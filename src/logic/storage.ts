@@ -6,6 +6,47 @@ import type { AppPage } from '~/enums/appEnums'
 export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
 export const accessKey = useStorageLocal('accessKey', '')
 
+// 快捷键基础配置接口
+export interface BaseShortcutSetting {
+  key: string
+  enabled: boolean
+}
+
+// 快捷键配置集合接口
+export interface ShortcutsSettings {
+  [key: string]: BaseShortcutSetting | undefined
+  // 扩展快捷键
+  danmuStatus?: BaseShortcutSetting
+  webFullscreen?: BaseShortcutSetting
+  widescreen?: BaseShortcutSetting
+  shortStepBackward?: BaseShortcutSetting // J
+  longStepBackward?: BaseShortcutSetting // Shift+J
+  playPause?: BaseShortcutSetting // K
+  shortStepForward?: BaseShortcutSetting // L
+  longStepForward?: BaseShortcutSetting // Shift+L
+  nextVideoExtended?: BaseShortcutSetting // N (官方使用 ] or ⏩)
+  pip?: BaseShortcutSetting // P
+  turnOffLight?: BaseShortcutSetting // I
+  caption?: BaseShortcutSetting // C
+  increasePlaybackRate?: BaseShortcutSetting // +
+  decreasePlaybackRate?: BaseShortcutSetting // -
+  resetPlaybackRate?: BaseShortcutSetting // 0
+  screenshotFile?: BaseShortcutSetting // Shift+S
+  screenshotClipboard?: BaseShortcutSetting // Alt+Shift+S
+  previousFrame?: BaseShortcutSetting // ,
+  nextFrame?: BaseShortcutSetting // .
+  replay?: BaseShortcutSetting // Shift+Backspace
+
+  // 全屏模式下快捷键
+  increaseVideoSize?: BaseShortcutSetting // Shift++
+  decreaseVideoSize?: BaseShortcutSetting // Shift+-
+  resetVideoSize?: BaseShortcutSetting // Shift+0
+  videoTitle?: BaseShortcutSetting // B
+  videoTime?: BaseShortcutSetting // G
+  clockTime?: BaseShortcutSetting // H
+
+  // 跳转进度快捷键已移除
+}
 export interface Settings {
   touchScreenOptimization: boolean
   enableGridLayoutSwitcher: boolean
@@ -117,7 +158,8 @@ export interface Settings {
   // 新增视频播放器默认样式设置
   defaultVideoPlayerMode: 'default' | 'fullscreen' | 'webFullscreen' | 'widescreen'
   disableAutoPlayCollection: boolean
-
+  keyboard: boolean
+  shortcuts: ShortcutsSettings
 }
 
 export const originalSettings: Settings = {
@@ -228,9 +270,38 @@ export const originalSettings: Settings = {
   // 新增默认值
   defaultVideoPlayerMode: 'default',
   disableAutoPlayCollection: false,
+  keyboard: true, // 总快捷键开关，默认为 true
+  shortcuts: {
+    danmuStatus: { key: 'Shift+D', enabled: true },
+    webFullscreen: { key: 'W', enabled: true },
+    widescreen: { key: 'T', enabled: true },
+    shortStepBackward: { key: 'J', enabled: true },
+    longStepBackward: { key: 'Shift+J', enabled: true },
+    playPause: { key: 'K', enabled: true }, // 官方有 Space/⏯️，K 作为可选项
+    shortStepForward: { key: 'L', enabled: true },
+    longStepForward: { key: 'Shift+L', enabled: true },
+    nextVideoExtended: { key: 'N', enabled: true }, // 官方有 ]/⏩，N 作为可选项
+    pip: { key: 'P', enabled: true },
+    turnOffLight: { key: 'I', enabled: true },
+    caption: { key: 'C', enabled: true },
+    increasePlaybackRate: { key: '+', enabled: true },
+    decreasePlaybackRate: { key: '-', enabled: true },
+    resetPlaybackRate: { key: '0', enabled: true },
+    screenshotFile: { key: 'Shift+S', enabled: true },
+    screenshotClipboard: { key: 'Alt+Shift+S', enabled: true },
+    previousFrame: { key: ',', enabled: true },
+    nextFrame: { key: '.', enabled: true },
+    replay: { key: 'Shift+Backspace', enabled: true },
+    increaseVideoSize: { key: 'Shift++', enabled: true },
+    decreaseVideoSize: { key: 'Shift+-', enabled: true },
+    resetVideoSize: { key: 'Shift+0', enabled: true },
+    videoTitle: { key: 'B', enabled: true },
+    videoTime: { key: 'G', enabled: true },
+    clockTime: { key: 'H', enabled: true },
+  },
 }
 
-export const settings = useStorageLocal('settings', ref<Settings>(originalSettings), { mergeDefaults: true })
+export const settings = useStorageLocal('settings', originalSettings, { mergeDefaults: true })
 
 export type GridLayoutType = 'adaptive' | 'twoColumns' | 'oneColumn'
 

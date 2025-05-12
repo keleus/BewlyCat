@@ -19,7 +19,7 @@
 > [!IMPORTANT]
 > 该项目面向我个人使用习惯修改。当然，欢迎功能建议与bug反馈。
 >
-> 不会打包firefox和safari，如果有需要欢迎自行打包。
+> 不会打包safari，如果有需要欢迎自行打包。
 >
 > 本项目由MIT许可在原项目基础上开发，并亦与原作者联系取得了授权，包括上架Chrome应用商店的权利。
 
@@ -52,8 +52,10 @@
 
 [Edge应用商店](https://microsoftedge.microsoft.com/addons/detail/bewlycat/aaammfjdfifgnfnbflolojihjfhdploj):审核的比Chrome快
 
+[Firefox应用商店](): 审核中，敬请期待
+
 > [!CAUTION]
-> 审核可能存在延迟，Chrome一般会晚7-15天，Edge一般会晚3-7天
+> 审核可能存在延迟，Chrome一般会晚3-15天，Edge一般会晚3-7天
 
 ### 本地安装
 

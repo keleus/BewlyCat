@@ -3,6 +3,7 @@ export enum MenuType {
   DesktopAndDock = 'DesktopAndDock',
   Appearance = 'Appearance',
   BewlyPages = 'BewlyPages',
+  Shortcuts = 'Shortcuts',
   Compatibility = 'Compatibility',
   BilibiliSettings = 'BilibiliSettings',
   About = 'About',

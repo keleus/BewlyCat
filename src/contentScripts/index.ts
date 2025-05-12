@@ -10,7 +10,8 @@ import { setupApp } from '~/logic/common-setup'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { defaultMode, disableAutoPlayCollection, fullscreen, webFullscreen, widescreen } from '~/utils/player'
+import { defaultMode, disableAutoPlayCollection, fullscreen, isBangumiOrWatchLaterPage, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
+import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 
@@ -173,16 +174,6 @@ window.addEventListener(BEWLY_MOUNTED, () => {
 
 let lastUrl = location.href
 
-// 判断是否为视频页面
-function isVideoPage() {
-  return location.pathname.startsWith('/video/')
-}
-
-// 判断是否为番剧/watchlater页面
-function isBangumiOrWatchLaterPage() {
-  return location.pathname.startsWith('/bangumi/play/') || location.pathname.startsWith('/list/watchlater')
-}
-
 // 应用默认播放器模式
 function applyDefaultPlayerMode() {
   const playerMode = settings.value.defaultVideoPlayerMode
@@ -202,6 +193,7 @@ function applyDefaultPlayerMode() {
       widescreen()
       break
   }
+  setupShortcutHandlers()
 }
 
 function checkForUrlChanges() {
@@ -209,6 +201,7 @@ function checkForUrlChanges() {
     lastUrl = location.href
     if (isVideoPage() || isBangumiOrWatchLaterPage()) {
       applyDefaultPlayerMode()
+      setupShortcutHandlers() // URL变化时重新注册快捷键
     }
   }
   requestAnimationFrame(checkForUrlChanges)
@@ -221,6 +214,7 @@ function handleVisibilityChange() {
   if (document.visibilityState === 'visible'
     && (isVideoPage() || isBangumiOrWatchLaterPage())) {
     applyDefaultPlayerMode()
+    setupShortcutHandlers() // 页面变为可见时重新注册快捷键
   }
 }
 
@@ -229,10 +223,11 @@ window.addEventListener('load', () => {
   if (isVideoPage()) {
     applyDefaultPlayerMode()
     disableAutoPlayCollection(settings.value)
+    setupShortcutHandlers() // 确保视频页面加载完成后注册快捷键
   }
   else if (isBangumiOrWatchLaterPage()) {
     applyDefaultPlayerMode()
-    // 番剧页面不执行 disableAutoPlayCollection
+    setupShortcutHandlers() // 确保番剧页面加载完成后注册快捷键
   }
 
   // 添加搜索页面视频卡片点击事件处理
@@ -267,6 +262,7 @@ function setupBiliVideoCardClickHandler() {
 window.addEventListener('pageshow', () => {
   if (isVideoPage() || isBangumiOrWatchLaterPage()) {
     applyDefaultPlayerMode()
+    setupShortcutHandlers() // 页面显示时注册快捷键
   }
 })
 window.addEventListener('visibilitychange', handleVisibilityChange)

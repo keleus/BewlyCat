@@ -172,7 +172,7 @@ settings:
     dark: 深色
     auto: 自動
   theme_color: 主題色
-  gradient_theme_color_background: 在深色模式下使用漸層主題色作��为背景
+  gradient_theme_color_background: 在深色模式下使用漸層主題色作為背景
   wallpaper_mode: 背景圖片模式
   wallpaper_mode_desc: '使用網址: 直接使用網路圖片的網址來設定背景圖片。'
   wallpaper_mode_opt:
@@ -290,6 +290,111 @@ settings:
   disable_auto_play_collection_desc: 打開視頻頁面時，自動關閉合集的自動連播功能
   enable_undo_refresh_button: 啟用撤銷刷新按鈕（僅在Web推薦模式下有效）
   enable_undo_refresh_button_desc: 刷新頁面後顯示撤銷按鈕，點擊可恢復刷新前的內容
+  shortcuts:
+    title: 快捷鍵
+    enable_all_shortcuts_toggle: 啟用鍵盤快捷鍵
+    enable_all_shortcuts_toggle_desc: 啟用或停用所有鍵盤快捷鍵功能
+
+    # 分組
+    group:
+      official_bilibili: bilibili 官方快捷鍵
+      general: 常規快捷鍵
+      fullscreen_mode: 全螢幕模式快捷鍵
+      jump_to_progress: 進度跳轉快捷鍵
+      global_actions: 全域操作
+
+    # 官方快捷鍵描述
+    official:
+      play_pause: 播放/暫停
+      forward: 快進5秒
+      backward: 後退5秒
+      volume_up: 音量增加
+      volume_down: 音量減少
+      exit_fullscreen: 退出全螢幕
+      fullscreen: 切換全螢幕模式
+      danmu_toggle: 彈幕開關
+      mute: 靜音切換
+      prev_video: 播放上一個視訊
+      next_video: 播放下一個視訊
+      speed_1: 播放速度設為1倍速
+      speed_2: 播放速度設為2倍速
+      input_danmu: 輸入彈幕
+
+    # 常規項目操作
+    item:
+      edit_key: 編輯快捷鍵
+      cancel_edit: 取消編輯
+      reset_default: 重置為預設值
+
+    # 按鈕文案
+    reset_all_button: 重置所有快捷鍵
+    reset_all_ext_shortcuts: 重置所有擴充套件快捷鍵
+
+    # 格式選項
+    screenshot_format: 截圖格式
+    clock_time_format: 時間格式
+    hour: 小時
+    clock_show_seconds: 顯示秒數
+    press_keys: 點擊輸入框，按下快捷鍵
+
+    # 具體操作的描述
+    danmu_status: 顯示彈幕狀態
+    danmu_status_desc: 顯示當前彈幕開關狀態
+    web_fullscreen: 網頁全螢幕
+    web_fullscreen_desc: 切換網頁全螢幕模式
+    widescreen: 寬螢幕模式
+    widescreen_desc: 切換寬螢幕模式
+    short_step_backward: 快退
+    short_step_backward_desc: 快退5秒
+    long_step_backward: 長退
+    long_step_backward_desc: 快退30秒
+    play_pause_ext: 播放/暫停
+    play_pause_ext_desc: 播放或暫停視訊(擴充套件)
+    short_step_forward: 快進
+    short_step_forward_desc: 快進5秒
+    long_step_forward: 長進
+    long_step_forward_desc: 快進30秒
+    next_video_ext: 下一個視訊
+    next_video_ext_desc: 播放清單的下一個視訊(擴充套件)
+    pip: 子母畫面
+    pip_desc: 切換子母畫面模式
+    turn_off_light: 關燈
+    turn_off_light_desc: 開啟/關閉關燈模式
+    caption: 字幕
+    caption_desc: 開啟/關閉字幕
+    increase_playback_rate: 加速播放
+    increase_playback_rate_desc: 提高播放速度
+    decrease_playback_rate: 減速播放
+    decrease_playback_rate_desc: 降低播放速度
+    reset_playback_rate: 重置播放速度
+    reset_playback_rate_desc: 恢復正常播放速度
+    screenshot_file: 截圖到檔案
+    screenshot_file_desc: 儲存當前畫面到檔案
+    screenshot_clipboard: 截圖到剪貼簿
+    screenshot_clipboard_desc: 複製當前畫面到剪貼簿
+    previous_frame: 上一幀
+    previous_frame_desc: 回退到上一幀(暫停時)
+    next_frame: 下一幀
+    next_frame_desc: 前進到下一幀(暫停時)
+    replay: 重播
+    replay_desc: 從頭開始播放
+    increase_video_size: 放大視訊
+    increase_video_size_desc: 增加視訊畫面大小
+    decrease_video_size: 縮小視訊
+    decrease_video_size_desc: 減小視訊畫面大小
+    reset_video_size: 重置視訊大小
+    reset_video_size_desc: 恢復預設視訊大小
+    video_title: 視訊標題
+    video_title_desc: 顯示/隱藏視訊標題
+    video_time: 視訊時間
+    video_time_desc: 顯示/隱藏視訊時間
+    clock_time: 時鐘
+    clock_time_desc: 顯示/隱藏系統時間
+
+    # 快捷鍵組外的一些提示文字
+    keyboard_conflict_warning: 如果您同時使用了其它帶有快捷鍵功能的擴充套件，那麼他們可能會衝突，導致功能不正常。為了避免衝突，您可以在其它擴充套件或此擴充套件的設定中關閉相應的快捷鍵功能。
+    only_physical_keys_note: 所有快捷鍵均表示實體按鍵，只有明確提示 Shift 的才需要按 Shift 鍵。
+
 auth:
   auth_access_key_first: 在這之前請先授權 BewlyBewly 使用 access key
 topbar:

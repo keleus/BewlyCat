@@ -341,6 +341,109 @@ settings:
   enable_undo_refresh_button_desc: >-
     After refreshing the page, display an undo button that restores the content
     before the refresh when clicked.
+  shortcuts:
+    title: Keyboard Shortcuts
+    enable_all_shortcuts_toggle: Enable Keyboard Shortcuts
+    enable_all_shortcuts_toggle_desc: Enable or disable all keyboard shortcuts functionality
+
+    # Groups
+    group:
+      official_bilibili: Bilibili Official Shortcuts
+      general: General Shortcuts
+      fullscreen_mode: Fullscreen Mode Shortcuts
+      jump_to_progress: Progress Jump Shortcuts
+      global_actions: Global Actions
+
+    # Official Shortcuts Description
+    official:
+      play_pause: Play/Pause
+      forward: Forward 5s
+      backward: Backward 5s
+      volume_up: Volume Up
+      volume_down: Volume Down
+      exit_fullscreen: Exit Fullscreen
+      fullscreen: Toggle Fullscreen
+      danmu_toggle: Toggle Danmu
+      mute: Toggle Mute
+      prev_video: Play Previous Video
+      next_video: Play Next Video
+      speed_1: Set Speed to 1x
+      speed_2: Set Speed to 2x
+      input_danmu: Input Danmu
+
+    # Regular Item Operations
+    item:
+      edit_key: Edit Shortcut
+      cancel_edit: Cancel Edit
+      reset_default: Reset to Default
+
+    # Button Text
+    reset_all_button: Reset All Shortcuts
+    reset_all_ext_shortcuts: Reset All Extension Shortcuts
+    # Format Options
+    screenshot_format: Screenshot Format
+    clock_time_format: Time Format
+    hour: Hour
+    clock_show_seconds: Show Seconds
+    press_keys: Click the input box, then press the shortcut keys
+
+    # Operation Descriptions
+    danmu_status: Show Danmu Status
+    danmu_status_desc: Show current danmu toggle status
+    web_fullscreen: Web Fullscreen
+    web_fullscreen_desc: Toggle web fullscreen mode
+    widescreen: Widescreen
+    widescreen_desc: Toggle widescreen mode
+    short_step_backward: Quick Rewind
+    short_step_backward_desc: Rewind 5 seconds
+    long_step_backward: Long Rewind
+    long_step_backward_desc: Rewind 30 seconds
+    play_pause_ext: Play/Pause
+    play_pause_ext_desc: Play or pause video (extension)
+    short_step_forward: Quick Forward
+    short_step_forward_desc: Forward 5 seconds
+    long_step_forward: Long Forward
+    long_step_forward_desc: Forward 30 seconds
+    next_video_ext: Next Video
+    next_video_ext_desc: Play next video in playlist (extension)
+    pip: Picture in Picture
+    pip_desc: Toggle picture-in-picture mode
+    turn_off_light: Turn Off Light
+    turn_off_light_desc: Toggle theater mode
+    caption: Captions
+    caption_desc: Toggle captions
+    increase_playback_rate: Increase Speed
+    increase_playback_rate_desc: Increase playback speed
+    decrease_playback_rate: Decrease Speed
+    decrease_playback_rate_desc: Decrease playback speed
+    reset_playback_rate: Reset Speed
+    reset_playback_rate_desc: Reset to normal playback speed
+    screenshot_file: Screenshot to File
+    screenshot_file_desc: Save current frame to file
+    screenshot_clipboard: Screenshot to Clipboard
+    screenshot_clipboard_desc: Copy current frame to clipboard
+    previous_frame: Previous Frame
+    previous_frame_desc: Go to previous frame (when paused)
+    next_frame: Next Frame
+    next_frame_desc: Go to next frame (when paused)
+    replay: Replay
+    replay_desc: Start playing from beginning
+    increase_video_size: Increase Video Size
+    increase_video_size_desc: Make video larger
+    decrease_video_size: Decrease Video Size
+    decrease_video_size_desc: Make video smaller
+    reset_video_size: Reset Video Size
+    reset_video_size_desc: Reset to default video size
+    video_title: Video Title
+    video_title_desc: Show/Hide video title
+    video_time: Video Time
+    video_time_desc: Show/Hide video time
+    clock_time: Clock
+    clock_time_desc: Show/Hide system time
+
+    # Tips outside shortcut groups
+    keyboard_conflict_warning: If you are using other extensions with keyboard shortcuts, they may conflict and cause functionality issues. To avoid conflicts, you can disable the corresponding shortcuts in other extensions or this extension's settings.
+    only_physical_keys_note: All shortcuts represent physical keys. Only press Shift when explicitly indicated.
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
