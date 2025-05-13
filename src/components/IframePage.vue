@@ -96,6 +96,7 @@ defineExpose({
         v-show="showIframe"
         ref="iframeRef"
         :src="props.url"
+        sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
         :style="{
           bottom: headerShow ? `var(--bew-top-bar-height)` : '0',
         }"

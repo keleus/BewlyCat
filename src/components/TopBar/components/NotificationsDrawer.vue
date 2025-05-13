@@ -217,6 +217,7 @@ nextTick(() => {
               frameborder="0"
               pointer-events-auto
               pos="relative right-0"
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
               w-inherit
               max-w-inherit
               :style="{
