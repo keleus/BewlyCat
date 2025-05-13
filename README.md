@@ -52,7 +52,7 @@
 
 [Edge应用商店](https://microsoftedge.microsoft.com/addons/detail/bewlycat/aaammfjdfifgnfnbflolojihjfhdploj):审核的比Chrome快
 
-[Firefox应用商店](): 审核中，敬请期待
+[Firefox应用商店](https://addons.mozilla.org/en-US/firefox/addon/bewlycat/):已上线～（目前已知抽屉有BUG）
 
 > [!CAUTION]
 > 审核可能存在延迟，Chrome一般会晚3-15天，Edge一般会晚3-7天
