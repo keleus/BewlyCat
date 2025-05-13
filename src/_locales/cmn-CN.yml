@@ -144,6 +144,8 @@ settings:
   enable_video_ctrl_bar_on_video_card: 在视频卡片上显示视频控制栏
   hover_video_card_delayed: 将鼠标悬停在视频卡片上时延迟视频预览
   auto_hide_top_bar: 自动隐藏顶栏
+  auto_hide_top_bar_on_video_page: 视频页默认隐藏
+  auto_hide_top_bar_on_video_page_desc: 在视频页面默认隐藏顶栏，鼠标移动到顶部区域时显示
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 显示 BewlyCat/Bilibili 顶栏切换器
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器

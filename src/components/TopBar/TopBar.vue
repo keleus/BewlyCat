@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { onKeyStroke, useMouseInElement } from '@vueuse/core'
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
-import { isHomePage } from '~/utils/main'
+import { isHomePage, isVideoOrBangumiPage } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
 import NotificationsDrawer from './components/NotificationsDrawer.vue'
@@ -22,13 +22,44 @@ const { isDark } = useDark()
 // 顶栏显示控制
 const hideTopBar = ref<boolean>(false)
 const headerTarget = ref(null)
+const topAreaTarget = ref(null)
 const { isOutside: isOutsideTopBar } = useMouseInElement(headerTarget)
+const { isOutside: isOutsideTopArea } = useMouseInElement(topAreaTarget)
+
+// 延迟隐藏计时器
+let hideTimer: number | null = null
+
+// 监听鼠标位置变化
+watch([isOutsideTopBar, isOutsideTopArea], ([newTopBarValue, newTopAreaValue]) => {
+  if (isVideoOrBangumiPage() && settings.value.autoHideTopBarOnVideoPage) {
+    // 清除之前的计时器
+    if (hideTimer) {
+      clearTimeout(hideTimer)
+      hideTimer = null
+    }
+
+    // 如果鼠标在顶栏区域或顶部监听区域，则显示顶栏
+    if (!newTopBarValue || !newTopAreaValue) {
+      toggleTopBarVisible(true)
+    }
+    else {
+      // 延迟隐藏顶栏
+      hideTimer = window.setTimeout(() => {
+        toggleTopBarVisible(false)
+      }, 500) // 500ms 延迟
+    }
+  }
+})
 
 // 滚动处理
 const scrollTop = ref<number>(0)
 const oldScrollTop = ref<number>(0)
 
 function handleScroll() {
+  // 在视频页面且启用自动隐藏时，不处理滚动事件
+  if (isVideoOrBangumiPage() && settings.value.autoHideTopBarOnVideoPage)
+    return
+
   if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
     const osInstance = scrollbarRef.value?.osInstance()
     scrollTop.value = osInstance.elements().viewport.scrollTop as number
@@ -40,7 +71,7 @@ function handleScroll() {
   if (scrollTop.value === 0)
     toggleTopBarVisible(true)
 
-  if (settings.value.autoHideTopBar && isOutsideTopBar && scrollTop.value !== 0) {
+  if (settings.value.autoHideTopBar && isOutsideTopBar.value && scrollTop.value !== 0) {
     if (scrollTop.value > oldScrollTop.value)
       toggleTopBarVisible(false)
     else
@@ -52,12 +83,17 @@ function handleScroll() {
 
 function toggleTopBarVisible(visible: boolean) {
   hideTopBar.value = !visible
-  emitter.emit(TOP_BAR_VISIBILITY_CHANGE, visible)
+  emitter.emit(TOP_BAR_VISIBILITY_CHANGE, !hideTopBar.value)
 }
 
 function setupScrollListeners() {
   toggleTopBarVisible(true)
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL)
+
+  // 在视频页面且启用自动隐藏时，不设置滚动监听
+  if (isVideoOrBangumiPage() && settings.value.autoHideTopBarOnVideoPage)
+    return
+
   if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
     emitter.on(OVERLAY_SCROLL_BAR_SCROLL, () => {
       handleScroll()
@@ -84,6 +120,10 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (hideTimer) {
+    clearTimeout(hideTimer)
+    hideTimer = null
+  }
   cleanupScrollListeners()
   // 使用 store 中的方法清理定时器
   topBarStore.cleanup()
@@ -101,31 +141,64 @@ defineExpose({
 </script>
 
 <template>
-  <Transition name="top-bar">
-    <header
-      v-if="topBarStore.showTopBar"
-      ref="headerTarget"
-      w="full" transition="all 300 ease-in-out"
-      :class="{ 'hide': hideTopBar, 'force-white-icon': topBarStore.forceWhiteIcon }"
-      :style="{ position: topBarStore.isTopBarFixed ? 'fixed' : 'absolute' }"
-    >
-      <TopBarHeader
-        :force-white-icon="topBarStore.forceWhiteIcon"
-        :reach-top="reachTop"
-        :is-dark="isDark"
-      />
-
-      <KeepAlive v-if="settings.openNotificationsPageAsDrawer">
-        <NotificationsDrawer
-          v-if="topBarStore.drawerVisible.notifications"
-          :url="topBarStore.notificationsDrawerUrl"
-          @close="topBarStore.drawerVisible.notifications = false"
+  <div class="top-bar-container">
+    <!-- 顶部监听区域 -->
+    <div
+      v-if="isVideoOrBangumiPage() && settings.autoHideTopBarOnVideoPage"
+      ref="topAreaTarget"
+      class="top-area-listener"
+      :style="{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '20px',
+        zIndex: 100,
+      }"
+    />
+    <Transition name="top-bar">
+      <header
+        v-if="topBarStore.showTopBar"
+        ref="headerTarget"
+        class="top-bar"
+        w="full" transition="all 300 ease-in-out"
+        :class="{ 'hide': hideTopBar, 'force-white-icon': topBarStore.forceWhiteIcon }"
+        :style="{ position: topBarStore.isTopBarFixed ? 'fixed' : 'absolute' }"
+      >
+        <TopBarHeader
+          :force-white-icon="topBarStore.forceWhiteIcon"
+          :reach-top="reachTop"
+          :is-dark="isDark"
         />
-      </KeepAlive>
-    </header>
-  </Transition>
+
+        <KeepAlive v-if="settings.openNotificationsPageAsDrawer">
+          <NotificationsDrawer
+            v-if="topBarStore.drawerVisible.notifications"
+            :url="topBarStore.notificationsDrawerUrl"
+            @close="topBarStore.drawerVisible.notifications = false"
+          />
+        </KeepAlive>
+      </header>
+    </Transition>
+  </div>
 </template>
 
 <style lang="scss" scoped>
 @import "./styles/index.scss";
+
+.top-bar-container {
+  position: relative;
+  width: 100%;
+}
+
+.top-bar {
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99;
+}
+
+.top-area-listener {
+  cursor: default;
+}
 </style>

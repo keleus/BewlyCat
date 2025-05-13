@@ -142,6 +142,8 @@ settings:
   enable_video_ctrl_bar_on_video_card: 在影片卡片上顯示影片控制欄
   hover_video_card_delayed: 將滑鼠懸停在影片卡片上時延遲影片預覽
   auto_hide_top_bar: 自動隱藏頂欄
+  auto_hide_top_bar_on_video_page: 影片頁預設隱藏
+  auto_hide_top_bar_on_video_page_desc: 在影片頁面預設隱藏頂欄，滑鼠移動到頂部區域時顯示
   show_top_bar_theme_color_gradient: 在頂欄顯示主題色漸變（僅在深色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂欄切換器
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器

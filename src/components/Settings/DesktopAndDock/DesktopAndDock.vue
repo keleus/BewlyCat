@@ -105,6 +105,9 @@ function handleToggleDockItem(dockItem: any) {
       <SettingsItem :title="$t('settings.auto_hide_top_bar')">
         <Radio v-model="settings.autoHideTopBar" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.auto_hide_top_bar_on_video_page')" :desc="$t('settings.auto_hide_top_bar_on_video_page_desc')">
+        <Radio v-model="settings.autoHideTopBarOnVideoPage" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')">
         <Radio v-model="settings.showTopBarThemeColorGradient" />
       </SettingsItem>
