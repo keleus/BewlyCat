@@ -258,6 +258,7 @@ watchEffect(() => {
             v-show="showIframe"
             ref="iframeRef"
             :src="props.url"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
             :style="{
               // Prevent top bar shaking when before the remove-top-bar-without-placeholder class is injected
               top: !removeTopBarClassInjected ? `calc(-1 * var(--bew-top-bar-height))` : '0',
