@@ -5,6 +5,8 @@
 ![Chrome Web Store Users](https://img.shields.io/chrome-web-store/users/oopkfefbgecikmfbbapnlpjidoomhjpl?label=Chrome%20Users)
 ![Edge Addons Version](https://img.shields.io/badge/dynamic/json?label=Edge%20Version&query=%24.version&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Faaammfjdfifgnfnbflolojihjfhdploj)
 ![Edge Addons Users](https://img.shields.io/badge/dynamic/json?label=Edge%20Users&query=%24.activeInstallCount&url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Faaammfjdfifgnfnbflolojihjfhdploj)
+![Firefox Version](https://img.shields.io/amo/v/bewlycat)
+![Firefox Users](https://img.shields.io/amo/users/bewlycat)
 
 此项目基于[BewlyBewly](https://github.com/BewlyBewly/BewlyBewly)开发，并在其基础上进行功能扩充和调整，并合并了一些其他拓展的功能。
 
@@ -21,10 +23,12 @@
 >
 > 不会打包safari，如果有需要欢迎自行打包。
 >
-> 本项目由MIT许可在原项目基础上开发，并亦与原作者联系取得了授权，包括上架Chrome应用商店的权利。
+> 本项目由MIT许可在原项目基础上开发，并亦与原作者联系取得了授权，包括上架Chrome应用商店等权利。
 
 > [!CAUTION]
 > 本插件移除了原插件的`tabs`权限以及`activeTab`权限，目前我个人使用功能并未受到影响，不确定是否会造成BUG。
+>
+> 本插件重构了TopBar，移除了旧版顶栏，请至少升级到`0.0.12`版本（顶栏基本优化完毕）。
 
 ## 主要功能异同
 
@@ -36,6 +40,7 @@
 5. 新增首页推荐前进后退的能力。
 6. 新增合集播放自动关闭功能（需要在设置里开启），方便挂合集听歌。
 7. 新增web模式推荐按照点赞/播放比例过滤视频的能力（需要设置里开启）
+8. 参考了`Extension for Bilibili Player`插件的快捷键，支持了其中大部分功能的自定义快捷键。
 
 ### 删除功能
 1. 删除了原插件广东话翻译
