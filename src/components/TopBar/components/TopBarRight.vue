@@ -6,7 +6,7 @@ import { ref } from 'vue'
 import ALink from '~/components/ALink.vue'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
-import { getUserID } from '~/utils/main'
+import { getUserID, removeHttpFromUrl } from '~/utils/main'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import { MESSAGE_URL } from '../constants/urls'
@@ -427,10 +427,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           class="avatar-img"
           :class="{ hover: popupVisible.userPanel }"
           :style="{
-            backgroundImage: `url(${`${userInfo.face}`.replace(
-              'http:',
-              '',
-            )})`,
+            backgroundImage: `url(${userInfo.face ? removeHttpFromUrl(userInfo.face) : ''})`,
           }"
         />
         <div
@@ -438,10 +435,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           class="avatar-shadow"
           :class="{ hover: popupVisible.userPanel }"
           :style="{
-            backgroundImage: `url(${`${userInfo.face}`.replace(
-              'http:',
-              '',
-            )})`,
+            backgroundImage: `url(${userInfo.face ? removeHttpFromUrl(userInfo.face) : ''})`,
           }"
         />
         <svg
