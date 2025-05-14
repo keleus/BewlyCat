@@ -26,8 +26,20 @@ const topAreaTarget = ref(null)
 const { isOutside: isOutsideTopBar } = useMouseInElement(headerTarget)
 const { isOutside: isOutsideTopArea } = useMouseInElement(topAreaTarget)
 
+// 当前URL
+const currentUrl = ref(window.location.href)
+
+// 监听URL变化
+function checkUrlChange() {
+  if (currentUrl.value !== window.location.href) {
+    currentUrl.value = window.location.href
+    setupScrollListeners()
+  }
+}
+
 // 延迟隐藏计时器
 let hideTimer: number | null = null
+let urlCheckTimer: number | null = null
 
 // 监听鼠标位置变化
 watch([isOutsideTopBar, isOutsideTopArea], ([newTopBarValue, newTopAreaValue]) => {
@@ -87,7 +99,14 @@ function toggleTopBarVisible(visible: boolean) {
 }
 
 function setupScrollListeners() {
-  toggleTopBarVisible(true)
+  // 默认显示顶栏，除非在视频页面且启用了自动隐藏
+  if (isVideoOrBangumiPage() && settings.value.autoHideTopBarOnVideoPage) {
+    toggleTopBarVisible(false)
+  }
+  else {
+    toggleTopBarVisible(true)
+  }
+
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL)
 
   // 在视频页面且启用自动隐藏时，不设置滚动监听
@@ -116,6 +135,9 @@ onMounted(() => {
     topBarStore.initData()
     topBarStore.startUpdateTimer()
     setupScrollListeners()
+
+    // 设置URL变化检查定时器
+    urlCheckTimer = window.setInterval(checkUrlChange, 1000)
   })
 })
 
@@ -124,6 +146,12 @@ onUnmounted(() => {
     clearTimeout(hideTimer)
     hideTimer = null
   }
+
+  if (urlCheckTimer) {
+    clearInterval(urlCheckTimer)
+    urlCheckTimer = null
+  }
+
   cleanupScrollListeners()
   // 使用 store 中的方法清理定时器
   topBarStore.cleanup()
