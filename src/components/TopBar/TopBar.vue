@@ -147,14 +147,6 @@ defineExpose({
       v-if="isVideoOrBangumiPage() && settings.autoHideTopBarOnVideoPage"
       ref="topAreaTarget"
       class="top-area-listener"
-      :style="{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '20px',
-        zIndex: 100,
-      }"
     />
     <Transition name="top-bar">
       <header
@@ -163,7 +155,6 @@ defineExpose({
         class="top-bar"
         w="full" transition="all 300 ease-in-out"
         :class="{ 'hide': hideTopBar, 'force-white-icon': topBarStore.forceWhiteIcon }"
-        :style="{ position: topBarStore.isTopBarFixed ? 'fixed' : 'absolute' }"
       >
         <TopBarHeader
           :force-white-icon="topBarStore.forceWhiteIcon"
@@ -195,10 +186,17 @@ defineExpose({
   top: 0;
   left: 0;
   right: 0;
-  z-index: 99;
+  z-index: 999;
+  position: fixed;
 }
 
 .top-area-listener {
   cursor: default;
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
 }
 </style>
