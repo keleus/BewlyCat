@@ -17,36 +17,82 @@ const emit = defineEmits<{
 }>()
 
 const show = ref(false)
-const headerShow = ref(false)
+const headerShow = ref(true)
 const iframeRef = ref<HTMLIFrameElement | null>(null)
 const currentUrl = ref<string>(props.url)
 const showIframe = ref<boolean>(false)
 const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
 const removeTopBarClassInjected = ref<boolean>(false)
+const iframeLoaded = ref<boolean>(false)
 
 useEventListener(window, 'popstate', updateIframeUrl)
-nextTick(() => {
-  useEventListener(iframeRef.value?.contentWindow, 'historyChange', updateCurrentUrl)
-  useEventListener(iframeRef.value?.contentWindow, 'popstate', updateCurrentUrl)
 
-  useEventListener(iframeRef.value?.contentWindow, 'DOMContentLoaded', () => {
-    if (headerShow.value) {
-      iframeRef.value?.contentWindow?.document.documentElement.classList.add('remove-top-bar-without-placeholder')
-      removeTopBarClassInjected.value = true
-    }
-    else {
-      iframeRef.value?.contentWindow?.document.documentElement.classList.remove('remove-top-bar-without-placeholder')
-      removeTopBarClassInjected.value = false
-    }
-  })
-})
+function setupIframeListeners() {
+  if (!iframeRef.value || !iframeRef.value.contentWindow)
+    return
+
+  try {
+    // Listen for iframe load event
+    iframeRef.value.addEventListener('load', () => {
+      iframeLoaded.value = true
+      updateCurrentUrl()
+
+      try {
+        // Try to add event listeners to the iframe content
+        const iframeWindow = iframeRef.value?.contentWindow
+        if (iframeWindow) {
+          // 尝试监听 iframe 内部的点击事件，可能捕获导航
+          try {
+            iframeWindow.document.addEventListener('click', (_e) => {
+              // 延迟检查 URL 变化，给导航一些时间完成
+              setTimeout(updateCurrentUrl, 300)
+            })
+          }
+          catch (e) {
+            console.error('Unable to add click listener to iframe:', e)
+          }
+
+          // 定期检查 URL 变化，作为后备方案
+          const urlCheckInterval = setInterval(() => {
+            updateCurrentUrl()
+          }, 1000)
+
+          // 清理函数
+          onBeforeUnmount(() => {
+            clearInterval(urlCheckInterval)
+          })
+
+          // Apply styling
+          if (headerShow.value) {
+            iframeWindow.document.documentElement.classList.add('remove-top-bar-without-placeholder')
+            removeTopBarClassInjected.value = true
+          }
+          else {
+            iframeWindow.document.documentElement.classList.remove('remove-top-bar-without-placeholder')
+            removeTopBarClassInjected.value = false
+          }
+        }
+      }
+      catch (error) {
+        console.error('Error setting up iframe listeners:', error)
+      }
+    })
+  }
+  catch (error) {
+    console.error('Failed to setup iframe listeners:', error)
+  }
+}
 
 onMounted(() => {
   history.pushState(null, '', props.url)
   show.value = true
   headerShow.value = true
+
   nextTick(() => {
-    iframeRef.value?.focus()
+    if (iframeRef.value) {
+      setupIframeListeners()
+      iframeRef.value.focus()
+    }
   })
 })
 
@@ -59,14 +105,34 @@ onUnmounted(() => {
 })
 
 function updateCurrentUrl() {
-  if (iframeRef.value?.contentWindow) {
+  if (!iframeRef.value || !iframeRef.value.contentWindow)
+    return
+
+  try {
+    // 使用 try-catch 获取 iframe URL，处理可能的跨域问题
     try {
-      currentUrl.value = iframeRef.value.contentWindow.location.href.replace(/\/$/, '')
-      history.pushState(null, '', currentUrl.value.replace(/\/$/, ''))
+      const newUrl = iframeRef.value.contentWindow.location.href
+      if (newUrl && newUrl !== 'about:blank' && newUrl !== currentUrl.value) {
+        const cleanUrl = newUrl.replace(/\/$/, '')
+        currentUrl.value = cleanUrl
+        history.pushState(null, '', cleanUrl)
+        console.log('URL updated to:', cleanUrl)
+      }
     }
-    catch (error) {
-      console.error('Unable to access iframe URL:', error)
+    catch (e) {
+      // 如果直接访问 location.href 失败（可能是跨域问题），
+      // 尝试使用 iframe 的 src 属性作为备选
+      if (iframeRef.value.src && iframeRef.value.src !== 'about:blank'
+        && iframeRef.value.src !== currentUrl.value) {
+        const cleanUrl = iframeRef.value.src.replace(/\/$/, '')
+        currentUrl.value = cleanUrl
+        history.pushState(null, '', cleanUrl)
+        console.log('URL updated from src to:', cleanUrl)
+      }
     }
+  }
+  catch (error) {
+    console.error('Error in updateCurrentUrl:', error)
   }
 }
 
@@ -168,15 +234,6 @@ watchEffect(() => {
     }
   })
 })
-
-// const keys = useMagicKeys()
-// const ctrlAltT = keys['Ctrl+Alt+T']
-
-// watch(() => ctrlAltT, (value) => {
-//   if (value) {
-//     handleOpenInNewTab()
-//   }
-// })
 </script>
 
 <template>
@@ -258,7 +315,7 @@ watchEffect(() => {
             v-show="showIframe"
             ref="iframeRef"
             :src="props.url"
-            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"
             :style="{
               // Prevent top bar shaking when before the remove-top-bar-without-placeholder class is injected
               top: !removeTopBarClassInjected ? `calc(-1 * var(--bew-top-bar-height))` : '0',
@@ -267,7 +324,8 @@ watchEffect(() => {
             pointer-events-auto
             pos="relative left-0"
             w-full
-            h-full @load="showIframe = true"
+            h-full
+            @load="showIframe = true"
           />
         </Transition>
       </div>
