@@ -53,10 +53,10 @@
 
 [Edge应用商店](https://microsoftedge.microsoft.com/addons/detail/bewlycat/aaammfjdfifgnfnbflolojihjfhdploj):审核的比Chrome快
 
-[Firefox应用商店](https://addons.mozilla.org/en-US/firefox/addon/bewlycat/):已上线～（目前已知抽屉有BUG）
+[Firefox应用商店](https://addons.mozilla.org/en-US/firefox/addon/bewlycat/):已上线～（`1.0.0`版本已经修复抽屉问题）
 
 > [!CAUTION]
-> 审核可能存在延迟，Chrome一般会晚3-15天，Edge一般会晚3-7天
+> 审核可能存在延迟，Chrome一般会晚3-15天，Edge一般会晚3-7天，Firefox基本1-30分钟
 
 ### 本地安装
 
