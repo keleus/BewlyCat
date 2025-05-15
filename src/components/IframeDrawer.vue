@@ -113,10 +113,9 @@ function updateCurrentUrl() {
     try {
       const newUrl = iframeRef.value.contentWindow.location.href
       if (newUrl && newUrl !== 'about:blank' && newUrl !== currentUrl.value) {
-        const cleanUrl = newUrl.replace(/\/$/, '')
-        currentUrl.value = cleanUrl
-        history.pushState(null, '', cleanUrl)
-        console.log('URL updated to:', cleanUrl)
+        currentUrl.value = newUrl
+        history.pushState(null, '', newUrl)
+        console.debug('URL updated to:', newUrl)
       }
     }
     catch (e) {
@@ -124,10 +123,9 @@ function updateCurrentUrl() {
       // 尝试使用 iframe 的 src 属性作为备选
       if (iframeRef.value.src && iframeRef.value.src !== 'about:blank'
         && iframeRef.value.src !== currentUrl.value) {
-        const cleanUrl = iframeRef.value.src.replace(/\/$/, '')
-        currentUrl.value = cleanUrl
-        history.pushState(null, '', cleanUrl)
-        console.log('URL updated from src to:', cleanUrl)
+        currentUrl.value = iframeRef.value.src
+        history.pushState(null, '', iframeRef.value.src)
+        console.debug('URL updated to:', iframeRef.value.src)
       }
     }
   }
