@@ -269,7 +269,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     })
       .then((res: any) => {
         if (res.code === 0) {
-          const { has_more, items, offset, update_baseline } = res.data
+          const { has_more, items, offset, update_baseline, update_num } = res.data
 
           if (!has_more) {
             noMoreMomentsContent.value = true
@@ -277,7 +277,7 @@ export const useTopBarStore = defineStore('topBar', () => {
           }
 
           // 更新状态
-          // newMomentsCount.value = update_num
+          newMomentsCount.value = update_num
           momentUpdateBaseline.value = update_baseline
           momentOffset.value = offset
 
