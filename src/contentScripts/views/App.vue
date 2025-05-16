@@ -410,7 +410,7 @@ if (settings.value.cleanUrlArgument) {
 
     if (hasChanged) {
       const newUrl = currentUrl.toString()
-        .replace(/([^:])\/\//g, '$1/')
+        .replace(/([^:])\/\/(?!\/)/g, '$1/') // 只替换中间的双斜杠，不处理末尾的斜杠
         .replace(/%3D/gi, '=')
         .replace(/%26/g, '&')
       history.replaceState(null, '', newUrl)

@@ -60,16 +60,28 @@ const videoUrl = computed(() => {
   if (removed.value || !props.video)
     return undefined
 
+  let url = ''
   if (props.video.url)
-    return props.video.url
+    url = props.video.url
   else if (props.video.bvid || props.video.aid)
-    return getCurrentVideoUrl(props.video, videoCurrentTime)
+    url = getCurrentVideoUrl(props.video, videoCurrentTime)
   else if (props.video.epid)
-    return `https://www.bilibili.com/bangumi/play/ep${props.video.epid}`
+    url = `https://www.bilibili.com/bangumi/play/ep${props.video.epid}/`
   else if (props.video.roomid)
-    return `https://live.bilibili.com/${props.video.roomid}`
+    url = `https://live.bilibili.com/${props.video.roomid}/`
   else
     return ''
+
+  try {
+    const urlObj = new URL(url)
+    if (!urlObj.pathname.endsWith('/')) {
+      urlObj.pathname += '/'
+    }
+    return urlObj.toString()
+  }
+  catch {
+    return url
+  }
 })
 
 const isInWatchLater = ref<boolean>(false)

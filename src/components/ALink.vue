@@ -5,7 +5,7 @@ import { isHomePage } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 const props = defineProps<{
-  href?: string // 修改这里，添加 ? 使其成为可选属性
+  href?: string
   title?: string
   rel?: string
   type: 'topBar' | 'videoCard'
@@ -17,6 +17,24 @@ const emit = defineEmits<{
 }>()
 
 const { openIframeDrawer } = useBewlyApp()
+
+const processedHref = computed(() => {
+  if (!props.href)
+    return 'javascript:void(0)'
+
+  try {
+    const url = new URL(props.href)
+    // 如果没有查询参数且不以/结尾，添加/
+    if (!url.pathname.endsWith('/')) {
+      url.pathname += '/'
+      return url.toString()
+    }
+    return props.href
+  }
+  catch (error) {
+    return props.href
+  }
+})
 
 const openMode = computed(() => {
   if (props.type === 'topBar')
@@ -53,21 +71,22 @@ function handleClick(event: MouseEvent) {
 
   if (openMode.value === 'drawer') {
     event.preventDefault()
-    if (props.href)
-      openIframeDrawer(props.href)
+    if (props.href) {
+      openIframeDrawer(processedHref.value)
+    }
     return
   }
 
   if (openMode.value === 'background' && props.href) {
     event.preventDefault()
-    openLinkInBackground(props.href)
+    openLinkInBackground(processedHref.value)
   }
 }
 </script>
 
 <template>
   <a
-    :href="href ?? 'javascript:void(0)'"
+    :href="processedHref"
     :target="target"
     :title="title"
     :rel="rel"

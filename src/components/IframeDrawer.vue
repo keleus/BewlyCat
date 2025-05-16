@@ -23,75 +23,37 @@ const currentUrl = ref<string>(props.url)
 const showIframe = ref<boolean>(false)
 const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
 const removeTopBarClassInjected = ref<boolean>(false)
-const iframeLoaded = ref<boolean>(false)
 
 useEventListener(window, 'popstate', updateIframeUrl)
 
 function setupIframeListeners() {
-  if (!iframeRef.value || !iframeRef.value.contentWindow)
+  if (!(iframeRef.value && iframeRef.value.contentWindow)) {
+    console.error('Iframe or contentWindow is not available')
     return
-
-  try {
-    // Listen for iframe load event
-    iframeRef.value.addEventListener('load', () => {
-      iframeLoaded.value = true
-      updateCurrentUrl()
-
-      try {
-        // Try to add event listeners to the iframe content
-        const iframeWindow = iframeRef.value?.contentWindow
-        if (iframeWindow) {
-          // 尝试监听 iframe 内部的点击事件，可能捕获导航
-          try {
-            iframeWindow.document.addEventListener('click', (_e) => {
-              // 延迟检查 URL 变化，给导航一些时间完成
-              setTimeout(updateCurrentUrl, 300)
-            })
-          }
-          catch (e) {
-            console.error('Unable to add click listener to iframe:', e)
-          }
-
-          // 定期检查 URL 变化，作为后备方案
-          const urlCheckInterval = setInterval(() => {
-            updateCurrentUrl()
-          }, 1000)
-
-          // 清理函数
-          onBeforeUnmount(() => {
-            clearInterval(urlCheckInterval)
-          })
-
-          // Apply styling
-          if (headerShow.value) {
-            iframeWindow.document.documentElement.classList.add('remove-top-bar-without-placeholder')
-            removeTopBarClassInjected.value = true
-          }
-          else {
-            iframeWindow.document.documentElement.classList.remove('remove-top-bar-without-placeholder')
-            removeTopBarClassInjected.value = false
-          }
-        }
+  }
+  useEventListener(iframeRef.value, 'load', () => {
+    useEventListener(iframeRef.value?.contentWindow, 'pushstate', updateCurrentUrl)
+    useEventListener(iframeRef.value?.contentWindow, 'popstate', updateCurrentUrl)
+    useEventListener(iframeRef.value?.contentWindow, 'DOMContentLoaded', () => {
+      if (headerShow.value) {
+        iframeRef.value?.contentWindow?.document.documentElement.classList.add('remove-top-bar-without-placeholder')
+        removeTopBarClassInjected.value = true
       }
-      catch (error) {
-        console.error('Error setting up iframe listeners:', error)
+      else {
+        iframeRef.value?.contentWindow?.document.documentElement.classList.remove('remove-top-bar-without-placeholder')
+        removeTopBarClassInjected.value = false
       }
     })
-  }
-  catch (error) {
-    console.error('Failed to setup iframe listeners:', error)
-  }
+  })
 }
-
 onMounted(() => {
   history.pushState(null, '', props.url)
   show.value = true
   headerShow.value = true
-
   nextTick(() => {
     if (iframeRef.value) {
       setupIframeListeners()
-      iframeRef.value.focus()
+      iframeRef.value?.focus()
     }
   })
 })
@@ -104,33 +66,18 @@ onUnmounted(() => {
   history.replaceState(null, '', 'https://www.bilibili.com')
 })
 
-function updateCurrentUrl() {
-  if (!iframeRef.value || !iframeRef.value.contentWindow)
+function updateCurrentUrl(e: any) {
+  if (!iframeRef.value?.contentWindow) {
+    console.error('iframe contentWindow not available')
     return
-
-  try {
-    // 使用 try-catch 获取 iframe URL，处理可能的跨域问题
-    try {
-      const newUrl = iframeRef.value.contentWindow.location.href
-      if (newUrl && newUrl !== 'about:blank' && newUrl !== currentUrl.value) {
-        currentUrl.value = newUrl
-        history.pushState(null, '', newUrl)
-        console.debug('URL updated to:', newUrl)
-      }
-    }
-    catch (e) {
-      // 如果直接访问 location.href 失败（可能是跨域问题），
-      // 尝试使用 iframe 的 src 属性作为备选
-      if (iframeRef.value.src && iframeRef.value.src !== 'about:blank'
-        && iframeRef.value.src !== currentUrl.value) {
-        currentUrl.value = iframeRef.value.src
-        history.pushState(null, '', iframeRef.value.src)
-        console.debug('URL updated to:', iframeRef.value.src)
-      }
-    }
   }
-  catch (error) {
-    console.error('Error in updateCurrentUrl:', error)
+  let newUrl = iframeRef.value.contentWindow.location.href
+  if (e.type === 'pushstate' && Array.isArray(e.detail) && e.detail.length === 3 && e.detail[2]) {
+    newUrl = String(e.detail[2])
+  }
+  newUrl = newUrl.replace(/\/$/, '')
+  if (newUrl && newUrl !== 'about:blank') {
+    history.replaceState(null, '', newUrl)
   }
 }
 
