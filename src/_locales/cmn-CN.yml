@@ -281,16 +281,12 @@ settings:
     title: 快捷键
     enable_all_shortcuts_toggle: 启用键盘快捷键
     enable_all_shortcuts_toggle_desc: 启用或禁用所有键盘快捷键功能
-
-    # 分组
     group:
       official_bilibili: bilibili 官方快捷键
       general: 常规快捷键
       fullscreen_mode: 全屏模式快捷键
       jump_to_progress: 进度跳转快捷键
       global_actions: 全局操作
-
-    # 官方快捷键描述
     official:
       play_pause: 播放/暂停
       forward: 快进5秒
@@ -306,25 +302,17 @@ settings:
       speed_1: 播放速度设为1倍速
       speed_2: 播放速度设为2倍速
       input_danmu: 输入弹幕
-
-    # 常规项目操作
     item:
       edit_key: 编辑快捷键
       cancel_edit: 取消编辑
       reset_default: 重置为默认值
-
-    # 按钮文案
     reset_all_button: 重置所有快捷键
     reset_all_ext_shortcuts: 重置所有扩展快捷键
-
-    # 格式选项
     screenshot_format: 截图格式
     clock_time_format: 时间格式
     hour: 小时
     clock_show_seconds: 显示秒数
     press_keys: 点击输入框，按下快捷键
-
-    # 具体操作的描述
     danmu_status: 显示弹幕状态
     danmu_status_desc: 显示当前弹幕开关状态
     web_fullscreen: 网页全屏
@@ -377,10 +365,11 @@ settings:
     video_time_desc: 显示/隐藏视频时间
     clock_time: 时钟
     clock_time_desc: 显示/隐藏系统时间
-
-    # 快捷键组外的一些提示文本
-    keyboard_conflict_warning: 如果您同时使用了其它带有快捷键功能的扩展程序，那么他们可能会冲突，导致功能不正常。为了避免冲突，您可以在其它扩展或此扩展的设置中关闭相应的快捷键功能。
+    keyboard_conflict_warning: >-
+      如果您同时使用了其它带有快捷键功能的扩展程序，那么他们可能会冲突，导致功能不正常。为了避免冲突，您可以在其它扩展或此扩展的设置中关闭相应的快捷键功能。
     only_physical_keys_note: 所有快捷键均表示物理按键，只有明确提示 Shift 的才需要按 Shift 键。
+  clean_url_argument: 清理URL追踪参数
+  clean_url_argument_desc: 自动清理URL中的追踪参数，使链接更加简洁
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key
 topbar:

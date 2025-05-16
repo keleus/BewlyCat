@@ -74,6 +74,7 @@ export interface Settings {
 
   blockAds: boolean
   blockTopSearchPageAds: boolean
+  cleanUrlArgument: boolean // 清理URL追踪参数
 
   enableVideoCtrlBarOnVideoCard: boolean
   hoverVideoCardDelayed: boolean
@@ -186,6 +187,7 @@ export const originalSettings: Settings = {
 
   blockAds: false,
   blockTopSearchPageAds: false,
+  cleanUrlArgument: true, // 默认开启清理URL追踪参数
 
   enableVideoPreview: true,
   enableVideoCtrlBarOnVideoCard: false,

@@ -157,7 +157,9 @@ settings:
   hover_video_card_delayed: Delayed video preview on hover over the video card
   auto_hide_top_bar: Auto-hide top bar
   auto_hide_top_bar_on_video_page: Hide top bar on video page
-  auto_hide_top_bar_on_video_page_desc: Hide top bar by default on video pages, show when mouse moves to the top area
+  auto_hide_top_bar_on_video_page_desc: >-
+    Hide top bar by default on video pages, show when mouse moves to the top
+    area
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
   show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher
@@ -347,16 +349,12 @@ settings:
     title: Keyboard Shortcuts
     enable_all_shortcuts_toggle: Enable Keyboard Shortcuts
     enable_all_shortcuts_toggle_desc: Enable or disable all keyboard shortcuts functionality
-
-    # Groups
     group:
       official_bilibili: Bilibili Official Shortcuts
       general: General Shortcuts
       fullscreen_mode: Fullscreen Mode Shortcuts
       jump_to_progress: Progress Jump Shortcuts
       global_actions: Global Actions
-
-    # Official Shortcuts Description
     official:
       play_pause: Play/Pause
       forward: Forward 5s
@@ -372,24 +370,17 @@ settings:
       speed_1: Set Speed to 1x
       speed_2: Set Speed to 2x
       input_danmu: Input Danmu
-
-    # Regular Item Operations
     item:
       edit_key: Edit Shortcut
       cancel_edit: Cancel Edit
       reset_default: Reset to Default
-
-    # Button Text
     reset_all_button: Reset All Shortcuts
     reset_all_ext_shortcuts: Reset All Extension Shortcuts
-    # Format Options
     screenshot_format: Screenshot Format
     clock_time_format: Time Format
     hour: Hour
     clock_show_seconds: Show Seconds
     press_keys: Click the input box, then press the shortcut keys
-
-    # Operation Descriptions
     danmu_status: Show Danmu Status
     danmu_status_desc: Show current danmu toggle status
     web_fullscreen: Web Fullscreen
@@ -442,10 +433,16 @@ settings:
     video_time_desc: Show/Hide video time
     clock_time: Clock
     clock_time_desc: Show/Hide system time
-
-    # Tips outside shortcut groups
-    keyboard_conflict_warning: If you are using other extensions with keyboard shortcuts, they may conflict and cause functionality issues. To avoid conflicts, you can disable the corresponding shortcuts in other extensions or this extension's settings.
-    only_physical_keys_note: All shortcuts represent physical keys. Only press Shift when explicitly indicated.
+    keyboard_conflict_warning: >-
+      If you are using other extensions with keyboard shortcuts, they may
+      conflict and cause functionality issues. To avoid conflicts, you can
+      disable the corresponding shortcuts in other extensions or this
+      extension's settings.
+    only_physical_keys_note: >-
+      All shortcuts represent physical keys. Only press Shift when explicitly
+      indicated.
+  clean_url_argument: Clean URL Tracking Parameters
+  clean_url_argument_desc: Automatically clean tracking parameters from URLs to make links cleaner
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
