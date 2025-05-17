@@ -399,13 +399,13 @@ topbar:
   creative_center: 創作中心
   upload: 上傳
   logo_dropdown:
-    anime: 動畫
+    anime: 番劇
     movies: 電影
-    chinese_anime: 中國動畫
+    chinese_anime: 國創
     tv_shows: 電視劇
     variety_shows: 綜藝
     documentary_films: 紀錄片
-    animations: 原創動畫
+    animations: 動畫
     gaming: 遊戲
     kichiku: 鬼畜
     music: 音樂
@@ -414,27 +414,37 @@ topbar:
     showbiz: 娛樂
     knowledge: 知識
     technology: 科技數碼
-    news: 新聞
+    news: 資訊
     foods: 美食
-    life: 生活
+    shortplay: 小劇場
     cars: 汽車
     fashion: 時尚美妝
     sports: 體育運動
     animals: 動物圈
     vlog: VLOG
-    funny: 搞笑
-    standalone_gaming: 單機遊戲
-    vtubers: VTubers & Vups
-    charitable_events: 慈善
-    moocs: 線上課堂
+    painting: 繪畫
+    ai: 人工智能
+    home: 家裝房產
+    outdoors: 戶外潮流
+    gym: 健身
+    handmake: 手工
+    travel: 旅遊出行
+    rural: 三農
+    parenting: 親子
+    health: 健康
+    emotion: 情感
+    life_joy: 生活興趣
+    life_experience: 生活經驗
+    charitable_events: 公益
+    ultra_hd: 超高清
     articles: 專欄
     live: 直播
     activities: 活動
-    paid_courses: 付費課堂
+    paid_courses: 課堂
     community: 社群中心
     music_plus: 新歌熱榜
     game_center: 遊戲中心
-    comic_con_and_goods: 動漫節與周邊
+    comic_con_and_goods: 漫展和周邊
     manga: 漫畫
     game_competitions: 遊戲賽事
   user_dropdown:

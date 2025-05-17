@@ -386,7 +386,7 @@ topbar:
   logo_dropdown:
     anime: 番剧
     movies: 电影
-    chinese_anime: 中国动画
+    chinese_anime: 国创
     tv_shows: 电视剧
     variety_shows: 综艺
     documentary_films: 纪录片
@@ -397,31 +397,41 @@ topbar:
     dance: 舞蹈
     cinephile: 影视
     showbiz: 娱乐
+    painting: 绘画
+    ai: AI
+    home: 家居
+    outdoors: 户外
+    gym: 健身
+    handmake: 手工
+    travel: 旅游
+    rural: 三农
+    parenting: 亲子
+    health: 健康
+    emotion: 情感
+    life_joy: 生活
+    life_experience: 生活记录
+    ultra_hd: 4K
     knowledge: 知识
     technology: 科技数码
     news: 资讯
     foods: 美食
-    life: 生活
+    shortplay: 小剧场
     cars: 汽车
     fashion: 时尚美妆
     sports: 体育运动
     animals: 动物圈
     vlog: VLOG
-    funny: 搞笑
-    standalone_gaming: 单机游戏
-    vtubers: 虚拟主播
-    charitable_events: 公益
-    moocs: 公开课
-    articles: 专栏
-    live: 直播
-    activities: 活动
-    paid_courses: 课堂
     community: 社区中心
     music_plus: 新歌热榜
     game_center: 游戏中心
     comic_con_and_goods: 漫展和周边
     manga: 漫画
     game_competitions: 游戏赛事
+    articles: 专栏
+    live: 直播
+    activities: 活动
+    paid_courses: 课堂
+    charitable_events: 公益
   user_dropdown:
     money: 硬币：
     b_coins: B币：

@@ -459,7 +459,7 @@ topbar:
   logo_dropdown:
     anime: Anime
     movies: Movies
-    chinese_anime: Chinese Anime
+    chinese_anime: Chinese Animation
     tv_shows: TV Shows
     variety_shows: Variety Shows
     documentary_films: Documentary Films
@@ -474,21 +474,31 @@ topbar:
     technology: Technology
     news: News
     foods: Foods
-    life: Life
+    shortplay: Short Play
     cars: Cars
     fashion: Fashion
     sports: Sports
     animals: Animals
     vlog: VLOG
-    funny: Funny
-    standalone_gaming: Standalone Gaming
-    vtubers: VTubers & Vups
+    painting: Painting
+    ai: AI
+    home: Home & Real Estate
+    outdoors: Outdoors
+    gym: Fitness
+    handmake: Handicraft
+    travel: Travel
+    rural: Rural
+    parenting: Parenting
+    health: Health
+    emotion: Emotion
+    life_joy: Life Interests
+    life_experience: Life Experience
     charitable_events: Charitable Events
-    moocs: MOOCs
+    ultra_hd: Ultra HD
     articles: Articles
     live: Live
     activities: Activities
-    paid_courses: Paid Courses
+    paid_courses: Courses
     community: Community
     music_plus: New Song Hotlist
     game_center: Game Center
