@@ -17,12 +17,14 @@
 > [!IMPORTANT]
 > 该项目面向我个人使用习惯修改。当然，欢迎功能建议与bug反馈。
 >
+> 浏览器拓展商店上架均同时提交审核，实际更新速度取决于各个商店审核速度。请勿在issue中催促审核，商店异常行为由商店导致！
+>
 > 不会打包safari，如果有需要欢迎自行打包。
 >
 > 本项目由MIT许可在原项目基础上开发，并亦与原作者联系取得了授权，包括上架Chrome应用商店等权利。
 
 > [!CAUTION]
-> 本插件移除了原插件的`tabs`权限以及`activeTab`权限，目前我个人使用功能并未受到影响，不确定是否会造成BUG。
+> B站于2025年5月调整了分区，请更新至`1.0.2`版本以适配新的排行榜和分区。
 >
 > 本插件重构了TopBar，移除了旧版顶栏，请至少升级到`0.0.12`版本（顶栏基本优化完毕）。
 
@@ -51,12 +53,12 @@
 
 [Chrome应用商店](https://chromewebstore.google.com/detail/oopkfefbgecikmfbbapnlpjidoomhjpl)
 
-[Edge应用商店](https://microsoftedge.microsoft.com/addons/detail/bewlycat/aaammfjdfifgnfnbflolojihjfhdploj):审核的比Chrome快
+[Edge应用商店](https://microsoftedge.microsoft.com/addons/detail/bewlycat/aaammfjdfifgnfnbflolojihjfhdploj):审核周期不定
 
-[Firefox应用商店](https://addons.mozilla.org/en-US/firefox/addon/bewlycat/):已上线～（`1.0.0`版本已经修复抽屉问题）
+[Firefox应用商店](https://addons.mozilla.org/en-US/firefox/addon/bewlycat/):已上线～（`1.0.2`版本已经修复抽屉问题）
 
 > [!CAUTION]
-> 审核可能存在延迟，Chrome一般会晚3-15天，Edge一般会晚3-7天，Firefox基本1-30分钟
+> 审核可能存在延迟，Chrome一般会晚30分钟-15天，Edge一般会晚3-30天，Firefox一般会晚1-30分钟
 
 ### 本地安装
 
