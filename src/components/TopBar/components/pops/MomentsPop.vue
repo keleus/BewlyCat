@@ -195,7 +195,7 @@ defineExpose({
         >
           <!-- new moment dot -->
           <div
-            v-if="topBarStore.isNewMoment(index)"
+            v-if="topBarStore.isNewMoment(index) && selectedMomentTab.type === 'video'"
             rounded="full"
             w="8px"
             h="8px"
