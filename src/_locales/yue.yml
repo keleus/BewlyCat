@@ -33,6 +33,7 @@ common:
     reset: 重設
     import: 匯入
     export: 匯出
+    undo_refresh: 復原更新
   table:
     index: 索引
     title: 標題
@@ -123,6 +124,7 @@ settings:
     current_tab_if_not_homepage: 唔喺主頁就喺目前分頁度開啓，否則開新嘅分頁
     new_tab: 新開分頁
     drawer: 喺櫃桶度開啓
+    background: 後臺打開（若然得嘅話）
   top_bar_link_opening_behavior: 頂部欄連結開啓行爲
   video_card_link_opening_behavior: 影片同番劇卡片連結開啓行爲
   search_bar_link_opening_behavior: 搜尋欄連結開啓行爲
@@ -275,6 +277,114 @@ settings:
   safari_helpers_desc3: 幫手解答註冊蘋果開發者問題
   safari_helpers_desc4: 幫手解答註冊蘋果開發者問題
   contributors: 貢獻者
+  auto_hide_top_bar_on_video_page: 影片頁預設隱藏
+  auto_hide_top_bar_on_video_page_desc: 影片頁度預設隱藏頂欄，滑鼠移動到頂部區域嗰陣顯示。
+  clean_url_argument: 清理 URL 追蹤參數
+  clean_url_argument_desc: 自動清理 URL 嘅最終參數，令到連結更加企理。
+  disable_auto_play_collection_desc: 打開影片頁嗰陣，自動關閉合集自動連播功能。
+  disable_auto_play_collection: 自動關閉合集自動連播
+  enable_settings_sync: 允許同步設定
+  enable_settings_sync_desc: 喺唔同設備度同步延伸功能設定 (需要登入瀏覽器帳戶)。
+  enable_undo_refresh_button: 啓用復原更新掣（淨係得 Web 推介模式下有效）
+  enable_undo_refresh_button_desc: 更新頁面後顯示復原更新掣，撳低可以回復更新前內容。
+  filter_like_view_ratio: 按讚好播放比例篩選（淨係得 Web 推介模式下有效）
+  filter_like_view_ratio_desc: 篩選影片嘅讚好數通播放數比例（預設 5%，最高 10%）。
+  shortcuts:
+    caption: 字幕
+    clock_show_seconds: 顯示秒
+    caption_desc: 顯示/隱藏字幕。
+    clock_time: 時鐘
+    clock_time_desc: 顯示/隱藏系統時間。
+    clock_time_format: 時間格式
+    danmu_status: 顯示彈幕狀態
+    danmu_status_desc: 顯示目前彈幕開關狀態。
+    decrease_playback_rate: 減速播放
+    decrease_playback_rate_desc: 校慢播放速度。
+    decrease_video_size: 縮細影片
+    decrease_video_size_desc: 縮細影片畫面大細。
+    enable_all_shortcuts_toggle: 啓用鍵盤快捷鍵
+    enable_all_shortcuts_toggle_desc: 啓用或停用所有鍵盤快捷鍵功能。
+    group:
+      fullscreen_mode: 全螢幕模式快捷鍵
+      general: 一般快捷鍵
+      global_actions: 全域操作
+      jump_to_progress: 進度跳轉快捷鍵
+      official_bilibili: bilibili 官方快捷鍵
+    hour: 小時
+    increase_playback_rate: 加速播放
+    increase_playback_rate_desc: 校快播放速度。
+    increase_video_size: 放大影片
+    increase_video_size_desc: 校帶影片畫面大細。
+    item:
+      cancel_edit: 唔再編輯
+      edit_key: 編輯快捷鍵
+      reset_default: 重設做預設值
+    keyboard_conflict_warning: 若然你同時用咗其他具備快捷鍵嘅延伸功能，佢哋可能會衝突兼且令到功能出問題。爲咗避免衝突，你可以喺其他延伸功能抑或喺呢個設定度停用相應嘅快捷鍵。
+    long_step_backward: 褪後
+    long_step_backward_desc: 褪後 30 秒。
+    long_step_forward: 行前
+    long_step_forward_desc: 行前 30 秒
+    next_frame: 下一影格
+    next_frame_desc: 去到下一影格（暫停時）
+    next_video_ext: 下一條片
+    next_video_ext_desc: 播放清單度嘅下一條片（延伸功能）
+    official:
+      backward: 快褪 5 秒
+      danmu_toggle: 彈幕開關
+      exit_fullscreen: 離開全螢幕
+      forward: 快行 5 秒
+      fullscreen: 切換全螢幕模式
+      input_danmu: 輸入彈幕
+      mute: 切換靜音
+      next_video: 播下一條片
+      play_pause: 播放/暫停
+      prev_video: 播上一條片
+      speed_1: 設定 1 倍播放速度
+      speed_2: 設定 2 倍播放速度
+      volume_down: 校低音量
+      volume_up: 校高音量
+    only_physical_keys_note: 所有快捷鍵都係代表實體掣。淨係喺有指明嘅時候先要撳 Shift 掣。
+    pip: 子母畫面
+    pip_desc: 切換字母畫面模式。
+    play_pause_ext: 播放/暫停
+    play_pause_ext_desc: 播放或暫停影片（延伸功能）。
+    press_keys: 點擊輸入框，跟住撳低快捷鍵
+    previous_frame: 上一影格
+    previous_frame_desc: 去返上一影格（暫停時）。
+    replay: 重播
+    replay_desc: 由頭播過。
+    reset_all_button: 重設所有快捷鍵
+    reset_all_ext_shortcuts: 重設所有延伸功能快捷鍵
+    reset_playback_rate: 重設播放速度
+    reset_playback_rate_desc: 恢復正常播放速度。
+    reset_video_size: 重設影片大細
+    reset_video_size_desc: 恢復預設影片大細。
+    screenshot_clipboard: 擷取畫面到剪貼簿
+    screenshot_clipboard_desc: 複製目前畫面到剪貼簿。
+    screenshot_file: 擷取畫面到新檔
+    screenshot_file_desc: 儲存目前畫面到新檔。
+    screenshot_format: 擷取畫面格式
+    short_step_backward: 快褪
+    short_step_backward_desc: 快褪 5 秒。
+    short_step_forward: 快進
+    short_step_forward_desc: 快進 5 秒。
+    title: 快捷鍵
+    turn_off_light: 熄燈
+    turn_off_light_desc: 切換熄燈模式。
+    video_time: 影片時長
+    video_time_desc: 顯示/隱藏影片時長
+    video_title: 影片標題
+    video_title_desc: 顯示/隱藏影片標題
+    web_fullscreen: 網頁全螢幕
+    web_fullscreen_desc: 切換網頁全螢幕模式。
+    widescreen: 闊螢幕模式
+    widescreen_desc: 切換闊螢幕模式。
+  video_default_player_mode: 預設影片顯示模式
+  video_player_mode:
+    default: 預設
+    fullscreen: 全螢幕
+    web_fullscreen: 網頁全螢幕
+    widescreen: 闊螢幕
 auth:
   auth_access_key_first: 整之前記得先授權 BewlyBewly 去用 access key
 topbar:
@@ -306,12 +416,17 @@ topbar:
     technology: 科技
     news: 新聞
     foods: 美食
+    life: 生活
     cars: 汽車
     fashion: 時尚
     sports: 運動
     animals: 動物圈
     vlog: VLOG
+    funny: 搞笑
+    standalone_gaming: 單機遊戲
+    vtubers: VTubers & Vups
     charitable_events: 慈善
+    moocs: 線上學堂
     articles: 專欄
     live: 直播
     activities: 活動
@@ -322,6 +437,21 @@ topbar:
     comic_con_and_goods: 動漫節同周邊
     manga: 漫畫
     game_competitions: 遊戲賽事
+    ai: AI
+    emotion: 情感
+    gym: 健身
+    handmake: 手工
+    health: 健康
+    home: 家裝房產
+    life_experience: 生活經驗
+    life_joy: 生活興趣
+    outdoors: 戶外潮流
+    painting: 繪畫
+    parenting: 親子
+    rural: 三農
+    shortplay: 小劇場
+    travel: 旅遊出行
+    ultra_hd: 高解像度
   user_dropdown:
     money: 銀仔：
     b_coins: B銀：
@@ -338,6 +468,7 @@ topbar:
     my_stream_info: 實況資訊
     my_courses: 我嘅課程
     log_out: 登出
+    bilibili_premium_rewards: 大會員福利領取
   noti_dropdown:
     replys: 覆我
     mentions: 提我
