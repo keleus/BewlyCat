@@ -214,7 +214,7 @@ function handleVisibilityChange() {
   if (document.visibilityState === 'visible'
     && (isVideoPage() || isBangumiOrWatchLaterPage())) {
     applyDefaultPlayerMode()
-    setupShortcutHandlers() // 页面变为可见时重新注册快捷键
+    setupShortcutHandlers()
   }
 }
 
@@ -223,11 +223,11 @@ window.addEventListener('load', () => {
   if (isVideoPage()) {
     applyDefaultPlayerMode()
     disableAutoPlayCollection(settings.value)
-    setupShortcutHandlers() // 确保视频页面加载完成后注册快捷键
+    setupShortcutHandlers()
   }
   else if (isBangumiOrWatchLaterPage()) {
     applyDefaultPlayerMode()
-    setupShortcutHandlers() // 确保番剧页面加载完成后注册快捷键
+    setupShortcutHandlers()
   }
 
   // 添加搜索页面视频卡片点击事件处理

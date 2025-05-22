@@ -15,8 +15,8 @@ import {
   togglePictureInPicture,
   toggleVideoTime,
   toggleVideoTitle,
-  webFullscreen,
-  widescreen,
+  webFullscreenClick,
+  widescreenClick,
 } from '~/utils/player'
 
 // 定义快捷键处理器类型
@@ -91,7 +91,32 @@ export function getShortcutHandler(id: string): ShortcutHandler | undefined {
 // 保存事件监听器引用以便后续移除
 let keydownListener: ((e: KeyboardEvent) => void) | null = null
 
+// 缓存快捷键配置
+let cachedShortcuts: Record<string, any> | null = null
+let lastSettingsUpdate = 0
+
+// 更新快捷键配置缓存
+function updateShortcutsCache() {
+  const now = Date.now()
+  // 每100ms最多更新一次缓存
+  if (now - lastSettingsUpdate < 100)
+    return
+
+  lastSettingsUpdate = now
+  cachedShortcuts = settings.value.shortcuts || {}
+}
+
 export function setupShortcutHandlers() {
+  // 如果快捷键总开关关闭，移除现有监听器并返回
+  if (settings.value.keyboard === false) {
+    if (keydownListener) {
+      document.removeEventListener('keydown', keydownListener, true)
+      keydownListener = null
+    }
+    cachedShortcuts = null
+    return
+  }
+
   // 如果已存在监听器，先移除
   if (keydownListener) {
     document.removeEventListener('keydown', keydownListener, true)
@@ -106,81 +131,90 @@ export function setupShortcutHandlers() {
   // 注册默认快捷键处理器
   registerDefaultHandlers()
 
-  if (settings.value.keyboard !== false) {
-    keydownListener = (e: KeyboardEvent) => {
-      // 如果在输入框中，不处理快捷键
-      if (e.target instanceof HTMLInputElement
-        || e.target instanceof HTMLTextAreaElement
-        || (e.target as HTMLElement).isContentEditable
-        || (e.target instanceof HTMLElement && e.target.tagName === 'BILI-COMMENTS')
-        || e.metaKey) { // 忽略 Command/Windows 键组合
-        return
-      }
+  // 更新快捷键配置缓存
+  updateShortcutsCache()
 
-      // 获取播放器元素
-      const player = document.querySelector('.bpx-player') || document.querySelector('.bilibili-player')
+  // 创建新的键盘事件监听器
+  keydownListener = (e: KeyboardEvent) => {
+    // 快速检查：如果在输入框中或按下meta键，直接返回
+    if (e.target instanceof HTMLInputElement
+      || e.target instanceof HTMLTextAreaElement
+      || (e.target as HTMLElement).isContentEditable
+      || (e.target instanceof HTMLElement && e.target.tagName === 'BILI-COMMENTS')
+      || e.metaKey) {
+      return
+    }
 
-      // 生成当前按键组合
-      const keyCombo = generateKeyCombo(e)
+    // 更新快捷键配置缓存
+    updateShortcutsCache()
 
-      // 遍历所有注册的快捷键
-      try {
-        // 获取所有快捷键ID
-        const shortcutIds = Object.keys(settings.value.shortcuts || {})
+    // 如果没有缓存的快捷键配置，直接返回
+    if (!cachedShortcuts)
+      return
 
-        // 直接检查是否有匹配的快捷键ID
-        for (const id of shortcutIds) {
-          try {
-            // 尝试获取快捷键配置
-            const shortcutConfig = settings.value.shortcuts[id]
+    // 获取播放器元素
+    const player = document.querySelector('.bpx-player') || document.querySelector('.bilibili-player')
 
-            // 如果快捷键未启用，跳过
-            if (!shortcutConfig?.enabled)
-              continue
+    // 生成当前按键组合
+    const keyCombo = generateKeyCombo(e)
 
-            // 处理不同类型的快捷键配置
-            let configKey = ''
-            if (typeof shortcutConfig === 'string') {
-              // 如果配置是字符串，直接使用
-              configKey = shortcutConfig
-            }
-            else if (shortcutConfig && typeof shortcutConfig === 'object') {
-              // 如果配置是对象，尝试获取key属性
-              configKey = String(shortcutConfig.key || '')
-            }
+    // 遍历所有注册的快捷键
+    try {
+      // 获取所有快捷键ID
+      const shortcutIds = Object.keys(cachedShortcuts)
 
-            if (!configKey)
-              continue
+      // 直接检查是否有匹配的快捷键ID
+      for (const id of shortcutIds) {
+        try {
+          // 尝试获取快捷键配置
+          const shortcutConfig = cachedShortcuts[id]
 
-            // 如果快捷键匹配
-            if (configKey.toLowerCase() === keyCombo.toLowerCase()) {
-              // 获取处理函数
-              const handler = shortcutHandlers[id]
-              if (handler) {
-                e.preventDefault()
-                e.stopPropagation()
+          // 如果快捷键未启用，跳过
+          if (!shortcutConfig?.enabled)
+            continue
 
-                try {
-                  handler(e, player || undefined)
-                }
-                catch (err) {
-                  console.error(`[Shortcuts] Error executing handler for shortcut ${id}:`, err)
-                }
-                return
-              }
-            }
+          // 处理不同类型的快捷键配置
+          let configKey = ''
+          if (typeof shortcutConfig === 'string') {
+            configKey = shortcutConfig
           }
-          catch (err) {
-            console.error(`[Shortcuts] Error processing shortcut ${id}:`, err)
+          else if (shortcutConfig && typeof shortcutConfig === 'object') {
+            configKey = String(shortcutConfig.key || '')
+          }
+
+          if (!configKey)
+            continue
+
+          // 如果快捷键匹配
+          if (configKey.toLowerCase() === keyCombo.toLowerCase()) {
+            // 获取处理函数
+            const handler = shortcutHandlers[id]
+            if (handler) {
+              e.preventDefault()
+              e.stopPropagation()
+
+              try {
+                handler(e, player || undefined)
+              }
+              catch (err) {
+                console.error(`[Shortcuts] Error executing handler for shortcut ${id}:`, err)
+              }
+              return
+            }
           }
         }
-      }
-      catch (err) {
-        console.error('[Shortcuts] Error processing shortcuts:', err)
+        catch (err) {
+          console.error(`[Shortcuts] Error processing shortcut ${id}:`, err)
+        }
       }
     }
-    document.addEventListener('keydown', keydownListener, true) // 使用捕获阶段，确保快捷键优先处理
+    catch (err) {
+      console.error('[Shortcuts] Error processing shortcuts:', err)
+    }
   }
+
+  // 添加事件监听器
+  document.addEventListener('keydown', keydownListener, true)
 }
 
 /**
@@ -196,12 +230,12 @@ export function registerDefaultHandlers(): void {
 
   // 网页全屏
   registerShortcutHandler('webFullscreen', () => {
-    webFullscreen()
+    webFullscreenClick()
   })
 
   // 宽屏
   registerShortcutHandler('widescreen', () => {
-    widescreen()
+    widescreenClick()
   })
 
   // 短步后退

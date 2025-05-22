@@ -47,9 +47,6 @@ export class RetryTask {
   }
 }
 
-// 检查是否为移动设备
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-
 // 状态显示元素
 let stateElement: HTMLDivElement | null = null
 let timeElement: HTMLDivElement | null = null
@@ -104,12 +101,7 @@ export function showState(text: string) {
 
 export function fullscreen() {
   new RetryTask(20, 500, () => {
-    const fullscreenBtn = document.querySelector(_videoClassTag.fullscreen) as HTMLElement
-    if (fullscreenBtn) {
-      fullscreenBtn.click()
-      return true
-    }
-    return false
+    return fullscreenClick()
   }).start()
 }
 
@@ -120,20 +112,7 @@ export function webFullscreen() {
       return true
     }
 
-    const webFullscreenBtn = document.querySelector(_videoClassTag.pagefullscreen) as HTMLElement
-    if (webFullscreenBtn) {
-      webFullscreenBtn.click()
-
-      // 如果是移动设备，可能需要滚动到视频中心位置
-      const videoElement = document.querySelector(_videoClassTag.video)
-      if (isMobile && videoElement) {
-        setTimeout(() => {
-          (videoElement as HTMLElement).scrollIntoView({ block: 'center', inline: 'center' })
-        }, 180)
-      }
-      return true
-    }
-    return false
+    return webFullscreenClick()
   }).start()
 }
 
@@ -171,15 +150,39 @@ export function widescreen() {
       return true
     }
 
-    const widescreenBtn = document.querySelector(_videoClassTag.widescreen) as HTMLElement
-    if (widescreenBtn) {
-      widescreenBtn.click()
-      // 点击后立即执行滚动
-      setTimeout(() => scrollPlayerToOptimalPosition(), 800)
-      return true
+    const result = widescreenClick()
+    if (result) {
+      scrollPlayerToOptimalPosition()
     }
-    return false
+    return result
   }).start()
+}
+
+export function widescreenClick() {
+  const widescreenBtn = document.querySelector(_videoClassTag.widescreen) as HTMLElement
+  if (widescreenBtn) {
+    widescreenBtn.click()
+    return true
+  }
+  return false
+}
+
+export function fullscreenClick() {
+  const fullscreenBtn = document.querySelector(_videoClassTag.fullscreen) as HTMLElement
+  if (fullscreenBtn) {
+    fullscreenBtn.click()
+    return true
+  }
+  return false
+}
+
+export function webFullscreenClick() {
+  const webFullscreenBtn = document.querySelector(_videoClassTag.pagefullscreen) as HTMLElement
+  if (webFullscreenBtn) {
+    webFullscreenBtn.click()
+    return true
+  }
+  return false
 }
 
 // 默认模式下也执行滚动
