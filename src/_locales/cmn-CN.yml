@@ -371,6 +371,8 @@ settings:
     only_physical_keys_note: 所有快捷键均表示物理按键，只有明确提示 Shift 的才需要按 Shift 键。
   clean_url_argument: 清理URL追踪参数
   clean_url_argument_desc: 自动清理URL中的追踪参数，使链接更加简洁
+  show_ip_location: 显示IP归属地
+  show_ip_location_desc: 在视频/动态评论区显示IP归属地
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key
 topbar:

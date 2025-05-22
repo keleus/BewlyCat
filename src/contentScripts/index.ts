@@ -387,3 +387,31 @@ function injectApp() {
   setupApp(app)
   app.mount(root)
 }
+
+// 发送设置更新到网页环境
+function sendSettingsToPage(settings: any) {
+  // 将响应式对象转换为普通对象
+  const serializedSettings = JSON.parse(JSON.stringify(settings))
+  window.postMessage({
+    type: 'BEWLY_SETTINGS_UPDATE',
+    data: serializedSettings,
+  }, '*')
+}
+
+// 监听设置变化
+watch(settings, (newSettings) => {
+  sendSettingsToPage(newSettings)
+}, { deep: true })
+
+// 监听来自网页环境的请求
+window.addEventListener('message', (event) => {
+  if (event.source !== window)
+    return
+
+  const { type } = event.data
+
+  if (type === 'BEWLY_REQUEST_SETTINGS') {
+    // 发送当前设置到网页环境
+    sendSettingsToPage(settings.value)
+  }
+})

@@ -1,6 +1,6 @@
-import path from 'node:path'
+// import path from 'node:path'
 
-import fs from 'fs-extra'
+// import fs from 'fs-extra'
 import { defineConfig } from 'tsup'
 
 import { isDev, isFirefox, isSafari } from './scripts/utils'
@@ -13,7 +13,7 @@ export default defineConfig(() => ({
     ...(isDev ? { mv3client: './scripts/client.ts' } : {}),
   },
   async onSuccess() {
-    fs.copySync(path.resolve(__dirname, './src/inject/index.js'), path.resolve(__dirname, `./${outDir}/inject/index.js`))
+    // fs.copySync(path.resolve(__dirname, './src/inject/index.js'), path.resolve(__dirname, `./${outDir}/inject/index.js`))
   },
   outDir,
   format: ['esm'],

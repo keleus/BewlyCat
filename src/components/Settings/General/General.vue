@@ -127,6 +127,10 @@ watch(() => settings.value.language, (newValue) => {
         <Radio v-model="settings.touchScreenOptimization" />
       </SettingsItem>
 
+      <SettingsItem :title="$t('settings.show_ip_location')" :desc="$t('settings.show_ip_location_desc')">
+        <Radio v-model="settings.showIPLocation" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.enable_grid_layout_switcher')">
         <Radio v-model="settings.enableGridLayoutSwitcher" />
       </SettingsItem>

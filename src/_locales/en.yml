@@ -444,6 +444,8 @@ settings:
       indicated.
   clean_url_argument: Clean URL Tracking Parameters
   clean_url_argument_desc: Automatically clean tracking parameters from URLs to make links cleaner
+  show_ip_location: Show IP home location
+  show_ip_location_desc: Display IP home in the video/dynamic comment area
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:

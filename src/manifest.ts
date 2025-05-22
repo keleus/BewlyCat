@@ -79,8 +79,9 @@ export async function getManifest() {
           '*://passport.bilibili.com/*',
           '*://music.bilibili.com/*',
         ],
-        js: ['./dist/inject/index.js'],
+        js: ['./dist/contentScripts/inject.global.js'],
         run_at: 'document_start',
+        match_about_blank: true,
         all_frames: true,
         // eslint-disable-next-line ts/ban-ts-comment
         // @ts-expect-error
