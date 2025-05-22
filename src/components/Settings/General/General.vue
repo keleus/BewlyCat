@@ -24,8 +24,8 @@ const langOptions = computed(() => {
       value: 'cmn-TW',
     },
     {
-      label: t('settings.select_language_opt.yue'),
-      value: 'yue',
+      label: t('settings.select_language_opt.jyut'),
+      value: 'jyut',
     },
   ]
 })

@@ -417,8 +417,8 @@ async function getAppRecommendVideos() {
 
     const response: AppForYouResult = await api.video.getAppRecommendVideos({
       access_key: accessKey.value,
-      s_locale: settings.value.language === LanguageType.Mandarin_TW ? 'zh-Hant_TW' : 'zh-Hans_CN',
-      c_locate: settings.value.language === LanguageType.Mandarin_TW ? 'zh-Hant_TW' : 'zh-Hans_CN',
+      s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+      c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
       appkey: TVAppKey.appkey,
       idx: appVideoList.value.length > 0 ? appVideoList.value[appVideoList.value.length - 1].item?.idx : 1,
     })

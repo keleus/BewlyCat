@@ -104,7 +104,7 @@ settings:
     english: English
     mandarin_cn: Mandarin - Simplified Chinese
     mandarin_tw: Mandarin - Traditional Chinese
-    yue: Cantonese
+    jyut: Cantonese
   customize_font: Customize font
   customize_font_opt:
     default: Bilibili Default

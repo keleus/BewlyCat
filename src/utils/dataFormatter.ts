@@ -17,7 +17,7 @@ export function numFormatter(num: number | string): string {
       { value: 1e8, symbol: ' 亿' },
     ]
   }
-  else if (settings.value.language === LanguageType.Mandarin_TW) {
+  else if (settings.value.language === LanguageType.Cantonese || settings.value.language === LanguageType.Mandarin_TW) {
     lookup = [
       { value: 1, symbol: ' ' },
       { value: 1e4, symbol: ' 萬' },
