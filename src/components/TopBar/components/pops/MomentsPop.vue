@@ -207,6 +207,7 @@ defineExpose({
           <ALink
             :href="moment.authorJumpUrl"
             type="topBar"
+            :stop-propagation="true"
             rounded="1/2"
             w="40px" h="40px" m="r-4"
             bg="$bew-skeleton"
@@ -227,6 +228,7 @@ defineExpose({
               <ALink
                 :href="moment.authorJumpUrl"
                 type="topBar"
+                :stop-propagation="true"
                 font-bold
               >
                 {{ moment.author }}

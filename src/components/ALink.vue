@@ -10,6 +10,7 @@ const props = defineProps<{
   rel?: string
   type: 'topBar' | 'videoCard'
   customClickEvent?: boolean
+  stopPropagation?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -60,6 +61,10 @@ const target = computed(() => {
 })
 
 function handleClick(event: MouseEvent) {
+  if (props.stopPropagation) {
+    event.stopPropagation()
+  }
+
   if (event.ctrlKey || event.metaKey || event.altKey)
     return
 
