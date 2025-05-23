@@ -366,7 +366,6 @@ settings:
     no_configs: 暂无UP主音量配置
     no_search_results: 没有找到匹配的UP主配置
     search_results_count: 显示 {current} / {total} 个配置
-    last_updated: 最后更新
     usage_guide:
       title: 使用说明
       desc: |

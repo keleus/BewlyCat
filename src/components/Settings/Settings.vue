@@ -82,23 +82,23 @@ const settingsMenuItems = computed((): MenuItem[] => {
       title: t('settings.shortcuts.title'),
     },
     {
+      value: MenuType.VolumeBalance,
+      icon: 'i-mingcute:volume-line',
+      iconActivated: 'i-mingcute:volume-fill',
+      title: t('settings.menu_volume_balance'),
+    },
+    {
       value: MenuType.Compatibility,
       icon: 'i-mingcute:polygon-line',
       iconActivated: 'i-mingcute:polygon-fill',
       title: t('settings.menu_compatibility'),
     },
-    {
-      value: MenuType.VolumeBalance,
-      icon: 'i-mingcute:volume-up-line',
-      iconActivated: 'i-mingcute:volume-up-fill',
-      title: t('settings.menu_volume_balance'),
-    },
-    {
-      value: MenuType.BilibiliSettings,
-      icon: 'ant-design:bilibili-outlined',
-      iconActivated: 'ant-design:bilibili-outlined',
-      title: 'Bilibili',
-    },
+    // {
+    //   value: MenuType.BilibiliSettings,
+    //   icon: 'ant-design:bilibili-outlined',
+    //   iconActivated: 'ant-design:bilibili-outlined',
+    //   title: 'Bilibili',
+    // },
     {
       value: MenuType.About,
       icon: 'i-mingcute:information-line',

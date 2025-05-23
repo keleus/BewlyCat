@@ -438,7 +438,6 @@ settings:
     enable_desc: >-
       Set personalized volumes for different UP masters and automatically adjust
       playback volume
-    last_updated: Last updated
     no_configs: No UP master volume configuration yet
     no_search_results: No matching UP master configuration was found
     search_placeholder: Search for UP master name or UID...

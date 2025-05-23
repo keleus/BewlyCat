@@ -384,7 +384,6 @@ settings:
       up_name: UP主
     enable: 啟用音量均衡
     enable_desc: 為不同UP主設置個性化音量，自動調整播放音量
-    last_updated: 最後更新
     no_configs: 暫無UP主音量配置
     no_search_results: 沒有找到匹配的UP主配置
     search_placeholder: 搜索UP主名字或UID...

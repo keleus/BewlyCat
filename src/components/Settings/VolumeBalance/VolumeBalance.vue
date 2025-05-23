@@ -111,9 +111,6 @@ function handleUpdateVolumeOffset(uid: string, name: string, newOffset: number) 
                   <div text="sm $bew-text-2">
                     UID: {{ config.uid }}
                   </div>
-                  <div text="sm $bew-text-2">
-                    {{ t('settings.volume_balance.last_updated') }}: {{ new Date(config.lastUpdated).toLocaleString() }}
-                  </div>
                 </div>
                 <div flex="~ items-center" gap-3>
                   <!-- 可编辑的音量偏移 -->
