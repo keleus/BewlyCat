@@ -163,6 +163,7 @@ export interface Settings {
   disableAutoPlayCollection: boolean
   keyboard: boolean
   shortcuts: ShortcutsSettings
+  videoPlayerScroll: boolean // 添加视频播放器滚动设置
 }
 
 export const originalSettings: Settings = {
@@ -277,6 +278,7 @@ export const originalSettings: Settings = {
   defaultVideoPlayerMode: 'default',
   disableAutoPlayCollection: false,
   keyboard: true, // 总快捷键开关，默认为 true
+  videoPlayerScroll: true, // 默认开启视频播放器滚动
   shortcuts: {
     danmuStatus: { key: 'Shift+D', enabled: true },
     webFullscreen: { key: 'W', enabled: true },

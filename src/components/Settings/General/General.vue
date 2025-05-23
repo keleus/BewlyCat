@@ -225,6 +225,12 @@ watch(() => settings.value.language, (newValue) => {
         <Select v-model="settings.defaultVideoPlayerMode" :options="videoPlayerModeOptions" w="full" />
       </SettingsItem>
       <SettingsItem
+        :title="t('settings.video_player_scroll')"
+        :desc="t('settings.video_player_scroll_desc')"
+      >
+        <Radio v-model="settings.videoPlayerScroll" />
+      </SettingsItem>
+      <SettingsItem
         :title="t('settings.disable_auto_play_collection')"
         :desc="t('settings.disable_auto_play_collection_desc')"
       >

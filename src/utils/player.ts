@@ -1,4 +1,6 @@
 // 更完善的播放器元素选择器
+import { settings } from '~/logic'
+
 const _videoClassTag = {
   danmuBtn:
       '.bilibili-player-video-danmaku-switch > input[type=checkbox],.bpx-player-dm-switch input[type=checkbox]',
@@ -117,27 +119,40 @@ export function webFullscreen() {
 }
 
 // 将播放器滚动到合适位置，优先保证弹幕栏可见
-function scrollPlayerToOptimalPosition() {
-  const playerElement = document.querySelector(_videoClassTag.player)
-  if (!playerElement)
+function scrollPlayerToOptimalPosition(delay = 0) {
+  // 如果设置了不滚动，直接返回
+  if (!settings.value.videoPlayerScroll)
     return
 
-  // 查找弹幕发送栏
-  const sendingBar = document.querySelector('.bpx-player-sending-bar')
-  if (sendingBar) {
-    // 将弹幕发送栏底部滚动到窗口底部
-    const rect = sendingBar.getBoundingClientRect()
-    const bottomOffset = window.innerHeight - rect.bottom
-    if (bottomOffset < 0) {
-      window.scrollBy({
-        top: -bottomOffset,
-        behavior: 'smooth',
-      })
+  const scroll = () => {
+    const playerElement = document.querySelector(_videoClassTag.player)
+    if (!playerElement)
+      return
+
+    // 查找弹幕发送栏
+    const sendingBar = document.querySelector('.bpx-player-sending-bar')
+    if (sendingBar) {
+      // 将弹幕发送栏底部滚动到窗口底部
+      const rect = sendingBar.getBoundingClientRect()
+      const bottomOffset = window.innerHeight - rect.bottom
+      if (bottomOffset < 0) {
+        window.scrollBy({
+          top: -bottomOffset,
+          behavior: 'smooth',
+        })
+      }
+    }
+    else {
+      // 如果找不到弹幕发送栏，则直接居中显示播放器
+      playerElement.scrollIntoView({ block: 'center', behavior: 'smooth' })
     }
   }
+
+  if (delay > 0) {
+    setTimeout(scroll, delay)
+  }
   else {
-    // 如果找不到弹幕发送栏，则直接居中显示播放器
-    playerElement.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    scroll()
   }
 }
 
@@ -395,7 +410,7 @@ export function resetPlaybackRate() {
     video.playbackRate = 1
     showState('倍速 1')
   }
-} // Import settings
+}
 
 // 截图
 export function takeScreenshot(toClipboard = false, format: 'png' | 'jpg' = 'jpg') {
@@ -672,6 +687,11 @@ export function showClockTime(firstShow = false) {
       clockElement.style.display = 'none'
     }
   }
+}
+
+// 添加视频页面内部跳转后的滚动处理
+export function handleVideoPageNavigation() {
+  scrollPlayerToOptimalPosition(3000) // 延迟3秒执行滚动
 }
 
 // 为Window接口添加自定义属性

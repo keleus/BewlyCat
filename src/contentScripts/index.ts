@@ -10,7 +10,7 @@ import { setupApp } from '~/logic/common-setup'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { defaultMode, disableAutoPlayCollection, fullscreen, isBangumiOrWatchLaterPage, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
+import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isBangumiOrWatchLaterPage, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -208,6 +208,10 @@ function checkForUrlChanges() {
     if (isVideoPage() || isBangumiOrWatchLaterPage()) {
       applyDefaultPlayerMode()
       setupShortcutHandlers() // URL变化时重新注册快捷键
+      // 如果是视频页面内部跳转，延迟执行滚动
+      if (isVideoPage() || isBangumiOrWatchLaterPage()) {
+        handleVideoPageNavigation()
+      }
     }
   }
   requestAnimationFrame(checkForUrlChanges)

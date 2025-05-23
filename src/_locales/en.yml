@@ -446,6 +446,10 @@ settings:
   clean_url_argument_desc: Automatically clean tracking parameters from URLs to make links cleaner
   show_ip_location: Show IP home location
   show_ip_location_desc: Display IP home in the video/dynamic comment area
+  video_player_scroll: Scroll after adjusting the display mode
+  video_player_scroll_desc: >-
+    When enabled, it will automatically scroll to the appropriate position when
+    the default mode is widescreen and default.
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
