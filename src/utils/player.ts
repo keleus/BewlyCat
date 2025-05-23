@@ -25,6 +25,8 @@ const _videoClassTag = {
   player: '#bilibili-player,.bpx-player-container',
   autoPlaySwitchOn: '.auto-play .switch-btn.on',
   autoPlaySwitchOff: '.auto-play .switch-btn:not(.on)',
+  upName: '.up-name,.up-info-name,.upinfo-btn-panel .name,.video-info-detail-list .name',
+  upLink: 'a[href*="space.bilibili.com"],.up-name[href*="space.bilibili.com"],.upinfo-btn-panel .name[href*="space.bilibili.com"]',
 }
 
 // 重试任务类，用于处理重试逻辑
@@ -692,6 +694,45 @@ export function showClockTime(firstShow = false) {
 // 添加视频页面内部跳转后的滚动处理
 export function handleVideoPageNavigation() {
   scrollPlayerToOptimalPosition(3000) // 延迟3秒执行滚动
+}
+
+// 获取UP主的uid
+export function getUpUid(): string | null {
+  const upLinkElement = document.querySelector(_videoClassTag.upLink) as HTMLAnchorElement
+  if (!upLinkElement || !upLinkElement.href) {
+    return null
+  }
+
+  // 从href中提取uid，格式通常是 //space.bilibili.com/uid 或 https://space.bilibili.com/uid
+  const uidMatch = upLinkElement.href.match(/space\.bilibili\.com\/(\d+)/)
+  return uidMatch ? uidMatch[1] : null
+}
+
+// 获取UP主的名字
+export function getUpName(): string | null {
+  const upNameElement = document.querySelector(_videoClassTag.upName) as HTMLElement
+  if (!upNameElement) {
+    return null
+  }
+
+  // 获取文本内容，去除空白字符
+  let upName = upNameElement.textContent?.trim()
+
+  // 如果存在mask元素，需要去除它的影响
+  const maskElement = upNameElement.querySelector('.mask')
+  if (maskElement && maskElement.textContent) {
+    upName = upName?.replace(maskElement.textContent.trim(), '')?.trim()
+  }
+
+  return upName || null
+}
+
+// 获取UP主完整信息
+export function getUpInfo(): { uid: string | null, name: string | null } {
+  return {
+    uid: getUpUid(),
+    name: getUpName(),
+  }
 }
 
 // 为Window接口添加自定义属性
