@@ -41,11 +41,6 @@ const genres = computed(() => [
   { name: t('topbar.logo_dropdown.life_joy'), icon: '#channel-life-joy', href: 'https://www.bilibili.com/c/life_joy' },
   { name: t('topbar.logo_dropdown.life_experience'), icon: '#channel-life-experience', href: 'https://www.bilibili.com/c/life_experience' },
   { name: t('topbar.logo_dropdown.charitable_events'), icon: '#channel-love', href: 'https://love.bilibili.com' },
-  // 以下分区已不再存在，暂时注释
-  // { name: t('topbar.logo_dropdown.funny'), icon: '#channel-gaoxiao', href: 'https://www.bilibili.com/c/life/funny' },
-  // { name: t('topbar.logo_dropdown.standalone_gaming'), icon: '#channel-danjiyouxi', href: 'https://www.bilibili.com/c/game/stand_alone' },
-  // { name: t('topbar.logo_dropdown.vtubers'), icon: '#channel-vtuber', href: 'https://www.bilibili.com/c/virtual' },
-  // { name: t('topbar.logo_dropdown.moocs'), icon: '#channel-gongkaike', href: 'https://www.bilibili.com/mooc' },
 ])
 
 const otherLinks = computed(() => [

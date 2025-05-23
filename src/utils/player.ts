@@ -1,6 +1,8 @@
 // 更完善的播放器元素选择器
 import { settings } from '~/logic'
 
+import { applyVolumeBalance, startVolumeChangeMonitoring } from './volumeBalance'
+
 const _videoClassTag = {
   danmuBtn:
       '.bilibili-player-video-danmaku-switch > input[type=checkbox],.bpx-player-dm-switch input[type=checkbox]',
@@ -105,7 +107,15 @@ export function showState(text: string) {
 
 export function fullscreen() {
   new RetryTask(20, 500, () => {
-    return fullscreenClick()
+    const result = fullscreenClick()
+    if (result) {
+      // 在成功进入全屏后应用音量均衡
+      setTimeout(() => {
+        applyVolumeBalance()
+        startVolumeChangeMonitoring()
+      }, 1000)
+    }
+    return result
   }).start()
 }
 
@@ -113,10 +123,23 @@ export function webFullscreen() {
   new RetryTask(20, 500, () => {
     // 检查是否已经处于网页全屏状态
     if (document.querySelector('[data-screen=\'web\']')) {
+      // 即使已经是网页全屏状态，也应用音量均衡
+      setTimeout(() => {
+        applyVolumeBalance()
+        startVolumeChangeMonitoring()
+      }, 1000)
       return true
     }
 
-    return webFullscreenClick()
+    const result = webFullscreenClick()
+    if (result) {
+      // 在成功进入网页全屏后应用音量均衡
+      setTimeout(() => {
+        applyVolumeBalance()
+        startVolumeChangeMonitoring()
+      }, 1000)
+    }
+    return result
   }).start()
 }
 
@@ -162,14 +185,23 @@ export function widescreen() {
   new RetryTask(20, 500, () => {
     // 检查是否已经处于宽屏状态
     if (document.querySelector('[data-screen=\'wide\']')) {
-      // 即使已经是宽屏状态，也执行滚动
+      // 即使已经是宽屏状态，也执行滚动和音量均衡
       scrollPlayerToOptimalPosition()
+      setTimeout(() => {
+        applyVolumeBalance()
+        startVolumeChangeMonitoring()
+      }, 1000)
       return true
     }
 
     const result = widescreenClick()
     if (result) {
       scrollPlayerToOptimalPosition()
+      // 在成功进入宽屏后应用音量均衡
+      setTimeout(() => {
+        applyVolumeBalance()
+        startVolumeChangeMonitoring()
+      }, 1000)
     }
     return result
   }).start()
@@ -202,9 +234,14 @@ export function webFullscreenClick() {
   return false
 }
 
-// 默认模式下也执行滚动
+// 默认模式下也执行滚动和音量均衡
 export function defaultMode() {
   scrollPlayerToOptimalPosition()
+  // 在默认模式下也应用音量均衡
+  setTimeout(() => {
+    applyVolumeBalance()
+    startVolumeChangeMonitoring()
+  }, 2000) // 默认模式延迟稍长一些，确保页面完全加载
   return true
 }
 
@@ -698,33 +735,37 @@ export function handleVideoPageNavigation() {
 
 // 获取UP主的uid
 export function getUpUid(): string | null {
-  const upLinkElement = document.querySelector(_videoClassTag.upLink) as HTMLAnchorElement
-  if (!upLinkElement || !upLinkElement.href) {
-    return null
+  const upLinkElement = document.querySelector('.up-name[href*="space.bilibili.com"]') as HTMLAnchorElement
+  if (upLinkElement && upLinkElement.href) {
+    // 从href中提取uid，格式通常是 //space.bilibili.com/uid 或 https://space.bilibili.com/uid
+    const uidMatch = upLinkElement.href.match(/space\.bilibili\.com\/(\d+)/)
+    if (uidMatch) {
+      return uidMatch[1]
+    }
   }
 
-  // 从href中提取uid，格式通常是 //space.bilibili.com/uid 或 https://space.bilibili.com/uid
-  const uidMatch = upLinkElement.href.match(/space\.bilibili\.com\/(\d+)/)
-  return uidMatch ? uidMatch[1] : null
+  return null
 }
 
 // 获取UP主的名字
 export function getUpName(): string | null {
-  const upNameElement = document.querySelector(_videoClassTag.upName) as HTMLElement
-  if (!upNameElement) {
-    return null
+  const upNameElement = document.querySelector('.up-name[href*="space.bilibili.com"]') as HTMLElement
+  if (upNameElement && upNameElement.textContent) {
+    // 获取文本内容，去除空白字符
+    let upName = upNameElement.textContent.trim()
+
+    // 如果存在mask元素，需要去除它的影响
+    const maskElement = upNameElement.querySelector('.mask')
+    if (maskElement && maskElement.textContent) {
+      upName = upName.replace(maskElement.textContent.trim(), '').trim()
+    }
+
+    if (upName) {
+      return upName
+    }
   }
 
-  // 获取文本内容，去除空白字符
-  let upName = upNameElement.textContent?.trim()
-
-  // 如果存在mask元素，需要去除它的影响
-  const maskElement = upNameElement.querySelector('.mask')
-  if (maskElement && maskElement.textContent) {
-    upName = upName?.replace(maskElement.textContent.trim(), '')?.trim()
-  }
-
-  return upName || null
+  return null
 }
 
 // 获取UP主完整信息
@@ -733,6 +774,50 @@ export function getUpInfo(): { uid: string | null, name: string | null } {
     uid: getUpUid(),
     name: getUpName(),
   }
+}
+
+// 获取当前音量 (0-100)
+export function getCurrentVolume(): number {
+  const video = getVideoElement()
+  if (!video) {
+    return 0
+  }
+
+  // 将0-1范围映射到0-100
+  return Math.round(video.volume * 100)
+}
+
+// 设置音量 (0-100)
+export function setVolume(volume: number, showStatus = false): boolean {
+  const video = getVideoElement()
+  if (!video) {
+    return false
+  }
+
+  // 确保音量在有效范围内
+  const clampedVolume = Math.max(0, Math.min(100, volume))
+
+  // 将0-100范围映射到0-1
+  video.volume = clampedVolume / 100
+
+  // 如果设置的音量大于0，取消静音状态
+  if (clampedVolume > 0 && video.muted) {
+    video.muted = false
+  }
+
+  // 根据参数决定是否显示音量状态
+  if (showStatus) {
+    showState(`音量 ${clampedVolume}%`)
+  }
+
+  return true
+}
+
+// 调整音量 (增加或减少指定数值)
+export function adjustVolume(delta: number): boolean {
+  const currentVolume = getCurrentVolume()
+  const newVolume = currentVolume + delta
+  return setVolume(newVolume, true)
 }
 
 // 为Window接口添加自定义属性

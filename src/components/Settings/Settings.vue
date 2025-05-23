@@ -19,6 +19,7 @@ const settingsMenu = {
   [MenuType.BewlyPages]: defineAsyncComponent(() => import('./BewlyPages/BewlyPages.vue')),
   [MenuType.Shortcuts]: defineAsyncComponent(() => import('./Shortcuts/Shortcuts.vue')),
   [MenuType.Compatibility]: defineAsyncComponent(() => import('./Compatibility/Compatibility.vue')),
+  [MenuType.VolumeBalance]: defineAsyncComponent(() => import('./VolumeBalance/VolumeBalance.vue')),
   // [MenuType.BilibiliSettings]: defineAsyncComponent(() => import('./BilibiliSettings/BilibiliSettings.vue')),
   [MenuType.About]: defineAsyncComponent(() => import('./About/About.vue')),
 }
@@ -86,12 +87,18 @@ const settingsMenuItems = computed((): MenuItem[] => {
       iconActivated: 'i-mingcute:polygon-fill',
       title: t('settings.menu_compatibility'),
     },
-    // {
-    //   value: MenuType.BilibiliSettings,
-    //   icon: 'ant-design:bilibili-outlined',
-    //   iconActivated: 'ant-design:bilibili-outlined',
-    //   title: 'Bilibili',
-    // },
+    {
+      value: MenuType.VolumeBalance,
+      icon: 'i-mingcute:volume-up-line',
+      iconActivated: 'i-mingcute:volume-up-fill',
+      title: t('settings.menu_volume_balance'),
+    },
+    {
+      value: MenuType.BilibiliSettings,
+      icon: 'ant-design:bilibili-outlined',
+      iconActivated: 'ant-design:bilibili-outlined',
+      title: 'Bilibili',
+    },
     {
       value: MenuType.About,
       icon: 'i-mingcute:information-line',

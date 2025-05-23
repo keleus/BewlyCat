@@ -23,27 +23,20 @@ common:
   no_more_content: 沒有更多內容了
   operation:
     add: 新增
-    edit: 編輯
-    delete: 刪除
     confirm: 確定
     cancel: 取消
-    enable: 啓用
-    disable: 停用
     refresh: 重新整理
     reset: 重設
     import: 匯入
     export: 匯出
-    undo_refresh: 撤銷更新
   table:
     index: 索引
     title: 標題
-    name: 名稱
     remark: 備註
     operations: 操作
   position:
     left: 左側
     right: 右側
-    top: 頂部
     bottom: 底部
 iframe_drawer:
   open_in_new_tab: 在新索引標籤開啓連結
@@ -103,7 +96,7 @@ settings:
     default: Bilibili 預設
     recommend: 推介
     custom: 自訂
-  customize_font_desc: >-
+  customize_font_desc: >
     對於喜歡舊字形的用戶，我們推薦 <a class="link" href="https://github.com/GuiWonder/Shanggu"
     target="_blank">Shanggu Fonts (尚古字型)</a> 和 <a class="link"
     href="https://github.com/ayaka14732/FanWunHak" target="_blank">Fan Wun Hak
@@ -183,7 +176,7 @@ settings:
     by_url: 使用網址
   choose_ur_wallpaper: 選擇你的背景
   image_url: 圖片網址
-  image_url_hint: >-
+  image_url_hint: >
     網址範例:
     https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/wallpapers/rocky-mountain-cloudscape.jpg
 
@@ -226,7 +219,7 @@ settings:
   filter_by_duration_unit: 秒
   filter_item_already_exist: 這個篩選項目已經存在！
   filter_by_title: 按標題篩選
-  filter_by_title_desc: >-
+  filter_by_title_desc: >
     按標題篩選掉包含您設定的字串的影片（不區分大小寫），或使用正規表示式，如 <code>/abc&#124;\d+/</code>，用
     <code>/</code> 包裏。
 
@@ -238,7 +231,7 @@ settings:
 
     按兩下欄位以編輯目前欄位。
   filter_by_user: 按使用者篩選
-  filter_by_user_desc: >-
+  filter_by_user_desc: >
     篩選掉包含您設定的使用者名稱（全名，不區分大小寫）或 MID 所上傳的影片，或使用正規表示式，如
     <code>/abc&#124;\d+/</code>，用 <code>/</code> 包裏。
 
@@ -269,9 +262,6 @@ settings:
   follow_bilibili_evolved_color: 使用 Bilibili Evolved 主題色
   follow_bilibili_evolved_color_desc: 每次變更 Bilibili Evolved 主題色後，記得重新選取此選項以更新配置。
   links: 連結
-  sponsor: 贊助
-  sponsor_desc: 喜歡這份專案並希望看到它蓬勃發展嗎？請考慮贊助它！您的支持是此專案發展的動力。
-  afdian: 爱发电
   import_settings: 匯入設定
   export_settings: 匯出設定
   export_settings_desc: 一些敏感性資訊，例如 access key，可能需要重新取得。
@@ -279,11 +269,6 @@ settings:
   reset_settings_confirm: |-
     重設設定？
     此操作無法撤消，你確定要重設你的設定嗎？
-  safari_helpers: 幫助過上架 Safari 商店的人
-  safari_helpers_desc1: 提交 PR 支援 Safari
-  safari_helpers_desc2: 幫忙免費上架 Safari
-  safari_helpers_desc3: 幫解答註冊蘋果開發者問題
-  safari_helpers_desc4: 幫解答註冊蘋果開發者問題
   contributors: BewlyBewly歷史貢獻者
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 在不同設備間同步擴展設定（需要登入瀏覽器帳號）
@@ -301,7 +286,6 @@ settings:
       official_bilibili: bilibili 官方快捷鍵
       general: 常規快捷鍵
       fullscreen_mode: 全螢幕模式快捷鍵
-      jump_to_progress: 進度跳轉快捷鍵
       global_actions: 全域操作
     official:
       play_pause: 播放/暫停
@@ -324,10 +308,6 @@ settings:
       reset_default: 重置為預設值
     reset_all_button: 重置所有快捷鍵
     reset_all_ext_shortcuts: 重置所有擴充套件快捷鍵
-    screenshot_format: 截圖格式
-    clock_time_format: 時間格式
-    hour: 小時
-    clock_show_seconds: 顯示秒數
     press_keys: 點擊輸入框，按下快捷鍵
     danmu_status: 顯示彈幕狀態
     danmu_status_desc: 顯示當前彈幕開關狀態
@@ -381,15 +361,49 @@ settings:
     video_time_desc: 顯示/隱藏視訊時間
     clock_time: 時鐘
     clock_time_desc: 顯示/隱藏系統時間
-    keyboard_conflict_warning: >-
-      如果您同時使用了其它帶有快捷鍵功能的擴充套件，那麼他們可能會衝突，導致功能不正常。為了避免衝突，您可以在其它擴充套件或此擴充套件的設定中關閉相應的快捷鍵功能。
-    only_physical_keys_note: 所有快捷鍵均表示實體按鍵，只有明確提示 Shift 的才需要按 Shift 鍵。
   clean_url_argument: 清理URL追蹤參數
   clean_url_argument_desc: 自動清理URL中的追蹤參數，使連結更加簡潔
   show_ip_location: 顯示IP歸屬地
   show_ip_location_desc: 在視頻/動態評論區顯示IP歸屬地
   video_player_scroll: 調整顯示模式後滾動
   video_player_scroll_desc: 啟用後，在默認模式為寬屏和默認時，會自動滾動到合適位置。
+  volume_balance:
+    base_volume: 基準音量
+    base_volume_desc: 所有UP主音量的基準值
+    clear_all_configs: 清空所有配置
+    delete: 刪除
+    dialog:
+      adjust_base_volume: 調整基準音量
+      base_adjusted_message: 基準音量已調整為 {volume}%
+      base_volume: 基準音量
+      cancel: 取消
+      current_volume: 當前音量
+      record_up_config: 記錄UP音量配置
+      recorded_message: 已記錄 {name} 的音量配置 ({offset})
+      title: 音量調整選擇
+      up_name: UP主
+    enable: 啟用音量均衡
+    enable_desc: 為不同UP主設置個性化音量，自動調整播放音量
+    last_updated: 最後更新
+    no_configs: 暫無UP主音量配置
+    no_search_results: 沒有找到匹配的UP主配置
+    search_placeholder: 搜索UP主名字或UID...
+    search_results_count: 顯示 {current} / {total} 個配置
+    title: 音量均衡
+    up_configs: UP主音量配置
+    up_configs_desc: 管理各個UP主的個性化音量設置
+    usage_guide:
+      desc: |-
+        音量均衡功能可以為不同UP主設置個性化音量
+        1. 啟用音量均衡功能後，系統會自動監聽音量變化
+        2. 當你手動調整音量時，會彈出對話框詢問是否記錄UP主配置或調整基準音量
+        3. 記錄UP主配置：保存當前UP主相對於基準音量的偏移量
+        4. 調整基準音量：將當前音量設為新的基準音量
+        5. 進入視頻頁面時，系統會根據UP主配置自動調整音量
+        6. 可以直接在配置列表中修改音量偏移值，範圍為 -100% 到  100%
+        7. 使用搜索框可以快速查找特定UP主的配置
+      title: 使用說明
+  menu_volume_balance: 音量均衡
 auth:
   auth_access_key_first: 在這之前請先授權 BewlyBewly 使用 access key
 topbar:
@@ -441,7 +455,6 @@ topbar:
     life_joy: 生活興趣
     life_experience: 生活經驗
     charitable_events: 公益
-    ultra_hd: 超高清
     articles: 專欄
     live: 直播
     activities: 活動
@@ -490,13 +503,6 @@ topbar:
     video: 上傳影片
     manager: 內容管理
 dock:
-  search: 搜尋
-  home: 首頁
-  anime: 動畫
-  history: 觀看記錄
-  watch_later: 稍後觀看
-  favorites: 收藏
-  moments: 動向
   dark_mode: 深色模式
   light_mode: 淺色模式
   settings: 設定
@@ -516,18 +522,11 @@ video_card:
   video_removed: 影片已移除
 home:
   tell_us_why: 爲什麼這樣做...
-  not_interested_desc: >-
+  not_interested_desc: >
     你可以用 <kbd>↑</kbd> 和 <kbd>↓</kbd> 來選擇原因，或者直接使用數字鍵來選擇原因，按 <kbd>Enter</kbd>
     就直接提交。
-  for_you: 爲你推薦
-  following: 正在跟隨
-  trending: 發燒影片
-  ranking: 排行
-  subscribed_series: 訂閱劇集
-  live: 直播
 ranking:
   all: 全部
-  chinese_anime_related: 中國動畫相關
   original_content: 原創內容
   debut_work: 新人作品
 anime:

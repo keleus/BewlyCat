@@ -47,6 +47,15 @@ export interface ShortcutsSettings {
 
   // 跳转进度快捷键已移除
 }
+
+// UP主音量配置接口
+export interface UpVolumeConfig {
+  uid: string
+  name: string
+  volumeOffset: number // 相对基准音量的偏移量 (-100 到 100)
+  lastUpdated: number // 最后更新时间戳
+}
+
 export interface Settings {
   touchScreenOptimization: boolean
   enableGridLayoutSwitcher: boolean
@@ -164,6 +173,11 @@ export interface Settings {
   keyboard: boolean
   shortcuts: ShortcutsSettings
   videoPlayerScroll: boolean // 添加视频播放器滚动设置
+
+  // 音量均衡设置
+  enableVolumeBalance: boolean // 启用音量均衡功能
+  baseVolume: number // 基准音量 (0-100)
+  upVolumeConfigs: UpVolumeConfig[] // UP主音量配置列表
 }
 
 export const originalSettings: Settings = {
@@ -307,6 +321,11 @@ export const originalSettings: Settings = {
     videoTime: { key: 'G', enabled: true },
     clockTime: { key: 'H', enabled: true },
   },
+
+  // 音量均衡设置
+  enableVolumeBalance: false, // 启用音量均衡功能
+  baseVolume: 100, // 基准音量 (0-100)
+  upVolumeConfigs: [], // UP主音量配置列表
 }
 
 export const settings = useStorageLocal('settings', originalSettings, { mergeDefaults: true })

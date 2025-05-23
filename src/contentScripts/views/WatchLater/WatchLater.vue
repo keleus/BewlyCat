@@ -293,8 +293,6 @@ function handleMouseEnter(item: VideoItem) {
                 </div>
 
                 <div flex items-center>
-                  <!-- <span>{{ item.progress === -1 ? $t('watch_later.watched') : '' }}</span> -->
-
                   <button
                     text="2xl $bew-text-3"
                     hover:color="$bew-theme-color"

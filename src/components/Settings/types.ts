@@ -5,6 +5,7 @@ export enum MenuType {
   BewlyPages = 'BewlyPages',
   Shortcuts = 'Shortcuts',
   Compatibility = 'Compatibility',
+  VolumeBalance = 'VolumeBalance',
   BilibiliSettings = 'BilibiliSettings',
   About = 'About',
 }
@@ -16,7 +17,7 @@ export enum BewlyPage {
 
 export interface MenuItem {
   value: MenuType
-  title: string
   icon: string
   iconActivated: string
+  title: string
 }

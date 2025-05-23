@@ -34,20 +34,18 @@ const shortcutHandlers: Record<string, ShortcutHandler> = {}
 export function registerShortcutHandler(id: string, handler: ShortcutHandler): boolean {
   try {
     if (!id || typeof handler !== 'function') {
-      console.error('[Shortcuts] Invalid shortcut handler registration:', { id, handler })
       return false
     }
 
     // 如果已存在处理器，先注销
     if (shortcutHandlers[id]) {
-      console.warn(`[Shortcuts] Overwriting existing handler for shortcut: ${id}`)
+      // 覆盖现有处理器
     }
 
     shortcutHandlers[id] = handler
     return true
   }
   catch (err) {
-    console.error(`[Shortcuts] Failed to register shortcut handler for ${id}:`, err)
     return false
   }
 }
@@ -60,12 +58,10 @@ export function registerShortcutHandler(id: string, handler: ShortcutHandler): b
 export function unregisterShortcutHandler(id: string): boolean {
   try {
     if (!id) {
-      console.error('[Shortcuts] Invalid shortcut handler unregistration: empty id')
       return false
     }
 
     if (!shortcutHandlers[id]) {
-      console.warn(`[Shortcuts] No handler found for shortcut: ${id}`)
       return false
     }
 
@@ -73,7 +69,6 @@ export function unregisterShortcutHandler(id: string): boolean {
     return true
   }
   catch (err) {
-    console.error(`[Shortcuts] Failed to unregister shortcut handler for ${id}:`, err)
     return false
   }
 }
@@ -150,8 +145,6 @@ export function setupShortcutHandlers() {
     if (target && target.id === 'bewly') {
       return
     }
-
-    console.log('keydownListener', e)
     // 更新快捷键配置缓存
     updateShortcutsCache()
 
@@ -204,19 +197,19 @@ export function setupShortcutHandlers() {
                 handler(e, player || undefined)
               }
               catch (err) {
-                console.error(`[Shortcuts] Error executing handler for shortcut ${id}:`, err)
+                // 处理器执行错误
               }
               return
             }
           }
         }
         catch (err) {
-          console.error(`[Shortcuts] Error processing shortcut ${id}:`, err)
+          // 处理单个快捷键时出错
         }
       }
     }
     catch (err) {
-      console.error('[Shortcuts] Error processing shortcuts:', err)
+      // 处理快捷键时出错
     }
   }
 

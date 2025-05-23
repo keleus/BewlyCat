@@ -55,7 +55,6 @@ const officialShortcuts: OfficialShortcut[] = [
   { key: 'Shift + 1', description: t('settings.shortcuts.official.speed_1') },
   { key: 'Shift + 2', description: t('settings.shortcuts.official.speed_2') },
   { key: 'Enter', description: t('settings.shortcuts.official.input_danmu') },
-  // { key: '⏯️', description: t('settings.shortcuts.official.play_pause_alt') }, // Alternative, might be hard to display
 ]
 
 const configurableShortcutsGroups: ShortcutGroup[] = [

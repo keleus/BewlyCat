@@ -199,6 +199,7 @@ function applyDefaultPlayerMode() {
     }
   }
   setupShortcutHandlers()
+
   hasAppliedPlayerMode = true // 标记已应用
 }
 

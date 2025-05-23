@@ -23,27 +23,20 @@ common:
   no_more_content: 唔使睇喇，冇嘢喇
   operation:
     add: 新增
-    edit: 編輯
-    delete: 刪除
     confirm: 確定
     cancel: 取消
-    enable: 開
-    disable: 閂
     refresh: 重新整理
     reset: 重設
     import: 匯入
     export: 匯出
-    undo_refresh: 復原更新
   table:
     index: 索引
     title: 標題
-    name: 名稱
     remark: 備註
     operations: 操作
   position:
     left: 左邊
     right: 右邊
-    top: 上頭
     bottom: 下低
 iframe_drawer:
   open_in_new_tab: 喺新嘅分頁度打開連結
@@ -103,7 +96,7 @@ settings:
     default: Bilibili 預設
     recommend: 推介
     custom: 自訂
-  customize_font_desc: >-
+  customize_font_desc: >
     對於舊字形嘅用戶，我哋推介 <a class="link" href="https://github.com/GuiWonder/Shanggu"
     target="_blank">Shanggu Fonts (尚古字型)</a> 同 <a class="link"
     href="https://github.com/ayaka14732/FanWunHak" target="_blank">Fan Wun Hak
@@ -175,7 +168,7 @@ settings:
     by_url: 使用網址
   choose_ur_wallpaper: 揀張背景
   image_url: 圖片網址
-  image_url_hint: >-
+  image_url_hint: >
     網址範例:
     https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/wallpapers/rocky-mountain-cloudscape.jpg
 
@@ -218,7 +211,7 @@ settings:
   filter_by_duration_unit: 秒
   filter_item_already_exist: 呢個篩選條件已經有咗喇！
   filter_by_title: 根據標題篩選
-  filter_by_title_desc: >-
+  filter_by_title_desc: >
     避開啲標題係你指定嘅字嘅片（唔理大細楷），抑或用正則表達式，好似 <code>/abc&#124;\d+/</code> 噉，用兩個
     <code>/</code> 包住。
 
@@ -230,7 +223,7 @@ settings:
 
     撳兩吓欄位就可以改返入邊嘅嘢。
   filter_by_user: 根據用戶篩選
-  filter_by_user_desc: >-
+  filter_by_user_desc: >
     避開啲 po 片嗰位係你指定嘅用戶名（全名，唔理大細楷）抑或 MID 嘅片，抑或用正則表達式，好似
     <code>/abc&#124;\d+/</code> 噉，用兩個 <code>/</code> 包住。
 
@@ -261,9 +254,6 @@ settings:
   follow_bilibili_evolved_color: 跟返 Bilibili Evolved 主題色
   follow_bilibili_evolved_color_desc: 每次換完 Bilibili Evolved 主題色嗰陣，記得揀多一次呢個選項愛嚟更新佈置。
   links: 拎
-  sponsor: 贊助
-  sponsor_desc: 鍾意呢份專案又想佢愈做愈好？可以考慮贊助吓！你嘅支持就係呢份專案發展嘅動力。
-  afdian: 愛發電
   import_settings: 匯入設定
   export_settings: 匯出設定
   export_settings_desc: 一啲敏感性資訊，例如 access key，可能要你攞多次先至得。
@@ -271,11 +261,6 @@ settings:
   reset_settings_confirm: |-
     重設設定？
     噉做冇得返轉頭噃，你確定要重設你之前嘅設定？
-  safari_helpers: 幫過上架 Safari 商店嘅人
-  safari_helpers_desc1: 提交 PR 支援 Safari
-  safari_helpers_desc2: 幫手免費上架 Safari
-  safari_helpers_desc3: 幫手解答註冊蘋果開發者問題
-  safari_helpers_desc4: 幫手解答註冊蘋果開發者問題
   contributors: 貢獻者
   auto_hide_top_bar_on_video_page: 影片頁預設隱藏
   auto_hide_top_bar_on_video_page_desc: 影片頁度預設隱藏頂欄，滑鼠移動到頂部區域嗰陣顯示。
@@ -291,11 +276,9 @@ settings:
   filter_like_view_ratio_desc: 篩選影片嘅讚好數通播放數比例（預設 5%，最高 10%）。
   shortcuts:
     caption: 字幕
-    clock_show_seconds: 顯示秒
     caption_desc: 顯示/隱藏字幕。
     clock_time: 時鐘
     clock_time_desc: 顯示/隱藏系統時間。
-    clock_time_format: 時間格式
     danmu_status: 顯示彈幕狀態
     danmu_status_desc: 顯示目前彈幕開關狀態。
     decrease_playback_rate: 減速播放
@@ -308,9 +291,7 @@ settings:
       fullscreen_mode: 全螢幕模式快捷鍵
       general: 一般快捷鍵
       global_actions: 全域操作
-      jump_to_progress: 進度跳轉快捷鍵
       official_bilibili: bilibili 官方快捷鍵
-    hour: 小時
     increase_playback_rate: 加速播放
     increase_playback_rate_desc: 校快播放速度。
     increase_video_size: 放大影片
@@ -319,7 +300,6 @@ settings:
       cancel_edit: 唔再編輯
       edit_key: 編輯快捷鍵
       reset_default: 重設做預設值
-    keyboard_conflict_warning: 若然你同時用咗其他具備快捷鍵嘅延伸功能，佢哋可能會衝突兼且令到功能出問題。爲咗避免衝突，你可以喺其他延伸功能抑或喺呢個設定度停用相應嘅快捷鍵。
     long_step_backward: 褪後
     long_step_backward_desc: 褪後 30 秒。
     long_step_forward: 行前
@@ -343,7 +323,6 @@ settings:
       speed_2: 設定 2 倍播放速度
       volume_down: 校低音量
       volume_up: 校高音量
-    only_physical_keys_note: 所有快捷鍵都係代表實體掣。淨係喺有指明嘅時候先要撳 Shift 掣。
     pip: 子母畫面
     pip_desc: 切換字母畫面模式。
     play_pause_ext: 播放/暫停
@@ -363,7 +342,6 @@ settings:
     screenshot_clipboard_desc: 複製目前畫面到剪貼簿。
     screenshot_file: 擷取畫面到新檔
     screenshot_file_desc: 儲存目前畫面到新檔。
-    screenshot_format: 擷取畫面格式
     short_step_backward: 快褪
     short_step_backward_desc: 快褪 5 秒。
     short_step_forward: 快進
@@ -450,7 +428,6 @@ topbar:
     rural: 三農
     shortplay: 小劇場
     travel: 旅遊出行
-    ultra_hd: 高解像度
   user_dropdown:
     money: 銀仔：
     b_coins: B銀：
@@ -489,13 +466,6 @@ topbar:
     video: Po 片
     manager: 內容管理
 dock:
-  search: 搵嘢
-  home: 主頁
-  anime: 動畫
-  history: 收睇記錄
-  watch_later: 陣間至睇
-  favorites: 我嘅至愛
-  moments: 動向
   dark_mode: 深色模式
   light_mode: 淺色模式
   settings: 設定
@@ -515,18 +485,11 @@ video_card:
   video_removed: 經已鏟咗條片
 home:
   tell_us_why: 點解噉做...
-  not_interested_desc: >-
+  not_interested_desc: >
     你可以用 <kbd>↑</kbd> 同 <kbd>↓</kbd> 嚟揀個理由，抑或用數字鍵嚟直接揀理由，撳 <kbd>Enter</kbd>
     就直接提交。
-  for_you: 估你心水
-  following: 跟緊啲人
-  trending: 時下至 Hit
-  ranking: 排行
-  subscribed_series: 訂閱劇集
-  live: 直播
 ranking:
   all: 全部
-  chinese_anime_related: 中國動畫相關
   original_content: 原創內容
   debut_work: 新人作品
 anime:
