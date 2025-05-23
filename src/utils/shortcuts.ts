@@ -145,6 +145,13 @@ export function setupShortcutHandlers() {
       return
     }
 
+    // 检查是否事件来自插件容器
+    const target = e.target as HTMLElement
+    if (target && target.id === 'bewly') {
+      return
+    }
+
+    console.log('keydownListener', e)
     // 更新快捷键配置缓存
     updateShortcutsCache()
 
