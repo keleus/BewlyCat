@@ -1,14 +1,15 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
+
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import Progress from '~/components/Progress.vue'
-import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
-import api from '~/utils/api'
+import { useTopBarStore } from '~/stores/topBarStore'
 import { calcCurrentTime } from '~/utils/dataFormatter'
-import { getCSRF, removeHttpFromUrl } from '~/utils/main'
+import { removeHttpFromUrl } from '~/utils/main'
 
-const watchLaterList = reactive<VideoItem[]>([])
-const isLoading = ref<boolean>()
+const topBarStore = useTopBarStore()
+const { watchLaterList, isLoadingWatchLater } = storeToRefs(topBarStore)
 const viewAllUrl = computed((): string => {
   return 'https://www.bilibili.com/watchlater/list'
 })
@@ -17,7 +18,7 @@ const playAllUrl = computed((): string => {
 })
 
 onMounted(() => {
-  getAllWatchLaterList()
+  topBarStore.getAllWatchLaterList()
 })
 
 /**
@@ -29,32 +30,8 @@ function getWatchLaterUrl(bvid: string): string {
   return `https://www.bilibili.com/list/watchlater?bvid=${bvid}`
 }
 
-/**
- * Get watch later list
- */
-function getAllWatchLaterList() {
-  isLoading.value = true
-  watchLaterList.length = 0
-
-  api.watchlater.getAllWatchLaterList()
-    .then((res: WatchLaterResult) => {
-      if (res.code === 0)
-        Object.assign(watchLaterList, res.data.list)
-
-      isLoading.value = false
-    })
-}
-
 function deleteWatchLaterItem(index: number, aid: number) {
-  api.watchlater.removeFromWatchLater({
-    aid,
-    csrf: getCSRF(),
-  })
-    .then((res) => {
-      if (res.code === 0) {
-        watchLaterList.splice(index, 1)
-      }
-    })
+  topBarStore.deleteWatchLaterItem(index, aid)
 }
 </script>
 
@@ -115,14 +92,14 @@ function deleteWatchLaterItem(index: number, aid: number) {
     >
       <!-- loading -->
       <Loading
-        v-if="isLoading && watchLaterList.length === 0"
+        v-if="isLoadingWatchLater && watchLaterList.length === 0"
         h="full"
         flex="~ items-center"
       />
 
       <!-- empty -->
       <Empty
-        v-if="!isLoading && watchLaterList.length === 0"
+        v-if="!isLoadingWatchLater && watchLaterList.length === 0"
         pos="absolute top-0 left-0"
         bg="$bew-content"
         z="0" w="full" h="full"
@@ -225,7 +202,7 @@ function deleteWatchLaterItem(index: number, aid: number) {
 
       <!-- loading -->
       <Transition name="fade">
-        <Loading v-if="isLoading && watchLaterList.length !== 0" m="-t-4" />
+        <Loading v-if="isLoadingWatchLater && watchLaterList.length !== 0" m="-t-4" />
       </Transition>
     </main>
   </div>

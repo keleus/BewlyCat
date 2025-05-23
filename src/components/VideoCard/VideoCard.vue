@@ -9,6 +9,7 @@ import { accessKey, settings } from '~/logic'
 import type { VideoInfo } from '~/models/video/videoInfo'
 import type { VideoPreviewResult } from '~/models/video/videoPreview'
 import { useMainStore } from '~/stores/mainStore'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getTvSign, TVAppKey } from '~/utils/authProvider'
 import { calcCurrentTime, calcTimeSince, numFormatter } from '~/utils/dataFormatter'
@@ -43,6 +44,7 @@ interface Props {
 const toast = useToast()
 const { mainAppRef, openIframeDrawer } = useBewlyApp()
 const { setActivatedCover } = useMainStore()
+const topBarStore = useTopBarStore()
 
 const showVideoOptions = ref<boolean>(false)
 const videoOptionsFloatingStyles = ref<CSSProperties>({})
@@ -131,10 +133,16 @@ function toggleWatchLater() {
       csrf: getCSRF(),
     })
       .then((res) => {
-        if (res.code === 0)
+        if (res.code === 0) {
           isInWatchLater.value = true
-        else
+          // 延时1秒后获取稍后再看列表（add成功后居然不是立即生效的）
+          setTimeout(() => {
+            topBarStore.getAllWatchLaterList()
+          }, 1000)
+        }
+        else {
           toast.error(res.message)
+        }
       })
   }
   else {
@@ -143,10 +151,16 @@ function toggleWatchLater() {
       csrf: getCSRF(),
     })
       .then((res) => {
-        if (res.code === 0)
+        if (res.code === 0) {
           isInWatchLater.value = false
-        else
+          // 延时1秒后获取稍后再看列表（add成功后居然不是立即生效的）
+          setTimeout(() => {
+            topBarStore.getAllWatchLaterList()
+          }, 1000)
+        }
+        else {
           toast.error(res.message)
+        }
       })
   }
 }

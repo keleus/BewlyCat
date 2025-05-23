@@ -29,6 +29,7 @@ const {
   unReadMessage,
   unReadDm,
   newMomentsCount,
+  watchLaterCount,
   drawerVisible,
   popupVisible,
   forceWhiteIcon,
@@ -273,6 +274,18 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
             :class="{ active: popupVisible.watchLater }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'watchLater')"
           >
+            <template v-if="watchLaterCount > 0">
+              <div
+                v-if="settings.topBarIconBadges === 'number'"
+                class="unread-num-dot"
+              >
+                {{ watchLaterCount > 99 ? '99+' : watchLaterCount }}
+              </div>
+              <div
+                v-else-if="settings.topBarIconBadges === 'dot'"
+                class="unread-dot"
+              />
+            </template>
             <ALink
               :class="{ 'white-icon': forceWhiteIcon }"
               href="https://www.bilibili.com/watchlater/list"

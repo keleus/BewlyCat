@@ -19,6 +19,7 @@ import type { UnReadDm, UnReadMessage, UserInfo } from '~/components/TopBar/type
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
+import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { getCSRF, isHomePage, isInIframe } from '~/utils/main'
 
@@ -51,6 +52,11 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   // Moments State
   const newMomentsCount = ref<number>(0)
+  // 添加稍后再看计数
+  const watchLaterCount = ref<number>(0)
+  // 添加稍后再看列表
+  const watchLaterList = reactive<VideoItem[]>([])
+  const isLoadingWatchLater = ref<boolean>(false)
   // 添加 Moments 相关状态
   const moments = reactive<any[]>([])
   const addedWatchLaterList = reactive<number[]>([])
@@ -237,6 +243,62 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
   }
 
+  // 获取稍后再看列表数量
+  async function getWatchLaterCount() {
+    if (!isLogin.value)
+      return
+
+    try {
+      const res = await api.watchlater.getAllWatchLaterList()
+      if (res.code === 0) {
+        watchLaterCount.value = res.data.count
+        Object.assign(watchLaterList, res.data.list)
+      }
+    }
+    catch (error) {
+      console.error(error)
+    }
+  }
+
+  // 获取稍后再看列表
+  async function getAllWatchLaterList() {
+    if (!isLogin.value)
+      return
+
+    isLoadingWatchLater.value = true
+
+    try {
+      const res = await api.watchlater.getAllWatchLaterList()
+      if (res.code === 0) {
+        watchLaterCount.value = res.data.count
+        Object.assign(watchLaterList, res.data.list)
+      }
+    }
+    catch (error) {
+      console.error(error)
+    }
+    finally {
+      isLoadingWatchLater.value = false
+    }
+  }
+
+  // 删除稍后再看项目
+  async function deleteWatchLaterItem(index: number, aid: number) {
+    try {
+      const res = await api.watchlater.removeFromWatchLater({
+        aid,
+        csrf: getCSRF(),
+      })
+      if (res.code === 0) {
+        watchLaterList.splice(index, 1)
+        watchLaterCount.value = watchLaterList.length
+      }
+    }
+    catch (error) {
+      console.error(error)
+    }
+  }
+
   function initMomentsData(selectedType: string) {
     // 重置所有相关状态
     moments.length = 0
@@ -395,6 +457,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     getUserInfo()
     getUnreadMessageCount()
     getTopBarNewMomentsCount()
+    getAllWatchLaterList()
   }
 
   function startUpdateTimer() {
@@ -408,6 +471,8 @@ export const useTopBarStore = defineStore('topBar', () => {
         // 只有在弹窗未显示时才更新计数，避免与 watch 重复调用
         if (!popupVisible.moments)
           getTopBarNewMomentsCount()
+        if (!popupVisible.watchLater)
+          getWatchLaterCount()
       }
     }, updateInterval)
   }
@@ -428,6 +493,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       unReadDm[key as keyof UnReadDm] = 0
     })
     newMomentsCount.value = 0
+    watchLaterCount.value = 0
 
     closeAllPopups()
     drawerVisible.notifications = false
@@ -453,6 +519,9 @@ export const useTopBarStore = defineStore('topBar', () => {
     unReadDm,
     unReadMessageCount,
     newMomentsCount,
+    watchLaterCount,
+    watchLaterList,
+    isLoadingWatchLater,
     drawerVisible,
     notificationsDrawerUrl,
     popupVisible,
@@ -489,5 +558,9 @@ export const useTopBarStore = defineStore('topBar', () => {
     getMomentsData,
     isNewMoment,
     toggleWatchLater,
+
+    getWatchLaterCount,
+    getAllWatchLaterList,
+    deleteWatchLaterItem,
   }
 })
