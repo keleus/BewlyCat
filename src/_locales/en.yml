@@ -449,33 +449,19 @@ settings:
       desc: >-
         The volume equalization function can set personalized volumes for
         different UP masters
-
-
         1. After the volume equalization function is enabled, the system will
         automatically monitor the volume change.
-
-
         2. When you manually adjust the volume, a dialog box will pop up to ask
         whether to record the UP main configuration or adjust the reference
         volume.
-
-
         3. Record UP master configuration: save the offset of the current UP
         master relative to the reference volume
-
-
         4. Adjust the reference volume: Set the current volume to the new
         reference volume
-
-
         5. When entering the video page, the system will automatically adjust
         the volume according to the UP main configuration.
-
-
         6. You can directly modify the volume offset value in the configuration
         list, ranging from -100% to 100%
-
-
         7. Use the search box to quickly find the configuration of a specific UP
         master
       title: Instructions for use
