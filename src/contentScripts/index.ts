@@ -121,6 +121,8 @@ export function isSupportedIframePages(): boolean {
 }
 
 let beforeLoadedStyleEl: HTMLStyleElement | undefined
+let lastUrl = location.href
+let hasAppliedPlayerMode = false // 添加标志变量
 
 if (isSupportedPages() || isSupportedIframePages()) {
   if (settings.value.adaptToOtherPageStyles)
@@ -172,33 +174,37 @@ window.addEventListener(BEWLY_MOUNTED, () => {
   }
 })
 
-let lastUrl = location.href
-
 // 应用默认播放器模式
 function applyDefaultPlayerMode() {
+  if (hasAppliedPlayerMode)
+    return // 如果已经应用过，直接返回
+
   const playerMode = settings.value.defaultVideoPlayerMode
   if (!playerMode || playerMode === 'default') {
     // 默认模式也需要居中显示
     defaultMode()
-    return
   }
-  switch (playerMode) {
-    case 'fullscreen':
-      fullscreen()
-      break
-    case 'webFullscreen':
-      webFullscreen()
-      break
-    case 'widescreen':
-      widescreen()
-      break
+  else {
+    switch (playerMode) {
+      case 'fullscreen':
+        fullscreen()
+        break
+      case 'webFullscreen':
+        webFullscreen()
+        break
+      case 'widescreen':
+        widescreen()
+        break
+    }
   }
   setupShortcutHandlers()
+  hasAppliedPlayerMode = true // 标记已应用
 }
 
 function checkForUrlChanges() {
   if (location.href !== lastUrl) {
     lastUrl = location.href
+    hasAppliedPlayerMode = false // URL变化时重置标志
     if (isVideoPage() || isBangumiOrWatchLaterPage()) {
       applyDefaultPlayerMode()
       setupShortcutHandlers() // URL变化时重新注册快捷键
@@ -212,7 +218,8 @@ requestAnimationFrame(checkForUrlChanges)
 function handleVisibilityChange() {
   // 当页面变为可见且是视频或番剧页面时，且尚未应用播放器模式
   if (document.visibilityState === 'visible'
-    && (isVideoPage() || isBangumiOrWatchLaterPage())) {
+    && (isVideoPage() || isBangumiOrWatchLaterPage())
+    && !hasAppliedPlayerMode) {
     applyDefaultPlayerMode()
     setupShortcutHandlers()
   }
@@ -260,7 +267,7 @@ function setupBiliVideoCardClickHandler() {
   }, true)
 }
 window.addEventListener('pageshow', () => {
-  if (isVideoPage() || isBangumiOrWatchLaterPage()) {
+  if ((isVideoPage() || isBangumiOrWatchLaterPage()) && !hasAppliedPlayerMode) {
     applyDefaultPlayerMode()
     setupShortcutHandlers() // 页面显示时注册快捷键
   }
