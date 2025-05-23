@@ -7,6 +7,7 @@ import { useDark } from '~/composables/useDark'
 import { BEWLY_MOUNTED } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
+import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
@@ -251,6 +252,19 @@ window.addEventListener('load', () => {
 function setupBiliVideoCardClickHandler() {
   document.addEventListener('click', (event) => {
     const target = event.target as HTMLElement
+
+    // 检查点击的是否是稍后再看按钮或其子元素
+    const watchLaterButton = target.closest('.bili-watch-later, .bili-watch-later--wrap, .bili-watch-later__icon')
+    if (watchLaterButton) {
+      // 如果点击的是稍后再看按钮，延迟1秒后更新顶栏数据
+      setTimeout(() => {
+        // 动态导入topBarStore来更新稍后再看列表
+        const topBarStore = useTopBarStore()
+        topBarStore.getAllWatchLaterList()
+      }, 1000)
+      return
+    }
+
     const linkElement = target.closest('.bili-video-card a, .bili-video-card__wrap a')
 
     if (linkElement instanceof HTMLAnchorElement) {
