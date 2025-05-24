@@ -23,20 +23,27 @@ common:
   no_more_content: 没有更多内容了
   operation:
     add: 新增
+    edit: 编辑
+    delete: 删除
     confirm: 确定
     cancel: 取消
+    enable: 启用
+    disable: 禁用
     refresh: 刷新
     reset: 重置
     import: 导入
     export: 导出
+    undo_refresh: 撤销刷新
   table:
     index: 索引
     title: 标题
+    name: 名称
     remark: 备注
     operations: 操作
   position:
     left: 左侧
     right: 右侧
+    top: 顶部
     bottom: 底部
 iframe_drawer:
   open_in_new_tab: 在新标签页打开
@@ -487,6 +494,13 @@ topbar:
     video: 上传视频
     manager: 投稿管理
 dock:
+  search: 搜索
+  home: 首页
+  anime: 番剧
+  history: 观看历史
+  favorites: 收藏
+  watch_later: 稍后再看
+  moments: 动态
   dark_mode: 暗色模式
   light_mode: 亮色模式
   settings: 设置
@@ -509,6 +523,12 @@ home:
   not_interested_desc: >
     你可以使用 <kbd>↑</kbd> 和 <kbd>↓</kbd> 来选择原因，或者直接使用数字键选择原因，按 <kbd>Enter</kbd>
     就直接提交。
+  for_you: 个性推荐
+  following: 正在关注
+  trending: 热门视频
+  ranking: 排行
+  subscribed_series: 订阅剧集
+  live: 直播
 ranking:
   all: 全部
   original_content: 原创内容

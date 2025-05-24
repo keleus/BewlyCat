@@ -23,20 +23,27 @@ common:
   no_more_content: 唔使睇喇，冇嘢喇
   operation:
     add: 新增
+    edit: 編輯
+    delete: 刪除
     confirm: 確定
     cancel: 取消
+    enable: 開
+    disable: 閂
     refresh: 重新整理
     reset: 重設
     import: 匯入
     export: 匯出
+    undo_refresh: 復原更新
   table:
     index: 索引
     title: 標題
+    name: 名稱
     remark: 備註
     operations: 操作
   position:
     left: 左邊
     right: 右邊
+    top: 上頭
     bottom: 下低
 iframe_drawer:
   open_in_new_tab: 喺新嘅分頁度打開連結
@@ -466,6 +473,13 @@ topbar:
     video: Po 片
     manager: 內容管理
 dock:
+  search: 搵嘢
+  home: 主頁
+  anime: 動畫
+  history: 收睇記錄
+  watch_later: 陣間至睇
+  favorites: 我嘅至愛
+  moments: 動向
   dark_mode: 深色模式
   light_mode: 淺色模式
   settings: 設定
@@ -488,6 +502,12 @@ home:
   not_interested_desc: >
     你可以用 <kbd>↑</kbd> 同 <kbd>↓</kbd> 嚟揀個理由，抑或用數字鍵嚟直接揀理由，撳 <kbd>Enter</kbd>
     就直接提交。
+  for_you: 估你心水
+  following: 跟緊啲人
+  trending: 時下至 Hit
+  ranking: 排行
+  subscribed_series: 訂閱劇集
+  live: 直播
 ranking:
   all: 全部
   original_content: 原創內容

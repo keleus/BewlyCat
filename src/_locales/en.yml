@@ -23,20 +23,27 @@ common:
   no_more_content: No more content now, owari da
   operation:
     add: Add
+    edit: Edit
+    delete: Delete
     confirm: Confirm
     cancel: Cancel
+    enable: Enable
+    disable: Disable
     refresh: Refresh
     reset: Reset
     import: Import
     export: Export
+    undo_refresh: Undo Refresh
   table:
     index: Index
     title: Title
+    name: Name
     remark: Remark
     operations: Operations
   position:
     left: Left
     right: Right
+    top: Top
     bottom: Bottom
 iframe_drawer:
   open_in_new_tab: Open in new tab
@@ -565,6 +572,13 @@ topbar:
     video: Video
     manager: Manager
 dock:
+  search: Search
+  home: Home
+  anime: Anime
+  history: History
+  favorites: Favorites
+  watch_later: Watch later
+  moments: Moments
   dark_mode: Dark Mode
   light_mode: Light Mode
   settings: Settings
