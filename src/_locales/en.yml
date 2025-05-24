@@ -602,6 +602,12 @@ home:
     You can use <kbd>↑</kbd> and <kbd>↓</kbd> to choose the reason, or using
     number keys to choose the reason directly, press <kbd>Enter</kbd> to
     confirm.
+  for_you: For you
+  following: Following
+  trending: Trending
+  ranking: Ranking
+  subscribed_series: Subscribed Series
+  live: Live
 ranking:
   all: All
   original_content: Original Content
