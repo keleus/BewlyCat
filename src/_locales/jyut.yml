@@ -269,8 +269,13 @@ settings:
     重設設定？
     噉做冇得返轉頭噃，你確定要重設你之前嘅設定？
   contributors: 貢獻者
-  auto_hide_top_bar_on_video_page: 影片頁預設隱藏
-  auto_hide_top_bar_on_video_page_desc: 影片頁度預設隱藏頂欄，滑鼠移動到頂部區域嗰陣顯示。
+  video_page_top_bar_config: 影片頁頂欄配置
+  video_page_top_bar_config_desc: 配置喺影片頁面頂欄嘅顯示行為
+  video_page_top_bar_config_opt:
+    alwaysShow: 總係顯示
+    alwaysHide: 總係隱藏
+    showOnMouse: 滑鼠顯示
+    showOnScroll: 滾動顯示
   clean_url_argument: 清理 URL 追蹤參數
   clean_url_argument_desc: 自動清理 URL 嘅最終參數，令到連結更加企理。
   disable_auto_play_collection_desc: 打開影片頁嗰陣，自動關閉合集自動連播功能。

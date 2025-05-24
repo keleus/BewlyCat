@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import draggable from 'vuedraggable'
 
+import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
@@ -25,6 +26,27 @@ const topBarIconBadgesOptions = computed(() => {
     {
       label: t('settings.top_bar_icon_badges_opt.none'),
       value: 'none',
+    },
+  ]
+})
+
+const videoPageTopBarConfigOptions = computed(() => {
+  return [
+    {
+      label: t('settings.video_page_top_bar_config_opt.alwaysShow'),
+      value: VideoPageTopBarConfig.AlwaysShow,
+    },
+    {
+      label: t('settings.video_page_top_bar_config_opt.alwaysHide'),
+      value: VideoPageTopBarConfig.AlwaysHide,
+    },
+    {
+      label: t('settings.video_page_top_bar_config_opt.showOnMouse'),
+      value: VideoPageTopBarConfig.ShowOnMouse,
+    },
+    {
+      label: t('settings.video_page_top_bar_config_opt.showOnScroll'),
+      value: VideoPageTopBarConfig.ShowOnScroll,
     },
   ]
 })
@@ -105,8 +127,8 @@ function handleToggleDockItem(dockItem: any) {
       <SettingsItem :title="$t('settings.auto_hide_top_bar')">
         <Radio v-model="settings.autoHideTopBar" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.auto_hide_top_bar_on_video_page')" :desc="$t('settings.auto_hide_top_bar_on_video_page_desc')">
-        <Radio v-model="settings.autoHideTopBarOnVideoPage" />
+      <SettingsItem :title="$t('settings.video_page_top_bar_config')" :desc="$t('settings.video_page_top_bar_config_desc')">
+        <Select v-model="settings.videoPageTopBarConfig" :options="videoPageTopBarConfigOptions" w="full" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')">
         <Radio v-model="settings.showTopBarThemeColorGradient" />

@@ -2,6 +2,7 @@ import { useStorageLocal } from '~/composables/useStorageLocal'
 import type { wallpaperItem } from '~/constants/imgs'
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
+import { VideoPageTopBarConfig } from '~/enums/appEnums'
 
 export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
 export const accessKey = useStorageLocal('accessKey', '')
@@ -91,7 +92,7 @@ export interface Settings {
 
   // Desktop & Dock
   autoHideTopBar: boolean
-  autoHideTopBarOnVideoPage: boolean
+  videoPageTopBarConfig: VideoPageTopBarConfig
   showTopBarThemeColorGradient: boolean
   showBewlyOrBiliTopBarSwitcher: boolean
   showBewlyOrBiliPageSwitcher: boolean
@@ -212,7 +213,7 @@ export const originalSettings: Settings = {
 
   // Desktop & Dock
   autoHideTopBar: false,
-  autoHideTopBarOnVideoPage: false,
+  videoPageTopBarConfig: VideoPageTopBarConfig.ShowOnScroll,
   showTopBarThemeColorGradient: true,
   showBewlyOrBiliTopBarSwitcher: true,
   showBewlyOrBiliPageSwitcher: true,

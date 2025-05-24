@@ -157,10 +157,13 @@ settings:
   enable_video_ctrl_bar_on_video_card: Display the video control bar on the video card
   hover_video_card_delayed: Delayed video preview on hover over the video card
   auto_hide_top_bar: Auto-hide top bar
-  auto_hide_top_bar_on_video_page: Hide top bar on video page
-  auto_hide_top_bar_on_video_page_desc: >-
-    Hide top bar by default on video pages, show when mouse moves to the top
-    area
+  video_page_top_bar_config: Video page top bar configuration
+  video_page_top_bar_config_desc: Configure the display behavior of the top bar on video pages
+  video_page_top_bar_config_opt:
+    alwaysShow: Always show
+    alwaysHide: Always hide
+    showOnMouse: Show on mouse
+    showOnScroll: Show on scroll
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
   show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher

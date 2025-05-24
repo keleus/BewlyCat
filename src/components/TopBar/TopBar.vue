@@ -5,6 +5,7 @@ import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
+import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isHomePage, isVideoOrBangumiPage } from '~/utils/main'
@@ -43,7 +44,7 @@ let urlCheckTimer: number | null = null
 
 // 监听鼠标位置变化
 watch([isOutsideTopBar, isOutsideTopArea], ([newTopBarValue, newTopAreaValue]) => {
-  if (isVideoOrBangumiPage() && settings.value.autoHideTopBarOnVideoPage) {
+  if (isVideoOrBangumiPage() && settings.value.videoPageTopBarConfig === VideoPageTopBarConfig.ShowOnMouse) {
     // 清除之前的计时器
     if (hideTimer) {
       clearTimeout(hideTimer)
@@ -68,10 +69,6 @@ const scrollTop = ref<number>(0)
 const oldScrollTop = ref<number>(0)
 
 function handleScroll() {
-  // 在视频页面且启用自动隐藏时，不处理滚动事件
-  if (isVideoOrBangumiPage() && settings.value.autoHideTopBarOnVideoPage)
-    return
-
   if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
     const osInstance = scrollbarRef.value?.osInstance()
     scrollTop.value = osInstance.elements().viewport.scrollTop as number
@@ -80,14 +77,54 @@ function handleScroll() {
     scrollTop.value = document.documentElement.scrollTop
   }
 
-  if (scrollTop.value === 0)
-    toggleTopBarVisible(true)
+  // 在视频页面处理不同的配置
+  if (isVideoOrBangumiPage()) {
+    const config = settings.value.videoPageTopBarConfig
 
-  if (settings.value.autoHideTopBar && isOutsideTopBar.value && scrollTop.value !== 0) {
-    if (scrollTop.value > oldScrollTop.value)
-      toggleTopBarVisible(false)
-    else
+    // 总是显示：不处理滚动隐藏
+    if (config === VideoPageTopBarConfig.AlwaysShow) {
+      // 不做任何处理，保持显示
+      oldScrollTop.value = scrollTop.value
+      return
+    }
+
+    // 总是隐藏：不处理滚动显示
+    if (config === VideoPageTopBarConfig.AlwaysHide) {
+      // 不做任何处理，保持隐藏
+      oldScrollTop.value = scrollTop.value
+      return
+    }
+
+    // 鼠标显示：不处理滚动事件
+    if (config === VideoPageTopBarConfig.ShowOnMouse) {
+      oldScrollTop.value = scrollTop.value
+      return
+    }
+
+    // 滚动显示：处理滚动逻辑
+    if (config === VideoPageTopBarConfig.ShowOnScroll) {
+      if (scrollTop.value === 0) {
+        toggleTopBarVisible(true)
+      }
+      else if (scrollTop.value > oldScrollTop.value) {
+        toggleTopBarVisible(false)
+      }
+      else {
+        toggleTopBarVisible(true)
+      }
+    }
+  }
+  // 处理其他页面的自动隐藏逻辑
+  else {
+    if (scrollTop.value === 0)
       toggleTopBarVisible(true)
+
+    if (settings.value.autoHideTopBar && isOutsideTopBar.value && scrollTop.value !== 0) {
+      if (scrollTop.value > oldScrollTop.value)
+        toggleTopBarVisible(false)
+      else
+        toggleTopBarVisible(true)
+    }
   }
 
   oldScrollTop.value = scrollTop.value
@@ -99,9 +136,15 @@ function toggleTopBarVisible(visible: boolean) {
 }
 
 function setupScrollListeners() {
-  // 默认显示顶栏，除非在视频页面且启用了自动隐藏
-  if (isVideoOrBangumiPage() && settings.value.autoHideTopBarOnVideoPage) {
-    toggleTopBarVisible(false)
+  // 根据视频页面配置设置初始显示状态
+  if (isVideoOrBangumiPage()) {
+    const config = settings.value.videoPageTopBarConfig
+    if (config === VideoPageTopBarConfig.AlwaysHide || config === VideoPageTopBarConfig.ShowOnMouse) {
+      toggleTopBarVisible(false)
+    }
+    else {
+      toggleTopBarVisible(true)
+    }
   }
   else {
     toggleTopBarVisible(true)
@@ -109,10 +152,16 @@ function setupScrollListeners() {
 
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL)
 
-  // 在视频页面且启用自动隐藏时，不设置滚动监听
-  if (isVideoOrBangumiPage() && settings.value.autoHideTopBarOnVideoPage)
-    return
+  // 在视频页面根据配置决定是否设置滚动监听
+  if (isVideoOrBangumiPage()) {
+    const config = settings.value.videoPageTopBarConfig
+    // 只有在滚动显示模式下才设置滚动监听
+    if (config !== VideoPageTopBarConfig.ShowOnScroll) {
+      return
+    }
+  }
 
+  // 设置滚动监听
   if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
     emitter.on(OVERLAY_SCROLL_BAR_SCROLL, () => {
       handleScroll()
@@ -166,13 +215,16 @@ defineExpose({
   toggleTopBarVisible,
   handleScroll,
 })
+
+// 导出枚举供模板使用
+const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
 </script>
 
 <template>
   <div class="top-bar-container">
     <!-- 顶部监听区域 -->
     <div
-      v-if="isVideoOrBangumiPage() && settings.autoHideTopBarOnVideoPage"
+      v-if="isVideoOrBangumiPage() && settings.videoPageTopBarConfig === VideoPageTopBarConfigEnum.ShowOnMouse"
       ref="topAreaTarget"
       class="top-area-listener"
     />
