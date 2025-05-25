@@ -64,7 +64,7 @@ settings:
   group_link_opening_behavior: 連結開啓行爲
   group_video_card: 影片卡片
   group_performance: 毛玻璃同效能
-  group_topbar: 頂部欄
+  group_topbar: 頂欄
   group_dock: Dock
   group_sidebar: 側邊欄
   group_sidebar_desc: 喺主頁以外嘅頁面嘅右邊或左邊，通常有淺/深色模式切換掣同設定掣。
@@ -85,7 +85,7 @@ settings:
     open_settings: 打開設定...
   touch_screen_optimization: 觸控螢幕體驗改進
   touch_screen_optimization_desc: |
-    呢個設定開咗之後，好似頂部欄噉，撳咗啲嘢先至可以睇到更多嘅資料，而唔係淨係靠游標懸停就睇到。（舊版頂部欄唔支援呢個功能）
+    呢個設定開咗之後，好似頂欄噉，撳咗啲嘢先至可以睇到更多嘅資料，而唔係淨係靠游標懸停就睇到。（舊版頂欄唔支援呢個功能）
   chk_box:
     show: 擺出嚟
     hidden: 收埋
@@ -125,7 +125,7 @@ settings:
     new_tab: 新開分頁
     drawer: 喺櫃桶度開啓
     background: 後臺打開（若然得嘅話）
-  top_bar_link_opening_behavior: 頂部欄連結開啓行爲
+  top_bar_link_opening_behavior: 頂欄連結開啓行爲
   video_card_link_opening_behavior: 影片同番劇卡片連結開啓行爲
   search_bar_link_opening_behavior: 搜尋欄連結開啓行爲
   close_drawer_without_pressing_esc_again: 閂櫃桶嗰陣唔使再撳多次 <kbd>Esc</kbd>
@@ -136,9 +136,9 @@ settings:
   enable_video_preview: 使用影片預覽功能（若然得嘅話）
   enable_video_ctrl_bar_on_video_card: 喺影片卡片上顯示影片控制欄
   hover_video_card_delayed: 滑鼠停留喺影片卡片嗰陣遲啲進行影片預覽
-  auto_hide_top_bar: 自動收埋頂部欄
-  show_top_bar_theme_color_gradient: 喺頂部欄顯示主題色漸變（淨係喺深色模式下有效）
-  show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂部欄切換掣
+  auto_hide_top_bar: 自動收埋頂欄
+  show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）
+  show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂欄切換掣
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換掣
   top_bar_icon_badges: 圖標邊位標記
   top_bar_icon_badges_opt:
@@ -251,11 +251,11 @@ settings:
   home_tabs_adjustment: 分頁欄調整
   home_tabs_adjustment_desc: 第一個啓用嘅分頁項目會係開始頁面。
   always_show_tabs_on_home_page: 永遠顯示主頁分頁欄
-  topbar_visibility: BewlyBewly 頂部欄可視性
-  topbar_visibility_desc: 若然你係用緊 Bilibili Evolved 嘅頂部欄，你可以喺度閂咗 BewlyBewly 嘅頂部欄去。
+  topbar_visibility: BewlyBewly 頂欄可視性
+  topbar_visibility_desc: 若然你係用緊 Bilibili Evolved 嘅頂欄，你可以喺度閂咗 BewlyBewly 嘅頂欄去。
   use_original_bilibili_homepage: 用返原本嘅 Bilibili 主頁
   use_original_bilibili_homepage_desc: 改咗之後，如果你喺主頁，個頁面就會自動重新整理！
-  use_original_bilibili_topbar: 用返原本嘅 Bilibili 頂部欄
+  use_original_bilibili_topbar: 用返原本嘅 Bilibili 頂欄
   adapt_to_other_page_styles: 適應其他版面風格
   adapt_to_other_page_styles_desc: 執執啲常用嘅版面，襯返 BewlyBewly 主題風格。
   follow_bilibili_evolved_color: 跟返 Bilibili Evolved 主題色
@@ -270,12 +270,12 @@ settings:
     噉做冇得返轉頭噃，你確定要重設你之前嘅設定？
   contributors: 貢獻者
   video_page_top_bar_config: 影片頁頂欄配置
-  video_page_top_bar_config_desc: 配置喺影片頁面頂欄嘅顯示行為
+  video_page_top_bar_config_desc: 設定頂欄喺影片頁嘅顯示方式。
   video_page_top_bar_config_opt:
-    alwaysShow: 總係顯示
-    alwaysHide: 總係隱藏
-    showOnMouse: 滑鼠顯示
-    showOnScroll: 滾動顯示
+    alwaysShow: 一直顯示
+    alwaysHide: 一直隱藏
+    showOnMouse: 滑鼠移入嗰陣顯示
+    showOnScroll: 捲動嗰陣顯示
   clean_url_argument: 清理 URL 追蹤參數
   clean_url_argument_desc: 自動清理 URL 嘅最終參數，令到連結更加企理。
   disable_auto_play_collection_desc: 打開影片頁嗰陣，自動關閉合集自動連播功能。
@@ -382,8 +382,8 @@ settings:
 auth:
   auth_access_key_first: 整之前記得先授權 BewlyBewly 去用 access key
 topbar:
-  switch_to_bewly_top_bar: 切換到 BewlyBewly 頂部欄
-  switch_to_bili_top_bar: 切換到 Bilibili/Bilibili-Evolved 頂部欄
+  switch_to_bewly_top_bar: 切換到 BewlyBewly 頂欄
+  switch_to_bili_top_bar: 切換到 Bilibili/Bilibili-Evolved 頂欄
   sign_in: 登入
   notifications: 通知
   moments: 動向
