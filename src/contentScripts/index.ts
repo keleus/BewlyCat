@@ -11,7 +11,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isBangumiOrWatchLaterPage, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
+import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isBangumiOrCollectionPage, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -207,11 +207,11 @@ function checkForUrlChanges() {
   if (location.href !== lastUrl) {
     lastUrl = location.href
     hasAppliedPlayerMode = false // URL变化时重置标志
-    if (isVideoPage() || isBangumiOrWatchLaterPage()) {
+    if (isVideoPage() || isBangumiOrCollectionPage()) {
       applyDefaultPlayerMode()
       setupShortcutHandlers() // URL变化时重新注册快捷键
       // 如果是视频页面内部跳转，延迟执行滚动
-      if (isVideoPage() || isBangumiOrWatchLaterPage()) {
+      if (isVideoPage() || isBangumiOrCollectionPage()) {
         handleVideoPageNavigation()
       }
     }
@@ -224,7 +224,7 @@ requestAnimationFrame(checkForUrlChanges)
 function handleVisibilityChange() {
   // 当页面变为可见且是视频或番剧页面时，且尚未应用播放器模式
   if (document.visibilityState === 'visible'
-    && (isVideoPage() || isBangumiOrWatchLaterPage())
+    && (isVideoPage() || isBangumiOrCollectionPage())
     && !hasAppliedPlayerMode) {
     applyDefaultPlayerMode()
     setupShortcutHandlers()
@@ -238,7 +238,7 @@ window.addEventListener('load', () => {
     disableAutoPlayCollection(settings.value)
     setupShortcutHandlers()
   }
-  else if (isBangumiOrWatchLaterPage()) {
+  else if (isBangumiOrCollectionPage()) {
     applyDefaultPlayerMode()
     setupShortcutHandlers()
   }
@@ -286,7 +286,7 @@ function setupBiliVideoCardClickHandler() {
   }, true)
 }
 window.addEventListener('pageshow', () => {
-  if ((isVideoPage() || isBangumiOrWatchLaterPage()) && !hasAppliedPlayerMode) {
+  if ((isVideoPage() || isBangumiOrCollectionPage()) && !hasAppliedPlayerMode) {
     applyDefaultPlayerMode()
     setupShortcutHandlers() // 页面显示时注册快捷键
   }

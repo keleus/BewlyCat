@@ -71,9 +71,8 @@ export function isVideoPage() {
   return location.pathname.startsWith('/video/')
 }
 
-// 判断是否为番剧/watchlater页面
-export function isBangumiOrWatchLaterPage() {
-  return location.pathname.startsWith('/bangumi/play/') || location.pathname.startsWith('/list/watchlater')
+export function isBangumiOrCollectionPage() {
+  return location.pathname.startsWith('/bangumi/play/') || (location.pathname.startsWith('/list/') && (location.search.includes('bvid=') || location.search.includes('avid=')))
 }
 
 // 格式化时间
@@ -144,7 +143,7 @@ export function webFullscreen() {
 }
 
 // 将播放器滚动到合适位置，优先保证弹幕栏可见
-function scrollPlayerToOptimalPosition(delay = 0) {
+function scrollPlayerToOptimalPosition(delay = 1000) {
   // 如果设置了不滚动，直接返回
   if (!settings.value.videoPlayerScroll)
     return
@@ -733,46 +732,88 @@ export function handleVideoPageNavigation() {
   scrollPlayerToOptimalPosition(3000) // 延迟3秒执行滚动
 }
 
-// 获取UP主的uid
-export function getUpUid(): string | null {
-  const upLinkElement = document.querySelector('.up-name[href*="space.bilibili.com"]') as HTMLAnchorElement
-  if (upLinkElement && upLinkElement.href) {
-    // 从href中提取uid，格式通常是 //space.bilibili.com/uid 或 https://space.bilibili.com/uid
-    const uidMatch = upLinkElement.href.match(/space\.bilibili\.com\/(\d+)/)
-    if (uidMatch) {
-      return uidMatch[1]
+// 查找UP主元素，优先查找 up-panel-container 容器，适配单UP和联合投稿
+function findUpElement(): HTMLAnchorElement | null {
+  // 首先查找 up-panel-container 容器
+  const upPanelContainer = document.querySelector('.up-panel-container')
+  if (upPanelContainer) {
+    // 在容器内查找 .up-name[href*="space.bilibili.com"] 链接
+    const upLinkElement = upPanelContainer.querySelector('.up-name[href*="space.bilibili.com"]') as HTMLAnchorElement
+    if (upLinkElement && upLinkElement.href) {
+      return upLinkElement
+    }
+
+    // 查找带有 info-tag 为 "UP主" 的 staff-info 结构
+    const staffInfos = upPanelContainer.querySelectorAll('.staff-info')
+    for (let i = 0; i < staffInfos.length; i++) {
+      const staffInfo = staffInfos[i]
+      const infoTag = staffInfo.querySelector('.info-tag')
+      if (infoTag && infoTag.textContent?.trim() === 'UP主') {
+        const staffLink = staffInfo.querySelector('a[href*="space.bilibili.com"]') as HTMLAnchorElement
+        if (staffLink && staffLink.href) {
+          return staffLink
+        }
+      }
     }
   }
 
+  // 如果在 up-panel-container 中没找到，回退到原来的查找方式
+  const upLinkElement = document.querySelector('.up-name[href*="space.bilibili.com"]') as HTMLAnchorElement
+  if (upLinkElement && upLinkElement.href) {
+    return upLinkElement
+  }
+
   return null
+}
+
+// 从链接中提取UID
+function extractUidFromHref(href: string): string | null {
+  const uidMatch = href.match(/space\.bilibili\.com\/(\d+)/)
+  return uidMatch ? uidMatch[1] : null
+}
+
+// 从元素中提取名称
+function extractNameFromElement(element: HTMLElement): string | null {
+  if (!element.textContent) {
+    return null
+  }
+
+  let name = element.textContent.trim()
+
+  // 如果存在mask元素，需要去除它的影响
+  const maskElement = element.querySelector('.mask')
+  if (maskElement && maskElement.textContent) {
+    name = name.replace(maskElement.textContent.trim(), '').trim()
+  }
+
+  return name || null
+}
+
+// 获取UP主的uid
+export function getUpUid(): string | null {
+  const upElement = findUpElement()
+  return upElement ? extractUidFromHref(upElement.href) : null
 }
 
 // 获取UP主的名字
 export function getUpName(): string | null {
-  const upNameElement = document.querySelector('.up-name[href*="space.bilibili.com"]') as HTMLElement
-  if (upNameElement && upNameElement.textContent) {
-    // 获取文本内容，去除空白字符
-    let upName = upNameElement.textContent.trim()
-
-    // 如果存在mask元素，需要去除它的影响
-    const maskElement = upNameElement.querySelector('.mask')
-    if (maskElement && maskElement.textContent) {
-      upName = upName.replace(maskElement.textContent.trim(), '').trim()
-    }
-
-    if (upName) {
-      return upName
-    }
-  }
-
-  return null
+  const upElement = findUpElement()
+  return upElement ? extractNameFromElement(upElement) : null
 }
 
 // 获取UP主完整信息
 export function getUpInfo(): { uid: string | null, name: string | null } {
+  const upElement = findUpElement()
+  if (upElement) {
+    return {
+      uid: extractUidFromHref(upElement.href),
+      name: extractNameFromElement(upElement),
+    }
+  }
+
   return {
-    uid: getUpUid(),
-    name: getUpName(),
+    uid: null,
+    name: null,
   }
 }
 
