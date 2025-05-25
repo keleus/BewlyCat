@@ -173,10 +173,11 @@ export function isVideoOrBangumiPage(url: string = location.href): boolean {
     // anime playback & movie page
     || /https?:\/\/(?:www\.)?bilibili\.com\/bangumi\/play\/.*/.test(url)
     // watch later playlist
-    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater\?bvid.*/.test(url)
-    || /https?:\/\/(?:www\.)?bilibili\.com\/watchlater\/list.*/.test(url)
+    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater\?(?:bvid|avid).*/.test(url)
     // favorite playlist
-    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(url)) {
+    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(url)
+    || /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*\?(?:bvid|avid).*/.test(url)
+  ) {
     return true
   }
   return false

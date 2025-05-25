@@ -72,10 +72,6 @@ export function isVideoPage() {
   return location.pathname.startsWith('/video/')
 }
 
-export function isBangumiOrCollectionPage() {
-  return location.pathname.startsWith('/bangumi/play/') || (location.pathname.startsWith('/list/') && (location.search.includes('bvid=') || location.search.includes('avid=')))
-}
-
 // 格式化时间
 export function formatTime(seconds: number): string {
   const minutes = Math.floor(seconds / 60)
@@ -764,7 +760,21 @@ function findUpElement(): HTMLAnchorElement | null {
     }
   }
 
-  // 如果在 up-panel-container 中没找到，回退到原来的查找方式
+  // 如果在 up-panel-container 中没找到，查找 video-staffs-container 容器
+  const videoStaffsContainer = document.querySelector('.video-staffs-container')
+  if (videoStaffsContainer) {
+    // 查找带有 info-title 为 "UP主" 的 video-staffs-info 结构
+    const staffInfos = videoStaffsContainer.querySelectorAll('.video-staffs-info[href*="space.bilibili.com"]')
+    for (let i = 0; i < staffInfos.length; i++) {
+      const staffInfo = staffInfos[i] as HTMLAnchorElement
+      const infoTitle = staffInfo.querySelector('.info-title')
+      if (infoTitle && infoTitle.textContent?.trim() === 'UP主') {
+        return staffInfo
+      }
+    }
+  }
+
+  // 如果都没找到，回退到原来的查找方式
   const upLinkElement = document.querySelector('.up-name[href*="space.bilibili.com"]') as HTMLAnchorElement
   if (upLinkElement && upLinkElement.href) {
     return upLinkElement
@@ -781,6 +791,13 @@ function extractUidFromHref(href: string): string | null {
 
 // 从元素中提取名称
 function extractNameFromElement(element: HTMLElement): string | null {
+  // 优先查找 .info-name 元素（适用于 video-staffs-info 结构）
+  const infoNameElement = element.querySelector('.info-name')
+  if (infoNameElement && infoNameElement.textContent) {
+    return infoNameElement.textContent.trim() || null
+  }
+
+  // 如果没有 .info-name，使用原有逻辑
   if (!element.textContent) {
     return null
   }
