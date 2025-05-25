@@ -390,16 +390,7 @@ settings:
         5. 进入视频页面时，系统会根据UP主配置自动调整音量
         6. 可以直接在配置列表中修改音量偏移值，范围为 -100% 到 +100%
         7. 使用搜索框可以快速查找特定UP主的配置
-    dialog:
-      title: 音量调整选择
-      current_volume: 当前音量
-      base_volume: 基准音量
-      up_name: UP主
-      record_up_config: 记录UP音量配置
-      adjust_base_volume: 调整基准音量
-      cancel: 取消
-      recorded_message: 已记录 {name} 的音量配置 ({offset})
-      base_adjusted_message: 基准音量已调整为 {volume}%
+    up_volume: UP音量
   menu_volume_balance: 音量均衡
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key

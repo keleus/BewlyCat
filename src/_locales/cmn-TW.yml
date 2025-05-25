@@ -385,16 +385,6 @@ settings:
     base_volume_desc: 所有UP主音量的基準值
     clear_all_configs: 清空所有配置
     delete: 刪除
-    dialog:
-      adjust_base_volume: 調整基準音量
-      base_adjusted_message: 基準音量已調整為 {volume}%
-      base_volume: 基準音量
-      cancel: 取消
-      current_volume: 當前音量
-      record_up_config: 記錄UP音量配置
-      recorded_message: 已記錄 {name} 的音量配置 ({offset})
-      title: 音量調整選擇
-      up_name: UP主
     enable: 啟用音量均衡
     enable_desc: 為不同UP主設置個性化音量，自動調整播放音量
     no_configs: 暫無UP主音量配置
@@ -404,6 +394,7 @@ settings:
     title: 音量均衡
     up_configs: UP主音量配置
     up_configs_desc: 管理各個UP主的個性化音量設置
+    up_volume: UP主音量
     usage_guide:
       desc: |-
         音量均衡功能可以為不同UP主設置個性化音量

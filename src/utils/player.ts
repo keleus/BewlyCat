@@ -2,6 +2,7 @@
 import { settings } from '~/logic'
 
 import { applyVolumeBalance, startVolumeChangeMonitoring } from './volumeBalance'
+import { initVolumeSliders } from './volumeSliders'
 
 const _videoClassTag = {
   danmuBtn:
@@ -112,6 +113,7 @@ export function fullscreen() {
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
+        initVolumeSliders()
       }, 1000)
     }
     return result
@@ -126,6 +128,7 @@ export function webFullscreen() {
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
+        initVolumeSliders()
       }, 1000)
       return true
     }
@@ -136,6 +139,7 @@ export function webFullscreen() {
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
+        initVolumeSliders()
       }, 1000)
     }
     return result
@@ -189,6 +193,7 @@ export function widescreen() {
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
+        initVolumeSliders()
       }, 1000)
       return true
     }
@@ -200,6 +205,7 @@ export function widescreen() {
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
+        initVolumeSliders()
       }, 1000)
     }
     return result
@@ -240,6 +246,7 @@ export function defaultMode() {
   setTimeout(() => {
     applyVolumeBalance()
     startVolumeChangeMonitoring()
+    initVolumeSliders()
   }, 2000) // 默认模式延迟稍长一些，确保页面完全加载
   return true
 }

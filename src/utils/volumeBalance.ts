@@ -1,13 +1,10 @@
 import { settings } from '~/logic'
 import type { UpVolumeConfig } from '~/logic/storage'
 
-import { getCurrentVolume, getUpInfo, setVolume } from './player'
-import { showVolumeAdjustDialog } from './volumeDialogManager'
+import { getUpInfo, setVolume } from './player'
+import { initVolumeSliders } from './volumeSliders'
 
 // 音量均衡相关的状态管理
-let lastVolume = 0
-let volumeChangeTimeout: number | null = null
-let isVolumeMonitoringActive = false
 
 // 获取UP主音量配置
 export function getUpVolumeConfig(uid: string): UpVolumeConfig | null {
@@ -87,54 +84,14 @@ export function applyVolumeBalance(): void {
   }
 }
 
-// 监听音量变化
+// 初始化音量滑动条
 export function startVolumeChangeMonitoring(): void {
   if (!settings.value.enableVolumeBalance) {
     return
   }
 
-  // 如果已经在监听，直接返回
-  if (isVolumeMonitoringActive) {
-    return
-  }
-
-  const video = document.querySelector('#bilibiliPlayer video,#bilibili-player video,.bilibili-player video,.player-container video,#bilibiliPlayer bwp-video,#bilibili-player bwp-video,.bilibili-player bwp-video,.player-container bwp-video,#bofqi video,[aria-label="哔哩哔哩播放器"] video') as HTMLVideoElement
-  if (!video) {
-    return
-  }
-
-  lastVolume = getCurrentVolume()
-
-  const handleVolumeChange = () => {
-    const currentVolume = getCurrentVolume()
-
-    // 如果音量发生变化且不是程序自动设置的
-    if (Math.abs(currentVolume - lastVolume) > 1) {
-      if (volumeChangeTimeout) {
-        clearTimeout(volumeChangeTimeout)
-      }
-
-      // 延迟显示对话框，避免频繁触发
-      volumeChangeTimeout = window.setTimeout(() => {
-        showVolumeAdjustDialog(currentVolume)
-      }, 1000)
-    }
-
-    lastVolume = currentVolume
-  }
-
-  video.addEventListener('volumechange', handleVolumeChange)
-  isVolumeMonitoringActive = true
-
-  // 当视频元素被移除时，重置监听状态
-  const observer = new MutationObserver(() => {
-    if (!document.contains(video)) {
-      isVolumeMonitoringActive = false
-      observer.disconnect()
-    }
-  })
-
-  observer.observe(document.body, { childList: true, subtree: true })
+  // 初始化音量滑动条
+  initVolumeSliders()
 }
 
 // 手动应用音量均衡（用于页面跳转等场景）
@@ -147,9 +104,5 @@ export function manualApplyVolumeBalance() {
 
 // 重置音量监听状态（用于页面跳转时）
 export function resetVolumeMonitoring() {
-  isVolumeMonitoringActive = false
-  if (volumeChangeTimeout) {
-    clearTimeout(volumeChangeTimeout)
-    volumeChangeTimeout = null
-  }
+  // 现在使用滑动条，不需要重置监听状态
 }
