@@ -172,6 +172,7 @@ settings:
     number: Number
     dot: Dot
     none: Do not show
+  show_watch_later_badge: Show watch later badge
   open_notifications_page_as_drawer: Open the notifications page as a drawer
   always_use_dock: Always use the dock
   always_use_dock_desc: >-
@@ -198,7 +199,7 @@ settings:
   theme_color: Theme color
   gradient_theme_color_background: Use a gradient theme color as the background in dark mode
   wallpaper_mode: Wallpaper mode
-  wallpaper_mode_desc: >-
+  wallpaper_mode_desc: >
     By URL: Choose an image from the Internet and use its URL to set it as the
     wallpaper.
   wallpaper_mode_opt:

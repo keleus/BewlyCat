@@ -158,6 +158,7 @@ settings:
     number: 數字
     dot: 圓點
     none: 不顯示
+  show_watch_later_badge: 顯示稍後再看角標
   open_notifications_page_as_drawer: 將通知頁面作爲抽屜開啓
   always_use_dock: 總是使用 Dock
   always_use_dock_desc: 啓用後，Dock 將始終顯示，側邊欄將隱藏。我們推薦你同時啓用自動隱藏 Dock。

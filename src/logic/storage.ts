@@ -97,6 +97,7 @@ export interface Settings {
   showBewlyOrBiliTopBarSwitcher: boolean
   showBewlyOrBiliPageSwitcher: boolean
   topBarIconBadges: 'number' | 'dot' | 'none'
+  showWatchLaterBadge: boolean
   openNotificationsPageAsDrawer: boolean
 
   alwaysUseDock: boolean
@@ -218,6 +219,7 @@ export const originalSettings: Settings = {
   showBewlyOrBiliTopBarSwitcher: true,
   showBewlyOrBiliPageSwitcher: true,
   topBarIconBadges: 'number',
+  showWatchLaterBadge: false,
   openNotificationsPageAsDrawer: true,
 
   alwaysUseDock: false,

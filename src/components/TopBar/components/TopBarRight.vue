@@ -274,7 +274,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
             :class="{ active: popupVisible.watchLater }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'watchLater')"
           >
-            <template v-if="watchLaterCount > 0">
+            <template v-if="watchLaterCount > 0 && settings.showWatchLaterBadge">
               <div
                 v-if="settings.topBarIconBadges === 'number'"
                 class="unread-num-dot"
