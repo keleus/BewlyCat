@@ -1,0 +1,8 @@
+---
+description: 规定了多语言i18n引入方式、输出规范等内容
+globs: 
+alwaysApply: false
+---
+1. 当前插件使用i18n，正确的引入方式为`import { t } from '~/utils/dataFormatter'`
+2. 只需要读取`src/_locales/cmn-CN.yml`的内容作为参考
+3. 不修改任何i18n配置文件，可以输出`cmn-CN.yml`需要添加的翻译

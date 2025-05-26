@@ -1,0 +1,8 @@
+---
+description: 关于浏览器插件`设置`即`settings`的相关要求
+globs: 
+alwaysApply: false
+---
+1. 设置的定义和初始值在`src/logic/storage.ts`里。
+2. 设置的组件在`src/components/Settings`下。
+3. 相关的配置项目应该在一个`SettingsItemGroup`内
