@@ -1,0 +1,9 @@
+---
+description: 组件样式css、scss等相关的规定
+globs: 
+alwaysApply: false
+---
+项目已经定义了bew相关的样式。
+
+1. 定义文件为`src/styles/variables.scss`
+2. 优先使用主题样式确保风格统一
