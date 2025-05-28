@@ -24,17 +24,17 @@ function updateUpVolumeProgress(slider: HTMLInputElement, value: number) {
 
   // 根据值的正负设置不同的颜色
   if (value < 0) {
-    // 负值：红色区域
+    // 负值：红色区域从当前位置到中间（50%）
     slider.style.background = `linear-gradient(to right, 
-      #ff4757 0%, 
-      #ff4757 ${progress}%, 
+      #3a3a3a 0%, 
       #3a3a3a ${progress}%, 
-      #3a3a3a 50%, 
+      #ff4757 ${progress}%, 
+      #ff4757 50%, 
       #3a3a3a 50%, 
       #3a3a3a 100%)`
   }
   else if (value > 0) {
-    // 正值：绿色区域
+    // 正值：绿色区域从中间（50%）到当前位置
     slider.style.background = `linear-gradient(to right, 
       #3a3a3a 0%, 
       #3a3a3a 50%, 
@@ -44,12 +44,12 @@ function updateUpVolumeProgress(slider: HTMLInputElement, value: number) {
       #3a3a3a 100%)`
   }
   else {
-    // 零值：中性
+    // 零值：中性，在中间显示主题色标记
     slider.style.background = `linear-gradient(to right, 
       #3a3a3a 0%, 
       #3a3a3a 49%, 
-      #00a1d6 49%, 
-      #00a1d6 51%, 
+      var(--bew-theme-color) 49%, 
+      var(--bew-theme-color) 51%, 
       #3a3a3a 51%, 
       #3a3a3a 100%)`
   }
@@ -64,13 +64,13 @@ function createVolumeSlidersContainer(): HTMLElement {
     bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(20, 20, 20, 0.9);
     border-radius: 4px;
     padding: 8px;
     margin-bottom: 6px;
     min-width: 160px;
     color: white;
-    font-size: 11px;
+    font-size: 12px;
     z-index: 10000;
     display: none;
     backdrop-filter: blur(8px);
@@ -84,7 +84,7 @@ function createVolumeSlidersContainer(): HTMLElement {
 
   const upVolumeLabel = document.createElement('div')
   upVolumeLabel.textContent = t('settings.volume_balance.up_volume')
-  upVolumeLabel.style.cssText = 'margin-bottom: 6px; font-weight: bold; font-size: 10px;'
+  upVolumeLabel.style.cssText = 'margin-bottom: 6px; font-weight: bold; font-size: 11px;'
 
   const upVolumeSliderContainer = document.createElement('div')
   upVolumeSliderContainer.style.cssText = 'position: relative;'
@@ -116,34 +116,34 @@ function createVolumeSlidersContainer(): HTMLElement {
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      background: #00a1d6;
+      background: var(--bew-theme-color);
       cursor: pointer;
       border: none;
-      box-shadow: 0 2px 6px rgba(0, 161, 214, 0.3);
+      box-shadow: 0 2px 6px var(--bew-theme-color-30);
       transition: all 0.2s ease;
     }
     
     .bewly-volume-sliders input[type="range"]::-webkit-slider-thumb:hover {
-      background: #0bb5ff;
+      background: var(--bew-theme-color-80);
       transform: scale(1.1);
-      box-shadow: 0 3px 8px rgba(0, 161, 214, 0.5);
+      box-shadow: 0 3px 8px var(--bew-theme-color-50);
     }
     
     .bewly-volume-sliders input[type="range"]::-moz-range-thumb {
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      background: #00a1d6;
+      background: var(--bew-theme-color);
       cursor: pointer;
       border: none;
-      box-shadow: 0 2px 6px rgba(0, 161, 214, 0.3);
+      box-shadow: 0 2px 6px var(--bew-theme-color-30);
       transition: all 0.2s ease;
     }
     
     .bewly-volume-sliders input[type="range"]::-moz-range-thumb:hover {
-      background: #0bb5ff;
+      background: var(--bew-theme-color-80);
       transform: scale(1.1);
-      box-shadow: 0 3px 8px rgba(0, 161, 214, 0.5);
+      box-shadow: 0 3px 8px var(--bew-theme-color-50);
     }
     
     /* 为UP主音量滑动条添加进度条效果 */
@@ -159,13 +159,13 @@ function createVolumeSlidersContainer(): HTMLElement {
     
     /* 为基准音量滑动条添加进度条效果 */
     .bewly-volume-sliders .base-volume-slider {
-      background: linear-gradient(to right, #00a1d6 0%, #00a1d6 var(--progress), #3a3a3a var(--progress), #3a3a3a 100%);
+      background: linear-gradient(to right, var(--bew-theme-color) 0%, var(--bew-theme-color) var(--progress), #3a3a3a var(--progress), #3a3a3a 100%);
     }
   `
   document.head.appendChild(style)
 
   const upVolumeValue = document.createElement('div')
-  upVolumeValue.style.cssText = 'text-align: center; margin-top: 3px; font-size: 10px; color: #ccc;'
+  upVolumeValue.style.cssText = 'text-align: center; margin-top: 3px; font-size: 11px; color: #ccc;'
   upVolumeValue.textContent = '0%'
 
   upVolumeSliderContainer.appendChild(upVolumeSlider)
@@ -178,7 +178,7 @@ function createVolumeSlidersContainer(): HTMLElement {
 
   const baseVolumeLabel = document.createElement('div')
   baseVolumeLabel.textContent = t('settings.volume_balance.base_volume')
-  baseVolumeLabel.style.cssText = 'margin-bottom: 6px; font-weight: bold; font-size: 10px;'
+  baseVolumeLabel.style.cssText = 'margin-bottom: 6px; font-weight: bold; font-size: 11px;'
 
   const baseVolumeSliderContainer = document.createElement('div')
   baseVolumeSliderContainer.style.cssText = 'position: relative;'
@@ -202,7 +202,7 @@ function createVolumeSlidersContainer(): HTMLElement {
   updateBaseVolumeProgress(baseVolumeSlider, settings.value.baseVolume)
 
   const baseVolumeValue = document.createElement('div')
-  baseVolumeValue.style.cssText = 'text-align: center; margin-top: 3px; font-size: 10px; color: #ccc;'
+  baseVolumeValue.style.cssText = 'text-align: center; margin-top: 3px; font-size: 11px; color: #ccc;'
   baseVolumeValue.textContent = `${settings.value.baseVolume}%`
 
   baseVolumeSliderContainer.appendChild(baseVolumeSlider)
@@ -418,15 +418,6 @@ function createUpVolumeButton(): HTMLElement {
   iconContainer.appendChild(volumeIcon)
   iconContainer.appendChild(upBadge)
   upButton.appendChild(iconContainer)
-
-  // 添加悬停效果
-  upButton.addEventListener('mouseenter', () => {
-    upButton.style.opacity = '0.8'
-  })
-
-  upButton.addEventListener('mouseleave', () => {
-    upButton.style.opacity = '1'
-  })
 
   return upButton
 }
