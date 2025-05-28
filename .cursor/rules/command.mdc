@@ -1,0 +1,7 @@
+---
+description: 规定了关于依赖安装管理，编译打包验证等相关的要求
+globs: 
+alwaysApply: false
+---
+1. 项目使用`pnpm`作为包管理器
+2. 修改完成后不要使用`build`作为验证
