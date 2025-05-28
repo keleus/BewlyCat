@@ -63,6 +63,10 @@ const storageBoth: StorageLikeAsync = {
           if (parsedValue.enableSettingsSync) {
             await storageSync.setItem(key, valueStr)
           }
+          else {
+            // 如果关闭了同步，则清除云端配置
+            await storageSync.removeItem(key)
+          }
         }
         catch (e) {
           console.error('解析设置对象失败:', e)
