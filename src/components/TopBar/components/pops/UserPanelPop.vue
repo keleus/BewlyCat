@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import DOMPurify from 'dompurify'
+import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
 import { settings } from '~/logic'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { revokeAccessKey } from '~/utils/authProvider'
 import { numFormatter } from '~/utils/dataFormatter'
@@ -17,11 +19,14 @@ const props = defineProps<{
 
 const { t } = useI18n()
 
+const topBarStore = useTopBarStore()
+const { hasBCoinToReceive } = storeToRefs(topBarStore)
+
 const mid = computed(() => {
   return getUserID()
 })
 
-const otherLinks = computed((): { name: string, url: string, icon: string }[] => {
+const otherLinks = computed((): { name: string, url: string, icon: string, code?: string }[] => {
   return [
 
     {
@@ -43,6 +48,7 @@ const otherLinks = computed((): { name: string, url: string, icon: string }[] =>
       name: t('topbar.user_dropdown.bilibili_premium_rewards'),
       url: 'https://account.bilibili.com/account/big/myPackage',
       icon: 'i-solar:accessibility-bold-duotone',
+      code: 'vip_rewards',
     },
     {
       name: t('topbar.user_dropdown.b_coins_wallet'),
@@ -280,7 +286,15 @@ function handleClickChannel() {
         rounded="$bew-radius"
         duration-300
         hover:bg="$bew-fill-2"
+        relative
       >
+        <!-- B币领取提醒dot -->
+        <div
+          v-if="hasBCoinToReceive && item?.code === 'vip_rewards' && settings.showBCoinReceiveReminder"
+          class="unread-dot"
+          pos="absolute top-1 right-1"
+        />
+
         <div flex="~ items-center gap-2">
           <div :class="item.icon" text="$bew-text-2" />
           {{ item.name }}
@@ -303,7 +317,16 @@ function handleClickChannel() {
         rounded="$bew-radius"
         duration-300
         hover:bg="$bew-fill-2"
+        relative
       >
+        <!-- B币领取提醒dot -->
+        <div
+          v-if="hasBCoinToReceive && item?.code === 'vip_rewards'"
+          class="unread-dot"
+          pos="absolute top-1 right-1"
+          style="z-index: 999 !important;"
+        />
+
         <div flex="~ items-center gap-2">
           <div :class="item.icon" text="$bew-text-2" />
           {{ item.name }}
@@ -326,6 +349,8 @@ function handleClickChannel() {
 </template>
 
 <style lang="scss" scoped>
+@import "../../styles/index.scss";
+
 .level :deep(svg) {
   --uno: "w-25px h-16px";
 }

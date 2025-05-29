@@ -145,6 +145,9 @@ function handleToggleDockItem(dockItem: any) {
       <SettingsItem :title="$t('settings.show_watch_later_badge')">
         <Radio v-model="settings.showWatchLaterBadge" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.show_bcoin_receive_reminder')">
+        <Radio v-model="settings.showBCoinReceiveReminder" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.open_notifications_page_as_drawer')">
         <Radio v-model="settings.openNotificationsPageAsDrawer" />
       </SettingsItem>

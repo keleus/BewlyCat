@@ -34,6 +34,7 @@ const {
   popupVisible,
   forceWhiteIcon,
   unReadMessageCount,
+  hasBCoinToReceive,
 } = storeToRefs(topBarStore)
 
 const { getUnreadMessageCount, getTopBarNewMomentsCount } = topBarStore
@@ -433,6 +434,14 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
         class="avatar right-side-item"
         @click="(event: MouseEvent) => handleClickTopBarItem(event, 'userPanel')"
       >
+        <!-- B币领取提醒dot -->
+        <div
+          v-if="hasBCoinToReceive && settings.showBCoinReceiveReminder"
+          class="unread-dot avatar-dot"
+          :class="{ hover: popupVisible.userPanel }"
+          style="z-index: 10; right: 6px; top: 6px;"
+        />
+
         <ALink
           ref="avatarImg"
           :href="`https://space.bilibili.com/${mid}`"

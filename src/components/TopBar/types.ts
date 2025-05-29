@@ -121,3 +121,20 @@ export interface TopBarItemElements {
 export interface TopBarTransformers {
   [key: string]: Ref<any>
 }
+
+// B币领取状态相关类型定义
+export interface PrivilegeItem {
+  type: number
+  state: number // 0：未兑换 1：已兑换 2：未完成（若需要完成）
+  expire_time: number
+  vip_type: number
+  next_receive_days: number
+  period_end_unix: number
+}
+
+export interface PrivilegeInfo {
+  list: PrivilegeItem[]
+  is_vip: boolean
+  vip_status: number
+  vip_type: number
+}

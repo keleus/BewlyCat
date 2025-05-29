@@ -15,7 +15,7 @@ import {
   VIDEO_PAGE_URL,
 } from '~/components/TopBar/constants/urls'
 import { updateInterval } from '~/components/TopBar/notify'
-import type { UnReadDm, UnReadMessage, UserInfo } from '~/components/TopBar/types'
+import type { PrivilegeInfo, UnReadDm, UnReadMessage, UserInfo } from '~/components/TopBar/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
@@ -65,6 +65,10 @@ export const useTopBarStore = defineStore('topBar', () => {
   const livePage = ref<number>(1)
   const momentUpdateBaseline = ref<string>('')
   const momentOffset = ref<string>('')
+
+  // B币领取状态
+  const privilegeInfo = reactive<PrivilegeInfo>({} as PrivilegeInfo)
+  const hasBCoinToReceive = ref<boolean>(false)
 
   // UI State
   const drawerVisible = reactive({
@@ -215,6 +219,33 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
     catch (error) {
       console.error(error)
+    }
+  }
+
+  // B币领取状态检查
+  async function checkBCoinReceiveStatus() {
+    if (!isLogin.value || userInfo.vip.status !== 1 || !settings.value.showBCoinReceiveReminder)
+      return
+
+    try {
+      const res = await api.user.getPrivilegeInfo()
+      if (res.code === 0) {
+        Object.assign(privilegeInfo, res.data)
+
+        // 检查B币兑换状态 (type: 1)
+        const bCoinItem = privilegeInfo.list?.find(item => item.type === 1)
+        if (bCoinItem) {
+          // 如果有权限领取且未领取
+          hasBCoinToReceive.value = bCoinItem.state === 0 && bCoinItem.next_receive_days > 0
+        }
+        else {
+          hasBCoinToReceive.value = false
+        }
+      }
+    }
+    catch (error) {
+      console.error('Failed to check B-coin receive status:', error)
+      hasBCoinToReceive.value = false
     }
   }
 
@@ -454,7 +485,9 @@ export const useTopBarStore = defineStore('topBar', () => {
   let updateTimer: ReturnType<typeof setInterval> | null = null
 
   function initData() {
-    getUserInfo()
+    getUserInfo().then(() => {
+      checkBCoinReceiveStatus()
+    })
     getUnreadMessageCount()
     getTopBarNewMomentsCount()
     getAllWatchLaterList()
@@ -473,6 +506,7 @@ export const useTopBarStore = defineStore('topBar', () => {
           getTopBarNewMomentsCount()
         if (!popupVisible.watchLater)
           getWatchLaterCount()
+        checkBCoinReceiveStatus()
       }
     }, updateInterval)
   }
@@ -497,6 +531,7 @@ export const useTopBarStore = defineStore('topBar', () => {
 
     closeAllPopups()
     drawerVisible.notifications = false
+    hasBCoinToReceive.value = false
   }
 
   // 添加鼠标状态跟踪
@@ -544,6 +579,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     getMouseOverPopup,
     startUpdateTimer,
     stopUpdateTimer,
+    checkBCoinReceiveStatus,
 
     moments,
     addedWatchLaterList,
@@ -562,5 +598,8 @@ export const useTopBarStore = defineStore('topBar', () => {
     getWatchLaterCount,
     getAllWatchLaterList,
     deleteWatchLaterItem,
+
+    privilegeInfo,
+    hasBCoinToReceive,
   }
 })

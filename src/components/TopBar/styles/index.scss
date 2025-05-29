@@ -100,6 +100,12 @@
         --uno: "transform scale-180 translate-y-55px translate-15px";
       }
     }
+
+    .avatar-dot {
+      &.hover {
+        --uno: "transform scale-180 translate-y-35px translate-x--20px";
+      }
+    }
   }
 
   .unread-num-dot {

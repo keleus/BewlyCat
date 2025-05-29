@@ -99,6 +99,7 @@ export interface Settings {
   topBarIconBadges: 'number' | 'dot' | 'none'
   showWatchLaterBadge: boolean
   openNotificationsPageAsDrawer: boolean
+  showBCoinReceiveReminder: boolean
 
   alwaysUseDock: boolean
   autoHideDock: boolean
@@ -221,6 +222,7 @@ export const originalSettings: Settings = {
   topBarIconBadges: 'number',
   showWatchLaterBadge: false,
   openNotificationsPageAsDrawer: true,
+  showBCoinReceiveReminder: true,
 
   alwaysUseDock: false,
   autoHideDock: false,

@@ -1,7 +1,7 @@
 ---
-description: The import method and output specifications for multilingual i18n have been defined.
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 	1.	The plugin currently uses i18n, and the correct import method is import { t } from '~/utils/dataFormatter'.
 	2.	Only use the content of src/_locales/cmn-CN.yml as a reference.

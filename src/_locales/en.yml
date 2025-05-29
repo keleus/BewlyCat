@@ -173,7 +173,8 @@ settings:
     dot: Dot
     none: Do not show
   show_watch_later_badge: Show watch later badge
-  open_notifications_page_as_drawer: Open the notifications page as a drawer
+  show_bcoin_receive_reminder: VIP B-coin receive reminder
+  open_notifications_page_as_drawer: Open notifications page as drawer
   always_use_dock: Always use the dock
   always_use_dock_desc: >-
     The dock will always be visible and the sidebar will be hidden. We also

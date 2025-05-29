@@ -165,7 +165,8 @@ settings:
     dot: 圆点
     none: 不显示
   show_watch_later_badge: 显示稍后再看角标
-  open_notifications_page_as_drawer: 将通知页面作为抽屉打开
+  show_bcoin_receive_reminder: 大会员B币领取提醒
+  open_notifications_page_as_drawer: 以抽屉形式打开通知页面
   always_use_dock: 总是使用 Dock 栏
   always_use_dock_desc: 启用后，Dock 栏将始终显示，侧边栏将隐藏。我们推荐你同时启用自动隐藏 Dock 栏。
   auto_hide_dock: 自动隐藏 Dock 栏
