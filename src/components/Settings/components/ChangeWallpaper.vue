@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { WALLPAPERS } from '~/constants/imgs'
 import { settings } from '~/logic'
+import { hasLocalWallpaper, isLocalWallpaperUrl, removeLocalWallpaper, resolveWallpaperUrl, storeLocalWallpaper } from '~/utils/localWallpaper'
 import { compressAndResizeImage } from '~/utils/main'
 
 import SettingsItem from './SettingsItem.vue'
@@ -18,6 +19,22 @@ const isBuildInWallpaper = computed(() => {
   return isGlobal.value ? settings.value.wallpaperMode === 'buildIn' : settings.value.searchPageWallpaperMode === 'buildIn'
 })
 
+// 计算本地壁纸的实际显示URL
+const localWallpaperDisplayUrl = computed(() => {
+  const localWallpaper = settings.value.locallyUploadedWallpaper
+  if (!localWallpaper?.url) {
+    return null
+  }
+
+  // 使用新的解析函数
+  return resolveWallpaperUrl(localWallpaper.url)
+})
+
+// 检查是否为本地壁纸URL
+function isLocalWallpaper(url: string): boolean {
+  return isLocalWallpaperUrl(url)
+}
+
 function changeWallpaperType(type: 'buildIn' | 'byUrl') {
   if (isGlobal.value) {
     settings.value.wallpaperMode = type
@@ -28,9 +45,9 @@ function changeWallpaperType(type: 'buildIn' | 'byUrl') {
 
   // Set the wallpaper to empty if it's a locally uploaded wallpaper to prevent the `QUOTA_BYTES quota exceeded` error
   if (type === 'byUrl') {
-    if (settings.value.wallpaper.startsWith('data:image/'))
+    if (settings.value.wallpaper.startsWith('data:image/') || isLocalWallpaper(settings.value.wallpaper))
       settings.value.wallpaper = ''
-    else if (settings.value.searchPageWallpaper.startsWith('data:image/'))
+    else if (settings.value.searchPageWallpaper.startsWith('data:image/') || isLocalWallpaper(settings.value.searchPageWallpaper))
       settings.value.searchPageWallpaper = ''
   }
 }
@@ -58,32 +75,72 @@ function fileToBase64(inputFile: File) {
   })
 }
 
-function handleUploadWallpaper(e: Event) {
+async function handleUploadWallpaper(e: Event) {
   if (uploadWallpaperRef.value)
     (uploadWallpaperRef.value as HTMLInputElement).click()
   const file = (e.target as HTMLInputElement)?.files?.[0]
   if (!file)
     return
 
-  compressAndResizeImage(file, 2560, 1440, 0.9, (compressedFile: File) => {
-    // img to base64 on browser
-    fileToBase64(compressedFile).then((base64) => {
-      // 使用base64字符串
-      changeWallpaper(base64 as string)
-      settings.value.locallyUploadedWallpaper = {
-        name: file.name,
-        url: base64 as string,
+  compressAndResizeImage(file, 2560, 1440, 0.9, async (compressedFile: File) => {
+    try {
+      // 转换为base64
+      const base64 = await fileToBase64(compressedFile) as string
+
+      // 清理旧的本地壁纸
+      if (settings.value.locallyUploadedWallpaper?.isLocal && settings.value.locallyUploadedWallpaper?.id) {
+        removeLocalWallpaper(settings.value.locallyUploadedWallpaper.id)
       }
-    }).catch(() => {
-      // 处理错误
-    })
+
+      // 存储到本地storage
+      const localWallpaperRef = await storeLocalWallpaper(compressedFile, base64)
+
+      // 使用特殊标识符作为壁纸URL，而不是base64
+      const localWallpaperUrl = `local-wallpaper:${localWallpaperRef.id}`
+      changeWallpaper(localWallpaperUrl)
+
+      // 保存本地壁纸引用（不包含base64数据）
+      settings.value.locallyUploadedWallpaper = {
+        ...localWallpaperRef,
+        url: localWallpaperUrl, // 使用标识符而不是base64
+      }
+    }
+    catch (error) {
+      console.error('上传壁纸失败:', error)
+    }
   })
 }
 
 function handleRemoveCustomWallpaper() {
+  // 清理本地存储的壁纸数据
+  if (settings.value.locallyUploadedWallpaper?.isLocal && settings.value.locallyUploadedWallpaper?.id) {
+    removeLocalWallpaper(settings.value.locallyUploadedWallpaper.id)
+  }
+
   changeWallpaper('')
   settings.value.locallyUploadedWallpaper = null
 }
+
+// 检查本地壁纸是否有效，如果无效则清理
+function validateLocalWallpaper() {
+  const localWallpaper = settings.value.locallyUploadedWallpaper
+  if (localWallpaper?.isLocal && localWallpaper.id) {
+    if (!hasLocalWallpaper(localWallpaper.id)) {
+      settings.value.locallyUploadedWallpaper = null
+
+      // 如果当前壁纸使用的是丢失的本地壁纸，也清理掉
+      const currentWallpaper = isGlobal.value ? settings.value.wallpaper : settings.value.searchPageWallpaper
+      if (isLocalWallpaper(currentWallpaper)) {
+        changeWallpaper('')
+      }
+    }
+  }
+}
+
+// 组件挂载时验证本地壁纸
+onMounted(() => {
+  validateLocalWallpaper()
+})
 </script>
 
 <template>
@@ -162,12 +219,12 @@ function handleRemoveCustomWallpaper() {
               <picture
                 class="group"
                 :class="{ 'selected-wallpaper': isGlobal
-                  ? settings.wallpaper === settings.locallyUploadedWallpaper?.url
-                  : settings.searchPageWallpaper === settings.locallyUploadedWallpaper?.url }"
+                  ? settings.wallpaper === (localWallpaperDisplayUrl || settings.locallyUploadedWallpaper?.url)
+                  : settings.searchPageWallpaper === (localWallpaperDisplayUrl || settings.locallyUploadedWallpaper?.url) }"
                 aspect-video bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
                 un-border="4 transparent" w-full
                 flex="~ items-center justify-center"
-                @click="changeWallpaper(settings.locallyUploadedWallpaper?.url || '')"
+                @click="changeWallpaper(localWallpaperDisplayUrl || settings.locallyUploadedWallpaper?.url || '')"
               >
                 <div
                   v-if="settings.locallyUploadedWallpaper"
@@ -203,7 +260,7 @@ function handleRemoveCustomWallpaper() {
                 </div>
                 <img
                   v-else
-                  :src="settings.locallyUploadedWallpaper.thumbnail || settings.locallyUploadedWallpaper.url"
+                  :src="localWallpaperDisplayUrl || settings.locallyUploadedWallpaper.url"
                   :alt="settings.locallyUploadedWallpaper.name"
                   w-full h-full object-cover
                 >

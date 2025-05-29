@@ -10,6 +10,7 @@ import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
+import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
 import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
@@ -443,3 +444,39 @@ window.addEventListener('message', (event) => {
     sendSettingsToPage(settings.value)
   }
 })
+
+// 验证和恢复本地壁纸
+function validateAndRestoreLocalWallpaper() {
+  const localWallpaper = settings.value.locallyUploadedWallpaper
+  if (localWallpaper?.isLocal && localWallpaper.id) {
+    if (!hasLocalWallpaper(localWallpaper.id)) {
+      settings.value.locallyUploadedWallpaper = null
+
+      // 如果当前壁纸使用的是丢失的本地壁纸，也清理掉
+      if (isLocalWallpaperUrl(settings.value.wallpaper)) {
+        settings.value.wallpaper = ''
+      }
+      if (isLocalWallpaperUrl(settings.value.searchPageWallpaper)) {
+        settings.value.searchPageWallpaper = ''
+      }
+    }
+    else {
+      // 如果本地壁纸存在，确保当前壁纸URL使用正确的格式
+      const expectedUrl = `local-wallpaper:${localWallpaper.id}`
+      const base64Data = getLocalWallpaper(localWallpaper.id)
+
+      if (base64Data) {
+        // 检查当前壁纸是否需要更新格式（从旧的base64格式迁移到新格式）
+        if (settings.value.wallpaper.startsWith('data:image/') && settings.value.wallpaper === base64Data) {
+          settings.value.wallpaper = expectedUrl
+        }
+        if (settings.value.searchPageWallpaper.startsWith('data:image/') && settings.value.searchPageWallpaper === base64Data) {
+          settings.value.searchPageWallpaper = expectedUrl
+        }
+      }
+    }
+  }
+}
+
+// 在应用启动时验证本地壁纸
+validateAndRestoreLocalWallpaper()

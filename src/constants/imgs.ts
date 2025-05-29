@@ -5,7 +5,14 @@ export const SEARCH_BAR_CHARACTERS: { name: string, url: string }[] = [
   { name: '33 娘', url: 'https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/searchBarCharacters/33chan-2.png' },
 ]
 
-export interface wallpaperItem { name: string, url: string, thumbnail?: string }
+export interface wallpaperItem {
+  name: string
+  url: string
+  thumbnail?: string
+  // 本地壁纸引用字段
+  id?: string
+  isLocal?: boolean
+}
 
 export const WALLPAPERS: wallpaperItem[] = [
   // {

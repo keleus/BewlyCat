@@ -9,6 +9,11 @@ import { storage } from 'webextension-polyfill'
 
 import type { Settings } from '~/logic/storage'
 
+// 定义只存储在本地的key列表（不同步到云端）
+const LOCAL_ONLY_KEYS = [
+  'localWallpapers', // 本地壁纸数据
+]
+
 const storageLocal: StorageLikeAsync = {
   removeItem(key: string) {
     return storage.local.remove(key)
@@ -40,6 +45,11 @@ const storageSync: StorageLikeAsync = {
 // 创建一个同时保存到本地和云端的存储对象
 const storageBoth: StorageLikeAsync = {
   async removeItem(key: string) {
+    // 检查是否为仅本地存储的key
+    if (LOCAL_ONLY_KEYS.includes(key)) {
+      return storageLocal.removeItem(key)
+    }
+
     await Promise.all([
       storageLocal.removeItem(key),
       storageSync.removeItem(key),
@@ -49,6 +59,12 @@ const storageBoth: StorageLikeAsync = {
 
   async setItem<T>(key: string, value: T) {
     try {
+      // 检查是否为仅本地存储的key
+      if (LOCAL_ONLY_KEYS.includes(key)) {
+        const valueStr = typeof value === 'string' ? value : JSON.stringify(value)
+        return storageLocal.setItem(key, valueStr)
+      }
+
       // 检查值是否已经是字符串
       const valueStr = typeof value === 'string' ? value : JSON.stringify(value)
 
@@ -80,6 +96,11 @@ const storageBoth: StorageLikeAsync = {
   },
 
   async getItem(key: string): Promise<any | null> {
+    // 检查是否为仅本地存储的key
+    if (LOCAL_ONLY_KEYS.includes(key)) {
+      return storageLocal.getItem(key)
+    }
+
     if (key === 'settings') {
       // 先检查云端是否有配置
       const syncValue = await storageSync.getItem(key)
@@ -136,6 +157,11 @@ export function useStorageLocal<T>(
   initialValue: MaybeRef<T>,
   options?: UseStorageAsyncOptions<T>,
 ): RemovableRef<T> {
+  // 检查是否为仅本地存储的key
+  if (LOCAL_ONLY_KEYS.includes(key)) {
+    return useStorageAsync(key, initialValue, storageLocal, options)
+  }
+
   // 获取当前存储区域
   async function getCurrentStorage() {
     if (key === 'settings') {

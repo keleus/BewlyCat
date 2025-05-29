@@ -5,6 +5,7 @@ import { useDark } from '~/composables/useDark'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
+import { resolveWallpaperUrl } from '~/utils/localWallpaper'
 import { hexToHSL } from '~/utils/main'
 
 const props = defineProps<{ activatedPage: AppPage }>()
@@ -14,6 +15,23 @@ const { getActivatedCover } = useMainStore()
 
 const currentActivatedCover = ref<string>('')
 const isBlurredCoverLoaded = ref<boolean>(false)
+
+// 计算解析后的壁纸URL
+const resolvedWallpaper = computed(() => {
+  return resolveWallpaperUrl(settings.value.wallpaper) || ''
+})
+
+const resolvedSearchPageWallpaper = computed(() => {
+  return resolveWallpaperUrl(settings.value.searchPageWallpaper) || ''
+})
+
+// 计算当前页面使用的壁纸URL
+const currentWallpaperUrl = computed(() => {
+  if (props.activatedPage === AppPage.Search && settings.value.individuallySetSearchPageWallpaper) {
+    return resolvedSearchPageWallpaper.value
+  }
+  return resolvedWallpaper.value
+})
 
 // Use a more aggressive debounce and skip unnecessary updates
 const debouncedCoverUpdate = useDebounceFn((newValue: string) => {
@@ -105,7 +123,7 @@ function setAppWallpaperMaskingOpacity() {
         <div
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
           z--1 transform-gpu
-          :style="{ backgroundImage: `url('${settings.individuallySetSearchPageWallpaper ? settings.searchPageWallpaper : settings.wallpaper}')` }"
+          :style="{ backgroundImage: `url('${currentWallpaperUrl}')` }"
         />
         <!-- background mask -->
         <Transition name="fade">
@@ -122,7 +140,7 @@ function setAppWallpaperMaskingOpacity() {
       <div v-else>
         <!-- background -->
         <div
-          :style="{ backgroundImage: `url('${settings.wallpaper}')` }"
+          :style="{ backgroundImage: `url('${currentWallpaperUrl}')` }"
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
           z--1 transform-gpu
         />
@@ -130,7 +148,7 @@ function setAppWallpaperMaskingOpacity() {
         <!-- blurred cover background -->
         <Transition name="fade">
           <Transition
-            v-if="!settings.wallpaper && !settings.disableFrostedGlass"
+            v-if="!resolvedWallpaper && !settings.disableFrostedGlass"
             v-show="isBlurredCoverLoaded"
             name="slide-fade"
           >
