@@ -1,0 +1,8 @@
+---
+description: Guidelines for defining component styles using CSS and SCSS in the project.
+globs: 
+alwaysApply: false
+---
+The project has already defined BEM-related styles.
+1.	The definition file is src/styles/variables.scss.
+2.	Theme styles should be used as a priority to ensure visual consistency.

@@ -1,8 +1,8 @@
 ---
-description: 关于浏览器插件`设置`即`settings`的相关要求
+description: The following are the requirements related to the Settings section of the browser extension.
 globs: 
 alwaysApply: false
 ---
-1. 设置的定义和初始值在`src/logic/storage.ts`里。
-2. 设置的组件在`src/components/Settings`下。
-3. 相关的配置项目应该在一个`SettingsItemGroup`内
+	1.	The definitions and initial values of the settings are in src/logic/storage.ts.
+	2.	The settings components are located under src/components/Settings.
+	3.	Related configuration items should be grouped within a SettingsItemGroup.
