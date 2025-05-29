@@ -69,6 +69,7 @@ export const useTopBarStore = defineStore('topBar', () => {
   // B币领取状态
   const privilegeInfo = reactive<PrivilegeInfo>({} as PrivilegeInfo)
   const hasBCoinToReceive = ref<boolean>(false)
+  const bCoinAlreadyReceived = ref<boolean>(false) // 记录B币是否已经领取
 
   // UI State
   const drawerVisible = reactive({
@@ -188,15 +189,29 @@ export const useTopBarStore = defineStore('topBar', () => {
     try {
       const res = await api.user.getUserInfo()
       if (res.code === 0) {
+        const wasLoggedIn = isLogin.value
+        const previousMid = userInfo.mid
+
         isLogin.value = true
         Object.assign(userInfo, res.data)
+
+        // 如果是新登录或者切换了账号，重置B币领取状态
+        if (!wasLoggedIn || previousMid !== userInfo.mid) {
+          bCoinAlreadyReceived.value = false
+          hasBCoinToReceive.value = false
+        }
       }
       else if (res.code === -101) {
         isLogin.value = false
+        // 登出时重置状态
+        bCoinAlreadyReceived.value = false
+        hasBCoinToReceive.value = false
       }
     }
     catch (error) {
       isLogin.value = false
+      bCoinAlreadyReceived.value = false
+      hasBCoinToReceive.value = false
       console.error(error)
     }
   }
@@ -224,8 +239,13 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   // B币领取状态检查
   async function checkBCoinReceiveStatus() {
-    if (!isLogin.value || userInfo.vip.status !== 1 || !settings.value.showBCoinReceiveReminder)
+    if (!isLogin.value || userInfo.vip?.status !== 1 || !settings.value.showBCoinReceiveReminder)
       return
+
+    // 如果已经记录为已领取，则不再请求
+    if (bCoinAlreadyReceived.value) {
+      return
+    }
 
     try {
       const res = await api.user.getPrivilegeInfo()
@@ -235,8 +255,15 @@ export const useTopBarStore = defineStore('topBar', () => {
         // 检查B币兑换状态 (type: 1)
         const bCoinItem = privilegeInfo.list?.find(item => item.type === 1)
         if (bCoinItem) {
-          // 如果有权限领取且未领取
-          hasBCoinToReceive.value = bCoinItem.state === 0 && bCoinItem.next_receive_days > 0
+          if (bCoinItem.state === 1) {
+            // 如果已经领取，记录状态并设置为false
+            bCoinAlreadyReceived.value = true
+            hasBCoinToReceive.value = false
+          }
+          else {
+            // 如果有权限领取且未领取
+            hasBCoinToReceive.value = bCoinItem.state === 0 && bCoinItem.next_receive_days > 0
+          }
         }
         else {
           hasBCoinToReceive.value = false
@@ -532,6 +559,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     closeAllPopups()
     drawerVisible.notifications = false
     hasBCoinToReceive.value = false
+    bCoinAlreadyReceived.value = false
   }
 
   // 添加鼠标状态跟踪
@@ -601,5 +629,6 @@ export const useTopBarStore = defineStore('topBar', () => {
 
     privilegeInfo,
     hasBCoinToReceive,
+    bCoinAlreadyReceived,
   }
 })

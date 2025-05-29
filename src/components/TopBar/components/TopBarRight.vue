@@ -37,7 +37,7 @@ const {
   hasBCoinToReceive,
 } = storeToRefs(topBarStore)
 
-const { getUnreadMessageCount, getTopBarNewMomentsCount } = topBarStore
+const { getUnreadMessageCount, getTopBarNewMomentsCount, checkBCoinReceiveStatus } = topBarStore
 
 // 将 DOM 引用移到组件内部
 const avatarImg = ref<HTMLElement | null>(null)
@@ -95,10 +95,11 @@ watch(
 )
 
 const focused = useWindowFocus()
-watch(() => focused.value, (newVal) => {
+watch(() => focused.value, (newVal, _) => {
   if (newVal && isLogin.value) {
     getUnreadMessageCount()
     getTopBarNewMomentsCount('video')
+    checkBCoinReceiveStatus()
   }
 })
 
