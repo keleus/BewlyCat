@@ -140,8 +140,8 @@ function handleClickChannel() {
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1); max-height: 560px;"
-    w-300px h="[calc(100vh-100px)]" important-overflow-y-auto
+    style="backdrop-filter: var(--bew-filter-glass-1); overflow-y: auto;"
+    w-300px max-h="[calc(100vh-120px)]" min-h-0
     p-4 rounded="$bew-radius" z--1 bg="$bew-elevated-alt"
     border="1 $bew-border-color"
     shadow="[var(--bew-shadow-3),var(--bew-shadow-edge-glow-1)]"
