@@ -19,6 +19,10 @@ export interface UserInfo {
     bcoin_balance: number // b幣
     coupon_balance: number // 每个月可领数量
   }
+  wbi_img: {
+    img_url: string
+    sub_url: string
+  }
   is_senior_member: boolean
 }
 
