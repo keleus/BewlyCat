@@ -8,7 +8,7 @@ import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constant
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
-import { isHomePage, isVideoOrBangumiPage } from '~/utils/main'
+import { isHomePage, isUserSpacePage, isVideoOrBangumiPage } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
 import NotificationsDrawer from './components/NotificationsDrawer.vue'
@@ -119,7 +119,16 @@ function handleScroll() {
     if (scrollTop.value === 0)
       toggleTopBarVisible(true)
 
-    if (settings.value.autoHideTopBar && isOutsideTopBar.value && scrollTop.value !== 0) {
+    // 在用户首页强制开启滚动隐藏，无论设置如何
+    if (isUserSpacePage()) {
+      if (isOutsideTopBar.value && scrollTop.value !== 0) {
+        if (scrollTop.value > oldScrollTop.value)
+          toggleTopBarVisible(false)
+        else
+          toggleTopBarVisible(true)
+      }
+    }
+    else if (settings.value.autoHideTopBar && isOutsideTopBar.value && scrollTop.value !== 0) {
       if (scrollTop.value > oldScrollTop.value)
         toggleTopBarVisible(false)
       else
