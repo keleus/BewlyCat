@@ -88,25 +88,24 @@ useEventListener(window, 'message', ({ data, source }) => {
     // 在iframe环境中，强制更新黑暗模式状态
     // 这里我们需要直接更新设置，让整个应用响应
     if (isInIframe()) {
-      // 临时更新主题设置以触发响应式更新
+      // 立即更新主题设置以触发响应式更新
       settings.value.theme = isDark ? 'dark' : 'light'
 
-      // 确保DOM也被正确更新
-      nextTick(() => {
-        if (isDark) {
-          document.documentElement.classList.add('dark')
-          document.body?.classList.add('dark')
-          document.documentElement.classList.add('bili_dark')
-        }
-        else {
-          document.documentElement.classList.remove('dark')
-          document.body?.classList.remove('dark')
-          document.documentElement.classList.remove('bili_dark')
-        }
-      })
+      // 立即更新DOM，不使用nextTick避免延迟
+      if (isDark) {
+        document.documentElement.classList.add('dark')
+        document.body?.classList.add('dark')
+      }
+      else {
+        document.documentElement.classList.remove('dark')
+        document.body?.classList.remove('dark')
+      }
+
+      // 强制重新计算样式
+      void document.documentElement.offsetHeight
     }
   }
-})
+}, { passive: true })
 const iframePageURL = computed((): string => {
   // If the iframe is not the BiliBili homepage or in iframe, then don't show the iframe page
   if (!isHomePage(window.self.location.href) || isInIframe())

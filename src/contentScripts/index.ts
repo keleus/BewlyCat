@@ -447,29 +447,22 @@ window.addEventListener('message', (event) => {
 
 // 监听来自父页面的黑暗模式切换消息（用于iframe跨域场景）
 window.addEventListener('message', (event) => {
-  // 只处理来自父窗口的消息
   if (event.source !== window.parent)
     return
 
   const { type, isDark } = event.data
 
   if (type === 'iframeDarkModeChange') {
-    // 应用黑暗模式到当前页面
     if (isDark) {
       document.documentElement.classList.add('dark')
       document.body?.classList.add('dark')
-      document.documentElement.classList.add('bili_dark')
     }
     else {
       document.documentElement.classList.remove('dark')
       document.body?.classList.remove('dark')
-      document.documentElement.classList.remove('bili_dark')
     }
-
-    // 触发全局主题变化事件，让页面内的其他组件也能响应
-    window.dispatchEvent(new CustomEvent('global.themeChange', { detail: isDark ? 'dark' : 'light' }))
   }
-})
+}, { passive: true })
 
 // 验证和恢复本地壁纸
 function validateAndRestoreLocalWallpaper() {

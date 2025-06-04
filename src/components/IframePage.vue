@@ -13,16 +13,6 @@ const showIframe = ref<boolean>(false)
 const showLoading = ref<boolean>(false)
 
 watch(() => isDark.value, (newValue) => {
-  // 尝试直接操作同域iframe的DOM（用于同域情况）
-  try {
-    iframeRef.value?.contentDocument?.documentElement.classList.toggle('dark', newValue)
-    iframeRef.value?.contentDocument?.body?.classList.toggle('dark', newValue)
-  }
-  catch (error) {
-    // 同域操作失败，忽略错误，因为我们会使用postMessage
-  }
-
-  // 使用postMessage通知iframe内的页面切换黑暗模式（用于跨域情况）
   if (iframeRef.value?.contentWindow) {
     try {
       iframeRef.value.contentWindow.postMessage({
@@ -52,10 +42,9 @@ watch(() => showIframe.value, async (newValue) => {
   else {
     showLoading.value = false
 
-    // 当iframe加载完成后，立即发送当前的黑暗模式状态
+    // 当iframe加载完成后，发送当前的黑暗模式状态（仅在跨域时需要）
     if (newValue && iframeRef.value?.contentWindow) {
-      // 延迟一下确保iframe完全加载，并且多次尝试确保消息被接收
-      const sendDarkModeState = () => {
+      setTimeout(() => {
         try {
           iframeRef.value?.contentWindow?.postMessage({
             type: IFRAME_DARK_MODE_CHANGE,
@@ -65,15 +54,10 @@ watch(() => showIframe.value, async (newValue) => {
         catch (error) {
           console.warn('Failed to send initial dark mode state to iframe:', error)
         }
-      }
-
-      // 多次发送确保消息被接收
-      setTimeout(sendDarkModeState, 100)
-      setTimeout(sendDarkModeState, 500)
-      setTimeout(sendDarkModeState, 1000)
+      }, 500) // 稍长的延迟确保iframe完全加载
     }
   }
-}, { immediate: true })
+})
 
 onMounted(() => {
   nextTick(() => {
@@ -150,7 +134,3 @@ defineExpose({
     </Transition>
   </div>
 </template>
-
-<style lang="scss" scoped>
-
-</style>
