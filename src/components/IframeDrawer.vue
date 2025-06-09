@@ -263,7 +263,8 @@ watchEffect(() => {
             sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"
             :style="{
               // Prevent top bar shaking when before the remove-top-bar-without-placeholder class is injected
-              top: !removeTopBarClassInjected ? `calc(-1 * var(--bew-top-bar-height))` : '0',
+              // When in fullscreen mode (headerShow is false), remove the top offset
+              top: headerShow && !removeTopBarClassInjected ? `calc(-1 * var(--bew-top-bar-height))` : '0',
             }"
             frameborder="0"
             pointer-events-auto
