@@ -340,10 +340,6 @@ settings:
     decrease_playback_rate_desc: 降低播放速度
     reset_playback_rate: 重置播放速度
     reset_playback_rate_desc: 恢复正常播放速度
-    screenshot_file: 截图到文件
-    screenshot_file_desc: 保存当前画面到文件
-    screenshot_clipboard: 截图到剪贴板
-    screenshot_clipboard_desc: 复制当前画面到剪贴板
     previous_frame: 上一帧
     previous_frame_desc: 回退到上一帧(暂停时)
     next_frame: 下一帧

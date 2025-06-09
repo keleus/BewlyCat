@@ -350,10 +350,6 @@ settings:
     reset_playback_rate_desc: 恢復正常播放速度。
     reset_video_size: 重設影片大細
     reset_video_size_desc: 恢復預設影片大細。
-    screenshot_clipboard: 擷取畫面到剪貼簿
-    screenshot_clipboard_desc: 複製目前畫面到剪貼簿。
-    screenshot_file: 擷取畫面到新檔
-    screenshot_file_desc: 儲存目前畫面到新檔。
     short_step_backward: 快褪
     short_step_backward_desc: 快褪 5 秒。
     short_step_forward: 快進

@@ -353,10 +353,6 @@ settings:
     decrease_playback_rate_desc: 降低播放速度
     reset_playback_rate: 重置播放速度
     reset_playback_rate_desc: 恢復正常播放速度
-    screenshot_file: 截圖到檔案
-    screenshot_file_desc: 儲存當前畫面到檔案
-    screenshot_clipboard: 截圖到剪貼簿
-    screenshot_clipboard_desc: 複製當前畫面到剪貼簿
     previous_frame: 上一幀
     previous_frame_desc: 回退到上一幀(暫停時)
     next_frame: 下一幀

@@ -401,10 +401,6 @@ settings:
     decrease_playback_rate_desc: Decrease playback speed
     reset_playback_rate: Reset Speed
     reset_playback_rate_desc: Reset to normal playback speed
-    screenshot_file: Screenshot to File
-    screenshot_file_desc: Save current frame to file
-    screenshot_clipboard: Screenshot to Clipboard
-    screenshot_clipboard_desc: Copy current frame to clipboard
     previous_frame: Previous Frame
     previous_frame_desc: Go to previous frame (when paused)
     next_frame: Next Frame
@@ -449,15 +445,30 @@ settings:
     up_volume: UP volume
     up_configs_desc: Manage personalized volume settings for each UP host
     usage_guide:
-      desc: |
+      desc: >
         The volume equalization function can set personalized volumes for
+
         different UP
-        1. After the volume equalization function is enabled, the system will automatically monitor the volume change.
-        2.When you manually adjust the volume, a dialog box will pop up to ask whether to record the UP main configuration or adjust the reference volume.
-        3. Record UP configuration: save the offset of the current UP relative to the reference volume
-        4. Adjust the reference volume: Set the current volume to the new reference volume
-        5. When entering the video page, the system will automatically adjust the volume according to the UP main configuration.
-        6. You can directly modify the volume offset value in the configuration list, ranging from -100% to 100%
+
+        1. After the volume equalization function is enabled, the system will
+        automatically monitor the volume change.
+
+        2.When you manually adjust the volume, a dialog box will pop up to ask
+        whether to record the UP main configuration or adjust the reference
+        volume.
+
+        3. Record UP configuration: save the offset of the current UP relative
+        to the reference volume
+
+        4. Adjust the reference volume: Set the current volume to the new
+        reference volume
+
+        5. When entering the video page, the system will automatically adjust
+        the volume according to the UP main configuration.
+
+        6. You can directly modify the volume offset value in the configuration
+        list, ranging from -100% to 100%
+
         7. Use the search box to quickly find the configuration of a specific UP
       title: Instructions for use
   menu_volume_balance: Volume balance

@@ -76,8 +76,6 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
       { id: 'increasePlaybackRate', name: t('settings.shortcuts.increase_playback_rate'), description: t('settings.shortcuts.increase_playback_rate_desc'), defaultKey: '+' },
       { id: 'decreasePlaybackRate', name: t('settings.shortcuts.decrease_playback_rate'), description: t('settings.shortcuts.decrease_playback_rate_desc'), defaultKey: '-' },
       { id: 'resetPlaybackRate', name: t('settings.shortcuts.reset_playback_rate'), description: t('settings.shortcuts.reset_playback_rate_desc'), defaultKey: '0' },
-      { id: 'screenshotFile', name: t('settings.shortcuts.screenshot_file'), description: t('settings.shortcuts.screenshot_file_desc'), defaultKey: 'Shift+S' },
-      { id: 'screenshotClipboard', name: t('settings.shortcuts.screenshot_clipboard'), description: t('settings.shortcuts.screenshot_clipboard_desc'), defaultKey: 'Alt+Shift+S' },
       { id: 'previousFrame', name: t('settings.shortcuts.previous_frame'), description: t('settings.shortcuts.previous_frame_desc'), defaultKey: ',' },
       { id: 'nextFrame', name: t('settings.shortcuts.next_frame'), description: t('settings.shortcuts.next_frame_desc'), defaultKey: '.' },
       { id: 'replay', name: t('settings.shortcuts.replay'), description: t('settings.shortcuts.replay_desc'), defaultKey: 'Shift+Backspace' },

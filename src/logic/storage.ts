@@ -32,8 +32,6 @@ export interface ShortcutsSettings {
   increasePlaybackRate?: BaseShortcutSetting // +
   decreasePlaybackRate?: BaseShortcutSetting // -
   resetPlaybackRate?: BaseShortcutSetting // 0
-  screenshotFile?: BaseShortcutSetting // Shift+S
-  screenshotClipboard?: BaseShortcutSetting // Alt+Shift+S
   previousFrame?: BaseShortcutSetting // ,
   nextFrame?: BaseShortcutSetting // .
   replay?: BaseShortcutSetting // Shift+Backspace
@@ -314,8 +312,6 @@ export const originalSettings: Settings = {
     increasePlaybackRate: { key: '+', enabled: true },
     decreasePlaybackRate: { key: '-', enabled: true },
     resetPlaybackRate: { key: '0', enabled: true },
-    screenshotFile: { key: 'Shift+S', enabled: true },
-    screenshotClipboard: { key: 'Alt+Shift+S', enabled: true },
     previousFrame: { key: ',', enabled: true },
     nextFrame: { key: '.', enabled: true },
     replay: { key: 'Shift+Backspace', enabled: true },

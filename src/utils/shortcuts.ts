@@ -8,7 +8,6 @@ import {
   resetPlaybackRate,
   showDanmuState,
   stepSeek,
-  takeScreenshot,
   toggleCaption,
   toggleClockTime,
   toggleLight,
@@ -301,17 +300,6 @@ export function registerDefaultHandlers(): void {
   // 重置播放速度
   registerShortcutHandler('resetPlaybackRate', () => {
     resetPlaybackRate()
-  })
-
-  // 截图到文件
-  registerShortcutHandler('screenshotFile', () => {
-    // 默认使用jpg格式
-    takeScreenshot(false, 'jpg')
-  })
-
-  // 截图到剪贴板
-  registerShortcutHandler('screenshotClipboard', () => {
-    takeScreenshot(true)
   })
 
   // 上一帧
