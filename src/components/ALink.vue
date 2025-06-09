@@ -23,18 +23,7 @@ const processedHref = computed(() => {
   if (!props.href)
     return 'javascript:void(0)'
 
-  try {
-    const url = new URL(props.href)
-    // 如果没有查询参数且不以/结尾，添加/
-    if (!url.pathname.endsWith('/')) {
-      url.pathname += '/'
-      return url.toString()
-    }
-    return props.href
-  }
-  catch (error) {
-    return props.href
-  }
+  return props.href
 })
 
 const openMode = computed(() => {
