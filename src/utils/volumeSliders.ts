@@ -407,7 +407,7 @@ function createUpVolumeButton(): HTMLElement {
     font-size: 8px;
     font-weight: bold;
     color: #fff;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0);
     border-radius: 2px;
     padding: 1px 3px;
     line-height: 1;
