@@ -179,6 +179,10 @@ export interface Settings {
   enableVolumeBalance: boolean // 启用音量均衡功能
   baseVolume: number // 基准音量 (0-100)
   upVolumeConfigs: UpVolumeConfig[] // UP主音量配置列表
+
+  // 倍速记忆设置
+  rememberPlaybackRate: boolean // 启用倍速记忆功能
+  savedPlaybackRate: number // 记住的倍速值 (0.25-5)
 }
 
 export const originalSettings: Settings = {
@@ -327,6 +331,10 @@ export const originalSettings: Settings = {
   enableVolumeBalance: false, // 启用音量均衡功能
   baseVolume: 100, // 基准音量 (0-100)
   upVolumeConfigs: [], // UP主音量配置列表
+
+  // 倍速记忆设置
+  rememberPlaybackRate: false, // 启用倍速记忆功能
+  savedPlaybackRate: 1, // 记住的倍速值 (0.25-5)
 }
 
 export const settings = useStorageLocal('settings', originalSettings, { mergeDefaults: true })

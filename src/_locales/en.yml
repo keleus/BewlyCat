@@ -336,6 +336,8 @@ settings:
   filter_like_view_ratio_desc: Filter out videos with a like-to-play ratio lower than 1:10.
   disable_auto_play_collection: Auto disable collection autoplay
   disable_auto_play_collection_desc: Automatically turn off the autoplay feature for video collections
+  remember_playback_rate: Remember playback rate
+  remember_playback_rate_desc: When enabled, the player will remember your last set playback rate and automatically apply it when opening videos
   enable_undo_refresh_button: Enable Undo Refresh Button(only effective in Web recommendation mode)
   enable_undo_refresh_button_desc: >-
     After refreshing the page, display an undo button that restores the content

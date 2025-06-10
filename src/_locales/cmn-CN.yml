@@ -143,6 +143,8 @@ settings:
   video_player_scroll_desc: 启用后，在默认模式为宽屏和默认时，会自动滚动到合适位置。
   disable_auto_play_collection: 自动关闭合集自动连播
   disable_auto_play_collection_desc: 打开视频页面时，自动关闭合集的自动连播功能
+  remember_playback_rate: 记住倍速
+  remember_playback_rate_desc: 启用后，播放器会记住您上次设置的倍速，并在下次打开视频时自动应用
   enable_video_preview: 启用视频预览功能（如果可以的话）
   enable_video_ctrl_bar_on_video_card: 在视频卡片上显示视频控制栏
   hover_video_card_delayed: 将鼠标悬停在视频卡片上时延迟视频预览

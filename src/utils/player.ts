@@ -105,11 +105,13 @@ export function fullscreen() {
   new RetryTask(20, 500, () => {
     const result = fullscreenClick()
     if (result) {
-      // 在成功进入全屏后应用音量均衡
+      // 在成功进入全屏后应用音量均衡和倍速记忆
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
         initVolumeSliders()
+        applyRememberedPlaybackRate()
+        startPlaybackRateMonitoring()
       }, 1000)
     }
     return result
@@ -120,22 +122,26 @@ export function webFullscreen() {
   new RetryTask(20, 500, () => {
     // 检查是否已经处于网页全屏状态
     if (document.querySelector('[data-screen=\'web\']')) {
-      // 即使已经是网页全屏状态，也应用音量均衡
+      // 即使已经是网页全屏状态，也应用音量均衡和倍速记忆
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
         initVolumeSliders()
+        applyRememberedPlaybackRate()
+        startPlaybackRateMonitoring()
       }, 1000)
       return true
     }
 
     const result = webFullscreenClick()
     if (result) {
-      // 在成功进入网页全屏后应用音量均衡
+      // 在成功进入网页全屏后应用音量均衡和倍速记忆
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
         initVolumeSliders()
+        applyRememberedPlaybackRate()
+        startPlaybackRateMonitoring()
       }, 1000)
     }
     return result
@@ -184,12 +190,14 @@ export function widescreen() {
   new RetryTask(20, 500, () => {
     // 检查是否已经处于宽屏状态
     if (document.querySelector('[data-screen=\'wide\']')) {
-      // 即使已经是宽屏状态，也执行滚动和音量均衡
+      // 即使已经是宽屏状态，也执行滚动、音量均衡和倍速记忆
       scrollPlayerToOptimalPosition()
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
         initVolumeSliders()
+        applyRememberedPlaybackRate()
+        startPlaybackRateMonitoring()
       }, 1000)
       return true
     }
@@ -197,11 +205,13 @@ export function widescreen() {
     const result = widescreenClick()
     if (result) {
       scrollPlayerToOptimalPosition()
-      // 在成功进入宽屏后应用音量均衡
+      // 在成功进入宽屏后应用音量均衡和倍速记忆
       setTimeout(() => {
         applyVolumeBalance()
         startVolumeChangeMonitoring()
         initVolumeSliders()
+        applyRememberedPlaybackRate()
+        startPlaybackRateMonitoring()
       }, 1000)
     }
     return result
@@ -235,14 +245,16 @@ export function webFullscreenClick() {
   return false
 }
 
-// 默认模式下也执行滚动和音量均衡
+// 默认模式下也执行滚动、音量均衡和倍速记忆
 export function defaultMode() {
   scrollPlayerToOptimalPosition()
-  // 在默认模式下也应用音量均衡
+  // 在默认模式下也应用音量均衡和倍速记忆
   setTimeout(() => {
     applyVolumeBalance()
     startVolumeChangeMonitoring()
     initVolumeSliders()
+    applyRememberedPlaybackRate()
+    startPlaybackRateMonitoring()
   }, 2000) // 默认模式延迟稍长一些，确保页面完全加载
   return true
 }
@@ -451,6 +463,61 @@ export function resetPlaybackRate() {
     video.playbackRate = 1
     showState('倍速 1')
   }
+}
+
+// 应用记住的倍速
+export function applyRememberedPlaybackRate() {
+  if (!settings.value.rememberPlaybackRate) {
+    return
+  }
+
+  const video = getVideoElement()
+  if (!video) {
+    // 如果视频元素还没有加载，延迟重试
+    setTimeout(() => applyRememberedPlaybackRate(), 1000)
+    return
+  }
+
+  // 确保倍速值在有效范围内
+  const savedRate = settings.value.savedPlaybackRate
+  if (savedRate >= 0.25 && savedRate <= 5) {
+    video.playbackRate = savedRate
+    // 只在倍速不是1时显示状态
+    if (savedRate !== 1) {
+      showState(`倍速 ${savedRate}`)
+    }
+  }
+}
+
+// 监听播放器倍速变化并记录（监听所有倍速变化，包括播放器UI操作）
+export function startPlaybackRateMonitoring() {
+  if (!settings.value.rememberPlaybackRate) {
+    return
+  }
+
+  const video = getVideoElement()
+  if (!video) {
+    // 如果视频元素还没有加载，延迟重试
+    setTimeout(() => startPlaybackRateMonitoring(), 1000)
+    return
+  }
+
+  // 避免重复添加监听器
+  if (video.hasAttribute('bewly-rate-listener')) {
+    return
+  }
+  video.setAttribute('bewly-rate-listener', 'true')
+
+  // 监听倍速变化事件，这会捕获所有倍速变化（包括UI操作）
+  video.addEventListener('ratechange', () => {
+    if (settings.value.rememberPlaybackRate) {
+      const currentRate = video.playbackRate
+      // 确保倍速值在有效范围内
+      if (currentRate >= 0.25 && currentRate <= 5) {
+        settings.value.savedPlaybackRate = currentRate
+      }
+    }
+  })
 }
 
 // 重播
