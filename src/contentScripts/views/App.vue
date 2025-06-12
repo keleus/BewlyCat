@@ -547,15 +547,7 @@ if (settings.value.cleanUrlArgument) {
                 w="lg:[calc(100%-200px)] [calc(100%-150px)]"
               >
                 <Transition name="page-fade">
-                  <Component
-                    :is="pages[activatedPage]"
-                    v-if="activatedPage === AppPage.Home"
-                    @settings-visibility-change="toggleSettings"
-                  />
-                  <Component
-                    :is="pages[activatedPage]"
-                    v-else
-                  />
+                  <Component :is="pages[activatedPage]" />
                 </Transition>
               </div>
             </main>
