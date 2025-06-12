@@ -4,5 +4,5 @@ globs:
 alwaysApply: true
 ---
 	1.	Do not create summary/test documents after each modification.
-	2.	Do not modify markdown (.md) files in the project unless explicitly requested.
-	3.	Do not create markdown (.md) files unless explicitly requested.
+	2.	Do not modify markdown (.md) files.
+	3.	Do not create markdown (.md) files.

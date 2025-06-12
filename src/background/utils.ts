@@ -4,6 +4,8 @@
 
 import type Browser from 'webextension-polyfill'
 
+import { addWbiSign, needsWbiSign, storeWbiKeys } from './wbiSign'
+
 type FetchAfterHandler = ((data: Response) => Promise<any>) | ((data: any) => any)
 
 function toJsonHandler(data: Response): Promise<any> {
@@ -72,10 +74,10 @@ function apiListenerFactory(API_MAP: APIMAP) {
     // eslint-disable-next-line node/prefer-global/process
     if (process.env.FIREFOX && sender && sender.tab && sender.tab.cookieStoreId) {
       const cookies = await browser.cookies.getAll({ storeId: sender.tab.cookieStoreId })
-      return doRequest(message, api, sendResponse, cookies)
+      return await doRequest(message, api, sendResponse, cookies)
     }
 
-    return doRequest(message, api, sendResponse)
+    return await doRequest(message, api, sendResponse)
   }
 }
 
@@ -89,7 +91,7 @@ function doRequest(message: Message, api: API, sendResponse?: Function, cookies?
     const { method, headers = {}, body } = _fetch as _FETCH
     const isGET = method.toLocaleLowerCase() === 'get'
     // merge params and body
-    const targetParams = Object.assign({}, params)
+    let targetParams = Object.assign({}, params)
     let targetBody = Object.assign({}, body)
     Object.keys(rest).forEach((key) => {
       if (body && body[key] !== undefined)
@@ -97,6 +99,11 @@ function doRequest(message: Message, api: API, sendResponse?: Function, cookies?
       else
         targetParams[key] = rest[key]
     })
+
+    // 为需要WBI签名的API添加签名
+    if (needsWbiSign(url)) {
+      targetParams = addWbiSign(targetParams)
+    }
 
     // generate params
     if (Object.keys(targetParams).length) {
@@ -123,6 +130,27 @@ function doRequest(message: Message, api: API, sendResponse?: Function, cookies?
     let baseFunc = fetch(url, {
       ...fetchOpt,
     })
+
+    // 如果是获取用户信息的API，在响应后存储WBI密钥
+    if (url.includes('https://api.bilibili.com/x/web-interface/nav')) {
+      baseFunc = baseFunc.then(async (response) => {
+        const clonedResponse = response.clone()
+        try {
+          const data = await clonedResponse.json()
+          if (data.code === 0 && data.data && data.data.wbi_img) {
+            const { img_url, sub_url } = data.data.wbi_img
+            if (img_url && sub_url) {
+              storeWbiKeys(img_url, sub_url)
+            }
+          }
+        }
+        catch (error) {
+          console.error('解析用户信息响应失败:', error)
+        }
+        return response
+      })
+    }
+
     afterHandle.forEach((func) => {
       if (func.name === sendResponseHandler.name && sendResponse)
         // sendResponseHandler 是一个特殊的后处理函数，需要传入sendResponse
