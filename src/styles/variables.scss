@@ -199,16 +199,16 @@
   // dark mode
 
   // #region shadow
-  --bew-shadow-1: 0 4px 6px -1px rgb(0 0 0 / 0.18), 0 2px 4px -2px rgb(0 0 0 / 0.14);
-  --bew-shadow-2: 0 10px 15px -3px rgb(0 0 0 / 0.2), 0 4px 6px -4px rgb(0 0 0 / 0.16);
-  --bew-shadow-3: 0 20px 25px -5px rgb(0 0 0 / 0.22), 0 8px 10px -6px rgb(0 0 0 / 0.18);
-  --bew-shadow-4: 0 34px 50px -20px rgb(0 0 0 / 0.24), 0 32px 45px -12px rgb(0 0 0 / 0.2),
-    0 30px 40px -8px rgb(0 0 0 / 0.22);
+  --bew-shadow-1: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+  --bew-shadow-2: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  --bew-shadow-3: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --bew-shadow-4: 0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.12),
+    0 30px 40px -8px rgb(0 0 0 / 0.14);
 
-  --bew-shadow-edge-glow-1: inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.12),
-    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.04), inset 0 0 10px rgba(255, 255, 255, 0.04);
-  --bew-shadow-edge-glow-2: inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.12),
-    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.04), inset 0 0 14px rgba(255, 255, 255, 0.06);
+  --bew-shadow-edge-glow-1: inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03), inset 0 0 10px rgba(255, 255, 255, 0.02);
+  --bew-shadow-edge-glow-2: inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06),
+    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03), inset 0 0 14px rgba(255, 255, 255, 0.03);
   // #endregion
 
   --bew-logo-color: var(--bew-text-1);
@@ -216,42 +216,42 @@
   --bew-theme-color-auto: var(--bew-text-1);
 
   --bew-text-auto: black;
-  --bew-text-1: hsl(215 19% 98%);
-  --bew-text-2: hsl(215 19% 90% / 80%);
-  --bew-text-3: hsl(215 19% 82% / 60%);
-  --bew-text-4: hsl(215 19% 74% / 40%);
+  --bew-text-1: hsl(220 13% 95%);
+  --bew-text-2: hsl(220 13% 85% / 90%);
+  --bew-text-3: hsl(220 13% 75% / 75%);
+  --bew-text-4: hsl(220 13% 65% / 55%);
 
-  --bew-bg: hsl(230 12% 4%);
-  --bew-homepage-bg: hsl(230 12% 4%);
-  --bew-homepage-bg-mask: hsl(230 12% 4% / var(--bew-homepage-bg-mask-opacity));
+  --bew-bg: hsl(220 13% 12%);
+  --bew-homepage-bg: hsl(220 13% 12%);
+  --bew-homepage-bg-mask: hsl(220 13% 12% / var(--bew-homepage-bg-mask-opacity));
 
-  --bew-content: hsl(230 12% 10% / var(--bew-content-opacity));
-  --bew-content-hover: hsl(230 12% 25% / var(--bew-content-opacity));
-  --bew-content-alt: hsl(240 14% 13% / var(--bew-content-opacity));
-  --bew-content-alt-hover: hsl(240 14% 28% / var(--bew-content-opacity));
+  --bew-content: hsl(220 13% 15% / var(--bew-content-opacity));
+  --bew-content-hover: hsl(220 13% 20% / var(--bew-content-opacity));
+  --bew-content-alt: hsl(220 13% 17% / var(--bew-content-opacity));
+  --bew-content-alt-hover: hsl(220 13% 22% / var(--bew-content-opacity));
 
-  --bew-content-solid: hsl(230 12% 10%);
-  --bew-content-solid-hover: hsl(230 12% 25%);
-  --bew-content-alt-solid: hsl(240 14% 13%);
-  --bew-content-alt-solid-hover: hsl(240 14% 28%);
+  --bew-content-solid: hsl(220 13% 15%);
+  --bew-content-solid-hover: hsl(220 13% 20%);
+  --bew-content-alt-solid: hsl(220 13% 17%);
+  --bew-content-alt-solid-hover: hsl(220 13% 22%);
 
-  --bew-elevated: hsl(230 12% 15% / var(--bew-content-opacity));
-  --bew-elevated-hover: hsl(230 12% 30% / var(--bew-content-opacity));
+  --bew-elevated: hsl(220 13% 18% / var(--bew-content-opacity));
+  --bew-elevated-hover: hsl(220 13% 23% / var(--bew-content-opacity));
   --bew-elevated-alt: var(--bew-elevated);
   --bew-elevated-alt-hover: var(--bew-elevated-hover);
 
-  --bew-elevated-solid: hsl(230 12% 15%);
-  --bew-elevated-solid-hover: hsl(230 12% 30%);
+  --bew-elevated-solid: hsl(220 13% 18%);
+  --bew-elevated-solid-hover: hsl(220 13% 23%);
   --bew-elevated-alt-solid: var(--bew-elevated-solid);
   --bew-elevated-alt-solid-hover: var(--bew-elevated-hover-solid);
 
-  --bew-fill-1: rgb(131 131 145 / 15%);
-  --bew-fill-2: rgb(131 131 145 / 30%);
-  --bew-fill-3: rgb(131 131 145 / 45%);
-  --bew-fill-4: rgb(131 131 145 / 60%);
+  --bew-fill-1: rgb(131 131 145 / 10%);
+  --bew-fill-2: rgb(131 131 145 / 20%);
+  --bew-fill-3: rgb(131 131 145 / 30%);
+  --bew-fill-4: rgb(131 131 145 / 40%);
   --bew-fill-alt: var(--bew-fill-1);
 
-  --bew-border-color: rgb(131 131 145 / 26%);
+  --bew-border-color: rgb(131 131 145 / 16%);
 }
 
 :root.dark.bewly-design.forceDark,
