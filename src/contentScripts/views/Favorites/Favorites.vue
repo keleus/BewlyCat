@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { FavoriteCategory, FavoriteResource } from '~/components/TopBar/types'
@@ -15,27 +16,37 @@ const { t } = useI18n()
 
 const favoriteCategories = reactive<CategoryItem[]>([])
 const favoriteResources = reactive<FavoriteItem[]>([])
-const categoryOptions = reactive<Array<{ value: any, label: string }>>([])
+const categoryOptions = reactive<Array<{ value: FavoriteCategory, label: string }>>([])
 
 const selectedCategory = ref<FavoriteCategory>()
 const activatedCategoryCover = ref<string>('')
 
 const shouldMoveCtrlBarUp = ref<boolean>(false)
 const currentPageNum = ref<number>(1)
-const keyword = ref<string>('')
+const keyword: Ref<string> = ref<string>('')
+const searchScope = ref<'current' | 'all'>('current')
 const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 const isLoading = ref<boolean>(false)
 const isFullPageLoading = ref<boolean>(false)
 const noMoreContent = ref<boolean>(false)
+
+// 搜索范围选项
+const searchScopeOptions = computed(() => [
+  {
+    label: t('favorites.search_current_folder'),
+    value: 'current' as const,
+  },
+  {
+    label: t('favorites.search_all_folders'),
+    value: 'all' as const,
+  },
+])
 
 onMounted(() => {
   emitter.off(TOP_BAR_VISIBILITY_CHANGE)
   emitter.on(TOP_BAR_VISIBILITY_CHANGE, (val) => {
     shouldMoveCtrlBarUp.value = false
 
-    // Allow moving tabs up only when the top bar is not hidden & is set to auto-hide
-    // This feature is primarily designed to compatible with the Bilibili Evolved's top bar
-    // Even when the BewlyBewly top bar is hidden, the Bilibili Evolved top bar still exists, so not moving up
     if (settings.value.autoHideTopBar && settings.value.showTopBar) {
       if (val)
         shouldMoveCtrlBarUp.value = false
@@ -51,7 +62,9 @@ onMounted(() => {
 
 async function initData() {
   await getFavoriteCategories()
-  changeCategory(favoriteCategories[0])
+  if (favoriteCategories.length > 0) {
+    changeCategory(favoriteCategories[0])
+  }
 }
 
 onUnmounted(() => {
@@ -65,7 +78,13 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    await getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword.value)
+    if (searchScope.value === 'all') {
+      const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
+      await getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword.value, 1)
+    }
+    else {
+      await getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword.value, 0)
+    }
   }
 
   handlePageRefresh.value = () => {
@@ -102,24 +121,27 @@ async function getFavoriteCategories() {
  * @param media_id
  * @param pn
  * @param keyword
+ * @param type 搜索类型：0-特定收藏夹，1-全部收藏夹
  */
 async function getFavoriteResources(
   media_id: number,
   pn: number,
   keyword = '' as string,
+  type = 0 as number,
 ) {
-  // if (pn === 1)
-  //   isFullPageLoading.value = true
   isLoading.value = true
   try {
     const res: FavoritesResult = await api.favorite.getFavoriteResources({
       media_id,
       pn,
       keyword,
+      type,
     })
 
     if (res.code === 0) {
-      activatedCategoryCover.value = res.data.info.cover
+      if (searchScope.value === 'current') {
+        activatedCategoryCover.value = res.data.info.cover
+      }
 
       if (Array.isArray(res.data.medias) && res.data.medias.length > 0)
         favoriteResources.push(...res.data.medias)
@@ -127,13 +149,19 @@ async function getFavoriteResources(
       if (!res.data.medias)
         noMoreContent.value = true
 
-      if (!haveScrollbar() && !noMoreContent.value)
-        await getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword)
+      if (!haveScrollbar() && !noMoreContent.value) {
+        if (searchScope.value === 'all') {
+          const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
+          await getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword, 1)
+        }
+        else {
+          await getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword, 0)
+        }
+      }
     }
   }
   finally {
     isLoading.value = false
-    // isFullPageLoading.value = false
   }
 }
 
@@ -145,18 +173,53 @@ async function changeCategory(categoryItem: FavoriteCategory) {
   favoriteResources.length = 0
   noMoreContent.value = false
 
-  getFavoriteResources(categoryItem.id, 1)
+  // 切换收藏夹时，如果是搜索当前收藏夹模式，则立即加载数据
+  if (searchScope.value === 'current') {
+    activatedCategoryCover.value = ''
+    getFavoriteResources(categoryItem.id, 1, keyword.value, 0)
+  }
+  else {
+    // 全局搜索模式下，清空封面但不立即搜索
+    activatedCategoryCover.value = ''
+  }
 }
 
 function handleSearch() {
+  if (searchScope.value === 'all' && !keyword.value.trim()) {
+    return
+  }
+
   currentPageNum.value = 1
   favoriteResources.length = 0
   noMoreContent.value = false
 
-  getFavoriteResources(selectedCategory.value!.id, currentPageNum.value, keyword.value)
+  if (searchScope.value === 'all') {
+    const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
+    getFavoriteResources(firstCategoryId, currentPageNum.value, keyword.value, 1)
+  }
+  else {
+    if (selectedCategory.value) {
+      getFavoriteResources(selectedCategory.value.id, currentPageNum.value, keyword.value, 0)
+    }
+  }
+}
+
+function handleSearchScopeChange() {
+  // 切换搜索范围时，不清空当前结果，保持用户体验的连续性
+  // 只重置分页状态，等待用户主动搜索时再更新结果
+  currentPageNum.value = 1
+  noMoreContent.value = false
+
+  // 如果切换回当前收藏夹模式，且当前没有封面，则重新加载以获取封面
+  if (searchScope.value === 'current' && selectedCategory.value && !activatedCategoryCover.value) {
+    getFavoriteResources(selectedCategory.value.id, 1, keyword.value, 0)
+  }
 }
 
 function handlePlayAll() {
+  if (searchScope.value === 'all') {
+    return
+  }
   openLinkToNewTab(`https://www.bilibili.com/list/ml${selectedCategory.value?.id}`)
 }
 
@@ -188,9 +251,6 @@ function isMusic(item: FavoriteResource) {
 <template>
   <div v-if="getCSRF()" flex="~ col md:row lg:row" gap-6>
     <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" relative>
-      <!-- <h3 text="3xl $bew-text-1" font-bold mb-6>
-        {{ selectedCategory?.title }}
-      </h3> -->
       <div
         fixed z-10 absolute p-2 flex="~ gap-2"
         items-center
@@ -198,24 +258,33 @@ function isMusic(item: FavoriteResource) {
         :class="{ hide: shouldMoveCtrlBarUp }"
       >
         <Select v-model="selectedCategory" w-150px :options="categoryOptions" @change="(val: FavoriteCategory) => changeCategory(val)" />
-        <Input v-model="keyword" w-250px @enter="handleSearch" />
-        <Button type="primary" @click="handleSearch">
+        <Select v-model="searchScope" w-120px :options="searchScopeOptions" @change="handleSearchScopeChange" />
+        <Input
+          v-model="keyword"
+          w-250px
+          :placeholder="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
+          @enter="handleSearch"
+        />
+        <Button
+          type="primary"
+          :disabled="searchScope === 'all' && !keyword.trim()"
+          @click="handleSearch"
+        >
           <template #left>
             <div i-tabler:search />
           </template>
         </Button>
-        <!-- <h3
-          text="2xl $bew-text-1" font-bold w-150px
-        >
-          {{ selectedCategory?.title }}
-        </h3> -->
       </div>
-      <Empty v-if="favoriteResources.length === 0 && !isLoading" m="t-55px b-6" />
+
+      <div v-if="searchScope === 'all' && !keyword.trim() && favoriteResources.length === 0 && !isLoading" m="t-55px b-6">
+        <Empty :description="t('favorites.global_search_hint')" />
+      </div>
+
+      <Empty v-else-if="favoriteResources.length === 0 && !isLoading" m="t-55px b-6" />
       <template v-else>
         <Transition name="fade">
           <Loading v-if="isFullPageLoading" w-full h-full pos="absolute top-0 left-0" mt--50px />
         </Transition>
-        <!-- favorite list -->
         <div grid="~ 2xl:cols-4 xl:cols-3 lg:cols-2 md:cols-1 sm:cols-1 cols-1 gap-5" m="t-55px b-6">
           <TransitionGroup name="list">
             <VideoCard
@@ -256,10 +325,8 @@ function isMusic(item: FavoriteResource) {
           </TransitionGroup>
         </div>
 
-        <!-- no more content -->
         <Empty v-if="noMoreContent" class="py-4" :description="$t('common.no_more_content')" />
 
-        <!-- loading -->
         <Transition name="fade">
           <Loading
             v-if="isLoading && favoriteResources.length !== 0 && !noMoreContent"
@@ -277,7 +344,6 @@ function isMusic(item: FavoriteResource) {
         rounded="$bew-radius"
         overflow-hidden
       >
-        <!-- Frosted Glass Cover -->
         <div
           pos="absolute top-0 left-0" w-full h-full
           z--1
@@ -294,7 +360,6 @@ function isMusic(item: FavoriteResource) {
           >
         </div>
 
-        <!-- Content -->
         <main
           pos="absolute top-0 left-0"
           w-full h-full
@@ -310,14 +375,13 @@ function isMusic(item: FavoriteResource) {
               v-if="activatedCategoryCover" :src="removeHttpFromUrl(`${activatedCategoryCover}@480w_270h_1c`)"
               rounded="$bew-radius" aspect-video w-full object-cover
             >
-            <div v-else aspect-video w-full>
-              <!-- <Empty /> -->
-            </div>
+            <div v-else aspect-video w-full />
           </picture>
 
           <h3 text="3xl white" fw-600 style="text-shadow: 0 0 12px rgba(0,0,0,.3)">
             {{ selectedCategory?.title }}
           </h3>
+
           <p flex="~ col" gap-4>
             <Button
               color="rgba(255,255,255,.35)" block text-color="white" strong flex-1
@@ -329,6 +393,7 @@ function isMusic(item: FavoriteResource) {
               {{ t('common.play_all') }}
             </Button>
           </p>
+
           <ul
             class="category-list" h-full min-h-200px
             overflow-overlay
@@ -336,14 +401,15 @@ function isMusic(item: FavoriteResource) {
             rounded="$bew-radius"
           >
             <li
-              v-for="item in favoriteCategories" :key="item.id"
+              v-for="item in categoryOptions" :key="item.value.id"
               border-b="1 color-[rgba(255,255,255,.2)]"
               lh-30px px-4 cursor-pointer hover:bg="[rgba(255,255,255,.35)]"
               duration-300 color-white flex justify-between
-              :style="{ background: item.id === selectedCategory?.id ? 'rgba(255,255,255,.35)' : '', pointerEvents: isFullPageLoading ? 'none' : 'auto' }"
-              @click="changeCategory(item)"
+              :style="{ background: item.value.id === selectedCategory?.id ? 'rgba(255,255,255,.35)' : '', pointerEvents: isFullPageLoading ? 'none' : 'auto' }"
+              @click="changeCategory(item.value)"
             >
-              <span>{{ item.title }}</span> <span ml-2 color-white color-opacity-60>{{ item.media_count }}</span>
+              <span>{{ item.label }}</span>
+              <span v-if="item.value.id !== -1" ml-2 color-white color-opacity-60>{{ item.value.media_count }}</span>
             </li>
           </ul>
         </main>

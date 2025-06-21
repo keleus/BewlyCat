@@ -568,6 +568,11 @@ favorites:
   unfavorite_confirm: |-
     要取消收藏选中的视频吗？
     该操作无法撤销，你确定要取消收藏选中的视频吗？
+  search_current_folder: 当前
+  search_all_folders: 全部
+  search_placeholder: 搜索当前收藏夹
+  global_search_placeholder: 搜索全部收藏夹
+  global_search_hint: 请输入关键词以搜索全部收藏夹
 watch_later:
   title: 稍后再看
   clear_all: 清空稍后再看
