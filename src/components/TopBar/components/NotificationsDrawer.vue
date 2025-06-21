@@ -2,6 +2,8 @@
 import { onKeyStroke } from '@vueuse/core'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useDark } from '~/composables/useDark'
+import { IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 
 // TODO: support shortcuts like `Ctrl+Alt+T` to open in new tab, `Esc` to close
@@ -15,12 +17,62 @@ const emit = defineEmits<{
 }>()
 
 const { mainAppRef } = useBewlyApp()
+const { isDark } = useDark()
 
 const show = ref(false)
 const iframeRef = ref<HTMLIFrameElement | null>(null)
 const currentUrl = ref<string>(props.url || 'https://message.bilibili.com/')
 const showIframe = ref(false)
 const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
+
+// 监听黑暗模式变化
+watch(() => isDark.value, (newValue) => {
+  if (iframeRef.value?.contentWindow) {
+    try {
+      iframeRef.value.contentWindow.postMessage({
+        type: IFRAME_DARK_MODE_CHANGE,
+        isDark: newValue,
+      }, '*')
+    }
+    catch (error) {
+      console.warn('Failed to send dark mode change message to iframe:', error)
+    }
+  }
+})
+
+// 监听深色模式基准颜色变化
+watch(() => settings.value.darkModeBaseColor, (newColor) => {
+  if (iframeRef.value?.contentWindow && isDark.value) {
+    try {
+      iframeRef.value.contentWindow.postMessage({
+        type: IFRAME_DARK_MODE_CHANGE,
+        isDark: isDark.value,
+        darkModeBaseColor: newColor,
+      }, '*')
+    }
+    catch (error) {
+      console.warn('Failed to send dark mode base color change message to iframe:', error)
+    }
+  }
+})
+
+// 监听iframe加载状态，加载完成后发送初始的黑暗模式状态
+watch(() => showIframe.value, (newValue) => {
+  if (newValue && iframeRef.value?.contentWindow) {
+    setTimeout(() => {
+      try {
+        iframeRef.value?.contentWindow?.postMessage({
+          type: IFRAME_DARK_MODE_CHANGE,
+          isDark: isDark.value,
+          darkModeBaseColor: settings.value.darkModeBaseColor,
+        }, '*')
+      }
+      catch (error) {
+        console.warn('Failed to send initial dark mode state to iframe:', error)
+      }
+    }, 500) // 稍长的延迟确保iframe完全加载
+  }
+})
 
 onMounted(() => {
   handleOpen()

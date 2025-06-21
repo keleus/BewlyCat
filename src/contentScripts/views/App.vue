@@ -82,7 +82,7 @@ useEventListener(window, 'message', ({ data, source }) => {
   if (source !== window.parent)
     return
 
-  const { type, isDark } = data
+  const { type, isDark, darkModeBaseColor } = data
 
   if (type === 'iframeDarkModeChange') {
     // 在iframe环境中，强制更新黑暗模式状态
@@ -95,6 +95,12 @@ useEventListener(window, 'message', ({ data, source }) => {
       if (isDark) {
         document.documentElement.classList.add('dark')
         document.body?.classList.add('dark')
+
+        // 如果提供了深色模式基准颜色，则应用它并更新设置
+        if (darkModeBaseColor) {
+          document.documentElement.style.setProperty('--bew-dark-base-color', darkModeBaseColor)
+          settings.value.darkModeBaseColor = darkModeBaseColor
+        }
       }
       else {
         document.documentElement.classList.remove('dark')

@@ -450,12 +450,17 @@ window.addEventListener('message', (event) => {
   if (event.source !== window.parent)
     return
 
-  const { type, isDark } = event.data
+  const { type, isDark, darkModeBaseColor } = event.data
 
   if (type === 'iframeDarkModeChange') {
     if (isDark) {
       document.documentElement.classList.add('dark')
       document.body?.classList.add('dark')
+
+      // 如果提供了深色模式基准颜色，则应用它
+      if (darkModeBaseColor) {
+        document.documentElement.style.setProperty('--bew-dark-base-color', darkModeBaseColor)
+      }
     }
     else {
       document.documentElement.classList.remove('dark')

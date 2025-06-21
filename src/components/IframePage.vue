@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useDark } from '~/composables/useDark'
 import { IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
+import { settings } from '~/logic'
 
 const props = defineProps<{
   url: string
@@ -22,6 +23,22 @@ watch(() => isDark.value, (newValue) => {
     }
     catch (error) {
       console.warn('Failed to send dark mode change message to iframe:', error)
+    }
+  }
+})
+
+// 监听深色模式基准颜色变化
+watch(() => settings.value.darkModeBaseColor, (newColor) => {
+  if (iframeRef.value?.contentWindow && isDark.value) {
+    try {
+      iframeRef.value.contentWindow.postMessage({
+        type: IFRAME_DARK_MODE_CHANGE,
+        isDark: isDark.value,
+        darkModeBaseColor: newColor,
+      }, '*')
+    }
+    catch (error) {
+      console.warn('Failed to send dark mode base color change message to iframe:', error)
     }
   }
 })
@@ -49,6 +66,7 @@ watch(() => showIframe.value, async (newValue) => {
           iframeRef.value?.contentWindow?.postMessage({
             type: IFRAME_DARK_MODE_CHANGE,
             isDark: isDark.value,
+            darkModeBaseColor: settings.value.darkModeBaseColor,
           }, '*')
         }
         catch (error) {

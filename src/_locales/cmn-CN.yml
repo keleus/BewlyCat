@@ -190,6 +190,7 @@ settings:
     dark: 暗色
     auto: 自动
   theme_color: 主题色
+  dark_mode_base_color: 深色模式基准颜色
   gradient_theme_color_background: 在暗色模式下使用渐变主题颜色作为背景
   wallpaper_mode: 背景图片模式
   wallpaper_mode_desc: '使用网址: 直接用网上图片的网址来设置背景图片。'

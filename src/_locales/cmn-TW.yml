@@ -182,6 +182,7 @@ settings:
     dark: 深色
     auto: 自動
   theme_color: 主題色
+  dark_mode_base_color: 深色模式基準顏色
   gradient_theme_color_background: 在深色模式下使用漸層主題色作為背景
   wallpaper_mode: 背景圖片模式
   wallpaper_mode_desc: '使用網址: 直接使用網路圖片的網址來設定背景圖片。'

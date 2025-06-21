@@ -1,9 +1,17 @@
 import { usePreferredDark } from '@vueuse/core'
 
+import { DARK_MODE_BASE_COLOR_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { setCookie } from '~/utils/main'
 import { executeTimes } from '~/utils/timer'
+
+/**
+ * 设置深色模式基准颜色
+ */
+function setDarkModeBaseColor(color: string) {
+  document.documentElement.style.setProperty('--bew-dark-base-color', color)
+}
 
 export function useDark() {
   const isPreferredDark = usePreferredDark()
@@ -23,6 +31,17 @@ export function useDark() {
     () => [settings.value.theme, isPreferredDark.value],
     () => {
       setAppAppearance()
+    },
+    { immediate: true },
+  )
+
+  // 监听深色模式基准颜色变化
+  watch(
+    () => settings.value.darkModeBaseColor,
+    (newColor) => {
+      setDarkModeBaseColor(newColor)
+      // 触发全局基准颜色变化事件
+      window.dispatchEvent(new CustomEvent(DARK_MODE_BASE_COLOR_CHANGE, { detail: newColor }))
     },
     { immediate: true },
   )
@@ -63,6 +82,9 @@ export function useDark() {
       })
       // bili_dark is bilibili's official dark mode class
       document.documentElement.classList.add('bili_dark')
+
+      // 确保深色模式基准颜色被正确应用
+      setDarkModeBaseColor(settings.value.darkModeBaseColor)
 
       setCookie('theme_style', 'dark', 365 * 10)
       window.dispatchEvent(new CustomEvent('global.themeChange', { detail: 'dark' }))

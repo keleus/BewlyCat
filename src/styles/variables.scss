@@ -198,6 +198,9 @@
 :root.dark {
   // dark mode
 
+  // 深色模式基准颜色（通过 JS 动态设置）
+  --bew-dark-base-color: #2a2d32;
+
   // #region shadow
   --bew-shadow-1: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
   --bew-shadow-2: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.08);
@@ -221,29 +224,33 @@
   --bew-text-3: hsl(220 13% 75% / 75%);
   --bew-text-4: hsl(220 13% 65% / 55%);
 
-  --bew-bg: hsl(220 13% 12%);
-  --bew-homepage-bg: hsl(220 13% 12%);
-  --bew-homepage-bg-mask: hsl(220 13% 12% / var(--bew-homepage-bg-mask-opacity));
+  --bew-bg: color-mix(in oklab, var(--bew-dark-base-color), black 20%);
+  --bew-homepage-bg: color-mix(in oklab, var(--bew-dark-base-color), black 20%);
+  --bew-homepage-bg-mask: color-mix(
+    in oklab,
+    var(--bew-dark-base-color),
+    black 20% / var(--bew-homepage-bg-mask-opacity)
+  );
 
-  --bew-content: hsl(220 13% 15% / var(--bew-content-opacity));
-  --bew-content-hover: hsl(220 13% 20% / var(--bew-content-opacity));
-  --bew-content-alt: hsl(220 13% 17% / var(--bew-content-opacity));
-  --bew-content-alt-hover: hsl(220 13% 22% / var(--bew-content-opacity));
+  --bew-content: color-mix(in oklab, var(--bew-dark-base-color), white 3% / var(--bew-content-opacity));
+  --bew-content-hover: color-mix(in oklab, var(--bew-dark-base-color), white 8% / var(--bew-content-opacity));
+  --bew-content-alt: color-mix(in oklab, var(--bew-dark-base-color), white 5% / var(--bew-content-opacity));
+  --bew-content-alt-hover: color-mix(in oklab, var(--bew-dark-base-color), white 10% / var(--bew-content-opacity));
 
-  --bew-content-solid: hsl(220 13% 15%);
-  --bew-content-solid-hover: hsl(220 13% 20%);
-  --bew-content-alt-solid: hsl(220 13% 17%);
-  --bew-content-alt-solid-hover: hsl(220 13% 22%);
+  --bew-content-solid: color-mix(in oklab, var(--bew-dark-base-color), white 3%);
+  --bew-content-solid-hover: color-mix(in oklab, var(--bew-dark-base-color), white 8%);
+  --bew-content-alt-solid: color-mix(in oklab, var(--bew-dark-base-color), white 5%);
+  --bew-content-alt-solid-hover: color-mix(in oklab, var(--bew-dark-base-color), white 10%);
 
-  --bew-elevated: hsl(220 13% 18% / var(--bew-content-opacity));
-  --bew-elevated-hover: hsl(220 13% 23% / var(--bew-content-opacity));
+  --bew-elevated: color-mix(in oklab, var(--bew-dark-base-color), white 6% / var(--bew-content-opacity));
+  --bew-elevated-hover: color-mix(in oklab, var(--bew-dark-base-color), white 11% / var(--bew-content-opacity));
   --bew-elevated-alt: var(--bew-elevated);
   --bew-elevated-alt-hover: var(--bew-elevated-hover);
 
-  --bew-elevated-solid: hsl(220 13% 18%);
-  --bew-elevated-solid-hover: hsl(220 13% 23%);
+  --bew-elevated-solid: color-mix(in oklab, var(--bew-dark-base-color), white 6%);
+  --bew-elevated-solid-hover: color-mix(in oklab, var(--bew-dark-base-color), white 11%);
   --bew-elevated-alt-solid: var(--bew-elevated-solid);
-  --bew-elevated-alt-solid-hover: var(--bew-elevated-hover-solid);
+  --bew-elevated-alt-solid-hover: var(--bew-elevated-solid-hover);
 
   --bew-fill-1: rgb(131 131 145 / 10%);
   --bew-fill-2: rgb(131 131 145 / 20%);

@@ -31,9 +31,29 @@ const themeColorOptions = computed<Array<string>>(() => {
     '#fda4af',
   ]
 })
+
+// 深色模式基准颜色选项
+const darkModeBaseColorOptions = computed<Array<string>>(() => {
+  return [
+    '#2a2d32', // 默认深色
+    '#1a1b1e', // 更深的黑色
+    '#2d2a2f', // 紫色调深色
+    '#2a2f2d', // 绿色调深色
+    '#2f2d2a', // 棕色调深色
+    '#252829', // 蓝色调深色
+    '#2c2a2a', // 红色调深色
+    '#292a2c', // 灰色调深色
+  ]
+})
+
 const isCustomColor = computed<boolean>(() => {
   return !themeColorOptions.value.includes(settings.value.themeColor)
 })
+
+const isCustomDarkModeBaseColor = computed<boolean>(() => {
+  return !darkModeBaseColorOptions.value.includes(settings.value.darkModeBaseColor)
+})
+
 const themeOptions = computed<Array<{ value: string, label: string }>>(() => {
   return [
     {
@@ -59,6 +79,11 @@ function changeThemeColor(color: string) {
   settings.value.themeColor = color
 }
 const changeThemeColorThrottle = useThrottleFn((color: string) => changeThemeColor(color), 100)
+
+function changeDarkModeBaseColor(color: string) {
+  settings.value.darkModeBaseColor = color
+}
+const changeDarkModeBaseColorThrottle = useThrottleFn((color: string) => changeDarkModeBaseColor(color), 100)
 
 function changeWallpaper(url: string) {
   // If you had already set the wallpaper, it enables the wallpaper masking to prevent text hard to see
@@ -111,6 +136,45 @@ function changeWallpaper(url: string) {
               w-30px h-30px p-0 m-0 block
               shrink-0 rounded-8 border-none cursor-pointer
               @input="(e) => changeThemeColorThrottle((e.target as HTMLInputElement)?.value)"
+            >
+          </div>
+        </div>
+      </SettingsItem>
+
+      <SettingsItem :title="$t('settings.dark_mode_base_color')">
+        <div flex="~ gap-2 wrap" justify-end>
+          <div
+            v-for="color in darkModeBaseColorOptions" :key="color"
+            w-20px h-20px rounded-8 cursor-pointer transition
+            duration-300 box-border
+            :style="{
+              background: color,
+              transform: color === settings.darkModeBaseColor ? 'scale(1.3)' : 'scale(1)',
+              border: color === settings.darkModeBaseColor ? '2px solid white' : '2px solid transparent',
+              boxShadow: color === settings.darkModeBaseColor ? '0 0 0 1px var(--bew-border-color), var(--bew-shadow-1)' : 'none',
+            }"
+            @click="changeDarkModeBaseColor(color)"
+          />
+          <div
+            w-20px h-20px rounded-8 overflow-hidden
+            cursor-pointer transition duration-300
+            flex="~ items-center justify-center"
+            :style="{
+              transform: isCustomDarkModeBaseColor ? 'scale(1.3)' : 'scale(1)',
+              border: isCustomDarkModeBaseColor ? '2px solid white' : `2px solid ${settings.darkModeBaseColor}`,
+              boxShadow: isCustomDarkModeBaseColor ? '0 0 0 1px var(--bew-border-color), var(--bew-shadow-1)' : 'none',
+            }"
+          >
+            <div
+              i-mingcute:color-picker-line pos="absolute" text-white w-12px h-12px
+              pointer-events-none
+            />
+            <input
+              :value="settings.darkModeBaseColor"
+              type="color"
+              w-30px h-30px p-0 m-0 block
+              shrink-0 rounded-8 border-none cursor-pointer
+              @input="(e) => changeDarkModeBaseColorThrottle((e.target as HTMLInputElement)?.value)"
             >
           </div>
         </div>

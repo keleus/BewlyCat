@@ -198,6 +198,7 @@ settings:
     dark: Dark
     auto: Auto
   theme_color: Theme color
+  dark_mode_base_color: Dark mode base color
   gradient_theme_color_background: Use a gradient theme color as the background in dark mode
   wallpaper_mode: Wallpaper mode
   wallpaper_mode_desc: >
