@@ -2,7 +2,7 @@
 import { useThrottleFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
-import { settings } from '~/logic'
+import { localSettings, settings } from '~/logic'
 
 import ChangeWallpaper from '../components/ChangeWallpaper.vue'
 import SettingsItem from '../components/SettingsItem.vue'
@@ -125,14 +125,14 @@ function changeWallpaper(url: string) {
 
     <SettingsItemGroup>
       <SettingsItem :title="$t('settings.customize_css')">
-        <Radio v-model="settings.customizeCSS" />
+        <Radio v-model="localSettings.customizeCSS" />
         <template #desc>
           <span text="$bew-error-color">
             {{ $t('settings.customize_css_desc') }}
           </span>
         </template>
-        <template v-if="settings.customizeCSS" #bottom>
-          <CodeEditor v-model="settings.customizeCSSContent" language="css" @keydown.stop.passive="() => {}" />
+        <template v-if="localSettings.customizeCSS" #bottom>
+          <CodeEditor v-model="localSettings.customizeCSSContent" language="css" @keydown.stop.passive="() => {}" />
         </template>
       </SettingsItem>
     </SettingsItemGroup>

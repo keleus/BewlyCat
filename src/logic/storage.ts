@@ -55,6 +55,16 @@ export interface UpVolumeConfig {
   lastUpdated: number // 最后更新时间戳
 }
 
+// 本地存储配置接口（不同步到云端的配置）
+export interface LocalSettings {
+  // 壁纸相关
+  locallyUploadedWallpaper: wallpaperItem | null
+
+  // 自定义CSS
+  customizeCSS: boolean
+  customizeCSSContent: string
+}
+
 export interface Settings {
   touchScreenOptimization: boolean
   enableGridLayoutSwitcher: boolean
@@ -122,10 +132,6 @@ export interface Settings {
   enableWallpaperMasking: boolean
   wallpaperMaskOpacity: number
   wallpaperBlurIntensity: number
-  locallyUploadedWallpaper: wallpaperItem | null
-
-  customizeCSS: boolean
-  customizeCSSContent: string
 
   searchPageDarkenOnSearchFocus: boolean
   searchPageBlurredOnSearchFocus: boolean
@@ -183,6 +189,13 @@ export interface Settings {
   // 倍速记忆设置
   rememberPlaybackRate: boolean // 启用倍速记忆功能
   savedPlaybackRate: number // 记住的倍速值 (0.25-5)
+}
+
+// 本地存储配置默认值
+export const originalLocalSettings: LocalSettings = {
+  locallyUploadedWallpaper: null,
+  customizeCSS: false,
+  customizeCSSContent: '',
 }
 
 export const originalSettings: Settings = {
@@ -249,10 +262,6 @@ export const originalSettings: Settings = {
   enableWallpaperMasking: false,
   wallpaperMaskOpacity: 80,
   wallpaperBlurIntensity: 0,
-  locallyUploadedWallpaper: null,
-
-  customizeCSS: false,
-  customizeCSSContent: '',
 
   searchPageDarkenOnSearchFocus: true,
   searchPageBlurredOnSearchFocus: false,
@@ -338,6 +347,60 @@ export const originalSettings: Settings = {
 }
 
 export const settings = useStorageLocal('settings', originalSettings, { mergeDefaults: true })
+
+// 本地存储配置（不会同步到云端）
+export const localSettings = useStorageLocal('localSettings', originalLocalSettings, { mergeDefaults: true })
+
+// 数据迁移：将旧的设置迁移到新的本地设置中
+async function migrateOldSettings() {
+  try {
+    // 获取原始的存储数据
+    const rawSettings = await browser.storage.local.get('settings')
+    const settingsData = rawSettings.settings
+
+    if (settingsData && typeof settingsData === 'string') {
+      const parsedSettings = JSON.parse(settingsData)
+
+      // 检查是否存在需要迁移的字段
+      const needsMigration
+        = 'locallyUploadedWallpaper' in parsedSettings
+        || 'customizeCSS' in parsedSettings
+        || 'customizeCSSContent' in parsedSettings
+
+      if (needsMigration) {
+        // 迁移到 localSettings
+        const migratedLocalSettings = {
+          locallyUploadedWallpaper: parsedSettings.locallyUploadedWallpaper || null,
+          customizeCSS: parsedSettings.customizeCSS || false,
+          customizeCSSContent: parsedSettings.customizeCSSContent || '',
+        }
+
+        // 保存到 localSettings
+        await browser.storage.local.set({
+          localSettings: JSON.stringify(migratedLocalSettings),
+        })
+
+        // 从 settings 中移除这些字段
+        delete parsedSettings.locallyUploadedWallpaper
+        delete parsedSettings.customizeCSS
+        delete parsedSettings.customizeCSSContent
+
+        // 更新 settings
+        await browser.storage.local.set({
+          settings: JSON.stringify(parsedSettings),
+        })
+
+        console.log('✅ 设置迁移完成：已将本地存储相关设置迁移到独立存储')
+      }
+    }
+  }
+  catch (error) {
+    console.error('❌ 设置迁移失败:', error)
+  }
+}
+
+// 执行迁移
+migrateOldSettings()
 
 export type GridLayoutType = 'adaptive' | 'twoColumns' | 'oneColumn'
 

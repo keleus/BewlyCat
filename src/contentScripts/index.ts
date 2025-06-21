@@ -5,7 +5,7 @@ import { createApp } from 'vue'
 
 import { useDark } from '~/composables/useDark'
 import { BEWLY_MOUNTED } from '~/constants/globalEvents'
-import { settings } from '~/logic'
+import { localSettings, settings } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
@@ -466,10 +466,10 @@ window.addEventListener('message', (event) => {
 
 // 验证和恢复本地壁纸
 function validateAndRestoreLocalWallpaper() {
-  const localWallpaper = settings.value.locallyUploadedWallpaper
+  const localWallpaper = localSettings.value.locallyUploadedWallpaper
   if (localWallpaper?.isLocal && localWallpaper.id) {
     if (!hasLocalWallpaper(localWallpaper.id)) {
-      settings.value.locallyUploadedWallpaper = null
+      localSettings.value.locallyUploadedWallpaper = null
 
       // 如果当前壁纸使用的是丢失的本地壁纸，也清理掉
       if (isLocalWallpaperUrl(settings.value.wallpaper)) {

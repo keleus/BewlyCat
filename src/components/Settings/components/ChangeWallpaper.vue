@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { WALLPAPERS } from '~/constants/imgs'
-import { settings } from '~/logic'
+import { localSettings, settings } from '~/logic'
 import { hasLocalWallpaper, isLocalWallpaperUrl, removeLocalWallpaper, resolveWallpaperUrl, storeLocalWallpaper } from '~/utils/localWallpaper'
 import { compressAndResizeImage } from '~/utils/main'
 
@@ -21,7 +21,7 @@ const isBuildInWallpaper = computed(() => {
 
 // 计算本地壁纸的实际显示URL
 const localWallpaperDisplayUrl = computed(() => {
-  const localWallpaper = settings.value.locallyUploadedWallpaper
+  const localWallpaper = localSettings.value.locallyUploadedWallpaper
   if (!localWallpaper?.url) {
     return null
   }
@@ -88,8 +88,8 @@ async function handleUploadWallpaper(e: Event) {
       const base64 = await fileToBase64(compressedFile) as string
 
       // 清理旧的本地壁纸
-      if (settings.value.locallyUploadedWallpaper?.isLocal && settings.value.locallyUploadedWallpaper?.id) {
-        removeLocalWallpaper(settings.value.locallyUploadedWallpaper.id)
+      if (localSettings.value.locallyUploadedWallpaper?.isLocal && localSettings.value.locallyUploadedWallpaper?.id) {
+        removeLocalWallpaper(localSettings.value.locallyUploadedWallpaper.id)
       }
 
       // 存储到本地storage
@@ -100,7 +100,7 @@ async function handleUploadWallpaper(e: Event) {
       changeWallpaper(localWallpaperUrl)
 
       // 保存本地壁纸引用（不包含base64数据）
-      settings.value.locallyUploadedWallpaper = {
+      localSettings.value.locallyUploadedWallpaper = {
         ...localWallpaperRef,
         url: localWallpaperUrl, // 使用标识符而不是base64
       }
@@ -113,20 +113,20 @@ async function handleUploadWallpaper(e: Event) {
 
 function handleRemoveCustomWallpaper() {
   // 清理本地存储的壁纸数据
-  if (settings.value.locallyUploadedWallpaper?.isLocal && settings.value.locallyUploadedWallpaper?.id) {
-    removeLocalWallpaper(settings.value.locallyUploadedWallpaper.id)
+  if (localSettings.value.locallyUploadedWallpaper?.isLocal && localSettings.value.locallyUploadedWallpaper?.id) {
+    removeLocalWallpaper(localSettings.value.locallyUploadedWallpaper.id)
   }
 
   changeWallpaper('')
-  settings.value.locallyUploadedWallpaper = null
+  localSettings.value.locallyUploadedWallpaper = null
 }
 
 // 检查本地壁纸是否有效，如果无效则清理
 function validateLocalWallpaper() {
-  const localWallpaper = settings.value.locallyUploadedWallpaper
+  const localWallpaper = localSettings.value.locallyUploadedWallpaper
   if (localWallpaper?.isLocal && localWallpaper.id) {
     if (!hasLocalWallpaper(localWallpaper.id)) {
-      settings.value.locallyUploadedWallpaper = null
+      localSettings.value.locallyUploadedWallpaper = null
 
       // 如果当前壁纸使用的是丢失的本地壁纸，也清理掉
       const currentWallpaper = isGlobal.value ? settings.value.wallpaper : settings.value.searchPageWallpaper
@@ -208,7 +208,7 @@ onMounted(() => {
               </picture>
             </Tooltip>
 
-            <Tooltip placement="top" :content="settings.locallyUploadedWallpaper?.name || ''" aspect-video>
+            <Tooltip placement="top" :content="localSettings.locallyUploadedWallpaper?.name || ''" aspect-video>
               <!-- Upload wallpaper input -->
               <input
                 ref="uploadWallpaperRef" type="file" accept="image/*"
@@ -219,15 +219,15 @@ onMounted(() => {
               <picture
                 class="group"
                 :class="{ 'selected-wallpaper': isGlobal
-                  ? settings.wallpaper === (localWallpaperDisplayUrl || settings.locallyUploadedWallpaper?.url)
-                  : settings.searchPageWallpaper === (localWallpaperDisplayUrl || settings.locallyUploadedWallpaper?.url) }"
+                  ? settings.wallpaper === (localWallpaperDisplayUrl || localSettings.locallyUploadedWallpaper?.url)
+                  : settings.searchPageWallpaper === (localWallpaperDisplayUrl || localSettings.locallyUploadedWallpaper?.url) }"
                 aspect-video bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
                 un-border="4 transparent" w-full
                 flex="~ items-center justify-center"
-                @click="changeWallpaper(localWallpaperDisplayUrl || settings.locallyUploadedWallpaper?.url || '')"
+                @click="changeWallpaper(localWallpaperDisplayUrl || localSettings.locallyUploadedWallpaper?.url || '')"
               >
                 <div
-                  v-if="settings.locallyUploadedWallpaper"
+                  v-if="localSettings.locallyUploadedWallpaper"
                   class="opacity-0 group-hover:opacity-100" duration-300
                   pos="absolute top-4px right-4px" z-1 text="14px" flex="~ gap-1"
                 >
@@ -249,7 +249,7 @@ onMounted(() => {
                   </button>
                 </div>
                 <div
-                  v-if="!settings.locallyUploadedWallpaper"
+                  v-if="!localSettings.locallyUploadedWallpaper"
                   absolute w-full h-full grid place-items-center
                   @click="handleUploadWallpaper"
                 >
@@ -260,8 +260,8 @@ onMounted(() => {
                 </div>
                 <img
                   v-else
-                  :src="localWallpaperDisplayUrl || settings.locallyUploadedWallpaper.url"
-                  :alt="settings.locallyUploadedWallpaper.name"
+                  :src="localWallpaperDisplayUrl || localSettings.locallyUploadedWallpaper.url"
+                  :alt="localSettings.locallyUploadedWallpaper.name"
                   w-full h-full object-cover
                 >
               </picture>

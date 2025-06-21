@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import { LanguageType } from '~/enums/appEnums'
-import { accessKey, settings } from '~/logic'
+import { accessKey, localSettings, settings } from '~/logic'
 import { getUserID, injectCSS } from '~/utils/main'
 
 export function setupNecessarySettingsWatchers() {
@@ -217,7 +217,7 @@ export function setupNecessarySettingsWatchers() {
   let styleEL: HTMLStyleElement | null = null
   let bewlyStyleEL: HTMLStyleElement | null = null
   watch(
-    [() => settings.value.customizeCSS, () => settings.value.customizeCSSContent],
+    [() => localSettings.value.customizeCSS, () => localSettings.value.customizeCSSContent],
     () => {
       const bewlyEl: HTMLElement | null = document.querySelector('#bewly')
       const bewlyShadow: ShadowRoot | null = bewlyEl?.shadowRoot || null
@@ -230,12 +230,12 @@ export function setupNecessarySettingsWatchers() {
         el.remove()
       })
 
-      if (settings.value.customizeCSS) {
-        styleEL = injectCSS(settings.value.customizeCSSContent)
+      if (localSettings.value.customizeCSS) {
+        styleEL = injectCSS(localSettings.value.customizeCSSContent)
         styleEL.setAttribute('data-bewly-customizeCSS', '')
 
         if (bewlyShadow) {
-          bewlyStyleEL = injectCSS(settings.value.customizeCSSContent, bewlyShadow)
+          bewlyStyleEL = injectCSS(localSettings.value.customizeCSSContent, bewlyShadow)
           bewlyStyleEL.setAttribute('data-bewly-customizeCSS', '')
         }
       }

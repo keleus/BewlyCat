@@ -12,6 +12,7 @@ import type { Settings } from '~/logic/storage'
 // 定义只存储在本地的key列表（不同步到云端）
 const LOCAL_ONLY_KEYS = [
   'localWallpapers', // 本地壁纸数据
+  'localSettings', // 本地设置（壁纸、自定义CSS等）
 ]
 
 const storageLocal: StorageLikeAsync = {
