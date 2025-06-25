@@ -10,7 +10,15 @@ import { executeTimes } from '~/utils/timer'
  * 设置深色模式基准颜色
  */
 function setDarkModeBaseColor(color: string) {
+  // 设置主文档的CSS变量（用于哔哩哔哩原站样式）
   document.documentElement.style.setProperty('--bew-dark-base-color', color)
+
+  // 设置Shadow DOM内的CSS变量（用于BewlyCat组件样式）
+  const bewlyContainer = document.getElementById('bewly')
+  if (bewlyContainer?.shadowRoot) {
+    const shadowHost = bewlyContainer
+    shadowHost.style.setProperty('--bew-dark-base-color', color)
+  }
 }
 
 export function useDark() {

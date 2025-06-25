@@ -382,6 +382,12 @@ function injectApp() {
   container.id = 'bewly'
   container.setAttribute('data-version', version)
   container.setAttribute('data-dev', import.meta.env.DEV ? 'true' : 'false')
+
+  // 立即设置Shadow DOM容器的基准颜色，确保Vue组件能够访问到正确的CSS变量
+  if (settings.value.darkModeBaseColor) {
+    container.style.setProperty('--bew-dark-base-color', settings.value.darkModeBaseColor)
+  }
+
   const root = document.createElement('div')
   const styleEl = document.createElement('link')
   // Fix #69 https://github.com/hakadao/BewlyBewly/issues/69
