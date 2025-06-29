@@ -49,26 +49,46 @@ export function numFormatter(num: number | string): string {
 }
 
 export function calcTimeSince(date: number | string | Date) {
-  const seconds = Math.floor(((Number(new Date())) - Number(date)) / 1000)
-  let interval = seconds / 31536000
-  if (interval > 1)
-    return `${Math.floor(interval)} ${t('common.year', Math.floor(interval))}`
-  interval = seconds / 2592000
-  if (interval > 1)
-    return `${Math.floor(interval)} ${t('common.month', Math.floor(interval))}`
-  interval = seconds / 604800
-  if (interval > 1)
-    return `${Math.floor(interval)} ${t('common.week', Math.floor(interval))}`
-  interval = seconds / 86400
-  if (interval > 1)
-    return `${Math.floor(interval)} ${t('common.day', Math.floor(interval))}`
-  interval = seconds / 3600
-  if (interval > 1)
-    return `${Math.floor(interval)} ${t('common.hour', Math.floor(interval))}`
-  interval = seconds / 60
-  if (interval > 1)
-    return `${Math.floor(interval)} ${t('common.minute', Math.floor(interval))}`
-  return `${Math.floor(interval)} ${t('common.second', Math.floor(interval))}`
+  const now = new Date()
+  const targetDate = new Date(date)
+  const diffMs = now.getTime() - targetDate.getTime()
+  const diffSeconds = Math.floor(diffMs / 1000)
+
+  // 获取今天和目标日期的日期部分（忽略时间）
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const target = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate())
+  const daysDiff = Math.floor((today.getTime() - target.getTime()) / (1000 * 60 * 60 * 24))
+
+  if (daysDiff === 0) {
+    // 当天
+    if (diffSeconds < 60) {
+      return t('common.just_now')
+    }
+    const minutes = Math.floor(diffSeconds / 60)
+    if (minutes < 60) {
+      return `${minutes} ${t('common.minute', minutes)}`
+    }
+    const hours = Math.floor(diffSeconds / 3600)
+    return `${hours} ${t('common.hour', hours)}`
+  }
+  else if (daysDiff === 1) {
+    // 昨天
+    return t('common.yesterday')
+  }
+  else {
+    // 显示具体日期
+    const year = targetDate.getFullYear()
+    const month = targetDate.getMonth() + 1
+    const day = targetDate.getDate()
+
+    // 如果是同一年，只显示月日
+    if (year === now.getFullYear()) {
+      return `${month}-${day}`
+    }
+    else {
+      return `${year}-${month}-${day}`
+    }
+  }
 }
 
 export function calcCurrentTime(totalSeconds: number) {

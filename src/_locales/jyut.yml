@@ -15,6 +15,8 @@ common:
   hour: 個鐘頭前
   minute: 分鐘前
   second: 秒前
+  yesterday: 尋日
+  just_now: 啱啱
   please_log_in_first: 唔該登入先
   login: 登入
   save_to_watch_later: 陣間至睇
