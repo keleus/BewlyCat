@@ -71,8 +71,6 @@ export interface Settings {
   enableHorizontalScrolling: boolean
   showIPLocation: boolean // 添加显示IP归属地设置项
 
-  enableSettingsSync: boolean // 是否启用同步
-
   language: string
   customizeFont: 'default' | 'recommend' | 'custom'
   fontFamily: string
@@ -204,7 +202,6 @@ export const originalSettings: Settings = {
   enableGridLayoutSwitcher: true,
   enableHorizontalScrolling: false,
   showIPLocation: true, // 默认启用IP归属地显示
-  enableSettingsSync: false,
   language: '',
   customizeFont: 'default',
   fontFamily: '',

@@ -119,10 +119,6 @@ watch(() => settings.value.language, (newValue) => {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_common')">
-      <SettingsItem :title="$t('settings.enable_settings_sync')" :desc="$t('settings.enable_settings_sync_desc')">
-        <Radio v-model="settings.enableSettingsSync" />
-      </SettingsItem>
-
       <SettingsItem :title="$t('settings.touch_screen_optimization')" :desc="$t('settings.touch_screen_optimization_desc')">
         <Radio v-model="settings.touchScreenOptimization" />
       </SettingsItem>
