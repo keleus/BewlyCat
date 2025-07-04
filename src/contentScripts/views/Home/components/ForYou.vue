@@ -281,7 +281,7 @@ function initPageAction() {
       if (settings.value.recommendationMode === 'web' && cachedVideoList.value.length > 0) {
         // 滚动到页面顶部
         handleBackToTop()
-        
+
         // Web模式下的后退操作
         // 保存当前数据到前进状态
         forwardVideoList.value = JSON.parse(JSON.stringify(videoList.value))
@@ -304,7 +304,7 @@ function initPageAction() {
       if (settings.value.recommendationMode === 'web' && forwardVideoList.value.length > 0) {
         // 滚动到页面顶部
         handleBackToTop()
-        
+
         // Web模式下的前进操作
         // 保存当前数据到后退状态
         cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))

@@ -85,7 +85,7 @@ function initPageAction() {
   handlePageRefresh.value = async () => {
     if (isLoading.value)
       return
-    
+
     // 滚动到页面顶部
     handleBackToTop()
     initData()
