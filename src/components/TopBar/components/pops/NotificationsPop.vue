@@ -50,7 +50,7 @@ const list = computed((): { name: string, url: string, unreadCount: number, icon
 // 监听外部传入的数据变化，更新列表
 watch(() => props.unReadMessage, (newVal) => {
   if (newVal) {
-    list.value[0].unreadCount = newVal.recv_reply || 0
+    list.value[0].unreadCount = newVal.reply || 0
     list.value[1].unreadCount = newVal.at || 0
     list.value[2].unreadCount = newVal.recv_like || 0
     list.value[3].unreadCount = newVal.sys_msg || 0
