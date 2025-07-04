@@ -85,26 +85,30 @@ useEventListener(window, 'message', ({ data, source }) => {
   const { type, isDark, darkModeBaseColor } = data
 
   if (type === 'iframeDarkModeChange') {
-    // 在iframe环境中，强制更新黑暗模式状态
-    // 这里我们需要直接更新设置，让整个应用响应
+    // 在iframe环境中，只更新DOM样式，不修改用户的主题设置
+    // 避免覆盖用户设置的"auto"模式
     if (isInIframe()) {
-      // 立即更新主题设置以触发响应式更新
-      settings.value.theme = isDark ? 'dark' : 'light'
-
-      // 立即更新DOM，不使用nextTick避免延迟
+      // 立即更新DOM样式，不修改settings.value.theme
       if (isDark) {
         document.documentElement.classList.add('dark')
         document.body?.classList.add('dark')
+        document.querySelector('#bewly')?.classList.add('dark')
 
-        // 如果提供了深色模式基准颜色，则应用它并更新设置
+        // 如果提供了深色模式基准颜色，则应用它（仅应用到DOM，不修改设置）
         if (darkModeBaseColor) {
           document.documentElement.style.setProperty('--bew-dark-base-color', darkModeBaseColor)
-          settings.value.darkModeBaseColor = darkModeBaseColor
+          // 对于Shadow DOM也需要设置
+          const bewlyContainer = document.getElementById('bewly')
+          if (bewlyContainer?.shadowRoot) {
+            const shadowHost = bewlyContainer
+            shadowHost.style.setProperty('--bew-dark-base-color', darkModeBaseColor)
+          }
         }
       }
       else {
         document.documentElement.classList.remove('dark')
         document.body?.classList.remove('dark')
+        document.querySelector('#bewly')?.classList?.remove('dark')
       }
 
       // 强制重新计算样式
