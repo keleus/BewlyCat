@@ -226,11 +226,8 @@
 
   --bew-bg: color-mix(in oklab, var(--bew-dark-base-color), black 20%);
   --bew-homepage-bg: color-mix(in oklab, var(--bew-dark-base-color), black 20%);
-  --bew-homepage-bg-mask: color-mix(
-    in oklab,
-    var(--bew-dark-base-color),
-    black 20% / var(--bew-homepage-bg-mask-opacity)
-  );
+  --bew-homepage-bg-mask-opacity: 0;
+  --bew-homepage-bg-mask: hsl(210 8% 16% / var(--bew-homepage-bg-mask-opacity));
 
   --bew-content: color-mix(in oklab, var(--bew-dark-base-color), white 3% / var(--bew-content-opacity));
   --bew-content-hover: color-mix(in oklab, var(--bew-dark-base-color), white 8% / var(--bew-content-opacity));
