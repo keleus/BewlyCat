@@ -51,7 +51,7 @@ const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh, haveScrollbar, handleBackToTop } = useBewlyApp()
 
 onMounted(() => {
   initData()
@@ -75,6 +75,8 @@ function initPageAction() {
     if (isLoading.value)
       return
 
+    // 滚动到页面顶部
+    handleBackToTop()
     initData()
   }
 }

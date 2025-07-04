@@ -94,7 +94,7 @@ const needToLoginFirst = ref<boolean>(false)
 const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const refreshIdx = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar, showUndoButton, handleUndoRefresh, handleForwardRefresh } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh, haveScrollbar, showUndoButton, handleUndoRefresh, handleForwardRefresh, handleBackToTop } = useBewlyApp()
 const activatedAppVideo = ref<AppVideoItem | null>()
 const videoCardRef = ref(null)
 const showDislikeDialog = ref<boolean>(false)
@@ -247,6 +247,9 @@ function initPageAction() {
     if (isLoading.value)
       return
 
+    // 滚动到页面顶部
+    handleBackToTop()
+
     // 根据当前模式保存数据
     if (settings.value.recommendationMode === 'web') {
       if (hasBackState.value) {
@@ -276,6 +279,9 @@ function initPageAction() {
   handleUndoRefresh.value = () => {
     if (hasBackState.value) {
       if (settings.value.recommendationMode === 'web' && cachedVideoList.value.length > 0) {
+        // 滚动到页面顶部
+        handleBackToTop()
+        
         // Web模式下的后退操作
         // 保存当前数据到前进状态
         forwardVideoList.value = JSON.parse(JSON.stringify(videoList.value))
@@ -296,6 +302,9 @@ function initPageAction() {
   handleForwardRefresh.value = () => {
     if (hasForwardState.value) {
       if (settings.value.recommendationMode === 'web' && forwardVideoList.value.length > 0) {
+        // 滚动到页面顶部
+        handleBackToTop()
+        
         // Web模式下的前进操作
         // 保存当前数据到后退状态
         cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))

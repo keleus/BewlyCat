@@ -33,7 +33,7 @@ const isLoading = ref<boolean>(false)
 const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const pn = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh, haveScrollbar, handleBackToTop } = useBewlyApp()
 
 onMounted(() => {
   initData()
@@ -70,6 +70,8 @@ function initPageAction() {
   }
 
   handlePageRefresh.value = async () => {
+    // 滚动到页面顶部
+    handleBackToTop()
     initData()
   }
 }

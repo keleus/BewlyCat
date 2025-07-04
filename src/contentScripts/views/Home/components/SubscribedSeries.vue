@@ -37,7 +37,7 @@ const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
 const noMoreContentWarning = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh, haveScrollbar, handleBackToTop } = useBewlyApp()
 
 onMounted(() => {
   initData()
@@ -85,8 +85,9 @@ function initPageAction() {
   handlePageRefresh.value = async () => {
     if (isLoading.value)
       return
-    if (isLoading.value)
-      return
+    
+    // 滚动到页面顶部
+    handleBackToTop()
     initData()
   }
 }

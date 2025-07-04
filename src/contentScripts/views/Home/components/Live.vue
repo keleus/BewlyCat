@@ -35,7 +35,7 @@ const needToLoginFirst = ref<boolean>(false)
 const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const page = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh, haveScrollbar, handleBackToTop } = useBewlyApp()
 
 onMounted(() => {
   initData()
@@ -59,6 +59,8 @@ function initPageAction() {
     if (isLoading.value)
       return
 
+    // 滚动到页面顶部
+    handleBackToTop()
     initData()
   }
 }
