@@ -158,6 +158,14 @@ async function checkGitHubRelease() {
             >
               <div i-tabler:brand-bilibili /> Bilibili
             </a>
+            <a
+              href="https://www.xiaohongshu.com/user/profile/5fb77085000000000100060d" target="_blank"
+              class="link-card"
+              bg="#FF2442 dark:#D7223A !opacity-10 !hover:opacity-20"
+              un-text="#FF2442 dark:#D7223A"
+            >
+              <div i-tabler:book-2 /> 小红书
+            </a>
           </div>
         </section>
         <section w-full>
