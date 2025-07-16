@@ -302,6 +302,8 @@ export function registerDefaultHandlers(): void {
     resetPlaybackRate()
   })
 
+  // 随机播放切换已移除
+
   // 上一帧
   registerShortcutHandler('previousFrame', () => {
     stepSeek(false, 0.042)

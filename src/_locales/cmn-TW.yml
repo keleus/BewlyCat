@@ -295,6 +295,19 @@ settings:
   disable_auto_play_collection_desc: 打開視頻頁面時，自動關閉合集的自動連播功能
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住您上次設置的倍速，並在下次打開視頻時自動應用
+  enable_random_play: 啟用視頻合集隨機播放
+  enable_random_play_desc: 為多P視頻或合集添加隨機播放功能
+  random_play_mode: 隨機播放模式
+  random_play_mode_desc: 選擇隨機播放的啟用方式
+  random_play_mode_manual: 手動切換
+  random_play_mode_auto: 自動啟用
+  min_videos_for_random: 啟用隨機播放的最小視頻數
+  min_videos_for_random_desc: 當視頻數量不少於此值時才會啟用隨機播放功能
+  random_play: 隨機播放
+  random_play_enabled: 隨機播放已啟用
+  random_play_disabled: 隨機播放已禁用
+  random_play_not_enabled: 隨機播放功能未啟用
+  random_play_min_videos_required: 需要至少{count}個視頻才能啟用隨機播放
   enable_undo_refresh_button: 啟用撤銷刷新按鈕（僅在Web推薦模式下有效）
   enable_undo_refresh_button_desc: 刷新頁面後顯示撤銷按鈕，點擊可恢復刷新前的內容
   shortcuts:
@@ -376,6 +389,8 @@ settings:
     video_time_desc: 顯示/隱藏視訊時間
     clock_time: 時鐘
     clock_time_desc: 顯示/隱藏系統時間
+    toggle_random_play: 切換隨機播放
+    toggle_random_play_desc: 啟用或禁用視頻合集隨機播放功能
   clean_url_argument: 清理URL追蹤參數
   clean_url_argument_desc: 自動清理URL中的追蹤參數，使連結更加簡潔
   show_ip_location: 顯示IP歸屬地

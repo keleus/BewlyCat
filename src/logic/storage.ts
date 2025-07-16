@@ -44,6 +44,9 @@ export interface ShortcutsSettings {
   videoTime?: BaseShortcutSetting // G
   clockTime?: BaseShortcutSetting // H
 
+  // 随机播放快捷键
+  toggleRandomPlay?: BaseShortcutSetting // R
+
   // 跳转进度快捷键已移除
 }
 
@@ -188,6 +191,11 @@ export interface Settings {
   // 倍速记忆设置
   rememberPlaybackRate: boolean // 启用倍速记忆功能
   savedPlaybackRate: number // 记住的倍速值 (0.25-5)
+
+  // 随机播放设置
+  enableRandomPlay: boolean // 启用视频合集随机播放功能
+  randomPlayMode: 'manual' | 'auto' // 随机播放模式：手动切换或自动启用
+  minVideosForRandom: number // 启用随机播放的最小视频数量
 }
 
 // 本地存储配置默认值
@@ -333,6 +341,7 @@ export const originalSettings: Settings = {
     videoTitle: { key: 'B', enabled: true },
     videoTime: { key: 'G', enabled: true },
     clockTime: { key: 'H', enabled: true },
+    toggleRandomPlay: { key: 'R', enabled: true },
   },
 
   // 音量均衡设置
@@ -343,6 +352,11 @@ export const originalSettings: Settings = {
   // 倍速记忆设置
   rememberPlaybackRate: false, // 启用倍速记忆功能
   savedPlaybackRate: 1, // 记住的倍速值 (0.25-5)
+
+  // 随机播放设置
+  enableRandomPlay: false, // 启用视频合集随机播放功能
+  randomPlayMode: 'manual', // 随机播放模式：手动切换或自动启用
+  minVideosForRandom: 5, // 启用随机播放的最小视频数量
 }
 
 export const settings = useStorageLocal('settings', originalSettings, { mergeDefaults: true })

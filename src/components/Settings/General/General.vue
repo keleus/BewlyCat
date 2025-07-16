@@ -111,6 +111,20 @@ const videoPlayerModeOptions = computed(() => {
   ]
 })
 
+// 添加随机播放模式选项
+const randomPlayModeOptions = computed(() => {
+  return [
+    {
+      label: t('settings.random_play_mode_manual'),
+      value: 'manual',
+    },
+    {
+      label: t('settings.random_play_mode_auto'),
+      value: 'auto',
+    },
+  ]
+})
+
 watch(() => settings.value.language, (newValue) => {
   locale.value = newValue
 })
@@ -238,6 +252,37 @@ watch(() => settings.value.language, (newValue) => {
       >
         <Radio v-model="settings.rememberPlaybackRate" />
       </SettingsItem>
+      <SettingsItem
+        :title="t('settings.enable_random_play')"
+        :desc="t('settings.enable_random_play_desc')"
+      >
+        <Radio v-model="settings.enableRandomPlay" />
+      </SettingsItem>
+      <template v-if="settings.enableRandomPlay">
+        <SettingsItem
+          :title="t('settings.random_play_mode')"
+          :desc="t('settings.random_play_mode_desc')"
+        >
+          <Select
+            v-model="settings.randomPlayMode"
+            :options="randomPlayModeOptions"
+            w="full"
+          />
+        </SettingsItem>
+        <SettingsItem
+          :title="t('settings.min_videos_for_random')"
+          :desc="t('settings.min_videos_for_random_desc')"
+        >
+          <Input
+            v-model="settings.minVideosForRandom"
+            type="number"
+            min="2"
+            max="50"
+            step="1"
+            w="full"
+          />
+        </SettingsItem>
+      </template>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_video_card')">

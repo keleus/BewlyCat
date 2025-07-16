@@ -147,6 +147,19 @@ settings:
   disable_auto_play_collection_desc: 打开视频页面时，自动关闭合集的自动连播功能
   remember_playback_rate: 记住倍速
   remember_playback_rate_desc: 启用后，播放器会记住您上次设置的倍速，并在下次打开视频时自动应用
+  enable_random_play: 启用视频合集随机播放
+  enable_random_play_desc: 为多P视频或合集添加随机播放功能
+  random_play_mode: 随机播放模式
+  random_play_mode_desc: 选择随机播放的启用方式
+  random_play_mode_manual: 手动切换
+  random_play_mode_auto: 自动启用
+  min_videos_for_random: 启用随机播放的最小视频数
+  min_videos_for_random_desc: 当视频数量不少于此值时才会启用随机播放功能
+  random_play: 随机播放
+  random_play_enabled: 随机播放已启用
+  random_play_disabled: 随机播放已禁用
+  random_play_not_enabled: 随机播放功能未启用
+  random_play_min_videos_required: 需要至少{count}个视频才能启用随机播放
   enable_video_preview: 启用视频预览功能（如果可以的话）
   enable_video_ctrl_bar_on_video_card: 在视频卡片上显示视频控制栏
   hover_video_card_delayed: 将鼠标悬停在视频卡片上时延迟视频预览
@@ -363,6 +376,8 @@ settings:
     video_time_desc: 显示/隐藏视频时间
     clock_time: 时钟
     clock_time_desc: 显示/隐藏系统时间
+    toggle_random_play: 切换随机播放
+    toggle_random_play_desc: 启用或禁用视频合集随机播放功能
   clean_url_argument: 清理URL追踪参数
   clean_url_argument_desc: 自动清理URL中的追踪参数，使链接更加简洁
   show_ip_location: 显示IP归属地

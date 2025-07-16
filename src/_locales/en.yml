@@ -343,6 +343,19 @@ settings:
   remember_playback_rate_desc: >-
     When enabled, the player will remember your last set playback rate and
     automatically apply it when opening videos
+  enable_random_play: Enable video collection random play
+  enable_random_play_desc: Add random play feature for multi-part videos or collections
+  random_play_mode: Random play mode
+  random_play_mode_desc: Choose how random play is enabled
+  random_play_mode_manual: Manual toggle
+  random_play_mode_auto: Auto enable
+  min_videos_for_random: Minimum videos for random play
+  min_videos_for_random_desc: Random play will only be enabled when video count is no less than this value
+  random_play: Random Play
+  random_play_enabled: Random play enabled
+  random_play_disabled: Random play disabled
+  random_play_not_enabled: Random play feature not enabled
+  random_play_min_videos_required: At least {count} videos required to enable random play
   enable_undo_refresh_button: Enable Undo Refresh Button(only effective in Web recommendation mode)
   enable_undo_refresh_button_desc: >-
     After refreshing the page, display an undo button that restores the content
@@ -426,6 +439,8 @@ settings:
     video_time_desc: Show/Hide video time
     clock_time: Clock
     clock_time_desc: Show/Hide system time
+    toggle_random_play: Toggle Random Play
+    toggle_random_play_desc: Enable or disable video collection random play feature
   clean_url_argument: Clean URL Tracking Parameters
   clean_url_argument_desc: Automatically clean tracking parameters from URLs to make links cleaner
   show_ip_location: Show IP home location
