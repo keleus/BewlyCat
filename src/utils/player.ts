@@ -852,8 +852,6 @@ export function adjustVolume(delta: number): boolean {
   return setVolume(newVolume, true)
 }
 
-
-
 // 为Window接口添加自定义属性
 declare global {
   interface Window {
