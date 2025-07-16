@@ -251,7 +251,9 @@ export const useTopBarStore = defineStore('topBar', () => {
       const res = await api.user.getPrivilegeInfo()
       if (res.code === 0) {
         Object.assign(privilegeInfo, res.data)
-
+        if (privilegeInfo.vip_type < 2) {
+          return
+        }
         // 检查B币兑换状态 (type: 1)
         const bCoinItem = privilegeInfo.list?.find(item => item.type === 1)
         if (bCoinItem) {
