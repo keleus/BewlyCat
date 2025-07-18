@@ -408,54 +408,55 @@ function observePageChanges(): void {
 
   // 使用MutationObserver监听DOM变化
   const observer = new MutationObserver((mutations) => {
-    if (!isVideoPage()) return
-    
+    if (!isVideoPage())
+      return
+
     // 检查是否需要重新初始化
     if (!isRandomPlayInitialized) {
       initRandomPlayOnVideoPage()
       return
     }
-    
+
     // 检查随机播放按钮是否还存在
     const existingBtn = document.querySelector('.random-play-btn')
     const autoPlayContainer = document.querySelector('.auto-play')
-    
+
     // 如果按钮不存在但应该存在（有自动播放容器且启用了功能），则重新创建
     if (!existingBtn && autoPlayContainer && currentSettings?.enableRandomPlay) {
       // 检查是否是因为DOM重新渲染导致的
       let shouldRecreate = false
-      
+
       for (const mutation of mutations) {
         if (mutation.type === 'childList') {
           // 检查是否有节点被移除或添加，可能影响到我们的按钮
           const removedNodes = Array.from(mutation.removedNodes)
           const addedNodes = Array.from(mutation.addedNodes)
-          
+
           // 如果自动播放相关的DOM发生了变化，重新创建按钮
-          if (removedNodes.some(node => 
-              node.nodeType === Node.ELEMENT_NODE && 
-              (node as Element).querySelector?.('.auto-play, .random-play-btn')
-            ) || 
-            addedNodes.some(node => 
-              node.nodeType === Node.ELEMENT_NODE && 
-              (node as Element).querySelector?.('.auto-play')
-            )) {
+          if (removedNodes.some(node =>
+            node.nodeType === Node.ELEMENT_NODE
+            && (node as Element).querySelector?.('.auto-play, .random-play-btn'),
+          )
+          || addedNodes.some(node =>
+            node.nodeType === Node.ELEMENT_NODE
+            && (node as Element).querySelector?.('.auto-play'),
+          )) {
             shouldRecreate = true
             break
           }
         }
       }
-      
+
       if (shouldRecreate) {
         setTimeout(() => {
           createRandomPlayUI()
-          
+
           // 恢复之前的状态
           if (isRandomPlayEnabled) {
             const switchBtn = document.querySelector('.random-play-btn .switch-btn') as HTMLElement
             const switchBlock = document.querySelector('.random-play-btn .switch-block') as HTMLElement
             const randomPlayBtn = document.querySelector('.random-play-btn') as HTMLElement
-            
+
             if (switchBtn && switchBlock && randomPlayBtn) {
               switchBtn.style.backgroundColor = '#00aeec'
               switchBlock.style.transform = 'translateX(16px)'
