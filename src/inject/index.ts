@@ -342,15 +342,17 @@ function initRandomPlayOnVideoPage(): void {
   const checkAndInit = () => {
     const autoPlayContainer = document.querySelector('.auto-play')
     if (autoPlayContainer) {
-      // 检查是否有足够的视频数量
-      const episodes = getVideoEpisodes()
-      const minVideos = currentSettings?.minVideosForRandom || 5
-
-      if (episodes.length >= minVideos) {
+      // 只要启用了随机播放功能就创建UI
+      if (currentSettings?.enableRandomPlay) {
         createRandomPlayUI()
 
-        // 根据设置自动启用随机播放
-        if (currentSettings?.enableRandomPlay && currentSettings?.randomPlayMode === 'auto') {
+        // 检查视频数量是否足够，只影响自动启用
+        const episodes = getVideoEpisodes()
+        const minVideos = currentSettings?.minVideosForRandom || 5
+        const hasEnoughVideos = episodes.length >= minVideos
+
+        // 只有在视频数量足够且设置为自动模式时才自动启用
+        if (hasEnoughVideos && currentSettings?.randomPlayMode === 'auto') {
           isRandomPlayEnabled = true
           const switchBtn = document.querySelector('.random-play-btn .switch-btn') as HTMLElement
           const switchBlock = document.querySelector('.random-play-btn .switch-block') as HTMLElement
@@ -405,9 +407,63 @@ function observePageChanges(): void {
   window.addEventListener('popstate', checkUrlChange)
 
   // 使用MutationObserver监听DOM变化
-  const observer = new MutationObserver(() => {
-    if (isVideoPage() && !isRandomPlayInitialized) {
+  const observer = new MutationObserver((mutations) => {
+    if (!isVideoPage()) return
+    
+    // 检查是否需要重新初始化
+    if (!isRandomPlayInitialized) {
       initRandomPlayOnVideoPage()
+      return
+    }
+    
+    // 检查随机播放按钮是否还存在
+    const existingBtn = document.querySelector('.random-play-btn')
+    const autoPlayContainer = document.querySelector('.auto-play')
+    
+    // 如果按钮不存在但应该存在（有自动播放容器且启用了功能），则重新创建
+    if (!existingBtn && autoPlayContainer && currentSettings?.enableRandomPlay) {
+      // 检查是否是因为DOM重新渲染导致的
+      let shouldRecreate = false
+      
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList') {
+          // 检查是否有节点被移除或添加，可能影响到我们的按钮
+          const removedNodes = Array.from(mutation.removedNodes)
+          const addedNodes = Array.from(mutation.addedNodes)
+          
+          // 如果自动播放相关的DOM发生了变化，重新创建按钮
+          if (removedNodes.some(node => 
+              node.nodeType === Node.ELEMENT_NODE && 
+              (node as Element).querySelector?.('.auto-play, .random-play-btn')
+            ) || 
+            addedNodes.some(node => 
+              node.nodeType === Node.ELEMENT_NODE && 
+              (node as Element).querySelector?.('.auto-play')
+            )) {
+            shouldRecreate = true
+            break
+          }
+        }
+      }
+      
+      if (shouldRecreate) {
+        setTimeout(() => {
+          createRandomPlayUI()
+          
+          // 恢复之前的状态
+          if (isRandomPlayEnabled) {
+            const switchBtn = document.querySelector('.random-play-btn .switch-btn') as HTMLElement
+            const switchBlock = document.querySelector('.random-play-btn .switch-block') as HTMLElement
+            const randomPlayBtn = document.querySelector('.random-play-btn') as HTMLElement
+            
+            if (switchBtn && switchBlock && randomPlayBtn) {
+              switchBtn.style.backgroundColor = '#00aeec'
+              switchBlock.style.transform = 'translateX(16px)'
+              randomPlayBtn.style.color = '#00aeec'
+            }
+          }
+        }, 100)
+      }
     }
   })
 
