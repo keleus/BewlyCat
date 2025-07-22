@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
-import { isHomePage } from '~/utils/main'
+import { isHomePage, isMomentsPage } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 const props = defineProps<{
@@ -36,15 +36,16 @@ const openMode = computed(() => {
 
 // Since BewlyBewly sometimes uses an iframe to open the original Bilibili page in the current tab
 // please set the target to `_top` instead of `_self`
+// For moments page, use `_blank` to avoid navigation issues
 const target = computed(() => {
   if (openMode.value === 'newTab') {
     return '_blank'
   }
   if (openMode.value === 'currentTabIfNotHomepage') {
-    return isHomePage() ? '_blank' : '_top'
+    return isHomePage() ? '_blank' : (isMomentsPage() ? '_blank' : '_top')
   }
   if (openMode.value === 'currentTab') {
-    return '_top'
+    return isMomentsPage() ? '_blank' : '_top'
   }
   return '_top'
 })

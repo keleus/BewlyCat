@@ -212,6 +212,20 @@ export function isUserSpacePage(url: string = location.href): boolean {
 }
 
 /**
+ * Check if the current page is the moments page
+ * @param url the url to check
+ * @returns true if the current page is the moments page
+ */
+export function isMomentsPage(url: string = location.href): boolean {
+  if (
+    /https?:\/\/t\.bilibili\.com(?!\/vote|\/share).*/.test(url)
+  ) {
+    return true
+  }
+  return false
+}
+
+/**
  * Compresses and resizes an image file.
  *
  * @param file - The image file to compress and resize.
