@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useDelayedHover } from '~/composables/useDelayedHover'
+import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import type { DockItem } from '~/stores/mainStore'
@@ -31,7 +32,7 @@ const emit = defineEmits<{
 
 const mainStore = useMainStore()
 const { isDark, toggleDark } = useDark()
-const { reachTop, showUndoButton } = useBewlyApp()
+const { reachTop, showUndoButton, homeActivatedPage } = useBewlyApp()
 // 添加前进按钮状态
 const showForwardButton = ref<boolean>(false)
 
@@ -77,6 +78,14 @@ const showBackToTopOrRefreshButton = computed((): boolean => {
   }
 
   return props.activatedPage !== AppPage.Search && isHomePage()
+})
+
+/**
+ * Whether to show the undo/forward buttons
+ * Only show on Home page when current sub-page is ForYou
+ */
+const shouldShowUndoForwardButtons = computed((): boolean => {
+  return props.activatedPage === AppPage.Home && homeActivatedPage.value === HomeSubPage.ForYou
 })
 
 watch(() => settings.value.autoHideDock, (newValue) => {
@@ -429,7 +438,7 @@ const dockTransformStyle = computed((): { transform: string, transformOrigin: st
         <!-- 将原来的两个按钮替换为一个 -->
         <Transition name="fade">
           <button
-            v-if="(showUndoButton || showForwardButton) && settings.enableUndoRefreshButton"
+            v-if="shouldShowUndoForwardButtons && (showUndoButton || showForwardButton) && settings.enableUndoRefreshButton"
             class="back-to-top-or-refresh-btn"
             :class="{
               inactive: hoveringDockItem.themeMode && isDark,

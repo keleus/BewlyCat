@@ -12,10 +12,11 @@ import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
 
 const mainStore = useMainStore()
-const { handleBackToTop, scrollbarRef } = useBewlyApp()
+const { handleBackToTop, scrollbarRef, homeActivatedPage } = useBewlyApp()
 const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => handleBackToTop(targetScrollTop), 1000)
 
-const activatedPage = ref<HomeSubPage>(HomeSubPage.ForYou)
+// 使用全局的homeActivatedPage状态
+const activatedPage = homeActivatedPage
 const pages = {
   [HomeSubPage.ForYou]: defineAsyncComponent(() => import('./components/ForYou.vue')),
   [HomeSubPage.Following]: defineAsyncComponent(() => import('./components/Following.vue')),
@@ -94,6 +95,8 @@ onMounted(() => {
 
   currentTabs.value = computeTabs()
   activatedPage.value = currentTabs.value[0].page
+  // Initialize global home activated page state
+  homeActivatedPage.value = currentTabs.value[0].page
 })
 
 onUnmounted(() => {
@@ -123,6 +126,8 @@ function handleChangeTab(tab: HomeTab) {
     toggleTabContentLoading(false)
 
   activatedPage.value = tab.page
+  // Update global home activated page state
+  homeActivatedPage.value = tab.page
 }
 
 function toggleTabContentLoading(loading: boolean) {

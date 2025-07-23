@@ -1,9 +1,12 @@
 import type { Ref } from 'vue'
 
+import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
 
 export interface BewlyAppProvider {
   activatedPage: Ref<AppPage>
+  // 添加Home页面的子页面状态
+  homeActivatedPage: Ref<HomeSubPage>
   scrollbarRef: Ref<any>
   reachTop: Ref<boolean>
   mainAppRef: Ref<HTMLElement>
