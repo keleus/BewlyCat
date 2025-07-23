@@ -263,17 +263,17 @@ function handleHomeRefreshKeydown(event: KeyboardEvent) {
 
   // 获取配置的快捷键
   const configuredKey = shortcutConfig.key || 'R'
-  
+
   // 检查是否按下了配置的快捷键
   if (event.key.toUpperCase() === configuredKey.toUpperCase() && !event.ctrlKey && !event.metaKey && !event.altKey) {
     // 检查当前焦点是否在输入框或文本区域
     const activeElement = document.activeElement as HTMLElement
     const isInputFocused = activeElement && (
-      activeElement.tagName === 'INPUT' ||
-      activeElement.tagName === 'TEXTAREA' ||
-      activeElement.contentEditable === 'true'
+      activeElement.tagName === 'INPUT'
+      || activeElement.tagName === 'TEXTAREA'
+      || activeElement.contentEditable === 'true'
     )
-    
+
     // 如果没有输入框获得焦点且显示刷新按钮，则触发刷新
     if (!isInputFocused && showBackToTopOrRefreshButton.value) {
       event.preventDefault()
