@@ -306,6 +306,7 @@ settings:
       general: 一般快捷鍵
       global_actions: 全域操作
       official_bilibili: bilibili 官方快捷鍵
+      homepage: ''
     increase_playback_rate: 加速播放
     increase_playback_rate_desc: 校快播放速度。
     increase_video_size: 放大影片

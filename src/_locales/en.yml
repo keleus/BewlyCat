@@ -366,6 +366,7 @@ settings:
     enable_all_shortcuts_toggle_desc: Enable or disable all keyboard shortcuts functionality
     group:
       official_bilibili: Bilibili Official Shortcuts
+      homepage: Homepage Shortcuts
       general: General Shortcuts
       fullscreen_mode: Fullscreen Mode Shortcuts
       global_actions: Global Actions
@@ -439,6 +440,8 @@ settings:
     video_time_desc: Show/Hide video time
     clock_time: Clock
     clock_time_desc: Show/Hide system time
+    home_refresh: Homepage Refresh
+    home_refresh_desc: Refresh homepage content
   clean_url_argument: Clean URL Tracking Parameters
   clean_url_argument_desc: Automatically clean tracking parameters from URLs to make links cleaner
   show_ip_location: Show IP home location

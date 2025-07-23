@@ -319,6 +319,7 @@ settings:
       general: 常規快捷鍵
       fullscreen_mode: 全螢幕模式快捷鍵
       global_actions: 全域操作
+      homepage: 首頁快捷鍵
     official:
       play_pause: 播放/暫停
       forward: 快進5秒
@@ -389,6 +390,8 @@ settings:
     video_time_desc: 顯示/隱藏視訊時間
     clock_time: 時鐘
     clock_time_desc: 顯示/隱藏系統時間
+    home_refresh: 首頁刷新
+    home_refresh_desc: 刷新首頁內容
   clean_url_argument: 清理URL追蹤參數
   clean_url_argument_desc: 自動清理URL中的追蹤參數，使連結更加簡潔
   show_ip_location: 顯示IP歸屬地

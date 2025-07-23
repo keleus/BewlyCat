@@ -36,6 +36,9 @@ export interface ShortcutsSettings {
   nextFrame?: BaseShortcutSetting // .
   replay?: BaseShortcutSetting // Shift+Backspace
 
+  // 首页快捷键
+  homeRefresh?: BaseShortcutSetting // R
+
   // 全屏模式下快捷键
   increaseVideoSize?: BaseShortcutSetting // Shift++
   decreaseVideoSize?: BaseShortcutSetting // Shift+-
@@ -336,6 +339,7 @@ export const originalSettings: Settings = {
     videoTitle: { key: 'B', enabled: true },
     videoTime: { key: 'G', enabled: true },
     clockTime: { key: 'H', enabled: true },
+    homeRefresh: { key: 'R', enabled: true },
   },
 
   // 音量均衡设置

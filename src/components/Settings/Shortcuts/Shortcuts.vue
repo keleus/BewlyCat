@@ -59,6 +59,12 @@ const officialShortcuts: OfficialShortcut[] = [
 
 const configurableShortcutsGroups: ShortcutGroup[] = [
   {
+    title: t('settings.shortcuts.group.homepage'),
+    shortcuts: [
+      { id: 'homeRefresh', name: t('settings.shortcuts.home_refresh'), description: t('settings.shortcuts.home_refresh_desc'), defaultKey: 'R' },
+    ],
+  },
+  {
     title: t('settings.shortcuts.group.general'),
     shortcuts: [
       { id: 'danmuStatus', name: t('settings.shortcuts.danmu_status'), description: t('settings.shortcuts.danmu_status_desc'), defaultKey: 'Shift+D' },

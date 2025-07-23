@@ -303,6 +303,7 @@ settings:
     enable_all_shortcuts_toggle_desc: 启用或禁用所有键盘快捷键功能
     group:
       official_bilibili: bilibili 官方快捷键
+      homepage: 首页快捷键
       general: 常规快捷键
       fullscreen_mode: 全屏模式快捷键
       global_actions: 全局操作
@@ -376,6 +377,8 @@ settings:
     video_time_desc: 显示/隐藏视频时间
     clock_time: 时钟
     clock_time_desc: 显示/隐藏系统时间
+    home_refresh: 首页刷新
+    home_refresh_desc: 刷新首页内容
   clean_url_argument: 清理URL追踪参数
   clean_url_argument_desc: 自动清理URL中的追踪参数，使链接更加简洁
   show_ip_location: 显示IP归属地
