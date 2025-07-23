@@ -439,8 +439,6 @@ settings:
     video_time_desc: Show/Hide video time
     clock_time: Clock
     clock_time_desc: Show/Hide system time
-    toggle_random_play: Toggle Random Play
-    toggle_random_play_desc: Enable or disable video collection random play feature
   clean_url_argument: Clean URL Tracking Parameters
   clean_url_argument_desc: Automatically clean tracking parameters from URLs to make links cleaner
   show_ip_location: Show IP home location

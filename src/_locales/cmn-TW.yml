@@ -389,8 +389,6 @@ settings:
     video_time_desc: 顯示/隱藏視訊時間
     clock_time: 時鐘
     clock_time_desc: 顯示/隱藏系統時間
-    toggle_random_play: 切換隨機播放
-    toggle_random_play_desc: 啟用或禁用視頻合集隨機播放功能
   clean_url_argument: 清理URL追蹤參數
   clean_url_argument_desc: 自動清理URL中的追蹤參數，使連結更加簡潔
   show_ip_location: 顯示IP歸屬地

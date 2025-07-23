@@ -43,11 +43,6 @@ export interface ShortcutsSettings {
   videoTitle?: BaseShortcutSetting // B
   videoTime?: BaseShortcutSetting // G
   clockTime?: BaseShortcutSetting // H
-
-  // 随机播放快捷键
-  toggleRandomPlay?: BaseShortcutSetting // R
-
-  // 跳转进度快捷键已移除
 }
 
 // UP主音量配置接口
@@ -341,7 +336,6 @@ export const originalSettings: Settings = {
     videoTitle: { key: 'B', enabled: true },
     videoTime: { key: 'G', enabled: true },
     clockTime: { key: 'H', enabled: true },
-    toggleRandomPlay: { key: 'R', enabled: true },
   },
 
   // 音量均衡设置
