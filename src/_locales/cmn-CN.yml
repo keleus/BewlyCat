@@ -601,6 +601,9 @@ watch_later:
   remove_watched_videos_confirm: |-
     要清除已观看的视频吗？
     该操作无法撤销，你确定要清除已观看的视频吗？
+  play_video: 播放
+  play_in_watch_later: 列表播放
+  remove_from_watch_later: 移除
 search_bar:
   history_title: 搜索历史
   clear_history: 清空搜索历史

@@ -161,6 +161,22 @@ function jumpToLoginPage() {
 function handleMouseEnter(item: VideoItem) {
   setActivatedCover(`${removeHttpFromUrl(item.pic)}@480w_270h_1c`)
 }
+
+function handleVideoLinkClick(bvid: string) {
+  const videoUrl = `https://www.bilibili.com/video/${bvid}/`
+  if (settings.value.videoCardLinkOpenMode === 'drawer') {
+    openIframeDrawer(videoUrl) // 在抽屉打开
+  }
+  else if (settings.value.videoCardLinkOpenMode === 'currentTab') {
+    window.open(videoUrl, '_self') // 在当前标签页打开
+  }
+  else if (settings.value.videoCardLinkOpenMode === 'background') {
+    openLinkInBackground(videoUrl)
+  }
+  else {
+    openLinkToNewTab(videoUrl) // 在新标签页打开
+  }
+}
 </script>
 
 <template>
@@ -292,17 +308,43 @@ function handleMouseEnter(item: VideoItem) {
                   </p>
                 </div>
 
-                <div flex items-center>
-                  <button
-                    text="2xl $bew-text-3"
-                    hover:color="$bew-theme-color"
-                    opacity-0 group-hover:opacity-100
-                    p-2
-                    duration-300
-                    @click.prevent.stop="deleteWatchLaterItem(index, item.aid)"
-                  >
-                    <div i-tabler:trash />
-                  </button>
+                <div flex items-center gap-1>
+                  <Tooltip :content="t('watch_later.play_video')" placement="top">
+                    <button
+                      text="2xl $bew-text-3"
+                      hover:color="$bew-theme-color"
+                      opacity-0 group-hover:opacity-100
+                      p-2
+                      duration-300
+                      @click.prevent.stop="handleVideoLinkClick(item.bvid)"
+                    >
+                      <div i-tabler:player-play />
+                    </button>
+                  </Tooltip>
+                  <Tooltip :content="t('watch_later.play_in_watch_later')" placement="top">
+                    <button
+                      text="2xl $bew-text-3"
+                      hover:color="$bew-theme-color"
+                      opacity-0 group-hover:opacity-100
+                      p-2
+                      duration-300
+                      @click.prevent.stop="handleLinkClick(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`)"
+                    >
+                      <div i-tabler:list-check />
+                    </button>
+                  </Tooltip>
+                  <Tooltip :content="t('watch_later.remove_from_watch_later')" placement="top">
+                    <button
+                      text="2xl $bew-text-3"
+                      hover:color="$bew-theme-color"
+                      opacity-0 group-hover:opacity-100
+                      p-2
+                      duration-300
+                      @click.prevent.stop="deleteWatchLaterItem(index, item.aid)"
+                    >
+                      <div i-tabler:trash />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
             </section>

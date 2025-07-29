@@ -693,6 +693,9 @@ watch_later:
 
     This operation cannot be reversed. Are you sure you want to remove watched
     videos?
+  play_video: Play
+  play_in_watch_later: Playlist
+  remove_from_watch_later: Remove
 search_bar:
   history_title: Search History
   clear_history: Clear search history

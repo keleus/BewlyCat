@@ -616,6 +616,9 @@ watch_later:
   remove_watched_videos_confirm: |-
     要移除看過的影片嗎？
     此操作無法復原，你確定要移除看過的影片嗎？
+  play_video: 播放
+  play_in_watch_later: 清單播放
+  remove_from_watch_later: 移除
 search_bar:
   history_title: 搜尋記錄
   clear_history: 清除所有搜尋記錄
