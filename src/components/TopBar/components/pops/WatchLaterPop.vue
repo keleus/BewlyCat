@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
+import Picture from '~/components/Picture.vue'
 import Progress from '~/components/Progress.vue'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { calcCurrentTime } from '~/utils/dataFormatter'
@@ -147,15 +148,15 @@ function deleteWatchLaterItem(index: number, aid: number) {
 
               <!-- Video -->
               <div pos="relative">
-                <img
+                <Picture
                   w="150px" h-full
                   class="aspect-video"
                   :src="`${removeHttpFromUrl(
                     item.pic,
                   )}@256w_144h_1c`"
                   :alt="item.title"
-                  object-cover
-                >
+                  loading="lazy"
+                />
                 <div
                   pos="absolute bottom-0 right-0"
                   bg="black opacity-60"
