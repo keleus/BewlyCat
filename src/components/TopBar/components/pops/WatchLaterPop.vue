@@ -10,7 +10,7 @@ import { calcCurrentTime } from '~/utils/dataFormatter'
 import { removeHttpFromUrl } from '~/utils/main'
 
 const topBarStore = useTopBarStore()
-const { watchLaterList, isLoadingWatchLater } = storeToRefs(topBarStore)
+const { watchLaterList, isLoadingWatchLater, watchLaterCount } = storeToRefs(topBarStore)
 const viewAllUrl = computed((): string => {
   return 'https://www.bilibili.com/watchlater/list'
 })
@@ -18,8 +18,41 @@ const playAllUrl = computed((): string => {
   return 'https://www.bilibili.com/list/watchlater'
 })
 
-onMounted(() => {
+const scrollContainer = ref<HTMLElement>()
+
+// 检查是否还有更多内容
+const hasMoreContent = computed(() => {
+  return watchLaterList.value.length < watchLaterCount.value
+})
+
+// 滚动加载处理
+function handleScroll() {
+  if (!scrollContainer.value || isLoadingWatchLater.value || !hasMoreContent.value)
+    return
+
+  const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value
+  const threshold = 100 // 距离底部100px时开始加载
+
+  if (scrollTop + clientHeight >= scrollHeight - threshold) {
+    topBarStore.loadMoreWatchLaterList()
+  }
+}
+
+onMounted(async () => {
   topBarStore.getAllWatchLaterList()
+
+  // 等待 DOM 渲染完成后添加滚动事件监听
+  await nextTick()
+  if (scrollContainer.value) {
+    scrollContainer.value.addEventListener('scroll', handleScroll)
+  }
+})
+
+onUnmounted(() => {
+  // 移除滚动事件监听
+  if (scrollContainer.value) {
+    scrollContainer.value.removeEventListener('scroll', handleScroll)
+  }
 })
 
 /**
@@ -87,9 +120,11 @@ function deleteWatchLaterItem(index: number, aid: number) {
 
     <!-- watchLater wrapper -->
     <main
-      overflow-hidden rounded="$bew-radius"
+      ref="scrollContainer"
+      overflow-y-auto rounded="$bew-radius"
       flex="~ col gap-2"
       p="x-4"
+      h="[calc(100%-80px)]"
     >
       <!-- loading -->
       <Loading
@@ -205,6 +240,15 @@ function deleteWatchLaterItem(index: number, aid: number) {
       <Transition name="fade">
         <Loading v-if="isLoadingWatchLater && watchLaterList.length !== 0" m="-t-4" />
       </Transition>
+
+      <!-- no more content -->
+      <div
+        v-if="!isLoadingWatchLater && !hasMoreContent && watchLaterList.length > 0"
+        text="$bew-text-3 xs center"
+        p="y-4"
+      >
+        {{ $t('common.no_more_content') }}
+      </div>
     </main>
   </div>
 </template>

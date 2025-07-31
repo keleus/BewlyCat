@@ -260,7 +260,7 @@ function initPageAction() {
       // 清空前进状态（因为刷新会产生新的分支）
       forwardVideoList.value = []
       hasForwardState.value = false
-      
+
       // 显示撤销按钮
       showUndoButton.value = true
     }

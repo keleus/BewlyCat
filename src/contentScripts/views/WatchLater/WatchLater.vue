@@ -17,11 +17,11 @@ const { setActivatedCover } = useMainStore()
 
 const isLoading = ref<boolean>()
 const noMoreContent = ref<boolean>()
-const allWatchLaterList = ref<VideoItem[]>([])
 const currentWatchLaterList = ref<VideoItem[]>([])
 const watchLaterCount = ref<number>(0)
 const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 const pageNum = ref<number>(1)
+const pageSize = ref<number>(20)
 
 onMounted(() => {
   initPageAction()
@@ -31,15 +31,13 @@ onMounted(() => {
 async function initData() {
   isLoading.value = false
   noMoreContent.value = false
-  allWatchLaterList.value.length = 0
   currentWatchLaterList.value.length = 0
   pageNum.value = 1
-  await getAllWatchLaterList()
-  getData()
+  await getWatchLaterListByPage()
 }
 
 function getData() {
-  getCurrentWatchLaterList()
+  getWatchLaterListByPage()
 }
 
 function initPageAction() {
@@ -56,36 +54,44 @@ function initPageAction() {
 }
 
 /**
- * Get watch later list
+ * Get watch later list by page
  */
-async function getAllWatchLaterList() {
+async function getWatchLaterListByPage() {
+  if (isLoading.value || noMoreContent.value) {
+    return
+  }
+
   isLoading.value = true
-  currentWatchLaterList.value.length = 0
+
   try {
-    const res: WatchLaterResult = await api.watchlater.getAllWatchLaterList()
+    const res: WatchLaterResult = await api.watchlater.getWatchLaterListByPage({
+      pn: pageNum.value,
+      ps: pageSize.value,
+    })
+
     if (res.code === 0) {
-      allWatchLaterList.value = res.data.list
-      watchLaterCount.value = allWatchLaterList.value.length
+      // 第一页时更新总数
+      if (pageNum.value === 1) {
+        watchLaterCount.value = res.data.count
+      }
+
+      // 如果返回的数据少于请求的数量，说明没有更多数据了
+      if (res.data.list.length < pageSize.value) {
+        noMoreContent.value = true
+      }
+
+      // 添加新数据到列表
+      currentWatchLaterList.value.push(...res.data.list)
+      pageNum.value++
+
+      // 如果没有滚动条且还有更多数据，继续加载
+      if (!await haveScrollbar() && !noMoreContent.value) {
+        getWatchLaterListByPage()
+      }
     }
   }
   finally {
     isLoading.value = false
-  }
-}
-
-async function getCurrentWatchLaterList() {
-  const allWatchLaterListCopy = JSON.parse(JSON.stringify(allWatchLaterList.value))
-  const currentList = allWatchLaterListCopy.slice((pageNum.value - 1) * 10, pageNum.value * 10)
-
-  if (currentList.length === 0) {
-    noMoreContent.value = true
-    return
-  }
-  pageNum.value++
-  currentWatchLaterList.value.push(...currentList)
-
-  if (!await haveScrollbar() && !noMoreContent.value) {
-    getCurrentWatchLaterList()
   }
 }
 

@@ -43,6 +43,18 @@ const API_WATCHLATER = {
     },
     afterHandle: AHS.J_D,
   },
+  // 分页获取稍后再看列表
+  getWatchLaterListByPage: {
+    url: 'https://api.bilibili.com/x/v2/history/toview/web',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      pn: 1,
+      ps: 20,
+    },
+    afterHandle: AHS.J_D,
+  },
   // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/history&toview/toview.md#%E6%B8%85%E7%A9%BA%E7%A8%8D%E5%90%8E%E5%86%8D%E7%9C%8B%E8%A7%86%E9%A2%91%E5%88%97%E8%A1%A8
   clearAllWatchLater: {
     url: 'https://api.bilibili.com/x/v2/history/toview/clear',

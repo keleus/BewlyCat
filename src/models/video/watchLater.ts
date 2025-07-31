@@ -32,27 +32,37 @@ export interface List {
   up_from_v2?: number
   first_frame: string
   pub_location: string
-  page: Page
-  count: number
+  pages?: Page[]
+  page?: Page
+  count?: number
   cid: number
   progress: number
   add_at: number
   bvid: string
   uri: string
+  viewed?: boolean
+  seq?: number
   enable_vt: number
   view_text_1: string
-  card_type: number
-  left_icon_type: number
-  left_text: string
-  right_icon_type: number
-  right_text: string
-  arc_state: number
+  is_pgc?: boolean
   pgc_label: string
-  show_up: boolean
-  forbid_fav: boolean
-  forbid_sort: boolean
+  is_pugv?: boolean
+  card_type?: number
+  left_icon_type?: number
+  left_text?: string
+  right_icon_type?: number
+  right_text?: string
+  arc_state?: number
+  show_up?: boolean
+  forbid_fav?: boolean
+  forbid_sort?: boolean
   season_id?: number
   mission_id?: number
+  tidv2?: number
+  tnamev2?: string
+  pid_v2?: number
+  pid_name_v2?: string
+  cover43?: string
 }
 
 export interface Dimension {

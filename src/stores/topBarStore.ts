@@ -309,7 +309,10 @@ export const useTopBarStore = defineStore('topBar', () => {
       return
 
     try {
-      const res = await api.watchlater.getAllWatchLaterList()
+      const res = await api.watchlater.getWatchLaterListByPage({
+        pn: 1,
+        ps: 10,
+      })
       if (res.code === 0) {
         watchLaterCount.value = res.data.count
         Object.assign(watchLaterList, res.data.list)
@@ -328,10 +331,43 @@ export const useTopBarStore = defineStore('topBar', () => {
     isLoadingWatchLater.value = true
 
     try {
-      const res = await api.watchlater.getAllWatchLaterList()
+      const res = await api.watchlater.getWatchLaterListByPage({
+        pn: 1,
+        ps: 10,
+      })
       if (res.code === 0) {
         watchLaterCount.value = res.data.count
         Object.assign(watchLaterList, res.data.list)
+      }
+    }
+    catch (error) {
+      console.error(error)
+    }
+    finally {
+      isLoadingWatchLater.value = false
+    }
+  }
+
+  // 加载更多稍后再看列表
+  async function loadMoreWatchLaterList() {
+    if (!isLogin.value || isLoadingWatchLater.value)
+      return
+
+    const currentPage = Math.floor(watchLaterList.length / 10) + 1
+    const totalPages = Math.ceil(watchLaterCount.value / 10)
+
+    if (currentPage > totalPages)
+      return
+
+    isLoadingWatchLater.value = true
+
+    try {
+      const res = await api.watchlater.getWatchLaterListByPage({
+        pn: currentPage,
+        ps: 10,
+      })
+      if (res.code === 0) {
+        watchLaterList.push(...res.data.list)
       }
     }
     catch (error) {
@@ -627,6 +663,7 @@ export const useTopBarStore = defineStore('topBar', () => {
 
     getWatchLaterCount,
     getAllWatchLaterList,
+    loadMoreWatchLaterList,
     deleteWatchLaterItem,
 
     privilegeInfo,
