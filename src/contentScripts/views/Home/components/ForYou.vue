@@ -252,22 +252,15 @@ function initPageAction() {
 
     // 根据当前模式保存数据
     if (settings.value.recommendationMode === 'web') {
-      if (hasBackState.value) {
-        // 如果当前已经是后退状态，则保存当前数据到前进状态
-        forwardVideoList.value = JSON.parse(JSON.stringify(videoList.value))
-        forwardRefreshIdx.value = refreshIdx.value
-        hasForwardState.value = true
-      }
-      else {
-        // 保存当前数据到后退缓存
-        cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
-        cachedRefreshIdx.value = refreshIdx.value
-        hasBackState.value = true
+      // 总是保存刷新前的当前状态到后退缓存
+      cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
+      cachedRefreshIdx.value = refreshIdx.value
+      hasBackState.value = true
 
-        // 清空前进状态
-        forwardVideoList.value = []
-        hasForwardState.value = false
-      }
+      // 清空前进状态（因为刷新会产生新的分支）
+      forwardVideoList.value = []
+      hasForwardState.value = false
+      
       // 显示撤销按钮
       showUndoButton.value = true
     }
@@ -289,7 +282,7 @@ function initPageAction() {
         hasForwardState.value = true
 
         // 恢复缓存的数据
-        videoList.value = cachedVideoList.value
+        videoList.value = JSON.parse(JSON.stringify(cachedVideoList.value))
         refreshIdx.value = cachedRefreshIdx.value
 
         hasBackState.value = false
@@ -312,7 +305,7 @@ function initPageAction() {
         hasBackState.value = true
 
         // 恢复前进状态的数据
-        videoList.value = forwardVideoList.value
+        videoList.value = JSON.parse(JSON.stringify(forwardVideoList.value))
         refreshIdx.value = forwardRefreshIdx.value
 
         // 标记为已经前进
