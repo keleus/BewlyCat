@@ -96,6 +96,7 @@ function setupIframeListeners() {
         removeTopBarClassInjected.value = false
       }
     })
+    iframeRef.value?.focus()
   })
 }
 onMounted(() => {
@@ -105,7 +106,6 @@ onMounted(() => {
   nextTick(() => {
     if (iframeRef.value) {
       setupIframeListeners()
-      iframeRef.value?.focus()
     }
   })
 })
