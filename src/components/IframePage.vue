@@ -13,6 +13,8 @@ const currentUrl = ref<string>(props.url)
 const showIframe = ref<boolean>(false)
 const showLoading = ref<boolean>(false)
 
+const src = computed(() => showIframe.value ? props.url : undefined)
+
 watch(() => isDark.value, (newValue) => {
   if (iframeRef.value?.contentWindow) {
     try {
@@ -138,7 +140,7 @@ defineExpose({
       <iframe
         v-show="showIframe"
         ref="iframeRef"
-        :src="props.url"
+        :src="src"
         sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
         :style="{
           bottom: headerShow ? `var(--bew-top-bar-height)` : '0',
