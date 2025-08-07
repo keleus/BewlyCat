@@ -43,9 +43,9 @@ watch(() => settings.value.darkModeBaseColor, (newColor) => {
   }
 })
 
-watch(() => props.url, () => {
-  showIframe.value = false
-})
+// watch(() => props.url, () => {
+//   showIframe.value = false
+// })
 
 // Only show loading animation after 1.5 seconds to prevent annoying flash when content loads quickly
 const showLoadingTimeout = ref()
