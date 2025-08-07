@@ -13,8 +13,6 @@ const currentUrl = ref<string>(props.url)
 const showIframe = ref<boolean>(false)
 const showLoading = ref<boolean>(false)
 
-const src = computed(() => showIframe.value ? props.url : undefined)
-
 watch(() => isDark.value, (newValue) => {
   if (iframeRef.value?.contentWindow) {
     try {
@@ -80,6 +78,8 @@ watch(() => showIframe.value, async (newValue) => {
 })
 
 onMounted(() => {
+  // 初始显示iframe，避免延迟加载问题
+  showIframe.value = true
   nextTick(() => {
     iframeRef.value?.focus()
   })
@@ -140,7 +140,7 @@ defineExpose({
       <iframe
         v-show="showIframe"
         ref="iframeRef"
-        :src="src"
+        :src="props.url"
         sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
         :style="{
           bottom: headerShow ? `var(--bew-top-bar-height)` : '0',
