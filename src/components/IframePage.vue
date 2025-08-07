@@ -78,8 +78,6 @@ watch(() => showIframe.value, async (newValue) => {
 })
 
 onMounted(() => {
-  // 初始显示iframe，避免延迟加载问题
-  showIframe.value = true
   nextTick(() => {
     iframeRef.value?.focus()
   })
