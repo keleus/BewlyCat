@@ -25,6 +25,9 @@ const currentUrl = ref<string>(props.url || 'https://message.bilibili.com/')
 const showIframe = ref(false)
 const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
 
+// 计算属性：只有在显示iframe时才设置src，避免隐藏时提前加载
+const src = computed(() => showIframe.value ? currentUrl.value : undefined)
+
 // 监听黑暗模式变化
 watch(() => isDark.value, (newValue) => {
   if (iframeRef.value?.contentWindow) {
@@ -89,9 +92,13 @@ function handleOpen() {
     currentUrl.value = props.url
     beforeUrl.value = props.url
   }
-  nextTick(() => {
-    iframeRef.value?.focus()
-  })
+  // 延迟加载iframe，确保抽屉动画完成后再开始加载内容
+  setTimeout(() => {
+    showIframe.value = true
+    nextTick(() => {
+      iframeRef.value?.focus()
+    })
+  }, 100) // 短暂延迟，确保抽屉显示动画开始
 }
 
 onBeforeUnmount(() => {
@@ -104,6 +111,7 @@ async function handleClose() {
   }
   // await releaseIframeResources()
   show.value = false
+  showIframe.value = false // 重置iframe显示状态
   delayCloseTimer.value = setTimeout(() => {
     emit('close')
   }, 300)
@@ -265,7 +273,7 @@ nextTick(() => {
             <iframe
               v-show="showIframe"
               ref="iframeRef"
-              :src="currentUrl"
+              :src="src"
               frameborder="0"
               pointer-events-auto
               pos="relative right-0"
