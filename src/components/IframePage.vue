@@ -55,7 +55,7 @@ function handleIframeLoad() {
   // 清除loading状态
   clearTimeout(showLoadingTimeout.value)
   showLoading.value = false
-  
+
   // 当iframe加载完成后，发送当前的黑暗模式状态（仅在跨域时需要）
   if (iframeRef.value?.contentWindow) {
     setTimeout(() => {
@@ -80,14 +80,12 @@ watch(() => props.url, () => {
   }, 1500)
 })
 
-
-
 onMounted(() => {
   // 第一次加载时启动loading逻辑
   showLoadingTimeout.value = setTimeout(() => {
     showLoading.value = true
   }, 1500)
-  
+
   nextTick(() => {
     iframeRef.value?.focus()
   })
@@ -156,6 +154,6 @@ defineExpose({
       pos="absolute left-0"
       w-inherit h-inherit
       @load="handleIframeLoad"
-       />
+    />
   </div>
 </template>
