@@ -10,7 +10,7 @@ const { isDark } = useDark()
 const headerShow = ref(false)
 const iframeRef = ref<HTMLIFrameElement | null>(null)
 const currentUrl = ref<string>(props.url)
-const showIframe = ref<boolean>(false)
+
 const showLoading = ref<boolean>(false)
 
 watch(() => isDark.value, (newValue) => {
@@ -49,35 +49,45 @@ watch(() => settings.value.darkModeBaseColor, (newColor) => {
 
 // Only show loading animation after 1.5 seconds to prevent annoying flash when content loads quickly
 const showLoadingTimeout = ref()
-watch(() => showIframe.value, async (newValue) => {
-  clearTimeout(showLoadingTimeout.value)
-  if (!newValue) {
-    showLoadingTimeout.value = setTimeout(() => {
-      showLoading.value = true
-    }, 1500)
-  }
-  else {
-    showLoading.value = false
 
-    // 当iframe加载完成后，发送当前的黑暗模式状态（仅在跨域时需要）
-    if (newValue && iframeRef.value?.contentWindow) {
-      setTimeout(() => {
-        try {
-          iframeRef.value?.contentWindow?.postMessage({
-            type: IFRAME_DARK_MODE_CHANGE,
-            isDark: isDark.value,
-            darkModeBaseColor: settings.value.darkModeBaseColor,
-          }, '*')
-        }
-        catch (error) {
-          console.warn('Failed to send initial dark mode state to iframe:', error)
-        }
-      }, 500) // 稍长的延迟确保iframe完全加载
-    }
+// 处理iframe加载完成事件
+function handleIframeLoad() {
+  // 清除loading状态
+  clearTimeout(showLoadingTimeout.value)
+  showLoading.value = false
+  
+  // 当iframe加载完成后，发送当前的黑暗模式状态（仅在跨域时需要）
+  if (iframeRef.value?.contentWindow) {
+    setTimeout(() => {
+      try {
+        iframeRef.value?.contentWindow?.postMessage({
+          type: IFRAME_DARK_MODE_CHANGE,
+          isDark: isDark.value,
+          darkModeBaseColor: settings.value.darkModeBaseColor,
+        }, '*')
+      }
+      catch (error) {
+        console.warn('Failed to send initial dark mode state to iframe:', error)
+      }
+    }, 100) // 减少延迟，因为iframe已经触发了load事件
   }
+}
+
+watch(() => props.url, () => {
+  // URL变化时启动loading逻辑，但保持iframe可见以避免样式计算错误
+  showLoadingTimeout.value = setTimeout(() => {
+    showLoading.value = true
+  }, 1500)
 })
 
+
+
 onMounted(() => {
+  // 第一次加载时启动loading逻辑
+  showLoadingTimeout.value = setTimeout(() => {
+    showLoading.value = true
+  }, 1500)
+  
   nextTick(() => {
     iframeRef.value?.focus()
   })
@@ -133,22 +143,19 @@ defineExpose({
     <Transition name="fade">
       <Loading v-if="showLoading" w-full h-full pos="absolute top-0 left-0" />
     </Transition>
-    <Transition name="fade">
-      <!-- Iframe -->
-      <iframe
-        v-show="showIframe"
-        ref="iframeRef"
-        :src="props.url"
-        sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
-        :style="{
-          bottom: headerShow ? `var(--bew-top-bar-height)` : '0',
-        }"
-        frameborder="0"
-        pointer-events-auto
-        pos="absolute left-0"
-        w-inherit h-inherit
-        @load="showIframe = true"
-      />
-    </Transition>
+    <!-- Iframe -->
+    <iframe
+      ref="iframeRef"
+      :src="props.url"
+      sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
+      :style="{
+        bottom: headerShow ? `var(--bew-top-bar-height)` : '0',
+      }"
+      frameborder="0"
+      pointer-events-auto
+      pos="absolute left-0"
+      w-inherit h-inherit
+      @load="handleIframeLoad"
+       />
   </div>
 </template>
