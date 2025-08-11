@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onMounted, onUpdated, ref, watch } from 'vue'
+
 const props = defineProps<{
   options: OptionType[]
   modelValue: any
@@ -13,6 +15,8 @@ interface OptionType {
 
 const label = ref<string>('')
 const showOptions = ref<boolean>(false)
+const dropdownPosition = ref({ top: 0, left: 0, width: 0 })
+const triggerRef = ref<HTMLElement | null>(null)
 
 onUpdated(() => {
   // fix the issue when the dropdown menu text doesn't update in real-time based on the updated page language
@@ -23,7 +27,27 @@ onUpdated(() => {
 onMounted(() => {
   if (props.options)
     label.value = `${props.options.find((item: OptionType) => item.value === props.modelValue)?.label}`
+
+  // 窗口大小变化时重算位置
+  window.addEventListener('resize', calculatePosition)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('resize', calculatePosition)
+})
+
+/** 计算下拉菜单绝对位置 */
+function calculatePosition() {
+  if (!triggerRef.value)
+    return
+
+  const rect = triggerRef.value.getBoundingClientRect()
+  dropdownPosition.value = {
+    top: rect.bottom + window.scrollY,
+    left: rect.left + window.scrollX,
+    width: rect.width,
+  }
+}
 
 function onClickOption(val: OptionType) {
   window.removeEventListener('click', () => {})
@@ -45,10 +69,18 @@ function onMouseLeave() {
 function onMouseEnter() {
   window.removeEventListener('click', closeOptions)
 }
+
+// 显示选项时计算位置
+watch(showOptions, (newVal) => {
+  if (newVal) {
+    calculatePosition()
+  }
+})
 </script>
 
 <template>
   <div
+    ref="triggerRef"
     pos="relative"
     @mouseleave="onMouseLeave"
     @mouseenter="onMouseEnter"
@@ -83,30 +115,38 @@ function onMouseEnter() {
         transition="all duration-300"
       />
     </div>
-    <Transition name="dropdown">
-      <div
-        v-if="showOptions"
-        style="backdrop-filter: var(--bew-filter-glass-1)"
-        pos="absolute" bg="$bew-elevated" shadow="$bew-shadow-2" p="2"
-        m="t-2"
-        rounded="$bew-radius" z="1" flex="~ col gap-1"
-        w="full" max-h-300px overflow-y-overlay will-change-transform transform-gpu
-      >
+
+    <Teleport to="body">
+      <Transition name="dropdown">
         <div
-          v-for="option in options"
-          :key="option.value"
-          p="x-2 y-2"
-          rounded="$bew-radius"
-          w="full"
-          bg="hover:$bew-fill-2"
-          transition="all duration-300"
-          cursor="pointer"
-          @click="onClickOption(option)"
+          v-if="showOptions"
+          :style="{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            backdropFilter: 'var(--bew-filter-glass-1)',
+          }"
+          pos="absolute" bg="$bew-elevated" shadow="$bew-shadow-2" p="2"
+          m="t-2"
+          rounded="$bew-radius" z="10003" flex="~ col gap-1"
+          w="full" max-h-300px overflow-y-overlay will-change-transform transform-gpu
         >
-          <span v-text="option.label" />
+          <div
+            v-for="option in options"
+            :key="option.value"
+            p="x-2 y-2"
+            rounded="$bew-radius"
+            w="full"
+            bg="hover:$bew-fill-2"
+            transition="all duration-300"
+            cursor="pointer"
+            @click="onClickOption(option)"
+          >
+            <span v-text="option.label" />
+          </div>
         </div>
-      </div>
-    </Transition>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
