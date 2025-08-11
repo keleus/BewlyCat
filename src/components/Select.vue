@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUpdated, ref, watch } from 'vue'
+import { onMounted, onUpdated, ref } from 'vue'
 
 const props = defineProps<{
   options: OptionType[]
@@ -71,8 +71,8 @@ function onMouseEnter() {
 }
 
 // 显示选项时计算位置
-watch(showOptions, (newVal) => {
-  if (newVal) {
+watchEffect(() => {
+  if (showOptions.value) {
     calculatePosition()
   }
 }, { flush: 'pre' })
