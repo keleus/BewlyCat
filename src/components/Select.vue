@@ -75,7 +75,7 @@ watch(showOptions, (newVal) => {
   if (newVal) {
     calculatePosition()
   }
-})
+}, { flush: 'pre' })
 </script>
 
 <template>
