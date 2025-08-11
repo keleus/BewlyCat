@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { onMounted, onUpdated, ref } from 'vue'
-
 const props = defineProps<{
   options: OptionType[]
   modelValue: any
