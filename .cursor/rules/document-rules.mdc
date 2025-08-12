@@ -1,8 +1,0 @@
----
-description: 
-globs: 
-alwaysApply: true
----
-	1.	Do not create summary/test documents after each modification.
-	2.	Do not modify markdown (.md) files.
-	3.	Do not create markdown (.md) files.

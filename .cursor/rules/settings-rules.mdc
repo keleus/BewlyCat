@@ -1,8 +1,0 @@
----
-description: The following are the requirements related to the Settings section of the browser extension.
-globs: 
-alwaysApply: false
----
-	1.	The definitions and initial values of the settings are in src/logic/storage.ts.
-	2.	The settings components are located under src/components/Settings.
-	3.	Related configuration items should be grouped within a SettingsItemGroup.
