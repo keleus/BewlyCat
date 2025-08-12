@@ -59,7 +59,7 @@ const channels = setupTopBarItemHoverEvent('channels')
         </svg>
       </a>
 
-      <Transition name="slide-in">
+      <Transition name="dropdown">
         <ChannelsPop
           v-if="popupVisible.channels"
           class="bew-popover"
