@@ -33,3 +33,7 @@ const searchBarStyles = computed(() => ({
     </Transition>
   </div>
 </template>
+
+<style lang="scss" scoped>
+@import "../styles/index.scss";
+</style>
