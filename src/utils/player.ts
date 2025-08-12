@@ -284,7 +284,7 @@ export function isCollectionVideo(): boolean {
     const link = item.querySelector('a[href*="/video/"]')
     return link !== null
   })
-  
+
   return hasVideoLinks
 }
 

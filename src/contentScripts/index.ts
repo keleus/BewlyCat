@@ -184,7 +184,7 @@ function applyDefaultPlayerMode() {
     return // 如果已经应用过，直接返回
 
   const playerMode = settings.value.defaultVideoPlayerMode
-  
+
   // 检查是否为合集视频且启用了保持默认模式
   if (settings.value.keepCollectionVideoDefaultMode && isCollectionVideo()) {
     // 合集视频强制使用默认模式
