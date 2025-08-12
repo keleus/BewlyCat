@@ -293,6 +293,8 @@ settings:
   filter_like_view_ratio_desc: 篩選影片的按讚數與播放數比例（預設為5%，最高為10%）
   disable_auto_play_collection: 自動關閉合集自動連播
   disable_auto_play_collection_desc: 打開視頻頁面時，自動關閉合集的自動連播功能
+  keep_collection_video_default_mode: 合集視頻保持預設模式
+  keep_collection_video_default_mode_desc: 當啟用時，合集視頻將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住您上次設置的倍速，並在下次打開視頻時自動應用
   enable_random_play: 啟用視頻合集隨機播放

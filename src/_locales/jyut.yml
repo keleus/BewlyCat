@@ -282,6 +282,8 @@ settings:
   clean_url_argument_desc: 自動清理 URL 嘅最終參數，令到連結更加企理。
   disable_auto_play_collection_desc: 打開影片頁嗰陣，自動關閉合集自動連播功能。
   disable_auto_play_collection: 自動關閉合集自動連播
+  keep_collection_video_default_mode: 合集影片保持預設模式
+  keep_collection_video_default_mode_desc: 啟用嗰陣，合集影片會一直用預設播放器模式，唔會套用寬螢幕或者全螢幕設定
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 喺唔同設備度同步延伸功能設定 (需要登入瀏覽器帳戶)。
   enable_undo_refresh_button: 啓用復原更新掣（淨係得 Web 推介模式下有效）

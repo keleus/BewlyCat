@@ -339,6 +339,8 @@ settings:
   filter_like_view_ratio_desc: Filter out videos with a like-to-play ratio lower than 1:10.
   disable_auto_play_collection: Auto disable collection autoplay
   disable_auto_play_collection_desc: Automatically turn off the autoplay feature for video collections
+  keep_collection_video_default_mode: Keep collection videos in default mode
+  keep_collection_video_default_mode_desc: When enabled, collection videos will always use the default player mode and won't apply widescreen or fullscreen settings
   remember_playback_rate: Remember playback rate
   remember_playback_rate_desc: >-
     When enabled, the player will remember your last set playback rate and

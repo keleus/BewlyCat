@@ -247,6 +247,12 @@ watch(() => settings.value.language, (newValue) => {
         <Radio v-model="settings.disableAutoPlayCollection" />
       </SettingsItem>
       <SettingsItem
+        :title="t('settings.keep_collection_video_default_mode')"
+        :desc="t('settings.keep_collection_video_default_mode_desc')"
+      >
+        <Radio v-model="settings.keepCollectionVideoDefaultMode" />
+      </SettingsItem>
+      <SettingsItem
         :title="t('settings.remember_playback_rate')"
         :desc="t('settings.remember_playback_rate_desc')"
       >

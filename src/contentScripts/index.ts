@@ -12,7 +12,7 @@ import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
+import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isCollectionVideo, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -184,7 +184,13 @@ function applyDefaultPlayerMode() {
     return // 如果已经应用过，直接返回
 
   const playerMode = settings.value.defaultVideoPlayerMode
-  if (!playerMode || playerMode === 'default') {
+  
+  // 检查是否为合集视频且启用了保持默认模式
+  if (settings.value.keepCollectionVideoDefaultMode && isCollectionVideo()) {
+    // 合集视频强制使用默认模式
+    defaultMode()
+  }
+  else if (!playerMode || playerMode === 'default') {
     // 默认模式也需要居中显示
     defaultMode()
   }

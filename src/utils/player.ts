@@ -270,6 +270,24 @@ export function disableAutoPlayCollection(settings: { disableAutoPlayCollection:
   }, 2000)
 }
 
+// 检测是否为合集视频
+export function isCollectionVideo(): boolean {
+  // 检测多P视频选集
+  const episodes = document.querySelectorAll('.video-pod__item')
+  if (episodes.length > 0) {
+    return true
+  }
+
+  // 检测其他可能的选集容器
+  const otherEpisodes = document.querySelectorAll('.list-item, .episode-item, .section-item')
+  const hasVideoLinks = Array.from(otherEpisodes).some((item) => {
+    const link = item.querySelector('a[href*="/video/"]')
+    return link !== null
+  })
+  
+  return hasVideoLinks
+}
+
 // 播放/暂停
 export function playPause(player: Element) {
   const playBtn = player.querySelector(_videoClassTag.playBtn)
