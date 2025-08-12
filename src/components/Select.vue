@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useBewlyApp } from '~/composables/useAppProvider'
+
 const props = defineProps<{
   options: OptionType[]
   modelValue: any
@@ -10,6 +12,8 @@ interface OptionType {
   value: any
   label: string
 }
+
+const { mainAppRef } = useBewlyApp()
 
 const label = ref<string>('')
 const showOptions = ref<boolean>(false)
@@ -114,7 +118,7 @@ watchEffect(() => {
       />
     </div>
 
-    <Teleport to="body">
+    <Teleport :to="mainAppRef">
       <Transition name="dropdown">
         <div
           v-if="showOptions"
