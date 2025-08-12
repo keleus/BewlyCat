@@ -130,7 +130,7 @@ watchEffect(() => {
           }"
           pos="absolute" bg="$bew-elevated" shadow="$bew-shadow-2" p="2"
           m="t-2"
-          rounded="$bew-radius" z="10003" flex="~ col gap-1"
+          rounded="$bew-radius" z="10004" flex="~ col gap-1"
           w="full" max-h-300px overflow-y-overlay will-change-transform transform-gpu
         >
           <div
@@ -148,6 +148,14 @@ watchEffect(() => {
           </div>
         </div>
       </Transition>
+
+      <!-- 遮罩 外部滚动时关闭下拉菜单 -->
+      <div
+        v-if="showOptions"
+        pos="fixed top-0 left-0" w-full h-full
+        z="10003"
+        @wheel="closeOptions"
+      />
     </Teleport>
   </div>
 </template>
