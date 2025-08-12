@@ -18,7 +18,7 @@ const { mainAppRef } = useBewlyApp()
 const label = ref<string>('')
 const showOptions = ref<boolean>(false)
 const dropdownPosition = ref({ top: 0, left: 0, width: 0 })
-const triggerRef = ref<HTMLElement | null>(null)
+const containerRef = ref<HTMLElement | null>(null)
 
 onUpdated(() => {
   // fix the issue when the dropdown menu text doesn't update in real-time based on the updated page language
@@ -40,10 +40,10 @@ onUnmounted(() => {
 
 /** 计算下拉菜单绝对位置 */
 function calculatePosition() {
-  if (!triggerRef.value)
+  if (!containerRef.value)
     return
 
-  const rect = triggerRef.value.getBoundingClientRect()
+  const rect = containerRef.value.getBoundingClientRect()
   dropdownPosition.value = {
     top: rect.bottom + window.scrollY,
     left: rect.left + window.scrollX,
@@ -82,7 +82,7 @@ watchEffect(() => {
 
 <template>
   <div
-    ref="triggerRef"
+    ref="containerRef"
     pos="relative"
     @mouseleave="onMouseLeave"
     @mouseenter="onMouseEnter"
