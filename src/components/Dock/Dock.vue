@@ -132,16 +132,18 @@ function computeDockItem(): DockItem[] {
     if (!foundItem?.hasBewlyPage)
       item.useOriginalBiliPage = true
 
-    item.visible && targetDockItems.push({
-      i18nKey: foundItem?.i18nKey || '',
-      icon: foundItem?.icon || '',
-      iconActivated: foundItem?.iconActivated || '',
-      page: foundItem?.page || AppPage.Home,
-      openInNewTab: item.openInNewTab,
-      useOriginalBiliPage: item.useOriginalBiliPage || !foundItem?.hasBewlyPage,
-      url: foundItem?.url || '',
-      hasBewlyPage: foundItem?.hasBewlyPage || false,
-    })
+    if (item.visible) {
+      targetDockItems.push({
+        i18nKey: foundItem?.i18nKey || '',
+        icon: foundItem?.icon || '',
+        iconActivated: foundItem?.iconActivated || '',
+        page: foundItem?.page || AppPage.Home,
+        openInNewTab: item.openInNewTab,
+        useOriginalBiliPage: item.useOriginalBiliPage || !foundItem?.hasBewlyPage,
+        url: foundItem?.url || '',
+        hasBewlyPage: foundItem?.hasBewlyPage || false,
+      })
+    }
   })
   return targetDockItems
 }

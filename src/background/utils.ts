@@ -17,8 +17,11 @@ function toData(data: Promise<any>): Promise<any> {
 
 // if need sendResponse, use this
 // return a FetchAfterHandler function
-function sendResponseHandler(sendResponse: Function) {
-  return (data: any) => sendResponse(data)
+function sendResponseHandler(sendResponse: (response?: any) => void) {
+  return (data: any) => {
+    sendResponse(data)
+    return data
+  }
 }
 
 // 定义后处理流
@@ -54,14 +57,14 @@ interface API {
   afterHandle: ((response: Response) => Response | Promise<Response>)[]
 }
 // 重载API 可以为函数
-type APIFunction = (message: Message, sender?: any, sendResponse?: Function) => any
+type APIFunction = (message: Message, sender?: any, sendResponse?: (response?: any) => void) => any
 export type APIType = API | APIFunction
 interface APIMAP {
   [key: string]: APIType
 }
 // 工厂函数API_LISTENER_FACTORY
 function apiListenerFactory(API_MAP: APIMAP) {
-  return async (message: Message, sender?: Browser.Runtime.MessageSender, sendResponse?: Function) => {
+  return async (message: Message, sender?: Browser.Runtime.MessageSender, sendResponse?: (response?: any) => void) => {
     const contentScriptQuery = message.contentScriptQuery
     // 检测是否有contentScriptQuery
     if (!contentScriptQuery || !API_MAP[contentScriptQuery])
@@ -81,7 +84,7 @@ function apiListenerFactory(API_MAP: APIMAP) {
   }
 }
 
-function doRequest(message: Message, api: API, sendResponse?: Function, cookies?: Browser.Cookies.Cookie[]) {
+function doRequest(message: Message, api: API, sendResponse?: (response?: any) => void, cookies?: Browser.Cookies.Cookie[]) {
   try {
     let { contentScriptQuery, ...rest } = message
     // rest above two part body or params
@@ -108,8 +111,10 @@ function doRequest(message: Message, api: API, sendResponse?: Function, cookies?
     // generate params
     if (Object.keys(targetParams).length) {
       const urlParams = new URLSearchParams()
-      for (const key in targetParams)
-        targetParams[key] && urlParams.append(key, targetParams[key])
+      for (const key in targetParams) {
+        if (targetParams[key])
+          urlParams.append(key, targetParams[key])
+      }
       url += `?${urlParams.toString()}`
     }
     // generate body
@@ -125,7 +130,8 @@ function doRequest(message: Message, api: API, sendResponse?: Function, cookies?
     }
     // get cant take body
     const fetchOpt = { method, headers }
-    !isGET && Object.assign(fetchOpt, { body: targetBody })
+    if (!isGET)
+      Object.assign(fetchOpt, { body: targetBody })
     // fetch and after handle
     let baseFunc = fetch(url, {
       ...fetchOpt,

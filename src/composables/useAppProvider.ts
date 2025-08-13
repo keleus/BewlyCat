@@ -1,4 +1,5 @@
 import type { Ref } from 'vue'
+import { inject } from 'vue'
 
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'

@@ -44,7 +44,7 @@ export function registerShortcutHandler(id: string, handler: ShortcutHandler): b
     shortcutHandlers[id] = handler
     return true
   }
-  catch (err) {
+  catch {
     return false
   }
 }
@@ -67,7 +67,7 @@ export function unregisterShortcutHandler(id: string): boolean {
     delete shortcutHandlers[id]
     return true
   }
-  catch (err) {
+  catch {
     return false
   }
 }
@@ -195,19 +195,19 @@ export function setupShortcutHandlers() {
               try {
                 handler(e, player || undefined)
               }
-              catch (err) {
+              catch {
                 // 处理器执行错误
               }
               return
             }
           }
         }
-        catch (err) {
+        catch {
           // 处理单个快捷键时出错
         }
       }
     }
-    catch (err) {
+    catch {
       // 处理快捷键时出错
     }
   }

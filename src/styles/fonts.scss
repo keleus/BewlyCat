@@ -2,10 +2,12 @@
 
 :root,
 :host {
-  --bew-fonts-basic: CJKEmDash, Numbers, Onest, ShangguSansSCVF, -apple-system, BlinkMacSystemFont, InterVariable, Inter,
-    "Segoe UI", Cantarell, "Noto Sans", "Roboto Flex", Roboto;
-  --bew-fonts-fallback: sans-serif, ui-sans-serif, system-ui, "Apple Color Emoji", "Twemoji Mozilla", "Noto Color Emoji",
-    "Segoe UI Emoji", "Segoe UI Symbol", emoji;
+  --bew-fonts-basic:
+    CJKEmDash, Numbers, Onest, ShangguSansSCVF, -apple-system, BlinkMacSystemFont, InterVariable, Inter, "Segoe UI",
+    Cantarell, "Noto Sans", "Roboto Flex", Roboto;
+  --bew-fonts-fallback:
+    sans-serif, ui-sans-serif, system-ui, "Apple Color Emoji", "Twemoji Mozilla", "Noto Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", emoji;
 
   --bew-fonts: bilifont, var(--bew-custom-fonts, var(--bew-fonts-basic), var(--bew-fonts-fallback));
 }
@@ -16,8 +18,9 @@
   kbd,
   samp,
   pre {
-    font-family: "JetBrains Mono", "Fira Code", "Fira Mono", "Cascadia Code", "Cascadia Mono", ui-monospace,
-      SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family:
+      "JetBrains Mono", "Fira Code", "Fira Mono", "Cascadia Code", "Cascadia Mono", ui-monospace, SFMono-Regular, Menlo,
+      Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   }
 }
 

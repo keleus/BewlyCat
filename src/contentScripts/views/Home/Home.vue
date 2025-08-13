@@ -52,10 +52,12 @@ function computeTabs(): HomeTab[] {
   const targetTabs: HomeTab[] = []
 
   for (const tab of settings.value.homePageTabVisibilityList) {
-    tab.visible && targetTabs.push({
-      i18nKey: (mainStore.homeTabs.find(defaultTab => defaultTab.page === tab.page) || {})?.i18nKey || tab.page,
-      page: tab.page,
-    })
+    if (tab.visible) {
+      targetTabs.push({
+        i18nKey: (mainStore.homeTabs.find(defaultTab => defaultTab.page === tab.page) || {})?.i18nKey || tab.page,
+        page: tab.page,
+      })
+    }
   }
 
   return targetTabs
@@ -114,7 +116,8 @@ function handleChangeTab(tab: HomeTab) {
     else {
       if (tabContentLoading.value)
         return
-      tabPageRef.value && tabPageRef.value.initData()
+      if (tabPageRef.value)
+        tabPageRef.value.initData()
     }
     return
   }

@@ -334,7 +334,7 @@ export function isInIframe(): boolean {
   try {
     return window.self !== window.top
   }
-  catch (e) {
+  catch {
     // If we can't access window.top due to security restrictions,
     // we're definitely in an iframe
     return true

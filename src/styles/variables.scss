@@ -34,16 +34,18 @@
   --bew-shadow-3: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.08);
 
   // Only used in the dialog
-  --bew-shadow-4: 0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.1),
-    0 30px 40px -8px rgb(0 0 0 / 0.12);
+  --bew-shadow-4:
+    0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.1), 0 30px 40px -8px rgb(0 0 0 / 0.12);
 
   // Use this to imitate the frosted glass edge effect in components with a frosted glass design (except dialogs)
-  --bew-shadow-edge-glow-1: inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.34),
-    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.14), inset 0 0 10px rgba(255, 255, 255, 0.6);
+  --bew-shadow-edge-glow-1:
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.34), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.14),
+    inset 0 0 10px rgba(255, 255, 255, 0.6);
 
   // Use this for dialogs with the frosted glass effect
-  --bew-shadow-edge-glow-2: inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.34),
-    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.14), inset 0 0 14px rgba(255, 255, 255, 0.62);
+  --bew-shadow-edge-glow-2:
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.34), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.14),
+    inset 0 0 14px rgba(255, 255, 255, 0.62);
 
   // #endregion
 
@@ -205,13 +207,15 @@
   --bew-shadow-1: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
   --bew-shadow-2: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.08);
   --bew-shadow-3: 0 20px 25px -5px rgb(0 0 0 / 0.12), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --bew-shadow-4: 0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.12),
-    0 30px 40px -8px rgb(0 0 0 / 0.14);
+  --bew-shadow-4:
+    0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.12), 0 30px 40px -8px rgb(0 0 0 / 0.14);
 
-  --bew-shadow-edge-glow-1: inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06),
-    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03), inset 0 0 10px rgba(255, 255, 255, 0.02);
-  --bew-shadow-edge-glow-2: inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06),
-    inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03), inset 0 0 14px rgba(255, 255, 255, 0.03);
+  --bew-shadow-edge-glow-1:
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03),
+    inset 0 0 10px rgba(255, 255, 255, 0.02);
+  --bew-shadow-edge-glow-2:
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03),
+    inset 0 0 14px rgba(255, 255, 255, 0.03);
   // #endregion
 
   --bew-logo-color: var(--bew-text-1);

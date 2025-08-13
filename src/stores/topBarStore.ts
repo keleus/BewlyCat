@@ -89,7 +89,15 @@ export const useTopBarStore = defineStore('topBar', () => {
   })
 
   // 从 useTopBarReactive 整合的状态
-  const { activatedPage, reachTop } = useBewlyApp()
+  // 延迟获取 AppProvider，避免在 store 初始化时就调用
+  const getAppProvider = () => {
+    try {
+      return useBewlyApp()
+    }
+    catch {
+      return null
+    }
+  }
 
   // 从 useTopBarReactive 整合的计算属性
   const isSearchPage = computed((): boolean => {
@@ -113,11 +121,12 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (!isHomePage())
       return false
 
+    const appProvider = getAppProvider()
     // 确保 activatedPage.value 存在
-    if (!activatedPage?.value)
+    if (!appProvider?.activatedPage?.value)
       return false
 
-    if (activatedPage.value === AppPage.Search) {
+    if (appProvider.activatedPage.value === AppPage.Search) {
       if (settings.value.individuallySetSearchPageWallpaper) {
         if (settings.value.searchPageWallpaper)
           return true
@@ -143,9 +152,10 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (isHomePage()) {
       if (settings.value.useOriginalBilibiliHomepage)
         return true
-      if (activatedPage.value === AppPage.Search)
+      const appProvider = getAppProvider()
+      if (appProvider?.activatedPage?.value === AppPage.Search)
         return false
-      if (settings.value.useSearchPageModeOnHomePage && activatedPage.value === AppPage.Home && reachTop.value)
+      if (settings.value.useSearchPageModeOnHomePage && appProvider?.activatedPage?.value === AppPage.Home && appProvider?.reachTop?.value)
         return false
     }
     else {

@@ -377,8 +377,8 @@ async function migrateOldSettings() {
       // 检查是否存在需要迁移的字段
       const needsMigration
         = 'locallyUploadedWallpaper' in parsedSettings
-        || 'customizeCSS' in parsedSettings
-        || 'customizeCSSContent' in parsedSettings
+          || 'customizeCSS' in parsedSettings
+          || 'customizeCSSContent' in parsedSettings
 
       if (needsMigration) {
         // 迁移到 localSettings

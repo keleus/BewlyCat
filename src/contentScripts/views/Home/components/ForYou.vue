@@ -321,7 +321,7 @@ function initPageAction() {
 async function getRecommendVideos() {
   try {
     let i = 0
-    if (!filterFunc.value || (videoList.value.length < PAGE_SIZE && filterFunc.value)) {
+    if (!filterFunc.value || videoList.value.length < PAGE_SIZE) {
       const pendingVideos: VideoElement[] = Array.from({
         length: videoList.value.length < PAGE_SIZE ? PAGE_SIZE - videoList.value.length : PAGE_SIZE,
       }, () => ({
@@ -407,7 +407,7 @@ async function getRecommendVideos() {
 async function getAppRecommendVideos() {
   try {
     let i = 0
-    if (!appFilterFunc.value || (appVideoList.value.length < PAGE_SIZE && appFilterFunc.value)) {
+    if (!appFilterFunc.value || appVideoList.value.length < PAGE_SIZE) {
       const pendingVideos: AppVideoElement[] = Array.from({
         length: appVideoList.value.length < PAGE_SIZE ? PAGE_SIZE - appVideoList.value.length : PAGE_SIZE,
       }, () => ({

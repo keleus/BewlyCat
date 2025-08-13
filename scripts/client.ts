@@ -210,7 +210,7 @@ async function waitForSuccessfulPing(ms = 1000) {
       await fetch(`${location.protocol}//${socketHost}`)
       break
     }
-    catch (e) {
+    catch {
       // wait ms before attempting to ping again
       await new Promise(resolve => setTimeout(resolve, ms))
     }

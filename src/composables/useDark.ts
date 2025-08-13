@@ -169,7 +169,6 @@ export function useDark() {
 
       bewlyWrapper.appendChild(shadowDomStyle)
 
-      // @ts-expect-error: Transition API
       const transition = document.startViewTransition(async () => {
         updateThemeSettings()
         await nextTick()
@@ -177,8 +176,8 @@ export function useDark() {
 
       transition.ready.then(() => {
         const clipPath = [
-              `circle(0px at ${x}px ${y}px)`,
-              `circle(${endRadius}px at ${x}px ${y}px)`,
+          `circle(0px at ${x}px ${y}px)`,
+          `circle(${endRadius}px at ${x}px ${y}px)`,
         ]
         const animation = document.documentElement.animate(
           {

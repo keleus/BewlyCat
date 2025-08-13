@@ -8,7 +8,7 @@ import { settings } from '~/logic'
 import Tooltip from '../Tooltip.vue'
 import type { HoveringDockItem } from './types'
 
-const emit = defineEmits(['settings-visibility-change'])
+const emit = defineEmits(['settingsVisibilityChange'])
 const { isDark, toggleDark } = useDark()
 
 const hideSidebar = ref<boolean>(false)
@@ -106,7 +106,7 @@ function toggleHideSidebar(hide: boolean) {
           class="ctrl-btn group"
           style="backdrop-filter: var(--bew-filter-glass-1);"
           center size="small" round
-          @click="emit('settings-visibility-change')"
+          @click="emit('settingsVisibilityChange')"
         >
           <div mt--2px>
             <i

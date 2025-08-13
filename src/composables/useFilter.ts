@@ -14,7 +14,7 @@ export enum FilterType {
 }
 
 type FuncMap = { [key in FilterType]: {
-  func: Function
+  func: (item: any, keyPath: string[], filterValue: any) => boolean
   enabledKey: string
   valueKey: string
 } }
@@ -168,7 +168,7 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
     },
   }
 
-  const filter = ref<Function | null>(null)
+  const filter = ref<((item: any) => boolean) | null>(null)
 
   watch(() => [
     settings.value.filterOutVerticalVideos,
@@ -189,10 +189,10 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
     filter.value = factoryFilter(funcMap, filterOpt, keyList)
   }, { immediate: true })
 
-  function factoryFilter(funcMap: FuncMap, filterOpt: FilterType[], keyList: KeyPath): Function {
+  function factoryFilter(funcMap: FuncMap, filterOpt: FilterType[], keyList: KeyPath): (item: any) => boolean {
     interface FuncParams {
       keyPath: string[]
-      func: Function
+      func: (item: any, keyPath: string[], filterValue: any) => boolean
       value?: number | string
     }
 
