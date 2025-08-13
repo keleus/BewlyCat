@@ -282,9 +282,6 @@ watch(() => settings.value.language, (newValue) => {
           <Input
             v-model="settings.minVideosForRandom"
             type="number"
-            min="2"
-            max="50"
-            step="1"
             w="full"
           />
         </SettingsItem>
