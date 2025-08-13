@@ -1,5 +1,5 @@
 import type { MaybeElement } from '@vueuse/core'
-import { unrefElement, useElementVisibility, whenever } from '@vueuse/core'
+import { unrefElement, useElementVisibility } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 
 interface TransformerCenter {
@@ -23,7 +23,7 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
   const target = ref<MaybeElement>()
   const style = ref<CSSProperties>({})
 
-  whenever(trigger, (newVal) => {
+  watch(() => trigger.value, (newVal) => {
     if (transformer.notrigger && newVal) {
       try {
         target.value = unrefElement(trigger)
@@ -109,18 +109,10 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
   }
 
   // v-show
-  const targetVisibility = useElementVisibility(() => {
-    try {
-      return unrefElement(target)
-    }
-    catch (e) {
-      console.warn('Failed to get element visibility:', e)
-      return null
-    }
-  })
+  const targetVisibility = useElementVisibility(target)
 
-  // 使用 whenever 替代 watch
-  whenever(targetVisibility, () => {
+  // 使用 watch 替代 whenever 来避免Vue警告
+  watch(() => targetVisibility.value, () => {
     try {
       const targetElement = unrefElement(target)
       if (targetElement) {
@@ -134,20 +126,19 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
     }
   }, { flush: 'pre' })
 
-  // v-if
-  whenever(() => {
-    try {
-      return unrefElement(target)
-    }
-    catch (e) {
-      console.warn('Failed to watch target element:', e)
-      return null
-    }
-  }, (targetElement) => {
+  // v-if - 使用getter函数来避免Vue警告
+  watch(() => target.value, (targetElement) => {
     if (targetElement) {
-      update()
-      const style = targetElement.getAttribute('style')
-      targetElement.setAttribute('style', generateStyle(style))
+      try {
+        update()
+        const style = unrefElement(targetElement)?.getAttribute('style')
+        if (style !== undefined) {
+          unrefElement(targetElement)?.setAttribute('style', generateStyle(style))
+        }
+      }
+      catch (e) {
+        console.warn('Failed to update style on target change:', e)
+      }
     }
   }, { flush: 'pre' })
 

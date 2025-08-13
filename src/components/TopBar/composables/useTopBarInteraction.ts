@@ -1,4 +1,4 @@
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 
 import { useDelayedHover } from '~/composables/useDelayedHover'
 import { settings } from '~/logic'
@@ -40,7 +40,7 @@ export function useTopBarInteraction() {
   }
 
   // 设置顶栏项变换器
-  function setupTopBarItemTransformer(key: string) {
+  function setupTopBarItemTransformer(key: string, targetRef?: any) {
     const transformer = createTransformer(topBarItemElements[key], {
       x: '0px',
       y: '50px',
@@ -48,6 +48,18 @@ export function useTopBarInteraction() {
         x: true,
       },
     })
+
+    // 如果提供了targetRef，将其存储但不修改transformer的内部逻辑
+    if (targetRef) {
+      topBarTransformers[key] = targetRef
+      // 监听targetRef的变化，当targetRef有值时，将其设置为transformer的target
+      watch(targetRef, (newVal) => {
+        if (newVal) {
+          transformer.value = newVal
+        }
+      }, { immediate: true })
+      return targetRef
+    }
 
     topBarTransformers[key] = transformer
     return transformer

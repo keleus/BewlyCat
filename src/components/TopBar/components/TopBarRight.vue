@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useWindowFocus } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { ref } from 'vue'
 
 import ALink from '~/components/ALink.vue'
 import { settings } from '~/logic'
@@ -56,14 +55,30 @@ const notifications = setupTopBarItemHoverEvent('notifications')
 const more = setupTopBarItemHoverEvent('more')
 const avatar = setupTopBarItemHoverEvent('userPanel')
 
-const avatarTransformer = setupTopBarItemTransformer('userPanel')
-const notificationsTransformer = setupTopBarItemTransformer('notifications')
-const momentsTransformer = setupTopBarItemTransformer('moments')
-const favoritesTransformer = setupTopBarItemTransformer('favorites')
-const historyTransformer = setupTopBarItemTransformer('history')
-const watchLaterTransformer = setupTopBarItemTransformer('watchLater')
-const uploadTransformer = setupTopBarItemTransformer('upload')
-const moreTransformer = setupTopBarItemTransformer('more')
+// 将transformer初始化移到onMounted中
+// 声明组件ref
+const avatarPopRef = ref()
+const notificationsPopRef = ref()
+const momentsPopRef = ref()
+const favoritesPopRef = ref()
+const historyPopRef = ref()
+const watchLaterPopRef = ref()
+const uploadPopRef = ref()
+const morePopRef = ref()
+
+// 在组件挂载后初始化transformer，传入ref对象
+onMounted(() => {
+  nextTick(() => {
+    setupTopBarItemTransformer('userPanel', avatarPopRef)
+    setupTopBarItemTransformer('notifications', notificationsPopRef)
+    setupTopBarItemTransformer('moments', momentsPopRef)
+    setupTopBarItemTransformer('favorites', favoritesPopRef)
+    setupTopBarItemTransformer('history', historyPopRef)
+    setupTopBarItemTransformer('watchLater', watchLaterPopRef)
+    setupTopBarItemTransformer('upload', uploadPopRef)
+    setupTopBarItemTransformer('more', morePopRef)
+  })
+})
 
 watch(
   () => popupVisible.value?.notifications ?? false,
@@ -119,8 +134,8 @@ watch(
       }
       else {
         nextTick(() => {
-          if (momentsTransformer.value) {
-            (momentsTransformer.value as any).initData?.()
+          if (momentsPopRef.value) {
+            momentsPopRef.value.initData?.()
           }
         })
       }
@@ -137,10 +152,10 @@ watch(
     if (newVal === oldVal)
       return
 
-    if (newVal && favoritesTransformer.value) {
+    if (newVal && favoritesPopRef.value) {
       nextTick(() => {
-        if (favoritesTransformer.value)
-          (favoritesTransformer.value as any).refreshFavoriteResources?.()
+        if (favoritesPopRef.value)
+          favoritesPopRef.value.refreshFavoriteResources?.()
       })
     }
   },
@@ -181,7 +196,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           <div
             ref="moments"
             class="right-side-item"
-            :class="{ active: popupVisible.moments }"
+            :class="{ active: popupVisible?.moments }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'moments')"
           >
             <template v-if="newMomentsCount > 0">
@@ -207,8 +222,8 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
             <Transition name="slide-in">
               <MomentsPop
-                v-show="popupVisible.moments"
-                ref="momentsTransformer"
+                v-show="popupVisible?.moments"
+                ref="momentsPopRef"
                 class="bew-popover"
                 @click.stop="() => {}"
               />
@@ -219,7 +234,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           <div
             ref="favorites"
             class="right-side-item"
-            :class="{ active: popupVisible.favorites }"
+            :class="{ active: popupVisible?.favorites }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'favorites')"
           >
             <ALink
@@ -234,8 +249,8 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
             <Transition name="slide-in">
               <KeepAlive>
                 <FavoritesPop
-                  v-if="popupVisible.favorites"
-                  ref="favoritesTransformer"
+                  v-if="popupVisible?.favorites"
+                  ref="favoritesPopRef"
                   class="bew-popover"
                   @click.stop="() => {}"
                 />
@@ -247,7 +262,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           <div
             ref="history"
             class="right-side-item"
-            :class="{ active: popupVisible.history }"
+            :class="{ active: popupVisible?.history }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'history')"
           >
             <ALink
@@ -261,8 +276,8 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
             <Transition name="slide-in">
               <HistoryPop
-                v-if="popupVisible.history"
-                ref="historyTransformer"
+                v-if="popupVisible?.history"
+                ref="historyPopRef"
                 class="bew-popover"
                 @click.stop="() => {}"
               />
@@ -273,7 +288,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           <div
             ref="watchLater"
             class="right-side-item"
-            :class="{ active: popupVisible.watchLater }"
+            :class="{ active: popupVisible?.watchLater }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'watchLater')"
           >
             <template v-if="watchLaterCount > 0 && settings.showWatchLaterBadge">
@@ -299,8 +314,8 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
             <Transition name="slide-in">
               <WatchLaterPop
-                v-if="popupVisible.watchLater"
-                ref="watchLaterTransformer"
+                v-if="popupVisible?.watchLater"
+                ref="watchLaterPopRef"
                 class="bew-popover"
                 @click.stop="() => {}"
               />
@@ -324,7 +339,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
         <div
           ref="more"
           class="right-side-item lg:!hidden flex"
-          :class="{ active: popupVisible.more }"
+          :class="{ active: popupVisible?.more }"
           @click="(event: MouseEvent) => handleClickTopBarItem(event, 'more')"
         >
           <a
@@ -336,8 +351,8 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
           <Transition name="slide-in">
             <MorePop
-              v-show="popupVisible.more"
-              ref="moreTransformer"
+              v-show="popupVisible?.more"
+              ref="morePopRef"
               class="bew-popover"
               @click.stop="() => {}"
             />
@@ -356,7 +371,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           <div
             ref="upload"
             class="right-side-item"
-            :class="{ active: popupVisible.upload }"
+            :class="{ active: popupVisible?.upload }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'upload')"
           >
             <a
@@ -372,8 +387,8 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
             <Transition name="slide-in">
               <UploadPop
-                v-if="popupVisible.upload"
-                ref="uploadTransformer"
+                v-if="popupVisible?.upload"
+                ref="uploadPopRef"
                 class="bew-popover"
                 @click.stop="() => {}"
               />
@@ -384,7 +399,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           <div
             ref="notifications"
             class="right-side-item"
-            :class="{ active: popupVisible.notifications }"
+            :class="{ active: popupVisible?.notifications }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'notifications')"
           >
             <template v-if="unReadMessageCount > 0">
@@ -406,15 +421,15 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
               :title="$t('topbar.notifications')"
               type="topBar"
               :custom-click-event="settings.openNotificationsPageAsDrawer"
-              @click="drawerVisible.notifications = true"
+              @click="drawerVisible && (drawerVisible.notifications = true)"
             >
               <div i-tabler:bell />
             </ALink>
 
             <Transition name="slide-in">
               <NotificationsPop
-                v-if="popupVisible.notifications"
-                ref="notificationsTransformer"
+                v-if="popupVisible?.notifications"
+                ref="notificationsPopRef"
                 class="bew-popover"
                 :un-read-message="unReadMessage"
                 :un-read-dm="unReadDm"
@@ -431,7 +446,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
       <div
         v-if="isLogin"
         ref="avatar"
-        :class="{ hover: popupVisible.userPanel }"
+        :class="{ hover: popupVisible?.userPanel }"
         class="avatar right-side-item"
         @click="(event: MouseEvent) => handleClickTopBarItem(event, 'userPanel')"
       >
@@ -439,7 +454,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
         <div
           v-if="hasBCoinToReceive && settings.showBCoinReceiveReminder"
           class="unread-dot avatar-dot"
-          :class="{ hover: popupVisible.userPanel }"
+          :class="{ hover: popupVisible?.userPanel }"
           style="z-index: 10; right: 6px; top: 6px;"
         />
 
@@ -448,7 +463,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           :href="`https://space.bilibili.com/${mid}`"
           type="topBar"
           class="avatar-img"
-          :class="{ hover: popupVisible.userPanel }"
+          :class="{ hover: popupVisible?.userPanel }"
           :style="{
             backgroundImage: `url(${userInfo.face ? removeHttpFromUrl(userInfo.face) : ''})`,
           }"
@@ -456,7 +471,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
         <div
           ref="avatarShadow"
           class="avatar-shadow"
-          :class="{ hover: popupVisible.userPanel }"
+          :class="{ hover: popupVisible?.userPanel }"
           :style="{
             backgroundImage: `url(${userInfo.face ? removeHttpFromUrl(userInfo.face) : ''})`,
           }"
@@ -464,8 +479,8 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
         <svg
           v-if="userInfo.vip?.status === 1"
           class="vip-img"
-          :class="{ hover: popupVisible.userPanel }"
-          :style="{ opacity: popupVisible.userPanel ? 1 : 0 }"
+          :class="{ hover: popupVisible?.userPanel }"
+          :style="{ opacity: popupVisible?.userPanel ? 1 : 0 }"
           bg="[url(https://i0.hdslb.com/bfs/seed/jinkela/short/user-avatar/big-vip.svg)] contain no-repeat"
           w="28%" h="28%" z-1
           pos="absolute bottom--20px right-28px" duration-300
@@ -473,8 +488,8 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
         <Transition name="slide-in">
           <UserPanelPop
-            v-if="popupVisible.userPanel"
-            ref="avatarTransformer"
+            v-if="popupVisible?.userPanel"
+            ref="avatarPopRef"
             :user-info="userInfo"
             after:h="!0"
             class="bew-popover"
