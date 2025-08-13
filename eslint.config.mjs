@@ -32,6 +32,7 @@ export default antfu(
         'public',
         'extension',
         'extension-firefox',
+        '.kiro',
       ],
     },
   },

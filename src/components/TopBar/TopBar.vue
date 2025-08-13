@@ -264,7 +264,7 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
 </template>
 
 <style lang="scss" scoped>
-@import "./styles/index.scss";
+@use "./styles/index.scss";
 
 .top-bar-container {
   position: relative;

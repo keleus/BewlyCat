@@ -35,5 +35,5 @@ const searchBarStyles = computed(() => ({
 </template>
 
 <style lang="scss" scoped>
-@import "../styles/index.scss";
+@use "../styles/index.scss";
 </style>

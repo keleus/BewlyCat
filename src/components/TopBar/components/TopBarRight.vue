@@ -488,5 +488,5 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 </template>
 
 <style lang="scss" scoped>
-@import "../styles/index.scss";
+@use "../styles/index.scss";
 </style>

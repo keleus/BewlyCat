@@ -74,6 +74,14 @@ export const sharedConfig: UserConfig = {
       'vue-demi',
     ],
   },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ['legacy-js-api'],
+      },
+    },
+  },
+
 }
 
 export default defineConfig(({ command }) => ({

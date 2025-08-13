@@ -349,7 +349,7 @@ function handleClickChannel() {
 </template>
 
 <style lang="scss" scoped>
-@import "../../styles/index.scss";
+@use "../../styles/index.scss";
 
 .level :deep(svg) {
   --uno: "w-25px h-16px";

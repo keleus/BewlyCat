@@ -2,6 +2,9 @@
 .idea/
 .vite-ssg-dist
 .vite-ssg-temp
+.trae
+.kiro
+*.backup
 *.crx
 *.local
 *.log

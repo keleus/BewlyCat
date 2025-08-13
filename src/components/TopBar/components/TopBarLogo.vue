@@ -75,7 +75,7 @@ const channels = setupTopBarItemHoverEvent('channels')
 </template>
 
 <style lang="scss" scoped>
-@import "../styles/index.scss";
+@use "../styles/index.scss";
 
 .bew-popover {
   position: fixed;
