@@ -1,6 +1,8 @@
 onlyBuiltDependencies:
+  - '@parcel/watcher'
   - dtrace-provider
   - esbuild
+  - oxc-resolver
   - simple-git-hooks
   - spawn-sync
   - vue-demi
