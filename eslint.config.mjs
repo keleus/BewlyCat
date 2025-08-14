@@ -24,6 +24,7 @@ export default antfu(
       ],
       'no-alert': 'off',
       'style/quote-props': 'off',
+      'vue/no-required-prop-with-default': 'off',
     },
     eslint: {
       ignorePatterns: [
@@ -45,6 +46,8 @@ export default antfu(
       'sort-imports': 'off',
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
+      'perfectionist/sort-imports': 'off',
+      'perfectionist/sort-named-imports': 'off',
       'no-console': ['error', { allow: ['debug', 'warn', 'error', 'log'] }],
     },
   },
