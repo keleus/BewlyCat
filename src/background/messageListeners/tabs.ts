@@ -9,10 +9,11 @@ export enum TABS_MESSAGE {
   OPEN_LINK_IN_BACKGROUND = 'openLinkInBackground',
 }
 
-function handleMessage(message: Message) {
-  if (message.contentScriptQuery === TABS_MESSAGE.OPEN_LINK_IN_BACKGROUND) {
+function handleMessage(message: unknown) {
+  const typedMessage = message as Message
+  if (typedMessage.contentScriptQuery === TABS_MESSAGE.OPEN_LINK_IN_BACKGROUND) {
     // 处理以 // 开头的 URL
-    const url = message.url.startsWith('//') ? `https:${message.url}` : message.url
+    const url = typedMessage.url.startsWith('//') ? `https:${typedMessage.url}` : typedMessage.url
     return browser.tabs.create({ url, active: false })
   }
 }

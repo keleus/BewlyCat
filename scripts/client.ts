@@ -1,6 +1,30 @@
 import type { ErrorPayload, HMRPayload, Update } from 'vite'
-import type { InferCustomEventPayload } from 'vite/types/customEvent'
-import type { ViteHotContext } from 'vite/types/hot'
+// import type { InferCustomEventPayload } from 'vite/types/customEvent'
+// import type { ViteHotContext } from 'vite/types/hot'
+
+// Define types locally since they're not exported in newer Vite versions
+type InferCustomEventPayload<T extends string> = T extends keyof CustomEventMap ? CustomEventMap[T] : any
+interface ViteHotContext {
+  readonly data: any
+  accept: {
+    (): void
+    (cb: (mod: any) => void): void
+    (dep: string, cb: (mod: any) => void): void
+    (deps: readonly string[], cb: (mods: any[]) => void): void
+  }
+  dispose: (cb: (data: any) => void) => void
+  decline: () => void
+  invalidate: () => void
+  on: <T extends string>(event: T, cb: (data: InferCustomEventPayload<T>) => void) => void
+  send: <T extends string>(event: T, data?: InferCustomEventPayload<T>) => void
+  prune: (cb: (data: any) => void) => void
+  acceptExports: () => void
+  off: () => void
+}
+
+interface CustomEventMap {
+  [key: string]: any
+}
 
 // Vite v3 doesn't export overlay
 // import { ErrorOverlay, overlayId } from 'vite/src/client/overlay'
@@ -152,6 +176,9 @@ async function handleMessage(payload: HMRPayload) {
 
       break
     }
+    case 'ping':
+      // handle ping payload
+      break
     default: {
       const check: never = payload
       return check
@@ -434,6 +461,10 @@ export function createHotContext(ownerPath: string): ViteHotContext {
 
     dispose(cb) {
       disposeMap.set(ownerPath, cb)
+    },
+
+    decline() {
+      // decline hot updates for this module
     },
 
     prune(cb: (data: any) => void) {

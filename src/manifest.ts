@@ -83,8 +83,6 @@ export async function getManifest() {
         run_at: 'document_start',
         match_about_blank: true,
         all_frames: true,
-        // eslint-disable-next-line ts/ban-ts-comment
-        // @ts-expect-error
         world: 'MAIN',
       },
     ],
