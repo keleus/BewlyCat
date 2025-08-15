@@ -5,7 +5,6 @@ import { dirname, relative } from 'node:path'
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
 import replace from '@rollup/plugin-replace'
 import Vue from '@vitejs/plugin-vue'
-import UnoCSS from 'unocss/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import type { UserConfig } from 'vite'
 import { defineConfig } from 'vite'
@@ -43,8 +42,8 @@ export const sharedConfig: UserConfig = {
       include: [r('./src/_locales/**')],
     }),
 
-    // https://github.com/unocss/unocss
-    UnoCSS(),
+    // // https://github.com/unocss/unocss
+    // UnoCSS(),
 
     replace({
       '__DEV__': JSON.stringify(isDev),
@@ -109,11 +108,6 @@ export default defineConfig(({ command }) => ({
     },
     minify: 'terser',
   },
-  plugins: [
-    ...sharedConfig.plugins!,
-
-    // MV3Hmr(),
-  ],
   test: {
     globals: true,
     environment: 'jsdom',
