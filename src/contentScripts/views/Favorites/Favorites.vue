@@ -168,6 +168,7 @@ async function changeCategory(categoryItem: FavoriteCategory) {
 }
 
 function handleSearch() {
+  // 搜索框为空时，关闭搜索全部收藏夹模式
   if (searchAll.value === true && !keyword.value.trim()) {
     searchAll.value = false
   }
