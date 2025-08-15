@@ -394,10 +394,6 @@ function isMusic(item: FavoriteResource) {
 </template>
 
 <style lang="scss" scoped>
-.hide {
-  transform: translateY(-70px);
-}
-
 .category-list {
   &::-webkit-scrollbar {
     width: 8px;
