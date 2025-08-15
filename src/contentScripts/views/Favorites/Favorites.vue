@@ -24,23 +24,11 @@ const activatedCategoryCover = ref<string>('')
 const shouldMoveCtrlBarUp = ref<boolean>(false)
 const currentPageNum = ref<number>(1)
 const keyword: Ref<string> = ref<string>('')
-const searchScope = ref<'current' | 'all'>('current')
+const searchAll = ref<boolean>(false)
 const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 const isLoading = ref<boolean>(false)
 const isFullPageLoading = ref<boolean>(false)
 const noMoreContent = ref<boolean>(false)
-
-// 搜索范围选项
-const searchScopeOptions = computed(() => [
-  {
-    label: t('favorites.search_current_folder'),
-    value: 'current' as const,
-  },
-  {
-    label: t('favorites.search_all_folders'),
-    value: 'all' as const,
-  },
-])
 
 onMounted(() => {
   emitter.off(TOP_BAR_VISIBILITY_CHANGE)
@@ -78,7 +66,7 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    if (searchScope.value === 'all') {
+    if (searchAll.value === true) {
       const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
       await getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword.value, 1)
     }
@@ -139,7 +127,7 @@ async function getFavoriteResources(
     })
 
     if (res.code === 0) {
-      if (searchScope.value === 'current') {
+      if (searchAll.value === false) {
         activatedCategoryCover.value = res.data.info.cover
       }
 
@@ -150,7 +138,7 @@ async function getFavoriteResources(
         noMoreContent.value = true
 
       if (!haveScrollbar() && !noMoreContent.value) {
-        if (searchScope.value === 'all') {
+        if (searchAll.value === true) {
           const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
           await getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword, 1)
         }
@@ -173,27 +161,22 @@ async function changeCategory(categoryItem: FavoriteCategory) {
   favoriteResources.length = 0
   noMoreContent.value = false
 
-  // 切换收藏夹时，如果是搜索当前收藏夹模式，则立即加载数据
-  if (searchScope.value === 'current') {
-    activatedCategoryCover.value = ''
-    getFavoriteResources(categoryItem.id, 1, keyword.value, 0)
-  }
-  else {
-    // 全局搜索模式下，清空封面但不立即搜索
-    activatedCategoryCover.value = ''
-  }
+  // 切换收藏夹时，关闭搜索全部收藏夹模式
+  searchAll.value = false
+  activatedCategoryCover.value = ''
+  getFavoriteResources(categoryItem.id, 1, keyword.value, 0)
 }
 
 function handleSearch() {
-  if (searchScope.value === 'all' && !keyword.value.trim()) {
-    return
+  if (searchAll.value === true && !keyword.value.trim()) {
+    searchAll.value = false
   }
 
   currentPageNum.value = 1
   favoriteResources.length = 0
   noMoreContent.value = false
 
-  if (searchScope.value === 'all') {
+  if (searchAll.value === true) {
     const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
     getFavoriteResources(firstCategoryId, currentPageNum.value, keyword.value, 1)
   }
@@ -204,20 +187,8 @@ function handleSearch() {
   }
 }
 
-function handleSearchScopeChange() {
-  // 切换搜索范围时，不清空当前结果，保持用户体验的连续性
-  // 只重置分页状态，等待用户主动搜索时再更新结果
-  currentPageNum.value = 1
-  noMoreContent.value = false
-
-  // 如果切换回当前收藏夹模式，且当前没有封面，则重新加载以获取封面
-  if (searchScope.value === 'current' && selectedCategory.value && !activatedCategoryCover.value) {
-    getFavoriteResources(selectedCategory.value.id, 1, keyword.value, 0)
-  }
-}
-
 function handlePlayAll() {
-  if (searchScope.value === 'all') {
+  if (searchAll.value === true) {
     return
   }
   openLinkToNewTab(`https://www.bilibili.com/list/ml${selectedCategory.value?.id}`)
@@ -251,32 +222,7 @@ function isMusic(item: FavoriteResource) {
 <template>
   <div v-if="getCSRF()" flex="~ col md:row lg:row" gap-6>
     <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" relative>
-      <div
-        fixed z-10 absolute p-2 flex="~ gap-2"
-        items-center
-        bg="$bew-elevated-solid" rounded="$bew-radius" shadow="$bew-shadow-2" mt--2 transition="all 300 ease-in-out"
-        :class="{ hide: shouldMoveCtrlBarUp }"
-      >
-        <Select v-model="selectedCategory" w-150px :options="categoryOptions" @change="(val: FavoriteCategory) => changeCategory(val)" />
-        <Select v-model="searchScope" w-120px :options="searchScopeOptions" @change="handleSearchScopeChange" />
-        <Input
-          v-model="keyword"
-          w-250px
-          :placeholder="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
-          @enter="handleSearch"
-        />
-        <Button
-          type="primary"
-          :disabled="searchScope === 'all' && !keyword.trim()"
-          @click="handleSearch"
-        >
-          <template #left>
-            <div i-tabler:search />
-          </template>
-        </Button>
-      </div>
-
-      <div v-if="searchScope === 'all' && !keyword.trim() && favoriteResources.length === 0 && !isLoading" m="t-55px b-6">
+      <div v-if="searchAll === true && !keyword.trim() && favoriteResources.length === 0 && !isLoading" m="t-55px b-6">
         <Empty :description="t('favorites.global_search_hint')" />
       </div>
 
@@ -394,6 +340,33 @@ function isMusic(item: FavoriteResource) {
             </Button>
           </p>
 
+          <input
+            v-model="keyword"
+            w-full
+            rounded="$bew-radius"
+            px-4 lh-30px
+            bg="transparent" text="white"
+            border="1 color-[rgba(255,255,255,.2)]"
+            outline-none
+            :placeholder="searchAll === true ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
+            @keyup.enter="handleSearch"
+          >
+
+          <Transition name="search-all">
+            <button
+              v-show="keyword.trim()"
+              lh-30px px-4 cursor-pointer hover:bg="[rgba(255,255,255,.35)]"
+              duration-300 color-white flex justify-between
+              :style="{ background: searchAll === true ? 'rgba(255,255,255,.35)' : '' }"
+              border="1 color-[rgba(255,255,255,.2)]"
+              rounded="$bew-radius"
+
+              @click="searchAll = true; handleSearch()"
+            >
+              {{ t('favorites.search_all_folders') }}
+            </button>
+          </Transition>
+
           <ul
             class="category-list" h-full min-h-200px
             overflow-overlay
@@ -405,7 +378,7 @@ function isMusic(item: FavoriteResource) {
               border-b="1 color-[rgba(255,255,255,.2)]"
               lh-30px px-4 cursor-pointer hover:bg="[rgba(255,255,255,.35)]"
               duration-300 color-white flex justify-between
-              :style="{ background: item.value.id === selectedCategory?.id ? 'rgba(255,255,255,.35)' : '', pointerEvents: isFullPageLoading ? 'none' : 'auto' }"
+              :style="{ background: !searchAll && item.value.id === selectedCategory?.id ? 'rgba(255,255,255,.35)' : '', pointerEvents: isFullPageLoading ? 'none' : 'auto' }"
               @click="changeCategory(item.value)"
             >
               <span>{{ item.label }}</span>
@@ -446,5 +419,15 @@ function isMusic(item: FavoriteResource) {
   &::-webkit-scrollbar-corner {
     background: transparent;
   }
+}
+
+.search-all-enter-active,
+.search-all-leave-active {
+  --uno: "transition-all duration-300 transform-gpu";
+}
+.search-all-leave-to,
+.search-all-enter-from {
+  // mt: gap + lh + 2border 取反
+  --uno: "transform mt-[calc(-1rem-30px-2px)] opacity-0";
 }
 </style>
