@@ -223,11 +223,7 @@ function isMusic(item: FavoriteResource) {
 <template>
   <div v-if="getCSRF()" flex="~ col md:row lg:row" gap-6>
     <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" relative>
-      <div v-if="searchAll === true && !keyword.trim() && favoriteResources.length === 0 && !isLoading" m="t-55px b-6">
-        <Empty :description="t('favorites.global_search_hint')" />
-      </div>
-
-      <Empty v-else-if="favoriteResources.length === 0 && !isLoading" m="t-55px b-6" />
+      <Empty v-if="favoriteResources.length === 0 && !isLoading" m="t-55px b-6" />
       <template v-else>
         <Transition name="fade">
           <Loading v-if="isFullPageLoading" w-full h-full pos="absolute top-0 left-0" mt--50px />
