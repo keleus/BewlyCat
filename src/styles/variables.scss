@@ -233,18 +233,28 @@
   --bew-homepage-bg-mask-opacity: 0;
   --bew-homepage-bg-mask: hsl(210 8% 16% / var(--bew-homepage-bg-mask-opacity));
 
-  --bew-content: color-mix(in oklab, var(--bew-dark-base-color), white 3% / var(--bew-content-opacity));
-  --bew-content-hover: color-mix(in oklab, var(--bew-dark-base-color), white 8% / var(--bew-content-opacity));
-  --bew-content-alt: color-mix(in oklab, var(--bew-dark-base-color), white 5% / var(--bew-content-opacity));
-  --bew-content-alt-hover: color-mix(in oklab, var(--bew-dark-base-color), white 10% / var(--bew-content-opacity));
+  --bew-content: rgb(from color-mix(in oklab, var(--bew-dark-base-color), white 3%) r g b / var(--bew-content-opacity));
+  --bew-content-hover: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 8%) r g b / var(--bew-content-opacity)
+  );
+  --bew-content-alt: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 5%) r g b / var(--bew-content-opacity)
+  );
+  --bew-content-alt-hover: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 10% r g b / var(--bew-content-opacity))
+  );
 
   --bew-content-solid: color-mix(in oklab, var(--bew-dark-base-color), white 3%);
   --bew-content-solid-hover: color-mix(in oklab, var(--bew-dark-base-color), white 8%);
   --bew-content-alt-solid: color-mix(in oklab, var(--bew-dark-base-color), white 5%);
   --bew-content-alt-solid-hover: color-mix(in oklab, var(--bew-dark-base-color), white 10%);
 
-  --bew-elevated: color-mix(in oklab, var(--bew-dark-base-color), white 6% / var(--bew-content-opacity));
-  --bew-elevated-hover: color-mix(in oklab, var(--bew-dark-base-color), white 11% / var(--bew-content-opacity));
+  --bew-elevated: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 6%) r g b / var(--bew-content-opacity)
+  );
+  --bew-elevated-hover: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 11% r g b / var(--bew-content-opacity))
+  );
   --bew-elevated-alt: var(--bew-elevated);
   --bew-elevated-alt-hover: var(--bew-elevated-hover);
 
