@@ -241,7 +241,7 @@
     from color-mix(in oklab, var(--bew-dark-base-color), white 5%) r g b / var(--bew-content-opacity)
   );
   --bew-content-alt-hover: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 10% r g b / var(--bew-content-opacity))
+    from color-mix(in oklab, var(--bew-dark-base-color), white 10%) r g b / var(--bew-content-opacity)
   );
 
   --bew-content-solid: color-mix(in oklab, var(--bew-dark-base-color), white 3%);
@@ -253,7 +253,7 @@
     from color-mix(in oklab, var(--bew-dark-base-color), white 6%) r g b / var(--bew-content-opacity)
   );
   --bew-elevated-hover: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 11% r g b / var(--bew-content-opacity))
+    from color-mix(in oklab, var(--bew-dark-base-color), white 11%) r g b / var(--bew-content-opacity)
   );
   --bew-elevated-alt: var(--bew-elevated);
   --bew-elevated-alt-hover: var(--bew-elevated-hover);
