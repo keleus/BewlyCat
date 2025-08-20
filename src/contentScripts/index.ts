@@ -208,8 +208,12 @@ function applyDefaultPlayerMode() {
     }
   }
   setupShortcutHandlers()
-
   hasAppliedPlayerMode = true // 标记已应用
+  // 添加稍后再看按钮
+  setTimeout(async () => {
+    const { addWatchLaterButton } = await import('~/utils/watchLaterButton')
+    addWatchLaterButton()
+  }, 3000)
 }
 
 function checkForUrlChanges() {
@@ -218,7 +222,6 @@ function checkForUrlChanges() {
     hasAppliedPlayerMode = false // URL变化时重置标志
     if (isVideoOrBangumiPage()) {
       applyDefaultPlayerMode()
-      setupShortcutHandlers() // URL变化时重新注册快捷键
       // 如果是视频页面内部跳转，延迟执行滚动
       if (isVideoOrBangumiPage()) {
         handleVideoPageNavigation()
@@ -236,7 +239,6 @@ function handleVisibilityChange() {
     && (isVideoOrBangumiPage())
     && !hasAppliedPlayerMode) {
     applyDefaultPlayerMode()
-    setupShortcutHandlers()
   }
 }
 
@@ -245,11 +247,9 @@ window.addEventListener('load', () => {
   if (isVideoPage()) {
     applyDefaultPlayerMode()
     disableAutoPlayCollection(settings.value)
-    setupShortcutHandlers()
   }
   else if (isVideoOrBangumiPage()) {
     applyDefaultPlayerMode()
-    setupShortcutHandlers()
   }
 
   // 添加搜索页面视频卡片点击事件处理
@@ -297,7 +297,6 @@ function setupBiliVideoCardClickHandler() {
 window.addEventListener('pageshow', () => {
   if ((isVideoOrBangumiPage()) && !hasAppliedPlayerMode) {
     applyDefaultPlayerMode()
-    setupShortcutHandlers() // 页面显示时注册快捷键
   }
 })
 window.addEventListener('visibilitychange', handleVisibilityChange)
