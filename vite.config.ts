@@ -42,7 +42,7 @@ export const sharedConfig: UserConfig = {
       include: [r('./src/_locales/**')],
     }),
 
-    // // https://github.com/unocss/unocss
+    // https://github.com/unocss/unocss
     // UnoCSS(),
 
     replace({
@@ -75,8 +75,8 @@ export const sharedConfig: UserConfig = {
   },
   css: {
     preprocessorOptions: {
-      scss: {
-        api: 'modern-compiler',
+      sass: {
+        api: 'modern',
       },
     },
   },
