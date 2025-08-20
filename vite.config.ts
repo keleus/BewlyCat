@@ -73,13 +73,6 @@ export const sharedConfig: UserConfig = {
       'vue-demi',
     ],
   },
-  css: {
-    preprocessorOptions: {
-      sass: {
-        api: 'modern',
-      },
-    },
-  },
 
 }
 
