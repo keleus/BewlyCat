@@ -1,4 +1,4 @@
-import type { AttributifyAttributes } from '@unocss/preset-attributify'
+import type { AttributifyAttributes } from 'unocss'
 import type { ProtocolWithReturn } from 'webext-bridge'
 
 declare module 'webext-bridge' {
