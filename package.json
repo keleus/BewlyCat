@@ -69,8 +69,6 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.2.1",
     "@types/webextension-polyfill": "^0.12.3",
-    "@unocss/preset-attributify": "^66.4.2",
-    "@unocss/preset-wind3": "^66.4.2",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vueuse/core": "^13.6.0",
     "chokidar": "^4.0.3",

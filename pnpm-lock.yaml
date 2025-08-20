@@ -69,12 +69,6 @@ importers:
       '@types/webextension-polyfill':
         specifier: ^0.12.3
         version: 0.12.3
-      '@unocss/preset-attributify':
-        specifier: ^66.4.2
-        version: 66.4.2
-      '@unocss/preset-wind3':
-        specifier: ^66.4.2
-        version: 66.4.2
       '@vitejs/plugin-vue':
         specifier: ^6.0.1
         version: 6.0.1(vite@6.3.5(@types/node@24.3.0)(jiti@2.5.1)(sass@1.90.0)(terser@5.43.1)(tsx@4.20.4)(yaml@2.8.1))(vue@3.5.18(typescript@5.9.2))
