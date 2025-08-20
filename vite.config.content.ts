@@ -9,8 +9,8 @@ import { sharedConfig } from './vite.config'
 export default defineConfig({
   ...sharedConfig,
   plugins: [
-    ...sharedConfig.plugins!,
     UnoCSS(),
+    ...sharedConfig.plugins!,
   ],
   build: {
     watch: isDev
