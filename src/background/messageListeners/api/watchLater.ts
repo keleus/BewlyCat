@@ -12,6 +12,7 @@ const API_WATCHLATER = {
       },
       body: {
         aid: 0,
+        bvid: '',
         csrf: '',
       },
     },

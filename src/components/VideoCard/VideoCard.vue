@@ -128,10 +128,19 @@ function toggleWatchLater() {
     return
 
   if (!isInWatchLater.value) {
-    api.watchlater.saveToWatchLater({
-      aid: props.video.id,
+    const params: { bvid?: string, aid?: number, csrf: string } = {
       csrf: getCSRF(),
-    })
+    }
+
+    // 优先使用bvid，如果没有则使用aid
+    if (props.video.bvid) {
+      params.bvid = props.video.bvid
+    }
+    else {
+      params.aid = props.video.id
+    }
+
+    api.watchlater.saveToWatchLater(params)
       .then((res) => {
         if (res.code === 0) {
           isInWatchLater.value = true
