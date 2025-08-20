@@ -17,6 +17,8 @@ const _videoClassTag = {
       '.bilibili-player-video-state,.bpx-player-state-wrap,.bpx-player-video-state',
   title:
       '.video-title,.bilibili-player-video-top-title,#player-title,.season-info .title',
+  subtitle:
+      '.video-pod__item.active>.title,.multip-list-item.multip-list-item-active',
   widescreen:
       '.bpx-player-ctrl-wide,.bilibili-player-video-btn-widescreen,.squirtle-video-widescreen',
   pagefullscreen:
@@ -587,11 +589,12 @@ export function showDanmuState() {
 export function toggleVideoTitle() {
   if (!titleElement) {
     titleElement = document.createElement('div')
-    titleElement.style.cssText = 'display: none; position: absolute; z-index: 100000; top: 0px; left: 50%; transform: translateX(-50%); padding: 4px 8px; background-color: rgba(8, 8, 8, 0.75); color: white; font-size: 22px;'
+    titleElement.style.cssText = 'display: none; position: absolute; z-index: 99; top: 0px; left: 50%; transform: translateX(-50%); padding: 4px 8px; background-color: rgba(8, 8, 8, 0.75); color: white; font-size: 22px;'
   }
 
   const stateContainer = document.querySelector(_videoClassTag.state)
   const titleElement2 = document.querySelector(_videoClassTag.title)
+  const subtitleElement = document.querySelector(_videoClassTag.subtitle)
 
   if (stateContainer && titleElement2 && titleElement2.textContent) {
     if (stateContainer.parentElement !== titleElement.parentElement) {
@@ -600,7 +603,10 @@ export function toggleVideoTitle() {
     }
 
     if (titleElement.style.display === 'none') {
-      titleElement.textContent = titleElement2.textContent
+      if (subtitleElement && subtitleElement.getAttribute('title'))
+        titleElement.textContent = `${titleElement2.textContent} - ${subtitleElement.getAttribute('title')}`
+      else
+        titleElement.textContent = titleElement2.textContent
       titleElement.style.display = 'block'
     }
     else {
