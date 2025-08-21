@@ -1,6 +1,6 @@
 name: 问题报告
 description: 遇到错误请在此报告。
-labels: [bug]
+labels: [BUG]
 
 body:
   - type: markdown
