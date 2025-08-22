@@ -51,34 +51,44 @@ export async function addWatchLaterButton() {
   watchLaterBtn.style.cssText = `
     display: flex;
     align-items: center;
+    justify-content: center;
     cursor: pointer;
-    padding: 8px 12px;
     border-radius: 6px;
-    transition: background-color 0.2s;
-    margin-right: 8px;
+    transition: background-color 0.2s, transform 0.15s ease;
+    height: 32px;
+    width: 32px;
+    padding: 0;
+    margin: 0 4px;
   `
 
   watchLaterBtn.innerHTML = `
-    <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" class="video-toolbar-item-icon" style="margin-right: 4px;">
-      <path fill-rule="evenodd" clip-rule="evenodd" d="M11.5 4C7.08172 4 3.5 7.58172 3.5 12C3.5 16.4183 7.08172 20 11.5 20C13.709 20 15.7072 19.106 17.156 17.6578C17.5465 17.2673 18.1797 17.2674 18.5702 17.658C18.9606 18.0486 18.9605 18.6817 18.5699 19.0722C16.7615 20.8801 14.2606 22 11.5 22C5.97715 22 1.5 17.5228 1.5 12C1.5 6.47715 5.97715 2 11.5 2C17.0228 2 21.5 6.47715 21.5 12C21.5 12.3748 21.4793 12.7451 21.439 13.1099C21.3783 13.6588 20.8841 14.0546 20.3352 13.9939C19.7863 13.9333 19.3904 13.4391 19.4511 12.8901C19.4834 12.5982 19.5 12.3012 19.5 12C19.5 7.58172 15.9183 4 11.5 4Z"></path>
-      <path fill-rule="evenodd" clip-rule="evenodd" d="M17.7929 10.7929C18.1834 10.4024 18.8166 10.4024 19.2071 10.7929L20.5 12.0858L21.7929 10.7929C22.1834 10.4024 22.8166 10.4024 23.2071 10.7929C23.5976 11.1834 23.5976 11.8166 23.2071 12.2071L21.2071 14.2071C21.0196 14.3946 20.7652 14.5 20.5 14.5C20.2348 14.5 19.9804 14.3946 19.7929 14.2071L17.7929 12.2071C17.4024 11.8166 17.4024 11.1834 17.7929 10.7929Z"></path>
-      <path fill-rule="evenodd" clip-rule="evenodd" d="M14.625 10.4846C15.7917 11.1582 15.7917 12.8422 14.625 13.5157L10.875 15.6808C9.70834 16.3544 8.25 15.5124 8.25 14.1653L8.25 9.83513C8.25 8.48798 9.70834 7.64601 10.875 8.31959L14.625 10.4846ZM13.875 12.2167C14.0417 12.1205 14.0417 11.8799 13.875 11.7837L10.125 9.61862C9.95833 9.5224 9.75 9.64268 9.75 9.83513L9.75 14.1653C9.75 14.3577 9.95833 14.478 10.125 14.3818L13.875 12.2167Z"></path>
-    </svg>
-    <span class="video-toolbar-item-text">稍后再看</span>
+    <div class="video-toolbar-item-icon" style="
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    ">
+      <i class="i-mingcute:carplay-line" style="
+        font-size: 18px;
+        line-height: 1;
+        color: var(--text1);
+        transition: color 0.2s ease;
+      "></i>
+    </div>
   `
-
-  // 添加悬停效果
-  watchLaterBtn.addEventListener('mouseenter', () => {
-    watchLaterBtn.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'
-  })
-
-  watchLaterBtn.addEventListener('mouseleave', () => {
-    watchLaterBtn.style.backgroundColor = 'transparent'
-  })
 
   // 添加点击事件
   watchLaterBtn.addEventListener('click', async () => {
     try {
+      // 获取图标元素
+      const iconElement = watchLaterBtn.querySelector('i')
+      if (!iconElement)
+        return
+
+      // 禁用按钮防止重复点击
+      watchLaterBtn.style.pointerEvents = 'none'
+
       // 动态导入api模块
       const { default: api } = await import('~/utils/api')
       const { getCSRF } = await import('~/utils/main')
@@ -99,28 +109,38 @@ export async function addWatchLaterButton() {
       const result = await api.watchlater.saveToWatchLater(params)
 
       if (result.code === 0) {
-        // 成功添加到稍后再看
-        const textSpan = watchLaterBtn.querySelector('.video-toolbar-item-text')
-        if (textSpan) {
-          const originalText = textSpan.textContent
-          textSpan.textContent = '已添加'
-          setTimeout(() => {
-            textSpan.textContent = originalText
-          }, 2000)
-        }
+        // 成功后将图标变为勾选
+        iconElement.className = 'i-mingcute:check-line'
+        iconElement.style.color = 'var(--bew-theme-color)'
+
+        // 添加成功动画效果
+        watchLaterBtn.style.transform = 'scale(1.1)'
+        setTimeout(() => {
+          watchLaterBtn.style.transform = 'scale(1)'
+        }, 150)
 
         // 更新顶栏数据
         setTimeout(() => {
           const topBarStore = useTopBarStore()
           topBarStore.getAllWatchLaterList()
         }, 1000)
+
+        // 2秒后恢复原始图标
+        setTimeout(() => {
+          iconElement.className = 'i-mingcute:carplay-line'
+          iconElement.style.color = 'var(--text1)'
+          watchLaterBtn.style.pointerEvents = 'auto'
+        }, 2000)
       }
       else {
-        console.error('添加稍后再看失败:', result.message)
+        // 失败时恢复按钮状态
+        watchLaterBtn.style.pointerEvents = 'auto'
       }
     }
     catch (error) {
       console.error('添加稍后再看出错:', error)
+      // 出错时恢复按钮状态
+      watchLaterBtn.style.pointerEvents = 'auto'
     }
   })
 
