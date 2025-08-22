@@ -492,8 +492,7 @@ function handleMouseEnter(item: HistoryItem) {
           v-model.lazy.trim="keyword"
           type="text"
           :placeholder="t('history.search_watch_history')"
-          p="x-14px"
-          lh-35px h-35px
+          class="p-x-14px lh-35px h-35px"
           rounded="$bew-radius"
           bg="$bew-content-solid"
           shadow="$bew-shadow-1"
