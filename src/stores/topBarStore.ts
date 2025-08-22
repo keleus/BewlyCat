@@ -88,6 +88,9 @@ export const useTopBarStore = defineStore('topBar', () => {
     more: false,
   })
 
+  // TopBar visibility state
+  const topBarVisible = ref<boolean>(true)
+
   // 从 useTopBarReactive 整合的状态
   // 延迟获取 AppProvider，避免在 store 初始化时就调用
   const getAppProvider = () => {
@@ -623,6 +626,11 @@ export const useTopBarStore = defineStore('topBar', () => {
     return isMouseOverPopup[key] || false
   }
 
+  // 设置TopBar可见状态
+  function setTopBarVisible(visible: boolean) {
+    topBarVisible.value = visible
+  }
+
   return {
     isLogin,
     userInfo,
@@ -679,5 +687,8 @@ export const useTopBarStore = defineStore('topBar', () => {
     privilegeInfo,
     hasBCoinToReceive,
     bCoinAlreadyReceived,
+
+    topBarVisible,
+    setTopBarVisible,
   }
 })

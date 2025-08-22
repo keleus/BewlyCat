@@ -141,6 +141,8 @@ function handleScroll() {
 
 function toggleTopBarVisible(visible: boolean) {
   hideTopBar.value = !visible
+  // 同时更新topBarStore中的状态
+  topBarStore.setTopBarVisible(visible)
   emitter.emit(TOP_BAR_VISIBILITY_CHANGE, !hideTopBar.value)
 }
 

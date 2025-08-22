@@ -1,10 +1,24 @@
 <script setup lang="ts">
 import { settings } from '~/logic'
+import { useTopBarStore } from '~/stores/topBarStore'
 
 function toggleBewlyTopBar() {
   settings.value.useOriginalBilibiliTopBar = !settings.value.useOriginalBilibiliTopBar
   settings.value.showTopBar = !settings.value.showTopBar
 }
+
+const topBarStore = useTopBarStore()
+
+// 计算顶部边距
+const topMargin = computed(() => {
+  if (settings.value.useOriginalBilibiliTopBar) {
+    return 'calc(var(--bew-top-bar-height) - 15px)'
+  }
+  if (!topBarStore.topBarVisible) {
+    return '0px'
+  }
+  return 'calc(var(--bew-top-bar-height) - 20px)'
+})
 </script>
 
 <template>
@@ -14,7 +28,7 @@ function toggleBewlyTopBar() {
     z-10
     w-full
     flex="~ items-center justify-center"
-    m="t-[calc(var(--bew-top-bar-height)-20px)]"
+    :style="{ marginTop: topMargin }"
     p="t-30px"
   >
     <button
