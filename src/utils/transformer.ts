@@ -1,5 +1,5 @@
 import type { MaybeElement } from '@vueuse/core'
-import { unrefElement, useElementVisibility } from '@vueuse/core'
+import { unrefElement, useElementVisibility, whenever } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 
 interface TransformerCenter {
@@ -111,8 +111,9 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
   // v-show
   const targetVisibility = useElementVisibility(target)
 
-  // 使用 watch 替代 whenever 来避免Vue警告
-  watch(() => targetVisibility.value, () => {
+  // fix keleus#135
+  // 还原为 whenever，仅在显示时计算位置
+  whenever(targetVisibility, () => {
     try {
       const targetElement = unrefElement(target)
       if (targetElement) {
@@ -123,22 +124,6 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
     }
     catch (e) {
       console.warn('Failed to update style on visibility change:', e)
-    }
-  }, { flush: 'pre' })
-
-  // v-if - 使用getter函数来避免Vue警告
-  watch(() => target.value, (targetElement) => {
-    if (targetElement) {
-      try {
-        update()
-        const style = unrefElement(targetElement)?.getAttribute('style')
-        if (style !== undefined) {
-          unrefElement(targetElement)?.setAttribute('style', generateStyle(style))
-        }
-      }
-      catch (e) {
-        console.warn('Failed to update style on target change:', e)
-      }
     }
   }, { flush: 'pre' })
 
