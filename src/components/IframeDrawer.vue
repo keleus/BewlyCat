@@ -26,6 +26,7 @@ const currentUrl = ref<string>(props.url)
 const showIframe = ref<boolean>(false)
 const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
 const removeTopBarClassInjected = ref<boolean>(false)
+const originUrl = ref<string>()
 
 useEventListener(window, 'popstate', updateIframeUrl)
 
@@ -100,6 +101,7 @@ function setupIframeListeners() {
   })
 }
 onMounted(() => {
+  originUrl.value = window.location.href
   history.pushState(null, '', props.url)
   show.value = true
   headerShow.value = true
@@ -115,7 +117,7 @@ onBeforeUnmount(() => {
 })
 
 onUnmounted(() => {
-  history.replaceState(null, '', 'https://www.bilibili.com')
+  history.replaceState(null, '', originUrl.value)
 })
 
 function updateCurrentUrl(e: any) {
