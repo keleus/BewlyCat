@@ -72,10 +72,8 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
       { id: 'widescreen', name: t('settings.shortcuts.widescreen'), description: t('settings.shortcuts.widescreen_desc'), defaultKey: 'T' },
       { id: 'shortStepBackward', name: t('settings.shortcuts.short_step_backward'), description: t('settings.shortcuts.short_step_backward_desc'), defaultKey: 'J' },
       { id: 'longStepBackward', name: t('settings.shortcuts.long_step_backward'), description: t('settings.shortcuts.long_step_backward_desc'), defaultKey: 'Shift+J' },
-      { id: 'playPause', name: t('settings.shortcuts.play_pause_ext'), description: t('settings.shortcuts.play_pause_ext_desc'), defaultKey: 'K' }, // Renamed to avoid conflict if 'playPause' is used for official
       { id: 'shortStepForward', name: t('settings.shortcuts.short_step_forward'), description: t('settings.shortcuts.short_step_forward_desc'), defaultKey: 'L' },
       { id: 'longStepForward', name: t('settings.shortcuts.long_step_forward'), description: t('settings.shortcuts.long_step_forward_desc'), defaultKey: 'Shift+L' },
-      { id: 'nextVideoExtended', name: t('settings.shortcuts.next_video_ext'), description: t('settings.shortcuts.next_video_ext_desc'), defaultKey: 'N' },
       { id: 'pip', name: t('settings.shortcuts.pip'), description: t('settings.shortcuts.pip_desc'), defaultKey: 'P' },
       { id: 'turnOffLight', name: t('settings.shortcuts.turn_off_light'), description: t('settings.shortcuts.turn_off_light_desc'), defaultKey: 'I' },
       { id: 'caption', name: t('settings.shortcuts.caption'), description: t('settings.shortcuts.caption_desc'), defaultKey: 'C' },

@@ -322,10 +322,8 @@ export const originalSettings: Settings = {
     widescreen: { key: 'T', enabled: true },
     shortStepBackward: { key: 'J', enabled: true },
     longStepBackward: { key: 'Shift+J', enabled: true },
-    playPause: { key: 'K', enabled: true }, // 官方有 Space/⏯️，K 作为可选项
     shortStepForward: { key: 'L', enabled: true },
     longStepForward: { key: 'Shift+L', enabled: true },
-    nextVideoExtended: { key: 'N', enabled: true }, // 官方有 ]/⏩，N 作为可选项
     pip: { key: 'P', enabled: true },
     turnOffLight: { key: 'I', enabled: true },
     caption: { key: 'C', enabled: true },

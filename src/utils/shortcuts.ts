@@ -3,7 +3,6 @@ import { settings } from '~/logic'
 import {
   adjustVideoSize,
   changePlaybackRate,
-  playPause as playerPlayPause,
   replay as playerReplay,
   resetPlaybackRate,
   showDanmuState,
@@ -255,21 +254,6 @@ export function registerDefaultHandlers(): void {
   // 长步前进
   registerShortcutHandler('longStepForward', () => {
     stepSeek(true, 30)
-  })
-
-  // 播放/暂停
-  registerShortcutHandler('playPause', (e, player) => {
-    if (player)
-      playerPlayPause(player)
-  })
-
-  // 扩展的下一个视频 (N)
-  registerShortcutHandler('nextVideoExtended', () => {
-    const nextBtn = document.querySelector('.bpx-player-ctrl-next')
-      || document.querySelector('.bilibili-player-video-btn-next')
-      || document.querySelector('.squirtle-video-next')
-    if (nextBtn)
-      (nextBtn as HTMLElement).click()
   })
 
   // 画中画
