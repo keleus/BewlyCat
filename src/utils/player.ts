@@ -291,19 +291,33 @@ export function isCollectionVideo(): boolean {
 }
 
 // 播放/暂停
-export function playPause(player: Element) {
-  const playBtn = player.querySelector(_videoClassTag.playBtn)
-  if (playBtn) {
-    (playBtn as HTMLElement).click()
-  }
-  else {
-    const video = getVideoElement()
-    if (video) {
-      if (video.paused)
-        video.play()
-      else
-        video.pause()
+export function playPause(player?: Element) {
+  // 如果提供了player参数，优先使用
+  if (player) {
+    const playBtn = player.querySelector(_videoClassTag.playBtn)
+    if (playBtn) {
+      (playBtn as HTMLElement).click()
+      return
     }
+  }
+
+  // 如果没有player参数或者找不到播放按钮，尝试自动查找播放器
+  const autoPlayer = document.querySelector(_videoClassTag.player)
+  if (autoPlayer) {
+    const playBtn = autoPlayer.querySelector(_videoClassTag.playBtn)
+    if (playBtn) {
+      (playBtn as HTMLElement).click()
+      return
+    }
+  }
+
+  // 最后备用方案：直接操作视频元素
+  const video = getVideoElement()
+  if (video) {
+    if (video.paused)
+      video.play()
+    else
+      video.pause()
   }
 }
 
