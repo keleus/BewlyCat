@@ -29,6 +29,7 @@ const searchBarStyles = computed(() => ({
         v-if="showSearchBar"
         class="search-bar"
         :style="searchBarStyles"
+        :show-hot-search="settings.showHotSearchInTopBar"
       />
     </Transition>
   </div>

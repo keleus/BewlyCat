@@ -74,6 +74,7 @@ settings:
   group_wallpaper: 背景圖片
   group_logo: LOGO
   group_search_bar: 搜尋欄
+  group_hot_search: 熱搜
   group_recommendation_mode: 「爲你推薦」推薦模式
   group_recommendation_filters: 「爲你推薦」過濾
   group_recommendation_filters_desc: |
@@ -214,6 +215,10 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: 當搜尋欄聚焦時背景變暗
   bg_blurs_when_the_search_bar_is_focused: 當搜尋欄聚焦時背景變模糊
   choose_search_bar_focused_character: 選擇搜尋欄聚焦時出現的人物
+  show_hot_search_in_top_bar: 在頂欄顯示熱搜
+  show_hot_search_in_top_bar_desc: 在頂欄搜尋框中顯示熱搜列表
+  show_hot_search_in_search_page: 在搜尋頁顯示熱搜
+  show_hot_search_in_search_page_desc: 在搜尋頁面顯示熱搜排行榜
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
   recommendation_mode: 推薦模式
   recommendation_mode_desc: |
@@ -623,4 +628,9 @@ watch_later:
   remove_from_watch_later: 移除
 search_bar:
   history_title: 搜尋記錄
+  hot_search_title: 熱搜
   clear_history: 清除所有搜尋記錄
+search_page:
+  hot_search_ranking: 熱搜排行榜
+  loading: 載入中...
+  no_hot_search_data: 暫無熱搜資料

@@ -100,6 +100,15 @@ function changeSearchBarFocusCharacter(url: string) {
       </SettingsItem>
     </SettingsItemGroup>
 
+    <SettingsItemGroup :title="$t('settings.group_hot_search')">
+      <SettingsItem :title="$t('settings.show_hot_search_in_search_page')">
+        <template #desc>
+          <span>{{ $t('settings.show_hot_search_in_search_page_desc') }}</span>
+        </template>
+        <Radio v-model="settings.showHotSearchInSearchPage" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
     <ChangeWallpaper type="searchPage" />
   </div>
 </template>

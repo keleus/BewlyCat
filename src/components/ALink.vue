@@ -8,7 +8,7 @@ const props = defineProps<{
   href?: string
   title?: string
   rel?: string
-  type: 'topBar' | 'videoCard'
+  type: 'topBar' | 'videoCard' | 'searchBar'
   customClickEvent?: boolean
   stopPropagation?: boolean
 }>()
@@ -31,6 +31,8 @@ const openMode = computed(() => {
     return settings.value.topBarLinkOpenMode
   else if (props.type === 'videoCard')
     return settings.value.videoCardLinkOpenMode
+  else if (props.type === 'searchBar')
+    return settings.value.searchBarLinkOpenMode
   return 'newTab'
 })
 

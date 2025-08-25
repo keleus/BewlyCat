@@ -76,6 +76,7 @@ settings:
   group_wallpaper: Wallpaper
   group_logo: LOGO
   group_search_bar: Search Bar
+  group_hot_search: Hot Search
   group_recommendation_mode: '"For you" Recommendation Mode'
   group_recommendation_filters: '"For you" Recommendation Filters'
   group_recommendation_filters_desc: >
@@ -235,6 +236,10 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: Background darkens when the search bar is focused
   bg_blurs_when_the_search_bar_is_focused: Background blurs when the search bar is focused
   choose_search_bar_focused_character: Choose the character that appears when the search bar is focused
+  show_hot_search_in_top_bar: Show hot search in top bar
+  show_hot_search_in_top_bar_desc: Display hot search list in the top bar search box
+  show_hot_search_in_search_page: Show hot search in search page
+  show_hot_search_in_search_page_desc: Display hot search ranking on the search page
   individually_set_search_page_wallpaper: Individually set search page wallpaper
   recommendation_mode: Recommendation mode
   recommendation_mode_desc: >
@@ -700,4 +705,9 @@ watch_later:
   remove_from_watch_later: Remove
 search_bar:
   history_title: Search History
+  hot_search_title: Hot Search
   clear_history: Clear search history
+search_page:
+  hot_search_ranking: Hot Search Ranking
+  loading: Loading...
+  no_hot_search_data: No hot search data available

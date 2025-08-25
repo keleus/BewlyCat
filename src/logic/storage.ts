@@ -146,6 +146,10 @@ export interface Settings {
   searchPageWallpaperMaskOpacity: number
   searchPageWallpaperBlurIntensity: number
 
+  // 热搜功能设置
+  showHotSearchInTopBar: boolean
+  showHotSearchInSearchPage: boolean
+
   recommendationMode: 'web' | 'app'
 
   // filter setting
@@ -281,6 +285,10 @@ export const originalSettings: Settings = {
   searchPageEnableWallpaperMasking: false,
   searchPageWallpaperMaskOpacity: 0,
   searchPageWallpaperBlurIntensity: 0,
+
+  // 热搜功能设置
+  showHotSearchInTopBar: true,
+  showHotSearchInSearchPage: true,
 
   recommendationMode: 'web',
 

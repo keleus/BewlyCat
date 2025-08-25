@@ -13,6 +13,17 @@ const API_SEARCH = {
     },
     afterHandle: AHS.J_D,
   },
+  getHotSearchList: {
+    url: 'https://api.bilibili.com/x/web-interface/wbi/search/square',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      limit: 50,
+      platform: 'web',
+    },
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_SEARCH

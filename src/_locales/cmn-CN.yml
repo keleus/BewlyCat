@@ -74,6 +74,7 @@ settings:
   group_wallpaper: 背景图片
   group_logo: LOGO
   group_search_bar: 搜索栏
+  group_hot_search: 热搜
   group_recommendation_mode: “个性推荐” 推荐模式
   group_recommendation_filters: “个性推荐” 过滤
   group_recommendation_filters_desc: |
@@ -237,6 +238,10 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: 当搜索栏聚焦时背景暗化
   bg_blurs_when_the_search_bar_is_focused: 当搜索栏聚焦时背景模糊
   choose_search_bar_focused_character: 选择搜索栏聚焦时出现的人物
+  show_hot_search_in_top_bar: 在顶栏显示热搜
+  show_hot_search_in_top_bar_desc: 在顶栏搜索框中显示热搜列表
+  show_hot_search_in_search_page: 在搜索页显示热搜
+  show_hot_search_in_search_page_desc: 在搜索页面显示热搜排行榜
   individually_set_search_page_wallpaper: 单独设置搜索页背景
   recommendation_mode: 推荐模式
   recommendation_mode_desc: |
@@ -608,4 +613,9 @@ watch_later:
   remove_from_watch_later: 移除
 search_bar:
   history_title: 搜索历史
+  hot_search_title: 热搜
   clear_history: 清空搜索历史
+search_page:
+  hot_search_ranking: 热搜排行榜
+  loading: 加载中...
+  no_hot_search_data: 暂无热搜数据
