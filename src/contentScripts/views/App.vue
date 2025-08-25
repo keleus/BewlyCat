@@ -443,48 +443,106 @@ if (settings.value.cleanUrlArgument) {
     'broadcast_type',
   ]
 
+  let isCleaningUrl = false // 防止重复执行
+  let cleanupTimer: ReturnType<typeof setTimeout> | null = null
+
   function cleanUrlParams() {
-    const currentUrl = new URL(window.location.href)
-    let hasChanged = false
+    // 防止在页面加载过程中执行URL清理
+    if (isCleaningUrl || document.readyState === 'loading') {
+      return
+    }
 
-    PARAMS_TO_REMOVE.forEach((param) => {
-      if (currentUrl.searchParams.has(param)) {
-        currentUrl.searchParams.delete(param)
-        hasChanged = true
+    try {
+      isCleaningUrl = true
+      const currentUrl = new URL(window.location.href)
+      let hasChanged = false
+
+      PARAMS_TO_REMOVE.forEach((param) => {
+        if (currentUrl.searchParams.has(param)) {
+          currentUrl.searchParams.delete(param)
+          hasChanged = true
+        }
+      })
+
+      if (hasChanged) {
+        const newUrl = currentUrl.toString()
+          .replace(/([^:])\/\/(?!\/)/g, '$1/') // 只替换中间的双斜杠，不处理末尾的斜杠
+          .replace(/%3D/gi, '=')
+          .replace(/%26/g, '&')
+
+        // 使用 requestIdleCallback 来避免阻塞页面加载
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(() => {
+            history.replaceState(null, '', newUrl)
+            isCleaningUrl = false
+          })
+        }
+        else {
+          setTimeout(() => {
+            history.replaceState(null, '', newUrl)
+            isCleaningUrl = false
+          }, 0)
+        }
       }
-    })
-
-    if (hasChanged) {
-      const newUrl = currentUrl.toString()
-        .replace(/([^:])\/\/(?!\/)/g, '$1/') // 只替换中间的双斜杠，不处理末尾的斜杠
-        .replace(/%3D/gi, '=')
-        .replace(/%26/g, '&')
-      history.replaceState(null, '', newUrl)
+      else {
+        isCleaningUrl = false
+      }
+    }
+    catch (error) {
+      console.warn('URL清理失败:', error)
+      isCleaningUrl = false
     }
   }
 
-  const cleanupStrategies = [
-    () => window.addEventListener('load', cleanUrlParams),
-    () => document.addEventListener('DOMContentLoaded', cleanUrlParams),
-    () => setTimeout(cleanUrlParams, 1500),
-    () => window.requestIdleCallback?.(cleanUrlParams),
-  ]
+  // 延迟执行URL清理，确保页面完全加载后再执行
+  function scheduleCleanup(delay = 2000) {
+    if (cleanupTimer) {
+      clearTimeout(cleanupTimer)
+    }
+    cleanupTimer = setTimeout(() => {
+      if (document.readyState === 'complete') {
+        cleanUrlParams()
+      }
+    }, delay)
+  }
 
+  // 只在页面完全加载后执行清理
   if (document.readyState === 'complete') {
-    setTimeout(cleanUrlParams, 300)
+    scheduleCleanup(1000)
   }
   else {
-    cleanupStrategies.forEach(strategy => strategy())
+    window.addEventListener('load', () => scheduleCleanup(1000), { once: true })
   }
 
+  // 监听URL变化，但增加防抖和延迟
   if (typeof window !== 'undefined') {
     let lastUrl = window.location.href
-    setInterval(() => {
+    let urlCheckTimer: ReturnType<typeof setTimeout> | null = null
+
+    const checkUrlChange = () => {
       if (window.location.href !== lastUrl) {
         lastUrl = window.location.href
-        setTimeout(cleanUrlParams, 300)
+        scheduleCleanup(2000) // 页面跳转后延迟更长时间
       }
-    }, 500)
+      urlCheckTimer = setTimeout(checkUrlChange, 1000) // 降低检查频率
+    }
+
+    // 页面可见性变化时停止/恢复检查
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (urlCheckTimer) {
+          clearTimeout(urlCheckTimer)
+          urlCheckTimer = null
+        }
+      }
+      else {
+        if (!urlCheckTimer) {
+          checkUrlChange()
+        }
+      }
+    })
+
+    checkUrlChange()
   }
 }
 </script>
