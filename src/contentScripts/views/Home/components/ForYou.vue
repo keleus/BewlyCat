@@ -115,11 +115,17 @@ const hasBackState = ref<boolean>(false)
 const hasForwardState = ref<boolean>(false)
 
 // 添加请求限制相关的变量
-const requestCount = ref<number>(0)
-const maxRequestsPerSession = 20 // 每个会话最多请求次数
 const requestThrottleTime = 300 // 请求间隔时间(毫秒)
 const lastRequestTime = ref<number>(0)
 const PAGE_SIZE = 30
+
+// 添加过滤条件检查相关变量
+const lowFilterResultCount = ref<number>(0) // 连续低过滤结果次数
+const maxLowFilterCount = 2 // 最大连续低过滤结果次数
+const minFilteredVideos = 6 // 最少过滤后视频数量
+const minFilteredVideosAfterRetry = 10 // 重试后最少过滤后视频数量
+const filterDelayTime = 1000 // 过滤结果不足时的延迟时间(毫秒)
+const isFilterBlocked = ref<boolean>(false) // 是否因过滤条件被阻止加载
 
 onKeyStroke((e: KeyboardEvent) => {
   if (showDislikeDialog.value) {
@@ -152,6 +158,7 @@ watch(() => settings.value.recommendationMode, () => {
   refreshIdx.value = 1
 
   videoList.value = []
+  appVideoList.value = []
   forwardVideoList.value = []
   cachedVideoList.value = []
 
@@ -159,6 +166,10 @@ watch(() => settings.value.recommendationMode, () => {
   hasBackState.value = false
   hasForwardState.value = false
   showUndoButton.value = false
+
+  // 重置过滤相关状态
+  resetRequestLimit()
+
   initData()
 })
 
@@ -186,14 +197,15 @@ async function initData() {
 
 // 添加重置请求限制的方法
 function resetRequestLimit() {
-  requestCount.value = 0
   lastRequestTime.value = 0
+  lowFilterResultCount.value = 0
+  isFilterBlocked.value = false
 }
 
 async function getData() {
-  // 检查请求次数限制
-  if (requestCount.value >= maxRequestsPerSession) {
-    toast.info('已达到本次会话的请求上限，请刷新页面重试')
+  // 检查是否因过滤条件被阻止
+  if (isFilterBlocked.value) {
+    toast.warning('过滤条件过于严格，请调整过滤设置后刷新页面')
     return
   }
 
@@ -207,7 +219,6 @@ async function getData() {
   emit('beforeLoading')
   isLoading.value = true
   lastRequestTime.value = now
-  requestCount.value++
 
   try {
     if (settings.value.recommendationMode === 'web') {
@@ -239,6 +250,14 @@ function initPageAction() {
       return
     if (noMoreContent.value)
       return
+    if (isFilterBlocked.value)
+      return
+
+    // 检查频率限制
+    const now = Date.now()
+    if (now - lastRequestTime.value < requestThrottleTime) {
+      return
+    }
 
     getData()
   }
@@ -391,13 +410,42 @@ async function getRecommendVideos() {
 
     if (!needToLoginFirst.value) {
       await nextTick()
-      if (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
-        // 检查请求次数和频率限制
-        if (requestCount.value < maxRequestsPerSession && (Date.now() - lastRequestTime.value >= requestThrottleTime)) {
-          getRecommendVideos()
+
+      // 检查过滤后的视频数量
+      const currentFilteredCount = filledItems.length
+      const shouldCheckFilter = filterFunc.value && currentFilteredCount > 0
+
+      if (shouldCheckFilter) {
+        // 检查是否符合最低过滤要求
+        const minRequired = lowFilterResultCount.value > 0 ? minFilteredVideosAfterRetry : minFilteredVideos
+
+        if (currentFilteredCount < minRequired) {
+          lowFilterResultCount.value++
+
+          if (lowFilterResultCount.value >= maxLowFilterCount) {
+            // 达到最大重试次数，停止加载
+            isFilterBlocked.value = true
+            toast.error(`过滤条件过于严格，连续${maxLowFilterCount}次加载的符合条件视频少于${minRequired}个，请调整过滤设置`)
+          }
+          else {
+            setTimeout(() => {
+              if (!isLoading.value && !isFilterBlocked.value) {
+                getRecommendVideos()
+              }
+            }, filterDelayTime)
+          }
         }
-        else if (requestCount.value >= maxRequestsPerSession) {
-          toast.info('已达到本次会话的请求上限')
+        else {
+          // 过滤结果符合要求，重置计数器
+          lowFilterResultCount.value = 0
+        }
+      }
+
+      // 只有在未被阻止的情况下才继续加载
+      if (!isFilterBlocked.value && (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1)) {
+        // 检查请求频率限制
+        if (Date.now() - lastRequestTime.value >= requestThrottleTime) {
+          getRecommendVideos()
         }
       }
     }
@@ -476,13 +524,42 @@ async function getAppRecommendVideos() {
 
     if (!needToLoginFirst.value) {
       await nextTick()
-      if (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
-        // 检查请求次数和频率限制
-        if (requestCount.value < maxRequestsPerSession && (Date.now() - lastRequestTime.value >= requestThrottleTime)) {
-          getAppRecommendVideos()
+
+      // 检查过滤后的视频数量
+      const currentFilteredCount = filledItems.length
+      const shouldCheckFilter = appFilterFunc.value && currentFilteredCount > 0
+
+      if (shouldCheckFilter) {
+        // 检查是否符合最低过滤要求
+        const minRequired = lowFilterResultCount.value > 0 ? minFilteredVideosAfterRetry : minFilteredVideos
+
+        if (currentFilteredCount < minRequired) {
+          lowFilterResultCount.value++
+
+          if (lowFilterResultCount.value >= maxLowFilterCount) {
+            // 达到最大重试次数，停止加载
+            isFilterBlocked.value = true
+            toast.error(`过滤条件过于严格，连续${maxLowFilterCount}次加载的符合条件视频少于${minRequired}个，请调整过滤设置`)
+          }
+          else {
+            setTimeout(() => {
+              if (!isLoading.value && !isFilterBlocked.value) {
+                getAppRecommendVideos()
+              }
+            }, filterDelayTime)
+          }
         }
-        else if (requestCount.value >= maxRequestsPerSession) {
-          toast.info('已达到本次会话的请求上限')
+        else {
+          // 过滤结果符合要求，重置计数器
+          lowFilterResultCount.value = 0
+        }
+      }
+
+      // 只有在未被阻止的情况下才继续加载
+      if (!isFilterBlocked.value && (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1)) {
+        // 检查请求频率限制
+        if (Date.now() - lastRequestTime.value >= requestThrottleTime) {
+          getAppRecommendVideos()
         }
       }
     }
