@@ -51,6 +51,7 @@ const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
+const isInitialized = ref<boolean>(false)
 const { handleReachBottom, handlePageRefresh, haveScrollbar, handleBackToTop } = useBewlyApp()
 
 onMounted(() => {
@@ -82,6 +83,7 @@ function initPageAction() {
 }
 
 async function initData() {
+  isInitialized.value = false
   offset.value = ''
   updateBaseline.value = ''
   liveVideoList.value.length = 0
@@ -92,6 +94,7 @@ async function initData() {
   if (settings.value.followingTabShowLivestreamingVideos)
     getLiveVideoList()
   await getData()
+  isInitialized.value = true
 }
 
 async function getData() {
@@ -173,13 +176,18 @@ async function getFollowedUsersVideos() {
     const lastUniqueId = lastVideo ? lastVideo.uniqueId : ''
     let lastBvid = lastVideo ? lastVideo.bvid : ''
 
-    let i = 0
-    // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L208
-    const pendingVideos: VideoElement[] = Array.from({ length: 30 }, () => ({
-      uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
-    } satisfies VideoElement))
+    // 只在首次加载时添加占位视频，避免闪屏
+    const isFirstLoad = videoList.value.length === 0
+    let pendingVideos: VideoElement[] = []
     let lastVideoListLength = videoList.value.length
-    videoList.value.push(...pendingVideos)
+
+    if (isFirstLoad) {
+      let i = 0
+      pendingVideos = Array.from({ length: 30 }, () => ({
+        uniqueId: `unique-id-${i++}`,
+      } satisfies VideoElement))
+      videoList.value.push(...pendingVideos)
+    }
 
     const response: MomentResult = await api.moment.getMoments({
       type: 'video',
@@ -203,8 +211,8 @@ async function getFollowedUsersVideos() {
         resData.push(item)
       })
 
-      // when videoList has length property, it means it is the first time to load
-      if (!videoList.value.length) {
+      // 使用isFirstLoad来判断是否是首次加载
+      if (isFirstLoad) {
         videoList.value = resData.map(item => ({ uniqueId: `${item.id_str}`, item }))
       }
       else {
@@ -256,7 +264,10 @@ async function getFollowedUsersVideos() {
     }
   }
   finally {
-    videoList.value = videoList.value.filter(video => video.item)
+    // 只在首次加载时过滤占位视频，避免后续加载时的闪屏
+    if (videoList.value.some(video => !video.item)) {
+      videoList.value = videoList.value.filter(video => video.item)
+    }
   }
 }
 
@@ -275,7 +286,7 @@ defineExpose({ initData })
       </Button>
     </Empty>
     <div
-      v-else
+      v-else-if="isInitialized"
       ref="containerRef"
       m="b-0 t-0" relative w-full h-full
       :class="gridClass"
@@ -331,8 +342,18 @@ defineExpose({ initData })
       />
     </div>
 
+    <!-- loading state for initial load -->
+    <div v-else-if="!isInitialized && !needToLoginFirst" class="grid gap-4" :class="gridClass">
+      <VideoCard
+        v-for="i in 12"
+        :key="`skeleton-${i}`"
+        :skeleton="true"
+        :horizontal="gridLayout !== 'adaptive'"
+      />
+    </div>
+
     <!-- no more content -->
-    <Empty v-if="noMoreContent && !needToLoginFirst" class="pb-4" :description="$t('common.no_more_content')" />
+    <Empty v-if="noMoreContent && !needToLoginFirst && isInitialized" class="pb-4" :description="$t('common.no_more_content')" />
   </div>
 </template>
 
