@@ -53,7 +53,8 @@ function isSupportedPages(): boolean {
     // https://github.com/BewlyBewly/BewlyBewly/issues/1246
     // https://github.com/BewlyBewly/BewlyBewly/issues/1256
     // https://github.com/BewlyBewly/BewlyBewly/issues/1266
-    || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share).*/.test(currentUrl)
+    // https://github.com/keleus/BewlyCat/issues/150
+    || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share|\/pages\/nav).*/.test(currentUrl)
     // moment detail
     || /https?:\/\/(?:www\.)?bilibili\.com\/opus\/.*/.test(currentUrl)
     // history page
@@ -86,6 +87,10 @@ function isSupportedPages(): boolean {
     || /^https?:\/\/passport\.bilibili\.com\/login.*$/.test(currentUrl)
     // music center page 新歌熱榜 https://music.bilibili.com/pc/music-center/
     || /https?:\/\/music\.bilibili\.com\/pc\/music-center.*$/.test(currentUrl)
+    // // blackboard 存在和B站其他页面不一样的元素，需要独立适配
+    // || /https?:\/\/(?:www\.)?bilibili\.com\/blackboard.*$/.test(currentUrl)
+    // // judgement 存在和B站其他页面不一样的元素，需要独立适配
+    // || /https?:\/\/(?:www\.)?bilibili\.com\/judgement.*$/.test(currentUrl)
   ) {
     return true
   }
@@ -112,7 +117,8 @@ export function isSupportedIframePages(): boolean {
       // https://github.com/BewlyBewly/BewlyBewly/issues/1246
       // https://github.com/BewlyBewly/BewlyBewly/issues/1256
       // https://github.com/BewlyBewly/BewlyBewly/issues/1266
-      || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share).*/.test(currentUrl)
+      // https://github.com/keleus/BewlyCat/issues/150
+      || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share|\/pages\/nav).*/.test(currentUrl)
       // notifications page, for `Open the notifications page as a drawer`
       || isNotificationPage()
     )
