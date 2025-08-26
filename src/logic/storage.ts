@@ -105,6 +105,7 @@ export interface Settings {
   showBewlyOrBiliPageSwitcher: boolean
   topBarIconBadges: 'number' | 'dot' | 'none'
   showWatchLaterBadge: boolean
+  topBarComponentsConfig: { key: string, visible: boolean, badgeType: 'number' | 'dot' | 'none' }[]
   openNotificationsPageAsDrawer: boolean
   showBCoinReceiveReminder: boolean
 
@@ -245,6 +246,15 @@ export const originalSettings: Settings = {
   showBewlyOrBiliPageSwitcher: true,
   topBarIconBadges: 'number',
   showWatchLaterBadge: false,
+  topBarComponentsConfig: [
+    { key: 'moments', visible: true, badgeType: 'number' },
+    { key: 'favorites', visible: true, badgeType: 'number' },
+    { key: 'history', visible: true, badgeType: 'number' },
+    { key: 'watchLater', visible: true, badgeType: 'number' },
+    { key: 'creatorCenter', visible: true, badgeType: 'none' },
+    { key: 'upload', visible: true, badgeType: 'none' },
+    { key: 'notifications', visible: true, badgeType: 'number' },
+  ],
   openNotificationsPageAsDrawer: true,
   showBCoinReceiveReminder: true,
 

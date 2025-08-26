@@ -96,6 +96,7 @@ settings:
   chk_box:
     show: 显示
     hidden: 隐藏
+  visibility: 显示
   enable_grid_layout_switcher: 启用页面网格布局切换器
   enable_horizontal_scrolling: 启用横向滚动
   enable_horizontal_scrolling_desc: 启用后，鼠标滚动时将直接滚动横向滚动列表。
@@ -191,6 +192,10 @@ settings:
   show_watch_later_badge: 显示稍后再看角标
   show_bcoin_receive_reminder: 大会员B币领取提醒
   open_notifications_page_as_drawer: 以抽屉形式打开通知页面
+  group_topbar_components: 顶栏组件设置
+  topbar_components_adjustment: 顶栏组件角标设置
+  topbar_components_adjustment_desc: 配置各个顶栏图标的角标显示方式
+  badge_type: 角标类型
   always_use_dock: 总是使用 Dock 栏
   always_use_dock_desc: 启用后，Dock 栏将始终显示，侧边栏将隐藏。我们推荐你同时启用自动隐藏 Dock 栏。
   auto_hide_dock: 自动隐藏 Dock 栏

@@ -8,25 +8,9 @@ import { settings } from '~/logic'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import TopBarComponents from './TopBarComponents.vue'
 
 const { t } = useI18n()
-
-const topBarIconBadgesOptions = computed(() => {
-  return [
-    {
-      label: t('settings.top_bar_icon_badges_opt.number'),
-      value: 'number',
-    },
-    {
-      label: t('settings.top_bar_icon_badges_opt.dot'),
-      value: 'dot',
-    },
-    {
-      label: t('settings.top_bar_icon_badges_opt.none'),
-      value: 'none',
-    },
-  ]
-})
 
 const videoPageTopBarConfigOptions = computed(() => {
   return [
@@ -68,12 +52,7 @@ const videoPageTopBarConfigOptions = computed(() => {
       <SettingsItem :title="$t('settings.show_bewly_or_bili_page_switcher')">
         <Radio v-model="settings.showBewlyOrBiliPageSwitcher" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.top_bar_icon_badges')">
-        <Select v-model="settings.topBarIconBadges" :options="topBarIconBadgesOptions" w="full" />
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.show_watch_later_badge')">
-        <Radio v-model="settings.showWatchLaterBadge" />
-      </SettingsItem>
+
       <SettingsItem :title="$t('settings.show_bcoin_receive_reminder')">
         <Radio v-model="settings.showBCoinReceiveReminder" />
       </SettingsItem>
@@ -87,6 +66,8 @@ const videoPageTopBarConfigOptions = computed(() => {
         <Radio v-model="settings.showHotSearchInTopBar" />
       </SettingsItem>
     </SettingsItemGroup>
+
+    <TopBarComponents />
   </div>
 </template>
 

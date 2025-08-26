@@ -6,6 +6,7 @@ import ALink from '~/components/ALink.vue'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { getUserID, removeHttpFromUrl } from '~/utils/main'
+import { isComponentVisible, shouldShowBadge, shouldShowDotBadge, shouldShowNumberBadge } from '~/utils/topBarBadge'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import { MESSAGE_URL } from '../constants/urls'
@@ -166,6 +167,23 @@ watch(
 function handleNotificationsClick(item: { name: string, url: string, unreadCount: number, icon: string }) {
   emit('notificationsClick', item)
 }
+
+// 判断分割线是否应该显示
+const shouldShowDivider = computed(() => {
+  // 分割线左边的组件：moments、favorites、history、watchLater、creatorCenter
+  const leftSideVisible = isComponentVisible('moments')
+    || isComponentVisible('favorites')
+    || isComponentVisible('history')
+    || isComponentVisible('watchLater')
+    || isComponentVisible('creatorCenter')
+
+  // 分割线右边的组件：upload、notifications
+  const rightSideVisible = isComponentVisible('upload')
+    || isComponentVisible('notifications')
+
+  // 只有当左右两边都至少有一边显示时才显示分割线
+  return leftSideVisible && rightSideVisible
+})
 </script>
 
 <template>
@@ -194,20 +212,21 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
         <div class="hidden lg:flex" gap-1>
           <!-- Moments -->
           <div
+            v-if="isComponentVisible('moments')"
             ref="moments"
             class="right-side-item"
             :class="{ active: popupVisible?.moments }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'moments')"
           >
-            <template v-if="newMomentsCount > 0">
+            <template v-if="newMomentsCount > 0 && shouldShowBadge('moments')">
               <div
-                v-if="settings.topBarIconBadges === 'number'"
+                v-if="shouldShowNumberBadge('moments')"
                 class="unread-num-dot"
               >
                 {{ newMomentsCount > 99 ? '99+' : newMomentsCount }}
               </div>
               <div
-                v-else-if="settings.topBarIconBadges === 'dot'"
+                v-else-if="shouldShowDotBadge('moments')"
                 class="unread-dot"
               />
             </template>
@@ -232,6 +251,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
           <!-- Favorites -->
           <div
+            v-if="isComponentVisible('favorites')"
             ref="favorites"
             class="right-side-item"
             :class="{ active: popupVisible?.favorites }"
@@ -260,6 +280,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
           <!-- History -->
           <div
+            v-if="isComponentVisible('history')"
             ref="history"
             class="right-side-item"
             :class="{ active: popupVisible?.history }"
@@ -286,20 +307,21 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
           <!-- Watch later -->
           <div
+            v-if="isComponentVisible('watchLater')"
             ref="watchLater"
             class="right-side-item"
             :class="{ active: popupVisible?.watchLater }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'watchLater')"
           >
-            <template v-if="watchLaterCount > 0 && settings.showWatchLaterBadge">
+            <template v-if="watchLaterCount > 0 && shouldShowBadge('watchLater')">
               <div
-                v-if="settings.topBarIconBadges === 'number'"
+                v-if="shouldShowNumberBadge('watchLater')"
                 class="unread-num-dot"
               >
                 {{ watchLaterCount > 99 ? '99+' : watchLaterCount }}
               </div>
               <div
-                v-else-if="settings.topBarIconBadges === 'dot'"
+                v-else-if="shouldShowDotBadge('watchLater')"
                 class="unread-dot"
               />
             </template>
@@ -323,7 +345,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
           </div>
 
           <!-- Creative center -->
-          <div class="right-side-item">
+          <div v-if="isComponentVisible('creatorCenter')" class="right-side-item">
             <a
               :class="{ 'white-icon': forceWhiteIcon }"
               href="https://member.bilibili.com/platform/home"
@@ -362,6 +384,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
         <div class="hidden lg:flex" gap-1 items-center>
           <!-- Divider -->
           <div
+            v-if="shouldShowDivider"
             :class="{ 'white-icon': forceWhiteIcon }"
             w-2px h-16px bg="$bew-border-color" mx-1
             rounded-4px
@@ -369,6 +392,7 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
           <!-- Upload -->
           <div
+            v-if="isComponentVisible('upload')"
             ref="upload"
             class="right-side-item"
             :class="{ active: popupVisible?.upload }"
@@ -397,20 +421,21 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
 
           <!-- Notifications -->
           <div
+            v-if="isComponentVisible('notifications')"
             ref="notifications"
             class="right-side-item"
             :class="{ active: popupVisible?.notifications }"
             @click="(event: MouseEvent) => handleClickTopBarItem(event, 'notifications')"
           >
-            <template v-if="unReadMessageCount > 0">
+            <template v-if="unReadMessageCount > 0 && shouldShowBadge('notifications')">
               <div
-                v-if="settings.topBarIconBadges === 'number'"
+                v-if="shouldShowNumberBadge('notifications')"
                 class="unread-num-dot"
               >
                 {{ unReadMessageCount > 99 ? '99+' : unReadMessageCount }}
               </div>
               <div
-                v-else-if="settings.topBarIconBadges === 'dot'"
+                v-else-if="shouldShowDotBadge('notifications')"
                 class="unread-dot"
               />
             </template>

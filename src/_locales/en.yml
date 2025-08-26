@@ -182,6 +182,10 @@ settings:
   show_watch_later_badge: Show watch later badge
   show_bcoin_receive_reminder: VIP B-coin receive reminder
   open_notifications_page_as_drawer: Open notifications page as drawer
+  group_topbar_components: Top Bar Components Settings
+  topbar_components_adjustment: Top Bar Components Badge Settings
+  topbar_components_adjustment_desc: Configure the badge display mode for each top bar icon
+  badge_type: Badge Type
   always_use_dock: Always use the dock
   always_use_dock_desc: >-
     The dock will always be visible and the sidebar will be hidden. We also
@@ -512,6 +516,7 @@ settings:
   group_language: language
   group_ad_blocking: AD Block
   group_visual_effects: Visual Effects
+  visibility: show
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
