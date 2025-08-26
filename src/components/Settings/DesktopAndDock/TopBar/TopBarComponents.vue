@@ -114,63 +114,61 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div>
-    <SettingsItemGroup :title="$t('settings.group_topbar_components')">
-      <SettingsItem :desc="$t('settings.topbar_components_adjustment_desc')">
-        <template #title>
-          <div flex="~ gap-4 items-center">
-            {{ $t('settings.topbar_components_adjustment') }}
-            <Button size="small" type="secondary" @click="resetTopBarComponents">
-              <template #left>
-                <div i-mingcute:back-line />
-              </template>
-              {{ $t('common.operation.reset') }}
-            </Button>
-          </div>
-        </template>
+  <SettingsItemGroup :title="$t('settings.group_topbar_components')">
+    <SettingsItem :desc="$t('settings.topbar_components_adjustment_desc')">
+      <template #title>
+        <div flex="~ gap-4 items-center">
+          {{ $t('settings.topbar_components_adjustment') }}
+          <Button size="small" type="secondary" @click="resetTopBarComponents">
+            <template #left>
+              <div i-mingcute:back-line />
+            </template>
+            {{ $t('common.operation.reset') }}
+          </Button>
+        </div>
+      </template>
 
-        <template #bottom>
+      <template #bottom>
+        <div
+          style="display: flex; gap: 0.5rem; flex-wrap: wrap; flex-direction: column;"
+        >
           <div
-            style="display: flex; gap: 0.5rem; flex-wrap: wrap; flex-direction: column;"
+            v-for="(component, index) in topBarComponents"
+            :key="component.key"
+            flex="~ gap-2 justify-between items-center wrap"
+            p="x-4 y-2"
+            bg="$bew-fill-1"
+            rounded="$bew-radius"
+            cursor-pointer
+            duration-300
+            :style="{
+              background: settings.topBarComponentsConfig[index]?.visible ? 'var(--bew-theme-color-20)' : 'var(--bew-fill-1)',
+              color: settings.topBarComponentsConfig[index]?.visible ? 'var(--bew-theme-color)' : 'var(--bew-text-1)',
+            }"
+            @click="handleToggleComponent(index)"
           >
-            <div
-              v-for="(component, index) in topBarComponents"
-              :key="component.key"
-              flex="~ gap-2 justify-between items-center wrap"
-              p="x-4 y-2"
-              bg="$bew-fill-1"
-              rounded="$bew-radius"
-              cursor-pointer
-              duration-300
-              :style="{
-                background: settings.topBarComponentsConfig[index]?.visible ? 'var(--bew-theme-color-20)' : 'var(--bew-fill-1)',
-                color: settings.topBarComponentsConfig[index]?.visible ? 'var(--bew-theme-color)' : 'var(--bew-text-1)',
-              }"
-              @click="handleToggleComponent(index)"
-            >
-              <div flex="~ gap-2 items-center">
-                <div :class="component.icon" />
-                <div w-80px text-ellipsis>
-                  {{ $t(component.i18nKey) }}
-                </div>
-              </div>
-              <div flex="~ gap-4 items-center justify-between wrap" @click.stop>
-                <div v-if="component.supportsBadge && settings.topBarComponentsConfig[index]?.visible" flex="~ items-center gap-2">
-                  {{ $t('settings.badge_type') }}
-                  <Select
-                    v-model="settings.topBarComponentsConfig[index].badgeType"
-                    :options="badgeOptions"
-                    w="120px"
-                  />
-                </div>
-                <div v-else h="32px" />
+            <div flex="~ gap-2 items-center">
+              <div :class="component.icon" />
+              <div w-80px text-ellipsis>
+                {{ $t(component.i18nKey) }}
               </div>
             </div>
+            <div flex="~ gap-4 items-center justify-between wrap" @click.stop>
+              <div v-if="component.supportsBadge && settings.topBarComponentsConfig[index]?.visible" flex="~ items-center gap-2">
+                {{ $t('settings.badge_type') }}
+                <Select
+                  v-model="settings.topBarComponentsConfig[index].badgeType"
+                  :options="badgeOptions"
+                  w="120px"
+                />
+              </div>
+              <div v-else h="32px" />
+            </div>
           </div>
-        </template>
-      </SettingsItem>
-    </SettingsItemGroup>
-  </div>
+        </div>
+      </template>
+    </SettingsItem>
+  </SettingsItemGroup>
 </template>
 
 <style lang="scss" scoped>
