@@ -2,6 +2,7 @@
 import { useThrottleFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
+import Select from '~/components/Select.vue'
 import { localSettings, settings } from '~/logic'
 
 import ChangeWallpaper from '../components/ChangeWallpaper.vue'
@@ -52,6 +53,23 @@ const isCustomColor = computed<boolean>(() => {
 
 const isCustomDarkModeBaseColor = computed<boolean>(() => {
   return !darkModeBaseColorOptions.value.includes(settings.value.darkModeBaseColor)
+})
+
+const fontPreferenceOptions = computed(() => {
+  return [
+    {
+      label: t('settings.customize_font_opt.default'),
+      value: 'default',
+    },
+    {
+      label: t('settings.customize_font_opt.recommend'),
+      value: 'recommend',
+    },
+    {
+      label: t('settings.customize_font_opt.custom'),
+      value: 'custom',
+    },
+  ]
 })
 
 const themeOptions = computed<Array<{ value: string, label: string }>>(() => {
@@ -186,6 +204,41 @@ function changeWallpaper(url: string) {
     </SettingsItemGroup>
 
     <ChangeWallpaper type="global" />
+
+    <SettingsItemGroup :title="$t('settings.group_visual_effects')">
+      <SettingsItem :title="$t('settings.disable_frosted_glass')">
+        <Radio v-model="settings.disableFrostedGlass" />
+      </SettingsItem>
+      <SettingsItem
+        v-if="!settings.disableFrostedGlass"
+        :title="$t('settings.reduce_frosted_glass_blur')"
+      >
+        <Radio v-model="settings.reduceFrostedGlassBlur" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.disable_shadow')">
+        <Radio v-model="settings.disableShadow" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup :title="$t('settings.group_fonts')">
+      <SettingsItem :title="$t('settings.customize_font')">
+        <Select
+          v-model="settings.customizeFont"
+          :options="fontPreferenceOptions"
+          w="full"
+        />
+        <template v-if="settings.customizeFont === 'custom'" #bottom>
+          <Input v-model="settings.fontFamily" @keydown.stop.passive="() => {}" />
+          <div text="sm $bew-text-2" mt-1 v-html="t('settings.customize_font_desc')" />
+        </template>
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.remove_the_indent_from_chinese_punctuation')" :desc="$t('settings.remove_the_indent_from_chinese_punctuation_desc')">
+        <Radio v-model="settings.removeTheIndentFromChinesePunctuation" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.override_danmaku_font')" :desc="$t('settings.override_danmaku_font_desc')">
+        <Radio v-model="settings.overrideDanmakuFont" />
+      </SettingsItem>
+    </SettingsItemGroup>
 
     <SettingsItemGroup>
       <SettingsItem :title="$t('settings.customize_css')">

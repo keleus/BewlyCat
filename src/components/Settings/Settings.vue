@@ -14,12 +14,13 @@ const { t } = useI18n()
 
 const settingsMenu = {
   [MenuType.General]: defineAsyncComponent(() => import('./General/General.vue')),
-  [MenuType.DesktopAndDock]: defineAsyncComponent(() => import('./DesktopAndDock/DesktopAndDock.vue')),
   [MenuType.Appearance]: defineAsyncComponent(() => import('./Appearance/Appearance.vue')),
+  [MenuType.VideoAndPlayback]: defineAsyncComponent(() => import('./VideoAndPlayback/VideoAndPlayback.vue')),
+  [MenuType.DesktopAndDock]: defineAsyncComponent(() => import('./DesktopAndDock/DesktopAndDock.vue')),
   [MenuType.BewlyPages]: defineAsyncComponent(() => import('./BewlyPages/BewlyPages.vue')),
   [MenuType.Shortcuts]: defineAsyncComponent(() => import('./Shortcuts/Shortcuts.vue')),
-  [MenuType.Compatibility]: defineAsyncComponent(() => import('./Compatibility/Compatibility.vue')),
   [MenuType.VolumeBalance]: defineAsyncComponent(() => import('./VolumeBalance/VolumeBalance.vue')),
+  [MenuType.Compatibility]: defineAsyncComponent(() => import('./Compatibility/Compatibility.vue')),
   // [MenuType.BilibiliSettings]: defineAsyncComponent(() => import('./BilibiliSettings/BilibiliSettings.vue')),
   [MenuType.About]: defineAsyncComponent(() => import('./About/About.vue')),
 }
@@ -58,16 +59,22 @@ const settingsMenuItems = computed((): MenuItem[] => {
       title: t('settings.menu_general'),
     },
     {
-      value: MenuType.DesktopAndDock,
-      icon: 'i-mingcute:imac-line',
-      iconActivated: 'i-mingcute:imac-fill',
-      title: t('settings.menu_desktop_and_dock'),
-    },
-    {
       value: MenuType.Appearance,
       title: t('settings.menu_appearance'),
       icon: 'i-mingcute:paint-brush-line',
       iconActivated: 'i-mingcute:paint-brush-fill',
+    },
+    {
+      value: MenuType.VideoAndPlayback,
+      icon: 'i-mingcute:play-circle-line',
+      iconActivated: 'i-mingcute:play-circle-fill',
+      title: t('settings.menu_video_and_playback'),
+    },
+    {
+      value: MenuType.DesktopAndDock,
+      icon: 'i-mingcute:imac-line',
+      iconActivated: 'i-mingcute:imac-fill',
+      title: t('settings.menu_desktop_and_dock'),
     },
     {
       value: MenuType.BewlyPages,

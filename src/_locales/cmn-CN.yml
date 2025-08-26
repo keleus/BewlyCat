@@ -54,8 +54,9 @@ iframe_drawer:
 settings:
   title: 设置
   menu_general: 常规
-  menu_desktop_and_dock: 桌面和 Dock 栏
   menu_appearance: 外观
+  menu_video_and_playback: 视频与播放
+  menu_desktop_and_dock: 桌面和 Dock 栏
   menu_bewly_pages: BewlyCat 页面
   menu_search_page: 搜索页
   menu_home: 首页
@@ -66,7 +67,10 @@ settings:
   group_link_opening_behavior: 链接打开行为
   group_video_card: 视频卡片
   group_performance: 毛玻璃和性能
+  group_player_settings: 播放器设置
+  group_playback_behavior: 播放行为
   group_topbar: 顶栏
+  group_navigation: Dock和侧边栏
   group_dock: Dock 栏
   group_sidebar: 侧边栏
   group_sidebar_desc: 位于主页以外的页面右侧或左侧，通常有亮/暗模式切换按钮和设置按钮。
@@ -417,6 +421,10 @@ settings:
         7. 使用搜索框可以快速查找特定UP主的配置
     up_volume: UP音量
   menu_volume_balance: 音量均衡
+  group_fonts: 字体
+  group_language: 语言
+  group_ad_blocking: 广告屏蔽
+  group_visual_effects: 视觉效果
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key
 topbar:

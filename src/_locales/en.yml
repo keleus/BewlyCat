@@ -54,8 +54,9 @@ iframe_drawer:
 settings:
   title: Settings
   menu_general: General
-  menu_desktop_and_dock: Desktop & Dock
   menu_appearance: Appearance
+  menu_video_and_playback: Video & Playback
+  menu_desktop_and_dock: Desktop & Dock
   menu_bewly_pages: BewlyBewly Pages
   menu_search_page: Search Page
   menu_home: Home
@@ -66,7 +67,10 @@ settings:
   group_link_opening_behavior: Link Opening Behavior
   group_video_card: Video Card
   group_performance: Frosted Glass & Performance
+  group_player_settings: Player Settings
+  group_playback_behavior: Playback Behavior
   group_topbar: Top Bar
+  group_navigation: Dock & Sidebar
   group_dock: Dock
   group_sidebar: Sidebar
   group_sidebar_desc: >-
@@ -345,7 +349,9 @@ settings:
   disable_auto_play_collection: Auto disable collection autoplay
   disable_auto_play_collection_desc: Automatically turn off the autoplay feature for video collections
   keep_collection_video_default_mode: Keep collection videos in default mode
-  keep_collection_video_default_mode_desc: When enabled, collection videos will always use the default player mode and won't apply widescreen or fullscreen settings
+  keep_collection_video_default_mode_desc: >-
+    When enabled, collection videos will always use the default player mode and
+    won't apply widescreen or fullscreen settings
   remember_playback_rate: Remember playback rate
   remember_playback_rate_desc: >-
     When enabled, the player will remember your last set playback rate and
@@ -502,6 +508,10 @@ settings:
         7. Use the search box to quickly find the configuration of a specific UP
       title: Instructions for use
   menu_volume_balance: Volume balance
+  group_fonts: Font
+  group_language: language
+  group_ad_blocking: AD Block
+  group_visual_effects: Visual Effects
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
