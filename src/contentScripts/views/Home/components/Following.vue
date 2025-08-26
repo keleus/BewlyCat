@@ -213,7 +213,19 @@ async function getFollowedUsersVideos() {
 
       // 使用isFirstLoad来判断是否是首次加载
       if (isFirstLoad) {
-        videoList.value = resData.map(item => ({ uniqueId: `${item.id_str}`, item }))
+        videoList.value = resData.map((item) => {
+          const author: Author = {
+            name: item.modules.module_author.name,
+            authorFace: item.modules.module_author.face,
+            mid: item.modules.module_author.mid,
+          }
+          return {
+            uniqueId: `${item.id_str}`,
+            bvid: item.modules.module_dynamic.major.archive?.bvid,
+            item,
+            authorList: [author],
+          }
+        })
       }
       else {
         resData.forEach((item, index) => {
