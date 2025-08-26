@@ -349,7 +349,7 @@ async function handleClearSearchHistory() {
               >
                 {{ index + 1 }}
               </span>
-              <span class="keyword" text="sm $bew-text-1" truncate flex-1>{{ item.show_name }}</span>
+              <span class="keyword" text="base $bew-text-1" truncate flex-1>{{ item.show_name }}</span>
               <img
                 v-if="item.icon && !item.icon.includes('.gif')"
                 :src="item.icon"
@@ -565,7 +565,7 @@ async function handleClearSearchHistory() {
           }
 
           .keyword {
-            --uno: "text-sm truncate flex-1";
+            --uno: "text-base truncate flex-1";
           }
         }
       }
