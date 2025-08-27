@@ -9,15 +9,6 @@
 
   --bew-top-bar-height: 64px;
 
-  // Responsive top bar height
-  @media (max-width: 1024px) {
-    --bew-top-bar-height: 56px;
-  }
-
-  @media (max-width: 768px) {
-    --bew-top-bar-height: 52px;
-  }
-
   // #region Filters
   // Use this in all components (except dialogs) if you want to add a frosted glass effect
   --bew-filter-glass-1: blur(20px) saturate(180%);
