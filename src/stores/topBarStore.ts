@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, reactive, ref } from 'vue'
+import { computed, hasInjectionContext, reactive, ref } from 'vue'
 
 import {
   ACCOUNT_URL,
@@ -92,10 +92,27 @@ export const useTopBarStore = defineStore('topBar', () => {
   const topBarVisible = ref<boolean>(true)
 
   // 从 useTopBarReactive 整合的状态
+  // AppProvider 缓存，避免重复调用
+  let cachedAppProvider: ReturnType<typeof useBewlyApp> | null = null
+
   // 延迟获取 AppProvider，避免在 store 初始化时就调用
   const getAppProvider = () => {
+    // 如果已经有缓存的 provider，直接返回
+    if (cachedAppProvider) {
+      return cachedAppProvider
+    }
+
     try {
-      return useBewlyApp()
+      // 检查是否在正确的注入上下文中
+      if (!hasInjectionContext()) {
+        return null
+      }
+
+      const provider = useBewlyApp()
+      if (provider) {
+        cachedAppProvider = provider
+      }
+      return provider
     }
     catch {
       return null
@@ -156,9 +173,11 @@ export const useTopBarStore = defineStore('topBar', () => {
       if (settings.value.useOriginalBilibiliHomepage)
         return true
       const appProvider = getAppProvider()
-      if (appProvider?.activatedPage?.value === AppPage.Search)
+      if (!appProvider)
+        return true
+      if (appProvider.activatedPage?.value === AppPage.Search)
         return false
-      if (settings.value.useSearchPageModeOnHomePage && appProvider?.activatedPage?.value === AppPage.Home && appProvider?.reachTop?.value)
+      if (settings.value.useSearchPageModeOnHomePage && appProvider.activatedPage?.value === AppPage.Home && appProvider.reachTop?.value)
         return false
     }
     else {
