@@ -1,8 +1,18 @@
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 
+import {
+  ACCOUNT_URL,
+  CHANNEL_PAGE_URL,
+  SEARCH_PAGE_URL,
+  SPACE_URL,
+  VIDEO_PAGE_URL,
+} from '~/components/TopBar/constants/urls'
+import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDelayedHover } from '~/composables/useDelayedHover'
+import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { isHomePage, isInIframe } from '~/utils/main'
 import { createTransformer } from '~/utils/transformer'
 
 export function useTopBarInteraction() {
@@ -15,6 +25,73 @@ export function useTopBarInteraction() {
 
   // 当前点击的顶栏项
   const currentClickedTopBarItem = ref<string | null>(null)
+
+  // 获取 App Provider
+  const { activatedPage, reachTop } = useBewlyApp()
+
+  // TopBar 相关计算属性
+  const forceWhiteIcon = computed((): boolean => {
+    if (!settings.value)
+      return false
+
+    if (
+      (isHomePage() && settings.value.useOriginalBilibiliHomepage)
+      || (isInIframe() && isHomePage())
+      || (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))
+      || SPACE_URL.test(location.href)
+      || ACCOUNT_URL.test(location.href)
+    ) {
+      return true
+    }
+
+    if (!isHomePage())
+      return false
+
+    // 确保 activatedPage.value 存在
+    if (!activatedPage?.value)
+      return false
+
+    if (activatedPage.value === AppPage.Search) {
+      if (settings.value.individuallySetSearchPageWallpaper) {
+        if (settings.value.searchPageWallpaper)
+          return true
+        return false
+      }
+      return !!settings.value.wallpaper
+    }
+    else {
+      if (settings.value.wallpaper)
+        return true
+
+      if (settings.value.useSearchPageModeOnHomePage) {
+        if (settings.value.individuallySetSearchPageWallpaper && !!settings.value.searchPageWallpaper)
+          return true
+        else if (settings.value.wallpaper)
+          return true
+      }
+    }
+    return false
+  })
+
+  const showSearchBar = computed((): boolean => {
+    const isSearchPage = SEARCH_PAGE_URL.test(location.href)
+
+    if (isHomePage()) {
+      if (settings.value.useOriginalBilibiliHomepage)
+        return true
+      if (!activatedPage?.value)
+        return true
+      if (activatedPage.value === AppPage.Search)
+        return false
+      if (settings.value.useSearchPageModeOnHomePage && activatedPage.value === AppPage.Home && reachTop?.value)
+        return false
+    }
+    else {
+      if (isSearchPage)
+        return false
+    }
+    return true
+  })
 
   // 设置顶栏项悬停事件
   function setupTopBarItemHoverEvent(key: string) {
@@ -75,10 +152,21 @@ export function useTopBarInteraction() {
     }
   }
 
+  // 处理通知项点击
+  function handleNotificationsItemClick(item: { name: string, url: string, unreadCount: number, icon: string }) {
+    if (settings.value.openNotificationsPageAsDrawer) {
+      topBarStore.drawerVisible.notifications = true
+      topBarStore.notificationsDrawerUrl = item.url
+    }
+  }
+
   return {
     currentClickedTopBarItem,
     setupTopBarItemHoverEvent,
     setupTopBarItemTransformer,
     handleClickTopBarItem,
+    handleNotificationsItemClick,
+    forceWhiteIcon,
+    showSearchBar,
   }
 }

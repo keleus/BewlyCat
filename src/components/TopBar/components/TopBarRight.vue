@@ -32,7 +32,6 @@ const {
   watchLaterCount,
   drawerVisible,
   popupVisible,
-  forceWhiteIcon,
   unReadMessageCount,
   hasBCoinToReceive,
 } = storeToRefs(topBarStore)
@@ -43,7 +42,7 @@ const { getUnreadMessageCount, getTopBarNewMomentsCount, checkBCoinReceiveStatus
 const avatarImg = ref<HTMLElement | null>(null)
 const avatarShadow = ref<HTMLElement | null>(null)
 
-const { handleClickTopBarItem, setupTopBarItemHoverEvent, setupTopBarItemTransformer } = useTopBarInteraction()
+const { handleClickTopBarItem, setupTopBarItemHoverEvent, setupTopBarItemTransformer, forceWhiteIcon } = useTopBarInteraction()
 
 const mid = getUserID() || ''
 

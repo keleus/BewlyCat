@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, hasInjectionContext, reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 
 import {
   ACCOUNT_URL,
@@ -10,18 +10,14 @@ import {
   READ_HOME_URL,
   READ_PREVIEW_URL,
   SEARCH_PAGE_URL,
-  SPACE_URL,
   VIDEO_LIST_URL,
-  VIDEO_PAGE_URL,
 } from '~/components/TopBar/constants/urls'
 import { updateInterval } from '~/components/TopBar/notify'
 import type { PrivilegeInfo, UnReadDm, UnReadMessage, UserInfo } from '~/components/TopBar/types'
-import { useBewlyApp } from '~/composables/useAppProvider'
-import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
-import { getCSRF, isHomePage, isInIframe } from '~/utils/main'
+import { getCSRF, isHomePage } from '~/utils/main'
 
 export const useTopBarStore = defineStore('topBar', () => {
   const isLogin = ref<boolean>(true)
@@ -91,100 +87,9 @@ export const useTopBarStore = defineStore('topBar', () => {
   // TopBar visibility state
   const topBarVisible = ref<boolean>(true)
 
-  // 从 useTopBarReactive 整合的状态
-  // AppProvider 缓存，避免重复调用
-  let cachedAppProvider: ReturnType<typeof useBewlyApp> | null = null
-
-  // 延迟获取 AppProvider，避免在 store 初始化时就调用
-  const getAppProvider = () => {
-    // 如果已经有缓存的 provider，直接返回
-    if (cachedAppProvider) {
-      return cachedAppProvider
-    }
-
-    try {
-      // 检查是否在正确的注入上下文中
-      if (!hasInjectionContext()) {
-        return null
-      }
-
-      const provider = useBewlyApp()
-      if (provider) {
-        cachedAppProvider = provider
-      }
-      return provider
-    }
-    catch {
-      return null
-    }
-  }
-
   // 从 useTopBarReactive 整合的计算属性
   const isSearchPage = computed((): boolean => {
     return SEARCH_PAGE_URL.test(location.href)
-  })
-
-  const forceWhiteIcon = computed((): boolean => {
-    if (!settings.value)
-      return false
-
-    if (
-      (isHomePage() && settings.value.useOriginalBilibiliHomepage)
-      || (isInIframe() && isHomePage())
-      || (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))
-      || SPACE_URL.test(location.href)
-      || ACCOUNT_URL.test(location.href)
-    ) {
-      return true
-    }
-
-    if (!isHomePage())
-      return false
-
-    const appProvider = getAppProvider()
-    // 确保 activatedPage.value 存在
-    if (!appProvider?.activatedPage?.value)
-      return false
-
-    if (appProvider.activatedPage.value === AppPage.Search) {
-      if (settings.value.individuallySetSearchPageWallpaper) {
-        if (settings.value.searchPageWallpaper)
-          return true
-        return false
-      }
-      return !!settings.value.wallpaper
-    }
-    else {
-      if (settings.value.wallpaper)
-        return true
-
-      if (settings.value.useSearchPageModeOnHomePage) {
-        if (settings.value.individuallySetSearchPageWallpaper && !!settings.value.searchPageWallpaper)
-          return true
-        else if (settings.value.wallpaper)
-          return true
-      }
-    }
-    return false
-  })
-
-  const showSearchBar = computed((): boolean => {
-    if (isHomePage()) {
-      if (settings.value.useOriginalBilibiliHomepage)
-        return true
-      const appProvider = getAppProvider()
-      if (!appProvider)
-        return true
-      if (appProvider.activatedPage?.value === AppPage.Search)
-        return false
-      if (settings.value.useSearchPageModeOnHomePage && appProvider.activatedPage?.value === AppPage.Home && appProvider.reachTop?.value)
-        return false
-    }
-    else {
-      if (isSearchPage.value)
-        return false
-    }
-    return true
   })
 
   const isTopBarFixed = computed((): boolean => {
@@ -665,8 +570,6 @@ export const useTopBarStore = defineStore('topBar', () => {
     popupVisible,
 
     isSearchPage,
-    forceWhiteIcon,
-    showSearchBar,
     isTopBarFixed,
     showTopBar,
 

@@ -13,10 +13,12 @@ import emitter from '~/utils/mitt'
 
 import NotificationsDrawer from './components/NotificationsDrawer.vue'
 import TopBarHeader from './components/TopBarHeader.vue'
+import { useTopBarInteraction } from './composables/useTopBarInteraction'
 
 const { scrollbarRef, reachTop } = useBewlyApp()
 // 顶栏状态管理
 const topBarStore = useTopBarStore()
+const { forceWhiteIcon } = useTopBarInteraction()
 
 const { isDark } = useDark()
 
@@ -245,10 +247,10 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
         ref="headerTarget"
         class="top-bar"
         w="full" transition="all 300 ease-in-out"
-        :class="{ 'hide': hideTopBar, 'force-white-icon': topBarStore.forceWhiteIcon }"
+        :class="{ 'hide': hideTopBar, 'force-white-icon': forceWhiteIcon }"
       >
         <TopBarHeader
-          :force-white-icon="topBarStore.forceWhiteIcon"
+          :force-white-icon="forceWhiteIcon"
           :reach-top="reachTop"
           :is-dark="isDark"
         />
