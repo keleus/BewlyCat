@@ -112,8 +112,8 @@
   "webExt": {
     "run": {
       "keepProfileChanges": true,
-      "firefoxProfile": "./web-ext-profile",
-      "chromiumProfile": "./web-ext-profile",
+      "firefoxProfile": "./firefox-web-ext-profile",
+      "chromiumProfile": "./chromium-web-ext-profile",
       "startUrl": [
         "https://www.bilibili.com/"
       ]

@@ -22,7 +22,7 @@ This project is built using [Vite](https://vitejs.dev/), please make sure you ha
 pnpm install
 
 # Create a profile folder for the extension to store the login status
-mkdir web-ext-profile
+mkdir chromium-web-ext-profile
 
 # Run the project
 pnpm dev
@@ -88,10 +88,10 @@ Then package it to the `extension` folder
 pnpm install
 
 # Create a profile folder for the extension to store the login status
-mkdir web-ext-profile
+mkdir firefox-web-ext-profile
 
 # Run the project
-pnpm dev
+pnpm dev-firefox
 
 # After typing this commend, it will automatically open a new Firefox window that opens BiliBili website
 pnpm start:firefox
