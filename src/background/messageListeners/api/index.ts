@@ -1,4 +1,4 @@
-import browser from 'webextension-polyfill'
+import { onMessage } from 'webext-bridge/background'
 
 import { apiListenerFactory } from '../../utils'
 import API_ANIME from './anime'
@@ -38,12 +38,9 @@ const FullAPI = Object.assign({}, ...API_COLLECTION)
 // Create a message listener for each API
 const handleMessage = apiListenerFactory(FullAPI)
 
-export function setupApiMsgLstnrs() {
-  browser.runtime.onConnect.removeListener(handleConnect)
-  browser.runtime.onConnect.addListener(handleConnect)
-}
-
-function handleConnect() {
-  browser.runtime.onMessage.removeListener(handleMessage)
-  browser.runtime.onMessage.addListener(handleMessage)
+export function setupApiMsgListeners() {
+  // 为每个API设置webext-bridge消息监听器
+  Object.keys(FullAPI).forEach((apiName) => {
+    onMessage(apiName, handleMessage)
+  })
 }

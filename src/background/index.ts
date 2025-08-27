@@ -1,7 +1,7 @@
 import browser from 'webextension-polyfill'
 
-import { setupApiMsgLstnrs } from './messageListeners/api'
-import { setupTabMsgLstnrs } from './messageListeners/tabs'
+import { setupApiMsgListeners } from './messageListeners/api'
+import { setupTabMsgListeners } from './messageListeners/tabs'
 
 // Initialize extension and set up message handlers
 browser.runtime.onInstalled.addListener(async () => {
@@ -42,6 +42,5 @@ if (process.env.FIREFOX) {
 }
 
 // Setup all message listeners
-// 只设置一次消息监听器
-setupApiMsgLstnrs()
-setupTabMsgLstnrs()
+setupApiMsgListeners()
+setupTabMsgListeners()

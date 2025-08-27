@@ -64,28 +64,24 @@ interface APIMAP {
 }
 // 工厂函数API_LISTENER_FACTORY
 function apiListenerFactory(API_MAP: APIMAP) {
-  return async (message: unknown, sender?: Browser.Runtime.MessageSender, sendResponse?: (response?: any) => void) => {
-    const typedMessage = message as Message
+  return async (message: { data: any, sender: { context: string, tabId?: number } }) => {
+    const typedMessage = message.data as Message
     const contentScriptQuery = typedMessage.contentScriptQuery
-    // 避免后台打开的message一直显示warning
-    if (contentScriptQuery === 'openLinkInBackground') {
-      return
-    }
     // 检测是否有contentScriptQuery
     if (!contentScriptQuery || !API_MAP[contentScriptQuery])
       return console.error(`Cannot find this contentScriptQuery: ${contentScriptQuery}`)
     if (typeof API_MAP[contentScriptQuery] === 'function')
-      return (API_MAP[contentScriptQuery] as APIFunction)(typedMessage, sender, sendResponse)
+      return (API_MAP[contentScriptQuery] as APIFunction)(typedMessage, message.sender)
 
     const api = API_MAP[contentScriptQuery] as API
 
     // eslint-disable-next-line node/prefer-global/process
-    if (process.env.FIREFOX && sender && sender.tab && sender.tab.cookieStoreId) {
-      const cookies = await browser.cookies.getAll({ storeId: sender.tab.cookieStoreId })
-      return await doRequest(typedMessage, api, sendResponse, cookies)
+    if (process.env.FIREFOX && message.sender && message.sender.tabId) {
+      const cookies = await browser.cookies.getAll({ storeId: 'default' })
+      return await doRequest(typedMessage, api, undefined, cookies)
     }
 
-    return await doRequest(typedMessage, api, sendResponse)
+    return await doRequest(typedMessage, api)
   }
 }
 

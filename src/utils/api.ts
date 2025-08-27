@@ -1,3 +1,5 @@
+import { sendMessage } from 'webext-bridge/content-script'
+
 import type { API_COLLECTION } from '~/background/messageListeners/api'
 
 type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${infer P3}`
@@ -31,10 +33,10 @@ export class APIClient {
           const api = new Proxy({}, {
             get(_, p) {
               return (options?: object) => {
-                return browser.runtime.sendMessage({
-                  contentScriptQuery: p,
+                return sendMessage(p as string, {
+                  contentScriptQuery: p as string,
                   ...options,
-                })
+                }, 'background')
               }
             },
           })
