@@ -67,6 +67,10 @@ function apiListenerFactory(API_MAP: APIMAP) {
   return async (message: unknown, sender?: Browser.Runtime.MessageSender, sendResponse?: (response?: any) => void) => {
     const typedMessage = message as Message
     const contentScriptQuery = typedMessage.contentScriptQuery
+    // 避免后台打开的message一直显示warning
+    if (contentScriptQuery === 'openLinkInBackground') {
+      return
+    }
     // 检测是否有contentScriptQuery
     if (!contentScriptQuery || !API_MAP[contentScriptQuery])
       return console.error(`Cannot find this contentScriptQuery: ${contentScriptQuery}`)
