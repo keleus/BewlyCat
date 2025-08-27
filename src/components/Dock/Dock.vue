@@ -221,16 +221,61 @@ const dockScale = computed((): number => {
   if (!dockHeight.value || !dockWidth.value)
     return 1
 
-  const maxAllowedHeight = windowHeight.value - 180
-  const maxAllowedWidth = windowWidth.value - 180
+  // Get current top bar height from CSS variable
+  const getTopBarHeight = (): number => {
+    const topBarHeight = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bew-top-bar-height')
+      .replace('px', '')
+    return Number.parseInt(topBarHeight) || 64 // fallback to 64px
+  }
+
+  const currentTopBarHeight = getTopBarHeight()
+
+  // Dynamic margins based on screen size and dock position
+  let heightMargin: number
+  let widthMargin: number
+
+  if (settings.value.dockPosition === 'bottom') {
+    // For bottom position, use original logic
+    heightMargin = Math.max(100, Math.min(150, windowHeight.value * 0.1))
+    widthMargin = Math.max(100, Math.min(150, windowWidth.value * 0.1))
+  }
+  else {
+    // For side positions, adjust margins considering responsive top bar height
+    heightMargin = Math.max(50, Math.min(100, windowHeight.value * 0.08)) + currentTopBarHeight
+    widthMargin = Math.max(50, Math.min(100, windowWidth.value * 0.08))
+  }
+
+  const maxAllowedHeight = windowHeight.value - heightMargin
+  const maxAllowedWidth = windowWidth.value - widthMargin
+
+  const buttonSize = 45 // lg:w-45px w-35px, use larger size for calculation
+  const buttonGap = 8 // gap-2 = 8px
+
+  let additionalHeight = 0
+  let additionalWidth = 0
+
+  if (settings.value.dockPosition === 'bottom') {
+    const maxButtonCount = settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1
+    const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
+    additionalWidth = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
+  }
+  else {
+    const maxButtonCount = settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1
+    const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
+    additionalHeight = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
+  }
+
+  const effectiveDockHeight = dockHeight.value + additionalHeight
+  const effectiveDockWidth = dockWidth.value + additionalWidth
 
   // Calculate scale factors for both dimensions
-  const heightScale = dockHeight.value > maxAllowedHeight
-    ? maxAllowedHeight / dockHeight.value
+  const heightScale = effectiveDockHeight > maxAllowedHeight
+    ? maxAllowedHeight / effectiveDockHeight
     : 1
 
-  const widthScale = dockWidth.value > maxAllowedWidth
-    ? maxAllowedWidth / dockWidth.value
+  const widthScale = effectiveDockWidth > maxAllowedWidth
+    ? maxAllowedWidth / effectiveDockWidth
     : 1
 
   // Use the smaller scale to ensure dock fits in both dimensions
