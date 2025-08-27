@@ -77,7 +77,10 @@ function apiListenerFactory(API_MAP: APIMAP) {
 
     // eslint-disable-next-line node/prefer-global/process
     if (process.env.FIREFOX && message.sender && message.sender.tabId) {
-      const cookies = await browser.cookies.getAll({ storeId: 'default' })
+      // 获取tab信息以获取正确的cookieStoreId
+      const tab = await browser.tabs.get(message.sender.tabId)
+      const storeId = tab.cookieStoreId || 'default'
+      const cookies = await browser.cookies.getAll({ storeId })
       return await doRequest(typedMessage, api, undefined, cookies)
     }
 
