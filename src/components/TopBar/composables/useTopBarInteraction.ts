@@ -12,7 +12,7 @@ import { useDelayedHover } from '~/composables/useDelayedHover'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
-import { isHomePage, isInIframe } from '~/utils/main'
+import { isHomePage } from '~/utils/main'
 import { createTransformer } from '~/utils/transformer'
 
 export function useTopBarInteraction() {
@@ -36,7 +36,6 @@ export function useTopBarInteraction() {
 
     if (
       (isHomePage() && settings.value.useOriginalBilibiliHomepage)
-      || (isInIframe() && isHomePage())
       || (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))
       || SPACE_URL.test(location.href)
       || ACCOUNT_URL.test(location.href)
