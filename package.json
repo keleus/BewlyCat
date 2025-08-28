@@ -31,7 +31,7 @@
     "pack:zip-firefox-sources": "rimraf extension-firefox-sources.zip && git archive HEAD -o extension-firefox-sources.zip",
     "pack:crx": "crx pack extension -o ./extension.crx",
     "pack:xpi": "cross-env WEB_EXT_ARTIFACTS_DIR=./ FIREFOX=true web-ext build --source-dir ./extension-firefox --filename extension.xpi --overwrite-dest",
-    "start:chromium": "web-ext run --source-dir ./extension --target=chromium --no-reload",
+    "start:chromium": "web-ext run --source-dir ./extension --target=chromium --watch-file=\"*.js\" --ignore-files=\"*.log,*.sqlite,*.ldb,*.tmp\"",
     "start:firefox": "web-ext run --source-dir ./extension-firefox --target=firefox-desktop",
     "clear": "rimraf --glob extension extension.*",
     "clear-firefox": "rimraf --glob extension-firefox extension-firefox.*",
