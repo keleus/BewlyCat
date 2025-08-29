@@ -415,7 +415,7 @@ settings:
     search_results_count: 显示 {current} / {total} 个配置
     usage_guide:
       title: 使用说明
-      desc: |
+      desc: |-
         音量均衡功能可以为不同UP主设置个性化音量
         1. 启用音量均衡功能后，系统会自动监听音量变化
         2. 当你手动调整音量时，会弹出对话框询问是否记录UP主配置或调整基准音量
