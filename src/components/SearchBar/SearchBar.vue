@@ -393,7 +393,7 @@ async function handleClearSearchHistory() {
                 rounded-full duration-300 pointer-events-auto cursor-pointer p-1
                 text="xs $bew-text-2 hover:white" leading-0 bg="$bew-fill-2 hover:$bew-theme-color"
                 pos="absolute top-0 right-0" scale-80 opacity-0 group-hover:opacity-100
-                @click.stop="handleDelete(item.value)"
+                @click.stop.prevent="handleDelete(item.value)"
               >
                 <div i-ic-baseline-clear />
               </button>
