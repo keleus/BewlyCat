@@ -60,3 +60,10 @@ body:
           required: false
         - label: 我确认我正在使用最新的 BewlyCat 版本。
           required: false
+
+  - type: checkboxes
+    attributes:
+      label: 参与贡献
+      options:
+        - label: 我将自行创建一个PR进行修复
+          required: false
