@@ -487,7 +487,6 @@ settings:
     usage_guide:
       desc: |-
         The volume equalization function can set personalized volumes for
-
         different UP
 
         1. After the volume equalization function is enabled, the system will
