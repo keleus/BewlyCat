@@ -485,7 +485,7 @@ settings:
     up_volume: UP volume
     up_configs_desc: Manage personalized volume settings for each UP host
     usage_guide:
-      desc: >
+      desc: |-
         The volume equalization function can set personalized volumes for
 
         different UP
