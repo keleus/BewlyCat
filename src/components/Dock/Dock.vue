@@ -176,7 +176,6 @@ function handleBackToTopOrRefresh(action: 'backToTop' | 'refresh' | 'auto' = 'au
   }
   else if (action === 'refresh') {
     emit('refresh')
-    emit('backToTop')
   }
   else {
     if (reachTop.value)

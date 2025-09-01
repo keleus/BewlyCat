@@ -266,9 +266,6 @@ function initPageAction() {
     if (isLoading.value)
       return
 
-    // 滚动到页面顶部
-    handleBackToTop()
-
     // 根据当前模式保存数据
     if (settings.value.recommendationMode === 'web') {
       // 总是保存刷新前的当前状态到后退缓存

@@ -49,9 +49,31 @@ const handleReachBottom = ref<() => void>()
 const handleUndoRefresh = ref<() => void>()
 const handleForwardRefresh = ref<() => void>()
 const showUndoButton = ref<boolean>(false)
-const handleThrottledPageRefresh = useThrottleFn(() => handlePageRefresh.value?.(), 500)
+const handleThrottledPageRefresh = useThrottleFn(() => {
+  const osInstance = scrollbarRef.value?.osInstance()
+  if (!osInstance) {
+    handlePageRefresh.value?.()
+    return
+  }
+  const { viewport } = osInstance.elements()
+  if (viewport.scrollTop === 0) {
+    handlePageRefresh.value?.()
+  }
+  else {
+    handleBackToTop()
+    const checkScrollComplete = () => {
+      if (viewport.scrollTop === 0) {
+        handlePageRefresh.value?.()
+      }
+      else {
+        setTimeout(checkScrollComplete, 50)
+      }
+    }
+    setTimeout(checkScrollComplete, 100)
+  }
+}, 500)
 const handleThrottledReachBottom = useThrottleFn(() => handleReachBottom.value?.(), 500)
-const handleThrottledBackToTop = useThrottleFn(() => handleBackToTop(), 1000)
+const handleThrottledBackToTop = useThrottleFn(() => handleBackToTop(), 500)
 const handleThrottledPageUnRefresh = useThrottleFn(() => handleUndoRefresh.value?.(), 500)
 const handleThrottledPageForwardRefresh = useThrottleFn(() => handleForwardRefresh.value?.(), 500)
 const topBarRef = ref()
