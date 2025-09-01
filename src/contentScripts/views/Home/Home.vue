@@ -39,10 +39,10 @@ const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   ]
 })
 
-// use Json stringify to watch the changes of the array item properties
-watch(() => JSON.stringify(settings.value.homePageTabVisibilityList), () => {
+// 使用deep监听
+watch(() => settings.value.homePageTabVisibilityList, () => {
   currentTabs.value = computeTabs()
-})
+}, { deep: true })
 
 function computeTabs(): HomeTab[] {
   // if homePageTabVisibilityList not fresh , set it to default

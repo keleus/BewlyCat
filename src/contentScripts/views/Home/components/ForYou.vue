@@ -98,7 +98,24 @@ const { handleReachBottom, handlePageRefresh, haveScrollbar, showUndoButton, han
 const activatedAppVideo = ref<AppVideoItem | null>()
 const videoCardRef = ref(null)
 const showDislikeDialog = ref<boolean>(false)
+
+// 页面可见性状态
+const isPageVisible = ref<boolean>(!document.hidden)
 const selectedDislikeReason = ref<number>(1)
+
+// 监听页面可见性变化
+function handleVisibilityChange() {
+  isPageVisible.value = !document.hidden
+}
+
+// 添加页面可见性监听器
+onMounted(() => {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
 
 // 修改缓存数据变量，添加前进状态变量
 const cachedVideoList = ref<VideoElement[]>([])
@@ -426,7 +443,7 @@ async function getRecommendVideos() {
           }
           else {
             setTimeout(() => {
-              if (!isLoading.value && !isFilterBlocked.value) {
+              if (!isLoading.value && !isFilterBlocked.value && isPageVisible.value) {
                 getRecommendVideos()
               }
             }, filterDelayTime)
@@ -540,7 +557,7 @@ async function getAppRecommendVideos() {
           }
           else {
             setTimeout(() => {
-              if (!isLoading.value && !isFilterBlocked.value) {
+              if (!isLoading.value && !isFilterBlocked.value && isPageVisible.value) {
                 getAppRecommendVideos()
               }
             }, filterDelayTime)
