@@ -306,6 +306,8 @@ settings:
   keep_collection_video_default_mode_desc: 當啟用時，合集視頻將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住您上次設置的倍速，並在下次打開視頻時自動應用
+  auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播放完畢後自動退出
+  auto_exit_fullscreen_on_end_desc: 啟用後，當視頻播放結束時會自動退出全螢幕模式
   enable_random_play: 啟用視頻合集隨機播放
   enable_random_play_desc: 為多P視頻或合集添加隨機播放功能
   random_play_mode: 隨機播放模式

@@ -183,6 +183,7 @@ export interface Settings {
   defaultVideoPlayerMode: 'default' | 'fullscreen' | 'webFullscreen' | 'widescreen'
   disableAutoPlayCollection: boolean
   keepCollectionVideoDefaultMode: boolean // 合集视频保持默认模式
+  autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
   keyboard: boolean
   shortcuts: ShortcutsSettings
   videoPlayerScroll: boolean // 添加视频播放器滚动设置
@@ -332,6 +333,7 @@ export const originalSettings: Settings = {
   defaultVideoPlayerMode: 'default',
   disableAutoPlayCollection: false,
   keepCollectionVideoDefaultMode: false, // 合集视频保持默认模式，默认关闭
+  autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
   keyboard: true, // 总快捷键开关，默认为 true
   videoPlayerScroll: true, // 默认开启视频播放器滚动
   shortcuts: {

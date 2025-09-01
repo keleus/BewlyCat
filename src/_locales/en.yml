@@ -357,9 +357,12 @@ settings:
     When enabled, collection videos will always use the default player mode and
     won't apply widescreen or fullscreen settings
   remember_playback_rate: Remember playback rate
-  remember_playback_rate_desc: >-
+  remember_playback_rate_desc: >
     When enabled, the player will remember your last set playback rate and
     automatically apply it when opening videos
+  auto_exit_fullscreen_on_end: Auto exit fullscreen/webFullscreen when video ends
+  auto_exit_fullscreen_on_end_desc: >
+    When enabled, the player will automatically exit fullscreen mode when the video finishes playing
   enable_random_play: Enable video collection random play
   enable_random_play_desc: Add random play feature for multi-part videos or collections
   random_play_mode: Random play mode

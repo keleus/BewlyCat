@@ -890,10 +890,55 @@ export function adjustVolume(delta: number): boolean {
   return setVolume(newVolume, true)
 }
 
+// 监听视频结束事件并自动退出全屏
+export function startAutoExitFullscreenMonitoring() {
+  if (!settings.value.autoExitFullscreenOnEnd) {
+    return
+  }
+
+  const video = getVideoElement()
+  if (!video) {
+    // 如果视频元素还没有加载，延迟重试
+    setTimeout(() => startAutoExitFullscreenMonitoring(), 1000)
+    return
+  }
+
+  // 避免重复添加监听器
+  if (video.hasAttribute('bewly-auto-exit-listener')) {
+    return
+  }
+  video.setAttribute('bewly-auto-exit-listener', 'true')
+
+  // 监听视频结束事件
+  video.addEventListener('ended', () => {
+    if (settings.value.autoExitFullscreenOnEnd) {
+      // 检查是否处于全屏状态
+      if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
+        // 退出浏览器全屏
+        if (document.exitFullscreen) {
+          document.exitFullscreen()
+        }
+        else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen()
+        }
+      }
+
+      // 检查是否处于网页全屏状态
+      const webFullscreenBtn = document.querySelector(_videoClassTag.pagefullscreen) as HTMLElement
+      if (webFullscreenBtn && webFullscreenBtn.classList.contains('bpx-state-entered')) {
+        webFullscreenBtn.click()
+      }
+    }
+  })
+}
+
 // 为Window接口添加自定义属性
 declare global {
   interface Window {
     _bewlyScreenshotLink?: HTMLAnchorElement
     _bewlyScreenshotCanvas?: HTMLCanvasElement
+    bewlyPlayer: {
+      adjustVolume: (delta: number) => boolean
+    }
   }
 }

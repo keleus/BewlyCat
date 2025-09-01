@@ -12,7 +12,7 @@ import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isCollectionVideo, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
+import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isCollectionVideo, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -214,6 +214,10 @@ function applyDefaultPlayerMode() {
     }
   }
   setupShortcutHandlers()
+  // 启动自动退出全屏监听
+  setTimeout(() => {
+    startAutoExitFullscreenMonitoring()
+  }, 2000)
   hasAppliedPlayerMode = true // 标记已应用
   // 添加稍后再看按钮
   setTimeout(async () => {

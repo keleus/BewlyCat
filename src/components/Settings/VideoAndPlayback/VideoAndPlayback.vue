@@ -66,6 +66,13 @@ const randomPlayModeOptions = computed(() => {
       >
         <Radio v-model="settings.rememberPlaybackRate" />
       </SettingsItem>
+
+      <SettingsItem
+        :title="t('settings.auto_exit_fullscreen_on_end')"
+        :desc="t('settings.auto_exit_fullscreen_on_end_desc')"
+      >
+        <Radio v-model="settings.autoExitFullscreenOnEnd" />
+      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_playback_behavior')">
