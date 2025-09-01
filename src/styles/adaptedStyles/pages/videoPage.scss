@@ -52,6 +52,18 @@
       background: unset;
     }
 
+    // Firefox specific fix for checkbox visibility
+    @-moz-document url-prefix() {
+      .content .group-list li input[type="checkbox"]:checked + i,
+      .content .group-list li input[type="checkbox"]:checked:hover + i {
+        background-color: var(--bew-theme-color) !important;
+        background-image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOSIgaGVpZ2h0PSI5IiB2aWV3Qm94PSIwIDAgOSA5IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNy41IDIuNUwzLjc1IDYuMjVMMS41IDQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+) !important;
+        background-repeat: no-repeat !important;
+        background-position: 50% !important;
+        background-size: 9px !important;
+      }
+    }
+
     .note-list .list-note-operation,
     .note-pc .note-container .note-header .note-operation,
     .note-up .up-desc-container .desc-top .attention-btn-container:not(.is-attention),
