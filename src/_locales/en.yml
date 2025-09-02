@@ -640,6 +640,7 @@ video_card:
     copy_bv_number: Copy BV Number
     copy_av_number: Copy AV Number
     view_the_original_cover: View the Original Cover
+    block_user: Block User
   group_contribution: '{firstAuthor} and {num} others contributed'
   video_removed: Video removed
 home:

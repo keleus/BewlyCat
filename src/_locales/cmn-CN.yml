@@ -553,6 +553,7 @@ video_card:
     copy_bv_number: 复制 BV 号
     copy_av_number: 复制 AV 号
     view_the_original_cover: 查看封面
+    block_user: 拉黑用户
   group_contribution: '{firstAuthor} 等 {num} 人联合创作'
   video_removed: 视频已移除
 home:

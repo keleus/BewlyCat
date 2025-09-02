@@ -22,12 +22,15 @@ const API_USER = {
     url: 'https://api.bilibili.com/x/relation/modify',
     _fetch: {
       method: 'post',
-    },
-    params: {
-      // access_key: '', // app only
-      fid: '',
-      act: 1,
-      re_src: 11,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      body: {
+        fid: '',
+        act: 1,
+        re_src: 11,
+        csrf: '',
+      },
     },
     afterHandle: AHS.J_D,
   },

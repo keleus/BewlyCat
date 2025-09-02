@@ -568,6 +568,7 @@ video_card:
     copy_bv_number: 複製 BV 號
     copy_av_number: 複製 AV 號
     view_the_original_cover: 檢視封面
+    block_user: 拉黑用戶
   group_contribution: '{firstAuthor} 等 {num} 人共同創作'
   video_removed: 影片已移除
 home:
