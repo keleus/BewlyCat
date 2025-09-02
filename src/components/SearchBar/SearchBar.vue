@@ -589,6 +589,7 @@ async function handleClearSearchHistory() {
     @include search-content;
     --uno: "bg-$bew-elevated";
     --uno: "max-h-420px important-overflow-y-auto";
+    z-index: 1000;
 
     .suggestion-item {
       @include search-content-item;
