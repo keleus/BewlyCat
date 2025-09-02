@@ -286,7 +286,7 @@ function isMusic(item: FavoriteResource) {
       <Empty v-else-if="favoriteResources.length === 0 && !isLoading && !isFullPageLoading" m="t-55px b-6" />
       <template v-else>
         <Transition name="fade">
-          <Loading v-if="isFullPageLoading" w-full h-full pos="absolute top-0 left-0" mt--50px />
+          <Loading v-if="isFullPageLoading" w-full h-screen pos="absolute top-0 left-0" mt--50px />
         </Transition>
         <div grid="~ 2xl:cols-4 xl:cols-3 lg:cols-2 md:cols-1 sm:cols-1 cols-1 gap-5" m="t-55px b-6">
           <TransitionGroup name="list">
