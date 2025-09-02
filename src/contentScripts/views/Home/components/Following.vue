@@ -211,7 +211,7 @@ async function getFollowedUsersVideos() {
   }
 
   // 限制递归深度，避免无限递归
-  if (recursionDepth.value >= 5) {
+  if (recursionDepth.value >= 10) {
     return
   }
   recursionDepth.value++
@@ -313,7 +313,7 @@ async function getFollowedUsersVideos() {
         })
       }
 
-      if (!await haveScrollbar() && !noMoreContent.value && recursionDepth.value < 5 && isPageVisible.value) {
+      if (!await haveScrollbar() && !noMoreContent.value && recursionDepth.value < 10 && isPageVisible.value) {
         // 添加延迟避免无限递归调用
         setTimeout(() => {
           getFollowedUsersVideos()
