@@ -46,12 +46,12 @@ const { handleClickTopBarItem, setupTopBarItemHoverEvent, setupTopBarItemTransfo
 
 const mid = getUserID() || ''
 
-const moments = setupTopBarItemHoverEvent('moments')
-const favorites = setupTopBarItemHoverEvent('favorites')
-const history = setupTopBarItemHoverEvent('history')
-const watchLater = setupTopBarItemHoverEvent('watchLater')
-const upload = setupTopBarItemHoverEvent('upload')
-const notifications = setupTopBarItemHoverEvent('notifications')
+const moments = isComponentVisible('moments') ? setupTopBarItemHoverEvent('moments') : ref()
+const favorites = isComponentVisible('favorites') ? setupTopBarItemHoverEvent('favorites') : ref()
+const history = isComponentVisible('history') ? setupTopBarItemHoverEvent('history') : ref()
+const watchLater = isComponentVisible('watchLater') ? setupTopBarItemHoverEvent('watchLater') : ref()
+const upload = isComponentVisible('upload') ? setupTopBarItemHoverEvent('upload') : ref()
+const notifications = isComponentVisible('notifications') ? setupTopBarItemHoverEvent('notifications') : ref()
 const more = setupTopBarItemHoverEvent('more')
 const avatar = setupTopBarItemHoverEvent('userPanel')
 
@@ -70,44 +70,53 @@ const morePopRef = ref()
 onMounted(() => {
   nextTick(() => {
     setupTopBarItemTransformer('userPanel', avatarPopRef)
-    setupTopBarItemTransformer('notifications', notificationsPopRef)
-    setupTopBarItemTransformer('moments', momentsPopRef)
-    setupTopBarItemTransformer('favorites', favoritesPopRef)
-    setupTopBarItemTransformer('history', historyPopRef)
-    setupTopBarItemTransformer('watchLater', watchLaterPopRef)
-    setupTopBarItemTransformer('upload', uploadPopRef)
+    if (isComponentVisible('notifications'))
+      setupTopBarItemTransformer('notifications', notificationsPopRef)
+    if (isComponentVisible('moments'))
+      setupTopBarItemTransformer('moments', momentsPopRef)
+    if (isComponentVisible('favorites'))
+      setupTopBarItemTransformer('favorites', favoritesPopRef)
+    if (isComponentVisible('history'))
+      setupTopBarItemTransformer('history', historyPopRef)
+    if (isComponentVisible('watchLater'))
+      setupTopBarItemTransformer('watchLater', watchLaterPopRef)
+    if (isComponentVisible('upload'))
+      setupTopBarItemTransformer('upload', uploadPopRef)
     setupTopBarItemTransformer('more', morePopRef)
   })
 })
 
-watch(
-  () => popupVisible.value?.notifications ?? false,
-  (newVal, oldVal) => {
-    if (newVal === undefined || oldVal === undefined)
-      return
+// 只有当notifications组件可见时才监听相关属性
+if (isComponentVisible('notifications')) {
+  watch(
+    () => popupVisible.value?.notifications ?? false,
+    (newVal, oldVal) => {
+      if (newVal === undefined || oldVal === undefined)
+        return
 
-    if (oldVal !== undefined && MESSAGE_URL.test(location.href))
-      return
+      if (oldVal !== undefined && MESSAGE_URL.test(location.href))
+        return
 
-    if (newVal === oldVal)
-      return
+      if (newVal === oldVal)
+        return
 
-    if (!newVal)
-      getUnreadMessageCount()
-  },
-  { immediate: true },
-)
+      if (!newVal)
+        getUnreadMessageCount()
+    },
+    { immediate: true },
+  )
 
-watch(
-  () => drawerVisible.value?.notifications ?? false,
-  (newVal, oldVal) => {
-    if (newVal === oldVal)
-      return
+  watch(
+    () => drawerVisible.value?.notifications ?? false,
+    (newVal, oldVal) => {
+      if (newVal === oldVal)
+        return
 
-    if (!newVal)
-      getUnreadMessageCount()
-  },
-)
+      if (!newVal)
+        getUnreadMessageCount()
+    },
+  )
+}
 
 const focused = useWindowFocus()
 watch(() => focused.value, (newVal, _) => {
