@@ -48,19 +48,42 @@ const liveVideoList = ref<LiveVideoElement[]>([])
 const isLoading = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
 const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
+const recursionDepth = ref<number>(0) // 递归深度计数器
+const isPageVisible = ref<boolean>(true) // 页面可见性状态
 const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
 const isInitialized = ref<boolean>(false)
 const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
 
+// 页面可见性变化处理函数
+function handleVisibilityChange() {
+  isPageVisible.value = !document.hidden
+}
+
 onMounted(() => {
   initData()
   initPageAction()
+  // 监听页面可见性变化
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  // 初始化页面可见性状态
+  isPageVisible.value = !document.hidden
+})
+
+onUnmounted(() => {
+  // 清理页面可见性监听器
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onActivated(() => {
   initPageAction()
+  // 组件激活时重新检查页面可见性
+  isPageVisible.value = !document.hidden
+})
+
+onDeactivated(() => {
+  // 组件失活时设置为不可见
+  isPageVisible.value = false
 })
 
 function initPageAction() {
@@ -110,6 +133,11 @@ async function getData() {
 }
 
 async function getLiveVideoList() {
+  // 检查页面是否可见，如果不可见则不进行请求
+  if (!isPageVisible.value) {
+    return
+  }
+
   let lastLiveVideoListLength = liveVideoList.value.length
   try {
     const response: FollowingLiveResult = await api.live.getFollowingLiveList({
@@ -124,8 +152,10 @@ async function getLiveVideoList() {
     }
 
     if (response.code === 0) {
-      if (response.data.list.length < 9)
+      // 如果返回的数据少于9条，说明没有更多数据了
+      if (response.data.list.length < 9) {
         noMoreContent.value = true
+      }
 
       livePage.value++
 
@@ -149,13 +179,20 @@ async function getLiveVideoList() {
           }
         })
       }
+
+      // 只有在获取到新的直播数据且还有更多数据且页面可见时才继续递归
+      if (resData.length > 0
+        && !noMoreContent.value
+        && liveVideoList.value.length < 50
+        && isPageVisible.value) {
+        setTimeout(() => {
+          getLiveVideoList()
+        }, 500)
+      }
     }
   }
-  finally {
-    // 當直播列表結果大於9時（9是返回的列表數量）且如果最后一支影片還是正在直播，則繼續獲取
-    if (liveVideoList.value.length > 9 && liveVideoList.value[liveVideoList.value.length - 1]?.item?.live_status === 1) {
-      getLiveVideoList()
-    }
+  catch (error) {
+    console.error('获取直播列表失败:', error)
   }
 }
 
@@ -167,6 +204,17 @@ async function getFollowedUsersVideos() {
     noMoreContent.value = true
     return
   }
+
+  // 检查页面是否可见，如果不可见则不进行请求
+  if (!isPageVisible.value) {
+    return
+  }
+
+  // 限制递归深度，避免无限递归
+  if (recursionDepth.value >= 5) {
+    return
+  }
+  recursionDepth.value++
 
   try {
     // 如果 videoList 不是空的，获取最后一个真实视频的 uniqueId 和 bvid
@@ -265,13 +313,24 @@ async function getFollowedUsersVideos() {
         })
       }
 
-      if (!await haveScrollbar() && !noMoreContent.value) {
-        getFollowedUsersVideos()
+      if (!await haveScrollbar() && !noMoreContent.value && recursionDepth.value < 5 && isPageVisible.value) {
+        // 添加延迟避免无限递归调用
+        setTimeout(() => {
+          getFollowedUsersVideos()
+        }, 100)
+      }
+      else {
+        // 重置递归深度计数器
+        recursionDepth.value = 0
       }
     }
     else if (response.code === -101) {
       needToLoginFirst.value = true
     }
+  }
+  catch {
+    // 出错时重置递归深度计数器
+    recursionDepth.value = 0
   }
   finally {
     // 只在首次加载时过滤占位视频，避免后续加载时的闪屏
