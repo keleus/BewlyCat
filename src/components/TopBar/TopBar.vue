@@ -44,8 +44,8 @@ function checkUrlChange() {
 let hideTimer: number | null = null
 let urlCheckTimer: number | null = null
 
-// 监听鼠标位置变化
-watch([isOutsideTopBar, isOutsideTopArea], ([newTopBarValue, newTopAreaValue]) => {
+// 监听鼠标位置变化和相关状态
+watch([isOutsideTopBar, isOutsideTopArea, () => topBarStore.isSwitcherButtonVisible], ([newTopBarValue, newTopAreaValue, isSwitcherButtonVisibleValue]) => {
   if (isVideoOrBangumiPage() && settings.value.videoPageTopBarConfig === VideoPageTopBarConfig.ShowOnMouse) {
     // 清除之前的计时器
     if (hideTimer) {
@@ -53,14 +53,25 @@ watch([isOutsideTopBar, isOutsideTopArea], ([newTopBarValue, newTopAreaValue]) =
       hideTimer = null
     }
 
-    // 如果鼠标在顶栏区域或顶部监听区域，则显示顶栏
-    if (!newTopBarValue || !newTopAreaValue) {
+    // 检查是否有任何弹窗或抽屉处于激活状态
+    const hasActivePopup = Object.values(topBarStore.popupVisible).some(visible => visible)
+    const hasActiveDrawer = Object.values(topBarStore.drawerVisible).some(visible => visible)
+
+    // 如果鼠标在顶栏区域或顶部监听区域，或者有任何弹窗/抽屉激活，或者切换器按钮可见，则显示顶栏
+    if (!newTopBarValue || !newTopAreaValue || hasActivePopup || hasActiveDrawer || isSwitcherButtonVisibleValue) {
       toggleTopBarVisible(true)
     }
     else {
       // 延迟隐藏顶栏
       hideTimer = window.setTimeout(() => {
-        toggleTopBarVisible(false)
+        // 再次检查是否有弹窗激活，防止在延迟期间有弹窗打开
+        const hasActivePopupNow = Object.values(topBarStore.popupVisible).some(visible => visible)
+        const hasActiveDrawerNow = Object.values(topBarStore.drawerVisible).some(visible => visible)
+        const isSwitcherButtonVisibleNow = topBarStore.isSwitcherButtonVisible
+
+        if (!hasActivePopupNow && !hasActiveDrawerNow && !isSwitcherButtonVisibleNow) {
+          toggleTopBarVisible(false)
+        }
       }, 500) // 500ms 延迟
     }
   }
