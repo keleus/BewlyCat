@@ -41,6 +41,20 @@ const API_USER = {
     },
     afterHandle: AHS.J_D,
   },
+  exchangeCoupon: {
+    url: 'https://api.bilibili.com/x/vip/privilege/receive',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      body: {
+        type: '1',
+        csrf: '',
+      },
+    },
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_USER

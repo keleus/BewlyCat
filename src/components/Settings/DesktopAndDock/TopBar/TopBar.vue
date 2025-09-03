@@ -56,6 +56,9 @@ const videoPageTopBarConfigOptions = computed(() => {
       <SettingsItem :title="$t('settings.show_bcoin_receive_reminder')">
         <Radio v-model="settings.showBCoinReceiveReminder" />
       </SettingsItem>
+      <SettingsItem v-if="settings.showBCoinReceiveReminder" :title="$t('settings.auto_receive_bcoin_coupon')" :desc="$t('settings.auto_receive_bcoin_coupon_desc')">
+        <Radio v-model="settings.autoReceiveBCoinCoupon" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.open_notifications_page_as_drawer')">
         <Radio v-model="settings.openNotificationsPageAsDrawer" />
       </SettingsItem>

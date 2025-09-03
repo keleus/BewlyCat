@@ -181,6 +181,8 @@ settings:
     none: Do not show
   show_watch_later_badge: Show watch later badge
   show_bcoin_receive_reminder: VIP B-coin receive reminder
+  auto_receive_bcoin_coupon: Auto receive B-coin coupon
+  auto_receive_bcoin_coupon_desc: When enabled, B-coin coupons will be automatically received when detected
   open_notifications_page_as_drawer: Open notifications page as drawer
   group_topbar_components: Top Bar Components Settings
   topbar_components_adjustment: Top Bar Components Badge Settings

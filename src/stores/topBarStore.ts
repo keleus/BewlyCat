@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
+import { useToast } from 'vue-toastification'
 
 import {
   ACCOUNT_URL,
@@ -20,6 +21,7 @@ import api from '~/utils/api'
 import { getCSRF, isHomePage } from '~/utils/main'
 
 export const useTopBarStore = defineStore('topBar', () => {
+  const toast = useToast()
   const isLogin = ref<boolean>(true)
   const userInfo = reactive<UserInfo>({} as UserInfo)
 
@@ -202,6 +204,11 @@ export const useTopBarStore = defineStore('topBar', () => {
           else {
             // 如果有权限领取且未领取
             hasBCoinToReceive.value = bCoinItem.state === 0 && bCoinItem.next_receive_days > 0
+
+            // 如果开启了自动领取，则自动领取B币
+            if (hasBCoinToReceive.value && settings.value.autoReceiveBCoinCoupon) {
+              await autoReceiveBCoin()
+            }
           }
         }
         else {
@@ -212,6 +219,34 @@ export const useTopBarStore = defineStore('topBar', () => {
     catch (error) {
       console.error('Failed to check B-coin receive status:', error)
       hasBCoinToReceive.value = false
+    }
+  }
+
+  // 自动领取B币
+  async function autoReceiveBCoin() {
+    if (!isLogin.value || !hasBCoinToReceive.value) {
+      return
+    }
+
+    try {
+      const res = await api.user.exchangeCoupon({
+        type: '1',
+        csrf: getCSRF(),
+      })
+
+      if (res.code === 0) {
+        // 领取成功，更新状态
+        bCoinAlreadyReceived.value = true
+        hasBCoinToReceive.value = false
+        toast.success('B币券自动领取成功')
+      }
+      else {
+        toast.error(`B币券自动领取失败: ${res.message}`)
+      }
+    }
+    catch (error) {
+      toast.error('B币券自动领取失败，请稍后重试')
+      console.error('❌ B币券自动领取失败:', error)
     }
   }
 
@@ -586,6 +621,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     startUpdateTimer,
     stopUpdateTimer,
     checkBCoinReceiveStatus,
+    autoReceiveBCoin,
 
     moments,
     addedWatchLaterList,

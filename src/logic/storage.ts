@@ -108,6 +108,7 @@ export interface Settings {
   topBarComponentsConfig: { key: string, visible: boolean, badgeType: 'number' | 'dot' | 'none' }[]
   openNotificationsPageAsDrawer: boolean
   showBCoinReceiveReminder: boolean
+  autoReceiveBCoinCoupon: boolean
 
   alwaysUseDock: boolean
   autoHideDock: boolean
@@ -258,6 +259,7 @@ export const originalSettings: Settings = {
   ],
   openNotificationsPageAsDrawer: true,
   showBCoinReceiveReminder: true,
+  autoReceiveBCoinCoupon: false,
 
   alwaysUseDock: false,
   autoHideDock: false,

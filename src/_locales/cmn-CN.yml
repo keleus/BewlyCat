@@ -193,6 +193,8 @@ settings:
     none: 不显示
   show_watch_later_badge: 显示稍后再看角标
   show_bcoin_receive_reminder: 大会员B币领取提醒
+  auto_receive_bcoin_coupon: 大会员B币自动领取
+  auto_receive_bcoin_coupon_desc: 启用后，当检测到有未领取的B币券时将自动领取
   open_notifications_page_as_drawer: 以抽屉形式打开通知页面
   group_topbar_components: 顶栏组件设置
   topbar_components_adjustment: 顶栏组件角标设置

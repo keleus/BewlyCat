@@ -167,6 +167,8 @@ settings:
     none: 不顯示
   show_watch_later_badge: 顯示稍後再看角標
   show_bcoin_receive_reminder: 大會員B幣領取提醒
+  auto_receive_bcoin_coupon: 大會員B幣自動領取
+  auto_receive_bcoin_coupon_desc: 啓用後，當檢測到有未領取的B幣券時將自動領取
   open_notifications_page_as_drawer: 以抽屜形式打開通知頁面
   always_use_dock: 總是使用 Dock
   always_use_dock_desc: 啓用後，Dock 將始終顯示，側邊欄將隱藏。我們推薦你同時啓用自動隱藏 Dock。
