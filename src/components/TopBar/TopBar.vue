@@ -44,8 +44,13 @@ function checkUrlChange() {
 let hideTimer: number | null = null
 let urlCheckTimer: number | null = null
 
-// 监听鼠标位置变化和相关状态
-watch([isOutsideTopBar, isOutsideTopArea, () => topBarStore.isSwitcherButtonVisible], ([newTopBarValue, newTopAreaValue, isSwitcherButtonVisibleValue]) => {
+// 检测是否有弹窗激活
+const hasActivePopup = computed(() => {
+  return Object.values(topBarStore.popupVisible).some(visible => visible)
+})
+
+// 处理顶栏显示/隐藏逻辑的函数
+function handleTopBarVisibility() {
   if (isVideoOrBangumiPage() && settings.value.videoPageTopBarConfig === VideoPageTopBarConfig.ShowOnMouse) {
     // 清除之前的计时器
     if (hideTimer) {
@@ -53,28 +58,33 @@ watch([isOutsideTopBar, isOutsideTopArea, () => topBarStore.isSwitcherButtonVisi
       hideTimer = null
     }
 
-    // 检查是否有任何弹窗或抽屉处于激活状态
-    const hasActivePopup = Object.values(topBarStore.popupVisible).some(visible => visible)
-    const hasActiveDrawer = Object.values(topBarStore.drawerVisible).some(visible => visible)
-
-    // 如果鼠标在顶栏区域或顶部监听区域，或者有任何弹窗/抽屉激活，或者切换器按钮可见，则显示顶栏
-    if (!newTopBarValue || !newTopAreaValue || hasActivePopup || hasActiveDrawer || isSwitcherButtonVisibleValue) {
+    // 如果鼠标在顶栏区域或顶部监听区域，或者有任何弹窗激活，或者切换器按钮可见，则显示顶栏
+    if (!isOutsideTopBar.value || !isOutsideTopArea.value || hasActivePopup.value || topBarStore.isSwitcherButtonVisible) {
       toggleTopBarVisible(true)
     }
     else {
       // 延迟隐藏顶栏
       hideTimer = window.setTimeout(() => {
         // 再次检查是否有弹窗激活，防止在延迟期间有弹窗打开
-        const hasActivePopupNow = Object.values(topBarStore.popupVisible).some(visible => visible)
-        const hasActiveDrawerNow = Object.values(topBarStore.drawerVisible).some(visible => visible)
+        const hasActivePopupNow = hasActivePopup.value
         const isSwitcherButtonVisibleNow = topBarStore.isSwitcherButtonVisible
 
-        if (!hasActivePopupNow && !hasActiveDrawerNow && !isSwitcherButtonVisibleNow) {
+        // 在鼠标显示模式下，如果所有弹窗都关闭且鼠标不在检测区域，则隐藏顶栏
+        if (!hasActivePopupNow && !isSwitcherButtonVisibleNow) {
           toggleTopBarVisible(false)
         }
       }, 500) // 500ms 延迟
     }
   }
+}
+
+// 监听鼠标位置变化和相关状态
+watch([isOutsideTopBar, isOutsideTopArea, () => topBarStore.isSwitcherButtonVisible], handleTopBarVisibility)
+
+// 监听弹窗状态变化
+watch(hasActivePopup, () => {
+  // 当弹窗状态变化时，触发顶栏显示/隐藏逻辑
+  handleTopBarVisibility()
 })
 
 // 滚动处理
