@@ -58,7 +58,19 @@ const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
 
 // 页面可见性变化处理函数
 function handleVisibilityChange() {
+  const wasVisible = isPageVisible.value
   isPageVisible.value = !document.hidden
+
+  // 如果从不可见变为可见，且需要加载更多数据，则触发加载
+  if (!wasVisible && isPageVisible.value && !noMoreContent.value && !isLoading.value) {
+    if (!haveScrollbar() || videoList.value.length < 30) {
+      setTimeout(() => {
+        if (isPageVisible.value && !isLoading.value && !noMoreContent.value) {
+          getFollowedUsersVideos()
+        }
+      }, 200)
+    }
+  }
 }
 
 onMounted(() => {
@@ -111,6 +123,7 @@ async function initData() {
   livePage.value = 1
   videoList.value.length = 0
   noMoreContent.value = false
+  recursionDepth.value = 0
 
   if (settings.value.followingTabShowLivestreamingVideos)
     getLiveVideoList()
@@ -123,8 +136,7 @@ async function getData() {
   isLoading.value = true
 
   try {
-    for (let i = 0; i < 3; i++)
-      await getFollowedUsersVideos()
+    await getFollowedUsersVideos()
   }
   finally {
     isLoading.value = false
@@ -186,7 +198,9 @@ async function getLiveVideoList() {
         && liveVideoList.value.length < 50
         && isPageVisible.value) {
         setTimeout(() => {
-          getLiveVideoList()
+          if (!isLoading.value && isPageVisible.value) {
+            getLiveVideoList()
+          }
         }, 500)
       }
     }
@@ -205,8 +219,8 @@ async function getFollowedUsersVideos() {
     return
   }
 
-  // 检查页面是否可见，如果不可见则不进行请求
-  if (!isPageVisible.value) {
+  // 检查页面是否可见，如果不可见则限制加载次数
+  if (!isPageVisible.value && recursionDepth.value >= 3) {
     return
   }
 
@@ -313,11 +327,20 @@ async function getFollowedUsersVideos() {
         })
       }
 
-      if (!await haveScrollbar() && !noMoreContent.value && recursionDepth.value < 10 && isPageVisible.value) {
-        // 添加延迟避免无限递归调用
-        setTimeout(() => {
-          getFollowedUsersVideos()
-        }, 100)
+      // 只有在未被阻止的情况下才继续加载
+      if (!noMoreContent.value) {
+        if (!await haveScrollbar() || videoList.value.length < 30) {
+          // 添加延迟避免无限递归调用
+          setTimeout(() => {
+            if (!isLoading.value && !noMoreContent.value) {
+              getFollowedUsersVideos()
+            }
+          }, 200)
+        }
+        else {
+          // 重置递归深度计数器
+          recursionDepth.value = 0
+        }
       }
       else {
         // 重置递归深度计数器
