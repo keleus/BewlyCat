@@ -1,7 +1,7 @@
 name: 功能请求
 description: 提交新功能请求
 title: '[功能请求] '
-labels: [新需求]
+labels: [功能请求]
 body:
   - type: dropdown
     id: module
@@ -36,7 +36,7 @@ body:
   - type: textarea
     id: existing_plugins
     attributes:
-      label: 其他插件存在此功能
+      label: 如果其他插件存在此功能：
       description: 如果您知道其他插件/脚本已经实现了类似功能，请提供参考说明
       placeholder: 例如：插件名称或脚本名称和说明
     validations:
