@@ -56,11 +56,11 @@ function handleExportSettings() {
   const blob = new Blob([jsonStr], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
-  const date = new Date()
-  const dateStr = date.toISOString().replace(/T/, '-').replace(/\..+/, '').replace(/:/g, '')
+  const date = new Date();
+  const dateTimeStr = date.toLocaleString('sv-SE').replace(/[- :]/g, '');
 
   a.href = url
-  a.download = `bewly-settings-${dateStr}.json`
+  a.download = `bewly-settings-${dateTimeStr}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
