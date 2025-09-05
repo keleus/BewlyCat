@@ -127,7 +127,7 @@ async function checkGitHubRelease() {
             href="https://github.com/keleus/BewlyCat/releases" target="_blank"
             un-text="sm color-$bew-text-2 hover:color-$bew-text-3"
           >
-            v{{ version }} - Farewell
+            v{{ version }}
           </a>
         </p>
       </section>
