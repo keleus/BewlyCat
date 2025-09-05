@@ -57,7 +57,7 @@ function handleExportSettings() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   const date = new Date()
-  const dateStr = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`
+  const dateStr = date.toISOString().replace(/T/, '-').replace(/\..+/, '').replace(/:/g, '')
 
   a.href = url
   a.download = `bewly-settings-${dateStr}.json`
