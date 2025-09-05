@@ -56,8 +56,11 @@ function handleExportSettings() {
   const blob = new Blob([jsonStr], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
+  const date = new Date()
+  const dateStr = `${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`
+  
   a.href = url
-  a.download = 'bewly-settings.json'
+  a.download = `bewly-settings-${dateStr}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
