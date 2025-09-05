@@ -52,7 +52,7 @@ function handleImportSettings() {
 }
 
 function handleExportSettings() {
-  const jsonStr = JSON.stringify(settings.value)
+  const jsonStr = JSON.stringify(settings.value, null, 2) // Pretty print JSON
   const blob = new Blob([jsonStr], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
