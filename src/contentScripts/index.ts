@@ -259,7 +259,6 @@ function checkForUrlChanges() {
 
   if (currentCoreUrl !== lastCoreUrl) {
     lastUrl = location.href
-    hasAppliedPlayerMode = false // URL变化时重置标志
 
     // 重置随机播放初始化状态，避免重复加载
     resetRandomPlayInitialization()
