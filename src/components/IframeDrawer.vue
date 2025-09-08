@@ -27,6 +27,31 @@ const showIframe = ref<boolean>(false)
 const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
 const removeTopBarClassInjected = ref<boolean>(false)
 const originUrl = ref<string>()
+const isPageFullscreen = ref<boolean>(false)
+
+// 计算iframe容器的样式
+const iframeContainerClasses = computed(() => {
+  if (isPageFullscreen.value) {
+    return 'pos-fixed top-0 left-0 w-full h-full z-999999'
+  }
+  else {
+    const topPosition = headerShow.value ? 'top-$bew-top-bar-height' : 'top-0'
+    return `pos-absolute ${topPosition} left-0 of-hidden bg-$bew-bg rounded-t-$bew-radius w-full h-full`
+  }
+})
+
+const iframeStyles = computed(() => {
+  if (isPageFullscreen.value) {
+    return {}
+  }
+  else {
+    return {
+      // Prevent top bar shaking when before the remove-top-bar-without-placeholder class is injected
+      // When in fullscreen mode (headerShow is false), remove the top offset
+      top: headerShow.value && !removeTopBarClassInjected.value ? `calc(-1 * var(--bew-top-bar-height))` : '0',
+    }
+  }
+})
 
 useEventListener(window, 'popstate', updateIframeUrl)
 
@@ -225,10 +250,12 @@ watchEffect(() => {
       case DRAWER_VIDEO_ENTER_PAGE_FULL:
         headerShow.value = false
         disableEscPress.value = true
+        isPageFullscreen.value = true
         break
       case DRAWER_VIDEO_EXIT_PAGE_FULL:
         headerShow.value = true
         disableEscPress.value = false
+        isPageFullscreen.value = false
         break
     }
   })
@@ -240,10 +267,10 @@ watchEffect(() => {
     pos="absolute top-0 left-0" of-hidden w-full h-full
     z-999999
   >
-    <!-- Mask -->
+    <!-- Mask (only show in drawer mode, not in fullscreen) -->
     <Transition name="fade">
       <div
-        v-if="show"
+        v-if="show && !isPageFullscreen"
         pos="absolute bottom-0 left-0" w-full h-full bg="black opacity-60"
         @click="handleClose"
       />
@@ -302,12 +329,11 @@ watchEffect(() => {
       </div>
     </Transition>
 
-    <!-- Iframe -->
-    <Transition name="drawer">
+    <!-- Iframe Container -->
+    <Transition :name="isPageFullscreen ? 'fade' : 'drawer'">
       <div
         v-if="show"
-        :pos="`absolute ${headerShow ? 'top-$bew-top-bar-height' : 'top-0'} left-0`" of-hidden bg="$bew-bg"
-        rounded="t-$bew-radius" w-full h-full
+        :class="iframeContainerClasses"
       >
         <Transition name="fade">
           <iframe
@@ -315,14 +341,10 @@ watchEffect(() => {
             ref="iframeRef"
             :src="props.url"
             sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"
-            :style="{
-              // Prevent top bar shaking when before the remove-top-bar-without-placeholder class is injected
-              // When in fullscreen mode (headerShow is false), remove the top offset
-              top: headerShow && !removeTopBarClassInjected ? `calc(-1 * var(--bew-top-bar-height))` : '0',
-            }"
+            :style="iframeStyles"
             frameborder="0"
             pointer-events-auto
-            pos="relative left-0"
+            :pos="isPageFullscreen ? undefined : 'relative left-0'"
             allow="fullscreen"
             w-full
             h-full
