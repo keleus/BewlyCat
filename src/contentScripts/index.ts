@@ -12,7 +12,7 @@ import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isCollectionVideo, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isCollectionVideo, isPlayerModeTaskRunning, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -186,7 +186,7 @@ window.addEventListener(BEWLY_MOUNTED, () => {
 
 // 应用默认播放器模式
 function applyDefaultPlayerMode() {
-  if (hasAppliedPlayerMode)
+  if (hasAppliedPlayerMode || isPlayerModeTaskRunning())
     return // 如果已经应用过，直接返回
 
   const playerMode = settings.value.defaultVideoPlayerMode
@@ -226,8 +226,29 @@ function applyDefaultPlayerMode() {
   }, 3000)
 }
 
+// 获取URL的核心部分，忽略不重要的参数
+function getCoreUrl(url: string): string {
+  const urlObj = new URL(url)
+  const params = new URLSearchParams(urlObj.search)
+
+  // 保留重要的参数，忽略统计、追踪等参数
+  const importantParams = ['p', 'list', 't', 'from', 'seid', 'keyword', 'from_source']
+  const filteredParams = new URLSearchParams()
+
+  importantParams.forEach((param) => {
+    if (params.has(param)) {
+      filteredParams.set(param, params.get(param)!)
+    }
+  })
+
+  return urlObj.pathname + (filteredParams.toString() ? `?${filteredParams.toString()}` : '')
+}
+
 function checkForUrlChanges() {
-  if (location.href !== lastUrl) {
+  const currentCoreUrl = getCoreUrl(location.href)
+  const lastCoreUrl = lastUrl ? getCoreUrl(lastUrl) : ''
+
+  if (currentCoreUrl !== lastCoreUrl) {
     lastUrl = location.href
     hasAppliedPlayerMode = false // URL变化时重置标志
     if (isVideoOrBangumiPage()) {

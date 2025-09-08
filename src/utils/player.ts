@@ -38,6 +38,8 @@ const _videoClassTag = {
 export class RetryTask {
   private count = 0
   private repeat: () => void
+  private timeoutId: number | null = null
+  private cancelled = false
 
   constructor(
     private max: number,
@@ -48,12 +50,33 @@ export class RetryTask {
   }
 
   start() {
+    if (this.cancelled)
+      return
+
     this.count++
     if (this.count > this.max)
       return
-    if (!this.fn())
-      setTimeout(this.repeat, this.timeout)
+    if (!this.fn() && !this.cancelled) {
+      this.timeoutId = window.setTimeout(this.repeat, this.timeout)
+    }
   }
+
+  cancel() {
+    this.cancelled = true
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId)
+      this.timeoutId = null
+    }
+  }
+}
+
+// 全局锁，防止多个播放器模式任务同时执行
+let playerModeTaskRunning = false
+let currentPlayerTask: RetryTask | null = null
+
+// 获取播放器任务运行状态
+export function isPlayerModeTaskRunning(): boolean {
+  return playerModeTaskRunning
 }
 
 // 状态显示元素
@@ -104,7 +127,13 @@ export function showState(text: string) {
 }
 
 export function fullscreen() {
-  new RetryTask(20, 500, () => {
+  // 如果已有播放器任务在运行，先取消它
+  if (playerModeTaskRunning && currentPlayerTask) {
+    currentPlayerTask.cancel()
+  }
+
+  playerModeTaskRunning = true
+  currentPlayerTask = new RetryTask(20, 500, () => {
     const result = fullscreenClick()
     if (result) {
       // 在成功进入全屏后应用音量均衡和倍速记忆
@@ -114,14 +143,24 @@ export function fullscreen() {
         initVolumeSliders()
         applyRememberedPlaybackRate()
         startPlaybackRateMonitoring()
+        // 任务完成，重置锁
+        playerModeTaskRunning = false
+        currentPlayerTask = null
       }, 1000)
     }
     return result
-  }).start()
+  })
+  currentPlayerTask.start()
 }
 
 export function webFullscreen() {
-  new RetryTask(20, 500, () => {
+  // 如果已有播放器任务在运行，先取消它
+  if (playerModeTaskRunning && currentPlayerTask) {
+    currentPlayerTask.cancel()
+  }
+
+  playerModeTaskRunning = true
+  currentPlayerTask = new RetryTask(20, 500, () => {
     // 检查是否已经处于网页全屏状态
     if (document.querySelector('[data-screen=\'web\']')) {
       // 即使已经是网页全屏状态，也应用音量均衡和倍速记忆
@@ -131,6 +170,9 @@ export function webFullscreen() {
         initVolumeSliders()
         applyRememberedPlaybackRate()
         startPlaybackRateMonitoring()
+        // 任务完成，重置锁
+        playerModeTaskRunning = false
+        currentPlayerTask = null
       }, 1000)
       return true
     }
@@ -144,10 +186,14 @@ export function webFullscreen() {
         initVolumeSliders()
         applyRememberedPlaybackRate()
         startPlaybackRateMonitoring()
+        // 任务完成，重置锁
+        playerModeTaskRunning = false
+        currentPlayerTask = null
       }, 1000)
     }
     return result
-  }).start()
+  })
+  currentPlayerTask.start()
 }
 
 // 将播放器滚动到合适位置，优先保证弹幕栏可见
@@ -189,7 +235,13 @@ function scrollPlayerToOptimalPosition(delay = 1000) {
 }
 
 export function widescreen() {
-  new RetryTask(20, 500, () => {
+  // 如果已有播放器任务在运行，先取消它
+  if (playerModeTaskRunning && currentPlayerTask) {
+    currentPlayerTask.cancel()
+  }
+
+  playerModeTaskRunning = true
+  currentPlayerTask = new RetryTask(20, 500, () => {
     // 检查是否已经处于宽屏状态
     if (document.querySelector('[data-screen=\'wide\']')) {
       // 即使已经是宽屏状态，也执行滚动、音量均衡和倍速记忆
@@ -200,6 +252,9 @@ export function widescreen() {
         initVolumeSliders()
         applyRememberedPlaybackRate()
         startPlaybackRateMonitoring()
+        // 任务完成，重置锁
+        playerModeTaskRunning = false
+        currentPlayerTask = null
       }, 1000)
       return true
     }
@@ -214,10 +269,14 @@ export function widescreen() {
         initVolumeSliders()
         applyRememberedPlaybackRate()
         startPlaybackRateMonitoring()
+        // 任务完成，重置锁
+        playerModeTaskRunning = false
+        currentPlayerTask = null
       }, 1000)
     }
     return result
-  }).start()
+  })
+  currentPlayerTask.start()
 }
 
 export function widescreenClick() {
