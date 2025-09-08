@@ -13,6 +13,7 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
 import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isCollectionVideo, isPlayerModeTaskRunning, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -244,6 +245,14 @@ function getCoreUrl(url: string): string {
   return urlObj.pathname + (filteredParams.toString() ? `?${filteredParams.toString()}` : '')
 }
 
+// 初始化随机播放功能
+function initRandomPlayFeature() {
+  // 只在视频页面初始化随机播放功能
+  if (isVideoPage() && settings.value.enableRandomPlay) {
+    initRandomPlay()
+  }
+}
+
 function checkForUrlChanges() {
   const currentCoreUrl = getCoreUrl(location.href)
   const lastCoreUrl = lastUrl ? getCoreUrl(lastUrl) : ''
@@ -251,11 +260,21 @@ function checkForUrlChanges() {
   if (currentCoreUrl !== lastCoreUrl) {
     lastUrl = location.href
     hasAppliedPlayerMode = false // URL变化时重置标志
+
+    // 重置随机播放初始化状态，避免重复加载
+    resetRandomPlayInitialization()
+
     if (isVideoOrBangumiPage()) {
       applyDefaultPlayerMode()
       // 如果是视频页面内部跳转，延迟执行滚动
       if (isVideoOrBangumiPage()) {
         handleVideoPageNavigation()
+      }
+      // 重新初始化随机播放功能
+      if (isVideoPage() && settings.value.enableRandomPlay) {
+        setTimeout(() => {
+          initRandomPlayFeature()
+        }, 2000) // 延迟2秒初始化，确保页面完全加载
       }
     }
   }
@@ -278,6 +297,12 @@ window.addEventListener('load', () => {
   if (isVideoPage()) {
     applyDefaultPlayerMode()
     disableAutoPlayCollection(settings.value)
+    // 初始化随机播放功能
+    if (settings.value.enableRandomPlay) {
+      setTimeout(() => {
+        initRandomPlayFeature()
+      }, 3000) // 延迟3秒初始化，确保页面完全加载
+    }
   }
   else if (isVideoOrBangumiPage()) {
     applyDefaultPlayerMode()
@@ -472,6 +497,22 @@ function sendSettingsToPage(settings: any) {
 // 监听设置变化
 watch(settings, (newSettings) => {
   sendSettingsToPage(newSettings)
+
+  // 监听随机播放设置变化
+  if (newSettings.enableRandomPlay !== undefined) {
+    if (isVideoPage()) {
+      if (newSettings.enableRandomPlay) {
+        // 启用随机播放
+        setTimeout(() => {
+          initRandomPlayFeature()
+        }, 1000)
+      }
+      else {
+        // 禁用随机播放，重置状态
+        resetRandomPlayInitialization()
+      }
+    }
+  }
 }, { deep: true })
 
 // 监听来自网页环境的请求
