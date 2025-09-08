@@ -157,7 +157,6 @@ settings:
   video_default_player_mode: Default video display mode
   video_player_mode:
     default: Default
-    fullscreen: Fullscreen
     web_fullscreen: Web Fullscreen
     widescreen: Widescreen
   enable_video_preview: Enable video preview feature (if possible)

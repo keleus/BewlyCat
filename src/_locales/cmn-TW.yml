@@ -143,7 +143,6 @@ settings:
   video_default_player_mode: 影片預設顯示模式
   video_player_mode:
     default: 預設
-    fullscreen: 全螢幕
     web_fullscreen: 網頁全螢幕
     widescreen: 寬螢幕
   enable_video_preview: 啓用影片預覽功能（如果可以的話）

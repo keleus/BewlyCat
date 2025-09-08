@@ -12,7 +12,7 @@ import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isCollectionVideo, isPlayerModeTaskRunning, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { defaultMode, disableAutoPlayCollection, handleVideoPageNavigation, isCollectionVideo, isPlayerModeTaskRunning, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
@@ -203,9 +203,6 @@ function applyDefaultPlayerMode() {
   }
   else {
     switch (playerMode) {
-      case 'fullscreen':
-        fullscreen()
-        break
       case 'webFullscreen':
         webFullscreen()
         break
@@ -259,6 +256,7 @@ function checkForUrlChanges() {
 
   if (currentCoreUrl !== lastCoreUrl) {
     lastUrl = location.href
+    hasAppliedPlayerMode = false // URL变化时重置标志
 
     // 重置随机播放初始化状态，避免重复加载
     resetRandomPlayInitialization()

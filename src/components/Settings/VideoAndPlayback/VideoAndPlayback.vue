@@ -17,10 +17,6 @@ const videoPlayerModeOptions = computed(() => {
       value: 'default',
     },
     {
-      label: t('settings.video_player_mode.fullscreen'),
-      value: 'fullscreen',
-    },
-    {
       label: t('settings.video_player_mode.web_fullscreen'),
       value: 'webFullscreen',
     },

@@ -144,7 +144,6 @@ settings:
   video_default_player_mode: 视频默认显示模式
   video_player_mode:
     default: 默认
-    fullscreen: 全屏
     web_fullscreen: 网页全屏
     widescreen: 宽屏
   video_player_scroll: 调整显示模式后滚动
