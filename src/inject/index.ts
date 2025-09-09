@@ -63,9 +63,11 @@ function isSupportedPage(): boolean {
   const currentUrl = window.location.href
   return (
     // 视频页面
-    /https?:\/\/(?:www\.)?bilibili\.com\/video\/.*/.test(currentUrl)
+    /https?:\/\/(?:www\.|m\.)?bilibili\.com\/video\/.*/.test(currentUrl)
+    // 视频分享页短链路径
+    || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/s\/video\/.*/.test(currentUrl)
     // 番剧页面
-    || /https?:\/\/(?:www\.)?bilibili\.com\/bangumi\/play\/.*/.test(currentUrl)
+    || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/bangumi\/play\/.*/.test(currentUrl)
     // 动态页面
     || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share).*/.test(currentUrl)
     // 动态详情页
@@ -77,11 +79,17 @@ function isSupportedPage(): boolean {
     // 话题页面
     || /https?:\/\/(?:www\.)?bilibili\.com\/v\/topic\/detail.*/.test(currentUrl)
     // 课程页面
-    || /https?:\/\/(?:www\.)?bilibili\.com\/cheese\/play\/.*/.test(currentUrl)
+    || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/cheese\/play\/.*/.test(currentUrl)
+    // 稍后再看列表页（两种路径）
+    || /https?:\/\/(?:www\.)?bilibili\.com\/watchlater\/(?:#\/)?list.*/.test(currentUrl)
+    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater(?:\?.*|\/.*)?$/.test(currentUrl)
+    // 收藏夹与媒体列表
+    || /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(currentUrl)
+    || /https?:\/\/(?:www\.)?bilibili\.com\/medialist\/(?:play|detail)\/.*/.test(currentUrl)
     // 活动页面
-    || /https?:\/\/(?:www\.)?bilibili\.com\/blackboard\/.*/.test(currentUrl)
+    || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/blackboard\/.*/.test(currentUrl)
     // 拜年祭页面
-    || /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(currentUrl)
+    || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/festival\/.*/.test(currentUrl)
     // 漫画页面
     || /https?:\/\/manga\.bilibili\.com\/detail\/.*/.test(currentUrl)
   )
