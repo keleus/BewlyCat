@@ -90,7 +90,7 @@ const handleThrottledPageRefresh = useThrottleFn(() => {
     setTimeout(checkScrollComplete, 100)
   }
 }, 500)
-const handleThrottledReachBottom = useThrottleFn(() => handleReachBottom.value?.(), 500)
+const handleThrottledReachBottom = useThrottleFn(() => handleReachBottom.value?.(), 200)
 const handleThrottledBackToTop = useThrottleFn(() => handleBackToTop(), 500)
 const handleThrottledPageUnRefresh = useThrottleFn(() => handleUndoRefresh.value?.(), 500)
 const handleThrottledPageForwardRefresh = useThrottleFn(() => handleForwardRefresh.value?.(), 500)
@@ -359,6 +359,9 @@ function handleBackToTop(targetScrollTop = 0 as number) {
   iframePageRef.value?.handleBackToTop()
 }
 
+// 添加滚动结束检测
+let scrollEndTimer: ReturnType<typeof setTimeout> | null = null
+
 function handleOsScroll() {
   emitter.emit(OVERLAY_SCROLL_BAR_SCROLL)
 
@@ -373,8 +376,32 @@ function handleOsScroll() {
     reachTop.value = false
   }
 
-  if (clientHeight + scrollTop >= scrollHeight - 300)
+  // 优化滚动检测：降低阈值，提高敏感度
+  const threshold = Math.min(200, clientHeight * 0.2) // 动态阈值，最大200px或20%屏幕高度
+  if (clientHeight + scrollTop >= scrollHeight - threshold) {
     handleThrottledReachBottom()
+  }
+
+  // 清除之前的滚动结束定时器
+  if (scrollEndTimer) {
+    clearTimeout(scrollEndTimer)
+  }
+
+  // 设置滚动结束检测，在滚动停止150ms后再检查一次
+  scrollEndTimer = setTimeout(() => {
+    const osInstance = scrollbarRef.value?.osInstance()
+    if (!osInstance)
+      return
+
+    const { viewport } = osInstance.elements()
+    const { scrollTop, scrollHeight, clientHeight } = viewport
+    const threshold = Math.min(200, clientHeight * 0.2)
+
+    // 滚动结束后的最终检测，使用更大的阈值确保不遗漏
+    if (clientHeight + scrollTop >= scrollHeight - threshold * 1.5) {
+      handleReachBottom.value?.()
+    }
+  }, 150)
 
   if (isHomePage())
     topBarRef.value?.handleScroll()

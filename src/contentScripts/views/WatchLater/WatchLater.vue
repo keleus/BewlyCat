@@ -49,7 +49,16 @@ function initPageAction() {
   }
 
   handleReachBottom.value = async () => {
-    getData()
+    if (isLoading.value || noMoreContent.value) {
+      return
+    }
+
+    // 优化：添加延迟执行提高触发成功率
+    setTimeout(() => {
+      if (!isLoading.value && !noMoreContent.value) {
+        getData()
+      }
+    }, 50)
   }
 }
 

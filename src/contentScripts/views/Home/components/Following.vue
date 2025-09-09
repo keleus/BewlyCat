@@ -105,7 +105,12 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    getData()
+    // 优化：添加延迟执行而不是直接阻止
+    setTimeout(() => {
+      if (!isLoading.value && !noMoreContent.value) {
+        getData()
+      }
+    }, 50) // 短暂延迟确保滚动结束
   }
   handlePageRefresh.value = async () => {
     if (isLoading.value)

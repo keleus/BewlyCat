@@ -78,13 +78,18 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    if (searchScope.value === 'all') {
-      const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
-      await getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword.value, 1)
-    }
-    else {
-      await getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword.value, 0)
-    }
+    // 优化：添加延迟执行提高触发成功率
+    setTimeout(() => {
+      if (!isLoading.value && !noMoreContent.value) {
+        if (searchScope.value === 'all') {
+          const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
+          getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword.value, 1)
+        }
+        else {
+          getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword.value, 0)
+        }
+      }
+    }, 50)
   }
 
   handlePageRefresh.value = () => {

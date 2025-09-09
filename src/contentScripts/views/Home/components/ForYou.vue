@@ -132,7 +132,7 @@ const hasBackState = ref<boolean>(false)
 const hasForwardState = ref<boolean>(false)
 
 // 添加请求限制相关的变量
-const requestThrottleTime = 300 // 请求间隔时间(毫秒)
+const requestThrottleTime = 150 // 请求间隔时间(毫秒) - 从300ms减少到150ms
 const lastRequestTime = ref<number>(0)
 const PAGE_SIZE = 30
 
@@ -270,9 +270,17 @@ function initPageAction() {
     if (isFilterBlocked.value)
       return
 
-    // 检查频率限制
+    // 优化频率限制：允许滚动结束后的立即检查
     const now = Date.now()
-    if (now - lastRequestTime.value < requestThrottleTime) {
+    const timeSinceLastRequest = now - lastRequestTime.value
+    if (timeSinceLastRequest < requestThrottleTime) {
+      // 如果距离上次请求时间很短，延迟执行而不是直接返回
+      const remainingTime = requestThrottleTime - timeSinceLastRequest
+      setTimeout(() => {
+        if (!isLoading.value && !noMoreContent.value && !isFilterBlocked.value) {
+          getData()
+        }
+      }, remainingTime)
       return
     }
 
