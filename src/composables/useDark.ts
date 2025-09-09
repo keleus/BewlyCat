@@ -7,6 +7,13 @@ import { setCookie } from '~/utils/main'
 import { executeTimes } from '~/utils/timer'
 
 /**
+ * Check if current page is festival page
+ */
+function isFestivalPage(): boolean {
+  return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
+}
+
+/**
  * 设置深色模式基准颜色
  */
 function setDarkModeBaseColor(color: string) {
@@ -82,14 +89,22 @@ export function useDark() {
     if (themeChangeTimer)
       clearInterval(themeChangeTimer)
 
+    // Check if we should apply selective dark mode (plugin UI only) on festival pages
+    const isSelectiveDark = isFestivalPage() && settings.value.adaptToOtherPageStyles
+
     if (isDark.value) {
+      // Always apply dark mode to plugin container
       document.querySelector('#bewly')?.classList.add('dark')
-      document.documentElement.classList.add('dark')
-      nextTick(() => {
-        document.body?.classList.add('dark')
-      })
-      // bili_dark is bilibili's official dark mode class
-      document.documentElement.classList.add('bili_dark')
+
+      // Only apply global dark mode if not on festival pages
+      if (!isSelectiveDark) {
+        document.documentElement.classList.add('dark')
+        nextTick(() => {
+          document.body?.classList.add('dark')
+        })
+        // bili_dark is bilibili's official dark mode class
+        document.documentElement.classList.add('bili_dark')
+      }
 
       // 确保深色模式基准颜色被正确应用
       setDarkModeBaseColor(settings.value.darkModeBaseColor)
@@ -99,11 +114,15 @@ export function useDark() {
     }
     else {
       document.querySelector('#bewly')?.classList?.remove('dark')
-      document.documentElement.classList.remove('dark')
-      nextTick(() => {
-        document.body?.classList.remove('dark')
-      })
-      document.documentElement.classList.remove('bili_dark')
+
+      // Only remove global classes if we're not in selective mode or if we applied them
+      if (!isSelectiveDark) {
+        document.documentElement.classList.remove('dark')
+        nextTick(() => {
+          document.body?.classList.remove('dark')
+        })
+        document.documentElement.classList.remove('bili_dark')
+      }
 
       setCookie('theme_style', 'light', 365 * 10)
       window.dispatchEvent(new CustomEvent('global.themeChange', { detail: 'light' }))

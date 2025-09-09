@@ -36,6 +36,10 @@ if (isFirefox) {
 
 const currentUrl = document.URL
 
+function isFestivalPage(): boolean {
+  return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
+}
+
 function isSupportedPages(): boolean {
   if (isInIframe())
     return false
@@ -136,10 +140,12 @@ let lastUrl = location.href
 let hasAppliedPlayerMode = false // 添加标志变量
 
 if (isSupportedPages() || isSupportedIframePages()) {
+  // Always use dark mode if enabled, but let useDark() handle selective application
   if (settings.value.adaptToOtherPageStyles)
     useDark()
 
-  if (settings.value.adaptToOtherPageStyles) {
+  const shouldApplyFullStyles = settings.value.adaptToOtherPageStyles && !isFestivalPage()
+  if (shouldApplyFullStyles) {
     document.documentElement.classList.add('bewly-design')
 
     // Remove the Bilibili Evolved's dark mode style
@@ -533,9 +539,21 @@ window.addEventListener('message', (event) => {
   const { type, isDark, darkModeBaseColor } = event.data
 
   if (type === 'iframeDarkModeChange') {
+    // Check if we should apply selective dark mode (plugin UI only) on festival pages
+    const isSelectiveDark = isFestivalPage()
+
     if (isDark) {
-      document.documentElement.classList.add('dark')
-      document.body?.classList.add('dark')
+      // Always apply to plugin container if it exists
+      const bewlyElement = document.querySelector('#bewly')
+      if (bewlyElement) {
+        bewlyElement.classList.add('dark')
+      }
+
+      // Only apply global styles if not on festival pages
+      if (!isSelectiveDark) {
+        document.documentElement.classList.add('dark')
+        document.body?.classList.add('dark')
+      }
 
       // 如果提供了深色模式基准颜色，则应用它
       if (darkModeBaseColor) {
@@ -543,8 +561,16 @@ window.addEventListener('message', (event) => {
       }
     }
     else {
-      document.documentElement.classList.remove('dark')
-      document.body?.classList.remove('dark')
+      const bewlyElement = document.querySelector('#bewly')
+      if (bewlyElement) {
+        bewlyElement.classList.remove('dark')
+      }
+
+      // Only remove global classes if not in selective mode
+      if (!isSelectiveDark) {
+        document.documentElement.classList.remove('dark')
+        document.body?.classList.remove('dark')
+      }
     }
   }
 }, { passive: true })

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onKeyStroke, useEventListener, useThrottleFn, useToggle } from '@vueuse/core'
 import type { Ref } from 'vue'
+import { ref } from 'vue'
 
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
@@ -16,9 +17,26 @@ import emitter from '~/utils/mitt'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
+// Check if current page is festival page
+function isFestivalPage(): boolean {
+  return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
+}
+
 const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
-const { isDark } = useDark()
+
+// Conditionally use dark mode (skip on festival pages)
+let isDark: Ref<boolean>
+// Always use dark mode if enabled, but let useDark() handle selective application
+const shouldUseDark = settings.value.adaptToOtherPageStyles
+
+if (shouldUseDark) {
+  const darkResult = useDark()
+  isDark = darkResult.isDark
+}
+else {
+  isDark = ref(false)
+}
 const [showSettings, toggleSettings] = useToggle(false)
 
 // Get the 'page' query parameter from the URL
@@ -114,11 +132,19 @@ useEventListener(window, 'message', ({ data, source }) => {
     // 在iframe环境中，只更新DOM样式，不修改用户的主题设置
     // 避免覆盖用户设置的"auto"模式
     if (isInIframe()) {
+      // Check if we should apply selective dark mode (plugin UI only) on festival pages
+      const isSelectiveDark = isFestivalPage()
+
       // 立即更新DOM样式，不修改settings.value.theme
       if (isDark) {
-        document.documentElement.classList.add('dark')
-        document.body?.classList.add('dark')
+        // Always apply to plugin container
         document.querySelector('#bewly')?.classList.add('dark')
+
+        // Only apply global styles if not on festival pages
+        if (!isSelectiveDark) {
+          document.documentElement.classList.add('dark')
+          document.body?.classList.add('dark')
+        }
 
         // 如果提供了深色模式基准颜色，则应用它（仅应用到DOM，不修改设置）
         if (darkModeBaseColor) {
@@ -132,9 +158,13 @@ useEventListener(window, 'message', ({ data, source }) => {
         }
       }
       else {
-        document.documentElement.classList.remove('dark')
-        document.body?.classList.remove('dark')
         document.querySelector('#bewly')?.classList?.remove('dark')
+
+        // Only remove global classes if not in selective mode
+        if (!isSelectiveDark) {
+          document.documentElement.classList.remove('dark')
+          document.body?.classList.remove('dark')
+        }
       }
 
       // 强制重新计算样式
