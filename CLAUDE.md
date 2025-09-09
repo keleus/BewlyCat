@@ -12,17 +12,9 @@ BewlyCat is a browser extension that enhances the Bilibili homepage experience. 
 - Uses `pnpm` as the package manager
 
 ### Key Development Commands
-- `pnpm dev` - Start development mode for Chrome/Edge
-- `pnpm dev-firefox` - Start development mode for Firefox
-- `pnpm build` - Build for production (Chrome/Edge)
-- `pnpm build-firefox` - Build for Firefox
-- `pnpm build-safari` - Build for Safari
 - `pnpm lint` - Run ESLint
 - `pnpm lint:fix` - Run ESLint with auto-fix
 - `pnpm typecheck` - Run TypeScript type checking
-- `pnpm test` - Run tests with Vitest
-- `pnpm start:chromium` - Run extension in Chromium browser
-- `pnpm start:firefox` - Run extension in Firefox browser
 
 ### Build Process
 The project uses a multi-target build system:

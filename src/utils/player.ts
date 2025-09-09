@@ -38,8 +38,6 @@ const _videoClassTag = {
 export class RetryTask {
   private count = 0
   private repeat: () => void
-  private timeoutId: number | null = null
-  private cancelled = false
 
   constructor(
     private max: number,
@@ -50,33 +48,12 @@ export class RetryTask {
   }
 
   start() {
-    if (this.cancelled)
-      return
-
     this.count++
     if (this.count > this.max)
       return
-    if (!this.fn() && !this.cancelled) {
-      this.timeoutId = window.setTimeout(this.repeat, this.timeout)
-    }
+    if (!this.fn())
+      setTimeout(this.repeat, this.timeout)
   }
-
-  cancel() {
-    this.cancelled = true
-    if (this.timeoutId) {
-      clearTimeout(this.timeoutId)
-      this.timeoutId = null
-    }
-  }
-}
-
-// 全局锁，防止多个播放器模式任务同时执行
-let playerModeTaskRunning = false
-let currentPlayerTask: RetryTask | null = null
-
-// 获取播放器任务运行状态
-export function isPlayerModeTaskRunning(): boolean {
-  return playerModeTaskRunning
 }
 
 // 状态显示元素
@@ -136,128 +113,25 @@ function applyPlayerEnhancements() {
 }
 
 export function fullscreen() {
-  // 如果已有播放器任务在运行，先取消它
-  if (playerModeTaskRunning && currentPlayerTask) {
-    currentPlayerTask.cancel()
-  }
-
-  playerModeTaskRunning = true
-  currentPlayerTask = new RetryTask(20, 500, () => {
-    // 检查是否已经处于全屏状态
-    if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
-      // 即使已经是全屏状态，也应用音量均衡和倍速记忆
-      setTimeout(() => {
-        applyPlayerEnhancements()
-        // 任务完成，重置锁
-        playerModeTaskRunning = false
-        currentPlayerTask = null
-      }, 1000)
-      return true
-    }
-
-    // 使用原生全屏API而不是点击UI元素
-    const video = getVideoElement()
-    const playerElement = document.querySelector(_videoClassTag.player)
-
-    if (video && video.requestFullscreen) {
-      video.requestFullscreen().then(() => {
-        // 在成功进入全屏后应用音量均衡和倍速记忆
-        setTimeout(() => {
-          applyPlayerEnhancements()
-          // 任务完成，重置锁
-          playerModeTaskRunning = false
-          currentPlayerTask = null
-        }, 1000)
-      }).catch(() => {
-        // 如果video全屏失败，尝试播放器容器全屏
-        if (playerElement && playerElement.requestFullscreen) {
-          playerElement.requestFullscreen().then(() => {
-            setTimeout(() => {
-              applyPlayerEnhancements()
-              playerModeTaskRunning = false
-              currentPlayerTask = null
-            }, 1000)
-          }).catch(() => {
-            playerModeTaskRunning = false
-            currentPlayerTask = null
-          })
-        }
-        else {
-          playerModeTaskRunning = false
-          currentPlayerTask = null
-        }
-      })
-      return true
-    }
-    else if ((video as any)?.webkitRequestFullscreen) {
-      // Safari兼容
-      (video as any).webkitRequestFullscreen()
-      setTimeout(() => {
-        applyPlayerEnhancements()
-        playerModeTaskRunning = false
-        currentPlayerTask = null
-      }, 1000)
-      return true
-    }
-    else if (playerElement && (playerElement as any).requestFullscreen) {
-      // 如果video元素不支持，尝试播放器容器
-      (playerElement as any).requestFullscreen().then(() => {
-        setTimeout(() => {
-          applyPlayerEnhancements()
-          playerModeTaskRunning = false
-          currentPlayerTask = null
-        }, 1000)
-      }).catch(() => {
-        playerModeTaskRunning = false
-        currentPlayerTask = null
-      })
-      return true
-    }
-    else if (playerElement && (playerElement as any).webkitRequestFullscreen) {
-      // Safari播放器容器兼容
-      (playerElement as any).webkitRequestFullscreen()
-      setTimeout(() => {
-        applyPlayerEnhancements()
-        playerModeTaskRunning = false
-        currentPlayerTask = null
-      }, 1000)
-      return true
-    }
-
-    // 如果原生API都不可用，回退到点击方式
+  new RetryTask(20, 500, () => {
     const result = fullscreenClick()
     if (result) {
+      // 在成功进入全屏后应用音量均衡和倍速记忆
       setTimeout(() => {
         applyPlayerEnhancements()
-        playerModeTaskRunning = false
-        currentPlayerTask = null
       }, 1000)
     }
-    else {
-      playerModeTaskRunning = false
-      currentPlayerTask = null
-    }
     return result
-  })
-  currentPlayerTask.start()
+  }).start()
 }
 
 export function webFullscreen() {
-  // 如果已有播放器任务在运行，先取消它
-  if (playerModeTaskRunning && currentPlayerTask) {
-    currentPlayerTask.cancel()
-  }
-
-  playerModeTaskRunning = true
-  currentPlayerTask = new RetryTask(20, 500, () => {
+  new RetryTask(20, 500, () => {
     // 检查是否已经处于网页全屏状态
     if (document.querySelector('[data-screen=\'web\']')) {
       // 即使已经是网页全屏状态，也应用音量均衡和倍速记忆
       setTimeout(() => {
         applyPlayerEnhancements()
-        // 任务完成，重置锁
-        playerModeTaskRunning = false
-        currentPlayerTask = null
       }, 1000)
       return true
     }
@@ -267,14 +141,10 @@ export function webFullscreen() {
       // 在成功进入网页全屏后应用音量均衡和倍速记忆
       setTimeout(() => {
         applyPlayerEnhancements()
-        // 任务完成，重置锁
-        playerModeTaskRunning = false
-        currentPlayerTask = null
       }, 1000)
     }
     return result
-  })
-  currentPlayerTask.start()
+  }).start()
 }
 
 // 将播放器滚动到合适位置，优先保证弹幕栏可见
@@ -316,22 +186,13 @@ function scrollPlayerToOptimalPosition(delay = 1000) {
 }
 
 export function widescreen() {
-  // 如果已有播放器任务在运行，先取消它
-  if (playerModeTaskRunning && currentPlayerTask) {
-    currentPlayerTask.cancel()
-  }
-
-  playerModeTaskRunning = true
-  currentPlayerTask = new RetryTask(20, 500, () => {
+  new RetryTask(20, 500, () => {
     // 检查是否已经处于宽屏状态
     if (document.querySelector('[data-screen=\'wide\']')) {
       // 即使已经是宽屏状态，也执行滚动、音量均衡和倍速记忆
       scrollPlayerToOptimalPosition()
       setTimeout(() => {
         applyPlayerEnhancements()
-        // 任务完成，重置锁
-        playerModeTaskRunning = false
-        currentPlayerTask = null
       }, 1000)
       return true
     }
@@ -342,14 +203,10 @@ export function widescreen() {
       // 在成功进入宽屏后应用音量均衡和倍速记忆
       setTimeout(() => {
         applyPlayerEnhancements()
-        // 任务完成，重置锁
-        playerModeTaskRunning = false
-        currentPlayerTask = null
       }, 1000)
     }
     return result
-  })
-  currentPlayerTask.start()
+  }).start()
 }
 
 export function widescreenClick() {
