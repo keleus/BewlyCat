@@ -288,7 +288,9 @@ settings:
     username_or_mid: 用户名 / MID
   filter_like_view_ratio: 按点赞播放比例筛选（仅在Web推荐模式下有效）
   filter_like_view_ratio_desc: 筛选视频的点赞数与播放数比例（默认为5%，最高为10%）
-  following_tab_show_livestreaming_videos: 在 “正在关注” 中显示直播视频
+  following_tab_show_livestreaming_videos: 在 "正在关注" 中显示直播视频
+  preserve_for_you_state: 留存个性推荐切换前状态
+  preserve_for_you_state_desc: 当从dock栏切换到其他页面时，留存个性推荐页面的浏览状态，返回时保持切换前的内容
   use_search_page_mode: 首页使用搜索页模式
   settings_shared_with_the_search_page: 与搜索页共用的配置
   settings_shared_with_the_search_page_desc: 这些设置都与搜索页共用。

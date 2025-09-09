@@ -3,7 +3,7 @@ import { onKeyStroke } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
-import { useBewlyApp } from '~/composables/useAppProvider'
+import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { FilterType, useFilter } from '~/composables/useFilter'
 import { LanguageType } from '~/enums/appEnums'
 import type { GridLayoutType } from '~/logic'
@@ -11,6 +11,8 @@ import { accessKey, settings } from '~/logic'
 import type { AppForYouResult, Item as AppVideoItem } from '~/models/video/appForYou'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
 import type { forYouResult, Item as VideoItem } from '~/models/video/forYou'
+import type { AppVideoElement, VideoElement } from '~/stores/forYouStore'
+import { useForYouStore } from '~/stores/forYouStore'
 import api from '~/utils/api'
 import { TVAppKey } from '~/utils/authProvider'
 import { isVerticalVideo } from '~/utils/uriParse'
@@ -25,6 +27,7 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
+const forYouStore = useForYouStore()
 
 const filterFunc = useFilter(
   ['is_followed'],
@@ -68,17 +71,6 @@ const appFilterFunc = useFilter(
   ],
 )
 
-// https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
-interface VideoElement {
-  uniqueId: string
-  item?: VideoItem
-}
-
-interface AppVideoElement {
-  uniqueId: string
-  item?: AppVideoItem
-}
-
 const gridClass = computed((): string => {
   if (props.gridLayout === 'adaptive')
     return 'grid-adaptive'
@@ -94,7 +86,7 @@ const needToLoginFirst = ref<boolean>(false)
 const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const refreshIdx = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar, showUndoButton, handleUndoRefresh, handleForwardRefresh, handleBackToTop } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, handleUndoRefresh, handleForwardRefresh, handleBackToTop } = useBewlyApp()
 const activatedAppVideo = ref<AppVideoItem | null>()
 const videoCardRef = ref(null)
 const showDislikeDialog = ref<boolean>(false)
@@ -103,28 +95,12 @@ const showDislikeDialog = ref<boolean>(false)
 const isPageVisible = ref<boolean>(!document.hidden)
 const selectedDislikeReason = ref<number>(1)
 
-// 监听页面可见性变化
-function handleVisibilityChange() {
-  isPageVisible.value = !document.hidden
-}
-
-// 添加页面可见性监听器
-onMounted(() => {
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
-})
-
 // 修改缓存数据变量，添加前进状态变量
 const cachedVideoList = ref<VideoElement[]>([])
-// const cachedAppVideoList = ref<AppVideoElement[]>([])
 const cachedRefreshIdx = ref<number>(1)
 
 // 添加前进状态变量
 const forwardVideoList = ref<VideoElement[]>([])
-// const forwardAppVideoList = ref<AppVideoElement[]>([])
 const forwardRefreshIdx = ref<number>(1)
 
 // 添加状态标记
@@ -143,6 +119,76 @@ const minFilteredVideos = 6 // 最少过滤后视频数量
 const minFilteredVideosAfterRetry = 10 // 重试后最少过滤后视频数量
 const filterDelayTime = 1000 // 过滤结果不足时的延迟时间(毫秒)
 const isFilterBlocked = ref<boolean>(false) // 是否因过滤条件被阻止加载
+
+// 监听页面可见性变化
+function handleVisibilityChange() {
+  isPageVisible.value = !document.hidden
+}
+
+// 添加页面可见性监听器
+onMounted(() => {
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+
+  // 如果启用状态保留且store中有数据，则恢复状态
+  if (settings.value.preserveForYouState && forYouStore.state.isInitialized) {
+    // 恢复关键状态
+    const savedState = forYouStore.getCompleteState()
+    videoList.value = [...savedState.videoList]
+    appVideoList.value = [...savedState.appVideoList]
+    refreshIdx.value = savedState.refreshIdx
+    noMoreContent.value = savedState.noMoreContent
+
+    // 确保撤销按钮不显示（因为这是状态恢复，不是刷新操作）
+    hasBackState.value = false
+    hasForwardState.value = false
+    undoForwardState.value = UndoForwardState.Hidden
+
+    // 清空所有缓存状态，确保没有历史数据影响
+    cachedVideoList.value = []
+    cachedRefreshIdx.value = 1
+    forwardVideoList.value = []
+    forwardRefreshIdx.value = 1
+
+    // 重置请求限制状态
+    resetRequestLimit()
+
+    // 延迟初始化页面交互功能，避免立即触发数据加载
+    setTimeout(() => {
+      initPageAction()
+      // 在初始化页面交互功能后，再次确保按钮状态正确
+      setTimeout(() => {
+        if (settings.value.preserveForYouState && forYouStore.state.isInitialized) {
+          undoForwardState.value = UndoForwardState.Hidden
+        }
+      }, 100)
+    }, 1000)
+  }
+  else {
+    // 首次加载或未启用状态保留时，初始化数据
+    setTimeout(() => {
+      initData()
+    }, 200)
+    initPageAction()
+  }
+})
+
+onBeforeUnmount(() => {
+  // 如果启用状态保留，保存当前状态到store
+  if (settings.value.preserveForYouState) {
+    const currentState = {
+      videoList: [...videoList.value],
+      appVideoList: [...appVideoList.value],
+      refreshIdx: refreshIdx.value,
+      noMoreContent: noMoreContent.value,
+      isInitialized: true,
+    }
+    forYouStore.saveCompleteState(currentState)
+  }
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+})
 
 onKeyStroke((e: KeyboardEvent) => {
   if (showDislikeDialog.value) {
@@ -182,27 +228,15 @@ watch(() => settings.value.recommendationMode, () => {
   // 重置前进后退状态
   hasBackState.value = false
   hasForwardState.value = false
-  showUndoButton.value = false
+  undoForwardState.value = UndoForwardState.Hidden
 
   // 重置过滤相关状态
   resetRequestLimit()
 
+  // 重置store状态
+  forYouStore.resetState()
+
   initData()
-})
-
-onMounted(() => {
-  // Delay by 0.2 seconds to obtain the `settings.value.recommendationMode` value
-  // otherwise the `settings.value.recommendationMode` value will be undefined
-  // i have no idea to fix that...
-  setTimeout(() => {
-    initData()
-  }, 200)
-
-  initPageAction()
-})
-
-onActivated(() => {
-  initPageAction()
 })
 
 async function initData() {
@@ -303,7 +337,7 @@ function initPageAction() {
       hasForwardState.value = false
 
       // 显示撤销按钮
-      showUndoButton.value = true
+      undoForwardState.value = UndoForwardState.ShowUndo
     }
 
     initData()
@@ -327,7 +361,7 @@ function initPageAction() {
         refreshIdx.value = cachedRefreshIdx.value
 
         hasBackState.value = false
-        showUndoButton.value = false
+        undoForwardState.value = UndoForwardState.Hidden
       }
     }
   }
@@ -351,7 +385,7 @@ function initPageAction() {
 
         // 标记为已经前进
         hasForwardState.value = false
-        showUndoButton.value = true
+        undoForwardState.value = UndoForwardState.ShowUndo
         return true
       }
     }
@@ -463,11 +497,16 @@ async function getRecommendVideos() {
         }
       }
 
-      // 只有在未被阻止的情况下才继续加载
+      // 只有在未被阻止且需要继续加载的情况下才继续加载
       if (!isFilterBlocked.value && (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1)) {
-        // 检查请求频率限制
-        if (Date.now() - lastRequestTime.value >= requestThrottleTime) {
-          getRecommendVideos()
+        // 检查请求频率限制和页面可见性
+        if (Date.now() - lastRequestTime.value >= requestThrottleTime && isPageVisible.value) {
+          // 使用 setTimeout 避免直接递归调用
+          setTimeout(() => {
+            if (!isLoading.value && !isFilterBlocked.value && isPageVisible.value) {
+              getRecommendVideos()
+            }
+          }, 100)
         }
       }
     }

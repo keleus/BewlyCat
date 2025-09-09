@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onKeyStroke, useEventListener, useThrottleFn, useToggle } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { ref } from 'vue'
+import { provide, ref } from 'vue'
 
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
+import { UndoForwardState } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
@@ -66,7 +67,8 @@ const handlePageRefresh = ref<() => void>()
 const handleReachBottom = ref<() => void>()
 const handleUndoRefresh = ref<() => void>()
 const handleForwardRefresh = ref<() => void>()
-const showUndoButton = ref<boolean>(false)
+// 使用新的枚举状态管理撤销/前进按钮
+const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
 const handleThrottledPageRefresh = useThrottleFn(() => {
   const osInstance = scrollbarRef.value?.osInstance()
   if (!osInstance) {
@@ -487,7 +489,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   handleReachBottom,
   handleUndoRefresh,
   handleForwardRefresh,
-  showUndoButton,
+  undoForwardState,
   openIframeDrawer,
   haveScrollbar,
 })

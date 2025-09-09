@@ -168,6 +168,9 @@ function handleToggleDockItem(dockItem: any) {
       <SettingsItem :title="$t('settings.enable_undo_refresh_button')" :desc="$t('settings.enable_undo_refresh_button_desc')">
         <Radio v-model="settings.enableUndoRefreshButton" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.preserve_for_you_state')" :desc="$t('settings.preserve_for_you_state_desc')">
+        <Radio v-model="settings.preserveForYouState" />
+      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_sidebar')" :desc="$t('settings.group_sidebar_desc')">

@@ -174,6 +174,7 @@ export interface Settings {
   alwaysShowTabsOnHomePage: boolean
   useSearchPageModeOnHomePage: boolean
   searchPageModeWallpaperFixed: boolean
+  preserveForYouState: boolean
 
   adaptToOtherPageStyles: boolean
   showTopBar: boolean
@@ -325,6 +326,7 @@ export const originalSettings: Settings = {
   alwaysShowTabsOnHomePage: false,
   useSearchPageModeOnHomePage: false,
   searchPageModeWallpaperFixed: false,
+  preserveForYouState: false,
 
   adaptToOtherPageStyles: true,
   showTopBar: true,

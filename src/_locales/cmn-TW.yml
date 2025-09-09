@@ -272,6 +272,8 @@ settings:
   filter_by_user_table:
     username_or_mid: 使用者名稱 / MID
   following_tab_show_livestreaming_videos: 在「正在跟隨」中顯示實況直播
+  preserve_for_you_state: 留存為你推薦切換前狀態
+  preserve_for_you_state_desc: 當從dock欄切換到其他頁面時，留存為你推薦頁面的瀏覽狀態，返回時保持切換前的內容
   use_search_page_mode: 首頁使用搜尋頁模式
   settings_shared_with_the_search_page: 與搜尋頁共用的設定
   settings_shared_with_the_search_page_desc: 這些設定都與搜尋頁共用。

@@ -3,7 +3,7 @@ import { Icon } from '@iconify/vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import { useBewlyApp } from '~/composables/useAppProvider'
+import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useDelayedHover } from '~/composables/useDelayedHover'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
@@ -32,9 +32,12 @@ const emit = defineEmits<{
 
 const mainStore = useMainStore()
 const { isDark, toggleDark } = useDark()
-const { reachTop, showUndoButton, homeActivatedPage } = useBewlyApp()
-// 添加前进按钮状态
-const showForwardButton = ref<boolean>(false)
+const { reachTop, homeActivatedPage, undoForwardState } = useBewlyApp()
+
+// 计算属性：是否显示撤销按钮
+const showUndo = computed(() => undoForwardState.value === UndoForwardState.ShowUndo)
+// 计算属性：是否显示前进按钮
+const showForward = computed(() => undoForwardState.value === UndoForwardState.ShowForward)
 
 const hideDock = ref<boolean>(false)
 const dockContentHover = ref<boolean>(false)
@@ -188,23 +191,21 @@ function handleBackToTopOrRefresh(action: 'backToTop' | 'refresh' | 'auto' = 'au
 // 处理撤销刷新
 function handleUndoRefresh() {
   emit('undoRefresh')
-  showForwardButton.value = true
-  showUndoButton.value = false
+  undoForwardState.value = UndoForwardState.ShowForward
 }
 
 // 添加处理前进的方法
 function handleForwardRefresh() {
   emit('forwardRefresh')
-  showUndoButton.value = true
-  showForwardButton.value = false
+  undoForwardState.value = UndoForwardState.ShowUndo
 }
 
 // 添加统一的前进后退处理方法
 function handleHistoryNavigation() {
-  if (showUndoButton.value) {
+  if (showUndo.value) {
     handleUndoRefresh()
   }
-  else if (showForwardButton.value) {
+  else if (showForward.value) {
     handleForwardRefresh()
   }
 }
@@ -558,7 +559,7 @@ onUnmounted(() => {
         <!-- 将原来的两个按钮替换为一个 -->
         <Transition name="fade">
           <button
-            v-if="shouldShowUndoForwardButtons && (showUndoButton || showForwardButton) && settings.enableUndoRefreshButton"
+            v-if="shouldShowUndoForwardButtons && (showUndo || showForward) && settings.enableUndoRefreshButton"
             class="back-to-top-or-refresh-btn"
             :class="{
               inactive: hoveringDockItem.themeMode && isDark,
@@ -566,12 +567,12 @@ onUnmounted(() => {
             @click="handleHistoryNavigation"
           >
             <Icon
-              v-if="showUndoButton"
+              v-if="showUndo"
               icon="mdi:undo-variant"
               shrink-0 absolute text-2xl
             />
             <Icon
-              v-else-if="showForwardButton"
+              v-else-if="showForward"
               icon="mdi:redo-variant"
               shrink-0 absolute text-2xl
             />

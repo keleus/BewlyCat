@@ -255,6 +255,8 @@ settings:
   filter_by_user_table:
     username_or_mid: 用戶名 / MID
   following_tab_show_livestreaming_videos: 喺「跟緊啲人」入邊顯示實況直播
+  preserve_for_you_state: 留存估你心水切換前狀態
+  preserve_for_you_state_desc: 喺dock欄切換到其它頁面嗰陣，留存估你心水頁面嘅瀏覽狀態，返嚟嗰陣保持切換前嘅內容
   use_search_page_mode: 主頁使用搵嘢頁模式
   settings_shared_with_the_search_page: 同搵嘢頁共用嘅設定
   settings_shared_with_the_search_page_desc: 呢啲設定同搵嘢頁嗰度共用。
