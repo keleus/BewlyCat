@@ -172,6 +172,12 @@ export interface Settings {
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
   alwaysShowTabsOnHomePage: boolean
+  // Adaptive grid card min width (px) for Home page
+  homeAdaptiveCardMinWidth: number
+  // Title font size for cards (px); when auto is enabled, this is ignored
+  homeAdaptiveTitleFontSize: number
+  // Auto adjust title font size based on grid width
+  homeAdaptiveTitleAutoSize: boolean
   useSearchPageModeOnHomePage: boolean
   searchPageModeWallpaperFixed: boolean
   preserveForYouState: boolean
@@ -324,6 +330,9 @@ export const originalSettings: Settings = {
 
   homePageTabVisibilityList: [],
   alwaysShowTabsOnHomePage: false,
+  homeAdaptiveCardMinWidth: 280,
+  homeAdaptiveTitleFontSize: 16,
+  homeAdaptiveTitleAutoSize: true,
   useSearchPageModeOnHomePage: false,
   searchPageModeWallpaperFixed: false,
   preserveForYouState: false,

@@ -79,6 +79,19 @@ const gridClass = computed((): string => {
   return 'grid-one-column'
 })
 
+// Inline grid style for adaptive mode: optional max width and centering
+const gridStyle = computed(() => {
+  if (props.gridLayout !== 'adaptive')
+    return {}
+  const style: Record<string, any> = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(var(--bew-home-card-min-width, 280px), 1fr))',
+  }
+  const baseWidth = Math.max(120, settings.value.homeAdaptiveCardMinWidth || 280)
+  style['--bew-home-card-min-width'] = `${baseWidth}px`
+  return style
+})
+
 const videoList = ref<VideoElement[]>([])
 const appVideoList = ref<AppVideoElement[]>([])
 const isLoading = ref<boolean>(false)
@@ -659,6 +672,7 @@ defineExpose({
       ref="containerRef"
       m="b-0 t-0" relative w-full h-full
       :class="gridClass"
+      :style="gridStyle"
     >
       <template v-if="settings.recommendationMode === 'web'">
         <VideoCard
@@ -732,7 +746,8 @@ defineExpose({
 
 <style lang="scss" scoped>
 .grid-adaptive {
-  --uno: "grid 2xl:cols-5 xl:cols-4 lg:cols-3 md:cols-2 sm:cols-1 cols-1 gap-5";
+  --uno: "grid gap-5";
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 .grid-two-columns {

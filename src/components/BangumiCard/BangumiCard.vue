@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useDark } from '~/composables/useDark'
+import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
 import { numFormatter } from '~/utils/dataFormatter'
 import { removeHttpFromUrl } from '~/utils/main'
@@ -11,6 +12,26 @@ defineProps<{
   bangumi: Bangumi
   horizontal?: boolean
 }>()
+const cardRootRef = ref<HTMLElement | null>(null)
+let cardResizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  const el = cardRootRef.value
+  if (!el)
+    return
+  cardResizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const width = entry.contentRect.width
+      el.style.setProperty('--bew-card-width', `${Math.round(width)}px`)
+    }
+  })
+  cardResizeObserver.observe(el)
+})
+
+onBeforeUnmount(() => {
+  cardResizeObserver?.disconnect()
+  cardResizeObserver = null
+})
 
 interface Bangumi {
   url: string
@@ -43,6 +64,7 @@ function handleMouseEnter(bangumi: Bangumi) {
   <div mb-6>
     <ALink
       v-if="!skeleton && bangumi"
+      ref="cardRootRef"
       class="group"
       :style="{
         display: horizontal ? 'flex' : 'block',
@@ -167,7 +189,7 @@ function handleMouseEnter(bangumi: Bangumi) {
           marginTop: horizontal ? '0' : '1rem',
         }"
       >
-        <p un-text="lg" mb-2>
+        <p un-text="lg" mb-2 :class="{ 'bew-title-auto': settings.homeAdaptiveTitleAutoSize }" :style="!settings.homeAdaptiveTitleAutoSize && settings.homeAdaptiveTitleFontSize ? { fontSize: `${settings.homeAdaptiveTitleFontSize}px`, lineHeight: '1.25' } : {}">
           <a
             :href="bangumi.url" target="_blank"
             class="keep-two-lines"
@@ -199,3 +221,10 @@ function handleMouseEnter(bangumi: Bangumi) {
     />
   </div>
 </template>
+
+<style lang="scss" scoped>
+.bew-title-auto {
+  font-size: clamp(12px, calc((var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 20px), 30px);
+  line-height: clamp(1.15, calc(1.1 + (var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 0.2), 1.5);
+}
+</style>

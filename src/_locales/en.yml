@@ -89,6 +89,7 @@ settings:
   group_following: Following
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs
+  group_home_layout: Home Layout
   btn:
     authorize: Authorize
     revoke: Revoke
@@ -183,6 +184,12 @@ settings:
   auto_receive_bcoin_coupon: Auto receive B-coin coupon
   auto_receive_bcoin_coupon_desc: When enabled, B-coin coupons will be automatically received when detected
   open_notifications_page_as_drawer: Open notifications page as drawer
+  home_adaptive_card_min_width: Grid adaptive width
+  home_adaptive_card_min_width_desc: Controls base column width (px); smaller value shows more columns. Minimum 120px enforced. Layout auto-adjusts based on this value and available page width.
+  home_adaptive_title_auto_size: Auto adjust title font size
+  home_adaptive_title_auto_size_desc: Adjusts title font size based on the grid width
+  home_adaptive_title_font_size: Title font size
+  home_adaptive_title_font_size_desc: Fixed title font size (px); disabled when auto is on
   group_topbar_components: Top Bar Components Settings
   topbar_components_adjustment: Top Bar Components Badge Settings
   topbar_components_adjustment_desc: Configure the badge display mode for each top bar icon
