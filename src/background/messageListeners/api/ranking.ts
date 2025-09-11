@@ -45,6 +45,16 @@ const API_RANKING = {
     },
     afterHandle: AHS.J_D,
   },
+  // 入站必刷 - precious videos
+  // https://socialsisteryi.github.io/bilibili-API-collect/docs/video_ranking/precious_videos.html
+  getPreciousVideos: {
+    url: 'https://api.bilibili.com/x/web-interface/popular/preciousx',
+    _fetch: {
+      method: 'get',
+    },
+    params: {},
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_RANKING

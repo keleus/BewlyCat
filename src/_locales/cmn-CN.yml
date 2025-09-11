@@ -577,6 +577,7 @@ home:
   ranking: 排行
   subscribed_series: 订阅剧集
   weekly: 每周必看
+  precious: 入站必刷
   live: 直播
 ranking:
   all: 全部

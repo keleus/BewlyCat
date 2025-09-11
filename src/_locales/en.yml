@@ -665,6 +665,7 @@ home:
   ranking: Ranking
   subscribed_series: Subscribed Series
   weekly: Weekly
+  precious: Must Watch
   live: Live
 ranking:
   all: All

@@ -4,6 +4,7 @@ import { useToast } from 'vue-toastification'
 import draggable from 'vuedraggable'
 
 import Radio from '~/components/Radio.vue'
+import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { accessKey, settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
 import { getTVLoginQRCode, pollTVLoginQRCode, revokeAccessKey } from '~/utils/authProvider'
@@ -165,7 +166,7 @@ function resetHomeTabs() {
   settings.value.homePageTabVisibilityList = mainStore.homeTabs.map((tab) => {
     return {
       page: tab.page,
-      visible: true,
+      visible: tab.page !== HomeSubPage.Precious,
     }
   })
 }
