@@ -25,6 +25,26 @@ const API_RANKING = {
     },
     afterHandle: AHS.J_D,
   },
+  // 每周必看 - 期数列表
+  getPopularSeriesList: {
+    url: 'https://api.bilibili.com/x/web-interface/popular/series/list',
+    _fetch: {
+      method: 'get',
+    },
+    params: {},
+    afterHandle: AHS.J_D,
+  },
+  // 每周必看 - 某一期视频列表
+  getPopularSeriesOne: {
+    url: 'https://api.bilibili.com/x/web-interface/popular/series/one',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      number: 1,
+    },
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_RANKING
