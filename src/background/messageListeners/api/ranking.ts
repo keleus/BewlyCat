@@ -48,7 +48,7 @@ const API_RANKING = {
   // 入站必刷 - precious videos
   // https://socialsisteryi.github.io/bilibili-API-collect/docs/video_ranking/precious_videos.html
   getPreciousVideos: {
-    url: 'https://api.bilibili.com/x/web-interface/popular/preciousx',
+    url: 'https://api.bilibili.com/x/web-interface/popular/precious',
     _fetch: {
       method: 'get',
     },
