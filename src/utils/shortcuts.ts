@@ -3,6 +3,7 @@ import { settings } from '~/logic'
 import {
   adjustVideoSize,
   changePlaybackRate,
+  playPause as playerPlayPause,
   replay as playerReplay,
   resetPlaybackRate,
   showDanmuState,
@@ -254,6 +255,11 @@ export function registerDefaultHandlers(): void {
   // 长步前进
   registerShortcutHandler('longStepForward', () => {
     stepSeek(true, 30)
+  })
+
+  // 播放/暂停
+  registerShortcutHandler('playPause', (e, player) => {
+    playerPlayPause(player)
   })
 
   // 画中画

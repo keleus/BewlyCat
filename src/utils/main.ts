@@ -176,7 +176,7 @@ export function isVideoOrBangumiPage(url: string = location.href): boolean {
     || /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater\?(?:bvid|avid).*/.test(url)
     // favorite playlist
     || /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(url)
-    || /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*\?(?:bvid|avid).*/.test(url)
+    || /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(url)
   ) {
     return true
   }

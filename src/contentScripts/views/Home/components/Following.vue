@@ -39,6 +39,18 @@ const gridClass = computed((): string => {
   return 'grid-one-column'
 })
 
+const gridStyle = computed(() => {
+  if (props.gridLayout !== 'adaptive')
+    return {}
+  const style: Record<string, any> = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(var(--bew-home-card-min-width, 280px), 1fr))',
+  }
+  const baseWidth = Math.max(120, settings.value.homeAdaptiveCardMinWidth || 280)
+  style['--bew-home-card-min-width'] = `${baseWidth}px`
+  return style
+})
+
 const videoList = ref<VideoElement[]>([])
 /**
  * Get all livestreaming videos of followed users
@@ -48,18 +60,54 @@ const liveVideoList = ref<LiveVideoElement[]>([])
 const isLoading = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
 const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
+const recursionDepth = ref<number>(0) // 递归深度计数器
+const isPageVisible = ref<boolean>(true) // 页面可见性状态
 const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar, handleBackToTop } = useBewlyApp()
+const isInitialized = ref<boolean>(false)
+const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
+
+// 页面可见性变化处理函数
+function handleVisibilityChange() {
+  const wasVisible = isPageVisible.value
+  isPageVisible.value = !document.hidden
+
+  // 如果从不可见变为可见，且需要加载更多数据，则触发加载
+  if (!wasVisible && isPageVisible.value && !noMoreContent.value && !isLoading.value) {
+    if (!haveScrollbar() || videoList.value.length < 30) {
+      setTimeout(() => {
+        if (isPageVisible.value && !isLoading.value && !noMoreContent.value) {
+          getFollowedUsersVideos()
+        }
+      }, 200)
+    }
+  }
+}
 
 onMounted(() => {
   initData()
   initPageAction()
+  // 监听页面可见性变化
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  // 初始化页面可见性状态
+  isPageVisible.value = !document.hidden
+})
+
+onUnmounted(() => {
+  // 清理页面可见性监听器
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onActivated(() => {
   initPageAction()
+  // 组件激活时重新检查页面可见性
+  isPageVisible.value = !document.hidden
+})
+
+onDeactivated(() => {
+  // 组件失活时设置为不可见
+  isPageVisible.value = false
 })
 
 function initPageAction() {
@@ -69,29 +117,35 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    getData()
+    // 优化：添加延迟执行而不是直接阻止
+    setTimeout(() => {
+      if (!isLoading.value && !noMoreContent.value) {
+        getData()
+      }
+    }, 50) // 短暂延迟确保滚动结束
   }
   handlePageRefresh.value = async () => {
     if (isLoading.value)
       return
 
-    // 滚动到页面顶部
-    handleBackToTop()
     initData()
   }
 }
 
 async function initData() {
+  isInitialized.value = false
   offset.value = ''
   updateBaseline.value = ''
   liveVideoList.value.length = 0
   livePage.value = 1
   videoList.value.length = 0
   noMoreContent.value = false
+  recursionDepth.value = 0
 
   if (settings.value.followingTabShowLivestreamingVideos)
     getLiveVideoList()
   await getData()
+  isInitialized.value = true
 }
 
 async function getData() {
@@ -99,8 +153,7 @@ async function getData() {
   isLoading.value = true
 
   try {
-    for (let i = 0; i < 3; i++)
-      await getFollowedUsersVideos()
+    await getFollowedUsersVideos()
   }
   finally {
     isLoading.value = false
@@ -109,6 +162,11 @@ async function getData() {
 }
 
 async function getLiveVideoList() {
+  // 检查页面是否可见，如果不可见则不进行请求
+  if (!isPageVisible.value) {
+    return
+  }
+
   let lastLiveVideoListLength = liveVideoList.value.length
   try {
     const response: FollowingLiveResult = await api.live.getFollowingLiveList({
@@ -123,8 +181,10 @@ async function getLiveVideoList() {
     }
 
     if (response.code === 0) {
-      if (response.data.list.length < 9)
+      // 如果返回的数据少于9条，说明没有更多数据了
+      if (response.data.list.length < 9) {
         noMoreContent.value = true
+      }
 
       livePage.value++
 
@@ -148,13 +208,22 @@ async function getLiveVideoList() {
           }
         })
       }
+
+      // 只有在获取到新的直播数据且还有更多数据且页面可见时才继续递归
+      if (resData.length > 0
+        && !noMoreContent.value
+        && liveVideoList.value.length < 50
+        && isPageVisible.value) {
+        setTimeout(() => {
+          if (!isLoading.value && isPageVisible.value) {
+            getLiveVideoList()
+          }
+        }, 500)
+      }
     }
   }
-  finally {
-    // 當直播列表結果大於9時（9是返回的列表數量）且如果最后一支影片還是正在直播，則繼續獲取
-    if (liveVideoList.value.length > 9 && liveVideoList.value[liveVideoList.value.length - 1]?.item?.live_status === 1) {
-      getLiveVideoList()
-    }
+  catch (error) {
+    console.error('获取直播列表失败:', error)
   }
 }
 
@@ -167,19 +236,35 @@ async function getFollowedUsersVideos() {
     return
   }
 
+  // 检查页面是否可见，如果不可见则限制加载次数
+  if (!isPageVisible.value && recursionDepth.value >= 3) {
+    return
+  }
+
+  // 限制递归深度，避免无限递归
+  if (recursionDepth.value >= 10) {
+    return
+  }
+  recursionDepth.value++
+
   try {
     // 如果 videoList 不是空的，获取最后一个真实视频的 uniqueId 和 bvid
     let lastVideo: VideoElement | null = videoList.value.length > 0 ? videoList.value.slice(-1)[0] : null
     const lastUniqueId = lastVideo ? lastVideo.uniqueId : ''
     let lastBvid = lastVideo ? lastVideo.bvid : ''
 
-    let i = 0
-    // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L208
-    const pendingVideos: VideoElement[] = Array.from({ length: 30 }, () => ({
-      uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
-    } satisfies VideoElement))
+    // 只在首次加载时添加占位视频，避免闪屏
+    const isFirstLoad = videoList.value.length === 0
+    let pendingVideos: VideoElement[] = []
     let lastVideoListLength = videoList.value.length
-    videoList.value.push(...pendingVideos)
+
+    if (isFirstLoad) {
+      let i = 0
+      pendingVideos = Array.from({ length: 30 }, () => ({
+        uniqueId: `unique-id-${i++}`,
+      } satisfies VideoElement))
+      videoList.value.push(...pendingVideos)
+    }
 
     const response: MomentResult = await api.moment.getMoments({
       type: 'video',
@@ -203,9 +288,21 @@ async function getFollowedUsersVideos() {
         resData.push(item)
       })
 
-      // when videoList has length property, it means it is the first time to load
-      if (!videoList.value.length) {
-        videoList.value = resData.map(item => ({ uniqueId: `${item.id_str}`, item }))
+      // 使用isFirstLoad来判断是否是首次加载
+      if (isFirstLoad) {
+        videoList.value = resData.map((item) => {
+          const author: Author = {
+            name: item.modules.module_author.name,
+            authorFace: item.modules.module_author.face,
+            mid: item.modules.module_author.mid,
+          }
+          return {
+            uniqueId: `${item.id_str}`,
+            bvid: item.modules.module_dynamic.major.archive?.bvid,
+            item,
+            authorList: [author],
+          }
+        })
       }
       else {
         resData.forEach((item, index) => {
@@ -247,16 +344,39 @@ async function getFollowedUsersVideos() {
         })
       }
 
-      if (!await haveScrollbar() && !noMoreContent.value) {
-        getFollowedUsersVideos()
+      // 只有在未被阻止的情况下才继续加载
+      if (!noMoreContent.value) {
+        if (!await haveScrollbar() || videoList.value.length < 30) {
+          // 添加延迟避免无限递归调用
+          setTimeout(() => {
+            if (!isLoading.value && !noMoreContent.value) {
+              getFollowedUsersVideos()
+            }
+          }, 200)
+        }
+        else {
+          // 重置递归深度计数器
+          recursionDepth.value = 0
+        }
+      }
+      else {
+        // 重置递归深度计数器
+        recursionDepth.value = 0
       }
     }
     else if (response.code === -101) {
       needToLoginFirst.value = true
     }
   }
+  catch {
+    // 出错时重置递归深度计数器
+    recursionDepth.value = 0
+  }
   finally {
-    videoList.value = videoList.value.filter(video => video.item)
+    // 只在首次加载时过滤占位视频，避免后续加载时的闪屏
+    if (videoList.value.some(video => !video.item)) {
+      videoList.value = videoList.value.filter(video => video.item)
+    }
   }
 }
 
@@ -275,10 +395,11 @@ defineExpose({ initData })
       </Button>
     </Empty>
     <div
-      v-else
+      v-else-if="isInitialized"
       ref="containerRef"
       m="b-0 t-0" relative w-full h-full
       :class="gridClass"
+      :style="gridStyle"
     >
       <template v-if="settings.followingTabShowLivestreamingVideos">
         <VideoCard
@@ -331,14 +452,25 @@ defineExpose({ initData })
       />
     </div>
 
+    <!-- loading state for initial load -->
+    <div v-else-if="!isInitialized && !needToLoginFirst" class="grid gap-4" :class="gridClass">
+      <VideoCard
+        v-for="i in 12"
+        :key="`skeleton-${i}`"
+        :skeleton="true"
+        :horizontal="gridLayout !== 'adaptive'"
+      />
+    </div>
+
     <!-- no more content -->
-    <Empty v-if="noMoreContent && !needToLoginFirst" class="pb-4" :description="$t('common.no_more_content')" />
+    <Empty v-if="noMoreContent && !needToLoginFirst && isInitialized" class="pb-4" :description="$t('common.no_more_content')" />
   </div>
 </template>
 
 <style lang="scss" scoped>
 .grid-adaptive {
-  --uno: "grid 2xl:cols-5 xl:cols-4 lg:cols-3 md:cols-2 sm:cols-1 cols-1 gap-5";
+  --uno: "grid gap-5";
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 .grid-two-columns {

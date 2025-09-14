@@ -40,10 +40,15 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    if (keyword.value)
-      searchHistoryList()
-    else
-      getHistoryList()
+    // 优化：添加延迟执行提高触发成功率
+    setTimeout(() => {
+      if (!isLoading.value && !noMoreContent.value) {
+        if (keyword.value)
+          searchHistoryList()
+        else
+          getHistoryList()
+      }
+    }, 50)
   }
 
   handlePageRefresh.value = () => {

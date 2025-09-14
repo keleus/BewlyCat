@@ -37,6 +37,18 @@ const gridClass = computed((): string => {
   return 'grid-one-column'
 })
 
+const gridStyle = computed(() => {
+  if (props.gridLayout !== 'adaptive')
+    return {}
+  const style: Record<string, any> = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(var(--bew-home-card-min-width, 280px), 1fr))',
+  }
+  const baseWidth = Math.max(120, settings.value.homeAdaptiveCardMinWidth || 280)
+  style['--bew-home-card-min-width'] = `${baseWidth}px`
+  return style
+})
+
 const rankingTypes = computed((): RankingType[] => {
   return [
     { id: 1, name: t('ranking.all'), rid: 0 },
@@ -180,7 +192,7 @@ defineExpose({ initData })
       </OverlayScrollbarsComponent>
     </aside>
 
-    <main w-full :class="gridClass">
+    <main w-full :class="gridClass" :style="gridStyle">
       <template v-if="!('seasonType' in activatedRankingType)">
         <VideoCard
           v-for="(video, index) in videoList"
@@ -260,11 +272,13 @@ defineExpose({ initData })
 }
 
 .grid-adaptive-video {
-  --uno: "grid 2xl:cols-4 xl:cols-3 lg:cols-2 md:cols-1 sm:cols-1 cols-1 gap-5";
+  --uno: "grid gap-5";
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 .grid-adaptive-bangumi {
-  --uno: "grid 2xl:cols-5 xl:cols-4 lg:cols-3 md:cols-2 gap-5";
+  --uno: "grid gap-5";
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 .grid-two-columns {

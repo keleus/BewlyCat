@@ -4,6 +4,7 @@ import { useToast } from 'vue-toastification'
 import draggable from 'vuedraggable'
 
 import Radio from '~/components/Radio.vue'
+import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { accessKey, settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
 import { getTVLoginQRCode, pollTVLoginQRCode, revokeAccessKey } from '~/utils/authProvider'
@@ -165,7 +166,7 @@ function resetHomeTabs() {
   settings.value.homePageTabVisibilityList = mainStore.homeTabs.map((tab) => {
     return {
       page: tab.page,
-      visible: true,
+      visible: tab.page !== HomeSubPage.Precious,
     }
   })
 }
@@ -430,6 +431,45 @@ function handleToggleHomeTab(tab: any) {
       </SettingsItem>
       <SettingsItem :title="$t('settings.always_show_tabs_on_home_page')">
         <Radio v-model="settings.alwaysShowTabsOnHomePage" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup :title="$t('settings.group_home_layout')">
+      <SettingsItem :title="$t('settings.home_adaptive_card_min_width')" :desc="$t('settings.home_adaptive_card_min_width_desc')">
+        <div flex="~ justify-end" w-full>
+          <Input
+            v-model="settings.homeAdaptiveCardMinWidth"
+            type="number"
+            :min="120"
+            :max="600"
+            flex-1
+          >
+            <template #suffix>
+              px
+            </template>
+          </Input>
+        </div>
+      </SettingsItem>
+
+      <SettingsItem :title="$t('settings.home_adaptive_title_auto_size')" :desc="$t('settings.home_adaptive_title_auto_size_desc')">
+        <Radio v-model="settings.homeAdaptiveTitleAutoSize" />
+      </SettingsItem>
+
+      <SettingsItem :title="$t('settings.home_adaptive_title_font_size')" :desc="$t('settings.home_adaptive_title_font_size_desc')">
+        <div flex="~ justify-end" w-full>
+          <Input
+            v-model="settings.homeAdaptiveTitleFontSize"
+            type="number"
+            :min="12"
+            :max="28"
+            flex-1
+            :disabled="settings.homeAdaptiveTitleAutoSize"
+          >
+            <template #suffix>
+              px
+            </template>
+          </Input>
+        </div>
       </SettingsItem>
     </SettingsItemGroup>
 

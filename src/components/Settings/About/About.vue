@@ -52,12 +52,15 @@ function handleImportSettings() {
 }
 
 function handleExportSettings() {
-  const jsonStr = JSON.stringify(settings.value)
+  const jsonStr = JSON.stringify(settings.value, null, 2) // Pretty print JSON
   const blob = new Blob([jsonStr], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
+  const date = new Date()
+  const dateTimeStr = date.toLocaleString('sv-SE').replace(/[- :]/g, '')
+
   a.href = url
-  a.download = 'bewly-settings.json'
+  a.download = `bewly-settings-${dateTimeStr}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -127,7 +130,7 @@ async function checkGitHubRelease() {
             href="https://github.com/keleus/BewlyCat/releases" target="_blank"
             un-text="sm color-$bew-text-2 hover:color-$bew-text-3"
           >
-            v{{ version }} - Farewell
+            v{{ version }}
           </a>
         </p>
       </section>

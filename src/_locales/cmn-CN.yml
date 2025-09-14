@@ -54,8 +54,9 @@ iframe_drawer:
 settings:
   title: 设置
   menu_general: 常规
-  menu_desktop_and_dock: 桌面和 Dock 栏
   menu_appearance: 外观
+  menu_video_and_playback: 视频与播放
+  menu_desktop_and_dock: 桌面和 Dock 栏
   menu_bewly_pages: BewlyCat 页面
   menu_search_page: 搜索页
   menu_home: 首页
@@ -66,7 +67,10 @@ settings:
   group_link_opening_behavior: 链接打开行为
   group_video_card: 视频卡片
   group_performance: 毛玻璃和性能
+  group_player_settings: 播放器设置
+  group_playback_behavior: 播放行为
   group_topbar: 顶栏
+  group_navigation: Dock和侧边栏
   group_dock: Dock 栏
   group_sidebar: 侧边栏
   group_sidebar_desc: 位于主页以外的页面右侧或左侧，通常有亮/暗模式切换按钮和设置按钮。
@@ -74,6 +78,7 @@ settings:
   group_wallpaper: 背景图片
   group_logo: LOGO
   group_search_bar: 搜索栏
+  group_hot_search: 热搜
   group_recommendation_mode: “个性推荐” 推荐模式
   group_recommendation_filters: “个性推荐” 过滤
   group_recommendation_filters_desc: |
@@ -81,6 +86,7 @@ settings:
   group_following: 正在关注
   group_search_page_mode: 搜索页模式
   group_home_tabs: 首页标签栏
+  group_home_layout: 首页布局
   btn:
     authorize: 授权
     revoke: 取消授权
@@ -91,6 +97,7 @@ settings:
   chk_box:
     show: 显示
     hidden: 隐藏
+  visibility: 显示
   enable_grid_layout_switcher: 启用页面网格布局切换器
   enable_horizontal_scrolling: 启用横向滚动
   enable_horizontal_scrolling_desc: 启用后，鼠标滚动时将直接滚动横向滚动列表。
@@ -138,7 +145,6 @@ settings:
   video_default_player_mode: 视频默认显示模式
   video_player_mode:
     default: 默认
-    fullscreen: 全屏
     web_fullscreen: 网页全屏
     widescreen: 宽屏
   video_player_scroll: 调整显示模式后滚动
@@ -149,6 +155,8 @@ settings:
   keep_collection_video_default_mode_desc: 当启用时，合集视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   remember_playback_rate: 记住倍速
   remember_playback_rate_desc: 启用后，播放器会记住您上次设置的倍速，并在下次打开视频时自动应用
+  auto_exit_fullscreen_on_end: 全屏/网页全屏播放完毕后自动退出
+  auto_exit_fullscreen_on_end_desc: 启用后，当视频播放结束时会自动退出全屏模式
   enable_random_play: 启用视频合集随机播放
   enable_random_play_desc: 为多P视频或合集添加随机播放功能
   random_play_mode: 随机播放模式
@@ -185,7 +193,19 @@ settings:
     none: 不显示
   show_watch_later_badge: 显示稍后再看角标
   show_bcoin_receive_reminder: 大会员B币领取提醒
+  auto_receive_bcoin_coupon: 大会员B币自动领取
+  auto_receive_bcoin_coupon_desc: 启用后，当检测到有未领取的B币券时将自动领取
   open_notifications_page_as_drawer: 以抽屉形式打开通知页面
+  home_adaptive_card_min_width: 网格自适应宽度
+  home_adaptive_card_min_width_desc: 控制每列的基准宽度（像素），值越小列数越多。最小值强制为 120px。页面会基于此值并结合实际可用网页宽度自动调整布局。
+  home_adaptive_title_auto_size: 标题字号自适应
+  home_adaptive_title_auto_size_desc: 根据网格宽度自动调整标题字号
+  home_adaptive_title_font_size: 标题字号
+  home_adaptive_title_font_size_desc: 固定的标题字号（像素），开启自适应时不生效
+  group_topbar_components: 顶栏组件设置
+  topbar_components_adjustment: 顶栏组件角标设置
+  topbar_components_adjustment_desc: 配置各个顶栏图标的角标显示方式
+  badge_type: 角标类型
   always_use_dock: 总是使用 Dock 栏
   always_use_dock_desc: 启用后，Dock 栏将始终显示，侧边栏将隐藏。我们推荐你同时启用自动隐藏 Dock 栏。
   auto_hide_dock: 自动隐藏 Dock 栏
@@ -237,6 +257,10 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: 当搜索栏聚焦时背景暗化
   bg_blurs_when_the_search_bar_is_focused: 当搜索栏聚焦时背景模糊
   choose_search_bar_focused_character: 选择搜索栏聚焦时出现的人物
+  show_hot_search_in_top_bar: 在顶栏显示热搜
+  show_hot_search_in_top_bar_desc: 在顶栏搜索框中显示热搜列表
+  show_hot_search_in_search_page: 在搜索页显示热搜
+  show_hot_search_in_search_page_desc: 在搜索页面显示热搜排行榜
   individually_set_search_page_wallpaper: 单独设置搜索页背景
   recommendation_mode: 推荐模式
   recommendation_mode_desc: |
@@ -271,7 +295,9 @@ settings:
     username_or_mid: 用户名 / MID
   filter_like_view_ratio: 按点赞播放比例筛选（仅在Web推荐模式下有效）
   filter_like_view_ratio_desc: 筛选视频的点赞数与播放数比例（默认为5%，最高为10%）
-  following_tab_show_livestreaming_videos: 在 “正在关注” 中显示直播视频
+  following_tab_show_livestreaming_videos: 在 "正在关注" 中显示直播视频
+  preserve_for_you_state: 留存个性推荐切换前状态
+  preserve_for_you_state_desc: 当从dock栏切换到其他页面时，留存个性推荐页面的浏览状态，返回时保持切换前的内容
   use_search_page_mode: 首页使用搜索页模式
   settings_shared_with_the_search_page: 与搜索页共用的配置
   settings_shared_with_the_search_page_desc: 这些设置都与搜索页共用。
@@ -401,7 +427,7 @@ settings:
     search_results_count: 显示 {current} / {total} 个配置
     usage_guide:
       title: 使用说明
-      desc: |
+      desc: |-
         音量均衡功能可以为不同UP主设置个性化音量
         1. 启用音量均衡功能后，系统会自动监听音量变化
         2. 当你手动调整音量时，会弹出对话框询问是否记录UP主配置或调整基准音量
@@ -412,6 +438,10 @@ settings:
         7. 使用搜索框可以快速查找特定UP主的配置
     up_volume: UP音量
   menu_volume_balance: 音量均衡
+  group_fonts: 字体
+  group_language: 语言
+  group_ad_blocking: 广告屏蔽
+  group_visual_effects: 视觉效果
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key
 topbar:
@@ -533,6 +563,7 @@ video_card:
     copy_bv_number: 复制 BV 号
     copy_av_number: 复制 AV 号
     view_the_original_cover: 查看封面
+    block_user: 拉黑用户
   group_contribution: '{firstAuthor} 等 {num} 人联合创作'
   video_removed: 视频已移除
 home:
@@ -545,6 +576,8 @@ home:
   trending: 热门视频
   ranking: 排行
   subscribed_series: 订阅剧集
+  weekly: 每周必看
+  precious: 入站必刷
   live: 直播
 ranking:
   all: 全部
@@ -608,4 +641,9 @@ watch_later:
   remove_from_watch_later: 移除
 search_bar:
   history_title: 搜索历史
+  hot_search_title: 热搜
   clear_history: 清空搜索历史
+search_page:
+  hot_search_ranking: 热搜排行榜
+  loading: 加载中...
+  no_hot_search_data: 暂无热搜数据

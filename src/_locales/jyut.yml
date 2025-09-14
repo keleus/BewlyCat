@@ -54,8 +54,9 @@ iframe_drawer:
 settings:
   title: 設定
   menu_general: 一般
-  menu_desktop_and_dock: 桌面同 Dock
   menu_appearance: 版面
+  menu_video_and_playback: 影片同播放
+  menu_desktop_and_dock: 桌面同 Dock
   menu_bewly_pages: BewlyBewly 頁面
   menu_home: 主頁
   menu_search_page: 搵嘢頁
@@ -66,7 +67,10 @@ settings:
   group_link_opening_behavior: 連結開啓行爲
   group_video_card: 影片卡片
   group_performance: 毛玻璃同效能
+  group_player_settings: 播放器設定
+  group_playback_behavior: 播放行為
   group_topbar: 頂欄
+  group_navigation: Dock同側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄
   group_sidebar_desc: 喺主頁以外嘅頁面嘅右邊或左邊，通常有淺/深色模式切換掣同設定掣。
@@ -74,6 +78,7 @@ settings:
   group_wallpaper: 背景圖片
   group_logo: LOGO
   group_search_bar: 搜尋欄
+  group_hot_search: 熱搜
   group_recommendation_mode: 「估你心水」推介模式
   group_recommendation_filters: 「估你心水」過濾
   group_recommendation_filters_desc: |
@@ -81,6 +86,7 @@ settings:
   group_following: 跟緊啲人
   group_search_page_mode: 搵嘢頁模式
   group_home_tabs: 主頁分頁欄
+  group_home_layout: 主頁版面
   btn:
     authorize: 授權
     revoke: 解除授權
@@ -133,6 +139,12 @@ settings:
   close_drawer_without_pressing_esc_again: 閂櫃桶嗰陣唔使再撳多次 <kbd>Esc</kbd>
   block_ads: 封鎖廣告
   block_top_search_page_ads: 封鎖 Bilibili 搵嘢頁上方的廣告
+  home_adaptive_card_min_width: 網格自適應寬度
+  home_adaptive_card_min_width_desc: 控制每列嘅基準闊度（像素），數值越細列數越多。最小值會強制為 120px。頁面會基於呢個值並按實際可用網頁闊度自動調整版面。
+  home_adaptive_title_auto_size: 標題字體大小自動
+  home_adaptive_title_auto_size_desc: 根據網格闊度自動調整標題字體大小
+  home_adaptive_title_font_size: 標題字體大小
+  home_adaptive_title_font_size_desc: 固定標題字體大小（像素），開啟自動時唔生效
   block_top_search_page_ads_desc: |
     有時喺搵嘢結果上高嘅廣告，其實係年結報告抑或週年報告嚟㗎。若然你唔想佢哋唔覺意俾人刪咗，就請你閂咗呢個選項啦。
   enable_video_preview: 使用影片預覽功能（若然得嘅話）
@@ -198,6 +210,10 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: 搜尋欄聚焦嗰陣校暗背景
   bg_blurs_when_the_search_bar_is_focused: 搜尋欄聚焦嗰陣校矇背景
   choose_search_bar_focused_character: 揀個喺搜尋欄聚焦嗰陣出現嘅人物
+  show_hot_search_in_top_bar: 喺頂欄顯示熱搜
+  show_hot_search_in_top_bar_desc: 喺頂欄搜尋框度顯示熱搜清單
+  show_hot_search_in_search_page: 喺搵嘢頁顯示熱搜
+  show_hot_search_in_search_page_desc: 喺搵嘢頁面顯示熱搜排行榜
   individually_set_search_page_wallpaper: 單獨設定搵嘢頁背景
   recommendation_mode: 推介模式
   recommendation_mode_desc: |
@@ -246,6 +262,8 @@ settings:
   filter_by_user_table:
     username_or_mid: 用戶名 / MID
   following_tab_show_livestreaming_videos: 喺「跟緊啲人」入邊顯示實況直播
+  preserve_for_you_state: 留存估你心水切換前狀態
+  preserve_for_you_state_desc: 喺dock欄切換到其它頁面嗰陣，留存估你心水頁面嘅瀏覽狀態，返嚟嗰陣保持切換前嘅內容
   use_search_page_mode: 主頁使用搵嘢頁模式
   settings_shared_with_the_search_page: 同搵嘢頁共用嘅設定
   settings_shared_with_the_search_page_desc: 呢啲設定同搵嘢頁嗰度共用。
@@ -380,6 +398,8 @@ settings:
   show_ip_location_desc: 喺影片/動向頁留言區顯示 IP 歸屬地。
   video_player_scroll: 校好顯示模式後自動轆到合適嘅位置
   video_player_scroll_desc: 啓用後，若果顯示模式係闊螢幕或預設嗰陣，會自動轆到合適嘅位置。
+  group_fonts: ''
+  group_visual_effects: ''
 auth:
   auth_access_key_first: 整之前記得先授權 BewlyBewly 去用 access key
 topbar:
@@ -501,6 +521,7 @@ video_card:
     copy_bv_number: 複製 BV 號
     copy_av_number: 複製 AV 號
     view_the_original_cover: 睇吓封面
+    block_user: 拉黑用戶
   group_contribution: '{firstAuthor} 等 {num} 人一齊創作'
   video_removed: 經已鏟咗條片
 home:
@@ -513,6 +534,8 @@ home:
   trending: 時下至 Hit
   ranking: 排行
   subscribed_series: 訂閱劇集
+  weekly: 每周必睇
+  precious: 入站必睇
   live: 直播
 ranking:
   all: 全部
@@ -571,4 +594,9 @@ watch_later:
   remove_from_watch_later: 剷走
 search_bar:
   history_title: 搜尋記錄
+  hot_search_title: 熱搜
   clear_history: 剷晒你啲搜尋記錄
+search_page:
+  hot_search_ranking: 熱搜排行榜
+  loading: 載入緊...
+  no_hot_search_data: 暫時冇熱搜資料

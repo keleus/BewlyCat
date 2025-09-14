@@ -6,6 +6,8 @@ export enum HomeSubPage {
   SubscribedSeries = 'SubscribedSeries',
   Trending = 'Trending',
   Ranking = 'Ranking',
+  Precious = 'Precious',
+  Weekly = 'Weekly',
   Live = 'Live',
 }
 

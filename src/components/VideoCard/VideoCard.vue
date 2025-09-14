@@ -94,6 +94,28 @@ const previewVideoUrl = ref<string>('')
 const contentVisibility = ref<'auto' | 'visible'>('auto')
 const videoElement = ref<HTMLVideoElement | null>(null)
 
+// Track actual card width for better auto title sizing
+const cardRootRef = ref<HTMLElement | null>(null)
+let cardResizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  const el = cardRootRef.value
+  if (!el)
+    return
+  cardResizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const width = entry.contentRect.width
+      el.style.setProperty('--bew-card-width', `${Math.round(width)}px`)
+    }
+  })
+  cardResizeObserver.observe(el)
+})
+
+onBeforeUnmount(() => {
+  cardResizeObserver?.disconnect()
+  cardResizeObserver = null
+})
+
 watch(() => isHover.value, async (newValue) => {
   if (!props.video || !newValue)
     return
@@ -285,6 +307,7 @@ provide('getVideoType', () => props.type!)
 
 <template>
   <div
+    ref="cardRootRef"
     :style="{ contentVisibility }"
     intrinsic-size-300px
     duration-300 ease-in-out
@@ -481,6 +504,8 @@ provide('getVideoType', () => props.type!)
                 <h3
                   class="keep-two-lines"
                   text="overflow-ellipsis $bew-text-1 lg"
+                  :class="{ 'bew-title-auto': settings.homeAdaptiveTitleAutoSize }"
+                  :style="!settings.homeAdaptiveTitleAutoSize && settings.homeAdaptiveTitleFontSize ? { fontSize: `${settings.homeAdaptiveTitleFontSize}px`, lineHeight: '1.25' } : {}"
                   cursor="pointer"
                 >
                   <a :href="videoUrl" target="_blank" :title="video.title">
@@ -600,5 +625,12 @@ provide('getVideoType', () => props.type!)
 
 .more-active {
   --uno: "opacity-100";
+}
+
+.bew-title-auto {
+  /* Auto scale by actual card width (fallback to base grid width)
+     Increase responsiveness and use unitless line-height for better small-size rendering */
+  font-size: clamp(12px, calc((var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 20px), 30px);
+  line-height: clamp(1.15, calc(1.1 + (var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 0.2), 1.5);
 }
 </style>

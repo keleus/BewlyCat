@@ -3,7 +3,7 @@ import { Icon } from '@iconify/vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import { useBewlyApp } from '~/composables/useAppProvider'
+import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useDelayedHover } from '~/composables/useDelayedHover'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
@@ -32,9 +32,12 @@ const emit = defineEmits<{
 
 const mainStore = useMainStore()
 const { isDark, toggleDark } = useDark()
-const { reachTop, showUndoButton, homeActivatedPage } = useBewlyApp()
-// 添加前进按钮状态
-const showForwardButton = ref<boolean>(false)
+const { reachTop, homeActivatedPage, undoForwardState } = useBewlyApp()
+
+// 计算属性：是否显示撤销按钮
+const showUndo = computed(() => undoForwardState.value === UndoForwardState.ShowUndo)
+// 计算属性：是否显示前进按钮
+const showForward = computed(() => undoForwardState.value === UndoForwardState.ShowForward)
 
 const hideDock = ref<boolean>(false)
 const dockContentHover = ref<boolean>(false)
@@ -176,7 +179,6 @@ function handleBackToTopOrRefresh(action: 'backToTop' | 'refresh' | 'auto' = 'au
   }
   else if (action === 'refresh') {
     emit('refresh')
-    emit('backToTop')
   }
   else {
     if (reachTop.value)
@@ -189,23 +191,21 @@ function handleBackToTopOrRefresh(action: 'backToTop' | 'refresh' | 'auto' = 'au
 // 处理撤销刷新
 function handleUndoRefresh() {
   emit('undoRefresh')
-  showForwardButton.value = true
-  showUndoButton.value = false
+  undoForwardState.value = UndoForwardState.ShowForward
 }
 
 // 添加处理前进的方法
 function handleForwardRefresh() {
   emit('forwardRefresh')
-  showUndoButton.value = true
-  showForwardButton.value = false
+  undoForwardState.value = UndoForwardState.ShowUndo
 }
 
 // 添加统一的前进后退处理方法
 function handleHistoryNavigation() {
-  if (showUndoButton.value) {
+  if (showUndo.value) {
     handleUndoRefresh()
   }
-  else if (showForwardButton.value) {
+  else if (showForward.value) {
     handleForwardRefresh()
   }
 }
@@ -221,16 +221,61 @@ const dockScale = computed((): number => {
   if (!dockHeight.value || !dockWidth.value)
     return 1
 
-  const maxAllowedHeight = windowHeight.value - 180
-  const maxAllowedWidth = windowWidth.value - 180
+  // Get current top bar height from CSS variable
+  const getTopBarHeight = (): number => {
+    const topBarHeight = getComputedStyle(document.documentElement)
+      .getPropertyValue('--bew-top-bar-height')
+      .replace('px', '')
+    return Number.parseInt(topBarHeight) || 64 // fallback to 64px
+  }
+
+  const currentTopBarHeight = getTopBarHeight()
+
+  // Dynamic margins based on screen size and dock position
+  let heightMargin: number
+  let widthMargin: number
+
+  if (settings.value.dockPosition === 'bottom') {
+    // For bottom position, use original logic
+    heightMargin = Math.max(100, Math.min(150, windowHeight.value * 0.1))
+    widthMargin = Math.max(100, Math.min(150, windowWidth.value * 0.1))
+  }
+  else {
+    // For side positions, adjust margins considering responsive top bar height
+    heightMargin = Math.max(50, Math.min(100, windowHeight.value * 0.08)) + currentTopBarHeight
+    widthMargin = Math.max(50, Math.min(100, windowWidth.value * 0.08))
+  }
+
+  const maxAllowedHeight = windowHeight.value - heightMargin
+  const maxAllowedWidth = windowWidth.value - widthMargin
+
+  const buttonSize = 45 // lg:w-45px w-35px, use larger size for calculation
+  const buttonGap = 8 // gap-2 = 8px
+
+  let additionalHeight = 0
+  let additionalWidth = 0
+
+  if (settings.value.dockPosition === 'bottom') {
+    const maxButtonCount = settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1
+    const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
+    additionalWidth = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
+  }
+  else {
+    const maxButtonCount = settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1
+    const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
+    additionalHeight = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
+  }
+
+  const effectiveDockHeight = dockHeight.value + additionalHeight
+  const effectiveDockWidth = dockWidth.value + additionalWidth
 
   // Calculate scale factors for both dimensions
-  const heightScale = dockHeight.value > maxAllowedHeight
-    ? maxAllowedHeight / dockHeight.value
+  const heightScale = effectiveDockHeight > maxAllowedHeight
+    ? maxAllowedHeight / effectiveDockHeight
     : 1
 
-  const widthScale = dockWidth.value > maxAllowedWidth
-    ? maxAllowedWidth / dockWidth.value
+  const widthScale = effectiveDockWidth > maxAllowedWidth
+    ? maxAllowedWidth / effectiveDockWidth
     : 1
 
   // Use the smaller scale to ensure dock fits in both dimensions
@@ -514,7 +559,7 @@ onUnmounted(() => {
         <!-- 将原来的两个按钮替换为一个 -->
         <Transition name="fade">
           <button
-            v-if="shouldShowUndoForwardButtons && (showUndoButton || showForwardButton) && settings.enableUndoRefreshButton"
+            v-if="shouldShowUndoForwardButtons && (showUndo || showForward) && settings.enableUndoRefreshButton"
             class="back-to-top-or-refresh-btn"
             :class="{
               inactive: hoveringDockItem.themeMode && isDark,
@@ -522,12 +567,12 @@ onUnmounted(() => {
             @click="handleHistoryNavigation"
           >
             <Icon
-              v-if="showUndoButton"
+              v-if="showUndo"
               icon="mdi:undo-variant"
               shrink-0 absolute text-2xl
             />
             <Icon
-              v-else-if="showForwardButton"
+              v-else-if="showForward"
               icon="mdi:redo-variant"
               shrink-0 absolute text-2xl
             />

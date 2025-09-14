@@ -22,12 +22,15 @@ const API_USER = {
     url: 'https://api.bilibili.com/x/relation/modify',
     _fetch: {
       method: 'post',
-    },
-    params: {
-      // access_key: '', // app only
-      fid: '',
-      act: 1,
-      re_src: 11,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      body: {
+        fid: '',
+        act: 1,
+        re_src: 11,
+        csrf: '',
+      },
     },
     afterHandle: AHS.J_D,
   },
@@ -35,6 +38,20 @@ const API_USER = {
     url: 'https://api.bilibili.com/x/vip/privilege/my',
     _fetch: {
       method: 'get',
+    },
+    afterHandle: AHS.J_D,
+  },
+  exchangeCoupon: {
+    url: 'https://api.bilibili.com/x/vip/privilege/receive',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      body: {
+        type: '1',
+        csrf: '',
+      },
     },
     afterHandle: AHS.J_D,
   },

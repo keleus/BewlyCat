@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onKeyStroke, useEventListener, useThrottleFn, useToggle } from '@vueuse/core'
 import type { Ref } from 'vue'
+import { provide, ref } from 'vue'
 
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
+import { UndoForwardState } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
@@ -16,9 +18,26 @@ import emitter from '~/utils/mitt'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
+// Check if current page is festival page
+function isFestivalPage(): boolean {
+  return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
+}
+
 const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
-const { isDark } = useDark()
+
+// Conditionally use dark mode (skip on festival pages)
+let isDark: Ref<boolean>
+// Always use dark mode if enabled, but let useDark() handle selective application
+const shouldUseDark = settings.value.adaptToOtherPageStyles
+
+if (shouldUseDark) {
+  const darkResult = useDark()
+  isDark = darkResult.isDark
+}
+else {
+  isDark = ref(false)
+}
 const [showSettings, toggleSettings] = useToggle(false)
 
 // Get the 'page' query parameter from the URL
@@ -48,10 +67,33 @@ const handlePageRefresh = ref<() => void>()
 const handleReachBottom = ref<() => void>()
 const handleUndoRefresh = ref<() => void>()
 const handleForwardRefresh = ref<() => void>()
-const showUndoButton = ref<boolean>(false)
-const handleThrottledPageRefresh = useThrottleFn(() => handlePageRefresh.value?.(), 500)
-const handleThrottledReachBottom = useThrottleFn(() => handleReachBottom.value?.(), 500)
-const handleThrottledBackToTop = useThrottleFn(() => handleBackToTop(), 1000)
+// 使用新的枚举状态管理撤销/前进按钮
+const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
+const handleThrottledPageRefresh = useThrottleFn(() => {
+  const osInstance = scrollbarRef.value?.osInstance()
+  if (!osInstance) {
+    handlePageRefresh.value?.()
+    return
+  }
+  const { viewport } = osInstance.elements()
+  if (viewport.scrollTop === 0) {
+    handlePageRefresh.value?.()
+  }
+  else {
+    handleBackToTop()
+    const checkScrollComplete = () => {
+      if (viewport.scrollTop === 0) {
+        handlePageRefresh.value?.()
+      }
+      else {
+        setTimeout(checkScrollComplete, 50)
+      }
+    }
+    setTimeout(checkScrollComplete, 100)
+  }
+}, 500)
+const handleThrottledReachBottom = useThrottleFn(() => handleReachBottom.value?.(), 200)
+const handleThrottledBackToTop = useThrottleFn(() => handleBackToTop(), 500)
 const handleThrottledPageUnRefresh = useThrottleFn(() => handleUndoRefresh.value?.(), 500)
 const handleThrottledPageForwardRefresh = useThrottleFn(() => handleForwardRefresh.value?.(), 500)
 const topBarRef = ref()
@@ -92,11 +134,19 @@ useEventListener(window, 'message', ({ data, source }) => {
     // 在iframe环境中，只更新DOM样式，不修改用户的主题设置
     // 避免覆盖用户设置的"auto"模式
     if (isInIframe()) {
+      // Check if we should apply selective dark mode (plugin UI only) on festival pages
+      const isSelectiveDark = isFestivalPage()
+
       // 立即更新DOM样式，不修改settings.value.theme
       if (isDark) {
-        document.documentElement.classList.add('dark')
-        document.body?.classList.add('dark')
+        // Always apply to plugin container
         document.querySelector('#bewly')?.classList.add('dark')
+
+        // Only apply global styles if not on festival pages
+        if (!isSelectiveDark) {
+          document.documentElement.classList.add('dark')
+          document.body?.classList.add('dark')
+        }
 
         // 如果提供了深色模式基准颜色，则应用它（仅应用到DOM，不修改设置）
         if (darkModeBaseColor) {
@@ -110,9 +160,13 @@ useEventListener(window, 'message', ({ data, source }) => {
         }
       }
       else {
-        document.documentElement.classList.remove('dark')
-        document.body?.classList.remove('dark')
         document.querySelector('#bewly')?.classList?.remove('dark')
+
+        // Only remove global classes if not in selective mode
+        if (!isSelectiveDark) {
+          document.documentElement.classList.remove('dark')
+          document.body?.classList.remove('dark')
+        }
       }
 
       // 强制重新计算样式
@@ -152,16 +206,17 @@ const showTopBar = computed((): boolean => {
   if (isNotificationPage() && settings.value.openNotificationsPageAsDrawer && isInIframe())
     return false
 
-  // When the user switches to the original Bilibili page, BewlyBewly will only show the top bar inside the iframe.
-  // This helps prevent the outside top bar from covering the contents.
-  // reference: https://github.com/BewlyBewly/BewlyBewly/issues/1235
+  // Always show TopBar in the outer layer, never inside iframe
+  // This ensures TopBar is always visible outside of iframe content
+  if (isInIframe())
+    return false
 
   // when using original bilibili homepage, show top bar
   return settings.value.useOriginalBilibiliHomepage
   // when on home page and not using original bilibili page, show top bar
-    || (isHomePage() && !settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value) && !isInIframe())
-  // when in iframe and using original bilibili page, show top bar
-    || (settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value) && isInIframe())
+    || (isHomePage() && !settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value))
+  // when using original bilibili page on home page, show top bar in outer layer
+    || (isHomePage() && settingsStore.getDockItemIsUseOriginalBiliPage(activatedPage.value))
   // when not on home page, show top bar
     || !isHomePage()
 })
@@ -306,6 +361,9 @@ function handleBackToTop(targetScrollTop = 0 as number) {
   iframePageRef.value?.handleBackToTop()
 }
 
+// 添加滚动结束检测
+let scrollEndTimer: ReturnType<typeof setTimeout> | null = null
+
 function handleOsScroll() {
   emitter.emit(OVERLAY_SCROLL_BAR_SCROLL)
 
@@ -320,8 +378,32 @@ function handleOsScroll() {
     reachTop.value = false
   }
 
-  if (clientHeight + scrollTop >= scrollHeight - 300)
+  // 优化滚动检测：降低阈值，提高敏感度
+  const threshold = Math.min(200, clientHeight * 0.2) // 动态阈值，最大200px或20%屏幕高度
+  if (clientHeight + scrollTop >= scrollHeight - threshold) {
     handleThrottledReachBottom()
+  }
+
+  // 清除之前的滚动结束定时器
+  if (scrollEndTimer) {
+    clearTimeout(scrollEndTimer)
+  }
+
+  // 设置滚动结束检测，在滚动停止150ms后再检查一次
+  scrollEndTimer = setTimeout(() => {
+    const osInstance = scrollbarRef.value?.osInstance()
+    if (!osInstance)
+      return
+
+    const { viewport } = osInstance.elements()
+    const { scrollTop, scrollHeight, clientHeight } = viewport
+    const threshold = Math.min(200, clientHeight * 0.2)
+
+    // 滚动结束后的最终检测，使用更大的阈值确保不遗漏
+    if (clientHeight + scrollTop >= scrollHeight - threshold * 1.5) {
+      handleReachBottom.value?.()
+    }
+  }, 150)
 
   if (isHomePage())
     topBarRef.value?.handleScroll()
@@ -407,7 +489,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   handleReachBottom,
   handleUndoRefresh,
   handleForwardRefresh,
-  showUndoButton,
+  undoForwardState,
   openIframeDrawer,
   haveScrollbar,
 })
@@ -443,48 +525,106 @@ if (settings.value.cleanUrlArgument) {
     'broadcast_type',
   ]
 
+  let isCleaningUrl = false // 防止重复执行
+  let cleanupTimer: ReturnType<typeof setTimeout> | null = null
+
   function cleanUrlParams() {
-    const currentUrl = new URL(window.location.href)
-    let hasChanged = false
+    // 防止在页面加载过程中执行URL清理
+    if (isCleaningUrl || document.readyState === 'loading') {
+      return
+    }
 
-    PARAMS_TO_REMOVE.forEach((param) => {
-      if (currentUrl.searchParams.has(param)) {
-        currentUrl.searchParams.delete(param)
-        hasChanged = true
+    try {
+      isCleaningUrl = true
+      const currentUrl = new URL(window.location.href)
+      let hasChanged = false
+
+      PARAMS_TO_REMOVE.forEach((param) => {
+        if (currentUrl.searchParams.has(param)) {
+          currentUrl.searchParams.delete(param)
+          hasChanged = true
+        }
+      })
+
+      if (hasChanged) {
+        const newUrl = currentUrl.toString()
+          .replace(/([^:])\/\/(?!\/)/g, '$1/') // 只替换中间的双斜杠，不处理末尾的斜杠
+          .replace(/%3D/gi, '=')
+          .replace(/%26/g, '&')
+
+        // 使用 requestIdleCallback 来避免阻塞页面加载
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(() => {
+            history.replaceState(null, '', newUrl)
+            isCleaningUrl = false
+          })
+        }
+        else {
+          setTimeout(() => {
+            history.replaceState(null, '', newUrl)
+            isCleaningUrl = false
+          }, 0)
+        }
       }
-    })
-
-    if (hasChanged) {
-      const newUrl = currentUrl.toString()
-        .replace(/([^:])\/\/(?!\/)/g, '$1/') // 只替换中间的双斜杠，不处理末尾的斜杠
-        .replace(/%3D/gi, '=')
-        .replace(/%26/g, '&')
-      history.replaceState(null, '', newUrl)
+      else {
+        isCleaningUrl = false
+      }
+    }
+    catch (error) {
+      console.warn('URL清理失败:', error)
+      isCleaningUrl = false
     }
   }
 
-  const cleanupStrategies = [
-    () => window.addEventListener('load', cleanUrlParams),
-    () => document.addEventListener('DOMContentLoaded', cleanUrlParams),
-    () => setTimeout(cleanUrlParams, 1500),
-    () => window.requestIdleCallback?.(cleanUrlParams),
-  ]
+  // 延迟执行URL清理，确保页面完全加载后再执行
+  function scheduleCleanup(delay = 2000) {
+    if (cleanupTimer) {
+      clearTimeout(cleanupTimer)
+    }
+    cleanupTimer = setTimeout(() => {
+      if (document.readyState === 'complete') {
+        cleanUrlParams()
+      }
+    }, delay)
+  }
 
+  // 只在页面完全加载后执行清理
   if (document.readyState === 'complete') {
-    setTimeout(cleanUrlParams, 300)
+    scheduleCleanup(1000)
   }
   else {
-    cleanupStrategies.forEach(strategy => strategy())
+    window.addEventListener('load', () => scheduleCleanup(1000), { once: true })
   }
 
+  // 监听URL变化，但增加防抖和延迟
   if (typeof window !== 'undefined') {
     let lastUrl = window.location.href
-    setInterval(() => {
+    let urlCheckTimer: ReturnType<typeof setTimeout> | null = null
+
+    const checkUrlChange = () => {
       if (window.location.href !== lastUrl) {
         lastUrl = window.location.href
-        setTimeout(cleanUrlParams, 300)
+        scheduleCleanup(2000) // 页面跳转后延迟更长时间
       }
-    }, 500)
+      urlCheckTimer = setTimeout(checkUrlChange, 1000) // 降低检查频率
+    }
+
+    // 页面可见性变化时停止/恢复检查
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (urlCheckTimer) {
+          clearTimeout(urlCheckTimer)
+          urlCheckTimer = null
+        }
+      }
+      else {
+        if (!urlCheckTimer) {
+          checkUrlChange()
+        }
+      }
+    })
+
+    checkUrlChange()
   }
 }
 </script>

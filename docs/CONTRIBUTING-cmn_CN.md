@@ -23,7 +23,7 @@
 pnpm install
 
 # 创建一个用于存储登录状态的扩展程序文件夹
-mkdir web-ext-profile
+mkdir chromium-web-ext-profile
 
 # 运行项目
 pnpm dev
@@ -89,10 +89,10 @@ pnpm build
 pnpm install
 
 # 创建一个用于存储登录状态的扩展程序文件夹
-mkdir web-ext-profile
+mkdir firefox-web-ext-profile
 
 # 运行项目
-pnpm dev
+pnpm dev-firefox
 
 # 打完这条指令之后，会自动打开一个新的 Firefox 窗口并打开 BiliBili 网站
 pnpm start:firefox

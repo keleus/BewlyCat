@@ -3,12 +3,12 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
-// import { useSettingsStore } from '~/stores/settingsStore'
+import { useSettingsStore } from '~/stores/settingsStore'
 import { isHomePage, isInIframe } from '~/utils/main'
 
 const { activatedPage } = useBewlyApp()
 const { getDockItemByPage } = useMainStore()
-// const { getDockItemConfigByPage } = useSettingsStore()
+const { getDockItemConfigByPage } = useSettingsStore()
 const options = readonly([
   {
     name: 'BewlyCat',
@@ -25,13 +25,10 @@ const options = readonly([
 const showBewlyOrBiliPageSwitcher = computed(() => {
   if (settings.value.useOriginalBilibiliHomepage)
     return false
-  if (!isInIframe() && getDockItemByPage(activatedPage.value)?.hasBewlyPage && isHomePage())
+  // TopBar is now always shown outside iframe, so only check if we're not in iframe
+  // Show switcher for all dock items on home page, even if they don't have Bewly page
+  if (!isInIframe() && getDockItemByPage(activatedPage.value) && isHomePage())
     return true
-  if (isInIframe() && getDockItemByPage(activatedPage.value)?.hasBewlyPage)
-    return true
-  // const dockItemConfig = getDockItemConfigByPage(activatedPage.value)
-  // if (dockItemConfig?.useOriginalBiliPage && isInIframe())
-  //   return true
   return false
 })
 
@@ -41,11 +38,14 @@ function switchPage(useOriginalBiliPage: boolean) {
     dockItem.useOriginalBiliPage = useOriginalBiliPage
   }
 
-  if (isInIframe()) {
+  // Since TopBar is now always outside iframe, we need to send message to iframe if it exists
+  // Find the iframe and send message to it
+  const iframe = document.querySelector('iframe[src*="bilibili.com"]') as HTMLIFrameElement
+  if (iframe && iframe.contentWindow) {
     if (useOriginalBiliPage)
-      parent.postMessage(IFRAME_PAGE_SWITCH_BILI, '*')
+      iframe.contentWindow.postMessage(IFRAME_PAGE_SWITCH_BILI, '*')
     else
-      parent.postMessage(IFRAME_PAGE_SWITCH_BEWLY, '*')
+      iframe.contentWindow.postMessage(IFRAME_PAGE_SWITCH_BEWLY, '*')
   }
 }
 </script>
@@ -63,7 +63,7 @@ function switchPage(useOriginalBiliPage: boolean) {
       v-for="option in options" :key="option.name"
       class="bewly-bili-switcher-button"
       :class="{
-        active: option.useOriginalBiliPage === isInIframe(),
+        active: option.useOriginalBiliPage === (getDockItemConfigByPage(activatedPage)?.useOriginalBiliPage || false),
       }"
       rounded-inherit text="$bew-text-2 hover:$bew-text-1 xs" p="x-2 lg:x-4" bg="hover:$bew-fill-2"
       fw-bold duration-300

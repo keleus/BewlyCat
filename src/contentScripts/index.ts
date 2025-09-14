@@ -12,7 +12,8 @@ import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { defaultMode, disableAutoPlayCollection, fullscreen, handleVideoPageNavigation, isCollectionVideo, isVideoPage, webFullscreen, widescreen } from '~/utils/player'
+import { defaultMode, disableAutoPlayCollection, handleVideoPageNavigation, isCollectionVideo, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -35,6 +36,10 @@ if (isFirefox) {
 
 const currentUrl = document.URL
 
+function isFestivalPage(): boolean {
+  return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
+}
+
 function isSupportedPages(): boolean {
   if (isInIframe())
     return false
@@ -53,7 +58,8 @@ function isSupportedPages(): boolean {
     // https://github.com/BewlyBewly/BewlyBewly/issues/1246
     // https://github.com/BewlyBewly/BewlyBewly/issues/1256
     // https://github.com/BewlyBewly/BewlyBewly/issues/1266
-    || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share).*/.test(currentUrl)
+    // https://github.com/keleus/BewlyCat/issues/150
+    || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share|\/pages\/nav).*/.test(currentUrl)
     // moment detail
     || /https?:\/\/(?:www\.)?bilibili\.com\/opus\/.*/.test(currentUrl)
     // history page
@@ -86,6 +92,10 @@ function isSupportedPages(): boolean {
     || /^https?:\/\/passport\.bilibili\.com\/login.*$/.test(currentUrl)
     // music center page 新歌熱榜 https://music.bilibili.com/pc/music-center/
     || /https?:\/\/music\.bilibili\.com\/pc\/music-center.*$/.test(currentUrl)
+    // // blackboard 存在和B站其他页面不一样的元素，需要独立适配
+    // || /https?:\/\/(?:www\.)?bilibili\.com\/blackboard.*$/.test(currentUrl)
+    // // judgement 存在和B站其他页面不一样的元素，需要独立适配
+    // || /https?:\/\/(?:www\.)?bilibili\.com\/judgement.*$/.test(currentUrl)
   ) {
     return true
   }
@@ -112,7 +122,8 @@ export function isSupportedIframePages(): boolean {
       // https://github.com/BewlyBewly/BewlyBewly/issues/1246
       // https://github.com/BewlyBewly/BewlyBewly/issues/1256
       // https://github.com/BewlyBewly/BewlyBewly/issues/1266
-      || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share).*/.test(currentUrl)
+      // https://github.com/keleus/BewlyCat/issues/150
+      || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share|\/pages\/nav).*/.test(currentUrl)
       // notifications page, for `Open the notifications page as a drawer`
       || isNotificationPage()
     )
@@ -129,10 +140,12 @@ let lastUrl = location.href
 let hasAppliedPlayerMode = false // 添加标志变量
 
 if (isSupportedPages() || isSupportedIframePages()) {
+  // Always use dark mode if enabled, but let useDark() handle selective application
   if (settings.value.adaptToOtherPageStyles)
     useDark()
 
-  if (settings.value.adaptToOtherPageStyles) {
+  const shouldApplyFullStyles = settings.value.adaptToOtherPageStyles && !isFestivalPage()
+  if (shouldApplyFullStyles) {
     document.documentElement.classList.add('bewly-design')
 
     // Remove the Bilibili Evolved's dark mode style
@@ -196,9 +209,6 @@ function applyDefaultPlayerMode() {
   }
   else {
     switch (playerMode) {
-      case 'fullscreen':
-        fullscreen()
-        break
       case 'webFullscreen':
         webFullscreen()
         break
@@ -208,6 +218,10 @@ function applyDefaultPlayerMode() {
     }
   }
   setupShortcutHandlers()
+  // 启动自动退出全屏监听
+  setTimeout(() => {
+    startAutoExitFullscreenMonitoring()
+  }, 2000)
   hasAppliedPlayerMode = true // 标记已应用
   // 添加稍后再看按钮
   setTimeout(async () => {
@@ -216,15 +230,33 @@ function applyDefaultPlayerMode() {
   }, 3000)
 }
 
+// 初始化随机播放功能
+function initRandomPlayFeature() {
+  // 只在视频页面初始化随机播放功能
+  if (isVideoPage() && settings.value.enableRandomPlay) {
+    initRandomPlay()
+  }
+}
+
 function checkForUrlChanges() {
   if (location.href !== lastUrl) {
     lastUrl = location.href
     hasAppliedPlayerMode = false // URL变化时重置标志
+
+    // 重置随机播放初始化状态，避免重复加载
+    resetRandomPlayInitialization()
+
     if (isVideoOrBangumiPage()) {
       applyDefaultPlayerMode()
       // 如果是视频页面内部跳转，延迟执行滚动
       if (isVideoOrBangumiPage()) {
         handleVideoPageNavigation()
+      }
+      // 重新初始化随机播放功能
+      if (isVideoPage() && settings.value.enableRandomPlay) {
+        setTimeout(() => {
+          initRandomPlayFeature()
+        }, 2000) // 延迟2秒初始化，确保页面完全加载
       }
     }
   }
@@ -247,6 +279,12 @@ window.addEventListener('load', () => {
   if (isVideoPage()) {
     applyDefaultPlayerMode()
     disableAutoPlayCollection(settings.value)
+    // 初始化随机播放功能
+    if (settings.value.enableRandomPlay) {
+      setTimeout(() => {
+        initRandomPlayFeature()
+      }, 3000) // 延迟3秒初始化，确保页面完全加载
+    }
   }
   else if (isVideoOrBangumiPage()) {
     applyDefaultPlayerMode()
@@ -441,6 +479,22 @@ function sendSettingsToPage(settings: any) {
 // 监听设置变化
 watch(settings, (newSettings) => {
   sendSettingsToPage(newSettings)
+
+  // 监听随机播放设置变化
+  if (newSettings.enableRandomPlay !== undefined) {
+    if (isVideoPage()) {
+      if (newSettings.enableRandomPlay) {
+        // 启用随机播放
+        setTimeout(() => {
+          initRandomPlayFeature()
+        }, 1000)
+      }
+      else {
+        // 禁用随机播放，重置状态
+        resetRandomPlayInitialization()
+      }
+    }
+  }
 }, { deep: true })
 
 // 监听来自网页环境的请求
@@ -464,9 +518,21 @@ window.addEventListener('message', (event) => {
   const { type, isDark, darkModeBaseColor } = event.data
 
   if (type === 'iframeDarkModeChange') {
+    // Check if we should apply selective dark mode (plugin UI only) on festival pages
+    const isSelectiveDark = isFestivalPage()
+
     if (isDark) {
-      document.documentElement.classList.add('dark')
-      document.body?.classList.add('dark')
+      // Always apply to plugin container if it exists
+      const bewlyElement = document.querySelector('#bewly')
+      if (bewlyElement) {
+        bewlyElement.classList.add('dark')
+      }
+
+      // Only apply global styles if not on festival pages
+      if (!isSelectiveDark) {
+        document.documentElement.classList.add('dark')
+        document.body?.classList.add('dark')
+      }
 
       // 如果提供了深色模式基准颜色，则应用它
       if (darkModeBaseColor) {
@@ -474,8 +540,16 @@ window.addEventListener('message', (event) => {
       }
     }
     else {
-      document.documentElement.classList.remove('dark')
-      document.body?.classList.remove('dark')
+      const bewlyElement = document.querySelector('#bewly')
+      if (bewlyElement) {
+        bewlyElement.classList.remove('dark')
+      }
+
+      // Only remove global classes if not in selective mode
+      if (!isSelectiveDark) {
+        document.documentElement.classList.remove('dark')
+        document.body?.classList.remove('dark')
+      }
     }
   }
 }, { passive: true })

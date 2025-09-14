@@ -54,8 +54,9 @@ iframe_drawer:
 settings:
   title: Settings
   menu_general: General
-  menu_desktop_and_dock: Desktop & Dock
   menu_appearance: Appearance
+  menu_video_and_playback: Video & Playback
+  menu_desktop_and_dock: Desktop & Dock
   menu_bewly_pages: BewlyBewly Pages
   menu_search_page: Search Page
   menu_home: Home
@@ -66,7 +67,10 @@ settings:
   group_link_opening_behavior: Link Opening Behavior
   group_video_card: Video Card
   group_performance: Frosted Glass & Performance
+  group_player_settings: Player Settings
+  group_playback_behavior: Playback Behavior
   group_topbar: Top Bar
+  group_navigation: Dock & Sidebar
   group_dock: Dock
   group_sidebar: Sidebar
   group_sidebar_desc: >-
@@ -76,6 +80,7 @@ settings:
   group_wallpaper: Wallpaper
   group_logo: LOGO
   group_search_bar: Search Bar
+  group_hot_search: Hot Search
   group_recommendation_mode: '"For you" Recommendation Mode'
   group_recommendation_filters: '"For you" Recommendation Filters'
   group_recommendation_filters_desc: >
@@ -84,6 +89,7 @@ settings:
   group_following: Following
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs
+  group_home_layout: Home Layout
   btn:
     authorize: Authorize
     revoke: Revoke
@@ -152,7 +158,6 @@ settings:
   video_default_player_mode: Default video display mode
   video_player_mode:
     default: Default
-    fullscreen: Fullscreen
     web_fullscreen: Web Fullscreen
     widescreen: Widescreen
   enable_video_preview: Enable video preview feature (if possible)
@@ -176,7 +181,19 @@ settings:
     none: Do not show
   show_watch_later_badge: Show watch later badge
   show_bcoin_receive_reminder: VIP B-coin receive reminder
+  auto_receive_bcoin_coupon: Auto receive B-coin coupon
+  auto_receive_bcoin_coupon_desc: When enabled, B-coin coupons will be automatically received when detected
   open_notifications_page_as_drawer: Open notifications page as drawer
+  home_adaptive_card_min_width: Grid adaptive width
+  home_adaptive_card_min_width_desc: Controls base column width (px); smaller value shows more columns. Minimum 120px enforced. Layout auto-adjusts based on this value and available page width.
+  home_adaptive_title_auto_size: Auto adjust title font size
+  home_adaptive_title_auto_size_desc: Adjusts title font size based on the grid width
+  home_adaptive_title_font_size: Title font size
+  home_adaptive_title_font_size_desc: Fixed title font size (px); disabled when auto is on
+  group_topbar_components: Top Bar Components Settings
+  topbar_components_adjustment: Top Bar Components Badge Settings
+  topbar_components_adjustment_desc: Configure the badge display mode for each top bar icon
+  badge_type: Badge Type
   always_use_dock: Always use the dock
   always_use_dock_desc: >-
     The dock will always be visible and the sidebar will be hidden. We also
@@ -235,6 +252,10 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: Background darkens when the search bar is focused
   bg_blurs_when_the_search_bar_is_focused: Background blurs when the search bar is focused
   choose_search_bar_focused_character: Choose the character that appears when the search bar is focused
+  show_hot_search_in_top_bar: Show hot search in top bar
+  show_hot_search_in_top_bar_desc: Display hot search list in the top bar search box
+  show_hot_search_in_search_page: Show hot search in search page
+  show_hot_search_in_search_page_desc: Display hot search ranking on the search page
   individually_set_search_page_wallpaper: Individually set search page wallpaper
   recommendation_mode: Recommendation mode
   recommendation_mode_desc: >
@@ -296,6 +317,8 @@ settings:
   filter_by_user_table:
     username_or_mid: Username / MID
   following_tab_show_livestreaming_videos: Show Live-streaming videos in the "Following" tab
+  preserve_for_you_state: Preserve "For You" pre-switch state
+  preserve_for_you_state_desc: When switching from dock to other pages, preserve the browsing state of the "For You" page and maintain content before switching when returning
   use_search_page_mode: Use search page mode on homepage
   settings_shared_with_the_search_page: Settings shared with the search page
   settings_shared_with_the_search_page_desc: Those settings are used in common with the search page.
@@ -340,11 +363,16 @@ settings:
   disable_auto_play_collection: Auto disable collection autoplay
   disable_auto_play_collection_desc: Automatically turn off the autoplay feature for video collections
   keep_collection_video_default_mode: Keep collection videos in default mode
-  keep_collection_video_default_mode_desc: When enabled, collection videos will always use the default player mode and won't apply widescreen or fullscreen settings
+  keep_collection_video_default_mode_desc: >-
+    When enabled, collection videos will always use the default player mode and
+    won't apply widescreen or fullscreen settings
   remember_playback_rate: Remember playback rate
-  remember_playback_rate_desc: >-
+  remember_playback_rate_desc: >
     When enabled, the player will remember your last set playback rate and
     automatically apply it when opening videos
+  auto_exit_fullscreen_on_end: Auto exit fullscreen/webFullscreen when video ends
+  auto_exit_fullscreen_on_end_desc: >
+    When enabled, the player will automatically exit fullscreen mode when the video finishes playing
   enable_random_play: Enable video collection random play
   enable_random_play_desc: Add random play feature for multi-part videos or collections
   random_play_mode: Random play mode
@@ -470,9 +498,8 @@ settings:
     up_volume: UP volume
     up_configs_desc: Manage personalized volume settings for each UP host
     usage_guide:
-      desc: >
+      desc: |-
         The volume equalization function can set personalized volumes for
-
         different UP
 
         1. After the volume equalization function is enabled, the system will
@@ -497,6 +524,11 @@ settings:
         7. Use the search box to quickly find the configuration of a specific UP
       title: Instructions for use
   menu_volume_balance: Volume balance
+  group_fonts: Font
+  group_language: language
+  group_ad_blocking: AD Block
+  group_visual_effects: Visual Effects
+  visibility: show
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
@@ -618,6 +650,7 @@ video_card:
     copy_bv_number: Copy BV Number
     copy_av_number: Copy AV Number
     view_the_original_cover: View the Original Cover
+    block_user: Block User
   group_contribution: '{firstAuthor} and {num} others contributed'
   video_removed: Video removed
 home:
@@ -631,6 +664,8 @@ home:
   trending: Trending
   ranking: Ranking
   subscribed_series: Subscribed Series
+  weekly: Weekly
+  precious: Must Watch
   live: Live
 ranking:
   all: All
@@ -700,4 +735,9 @@ watch_later:
   remove_from_watch_later: Remove
 search_bar:
   history_title: Search History
+  hot_search_title: Hot Search
   clear_history: Clear search history
+search_page:
+  hot_search_ranking: Hot Search Ranking
+  loading: Loading...
+  no_hot_search_data: No hot search data available

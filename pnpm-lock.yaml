@@ -160,8 +160,8 @@ importers:
         specifier: ^8.9.0
         version: 8.9.0
       webext-bridge:
-        specifier: 5.0.5
-        version: 5.0.5
+        specifier: 6.0.1
+        version: 6.0.1
       webextension-polyfill:
         specifier: ^0.12.0
         version: 0.12.0
@@ -5568,8 +5568,8 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
-  webext-bridge@5.0.5:
-    resolution: {integrity: sha512-STCv6pLfQtUHmZQ96Tmov+CrdGjjc08xG6o/VH7TlDvchAPmXEG7faPdHfIzkcs0qp0sedDkq7oDzXAei19vtw==}
+  webext-bridge@6.0.1:
+    resolution: {integrity: sha512-GruIrN+vNwbxVCi8UW4Dqk5YkcGA9V0ZfJ57jXP9JXHbrsDs5k2N6NNYQR5e+wSCnQpGYOGAGihwUpKlhg8QIw==}
 
   webextension-polyfill@0.12.0:
     resolution: {integrity: sha512-97TBmpoWJEE+3nFBQ4VocyCdLKfw54rFaJ6EVQYLBCXqCIpLSZkwGgASpv4oPt9gdKCJ80RJlcmNzNn008Ag6Q==}
@@ -11953,7 +11953,7 @@ snapshots:
       - safe-compare
       - supports-color
 
-  webext-bridge@5.0.5:
+  webext-bridge@6.0.1:
     dependencies:
       '@types/webextension-polyfill': 0.8.3
       nanoevents: 6.0.2

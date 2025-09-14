@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-
 import { settings } from '~/logic'
-import { useTopBarStore } from '~/stores/topBarStore'
 
+import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import TopBarLogo from './TopBarLogo.vue'
 import TopBarRight from './TopBarRight.vue'
 import TopBarSearch from './TopBarSearch.vue'
@@ -13,8 +11,7 @@ defineProps<{
   isDark: boolean
 }>()
 
-const topBarStore = useTopBarStore()
-const { forceWhiteIcon } = storeToRefs(topBarStore)
+const { forceWhiteIcon, handleNotificationsItemClick } = useTopBarInteraction()
 </script>
 
 <template>
@@ -58,14 +55,14 @@ const { forceWhiteIcon } = storeToRefs(topBarStore)
       />
     </Transition>
 
-    <TopBarLogo />
+    <TopBarLogo :force-white-icon="forceWhiteIcon" />
 
     <!-- search bar -->
     <TopBarSearch />
 
     <!-- right content -->
     <TopBarRight
-      @notifications-click="topBarStore.handleNotificationsItemClick"
+      @notifications-click="handleNotificationsItemClick"
     />
   </main>
 </template>

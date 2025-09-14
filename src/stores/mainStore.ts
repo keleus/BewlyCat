@@ -115,6 +115,14 @@ export const useMainStore = defineStore('main', () => {
         page: HomeSubPage.Trending,
       },
       {
+        i18nKey: 'home.weekly',
+        page: HomeSubPage.Weekly,
+      },
+      {
+        i18nKey: 'home.precious',
+        page: HomeSubPage.Precious,
+      },
+      {
         i18nKey: 'home.ranking',
         page: HomeSubPage.Ranking,
       },

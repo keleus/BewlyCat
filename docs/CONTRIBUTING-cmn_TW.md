@@ -22,7 +22,7 @@
 pnpm install
 
 # 建立一個用戶的帳戶資料夾，用於擴充功能存儲登入狀態
-mkdir web-ext-profile
+mkdir chromium-web-ext-profile
 
 # 運行專案
 pnpm dev
@@ -88,10 +88,10 @@ pnpm build
 pnpm install
 
 # 建立一個用戶的帳戶資料夾，用於擴充功能存儲登入狀態
-mkdir web-ext-profile
+mkdir firefox-web-ext-profile
 
 # 運行專案
-pnpm dev
+pnpm dev-firefox
 
 # 打完這條指令之後，會自動開啓一個新的 Firefox 視窗並打開 BiliBili 網站
 pnpm start:firefox

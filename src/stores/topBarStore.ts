@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref } from 'vue'
+import { useToast } from 'vue-toastification'
 
 import {
   ACCOUNT_URL,
@@ -10,20 +11,17 @@ import {
   READ_HOME_URL,
   READ_PREVIEW_URL,
   SEARCH_PAGE_URL,
-  SPACE_URL,
   VIDEO_LIST_URL,
-  VIDEO_PAGE_URL,
 } from '~/components/TopBar/constants/urls'
 import { updateInterval } from '~/components/TopBar/notify'
 import type { PrivilegeInfo, UnReadDm, UnReadMessage, UserInfo } from '~/components/TopBar/types'
-import { useBewlyApp } from '~/composables/useAppProvider'
-import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
-import { getCSRF, isHomePage, isInIframe } from '~/utils/main'
+import { getCSRF, isHomePage } from '~/utils/main'
 
 export const useTopBarStore = defineStore('topBar', () => {
+  const toast = useToast()
   const isLogin = ref<boolean>(true)
   const userInfo = reactive<UserInfo>({} as UserInfo)
 
@@ -91,81 +89,12 @@ export const useTopBarStore = defineStore('topBar', () => {
   // TopBar visibility state
   const topBarVisible = ref<boolean>(true)
 
-  // 从 useTopBarReactive 整合的状态
-  // 延迟获取 AppProvider，避免在 store 初始化时就调用
-  const getAppProvider = () => {
-    try {
-      return useBewlyApp()
-    }
-    catch {
-      return null
-    }
-  }
+  // TopBar switcher button visibility state
+  const isSwitcherButtonVisible = ref<boolean>(false)
 
   // 从 useTopBarReactive 整合的计算属性
   const isSearchPage = computed((): boolean => {
     return SEARCH_PAGE_URL.test(location.href)
-  })
-
-  const forceWhiteIcon = computed((): boolean => {
-    if (!settings.value)
-      return false
-
-    if (
-      (isHomePage() && settings.value.useOriginalBilibiliHomepage)
-      || (isInIframe() && isHomePage())
-      || (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))
-      || SPACE_URL.test(location.href)
-      || ACCOUNT_URL.test(location.href)
-    ) {
-      return true
-    }
-
-    if (!isHomePage())
-      return false
-
-    const appProvider = getAppProvider()
-    // 确保 activatedPage.value 存在
-    if (!appProvider?.activatedPage?.value)
-      return false
-
-    if (appProvider.activatedPage.value === AppPage.Search) {
-      if (settings.value.individuallySetSearchPageWallpaper) {
-        if (settings.value.searchPageWallpaper)
-          return true
-        return false
-      }
-      return !!settings.value.wallpaper
-    }
-    else {
-      if (settings.value.wallpaper)
-        return true
-
-      if (settings.value.useSearchPageModeOnHomePage) {
-        if (settings.value.individuallySetSearchPageWallpaper && !!settings.value.searchPageWallpaper)
-          return true
-        else if (settings.value.wallpaper)
-          return true
-      }
-    }
-    return false
-  })
-
-  const showSearchBar = computed((): boolean => {
-    if (isHomePage()) {
-      if (settings.value.useOriginalBilibiliHomepage)
-        return true
-      const appProvider = getAppProvider()
-      if (appProvider?.activatedPage?.value === AppPage.Search)
-        return false
-      if (settings.value.useSearchPageModeOnHomePage && appProvider?.activatedPage?.value === AppPage.Home && appProvider?.reachTop?.value)
-        return false
-    }
-    else {
-      if (isSearchPage.value)
-        return false
-    }
-    return true
   })
 
   const isTopBarFixed = computed((): boolean => {
@@ -278,6 +207,11 @@ export const useTopBarStore = defineStore('topBar', () => {
           else {
             // 如果有权限领取且未领取
             hasBCoinToReceive.value = bCoinItem.state === 0 && bCoinItem.next_receive_days > 0
+
+            // 如果开启了自动领取，则自动领取B币
+            if (hasBCoinToReceive.value && settings.value.autoReceiveBCoinCoupon) {
+              await autoReceiveBCoin()
+            }
           }
         }
         else {
@@ -288,6 +222,34 @@ export const useTopBarStore = defineStore('topBar', () => {
     catch (error) {
       console.error('Failed to check B-coin receive status:', error)
       hasBCoinToReceive.value = false
+    }
+  }
+
+  // 自动领取B币
+  async function autoReceiveBCoin() {
+    if (!isLogin.value || !hasBCoinToReceive.value) {
+      return
+    }
+
+    try {
+      const res = await api.user.exchangeCoupon({
+        type: '1',
+        csrf: getCSRF(),
+      })
+
+      if (res.code === 0) {
+        // 领取成功，更新状态
+        bCoinAlreadyReceived.value = true
+        hasBCoinToReceive.value = false
+        toast.success('B币券自动领取成功')
+      }
+      else {
+        toast.error(`B币券自动领取失败: ${res.message}`)
+      }
+    }
+    catch (error) {
+      toast.error('B币券自动领取失败，请稍后重试')
+      console.error('❌ B币券自动领取失败:', error)
     }
   }
 
@@ -631,6 +593,11 @@ export const useTopBarStore = defineStore('topBar', () => {
     topBarVisible.value = visible
   }
 
+  // 设置切换器按钮可见性状态
+  function setSwitcherButtonVisible(visible: boolean) {
+    isSwitcherButtonVisible.value = visible
+  }
+
   return {
     isLogin,
     userInfo,
@@ -646,8 +613,6 @@ export const useTopBarStore = defineStore('topBar', () => {
     popupVisible,
 
     isSearchPage,
-    forceWhiteIcon,
-    showSearchBar,
     isTopBarFixed,
     showTopBar,
 
@@ -664,6 +629,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     startUpdateTimer,
     stopUpdateTimer,
     checkBCoinReceiveStatus,
+    autoReceiveBCoin,
 
     moments,
     addedWatchLaterList,
@@ -690,5 +656,7 @@ export const useTopBarStore = defineStore('topBar', () => {
 
     topBarVisible,
     setTopBarVisible,
+    isSwitcherButtonVisible,
+    setSwitcherButtonVisible,
   }
 })

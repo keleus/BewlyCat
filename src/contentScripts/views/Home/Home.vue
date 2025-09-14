@@ -23,6 +23,8 @@ const pages = {
   [HomeSubPage.SubscribedSeries]: defineAsyncComponent(() => import('./components/SubscribedSeries.vue')),
   [HomeSubPage.Trending]: defineAsyncComponent(() => import('./components/Trending.vue')),
   [HomeSubPage.Ranking]: defineAsyncComponent(() => import('./components/Ranking.vue')),
+  [HomeSubPage.Precious]: defineAsyncComponent(() => import('./components/Precious.vue')),
+  [HomeSubPage.Weekly]: defineAsyncComponent(() => import('./components/Weekly.vue')),
   [HomeSubPage.Live]: defineAsyncComponent(() => import('./components/Live.vue')),
 }
 const showSearchPageMode = ref<boolean>(false)
@@ -39,15 +41,15 @@ const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   ]
 })
 
-// use Json stringify to watch the changes of the array item properties
-watch(() => JSON.stringify(settings.value.homePageTabVisibilityList), () => {
+// 使用deep监听
+watch(() => settings.value.homePageTabVisibilityList, () => {
   currentTabs.value = computeTabs()
-})
+}, { deep: true })
 
 function computeTabs(): HomeTab[] {
   // if homePageTabVisibilityList not fresh , set it to default
   if (!settings.value.homePageTabVisibilityList.length || settings.value.homePageTabVisibilityList.length !== mainStore.homeTabs.length)
-    settings.value.homePageTabVisibilityList = mainStore.homeTabs.map(tab => ({ page: tab.page, visible: true }))
+    settings.value.homePageTabVisibilityList = mainStore.homeTabs.map(tab => ({ page: tab.page, visible: tab.page !== HomeSubPage.Precious }))
 
   const targetTabs: HomeTab[] = []
 
@@ -269,16 +271,14 @@ function toggleTabContentLoading(loading: boolean) {
       </header>
 
       <Transition name="page-fade">
-        <KeepAlive include="ForYou">
-          <Component
-            :is="pages[activatedPage]" :key="activatedPage"
-            ref="tabPageRef"
-            :grid-layout="gridLayout.home"
-            :top-bar-visibility="topBarVisibility"
-            @before-loading="toggleTabContentLoading(true)"
-            @after-loading="toggleTabContentLoading(false)"
-          />
-        </KeepAlive>
+        <Component
+          :is="pages[activatedPage]" :key="activatedPage"
+          ref="tabPageRef"
+          :grid-layout="gridLayout.home"
+          :top-bar-visibility="topBarVisibility"
+          @before-loading="toggleTabContentLoading(true)"
+          @after-loading="toggleTabContentLoading(false)"
+        />
       </Transition>
     </main>
   </div>

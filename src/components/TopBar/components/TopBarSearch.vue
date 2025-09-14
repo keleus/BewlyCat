@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import { settings } from '~/logic'
-import { useTopBarStore } from '~/stores/topBarStore'
 
-const topBarStore = useTopBarStore()
+import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 
-const {
-  showSearchBar,
-  forceWhiteIcon,
-} = storeToRefs(topBarStore)
+const { showSearchBar, forceWhiteIcon } = useTopBarInteraction()
 
 // 可以考虑添加一个计算属性来处理样式
 const searchBarStyles = computed(() => ({
@@ -29,6 +24,7 @@ const searchBarStyles = computed(() => ({
         v-if="showSearchBar"
         class="search-bar"
         :style="searchBarStyles"
+        :show-hot-search="settings.showHotSearchInTopBar"
       />
     </Transition>
   </div>

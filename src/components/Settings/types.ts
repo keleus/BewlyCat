@@ -1,11 +1,12 @@
 export enum MenuType {
   General = 'General',
-  DesktopAndDock = 'DesktopAndDock',
   Appearance = 'Appearance',
+  VideoAndPlayback = 'VideoAndPlayback',
+  DesktopAndDock = 'DesktopAndDock',
   BewlyPages = 'BewlyPages',
   Shortcuts = 'Shortcuts',
-  Compatibility = 'Compatibility',
   VolumeBalance = 'VolumeBalance',
+  Compatibility = 'Compatibility',
   BilibiliSettings = 'BilibiliSettings',
   About = 'About',
 }

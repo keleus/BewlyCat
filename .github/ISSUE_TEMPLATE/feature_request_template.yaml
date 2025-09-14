@@ -1,0 +1,43 @@
+name: 功能请求
+description: 提交新功能请求
+title: '[功能请求] '
+labels: [功能请求]
+body:
+  - type: dropdown
+    id: module
+    attributes:
+      label: 功能涉及模块
+      description: 请选择此功能请求涉及的模块
+      options:
+        - 插件页面
+        - B站页面
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: page_url
+    attributes:
+      label: 页面地址
+      description: 如果涉及特定页面，请提供页面地址
+      placeholder: '例如：https://t.bilibili.com/'
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 需求描述
+      description: 请详细描述您希望添加的功能
+      placeholder: 请描述您的功能需求，包括期望的行为、使用场景等
+    validations:
+      required: true
+
+  - type: textarea
+    id: existing_plugins
+    attributes:
+      label: 如果其他插件存在此功能：
+      description: 如果您知道其他插件/脚本已经实现了类似功能，请提供参考说明
+      placeholder: 例如：插件名称或脚本名称和说明
+    validations:
+      required: false

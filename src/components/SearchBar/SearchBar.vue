@@ -15,10 +15,27 @@ import {
   removeSearchHistory,
 } from './searchHistoryProvider'
 
-defineProps<{
+// 热搜数据类型定义
+interface HotSearchItem {
+  keyword: string
+  show_name: string
+  icon: string
+}
+
+interface HotSearchResponse {
+  code: number
+  data: {
+    trending: {
+      list: HotSearchItem[]
+    }
+  }
+}
+
+const props = defineProps<{
   darkenOnFocus?: boolean
   blurredOnFocus?: boolean
   focusedCharacter?: string
+  showHotSearch?: boolean
 }>()
 
 const keywordRef = ref<HTMLInputElement>()
@@ -29,12 +46,40 @@ const selectedIndex = ref<number>(-1)
 const searchHistory = shallowRef<HistoryItem[]>([])
 const historyItemRef = ref<HTMLElement[]>([])
 const suggestionItemRef = ref<HTMLElement[]>([])
+// 热搜相关状态
+const hotSearchList = ref<HotSearchItem[]>([])
+const isLoadingHotSearch = ref<boolean>(false)
 
 watch(isFocus, async (focus) => {
   // 延后加载搜索历史
-  if (focus)
+  if (focus) {
     searchHistory.value = await getSearchHistory()
+    // 加载热搜数据
+    if (props.showHotSearch ?? settings.value.showHotSearchInTopBar) {
+      await loadHotSearchData()
+    }
+  }
 })
+
+// 加载热搜数据
+async function loadHotSearchData() {
+  if (isLoadingHotSearch.value)
+    return
+
+  try {
+    isLoadingHotSearch.value = true
+    const res: HotSearchResponse = await api.search.getHotSearchList({ limit: 10 })
+    if (res && res.code === 0) {
+      hotSearchList.value = res.data.trending.list.slice(0, 10)
+    }
+  }
+  catch (error) {
+    console.error('Failed to load hot search data:', error)
+  }
+  finally {
+    isLoadingHotSearch.value = false
+  }
+}
 
 onKeyStroke('/', (e: KeyboardEvent) => {
   // Reference: https://github.com/polywock/globalSpeed/blob/3705ac836402b324550caf92aa65075b2f2347c6/src/contentScript/ConfigSync.ts#L94
@@ -271,12 +316,63 @@ async function handleClearSearchHistory() {
       <div
         v-if="
           isFocus
-            && searchHistory.length !== 0
             && keyword.length === 0
+            && (searchHistory.length !== 0 || ((showHotSearch ?? settings.showHotSearchInTopBar) && hotSearchList.length > 0))
         "
-        id="search-history"
+        id="search-dropdown"
       >
-        <div class="history-list flex flex-col gap-y-2">
+        <!-- 热搜区块 -->
+        <div
+          v-if="(showHotSearch ?? settings.showHotSearchInTopBar) && hotSearchList.length > 0"
+          class="hot-search-section"
+        >
+          <div class="title p-2 pb-0">
+            <span>{{ $t('search_bar.hot_search_title') || '热搜' }}</span>
+          </div>
+
+          <div class="hot-search-container p-2 grid grid-cols-2 gap-x-4 gap-y-1">
+            <ALink
+              v-for="(item, index) in hotSearchList.slice(0, 10)" :key="item.keyword"
+              :href="`//search.bilibili.com/all?keyword=${encodeURIComponent(item.keyword)}`"
+              type="searchBar"
+              class="hot-search-item cursor-pointer duration-300"
+              flex items-center gap-2 p="x-2 y-1" hover="text-$bew-theme-color"
+            >
+              <span
+                class="index"
+                :class="{
+                  'top-1': index === 0,
+                  'top-2': index === 1,
+                  'top-3': index === 2,
+                  'normal': index > 2,
+                }"
+              >
+                {{ index + 1 }}
+              </span>
+              <span class="keyword" text="base $bew-text-1" truncate flex-1>{{ item.show_name }}</span>
+              <img
+                v-if="item.icon && !item.icon.includes('.gif')"
+                :src="item.icon"
+                class="hot-search-icon"
+                w-4 h-4 object-contain
+                alt=""
+              >
+            </ALink>
+          </div>
+        </div>
+
+        <!-- 分割线 -->
+        <div
+          v-if="(showHotSearch ?? settings.showHotSearchInTopBar) && hotSearchList.length > 0 && searchHistory.length > 0"
+          class="divider"
+          mx-2 my-1 h-px bg="$bew-border-color"
+        />
+
+        <!-- 搜索历史区块 -->
+        <div
+          v-if="searchHistory.length !== 0"
+          class="history-section"
+        >
           <div class="title p-2 pb-0 flex justify-between">
             <span>{{ $t('search_bar.history_title') }}</span>
             <button class="rounded-2 duration-300 pointer-events-auto cursor-pointer" hover="text-$bew-theme-color" text="base $bew-text-2" @click="handleClearSearchHistory">
@@ -285,22 +381,23 @@ async function handleClearSearchHistory() {
           </div>
 
           <div class="history-item-container p2 flex flex-wrap gap-x-3 gap-y-3">
-            <div
+            <ALink
               v-for="item in searchHistory" :key="item.timestamp" ref="historyItemRef"
+              :href="`//search.bilibili.com/all?keyword=${encodeURIComponent(item.value)}`"
+              type="searchBar"
               class="history-item group"
               flex justify-between items-center
-              @click="navigateToSearchResultPage(item.value)"
             >
               <span> {{ item.value }}</span>
               <button
                 rounded-full duration-300 pointer-events-auto cursor-pointer p-1
                 text="xs $bew-text-2 hover:white" leading-0 bg="$bew-fill-2 hover:$bew-theme-color"
                 pos="absolute top-0 right-0" scale-80 opacity-0 group-hover:opacity-100
-                @click.stop="handleDelete(item.value)"
+                @click.stop.prevent="handleDelete(item.value)"
               >
                 <div i-ic-baseline-clear />
               </button>
-            </div>
+            </ALink>
           </div>
         </div>
       </div>
@@ -415,17 +512,70 @@ async function handleClearSearchHistory() {
     --uno: "px-4 py-2 w-full rounded-$bew-radius duration-300 cursor-pointer not-first:mt-1 tracking-wider hover:bg-$bew-fill-2";
   }
 
-  #search-history {
+  #search-dropdown {
     @include search-content;
     --uno: "bg-$bew-elevated";
+    --uno: "max-h-420px important-overflow-y-auto";
+    z-index: 1000;
 
-    .history-list {
-      --uno: "max-h-420px important-overflow-y-auto";
+    .title {
+      --uno: "text-lg font-500";
+    }
 
-      .title {
-        --uno: "text-lg font-500";
+    .hot-search-section {
+      .hot-search-container {
+        .hot-search-item {
+          --uno: "relative cursor-pointer duration-300";
+          --uno: "hover:text-$bew-theme-color";
+
+          .hot-search-icon {
+            object-fit: contain;
+            display: inline-block;
+            height: 16px;
+            width: auto;
+            max-width: 24px;
+            vertical-align: baseline;
+            flex-shrink: 0;
+            position: relative;
+            z-index: inherit;
+            margin: 0;
+            padding: 0;
+            border: none;
+            background: none;
+          }
+
+          .index {
+            --uno: "text-xs min-w-4 text-center font-bold";
+
+            &.top-1 {
+              --uno: "text-red-500";
+            }
+
+            &.top-2 {
+              --uno: "text-orange-500";
+            }
+
+            &.top-3 {
+              --uno: "text-yellow-500";
+            }
+
+            &.normal {
+              --uno: "text-$bew-text-3";
+            }
+          }
+
+          .keyword {
+            --uno: "text-base truncate flex-1";
+          }
+        }
       }
+    }
 
+    .divider {
+      --uno: "mx-2 my-1 h-px bg-$bew-border-color";
+    }
+
+    .history-section {
       .history-item-container {
         .history-item {
           --uno: "relative cursor-pointer duration-300";
@@ -439,6 +589,7 @@ async function handleClearSearchHistory() {
     @include search-content;
     --uno: "bg-$bew-elevated";
     --uno: "max-h-420px important-overflow-y-auto";
+    z-index: 1000;
 
     .suggestion-item {
       @include search-content-item;

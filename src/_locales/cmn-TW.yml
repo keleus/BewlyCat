@@ -54,8 +54,9 @@ iframe_drawer:
 settings:
   title: 設定
   menu_general: 一般
-  menu_desktop_and_dock: 桌面與 Dock
   menu_appearance: 外觀
+  menu_video_and_playback: 影片與播放
+  menu_desktop_and_dock: 桌面與 Dock
   menu_bewly_pages: BewlyBewly 頁面
   menu_home: 首頁
   menu_search_page: 搜尋頁
@@ -66,7 +67,10 @@ settings:
   group_link_opening_behavior: 連結開啓行爲
   group_video_card: 影片卡片
   group_performance: 毛玻璃與效能
+  group_player_settings: 播放器設定
+  group_playback_behavior: 播放行為
   group_topbar: 頂欄
+  group_navigation: Dock與側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄
   group_sidebar_desc: 位於首頁以外的頁面右側或左側，通常有淺/深色模式切換按鈕和設定按鈕。
@@ -74,6 +78,7 @@ settings:
   group_wallpaper: 背景圖片
   group_logo: LOGO
   group_search_bar: 搜尋欄
+  group_hot_search: 熱搜
   group_recommendation_mode: 「爲你推薦」推薦模式
   group_recommendation_filters: 「爲你推薦」過濾
   group_recommendation_filters_desc: |
@@ -81,6 +86,7 @@ settings:
   group_following: 正在跟隨
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄
+  group_home_layout: 首頁版面
   btn:
     authorize: 授權
     revoke: 解除授權
@@ -133,12 +139,17 @@ settings:
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉
   block_ads: 封鎖廣告
   block_top_search_page_ads: 封鎖 Bilibili 搜尋頁上方的廣告
+  home_adaptive_card_min_width: 網格自適應寬度
+  home_adaptive_card_min_width_desc: 控制每列的基準寬度（像素），數值越小列數越多。最小值強制為 120px。頁面會依據此值並結合實際可用網頁寬度自動調整版面。
+  home_adaptive_title_auto_size: 標題字級自適應
+  home_adaptive_title_auto_size_desc: 依據網格寬度自動調整標題字級
+  home_adaptive_title_font_size: 標題字級
+  home_adaptive_title_font_size_desc: 固定標題字級（像素），開啟自適應時不生效
   block_top_search_page_ads_desc: |
     有時候，搜尋結果上方的廣告實際上是年末總結、年度報告這些。 如果你不想這些內容被誤刪，請停用此選項。
   video_default_player_mode: 影片預設顯示模式
   video_player_mode:
     default: 預設
-    fullscreen: 全螢幕
     web_fullscreen: 網頁全螢幕
     widescreen: 寬螢幕
   enable_video_preview: 啓用影片預覽功能（如果可以的話）
@@ -162,6 +173,8 @@ settings:
     none: 不顯示
   show_watch_later_badge: 顯示稍後再看角標
   show_bcoin_receive_reminder: 大會員B幣領取提醒
+  auto_receive_bcoin_coupon: 大會員B幣自動領取
+  auto_receive_bcoin_coupon_desc: 啓用後，當檢測到有未領取的B幣券時將自動領取
   open_notifications_page_as_drawer: 以抽屜形式打開通知頁面
   always_use_dock: 總是使用 Dock
   always_use_dock_desc: 啓用後，Dock 將始終顯示，側邊欄將隱藏。我們推薦你同時啓用自動隱藏 Dock。
@@ -214,6 +227,10 @@ settings:
   bg_darkens_when_the_search_bar_is_focused: 當搜尋欄聚焦時背景變暗
   bg_blurs_when_the_search_bar_is_focused: 當搜尋欄聚焦時背景變模糊
   choose_search_bar_focused_character: 選擇搜尋欄聚焦時出現的人物
+  show_hot_search_in_top_bar: 在頂欄顯示熱搜
+  show_hot_search_in_top_bar_desc: 在頂欄搜尋框中顯示熱搜列表
+  show_hot_search_in_search_page: 在搜尋頁顯示熱搜
+  show_hot_search_in_search_page_desc: 在搜尋頁面顯示熱搜排行榜
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
   recommendation_mode: 推薦模式
   recommendation_mode_desc: |
@@ -262,6 +279,8 @@ settings:
   filter_by_user_table:
     username_or_mid: 使用者名稱 / MID
   following_tab_show_livestreaming_videos: 在「正在跟隨」中顯示實況直播
+  preserve_for_you_state: 留存為你推薦切換前狀態
+  preserve_for_you_state_desc: 當從dock欄切換到其他頁面時，留存為你推薦頁面的瀏覽狀態，返回時保持切換前的內容
   use_search_page_mode: 首頁使用搜尋頁模式
   settings_shared_with_the_search_page: 與搜尋頁共用的設定
   settings_shared_with_the_search_page_desc: 這些設定都與搜尋頁共用。
@@ -297,6 +316,8 @@ settings:
   keep_collection_video_default_mode_desc: 當啟用時，合集視頻將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住您上次設置的倍速，並在下次打開視頻時自動應用
+  auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播放完畢後自動退出
+  auto_exit_fullscreen_on_end_desc: 啟用後，當視頻播放結束時會自動退出全螢幕模式
   enable_random_play: 啟用視頻合集隨機播放
   enable_random_play_desc: 為多P視頻或合集添加隨機播放功能
   random_play_mode: 隨機播放模式
@@ -427,6 +448,15 @@ settings:
         7. 使用搜索框可以快速查找特定UP主的配置
       title: 使用說明
   menu_volume_balance: 音量均衡
+  group_fonts: 字體
+  group_language: 語言
+  group_ad_blocking: 廣告屏蔽
+  group_visual_effects: 視覺效果
+  badge_type: 角標類型
+  group_topbar_components: 頂欄組件設置
+  topbar_components_adjustment: 頂欄組件角標設置
+  topbar_components_adjustment_desc: 配置各個頂欄圖標的角標顯示方式
+  visibility: 顯示
 auth:
   auth_access_key_first: 在這之前請先授權 BewlyBewly 使用 access key
 topbar:
@@ -548,6 +578,7 @@ video_card:
     copy_bv_number: 複製 BV 號
     copy_av_number: 複製 AV 號
     view_the_original_cover: 檢視封面
+    block_user: 拉黑用戶
   group_contribution: '{firstAuthor} 等 {num} 人共同創作'
   video_removed: 影片已移除
 home:
@@ -560,6 +591,8 @@ home:
   trending: 發燒影片
   ranking: 排行
   subscribed_series: 訂閱劇集
+  weekly: 每週必看
+  precious: 入站必刷
   live: 直播
 ranking:
   all: 全部
@@ -623,4 +656,9 @@ watch_later:
   remove_from_watch_later: 移除
 search_bar:
   history_title: 搜尋記錄
+  hot_search_title: 熱搜
   clear_history: 清除所有搜尋記錄
+search_page:
+  hot_search_ranking: 熱搜排行榜
+  loading: 載入中...
+  no_hot_search_data: 暫無熱搜資料

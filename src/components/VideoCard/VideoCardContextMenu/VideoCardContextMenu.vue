@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
-import { openLinkToNewTab } from '~/utils/main'
+import api from '~/utils/api'
+import { getCSRF, openLinkToNewTab } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { Video } from '../types'
@@ -80,6 +81,8 @@ enum VideoOption {
   CopyVideoLink,
   CopyBVNumber,
   CopyAVNumber,
+
+  BlockUser,
 }
 
 const commonOptions = computed((): { command: VideoOption, name: string, icon: string, color?: string }[][] => {
@@ -100,6 +103,10 @@ const commonOptions = computed((): { command: VideoOption, name: string, icon: s
 
     [
       { command: VideoOption.ViewTheOriginalCover, name: t('video_card.operation.view_the_original_cover'), icon: 'i-solar:gallery-minimalistic-bold-duotone' },
+    ],
+
+    [
+      { command: VideoOption.BlockUser, name: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone', color: 'text-red-500' },
     ],
   ]
   if (getVideoType() === 'bangumi' || getVideoType() === 'live') {
@@ -181,6 +188,10 @@ function handleCommonCommand(command: VideoOption) {
       window.open(props.video.cover, '_blank')
       handleClose()
       break
+
+    case VideoOption.BlockUser:
+      blockUser()
+      break
   }
 }
 
@@ -206,6 +217,42 @@ function handleReopen() {
 function handleRemoved(selectedOpt?: { dislikeReasonId: number }) {
   emit('removed', selectedOpt)
   handleClose()
+}
+
+async function blockUser() {
+  if (!props.video.author) {
+    console.error('No author information available')
+    return
+  }
+
+  const authorMid = Array.isArray(props.video.author)
+    ? props.video.author[0]?.mid
+    : props.video.author.mid
+
+  if (!authorMid) {
+    console.error('No author mid available')
+    return
+  }
+
+  try {
+    const response = await api.user.relationModify({
+      fid: authorMid.toString(),
+      act: 5, // 5表示拉黑用户
+      re_src: 11,
+      csrf: getCSRF(),
+    })
+
+    if (response.code === 0) {
+      // 拉黑成功
+      handleRemoved()
+    }
+    else {
+      console.error('Block user failed:', response.message)
+    }
+  }
+  catch (error) {
+    console.error('Block user error:', error)
+  }
 }
 </script>
 
@@ -268,9 +315,10 @@ function handleRemoved(selectedOpt?: { dislikeReasonId: number }) {
               v-for="option in optionGroup"
               :key="option.command"
               class="context-menu-item"
+              :class="option.color"
               @click="handleCommonCommand(option.command)"
             >
-              <i class="item-icon" :class="option.icon" />
+              <i class="item-icon" :class="[option.icon, option.color]" />
               {{ option.name }}
             </li>
 

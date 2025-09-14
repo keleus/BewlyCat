@@ -105,8 +105,10 @@ export interface Settings {
   showBewlyOrBiliPageSwitcher: boolean
   topBarIconBadges: 'number' | 'dot' | 'none'
   showWatchLaterBadge: boolean
+  topBarComponentsConfig: { key: string, visible: boolean, badgeType: 'number' | 'dot' | 'none' }[]
   openNotificationsPageAsDrawer: boolean
   showBCoinReceiveReminder: boolean
+  autoReceiveBCoinCoupon: boolean
 
   alwaysUseDock: boolean
   autoHideDock: boolean
@@ -146,6 +148,10 @@ export interface Settings {
   searchPageWallpaperMaskOpacity: number
   searchPageWallpaperBlurIntensity: number
 
+  // 热搜功能设置
+  showHotSearchInTopBar: boolean
+  showHotSearchInSearchPage: boolean
+
   recommendationMode: 'web' | 'app'
 
   // filter setting
@@ -166,8 +172,15 @@ export interface Settings {
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
   alwaysShowTabsOnHomePage: boolean
+  // Adaptive grid card min width (px) for Home page
+  homeAdaptiveCardMinWidth: number
+  // Title font size for cards (px); when auto is enabled, this is ignored
+  homeAdaptiveTitleFontSize: number
+  // Auto adjust title font size based on grid width
+  homeAdaptiveTitleAutoSize: boolean
   useSearchPageModeOnHomePage: boolean
   searchPageModeWallpaperFixed: boolean
+  preserveForYouState: boolean
 
   adaptToOtherPageStyles: boolean
   showTopBar: boolean
@@ -175,9 +188,10 @@ export interface Settings {
   useOriginalBilibiliHomepage: boolean
 
   // Video Player
-  defaultVideoPlayerMode: 'default' | 'fullscreen' | 'webFullscreen' | 'widescreen'
+  defaultVideoPlayerMode: 'default' | 'webFullscreen' | 'widescreen'
   disableAutoPlayCollection: boolean
   keepCollectionVideoDefaultMode: boolean // 合集视频保持默认模式
+  autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
   keyboard: boolean
   shortcuts: ShortcutsSettings
   videoPlayerScroll: boolean // 添加视频播放器滚动设置
@@ -241,8 +255,18 @@ export const originalSettings: Settings = {
   showBewlyOrBiliPageSwitcher: true,
   topBarIconBadges: 'number',
   showWatchLaterBadge: false,
+  topBarComponentsConfig: [
+    { key: 'moments', visible: true, badgeType: 'number' },
+    { key: 'favorites', visible: true, badgeType: 'number' },
+    { key: 'history', visible: true, badgeType: 'number' },
+    { key: 'watchLater', visible: true, badgeType: 'number' },
+    { key: 'creatorCenter', visible: true, badgeType: 'none' },
+    { key: 'upload', visible: true, badgeType: 'none' },
+    { key: 'notifications', visible: true, badgeType: 'number' },
+  ],
   openNotificationsPageAsDrawer: true,
   showBCoinReceiveReminder: true,
+  autoReceiveBCoinCoupon: false,
 
   alwaysUseDock: false,
   autoHideDock: false,
@@ -282,6 +306,10 @@ export const originalSettings: Settings = {
   searchPageWallpaperMaskOpacity: 0,
   searchPageWallpaperBlurIntensity: 0,
 
+  // 热搜功能设置
+  showHotSearchInTopBar: true,
+  showHotSearchInSearchPage: true,
+
   recommendationMode: 'web',
 
   // filter setting
@@ -302,8 +330,12 @@ export const originalSettings: Settings = {
 
   homePageTabVisibilityList: [],
   alwaysShowTabsOnHomePage: false,
+  homeAdaptiveCardMinWidth: 280,
+  homeAdaptiveTitleFontSize: 16,
+  homeAdaptiveTitleAutoSize: true,
   useSearchPageModeOnHomePage: false,
   searchPageModeWallpaperFixed: false,
+  preserveForYouState: false,
 
   adaptToOtherPageStyles: true,
   showTopBar: true,
@@ -314,6 +346,7 @@ export const originalSettings: Settings = {
   defaultVideoPlayerMode: 'default',
   disableAutoPlayCollection: false,
   keepCollectionVideoDefaultMode: false, // 合集视频保持默认模式，默认关闭
+  autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
   keyboard: true, // 总快捷键开关，默认为 true
   videoPlayerScroll: true, // 默认开启视频播放器滚动
   shortcuts: {
@@ -322,6 +355,7 @@ export const originalSettings: Settings = {
     widescreen: { key: 'T', enabled: true },
     shortStepBackward: { key: 'J', enabled: true },
     longStepBackward: { key: 'Shift+J', enabled: true },
+    playPause: { key: 'K', enabled: true }, // 官方有 Space/⏯️，K 作为可选项
     shortStepForward: { key: 'L', enabled: true },
     longStepForward: { key: 'Shift+L', enabled: true },
     pip: { key: 'P', enabled: true },

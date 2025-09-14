@@ -27,7 +27,7 @@ const keyword: Ref<string> = ref<string>('')
 const searchScope = ref<'current' | 'all'>('current')
 const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 const isLoading = ref<boolean>(false)
-const isFullPageLoading = ref<boolean>(false)
+const isFullPageLoading = ref<boolean>(true)
 const noMoreContent = ref<boolean>(false)
 
 // 搜索范围选项
@@ -78,13 +78,18 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    if (searchScope.value === 'all') {
-      const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
-      await getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword.value, 1)
-    }
-    else {
-      await getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword.value, 0)
-    }
+    // 优化：添加延迟执行提高触发成功率
+    setTimeout(() => {
+      if (!isLoading.value && !noMoreContent.value) {
+        if (searchScope.value === 'all') {
+          const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
+          getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword.value, 1)
+        }
+        else {
+          getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword.value, 0)
+        }
+      }
+    }, 50)
   }
 
   handlePageRefresh.value = () => {
@@ -129,6 +134,8 @@ async function getFavoriteResources(
   keyword = '' as string,
   type = 0 as number,
 ) {
+  if (pn === 1)
+    isFullPageLoading.value = true
   isLoading.value = true
   try {
     const res: FavoritesResult = await api.favorite.getFavoriteResources({
@@ -162,6 +169,7 @@ async function getFavoriteResources(
   }
   finally {
     isLoading.value = false
+    isFullPageLoading.value = false
   }
 }
 
@@ -280,10 +288,10 @@ function isMusic(item: FavoriteResource) {
         <Empty :description="t('favorites.global_search_hint')" />
       </div>
 
-      <Empty v-else-if="favoriteResources.length === 0 && !isLoading" m="t-55px b-6" />
+      <Empty v-else-if="favoriteResources.length === 0 && !isLoading && !isFullPageLoading" m="t-55px b-6" />
       <template v-else>
         <Transition name="fade">
-          <Loading v-if="isFullPageLoading" w-full h-full pos="absolute top-0 left-0" mt--50px />
+          <Loading v-if="isFullPageLoading" w-full h-screen pos="absolute top-0 left-0" mt--50px />
         </Transition>
         <div grid="~ 2xl:cols-4 xl:cols-3 lg:cols-2 md:cols-1 sm:cols-1 cols-1 gap-5" m="t-55px b-6">
           <TransitionGroup name="list">
