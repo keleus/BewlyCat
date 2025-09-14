@@ -71,7 +71,7 @@ function createVolumeSlidersContainer(): HTMLElement {
     min-width: 160px;
     color: white;
     font-size: 12px;
-    z-index: 10000;
+    z-index: 99;
     display: none;
     backdrop-filter: blur(8px);
     border: 1px solid rgba(255, 255, 255, 0.15);

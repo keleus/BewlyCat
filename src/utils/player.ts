@@ -85,7 +85,7 @@ export function formatTime(seconds: number): string {
 export function showState(text: string) {
   if (!stateElement) {
     stateElement = document.createElement('div')
-    stateElement.style.cssText = 'display: none; position: absolute; z-index: 100000; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 8px 12px; background-color: rgba(8, 8, 8, 0.75); color: white; font-size: 22px; border-radius: 4px;'
+    stateElement.style.cssText = 'display: none; position: absolute; z-index: 99; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 8px 12px; background-color: rgba(8, 8, 8, 0.75); color: white; font-size: 22px; border-radius: 4px;'
   }
 
   const stateContainer = document.querySelector(_videoClassTag.state)
@@ -622,7 +622,7 @@ export function toggleVideoTitle() {
 export function toggleVideoTime() {
   if (!timeElement) {
     timeElement = document.createElement('div')
-    timeElement.style.cssText = 'display: none; position: absolute; z-index: 100000; bottom: 55px; right: 20px; padding: 4px 8px; background-color: rgba(8, 8, 8, 0.75); color: white; font-size: 16px; border-radius: 4px;'
+    timeElement.style.cssText = 'display: none; position: absolute; z-index: 99; bottom: 55px; right: 20px; padding: 4px 8px; background-color: rgba(8, 8, 8, 0.75); color: white; font-size: 16px; border-radius: 4px;'
   }
 
   if (timeElement.style.display === 'none') {
@@ -672,7 +672,7 @@ export function showVideoTime(firstShow = false) {
 export function toggleClockTime() {
   if (!clockElement) {
     clockElement = document.createElement('div')
-    clockElement.style.cssText = 'display: none; position: absolute; z-index: 100000; top: 10px; right: 20px; padding: 4px 8px; background-color: rgba(8, 8, 8, 0.75); color: white; font-size: 16px; border-radius: 4px;'
+    clockElement.style.cssText = 'display: none; position: absolute; z-index: 99; top: 10px; right: 20px; padding: 4px 8px; background-color: rgba(8, 8, 8, 0.75); color: white; font-size: 16px; border-radius: 4px;'
   }
 
   if (clockElement.style.display === 'none') {
