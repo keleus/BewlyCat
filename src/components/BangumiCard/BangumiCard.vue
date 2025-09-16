@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
+
 import { useDark } from '~/composables/useDark'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
@@ -12,12 +14,12 @@ defineProps<{
   bangumi: Bangumi
   horizontal?: boolean
 }>()
-const cardRootRef = ref<HTMLElement | null>(null)
+const cardRootRef = ref<HTMLElement | ComponentPublicInstance | null>(null)
 let cardResizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
-  const el = cardRootRef.value
-  if (!el)
+  const el = resolveCardElement()
+  if (!el || typeof ResizeObserver === 'undefined')
     return
   cardResizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
@@ -32,6 +34,16 @@ onBeforeUnmount(() => {
   cardResizeObserver?.disconnect()
   cardResizeObserver = null
 })
+
+function resolveCardElement(): HTMLElement | null {
+  const el = cardRootRef.value
+  if (!el)
+    return null
+  if (el instanceof HTMLElement)
+    return el
+  const exposed = (el as ComponentPublicInstance).$el
+  return exposed instanceof HTMLElement ? exposed : null
+}
 
 interface Bangumi {
   url: string
