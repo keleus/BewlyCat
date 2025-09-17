@@ -55,7 +55,43 @@ injectFunction(
 
 // 获取IP地理位置字符串
 function getLocationString(replyItem: any) {
-  return replyItem?.reply_control?.location
+  const location = replyItem?.reply_control?.location
+  if (typeof location !== 'string')
+    return location
+
+  return location.replace(/^IP属地[：: ]*/u, '')
+}
+
+function getSexString(replyItem: any) {
+  return replyItem?.member?.sex
+}
+
+function updateInfoElement(
+  root: ShadowRoot | null | undefined,
+  id: string,
+  shouldShow: boolean,
+  text: any,
+  anchor: Element | null | undefined,
+): HTMLElement | null {
+  if (!root)
+    return null
+
+  let element = root.querySelector<HTMLElement>(`#${id}`)
+
+  if (!shouldShow || !anchor) {
+    if (element)
+      element.remove()
+    return null
+  }
+
+  if (!element) {
+    element = document.createElement('div')
+    element.id = id
+    anchor.insertAdjacentElement('afterend', element)
+  }
+
+  element.textContent = String(text)
+  return element
 }
 
 // 判断当前页面URL是否支持IP显示
@@ -107,29 +143,19 @@ if (window.customElements && isSupportedPage()) {
       const originalUpdate = classConstructor.prototype.update
       classConstructor.prototype.update = function (...updateArgs: any[]) {
         const result = originalUpdate.apply(this, updateArgs)
-        const pubDateEl = this.shadowRoot?.querySelector('#pubdate')
+        const root = this.shadowRoot
+        const pubDateEl = root?.querySelector('#pubdate')
         if (!pubDateEl)
           return result
 
-        let locationEl = this.shadowRoot?.querySelector('#location')
         const locationString = getLocationString(this.data)
+        const shouldShowLocation = Boolean(currentSettings?.showIPLocation && locationString)
+        const locationEl = updateInfoElement(root, 'location', shouldShowLocation, locationString, pubDateEl)
 
-        // 根据设置决定是否显示IP
-        if (!currentSettings?.showIPLocation || !locationString) {
-          if (locationEl)
-            locationEl.remove()
-          return result
-        }
-
-        if (locationEl) {
-          locationEl.textContent = locationString
-          return result
-        }
-
-        locationEl = document.createElement('div')
-        locationEl.id = 'location'
-        locationEl.textContent = locationString
-        pubDateEl.insertAdjacentElement('afterend', locationEl)
+        const sexString = getSexString(this.data)
+        const shouldShowSex = Boolean(currentSettings?.showSex && sexString)
+        const sexAnchor = locationEl ?? pubDateEl
+        updateInfoElement(root, 'sex', shouldShowSex, sexString, sexAnchor)
         return result
       }
       return Reflect.apply(target, thisArg, args)

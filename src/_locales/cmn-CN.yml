@@ -413,6 +413,8 @@ settings:
   clean_url_argument_desc: 自动清理URL中的追踪参数，使链接更加简洁
   show_ip_location: 显示IP归属地
   show_ip_location_desc: 在视频/动态评论区显示IP归属地
+  show_sex: 显示用户性别
+  show_sex_desc: 在视频/动态评论区显示用户性别
   volume_balance:
     title: 音量均衡
     enable: 启用音量均衡

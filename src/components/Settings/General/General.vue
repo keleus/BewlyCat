@@ -89,6 +89,10 @@ watch(() => settings.value.language, (newValue) => {
         <Radio v-model="settings.showIPLocation" />
       </SettingsItem>
 
+      <SettingsItem :title="$t('settings.show_sex')" :desc="$t('settings.show_sex_desc')">
+        <Radio v-model="settings.showSex" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.enable_grid_layout_switcher')">
         <Radio v-model="settings.enableGridLayoutSwitcher" />
       </SettingsItem>
