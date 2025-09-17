@@ -101,6 +101,25 @@ let cardResizeObserver: ResizeObserver | null = null
 const statSuffixPattern = /(播放量?|观看|弹幕|点赞|views?|likes?|danmakus?|comments?|回复|人气|转发|分享|[次条人])/gi
 const statSeparatorPattern = /[•·]/g
 
+const DEFAULT_TITLE_LINE_HEIGHT = 1.35
+const CUSTOM_TITLE_LINE_HEIGHT = 1.25
+
+const titleStyle = computed(() => {
+  const { homeAdaptiveTitleAutoSize, homeAdaptiveTitleFontSize } = settings.value
+
+  if (!homeAdaptiveTitleAutoSize && homeAdaptiveTitleFontSize) {
+    return {
+      fontSize: `${homeAdaptiveTitleFontSize}px`,
+      lineHeight: CUSTOM_TITLE_LINE_HEIGHT.toString(),
+      '--bew-title-line-height': CUSTOM_TITLE_LINE_HEIGHT.toString(),
+    }
+  }
+
+  return {
+    '--bew-title-line-height': DEFAULT_TITLE_LINE_HEIGHT.toString(),
+  }
+})
+
 function formatStatValue(count?: number, countStr?: string) {
   if (typeof count === 'number')
     return numFormatter(count).trim()
@@ -512,10 +531,10 @@ provide('getVideoType', () => props.type!)
             <div class="group/desc" flex="~ col gap-2" w="full" align="items-start">
               <div flex="~ gap-1 justify-between items-start" w="full" pos="relative">
                 <h3
-                  class="keep-two-lines"
+                  class="keep-two-lines video-card-title"
                   text="overflow-ellipsis $bew-text-1 lg"
                   :class="{ 'bew-title-auto': settings.homeAdaptiveTitleAutoSize }"
-                  :style="!settings.homeAdaptiveTitleAutoSize && settings.homeAdaptiveTitleFontSize ? { fontSize: `${settings.homeAdaptiveTitleFontSize}px`, lineHeight: '1.25' } : {}"
+                  :style="titleStyle"
                   cursor="pointer"
                 >
                   <a :href="videoUrl" target="_blank" :title="video.title">
@@ -674,5 +693,9 @@ provide('getVideoType', () => props.type!)
      Increase responsiveness and use unitless line-height for better small-size rendering */
   font-size: clamp(12px, calc((var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 20px), 30px);
   line-height: clamp(1.15, calc(1.1 + (var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 0.2), 1.5);
+}
+
+.video-card-title {
+  min-height: calc(var(--bew-title-line-height, 1.35) * 2em);
 }
 </style>
