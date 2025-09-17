@@ -354,6 +354,7 @@ export enum BadgeText {
 }
 
 export interface Stat {
+  like: string
   danmaku: string
   play: string
 }

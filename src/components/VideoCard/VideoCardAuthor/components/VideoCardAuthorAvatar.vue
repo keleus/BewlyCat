@@ -8,8 +8,10 @@ const props = withDefaults(defineProps<{
   author: Author | Author[]
   maxCount?: number
   isLive?: boolean
+  compact?: boolean
 }>(), {
   maxCount: 3, // 最多显示的头像数量
+  compact: false,
 })
 
 // 限制显示的头像数量，最多显示 maxCount 个
@@ -27,7 +29,7 @@ const displayedAvatars = computed(() => {
       width: Array.isArray(author) && author.length > 1 ? `${28 + (displayedAvatars?.length) * 6}px` : '34px',
       height: Array.isArray(author) && author.length > 1 ? '28px' : '34px',
     }"
-    mr-4
+    :class="compact ? 'mr-2' : 'mr-4'"
     pos="relative"
     shrink-0
   >

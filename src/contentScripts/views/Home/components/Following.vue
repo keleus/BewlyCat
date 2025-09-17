@@ -438,6 +438,7 @@ defineExpose({ initData })
           author: video.authorList,
           viewStr: video.item.modules.module_dynamic.major.archive?.stat.play,
           danmakuStr: video.item.modules.module_dynamic.major.archive?.stat.danmaku,
+          likeStr: video.item.modules.module_dynamic.major.archive?.stat.like,
           capsuleText: video.item.modules.module_author.pub_time,
           bvid: video.item.modules.module_dynamic.major.archive?.bvid,
           badge: video.item.modules.module_dynamic.major.archive?.badge.text !== '投稿视频' ? {

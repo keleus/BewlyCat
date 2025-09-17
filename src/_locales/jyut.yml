@@ -7,6 +7,8 @@ common:
   viewWithoutNum: 次
   danmaku: '{count} 彈幕'
   danmakuWithoutNum: 彈幕
+  like: '{count} 個讚'
+  likeWithoutNum: 讚
   anime_follow_count: '{count}人追緊'
   year: 年前
   month: 個月前

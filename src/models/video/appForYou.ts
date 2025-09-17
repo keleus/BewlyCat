@@ -62,6 +62,7 @@ export interface Item {
   cover_left_text_1?: string
   cover_left_text_2?: string
   desc?: string
+  rcmd_reason?: RcmdReason
   can_play?: number
   cover_right_text?: string
   cover_left_icon_1?: number
@@ -74,6 +75,10 @@ export interface Item {
   bottom_rcmd_reason_style?: RcmdReasonStyle
 }
 
+export interface RcmdReason {
+  content?: string
+  reason_type?: number
+}
 export interface AdInfo {
   creative_id: number
   creative_type: number

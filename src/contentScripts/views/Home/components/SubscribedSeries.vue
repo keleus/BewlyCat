@@ -212,6 +212,7 @@ defineExpose({ initData })
           },
           viewStr: video.item.modules.module_dynamic.major.pgc?.stat.play,
           danmakuStr: video.item.modules.module_dynamic.major.pgc?.stat.danmaku,
+          likeStr: video.item.modules.module_dynamic.major.pgc?.stat.like,
           capsuleText: video.item.modules.module_author.pub_time,
           epid: video.item.modules.module_dynamic.major.pgc?.epid,
         } : undefined"

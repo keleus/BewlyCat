@@ -7,6 +7,8 @@ common:
   viewWithoutNum: ' views'
   danmaku: no danmaku | {count} danmaku | {count} danmakus
   danmakuWithoutNum: ' danmakus'
+  like: no like | {count} like | {count} likes
+  likeWithoutNum: ' likes'
   anime_follow_count: no follow | {count} follow | {count} follows
   year: year ago | years ago
   month: month ago | months ago

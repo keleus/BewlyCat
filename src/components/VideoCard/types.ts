@@ -15,6 +15,8 @@ export interface Video {
   viewStr?: string
   danmaku?: number
   danmakuStr?: string
+  like?: number
+  likeStr?: string
 
   publishedTimestamp?: number
   capsuleText?: string
