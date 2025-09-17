@@ -4,6 +4,7 @@
 .vite-ssg-temp
 .trae
 .kiro
+.claude
 *.backup
 *.crx
 *.local
