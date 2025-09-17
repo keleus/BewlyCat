@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
-import { useMainStore } from '~/stores/mainStore'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getCSRF, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
@@ -13,7 +12,6 @@ import { openLinkInBackground } from '~/utils/tabs'
 
 const { t } = useI18n()
 const { openIframeDrawer } = useBewlyApp()
-const { setActivatedCover } = useMainStore()
 
 const isLoading = ref<boolean>()
 const noMoreContent = ref<boolean>()
@@ -173,10 +171,6 @@ function jumpToLoginPage() {
   location.href = 'https://passport.bilibili.com/login'
 }
 
-function handleMouseEnter(item: VideoItem) {
-  setActivatedCover(`${removeHttpFromUrl(item.pic)}@480w_270h_1c`)
-}
-
 function handleVideoLinkClick(bvid: string) {
   const videoUrl = `https://www.bilibili.com/video/${bvid}/`
   if (settings.value.videoCardLinkOpenMode === 'drawer') {
@@ -211,7 +205,6 @@ function handleVideoLinkClick(bvid: string) {
             type="videoCard"
             class="group"
             flex cursor-pointer
-            @mouseenter="handleMouseEnter(item)"
           >
             <section
               rounded="$bew-radius"

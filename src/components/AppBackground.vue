@@ -1,21 +1,13 @@
 <script setup lang="ts">
-import { useDebounceFn } from '@vueuse/core'
-
 import { useDark } from '~/composables/useDark'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
-import { useMainStore } from '~/stores/mainStore'
 import { resolveWallpaperUrl } from '~/utils/localWallpaper'
 import { hexToHSL } from '~/utils/main'
 
 const props = defineProps<{ activatedPage: AppPage }>()
 
 const { isDark } = useDark()
-const { getActivatedCover } = useMainStore()
-
-const currentActivatedCover = ref<string>('')
-const isBlurredCoverLoaded = ref<boolean>(false)
-
 // 计算解析后的壁纸URL
 const resolvedWallpaper = computed(() => {
   return resolveWallpaperUrl(settings.value.wallpaper) || ''
@@ -32,28 +24,6 @@ const currentWallpaperUrl = computed(() => {
   }
   return resolvedWallpaper.value
 })
-
-// Use a more aggressive debounce and skip unnecessary updates
-const debouncedCoverUpdate = useDebounceFn((newValue: string) => {
-  if (newValue === currentActivatedCover.value)
-    return
-
-  const nextCover = newValue
-
-  requestAnimationFrame(() => {
-    currentActivatedCover.value = nextCover
-    isBlurredCoverLoaded.value = false
-  })
-}, 800)
-
-// Watch with immediate to handle initial value
-watch(
-  () => getActivatedCover(),
-  debouncedCoverUpdate,
-  {
-    flush: 'post',
-  },
-)
 
 const themeColorHsl = computed(() => {
   return hexToHSL(settings.value.themeColor).replace('hsl(', '').replace(')', '')
@@ -144,30 +114,6 @@ function setAppWallpaperMaskingOpacity() {
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
           z--1 transform-gpu
         />
-
-        <!-- blurred cover background -->
-        <Transition name="fade">
-          <Transition
-            v-if="!resolvedWallpaper && !settings.disableFrostedGlass"
-            v-show="isBlurredCoverLoaded"
-            name="slide-fade"
-          >
-            <img
-              :key="currentActivatedCover"
-              :src="currentActivatedCover"
-              loading="eager"
-              style="
-                mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 50%, transparent);
-                filter: blur(20px) opacity(0.15);
-                will-change: transform, opacity;
-              "
-              pointer-events-none
-              pos="absolute top--40px left-0" w="100%" h="50%" of-hidden
-              transform-gpu
-              object-cover @load="isBlurredCoverLoaded = true"
-            >
-          </Transition>
-        </Transition>
 
         <!-- background mask -->
         <Transition name="fade">

@@ -3,7 +3,6 @@ import type { ComponentPublicInstance } from 'vue'
 
 import { useDark } from '~/composables/useDark'
 import { settings } from '~/logic'
-import { useMainStore } from '~/stores/mainStore'
 import { numFormatter } from '~/utils/dataFormatter'
 import { removeHttpFromUrl } from '~/utils/main'
 
@@ -65,11 +64,6 @@ interface Bangumi {
 }
 
 const { isDark } = useDark()
-const { setActivatedCover } = useMainStore()
-
-function handleMouseEnter(bangumi: Bangumi) {
-  setActivatedCover(`${removeHttpFromUrl(bangumi.cover)}@466w_622h.webp`)
-}
 </script>
 
 <template>
@@ -87,7 +81,6 @@ function handleMouseEnter(bangumi: Bangumi) {
       content-visibility-auto intrinsic-size-400px
       transition="all ease-in-out 300"
       rounded="$bew-radius" h-fit
-      @mouseenter="handleMouseEnter(bangumi)"
     >
       <!-- Cover -->
       <div
