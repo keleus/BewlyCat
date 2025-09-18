@@ -603,7 +603,7 @@ provide('getVideoType', () => props.type!)
                   >
                     <span
                       v-if="video.tag"
-                      text="$bew-theme-color"
+                      text="xs $bew-theme-color"
                       lh-6 p="x-2"
                       rounded="$bew-radius"
                       bg="$bew-theme-color-20"
@@ -616,7 +616,7 @@ provide('getVideoType', () => props.type!)
                       bg="$bew-fill-1"
                       p="x-2"
                       rounded="$bew-radius"
-                      text="$bew-text-3"
+                      text="xs $bew-text-3"
                       lh-6
                     >
                       {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
