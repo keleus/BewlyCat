@@ -28,7 +28,7 @@ export interface List {
   mission_id?: number
   rights: { [key: string]: number }
   owner: Owner
-  stat: { [key: string]: number }
+  stat: { [key: string]: number | string }
   dynamic: string
   cid: number
   dimension: Dimension

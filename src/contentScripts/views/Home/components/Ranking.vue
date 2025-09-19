@@ -210,6 +210,8 @@ defineExpose({ initData })
             },
             view: video.stat.view,
             danmaku: video.stat.danmaku,
+            like: video.stat.like,
+            likeStr: (video.stat as any)?.like_str ?? video.stat.like,
             publishedTimestamp: video.pubdate,
             bvid: video.bvid,
             rank: index + 1,

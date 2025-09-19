@@ -94,6 +94,61 @@ const videoElement = ref<HTMLVideoElement | null>(null)
 // Track actual card width for better auto title sizing
 const cardRootRef = ref<HTMLElement | null>(null)
 let cardResizeObserver: ResizeObserver | null = null
+const cardWidth = ref<number>(0)
+
+const coverStatValues = computed(() => {
+  if (!props.video) {
+    return {
+      view: '',
+      danmaku: '',
+      like: '',
+      duration: '',
+    }
+  }
+
+  return {
+    view: formatStatValue(props.video.view, props.video.viewStr),
+    danmaku: formatStatValue(props.video.danmaku, props.video.danmakuStr),
+    like: formatStatValue(props.video.like, props.video.likeStr),
+    duration: props.video.duration
+      ? calcCurrentTime(props.video.duration)
+      : props.video.durationStr ?? '',
+  }
+})
+
+const coverStatsVisibility = computed(() => {
+  const { view, danmaku, like, duration } = coverStatValues.value
+  const width = cardWidth.value
+
+  let showDanmaku = Boolean(danmaku)
+  let showLike = Boolean(like)
+
+  if (width && width < 240)
+    showLike = false
+  if (width && width < 210)
+    showDanmaku = false
+
+  return {
+    view: Boolean(view),
+    danmaku: showDanmaku,
+    like: showLike,
+    duration: Boolean(duration),
+  }
+})
+
+const hasCoverStats = computed(() => {
+  const visibility = coverStatsVisibility.value
+  const values = coverStatValues.value
+
+  return (
+    (visibility.view && values.view)
+    || (visibility.danmaku && values.danmaku)
+    || (visibility.like && values.like)
+    || (visibility.duration && values.duration)
+  )
+})
+
+const shouldHideCoverStats = computed(() => props.showPreview && settings.value.enableVideoPreview && isHover.value)
 
 const statSuffixPattern = /(播放量?|观看|弹幕|点赞|views?|likes?|danmakus?|comments?|回复|人气|转发|分享|[次条人])/gi
 const statSeparatorPattern = /[•·]/g
@@ -134,10 +189,17 @@ onMounted(() => {
   const el = cardRootRef.value
   if (!el)
     return
+  const initialRect = el.getBoundingClientRect()
+  if (initialRect.width) {
+    const width = Math.round(initialRect.width)
+    cardWidth.value = width
+    el.style.setProperty('--bew-card-width', `${width}px`)
+  }
   cardResizeObserver = new ResizeObserver((entries) => {
     for (const entry of entries) {
       const width = entry.contentRect.width
       el.style.setProperty('--bew-card-width', `${Math.round(width)}px`)
+      cardWidth.value = Math.round(width)
     }
   })
   cardResizeObserver.observe(el)
@@ -341,7 +403,7 @@ provide('getVideoType', () => props.type!)
     ring="hover:8 hover:$bew-fill-2 active:8 active:$bew-fill-3"
     bg="hover:$bew-fill-2 active:$bew-fill-3"
     transform="~ translate-z-0"
-    mb-4
+    mb-3
   >
     <div v-if="!skeleton && video">
       <div
@@ -363,7 +425,7 @@ provide('getVideoType', () => props.type!)
             class="group/cover"
             :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
             shrink-0
-            h-fit relative bg="$bew-skeleton" rounded="$bew-radius"
+            h-fit relative bg="$bew-skeleton" rounded="$bew-radius" overflow-hidden
             cursor-pointer
             group-hover:z-2
             transform="~ translate-z-0"
@@ -438,22 +500,6 @@ provide('getVideoType', () => props.type!)
             </div>
 
             <template v-if="!removed">
-              <!-- Video Duration -->
-              <div
-                v-if="video.duration || video.durationStr"
-                pos="absolute bottom-0 right-0"
-                z="2"
-                p="x-2 y-1"
-                m="1"
-                rounded="$bew-radius"
-                text="!white xs"
-                bg="black opacity-60"
-                class="group-hover:opacity-0"
-                duration-300
-              >
-                {{ video.duration ? calcCurrentTime(video.duration) : video.durationStr }}
-              </div>
-
               <div
                 class="opacity-0 group-hover/cover:opacity-100"
                 transform="scale-70 group-hover/cover:scale-100"
@@ -507,6 +553,45 @@ provide('getVideoType', () => props.type!)
                   <Icon icon="line-md:confirm" />
                 </Tooltip>
               </button>
+
+              <div
+                v-if="hasCoverStats"
+                class="video-card-cover-stats"
+                :class="{ 'video-card-cover-stats--hidden': shouldHideCoverStats }"
+              >
+                <div class="video-card-cover-stats__items">
+                  <span
+                    v-if="coverStatsVisibility.view"
+                    class="video-card-cover-stats__item"
+                  >
+                    <Icon icon="mingcute:play-circle-line" class="video-card-cover-stats__icon" aria-hidden="true" />
+                    <span class="video-card-cover-stats__value">{{ coverStatValues.view }}</span>
+                  </span>
+
+                  <span
+                    v-if="coverStatsVisibility.danmaku"
+                    class="video-card-cover-stats__item"
+                  >
+                    <Icon icon="mingcute:danmaku-line" class="video-card-cover-stats__icon" aria-hidden="true" />
+                    <span class="video-card-cover-stats__value">{{ coverStatValues.danmaku }}</span>
+                  </span>
+
+                  <span
+                    v-if="coverStatsVisibility.like"
+                    class="video-card-cover-stats__item"
+                  >
+                    <Icon icon="mingcute:thumb-up-2-line" class="video-card-cover-stats__icon" aria-hidden="true" />
+                    <span class="video-card-cover-stats__value">{{ coverStatValues.like }}</span>
+                  </span>
+                </div>
+
+                <span
+                  v-if="coverStatsVisibility.duration"
+                  class="video-card-cover-stats__item video-card-cover-stats__item--duration"
+                >
+                  <span class="video-card-cover-stats__value">{{ coverStatValues.duration }}</span>
+                </span>
+              </div>
             </template>
           </div>
 
@@ -515,7 +600,7 @@ provide('getVideoType', () => props.type!)
             v-if="!removed"
             :style="{
               width: horizontal ? '100%' : 'unset',
-              marginTop: horizontal ? '0' : '1rem',
+              marginTop: horizontal ? '0' : '0.5rem',
             }"
             flex="~"
           >
@@ -548,7 +633,7 @@ provide('getVideoType', () => props.type!)
 
               <div
                 class="video-card-meta"
-                flex="~ gap-2 items-start"
+                flex="~ gap-2 items-center"
                 w="full"
               >
                 <VideoCardAuthorAvatar
@@ -565,36 +650,6 @@ provide('getVideoType', () => props.type!)
                     text="sm $bew-text-2"
                   >
                     <VideoCardAuthorName :author="video.author" />
-                  </div>
-
-                  <div
-                    v-if="formatStatValue(video.view, video.viewStr) || formatStatValue(video.danmaku, video.danmakuStr) || formatStatValue(video.like, video.likeStr)"
-                    flex="~ items-center gap-2 wrap"
-                    text="sm $bew-text-3"
-                  >
-                    <span
-                      v-if="formatStatValue(video.view, video.viewStr)"
-                      flex="~ items-center gap-1"
-                    >
-                      <Icon icon="mingcute:play-line" class="text-base text-$bew-text-3" aria-hidden="true" />
-                      <span>{{ formatStatValue(video.view, video.viewStr) }}</span>
-                    </span>
-
-                    <span
-                      v-if="formatStatValue(video.danmaku, video.danmakuStr)"
-                      flex="~ items-center gap-1"
-                    >
-                      <Icon icon="mingcute:comment-line" class="text-base text-$bew-text-3" aria-hidden="true" />
-                      <span>{{ formatStatValue(video.danmaku, video.danmakuStr) }}</span>
-                    </span>
-
-                    <span
-                      v-if="formatStatValue(video.like, video.likeStr)"
-                      flex="~ items-center gap-1"
-                    >
-                      <Icon icon="mingcute:thumb-up-line" class="text-base text-$bew-text-3" aria-hidden="true" />
-                      <span>{{ formatStatValue(video.like, video.likeStr) }}</span>
-                    </span>
                   </div>
 
                   <div
@@ -688,5 +743,85 @@ provide('getVideoType', () => props.type!)
 
 .video-card-title {
   min-height: calc(var(--bew-title-line-height, 1.35) * 2em);
+}
+
+.video-card-cover-stats {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.4rem 0.45rem 0.3rem;
+  color: #fff;
+  font-size: var(--video-card-stats-font-size, 0.75rem);
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.video-card-cover-stats::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.7) 30%,
+    rgba(0, 0, 0, 0.5) 50%,
+    rgba(0, 0, 0, 0.3) 70%,
+    rgba(0, 0, 0, 0.15) 85%,
+    rgba(0, 0, 0, 0.05) 95%,
+    transparent 100%
+  );
+  height: 140%;
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+  pointer-events: none;
+}
+
+.video-card-cover-stats > * {
+  position: relative;
+  z-index: 1;
+}
+
+.video-card-cover-stats__items {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+  flex-shrink: 1;
+}
+
+.video-card-cover-stats__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.video-card-cover-stats__icon {
+  font-size: 0.85rem;
+  color: currentColor;
+}
+
+.video-card-cover-stats__value {
+  font-size: var(--video-card-stats-font-size, 0.75rem);
+  line-height: 1;
+}
+
+.video-card-cover-stats__item--duration {
+  margin-left: auto;
+  font-size: var(--video-card-stats-font-size, 0.75rem);
+}
+
+.video-card-cover-stats--hidden {
+  opacity: 0;
+  visibility: hidden;
 }
 </style>

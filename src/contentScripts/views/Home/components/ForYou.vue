@@ -722,7 +722,11 @@ defineExpose({
               followed: video.item?.bottom_rcmd_reason === '已关注' || video.item?.bottom_rcmd_reason === '已關注',
               mid: video.item?.mask?.avatar.up_id,
             },
-            capsuleText: video.item?.desc?.split('·')?.[1]?.trim(),
+            capsuleText:
+              video.item?.desc?.split('·')?.[1]?.trim()
+              || ((video.item?.bottom_rcmd_reason?.trim() === '已关注' || video.item?.bottom_rcmd_reason?.trim() === '已關注')
+                ? video.item?.bottom_rcmd_reason?.trim()
+                : undefined),
             bvid: video.item.bvid,
             viewStr: video.item.cover_left_text_1,
             danmakuStr: video.item.cover_left_text_2,

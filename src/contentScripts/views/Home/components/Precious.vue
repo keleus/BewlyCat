@@ -120,6 +120,8 @@ defineExpose({ initData })
           } : undefined,
           view: video.item.stat?.view,
           danmaku: video.item.stat?.danmaku,
+          like: video.item.stat?.like,
+          likeStr: video.item.stat?.like_str ?? video.item.stat?.like,
           publishedTimestamp: video.item.pubdate,
           bvid: video.item.bvid,
           cid: video.item.cid,
