@@ -184,13 +184,19 @@ const highlightTags = computed(() => {
 
   if (viewCount >= 10_000) {
     const likeCount = props.video.like ?? 0
-    if (likeCount / viewCount > 0.02)
+    const likeRatio = viewCount > 0 ? likeCount / viewCount : 0
+    if ((viewCount < 100_000 && likeRatio >= 0.075)
+      || (viewCount < 200_000 && likeRatio >= 0.05)
+      || (viewCount < 1_000_000 && likeRatio >= 0.035)
+      || (viewCount >= 1_000_000 && likeRatio >= 0.02)) {
       tags.push('高赞播比')
+    }
 
     const danmakuCount = props.video.danmaku ?? 0
-    if ((danmakuCount / viewCount > 0.01 && viewCount < 100_000)
-      || (danmakuCount / viewCount > 0.007 && viewCount < 1_000_000)
-      || (danmakuCount / viewCount > 0.005 && viewCount >= 1_000_000)) {
+    if ((danmakuCount / viewCount > 0.0075 && viewCount < 100_000)
+      || (danmakuCount / viewCount > 0.005 && viewCount < 200_000)
+      || (danmakuCount / viewCount > 0.0035 && viewCount < 1_000_000)
+      || (danmakuCount / viewCount > 0.002 && viewCount >= 1_000_000)) {
       tags.push('高互动')
     }
   }
