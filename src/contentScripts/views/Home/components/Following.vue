@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 
-import type { Author } from '~/components/VideoCard/types'
+import type { Author, Video } from '~/components/VideoCard/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
@@ -384,6 +384,107 @@ function jumpToLoginPage() {
   location.href = 'https://passport.bilibili.com/login'
 }
 
+function parseStatNumber(value?: string | number) {
+  if (typeof value === 'number')
+    return Number.isFinite(value) ? value : undefined
+
+  if (typeof value !== 'string')
+    return undefined
+
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === '-' || trimmed === '--')
+    return undefined
+
+  let normalized = trimmed.replace(/,/g, '')
+  let multiplier = 1
+
+  if (/[亿億]/.test(normalized)) {
+    multiplier *= 1e8
+    normalized = normalized.replace(/[亿億]/g, '')
+  }
+
+  if (/[万萬]/.test(normalized)) {
+    multiplier *= 1e4
+    normalized = normalized.replace(/[万萬]/g, '')
+  }
+
+  const numeric = Number(normalized.replace(/[^0-9.]/g, ''))
+  if (Number.isNaN(numeric))
+    return undefined
+
+  return Math.round(numeric * multiplier)
+}
+
+function mapLiveItemToVideo(item?: FollowingLiveItem): Video | undefined {
+  if (!item)
+    return undefined
+
+  const tag = item.area_name_v2?.trim() || item.area_name?.trim() || undefined
+
+  return {
+    id: item.roomid,
+    title: item.title,
+    cover: item.room_cover,
+    author: {
+      name: item.uname,
+      authorFace: item.face,
+      mid: item.uid,
+    },
+    view: parseStatNumber(item.text_small),
+    viewStr: item.text_small,
+    tag,
+    roomid: item.roomid,
+    liveStatus: item.live_status,
+    threePointV2: [],
+  }
+}
+
+function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | undefined {
+  if (!item)
+    return undefined
+
+  const archive = item.modules?.module_dynamic?.major?.archive
+  if (!archive)
+    return undefined
+
+  const stat = archive.stat
+  const likeCount = item.modules?.module_stat?.like?.count
+  const authorValue = authors && authors.length > 0
+    ? (authors.length === 1 ? authors[0] : authors)
+    : undefined
+
+  const badge = archive.badge?.text && archive.badge.text !== '投稿视频'
+    ? {
+        bgColor: archive.badge.bg_color,
+        color: archive.badge.color,
+        iconUrl: archive.badge.icon_url || undefined,
+        text: archive.badge.text,
+      }
+    : undefined
+
+  const id = Number.parseInt(archive.aid, 10)
+
+  return {
+    id: Number.isNaN(id) ? 0 : id,
+    durationStr: archive.duration_text,
+    title: archive.title,
+    desc: archive.desc,
+    cover: archive.cover,
+    author: authorValue,
+    view: parseStatNumber(stat?.play),
+    viewStr: stat?.play,
+    danmaku: parseStatNumber(stat?.danmaku),
+    danmakuStr: stat?.danmaku,
+    like: typeof likeCount === 'number' ? likeCount : parseStatNumber(stat?.like),
+    likeStr: stat?.like_str ?? stat?.like,
+    capsuleText: item.modules?.module_author?.pub_time?.trim() || undefined,
+    publishedTimestamp: item.modules?.module_author?.pub_ts,
+    bvid: archive.bvid,
+    badge,
+    threePointV2: [],
+  }
+}
+
 defineExpose({ initData })
 </script>
 
@@ -406,21 +507,7 @@ defineExpose({ initData })
           v-for="video in liveVideoList"
           :key="video.uniqueId"
           :skeleton="!video.item"
-          :video="video.item ? {
-            // id: Number(video.item.modules.module_dynamic.major.archive?.aid),
-            title: `${video.item.title}`,
-            cover: `${video.item.room_cover}`,
-            author: {
-              name: video.item.uname,
-              authorFace: video.item.face,
-              mid: video.item.uid,
-            },
-            viewStr: video.item.text_small,
-            tag: video.item.area_name_v2,
-            roomid: video.item.roomid,
-            liveStatus: video.item.live_status,
-          } : undefined"
-          type="live"
+          :video="mapLiveItemToVideo(video.item)"
           :show-watcher-later="false"
           :horizontal="gridLayout !== 'adaptive'"
         />
@@ -430,27 +517,7 @@ defineExpose({ initData })
         v-for="video in videoList"
         :key="video.uniqueId"
         :skeleton="!video.item"
-        :video="video.item ? {
-          id: Number(video.item.modules.module_dynamic.major.archive?.aid),
-          durationStr: video.item.modules.module_dynamic.major.archive?.duration_text,
-          title: `${video.item.modules.module_dynamic.major.archive?.title}`,
-          cover: `${video.item.modules.module_dynamic.major.archive?.cover}`,
-          author: video.authorList,
-          viewStr: video.item.modules.module_dynamic.major.archive?.stat.play,
-          danmakuStr: video.item.modules.module_dynamic.major.archive?.stat.danmaku,
-          like: typeof video.item.modules.module_dynamic.major.archive?.stat.like === 'number'
-            ? video.item.modules.module_dynamic.major.archive?.stat?.like
-            : undefined,
-          likeStr: video.item.modules.module_dynamic.major.archive?.stat?.like_str,
-          capsuleText: video.item.modules.module_author.pub_time,
-          bvid: video.item.modules.module_dynamic.major.archive?.bvid,
-          badge: video.item.modules.module_dynamic.major.archive?.badge.text !== '投稿视频' ? {
-            bgColor: video.item.modules.module_dynamic.major.archive?.badge.bg_color,
-            color: video.item.modules.module_dynamic.major.archive?.badge.color,
-            iconUrl: video.item.modules.module_dynamic.major.archive?.badge.icon_url,
-            text: video.item.modules.module_dynamic.major.archive?.badge.text,
-          } : undefined,
-        } : undefined"
+        :video="mapMomentItemToVideo(video.item, video.authorList)"
         show-preview
         :horizontal="gridLayout !== 'adaptive'"
       />
