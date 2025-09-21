@@ -172,6 +172,80 @@ const titleStyle = computed(() => {
   }
 })
 
+const highlightTags = computed(() => {
+  if (!props.video)
+    return [] as string[]
+
+  const tags: string[] = []
+  const viewCount = props.video.view ?? 0
+
+  if (viewCount <= 0)
+    return tags
+
+  if (viewCount >= 10_000) {
+    const likeCount = props.video.like ?? 0
+    if (likeCount / viewCount > 0.02)
+      tags.push('高赞播比')
+
+    const danmakuCount = props.video.danmaku ?? 0
+    if ((danmakuCount / viewCount > 0.01 && viewCount < 100_000)
+      || (danmakuCount / viewCount > 0.007 && viewCount < 1_000_000)
+      || (danmakuCount / viewCount > 0.005 && viewCount >= 1_000_000)) {
+      tags.push('高互动')
+    }
+  }
+
+  const durationTag = getDurationHighlight(props.video)
+
+  if (durationTag)
+    tags.push(durationTag)
+
+  if (props.video.tag) {
+    // tags只返回一个
+    return tags.slice(0, 1)
+  }
+  else {
+    // 最多返回2个，避免越界
+    return tags.slice(0, 2)
+  }
+})
+
+function getDurationHighlight(video: Video) {
+  const durationInSeconds = getDurationInSeconds(video)
+
+  if (!durationInSeconds)
+    return
+
+  if (durationInSeconds >= 40 * 60)
+    return '超长视频'
+
+  if (durationInSeconds >= 20 * 60)
+    return '长视频'
+}
+
+function getDurationInSeconds(video: Video) {
+  const { duration } = video
+  if (typeof duration === 'number' && duration > 0)
+    return duration
+
+  return parseDurationStr(video.durationStr)
+}
+
+function parseDurationStr(durationStr?: string) {
+  if (!durationStr)
+    return
+
+  const parts = durationStr.split(':').map(part => Number(part))
+  if (parts.some(part => Number.isNaN(part)))
+    return
+
+  let seconds = 0
+  for (const value of parts)
+    seconds = seconds * 60 + value
+
+  return seconds
+}
+
 function formatStatValue(count?: number, countStr?: string) {
   if (typeof count === 'number')
     return numFormatter(count).trim()
@@ -653,7 +727,7 @@ provide('getVideoType', () => props.type!)
                   </div>
 
                   <div
-                    v-if="video.tag || video.publishedTimestamp || video.capsuleText || video.type === 'vertical' || video.type === 'bangumi'"
+                    v-if="video.tag || highlightTags.length || video.publishedTimestamp || video.capsuleText || video.type === 'vertical' || video.type === 'bangumi'"
                     flex="~ items-center gap-2 wrap"
                   >
                     <span
@@ -664,6 +738,17 @@ provide('getVideoType', () => props.type!)
                       bg="$bew-theme-color-20"
                     >
                       {{ video.tag }}
+                    </span>
+
+                    <span
+                      v-for="extraTag in highlightTags"
+                      :key="`highlight-${extraTag}`"
+                      text="xs $bew-theme-color"
+                      lh-6 p="x-2"
+                      rounded="$bew-radius"
+                      bg="$bew-theme-color-20"
+                    >
+                      {{ extraTag }}
                     </span>
 
                     <span
