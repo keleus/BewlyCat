@@ -11,7 +11,7 @@ import type { VideoPreviewResult } from '~/models/video/videoPreview'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getTvSign, TVAppKey } from '~/utils/authProvider'
-import { calcCurrentTime, calcTimeSince, numFormatter } from '~/utils/dataFormatter'
+import { calcCurrentTime, calcTimeSince, numFormatter, parseStatNumber } from '~/utils/dataFormatter'
 import { getCSRF, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
@@ -96,6 +96,24 @@ const cardRootRef = ref<HTMLElement | null>(null)
 let cardResizeObserver: ResizeObserver | null = null
 const cardWidth = ref<number>(0)
 
+const videoStatNumbers = computed(() => {
+  if (!props.video) {
+    return {
+      view: undefined,
+      danmaku: undefined,
+      like: undefined,
+    }
+  }
+
+  const { view, viewStr, danmaku, danmakuStr, like, likeStr } = props.video
+
+  return {
+    view: parseStatNumber(view ?? viewStr),
+    danmaku: parseStatNumber(danmaku ?? danmakuStr),
+    like: parseStatNumber(like ?? likeStr),
+  }
+})
+
 const coverStatValues = computed(() => {
   if (!props.video) {
     return {
@@ -106,10 +124,12 @@ const coverStatValues = computed(() => {
     }
   }
 
+  const stats = videoStatNumbers.value
+
   return {
-    view: formatStatValue(props.video.view, props.video.viewStr),
-    danmaku: formatStatValue(props.video.danmaku, props.video.danmakuStr),
-    like: formatStatValue(props.video.like, props.video.likeStr),
+    view: formatStatValue(stats.view, props.video.viewStr),
+    danmaku: formatStatValue(stats.danmaku, props.video.danmakuStr),
+    like: formatStatValue(stats.like, props.video.likeStr),
     duration: props.video.duration
       ? calcCurrentTime(props.video.duration)
       : props.video.durationStr ?? '',
@@ -177,26 +197,27 @@ const highlightTags = computed(() => {
     return [] as string[]
 
   const tags: string[] = []
-  const viewCount = props.video.view ?? 0
+  const stats = videoStatNumbers.value
+  const viewCount = stats.view ?? 0
 
   if (viewCount <= 0)
     return tags
 
   if (viewCount >= 10_000) {
-    const likeCount = props.video.like ?? 0
+    const likeCount = stats.like ?? 0
     const likeRatio = viewCount > 0 ? likeCount / viewCount : 0
-    if ((viewCount < 100_000 && likeRatio >= 0.075)
-      || (viewCount < 200_000 && likeRatio >= 0.05)
-      || (viewCount < 1_000_000 && likeRatio >= 0.035)
-      || (viewCount >= 1_000_000 && likeRatio >= 0.02)) {
-      tags.push('高赞播比')
+    if ((likeRatio >= 0.04)
+      || (viewCount >= 100_000 && likeRatio >= 0.03)
+      || (viewCount >= 200_000 && likeRatio >= 0.02)
+      || (viewCount >= 1_000_000 && likeRatio >= 0.01)) {
+      tags.push('高赞')
     }
 
-    const danmakuCount = props.video.danmaku ?? 0
-    if ((danmakuCount / viewCount > 0.0075 && viewCount < 100_000)
-      || (danmakuCount / viewCount > 0.005 && viewCount < 200_000)
-      || (danmakuCount / viewCount > 0.0035 && viewCount < 1_000_000)
-      || (danmakuCount / viewCount > 0.002 && viewCount >= 1_000_000)) {
+    const danmakuCount = stats.danmaku ?? 0
+    if ((danmakuCount / viewCount > 0.004)
+      || (danmakuCount / viewCount > 0.003 && viewCount >= 100_000)
+      || (danmakuCount / viewCount > 0.002 && viewCount >= 200_000)
+      || (danmakuCount / viewCount > 0.001 && viewCount >= 1_000_000)) {
       tags.push('高互动')
     }
   }
@@ -701,10 +722,12 @@ provide('getVideoType', () => props.type!)
                 <div
                   v-if="moreBtn"
                   ref="moreBtnRef"
+                  class="video-card__more-btn"
                   :class="{ 'more-active': showVideoOptions }"
                   bg="hover:$bew-fill-2 active:$bew-fill-3"
                   shrink-0 w-32px h-32px m="t--3px r--4px"
-                  grid place-items-center cursor-pointer rounded="50%" duration-300
+                  grid place-items-center cursor-pointer rounded="full" overflow="hidden"
+                  duration-300
                   @click.stop.prevent="handleMoreBtnClick"
                 >
                   <div i-mingcute:more-2-line text="lg" />
@@ -819,6 +842,17 @@ provide('getVideoType', () => props.type!)
 
 .vertical-card-cover {
   --uno: "w-full";
+}
+
+.video-card__more-btn {
+  position: relative;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.video-card__more-btn::before,
+.video-card__more-btn::after {
+  border-radius: inherit;
 }
 
 .more-active {

@@ -5,6 +5,41 @@ import { LanguageType } from './../enums/appEnums'
 
 export const { t } = i18n.global
 
+export function parseStatNumber(value?: number | string | null): number | undefined {
+  if (typeof value === 'number')
+    return Number.isFinite(value) ? value : undefined
+
+  if (typeof value !== 'string')
+    return undefined
+
+  const trimmed = value.trim()
+  if (!trimmed || trimmed === '-' || trimmed === '--')
+    return undefined
+
+  let normalized = trimmed.replace(/,/g, '').toLowerCase()
+  let multiplier = 1
+
+  if (/[亿億]/.test(normalized)) {
+    multiplier *= 1e8
+    normalized = normalized.replace(/[亿億]/g, '')
+  }
+
+  if (/[万萬]/.test(normalized)) {
+    multiplier *= 1e4
+    normalized = normalized.replace(/[万萬]/g, '')
+  }
+
+  normalized = normalized.replace(/[^0-9.]/g, '')
+  if (!normalized)
+    return undefined
+
+  const numeric = Number(normalized)
+  if (Number.isNaN(numeric))
+    return undefined
+
+  return numeric * multiplier
+}
+
 export function numFormatter(num: number | string): string {
   const digits = 1 // specify number of digits after decimal
   let lookup
@@ -35,12 +70,8 @@ export function numFormatter(num: number | string): string {
   }
   const rx = /\.0+$|(\.\d*[1-9])0+$/
   if (typeof num === 'string') {
-    if (num.includes('萬') || num.includes('万')) {
-      num = (Number(num.replaceAll('萬', '').replaceAll('万', '')) || 0) * 10000
-    }
-    else {
-      num = Number(num)
-    }
+    const parsed = parseStatNumber(num)
+    num = typeof parsed === 'number' ? parsed : Number(num)
   }
   const item = lookup.slice().reverse().find((item) => {
     return num >= item.value

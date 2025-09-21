@@ -62,7 +62,11 @@ export interface RcmdReason {
 
 export interface Stat {
   view: number
-  like: number
+  like?: number
   danmaku: number
   vt: number
+  share?: number
+  reply?: number
+  favorite?: number
+  coin?: number
 }

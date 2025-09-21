@@ -8,6 +8,7 @@ import { settings } from '~/logic'
 import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
 import type { DataItem as MomentItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
+import { parseStatNumber } from '~/utils/dataFormatter'
 
 // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
 interface VideoElement {
@@ -382,37 +383,6 @@ async function getFollowedUsersVideos() {
 
 function jumpToLoginPage() {
   location.href = 'https://passport.bilibili.com/login'
-}
-
-function parseStatNumber(value?: string | number) {
-  if (typeof value === 'number')
-    return Number.isFinite(value) ? value : undefined
-
-  if (typeof value !== 'string')
-    return undefined
-
-  const trimmed = value.trim()
-  if (!trimmed || trimmed === '-' || trimmed === '--')
-    return undefined
-
-  let normalized = trimmed.replace(/,/g, '')
-  let multiplier = 1
-
-  if (/[亿億]/.test(normalized)) {
-    multiplier *= 1e8
-    normalized = normalized.replace(/[亿億]/g, '')
-  }
-
-  if (/[万萬]/.test(normalized)) {
-    multiplier *= 1e4
-    normalized = normalized.replace(/[万萬]/g, '')
-  }
-
-  const numeric = Number(normalized.replace(/[^0-9.]/g, ''))
-  if (Number.isNaN(numeric))
-    return undefined
-
-  return Math.round(numeric * multiplier)
 }
 
 function mapLiveItemToVideo(item?: FollowingLiveItem): Video | undefined {

@@ -358,6 +358,10 @@ export interface Stat {
   danmaku: string
   play: string
   like_str?: string
+  share?: string
+  reply?: string
+  favorite?: string
+  coin?: string
 }
 
 export interface Pgc {
