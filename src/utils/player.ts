@@ -419,6 +419,20 @@ export function toggleLight() {
 
 // 切换字幕
 export function toggleCaption() {
+  const closeSwitch = document.querySelector<HTMLElement>('.bpx-player-ctrl-subtitle-close-switch')
+  const languageItem = document.querySelector<HTMLElement>('.bpx-player-ctrl-subtitle-language-item')
+
+  if (closeSwitch && languageItem) {
+    const isClosed = closeSwitch.classList.contains('bpx-state-active')
+    if (isClosed) {
+      languageItem.click()
+    }
+    else {
+      closeSwitch.click()
+    }
+    return
+  }
+
   let captionBtn = document.querySelector('.bilibili-player-iconfont-subtitle')
   if (captionBtn) {
     if (captionBtn.nextElementSibling) {
@@ -437,18 +451,18 @@ export function toggleCaption() {
         parent.dispatchEvent(new MouseEvent('mouseover'))
       }
     }
+    return
   }
-  else {
-    captionBtn = document.querySelector('.bpx-player-ctrl-subtitle span')
-    if (captionBtn) {
-      (captionBtn as HTMLElement).click()
-    }
-    else {
-      const subtitleWrap = document.querySelector('.squirtle-subtitle-wrap')
-      if (subtitleWrap && subtitleWrap.firstElementChild) {
-        (subtitleWrap.firstElementChild as HTMLElement).click()
-      }
-    }
+
+  captionBtn = document.querySelector('.bpx-player-ctrl-subtitle span')
+  if (captionBtn) {
+    (captionBtn as HTMLElement).click()
+    return
+  }
+
+  const subtitleWrap = document.querySelector('.squirtle-subtitle-wrap')
+  if (subtitleWrap && subtitleWrap.firstElementChild) {
+    (subtitleWrap.firstElementChild as HTMLElement).click()
   }
 }
 
