@@ -154,6 +154,9 @@ function resetPinnedChannels() {
     height: 32px;
     display: grid;
     place-items: center;
+    border-radius: 12px;
+    background: color-mix(in oklab, white, transparent 20%);
+    border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 30%);
 
     svg {
       width: 24px;

@@ -149,6 +149,7 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
     v-if="validPinnedKeys.length"
     ref="containerRef"
     class="pinned-channels"
+    :class="{ 'white-theme': props.forceWhiteIcon }"
   >
     <div ref="listRef" class="pinned-channels__list">
       <ALink
@@ -188,9 +189,13 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
 .pinned-channels {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   min-width: 0;
-  flex: 1;
+  flex: 0 1 auto;
+  padding: 2px;
+  border-radius: 28px;
+  background: color-mix(in oklab, var(--bew-elevated), transparent 55%);
+  border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 50%);
 
   &__list {
     display: flex;
@@ -203,12 +208,14 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
   &__item {
     display: grid;
     place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 40px;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
     color: var(--bew-text-1);
-    transition: background-color 0.3s ease;
-    filter: drop-shadow(0 0 4px var(--bew-bg));
+    background: transparent;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
 
     &:hover {
       background: var(--bew-fill-2);
@@ -216,7 +223,6 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
 
     &.white-icon {
       color: white;
-      filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.6));
 
       &:hover {
         background: rgba(255, 255, 255, 0.2);
@@ -266,6 +272,11 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
         background: rgba(255, 255, 255, 0.2);
       }
     }
+  }
+
+  &.white-theme {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.3);
   }
 }
 </style>

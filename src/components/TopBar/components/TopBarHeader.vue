@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useMutationObserver, useResizeObserver } from '@vueuse/core'
+import { computed, onMounted, ref } from 'vue'
+
 import { settings } from '~/logic'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
@@ -12,12 +15,70 @@ defineProps<{
 }>()
 
 const { forceWhiteIcon, handleNotificationsItemClick } = useTopBarInteraction()
+
+const leftSection = ref<HTMLElement | null>(null)
+const rightSection = ref<HTMLElement | null>(null)
+const searchSection = ref<HTMLElement | null>(null)
+const searchContent = ref<HTMLElement | null>(null)
+
+const leftWidth = ref(0)
+const rightWidth = ref(0)
+const centerWidth = ref(0)
+const searchContentWidth = ref(0)
+
+useResizeObserver(leftSection, (entries) => {
+  leftWidth.value = entries[0]?.contentRect.width ?? leftSection.value?.offsetWidth ?? 0
+})
+
+useResizeObserver(rightSection, (entries) => {
+  rightWidth.value = entries[0]?.contentRect.width ?? rightSection.value?.offsetWidth ?? 0
+})
+
+useResizeObserver(searchSection, (entries) => {
+  centerWidth.value = entries[0]?.contentRect.width ?? searchSection.value?.offsetWidth ?? 0
+  refreshSearchContent()
+})
+
+useResizeObserver(searchContent, (entries) => {
+  searchContentWidth.value = entries[0]?.contentRect.width ?? searchContent.value?.offsetWidth ?? 0
+})
+
+useMutationObserver(searchSection, () => {
+  refreshSearchContent()
+}, { childList: true, subtree: true })
+
+onMounted(() => {
+  leftWidth.value = leftSection.value?.offsetWidth ?? 0
+  rightWidth.value = rightSection.value?.offsetWidth ?? 0
+  centerWidth.value = searchSection.value?.offsetWidth ?? 0
+  refreshSearchContent()
+})
+
+const maxOffset = computed(() => {
+  if (!centerWidth.value || !searchContentWidth.value)
+    return 0
+  return Math.max(0, (centerWidth.value - searchContentWidth.value) / 2)
+})
+
+const searchOffset = computed(() => {
+  const desired = (rightWidth.value - leftWidth.value) / 2
+  const limit = maxOffset.value
+  if (!limit)
+    return 0
+  return Math.min(Math.max(desired, -limit), limit)
+})
+
+function refreshSearchContent() {
+  const el = searchSection.value?.querySelector('#search-wrap') as HTMLElement | null
+  searchContent.value = el ?? null
+  searchContentWidth.value = el?.offsetWidth ?? 0
+}
 </script>
 
 <template>
   <main
     max-w="$bew-page-max-width"
-    flex="~ justify-between items-center gap-4"
+    grid="~ cols-[auto_1fr_auto] items-center gap-4"
     p="x-12" m-auto
     h="$bew-top-bar-height"
   >
@@ -55,14 +116,47 @@ const { forceWhiteIcon, handleNotificationsItemClick } = useTopBarInteraction()
       />
     </Transition>
 
-    <TopBarLogo :force-white-icon="forceWhiteIcon" />
+    <div ref="leftSection" class="top-bar-header__side top-bar-header__side--left">
+      <TopBarLogo :force-white-icon="forceWhiteIcon" />
+    </div>
 
     <!-- search bar -->
-    <TopBarSearch />
+    <div
+      ref="searchSection"
+      class="top-bar-header__search"
+      :style="{ transform: `translateX(${searchOffset}px)` }"
+    >
+      <TopBarSearch />
+    </div>
 
     <!-- right content -->
-    <TopBarRight
-      @notifications-click="handleNotificationsItemClick"
-    />
+    <div ref="rightSection" class="top-bar-header__side top-bar-header__side--right">
+      <TopBarRight
+        @notifications-click="handleNotificationsItemClick"
+      />
+    </div>
   </main>
 </template>
+
+<style scoped lang="scss">
+.top-bar-header__side {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.top-bar-header__side--left {
+  justify-self: start;
+}
+
+.top-bar-header__side--right {
+  justify-self: end;
+}
+
+.top-bar-header__search {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  transition: transform 0.2s ease;
+}
+</style>
