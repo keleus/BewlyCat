@@ -38,6 +38,7 @@ common:
     import: 匯入
     export: 匯出
     undo_refresh: 復原更新
+    remove: 移除
   table:
     index: 索引
     title: 標題
@@ -161,6 +162,13 @@ settings:
     number: 數字
     dot: 圓點
     none: 唔顯示
+  group_topbar_pinned_channels: 頂欄固定分區
+  topbar_pinned_channels_desc: 可以將 Logo 展開嘅分區固定喺頂欄外面，並且設定顯示順序。
+  topbar_pinned_channels_title: 固定分區
+  topbar_pinned_channels_hint: 撳卡片就可以固定或者取消，撳落去嘅順序會決定顯示順序。排後面嗰啲會喺空間唔夠時優先收埋。
+  topbar_pinned_channels_all_selected: 所有可用分區都已經加入。
+  topbar_pinned_channels_empty: 仲未揀任何固定分區。
+  topbar_pinned_channels_order_tip: 撳嘅順序決定顯示，再撳一次就會取消固定。
   open_notifications_page_as_drawer: 用櫃桶打開通知頁面
   always_use_dock: 點都要用 Dock
   always_use_dock_desc: 啓用後，Dock 點都要用佢而唔係用側邊欄。我哋推介你同時啓用自動收埋 Dock 去。

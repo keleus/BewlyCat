@@ -38,6 +38,7 @@ common:
     import: 导入
     export: 导出
     undo_refresh: 撤销刷新
+    remove: 移除
   table:
     index: 索引
     title: 标题
@@ -207,6 +208,13 @@ settings:
   group_topbar_components: 顶栏组件设置
   topbar_components_adjustment: 顶栏组件角标设置
   topbar_components_adjustment_desc: 配置各个顶栏图标的角标显示方式
+  group_topbar_pinned_channels: 顶栏常驻分区
+  topbar_pinned_channels_desc: 可以将 Logo 展开中的分区固定在顶栏外侧，并自定义显示顺序。
+  topbar_pinned_channels_title: 常驻分区
+  topbar_pinned_channels_hint: 点击卡片即可固定或取消，点击顺序决定展示顺序。靠后的分区会在空间不足时优先隐藏。
+  topbar_pinned_channels_all_selected: 所有可用分区都已添加。
+  topbar_pinned_channels_empty: 还没有添加任何常驻分区。
+  topbar_pinned_channels_order_tip: 点击顺序决定展示顺序，再次点击可取消固定。
   badge_type: 角标类型
   always_use_dock: 总是使用 Dock 栏
   always_use_dock_desc: 启用后，Dock 栏将始终显示，侧边栏将隐藏。我们推荐你同时启用自动隐藏 Dock 栏。

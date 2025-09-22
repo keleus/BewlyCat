@@ -38,6 +38,7 @@ common:
     import: Import
     export: Export
     undo_refresh: Undo Refresh
+    remove: Remove
   table:
     index: Index
     title: Title
@@ -195,6 +196,13 @@ settings:
   group_topbar_components: Top Bar Components Settings
   topbar_components_adjustment: Top Bar Components Badge Settings
   topbar_components_adjustment_desc: Configure the badge display mode for each top bar icon
+  group_topbar_pinned_channels: Top Bar Pinned Channels
+  topbar_pinned_channels_desc: Choose items from the logo dropdown to keep directly on the top bar and arrange their priority.
+  topbar_pinned_channels_title: Pinned channels
+  topbar_pinned_channels_hint: Click a tile to pin or unpin it; the order follows the sequence of your clicks. Items toward the end hide first when space is tight.
+  topbar_pinned_channels_all_selected: All channels have already been pinned.
+  topbar_pinned_channels_empty: You have not pinned any channels yet.
+  topbar_pinned_channels_order_tip: Selection order follows your clicks. Click an item again to unpin it.
   badge_type: Badge Type
   always_use_dock: Always use the dock
   always_use_dock_desc: >-

@@ -107,6 +107,7 @@ export interface Settings {
   topBarIconBadges: 'number' | 'dot' | 'none'
   showWatchLaterBadge: boolean
   topBarComponentsConfig: { key: string, visible: boolean, badgeType: 'number' | 'dot' | 'none' }[]
+  topBarPinnedChannels: string[]
   openNotificationsPageAsDrawer: boolean
   showBCoinReceiveReminder: boolean
   autoReceiveBCoinCoupon: boolean
@@ -266,6 +267,7 @@ export const originalSettings: Settings = {
     { key: 'upload', visible: true, badgeType: 'none' },
     { key: 'notifications', visible: true, badgeType: 'number' },
   ],
+  topBarPinnedChannels: [],
   openNotificationsPageAsDrawer: true,
   showBCoinReceiveReminder: true,
   autoReceiveBCoinCoupon: false,

@@ -18,7 +18,7 @@ const searchBarStyles = computed(() => ({
 </script>
 
 <template>
-  <div flex="inline 1 md:justify-center items-center" w="full">
+  <div flex="inline 1 md:justify-center items-center" w="full" data-top-bar-search>
     <Transition name="slide-out">
       <SearchBar
         v-if="showSearchBar"

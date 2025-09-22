@@ -8,6 +8,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import BewlyOrBiliPageSwitcher from './BewlyOrBiliPageSwitcher.vue'
 import ChannelsPop from './pops/ChannelsPop.vue'
+import TopBarPinnedChannels from './TopBarPinnedChannels.vue'
 
 defineProps<{
   forceWhiteIcon: boolean
@@ -22,7 +23,12 @@ const channels = setupTopBarItemHoverEvent('channels')
 </script>
 
 <template>
-  <div shrink-0 flex="inline xl:1 justify-start items-center gap-2" pos="relative" z-1>
+  <div
+    flex="inline xl:1 items-center gap-2"
+    pos="relative"
+    z-1
+    class="top-bar-logo"
+  >
     <div
       ref="channels"
       z-1 relative w-fit
@@ -75,6 +81,8 @@ const channels = setupTopBarItemHoverEvent('channels')
     </div>
 
     <BewlyOrBiliPageSwitcher v-if="settings.showBewlyOrBiliPageSwitcher" z-1 />
+
+    <TopBarPinnedChannels :force-white-icon="forceWhiteIcon" />
   </div>
 </template>
 
@@ -94,5 +102,10 @@ const channels = setupTopBarItemHoverEvent('channels')
       filter: none !important;
     }
   }
+}
+
+.top-bar-logo {
+  min-width: 0;
+  flex: 0 1 auto;
 }
 </style>

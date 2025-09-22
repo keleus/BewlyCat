@@ -9,6 +9,7 @@ import { settings } from '~/logic'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import TopBarComponents from './TopBarComponents.vue'
+import TopBarPinnedChannels from './TopBarPinnedChannels.vue'
 
 const { t } = useI18n()
 
@@ -71,6 +72,7 @@ const videoPageTopBarConfigOptions = computed(() => {
     </SettingsItemGroup>
 
     <TopBarComponents />
+    <TopBarPinnedChannels />
   </div>
 </template>
 

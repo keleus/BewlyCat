@@ -27,6 +27,10 @@ export default defineConfig({
     'i-mingcute:carplay-fill',
     'i-tabler:windmill',
     'i-tabler:windmill-filled',
+    'i-mingcute:game-2-fill',
+    'i-mingcute:store-fill',
+    'i-mingcute:cat-fill',
+    'i-mingcute:sword-fill',
   ],
   presets: [
     presetWind3(),

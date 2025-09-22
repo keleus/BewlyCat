@@ -38,6 +38,7 @@ common:
     import: 匯入
     export: 匯出
     undo_refresh: 撤銷更新
+    remove: 移除
   table:
     index: 索引
     title: 標題
@@ -460,6 +461,13 @@ settings:
   group_topbar_components: 頂欄組件設置
   topbar_components_adjustment: 頂欄組件角標設置
   topbar_components_adjustment_desc: 配置各個頂欄圖標的角標顯示方式
+  group_topbar_pinned_channels: 頂欄常駐分區
+  topbar_pinned_channels_desc: 可將 Logo 展開內的分區固定在頂欄外側，並調整顯示順序。
+  topbar_pinned_channels_title: 常駐分區
+  topbar_pinned_channels_hint: 點擊卡片即可固定或取消，點擊順序決定顯示順序。排在後面的分區會在空間不足時優先隱藏。
+  topbar_pinned_channels_all_selected: 所有可用分區都已加入。
+  topbar_pinned_channels_empty: 尚未新增任何常駐分區。
+  topbar_pinned_channels_order_tip: 點擊順序決定顯示順序，再點一次即可取消固定。
   visibility: 顯示
 auth:
   auth_access_key_first: 在這之前請先授權 BewlyBewly 使用 access key
