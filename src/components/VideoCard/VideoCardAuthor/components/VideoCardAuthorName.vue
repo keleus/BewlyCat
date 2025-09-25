@@ -11,7 +11,7 @@ defineProps<{
 <template>
   <a
     class="channel-name"
-    un-text="hover:$bew-text-1"
+    un-text="hover:$bew-theme-color"
     cursor-pointer mr-4
     :href="getAuthorJumpUrl(Array.isArray(author) ? author[0] : author)"
     target="_blank"
