@@ -55,6 +55,16 @@
   --uno: "after:opacity-100 after:w-full after:h-100px";
   --uno: "after:absolute after:top--30px after:left-1/2 after:-z-1";
   --uno: "after:transform after:-translate-x-1/2";
+  backdrop-filter: var(--bew-filter-glass-1);
+}
+
+.bew-popover__header {
+  backdrop-filter: var(--bew-filter-glass-1);
+  background-color: color-mix(in oklab, var(--bew-elevated), transparent 35%);
+}
+
+.disable-frosted-glass .bew-popover__header {
+  background-color: var(--bew-elevated);
 }
 
 .logo.activated {
