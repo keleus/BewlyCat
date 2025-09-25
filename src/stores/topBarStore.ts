@@ -28,15 +28,16 @@ export const useTopBarStore = defineStore('topBar', () => {
   const unReadMessage = reactive<UnReadMessage>({} as UnReadMessage)
   const unReadDm = reactive<UnReadDm>({} as UnReadDm)
 
+  const MESSAGE_KEYS_TO_COUNT: Array<keyof UnReadMessage> = ['reply', 'at', 'chat', 'sys_msg']
+
   const unReadMessageCount = computed((): number => {
     let result = 0
 
-    // 计算 unReadMessage 中的未读消息
-    Object.entries(unReadMessage).forEach(([key, value]) => {
-      if (key !== 'up' && key !== 'recv_reply' && key !== 'recv_like') {
-        if (typeof value === 'number')
-          result += value
-      }
+    // 只统计需要在顶栏展示的消息类型，过滤掉点赞等提醒
+    MESSAGE_KEYS_TO_COUNT.forEach((key) => {
+      const value = unReadMessage[key]
+      if (typeof value === 'number')
+        result += value
     })
 
     // 计算 unReadDm 中的未读消息

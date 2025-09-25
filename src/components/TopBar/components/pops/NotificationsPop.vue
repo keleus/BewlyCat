@@ -52,7 +52,8 @@ watch(() => props.unReadMessage, (newVal) => {
   if (newVal) {
     list.value[0].unreadCount = newVal.reply || 0
     list.value[1].unreadCount = newVal.at || 0
-    list.value[2].unreadCount = newVal.recv_like || 0
+    const likesCount = newVal.like ?? newVal.recv_like ?? 0
+    list.value[2].unreadCount = likesCount
     list.value[3].unreadCount = newVal.sys_msg || 0
   }
 }, { immediate: true, deep: true })
