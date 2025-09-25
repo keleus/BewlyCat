@@ -1,0 +1,73 @@
+.bewly-design {
+  .pswp {
+    --bew-pswp-horizontal-gap: clamp(24px, 6vw, 96px);
+    --bew-pswp-vertical-gap: clamp(24px, 12vh, 140px);
+  }
+
+  .pswp__bg {
+    background-color: rgba(0, 0, 0, 0.85) !important;
+  }
+
+  .pswp__item {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    padding: var(--bew-pswp-vertical-gap) var(--bew-pswp-horizontal-gap);
+    box-sizing: border-box;
+  }
+
+  .pswp__zoom-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pswp__img {
+    max-width: calc(100vw - var(--bew-pswp-horizontal-gap) * 2) !important;
+    max-height: calc(100vh - var(--bew-pswp-vertical-gap) * 2) !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain;
+    border-radius: 12px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    background-color: #000;
+  }
+
+  .pswp.bewly-pswp-adapted {
+    .pswp__top-bar {
+      background: none !important;
+      box-shadow: none !important;
+      pointer-events: none;
+    }
+
+    .pswp__counter,
+    .pswp__preloader,
+    .pswp__button--zoom {
+      display: none !important;
+    }
+
+    .pswp__button--close {
+      position: fixed !important;
+      top: var(--bew-pswp-close-top, 24px) !important;
+      left: var(--bew-pswp-close-left, calc(100vw - 56px)) !important;
+      right: auto !important;
+      bottom: auto !important;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+      pointer-events: auto;
+      transition: background 0.2s ease;
+    }
+
+    .pswp__button--close:hover {
+      background: rgba(0, 0, 0, 0.9);
+    }
+  }
+}

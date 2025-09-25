@@ -19,6 +19,7 @@ import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import { version } from '../../package.json'
+import { setupPhotoViewerAdapter } from './features/photoViewer'
 import App from './views/App.vue'
 
 const isFirefox: boolean = /Firefox/i.test(navigator.userAgent)
@@ -147,6 +148,7 @@ if (isSupportedPages() || isSupportedIframePages()) {
   const shouldApplyFullStyles = settings.value.adaptToOtherPageStyles && !isFestivalPage()
   if (shouldApplyFullStyles) {
     document.documentElement.classList.add('bewly-design')
+    setupPhotoViewerAdapter()
 
     // Remove the Bilibili Evolved's dark mode style
     runWhenIdle(async () => {
