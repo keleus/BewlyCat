@@ -27,6 +27,23 @@ const videoPlayerModeOptions = computed(() => {
   ]
 })
 
+const videoDanmakuDefaultStateOptions = computed(() => {
+  return [
+    {
+      label: t('settings.video_danmaku_default_state_opt.system'),
+      value: 'system',
+    },
+    {
+      label: t('settings.video_danmaku_default_state_opt.on'),
+      value: 'on',
+    },
+    {
+      label: t('settings.video_danmaku_default_state_opt.off'),
+      value: 'off',
+    },
+  ]
+})
+
 // 随机播放模式选项
 const randomPlayModeOptions = computed(() => {
   return [
@@ -47,6 +64,13 @@ const randomPlayModeOptions = computed(() => {
     <SettingsItemGroup :title="$t('settings.group_player_settings')">
       <SettingsItem :title="$t('settings.video_default_player_mode')">
         <Select v-model="settings.defaultVideoPlayerMode" :options="videoPlayerModeOptions" w="full" />
+      </SettingsItem>
+
+      <SettingsItem
+        :title="t('settings.video_danmaku_default_state')"
+        :desc="t('settings.video_danmaku_default_state_desc')"
+      >
+        <Select v-model="settings.defaultDanmakuState" :options="videoDanmakuDefaultStateOptions" w="full" />
       </SettingsItem>
 
       <SettingsItem

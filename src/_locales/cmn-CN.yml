@@ -146,6 +146,12 @@ settings:
   block_top_search_page_ads_desc: |
     有时候，搜索结果上方的广告实际上是年末总结或年度报告。 如果你不想这些内容被误删除，请禁用此选项。
   video_default_player_mode: 视频默认显示模式
+  video_danmaku_default_state: 视频默认弹幕状态
+  video_danmaku_default_state_desc: 打开视频时自动调整弹幕开关，也可以保持原样。
+  video_danmaku_default_state_opt:
+    system: 不调整
+    on: 默认开启
+    off: 默认关闭
   video_player_mode:
     default: 默认
     web_fullscreen: 网页全屏

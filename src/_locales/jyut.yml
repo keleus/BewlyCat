@@ -399,6 +399,12 @@ settings:
     widescreen: 闊螢幕模式
     widescreen_desc: 切換闊螢幕模式。
   video_default_player_mode: 預設影片顯示模式
+  video_danmaku_default_state: 影片預設彈幕狀態
+  video_danmaku_default_state_desc: 開片時自動幫你調整彈幕開關，亦可以保持唔變。
+  video_danmaku_default_state_opt:
+    system: 唔調整
+    on: 預設開啟
+    off: 預設關閉
   video_player_mode:
     default: 預設
     fullscreen: 全螢幕

@@ -246,6 +246,39 @@ export function defaultMode() {
   return true
 }
 
+// 根据设置应用默认弹幕状态
+export function applyDefaultDanmakuState() {
+  const preference = settings.value.defaultDanmakuState
+  if (!preference || preference === 'system')
+    return
+
+  const shouldEnable = preference === 'on'
+
+  new RetryTask(20, 500, () => {
+    const danmuSwitch = document.querySelector(_videoClassTag.danmuBtn) as HTMLInputElement | null
+    if (!danmuSwitch)
+      return false
+
+    if (danmuSwitch.checked === shouldEnable)
+      return true
+
+    const clickableParent = danmuSwitch.closest('label')
+      || (danmuSwitch.parentElement instanceof HTMLElement ? danmuSwitch.parentElement : null)
+
+    if (clickableParent)
+      clickableParent.click()
+    else
+      danmuSwitch.click()
+
+    if (danmuSwitch.checked !== shouldEnable) {
+      danmuSwitch.checked = shouldEnable
+      danmuSwitch.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+
+    return danmuSwitch.checked === shouldEnable
+  }).start()
+}
+
 export function disableAutoPlayCollection(settings: { disableAutoPlayCollection: boolean }) {
   if (!settings.disableAutoPlayCollection)
     return false

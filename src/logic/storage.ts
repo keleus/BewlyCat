@@ -191,6 +191,7 @@ export interface Settings {
 
   // Video Player
   defaultVideoPlayerMode: 'default' | 'webFullscreen' | 'widescreen'
+  defaultDanmakuState: 'system' | 'on' | 'off'
   disableAutoPlayCollection: boolean
   keepCollectionVideoDefaultMode: boolean // 合集视频保持默认模式
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
@@ -348,6 +349,7 @@ export const originalSettings: Settings = {
 
   // Video Player
   defaultVideoPlayerMode: 'default',
+  defaultDanmakuState: 'system',
   disableAutoPlayCollection: false,
   keepCollectionVideoDefaultMode: false, // 合集视频保持默认模式，默认关闭
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭

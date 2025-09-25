@@ -159,6 +159,12 @@ settings:
     annual reports. If you don't want these to be accidentally removed, please
     disable this option.
   video_default_player_mode: Default video display mode
+  video_danmaku_default_state: Default danmaku state
+  video_danmaku_default_state_desc: Automatically toggle danmaku when a video loads, or leave it unchanged.
+  video_danmaku_default_state_opt:
+    system: Do not adjust
+    on: Always enable
+    off: Always disable
   video_player_mode:
     default: Default
     web_fullscreen: Web Fullscreen
