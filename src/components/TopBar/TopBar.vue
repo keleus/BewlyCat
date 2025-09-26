@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onKeyStroke, useMouseInElement } from '@vueuse/core'
-import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onKeyStroke, useMouseInElement, useMutationObserver } from '@vueuse/core'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
@@ -20,10 +20,14 @@ const { scrollbarRef, reachTop } = useBewlyApp()
 const topBarStore = useTopBarStore()
 const { forceWhiteIcon } = useTopBarInteraction()
 
+const conflictingHeaderSelectors = ['.fixed-author-header', '.fixed-top-header']
+
 const { isDark } = useDark()
 
 // 顶栏显示控制
 const hideTopBar = ref<boolean>(false)
+const desiredTopBarVisible = ref(true)
+const forceHideTopBar = ref(false)
 const headerTarget = ref(null)
 const topAreaTarget = ref(null)
 const { isOutside: isOutsideTopBar } = useMouseInElement(headerTarget)
@@ -37,6 +41,7 @@ function checkUrlChange() {
   if (currentUrl.value !== window.location.href) {
     currentUrl.value = window.location.href
     setupScrollListeners()
+    updateConflictingHeaderVisibility()
   }
 }
 
@@ -48,6 +53,19 @@ let urlCheckTimer: number | null = null
 const hasActivePopup = computed(() => {
   return Object.values(topBarStore.popupVisible).some(visible => visible)
 })
+
+function applyTopBarVisibility() {
+  const shouldShow = desiredTopBarVisible.value
+    && (
+      !forceHideTopBar.value
+      || hasActivePopup.value
+      || topBarStore.isSwitcherButtonVisible
+    )
+
+  hideTopBar.value = !shouldShow
+  topBarStore.setTopBarVisible(shouldShow)
+  emitter.emit(TOP_BAR_VISIBILITY_CHANGE, shouldShow)
+}
 
 // 处理顶栏显示/隐藏逻辑的函数
 function handleTopBarVisibility() {
@@ -85,6 +103,15 @@ watch([isOutsideTopBar, isOutsideTopArea, () => topBarStore.isSwitcherButtonVisi
 watch(hasActivePopup, () => {
   // 当弹窗状态变化时，触发顶栏显示/隐藏逻辑
   handleTopBarVisibility()
+  applyTopBarVisibility()
+})
+
+watch(forceHideTopBar, () => {
+  applyTopBarVisibility()
+})
+
+watch(() => topBarStore.isSwitcherButtonVisible, () => {
+  applyTopBarVisibility()
 })
 
 // 滚动处理
@@ -163,10 +190,8 @@ function handleScroll() {
 }
 
 function toggleTopBarVisible(visible: boolean) {
-  hideTopBar.value = !visible
-  // 同时更新topBarStore中的状态
-  topBarStore.setTopBarVisible(visible)
-  emitter.emit(TOP_BAR_VISIBILITY_CHANGE, !hideTopBar.value)
+  desiredTopBarVisible.value = visible
+  applyTopBarVisibility()
 }
 
 function setupScrollListeners() {
@@ -211,6 +236,25 @@ function cleanupScrollListeners() {
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL)
 }
 
+function updateConflictingHeaderVisibility() {
+  const hasVisibleHeader = conflictingHeaderSelectors.some((selector) => {
+    const el = document.querySelector(selector) as HTMLElement | null
+    if (!el)
+      return false
+
+    const style = window.getComputedStyle(el)
+    return style.display !== 'none'
+      && style.visibility !== 'hidden'
+      && Number.parseFloat(style.opacity) !== 0
+      && el.offsetWidth > 0
+      && el.offsetHeight > 0
+  })
+
+  forceHideTopBar.value = hasVisibleHeader
+}
+
+let conflictingHeaderObserver: ReturnType<typeof useMutationObserver> | undefined
+
 // 生命周期钩子
 onMounted(() => {
   nextTick(() => {
@@ -218,6 +262,20 @@ onMounted(() => {
     topBarStore.initData()
     topBarStore.startUpdateTimer()
     setupScrollListeners()
+
+    updateConflictingHeaderVisibility()
+    conflictingHeaderObserver = useMutationObserver(
+      () => document.body,
+      () => {
+        updateConflictingHeaderVisibility()
+      },
+      {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'style'],
+      },
+    ) ?? undefined
 
     // 设置URL变化检查定时器
     urlCheckTimer = window.setInterval(checkUrlChange, 1000)
@@ -234,6 +292,8 @@ onUnmounted(() => {
     clearInterval(urlCheckTimer)
     urlCheckTimer = null
   }
+
+  conflictingHeaderObserver?.stop()
 
   cleanupScrollListeners()
   // 使用 store 中的方法清理定时器
