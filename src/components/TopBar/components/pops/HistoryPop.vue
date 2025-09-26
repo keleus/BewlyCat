@@ -62,13 +62,14 @@ watch(activatedTab, (newVal: number | undefined, oldVal: number | undefined) => 
 }, { immediate: true })
 
 onMounted(() => {
-  if (historysWrap.value) {
-    historysWrap.value.addEventListener('scroll', () => {
+  const wrap = historysWrap.value
+  if (wrap) {
+    wrap.addEventListener('scroll', () => {
       // When you scroll to the bottom, they will automatically
       // add the next page of data to the history list
       if (
-        historysWrap.value.clientHeight + historysWrap.value.scrollTop
-        >= historysWrap.value.scrollHeight - 20
+        wrap.clientHeight + wrap.scrollTop
+        >= wrap.scrollHeight - 20
         && historys.length > 0
         && !isLoading.value
       ) {
@@ -180,7 +181,6 @@ function deleteHistoryItem(index: number, historyItem: HistoryItem) {
 
 <template>
   <div
-    ref="historysWrap"
     style="backdrop-filter: var(--bew-filter-glass-1);"
     h="[calc(100vh-100px)]" max-h-500px important-overflow-y-overlay
     bg="$bew-elevated"
@@ -191,16 +191,15 @@ function deleteHistoryItem(index: number, historyItem: HistoryItem) {
     border="1 $bew-border-color"
     class="history-pop bew-popover"
     data-key="history"
+    flex="~ col"
   >
     <!-- top bar -->
     <header
-      style="backdrop-filter: var(--bew-filter-glass-1);"
-      flex="~"
-      justify="between"
-      p="y-4 x-6"
+      flex="~ items-center justify-between"
+      p="x-6"
       pos="sticky top-0 left-0"
       w="full"
-      bg="$bew-elevated"
+      h-50px
       z="2"
     >
       <div flex="~">
@@ -228,9 +227,14 @@ function deleteHistoryItem(index: number, historyItem: HistoryItem) {
 
     <!-- historys wrapper -->
     <main
-      overflow-hidden rounded="$bew-radius"
+      ref="historysWrap"
+      overflow-y-auto
+      rounded="$bew-radius"
       flex="~ col gap-2"
       p="x-4"
+      flex-1
+      min-h-0
+      pos="relative"
     >
       <!-- loading -->
       <Loading

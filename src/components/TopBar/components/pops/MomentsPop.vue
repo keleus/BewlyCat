@@ -35,7 +35,7 @@ const momentTabs = computed((): MomentTab[] => {
 )
 const selectedMomentTab = ref<MomentTab>(momentTabs.value[0])
 
-const momentsWrap = ref()
+const momentsWrap = ref<HTMLElement>()
 
 watch(() => selectedMomentTab.value.type, (newVal, oldVal) => {
   if (newVal === oldVal)
@@ -48,11 +48,12 @@ watch(() => selectedMomentTab.value.type, (newVal, oldVal) => {
 })
 
 onMounted(() => {
-  if (momentsWrap.value) {
-    momentsWrap.value.addEventListener('scroll', () => {
+  const wrap = momentsWrap.value
+  if (wrap) {
+    wrap.addEventListener('scroll', () => {
       if (
-        momentsWrap.value.clientHeight + momentsWrap.value.scrollTop
-        >= momentsWrap.value.scrollHeight - 20
+        wrap.clientHeight + wrap.scrollTop
+        >= wrap.scrollHeight - 20
         && topBarStore.moments.length > 0
         && !topBarStore.isLoadingMoments
       ) {
@@ -114,7 +115,6 @@ defineExpose({
 
 <template>
   <div
-    ref="momentsWrap"
     style="backdrop-filter: var(--bew-filter-glass-1);" h="[calc(100vh-100px)]" max-h-500px
     important-overflow-y-overlay
     bg="$bew-elevated"
@@ -125,16 +125,16 @@ defineExpose({
     border="1 $bew-border-color"
     class="moments-pop bew-popover"
     data-key="moments"
+    flex="~ col"
   >
     <!-- top bar -->
     <header
-      style="backdrop-filter: var(--bew-filter-glass-1);"
-      flex="~ justify-between items-center"
-      p="y-4 x-6"
+      flex="~ items-center justify-between"
+      p="x-6"
       pos="sticky top-0 left-0"
       w="full"
-      z="1"
-      bg="$bew-elevated"
+      h-50px
+      z="2"
     >
       <div flex="~">
         <div
@@ -160,7 +160,14 @@ defineExpose({
     </header>
 
     <!-- moments wrapper -->
-    <main rounded="$bew-radius" overflow-hidden p="x-4">
+    <main
+      ref="momentsWrap"
+      rounded="$bew-radius"
+      overflow-y-auto
+      p="x-4"
+      flex-1
+      min-h-0
+    >
       <!-- loading -->
       <Loading
         v-if="topBarStore.isLoadingMoments && topBarStore.moments.length === 0"

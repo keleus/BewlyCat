@@ -82,16 +82,15 @@ function deleteWatchLaterItem(index: number, aid: number) {
     border="1 $bew-border-color"
     class="watchLater-pop bew-popover"
     data-key="watchLater"
+    flex="~ col"
   >
     <!-- top bar -->
     <header
-      style="backdrop-filter: var(--bew-filter-glass-1);"
-      flex="~"
-      justify="between"
-      p="y-4 x-6"
+      flex="~ items-center justify-between"
+      p="x-6"
       pos="sticky top-0 left-0"
       w="full"
-      bg="$bew-elevated"
+      h-50px
       z="2"
     >
       <div flex="~">
@@ -124,7 +123,8 @@ function deleteWatchLaterItem(index: number, aid: number) {
       overflow-y-auto rounded="$bew-radius"
       flex="~ col gap-2"
       p="x-4"
-      h="[calc(100%-80px)]"
+      flex-1
+      min-h-0
     >
       <!-- loading -->
       <Loading
