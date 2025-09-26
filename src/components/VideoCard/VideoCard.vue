@@ -227,6 +227,14 @@ const highlightTags = computed(() => {
   if (durationTag)
     tags.push(durationTag)
 
+  // 百万播放标签 - 只有在外部tag没有播放字眼时显示，且优先级最后
+  if (viewCount >= 1_000_000) {
+    const hasPlayKeyword = props.video.tag && /播放|观看|views?|play/i.test(props.video.tag)
+    if (!hasPlayKeyword) {
+      tags.push('百万播放')
+    }
+  }
+
   if (props.video.tag) {
     // tags只返回一个
     return tags.slice(0, 1)
