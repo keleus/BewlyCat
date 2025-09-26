@@ -128,12 +128,13 @@ defineExpose({
   >
     <!-- top bar -->
     <header
-      class="bew-popover__header"
+      style="backdrop-filter: var(--bew-filter-glass-1);"
       flex="~ justify-between items-center"
       p="y-4 x-6"
       pos="sticky top-0 left-0"
       w="full"
       z="1"
+      bg="$bew-elevated"
     >
       <div flex="~">
         <div

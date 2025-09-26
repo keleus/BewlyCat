@@ -146,11 +146,10 @@ defineExpose({
     pos="relative"
     shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
     border="1 $bew-border-color"
-    class="favorites-pop bew-popover"
+    class="favorites-pop"
   >
     <!-- top bar -->
     <header
-      class="bew-popover__header"
       flex="~" items-center justify-between
       p="x-6"
       pos="sticky top-0 left-0"

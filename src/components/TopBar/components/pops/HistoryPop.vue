@@ -194,12 +194,13 @@ function deleteHistoryItem(index: number, historyItem: HistoryItem) {
   >
     <!-- top bar -->
     <header
-      class="bew-popover__header"
+      style="backdrop-filter: var(--bew-filter-glass-1);"
       flex="~"
       justify="between"
       p="y-4 x-6"
       pos="sticky top-0 left-0"
       w="full"
+      bg="$bew-elevated"
       z="2"
     >
       <div flex="~">
