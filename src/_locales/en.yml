@@ -203,6 +203,11 @@ settings:
   video_card_author_font_size_desc: Controls the font size for uploader names shown on video cards.
   video_card_meta_font_size: Tag & timestamp font size
   video_card_meta_font_size_desc: Controls the font size for tags and timestamps shown below the title.
+  video_card_layout: Video card layout
+  video_card_layout_desc: Switch between the redesigned card and the legacy layout.
+  video_card_layout_option:
+    modern: Modern layout
+    old: Classic layout
   font_size_option:
     xs: Extra small
     sm: Small

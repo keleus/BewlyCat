@@ -152,6 +152,11 @@ settings:
   video_card_author_font_size_desc: 控制影片卡片上 UP 主名稱嘅字體大小。
   video_card_meta_font_size: 標籤同時間字體大小
   video_card_meta_font_size_desc: 控制標題下方標籤同時間資訊嘅字體大小。
+  video_card_layout: 影片卡片版面
+  video_card_layout_desc: 喺新版同舊版嘅影片卡片樣式之間切換。
+  video_card_layout_option:
+    modern: 新版
+    old: 經典版
   font_size_option:
     xs: 特細
     sm: 細
