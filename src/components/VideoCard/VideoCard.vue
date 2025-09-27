@@ -206,17 +206,17 @@ const highlightTags = computed(() => {
   if (viewCount >= 10_000) {
     const likeCount = stats.like ?? 0
     const likeRatio = viewCount > 0 ? likeCount / viewCount : 0
-    if ((likeRatio >= 0.04)
-      || (viewCount >= 100_000 && likeRatio >= 0.03)
-      || (viewCount >= 200_000 && likeRatio >= 0.02)
+    if ((likeRatio >= 0.05)
+      || (viewCount >= 100_000 && likeRatio >= 0.04)
+      || (viewCount >= 200_000 && likeRatio >= 0.025)
       || (viewCount >= 1_000_000 && likeRatio >= 0.01)) {
-      tags.push('高赞')
+      tags.push('高赞比')
     }
 
     const danmakuCount = stats.danmaku ?? 0
-    if ((danmakuCount / viewCount > 0.004)
-      || (danmakuCount / viewCount > 0.003 && viewCount >= 100_000)
-      || (danmakuCount / viewCount > 0.002 && viewCount >= 200_000)
+    if ((danmakuCount / viewCount > 0.005)
+      || (danmakuCount / viewCount > 0.004 && viewCount >= 100_000)
+      || (danmakuCount / viewCount > 0.0025 && viewCount >= 200_000)
       || (danmakuCount / viewCount > 0.001 && viewCount >= 1_000_000)) {
       tags.push('高互动')
     }
