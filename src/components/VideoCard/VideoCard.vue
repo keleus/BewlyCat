@@ -210,7 +210,7 @@ const highlightTags = computed(() => {
       || (viewCount >= 100_000 && likeRatio >= 0.04)
       || (viewCount >= 200_000 && likeRatio >= 0.025)
       || (viewCount >= 1_000_000 && likeRatio >= 0.01)) {
-      tags.push('高赞比')
+      tags.push('高赞')
     }
 
     const danmakuCount = stats.danmaku ?? 0
@@ -244,6 +244,16 @@ const highlightTags = computed(() => {
     return tags.slice(0, 2)
   }
 })
+
+const VIDEO_CARD_FONT_SIZE_MAP = {
+  xs: 'text-xs',
+  sm: 'text-sm',
+  base: 'text-base',
+  lg: 'text-lg',
+} as const
+
+const authorFontSizeClass = computed(() => VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardAuthorFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.sm)
+const metaFontSizeClass = computed(() => VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardMetaFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.xs)
 
 function getDurationHighlight(video: Video) {
   const durationInSeconds = getDurationInSeconds(video)
@@ -758,7 +768,8 @@ provide('getVideoType', () => props.type!)
                   <div
                     v-if="video.author"
                     flex="~ items-center gap-2"
-                    text="sm $bew-text-2"
+                    text="$bew-text-2"
+                    :class="authorFontSizeClass"
                   >
                     <VideoCardAuthorName :author="video.author" />
                   </div>
@@ -766,11 +777,14 @@ provide('getVideoType', () => props.type!)
                   <div
                     v-if="video.tag || highlightTags.length || video.publishedTimestamp || video.capsuleText || video.type === 'vertical' || video.type === 'bangumi'"
                     flex="~ items-center gap-2 wrap"
+                    :class="metaFontSizeClass"
                   >
                     <span
                       v-if="video.tag"
-                      text="sm $bew-theme-color"
-                      lh-6 p="x-2"
+                      class="video-card-meta__chip"
+                      text="$bew-theme-color"
+                      p="x-2"
+                      lh-6
                       rounded="$bew-radius"
                       bg="$bew-theme-color-20"
                     >
@@ -780,8 +794,10 @@ provide('getVideoType', () => props.type!)
                     <span
                       v-for="extraTag in highlightTags"
                       :key="`highlight-${extraTag}`"
-                      text="sm $bew-theme-color"
-                      lh-6 p="x-2"
+                      class="video-card-meta__chip"
+                      text="$bew-theme-color"
+                      p="x-2"
+                      lh-6
                       rounded="$bew-radius"
                       bg="$bew-theme-color-20"
                     >
@@ -790,11 +806,12 @@ provide('getVideoType', () => props.type!)
 
                     <span
                       v-if="video.publishedTimestamp || video.capsuleText"
+                      class="video-card-meta__chip"
                       bg="$bew-fill-1"
                       p="x-2"
-                      rounded="$bew-radius"
-                      text="sm $bew-text-3"
                       lh-6
+                      rounded="$bew-radius"
+                      text="$bew-text-3"
                     >
                       {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
                     </span>
@@ -956,5 +973,13 @@ provide('getVideoType', () => props.type!)
 .video-card-cover-stats--hidden {
   opacity: 0;
   visibility: hidden;
+}
+
+.video-card-meta__chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: inherit;
+  line-height: inherit;
+  padding-block: calc(var(--bew-base-font-size) * 0.12);
 }
 </style>

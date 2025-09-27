@@ -56,6 +56,8 @@ export interface UpVolumeConfig {
   lastUpdated: number // 最后更新时间戳
 }
 
+export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
+
 // 本地存储配置接口（不同步到云端的配置）
 export interface LocalSettings {
   // 壁纸相关
@@ -180,6 +182,10 @@ export interface Settings {
   homeAdaptiveTitleFontSize: number
   // Auto adjust title font size based on grid width
   homeAdaptiveTitleAutoSize: boolean
+  // Video card author (UP) font size token
+  videoCardAuthorFontSize: VideoCardFontSizeSetting
+  // Video card tag/meta font size token
+  videoCardMetaFontSize: VideoCardFontSizeSetting
   useSearchPageModeOnHomePage: boolean
   searchPageModeWallpaperFixed: boolean
   preserveForYouState: boolean
@@ -338,6 +344,8 @@ export const originalSettings: Settings = {
   homeAdaptiveCardMinWidth: 280,
   homeAdaptiveTitleFontSize: 16,
   homeAdaptiveTitleAutoSize: true,
+  videoCardAuthorFontSize: 'sm',
+  videoCardMetaFontSize: 'xs',
   useSearchPageModeOnHomePage: false,
   searchPageModeWallpaperFixed: false,
   preserveForYouState: false,

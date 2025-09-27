@@ -32,7 +32,7 @@ const gridStyle = computed(() => {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(var(--bew-home-card-min-width, 280px), 1fr))',
   }
-  const baseWidth = Math.max(120, settings.value.homeAdaptiveCardMinWidth || 280)
+  const baseWidth = Math.max(160, settings.value.homeAdaptiveCardMinWidth || 280)
   style['--bew-home-card-min-width'] = `${baseWidth}px`
   return style
 })

@@ -143,11 +143,20 @@ settings:
   block_ads: 封鎖廣告
   block_top_search_page_ads: 封鎖 Bilibili 搵嘢頁上方的廣告
   home_adaptive_card_min_width: 網格自適應寬度
-  home_adaptive_card_min_width_desc: 控制每列嘅基準闊度（像素），數值越細列數越多。最小值會強制為 120px。頁面會基於呢個值並按實際可用網頁闊度自動調整版面。
+  home_adaptive_card_min_width_desc: 控制每列嘅基準闊度（像素），數值越細列數越多。最小值會強制為 160px。頁面會基於呢個值並按實際可用網頁闊度自動調整版面。
   home_adaptive_title_auto_size: 標題字體大小自動
   home_adaptive_title_auto_size_desc: 根據網格闊度自動調整標題字體大小
   home_adaptive_title_font_size: 標題字體大小
   home_adaptive_title_font_size_desc: 固定標題字體大小（像素），開啟自動時唔生效
+  video_card_author_font_size: UP 資訊字體大小
+  video_card_author_font_size_desc: 控制影片卡片上 UP 主名稱嘅字體大小。
+  video_card_meta_font_size: 標籤同時間字體大小
+  video_card_meta_font_size_desc: 控制標題下方標籤同時間資訊嘅字體大小。
+  font_size_option:
+    xs: 特細
+    sm: 細
+    base: 中
+    lg: 大
   block_top_search_page_ads_desc: |
     有時喺搵嘢結果上高嘅廣告，其實係年結報告抑或週年報告嚟㗎。若然你唔想佢哋唔覺意俾人刪咗，就請你閂咗呢個選項啦。
   enable_video_preview: 使用影片預覽功能（若然得嘅話）

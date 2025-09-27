@@ -206,11 +206,20 @@ settings:
   auto_receive_bcoin_coupon_desc: 启用后，当检测到有未领取的B币券时将自动领取
   open_notifications_page_as_drawer: 以抽屉形式打开通知页面
   home_adaptive_card_min_width: 网格自适应宽度
-  home_adaptive_card_min_width_desc: 控制每列的基准宽度（像素），值越小列数越多。最小值强制为 120px。页面会基于此值并结合实际可用网页宽度自动调整布局。
+  home_adaptive_card_min_width_desc: 控制每列的基准宽度（像素），值越小列数越多。最小值强制为 160px。页面会基于此值并结合实际可用网页宽度自动调整布局。
   home_adaptive_title_auto_size: 标题字号自适应
   home_adaptive_title_auto_size_desc: 根据网格宽度自动调整标题字号
   home_adaptive_title_font_size: 标题字号
   home_adaptive_title_font_size_desc: 固定的标题字号（像素），开启自适应时不生效
+  video_card_author_font_size: UP 信息字号
+  video_card_author_font_size_desc: 控制视频卡片上 UP 主昵称的字号。
+  video_card_meta_font_size: 标签与时间字号
+  video_card_meta_font_size_desc: 控制标题下方标签与时间信息的字号。
+  font_size_option:
+    xs: 特小
+    sm: 小
+    base: 中
+    lg: 大
   group_topbar_components: 顶栏组件设置
   topbar_components_adjustment: 顶栏组件角标设置
   topbar_components_adjustment_desc: 配置各个顶栏图标的角标显示方式
