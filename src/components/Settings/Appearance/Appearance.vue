@@ -3,7 +3,7 @@ import { useThrottleFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import Select from '~/components/Select.vue'
-import { localSettings, settings } from '~/logic'
+import { FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, settings } from '~/logic'
 
 import ChangeWallpaper from '../components/ChangeWallpaper.vue'
 import SettingsItem from '../components/SettingsItem.vue'
@@ -211,9 +211,14 @@ function changeWallpaper(url: string) {
       </SettingsItem>
       <SettingsItem
         v-if="!settings.disableFrostedGlass"
-        :title="$t('settings.reduce_frosted_glass_blur')"
+        :title="$t('settings.frosted_glass_blur_intensity')"
       >
-        <Radio v-model="settings.reduceFrostedGlassBlur" />
+        <Slider
+          v-model="settings.frostedGlassBlurIntensity"
+          :min="FROSTED_GLASS_BLUR_MIN_PX"
+          :max="FROSTED_GLASS_BLUR_MAX_PX"
+          :label="`${settings.frostedGlassBlurIntensity}`"
+        />
       </SettingsItem>
       <SettingsItem :title="$t('settings.disable_shadow')">
         <Radio v-model="settings.disableShadow" />

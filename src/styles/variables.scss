@@ -292,12 +292,6 @@
   --bew-fill-alt: var(--bew-fill-1);
 }
 
-:host(.reduce-frosted-glass-blur),
-:root.reduce-frosted-glass-blur {
-  --bew-filter-glass-1: blur(10px) saturate(180%);
-  --bew-filter-glass-2: blur(20px) saturate(180%);
-}
-
 :host(.disable-shadow),
 :root.disable-shadow {
   --bew-shadow-1: 0 0 0 transparent;

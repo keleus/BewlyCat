@@ -1,3 +1,5 @@
+import { watch } from 'vue'
+
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import type { wallpaperItem } from '~/constants/imgs'
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
@@ -6,6 +8,9 @@ import { VideoPageTopBarConfig } from '~/enums/appEnums'
 
 export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
 export const accessKey = useStorageLocal('accessKey', '')
+
+export const FROSTED_GLASS_BLUR_MIN_PX = 1
+export const FROSTED_GLASS_BLUR_MAX_PX = 20
 
 // 快捷键基础配置接口
 export interface BaseShortcutSetting {
@@ -83,7 +88,7 @@ export interface Settings {
   removeTheIndentFromChinesePunctuation: boolean
 
   disableFrostedGlass: boolean
-  reduceFrostedGlassBlur: boolean
+  frostedGlassBlurIntensity: number
   disableShadow: boolean
 
   enableVideoPreview: boolean
@@ -243,7 +248,7 @@ export const originalSettings: Settings = {
   removeTheIndentFromChinesePunctuation: false,
 
   disableFrostedGlass: true,
-  reduceFrostedGlassBlur: false,
+  frostedGlassBlurIntensity: 20,
   disableShadow: false,
 
   // Link Opening Behavior
@@ -410,6 +415,30 @@ export const originalSettings: Settings = {
 }
 
 export const settings = useStorageLocal('settings', originalSettings, { mergeDefaults: true })
+
+watch(
+  () => settings.value,
+  (value) => {
+    const record = value as Record<string, any>
+
+    if (!Number.isFinite(record.frostedGlassBlurIntensity))
+      record.frostedGlassBlurIntensity = originalSettings.frostedGlassBlurIntensity
+
+    if ('reduceFrostedGlassBlur' in record) {
+      if (record.reduceFrostedGlassBlur === true && record.frostedGlassBlurIntensity === originalSettings.frostedGlassBlurIntensity)
+        record.frostedGlassBlurIntensity = 10
+
+      Reflect.deleteProperty(record, 'reduceFrostedGlassBlur')
+    }
+
+    if (record.frostedGlassBlurIntensity < FROSTED_GLASS_BLUR_MIN_PX)
+      record.frostedGlassBlurIntensity = FROSTED_GLASS_BLUR_MIN_PX
+
+    if (record.frostedGlassBlurIntensity > FROSTED_GLASS_BLUR_MAX_PX)
+      record.frostedGlassBlurIntensity = FROSTED_GLASS_BLUR_MAX_PX
+  },
+  { immediate: true },
+)
 
 // 本地存储配置（不会同步到云端）
 export const localSettings = useStorageLocal('localSettings', originalLocalSettings, { mergeDefaults: true })

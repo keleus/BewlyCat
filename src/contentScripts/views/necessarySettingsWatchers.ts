@@ -1,11 +1,53 @@
 import { useI18n } from 'vue-i18n'
 
 import { LanguageType } from '~/enums/appEnums'
-import { accessKey, localSettings, settings } from '~/logic'
+import { accessKey, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
 import { getUserID, injectCSS } from '~/utils/main'
 
 export function setupNecessarySettingsWatchers() {
   const { locale } = useI18n()
+
+  const DEFAULT_FROSTED_GLASS_BLUR_PX = originalSettings.frostedGlassBlurIntensity
+  const FROSTED_GLASS_DIALOG_OFFSET_PX = 10
+
+  const clampFrostedGlassBlur = (value: number) => {
+    if (!Number.isFinite(value))
+      return DEFAULT_FROSTED_GLASS_BLUR_PX
+
+    return Math.min(FROSTED_GLASS_BLUR_MAX_PX, Math.max(FROSTED_GLASS_BLUR_MIN_PX, value))
+  }
+
+  const applyFrostedGlassBlur = (rawValue: number) => {
+    const clampedValue = clampFrostedGlassBlur(rawValue)
+    const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
+    const targets: HTMLElement[] = [document.documentElement]
+
+    if (bewlyElement)
+      targets.push(bewlyElement)
+
+    if (settings.value.disableFrostedGlass) {
+      targets.forEach((element) => {
+        element.style.removeProperty('--bew-filter-glass-1')
+        element.style.removeProperty('--bew-filter-glass-2')
+      })
+      return
+    }
+
+    const blur1Value = `blur(${clampedValue}px) saturate(180%)`
+    const dialogBlur = clampedValue === 0 ? 0 : clampedValue + FROSTED_GLASS_DIALOG_OFFSET_PX
+    const blur2Value = `blur(${dialogBlur}px) saturate(180%)`
+
+    targets.forEach((element) => {
+      if (Math.abs(clampedValue - DEFAULT_FROSTED_GLASS_BLUR_PX) < 0.01) {
+        element.style.removeProperty('--bew-filter-glass-1')
+        element.style.removeProperty('--bew-filter-glass-2')
+      }
+      else {
+        element.style.setProperty('--bew-filter-glass-1', blur1Value)
+        element.style.setProperty('--bew-filter-glass-2', blur2Value)
+      }
+    })
+  }
 
   watch(
     () => settings.value.language,
@@ -122,14 +164,12 @@ export function setupNecessarySettingsWatchers() {
   watch(
     () => settings.value.disableFrostedGlass,
     () => {
-      const bewlyElement = document.querySelector('#bewly') as HTMLElement
+      const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
       if (settings.value.disableFrostedGlass) {
         if (bewlyElement)
           bewlyElement.classList.add('disable-frosted-glass')
 
         document.documentElement.classList.add('disable-frosted-glass')
-
-        settings.value.reduceFrostedGlassBlur = false
       }
       else {
         if (bewlyElement)
@@ -137,26 +177,23 @@ export function setupNecessarySettingsWatchers() {
 
         document.documentElement.classList.remove('disable-frosted-glass')
       }
+
+      applyFrostedGlassBlur(settings.value.frostedGlassBlurIntensity)
     },
     { immediate: true },
   )
 
   watch(
-    () => settings.value.reduceFrostedGlassBlur,
-    () => {
-      const bewlyElement = document.querySelector('#bewly') as HTMLElement
-      if (settings.value.reduceFrostedGlassBlur) {
-        if (bewlyElement)
-          bewlyElement.classList.add('reduce-frosted-glass-blur')
+    () => settings.value.frostedGlassBlurIntensity,
+    (value) => {
+      const clamped = clampFrostedGlassBlur(value)
 
-        document.documentElement.classList.add('reduce-frosted-glass-blur')
+      if (clamped !== value) {
+        settings.value.frostedGlassBlurIntensity = clamped
+        return
       }
-      else {
-        if (bewlyElement)
-          bewlyElement.classList.remove('reduce-frosted-glass-blur')
 
-        document.documentElement.classList.remove('reduce-frosted-glass-blur')
-      }
+      applyFrostedGlassBlur(clamped)
     },
     { immediate: true },
   )
