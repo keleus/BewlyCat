@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onKeyStroke, useDebounceFn } from '@vueuse/core'
+import { onClickOutside, onKeyStroke, useDebounceFn } from '@vueuse/core'
 import DOMPurify from 'dompurify'
 
 import { settings } from '~/logic'
@@ -38,6 +38,7 @@ const props = defineProps<{
   showHotSearch?: boolean
 }>()
 
+const searchWrapRef = ref<HTMLElement>()
 const keywordRef = ref<HTMLInputElement>()
 const isFocus = ref<boolean>(false)
 const keyword = ref<string>('')
@@ -59,6 +60,11 @@ watch(isFocus, async (focus) => {
       await loadHotSearchData()
     }
   }
+})
+
+// 点击外部关闭搜索框
+onClickOutside(searchWrapRef, () => {
+  isFocus.value = false
 })
 
 // 加载热搜数据
@@ -228,10 +234,26 @@ async function handleClearSearchHistory() {
   await clearAllSearchHistory()
   searchHistory.value = []
 }
+
+function handleFocusOut(event: FocusEvent) {
+  const nextTarget = event.relatedTarget as HTMLElement | null
+  if (nextTarget && searchWrapRef.value?.contains(nextTarget))
+    return
+
+  isFocus.value = false
+}
 </script>
 
 <template>
-  <div id="search-wrap" w="full" max-w="550px" h-46px pos="relative">
+  <div
+    id="search-wrap"
+    ref="searchWrapRef"
+    w="full"
+    max-w="550px"
+    h-46px
+    pos="relative"
+    @focusout="handleFocusOut"
+  >
     <div
       v-if="!darkenOnFocus && isFocus"
       pos="fixed top-0 left-0"
