@@ -163,6 +163,7 @@ export interface Settings {
   showHotSearchInSearchPage: boolean
 
   recommendationMode: 'web' | 'app'
+  autoSwitchRecommendationMode: boolean
 
   // filter setting
   disableFilterForFollowedUser: boolean
@@ -330,6 +331,7 @@ export const originalSettings: Settings = {
   showHotSearchInSearchPage: true,
 
   recommendationMode: 'web',
+  autoSwitchRecommendationMode: true,
 
   // filter setting
   disableFilterForFollowedUser: false,

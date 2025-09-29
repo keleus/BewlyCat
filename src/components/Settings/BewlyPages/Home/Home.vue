@@ -250,6 +250,10 @@ function handleToggleHomeTab(tab: any) {
         </div>
       </SettingsItem>
 
+      <SettingsItem :title="$t('settings.auto_switch_recommendation_mode')" :desc="$t('settings.auto_switch_recommendation_mode_desc')">
+        <Radio v-model="settings.autoSwitchRecommendationMode" />
+      </SettingsItem>
+
       <Dialog
         v-if="showQRCodeDialog"
         width="50%"

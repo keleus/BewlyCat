@@ -291,6 +291,10 @@ settings:
   recommendation_mode_desc: >
     If you want to use the recommendation algorithm on the app, please ensure
     that you authorize the BewlyBewly to use the access key first.
+  auto_switch_recommendation_mode: Auto switch recommendation mode
+  auto_switch_recommendation_mode_desc: >
+    Automatically switch from App mode to Web mode when App recommendation fails.
+    Will first check if Web mode can load data before switching.
   authorize_app: Authorize the BewlyBewly to use the access key
   authorize_app_desc: >
     After authentication, you will receive the video recommendations based on
