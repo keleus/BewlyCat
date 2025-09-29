@@ -170,6 +170,37 @@ const hasCoverStats = computed(() => {
 
 const shouldHideCoverStats = computed(() => props.showPreview && settings.value.enableVideoPreview && isHover.value)
 
+const COVER_STATS_BASE_FONT_REM = 0.75
+const COVER_STATS_MIN_FONT_REM = 0.68
+const COVER_STATS_MAX_FONT_REM = 0.82
+const COVER_STATS_MIN_OVERLAY_SCALE = 1.25
+const COVER_STATS_MAX_OVERLAY_SCALE = 1.6
+const COVER_STATS_MIN_WIDTH = 180
+const COVER_STATS_MAX_WIDTH = 360
+
+const coverStatsStyle = computed(() => {
+  const width = cardWidth.value
+  if (!width) {
+    return {
+      '--video-card-stats-font-size': `${COVER_STATS_BASE_FONT_REM}rem`,
+      '--video-card-stats-overlay-scale': COVER_STATS_MIN_OVERLAY_SCALE.toString(),
+      '--video-card-stats-icon-size': `${roundToDecimals(COVER_STATS_BASE_FONT_REM * 1.1)}rem`,
+    }
+  }
+
+  const clampedWidth = clampWidth(width)
+  const interpolation = (clampedWidth - COVER_STATS_MIN_WIDTH) / (COVER_STATS_MAX_WIDTH - COVER_STATS_MIN_WIDTH)
+  const fontSizeRem = interpolate(COVER_STATS_MIN_FONT_REM, COVER_STATS_MAX_FONT_REM, interpolation)
+  const overlayScale = interpolate(COVER_STATS_MIN_OVERLAY_SCALE, COVER_STATS_MAX_OVERLAY_SCALE, interpolation)
+  const iconSizeRem = roundToDecimals(fontSizeRem * 1.1)
+
+  return {
+    '--video-card-stats-font-size': `${roundToDecimals(fontSizeRem)}rem`,
+    '--video-card-stats-overlay-scale': roundToDecimals(overlayScale).toString(),
+    '--video-card-stats-icon-size': `${iconSizeRem}rem`,
+  }
+})
+
 const statSuffixPattern = /(播放量?|观看|弹幕|点赞|views?|likes?|danmakus?|comments?|回复|人气|转发|分享|[次条人])/gi
 const statSeparatorPattern = /[•·]/g
 
@@ -510,6 +541,20 @@ function handleRemoved(selectedOpt?: { dislikeReasonId: number }) {
 }
 
 provide('getVideoType', () => props.type!)
+
+function clampWidth(value: number) {
+  return Math.min(Math.max(value, COVER_STATS_MIN_WIDTH), COVER_STATS_MAX_WIDTH)
+}
+
+function interpolate(start: number, end: number, factor: number) {
+  const clampedFactor = Math.min(Math.max(factor, 0), 1)
+  return start + (end - start) * clampedFactor
+}
+
+function roundToDecimals(value: number, decimals = 3) {
+  const multiplier = 10 ** decimals
+  return Math.round(value * multiplier) / multiplier
+}
 </script>
 
 <template>
@@ -677,6 +722,7 @@ provide('getVideoType', () => props.type!)
                 v-if="hasCoverStats"
                 class="video-card-cover-stats"
                 :class="{ 'video-card-cover-stats--hidden': shouldHideCoverStats }"
+                :style="coverStatsStyle"
               >
                 <div class="video-card-cover-stats__items">
                   <span
@@ -904,7 +950,8 @@ provide('getVideoType', () => props.type!)
   align-items: flex-end;
   justify-content: space-between;
   gap: 0.4rem;
-  padding: 0.4rem 0.45rem 0.3rem;
+  padding: calc(var(--video-card-stats-font-size, 0.75rem) * 0.55)
+    calc(var(--video-card-stats-font-size, 0.75rem) * 0.6) calc(var(--video-card-stats-font-size, 0.75rem) * 0.45);
   color: #fff;
   font-size: var(--video-card-stats-font-size, 0.75rem);
   opacity: 1;
@@ -927,7 +974,7 @@ provide('getVideoType', () => props.type!)
     rgba(0, 0, 0, 0.05) 95%,
     transparent 100%
   );
-  height: 140%;
+  height: calc(var(--video-card-stats-overlay-scale, 1.4) * 100%);
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;
   pointer-events: none;
@@ -956,7 +1003,7 @@ provide('getVideoType', () => props.type!)
 }
 
 .video-card-cover-stats__icon {
-  font-size: 0.85rem;
+  font-size: var(--video-card-stats-icon-size, calc(var(--video-card-stats-font-size, 0.75rem) * 1.1));
   color: currentColor;
 }
 
