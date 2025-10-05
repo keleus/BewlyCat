@@ -437,7 +437,6 @@ provide('getVideoType', () => props.type!)
   <div
     ref="cardRootRef"
     :style="{ contentVisibility }"
-    intrinsic-size-300px
     duration-300 ease-in-out
     rounded="$bew-radius"
     ring="hover:8 hover:$bew-fill-2 active:8 active:$bew-fill-3"
