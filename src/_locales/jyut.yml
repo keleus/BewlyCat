@@ -244,7 +244,7 @@ settings:
     若然你想用手機版嘅推介演算法，就要俾 BewlyBewly 批准使用存取 access key。
   auto_switch_recommendation_mode: 自動切換推介模式
   auto_switch_recommendation_mode_desc: |
-    當手機版推介壞咗嗰陣自動切換到網頁模式。切換之前會檢查吓網頁模式係咪拮到資料先。
+    當手機版推介壞咗嗰陣自動切換到網頁模式。
   authorize_app: 授權 BewlyBewly 使用 access key
   authorize_app_desc: >
     授咗權嘅話，你就會收到基於 bilibili 手機版推介演算法所推介嘅內容，兼且授權 key 只有約一個月有效期，到期後記得要重新授權嚟取得存取

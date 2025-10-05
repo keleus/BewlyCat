@@ -298,17 +298,10 @@ async function getData() {
 
         // 检查是否启用自动切换
         if (settings.value.autoSwitchRecommendationMode) {
-          // 验证web模式是否可用
-          const webAvailable = await validateWebRecommendation()
-          if (webAvailable) {
-            // 切换到 web 模式并提示用户
-            settings.value.recommendationMode = 'web'
-            toast.warning('App 推荐数据加载失败，已自动切换至 Web 模式')
-            await getRecommendVideos()
-          }
-          else {
-            toast.error('App 推荐数据加载失败，Web 模式也无法获取数据，请稍后重试')
-          }
+          // 切换到 web 模式并提示用户
+          settings.value.recommendationMode = 'web'
+          toast.warning('App 推荐数据加载失败，已自动切换至 Web 模式')
+          await getRecommendVideos()
         }
         else {
           toast.error('App 推荐数据加载失败，请手动切换至 Web 模式或稍后重试')
@@ -651,22 +644,6 @@ async function getAppRecommendVideos() {
         }
       }
     }
-  }
-}
-
-// 验证web模式是否能获取到数据
-async function validateWebRecommendation(): Promise<boolean> {
-  try {
-    const response: forYouResult = await api.video.getRecommendVideos({
-      fresh_idx: 1,
-      ps: 10, // 只请求少量数据进行验证
-    })
-
-    return response.code === 0 && response.data && response.data.item && response.data.item.length > 0
-  }
-  catch (error) {
-    console.error('Web recommendation validation failed:', error)
-    return false
   }
 }
 
