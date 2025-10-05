@@ -264,6 +264,9 @@ settings:
 
     https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/wallpapers/green-white-mountains.jpg
   enable_wallpaper_masking: Enable wallpaper masking
+  wallpaper_cache_time: Wallpaper cache time
+  wallpaper_cache_time_desc: Set the cache time (hours) for URL wallpapers. 0 means no caching, reload every time. Locally uploaded images are not affected by this setting.
+  no_cache: No cache
   wallpaper_mask_opacity: Wallpaper masking opacity
   wallpaper_blur_intensity: Wallpaper blur intensity
   customize_css: Customize CSS

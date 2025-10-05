@@ -2,20 +2,78 @@
 import { useDark } from '~/composables/useDark'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
-import { resolveWallpaperUrl } from '~/utils/localWallpaper'
+import { isLocalWallpaperUrl, resolveWallpaperUrl } from '~/utils/localWallpaper'
 import { hexToHSL } from '~/utils/main'
+import { cleanupExpiredCache, getOrCacheWallpaper } from '~/utils/wallpaperCache'
 
 const props = defineProps<{ activatedPage: AppPage }>()
 
 const { isDark } = useDark()
-// 计算解析后的壁纸URL
-const resolvedWallpaper = computed(() => {
-  return resolveWallpaperUrl(settings.value.wallpaper) || ''
+
+// 组件挂载时清理过期缓存
+onMounted(() => {
+  cleanupExpiredCache()
+  setAppWallpaperMaskingOpacity()
 })
 
-const resolvedSearchPageWallpaper = computed(() => {
-  return resolveWallpaperUrl(settings.value.searchPageWallpaper) || ''
-})
+// 计算解析后的壁纸URL(支持本地壁纸和缓存控制)
+const resolvedWallpaper = ref('')
+const resolvedSearchPageWallpaper = ref('')
+
+// 解析全局壁纸
+async function resolveGlobalWallpaper() {
+  const originalUrl = settings.value.wallpaper
+
+  // 如果是本地壁纸,直接解析,不使用URL缓存
+  if (isLocalWallpaperUrl(originalUrl)) {
+    resolvedWallpaper.value = resolveWallpaperUrl(originalUrl) || ''
+    return
+  }
+
+  // 如果是普通URL,使用缓存控制
+  if (originalUrl) {
+    resolvedWallpaper.value = await getOrCacheWallpaper(originalUrl, settings.value.wallpaperCacheTime)
+  }
+  else {
+    resolvedWallpaper.value = ''
+  }
+}
+
+// 解析搜索页壁纸
+async function resolveSearchWallpaper() {
+  const originalUrl = settings.value.searchPageWallpaper
+
+  // 如果是本地壁纸,直接解析,不使用URL缓存
+  if (isLocalWallpaperUrl(originalUrl)) {
+    resolvedSearchPageWallpaper.value = resolveWallpaperUrl(originalUrl) || ''
+    return
+  }
+
+  // 如果是普通URL,使用缓存控制
+  if (originalUrl) {
+    resolvedSearchPageWallpaper.value = await getOrCacheWallpaper(originalUrl, settings.value.searchPageWallpaperCacheTime)
+  }
+  else {
+    resolvedSearchPageWallpaper.value = ''
+  }
+}
+
+// 监听设置变化,重新解析壁纸
+watch(() => [settings.value.wallpaper, settings.value.wallpaperCacheTime], ([, newCacheTime], oldValue) => {
+  // 如果缓存时间改变,用新的缓存时间清理可能已过期的缓存
+  if (oldValue && newCacheTime !== oldValue[1]) {
+    cleanupExpiredCache(newCacheTime as number)
+  }
+  resolveGlobalWallpaper()
+}, { immediate: true })
+
+watch(() => [settings.value.searchPageWallpaper, settings.value.searchPageWallpaperCacheTime], ([, newCacheTime], oldValue) => {
+  // 如果缓存时间改变,用新的缓存时间清理可能已过期的缓存
+  if (oldValue && newCacheTime !== oldValue[1]) {
+    cleanupExpiredCache(newCacheTime as number)
+  }
+  resolveSearchWallpaper()
+}, { immediate: true })
 
 // 计算当前页面使用的壁纸URL
 const currentWallpaperUrl = computed(() => {
@@ -58,10 +116,6 @@ watch(() => props.activatedPage, (newValue, oldValue) => {
   // or when switching from a search page to another page, since search page has its own wallpaper.
   if (settings.value.individuallySetSearchPageWallpaper && (newValue === AppPage.Search || oldValue === AppPage.Search))
     setAppWallpaperMaskingOpacity()
-})
-
-onMounted(() => {
-  setAppWallpaperMaskingOpacity()
 })
 
 function setAppWallpaperMaskingOpacity() {

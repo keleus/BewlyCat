@@ -235,6 +235,9 @@ settings:
 
     https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/wallpapers/green-white-mountains.jpg
   enable_wallpaper_masking: 啓用背景遮蔽效果
+  wallpaper_cache_time: 背景圖片快取時間
+  wallpaper_cache_time_desc: 設定URL壁紙的快取時間(小時)。0表示不快取,每次都重新載入。本地上傳的圖片不受此設定影響。
+  no_cache: 不快取
   wallpaper_mask_opacity: 背景遮蔽透明度調節
   wallpaper_blur_intensity: 背景模糊強度調節
   customize_css: 自訂 CSS

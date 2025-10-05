@@ -179,6 +179,29 @@ onMounted(() => {
         </div>
       </SettingsItem>
 
+      <!-- 缓存时间设置 - 对所有URL壁纸生效 -->
+      <SettingsItem :title="$t('settings.wallpaper_cache_time')">
+        <template #desc>
+          {{ $t('settings.wallpaper_cache_time_desc') }}
+        </template>
+        <Slider
+          v-if="isGlobal"
+          v-model="settings.wallpaperCacheTime"
+          :min="0"
+          :max="168"
+          :step="1"
+          :label="settings.wallpaperCacheTime === 0 ? $t('settings.no_cache') : `${settings.wallpaperCacheTime}h`"
+        />
+        <Slider
+          v-else
+          v-model="settings.searchPageWallpaperCacheTime"
+          :min="0"
+          :max="168"
+          :step="1"
+          :label="settings.searchPageWallpaperCacheTime === 0 ? $t('settings.no_cache') : `${settings.searchPageWallpaperCacheTime}h`"
+        />
+      </SettingsItem>
+
       <SettingsItem v-if="isBuildInWallpaper" :title="$t('settings.choose_ur_wallpaper')">
         <template #bottom>
           <div grid="~ xl:cols-5 lg:cols-4 cols-3 gap-4">

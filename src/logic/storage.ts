@@ -144,6 +144,7 @@ export interface Settings {
   enableWallpaperMasking: boolean
   wallpaperMaskOpacity: number
   wallpaperBlurIntensity: number
+  wallpaperCacheTime: number // URL壁纸缓存时间(小时), 0表示不缓存
 
   searchPageDarkenOnSearchFocus: boolean
   searchPageBlurredOnSearchFocus: boolean
@@ -157,6 +158,7 @@ export interface Settings {
   searchPageEnableWallpaperMasking: boolean
   searchPageWallpaperMaskOpacity: number
   searchPageWallpaperBlurIntensity: number
+  searchPageWallpaperCacheTime: number // URL壁纸缓存时间(小时), 0表示不缓存
 
   // 热搜功能设置
   showHotSearchInTopBar: boolean
@@ -312,6 +314,7 @@ export const originalSettings: Settings = {
   enableWallpaperMasking: false,
   wallpaperMaskOpacity: 80,
   wallpaperBlurIntensity: 0,
+  wallpaperCacheTime: 0, // 默认缓存24小时
 
   searchPageDarkenOnSearchFocus: true,
   searchPageBlurredOnSearchFocus: false,
@@ -325,6 +328,7 @@ export const originalSettings: Settings = {
   searchPageEnableWallpaperMasking: false,
   searchPageWallpaperMaskOpacity: 0,
   searchPageWallpaperBlurIntensity: 0,
+  searchPageWallpaperCacheTime: 0, // 默认缓存24小时
 
   // 热搜功能设置
   showHotSearchInTopBar: true,
