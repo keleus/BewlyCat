@@ -102,6 +102,9 @@ const reachTop = ref<boolean>(true)
 const iframeDrawerURL = ref<string>('')
 const showIframeDrawer = ref<boolean>(false)
 
+// 用于控制当iframe内打开图片预览时隐藏顶栏和Dock
+const hideUIForIframePhotoViewer = ref<boolean>(false)
+
 const iframePageRef = ref()
 useEventListener(window, 'message', ({ data }) => {
   switch (data) {
@@ -119,6 +122,19 @@ useEventListener(window, 'message', ({ data }) => {
           currentDockItemConfig.useOriginalBiliPage = true
       }
       break
+  }
+})
+
+// 监听来自iframe的图片预览器状态
+useEventListener(window, 'message', ({ data, source }) => {
+  // 确保消息来自iframe
+  if (!data || data.type !== 'IFRAME_PHOTO_VIEWER_STATE')
+    return
+
+  // 检查消息来源是否是iframe
+  const iframe = iframePageRef.value?.$el?.querySelector('iframe')
+  if (iframe && source === iframe.contentWindow) {
+    hideUIForIframePhotoViewer.value = data.isOpen
   }
 })
 
@@ -650,6 +666,11 @@ if (settings.value.cleanUrlArgument) {
       v-if="!isInIframe()"
       pos="absolute top-0 left-0" w-full h-full overflow-hidden
       pointer-events-none
+      :style="{
+        opacity: hideUIForIframePhotoViewer ? 0 : 1,
+        pointerEvents: hideUIForIframePhotoViewer ? 'none' : 'auto',
+        transition: 'opacity 0.2s ease',
+      }"
     >
       <Dock
         v-if="!settings.useOriginalBilibiliHomepage && (settings.alwaysUseDock || (showBewlyPage || iframePageURL))"
@@ -673,6 +694,11 @@ if (settings.value.cleanUrlArgument) {
     <div
       v-if="showTopBar"
       m-auto max-w="$bew-page-max-width"
+      :style="{
+        opacity: hideUIForIframePhotoViewer ? 0 : 1,
+        pointerEvents: hideUIForIframePhotoViewer ? 'none' : 'auto',
+        transition: 'opacity 0.2s ease',
+      }"
     >
       <BewlyOrBiliTopBarSwitcher v-if="settings.showBewlyOrBiliTopBarSwitcher" />
 
