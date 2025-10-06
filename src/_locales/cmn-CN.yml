@@ -182,6 +182,8 @@ settings:
   enable_video_preview: 启用视频预览功能（如果可以的话）
   enable_video_ctrl_bar_on_video_card: 在视频卡片上显示视频控制栏
   hover_video_card_delayed: 将鼠标悬停在视频卡片上时延迟视频预览
+  show_video_card_recommend_tag: 显示插件计算的推荐标签
+  show_video_card_recommend_tag_desc: 显示插件计算的标签，如"高赞"、"高互动"、"百万播放"等
   auto_hide_top_bar: 自动隐藏顶栏
   video_page_top_bar_config: 视频页顶栏配置
   video_page_top_bar_config_desc: 配置在视频页面顶栏的显示行为

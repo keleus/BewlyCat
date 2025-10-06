@@ -178,6 +178,8 @@ settings:
   enable_video_preview: 啓用影片預覽功能（如果可以的話）
   enable_video_ctrl_bar_on_video_card: 在影片卡片上顯示影片控制欄
   hover_video_card_delayed: 將滑鼠懸停在影片卡片上時延遲影片預覽
+  show_video_card_recommend_tag: 顯示插件計算的推薦標籤
+  show_video_card_recommend_tag_desc: 顯示插件計算的標籤，如「高讚」、「高互動」、「百萬播放」等
   auto_hide_top_bar: 自動隱藏頂欄
   video_page_top_bar_config: 影片頁頂欄配置
   video_page_top_bar_config_desc: 配置在影片頁面頂欄的顯示行為

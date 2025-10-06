@@ -227,6 +227,10 @@ const highlightTags = computed(() => {
   if (!props.video)
     return [] as string[]
 
+  // 如果设置为不显示推荐标签，则不显示插件计算的标签
+  if (!settings.value.showVideoCardRecommendTag)
+    return [] as string[]
+
   const tags: string[] = []
   const stats = videoStatNumbers.value
   const viewCount = stats.view ?? 0

@@ -105,6 +105,7 @@ export interface Settings {
 
   enableVideoCtrlBarOnVideoCard: boolean
   hoverVideoCardDelayed: boolean
+  showVideoCardRecommendTag: boolean
 
   // Desktop & Dock
   autoHideTopBar: boolean
@@ -265,6 +266,7 @@ export const originalSettings: Settings = {
   enableVideoPreview: true,
   enableVideoCtrlBarOnVideoCard: false,
   hoverVideoCardDelayed: false,
+  showVideoCardRecommendTag: true,
 
   // Desktop & Dock
   autoHideTopBar: false,

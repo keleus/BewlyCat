@@ -1,14 +1,23 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 
+import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
+import type { VideoCardFontSizeSetting } from '~/logic/storage'
 
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 
 const { t, locale } = useI18n()
+
+const fontSizeOptionValues: VideoCardFontSizeSetting[] = ['xs', 'sm', 'base', 'lg']
+
+const videoCardFontSizeOptions = computed(() => fontSizeOptionValues.map(value => ({
+  label: t(`settings.font_size_option.${value}`),
+  value,
+})))
 
 const langOptions = computed(() => {
   return [
@@ -164,6 +173,45 @@ watch(() => settings.value.language, (newValue) => {
           <Radio v-model="settings.hoverVideoCardDelayed" />
         </SettingsItem>
       </template>
+
+      <SettingsItem :title="$t('settings.show_video_card_recommend_tag')" :desc="$t('settings.show_video_card_recommend_tag_desc')">
+        <Radio v-model="settings.showVideoCardRecommendTag" />
+      </SettingsItem>
+
+      <SettingsItem :title="$t('settings.home_adaptive_title_auto_size')" :desc="$t('settings.home_adaptive_title_auto_size_desc')">
+        <Radio v-model="settings.homeAdaptiveTitleAutoSize" />
+      </SettingsItem>
+
+      <SettingsItem :title="$t('settings.home_adaptive_title_font_size')" :desc="$t('settings.home_adaptive_title_font_size_desc')">
+        <div flex="~ justify-end" w-full>
+          <Input
+            v-model="settings.homeAdaptiveTitleFontSize"
+            type="number"
+            :min="12"
+            :max="28"
+            flex-1
+            :disabled="settings.homeAdaptiveTitleAutoSize"
+          >
+            <template #suffix>
+              px
+            </template>
+          </Input>
+        </div>
+      </SettingsItem>
+
+      <SettingsItem
+        :title="$t('settings.video_card_author_font_size')"
+        :desc="$t('settings.video_card_author_font_size_desc')"
+      >
+        <Select v-model="settings.videoCardAuthorFontSize" :options="videoCardFontSizeOptions" w="full" />
+      </SettingsItem>
+
+      <SettingsItem
+        :title="$t('settings.video_card_meta_font_size')"
+        :desc="$t('settings.video_card_meta_font_size_desc')"
+      >
+        <Select v-model="settings.videoCardMetaFontSize" :options="videoCardFontSizeOptions" w="full" />
+      </SettingsItem>
     </SettingsItemGroup>
   </div>
 </template>

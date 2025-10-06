@@ -172,6 +172,8 @@ settings:
   enable_video_preview: Enable video preview feature (if possible)
   enable_video_ctrl_bar_on_video_card: Display the video control bar on the video card
   hover_video_card_delayed: Delayed video preview on hover over the video card
+  show_video_card_recommend_tag: Show plugin-calculated recommendation tags
+  show_video_card_recommend_tag_desc: Display tags calculated by the plugin, such as "High Engagement", "Popular", etc.
   auto_hide_top_bar: Auto-hide top bar
   video_page_top_bar_config: Video page top bar configuration
   video_page_top_bar_config_desc: Configure the display behavior of the top bar on video pages
