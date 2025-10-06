@@ -668,7 +668,6 @@ if (settings.value.cleanUrlArgument) {
       pointer-events-none
       :style="{
         opacity: hideUIForIframePhotoViewer ? 0 : 1,
-        pointerEvents: hideUIForIframePhotoViewer ? 'none' : 'auto',
         transition: 'opacity 0.2s ease',
       }"
     >
