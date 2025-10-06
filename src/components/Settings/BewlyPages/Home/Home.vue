@@ -302,23 +302,6 @@ function handleToggleHomeTab(tab: any) {
       <SettingsItem :title="$t('settings.filter_out_vertical_videos')">
         <Radio v-model="settings.filterOutVerticalVideos" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.filter_like_view_ratio')" :desc="$t('settings.filter_like_view_ratio_desc')">
-        <div flex="~ justify-end" w-full>
-          <Input
-            v-if="settings.filterLikeViewRatio"
-            v-model="settings.filterByLikeViewRatio"
-            type="number"
-            :min="0"
-            :max="10"
-            flex-1
-          >
-            <template #suffix>
-              %
-            </template>
-          </Input>
-          <Radio v-model="settings.filterLikeViewRatio" />
-        </div>
-      </SettingsItem>
       <SettingsItem :title="$t('settings.filter_by_view_count')" :desc="$t('settings.filter_by_view_count_desc')">
         <div flex="~ justify-end" w-full>
           <Input

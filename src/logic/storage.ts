@@ -172,8 +172,6 @@ export interface Settings {
   filterOutVerticalVideos: boolean
   enableFilterByViewCount: boolean
   filterByViewCount: number
-  filterLikeViewRatio: boolean
-  filterByLikeViewRatio: number
   enableFilterByDuration: boolean
   filterByDuration: number
   enableFilterByTitle: boolean
@@ -341,8 +339,6 @@ export const originalSettings: Settings = {
   disableFilterForFollowedUser: false,
   filterOutVerticalVideos: false,
   enableFilterByViewCount: false,
-  filterLikeViewRatio: false,
-  filterByLikeViewRatio: 5,
   filterByViewCount: 10000,
   enableFilterByDuration: false,
   filterByDuration: 3600,

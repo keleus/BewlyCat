@@ -394,8 +394,6 @@ settings:
   enable_settings_sync_desc: >-
     Sync extension settings across different devices (requires signing into the
     browser account)
-  filter_like_view_ratio: Filter by like-to-play ratio (only effective in Web recommendation mode)
-  filter_like_view_ratio_desc: Filter out videos with a like-to-play ratio lower than 1:10.
   disable_auto_play_collection: Auto disable collection autoplay
   disable_auto_play_collection_desc: Automatically turn off the autoplay feature for video collections
   keep_collection_video_default_mode: Keep collection videos in default mode

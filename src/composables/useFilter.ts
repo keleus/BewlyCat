@@ -10,7 +10,6 @@ export enum FilterType {
   duration,
   title,
   user,
-  likeViewRatio, // 添加新的过滤类型
 }
 
 type FuncMap = { [key in FilterType]: {
@@ -114,22 +113,6 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
   }
   // #endregion
 
-  // 添加点赞播放比例过滤函数
-  // 修改点赞播放比例过滤函数
-  function compareLikeViewRatio(item: any, _keyPath: string[], filterValue: number) {
-    const value = item.stat || {}
-    const viewCount = value.view || 0
-    const likeCount = value.like || 0
-
-    // 避免除以0，如果播放数为0，则不保留
-    if (viewCount === 0)
-      return false
-
-    // 使用传入的 filterValue 作为比例阈值（范围 0-0.1）
-    const ratio = Math.min(Math.max(filterValue, 0), 10)
-    return likeCount / viewCount * 100 >= ratio
-  }
-
   const funcMap: FuncMap = {
     [FilterType.filterOutVerticalVideos]: {
       func: filterOutVerticalVideos,
@@ -161,11 +144,6 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
       enabledKey: 'enableFilterByUser',
       valueKey: '',
     },
-    [FilterType.likeViewRatio]: {
-      func: compareLikeViewRatio,
-      enabledKey: 'filterLikeViewRatio',
-      valueKey: 'filterByLikeViewRatio', // 添加值的配置项
-    },
   }
 
   const filter = ref<((item: any) => boolean) | null>(null)
@@ -176,13 +154,12 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
     settings.value.enableFilterByViewCount,
     settings.value.enableFilterByTitle,
     settings.value.enableFilterByUser,
-    settings.value.filterLikeViewRatio, // 添加新的监听项
     settings.value.filterByDuration,
     settings.value.filterByViewCount,
     settings.value.filterByTitle,
     settings.value.filterByUser,
-  ], ([filterOutVerticalVideos, durationFilter, viewCountFilter, titleFilter, userFilter, likeViewRatioFilter]) => {
-    if (!filterOutVerticalVideos && !durationFilter && !viewCountFilter && !titleFilter && !userFilter && !likeViewRatioFilter) {
+  ], ([filterOutVerticalVideos, durationFilter, viewCountFilter, titleFilter, userFilter]) => {
+    if (!filterOutVerticalVideos && !durationFilter && !viewCountFilter && !titleFilter && !userFilter) {
       filter.value = null
       return
     }

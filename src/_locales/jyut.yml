@@ -336,8 +336,6 @@ settings:
   enable_settings_sync_desc: 喺唔同設備度同步延伸功能設定 (需要登入瀏覽器帳戶)。
   enable_undo_refresh_button: 啓用復原更新掣（淨係得 Web 推介模式下有效）
   enable_undo_refresh_button_desc: 更新頁面後顯示復原更新掣，撳低可以回復更新前內容。
-  filter_like_view_ratio: 按讚好播放比例篩選（淨係得 Web 推介模式下有效）
-  filter_like_view_ratio_desc: 篩選影片嘅讚好數通播放數比例（預設 5%，最高 10%）。
   shortcuts:
     caption: 字幕
     caption_desc: 顯示/隱藏字幕。

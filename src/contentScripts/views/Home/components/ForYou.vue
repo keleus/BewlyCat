@@ -37,7 +37,6 @@ const filterFunc = useFilter(
     FilterType.title,
     FilterType.user,
     FilterType.user,
-    FilterType.likeViewRatio, // 添加点赞播放比例过滤
   ],
   [
     ['duration'],
@@ -45,11 +44,9 @@ const filterFunc = useFilter(
     ['title'],
     ['owner', 'name'],
     ['owner', 'mid'],
-    ['stat', 'view'], // 添加点赞数和播放数的路径
   ],
 )
 
-// App模式下的过滤器也需要添加相应的配置
 const appFilterFunc = useFilter(
   ['bottom_rcmd_reason'],
   [
@@ -59,7 +56,6 @@ const appFilterFunc = useFilter(
     FilterType.title,
     FilterType.user,
     FilterType.user,
-    // App模式下暂不添加点赞播放比例过滤，因为需要确认数据结构
   ],
   [
     ['uri'],

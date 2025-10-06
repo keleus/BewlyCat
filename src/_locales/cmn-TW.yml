@@ -337,8 +337,6 @@ settings:
   contributors: BewlyBewly歷史貢獻者
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 在不同設備間同步擴展設定（需要登入瀏覽器帳號）
-  filter_like_view_ratio: 按點讚播放比例篩選（僅在Web推薦模式下有效）
-  filter_like_view_ratio_desc: 篩選影片的按讚數與播放數比例（預設為5%，最高為10%）
   disable_auto_play_collection: 自動關閉合集自動連播
   disable_auto_play_collection_desc: 打開視頻頁面時，自動關閉合集的自動連播功能
   keep_collection_video_default_mode: 合集視頻保持預設模式
