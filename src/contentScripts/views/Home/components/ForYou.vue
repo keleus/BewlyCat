@@ -120,9 +120,6 @@ const forwardRefreshIdx = ref<number>(1)
 const hasBackState = ref<boolean>(false)
 const hasForwardState = ref<boolean>(false)
 
-// 添加请求限制相关的变量
-const requestThrottleTime = 150 // 请求间隔时间(毫秒) - 从300ms减少到150ms
-const lastRequestTime = ref<number>(0)
 const PAGE_SIZE = 30
 
 // 添加过滤条件检查相关变量
@@ -259,9 +256,8 @@ async function initData() {
   await getData()
 }
 
-// 添加重置请求限制的方法
+// 添加重置过滤状态的方法
 function resetRequestLimit() {
-  lastRequestTime.value = 0
   lowFilterResultCount.value = 0
   isFilterBlocked.value = false
 }
@@ -273,16 +269,8 @@ async function getData() {
     return
   }
 
-  // 检查请求频率限制
-  const now = Date.now()
-  if (now - lastRequestTime.value < requestThrottleTime) {
-    toast.info('请求过于频繁，请稍后再试')
-    return
-  }
-
   emit('beforeLoading')
   isLoading.value = true
-  lastRequestTime.value = now
 
   try {
     if (settings.value.recommendationMode === 'web') {
@@ -323,20 +311,6 @@ function initPageAction() {
       return
     if (isFilterBlocked.value)
       return
-
-    // 优化频率限制：允许滚动结束后的立即检查
-    const now = Date.now()
-    const timeSinceLastRequest = now - lastRequestTime.value
-    if (timeSinceLastRequest < requestThrottleTime) {
-      // 如果距离上次请求时间很短，延迟执行而不是直接返回
-      const remainingTime = requestThrottleTime - timeSinceLastRequest
-      setTimeout(() => {
-        if (!isLoading.value && !noMoreContent.value && !isFilterBlocked.value) {
-          getData()
-        }
-      }, remainingTime)
-      return
-    }
 
     getData()
   }
@@ -519,8 +493,8 @@ async function getRecommendVideos() {
 
       // 只有在未被阻止且需要继续加载的情况下才继续加载
       if (!isFilterBlocked.value && (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1)) {
-        // 检查请求频率限制和页面可见性
-        if (Date.now() - lastRequestTime.value >= requestThrottleTime && isPageVisible.value) {
+        // 检查页面可见性
+        if (isPageVisible.value) {
           // 使用 setTimeout 避免直接递归调用
           setTimeout(() => {
             if (!isLoading.value && !isFilterBlocked.value && isPageVisible.value) {
@@ -638,10 +612,7 @@ async function getAppRecommendVideos() {
 
       // 只有在未被阻止的情况下才继续加载
       if (!isFilterBlocked.value && (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1)) {
-        // 检查请求频率限制
-        if (Date.now() - lastRequestTime.value >= requestThrottleTime) {
-          getAppRecommendVideos()
-        }
+        getAppRecommendVideos()
       }
     }
   }
