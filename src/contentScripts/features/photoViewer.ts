@@ -3,7 +3,7 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 const EDGE_OFFSET = 24
 const BUTTON_HORIZONTAL_OFFSET = 12
 const GAP_BELOW_IMAGE = 24
-const POSITION_STABLE_DELAY = 100 // Reduced delay for faster initial positioning
+const CENTER_THRESHOLD = 0.5
 
 let pswpRoot: HTMLElement | null = null
 let bodyObserver: MutationObserver | null = null
@@ -13,26 +13,94 @@ let currentObservedSlide: HTMLElement | null = null
 let hasResizeListener = false
 let rafId = 0
 let initScheduled = false
-let buttonUpdateTimeout = 0
-let lastImageRect: DOMRect | null = null
+
+function normalizeNumber(value: number): number {
+  return Math.abs(value) < 1e-4 ? 0 : value
+}
+
+function formatWithUnit(value: number, template: string): string {
+  const unit = template.trim().replace(/[-\d.]/g, '') || 'px'
+  const normalized = normalizeNumber(value)
+  const valueStr = Number.isInteger(normalized) ? normalized.toString() : normalized.toFixed(3).replace(/\.0+$/, '').replace(/\.$/, '')
+  return `${valueStr}${unit}`
+}
 
 function adjustImagePosition(
-  _imageEl: HTMLImageElement,
+  imageEl: HTMLImageElement,
   imageRect: DOMRect,
-  _slideEl: HTMLElement,
+  slideEl: HTMLElement,
 ): DOMRect {
-  // Let CSS handle centering - only return the current rect
-  return imageRect
+  if (pswpRoot?.classList.contains('pswp--zoomed-in') || pswpRoot?.classList.contains('pswp--dragging'))
+    return imageRect
+
+  const zoomWrap = slideEl.querySelector<HTMLElement>('.pswp__zoom-wrap')
+  if (!zoomWrap)
+    return imageRect
+
+  const transform = zoomWrap.style.transform || window.getComputedStyle(zoomWrap).transform
+  if (!transform || transform === 'none')
+    return imageRect
+
+  const translateIndex = transform.indexOf('translate3d(')
+  if (translateIndex === -1)
+    return imageRect
+
+  const start = translateIndex + 'translate3d('.length
+  const end = transform.indexOf(')', start)
+  if (end === -1)
+    return imageRect
+
+  const translateContent = transform.slice(start, end)
+  const components = translateContent.split(',')
+  if (components.length < 3)
+    return imageRect
+
+  const [translateXRaw, translateYRaw, translateZRaw] = components
+  const translateX = translateXRaw.trim()
+  const translateY = translateYRaw.trim()
+  const translateZ = translateZRaw.trim()
+  const currentX = Number.parseFloat(translateX)
+  const currentY = Number.parseFloat(translateY)
+  if (Number.isNaN(currentX) || Number.isNaN(currentY))
+    return imageRect
+
+  const availableSpace = window.innerHeight - imageRect.height
+  const centeredTop = availableSpace / 2
+  const minTop = EDGE_OFFSET
+  const maxTop = Math.max(minTop, window.innerHeight - imageRect.height - EDGE_OFFSET)
+  const desiredTop = Math.min(Math.max(centeredTop, minTop), maxTop)
+
+  const currentTop = imageRect.top
+  const deltaY = desiredTop - currentTop
+
+  let deltaX = 0
+  const availableWidth = window.innerWidth - imageRect.width
+  if (availableWidth > EDGE_OFFSET * 2) {
+    const centeredLeft = availableWidth / 2
+    const minLeft = EDGE_OFFSET
+    const maxLeft = Math.max(minLeft, window.innerWidth - imageRect.width - EDGE_OFFSET)
+    const desiredLeft = Math.min(Math.max(centeredLeft, minLeft), maxLeft)
+    const currentLeft = imageRect.left
+    deltaX = desiredLeft - currentLeft
+  }
+
+  if (Math.abs(deltaY) < CENTER_THRESHOLD && Math.abs(deltaX) < CENTER_THRESHOLD)
+    return imageRect
+
+  const newX = Math.abs(deltaX) < CENTER_THRESHOLD ? currentX : currentX + deltaX
+  const newY = Math.abs(deltaY) < CENTER_THRESHOLD ? currentY : currentY + deltaY
+
+  const originalTranslate = `translate3d(${translateContent})`
+  const replacement = `translate3d(${formatWithUnit(newX, translateX)}, ${formatWithUnit(newY, translateY)}, ${translateZ})`
+  zoomWrap.style.transform = transform.replace(originalTranslate, replacement)
+
+  return imageEl.getBoundingClientRect()
 }
 
 function cleanup() {
   if (rafId)
     cancelAnimationFrame(rafId)
   rafId = 0
-
-  if (buttonUpdateTimeout)
-    clearTimeout(buttonUpdateTimeout)
-  buttonUpdateTimeout = 0
 
   slideObserver?.disconnect()
   slideObserver = null
@@ -41,7 +109,6 @@ function cleanup() {
   resizeObserver = null
 
   currentObservedSlide = null
-  lastImageRect = null
 
   if (hasResizeListener) {
     window.removeEventListener('resize', scheduleUpdate, true)
@@ -52,7 +119,6 @@ function cleanup() {
     pswpRoot.classList.remove('bewly-pswp-adapted')
     pswpRoot.style.removeProperty('--bew-pswp-close-left')
     pswpRoot.style.removeProperty('--bew-pswp-close-top')
-    pswpRoot.style.removeProperty('--bew-pswp-button-hidden')
     pswpRoot = null
   }
 }
@@ -83,115 +149,35 @@ function scheduleUpdate() {
     const activeSlide = pswpRoot.querySelector<HTMLElement>('.pswp__item[aria-hidden="false"]')
     const activeImage = activeSlide?.querySelector<HTMLImageElement>('img.pswp__img')
 
-    // Check if there are multiple images by looking for bullets indicator
-    const bulletsIndicator = pswpRoot.querySelector('.pswp__bullets-indicator')
-    const hasMultipleImages = !!bulletsIndicator
-
-    // Show/hide navigation arrows based on bullets indicator presence
-    if (hasMultipleImages) {
-      pswpRoot.removeAttribute('data-bewly-hide-nav')
-    }
-    else {
-      pswpRoot.setAttribute('data-bewly-hide-nav', 'true')
-    }
-
     if (!closeButton || !activeImage) {
-      // Hide button when no image
-      pswpRoot?.style.setProperty('--bew-pswp-button-hidden', '1')
-      return
-    }
-
-    // Check if image is still loading
-    if (!activeImage.complete || activeImage.naturalWidth === 0) {
-      pswpRoot?.style.setProperty('--bew-pswp-button-hidden', '1')
-      // Retry after a short delay
-      setTimeout(scheduleUpdate, 100)
+      pswpRoot?.style.removeProperty('--bew-pswp-close-left')
+      pswpRoot?.style.removeProperty('--bew-pswp-close-top')
       return
     }
 
     let imageRect = activeImage.getBoundingClientRect()
     if (activeSlide)
       imageRect = adjustImagePosition(activeImage, imageRect, activeSlide)
-
-    if (imageRect.width === 0 || imageRect.height === 0) {
-      pswpRoot?.style.setProperty('--bew-pswp-button-hidden', '1')
+    if (imageRect.width === 0 || imageRect.height === 0)
       return
-    }
 
-    // Check if image position has stabilized
-    const isPositionStable = lastImageRect
-      && Math.abs(imageRect.left - lastImageRect.left) < 2
-      && Math.abs(imageRect.top - lastImageRect.top) < 2
-      && Math.abs(imageRect.width - lastImageRect.width) < 2
-      && Math.abs(imageRect.height - lastImageRect.height) < 2
+    const buttonRect = closeButton.getBoundingClientRect()
+    const buttonWidth = buttonRect.width || closeButton.offsetWidth || 40
+    const buttonHeight = buttonRect.height || closeButton.offsetHeight || 40
 
-    lastImageRect = imageRect
+    const desiredLeft = imageRect.right - buttonWidth + BUTTON_HORIZONTAL_OFFSET
+    const minLeft = Math.max(imageRect.left, EDGE_OFFSET)
+    const maxLeft = window.innerWidth - buttonWidth - EDGE_OFFSET
+    const left = Math.min(Math.max(desiredLeft, minLeft), maxLeft)
 
-    // Only use delayed update for the initial load, not for subsequent updates
-    if (!isPositionStable && !buttonUpdateTimeout) {
-      // Hide button during position changes
-      pswpRoot?.style.setProperty('--bew-pswp-button-hidden', '1')
+    const desiredTop = imageRect.bottom + GAP_BELOW_IMAGE
+    const minTop = imageRect.bottom + 8
+    const maxTop = window.innerHeight - buttonHeight - EDGE_OFFSET
+    const top = Math.min(Math.max(desiredTop, minTop), maxTop)
 
-      // Set a delay before showing button (only once)
-      buttonUpdateTimeout = window.setTimeout(() => {
-        buttonUpdateTimeout = 0
-        // Force a final update after delay
-        const finalImage = pswpRoot?.querySelector<HTMLImageElement>('.pswp__item[aria-hidden="false"] img.pswp__img')
-        const finalButton = pswpRoot?.querySelector<HTMLElement>('.pswp__button--close')
-        if (finalImage && finalButton) {
-          updateButtonPosition(finalImage.getBoundingClientRect(), finalButton)
-        }
-      }, POSITION_STABLE_DELAY)
-      return
-    }
-
-    // Position is stable or already had a delayed update, update immediately
-    if (isPositionStable) {
-      updateButtonPosition(imageRect, closeButton)
-    }
+    pswpRoot.style.setProperty('--bew-pswp-close-left', `${left}px`)
+    pswpRoot.style.setProperty('--bew-pswp-close-top', `${top}px`)
   })
-}
-
-function updateButtonPosition(imageRect: DOMRect, closeButton: HTMLElement) {
-  if (!pswpRoot)
-    return
-
-  // Calculate the actual centered position of the image
-  // Since CSS should center it, we calculate where it should be
-  const viewportWidth = window.innerWidth
-  const viewportHeight = window.innerHeight
-
-  // Calculate the centered position
-  const centeredLeft = (viewportWidth - imageRect.width) / 2
-  const centeredTop = (viewportHeight - imageRect.height) / 2
-
-  // Use the centered position for button calculation
-  const centeredImageRect = {
-    left: centeredLeft,
-    top: centeredTop,
-    right: centeredLeft + imageRect.width,
-    bottom: centeredTop + imageRect.height,
-    width: imageRect.width,
-    height: imageRect.height,
-  }
-
-  const buttonRect = closeButton.getBoundingClientRect()
-  const buttonWidth = buttonRect.width || closeButton.offsetWidth || 40
-  const buttonHeight = buttonRect.height || closeButton.offsetHeight || 40
-
-  const desiredLeft = centeredImageRect.right - buttonWidth + BUTTON_HORIZONTAL_OFFSET
-  const minLeft = Math.max(centeredImageRect.left, EDGE_OFFSET)
-  const maxLeft = viewportWidth - buttonWidth - EDGE_OFFSET
-  const left = Math.min(Math.max(desiredLeft, minLeft), maxLeft)
-
-  const desiredTop = centeredImageRect.bottom + GAP_BELOW_IMAGE
-  const minTop = centeredImageRect.bottom + 8
-  const maxTop = viewportHeight - buttonHeight - EDGE_OFFSET
-  const top = Math.min(Math.max(desiredTop, minTop), maxTop)
-
-  pswpRoot.style.setProperty('--bew-pswp-close-left', `${left}px`)
-  pswpRoot.style.setProperty('--bew-pswp-close-top', `${top}px`)
-  pswpRoot.style.removeProperty('--bew-pswp-button-hidden')
 }
 
 function observeActiveSlide() {
@@ -204,16 +190,6 @@ function observeActiveSlide() {
 
   if (currentObservedSlide === activeSlide)
     return
-
-  // Reset state when switching slides
-  lastImageRect = null
-  if (buttonUpdateTimeout) {
-    clearTimeout(buttonUpdateTimeout)
-    buttonUpdateTimeout = 0
-  }
-
-  // Hide button immediately when switching
-  pswpRoot?.style.setProperty('--bew-pswp-button-hidden', '1')
 
   currentObservedSlide = activeSlide
 
@@ -237,25 +213,10 @@ function observeActiveSlide() {
   if (resizeObserver) {
     resizeObserver.disconnect()
     const currentImg = activeSlide.querySelector<HTMLImageElement>('.pswp__img')
-    if (currentImg) {
+    if (currentImg)
       resizeObserver.observe(currentImg)
-
-      // Only listen for image load event if image is not complete
-      if (!currentImg.complete) {
-        const handleImageLoad = () => {
-          currentImg.removeEventListener('load', handleImageLoad)
-          currentImg.removeEventListener('error', handleImageLoad)
-          // Reduced delay for faster positioning
-          setTimeout(scheduleUpdate, 50)
-        }
-        currentImg.addEventListener('load', handleImageLoad)
-        currentImg.addEventListener('error', handleImageLoad)
-        return // Don't call scheduleUpdate immediately if waiting for load
-      }
-    }
   }
 
-  // Only call scheduleUpdate once if image is already loaded
   scheduleUpdate()
 }
 
@@ -276,8 +237,6 @@ function handleMutations() {
     cleanup()
     pswpRoot = candidate
     pswpRoot.classList.add('bewly-pswp-adapted')
-    // Initially hide the close button until position is calculated
-    pswpRoot.style.setProperty('--bew-pswp-button-hidden', '1')
   }
 
   if (!hasResizeListener) {

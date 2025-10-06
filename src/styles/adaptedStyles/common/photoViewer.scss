@@ -9,36 +9,17 @@
   }
 
   .pswp__item {
-    align-items: center !important;
-    display: flex !important;
-    justify-content: center !important;
+    align-items: center;
+    display: flex;
+    justify-content: center;
     padding: var(--bew-pswp-vertical-gap) var(--bew-pswp-horizontal-gap);
     box-sizing: border-box;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
   }
 
-  // Strong override for all pswp elements
   .pswp__zoom-wrap {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-    transform: none !important;
-
-    // Use CSS animation to continuously reset transform
-    animation: resetTransform 0s infinite;
-  }
-
-  @keyframes resetTransform {
-    to {
-      transform: none !important;
-    }
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .pswp__img {
@@ -50,13 +31,6 @@
     border-radius: 12px;
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
     background-color: #000;
-    position: static !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    transform: none !important;
-    animation: resetTransform 0s infinite;
   }
 
   .pswp.bewly-pswp-adapted {
@@ -64,8 +38,6 @@
       background: none !important;
       box-shadow: none !important;
       pointer-events: none;
-      position: relative !important;
-      z-index: 1;
     }
 
     .pswp__counter,
@@ -74,107 +46,28 @@
       display: none !important;
     }
 
-    // Even stronger override for adapted version
-    .pswp__zoom-wrap {
-      transform: none !important;
-      animation: resetTransform 0s infinite;
-    }
-
-    .pswp__img {
-      transform: none !important;
-      animation: resetTransform 0s infinite;
-    }
-
     .pswp__button--close {
       position: fixed !important;
-      top: var(--bew-pswp-close-top, -100px) !important; // Hide by default
-      left: var(--bew-pswp-close-left, -100px) !important; // Hide by default
+      top: var(--bew-pswp-close-top, 24px) !important;
+      left: var(--bew-pswp-close-left, calc(100vw - 56px)) !important;
       right: auto !important;
       bottom: auto !important;
-      width: 44px !important;
-      height: 44px !important;
-      border-radius: 999px !important;
-      background: rgba(0, 0, 0, 0.72) !important;
-      backdrop-filter: blur(8px) !important;
-      color: #fff !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
-      pointer-events: auto !important;
-      transition:
-        background 0.2s ease,
-        opacity 0.3s ease,
-        transform 0.3s ease !important;
-      z-index: 9999 !important;
-      margin: 0 !important;
-      padding: 0 !important;
-      opacity: 0 !important; // Start hidden
-      transform: scale(0.8) !important; // Start scaled down
-    }
-
-    // Show button when position is set and not hidden
-    &:not([style*="--bew-pswp-button-hidden"]) .pswp__button--close {
-      opacity: 1 !important;
-      transform: scale(1) !important;
-    }
-
-    // Hide button when image is loading or position is unstable
-    &[style*="--bew-pswp-button-hidden"] .pswp__button--close {
-      opacity: 0 !important;
-      transform: scale(0.8) !important;
-      pointer-events: none !important;
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(8px);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+      pointer-events: auto;
+      transition: background 0.2s ease;
     }
 
     .pswp__button--close:hover {
-      background: rgba(0, 0, 0, 0.9) !important;
-    }
-
-    // Keep navigation arrows visible and style them
-    .pswp__button--arrow--prev,
-    .pswp__button--arrow--next {
-      display: flex !important;
-      width: 44px !important;
-      height: 44px !important;
-      border-radius: 999px !important;
-      background: rgba(0, 0, 0, 0.72) !important;
-      backdrop-filter: blur(8px) !important;
-      color: #fff !important;
-      align-items: center !important;
-      justify-content: center !important;
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45) !important;
-      transition: background 0.2s ease !important;
-      pointer-events: auto !important;
-      position: fixed !important;
-      top: 50% !important;
-      transform: translateY(-50%) !important;
-      z-index: 9998 !important;
-      margin: 0 !important;
-    }
-
-    .pswp__button--arrow--prev {
-      left: 24px !important;
-    }
-
-    .pswp__button--arrow--next {
-      right: 24px !important;
-      transform: translateY(-50%) rotate(180deg) !important;
-    }
-
-    .pswp__button--arrow--prev:hover,
-    .pswp__button--arrow--next:hover {
-      background: rgba(0, 0, 0, 0.9) !important;
-    }
-
-    // Hide navigation arrows when they should be hidden (for single images)
-    &[data-bewly-hide-nav="true"] {
-      .pswp__button--arrow--prev,
-      .pswp__button--arrow--next {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
-      }
+      background: rgba(0, 0, 0, 0.9);
     }
   }
 }
