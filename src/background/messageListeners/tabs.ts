@@ -1,8 +1,10 @@
-import { onMessage } from 'webext-bridge/background'
 import browser from 'webextension-polyfill'
+
+import { onMessage } from '~/utils/messaging'
 
 interface Message {
   contentScriptQuery: string
+  url?: string
   [key: string]: any
 }
 
@@ -10,11 +12,10 @@ export enum TABS_MESSAGE {
   OPEN_LINK_IN_BACKGROUND = 'openLinkInBackground',
 }
 
-function handleMessage(message: { data: any }) {
-  const typedMessage = message.data as Message
-  if (typedMessage.contentScriptQuery === TABS_MESSAGE.OPEN_LINK_IN_BACKGROUND) {
+function handleMessage(data: Message) {
+  if (data.contentScriptQuery === TABS_MESSAGE.OPEN_LINK_IN_BACKGROUND) {
     // 处理以 // 开头的 URL
-    const url = typedMessage.url.startsWith('//') ? `https:${typedMessage.url}` : typedMessage.url
+    const url = data.url?.startsWith('//') ? `https:${data.url}` : data.url
     return browser.tabs.create({ url, active: false })
   }
 }

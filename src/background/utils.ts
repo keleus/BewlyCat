@@ -64,21 +64,21 @@ interface APIMAP {
 }
 // 工厂函数API_LISTENER_FACTORY
 function apiListenerFactory(API_MAP: APIMAP) {
-  return async (message: { data: any, sender: { context: string, tabId?: number } }) => {
-    const typedMessage = message.data as Message
+  return async (data: any, sender?: Browser.Runtime.MessageSender) => {
+    const typedMessage = data as Message
     const contentScriptQuery = typedMessage.contentScriptQuery
     // 检测是否有contentScriptQuery
     if (!contentScriptQuery || !API_MAP[contentScriptQuery])
       return console.error(`Cannot find this contentScriptQuery: ${contentScriptQuery}`)
     if (typeof API_MAP[contentScriptQuery] === 'function')
-      return (API_MAP[contentScriptQuery] as APIFunction)(typedMessage, message.sender)
+      return (API_MAP[contentScriptQuery] as APIFunction)(typedMessage, sender)
 
     const api = API_MAP[contentScriptQuery] as API
 
     // eslint-disable-next-line node/prefer-global/process
-    if (process.env.FIREFOX && message.sender && message.sender.tabId) {
+    if (process.env.FIREFOX && sender && sender.tab?.id) {
       // 获取tab信息以获取正确的cookieStoreId
-      const tab = await browser.tabs.get(message.sender.tabId)
+      const tab = await browser.tabs.get(sender.tab.id)
       const storeId = tab.cookieStoreId || 'default'
       const cookies = await browser.cookies.getAll({ storeId })
       return await doRequest(typedMessage, api, undefined, cookies)

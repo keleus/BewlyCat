@@ -1,4 +1,4 @@
-import { onMessage } from 'webext-bridge/background'
+import { onMessage } from '~/utils/messaging'
 
 import { apiListenerFactory } from '../../utils'
 import API_ANIME from './anime'
