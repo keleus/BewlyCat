@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
 import type { Video } from '~/components/VideoCard/types'
-import { accessKey } from '~/logic'
+import { appAuthTokens } from '~/logic'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
 import api from '~/utils/api'
 import { getTvSign, TVAppKey } from '~/utils/authProvider'
@@ -34,14 +34,14 @@ function closeDislikeDialog() {
 }
 
 function handleAppDislike() {
-  if (!accessKey.value) {
+  if (!appAuthTokens.value.accessToken) {
     toast.warning(t('auth.auth_access_key_first'))
     return
   }
 
   loadingDislikeDialog.value = true
   const params = {
-    access_key: accessKey.value,
+    access_key: appAuthTokens.value.accessToken,
     goto: props.video?.goto,
     id: props.video?.id,
     // https://github.com/magicdawn/bilibili-app-recommend/blob/cb51f75f415f48235ce048537f2013122c16b56b/src/components/VideoCard/card.service.ts#L115

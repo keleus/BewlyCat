@@ -7,10 +7,10 @@ import draggable from 'vuedraggable'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
-import { accessKey, settings } from '~/logic'
+import { appAuthTokens, settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
 import { useMainStore } from '~/stores/mainStore'
-import { getTVLoginQRCode, pollTVLoginQRCode, revokeAccessKey } from '~/utils/authProvider'
+import { getTVLoginQRCode, pollTVLoginQRCode, revokeAccessKey, saveAppAuthTokens } from '~/utils/authProvider'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -36,6 +36,8 @@ const pollLoginQRCodeInterval = ref<any>(null)
 const authCode = ref<string>('')
 const qrcodeMsg = ref<string>('')
 
+const appAccessToken = computed(() => appAuthTokens.value.accessToken)
+
 onDeactivated(() => {
   clearInterval(pollLoginQRCodeInterval.value)
 })
@@ -46,7 +48,7 @@ onBeforeUnmount(() => {
 
 function changeAppRecommendationMode() {
   settings.value.recommendationMode = 'app'
-  if (!accessKey.value)
+  if (!appAccessToken.value)
     handleAuthorize()
 }
 
@@ -90,7 +92,7 @@ function pollLoginQRCode() {
       qrcodeMsg.value = pollRes.message
     if (pollRes.code === 0) {
       showQRCodeDialog.value = false
-      accessKey.value = pollRes.data.access_token
+      saveAppAuthTokens(pollRes.data)
       clearInterval(pollLoginQRCodeInterval.value)
       toast.success('授权成功')
     }
@@ -232,7 +234,7 @@ function handleToggleHomeTab(tab: any) {
         </template>
 
         <div w-full>
-          <Button v-if="!accessKey" type="primary" center block @click="handleAuthorize">
+          <Button v-if="!appAccessToken" type="primary" center block @click="handleAuthorize">
             {{ $t('settings.btn.authorize') }}...
           </Button>
           <Button

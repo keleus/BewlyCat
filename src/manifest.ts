@@ -28,7 +28,7 @@ export async function getManifest() {
     // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/background
     background: (isFirefox || isSafari)
       ? { scripts: ['./dist/background/index.js'], persistent: isFirefox ? undefined : false }
-      : { service_worker: './dist/background/index.js' },
+      : { service_worker: './dist/background/index.js', type: 'module' },
 
     icons: {
       16: 'assets/icon-512.png',

@@ -1,4 +1,5 @@
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
+import browser from 'webextension-polyfill'
 
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import type { wallpaperItem } from '~/constants/imgs'
@@ -7,7 +8,53 @@ import type { AppPage } from '~/enums/appEnums'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 
 export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
-export const accessKey = useStorageLocal('accessKey', '')
+
+export interface AppAuthTokens {
+  accessToken: string
+  refreshToken: string
+  accessTokenExpiresAt: number | null
+  refreshTokenExpiresAt: number | null
+  mid: number | null
+  lastUpdatedAt: number | null
+}
+
+export const defaultAppAuthTokens: AppAuthTokens = {
+  accessToken: '',
+  refreshToken: '',
+  accessTokenExpiresAt: null,
+  refreshTokenExpiresAt: null,
+  mid: null,
+  lastUpdatedAt: null,
+}
+
+export const appAuthTokens = useStorageLocal<AppAuthTokens>('appAuthTokens', defaultAppAuthTokens, { mergeDefaults: true })
+
+const legacyAccessKey = useStorageLocal('accessKey', '')
+
+watch(
+  () => legacyAccessKey.value,
+  (value) => {
+    if (!value)
+      return
+
+    if (!appAuthTokens.value.accessToken) {
+      appAuthTokens.value = {
+        ...appAuthTokens.value,
+        accessToken: value,
+        lastUpdatedAt: Date.now(),
+      }
+    }
+
+    // 清理遗留的 accessKey，避免重复存储
+    legacyAccessKey.value = ''
+  },
+  { immediate: true },
+)
+
+export function resetAppAuthTokens() {
+  appAuthTokens.value = { ...defaultAppAuthTokens }
+  legacyAccessKey.value = ''
+}
 
 export const FROSTED_GLASS_BLUR_MIN_PX = 1
 export const FROSTED_GLASS_BLUR_MAX_PX = 20
