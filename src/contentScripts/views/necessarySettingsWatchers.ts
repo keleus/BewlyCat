@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import { LanguageType } from '~/enums/appEnums'
-import { accessKey, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
+import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
 import { getUserID, injectCSS } from '~/utils/main'
 
 export function setupNecessarySettingsWatchers() {
@@ -281,11 +281,14 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
-    () => accessKey.value,
-    () => {
+    () => appAuthTokens.value.accessToken,
+    (token) => {
+      if (!token)
+        return
+
       // Clear accessKey if not logged in
       if (!getUserID())
-        accessKey.value = ''
+        appAuthTokens.value.accessToken = ''
     },
     { immediate: true },
   )

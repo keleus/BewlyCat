@@ -5,7 +5,7 @@ import { useToast } from 'vue-toastification'
 
 import Button from '~/components/Button.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { accessKey, settings } from '~/logic'
+import { appAuthTokens, settings } from '~/logic'
 import type { VideoInfo } from '~/models/video/videoInfo'
 import type { VideoPreviewResult } from '~/models/video/videoPreview'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -510,7 +510,7 @@ function handleMoreBtnClick(event: MouseEvent) {
 function handleUndo() {
   if (props.type === 'appRcmd') {
     const params = {
-      access_key: accessKey.value,
+      access_key: appAuthTokens.value.accessToken,
       goto: props.video?.goto,
       id: props.video?.id,
       // https://github.com/magicdawn/bilibili-app-recommend/blob/cb51f75f415f48235ce048537f2013122c16b56b/src/components/VideoCard/card.service.ts#L115

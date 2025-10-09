@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill'
 
+import { setupAppAuthScheduler } from './appAuthScheduler'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
 
@@ -44,3 +45,4 @@ if (process.env.FIREFOX) {
 // Setup all message listeners
 setupApiMsgListeners()
 setupTabMsgListeners()
+setupAppAuthScheduler()
