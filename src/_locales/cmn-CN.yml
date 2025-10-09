@@ -449,6 +449,8 @@ settings:
   show_ip_location_desc: 在视频/动态评论区显示IP归属地
   show_sex: 显示用户性别
   show_sex_desc: 在视频/动态评论区显示用户性别
+  adjust_comment_image_height: 调整评论区图片高度
+  adjust_comment_image_height_desc: 自动调整评论区图片高度以匹配实际长宽比，避免图片变形
   volume_balance:
     title: 音量均衡
     enable: 启用音量均衡

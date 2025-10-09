@@ -450,6 +450,8 @@ settings:
   show_ip_location_desc: 在視頻/動態評論區顯示IP歸屬地
   show_sex: 顯示使用者性別
   show_sex_desc: 在視頻/動態評論區顯示使用者性別
+  adjust_comment_image_height: 調整評論區圖片高度
+  adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
   video_player_scroll: 調整顯示模式後滾動
   video_player_scroll_desc: 啟用後，在默認模式為寬屏和默認時，會自動滾動到合適位置。
   volume_balance:

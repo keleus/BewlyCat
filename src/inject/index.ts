@@ -136,28 +136,61 @@ if (window.customElements && isSupportedPage()) {
   window.customElements.define = new Proxy(originalDefine, {
     apply: (target, thisArg, args) => {
       const [name, classConstructor] = args
-      if (typeof classConstructor !== 'function' || name !== 'bili-comment-action-buttons-renderer') {
+      if (typeof classConstructor !== 'function') {
         return Reflect.apply(target, thisArg, args)
       }
 
-      const originalUpdate = classConstructor.prototype.update
-      classConstructor.prototype.update = function (...updateArgs: any[]) {
-        const result = originalUpdate.apply(this, updateArgs)
-        const root = this.shadowRoot
-        const pubDateEl = root?.querySelector('#pubdate')
-        if (!pubDateEl)
+      // 处理评论区图片组件
+      if (name === 'bili-comment-pictures-renderer') {
+        const originalUpdate = classConstructor.prototype.update
+        classConstructor.prototype.update = function (...updateArgs: any[]) {
+          const result = originalUpdate.apply(this, updateArgs)
+          const root = this.shadowRoot
+          if (!root)
+            return result
+
+          // 根据设置决定是否修复图片长宽比问题
+          if (currentSettings?.adjustCommentImageHeight) {
+            // 非1:1图片（非flex布局）保持宽度，高度按实际比例自适应
+            const content = root.querySelector('#content')
+            if (content && !content.classList.contains('flex')) {
+              const images = content.querySelectorAll('img')
+              images.forEach((img: HTMLImageElement) => {
+                // 移除固定的 height 属性，让图片按实际比例显示
+                img.removeAttribute('height')
+                img.style.height = 'auto'
+              })
+            }
+          }
+
           return result
-
-        const locationString = getLocationString(this.data)
-        const shouldShowLocation = Boolean(currentSettings?.showIPLocation && locationString)
-        const locationEl = updateInfoElement(root, 'location', shouldShowLocation, locationString, pubDateEl)
-
-        const sexString = getSexString(this.data)
-        const shouldShowSex = Boolean(currentSettings?.showSex && sexString)
-        const sexAnchor = locationEl ?? pubDateEl
-        updateInfoElement(root, 'sex', shouldShowSex, sexString, sexAnchor)
-        return result
+        }
+        return Reflect.apply(target, thisArg, args)
       }
+
+      // 处理评论操作按钮组件
+      if (name === 'bili-comment-action-buttons-renderer') {
+        const originalUpdate = classConstructor.prototype.update
+        classConstructor.prototype.update = function (...updateArgs: any[]) {
+          const result = originalUpdate.apply(this, updateArgs)
+          const root = this.shadowRoot
+          const pubDateEl = root?.querySelector('#pubdate')
+          if (!pubDateEl)
+            return result
+
+          const locationString = getLocationString(this.data)
+          const shouldShowLocation = Boolean(currentSettings?.showIPLocation && locationString)
+          const locationEl = updateInfoElement(root, 'location', shouldShowLocation, locationString, pubDateEl)
+
+          const sexString = getSexString(this.data)
+          const shouldShowSex = Boolean(currentSettings?.showSex && sexString)
+          const sexAnchor = locationEl ?? pubDateEl
+          updateInfoElement(root, 'sex', shouldShowSex, sexString, sexAnchor)
+          return result
+        }
+        return Reflect.apply(target, thisArg, args)
+      }
+
       return Reflect.apply(target, thisArg, args)
     },
   })

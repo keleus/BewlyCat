@@ -102,6 +102,10 @@ watch(() => settings.value.language, (newValue) => {
         <Radio v-model="settings.showSex" />
       </SettingsItem>
 
+      <SettingsItem :title="$t('settings.adjust_comment_image_height')" :desc="$t('settings.adjust_comment_image_height_desc')">
+        <Radio v-model="settings.adjustCommentImageHeight" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.enable_grid_layout_switcher')">
         <Radio v-model="settings.enableGridLayoutSwitcher" />
       </SettingsItem>
