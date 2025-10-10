@@ -293,11 +293,11 @@ function handleFocusOut(event: FocusEvent) {
         ref="keywordRef"
         v-model="keyword"
         class="group"
-        rounded="60px focus:$bew-radius"
+        rounded="60px"
         p="l-6 r-18 y-3"
         h-inherit
         text="$b-search-bar-normal-text-color group-focus-within:$b-search-bar-focus-text-color group-hover:$b-search-bar-hover-text-color"
-        un-border="1 solid $bew-border-color focus:$bew-theme-color"
+        un-border="1 solid $bew-border-color"
         transition="all duration-300"
         type="text"
         @focus="isFocus = true"
