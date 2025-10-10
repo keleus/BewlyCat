@@ -7,10 +7,34 @@ import browser from 'webextension-polyfill'
 
 import { addWbiSign, needsWbiSign, storeWbiKeys } from './wbiSign'
 
+export class ApiRiskControlError extends Error {
+  constructor(message: string = '检测到风控页面，API返回了HTML而不是JSON') {
+    super(message)
+    this.name = 'ApiRiskControlError'
+  }
+}
+
 type FetchAfterHandler = ((data: Response) => Promise<any>) | ((data: any) => any)
 
-function toJsonHandler(data: Response): Promise<any> {
-  return data.json()
+async function toJsonHandler(data: Response): Promise<any> {
+  const contentType = data.headers.get('content-type')
+
+  // 检测是否返回了HTML（风控页面）
+  if (contentType && contentType.includes('text/html')) {
+    throw new ApiRiskControlError()
+  }
+
+  try {
+    return await data.json()
+  }
+  catch (error) {
+    // 如果JSON解析失败，可能也是风控页面
+    const text = await data.clone().text()
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      throw new ApiRiskControlError()
+    }
+    throw error
+  }
 }
 function toData(data: Promise<any>): Promise<any> {
   return data
@@ -169,11 +193,38 @@ function doRequest(message: Message, api: API, sendResponse?: (response?: any) =
       else
         baseFunc = baseFunc.then(func)
     })
-    baseFunc.catch(console.error)
+
+    // 统一错误处理
+    baseFunc = baseFunc.catch((error) => {
+      console.error('API请求失败:', error)
+      if (error instanceof ApiRiskControlError) {
+        // 返回统一的风控错误格式
+        const riskError = new Error(error.message)
+        Object.assign(riskError, {
+          code: -412,
+          isRiskControl: true,
+        })
+        throw riskError
+      }
+      // 其他错误也返回统一格式
+      const apiError = new Error(error.message || '请求失败')
+      Object.assign(apiError, {
+        code: -1,
+        originalError: error.toString(),
+      })
+      throw apiError
+    })
+
     return baseFunc
   }
   catch (e) {
-    console.error(e)
+    console.error('API请求初始化失败:', e)
+    const initError = new Error(e instanceof Error ? e.message : '请求初始化失败')
+    Object.assign(initError, {
+      code: -1,
+      originalError: e instanceof Error ? e.toString() : String(e),
+    })
+    return Promise.reject(initError)
   }
 }
 
