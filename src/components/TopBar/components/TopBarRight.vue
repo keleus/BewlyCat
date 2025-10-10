@@ -143,9 +143,8 @@ watch(
       }
       else {
         nextTick(() => {
-          if (momentsPopRef.value) {
+          if (momentsPopRef.value)
             momentsPopRef.value.initData?.()
-          }
         })
       }
     }
@@ -161,10 +160,29 @@ watch(
     if (newVal === oldVal)
       return
 
-    if (newVal && favoritesPopRef.value) {
+    if (newVal) {
       nextTick(() => {
         if (favoritesPopRef.value)
           favoritesPopRef.value.refreshFavoriteResources?.()
+      })
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => popupVisible.value?.history ?? false,
+  (newVal, oldVal) => {
+    if (newVal === undefined || oldVal === undefined)
+      return
+
+    if (newVal === oldVal)
+      return
+
+    if (newVal) {
+      nextTick(() => {
+        if (historyPopRef.value)
+          historyPopRef.value.initData?.()
       })
     }
   },

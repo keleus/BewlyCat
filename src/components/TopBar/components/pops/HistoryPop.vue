@@ -177,6 +177,28 @@ function deleteHistoryItem(index: number, historyItem: HistoryItem) {
         historys.splice(index, 1)
     })
 }
+
+function initData() {
+  historys.length = 0
+  noMoreContent.value = false
+  if (historysWrap.value)
+    scrollToTop(historysWrap.value)
+
+  if (activatedTab.value === 0) {
+    getHistoryList(Business.ARCHIVE)
+  }
+  else if (activatedTab.value === 1) {
+    livePage.value = 1
+    getHistoryList(Business.LIVE)
+  }
+  else if (activatedTab.value === 2) {
+    getHistoryList(Business.ARTICLE)
+  }
+}
+
+defineExpose({
+  initData,
+})
 </script>
 
 <template>

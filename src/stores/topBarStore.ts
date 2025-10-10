@@ -379,6 +379,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     // newMomentsCount.value = 0
     livePage.value = 1
     noMoreMomentsContent.value = false
+    isLoadingMoments.value = false // 重置加载状态,防止卡住
 
     // 获取初始数据
     getMomentsData(selectedType)
