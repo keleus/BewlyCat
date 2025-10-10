@@ -922,12 +922,37 @@ export function adjustVolume(delta: number): boolean {
   return setVolume(newVolume, true)
 }
 
+// 检查是否为互动视频
+export function isInteractiveVideo(): boolean {
+  try {
+    // 方法1: 检查页面DOM中是否存在互动视频的选择问题容器
+    const interactionQuestion = document.querySelector('.bpx-player-interaction-question')
+    if (interactionQuestion) {
+      return true
+    }
+
+    // 方法2: 检查URL中是否包含互动视频的参数
+    const url = window.location.href
+    if (url.includes('?') && (url.includes('edge_id=') || url.includes('graph_version='))) {
+      return true
+    }
+
+    // 方法3: 检查页面中是否有互动视频的标识元素
+    const interactiveBtn = document.querySelector('.bpx-player-ctrl-btn[aria-label*="互动"]')
+    if (interactiveBtn) {
+      return true
+    }
+
+    return false
+  }
+  catch (error) {
+    console.error('检查互动视频时出错:', error)
+    return false
+  }
+}
+
 // 监听视频结束事件并自动退出全屏
 export function startAutoExitFullscreenMonitoring() {
-  if (!settings.value.autoExitFullscreenOnEnd) {
-    return
-  }
-
   const video = getVideoElement()
   if (!video) {
     // 如果视频元素还没有加载，延迟重试
@@ -943,6 +968,12 @@ export function startAutoExitFullscreenMonitoring() {
 
   // 监听视频结束事件
   video.addEventListener('ended', () => {
+    // 如果是互动视频，不处理（因为URL变化会由pushstate处理）
+    if (isInteractiveVideo()) {
+      return
+    }
+
+    // 非互动视频且开启了自动退出全屏
     if (settings.value.autoExitFullscreenOnEnd) {
       // 检查是否处于全屏状态
       if (document.fullscreenElement || (document as any).webkitFullscreenElement) {

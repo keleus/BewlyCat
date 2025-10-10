@@ -246,14 +246,44 @@ function initRandomPlayFeature() {
 
 function checkForUrlChanges() {
   if (location.href !== lastUrl) {
+    const previousUrl = lastUrl
     lastUrl = location.href
-    hasAppliedPlayerMode = false // URL变化时重置标志
+
+    // 提取视频ID和分P参数
+    const extractVideoInfo = (url: string) => {
+      const bvMatch = url.match(/\/video\/(BV[a-zA-Z0-9]+)/)
+      const avMatch = url.match(/\/video\/av(\d+)/)
+      const videoId = bvMatch ? bvMatch[1] : (avMatch ? `av${avMatch[1]}` : null)
+
+      // 提取分P参数
+      const urlObj = new URL(url)
+      const part = urlObj.searchParams.get('p')
+
+      return { videoId, part }
+    }
+
+    const previousInfo = extractVideoInfo(previousUrl)
+    const currentInfo = extractVideoInfo(lastUrl)
+
+    // 检查是否是同一个视频且同一分P的URL变化（仅互动视频会这样）
+    const isSameVideoAndPart = previousInfo.videoId
+      && currentInfo.videoId
+      && previousInfo.videoId === currentInfo.videoId
+      && previousInfo.part === currentInfo.part
+
+    // 只有互动视频在同一分P内跳转时才不重置播放器模式
+    if (!isSameVideoAndPart) {
+      hasAppliedPlayerMode = false // URL变化时重置标志
+    }
 
     // 重置随机播放初始化状态，避免重复加载
     resetRandomPlayInitialization()
 
     if (isVideoOrBangumiPage()) {
-      applyDefaultPlayerMode()
+      // 只有互动视频在同一分P内跳转时才不重新应用播放器模式
+      if (!isSameVideoAndPart) {
+        applyDefaultPlayerMode()
+      }
       // 如果是视频页面内部跳转，延迟执行滚动
       if (isVideoOrBangumiPage()) {
         handleVideoPageNavigation()
