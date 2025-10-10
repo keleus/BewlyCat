@@ -168,7 +168,7 @@ const hasCoverStats = computed(() => {
   )
 })
 
-const shouldHideCoverStats = computed(() => props.showPreview && settings.value.enableVideoPreview && isHover.value)
+const shouldHideCoverStats = computed(() => props.showPreview && settings.value.enableVideoPreview && isHover.value && previewVideoUrl.value && topBarStore.isLogin)
 
 const COVER_STATS_BASE_FONT_REM = 0.75
 const COVER_STATS_MIN_FONT_REM = 0.68
@@ -391,7 +391,7 @@ watch(() => isHover.value, async (newValue) => {
       bvid: props.video.bvid,
       cid,
     }).then((res: VideoPreviewResult) => {
-      if (res.code === 0)
+      if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
         previewVideoUrl.value = res.data.durl[0].url
     })
   }

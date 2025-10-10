@@ -91,6 +91,8 @@ const previewVideoUrl = ref<string>('')
 const contentVisibility = ref<'auto' | 'visible'>('auto')
 const videoElement = ref<HTMLVideoElement | null>(null)
 
+const shouldHideOverlayElements = computed(() => props.showPreview && settings.value.enableVideoPreview && isHover.value && previewVideoUrl.value && topBarStore.isLogin)
+
 // Track actual card width for better auto title sizing
 const cardRootRef = ref<HTMLElement | null>(null)
 let cardResizeObserver: ResizeObserver | null = null
@@ -281,7 +283,7 @@ watch(() => isHover.value, async (newValue) => {
       bvid: props.video.bvid,
       cid,
     }).then((res: VideoPreviewResult) => {
-      if (res.code === 0)
+      if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
         previewVideoUrl.value = res.data.durl[0].url
     })
   }
@@ -523,7 +525,8 @@ provide('getVideoType', () => props.type!)
             <div
               v-if="video.rank"
               pos="absolute top-0"
-              p-2 group-hover:opacity-0
+              p-2
+              :class="{ 'opacity-0': shouldHideOverlayElements }"
               duration-300
             >
               <div
@@ -557,7 +560,7 @@ provide('getVideoType', () => props.type!)
                 rounded="$bew-radius"
                 text="!white xs"
                 bg="black opacity-60"
-                class="group-hover:opacity-0"
+                :class="{ 'opacity-0': shouldHideOverlayElements }"
                 duration-300
               >
                 {{ video.duration ? calcCurrentTime(video.duration) : video.durationStr }}
@@ -575,7 +578,7 @@ provide('getVideoType', () => props.type!)
 
               <div
                 v-if="video.liveStatus === 1"
-                class="group-hover:opacity-0"
+                :class="{ 'opacity-0': shouldHideOverlayElements }"
                 pos="absolute left-0 top-0" bg="$bew-theme-color" text="xs white" fw-bold
                 p="x-2 y-1" m-1 inline-block rounded="$bew-radius" duration-300
               >
@@ -585,7 +588,7 @@ provide('getVideoType', () => props.type!)
 
               <div
                 v-if="video.badge && Object.keys(video.badge).length > 0"
-                class="group-hover:opacity-0"
+                :class="{ 'opacity-0': shouldHideOverlayElements }"
                 :style="{
                   backgroundColor: video.badge.bgColor,
                   color: video.badge.color,
