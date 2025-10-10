@@ -97,6 +97,11 @@ onMounted(() => {
 
 async function logout() {
   revokeAccessKey()
+
+  // 立即更新登录状态，让顶栏立即显示未登录状态
+  topBarStore.isLogin = false
+  topBarStore.cleanup()
+
   api.auth.logout({
     biliCSRF: getCSRF(),
   }).then(() => {
