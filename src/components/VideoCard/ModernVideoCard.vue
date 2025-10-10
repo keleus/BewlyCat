@@ -370,6 +370,10 @@ watch(() => isHover.value, async (newValue) => {
 
   if (props.showPreview && settings.value.enableVideoPreview
     && !previewVideoUrl.value && (props.video.aid || props.video.bvid)) {
+    // 检查登录状态，未登录不允许视频预览
+    if (!topBarStore.isLogin)
+      return
+
     let cid = props.video.cid
     if (!cid) {
       try {
