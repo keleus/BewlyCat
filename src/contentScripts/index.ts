@@ -312,18 +312,21 @@ function handleVisibilityChange() {
 
 // 添加页面加载和可见性变化的监听
 window.addEventListener('load', () => {
-  if (isVideoPage()) {
-    applyDefaultPlayerMode()
-    disableAutoPlayCollection(settings.value)
-    // 初始化随机播放功能
-    if (settings.value.enableRandomPlay) {
-      setTimeout(() => {
-        initRandomPlayFeature()
-      }, 3000) // 延迟3秒初始化，确保页面完全加载
+  // 只有当页面可见时才应用播放器模式，避免后台标签页加载时应用样式失败
+  if (document.visibilityState === 'visible') {
+    if (isVideoPage()) {
+      applyDefaultPlayerMode()
+      disableAutoPlayCollection(settings.value)
+      // 初始化随机播放功能
+      if (settings.value.enableRandomPlay) {
+        setTimeout(() => {
+          initRandomPlayFeature()
+        }, 3000) // 延迟3秒初始化，确保页面完全加载
+      }
     }
-  }
-  else if (isVideoOrBangumiPage()) {
-    applyDefaultPlayerMode()
+    else if (isVideoOrBangumiPage()) {
+      applyDefaultPlayerMode()
+    }
   }
 
   // 添加搜索页面视频卡片点击事件处理
