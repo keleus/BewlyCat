@@ -47,13 +47,6 @@ onMounted(() => {
   initData()
 })
 
-onActivated(() => {
-  // 当组件从 KeepAlive 缓存中激活时,刷新数据以确保数据是最新的
-  if (favoriteResources.length > 0) {
-    refreshFavoriteResources()
-  }
-})
-
 async function initData() {
   await getFavoriteCategories()
   activatedMediaId.value = favoriteCategories[0].id
