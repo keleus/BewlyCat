@@ -201,6 +201,17 @@ function applyDefaultPlayerMode() {
   if (hasAppliedPlayerMode)
     return // 如果已经应用过，直接返回
 
+  // 检查是否处于全屏或网页全屏状态（互动视频场景）
+  const isInFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement)
+  const webFullscreenBtn = document.querySelector('.bpx-player-ctrl-web,.bilibili-player-video-web-fullscreen') as HTMLElement
+  const isInWebFullscreen = webFullscreenBtn?.classList.contains('bpx-state-entered')
+
+  // 如果播放器已经在全屏状态，跳过应用模式（避免互动视频退出全屏）
+  if (isInFullscreen || isInWebFullscreen) {
+    hasAppliedPlayerMode = true // 标记已应用，避免重复检查
+    return
+  }
+
   const playerMode = settings.value.defaultVideoPlayerMode
 
   // 检查是否为合集视频且启用了保持默认模式
@@ -246,44 +257,14 @@ function initRandomPlayFeature() {
 
 function checkForUrlChanges() {
   if (location.href !== lastUrl) {
-    const previousUrl = lastUrl
     lastUrl = location.href
-
-    // 提取视频ID和分P参数
-    const extractVideoInfo = (url: string) => {
-      const bvMatch = url.match(/\/video\/(BV[a-zA-Z0-9]+)/)
-      const avMatch = url.match(/\/video\/av(\d+)/)
-      const videoId = bvMatch ? bvMatch[1] : (avMatch ? `av${avMatch[1]}` : null)
-
-      // 提取分P参数
-      const urlObj = new URL(url)
-      const part = urlObj.searchParams.get('p')
-
-      return { videoId, part }
-    }
-
-    const previousInfo = extractVideoInfo(previousUrl)
-    const currentInfo = extractVideoInfo(lastUrl)
-
-    // 检查是否是同一个视频且同一分P的URL变化（仅互动视频会这样）
-    const isSameVideoAndPart = previousInfo.videoId
-      && currentInfo.videoId
-      && previousInfo.videoId === currentInfo.videoId
-      && previousInfo.part === currentInfo.part
-
-    // 只有互动视频在同一分P内跳转时才不重置播放器模式
-    if (!isSameVideoAndPart) {
-      hasAppliedPlayerMode = false // URL变化时重置标志
-    }
+    hasAppliedPlayerMode = false // URL变化时重置标志
 
     // 重置随机播放初始化状态，避免重复加载
     resetRandomPlayInitialization()
 
     if (isVideoOrBangumiPage()) {
-      // 只有互动视频在同一分P内跳转时才不重新应用播放器模式
-      if (!isSameVideoAndPart) {
-        applyDefaultPlayerMode()
-      }
+      applyDefaultPlayerMode()
       // 如果是视频页面内部跳转，延迟执行滚动
       if (isVideoOrBangumiPage()) {
         handleVideoPageNavigation()
@@ -312,21 +293,18 @@ function handleVisibilityChange() {
 
 // 添加页面加载和可见性变化的监听
 window.addEventListener('load', () => {
-  // 只有当页面可见时才应用播放器模式，避免后台标签页加载时应用样式失败
-  if (document.visibilityState === 'visible') {
-    if (isVideoPage()) {
-      applyDefaultPlayerMode()
-      disableAutoPlayCollection(settings.value)
-      // 初始化随机播放功能
-      if (settings.value.enableRandomPlay) {
-        setTimeout(() => {
-          initRandomPlayFeature()
-        }, 3000) // 延迟3秒初始化，确保页面完全加载
-      }
+  if (isVideoPage()) {
+    applyDefaultPlayerMode()
+    disableAutoPlayCollection(settings.value)
+    // 初始化随机播放功能
+    if (settings.value.enableRandomPlay) {
+      setTimeout(() => {
+        initRandomPlayFeature()
+      }, 3000) // 延迟3秒初始化，确保页面完全加载
     }
-    else if (isVideoOrBangumiPage()) {
-      applyDefaultPlayerMode()
-    }
+  }
+  else if (isVideoOrBangumiPage()) {
+    applyDefaultPlayerMode()
   }
 
   // 添加搜索页面视频卡片点击事件处理
