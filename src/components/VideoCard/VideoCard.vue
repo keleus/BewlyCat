@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
 import { calcCurrentTime, numFormatter } from '~/utils/dataFormatter'
@@ -32,6 +33,7 @@ const layout = computed((): 'modern' | 'old' => {
 })
 
 const logic = useVideoCardLogic(props)
+const { mainAppRef } = useBewlyApp()
 
 // Modern layout specific: cover stats calculation
 const statSuffixPattern = /(播放量?|观看|弹幕|点赞|views?|likes?|danmakus?|comments?|回复|人气|转发|分享|[次条人])/gi
@@ -389,10 +391,9 @@ provide('getVideoType', () => props.type!)
     <!-- context menu -->
     <Teleport
       v-if="logic.showVideoOptions.value && video"
-      :to="logic.mainAppRef"
+      :to="mainAppRef"
     >
       <VideoCardContextMenu
-        :ref="(el) => logic.contextMenuRef.value = el as HTMLDivElement"
         :video="{
           ...video,
           url: logic.videoUrl.value,

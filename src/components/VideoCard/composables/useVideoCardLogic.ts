@@ -27,7 +27,7 @@ interface VideoCardProps {
 
 export function useVideoCardLogic(props: VideoCardProps) {
   const toast = useToast()
-  const { mainAppRef, openIframeDrawer } = useBewlyApp()
+  const { openIframeDrawer } = useBewlyApp()
   const topBarStore = useTopBarStore()
 
   // Refs
@@ -344,7 +344,6 @@ export function useVideoCardLogic(props: VideoCardProps) {
     videoElement,
     cardRootRef,
     cardWidth,
-    mainAppRef,
 
     // Computed
     videoUrl,
