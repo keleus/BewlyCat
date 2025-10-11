@@ -113,6 +113,10 @@ const cachedRefreshIdx = ref<number>(1)
 const forwardVideoList = ref<VideoElement[]>([])
 const forwardRefreshIdx = ref<number>(1)
 
+// APP 模式的缓存和前进状态变量
+const cachedAppVideoList = ref<AppVideoElement[]>([])
+const forwardAppVideoList = ref<AppVideoElement[]>([])
+
 // 添加状态标记
 const hasBackState = ref<boolean>(false)
 const hasForwardState = ref<boolean>(false)
@@ -231,6 +235,8 @@ watch(() => settings.value.recommendationMode, () => {
   appVideoList.value = []
   forwardVideoList.value = []
   cachedVideoList.value = []
+  forwardAppVideoList.value = []
+  cachedAppVideoList.value = []
 
   // 重置前进后退状态
   hasBackState.value = false
@@ -330,6 +336,18 @@ function initPageAction() {
       // 显示撤销按钮
       undoForwardState.value = UndoForwardState.ShowUndo
     }
+    else if (settings.value.recommendationMode === 'app') {
+      // APP 模式下保存刷新前的当前状态到后退缓存
+      cachedAppVideoList.value = JSON.parse(JSON.stringify(appVideoList.value))
+      hasBackState.value = true
+
+      // 清空前进状态（因为刷新会产生新的分支）
+      forwardAppVideoList.value = []
+      hasForwardState.value = false
+
+      // 显示撤销按钮
+      undoForwardState.value = UndoForwardState.ShowUndo
+    }
 
     initData()
   }
@@ -354,6 +372,21 @@ function initPageAction() {
         hasBackState.value = false
         undoForwardState.value = UndoForwardState.Hidden
       }
+      else if (settings.value.recommendationMode === 'app' && cachedAppVideoList.value.length > 0) {
+        // 滚动到页面顶部
+        handleBackToTop()
+
+        // APP模式下的后退操作
+        // 保存当前数据到前进状态
+        forwardAppVideoList.value = JSON.parse(JSON.stringify(appVideoList.value))
+        hasForwardState.value = true
+
+        // 恢复缓存的数据
+        appVideoList.value = JSON.parse(JSON.stringify(cachedAppVideoList.value))
+
+        hasBackState.value = false
+        undoForwardState.value = UndoForwardState.Hidden
+      }
     }
   }
 
@@ -373,6 +406,23 @@ function initPageAction() {
         // 恢复前进状态的数据
         videoList.value = JSON.parse(JSON.stringify(forwardVideoList.value))
         refreshIdx.value = forwardRefreshIdx.value
+
+        // 标记为已经前进
+        hasForwardState.value = false
+        undoForwardState.value = UndoForwardState.ShowUndo
+        return true
+      }
+      else if (settings.value.recommendationMode === 'app' && forwardAppVideoList.value.length > 0) {
+        // 滚动到页面顶部
+        handleBackToTop()
+
+        // APP模式下的前进操作
+        // 保存当前数据到后退状态
+        cachedAppVideoList.value = JSON.parse(JSON.stringify(appVideoList.value))
+        hasBackState.value = true
+
+        // 恢复前进状态的数据
+        appVideoList.value = JSON.parse(JSON.stringify(forwardAppVideoList.value))
 
         // 标记为已经前进
         hasForwardState.value = false
@@ -540,6 +590,11 @@ async function getAppRecommendVideos() {
       }
       else {
         resData.forEach((item) => {
+          // 检查是否已经存在该视频，避免重复
+          const isDuplicate = appVideoList.value.some(video => video.item && video.item.idx === item.idx)
+          if (isDuplicate)
+            return
+
           // If the `appFilterFunc` is unset, indicating that the user hasn't specified the filter,
           // skep the `findFirstEmptyItemIndex` check to enhance the performance
           if (!appFilterFunc.value) {
@@ -629,8 +684,20 @@ defineExpose({
   goForward: () => {
     handleForwardRefresh.value?.()
   },
-  canGoBack: () => settings.value.recommendationMode === 'web' && hasBackState.value && cachedVideoList.value.length > 0,
-  canGoForward: () => settings.value.recommendationMode === 'web' && hasForwardState.value && forwardVideoList.value.length > 0,
+  canGoBack: () => {
+    if (settings.value.recommendationMode === 'web')
+      return hasBackState.value && cachedVideoList.value.length > 0
+    else if (settings.value.recommendationMode === 'app')
+      return hasBackState.value && cachedAppVideoList.value.length > 0
+    return false
+  },
+  canGoForward: () => {
+    if (settings.value.recommendationMode === 'web')
+      return hasForwardState.value && forwardVideoList.value.length > 0
+    else if (settings.value.recommendationMode === 'app')
+      return hasForwardState.value && forwardAppVideoList.value.length > 0
+    return false
+  },
 })
 </script>
 
