@@ -10,7 +10,7 @@ import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
 import { useMainStore } from '~/stores/mainStore'
-import { getTVLoginQRCode, pollTVLoginQRCode, revokeAccessKey, saveAppAuthTokens } from '~/utils/authProvider'
+import { getTVLoginQRCode, hasValidAppAuthTokens, pollTVLoginQRCode, revokeAccessKey, saveAppAuthTokens } from '~/utils/authProvider'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -48,7 +48,7 @@ onBeforeUnmount(() => {
 
 function changeAppRecommendationMode() {
   settings.value.recommendationMode = 'app'
-  if (!appAccessToken.value)
+  if (!hasValidAppAuthTokens())
     handleAuthorize()
 }
 
