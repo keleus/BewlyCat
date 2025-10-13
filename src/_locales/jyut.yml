@@ -170,6 +170,7 @@ settings:
   show_video_card_recommend_tag: 顯示插件計算嘅推薦標籤
   show_video_card_recommend_tag_desc: 顯示插件計算嘅標籤，好似「高讚」、「高互動」、「百萬播放」咁
   auto_hide_top_bar: 自動收埋頂欄
+  always_use_transparent_top_bar: 頂欄始終使用透明(舊版)樣式
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂欄切換掣
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換掣

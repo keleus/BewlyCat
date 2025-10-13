@@ -44,6 +44,9 @@ const videoPageTopBarConfigOptions = computed(() => {
       <SettingsItem :title="$t('settings.video_page_top_bar_config')" :desc="$t('settings.video_page_top_bar_config_desc')">
         <Select v-model="settings.videoPageTopBarConfig" :options="videoPageTopBarConfigOptions" w="full" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.always_use_transparent_top_bar')">
+        <Radio v-model="settings.alwaysUseTransparentTopBar" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')">
         <Radio v-model="settings.showTopBarThemeColorGradient" />
       </SettingsItem>

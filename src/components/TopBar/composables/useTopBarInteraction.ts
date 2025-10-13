@@ -34,6 +34,10 @@ export function useTopBarInteraction() {
     if (!settings.value)
       return false
 
+    // 如果启用了"始终使用透明样式"，直接返回 true
+    if (settings.value.alwaysUseTransparentTopBar)
+      return true
+
     if (
       (isHomePage() && settings.value.useOriginalBilibiliHomepage)
       || (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))

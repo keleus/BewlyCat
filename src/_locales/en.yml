@@ -182,6 +182,7 @@ settings:
     alwaysHide: Always hide
     showOnMouse: Show on mouse
     showOnScroll: Show on scroll
+  always_use_transparent_top_bar: Always use transparent (legacy) style for top bar
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
   show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher

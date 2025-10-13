@@ -188,6 +188,7 @@ settings:
     alwaysHide: 總是隱藏
     showOnMouse: 滑鼠顯示
     showOnScroll: 滾動顯示
+  always_use_transparent_top_bar: 頂欄始終使用透明(舊版)樣式
   show_top_bar_theme_color_gradient: 在頂欄顯示主題色漸變（僅在深色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂欄切換器
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器

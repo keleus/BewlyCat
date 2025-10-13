@@ -158,6 +158,7 @@ export interface Settings {
   // Desktop & Dock
   autoHideTopBar: boolean
   videoPageTopBarConfig: VideoPageTopBarConfig
+  alwaysUseTransparentTopBar: boolean
   showTopBarThemeColorGradient: boolean
   showBewlyOrBiliTopBarSwitcher: boolean
   showBewlyOrBiliPageSwitcher: boolean
@@ -320,6 +321,7 @@ export const originalSettings: Settings = {
   // Desktop & Dock
   autoHideTopBar: false,
   videoPageTopBarConfig: VideoPageTopBarConfig.ShowOnScroll,
+  alwaysUseTransparentTopBar: false,
   showTopBarThemeColorGradient: true,
   showBewlyOrBiliTopBarSwitcher: true,
   showBewlyOrBiliPageSwitcher: true,

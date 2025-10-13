@@ -192,6 +192,7 @@ settings:
     alwaysHide: 总是隐藏
     showOnMouse: 鼠标显示
     showOnScroll: 滚动显示
+  always_use_transparent_top_bar: 顶栏始终使用透明(旧版)样式
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 显示 BewlyCat/Bilibili 顶栏切换器
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
