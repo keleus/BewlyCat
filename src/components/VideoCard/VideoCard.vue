@@ -311,8 +311,8 @@ provide('getVideoType', () => props.type!)
     :style="{ contentVisibility: logic.contentVisibility.value }"
     duration-300 ease-in-out
     rounded="$bew-radius"
-    ring="hover:8 hover:$bew-fill-2 active:8 active:$bew-fill-3"
-    bg="hover:$bew-fill-2 active:$bew-fill-3"
+    :ring="skeleton ? '' : 'hover:8 hover:$bew-fill-2 active:8 active:$bew-fill-3'"
+    :bg="skeleton ? '' : 'hover:$bew-fill-2 active:$bew-fill-3'"
     transform="~ translate-z-0"
     will-change-transform
     :class="layout === 'modern' ? 'mb-3' : 'mb-4'"

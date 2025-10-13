@@ -122,14 +122,11 @@ const hasBackState = ref<boolean>(false)
 const hasForwardState = ref<boolean>(false)
 
 const PAGE_SIZE = 30
+const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，初始化时为1
 
 // 添加过滤条件检查相关变量
-const lowFilterResultCount = ref<number>(0) // 连续低过滤结果次数
-const maxLowFilterCount = 2 // 最大连续低过滤结果次数
-const minFilteredVideos = 6 // 最少过滤后视频数量
-const minFilteredVideosAfterRetry = 10 // 重试后最少过滤后视频数量
-const filterDelayTime = 1000 // 过滤结果不足时的延迟时间(毫秒)
-const isFilterBlocked = ref<boolean>(false) // 是否因过滤条件被阻止加载
+const hasShownFilterWarning = ref<boolean>(false) // 是否已显示过滤条件警告
+const minFilteredVideos = 6 // 最少过滤后视频数量，用于警告提示
 
 // 监听页面可见性变化
 function handleVisibilityChange() {
@@ -255,23 +252,17 @@ watch(() => settings.value.recommendationMode, () => {
 async function initData() {
   videoList.value.length = 0
   appVideoList.value.length = 0
+  APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
   resetRequestLimit() // 添加重置请求限制
   await getData()
 }
 
 // 添加重置过滤状态的方法
 function resetRequestLimit() {
-  lowFilterResultCount.value = 0
-  isFilterBlocked.value = false
+  hasShownFilterWarning.value = false
 }
 
 async function getData() {
-  // 检查是否因过滤条件被阻止
-  if (isFilterBlocked.value) {
-    toast.warning('过滤条件过于严格，请调整过滤设置后刷新页面')
-    return
-  }
-
   emit('beforeLoading')
   isLoading.value = true
 
@@ -281,7 +272,6 @@ async function getData() {
     }
     else {
       try {
-        // 限制一次最多请求次数
         await getAppRecommendVideos()
       }
       catch (error) {
@@ -312,8 +302,10 @@ function initPageAction() {
       return
     if (noMoreContent.value)
       return
-    if (isFilterBlocked.value)
-      return
+
+    // 滚动加载时，APP模式加载1批
+    if (settings.value.recommendationMode === 'app')
+      APP_LOAD_BATCHES.value = 1
 
     getData()
   }
@@ -508,46 +500,20 @@ async function getRecommendVideos() {
     if (!needToLoginFirst.value) {
       await nextTick()
 
-      // 检查过滤后的视频数量
+      // 检查过滤后的视频数量，给出提醒但不阻止加载
       const currentFilteredCount = filledItems.length
       const shouldCheckFilter = filterFunc.value && currentFilteredCount > 0
 
-      if (shouldCheckFilter) {
-        // 检查是否符合最低过滤要求
-        const minRequired = lowFilterResultCount.value > 0 ? minFilteredVideosAfterRetry : minFilteredVideos
-
-        if (currentFilteredCount < minRequired) {
-          lowFilterResultCount.value++
-
-          if (lowFilterResultCount.value >= maxLowFilterCount) {
-            // 达到最大重试次数，停止加载
-            isFilterBlocked.value = true
-            toast.error(`过滤条件过于严格，连续${maxLowFilterCount}次加载的符合条件视频少于${minRequired}个，请调整过滤设置`)
-          }
-          else {
-            setTimeout(() => {
-              if (!isLoading.value && !isFilterBlocked.value && isPageVisible.value) {
-                getRecommendVideos()
-              }
-            }, filterDelayTime)
-          }
-        }
-        else {
-          // 过滤结果符合要求，重置计数器
-          lowFilterResultCount.value = 0
-        }
+      if (shouldCheckFilter && !hasShownFilterWarning.value && currentFilteredCount < minFilteredVideos) {
+        toast.warning('过滤条件可能过于严格，符合条件的视频较少')
+        hasShownFilterWarning.value = true
       }
 
-      // 只有在未被阻止且需要继续加载的情况下才继续加载
-      if (!isFilterBlocked.value && (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1)) {
+      // 如果需要更多内容，继续加载
+      if (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
         // 检查页面可见性
         if (isPageVisible.value) {
-          // 使用 setTimeout 避免直接递归调用
-          setTimeout(() => {
-            if (!isLoading.value && !isFilterBlocked.value && isPageVisible.value) {
-              getRecommendVideos()
-            }
-          }, 100)
+          getRecommendVideos()
         }
       }
     }
@@ -555,117 +521,73 @@ async function getRecommendVideos() {
 }
 
 async function getAppRecommendVideos() {
-  try {
-    let i = 0
-    if (!appFilterFunc.value || appVideoList.value.length < PAGE_SIZE) {
-      const pendingVideos: AppVideoElement[] = Array.from({
-        length: appVideoList.value.length < PAGE_SIZE ? PAGE_SIZE - appVideoList.value.length : PAGE_SIZE,
-      }, () => ({
-        uniqueId: `unique-id-${(appVideoList.value.length || 0) + i++})}`,
-      } satisfies AppVideoElement))
+  const batchesToLoad = APP_LOAD_BATCHES.value
+  const initialLength = appVideoList.value.length
 
-      appVideoList.value.push(...pendingVideos)
-    }
+  // 加载多个批次
+  for (let batch = 0; batch < batchesToLoad; batch++) {
+    try {
+      // 获取最后一个视频的idx用于请求下一批
+      const lastIdx = appVideoList.value.length > 0 && appVideoList.value[appVideoList.value.length - 1].item
+        ? appVideoList.value[appVideoList.value.length - 1].item!.idx
+        : 1
 
-    const response: AppForYouResult = await api.video.getAppRecommendVideos({
-      access_key: appAccessToken.value,
-      s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-      c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-      appkey: TVAppKey.appkey,
-      idx: appVideoList.value.length > 0 ? appVideoList.value[appVideoList.value.length - 1].item?.idx : 1,
-    })
-
-    if (response.code === 0) {
-      const resData = [] as AppVideoItem[]
-
-      response.data.items.forEach((item: AppVideoItem) => {
-        // Remove banner & ad cards
-        if (!item.card_type.includes('banner') && item.card_type !== 'cm_v1' && (!appFilterFunc.value || appFilterFunc.value(item)))
-          resData.push(item)
+      const response: AppForYouResult = await api.video.getAppRecommendVideos({
+        access_key: appAccessToken.value,
+        s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+        c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+        appkey: TVAppKey.appkey,
+        idx: lastIdx,
       })
 
-      // when videoList has length property, it means it is the first time to load
-      if (!appVideoList.value.length) {
-        appVideoList.value = resData.map(item => ({ uniqueId: `${item.idx}`, item }))
-      }
-      else {
-        resData.forEach((item) => {
+      if (response.code === 0) {
+        response.data.items.forEach((item: AppVideoItem) => {
+          // Remove banner & ad cards
+          if (item.card_type.includes('banner') || item.card_type === 'cm_v1')
+            return
+
+          // 应用过滤函数
+          if (appFilterFunc.value && !appFilterFunc.value(item))
+            return
+
           // 检查是否已经存在该视频，避免重复
           const isDuplicate = appVideoList.value.some(video => video.item && video.item.idx === item.idx)
           if (isDuplicate)
             return
 
-          // If the `appFilterFunc` is unset, indicating that the user hasn't specified the filter,
-          // skep the `findFirstEmptyItemIndex` check to enhance the performance
-          if (!appFilterFunc.value) {
-            appVideoList.value.push({
-              uniqueId: `${item.idx}`,
-              item,
-            })
-          }
-          else {
-            const findFirstEmptyItemIndex = appVideoList.value.findIndex(video => !video.item)
-            if (findFirstEmptyItemIndex !== -1) {
-              appVideoList.value[findFirstEmptyItemIndex] = {
-                uniqueId: `${item.idx}`,
-                item,
-              }
-            }
-            else {
-              appVideoList.value.push({
-                uniqueId: `${item.idx}`,
-                item,
-              })
-            }
-          }
+          // 直接添加到列表
+          appVideoList.value.push({
+            uniqueId: `${item.idx}`,
+            item,
+          })
         })
       }
+      else if (response.code === 62011) {
+        needToLoginFirst.value = true
+        break
+      }
     }
-    else if (response.code === 62011) {
-      needToLoginFirst.value = true
+    catch (error) {
+      console.error('Failed to load batch', batch, error)
+      break
     }
   }
-  finally {
-    const filledItems = appVideoList.value.filter(video => video.item)
-    appVideoList.value = filledItems
 
-    if (!needToLoginFirst.value) {
-      await nextTick()
+  if (!needToLoginFirst.value) {
+    await nextTick()
 
-      // 检查过滤后的视频数量
-      const currentFilteredCount = filledItems.length
-      const shouldCheckFilter = appFilterFunc.value && currentFilteredCount > 0
+    // 检查新加载的视频数量，给出提醒但不阻止加载
+    const newVideosCount = appVideoList.value.length - initialLength
+    const shouldCheckFilter = appFilterFunc.value && newVideosCount > 0
 
-      if (shouldCheckFilter) {
-        // 检查是否符合最低过滤要求
-        const minRequired = lowFilterResultCount.value > 0 ? minFilteredVideosAfterRetry : minFilteredVideos
+    if (shouldCheckFilter && !hasShownFilterWarning.value && newVideosCount < minFilteredVideos) {
+      toast.warning('过滤条件可能过于严格，符合条件的视频较少')
+      hasShownFilterWarning.value = true
+    }
 
-        if (currentFilteredCount < minRequired) {
-          lowFilterResultCount.value++
-
-          if (lowFilterResultCount.value >= maxLowFilterCount) {
-            // 达到最大重试次数，停止加载
-            isFilterBlocked.value = true
-            toast.error(`过滤条件过于严格，连续${maxLowFilterCount}次加载的符合条件视频少于${minRequired}个，请调整过滤设置`)
-          }
-          else {
-            setTimeout(() => {
-              if (!isLoading.value && !isFilterBlocked.value && isPageVisible.value) {
-                getAppRecommendVideos()
-              }
-            }, filterDelayTime)
-          }
-        }
-        else {
-          // 过滤结果符合要求，重置计数器
-          lowFilterResultCount.value = 0
-        }
-      }
-
-      // 只有在未被阻止的情况下才继续加载
-      if (!isFilterBlocked.value && (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1)) {
-        getAppRecommendVideos()
-      }
+    // 如果需要更多内容，继续加载
+    if (!haveScrollbar() || appVideoList.value.length < PAGE_SIZE || newVideosCount < 1) {
+      getAppRecommendVideos()
     }
   }
 }
