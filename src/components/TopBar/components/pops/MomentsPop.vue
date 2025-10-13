@@ -69,7 +69,7 @@ function onClickTab(tab: MomentTab) {
     return
 
   selectedMomentTab.value = tab
-  initData()
+  // 移除这里的 initData() 调用，因为 watch 已经会处理
 }
 
 function initData() {

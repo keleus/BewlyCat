@@ -373,7 +373,7 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   function initMomentsData(selectedType: string) {
     // 重置所有相关状态
-    moments.length = 0
+    moments.splice(0) // 使用 splice 正确清空响应式数组
     momentUpdateBaseline.value = ''
     momentOffset.value = ''
     // newMomentsCount.value = 0
