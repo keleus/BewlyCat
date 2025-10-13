@@ -2,7 +2,7 @@
   "name": "bewly-cat",
   "displayName": "BewlyCat",
   "type": "module",
-  "version": "1.3.8",
+  "version": "1.3.9",
   "private": true,
   "packageManager": "pnpm@10.18.0",
   "description": "Just make a few small changes to your Bilibili homepage.",
