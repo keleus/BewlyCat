@@ -215,6 +215,11 @@ function toggleChannel(value: string) {
   <SettingsItemGroup :title="$t('settings.group_topbar')">
     <SettingsItem>
       <template #bottom>
+        <!-- 提示文字 -->
+        <div text-sm opacity-70 mb-3>
+          点击顶栏对应元素进行设置
+        </div>
+
         <!-- 缩略顶栏预览 -->
         <div
           class="topbar-preview"
