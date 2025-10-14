@@ -60,11 +60,40 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
     // 增加安全检查
     if (target.value && transformer.centerTarget) {
       const el = unrefElement(target.value)
-      if (el) {
+      const triggerEl = unrefElement(trigger)
+      if (el && triggerEl) {
         const targetRect = el.getBoundingClientRect()
+        const triggerRect = triggerEl.getBoundingClientRect()
 
         if (transformer.centerTarget.x) {
-          x = `calc(${transformer.x} - ${targetRect.width / 2}px)`
+          // 计算 popup 的预期中心点位置
+          const popupCenterX = triggerRect.left + triggerRect.width / 2
+          // 计算 popup 居中后的左右边界
+          const popupLeft = popupCenterX - targetRect.width / 2
+          const popupRight = popupCenterX + targetRect.width / 2
+
+          const viewportWidth = window.innerWidth
+          const edgeMargin = 16 // 与边缘保持的最小距离
+
+          // 检查是否会超出边界
+          let offset = 0
+
+          // 超出右边缘
+          if (popupRight > viewportWidth - edgeMargin) {
+            offset = -(popupRight - (viewportWidth - edgeMargin))
+          }
+          // 超出左边缘（优先级更高，因为通常更重要）
+          else if (popupLeft < edgeMargin) {
+            offset = edgeMargin - popupLeft
+          }
+
+          // 应用偏移
+          if (offset !== 0) {
+            x = `calc(${transformer.x} - ${targetRect.width / 2}px + ${offset}px)`
+          }
+          else {
+            x = `calc(${transformer.x} - ${targetRect.width / 2}px)`
+          }
         }
 
         if (transformer.centerTarget.y) {
