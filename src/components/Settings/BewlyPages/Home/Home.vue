@@ -1,14 +1,12 @@
 <script lang="ts" setup>
 import QRCodeVue from 'qrcode.vue'
-import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import draggable from 'vuedraggable'
 
+import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
-import Select from '~/components/Select.vue'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
-import type { VideoCardLayoutSetting } from '~/logic/storage'
 import { useMainStore } from '~/stores/mainStore'
 import { getTVLoginQRCode, hasValidAppAuthTokens, pollTVLoginQRCode, revokeAccessKey, saveAppAuthTokens } from '~/utils/authProvider'
 
@@ -20,14 +18,6 @@ import FilterByUserTable from './components/FilterByUserTable.vue'
 
 const mainStore = useMainStore()
 const toast = useToast()
-const { t } = useI18n()
-
-const videoCardLayoutOptionValues: VideoCardLayoutSetting[] = ['modern', 'old']
-
-const videoCardLayoutOptions = computed(() => videoCardLayoutOptionValues.map(value => ({
-  label: t(`settings.video_card_layout_option.${value}`),
-  value,
-})))
 
 const showSearchPageModeSharedSettings = ref<boolean>(false)
 const showQRCodeDialog = ref<boolean>(false)
@@ -431,31 +421,6 @@ function handleToggleHomeTab(tab: any) {
       </SettingsItem>
       <SettingsItem :title="$t('settings.always_show_tabs_on_home_page')">
         <Radio v-model="settings.alwaysShowTabsOnHomePage" />
-      </SettingsItem>
-    </SettingsItemGroup>
-
-    <SettingsItemGroup :title="$t('settings.group_home_layout')">
-      <SettingsItem
-        :title="$t('settings.video_card_layout')"
-        :desc="$t('settings.video_card_layout_desc')"
-      >
-        <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="full" />
-      </SettingsItem>
-
-      <SettingsItem :title="$t('settings.home_adaptive_card_min_width')" :desc="$t('settings.home_adaptive_card_min_width_desc')">
-        <div flex="~ justify-end" w-full>
-          <Input
-            v-model="settings.homeAdaptiveCardMinWidth"
-            type="number"
-            :min="160"
-            :max="600"
-            flex-1
-          >
-            <template #suffix>
-              px
-            </template>
-          </Input>
-        </div>
       </SettingsItem>
     </SettingsItemGroup>
 

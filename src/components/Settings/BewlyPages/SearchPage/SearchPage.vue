@@ -109,6 +109,15 @@ function changeSearchBarFocusCharacter(url: string) {
       </SettingsItem>
     </SettingsItemGroup>
 
+    <SettingsItemGroup :title="$t('settings.group_search_results')">
+      <SettingsItem :title="$t('settings.use_plugin_search_results_page')">
+        <template #desc>
+          <span>{{ $t('settings.use_plugin_search_results_page_desc') }}</span>
+        </template>
+        <Radio v-model="settings.usePluginSearchResultsPage" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
     <ChangeWallpaper type="searchPage" />
   </div>
 </template>

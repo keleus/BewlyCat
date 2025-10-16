@@ -5,7 +5,7 @@ import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
-import type { VideoCardFontSizeSetting } from '~/logic/storage'
+import type { VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
 
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
@@ -13,9 +13,15 @@ import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 const { t, locale } = useI18n()
 
 const fontSizeOptionValues: VideoCardFontSizeSetting[] = ['xs', 'sm', 'base', 'lg']
+const videoCardLayoutOptionValues: VideoCardLayoutSetting[] = ['modern', 'old']
 
 const videoCardFontSizeOptions = computed(() => fontSizeOptionValues.map(value => ({
   label: t(`settings.font_size_option.${value}`),
+  value,
+})))
+
+const videoCardLayoutOptions = computed(() => videoCardLayoutOptionValues.map(value => ({
+  label: t(`settings.video_card_layout_option.${value}`),
   value,
 })))
 
@@ -164,6 +170,13 @@ watch(() => settings.value.language, (newValue) => {
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_video_card')">
+      <SettingsItem
+        :title="$t('settings.video_card_layout')"
+        :desc="$t('settings.video_card_layout_desc')"
+      >
+        <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="full" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.enable_video_preview')">
         <Radio v-model="settings.enableVideoPreview" />
       </SettingsItem>
@@ -195,6 +208,22 @@ watch(() => settings.value.language, (newValue) => {
             :max="28"
             flex-1
             :disabled="settings.homeAdaptiveTitleAutoSize"
+          >
+            <template #suffix>
+              px
+            </template>
+          </Input>
+        </div>
+      </SettingsItem>
+
+      <SettingsItem :title="$t('settings.home_adaptive_card_min_width')" :desc="$t('settings.home_adaptive_card_min_width_desc')">
+        <div flex="~ justify-end" w-full>
+          <Input
+            v-model="settings.homeAdaptiveCardMinWidth"
+            type="number"
+            :min="160"
+            :max="600"
+            flex-1
           >
             <template #suffix>
               px

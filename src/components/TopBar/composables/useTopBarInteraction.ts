@@ -77,6 +77,9 @@ export function useTopBarInteraction() {
   })
 
   const showSearchBar = computed((): boolean => {
+    if (!settings.value.usePluginSearchResultsPage)
+      return false
+
     const isSearchPage = SEARCH_PAGE_URL.test(location.href)
 
     if (isHomePage()) {
@@ -85,14 +88,14 @@ export function useTopBarInteraction() {
       if (!activatedPage?.value)
         return true
       if (activatedPage.value === AppPage.Search)
-        return false
+        return true
       if (settings.value.useSearchPageModeOnHomePage && activatedPage.value === AppPage.Home && reachTop?.value)
         return false
     }
-    else {
-      if (isSearchPage)
-        return false
+    else if (isSearchPage) {
+      return true
     }
+
     return true
   })
 

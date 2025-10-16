@@ -35,7 +35,7 @@ export interface Video {
   followed?: boolean
   liveStatus?: number
 
-  tag?: string
+  tag?: string | string[]
   rank?: number
   type?: 'horizontal' | 'vertical' | 'bangumi'
   threePointV2: ThreePointV2[]

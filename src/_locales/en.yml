@@ -84,6 +84,7 @@ settings:
   group_logo: LOGO
   group_search_bar: Search Bar
   group_hot_search: Hot Search
+  group_search_results: Search Results
   group_recommendation_mode: '"For you" Recommendation Mode'
   group_recommendation_filters: '"For you" Recommendation Filters'
   group_recommendation_filters_desc: >
@@ -292,6 +293,8 @@ settings:
   show_hot_search_in_top_bar_desc: Display hot search list in the top bar search box
   show_hot_search_in_search_page: Show hot search in search page
   show_hot_search_in_search_page_desc: Display hot search ranking on the search page
+  use_plugin_search_results_page: Use plugin search results page
+  use_plugin_search_results_page_desc: When enabled, searches will use the plugin's built-in search results page with category filtering and more features
   individually_set_search_page_wallpaper: Individually set search page wallpaper
   recommendation_mode: Recommendation mode
   recommendation_mode_desc: >

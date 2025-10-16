@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { settings } from '~/logic'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 
@@ -19,7 +21,8 @@ interface Props {
   highlightTags: string[]
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
 const emit = defineEmits<{
   moreBtnClick: [event: MouseEvent]
 }>()
@@ -28,6 +31,15 @@ const moreBtnRef = ref<HTMLDivElement | null>(null)
 
 defineExpose({
   moreBtnRef,
+})
+
+const primaryTags = computed(() => {
+  const tag = props.video?.tag
+  if (!tag)
+    return []
+  if (Array.isArray(tag))
+    return tag.filter(Boolean)
+  return [tag]
 })
 </script>
 
@@ -106,12 +118,13 @@ defineExpose({
           </div>
 
           <div
-            v-if="video.tag || highlightTags.length || video.publishedTimestamp || video.capsuleText || video.type === 'vertical' || video.type === 'bangumi'"
+            v-if="primaryTags.length || highlightTags.length || video.publishedTimestamp || video.capsuleText || video.type === 'vertical' || video.type === 'bangumi'"
             flex="~ items-center gap-2 wrap"
             :class="metaFontSizeClass"
           >
             <span
-              v-if="video.tag"
+              v-for="primaryTag in primaryTags"
+              :key="`primary-${primaryTag}`"
               class="video-card-meta__chip"
               text="$bew-theme-color"
               p="x-2"
@@ -119,7 +132,7 @@ defineExpose({
               rounded="$bew-radius"
               bg="$bew-theme-color-20"
             >
-              {{ video.tag }}
+              {{ primaryTag }}
             </span>
 
             <span
@@ -212,10 +225,11 @@ defineExpose({
         >
           <!-- Tag -->
           <span
-            v-if="video.tag"
+            v-for="primaryTag in primaryTags"
+            :key="`legacy-primary-${primaryTag}`"
             text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
           >
-            {{ video.tag }}
+            {{ primaryTag }}
           </span>
           <span
             v-for="extraTag in highlightTags"

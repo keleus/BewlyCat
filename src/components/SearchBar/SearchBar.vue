@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onClickOutside, onKeyStroke, useDebounceFn } from '@vueuse/core'
 import DOMPurify from 'dompurify'
+import { computed, reactive, ref, shallowRef, watch } from 'vue'
 
 import { settings } from '~/logic'
 import api from '~/utils/api'
@@ -36,12 +37,19 @@ const props = defineProps<{
   blurredOnFocus?: boolean
   focusedCharacter?: string
   showHotSearch?: boolean
+  modelValue?: string
+  searchBehavior?: 'navigate' | 'stay'
+}>()
+
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  search: [value: string]
 }>()
 
 const searchWrapRef = ref<HTMLElement>()
 const keywordRef = ref<HTMLInputElement>()
 const isFocus = ref<boolean>(false)
-const keyword = ref<string>('')
+const keyword = ref<string>(props.modelValue ?? '')
 const suggestions = reactive<SuggestionItem[]>([])
 const selectedIndex = ref<number>(-1)
 const searchHistory = shallowRef<HistoryItem[]>([])
@@ -51,13 +59,44 @@ const suggestionItemRef = ref<HTMLElement[]>([])
 const hotSearchList = ref<HotSearchItem[]>([])
 const isLoadingHotSearch = ref<boolean>(false)
 
+const pluginSearchOrigin = computed(() => {
+  if (typeof window === 'undefined')
+    return ''
+  return window.location.origin
+})
+
+const searchMode = computed(() => props.searchBehavior ?? 'navigate')
+const isInPlaceSearch = computed(() => searchMode.value === 'stay')
+
+watch(() => props.modelValue, (value) => {
+  const next = value ?? ''
+  if (next !== keyword.value)
+    keyword.value = next
+})
+
+watch(keyword, (value) => {
+  if (value !== (props.modelValue ?? ''))
+    emit('update:modelValue', value)
+})
+
 watch(isFocus, async (focus) => {
   // 延后加载搜索历史
   if (focus) {
-    searchHistory.value = await getSearchHistory()
+    try {
+      searchHistory.value = await getSearchHistory()
+    }
+    catch (error) {
+      console.error('Failed to load search history:', error)
+      searchHistory.value = []
+    }
     // 加载热搜数据
     if (props.showHotSearch ?? settings.value.showHotSearchInTopBar) {
-      await loadHotSearchData()
+      try {
+        await loadHotSearchData()
+      }
+      catch (error) {
+        console.error('Failed to load hot search list:', error)
+      }
     }
   }
 })
@@ -109,7 +148,7 @@ onKeyStroke('Escape', (e: KeyboardEvent) => {
   isFocus.value = false
 }, { target: keywordRef })
 
-const handleInput = useDebounceFn(() => {
+const handleKeywordInput = useDebounceFn(() => {
   selectedIndex.value = -1
   if (keyword.value.trim().length > 0) {
     api.search.getSearchSuggestion({
@@ -126,23 +165,61 @@ const handleInput = useDebounceFn(() => {
   }
 }, 200)
 
-async function navigateToSearchResultPage(keyword: string) {
-  if (keyword) {
-    let target = '_blank'
-    if (settings.value.searchBarLinkOpenMode === 'currentTabIfNotHomepage')
-      target = isHomePage() ? '_blank' : '_self'
-    else if (settings.value.searchBarLinkOpenMode === 'currentTab')
-      target = '_self'
-    else if (settings.value.searchBarLinkOpenMode === 'newTab')
-      target = '_blank'
+function handleNativeInput(event: Event) {
+  const value = (event.target as HTMLInputElement).value
+  keyword.value = value
+  handleKeywordInput()
+}
 
-    window.open(`//search.bilibili.com/all?keyword=${encodeURIComponent(keyword)}`, target)
-    const searchItem = {
-      value: keyword,
-      timestamp: Number(new Date()),
-    }
+function buildKeywordHref(keyword: string) {
+  const encoded = encodeURIComponent(keyword)
+  if (settings.value.usePluginSearchResultsPage && pluginSearchOrigin.value)
+    return `${pluginSearchOrigin.value}/?page=Search&keyword=${encoded}`
+  return `//search.bilibili.com/all?keyword=${encoded}`
+}
+
+async function navigateToSearchResultPage(rawKeyword: string) {
+  const normalized = (rawKeyword || keyword.value).trim()
+  if (!normalized)
+    return
+
+  keyword.value = normalized
+
+  const searchItem = {
+    value: normalized,
+    timestamp: Number(new Date()),
+  }
+  try {
     searchHistory.value = await addSearchHistory(searchItem)
   }
+  catch (error) {
+    console.error('Failed to add search history:', error)
+  }
+
+  if (isInPlaceSearch.value) {
+    emit('search', normalized)
+    isFocus.value = false
+    return
+  }
+
+  let target = '_blank'
+  if (settings.value.searchBarLinkOpenMode === 'currentTabIfNotHomepage')
+    target = isHomePage() ? '_blank' : '_self'
+  else if (settings.value.searchBarLinkOpenMode === 'currentTab')
+    target = '_self'
+  else if (settings.value.searchBarLinkOpenMode === 'newTab')
+    target = '_blank'
+
+  const searchUrl = buildKeywordHref(normalized)
+  window.open(searchUrl, target)
+}
+
+function handleKeywordLinkClick(value: string, event: MouseEvent) {
+  if (!isInPlaceSearch.value)
+    return
+  event.preventDefault()
+  event.stopPropagation()
+  void navigateToSearchResultPage(value)
 }
 
 async function handleDelete(value: string) {
@@ -291,7 +368,7 @@ function handleFocusOut(event: FocusEvent) {
 
       <input
         ref="keywordRef"
-        v-model="keyword"
+        :value="keyword"
         class="group"
         rounded="60px"
         p="l-6 r-18 y-3"
@@ -301,7 +378,7 @@ function handleFocusOut(event: FocusEvent) {
         transition="all duration-300"
         type="text"
         @focus="isFocus = true"
-        @input="handleInput"
+        @input="handleNativeInput"
         @keydown.enter.stop.passive="handleKeyEnter"
         @keyup.up.stop.passive="handleKeyUp"
         @keyup.down.stop.passive="handleKeyDown"
@@ -355,10 +432,11 @@ function handleFocusOut(event: FocusEvent) {
           <div class="hot-search-container p-2 grid grid-cols-2 gap-x-4 gap-y-1">
             <ALink
               v-for="(item, index) in hotSearchList.slice(0, 10)" :key="item.keyword"
-              :href="`//search.bilibili.com/all?keyword=${encodeURIComponent(item.keyword)}`"
+              :href="buildKeywordHref(item.keyword)"
               type="searchBar"
               class="hot-search-item cursor-pointer duration-300"
               flex items-center gap-2 p="x-2 y-1" hover="text-$bew-theme-color"
+              @click="handleKeywordLinkClick(item.keyword, $event)"
             >
               <span
                 class="index"
@@ -405,10 +483,11 @@ function handleFocusOut(event: FocusEvent) {
           <div class="history-item-container p2 flex flex-wrap gap-x-3 gap-y-3">
             <ALink
               v-for="item in searchHistory" :key="item.timestamp" ref="historyItemRef"
-              :href="`//search.bilibili.com/all?keyword=${encodeURIComponent(item.value)}`"
+              :href="buildKeywordHref(item.value)"
               type="searchBar"
               class="history-item group"
               flex justify-between items-center
+              @click="handleKeywordLinkClick(item.value, $event)"
             >
               <span> {{ item.value }}</span>
               <button

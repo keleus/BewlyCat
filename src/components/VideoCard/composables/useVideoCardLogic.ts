@@ -40,8 +40,8 @@ export function useVideoCardLogic(props: VideoCardProps) {
   const videoCurrentTime = ref<number | null>(null)
   const isInWatchLater = ref<boolean>(false)
   const isHover = ref<boolean>(false)
-  const mouseEnterTimeOut = ref<ReturnType<typeof setTimeout> | null>(null)
-  const mouseLeaveTimeOut = ref<ReturnType<typeof setTimeout> | null>(null)
+  const mouseEnterTimeOut = ref<number | null>(null)
+  const mouseLeaveTimeOut = ref<number | null>(null)
   const previewVideoUrl = ref<string>('')
   const contentVisibility = ref<'auto' | 'visible'>('auto')
   const videoElement = ref<HTMLVideoElement | null>(null)
@@ -228,7 +228,7 @@ export function useVideoCardLogic(props: VideoCardProps) {
     if (mouseEnterTimeOut.value)
       clearTimeout(mouseEnterTimeOut.value)
     const delay = settings.value.hoverVideoCardDelayed ? 1200 : 500
-    mouseEnterTimeOut.value = setTimeout(() => {
+    mouseEnterTimeOut.value = window.setTimeout(() => {
       mouseEnterTimeOut.value = null
       isHover.value = true
     }, delay)
@@ -245,7 +245,7 @@ export function useVideoCardLogic(props: VideoCardProps) {
     if (mouseLeaveTimeOut.value)
       clearTimeout(mouseLeaveTimeOut.value)
 
-    mouseLeaveTimeOut.value = setTimeout(() => {
+    mouseLeaveTimeOut.value = window.setTimeout(() => {
       mouseLeaveTimeOut.value = null
       contentVisibility.value = 'auto'
       isHover.value = false

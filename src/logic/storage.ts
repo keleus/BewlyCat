@@ -214,6 +214,9 @@ export interface Settings {
   showHotSearchInTopBar: boolean
   showHotSearchInSearchPage: boolean
 
+  // 搜索结果页设置
+  usePluginSearchResultsPage: boolean
+
   recommendationMode: 'web' | 'app'
   autoSwitchRecommendationMode: boolean
 
@@ -384,6 +387,9 @@ export const originalSettings: Settings = {
   // 热搜功能设置
   showHotSearchInTopBar: true,
   showHotSearchInSearchPage: true,
+
+  // 搜索结果页设置
+  usePluginSearchResultsPage: false,
 
   recommendationMode: 'web',
   autoSwitchRecommendationMode: true,

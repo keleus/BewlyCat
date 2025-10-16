@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import { computed, ref, watchEffect } from 'vue'
+
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
@@ -139,6 +141,18 @@ function roundToDecimals(value: number, decimals = 3) {
   return Math.round(value * multiplier) / multiplier
 }
 
+const primaryTags = computed(() => {
+  const video = props.video
+  if (!video)
+    return []
+  const { tag } = video
+  if (!tag)
+    return []
+  if (Array.isArray(tag))
+    return tag.filter(Boolean)
+  return [tag]
+})
+
 const coverStatsStyle = computed(() => {
   if (layout.value !== 'modern')
     return {}
@@ -227,13 +241,12 @@ const highlightTags = computed(() => {
 
   // 百万播放标签 - 只有在外部tag没有播放字眼时显示，且优先级最后
   if (viewCount >= 1_000_000) {
-    const hasPlayKeyword = props.video.tag && /播放|观看|views?|play/i.test(props.video.tag)
-    if (!hasPlayKeyword) {
+    const hasPlayKeyword = primaryTags.value.some(tag => /播放|观看|views?|play/i.test(tag))
+    if (!hasPlayKeyword)
       tags.push('百万播放')
-    }
   }
 
-  if (props.video.tag) {
+  if (primaryTags.value.length > 0) {
     // tags只返回一个
     return tags.slice(0, 1)
   }

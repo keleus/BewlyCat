@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
+import { computed, ref } from 'vue'
 
 import { settings } from '~/logic'
+import { useTopBarStore } from '~/stores/topBarStore'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 
 const { showSearchBar, forceWhiteIcon } = useTopBarInteraction()
+const topBarStore = useTopBarStore()
+const { searchKeyword } = storeToRefs(topBarStore)
 
 // 可以考虑添加一个计算属性来处理样式
 const searchBarStyles = computed(() => ({
@@ -15,6 +20,42 @@ const searchBarStyles = computed(() => ({
   '--b-search-bar-normal-icon-color': forceWhiteIcon.value && !settings.value.disableFrostedGlass ? 'white' : 'var(--bew-text-1)',
   '--b-search-bar-normal-text-color': forceWhiteIcon.value && !settings.value.disableFrostedGlass ? 'white' : 'var(--bew-text-1)',
 }))
+
+const currentLocation = ref(window.location.href)
+
+function updateCurrentLocation() {
+  currentLocation.value = window.location.href
+}
+
+useEventListener(window, 'pushstate', updateCurrentLocation)
+useEventListener(window, 'popstate', updateCurrentLocation)
+
+const searchBehavior = computed<'navigate' | 'stay'>(() => {
+  if (!settings.value.usePluginSearchResultsPage)
+    return 'navigate'
+
+  const url = new URL(currentLocation.value)
+  const params = new URLSearchParams(url.search)
+  return params.get('page') === 'Search' ? 'stay' : 'navigate'
+})
+
+function pushKeywordToSearchPage(keyword: string) {
+  const normalized = keyword.trim()
+  if (!normalized)
+    return
+
+  const params = new URLSearchParams(window.location.search)
+  params.set('page', 'Search')
+  params.set('keyword', normalized)
+  const newUrl = `${window.location.pathname}?${params.toString()}`
+  window.history.pushState({}, '', newUrl)
+}
+
+function handleSearch(keyword: string) {
+  if (searchBehavior.value !== 'stay')
+    return
+  pushKeywordToSearchPage(keyword)
+}
 </script>
 
 <template>
@@ -22,9 +63,12 @@ const searchBarStyles = computed(() => ({
     <Transition name="slide-out">
       <SearchBar
         v-if="showSearchBar"
+        v-model="searchKeyword"
         class="search-bar"
         :style="searchBarStyles"
         :show-hot-search="settings.showHotSearchInTopBar"
+        :search-behavior="searchBehavior"
+        @search="handleSearch"
       />
     </Transition>
   </div>

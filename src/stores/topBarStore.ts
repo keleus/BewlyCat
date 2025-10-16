@@ -89,6 +89,7 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   // TopBar visibility state
   const topBarVisible = ref<boolean>(true)
+  const searchKeyword = ref<string>('')
 
   // TopBar switcher button visibility state
   const isSwitcherButtonVisible = ref<boolean>(false)
@@ -657,6 +658,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     bCoinAlreadyReceived,
 
     topBarVisible,
+    searchKeyword,
     setTopBarVisible,
     isSwitcherButtonVisible,
     setSwitcherButtonVisible,
