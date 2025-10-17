@@ -389,7 +389,7 @@ export const originalSettings: Settings = {
   showHotSearchInSearchPage: true,
 
   // 搜索结果页设置
-  usePluginSearchResultsPage: false,
+  usePluginSearchResultsPage: true,
 
   recommendationMode: 'web',
   autoSwitchRecommendationMode: true,
