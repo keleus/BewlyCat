@@ -340,6 +340,10 @@ export function convertActivityData(item: any) {
   }
 }
 
+export function removeUnusedActivityCard(item: any) {
+  return item.card_type !== 2
+}
+
 export function convertLiveRoomData(live: any): Video {
   const cover = live.cover || live.user_cover || live.pic
   const sanitizedCover = typeof cover === 'string' && cover.startsWith('//')

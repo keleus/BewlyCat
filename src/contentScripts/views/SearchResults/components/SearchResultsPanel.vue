@@ -23,6 +23,7 @@ import {
   formatNumber,
   isMediaFtItem,
   removeHighlight,
+  removeUnusedActivityCard,
 } from '../searchTransforms'
 import type { SearchCategory, SearchCategoryOption } from '../types'
 
@@ -429,7 +430,7 @@ const { t } = useI18n()
             </h3>
             <div class="activity-results" grid="~ cols-1 md:cols-2 lg:cols-3 gap-4">
               <a
-                v-for="activity in section.data.map(convertActivityData)"
+                v-for="activity in section.data.filter(removeUnusedActivityCard).map(convertActivityData)"
                 :key="activity.id"
                 :href="activity.url"
                 target="_blank"
