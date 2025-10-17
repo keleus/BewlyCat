@@ -126,7 +126,8 @@ const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，�
 
 // 添加过滤条件检查相关变量
 const hasShownFilterWarning = ref<boolean>(false) // 是否已显示过滤条件警告
-const minFilteredVideos = 6 // 最少过滤后视频数量，用于警告提示
+const minFilteredVideosWeb = 6 // Web 模式最少过滤后视频数量，用于警告提示
+const minFilteredVideosApp = 3 // APP 模式最少过滤后视频数量，用于警告提示
 
 // 监听页面可见性变化
 function handleVisibilityChange() {
@@ -504,7 +505,7 @@ async function getRecommendVideos() {
       const currentFilteredCount = filledItems.length
       const shouldCheckFilter = filterFunc.value && currentFilteredCount > 0
 
-      if (shouldCheckFilter && !hasShownFilterWarning.value && currentFilteredCount < minFilteredVideos) {
+      if (shouldCheckFilter && !hasShownFilterWarning.value && currentFilteredCount < minFilteredVideosWeb) {
         toast.warning('过滤条件可能过于严格，符合条件的视频较少')
         hasShownFilterWarning.value = true
       }
@@ -580,7 +581,7 @@ async function getAppRecommendVideos() {
     const newVideosCount = appVideoList.value.length - initialLength
     const shouldCheckFilter = appFilterFunc.value && newVideosCount > 0
 
-    if (shouldCheckFilter && !hasShownFilterWarning.value && newVideosCount < minFilteredVideos) {
+    if (shouldCheckFilter && !hasShownFilterWarning.value && newVideosCount < minFilteredVideosApp) {
       toast.warning('过滤条件可能过于严格，符合条件的视频较少')
       hasShownFilterWarning.value = true
     }
