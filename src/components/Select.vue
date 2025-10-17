@@ -2,7 +2,7 @@
 import { useBewlyApp } from '~/composables/useAppProvider'
 
 const props = defineProps<{
-  options: OptionType[]
+  options: readonly OptionType[]
   modelValue: any
 }>()
 
