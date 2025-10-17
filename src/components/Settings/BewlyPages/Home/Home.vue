@@ -240,6 +240,10 @@ function handleToggleHomeTab(tab: any) {
         <Radio v-model="settings.autoSwitchRecommendationMode" />
       </SettingsItem>
 
+      <SettingsItem :title="$t('settings.preserve_for_you_state')" :desc="$t('settings.preserve_for_you_state_desc')">
+        <Radio v-model="settings.preserveForYouState" />
+      </SettingsItem>
+
       <Dialog
         v-if="showQRCodeDialog"
         width="50%"
