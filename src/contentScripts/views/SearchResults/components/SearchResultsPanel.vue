@@ -424,7 +424,7 @@ const { t } = useI18n()
             </div>
           </div>
 
-          <div v-else-if="section?.result_type === 'activity' && Array.isArray(section.data) && section.data.length">
+          <div v-else-if="section?.result_type === 'activity' && Array.isArray(section.data) && section.data.filter(removeUnusedActivityCard).length">
             <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
               活动
             </h3>
