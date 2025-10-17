@@ -35,17 +35,17 @@ function formatCount(count: number): string {
         class="category-tab"
         :class="{ active: props.currentCategory === category.value }"
         flex
-        items-center gap-1 px-3 py-1.5 rounded="$bew-radius-half"
+        items-center gap-1.5 px-4 py-2 rounded="$bew-radius-half"
         transition-all
         duration-200 hover:bg="$bew-fill-1"
         type="button"
         @click="handleSelect(category.value)"
       >
-        <div :class="category.icon" text-sm />
-        <span text-sm>{{ category.label }}</span>
+        <div :class="category.icon" text-base />
+        <span text-base font-medium>{{ category.label }}</span>
         <span
           v-if="category.value !== 'all' && props.categoryCounts[category.value] > 0"
-          text="xs $bew-text-3"
+          text="sm $bew-text-3"
           ml-1
         >
           ({{ formatCount(props.categoryCounts[category.value]) }})

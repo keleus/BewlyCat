@@ -34,6 +34,17 @@ const API_USER = {
     },
     afterHandle: AHS.J_D,
   },
+  // 批量查询用户关系
+  getRelations: {
+    url: 'https://api.bilibili.com/x/relation/relations',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      fids: '', // 用户mid列表，用逗号分隔，最多40个
+    },
+    afterHandle: AHS.J_D,
+  },
   getPrivilegeInfo: {
     url: 'https://api.bilibili.com/x/vip/privilege/my',
     _fetch: {

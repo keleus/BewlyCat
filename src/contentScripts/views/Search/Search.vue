@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -32,6 +32,7 @@ const isLoadingHotSearch = ref<boolean>(false)
 // 搜索关键词
 const searchKeyword = ref<string>('')
 const searchInput = ref<string>('')
+const searchTimestamp = ref<number>(Date.now())
 const topBarStore = useTopBarStore()
 const { searchKeyword: topBarSearchKeyword } = storeToRefs(topBarStore)
 
@@ -41,16 +42,13 @@ const pluginSearchOrigin = computed(() => {
   return window.location.origin
 })
 
-function updateSearchKeyword() {
-  checkUrlParams()
-}
-
 // 检查URL参数
 function checkUrlParams() {
   const urlParams = new URLSearchParams(window.location.search)
-  searchKeyword.value = urlParams.get('keyword') || ''
-  searchInput.value = searchKeyword.value
-  topBarSearchKeyword.value = searchKeyword.value
+  const keywordFromUrl = urlParams.get('keyword') || ''
+  searchKeyword.value = keywordFromUrl
+  searchInput.value = keywordFromUrl
+  topBarSearchKeyword.value = keywordFromUrl
 }
 
 // 是否显示搜索结果页面
@@ -86,6 +84,11 @@ onMounted(() => {
   }
 })
 
+// 页面卸载时清空顶栏搜索框（真正离开搜索页面）
+onUnmounted(() => {
+  topBarSearchKeyword.value = ''
+})
+
 function buildKeywordHref(keyword: string) {
   const encoded = encodeURIComponent(keyword)
   if (settings.value.usePluginSearchResultsPage && pluginSearchOrigin.value) {
@@ -102,13 +105,17 @@ function performInPlaceSearch(keyword: string) {
   const params = new URLSearchParams(window.location.search)
   params.set('page', 'Search')
   params.set('keyword', normalized)
+  // 保留所有现有的筛选参数（category、筛选条件等）
+  // 这样当搜索词变化时，分类和筛选条件会保持不变
   const newUrl = `${window.location.pathname}?${params.toString()}`
 
   window.history.pushState({}, '', newUrl)
   searchKeyword.value = normalized
   searchInput.value = normalized
   topBarSearchKeyword.value = normalized
-  updateSearchKeyword()
+  searchTimestamp.value = Date.now()
+  // 触发 pushstate 事件通知其他组件
+  window.dispatchEvent(new Event('pushstate'))
 }
 
 function handleSearch(keyword: string) {
@@ -124,9 +131,17 @@ function handleHotKeywordClick(keyword: string, event: MouseEvent) {
   performInPlaceSearch(keyword)
 }
 
-// 监听URL变化（前进/后退、pushState）
-useEventListener(window, 'popstate', updateSearchKeyword)
-useEventListener(window, 'pushstate', updateSearchKeyword)
+// 监听URL变化（前进/后退）
+useEventListener(window, 'popstate', () => {
+  checkUrlParams()
+  searchTimestamp.value = Date.now()
+})
+// 监听 pushstate 事件，同步更新搜索关键词
+// 这确保了从顶栏搜索时也能正确更新搜索结果
+useEventListener(window, 'pushstate', () => {
+  checkUrlParams()
+  searchTimestamp.value = Date.now()
+})
 
 // 当从结果页返回到搜索页时重新加载热搜
 watch(showSearchResults, (visible) => {
@@ -140,7 +155,7 @@ watch(showSearchResults, (visible) => {
   <!-- 显示搜索结果页面 -->
   <SearchResults
     v-if="showSearchResults"
-    :key="searchKeyword"
+    :key="`${searchKeyword}-${searchTimestamp}`"
     :keyword="searchKeyword"
   />
 
@@ -198,6 +213,7 @@ watch(showSearchResults, (visible) => {
           :key="item.keyword"
           :href="buildKeywordHref(item.keyword)"
           type="searchBar"
+          :custom-click-event="settings.usePluginSearchResultsPage"
           class="hot-search-item cursor-pointer duration-300"
           flex items-center gap-2 p="x-3 y-2" hover="text-$bew-theme-color bg-$bew-fill-2"
           rounded="$bew-radius-half"

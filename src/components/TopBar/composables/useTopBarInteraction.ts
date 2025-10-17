@@ -1,3 +1,4 @@
+import { useEventListener } from '@vueuse/core'
 import { computed, reactive, ref, watch } from 'vue'
 
 import {
@@ -28,6 +29,16 @@ export function useTopBarInteraction() {
 
   // 获取 App Provider
   const { activatedPage, reachTop } = useBewlyApp()
+
+  // 监听 URL 变化，使其响应式
+  const currentLocationSearch = ref(window.location.search)
+
+  function updateCurrentLocationSearch() {
+    currentLocationSearch.value = window.location.search
+  }
+
+  useEventListener(window, 'pushstate', updateCurrentLocationSearch)
+  useEventListener(window, 'popstate', updateCurrentLocationSearch)
 
   // TopBar 相关计算属性
   const forceWhiteIcon = computed((): boolean => {
@@ -77,9 +88,6 @@ export function useTopBarInteraction() {
   })
 
   const showSearchBar = computed((): boolean => {
-    if (!settings.value.usePluginSearchResultsPage)
-      return false
-
     const isSearchPage = SEARCH_PAGE_URL.test(location.href)
 
     if (isHomePage()) {
@@ -87,8 +95,19 @@ export function useTopBarInteraction() {
         return true
       if (!activatedPage?.value)
         return true
-      if (activatedPage.value === AppPage.Search)
-        return true
+      // Search 页面的显示逻辑：
+      if (activatedPage.value === AppPage.Search) {
+        // 如果关闭了插件搜索结果页，Search 页面都不显示顶栏搜索框
+        if (!settings.value.usePluginSearchResultsPage)
+          return false
+        // 如果启用了插件搜索结果页，但在空页面状态（没有 keyword），也不显示搜索框
+        // 使用响应式的 currentLocationSearch 而不是直接读取 window.location.search
+        const urlParams = new URLSearchParams(currentLocationSearch.value)
+        const hasKeyword = !!urlParams.get('keyword')
+        if (!hasKeyword)
+          return false
+        // 其他情况（启用插件搜索结果页 + 有 keyword）显示搜索框
+      }
       if (settings.value.useSearchPageModeOnHomePage && activatedPage.value === AppPage.Home && reachTop?.value)
         return false
     }

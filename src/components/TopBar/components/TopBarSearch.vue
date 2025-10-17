@@ -49,11 +49,17 @@ function pushKeywordToSearchPage(keyword: string) {
   params.set('keyword', normalized)
   const newUrl = `${window.location.pathname}?${params.toString()}`
   window.history.pushState({}, '', newUrl)
+  // 触发 pushstate 事件通知其他组件（如 Search.vue）
+  window.dispatchEvent(new Event('pushstate'))
 }
 
 function handleSearch(keyword: string) {
+  // 先更新 searchKeyword，确保顶栏搜索框显示正确的值
+  searchKeyword.value = keyword
+
   if (searchBehavior.value !== 'stay')
     return
+
   pushKeywordToSearchPage(keyword)
 }
 </script>

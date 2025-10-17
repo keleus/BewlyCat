@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
+import Select from '~/components/Select.vue'
+
 import DatePicker from './DatePicker.vue'
 
 const props = defineProps<{
@@ -71,29 +73,23 @@ const maxDate = computed(() => formatDate(new Date()))
     <!-- 排序 -->
     <div flex items-center gap-2>
       <span text="sm $bew-text-2">排序</span>
-      <select
-        v-model="videoOrder"
-        class="filter-select"
-        text="sm $bew-text-1"
-      >
-        <option v-for="option in props.orderOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <div min-w-120px>
+        <Select
+          v-model="videoOrder"
+          :options="props.orderOptions"
+        />
+      </div>
     </div>
 
     <!-- 时长 -->
     <div flex items-center gap-2>
       <span text="sm $bew-text-2">时长</span>
-      <select
-        v-model.number="duration"
-        class="filter-select"
-        text="sm $bew-text-1"
-      >
-        <option v-for="option in props.durationOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
+      <div min-w-120px>
+        <Select
+          v-model="duration"
+          :options="props.durationOptions"
+        />
+      </div>
     </div>
 
     <!-- 日期 -->
@@ -127,40 +123,6 @@ const maxDate = computed(() => formatDate(new Date()))
 </template>
 
 <style scoped lang="scss">
-.filter-select {
-  background: var(--bew-fill-1);
-  border: 1px solid transparent;
-  border-radius: var(--bew-radius-half);
-  padding: 0.35rem 1.75rem 0.35rem 0.75rem;
-  min-width: 120px;
-  color: var(--bew-text-1);
-  font-size: 0.875rem;
-  outline: none;
-  cursor: pointer;
-  appearance: none;
-  transition: all 0.2s ease;
-
-  // 自定义下拉箭头 - 垂直居中
-  background-image:
-    linear-gradient(45deg, transparent 50%, var(--bew-text-3) 50%),
-    linear-gradient(135deg, var(--bew-text-3) 50%, transparent 50%);
-  background-position:
-    calc(100% - 12px) 50%,
-    calc(100% - 7px) 50%;
-  background-size:
-    5px 5px,
-    5px 5px;
-  background-repeat: no-repeat;
-
-  &:hover {
-    background: var(--bew-fill-2);
-  }
-
-  &:focus {
-    border-color: var(--bew-theme-color);
-  }
-}
-
 .time-range-btn {
   padding: 0.35rem 0.75rem;
   border-radius: var(--bew-radius-half);

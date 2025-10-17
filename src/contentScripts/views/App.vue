@@ -13,6 +13,7 @@ import { settings } from '~/logic'
 import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
+import { useTopBarStore } from '~/stores/topBarStore'
 import { isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
@@ -25,6 +26,7 @@ function isFestivalPage(): boolean {
 
 const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
+const topBarStore = useTopBarStore()
 
 // Conditionally use dark mode (skip on festival pages)
 let isDark: Ref<boolean>
@@ -50,6 +52,37 @@ function getPageParam(): AppPage | null {
 }
 
 const activatedPage = ref<AppPage>(getPageParam() || (settings.value.dockItemsConfig.find(e => e.visible === true)?.page || AppPage.Home))
+
+// 清理搜索相关的URL参数
+function clearSearchParamsFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search)
+  const hasSearchParams = urlParams.has('keyword')
+    || urlParams.has('category')
+    || urlParams.has('user_order')
+    || urlParams.has('user_type')
+    || urlParams.has('search_type')
+    || urlParams.has('live_room_order')
+    || urlParams.has('live_user_order')
+
+  if (hasSearchParams) {
+    urlParams.delete('keyword')
+    urlParams.delete('category')
+    urlParams.delete('user_order')
+    urlParams.delete('user_type')
+    urlParams.delete('search_type')
+    urlParams.delete('live_room_order')
+    urlParams.delete('live_user_order')
+    const newUrl = `${window.location.pathname}?${urlParams.toString()}`
+    window.history.replaceState({}, '', newUrl)
+  }
+}
+
+// 页面加载时，如果不是Search页面则清理搜索参数
+if (activatedPage.value !== AppPage.Search) {
+  clearSearchParamsFromUrl()
+  topBarStore.searchKeyword = ''
+}
+
 // 添加Home页面的子页面状态
 const homeActivatedPage = ref<HomeSubPage>(HomeSubPage.ForYou)
 const pages = {
@@ -346,6 +379,12 @@ function handleDockItemClick(dockItem: DockItem) {
 
     // When not opened in a new tab, change the `activatedPage`
     activatedPage.value = dockItem.page
+
+    // Clear search keyword and URL params when switching away from Search page
+    if (dockItem.page !== AppPage.Search) {
+      topBarStore.searchKeyword = ''
+      clearSearchParamsFromUrl()
+    }
   }
 }
 

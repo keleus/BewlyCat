@@ -82,6 +82,20 @@ const API_SEARCH = {
     },
     afterHandle: AHS.J_D,
   },
+  // 影视搜索
+  searchMediaFt: {
+    url: 'https://api.bilibili.com/x/web-interface/search/type',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      search_type: 'media_ft',
+      keyword: '',
+      page: 1,
+      pagesize: 20,
+    },
+    afterHandle: AHS.J_D,
+  },
   // 用户搜索
   searchUser: {
     url: 'https://api.bilibili.com/x/web-interface/wbi/search/type',
@@ -110,6 +124,37 @@ const API_SEARCH = {
       keyword: '',
       page: 1,
       pagesize: 20,
+      order: '', // 排序: 综合(default)，最新开播(live_time)
+    },
+    afterHandle: AHS.J_D,
+  },
+  // 直播间搜索（仅直播间）
+  searchLiveRoom: {
+    url: 'https://api.bilibili.com/x/web-interface/wbi/search/type',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      search_type: 'live_room',
+      keyword: '',
+      page: 1,
+      pagesize: 20,
+      order: '', // 排序: 综合(default)，最新开播(live_time)
+    },
+    afterHandle: AHS.J_D,
+  },
+  // 主播搜索
+  searchLiveUser: {
+    url: 'https://api.bilibili.com/x/web-interface/wbi/search/type',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      search_type: 'live_user',
+      keyword: '',
+      page: 1,
+      page_size: 20,
+      order: '', // 排序: 在线人数(online)，粉丝数(fans)
     },
     afterHandle: AHS.J_D,
   },

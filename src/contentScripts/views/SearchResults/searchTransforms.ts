@@ -1,4 +1,5 @@
 import type { Video } from '~/components/VideoCard/types'
+import { parseStatNumber } from '~/utils/dataFormatter'
 
 export function formatNumber(num?: number): string {
   if (!num)
@@ -162,16 +163,25 @@ export interface BangumiEpisode {
 
 export function convertUserCardData(user: any) {
   const verifyInfo = user.official_verify?.desc || user.verify_info || ''
+  // 兼容live_user数据结构：uid->mid, uface->face
+  const mid = user.mid || user.uid
+  const face = user.upic || user.face || user.uface || ''
   return {
-    mid: user.mid,
+    mid,
     name: removeHighlight(user.uname),
-    face: user.upic || user.face || '',
+    face,
     sign: removeHighlight(user.usign || user.sign),
-    fans: user.fans,
+    fans: user.fans || user.attentions,
     videos: user.videos,
+    level: user.level,
+    gender: user.gender, // 0:保密, 1:男, 2:女
     isVerified: Boolean(user.official_verify?.type === 0 || user.is_verify),
     verifyInfo: removeHighlight(verifyInfo),
-    samples: convertUserSamples(user, 6),
+    samples: convertUserSamples(user, 7),
+    isFollowed: user.is_follow || 0,
+    showFollowButton: true,
+    liveStatus: user.live_status,
+    roomid: user.roomid || user.room_id,
   }
 }
 
@@ -185,9 +195,10 @@ export function convertUserHighlight(user: any) {
     videos: user.videos,
     desc: removeHighlight(user.usign || user.sign || ''),
     level: user.level,
+    gender: user.gender, // 0:保密, 1:男, 2:女
     officialVerify: removeHighlight(user.official_verify?.title || user.official_verify?.desc || ''),
     url: `https://space.bilibili.com/${user.mid}`,
-    samples: convertUserSamples(user, 6),
+    samples: convertUserSamples(user, 7),
   }
 }
 
@@ -270,6 +281,47 @@ export function convertMediaFtData(item: any) {
   }
 }
 
+export function convertMediaFtHighlight(item: any) {
+  const cover = item.cover || item.square_cover || item.vertical_cover || item.horizontal_cover
+  const url = item.url
+    || item.goto_url
+    || (item.season_id ? `https://www.bilibili.com/bangumi/play/ss${item.season_id}` : undefined)
+    || (item.media_id ? `https://www.bilibili.com/bangumi/media/md${item.media_id}` : undefined)
+    || ''
+
+  const badge = Array.isArray(item.badges) && item.badges.length > 0
+    ? removeHighlight(item.badges[0].text)
+    : removeHighlight(item.badge || '')
+
+  const areas = typeof item.areas === 'string' ? item.areas : ''
+  const styles = typeof item.styles === 'string' ? item.styles : ''
+  const indexShow = typeof item.index_show === 'string' ? item.index_show : ''
+
+  const episodes = Array.isArray(item.eps)
+    ? item.eps.map((ep: any) => ({
+        id: ep.id,
+        title: ep.title || ep.index,
+        url: ep.url,
+        cover: ep.cover,
+        badge: ep.badges?.[0]?.text,
+      }))
+    : []
+
+  return {
+    id: item.season_id || item.media_id || item.id,
+    title: removeHighlight(item.title),
+    url,
+    cover,
+    badge,
+    score: typeof item.media_score?.score === 'number' ? item.media_score.score : undefined,
+    areas,
+    styles,
+    indexShow,
+    desc: removeHighlight(item.desc || ''),
+    episodes,
+  }
+}
+
 export function convertActivityData(item: any) {
   const cover = typeof item.cover === 'string'
     ? item.cover.startsWith('//') ? `https:${item.cover}` : item.cover
@@ -285,6 +337,32 @@ export function convertActivityData(item: any) {
     cover,
     url,
     badge: removeHighlight(item.corner),
+  }
+}
+
+export function convertLiveRoomData(live: any): Video {
+  const cover = live.cover || live.user_cover || live.pic
+  const sanitizedCover = typeof cover === 'string' && cover.startsWith('//')
+    ? `https:${cover}`
+    : cover
+
+  const tag = live.area_name_v2?.trim() || live.area_name?.trim() || undefined
+
+  return {
+    id: live.roomid,
+    title: removeHighlight(live.title),
+    cover: sanitizedCover || '',
+    author: {
+      name: removeHighlight(live.uname),
+      authorFace: live.uface || live.face || '',
+      mid: live.uid,
+    },
+    view: parseStatNumber(live.online),
+    viewStr: String(live.online || ''),
+    tag,
+    roomid: live.roomid,
+    liveStatus: live.live_status,
+    threePointV2: [],
   }
 }
 
@@ -414,13 +492,15 @@ function convertUserSamples(source: any, limit = 6): any[] {
     const cover = normalizeMediaCover(item.pic || item.cover)
     const url = resolveUserSampleUrl(item)
     const play = parseCountNumber(item.play)
-    const duration = normalizeDuration(item.duration)
+    const durationStr = normalizeDuration(item.duration)
+    const duration = durationStr ? parseDurationToSeconds(durationStr) : undefined
     samples.push({
       id,
       title,
       cover,
       url,
       duration,
+      durationStr,
       play,
     })
     if (samples.length >= limit)

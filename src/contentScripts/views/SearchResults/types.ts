@@ -1,4 +1,4 @@
-export type SearchCategory = 'all' | 'video' | 'bangumi' | 'user' | 'live' | 'article'
+export type SearchCategory = 'all' | 'video' | 'bangumi' | 'media_ft' | 'user' | 'live' | 'article'
 
 export interface SearchCategoryOption {
   value: SearchCategory

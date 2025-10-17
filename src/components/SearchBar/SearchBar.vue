@@ -68,6 +68,15 @@ const pluginSearchOrigin = computed(() => {
 const searchMode = computed(() => props.searchBehavior ?? 'navigate')
 const isInPlaceSearch = computed(() => searchMode.value === 'stay')
 
+// 判断是否在搜索页且启用了插件搜索
+const shouldHandleInCurrentPage = computed(() => {
+  if (!settings.value.usePluginSearchResultsPage)
+    return false
+  // 检查是否在搜索页
+  const urlParams = new URLSearchParams(window.location.search)
+  return urlParams.get('page') === 'Search'
+})
+
 watch(() => props.modelValue, (value) => {
   const next = value ?? ''
   if (next !== keyword.value)
@@ -183,8 +192,6 @@ async function navigateToSearchResultPage(rawKeyword: string) {
   if (!normalized)
     return
 
-  keyword.value = normalized
-
   const searchItem = {
     value: normalized,
     timestamp: Number(new Date()),
@@ -196,7 +203,8 @@ async function navigateToSearchResultPage(rawKeyword: string) {
     console.error('Failed to add search history:', error)
   }
 
-  if (isInPlaceSearch.value) {
+  // 如果是就地搜索模式，或在搜索页且启用了插件搜索，则 emit 事件
+  if (isInPlaceSearch.value || shouldHandleInCurrentPage.value) {
     emit('search', normalized)
     isFocus.value = false
     return
@@ -215,7 +223,8 @@ async function navigateToSearchResultPage(rawKeyword: string) {
 }
 
 function handleKeywordLinkClick(value: string, event: MouseEvent) {
-  if (!isInPlaceSearch.value)
+  // 如果不是就地搜索模式，且不在搜索页，则使用默认行为
+  if (!isInPlaceSearch.value && !shouldHandleInCurrentPage.value)
     return
   event.preventDefault()
   event.stopPropagation()
@@ -379,7 +388,7 @@ function handleFocusOut(event: FocusEvent) {
         type="text"
         @focus="isFocus = true"
         @input="handleNativeInput"
-        @keydown.enter.stop.passive="handleKeyEnter"
+        @keydown.enter.stop="handleKeyEnter"
         @keyup.up.stop.passive="handleKeyUp"
         @keyup.down.stop.passive="handleKeyDown"
         @keydown.stop="() => {}"
@@ -434,6 +443,7 @@ function handleFocusOut(event: FocusEvent) {
               v-for="(item, index) in hotSearchList.slice(0, 10)" :key="item.keyword"
               :href="buildKeywordHref(item.keyword)"
               type="searchBar"
+              :custom-click-event="isInPlaceSearch || shouldHandleInCurrentPage"
               class="hot-search-item cursor-pointer duration-300"
               flex items-center gap-2 p="x-2 y-1" hover="text-$bew-theme-color"
               @click="handleKeywordLinkClick(item.keyword, $event)"
@@ -485,6 +495,7 @@ function handleFocusOut(event: FocusEvent) {
               v-for="item in searchHistory" :key="item.timestamp" ref="historyItemRef"
               :href="buildKeywordHref(item.value)"
               type="searchBar"
+              :custom-click-event="isInPlaceSearch || shouldHandleInCurrentPage"
               class="history-item group"
               flex justify-between items-center
               @click="handleKeywordLinkClick(item.value, $event)"

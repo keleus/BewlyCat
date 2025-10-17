@@ -27,6 +27,7 @@ interface Props {
   horizontal?: boolean
   showPreview?: boolean
   moreBtn?: boolean
+  hideAuthor?: boolean
 }
 
 const layout = computed((): 'modern' | 'old' => {
@@ -79,6 +80,16 @@ const coverStatValues = computed(() => {
 const coverStatsVisibility = computed(() => {
   const { view, danmaku, like, duration } = coverStatValues.value
   const width = logic.cardWidth.value
+
+  // 无用户信息模式下，只显示播放量和时长
+  if (props.hideAuthor) {
+    return {
+      view: Boolean(view),
+      danmaku: false,
+      like: false,
+      duration: Boolean(duration),
+    }
+  }
 
   let showDanmaku = Boolean(danmaku)
   let showLike = Boolean(like)
@@ -246,7 +257,11 @@ const highlightTags = computed(() => {
       tags.push('百万播放')
   }
 
-  if (primaryTags.value.length > 0) {
+  // 如果传入了2个或更多Tag，则不显示推荐tag
+  if (primaryTags.value.length >= 2) {
+    return []
+  }
+  else if (primaryTags.value.length > 0) {
     // tags只返回一个
     return tags.slice(0, 1)
   }
@@ -388,6 +403,7 @@ provide('getVideoType', () => props.type!)
             :author-font-size-class="authorFontSizeClass"
             :meta-font-size-class="metaFontSizeClass"
             :highlight-tags="highlightTags"
+            :hide-author="hideAuthor"
             @more-btn-click="logic.handleMoreBtnClick"
           />
         </ALink>
