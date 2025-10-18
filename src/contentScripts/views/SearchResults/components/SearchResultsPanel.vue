@@ -23,6 +23,7 @@ import {
   formatNumber,
   isMediaFtItem,
   removeHighlight,
+  removeUnusedActivityCard,
 } from '../searchTransforms'
 import type { SearchCategory, SearchCategoryOption } from '../types'
 
@@ -423,13 +424,13 @@ const { t } = useI18n()
             </div>
           </div>
 
-          <div v-else-if="section?.result_type === 'activity' && Array.isArray(section.data) && section.data.length">
+          <div v-else-if="section?.result_type === 'activity' && Array.isArray(section.data) && section.data.filter(removeUnusedActivityCard).length">
             <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
               活动
             </h3>
             <div class="activity-results" grid="~ cols-1 md:cols-2 lg:cols-3 gap-4">
               <a
-                v-for="activity in section.data.map(convertActivityData)"
+                v-for="activity in section.data.filter(removeUnusedActivityCard).map(convertActivityData)"
                 :key="activity.id"
                 :href="activity.url"
                 target="_blank"

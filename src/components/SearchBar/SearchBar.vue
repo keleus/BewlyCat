@@ -62,6 +62,8 @@ const isLoadingHotSearch = ref<boolean>(false)
 const pluginSearchOrigin = computed(() => {
   if (typeof window === 'undefined')
     return ''
+  if (window.location.origin === 'https://t.bilibili.com')
+    return '//www.bilibili.com'
   return window.location.origin
 })
 
