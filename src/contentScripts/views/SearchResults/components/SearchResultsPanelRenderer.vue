@@ -595,6 +595,11 @@ const { t } = useI18n()
                         id: sample.id,
                         title: sample.title,
                         cover: sample.cover,
+                        author: {
+                          name: user.name,
+                          mid: user.mid,
+                          authorFace: user.face,
+                        },
                         duration: sample.duration,
                         durationStr: sample.durationStr,
                         view: sample.play,

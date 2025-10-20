@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, watch } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import api from '~/utils/api'
@@ -93,12 +93,20 @@ watch(() => props.keyword, async (newKeyword, oldKeyword) => {
     return
   }
 
-  if (normalizedNew === normalizedOld && newKeyword === oldKeyword)
-    return
+  // 关键词变化时才执行
+  if (normalizedNew !== normalizedOld) {
+    resetAll()
+    await performSearch(false)
+  }
+})
 
-  resetAll()
-  await performSearch(false)
-}, { immediate: true })
+// 组件挂载时立即执行搜索
+onMounted(() => {
+  const keyword = props.keyword.trim()
+  if (keyword) {
+    performSearch(false)
+  }
+})
 
 // 监听筛选条件变化
 watch(() => props.filters, () => {

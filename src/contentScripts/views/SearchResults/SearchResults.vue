@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useTitle } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -18,6 +19,15 @@ const props = defineProps<{
 
 const normalizedKeyword = computed(() => (props.keyword || '').trim())
 const CATEGORY_KEYS: SearchCategory[] = ['all', 'video', 'bangumi', 'media_ft', 'user', 'live', 'article']
+
+// 设置页面标题
+const pageTitle = computed(() => {
+  if (!normalizedKeyword.value) {
+    return '搜索 - 哔哩哔哩'
+  }
+  return `${normalizedKeyword.value} - 搜索结果 - 哔哩哔哩`
+})
+useTitle(pageTitle)
 
 // 从URL读取category参数
 function getCategoryFromUrl(): SearchCategory {

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { watch } from 'vue'
+import { onMounted, watch } from 'vue'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
@@ -10,6 +10,7 @@ import VideoGrid from '../components/renderers/VideoGrid.vue'
 import { useLoadMore } from '../composables/useLoadMore'
 import { usePagination } from '../composables/usePagination'
 import { useSearchRequest } from '../composables/useSearchRequest'
+import { convertVideoData } from '../searchTransforms'
 import type { VideoSearchFilters } from '../types'
 import { applyVideoTimeFilter, buildVideoSearchParams } from '../utils/searchHelpers'
 
@@ -65,12 +66,20 @@ watch(() => props.keyword, async (newKeyword, oldKeyword) => {
     return
   }
 
-  if (normalizedNew === normalizedOld && newKeyword === oldKeyword)
-    return
+  // 关键词变化时才执行
+  if (normalizedNew !== normalizedOld) {
+    resetAll()
+    await performSearch(false)
+  }
+})
 
-  resetAll()
-  await performSearch(false)
-}, { immediate: true })
+// 组件挂载时立即执行搜索
+onMounted(() => {
+  const keyword = props.keyword.trim()
+  if (keyword) {
+    performSearch(false)
+  }
+})
 
 // 监听筛选条件变化
 watch(() => props.filters, () => {
@@ -121,12 +130,15 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   // 过滤广告
   const filteredList = applyVideoTimeFilter(incomingList)
 
+  // 转换数据格式
+  const convertedList = filteredList.map(item => convertVideoData(item))
+
   // 合并或替换结果
   if (loadMore && results.value) {
-    results.value = [...results.value, ...filteredList]
+    results.value = [...results.value, ...convertedList]
   }
   else {
-    results.value = filteredList
+    results.value = convertedList
   }
 
   // 提取分页信息
@@ -179,7 +191,7 @@ defineExpose({
       {{ $t('common.no_data') }}
     </div>
 
-    <VideoGrid v-else :videos="results || []" />
+    <VideoGrid v-else :videos="results || []" :auto-convert="false" />
 
     <Loading v-if="isLoading && results && results.length > 0" />
 

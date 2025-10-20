@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { watch } from 'vue'
+import { onMounted, watch } from 'vue'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
@@ -58,12 +58,20 @@ watch(() => props.keyword, async (newKeyword, oldKeyword) => {
     return
   }
 
-  if (normalizedNew === normalizedOld && newKeyword === oldKeyword)
-    return
+  // 关键词变化时才执行
+  if (normalizedNew !== normalizedOld) {
+    resetAll()
+    await performSearch(false)
+  }
+})
 
-  resetAll()
-  await performSearch(false)
-}, { immediate: true })
+// 组件挂载时立即执行搜索
+onMounted(() => {
+  const keyword = props.keyword.trim()
+  if (keyword) {
+    performSearch(false)
+  }
+})
 
 async function performSearch(loadMore: boolean): Promise<boolean> {
   const keyword = props.keyword.trim()

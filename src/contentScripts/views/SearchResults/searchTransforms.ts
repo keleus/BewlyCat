@@ -10,7 +10,7 @@ export function formatNumber(num?: number): string {
 }
 
 export function removeHighlight(text?: string): string {
-  if (typeof text !== 'string')
+  if (typeof text !== 'string' || !text)
     return ''
   return text.replace(/<em class="keyword">/g, '').replace(/<\/em>/g, '')
 }
@@ -60,17 +60,46 @@ export function convertVideoData(video: any): Video {
   const tags = extractVideoTags(video)
   const capsuleText = removeHighlight(video.typename || '').trim()
 
+  // 处理 author 字段：确保始终返回正确的对象格式
+  let author: any
+
+  // 如果 author 已经是对象且有必要的字段，直接使用
+  if (typeof video.author === 'object' && video.author !== null && !Array.isArray(video.author)) {
+    // 确保对象有必要的字段
+    if ('authorFace' in video.author || 'face' in video.author) {
+      author = {
+        name: removeHighlight(video.author.name || video.author.uname || ''),
+        mid: video.author.mid,
+        authorFace: video.author.authorFace || video.author.face || '',
+      }
+    }
+    else {
+      // author 对象缺少必要字段，从其他地方构造
+      const authorName = video.author.name || video.author.uname || video.owner?.name || ''
+      author = {
+        name: removeHighlight(authorName),
+        mid: video.mid || video.owner?.mid || video.author.mid,
+        authorFace: video.upic || video.owner?.face || '',
+      }
+    }
+  }
+  else {
+    // author 是字符串或其他类型，从原始字段构造
+    const authorName = typeof video.author === 'string' ? video.author : (video.owner?.name || '')
+    author = {
+      name: removeHighlight(authorName),
+      mid: video.mid || video.owner?.mid,
+      authorFace: video.upic || video.owner?.face || '',
+    }
+  }
+
   return {
     id: video.aid || video.id,
     duration: durationSeconds,
     durationStr,
-    title: removeHighlight(video.title),
+    title: removeHighlight(video.title || ''),
     cover: normalizedCover || '',
-    author: {
-      name: removeHighlight(video.author || video.owner?.name),
-      mid: video.mid || video.owner?.mid,
-      authorFace: video.upic || video.owner?.face || '',
-    },
+    author,
     view: video.play || video.stat?.view,
     danmaku: video.danmaku || video.video_review || video.stat?.danmaku,
     publishedTimestamp: video.pubdate,
