@@ -1,0 +1,196 @@
+<script lang="ts" setup>
+import { watch } from 'vue'
+
+import ArticleCard from '~/components/ArticleCard/ArticleCard.vue'
+import Empty from '~/components/Empty.vue'
+import Loading from '~/components/Loading.vue'
+import { useBewlyApp } from '~/composables/useAppProvider'
+import api from '~/utils/api'
+
+import { useLoadMore } from '../composables/useLoadMore'
+import { usePagination } from '../composables/usePagination'
+import { useSearchRequest } from '../composables/useSearchRequest'
+import { convertArticleCardData } from '../searchTransforms'
+import { dedupeByKey } from '../utils/searchHelpers'
+
+const props = defineProps<{
+  keyword: string
+}>()
+
+const { haveScrollbar } = useBewlyApp()
+
+const {
+  isLoading,
+  error,
+  results,
+  lastResponse,
+  search,
+  reset: resetSearch,
+} = useSearchRequest<any[]>('article')
+
+const {
+  totalResults,
+  totalPages,
+  extractPagination,
+  updatePage,
+  getNextPage,
+  reset: resetPagination,
+} = usePagination()
+
+const {
+  hasMore,
+  exhausted,
+  requestLoadMore,
+  handleLoadMoreCompletion,
+  setExhausted,
+  reset: resetLoadMore,
+} = useLoadMore(async () => {
+  const success = await performSearch(true)
+  const itemsCount = results.value?.length || 0
+  return { success, itemsCount }
+})
+
+watch(() => props.keyword, async (newKeyword, oldKeyword) => {
+  const normalizedNew = (newKeyword || '').trim()
+  const normalizedOld = (oldKeyword || '').trim()
+
+  if (!normalizedNew) {
+    resetAll()
+    return
+  }
+
+  if (normalizedNew === normalizedOld && newKeyword === oldKeyword)
+    return
+
+  resetAll()
+  await performSearch(false)
+}, { immediate: true })
+
+async function performSearch(loadMore: boolean): Promise<boolean> {
+  const keyword = props.keyword.trim()
+  if (!keyword)
+    return false
+
+  if (loadMore && (isLoading.value || exhausted.value))
+    return false
+
+  if (!loadMore)
+    setExhausted(false)
+
+  const targetPage = getNextPage(loadMore)
+  const previousLength = results.value?.length || 0
+
+  const success = await search(
+    keyword,
+    params => api.search.searchArticle(params),
+    {
+      page: targetPage,
+      pagesize: 30,
+    },
+  )
+
+  if (!success || !lastResponse.value?.data)
+    return false
+
+  const rawData = lastResponse.value.data
+  const incomingList = Array.isArray(rawData?.result) ? rawData.result : []
+
+  if (loadMore && results.value) {
+    const merged = [...results.value, ...incomingList]
+    results.value = dedupeByKey(merged, item => String(item?.id ?? JSON.stringify(item)))
+  }
+  else {
+    results.value = incomingList
+  }
+
+  extractPagination(rawData, incomingList.length)
+  updatePage(targetPage)
+
+  const finalLength = results.value!.length
+  const newItems = Math.max(finalLength - previousLength, 0)
+
+  if (incomingList.length === 0) {
+    setExhausted(true)
+  }
+  else if (newItems <= 0 && targetPage >= totalPages.value) {
+    setExhausted(true)
+  }
+
+  if (loadMore)
+    await handleLoadMoreCompletion(haveScrollbar)
+
+  return true
+}
+
+function resetAll() {
+  resetSearch()
+  resetPagination()
+  resetLoadMore()
+  results.value = []
+}
+
+defineExpose({
+  isLoading,
+  error,
+  results,
+  totalResults,
+  hasMore,
+  requestLoadMore,
+})
+</script>
+
+<template>
+  <div class="article-search-page">
+    <div v-if="error" class="error-message">
+      {{ error }}
+    </div>
+
+    <div v-else-if="!isLoading && (!results || results.length === 0)" class="empty-state">
+      {{ $t('common.no_data') }}
+    </div>
+
+    <div v-else class="article-grid">
+      <ArticleCard
+        v-for="article in results"
+        :key="article.id"
+        v-bind="convertArticleCardData(article)"
+      />
+    </div>
+
+    <Loading v-if="isLoading && results && results.length > 0" />
+
+    <Empty
+      v-else-if="!isLoading && results && results.length > 0 && !hasMore"
+      :description="$t('common.no_more_content')"
+    />
+  </div>
+</template>
+
+<style scoped lang="scss">
+.article-search-page {
+  width: 100%;
+  padding-bottom: 2rem;
+}
+
+.article-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.error-message {
+  padding: 2rem;
+  text-align: center;
+  color: var(--bew-error-color);
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: var(--bew-text-2);
+}
+</style>

@@ -85,6 +85,12 @@ img {
     -moz-osx-font-smoothing: grayscale;
   }
 
+  .keep-one-line {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .keep-two-lines {
     overflow: hidden;
     text-overflow: ellipsis;

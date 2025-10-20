@@ -15,6 +15,16 @@ export function removeHighlight(text?: string): string {
   return text.replace(/<em class="keyword">/g, '').replace(/<\/em>/g, '')
 }
 
+/**
+ * 检查视频是否是广告
+ */
+export function isAdVideo(video: any): boolean {
+  if (!video)
+    return false
+  const type = video.type || ''
+  return typeof type === 'string' && type.toLowerCase().includes('ad')
+}
+
 function splitTagValue(value: string): string[] {
   return value.split(/[\s,，、/|#；;]+/g).filter(Boolean)
 }
@@ -350,7 +360,13 @@ export function convertLiveRoomData(live: any): Video {
     ? `https:${cover}`
     : cover
 
-  const tag = live.area_name_v2?.trim() || live.area_name?.trim() || undefined
+  // uface 可能也需要补全 https
+  const authorFace = live.uface || live.face || ''
+  const sanitizedAuthorFace = typeof authorFace === 'string' && authorFace.startsWith('//')
+    ? `https:${authorFace}`
+    : authorFace
+
+  const tag = removeHighlight(live.cate_name?.trim() || live.area_name_v2?.trim() || live.area_name?.trim() || '')
 
   return {
     id: live.roomid,
@@ -358,7 +374,7 @@ export function convertLiveRoomData(live: any): Video {
     cover: sanitizedCover || '',
     author: {
       name: removeHighlight(live.uname),
-      authorFace: live.uface || live.face || '',
+      authorFace: sanitizedAuthorFace || '',
       mid: live.uid,
     },
     view: parseStatNumber(live.online),
@@ -702,4 +718,28 @@ function resolveBangumiEpisodeCount(item: any, episodes: BangumiEpisode[]): numb
     return episodes.length
 
   return undefined
+}
+
+/**
+ * 转换游戏卡片数据
+ */
+export function convertWebGameData(game: any) {
+  const cover = typeof game.game_icon === 'string'
+    ? game.game_icon.startsWith('//') ? `https:${game.game_icon}` : game.game_icon
+    : undefined
+
+  const url = game.game_link || ''
+
+  return {
+    id: String(game.game_base_id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+    title: removeHighlight(game.game_name || game.game_name_v2),
+    desc: removeHighlight(game.summary || game.notice),
+    cover,
+    url,
+    badge: game.recommend_reason,
+    tags: game.game_tags,
+    rating: game.grade,
+    downloads: game.download_num,
+    platform: game.platform,
+  }
 }

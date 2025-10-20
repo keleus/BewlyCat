@@ -24,6 +24,7 @@ common:
   save_to_watch_later: 稍后再看
   added: 已添加
   performance_impact_warn: 这个功能可能会影响性能！
+  no_data: 暂无数据
   no_more_content: 没有更多内容了
   operation:
     add: 新增

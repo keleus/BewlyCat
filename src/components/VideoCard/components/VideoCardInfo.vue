@@ -62,8 +62,8 @@ const primaryTags = computed(() => {
     <div class="group/desc" flex="~ col" :class="layout === 'modern' ? 'gap-2' : ''" w="full" align="items-start">
       <div flex="~ gap-1 justify-between items-start" w="full" pos="relative">
         <h3
-          class="keep-two-lines"
           :class="[
+            video.liveStatus === 1 ? 'keep-one-line' : 'keep-two-lines',
             { 'bew-title-auto': settings.homeAdaptiveTitleAutoSize },
             layout === 'modern' ? 'video-card-title' : '',
           ]"
@@ -367,7 +367,12 @@ const primaryTags = computed(() => {
 }
 
 .video-card-title {
-  min-height: calc(var(--bew-title-line-height, 1.35) * 2em);
+  &.keep-two-lines {
+    min-height: calc(var(--bew-title-line-height, 1.35) * 2em);
+  }
+  &.keep-one-line {
+    min-height: auto;
+  }
 }
 
 .video-card__more-btn {

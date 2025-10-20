@@ -24,6 +24,7 @@ common:
   save_to_watch_later: 陣間至睇
   added: 已添加
   performance_impact_warn: 呢個功能可能會降低效能！
+  no_data: 暫時冇數據
   no_more_content: 唔使睇喇，冇嘢喇
   operation:
     add: 新增
@@ -428,7 +429,6 @@ settings:
     off: 預設關閉
   video_player_mode:
     default: 預設
-    fullscreen: 全螢幕
     web_fullscreen: 網頁全螢幕
     widescreen: 闊螢幕
   show_ip_location: 顯示 IP 歸屬地
