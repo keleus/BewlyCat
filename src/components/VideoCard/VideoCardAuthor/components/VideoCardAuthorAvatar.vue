@@ -21,10 +21,41 @@ const displayedAvatars = computed(() => {
   else
     return [props.author]
 })
+
+// 检查是否是课堂类型（使用特殊标记）
+const isKetang = computed(() => {
+  if (Array.isArray(props.author))
+    return false
+  return props.author?.authorFace === '__ketang_icon__'
+})
 </script>
 
 <template>
+  <!-- 课堂图标 -->
   <div
+    v-if="isKetang"
+    :style="{
+      width: '34px',
+      height: '34px',
+    }"
+    :class="compact ? 'mr-2' : 'mr-4'"
+    pos="relative"
+    shrink-0
+  >
+    <div
+      class="ketang-icon"
+      w-34px h-34px
+      rounded="1/2"
+      bg="$bew-theme-color-10"
+      grid="~ place-items-center"
+    >
+      <div i-mingcute:book-2-line text="xl $bew-theme-color" />
+    </div>
+  </div>
+
+  <!-- 普通头像 -->
+  <div
+    v-else
     :style="{
       width: Array.isArray(author) && author.length > 1 ? `${28 + (displayedAvatars?.length) * 6}px` : '34px',
       height: Array.isArray(author) && author.length > 1 ? '28px' : '34px',

@@ -14,7 +14,7 @@ import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
 import { useTopBarStore } from '~/stores/topBarStore'
-import { isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
+import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
@@ -53,8 +53,13 @@ function getPageParam(): AppPage | null {
 
 const activatedPage = ref<AppPage>(getPageParam() || (settings.value.dockItemsConfig.find(e => e.visible === true)?.page || AppPage.Home))
 
-// 清理搜索相关的URL参数
+// 清理搜索相关的URL参数（仅在首页生效）
 function clearSearchParamsFromUrl() {
+  // 只在首页清理搜索参数，避免影响其他B站页面（如搜索结果页）
+  if (!isHomePage() || isSearchResultsPage()) {
+    return
+  }
+
   const urlParams = new URLSearchParams(window.location.search)
   const hasSearchParams = urlParams.has('keyword')
     || urlParams.has('category')
@@ -77,8 +82,8 @@ function clearSearchParamsFromUrl() {
   }
 }
 
-// 页面加载时，如果不是Search页面则清理搜索参数
-if (activatedPage.value !== AppPage.Search) {
+// 页面加载时，如果不是Search页面且在首页则清理搜索参数
+if (activatedPage.value !== AppPage.Search && isHomePage() && !isSearchResultsPage()) {
   clearSearchParamsFromUrl()
   topBarStore.searchKeyword = ''
 }
@@ -380,8 +385,8 @@ function handleDockItemClick(dockItem: DockItem) {
     // When not opened in a new tab, change the `activatedPage`
     activatedPage.value = dockItem.page
 
-    // Clear search keyword and URL params when switching away from Search page
-    if (dockItem.page !== AppPage.Search) {
+    // Clear search keyword and URL params when switching away from Search page (only on homepage)
+    if (dockItem.page !== AppPage.Search && isHomePage() && !isSearchResultsPage()) {
       topBarStore.searchKeyword = ''
       clearSearchParamsFromUrl()
     }

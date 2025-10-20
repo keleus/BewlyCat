@@ -28,6 +28,7 @@ import {
   removeUnusedActivityCard,
 } from '../searchTransforms'
 import type { SearchCategory, SearchCategoryOption } from '../types'
+import EsportsMatchCard from './renderers/EsportsMatchCard.vue'
 
 const props = defineProps<{
   categories: ReadonlyArray<SearchCategoryOption>
@@ -106,6 +107,33 @@ const videoGridStyle = computed(() => {
   return {
     gridTemplateColumns: `repeat(${columns}, minmax(${columnWidth}px, ${columnWidth}px))`,
     justifyContent: 'flex-start',
+  }
+})
+
+// 赛事卡片样式计算（基于250px卡片宽度，最多5个）
+const esportsCardStyle = computed(() => {
+  const containerWidth = searchContentWidth.value
+  const cardMinWidth = 250
+  const gap = videoGridGap.value
+  const maxCards = 5
+
+  if (!containerWidth || !Number.isFinite(containerWidth) || containerWidth <= 0) {
+    return {
+      cardWidth: `${cardMinWidth}px`,
+    }
+  }
+
+  // 计算可以显示的卡片数量（最多5个）
+  const rawColumns = Math.floor((containerWidth + gap) / (cardMinWidth + gap))
+  const columns = Math.min(Math.max(rawColumns, 1), maxCards)
+
+  // 计算每张卡片的实际宽度（填满容器）
+  const totalGap = gap * Math.max(columns - 1, 0)
+  const available = containerWidth - totalGap
+  const cardWidth = columns > 0 ? Math.max(available / columns, cardMinWidth) : cardMinWidth
+
+  return {
+    cardWidth: `${cardWidth}px`,
   }
 })
 
@@ -516,6 +544,36 @@ const { t } = useI18n()
 
           <!-- 跳过活动和游戏的单独渲染，它们会在后面统一渲染 -->
           <template v-else-if="section?.result_type === 'activity' || section?.result_type === 'web_game'" />
+
+          <!-- 赛事比分 -->
+          <div v-else-if="section?.result_type === 'esports' && Array.isArray(section.data) && section.data.length">
+            <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
+              赛程日历
+            </h3>
+            <div
+              class="esports-grid"
+              flex="~ wrap gap-4"
+              mb-4
+            >
+              <template v-for="contestData in section.data" :key="`esports-data-${contestData.contest?.[0]?.ID}`">
+                <EsportsMatchCard
+                  v-for="contest in contestData.contest?.slice(0, 5)"
+                  :key="`contest-${contest.ID}`"
+                  :contest="contest"
+                  :card-width="esportsCardStyle.cardWidth"
+                />
+              </template>
+            </div>
+            <!-- 更多赛事按钮 -->
+            <a
+              :href="`https://www.bilibili.com/v/game/match/schedule?mid=${section.data[0]?.contest?.[0]?.mid || 0}&time=${Date.now()}`"
+              target="_blank"
+              class="more-esports-button"
+              @click.stop=""
+            >
+              {{ $t('search_page.view_all_esports') }}
+            </a>
+          </div>
 
           <div v-else-if="section?.result_type === 'bili_user' && Array.isArray(section.data) && section.data.length">
             <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
@@ -1479,6 +1537,21 @@ const { t } = useI18n()
 
   &:active {
     transform: scale(0.98);
+  }
+}
+
+.more-esports-button {
+  display: block;
+  text-align: center;
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--bew-theme-color);
+  text-decoration: none;
+  border-radius: var(--bew-radius);
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: var(--bew-theme-color-10);
   }
 }
 </style>

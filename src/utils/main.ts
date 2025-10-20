@@ -198,6 +198,20 @@ export function isNotificationPage(url: string = location.href): boolean {
 }
 
 /**
+ * Check if the current page is a search results page
+ * @param url the url to check
+ * @returns true if the current page is a search results page
+ */
+export function isSearchResultsPage(url: string = location.href): boolean {
+  if (
+    /https?:\/\/search\.bilibili\.com\/.*/.test(url)
+  ) {
+    return true
+  }
+  return false
+}
+
+/**
  * Check if the current page is a user space page
  * @param url the url to check
  * @returns true if the current page is a user space page

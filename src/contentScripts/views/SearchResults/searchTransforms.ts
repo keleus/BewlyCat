@@ -57,14 +57,32 @@ export function convertVideoData(video: any): Video {
       ? video.durationStr
       : durationSeconds ? formatDuration(durationSeconds) : undefined
 
-  const tags = extractVideoTags(video)
-  const capsuleText = removeHighlight(video.typename || '').trim()
+  // 处理课堂类型：将 episode_count_text 作为 tag
+  let tags: string[]
+  if (video.type === 'ketang' && video.episode_count_text) {
+    tags = [video.episode_count_text]
+  }
+  else {
+    tags = extractVideoTags(video)
+  }
+
+  // 处理课堂类型的 capsuleText（课堂不需要 capsuleText）
+  const capsuleText = video.type === 'ketang' ? undefined : removeHighlight(video.typename || '').trim()
 
   // 处理 author 字段：确保始终返回正确的对象格式
   let author: any
 
+  // 课堂类型特殊处理：使用特殊标记表示需要显示图标而不是头像
+  if (video.type === 'ketang') {
+    const authorName = typeof video.author === 'string' ? video.author : (video.author?.name || video.author?.uname || '')
+    author = {
+      name: removeHighlight(authorName),
+      mid: video.mid,
+      authorFace: '__ketang_icon__', // 特殊标记，表示使用课堂图标
+    }
+  }
   // 如果 author 已经是对象且有必要的字段，直接使用
-  if (typeof video.author === 'object' && video.author !== null && !Array.isArray(video.author)) {
+  else if (typeof video.author === 'object' && video.author !== null && !Array.isArray(video.author)) {
     // 确保对象有必要的字段
     if ('authorFace' in video.author || 'face' in video.author) {
       author = {
@@ -79,7 +97,7 @@ export function convertVideoData(video: any): Video {
       author = {
         name: removeHighlight(authorName),
         mid: video.mid || video.owner?.mid || video.author.mid,
-        authorFace: video.upic || video.owner?.face || '',
+        authorFace: video.upic || video.uface || video.owner?.face || '',
       }
     }
   }
@@ -89,9 +107,14 @@ export function convertVideoData(video: any): Video {
     author = {
       name: removeHighlight(authorName),
       mid: video.mid || video.owner?.mid,
-      authorFace: video.upic || video.owner?.face || '',
+      authorFace: video.upic || video.uface || video.owner?.face || '',
     }
   }
+
+  // 课堂类型需要特殊处理 URL
+  const url = video.type === 'ketang' && video.arcurl
+    ? video.arcurl
+    : undefined
 
   return {
     id: video.aid || video.id,
@@ -109,6 +132,8 @@ export function convertVideoData(video: any): Video {
     threePointV2: [],
     tag: tags.length ? tags : undefined,
     capsuleText: capsuleText || undefined,
+    type: video.type === 'ketang' ? 'ketang' : undefined,
+    url,
   }
 }
 

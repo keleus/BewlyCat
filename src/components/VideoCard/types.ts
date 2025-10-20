@@ -37,7 +37,7 @@ export interface Video {
 
   tag?: string | string[]
   rank?: number
-  type?: 'horizontal' | 'vertical' | 'bangumi'
+  type?: 'horizontal' | 'vertical' | 'bangumi' | 'ketang'
   threePointV2: ThreePointV2[]
 
   badge?: {
