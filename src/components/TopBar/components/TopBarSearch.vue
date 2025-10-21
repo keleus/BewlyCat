@@ -5,6 +5,7 @@ import { computed, ref } from 'vue'
 
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { isHomePage } from '~/utils/main'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 
@@ -34,9 +35,8 @@ const searchBehavior = computed<'navigate' | 'stay'>(() => {
   if (!settings.value.usePluginSearchResultsPage)
     return 'navigate'
 
-  const url = new URL(currentLocation.value)
-  const params = new URLSearchParams(url.search)
-  return params.get('page') === 'Search' ? 'stay' : 'navigate'
+  // 当启用插件搜索页时,始终使用 stay 模式以支持页面内跳转
+  return 'stay'
 })
 
 function pushKeywordToSearchPage(keyword: string) {
@@ -44,13 +44,23 @@ function pushKeywordToSearchPage(keyword: string) {
   if (!normalized)
     return
 
-  const params = new URLSearchParams(window.location.search)
-  params.set('page', 'Search')
-  params.set('keyword', normalized)
-  const newUrl = `${window.location.pathname}?${params.toString()}`
-  window.history.pushState({}, '', newUrl)
-  // 触发 pushstate 事件通知其他组件（如 Search.vue）
-  window.dispatchEvent(new Event('pushstate'))
+  // 如果在首页,直接使用 pushState 更新 URL
+  if (isHomePage()) {
+    const params = new URLSearchParams(window.location.search)
+    params.set('page', 'Search')
+    params.set('keyword', normalized)
+    const newUrl = `${window.location.pathname}?${params.toString()}`
+    window.history.pushState({}, '', newUrl)
+    // 触发 pushstate 事件通知其他组件（如 Search.vue）
+    window.dispatchEvent(new Event('pushstate'))
+  }
+  else {
+    // 如果不在首页,跳转到 bilibili.com 主页的搜索页
+    const params = new URLSearchParams()
+    params.set('page', 'Search')
+    params.set('keyword', normalized)
+    window.location.href = `https://www.bilibili.com/?${params.toString()}`
+  }
 }
 
 function handleSearch(keyword: string) {

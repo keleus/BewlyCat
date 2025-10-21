@@ -53,6 +53,20 @@ function getPageParam(): AppPage | null {
 
 const activatedPage = ref<AppPage>(getPageParam() || (settings.value.dockItemsConfig.find(e => e.visible === true)?.page || AppPage.Home))
 
+// 监听 URL 变化,同步更新 activatedPage
+useEventListener(window, 'pushstate', () => {
+  const pageParam = getPageParam()
+  if (pageParam && pageParam !== activatedPage.value) {
+    activatedPage.value = pageParam
+  }
+})
+useEventListener(window, 'popstate', () => {
+  const pageParam = getPageParam()
+  if (pageParam && pageParam !== activatedPage.value) {
+    activatedPage.value = pageParam
+  }
+})
+
 // 清理搜索相关的URL参数（仅在首页生效）
 function clearSearchParamsFromUrl() {
   // 只在首页清理搜索参数，避免影响其他B站页面（如搜索结果页）
