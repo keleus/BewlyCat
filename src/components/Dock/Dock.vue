@@ -80,7 +80,8 @@ const showBackToTopOrRefreshButton = computed((): boolean => {
     return false
   }
 
-  return props.activatedPage !== AppPage.Search && isHomePage()
+  // 在首页显示返回顶部/刷新按钮（包括搜索页）
+  return isHomePage()
 })
 
 /**
@@ -181,10 +182,16 @@ function handleBackToTopOrRefresh(action: 'backToTop' | 'refresh' | 'auto' = 'au
     emit('refresh')
   }
   else {
-    if (reachTop.value)
-      emit('refresh')
-    else
+    // 搜索页面只显示返回顶部，不显示刷新
+    if (props.activatedPage === AppPage.Search) {
       emit('backToTop')
+    }
+    else if (reachTop.value) {
+      emit('refresh')
+    }
+    else {
+      emit('backToTop')
+    }
   }
 }
 
@@ -513,7 +520,7 @@ onUnmounted(() => {
           <template v-for="key in 2" :key="key">
             <Transition name="fade">
               <button
-                v-if="key === 1 || key === 2 && !reachTop"
+                v-if="(key === 1 && activatedPage !== AppPage.Search) || (key === 2 && !reachTop)"
                 class="back-to-top-or-refresh-btn"
                 :class="{
                   inactive: hoveringDockItem.themeMode && isDark,
@@ -544,7 +551,7 @@ onUnmounted(() => {
           >
             <Transition name="fade">
               <Icon
-                v-if="reachTop"
+                v-if="reachTop && activatedPage !== AppPage.Search"
                 icon="line-md:rotate-270"
                 shrink-0 rotate-90 absolute text-2xl
               />

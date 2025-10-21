@@ -31,6 +31,11 @@ const props = defineProps<{
     roomOrder: string
     userOrder: string
   }
+  initialPage: number
+}>()
+
+const emit = defineEmits<{
+  updatePage: [page: number]
 }>()
 
 // Page 组件的 refs
@@ -128,6 +133,11 @@ function handleUpdateUserRelation(mid: number, isFollowing: boolean) {
   }
 }
 
+// 处理页码更新
+function handleUpdatePage(page: number) {
+  emit('updatePage', page)
+}
+
 // 暴露给父组件
 defineExpose({
   handleReachBottom,
@@ -142,6 +152,8 @@ defineExpose({
       ref="allPageRef"
       :keyword="keyword"
       :filters="videoFilters"
+      :initial-page="initialPage"
+      @update-page="handleUpdatePage"
     >
       <template #default>
         <SearchResultsPanelRenderer
@@ -155,6 +167,7 @@ defineExpose({
           :current-total-pages="0"
           :current-total-results="currentState.totalResults"
           :user-relations="currentState.userRelations"
+          :current-page="allPageRef?.currentPage || 1"
           @update-user-relation="handleUpdateUserRelation"
         />
       </template>
@@ -166,6 +179,8 @@ defineExpose({
       ref="videoPageRef"
       :keyword="keyword"
       :filters="videoFilters"
+      :initial-page="initialPage"
+      @update-page="handleUpdatePage"
     />
 
     <!-- Bangumi Search Page -->
@@ -173,6 +188,8 @@ defineExpose({
       v-if="currentCategory === 'bangumi'"
       ref="bangumiPageRef"
       :keyword="keyword"
+      :initial-page="initialPage"
+      @update-page="handleUpdatePage"
     />
 
     <!-- MediaFt Search Page -->
@@ -180,6 +197,8 @@ defineExpose({
       v-if="currentCategory === 'media_ft'"
       ref="mediaFtPageRef"
       :keyword="keyword"
+      :initial-page="initialPage"
+      @update-page="handleUpdatePage"
     />
 
     <!-- User Search Page -->
@@ -188,6 +207,8 @@ defineExpose({
       ref="userPageRef"
       :keyword="keyword"
       :filters="userFilters"
+      :initial-page="initialPage"
+      @update-page="handleUpdatePage"
     />
 
     <!-- Live Search Page -->
@@ -196,6 +217,8 @@ defineExpose({
       ref="livePageRef"
       :keyword="keyword"
       :filters="liveFilters"
+      :initial-page="initialPage"
+      @update-page="handleUpdatePage"
     />
 
     <!-- Article Search Page -->
@@ -203,6 +226,8 @@ defineExpose({
       v-if="currentCategory === 'article'"
       ref="articlePageRef"
       :keyword="keyword"
+      :initial-page="initialPage"
+      @update-page="handleUpdatePage"
     />
   </div>
 </template>

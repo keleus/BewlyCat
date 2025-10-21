@@ -82,6 +82,7 @@ function clearSearchParamsFromUrl() {
     || urlParams.has('search_type')
     || urlParams.has('live_room_order')
     || urlParams.has('live_user_order')
+    || urlParams.has('pn')
 
   if (hasSearchParams) {
     urlParams.delete('keyword')
@@ -91,6 +92,8 @@ function clearSearchParamsFromUrl() {
     urlParams.delete('search_type')
     urlParams.delete('live_room_order')
     urlParams.delete('live_user_order')
+    urlParams.delete('pn')
+    // 注意：不要删除 'page' 参数，它用于 dock 的页面切换
     const newUrl = `${window.location.pathname}?${urlParams.toString()}`
     window.history.replaceState({}, '', newUrl)
   }

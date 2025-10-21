@@ -116,6 +116,36 @@ function changeSearchBarFocusCharacter(url: string) {
         </template>
         <Radio v-model="settings.usePluginSearchResultsPage" />
       </SettingsItem>
+
+      <SettingsItem :title="$t('settings.search_results_pagination_mode')">
+        <template #desc>
+          <span>{{ $t('settings.search_results_pagination_mode_desc') }}</span>
+        </template>
+        <div w-full flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
+          <div
+            flex="1 ~" items-center justify-center py-1 cursor-pointer
+            text-center rounded="$bew-radius"
+            :style="{
+              background: settings.searchResultsPaginationMode === 'scroll' ? 'var(--bew-theme-color)' : '',
+              color: settings.searchResultsPaginationMode === 'scroll' ? 'white' : '',
+            }"
+            @click="settings.searchResultsPaginationMode = 'scroll'"
+          >
+            {{ $t('settings.search_results_pagination_mode_opt.scroll') }}
+          </div>
+          <div
+            flex="1 ~" items-center justify-center py-1 cursor-pointer
+            text-center rounded="$bew-radius"
+            :style="{
+              background: settings.searchResultsPaginationMode === 'pagination' ? 'var(--bew-theme-color)' : '',
+              color: settings.searchResultsPaginationMode === 'pagination' ? 'white' : '',
+            }"
+            @click="settings.searchResultsPaginationMode = 'pagination'"
+          >
+            {{ $t('settings.search_results_pagination_mode_opt.pagination') }}
+          </div>
+        </div>
+      </SettingsItem>
     </SettingsItemGroup>
 
     <ChangeWallpaper type="searchPage" />

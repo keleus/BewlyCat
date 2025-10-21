@@ -1,9 +1,13 @@
 <script lang="ts" setup>
-import { computed, onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
+import Empty from '~/components/Empty.vue'
+import Loading from '~/components/Loading.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { settings } from '~/logic'
 import api from '~/utils/api'
 
+import Pagination from '../components/Pagination.vue'
 import { useLoadMore } from '../composables/useLoadMore'
 import { usePagination } from '../composables/usePagination'
 import { useSearchRequest } from '../composables/useSearchRequest'
@@ -14,9 +18,20 @@ import { applyVideoTimeFilter, buildVideoSearchParams } from '../utils/searchHel
 const props = defineProps<{
   keyword: string
   filters: VideoSearchFilters
+  initialPage?: number
 }>()
 
-const { haveScrollbar } = useBewlyApp()
+const emit = defineEmits<{
+  updatePage: [page: number]
+}>()
+
+const { haveScrollbar, handleBackToTop } = useBewlyApp()
+
+// 分页模式：scroll 滚动加载，pagination 翻页
+const paginationMode = computed(() => settings.value.searchResultsPaginationMode)
+
+// 翻页加载状态
+const isPageChanging = ref(false)
 
 // 用户关系管理
 const {
@@ -37,6 +52,7 @@ const {
 
 // 分页管理
 const {
+  currentPage,
   totalResults,
   totalPages,
   context,
@@ -104,6 +120,10 @@ watch(() => props.keyword, async (newKeyword, oldKeyword) => {
 onMounted(() => {
   const keyword = props.keyword.trim()
   if (keyword) {
+    // 如果有初始页码，先设置页码
+    if (props.initialPage && props.initialPage > 1) {
+      updatePage(props.initialPage)
+    }
     performSearch(false)
   }
 })
@@ -122,13 +142,18 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   if (!keyword)
     return false
 
-  if (loadMore && (isLoading.value || exhausted.value))
+  // 分页模式下不支持 loadMore
+  const isLoadMore = paginationMode.value === 'scroll' && loadMore
+
+  if (isLoadMore && (isLoading.value || exhausted.value))
     return false
 
-  if (!loadMore)
+  if (!isLoadMore)
     setExhausted(false)
 
-  const targetPage = getNextPage(loadMore)
+  // 滚动模式下：loadMore 使用 getNextPage，否则从第1页开始
+  // 翻页模式下：使用 currentPage（如果有设置）或从第1页开始
+  const targetPage = isLoadMore ? getNextPage(true) : (currentPage.value > 0 ? currentPage.value : getNextPage(false))
   const previousLength = getCurrentResultLength()
 
   let success = false
@@ -143,7 +168,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
         page: targetPage,
         page_size: 30,
         ...buildVideoSearchParams({
-          loadMore,
+          loadMore: isLoadMore,
           context: context.value,
           filters: props.filters,
         }),
@@ -185,7 +210,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   const incomingSections = Array.isArray(normalizedData?.result) ? normalizedData.result : []
 
   // 合并或替换结果
-  if (loadMore && results.value) {
+  if (isLoadMore && results.value) {
     results.value = mergeSections(results.value, normalizedData)
   }
   else {
@@ -210,25 +235,27 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   extractPagination(rawData, fallbackLength)
   updatePage(targetPage)
 
-  // 检查是否已耗尽
-  const finalLength = getCurrentResultLength()
-  const newItems = Math.max(finalLength - previousLength, 0)
-  const incomingLength = incomingSections.reduce((sum: number, section: any) => {
-    if (Array.isArray(section?.data))
-      return sum + section.data.length
-    return sum
-  }, 0)
+  // 检查是否已耗尽（仅在滚动模式下）
+  if (paginationMode.value === 'scroll') {
+    const finalLength = getCurrentResultLength()
+    const newItems = Math.max(finalLength - previousLength, 0)
+    const incomingLength = incomingSections.reduce((sum: number, section: any) => {
+      if (Array.isArray(section?.data))
+        return sum + section.data.length
+      return sum
+    }, 0)
 
-  if (incomingLength === 0) {
-    setExhausted(true)
-  }
-  else if (newItems <= 0 && targetPage >= totalPages.value) {
-    setExhausted(true)
-  }
+    if (incomingLength === 0) {
+      setExhausted(true)
+    }
+    else if (newItems <= 0 && targetPage >= totalPages.value) {
+      setExhausted(true)
+    }
 
-  // 处理加载完成
-  if (loadMore)
-    await handleLoadMoreCompletion(haveScrollbar)
+    // 处理加载完成
+    if (isLoadMore)
+      await handleLoadMoreCompletion(haveScrollbar)
+  }
 
   return true
 }
@@ -315,6 +342,101 @@ function getSectionItemKey(type: string, item: any): string {
   }
 }
 
+// 翻页模式的页码切换
+async function handlePageChange(page: number) {
+  if (paginationMode.value !== 'pagination')
+    return
+
+  const keyword = props.keyword.trim()
+  if (!keyword)
+    return
+
+  // 先滚动到顶部
+  handleBackToTop()
+  await nextTick()
+
+  isPageChanging.value = true
+
+  let success = false
+  const useVideoFilters = isVideoFilterActive.value
+
+  if (useVideoFilters) {
+    // 使用视频筛选时，调用视频搜索API
+    success = await search(
+      keyword,
+      params => api.search.searchVideo(params),
+      {
+        page,
+        page_size: 30,
+        ...buildVideoSearchParams({
+          loadMore: false,
+          context: context.value,
+          filters: props.filters,
+        }),
+      },
+    )
+  }
+  else {
+    // 综合搜索
+    success = await search(
+      keyword,
+      params => api.search.searchAll(params),
+      {
+        page,
+        page_size: 30,
+        context: page > 1 ? context.value : '',
+        web_roll_page: page,
+      },
+    )
+  }
+
+  if (!success || !lastResponse.value?.data)
+    return
+
+  const rawData = lastResponse.value.data
+
+  // 如果使用视频筛选，需要将数据标准化为 all 的格式
+  let normalizedData = rawData
+  if (useVideoFilters) {
+    const list = Array.isArray(rawData?.result) ? rawData.result : []
+    normalizedData = {
+      ...rawData,
+      result: [{
+        result_type: 'video',
+        data: list,
+      }],
+    }
+  }
+
+  const incomingSections = Array.isArray(normalizedData?.result) ? normalizedData.result : []
+
+  // 替换结果
+  results.value = normalizedData
+
+  // 批量查询用户关系
+  if (Array.isArray(results.value?.result)) {
+    const userSection = results.value.result.find((s: any) => s?.result_type === 'bili_user')
+    if (userSection && Array.isArray(userSection.data)) {
+      const mids = userSection.data.map((u: any) => u.mid).filter(Boolean)
+      await batchQueryUserRelations(mids)
+    }
+  }
+
+  // 提取分页信息
+  const fallbackLength = incomingSections.reduce((sum: number, section: any) => {
+    if (Array.isArray(section?.data))
+      return sum + section.data.length
+    return sum
+  }, 0)
+  extractPagination(rawData, fallbackLength)
+  updatePage(page)
+
+  isPageChanging.value = false
+
+  // 更新 URL 中的页码参数
+  emit('updatePage', page)
+}
+
 function resetAll() {
   resetSearch()
   resetPagination()
@@ -332,6 +454,8 @@ defineExpose({
   requestLoadMore,
   userRelations,
   updateUserRelation,
+  currentPage,
+  totalPages,
 })
 </script>
 
@@ -347,6 +471,27 @@ defineExpose({
       :user-relations="userRelations"
       @update-user-relation="updateUserRelation"
     />
+
+    <!-- 滚动加载模式 -->
+    <template v-if="paginationMode === 'scroll'">
+      <Loading v-if="isLoading && results && getCurrentResultLength() > 0" />
+
+      <Empty
+        v-else-if="!isLoading && results && getCurrentResultLength() > 0 && !hasMore"
+        :description="$t('common.no_more_content')"
+      />
+    </template>
+
+    <!-- 翻页模式 -->
+    <template v-else>
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :loading="isPageChanging"
+        :disabled="isLoading"
+        @change="handlePageChange"
+      />
+    </template>
   </div>
 </template>
 

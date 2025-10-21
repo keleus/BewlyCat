@@ -216,6 +216,7 @@ export interface Settings {
 
   // 搜索结果页设置
   usePluginSearchResultsPage: boolean
+  searchResultsPaginationMode: 'scroll' | 'pagination' // 搜索结果分页模式：滚动加载或翻页
 
   recommendationMode: 'web' | 'app'
   autoSwitchRecommendationMode: boolean
@@ -390,6 +391,7 @@ export const originalSettings: Settings = {
 
   // 搜索结果页设置
   usePluginSearchResultsPage: true,
+  searchResultsPaginationMode: 'scroll', // 默认使用滚动加载
 
   recommendationMode: 'web',
   autoSwitchRecommendationMode: true,

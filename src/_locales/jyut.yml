@@ -236,6 +236,9 @@ settings:
   logo_color_opt:
     white: 白
     theme_color: 主題色
+  search_results_pagination_mode_opt:
+    scroll: 捲動加載
+    pagination: 翻頁
   enable_logo_glowing_effect: Logo 使用發光效果
   logo_visibility: Logo 可視性
   bg_darkens_when_the_search_bar_is_focused: 搜尋欄聚焦嗰陣校暗背景

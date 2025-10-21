@@ -88,10 +88,23 @@ export function usePagination() {
       data?.page_info?.num_page,
     ].map(Number).find(value => Number.isFinite(value) && value > 0)
 
-    totalPages.value = totalPagesCandidate
-      || (totalResults.value && effectivePageSize
-        ? Math.ceil(totalResults.value / effectivePageSize)
-        : currentPage.value)
+    // 计算总页数
+    if (totalPagesCandidate) {
+      // 如果API返回了明确的总页数，使用它
+      totalPages.value = totalPagesCandidate
+    }
+    else if (totalResults.value > 0 && effectivePageSize > 0) {
+      // 基于总结果数和每页大小计算总页数
+      totalPages.value = Math.ceil(totalResults.value / effectivePageSize)
+    }
+    else if (totalResults.value === 0) {
+      // 如果没有结果，总页数应该是0或1
+      totalPages.value = fallbackLength > 0 ? 1 : 0
+    }
+    else {
+      // 其他情况默认为1
+      totalPages.value = 1
+    }
 
     // 提取 context（用于无限滚动）
     const contextCandidate = [

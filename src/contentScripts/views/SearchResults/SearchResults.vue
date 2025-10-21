@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 
 import SearchCategoryTabs from './components/SearchCategoryTabs.vue'
@@ -44,6 +45,9 @@ function getFiltersFromUrl() {
   const urlParams = new URLSearchParams(window.location.search)
 
   return {
+    // 分页参数
+    page: Number(urlParams.get('pn')) || 1,
+
     // 用户筛选
     userOrder: urlParams.get('user_order') || '',
     userType: Number(urlParams.get('user_type')) || 0,
@@ -60,7 +64,8 @@ function updateUrlParams(params: Record<string, string | number | undefined | nu
   const urlParams = new URLSearchParams(window.location.search)
 
   Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null || value === '' || value === 0 || value === 'all') {
+    // pn=1 时删除参数，其他默认值也删除
+    if (value === undefined || value === null || value === '' || value === 0 || value === 'all' || (key === 'pn' && value === 1)) {
       urlParams.delete(key)
     }
     else {
@@ -76,6 +81,9 @@ const currentCategory = ref<SearchCategory>(getCategoryFromUrl())
 
 // 从URL初始化筛选条件
 const initialFilters = getFiltersFromUrl()
+
+// 当前页码（响应式，切换tab时重置为1）
+const currentPage = ref<number>(initialFilters.page)
 
 // 视频筛选条件（不同步到URL）
 const currentVideoOrder = ref<string>('')
@@ -196,6 +204,7 @@ watch(() => props.keyword, async (newKeyword, oldKeyword) => {
 
   // 恢复筛选条件
   currentCategory.value = categoryFromUrl
+  currentPage.value = filters.page
   // 视频筛选条件重置为默认值
   currentVideoOrder.value = ''
   currentDuration.value = 0
@@ -220,10 +229,14 @@ watch([currentUserOrder, currentUserType], () => {
   if (!normalizedKeyword.value)
     return
 
-  // 更新URL参数
+  // 筛选条件变化时重置页码
+  currentPage.value = 1
+
+  // 更新URL参数（筛选条件变化时回到第一页）
   updateUrlParams({
     user_order: currentUserOrder.value,
     user_type: currentUserType.value,
+    pn: 1,
   })
 }, { deep: false })
 
@@ -232,9 +245,13 @@ watch(currentLiveSubCategory, () => {
   if (!normalizedKeyword.value)
     return
 
-  // 更新URL参数
+  // 筛选条件变化时重置页码
+  currentPage.value = 1
+
+  // 更新URL参数（筛选条件变化时回到第一页）
   updateUrlParams({
     search_type: currentLiveSubCategory.value,
+    pn: 1,
   })
 })
 
@@ -243,9 +260,13 @@ watch(currentLiveRoomOrder, () => {
   if (!normalizedKeyword.value)
     return
 
-  // 更新URL参数
+  // 筛选条件变化时重置页码
+  currentPage.value = 1
+
+  // 更新URL参数（筛选条件变化时回到第一页）
   updateUrlParams({
     live_room_order: currentLiveRoomOrder.value,
+    pn: 1,
   })
 })
 
@@ -254,9 +275,13 @@ watch(currentLiveUserOrder, () => {
   if (!normalizedKeyword.value)
     return
 
-  // 更新URL参数
+  // 筛选条件变化时重置页码
+  currentPage.value = 1
+
+  // 更新URL参数（筛选条件变化时回到第一页）
   updateUrlParams({
     live_user_order: currentLiveUserOrder.value,
+    pn: 1,
   })
 })
 
@@ -266,9 +291,15 @@ function switchCategory(category: SearchCategory) {
 
   currentCategory.value = category
 
+  // 切换分类时重置页码为1
+  currentPage.value = 1
+
   // 更新URL中的category参数，并清空不相关的筛选参数
   const params = new URLSearchParams(window.location.search)
   params.set('category', category)
+
+  // 切换分类时清除页码参数（回到第一页）
+  params.delete('pn')
 
   // 根据新的category清空不相关的筛选参数
   if (category !== 'user') {
@@ -290,15 +321,30 @@ function initPageAction() {
     if (!normalizedKeyword.value)
       return
 
+    // 翻页模式下不触发滚动加载
+    if (settings.value.searchResultsPaginationMode === 'pagination')
+      return
+
     if (searchResultsPanelRef.value?.handleReachBottom) {
       searchResultsPanelRef.value.handleReachBottom()
     }
   }
 
   handlePageRefresh.value = () => {
-    // 刷新逻辑可以在各个 Page 组件内部处理
-    window.location.reload()
+    // 刷新时保持在搜索结果页，重新触发搜索
+    const urlParams = new URLSearchParams(window.location.search)
+    const keyword = urlParams.get('keyword')
+    if (keyword) {
+      // 触发 pushstate 事件通知组件重新加载
+      window.dispatchEvent(new Event('pushstate'))
+    }
+    else {
+      window.location.reload()
+    }
   }
+
+  // 使用 App.vue 提供的 handleBackToTop，它会正确处理滚动条实例
+  // 不需要重新赋值，直接使用从 useBewlyApp 获取的值即可
 }
 
 onMounted(() => {
@@ -347,6 +393,8 @@ onMounted(() => {
       :video-filters="videoFilters"
       :user-filters="userFilters"
       :live-filters="liveFilters"
+      :initial-page="currentPage"
+      @update-page="(page: number) => updateUrlParams({ pn: page })"
     />
   </div>
 </template>

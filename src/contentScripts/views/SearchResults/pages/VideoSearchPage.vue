@@ -1,11 +1,13 @@
 <script lang="ts" setup>
-import { onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { settings } from '~/logic'
 import api from '~/utils/api'
 
+import Pagination from '../components/Pagination.vue'
 import VideoGrid from '../components/renderers/VideoGrid.vue'
 import { useLoadMore } from '../composables/useLoadMore'
 import { usePagination } from '../composables/usePagination'
@@ -17,9 +19,20 @@ import { applyVideoTimeFilter, buildVideoSearchParams } from '../utils/searchHel
 const props = defineProps<{
   keyword: string
   filters: VideoSearchFilters
+  initialPage?: number
 }>()
 
-const { haveScrollbar } = useBewlyApp()
+const emit = defineEmits<{
+  updatePage: [page: number]
+}>()
+
+const { haveScrollbar, handleBackToTop } = useBewlyApp()
+
+// 分页模式：scroll 滚动加载，pagination 翻页
+const paginationMode = computed(() => settings.value.searchResultsPaginationMode)
+
+// 翻页加载状态
+const isPageChanging = ref(false)
 
 // 搜索请求管理
 const {
@@ -33,6 +46,7 @@ const {
 
 // 分页管理
 const {
+  currentPage,
   totalResults,
   totalPages,
   context,
@@ -77,6 +91,10 @@ watch(() => props.keyword, async (newKeyword, oldKeyword) => {
 onMounted(() => {
   const keyword = props.keyword.trim()
   if (keyword) {
+    // 如果有初始页码，先设置页码
+    if (props.initialPage && props.initialPage > 1) {
+      updatePage(props.initialPage)
+    }
     performSearch(false)
   }
 })
@@ -95,13 +113,18 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   if (!keyword)
     return false
 
-  if (loadMore && (isLoading.value || exhausted.value))
+  // 分页模式下不支持 loadMore
+  const isLoadMore = paginationMode.value === 'scroll' && loadMore
+
+  if (isLoadMore && (isLoading.value || exhausted.value))
     return false
 
-  if (!loadMore)
+  if (!isLoadMore)
     setExhausted(false)
 
-  const targetPage = getNextPage(loadMore)
+  // 滚动模式下：loadMore 使用 getNextPage，否则从第1页开始
+  // 翻页模式下：使用 currentPage（如果有设置）或从第1页开始
+  const targetPage = isLoadMore ? getNextPage(true) : (currentPage.value > 0 ? currentPage.value : getNextPage(false))
   const previousLength = results.value?.length || 0
 
   const success = await search(
@@ -111,7 +134,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
       page: targetPage,
       page_size: 30,
       ...buildVideoSearchParams({
-        loadMore,
+        loadMore: isLoadMore,
         context: context.value,
         filters: props.filters,
       }),
@@ -134,7 +157,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   const convertedList = filteredList.map(item => convertVideoData(item))
 
   // 合并或替换结果
-  if (loadMore && results.value) {
+  if (isLoadMore && results.value) {
     results.value = [...results.value, ...convertedList]
   }
   else {
@@ -145,22 +168,80 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   extractPagination(rawData, filteredList.length)
   updatePage(targetPage)
 
-  // 检查是否已耗尽
-  const finalLength = results.value.length
-  const newItems = Math.max(finalLength - previousLength, 0)
+  // 检查是否已耗尽（仅在滚动模式下）
+  if (paginationMode.value === 'scroll') {
+    const finalLength = results.value.length
+    const newItems = Math.max(finalLength - previousLength, 0)
 
-  if (incomingList.length === 0) {
-    setExhausted(true)
-  }
-  else if (newItems <= 0 && targetPage >= totalPages.value) {
-    setExhausted(true)
-  }
+    if (incomingList.length === 0) {
+      setExhausted(true)
+    }
+    else if (newItems <= 0 && targetPage >= totalPages.value) {
+      setExhausted(true)
+    }
 
-  // 处理加载完成
-  if (loadMore)
-    await handleLoadMoreCompletion(haveScrollbar)
+    // 处理加载完成
+    if (isLoadMore)
+      await handleLoadMoreCompletion(haveScrollbar)
+  }
 
   return true
+}
+
+// 翻页模式的页码切换
+async function handlePageChange(page: number) {
+  if (paginationMode.value !== 'pagination')
+    return
+
+  const keyword = props.keyword.trim()
+  if (!keyword)
+    return
+
+  // 先滚动到顶部
+  handleBackToTop()
+  await nextTick()
+
+  isPageChanging.value = true
+
+  const success = await search(
+    keyword,
+    params => api.search.searchVideo(params),
+    {
+      page,
+      page_size: 30,
+      ...buildVideoSearchParams({
+        loadMore: false,
+        context: context.value,
+        filters: props.filters,
+      }),
+    },
+  )
+
+  if (!success || !lastResponse.value?.data) {
+    isPageChanging.value = false
+    return
+  }
+
+  const rawData = lastResponse.value.data
+  const incomingList = Array.isArray(rawData?.result) ? rawData.result : []
+
+  // 过滤广告
+  const filteredList = applyVideoTimeFilter(incomingList)
+
+  // 转换数据格式
+  const convertedList = filteredList.map(item => convertVideoData(item))
+
+  // 替换结果
+  results.value = convertedList
+
+  // 提取分页信息
+  extractPagination(rawData, filteredList.length)
+  updatePage(page)
+
+  isPageChanging.value = false
+
+  // 更新 URL 中的页码参数
+  emit('updatePage', page)
 }
 
 function resetAll() {
@@ -178,6 +259,8 @@ defineExpose({
   totalResults,
   hasMore,
   requestLoadMore,
+  currentPage,
+  totalPages,
 })
 </script>
 
@@ -193,12 +276,26 @@ defineExpose({
 
     <VideoGrid v-else :videos="results || []" :auto-convert="false" />
 
-    <Loading v-if="isLoading && results && results.length > 0" />
+    <!-- 滚动加载模式 -->
+    <template v-if="paginationMode === 'scroll'">
+      <Loading v-if="isLoading && results && results.length > 0" />
 
-    <Empty
-      v-else-if="!isLoading && results && results.length > 0 && !hasMore"
-      :description="$t('common.no_more_content')"
-    />
+      <Empty
+        v-else-if="!isLoading && results && results.length > 0 && !hasMore"
+        :description="$t('common.no_more_content')"
+      />
+    </template>
+
+    <!-- 翻页模式 -->
+    <template v-else>
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :loading="isPageChanging"
+        :disabled="isLoading"
+        @change="handlePageChange"
+      />
+    </template>
   </div>
 </template>
 

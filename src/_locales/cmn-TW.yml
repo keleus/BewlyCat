@@ -252,6 +252,9 @@ settings:
   logo_color_opt:
     white: 白
     theme_color: 主題顏色
+  search_results_pagination_mode_opt:
+    scroll: 滾動加載
+    pagination: 翻頁
   enable_logo_glowing_effect: 啓用 Logo 發光效果
   logo_visibility: Logo 可視性
   bg_darkens_when_the_search_bar_is_focused: 當搜尋欄聚焦時背景變暗
@@ -502,6 +505,8 @@ settings:
   group_search_results: 搜索結果
   use_plugin_search_results_page: 使用插件搜索結果頁
   use_plugin_search_results_page_desc: 啟用後，搜索時將使用插件內置的搜索結果頁面，支持分類篩選等功能
+  search_results_pagination_mode: 搜索結果分頁模式
+  search_results_pagination_mode_desc: 選擇搜索結果的展示方式：滾動自動加載或翻頁
 auth:
   auth_access_key_first: 在這之前請先授權 BewlyBewly 使用 access key
 topbar:

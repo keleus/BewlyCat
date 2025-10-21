@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import UserCard from '~/components/UserCard/UserCard.vue'
 
 import { convertLiveRoomData, convertUserCardData, formatNumber } from '../../searchTransforms'
 import VideoGrid from './VideoGrid.vue'
 
-defineProps<{
+const props = defineProps<{
   liveUserList: any[]
   liveRoomList: any[]
   currentSubCategory: 'all' | 'live_room' | 'live_user'
@@ -12,12 +14,19 @@ defineProps<{
   liveRoomTotalResults?: number
   currentTotalResults: number
   userRelations: Record<number, { isFollowing: boolean, isLoading: boolean }>
+  currentPage?: number
+  paginationMode?: string
 }>()
 
 const emit = defineEmits<{
   followStateChanged: [data: { mid: number, isFollowing: boolean }]
   switchToLiveUser: []
 }>()
+
+// 检查是否在翻页模式下且不在第一页
+const isInPaginationNonFirstPage = computed(() => {
+  return props.paginationMode === 'pagination' && (props.currentPage || 1) > 1
+})
 
 function handleFollowStateChanged(mid: number, isFollowing: boolean) {
   emit('followStateChanged', { mid, isFollowing })
@@ -32,7 +41,8 @@ function formatResultCount(count: number): string {
   <div class="live-results" space-y-6>
     <!-- 主播 (上面) -->
     <div
-      v-if="liveUserList.length > 0
+      v-if="!isInPaginationNonFirstPage
+        && liveUserList.length > 0
         && (currentSubCategory === 'all' || currentSubCategory === 'live_user')"
     >
       <div flex items-center gap-3 mb-3>

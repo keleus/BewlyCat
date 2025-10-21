@@ -285,6 +285,9 @@ settings:
   logo_color_opt:
     white: White
     theme_color: Theme Color
+  search_results_pagination_mode_opt:
+    scroll: Infinite Scroll
+    pagination: Pagination
   enable_logo_glowing_effect: Enable glowing effect for the logo
   logo_visibility: Logo visibility
   bg_darkens_when_the_search_bar_is_focused: Background darkens when the search bar is focused
@@ -296,6 +299,8 @@ settings:
   show_hot_search_in_search_page_desc: Display hot search ranking on the search page
   use_plugin_search_results_page: Use plugin search results page
   use_plugin_search_results_page_desc: When enabled, searches will use the plugin's built-in search results page with category filtering and more features
+  search_results_pagination_mode: Search results pagination mode
+  search_results_pagination_mode_desc: 'Choose how search results are displayed: infinite scroll or page-based navigation'
   individually_set_search_page_wallpaper: Individually set search page wallpaper
   recommendation_mode: Recommendation mode
   recommendation_mode_desc: >

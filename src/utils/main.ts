@@ -203,9 +203,13 @@ export function isNotificationPage(url: string = location.href): boolean {
  * @returns true if the current page is a search results page
  */
 export function isSearchResultsPage(url: string = location.href): boolean {
-  if (
-    /https?:\/\/search\.bilibili\.com\/.*/.test(url)
-  ) {
+  // 检查是否是 B站原生搜索结果页
+  if (/https?:\/\/search\.bilibili\.com\/.*/.test(url)) {
+    return true
+  }
+  // 检查是否是插件搜索结果页（URL 中带 page=Search 参数）
+  const urlObj = new URL(url)
+  if (urlObj.searchParams.get('page') === 'Search') {
     return true
   }
   return false

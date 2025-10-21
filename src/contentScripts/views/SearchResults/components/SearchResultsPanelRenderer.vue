@@ -48,6 +48,7 @@ const props = defineProps<{
   liveRoomOrderOptions?: Array<{ value: string, label: string }>
   liveUserOrder?: string
   liveUserOrderOptions?: Array<{ value: string, label: string }>
+  currentPage?: number
 }>()
 
 const emit = defineEmits<{
@@ -66,7 +67,16 @@ const {
   normalizedKeyword,
   hasMore,
   currentTotalPages,
+  currentPage,
 } = toRefs(props)
+
+// 翻页模式
+const paginationMode = computed(() => settings.value.searchResultsPaginationMode)
+
+// 是否在翻页模式的非首页
+const isInPaginationNonFirstPage = computed(() => {
+  return paginationMode.value === 'pagination' && (currentPage?.value || 1) > 1
+})
 
 const baseCardMinWidth = computed(() => Math.max(160, settings.value.homeAdaptiveCardMinWidth || 280))
 const searchContentRef = ref<HTMLElement | null>(null)
@@ -349,8 +359,8 @@ const { t } = useI18n()
 
     <div v-else-if="searchResults[currentCategory]">
       <div v-if="currentCategory === 'all'" class="all-results" space-y-6>
-        <!-- 优先显示活动和游戏 -->
-        <div v-if="activityAndGameItems.length > 0">
+        <!-- 优先显示活动和游戏 (仅首页) -->
+        <div v-if="!isInPaginationNonFirstPage && activityAndGameItems.length > 0">
           <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
             活动
           </h3>
@@ -405,7 +415,7 @@ const { t } = useI18n()
           </div>
 
           <div
-            v-else-if="(section?.result_type === 'media_bangumi' || section?.result_type === 'media_ft')
+            v-else-if="!isInPaginationNonFirstPage && (section?.result_type === 'media_bangumi' || section?.result_type === 'media_ft')
               && Array.isArray(section.data)
               && section.data.length"
           >
@@ -546,7 +556,7 @@ const { t } = useI18n()
           <template v-else-if="section?.result_type === 'activity' || section?.result_type === 'web_game'" />
 
           <!-- 赛事比分 -->
-          <div v-else-if="section?.result_type === 'esports' && Array.isArray(section.data) && section.data.length">
+          <div v-else-if="!isInPaginationNonFirstPage && section?.result_type === 'esports' && Array.isArray(section.data) && section.data.length">
             <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
               赛程日历
             </h3>
@@ -575,7 +585,7 @@ const { t } = useI18n()
             </a>
           </div>
 
-          <div v-else-if="section?.result_type === 'bili_user' && Array.isArray(section.data) && section.data.length">
+          <div v-else-if="!isInPaginationNonFirstPage && section?.result_type === 'bili_user' && Array.isArray(section.data) && section.data.length">
             <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
               用户
             </h3>
@@ -679,7 +689,7 @@ const { t } = useI18n()
           </div>
 
           <div
-            v-else-if="section?.result_type === 'article' && Array.isArray(section.data) && section.data.length"
+            v-else-if="!isInPaginationNonFirstPage && section?.result_type === 'article' && Array.isArray(section.data) && section.data.length"
             class="article-results"
             grid="~ cols-1 md:cols-2 gap-4"
           >
@@ -1034,7 +1044,8 @@ const { t } = useI18n()
       </div>
     </div>
 
-    <Loading v-if="isLoading && searchResults[currentCategory]" />
+    <!-- 滚动模式下的 Loading 由各个 Page 组件自己处理，这里只处理翻页模式 -->
+    <Loading v-if="paginationMode === 'pagination' && isLoading && searchResults[currentCategory]" />
 
     <Empty
       v-else-if="showNoMore"
