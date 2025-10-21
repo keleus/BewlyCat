@@ -406,10 +406,11 @@ const { t } = useI18n()
             <div class="video-grid" :style="videoGridStyle">
               <VideoCard
                 v-for="video in section.data.filter(v => !isAdVideo(v))"
-                :key="video.aid || video.id"
-                :video="convertVideoData(video)"
+                :key="video.aid || video.id || video.roomid"
+                :video="video.type === 'live_room' ? convertLiveRoomData(video) : convertVideoData(video)"
                 :horizontal="false"
                 :show-preview="true"
+                :show-watcher-later="video.type !== 'live_room'"
               />
             </div>
           </div>

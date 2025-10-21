@@ -12,7 +12,7 @@ import VideoGrid from '../components/renderers/VideoGrid.vue'
 import { useLoadMore } from '../composables/useLoadMore'
 import { usePagination } from '../composables/usePagination'
 import { useSearchRequest } from '../composables/useSearchRequest'
-import { convertVideoData } from '../searchTransforms'
+import { convertLiveRoomData, convertVideoData, isAdVideo } from '../searchTransforms'
 import type { VideoSearchFilters } from '../types'
 import { applyVideoTimeFilter, buildVideoSearchParams } from '../utils/searchHelpers'
 
@@ -150,11 +150,18 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   const rawData = lastResponse.value.data
   const incomingList = Array.isArray(rawData?.result) ? rawData.result : []
 
-  // 过滤广告
-  const filteredList = applyVideoTimeFilter(incomingList)
+  // 过滤广告和应用时间过滤
+  const filteredList = applyVideoTimeFilter(incomingList.filter(item => !isAdVideo(item)))
 
-  // 转换数据格式
-  const convertedList = filteredList.map(item => convertVideoData(item))
+  // 转换数据格式 - 根据类型选择正确的转换函数
+  const convertedList = filteredList.map((item) => {
+    // 如果是直播间类型，使用直播间转换函数
+    if (item.type === 'live_room') {
+      return convertLiveRoomData(item)
+    }
+    // 否则使用视频转换函数
+    return convertVideoData(item)
+  })
 
   // 合并或替换结果
   if (isLoadMore && results.value) {
@@ -225,11 +232,18 @@ async function handlePageChange(page: number) {
   const rawData = lastResponse.value.data
   const incomingList = Array.isArray(rawData?.result) ? rawData.result : []
 
-  // 过滤广告
-  const filteredList = applyVideoTimeFilter(incomingList)
+  // 过滤广告和应用时间过滤
+  const filteredList = applyVideoTimeFilter(incomingList.filter(item => !isAdVideo(item)))
 
-  // 转换数据格式
-  const convertedList = filteredList.map(item => convertVideoData(item))
+  // 转换数据格式 - 根据类型选择正确的转换函数
+  const convertedList = filteredList.map((item) => {
+    // 如果是直播间类型，使用直播间转换函数
+    if (item.type === 'live_room') {
+      return convertLiveRoomData(item)
+    }
+    // 否则使用视频转换函数
+    return convertVideoData(item)
+  })
 
   // 替换结果
   results.value = convertedList
