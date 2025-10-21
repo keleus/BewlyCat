@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import Select from '~/components/Select.vue'
-
 import DatePicker from './DatePicker.vue'
 
 const props = defineProps<{
@@ -19,6 +17,9 @@ const customEndDate = defineModel<string>('customEndDate', { default: '' })
 
 const customStartInput = ref('')
 const customEndInput = ref('')
+
+// 更多筛选的展开状态
+const isMoreFiltersExpanded = ref(false)
 
 // 监听父组件的日期变化，同步到本地输入
 watch([customStartDate, customEndDate], ([start, end]) => {
@@ -66,69 +67,92 @@ const maxDate = computed(() => formatDate(new Date()))
 </script>
 
 <template>
-  <div
-    class="filter-bar" mb-4 flex items-center gap-4
-    flex-wrap
-  >
-    <!-- 排序 -->
+  <div class="filter-bar" mb-4 flex="~ col" gap-3>
+    <!-- 排序 + 更多筛选按钮 -->
     <div flex items-center gap-2>
-      <span text="sm $bew-text-2">排序</span>
-      <div min-w-120px>
-        <Select
-          v-model="videoOrder"
-          :options="props.orderOptions"
-        />
-      </div>
-    </div>
-
-    <!-- 时长 -->
-    <div flex items-center gap-2>
-      <span text="sm $bew-text-2">时长</span>
-      <div min-w-120px>
-        <Select
-          v-model="duration"
-          :options="props.durationOptions"
-        />
-      </div>
-    </div>
-
-    <!-- 日期 -->
-    <div flex items-center gap-2>
-      <span text="sm $bew-text-2">日期</span>
-      <div flex items-center gap-2>
+      <span text="sm $bew-text-2" min-w-12>排序</span>
+      <div flex items-center gap-2 flex-wrap flex-1>
         <button
-          v-for="option in props.timeRangeOptions"
+          v-for="option in props.orderOptions"
           :key="option.value"
-          class="time-range-btn"
-          :class="{ active: timeRange === option.value }"
+          class="filter-btn"
+          :class="{ active: videoOrder === option.value }"
           type="button"
-          @click="handleTimeRangeSelect(option.value)"
+          @click="videoOrder = option.value"
         >
           {{ option.label }}
         </button>
-        <DatePicker
-          v-model="customStartInput"
-          :max="maxDate"
-          placeholder="开始日期"
-        />
-        <span text="sm $bew-text-3">至</span>
-        <DatePicker
-          v-model="customEndInput"
-          :max="maxDate"
-          placeholder="结束日期"
-        />
+      </div>
+      <button
+        class="more-filters-btn"
+        flex items-center gap-1
+        type="button"
+        @click="isMoreFiltersExpanded = !isMoreFiltersExpanded"
+      >
+        <span text="sm $bew-text-2">更多筛选</span>
+        <div class="toggle-icon" :class="{ expanded: isMoreFiltersExpanded }">
+          <div class="i-tabler:chevron-down" text="sm $bew-text-3" />
+        </div>
+      </button>
+    </div>
+
+    <!-- 更多筛选内容 -->
+    <div v-show="isMoreFiltersExpanded" flex="~ col" gap-3>
+      <!-- 时长 -->
+      <div flex items-center gap-2>
+        <span text="sm $bew-text-2" min-w-12>时长</span>
+        <div flex items-center gap-2 flex-wrap>
+          <button
+            v-for="option in props.durationOptions"
+            :key="option.value"
+            class="filter-btn"
+            :class="{ active: duration === option.value }"
+            type="button"
+            @click="duration = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 日期 -->
+      <div flex items-center gap-2>
+        <span text="sm $bew-text-2" min-w-12>日期</span>
+        <div flex items-center gap-2 flex-wrap>
+          <button
+            v-for="option in props.timeRangeOptions"
+            :key="option.value"
+            class="filter-btn"
+            :class="{ active: timeRange === option.value }"
+            type="button"
+            @click="handleTimeRangeSelect(option.value)"
+          >
+            {{ option.label }}
+          </button>
+          <DatePicker
+            v-model="customStartInput"
+            :max="maxDate"
+            placeholder="开始日期"
+          />
+          <span text="sm $bew-text-3">至</span>
+          <DatePicker
+            v-model="customEndInput"
+            :max="maxDate"
+            placeholder="结束日期"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.time-range-btn {
+.filter-btn {
   padding: 0.35rem 0.75rem;
   border-radius: var(--bew-radius-half);
   background: var(--bew-fill-1);
   color: var(--bew-text-2);
-  font-size: 0.875rem;
+  font-size: var(--bew-base-font-size);
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -147,6 +171,33 @@ const maxDate = computed(() => formatDate(new Date()))
 
   &:active {
     transform: scale(0.98);
+  }
+}
+
+.more-filters-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.35rem 0.75rem;
+  user-select: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+
+  &:hover {
+    span {
+      color: var(--bew-text-1);
+    }
+  }
+}
+
+.toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+
+  &.expanded {
+    transform: rotate(180deg);
   }
 }
 </style>
