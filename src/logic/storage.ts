@@ -261,9 +261,16 @@ export interface Settings {
   // Video Player
   defaultVideoPlayerMode: 'default' | 'webFullscreen' | 'widescreen'
   defaultDanmakuState: 'system' | 'on' | 'off'
-  disableAutoPlayCollection: boolean
   keepCollectionVideoDefaultMode: boolean // 合集视频保持默认模式
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
+  autoExitFullscreenExcludeAutoPlay: boolean // 全屏自动退出时排除自动连播
+
+  // 分类型自动连播设置
+  autoPlayMultipart: boolean // 分P视频自动连播
+  autoPlayCollection: boolean // 合集视频自动连播
+  autoPlayRecommend: boolean // 单视频推荐自动连播
+  autoPlayPlaylist: boolean // 收藏列表自动连播
+
   keyboard: boolean
   shortcuts: ShortcutsSettings
   videoPlayerScroll: boolean // 添加视频播放器滚动设置
@@ -430,9 +437,16 @@ export const originalSettings: Settings = {
   // Video Player
   defaultVideoPlayerMode: 'default',
   defaultDanmakuState: 'system',
-  disableAutoPlayCollection: false,
   keepCollectionVideoDefaultMode: false, // 合集视频保持默认模式，默认关闭
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
+  autoExitFullscreenExcludeAutoPlay: false, // 全屏自动退出时排除自动连播，默认关闭
+
+  // 分类型自动连播设置
+  autoPlayMultipart: false, // 分P视频自动连播，默认关闭
+  autoPlayCollection: false, // 合集视频自动连播，默认关闭
+  autoPlayRecommend: false, // 单视频推荐自动连播，默认关闭
+  autoPlayPlaylist: false, // 收藏列表自动连播，默认关闭
+
   keyboard: true, // 总快捷键开关，默认为 true
   videoPlayerScroll: true, // 默认开启视频播放器滚动
   shortcuts: {

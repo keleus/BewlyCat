@@ -66,11 +66,14 @@ export function getCurrentEpisodeIndex(episodes: HTMLElement[]): number {
 
 // 获取随机下一集
 export function getRandomNextEpisode(episodes: HTMLElement[], currentIndex: number): number {
+  console.log('[BewlyCat Random Play] getRandomNextEpisode called, currentIndex:', currentIndex, 'visitedEpisodes:', Array.from(visitedEpisodes))
+
   if (episodes.length <= 1)
     return currentIndex
 
   // 如果所有视频都已访问，重置访问记录
   if (visitedEpisodes.size >= episodes.length) {
+    console.log('[BewlyCat Random Play] All episodes visited, resetting')
     visitedEpisodes.clear()
     visitedEpisodes.add(currentIndex)
   }
@@ -80,18 +83,27 @@ export function getRandomNextEpisode(episodes: HTMLElement[], currentIndex: numb
     .map((_, index) => index)
     .filter(index => !visitedEpisodes.has(index))
 
+  console.log('[BewlyCat Random Play] Unvisited indices:', unvisitedIndices)
+
   if (unvisitedIndices.length === 0) {
+    console.log('[BewlyCat Random Play] No unvisited indices, selecting random excluding current')
     // 如果没有未访问的视频，随机选择一个不是当前视频的
     const availableIndices = episodes
       .map((_, index) => index)
       .filter(index => index !== currentIndex)
 
-    if (availableIndices.length === 0)
+    if (availableIndices.length === 0) {
+      console.log('[BewlyCat Random Play] No available indices')
       return currentIndex
-    return availableIndices[Math.floor(Math.random() * availableIndices.length)]
+    }
+    const selected = availableIndices[Math.floor(Math.random() * availableIndices.length)]
+    console.log('[BewlyCat Random Play] Selected from available:', selected)
+    return selected
   }
 
-  return unvisitedIndices[Math.floor(Math.random() * unvisitedIndices.length)]
+  const selected = unvisitedIndices[Math.floor(Math.random() * unvisitedIndices.length)]
+  console.log('[BewlyCat Random Play] Selected from unvisited:', selected)
+  return selected
 }
 
 // 跳转到指定选集
@@ -101,80 +113,110 @@ export function jumpToEpisode(episodes: HTMLElement[], targetIndex: number): voi
   }
 
   const targetEpisode = episodes[targetIndex]
+  console.log('[BewlyCat Random Play] Target episode element:', targetEpisode)
 
   // 尝试多种方式找到可点击的元素
   let clickableElement: HTMLElement | null = null
 
   // 1. 优先查找链接
   const link = targetEpisode.querySelector('a') as HTMLAnchorElement
-  if (link) {
+  console.log('[BewlyCat Random Play] Found link:', link, 'href:', link?.href)
+
+  if (link && link.href) {
     clickableElement = link
   }
   else {
-    // 2. 查找整个可点击的选集项
-    clickableElement = targetEpisode
+    // 2. 查找 .simple-base-item 元素（B站新版播放列表项）
+    const simpleBaseItem = targetEpisode.querySelector('.simple-base-item') as HTMLElement
+    console.log('[BewlyCat Random Play] Found .simple-base-item:', simpleBaseItem)
+
+    if (simpleBaseItem) {
+      clickableElement = simpleBaseItem
+    }
+    else {
+      // 3. 查找其他可能的可点击元素
+      const baseItem = targetEpisode.querySelector('.base-item, .item, .video-item') as HTMLElement
+      if (baseItem) {
+        clickableElement = baseItem
+      }
+      else {
+        // 4. 回退到父元素
+        clickableElement = targetEpisode
+      }
+    }
   }
 
   if (!clickableElement) {
+    console.log('[BewlyCat Random Play] No clickable element found')
     return
   }
+
+  console.log('[BewlyCat Random Play] Clickable element:', clickableElement)
 
   // 使用更智能的点击策略
   const performClick = () => {
     try {
-      // 方法1: 直接点击元素
+      console.log('[BewlyCat Random Play] Attempting to click element:', targetIndex, clickableElement)
+
+      // 标记为已访问（在点击前标记，防止点击失败后重复尝试）
+      visitedEpisodes.add(targetIndex)
+
+      // 如果是链接，尝试点击
+      if (clickableElement instanceof HTMLAnchorElement && clickableElement.href) {
+        console.log('[BewlyCat Random Play] Clicking anchor element, href:', clickableElement.href)
+        clickableElement.click()
+        return
+      }
+
+      // 对于没有链接的元素（如 video-pod__item），模拟真实点击
+      console.log('[BewlyCat Random Play] Simulating click on element')
+
+      // 方法1: 直接点击
       clickableElement!.click()
 
-      // 方法2: 创建鼠标事件（作为备选）
+      // 方法2: 触发 mousedown -> mouseup -> click 事件序列（模拟真实点击）
       setTimeout(() => {
-        const clickEvent = new MouseEvent('click', {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-          button: 0, // 左键点击
-          buttons: 1,
-          clientX: 0,
-          clientY: 0,
-        })
-        clickableElement!.dispatchEvent(clickEvent)
-      }, 50)
-
-      // 方法3: 触发原生事件（针对B站特殊处理）
-      setTimeout(() => {
-        // 触发mousedown和mouseup来模拟真实点击
         const mouseDownEvent = new MouseEvent('mousedown', {
           bubbles: true,
           cancelable: true,
           view: window,
+          button: 0,
+          buttons: 1,
         })
-        const mouseUpEvent = new MouseEvent('mouseup', {
-          bubbles: true,
-          cancelable: true,
-          view: window,
-        })
-
         clickableElement!.dispatchEvent(mouseDownEvent)
-        clickableElement!.dispatchEvent(mouseUpEvent)
-      }, 100)
 
-      // 标记为已访问
-      visitedEpisodes.add(targetIndex)
+        setTimeout(() => {
+          const mouseUpEvent = new MouseEvent('mouseup', {
+            bubbles: true,
+            cancelable: true,
+            view: window,
+            button: 0,
+            buttons: 0,
+          })
+          clickableElement!.dispatchEvent(mouseUpEvent)
+
+          setTimeout(() => {
+            const clickEvent = new MouseEvent('click', {
+              bubbles: true,
+              cancelable: true,
+              view: window,
+              button: 0,
+              detail: 1,
+            })
+            clickableElement!.dispatchEvent(clickEvent)
+            console.log('[BewlyCat Random Play] Click sequence completed')
+          }, 10)
+        }, 10)
+      }, 10)
     }
     catch (error) {
-      console.error('[BewlyCat] Click failed:', error)
+      console.error('[BewlyCat Random Play] Click failed:', error)
     }
   }
 
-  // 延迟执行，确保页面状态稳定
-  setTimeout(() => {
-    // 先滚动到目标元素，确保它在视图中
-    targetEpisode.scrollIntoView({ behavior: 'smooth', block: 'center' })
-
-    // 延迟后执行点击
-    setTimeout(() => {
-      performClick()
-    }, 300)
-  }, 200)
+  // 直接执行点击，不需要滚动
+  // B站点击后会自动处理页面滚动和视频加载
+  performClick()
 }
 
 // 创建随机播放UI
@@ -297,32 +339,59 @@ export function enableRandomPlay(): void {
       video.removeEventListener('pause', originalEndedListener)
     }
 
+    // 标记视频元素，防止重复添加监听器
+    video.setAttribute('data-bewly-random-play-listener', 'true')
+
+    // 用于防止重复触发
+    let isProcessing = false
+
     // 创建新的随机播放监听器
     const randomPlayListener = () => {
-      // 关键：检查随机播放是否仍然启用
-      if (!isRandomPlayEnabled) {
+      console.log('[BewlyCat Random Play] Video ended, random play listener triggered')
+
+      // 防止重复触发（ended 和 pause 事件可能都会触发）
+      if (isProcessing) {
+        console.log('[BewlyCat Random Play] Already processing, skipping')
         return
       }
 
+      // 关键：检查随机播放是否仍然启用
+      if (!isRandomPlayEnabled) {
+        console.log('[BewlyCat Random Play] Random play disabled, skipping')
+        return
+      }
+
+      isProcessing = true
+
       // 延迟执行，确保播放状态完全结束
       setTimeout(() => {
+        // 重置处理标志
+        isProcessing = false
         // 再次检查状态，防止在延迟期间被禁用
         if (!isRandomPlayEnabled) {
+          console.log('[BewlyCat Random Play] Random play disabled during delay, skipping')
           return
         }
 
         const episodes = getVideoEpisodes()
+        console.log('[BewlyCat Random Play] Found episodes:', episodes.length)
 
         if (episodes.length <= 1) {
+          console.log('[BewlyCat Random Play] Not enough episodes')
           return
         }
 
         const currentIndex = getCurrentEpisodeIndex(episodes)
+        console.log('[BewlyCat Random Play] Current episode index:', currentIndex)
 
         const nextIndex = getRandomNextEpisode(episodes, currentIndex)
+        console.log('[BewlyCat Random Play] Next episode index:', nextIndex)
 
         if (nextIndex !== currentIndex) {
           jumpToEpisode(episodes, nextIndex)
+        }
+        else {
+          console.log('[BewlyCat Random Play] Next index same as current, not jumping')
         }
       }, 1500) // 增加到1.5秒延迟，确保播放完全结束
     }
@@ -347,7 +416,6 @@ export function enableRandomPlay(): void {
   const videoObserver = new MutationObserver(() => {
     const video = document.querySelector('video')
     if (video && !video.hasAttribute('data-bewly-random-play-listener')) {
-      video.setAttribute('data-bewly-random-play-listener', 'true')
       setupVideoListener()
     }
   })
@@ -368,6 +436,9 @@ export function disableRandomPlay(): void {
   video.removeEventListener('ended', originalEndedListener)
   video.removeEventListener('pause', originalEndedListener)
   originalEndedListener = null
+
+  // 移除标记，以便下次可以重新添加
+  video.removeAttribute('data-bewly-random-play-listener')
 
   // 清空访问记录
   visitedEpisodes.clear()

@@ -12,7 +12,7 @@ import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { applyDefaultDanmakuState, defaultMode, disableAutoPlayCollection, handleVideoPageNavigation, isCollectionVideo, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
@@ -235,6 +235,10 @@ function applyDefaultPlayerMode() {
   }
   setupShortcutHandlers()
   applyDefaultDanmakuState()
+  // 应用自动连播设置
+  setTimeout(() => {
+    applyAutoPlayByVideoType()
+  }, 1000)
   // 启动自动退出全屏监听
   setTimeout(() => {
     startAutoExitFullscreenMonitoring()
@@ -295,7 +299,6 @@ function handleVisibilityChange() {
 window.addEventListener('load', () => {
   if (isVideoPage()) {
     applyDefaultPlayerMode()
-    disableAutoPlayCollection(settings.value)
     // 初始化随机播放功能
     if (settings.value.enableRandomPlay) {
       setTimeout(() => {

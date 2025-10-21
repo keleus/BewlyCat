@@ -160,14 +160,22 @@ settings:
     widescreen: 宽屏
   video_player_scroll: 调整显示模式后滚动
   video_player_scroll_desc: 启用后，在默认模式为宽屏和默认时，会自动滚动到合适位置。
-  disable_auto_play_collection: 自动关闭合集自动连播
-  disable_auto_play_collection_desc: 打开视频页面时，自动关闭合集的自动连播功能
   keep_collection_video_default_mode: 合集视频保持默认模式
   keep_collection_video_default_mode_desc: 当启用时，合集视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   remember_playback_rate: 记住倍速
   remember_playback_rate_desc: 启用后，播放器会记住您上次设置的倍速，并在下次打开视频时自动应用
   auto_exit_fullscreen_on_end: 全屏/网页全屏播放完毕后自动退出
   auto_exit_fullscreen_on_end_desc: 启用后，当视频播放结束时会自动退出全屏模式
+  auto_exit_fullscreen_exclude_auto_play: 自动连播下除外
+  auto_exit_fullscreen_exclude_auto_play_desc: 启用后，在自动连播下播放结束时不会自动退出全屏，方便连续观看
+  auto_play_multipart: 分P视频自动连播
+  auto_play_multipart_desc: 启用后，分P视频将自动播放下一个分P
+  auto_play_collection: 合集视频自动连播
+  auto_play_collection_desc: 启用后，合集视频将自动播放下一个视频
+  auto_play_recommend: 单视频推荐自动连播
+  auto_play_recommend_desc: 启用后，单视频播放结束后将自动播放推荐视频
+  auto_play_playlist: 收藏列表自动连播
+  auto_play_playlist_desc: 启用后，收藏列表中的视频将自动播放下一个
   enable_random_play: 启用视频合集随机播放
   enable_random_play_desc: 为多P视频或合集添加随机播放功能
   random_play_mode: 随机播放模式

@@ -419,6 +419,17 @@ settings:
   auto_exit_fullscreen_on_end: Auto exit fullscreen/webFullscreen when video ends
   auto_exit_fullscreen_on_end_desc: >
     When enabled, the player will automatically exit fullscreen mode when the video finishes playing
+  auto_exit_fullscreen_exclude_auto_play: Exclude auto-play mode
+  auto_exit_fullscreen_exclude_auto_play_desc: >
+    When enabled, videos in auto-play mode will not auto-exit fullscreen when finished, allowing continuous viewing
+  auto_play_multipart: Auto-play multi-part videos
+  auto_play_multipart_desc: When enabled, multi-part videos will automatically play the next part
+  auto_play_collection: Auto-play collection videos
+  auto_play_collection_desc: When enabled, collection videos will automatically play the next video
+  auto_play_recommend: Auto-play recommended videos
+  auto_play_recommend_desc: When enabled, recommended videos will automatically play after the current video ends
+  auto_play_playlist: Auto-play playlist videos
+  auto_play_playlist_desc: When enabled, videos in playlists will automatically play the next video
   enable_random_play: Enable video collection random play
   enable_random_play_desc: Add random play feature for multi-part videos or collections
   random_play_mode: Random play mode

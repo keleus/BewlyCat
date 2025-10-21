@@ -344,14 +344,22 @@ settings:
   contributors: BewlyBewly歷史貢獻者
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 在不同設備間同步擴展設定（需要登入瀏覽器帳號）
-  disable_auto_play_collection: 自動關閉合集自動連播
-  disable_auto_play_collection_desc: 打開視頻頁面時，自動關閉合集的自動連播功能
   keep_collection_video_default_mode: 合集視頻保持預設模式
   keep_collection_video_default_mode_desc: 當啟用時，合集視頻將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住您上次設置的倍速，並在下次打開視頻時自動應用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播放完畢後自動退出
   auto_exit_fullscreen_on_end_desc: 啟用後，當視頻播放結束時會自動退出全螢幕模式
+  auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
+  auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，在自動連播下播放結束時不會自動退出全螢幕，方便連續觀看
+  auto_play_multipart: 分P視頻自動連播
+  auto_play_multipart_desc: 啟用後，分P視頻將自動播放下一個分P
+  auto_play_collection: 合集視頻自動連播
+  auto_play_collection_desc: 啟用後，合集視頻將自動播放下一個視頻
+  auto_play_recommend: 單視頻推薦自動連播
+  auto_play_recommend_desc: 啟用後，單視頻播放結束後將自動播放推薦視頻
+  auto_play_playlist: 收藏列表自動連播
+  auto_play_playlist_desc: 啟用後，收藏列表中的視頻將自動播放下一個
   enable_random_play: 啟用視頻合集隨機播放
   enable_random_play_desc: 為多P視頻或合集添加隨機播放功能
   random_play_mode: 隨機播放模式

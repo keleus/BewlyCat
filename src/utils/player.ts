@@ -279,17 +279,6 @@ export function applyDefaultDanmakuState() {
   }).start()
 }
 
-export function disableAutoPlayCollection(settings: { disableAutoPlayCollection: boolean }) {
-  if (!settings.disableAutoPlayCollection)
-    return false
-
-  setTimeout(() => {
-    const autoPlaySwitch = document.querySelector(_videoClassTag.autoPlaySwitchOn) as HTMLElement
-    if (autoPlaySwitch)
-      autoPlaySwitch.click()
-  }, 2000)
-}
-
 // 检测是否为合集视频
 export function isCollectionVideo(): boolean {
   // 检测多P视频选集
@@ -306,6 +295,97 @@ export function isCollectionVideo(): boolean {
   })
 
   return hasVideoLinks
+}
+
+// 检测自动连播是否开启
+export function isAutoPlayEnabled(): boolean {
+  // 查找自动连播开关按钮（on状态）
+  const autoPlaySwitchOn = document.querySelector(_videoClassTag.autoPlaySwitchOn)
+  return autoPlaySwitchOn !== null
+}
+
+// 视频类型枚举
+export enum VideoType {
+  MULTIPART = 'multipart', // 分P视频
+  COLLECTION = 'collection', // 合集视频
+  RECOMMEND = 'recommend', // 单视频推荐
+  PLAYLIST = 'playlist', // 收藏列表
+}
+
+// 检测当前视频类型
+export function detectVideoType(): VideoType {
+  // 检测是否为收藏列表
+  if (/https?:\/\/(?:www\.)?bilibili\.com\/list\//.test(location.href)) {
+    return VideoType.PLAYLIST
+  }
+
+  // 尝试从页面中获取视频数据
+  const app = document.querySelector('#app') as any
+  if (app?.__vue__) {
+    const videoData = app.__vue__.videoData
+    if (videoData) {
+      const { videos: videosCount } = videoData
+      const isSection = app.__vue__.isSection
+
+      // 分P视频：videos > 1
+      if (videosCount > 1) {
+        return VideoType.MULTIPART
+      }
+      // 合集视频：isSection = true
+      if (isSection) {
+        return VideoType.COLLECTION
+      }
+    }
+  }
+
+  // 如果以上都不是，检测是否为合集视频（通过DOM）
+  if (isCollectionVideo()) {
+    return VideoType.COLLECTION
+  }
+
+  // 默认为单视频推荐
+  return VideoType.RECOMMEND
+}
+
+// 根据视频类型和设置应用自动连播状态
+export function applyAutoPlayByVideoType() {
+  const videoType = detectVideoType()
+  let shouldEnableAutoPlay = false
+
+  // 根据视频类型获取对应的设置
+  switch (videoType) {
+    case VideoType.MULTIPART:
+      shouldEnableAutoPlay = settings.value.autoPlayMultipart
+      break
+    case VideoType.COLLECTION:
+      shouldEnableAutoPlay = settings.value.autoPlayCollection
+      break
+    case VideoType.RECOMMEND:
+      shouldEnableAutoPlay = settings.value.autoPlayRecommend
+      break
+    case VideoType.PLAYLIST:
+      shouldEnableAutoPlay = settings.value.autoPlayPlaylist
+      break
+  }
+
+  // 应用自动连播设置
+  new RetryTask(20, 500, () => {
+    const switchButton = document.querySelector(_videoClassTag.autoPlaySwitchOn)
+      || document.querySelector(_videoClassTag.autoPlaySwitchOff)
+
+    if (!switchButton)
+      return false
+
+    const isCurrentlyOn = switchButton.classList.contains('on')
+      || !!document.querySelector(_videoClassTag.autoPlaySwitchOn)
+
+    // 如果当前状态与目标状态不一致，则切换
+    if (isCurrentlyOn !== shouldEnableAutoPlay) {
+      (switchButton as HTMLElement).click()
+    }
+
+    return true
+  }).start()
 }
 
 // 播放/暂停
@@ -967,7 +1047,7 @@ export function startAutoExitFullscreenMonitoring() {
   video.setAttribute('bewly-auto-exit-listener', 'true')
 
   // 监听视频结束事件
-  video.addEventListener('ended', () => {
+  video.addEventListener('ended', async () => {
     // 如果是互动视频，不处理（因为URL变化会由pushstate处理）
     if (isInteractiveVideo()) {
       return
@@ -975,6 +1055,19 @@ export function startAutoExitFullscreenMonitoring() {
 
     // 非互动视频且开启了自动退出全屏
     if (settings.value.autoExitFullscreenOnEnd) {
+      // 如果开启了自动连播下除外选项，并且当前自动连播已开启，则不自动退出
+      if (settings.value.autoExitFullscreenExcludeAutoPlay && isAutoPlayEnabled()) {
+        return
+      }
+
+      // 如果启用了随机播放功能，并且随机播放已激活，也不自动退出
+      if (settings.value.enableRandomPlay) {
+        const { isRandomPlayActive } = await import('~/utils/randomPlay')
+        if (isRandomPlayActive()) {
+          return
+        }
+      }
+
       // 检查是否处于全屏状态
       if (document.fullscreenElement || (document as any).webkitFullscreenElement) {
         // 退出浏览器全屏
