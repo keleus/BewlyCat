@@ -13,6 +13,14 @@ const API_SEARCH = {
     },
     afterHandle: AHS.J_D,
   },
+  getDefaultSearchRecommendation: {
+    url: 'https://api.bilibili.com/x/web-interface/wbi/search/default',
+    _fetch: {
+      method: 'get',
+    },
+    params: {},
+    afterHandle: AHS.J_D,
+  },
   getHotSearchList: {
     url: 'https://api.bilibili.com/x/web-interface/wbi/search/square',
     _fetch: {

@@ -214,6 +214,9 @@ export interface Settings {
   showHotSearchInTopBar: boolean
   showHotSearchInSearchPage: boolean
 
+  // 搜索推荐功能设置
+  showSearchRecommendation: boolean
+
   // 搜索结果页设置
   usePluginSearchResultsPage: boolean
   searchResultsPaginationMode: 'scroll' | 'pagination' // 搜索结果分页模式：滚动加载或翻页
@@ -395,6 +398,9 @@ export const originalSettings: Settings = {
   // 热搜功能设置
   showHotSearchInTopBar: true,
   showHotSearchInSearchPage: true,
+
+  // 搜索推荐功能设置
+  showSearchRecommendation: false,
 
   // 搜索结果页设置
   usePluginSearchResultsPage: true,

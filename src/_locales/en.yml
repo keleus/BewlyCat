@@ -297,6 +297,8 @@ settings:
   show_hot_search_in_top_bar_desc: Display hot search list in the top bar search box
   show_hot_search_in_search_page: Show hot search in search page
   show_hot_search_in_search_page_desc: Display hot search ranking on the search page
+  show_search_recommendation: Show search recommendation
+  show_search_recommendation_desc: Display recommended search terms as placeholder in the search box, and search for them when pressing Enter with an empty input
   use_plugin_search_results_page: Use plugin search results page
   use_plugin_search_results_page_desc: When enabled, searches will use the plugin's built-in search results page with category filtering and more features
   search_results_pagination_mode: Search results pagination mode

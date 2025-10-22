@@ -248,6 +248,8 @@ settings:
   show_hot_search_in_top_bar_desc: 喺頂欄搜尋框度顯示熱搜清單
   show_hot_search_in_search_page: 喺搵嘢頁顯示熱搜
   show_hot_search_in_search_page_desc: 喺搵嘢頁面顯示熱搜排行榜
+  show_search_recommendation: 顯示搜尋推介
+  show_search_recommendation_desc: 喺搜尋框度顯示推介嘅搜尋詞做佔位符,空白輸入時撳回車會搜尋呢個推介詞
   individually_set_search_page_wallpaper: 單獨設定搵嘢頁背景
   recommendation_mode: 推介模式
   recommendation_mode_desc: |

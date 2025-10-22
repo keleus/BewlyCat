@@ -264,6 +264,8 @@ settings:
   show_hot_search_in_top_bar_desc: 在頂欄搜尋框中顯示熱搜列表
   show_hot_search_in_search_page: 在搜尋頁顯示熱搜
   show_hot_search_in_search_page_desc: 在搜尋頁面顯示熱搜排行榜
+  show_search_recommendation: 顯示搜尋推薦
+  show_search_recommendation_desc: 在搜尋框中顯示推薦的搜尋詞作為佔位符，空白輸入時按回車將搜尋該推薦詞
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
   recommendation_mode: 推薦模式
   recommendation_mode_desc: |

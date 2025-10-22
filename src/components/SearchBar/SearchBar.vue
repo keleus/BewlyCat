@@ -35,6 +35,25 @@ interface HotSearchResponse {
   }
 }
 
+// 搜索推荐数据类型定义
+interface SearchRecommendationItem {
+  seid: string
+  id: number
+  type: number
+  show_name: string
+  name: string
+  goto_type: number
+  goto_value: string
+  url: string
+}
+
+interface SearchRecommendationResponse {
+  code: number
+  message: string
+  ttl: number
+  data: SearchRecommendationItem
+}
+
 const props = defineProps<{
   darkenOnFocus?: boolean
   blurredOnFocus?: boolean
@@ -61,6 +80,9 @@ const suggestionItemRef = ref<HTMLElement[]>([])
 // 热搜相关状态
 const hotSearchList = ref<HotSearchItem[]>([])
 const isLoadingHotSearch = ref<boolean>(false)
+// 搜索推荐相关状态
+const searchRecommendation = ref<SearchRecommendationItem | null>(null)
+const isLoadingSearchRecommendation = ref<boolean>(false)
 
 const pluginSearchOrigin = computed(() => {
   if (typeof window === 'undefined')
@@ -72,6 +94,14 @@ const pluginSearchOrigin = computed(() => {
 
 const searchMode = computed(() => props.searchBehavior ?? 'navigate')
 const isInPlaceSearch = computed(() => searchMode.value === 'stay')
+
+// 计算 placeholder 显示文本
+const placeholderText = computed(() => {
+  if (settings.value.showSearchRecommendation && searchRecommendation.value) {
+    return searchRecommendation.value.show_name || searchRecommendation.value.name
+  }
+  return ''
+})
 
 // 尝试获取 BEWLY_APP（在首页时可用）
 const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
@@ -147,6 +177,79 @@ async function loadHotSearchData() {
   }
 }
 
+// 加载搜索推荐数据
+async function loadSearchRecommendation() {
+  if (isLoadingSearchRecommendation.value)
+    return
+
+  try {
+    isLoadingSearchRecommendation.value = true
+    const res: SearchRecommendationResponse = await api.search.getDefaultSearchRecommendation()
+    if (res && res.code === 0) {
+      searchRecommendation.value = res.data
+    }
+  }
+  catch (error) {
+    console.error('Failed to load search recommendation:', error)
+  }
+  finally {
+    isLoadingSearchRecommendation.value = false
+  }
+}
+
+// 定时更新搜索推荐的定时器
+let recommendationTimer: ReturnType<typeof setInterval> | null = null
+
+// 初始化搜索推荐（组件挂载时调用）
+function initSearchRecommendation() {
+  if (!settings.value.showSearchRecommendation)
+    return
+
+  // 立即加载一次
+  loadSearchRecommendation()
+
+  // 设置10分钟定时更新
+  if (recommendationTimer)
+    clearInterval(recommendationTimer)
+
+  recommendationTimer = setInterval(() => {
+    if (settings.value.showSearchRecommendation) {
+      loadSearchRecommendation()
+    }
+  }, 10 * 60 * 1000) // 10分钟
+}
+
+// 清理定时器
+function cleanupRecommendationTimer() {
+  if (recommendationTimer) {
+    clearInterval(recommendationTimer)
+    recommendationTimer = null
+  }
+}
+
+// 监听设置变化，动态启用或停止推荐功能
+watch(() => settings.value.showSearchRecommendation, (enabled) => {
+  if (enabled) {
+    initSearchRecommendation()
+  }
+  else {
+    cleanupRecommendationTimer()
+    searchRecommendation.value = null
+  }
+})
+
+// 组件挂载时初始化
+onMounted(() => {
+  if (settings.value.showSearchRecommendation) {
+    initSearchRecommendation()
+  }
+})
+
+// 组件卸载时清理定时器
+onBeforeUnmount(() => {
+  cleanupRecommendationTimer()
+})
+
 onKeyStroke('/', (e: KeyboardEvent) => {
   // Reference: https://github.com/polywock/globalSpeed/blob/3705ac836402b324550caf92aa65075b2f2347c6/src/contentScript/ConfigSync.ts#L94
   const target = e.target as HTMLElement
@@ -199,8 +302,25 @@ function buildKeywordHref(keyword: string) {
   return `//search.bilibili.com/all?keyword=${encoded}`
 }
 
+// 从URL中提取搜索关键词
+function extractKeywordFromUrl(url: string): string {
+  try {
+    const urlObj = new URL(url)
+    return urlObj.searchParams.get('keyword') || ''
+  }
+  catch {
+    return ''
+  }
+}
+
 async function navigateToSearchResultPage(rawKeyword: string) {
-  const normalized = (rawKeyword || keyword.value).trim()
+  let normalized = (rawKeyword || keyword.value).trim()
+
+  // 如果输入为空且启用了搜索推荐，使用推荐的搜索词
+  if (!normalized && settings.value.showSearchRecommendation && searchRecommendation.value) {
+    normalized = extractKeywordFromUrl(searchRecommendation.value.url)
+  }
+
   if (!normalized)
     return
 
@@ -404,6 +524,7 @@ function handleFocusOut(event: FocusEvent) {
       <input
         ref="keywordRef"
         :value="keyword"
+        :placeholder="placeholderText"
         class="group"
         rounded="60px"
         p="l-6 r-18 y-3"

@@ -390,6 +390,9 @@ function toggleChannel(value: string) {
               <SettingsItem :title="$t('settings.show_hot_search_in_top_bar')" :desc="$t('settings.show_hot_search_in_top_bar_desc')">
                 <Radio v-model="settings.showHotSearchInTopBar" />
               </SettingsItem>
+              <SettingsItem :title="$t('settings.show_search_recommendation')" :desc="$t('settings.show_search_recommendation_desc')">
+                <Radio v-model="settings.showSearchRecommendation" />
+              </SettingsItem>
             </div>
 
             <!-- PopIcon 配置 -->

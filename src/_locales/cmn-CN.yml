@@ -310,6 +310,8 @@ settings:
   show_hot_search_in_top_bar_desc: 在顶栏搜索框中显示热搜列表
   show_hot_search_in_search_page: 在搜索页显示热搜
   show_hot_search_in_search_page_desc: 在搜索页面显示热搜排行榜
+  show_search_recommendation: 显示搜索推荐
+  show_search_recommendation_desc: 在搜索框中显示推荐的搜索词作为占位符，空白输入时按回车将搜索该推荐词
   use_plugin_search_results_page: 使用插件搜索结果页
   use_plugin_search_results_page_desc: 启用后，搜索时将使用插件内置的搜索结果页面，支持分类筛选等功能
   search_results_pagination_mode: 搜索结果分页模式
