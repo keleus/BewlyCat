@@ -437,7 +437,7 @@ provide('getVideoType', () => props.type!)
 
 <style lang="scss" scoped>
 .horizontal-card-cover {
-  --uno: "xl:w-280px lg:w-250px md:w-200px w-200px";
+  --uno: "w-full max-w-400px aspect-video";
 }
 
 .vertical-card-cover {
