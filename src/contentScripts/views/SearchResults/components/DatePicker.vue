@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 const props = defineProps<{
   modelValue?: string
@@ -14,6 +14,8 @@ const emit = defineEmits<{
 
 const showPicker = ref(false)
 const pickerRef = ref<HTMLElement>()
+const inputValue = ref('')
+const isInputMode = ref(false)
 
 // 当前显示的年月
 const currentYear = ref(new Date().getFullYear())
@@ -35,8 +37,47 @@ const maxDate = computed(() => {
 const displayValue = computed(() => {
   if (!props.modelValue)
     return props.placeholder || '开始日期'
-  return props.modelValue.replace(/-/g, ' / ')
+  return props.modelValue.replace(/-/g, '/')
 })
+
+// 同步 modelValue 到 inputValue
+watch(() => props.modelValue, (newVal) => {
+  if (!isInputMode.value) {
+    inputValue.value = newVal ? displayValue.value : ''
+  }
+}, { immediate: true })
+
+// 解析用户输入的日期
+function parseInputDate(input: string): Date | null {
+  if (!input)
+    return null
+
+  // 移除空格
+  const cleaned = input.trim()
+
+  // 尝试匹配 yyyy-MM-DD 格式
+  const dashMatch = cleaned.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/)
+  if (dashMatch) {
+    const [, year, month, day] = dashMatch
+    return new Date(Number(year), Number(month) - 1, Number(day))
+  }
+
+  // 尝试匹配 yyyy/MM/DD 格式
+  const slashMatch = cleaned.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/)
+  if (slashMatch) {
+    const [, year, month, day] = slashMatch
+    return new Date(Number(year), Number(month) - 1, Number(day))
+  }
+
+  // 尝试匹配 yyyy年MM月DD日 格式
+  const chineseMatch = cleaned.match(/^(\d{4})年(\d{1,2})月(\d{1,2})日$/)
+  if (chineseMatch) {
+    const [, year, month, day] = chineseMatch
+    return new Date(Number(year), Number(month) - 1, Number(day))
+  }
+
+  return null
+}
 
 // 生成日历数据
 const calendarDays = computed(() => {
@@ -167,6 +208,16 @@ function nextMonth() {
   }
 }
 
+// 上一年
+function prevYear() {
+  currentYear.value--
+}
+
+// 下一年
+function nextYear() {
+  currentYear.value++
+}
+
 // 今天
 function selectToday() {
   const today = new Date()
@@ -180,6 +231,7 @@ function selectToday() {
 function clearDate() {
   emit('update:modelValue', '')
   showPicker.value = false
+  inputValue.value = ''
 }
 
 // 打开选择器时，初始化到当前选中的日期或今天
@@ -197,6 +249,55 @@ function openPicker() {
   showPicker.value = true
 }
 
+// 处理输入框点击
+function handleInputClick() {
+  if (!isInputMode.value) {
+    openPicker()
+  }
+}
+
+// 处理输入框获得焦点
+function handleInputFocus() {
+  isInputMode.value = true
+  showPicker.value = false
+}
+
+// 处理输入框失去焦点
+function handleInputBlur() {
+  isInputMode.value = false
+  const date = parseInputDate(inputValue.value)
+
+  if (date && !Number.isNaN(date.getTime())) {
+    // 检查日期是否有效且不超过最大日期
+    if (!isDateDisabled(date)) {
+      emit('update:modelValue', formatDate(date))
+    }
+    else {
+      // 如果日期无效，恢复到原值
+      inputValue.value = displayValue.value
+    }
+  }
+  else if (inputValue.value.trim() === '') {
+    // 如果输入为空，清除日期
+    emit('update:modelValue', '')
+  }
+  else {
+    // 如果输入格式不正确，恢复到原值
+    inputValue.value = displayValue.value
+  }
+}
+
+// 处理输入框的键盘事件
+function handleInputKeydown(event: KeyboardEvent) {
+  if (event.key === 'Enter') {
+    ;(event.target as HTMLInputElement).blur()
+  }
+  else if (event.key === 'Escape') {
+    inputValue.value = displayValue.value
+    ;(event.target as HTMLInputElement).blur()
+  }
+}
+
 // 点击外部关闭
 onClickOutside(pickerRef, () => {
   showPicker.value = false
@@ -210,30 +311,52 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 <template>
   <div ref="pickerRef" class="date-picker" pos="relative">
     <!-- 输入框显示 -->
-    <button
-      type="button"
-      class="date-picker-input"
-      :class="{ 'has-value': modelValue }"
-      @click="openPicker"
-    >
-      <span>{{ displayValue }}</span>
-      <div class="i-tabler:calendar" w-4 h-4 />
-    </button>
+    <div class="date-picker-input-wrapper">
+      <input
+        v-model="inputValue"
+        type="text"
+        class="date-picker-input"
+        :class="{ 'has-value': modelValue }"
+        :placeholder="placeholder || '开始日期'"
+        @click="handleInputClick"
+        @focus="handleInputFocus"
+        @blur="handleInputBlur"
+        @keydown="handleInputKeydown"
+      >
+      <button
+        type="button"
+        class="calendar-icon"
+        @click="openPicker"
+      >
+        <div class="i-tabler:calendar" w-4 h-4 />
+      </button>
+    </div>
 
     <!-- 日历弹出框 -->
     <Transition name="picker-fade">
       <div v-if="showPicker" class="date-picker-panel">
         <!-- 头部：年月选择 -->
         <div class="picker-header">
-          <button type="button" class="header-btn" @click="prevMonth">
-            <div class="i-tabler:chevron-up" w-5 h-5 />
-          </button>
-          <div class="header-title">
-            {{ currentYear }}年{{ monthNames[currentMonth] }}
+          <div class="year-controls">
+            <button type="button" class="header-btn" @click="prevYear">
+              <div class="i-tabler:chevron-left" w-4 h-4 />
+            </button>
+            <span class="year-text">{{ currentYear }}年</span>
+            <button type="button" class="header-btn" @click="nextYear">
+              <div class="i-tabler:chevron-right" w-4 h-4 />
+            </button>
           </div>
-          <button type="button" class="header-btn" @click="nextMonth">
-            <div class="i-tabler:chevron-down" w-5 h-5 />
-          </button>
+          <div class="month-controls">
+            <button type="button" class="header-btn" @click="prevMonth">
+              <div class="i-tabler:chevron-up" w-5 h-5 />
+            </button>
+            <div class="month-text">
+              {{ monthNames[currentMonth] }}
+            </div>
+            <button type="button" class="header-btn" @click="nextMonth">
+              <div class="i-tabler:chevron-down" w-5 h-5 />
+            </button>
+          </div>
         </div>
 
         <!-- 星期标题 -->
@@ -281,21 +404,29 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   display: inline-block;
 }
 
-.date-picker-input {
-  display: flex;
+.date-picker-input-wrapper {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  width: 140px;
-  padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+  width: 115px;
+}
+
+.date-picker-input {
+  flex: 1;
+  width: 100%;
+  padding: 0.35rem 1.5rem 0.35rem 0.5rem;
   background: var(--bew-fill-1);
   border: 1px solid transparent;
   border-radius: var(--bew-radius-half);
   color: var(--bew-text-3);
-  font-size: 0.875rem;
-  cursor: pointer;
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
   transition: all 0.2s ease;
-  white-space: nowrap;
-  user-select: none;
+  outline: none;
+
+  &::placeholder {
+    color: var(--bew-text-3);
+  }
 
   &.has-value {
     color: var(--bew-text-1);
@@ -305,13 +436,31 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
     background: var(--bew-fill-2);
   }
 
-  &:active {
-    transform: scale(0.98);
+  &:focus {
+    background: var(--bew-fill-2);
+    border-color: var(--bew-theme-color);
+  }
+}
+
+.calendar-icon {
+  position: absolute;
+  right: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem;
+  background: transparent;
+  border: none;
+  color: var(--bew-text-3);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    color: var(--bew-theme-color);
   }
 
-  span {
-    flex: 1;
-    text-align: left;
+  &:active {
+    transform: scale(0.95);
   }
 }
 
@@ -332,16 +481,33 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 12px;
   padding: 0 4px;
+}
+
+.year-controls,
+.month-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.year-text,
+.month-text {
+  min-width: 60px;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--bew-text-1);
 }
 
 .header-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   background: transparent;
   border: none;
   border-radius: var(--bew-radius-half);
@@ -357,12 +523,6 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   &:active {
     transform: scale(0.95);
   }
-}
-
-.header-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--bew-text-1);
 }
 
 .picker-weekdays {
