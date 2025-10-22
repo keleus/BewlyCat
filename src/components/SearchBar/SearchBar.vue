@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { onClickOutside, onKeyStroke, useDebounceFn } from '@vueuse/core'
 import DOMPurify from 'dompurify'
-import { computed, reactive, ref, shallowRef, watch } from 'vue'
+import { computed, inject, reactive, ref, shallowRef, watch } from 'vue'
 
+import type { BewlyAppProvider } from '~/composables/useAppProvider'
+import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage } from '~/utils/main'
+import { openLinkInBackground } from '~/utils/tabs'
 
 import type { HistoryItem, SuggestionItem, SuggestionResponse } from './searchHistoryProvider'
 import {
@@ -70,13 +73,20 @@ const pluginSearchOrigin = computed(() => {
 const searchMode = computed(() => props.searchBehavior ?? 'navigate')
 const isInPlaceSearch = computed(() => searchMode.value === 'stay')
 
+// 尝试获取 BEWLY_APP（在首页时可用）
+const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
+
 // 判断是否在搜索页且启用了插件搜索
 const shouldHandleInCurrentPage = computed(() => {
   if (!settings.value.usePluginSearchResultsPage)
     return false
-  // 检查是否在搜索页
+  // 如果能获取到 bewlyApp，使用 activatedPage 来判断
+  if (bewlyApp?.activatedPage) {
+    return bewlyApp.activatedPage.value === AppPage.Search
+  }
+  // 降级方案：检查 URL 参数（在非首页或无法获取 bewlyApp 时使用）
   const urlParams = new URLSearchParams(window.location.search)
-  return urlParams.get('page') === 'Search'
+  return urlParams.get('page') === 'Search' && !!urlParams.get('keyword')
 })
 
 watch(() => props.modelValue, (value) => {
@@ -205,29 +215,43 @@ async function navigateToSearchResultPage(rawKeyword: string) {
     console.error('Failed to add search history:', error)
   }
 
-  // 如果是就地搜索模式，或在搜索页且启用了插件搜索，则 emit 事件
-  if (isInPlaceSearch.value || shouldHandleInCurrentPage.value) {
+  // 如果是就地搜索模式，则 emit 事件（这是组件级别的行为设置）
+  if (isInPlaceSearch.value) {
     emit('search', normalized)
     isFocus.value = false
     return
   }
 
-  let target = '_blank'
-  if (settings.value.searchBarLinkOpenMode === 'currentTabIfNotHomepage')
-    target = isHomePage() ? '_blank' : '_self'
-  else if (settings.value.searchBarLinkOpenMode === 'currentTab')
-    target = '_self'
-  else if (settings.value.searchBarLinkOpenMode === 'newTab')
-    target = '_blank'
+  // 如果在搜索页且启用了插件搜索，则在当前页加载
+  if (shouldHandleInCurrentPage.value) {
+    emit('search', normalized)
+    isFocus.value = false
+    return
+  }
 
+  // 不在搜索页时，遵循顶栏链接行为设置
   const searchUrl = buildKeywordHref(normalized)
-  window.open(searchUrl, target)
+
+  if (settings.value.searchBarLinkOpenMode === 'background') {
+    // 使用后台标签页打开
+    void openLinkInBackground(searchUrl)
+  }
+  else {
+    // 使用 window.open 打开
+    let target = '_blank'
+    if (settings.value.searchBarLinkOpenMode === 'currentTabIfNotHomepage')
+      target = isHomePage() ? '_blank' : '_self'
+    else if (settings.value.searchBarLinkOpenMode === 'currentTab')
+      target = '_self'
+    else if (settings.value.searchBarLinkOpenMode === 'newTab')
+      target = '_blank'
+
+    window.open(searchUrl, target)
+  }
 }
 
 function handleKeywordLinkClick(value: string, event: MouseEvent) {
-  // 如果不是就地搜索模式，且不在搜索页，则使用默认行为
-  if (!isInPlaceSearch.value && !shouldHandleInCurrentPage.value)
-    return
+  // 始终阻止默认行为，使用 navigateToSearchResultPage 来处理所有情况
   event.preventDefault()
   event.stopPropagation()
   void navigateToSearchResultPage(value)
@@ -445,7 +469,7 @@ function handleFocusOut(event: FocusEvent) {
               v-for="(item, index) in hotSearchList.slice(0, 10)" :key="item.keyword"
               :href="buildKeywordHref(item.keyword)"
               type="searchBar"
-              :custom-click-event="isInPlaceSearch || shouldHandleInCurrentPage"
+              :custom-click-event="true"
               class="hot-search-item cursor-pointer duration-300"
               flex items-center gap-2 p="x-2 y-1" hover="text-$bew-theme-color"
               @click="handleKeywordLinkClick(item.keyword, $event)"
@@ -497,7 +521,7 @@ function handleFocusOut(event: FocusEvent) {
               v-for="item in searchHistory" :key="item.timestamp" ref="historyItemRef"
               :href="buildKeywordHref(item.value)"
               type="searchBar"
-              :custom-click-event="isInPlaceSearch || shouldHandleInCurrentPage"
+              :custom-click-event="true"
               class="history-item group"
               flex justify-between items-center
               @click="handleKeywordLinkClick(item.value, $event)"

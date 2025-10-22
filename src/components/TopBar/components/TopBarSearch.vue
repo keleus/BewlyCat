@@ -32,11 +32,9 @@ useEventListener(window, 'pushstate', updateCurrentLocation)
 useEventListener(window, 'popstate', updateCurrentLocation)
 
 const searchBehavior = computed<'navigate' | 'stay'>(() => {
-  if (!settings.value.usePluginSearchResultsPage)
-    return 'navigate'
-
-  // 当启用插件搜索页时,始终使用 stay 模式以支持页面内跳转
-  return 'stay'
+  // 不再在这里决定搜索行为，让 SearchBar 组件自己根据情况判断
+  // SearchBar 会根据当前是否在搜索页来决定是否使用 stay 模式
+  return 'navigate'
 })
 
 function pushKeywordToSearchPage(keyword: string) {
@@ -67,7 +65,16 @@ function handleSearch(keyword: string) {
   // 先更新 searchKeyword，确保顶栏搜索框显示正确的值
   searchKeyword.value = keyword
 
-  if (searchBehavior.value !== 'stay')
+  // 只有在搜索页且启用了插件搜索时才使用 pushState 方式
+  // 其他情况由 SearchBar 组件的 navigateToSearchResultPage 处理
+  if (!settings.value.usePluginSearchResultsPage)
+    return
+
+  // 检查是否在搜索页（通过 URL 参数判断，因为在 TopBar 中无法 inject BEWLY_APP）
+  const urlParams = new URLSearchParams(window.location.search)
+  const isInSearchPage = urlParams.get('page') === 'Search' && !!urlParams.get('keyword')
+
+  if (!isInSearchPage)
     return
 
   pushKeywordToSearchPage(keyword)
