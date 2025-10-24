@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { settings } from '~/logic'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
@@ -29,6 +29,8 @@ const emit = defineEmits<{
 }>()
 
 const moreBtnRef = ref<HTMLDivElement | null>(null)
+const titleRef = ref<HTMLElement | null>(null)
+const titleTooltip = ref<string | undefined>(undefined)
 
 defineExpose({
   moreBtnRef,
@@ -41,6 +43,27 @@ const primaryTags = computed(() => {
   if (Array.isArray(tag))
     return tag.filter(Boolean)
   return [tag]
+})
+
+// 检测标题是否溢出，只有溢出时才设置 title 属性
+function checkTitleOverflow() {
+  if (!titleRef.value)
+    return
+
+  const element = titleRef.value
+  // 检查是否有文本溢出(scrollHeight > clientHeight 表示有垂直溢出)
+  const isOverflow = element.scrollHeight > element.clientHeight
+  titleTooltip.value = isOverflow ? props.video.title : undefined
+}
+
+onMounted(() => {
+  checkTitleOverflow()
+  // 监听窗口大小变化,重新检测
+  window.addEventListener('resize', checkTitleOverflow)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', checkTitleOverflow)
 })
 </script>
 
@@ -62,6 +85,7 @@ const primaryTags = computed(() => {
     <div class="group/desc" flex="~ col" :class="layout === 'modern' ? 'gap-2' : ''" w="full" align="items-start">
       <div flex="~ gap-1 justify-between items-start" w="full" pos="relative">
         <h3
+          ref="titleRef"
           :class="[
             video.liveStatus === 1 ? 'keep-one-line' : 'keep-two-lines',
             { 'bew-title-auto': settings.homeAdaptiveTitleAutoSize },
@@ -70,8 +94,9 @@ const primaryTags = computed(() => {
           text="overflow-ellipsis $bew-text-1 lg"
           :style="titleStyle"
           cursor="pointer"
+          :title="titleTooltip"
         >
-          <a :href="videoUrl" target="_blank" :title="video.title">
+          <a :href="videoUrl" target="_blank">
             {{ video.title }}
           </a>
         </h3>
