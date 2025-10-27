@@ -598,6 +598,7 @@ if (settings.value.cleanUrlArgument) {
     'live_from',
     'hotRank',
     'broadcast_type',
+    'trackid',
   ]
 
   let isCleaningUrl = false // 防止重复执行
