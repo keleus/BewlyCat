@@ -84,14 +84,6 @@ const isLoadingHotSearch = ref<boolean>(false)
 const searchRecommendation = ref<SearchRecommendationItem | null>(null)
 const isLoadingSearchRecommendation = ref<boolean>(false)
 
-const pluginSearchOrigin = computed(() => {
-  if (typeof window === 'undefined')
-    return ''
-  if (window.location.origin === 'https://t.bilibili.com')
-    return '//www.bilibili.com'
-  return window.location.origin
-})
-
 const searchMode = computed(() => props.searchBehavior ?? 'navigate')
 const isInPlaceSearch = computed(() => searchMode.value === 'stay')
 
@@ -297,9 +289,12 @@ function handleNativeInput(event: Event) {
 
 function buildKeywordHref(keyword: string) {
   const encoded = encodeURIComponent(keyword)
-  if (settings.value.usePluginSearchResultsPage && pluginSearchOrigin.value)
-    return `${pluginSearchOrigin.value}/?page=Search&keyword=${encoded}`
-  return `//search.bilibili.com/all?keyword=${encoded}`
+  if (settings.value.usePluginSearchResultsPage) {
+    // 写死插件搜索页面 URL
+    return `https://www.bilibili.com/?page=Search&keyword=${encoded}`
+  }
+  // 写死B站原版搜索页面 URL
+  return `https://search.bilibili.com/all?keyword=${encoded}`
 }
 
 // 从URL中提取搜索关键词
