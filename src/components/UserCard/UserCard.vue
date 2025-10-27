@@ -2,6 +2,7 @@
 import DOMPurify from 'dompurify'
 import { computed, ref, watch } from 'vue'
 
+import ALink from '~/components/ALink.vue'
 import api from '~/utils/api'
 import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON } from '~/utils/lvIcons'
 import { getCSRF } from '~/utils/main'
@@ -132,26 +133,24 @@ async function handleFollowClick(e: Event) {
 </script>
 
 <template>
-  <div
-    class="user-card transition-all duration-300 cursor-pointer"
-    :class="[
-      { horizontal, compact },
-    ]"
-    relative
-    flex
-    align-items-center
-    gap-3
-    p-3
-    :bg="compact ? '$bew-elevated' : '$bew-elevated hover:$bew-elevated-hover'"
-    rounded="$bew-radius"
-    cursor="pointer"
-    @click="openUserSpace()"
-  >
-    <!-- Compact模式布局 -->
-    <template v-if="compact">
+  <!-- Compact模式布局 -->
+  <template v-if="compact">
+    <ALink
+      :href="`https://space.bilibili.com/${mid}`"
+      type="videoCard"
+      class="user-card transition-all duration-300 cursor-pointer compact"
+      relative
+      flex
+      align-items-center
+      gap-3
+      p-3
+      bg="$bew-elevated"
+      rounded="$bew-radius"
+      cursor="pointer"
+    >
       <div flex items-center gap-5 w-full>
         <!-- 左侧：头像（带角标） -->
-        <div class="avatar-wrapper-compact" relative flex-shrink-0 cursor-pointer @click="openUserSpace">
+        <div class="avatar-wrapper-compact" relative flex-shrink-0>
           <img
             :src="face"
             :alt="name"
@@ -176,8 +175,7 @@ async function handleFollowClick(e: Event) {
           <!-- 用户名 + 等级 + 性别 -->
           <div flex items-center gap-2>
             <div
-              class="username" text="base $bew-text-1" font-medium truncate cursor-pointer
-              @click="openUserSpace"
+              class="username" text="base $bew-text-1" font-medium truncate
             >
               {{ name }}
             </div>
@@ -239,10 +237,24 @@ async function handleFollowClick(e: Event) {
           </div>
         </div>
       </div>
-    </template>
+    </ALink>
+  </template>
 
-    <!-- 非Compact模式布局 -->
-    <template v-else>
+  <!-- 非Compact模式布局 -->
+  <template v-else>
+    <div
+      class="user-card transition-all duration-300 cursor-pointer"
+      :class="{ horizontal }"
+      relative
+      flex
+      align-items-center
+      gap-3
+      p-3
+      bg="$bew-elevated hover:$bew-elevated-hover"
+      rounded="$bew-radius"
+      cursor="pointer"
+      @click="openUserSpace()"
+    >
       <!-- 头像 -->
       <div class="avatar-wrapper" flex-shrink-0>
         <img
@@ -327,12 +339,15 @@ async function handleFollowClick(e: Event) {
           </a>
         </div>
       </div>
-    </template>
-  </div>
+    </div>
+  </template>
 </template>
 
 <style lang="scss" scoped>
 .user-card {
+  text-decoration: none;
+  color: inherit;
+
   &:not(.compact):hover {
     transform: translateY(-2px);
     box-shadow: var(--bew-shadow-2);
@@ -348,6 +363,7 @@ async function handleFollowClick(e: Event) {
   }
 
   &.compact {
+    display: flex;
     cursor: pointer;
     transition: all 0.2s ease;
 

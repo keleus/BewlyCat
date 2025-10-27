@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+import ALink from '~/components/ALink.vue'
+
 interface ArticleCardProps {
   id: number
   title: string
@@ -14,7 +16,7 @@ interface ArticleCardProps {
   tags?: Array<{ name: string }>
 }
 
-const props = defineProps<ArticleCardProps>()
+defineProps<ArticleCardProps>()
 
 // 格式化数字
 function formatNumber(num: number | undefined) {
@@ -57,20 +59,17 @@ function formatDate(timestamp: number | undefined) {
     return `${Math.floor(days / 365)}年前`
   }
 }
-
-function openArticle() {
-  window.open(`https://www.bilibili.com/read/cv${props.id}`, '_blank')
-}
 </script>
 
 <template>
-  <div
+  <ALink
+    :href="`https://www.bilibili.com/read/cv${id}`"
+    type="videoCard"
     class="article-card"
     flex gap-4 p-4
     bg="$bew-elevated hover:$bew-elevated-hover"
     rounded="$bew-radius"
     transition-all duration-300 cursor-pointer
-    @click="openArticle"
   >
     <!-- 左侧内容 -->
     <div class="article-content" flex-1 min-w-0>
@@ -157,11 +156,15 @@ function openArticle() {
         w-full h-full object-cover
       >
     </div>
-  </div>
+  </ALink>
 </template>
 
 <style lang="scss" scoped>
 .article-card {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: var(--bew-shadow-2);
