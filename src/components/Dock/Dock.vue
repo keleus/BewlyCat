@@ -54,6 +54,55 @@ const dockContentRef = useDelayedHover({
   },
 })
 
+// Global mouse move detection for edge zones
+const edgeZoneSize = 20 // pixels from edge
+let mouseEnterTimer: any | undefined
+let mouseLeaveTimer: any | undefined
+
+function handleGlobalMouseMove(event: MouseEvent) {
+  if (!settings.value.autoHideDock) {
+    return
+  }
+
+  const { clientX, clientY } = event
+  const { innerWidth, innerHeight } = window
+
+  let isInEdgeZone = false
+
+  if (settings.value.dockPosition === 'left' && clientX <= edgeZoneSize) {
+    isInEdgeZone = true
+  }
+  else if (settings.value.dockPosition === 'right' && clientX >= innerWidth - edgeZoneSize) {
+    isInEdgeZone = true
+  }
+  else if (settings.value.dockPosition === 'bottom' && clientY >= innerHeight - edgeZoneSize) {
+    isInEdgeZone = true
+  }
+
+  if (isInEdgeZone) {
+    if (mouseLeaveTimer) {
+      clearTimeout(mouseLeaveTimer)
+      mouseLeaveTimer = undefined
+    }
+    if (!mouseEnterTimer) {
+      mouseEnterTimer = setTimeout(() => {
+        toggleHideDock(false)
+      }, 100)
+    }
+  }
+  else {
+    if (mouseEnterTimer) {
+      clearTimeout(mouseEnterTimer)
+      mouseEnterTimer = undefined
+    }
+    if (!mouseLeaveTimer && !dockContentHover.value) {
+      mouseLeaveTimer = setTimeout(() => {
+        toggleHideDock(true)
+      }, 600)
+    }
+  }
+}
+
 const hoveringDockItem = reactive<HoveringDockItem>({
   themeMode: false,
   settings: false,
@@ -374,11 +423,22 @@ function handleHomeRefreshKeydown(event: KeyboardEvent) {
 // 在组件挂载时添加键盘事件监听
 onMounted(() => {
   document.addEventListener('keydown', handleHomeRefreshKeydown)
+  // Add global mouse move listener for edge zone detection
+  window.addEventListener('mousemove', handleGlobalMouseMove)
 })
 
 // 在组件卸载时移除键盘事件监听
 onUnmounted(() => {
   document.removeEventListener('keydown', handleHomeRefreshKeydown)
+  // Remove global mouse move listener
+  window.removeEventListener('mousemove', handleGlobalMouseMove)
+  // Clear any pending timers
+  if (mouseEnterTimer) {
+    clearTimeout(mouseEnterTimer)
+  }
+  if (mouseLeaveTimer) {
+    clearTimeout(mouseLeaveTimer)
+  }
 })
 </script>
 
