@@ -35,7 +35,86 @@ const layout = computed((): 'modern' | 'old' => {
   return layoutSetting === 'old' ? 'old' : 'modern'
 })
 
-const logic = useVideoCardLogic(props)
+/**
+ * 解码 HTML 实体编码
+ * 支持所有标准 HTML 实体，包括：
+ * - 命名实体：&amp; &lt; &gt; &quot; &copy; &reg; &trade; &nbsp; 等
+ * - 十进制数字实体：&#38; &#60; &#34; 等
+ * - 十六进制数字实体：&#x27; &#x3C; 等
+ */
+function decodeHtmlEntities(text: string | undefined): string | undefined {
+  if (!text || typeof text !== 'string')
+    return text
+
+  // 使用 DOMParser 更安全，不会执行脚本
+  const doc = new DOMParser().parseFromString(text, 'text/html')
+  return doc.documentElement.textContent || text
+}
+
+/**
+ * 对 video 对象中的所有文本字段进行 HTML 实体解码
+ */
+const decodedVideo = computed((): Video | undefined => {
+  if (!props.video)
+    return undefined
+
+  const video = props.video
+
+  // 解码 author 字段
+  let decodedAuthor = video.author
+  if (video.author) {
+    if (Array.isArray(video.author)) {
+      decodedAuthor = video.author.map(author => ({
+        ...author,
+        name: decodeHtmlEntities(author.name),
+      }))
+    }
+    else {
+      decodedAuthor = {
+        ...video.author,
+        name: decodeHtmlEntities(video.author.name),
+      }
+    }
+  }
+
+  // 解码 tag 字段
+  let decodedTag = video.tag
+  if (video.tag) {
+    if (Array.isArray(video.tag)) {
+      decodedTag = video.tag.map(tag => decodeHtmlEntities(tag) || tag)
+    }
+    else {
+      decodedTag = decodeHtmlEntities(video.tag)
+    }
+  }
+
+  // 解码 badge 字段
+  let decodedBadge = video.badge
+  if (video.badge) {
+    decodedBadge = {
+      ...video.badge,
+      text: decodeHtmlEntities(video.badge.text) || video.badge.text,
+    }
+  }
+
+  return {
+    ...video,
+    title: decodeHtmlEntities(video.title) || video.title,
+    desc: decodeHtmlEntities(video.desc),
+    capsuleText: decodeHtmlEntities(video.capsuleText),
+    author: decodedAuthor,
+    tag: decodedTag,
+    badge: decodedBadge,
+  }
+})
+
+// 创建一个新的 props 对象，使用解码后的 video
+const videoCardProps = computed(() => ({
+  ...props,
+  video: decodedVideo.value,
+}))
+
+const logic = useVideoCardLogic(videoCardProps.value)
 const { mainAppRef } = useBewlyApp()
 
 // Modern layout specific: cover stats calculation
@@ -56,7 +135,7 @@ function formatStatValue(count?: number, countStr?: string) {
 }
 
 const coverStatValues = computed(() => {
-  if (!props.video || layout.value !== 'modern') {
+  if (!decodedVideo.value || layout.value !== 'modern') {
     return {
       view: '',
       danmaku: '',
@@ -68,12 +147,12 @@ const coverStatValues = computed(() => {
   const stats = logic.videoStatNumbers.value
 
   return {
-    view: formatStatValue(stats.view, props.video.viewStr),
-    danmaku: formatStatValue(stats.danmaku, props.video.danmakuStr),
-    like: formatStatValue(stats.like, props.video.likeStr),
-    duration: props.video.duration
-      ? calcCurrentTime(props.video.duration)
-      : props.video.durationStr ?? '',
+    view: formatStatValue(stats.view, decodedVideo.value.viewStr),
+    danmaku: formatStatValue(stats.danmaku, decodedVideo.value.danmakuStr),
+    like: formatStatValue(stats.like, decodedVideo.value.likeStr),
+    duration: decodedVideo.value.duration
+      ? calcCurrentTime(decodedVideo.value.duration)
+      : decodedVideo.value.durationStr ?? '',
   }
 })
 
@@ -153,7 +232,7 @@ function roundToDecimals(value: number, decimals = 3) {
 }
 
 const primaryTags = computed(() => {
-  const video = props.video
+  const video = decodedVideo.value
   if (!video)
     return []
   const { tag } = video
@@ -212,7 +291,7 @@ const titleStyle = computed((): Record<string, string | number> => {
 
 // Highlight tags calculation
 const highlightTags = computed(() => {
-  if (!props.video)
+  if (!decodedVideo.value)
     return [] as string[]
 
   // 如果设置为不显示推荐标签，则不显示插件计算的标签
@@ -245,7 +324,7 @@ const highlightTags = computed(() => {
     }
   }
 
-  const durationTag = getDurationHighlight(props.video)
+  const durationTag = decodedVideo.value ? getDurationHighlight(decodedVideo.value) : undefined
 
   if (durationTag)
     tags.push(durationTag)
@@ -318,7 +397,7 @@ const authorFontSizeClass = computed(() => VIDEO_CARD_FONT_SIZE_MAP[settings.val
 const metaFontSizeClass = computed(() => VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardMetaFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.xs)
 
 const coverImageUrl = computed(() =>
-  props.video ? `${logic.removeHttpFromUrl(props.video.cover)}@672w_378h_1c_!web-home-common-cover` : '',
+  decodedVideo.value ? `${logic.removeHttpFromUrl(decodedVideo.value.cover)}@672w_378h_1c_!web-home-common-cover` : '',
 )
 
 const infoComponentRef = ref()
@@ -345,7 +424,7 @@ provide('getVideoType', () => props.type!)
     will-change-transform
     :class="layout === 'modern' ? 'mb-3' : 'mb-4'"
   >
-    <div v-if="!skeleton && video">
+    <div v-if="!skeleton && decodedVideo">
       <div
         class="video-card group"
         w="full"
@@ -365,7 +444,7 @@ provide('getVideoType', () => props.type!)
             :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
           >
             <VideoCardCover
-              :video="video"
+              :video="decodedVideo"
               :layout="layout"
               :removed="logic.removed.value"
               :is-hover="logic.isHover.value"
@@ -393,7 +472,7 @@ provide('getVideoType', () => props.type!)
           <VideoCardInfo
             v-if="!logic.removed.value"
             ref="infoComponentRef"
-            :video="video"
+            :video="decodedVideo"
             :layout="layout"
             :horizontal="horizontal || false"
             :video-url="logic.videoUrl.value"
@@ -419,12 +498,12 @@ provide('getVideoType', () => props.type!)
 
     <!-- context menu -->
     <Teleport
-      v-if="logic.showVideoOptions.value && video"
+      v-if="logic.showVideoOptions.value && decodedVideo"
       :to="mainAppRef"
     >
       <VideoCardContextMenu
         :video="{
-          ...video,
+          ...decodedVideo,
           url: logic.videoUrl.value,
         }"
         :context-menu-styles="logic.videoOptionsFloatingStyles.value"
