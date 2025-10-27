@@ -124,11 +124,6 @@ const hasForwardState = ref<boolean>(false)
 const PAGE_SIZE = 30
 const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，初始化时为1
 
-// 添加过滤条件检查相关变量
-const hasShownFilterWarning = ref<boolean>(false) // 是否已显示过滤条件警告
-const minFilteredVideosWeb = 6 // Web 模式最少过滤后视频数量，用于警告提示
-const minFilteredVideosApp = 3 // APP 模式最少过滤后视频数量，用于警告提示
-
 // 监听页面可见性变化
 function handleVisibilityChange() {
   isPageVisible.value = !document.hidden
@@ -157,9 +152,6 @@ onMounted(() => {
     cachedRefreshIdx.value = 1
     forwardVideoList.value = []
     forwardRefreshIdx.value = 1
-
-    // 重置请求限制状态
-    resetRequestLimit()
 
     // 延迟初始化页面交互功能，避免立即触发数据加载
     setTimeout(() => {
@@ -241,9 +233,6 @@ watch(() => settings.value.recommendationMode, () => {
   hasForwardState.value = false
   undoForwardState.value = UndoForwardState.Hidden
 
-  // 重置过滤相关状态
-  resetRequestLimit()
-
   // 重置store状态
   forYouStore.resetState()
 
@@ -254,13 +243,7 @@ async function initData() {
   videoList.value.length = 0
   appVideoList.value.length = 0
   APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
-  resetRequestLimit() // 添加重置请求限制
   await getData()
-}
-
-// 添加重置过滤状态的方法
-function resetRequestLimit() {
-  hasShownFilterWarning.value = false
 }
 
 async function getData() {
@@ -501,15 +484,6 @@ async function getRecommendVideos() {
     if (!needToLoginFirst.value) {
       await nextTick()
 
-      // 检查过滤后的视频数量，给出提醒但不阻止加载
-      const currentFilteredCount = filledItems.length
-      const shouldCheckFilter = filterFunc.value && currentFilteredCount > 0
-
-      if (shouldCheckFilter && !hasShownFilterWarning.value && currentFilteredCount < minFilteredVideosWeb) {
-        toast.warning('过滤条件可能过于严格，符合条件的视频较少')
-        hasShownFilterWarning.value = true
-      }
-
       // 如果需要更多内容，继续加载
       if (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
         // 检查页面可见性
@@ -523,7 +497,6 @@ async function getRecommendVideos() {
 
 async function getAppRecommendVideos() {
   const batchesToLoad = APP_LOAD_BATCHES.value
-  const initialLength = appVideoList.value.length
 
   // 加载多个批次
   for (let batch = 0; batch < batchesToLoad; batch++) {
@@ -577,17 +550,8 @@ async function getAppRecommendVideos() {
   if (!needToLoginFirst.value) {
     await nextTick()
 
-    // 检查新加载的视频数量，给出提醒但不阻止加载
-    const newVideosCount = appVideoList.value.length - initialLength
-    const shouldCheckFilter = appFilterFunc.value && newVideosCount > 0
-
-    if (shouldCheckFilter && !hasShownFilterWarning.value && newVideosCount < minFilteredVideosApp) {
-      toast.warning('过滤条件可能过于严格，符合条件的视频较少')
-      hasShownFilterWarning.value = true
-    }
-
     // 如果需要更多内容，继续加载
-    if (!haveScrollbar() || appVideoList.value.length < PAGE_SIZE || newVideosCount < 1) {
+    if (!haveScrollbar() || appVideoList.value.length < PAGE_SIZE) {
       getAppRecommendVideos()
     }
   }
@@ -600,7 +564,6 @@ function jumpToLoginPage() {
 // 修改 defineExpose，暴露重置方法和撤销方法
 defineExpose({
   initData,
-  resetRequestLimit,
   undoRefresh: () => {
     handleUndoRefresh.value?.()
   },

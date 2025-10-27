@@ -87,7 +87,7 @@ settings:
   group_recommendation_mode: “个性推荐” 推荐模式
   group_recommendation_filters: “个性推荐” 过滤
   group_recommendation_filters_desc: |
-    请勿将限制值设置得太大，不然可能会增加加载时间！
+    请勿将限制值设置得太大，不然可能会增加加载时间！频繁请求可能会导致B站对IP的封禁!
   group_following: 正在关注
   group_search_page_mode: 搜索页模式
   group_home_tabs: 首页标签栏

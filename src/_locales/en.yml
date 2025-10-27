@@ -90,7 +90,7 @@ settings:
   group_recommendation_filters: '"For you" Recommendation Filters'
   group_recommendation_filters_desc: >
     Do not set the restricted value too large, as this may increase loading
-    time!
+    time! Frequent requests may result in IP blocking by Bilibili!
   group_following: Following
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs

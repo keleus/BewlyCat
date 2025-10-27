@@ -86,7 +86,7 @@ settings:
   group_recommendation_mode: 「估你心水」推介模式
   group_recommendation_filters: 「估你心水」過濾
   group_recommendation_filters_desc: |
-    限制嘅數值唔好設太大，唔係嘅話會影響載入時間！
+    限制嘅數值唔好設太大，唔係嘅話會影響載入時間！頻繁請求可能會導致B站對IP嘅封禁!
   group_following: 跟緊啲人
   group_search_page_mode: 搵嘢頁模式
   group_home_tabs: 主頁分頁欄

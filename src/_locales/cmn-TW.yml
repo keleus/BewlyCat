@@ -86,7 +86,7 @@ settings:
   group_recommendation_mode: 「爲你推薦」推薦模式
   group_recommendation_filters: 「爲你推薦」過濾
   group_recommendation_filters_desc: |
-    限制的數值不要設太大，不然載入時間可能會增加！
+    限制的數值不要設太大，不然載入時間可能會增加！頻繁請求可能會導致B站對IP的封禁!
   group_following: 正在跟隨
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄
