@@ -3,6 +3,7 @@ import { onKeyStroke } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
+import SmoothLoading from '~/components/SmoothLoading.vue'
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { FilterType, useFilter } from '~/composables/useFilter'
 import { LanguageType } from '~/enums/appEnums'
@@ -498,95 +499,60 @@ async function getRecommendVideos() {
 async function getAppRecommendVideos() {
   const batchesToLoad = APP_LOAD_BATCHES.value
 
-  try {
-    // 如果列表为空或数量不足，先添加骨架屏占位
-    let i = 0
-    if (!appFilterFunc.value || appVideoList.value.length < PAGE_SIZE) {
-      const pendingVideos: AppVideoElement[] = Array.from({
-        length: appVideoList.value.length < PAGE_SIZE ? PAGE_SIZE - appVideoList.value.length : PAGE_SIZE,
-      }, () => ({
-        uniqueId: `app-unique-id-${(appVideoList.value.length || 0) + i++}`,
-      } satisfies AppVideoElement))
+  // 加载多个批次
+  for (let batch = 0; batch < batchesToLoad; batch++) {
+    try {
+      // 获取最后一个视频的idx用于请求下一批
+      const lastIdx = appVideoList.value.length > 0 && appVideoList.value[appVideoList.value.length - 1].item
+        ? appVideoList.value[appVideoList.value.length - 1].item!.idx
+        : 1
 
-      appVideoList.value.push(...pendingVideos)
-    }
+      const response: AppForYouResult = await api.video.getAppRecommendVideos({
+        access_key: appAccessToken.value,
+        s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+        c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+        appkey: TVAppKey.appkey,
+        idx: lastIdx,
+      })
 
-    // 加载多个批次
-    for (let batch = 0; batch < batchesToLoad; batch++) {
-      try {
-        // 获取最后一个视频的idx用于请求下一批
-        const lastIdx = appVideoList.value.length > 0 && appVideoList.value[appVideoList.value.length - 1].item
-          ? appVideoList.value[appVideoList.value.length - 1].item!.idx
-          : 1
+      if (response.code === 0) {
+        response.data.items.forEach((item: AppVideoItem) => {
+          // Remove banner & ad cards
+          if (item.card_type.includes('banner') || item.card_type === 'cm_v1')
+            return
 
-        const response: AppForYouResult = await api.video.getAppRecommendVideos({
-          access_key: appAccessToken.value,
-          s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-          c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-          appkey: TVAppKey.appkey,
-          idx: lastIdx,
-        })
+          // 应用过滤函数
+          if (appFilterFunc.value && !appFilterFunc.value(item))
+            return
 
-        if (response.code === 0) {
-          response.data.items.forEach((item: AppVideoItem) => {
-            // Remove banner & ad cards
-            if (item.card_type.includes('banner') || item.card_type === 'cm_v1')
-              return
+          // 检查是否已经存在该视频，避免重复
+          const isDuplicate = appVideoList.value.some(video => video.item && video.item.idx === item.idx)
+          if (isDuplicate)
+            return
 
-            // 应用过滤函数
-            if (appFilterFunc.value && !appFilterFunc.value(item))
-              return
-
-            // 检查是否已经存在该视频，避免重复
-            const isDuplicate = appVideoList.value.some(video => video.item && video.item.idx === item.idx)
-            if (isDuplicate)
-              return
-
-            // 如果设置了过滤函数，优先填充空位
-            if (appFilterFunc.value) {
-              const findFirstEmptyItemIndex = appVideoList.value.findIndex(video => !video.item)
-              if (findFirstEmptyItemIndex !== -1) {
-                appVideoList.value[findFirstEmptyItemIndex] = {
-                  uniqueId: `${item.idx}`,
-                  item,
-                }
-                return
-              }
-            }
-
-            // 否则直接添加到列表
-            appVideoList.value.push({
-              uniqueId: `${item.idx}`,
-              item,
-            })
+          appVideoList.value.push({
+            uniqueId: `${item.idx}`,
+            item,
           })
-        }
-        else if (response.code === 62011) {
-          needToLoginFirst.value = true
-          break
-        }
+        })
       }
-      catch (error) {
-        console.error('Failed to load batch', batch, error)
+      else if (response.code === 62011) {
+        needToLoginFirst.value = true
         break
       }
     }
+    catch (error) {
+      console.error('Failed to load batch', batch, error)
+      break
+    }
   }
-  finally {
-    // 移除所有未填充的骨架屏占位
-    const filledItems = appVideoList.value.filter(video => video.item)
-    appVideoList.value = filledItems
 
-    if (!needToLoginFirst.value) {
-      await nextTick()
+  if (!needToLoginFirst.value) {
+    await nextTick()
 
-      // 如果需要更多内容，继续加载
-      if (!haveScrollbar() || appVideoList.value.length < PAGE_SIZE) {
-        // 检查页面可见性
-        if (isPageVisible.value) {
-          getAppRecommendVideos()
-        }
-      }
+    // 如果需要更多内容，继续加载
+    if (!haveScrollbar() || appVideoList.value.length < PAGE_SIZE) {
+      getAppRecommendVideos()
     }
   }
 }
@@ -706,7 +672,7 @@ defineExpose({
       </template>
     </div>
 
-    <Loading v-show="isLoading" />
+    <SmoothLoading :show="isLoading" />
     <!-- no more content -->
     <Empty v-if="noMoreContent" class="pb-4" :description="$t('common.no_more_content')" />
   </div>
