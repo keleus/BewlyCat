@@ -287,9 +287,27 @@ export function isCollectionVideo(): boolean {
     return true
   }
 
-  // 检测其他可能的选集容器
-  const otherEpisodes = document.querySelectorAll('.list-item, .episode-item, .section-item')
+  // 检测多P视频的其他容器
+  const multiPageItems = document.querySelectorAll('.multi-page__item, .page-item')
+  if (multiPageItems.length > 0) {
+    return true
+  }
+
+  // 检测合集视频容器
+  const videoSectionsContainer = document.querySelector('.video-sections-content-list, .base-video-sections-v1, .video-sections-v1')
+  if (videoSectionsContainer) {
+    return true
+  }
+
+  // 检测其他可能的选集容器，但排除推荐列表区域
+  const otherEpisodes = document.querySelectorAll('.list-item, .episode-item, .section-item, .collect-item')
   const hasVideoLinks = Array.from(otherEpisodes).some((item) => {
+    // 排除推荐列表和相关推荐区域
+    const isInRecommendArea = (item as Element).closest('.recommend-list-v1, .rec-list, .next-play, .video-page-card-small, .recommend-list')
+    if (isInRecommendArea) {
+      return false
+    }
+
     const link = item.querySelector('a[href*="/video/"]')
     return link !== null
   })
@@ -319,7 +337,24 @@ export function detectVideoType(): VideoType {
     return VideoType.PLAYLIST
   }
 
-  // 尝试从页面中获取视频数据
+  // 检测多P视频和合集视频的关键区别：
+  // 分P视频有 .view-mode 切换视图组件，合集视频没有
+  const hasViewMode = !!document.querySelector('.view-mode')
+  const hasVideoPod = !!document.querySelector('.video-pod__item, .multi-page__item, .page-item')
+
+  if (hasVideoPod) {
+    // 有视频列表项
+    if (hasViewMode) {
+      // 有切换视图组件 = 分P视频
+      return VideoType.MULTIPART
+    }
+    else {
+      // 没有切换视图组件 = 合集视频
+      return VideoType.COLLECTION
+    }
+  }
+
+  // 尝试从页面中获取视频数据（备用方案）
   const app = document.querySelector('#app') as any
   if (app?.__vue__) {
     const videoData = app.__vue__.videoData
@@ -347,6 +382,45 @@ export function detectVideoType(): VideoType {
   return VideoType.RECOMMEND
 }
 
+// 查找自动播放开关按钮（支持多种 DOM 结构）
+function findAutoPlaySwitchButton(): { button: HTMLElement, isOn: boolean } | null {
+  // 尝试多种可能的选择器
+  const selectors = [
+    // 新版 B站
+    { container: '.auto-play', switchOn: '.switch-btn.on', switchOff: '.switch-btn:not(.on)' },
+    // 旧版 B站
+    { container: '.continuous-btn', switchOn: '.switch-btn.on', switchOff: '.switch-btn:not(.on)' },
+    // 备用：直接查找开关
+    { container: null, switchOn: '.switch-btn.on', switchOff: '.switch-btn:not(.on)' },
+  ]
+
+  for (const selector of selectors) {
+    let searchRoot: Element | Document = document
+
+    // 如果指定了容器，先查找容器
+    if (selector.container) {
+      const container = document.querySelector(selector.container)
+      if (!container) {
+        continue
+      }
+      searchRoot = container
+    }
+
+    // 在容器内查找开关按钮
+    const switchOnBtn = searchRoot.querySelector(selector.switchOn) as HTMLElement
+    const switchOffBtn = searchRoot.querySelector(selector.switchOff) as HTMLElement
+
+    if (switchOnBtn) {
+      return { button: switchOnBtn, isOn: true }
+    }
+    if (switchOffBtn) {
+      return { button: switchOffBtn, isOn: false }
+    }
+  }
+
+  return null
+}
+
 // 根据视频类型和设置应用自动连播状态
 export function applyAutoPlayByVideoType() {
   const videoType = detectVideoType()
@@ -368,20 +442,19 @@ export function applyAutoPlayByVideoType() {
       break
   }
 
-  // 应用自动连播设置
-  new RetryTask(20, 500, () => {
-    const switchButton = document.querySelector(_videoClassTag.autoPlaySwitchOn)
-      || document.querySelector(_videoClassTag.autoPlaySwitchOff)
+  // 使用 DOM 操作控制自动播放
+  new RetryTask(30, 500, () => {
+    const result = findAutoPlaySwitchButton()
 
-    if (!switchButton)
+    if (!result) {
       return false
+    }
 
-    const isCurrentlyOn = switchButton.classList.contains('on')
-      || !!document.querySelector(_videoClassTag.autoPlaySwitchOn)
+    const { button, isOn } = result
 
     // 如果当前状态与目标状态不一致，则切换
-    if (isCurrentlyOn !== shouldEnableAutoPlay) {
-      (switchButton as HTMLElement).click()
+    if (isOn !== shouldEnableAutoPlay) {
+      button.click()
     }
 
     return true

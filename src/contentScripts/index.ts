@@ -497,7 +497,7 @@ function sendSettingsToPage(settings: any) {
 }
 
 // 监听设置变化
-watch(settings, (newSettings) => {
+watch(settings, (newSettings, oldSettings) => {
   sendSettingsToPage(newSettings)
 
   // 监听随机播放设置变化
@@ -513,6 +513,25 @@ watch(settings, (newSettings) => {
         // 禁用随机播放，重置状态
         resetRandomPlayInitialization()
       }
+    }
+  }
+
+  // 监听自动播放设置变化
+  if (isVideoPage()) {
+    // 检查自动播放相关设置是否发生变化
+    const autoPlaySettingsChanged = oldSettings && (
+      newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
+      || newSettings.autoPlayCollection !== oldSettings.autoPlayCollection
+      || newSettings.autoPlayRecommend !== oldSettings.autoPlayRecommend
+      || newSettings.autoPlayPlaylist !== oldSettings.autoPlayPlaylist
+    )
+
+    if (autoPlaySettingsChanged) {
+      // 自动播放设置发生变化，同步更新页面上的自动播放开关
+      // 延迟时间增加，确保页面元素已经渲染
+      setTimeout(() => {
+        applyAutoPlayByVideoType()
+      }, 1000)
     }
   }
 }, { deep: true })
