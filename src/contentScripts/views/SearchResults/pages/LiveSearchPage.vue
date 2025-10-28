@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 
 import Empty from '~/components/Empty.vue'
-import Loading from '~/components/Loading.vue'
+import SmoothLoading from '~/components/SmoothLoading.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import api from '~/utils/api'
@@ -601,10 +601,13 @@ defineExpose({
 
     <!-- 滚动加载模式 -->
     <template v-if="paginationMode === 'scroll'">
-      <Loading v-if="isLoading && (liveRoomList.length > 0 || liveUserList.length > 0)" />
+      <SmoothLoading
+        :show="isLoading && (liveRoomList.length > 0 || liveUserList.length > 0)"
+        :keep-space="true"
+      />
 
       <Empty
-        v-else-if="!isLoading && (liveRoomList.length > 0 || liveUserList.length > 0) && !hasMore"
+        v-if="!isLoading && (liveRoomList.length > 0 || liveUserList.length > 0) && !hasMore"
         :description="$t('common.no_more_content')"
       />
     </template>
