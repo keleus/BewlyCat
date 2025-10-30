@@ -98,6 +98,9 @@ export interface ShortcutsSettings {
   videoTitle?: BaseShortcutSetting // B
   videoTime?: BaseShortcutSetting // G
   clockTime?: BaseShortcutSetting // H
+
+  // 视频页快捷键
+  toggleFollow?: BaseShortcutSetting // Shift+F (默认禁用)
 }
 
 // UP主音量配置接口

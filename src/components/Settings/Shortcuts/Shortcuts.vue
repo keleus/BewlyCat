@@ -84,6 +84,7 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
       { id: 'previousFrame', name: t('settings.shortcuts.previous_frame'), description: t('settings.shortcuts.previous_frame_desc'), defaultKey: ',' },
       { id: 'nextFrame', name: t('settings.shortcuts.next_frame'), description: t('settings.shortcuts.next_frame_desc'), defaultKey: '.' },
       { id: 'replay', name: t('settings.shortcuts.replay'), description: t('settings.shortcuts.replay_desc'), defaultKey: 'Shift+Backspace' },
+      { id: 'toggleFollow', name: t('settings.shortcuts.toggle_follow'), description: t('settings.shortcuts.toggle_follow_desc'), defaultKey: 'Shift+F' },
     ],
   },
   {

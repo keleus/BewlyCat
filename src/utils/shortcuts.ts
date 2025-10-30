@@ -338,6 +338,114 @@ export function registerDefaultHandlers(): void {
   registerShortcutHandler('clockTime', () => {
     toggleClockTime()
   })
+
+  // 关注/取消关注
+  registerShortcutHandler('toggleFollow', () => {
+    toggleFollow()
+  })
+}
+
+/**
+ * 切换关注/取消关注
+ * 在视频页点击关注按钮
+ */
+function toggleFollow(): void {
+  try {
+    // 查找关注按钮
+    const followButton = document.querySelector<HTMLElement>(
+      '.upinfo-btn-panel .follow-btn, ' // 新版视频页
+      + '.up-info .follow-btn, ' // 旧版视频页
+      + '.video-info-detail .follow-btn, ' // 其他可能的位置
+      + 'button.follow-btn', // 通用关注按钮
+    )
+
+    if (!followButton) {
+      return
+    }
+
+    // 检查是否未关注状态（有 not-follow 类）
+    const isNotFollowing = followButton.classList.contains('not-follow')
+
+    // 创建并触发鼠标事件，确保Vue组件能响应
+    const triggerClick = (element: HTMLElement) => {
+      // 尝试多种方式触发点击
+      // 1. 标准 click
+      element.click()
+
+      // 2. 触发 mousedown 和 mouseup 事件
+      const mouseDownEvent = new MouseEvent('mousedown', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+      })
+      const mouseUpEvent = new MouseEvent('mouseup', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+      })
+      const clickEvent = new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        view: window,
+      })
+
+      element.dispatchEvent(mouseDownEvent)
+      element.dispatchEvent(mouseUpEvent)
+      element.dispatchEvent(clickEvent)
+    }
+
+    if (isNotFollowing) {
+      // 未关注，直接点击关注
+      // 尝试找到内部的 follow-btn-inner 元素
+      const innerButton = followButton.querySelector<HTMLElement>('.follow-btn-inner')
+      if (innerButton) {
+        triggerClick(innerButton)
+      }
+      else {
+        triggerClick(followButton)
+      }
+    }
+    else {
+      // 已关注，需要打开下拉菜单后点击"取消关注"
+      // 先尝试点击内部元素
+      const innerButton = followButton.querySelector<HTMLElement>('.follow-btn-inner')
+      if (innerButton) {
+        triggerClick(innerButton)
+      }
+      else {
+        triggerClick(followButton)
+      }
+
+      // 等待下拉框出现
+      setTimeout(() => {
+        try {
+          // 查找取消关注按钮 - 支持中英文
+          const unfollowItems = Array.from(
+            document.querySelectorAll<HTMLElement>(
+              '.follow_dropdown li, .van-popover li, .van-followed li, [class*="follow"] li',
+            ),
+          )
+
+          const unfollowButton = unfollowItems.find(
+            item =>
+              item.textContent?.includes('取消关注')
+              || item.textContent?.includes('取消關注')
+              || item.textContent?.toLowerCase().includes('unfollow'),
+          )
+
+          if (unfollowButton) {
+            triggerClick(unfollowButton)
+          }
+        }
+        catch (error) {
+          console.error('[BewlyCat] Error clicking unfollow:', error)
+        }
+      }, 150) // 增加等待时间到 150ms
+    }
+  }
+  catch (error) {
+    console.error('[BewlyCat] Error toggling follow:', error)
+  }
 }
 
 // 快捷键按键组合生成函数
