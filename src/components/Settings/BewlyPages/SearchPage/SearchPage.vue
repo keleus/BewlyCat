@@ -109,7 +109,7 @@ function changeSearchBarFocusCharacter(url: string) {
         <template #desc>
           <span>{{ $t('settings.show_hot_search_in_search_page_desc') }}</span>
         </template>
-        <Radio v-model="settings.showHotSearchInSearchPage" />
+        <Radio v-model="settings.showHotSearchInTopBar" />
       </SettingsItem>
     </SettingsItemGroup>
 

@@ -213,9 +213,8 @@ export interface Settings {
   searchPageWallpaperBlurIntensity: number
   searchPageWallpaperCacheTime: number // URL壁纸缓存时间(小时), 0表示不缓存
 
-  // 热搜功能设置
+  // 热搜功能设置（统一在搜索框聚焦时显示）
   showHotSearchInTopBar: boolean
-  showHotSearchInSearchPage: boolean
 
   // 搜索推荐功能设置
   showSearchRecommendation: boolean
@@ -398,9 +397,8 @@ export const originalSettings: Settings = {
   searchPageWallpaperBlurIntensity: 0,
   searchPageWallpaperCacheTime: 0, // 默认缓存24小时
 
-  // 热搜功能设置
+  // 热搜功能设置（统一在搜索框聚焦时显示）
   showHotSearchInTopBar: true,
-  showHotSearchInSearchPage: true,
 
   // 搜索推荐功能设置
   showSearchRecommendation: false,

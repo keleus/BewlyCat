@@ -231,8 +231,8 @@ function handleBackToTopOrRefresh(action: 'backToTop' | 'refresh' | 'auto' = 'au
     emit('refresh')
   }
   else {
-    // 搜索页面只显示返回顶部，不显示刷新
-    if (props.activatedPage === AppPage.Search) {
+    // 搜索页面和搜索结果页只显示返回顶部，不显示刷新
+    if (props.activatedPage === AppPage.Search || props.activatedPage === AppPage.SearchResults) {
       emit('backToTop')
     }
     else if (reachTop.value) {
@@ -267,6 +267,10 @@ function handleHistoryNavigation() {
 }
 
 function isDockItemActivated(dockItem: DockItem): boolean {
+  // SearchResults 页面时也激活 Search 按钮
+  if (props.activatedPage === AppPage.SearchResults && dockItem.page === AppPage.Search) {
+    return isHomePage()
+  }
   return props.activatedPage === dockItem.page && isHomePage()
 }
 
@@ -580,7 +584,7 @@ onUnmounted(() => {
           <template v-for="key in 2" :key="key">
             <Transition name="fade">
               <button
-                v-if="(key === 1 && activatedPage !== AppPage.Search) || (key === 2 && !reachTop)"
+                v-if="(key === 1 && activatedPage !== AppPage.Search && activatedPage !== AppPage.SearchResults) || (key === 2 && !reachTop)"
                 class="back-to-top-or-refresh-btn"
                 :class="{
                   inactive: hoveringDockItem.themeMode && isDark,
@@ -611,7 +615,7 @@ onUnmounted(() => {
           >
             <Transition name="fade">
               <Icon
-                v-if="reachTop && activatedPage !== AppPage.Search"
+                v-if="reachTop && activatedPage !== AppPage.Search && activatedPage !== AppPage.SearchResults"
                 icon="line-md:rotate-270"
                 shrink-0 rotate-90 absolute text-2xl
               />

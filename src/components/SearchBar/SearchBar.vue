@@ -98,17 +98,17 @@ const placeholderText = computed(() => {
 // 尝试获取 BEWLY_APP（在首页时可用）
 const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
 
-// 判断是否在搜索页且启用了插件搜索
+// 判断是否在搜索结果页且启用了插件搜索
 const shouldHandleInCurrentPage = computed(() => {
   if (!settings.value.usePluginSearchResultsPage)
     return false
   // 如果能获取到 bewlyApp，使用 activatedPage 来判断
   if (bewlyApp?.activatedPage) {
-    return bewlyApp.activatedPage.value === AppPage.Search
+    return bewlyApp.activatedPage.value === AppPage.SearchResults
   }
   // 降级方案：检查 URL 参数（在非首页或无法获取 bewlyApp 时使用）
   const urlParams = new URLSearchParams(window.location.search)
-  return urlParams.get('page') === 'Search' && !!urlParams.get('keyword')
+  return urlParams.get('page') === 'SearchResults' && !!urlParams.get('keyword')
 })
 
 watch(() => props.modelValue, (value) => {
@@ -290,8 +290,8 @@ function handleNativeInput(event: Event) {
 function buildKeywordHref(keyword: string) {
   const encoded = encodeURIComponent(keyword)
   if (settings.value.usePluginSearchResultsPage) {
-    // 写死插件搜索页面 URL
-    return `https://www.bilibili.com/?page=Search&keyword=${encoded}`
+    // 写死插件搜索结果页面 URL
+    return `https://www.bilibili.com/?page=SearchResults&keyword=${encoded}`
   }
   // 写死B站原版搜索页面 URL
   return `https://search.bilibili.com/all?keyword=${encoded}`

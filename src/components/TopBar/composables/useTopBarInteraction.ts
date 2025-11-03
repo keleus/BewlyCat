@@ -65,7 +65,7 @@ export function useTopBarInteraction() {
     if (!activatedPage?.value)
       return false
 
-    if (activatedPage.value === AppPage.Search) {
+    if (activatedPage.value === AppPage.Search || activatedPage.value === AppPage.SearchResults) {
       if (settings.value.individuallySetSearchPageWallpaper) {
         if (settings.value.searchPageWallpaper)
           return true
@@ -95,18 +95,16 @@ export function useTopBarInteraction() {
         return true
       if (!activatedPage?.value)
         return true
-      // Search 页面的显示逻辑：
+      // Search 页面的显示逻辑：不显示顶栏搜索框（因为页面中已有搜索框）
       if (activatedPage.value === AppPage.Search) {
-        // 如果关闭了插件搜索结果页，Search 页面都不显示顶栏搜索框
+        return false
+      }
+      // SearchResults 页面的显示逻辑：
+      if (activatedPage.value === AppPage.SearchResults) {
+        // 启用了插件搜索结果页才显示搜索框
         if (!settings.value.usePluginSearchResultsPage)
           return false
-        // 如果启用了插件搜索结果页，但在空页面状态（没有 keyword），也不显示搜索框
-        // 使用响应式的 currentLocationSearch 而不是直接读取 window.location.search
-        const urlParams = new URLSearchParams(currentLocationSearch.value)
-        const hasKeyword = !!urlParams.get('keyword')
-        if (!hasKeyword)
-          return false
-        // 其他情况（启用插件搜索结果页 + 有 keyword）显示搜索框
+        // 其他情况显示搜索框
       }
       if (settings.value.useSearchPageModeOnHomePage && activatedPage.value === AppPage.Home && reachTop?.value)
         return false

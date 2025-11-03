@@ -99,8 +99,8 @@ function clearSearchParamsFromUrl() {
   }
 }
 
-// 页面加载时，如果不是Search页面且在首页则清理搜索参数
-if (activatedPage.value !== AppPage.Search && isHomePage() && !isSearchResultsPage()) {
+// 页面加载时，如果不是Search或SearchResults页面且在首页则清理搜索参数
+if (activatedPage.value !== AppPage.Search && activatedPage.value !== AppPage.SearchResults && isHomePage() && !isSearchResultsPage()) {
   clearSearchParamsFromUrl()
   topBarStore.searchKeyword = ''
 }
@@ -110,6 +110,7 @@ const homeActivatedPage = ref<HomeSubPage>(HomeSubPage.ForYou)
 const pages = {
   [AppPage.Home]: defineAsyncComponent(() => import('./Home/Home.vue')),
   [AppPage.Search]: defineAsyncComponent(() => import('./Search/Search.vue')),
+  [AppPage.SearchResults]: defineAsyncComponent(() => import('./SearchResults/SearchResults.vue')),
   [AppPage.Anime]: defineAsyncComponent(() => import('./Anime/Anime.vue')),
   [AppPage.History]: defineAsyncComponent(() => import('./History/History.vue')),
   [AppPage.WatchLater]: defineAsyncComponent(() => import('./WatchLater/WatchLater.vue')),
@@ -259,6 +260,11 @@ const showBewlyPage = computed((): boolean => {
   if (isInIframe())
     return false
 
+  // SearchResults 页面是虚拟页面，不在 dockItems 中，但应该显示
+  if (activatedPage.value === AppPage.SearchResults) {
+    return isHomePage() && !settings.value.useOriginalBilibiliHomepage
+  }
+
   const dockItem = mainStore.getDockItemByPage(activatedPage.value)
   if (!dockItem?.hasBewlyPage)
     return false
@@ -402,10 +408,18 @@ function handleDockItemClick(dockItem: DockItem) {
     // When not opened in a new tab, change the `activatedPage`
     activatedPage.value = dockItem.page
 
-    // Clear search keyword and URL params when switching away from Search page (only on homepage)
-    if (dockItem.page !== AppPage.Search && isHomePage() && !isSearchResultsPage()) {
-      topBarStore.searchKeyword = ''
-      clearSearchParamsFromUrl()
+    // Clear search keyword and URL params when switching to/from search pages (only on homepage)
+    if (isHomePage() && !isSearchResultsPage()) {
+      // 从 SearchResults 返回 Search 页面时清理搜索参数
+      if (dockItem.page === AppPage.Search) {
+        topBarStore.searchKeyword = ''
+        clearSearchParamsFromUrl()
+      }
+      // 从 Search/SearchResults 切换到其他页面时清理搜索参数
+      else if (dockItem.page !== AppPage.SearchResults) {
+        topBarStore.searchKeyword = ''
+        clearSearchParamsFromUrl()
+      }
     }
   }
 }
@@ -415,7 +429,7 @@ function changeActivatePage(pageName: AppPage) {
   const scrollTop: number = osInstance.elements().viewport.scrollTop
 
   if (activatedPage.value === pageName) {
-    if (activatedPage.value !== AppPage.Search) {
+    if (activatedPage.value !== AppPage.Search && activatedPage.value !== AppPage.SearchResults) {
       if (scrollTop === 0)
         handleThrottledPageRefresh()
       else
@@ -787,7 +801,7 @@ if (settings.value.cleanUrlArgument) {
                 w="lg:[calc(100%-200px)] [calc(100%-150px)]"
               >
                 <Transition name="page-fade">
-                  <Component :is="pages[activatedPage]" />
+                  <Component :is="pages[activatedPage]" :key="activatedPage" />
                 </Transition>
               </div>
             </main>

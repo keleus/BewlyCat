@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { useTitle } from '@vueuse/core'
+import { useEventListener, useTitle } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 
@@ -14,11 +14,14 @@ import SearchUserFilters from './components/SearchUserFilters.vue'
 import SearchVideoFilters from './components/SearchVideoFilters.vue'
 import type { LiveSubCategory, SearchCategory, SearchCategoryOption } from './types'
 
-const props = defineProps<{
-  keyword: string
-}>()
+// 从 URL 读取关键词
+function getKeywordFromUrl(): string {
+  const urlParams = new URLSearchParams(window.location.search)
+  return urlParams.get('keyword') || ''
+}
 
-const normalizedKeyword = computed(() => (props.keyword || '').trim())
+const keyword = ref<string>(getKeywordFromUrl())
+const normalizedKeyword = computed(() => (keyword.value || '').trim())
 const CATEGORY_KEYS: SearchCategory[] = ['all', 'video', 'bangumi', 'media_ft', 'user', 'live', 'article']
 
 // 设置页面标题
@@ -187,16 +190,12 @@ const categoryCounts = ref<Record<SearchCategory, number>>({
 
 const searchResultsPanelRef = ref<InstanceType<typeof SearchResultsPanel>>()
 
-// 监听关键词变化
-watch(() => props.keyword, async (newKeyword, oldKeyword) => {
-  const normalizedNew = (newKeyword || '').trim()
-  const normalizedOld = (oldKeyword || '').trim()
-
-  if (!normalizedNew)
-    return
-
-  if (normalizedNew === normalizedOld && newKeyword === oldKeyword)
-    return
+// 监听 URL 变化（前进/后退或 pushstate）
+function handleUrlChange() {
+  const newKeyword = getKeywordFromUrl()
+  if (newKeyword !== keyword.value) {
+    keyword.value = newKeyword
+  }
 
   // 从URL读取筛选条件并恢复状态
   const filters = getFiltersFromUrl()
@@ -217,7 +216,25 @@ watch(() => props.keyword, async (newKeyword, oldKeyword) => {
   currentLiveSubCategory.value = filters.liveSubCategory
   currentLiveRoomOrder.value = filters.liveRoomOrder
   currentLiveUserOrder.value = filters.liveUserOrder
-}, { immediate: true })
+}
+
+// 监听 URL 变化事件
+useEventListener(window, 'popstate', handleUrlChange)
+useEventListener(window, 'pushstate', handleUrlChange)
+
+// 监听关键词变化
+watch(() => keyword.value, async (newKeyword, oldKeyword) => {
+  const normalizedNew = (newKeyword || '').trim()
+  const normalizedOld = (oldKeyword || '').trim()
+
+  if (!normalizedNew)
+    return
+
+  if (normalizedNew === normalizedOld && newKeyword === oldKeyword)
+    return
+
+  handleUrlChange()
+})
 
 // 同步搜索关键词到 topBar
 watch(normalizedKeyword, (value) => {
@@ -348,6 +365,9 @@ function initPageAction() {
 }
 
 onMounted(() => {
+  // 初始化 URL 参数和筛选条件
+  handleUrlChange()
+  // 初始化页面操作
   initPageAction()
 })
 </script>
