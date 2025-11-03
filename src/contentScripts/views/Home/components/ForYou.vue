@@ -125,6 +125,8 @@ const hasForwardState = ref<boolean>(false)
 const PAGE_SIZE = 30
 const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，初始化时为1
 const scrollLoadStartLength = ref<number>(0) // 滚动加载开始时的列表长度
+const consecutiveEmptyLoads = ref<number>(0) // 连续空加载次数，用于防止无限递归
+const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
 
 // 监听页面可见性变化
 function handleVisibilityChange() {
@@ -222,6 +224,7 @@ onKeyStroke((e: KeyboardEvent) => {
 watch(() => settings.value.recommendationMode, () => {
   noMoreContent.value = false
   refreshIdx.value = 1
+  consecutiveEmptyLoads.value = 0 // 重置空加载计数器
 
   videoList.value = []
   appVideoList.value = []
@@ -245,6 +248,7 @@ async function initData() {
   videoList.value.length = 0
   appVideoList.value.length = 0
   APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
+  consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   await getData()
 }
 
@@ -351,6 +355,7 @@ function initPageAction() {
 
         hasBackState.value = false
         undoForwardState.value = UndoForwardState.Hidden
+        consecutiveEmptyLoads.value = 0 // 重置空加载计数器
       }
       else if (settings.value.recommendationMode === 'app' && cachedAppVideoList.value.length > 0) {
         // 滚动到页面顶部
@@ -366,6 +371,7 @@ function initPageAction() {
 
         hasBackState.value = false
         undoForwardState.value = UndoForwardState.Hidden
+        consecutiveEmptyLoads.value = 0 // 重置空加载计数器
       }
     }
   }
@@ -390,6 +396,7 @@ function initPageAction() {
         // 标记为已经前进
         hasForwardState.value = false
         undoForwardState.value = UndoForwardState.ShowUndo
+        consecutiveEmptyLoads.value = 0 // 重置空加载计数器
         return true
       }
       else if (settings.value.recommendationMode === 'app' && forwardAppVideoList.value.length > 0) {
@@ -407,6 +414,7 @@ function initPageAction() {
         // 标记为已经前进
         hasForwardState.value = false
         undoForwardState.value = UndoForwardState.ShowUndo
+        consecutiveEmptyLoads.value = 0 // 重置空加载计数器
         return true
       }
     }
@@ -416,10 +424,20 @@ function initPageAction() {
 
 async function getRecommendVideos() {
   try {
+    // 检查是否达到最大空加载次数，防止无限递归
+    if (consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+      console.warn('达到最大连续空加载次数，停止加载')
+      noMoreContent.value = true
+      return
+    }
+
+    const beforeLoadCount = videoList.value.filter(video => video.item).length
     let i = 0
-    if (!filterFunc.value || videoList.value.length < PAGE_SIZE) {
+
+    // 只在初次加载或列表长度不足时添加占位视频
+    if (videoList.value.length < PAGE_SIZE) {
       const pendingVideos: VideoElement[] = Array.from({
-        length: videoList.value.length < PAGE_SIZE ? PAGE_SIZE - videoList.value.length : PAGE_SIZE,
+        length: PAGE_SIZE - videoList.value.length,
       }, () => ({
         uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
       } satisfies VideoElement))
@@ -476,6 +494,17 @@ async function getRecommendVideos() {
           }
         })
       }
+
+      // 检查是否成功添加了新内容
+      const afterLoadCount = videoList.value.filter(video => video.item).length
+      if (afterLoadCount > beforeLoadCount) {
+        // 成功加载了新内容，重置空加载计数器
+        consecutiveEmptyLoads.value = 0
+      }
+      else {
+        // 没有加载到新内容，增加空加载计数器
+        consecutiveEmptyLoads.value++
+      }
     }
     else if (response.code === 62011) {
       needToLoginFirst.value = true
@@ -490,9 +519,12 @@ async function getRecommendVideos() {
 
       // 如果需要更多内容，继续加载
       if (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
-        // 检查页面可见性
-        if (isPageVisible.value) {
+        // 检查页面可见性和空加载计数器
+        if (isPageVisible.value && consecutiveEmptyLoads.value < MAX_EMPTY_LOADS) {
           getRecommendVideos()
+        }
+        else if (consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+          noMoreContent.value = true
         }
       }
     }
