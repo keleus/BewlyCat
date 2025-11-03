@@ -65,12 +65,16 @@ export function useTopBarInteraction() {
     if (!activatedPage?.value)
       return false
 
-    if (activatedPage.value === AppPage.Search || activatedPage.value === AppPage.SearchResults) {
+    if (activatedPage.value === AppPage.Search) {
       if (settings.value.individuallySetSearchPageWallpaper) {
         if (settings.value.searchPageWallpaper)
           return true
         return false
       }
+      return !!settings.value.wallpaper
+    }
+    else if (activatedPage.value === AppPage.SearchResults) {
+      // 搜索结果页使用全局壁纸设置
       return !!settings.value.wallpaper
     }
     else {

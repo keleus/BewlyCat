@@ -77,7 +77,7 @@ watch(() => [settings.value.searchPageWallpaper, settings.value.searchPageWallpa
 
 // 计算当前页面使用的壁纸URL
 const currentWallpaperUrl = computed(() => {
-  if ((props.activatedPage === AppPage.Search || props.activatedPage === AppPage.SearchResults) && settings.value.individuallySetSearchPageWallpaper) {
+  if (props.activatedPage === AppPage.Search && settings.value.individuallySetSearchPageWallpaper) {
     return resolvedSearchPageWallpaper.value
   }
   return resolvedWallpaper.value
@@ -112,16 +112,16 @@ watch(() => settings.value.searchPageWallpaperMaskOpacity, () => {
 })
 
 watch(() => props.activatedPage, (newValue, oldValue) => {
-  // If u have set the `individuallySetSearchPageWallpaper`, reapply the wallpaper when the new page is search page or search results page
+  // If u have set the `individuallySetSearchPageWallpaper`, reapply the wallpaper when the new page is search page
   // or when switching from a search page to another page, since search page has its own wallpaper.
-  const isSearchPage = (page: AppPage) => page === AppPage.Search || page === AppPage.SearchResults
+  const isSearchPage = (page: AppPage) => page === AppPage.Search
   if (settings.value.individuallySetSearchPageWallpaper && (isSearchPage(newValue) || isSearchPage(oldValue)))
     setAppWallpaperMaskingOpacity()
 })
 
 function setAppWallpaperMaskingOpacity() {
   const bewlyElement = document.querySelector('#bewly') as HTMLElement
-  const isSearchPage = props.activatedPage === AppPage.Search || props.activatedPage === AppPage.SearchResults
+  const isSearchPage = props.activatedPage === AppPage.Search
   if (settings.value.individuallySetSearchPageWallpaper && isSearchPage)
     bewlyElement.style.setProperty('--bew-homepage-bg-mask-opacity', `${settings.value.searchPageWallpaperMaskOpacity}%`)
   else
@@ -136,7 +136,7 @@ function setAppWallpaperMaskingOpacity() {
       <div
         v-if="settings.useLinearGradientThemeColorBackground && isDark"
         :style="{
-          opacity: (activatedPage === AppPage.Search || activatedPage === AppPage.SearchResults) ? 1 : 0.4,
+          opacity: activatedPage === AppPage.Search ? 1 : 0.4,
           background: themeColorLinearGradientBackground,
         }"
         pos="absolute top-0 left-0" w-full h-full z-0 pointer-events-none
@@ -144,7 +144,7 @@ function setAppWallpaperMaskingOpacity() {
     </Transition>
 
     <Transition name="fade">
-      <div v-if="activatedPage === AppPage.Search || activatedPage === AppPage.SearchResults">
+      <div v-if="activatedPage === AppPage.Search">
         <!-- background -->
         <div
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
