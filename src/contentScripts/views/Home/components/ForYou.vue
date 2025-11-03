@@ -124,6 +124,7 @@ const hasForwardState = ref<boolean>(false)
 
 const PAGE_SIZE = 30
 const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，初始化时为1
+const scrollLoadStartLength = ref<number>(0) // 滚动加载开始时的列表长度
 
 // 监听页面可见性变化
 function handleVisibilityChange() {
@@ -288,9 +289,11 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    // 滚动加载时，APP模式加载1批
-    if (settings.value.recommendationMode === 'app')
+    // 滚动加载时，APP模式记录开始长度，触发持续加载
+    if (settings.value.recommendationMode === 'app') {
       APP_LOAD_BATCHES.value = 1
+      scrollLoadStartLength.value = appVideoList.value.length
+    }
 
     getData()
   }
@@ -550,8 +553,26 @@ async function getAppRecommendVideos() {
   if (!needToLoginFirst.value) {
     await nextTick()
 
-    // 如果需要更多内容，继续加载
+    // 判断是否需要继续加载
+    let shouldContinue = false
+
+    // 初始化加载：没有滚动条或数据量不足时继续
     if (!haveScrollbar() || appVideoList.value.length < PAGE_SIZE) {
+      shouldContinue = true
+    }
+    // 滚动加载：检查是否已加载足够内容（至少 PAGE_SIZE 个新视频）
+    else if (scrollLoadStartLength.value > 0) {
+      const loadedCount = appVideoList.value.length - scrollLoadStartLength.value
+      if (loadedCount < PAGE_SIZE) {
+        shouldContinue = true
+      }
+      else {
+        // 已加载足够内容，重置标记
+        scrollLoadStartLength.value = 0
+      }
+    }
+
+    if (shouldContinue && isPageVisible.value) {
       getAppRecommendVideos()
     }
   }
