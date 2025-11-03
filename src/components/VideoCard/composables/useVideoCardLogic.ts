@@ -25,10 +25,13 @@ interface VideoCardProps {
   moreBtn?: boolean
 }
 
-export function useVideoCardLogic(props: VideoCardProps) {
+export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps>) {
   const toast = useToast()
   const { openIframeDrawer } = useBewlyApp()
   const topBarStore = useTopBarStore()
+
+  // 将传入的 props 转换为 computed，确保响应式
+  const props = computed(() => toValue(propsOrGetter))
 
   // Refs
   const showVideoOptions = ref<boolean>(false)
@@ -51,18 +54,18 @@ export function useVideoCardLogic(props: VideoCardProps) {
 
   // Computed
   const videoUrl = computed(() => {
-    if (removed.value || !props.video)
+    if (removed.value || !props.value.video)
       return undefined
 
     let url = ''
-    if (props.video.url)
-      url = props.video.url
-    else if (props.video.bvid || props.video.aid)
-      url = getCurrentVideoUrl(props.video, videoCurrentTime)
-    else if (props.video.epid)
-      url = `https://www.bilibili.com/bangumi/play/ep${props.video.epid}/`
-    else if (props.video.roomid)
-      url = `https://live.bilibili.com/${props.video.roomid}/`
+    if (props.value.video.url)
+      url = props.value.video.url
+    else if (props.value.video.bvid || props.value.video.aid)
+      url = getCurrentVideoUrl(props.value.video, videoCurrentTime)
+    else if (props.value.video.epid)
+      url = `https://www.bilibili.com/bangumi/play/ep${props.value.video.epid}/`
+    else if (props.value.video.roomid)
+      url = `https://live.bilibili.com/${props.value.video.roomid}/`
     else
       return ''
 
@@ -79,7 +82,7 @@ export function useVideoCardLogic(props: VideoCardProps) {
   })
 
   const videoStatNumbers = computed(() => {
-    if (!props.video) {
+    if (!props.value.video) {
       return {
         view: undefined,
         danmaku: undefined,
@@ -87,7 +90,7 @@ export function useVideoCardLogic(props: VideoCardProps) {
       }
     }
 
-    const { view, viewStr, danmaku, danmakuStr, like, likeStr } = props.video
+    const { view, viewStr, danmaku, danmakuStr, like, likeStr } = props.value.video
 
     return {
       view: parseStatNumber(view ?? viewStr),
@@ -97,7 +100,7 @@ export function useVideoCardLogic(props: VideoCardProps) {
   })
 
   const shouldHideOverlayElements = computed(() =>
-    props.showPreview
+    props.value.showPreview
     && settings.value.enableVideoPreview
     && isHover.value
     && previewVideoUrl.value
@@ -132,20 +135,20 @@ export function useVideoCardLogic(props: VideoCardProps) {
 
   // Watch
   watch(() => isHover.value, async (newValue) => {
-    if (!props.video || !newValue)
+    if (!props.value.video || !newValue)
       return
 
-    if (props.showPreview && settings.value.enableVideoPreview
-      && !previewVideoUrl.value && (props.video.aid || props.video.bvid)) {
+    if (props.value.showPreview && settings.value.enableVideoPreview
+      && !previewVideoUrl.value && (props.value.video.aid || props.value.video.bvid)) {
       // 检查登录状态，未登录不允许视频预览
       if (!topBarStore.isLogin)
         return
 
-      let cid = props.video.cid
+      let cid = props.value.video.cid
       if (!cid) {
         try {
           const res: VideoInfo = await api.video.getVideoInfo({
-            bvid: props.video.bvid,
+            bvid: props.value.video.bvid,
           })
           if (res.code === 0)
             cid = res.data.cid
@@ -155,7 +158,7 @@ export function useVideoCardLogic(props: VideoCardProps) {
         }
       }
       api.video.getVideoPreview({
-        bvid: props.video.bvid,
+        bvid: props.value.video.bvid,
         cid,
       }).then((res: VideoPreviewResult) => {
         if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
@@ -166,7 +169,7 @@ export function useVideoCardLogic(props: VideoCardProps) {
 
   // Methods
   function toggleWatchLater() {
-    if (!props.video)
+    if (!props.value.video)
       return
 
     if (!isInWatchLater.value) {
@@ -175,11 +178,11 @@ export function useVideoCardLogic(props: VideoCardProps) {
       }
 
       // 优先使用bvid，如果没有则使用aid
-      if (props.video.bvid) {
-        params.bvid = props.video.bvid
+      if (props.value.video.bvid) {
+        params.bvid = props.value.video.bvid
       }
       else {
-        params.aid = props.video.id
+        params.aid = props.value.video.id
       }
 
       api.watchlater.saveToWatchLater(params)
@@ -198,7 +201,7 @@ export function useVideoCardLogic(props: VideoCardProps) {
     }
     else {
       api.watchlater.removeFromWatchLater({
-        aid: props.video.id,
+        aid: props.value.video.id,
         csrf: getCSRF(),
       })
         .then((res) => {
@@ -294,11 +297,11 @@ export function useVideoCardLogic(props: VideoCardProps) {
   }
 
   function handleUndo() {
-    if (props.type === 'appRcmd') {
+    if (props.value.type === 'appRcmd') {
       const params = {
         access_key: appAuthTokens.value.accessToken,
-        goto: props.video?.goto,
-        id: props.video?.id,
+        goto: props.value.video?.goto,
+        id: props.value.video?.id,
         idx: Number((Date.now() / 1000).toFixed(0)),
         reason_id: selectedDislikeOpt.value?.dislikeReasonId,
         build: 74800100,

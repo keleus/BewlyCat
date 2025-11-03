@@ -114,7 +114,8 @@ const videoCardProps = computed(() => ({
   video: decodedVideo.value,
 }))
 
-const logic = useVideoCardLogic(videoCardProps.value)
+// 传入 computed 引用，确保 props 变化时 logic 内部能够响应
+const logic = useVideoCardLogic(videoCardProps)
 const { mainAppRef } = useBewlyApp()
 
 // Modern layout specific: cover stats calculation
