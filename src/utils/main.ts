@@ -6,8 +6,10 @@
 export function getCookie(name: string): string {
   const value = `; ${document.cookie}`
   const parts: Array<string> = value.split(`; ${name}=`)
-  if (parts.length === 2)
-    return parts?.pop()?.split(';').shift() || ''
+  if (parts.length === 2) {
+    const result = parts?.pop()?.split(';').shift() || ''
+    return result
+  }
   return ''
 }
 

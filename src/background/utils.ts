@@ -123,8 +123,8 @@ function doRequest(message: Message, api: API, sendResponse?: (response?: any) =
     const { method, headers = {}, body } = _fetch as _FETCH
     const isGET = method.toLocaleLowerCase() === 'get'
     // merge params and body
-    let targetParams = Object.assign({}, params)
-    let targetBody = Object.assign({}, body)
+    const targetParams = Object.assign({}, params)
+    const targetBody = Object.assign({}, body)
     Object.keys(rest).forEach((key) => {
       if (body && body[key] !== undefined)
         targetBody[key] = rest[key]
@@ -132,46 +132,65 @@ function doRequest(message: Message, api: API, sendResponse?: (response?: any) =
         targetParams[key] = rest[key]
     })
 
-    // 为需要WBI签名的API添加签名
-    if (needsWbiSign(url)) {
-      targetParams = addWbiSign(targetParams)
-    }
+    const baseUrl = url
+    const needsWbi = needsWbiSign(url)
 
-    // generate params
-    if (Object.keys(targetParams).length) {
-      const urlParams = new URLSearchParams()
-      for (const key in targetParams) {
-        if (targetParams[key])
-          urlParams.append(key, targetParams[key])
+    // 内部函数：执行实际请求
+    const performRequest = (useWbi: boolean) => {
+      let requestUrl = baseUrl
+      let requestParams = Object.assign({}, targetParams)
+
+      // 为需要WBI签名的API添加签名
+      if (needsWbi && useWbi) {
+        requestParams = addWbiSign(requestParams)
       }
-      url += `?${urlParams.toString()}`
-    }
-    // generate body
-    if (!isGET) {
-      targetBody = (headers && headers['Content-Type'] && headers['Content-Type'].includes('application/x-www-form-urlencoded'))
-        ? new URLSearchParams(targetBody)
-        : JSON.stringify(targetBody)
-    }
-    // generate cookies
-    if (cookies) {
-      const cookieStr = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
-      headers['firefox-multi-account-cookie'] = cookieStr
-    }
-    // get cant take body
-    const fetchOpt = { method, headers }
-    if (!isGET)
-      Object.assign(fetchOpt, { body: targetBody })
-    // fetch and after handle
-    let baseFunc = fetch(url, {
-      ...fetchOpt,
-    })
+      // generate params
+      if (Object.keys(requestParams).length) {
+        const urlParams = new URLSearchParams()
+        for (const key in requestParams) {
+          if (requestParams[key])
+            urlParams.append(key, requestParams[key])
+        }
+        requestUrl += `?${urlParams.toString()}`
+      }
 
-    // 如果是获取用户信息的API，在响应后存储WBI密钥
-    if (url.includes('https://api.bilibili.com/x/web-interface/nav')) {
-      baseFunc = baseFunc.then(async (response) => {
+      // generate body
+      let requestBody = targetBody
+      if (!isGET) {
+        requestBody = (headers && headers['Content-Type'] && headers['Content-Type'].includes('application/x-www-form-urlencoded'))
+          ? new URLSearchParams(targetBody)
+          : JSON.stringify(targetBody)
+      }
+
+      // generate cookies
+      const requestHeaders = { ...headers }
+      if (cookies) {
+        const cookieStr = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
+        requestHeaders['firefox-multi-account-cookie'] = cookieStr
+      }
+
+      // get cant take body
+      const fetchOpt: any = { method, headers: requestHeaders }
+      if (!isGET)
+        fetchOpt.body = requestBody
+
+      return fetch(requestUrl, fetchOpt)
+    }
+
+    // 标记是否已经尝试过无 WBI 重试
+    let hasTriedWithoutWbi = false
+
+    // 执行完整请求流程的函数（包括响应处理）
+    const executeFullRequest = async (useWbi: boolean) => {
+      let response = await performRequest(useWbi)
+
+      // 如果是获取用户信息的API，在响应后存储WBI密钥
+      if (baseUrl.includes('https://api.bilibili.com/x/web-interface/nav')) {
         const clonedResponse = response.clone()
+
         try {
           const data = await clonedResponse.json()
+
           if (data.code === 0 && data.data && data.data.wbi_img) {
             const { img_url, sub_url } = data.data.wbi_img
             if (img_url && sub_url) {
@@ -179,24 +198,44 @@ function doRequest(message: Message, api: API, sendResponse?: (response?: any) =
             }
           }
         }
-        catch (error) {
-          console.error('解析用户信息响应失败:', error)
+        catch {
+          // 忽略错误
         }
-        return response
-      })
+      }
+
+      // 执行 afterHandle 处理
+      for (const func of afterHandle) {
+        if (func.name === sendResponseHandler.name && sendResponse) {
+          response = await sendResponseHandler(sendResponse)(response as any)
+        }
+        else {
+          response = await func(response as any)
+        }
+      }
+
+      return response
     }
 
-    afterHandle.forEach((func) => {
-      if (func.name === sendResponseHandler.name && sendResponse)
-        // sendResponseHandler 是一个特殊的后处理函数，需要传入sendResponse
-        baseFunc = baseFunc.then(sendResponseHandler(sendResponse))
-      else
-        baseFunc = baseFunc.then(func)
-    })
+    // 执行请求的包装函数，支持 WBI 降级重试
+    const executeRequestWithRetry = async () => {
+      try {
+        // 首次请求（使用 WBI 签名，如果需要）
+        return await executeFullRequest(true)
+      }
+      catch (error) {
+        // 如果使用了 WBI 签名且失败，尝试不带 WBI 签名重试
+        if (needsWbi && !hasTriedWithoutWbi) {
+          hasTriedWithoutWbi = true
+          return await executeFullRequest(false)
+        }
+        throw error
+      }
+    }
 
-    // 统一错误处理
-    baseFunc = baseFunc.catch((error) => {
-      console.error('API请求失败:', error)
+    url = baseUrl + (Object.keys(targetParams).length ? '?...' : '')
+
+    // 执行请求并进行统一错误处理
+    return executeRequestWithRetry().catch((error) => {
       if (error instanceof ApiRiskControlError) {
         // 返回统一的风控错误格式
         const riskError = new Error(error.message)
@@ -214,11 +253,8 @@ function doRequest(message: Message, api: API, sendResponse?: (response?: any) =
       })
       throw apiError
     })
-
-    return baseFunc
   }
   catch (e) {
-    console.error('API请求初始化失败:', e)
     const initError = new Error(e instanceof Error ? e.message : '请求初始化失败')
     Object.assign(initError, {
       code: -1,

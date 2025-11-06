@@ -129,9 +129,13 @@ export const useTopBarStore = defineStore('topBar', () => {
   })
 
   // User Methods
-  async function getUserInfo() {
+  async function getUserInfo(retryCount = 0) {
+    const maxRetries = 2 // 最多重试2次
+    const retryDelay = (retryCount + 1) * 1000 // 递增延迟: 1s, 2s
+
     try {
       const res = await api.user.getUserInfo()
+
       if (res.code === 0) {
         const wasLoggedIn = isLogin.value
         const previousMid = userInfo.mid
@@ -151,12 +155,34 @@ export const useTopBarStore = defineStore('topBar', () => {
         bCoinAlreadyReceived.value = false
         hasBCoinToReceive.value = false
       }
+      else {
+        // 其他错误码
+        // 对于非未登录的错误，如果还有重试机会，则重试
+        if (retryCount < maxRetries) {
+          setTimeout(() => {
+            getUserInfo(retryCount + 1)
+          }, retryDelay)
+          return
+        }
+
+        isLogin.value = false
+        bCoinAlreadyReceived.value = false
+        hasBCoinToReceive.value = false
+      }
     }
-    catch (error) {
+    catch {
+      // 如果还有重试机会，则重试
+      if (retryCount < maxRetries) {
+        setTimeout(() => {
+          getUserInfo(retryCount + 1)
+        }, retryDelay)
+        return
+      }
+
+      // 重试次数用尽，标记为未登录
       isLogin.value = false
       bCoinAlreadyReceived.value = false
       hasBCoinToReceive.value = false
-      console.error(error)
     }
   }
 
@@ -249,9 +275,8 @@ export const useTopBarStore = defineStore('topBar', () => {
         toast.error(`B币券自动领取失败: ${res.message}`)
       }
     }
-    catch (error) {
+    catch {
       toast.error('B币券自动领取失败，请稍后重试')
-      console.error('❌ B币券自动领取失败:', error)
     }
   }
 
