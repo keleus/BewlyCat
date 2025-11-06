@@ -37,7 +37,7 @@ const searchBehavior = computed<'navigate' | 'stay'>(() => {
   return 'navigate'
 })
 
-function pushKeywordToSearchPage(keyword: string) {
+function pushKeywordToSearchResultsPage(keyword: string) {
   const normalized = keyword.trim()
   if (!normalized)
     return
@@ -45,17 +45,25 @@ function pushKeywordToSearchPage(keyword: string) {
   // 如果在首页,直接使用 pushState 更新 URL
   if (isHomePage()) {
     const params = new URLSearchParams(window.location.search)
-    params.set('page', 'Search')
+    params.set('page', 'SearchResults')
     params.set('keyword', normalized)
+    // 清除旧的筛选参数，重新搜索时重置筛选条件
+    params.delete('category')
+    params.delete('pn')
+    params.delete('user_order')
+    params.delete('user_type')
+    params.delete('search_type')
+    params.delete('live_room_order')
+    params.delete('live_user_order')
     const newUrl = `${window.location.pathname}?${params.toString()}`
     window.history.pushState({}, '', newUrl)
-    // 触发 pushstate 事件通知其他组件（如 Search.vue）
+    // 触发 pushstate 事件通知其他组件（如 SearchResults.vue）
     window.dispatchEvent(new Event('pushstate'))
   }
   else {
-    // 如果不在首页,跳转到 bilibili.com 主页的搜索页
+    // 如果不在首页,跳转到 bilibili.com 主页的搜索结果页
     const params = new URLSearchParams()
-    params.set('page', 'Search')
+    params.set('page', 'SearchResults')
     params.set('keyword', normalized)
     window.location.href = `https://www.bilibili.com/?${params.toString()}`
   }
@@ -65,19 +73,19 @@ function handleSearch(keyword: string) {
   // 先更新 searchKeyword，确保顶栏搜索框显示正确的值
   searchKeyword.value = keyword
 
-  // 只有在搜索页且启用了插件搜索时才使用 pushState 方式
+  // 只有在搜索结果页且启用了插件搜索时才使用 pushState 方式
   // 其他情况由 SearchBar 组件的 navigateToSearchResultPage 处理
   if (!settings.value.usePluginSearchResultsPage)
     return
 
-  // 检查是否在搜索页（通过 URL 参数判断，因为在 TopBar 中无法 inject BEWLY_APP）
+  // 检查是否在搜索结果页（通过 URL 参数判断，因为在 TopBar 中无法 inject BEWLY_APP）
   const urlParams = new URLSearchParams(window.location.search)
-  const isInSearchPage = urlParams.get('page') === 'Search' && !!urlParams.get('keyword')
+  const isInSearchResultsPage = urlParams.get('page') === 'SearchResults' && !!urlParams.get('keyword')
 
-  if (!isInSearchPage)
+  if (!isInSearchResultsPage)
     return
 
-  pushKeywordToSearchPage(keyword)
+  pushKeywordToSearchResultsPage(keyword)
 }
 </script>
 
