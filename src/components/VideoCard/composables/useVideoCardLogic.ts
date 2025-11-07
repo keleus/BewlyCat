@@ -138,32 +138,50 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     if (!props.value.video || !newValue)
       return
 
-    if (props.value.showPreview && settings.value.enableVideoPreview
-      && !previewVideoUrl.value && (props.value.video.aid || props.value.video.bvid)) {
+    if (props.value.showPreview && settings.value.enableVideoPreview && !previewVideoUrl.value) {
       // 检查登录状态，未登录不允许视频预览
       if (!topBarStore.isLogin)
         return
 
-      let cid = props.value.video.cid
-      if (!cid) {
+      // Handle live stream preview
+      if (props.value.video.roomid) {
         try {
-          const res: VideoInfo = await api.video.getVideoInfo({
-            bvid: props.value.video.bvid,
+          const res = await api.live.getLivePlayUrl({
+            cid: props.value.video.roomid,
+            platform: 'web', // 使用web平台获取FLV格式，加载更快
+            qn: 80, // 流畅画质，适合预览
           })
-          if (res.code === 0)
-            cid = res.data.cid
+          if (res.code === 0 && res.data.durl && res.data.durl.length > 0) {
+            previewVideoUrl.value = res.data.durl[0].url
+          }
         }
         catch {
           // Ignore error
         }
       }
-      api.video.getVideoPreview({
-        bvid: props.value.video.bvid,
-        cid,
-      }).then((res: VideoPreviewResult) => {
-        if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
-          previewVideoUrl.value = res.data.durl[0].url
-      })
+      // Handle video preview
+      else if (props.value.video.aid || props.value.video.bvid) {
+        let cid = props.value.video.cid
+        if (!cid) {
+          try {
+            const res: VideoInfo = await api.video.getVideoInfo({
+              bvid: props.value.video.bvid,
+            })
+            if (res.code === 0)
+              cid = res.data.cid
+          }
+          catch {
+            // Ignore error
+          }
+        }
+        api.video.getVideoPreview({
+          bvid: props.value.video.bvid,
+          cid,
+        }).then((res: VideoPreviewResult) => {
+          if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
+            previewVideoUrl.value = res.data.durl[0].url
+        })
+      }
     }
   })
 

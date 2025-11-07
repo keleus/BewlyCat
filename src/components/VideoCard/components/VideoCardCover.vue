@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
+import type flvjs from 'flv.js'
+import type { ErrorData, Events } from 'hls.js'
+import Hls from 'hls.js'
 
 import Button from '~/components/Button.vue'
 import Tooltip from '~/components/Tooltip.vue'
@@ -37,13 +40,194 @@ interface Props {
   coverStatsStyle?: Record<string, string>
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<{
   toggleWatchLater: []
   undo: []
 }>()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
+const isLoadingStream = ref<boolean>(false)
+let hls: Hls | null = null
+let flvPlayer: flvjs.Player | null = null
+
+function cleanupPlayers() {
+  if (hls) {
+    hls.destroy()
+    hls = null
+  }
+  if (flvPlayer) {
+    flvPlayer.pause()
+    flvPlayer.unload()
+    flvPlayer.detachMediaElement()
+    flvPlayer.destroy()
+    flvPlayer = null
+  }
+  isLoadingStream.value = false
+}
+
+async function setupStream(url: string, videoEl: HTMLVideoElement) {
+  // Check if URL is FLV stream
+  if (url.includes('.flv')) {
+    try {
+      // 动态导入 flv.js 以避免构建时依赖问题
+      const flvjsModule = await import('flv.js')
+      const flvjs = flvjsModule.default
+
+      if (flvjs.isSupported()) {
+        // Cleanup previous players and clear video src
+        cleanupPlayers()
+
+        // Clear video element src to prevent conflicts
+        videoEl.removeAttribute('src')
+        videoEl.load()
+
+        isLoadingStream.value = true
+
+        flvPlayer = flvjs.createPlayer({
+          type: 'flv',
+          url,
+          isLive: true,
+        }, {
+          enableWorker: false, // 在扩展环境中禁用 worker
+          enableStashBuffer: false, // 禁用存储缓冲，减少延迟
+          stashInitialSize: 128, // 初始缓冲大小
+          lazyLoad: false,
+          lazyLoadMaxDuration: 1,
+          seekType: 'range',
+        })
+
+        flvPlayer.attachMediaElement(videoEl)
+        flvPlayer.load()
+
+        flvPlayer.on(flvjs.Events.LOADING_COMPLETE, () => {
+          isLoadingStream.value = false
+        })
+
+        flvPlayer.on(flvjs.Events.ERROR, (errorType, errorDetail) => {
+          console.error('FLV Player error:', errorType, errorDetail)
+          isLoadingStream.value = false
+          cleanupPlayers()
+        })
+
+        // 当有数据可以播放时立即播放
+        videoEl.addEventListener('loadeddata', () => {
+          isLoadingStream.value = false
+          videoEl.play().catch(() => {
+            // Ignore autoplay errors
+          })
+        }, { once: true })
+
+        videoEl.addEventListener('canplay', () => {
+          if (isLoadingStream.value) {
+            isLoadingStream.value = false
+          }
+        }, { once: true })
+      }
+    }
+    catch (error) {
+      console.error('Failed to load flv.js:', error)
+      isLoadingStream.value = false
+    }
+  }
+  // Check if URL is HLS stream (.m3u8)
+  else if (url.includes('.m3u8') || url.includes('m3u8')) {
+    if (Hls.isSupported()) {
+      // Cleanup previous players and clear video src
+      cleanupPlayers()
+
+      // Clear video element src to prevent conflicts
+      videoEl.removeAttribute('src')
+      videoEl.load()
+
+      isLoadingStream.value = true
+
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        // 优化配置以更快开始播放
+        maxBufferLength: 10, // 减少缓冲长度
+        maxMaxBufferLength: 20,
+        liveSyncDurationCount: 2, // 减少直播同步计数
+        liveMaxLatencyDurationCount: 5,
+        maxBufferSize: 60 * 1000 * 1000, // 60MB
+      })
+
+      hls.loadSource(url)
+      hls.attachMedia(videoEl)
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        isLoadingStream.value = false
+        videoEl.play().catch(() => {
+          // Ignore autoplay errors
+        })
+      })
+
+      hls.on(Hls.Events.ERROR, (_event: Events.ERROR, data: ErrorData) => {
+        if (data.fatal) {
+          isLoadingStream.value = false
+          switch (data.type) {
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              // Try to recover from media errors
+              hls?.recoverMediaError()
+              break
+            default:
+              // For other fatal errors, cleanup
+              cleanupPlayers()
+              break
+          }
+        }
+      })
+
+      // 添加首帧加载事件
+      hls.on(Hls.Events.BUFFER_APPENDED, () => {
+        if (isLoadingStream.value) {
+          isLoadingStream.value = false
+        }
+      })
+    }
+    // cSpell:ignore mpegurl
+    else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      // Native HLS support (Safari)
+      isLoadingStream.value = true
+      videoEl.src = url
+
+      const handleCanPlay = () => {
+        isLoadingStream.value = false
+        videoEl.removeEventListener('canplay', handleCanPlay)
+      }
+
+      videoEl.addEventListener('canplay', handleCanPlay)
+      videoEl.play().catch(() => {
+        isLoadingStream.value = false
+        // Ignore autoplay errors
+      })
+    }
+  }
+}
+
+// Watch for preview URL and videoRef changes
+watch([() => props.previewVideoUrl, () => props.isHover, videoRef], ([url, isHover, videoEl]) => {
+  if (!isHover) {
+    cleanupPlayers()
+    if (videoEl) {
+      // Clear video src when not hovering
+      videoEl.removeAttribute('src')
+      videoEl.load()
+    }
+    return
+  }
+
+  if (!url || !videoEl)
+    return
+
+  setupStream(url, videoEl)
+})
+
+// Cleanup on unmount
+onBeforeUnmount(() => {
+  cleanupPlayers()
+})
 </script>
 
 <template>
@@ -83,16 +267,34 @@ const videoRef = ref<HTMLVideoElement | null>(null)
 
     <!-- Video preview -->
     <Transition v-if="!removed && settings.enableVideoPreview" name="fade">
-      <video
+      <div
         v-if="previewVideoUrl && isHover"
-        ref="videoRef"
-        autoplay muted
-        :controls="settings.enableVideoCtrlBarOnVideoCard"
-        :style="{ pointerEvents: settings.enableVideoCtrlBarOnVideoCard ? 'auto' : 'none' }"
         pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-radius" bg-black
       >
-        <source :src="previewVideoUrl" type="video/mp4">
-      </video>
+        <video
+          ref="videoRef"
+          autoplay muted
+          :controls="settings.enableVideoCtrlBarOnVideoCard && !video.roomid"
+          :style="{ pointerEvents: settings.enableVideoCtrlBarOnVideoCard && !video.roomid ? 'auto' : 'none' }"
+          w-full h-full
+        >
+          <source :src="previewVideoUrl">
+        </video>
+
+        <!-- Loading indicator -->
+        <Transition name="fade">
+          <div
+            v-if="isLoadingStream"
+            pos="absolute top-0 left-0"
+            w-full h-full
+            flex="~ items-center justify-center"
+            bg="black/50"
+            pointer-events-none
+          >
+            <div class="loading-spinner" />
+          </div>
+        </Transition>
+      </div>
     </Transition>
 
     <!-- Ranking Number -->
@@ -318,5 +520,20 @@ const videoRef = ref<HTMLVideoElement | null>(null)
 .video-card-cover-stats--hidden {
   opacity: 0;
   visibility: hidden;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

@@ -17,6 +17,20 @@ const API_LIVE = {
     afterHandle: AHS.J_D,
   },
 
+  // https://socialsisteryi.github.io/bilibili-API-collect/docs/live/live_stream.html
+  getLivePlayUrl: {
+    url: 'https://api.live.bilibili.com/room/v1/Room/playUrl',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      cid: 0,
+      platform: 'web', // 使用web平台获取FLV格式，加载更快
+      qn: 80, // 流畅画质，适合预览
+    },
+    afterHandle: AHS.J_D,
+  },
+
 } satisfies APIMAP
 
 export default API_LIVE

@@ -479,6 +479,7 @@ defineExpose({ initData })
           :skeleton="!video.item"
           :video="mapLiveItemToVideo(video.item)"
           :show-watcher-later="false"
+          :show-preview="true"
           :horizontal="gridLayout !== 'adaptive'"
         />
       </template>

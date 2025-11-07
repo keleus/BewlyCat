@@ -191,7 +191,7 @@ defineExpose({ initData })
         :key="video.uniqueId"
         :skeleton="!video.item"
         :video="video.item ? {
-          // id: Number(video.item.modules.module_dynamic.major.archive?.aid),
+          id: video.item.roomid,
           title: `${video.item.title}`,
           cover: `${video.item.room_cover}`,
           author: {
@@ -206,6 +206,7 @@ defineExpose({ initData })
         } : undefined"
         type="live"
         :show-watcher-later="false"
+        :show-preview="true"
         :horizontal="gridLayout !== 'adaptive'"
       />
     </div>
