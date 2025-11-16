@@ -103,14 +103,6 @@ export interface ShortcutsSettings {
   toggleFollow?: BaseShortcutSetting // Shift+F (默认禁用)
 }
 
-// UP主音量配置接口
-export interface UpVolumeConfig {
-  uid: string
-  name: string
-  volumeOffset: number // 相对基准音量的偏移量 (-100 到 100)
-  lastUpdated: number // 最后更新时间戳
-}
-
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
 
@@ -280,10 +272,11 @@ export interface Settings {
   shortcuts: ShortcutsSettings
   videoPlayerScroll: boolean // 添加视频播放器滚动设置
 
-  // 音量均衡设置
-  enableVolumeBalance: boolean // 启用音量均衡功能
-  baseVolume: number // 基准音量 (0-100)
-  upVolumeConfigs: UpVolumeConfig[] // UP主音量配置列表
+  // 自动音量均衡设置
+  enableVolumeNormalization: boolean // 启用自动音量均衡功能
+  targetVolume: number // 目标音量 (0-100)
+  normalizationStrength: number // 均衡强度/压缩比 (1-20)
+  adaptiveGainSpeed: number // 响应速度 (1-10)
 
   // 倍速记忆设置
   rememberPlaybackRate: boolean // 启用倍速记忆功能
@@ -483,10 +476,11 @@ export const originalSettings: Settings = {
     homeRefresh: { key: 'R', enabled: true },
   },
 
-  // 音量均衡设置
-  enableVolumeBalance: false, // 启用音量均衡功能
-  baseVolume: 100, // 基准音量 (0-100)
-  upVolumeConfigs: [], // UP主音量配置列表
+  // 自动音量均衡设置
+  enableVolumeNormalization: false, // 启用自动音量均衡功能
+  targetVolume: 50, // 目标音量 (0-100)，50为中等音量
+  normalizationStrength: 12, // 均衡强度/压缩比 (1-20)，12为推荐值
+  adaptiveGainSpeed: 5, // 响应速度 (1-10)，5为中等速度
 
   // 倍速记忆设置
   rememberPlaybackRate: false, // 启用倍速记忆功能

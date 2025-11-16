@@ -1,8 +1,7 @@
 // 更完善的播放器元素选择器
 import { settings } from '~/logic'
 
-import { applyVolumeBalance, startVolumeChangeMonitoring } from './volumeBalance'
-import { initVolumeSliders } from './volumeSliders'
+import { applyVolumeNormalization } from './audioNormalization'
 
 const _videoClassTag = {
   danmuBtn:
@@ -105,9 +104,7 @@ export function showState(text: string) {
 
 // 应用播放器辅助功能（音量均衡、倍速记忆等）
 function applyPlayerEnhancements() {
-  applyVolumeBalance()
-  startVolumeChangeMonitoring()
-  initVolumeSliders()
+  applyVolumeNormalization()
   applyRememberedPlaybackRate()
   startPlaybackRateMonitoring()
 }

@@ -92,7 +92,8 @@ const settingsMenuItems = computed((): MenuItem[] => {
       value: MenuType.VolumeBalance,
       icon: 'i-mingcute:volume-line',
       iconActivated: 'i-mingcute:volume-fill',
-      title: t('settings.menu_volume_balance'),
+      title: t('settings.menu_volume_normalization'),
+      badge: t('settings.experimental'),
     },
     {
       value: MenuType.Compatibility,
@@ -199,7 +200,20 @@ function setCurrentTitle() {
                 text="xl center" w-40px h-20px flex="~ shrink-0" justify-center
                 :class="menuItem.iconActivated"
               />
-              <span shrink-0>{{ menuItem.title }}</span>
+              <div flex="~ items-center gap-2" shrink-0>
+                <span>{{ menuItem.title }}</span>
+                <span
+                  v-if="menuItem.badge"
+                  text="xs"
+                  bg="orange-500/20"
+                  px-2 py-0.5
+                  rounded-full
+                  text-orange-500
+                  fw-500
+                >
+                  {{ menuItem.badge }}
+                </span>
+              </div>
             </a>
           </li>
         </ul>

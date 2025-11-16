@@ -471,33 +471,31 @@ settings:
   adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
   video_player_scroll: 調整顯示模式後滾動
   video_player_scroll_desc: 啟用後，在默認模式為寬屏和默認時，會自動滾動到合適位置。
-  volume_balance:
-    base_volume: 基準音量
-    base_volume_desc: 所有UP主音量的基準值
-    clear_all_configs: 清空所有配置
-    delete: 刪除
-    enable: 啟用音量均衡
-    enable_desc: 為不同UP主設置個性化音量，自動調整播放音量
-    no_configs: 暫無UP主音量配置
-    no_search_results: 沒有找到匹配的UP主配置
-    search_placeholder: 搜索UP主名字或UID...
-    search_results_count: 顯示 {current} / {total} 個配置
+  volume_normalization:
     title: 音量均衡
-    up_configs: UP主音量配置
-    up_configs_desc: 管理各個UP主的個性化音量設置
-    up_volume: UP主音量
+    enable: 啟用音量均衡
+    enable_desc: 自動調整所有影片的音量到統一級別
+    target_volume: 目標音量
+    target_volume_desc: 期望的音量級別（0-100），值越大音量越響，推薦 40-60
+    strength: 平滑強度
+    strength_desc: 音量峰值平滑強度（1-20），推薦 8-15，一般無需調整
+    adaptive_speed: 響應速度
+    adaptive_speed_desc: 達到目標音量的速度（1-10），值越大越快，推薦 3-7
     usage_guide:
-      desc: |-
-        音量均衡功能可以為不同UP主設置個性化音量
-        1. 啟用音量均衡功能後，系統會自動監聽音量變化
-        2. 當你手動調整音量時，會彈出對話框詢問是否記錄UP主配置或調整基準音量
-        3. 記錄UP主配置：保存當前UP主相對於基準音量的偏移量
-        4. 調整基準音量：將當前音量設為新的基準音量
-        5. 進入視頻頁面時，系統會根據UP主配置自動調整音量
-        6. 可以直接在配置列表中修改音量偏移值，範圍為 -100% 到  100%
-        7. 使用搜索框可以快速查找特定UP主的配置
       title: 使用說明
-  menu_volume_balance: 音量均衡
+      desc: |-
+        參數說明：
+        • 目標音量（0-100）：所有影片會統一調整到這個音量級別，值越大音量越響（推薦 40-60）
+        • 響應速度（1-10）：控制達到目標音量的時間，值越大穩定越快（推薦 3-7）
+        • 平滑強度（1-20）：音量峰值平滑強度，影響較小，一般無需調整（推薦 8-15）
+
+        注意事項：
+        • 這是實驗性功能，部分情況下可能不生效
+        • 影片音量差距較大時，會有明顯的淡入淡出效果
+        • 重新整理頁面後功能才會生效
+        • 不改變原音質，僅調整音量大小
+  menu_volume_normalization: 音量均衡
+  experimental: 實驗性
   group_fonts: 字體
   group_language: 語言
   group_ad_blocking: 廣告屏蔽

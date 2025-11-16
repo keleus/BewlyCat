@@ -21,4 +21,5 @@ export interface MenuItem {
   icon: string
   iconActivated: string
   title: string
+  badge?: string
 }

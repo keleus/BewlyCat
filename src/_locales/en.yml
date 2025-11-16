@@ -545,50 +545,31 @@ settings:
   video_player_scroll_desc: >-
     When enabled, it will automatically scroll to the appropriate position when
     the default mode is widescreen and default.
-  volume_balance:
-    base_volume: Reference volume
-    base_volume_desc: Reference value for all UP volumes
-    clear_all_configs: Clear all configurations
-    delete: delete
-    enable: Enable volume equalization
-    enable_desc: >-
-      Set personalized volumes for different UP and automatically adjust
-      playback volume
-    no_configs: No UP volume configuration yet
-    no_search_results: No matching UP configuration was found
-    search_placeholder: Search for UP name or UID...
-    search_results_count: Show {current} / {total} configurations
-    title: Volume balance
-    up_configs: UP volume configuration
-    up_volume: UP volume
-    up_configs_desc: Manage personalized volume settings for each UP host
+  volume_normalization:
+    title: Volume Normalization
+    enable: Enable volume normalization
+    enable_desc: Automatically adjust all videos to a consistent volume level
+    target_volume: Target volume
+    target_volume_desc: Desired volume level (0-100), higher = louder, recommended 40-60
+    strength: Smoothness strength
+    strength_desc: Volume peak smoothing strength (1-20), recommended 8-15, usually no adjustment needed
+    adaptive_speed: Response speed
+    adaptive_speed_desc: Speed to reach target volume (1-10), higher = faster, recommended 3-7
     usage_guide:
+      title: Usage Guide
       desc: |-
-        The volume equalization function can set personalized volumes for
-        different UP
+        Parameter descriptions:
+        • Target Volume (0-100): All videos will be adjusted to this volume level, higher = louder (recommended 40-60)
+        • Response Speed (1-10): Controls time to reach target volume, higher = faster stabilization (recommended 3-7)
+        • Smoothness Strength (1-20): Volume peak smoothing strength, minimal impact, usually no adjustment needed (recommended 8-15)
 
-        1. After the volume equalization function is enabled, the system will
-        automatically monitor the volume change.
-
-        2.When you manually adjust the volume, a dialog box will pop up to ask
-        whether to record the UP main configuration or adjust the reference
-        volume.
-
-        3. Record UP configuration: save the offset of the current UP relative
-        to the reference volume
-
-        4. Adjust the reference volume: Set the current volume to the new
-        reference volume
-
-        5. When entering the video page, the system will automatically adjust
-        the volume according to the UP main configuration.
-
-        6. You can directly modify the volume offset value in the configuration
-        list, ranging from -100% to 100%
-
-        7. Use the search box to quickly find the configuration of a specific UP
-      title: Instructions for use
-  menu_volume_balance: Volume balance
+        Important notes:
+        • This is an experimental feature and may not work in some situations
+        • Videos with large volume differences will have noticeable fade-in/fade-out effects
+        • Refresh the page for changes to take effect
+        • Preserves original audio quality, only adjusts volume level
+  menu_volume_normalization: Volume Normalization
+  experimental: Experimental
   group_fonts: Font
   group_language: language
   group_ad_blocking: AD Block
