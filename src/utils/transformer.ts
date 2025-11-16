@@ -146,9 +146,18 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
     try {
       const targetElement = unrefElement(target)
       if (targetElement) {
-        update()
-        const style = targetElement.getAttribute('style')
-        targetElement.setAttribute('style', generateStyle(style))
+        // 使用 requestAnimationFrame 和 setTimeout 确保 DOM 完全稳定后再计算位置
+        // 这样可以避免在动画过程中计算位置导致的错误
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            const element = unrefElement(target)
+            if (element) {
+              update()
+              const style = element.getAttribute('style')
+              element.setAttribute('style', generateStyle(style))
+            }
+          }, 0)
+        })
       }
     }
     catch (e) {
