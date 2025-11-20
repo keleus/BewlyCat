@@ -19,6 +19,7 @@ import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import { version } from '../../package.json'
+import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import App from './views/App.vue'
 
@@ -407,6 +408,10 @@ async function onDOMLoaded() {
   // Reset the original Bilibili top bar display style
   if (removeOriginalTopBar)
     document.documentElement.removeChild(removeOriginalTopBar)
+
+  // Initialize Audio Interceptor
+  initAudioInterceptor()
+  setupSettingsWatcher()
 }
 
 if (document.readyState !== 'loading')
