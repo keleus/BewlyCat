@@ -83,6 +83,31 @@ function handleVolumeChange(newValue: number) {
           />
         </div>
       </SettingsItem>
+
+      <SettingsItem
+        v-if="settings.enableVolumeNormalization"
+        :title="t('settings.volume_normalization.voice_gate')"
+        :desc="t('settings.volume_normalization.voice_gate_desc')"
+      >
+        <div flex="~ justify-end items-center" w-full gap-2>
+          <Input
+            v-model="settings.voiceGateDb"
+            type="number"
+            :min="-60"
+            :max="-10"
+            w-20
+          />
+          <span text="sm $bew-text-2">dB</span>
+        </div>
+      </SettingsItem>
+
+      <SettingsItem
+        v-if="settings.enableVolumeNormalization"
+        :title="t('settings.volume_normalization.debug')"
+        :desc="t('settings.volume_normalization.debug_desc')"
+      >
+        <Radio v-model="settings.volumeNormalizationDebug" />
+      </SettingsItem>
     </SettingsItemGroup>
 
     <!-- 使用说明 -->

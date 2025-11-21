@@ -277,6 +277,8 @@ export interface Settings {
   targetVolume: number // 目标音量 (0-100)
   normalizationStrength: number // 均衡强度/压缩比 (1-20)
   adaptiveGainSpeed: number // 响应速度 (1-10)
+  voiceGateDb: number // 人声检测阈值 (dB)
+  volumeNormalizationDebug: boolean // 输出音量均衡调试信息
 
   // 倍速记忆设置
   rememberPlaybackRate: boolean // 启用倍速记忆功能
@@ -481,6 +483,8 @@ export const originalSettings: Settings = {
   targetVolume: 50, // 目标音量 (0-100)，50为中等音量
   normalizationStrength: 12, // 均衡强度/压缩比 (1-20)，12为推荐值
   adaptiveGainSpeed: 5, // 响应速度 (1-10)，5为中等速度
+  voiceGateDb: -34, // 人声检测阈值 (dB)，低于此值视为静音
+  volumeNormalizationDebug: false, // 输出音量均衡调试信息，默认关闭
 
   // 倍速记忆设置
   rememberPlaybackRate: false, // 启用倍速记忆功能

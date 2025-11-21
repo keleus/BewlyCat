@@ -548,24 +548,30 @@ settings:
   volume_normalization:
     title: Volume Normalization
     enable: Enable volume normalization
-    enable_desc: Automatically adjust all videos to a consistent volume level
+    enable_desc: Real-time detection of voice loudness, automatically adjust volume to a consistent level
     target_volume: Target volume
-    target_volume_desc: Desired volume level (0-100), higher = louder, recommended 40-60
+    target_volume_desc: Target loudness level (0-100), 50 = -20dBFS, higher = louder
     strength: Smoothness strength
     strength_desc: Volume peak smoothing strength (1-20), recommended 8-15, usually no adjustment needed
     adaptive_speed: Response speed
     adaptive_speed_desc: Speed to reach target volume (1-10), higher = faster, recommended 3-7
+    voice_gate: Voice detection threshold
+    voice_gate_desc: Sounds below this level are ignored (-60 to -10 dB), recommended -40 to -30
+    debug: Debug mode
+    debug_desc: Output volume normalization debug info to console
     usage_guide:
       title: Usage Guide
       desc: |-
-        Parameter descriptions:
-        • Target Volume (0-100): All videos will be adjusted to this volume level, higher = louder (recommended 40-60)
-        • Response Speed (1-10): Controls time to reach target volume, higher = faster stabilization (recommended 3-7)
-        • Smoothness Strength (1-20): Volume peak smoothing strength, minimal impact, usually no adjustment needed (recommended 8-15)
+        How it works:
+        • Real-time analysis of voice loudness in videos (ignoring background and silence)
+        • Automatically adjusts gain based on detected loudness to normalize all videos
+
+        Parameters:
+        • Target Volume (0-100): 0 = -30dBFS (quiet), 50 = -20dBFS (moderate), 100 = -10dBFS (loud)
+        • Response Speed (1-10): Controls time to reach target volume, higher = faster stabilization
 
         Important notes:
         • This is an experimental feature and may not work in some situations
-        • Videos with large volume differences will have noticeable fade-in/fade-out effects
         • Refresh the page for changes to take effect
         • Preserves original audio quality, only adjusts volume level
   menu_volume_normalization: Volume Normalization

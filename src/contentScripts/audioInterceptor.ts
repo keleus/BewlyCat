@@ -5,7 +5,9 @@ import { settings } from '~/logic'
 
 // Debug logger
 function log(msg: string, ...args: any[]) {
-  console.log(`[BewlyAudio] ${msg}`, ...args)
+  if (settings.value.volumeNormalizationDebug) {
+    console.log(`[BewlyAudio] ${msg}`, ...args)
+  }
 }
 
 function error(msg: string, ...args: any[]) {
@@ -27,6 +29,7 @@ let loudnessAnalysis: {
   smoothedLoudness: number
   targetLoudness: number
   animationId: number | null
+  recentLoudness: number[] // 用于计算百分位响度
 } | null = null
 
 let currentVideoElement: HTMLVideoElement | null = null
@@ -127,31 +130,98 @@ function startLoudnessAnalysis() {
     }
     const rms = Math.sqrt(sum / dataArray.length)
 
-    // Smooth Loudness
-    const smoothingFactor = 0.95 // Adjusted for slower sampling
-    loudnessAnalysis.smoothedLoudness = loudnessAnalysis.smoothedLoudness * smoothingFactor + rms * (1 - smoothingFactor)
+    // 使用设置中的人声检测阈值
+    // dB 转换为线性值: 10^(dB/20)
+    const voiceGateDb = settings.value.voiceGateDb || -34
+    const voiceGate = 10 ** (voiceGateDb / 20)
 
-    // Update Gain every 1s
+    if (rms > voiceGate) {
+      // 只记录人声级别的响度
+      loudnessAnalysis.recentLoudness.push(rms)
+
+      // 突变检测：检测响度剧烈变化（BGM突然变大/小）
+      const windowSize = 15 // 3 秒（15 个样本 × 200ms）
+      if (loudnessAnalysis.recentLoudness.length >= 5) {
+        // 比较最新样本和当前平滑值
+        const currentSmoothed = loudnessAnalysis.smoothedLoudness
+        if (currentSmoothed > 0.0001) {
+          const ratio = rms / currentSmoothed
+          // 如果响度突然增加超过2倍或减少到1/2以下，判定为场景切换
+          if (ratio > 2.0 || ratio < 0.5) {
+            // 快速重置：只保留最近3个样本，快速适应新场景
+            loudnessAnalysis.recentLoudness = loudnessAnalysis.recentLoudness.slice(-3)
+            log(`Scene change detected (ratio: ${ratio.toFixed(2)}), reset window`)
+          }
+        }
+      }
+
+      // 自适应窗口大小：检测是否在淡入/淡出
+      if (loudnessAnalysis.recentLoudness.length > windowSize) {
+        // 检测趋势：最近 5 个样本的平均值 vs 前面样本的平均值
+        const recentAvg = loudnessAnalysis.recentLoudness.slice(-5).reduce((a, b) => a + b, 0) / 5
+        const olderAvg = loudnessAnalysis.recentLoudness.slice(0, Math.min(10, loudnessAnalysis.recentLoudness.length - 5)).reduce((a, b) => a + b, 0) / Math.min(10, loudnessAnalysis.recentLoudness.length - 5)
+
+        // 如果响度显著增加（淡入），快速丢弃旧样本
+        if (recentAvg > olderAvg * 1.5) {
+          // 淡入：只保留最近 10 个样本
+          loudnessAnalysis.recentLoudness = loudnessAnalysis.recentLoudness.slice(-10)
+        }
+        else {
+          // 正常情况：保持窗口大小
+          loudnessAnalysis.recentLoudness.shift()
+        }
+      }
+
+      // 计算自适应百分位：优先关注较响的内容（人声区域）
+      if (loudnessAnalysis.recentLoudness.length >= 3) {
+        const sorted = [...loudnessAnalysis.recentLoudness].sort((a, b) => a - b)
+
+        // 过滤掉最低的 40% 样本（背景音/间隙），使用剩余样本的中位数
+        // 这样能更好地聚焦人声和主要内容
+        const filterThreshold = Math.floor(sorted.length * 0.4)
+        const filteredSamples = sorted.slice(filterThreshold)
+
+        // 使用过滤后样本的 30 百分位（偏向较安静的人声，避免被大声片段拉高）
+        const percentile30Index = Math.floor(filteredSamples.length * 0.3)
+        const targetLoudness = filteredSamples[percentile30Index]
+
+        // 对目标响度进行平滑，根据场景变化程度调整平滑系数
+        if (loudnessAnalysis.smoothedLoudness === 0) {
+          loudnessAnalysis.smoothedLoudness = targetLoudness
+        }
+        else {
+          // 计算变化幅度，决定平滑系数
+          const changeMagnitude = Math.abs(targetLoudness - loudnessAnalysis.smoothedLoudness) / loudnessAnalysis.smoothedLoudness
+          // 变化越大，响应越快（权重越高）
+          const alpha = changeMagnitude > 0.5 ? 0.7 : 0.5 // 大变化用70%新值，小变化用50%新值
+          loudnessAnalysis.smoothedLoudness = loudnessAnalysis.smoothedLoudness * (1 - alpha) + targetLoudness * alpha
+        }
+      }
+    }
+
+    // Update Gain every 0.5s (加快响应)
     const now = context.currentTime
-    if (now - lastGainUpdate >= 1.0) {
+    if (now - lastGainUpdate >= 0.5) {
       lastGainUpdate = now
 
       const currentLoudness = loudnessAnalysis.smoothedLoudness
       if (currentLoudness > 0.0001) {
         const currentDb = 20 * Math.log10(currentLoudness)
 
-        // Target Calculation
+        // 目标响度映射算法
+        // 0-100 映射到 -30dB 到 -10dB，50 对应 -20dB（中间值）
         const targetVolume = settings.value.targetVolume || 50
-        const volumeRatio = (100 - targetVolume) / 100
-        const targetDb = -45 * volumeRatio ** 1.8
+        // 线性映射：0 → -30dB, 50 → -20dB, 100 → -10dB
+        const targetDb = -30 + (targetVolume / 100) * 20
 
         const gainDb = targetDb - currentDb
-        // Clamp gain to avoid extreme amplification of noise
+
+        // 对称的增益限制范围
         const clampedGainDb = Math.max(-15, Math.min(15, gainDb))
         const targetGain = 10 ** (clampedGainDb / 20)
 
         const responseSpeed = (settings.value.adaptiveGainSpeed || 5) / 10
-        const timeConstant = 11 - responseSpeed
+        const timeConstant = (11 - responseSpeed) * 0.8
 
         adaptiveGain.gain.setTargetAtTime(
           Math.max(0.01, targetGain),
@@ -159,8 +229,9 @@ function startLoudnessAnalysis() {
           timeConstant,
         )
 
-        // Verbose logging (every 1s)
-        log(`Loudness: ${currentDb.toFixed(1)}dB | Gain: ${gainDb > 0 ? '+' : ''}${gainDb.toFixed(1)}dB | Target: ${targetDb.toFixed(1)}dB`)
+        // Verbose logging (every 0.5s now)
+        const samples = loudnessAnalysis.recentLoudness.length
+        log(`Loudness: ${currentDb.toFixed(1)}dB (${samples} samples) | Gain: ${gainDb > 0 ? '+' : ''}${gainDb.toFixed(1)}dB | Target: ${targetDb.toFixed(1)}dB | Volume: ${targetVolume}`)
       }
     }
   }
@@ -240,6 +311,7 @@ export function attachToVideo(video: HTMLVideoElement) {
         smoothedLoudness: 0,
         targetLoudness: (settings.value.targetVolume || 50) / 100,
         animationId: null,
+        recentLoudness: [],
       }
     }
 
@@ -281,7 +353,7 @@ function updateProcessingState() {
       if (!loudnessAnalysis?.animationId) {
         startLoudnessAnalysis()
       }
-      log('Volume normalization ENABLED')
+      console.log('[BewlyAudio] Volume normalization ENABLED')
     }
     catch (e) {
       error('Error enabling processing', e)
@@ -297,7 +369,7 @@ function updateProcessingState() {
 
       // Connect source directly to destination
       source.connect(audioContext.destination)
-      log('Volume normalization DISABLED (Bypass)')
+      console.log('[BewlyAudio] Volume normalization DISABLED (Bypass)')
     }
     catch (e) {
       error('Error disabling processing', e)
@@ -374,4 +446,53 @@ export function setupSettingsWatcher() {
       log('Target volume updated', newVal)
     }
   })
+}
+
+// 临时启用/禁用状态（用于播放器控件）
+let tempDisabled = false
+
+// 临时禁用音量均衡（不修改设置）
+export function setTempDisabled(disabled: boolean) {
+  tempDisabled = disabled
+  if (audioNodes && audioContext) {
+    const { source, limiter } = audioNodes
+    if (disabled) {
+      // 禁用：直连
+      try {
+        stopLoudnessAnalysis()
+        limiter.disconnect()
+        source.connect(audioContext.destination)
+        console.log('[BewlyAudio] Volume normalization temporarily DISABLED')
+      }
+      catch {}
+    }
+    else if (settings.value.enableVolumeNormalization) {
+      // 启用：恢复处理链
+      try {
+        source.disconnect(audioContext.destination)
+        limiter.connect(audioContext.destination)
+        startLoudnessAnalysis()
+        console.log('[BewlyAudio] Volume normalization temporarily ENABLED')
+      }
+      catch {}
+    }
+  }
+}
+
+// 获取临时禁用状态
+export function isTempDisabled(): boolean {
+  return tempDisabled
+}
+
+// 获取当前是否有音频处理链
+export function isAudioProcessingActive(): boolean {
+  return hasAttached && audioNodes !== null && !tempDisabled
+}
+
+// 获取当前增益值（用于显示）
+export function getCurrentGainDb(): number | null {
+  if (!audioNodes)
+    return null
+  const gain = audioNodes.adaptiveGain.gain.value
+  return 20 * Math.log10(gain)
 }

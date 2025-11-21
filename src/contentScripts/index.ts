@@ -23,6 +23,7 @@ import { version } from '../../package.json'
 import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import App from './views/App.vue'
+import { initVolumeNormalizationControl } from './volumeNormalizationControl'
 
 const isFirefox: boolean = /Firefox/i.test(navigator.userAgent)
 
@@ -413,6 +414,7 @@ async function onDOMLoaded() {
   // Initialize Audio Interceptor
   initAudioInterceptor()
   setupSettingsWatcher()
+  initVolumeNormalizationControl()
 
   // Initialize Favorite Dialog Enhancement (for video pages)
   if (isVideoOrBangumiPage()) {
