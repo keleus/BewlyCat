@@ -9,6 +9,7 @@ import { localSettings, settings } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
+import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
@@ -412,6 +413,11 @@ async function onDOMLoaded() {
   // Initialize Audio Interceptor
   initAudioInterceptor()
   setupSettingsWatcher()
+
+  // Initialize Favorite Dialog Enhancement (for video pages)
+  if (isVideoOrBangumiPage()) {
+    initFavoriteDialogEnhancement()
+  }
 }
 
 if (document.readyState !== 'loading')
