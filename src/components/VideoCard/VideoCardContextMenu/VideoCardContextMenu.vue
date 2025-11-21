@@ -128,11 +128,29 @@ watch(() => showContextMenu.value, (newVal) => {
   }
 })
 
+// 监听菜单列表尺寸变化，确保滚动指示器状态正确
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
   showContextMenu.value = true
   nextTick(() => {
     handleScroll()
+
+    // 监听菜单列表的尺寸变化
+    if (menuListRef.value) {
+      resizeObserver = new ResizeObserver(() => {
+        handleScroll()
+      })
+      resizeObserver.observe(menuListRef.value)
+    }
   })
+})
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 
 function handleMoreCommand(_command: number) {
