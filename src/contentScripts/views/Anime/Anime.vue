@@ -156,6 +156,7 @@ function getPopularAnimeList() {
             />
             <BangumiCard
               v-for="item in animeWatchList"
+              v-show="!item.title.includes('MADEBYBILIBILI') || !item.title.includes('号作品')"
               :key="item.short_url"
               :bangumi="{
                 url: item.url,
@@ -165,11 +166,13 @@ function getPopularAnimeList() {
                 desc: item.progress !== '' ? item.progress : $t('anime.havent_seen'),
                 evaluate: item.evaluate,
                 tags: item.styles,
-                capsuleText: item.is_finish
+                capsuleText: item.is_finish && item.total_count
                   ? $t('anime.total_episodes', { ep: item.total_count })
-                  : $t('anime.update_to_n_episodes', {
-                    ep: item.formal_ep_count,
-                  }),
+                  : (!item.is_finish && item.formal_ep_count
+                    ? $t('anime.update_to_n_episodes', {
+                      ep: item.formal_ep_count,
+                    })
+                    : ''),
                 badge: {
                   text: item.badge_info.text || '',
                   bgColor: item.badge_info.bg_color || '',

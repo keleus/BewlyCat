@@ -209,7 +209,7 @@ const { isDark } = useDark()
         </p>
         <div text="sm $bew-text-2" flex flex-wrap gap-2 items-center>
           <div
-            v-if="bangumi.capsuleText"
+            v-if="bangumi.capsuleText && bangumi.capsuleText.trim()"
             text="$bew-theme-color" bg="$bew-theme-color-20"
             p="x-2" h-22px lh-22px rounded-24px
           >
