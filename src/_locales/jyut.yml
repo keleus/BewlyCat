@@ -343,6 +343,8 @@ settings:
   auto_exit_fullscreen_on_end_desc: 啟用後，影片播完會自動退出全螢幕模式
   auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
   auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，自動連播下播完唔會自動退出全螢幕，方便連續睇
+  use_bilibili_default_auto_play: 用B站預設自動播放行為
+  use_bilibili_default_auto_play_desc: 啟用後會用B站嘅預設自動播放行為，下面嘅自訂自動播放設定會隱藏同埋無效
   auto_play_multipart: 分P影片自動連播
   auto_play_multipart_desc: 啟用後，分P影片會自動播下一個分P
   auto_play_collection: 合集影片自動連播
