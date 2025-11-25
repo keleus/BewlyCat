@@ -533,7 +533,8 @@ watch(settings, (newSettings, oldSettings) => {
   if (isVideoPage()) {
     // 检查自动播放相关设置是否发生变化
     const autoPlaySettingsChanged = oldSettings && (
-      newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
+      newSettings.useBilibiliDefaultAutoPlay !== oldSettings.useBilibiliDefaultAutoPlay
+      || newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
       || newSettings.autoPlayCollection !== oldSettings.autoPlayCollection
       || newSettings.autoPlayRecommend !== oldSettings.autoPlayRecommend
       || newSettings.autoPlayPlaylist !== oldSettings.autoPlayPlaylist

@@ -67,6 +67,13 @@ const randomPlayModeOptions = computed(() => {
       </SettingsItem>
 
       <SettingsItem
+        :title="t('settings.keep_collection_video_default_mode')"
+        :desc="t('settings.keep_collection_video_default_mode_desc')"
+      >
+        <Radio v-model="settings.keepCollectionVideoDefaultMode" />
+      </SettingsItem>
+
+      <SettingsItem
         :title="t('settings.video_danmaku_default_state')"
         :desc="t('settings.video_danmaku_default_state_desc')"
       >
@@ -106,39 +113,41 @@ const randomPlayModeOptions = computed(() => {
 
     <SettingsItemGroup :title="$t('settings.group_playback_behavior')">
       <SettingsItem
-        :title="t('settings.auto_play_multipart')"
-        :desc="t('settings.auto_play_multipart_desc')"
+        :title="t('settings.use_bilibili_default_auto_play')"
+        :desc="t('settings.use_bilibili_default_auto_play_desc')"
       >
-        <Radio v-model="settings.autoPlayMultipart" />
+        <Radio v-model="settings.useBilibiliDefaultAutoPlay" />
       </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.auto_play_collection')"
-        :desc="t('settings.auto_play_collection_desc')"
-      >
-        <Radio v-model="settings.autoPlayCollection" />
-      </SettingsItem>
+      <template v-if="!settings.useBilibiliDefaultAutoPlay">
+        <SettingsItem
+          :title="t('settings.auto_play_multipart')"
+          :desc="t('settings.auto_play_multipart_desc')"
+        >
+          <Radio v-model="settings.autoPlayMultipart" />
+        </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.auto_play_recommend')"
-        :desc="t('settings.auto_play_recommend_desc')"
-      >
-        <Radio v-model="settings.autoPlayRecommend" />
-      </SettingsItem>
+        <SettingsItem
+          :title="t('settings.auto_play_collection')"
+          :desc="t('settings.auto_play_collection_desc')"
+        >
+          <Radio v-model="settings.autoPlayCollection" />
+        </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.auto_play_playlist')"
-        :desc="t('settings.auto_play_playlist_desc')"
-      >
-        <Radio v-model="settings.autoPlayPlaylist" />
-      </SettingsItem>
+        <SettingsItem
+          :title="t('settings.auto_play_recommend')"
+          :desc="t('settings.auto_play_recommend_desc')"
+        >
+          <Radio v-model="settings.autoPlayRecommend" />
+        </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.keep_collection_video_default_mode')"
-        :desc="t('settings.keep_collection_video_default_mode_desc')"
-      >
-        <Radio v-model="settings.keepCollectionVideoDefaultMode" />
-      </SettingsItem>
+        <SettingsItem
+          :title="t('settings.auto_play_playlist')"
+          :desc="t('settings.auto_play_playlist_desc')"
+        >
+          <Radio v-model="settings.autoPlayPlaylist" />
+        </SettingsItem>
+      </template>
 
       <SettingsItem
         :title="t('settings.enable_random_play')"

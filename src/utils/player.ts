@@ -420,6 +420,11 @@ function findAutoPlaySwitchButton(): { button: HTMLElement, isOn: boolean } | nu
 
 // 根据视频类型和设置应用自动连播状态
 export function applyAutoPlayByVideoType() {
+  // 如果启用了B站默认自动播放行为，不进行任何操作
+  if (settings.value.useBilibiliDefaultAutoPlay) {
+    return
+  }
+
   const videoType = detectVideoType()
   let shouldEnableAutoPlay = false
 

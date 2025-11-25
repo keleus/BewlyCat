@@ -424,6 +424,9 @@ settings:
   auto_exit_fullscreen_exclude_auto_play: Exclude auto-play mode
   auto_exit_fullscreen_exclude_auto_play_desc: >
     When enabled, videos in auto-play mode will not auto-exit fullscreen when finished, allowing continuous viewing
+  use_bilibili_default_auto_play: Use Bilibili's default auto-play behavior
+  use_bilibili_default_auto_play_desc: >
+    When enabled, Bilibili's default auto-play behavior will be used, and custom auto-play settings below will be hidden and disabled
   auto_play_multipart: Auto-play multi-part videos
   auto_play_multipart_desc: When enabled, multi-part videos will automatically play the next part
   auto_play_collection: Auto-play collection videos

@@ -263,6 +263,7 @@ export interface Settings {
   autoExitFullscreenExcludeAutoPlay: boolean // 全屏自动退出时排除自动连播
 
   // 分类型自动连播设置
+  useBilibiliDefaultAutoPlay: boolean // 使用B站默认自动播放行为
   autoPlayMultipart: boolean // 分P视频自动连播
   autoPlayCollection: boolean // 合集视频自动连播
   autoPlayRecommend: boolean // 单视频推荐自动连播
@@ -444,6 +445,7 @@ export const originalSettings: Settings = {
   autoExitFullscreenExcludeAutoPlay: false, // 全屏自动退出时排除自动连播，默认关闭
 
   // 分类型自动连播设置
+  useBilibiliDefaultAutoPlay: true, // 使用B站默认自动播放行为，默认开启
   autoPlayMultipart: false, // 分P视频自动连播，默认关闭
   autoPlayCollection: false, // 合集视频自动连播，默认关闭
   autoPlayRecommend: false, // 单视频推荐自动连播，默认关闭

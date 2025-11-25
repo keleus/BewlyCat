@@ -168,6 +168,8 @@ settings:
   auto_exit_fullscreen_on_end_desc: 启用后，当视频播放结束时会自动退出全屏模式
   auto_exit_fullscreen_exclude_auto_play: 自动连播下除外
   auto_exit_fullscreen_exclude_auto_play_desc: 启用后，在自动连播下播放结束时不会自动退出全屏，方便连续观看
+  use_bilibili_default_auto_play: 使用B站默认自动播放行为
+  use_bilibili_default_auto_play_desc: 启用后将使用B站的默认自动播放行为，下方的自定义自动播放设置将被隐藏且无效
   auto_play_multipart: 分P视频自动连播
   auto_play_multipart_desc: 启用后，分P视频将自动播放下一个分P
   auto_play_collection: 合集视频自动连播
