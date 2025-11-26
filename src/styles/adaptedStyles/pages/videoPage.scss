@@ -104,7 +104,7 @@
       background-color: var(--bew-theme-color-60) !important;
     }
 
-    .collection-m-exp {
+    .collection-m-exp.bewly-enlarged-favorite-dialog {
       width: 60vw !important;
       height: 80vh !important;
       max-height: 80vh !important;
@@ -317,7 +317,7 @@
       }
     }
 
-    .collection-m-exp .bottom {
+    .collection-m-exp.bewly-enlarged-favorite-dialog .bottom {
       margin-top: 12px;
       padding: 12px 0;
       background: transparent;
@@ -335,16 +335,16 @@
       }
     }
 
-    .collection-m-exp .content .group-list .add-group .input-group .submit,
+    .collection-m-exp.bewly-enlarged-favorite-dialog .content .group-list .add-group .input-group .submit,
     .follow-dialog-wrap-exp .follow-dialog-window .content .group-list .add-group .input-group .submitGroup {
       background-color: var(--bew-theme-color) !important;
     }
 
-    .collection-m-exp .title {
+    .collection-m-exp.bewly-enlarged-favorite-dialog .title {
       flex-shrink: 0;
     }
 
-    .collection-m-exp .content .group-list .collection-mask {
+    .collection-m-exp.bewly-enlarged-favorite-dialog .content .group-list .collection-mask {
       display: none !important;
     }
 

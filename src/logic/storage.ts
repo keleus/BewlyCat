@@ -123,6 +123,7 @@ export interface Settings {
   showIPLocation: boolean // 添加显示IP归属地设置项
   showSex: boolean // 添加显示性别设置项
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
+  enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
 
   language: string
   customizeFont: 'default' | 'recommend' | 'custom'
@@ -305,6 +306,7 @@ export const originalSettings: Settings = {
   showIPLocation: true, // 默认启用IP归属地显示
   showSex: true, // 默认启用性别显示
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
+  enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
   language: '',
   customizeFont: 'default',
   fontFamily: '',

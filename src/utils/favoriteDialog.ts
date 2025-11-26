@@ -1,7 +1,9 @@
 /**
  * 收藏弹窗增强工具函数
- * 用于在B站收藏弹窗添加清空已选按钮
+ * 用于在B站收藏弹窗添加清空已选按钮和放大样式
  */
+
+import { settings } from '~/logic'
 
 let observer: MutationObserver | null = null
 
@@ -36,6 +38,18 @@ function clearAllSelections(container: Element) {
 }
 
 /**
+ * 应用放大样式到收藏弹窗
+ */
+function applyEnlargedStyle(dialog: Element) {
+  if (settings.value.enlargeFavoriteDialog) {
+    dialog.classList.add('bewly-enlarged-favorite-dialog')
+  }
+  else {
+    dialog.classList.remove('bewly-enlarged-favorite-dialog')
+  }
+}
+
+/**
  * 注入清空按钮到收藏弹窗
  */
 function injectClearButton(dialog: Element) {
@@ -66,8 +80,19 @@ function injectClearButton(dialog: Element) {
 }
 
 /**
+ * 增强收藏弹窗
+ */
+function enhanceFavoriteDialog(dialog: Element) {
+  // 应用放大样式
+  applyEnlargedStyle(dialog)
+
+  // 注入清空按钮
+  injectClearButton(dialog)
+}
+
+/**
  * 初始化收藏弹窗增强功能
- * 监听 DOM 变化，当收藏弹窗出现时注入清空按钮
+ * 监听 DOM 变化，当收藏弹窗出现时应用增强功能（清空按钮和放大样式）
  */
 export function initFavoriteDialogEnhancement() {
   // 如果已经初始化过，先清理
@@ -89,7 +114,7 @@ export function initFavoriteDialogEnhancement() {
           if (dialog) {
             // 延迟一点注入，确保弹窗内容已渲染
             setTimeout(() => {
-              injectClearButton(dialog)
+              enhanceFavoriteDialog(dialog)
             }, 100)
           }
         }
@@ -106,7 +131,7 @@ export function initFavoriteDialogEnhancement() {
   // 同时检查页面上是否已存在收藏弹窗
   const existingDialog = document.querySelector('.collection-m-exp')
   if (existingDialog) {
-    injectClearButton(existingDialog)
+    enhanceFavoriteDialog(existingDialog)
   }
 }
 

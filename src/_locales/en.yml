@@ -548,6 +548,8 @@ settings:
   video_player_scroll_desc: >-
     When enabled, it will automatically scroll to the appropriate position when
     the default mode is widescreen and default.
+  enlarge_favorite_dialog: Enlarge favorite dialog
+  enlarge_favorite_dialog_desc: When enabled, the favorite dialog on video pages will be displayed in a larger size for easier viewing and management.
   volume_normalization:
     title: Volume Normalization
     enable: Enable volume normalization

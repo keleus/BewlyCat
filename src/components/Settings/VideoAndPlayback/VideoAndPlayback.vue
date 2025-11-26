@@ -88,6 +88,13 @@ const randomPlayModeOptions = computed(() => {
       </SettingsItem>
 
       <SettingsItem
+        :title="t('settings.enlarge_favorite_dialog')"
+        :desc="t('settings.enlarge_favorite_dialog_desc')"
+      >
+        <Radio v-model="settings.enlargeFavoriteDialog" />
+      </SettingsItem>
+
+      <SettingsItem
         :title="t('settings.remember_playback_rate')"
         :desc="t('settings.remember_playback_rate_desc')"
       >

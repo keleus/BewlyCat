@@ -160,6 +160,8 @@ settings:
     widescreen: 宽屏
   video_player_scroll: 调整显示模式后滚动
   video_player_scroll_desc: 启用后，在默认模式为宽屏和默认时，会自动滚动到合适位置。
+  enlarge_favorite_dialog: 放大收藏弹窗
+  enlarge_favorite_dialog_desc: 启用后，视频页收藏弹窗将以更大的尺寸显示，方便查看和管理收藏夹。
   keep_collection_video_default_mode: 合集视频保持默认模式
   keep_collection_video_default_mode_desc: 当启用时，合集视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   remember_playback_rate: 记住倍速

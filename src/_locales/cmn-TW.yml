@@ -473,6 +473,8 @@ settings:
   adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
   video_player_scroll: 調整顯示模式後滾動
   video_player_scroll_desc: 啟用後，在默認模式為寬屏和默認時，會自動滾動到合適位置。
+  enlarge_favorite_dialog: 放大收藏彈窗
+  enlarge_favorite_dialog_desc: 啟用後，影片頁收藏彈窗將以更大的尺寸顯示，方便查看和管理收藏夾。
   volume_normalization:
     title: 音量均衡
     enable: 啟用音量均衡
