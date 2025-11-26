@@ -190,7 +190,7 @@ onMounted(() => {
           type="number"
           :min="0"
           :max="168"
-          :placeholder="0"
+          placeholder="0"
           w-100px
         >
           <template #suffix>
@@ -203,7 +203,7 @@ onMounted(() => {
           type="number"
           :min="0"
           :max="168"
-          :placeholder="0"
+          placeholder="0"
           w-100px
         >
           <template #suffix>

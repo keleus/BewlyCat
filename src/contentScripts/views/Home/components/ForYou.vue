@@ -561,12 +561,16 @@ async function getAppRecommendVideos() {
             return
 
           // 检查是否已经存在该视频，避免重复
-          const isDuplicate = appVideoList.value.some(video => video.item && video.item.idx === item.idx)
+          // 使用 aid/bvid 作为唯一标识符，而不是 idx（idx 只是推荐流中的位置）
+          const videoId = item.args?.aid || item.bvid
+          const isDuplicate = appVideoList.value.some(video =>
+            video.item && (video.item.args?.aid === item.args?.aid || video.item.bvid === item.bvid),
+          )
           if (isDuplicate)
             return
 
           appVideoList.value.push({
-            uniqueId: `${item.idx}`,
+            uniqueId: `${videoId || item.idx}`,
             item,
           })
         })
