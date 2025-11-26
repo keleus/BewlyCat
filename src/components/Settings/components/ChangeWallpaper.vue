@@ -184,22 +184,32 @@ onMounted(() => {
         <template #desc>
           {{ $t('settings.wallpaper_cache_time_desc') }}
         </template>
-        <Slider
+        <Input
           v-if="isGlobal"
           v-model="settings.wallpaperCacheTime"
+          type="number"
           :min="0"
           :max="168"
-          :step="1"
-          :label="settings.wallpaperCacheTime === 0 ? $t('settings.no_cache') : `${settings.wallpaperCacheTime}h`"
-        />
-        <Slider
+          :placeholder="0"
+          w-100px
+        >
+          <template #suffix>
+            <span text="sm $bew-text-2">h</span>
+          </template>
+        </Input>
+        <Input
           v-else
           v-model="settings.searchPageWallpaperCacheTime"
+          type="number"
           :min="0"
           :max="168"
-          :step="1"
-          :label="settings.searchPageWallpaperCacheTime === 0 ? $t('settings.no_cache') : `${settings.searchPageWallpaperCacheTime}h`"
-        />
+          :placeholder="0"
+          w-100px
+        >
+          <template #suffix>
+            <span text="sm $bew-text-2">h</span>
+          </template>
+        </Input>
       </SettingsItem>
 
       <SettingsItem v-if="isBuildInWallpaper" :title="$t('settings.choose_ur_wallpaper')">
