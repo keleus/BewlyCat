@@ -96,6 +96,22 @@ function injectPhotoViewerStyles() {
       width: 100% !important;
       height: 100% !important;
     }
+
+    .pswp__img {
+      /* 确保图片在受限空间内正确缩放 */
+      max-width: 100% !important;
+      max-height: 100% !important;
+      object-fit: contain !important;
+    }
+
+    .pswp__zoom-wrap {
+      /* 确保图片容器不超出可视区域 */
+      width: 100% !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
   `
 }
 
