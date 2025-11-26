@@ -57,22 +57,47 @@ iframe_drawer:
   press_esc_again_to_close: 再次按下 Esc 关闭
 settings:
   title: 设置
-  menu_general: 常规
+  menu_plugin_components_and_pages: BewlyCat界面
+  menu_bilibili_features_enhancement: Bilibili功能
   menu_appearance: 外观
-  menu_video_and_playback: 视频与播放
-  menu_desktop_and_dock: 桌面和 Dock 栏
-  menu_bewly_pages: BewlyCat 页面
-  menu_search_page: 搜索页
-  menu_home: 首页
   menu_compatibility: 兼容性
   menu_about: 关于
+  menu_changelog: 更新日志
+  experimental: 实验性
+
+  # 插件组件与页面 子菜单
+  plugin:
+    general: 常规
+    video_card: 视频卡片
+    topbar: 顶栏
+    dock_and_sidebar: Dock栏
+    home: 首页
+    search: 搜索页
+    volume_balance: 音量均衡
+
+  # B站功能增强 子菜单
+  bilibili_features:
+    comments: 评论
+    video_playback: 播放器
+    auto_play: 自动连播
+    vip_features: 大会员
+    vip_features_placeholder: 大会员功能增强将在未来版本中添加。
+
+  changelog_placeholder: 更新日志内容将在这里显示。
+
   group_common: 通用
+  group_language: 语言
+  group_ad_blocking: 广告拦截
+  group_comments: 评论
   group_languages_and_fonts: 语言和字体
   group_link_opening_behavior: 链接打开行为
   group_video_card: 视频卡片
   group_performance: 毛玻璃和性能
   group_player_settings: 播放器设置
+  group_player_components: 播放器组件
   group_playback_behavior: 播放行为
+  group_auto_play: 自动连播
+  group_random_play: 随机播放
   group_topbar: 顶栏
   group_navigation: Dock和侧边栏
   group_dock: Dock 栏
@@ -507,10 +532,7 @@ settings:
         • 刷新页面后功能才会生效
         • 不改变原音质，仅调整音量大小
   menu_volume_normalization: 音量均衡
-  experimental: 实验性
   group_fonts: 字体
-  group_language: 语言
-  group_ad_blocking: 广告屏蔽
   group_visual_effects: 视觉效果
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key

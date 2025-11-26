@@ -13,18 +13,15 @@ const emit = defineEmits(['close'])
 const { t } = useI18n()
 
 const settingsMenu = {
-  [MenuType.General]: defineAsyncComponent(() => import('./General/General.vue')),
+  [MenuType.PluginComponentsAndPages]: defineAsyncComponent(() => import('./PluginComponentsAndPages/PluginComponentsAndPages.vue')),
+  [MenuType.BilibiliFeaturesEnhancement]: defineAsyncComponent(() => import('./BilibiliFeaturesEnhancement/BilibiliFeaturesEnhancement.vue')),
   [MenuType.Appearance]: defineAsyncComponent(() => import('./Appearance/Appearance.vue')),
-  [MenuType.VideoAndPlayback]: defineAsyncComponent(() => import('./VideoAndPlayback/VideoAndPlayback.vue')),
-  [MenuType.DesktopAndDock]: defineAsyncComponent(() => import('./DesktopAndDock/DesktopAndDock.vue')),
-  [MenuType.BewlyPages]: defineAsyncComponent(() => import('./BewlyPages/BewlyPages.vue')),
   [MenuType.Shortcuts]: defineAsyncComponent(() => import('./Shortcuts/Shortcuts.vue')),
-  [MenuType.VolumeBalance]: defineAsyncComponent(() => import('./VolumeBalance/VolumeBalance.vue')),
   [MenuType.Compatibility]: defineAsyncComponent(() => import('./Compatibility/Compatibility.vue')),
-  // [MenuType.BilibiliSettings]: defineAsyncComponent(() => import('./BilibiliSettings/BilibiliSettings.vue')),
   [MenuType.About]: defineAsyncComponent(() => import('./About/About.vue')),
+  [MenuType.Changelog]: defineAsyncComponent(() => import('./Changelog/Changelog.vue')),
 }
-const activatedMenuItem = ref<MenuType>(MenuType.General)
+const activatedMenuItem = ref<MenuType>(MenuType.PluginComponentsAndPages)
 const title = ref<string>(t('settings.title'))
 const settingsWindow = ref<HTMLDivElement>()
 
@@ -53,10 +50,16 @@ watch(
 const settingsMenuItems = computed((): MenuItem[] => {
   return [
     {
-      value: MenuType.General,
-      icon: 'i-mingcute:settings-3-line',
-      iconActivated: 'i-mingcute:settings-3-fill',
-      title: t('settings.menu_general'),
+      value: MenuType.PluginComponentsAndPages,
+      icon: 'i-mingcute:plugin-2-line',
+      iconActivated: 'i-mingcute:plugin-2-fill',
+      title: t('settings.menu_plugin_components_and_pages'),
+    },
+    {
+      value: MenuType.BilibiliFeaturesEnhancement,
+      icon: 'i-mingcute:tv-2-line',
+      iconActivated: 'i-mingcute:tv-2-fill',
+      title: t('settings.menu_bilibili_features_enhancement'),
     },
     {
       value: MenuType.Appearance,
@@ -65,35 +68,10 @@ const settingsMenuItems = computed((): MenuItem[] => {
       iconActivated: 'i-mingcute:paint-brush-fill',
     },
     {
-      value: MenuType.VideoAndPlayback,
-      icon: 'i-mingcute:play-circle-line',
-      iconActivated: 'i-mingcute:play-circle-fill',
-      title: t('settings.menu_video_and_playback'),
-    },
-    {
-      value: MenuType.DesktopAndDock,
-      icon: 'i-mingcute:imac-line',
-      iconActivated: 'i-mingcute:imac-fill',
-      title: t('settings.menu_desktop_and_dock'),
-    },
-    {
-      value: MenuType.BewlyPages,
-      icon: 'i-mingcute:table-2-line',
-      iconActivated: 'i-mingcute:table-2-fill',
-      title: t('settings.menu_bewly_pages'),
-    },
-    {
       value: MenuType.Shortcuts,
       icon: 'i-mingcute:keyboard-line',
       iconActivated: 'i-mingcute:keyboard-fill',
       title: t('settings.shortcuts.title'),
-    },
-    {
-      value: MenuType.VolumeBalance,
-      icon: 'i-mingcute:volume-line',
-      iconActivated: 'i-mingcute:volume-fill',
-      title: t('settings.menu_volume_normalization'),
-      badge: t('settings.experimental'),
     },
     {
       value: MenuType.Compatibility,
@@ -101,17 +79,17 @@ const settingsMenuItems = computed((): MenuItem[] => {
       iconActivated: 'i-mingcute:polygon-fill',
       title: t('settings.menu_compatibility'),
     },
-    // {
-    //   value: MenuType.BilibiliSettings,
-    //   icon: 'ant-design:bilibili-outlined',
-    //   iconActivated: 'ant-design:bilibili-outlined',
-    //   title: 'Bilibili',
-    // },
     {
       value: MenuType.About,
       icon: 'i-mingcute:information-line',
       iconActivated: 'i-mingcute:information-fill',
       title: t('settings.menu_about'),
+    },
+    {
+      value: MenuType.Changelog,
+      icon: 'i-mingcute:time-line',
+      iconActivated: 'i-mingcute:time-fill',
+      title: t('settings.menu_changelog'),
     },
   ]
 })

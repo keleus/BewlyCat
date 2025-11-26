@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import Radio from '~/components/Radio.vue'
 import { settings } from '~/logic'
 import { isHomePage } from '~/utils/main'
 

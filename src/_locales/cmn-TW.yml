@@ -57,22 +57,47 @@ iframe_drawer:
   press_esc_again_to_close: 再次按下 Esc 關閉
 settings:
   title: 設定
-  menu_general: 一般
+  menu_plugin_components_and_pages: BewlyCat界面
+  menu_bilibili_features_enhancement: Bilibili功能
   menu_appearance: 外觀
-  menu_video_and_playback: 影片與播放
-  menu_desktop_and_dock: 桌面與 Dock
-  menu_bewly_pages: BewlyBewly 頁面
-  menu_home: 首頁
-  menu_search_page: 搜尋頁
-  menu_about: 關於
   menu_compatibility: 相容性
+  menu_about: 關於
+  menu_changelog: 更新日誌
+  experimental: 實驗性
+
+  # 外掛組件與頁面 子選單
+  plugin:
+    general: 一般
+    video_card: 影片卡片
+    topbar: 頂欄
+    dock_and_sidebar: Dock
+    home: 首頁
+    search: 搜尋頁
+    volume_balance: 音量均衡
+
+  # B站功能增強 子選單
+  bilibili_features:
+    comments: 評論
+    video_playback: 播放器
+    auto_play: 自動連播
+    vip_features: 大會員
+    vip_features_placeholder: 大會員功能增強將在未來版本中新增。
+
+  changelog_placeholder: 更新日誌內容將在這裡顯示。
+
   group_common: 常用
+  group_language: 語言
+  group_ad_blocking: 廣告攔截
+  group_comments: 評論
   group_languages_and_fonts: 語言與字型
   group_link_opening_behavior: 連結開啓行爲
   group_video_card: 影片卡片
   group_performance: 毛玻璃與效能
   group_player_settings: 播放器設定
+  group_player_components: 播放器組件
   group_playback_behavior: 播放行為
+  group_auto_play: 自動連播
+  group_random_play: 隨機播放
   group_topbar: 頂欄
   group_navigation: Dock與側邊欄
   group_dock: Dock
@@ -505,10 +530,7 @@ settings:
         • 重新整理頁面後功能才會生效
         • 不改變原音質，僅調整音量大小
   menu_volume_normalization: 音量均衡
-  experimental: 實驗性
   group_fonts: 字體
-  group_language: 語言
-  group_ad_blocking: 廣告屏蔽
   group_visual_effects: 視覺效果
   badge_type: 角標類型
   group_topbar_components: 頂欄組件設置

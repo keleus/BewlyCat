@@ -1,16 +1,31 @@
 export enum MenuType {
-  General = 'General',
+  PluginComponentsAndPages = 'PluginComponentsAndPages',
+  BilibiliFeaturesEnhancement = 'BilibiliFeaturesEnhancement',
   Appearance = 'Appearance',
-  VideoAndPlayback = 'VideoAndPlayback',
-  DesktopAndDock = 'DesktopAndDock',
-  BewlyPages = 'BewlyPages',
   Shortcuts = 'Shortcuts',
-  VolumeBalance = 'VolumeBalance',
   Compatibility = 'Compatibility',
-  BilibiliSettings = 'BilibiliSettings',
   About = 'About',
+  Changelog = 'Changelog',
 }
 
+export enum PluginPage {
+  General = 'General',
+  VideoCard = 'VideoCard',
+  TopBar = 'TopBar',
+  DockAndSidebar = 'DockAndSidebar',
+  Home = 'Home',
+  Search = 'Search',
+  VolumeBalance = 'VolumeBalance',
+}
+
+export enum BilibiliFeaturesPage {
+  Comments = 'Comments',
+  VideoPlayback = 'VideoPlayback',
+  AutoPlay = 'AutoPlay',
+  VipFeatures = 'VipFeatures',
+}
+
+// Legacy enum for backward compatibility
 export enum BewlyPage {
   Home = 'Home',
   Search = 'Search',

@@ -57,22 +57,47 @@ iframe_drawer:
   press_esc_again_to_close: Press Esc again to close
 settings:
   title: Settings
-  menu_general: General
+  menu_plugin_components_and_pages: BewlyCat Interface
+  menu_bilibili_features_enhancement: Bilibili Features
   menu_appearance: Appearance
-  menu_video_and_playback: Video & Playback
-  menu_desktop_and_dock: Desktop & Dock
-  menu_bewly_pages: BewlyBewly Pages
-  menu_search_page: Search Page
-  menu_home: Home
   menu_compatibility: Compatibility
   menu_about: About
+  menu_changelog: Changelog
+  experimental: Experimental
+
+  # Plugin Components & Pages submenu
+  plugin:
+    general: General
+    video_card: Video Card
+    topbar: Top Bar
+    dock_and_sidebar: Dock
+    home: Home
+    search: Search
+    volume_balance: Volume Normalization
+
+  # Bilibili Features Enhancement submenu
+  bilibili_features:
+    comments: Comments
+    video_playback: Player
+    auto_play: Auto Play
+    vip_features: VIP Features
+    vip_features_placeholder: VIP feature enhancements will be added here in future updates.
+
+  changelog_placeholder: Changelog content will be displayed here.
+
   group_common: Common
+  group_language: Language
+  group_ad_blocking: Ad Blocking
+  group_comments: Comments
   group_languages_and_fonts: Languages & Fonts
   group_link_opening_behavior: Link Opening Behavior
   group_video_card: Video Card
   group_performance: Frosted Glass & Performance
   group_player_settings: Player Settings
+  group_player_components: Player Components
   group_playback_behavior: Playback Behavior
+  group_auto_play: Auto Play
+  group_random_play: Random Play
   group_topbar: Top Bar
   group_navigation: Dock & Sidebar
   group_dock: Dock
@@ -580,10 +605,7 @@ settings:
         • Refresh the page for changes to take effect
         • Preserves original audio quality, only adjusts volume level
   menu_volume_normalization: Volume Normalization
-  experimental: Experimental
   group_fonts: Font
-  group_language: language
-  group_ad_blocking: AD Block
   group_visual_effects: Visual Effects
   visibility: show
 auth:
