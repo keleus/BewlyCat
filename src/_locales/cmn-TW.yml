@@ -500,6 +500,8 @@ settings:
   video_player_scroll_desc: 啟用後，在默認模式為寬屏和默認時，會自動滾動到合適位置。
   enlarge_favorite_dialog: 放大收藏彈窗
   enlarge_favorite_dialog_desc: 啟用後，影片頁收藏彈窗將以更大的尺寸顯示，方便查看和管理收藏夾。
+  external_watch_later_button: 稍後再看按鈕外置
+  external_watch_later_button_desc: 啟用後，影片頁將在工具欄顯示獨立的稍後再看按鈕，方便快速添加影片到稍後再看。
   volume_normalization:
     title: 音量均衡
     enable: 啟用音量均衡

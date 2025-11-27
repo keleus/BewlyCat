@@ -124,6 +124,7 @@ export interface Settings {
   showSex: boolean // 添加显示性别设置项
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
+  externalWatchLaterButton: boolean // 稍后再看按钮外置
 
   language: string
   customizeFont: 'default' | 'recommend' | 'custom'
@@ -307,6 +308,7 @@ export const originalSettings: Settings = {
   showSex: true, // 默认启用性别显示
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
+  externalWatchLaterButton: false, // 默认关闭稍后再看按钮外置
   language: '',
   customizeFont: 'default',
   fontFamily: '',

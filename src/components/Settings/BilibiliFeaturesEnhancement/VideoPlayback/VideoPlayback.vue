@@ -105,6 +105,13 @@ const videoDanmakuDefaultStateOptions = computed(() => {
       >
         <Radio v-model="settings.enlargeFavoriteDialog" />
       </SettingsItem>
+
+      <SettingsItem
+        :title="t('settings.external_watch_later_button')"
+        :desc="t('settings.external_watch_later_button_desc')"
+      >
+        <Radio v-model="settings.externalWatchLaterButton" />
+      </SettingsItem>
     </SettingsItemGroup>
   </div>
 </template>

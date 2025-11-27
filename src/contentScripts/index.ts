@@ -249,8 +249,10 @@ function applyDefaultPlayerMode() {
   hasAppliedPlayerMode = true // 标记已应用
   // 添加稍后再看按钮
   setTimeout(async () => {
-    const { addWatchLaterButton } = await import('~/utils/watchLaterButton')
-    addWatchLaterButton()
+    if (settings.value.externalWatchLaterButton) {
+      const { addWatchLaterButton } = await import('~/utils/watchLaterButton')
+      addWatchLaterButton()
+    }
   }, 3000)
 }
 
@@ -546,6 +548,26 @@ watch(settings, (newSettings, oldSettings) => {
       setTimeout(() => {
         applyAutoPlayByVideoType()
       }, 1000)
+    }
+  }
+
+  // 监听稍后再看按钮外置设置变化
+  if (isVideoPage() && oldSettings) {
+    if (newSettings.externalWatchLaterButton !== oldSettings.externalWatchLaterButton) {
+      if (newSettings.externalWatchLaterButton) {
+        // 启用稍后再看按钮
+        setTimeout(async () => {
+          const { addWatchLaterButton } = await import('~/utils/watchLaterButton')
+          addWatchLaterButton()
+        }, 1000)
+      }
+      else {
+        // 移除稍后再看按钮
+        const existingButton = document.querySelector('.bewly-watch-later-btn')
+        if (existingButton) {
+          existingButton.remove()
+        }
+      }
     }
   }
 }, { deep: true })
