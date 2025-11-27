@@ -240,12 +240,13 @@ export function createRandomPlayUI(): HTMLElement | null {
   // 创建随机播放按钮
   const randomPlayBtn = document.createElement('div')
   randomPlayBtn.className = 'random-play-btn'
+
   randomPlayBtn.style.cssText = `
     display: flex;
     align-items: center;
     cursor: pointer;
-    font-size: 13px;
-    color: #61666d;
+    font-size: 14px;
+    color: var(--text3);
     user-select: none;
   `
 
@@ -254,18 +255,19 @@ export function createRandomPlayUI(): HTMLElement | null {
   txtEl.className = 'txt'
   txtEl.textContent = getRandomPlayText()
   txtEl.style.cssText = `
-    margin-right: 6px;
+    margin-right: 4px;
   `
 
   // 创建开关
   const switchBtn = document.createElement('div')
   switchBtn.className = 'switch-btn'
+
   switchBtn.style.cssText = `
     position: relative;
-    width: 34px;
-    height: 18px;
-    background: #e3e5e7;
-    border-radius: 9px;
+    width: 30px;
+    height: 20px;
+    background: var(--bew-switch-bg);
+    border-radius: 10px;
     transition: background-color 0.3s;
     cursor: pointer;
   `
@@ -276,12 +278,11 @@ export function createRandomPlayUI(): HTMLElement | null {
     position: absolute;
     top: 2px;
     left: 2px;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     background: white;
     border-radius: 50%;
     transition: transform 0.3s;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
   `
 
   switchBtn.appendChild(switchBlock)
@@ -291,15 +292,18 @@ export function createRandomPlayUI(): HTMLElement | null {
 
   // 更新开关状态的函数
   function updateSwitchState(enabled: boolean) {
+    const activeColor = '#00aeec'
+
     if (enabled) {
-      switchBtn.style.backgroundColor = '#00aeec'
-      switchBlock.style.transform = 'translateX(16px)'
-      randomPlayBtn.style.color = '#00aeec'
+      switchBtn.style.backgroundColor = activeColor
+      // 30px宽度 - 2px左边距 - 2px右边距 - 16px滑块宽度 = 10px移动距离
+      switchBlock.style.transform = 'translateX(10px)'
+      randomPlayBtn.style.color = activeColor
     }
     else {
-      switchBtn.style.backgroundColor = '#e3e5e7'
+      switchBtn.style.backgroundColor = 'var(--bew-switch-bg)'
       switchBlock.style.transform = 'translateX(0)'
-      randomPlayBtn.style.color = '#61666d'
+      randomPlayBtn.style.color = 'var(--text3)'
     }
   }
 

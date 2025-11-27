@@ -194,6 +194,13 @@
   // #endregion
 
   --bew-border-color: rgb(131 131 145 / 18%);
+
+  // 开关背景色
+  --bew-switch-bg: rgb(227, 229, 231);
+
+  // IP标签背景色
+  --bew-ip-tag-bg: #f1f2f3;
+  --bew-ip-tag-text: #61666d;
 }
 
 :host(.dark),
@@ -270,6 +277,13 @@
   --bew-fill-alt: var(--bew-fill-1);
 
   --bew-border-color: rgb(131 131 145 / 16%);
+
+  // 开关背景色 - 暗色模式
+  --bew-switch-bg: oklab(0.419682 -0.00131126 -0.00814272);
+
+  // IP标签背景色 - 暗色模式
+  --bew-ip-tag-bg: var(--bew-fill-1);
+  --bew-ip-tag-text: var(--bew-text-3);
 }
 
 :root.dark.bewly-design.forceDark,
