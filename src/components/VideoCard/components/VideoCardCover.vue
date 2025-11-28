@@ -399,14 +399,14 @@ onBeforeUnmount(() => {
       <!-- Modern layout: Cover stats (bottom overlay) -->
       <div
         v-if="layout === 'modern' && hasCoverStats"
-        class="video-card-cover-stats"
+        class="video-card-cover-stats video-card-stats"
         :class="{ 'video-card-cover-stats--hidden': shouldHideCoverStats }"
         :style="coverStatsStyle"
       >
         <div class="video-card-cover-stats__items">
           <span
             v-if="coverStatsVisibility?.view"
-            class="video-card-cover-stats__item"
+            class="video-card-cover-stats__item cover-stat-view"
           >
             <Icon icon="mingcute:play-circle-line" class="video-card-cover-stats__icon" aria-hidden="true" />
             <span class="video-card-cover-stats__value">{{ coverStatValues?.view }}</span>
@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
 
           <span
             v-if="coverStatsVisibility?.danmaku"
-            class="video-card-cover-stats__item"
+            class="video-card-cover-stats__item cover-stat-danmaku"
           >
             <Icon icon="mingcute:danmaku-line" class="video-card-cover-stats__icon" aria-hidden="true" />
             <span class="video-card-cover-stats__value">{{ coverStatValues?.danmaku }}</span>
@@ -422,7 +422,7 @@ onBeforeUnmount(() => {
 
           <span
             v-if="coverStatsVisibility?.like"
-            class="video-card-cover-stats__item"
+            class="video-card-cover-stats__item cover-stat-like"
           >
             <Icon icon="mingcute:thumb-up-2-line" class="video-card-cover-stats__icon" aria-hidden="true" />
             <span class="video-card-cover-stats__value">{{ coverStatValues?.like }}</span>

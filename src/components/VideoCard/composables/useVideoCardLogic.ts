@@ -49,8 +49,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const contentVisibility = ref<'auto' | 'visible'>('auto')
   const videoElement = ref<HTMLVideoElement | null>(null)
   const cardRootRef = ref<HTMLElement | null>(null)
-  const cardWidth = ref<number>(0)
-  let cardResizeObserver: ResizeObserver | null = null
 
   // Computed
   const videoUrl = computed(() => {
@@ -106,32 +104,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     && previewVideoUrl.value
     && topBarStore.isLogin,
   )
-
-  // Lifecycle
-  onMounted(() => {
-    const el = cardRootRef.value
-    if (!el)
-      return
-    const initialRect = el.getBoundingClientRect()
-    if (initialRect.width) {
-      const width = Math.round(initialRect.width)
-      cardWidth.value = width
-      el.style.setProperty('--bew-card-width', `${width}px`)
-    }
-    cardResizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const width = entry.contentRect.width
-        el.style.setProperty('--bew-card-width', `${Math.round(width)}px`)
-        cardWidth.value = Math.round(width)
-      }
-    })
-    cardResizeObserver.observe(el)
-  })
-
-  onBeforeUnmount(() => {
-    cardResizeObserver?.disconnect()
-    cardResizeObserver = null
-  })
 
   // Watch
   watch(() => isHover.value, async (newValue) => {
@@ -364,7 +336,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     contentVisibility,
     videoElement,
     cardRootRef,
-    cardWidth,
 
     // Computed
     videoUrl,

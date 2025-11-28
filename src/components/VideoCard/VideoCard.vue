@@ -159,7 +159,6 @@ const coverStatValues = computed(() => {
 
 const coverStatsVisibility = computed(() => {
   const { view, danmaku, like, duration } = coverStatValues.value
-  const width = logic.cardWidth.value
 
   // 无用户信息模式下，只显示播放量和时长
   if (props.hideAuthor) {
@@ -171,18 +170,11 @@ const coverStatsVisibility = computed(() => {
     }
   }
 
-  let showDanmaku = Boolean(danmaku)
-  let showLike = Boolean(like)
-
-  if (width && width < 240)
-    showLike = false
-  if (width && width < 210)
-    showDanmaku = false
-
+  // 移除宽度判断，改用 CSS 容器查询控制显示
   return {
     view: Boolean(view),
-    danmaku: showDanmaku,
-    like: showLike,
+    danmaku: Boolean(danmaku),
+    like: Boolean(like),
     duration: Boolean(duration),
   }
 })
@@ -210,28 +202,6 @@ const shouldHideCoverStats = computed(() =>
   && logic.shouldHideOverlayElements.value,
 )
 
-const COVER_STATS_BASE_FONT_REM = 0.75
-const COVER_STATS_MIN_FONT_REM = 0.68
-const COVER_STATS_MAX_FONT_REM = 0.82
-const COVER_STATS_MIN_OVERLAY_SCALE = 1.25
-const COVER_STATS_MAX_OVERLAY_SCALE = 1.6
-const COVER_STATS_MIN_WIDTH = 180
-const COVER_STATS_MAX_WIDTH = 360
-
-function clampWidth(value: number) {
-  return Math.min(Math.max(value, COVER_STATS_MIN_WIDTH), COVER_STATS_MAX_WIDTH)
-}
-
-function interpolate(start: number, end: number, factor: number) {
-  const clampedFactor = Math.min(Math.max(factor, 0), 1)
-  return start + (end - start) * clampedFactor
-}
-
-function roundToDecimals(value: number, decimals = 3) {
-  const multiplier = 10 ** decimals
-  return Math.round(value * multiplier) / multiplier
-}
-
 const primaryTags = computed(() => {
   const video = decodedVideo.value
   if (!video)
@@ -244,30 +214,13 @@ const primaryTags = computed(() => {
   return [tag]
 })
 
+// 使用 CSS 变量定义，让浏览器通过 CSS 容器查询自动响应
 const coverStatsStyle = computed(() => {
   if (layout.value !== 'modern')
     return {}
 
-  const width = logic.cardWidth.value
-  if (!width) {
-    return {
-      '--video-card-stats-font-size': `${COVER_STATS_BASE_FONT_REM}rem`,
-      '--video-card-stats-overlay-scale': COVER_STATS_MIN_OVERLAY_SCALE.toString(),
-      '--video-card-stats-icon-size': `${roundToDecimals(COVER_STATS_BASE_FONT_REM * 1.1)}rem`,
-    }
-  }
-
-  const clampedWidth = clampWidth(width)
-  const interpolation = (clampedWidth - COVER_STATS_MIN_WIDTH) / (COVER_STATS_MAX_WIDTH - COVER_STATS_MIN_WIDTH)
-  const fontSizeRem = interpolate(COVER_STATS_MIN_FONT_REM, COVER_STATS_MAX_FONT_REM, interpolation)
-  const overlayScale = interpolate(COVER_STATS_MIN_OVERLAY_SCALE, COVER_STATS_MAX_OVERLAY_SCALE, interpolation)
-  const iconSizeRem = roundToDecimals(fontSizeRem * 1.1)
-
-  return {
-    '--video-card-stats-font-size': `${roundToDecimals(fontSizeRem)}rem`,
-    '--video-card-stats-overlay-scale': roundToDecimals(overlayScale).toString(),
-    '--video-card-stats-icon-size': `${iconSizeRem}rem`,
-  }
+  // 所有响应式样式都通过 CSS 容器查询处理，这里只设置基础值
+  return {}
 })
 
 // Title and text sizing
@@ -417,6 +370,7 @@ provide('getVideoType', () => props.type!)
   <div
     :ref="(el) => logic.cardRootRef.value = el as HTMLElement"
     :style="{ contentVisibility: logic.contentVisibility.value }"
+    class="video-card-container"
     duration-300 ease-in-out
     rounded="$bew-radius"
     :ring="skeleton ? '' : 'hover:8 hover:$bew-fill-2 active:8 active:$bew-fill-3'"
@@ -516,6 +470,16 @@ provide('getVideoType', () => props.type!)
 </template>
 
 <style lang="scss" scoped>
+/* 启用容器查询 */
+.video-card-container {
+  container-type: inline-size;
+  container-name: videocard;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 300px;
+  /* 性能优化：限制布局和样式重算范围 */
+  contain: layout style;
+}
+
 .horizontal-card-cover {
   --uno: "w-full max-w-400px aspect-video";
 }
@@ -525,13 +489,54 @@ provide('getVideoType', () => props.type!)
 }
 
 .bew-title-auto {
-  /* Auto scale by actual card width (fallback to base grid width)
-     Increase responsiveness and use unitless line-height for better small-size rendering */
-  font-size: clamp(12px, calc((var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 20px), 30px);
-  line-height: clamp(1.15, calc(1.1 + (var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 0.2), 1.5);
+  /* 使用容器查询单位 cqw 替代 JS 计算 */
+  font-size: clamp(12px, 7cqw, 30px);
+  line-height: clamp(1.15, 1.35, 1.5);
 }
 
 .video-card-title {
   min-height: calc(var(--bew-title-line-height, 1.35) * 2em);
+}
+
+/* 使用容器查询控制统计信息的显示/隐藏和样式 */
+@container videocard (max-width: 210px) {
+  :deep(.cover-stat-danmaku) {
+    display: none !important;
+  }
+  :deep(.cover-stat-like) {
+    display: none !important;
+  }
+  :deep(.video-card-stats) {
+    --video-card-stats-font-size: 0.68rem;
+    --video-card-stats-overlay-scale: 1.25;
+    --video-card-stats-icon-size: 0.748rem;
+  }
+}
+
+@container videocard (min-width: 211px) and (max-width: 239px) {
+  :deep(.cover-stat-like) {
+    display: none !important;
+  }
+  :deep(.video-card-stats) {
+    --video-card-stats-font-size: 0.7rem;
+    --video-card-stats-overlay-scale: 1.3;
+    --video-card-stats-icon-size: 0.77rem;
+  }
+}
+
+@container videocard (min-width: 240px) and (max-width: 299px) {
+  :deep(.video-card-stats) {
+    --video-card-stats-font-size: 0.73rem;
+    --video-card-stats-overlay-scale: 1.4;
+    --video-card-stats-icon-size: 0.803rem;
+  }
+}
+
+@container videocard (min-width: 300px) {
+  :deep(.video-card-stats) {
+    --video-card-stats-font-size: 0.82rem;
+    --video-card-stats-overlay-scale: 1.6;
+    --video-card-stats-icon-size: 0.902rem;
+  }
 }
 </style>
