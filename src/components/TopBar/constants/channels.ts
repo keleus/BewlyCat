@@ -59,6 +59,14 @@ export const otherChannelConfigs: TopBarChannelConfig[] = [
   { key: 'game_competitions', nameKey: 'topbar.logo_dropdown.game_competitions', icon: 'i-mingcute:sword-fill', href: 'https://www.bilibili.com/match/home', color: '#C8D3DF' },
 ]
 
+export const homeChannelConfig: TopBarChannelConfig = {
+  key: 'home',
+  nameKey: 'dock.home',
+  icon: 'i-mingcute:home-3-fill',
+  href: 'https://www.bilibili.com',
+  color: '#00A1D6',
+}
+
 export const allChannelConfigs: TopBarChannelConfig[] = [
   ...genreChannelConfigs,
   ...otherChannelConfigs,
