@@ -102,13 +102,9 @@ const channels = setupTopBarItemHoverEvent('channels')
           w="24px" h="24px"
           :style="{
             color: forceWhiteIcon ? 'white' : 'var(--bew-theme-color)',
-            filter: settings.enableLogoGlowingEffect
-              ? forceWhiteIcon
-                ? 'drop-shadow(0 0 4px rgba(0, 0, 0, 0.6))'
-                : 'drop-shadow(0 0 2px var(--bew-theme-color-20)) drop-shadow(0 0 8px var(--bew-theme-color-60)) drop-shadow(0 0 34px var(--bew-theme-color-80))'
-              : forceWhiteIcon
-                ? 'drop-shadow(0 0 4px rgba(0, 0, 0, 0.6))'
-                : 'drop-shadow(0 0 4px var(--bew-theme-color-60))',
+            filter: forceWhiteIcon
+              ? 'drop-shadow(0 0 4px rgba(0, 0, 0, 0.6))'
+              : 'drop-shadow(0 0 4px var(--bew-theme-color-60))',
           }"
         />
       </a>
