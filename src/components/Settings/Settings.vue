@@ -19,7 +19,6 @@ const settingsMenu = {
   [MenuType.Shortcuts]: defineAsyncComponent(() => import('./Shortcuts/Shortcuts.vue')),
   [MenuType.Compatibility]: defineAsyncComponent(() => import('./Compatibility/Compatibility.vue')),
   [MenuType.About]: defineAsyncComponent(() => import('./About/About.vue')),
-  [MenuType.Changelog]: defineAsyncComponent(() => import('./Changelog/Changelog.vue')),
 }
 const activatedMenuItem = ref<MenuType>(MenuType.PluginComponentsAndPages)
 const title = ref<string>(t('settings.title'))
@@ -84,12 +83,6 @@ const settingsMenuItems = computed((): MenuItem[] => {
       icon: 'i-mingcute:information-line',
       iconActivated: 'i-mingcute:information-fill',
       title: t('settings.menu_about'),
-    },
-    {
-      value: MenuType.Changelog,
-      icon: 'i-mingcute:time-line',
-      iconActivated: 'i-mingcute:time-fill',
-      title: t('settings.menu_changelog'),
     },
   ]
 })

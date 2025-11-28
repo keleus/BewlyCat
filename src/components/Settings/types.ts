@@ -5,7 +5,6 @@ export enum MenuType {
   Shortcuts = 'Shortcuts',
   Compatibility = 'Compatibility',
   About = 'About',
-  Changelog = 'Changelog',
 }
 
 export enum PluginPage {
