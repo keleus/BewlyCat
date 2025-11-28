@@ -576,6 +576,8 @@ function convertUserSamples(source: any, limit = 6): any[] {
       duration,
       durationStr,
       play,
+      aid: item.aid,
+      bvid: item.bvid,
     })
     if (samples.length >= limit)
       break

@@ -661,7 +661,7 @@ const { t } = useI18n()
                     <VideoCard
                       v-if="sample"
                       :video="{
-                        id: sample.id,
+                        id: sample.aid || 0,
                         title: sample.title,
                         cover: sample.cover,
                         author: {
@@ -674,7 +674,8 @@ const { t } = useI18n()
                         view: sample.play,
                         danmaku: 0,
                         publishedTimestamp: 0,
-                        bvid: '',
+                        aid: sample.aid,
+                        bvid: sample.bvid,
                         url: sample.url,
                         capsuleText: sample.badge,
                       }"
