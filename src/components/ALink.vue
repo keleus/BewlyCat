@@ -69,6 +69,12 @@ function handleClick(event: MouseEvent) {
     return
   }
 
+  // 在触屏模式下，topBar 类型的链接不执行打开操作，只显示弹窗
+  if (props.type === 'topBar' && settings.value.touchScreenOptimization) {
+    event.preventDefault()
+    return
+  }
+
   if (openMode.value === 'drawer') {
     event.preventDefault()
     if (props.href) {
