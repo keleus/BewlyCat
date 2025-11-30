@@ -142,6 +142,7 @@ export function isSupportedIframePages(): boolean {
 let beforeLoadedStyleEl: HTMLStyleElement | undefined
 let lastUrl = location.href
 let hasAppliedPlayerMode = false // 添加标志变量
+let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
 if (isSupportedPages() || isSupportedIframePages()) {
   // Always use dark mode if enabled, but let useDark() handle selective application
@@ -247,13 +248,29 @@ function applyDefaultPlayerMode() {
     startAutoExitFullscreenMonitoring()
   }, 2000)
   hasAppliedPlayerMode = true // 标记已应用
-  // 添加稍后再看按钮
-  setTimeout(async () => {
-    if (settings.value.externalWatchLaterButton) {
-      const { addWatchLaterButton } = await import('~/utils/watchLaterButton')
-      addWatchLaterButton()
+
+  // 延迟添加稍后再看按钮
+  scheduleAddWatchLaterButton()
+}
+
+// 延迟添加稍后再看按钮
+function scheduleAddWatchLaterButton() {
+  // 如果已经添加过或者设置未启用，直接返回
+  if (watchLaterButtonAdded || !settings.value.externalWatchLaterButton) {
+    return
+  }
+
+  // 等待播放器模式调整和滚动完成
+  // RetryTask最多20次*500ms=10s，滚动最多3s，再加1s保险 = 14s
+  // 实际上大部分情况会更快完成，这里取一个保守值
+  setTimeout(() => {
+    if (!watchLaterButtonAdded && settings.value.externalWatchLaterButton) {
+      import('~/utils/watchLaterButton').then(({ addWatchLaterButton }) => {
+        addWatchLaterButton()
+        watchLaterButtonAdded = true
+      }).catch(err => console.error('添加稍后再看按钮失败:', err))
     }
-  }, 3000)
+  }, 5000) // 5秒后添加，确保页面已完全稳定
 }
 
 // 初始化随机播放功能
@@ -268,6 +285,7 @@ function checkForUrlChanges() {
   if (location.href !== lastUrl) {
     lastUrl = location.href
     hasAppliedPlayerMode = false // URL变化时重置标志
+    watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
 
     // 重置随机播放初始化状态，避免重复加载
     resetRandomPlayInitialization()
@@ -556,16 +574,15 @@ watch(settings, (newSettings, oldSettings) => {
     if (newSettings.externalWatchLaterButton !== oldSettings.externalWatchLaterButton) {
       if (newSettings.externalWatchLaterButton) {
         // 启用稍后再看按钮
-        setTimeout(async () => {
-          const { addWatchLaterButton } = await import('~/utils/watchLaterButton')
-          addWatchLaterButton()
-        }, 1000)
+        watchLaterButtonAdded = false // 重置标志
+        scheduleAddWatchLaterButton()
       }
       else {
         // 移除稍后再看按钮
         const existingButton = document.querySelector('.bewly-watch-later-btn')
         if (existingButton) {
           existingButton.remove()
+          watchLaterButtonAdded = false
         }
       }
     }

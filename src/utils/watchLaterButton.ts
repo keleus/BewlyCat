@@ -27,7 +27,7 @@ export function extractVideoIds(url: string = location.href): { bvid?: string, a
 /**
  * 添加稍后再看按钮到视频页面
  */
-export async function addWatchLaterButton() {
+export function addWatchLaterButton() {
   // 检查是否已经添加过按钮
   if (document.querySelector('.bewly-watch-later-btn')) {
     return
