@@ -335,6 +335,21 @@ async function getFollowedUsersVideos() {
             }
             return
           }
+          else if (currentBvid) {
+            // 检查是否已存在相同 bvid 的视频（跨请求的联合投稿）
+            const existingVideo = videoList.value.find(v => v.bvid === currentBvid)
+            if (existingVideo) {
+              // 找到已存在的视频，添加作者到作者列表
+              if (!existingVideo.authorList?.some(existingAuthor => existingAuthor.mid === author.mid)) {
+                existingVideo.authorList?.push(author)
+              }
+              return
+            }
+            else {
+              // UP主个人投稿视频或新的联合投稿视频
+              videoList.value[lastVideoListLength++] = currentVideo
+            }
+          }
           else {
             // UP主个人投稿视频
             videoList.value[lastVideoListLength++] = currentVideo
@@ -423,6 +438,9 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
     ? (authors.length === 1 ? authors[0] : authors)
     : undefined
 
+  // 判断是否为联合投稿（有多个作者）
+  const isCollaboration = authors && authors.length > 1
+
   const badge = archive.badge?.text && archive.badge.text !== '投稿视频'
     ? {
         bgColor: archive.badge.bg_color,
@@ -451,6 +469,7 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
     publishedTimestamp: item.modules?.module_author?.pub_ts,
     bvid: archive.bvid,
     badge,
+    tag: isCollaboration ? '联合投稿' : undefined,
     threePointV2: [],
   }
 }
