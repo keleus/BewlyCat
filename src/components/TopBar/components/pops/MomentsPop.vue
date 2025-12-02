@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import Tooltip from '~/components/Tooltip.vue'
+import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getCSRF, scrollToTop } from '~/utils/main'
@@ -20,15 +21,14 @@ const momentTabs = computed((): MomentTab[] => {
   return [
     {
       type: 'video',
-      name: t('topbar.moments_dropdown.tabs.videos'),
+      // 如果开启了过滤专栏，显示"视频"，否则显示"全部"
+      name: settings.value.filterArticlesInMoments
+        ? t('topbar.moments_dropdown.tabs.videos')
+        : t('topbar.moments_dropdown.tabs.all'),
     },
     {
       type: 'live',
       name: t('topbar.moments_dropdown.tabs.live'),
-    },
-    {
-      type: 'article',
-      name: t('topbar.moments_dropdown.tabs.articles'),
     },
   ]
 },
@@ -232,7 +232,23 @@ defineExpose({
               <!-- <span v-if="selectedTab !== 1">{{ `${moment.name} ${t('topbar.moments_dropdown.uploaded')}` }}</span> -->
               <!-- <span v-else>{{ `${moment.name} ${t('topbar.moments_dropdown.now_streaming')}` }}</span> -->
 
+              <!-- 联合投稿显示多个作者 -->
+              <div v-if="moment.isCollaborative && moment.authors" flex="~ wrap" items="center" gap="1">
+                <template v-for="(author, idx) in moment.authors" :key="author.jump_url">
+                  <ALink
+                    :href="author.jump_url"
+                    type="topBar"
+                    :stop-propagation="true"
+                    font-bold
+                  >
+                    {{ author.name }}
+                  </ALink>
+                  <span v-if="idx < moment.authors.length - 1" text="$bew-text-2">/</span>
+                </template>
+              </div>
+              <!-- 单个作者 -->
               <ALink
+                v-else
                 :href="moment.authorJumpUrl"
                 type="topBar"
                 :stop-propagation="true"

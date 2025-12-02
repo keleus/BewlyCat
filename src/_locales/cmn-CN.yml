@@ -623,6 +623,7 @@ topbar:
   moments_dropdown:
     tabs:
       videos: 视频
+      all: 全部
       live: 直播
       articles: 专栏
     uploaded: 上传了：

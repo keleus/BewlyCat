@@ -697,6 +697,7 @@ topbar:
   moments_dropdown:
     tabs:
       videos: Videos
+      all: All
       live: Live
       articles: Articles
     uploaded: 'uploaded: '

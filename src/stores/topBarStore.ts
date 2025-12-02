@@ -444,17 +444,57 @@ export const useTopBarStore = defineStore('topBar', () => {
 
           // 添加新内容
           if (items?.length) {
+            // 根据 selectedType 和设置过滤数据
+            // type: 8 是视频，type: 64 是专栏
+            let filteredItems = items
+
+            // 如果是视频类型，根据设置决定是否过滤专栏
+            if (selectedType === 'video') {
+              if (settings.value.filterArticlesInMoments) {
+                // 开启过滤专栏：只保留视频（type: 8）
+                filteredItems = items.filter((item: any) => item.type === 8)
+              }
+              else {
+                // 关闭过滤专栏：保留视频和专栏（type: 8 或 64）
+                filteredItems = items.filter((item: any) => item.type === 8 || item.type === 64)
+              }
+            }
+
+            // 合并联合投稿视频 - 只对视频类型进行合并
+            let processedItems = filteredItems
+            if (selectedType === 'video') {
+              // 只合并视频，不合并专栏
+              const videos = filteredItems.filter((item: any) => item.type === 8)
+              const articles = filteredItems.filter((item: any) => item.type === 64)
+              const mergedVideos = mergeCollaborativeVideos(videos)
+              // 将合并后的视频和专栏合并到一起
+              processedItems = [...mergedVideos, ...articles]
+            }
+
+            // 如果是第一次加载（offset为空），需要根据过滤和合并后的实际数量调整 newMomentsCount
+            // 因为过滤专栏和合并联合投稿会导致显示的条目数量少于原始的 update_num
+            if (!momentOffset.value && selectedType === 'video') {
+              // 计算过滤前有多少新内容
+              const originalNewCount = newMomentsCount.value
+              // 计算过滤和合并后的实际条目数
+              const actualNewCount = Math.min(originalNewCount, processedItems.length)
+              // 更新为实际的新内容数量
+              newMomentsCount.value = actualNewCount
+            }
+
             moments.push(
-              ...items.map((item: any) => ({
+              ...processedItems.map((item: any) => ({
                 type: selectedType,
                 title: item.title,
-                author: item.author.name,
+                author: item.authors ? item.authors.map((a: any) => a.name).join(' / ') : item.author.name,
                 authorFace: item.author.face,
                 authorJumpUrl: item.author.jump_url,
                 pubTime: item.pub_time,
                 cover: item.cover,
                 link: item.jump_url,
                 rid: item.rid,
+                isCollaborative: !!item.authors,
+                authors: item.authors,
               })),
             )
           }
@@ -462,6 +502,49 @@ export const useTopBarStore = defineStore('topBar', () => {
       })
       .catch(error => console.error(error))
       .finally(() => isLoadingMoments.value = false)
+  }
+
+  // 合并联合投稿视频的辅助函数
+  function mergeCollaborativeVideos(items: any[]) {
+    const videoMap = new Map<string, any>()
+
+    items.forEach((item: any) => {
+      // 从 jump_url 中提取视频 ID (BV号)
+      const bvMatch = item.jump_url?.match(/\/(BV\w+)/)
+      if (!bvMatch)
+        return
+
+      const bvid = bvMatch[1]
+
+      if (videoMap.has(bvid)) {
+        // 如果已存在该视频，合并作者信息
+        const existing = videoMap.get(bvid)
+        if (!existing.authors) {
+          // 第一次发现是联合投稿，初始化 authors 数组
+          existing.authors = [
+            { name: existing.author.name, face: existing.author.face, jump_url: existing.author.jump_url },
+            { name: item.author.name, face: item.author.face, jump_url: item.author.jump_url },
+          ]
+        }
+        else {
+          // 已经是联合投稿，添加新作者（避免重复）
+          const authorExists = existing.authors.some((a: any) => a.jump_url === item.author.jump_url)
+          if (!authorExists) {
+            existing.authors.push({
+              name: item.author.name,
+              face: item.author.face,
+              jump_url: item.author.jump_url,
+            })
+          }
+        }
+      }
+      else {
+        // 首次遇到该视频，添加到 map
+        videoMap.set(bvid, { ...item })
+      }
+    })
+
+    return Array.from(videoMap.values())
   }
 
   function getTopBarLiveMoments() {

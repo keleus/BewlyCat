@@ -422,6 +422,15 @@ function toggleChannel(value: string) {
                   :disabled="!getElementConfig(selectedElement)?.visible"
                 />
               </SettingsItem>
+
+              <!-- 动态特殊设置 -->
+              <SettingsItem
+                v-if="selectedElement === 'moments'"
+                title="过滤专栏"
+                desc="在动态列表中过滤掉专栏内容，仅显示视频"
+              >
+                <Radio v-model="settings.filterArticlesInMoments" />
+              </SettingsItem>
             </div>
 
             <!-- 头像配置 -->

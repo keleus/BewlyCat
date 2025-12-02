@@ -638,6 +638,7 @@ topbar:
   moments_dropdown:
     tabs:
       videos: 影片
+      all: 全部
       live: 直播
       articles: 文章
     uploaded: 上傳了：
