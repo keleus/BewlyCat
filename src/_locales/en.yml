@@ -733,6 +733,10 @@ video_card:
     copy_av_number: Copy AV Number
     view_the_original_cover: View the Original Cover
     block_user: Block User
+  block_user_confirm:
+    title: Confirm Block User
+    message: Are you sure you want to block {name}?
+    warning: After blocking, you will not be able to see any content published by this user.
   group_contribution: '{firstAuthor} and {num} others contributed'
   video_removed: Video removed
 home:

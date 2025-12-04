@@ -674,6 +674,10 @@ video_card:
     copy_av_number: 複製 AV 號
     view_the_original_cover: 檢視封面
     block_user: 拉黑用戶
+  block_user_confirm:
+    title: 確認拉黑用戶
+    message: 確定要拉黑 {name} 嗎？
+    warning: 拉黑後，你將無法看到該用戶發佈的所有內容。
   group_contribution: '{firstAuthor} 等 {num} 人共同創作'
   video_removed: 影片已移除
 home:

@@ -610,6 +610,10 @@ video_card:
     copy_av_number: 複製 AV 號
     view_the_original_cover: 睇吓封面
     block_user: 拉黑用戶
+  block_user_confirm:
+    title: 確認拉黑用戶
+    message: 確定要拉黑 {name} 嗎？
+    warning: 拉黑咗之後，你就睇唔到該用戶發佈嘅所有內容。
   group_contribution: '{firstAuthor} 等 {num} 人一齊創作'
   video_removed: 經已鏟咗條片
 home:

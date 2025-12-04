@@ -9,6 +9,7 @@ import { getCSRF, openLinkToNewTab } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { Video } from '../types'
+import BlockUserConfirmDialog from './components/BlockUserConfirmDialog.vue'
 import DislikeDialog from './components/DislikeDialog.vue'
 
 const props = defineProps<{
@@ -65,6 +66,7 @@ const videoOptions = reactive<{ id: number, name: string }[]>([
 const { t } = useI18n()
 const showContextMenu = ref<boolean>(false)
 const showDislikeDialog = ref<boolean>(false)
+const showBlockUserDialog = ref<boolean>(false)
 const showPipWindow = ref<boolean>(false)
 const { openIframeDrawer } = useBewlyApp()
 
@@ -208,13 +210,18 @@ function handleCommonCommand(command: VideoOption) {
       break
 
     case VideoOption.BlockUser:
-      blockUser()
+      openBlockUserConfirmDialog()
       break
   }
 }
 
 function openAppDislikeDialog() {
   showDislikeDialog.value = true
+  showContextMenu.value = false
+}
+
+function openBlockUserConfirmDialog() {
+  showBlockUserDialog.value = true
   showContextMenu.value = false
 }
 
@@ -369,6 +376,13 @@ async function blockUser() {
       :video="video"
       @close="handleClose"
       @removed="handleRemoved"
+    />
+
+    <BlockUserConfirmDialog
+      v-model="showBlockUserDialog"
+      :video="video"
+      @close="handleClose"
+      @confirm="blockUser"
     />
 
     <PipWindow
