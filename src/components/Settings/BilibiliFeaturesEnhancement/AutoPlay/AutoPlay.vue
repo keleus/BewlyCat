@@ -2,14 +2,21 @@
 import { useI18n } from 'vue-i18n'
 
 import Input from '~/components/Input.vue'
-import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
+import type { AutoPlayMode } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 
 const { t } = useI18n()
+
+// 自动播放模式选项
+const autoPlayModes: { label: string, value: AutoPlayMode }[] = [
+  { label: 'auto_play_mode_auto_play', value: 'autoPlay' },
+  { label: 'auto_play_mode_pause_at_end', value: 'pauseAtEnd' },
+  { label: 'auto_play_mode_loop', value: 'loop' },
+]
 
 // 随机播放模式选项
 const randomPlayModeOptions = computed(() => {
@@ -36,33 +43,47 @@ const randomPlayModeOptions = computed(() => {
         <Radio v-model="settings.useBilibiliDefaultAutoPlay" />
       </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.auto_play_multipart')"
-        :desc="t('settings.auto_play_multipart_desc')"
-      >
-        <Radio v-model="settings.autoPlayMultipart" :disabled="settings.useBilibiliDefaultAutoPlay" />
-      </SettingsItem>
+      <template v-if="!settings.useBilibiliDefaultAutoPlay">
+        <SettingsItem
+          :title="t('settings.auto_play_multipart')"
+          :desc="t('settings.auto_play_multipart_desc')"
+        >
+          <Select
+            v-model="settings.autoPlayMultipart"
+            :options="autoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+          />
+        </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.auto_play_collection')"
-        :desc="t('settings.auto_play_collection_desc')"
-      >
-        <Radio v-model="settings.autoPlayCollection" :disabled="settings.useBilibiliDefaultAutoPlay" />
-      </SettingsItem>
+        <SettingsItem
+          :title="t('settings.auto_play_collection')"
+          :desc="t('settings.auto_play_collection_desc')"
+        >
+          <Select
+            v-model="settings.autoPlayCollection"
+            :options="autoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+          />
+        </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.auto_play_recommend')"
-        :desc="t('settings.auto_play_recommend_desc')"
-      >
-        <Radio v-model="settings.autoPlayRecommend" :disabled="settings.useBilibiliDefaultAutoPlay" />
-      </SettingsItem>
+        <SettingsItem
+          :title="t('settings.auto_play_recommend')"
+          :desc="t('settings.auto_play_recommend_desc')"
+        >
+          <Select
+            v-model="settings.autoPlayRecommend"
+            :options="autoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+          />
+        </SettingsItem>
 
-      <SettingsItem
-        :title="t('settings.auto_play_playlist')"
-        :desc="t('settings.auto_play_playlist_desc')"
-      >
-        <Radio v-model="settings.autoPlayPlaylist" :disabled="settings.useBilibiliDefaultAutoPlay" />
-      </SettingsItem>
+        <SettingsItem
+          :title="t('settings.auto_play_playlist')"
+          :desc="t('settings.auto_play_playlist_desc')"
+        >
+          <Select
+            v-model="settings.autoPlayPlaylist"
+            :options="autoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+          />
+        </SettingsItem>
+      </template>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="t('settings.group_random_play')">

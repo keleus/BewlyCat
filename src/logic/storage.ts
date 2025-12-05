@@ -105,6 +105,7 @@ export interface ShortcutsSettings {
 
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
+export type AutoPlayMode = 'default' | 'autoPlay' | 'pauseAtEnd' | 'loop'
 
 export interface ShadowCurvePoint {
   position: number
@@ -273,12 +274,14 @@ export interface Settings {
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
   autoExitFullscreenExcludeAutoPlay: boolean // 全屏自动退出时排除自动连播
 
+  // 自动连播总开关
+  useBilibiliDefaultAutoPlay: boolean // 使用B站默认自动播放行为（总开关）
+
   // 分类型自动连播设置
-  useBilibiliDefaultAutoPlay: boolean // 使用B站默认自动播放行为
-  autoPlayMultipart: boolean // 分P视频自动连播
-  autoPlayCollection: boolean // 合集视频自动连播
-  autoPlayRecommend: boolean // 单视频推荐自动连播
-  autoPlayPlaylist: boolean // 收藏列表自动连播
+  autoPlayMultipart: AutoPlayMode // 分P视频自动播放模式
+  autoPlayCollection: AutoPlayMode // 合集视频自动播放模式
+  autoPlayRecommend: AutoPlayMode // 单视频推荐自动播放模式
+  autoPlayPlaylist: AutoPlayMode // 收藏列表自动播放模式
 
   keyboard: boolean
   shortcuts: ShortcutsSettings
@@ -464,12 +467,14 @@ export const originalSettings: Settings = {
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
   autoExitFullscreenExcludeAutoPlay: false, // 全屏自动退出时排除自动连播，默认关闭
 
-  // 分类型自动连播设置
-  useBilibiliDefaultAutoPlay: true, // 使用B站默认自动播放行为，默认开启
-  autoPlayMultipart: false, // 分P视频自动连播，默认关闭
-  autoPlayCollection: false, // 合集视频自动连播，默认关闭
-  autoPlayRecommend: false, // 单视频推荐自动连播，默认关闭
-  autoPlayPlaylist: false, // 收藏列表自动连播，默认关闭
+  // 自动连播总开关
+  useBilibiliDefaultAutoPlay: true, // 使用B站默认自动播放行为（总开关），默认开启
+
+  // 分类型自动连播设置（总开关关闭时生效）
+  autoPlayMultipart: 'autoPlay', // 分P视频自动播放模式，默认自动连播
+  autoPlayCollection: 'autoPlay', // 合集视频自动播放模式，默认自动连播
+  autoPlayRecommend: 'autoPlay', // 单视频推荐自动播放模式，默认自动连播
+  autoPlayPlaylist: 'autoPlay', // 收藏列表自动播放模式，默认自动连播
 
   keyboard: true, // 总快捷键开关，默认为 true
   videoPlayerScroll: true, // 默认开启视频播放器滚动
@@ -540,6 +545,27 @@ watch(
 
     if (record.frostedGlassBlurIntensity > FROSTED_GLASS_BLUR_MAX_PX)
       record.frostedGlassBlurIntensity = FROSTED_GLASS_BLUR_MAX_PX
+
+    // 迁移旧的布尔类型自动播放设置到新的 AutoPlayMode 类型
+    const autoPlayFields = ['autoPlayMultipart', 'autoPlayCollection', 'autoPlayRecommend', 'autoPlayPlaylist'] as const
+
+    // 检查是否存在旧的布尔设置需要迁移
+    const needsMigration = autoPlayFields.some(field => typeof record[field] === 'boolean')
+
+    if (needsMigration) {
+      for (const field of autoPlayFields) {
+        // 只对布尔类型进行迁移，其他类型（包括 'default'）保持不变
+        if (typeof record[field] === 'boolean') {
+          // true -> 'autoPlay', false -> 'pauseAtEnd'
+          record[field] = record[field] ? 'autoPlay' : 'pauseAtEnd'
+        }
+      }
+    }
+
+    // 确保 useBilibiliDefaultAutoPlay 存在（新用户或旧版本升级）
+    if (!('useBilibiliDefaultAutoPlay' in record)) {
+      record.useBilibiliDefaultAutoPlay = true
+    }
   },
   { immediate: true },
 )

@@ -376,14 +376,18 @@ settings:
   auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，自動連播下播完唔會自動退出全螢幕，方便連續睇
   use_bilibili_default_auto_play: 用B站預設自動播放行為
   use_bilibili_default_auto_play_desc: 啟用後會用B站嘅預設自動播放行為，下面嘅自訂自動播放設定會隱藏同埋無效
-  auto_play_multipart: 分P影片自動連播
-  auto_play_multipart_desc: 啟用後，分P影片會自動播下一個分P
-  auto_play_collection: 合集影片自動連播
-  auto_play_collection_desc: 啟用後，合集影片會自動播下一個影片
-  auto_play_recommend: 單影片推薦自動連播
-  auto_play_recommend_desc: 啟用後，單影片播完會自動播推薦影片
-  auto_play_playlist: 收藏列表自動連播
-  auto_play_playlist_desc: 啟用後，收藏列表入面嘅影片會自動播下一個
+  auto_play_mode_default: B站預設
+  auto_play_mode_auto_play: 自動連播
+  auto_play_mode_pause_at_end: 播完暫停
+  auto_play_mode_loop: 單集循環
+  auto_play_multipart: 分P影片
+  auto_play_multipart_desc: 揀分P影片嘅自動播放行為
+  auto_play_collection: 合集影片
+  auto_play_collection_desc: 揀合集影片嘅自動播放行為
+  auto_play_recommend: 單影片推薦
+  auto_play_recommend_desc: 揀單影片睇完之後嘅自動播放行為
+  auto_play_playlist: 收藏列表
+  auto_play_playlist_desc: 揀收藏列表嘅自動播放行為
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 喺唔同設備度同步延伸功能設定 (需要登入瀏覽器帳戶)。
   enable_undo_refresh_button: 啓用復原更新掣（淨係得 Web 推介模式下有效）

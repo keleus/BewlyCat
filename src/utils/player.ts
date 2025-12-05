@@ -1,5 +1,6 @@
 // 更完善的播放器元素选择器
 import { settings } from '~/logic'
+import type { AutoPlayMode } from '~/logic/storage'
 
 import { applyVolumeNormalization } from './audioNormalization'
 
@@ -418,33 +419,43 @@ function findAutoPlaySwitchButton(): { button: HTMLElement, isOn: boolean } | nu
   return null
 }
 
-// 根据视频类型和设置应用自动连播状态
-export function applyAutoPlayByVideoType() {
-  // 如果启用了B站默认自动播放行为，不进行任何操作
-  if (settings.value.useBilibiliDefaultAutoPlay) {
-    return
-  }
+// 设置单集循环状态
+export function setLoopState(enable: boolean) {
+  console.log(`[BewlyCat] 尝试设置单集循环: ${enable}`)
 
-  const videoType = detectVideoType()
-  let shouldEnableAutoPlay = false
+  new RetryTask(30, 500, () => {
+    // 查找单集循环开关
+    const loopCheckbox = document.querySelector(
+      '.bpx-player-ctrl-setting-loop input[type=checkbox]',
+    ) as HTMLInputElement | null
 
-  // 根据视频类型获取对应的设置
-  switch (videoType) {
-    case VideoType.MULTIPART:
-      shouldEnableAutoPlay = settings.value.autoPlayMultipart
-      break
-    case VideoType.COLLECTION:
-      shouldEnableAutoPlay = settings.value.autoPlayCollection
-      break
-    case VideoType.RECOMMEND:
-      shouldEnableAutoPlay = settings.value.autoPlayRecommend
-      break
-    case VideoType.PLAYLIST:
-      shouldEnableAutoPlay = settings.value.autoPlayPlaylist
-      break
-  }
+    if (!loopCheckbox) {
+      console.log('[BewlyCat] 未找到单集循环开关')
+      return false
+    }
 
-  // 使用 DOM 操作控制自动播放
+    console.log(`[BewlyCat] 找到单集循环开关，当前状态: ${loopCheckbox.checked}, 目标状态: ${enable}`)
+
+    // 如果当前状态与目标状态不一致，则切换
+    if (loopCheckbox.checked !== enable) {
+      // B站的单集循环使用了 Vue/React，直接点击不会触发状态更新
+      // 需要直接设置 checked 属性并触发 change 事件
+      console.log('[BewlyCat] 设置 checked 属性并触发 change 事件')
+      loopCheckbox.checked = enable
+      loopCheckbox.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+    else {
+      console.log('[BewlyCat] 单集循环已经是目标状态，无需改变')
+    }
+
+    const success = loopCheckbox.checked === enable
+    console.log(`[BewlyCat] 单集循环设置${success ? '成功' : '失败'}，最终状态: ${loopCheckbox.checked}`)
+    return success
+  }).start()
+}
+
+// 设置自动播放状态
+function setAutoPlayState(enable: boolean) {
   new RetryTask(30, 500, () => {
     const result = findAutoPlaySwitchButton()
 
@@ -455,12 +466,126 @@ export function applyAutoPlayByVideoType() {
     const { button, isOn } = result
 
     // 如果当前状态与目标状态不一致，则切换
-    if (isOn !== shouldEnableAutoPlay) {
+    if (isOn !== enable) {
       button.click()
     }
 
     return true
   }).start()
+}
+
+// 设置收藏列表的播放方式（自动切集或播完暂停）
+function setPlaylistHandoffMode(enable: boolean) {
+  console.log(`[BewlyCat] 尝试设置收藏列表播放方式: ${enable ? '自动切集' : '播完暂停'}`)
+
+  // 如果启用自动切集，需要先关闭单集循环（单集循环优先级更高）
+  if (enable) {
+    console.log('[BewlyCat] 自动切集模式需要关闭单集循环')
+    setLoopState(false)
+  }
+
+  new RetryTask(30, 500, () => {
+    // 自动切集的 radio value 是 "0"，播完暂停的 value 是 "2"
+    const targetValue = enable ? '0' : '2'
+    const targetRadio = document.querySelector(
+      `.bpx-player-ctrl-setting-handoff input[type=radio][value="${targetValue}"]`,
+    ) as HTMLInputElement | null
+
+    if (!targetRadio) {
+      console.log('[BewlyCat] 未找到收藏列表播放方式控制按钮')
+      return false
+    }
+
+    console.log(`[BewlyCat] 找到播放方式控制按钮 (value=${targetValue})，当前选中: ${targetRadio.checked}`)
+
+    // 如果目标按钮未选中，则设置为选中
+    if (!targetRadio.checked) {
+      console.log('[BewlyCat] 设置 checked 属性并触发 change 事件')
+      targetRadio.checked = true
+      targetRadio.dispatchEvent(new Event('change', { bubbles: true }))
+    }
+    else {
+      console.log('[BewlyCat] 播放方式已经是目标状态，无需改变')
+    }
+
+    const success = targetRadio.checked
+    console.log(`[BewlyCat] 播放方式设置${success ? '成功' : '失败'}，最终状态: ${targetRadio.checked}`)
+    return success
+  }).start()
+}
+
+// 根据视频类型和设置应用自动连播状态
+export function applyAutoPlayByVideoType() {
+  // 如果启用了B站默认自动播放行为，不进行任何操作
+  if (settings.value.useBilibiliDefaultAutoPlay) {
+    console.log('[BewlyCat] 使用B站默认自动播放行为，不做任何操作')
+    return
+  }
+
+  const videoType = detectVideoType()
+  let mode: AutoPlayMode = 'default'
+
+  // 根据视频类型获取对应的设置
+  switch (videoType) {
+    case VideoType.MULTIPART:
+      mode = settings.value.autoPlayMultipart
+      break
+    case VideoType.COLLECTION:
+      mode = settings.value.autoPlayCollection
+      break
+    case VideoType.RECOMMEND:
+      mode = settings.value.autoPlayRecommend
+      break
+    case VideoType.PLAYLIST:
+      mode = settings.value.autoPlayPlaylist
+      break
+  }
+
+  console.log(`[BewlyCat] 视频类型: ${VideoType[videoType]}, 播放模式: ${mode}`)
+
+  // 收藏列表使用特殊的播放方式控制（自动切集/播完暂停）
+  if (videoType === VideoType.PLAYLIST) {
+    switch (mode) {
+      case 'autoPlay':
+        // 开启自动切集
+        console.log('[BewlyCat] 应用收藏列表自动切集模式')
+        setPlaylistHandoffMode(true)
+        break
+      case 'pauseAtEnd':
+        // 开启播完暂停
+        console.log('[BewlyCat] 应用收藏列表播完暂停模式')
+        setPlaylistHandoffMode(false)
+        break
+      case 'loop':
+        // 收藏列表不支持单集循环，使用播完暂停代替
+        console.log('[BewlyCat] 收藏列表不支持单集循环，使用播完暂停模式')
+        setPlaylistHandoffMode(false)
+        break
+    }
+    return
+  }
+
+  // 其他类型视频使用原有的自动播放和循环控制
+  switch (mode) {
+    case 'autoPlay':
+      // 开启自动连播，确保关闭单集循环
+      console.log('[BewlyCat] 应用自动连播模式')
+      setLoopState(false)
+      setAutoPlayState(true)
+      break
+    case 'pauseAtEnd':
+      // 关闭自动连播，确保关闭单集循环
+      console.log('[BewlyCat] 应用播完暂停模式')
+      setLoopState(false)
+      setAutoPlayState(false)
+      break
+    case 'loop':
+      // 先开启单集循环，再关闭自动连播
+      console.log('[BewlyCat] 应用单集循环模式')
+      setLoopState(true)
+      setAutoPlayState(false)
+      break
+  }
 }
 
 // 播放/暂停

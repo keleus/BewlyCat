@@ -199,14 +199,18 @@ settings:
   auto_exit_fullscreen_exclude_auto_play_desc: 启用后，在自动连播下播放结束时不会自动退出全屏，方便连续观看
   use_bilibili_default_auto_play: 使用B站默认自动播放行为
   use_bilibili_default_auto_play_desc: 启用后将使用B站的默认自动播放行为，下方的自定义自动播放设置将被隐藏且无效
-  auto_play_multipart: 分P视频自动连播
-  auto_play_multipart_desc: 启用后，分P视频将自动播放下一个分P
-  auto_play_collection: 合集视频自动连播
-  auto_play_collection_desc: 启用后，合集视频将自动播放下一个视频
-  auto_play_recommend: 单视频推荐自动连播
-  auto_play_recommend_desc: 启用后，单视频播放结束后将自动播放推荐视频
-  auto_play_playlist: 收藏列表自动连播
-  auto_play_playlist_desc: 启用后，收藏列表中的视频将自动播放下一个
+  auto_play_mode_default: B站默认
+  auto_play_mode_auto_play: 自动连播
+  auto_play_mode_pause_at_end: 播完暂停
+  auto_play_mode_loop: 单集循环
+  auto_play_multipart: 分P视频
+  auto_play_multipart_desc: 选择分P视频的自动播放行为
+  auto_play_collection: 合集视频
+  auto_play_collection_desc: 选择合集视频的自动播放行为
+  auto_play_recommend: 单视频推荐
+  auto_play_recommend_desc: 选择单视频播放结束后的自动播放行为
+  auto_play_playlist: 收藏列表
+  auto_play_playlist_desc: 选择收藏列表的自动播放行为
   enable_random_play: 启用视频合集随机播放
   enable_random_play_desc: 为多P视频或合集添加随机播放功能
   random_play_mode: 随机播放模式

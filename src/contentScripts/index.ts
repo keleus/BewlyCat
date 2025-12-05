@@ -239,10 +239,10 @@ function applyDefaultPlayerMode() {
   }
   setupShortcutHandlers()
   applyDefaultDanmakuState()
-  // 应用自动连播设置
+  // 应用自动连播设置，延迟更长时间确保播放器完全初始化
   setTimeout(() => {
     applyAutoPlayByVideoType()
-  }, 1000)
+  }, 2000)
   // 启动自动退出全屏监听
   setTimeout(() => {
     startAutoExitFullscreenMonitoring()
@@ -553,8 +553,7 @@ watch(settings, (newSettings, oldSettings) => {
   if (isVideoPage()) {
     // 检查自动播放相关设置是否发生变化
     const autoPlaySettingsChanged = oldSettings && (
-      newSettings.useBilibiliDefaultAutoPlay !== oldSettings.useBilibiliDefaultAutoPlay
-      || newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
+      newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
       || newSettings.autoPlayCollection !== oldSettings.autoPlayCollection
       || newSettings.autoPlayRecommend !== oldSettings.autoPlayRecommend
       || newSettings.autoPlayPlaylist !== oldSettings.autoPlayPlaylist
