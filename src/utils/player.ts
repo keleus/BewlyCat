@@ -1231,6 +1231,64 @@ export function isInteractiveVideo(): boolean {
   }
 }
 
+// 检查结束面板的下一个视频是否为推广视频（非分P/合集内视频）
+// 仅在分P视频和合集视频中生效
+function checkAndCancelAutoPlayForRecommendation() {
+  console.log('[BewlyCat] 检查是否需要取消自动连播...')
+
+  // 检测当前视频类型,只在分P和合集视频中生效
+  const videoType = detectVideoType()
+  if (videoType !== VideoType.MULTIPART && videoType !== VideoType.COLLECTION) {
+    console.log('[BewlyCat] 当前不是分P或合集视频,跳过检测。视频类型:', videoType)
+    return
+  }
+
+  console.log('[BewlyCat] 当前是分P/合集视频,继续检测...')
+
+  // 查找结束面板中的推荐视频标题
+  const endingPanelTitle = document.querySelector('.bpx-player-ending-related-item-title')
+  if (!endingPanelTitle || !endingPanelTitle.textContent) {
+    console.log('[BewlyCat] 未找到结束面板中的推荐视频标题')
+    return
+  }
+
+  const endingVideoTitle = endingPanelTitle.textContent.trim()
+  console.log('[BewlyCat] 结束面板推荐视频标题:', endingVideoTitle)
+
+  // 查找页面推广位的视频标题
+  const recommendCards = document.querySelectorAll('.video-page-card-small .title')
+  if (recommendCards.length === 0) {
+    console.log('[BewlyCat] 未找到页面推广位视频')
+    return
+  }
+
+  // 检查结束面板的视频标题是否与任何推广位视频匹配
+  let isRecommendedVideo = false
+  for (const card of Array.from(recommendCards)) {
+    const cardTitle = card.textContent?.trim()
+    if (cardTitle && cardTitle === endingVideoTitle) {
+      console.log('[BewlyCat] 检测到自动连播的下一个视频是推广视频:', cardTitle)
+      isRecommendedVideo = true
+      break
+    }
+  }
+
+  // 如果是推广视频，点击取消连播按钮
+  if (isRecommendedVideo) {
+    const cancelButton = document.querySelector('.bpx-player-ending-related-item-cancel') as HTMLElement
+    if (cancelButton) {
+      console.log('[BewlyCat] 点击取消连播按钮')
+      cancelButton.click()
+    }
+    else {
+      console.log('[BewlyCat] 未找到取消连播按钮')
+    }
+  }
+  else {
+    console.log('[BewlyCat] 自动连播的下一个视频不是推广视频，保持自动连播')
+  }
+}
+
 // 监听视频结束事件并自动退出全屏
 export function startAutoExitFullscreenMonitoring() {
   const video = getVideoElement()
@@ -1252,6 +1310,12 @@ export function startAutoExitFullscreenMonitoring() {
     if (isInteractiveVideo()) {
       return
     }
+
+    // 检查是否应该取消自动连播（针对推广视频）
+    // 延迟检查，等待结束面板完全渲染
+    setTimeout(() => {
+      checkAndCancelAutoPlayForRecommendation()
+    }, 1500)
 
     // 非互动视频且开启了自动退出全屏
     if (settings.value.autoExitFullscreenOnEnd) {
