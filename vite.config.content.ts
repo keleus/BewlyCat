@@ -26,6 +26,8 @@ export default defineConfig({
       formats: ['iife'],
     },
     rollupOptions: {
+      // Disable Rollup cache in dev mode to ensure locale file changes are picked up
+      cache: isDev ? false : undefined,
       output: {
         entryFileNames: 'index.global.js',
         assetFileNames: 'style.css',

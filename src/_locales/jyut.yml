@@ -178,6 +178,12 @@ settings:
   video_card_author_font_size_desc: 控制影片卡片上 UP 主名稱嘅字體大小。
   video_card_meta_font_size: 標籤同時間字體大小
   video_card_meta_font_size_desc: 控制標題下方標籤同時間資訊嘅字體大小。
+  video_card_shadow_curve: 陰影漸變曲線
+  video_card_shadow_curve_desc: 自訂影片卡片底部陰影嘅漸變效果
+  video_card_shadow_curve_hint: 拖曳線條建立控制點，右鍵刪除
+  video_card_shadow_height: 陰影高度
+  video_card_shadow_height_desc: 調整陰影覆蓋封面嘅高度比例
+  video_card_shadow_reset: 重設陰影設定
   video_card_layout: 影片卡片版面
   video_card_layout_desc: 喺新版同舊版嘅影片卡片樣式之間切換。
   video_card_layout_option:

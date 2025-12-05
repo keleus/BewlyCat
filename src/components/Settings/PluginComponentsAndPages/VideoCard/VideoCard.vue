@@ -1,14 +1,16 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 
+import Button from '~/components/Button.vue'
 import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
-import { settings } from '~/logic'
+import { originalSettings, settings } from '~/logic'
 import type { VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import ShadowCurveEditor from '../../components/ShadowCurveEditor.vue'
 
 const { t } = useI18n()
 
@@ -45,6 +47,13 @@ const videoCardOpenModeOptions = computed(() => {
     },
   ]
 })
+
+const isModernLayout = computed(() => settings.value.videoCardLayout === 'modern')
+
+function resetShadowSettings() {
+  settings.value.videoCardShadowCurve = [...originalSettings.videoCardShadowCurve]
+  settings.value.videoCardShadowHeight = originalSettings.videoCardShadowHeight
+}
 </script>
 
 <template>
@@ -141,6 +150,34 @@ const videoCardOpenModeOptions = computed(() => {
       >
         <Select v-model="settings.videoCardMetaFontSize" :options="videoCardFontSizeOptions" w="full" />
       </SettingsItem>
+
+      <!-- Shadow settings - only for modern layout -->
+      <template v-if="isModernLayout">
+        <SettingsItem :title="$t('settings.video_card_shadow_curve')" :desc="$t('settings.video_card_shadow_curve_desc')">
+          <ShadowCurveEditor v-model="settings.videoCardShadowCurve" />
+        </SettingsItem>
+
+        <SettingsItem :title="$t('settings.video_card_shadow_height')" :desc="$t('settings.video_card_shadow_height_desc')">
+          <div flex="~ items-center gap-2" w-full>
+            <input
+              v-model.number="settings.videoCardShadowHeight"
+              type="range"
+              :min="0"
+              :max="2"
+              :step="0.1"
+              flex-1
+              class="shadow-height-slider"
+            >
+            <span text-sm min-w-8 text-right>{{ settings.videoCardShadowHeight.toFixed(1) }}</span>
+          </div>
+        </SettingsItem>
+
+        <SettingsItem>
+          <Button type="secondary" center @click="resetShadowSettings">
+            {{ $t('settings.video_card_shadow_reset') }}
+          </Button>
+        </SettingsItem>
+      </template>
     </SettingsItemGroup>
   </div>
 </template>

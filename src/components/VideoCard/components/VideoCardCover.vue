@@ -228,6 +228,38 @@ watch([() => props.previewVideoUrl, () => props.isHover, videoRef], ([url, isHov
 onBeforeUnmount(() => {
   cleanupPlayers()
 })
+
+// Dynamic shadow gradient from settings
+const shadowGradient = computed(() => {
+  const points = settings.value.videoCardShadowCurve
+  if (!points || points.length === 0)
+    return undefined
+
+  const stops = [...points]
+    .sort((a, b) => a.position - b.position)
+    .map(p => `rgba(0, 0, 0, ${p.opacity / 100}) ${p.position}%`)
+    .join(', ')
+  return `linear-gradient(to top, ${stops})`
+})
+
+const shadowHeight = computed(() => {
+  const height = settings.value.videoCardShadowHeight
+  // When height is 0, return '0' to hide the shadow completely
+  if (height === 0)
+    return '0'
+  return height !== undefined ? `calc(${height} * 100%)` : undefined
+})
+
+const shadowStyle = computed(() => {
+  const style: Record<string, string> = {}
+  // Always set height if defined (including 0)
+  if (shadowHeight.value !== undefined)
+    style['--video-card-shadow-height'] = shadowHeight.value
+  // Only set gradient if height is not 0
+  if (settings.value.videoCardShadowHeight !== 0 && shadowGradient.value)
+    style['--video-card-shadow-gradient'] = shadowGradient.value
+  return style
+})
 </script>
 
 <template>
@@ -401,7 +433,7 @@ onBeforeUnmount(() => {
         v-if="layout === 'modern' && hasCoverStats"
         class="video-card-cover-stats video-card-stats"
         :class="{ 'video-card-cover-stats--hidden': shouldHideCoverStats }"
-        :style="coverStatsStyle"
+        :style="{ ...coverStatsStyle, ...shadowStyle }"
       >
         <div class="video-card-cover-stats__items">
           <span
@@ -463,18 +495,23 @@ onBeforeUnmount(() => {
 .video-card-cover-stats::before {
   content: "";
   position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.8) 0%,
-    rgba(0, 0, 0, 0.7) 30%,
-    rgba(0, 0, 0, 0.5) 50%,
-    rgba(0, 0, 0, 0.3) 70%,
-    rgba(0, 0, 0, 0.15) 85%,
-    rgba(0, 0, 0, 0.05) 95%,
-    transparent 100%
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(
+    --video-card-shadow-gradient,
+    linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.8) 0%,
+      rgba(0, 0, 0, 0.7) 30%,
+      rgba(0, 0, 0, 0.5) 50%,
+      rgba(0, 0, 0, 0.3) 70%,
+      rgba(0, 0, 0, 0.15) 85%,
+      rgba(0, 0, 0, 0.05) 95%,
+      transparent 100%
+    )
   );
-  height: calc(var(--video-card-stats-overlay-scale, 1.4) * 100%);
+  height: var(--video-card-shadow-height, calc(var(--video-card-stats-overlay-scale, 1.4) * 100%));
   border-bottom-left-radius: inherit;
   border-bottom-right-radius: inherit;
   pointer-events: none;
