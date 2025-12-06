@@ -421,8 +421,6 @@ function findAutoPlaySwitchButton(): { button: HTMLElement, isOn: boolean } | nu
 
 // 设置单集循环状态
 export function setLoopState(enable: boolean) {
-  console.log(`[BewlyCat] 尝试设置单集循环: ${enable}`)
-
   new RetryTask(30, 500, () => {
     // 查找单集循环开关
     const loopCheckbox = document.querySelector(
@@ -430,28 +428,40 @@ export function setLoopState(enable: boolean) {
     ) as HTMLInputElement | null
 
     if (!loopCheckbox) {
-      console.log('[BewlyCat] 未找到单集循环开关')
       return false
     }
-
-    console.log(`[BewlyCat] 找到单集循环开关，当前状态: ${loopCheckbox.checked}, 目标状态: ${enable}`)
 
     // 如果当前状态与目标状态不一致，则切换
     if (loopCheckbox.checked !== enable) {
       // B站的单集循环使用了 Vue/React，直接点击不会触发状态更新
       // 需要直接设置 checked 属性并触发 change 事件
-      console.log('[BewlyCat] 设置 checked 属性并触发 change 事件')
       loopCheckbox.checked = enable
       loopCheckbox.dispatchEvent(new Event('change', { bubbles: true }))
     }
-    else {
-      console.log('[BewlyCat] 单集循环已经是目标状态，无需改变')
-    }
 
-    const success = loopCheckbox.checked === enable
-    console.log(`[BewlyCat] 单集循环设置${success ? '成功' : '失败'}，最终状态: ${loopCheckbox.checked}`)
-    return success
+    return loopCheckbox.checked === enable
   }).start()
+}
+
+// 用户手动修改自动播放状态的标志
+let userManuallyChangedAutoPlay = false
+
+// 监听用户手动修改自动播放状态
+export function startAutoPlayUserChangeMonitoring() {
+  // 使用事件委托监听点击
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+    // 检查是否点击了自动播放开关
+    const switchBtn = target.closest('.auto-play .switch-btn, .continuous-btn .switch-btn')
+    if (switchBtn) {
+      userManuallyChangedAutoPlay = true
+    }
+  }, true)
+}
+
+// 重置用户手动修改标志(在页面导航时调用)
+export function resetAutoPlayUserChangeFlag() {
+  userManuallyChangedAutoPlay = false
 }
 
 // 设置自动播放状态
@@ -476,11 +486,8 @@ function setAutoPlayState(enable: boolean) {
 
 // 设置收藏列表的播放方式（自动切集或播完暂停）
 function setPlaylistHandoffMode(enable: boolean) {
-  console.log(`[BewlyCat] 尝试设置收藏列表播放方式: ${enable ? '自动切集' : '播完暂停'}`)
-
   // 如果启用自动切集，需要先关闭单集循环（单集循环优先级更高）
   if (enable) {
-    console.log('[BewlyCat] 自动切集模式需要关闭单集循环')
     setLoopState(false)
   }
 
@@ -492,25 +499,16 @@ function setPlaylistHandoffMode(enable: boolean) {
     ) as HTMLInputElement | null
 
     if (!targetRadio) {
-      console.log('[BewlyCat] 未找到收藏列表播放方式控制按钮')
       return false
     }
 
-    console.log(`[BewlyCat] 找到播放方式控制按钮 (value=${targetValue})，当前选中: ${targetRadio.checked}`)
-
     // 如果目标按钮未选中，则设置为选中
     if (!targetRadio.checked) {
-      console.log('[BewlyCat] 设置 checked 属性并触发 change 事件')
       targetRadio.checked = true
       targetRadio.dispatchEvent(new Event('change', { bubbles: true }))
     }
-    else {
-      console.log('[BewlyCat] 播放方式已经是目标状态，无需改变')
-    }
 
-    const success = targetRadio.checked
-    console.log(`[BewlyCat] 播放方式设置${success ? '成功' : '失败'}，最终状态: ${targetRadio.checked}`)
-    return success
+    return targetRadio.checked
   }).start()
 }
 
@@ -518,7 +516,11 @@ function setPlaylistHandoffMode(enable: boolean) {
 export function applyAutoPlayByVideoType() {
   // 如果启用了B站默认自动播放行为，不进行任何操作
   if (settings.value.useBilibiliDefaultAutoPlay) {
-    console.log('[BewlyCat] 使用B站默认自动播放行为，不做任何操作')
+    return
+  }
+
+  // 如果用户手动修改过自动播放状态,跳过自动应用
+  if (userManuallyChangedAutoPlay) {
     return
   }
 
@@ -541,24 +543,19 @@ export function applyAutoPlayByVideoType() {
       break
   }
 
-  console.log(`[BewlyCat] 视频类型: ${VideoType[videoType]}, 播放模式: ${mode}`)
-
   // 收藏列表使用特殊的播放方式控制（自动切集/播完暂停）
   if (videoType === VideoType.PLAYLIST) {
     switch (mode) {
       case 'autoPlay':
         // 开启自动切集
-        console.log('[BewlyCat] 应用收藏列表自动切集模式')
         setPlaylistHandoffMode(true)
         break
       case 'pauseAtEnd':
         // 开启播完暂停
-        console.log('[BewlyCat] 应用收藏列表播完暂停模式')
         setPlaylistHandoffMode(false)
         break
       case 'loop':
         // 收藏列表不支持单集循环，使用播完暂停代替
-        console.log('[BewlyCat] 收藏列表不支持单集循环，使用播完暂停模式')
         setPlaylistHandoffMode(false)
         break
     }
@@ -569,19 +566,16 @@ export function applyAutoPlayByVideoType() {
   switch (mode) {
     case 'autoPlay':
       // 开启自动连播，确保关闭单集循环
-      console.log('[BewlyCat] 应用自动连播模式')
       setLoopState(false)
       setAutoPlayState(true)
       break
     case 'pauseAtEnd':
       // 关闭自动连播，确保关闭单集循环
-      console.log('[BewlyCat] 应用播完暂停模式')
       setLoopState(false)
       setAutoPlayState(false)
       break
     case 'loop':
       // 先开启单集循环，再关闭自动连播
-      console.log('[BewlyCat] 应用单集循环模式')
       setLoopState(true)
       setAutoPlayState(false)
       break
@@ -1234,31 +1228,23 @@ export function isInteractiveVideo(): boolean {
 // 检查结束面板的下一个视频是否为推广视频（非分P/合集内视频）
 // 仅在分P视频和合集视频中生效
 function checkAndCancelAutoPlayForRecommendation() {
-  console.log('[BewlyCat] 检查是否需要取消自动连播...')
-
   // 检测当前视频类型,只在分P和合集视频中生效
   const videoType = detectVideoType()
   if (videoType !== VideoType.MULTIPART && videoType !== VideoType.COLLECTION) {
-    console.log('[BewlyCat] 当前不是分P或合集视频,跳过检测。视频类型:', videoType)
     return
   }
-
-  console.log('[BewlyCat] 当前是分P/合集视频,继续检测...')
 
   // 查找结束面板中的推荐视频标题
   const endingPanelTitle = document.querySelector('.bpx-player-ending-related-item-title')
   if (!endingPanelTitle || !endingPanelTitle.textContent) {
-    console.log('[BewlyCat] 未找到结束面板中的推荐视频标题')
     return
   }
 
   const endingVideoTitle = endingPanelTitle.textContent.trim()
-  console.log('[BewlyCat] 结束面板推荐视频标题:', endingVideoTitle)
 
   // 查找页面推广位的视频标题
   const recommendCards = document.querySelectorAll('.video-page-card-small .title')
   if (recommendCards.length === 0) {
-    console.log('[BewlyCat] 未找到页面推广位视频')
     return
   }
 
@@ -1267,7 +1253,6 @@ function checkAndCancelAutoPlayForRecommendation() {
   for (const card of Array.from(recommendCards)) {
     const cardTitle = card.textContent?.trim()
     if (cardTitle && cardTitle === endingVideoTitle) {
-      console.log('[BewlyCat] 检测到自动连播的下一个视频是推广视频:', cardTitle)
       isRecommendedVideo = true
       break
     }
@@ -1277,15 +1262,8 @@ function checkAndCancelAutoPlayForRecommendation() {
   if (isRecommendedVideo) {
     const cancelButton = document.querySelector('.bpx-player-ending-related-item-cancel') as HTMLElement
     if (cancelButton) {
-      console.log('[BewlyCat] 点击取消连播按钮')
       cancelButton.click()
     }
-    else {
-      console.log('[BewlyCat] 未找到取消连播按钮')
-    }
-  }
-  else {
-    console.log('[BewlyCat] 自动连播的下一个视频不是推广视频，保持自动连播')
   }
 }
 

@@ -13,7 +13,7 @@ import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { applyAutoPlayByVideoType, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isVideoPage, startAutoExitFullscreenMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isVideoPage, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
@@ -286,6 +286,7 @@ function checkForUrlChanges() {
     lastUrl = location.href
     hasAppliedPlayerMode = false // URL变化时重置标志
     watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
+    // 不再重置用户手动修改标志，保持用户的自动播放偏好设置
 
     // 重置随机播放初始化状态，避免重复加载
     resetRandomPlayInitialization()
@@ -680,3 +681,6 @@ function validateAndRestoreLocalWallpaper() {
 
 // 在应用启动时验证本地壁纸
 validateAndRestoreLocalWallpaper()
+
+// 启动自动播放用户修改监听
+startAutoPlayUserChangeMonitoring()

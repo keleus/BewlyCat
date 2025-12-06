@@ -5,6 +5,7 @@ let isRandomPlayEnabled = false
 let isRandomPlayInitialized = false
 const visitedEpisodes: Set<number> = new Set()
 let originalEndedListener: (() => void) | null = null
+let userManuallySetRandomPlay = false // 用户手动设置的随机播放状态标志
 
 // 获取随机播放文本
 export function getRandomPlayText(): string {
@@ -312,6 +313,8 @@ export function createRandomPlayUI(): HTMLElement | null {
     const newEnabled = !isRandomPlayEnabled
     setRandomPlayEnabled(newEnabled)
     updateSwitchState(newEnabled)
+    // 标记为用户手动设置
+    userManuallySetRandomPlay = true
   })
 
   // 初始状态 - 使用当前状态
@@ -468,6 +471,7 @@ export function isRandomPlayActive(): boolean {
 export function resetRandomPlayInitialization(): void {
   isRandomPlayInitialized = false
   // 注意：这里不清除isRandomPlayEnabled，保持用户的选择
+  // 也不清除userManuallySetRandomPlay标志，保持用户手动设置的状态
   visitedEpisodes.clear()
 }
 
@@ -504,19 +508,27 @@ export function initRandomPlayOnVideoPage(): void {
       if (settings.value.enableRandomPlay) {
         createRandomPlayUI()
 
-        // 检查视频数量是否足够，只影响自动启用
-        const episodes = getVideoEpisodes()
-        const minVideos = settings.value.minVideosForRandom || 5
-        const hasEnoughVideos = episodes.length >= minVideos
-
-        // 只有在视频数量足够且设置为自动模式时才自动启用，且当前未启用
-        if (hasEnoughVideos && settings.value.randomPlayMode === 'auto' && !isRandomPlayEnabled) {
-          setRandomPlayEnabled(true)
-        }
-
-        // 如果已经启用了，确保UI状态正确
-        if (isRandomPlayEnabled) {
+        // 如果用户手动设置过随机播放状态，直接应用该状态
+        if (userManuallySetRandomPlay) {
+          // 保持用户手动设置的状态，无需重新设置
           syncRandomPlayUI()
+        }
+        else {
+          // 用户没有手动设置过，应用自动模式逻辑
+          // 检查视频数量是否足够，只影响自动启用
+          const episodes = getVideoEpisodes()
+          const minVideos = settings.value.minVideosForRandom || 5
+          const hasEnoughVideos = episodes.length >= minVideos
+
+          // 只有在视频数量足够且设置为自动模式时才自动启用，且当前未启用
+          if (hasEnoughVideos && settings.value.randomPlayMode === 'auto' && !isRandomPlayEnabled) {
+            setRandomPlayEnabled(true)
+          }
+
+          // 如果已经启用了，确保UI状态正确
+          if (isRandomPlayEnabled) {
+            syncRandomPlayUI()
+          }
         }
 
         isRandomPlayInitialized = true
