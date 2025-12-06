@@ -293,18 +293,14 @@ export function createRandomPlayUI(): HTMLElement | null {
 
   // 更新开关状态的函数
   function updateSwitchState(enabled: boolean) {
-    const activeColor = '#00aeec'
-
     if (enabled) {
-      switchBtn.style.backgroundColor = activeColor
+      switchBtn.style.backgroundColor = 'var(--bew-theme-color)'
       // 30px宽度 - 2px左边距 - 2px右边距 - 16px滑块宽度 = 10px移动距离
       switchBlock.style.transform = 'translateX(10px)'
-      randomPlayBtn.style.color = activeColor
     }
     else {
       switchBtn.style.backgroundColor = 'var(--bew-switch-bg)'
       switchBlock.style.transform = 'translateX(0)'
-      randomPlayBtn.style.color = 'var(--text3)'
     }
   }
 
@@ -479,18 +475,15 @@ export function resetRandomPlayInitialization(): void {
 export function syncRandomPlayUI(): void {
   const existingBtn = document.querySelector('.random-play-btn .switch-btn') as HTMLElement
   const existingBlock = document.querySelector('.random-play-btn .switch-block') as HTMLElement
-  const existingPlayBtn = document.querySelector('.random-play-btn') as HTMLElement
 
-  if (existingBtn && existingBlock && existingPlayBtn) {
+  if (existingBtn && existingBlock) {
     if (isRandomPlayEnabled) {
-      existingBtn.style.backgroundColor = '#00aeec'
+      existingBtn.style.backgroundColor = 'var(--bew-theme-color)'
       existingBlock.style.transform = 'translateX(16px)'
-      existingPlayBtn.style.color = '#00aeec'
     }
     else {
-      existingBtn.style.backgroundColor = '#e3e5e7'
+      existingBtn.style.backgroundColor = 'var(--bew-switch-bg)'
       existingBlock.style.transform = 'translateX(0)'
-      existingPlayBtn.style.color = '#61666d'
     }
   }
 }
