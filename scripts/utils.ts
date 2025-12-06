@@ -14,3 +14,12 @@ export const isSafari = process.env.SAFARI === 'true'
 export function log(name: string, message: string) {
   console.log(black(bgCyan(` ${name} `)), message)
 }
+
+/**
+ * Generate a unique build hash based on current timestamp
+ */
+export function generateBuildHash(): string {
+  const timestamp = Date.now()
+  const hash = timestamp.toString(36).slice(-6)
+  return hash
+}

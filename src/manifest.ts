@@ -88,7 +88,7 @@ export async function getManifest() {
     ],
     web_accessible_resources: [
       {
-        resources: ['dist/contentScripts/style.css', 'assets/*'],
+        resources: ['dist/contentScripts/style.css', 'dist/build-info.json', 'assets/*'],
         matches: ['<all_urls>'],
         // matches: ['./assets/*'],
       },

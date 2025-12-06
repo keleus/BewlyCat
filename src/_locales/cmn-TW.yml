@@ -51,6 +51,15 @@ common:
     right: 右側
     top: 頂部
     bottom: 底部
+update_log:
+  title: 更新日誌
+  current_version: 當前版本
+  whats_new: 新功能上線
+  check_details: 檢視本次更新的新功能和改進內容
+  view_full_changelog: 檢視完整更新日誌
+  close: 關閉
+  close_and_never_show: 關閉,本版本不再提示
+  new_version_available: 版本已更新
 iframe_drawer:
   open_in_new_tab: 在新索引標籤開啓連結
   close: 關閉
@@ -367,6 +376,7 @@ settings:
   follow_bilibili_evolved_color: 使用 Bilibili Evolved 主題色
   follow_bilibili_evolved_color_desc: 每次變更 Bilibili Evolved 主題色後，記得重新選取此選項以更新配置。
   links: 連結
+  changelog: 更新日誌
   import_settings: 匯入設定
   export_settings: 匯出設定
   export_settings_desc: 一些敏感性資訊，例如 access key，可能需要重新取得。
@@ -374,7 +384,7 @@ settings:
   reset_settings_confirm: |-
     重設設定？
     此操作無法撤消，你確定要重設你的設定嗎？
-  contributors: BewlyBewly歷史貢獻者
+  contributors: BewlyCat貢獻者
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 在不同設備間同步擴展設定（需要登入瀏覽器帳號）
   keep_collection_video_default_mode: 合集視頻保持預設模式

@@ -154,6 +154,14 @@ async function checkGitHubRelease() {
               <div i-tabler:brand-github /> GitHub
             </a>
             <a
+              href="https://github.com/keleus/BewlyCat/releases" target="_blank"
+              class="link-card"
+              bg="#0969da dark:#58a6ff !opacity-10 !hover:opacity-20"
+              un-text="#0969da dark:#58a6ff"
+            >
+              <div i-mingcute:file-info-line /> {{ $t('settings.changelog') }}
+            </a>
+            <a
               href="https://space.bilibili.com/32487218/dynamic" target="_blank"
               class="link-card"
               bg="#fb7299 dark:#ffa7c0 !opacity-10 !hover:opacity-20"
@@ -204,10 +212,10 @@ async function checkGitHubRelease() {
             {{ $t('settings.contributors') }}
           </h3>
           <a
-            href="https://github.com/hakadao/BewlyBewly/graphs/contributors" target="_blank"
+            href="https://github.com/keleus/BewlyCat/graphs/contributors" target="_blank"
           >
             <img
-              src="https://contrib.rocks/image?repo=hakadao/BewlyBewly"
+              src="https://contrib.rocks/image?repo=keleus/BewlyCat"
               w-full
             >
           </a>

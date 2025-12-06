@@ -51,6 +51,15 @@ common:
     right: 右邊
     top: 上頭
     bottom: 下低
+update_log:
+  title: 更新日誌
+  current_version: 而家嘅版本
+  whats_new: 新功能上線
+  check_details: 睇下今次更新嘅新功能同改進內容
+  view_full_changelog: 睇晒成個更新日誌
+  close: 關閉
+  close_and_never_show: 關閉,呢個版本唔再提示
+  new_version_available: 版本已更新
 iframe_drawer:
   open_in_new_tab: 喺新嘅分頁度打開連結
   close: 關閉
@@ -351,6 +360,7 @@ settings:
   follow_bilibili_evolved_color: 跟返 Bilibili Evolved 主題色
   follow_bilibili_evolved_color_desc: 每次換完 Bilibili Evolved 主題色嗰陣，記得揀多一次呢個選項愛嚟更新佈置。
   links: 拎
+  changelog: 更新日誌
   import_settings: 匯入設定
   export_settings: 匯出設定
   export_settings_desc: 一啲敏感性資訊，例如 access key，可能要你攞多次先至得。
@@ -358,7 +368,7 @@ settings:
   reset_settings_confirm: |-
     重設設定？
     噉做冇得返轉頭噃，你確定要重設你之前嘅設定？
-  contributors: 貢獻者
+  contributors: BewlyCat貢獻者
   video_page_top_bar_config: 影片頁頂欄配置
   video_page_top_bar_config_desc: 設定頂欄喺影片頁嘅顯示方式。
   video_page_top_bar_config_opt:

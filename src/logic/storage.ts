@@ -132,6 +132,9 @@ export interface Settings {
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
   externalWatchLaterButton: boolean // 稍后再看按钮外置
 
+  // Update log settings
+  lastReadVersion: string // 上次已读的版本号
+
   language: string
   customizeFont: 'default' | 'recommend' | 'custom'
   fontFamily: string
@@ -321,6 +324,10 @@ export const originalSettings: Settings = {
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
   externalWatchLaterButton: false, // 默认关闭稍后再看按钮外置
+
+  // Update log settings
+  lastReadVersion: '', // 默认为空，表示尚未阅读任何版本
+
   language: '',
   customizeFont: 'default',
   fontFamily: '',
