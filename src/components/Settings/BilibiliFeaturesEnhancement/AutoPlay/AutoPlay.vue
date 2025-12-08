@@ -14,6 +14,7 @@ const { t } = useI18n()
 // 自动播放模式选项
 const autoPlayModes: { label: string, value: AutoPlayMode }[] = [
   { label: 'auto_play_mode_auto_play', value: 'autoPlay' },
+  { label: 'auto_play_mode_auto_play_with_recommend', value: 'autoPlayWithRecommend' },
   { label: 'auto_play_mode_pause_at_end', value: 'pauseAtEnd' },
   { label: 'auto_play_mode_loop', value: 'loop' },
 ]

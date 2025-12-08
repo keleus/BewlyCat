@@ -569,6 +569,12 @@ export function applyAutoPlayByVideoType() {
       setLoopState(false)
       setAutoPlayState(true)
       break
+    case 'autoPlayWithRecommend':
+      // 开启自动连播(含推荐)，确保关闭单集循环
+      // 与 autoPlay 相同，但不会在 checkAndCancelAutoPlayForRecommendation 中取消推荐视频
+      setLoopState(false)
+      setAutoPlayState(true)
+      break
     case 'pauseAtEnd':
       // 关闭自动连播，确保关闭单集循环
       setLoopState(false)
@@ -1228,9 +1234,30 @@ export function isInteractiveVideo(): boolean {
 // 检查结束面板的下一个视频是否为推广视频（非分P/合集内视频）
 // 仅在分P视频和合集视频中生效
 function checkAndCancelAutoPlayForRecommendation() {
+  // 如果启用了B站默认自动播放行为，不进行任何操作
+  if (settings.value.useBilibiliDefaultAutoPlay) {
+    return
+  }
+
   // 检测当前视频类型,只在分P和合集视频中生效
   const videoType = detectVideoType()
   if (videoType !== VideoType.MULTIPART && videoType !== VideoType.COLLECTION) {
+    return
+  }
+
+  // 获取当前视频类型对应的自动播放模式
+  let mode: AutoPlayMode = 'default'
+  switch (videoType) {
+    case VideoType.MULTIPART:
+      mode = settings.value.autoPlayMultipart
+      break
+    case VideoType.COLLECTION:
+      mode = settings.value.autoPlayCollection
+      break
+  }
+
+  // 如果是"自动播放(含推荐)"模式，不取消推荐视频的自动播放
+  if (mode === 'autoPlayWithRecommend') {
     return
   }
 

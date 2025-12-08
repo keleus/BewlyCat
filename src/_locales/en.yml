@@ -470,6 +470,7 @@ settings:
     When enabled, Bilibili's default auto-play behavior will be used, and custom auto-play settings below will be hidden and disabled
   auto_play_mode_default: Bilibili Default
   auto_play_mode_auto_play: Auto-play
+  auto_play_mode_auto_play_with_recommend: Auto-play (with Recommendations)
   auto_play_mode_pause_at_end: Pause at End
   auto_play_mode_loop: Single Loop
   auto_play_multipart: Multi-part Videos

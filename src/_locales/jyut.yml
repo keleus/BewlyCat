@@ -388,6 +388,7 @@ settings:
   use_bilibili_default_auto_play_desc: 啟用後會用B站嘅預設自動播放行為，下面嘅自訂自動播放設定會隱藏同埋無效
   auto_play_mode_default: B站預設
   auto_play_mode_auto_play: 自動連播
+  auto_play_mode_auto_play_with_recommend: 自動連播(含推薦)
   auto_play_mode_pause_at_end: 播完暫停
   auto_play_mode_loop: 單集循環
   auto_play_multipart: 分P影片
