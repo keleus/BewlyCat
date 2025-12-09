@@ -329,6 +329,9 @@ settings:
   filter_by_duration: 按影片長度篩選
   filter_by_duration_desc: 篩選掉時長少於您設定的影片。
   filter_by_duration_unit: 秒
+  filter_by_publish_time: 按發布時間篩選
+  filter_by_publish_time_desc: 篩選掉發布時間超過設定天數的影片（僅在 Web 推薦模式下有效，最少 7 天）。
+  filter_by_publish_time_unit: 天
   filter_item_already_exist: 這個篩選項目已經存在！
   filter_by_title: 按標題篩選
   filter_by_title_desc: >

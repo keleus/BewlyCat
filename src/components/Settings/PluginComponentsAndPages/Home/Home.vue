@@ -320,6 +320,20 @@ function handleToggleHomeTab(tab: any) {
           <Radio v-model="settings.enableFilterByDuration" />
         </div>
       </SettingsItem>
+      <SettingsItem :title="$t('settings.filter_by_publish_time')" :desc="$t('settings.filter_by_publish_time_desc')">
+        <div flex="~ justify-end" w-full>
+          <Input
+            v-if="settings.enableFilterByPublishTime"
+            v-model="settings.filterByPublishTime" type="number" :min="7" :max="365"
+            flex-1
+          >
+            <template #suffix>
+              {{ $t('settings.filter_by_publish_time_unit') }}
+            </template>
+          </Input>
+          <Radio v-model="settings.enableFilterByPublishTime" />
+        </div>
+      </SettingsItem>
 
       <div grid="~ lg:gap-4 lg:cols-2 cols-1" lg:border="t-1 $bew-border-color">
         <SettingsItem

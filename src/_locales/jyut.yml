@@ -313,6 +313,9 @@ settings:
   filter_by_duration: 根據條片長度篩選
   filter_by_duration_desc: 避開啲片長唔夠你設嗰個時間嘅片。
   filter_by_duration_unit: 秒
+  filter_by_publish_time: 根據發布時間篩選
+  filter_by_publish_time_desc: 避開啲發布時間超過設定日數嘅片（淨係得 Web 推介模式下有效，最少 7 日）。
+  filter_by_publish_time_unit: 日
   filter_item_already_exist: 呢個篩選條件已經有咗喇！
   filter_by_title: 根據標題篩選
   filter_by_title_desc: >

@@ -38,6 +38,7 @@ const filterFunc = useFilter(
     FilterType.title,
     FilterType.user,
     FilterType.user,
+    FilterType.publishTime,
   ],
   [
     ['duration'],
@@ -45,6 +46,7 @@ const filterFunc = useFilter(
     ['title'],
     ['owner', 'name'],
     ['owner', 'mid'],
+    ['pubdate'],
   ],
 )
 

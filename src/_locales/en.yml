@@ -372,6 +372,9 @@ settings:
   filter_by_duration: Filter by duration
   filter_by_duration_desc: Filtered out videos with less than the duration you set.
   filter_by_duration_unit: sec
+  filter_by_publish_time: Filter by publish time
+  filter_by_publish_time_desc: Filter out videos published more than the specified number of days ago (only works in Web recommendation mode, minimum 7 days).
+  filter_by_publish_time_unit: days
   filter_item_already_exist: This filter item already exists!
   filter_by_title: Filter by title
   filter_by_title_desc: >-

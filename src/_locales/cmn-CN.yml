@@ -389,6 +389,9 @@ settings:
   filter_by_duration: 按时长筛选
   filter_by_duration_desc: 筛选掉时长小于您设置的视频。
   filter_by_duration_unit: 秒
+  filter_by_publish_time: 按发布时间筛选
+  filter_by_publish_time_desc: 筛选掉发布时间超过设定天数的视频（仅在 Web 推荐模式下有效，最少 7 天）。
+  filter_by_publish_time_unit: 天
   filter_item_already_exist: 这个筛选项目已经存在！
   filter_by_title: 按标题筛选
   filter_by_title_desc: >

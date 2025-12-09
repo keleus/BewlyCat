@@ -10,6 +10,7 @@ export enum FilterType {
   duration,
   title,
   user,
+  publishTime,
 }
 
 type FuncMap = { [key in FilterType]: {
@@ -113,6 +114,27 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
   }
   // #endregion
 
+  /**
+   * Compares the publish time of an item with the filter value.
+   * Return `true` if the video was published within the specified number of days, `false` otherwise.
+   * @param item - The item to compare.
+   * @param keyPath - The path to the publish timestamp in the object.
+   * @param filterValue - The number of days to filter by.
+   * @returns `true` if the video was published within the specified days, `false` otherwise.
+   */
+  function comparePublishTime(item: any, keyPath: string[], filterValue: number) {
+    const publishTimestamp = get(item, keyPath)
+    if (!publishTimestamp)
+      return false
+
+    const now = Math.floor(Date.now() / 1000) // 当前时间戳（秒）
+    const dayInSeconds = 24 * 60 * 60
+    const filterTimeInSeconds = filterValue * dayInSeconds
+    const timeDiff = now - publishTimestamp
+
+    return timeDiff <= filterTimeInSeconds
+  }
+
   const funcMap: FuncMap = {
     [FilterType.filterOutVerticalVideos]: {
       func: filterOutVerticalVideos,
@@ -144,6 +166,11 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
       enabledKey: 'enableFilterByUser',
       valueKey: '',
     },
+    [FilterType.publishTime]: {
+      func: comparePublishTime,
+      enabledKey: 'enableFilterByPublishTime',
+      valueKey: 'filterByPublishTime',
+    },
   }
 
   const filter = ref<((item: any) => boolean) | null>(null)
@@ -154,12 +181,14 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
     settings.value.enableFilterByViewCount,
     settings.value.enableFilterByTitle,
     settings.value.enableFilterByUser,
+    settings.value.enableFilterByPublishTime,
     settings.value.filterByDuration,
     settings.value.filterByViewCount,
     settings.value.filterByTitle,
     settings.value.filterByUser,
-  ], ([filterOutVerticalVideos, durationFilter, viewCountFilter, titleFilter, userFilter]) => {
-    if (!filterOutVerticalVideos && !durationFilter && !viewCountFilter && !titleFilter && !userFilter) {
+    settings.value.filterByPublishTime,
+  ], ([filterOutVerticalVideos, durationFilter, viewCountFilter, titleFilter, userFilter, publishTimeFilter]) => {
+    if (!filterOutVerticalVideos && !durationFilter && !viewCountFilter && !titleFilter && !userFilter && !publishTimeFilter) {
       filter.value = null
       return
     }

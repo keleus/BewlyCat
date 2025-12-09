@@ -97,5 +97,6 @@
   "i18n-ally.localesPaths": [
     "src/_locales"
   ],
-  "i18n-ally.keystyle": "nested"
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.sourceLanguage": "cmn-CN"
 }

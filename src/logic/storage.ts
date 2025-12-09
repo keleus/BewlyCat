@@ -241,6 +241,8 @@ export interface Settings {
   filterByTitle: { keyword: string, remark: string }[]
   enableFilterByUser: boolean
   filterByUser: { keyword: string, remark: string }[]
+  enableFilterByPublishTime: boolean
+  filterByPublishTime: number // 单位：天
 
   followingTabShowLivestreamingVideos: boolean
 
@@ -441,6 +443,8 @@ export const originalSettings: Settings = {
   filterByTitle: [],
   enableFilterByUser: false,
   filterByUser: [],
+  enableFilterByPublishTime: false,
+  filterByPublishTime: 30, // 默认30天
 
   followingTabShowLivestreamingVideos: false,
 
