@@ -335,9 +335,15 @@
       }
     }
 
+    .collection-m-exp .content .group-list .add-group .input-group .submit,
     .collection-m-exp.bewly-enlarged-favorite-dialog .content .group-list .add-group .input-group .submit,
     .follow-dialog-wrap-exp .follow-dialog-window .content .group-list .add-group .input-group .submitGroup {
-      background-color: var(--bew-theme-color) !important;
+      background-color: var(--bew-theme-color-10) !important;
+      color: var(--bew-theme-color) !important;
+
+      &:hover {
+        background-color: var(--bew-theme-color-20) !important;
+      }
     }
 
     .collection-m-exp.bewly-enlarged-favorite-dialog .title {
