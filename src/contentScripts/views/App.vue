@@ -7,6 +7,7 @@ import UpdateLogNotifier from '~/components/UpdateLogNotifier.vue'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { UndoForwardState } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
+import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
@@ -29,6 +30,9 @@ function isFestivalPage(): boolean {
 const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
 const topBarStore = useTopBarStore()
+
+// Global video card shadow styles - computed once for all cards
+const { shadowStyleVars } = useVideoCardShadowStyle()
 
 // Update log notifier state
 const showUpdateLogNotifier = ref(false)
@@ -797,6 +801,7 @@ if (settings.value.cleanUrlArgument) {
     ref="mainAppRef"
     class="bewly-wrapper"
     :class="{ dark: isDark }"
+    :style="shadowStyleVars"
     text="$bew-text-1 size-$bew-base-font-size"
   >
     <!-- Background -->
