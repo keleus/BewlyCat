@@ -241,12 +241,11 @@ onBeforeUnmount(() => {
     :class="{ 'overflow-hidden': layout === 'modern' }"
     cursor-pointer
     group-hover:z-2
-    transform="~ translate-z-0"
   >
     <!-- Video cover -->
     <Picture
       :src="coverImageUrl"
-      loading="eager"
+      loading="lazy"
     />
 
     <div

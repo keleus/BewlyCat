@@ -12,9 +12,10 @@ defineProps<{
   <div
     v-if="settings.videoCardLayout === 'modern' && !horizontal"
     mb-3 pointer-events-none select-none
+    style="contain: layout;"
   >
-    <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" />
-    <div flex="~ col gap-2" mt-2>
+    <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" style="aspect-ratio: 16 / 9;" />
+    <div flex="~ col gap-2" mt-2 style="min-height: 120px;">
       <div flex="~ gap-1 justify-between items-start" w="full">
         <div flex="~ col gap-2" w="[calc(100%-40px)]">
           <div w-full h-5 bg="$bew-skeleton" rounded-4px />
@@ -38,12 +39,14 @@ defineProps<{
     v-else-if="settings.videoCardLayout === 'modern' && horizontal"
     flex="~ gap-6"
     mb-3 pointer-events-none select-none
+    style="contain: layout; min-height: 180px;"
   >
     <!-- Cover -->
     <div
       :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
       shrink-0 aspect-video h-fit bg="$bew-skeleton"
       rounded="$bew-radius"
+      style="aspect-ratio: 16 / 9;"
     />
     <!-- Other Information -->
     <div w-full mt-0 flex="~ col gap-2">
@@ -66,9 +69,10 @@ defineProps<{
   <div
     v-else-if="settings.videoCardLayout === 'old' && !horizontal"
     mb-4 pointer-events-none select-none
+    style="contain: layout;"
   >
-    <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" />
-    <div flex mt-5>
+    <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" style="aspect-ratio: 16 / 9;" />
+    <div flex mt-5 style="min-height: 140px;">
       <div
         m="r-4" w="34px" h="34px" rounded="1/2" bg="$bew-skeleton"
         shrink-0
@@ -97,6 +101,7 @@ defineProps<{
     v-else-if="settings.videoCardLayout === 'old' && horizontal"
     flex="~ gap-6"
     mb-4 pointer-events-none select-none
+    style="contain: layout; min-height: 180px;"
   >
     <!-- Cover -->
     <div
