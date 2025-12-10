@@ -35,87 +35,8 @@ const layout = computed((): 'modern' | 'old' => {
   return layoutSetting === 'old' ? 'old' : 'modern'
 })
 
-/**
- * 解码 HTML 实体编码
- * 支持所有标准 HTML 实体，包括：
- * - 命名实体：&amp; &lt; &gt; &quot; &copy; &reg; &trade; &nbsp; 等
- * - 十进制数字实体：&#38; &#60; &#34; 等
- * - 十六进制数字实体：&#x27; &#x3C; 等
- */
-function decodeHtmlEntities(text: string | undefined): string | undefined {
-  if (!text || typeof text !== 'string')
-    return text
-
-  // 使用 DOMParser 更安全，不会执行脚本
-  const doc = new DOMParser().parseFromString(text, 'text/html')
-  return doc.documentElement.textContent || text
-}
-
-/**
- * 对 video 对象中的所有文本字段进行 HTML 实体解码
- */
-const decodedVideo = computed((): Video | undefined => {
-  if (!props.video)
-    return undefined
-
-  const video = props.video
-
-  // 解码 author 字段
-  let decodedAuthor = video.author
-  if (video.author) {
-    if (Array.isArray(video.author)) {
-      decodedAuthor = video.author.map(author => ({
-        ...author,
-        name: decodeHtmlEntities(author.name),
-      }))
-    }
-    else {
-      decodedAuthor = {
-        ...video.author,
-        name: decodeHtmlEntities(video.author.name),
-      }
-    }
-  }
-
-  // 解码 tag 字段
-  let decodedTag = video.tag
-  if (video.tag) {
-    if (Array.isArray(video.tag)) {
-      decodedTag = video.tag.map(tag => decodeHtmlEntities(tag) || tag)
-    }
-    else {
-      decodedTag = decodeHtmlEntities(video.tag)
-    }
-  }
-
-  // 解码 badge 字段
-  let decodedBadge = video.badge
-  if (video.badge) {
-    decodedBadge = {
-      ...video.badge,
-      text: decodeHtmlEntities(video.badge.text) || video.badge.text,
-    }
-  }
-
-  return {
-    ...video,
-    title: decodeHtmlEntities(video.title) || video.title,
-    desc: decodeHtmlEntities(video.desc),
-    capsuleText: decodeHtmlEntities(video.capsuleText),
-    author: decodedAuthor,
-    tag: decodedTag,
-    badge: decodedBadge,
-  }
-})
-
-// 创建一个新的 props 对象，使用解码后的 video
-const videoCardProps = computed(() => ({
-  ...props,
-  video: decodedVideo.value,
-}))
-
-// 传入 computed 引用，确保 props 变化时 logic 内部能够响应
-const logic = useVideoCardLogic(videoCardProps)
+// 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
+const logic = useVideoCardLogic(props)
 const { mainAppRef } = useBewlyApp()
 
 // Modern layout specific: cover stats calculation
@@ -136,7 +57,7 @@ function formatStatValue(count?: number, countStr?: string) {
 }
 
 const coverStatValues = computed(() => {
-  if (!decodedVideo.value || layout.value !== 'modern') {
+  if (!props.video || layout.value !== 'modern') {
     return {
       view: '',
       danmaku: '',
@@ -148,12 +69,12 @@ const coverStatValues = computed(() => {
   const stats = logic.videoStatNumbers.value
 
   return {
-    view: formatStatValue(stats.view, decodedVideo.value.viewStr),
-    danmaku: formatStatValue(stats.danmaku, decodedVideo.value.danmakuStr),
-    like: formatStatValue(stats.like, decodedVideo.value.likeStr),
-    duration: decodedVideo.value.duration
-      ? calcCurrentTime(decodedVideo.value.duration)
-      : decodedVideo.value.durationStr ?? '',
+    view: formatStatValue(stats.view, props.video.viewStr),
+    danmaku: formatStatValue(stats.danmaku, props.video.danmakuStr),
+    like: formatStatValue(stats.like, props.video.likeStr),
+    duration: props.video.duration
+      ? calcCurrentTime(props.video.duration)
+      : props.video.durationStr ?? '',
   }
 })
 
@@ -203,7 +124,7 @@ const shouldHideCoverStats = computed(() =>
 )
 
 const primaryTags = computed(() => {
-  const video = decodedVideo.value
+  const video = props.video
   if (!video)
     return []
   const { tag } = video
@@ -245,7 +166,7 @@ const titleStyle = computed((): Record<string, string | number> => {
 
 // Highlight tags calculation
 const highlightTags = computed(() => {
-  if (!decodedVideo.value)
+  if (!props.video)
     return [] as string[]
 
   // 如果设置为不显示推荐标签，则不显示插件计算的标签
@@ -278,7 +199,7 @@ const highlightTags = computed(() => {
     }
   }
 
-  const durationTag = decodedVideo.value ? getDurationHighlight(decodedVideo.value) : undefined
+  const durationTag = props.video ? getDurationHighlight(props.video) : undefined
 
   if (durationTag)
     tags.push(durationTag)
@@ -351,7 +272,7 @@ const authorFontSizeClass = computed(() => VIDEO_CARD_FONT_SIZE_MAP[settings.val
 const metaFontSizeClass = computed(() => VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardMetaFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.xs)
 
 const coverImageUrl = computed(() =>
-  decodedVideo.value ? `${logic.removeHttpFromUrl(decodedVideo.value.cover)}@672w_378h_1c_!web-home-common-cover` : '',
+  props.video ? `${logic.removeHttpFromUrl(props.video.cover)}@672w_378h_1c_!web-home-common-cover` : '',
 )
 
 const infoComponentRef = ref()
@@ -369,17 +290,15 @@ provide('getVideoType', () => props.type!)
 <template>
   <div
     :ref="(el) => logic.cardRootRef.value = el as HTMLElement"
-    :style="{ contentVisibility: logic.contentVisibility.value }"
     class="video-card-container"
     duration-300 ease-in-out
     rounded="$bew-radius"
     :ring="skeleton ? '' : 'hover:8 hover:$bew-fill-2 active:8 active:$bew-fill-3'"
     :bg="skeleton ? '' : 'hover:$bew-fill-2 active:$bew-fill-3'"
-    transform="~ translate-z-0"
-    will-change-transform
     :class="layout === 'modern' ? 'mb-3' : 'mb-4'"
+    style="contain: layout;"
   >
-    <div v-if="!skeleton && decodedVideo">
+    <div v-if="!skeleton && props.video">
       <div
         class="video-card group"
         w="full"
@@ -399,7 +318,7 @@ provide('getVideoType', () => props.type!)
             :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
           >
             <VideoCardCover
-              :video="decodedVideo"
+              :video="props.video"
               :layout="layout"
               :removed="logic.removed.value"
               :is-hover="logic.isHover.value"
@@ -427,7 +346,7 @@ provide('getVideoType', () => props.type!)
           <VideoCardInfo
             v-if="!logic.removed.value"
             ref="infoComponentRef"
-            :video="decodedVideo"
+            :video="props.video"
             :layout="layout"
             :horizontal="horizontal || false"
             :video-url="logic.videoUrl.value"
@@ -453,12 +372,12 @@ provide('getVideoType', () => props.type!)
 
     <!-- context menu -->
     <Teleport
-      v-if="logic.showVideoOptions.value && decodedVideo"
+      v-if="logic.showVideoOptions.value && props.video"
       :to="mainAppRef"
     >
       <VideoCardContextMenu
         :video="{
-          ...decodedVideo,
+          ...props.video,
           url: logic.videoUrl.value,
         }"
         :context-menu-styles="logic.videoOptionsFloatingStyles.value"
@@ -470,14 +389,10 @@ provide('getVideoType', () => props.type!)
 </template>
 
 <style lang="scss" scoped>
-/* 启用容器查询 */
+/* 优化性能：移除容器查询以减少滚动时的 GPU 占用 */
 .video-card-container {
-  container-type: inline-size;
-  container-name: videocard;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 300px;
-  /* 性能优化：限制布局和样式重算范围 */
-  contain: layout style;
+  /* 使用轻量的 contain 策略，不使用 container-type */
+  contain: layout paint style;
 }
 
 .horizontal-card-cover {
@@ -489,8 +404,8 @@ provide('getVideoType', () => props.type!)
 }
 
 .bew-title-auto {
-  /* 使用容器查询单位 cqw 替代 JS 计算 */
-  font-size: clamp(12px, 7cqw, 30px);
+  /* 使用固定的响应式字体大小，不使用容器查询单位 */
+  font-size: clamp(12px, 2.5vw, 18px);
   line-height: clamp(1.15, 1.35, 1.5);
 }
 
@@ -498,45 +413,17 @@ provide('getVideoType', () => props.type!)
   min-height: calc(var(--bew-title-line-height, 1.35) * 2em);
 }
 
-/* 使用容器查询控制统计信息的显示/隐藏和样式 */
-@container videocard (max-width: 210px) {
-  :deep(.cover-stat-danmaku) {
-    display: none !important;
-  }
+/* 使用固定样式，不使用容器查询 - 大幅减少滚动时的计算开销 */
+:deep(.video-card-stats) {
+  --video-card-stats-font-size: 0.75rem;
+  --video-card-stats-overlay-scale: 1.4;
+  --video-card-stats-icon-size: 0.825rem;
+}
+
+/* 使用媒体查询替代容器查询 - 在小屏幕隐藏部分统计信息 */
+@media (max-width: 768px) {
   :deep(.cover-stat-like) {
     display: none !important;
-  }
-  :deep(.video-card-stats) {
-    --video-card-stats-font-size: 0.68rem;
-    --video-card-stats-overlay-scale: 1.25;
-    --video-card-stats-icon-size: 0.748rem;
-  }
-}
-
-@container videocard (min-width: 211px) and (max-width: 239px) {
-  :deep(.cover-stat-like) {
-    display: none !important;
-  }
-  :deep(.video-card-stats) {
-    --video-card-stats-font-size: 0.7rem;
-    --video-card-stats-overlay-scale: 1.3;
-    --video-card-stats-icon-size: 0.77rem;
-  }
-}
-
-@container videocard (min-width: 240px) and (max-width: 299px) {
-  :deep(.video-card-stats) {
-    --video-card-stats-font-size: 0.73rem;
-    --video-card-stats-overlay-scale: 1.4;
-    --video-card-stats-icon-size: 0.803rem;
-  }
-}
-
-@container videocard (min-width: 300px) {
-  :deep(.video-card-stats) {
-    --video-card-stats-font-size: 0.82rem;
-    --video-card-stats-overlay-scale: 1.6;
-    --video-card-stats-icon-size: 0.902rem;
   }
 }
 </style>
