@@ -302,6 +302,62 @@ export function compressAndResizeImage(file: File, maxWidth: number, maxHeight: 
 }
 
 /**
+ * Generate a blurred version of an image for better performance
+ * @param imageUrl - The original image URL (can be http/https/data URI)
+ * @param blurRadius - The blur radius in pixels (recommended: 40-80 for wallpapers)
+ * @param scale - Scale factor for performance optimization (0.3-0.5 recommended)
+ * @returns Promise<string> - Base64 data URL of the blurred image
+ */
+export async function generateBlurredWallpaper(
+  imageUrl: string,
+  blurRadius: number = 60,
+  scale: number = 0.4,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous' // Handle CORS for external images
+
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d', { alpha: false })
+
+        if (!ctx) {
+          reject(new Error('Failed to get canvas context'))
+          return
+        }
+
+        // Scale down for better performance (user won't notice on blurred background)
+        const scaledWidth = Math.floor(img.width * scale)
+        const scaledHeight = Math.floor(img.height * scale)
+
+        canvas.width = scaledWidth
+        canvas.height = scaledHeight
+
+        // Apply blur using CSS filter (GPU accelerated during rendering)
+        ctx.filter = `blur(${blurRadius * scale}px)`
+
+        // Draw the scaled and blurred image
+        ctx.drawImage(img, 0, 0, scaledWidth, scaledHeight)
+
+        // Convert to base64 with compression
+        const blurredDataUrl = canvas.toDataURL('image/jpeg', 0.7)
+        resolve(blurredDataUrl)
+      }
+      catch (error) {
+        reject(error)
+      }
+    }
+
+    img.onerror = () => {
+      reject(new Error(`Failed to load image: ${imageUrl}`))
+    }
+
+    img.src = imageUrl
+  })
+}
+
+/**
  * Compare two versions
  * @param version1
  * @param version2

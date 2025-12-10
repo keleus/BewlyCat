@@ -415,7 +415,7 @@ export const originalSettings: Settings = {
   searchPageWallpaperMode: 'buildIn',
   searchPageWallpaper: '',
   searchPageEnableWallpaperMasking: false,
-  searchPageWallpaperMaskOpacity: 0,
+  searchPageWallpaperMaskOpacity: 80,
   searchPageWallpaperBlurIntensity: 0,
   searchPageWallpaperCacheTime: 0, // 默认缓存24小时
 

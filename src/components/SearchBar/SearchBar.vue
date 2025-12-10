@@ -500,7 +500,11 @@ function handleFocusOut(event: FocusEvent) {
       v-if="blurredOnFocus"
       pos="fixed top-0 left-0" w-full h-full duration-500 pointer-events-none
       ease-out transform-gpu
-      :style="{ backdropFilter: isFocus ? 'blur(15px)' : 'blur(0)' }"
+      bg="$bew-bg"
+      :style="{
+        opacity: isFocus ? 0.9 : 0,
+        backdropFilter: isFocus ? 'blur(10px)' : 'blur(0)',
+      }"
     />
 
     <div

@@ -3,7 +3,7 @@ import { useDark } from '~/composables/useDark'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { isLocalWallpaperUrl, resolveWallpaperUrl } from '~/utils/localWallpaper'
-import { hexToHSL } from '~/utils/main'
+import { generateBlurredWallpaper, hexToHSL } from '~/utils/main'
 import { cleanupExpiredCache, getOrCacheWallpaper } from '~/utils/wallpaperCache'
 
 const props = defineProps<{ activatedPage: AppPage }>()
@@ -19,6 +19,14 @@ onMounted(() => {
 // 计算解析后的壁纸URL(支持本地壁纸和缓存控制)
 const resolvedWallpaper = ref('')
 const resolvedSearchPageWallpaper = ref('')
+
+// 模糊版本的壁纸URL
+const blurredWallpaper = ref('')
+const blurredSearchPageWallpaper = ref('')
+
+// 模糊图生成状态（用于本地图片的 loading 显示）
+const isGeneratingBlur = ref(false)
+const isGeneratingSearchPageBlur = ref(false)
 
 // 解析全局壁纸
 async function resolveGlobalWallpaper() {
@@ -81,6 +89,132 @@ const currentWallpaperUrl = computed(() => {
     return resolvedSearchPageWallpaper.value
   }
   return resolvedWallpaper.value
+})
+
+// 计算当前页面使用的模糊壁纸URL
+const currentBlurredWallpaperUrl = computed(() => {
+  if (props.activatedPage === AppPage.Search && settings.value.individuallySetSearchPageWallpaper) {
+    return blurredSearchPageWallpaper.value
+  }
+  return blurredWallpaper.value
+})
+
+// 生成全局壁纸的模糊版本
+async function generateGlobalBlurredWallpaper(isLocalImage: boolean = false) {
+  if (!resolvedWallpaper.value || !settings.value.enableWallpaperMasking)
+    return
+
+  // 如果模糊强度为 0，清空模糊图，直接使用半透明蒙层
+  const blurRadius = settings.value.wallpaperBlurIntensity || 0
+  if (blurRadius === 0) {
+    blurredWallpaper.value = ''
+    return
+  }
+
+  try {
+    // 本地图片：显示 loading
+    if (isLocalImage) {
+      isGeneratingBlur.value = true
+    }
+    // 在线图片：后台静默生成
+
+    blurredWallpaper.value = await generateBlurredWallpaper(resolvedWallpaper.value, blurRadius, 0.4)
+  }
+  catch (error) {
+    console.error('Failed to generate blurred wallpaper:', error)
+    blurredWallpaper.value = '' // Fallback to semi-transparent mask
+  }
+  finally {
+    if (isLocalImage) {
+      isGeneratingBlur.value = false
+    }
+  }
+}
+
+// 生成搜索页壁纸的模糊版本
+async function generateSearchPageBlurredWallpaper(isLocalImage: boolean = false) {
+  if (!resolvedSearchPageWallpaper.value || !settings.value.searchPageEnableWallpaperMasking)
+    return
+
+  // 如果模糊强度为 0，清空模糊图，直接使用半透明蒙层
+  const blurRadius = settings.value.searchPageWallpaperBlurIntensity || 0
+  if (blurRadius === 0) {
+    blurredSearchPageWallpaper.value = ''
+    return
+  }
+
+  try {
+    // 本地图片：显示 loading
+    if (isLocalImage) {
+      isGeneratingSearchPageBlur.value = true
+    }
+    // 在线图片：后台静默生成
+
+    blurredSearchPageWallpaper.value = await generateBlurredWallpaper(resolvedSearchPageWallpaper.value, blurRadius, 0.4)
+  }
+  catch (error) {
+    console.error('Failed to generate blurred search page wallpaper:', error)
+    blurredSearchPageWallpaper.value = ''
+  }
+  finally {
+    if (isLocalImage) {
+      isGeneratingSearchPageBlur.value = false
+    }
+  }
+}
+
+// 监听全局壁纸变化，生成模糊版本
+watch(() => resolvedWallpaper.value, (newUrl) => {
+  if (newUrl) {
+    // 判断是否为本地图片
+    const isLocal = isLocalWallpaperUrl(settings.value.wallpaper)
+    generateGlobalBlurredWallpaper(isLocal)
+  }
+  else {
+    blurredWallpaper.value = ''
+  }
+})
+
+// 监听搜索页壁纸变化，生成模糊版本
+watch(() => resolvedSearchPageWallpaper.value, (newUrl) => {
+  if (newUrl) {
+    // 判断是否为本地图片
+    const isLocal = isLocalWallpaperUrl(settings.value.searchPageWallpaper)
+    generateSearchPageBlurredWallpaper(isLocal)
+  }
+  else {
+    blurredSearchPageWallpaper.value = ''
+  }
+})
+
+// 监听蒙层开关变化
+watch(() => settings.value.enableWallpaperMasking, (enabled) => {
+  if (enabled && resolvedWallpaper.value && !blurredWallpaper.value) {
+    const isLocal = isLocalWallpaperUrl(settings.value.wallpaper)
+    generateGlobalBlurredWallpaper(isLocal)
+  }
+})
+
+watch(() => settings.value.searchPageEnableWallpaperMasking, (enabled) => {
+  if (enabled && resolvedSearchPageWallpaper.value && !blurredSearchPageWallpaper.value) {
+    const isLocal = isLocalWallpaperUrl(settings.value.searchPageWallpaper)
+    generateSearchPageBlurredWallpaper(isLocal)
+  }
+})
+
+// 监听模糊强度变化，重新生成模糊图
+watch(() => settings.value.wallpaperBlurIntensity, () => {
+  if (resolvedWallpaper.value && settings.value.enableWallpaperMasking) {
+    const isLocal = isLocalWallpaperUrl(settings.value.wallpaper)
+    generateGlobalBlurredWallpaper(isLocal)
+  }
+})
+
+watch(() => settings.value.searchPageWallpaperBlurIntensity, () => {
+  if (resolvedSearchPageWallpaper.value && settings.value.searchPageEnableWallpaperMasking) {
+    const isLocal = isLocalWallpaperUrl(settings.value.searchPageWallpaper)
+    generateSearchPageBlurredWallpaper(isLocal)
+  }
 })
 
 const themeColorHsl = computed(() => {
@@ -155,12 +289,42 @@ function setAppWallpaperMaskingOpacity() {
         <Transition name="fade">
           <div
             v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
-            pos="absolute top-0 left-0" w-full h-full pointer-events-none bg="$bew-homepage-bg-mask"
+            pos="absolute top-0 left-0" w-full h-full pointer-events-none
             duration-300 z--1 transform-gpu
-            :style="{
-              backdropFilter: `blur(${settings.individuallySetSearchPageWallpaper ? settings.searchPageWallpaperBlurIntensity : settings.wallpaperBlurIntensity}px)`,
-            }"
-          />
+          >
+            <!-- 模糊图层 -->
+            <div
+              v-if="currentBlurredWallpaperUrl"
+              pos="absolute top-0 left-0" w-full h-full
+              :style="{
+                backgroundImage: `url('${currentBlurredWallpaperUrl}')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }"
+            />
+            <!-- 半透明蒙层叠加 -->
+            <div
+              pos="absolute top-0 left-0" w-full h-full
+              :style="{
+                backgroundColor: `var(--bew-homepage-bg-mask)`,
+              }"
+            />
+          </div>
+        </Transition>
+
+        <!-- Loading indicator for local images -->
+        <Transition name="fade">
+          <div
+            v-if="(isGeneratingBlur || isGeneratingSearchPageBlur) && (!currentBlurredWallpaperUrl)"
+            pos="fixed top-20 left-1/2" transform="translate-x--1/2"
+            bg="$bew-elevated" backdrop-blur-8px
+            px-6 py-3 rounded-full shadow="$bew-shadow-2"
+            z-999 flex="~ items-center gap-3"
+            text="sm $bew-text-1"
+          >
+            <div w-4 h-4 border="2 $bew-theme-color-auto t-transparent" rounded-full animate-spin />
+            <span>{{ $t('common.loading') }}...</span>
+          </div>
         </Transition>
       </div>
       <div v-else>
@@ -175,12 +339,27 @@ function setAppWallpaperMaskingOpacity() {
         <Transition name="fade">
           <div
             v-if="settings.enableWallpaperMasking"
-            pos="absolute top-0 left-0" w-full h-full pointer-events-none bg="$bew-homepage-bg-mask"
+            pos="absolute top-0 left-0" w-full h-full pointer-events-none
             duration-300 z--1 transform-gpu
-            :style="{
-              backdropFilter: `blur(${settings.wallpaperBlurIntensity}px)`,
-            }"
-          />
+          >
+            <!-- 模糊图层 -->
+            <div
+              v-if="currentBlurredWallpaperUrl"
+              pos="absolute top-0 left-0" w-full h-full
+              :style="{
+                backgroundImage: `url('${currentBlurredWallpaperUrl}')`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+              }"
+            />
+            <!-- 半透明蒙层叠加 -->
+            <div
+              pos="absolute top-0 left-0" w-full h-full
+              :style="{
+                backgroundColor: `var(--bew-homepage-bg-mask)`,
+              }"
+            />
+          </div>
         </Transition>
       </div>
     </Transition>
