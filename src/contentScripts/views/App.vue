@@ -347,41 +347,31 @@ setupNecessarySettingsWatchers()
 
 // Update log dialog handlers
 function handleCloseAndNeverShowUpdateLog() {
-  console.log('[UpdateLog] User clicked "Close and never show for this version"')
-
   // Hide notifier immediately in current tab
   showUpdateLogNotifier.value = false
 
   // Save current version as read
   // This will trigger storage change event and sync to all tabs automatically
-  console.log('[UpdateLog] Saving version as read:', currentVersion.value)
   settings.value.lastReadVersion = currentVersion.value
 }
 
 // Check if we should show update log notifier
 async function checkUpdateLog() {
   // Only show update log on homepage, not in iframes or other pages
-  if (!isHomePage() || isInIframe()) {
-    console.log('[UpdateLog] Not on homepage or in iframe, skipping update log check')
+  if (!isHomePage() || isInIframe())
     return
-  }
 
   const version = await getExtensionVersion()
   currentVersion.value = version
   changelogUrl.value = await getChangelogUrl()
 
-  console.log('[UpdateLog] Current version:', version)
-  console.log('[UpdateLog] Last read version:', settings.value.lastReadVersion)
-
   // Important: Only show if version is different from last read
   // This prevents showing on refresh when already read
   if (shouldShowUpdateLog(settings.value.lastReadVersion, version)) {
-    console.log('[UpdateLog] Should show update log notifier')
     // Show the notifier icon immediately
     showUpdateLogNotifier.value = true
   }
   else {
-    console.log('[UpdateLog] Version already read, not showing notifier')
     // Explicitly set to false to ensure it's hidden
     showUpdateLogNotifier.value = false
   }
@@ -391,17 +381,11 @@ async function checkUpdateLog() {
 // useStorageLocal uses browser.storage which automatically syncs across tabs
 watch(() => settings.value.lastReadVersion, (newVersion, oldVersion) => {
   // Ignore if currentVersion hasn't been set yet
-  if (!currentVersion.value) {
-    console.log('[UpdateLog] Current version not set yet, ignoring watch trigger')
+  if (!currentVersion.value)
     return
-  }
-
-  console.log('[UpdateLog] settings.lastReadVersion changed from:', oldVersion, 'to:', newVersion)
-  console.log('[UpdateLog] Current version:', currentVersion.value)
 
   // Only react if the value actually changed and matches current version
   if (oldVersion !== newVersion && newVersion === currentVersion.value) {
-    console.log('[UpdateLog] Version marked as read in another tab, hiding notifier')
     // Version has been marked as read in another tab
     showUpdateLogNotifier.value = false
   }

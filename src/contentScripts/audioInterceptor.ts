@@ -396,8 +396,21 @@ export function detach() {
   log('Detached (Bypass mode)')
 }
 
+// 检查是否在视频播放页面
+function isVideoPage(): boolean {
+  const path = location.pathname
+  return path.includes('/video/')
+    || path.includes('/bangumi/play/')
+    || path.includes('/medialist/')
+    || path.startsWith('/festival/')
+    || path.startsWith('/cheese/play/')
+}
+
 export function initAudioInterceptor() {
-  log('Initializing Audio Interceptor')
+  // 只在视频页面输出初始化日志
+  if (isVideoPage()) {
+    log('Initializing Audio Interceptor')
+  }
 
   let lastUrl = location.href
 
@@ -405,11 +418,23 @@ export function initAudioInterceptor() {
     // 1. Check URL change
     if (location.href !== lastUrl) {
       lastUrl = location.href
-      log('URL changed')
-      // Don't full detach, just check video
+      // 只在视频页面输出 URL 变化日志
+      if (isVideoPage()) {
+        log('URL changed')
+      }
     }
 
-    // 2. Check Video Element
+    // 2. 只在视频播放页面启用音频处理
+    if (!isVideoPage()) {
+      // 不在视频页面时，如果已附加则断开
+      if (hasAttached) {
+        log('Not on video page, detaching')
+        detach()
+      }
+      return
+    }
+
+    // 3. Check Video Element (只在视频页面执行)
     const video = document.querySelector('video')
     if (video) {
       if (video !== currentVideoElement) {

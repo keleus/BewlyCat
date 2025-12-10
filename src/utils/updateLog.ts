@@ -16,16 +16,13 @@ async function getDevBuildHash(): Promise<string> {
   try {
     // Try to fetch the build-info.json file that was generated during build
     const response = await fetch(browser.runtime.getURL('/dist/build-info.json'))
-    if (!response.ok) {
-      console.warn('[UpdateLog] build-info.json not found, using fallback')
+    if (!response.ok)
       return 'dev'
-    }
 
     const buildInfo: BuildInfo = await response.json()
     return buildInfo.buildHash
   }
-  catch (error) {
-    console.error('[UpdateLog] Failed to read build-info.json:', error)
+  catch {
     return 'dev'
   }
 }
@@ -49,8 +46,7 @@ export async function getExtensionVersion(): Promise<string> {
 
     return baseVersion
   }
-  catch (error) {
-    console.error('[UpdateLog] Failed to get extension version:', error)
+  catch {
     return ''
   }
 }
