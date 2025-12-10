@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { settings } from '~/logic'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
@@ -56,14 +57,25 @@ function checkTitleOverflow() {
   titleTooltip.value = isOverflow ? props.video.title : undefined
 }
 
+// 使用防抖优化 resize 检查，减少布局读取频率
+const debouncedCheckTitleOverflow = useDebounceFn(checkTitleOverflow, 200)
+
 onMounted(() => {
-  checkTitleOverflow()
-  // 监听窗口大小变化,重新检测
-  window.addEventListener('resize', checkTitleOverflow)
+  // 使用 requestIdleCallback 延迟检查，避免阻塞初始渲染
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => checkTitleOverflow(), { timeout: 500 })
+  }
+  else {
+    // 降级方案：使用 setTimeout
+    setTimeout(checkTitleOverflow, 100)
+  }
+
+  // 监听窗口大小变化，使用防抖减少触发频率
+  window.addEventListener('resize', debouncedCheckTitleOverflow)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkTitleOverflow)
+  window.removeEventListener('resize', debouncedCheckTitleOverflow)
 })
 </script>
 

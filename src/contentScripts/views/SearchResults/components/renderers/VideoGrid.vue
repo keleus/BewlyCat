@@ -75,6 +75,7 @@ if (typeof window !== 'undefined') {
     <VideoCard
       v-for="video in videos"
       :key="video.aid || video.id"
+      v-memo="[video.aid || video.id, video, settings.videoCardLayout]"
       :video="shouldAutoConvert ? convertVideoData(video) : video"
       :horizontal="false"
       :show-preview="true"
