@@ -12,10 +12,11 @@ import { appAuthTokens, settings } from '~/logic'
 import type { AppForYouResult, Item as AppVideoItem } from '~/models/video/appForYou'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
 import type { forYouResult, Item as VideoItem } from '~/models/video/forYou'
-import type { AppVideoElement, VideoElement } from '~/stores/forYouStore'
+import type { AppVideoElement, VideoCardDisplayData, VideoElement } from '~/stores/forYouStore'
 import { useForYouStore } from '~/stores/forYouStore'
 import api from '~/utils/api'
 import { TVAppKey } from '~/utils/authProvider'
+import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { isVerticalVideo } from '~/utils/uriParse'
 
 const props = defineProps<{
@@ -78,24 +79,32 @@ const gridClass = computed((): string => {
   return 'grid-one-column'
 })
 
-// Inline grid style for adaptive mode: optional max width and centering
+// 提前定义 containerRef 避免 no-use-before-define 错误
+const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
+
+// Inline grid style for adaptive mode: 使用 CSS auto-fit，让浏览器自动计算列数
+// 避免 JS 计算导致的 forced reflow
 const gridStyle = computed(() => {
   if (props.gridLayout !== 'adaptive')
     return {}
-  const style: Record<string, any> = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(var(--bew-home-card-min-width, 280px), 1fr))',
-  }
+
   const baseWidth = Math.max(160, settings.value.homeAdaptiveCardMinWidth || 280)
-  style['--bew-home-card-min-width'] = `${baseWidth}px`
-  return style
+  const gap = 20 // 对应 gap-5 (1.25rem = 20px)
+
+  // 使用 auto-fit 和 minmax，让浏览器自动计算最优列数
+  // 不再需要 JS 读取 clientWidth，避免强制 reflow
+  return {
+    display: 'grid',
+    gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${baseWidth}px), 1fr))`,
+    gap: `${gap}px`,
+    '--bew-home-card-min-width': `${baseWidth}px`,
+  }
 })
 
 const videoList = ref<VideoElement[]>([])
 const appVideoList = ref<AppVideoElement[]>([])
 const isLoading = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
-const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const refreshIdx = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
 const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, handleUndoRefresh, handleForwardRefresh, handleBackToTop } = useBewlyApp()
@@ -138,6 +147,9 @@ function handleVisibilityChange() {
 // 添加页面可见性监听器
 onMounted(() => {
   document.addEventListener('visibilitychange', handleVisibilityChange)
+
+  // 移除了 ResizeObserver 和 calculateGridColumns 调用
+  // 现在使用纯 CSS grid auto-fit，浏览器自动处理响应式布局
 
   // 如果启用状态保留且store中有数据，则恢复状态
   if (settings.value.preserveForYouState && forYouStore.state.isInitialized) {
@@ -222,6 +234,71 @@ onKeyStroke((e: KeyboardEvent) => {
     }
   }
 })
+
+// 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
+// 这样可以避免在模板中进行大量计算，提高渲染性能
+function transformWebVideo(item: VideoItem): VideoCardDisplayData {
+  return {
+    id: item.id,
+    duration: item.duration,
+    title: decodeHtmlEntities(item.title),
+    cover: item.pic,
+    author: {
+      name: decodeHtmlEntities(item.owner.name),
+      authorFace: item.owner.face,
+      followed: !!item.is_followed,
+      mid: item.owner.mid,
+    },
+    tag: decodeHtmlEntities(item?.rcmd_reason?.content),
+    view: item.stat.view,
+    danmaku: item.stat.danmaku,
+    like: item.stat.like,
+    publishedTimestamp: item.pubdate,
+    bvid: item.bvid,
+    cid: item.cid,
+  }
+}
+
+function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
+  // 预先计算 followed 状态，避免多次 trim 和比较
+  const bottomReason = item?.bottom_rcmd_reason?.trim()
+  const followed = bottomReason === '已关注' || bottomReason === '已關注'
+
+  // 预先计算 capsuleText，提取复杂逻辑
+  const descPart = item?.desc?.split('·')?.[1]?.trim()
+  const capsuleText = descPart || (followed ? bottomReason : undefined)
+
+  // 预先计算 type，避免在模板中调用函数
+  let type: 'horizontal' | 'vertical' | 'bangumi' = 'horizontal'
+  if (item.card_goto === 'bangumi') {
+    type = 'bangumi'
+  }
+  else if (item.uri && isVerticalVideo(item.uri)) {
+    type = 'vertical'
+  }
+
+  return {
+    id: item.args?.aid ?? 0,
+    durationStr: item.cover_right_text,
+    title: decodeHtmlEntities(item.title),
+    cover: item.cover,
+    author: {
+      name: decodeHtmlEntities(item?.mask?.avatar?.text || ''),
+      authorFace: item?.mask?.avatar?.cover || item?.avatar?.cover || '',
+      followed,
+      mid: item?.mask?.avatar?.up_id || 0,
+    },
+    capsuleText: decodeHtmlEntities(capsuleText),
+    bvid: item.bvid,
+    viewStr: item.cover_left_text_1,
+    danmakuStr: item.cover_left_text_2,
+    cid: item?.player_args?.cid,
+    goto: item?.goto,
+    url: item?.goto === 'bangumi' ? item.uri : '',
+    type,
+    threePointV2: item?.three_point_v2,
+  }
+}
 
 watch(() => settings.value.recommendationMode, () => {
   noMoreContent.value = false
@@ -434,23 +511,32 @@ async function getRecommendVideos() {
     }
 
     const beforeLoadCount = videoList.value.filter(video => video.item).length
-    let i = 0
 
-    // 只在初次加载或列表长度不足时添加占位视频
-    if (videoList.value.length < PAGE_SIZE) {
-      const pendingVideos: VideoElement[] = Array.from({
-        length: PAGE_SIZE - videoList.value.length,
-      }, () => ({
-        uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
+    // 只在滚动加载（非初始加载）时显示骨架屏
+    // 初始加载有 SmoothLoading 全局加载指示器，无需 skeleton
+    const isScrollLoad = beforeLoadCount > 0
+    if (isScrollLoad) {
+      // 添加 skeleton 占位卡片（用于显示加载状态）
+      const SKELETON_COUNT = 6 // 每次加载显示 6 个骨架屏
+      const skeletonPlaceholders: VideoElement[] = Array.from({
+        length: SKELETON_COUNT,
+      }, (_, i) => ({
+        uniqueId: `skeleton-${Date.now()}-${i}`,
+        // 不设置 item，VideoCard 会检测到并显示 skeleton
       } satisfies VideoElement))
 
-      videoList.value.push(...pendingVideos)
+      videoList.value.push(...skeletonPlaceholders)
     }
 
     const response: forYouResult = await api.video.getRecommendVideos({
       fresh_idx: refreshIdx.value++,
       ps: PAGE_SIZE,
     })
+
+    // 移除刚添加的 skeleton 占位符（如果有）
+    if (isScrollLoad) {
+      videoList.value = videoList.value.filter(v => !v.uniqueId.startsWith('skeleton-'))
+    }
 
     if (!response.data) {
       noMoreContent.value = true
@@ -466,8 +552,12 @@ async function getRecommendVideos() {
       })
 
       // when videoList has length property, it means it is the first time to load
-      if (!videoList.value.length) {
-        videoList.value = resData.map(item => ({ uniqueId: `${item.id}`, item }))
+      if (!beforeLoadCount) {
+        videoList.value = resData.map(item => ({
+          uniqueId: `${item.id}`,
+          item,
+          displayData: transformWebVideo(item),
+        }))
       }
       else {
         resData.forEach((item) => {
@@ -477,6 +567,7 @@ async function getRecommendVideos() {
             videoList.value.push({
               uniqueId: `${item.id}`,
               item,
+              displayData: transformWebVideo(item),
             })
           }
           else {
@@ -485,12 +576,14 @@ async function getRecommendVideos() {
               videoList.value[findFirstEmptyItemIndex] = {
                 uniqueId: `${item.id}`,
                 item,
+                displayData: transformWebVideo(item),
               }
             }
             else {
               videoList.value.push({
                 uniqueId: `${item.id}`,
                 item,
+                displayData: transformWebVideo(item),
               })
             }
           }
@@ -536,6 +629,23 @@ async function getRecommendVideos() {
 async function getAppRecommendVideos() {
   const batchesToLoad = APP_LOAD_BATCHES.value
 
+  // 只在滚动加载（非初始加载）时显示骨架屏
+  // 初始加载有 SmoothLoading 全局加载指示器，无需 skeleton
+  const beforeLoadCount = appVideoList.value.filter(v => v.item).length
+  const isScrollLoad = beforeLoadCount > 0
+  if (isScrollLoad) {
+    // 添加 skeleton 占位卡片（用于显示加载状态）
+    const SKELETON_COUNT = 6 // 每次加载显示 6 个骨架屏
+    const skeletonPlaceholders: AppVideoElement[] = Array.from({
+      length: SKELETON_COUNT,
+    }, (_, i) => ({
+      uniqueId: `skeleton-${Date.now()}-${i}`,
+      // 不设置 item，VideoCard 会检测到并显示 skeleton
+    } satisfies AppVideoElement))
+
+    appVideoList.value.push(...skeletonPlaceholders)
+  }
+
   // 加载多个批次
   for (let batch = 0; batch < batchesToLoad; batch++) {
     try {
@@ -574,6 +684,7 @@ async function getAppRecommendVideos() {
           appVideoList.value.push({
             uniqueId: `${videoId || item.idx}`,
             item,
+            displayData: transformAppVideo(item),
           })
         })
       }
@@ -586,6 +697,11 @@ async function getAppRecommendVideos() {
       console.error('Failed to load batch', batch, error)
       break
     }
+  }
+
+  // 移除刚添加的 skeleton 占位符（如果有）
+  if (isScrollLoad) {
+    appVideoList.value = appVideoList.value.filter(v => !v.uniqueId.startsWith('skeleton-'))
   }
 
   if (!needToLoginFirst.value) {
@@ -665,27 +781,10 @@ defineExpose({
         <VideoCard
           v-for="video in videoList"
           :key="video.uniqueId"
+          v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
           :skeleton="!video.item"
           type="rcmd"
-          :video="video.item ? {
-            id: video.item.id,
-            duration: video.item.duration,
-            title: video.item.title,
-            cover: video.item.pic,
-            author: {
-              name: video.item.owner.name,
-              authorFace: video.item.owner.face,
-              followed: !!video.item.is_followed,
-              mid: video.item.owner.mid,
-            },
-            tag: video.item?.rcmd_reason?.content,
-            view: video.item.stat.view,
-            danmaku: video.item.stat.danmaku,
-            like: video.item.stat.like,
-            publishedTimestamp: video.item.pubdate,
-            bvid: video.item.bvid,
-            cid: video.item.cid,
-          } : undefined"
+          :video="video.displayData"
           show-preview
           :horizontal="gridLayout !== 'adaptive'"
           more-btn
@@ -696,33 +795,10 @@ defineExpose({
           v-for="video in appVideoList"
           :key="video.uniqueId"
           ref="videoCardRef"
+          v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
           :skeleton="!video.item"
           type="appRcmd"
-          :video="video.item ? {
-            id: video.item.args.aid ?? 0,
-            durationStr: video.item.cover_right_text,
-            title: `${video.item.title}`,
-            cover: `${video.item.cover}`,
-            author: {
-              name: video.item?.mask?.avatar.text,
-              authorFace: video.item?.mask?.avatar.cover || video.item?.avatar?.cover,
-              followed: video.item?.bottom_rcmd_reason === '已关注' || video.item?.bottom_rcmd_reason === '已關注',
-              mid: video.item?.mask?.avatar.up_id,
-            },
-            capsuleText:
-              video.item?.desc?.split('·')?.[1]?.trim()
-              || ((video.item?.bottom_rcmd_reason?.trim() === '已关注' || video.item?.bottom_rcmd_reason?.trim() === '已關注')
-                ? video.item?.bottom_rcmd_reason?.trim()
-                : undefined),
-            bvid: video.item.bvid,
-            viewStr: video.item.cover_left_text_1,
-            danmakuStr: video.item.cover_left_text_2,
-            cid: video.item?.player_args?.cid,
-            goto: video.item?.goto,
-            url: video.item?.goto === 'bangumi' ? video.item.uri : '',
-            type: video.item.card_goto === 'bangumi' ? 'bangumi' : isVerticalVideo(video.item.uri!) ? 'vertical' : 'horizontal',
-            threePointV2: video.item?.three_point_v2,
-          } : undefined"
+          :video="video.displayData"
           show-preview
           :horizontal="gridLayout !== 'adaptive'"
           more-btn

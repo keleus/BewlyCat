@@ -9,6 +9,7 @@ import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/li
 import type { DataItem as MomentItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { parseStatNumber } from '~/utils/dataFormatter'
+import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
 // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
 interface VideoElement {
@@ -16,11 +17,13 @@ interface VideoElement {
   bvid?: string // 用于标识UP主联合投稿视频
   item?: MomentItem
   authorList?: Author[]
+  displayData?: Video
 }
 
 interface LiveVideoElement {
   uniqueId: string
   item?: FollowingLiveItem
+  displayData?: Video
 }
 
 const props = defineProps<{
@@ -199,13 +202,18 @@ async function getLiveVideoList() {
 
       // when videoList has length property, it means it is the first time to load
       if (!liveVideoList.value.length) {
-        liveVideoList.value = resData.map(item => ({ uniqueId: `${item.roomid}`, item }))
+        liveVideoList.value = resData.map(item => ({
+          uniqueId: `${item.roomid}`,
+          item,
+          displayData: mapLiveItemToVideo(item),
+        }))
       }
       else {
         resData.forEach((item) => {
           liveVideoList.value[lastLiveVideoListLength++] = {
             uniqueId: `${item.roomid}`,
             item,
+            displayData: mapLiveItemToVideo(item),
           }
         })
       }
@@ -293,15 +301,17 @@ async function getFollowedUsersVideos() {
       if (isFirstLoad) {
         videoList.value = resData.map((item) => {
           const author: Author = {
-            name: item.modules.module_author.name,
+            name: decodeHtmlEntities(item.modules.module_author.name),
             authorFace: item.modules.module_author.face,
             mid: item.modules.module_author.mid,
           }
+          const authorList = [author]
           return {
             uniqueId: `${item.id_str}`,
             bvid: item.modules.module_dynamic.major.archive?.bvid,
             item,
-            authorList: [author],
+            authorList,
+            displayData: mapMomentItemToVideo(item, authorList),
           }
         })
       }
@@ -310,15 +320,17 @@ async function getFollowedUsersVideos() {
           const currentUniqueId = `${item.id_str}`
           const currentBvid = item.modules.module_dynamic.major.archive?.bvid
           const author: Author = {
-            name: item.modules.module_author.name,
+            name: decodeHtmlEntities(item.modules.module_author.name),
             authorFace: item.modules.module_author.face,
             mid: item.modules.module_author.mid,
           }
+          const authorList = [author]
           const currentVideo: VideoElement = {
             uniqueId: currentUniqueId,
             bvid: currentBvid,
             item,
-            authorList: [author],
+            authorList,
+            displayData: mapMomentItemToVideo(item, authorList),
           }
 
           if (index === 0 && currentUniqueId === lastUniqueId) {
@@ -332,6 +344,10 @@ async function getFollowedUsersVideos() {
             // 遍历authorList里面每个up的mid值，如果不存在再添加up信息
             if (!lastVideo?.authorList?.some(existingAuthor => existingAuthor.mid === author.mid)) {
               lastVideo?.authorList?.push(author)
+              // 更新 displayData
+              if (lastVideo?.item && lastVideo?.authorList) {
+                lastVideo.displayData = mapMomentItemToVideo(lastVideo.item, lastVideo.authorList)
+              }
             }
             return
           }
@@ -342,6 +358,10 @@ async function getFollowedUsersVideos() {
               // 找到已存在的视频，添加作者到作者列表
               if (!existingVideo.authorList?.some(existingAuthor => existingAuthor.mid === author.mid)) {
                 existingVideo.authorList?.push(author)
+                // 更新 displayData
+                if (existingVideo.item && existingVideo.authorList) {
+                  existingVideo.displayData = mapMomentItemToVideo(existingVideo.item, existingVideo.authorList)
+                }
               }
               return
             }
@@ -408,16 +428,16 @@ function mapLiveItemToVideo(item?: FollowingLiveItem): Video | undefined {
 
   return {
     id: item.roomid,
-    title: item.title,
+    title: decodeHtmlEntities(item.title),
     cover: item.room_cover,
     author: {
-      name: item.uname,
+      name: decodeHtmlEntities(item.uname),
       authorFace: item.face,
       mid: item.uid,
     },
     view: parseStatNumber(item.text_small),
     viewStr: item.text_small,
-    tag,
+    tag: decodeHtmlEntities(tag),
     roomid: item.roomid,
     liveStatus: item.live_status,
     threePointV2: [],
@@ -434,8 +454,15 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
 
   const stat = archive.stat
   const likeCount = item.modules?.module_stat?.like?.count
-  const authorValue = authors && authors.length > 0
-    ? (authors.length === 1 ? authors[0] : authors)
+
+  // Decode author names
+  const decodedAuthors = authors?.map(author => ({
+    ...author,
+    name: decodeHtmlEntities(author.name),
+  }))
+
+  const authorValue = decodedAuthors && decodedAuthors.length > 0
+    ? (decodedAuthors.length === 1 ? decodedAuthors[0] : decodedAuthors)
     : undefined
 
   // 判断是否为联合投稿（有多个作者）
@@ -446,7 +473,7 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
         bgColor: archive.badge.bg_color,
         color: archive.badge.color,
         iconUrl: archive.badge.icon_url || undefined,
-        text: archive.badge.text,
+        text: decodeHtmlEntities(archive.badge.text),
       }
     : undefined
 
@@ -455,8 +482,8 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
   return {
     id: Number.isNaN(id) ? 0 : id,
     durationStr: archive.duration_text,
-    title: archive.title,
-    desc: archive.desc,
+    title: decodeHtmlEntities(archive.title),
+    desc: decodeHtmlEntities(archive.desc),
     cover: archive.cover,
     author: authorValue,
     view: parseStatNumber(stat?.play),
@@ -465,7 +492,7 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
     danmakuStr: stat?.danmaku,
     like: typeof likeCount === 'number' ? likeCount : parseStatNumber(stat?.like),
     likeStr: stat?.like_str ?? stat?.like,
-    capsuleText: item.modules?.module_author?.pub_time?.trim() || undefined,
+    capsuleText: decodeHtmlEntities(item.modules?.module_author?.pub_time?.trim() || undefined),
     publishedTimestamp: item.modules?.module_author?.pub_ts,
     bvid: archive.bvid,
     badge,
@@ -495,8 +522,9 @@ defineExpose({ initData })
         <VideoCard
           v-for="video in liveVideoList"
           :key="video.uniqueId"
+          v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
           :skeleton="!video.item"
-          :video="mapLiveItemToVideo(video.item)"
+          :video="video.displayData"
           :show-watcher-later="false"
           :show-preview="true"
           :horizontal="gridLayout !== 'adaptive'"
@@ -506,8 +534,9 @@ defineExpose({ initData })
       <VideoCard
         v-for="video in videoList"
         :key="video.uniqueId"
+        v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
         :skeleton="!video.item"
-        :video="mapMomentItemToVideo(video.item, video.authorList)"
+        :video="video.displayData"
         show-preview
         :horizontal="gridLayout !== 'adaptive'"
       />
@@ -529,9 +558,27 @@ defineExpose({ initData })
 </template>
 
 <style lang="scss" scoped>
+/* 优化性能：使用响应式列数替代 auto-fill */
 .grid-adaptive {
   --uno: "grid gap-5";
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* 使用媒体查询定义固定列数，避免 auto-fill 的持续计算 */
+  grid-template-columns: repeat(1, 1fr);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .grid-two-columns {

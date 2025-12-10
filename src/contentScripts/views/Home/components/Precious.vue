@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 
+import type { Video } from '~/components/VideoCard/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { PreciousItem, PreciousResult } from '~/models/video/precious'
 import api from '~/utils/api'
+import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
 interface VideoElement {
   uniqueId: string
   item?: PreciousItem
+  displayData?: Video
 }
 
 const props = defineProps<{
@@ -78,13 +81,43 @@ function initPageAction() {
   }
 }
 
+// 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
+function transformPreciousVideo(item: PreciousItem): Video {
+  return {
+    id: Number(item.aid),
+    duration: item.duration,
+    title: decodeHtmlEntities(item.title),
+    desc: decodeHtmlEntities(item.desc),
+    cover: item.pic,
+    author: item.owner
+      ? {
+          name: decodeHtmlEntities(item.owner.name),
+          authorFace: item.owner.face,
+          mid: item.owner.mid,
+        }
+      : undefined,
+    view: item.stat?.view,
+    danmaku: item.stat?.danmaku,
+    like: item.stat?.like,
+    likeStr: item.stat?.like_str ?? item.stat?.like,
+    publishedTimestamp: item.pubdate,
+    bvid: item.bvid,
+    cid: item.cid,
+    threePointV2: [],
+  }
+}
+
 async function getPreciousVideos() {
   try {
     const response: PreciousResult = await api.ranking.getPreciousVideos()
 
     if (response.code === 0) {
       const list = Array.isArray((response.data as any)?.list) ? (response.data as any).list as PreciousItem[] : []
-      videoList.value = list.map(item => ({ uniqueId: `${item.aid}`, item }))
+      videoList.value = list.map(item => ({
+        uniqueId: `${item.aid}`,
+        item,
+        displayData: transformPreciousVideo(item),
+      }))
     }
   }
   finally {
@@ -106,26 +139,9 @@ defineExpose({ initData })
       <VideoCard
         v-for="video in videoList"
         :key="video.uniqueId"
+        v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
         :skeleton="!video.item"
-        :video="video.item ? {
-          id: Number(video.item.aid),
-          duration: video.item.duration,
-          title: video.item.title,
-          desc: video.item.desc,
-          cover: video.item.pic,
-          author: video.item.owner ? {
-            name: video.item.owner.name,
-            authorFace: video.item.owner.face,
-            mid: video.item.owner.mid,
-          } : undefined,
-          view: video.item.stat?.view,
-          danmaku: video.item.stat?.danmaku,
-          like: video.item.stat?.like,
-          likeStr: video.item.stat?.like_str ?? video.item.stat?.like,
-          publishedTimestamp: video.item.pubdate,
-          bvid: video.item.bvid,
-          cid: video.item.cid,
-        } : undefined"
+        :video="video.displayData"
         show-preview
         :horizontal="gridLayout !== 'adaptive'"
       />
@@ -142,9 +158,26 @@ defineExpose({ initData })
 </template>
 
 <style lang="scss" scoped>
+/* 优化性能：使用响应式列数替代 auto-fill */
 .grid-adaptive {
   --uno: "grid gap-5";
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(1, 1fr);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .grid-two-columns {

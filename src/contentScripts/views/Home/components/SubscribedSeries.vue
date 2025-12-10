@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 
+import type { Video } from '~/components/VideoCard/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { DataItem as MomentItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
+import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
 // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
 interface VideoElement {
   uniqueId: string
   item?: MomentItem
+  displayData?: Video
 }
 
 const props = defineProps<{
@@ -69,6 +72,27 @@ async function initData() {
   noMoreContentWarning.value = false
 
   await getData()
+}
+
+// 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
+function transformSubscribedSeriesVideo(item: MomentItem): Video {
+  return {
+    id: item.modules.module_author.mid,
+    title: decodeHtmlEntities(`${item.modules.module_dynamic.major.pgc?.title}`),
+    cover: `${item.modules.module_dynamic.major.pgc?.cover}`,
+    author: {
+      name: decodeHtmlEntities(item.modules.module_author.name),
+      authorUrl: item.modules.module_author.jump_url,
+      authorFace: item.modules.module_author.face,
+      mid: item.modules.module_author.mid,
+    },
+    viewStr: item.modules.module_dynamic.major.pgc?.stat.play,
+    danmakuStr: item.modules.module_dynamic.major.pgc?.stat.danmaku,
+    likeStr: item.modules.module_dynamic.major.pgc?.stat.like,
+    capsuleText: decodeHtmlEntities(item.modules.module_author.pub_time),
+    epid: item.modules.module_dynamic.major.pgc?.epid,
+    threePointV2: [],
+  }
 }
 
 async function getData() {
@@ -145,13 +169,18 @@ async function getFollowedUsersVideos() {
 
       // when videoList has length property, it means it is the first time to load
       if (!videoList.value.length) {
-        videoList.value = resData.map(item => ({ uniqueId: `${item.id_str}`, item }))
+        videoList.value = resData.map(item => ({
+          uniqueId: `${item.id_str}`,
+          item,
+          displayData: transformSubscribedSeriesVideo(item),
+        }))
       }
       else {
         resData.forEach((item) => {
           videoList.value[lastVideoListLength++] = {
             uniqueId: `${item.id_str}`,
             item,
+            displayData: transformSubscribedSeriesVideo(item),
           }
         })
       }
@@ -198,24 +227,10 @@ defineExpose({ initData })
       <VideoCard
         v-for="video in videoList"
         :key="video.uniqueId"
+        v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
         :skeleton="!video.item"
         type="bangumi"
-        :video="video.item ? {
-          id: video.item.modules.module_author.mid,
-          title: `${video.item.modules.module_dynamic.major.pgc?.title}`,
-          cover: `${video.item.modules.module_dynamic.major.pgc?.cover}`,
-          author: {
-            name: video.item.modules.module_author.name,
-            authorUrl: video.item.modules.module_author.jump_url,
-            authorFace: video.item.modules.module_author.face,
-            mid: video.item.modules.module_author.mid,
-          },
-          viewStr: video.item.modules.module_dynamic.major.pgc?.stat.play,
-          danmakuStr: video.item.modules.module_dynamic.major.pgc?.stat.danmaku,
-          likeStr: video.item.modules.module_dynamic.major.pgc?.stat.like,
-          capsuleText: video.item.modules.module_author.pub_time,
-          epid: video.item.modules.module_dynamic.major.pgc?.epid,
-        } : undefined"
+        :video="video.displayData"
         :show-watcher-later="false"
         :horizontal="gridLayout !== 'adaptive'"
       />
@@ -227,9 +242,26 @@ defineExpose({ initData })
 </template>
 
 <style lang="scss" scoped>
+/* 优化性能：使用响应式列数替代 auto-fill */
 .grid-adaptive {
   --uno: "grid gap-5";
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(1, 1fr);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .grid-two-columns {

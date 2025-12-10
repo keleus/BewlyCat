@@ -1,14 +1,21 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import type { Video } from '~/components/VideoCard/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { List as RankingVideoItem, RankingResult } from '~/models/video/ranking'
 import type { List as RankingPgcItem, RankingPgcResult } from '~/models/video/rankingPgc'
 import api from '~/utils/api'
+import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
 import type { RankingType } from '../types'
+
+// 扩展 RankingVideoItem 以包含预处理的显示数据
+interface RankingVideoElement extends RankingVideoItem {
+  displayData?: Video
+}
 
 const props = defineProps<{
   gridLayout: GridLayoutType
@@ -79,9 +86,34 @@ const rankingTypes = computed((): RankingType[] => {
 
 const isLoading = ref<boolean>(false)
 const activatedRankingType = ref<RankingType>({ ...rankingTypes.value[0] })
-const videoList = reactive<RankingVideoItem[]>([])
+const videoList = reactive<RankingVideoElement[]>([])
 const PgcList = reactive<RankingPgcItem[]>([])
 const shouldMoveAsideUp = ref<boolean>(false)
+
+// 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
+function transformRankingVideo(item: RankingVideoItem, rank: number): Video {
+  return {
+    id: Number(item.aid),
+    duration: item.duration,
+    title: decodeHtmlEntities(item.title),
+    desc: decodeHtmlEntities(item.desc),
+    cover: item.pic,
+    author: {
+      name: decodeHtmlEntities(item.owner.name),
+      authorFace: item.owner.face,
+      mid: item.owner.mid,
+    },
+    view: item.stat.view,
+    danmaku: item.stat.danmaku,
+    like: item.stat.like,
+    likeStr: (item.stat as any)?.like_str ?? item.stat.like,
+    publishedTimestamp: item.pubdate,
+    bvid: item.bvid,
+    rank,
+    cid: item.cid,
+    threePointV2: [],
+  }
+}
 
 watch(() => activatedRankingType.value.id, () => {
   handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
@@ -148,7 +180,12 @@ function getRankingVideos() {
   }).then((response: RankingResult) => {
     if (response.code === 0) {
       const { list } = response.data
-      Object.assign(videoList, list)
+      // 添加 displayData 预处理
+      const processedList = list.map((item, index) => ({
+        ...item,
+        displayData: transformRankingVideo(item, index + 1),
+      }))
+      Object.assign(videoList, processedList)
     }
   }).finally(() => {
     isLoading.value = false
@@ -195,28 +232,10 @@ defineExpose({ initData })
     <main w-full :class="gridClass" :style="gridStyle">
       <template v-if="!('seasonType' in activatedRankingType)">
         <VideoCard
-          v-for="(video, index) in videoList"
+          v-for="video in videoList"
           :key="video.aid"
-          :video="{
-            id: Number(video.aid),
-            duration: video.duration,
-            title: video.title,
-            desc: video.desc,
-            cover: video.pic,
-            author: {
-              name: video.owner.name,
-              authorFace: video.owner.face,
-              mid: video.owner.mid,
-            },
-            view: video.stat.view,
-            danmaku: video.stat.danmaku,
-            like: video.stat.like,
-            likeStr: (video.stat as any)?.like_str ?? video.stat.like,
-            publishedTimestamp: video.pubdate,
-            bvid: video.bvid,
-            rank: index + 1,
-            cid: video.cid,
-          }"
+          v-memo="[video.aid, video.displayData, settings.videoCardLayout]"
+          :video="video.displayData"
           show-preview
           :horizontal="gridLayout !== 'adaptive'"
           w-full
@@ -273,14 +292,47 @@ defineExpose({ initData })
   --uno: "h-[calc(100vh-70)] translate-y--70px";
 }
 
+/* 优化性能：使用响应式列数替代 auto-fill */
 .grid-adaptive-video {
   --uno: "grid gap-5";
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(1, 1fr);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .grid-adaptive-bangumi {
   --uno: "grid gap-5";
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(1, 1fr);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .grid-two-columns {

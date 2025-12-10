@@ -158,13 +158,18 @@ const bangumiGroups = computed(() => {
   width: 100%;
 }
 
+/* 优化性能：使用固定列数替代 auto-fit */
 .bangumi-highlight-grid {
   display: grid;
   gap: 1.5rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 
   @media (max-width: 1024px) {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  @media (min-width: 640px) and (max-width: 1024px) {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

@@ -1,9 +1,15 @@
 <script setup lang="ts">
+import type { Video } from '~/components/VideoCard/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { PopularSeriesItem, PopularSeriesListResult, PopularSeriesOneResult, PopularSeriesVideoItem } from '~/models/video/popularSeries'
 import api from '~/utils/api'
+import { decodeHtmlEntities } from '~/utils/htmlDecode'
+
+interface VideoElement extends PopularSeriesVideoItem {
+  displayData?: Video
+}
 
 const props = defineProps<{
   gridLayout: GridLayoutType
@@ -42,7 +48,32 @@ const shouldMoveAsideUp = ref<boolean>(false)
 
 const seriesList = ref<PopularSeriesItem[]>([])
 const activatedSeries = ref<PopularSeriesItem | null>(null)
-const videoList = ref<PopularSeriesVideoItem[]>([])
+const videoList = ref<VideoElement[]>([])
+
+// 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
+function transformWeeklyVideo(item: PopularSeriesVideoItem, rank: number): Video {
+  return {
+    id: Number(item.aid),
+    duration: item.duration,
+    title: decodeHtmlEntities(item.title),
+    desc: decodeHtmlEntities(item.desc),
+    cover: item.pic,
+    author: {
+      name: decodeHtmlEntities(item.owner?.name),
+      authorFace: item.owner?.face,
+      mid: item.owner?.mid,
+    },
+    view: item.stat?.view,
+    danmaku: item.stat?.danmaku,
+    like: item.stat?.like,
+    likeStr: item.stat?.like_str ?? item.stat?.like,
+    publishedTimestamp: item.pubdate,
+    bvid: item.bvid,
+    cid: item.cid,
+    rank,
+    threePointV2: [],
+  }
+}
 
 watch(() => props.topBarVisibility, () => {
   shouldMoveAsideUp.value = false
@@ -104,8 +135,12 @@ function getSeriesOne() {
   api.ranking.getPopularSeriesOne({
     number: (activatedSeries.value as PopularSeriesItem).number,
   }).then((res: PopularSeriesOneResult) => {
-    if (res && res.code === 0 && res.data && Array.isArray(res.data.list))
-      videoList.value = res.data.list
+    if (res && res.code === 0 && res.data && Array.isArray(res.data.list)) {
+      videoList.value = res.data.list.map((item, index) => ({
+        ...item,
+        displayData: transformWeeklyVideo(item, index + 1),
+      }))
+    }
   }).finally(() => {
     isLoading.value = false
     emit('afterLoading')
@@ -150,25 +185,8 @@ defineExpose({ initData })
       <VideoCard
         v-for="(video, index) in videoList"
         :key="`${video.aid}-${index}`"
-        :video="{
-          id: Number(video.aid),
-          duration: video.duration,
-          title: video.title,
-          desc: video.desc,
-          cover: video.pic,
-          author: {
-            name: video.owner?.name,
-            authorFace: video.owner?.face,
-            mid: video.owner?.mid,
-          },
-          view: video.stat?.view,
-          danmaku: video.stat?.danmaku,
-          like: video.stat?.like,
-          likeStr: video.stat?.like_str ?? video.stat?.like,
-          publishedTimestamp: video.pubdate,
-          bvid: video.bvid,
-          cid: video.cid,
-        }"
+        v-memo="[video.aid, video.displayData, settings.videoCardLayout]"
+        :video="video.displayData"
         show-preview
         :horizontal="gridLayout !== 'adaptive'"
         w-full
@@ -194,9 +212,26 @@ defineExpose({ initData })
   --uno: "h-[calc(100vh-70)] translate-y--70px";
 }
 
+/* 优化性能：使用响应式列数替代 auto-fill */
 .grid-adaptive {
   --uno: "grid gap-5";
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(1, 1fr);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .grid-two-columns {

@@ -1,6 +1,38 @@
 import type { Video } from '~/components/VideoCard/types'
 import { parseStatNumber } from '~/utils/dataFormatter'
 
+/**
+ * 解码 HTML 实体
+ * 使用轻量级正则替代 DOMParser，性能更好
+ */
+function decodeHtmlEntities(text: string | undefined): string {
+  if (!text || typeof text !== 'string')
+    return text || ''
+
+  // 常用实体映射
+  const entities: Record<string, string> = {
+    '&amp;': '&',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&quot;': '"',
+    '&#39;': '\'',
+    '&#x27;': '\'',
+    '&apos;': '\'',
+    '&nbsp;': ' ',
+  }
+
+  return text.replace(/&(?:#x?[0-9a-f]+|[a-z]+);/gi, (match) => {
+    // 数字实体 &#123; 或 &#xAB;
+    if (match.startsWith('&#')) {
+      const isHex = match[2] === 'x' || match[2] === 'X'
+      const code = Number.parseInt(match.slice(isHex ? 3 : 2, -1), isHex ? 16 : 10)
+      return Number.isNaN(code) ? match : String.fromCharCode(code)
+    }
+    // 命名实体
+    return entities[match.toLowerCase()] || match
+  })
+}
+
 export function formatNumber(num?: number): string {
   if (!num)
     return '0'
@@ -12,7 +44,9 @@ export function formatNumber(num?: number): string {
 export function removeHighlight(text?: string): string {
   if (typeof text !== 'string' || !text)
     return ''
-  return text.replace(/<em class="keyword">/g, '').replace(/<\/em>/g, '')
+  // 移除高亮标签并解码 HTML 实体
+  const withoutHighlight = text.replace(/<em class="keyword">/g, '').replace(/<\/em>/g, '')
+  return decodeHtmlEntities(withoutHighlight)
 }
 
 /**

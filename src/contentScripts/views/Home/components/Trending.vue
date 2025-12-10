@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 
+import type { Video } from '~/components/VideoCard/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { List as VideoItem, TrendingResult } from '~/models/video/trending'
 import api from '~/utils/api'
+import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
 // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
 interface VideoElement {
   uniqueId: string
   item?: VideoItem
+  displayData?: Video
 }
 
 const props = defineProps<{
@@ -62,6 +65,31 @@ async function initData() {
   videoList.value.length = 0
   pn.value = 1
   await getData()
+}
+
+// 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
+function transformTrendingVideo(item: VideoItem): Video {
+  return {
+    id: Number(item.aid),
+    duration: item.duration,
+    title: decodeHtmlEntities(item.title),
+    desc: decodeHtmlEntities(item.desc),
+    cover: item.pic,
+    author: {
+      name: decodeHtmlEntities(item.owner.name),
+      authorFace: item.owner.face,
+      mid: item.owner.mid,
+    },
+    view: item.stat.view,
+    danmaku: item.stat.danmaku,
+    like: item.stat.like,
+    likeStr: (item.stat as any)?.like_str ?? item.stat.like,
+    publishedTimestamp: item.pubdate,
+    bvid: item.bvid,
+    tag: decodeHtmlEntities(item.rcmd_reason.content),
+    cid: item.cid,
+    threePointV2: [],
+  }
 }
 
 async function getData() {
@@ -116,13 +144,18 @@ async function getTrendingVideos() {
 
       // when videoList has length property, it means it is the first time to load
       if (!videoList.value.length) {
-        videoList.value = resData.map(item => ({ uniqueId: `${item.aid}`, item }))
+        videoList.value = resData.map(item => ({
+          uniqueId: `${item.aid}`,
+          item,
+          displayData: transformTrendingVideo(item),
+        }))
       }
       else {
         resData.forEach((item) => {
           videoList.value[lastVideoListLength++] = {
             uniqueId: `${item.aid}`,
             item,
+            displayData: transformTrendingVideo(item),
           }
         })
       }
@@ -151,27 +184,9 @@ defineExpose({ initData })
       <VideoCard
         v-for="video in videoList"
         :key="video.uniqueId"
+        v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
         :skeleton="!video.item"
-        :video="video.item ? {
-          id: Number(video.item.aid),
-          duration: video.item.duration,
-          title: video.item.title,
-          desc: video.item.desc,
-          cover: video.item.pic,
-          author: {
-            name: video.item.owner.name,
-            authorFace: video.item.owner.face,
-            mid: video.item.owner.mid,
-          },
-          view: video.item.stat.view,
-          danmaku: video.item.stat.danmaku,
-          like: video.item.stat.like,
-          likeStr: (video.item.stat as any)?.like_str ?? video.item.stat.like,
-          publishedTimestamp: video.item.pubdate,
-          bvid: video.item.bvid,
-          tag: video.item.rcmd_reason.content,
-          cid: video.item.cid,
-        } : undefined"
+        :video="video.displayData"
         show-preview
         :horizontal="gridLayout !== 'adaptive'"
       />
@@ -180,9 +195,26 @@ defineExpose({ initData })
 </template>
 
 <style lang="scss" scoped>
+/* 优化性能：使用响应式列数替代 auto-fill */
 .grid-adaptive {
   --uno: "grid gap-5";
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(1, 1fr);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .grid-two-columns {

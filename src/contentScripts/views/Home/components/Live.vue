@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 
+import type { Video } from '~/components/VideoCard/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
 import api from '~/utils/api'
+import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
 // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
 interface VideoElement {
   uniqueId: string
   item?: FollowingLiveItem
+  displayData?: Video
 }
 
 const props = defineProps<{
@@ -84,6 +87,25 @@ async function initData() {
   await getData()
 }
 
+// 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
+function transformLiveVideo(item: FollowingLiveItem): Video {
+  return {
+    id: item.roomid,
+    title: decodeHtmlEntities(item.title),
+    cover: item.room_cover,
+    author: {
+      name: decodeHtmlEntities(item.uname),
+      authorFace: item.face,
+      mid: item.uid,
+    },
+    viewStr: item.text_small,
+    tag: decodeHtmlEntities(item.area_name_v2),
+    roomid: item.roomid,
+    liveStatus: item.live_status,
+    threePointV2: [],
+  }
+}
+
 async function getData() {
   emit('beforeLoading')
   isLoading.value = true
@@ -141,13 +163,18 @@ async function getFollowedUsersVideos() {
 
       // when videoList has length property, it means it is the first time to load
       if (!videoList.value.length) {
-        videoList.value = resData.map(item => ({ uniqueId: `${item.roomid}`, item }))
+        videoList.value = resData.map(item => ({
+          uniqueId: `${item.roomid}`,
+          item,
+          displayData: transformLiveVideo(item),
+        }))
       }
       else {
         resData.forEach((item) => {
           videoList.value[lastVideoListLength++] = {
             uniqueId: `${item.roomid}`,
             item,
+            displayData: transformLiveVideo(item),
           }
         })
       }
@@ -189,21 +216,9 @@ defineExpose({ initData })
       <VideoCard
         v-for="video in videoList"
         :key="video.uniqueId"
+        v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
         :skeleton="!video.item"
-        :video="video.item ? {
-          id: video.item.roomid,
-          title: `${video.item.title}`,
-          cover: `${video.item.room_cover}`,
-          author: {
-            name: video.item.uname,
-            authorFace: video.item.face,
-            mid: video.item.uid,
-          },
-          viewStr: video.item.text_small,
-          tag: video.item.area_name_v2,
-          roomid: video.item.roomid,
-          liveStatus: video.item.live_status,
-        } : undefined"
+        :video="video.displayData"
         type="live"
         :show-watcher-later="false"
         :show-preview="true"
@@ -217,9 +232,26 @@ defineExpose({ initData })
 </template>
 
 <style lang="scss" scoped>
+/* 优化性能：使用响应式列数替代 auto-fill */
 .grid-adaptive {
   --uno: "grid gap-5";
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(1, 1fr);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  @media (min-width: 1536px) {
+    grid-template-columns: repeat(5, 1fr);
+  }
 }
 
 .grid-two-columns {
