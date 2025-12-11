@@ -281,7 +281,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     id: item.args?.aid ?? 0,
     durationStr: item.cover_right_text,
     title: decodeHtmlEntities(item.title),
-    cover: item.cover,
+    cover: item.cover || '',
     author: {
       name: decodeHtmlEntities(item?.mask?.avatar?.text || ''),
       authorFace: item?.mask?.avatar?.cover || item?.avatar?.cover || '',
@@ -289,7 +289,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
       mid: item?.mask?.avatar?.up_id || 0,
     },
     capsuleText: decodeHtmlEntities(capsuleText),
-    bvid: item.bvid,
+    bvid: item.bvid || '',
     viewStr: item.cover_left_text_1,
     danmakuStr: item.cover_left_text_2,
     cid: item?.player_args?.cid,
