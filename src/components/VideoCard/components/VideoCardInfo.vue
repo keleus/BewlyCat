@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { useDebounceFn } from '@vueuse/core'
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { settings } from '~/logic'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
@@ -31,7 +30,6 @@ const emit = defineEmits<{
 
 const moreBtnRef = ref<HTMLDivElement | null>(null)
 const titleRef = ref<HTMLElement | null>(null)
-const titleTooltip = ref<string | undefined>(undefined)
 
 defineExpose({
   moreBtnRef,
@@ -44,38 +42,6 @@ const primaryTags = computed(() => {
   if (Array.isArray(tag))
     return tag.filter(Boolean)
   return [tag]
-})
-
-// 检测标题是否溢出，只有溢出时才设置 title 属性
-function checkTitleOverflow() {
-  if (!titleRef.value)
-    return
-
-  const element = titleRef.value
-  // 检查是否有文本溢出(scrollHeight > clientHeight 表示有垂直溢出)
-  const isOverflow = element.scrollHeight > element.clientHeight
-  titleTooltip.value = isOverflow ? props.video.title : undefined
-}
-
-// 使用防抖优化 resize 检查，减少布局读取频率
-const debouncedCheckTitleOverflow = useDebounceFn(checkTitleOverflow, 200)
-
-onMounted(() => {
-  // 使用 requestIdleCallback 延迟检查，避免阻塞初始渲染
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => checkTitleOverflow(), { timeout: 500 })
-  }
-  else {
-    // 降级方案：使用 setTimeout
-    setTimeout(checkTitleOverflow, 100)
-  }
-
-  // 监听窗口大小变化，使用防抖减少触发频率
-  window.addEventListener('resize', debouncedCheckTitleOverflow)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', debouncedCheckTitleOverflow)
 })
 </script>
 
@@ -106,7 +72,7 @@ onUnmounted(() => {
           text="overflow-ellipsis $bew-text-1 lg"
           :style="titleStyle"
           cursor="pointer"
-          :title="titleTooltip"
+          :title="video.title"
         >
           <a :href="videoUrl" target="_blank">
             {{ video.title }}

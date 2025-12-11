@@ -6,6 +6,7 @@ import { useToast } from 'vue-toastification'
 import SmoothLoading from '~/components/SmoothLoading.vue'
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { FilterType, useFilter } from '~/composables/useFilter'
+import { useGridLayout } from '~/composables/useGridLayout'
 import { LanguageType } from '~/enums/appEnums'
 import type { GridLayoutType } from '~/logic'
 import { appAuthTokens, settings } from '~/logic'
@@ -71,35 +72,11 @@ const appFilterFunc = useFilter(
   ],
 )
 
-const gridClass = computed((): string => {
-  if (props.gridLayout === 'adaptive')
-    return 'grid-adaptive'
-  if (props.gridLayout === 'twoColumns')
-    return 'grid-two-columns'
-  return 'grid-one-column'
-})
+// 使用共享的 Grid 布局 composable，避免重复计算
+const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
 
 // 提前定义 containerRef 避免 no-use-before-define 错误
 const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
-
-// Inline grid style for adaptive mode: 使用 CSS auto-fit，让浏览器自动计算列数
-// 避免 JS 计算导致的 forced reflow
-const gridStyle = computed(() => {
-  if (props.gridLayout !== 'adaptive')
-    return {}
-
-  const baseWidth = Math.max(160, settings.value.homeAdaptiveCardMinWidth || 280)
-  const gap = 20 // 对应 gap-5 (1.25rem = 20px)
-
-  // 使用 auto-fit 和 minmax，让浏览器自动计算最优列数
-  // 不再需要 JS 读取 clientWidth，避免强制 reflow
-  return {
-    display: 'grid',
-    gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${baseWidth}px), 1fr))`,
-    gap: `${gap}px`,
-    '--bew-home-card-min-width': `${baseWidth}px`,
-  }
-})
 
 const videoList = ref<VideoElement[]>([])
 const appVideoList = ref<AppVideoElement[]>([])
@@ -108,7 +85,6 @@ const needToLoginFirst = ref<boolean>(false)
 const refreshIdx = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
 const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, handleUndoRefresh, handleForwardRefresh, handleBackToTop } = useBewlyApp()
-const appAccessToken = computed(() => appAuthTokens.value.accessToken)
 const activatedAppVideo = ref<AppVideoItem | null>()
 const videoCardRef = ref(null)
 const showDislikeDialog = ref<boolean>(false)
@@ -655,7 +631,7 @@ async function getAppRecommendVideos() {
         : 1
 
       const response: AppForYouResult = await api.video.getAppRecommendVideos({
-        access_key: appAccessToken.value,
+        access_key: appAuthTokens.value.accessToken,
         s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
         c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
         appkey: TVAppKey.appkey,

@@ -164,7 +164,21 @@ const titleStyle = computed((): Record<string, string | number> => {
   }
 })
 
-// Highlight tags calculation
+// Highlight tags calculation - 使用查找表优化性能
+const LIKE_RATIO_THRESHOLDS = [
+  { view: 1_000_000, ratio: 0.01 },
+  { view: 200_000, ratio: 0.025 },
+  { view: 100_000, ratio: 0.04 },
+  { view: 10_000, ratio: 0.05 },
+] as const
+
+const DANMAKU_RATIO_THRESHOLDS = [
+  { view: 1_000_000, ratio: 0.001 },
+  { view: 200_000, ratio: 0.0025 },
+  { view: 100_000, ratio: 0.004 },
+  { view: 0, ratio: 0.005 },
+] as const
+
 const highlightTags = computed(() => {
   if (!props.video)
     return [] as string[]
@@ -182,19 +196,20 @@ const highlightTags = computed(() => {
 
   if (viewCount >= 10_000) {
     const likeCount = stats.like ?? 0
-    const likeRatio = viewCount > 0 ? likeCount / viewCount : 0
-    if ((likeRatio >= 0.05)
-      || (viewCount >= 100_000 && likeRatio >= 0.04)
-      || (viewCount >= 200_000 && likeRatio >= 0.025)
-      || (viewCount >= 1_000_000 && likeRatio >= 0.01)) {
+    const likeRatio = likeCount / viewCount
+
+    // 使用查找表快速判断是否高赞
+    const likeThreshold = LIKE_RATIO_THRESHOLDS.find(t => viewCount >= t.view)
+    if (likeThreshold && likeRatio >= likeThreshold.ratio) {
       tags.push('高赞')
     }
 
     const danmakuCount = stats.danmaku ?? 0
-    if ((danmakuCount / viewCount > 0.005)
-      || (danmakuCount / viewCount > 0.004 && viewCount >= 100_000)
-      || (danmakuCount / viewCount > 0.0025 && viewCount >= 200_000)
-      || (danmakuCount / viewCount > 0.001 && viewCount >= 1_000_000)) {
+    const danmakuRatio = danmakuCount / viewCount
+
+    // 使用查找表快速判断是否高互动
+    const danmakuThreshold = DANMAKU_RATIO_THRESHOLDS.find(t => viewCount >= t.view)
+    if (danmakuThreshold && danmakuRatio > danmakuThreshold.ratio) {
       tags.push('高互动')
     }
   }

@@ -512,50 +512,73 @@ function handleBackToTop(targetScrollTop = 0 as number) {
 
 // 添加滚动结束检测
 let scrollEndTimer: ReturnType<typeof setTimeout> | null = null
+let lastScrollTop = 0
+let rafId: number | null = null
 
 function handleOsScroll() {
-  emitter.emit(OVERLAY_SCROLL_BAR_SCROLL)
+  // 如果已经有 RAF 在等待，跳过本次滚动事件
+  if (rafId !== null)
+    return
 
-  const osInstance = scrollbarRef.value?.osInstance()
-  const { viewport } = osInstance.elements()
-  const { scrollTop, scrollHeight, clientHeight } = viewport // get scroll offset
+  // 使用 RAF 将所有 DOM 读取合并到下一帧
+  rafId = requestAnimationFrame(() => {
+    emitter.emit(OVERLAY_SCROLL_BAR_SCROLL)
 
-  if (scrollTop === 0) {
-    reachTop.value = true
-  }
-  else {
-    reachTop.value = false
-  }
-
-  // 优化滚动检测：降低阈值，提高敏感度
-  const threshold = Math.min(200, clientHeight * 0.2) // 动态阈值，最大200px或20%屏幕高度
-  if (clientHeight + scrollTop >= scrollHeight - threshold) {
-    handleThrottledReachBottom()
-  }
-
-  // 清除之前的滚动结束定时器
-  if (scrollEndTimer) {
-    clearTimeout(scrollEndTimer)
-  }
-
-  // 设置滚动结束检测，在滚动停止150ms后再检查一次
-  scrollEndTimer = setTimeout(() => {
     const osInstance = scrollbarRef.value?.osInstance()
-    if (!osInstance)
+    if (!osInstance) {
+      rafId = null
       return
+    }
 
     const { viewport } = osInstance.elements()
+    // 一次性批量读取所有 DOM 属性，避免多次强制布局
     const { scrollTop, scrollHeight, clientHeight } = viewport
-    const threshold = Math.min(200, clientHeight * 0.2)
 
-    // 滚动结束后的最终检测，使用更大的阈值确保不遗漏
-    if (clientHeight + scrollTop >= scrollHeight - threshold * 1.5) {
-      handleReachBottom.value?.()
+    // 只在滚动距离超过阈值时更新状态
+    const scrollDelta = Math.abs(scrollTop - lastScrollTop)
+    if (scrollDelta > 50) {
+      lastScrollTop = scrollTop
     }
-  }, 150)
 
-  if (isHomePage())
-    topBarRef.value?.handleScroll()
+    if (scrollTop === 0) {
+      reachTop.value = true
+    }
+    else {
+      reachTop.value = false
+    }
+
+    // 优化滚动检测：降低阈值，提高敏感度
+    const threshold = Math.min(200, clientHeight * 0.2) // 动态阈值，最大200px或20%屏幕高度
+    if (clientHeight + scrollTop >= scrollHeight - threshold) {
+      handleThrottledReachBottom()
+    }
+
+    // 清除之前的滚动结束定时器
+    if (scrollEndTimer) {
+      clearTimeout(scrollEndTimer)
+    }
+
+    // 设置滚动结束检测，在滚动停止150ms后再检查一次
+    // 缓存当前的滚动值，避免在 setTimeout 中再次读取 DOM
+    const cachedScrollTop = scrollTop
+    const cachedScrollHeight = scrollHeight
+    const cachedClientHeight = clientHeight
+
+    scrollEndTimer = setTimeout(() => {
+      // 使用缓存的值进行最终检测，避免 DOM 查询
+      const threshold = Math.min(200, cachedClientHeight * 0.2)
+
+      // 滚动结束后的最终检测，使用更大的阈值确保不遗漏
+      if (cachedClientHeight + cachedScrollTop >= cachedScrollHeight - threshold * 1.5) {
+        handleReachBottom.value?.()
+      }
+    }, 150)
+
+    if (isHomePage())
+      topBarRef.value?.handleScroll()
+
+    rafId = null
+  })
 }
 
 function openIframeDrawer(url: string) {

@@ -3,6 +3,7 @@ import type { Ref } from 'vue'
 
 import type { Video } from '~/components/VideoCard/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useGridLayout } from '~/composables/useGridLayout'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { List as VideoItem, TrendingResult } from '~/models/video/trending'
@@ -25,25 +26,9 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-const gridClass = computed((): string => {
-  if (props.gridLayout === 'adaptive')
-    return 'grid-adaptive'
-  if (props.gridLayout === 'twoColumns')
-    return 'grid-two-columns'
-  return 'grid-one-column'
-})
+// 使用共享的 Grid 布局 composable，避免重复计算
+const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
 
-const gridStyle = computed(() => {
-  if (props.gridLayout !== 'adaptive')
-    return {}
-  const style: Record<string, any> = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(var(--bew-home-card-min-width, 280px), 1fr))',
-  }
-  const baseWidth = Math.max(160, settings.value.homeAdaptiveCardMinWidth || 280)
-  style['--bew-home-card-min-width'] = `${baseWidth}px`
-  return style
-})
 const videoList = ref<VideoElement[]>([])
 const isLoading = ref<boolean>(false)
 const containerRef = ref<HTMLElement>() as Ref<HTMLElement>

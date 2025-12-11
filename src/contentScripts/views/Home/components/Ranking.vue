@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { Video } from '~/components/VideoCard/types'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useGridLayout } from '~/composables/useGridLayout'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { List as RankingVideoItem, RankingResult } from '~/models/video/ranking'
@@ -30,6 +31,9 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { handleBackToTop, handlePageRefresh } = useBewlyApp()
 
+// 为 gridStyle 获取 useGridLayout 的结果
+const { gridStyle } = useGridLayout(() => props.gridLayout)
+
 const gridClass = computed((): string => {
   if (props.gridLayout === 'adaptive') {
     // eslint-disable-next-line ts/no-use-before-define
@@ -42,18 +46,6 @@ const gridClass = computed((): string => {
   if (props.gridLayout === 'twoColumns')
     return 'grid-two-columns'
   return 'grid-one-column'
-})
-
-const gridStyle = computed(() => {
-  if (props.gridLayout !== 'adaptive')
-    return {}
-  const style: Record<string, any> = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(var(--bew-home-card-min-width, 280px), 1fr))',
-  }
-  const baseWidth = Math.max(160, settings.value.homeAdaptiveCardMinWidth || 280)
-  style['--bew-home-card-min-width'] = `${baseWidth}px`
-  return style
 })
 
 const rankingTypes = computed((): RankingType[] => {
