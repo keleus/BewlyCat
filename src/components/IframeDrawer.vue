@@ -36,7 +36,9 @@ const iframeContainerClasses = computed(() => {
   }
   else {
     const topPosition = headerShow.value ? 'top-$bew-top-bar-height' : 'top-0'
-    return `pos-absolute ${topPosition} left-0 of-hidden bg-$bew-bg rounded-t-$bew-radius w-full h-full`
+    // 修正高度：使用 calc(100% - top位置) 确保容器不会超出可视区域
+    const height = headerShow.value ? 'h-[calc(100%-var(--bew-top-bar-height))]' : 'h-full'
+    return `pos-absolute ${topPosition} left-0 of-hidden bg-$bew-bg rounded-t-$bew-radius w-full ${height}`
   }
 })
 
@@ -45,10 +47,9 @@ const iframeStyles = computed(() => {
     return {}
   }
   else {
+    // 不再需要负偏移，因为容器高度已经正确设置
     return {
-      // Prevent top bar shaking when before the remove-top-bar-without-placeholder class is injected
-      // When in fullscreen mode (headerShow is false), remove the top offset
-      top: headerShow.value && !removeTopBarClassInjected.value ? `calc(-1 * var(--bew-top-bar-height))` : '0',
+      top: '0',
     }
   }
 })
@@ -109,19 +110,32 @@ function setupIframeListeners() {
     console.error('Iframe or contentWindow is not available')
     return
   }
-  useEventListener(iframeRef.value, 'load', () => {
-    useEventListener(iframeRef.value?.contentWindow, 'pushstate', updateCurrentUrl)
-    useEventListener(iframeRef.value?.contentWindow, 'popstate', updateCurrentUrl)
-    useEventListener(iframeRef.value?.contentWindow, 'DOMContentLoaded', () => {
-      if (headerShow.value) {
-        iframeRef.value?.contentWindow?.document.documentElement.classList.add('remove-top-bar-without-placeholder')
+
+  // 尽早注入样式类，避免顶栏闪烁
+  const injectStyleClass = () => {
+    if (headerShow.value && iframeRef.value?.contentWindow?.document) {
+      try {
+        iframeRef.value.contentWindow.document.documentElement.classList.add('remove-top-bar-without-placeholder')
         removeTopBarClassInjected.value = true
       }
-      else {
-        iframeRef.value?.contentWindow?.document.documentElement.classList.remove('remove-top-bar-without-placeholder')
-        removeTopBarClassInjected.value = false
+      catch (error) {
+        console.warn('Failed to inject style class:', error)
       }
+    }
+  }
+
+  // 在 iframe 加载时立即尝试注入
+  useEventListener(iframeRef.value, 'load', () => {
+    injectStyleClass()
+
+    useEventListener(iframeRef.value?.contentWindow, 'pushstate', updateCurrentUrl)
+    useEventListener(iframeRef.value?.contentWindow, 'popstate', updateCurrentUrl)
+
+    // DOMContentLoaded 时再次确保已注入
+    useEventListener(iframeRef.value?.contentWindow, 'DOMContentLoaded', () => {
+      injectStyleClass()
     })
+
     iframeRef.value?.focus()
   })
 }
@@ -246,7 +260,7 @@ watchEffect(() => {
     return null
 
   useEventListener(window, 'message', ({ data }) => {
-    switch (data) {
+    switch (data.type) {
       case DRAWER_VIDEO_ENTER_PAGE_FULL:
         headerShow.value = false
         disableEscPress.value = true
@@ -257,6 +271,17 @@ watchEffect(() => {
         disableEscPress.value = false
         isPageFullscreen.value = false
         break
+    }
+    // 兼容旧的消息格式（没有 type 字段）
+    if (data === DRAWER_VIDEO_ENTER_PAGE_FULL) {
+      headerShow.value = false
+      disableEscPress.value = true
+      isPageFullscreen.value = true
+    }
+    else if (data === DRAWER_VIDEO_EXIT_PAGE_FULL) {
+      headerShow.value = true
+      disableEscPress.value = false
+      isPageFullscreen.value = false
     }
   })
 })

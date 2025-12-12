@@ -24,7 +24,43 @@
 }
 
 .remove-top-bar-without-placeholder {
-  #biliMainHeader {
-    display: none;
+  // 隐藏所有可能的顶栏元素
+  #biliMainHeader,
+  .bili-header,
+  .bili-header__bar,
+  #internationalHeader,
+  .link-navbar,
+  #home_nav,
+  #bili-header-container {
+    display: none !important;
+  }
+
+  // 移除可能的顶部间距
+  .banner-wrapper,
+  .home-banner-wrapper {
+    margin-top: 0 !important;
+  }
+
+  // 确保内容从顶部开始，移除为顶栏预留的空间
+  body {
+    padding-top: 0 !important;
+  }
+
+  // 主内容区域向上移动，填补顶栏空白
+  #app,
+  #mirror-vdcon,
+  .video-container-v1,
+  .left-container,
+  .international-home,
+  .bili-feed4,
+  .channel-layout {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  // 对于有固定顶部偏移的页面，重置偏移
+  .bili-wrapper,
+  .bili-layout {
+    padding-top: 0 !important;
   }
 }
