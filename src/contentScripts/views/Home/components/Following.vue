@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
-
 import type { Author, Video } from '~/components/VideoCard/types'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useGridLayout } from '~/composables/useGridLayout'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
@@ -27,7 +25,7 @@ interface LiveVideoElement {
   displayData?: Video
 }
 
-const props = defineProps<{
+const { gridLayout } = defineProps<{
   gridLayout: GridLayoutType
 }>()
 
@@ -35,9 +33,6 @@ const emit = defineEmits<{
   (e: 'beforeLoading'): void
   (e: 'afterLoading'): void
 }>()
-
-// 使用共享的 Grid 布局 composable，避免重复计算
-const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
 
 const videoList = ref<VideoElement[]>([])
 /**
@@ -47,7 +42,6 @@ const livePage = ref<number>(1)
 const liveVideoList = ref<LiveVideoElement[]>([])
 const isLoading = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
-const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const recursionDepth = ref<number>(0) // 递归深度计数器
 const isPageVisible = ref<boolean>(true) // 页面可见性状态
 const offset = ref<string>('')
@@ -56,18 +50,25 @@ const noMoreContent = ref<boolean>(false)
 const isInitialized = ref<boolean>(false)
 const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
 
+// 合并直播和视频列表用于虚拟滚动
+const combinedVideoList = computed(() => {
+  if (settings.value.followingTabShowLivestreamingVideos)
+    return [...liveVideoList.value, ...videoList.value] as Array<VideoElement | LiveVideoElement>
+
+  return videoList.value as Array<VideoElement | LiveVideoElement>
+})
+
 // 页面可见性变化处理函数
-function handleVisibilityChange() {
+async function handleVisibilityChange() {
   const wasVisible = isPageVisible.value
   isPageVisible.value = !document.hidden
 
   // 如果从不可见变为可见，且需要加载更多数据，则触发加载
   if (!wasVisible && isPageVisible.value && !noMoreContent.value && !isLoading.value) {
-    if (!haveScrollbar() || videoList.value.length < 30) {
+    if (!await haveScrollbar() || videoList.value.length < 30) {
       setTimeout(() => {
-        if (isPageVisible.value && !isLoading.value && !noMoreContent.value) {
+        if (isPageVisible.value && !isLoading.value && !noMoreContent.value)
           getFollowedUsersVideos()
-        }
       }, 200)
     }
   }
@@ -107,9 +108,8 @@ function initPageAction() {
 
     // 优化：添加延迟执行而不是直接阻止
     setTimeout(() => {
-      if (!isLoading.value && !noMoreContent.value) {
+      if (!isLoading.value && !noMoreContent.value)
         getData()
-      }
     }, 50) // 短暂延迟确保滚动结束
   }
   handlePageRefresh.value = async () => {
@@ -151,11 +151,10 @@ async function getData() {
 
 async function getLiveVideoList() {
   // 检查页面是否可见，如果不可见则不进行请求
-  if (!isPageVisible.value) {
+  if (!isPageVisible.value)
     return
-  }
 
-  let lastLiveVideoListLength = liveVideoList.value.length
+  const lastLiveVideoListLength = liveVideoList.value.length
   try {
     const response: FollowingLiveResult = await api.live.getFollowingLiveList({
       page: livePage.value,
@@ -170,9 +169,8 @@ async function getLiveVideoList() {
 
     if (response.code === 0) {
       // 如果返回的数据少于9条，说明没有更多数据了
-      if (response.data.list.length < 9) {
+      if (response.data.list.length < 9)
         noMoreContent.value = true
-      }
 
       livePage.value++
 
@@ -193,30 +191,21 @@ async function getLiveVideoList() {
         }))
       }
       else {
-        resData.forEach((item) => {
-          liveVideoList.value[lastLiveVideoListLength++] = {
+        resData.forEach((item, index) => {
+          liveVideoList.value[lastLiveVideoListLength + index] = {
             uniqueId: `${item.roomid}`,
             item,
             displayData: mapLiveItemToVideo(item),
           }
         })
       }
-
-      // 只有在获取到新的直播数据且还有更多数据且页面可见时才继续递归
-      if (resData.length > 0
-        && !noMoreContent.value
-        && liveVideoList.value.length < 50
-        && isPageVisible.value) {
-        setTimeout(() => {
-          if (!isLoading.value && isPageVisible.value) {
-            getLiveVideoList()
-          }
-        }, 500)
-      }
+    }
+    else if (response.code === -101) {
+      needToLoginFirst.value = true
     }
   }
-  catch (error) {
-    console.error('获取直播列表失败:', error)
+  catch {
+    // 忽略错误
   }
 }
 
@@ -229,35 +218,20 @@ async function getFollowedUsersVideos() {
     return
   }
 
-  // 检查页面是否可见，如果不可见则限制加载次数
-  if (!isPageVisible.value && recursionDepth.value >= 3) {
+  // 检查页面是否可见，如果不可见则不进行请求
+  if (!isPageVisible.value)
+    return
+
+  // 限制递归深度，防止无限递归
+  if (recursionDepth.value >= 10) {
+    noMoreContent.value = true
     return
   }
 
-  // 限制递归深度，避免无限递归
-  if (recursionDepth.value >= 10) {
-    return
-  }
   recursionDepth.value++
 
   try {
-    // 如果 videoList 不是空的，获取最后一个真实视频的 uniqueId 和 bvid
-    let lastVideo: VideoElement | null = videoList.value.length > 0 ? videoList.value.slice(-1)[0] : null
-    const lastUniqueId = lastVideo ? lastVideo.uniqueId : ''
-    let lastBvid = lastVideo ? lastVideo.bvid : ''
-
-    // 只在首次加载时添加占位视频，避免闪屏
-    const isFirstLoad = videoList.value.length === 0
-    let pendingVideos: VideoElement[] = []
-    let lastVideoListLength = videoList.value.length
-
-    if (isFirstLoad) {
-      let i = 0
-      pendingVideos = Array.from({ length: 30 }, () => ({
-        uniqueId: `unique-id-${i++}`,
-      } satisfies VideoElement))
-      videoList.value.push(...pendingVideos)
-    }
+    const lastVideoListLength = videoList.value.length
 
     const response: MomentResult = await api.moment.getMoments({
       type: 'video',
@@ -275,128 +249,63 @@ async function getFollowedUsersVideos() {
       offset.value = response.data.offset
       updateBaseline.value = response.data.update_baseline
 
-      const resData = [] as MomentItem[]
+      const resData = [] as VideoElement[]
 
       response.data.items.forEach((item: MomentItem) => {
-        resData.push(item)
-      })
+        const authors: Author[] = []
 
-      // 使用isFirstLoad来判断是否是首次加载
-      if (isFirstLoad) {
-        videoList.value = resData.map((item) => {
-          const author: Author = {
-            name: decodeHtmlEntities(item.modules.module_author.name),
-            authorFace: item.modules.module_author.face,
-            mid: item.modules.module_author.mid,
-          }
-          const authorList = [author]
-          return {
-            uniqueId: `${item.id_str}`,
-            bvid: item.modules.module_dynamic.major.archive?.bvid,
-            item,
-            authorList,
-            displayData: mapMomentItemToVideo(item, authorList),
-          }
-        })
-      }
-      else {
-        resData.forEach((item, index) => {
-          const currentUniqueId = `${item.id_str}`
-          const currentBvid = item.modules.module_dynamic.major.archive?.bvid
-          const author: Author = {
-            name: decodeHtmlEntities(item.modules.module_author.name),
-            authorFace: item.modules.module_author.face,
-            mid: item.modules.module_author.mid,
-          }
-          const authorList = [author]
-          const currentVideo: VideoElement = {
-            uniqueId: currentUniqueId,
-            bvid: currentBvid,
-            item,
-            authorList,
-            displayData: mapMomentItemToVideo(item, authorList),
-          }
-
-          if (index === 0 && currentUniqueId === lastUniqueId) {
-            // 重复视频
-            return
-          }
-          else if (currentBvid === lastBvid) {
-            // UP主联合投稿视频
-
-            // 当联合投稿的数据是分两次获取时，有概率会出现多个重复内容
-            // 遍历authorList里面每个up的mid值，如果不存在再添加up信息
-            if (!lastVideo?.authorList?.some(existingAuthor => existingAuthor.mid === author.mid)) {
-              lastVideo?.authorList?.push(author)
-              // 更新 displayData
-              if (lastVideo?.item && lastVideo?.authorList) {
-                lastVideo.displayData = mapMomentItemToVideo(lastVideo.item, lastVideo.authorList)
-              }
-            }
-            return
-          }
-          else if (currentBvid) {
-            // 检查是否已存在相同 bvid 的视频（跨请求的联合投稿）
-            const existingVideo = videoList.value.find(v => v.bvid === currentBvid)
-            if (existingVideo) {
-              // 找到已存在的视频，添加作者到作者列表
-              if (!existingVideo.authorList?.some(existingAuthor => existingAuthor.mid === author.mid)) {
-                existingVideo.authorList?.push(author)
-                // 更新 displayData
-                if (existingVideo.item && existingVideo.authorList) {
-                  existingVideo.displayData = mapMomentItemToVideo(existingVideo.item, existingVideo.authorList)
-                }
-              }
-              return
-            }
-            else {
-              // UP主个人投稿视频或新的联合投稿视频
-              videoList.value[lastVideoListLength++] = currentVideo
-            }
-          }
-          else {
-            // UP主个人投稿视频
-            videoList.value[lastVideoListLength++] = currentVideo
-          }
-
-          lastVideo = currentVideo
-          lastBvid = currentBvid
-        })
-      }
-
-      // 只有在未被阻止的情况下才继续加载
-      if (!noMoreContent.value) {
-        if (!await haveScrollbar() || videoList.value.length < 30) {
-          // 添加延迟避免无限递归调用
-          setTimeout(() => {
-            if (!isLoading.value && !noMoreContent.value) {
-              getFollowedUsersVideos()
-            }
-          }, 200)
+        // 检查是否有联合投稿信息
+        if ((item.modules?.module_dynamic?.major?.archive?.stat as any)?.coop_num) {
+          (item.modules.module_dynamic.major.archive as any).coop_info?.forEach((coop: any) => {
+            authors.push({
+              name: coop.name,
+              authorFace: coop.face,
+              mid: coop.mid,
+            })
+          })
         }
         else {
-          // 重置递归深度计数器
-          recursionDepth.value = 0
+          // 单人投稿
+          authors.push({
+            name: item.modules?.module_author?.name,
+            authorFace: item.modules?.module_author?.face,
+            mid: item.modules?.module_author?.mid,
+          })
         }
+
+        resData.push({
+          uniqueId: `${item.id_str}`,
+          bvid: item.modules?.module_dynamic?.major?.archive?.bvid,
+          item,
+          authorList: authors,
+        })
+      })
+
+      // when videoList has length property, it means it is the first time to load
+      if (!videoList.value.length) {
+        videoList.value = resData.map(video => ({
+          ...video,
+          displayData: mapMomentItemToVideo(video.item, video.authorList),
+        }))
       }
       else {
-        // 重置递归深度计数器
-        recursionDepth.value = 0
+        resData.forEach((video, index) => {
+          videoList.value[lastVideoListLength + index] = {
+            ...video,
+            displayData: mapMomentItemToVideo(video.item, video.authorList),
+          }
+        })
       }
+
+      if (!await haveScrollbar() && !noMoreContent.value)
+        getFollowedUsersVideos()
     }
     else if (response.code === -101) {
       needToLoginFirst.value = true
     }
   }
-  catch {
-    // 出错时重置递归深度计数器
-    recursionDepth.value = 0
-  }
   finally {
-    // 只在首次加载时过滤占位视频，避免后续加载时的闪屏
-    if (videoList.value.some(video => !video.item)) {
-      videoList.value = videoList.value.filter(video => video.item)
-    }
+    recursionDepth.value--
   }
 }
 
@@ -485,91 +394,39 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
   }
 }
 
+// 通用转换函数：处理两种类型的项目
+function transformCombinedItem(item: VideoElement | LiveVideoElement): Video | undefined {
+  if (!item.item)
+    return undefined
+
+  // 判断是直播还是视频
+  if ('roomid' in item.item) {
+    // 直播项
+    return item.displayData
+  }
+  else {
+    // 视频项
+    return item.displayData
+  }
+}
+
 defineExpose({ initData })
 </script>
 
 <template>
   <div>
-    <Empty v-if="needToLoginFirst" mt-6 :description="$t('common.please_log_in_first')">
-      <Button type="primary" @click="jumpToLoginPage()">
-        {{ $t('common.login') }}
-      </Button>
-    </Empty>
-    <div
-      v-else-if="isInitialized"
-      ref="containerRef"
-      m="b-0 t-0" relative w-full h-full
-      :class="gridClass"
-      :style="gridStyle"
-    >
-      <template v-if="settings.followingTabShowLivestreamingVideos">
-        <VideoCard
-          v-for="video in liveVideoList"
-          :key="video.uniqueId"
-          v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
-          :skeleton="!video.item"
-          :video="video.displayData"
-          :show-watcher-later="false"
-          :show-preview="true"
-          :horizontal="gridLayout !== 'adaptive'"
-        />
-      </template>
-
-      <VideoCard
-        v-for="video in videoList"
-        :key="video.uniqueId"
-        v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
-        :skeleton="!video.item"
-        :video="video.displayData"
-        show-preview
-        :horizontal="gridLayout !== 'adaptive'"
-      />
-    </div>
-
-    <!-- loading state for initial load -->
-    <div v-else-if="!isInitialized && !needToLoginFirst" class="grid gap-4" :class="gridClass">
-      <VideoCard
-        v-for="i in 12"
-        :key="`skeleton-${i}`"
-        :skeleton="true"
-        :horizontal="gridLayout !== 'adaptive'"
-      />
-    </div>
-
-    <!-- no more content -->
-    <Empty v-if="noMoreContent && !needToLoginFirst && isInitialized" class="pb-4" :description="$t('common.no_more_content')" />
+    <VideoCardGrid
+      :items="combinedVideoList"
+      :grid-layout="gridLayout"
+      :loading="isLoading"
+      :no-more-content="noMoreContent"
+      :need-to-login-first="needToLoginFirst"
+      :transform-item="transformCombinedItem"
+      :get-item-key="(item: VideoElement | LiveVideoElement) => item.uniqueId"
+      :show-watcher-later="false"
+      show-preview
+      @refresh="initData"
+      @login="jumpToLoginPage"
+    />
   </div>
 </template>
-
-<style lang="scss" scoped>
-/* 优化性能：使用响应式列数替代 auto-fill */
-.grid-adaptive {
-  --uno: "grid gap-5";
-  /* 使用媒体查询定义固定列数，避免 auto-fill 的持续计算 */
-  grid-template-columns: repeat(1, 1fr);
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (min-width: 1536px) {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
-.grid-two-columns {
-  --uno: "grid cols-1 xl:cols-2 gap-4";
-}
-
-.grid-one-column {
-  --uno: "grid cols-1 gap-4";
-}
-</style>

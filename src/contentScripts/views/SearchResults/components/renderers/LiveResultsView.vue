@@ -2,9 +2,10 @@
 import { computed } from 'vue'
 
 import UserCard from '~/components/UserCard/UserCard.vue'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
+import type { GridLayoutType } from '~/logic'
 
 import { convertLiveRoomData, convertUserCardData, formatNumber } from '../../searchTransforms'
-import VideoGrid from './VideoGrid.vue'
 
 const props = defineProps<{
   liveUserList: any[]
@@ -23,6 +24,14 @@ const emit = defineEmits<{
   switchToLiveUser: []
 }>()
 
+// Grid 布局：直播搜索结果使用 adaptive 布局
+const gridLayout: GridLayoutType = 'adaptive'
+
+// 转换后的直播间列表
+const transformedLiveRoomList = computed(() => {
+  return props.liveRoomList.map(live => convertLiveRoomData(live))
+})
+
 // 检查是否在翻页模式下且不在第一页
 const isInPaginationNonFirstPage = computed(() => {
   return props.paginationMode === 'pagination' && (props.currentPage || 1) > 1
@@ -34,6 +43,11 @@ function handleFollowStateChanged(mid: number, isFollowing: boolean) {
 
 function formatResultCount(count: number): string {
   return formatNumber(count)
+}
+
+// Transform 函数：数据已经转换过了，直接返回
+function transformLiveRoom(room: any) {
+  return room
 }
 </script>
 
@@ -98,7 +112,14 @@ function formatResultCount(count: number): string {
           共找到{{ formatResultCount(currentSubCategory === 'live_room' ? currentTotalResults : (liveRoomTotalResults || liveRoomList.length)) }}个结果
         </span>
       </div>
-      <VideoGrid :videos="liveRoomList.map(live => convertLiveRoomData(live))" :auto-convert="false" />
+      <VideoCardGrid
+        :items="transformedLiveRoomList"
+        :grid-layout="gridLayout"
+        :transform-item="transformLiveRoom"
+        :get-item-key="(room: any) => room.id || room.roomid"
+        :enable-virtual-scroll="false"
+        show-preview
+      />
     </div>
   </div>
 </template>

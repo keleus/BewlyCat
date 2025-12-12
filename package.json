@@ -48,6 +48,7 @@
     "submit:firefox": "pnpm wxt submit --firefox-zip ./extension-firefox.zip --firefox-sources-zip ./extension-firefox-sources.zip"
   },
   "dependencies": {
+    "@tanstack/vue-virtual": "^3.13.13",
     "@types/md5": "^2.3.5",
     "dompurify": "^3.2.6",
     "flv.js": "^1.6.2",

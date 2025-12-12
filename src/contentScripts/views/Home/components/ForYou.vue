@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { onKeyStroke } from '@vueuse/core'
-import type { Ref } from 'vue'
 import { useToast } from 'vue-toastification'
 
 import SmoothLoading from '~/components/SmoothLoading.vue'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { FilterType, useFilter } from '~/composables/useFilter'
-import { useGridLayout } from '~/composables/useGridLayout'
 import { LanguageType } from '~/enums/appEnums'
 import type { GridLayoutType } from '~/logic'
 import { appAuthTokens, settings } from '~/logic'
@@ -20,7 +19,7 @@ import { TVAppKey } from '~/utils/authProvider'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { isVerticalVideo } from '~/utils/uriParse'
 
-const props = defineProps<{
+const { gridLayout } = defineProps<{
   gridLayout: GridLayoutType
 }>()
 
@@ -72,21 +71,22 @@ const appFilterFunc = useFilter(
   ],
 )
 
-// 使用共享的 Grid 布局 composable，避免重复计算
-const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
+const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, handleUndoRefresh, handleForwardRefresh, handleBackToTop, scrollbarRef } = useBewlyApp()
 
-// 提前定义 containerRef 避免 no-use-before-define 错误
-const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
-
+// 先声明数据变量
 const videoList = ref<VideoElement[]>([])
 const appVideoList = ref<AppVideoElement[]>([])
+
+// 当前使用的视频列表（根据推荐模式）
+const currentVideoList = computed(() =>
+  settings.value.recommendationMode === 'web' ? videoList.value : appVideoList.value,
+)
+
 const isLoading = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
 const refreshIdx = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, handleUndoRefresh, handleForwardRefresh, handleBackToTop } = useBewlyApp()
 const activatedAppVideo = ref<AppVideoItem | null>()
-const videoCardRef = ref(null)
 const showDislikeDialog = ref<boolean>(false)
 
 // 页面可见性状态
@@ -124,9 +124,6 @@ function handleVisibilityChange() {
 onMounted(() => {
   document.addEventListener('visibilitychange', handleVisibilityChange)
 
-  // 移除了 ResizeObserver 和 calculateGridColumns 调用
-  // 现在使用纯 CSS grid auto-fit，浏览器自动处理响应式布局
-
   // 如果启用状态保留且store中有数据，则恢复状态
   if (settings.value.preserveForYouState && forYouStore.state.isInitialized) {
     // 恢复关键状态
@@ -146,6 +143,16 @@ onMounted(() => {
     cachedRefreshIdx.value = 1
     forwardVideoList.value = []
     forwardRefreshIdx.value = 1
+
+    // 恢复滚动位置
+    if (savedState.scrollTop) {
+      nextTick(() => {
+        const osInstance = scrollbarRef.value?.osInstance()
+        const viewport = osInstance?.elements().viewport
+        if (viewport)
+          viewport.scrollTop = savedState.scrollTop || 0
+      })
+    }
 
     // 延迟初始化页面交互功能，避免立即触发数据加载
     setTimeout(() => {
@@ -167,15 +174,25 @@ onMounted(() => {
   }
 })
 
+onActivated(() => {
+  initPageAction()
+})
+
 onBeforeUnmount(() => {
   // 如果启用状态保留，保存当前状态到store
   if (settings.value.preserveForYouState) {
+    // 获取当前滚动位置
+    const osInstance = scrollbarRef.value?.osInstance()
+    const viewport = osInstance?.elements().viewport
+    const scrollTop = viewport?.scrollTop || 0
+
     const currentState = {
       videoList: [...videoList.value],
       appVideoList: [...appVideoList.value],
       refreshIdx: refreshIdx.value,
       noMoreContent: noMoreContent.value,
       isInitialized: true,
+      scrollTop, // 保存滚动位置
     }
     forYouStore.saveCompleteState(currentState)
   }
@@ -232,6 +249,7 @@ function transformWebVideo(item: VideoItem): VideoCardDisplayData {
     publishedTimestamp: item.pubdate,
     bvid: item.bvid,
     cid: item.cid,
+    threePointV2: [],
   }
 }
 
@@ -272,7 +290,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     goto: item?.goto,
     url: item?.goto === 'bangumi' ? item.uri : '',
     type,
-    threePointV2: item?.three_point_v2,
+    threePointV2: item?.three_point_v2 || [],
   }
 }
 
@@ -302,6 +320,28 @@ watch(() => settings.value.recommendationMode, () => {
 async function initData() {
   videoList.value.length = 0
   appVideoList.value.length = 0
+
+  // 添加初始骨架屏占位，确保虚拟滚动有内容渲染
+  const INITIAL_SKELETON_COUNT = 30 // 添加足够的骨架屏填满屏幕
+  if (settings.value.recommendationMode === 'web') {
+    const skeletonPlaceholders: VideoElement[] = Array.from({
+      length: INITIAL_SKELETON_COUNT,
+    }, (_, i) => ({
+      uniqueId: `skeleton-init-${i}`,
+      // 不设置 item，VideoCard 会检测到并显示 skeleton
+    } satisfies VideoElement))
+    videoList.value.push(...skeletonPlaceholders)
+  }
+  else {
+    const skeletonPlaceholders: AppVideoElement[] = Array.from({
+      length: INITIAL_SKELETON_COUNT,
+    }, (_, i) => ({
+      uniqueId: `skeleton-init-${i}`,
+      // 不设置 item，VideoCard 会检测到并显示 skeleton
+    } satisfies AppVideoElement))
+    appVideoList.value.push(...skeletonPlaceholders)
+  }
+
   APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   await getData()
@@ -487,10 +527,11 @@ async function getRecommendVideos() {
     }
 
     const beforeLoadCount = videoList.value.filter(video => video.item).length
+    const hasInitialSkeleton = videoList.value.some(v => v.uniqueId.startsWith('skeleton-init-'))
 
     // 只在滚动加载（非初始加载）时显示骨架屏
-    // 初始加载有 SmoothLoading 全局加载指示器，无需 skeleton
-    const isScrollLoad = beforeLoadCount > 0
+    // 初始加载的骨架屏已经在 initData 中添加
+    const isScrollLoad = beforeLoadCount > 0 && !hasInitialSkeleton
     if (isScrollLoad) {
       // 添加 skeleton 占位卡片（用于显示加载状态）
       const SKELETON_COUNT = 6 // 每次加载显示 6 个骨架屏
@@ -509,10 +550,8 @@ async function getRecommendVideos() {
       ps: PAGE_SIZE,
     })
 
-    // 移除刚添加的 skeleton 占位符（如果有）
-    if (isScrollLoad) {
-      videoList.value = videoList.value.filter(v => !v.uniqueId.startsWith('skeleton-'))
-    }
+    // 移除所有 skeleton 占位符（包括初始骨架屏和滚动加载骨架屏）
+    videoList.value = videoList.value.filter(v => !v.uniqueId.startsWith('skeleton-'))
 
     if (!response.data) {
       noMoreContent.value = true
@@ -588,9 +627,8 @@ async function getRecommendVideos() {
     if (!needToLoginFirst.value) {
       await nextTick()
 
-      // 如果需要更多内容，继续加载
-      if (!haveScrollbar() || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
-        // 检查页面可见性和空加载计数器
+      const hasScrollbar = await haveScrollbar()
+      if (!hasScrollbar || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
         if (isPageVisible.value && consecutiveEmptyLoads.value < MAX_EMPTY_LOADS) {
           getRecommendVideos()
         }
@@ -606,9 +644,10 @@ async function getAppRecommendVideos() {
   const batchesToLoad = APP_LOAD_BATCHES.value
 
   // 只在滚动加载（非初始加载）时显示骨架屏
-  // 初始加载有 SmoothLoading 全局加载指示器，无需 skeleton
+  // 初始加载的骨架屏已经在 initData 中添加
   const beforeLoadCount = appVideoList.value.filter(v => v.item).length
-  const isScrollLoad = beforeLoadCount > 0
+  const hasInitialSkeleton = appVideoList.value.some(v => v.uniqueId.startsWith('skeleton-init-'))
+  const isScrollLoad = beforeLoadCount > 0 && !hasInitialSkeleton
   if (isScrollLoad) {
     // 添加 skeleton 占位卡片（用于显示加载状态）
     const SKELETON_COUNT = 6 // 每次加载显示 6 个骨架屏
@@ -675,29 +714,24 @@ async function getAppRecommendVideos() {
     }
   }
 
-  // 移除刚添加的 skeleton 占位符（如果有）
-  if (isScrollLoad) {
-    appVideoList.value = appVideoList.value.filter(v => !v.uniqueId.startsWith('skeleton-'))
-  }
+  // 移除所有 skeleton 占位符（包括初始骨架屏和滚动加载骨架屏）
+  appVideoList.value = appVideoList.value.filter(v => !v.uniqueId.startsWith('skeleton-'))
 
   if (!needToLoginFirst.value) {
     await nextTick()
 
-    // 判断是否需要继续加载
     let shouldContinue = false
+    const hasScrollbar = await haveScrollbar()
 
-    // 初始化加载：没有滚动条或数据量不足时继续
-    if (!haveScrollbar() || appVideoList.value.length < PAGE_SIZE) {
+    if (!hasScrollbar || appVideoList.value.length < PAGE_SIZE) {
       shouldContinue = true
     }
-    // 滚动加载：检查是否已加载足够内容（至少 PAGE_SIZE 个新视频）
     else if (scrollLoadStartLength.value > 0) {
       const loadedCount = appVideoList.value.length - scrollLoadStartLength.value
       if (loadedCount < PAGE_SIZE) {
         shouldContinue = true
       }
       else {
-        // 已加载足够内容，重置标记
         scrollLoadStartLength.value = 0
       }
     }
@@ -740,66 +774,32 @@ defineExpose({
 
 <template>
   <div>
+    <VideoCardGrid
+      v-if="!needToLoginFirst"
+      :items="currentVideoList"
+      :grid-layout="gridLayout"
+      :loading="isLoading"
+      :no-more-content="noMoreContent"
+      :need-to-login-first="needToLoginFirst"
+      :transform-item="(item: VideoElement | AppVideoElement) => item.displayData"
+      :get-item-key="(item: VideoElement | AppVideoElement) => item.uniqueId"
+      :video-type="settings.recommendationMode === 'web' ? 'rcmd' : 'appRcmd'"
+      show-preview
+      more-btn
+      @refresh="initData"
+      @login="jumpToLoginPage"
+    />
+
     <Empty v-if="needToLoginFirst" mt-6 :description="$t('common.please_log_in_first')">
       <Button type="primary" @click="jumpToLoginPage()">
         {{ $t('common.login') }}
       </Button>
     </Empty>
 
-    <div
-      v-else
-      ref="containerRef"
-      m="b-0 t-0" relative w-full h-full
-      :class="gridClass"
-      :style="gridStyle"
-    >
-      <template v-if="settings.recommendationMode === 'web'">
-        <VideoCard
-          v-for="video in videoList"
-          :key="video.uniqueId"
-          v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
-          :skeleton="!video.item"
-          type="rcmd"
-          :video="video.displayData"
-          show-preview
-          :horizontal="gridLayout !== 'adaptive'"
-          more-btn
-        />
-      </template>
-      <template v-else>
-        <VideoCard
-          v-for="video in appVideoList"
-          :key="video.uniqueId"
-          ref="videoCardRef"
-          v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
-          :skeleton="!video.item"
-          type="appRcmd"
-          :video="video.displayData"
-          show-preview
-          :horizontal="gridLayout !== 'adaptive'"
-          more-btn
-        />
-        <!-- :more-options="video.three_point_v2" -->
-      </template>
-    </div>
-
     <SmoothLoading :show="isLoading" />
-    <!-- no more content -->
-    <Empty v-if="noMoreContent" class="pb-4" :description="$t('common.no_more_content')" />
   </div>
 </template>
 
 <style lang="scss" scoped>
-.grid-adaptive {
-  --uno: "grid gap-5";
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-}
-
-.grid-two-columns {
-  --uno: "grid cols-1 xl:cols-2 gap-4";
-}
-
-.grid-one-column {
-  --uno: "grid cols-1 gap-4";
-}
+/* Styles moved to VideoCardGrid component */
 </style>

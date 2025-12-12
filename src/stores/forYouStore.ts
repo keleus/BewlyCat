@@ -29,7 +29,7 @@ export interface VideoCardDisplayData {
   goto?: string
   url?: string
   type?: 'horizontal' | 'vertical' | 'bangumi'
-  threePointV2?: any
+  threePointV2: any
 }
 
 export interface VideoElement {
@@ -52,6 +52,9 @@ export interface ForYouState {
   // 基础页面状态
   refreshIdx: number
   noMoreContent: boolean
+
+  // 滚动位置
+  scrollTop?: number
 
   // 是否已初始化
   isInitialized: boolean

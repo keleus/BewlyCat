@@ -98,11 +98,12 @@ function getFavoriteResources() {
     .then((res) => {
       const { code, data } = res
       if (code === 0) {
-        if ('medias' in data && Array.isArray(data.medias) && data.medias.length > 0)
+        if (data && 'medias' in data && Array.isArray(data.medias) && data.medias.length > 0)
           favoriteResources.push(...data.medias)
 
         if (
-          !data.medias
+          !data
+          || !data.medias
           || (data.medias.length < 20 && favoriteResources.length > 0)
         ) {
           isLoading.value = false

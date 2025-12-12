@@ -1,14 +1,13 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import Empty from '~/components/Empty.vue'
-import SmoothLoading from '~/components/SmoothLoading.vue'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 
 import Pagination from '../components/Pagination.vue'
-import VideoGrid from '../components/renderers/VideoGrid.vue'
 import { useLoadMore } from '../composables/useLoadMore'
 import { usePagination } from '../composables/usePagination'
 import { useSearchRequest } from '../composables/useSearchRequest'
@@ -33,6 +32,9 @@ const paginationMode = computed(() => settings.value.searchResultsPaginationMode
 
 // 翻页加载状态
 const isPageChanging = ref(false)
+
+// Grid 布局：搜索结果使用 adaptive 布局
+const gridLayout = computed<GridLayoutType>(() => 'adaptive')
 
 // 搜索请求管理
 const {
@@ -265,6 +267,11 @@ function resetAll() {
   results.value = []
 }
 
+// Transform 函数：数据已经转换过了，直接返回
+function transformVideo(video: any) {
+  return video
+}
+
 // 暴露给父组件
 defineExpose({
   isLoading,
@@ -288,31 +295,27 @@ defineExpose({
       {{ $t('common.no_data') }}
     </div>
 
-    <VideoGrid v-else :videos="results || []" :auto-convert="false" />
-
-    <!-- 滚动加载模式 -->
-    <template v-if="paginationMode === 'scroll'">
-      <SmoothLoading
-        :show="isLoading && results && results.length > 0"
-        :keep-space="true"
-      />
-
-      <Empty
-        v-if="!isLoading && results && results.length > 0 && !hasMore"
-        :description="$t('common.no_more_content')"
-      />
-    </template>
+    <VideoCardGrid
+      v-else
+      :items="results || []"
+      :grid-layout="gridLayout"
+      :loading="!!(isLoading && results && results.length > 0)"
+      :no-more-content="paginationMode === 'scroll' && !hasMore"
+      :transform-item="transformVideo"
+      :get-item-key="(video: any) => video.aid || video.id"
+      :enable-virtual-scroll="paginationMode === 'scroll'"
+      show-preview
+    />
 
     <!-- 翻页模式 -->
-    <template v-else>
-      <Pagination
-        :current-page="currentPage"
-        :total-pages="totalPages"
-        :loading="isPageChanging"
-        :disabled="isLoading"
-        @change="handlePageChange"
-      />
-    </template>
+    <Pagination
+      v-if="paginationMode === 'pagination'"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :loading="isPageChanging"
+      :disabled="isLoading"
+      @change="handlePageChange"
+    />
   </div>
 </template>
 

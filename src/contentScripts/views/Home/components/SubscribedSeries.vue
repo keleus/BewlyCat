@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
-
 import type { Video } from '~/components/VideoCard/types'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useGridLayout } from '~/composables/useGridLayout'
 import type { GridLayoutType } from '~/logic'
-import { settings } from '~/logic'
 import type { DataItem as MomentItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
@@ -17,7 +14,7 @@ interface VideoElement {
   displayData?: Video
 }
 
-const props = defineProps<{
+const { gridLayout } = defineProps<{
   gridLayout: GridLayoutType
 }>()
 
@@ -26,13 +23,9 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-// 使用共享的 Grid 布局 composable，避免重复计算
-const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
-
 const videoList = ref<VideoElement[]>([])
 const isLoading = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
-const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
@@ -59,22 +52,26 @@ async function initData() {
 }
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
-function transformSubscribedSeriesVideo(item: MomentItem): Video {
+function transformSubscribedSeriesVideo(item: VideoElement): Video | undefined {
+  if (!item.item)
+    return undefined
+
+  const momentItem = item.item
   return {
-    id: item.modules.module_author.mid,
-    title: decodeHtmlEntities(`${item.modules.module_dynamic.major.pgc?.title}`),
-    cover: `${item.modules.module_dynamic.major.pgc?.cover}`,
+    id: momentItem.modules.module_author.mid,
+    title: decodeHtmlEntities(`${momentItem.modules.module_dynamic.major.pgc?.title}`),
+    cover: `${momentItem.modules.module_dynamic.major.pgc?.cover}`,
     author: {
-      name: decodeHtmlEntities(item.modules.module_author.name),
-      authorUrl: item.modules.module_author.jump_url,
-      authorFace: item.modules.module_author.face,
-      mid: item.modules.module_author.mid,
+      name: decodeHtmlEntities(momentItem.modules.module_author.name),
+      authorUrl: momentItem.modules.module_author.jump_url,
+      authorFace: momentItem.modules.module_author.face,
+      mid: momentItem.modules.module_author.mid,
     },
-    viewStr: item.modules.module_dynamic.major.pgc?.stat.play,
-    danmakuStr: item.modules.module_dynamic.major.pgc?.stat.danmaku,
-    likeStr: item.modules.module_dynamic.major.pgc?.stat.like,
-    capsuleText: decodeHtmlEntities(item.modules.module_author.pub_time),
-    epid: item.modules.module_dynamic.major.pgc?.epid,
+    viewStr: momentItem.modules.module_dynamic.major.pgc?.stat.play,
+    danmakuStr: momentItem.modules.module_dynamic.major.pgc?.stat.danmaku,
+    likeStr: momentItem.modules.module_dynamic.major.pgc?.stat.like,
+    capsuleText: decodeHtmlEntities(momentItem.modules.module_author.pub_time),
+    epid: momentItem.modules.module_dynamic.major.pgc?.epid,
     threePointV2: [],
   }
 }
@@ -126,7 +123,7 @@ async function getFollowedUsersVideos() {
     const pendingVideos: VideoElement[] = Array.from({ length: 30 }, () => ({
       uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
     } satisfies VideoElement))
-    let lastVideoListLength = videoList.value.length
+    const lastVideoListLength = videoList.value.length
     videoList.value.push(...pendingVideos)
 
     const response: MomentResult = await api.moment.getMoments({
@@ -156,22 +153,21 @@ async function getFollowedUsersVideos() {
         videoList.value = resData.map(item => ({
           uniqueId: `${item.id_str}`,
           item,
-          displayData: transformSubscribedSeriesVideo(item),
+          displayData: transformSubscribedSeriesVideo({ uniqueId: `${item.id_str}`, item }),
         }))
       }
       else {
-        resData.forEach((item) => {
-          videoList.value[lastVideoListLength++] = {
+        resData.forEach((item, index) => {
+          videoList.value[lastVideoListLength + index] = {
             uniqueId: `${item.id_str}`,
             item,
-            displayData: transformSubscribedSeriesVideo(item),
+            displayData: transformSubscribedSeriesVideo({ uniqueId: `${item.id_str}`, item }),
           }
         })
       }
 
-      if (!await haveScrollbar() && !noMoreContent.value) {
+      if (!await haveScrollbar() && !noMoreContent.value)
         getFollowedUsersVideos()
-      }
     }
     else if (response.code === -101) {
       needToLoginFirst.value = true
@@ -191,68 +187,18 @@ defineExpose({ initData })
 
 <template>
   <div>
-    <Empty v-if="needToLoginFirst" mt-6 :description="$t('common.please_log_in_first')">
-      <Button type="primary" @click="jumpToLoginPage()">
-        {{ $t('common.login') }}
-      </Button>
-    </Empty>
-    <Empty v-if="videoList.length === 0 && !needToLoginFirst" mt-6 :description="$t('common.no_more_content')">
-      <Button type="primary" @click="initData()">
-        {{ $t('common.operation.refresh') }}
-      </Button>
-    </Empty>
-    <div
-      v-else
-      ref="containerRef"
-      m="b-0 t-0" relative w-full h-full
-      :class="gridClass"
-      :style="gridStyle"
-    >
-      <VideoCard
-        v-for="video in videoList"
-        :key="video.uniqueId"
-        v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
-        :skeleton="!video.item"
-        type="bangumi"
-        :video="video.displayData"
-        :show-watcher-later="false"
-        :horizontal="gridLayout !== 'adaptive'"
-      />
-    </div>
-
-    <!-- no more content -->
-    <Empty v-if="noMoreContentWarning" class="pb-4" :description="$t('common.no_more_content')" />
+    <VideoCardGrid
+      :items="videoList"
+      :grid-layout="gridLayout"
+      :loading="isLoading"
+      :no-more-content="noMoreContentWarning"
+      :need-to-login-first="needToLoginFirst"
+      :transform-item="transformSubscribedSeriesVideo"
+      :get-item-key="(item: VideoElement) => item.uniqueId"
+      video-type="bangumi"
+      :show-watcher-later="false"
+      @refresh="initData"
+      @login="jumpToLoginPage"
+    />
   </div>
 </template>
-
-<style lang="scss" scoped>
-/* 优化性能：使用响应式列数替代 auto-fill */
-.grid-adaptive {
-  --uno: "grid gap-5";
-  grid-template-columns: repeat(1, 1fr);
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (min-width: 1536px) {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
-.grid-two-columns {
-  --uno: "grid cols-1 xl:cols-2 gap-4";
-}
-
-.grid-one-column {
-  --uno: "grid cols-1 gap-4";
-}
-</style>

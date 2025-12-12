@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
-
 import type { Video } from '~/components/VideoCard/types'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useGridLayout } from '~/composables/useGridLayout'
 import type { GridLayoutType } from '~/logic'
-import { settings } from '~/logic'
 import type { List as VideoItem, TrendingResult } from '~/models/video/trending'
 import api from '~/utils/api'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
@@ -17,7 +14,7 @@ interface VideoElement {
   displayData?: Video
 }
 
-const props = defineProps<{
+const { gridLayout } = defineProps<{
   gridLayout: GridLayoutType
 }>()
 
@@ -26,12 +23,8 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-// 使用共享的 Grid 布局 composable，避免重复计算
-const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
-
 const videoList = ref<VideoElement[]>([])
 const isLoading = ref<boolean>(false)
-const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const pn = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
 const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
@@ -53,26 +46,30 @@ async function initData() {
 }
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
-function transformTrendingVideo(item: VideoItem): Video {
+function transformTrendingVideo(item: VideoElement): Video | undefined {
+  if (!item.item)
+    return undefined
+
+  const videoItem = item.item
   return {
-    id: Number(item.aid),
-    duration: item.duration,
-    title: decodeHtmlEntities(item.title),
-    desc: decodeHtmlEntities(item.desc),
-    cover: item.pic,
+    id: Number(videoItem.aid),
+    duration: videoItem.duration,
+    title: decodeHtmlEntities(videoItem.title),
+    desc: decodeHtmlEntities(videoItem.desc),
+    cover: videoItem.pic,
     author: {
-      name: decodeHtmlEntities(item.owner.name),
-      authorFace: item.owner.face,
-      mid: item.owner.mid,
+      name: decodeHtmlEntities(videoItem.owner.name),
+      authorFace: videoItem.owner.face,
+      mid: videoItem.owner.mid,
     },
-    view: typeof item.stat.view === 'number' ? item.stat.view : Number(item.stat.view),
-    danmaku: typeof item.stat.danmaku === 'number' ? item.stat.danmaku : Number(item.stat.danmaku),
-    like: typeof item.stat.like === 'number' ? item.stat.like : Number(item.stat.like),
-    likeStr: (item.stat as any)?.like_str ?? item.stat.like,
-    publishedTimestamp: item.pubdate,
-    bvid: item.bvid,
-    tag: decodeHtmlEntities(item.rcmd_reason.content),
-    cid: item.cid,
+    view: typeof videoItem.stat.view === 'number' ? videoItem.stat.view : Number(videoItem.stat.view),
+    danmaku: typeof videoItem.stat.danmaku === 'number' ? videoItem.stat.danmaku : Number(videoItem.stat.danmaku),
+    like: typeof videoItem.stat.like === 'number' ? videoItem.stat.like : Number(videoItem.stat.like),
+    likeStr: (videoItem.stat as any)?.like_str ?? videoItem.stat.like,
+    publishedTimestamp: videoItem.pubdate,
+    bvid: videoItem.bvid,
+    tag: decodeHtmlEntities(videoItem.rcmd_reason.content),
+    cid: videoItem.cid,
     threePointV2: [],
   }
 }
@@ -110,7 +107,7 @@ async function getTrendingVideos() {
     const pendingVideos: VideoElement[] = Array.from({ length: 30 }, () => ({
       uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
     } satisfies VideoElement))
-    let lastVideoListLength = videoList.value.length
+    const lastVideoListLength = videoList.value.length
     videoList.value.push(...pendingVideos)
 
     const response: TrendingResult = await api.video.getPopularVideos({
@@ -132,22 +129,21 @@ async function getTrendingVideos() {
         videoList.value = resData.map(item => ({
           uniqueId: `${item.aid}`,
           item,
-          displayData: transformTrendingVideo(item),
+          displayData: transformTrendingVideo({ uniqueId: `${item.aid}`, item }),
         }))
       }
       else {
-        resData.forEach((item) => {
-          videoList.value[lastVideoListLength++] = {
+        resData.forEach((item, index) => {
+          videoList.value[lastVideoListLength + index] = {
             uniqueId: `${item.aid}`,
             item,
-            displayData: transformTrendingVideo(item),
+            displayData: transformTrendingVideo({ uniqueId: `${item.aid}`, item }),
           }
         })
       }
 
-      if (!haveScrollbar() && !noMoreContent.value) {
+      if (!await haveScrollbar() && !noMoreContent.value)
         getTrendingVideos()
-      }
     }
   }
   finally {
@@ -159,54 +155,14 @@ defineExpose({ initData })
 </script>
 
 <template>
-  <div>
-    <div
-      ref="containerRef"
-      m="b-0 t-0" relative w-full h-full
-      :class="gridClass"
-      :style="gridStyle"
-    >
-      <VideoCard
-        v-for="video in videoList"
-        :key="video.uniqueId"
-        v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
-        :skeleton="!video.item"
-        :video="video.displayData"
-        show-preview
-        :horizontal="gridLayout !== 'adaptive'"
-      />
-    </div>
-  </div>
+  <VideoCardGrid
+    :items="videoList"
+    :grid-layout="gridLayout"
+    :loading="isLoading"
+    :no-more-content="noMoreContent"
+    :transform-item="transformTrendingVideo"
+    :get-item-key="(item: VideoElement) => item.uniqueId"
+    show-preview
+    @refresh="initData"
+  />
 </template>
-
-<style lang="scss" scoped>
-/* 优化性能：使用响应式列数替代 auto-fill */
-.grid-adaptive {
-  --uno: "grid gap-5";
-  grid-template-columns: repeat(1, 1fr);
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (min-width: 1536px) {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
-.grid-two-columns {
-  --uno: "grid cols-1 xl:cols-2 gap-4";
-}
-
-.grid-one-column {
-  --uno: "grid cols-1 gap-4";
-}
-</style>
