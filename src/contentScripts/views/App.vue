@@ -528,7 +528,7 @@ function handleOsScroll() {
 
   // 使用 RAF 将所有 DOM 读取合并到下一帧
   rafId = requestAnimationFrame(() => {
-    emitter.emit(OVERLAY_SCROLL_BAR_SCROLL)
+    emitter.emit(OVERLAY_SCROLL_BAR_SCROLL, scrollTop)
 
     const osInstance = scrollbarRef.value?.osInstance()
     if (!osInstance) {
@@ -580,8 +580,7 @@ function handleOsScroll() {
       }
     }, 150)
 
-    if (isHomePage())
-      topBarRef.value?.handleScroll()
+
 
     rafId = null
   })
