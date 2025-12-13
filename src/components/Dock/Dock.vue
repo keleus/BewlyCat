@@ -372,7 +372,7 @@ function handleHomeRefreshKeydown(event: KeyboardEvent) {
   const configuredKey = shortcutConfig.key || 'R'
 
   // 检查是否按下了配置的快捷键
-  if (event.key.toUpperCase() === configuredKey.toUpperCase() && !event.ctrlKey && !event.metaKey && !event.altKey) {
+  if (event.key && event.key.toUpperCase() === configuredKey.toUpperCase() && !event.ctrlKey && !event.metaKey && !event.altKey) {
     // 检查页面中是否有任何输入框处于焦点状态
     const activeElement = document.activeElement
 

@@ -528,8 +528,6 @@ function handleOsScroll() {
 
   // 使用 RAF 将所有 DOM 读取合并到下一帧
   rafId = requestAnimationFrame(() => {
-    emitter.emit(OVERLAY_SCROLL_BAR_SCROLL)
-
     const osInstance = scrollbarRef.value?.osInstance()
     if (!osInstance) {
       rafId = null
@@ -539,6 +537,8 @@ function handleOsScroll() {
     const { viewport } = osInstance.elements()
     // 一次性批量读取所有 DOM 属性，避免多次强制布局
     const { scrollTop, scrollHeight, clientHeight } = viewport
+
+    emitter.emit(OVERLAY_SCROLL_BAR_SCROLL, scrollTop)
 
     // 只在滚动距离超过阈值时更新状态
     const scrollDelta = Math.abs(scrollTop - lastScrollTop)
@@ -579,9 +579,6 @@ function handleOsScroll() {
         handleReachBottom.value?.()
       }
     }, 150)
-
-    if (isHomePage())
-      topBarRef.value?.handleScroll()
 
     rafId = null
   })
