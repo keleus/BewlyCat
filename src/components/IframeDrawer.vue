@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onKeyStroke, useEventListener } from '@vueuse/core'
 
+import { DrawerType, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const { isDark } = useDark()
+const { activeDrawer, setActiveDrawer } = useBewlyApp()
 
 const show = ref(false)
 const headerShow = ref(true)
@@ -140,10 +142,13 @@ function setupIframeListeners() {
   })
 }
 onMounted(() => {
+  console.log('[IframeDrawer] onMounted called')
   originUrl.value = window.location.href
   history.pushState(null, '', props.url)
   show.value = true
   headerShow.value = true
+  setActiveDrawer(DrawerType.IframeDrawer) // 设置为当前活跃抽屉
+  console.log('[IframeDrawer] show.value:', show.value, 'activeDrawer:', activeDrawer.value)
   nextTick(() => {
     if (iframeRef.value) {
       setupIframeListeners()
@@ -187,12 +192,15 @@ async function updateIframeUrl() {
 }
 
 async function handleClose() {
+  console.log('[IframeDrawer] handleClose called')
   if (delayCloseTimer.value) {
     clearTimeout(delayCloseTimer.value)
   }
   await releaseIframeResources()
   show.value = false
   headerShow.value = false
+  setActiveDrawer(DrawerType.None) // 清除活跃抽屉状态
+  console.log('[IframeDrawer] show.value:', show.value, 'activeDrawer:', activeDrawer.value)
   delayCloseTimer.value = setTimeout(() => {
     emit('close')
   }, 300)
@@ -230,29 +238,49 @@ const isEscPressed = ref<boolean>(false)
 const escPressedTimer = ref<NodeJS.Timeout | null>(null)
 const disableEscPress = ref<boolean>(false)
 
-nextTick(() => {
-  onKeyStroke('Escape', (e: KeyboardEvent) => {
-    e.preventDefault()
-    if (settings.value.closeDrawerWithoutPressingEscAgain) {
-      clearTimeout(escPressedTimer.value!)
-      handleClose()
-      return
+/**
+ * Listen to Escape key on the main window, not iframe
+ * Only active when this drawer is the active drawer
+ */
+onKeyStroke('Escape', (e: KeyboardEvent) => {
+  console.log('[IframeDrawer] ESC key pressed!')
+  console.log('[IframeDrawer] show.value:', show.value)
+  console.log('[IframeDrawer] activeDrawer.value:', activeDrawer.value)
+  console.log('[IframeDrawer] DrawerType.IframeDrawer:', DrawerType.IframeDrawer)
+  console.log('[IframeDrawer] Match:', activeDrawer.value === DrawerType.IframeDrawer)
+
+  // Only handle when this drawer is the active drawer
+  if (activeDrawer.value !== DrawerType.IframeDrawer) {
+    console.log('[IframeDrawer] Not active drawer, ignoring ESC')
+    return
+  }
+
+  console.log('[IframeDrawer] Processing ESC key')
+  e.preventDefault()
+  if (settings.value.closeDrawerWithoutPressingEscAgain) {
+    console.log('[IframeDrawer] closeDrawerWithoutPressingEscAgain = true, closing immediately')
+    clearTimeout(escPressedTimer.value!)
+    handleClose()
+    return
+  }
+  console.log('[IframeDrawer] disableEscPress:', disableEscPress.value)
+  console.log('[IframeDrawer] isEscPressed:', isEscPressed.value)
+  if (disableEscPress.value)
+    return
+  if (isEscPressed.value) {
+    console.log('[IframeDrawer] ESC pressed twice, closing')
+    handleClose()
+  }
+  else {
+    console.log('[IframeDrawer] First ESC press, waiting for second press')
+    isEscPressed.value = true
+    if (escPressedTimer.value) {
+      clearTimeout(escPressedTimer.value)
     }
-    if (disableEscPress.value)
-      return
-    if (isEscPressed.value) {
-      handleClose()
-    }
-    else {
-      isEscPressed.value = true
-      if (escPressedTimer.value) {
-        clearTimeout(escPressedTimer.value)
-      }
-      escPressedTimer.value = setTimeout(() => {
-        isEscPressed.value = false
-      }, 1300)
-    }
-  }, { target: iframeRef.value?.contentWindow })
+    escPressedTimer.value = setTimeout(() => {
+      isEscPressed.value = false
+    }, 1300)
+  }
 })
 
 watchEffect(() => {

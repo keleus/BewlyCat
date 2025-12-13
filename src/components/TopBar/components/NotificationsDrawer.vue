@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { onKeyStroke } from '@vueuse/core'
-
-import { useBewlyApp } from '~/composables/useAppProvider'
+import { DrawerType, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
@@ -16,13 +14,15 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const { mainAppRef } = useBewlyApp()
+const { mainAppRef, activeDrawer, setActiveDrawer } = useBewlyApp()
 const { isDark } = useDark()
 
 const show = ref(false)
 const iframeRef = ref<HTMLIFrameElement | null>(null)
+const drawerRef = ref<HTMLElement | null>(null)
 const currentUrl = ref<string>(props.url || 'https://message.bilibili.com/')
 const showIframe = ref(false)
+const isIframeLoaded = ref(false)
 const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
 
 // 计算属性：只有在显示iframe时才设置src，避免隐藏时提前加载
@@ -60,10 +60,11 @@ watch(() => settings.value.darkModeBaseColor, (newColor) => {
 })
 
 // 监听iframe加载状态，加载完成后发送初始的黑暗模式状态
-watch(() => showIframe.value, (newValue) => {
+watch(() => isIframeLoaded.value, (newValue) => {
   if (newValue && iframeRef.value?.contentWindow) {
     setTimeout(() => {
       try {
+        // 发送初始的黑暗模式状态
         iframeRef.value?.contentWindow?.postMessage({
           type: IFRAME_DARK_MODE_CHANGE,
           isDark: isDark.value,
@@ -86,8 +87,14 @@ onActivated(() => {
 })
 
 const beforeUrl = ref<string>('')
+
 function handleOpen() {
+  console.log('[NotificationsDrawer] handleOpen called')
   show.value = true
+  isIframeLoaded.value = false // 重置加载状态
+  setActiveDrawer(DrawerType.NotificationsDrawer) // 设置为当前活跃抽屉
+  console.log('[NotificationsDrawer] show.value:', show.value, 'activeDrawer:', activeDrawer.value)
+
   if (beforeUrl.value !== props.url) {
     currentUrl.value = props.url
     beforeUrl.value = props.url
@@ -96,7 +103,9 @@ function handleOpen() {
   setTimeout(() => {
     showIframe.value = true
     nextTick(() => {
-      iframeRef.value?.focus()
+      // 聚焦到抽屉容器而不是iframe，以便捕获键盘事件
+      console.log('[NotificationsDrawer] Focusing drawer container')
+      drawerRef.value?.focus()
     })
   }, 100) // 短暂延迟，确保抽屉显示动画开始
 }
@@ -106,12 +115,15 @@ onBeforeUnmount(() => {
 })
 
 async function handleClose() {
+  console.log('[NotificationsDrawer] handleClose called')
   if (delayCloseTimer.value) {
     clearTimeout(delayCloseTimer.value)
   }
-  // await releaseIframeResources()
   show.value = false
   showIframe.value = false // 重置iframe显示状态
+  isIframeLoaded.value = false // 重置加载状态
+  setActiveDrawer(DrawerType.None) // 清除活跃抽屉状态
+  console.log('[NotificationsDrawer] show.value:', show.value, 'activeDrawer:', activeDrawer.value)
   delayCloseTimer.value = setTimeout(() => {
     emit('close')
   }, 300)
@@ -153,34 +165,172 @@ function handleOpenInNewTab() {
 const isEscPressed = ref<boolean>(false)
 const escPressedTimer = ref<NodeJS.Timeout | null>(null)
 const disableEscPress = ref<boolean>(false)
+const showEscHint = ref<boolean>(false)
 
 /**
- * Not working, idk why
+ * Listen to Escape key using native event listener
  */
-nextTick(() => {
-  onKeyStroke('Escape', (e: KeyboardEvent) => {
-    e.preventDefault()
-    if (settings.value.closeDrawerWithoutPressingEscAgain) {
-      clearTimeout(escPressedTimer.value!)
-      handleClose()
-      return
+function handleKeydown(e: KeyboardEvent) {
+  console.log('[NotificationsDrawer] keydown event:', e.key, e.code, 'activeDrawer:', activeDrawer.value)
+
+  if (e.key !== 'Escape' && e.code !== 'Escape')
+    return
+
+  console.log('[NotificationsDrawer] ESC key pressed!')
+  console.log('[NotificationsDrawer] show.value:', show.value)
+  console.log('[NotificationsDrawer] activeDrawer.value:', activeDrawer.value)
+  console.log('[NotificationsDrawer] DrawerType.NotificationsDrawer:', DrawerType.NotificationsDrawer)
+  console.log('[NotificationsDrawer] Match:', activeDrawer.value === DrawerType.NotificationsDrawer)
+
+  // Only handle when this drawer is the active drawer
+  if (activeDrawer.value !== DrawerType.NotificationsDrawer) {
+    console.log('[NotificationsDrawer] Not active drawer, ignoring ESC')
+    return
+  }
+
+  console.log('[NotificationsDrawer] Processing ESC key')
+  e.preventDefault()
+  e.stopPropagation()
+
+  if (settings.value.closeDrawerWithoutPressingEscAgain) {
+    console.log('[NotificationsDrawer] closeDrawerWithoutPressingEscAgain = true, closing immediately')
+    clearTimeout(escPressedTimer.value!)
+    handleClose()
+    return
+  }
+  console.log('[NotificationsDrawer] disableEscPress:', disableEscPress.value)
+  console.log('[NotificationsDrawer] isEscPressed:', isEscPressed.value)
+  if (disableEscPress.value)
+    return
+  if (isEscPressed.value) {
+    console.log('[NotificationsDrawer] ESC pressed twice, closing')
+    handleClose()
+  }
+  else {
+    console.log('[NotificationsDrawer] First ESC press, waiting for second press')
+    isEscPressed.value = true
+    if (escPressedTimer.value) {
+      clearTimeout(escPressedTimer.value)
     }
-    if (disableEscPress.value)
-      return
-    if (isEscPressed.value) {
-      handleClose()
-    }
-    else {
-      isEscPressed.value = true
-      if (escPressedTimer.value) {
-        clearTimeout(escPressedTimer.value)
+    escPressedTimer.value = setTimeout(() => {
+      isEscPressed.value = false
+    }, 1300)
+  }
+}
+
+onMounted(() => {
+  console.log('[NotificationsDrawer] onMounted - registering keydown listener')
+  window.addEventListener('keydown', handleKeydown, true) // use capture phase
+  document.addEventListener('keydown', handleKeydown, true) // also listen on document
+
+  // 监听来自iframe的关闭请求
+  window.addEventListener('message', (event) => {
+    if (event.data?.type === 'BEWLY_DRAWER_CLOSE_REQUEST' && event.data?.source === 'iframe') {
+      console.log('[NotificationsDrawer] Received close request from iframe')
+
+      // 根据设置决定是立即关闭还是需要二次确认
+      if (settings.value.closeDrawerWithoutPressingEscAgain) {
+        console.log('[NotificationsDrawer] Closing drawer immediately (from iframe)')
+        handleClose()
       }
-      escPressedTimer.value = setTimeout(() => {
-        isEscPressed.value = false
-      }, 1300)
+      else {
+        // 模拟ESC按下逻辑
+        if (isEscPressed.value) {
+          console.log('[NotificationsDrawer] Second ESC from iframe, closing')
+          handleClose()
+        }
+        else {
+          console.log('[NotificationsDrawer] First ESC from iframe, waiting for second press')
+          isEscPressed.value = true
+          if (escPressedTimer.value) {
+            clearTimeout(escPressedTimer.value)
+          }
+          escPressedTimer.value = setTimeout(() => {
+            isEscPressed.value = false
+          }, 1300)
+        }
+      }
     }
-  }, { target: iframeRef.value?.contentWindow })
+  })
+
+  // Monitor focus changes - if iframe gets focus, show hint
+  document.addEventListener('focusin', (e) => {
+    if (show.value && iframeRef.value && e.target === iframeRef.value) {
+      console.log('[NotificationsDrawer] iframe got focus, showing ESC hint')
+      showEscHint.value = true
+      // Auto hide hint after 3 seconds
+      setTimeout(() => {
+        showEscHint.value = false
+      }, 3000)
+    }
+  }, true)
+
+  // Monitor clicks on iframe
+  document.addEventListener('click', (e) => {
+    if (show.value && iframeRef.value?.contains(e.target as Node)) {
+      console.log('[NotificationsDrawer] iframe clicked, showing ESC hint')
+      showEscHint.value = true
+      setTimeout(() => {
+        showEscHint.value = false
+      }, 3000)
+    }
+  }, true)
+
+  // Monitor clicks/mousedown on drawer area (outside iframe) to refocus
+  document.addEventListener('mousedown', (e) => {
+    if (!show.value || !drawerRef.value || !iframeRef.value)
+      return
+
+    const isClickInDrawer = drawerRef.value.contains(e.target as Node)
+    const isClickInIframe = iframeRef.value.contains(e.target as Node)
+
+    // If clicked inside drawer but not in iframe, refocus drawer
+    if (isClickInDrawer && !isClickInIframe) {
+      console.log('[NotificationsDrawer] Click outside iframe, refocusing drawer')
+      e.preventDefault()
+      showEscHint.value = false
+      nextTick(() => {
+        drawerRef.value?.focus()
+        console.log('[NotificationsDrawer] Drawer refocused, activeElement:', document.activeElement)
+      })
+    }
+  }, true)
+
+  handleOpen()
 })
+
+onActivated(() => {
+  console.log('[NotificationsDrawer] onActivated - re-registering keydown listener')
+  window.removeEventListener('keydown', handleKeydown, true)
+  document.removeEventListener('keydown', handleKeydown, true)
+  window.addEventListener('keydown', handleKeydown, true)
+  document.addEventListener('keydown', handleKeydown, true)
+  handleOpen()
+})
+
+onBeforeUnmount(() => {
+  console.log('[NotificationsDrawer] onBeforeUnmount - removing keydown listener')
+  window.removeEventListener('keydown', handleKeydown, true)
+  document.removeEventListener('keydown', handleKeydown, true)
+  releaseIframeResources()
+})
+
+onDeactivated(() => {
+  console.log('[NotificationsDrawer] onDeactivated - removing keydown listener')
+  window.removeEventListener('keydown', handleKeydown, true)
+  document.removeEventListener('keydown', handleKeydown, true)
+})
+
+// 辅助方法：处理点击/鼠标按下，隐藏提示并聚焦抽屉
+function handleFocusDrawer(e?: Event) {
+  console.log('[NotificationsDrawer] Focusing drawer')
+  e?.preventDefault()
+  showEscHint.value = false
+  nextTick(() => {
+    drawerRef.value?.focus()
+    console.log('[NotificationsDrawer] Drawer focused, activeElement:', document.activeElement)
+  })
+}
 </script>
 
 <template>
@@ -196,14 +346,20 @@ nextTick(() => {
           v-if="show"
           pos="absolute bottom-0 left-0" w-full h-full bg="black opacity-60"
           @click="handleClose"
+          @mousedown="handleFocusDrawer"
         />
       </Transition>
 
       <Transition name="drawer">
         <div
           v-show="show"
+          ref="drawerRef"
+          tabindex="0"
           pos="absolute top-0 right-0" of-hidden bg="$bew-bg"
           w="xl:70vw lg:80vw md:100vw 100vw" max-w-1400px h-full
+          outline-none
+          @keydown="handleKeydown"
+          @mousedown.self="handleFocusDrawer"
         >
           <div
             pos="fixed top-0 right-0" z-10 flex="~ items-center justify-between gap-2"
@@ -211,11 +367,25 @@ nextTick(() => {
             m-auto px-4
             pointer-events-none
             bg="$bew-bg"
+            @mousedown="handleFocusDrawer"
           >
             <h3 text="xl" fw-bold>
               {{ $t('topbar.notifications') }}
             </h3>
             <div flex="~ items-center gap-2">
+              <!-- ESC Hint -->
+              <Transition name="fade">
+                <div
+                  v-if="showEscHint"
+                  pointer-events-auto
+                  bg="$bew-theme-color" text="white sm" px-3 py-2 rounded-8px
+                  flex="~ items-center gap-2"
+                >
+                  <i i-mingcute:information-line />
+                  <span>{{ $t('iframe_drawer.esc_hint', '点击抽屉外部区域，然后按 ESC 关闭') }}</span>
+                </div>
+              </Transition>
+
               <Button
                 style="
                   --b-button-color: var(--bew-elevated-solid);
@@ -244,6 +414,10 @@ nextTick(() => {
                   <i i-mingcute:close-line />
                 </template>
                 {{ $t('iframe_drawer.close') }}
+                <kbd
+                  ml-1 px-1.5 py-0.5 rounded text-xs
+                  bg="$bew-fill-2" text="$bew-text-2"
+                >Esc</kbd>
               </Button>
               <Button
                 v-else
@@ -255,14 +429,17 @@ nextTick(() => {
                   <i i-mingcute:close-line />
                 </template>
                 {{ $t('iframe_drawer.press_esc_again_to_close') }}
-                <kbd>Esc</kbd>
+                <kbd
+                  ml-1 px-1.5 py-0.5 rounded text-xs
+                  bg="red-700" text="white"
+                >Esc</kbd>
               </Button>
             </div>
           </div>
 
           <Transition name="fade">
             <Loading
-              v-if="!showIframe"
+              v-if="showIframe && !isIframeLoaded"
               pos="absolute top-0 right-0" of-hidden
               w-full h-full
             />
@@ -283,7 +460,7 @@ nextTick(() => {
               :style="{
                 height: 'calc(100%)',
               }"
-              @load="showIframe = true"
+              @load="isIframeLoaded = true"
             />
           </Transition>
         </div>
