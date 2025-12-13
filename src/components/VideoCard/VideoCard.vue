@@ -311,7 +311,6 @@ provide('getVideoType', () => props.type!)
     :ring="skeleton ? '' : 'hover:8 hover:$bew-fill-2 active:8 active:$bew-fill-3'"
     :bg="skeleton ? '' : 'hover:$bew-fill-2 active:$bew-fill-3'"
     :class="layout === 'modern' ? 'mb-3' : 'mb-4'"
-    style="contain: layout;"
   >
     <div v-if="!skeleton && props.video">
       <div
@@ -404,10 +403,14 @@ provide('getVideoType', () => props.type!)
 </template>
 
 <style lang="scss" scoped>
-/* 优化性能：移除容器查询以减少滚动时的 GPU 占用 */
+/* 优化性能：使用更高效的 containment 策略 */
 .video-card-container {
-  /* 使用轻量的 contain 策略，不使用 container-type */
-  contain: layout paint style;
+  /* 使用 content-visibility 由父组件 VideoCardGrid 统一控制 */
+  /* 这里只设置 contain 限制重排范围 */
+  contain: layout style;
+  /* 防止内容溢出 */
+  overflow: hidden;
+  min-width: 0;
 }
 
 .horizontal-card-cover {

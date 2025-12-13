@@ -263,8 +263,16 @@ settings:
   auto_receive_bcoin_coupon: 大会员B币自动领取
   auto_receive_bcoin_coupon_desc: 启用后，当检测到有未领取的B币券时将自动领取
   open_notifications_page_as_drawer: 以抽屉形式打开通知页面
-  home_adaptive_card_min_width: 网格自适应宽度
-  home_adaptive_card_min_width_desc: 控制每列的基准宽度（像素），值越小列数越多。最小值强制为 160px。页面会基于此值并结合实际可用网页宽度自动调整布局。
+
+  # Video Card Grid Settings
+  group_video_card_grid: 视频卡片网格
+  grid_breakpoints: 网格断点配置
+  grid_breakpoints_desc: 设置不同屏幕宽度下显示的列数。当屏幕宽度大于等于设定值时，使用对应的列数。
+  grid_min_width: 宽度 ≥
+  grid_columns: 显示
+  grid_columns_unit: 列
+  grid_add_breakpoint: 添加断点
+
   home_adaptive_title_auto_size: 标题字号自适应
   home_adaptive_title_auto_size_desc: 根据网格宽度自动调整标题字号
   home_adaptive_title_font_size: 标题字号

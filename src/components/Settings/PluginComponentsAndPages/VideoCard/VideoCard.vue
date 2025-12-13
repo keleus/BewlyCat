@@ -6,7 +6,8 @@ import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { originalSettings, settings } from '~/logic'
-import type { VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
+import type { GridBreakpoint, VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
+import { defaultGridBreakpoints, gridBreakpoints } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -54,6 +55,35 @@ function resetShadowSettings() {
   settings.value.videoCardShadowCurve = [...originalSettings.videoCardShadowCurve]
   settings.value.videoCardShadowHeight = originalSettings.videoCardShadowHeight
 }
+
+// Grid breakpoints management
+function updateBreakpoint(index: number, field: keyof GridBreakpoint, value: number) {
+  const breakpoints = [...gridBreakpoints.value]
+  breakpoints[index] = { ...breakpoints[index], [field]: value }
+  // Sort by minWidth ascending
+  breakpoints.sort((a, b) => a.minWidth - b.minWidth)
+  gridBreakpoints.value = breakpoints
+}
+
+function addBreakpoint() {
+  const breakpoints = [...gridBreakpoints.value]
+  // Find the largest minWidth and add 200
+  const maxWidth = Math.max(...breakpoints.map(b => b.minWidth))
+  const maxColumns = Math.max(...breakpoints.map(b => b.columns))
+  breakpoints.push({ minWidth: maxWidth + 200, columns: maxColumns + 1 })
+  breakpoints.sort((a, b) => a.minWidth - b.minWidth)
+  gridBreakpoints.value = breakpoints
+}
+
+function removeBreakpoint(index: number) {
+  const breakpoints = [...gridBreakpoints.value]
+  breakpoints.splice(index, 1)
+  gridBreakpoints.value = breakpoints
+}
+
+function resetBreakpoints() {
+  gridBreakpoints.value = [...defaultGridBreakpoints]
+}
 </script>
 
 <template>
@@ -71,6 +101,64 @@ function resetShadowSettings() {
           <div v-html="$t('settings.close_drawer_without_pressing_esc_again')" />
         </template>
         <Radio v-model="settings.closeDrawerWithoutPressingEscAgain" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <!-- Video Card Grid Settings -->
+    <SettingsItemGroup :title="$t('settings.group_video_card_grid')">
+      <SettingsItem :title="$t('settings.grid_breakpoints')" :desc="$t('settings.grid_breakpoints_desc')">
+        <template #bottom>
+          <div flex="~ col gap-3" w-full>
+            <div
+              v-for="(breakpoint, index) in gridBreakpoints"
+              :key="index"
+              flex="~ items-center gap-3"
+            >
+              <span text-sm shrink-0 min-w-12>{{ $t('settings.grid_min_width') }}</span>
+              <Input
+                :model-value="breakpoint.minWidth"
+                type="number"
+                :min="0"
+                :max="4000"
+                :step="50"
+                w-28
+                @update:model-value="(v) => updateBreakpoint(index, 'minWidth', Number(v) || 0)"
+              />
+              <span text-sm shrink-0>px</span>
+              <span text-sm shrink-0 ml-2>{{ $t('settings.grid_columns') }}</span>
+              <Input
+                :model-value="breakpoint.columns"
+                type="number"
+                :min="1"
+                :max="12"
+                w-20
+                @update:model-value="(v) => updateBreakpoint(index, 'columns', Number(v) || 1)"
+              />
+              <span text-sm shrink-0>{{ $t('settings.grid_columns_unit') }}</span>
+              <Button
+                type="tertiary"
+                size="small"
+                ml-2
+                @click="removeBreakpoint(index)"
+              >
+                <template #left>
+                  <div i-mingcute:delete-2-line />
+                </template>
+              </Button>
+            </div>
+            <div flex="~ gap-2" mt-2>
+              <Button type="secondary" size="small" @click="addBreakpoint">
+                <template #left>
+                  <div i-mingcute:add-line />
+                </template>
+                {{ $t('settings.grid_add_breakpoint') }}
+              </Button>
+              <Button type="tertiary" size="small" @click="resetBreakpoints">
+                {{ $t('common.operation.reset') }}
+              </Button>
+            </div>
+          </div>
+        </template>
       </SettingsItem>
     </SettingsItemGroup>
 
@@ -113,22 +201,6 @@ function resetShadowSettings() {
             :max="28"
             flex-1
             :disabled="settings.homeAdaptiveTitleAutoSize"
-          >
-            <template #suffix>
-              px
-            </template>
-          </Input>
-        </div>
-      </SettingsItem>
-
-      <SettingsItem :title="$t('settings.home_adaptive_card_min_width')" :desc="$t('settings.home_adaptive_card_min_width_desc')">
-        <div flex="~ justify-end" w-full>
-          <Input
-            v-model="settings.homeAdaptiveCardMinWidth"
-            type="number"
-            :min="160"
-            :max="600"
-            flex-1
           >
             <template #suffix>
               px

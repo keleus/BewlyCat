@@ -267,6 +267,16 @@ function resetAll() {
   results.value = []
 }
 
+// 供 VideoCardGrid 预加载调用
+async function handleLoadMore() {
+  if (paginationMode.value !== 'scroll')
+    return
+  if (isLoading.value || exhausted.value)
+    return
+
+  await performSearch(true)
+}
+
 // Transform 函数：数据已经转换过了，直接返回
 function transformVideo(video: any) {
   return video
@@ -303,8 +313,8 @@ defineExpose({
       :no-more-content="paginationMode === 'scroll' && !hasMore"
       :transform-item="transformVideo"
       :get-item-key="(video: any) => video.aid || video.id"
-      :enable-virtual-scroll="paginationMode === 'scroll'"
       show-preview
+      @load-more="handleLoadMore"
     />
 
     <!-- 翻页模式 -->

@@ -7,7 +7,6 @@ import type { DataItem as MomentItem, MomentResult } from '~/models/moment/momen
 import api from '~/utils/api'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
-// https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
 interface VideoElement {
   uniqueId: string
   item?: MomentItem
@@ -30,7 +29,7 @@ const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
 const noMoreContentWarning = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 onMounted(() => {
   initData()
@@ -44,7 +43,7 @@ onActivated(() => {
 async function initData() {
   offset.value = ''
   updateBaseline.value = ''
-  videoList.value.length = 0
+  videoList.value = []
   noMoreContent.value = false
   noMoreContentWarning.value = false
 
@@ -81,8 +80,9 @@ async function getData() {
   isLoading.value = true
 
   try {
-    for (let i = 0; i < 3; i++)
-      await getFollowedUsersVideos()
+    // 初次加载时多加载几批确保有足够内容
+    for (let i = 0; i < 3 && !noMoreContent.value; i++)
+      await getSubscribedSeriesVideos()
   }
   finally {
     isLoading.value = false
@@ -98,7 +98,7 @@ function initPageAction() {
       noMoreContentWarning.value = true
       return
     }
-    getData()
+    handleLoadMore()
   }
   handlePageRefresh.value = async () => {
     if (isLoading.value)
@@ -108,7 +108,7 @@ function initPageAction() {
   }
 }
 
-async function getFollowedUsersVideos() {
+async function getSubscribedSeriesVideos() {
   if (noMoreContent.value)
     return
 
@@ -118,14 +118,6 @@ async function getFollowedUsersVideos() {
   }
 
   try {
-    let i = 0
-    // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L208
-    const pendingVideos: VideoElement[] = Array.from({ length: 30 }, () => ({
-      uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
-    } satisfies VideoElement))
-    const lastVideoListLength = videoList.value.length
-    videoList.value.push(...pendingVideos)
-
     const response: MomentResult = await api.moment.getMoments({
       type: 'pgc',
       offset: Number(offset.value),
@@ -142,39 +134,34 @@ async function getFollowedUsersVideos() {
       offset.value = response.data.offset
       updateBaseline.value = response.data.update_baseline
 
-      const resData = [] as MomentItem[]
+      const newItems = response.data.items.map((item: MomentItem) => ({
+        uniqueId: `${item.id_str}`,
+        item,
+        displayData: transformSubscribedSeriesVideo({ uniqueId: `${item.id_str}`, item }),
+      }))
 
-      response.data.items.forEach((item: MomentItem) => {
-        resData.push(item)
-      })
-
-      // when videoList has length property, it means it is the first time to load
-      if (!videoList.value.length) {
-        videoList.value = resData.map(item => ({
-          uniqueId: `${item.id_str}`,
-          item,
-          displayData: transformSubscribedSeriesVideo({ uniqueId: `${item.id_str}`, item }),
-        }))
-      }
-      else {
-        resData.forEach((item, index) => {
-          videoList.value[lastVideoListLength + index] = {
-            uniqueId: `${item.id_str}`,
-            item,
-            displayData: transformSubscribedSeriesVideo({ uniqueId: `${item.id_str}`, item }),
-          }
-        })
-      }
-
-      if (!await haveScrollbar() && !noMoreContent.value)
-        getFollowedUsersVideos()
+      videoList.value = [...videoList.value, ...newItems]
     }
     else if (response.code === -101) {
       needToLoginFirst.value = true
     }
   }
+  catch {
+    // 忽略错误
+  }
+}
+
+// 供 VideoCardGrid 预加载调用的函数
+async function handleLoadMore() {
+  if (isLoading.value || noMoreContent.value)
+    return
+
+  isLoading.value = true
+  try {
+    await getSubscribedSeriesVideos()
+  }
   finally {
-    videoList.value = videoList.value.filter(video => video.item)
+    isLoading.value = false
   }
 }
 
@@ -199,6 +186,7 @@ defineExpose({ initData })
       :show-watcher-later="false"
       @refresh="initData"
       @login="jumpToLoginPage"
+      @load-more="handleLoadMore"
     />
   </div>
 </template>

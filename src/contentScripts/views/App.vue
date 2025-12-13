@@ -5,7 +5,7 @@ import { nextTick, provide, ref, watch } from 'vue'
 
 import UpdateLogNotifier from '~/components/UpdateLogNotifier.vue'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
-import { UndoForwardState } from '~/composables/useAppProvider'
+import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
@@ -168,6 +168,12 @@ const reachTop = ref<boolean>(true)
 
 const iframeDrawerURL = ref<string>('')
 const showIframeDrawer = ref<boolean>(false)
+
+// 添加活跃抽屉状态管理
+const activeDrawer = ref<DrawerType>(DrawerType.None)
+function setActiveDrawer(drawer: DrawerType) {
+  activeDrawer.value = drawer
+}
 
 // 用于控制当iframe内打开图片预览时隐藏顶栏和Dock
 const hideUIForIframePhotoViewer = ref<boolean>(false)
@@ -664,6 +670,8 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   undoForwardState,
   openIframeDrawer,
   haveScrollbar,
+  activeDrawer,
+  setActiveDrawer,
 })
 
 if (settings.value.cleanUrlArgument) {

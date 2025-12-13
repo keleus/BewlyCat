@@ -684,3 +684,44 @@ validateAndRestoreLocalWallpaper()
 
 // 启动自动播放用户修改监听
 startAutoPlayUserChangeMonitoring()
+
+// 为 message.bilibili.com 在 iframe 中运行时添加 ESC 键监听
+if (isInIframe() && isNotificationPage()) {
+  console.log('[Bewly IFrame] ESC listener initialized for message.bilibili.com')
+
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
+    // 只处理ESC键
+    if (e.key !== 'Escape' && e.code !== 'Escape')
+      return
+
+    console.log('[Bewly IFrame] ESC key pressed in iframe')
+
+    // 检查当前焦点元素
+    const activeElement = document.activeElement
+    const tagName = activeElement?.tagName?.toLowerCase()
+
+    // 检查是否是输入框或可编辑元素
+    const isInputElement
+      = tagName === 'input'
+        || tagName === 'textarea'
+        || activeElement?.hasAttribute('contenteditable')
+
+    console.log('[Bewly IFrame] Active element:', tagName, 'isInput:', isInputElement)
+
+    // 如果焦点在输入框内，不处理ESC键，让用户正常使用
+    if (isInputElement) {
+      console.log('[Bewly IFrame] Focus in input element, ignoring ESC')
+      return
+    }
+
+    // 焦点不在输入框，通知父窗口关闭抽屉
+    console.log('[Bewly IFrame] Sending close request to parent')
+    e.preventDefault()
+    e.stopPropagation()
+
+    window.parent.postMessage({
+      type: 'BEWLY_DRAWER_CLOSE_REQUEST',
+      source: 'iframe',
+    }, '*')
+  }, true) // 使用捕获阶段
+}

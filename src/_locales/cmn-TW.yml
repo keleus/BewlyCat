@@ -177,8 +177,16 @@ settings:
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉
   block_ads: 封鎖廣告
   block_top_search_page_ads: 封鎖 Bilibili 搜尋頁上方的廣告
-  home_adaptive_card_min_width: 網格自適應寬度
-  home_adaptive_card_min_width_desc: 控制每列的基準寬度（像素），數值越小列數越多。最小值強制為 160px。頁面會依據此值並結合實際可用網頁寬度自動調整版面。
+
+  # Video Card Grid Settings
+  group_video_card_grid: 影片卡片網格
+  grid_breakpoints: 網格斷點配置
+  grid_breakpoints_desc: 設定不同螢幕寬度下顯示的列數。當螢幕寬度大於等於設定值時，使用對應的列數。
+  grid_min_width: 寬度 ≥
+  grid_columns: 顯示
+  grid_columns_unit: 列
+  grid_add_breakpoint: 新增斷點
+
   home_adaptive_title_auto_size: 標題字級自適應
   home_adaptive_title_auto_size_desc: 依據網格寬度自動調整標題字級
   home_adaptive_title_font_size: 標題字級

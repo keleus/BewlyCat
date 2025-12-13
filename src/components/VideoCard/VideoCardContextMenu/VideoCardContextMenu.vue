@@ -372,6 +372,7 @@ async function blockUser() {
     />
 
     <DislikeDialog
+      v-if="showDislikeDialog"
       v-model="showDislikeDialog"
       :video="video"
       @close="handleClose"
@@ -379,6 +380,7 @@ async function blockUser() {
     />
 
     <BlockUserConfirmDialog
+      v-if="showBlockUserDialog"
       v-model="showBlockUserDialog"
       :video="video"
       @close="handleClose"

@@ -117,7 +117,6 @@ function transformLiveRoom(room: any) {
         :grid-layout="gridLayout"
         :transform-item="transformLiveRoom"
         :get-item-key="(room: any) => room.id || room.roomid"
-        :enable-virtual-scroll="false"
         show-preview
       />
     </div>

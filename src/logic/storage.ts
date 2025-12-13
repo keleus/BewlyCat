@@ -645,6 +645,31 @@ export const gridLayout = useStorageLocal('gridLayout', ref<GridLayout>({
   home: 'adaptive',
 }), { mergeDefaults: true })
 
+/**
+ * 网格断点配置
+ * 定义在不同屏幕宽度下显示的列数
+ */
+export interface GridBreakpoint {
+  minWidth: number // 最小宽度 (px)
+  columns: number // 列数
+}
+
+// 默认断点配置
+export const defaultGridBreakpoints: GridBreakpoint[] = [
+  { minWidth: 0, columns: 1 },
+  { minWidth: 640, columns: 2 },
+  { minWidth: 900, columns: 3 },
+  { minWidth: 1200, columns: 4 },
+  { minWidth: 1500, columns: 5 },
+  { minWidth: 1800, columns: 6 },
+]
+
+export const gridBreakpoints = useStorageLocal<GridBreakpoint[]>(
+  'gridBreakpoints',
+  ref(defaultGridBreakpoints),
+  { mergeDefaults: true },
+)
+
 export const sidePanel = useStorageLocal('sidePanel', ref<{
   home: boolean
 }>({

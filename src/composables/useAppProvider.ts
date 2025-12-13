@@ -11,6 +11,13 @@ export enum UndoForwardState {
   ShowForward = 'showForward', // 显示前进按钮
 }
 
+// 定义抽屉类型
+export enum DrawerType {
+  None = 'none',
+  IframeDrawer = 'iframe',
+  NotificationsDrawer = 'notifications',
+}
+
 export interface BewlyAppProvider {
   activatedPage: Ref<AppPage>
   // 添加Home页面的子页面状态
@@ -28,6 +35,9 @@ export interface BewlyAppProvider {
   handleBackToTop: (targetScrollTop?: number) => void
   haveScrollbar: () => Promise<boolean>
   openIframeDrawer: (url: string) => void
+  // 添加活跃抽屉状态
+  activeDrawer: Ref<DrawerType>
+  setActiveDrawer: (drawer: DrawerType) => void
 }
 
 export function useBewlyApp(): BewlyAppProvider {

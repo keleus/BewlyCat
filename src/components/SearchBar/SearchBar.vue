@@ -259,9 +259,13 @@ onKeyStroke('/', (e: KeyboardEvent) => {
   keywordRef.value?.focus()
 })
 onKeyStroke('Escape', (e: KeyboardEvent) => {
+  console.log('[SearchBar] ESC key pressed!')
+  console.log('[SearchBar] isFocus.value:', isFocus.value)
+
   e.preventDefault()
   keywordRef.value?.blur()
   isFocus.value = false
+  console.log('[SearchBar] Blurred search input')
 }, { target: keywordRef })
 
 const handleKeywordInput = useDebounceFn(() => {

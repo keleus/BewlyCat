@@ -26,21 +26,34 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits(['close', 'confirm'])
 
+const showShortcut = ref<boolean>(false)
+const { mainAppRef } = useBewlyApp()
+const showDialog = ref<boolean>(false)
+
 onKeyStroke('Enter', (e: KeyboardEvent) => {
   e.preventDefault()
   if (!props.loading)
     handleConfirm()
 })
 onKeyStroke('Escape', (e: KeyboardEvent) => {
-  e.preventDefault()
-  if (props.loading && props.preventCloseWhenLoading)
+  console.log('[Dialog] ESC key pressed!')
+  console.log('[Dialog] showDialog.value:', showDialog.value)
+
+  // Only handle when dialog is shown
+  if (!showDialog.value) {
+    console.log('[Dialog] Dialog not shown, ignoring ESC')
     return
+  }
+
+  console.log('[Dialog] Processing ESC key')
+  e.preventDefault()
+  if (props.loading && props.preventCloseWhenLoading) {
+    console.log('[Dialog] Prevented close due to loading')
+    return
+  }
+  console.log('[Dialog] Closing dialog')
   handleClose()
 })
-
-const showShortcut = ref<boolean>(false)
-const { mainAppRef } = useBewlyApp()
-const showDialog = ref<boolean>(false)
 
 const dialogWidth = computed(() => {
   return typeof props.width === 'number' ? `${props.width}px` : props.width || '400px'

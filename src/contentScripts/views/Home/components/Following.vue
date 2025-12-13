@@ -48,7 +48,7 @@ const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
 const isInitialized = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 // 合并直播和视频列表用于虚拟滚动
 const combinedVideoList = computed(() => {
@@ -65,10 +65,10 @@ async function handleVisibilityChange() {
 
   // 如果从不可见变为可见，且需要加载更多数据，则触发加载
   if (!wasVisible && isPageVisible.value && !noMoreContent.value && !isLoading.value) {
-    if (!await haveScrollbar() || videoList.value.length < 30) {
+    if (videoList.value.length < 30) {
       setTimeout(() => {
         if (isPageVisible.value && !isLoading.value && !noMoreContent.value)
-          getFollowedUsersVideos()
+          handleLoadMore()
       }, 200)
     }
   }
@@ -124,9 +124,9 @@ async function initData() {
   isInitialized.value = false
   offset.value = ''
   updateBaseline.value = ''
-  liveVideoList.value.length = 0
+  liveVideoList.value = []
   livePage.value = 1
-  videoList.value.length = 0
+  videoList.value = []
   noMoreContent.value = false
   recursionDepth.value = 0
 
@@ -297,8 +297,11 @@ async function getFollowedUsersVideos() {
         })
       }
 
-      if (!await haveScrollbar() && !noMoreContent.value)
-        getFollowedUsersVideos()
+      // 预加载由 VideoCardGrid 的虚拟滚动机制控制
+      // 只在初次加载且数据不足时继续加载
+      if (lastVideoListLength === 0 && videoList.value.length < 30 && !noMoreContent.value) {
+        await getFollowedUsersVideos()
+      }
     }
     else if (response.code === -101) {
       needToLoginFirst.value = true
@@ -306,6 +309,20 @@ async function getFollowedUsersVideos() {
   }
   finally {
     recursionDepth.value--
+  }
+}
+
+// 供 VideoCardGrid 预加载调用的函数
+async function handleLoadMore() {
+  if (isLoading.value || noMoreContent.value)
+    return
+
+  isLoading.value = true
+  try {
+    await getFollowedUsersVideos()
+  }
+  finally {
+    isLoading.value = false
   }
 }
 
@@ -427,6 +444,7 @@ defineExpose({ initData })
       show-preview
       @refresh="initData"
       @login="jumpToLoginPage"
+      @load-more="handleLoadMore"
     />
   </div>
 </template>

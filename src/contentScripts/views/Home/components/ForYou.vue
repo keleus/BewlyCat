@@ -318,29 +318,9 @@ watch(() => settings.value.recommendationMode, () => {
 })
 
 async function initData() {
-  videoList.value.length = 0
-  appVideoList.value.length = 0
-
-  // 添加初始骨架屏占位，确保虚拟滚动有内容渲染
-  const INITIAL_SKELETON_COUNT = 30 // 添加足够的骨架屏填满屏幕
-  if (settings.value.recommendationMode === 'web') {
-    const skeletonPlaceholders: VideoElement[] = Array.from({
-      length: INITIAL_SKELETON_COUNT,
-    }, (_, i) => ({
-      uniqueId: `skeleton-init-${i}`,
-      // 不设置 item，VideoCard 会检测到并显示 skeleton
-    } satisfies VideoElement))
-    videoList.value.push(...skeletonPlaceholders)
-  }
-  else {
-    const skeletonPlaceholders: AppVideoElement[] = Array.from({
-      length: INITIAL_SKELETON_COUNT,
-    }, (_, i) => ({
-      uniqueId: `skeleton-init-${i}`,
-      // 不设置 item，VideoCard 会检测到并显示 skeleton
-    } satisfies AppVideoElement))
-    appVideoList.value.push(...skeletonPlaceholders)
-  }
+  // 直接清空列表，骨架屏由 VideoCardGrid 自动处理
+  videoList.value = []
+  appVideoList.value = []
 
   APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
@@ -381,6 +361,20 @@ async function getData() {
   }
 }
 
+// 供 VideoCardGrid 预加载调用的函数
+function handleLoadMore() {
+  if (isLoading.value || noMoreContent.value)
+    return
+
+  // 滚动加载时，APP模式记录开始长度，触发持续加载
+  if (settings.value.recommendationMode === 'app') {
+    APP_LOAD_BATCHES.value = 1
+    scrollLoadStartLength.value = appVideoList.value.length
+  }
+
+  getData()
+}
+
 function initPageAction() {
   handleReachBottom.value = async () => {
     if (isLoading.value)
@@ -388,13 +382,7 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    // 滚动加载时，APP模式记录开始长度，触发持续加载
-    if (settings.value.recommendationMode === 'app') {
-      APP_LOAD_BATCHES.value = 1
-      scrollLoadStartLength.value = appVideoList.value.length
-    }
-
-    getData()
+    handleLoadMore()
   }
 
   handlePageRefresh.value = async () => {
@@ -527,31 +515,11 @@ async function getRecommendVideos() {
     }
 
     const beforeLoadCount = videoList.value.filter(video => video.item).length
-    const hasInitialSkeleton = videoList.value.some(v => v.uniqueId.startsWith('skeleton-init-'))
-
-    // 只在滚动加载（非初始加载）时显示骨架屏
-    // 初始加载的骨架屏已经在 initData 中添加
-    const isScrollLoad = beforeLoadCount > 0 && !hasInitialSkeleton
-    if (isScrollLoad) {
-      // 添加 skeleton 占位卡片（用于显示加载状态）
-      const SKELETON_COUNT = 6 // 每次加载显示 6 个骨架屏
-      const skeletonPlaceholders: VideoElement[] = Array.from({
-        length: SKELETON_COUNT,
-      }, (_, i) => ({
-        uniqueId: `skeleton-${Date.now()}-${i}`,
-        // 不设置 item，VideoCard 会检测到并显示 skeleton
-      } satisfies VideoElement))
-
-      videoList.value.push(...skeletonPlaceholders)
-    }
 
     const response: forYouResult = await api.video.getRecommendVideos({
       fresh_idx: refreshIdx.value++,
       ps: PAGE_SIZE,
     })
-
-    // 移除所有 skeleton 占位符（包括初始骨架屏和滚动加载骨架屏）
-    videoList.value = videoList.value.filter(v => !v.uniqueId.startsWith('skeleton-'))
 
     if (!response.data) {
       noMoreContent.value = true
@@ -643,24 +611,6 @@ async function getRecommendVideos() {
 async function getAppRecommendVideos() {
   const batchesToLoad = APP_LOAD_BATCHES.value
 
-  // 只在滚动加载（非初始加载）时显示骨架屏
-  // 初始加载的骨架屏已经在 initData 中添加
-  const beforeLoadCount = appVideoList.value.filter(v => v.item).length
-  const hasInitialSkeleton = appVideoList.value.some(v => v.uniqueId.startsWith('skeleton-init-'))
-  const isScrollLoad = beforeLoadCount > 0 && !hasInitialSkeleton
-  if (isScrollLoad) {
-    // 添加 skeleton 占位卡片（用于显示加载状态）
-    const SKELETON_COUNT = 6 // 每次加载显示 6 个骨架屏
-    const skeletonPlaceholders: AppVideoElement[] = Array.from({
-      length: SKELETON_COUNT,
-    }, (_, i) => ({
-      uniqueId: `skeleton-${Date.now()}-${i}`,
-      // 不设置 item，VideoCard 会检测到并显示 skeleton
-    } satisfies AppVideoElement))
-
-    appVideoList.value.push(...skeletonPlaceholders)
-  }
-
   // 加载多个批次
   for (let batch = 0; batch < batchesToLoad; batch++) {
     try {
@@ -713,9 +663,6 @@ async function getAppRecommendVideos() {
       break
     }
   }
-
-  // 移除所有 skeleton 占位符（包括初始骨架屏和滚动加载骨架屏）
-  appVideoList.value = appVideoList.value.filter(v => !v.uniqueId.startsWith('skeleton-'))
 
   if (!needToLoginFirst.value) {
     await nextTick()
@@ -788,6 +735,7 @@ defineExpose({
       more-btn
       @refresh="initData"
       @login="jumpToLoginPage"
+      @load-more="handleLoadMore"
     />
 
     <Empty v-if="needToLoginFirst" mt-6 :description="$t('common.please_log_in_first')">

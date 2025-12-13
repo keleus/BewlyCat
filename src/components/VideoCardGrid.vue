@@ -1,15 +1,17 @@
 <script setup lang="ts" generic="T = any">
-import type { Ref } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
-import { useBewlyApp } from '~/composables/useAppProvider'
 import { useGridLayout } from '~/composables/useGridLayout'
-import { useVirtualGrid } from '~/composables/useVirtualGrid'
+import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
+import { settings } from '~/logic'
+import { isHomePage } from '~/utils/main'
+import emitter from '~/utils/mitt'
 
 /**
  * 统一的 VideoCard Grid 组件
- * 支持虚拟滚动和分页模式
+ * 支持滚动加载和预加载（基于剩余 item 数量）
  */
 
 interface VideoCardGridProps<T = any> {
@@ -22,12 +24,6 @@ interface VideoCardGridProps<T = any> {
    * Grid 布局模式
    */
   gridLayout: GridLayoutType
-
-  /**
-   * 是否启用虚拟滚动
-   * @default true
-   */
-  enableVirtualScroll?: boolean
 
   /**
    * 是否正在加载
@@ -49,12 +45,6 @@ interface VideoCardGridProps<T = any> {
    * 如果不指定，会根据数据自动推断
    */
   videoType?: 'rcmd' | 'appRcmd' | 'bangumi' | 'common'
-
-  /**
-   * 是否横向布局
-   * @default false（自动根据 gridLayout 计算）
-   */
-  horizontal?: boolean
 
   /**
    * 是否显示预览
@@ -87,14 +77,7 @@ interface VideoCardGridProps<T = any> {
   isSkeletonItem?: (item: T) => boolean
 
   /**
-   * 虚拟滚动的 overscan 行数
-   * @default 5
-   */
-  overscan?: number
-
-  /**
    * 初始加载时的骨架屏数量
-   * 当 loading=true 且 items 为空时，自动生成骨架屏占位
    * @default 30
    */
   initialSkeletonCount?: number
@@ -116,14 +99,12 @@ interface VideoCardGridProps<T = any> {
 }
 
 const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
-  enableVirtualScroll: true,
   loading: false,
   noMoreContent: false,
   needToLoginFirst: false,
   showPreview: false,
   showWatchLater: true,
   moreBtn: false,
-  overscan: 5,
   initialSkeletonCount: 30,
   isSkeletonItem: undefined,
 })
@@ -135,122 +116,123 @@ const emit = defineEmits<{
 }>()
 
 // 使用共享的 Grid 布局 composable
-const { gridClass } = useGridLayout(() => props.gridLayout)
+const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
 
-// 容器引用
-const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
-const { scrollbarRef } = useBewlyApp()
+// Grid 容器 ref
+const gridContainerRef = ref<HTMLElement | null>(null)
 
-// 计算是否横向布局
+// 检查是否可以加载更多
+function canLoadMore(): boolean {
+  return !props.loading && !props.noMoreContent && !props.needToLoginFirst && props.items.length > 0
+}
+
+// 触发加载更多
+function triggerLoadMore() {
+  if (canLoadMore()) {
+    emit('loadMore')
+  }
+}
+
+// 检查是否需要预加载
+function checkShouldPreload() {
+  if (!canLoadMore())
+    return
+
+  const container = gridContainerRef.value
+  if (!container)
+    return
+
+  const rect = container.getBoundingClientRect()
+
+  // grid 底部到视口底部的距离（剩余未显示的内容高度）
+  const remainingHeight = rect.bottom - window.innerHeight
+
+  // 如果剩余高度不足一个视口高度（一页），触发预加载
+  if (remainingHeight < window.innerHeight) {
+    triggerLoadMore()
+  }
+}
+
+// 防抖的滚动检查
+const debouncedCheck = useDebounceFn(checkShouldPreload, 100)
+
+// 监听滚动
+function handleScroll() {
+  debouncedCheck()
+}
+
+// 设置滚动监听
+function setupScrollListeners() {
+  // 首页使用 OverlayScrollbars，监听自定义事件
+  if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
+    emitter.on(OVERLAY_SCROLL_BAR_SCROLL, handleScroll)
+  }
+  // 其他页面监听 window scroll
+  window.addEventListener('scroll', handleScroll, { passive: true })
+}
+
+// 清理滚动监听
+function cleanupScrollListeners() {
+  emitter.off(OVERLAY_SCROLL_BAR_SCROLL, handleScroll)
+  window.removeEventListener('scroll', handleScroll)
+}
+
+// 监听 loading 结束后检查是否需要继续加载
+watch(() => props.loading, (newLoading, oldLoading) => {
+  if (oldLoading && !newLoading) {
+    // 加载完成后，延迟检查是否需要继续加载
+    nextTick(() => {
+      checkShouldPreload()
+    })
+  }
+})
+
+// 监听 items 变化后检查（处理初次加载不足的情况）
+watch(() => props.items.length, () => {
+  nextTick(() => {
+    checkShouldPreload()
+  })
+})
+
+onMounted(() => {
+  setupScrollListeners()
+  // 初始检查
+  nextTick(() => {
+    checkShouldPreload()
+  })
+})
+
+onUnmounted(() => {
+  cleanupScrollListeners()
+})
+
+// 计算是否横向布局（根据 gridLayout 自动决定）
 const isHorizontal = computed(() => {
-  if (props.horizontal !== undefined)
-    return props.horizontal
+  // adaptive: 纵向布局（图片在上，信息在下）
+  // twoColumns/oneColumn: 横向布局（图片在左，信息在右）
   return props.gridLayout !== 'adaptive'
 })
 
-// 生成骨架屏占位项
-const skeletonItems = computed(() => {
-  // 当 loading=true 时才生成骨架屏
-  if (!props.loading)
+// 是否显示初始骨架屏（只在首次加载且没有数据时）
+const showInitialSkeleton = computed(() => {
+  return props.loading && props.items.length === 0
+})
+
+// 生成初始骨架屏数据（仅用于首次加载）
+const initialSkeletonItems = computed(() => {
+  if (!showInitialSkeleton.value)
     return []
 
-  if (props.items.length === 0) {
-    // 完全空列表，生成完整的骨架屏
-    return Array.from({ length: props.initialSkeletonCount }, (_, i) => ({
-      _isSkeleton: true,
-      _skeletonId: `skeleton-${i}`,
-    })) as T[]
-  }
-
-  if (props.items.length < props.initialSkeletonCount && props.items.length > 0) {
-    // 列表有少量数据（可能是直播列表或首次加载），补充骨架屏到设定数量
-    const needCount = Math.max(0, props.initialSkeletonCount - props.items.length)
-    return Array.from({ length: needCount }, (_, i) => ({
-      _isSkeleton: true,
-      _skeletonId: `skeleton-extra-${i}`,
-    })) as T[]
-  }
-
-  return []
+  return Array.from({ length: props.initialSkeletonCount }, (_, i) => ({
+    _isSkeleton: true,
+    _skeletonId: `skeleton-init-${i}`,
+  })) as T[]
 })
 
-// 实际用于渲染的数据列表（包含骨架屏）
-const displayItems = computed(() => {
-  if (skeletonItems.value.length > 0) {
-    // 如果有骨架屏，需要看是完全替代还是追加
-    if (props.items.length === 0) {
-      // 没有真实数据，完全使用骨架屏
-      return skeletonItems.value
-    }
-    else {
-      // 有少量数据（如直播列表），追加骨架屏
-      return [...props.items, ...skeletonItems.value]
-    }
-  }
-  return props.items
+// 判断是否应该显示空状态
+const showEmptyState = computed(() => {
+  return !props.loading && props.items.length === 0 && !props.needToLoginFirst
 })
-
-// 预加载回调处理
-function handleLoadMore() {
-  if (props.loading || props.noMoreContent)
-    return
-  emit('loadMore')
-}
-
-// 虚拟滚动模式
-const {
-  virtualItems,
-  totalSize,
-  virtualGridStyle,
-  getItemsForRow,
-  virtualizer,
-  remeasure,
-} = useVirtualGrid<T>({
-  items: displayItems, // 使用包含骨架屏的列表
-  gridLayout: () => props.gridLayout,
-  containerRef,
-  scrollbarRef,
-  overscan: props.overscan,
-  onLoadMore: props.enableVirtualScroll ? handleLoadMore : undefined, // 只在虚拟滚动模式下启用预加载
-  loadMoreThreshold: 15, // 剩余 15 行时触发加载，非常提前的预加载
-})
-
-// 初始化虚拟滚动器 - 轮询等待 viewport 准备好
-onMounted(() => {
-  if (props.enableVirtualScroll) {
-    const checkViewport = () => {
-      const osInstance = scrollbarRef.value?.osInstance()
-      const viewport = osInstance?.elements().viewport
-      if (viewport && viewport.clientHeight > 0) {
-        virtualizer.value.measure()
-      }
-      else {
-        const retries = (checkViewport as any).retries || 0
-        if (retries < 10) {
-          (checkViewport as any).retries = retries + 1
-          setTimeout(checkViewport, 100)
-        }
-      }
-    }
-
-    setTimeout(checkViewport, 100)
-  }
-})
-
-// 组件激活时重新测量
-onActivated(() => {
-  if (props.enableVirtualScroll)
-    remeasure()
-})
-
-// 监听 displayItems 变化，确保虚拟滚动器及时更新
-watch(displayItems, () => {
-  if (props.enableVirtualScroll) {
-    nextTick(() => {
-      virtualizer.value?.measure()
-    })
-  }
-}, { flush: 'post' })
 
 // 判断是否为骨架屏项
 function isSkeleton(item: T): boolean {
@@ -304,7 +286,7 @@ function handleRefresh() {
   emit('refresh')
 }
 
-// 生成唯一 key（支持骨架屏）
+// 生成唯一 key
 function getUniqueKey(item: T): string | number {
   // 如果是骨架屏占位，使用骨架屏 ID
   if ((item as any)?._skeletonId)
@@ -336,7 +318,7 @@ function getUniqueKey(item: T): string | number {
 
     <!-- 空列表 -->
     <Empty
-      v-else-if="displayItems.length === 0 && !loading"
+      v-else-if="showEmptyState"
       mt-6
       :description="emptyDescription || $t('common.no_more_content')"
     >
@@ -345,62 +327,32 @@ function getUniqueKey(item: T): string | number {
       </Button>
     </Empty>
 
-    <!-- 虚拟滚动模式 -->
+    <!-- 初始加载骨架屏 -->
     <div
-      v-else-if="enableVirtualScroll"
-      ref="containerRef"
+      v-else-if="showInitialSkeleton"
       m="b-0 t-0" relative w-full
     >
-      <!-- 虚拟滚动容器 -->
-      <div
-        :style="{
-          height: `${totalSize}px`,
-          width: '100%',
-          position: 'relative',
-        }"
-      >
-        <!-- 虚拟化的行 -->
-        <div
-          v-for="virtualRow in virtualItems"
-          :key="String(virtualRow.key)"
-          :data-row-index="virtualRow.index"
-          :style="{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: `${virtualRow.size}px`,
-            transform: `translateY(${virtualRow.start}px)`,
-          }"
-        >
-          <!-- Grid 行 -->
-          <div :class="gridClass" :style="virtualGridStyle">
-            <VideoCard
-              v-for="item in getItemsForRow(virtualRow.index)"
-              :key="getUniqueKey(item)"
-              :skeleton="isSkeleton(item)"
-              :type="inferVideoType(item)"
-              :video="transformItem(item)"
-              :show-preview="showPreview"
-              :show-watcher-later="showWatchLater"
-              :horizontal="isHorizontal"
-              :more-btn="moreBtn"
-            />
-          </div>
-        </div>
+      <div :class="gridClass" :style="gridStyle">
+        <VideoCard
+          v-for="item in initialSkeletonItems"
+          :key="(item as any)._skeletonId"
+          skeleton
+          :horizontal="isHorizontal"
+        />
       </div>
     </div>
 
-    <!-- 传统 Grid 模式（分页） -->
+    <!-- Grid 内容 -->
     <div
       v-else
-      ref="containerRef"
+      ref="gridContainerRef"
       m="b-0 t-0" relative w-full
     >
-      <div :class="gridClass" :style="virtualGridStyle">
+      <div :class="gridClass" :style="gridStyle">
         <VideoCard
-          v-for="item in displayItems"
+          v-for="item in items"
           :key="getUniqueKey(item)"
+          v-memo="[getUniqueKey(item), isHorizontal]"
           :skeleton="isSkeleton(item)"
           :type="inferVideoType(item)"
           :video="transformItem(item)"
@@ -418,5 +370,34 @@ function getUniqueKey(item: T): string | number {
 </template>
 
 <style lang="scss" scoped>
-/* 由 gridClass 和 virtualGridStyle 提供样式 */
+/* Grid 样式类定义 */
+.grid-two-columns {
+  --uno: "grid cols-1 xl:cols-2 gap-4";
+}
+
+.grid-one-column {
+  --uno: "grid cols-1 gap-4";
+}
+
+/**
+ * Adaptive Grid - 列数由 JS 根据断点配置控制
+ * gridStyle 会设置 display: grid, grid-template-columns, gap
+ */
+.grid-adaptive {
+  contain: layout style;
+}
+
+/* 优化性能：使用 content-visibility 跳过不可见卡片的渲染 */
+:deep(.video-card-container) {
+  content-visibility: auto;
+  contain-intrinsic-block-size: 280px;
+  /* 关键：防止 grid 项目内容撑开超出容器 */
+  min-width: 0;
+}
+
+/* 非 adaptive 布局也需要优化 */
+.grid-two-columns,
+.grid-one-column {
+  contain: layout style;
+}
 </style>

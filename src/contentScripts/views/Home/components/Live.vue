@@ -7,7 +7,6 @@ import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/li
 import api from '~/utils/api'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
-// https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
 interface VideoElement {
   uniqueId: string
   item?: FollowingLiveItem
@@ -28,7 +27,7 @@ const isLoading = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
 const page = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 onMounted(() => {
   initData()
@@ -46,7 +45,7 @@ function initPageAction() {
     if (noMoreContent.value)
       return
 
-    getData()
+    handleLoadMore()
   }
   handlePageRefresh.value = async () => {
     if (isLoading.value)
@@ -58,7 +57,7 @@ function initPageAction() {
 
 async function initData() {
   page.value = 1
-  videoList.value.length = 0
+  videoList.value = []
   noMoreContent.value = false
 
   await getData()
@@ -92,8 +91,9 @@ async function getData() {
   isLoading.value = true
 
   try {
-    for (let i = 0; i < 3; i++)
-      await getFollowedUsersVideos()
+    // 初次加载时多加载几批确保有足够内容
+    for (let i = 0; i < 3 && !noMoreContent.value; i++)
+      await getLiveVideos()
   }
   finally {
     isLoading.value = false
@@ -101,19 +101,11 @@ async function getData() {
   }
 }
 
-async function getFollowedUsersVideos() {
+async function getLiveVideos() {
   if (noMoreContent.value)
     return
 
   try {
-    let i = 0
-    // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L208
-    const pendingVideos: VideoElement[] = Array.from({ length: 30 }, () => ({
-      uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
-    } satisfies VideoElement))
-    const lastVideoListLength = videoList.value.length
-    videoList.value.push(...pendingVideos)
-
     const response: FollowingLiveResult = await api.live.getFollowingLiveList({
       page: page.value,
       page_size: 9,
@@ -131,39 +123,34 @@ async function getFollowedUsersVideos() {
 
       page.value++
 
-      const resData = [] as FollowingLiveItem[]
+      const newItems = response.data.list.map((item: FollowingLiveItem) => ({
+        uniqueId: `${item.roomid}`,
+        item,
+        displayData: transformLiveVideo({ uniqueId: `${item.roomid}`, item }),
+      }))
 
-      response.data.list.forEach((item: FollowingLiveItem) => {
-        resData.push(item)
-      })
-
-      // when videoList has length property, it means it is the first time to load
-      if (!videoList.value.length) {
-        videoList.value = resData.map(item => ({
-          uniqueId: `${item.roomid}`,
-          item,
-          displayData: transformLiveVideo({ uniqueId: `${item.roomid}`, item }),
-        }))
-      }
-      else {
-        resData.forEach((item, index) => {
-          videoList.value[lastVideoListLength + index] = {
-            uniqueId: `${item.roomid}`,
-            item,
-            displayData: transformLiveVideo({ uniqueId: `${item.roomid}`, item }),
-          }
-        })
-      }
-
-      if (!await haveScrollbar() && !noMoreContent.value)
-        getFollowedUsersVideos()
+      videoList.value = [...videoList.value, ...newItems]
     }
     else if (response.code === -101) {
       needToLoginFirst.value = true
     }
   }
+  catch {
+    // 忽略错误
+  }
+}
+
+// 供 VideoCardGrid 预加载调用的函数
+async function handleLoadMore() {
+  if (isLoading.value || noMoreContent.value)
+    return
+
+  isLoading.value = true
+  try {
+    await getLiveVideos()
+  }
   finally {
-    videoList.value = videoList.value.filter(video => video.item)
+    isLoading.value = false
   }
 }
 
@@ -187,5 +174,6 @@ defineExpose({ initData })
     show-preview
     @refresh="initData"
     @login="jumpToLoginPage"
+    @load-more="handleLoadMore"
   />
 </template>

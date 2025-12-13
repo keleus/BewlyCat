@@ -7,7 +7,6 @@ import type { List as VideoItem, TrendingResult } from '~/models/video/trending'
 import api from '~/utils/api'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
-// https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
 interface VideoElement {
   uniqueId: string
   item?: VideoItem
@@ -27,7 +26,7 @@ const videoList = ref<VideoElement[]>([])
 const isLoading = ref<boolean>(false)
 const pn = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh, haveScrollbar } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 onMounted(() => {
   initData()
@@ -40,7 +39,7 @@ onActivated(() => {
 
 async function initData() {
   noMoreContent.value = false
-  videoList.value.length = 0
+  videoList.value = []
   pn.value = 1
   await getData()
 }
@@ -88,8 +87,8 @@ async function getData() {
 
 function initPageAction() {
   handleReachBottom.value = async () => {
-    if (!isLoading.value)
-      await getData()
+    if (!isLoading.value && !noMoreContent.value)
+      handleLoadMore()
   }
 
   handlePageRefresh.value = async () => {
@@ -102,14 +101,6 @@ async function getTrendingVideos() {
     return
 
   try {
-    let i = 0
-    // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L208
-    const pendingVideos: VideoElement[] = Array.from({ length: 30 }, () => ({
-      uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
-    } satisfies VideoElement))
-    const lastVideoListLength = videoList.value.length
-    videoList.value.push(...pendingVideos)
-
     const response: TrendingResult = await api.video.getPopularVideos({
       pn: pn.value++,
       ps: 30,
@@ -118,36 +109,36 @@ async function getTrendingVideos() {
     if (response.code === 0) {
       noMoreContent.value = response.data.no_more
 
-      const resData = [] as VideoItem[]
+      const newItems = response.data.list.map((item: VideoItem) => ({
+        uniqueId: `${item.aid}`,
+        item,
+        displayData: transformTrendingVideo({ uniqueId: `${item.aid}`, item }),
+      }))
 
-      response.data.list.forEach((item: VideoItem) => {
-        resData.push(item)
-      })
+      videoList.value = [...videoList.value, ...newItems]
 
-      // when videoList has length property, it means it is the first time to load
-      if (!videoList.value.length) {
-        videoList.value = resData.map(item => ({
-          uniqueId: `${item.aid}`,
-          item,
-          displayData: transformTrendingVideo({ uniqueId: `${item.aid}`, item }),
-        }))
+      // 初次加载且数据不足时继续加载
+      if (videoList.value.length < 30 && !noMoreContent.value) {
+        await getTrendingVideos()
       }
-      else {
-        resData.forEach((item, index) => {
-          videoList.value[lastVideoListLength + index] = {
-            uniqueId: `${item.aid}`,
-            item,
-            displayData: transformTrendingVideo({ uniqueId: `${item.aid}`, item }),
-          }
-        })
-      }
-
-      if (!await haveScrollbar() && !noMoreContent.value)
-        getTrendingVideos()
     }
   }
+  catch {
+    // 忽略错误
+  }
+}
+
+// 供 VideoCardGrid 预加载调用的函数
+async function handleLoadMore() {
+  if (isLoading.value || noMoreContent.value)
+    return
+
+  isLoading.value = true
+  try {
+    await getTrendingVideos()
+  }
   finally {
-    videoList.value = videoList.value.filter(video => video.item)
+    isLoading.value = false
   }
 }
 
@@ -164,5 +155,6 @@ defineExpose({ initData })
     :get-item-key="(item: VideoElement) => item.uniqueId"
     show-preview
     @refresh="initData"
+    @load-more="handleLoadMore"
   />
 </template>

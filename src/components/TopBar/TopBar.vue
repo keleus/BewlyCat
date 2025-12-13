@@ -117,6 +117,7 @@ watch(() => topBarStore.isSwitcherButtonVisible, () => {
 // 滚动处理
 const scrollTop = ref<number>(0)
 const oldScrollTop = ref<number>(0)
+const SCROLL_THRESHOLD = 10 // 滚动阈值，只有滚动超过这个值才触发顶栏显示/隐藏
 
 function handleScroll() {
   if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
@@ -126,6 +127,9 @@ function handleScroll() {
   else {
     scrollTop.value = document.documentElement.scrollTop
   }
+
+  // 计算滚动距离，只有超过阈值才处理
+  const scrollDelta = scrollTop.value - oldScrollTop.value
 
   // 在视频页面处理不同的配置
   if (isVideoOrBangumiPage()) {
@@ -155,38 +159,51 @@ function handleScroll() {
     if (config === VideoPageTopBarConfig.ShowOnScroll) {
       if (scrollTop.value === 0) {
         toggleTopBarVisible(true)
+        oldScrollTop.value = scrollTop.value
       }
-      else if (scrollTop.value > oldScrollTop.value) {
-        toggleTopBarVisible(false)
-      }
-      else {
-        toggleTopBarVisible(true)
+      else if (Math.abs(scrollDelta) > SCROLL_THRESHOLD) {
+        // 只有滚动超过阈值才更新状态
+        if (scrollDelta > 0) {
+          toggleTopBarVisible(false)
+        }
+        else {
+          toggleTopBarVisible(true)
+        }
+        oldScrollTop.value = scrollTop.value
       }
     }
   }
   // 处理其他页面的自动隐藏逻辑
   else {
-    if (scrollTop.value === 0)
+    if (scrollTop.value === 0) {
       toggleTopBarVisible(true)
+      oldScrollTop.value = scrollTop.value
+      return
+    }
+
+    // 只有滚动超过阈值才处理
+    if (Math.abs(scrollDelta) <= SCROLL_THRESHOLD) {
+      return
+    }
 
     // 在用户首页强制开启滚动隐藏，无论设置如何
     if (isUserSpacePage()) {
       if (isOutsideTopBar.value && scrollTop.value !== 0) {
-        if (scrollTop.value > oldScrollTop.value)
+        if (scrollDelta > 0)
           toggleTopBarVisible(false)
         else
           toggleTopBarVisible(true)
       }
     }
     else if (settings.value.autoHideTopBar && isOutsideTopBar.value && scrollTop.value !== 0) {
-      if (scrollTop.value > oldScrollTop.value)
+      if (scrollDelta > 0)
         toggleTopBarVisible(false)
       else
         toggleTopBarVisible(true)
     }
-  }
 
-  oldScrollTop.value = scrollTop.value
+    oldScrollTop.value = scrollTop.value
+  }
 }
 
 function toggleTopBarVisible(visible: boolean) {
