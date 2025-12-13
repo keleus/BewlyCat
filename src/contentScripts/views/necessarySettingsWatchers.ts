@@ -405,25 +405,37 @@ export function setupNecessarySettingsWatchers() {
   function applyOuterTopBarPolicy() {
     if (isInIframe())
       return
-    if (!isHomePage())
-      return
 
-    // When the homepage is showing an original Bilibili page inside our iframe (dock item "useOriginalBiliPage"),
-    // we should keep the *outer* document's Bilibili top bar hidden to avoid double headers.
-    const shouldHideOuterBiliTopBar = hasBiliIframePage()
+    // Handle homepage-specific logic
+    if (isHomePage()) {
+      // When the homepage is showing an original Bilibili page inside our iframe (dock item "useOriginalBiliPage"),
+      // we should keep the *outer* document's Bilibili top bar hidden to avoid double headers.
+      const shouldHideOuterBiliTopBar = hasBiliIframePage()
 
-    const shouldApplyRemoveTopBar = !settings.value.useOriginalBilibiliTopBar || shouldHideOuterBiliTopBar
-    document.documentElement.classList.toggle('remove-top-bar', shouldApplyRemoveTopBar)
+      const shouldApplyRemoveTopBar = !settings.value.useOriginalBilibiliTopBar || shouldHideOuterBiliTopBar
+      document.documentElement.classList.toggle('remove-top-bar', shouldApplyRemoveTopBar)
 
-    const outerHeader = document.querySelector<HTMLElement>('.bili-header')
-    if (outerHeader) {
-      if (shouldHideOuterBiliTopBar)
-        outerHeader.style.display = 'none'
-      else
-        outerHeader.style.removeProperty('display')
+      const outerHeader = document.querySelector<HTMLElement>('.bili-header')
+      if (outerHeader) {
+        if (shouldHideOuterBiliTopBar)
+          outerHeader.style.display = 'none'
+        else
+          outerHeader.style.removeProperty('display')
+      }
+
+      if (settings.value.useOriginalBilibiliTopBar && !shouldHideOuterBiliTopBar)
+        resetBilibiliTopBarInlineStyles(document)
     }
+    else {
+      // Handle non-homepage pages
+      document.documentElement.classList.toggle('remove-top-bar', !settings.value.useOriginalBilibiliTopBar)
 
-    if (settings.value.useOriginalBilibiliTopBar && !shouldHideOuterBiliTopBar)
-      resetBilibiliTopBarInlineStyles(document)
+      // When switching to Bewly top bar, reset any inline styles that Bilibili might have added
+      if (!settings.value.useOriginalBilibiliTopBar)
+        resetBilibiliTopBarInlineStyles(document)
+      // When switching to original Bilibili top bar, also reset inline styles to ensure it's visible
+      else
+        resetBilibiliTopBarInlineStyles(document)
+    }
   }
 }
