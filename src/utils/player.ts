@@ -776,7 +776,11 @@ export function toggleCaption() {
   const subtitleWrap = document.querySelector('.squirtle-subtitle-wrap')
   if (subtitleWrap && subtitleWrap.firstElementChild) {
     (subtitleWrap.firstElementChild as HTMLElement).click()
+    return
   }
+
+  // 如果没有找到任何字幕相关元素，显示提示
+  showState('当前视频无字幕')
 }
 
 // 改变播放速度
