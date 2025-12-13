@@ -248,7 +248,7 @@ function toggleTabContentLoading(loading: boolean) {
         <div
           v-if="settings.enableGridLayoutSwitcher"
           style="backdrop-filter: var(--bew-filter-glass-1)"
-          flex="~ gap-1 shrink-0" p-1 h-38px bg="$bew-elevated" transform-gpu
+          flex="~ gap-1 shrink-0" p-1 h-38px bg="$bew-elevated"
           ml-auto rounded-full
           shadow="[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]"
           box-border border="1 $bew-border-color"
