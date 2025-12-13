@@ -48,7 +48,7 @@ const channels = setupTopBarItemHoverEvent('channels')
           grid="~ place-items-center"
           rounded="46px"
           duration-300
-          w-46px h-46px transform-gpu
+          w-46px h-46px
           bg="hover:$bew-theme-color"
           @click="(event: MouseEvent) => handleClickTopBarItem(event, 'channels')"
         >
@@ -93,7 +93,7 @@ const channels = setupTopBarItemHoverEvent('channels')
         grid="~ place-items-center"
         rounded="46px"
         duration-300
-        w-46px h-46px transform-gpu
+        w-46px h-46px
         bg="hover:$bew-theme-color"
         shrink-0
       >

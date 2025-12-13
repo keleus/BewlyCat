@@ -131,7 +131,7 @@ watchEffect(() => {
           pos="absolute" bg="$bew-elevated" shadow="$bew-shadow-2" p="2"
           m="t-2"
           rounded="$bew-radius" z="10004" flex="~ col gap-1"
-          w="full" max-h-300px overflow-y-overlay will-change-transform transform-gpu
+          w="full" max-h-300px overflow-y-overlay will-change-transform
         >
           <div
             v-for="option in options"

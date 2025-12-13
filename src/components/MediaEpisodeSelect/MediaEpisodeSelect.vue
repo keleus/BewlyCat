@@ -148,7 +148,6 @@ watchEffect(() => {
           max-h-400px
           overflow-y-overlay
           will-change-transform
-          transform-gpu
           @click.stop
         >
           <a

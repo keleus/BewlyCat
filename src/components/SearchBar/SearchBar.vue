@@ -503,7 +503,7 @@ function handleFocusOut(event: FocusEvent) {
     <div
       v-if="blurredOnFocus"
       pos="fixed top-0 left-0" w-full h-full duration-500 pointer-events-none
-      ease-out transform-gpu
+      ease-out
       bg="$bew-bg"
       :style="{
         opacity: isFocus ? 0.9 : 0,
@@ -738,7 +738,7 @@ function handleFocusOut(event: FocusEvent) {
   --b-search-bar-focus-text-color: var(--bew-text-1);
 
   @mixin card-content {
-    --uno: "text-base outline-none w-full bg-$b-search-bar-normal-color transform-gpu border-1 border-$bew-border-color";
+    --uno: "text-base outline-none w-full bg-$b-search-bar-normal-color border-1 border-$bew-border-color";
     --uno: "shadow-[var(--bew-shadow-2),var(--bew-shadow-edge-glow-1)]";
     backdrop-filter: var(--bew-filter-glass-1);
   }

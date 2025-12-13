@@ -202,7 +202,6 @@ const shouldShowDivider = computed(() => {
       class="others"
       flex="~ items-center gap-1" h-46px px-5px
       text="$bew-text-1"
-      transform-gpu
     >
       <div
         v-if="!isLogin"

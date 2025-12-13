@@ -138,7 +138,7 @@ function setCurrentTitle() {
           "
           relative flex="~ gap-2 col" rounded="30px group-hover:25px" p-2
           bg="$bew-content-alt group-hover:$bew-elevated dark:$bew-elevated dark-group-hover:$bew-elevated"
-          scale="group-hover:105" duration-300 overflow-hidden antialiased transform-gpu
+          scale="group-hover:105" duration-300 overflow-hidden antialiased
         >
           <!-- frosted glass background -->
           <!-- https://github.com/BewlyBewly/BewlyBewly/issues/1162 -->
@@ -149,7 +149,7 @@ function setCurrentTitle() {
             "
             pos="absolute top-0 left-0" z--1
             w-full h-full pointer-events-none
-            border="1 $bew-border-color" transform-gpu
+            border="1 $bew-border-color"
             rounded-inherit duration-inherit
           />
 
@@ -197,7 +197,7 @@ function setCurrentTitle() {
           backdrop-filter: var(--bew-filter-glass-2);
         "
         relative overflow="x-hidden" w-full h-full bg="$bew-elevated-alt"
-        shadow rounded="$bew-radius" border="1 $bew-border-color" transform-gpu
+        shadow rounded="$bew-radius" border="1 $bew-border-color"
       >
         <header
           flex justify-between items-center w-full h-80px
@@ -215,7 +215,7 @@ function setCurrentTitle() {
               -webkit-mask-image: linear-gradient(to bottom, black 0, transparent 100%);
               backdrop-filter: blur(6px);
             "
-            z--1 rounded-inherit transform-gpu
+            z--1 rounded-inherit
           />
           <div text="3xl" fw-bold>
             {{ title }}
