@@ -68,7 +68,7 @@ function handleClick(evt: MouseEvent) {
   --b-button-shadow-active: var(--b-button-shadow);
 
   --uno: "bg-$b-button-color hover:bg-$b-button-color-hover box-border";
-  --uno: "rounded-$b-button-radius p-x-$b-button-padding transform-gpu active:scale-95";
+  --uno: "rounded-$b-button-radius p-x-$b-button-padding active:scale-95";
   --uno: "duration-300 flex items-center gap-2 text-size-$b-button-font-size";
   --uno: "text-$b-button-text-color lh-$b-button-height h-$b-button-height";
   --uno: "border-solid border-width-$b-button-border-width border-$b-button-border-color";

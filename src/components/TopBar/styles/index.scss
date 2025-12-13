@@ -10,7 +10,7 @@
 
 .slide-in-enter-active,
 .slide-in-leave-active {
-  --uno: "transition-all duration-250 pointer-events-none transform-gpu";
+  --uno: "transition-all duration-250 pointer-events-none";
 }
 
 .slide-in-leave-to,
@@ -20,7 +20,7 @@
 
 .slide-out-enter-active,
 .slide-out-leave-active {
-  --uno: "transition-all duration-300 pointer-events-none transform-gpu";
+  --uno: "transition-all duration-300 pointer-events-none";
 }
 
 .slide-out-leave-to,
