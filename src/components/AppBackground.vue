@@ -282,7 +282,7 @@ function setAppWallpaperMaskingOpacity() {
         <!-- background -->
         <div
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
-          z--1 transform-gpu
+          z--1
           :style="{ backgroundImage: `url('${currentWallpaperUrl}')` }"
         />
         <!-- background mask -->
@@ -290,7 +290,7 @@ function setAppWallpaperMaskingOpacity() {
           <div
             v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
             pos="absolute top-0 left-0" w-full h-full pointer-events-none
-            duration-300 z--1 transform-gpu
+            duration-300 z--1
           >
             <!-- 模糊图层 -->
             <div
@@ -332,7 +332,7 @@ function setAppWallpaperMaskingOpacity() {
         <div
           :style="{ backgroundImage: `url('${currentWallpaperUrl}')` }"
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
-          z--1 transform-gpu
+          z--1
         />
 
         <!-- background mask -->
@@ -340,7 +340,7 @@ function setAppWallpaperMaskingOpacity() {
           <div
             v-if="settings.enableWallpaperMasking"
             pos="absolute top-0 left-0" w-full h-full pointer-events-none
-            duration-300 z--1 transform-gpu
+            duration-300 z--1
           >
             <!-- 模糊图层 -->
             <div
