@@ -47,19 +47,44 @@ watch(() => selectedMomentTab.value.type, (newVal, oldVal) => {
   initData()
 })
 
+// 使用 RAF 优化滚动事件处理
+let scrollRAF: number | null = null
+
+function handleMomentsScroll() {
+  const wrap = momentsWrap.value
+  if (!wrap || topBarStore.isLoadingMoments || topBarStore.moments.length === 0)
+    return
+
+  if (scrollRAF !== null)
+    return
+
+  scrollRAF = requestAnimationFrame(() => {
+    scrollRAF = null
+    if (!wrap)
+      return
+
+    const { clientHeight, scrollTop, scrollHeight } = wrap
+    if (clientHeight + scrollTop >= scrollHeight - 20) {
+      getData()
+    }
+  })
+}
+
 onMounted(() => {
   const wrap = momentsWrap.value
   if (wrap) {
-    wrap.addEventListener('scroll', () => {
-      if (
-        wrap.clientHeight + wrap.scrollTop
-        >= wrap.scrollHeight - 20
-        && topBarStore.moments.length > 0
-        && !topBarStore.isLoadingMoments
-      ) {
-        getData()
-      }
-    })
+    wrap.addEventListener('scroll', handleMomentsScroll, { passive: true })
+  }
+})
+
+onUnmounted(() => {
+  const wrap = momentsWrap.value
+  if (wrap) {
+    wrap.removeEventListener('scroll', handleMomentsScroll)
+  }
+  if (scrollRAF !== null) {
+    cancelAnimationFrame(scrollRAF)
+    scrollRAF = null
   }
 })
 

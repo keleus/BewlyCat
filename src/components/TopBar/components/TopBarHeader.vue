@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMutationObserver, useResizeObserver } from '@vueuse/core'
+import { useMutationObserver } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 import { settings } from '~/logic'
@@ -26,21 +26,53 @@ const rightWidth = ref(0)
 const centerWidth = ref(0)
 const searchContentWidth = ref(0)
 
-useResizeObserver(leftSection, (entries) => {
-  leftWidth.value = entries[0]?.contentRect.width ?? leftSection.value?.offsetWidth ?? 0
+// 使用单个 ResizeObserver 监听多个元素，减少开销
+let resizeObserver: ResizeObserver | null = null
+
+function setupResizeObserver() {
+  if (resizeObserver)
+    resizeObserver.disconnect()
+
+  resizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const width = entry.contentRect.width
+      if (entry.target === leftSection.value) {
+        leftWidth.value = width
+      }
+      else if (entry.target === rightSection.value) {
+        rightWidth.value = width
+      }
+      else if (entry.target === searchSection.value) {
+        centerWidth.value = width
+        refreshSearchContent()
+      }
+      else if (entry.target === searchContent.value) {
+        searchContentWidth.value = width
+      }
+    }
+  })
+
+  if (leftSection.value)
+    resizeObserver.observe(leftSection.value)
+  if (rightSection.value)
+    resizeObserver.observe(rightSection.value)
+  if (searchSection.value)
+    resizeObserver.observe(searchSection.value)
+}
+
+// 监听 searchContent 变化
+watch(searchContent, (newEl, oldEl) => {
+  if (resizeObserver) {
+    if (oldEl)
+      resizeObserver.unobserve(oldEl)
+    if (newEl)
+      resizeObserver.observe(newEl)
+  }
 })
 
-useResizeObserver(rightSection, (entries) => {
-  rightWidth.value = entries[0]?.contentRect.width ?? rightSection.value?.offsetWidth ?? 0
-})
-
-useResizeObserver(searchSection, (entries) => {
-  centerWidth.value = entries[0]?.contentRect.width ?? searchSection.value?.offsetWidth ?? 0
-  refreshSearchContent()
-})
-
-useResizeObserver(searchContent, (entries) => {
-  searchContentWidth.value = entries[0]?.contentRect.width ?? searchContent.value?.offsetWidth ?? 0
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
 })
 
 useMutationObserver(searchSection, () => {
@@ -52,6 +84,7 @@ onMounted(() => {
   rightWidth.value = rightSection.value?.offsetWidth ?? 0
   centerWidth.value = searchSection.value?.offsetWidth ?? 0
   refreshSearchContent()
+  setupResizeObserver()
 })
 
 const maxOffset = computed(() => {

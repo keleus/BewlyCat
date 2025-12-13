@@ -47,30 +47,52 @@ onMounted(() => {
   initData()
 })
 
+// 使用 RAF 优化滚动事件处理
+let scrollRAF: number | null = null
+
+function handleFavoritesScroll() {
+  const wrap = favoriteVideosWrap.value
+  if (!wrap || isLoading.value || noMoreContent.value || favoriteResources.length === 0)
+    return
+
+  if (scrollRAF !== null)
+    return
+
+  scrollRAF = requestAnimationFrame(() => {
+    scrollRAF = null
+    if (!wrap)
+      return
+
+    const { clientHeight, scrollTop, scrollHeight } = wrap
+    if (clientHeight + scrollTop >= scrollHeight - 20) {
+      if (activatedMediaId.value) {
+        currentPageNum.value++
+        getFavoriteResources()
+      }
+    }
+  })
+}
+
 async function initData() {
   await getFavoriteCategories()
   activatedMediaId.value = favoriteCategories[0].id
   activatedFavoriteTitle.value = favoriteCategories[0].title
 
   if (favoriteVideosWrap.value) {
-    favoriteVideosWrap.value.addEventListener('scroll', () => {
-      // When you scroll to the bottom, they will automatically
-      // add the next page of data to the history list
-      if (
-        favoriteVideosWrap.value.clientHeight
-        + favoriteVideosWrap.value.scrollTop
-        >= favoriteVideosWrap.value.scrollHeight - 20
-        && favoriteResources.length > 0
-        && !isLoading.value
-      ) {
-        if (activatedMediaId.value && !noMoreContent.value) {
-          currentPageNum.value++
-          getFavoriteResources()
-        }
-      }
-    })
+    favoriteVideosWrap.value.addEventListener('scroll', handleFavoritesScroll, { passive: true })
   }
 }
+
+onUnmounted(() => {
+  const wrap = favoriteVideosWrap.value
+  if (wrap) {
+    wrap.removeEventListener('scroll', handleFavoritesScroll)
+  }
+  if (scrollRAF !== null) {
+    cancelAnimationFrame(scrollRAF)
+    scrollRAF = null
+  }
+})
 
 async function getFavoriteCategories() {
   await api.favorite.getFavoriteCategories({
