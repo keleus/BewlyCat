@@ -119,13 +119,18 @@ const scrollTop = ref<number>(0)
 const oldScrollTop = ref<number>(0)
 const SCROLL_THRESHOLD = 10 // 滚动阈值，只有滚动超过这个值才触发顶栏显示/隐藏
 
-function handleScroll(arg?: number | Event) {
+function handleScroll(arg?: number | Event): void {
+  // 优先使用传入的 scrollTop 值，避免重复 DOM 读取
   if (typeof arg === 'number') {
     scrollTop.value = arg
   }
   else if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
+    // 仅在非首页或使用原始页面时才读取 DOM
     const osInstance = scrollbarRef.value?.osInstance()
-    scrollTop.value = osInstance.elements().viewport.scrollTop as number
+    if (osInstance) {
+      scrollTop.value = osInstance.elements().viewport.scrollTop
+    }
+    return
   }
   else {
     scrollTop.value = document.documentElement.scrollTop
