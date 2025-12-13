@@ -723,7 +723,7 @@ onUnmounted(() => {
   }
 
   .dock-content-inner {
-    --uno: "duration-300 ease-in-out transform-gpu";
+    --uno: "duration-300 ease-in-out";
     --uno: "p-2 m-2 bg-$bew-content-alt dark:bg-$bew-elevated";
     --uno: "flex flex-col gap-2 shrink-0";
     --uno: "rounded-full border-1 border-$bew-border-color";
