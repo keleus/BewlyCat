@@ -231,6 +231,8 @@ settings:
   show_bcoin_receive_reminder: VIP B-coin receive reminder
   auto_receive_bcoin_coupon: Auto receive B-coin coupon
   auto_receive_bcoin_coupon_desc: When enabled, B-coin coupons will be automatically received when detected
+  auto_receive_vip_exp: Auto receive VIP experience
+  auto_receive_vip_exp_desc: When enabled, will automatically receive daily VIP experience
   open_notifications_page_as_drawer: Open notifications page as drawer
 
   # Video Card Grid Settings

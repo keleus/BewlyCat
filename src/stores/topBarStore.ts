@@ -70,6 +70,9 @@ export const useTopBarStore = defineStore('topBar', () => {
   const hasBCoinToReceive = ref<boolean>(false)
   const bCoinAlreadyReceived = ref<boolean>(false) // 记录B币是否已经领取
 
+  // 大会员经验领取状态
+  const vipExpAlreadyReceived = ref<boolean>(false) // 记录大会员经验是否已经领取
+
   // UI State
   const drawerVisible = reactive({
     notifications: false,
@@ -147,6 +150,7 @@ export const useTopBarStore = defineStore('topBar', () => {
         if (!wasLoggedIn || previousMid !== userInfo.mid) {
           bCoinAlreadyReceived.value = false
           hasBCoinToReceive.value = false
+          vipExpAlreadyReceived.value = false
         }
       }
       else if (res.code === -101) {
@@ -154,6 +158,7 @@ export const useTopBarStore = defineStore('topBar', () => {
         // 登出时重置状态
         bCoinAlreadyReceived.value = false
         hasBCoinToReceive.value = false
+        vipExpAlreadyReceived.value = false
       }
       else {
         // 其他错误码
@@ -168,6 +173,7 @@ export const useTopBarStore = defineStore('topBar', () => {
         isLogin.value = false
         bCoinAlreadyReceived.value = false
         hasBCoinToReceive.value = false
+        vipExpAlreadyReceived.value = false
       }
     }
     catch {
@@ -183,6 +189,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       isLogin.value = false
       bCoinAlreadyReceived.value = false
       hasBCoinToReceive.value = false
+      vipExpAlreadyReceived.value = false
     }
   }
 
@@ -277,6 +284,38 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
     catch {
       toast.error('B币券自动领取失败，请稍后重试')
+    }
+  }
+
+  // 自动领取大会员经验
+  async function autoReceiveVipExp() {
+    if (!isLogin.value || userInfo.vip?.status !== 1 || !settings.value.autoReceiveVipExp) {
+      return
+    }
+
+    // 如果已经记录为已领取，则不再请求
+    if (vipExpAlreadyReceived.value) {
+      return
+    }
+
+    try {
+      const res = await api.user.receiveVipExp({
+        csrf: getCSRF(),
+      })
+
+      if (res.code === 0) {
+        // 领取成功，更新状态并显示消息
+        vipExpAlreadyReceived.value = true
+        toast.success('大会员经验自动领取成功')
+      }
+      else if (res.code === 69198) {
+        // 经验已领取，静默更新状态
+        vipExpAlreadyReceived.value = true
+      }
+      // 其他错误码不处理，下次继续尝试
+    }
+    catch {
+      // 请求失败不处理，下次继续尝试
     }
   }
 
@@ -638,6 +677,7 @@ export const useTopBarStore = defineStore('topBar', () => {
   function initData() {
     getUserInfo().then(() => {
       checkBCoinReceiveStatus()
+      autoReceiveVipExp()
     })
     getUnreadMessageCount()
     getTopBarNewMomentsCount()
@@ -658,6 +698,7 @@ export const useTopBarStore = defineStore('topBar', () => {
         if (!popupVisible.watchLater)
           getWatchLaterCount()
         checkBCoinReceiveStatus()
+        autoReceiveVipExp()
       }
     }, updateInterval)
   }
@@ -684,6 +725,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     drawerVisible.notifications = false
     hasBCoinToReceive.value = false
     bCoinAlreadyReceived.value = false
+    vipExpAlreadyReceived.value = false
   }
 
   // 添加鼠标状态跟踪
@@ -741,6 +783,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     stopUpdateTimer,
     checkBCoinReceiveStatus,
     autoReceiveBCoin,
+    autoReceiveVipExp,
 
     moments,
     addedWatchLaterList,

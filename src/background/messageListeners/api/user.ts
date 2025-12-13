@@ -66,6 +66,20 @@ const API_USER = {
     },
     afterHandle: AHS.J_D,
   },
+  // 大会员每日经验领取 https://socialsisteryi.github.io/bilibili-API-collect/docs/vip/action.html#%E5%A4%A7%E4%BC%9A%E5%91%98%E6%AF%8F%E6%97%A5%E7%BB%8F%E9%AA%8C
+  receiveVipExp: {
+    url: 'https://api.bilibili.com/x/vip/experience/add',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      body: {
+        csrf: '',
+      },
+    },
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_USER

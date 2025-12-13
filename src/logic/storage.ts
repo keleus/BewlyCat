@@ -175,6 +175,7 @@ export interface Settings {
   openNotificationsPageAsDrawer: boolean
   showBCoinReceiveReminder: boolean
   autoReceiveBCoinCoupon: boolean
+  autoReceiveVipExp: boolean
   filterArticlesInMoments: boolean
 
   alwaysUseDock: boolean
@@ -377,6 +378,7 @@ export const originalSettings: Settings = {
   openNotificationsPageAsDrawer: true,
   showBCoinReceiveReminder: true,
   autoReceiveBCoinCoupon: false,
+  autoReceiveVipExp: false,
   filterArticlesInMoments: true,
 
   alwaysUseDock: false,

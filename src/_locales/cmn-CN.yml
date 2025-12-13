@@ -262,6 +262,8 @@ settings:
   show_bcoin_receive_reminder: 大会员B币领取提醒
   auto_receive_bcoin_coupon: 大会员B币自动领取
   auto_receive_bcoin_coupon_desc: 启用后，当检测到有未领取的B币券时将自动领取
+  auto_receive_vip_exp: 大会员经验自动领取
+  auto_receive_vip_exp_desc: 启用后，将自动领取大会员每日经验
   open_notifications_page_as_drawer: 以抽屉形式打开通知页面
 
   # Video Card Grid Settings
