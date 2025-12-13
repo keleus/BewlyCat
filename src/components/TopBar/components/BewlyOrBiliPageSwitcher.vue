@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI } from '~/constants/globalEvents'
+import { IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
@@ -46,6 +46,12 @@ function switchPage(useOriginalBiliPage: boolean) {
       iframe.contentWindow.postMessage(IFRAME_PAGE_SWITCH_BILI, '*')
     else
       iframe.contentWindow.postMessage(IFRAME_PAGE_SWITCH_BEWLY, '*')
+
+    // Also sync current top bar preference so the iframe can hide/show its own Bilibili header immediately.
+    iframe.contentWindow.postMessage({
+      type: IFRAME_TOP_BAR_CHANGE,
+      useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
+    }, '*')
   }
 }
 </script>

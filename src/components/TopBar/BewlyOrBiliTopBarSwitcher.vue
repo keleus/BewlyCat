@@ -6,7 +6,6 @@ import { useTopBarStore } from '~/stores/topBarStore'
 
 function toggleBewlyTopBar() {
   settings.value.useOriginalBilibiliTopBar = !settings.value.useOriginalBilibiliTopBar
-  settings.value.showTopBar = !settings.value.showTopBar
 }
 
 const topBarStore = useTopBarStore()

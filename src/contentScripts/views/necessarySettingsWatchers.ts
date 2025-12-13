@@ -1,11 +1,14 @@
 import { useI18n } from 'vue-i18n'
 
+import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { LanguageType } from '~/enums/appEnums'
 import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
-import { getUserID, injectCSS } from '~/utils/main'
+import { resetBilibiliTopBarInlineStyles } from '~/utils/bilibiliTopBar'
+import { getUserID, injectCSS, isHomePage, isInIframe } from '~/utils/main'
 
 export function setupNecessarySettingsWatchers() {
   const { locale } = useI18n()
+  let syncingTopBarSettings = false
 
   const DEFAULT_FROSTED_GLASS_BLUR_PX = originalSettings.frostedGlassBlurIntensity
   const FROSTED_GLASS_DIALOG_OFFSET_PX = 10
@@ -300,9 +303,18 @@ export function setupNecessarySettingsWatchers() {
   watch(
     () => settings.value.showTopBar,
     (newVal) => {
-      if (newVal)
-        settings.value.useOriginalBilibiliTopBar = false
-      settings.value.useOriginalBilibiliTopBar = !settings.value.showTopBar
+      // `showTopBar` is the Bewly top bar toggle. Keep `useOriginalBilibiliTopBar` in sync,
+      // but avoid ping-pong writes that can race in async storage.
+      if (syncingTopBarSettings)
+        return
+
+      const desiredUseOriginal = !newVal
+      if (settings.value.useOriginalBilibiliTopBar === desiredUseOriginal)
+        return
+
+      syncingTopBarSettings = true
+      settings.value.useOriginalBilibiliTopBar = desiredUseOriginal
+      syncingTopBarSettings = false
     },
     { immediate: true },
   )
@@ -310,13 +322,65 @@ export function setupNecessarySettingsWatchers() {
   watch(
     () => settings.value.useOriginalBilibiliTopBar,
     (newVal) => {
-      if (newVal)
-        settings.value.showTopBar = false
-      document.documentElement.classList.toggle('remove-top-bar', !settings.value.useOriginalBilibiliTopBar)
-      settings.value.showTopBar = !settings.value.useOriginalBilibiliTopBar
+      // `useOriginalBilibiliTopBar` is the source-of-truth for "which top bar to use".
+      // Sync `showTopBar` (Bewly top bar visible) with minimal writes.
+      const desiredShowTopBar = !newVal
+      if (!syncingTopBarSettings && settings.value.showTopBar !== desiredShowTopBar) {
+        syncingTopBarSettings = true
+        settings.value.showTopBar = desiredShowTopBar
+        syncingTopBarSettings = false
+      }
+      applyOuterTopBarPolicy()
+
+      // Sync top bar visibility preference to embedded Bilibili iframes.
+      // `useStorageAsync` (webextension storage) doesn't automatically sync reactive state across frames,
+      // so the iframe may not update until reload without this message.
+      if (!isInIframe()) {
+        const message = {
+          type: IFRAME_TOP_BAR_CHANGE,
+          useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
+        }
+
+        const iframeCandidates = new Set<HTMLIFrameElement>()
+        document.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => iframeCandidates.add(iframe))
+        document.getElementById('bewly')?.shadowRoot?.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => iframeCandidates.add(iframe))
+
+        iframeCandidates.forEach((iframe) => {
+          try {
+            // Prefer direct DOM access when same-origin, so it works even if the iframe didn't inject our content script.
+            const iframeDoc = iframe.contentWindow?.document
+            iframeDoc?.documentElement?.classList.toggle('remove-top-bar', !settings.value.useOriginalBilibiliTopBar)
+            if (settings.value.useOriginalBilibiliTopBar && iframeDoc)
+              resetBilibiliTopBarInlineStyles(iframeDoc)
+          }
+          catch {
+            // Ignore cross-origin / sandbox restrictions.
+          }
+
+          try {
+            iframe.contentWindow?.postMessage(message, '*')
+          }
+          catch {
+            // Ignore cross-origin / sandbox restrictions.
+          }
+        })
+      }
     },
     { immediate: true },
   )
+
+  // In the homepage "original Bili page in iframe" mode, the iframe may appear after async settings load.
+  // Observe shadow DOM changes so we can hide/show the outer `.bili-header` reliably without requiring refresh.
+  if (!isInIframe() && isHomePage()) {
+    const bewlyHost = document.getElementById('bewly')
+    const shadow = bewlyHost?.shadowRoot
+    if (shadow) {
+      const observer = new MutationObserver(() => {
+        applyOuterTopBarPolicy()
+      })
+      observer.observe(shadow, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] })
+    }
+  }
 
   watch(
     () => settings.value.adaptToOtherPageStyles,
@@ -328,4 +392,38 @@ export function setupNecessarySettingsWatchers() {
     },
     { immediate: true },
   )
+
+  function hasBiliIframePage(): boolean {
+    const bewlyHost = document.getElementById('bewly')
+    const shadow = bewlyHost?.shadowRoot
+    if (!shadow)
+      return false
+    // Only consider iframes that look like a Bilibili page.
+    return Boolean(shadow.querySelector('iframe[src*="bilibili.com"]'))
+  }
+
+  function applyOuterTopBarPolicy() {
+    if (isInIframe())
+      return
+    if (!isHomePage())
+      return
+
+    // When the homepage is showing an original Bilibili page inside our iframe (dock item "useOriginalBiliPage"),
+    // we should keep the *outer* document's Bilibili top bar hidden to avoid double headers.
+    const shouldHideOuterBiliTopBar = hasBiliIframePage()
+
+    const shouldApplyRemoveTopBar = !settings.value.useOriginalBilibiliTopBar || shouldHideOuterBiliTopBar
+    document.documentElement.classList.toggle('remove-top-bar', shouldApplyRemoveTopBar)
+
+    const outerHeader = document.querySelector<HTMLElement>('.bili-header')
+    if (outerHeader) {
+      if (shouldHideOuterBiliTopBar)
+        outerHeader.style.display = 'none'
+      else
+        outerHeader.style.removeProperty('display')
+    }
+
+    if (settings.value.useOriginalBilibiliTopBar && !shouldHideOuterBiliTopBar)
+      resetBilibiliTopBarInlineStyles(document)
+  }
 }

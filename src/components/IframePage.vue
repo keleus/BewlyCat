@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
-import { IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
+import { IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 
 const props = defineProps<{
@@ -100,6 +100,20 @@ watch(() => isDark.value, (newValue) => {
   }
 })
 
+watch(() => settings.value.useOriginalBilibiliTopBar, (newValue) => {
+  if (iframeRef.value?.contentWindow) {
+    try {
+      iframeRef.value.contentWindow.postMessage({
+        type: IFRAME_TOP_BAR_CHANGE,
+        useOriginalBilibiliTopBar: newValue,
+      }, '*')
+    }
+    catch (error) {
+      console.warn('Failed to send top bar change message to iframe:', error)
+    }
+  }
+}, { immediate: true })
+
 // 监听深色模式基准颜色变化
 watch(() => settings.value.darkModeBaseColor, (newColor) => {
   if (iframeRef.value?.contentWindow && isDark.value) {
@@ -139,6 +153,10 @@ function handleIframeLoad() {
           type: IFRAME_DARK_MODE_CHANGE,
           isDark: isDark.value,
           darkModeBaseColor: settings.value.darkModeBaseColor,
+        }, '*')
+        iframeRef.value?.contentWindow?.postMessage({
+          type: IFRAME_TOP_BAR_CHANGE,
+          useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
         }, '*')
       }
       catch (error) {

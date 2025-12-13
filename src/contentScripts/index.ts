@@ -4,11 +4,12 @@ import 'uno.css'
 import { createApp } from 'vue'
 
 import { useDark } from '~/composables/useDark'
-import { BEWLY_MOUNTED } from '~/constants/globalEvents'
+import { BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { localSettings, settings } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
+import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
@@ -188,6 +189,11 @@ if (settings.value.adaptToOtherPageStyles && isHomePage()) {
       transition: opacity 0.5s;
     }
   `)
+  // Failsafe: never keep the page hidden for too long.
+  setTimeout(() => {
+    if (beforeLoadedStyleEl?.isConnected)
+      document.documentElement.removeChild(beforeLoadedStyleEl)
+  }, 4000)
 }
 
 window.addEventListener(BEWLY_MOUNTED, () => {
@@ -388,19 +394,12 @@ window.addEventListener('visibilitychange', handleVisibilityChange)
 const removeOriginalTopBar = injectCSS(`.bili-header, #biliMainHeader { visibility: hidden !important; }`)
 
 async function onDOMLoaded() {
-  let originalTopBar: HTMLElement | null = null
-
   const changeHomePage = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
 
   // Remove the original Bilibili homepage if in Bilibili homepage & useOriginalBilibiliHomepage is enabled
   if (changeHomePage) {
-    originalTopBar = document.querySelector<HTMLElement>('.bili-header')
-    const originalTopBarInnerUselessContents = document.querySelectorAll<HTMLElement>('.bili-header > *:not(.bili-header__bar)')
-
-    if (originalTopBar) {
-      // always show the background on the original bilibili top bar
-      originalTopBar.querySelector('.bili-header__bar')?.classList.add('slide-down')
-    }
+    // Capture the original top bar early so we can optionally re-attach it later.
+    captureOriginalBilibiliTopBar(document)
 
     // Remove the original Bilibili homepage if in Bilibili homepage & useOriginalBilibiliHomepage is enabled
     document.body.innerHTML = ''
@@ -412,10 +411,7 @@ async function onDOMLoaded() {
       }
     `)
 
-    if (originalTopBarInnerUselessContents)
-      originalTopBarInnerUselessContents.forEach(item => (item as HTMLElement).style.display = 'none')
-    if (originalTopBar)
-      document.body.appendChild(originalTopBar)
+    ensureOriginalBilibiliTopBarAppended(document)
   }
 
   if (isSupportedPages() || isSupportedIframePages()) {
@@ -607,9 +603,9 @@ window.addEventListener('message', (event) => {
   if (event.source !== window.parent)
     return
 
-  const { type, isDark, darkModeBaseColor } = event.data
+  const { type, isDark, darkModeBaseColor, useOriginalBilibiliTopBar } = event.data
 
-  if (type === 'iframeDarkModeChange') {
+  if (type === IFRAME_DARK_MODE_CHANGE) {
     // Check if we should apply selective dark mode (plugin UI only) on festival pages
     const isSelectiveDark = isFestivalPage()
 
@@ -643,6 +639,14 @@ window.addEventListener('message', (event) => {
         document.body?.classList.remove('dark')
       }
     }
+  }
+  else if (type === IFRAME_TOP_BAR_CHANGE) {
+    if (typeof useOriginalBilibiliTopBar !== 'boolean')
+      return
+
+    document.documentElement.classList.toggle('remove-top-bar', !useOriginalBilibiliTopBar)
+    if (useOriginalBilibiliTopBar)
+      resetBilibiliTopBarInlineStyles(document)
   }
 }, { passive: true })
 
