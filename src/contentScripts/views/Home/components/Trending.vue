@@ -151,7 +151,7 @@ defineExpose({ initData })
     :grid-layout="gridLayout"
     :loading="isLoading"
     :no-more-content="noMoreContent"
-    :transform-item="transformTrendingVideo"
+    :transform-item="(item: VideoElement) => item.displayData"
     :get-item-key="(item: VideoElement) => item.uniqueId"
     show-preview
     @refresh="initData"

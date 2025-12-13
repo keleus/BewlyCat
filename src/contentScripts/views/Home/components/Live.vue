@@ -168,7 +168,7 @@ defineExpose({ initData })
     :loading="isLoading"
     :no-more-content="noMoreContent"
     :need-to-login-first="needToLoginFirst"
-    :transform-item="transformLiveVideo"
+    :transform-item="(item: VideoElement) => item.displayData"
     :get-item-key="(item: VideoElement) => item.uniqueId"
     :show-watcher-later="false"
     show-preview

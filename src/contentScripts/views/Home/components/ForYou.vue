@@ -112,8 +112,11 @@ const hasForwardState = ref<boolean>(false)
 const PAGE_SIZE = 30
 const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，初始化时为1
 const scrollLoadStartLength = ref<number>(0) // 滚动加载开始时的列表长度
-const consecutiveEmptyLoads = ref<number>(0) // 连续空加载次数，用于防止无限递归
+const consecutiveEmptyLoads = ref<number>(0) // 连续空加载次数，用于防止无限递归（Web模式）
+const appConsecutiveEmptyLoads = ref<number>(0) // APP模式连续空加载次数
 const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
+// 递归加载锁，防止双重触发
+const isRecursiveLoading = ref<boolean>(false)
 
 // 监听页面可见性变化
 function handleVisibilityChange() {
@@ -298,6 +301,7 @@ watch(() => settings.value.recommendationMode, () => {
   noMoreContent.value = false
   refreshIdx.value = 1
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
+  appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
 
   videoList.value = []
   appVideoList.value = []
@@ -324,6 +328,7 @@ async function initData() {
 
   APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
+  appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
   await getData()
 }
 
@@ -363,7 +368,8 @@ async function getData() {
 
 // 供 VideoCardGrid 预加载调用的函数
 function handleLoadMore() {
-  if (isLoading.value || noMoreContent.value)
+  // 如果正在递归加载中，跳过外部触发的加载请求
+  if (isLoading.value || noMoreContent.value || isRecursiveLoading.value)
     return
 
   // 滚动加载时，APP模式记录开始长度，触发持续加载
@@ -454,7 +460,7 @@ function initPageAction() {
 
         hasBackState.value = false
         undoForwardState.value = UndoForwardState.Hidden
-        consecutiveEmptyLoads.value = 0 // 重置空加载计数器
+        appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
       }
     }
   }
@@ -497,7 +503,7 @@ function initPageAction() {
         // 标记为已经前进
         hasForwardState.value = false
         undoForwardState.value = UndoForwardState.ShowUndo
-        consecutiveEmptyLoads.value = 0 // 重置空加载计数器
+        appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
         return true
       }
     }
@@ -598,7 +604,14 @@ async function getRecommendVideos() {
       const hasScrollbar = await haveScrollbar()
       if (!hasScrollbar || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
         if (isPageVisible.value && consecutiveEmptyLoads.value < MAX_EMPTY_LOADS) {
-          getRecommendVideos()
+          // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
+          isRecursiveLoading.value = true
+          try {
+            await getRecommendVideos()
+          }
+          finally {
+            isRecursiveLoading.value = false
+          }
         }
         else if (consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
           noMoreContent.value = true
@@ -609,7 +622,15 @@ async function getRecommendVideos() {
 }
 
 async function getAppRecommendVideos() {
+  // 检查是否达到最大空加载次数，防止无限递归
+  if (appConsecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+    console.warn('APP模式达到最大连续空加载次数，停止加载')
+    noMoreContent.value = true
+    return
+  }
+
   const batchesToLoad = APP_LOAD_BATCHES.value
+  const beforeLoadCount = appVideoList.value.length
 
   // 加载多个批次
   for (let batch = 0; batch < batchesToLoad; batch++) {
@@ -664,6 +685,17 @@ async function getAppRecommendVideos() {
     }
   }
 
+  // 检查是否成功添加了新内容
+  const afterLoadCount = appVideoList.value.length
+  if (afterLoadCount > beforeLoadCount) {
+    // 成功加载了新内容，重置空加载计数器
+    appConsecutiveEmptyLoads.value = 0
+  }
+  else {
+    // 没有加载到新内容，增加空加载计数器
+    appConsecutiveEmptyLoads.value++
+  }
+
   if (!needToLoginFirst.value) {
     await nextTick()
 
@@ -683,8 +715,18 @@ async function getAppRecommendVideos() {
       }
     }
 
-    if (shouldContinue && isPageVisible.value) {
-      getAppRecommendVideos()
+    if (shouldContinue && isPageVisible.value && appConsecutiveEmptyLoads.value < MAX_EMPTY_LOADS) {
+      // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
+      isRecursiveLoading.value = true
+      try {
+        await getAppRecommendVideos()
+      }
+      finally {
+        isRecursiveLoading.value = false
+      }
+    }
+    else if (appConsecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+      noMoreContent.value = true
     }
   }
 }

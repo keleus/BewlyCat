@@ -180,7 +180,7 @@ defineExpose({ initData })
       :loading="isLoading"
       :no-more-content="noMoreContentWarning"
       :need-to-login-first="needToLoginFirst"
-      :transform-item="transformSubscribedSeriesVideo"
+      :transform-item="(item: VideoElement) => item.displayData"
       :get-item-key="(item: VideoElement) => item.uniqueId"
       video-type="bangumi"
       :show-watcher-later="false"

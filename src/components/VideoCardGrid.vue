@@ -120,6 +120,8 @@ const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
 
 // Grid 容器 ref
 const gridContainerRef = ref<HTMLElement | null>(null)
+const loadMoreSentinelRef = ref<HTMLElement | null>(null)
+const isLoadMoreSentinelIntersecting = ref(false)
 
 // 检查是否可以加载更多
 function canLoadMore(): boolean {
@@ -127,16 +129,83 @@ function canLoadMore(): boolean {
 }
 
 // 触发加载更多
+const loadMoreRequested = ref(false)
+let loadMoreRequestTimeout: number | null = null
+
 function triggerLoadMore() {
   if (canLoadMore()) {
+    if (loadMoreRequested.value)
+      return
+    loadMoreRequested.value = true
     emit('loadMore')
+
+    // 防止父组件未及时更新 loading 导致的“卡死”
+    if (loadMoreRequestTimeout !== null)
+      window.clearTimeout(loadMoreRequestTimeout)
+    loadMoreRequestTimeout = window.setTimeout(() => {
+      if (!props.loading)
+        loadMoreRequested.value = false
+      loadMoreRequestTimeout = null
+    }, 1500)
   }
+}
+
+const supportsIntersectionObserver = typeof window !== 'undefined' && 'IntersectionObserver' in window
+let intersectionObserver: IntersectionObserver | null = null
+
+function cleanupIntersectionObserver() {
+  if (intersectionObserver) {
+    intersectionObserver.disconnect()
+    intersectionObserver = null
+  }
+  isLoadMoreSentinelIntersecting.value = false
+}
+
+function setupIntersectionObserver() {
+  if (!supportsIntersectionObserver)
+    return
+
+  cleanupIntersectionObserver()
+
+  const sentinel = loadMoreSentinelRef.value
+  if (!sentinel)
+    return
+
+  intersectionObserver = new IntersectionObserver(
+    (entries) => {
+      const entry = entries[0]
+      if (!entry)
+        return
+
+      isLoadMoreSentinelIntersecting.value = entry.isIntersecting
+
+      if (entry.isIntersecting) {
+        // 进入预加载区间时触发加载
+        checkShouldPreload()
+      }
+    },
+    {
+      root: null,
+      // 预加载：当列表底部进入“一个视口高度”范围内触发
+      rootMargin: '0px 0px 100% 0px',
+      threshold: 0,
+    },
+  )
+
+  intersectionObserver.observe(sentinel)
 }
 
 // 检查是否需要预加载
 function checkShouldPreload() {
   if (!canLoadMore())
     return
+
+  // 优先使用 IntersectionObserver 的结果（避免 scroll 下频繁 layout）
+  if (supportsIntersectionObserver) {
+    if (isLoadMoreSentinelIntersecting.value)
+      triggerLoadMore()
+    return
+  }
 
   const container = gridContainerRef.value
   if (!container)
@@ -163,12 +232,17 @@ function handleScroll() {
 
 // 设置滚动监听
 function setupScrollListeners() {
+  if (supportsIntersectionObserver)
+    return
+
   // 首页使用 OverlayScrollbars，监听自定义事件
   if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
     emitter.on(OVERLAY_SCROLL_BAR_SCROLL, handleScroll)
   }
   // 其他页面监听 window scroll
-  window.addEventListener('scroll', handleScroll, { passive: true })
+  else {
+    window.addEventListener('scroll', handleScroll, { passive: true })
+  }
 }
 
 // 清理滚动监听
@@ -179,6 +253,14 @@ function cleanupScrollListeners() {
 
 // 监听 loading 结束后检查是否需要继续加载
 watch(() => props.loading, (newLoading, oldLoading) => {
+  if (!newLoading) {
+    loadMoreRequested.value = false
+    if (loadMoreRequestTimeout !== null) {
+      window.clearTimeout(loadMoreRequestTimeout)
+      loadMoreRequestTimeout = null
+    }
+  }
+
   if (oldLoading && !newLoading) {
     // 加载完成后，延迟检查是否需要继续加载
     nextTick(() => {
@@ -189,13 +271,20 @@ watch(() => props.loading, (newLoading, oldLoading) => {
 
 // 监听 items 变化后检查（处理初次加载不足的情况）
 watch(() => props.items.length, () => {
+  // items 更新通常意味着加载已完成或数据发生变化，允许下一次 loadMore
+  loadMoreRequested.value = false
   nextTick(() => {
     checkShouldPreload()
   })
 })
 
+watch(loadMoreSentinelRef, () => {
+  setupIntersectionObserver()
+})
+
 onMounted(() => {
   setupScrollListeners()
+  setupIntersectionObserver()
   // 初始检查
   nextTick(() => {
     checkShouldPreload()
@@ -204,6 +293,11 @@ onMounted(() => {
 
 onUnmounted(() => {
   cleanupScrollListeners()
+  cleanupIntersectionObserver()
+  if (loadMoreRequestTimeout !== null) {
+    window.clearTimeout(loadMoreRequestTimeout)
+    loadMoreRequestTimeout = null
+  }
 })
 
 // 计算是否横向布局（根据 gridLayout 自动决定）
@@ -235,17 +329,64 @@ const showEmptyState = computed(() => {
 })
 
 // 判断是否为骨架屏项
+let videoTransformCache = new WeakMap<object, Video | undefined>()
+let primitiveVideoTransformCache: Map<unknown, Video | undefined> | null = null
+
+function resetTransformCaches() {
+  videoTransformCache = new WeakMap<object, Video | undefined>()
+  primitiveVideoTransformCache = null
+}
+
+watch(() => props.transformItem, () => {
+  resetTransformCaches()
+})
+
+function getTransformedVideo(item: T): Video | undefined {
+  if (!item)
+    return undefined
+
+  try {
+    const keyType = typeof item
+    if (keyType === 'object' || keyType === 'function') {
+      const objKey = item as any as object
+      if (videoTransformCache.has(objKey))
+        return videoTransformCache.get(objKey)
+      const video = props.transformItem(item)
+      videoTransformCache.set(objKey, video)
+      return video
+    }
+
+    // 原始类型兜底（很少见）
+    if (!primitiveVideoTransformCache)
+      primitiveVideoTransformCache = new Map()
+    if (primitiveVideoTransformCache.has(item))
+      return primitiveVideoTransformCache.get(item)
+    const video = props.transformItem(item)
+    primitiveVideoTransformCache.set(item, video)
+    return video
+  }
+  catch {
+    return undefined
+  }
+}
+
 function isSkeleton(item: T): boolean {
   // 1. 检查是否为自动生成的骨架屏占位
   if ((item as any)?._isSkeleton)
     return true
 
   // 2. 使用自定义判断函数
-  if (props.isSkeletonItem)
-    return props.isSkeletonItem(item)
+  if (props.isSkeletonItem) {
+    try {
+      return props.isSkeletonItem(item)
+    }
+    catch {
+      // 忽略错误，继续兜底判断
+    }
+  }
 
   // 3. 默认：检查 item 是否为空或没有有效数据
-  return !item || !props.transformItem(item)
+  return !item || !getTransformedVideo(item)
 }
 
 // 智能推断视频类型
@@ -255,7 +396,7 @@ function inferVideoType(item: T): 'rcmd' | 'appRcmd' | 'bangumi' | 'common' {
     return props.videoType || 'common'
 
   try {
-    const video = props.transformItem(item)
+    const video = getTransformedVideo(item)
     if (!video)
       return props.videoType || 'common'
 
@@ -287,22 +428,22 @@ function handleRefresh() {
 }
 
 // 生成唯一 key
-function getUniqueKey(item: T): string | number {
+function getUniqueKey(item: T, index: number): string | number {
   // 如果是骨架屏占位，使用骨架屏 ID
   if ((item as any)?._skeletonId)
     return (item as any)._skeletonId
 
-  // 如果 item 为空或无效，返回一个临时 key
+  // 如果 item 为空或无效，使用稳定的 index 作为 key（避免随机值破坏 v-memo）
   if (!item)
-    return `empty-${Math.random()}`
+    return `empty-${index}`
 
   try {
     // 否则使用正常的 key
     return props.getItemKey(item)
   }
   catch {
-    // 如果获取 key 失败，返回一个临时 key
-    return `error-${Math.random()}`
+    // 如果获取 key 失败，使用稳定的 index 作为 key
+    return `error-${index}`
   }
 }
 </script>
@@ -350,18 +491,19 @@ function getUniqueKey(item: T): string | number {
     >
       <div :class="gridClass" :style="gridStyle">
         <VideoCard
-          v-for="item in items"
-          :key="getUniqueKey(item)"
-          v-memo="[getUniqueKey(item), isHorizontal]"
+          v-for="(item, index) in items"
+          :key="getUniqueKey(item, index)"
+          v-memo="[getUniqueKey(item, index), isHorizontal]"
           :skeleton="isSkeleton(item)"
           :type="inferVideoType(item)"
-          :video="transformItem(item)"
+          :video="getTransformedVideo(item)"
           :show-preview="showPreview"
           :show-watcher-later="showWatchLater"
           :horizontal="isHorizontal"
           :more-btn="moreBtn"
         />
       </div>
+      <div ref="loadMoreSentinelRef" class="load-more-sentinel" aria-hidden="true" />
     </div>
 
     <!-- 无更多内容提示 -->
@@ -399,5 +541,10 @@ function getUniqueKey(item: T): string | number {
 .grid-two-columns,
 .grid-one-column {
   contain: layout style;
+}
+
+.load-more-sentinel {
+  width: 100%;
+  height: 1px;
 }
 </style>

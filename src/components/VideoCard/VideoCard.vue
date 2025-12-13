@@ -408,8 +408,6 @@ provide('getVideoType', () => props.type!)
   /* 使用 content-visibility 由父组件 VideoCardGrid 统一控制 */
   /* 这里只设置 contain 限制重排范围 */
   contain: layout style;
-  /* 防止内容溢出 */
-  overflow: hidden;
   min-width: 0;
 }
 
