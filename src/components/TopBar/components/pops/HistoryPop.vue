@@ -61,38 +61,61 @@ watch(activatedTab, (newVal: number | undefined, oldVal: number | undefined) => 
   }
 }, { immediate: true })
 
+// 使用防抖优化滚动事件处理
+let scrollRAF: number | null = null
+
+function handleHistoryScroll() {
+  const wrap = historysWrap.value
+  if (!wrap || isLoading.value || noMoreContent.value || historys.length === 0)
+    return
+
+  // 使用 RAF 避免频繁触发
+  if (scrollRAF !== null)
+    return
+
+  scrollRAF = requestAnimationFrame(() => {
+    scrollRAF = null
+    if (!wrap)
+      return
+
+    // 批量读取 DOM 属性
+    const { clientHeight, scrollTop, scrollHeight } = wrap
+
+    // When you scroll to the bottom, they will automatically
+    // add the next page of data to the history list
+    if (clientHeight + scrollTop >= scrollHeight - 20) {
+      const lastViewAt = historys[historys.length - 1]?.view_at
+      if (!lastViewAt)
+        return
+
+      if (activatedTab.value === 0) {
+        getHistoryList(Business.ARCHIVE, lastViewAt)
+      }
+      else if (activatedTab.value === 1) {
+        getHistoryList(Business.LIVE, lastViewAt)
+      }
+      else if (activatedTab.value === 2) {
+        getHistoryList(Business.ARTICLE, lastViewAt)
+      }
+    }
+  })
+}
+
 onMounted(() => {
   const wrap = historysWrap.value
   if (wrap) {
-    wrap.addEventListener('scroll', () => {
-      // When you scroll to the bottom, they will automatically
-      // add the next page of data to the history list
-      if (
-        wrap.clientHeight + wrap.scrollTop
-        >= wrap.scrollHeight - 20
-        && historys.length > 0
-        && !isLoading.value
-      ) {
-        if (activatedTab.value === 0 && !noMoreContent.value) {
-          getHistoryList(
-            Business.ARCHIVE,
-            historys[historys.length - 1].view_at,
-          )
-        }
-        else if (activatedTab.value === 1 && !noMoreContent.value) {
-          getHistoryList(
-            Business.LIVE,
-            historys[historys.length - 1].view_at,
-          )
-        }
-        else if (activatedTab.value === 2 && !noMoreContent.value) {
-          getHistoryList(
-            Business.ARTICLE,
-            historys[historys.length - 1].view_at,
-          )
-        }
-      }
-    })
+    wrap.addEventListener('scroll', handleHistoryScroll, { passive: true })
+  }
+})
+
+onUnmounted(() => {
+  const wrap = historysWrap.value
+  if (wrap) {
+    wrap.removeEventListener('scroll', handleHistoryScroll)
+  }
+  if (scrollRAF !== null) {
+    cancelAnimationFrame(scrollRAF)
+    scrollRAF = null
   }
 })
 
