@@ -8,7 +8,11 @@ interface WbiKeys {
   timestamp: number
 }
 
+// nav 接口获取的密钥缓存
 let wbiKeysCache: WbiKeys | null = null
+
+// 正在获取密钥的Promise，用于避免并发重复获取
+let fetchingKeysPromise: Promise<boolean> | null = null
 
 /**
  * 简单的MD5实现（用于WBI签名）
@@ -205,16 +209,17 @@ function generateMixinKey(imgKey: string, subKey: string): string {
 
 /**
  * 对参数进行URL编码（符合WBI要求）
+ * 注意：根据官方规范，需要先过滤掉 !'()* 字符，然后再进行URL编码
  */
 function encodeWbiParam(value: any): string {
-  return encodeURIComponent(String(value))
-    .replace(/[!'()*]/g, (c) => {
-      return `%${c.charCodeAt(0).toString(16).toUpperCase()}`
-    })
+  // 先过滤掉 !'()* 字符
+  const filtered = String(value).replace(/[!'()*]/g, '')
+  // 再进行URL编码
+  return encodeURIComponent(filtered)
 }
 
 /**
- * 存储WBI密钥
+ * 存储WBI密钥（从 nav 接口获取）
  */
 export function storeWbiKeys(imgUrl: string, subUrl: string): void {
   const imgKey = extractKeyFromUrl(imgUrl)
@@ -226,6 +231,7 @@ export function storeWbiKeys(imgUrl: string, subUrl: string): void {
       subKey,
       timestamp: Date.now(),
     }
+    console.log('[WBI] Stored keys from nav interface')
   }
 }
 
@@ -233,20 +239,27 @@ export function storeWbiKeys(imgUrl: string, subUrl: string): void {
  * 获取WBI密钥（如果缓存过期则返回null）
  */
 export function getWbiKeys(): WbiKeys | null {
-  if (!wbiKeysCache)
-    return null
-
-  // 检查缓存是否过期（24小时）
   const now = Date.now()
-  const cacheAge = now - wbiKeysCache.timestamp
   const maxAge = 24 * 60 * 60 * 1000 // 24小时
 
-  if (cacheAge > maxAge) {
+  if (wbiKeysCache) {
+    const cacheAge = now - wbiKeysCache.timestamp
+    if (cacheAge <= maxAge) {
+      return wbiKeysCache
+    }
+    // 密钥过期，清除
     wbiKeysCache = null
-    return null
   }
 
-  return wbiKeysCache
+  return null
+}
+
+/**
+ * 清除 WBI 密钥缓存
+ */
+export function clearWbiKeys(): void {
+  wbiKeysCache = null
+  console.log('[WBI] Cleared WBI keys cache')
 }
 
 /**
@@ -270,6 +283,8 @@ export function addWbiSign(params: Record<string, any>): Record<string, any> {
   const queryParts: string[] = []
   for (const key of sortedKeys) {
     const value = signParams[key]
+    // 过滤空值参数：undefined、null、空字符串
+    // 保留数字 0 和布尔值 false
     if (value !== undefined && value !== null && value !== '') {
       queryParts.push(`${encodeWbiParam(key)}=${encodeWbiParam(value)}`)
     }
@@ -287,6 +302,94 @@ export function addWbiSign(params: Record<string, any>): Record<string, any> {
     ...signParams,
     w_rid,
   }
+}
+
+/**
+ * 获取B站的cookie并组装成字符串
+ */
+async function getBilibiliCookies(): Promise<string> {
+  try {
+    // 动态导入 browser，避免在非浏览器环境下报错
+    const browser = await import('webextension-polyfill').then(m => m.default)
+    const cookies = await browser.cookies.getAll({
+      domain: '.bilibili.com',
+    })
+    return cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
+  }
+  catch {
+    return ''
+  }
+}
+
+/**
+ * 初始化WBI密钥（从nav接口获取）
+ * 应该在扩展启动时调用
+ * 使用单例模式避免并发重复获取
+ */
+export async function initWbiKeys(): Promise<boolean> {
+  // 如果已经有密钥且未过期，直接返回成功
+  if (getWbiKeys()) {
+    return true
+  }
+
+  // 如果正在获取中，等待当前获取完成
+  if (fetchingKeysPromise) {
+    return await fetchingKeysPromise
+  }
+
+  // 开始新的获取流程
+  fetchingKeysPromise = (async () => {
+    try {
+      // 获取B站cookie
+      const cookieStr = await getBilibiliCookies()
+
+      const headers: HeadersInit = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://www.bilibili.com/',
+      }
+
+      // 如果有cookie，添加到请求头
+      if (cookieStr) {
+        headers.Cookie = cookieStr
+      }
+
+      const navResponse = await fetch('https://api.bilibili.com/x/web-interface/nav', {
+        method: 'GET',
+        headers,
+        credentials: 'include',
+      })
+      const navData = await navResponse.json()
+
+      // 无论是否登录，nav接口都应该返回wbi_img
+      if (navData.code === 0 && navData.data && navData.data.wbi_img) {
+        const { img_url, sub_url } = navData.data.wbi_img
+        if (img_url && sub_url) {
+          storeWbiKeys(img_url, sub_url)
+          return true
+        }
+      }
+      // 未登录状态下也有 wbi_img
+      else if (navData.code === -101 && navData.data && navData.data.wbi_img) {
+        const { img_url, sub_url } = navData.data.wbi_img
+        if (img_url && sub_url) {
+          storeWbiKeys(img_url, sub_url)
+          return true
+        }
+      }
+      console.warn('[WBI] WBI keys not found in nav response')
+      return false
+    }
+    catch (error) {
+      console.error('[WBI] Failed to initialize WBI keys:', error)
+      return false
+    }
+    finally {
+      // 清除获取中的Promise标志
+      fetchingKeysPromise = null
+    }
+  })()
+
+  return await fetchingKeysPromise
 }
 
 /**

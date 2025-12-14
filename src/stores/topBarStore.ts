@@ -674,14 +674,17 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   let updateTimer: ReturnType<typeof setInterval> | null = null
 
-  function initData() {
-    getUserInfo().then(() => {
+  async function initData() {
+    await getUserInfo()
+
+    // 只有在登录状态下才调用这些需要登录的API
+    if (isLogin.value) {
       checkBCoinReceiveStatus()
       autoReceiveVipExp()
-    })
-    getUnreadMessageCount()
-    getTopBarNewMomentsCount()
-    getAllWatchLaterList()
+      getUnreadMessageCount()
+      getTopBarNewMomentsCount()
+      getAllWatchLaterList()
+    }
   }
 
   function startUpdateTimer() {

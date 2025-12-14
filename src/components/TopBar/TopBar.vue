@@ -283,9 +283,11 @@ let conflictingHeaderObserver: ReturnType<typeof useMutationObserver> | undefine
 // 生命周期钩子
 onMounted(() => {
   nextTick(() => {
-    // 先初始化数据
+    // 初始化数据和更新定时器
     topBarStore.initData()
-    topBarStore.startUpdateTimer()
+    // 只有在登录状态下才启动更新定时器
+    if (topBarStore.isLogin)
+      topBarStore.startUpdateTimer()
     setupScrollListeners()
 
     updateConflictingHeaderVisibility()

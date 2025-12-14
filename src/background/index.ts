@@ -3,10 +3,16 @@ import browser from 'webextension-polyfill'
 import { setupAppAuthScheduler } from './appAuthScheduler'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
+import { initWbiKeys } from './wbiSign'
 
 // Initialize extension and set up message handlers
 browser.runtime.onInstalled.addListener(async () => {
   console.log('Extension installed')
+})
+
+// 扩展启动时初始化 WBI 密钥
+initWbiKeys().catch((error) => {
+  console.error('[BewlyCat] WBI keys initialization error:', error)
 })
 
 function isExtensionUri(url: string) {

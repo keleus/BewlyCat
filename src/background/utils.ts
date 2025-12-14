@@ -5,7 +5,7 @@
 import type Browser from 'webextension-polyfill'
 import browser from 'webextension-polyfill'
 
-import { addWbiSign, needsWbiSign, storeWbiKeys } from './wbiSign'
+import { addWbiSign, getWbiKeys, initWbiKeys, needsWbiSign, storeWbiKeys } from './wbiSign'
 
 export class ApiRiskControlError extends Error {
   constructor(message: string = '检测到风控页面，API返回了HTML而不是JSON') {
@@ -113,7 +113,7 @@ function apiListenerFactory(API_MAP: APIMAP) {
   }
 }
 
-function doRequest(message: Message, api: API, sendResponse?: (response?: any) => void, cookies?: Browser.Cookies.Cookie[]) {
+async function doRequest(message: Message, api: API, sendResponse?: (response?: any) => void, cookies?: Browser.Cookies.Cookie[]) {
   try {
     let { contentScriptQuery, ...rest } = message
     // rest above two part body or params
@@ -135,6 +135,17 @@ function doRequest(message: Message, api: API, sendResponse?: (response?: any) =
     const baseUrl = url
     const needsWbi = needsWbiSign(url)
 
+    // 如果需要WBI签名但没有密钥，主动获取密钥
+    if (needsWbi && !getWbiKeys()) {
+      try {
+        await initWbiKeys()
+      }
+      catch (error) {
+        // 获取密钥失败，继续执行（降级到无签名请求）
+        console.error('[doRequest] Failed to fetch WBI keys:', error)
+      }
+    }
+
     // 内部函数：执行实际请求
     const performRequest = (useWbi: boolean) => {
       let requestUrl = baseUrl
@@ -148,8 +159,12 @@ function doRequest(message: Message, api: API, sendResponse?: (response?: any) =
       if (Object.keys(requestParams).length) {
         const urlParams = new URLSearchParams()
         for (const key in requestParams) {
-          if (requestParams[key])
-            urlParams.append(key, requestParams[key])
+          const value = requestParams[key]
+          // 过滤空值参数：undefined、null、空字符串
+          // 保留数字 0 和布尔值 false
+          if (value !== undefined && value !== null && value !== '') {
+            urlParams.append(key, value)
+          }
         }
         requestUrl += `?${urlParams.toString()}`
       }
