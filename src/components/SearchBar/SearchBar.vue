@@ -6,6 +6,7 @@ import { computed, inject, reactive, ref, shallowRef, watch } from 'vue'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage } from '~/utils/main'
@@ -97,6 +98,9 @@ const placeholderText = computed(() => {
 
 // 尝试获取 BEWLY_APP（在首页时可用）
 const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
+
+// 获取登录状态
+const topBarStore = useTopBarStore()
 
 // 判断是否在搜索结果页且启用了插件搜索
 const shouldHandleInCurrentPage = computed(() => {
@@ -293,6 +297,12 @@ function handleNativeInput(event: Event) {
 
 function buildKeywordHref(keyword: string) {
   const encoded = encodeURIComponent(keyword)
+
+  // 如果未登录，直接返回 B 站原版搜索页面 URL
+  if (!topBarStore.isLogin) {
+    return `https://search.bilibili.com/all?keyword=${encoded}`
+  }
+
   if (settings.value.usePluginSearchResultsPage) {
     // 写死插件搜索结果页面 URL
     return `https://www.bilibili.com/?page=SearchResults&keyword=${encoded}`

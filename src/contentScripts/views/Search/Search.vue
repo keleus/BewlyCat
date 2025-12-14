@@ -8,7 +8,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 // 搜索关键词
 const searchInput = ref<string>('')
 const topBarStore = useTopBarStore()
-const { searchKeyword: topBarSearchKeyword } = storeToRefs(topBarStore)
+const { searchKeyword: topBarSearchKeyword, isLogin } = storeToRefs(topBarStore)
 
 // 页面卸载时清空顶栏搜索框（真正离开搜索页面）
 onUnmounted(() => {
@@ -19,6 +19,13 @@ function performInPlaceSearch(keyword: string) {
   const normalized = keyword.trim()
   if (!normalized)
     return
+
+  // 如果未登录，跳转到 B 站原版搜索页面
+  if (!isLogin.value) {
+    const encoded = encodeURIComponent(normalized)
+    window.location.href = `https://search.bilibili.com/all?keyword=${encoded}`
+    return
+  }
 
   const params = new URLSearchParams(window.location.search)
   params.set('page', 'SearchResults')
