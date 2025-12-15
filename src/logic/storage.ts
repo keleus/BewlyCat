@@ -57,7 +57,7 @@ export function resetAppAuthTokens() {
 }
 
 export const FROSTED_GLASS_BLUR_MIN_PX = 1
-export const FROSTED_GLASS_BLUR_MAX_PX = 20
+export const FROSTED_GLASS_BLUR_MAX_PX = 10
 
 // 快捷键基础配置接口
 export interface BaseShortcutSetting {
