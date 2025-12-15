@@ -141,7 +141,7 @@ export interface Settings {
   overrideDanmakuFont: boolean
   removeTheIndentFromChinesePunctuation: boolean
 
-  disableFrostedGlass: boolean
+  enableFrostedGlass: boolean
   frostedGlassBlurIntensity: number
   disableShadow: boolean
 
@@ -337,7 +337,7 @@ export const originalSettings: Settings = {
   overrideDanmakuFont: true,
   removeTheIndentFromChinesePunctuation: false,
 
-  disableFrostedGlass: true,
+  enableFrostedGlass: false,
   frostedGlassBlurIntensity: 10,
   disableShadow: false,
 

@@ -164,7 +164,7 @@ settings:
   remove_the_indent_from_chinese_punctuation: 移除中文标点符号的缩进
   remove_the_indent_from_chinese_punctuation_desc: |
     Bilibili 默认会专门处理中文标点符号以实现左对齐。 如果你正在使用自定义字体，建议移除缩进。
-  disable_frosted_glass: 禁用毛玻璃效果
+  enable_frosted_glass: 启用毛玻璃效果
   frosted_glass_blur_intensity: 毛玻璃模糊强度
   disable_shadow: 禁用阴影
   link_opening_behavior_opt:

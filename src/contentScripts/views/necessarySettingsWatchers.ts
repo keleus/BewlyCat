@@ -28,7 +28,7 @@ export function setupNecessarySettingsWatchers() {
     if (bewlyElement)
       targets.push(bewlyElement)
 
-    if (settings.value.disableFrostedGlass) {
+    if (!settings.value.enableFrostedGlass) {
       targets.forEach((element) => {
         element.style.removeProperty('--bew-filter-glass-1')
         element.style.removeProperty('--bew-filter-glass-2')
@@ -163,20 +163,20 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
-    () => settings.value.disableFrostedGlass,
+    () => settings.value.enableFrostedGlass,
     () => {
       const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
-      if (settings.value.disableFrostedGlass) {
-        if (bewlyElement)
-          bewlyElement.classList.add('disable-frosted-glass')
-
-        document.documentElement.classList.add('disable-frosted-glass')
-      }
-      else {
+      if (settings.value.enableFrostedGlass) {
         if (bewlyElement)
           bewlyElement.classList.remove('disable-frosted-glass')
 
         document.documentElement.classList.remove('disable-frosted-glass')
+      }
+      else {
+        if (bewlyElement)
+          bewlyElement.classList.add('disable-frosted-glass')
+
+        document.documentElement.classList.add('disable-frosted-glass')
       }
 
       applyFrostedGlassBlur(settings.value.frostedGlassBlurIntensity)

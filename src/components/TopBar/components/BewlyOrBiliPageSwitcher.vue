@@ -60,7 +60,7 @@ function switchPage(useOriginalBiliPage: boolean) {
   <div
     v-if="showBewlyOrBiliPageSwitcher"
     class="bewly-bili-switcher"
-    :class="{ 'disable-frosted-glass': settings.disableFrostedGlass }"
+    :class="{ 'disable-frosted-glass': !settings.enableFrostedGlass }"
     style="backdrop-filter: var(--bew-filter-glass-1);"
     flex="~ gap-1" bg="$bew-elevated" p-1 rounded-full
     h-34px

@@ -206,11 +206,11 @@ function changeWallpaper(url: string) {
     <ChangeWallpaper type="global" />
 
     <SettingsItemGroup :title="$t('settings.group_visual_effects')">
-      <SettingsItem :title="$t('settings.disable_frosted_glass')">
-        <Radio v-model="settings.disableFrostedGlass" />
+      <SettingsItem :title="$t('settings.enable_frosted_glass')">
+        <Radio v-model="settings.enableFrostedGlass" />
       </SettingsItem>
       <SettingsItem
-        v-if="!settings.disableFrostedGlass"
+        v-if="settings.enableFrostedGlass"
         :title="$t('settings.frosted_glass_blur_intensity')"
       >
         <Slider

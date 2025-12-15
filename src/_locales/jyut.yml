@@ -162,7 +162,7 @@ settings:
   remove_the_indent_from_chinese_punctuation: 移除中文標點符號嘅縮排
   remove_the_indent_from_chinese_punctuation_desc: |
     Bilibili 預設會專登執吓中文標點符號，令到佢可以左對齊。如果你係用緊自訂字字型，最好係移除縮排。
-  disable_frosted_glass: 閂咗毛玻璃效果
+  enable_frosted_glass: 啓用毛玻璃效果
   frosted_glass_blur_intensity: 毛玻璃模糊強度
   disable_shadow: 閂咗陰影
   link_opening_behavior_opt:
