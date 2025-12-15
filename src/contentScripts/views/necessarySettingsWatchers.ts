@@ -36,13 +36,9 @@ export function setupNecessarySettingsWatchers() {
       return
     }
 
-    // 优化：限制最大模糊为 10px，降低 GPU 占用 60-70%
-    // 如果用户设置的值 <= 10px，使用用户设置；否则限制为 10px
-    const optimizedBlur1 = Math.min(clampedValue, 10)
-    const optimizedBlur2 = Math.min(clampedValue + FROSTED_GLASS_DIALOG_OFFSET_PX, 15)
-
-    const blur1Value = `blur(${optimizedBlur1}px)`
-    const blur2Value = `blur(${optimizedBlur2}px)`
+    // 设置页已增加了相应警告，不再限制模糊强度
+    const blur1Value = `blur(${clampedValue}px)`
+    const blur2Value = `blur(${clampedValue + FROSTED_GLASS_DIALOG_OFFSET_PX}px)`
 
     targets.forEach((element) => {
       element.style.setProperty('--bew-filter-glass-1', blur1Value)
