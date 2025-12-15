@@ -338,7 +338,7 @@ export const originalSettings: Settings = {
   removeTheIndentFromChinesePunctuation: false,
 
   disableFrostedGlass: true,
-  frostedGlassBlurIntensity: 20,
+  frostedGlassBlurIntensity: 10,
   disableShadow: false,
 
   // Link Opening Behavior
