@@ -579,6 +579,14 @@ watch(
     if (!('useBilibiliDefaultAutoPlay' in record)) {
       record.useBilibiliDefaultAutoPlay = true
     }
+
+    // 迁移旧的 disableFrostedGlass 到 enableFrostedGlass
+    if ('disableFrostedGlass' in record) {
+      record.enableFrostedGlass = !record.disableFrostedGlass
+
+      // 清理旧的字段
+      Reflect.deleteProperty(record, 'disableFrostedGlass')
+    }
   },
   { immediate: true },
 )
