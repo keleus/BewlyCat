@@ -19,7 +19,7 @@ const rangeRef = ref<HTMLInputElement>() as Ref<HTMLInputElement>
 
 onMounted(() => {
   modelValue.value = props.modelValue
-  const progress = (modelValue.value / Number(rangeRef.value.max)) * 100
+  const progress = ((modelValue.value - props.min) / (props.max - props.min)) * 100
 
   rangeRef.value.style.background = `linear-gradient(to right, var(--bew-theme-color) ${progress}%, var(--bew-fill-1) ${progress}%) no-repeat`
 
@@ -28,7 +28,7 @@ onMounted(() => {
       const tempSliderValue = Number((event.target as HTMLInputElement).value)
       emit('update:modelValue', Number(tempSliderValue))
 
-      const progress = (tempSliderValue / Number(rangeRef.value.max)) * 100
+      const progress = ((tempSliderValue - props.min) / (props.max - props.min)) * 100
 
       rangeRef.value.style.background = `linear-gradient(to right, var(--bew-theme-color) ${progress}%, var(--bew-fill-1) ${progress}%) no-repeat`
     })

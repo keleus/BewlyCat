@@ -45,14 +45,8 @@ export function setupNecessarySettingsWatchers() {
     const blur2Value = `blur(${optimizedBlur2}px)`
 
     targets.forEach((element) => {
-      if (Math.abs(clampedValue - DEFAULT_FROSTED_GLASS_BLUR_PX) < 0.01) {
-        element.style.removeProperty('--bew-filter-glass-1')
-        element.style.removeProperty('--bew-filter-glass-2')
-      }
-      else {
-        element.style.setProperty('--bew-filter-glass-1', blur1Value)
-        element.style.setProperty('--bew-filter-glass-2', blur2Value)
-      }
+      element.style.setProperty('--bew-filter-glass-1', blur1Value)
+      element.style.setProperty('--bew-filter-glass-2', blur2Value)
     })
   }
 
