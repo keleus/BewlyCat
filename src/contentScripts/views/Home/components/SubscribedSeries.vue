@@ -120,7 +120,7 @@ async function getSubscribedSeriesVideos() {
   try {
     const response: MomentResult = await api.moment.getMoments({
       type: 'pgc',
-      offset: Number(offset.value),
+      offset: offset.value || undefined,
       update_baseline: updateBaseline.value,
     })
 

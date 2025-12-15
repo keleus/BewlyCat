@@ -40,7 +40,7 @@ const API_MOMENT = {
     },
     params: {
       type: 'all',
-      offset: 0,
+      offset: '',
       update_baseline: '',
     },
     afterHandle: AHS.J_D,
@@ -52,7 +52,7 @@ const API_MOMENT = {
     },
     params: {
       type: 'video',
-      offset: 0,
+      offset: '',
       update_baseline: '0',
     },
     afterHandle: AHS.J_D,

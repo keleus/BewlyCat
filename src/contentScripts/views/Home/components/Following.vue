@@ -235,7 +235,7 @@ async function getFollowedUsersVideos() {
 
     const response: MomentResult = await api.moment.getMoments({
       type: 'video',
-      offset: Number(offset.value),
+      offset: offset.value || undefined,
       update_baseline: updateBaseline.value,
     })
 
