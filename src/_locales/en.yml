@@ -175,7 +175,7 @@ settings:
     By default, Bilibili will specifically handle Chinese punctuation to achieve
     left alignment. If you are using a custom font, it is recommended to remove
     the indent.
-  disable_frosted_glass: Disable frosted glass effect
+  enable_frosted_glass: Enable frosted glass effect
   frosted_glass_blur_intensity: Frosted glass blur intensity
   disable_shadow: Disable shadow
   link_opening_behavior_opt:

@@ -126,7 +126,7 @@ function refreshSearchContent() {
       bg="$bew-bg"
       :style="{
         opacity: 0.9,
-        backdropFilter: settings.disableFrostedGlass ? 'none' : 'blur(8px)',
+        backdropFilter: settings.enableFrostedGlass ? 'blur(8px)' : 'none',
       }"
     />
 

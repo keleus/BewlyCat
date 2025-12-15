@@ -57,7 +57,7 @@ export function resetAppAuthTokens() {
 }
 
 export const FROSTED_GLASS_BLUR_MIN_PX = 1
-export const FROSTED_GLASS_BLUR_MAX_PX = 10
+export const FROSTED_GLASS_BLUR_MAX_PX = 20
 
 // 快捷键基础配置接口
 export interface BaseShortcutSetting {
@@ -141,7 +141,7 @@ export interface Settings {
   overrideDanmakuFont: boolean
   removeTheIndentFromChinesePunctuation: boolean
 
-  disableFrostedGlass: boolean
+  enableFrostedGlass: boolean
   frostedGlassBlurIntensity: number
   disableShadow: boolean
 
@@ -337,7 +337,7 @@ export const originalSettings: Settings = {
   overrideDanmakuFont: true,
   removeTheIndentFromChinesePunctuation: false,
 
-  disableFrostedGlass: true,
+  enableFrostedGlass: false,
   frostedGlassBlurIntensity: 10,
   disableShadow: false,
 
@@ -578,6 +578,14 @@ watch(
     // 确保 useBilibiliDefaultAutoPlay 存在（新用户或旧版本升级）
     if (!('useBilibiliDefaultAutoPlay' in record)) {
       record.useBilibiliDefaultAutoPlay = true
+    }
+
+    // 迁移旧的 disableFrostedGlass 到 enableFrostedGlass
+    if ('disableFrostedGlass' in record) {
+      record.enableFrostedGlass = !record.disableFrostedGlass
+
+      // 清理旧的字段
+      Reflect.deleteProperty(record, 'disableFrostedGlass')
     }
   },
   { immediate: true },
