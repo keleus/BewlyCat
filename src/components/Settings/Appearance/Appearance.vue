@@ -207,6 +207,10 @@ function changeWallpaper(url: string) {
 
     <SettingsItemGroup :title="$t('settings.group_visual_effects')">
       <SettingsItem :title="$t('settings.enable_frosted_glass')">
+        <template #desc>
+          <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
+        </template>
+
         <Radio v-model="settings.enableFrostedGlass" />
       </SettingsItem>
       <SettingsItem
