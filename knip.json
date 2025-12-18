@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "src/contentScripts/index.ts",
-    "src/background/index.ts",
     "src/options/main.ts",
     "src/popup/main.ts",
     "src/components/**",
@@ -12,8 +11,7 @@
   "ignore": ["src/components/Settings/**", "src/inject/**"],
   "ignoreDependencies": [
     "@iconify/json",
-    "uno.css",
-    "lint-staged"
+    "uno.css"
   ],
   "ignoreBinaries": ["gh", "xcrun"],
   "rules": {
