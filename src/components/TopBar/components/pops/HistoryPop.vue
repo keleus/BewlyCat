@@ -269,9 +269,11 @@ defineExpose({
 
       <!-- historys -->
       <TransitionGroup name="list">
-        <div
+        <ALink
           v-for="(historyItem, index) in historys"
           :key="historyItem.kid"
+          :href="getHistoryUrl(historyItem)"
+          type="topBar"
           class="group"
           m="last:b-4" p="2"
           rounded="$bew-radius"
@@ -280,9 +282,7 @@ defineExpose({
         >
           <section flex="~ gap-4 item-start">
             <!-- Video cover, live cover, ariticle cover -->
-            <ALink
-              :href="getHistoryUrl(historyItem)"
-              type="topBar"
+            <div
               bg="$bew-skeleton"
               pos="relative"
               w="150px"
@@ -397,27 +397,23 @@ defineExpose({
                   bg="contain"
                 >
               </div>
-            </ALink>
+            </div>
 
             <!-- Description -->
             <div>
-              <ALink
-                :href="getHistoryUrl(historyItem)"
-                type="topBar"
+              <h3
+                class="keep-two-lines"
+                overflow="hidden"
+                text="ellipsis"
+                break-anywhere
               >
-                <h3
-                  class="keep-two-lines"
-                  overflow="hidden"
-                  text="ellipsis"
-                  break-anywhere
-                >
-                  {{ historyItem.title }}
-                </h3>
-              </ALink>
+                {{ historyItem.title }}
+              </h3>
               <div text="$bew-text-2 sm" m="t-4" flex="~" align="items-center">
                 <ALink
                   :href="`https://space.bilibili.com/${historyItem.author_mid}`"
                   type="topBar"
+                  :stop-propagation="true"
                 >
                   {{ historyItem.author_name }}
                 </ALink>
@@ -443,7 +439,7 @@ defineExpose({
               </p>
             </div>
           </section>
-        </div>
+        </ALink>
       </TransitionGroup>
       <!-- loading -->
       <Transition name="fade">
