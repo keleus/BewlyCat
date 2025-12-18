@@ -170,7 +170,7 @@ defineExpose({ initData })
         :loading="isLoading"
         :no-more-content="noMoreContent"
         :transform-item="(item: VideoElement) => item.displayData"
-        :get-item-key="(item: VideoElement, index: number) => `${item.aid}-${index}`"
+        :get-item-key="(item: VideoElement) => item.aid"
         show-preview
         @refresh="initData"
         @load-more="() => {}"
