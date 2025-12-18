@@ -5,6 +5,7 @@ import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import Picture from '~/components/Picture.vue'
 import Progress from '~/components/Progress.vue'
+import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { removeHttpFromUrl } from '~/utils/main'
@@ -25,49 +26,22 @@ const hasMoreContent = computed(() => {
   return watchLaterList.value.length < watchLaterCount.value
 })
 
-// 使用 RAF 优化滚动加载处理
-let scrollRAF: number | null = null
-
-function handleScroll() {
-  if (!scrollContainer.value || isLoadingWatchLater.value || !hasMoreContent.value)
+// 使用 useOptimizedScroll 处理滚动加载
+function handleReachBottom() {
+  if (isLoadingWatchLater.value || !hasMoreContent.value)
     return
 
-  if (scrollRAF !== null)
-    return
-
-  scrollRAF = requestAnimationFrame(() => {
-    scrollRAF = null
-    if (!scrollContainer.value)
-      return
-
-    const { scrollTop, scrollHeight, clientHeight } = scrollContainer.value
-    const threshold = 100 // 距离底部100px时开始加载
-
-    if (scrollTop + clientHeight >= scrollHeight - threshold) {
-      topBarStore.loadMoreWatchLaterList()
-    }
-  })
+  topBarStore.loadMoreWatchLaterList()
 }
+
+useOptimizedScroll(
+  scrollContainer,
+  { onReachBottom: handleReachBottom },
+  { bottomThreshold: 100, throttleDelay: 100 },
+)
 
 onMounted(async () => {
   topBarStore.getAllWatchLaterList()
-
-  // 等待 DOM 渲染完成后添加滚动事件监听
-  await nextTick()
-  if (scrollContainer.value) {
-    scrollContainer.value.addEventListener('scroll', handleScroll, { passive: true })
-  }
-})
-
-onUnmounted(() => {
-  // 移除滚动事件监听
-  if (scrollContainer.value) {
-    scrollContainer.value.removeEventListener('scroll', handleScroll)
-  }
-  if (scrollRAF !== null) {
-    cancelAnimationFrame(scrollRAF)
-    scrollRAF = null
-  }
 })
 
 /**

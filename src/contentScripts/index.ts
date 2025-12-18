@@ -9,6 +9,7 @@ import { localSettings, settings } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
+import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
@@ -401,7 +402,39 @@ async function onDOMLoaded() {
     // Capture the original top bar early so we can optionally re-attach it later.
     captureOriginalBilibiliTopBar(document)
 
-    // Remove the original Bilibili homepage if in Bilibili homepage & useOriginalBilibiliHomepage is enabled
+    // 方案选择：
+    // 方案 1: 清理脚本 + 删除 DOM（可能更彻底，但有风险）
+    // 方案 2: CSS 隐藏（更安全，性能更好，推荐）
+
+    // 推荐使用方案2：CSS隐藏
+    // 使用 CSS 隐藏 B 站原始页面，保留 DOM 结构
+    injectCSS(`
+      body > *:not(#bewly):not(script):not(style) {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        position: absolute !important;
+        left: -9999px !important;
+      }
+      .home-redesign-base, .bilibili-gate-root {
+        display: none !important;
+      }
+    `)
+
+    // 温和的脚本清理（可选，减少后台资源消耗）
+    cleanupBilibiliScripts()
+
+    ensureOriginalBilibiliTopBarAppended(document)
+
+    // 如果要使用方案1（删除DOM），取消注释以下代码并注释掉上面的 CSS 方案：
+    /*
+    // 清理 B 站脚本资源，避免内存泄漏和性能问题
+    cleanupBilibiliScripts()
+
+    // 延迟一小段时间，让清理逻辑生效
+    await new Promise(resolve => setTimeout(resolve, 100))
+
+    // Remove the original Bilibili homepage
     document.body.innerHTML = ''
 
     // Remove the Bilibili Evolved homepage & Bilibili-Gate homepage
@@ -412,6 +445,7 @@ async function onDOMLoaded() {
     `)
 
     ensureOriginalBilibiliTopBarAppended(document)
+    */
   }
 
   if (isSupportedPages() || isSupportedIframePages()) {

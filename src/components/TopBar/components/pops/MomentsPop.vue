@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import Tooltip from '~/components/Tooltip.vue'
+import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
@@ -47,46 +48,19 @@ watch(() => selectedMomentTab.value.type, (newVal, oldVal) => {
   initData()
 })
 
-// 使用 RAF 优化滚动事件处理
-let scrollRAF: number | null = null
-
-function handleMomentsScroll() {
-  const wrap = momentsWrap.value
-  if (!wrap || topBarStore.isLoadingMoments || topBarStore.moments.length === 0)
+// 使用 useOptimizedScroll 处理滚动加载
+function handleReachBottom() {
+  if (topBarStore.isLoadingMoments || topBarStore.moments.length === 0)
     return
 
-  if (scrollRAF !== null)
-    return
-
-  scrollRAF = requestAnimationFrame(() => {
-    scrollRAF = null
-    if (!wrap)
-      return
-
-    const { clientHeight, scrollTop, scrollHeight } = wrap
-    if (clientHeight + scrollTop >= scrollHeight - 20) {
-      getData()
-    }
-  })
+  getData()
 }
 
-onMounted(() => {
-  const wrap = momentsWrap.value
-  if (wrap) {
-    wrap.addEventListener('scroll', handleMomentsScroll, { passive: true })
-  }
-})
-
-onUnmounted(() => {
-  const wrap = momentsWrap.value
-  if (wrap) {
-    wrap.removeEventListener('scroll', handleMomentsScroll)
-  }
-  if (scrollRAF !== null) {
-    cancelAnimationFrame(scrollRAF)
-    scrollRAF = null
-  }
-})
+useOptimizedScroll(
+  momentsWrap,
+  { onReachBottom: handleReachBottom },
+  { bottomThreshold: 20, throttleDelay: 100 },
+)
 
 function onClickTab(tab: MomentTab) {
   // Prevent changing tab when loading, cuz it will cause a bug

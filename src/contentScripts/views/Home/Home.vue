@@ -162,6 +162,9 @@ function toggleTabContentLoading(loading: boolean) {
             v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
             pos="relative left-0 top-0" w-full h-inherit pointer-events-none duration-300
             z-1
+            :style="{
+              backdropFilter: `blur(${settings.individuallySetSearchPageWallpaper ? settings.searchPageWallpaperBlurIntensity : settings.wallpaperBlurIntensity}px)`,
+            }"
           >
             <div
               bg="$bew-homepage-bg" pos="absolute top-0 left-0" w-full h-full

@@ -2,6 +2,7 @@
 import { useDebounceFn } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
+import { useGlobalScrollState } from '~/composables/useGlobalScrollState'
 import { useGridLayout } from '~/composables/useGridLayout'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
@@ -116,12 +117,29 @@ const emit = defineEmits<{
 }>()
 
 // 使用共享的 Grid 布局 composable
-const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
+const { gridClass, gridStyle, columnCount } = useGridLayout(() => props.gridLayout)
+
+// 使用全局滚动状态来优化性能
+const { isScrolling } = useGlobalScrollState()
 
 // Grid 容器 ref
 const gridContainerRef = ref<HTMLElement | null>(null)
 const loadMoreSentinelRef = ref<HTMLElement | null>(null)
 const isLoadMoreSentinelIntersecting = ref(false)
+
+// 动态计算骨架屏数量（基于视口大小和布局，确保是列数的整数倍）
+const dynamicSkeletonCount = computed(() => {
+  const columnsPerRow = columnCount.value
+  // 估算视口高度能容纳的行数 (假设每个卡片平均400px高)
+  const rowsInViewport = Math.ceil(window.innerHeight / 400)
+  // 多加载1.5倍的视口内容作为缓冲
+  const bufferedRows = Math.ceil(rowsInViewport * 1.5)
+  // 计算总数（完整的行数 * 列数）
+  const totalCount = bufferedRows * columnsPerRow
+  // 不超过设定的上限，但确保是列数的整数倍
+  const maxCount = Math.floor(props.initialSkeletonCount / columnsPerRow) * columnsPerRow
+  return Math.min(totalCount, maxCount)
+})
 
 // 检查是否可以加载更多
 function canLoadMore(): boolean {
@@ -136,10 +154,11 @@ function triggerLoadMore() {
   if (canLoadMore()) {
     if (loadMoreRequested.value)
       return
+
     loadMoreRequested.value = true
     emit('loadMore')
 
-    // 防止父组件未及时更新 loading 导致的“卡死”
+    // 防止父组件未及时更新 loading 导致的"卡死"
     if (loadMoreRequestTimeout !== null)
       window.clearTimeout(loadMoreRequestTimeout)
     loadMoreRequestTimeout = window.setTimeout(() => {
@@ -186,7 +205,7 @@ function setupIntersectionObserver() {
     },
     {
       root: null,
-      // 预加载：当列表底部进入“一个视口高度”范围内触发
+      // 预加载：当列表底部进入"一个视口高度"范围内触发
       rootMargin: '0px 0px 100% 0px',
       threshold: 0,
     },
@@ -194,6 +213,9 @@ function setupIntersectionObserver() {
 
   intersectionObserver.observe(sentinel)
 }
+
+// RAF 标志，用于批量处理 DOM 读取
+let checkPreloadRAF: number | null = null
 
 // 检查是否需要预加载
 function checkShouldPreload() {
@@ -207,19 +229,29 @@ function checkShouldPreload() {
     return
   }
 
-  const container = gridContainerRef.value
-  if (!container)
+  // Fallback: 使用 RAF 批量读取 DOM，避免 Forced Reflow
+  if (checkPreloadRAF !== null)
     return
 
-  const rect = container.getBoundingClientRect()
+  checkPreloadRAF = requestAnimationFrame(() => {
+    checkPreloadRAF = null
 
-  // grid 底部到视口底部的距离（剩余未显示的内容高度）
-  const remainingHeight = rect.bottom - window.innerHeight
+    const container = gridContainerRef.value
+    if (!container)
+      return
 
-  // 如果剩余高度不足一个视口高度（一页），触发预加载
-  if (remainingHeight < window.innerHeight) {
-    triggerLoadMore()
-  }
+    // 批量读取 DOM 属性
+    const rect = container.getBoundingClientRect()
+    const viewportHeight = window.innerHeight
+
+    // grid 底部到视口底部的距离（剩余未显示的内容高度）
+    const remainingHeight = rect.bottom - viewportHeight
+
+    // 如果剩余高度不足一个视口高度（一页），触发预加载
+    if (remainingHeight < viewportHeight) {
+      triggerLoadMore()
+    }
+  })
 }
 
 // 防抖的滚动检查
@@ -273,6 +305,7 @@ watch(() => props.loading, (newLoading, oldLoading) => {
 watch(() => props.items.length, () => {
   // items 更新通常意味着加载已完成或数据发生变化，允许下一次 loadMore
   loadMoreRequested.value = false
+
   nextTick(() => {
     checkShouldPreload()
   })
@@ -298,6 +331,10 @@ onUnmounted(() => {
     window.clearTimeout(loadMoreRequestTimeout)
     loadMoreRequestTimeout = null
   }
+  if (checkPreloadRAF !== null) {
+    cancelAnimationFrame(checkPreloadRAF)
+    checkPreloadRAF = null
+  }
 })
 
 // 计算是否横向布局（根据 gridLayout 自动决定）
@@ -306,6 +343,11 @@ const isHorizontal = computed(() => {
   // twoColumns/oneColumn: 横向布局（图片在左，信息在右）
   return props.gridLayout !== 'adaptive'
 })
+
+// 滚动时禁用 pointer-events，减少 hover 触发的样式重计算
+const gridContainerStyle = computed(() => ({
+  pointerEvents: (isScrolling.value ? 'none' : 'auto') as 'none' | 'auto',
+}))
 
 // 是否显示初始骨架屏（只在首次加载且没有数据时）
 const showInitialSkeleton = computed(() => {
@@ -317,10 +359,37 @@ const initialSkeletonItems = computed(() => {
   if (!showInitialSkeleton.value)
     return []
 
-  return Array.from({ length: props.initialSkeletonCount }, (_, i) => ({
+  return Array.from({ length: dynamicSkeletonCount.value }, (_, i) => ({
     _isSkeleton: true,
     _skeletonId: `skeleton-init-${i}`,
   })) as T[]
+})
+
+// 是否正在加载更多（有数据且loading）
+const isLoadingMore = computed(() => {
+  return props.loading && props.items.length > 0
+})
+
+// 生成加载更多时的骨架屏数据（追加到列表末尾，确保是完整的行）
+const loadingMoreSkeletonItems = computed(() => {
+  if (!isLoadingMore.value)
+    return []
+
+  const columnsPerRow = columnCount.value
+  // 加载更多时显示2行完整的骨架屏
+  const skeletonRows = 2
+  return Array.from({ length: skeletonRows * columnsPerRow }, (_, i) => ({
+    _isSkeleton: true,
+    _skeletonId: `skeleton-more-${i}`,
+  })) as T[]
+})
+
+// 合并实际数据和加载更多的骨架屏
+const displayItems = computed(() => {
+  if (isLoadingMore.value) {
+    return [...props.items, ...loadingMoreSkeletonItems.value]
+  }
+  return props.items
 })
 
 // 判断是否应该显示空状态
@@ -349,9 +418,14 @@ function getTransformedVideo(item: T): Video | undefined {
     const keyType = typeof item
     if (keyType === 'object' || keyType === 'function') {
       const objKey = item as any as object
-      if (videoTransformCache.has(objKey))
+      if (videoTransformCache.has(objKey)) {
+        // Cache命中，无需重新转换
         return videoTransformCache.get(objKey)
+      }
+
+      // Cache未命中，执行转换（性能关键路径）
       const video = props.transformItem(item)
+
       videoTransformCache.set(objKey, video)
       return video
     }
@@ -361,7 +435,9 @@ function getTransformedVideo(item: T): Video | undefined {
       primitiveVideoTransformCache = new Map()
     if (primitiveVideoTransformCache.has(item))
       return primitiveVideoTransformCache.get(item)
+
     const video = props.transformItem(item)
+
     primitiveVideoTransformCache.set(item, video)
     return video
   }
@@ -385,8 +461,13 @@ function isSkeleton(item: T): boolean {
     }
   }
 
-  // 3. 默认：检查 item 是否为空或没有有效数据
-  return !item || !getTransformedVideo(item)
+  // 3. 默认：检查是否可以成功转换为视频数据
+  // 如果转换失败或 item 无效，显示骨架屏
+  if (!item)
+    return true
+
+  const video = getTransformedVideo(item)
+  return !video || !video.id
 }
 
 // 智能推断视频类型
@@ -472,6 +553,7 @@ function getUniqueKey(item: T, index: number): string | number {
     <div
       v-else-if="showInitialSkeleton"
       m="b-0 t-0" relative w-full
+      :style="gridContainerStyle"
     >
       <div :class="gridClass" :style="gridStyle">
         <VideoCard
@@ -488,10 +570,11 @@ function getUniqueKey(item: T, index: number): string | number {
       v-else
       ref="gridContainerRef"
       m="b-0 t-0" relative w-full
+      :style="gridContainerStyle"
     >
       <div :class="gridClass" :style="gridStyle">
         <VideoCard
-          v-for="(item, index) in items"
+          v-for="(item, index) in displayItems"
           :key="getUniqueKey(item, index)"
           v-memo="[getUniqueKey(item, index), isHorizontal]"
           :skeleton="isSkeleton(item)"
@@ -515,10 +598,12 @@ function getUniqueKey(item: T, index: number): string | number {
 /* Grid 样式类定义 */
 .grid-two-columns {
   --uno: "grid cols-1 xl:cols-2 gap-4";
+  align-items: stretch; /* 同行卡片拉伸到统一高度 */
 }
 
 .grid-one-column {
   --uno: "grid cols-1 gap-4";
+  align-items: stretch;
 }
 
 /**
@@ -527,12 +612,12 @@ function getUniqueKey(item: T, index: number): string | number {
  */
 .grid-adaptive {
   contain: layout style;
+  align-items: stretch; /* 同行卡片拉伸到统一高度 */
 }
 
-/* 优化性能：使用 content-visibility 跳过不可见卡片的渲染 */
+/* 优化性能：VideoCard 使用 contain 属性并固定高度 */
 :deep(.video-card-container) {
-  content-visibility: auto;
-  contain-intrinsic-block-size: 280px;
+  contain: layout;
   /* 关键：防止 grid 项目内容撑开超出容器 */
   min-width: 0;
 }

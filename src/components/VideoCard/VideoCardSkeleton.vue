@@ -12,10 +12,10 @@ defineProps<{
   <div
     v-if="settings.videoCardLayout === 'modern' && !horizontal"
     mb-3 pointer-events-none select-none
-    style="contain: layout;"
+    style="aspect-ratio: 11 / 10;"
   >
     <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" style="aspect-ratio: 16 / 9;" />
-    <div flex="~ col gap-2" mt-2 style="min-height: 120px;">
+    <div flex="~ col gap-2" mt-2>
       <div flex="~ gap-1 justify-between items-start" w="full">
         <div flex="~ col gap-2" w="[calc(100%-40px)]">
           <div w-full h-5 bg="$bew-skeleton" rounded-4px />
@@ -69,10 +69,10 @@ defineProps<{
   <div
     v-else-if="settings.videoCardLayout === 'old' && !horizontal"
     mb-4 pointer-events-none select-none
-    style="contain: layout;"
+    style="aspect-ratio: 10 / 11;"
   >
     <div aspect-video bg="$bew-skeleton" rounded="$bew-radius" style="aspect-ratio: 16 / 9;" />
-    <div flex mt-5 style="min-height: 140px;">
+    <div flex mt-5>
       <div
         m="r-4" w="34px" h="34px" rounded="1/2" bg="$bew-skeleton"
         shrink-0

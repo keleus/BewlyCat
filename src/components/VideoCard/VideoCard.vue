@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, watchEffect } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
@@ -11,7 +11,6 @@ import VideoCardInfo from './components/VideoCardInfo.vue'
 import { useVideoCardLogic } from './composables/useVideoCardLogic'
 import type { Video } from './types'
 import VideoCardContextMenu from './VideoCardContextMenu/VideoCardContextMenu.vue'
-import VideoCardSkeleton from './VideoCardSkeleton.vue'
 
 const props = withDefaults(defineProps<Props>(), {
   showWatcherLater: true,
@@ -292,6 +291,36 @@ const coverImageUrl = computed(() =>
 
 const infoComponentRef = ref()
 
+// 图片加载状态：用于等待图片加载完成后才显示真实内容
+const imageLoaded = ref(false)
+
+// Cover 骨架屏状态：只依赖数据骨架屏，让图片能立即开始加载
+const coverSkeleton = computed(() => props.skeleton)
+
+// Info 骨架屏状态：数据骨架屏 || 图片未加载完成
+const infoSkeleton = computed(() => {
+  // 如果是数据骨架屏，直接返回true
+  if (props.skeleton)
+    return true
+  // 如果数据已加载，但图片未加载完成，Info部分继续显示骨架屏
+  if (!imageLoaded.value)
+    return true
+  return false
+})
+
+// 监听skeleton prop变化，重置imageLoaded状态
+watch(() => props.skeleton, (newVal) => {
+  if (newVal) {
+    // 变成骨架屏时，重置图片加载状态
+    imageLoaded.value = false
+  }
+})
+
+// 处理图片加载完成
+function handleImageLoaded() {
+  imageLoaded.value = true
+}
+
 // Expose moreBtnRef from child component
 watchEffect(() => {
   if (infoComponentRef.value?.moreBtnRef) {
@@ -312,77 +341,77 @@ provide('getVideoType', () => props.type!)
     :bg="skeleton ? '' : 'hover:$bew-fill-2 active:$bew-fill-3'"
     :class="layout === 'modern' ? 'mb-3' : 'mb-4'"
   >
-    <div v-if="!skeleton && props.video">
-      <div
-        class="video-card group"
-        w="full"
-        rounded="$bew-radius"
+    <div
+      class="video-card group"
+      w="full"
+      rounded="$bew-radius"
+    >
+      <component
+        :is="coverSkeleton ? 'div' : 'ALink'"
+        :style="{ display: horizontal ? 'flex' : 'block', gap: horizontal ? '1.5rem' : '0' }"
+        v-bind="coverSkeleton ? {} : {
+          href: logic.videoUrl.value,
+          type: 'videoCard',
+          customClickEvent: settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'background',
+        }"
+        v-on="coverSkeleton ? {} : {
+          mouseenter: logic.handleMouseEnter,
+          mouseleave: logic.handelMouseLeave,
+          click: logic.handleClick,
+        }"
       >
-        <ALink
-          :style="{ display: horizontal ? 'flex' : 'block', gap: horizontal ? '1.5rem' : '0' }"
-          :href="logic.videoUrl.value"
-          type="videoCard"
-          :custom-click-event="settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'background'"
-          @mouseenter="logic.handleMouseEnter"
-          @mouseleave="logic.handelMouseLeave"
-          @click="logic.handleClick"
+        <!-- Cover -->
+        <div
+          :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
         >
-          <!-- Cover -->
-          <div
-            :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
-          >
-            <VideoCardCover
-              :video="props.video"
-              :layout="layout"
-              :removed="logic.removed.value"
-              :is-hover="logic.isHover.value"
-              :should-hide-overlay-elements="Boolean(logic.shouldHideOverlayElements.value)"
-              :preview-video-url="logic.previewVideoUrl.value || ''"
-              :video-element="logic.videoElement.value || null"
-              :is-in-watch-later="logic.isInWatchLater.value"
-              :show-watcher-later="showWatcherLater"
-              :cover-image-url="coverImageUrl"
-              :cover-stat-values="coverStatValues"
-              :cover-stats-visibility="coverStatsVisibility"
-              :has-cover-stats="Boolean(hasCoverStats)"
-              :should-hide-cover-stats="Boolean(shouldHideCoverStats)"
-              :cover-stats-style="coverStatsStyle as Record<string, string>"
-              @toggle-watch-later="logic.toggleWatchLater"
-              @undo="logic.handleUndo"
-            >
-              <template #coverTopLeft>
-                <slot name="coverTopLeft" />
-              </template>
-            </VideoCardCover>
-          </div>
-
-          <!-- Other Information -->
-          <VideoCardInfo
-            v-if="!logic.removed.value"
-            ref="infoComponentRef"
+          <VideoCardCover
+            :skeleton="coverSkeleton"
             :video="props.video"
             :layout="layout"
-            :horizontal="horizontal || false"
-            :video-url="logic.videoUrl.value"
-            :more-btn="moreBtn"
-            :show-video-options="logic.showVideoOptions.value"
-            :title-style="titleStyle"
-            :author-font-size-class="authorFontSizeClass"
-            :meta-font-size-class="metaFontSizeClass"
-            :highlight-tags="highlightTags"
-            :hide-author="hideAuthor"
-            @more-btn-click="logic.handleMoreBtnClick"
-          />
-        </ALink>
-      </div>
-    </div>
+            :horizontal="horizontal"
+            :removed="logic.removed.value"
+            :is-hover="logic.isHover.value"
+            :should-hide-overlay-elements="Boolean(logic.shouldHideOverlayElements.value)"
+            :preview-video-url="logic.previewVideoUrl.value || ''"
+            :video-element="logic.videoElement.value || null"
+            :is-in-watch-later="logic.isInWatchLater.value"
+            :show-watcher-later="showWatcherLater"
+            :cover-image-url="coverImageUrl"
+            :cover-stat-values="coverStatValues"
+            :cover-stats-visibility="coverStatsVisibility"
+            :has-cover-stats="Boolean(hasCoverStats)"
+            :should-hide-cover-stats="Boolean(shouldHideCoverStats)"
+            :cover-stats-style="coverStatsStyle as Record<string, string>"
+            @toggle-watch-later="logic.toggleWatchLater"
+            @undo="logic.handleUndo"
+            @image-loaded="handleImageLoaded"
+          >
+            <template #coverTopLeft>
+              <slot name="coverTopLeft" />
+            </template>
+          </VideoCardCover>
+        </div>
 
-    <!-- skeleton -->
-    <VideoCardSkeleton
-      v-if="skeleton"
-      :horizontal="horizontal"
-      important-mb-0
-    />
+        <!-- Other Information -->
+        <VideoCardInfo
+          v-if="!logic.removed.value"
+          ref="infoComponentRef"
+          :skeleton="infoSkeleton"
+          :video="props.video"
+          :layout="layout"
+          :horizontal="horizontal || false"
+          :video-url="logic.videoUrl.value"
+          :more-btn="moreBtn"
+          :show-video-options="logic.showVideoOptions.value"
+          :title-style="titleStyle"
+          :author-font-size-class="authorFontSizeClass"
+          :meta-font-size-class="metaFontSizeClass"
+          :highlight-tags="highlightTags"
+          :hide-author="hideAuthor"
+          @more-btn-click="logic.handleMoreBtnClick"
+        />
+      </component>
+    </div>
 
     <!-- context menu -->
     <Teleport
@@ -409,6 +438,9 @@ provide('getVideoType', () => props.type!)
   /* 这里只设置 contain 限制重排范围 */
   contain: layout style;
   min-width: 0;
+
+  /* 防止字体加载导致的layout shift */
+  text-rendering: optimizeSpeed;
 }
 
 .horizontal-card-cover {
@@ -427,6 +459,9 @@ provide('getVideoType', () => props.type!)
 
 .video-card-title {
   min-height: calc(var(--bew-title-line-height, 1.35) * 2em);
+  /* 确保两行高度固定 */
+  max-height: calc(var(--bew-title-line-height, 1.35) * 2em);
+  overflow: hidden;
 }
 
 /* 使用固定样式，不使用容器查询 - 大幅减少滚动时的计算开销 */

@@ -5,6 +5,7 @@ import type { ErrorData, Events } from 'hls.js'
 import Hls from 'hls.js'
 
 import Button from '~/components/Button.vue'
+import LazyPicture from '~/components/LazyPicture.vue'
 import Tooltip from '~/components/Tooltip.vue'
 import { settings } from '~/logic'
 import { calcCurrentTime } from '~/utils/dataFormatter'
@@ -12,8 +13,10 @@ import { calcCurrentTime } from '~/utils/dataFormatter'
 import type { Video } from '../types'
 
 interface Props {
-  video: Video
+  skeleton?: boolean
+  video?: Video
   layout: 'modern' | 'old'
+  horizontal?: boolean
   removed: boolean
   isHover: boolean
   shouldHideOverlayElements: boolean
@@ -44,6 +47,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   toggleWatchLater: []
   undo: []
+  imageLoaded: []
 }>()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
@@ -242,202 +246,216 @@ onBeforeUnmount(() => {
     cursor-pointer
     group-hover:z-2
   >
-    <!-- Video cover -->
-    <Picture
-      :src="coverImageUrl"
-      loading="lazy"
+    <!-- Skeleton mode -->
+    <div
+      v-if="skeleton"
+      aspect-video bg="$bew-skeleton" rounded="$bew-radius"
+      class="animate-pulse"
+      style="aspect-ratio: 16 / 9;"
     />
 
-    <div
-      v-if="removed"
-      pos="absolute top-0 left-0" w-full h-fit aspect-video flex="~ col gap-2 items-center justify-center"
-      bg="$bew-fill-4" backdrop-blur-20px mix-blend-luminosity rounded="$bew-radius" z-2
-    >
-      <p mb-2 color-white text-lg>
-        {{ $t('video_card.video_removed') }}
-      </p>
-      <Button
-        color="rgba(255,255,255,.35)" text-color="white" size="small"
-        @click.prevent.stop="emit('undo')"
-      >
-        <template #left>
-          <div i-mingcute-back-line text-lg />
-        </template>
-        {{ $t('common.undo') }}
-      </Button>
-    </div>
+    <!-- Normal mode -->
+    <template v-else>
+      <!-- Video cover -->
+      <LazyPicture
+        :src="coverImageUrl"
+        loading="lazy"
+        root-margin="400px"
+        :show-skeleton="false"
+        @loaded="emit('imageLoaded')"
+      />
 
-    <!-- Video preview -->
-    <Transition v-if="!removed && settings.enableVideoPreview" name="fade">
       <div
-        v-if="previewVideoUrl && isHover"
-        pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-radius" bg-black
+        v-if="removed"
+        pos="absolute top-0 left-0" w-full h-fit aspect-video flex="~ col gap-2 items-center justify-center"
+        bg="$bew-fill-4" backdrop-blur-20px mix-blend-luminosity rounded="$bew-radius" z-2
       >
-        <video
-          ref="videoRef"
-          autoplay muted
-          :controls="settings.enableVideoCtrlBarOnVideoCard && !video.roomid"
-          :style="{ pointerEvents: settings.enableVideoCtrlBarOnVideoCard && !video.roomid ? 'auto' : 'none' }"
-          w-full h-full
+        <p mb-2 color-white text-lg>
+          {{ $t('video_card.video_removed') }}
+        </p>
+        <Button
+          color="rgba(255,255,255,.35)" text-color="white" size="small"
+          @click.prevent.stop="emit('undo')"
         >
-          <source :src="previewVideoUrl">
-        </video>
+          <template #left>
+            <div i-mingcute-back-line text-lg />
+          </template>
+          {{ $t('common.undo') }}
+        </Button>
+      </div>
 
-        <!-- Loading indicator -->
-        <Transition name="fade">
-          <div
-            v-if="isLoadingStream"
-            pos="absolute top-0 left-0"
+      <!-- Video preview -->
+      <Transition v-if="!removed && settings.enableVideoPreview" name="fade">
+        <div
+          v-if="previewVideoUrl && isHover"
+          pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-radius" bg-black
+        >
+          <video
+            ref="videoRef"
+            autoplay muted
+            :controls="settings.enableVideoCtrlBarOnVideoCard && !video?.roomid"
+            :style="{ pointerEvents: settings.enableVideoCtrlBarOnVideoCard && !video?.roomid ? 'auto' : 'none' }"
             w-full h-full
-            flex="~ items-center justify-center"
-            bg="black/50"
-            pointer-events-none
           >
-            <div class="loading-spinner" />
-          </div>
-        </Transition>
-      </div>
-    </Transition>
+            <source :src="previewVideoUrl">
+          </video>
 
-    <!-- Ranking Number -->
-    <div
-      v-if="video.rank"
-      pos="absolute top-0"
-      p-2
-      :class="layout === 'modern' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
-      duration-300
-    >
-      <div
-        v-if="Number(video.rank) <= 3"
-        bg="$bew-theme-color" text-center lh-0 h-30px w-30px
-        text-white rounded="1/2" shadow="$bew-shadow-1"
-        border="1 $bew-theme-color"
-        grid="~ place-content-center"
-        text="xl" fw-bold
-      >
-        {{ video.rank }}
-      </div>
-      <div
-        v-else
-        bg="$bew-elevated-solid" text-center lh-30px h-30px w-30px
-        rounded="1/2" shadow="$bew-shadow-1"
-        border="1 $bew-border-color"
-      >
-        {{ video.rank }}
-      </div>
-    </div>
+          <!-- Loading indicator -->
+          <Transition name="fade">
+            <div
+              v-if="isLoadingStream"
+              pos="absolute top-0 left-0"
+              w-full h-full
+              flex="~ items-center justify-center"
+              bg="black/50"
+              pointer-events-none
+            >
+              <div class="loading-spinner" />
+            </div>
+          </Transition>
+        </div>
+      </Transition>
 
-    <template v-if="!removed">
-      <!-- Old layout: Video Duration (right bottom) -->
+      <!-- Ranking Number -->
       <div
-        v-if="layout === 'old' && (video.duration || video.durationStr)"
-        pos="absolute bottom-0 right-0"
-        z="2"
-        p="x-2 y-1"
-        m="1"
-        rounded="$bew-radius"
-        text="!white xs"
-        bg="black opacity-60"
-        :class="{ 'opacity-0': shouldHideOverlayElements }"
-        duration-300
-      >
-        {{ video.duration ? calcCurrentTime(video.duration) : video.durationStr }}
-      </div>
-
-      <div
-        class="opacity-0 group-hover/cover:opacity-100"
-        transform="scale-70 group-hover/cover:scale-100"
-        duration-300
-        pos="absolute top-0 left-0" z-2
-        @click.stop=""
-      >
-        <slot name="coverTopLeft" />
-      </div>
-
-      <div
-        v-if="video.liveStatus === 1"
+        v-if="video?.rank"
+        pos="absolute top-0"
+        p-2
         :class="layout === 'modern' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
-        pos="absolute left-0 top-0" bg="$bew-theme-color" text="xs white" fw-bold
-        p="x-2 y-1" m-1 inline-block rounded="$bew-radius" duration-300
-      >
-        LIVE
-        <i i-svg-spinners:pulse-3 align-middle mt--0.2em />
-      </div>
-
-      <div
-        v-if="video.badge && Object.keys(video.badge).length > 0"
-        :class="layout === 'modern' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
-        :style="{
-          backgroundColor: video.badge.bgColor,
-          color: video.badge.color,
-        }"
-        pos="absolute right-0 top-0" bg="$bew-theme-color" text="xs white"
-        p="x-2 y-1" m-1 inline-block rounded="$bew-radius" duration-300
-      >
-        {{ video.badge.text }}
-      </div>
-
-      <!-- Watcher later button -->
-      <button
-        v-if="showWatcherLater"
-        pos="absolute top-0 right-0" z="2"
-        p="x-2 y-1" m="1"
-        rounded="$bew-radius"
-        text="!white xl"
-        bg="black opacity-60"
-        class="opacity-0 group-hover/cover:opacity-100"
-        transform="scale-70 group-hover/cover:scale-100"
         duration-300
-        @click.prevent.stop="emit('toggleWatchLater')"
       >
-        <Tooltip v-if="!isInWatchLater" :content="$t('common.save_to_watch_later')" placement="bottom-right" type="dark">
-          <div i-mingcute:carplay-line />
-        </Tooltip>
-        <Tooltip v-else :content="$t('common.added')" placement="bottom-right" type="dark">
-          <Icon icon="line-md:confirm" />
-        </Tooltip>
-      </button>
+        <div
+          v-if="Number(video.rank) <= 3"
+          bg="$bew-theme-color" text-center lh-0 h-30px w-30px
+          text-white rounded="1/2" shadow="$bew-shadow-1"
+          border="1 $bew-theme-color"
+          grid="~ place-content-center"
+          text="xl" fw-bold
+        >
+          {{ video.rank }}
+        </div>
+        <div
+          v-else
+          bg="$bew-elevated-solid" text-center lh-30px h-30px w-30px
+          rounded="1/2" shadow="$bew-shadow-1"
+          border="1 $bew-border-color"
+        >
+          {{ video.rank }}
+        </div>
+      </div>
 
-      <!-- Modern layout: Cover stats (bottom overlay) -->
-      <div
-        v-if="layout === 'modern' && hasCoverStats"
-        class="video-card-cover-stats video-card-stats"
-        :class="{ 'video-card-cover-stats--hidden': shouldHideCoverStats }"
-        :style="coverStatsStyle"
-      >
-        <div class="video-card-cover-stats__items">
-          <span
-            v-if="coverStatsVisibility?.view"
-            class="video-card-cover-stats__item cover-stat-view"
-          >
-            <Icon icon="mingcute:play-circle-line" class="video-card-cover-stats__icon" aria-hidden="true" />
-            <span class="video-card-cover-stats__value">{{ coverStatValues?.view }}</span>
-          </span>
-
-          <span
-            v-if="coverStatsVisibility?.danmaku"
-            class="video-card-cover-stats__item cover-stat-danmaku"
-          >
-            <Icon icon="mingcute:danmaku-line" class="video-card-cover-stats__icon" aria-hidden="true" />
-            <span class="video-card-cover-stats__value">{{ coverStatValues?.danmaku }}</span>
-          </span>
-
-          <span
-            v-if="coverStatsVisibility?.like"
-            class="video-card-cover-stats__item cover-stat-like"
-          >
-            <Icon icon="mingcute:thumb-up-2-line" class="video-card-cover-stats__icon" aria-hidden="true" />
-            <span class="video-card-cover-stats__value">{{ coverStatValues?.like }}</span>
-          </span>
+      <template v-if="!removed && video">
+        <!-- Old layout: Video Duration (right bottom) -->
+        <div
+          v-if="layout === 'old' && (video.duration || video.durationStr)"
+          pos="absolute bottom-0 right-0"
+          z="2"
+          p="x-2 y-1"
+          m="1"
+          rounded="$bew-radius"
+          text="!white xs"
+          bg="black opacity-60"
+          :class="{ 'opacity-0': shouldHideOverlayElements }"
+          duration-300
+        >
+          {{ video.duration ? calcCurrentTime(video.duration) : video.durationStr }}
         </div>
 
-        <span
-          v-if="coverStatsVisibility?.duration"
-          class="video-card-cover-stats__item video-card-cover-stats__item--duration"
+        <div
+          class="opacity-0 group-hover/cover:opacity-100"
+          transform="scale-70 group-hover/cover:scale-100"
+          duration-300
+          pos="absolute top-0 left-0" z-2
+          @click.stop=""
         >
-          <span class="video-card-cover-stats__value">{{ coverStatValues?.duration }}</span>
-        </span>
-      </div>
+          <slot name="coverTopLeft" />
+        </div>
+
+        <div
+          v-if="video.liveStatus === 1"
+          :class="layout === 'modern' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
+          pos="absolute left-0 top-0" bg="$bew-theme-color" text="xs white" fw-bold
+          p="x-2 y-1" m-1 inline-block rounded="$bew-radius" duration-300
+        >
+          LIVE
+          <i i-svg-spinners:pulse-3 align-middle mt--0.2em />
+        </div>
+
+        <div
+          v-if="video.badge && Object.keys(video.badge).length > 0"
+          :class="layout === 'modern' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
+          :style="{
+            backgroundColor: video.badge.bgColor,
+            color: video.badge.color,
+          }"
+          pos="absolute right-0 top-0" bg="$bew-theme-color" text="xs white"
+          p="x-2 y-1" m-1 inline-block rounded="$bew-radius" duration-300
+        >
+          {{ video.badge.text }}
+        </div>
+
+        <!-- Watcher later button -->
+        <button
+          v-if="showWatcherLater"
+          pos="absolute top-0 right-0" z="2"
+          p="x-2 y-1" m="1"
+          rounded="$bew-radius"
+          text="!white xl"
+          bg="black opacity-60"
+          class="opacity-0 group-hover/cover:opacity-100"
+          transform="scale-70 group-hover/cover:scale-100"
+          duration-300
+          @click.prevent.stop="emit('toggleWatchLater')"
+        >
+          <Tooltip v-if="!isInWatchLater" :content="$t('common.save_to_watch_later')" placement="bottom-right" type="dark">
+            <div i-mingcute:carplay-line />
+          </Tooltip>
+          <Tooltip v-else :content="$t('common.added')" placement="bottom-right" type="dark">
+            <Icon icon="line-md:confirm" />
+          </Tooltip>
+        </button>
+
+        <!-- Modern layout: Cover stats (bottom overlay) -->
+        <div
+          v-if="layout === 'modern' && hasCoverStats"
+          class="video-card-cover-stats video-card-stats"
+          :class="{ 'video-card-cover-stats--hidden': shouldHideCoverStats }"
+          :style="coverStatsStyle"
+        >
+          <div class="video-card-cover-stats__items">
+            <span
+              v-if="coverStatsVisibility?.view"
+              class="video-card-cover-stats__item cover-stat-view"
+            >
+              <Icon icon="mingcute:play-circle-line" class="video-card-cover-stats__icon" aria-hidden="true" />
+              <span class="video-card-cover-stats__value">{{ coverStatValues?.view }}</span>
+            </span>
+
+            <span
+              v-if="coverStatsVisibility?.danmaku"
+              class="video-card-cover-stats__item cover-stat-danmaku"
+            >
+              <Icon icon="mingcute:danmaku-line" class="video-card-cover-stats__icon" aria-hidden="true" />
+              <span class="video-card-cover-stats__value">{{ coverStatValues?.danmaku }}</span>
+            </span>
+
+            <span
+              v-if="coverStatsVisibility?.like"
+              class="video-card-cover-stats__item cover-stat-like"
+            >
+              <Icon icon="mingcute:thumb-up-2-line" class="video-card-cover-stats__icon" aria-hidden="true" />
+              <span class="video-card-cover-stats__value">{{ coverStatValues?.like }}</span>
+            </span>
+          </div>
+
+          <span
+            v-if="coverStatsVisibility?.duration"
+            class="video-card-cover-stats__item video-card-cover-stats__item--duration"
+          >
+            <span class="video-card-cover-stats__value">{{ coverStatValues?.duration }}</span>
+          </span>
+        </div>
+      </template>
     </template>
   </div>
 </template>
