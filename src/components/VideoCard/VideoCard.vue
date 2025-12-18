@@ -436,11 +436,14 @@ provide('getVideoType', () => props.type!)
 .video-card-container {
   /* 使用 content-visibility 由父组件 VideoCardGrid 统一控制 */
   /* 这里只设置 contain 限制重排范围 */
-  contain: layout style;
+  contain: layout size style;
   min-width: 0;
 
   /* 防止字体加载导致的layout shift */
   text-rendering: optimizeSpeed;
+  /* 防止字体度量变化 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .horizontal-card-cover {

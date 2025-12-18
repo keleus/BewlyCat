@@ -241,15 +241,16 @@ onBeforeUnmount(() => {
   <div
     class="group/cover"
     shrink-0
-    h-fit relative bg="$bew-skeleton" rounded="$bew-radius"
-    :class="{ 'overflow-hidden': layout === 'modern' }"
+    relative bg="$bew-skeleton" rounded="$bew-radius"
+    overflow-hidden
     cursor-pointer
     group-hover:z-2
+    style="aspect-ratio: 16 / 9; contain: layout size style;"
   >
     <!-- Skeleton mode -->
     <div
       v-if="skeleton"
-      aspect-video bg="$bew-skeleton" rounded="$bew-radius"
+      w-full h-full bg="$bew-skeleton" rounded="$bew-radius"
       class="animate-pulse"
       style="aspect-ratio: 16 / 9;"
     />
@@ -260,7 +261,7 @@ onBeforeUnmount(() => {
       <LazyPicture
         :src="coverImageUrl"
         loading="lazy"
-        root-margin="400px"
+        root-margin="150px"
         :show-skeleton="false"
         @loaded="emit('imageLoaded')"
       />

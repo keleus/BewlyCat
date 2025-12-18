@@ -11,7 +11,7 @@ interface Props {
   src: string
   alt?: string
   loading?: 'lazy' | 'eager'
-  // rootMargin: 距离视口多少像素时开始加载，默认 100px
+  // rootMargin: 距离视口多少像素时开始加载，默认 150px
   rootMargin?: string
   // 是否显示骨架屏动画
   showSkeleton?: boolean
@@ -20,7 +20,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   alt: '',
   loading: 'lazy',
-  rootMargin: '300px', // 增加到 300px，提前加载以分散加载时机
+  rootMargin: '150px', // 平衡预加载和性能
   showSkeleton: true,
 })
 
@@ -110,10 +110,10 @@ watch(() => props.src, (newSrc) => {
 <template>
   <picture
     ref="imgRef"
-    w-full max-w-full align-middle object-cover
+    w-full max-w-full align-middle
     rounded="$bew-radius"
     bg="$bew-skeleton"
-    style="aspect-ratio: 16 / 9; display: block;"
+    style="aspect-ratio: 16 / 9; display: block; overflow: hidden; contain: layout size style;"
   >
     <!-- 骨架屏 - 图片未可见时显示（仅当 showSkeleton 为 true 时） -->
     <div
@@ -134,9 +134,9 @@ watch(() => props.src, (newSrc) => {
         :alt="alt"
         loading="lazy"
         decoding="async"
-        block w-full h-full object-cover
+        block w-full h-full
         rounded-inherit
-        style="aspect-ratio: 16 / 9;"
+        style="aspect-ratio: 16 / 9; object-fit: cover; object-position: center;"
         :style="{ opacity: isLoaded ? 1 : 0 }"
         class="image-transition"
         @load="handleImageLoad"
