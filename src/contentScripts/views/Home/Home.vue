@@ -160,7 +160,7 @@ function toggleTabContentLoading(loading: boolean) {
         <Transition name="fade">
           <div
             v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
-            pos="relative left-0 top-0" w-full h-inherit pointer-events-none duration-300
+            pos="absolute left-0 top-0" w-full h-inherit pointer-events-none duration-300
             z-1
             :style="{
               backdropFilter: `blur(${settings.individuallySetSearchPageWallpaper ? settings.searchPageWallpaperBlurIntensity : settings.wallpaperBlurIntensity}px)`,
@@ -210,7 +210,7 @@ function toggleTabContentLoading(loading: boolean) {
           v-if="!(!settings.alwaysShowTabsOnHomePage && currentTabs.length === 1)"
           style="backdrop-filter: var(--bew-filter-glass-1)"
           bg="$bew-elevated" p-1
-          w="[calc(100vw-280px)]" max-w="fit"
+          w="[calc(100%-280px)]" max-w="fit"
           h-38px rounded-full
           text="sm"
           shadow="[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]"

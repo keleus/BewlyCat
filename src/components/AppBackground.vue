@@ -148,7 +148,7 @@ function setAppWallpaperMaskingOpacity() {
         <!-- background -->
         <div
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
-          z--1 transform-gpu
+          z--1
           :style="{ backgroundImage: `url('${currentWallpaperUrl}')` }"
         />
         <!-- background mask -->
@@ -156,7 +156,7 @@ function setAppWallpaperMaskingOpacity() {
           <div
             v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
             pos="absolute top-0 left-0" w-full h-full pointer-events-none bg="$bew-homepage-bg-mask"
-            duration-300 z--1 transform-gpu
+            duration-300 z--1
             :style="{
               backdropFilter: `blur(${settings.individuallySetSearchPageWallpaper ? settings.searchPageWallpaperBlurIntensity : settings.wallpaperBlurIntensity}px)`,
             }"
@@ -168,7 +168,7 @@ function setAppWallpaperMaskingOpacity() {
         <div
           :style="{ backgroundImage: `url('${currentWallpaperUrl}')` }"
           pos="absolute top-0 left-0" w-full h-full duration-300 bg="cover center $bew-homepage-bg"
-          z--1 transform-gpu
+          z--1
         />
 
         <!-- background mask -->
@@ -176,7 +176,7 @@ function setAppWallpaperMaskingOpacity() {
           <div
             v-if="settings.enableWallpaperMasking"
             pos="absolute top-0 left-0" w-full h-full pointer-events-none bg="$bew-homepage-bg-mask"
-            duration-300 z--1 transform-gpu
+            duration-300 z--1
             :style="{
               backdropFilter: `blur(${settings.wallpaperBlurIntensity}px)`,
             }"

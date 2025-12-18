@@ -882,6 +882,11 @@ if (settings.value.cleanUrlArgument) {
         <template v-if="showBewlyPage">
           <OverlayScrollbarsComponent
             ref="scrollbarRef" element="div" h-inherit defer
+            :options="{
+              overflow: {
+                x: 'hidden',
+              },
+            }"
             @os-scroll="handleOsScroll"
           >
             <main m-auto max-w="$bew-page-max-width">
