@@ -126,6 +126,7 @@ const API_VIDEO = {
       fnval: 1,
       bvid: '',
       cid: 0,
+      web_location: '1550101',
     },
     afterHandle: AHS.J_D,
   },

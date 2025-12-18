@@ -787,6 +787,8 @@ home:
   weekly: Weekly
   precious: Must Watch
   live: Live
+  moments: Moments
+  uploaders_with_updates: no uploader with updates | {count} uploader with updates | {count} uploaders with updates
 ranking:
   all: All
   original_content: Original Content

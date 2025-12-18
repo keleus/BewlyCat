@@ -661,6 +661,8 @@ home:
   weekly: 每周必睇
   precious: 入站必睇
   live: 直播
+  moments: 動向
+  uploaders_with_updates: '{count}個UP主有更新'
 ranking:
   all: 全部
   original_content: 原創內容

@@ -135,15 +135,38 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
     const baseUrl = url
     const needsWbi = needsWbiSign(url)
 
+    console.log('[doRequest] URL:', url, 'Needs WBI:', needsWbi)
+
+    // 如果还没有提供cookies（非Firefox），则从浏览器获取
+    if (!cookies) {
+      try {
+        const allCookies = await browser.cookies.getAll({
+          domain: '.bilibili.com',
+        })
+        if (allCookies && allCookies.length > 0) {
+          cookies = allCookies
+          console.log('[doRequest] Retrieved', allCookies.length, 'cookies from browser')
+        }
+      }
+      catch (error) {
+        console.error('[doRequest] Failed to get cookies:', error)
+      }
+    }
+
     // 如果需要WBI签名但没有密钥，主动获取密钥
     if (needsWbi && !getWbiKeys()) {
+      console.log('[doRequest] WBI keys not found, initializing...')
       try {
         await initWbiKeys()
+        console.log('[doRequest] WBI keys initialized successfully')
       }
       catch (error) {
         // 获取密钥失败，继续执行（降级到无签名请求）
         console.error('[doRequest] Failed to fetch WBI keys:', error)
       }
+    }
+    else if (needsWbi) {
+      console.log('[doRequest] Using existing WBI keys')
     }
 
     // 内部函数：执行实际请求
@@ -177,17 +200,47 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
           : JSON.stringify(targetBody)
       }
 
-      // generate cookies
+      // generate cookies and headers
       const requestHeaders = { ...headers }
-      if (cookies) {
+
+      // 对于WBI签名的API，不手动设置Cookie头
+      // 而是依赖credentials: 'include'和同源策略
+      // 因为Chrome Service Worker无法通过手动设置Cookie头来传递Cookie
+      if (!needsWbi && cookies && cookies.length > 0) {
         const cookieStr = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
-        requestHeaders['firefox-multi-account-cookie'] = cookieStr
+        requestHeaders.Cookie = cookieStr
+        console.log('[doRequest] Added Cookie header with', cookies.length, 'cookies')
+      }
+      else if (needsWbi) {
+        console.log('[doRequest] WBI API - relying on credentials:include for Cookie transmission')
+      }
+
+      // 添加必要的请求头以防止风控
+      if (!requestHeaders['User-Agent']) {
+        requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+      if (!requestHeaders.Referer) {
+        requestHeaders.Referer = 'https://www.bilibili.com/'
+      }
+
+      // 对于UP主空间相关的API，设置正确的Referer
+      if (requestUrl.includes('/x/space/wbi/arc/search') && targetParams.mid) {
+        requestHeaders.Referer = `https://space.bilibili.com/${targetParams.mid}/`
+        console.log('[doRequest] Set Referer to UP space:', requestHeaders.Referer)
       }
 
       // get cant take body
-      const fetchOpt: any = { method, headers: requestHeaders }
+      const fetchOpt: any = {
+        method,
+        headers: requestHeaders,
+        credentials: 'include', // 重要：在Chrome/Edge中必须添加此项才能携带Cookie
+        mode: needsWbi ? 'cors' : 'cors', // 明确设置CORS模式
+      }
       if (!isGET)
         fetchOpt.body = requestBody
+
+      console.log('[doRequest] Final request URL:', requestUrl)
+      console.log('[doRequest] Request headers:', requestHeaders)
 
       return fetch(requestUrl, fetchOpt)
     }
