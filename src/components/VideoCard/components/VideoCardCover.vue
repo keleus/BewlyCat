@@ -245,7 +245,7 @@ onBeforeUnmount(() => {
     overflow-hidden
     cursor-pointer
     group-hover:z-2
-    style="aspect-ratio: 16 / 9; contain: layout size style;"
+    style="aspect-ratio: 16 / 9; contain: layout size style; container-type: inline-size;"
   >
     <!-- Skeleton mode -->
     <div
@@ -479,6 +479,8 @@ onBeforeUnmount(() => {
   transition: opacity 0.2s ease;
   pointer-events: none;
   border-radius: inherit;
+  /* 确保容器不会溢出 */
+  overflow: hidden;
 }
 
 .video-card-cover-stats::before {
@@ -517,7 +519,10 @@ onBeforeUnmount(() => {
   gap: 0.4rem;
   white-space: nowrap;
   flex-wrap: nowrap;
-  flex-shrink: 1;
+  /* 不允许收缩，避免数字被截断 */
+  flex-shrink: 0;
+  /* 允许内容溢出，由容器查询控制显示 */
+  min-width: 0;
 }
 
 .video-card-cover-stats__item {
@@ -541,6 +546,35 @@ onBeforeUnmount(() => {
 .video-card-cover-stats__item--duration {
   margin-left: auto;
   font-size: var(--video-card-stats-font-size, 0.75rem);
+  /* 时长固定在最右侧，不收缩 */
+  flex-shrink: 0;
+}
+
+/* 使用容器查询根据宽度自动隐藏统计信息 */
+/* 优先级：点赞 -> 弹幕 -> 播放量（播放量和时长始终显示） */
+
+/* 卡片宽度 < 200px：隐藏点赞 */
+@container (max-width: 200px) {
+  .cover-stat-like {
+    display: none !important;
+  }
+}
+
+/* 卡片宽度 < 160px：隐藏点赞和弹幕 */
+@container (max-width: 160px) {
+  .cover-stat-like,
+  .cover-stat-danmaku {
+    display: none !important;
+  }
+}
+
+/* 卡片宽度 < 120px：只显示时长 */
+@container (max-width: 120px) {
+  .cover-stat-like,
+  .cover-stat-danmaku,
+  .cover-stat-view {
+    display: none !important;
+  }
 }
 
 .video-card-cover-stats--hidden {
