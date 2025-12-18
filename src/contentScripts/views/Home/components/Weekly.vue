@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { Video } from '~/components/VideoCard/types'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useGridLayout } from '~/composables/useGridLayout'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { PopularSeriesItem, PopularSeriesListResult, PopularSeriesOneResult, PopularSeriesVideoItem } from '~/models/video/popularSeries'
@@ -24,15 +24,13 @@ const emit = defineEmits<{
 
 const { handleBackToTop, handlePageRefresh } = useBewlyApp()
 
-// 使用共享的 Grid 布局 composable，避免重复计算
-const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
-
 const isLoading = ref<boolean>(false)
 const shouldMoveAsideUp = ref<boolean>(false)
 
 const seriesList = ref<PopularSeriesItem[]>([])
 const activatedSeries = ref<PopularSeriesItem | null>(null)
 const videoList = ref<VideoElement[]>([])
+const noMoreContent = ref<boolean>(true) // 每周必看没有分页
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
 function transformWeeklyVideo(item: PopularSeriesVideoItem, rank: number): Video {
@@ -165,25 +163,19 @@ defineExpose({ initData })
       </OverlayScrollbarsComponent>
     </aside>
 
-    <main w-full :class="gridClass" :style="gridStyle">
-      <VideoCard
-        v-for="(video, index) in videoList"
-        :key="`${video.aid}-${index}`"
-        v-memo="[video.aid, video.displayData, settings.videoCardLayout]"
-        :video="video.displayData"
+    <div w-full>
+      <VideoCardGrid
+        :items="videoList"
+        :grid-layout="gridLayout"
+        :loading="isLoading"
+        :no-more-content="noMoreContent"
+        :transform-item="(item: VideoElement) => item.displayData"
+        :get-item-key="(item: VideoElement, index: number) => `${item.aid}-${index}`"
         show-preview
-        :horizontal="gridLayout !== 'adaptive'"
-        w-full
+        @refresh="initData"
+        @load-more="() => {}"
       />
-
-      <!-- skeleton -->
-      <template v-if="isLoading">
-        <VideoCardSkeleton
-          v-for="item in 30" :key="item"
-          :horizontal="gridLayout !== 'adaptive'"
-        />
-      </template>
-    </main>
+    </div>
   </div>
 </template>
 
@@ -196,35 +188,6 @@ defineExpose({ initData })
   --uno: "h-[calc(100vh-70)] translate-y--70px";
 }
 
-/* 优化性能：使用响应式列数替代 auto-fill */
-.grid-adaptive {
-  --uno: "grid gap-5";
-  grid-template-columns: repeat(1, 1fr);
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (min-width: 1536px) {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
-.grid-two-columns {
-  --uno: "grid cols-1 xl:cols-2 gap-4";
-}
-
-.grid-one-column {
-  --uno: "grid cols-1 gap-4";
-}
 .issue-label {
   --uno: "text-13px truncate";
 }

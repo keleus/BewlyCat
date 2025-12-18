@@ -2,8 +2,8 @@
 import { useI18n } from 'vue-i18n'
 
 import type { Video } from '~/components/VideoCard/types'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useGridLayout } from '~/composables/useGridLayout'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { List as RankingVideoItem, RankingResult } from '~/models/video/ranking'
@@ -30,23 +30,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { handleBackToTop, handlePageRefresh } = useBewlyApp()
-
-// 为 gridStyle 获取 useGridLayout 的结果
-const { gridStyle } = useGridLayout(() => props.gridLayout)
-
-const gridClass = computed((): string => {
-  if (props.gridLayout === 'adaptive') {
-    // eslint-disable-next-line ts/no-use-before-define
-    if (!activatedRankingType.value.seasonType)
-      return 'grid-adaptive-video'
-    else
-      return 'grid-adaptive-bangumi'
-  }
-
-  if (props.gridLayout === 'twoColumns')
-    return 'grid-two-columns'
-  return 'grid-one-column'
-})
 
 const rankingTypes = computed((): RankingType[] => {
   return [
@@ -81,6 +64,7 @@ const activatedRankingType = ref<RankingType>({ ...rankingTypes.value[0] })
 const videoList = reactive<RankingVideoElement[]>([])
 const PgcList = reactive<RankingPgcItem[]>([])
 const shouldMoveAsideUp = ref<boolean>(false)
+const noMoreContent = ref<boolean>(true) // 排行榜没有分页
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
 function transformRankingVideo(item: RankingVideoItem, rank: number): Video {
@@ -158,10 +142,6 @@ function getData() {
     getRankingVideos()
 }
 
-// onBeforeUnmount(() => {
-//   emitter.off(TOP_BAR_VISIBILITY_CHANGE)
-// })
-
 function getRankingVideos() {
   videoList.length = 0
   emit('beforeLoading')
@@ -221,57 +201,59 @@ defineExpose({ initData })
       </OverlayScrollbarsComponent>
     </aside>
 
-    <main w-full :class="gridClass" :style="gridStyle">
+    <div w-full>
       <template v-if="!('seasonType' in activatedRankingType)">
-        <VideoCard
-          v-for="video in videoList"
-          :key="video.aid"
-          v-memo="[video.aid, video.displayData, settings.videoCardLayout]"
-          :video="video.displayData"
+        <VideoCardGrid
+          :items="videoList"
+          :grid-layout="gridLayout"
+          :loading="isLoading"
+          :no-more-content="noMoreContent"
+          :transform-item="(item: RankingVideoElement) => item.displayData"
+          :get-item-key="(item: RankingVideoElement) => item.aid"
           show-preview
-          :horizontal="gridLayout !== 'adaptive'"
-          w-full
+          @refresh="initData"
+          @load-more="() => {}"
         />
       </template>
       <template v-else>
-        <BangumiCard
-          v-for="pgc in PgcList"
-          :key="pgc.url"
-          :bangumi="{
-            url: pgc.url,
-            cover: pgc.cover,
-            title: pgc.title,
-            desc: pgc.new_ep.index_show,
-            view: pgc.stat.view,
-            follow: pgc.stat.follow,
-            rank: pgc.rank,
-            capsuleText: pgc.rating.replace('分', ''),
-            badge: {
-              text: pgc.badge_info.text || '',
-              bgColor: pgc.badge_info.bg_color || '',
-              bgColorDark: pgc.badge_info.bg_color_night || '',
-            },
+        <div
+          :class="{
+            'grid-adaptive-bangumi': gridLayout === 'adaptive',
+            'grid-two-columns': gridLayout === 'twoColumns',
+            'grid-one-column': gridLayout === 'oneColumn',
           }"
-          :horizontal="gridLayout !== 'adaptive'"
-        />
-      </template>
+        >
+          <BangumiCard
+            v-for="pgc in PgcList"
+            :key="pgc.url"
+            :bangumi="{
+              url: pgc.url,
+              cover: pgc.cover,
+              title: pgc.title,
+              desc: pgc.new_ep.index_show,
+              view: pgc.stat.view,
+              follow: pgc.stat.follow,
+              rank: pgc.rank,
+              capsuleText: pgc.rating.replace('分', ''),
+              badge: {
+                text: pgc.badge_info.text || '',
+                bgColor: pgc.badge_info.bg_color || '',
+                bgColorDark: pgc.badge_info.bg_color_night || '',
+              },
+            }"
+            :horizontal="gridLayout !== 'adaptive'"
+          />
 
-      <!-- skeleton -->
-      <template v-if="isLoading">
-        <template v-if="!('seasonType' in activatedRankingType)">
-          <VideoCardSkeleton
-            v-for="item in 30" :key="item"
-            :horizontal="gridLayout !== 'adaptive'"
-          />
-        </template>
-        <template v-else>
-          <BangumiCardSkeleton
-            v-for="item in 30" :key="item"
-            :horizontal="gridLayout !== 'adaptive'"
-          />
-        </template>
+          <!-- skeleton -->
+          <template v-if="isLoading">
+            <BangumiCardSkeleton
+              v-for="item in 30" :key="item"
+              :horizontal="gridLayout !== 'adaptive'"
+            />
+          </template>
+        </div>
       </template>
-    </main>
+    </div>
   </div>
 </template>
 
@@ -284,54 +266,17 @@ defineExpose({ initData })
   --uno: "h-[calc(100vh-70)] translate-y--70px";
 }
 
-/* 优化性能：使用响应式列数替代 auto-fill */
-.grid-adaptive-video {
-  --uno: "grid gap-5";
-  grid-template-columns: repeat(1, 1fr);
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (min-width: 1536px) {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
+/* Bangumi Grid 布局 */
 .grid-adaptive-bangumi {
   --uno: "grid gap-5";
-  grid-template-columns: repeat(1, 1fr);
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (min-width: 1536px) {
-    grid-template-columns: repeat(5, 1fr);
-  }
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
 }
 
 .grid-two-columns {
-  --uno: "grid cols-1 xl:cols-2 gap-4";
+  --uno: "grid cols-1 xl:cols-2 gap-5";
 }
 
 .grid-one-column {
-  --uno: "grid cols-1 gap-4";
+  --uno: "grid cols-1 gap-5";
 }
 </style>

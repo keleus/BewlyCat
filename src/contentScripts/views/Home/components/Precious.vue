@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
-
 import type { Video } from '~/components/VideoCard/types'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useGridLayout } from '~/composables/useGridLayout'
 import type { GridLayoutType } from '~/logic'
-import { settings } from '~/logic'
 import type { PreciousItem, PreciousResult } from '~/models/video/precious'
 import api from '~/utils/api'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
@@ -16,7 +13,7 @@ interface VideoElement {
   displayData?: Video
 }
 
-const props = defineProps<{
+defineProps<{
   gridLayout: GridLayoutType
 }>()
 
@@ -25,12 +22,9 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-// 使用共享的 Grid 布局 composable，避免重复计算
-const { gridClass, gridStyle } = useGridLayout(() => props.gridLayout)
-
 const videoList = ref<VideoElement[]>([])
 const isLoading = ref<boolean>(false)
-const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
+const noMoreContent = ref<boolean>(true) // 入站必刷没有分页
 const { handlePageRefresh } = useBewlyApp()
 
 onMounted(() => {
@@ -43,7 +37,7 @@ onActivated(() => {
 })
 
 async function initData() {
-  videoList.value.length = 0
+  videoList.value = []
   await getData()
 }
 
@@ -114,61 +108,17 @@ defineExpose({ initData })
 
 <template>
   <div>
-    <div
-      ref="containerRef"
-      m="b-0 t-0" relative w-full h-full
-      :class="gridClass"
-      :style="gridStyle"
-    >
-      <VideoCard
-        v-for="video in videoList"
-        :key="video.uniqueId"
-        v-memo="[video.uniqueId, video.item, settings.videoCardLayout]"
-        :skeleton="!video.item"
-        :video="video.displayData"
-        show-preview
-        :horizontal="gridLayout !== 'adaptive'"
-      />
-
-      <!-- skeleton -->
-      <template v-if="isLoading && !videoList.length">
-        <VideoCardSkeleton
-          v-for="item in 24" :key="item"
-          :horizontal="gridLayout !== 'adaptive'"
-        />
-      </template>
-    </div>
+    <VideoCardGrid
+      :items="videoList"
+      :grid-layout="gridLayout"
+      :loading="isLoading"
+      :no-more-content="noMoreContent"
+      :transform-item="(item: VideoElement) => item.displayData"
+      :get-item-key="(item: VideoElement) => item.uniqueId"
+      :is-skeleton-item="(item: VideoElement) => !item.item"
+      show-preview
+      @refresh="initData"
+      @load-more="() => {}"
+    />
   </div>
 </template>
-
-<style lang="scss" scoped>
-/* 优化性能：使用响应式列数替代 auto-fill */
-.grid-adaptive {
-  --uno: "grid gap-5";
-  grid-template-columns: repeat(1, 1fr);
-
-  @media (min-width: 640px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (min-width: 1024px) {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  @media (min-width: 1280px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (min-width: 1536px) {
-    grid-template-columns: repeat(5, 1fr);
-  }
-}
-
-.grid-two-columns {
-  --uno: "grid cols-1 xl:cols-2 gap-4";
-}
-
-.grid-one-column {
-  --uno: "grid cols-1 gap-4";
-}
-</style>
