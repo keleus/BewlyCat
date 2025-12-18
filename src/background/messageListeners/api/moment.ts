@@ -45,6 +45,18 @@ const API_MOMENT = {
     },
     afterHandle: AHS.J_D,
   },
+  getUserMoments: {
+    url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      host_mid: '',
+      offset: '',
+      features: 'itemOpusStyle',
+    },
+    afterHandle: AHS.J_D,
+  },
   getMomentsUpdate: {
     url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/all/update',
     _fetch: {

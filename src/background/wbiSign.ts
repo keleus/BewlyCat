@@ -402,13 +402,17 @@ export function needsWbiSign(url: string): boolean {
   // 排除bili_ticket接口
   if (url.includes('https://api.bilibili.com/x/web-interface/bili_ticket'))
     return false
+  // 排除推荐接口（ForYou页面）- 这些接口不需要WBI签名
+  if (url.includes('https://api.bilibili.com/x/web-interface/index/top/feed/rcmd'))
+    return false
+  if (url.includes('https://api.bilibili.com/x/web-interface/popular'))
+    return false
+
   // 需要WBI签名的API接口
   const wbiApiPatterns = [
-    /^https:\/\/api\.bilibili\.com\/x\/web-interface\//,
-    /^https:\/\/api\.bilibili\.com\/x\/v2\//,
-    /^https:\/\/api\.bilibili\.com\/x\/v3\//,
-    /^https:\/\/api\.bilibili\.com\/x\/player\/wbi\//,
-    /^https:\/\/api\.bilibili\.com\/pgc\//,
+    /^https:\/\/api\.bilibili\.com\/x\/space\/wbi\//, // 明确的WBI端点
+    /^https:\/\/api\.bilibili\.com\/x\/player\/wbi\//, // 播放器WBI端点
+    /^https:\/\/api\.bilibili\.com\/x\/wbi\//, // 其他WBI端点
   ]
 
   return wbiApiPatterns.some(pattern => pattern.test(url))

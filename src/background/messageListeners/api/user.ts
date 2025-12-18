@@ -80,6 +80,41 @@ const API_USER = {
     },
     afterHandle: AHS.J_D,
   },
+  // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/user/relation.md#查询用户关注明细
+  getUserFollowings: {
+    url: 'https://api.bilibili.com/x/relation/followings',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      vmid: '', // 目标用户的mid
+      ps: 50, // 每页项数
+      pn: 1, // 页码
+      order_type: '', // 排序方式：留空按关注顺序，'attention'按经常访问
+    },
+    afterHandle: AHS.J_D,
+  },
+  // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/user/space.md#查询用户投稿视频明细
+  getUserVideos: {
+    url: 'https://api.bilibili.com/x/space/wbi/arc/search',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      mid: '', // 目标用户的mid
+      ps: 30, // 每页项数，默认30
+      pn: 1, // 页码，默认1
+      order: 'pubdate', // 排序方式：pubdate最新发布，click最多播放
+      index: 1, // 防风控参数
+      order_avoided: true, // 防风控参数
+      platform: 'web', // 平台标识
+      web_location: '333.1387', // 防风控参数（来自B站实际请求）
+      dm_img_list: '[]', // 防风控参数
+      dm_img_str: 'V2ViR0wgMS4wIChPcGVuR0wgRVMgMi4wIENocm9taXVtKQ', // WebGL 1.0 (OpenGL ES 2.0 Chromium)的Base64
+      dm_cover_img_str: 'QU5HTEUgKE5WSURJQSwgTlZJRElBIEdlRm9yY2UgUlRYIDQwNjAgTGFwdG9wIEdQVSAoMHgwMDAwMjhFMCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSlHb29nbGUgSW5jLiAoTlZJRElBKQ', // GPU信息的Base64
+    },
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_USER

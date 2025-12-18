@@ -33,6 +33,10 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   // 将传入的 props 转换为 computed，确保响应式
   const props = computed(() => toValue(propsOrGetter))
 
+  // Inject selectedUploader from Following component (if available)
+  // This is used to control preview loading for moments feed
+  const momentsSelectedUploader = inject<Ref<number | null>>('moments-selected-uploader', ref(null))
+
   // Refs
   const showVideoOptions = ref<boolean>(false)
   const videoOptionsFloatingStyles = ref<CSSProperties>({})
@@ -49,6 +53,25 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const contentVisibility = ref<'auto' | 'visible'>('auto')
   const videoElement = ref<HTMLVideoElement | null>(null)
   const cardRootRef = ref<HTMLElement | null>(null)
+  const isDisposed = ref<boolean>(false) // 跟踪组件是否已卸载
+
+  // 清理函数 - 在组件卸载时调用
+  onScopeDispose(() => {
+    isDisposed.value = true
+
+    // 清除所有待处理的超时
+    if (mouseEnterTimeOut.value) {
+      clearTimeout(mouseEnterTimeOut.value)
+      mouseEnterTimeOut.value = null
+    }
+    if (mouseLeaveTimeOut.value) {
+      clearTimeout(mouseLeaveTimeOut.value)
+      mouseLeaveTimeOut.value = null
+    }
+
+    // 重置hover状态
+    isHover.value = false
+  })
 
   // Computed
   const videoUrl = computed(() => {
@@ -105,10 +128,38 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     && topBarStore.isLogin,
   )
 
+  // Helper function to extract author mids from video
+  function getAuthorMids(video?: Video): number[] {
+    if (!video?.author)
+      return []
+
+    // author can be a single Author object or an array of Authors
+    const authors = Array.isArray(video.author) ? video.author : [video.author]
+    return authors
+      .map(author => author.mid)
+      .filter((mid): mid is number => typeof mid === 'number')
+  }
+
   // Watch
   watch(() => isHover.value, async (newValue) => {
     if (!props.value.video || !newValue)
       return
+
+    // 如果组件已卸载，不执行任何操作
+    if (isDisposed.value)
+      return
+
+    // Moments feed preview control: Only load preview if video belongs to selected uploader
+    // This prevents loading previews for videos from other uploaders when switching
+    if (momentsSelectedUploader.value !== null) {
+      const authorMids = getAuthorMids(props.value.video)
+      // If no authors found, don't load preview
+      if (authorMids.length === 0)
+        return
+      // If a specific uploader is selected and video doesn't belong to them, don't load preview
+      if (!authorMids.includes(momentsSelectedUploader.value))
+        return
+    }
 
     if (props.value.showPreview && settings.value.enableVideoPreview && !previewVideoUrl.value) {
       // 检查登录状态，未登录不允许视频预览
@@ -123,6 +174,9 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
             platform: 'web', // 使用web平台获取FLV格式，加载更快
             qn: 80, // 流畅画质，适合预览
           })
+          // 再次检查是否已卸载
+          if (isDisposed.value)
+            return
           if (res.code === 0 && res.data.durl && res.data.durl.length > 0) {
             previewVideoUrl.value = res.data.durl[0].url
           }
@@ -139,6 +193,9 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
             const res: VideoInfo = await api.video.getVideoInfo({
               bvid: props.value.video.bvid,
             })
+            // 检查是否已卸载
+            if (isDisposed.value)
+              return
             if (res.code === 0)
               cid = res.data.cid
           }
@@ -146,10 +203,16 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
             // Ignore error
           }
         }
+        // 如果组件已卸载，不发起请求
+        if (isDisposed.value)
+          return
         api.video.getVideoPreview({
           bvid: props.value.video.bvid,
           cid,
         }).then((res: VideoPreviewResult) => {
+          // 检查是否已卸载，已卸载则不更新状态
+          if (isDisposed.value)
+            return
           if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
             previewVideoUrl.value = res.data.durl[0].url
         })
