@@ -186,7 +186,19 @@ defineExpose({ initData })
       ease-in-out
       :class="{ hide: shouldMoveAsideUp }"
     >
-      <OverlayScrollbarsComponent h-inherit p-20px m--20px defer>
+      <OverlayScrollbarsComponent
+        h-inherit p-20px m--20px defer
+        :options="{
+          update: {
+            debounce: {
+              mutations: [100, 100],
+              resizes: [100, 100],
+              events: [100, 100],
+              environmental: [100, 100],
+            },
+          },
+        }"
+      >
         <ul flex="~ col gap-2">
           <li v-for="rankingType in rankingTypes" :key="rankingType.id">
             <a

@@ -1,9 +1,10 @@
 <script setup lang="ts" generic="T = any">
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useElementSize } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
 import { useGlobalScrollState } from '~/composables/useGlobalScrollState'
 import { useGridLayout } from '~/composables/useGridLayout'
+import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
@@ -97,6 +98,13 @@ interface VideoCardGridProps<T = any> {
    * 刷新按钮文本
    */
   refreshButtonText?: string
+
+  /**
+   * 是否启用整行填充（用于无限滚动场景）
+   * 启用后，当有更多数据时会用骨架屏填满最后一行
+   * @default false
+   */
+  enableRowPadding?: boolean
 }
 
 const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
@@ -108,6 +116,7 @@ const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
   moreBtn: false,
   initialSkeletonCount: 30,
   isSkeletonItem: undefined,
+  enableRowPadding: false,
 })
 
 const emit = defineEmits<{
@@ -116,16 +125,42 @@ const emit = defineEmits<{
   (e: 'login'): void
 }>()
 
-// 使用共享的 Grid 布局 composable
-const { gridClass, gridStyle, columnCount } = useGridLayout(() => props.gridLayout)
-
-// 使用全局滚动状态来优化性能
-const { isScrolling } = useGlobalScrollState()
-
 // Grid 容器 ref
 const gridContainerRef = ref<HTMLElement | null>(null)
 const loadMoreSentinelRef = ref<HTMLElement | null>(null)
 const isLoadMoreSentinelIntersecting = ref(false)
+
+// 使用共享的 Grid 布局 composable，传递容器 ref 以使用容器宽度
+const { gridClass, gridStyle, columnCount } = useGridLayout(() => props.gridLayout, gridContainerRef)
+
+// 获取容器宽度用于计算卡片宽度
+const { width: containerWidth } = useElementSize(gridContainerRef)
+
+// 计算单个卡片的宽度（用于子组件响应式逻辑，避免 Container Query 性能问题）
+const cardWidth = computed(() => {
+  const width = containerWidth.value
+  const cols = columnCount.value
+  if (width <= 0 || cols <= 0)
+    return 300 // 默认宽度
+
+  // adaptive 使用 20px gap，其他使用 16px (1rem)
+  const gap = props.gridLayout === 'adaptive' ? 20 : 16
+  // (总宽度 - 总间隙) / 列数
+  const raw = (width - (cols - 1) * gap) / cols
+  // 按 10px 量化，减少宽度变化频率，避免频繁 UI 更新
+  // 例如: 203px -> 200px, 197px -> 190px
+  const quantized = Math.floor(raw / 10) * 10
+  return Math.max(100, quantized)
+})
+
+// 提供给子组件使用
+provide('videoCardWidth', cardWidth)
+
+// 使用全局滚动状态来优化性能
+const { isScrolling } = useGlobalScrollState()
+
+// 获取 shadow 样式变量（避免依赖外部传入）
+const { shadowStyleVars } = useVideoCardShadowStyle()
 
 // 动态计算骨架屏数量（基于视口大小和布局，确保是列数的整数倍）
 const dynamicSkeletonCount = computed(() => {
@@ -141,8 +176,18 @@ const dynamicSkeletonCount = computed(() => {
   return Math.min(totalCount, maxCount)
 })
 
+// 递归加载保护机制
+const consecutiveEmptyLoads = ref(0)
+const MAX_CONSECUTIVE_EMPTY_LOADS = 2
+const lastItemsCount = ref(0)
+
 // 检查是否可以加载更多
 function canLoadMore(): boolean {
+  // 连续空加载次数超过限制时停止
+  if (consecutiveEmptyLoads.value >= MAX_CONSECUTIVE_EMPTY_LOADS) {
+    return false
+  }
+
   return !props.loading && !props.noMoreContent && !props.needToLoginFirst && props.items.length > 0
 }
 
@@ -291,6 +336,11 @@ watch(() => props.loading, (newLoading, oldLoading) => {
       window.clearTimeout(loadMoreRequestTimeout)
       loadMoreRequestTimeout = null
     }
+
+    // 检测空加载：loading 结束但 items 数量没变化
+    if (lastItemsCount.value > 0 && props.items.length === lastItemsCount.value) {
+      consecutiveEmptyLoads.value++
+    }
   }
 
   if (oldLoading && !newLoading) {
@@ -302,13 +352,33 @@ watch(() => props.loading, (newLoading, oldLoading) => {
 })
 
 // 监听 items 变化后检查（处理初次加载不足的情况）
-watch(() => props.items.length, () => {
+watch(() => props.items.length, (newCount, oldCount) => {
+  // items 被清空，重置状态（用户刷新了页面）
+  if (newCount === 0 && oldCount > 0) {
+    consecutiveEmptyLoads.value = 0
+    lastItemsCount.value = 0
+    return
+  }
+
+  // 成功加载了新数据，重置空加载计数
+  if (newCount > lastItemsCount.value) {
+    consecutiveEmptyLoads.value = 0
+  }
+  lastItemsCount.value = newCount
+
   // items 更新通常意味着加载已完成或数据发生变化，允许下一次 loadMore
   loadMoreRequested.value = false
 
   nextTick(() => {
     checkShouldPreload()
   })
+})
+
+// 监听 noMoreContent 重置（用户切换模式或刷新时）
+watch(() => props.noMoreContent, (newVal, oldVal) => {
+  if (oldVal && !newVal) {
+    consecutiveEmptyLoads.value = 0
+  }
 })
 
 watch(loadMoreSentinelRef, () => {
@@ -345,8 +415,10 @@ const isHorizontal = computed(() => {
 })
 
 // 滚动时禁用 pointer-events，减少 hover 触发的样式重计算
+// 同时合并 shadow 样式变量
 const gridContainerStyle = computed(() => ({
   pointerEvents: (isScrolling.value ? 'none' : 'auto') as 'none' | 'auto',
+  ...shadowStyleVars.value,
 }))
 
 // 是否显示初始骨架屏（只在首次加载且没有数据时）
@@ -370,25 +442,71 @@ const isLoadingMore = computed(() => {
   return props.loading && props.items.length > 0
 })
 
+// 计算当前行不足时需要填充的骨架屏数量
+const rowPaddingCount = computed(() => {
+  const cols = columnCount.value
+  if (cols <= 0 || props.items.length === 0)
+    return 0
+
+  const itemsInLastRow = props.items.length % cols
+  if (itemsInLastRow === 0)
+    return 0
+
+  return cols - itemsInLastRow
+})
+
 // 生成加载更多时的骨架屏数据（追加到列表末尾，确保是完整的行）
 const loadingMoreSkeletonItems = computed(() => {
   if (!isLoadingMore.value)
     return []
 
   const columnsPerRow = columnCount.value
-  // 加载更多时显示2行完整的骨架屏
+  // 计算当前items补全到整行需要几个
+  const fillToCompleteRow = rowPaddingCount.value
+
+  // 加载更多时显示：补全当前行 + 2行完整的骨架屏
   const skeletonRows = 2
-  return Array.from({ length: skeletonRows * columnsPerRow }, (_, i) => ({
+  const totalSkeletons = fillToCompleteRow + skeletonRows * columnsPerRow
+
+  return Array.from({ length: totalSkeletons }, (_, i) => ({
     _isSkeleton: true,
     _skeletonId: `skeleton-more-${i}`,
   })) as T[]
 })
 
-// 合并实际数据和加载更多的骨架屏
+// 生成行尾填充的骨架屏（非loading状态，但还有更多数据时，填满当前行）
+const rowPaddingSkeletonItems = computed(() => {
+  // 需要显式启用 enableRowPadding 才会填充
+  if (!props.enableRowPadding)
+    return []
+
+  // 只有在非loading、非noMoreContent、有数据时才填充
+  if (props.loading || props.noMoreContent || props.items.length === 0)
+    return []
+
+  const padding = rowPaddingCount.value
+  if (padding === 0)
+    return []
+
+  return Array.from({ length: padding }, (_, i) => ({
+    _isSkeleton: true,
+    _skeletonId: `skeleton-padding-${i}`,
+  })) as T[]
+})
+
+// 合并实际数据和骨架屏
 const displayItems = computed(() => {
+  // 加载更多时：数据 + 填充骨架屏 + 额外行骨架屏
   if (isLoadingMore.value) {
     return [...props.items, ...loadingMoreSkeletonItems.value]
   }
+
+  // 非loading、有更多数据时：数据 + 行尾填充骨架屏
+  if (rowPaddingSkeletonItems.value.length > 0) {
+    return [...props.items, ...rowPaddingSkeletonItems.value]
+  }
+
+  // 其他情况：只显示数据（noMoreContent时不填充，保持原样）
   return props.items
 })
 
@@ -549,30 +667,29 @@ function getUniqueKey(item: T, index: number): string | number {
       </Button>
     </Empty>
 
-    <!-- 初始加载骨架屏 -->
-    <div
-      v-else-if="showInitialSkeleton"
-      m="b-0 t-0" relative w-full
-      :style="gridContainerStyle"
-    >
-      <div :class="gridClass" :style="gridStyle">
-        <VideoCard
-          v-for="item in initialSkeletonItems"
-          :key="(item as any)._skeletonId"
-          skeleton
-          :horizontal="isHorizontal"
-        />
-      </div>
-    </div>
-
-    <!-- Grid 内容 -->
+    <!-- 统一的 Grid 容器 - 保持 ref 稳定 -->
     <div
       v-else
       ref="gridContainerRef"
       m="b-0 t-0" relative w-full
       :style="gridContainerStyle"
     >
-      <div :class="gridClass" :style="gridStyle">
+      <!-- 初始加载骨架屏 -->
+      <div v-if="showInitialSkeleton" :class="gridClass" :style="gridStyle">
+        <VideoCard
+          v-for="item in initialSkeletonItems"
+          :key="(item as any)._skeletonId"
+          skeleton
+          :horizontal="isHorizontal"
+        >
+          <template v-for="(_, name) in $slots" #[name]>
+            <slot :name="name" :item="item" />
+          </template>
+        </VideoCard>
+      </div>
+
+      <!-- Grid 内容 -->
+      <div v-else :class="gridClass" :style="gridStyle">
         <VideoCard
           v-for="(item, index) in displayItems"
           :key="getUniqueKey(item, index)"
@@ -584,13 +701,18 @@ function getUniqueKey(item: T, index: number): string | number {
           :show-watcher-later="showWatchLater"
           :horizontal="isHorizontal"
           :more-btn="moreBtn"
-        />
+        >
+          <template v-for="(_, name) in $slots" #[name]>
+            <slot :name="name" :item="item" />
+          </template>
+        </VideoCard>
       </div>
+
       <div ref="loadMoreSentinelRef" class="load-more-sentinel" aria-hidden="true" />
     </div>
 
-    <!-- 无更多内容提示 -->
-    <Empty v-if="noMoreContent && !needToLoginFirst" class="pb-4" :description="$t('common.no_more_content')" />
+    <!-- 无更多内容提示（仅在有数据时显示，避免与空列表提示重复） -->
+    <Empty v-if="noMoreContent && !needToLoginFirst && items.length > 0" class="pb-4" :description="$t('common.no_more_content')" />
   </div>
 </template>
 

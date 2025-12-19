@@ -301,18 +301,16 @@ defineExpose({
       {{ error }}
     </div>
 
-    <div v-else-if="!isLoading && (!results || results.length === 0)" class="empty-state">
-      {{ $t('common.no_data') }}
-    </div>
-
     <VideoCardGrid
       v-else
       :items="results || []"
       :grid-layout="gridLayout"
-      :loading="!!(isLoading && results && results.length > 0)"
+      :loading="isLoading"
       :no-more-content="paginationMode === 'scroll' && !hasMore"
       :transform-item="transformVideo"
       :get-item-key="(video: any) => video.aid || video.id"
+      :empty-description="$t('common.no_data')"
+      enable-row-padding
       show-preview
       @load-more="handleLoadMore"
     />
@@ -339,11 +337,5 @@ defineExpose({
   padding: 2rem;
   text-align: center;
   color: var(--bew-error-color);
-}
-
-.empty-state {
-  padding: 2rem;
-  text-align: center;
-  color: var(--bew-text-2);
 }
 </style>

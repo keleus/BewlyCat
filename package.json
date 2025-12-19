@@ -54,7 +54,7 @@
     "hls.js": "^1.6.14",
     "md5": "^2.3.0",
     "mitt": "^3.0.1",
-    "overlayscrollbars": "^2.11.5",
+    "overlayscrollbars": "^2.13.0",
     "overlayscrollbars-vue": "^0.5.9",
     "pinia": "^3.0.3",
     "qrcode.vue": "^3.6.0",

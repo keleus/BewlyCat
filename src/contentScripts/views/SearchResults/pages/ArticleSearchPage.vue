@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ArticleCard from '~/components/ArticleCard/ArticleCard.vue'
 import Empty from '~/components/Empty.vue'
@@ -23,6 +24,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   updatePage: [page: number]
 }>()
+
+const { t } = useI18n()
 
 const { haveScrollbar, handleBackToTop } = useBewlyApp()
 
@@ -226,7 +229,7 @@ defineExpose({
     </div>
 
     <div v-else-if="!isLoading && (!results || results.length === 0)" class="empty-state">
-      {{ $t('common.no_data') }}
+      <Empty :description="t('common.no_data')" />
     </div>
 
     <div v-else class="article-grid">
@@ -246,7 +249,7 @@ defineExpose({
 
       <Empty
         v-if="!isLoading && results && results.length > 0 && !hasMore"
-        :description="$t('common.no_more_content')"
+        :description="t('common.no_more_content')"
       />
     </template>
 

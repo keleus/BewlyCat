@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { computed, ref, watch, watchEffect } from 'vue'
+import type { Ref } from 'vue'
+import { computed, inject, ref, watch, watchEffect } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
@@ -37,6 +38,10 @@ const layout = computed((): 'modern' | 'old' => {
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
 const logic = useVideoCardLogic(props)
 const { mainAppRef } = useBewlyApp()
+
+// inject 父组件提供的卡片宽度（由 VideoCardGrid 计算并 provide）
+// 用于基于宽度的响应式显示，避免 CSS Container Query 在特定缩放下的性能问题
+const cardWidth = inject<Ref<number>>('videoCardWidth', ref(300))
 
 // Modern layout specific: cover stats calculation
 const statSuffixPattern = /(播放量?|观看|弹幕|点赞|views?|likes?|danmakus?|comments?|回复|人气|转发|分享|[次条人])/gi
@@ -79,6 +84,7 @@ const coverStatValues = computed(() => {
 
 const coverStatsVisibility = computed(() => {
   const { view, danmaku, like, duration } = coverStatValues.value
+  const width = cardWidth.value
 
   // 无用户信息模式下，只显示播放量和时长
   if (props.hideAuthor) {
@@ -90,11 +96,14 @@ const coverStatsVisibility = computed(() => {
     }
   }
 
-  // 移除宽度判断，改用 CSS 容器查询控制显示
+  // 基于卡片宽度控制显示（替代 CSS Container Query，避免缩放性能问题）
+  // 使用滞后阈值防止边界抖动：隐藏时用低阈值，显示时用高阈值
+  // 实际断点：点赞 200px，弹幕 160px，播放量 120px
+  // 由于 cardWidth 已 round，这里直接比较即可
   return {
-    view: Boolean(view),
-    danmaku: Boolean(danmaku),
-    like: Boolean(like),
+    view: Boolean(view) && width > 120,
+    danmaku: Boolean(danmaku) && width > 160,
+    like: Boolean(like) && width > 200,
     duration: Boolean(duration),
   }
 })
@@ -436,7 +445,8 @@ provide('getVideoType', () => props.type!)
 .video-card-container {
   /* 使用 content-visibility 由父组件 VideoCardGrid 统一控制 */
   /* 这里只设置 contain 限制重排范围 */
-  contain: layout size style;
+  /* 移除 size 以允许内容自动撑开高度，避免高度跳动 */
+  contain: layout style;
   min-width: 0;
 
   /* 防止字体加载导致的layout shift */

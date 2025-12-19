@@ -3,6 +3,8 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { FavoriteCategory, FavoriteResource } from '~/components/TopBar/types'
+import type { Video } from '~/components/VideoCard/types'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
@@ -254,6 +256,27 @@ function handleUnfavorite(favoriteResource: FavoriteResource) {
 function isMusic(item: FavoriteResource) {
   return item.link.includes('bilibili://music')
 }
+
+// Transform function for VideoCardGrid
+function transformFavoriteItem(item: FavoriteItem): Video {
+  return {
+    id: item.id,
+    duration: item.duration,
+    title: item.title,
+    cover: item.cover,
+    author: {
+      name: item.upper.name,
+      authorFace: item.upper.face,
+      mid: item.upper.mid,
+    },
+    view: item.cnt_info.play,
+    danmaku: item.cnt_info.danmaku,
+    publishedTimestamp: item.pubtime,
+    bvid: isMusic(item) ? undefined : item.bvid,
+    url: isMusic(item) ? `https://www.bilibili.com/audio/au${item.id}` : undefined,
+    threePointV2: [],
+  }
+}
 </script>
 
 <template>
@@ -284,64 +307,41 @@ function isMusic(item: FavoriteResource) {
         </Button>
       </div>
 
-      <div v-if="searchScope === 'all' && !keyword.trim() && favoriteResources.length === 0 && !isLoading" m="t-55px b-6">
-        <Empty :description="t('favorites.global_search_hint')" />
-      </div>
+      <!-- 全局搜索模式下，未输入关键词时的提示 -->
+      <Empty
+        v-if="searchScope === 'all' && !keyword.trim() && favoriteResources.length === 0 && !isLoading"
+        m="t-55px b-6"
+        :description="t('favorites.global_search_hint')"
+      />
 
-      <Empty v-else-if="favoriteResources.length === 0 && !isLoading && !isFullPageLoading" m="t-55px b-6" />
-      <template v-else>
-        <Transition name="fade">
-          <Loading v-if="isFullPageLoading" w-full h-screen pos="absolute top-0 left-0" mt--50px />
-        </Transition>
-        <div grid="~ 2xl:cols-4 xl:cols-3 lg:cols-2 md:cols-1 sm:cols-1 cols-1 gap-5" m="t-55px b-6">
-          <TransitionGroup name="list">
-            <VideoCard
-              v-for="item in favoriteResources"
-              :key="item.id"
-              :video="{
-                id: item.id,
-                duration: item.duration,
-                title: item.title,
-                cover: item.cover,
-                author: {
-                  name: item.upper.name,
-                  authorFace: item.upper.face,
-                  mid: item.upper.mid,
-                },
-                view: item.cnt_info.play,
-                danmaku: item.cnt_info.danmaku,
-                publishedTimestamp: item.pubtime,
-                bvid: isMusic(item) ? undefined : item.bvid,
-                url: isMusic(item) ? `https://www.bilibili.com/audio/au${item.id}` : undefined,
-              }"
-              group
-            >
-              <template #coverTopLeft>
-                <button
-                  p="x-2 y-1" m="1"
-                  rounded="$bew-radius"
-                  text="!white xl"
-                  bg="black opacity-60 hover:$bew-error-color-80"
-                  @click.prevent.stop="handleUnfavorite(item)"
-                >
-                  <Tooltip :content="$t('favorites.unfavorite')" placement="bottom" type="dark">
-                    <div i-ic-baseline-clear />
-                  </Tooltip>
-                </button>
-              </template>
-            </VideoCard>
-          </TransitionGroup>
-        </div>
-
-        <Empty v-if="noMoreContent" class="py-4" :description="$t('common.no_more_content')" />
-
-        <Transition name="fade">
-          <Loading
-            v-if="isLoading && favoriteResources.length !== 0 && !noMoreContent"
-            m="-t-4"
-          />
-        </Transition>
-      </template>
+      <!-- 使用 VideoCardGrid 统一处理加载、空状态和数据展示 -->
+      <VideoCardGrid
+        v-else
+        m="t-55px b-6"
+        :items="favoriteResources"
+        :transform-item="transformFavoriteItem"
+        :get-item-key="(item) => item.id"
+        grid-layout="adaptive"
+        :loading="isLoading || isFullPageLoading"
+        :no-more-content="noMoreContent"
+        :empty-description="$t('common.no_more_content')"
+        enable-row-padding
+        @refresh="() => handlePageRefresh?.()"
+      >
+        <template #coverTopLeft="{ item }">
+          <button
+            p="x-2 y-1" m="1"
+            rounded="$bew-radius"
+            text="!white xl"
+            bg="black opacity-60 hover:$bew-error-color-80"
+            @click.prevent.stop="handleUnfavorite(item)"
+          >
+            <Tooltip :content="$t('favorites.unfavorite')" placement="bottom" type="dark">
+              <div i-ic-baseline-clear />
+            </Tooltip>
+          </button>
+        </template>
+      </VideoCardGrid>
     </main>
 
     <aside relative w="full md:40% lg:30% xl:25%" class="hidden md:block" order="1 md:2 lg:2">

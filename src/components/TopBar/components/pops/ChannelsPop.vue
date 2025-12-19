@@ -30,6 +30,14 @@ const otherLinks = computed(() => {
     :options="{
       x: 'hidden',
       y: 'scroll',
+      update: {
+        debounce: {
+          mutations: [100, 100],
+          resizes: [100, 100],
+          events: [100, 100],
+          environmental: [100, 100],
+        },
+      },
     }"
     style="backdrop-filter: var(--bew-filter-glass-1);"
     h="[calc(100vh-100px)]" max-h="445px"

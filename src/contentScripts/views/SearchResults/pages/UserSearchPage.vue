@@ -1,18 +1,20 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Empty from '~/components/Empty.vue'
 import SmoothLoading from '~/components/SmoothLoading.vue'
+import UserCard from '~/components/UserCard/UserCard.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 
 import Pagination from '../components/Pagination.vue'
-import UserGrid from '../components/renderers/UserGrid.vue'
 import { useLoadMore } from '../composables/useLoadMore'
 import { usePagination } from '../composables/usePagination'
 import { useSearchRequest } from '../composables/useSearchRequest'
 import { useUserRelations } from '../composables/useUserRelations'
+import { convertUserCardData } from '../searchTransforms'
 import type { UserSearchFilters } from '../types'
 import { dedupeByKey } from '../utils/searchHelpers'
 
@@ -25,6 +27,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   updatePage: [page: number]
 }>()
+
+const { t } = useI18n()
 
 const { haveScrollbar, handleBackToTop } = useBewlyApp()
 
@@ -295,15 +299,21 @@ defineExpose({
     </div>
 
     <div v-else-if="!isLoading && (!results || results.length === 0)" class="empty-state">
-      {{ $t('common.no_data') }}
+      <Empty :description="t('common.no_data')" />
     </div>
 
-    <UserGrid
-      v-else
-      :users="results || []"
-      :user-relations="userRelations"
-      @follow-state-changed="handleFollowStateChanged"
-    />
+    <div v-else class="user-grid">
+      <UserCard
+        v-for="user in results"
+        :key="user.mid"
+        v-bind="{
+          ...convertUserCardData(user),
+          isFollowed: userRelations[user.mid]?.isFollowing ? 1 : 0,
+        }"
+        :compact="true"
+        @follow-state-changed="(mid: number, isFollowing: boolean) => handleFollowStateChanged({ mid, isFollowing })"
+      />
+    </div>
 
     <!-- 滚动加载模式 -->
     <template v-if="paginationMode === 'scroll'">
@@ -314,7 +324,7 @@ defineExpose({
 
       <Empty
         v-if="!isLoading && results && results.length > 0 && !hasMore"
-        :description="$t('common.no_more_content')"
+        :description="t('common.no_more_content')"
       />
     </template>
 
@@ -335,6 +345,20 @@ defineExpose({
 .user-search-page {
   width: 100%;
   padding-bottom: 2rem;
+}
+
+.user-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .error-message {

@@ -245,7 +245,7 @@ onBeforeUnmount(() => {
     overflow-hidden
     cursor-pointer
     group-hover:z-2
-    style="aspect-ratio: 16 / 9; contain: layout size style; container-type: inline-size;"
+    style="aspect-ratio: 16 / 9; contain: layout style;"
   >
     <!-- Skeleton mode -->
     <div
@@ -550,32 +550,8 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-/* 使用容器查询根据宽度自动隐藏统计信息 */
-/* 优先级：点赞 -> 弹幕 -> 播放量（播放量和时长始终显示） */
-
-/* 卡片宽度 < 200px：隐藏点赞 */
-@container (max-width: 200px) {
-  .cover-stat-like {
-    display: none !important;
-  }
-}
-
-/* 卡片宽度 < 160px：隐藏点赞和弹幕 */
-@container (max-width: 160px) {
-  .cover-stat-like,
-  .cover-stat-danmaku {
-    display: none !important;
-  }
-}
-
-/* 卡片宽度 < 120px：只显示时长 */
-@container (max-width: 120px) {
-  .cover-stat-like,
-  .cover-stat-danmaku,
-  .cover-stat-view {
-    display: none !important;
-  }
-}
+/* 响应式显示控制已移至 VideoCard.vue 的 coverStatsVisibility 计算属性 */
+/* 避免 CSS Container Query 在特定系统缩放（如 Windows 125%）下的性能问题 */
 
 .video-card-cover-stats--hidden {
   opacity: 0;

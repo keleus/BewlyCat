@@ -2,7 +2,6 @@
 import { onKeyStroke } from '@vueuse/core'
 import { useToast } from 'vue-toastification'
 
-import SmoothLoading from '~/components/SmoothLoading.vue'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { FilterType, useFilter } from '~/composables/useFilter'
@@ -785,8 +784,6 @@ defineExpose({
         {{ $t('common.login') }}
       </Button>
     </Empty>
-
-    <SmoothLoading :show="isLoading" />
   </div>
 </template>
 
