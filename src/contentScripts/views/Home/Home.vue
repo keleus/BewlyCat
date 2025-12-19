@@ -17,16 +17,18 @@ const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => 
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
-const pages = {
+const pages = computed(() => ({
   [HomeSubPage.ForYou]: defineAsyncComponent(() => import('./components/ForYou.vue')),
-  [HomeSubPage.Following]: defineAsyncComponent(() => import('./components/Following.vue')),
+  [HomeSubPage.Following]: settings.value.useFollowingNewLayout
+    ? defineAsyncComponent(() => import('./components/Following.vue'))
+    : defineAsyncComponent(() => import('./components/FollowingOld.vue')),
   [HomeSubPage.SubscribedSeries]: defineAsyncComponent(() => import('./components/SubscribedSeries.vue')),
   [HomeSubPage.Trending]: defineAsyncComponent(() => import('./components/Trending.vue')),
   [HomeSubPage.Ranking]: defineAsyncComponent(() => import('./components/Ranking.vue')),
   [HomeSubPage.Precious]: defineAsyncComponent(() => import('./components/Precious.vue')),
   [HomeSubPage.Weekly]: defineAsyncComponent(() => import('./components/Weekly.vue')),
   [HomeSubPage.Live]: defineAsyncComponent(() => import('./components/Live.vue')),
-}
+}))
 const showSearchPageMode = ref<boolean>(false)
 const shouldMoveTabsUp = ref<boolean>(false)
 const tabContentLoading = ref<boolean>(false)
@@ -222,6 +224,14 @@ function toggleTabContentLoading(loading: boolean) {
             :options="{
               x: 'scroll',
               y: 'hidden',
+              update: {
+                debounce: {
+                  mutations: [100, 100],
+                  resizes: [100, 100],
+                  events: [100, 100],
+                  environmental: [100, 100],
+                },
+              },
             }"
             h-full of-hidden
           >

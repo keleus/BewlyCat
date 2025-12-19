@@ -402,18 +402,14 @@ export function needsWbiSign(url: string): boolean {
   // 排除bili_ticket接口
   if (url.includes('https://api.bilibili.com/x/web-interface/bili_ticket'))
     return false
-  // 排除推荐接口（ForYou页面）- 这些接口不需要WBI签名
-  if (url.includes('https://api.bilibili.com/x/web-interface/index/top/feed/rcmd'))
-    return false
-  if (url.includes('https://api.bilibili.com/x/web-interface/popular'))
-    return false
 
-  // 需要WBI签名的API接口
-  const wbiApiPatterns = [
-    /^https:\/\/api\.bilibili\.com\/x\/space\/wbi\//, // 明确的WBI端点
-    /^https:\/\/api\.bilibili\.com\/x\/player\/wbi\//, // 播放器WBI端点
-    /^https:\/\/api\.bilibili\.com\/x\/wbi\//, // 其他WBI端点
-  ]
+  // WBI签名判断规则：
+  // 1. URL中明确包含 /wbi/
+  // 2. 匹配 /x/.../v1/、/x/.../v2/、/x/.../v3/ 模式（/.../可以是直接连着的，如/x/v2/）
+  if (url.includes('/wbi/'))
+    return true
 
-  return wbiApiPatterns.some(pattern => pattern.test(url))
+  // 匹配版本号路径：/x/任意内容/v1/ 或 /x/任意内容/v2/ 或 /x/任意内容/v3/
+  const versionPattern = /\/x\/.*\/v[123]\//
+  return versionPattern.test(url)
 }

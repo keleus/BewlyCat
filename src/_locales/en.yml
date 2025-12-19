@@ -2,7 +2,9 @@ common:
   view_all: View ALL
   play_all: Play ALL
   loading: Loading...
+  search: Search
   undo: UNDO
+  days: days
   view: no view | {count} view | {count} views
   viewWithoutNum: ' views'
   danmaku: no danmaku | {count} danmaku | {count} danmakus
@@ -420,6 +422,10 @@ settings:
   filter_by_user_table:
     username_or_mid: Username / MID
   following_tab_show_livestreaming_videos: Show Live-streaming videos in the "Following" tab
+  use_following_new_layout: Use new layout for Following tab
+  use_following_new_layout_desc: Display followed UPs list on the left and video feed on the right
+  following_inactive_days: UP inactive days
+  following_inactive_days_desc: When a UP has not posted for the specified number of days or has no videos, they will be automatically moved to the blacklist. They will be removed from the blacklist when appearing in ALL view or when clicked
   preserve_for_you_state: Preserve "For You" pre-switch state
   preserve_for_you_state_desc: When switching from dock to other pages, preserve the browsing state of the "For You" page and maintain content before switching when returning
   use_search_page_mode: Use search page mode on homepage

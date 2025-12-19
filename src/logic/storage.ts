@@ -246,6 +246,8 @@ export interface Settings {
   filterByPublishTime: number // 单位：天
 
   followingTabShowLivestreamingVideos: boolean
+  useFollowingNewLayout: boolean
+  followingInactiveDays: number // UP主超过N天未更新则移至黑名单
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
   alwaysShowTabsOnHomePage: boolean
@@ -449,6 +451,8 @@ export const originalSettings: Settings = {
   filterByPublishTime: 30, // 默认30天
 
   followingTabShowLivestreamingVideos: false,
+  useFollowingNewLayout: false, // 默认使用旧布局
+  followingInactiveDays: 100, // 默认100天
 
   homePageTabVisibilityList: [],
   alwaysShowTabsOnHomePage: false,

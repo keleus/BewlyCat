@@ -102,16 +102,10 @@ const API_USER = {
     },
     params: {
       mid: '', // 目标用户的mid
-      ps: 30, // 每页项数，默认30
-      pn: 1, // 页码，默认1
+      ps: 30, // 每页项数
+      pn: 1, // 页码
       order: 'pubdate', // 排序方式：pubdate最新发布，click最多播放
-      index: 1, // 防风控参数
-      order_avoided: true, // 防风控参数
-      platform: 'web', // 平台标识
-      web_location: '333.1387', // 防风控参数（来自B站实际请求）
-      dm_img_list: '[]', // 防风控参数
-      dm_img_str: 'V2ViR0wgMS4wIChPcGVuR0wgRVMgMi4wIENocm9taXVtKQ', // WebGL 1.0 (OpenGL ES 2.0 Chromium)的Base64
-      dm_cover_img_str: 'QU5HTEUgKE5WSURJQSwgTlZJRElBIEdlRm9yY2UgUlRYIDQwNjAgTGFwdG9wIEdQVSAoMHgwMDAwMjhFMCkgRGlyZWN0M0QxMSB2c181XzAgcHNfNV8wLCBEM0QxMSlHb29nbGUgSW5jLiAoTlZJRElBKQ', // GPU信息的Base64
+      tid: 0, // 不筛选分区
     },
     afterHandle: AHS.J_D,
   },

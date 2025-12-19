@@ -2,7 +2,9 @@ common:
   view_all: 查看更多
   play_all: 播放全部
   loading: 加载中...
+  search: 搜索
   undo: 还原
+  days: 天
   view: '{count}次'
   viewWithoutNum: 次
   danmaku: '{count} 弹幕'
@@ -416,6 +418,10 @@ settings:
   filter_by_user_table:
     username_or_mid: 用户名 / MID
   following_tab_show_livestreaming_videos: 在 "正在关注" 中显示直播视频
+  use_following_new_layout: 使用正在关注新布局
+  use_following_new_layout_desc: 左侧显示关注的UP主列表，右侧显示视频流
+  following_inactive_days: UP主不活跃天数
+  following_inactive_days_desc: 当UP主超过指定天数未更新或无投稿时，将自动移至黑名单。在ALL视图中出现更新或点击该UP主时会自动移出黑名单
   preserve_for_you_state: 留存个性推荐切换前状态
   preserve_for_you_state_desc: 当从dock栏切换到其他页面时，留存个性推荐页面的浏览状态，返回时保持切换前的内容
   use_search_page_mode: 首页使用搜索页模式
