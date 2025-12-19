@@ -60,7 +60,11 @@ function resetShadowSettings() {
 function updateBreakpoint(index: number, field: keyof GridBreakpoint, value: number) {
   const breakpoints = [...gridBreakpoints.value]
   breakpoints[index] = { ...breakpoints[index], [field]: value }
-  // Sort by minWidth ascending
+  gridBreakpoints.value = breakpoints
+}
+
+function sortBreakpoints() {
+  const breakpoints = [...gridBreakpoints.value]
   breakpoints.sort((a, b) => a.minWidth - b.minWidth)
   gridBreakpoints.value = breakpoints
 }
@@ -123,6 +127,7 @@ function resetBreakpoints() {
                 :step="50"
                 w-28
                 @update:model-value="(v) => updateBreakpoint(index, 'minWidth', Number(v) || 0)"
+                @blur="sortBreakpoints"
               />
               <span text-sm shrink-0>px</span>
               <span text-sm shrink-0 ml-2>{{ $t('settings.grid_columns') }}</span>
@@ -133,6 +138,7 @@ function resetBreakpoints() {
                 :max="12"
                 w-20
                 @update:model-value="(v) => updateBreakpoint(index, 'columns', Number(v) || 1)"
+                @blur="sortBreakpoints"
               />
               <span text-sm shrink-0>{{ $t('settings.grid_columns_unit') }}</span>
               <Button

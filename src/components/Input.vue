@@ -9,7 +9,7 @@ interface Props {
 }
 const props = withDefaults(defineProps<Props>(), { size: 'medium' })
 
-defineEmits(['enter'])
+defineEmits(['enter', 'blur'])
 
 const modelValue = defineModel<string | number>()
 
@@ -63,6 +63,7 @@ defineExpose({ focus })
       w-inherit h-inherit
       outline-none flex-1 bg-transparent
       @keydown.enter="$emit('enter')"
+      @blur="$emit('blur')"
     >
 
     <div v-if="$slots.suffix" class="suffix">

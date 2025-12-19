@@ -243,6 +243,16 @@ function setCurrentTitle() {
           "
           element="div" defer
           h-inherit
+          :options="{
+            update: {
+              debounce: {
+                mutations: [100, 100],
+                resizes: [100, 100],
+                events: [100, 100],
+                environmental: [100, 100],
+              },
+            },
+          }"
         >
           <main
             pos="absolute top-80px left-0" w-full min-h="[calc(100%-80px)]" p="x-12 b-10"
