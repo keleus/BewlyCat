@@ -278,6 +278,10 @@ settings:
   grid_columns: 显示
   grid_columns_unit: 列
   grid_add_breakpoint: 添加断点
+  enable_image_load_concurrency_limit: 启用图片加载并发限制
+  enable_image_load_concurrency_limit_desc: 限制同时加载的图片数量，减少页面卡顿
+  image_load_concurrency_count: 图片加载并发数
+  image_load_concurrency_count_desc: 同时加载图片的最大数量，可根据设备性能调整
 
   home_adaptive_title_auto_size: 标题字号自适应
   home_adaptive_title_auto_size_desc: 根据网格宽度自动调整标题字号

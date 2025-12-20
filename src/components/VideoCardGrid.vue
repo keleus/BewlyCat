@@ -401,7 +401,8 @@ const gridContainerStyle = computed(() => ({
 }))
 
 // 是否显示初始骨架屏（数据量不足阈值且还有更多内容时）
-const showInitialSkeleton = computed(() => {
+// 改为计算是否需要填充骨架屏，而不是完全切换
+const needSkeletonPadding = computed(() => {
   if (props.needToLoginFirst)
     return false
   if (props.noMoreContent)
@@ -411,14 +412,18 @@ const showInitialSkeleton = computed(() => {
   return true
 })
 
-// 生成初始骨架屏数据（仅用于首次加载）
-const initialSkeletonItems = computed(() => {
-  if (!showInitialSkeleton.value)
+// 生成填充骨架屏数据（填补到最小渲染数量）
+const paddingSkeletonItems = computed(() => {
+  if (!needSkeletonPadding.value)
     return []
 
-  return Array.from({ length: dynamicSkeletonCount.value }, (_, i) => ({
+  const currentCount = props.items.length
+  const targetCount = dynamicSkeletonCount.value
+  const paddingCount = Math.max(0, targetCount - currentCount)
+
+  return Array.from({ length: paddingCount }, (_, i) => ({
     _isSkeleton: true,
-    _skeletonId: `skeleton-init-${i}`,
+    _skeletonId: `skeleton-padding-${i}`,
   })) as T[]
 })
 
@@ -443,6 +448,11 @@ const loadingMoreSkeletonItems = computed(() => {
 
 // 合并实际数据和骨架屏
 const displayItems = computed(() => {
+  // 数据不足时：数据 + 填充骨架屏
+  if (needSkeletonPadding.value) {
+    return [...props.items, ...paddingSkeletonItems.value]
+  }
+
   // 加载更多时：数据 + 骨架屏
   if (isLoadingMore.value) {
     return [...props.items, ...loadingMoreSkeletonItems.value]
@@ -616,22 +626,8 @@ function getUniqueKey(item: T, index: number): string | number {
       m="b-0 t-0" relative w-full
       :style="gridContainerStyle"
     >
-      <!-- 初始加载骨架屏 -->
-      <div v-if="showInitialSkeleton" :class="gridClass">
-        <VideoCard
-          v-for="item in initialSkeletonItems"
-          :key="(item as any)._skeletonId"
-          skeleton
-          :horizontal="isHorizontal"
-        >
-          <template v-for="(_, name) in $slots" #[name]>
-            <slot :name="name" :item="item" />
-          </template>
-        </VideoCard>
-      </div>
-
-      <!-- Grid 内容 -->
-      <div v-else :class="gridClass">
+      <!-- Grid 内容（统一渲染，避免 v-if/v-else 切换导致的滚动跳动） -->
+      <div :class="gridClass">
         <VideoCard
           v-for="(item, index) in displayItems"
           :key="getUniqueKey(item, index)"

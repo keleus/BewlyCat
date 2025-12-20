@@ -267,6 +267,9 @@ export interface Settings {
   // Video card shadow customization (modern layout only)
   videoCardShadowCurve: ShadowCurvePoint[]
   videoCardShadowHeight: number // 1.0-3.0
+  // Image load concurrency limit
+  enableImageLoadConcurrencyLimit: boolean
+  imageLoadConcurrencyCount: number // 1-6
   useSearchPageModeOnHomePage: boolean
   searchPageModeWallpaperFixed: boolean
   preserveForYouState: boolean
@@ -470,6 +473,8 @@ export const originalSettings: Settings = {
     { position: 100, opacity: 0 },
   ],
   videoCardShadowHeight: 1.0,
+  enableImageLoadConcurrencyLimit: true,
+  imageLoadConcurrencyCount: 4,
   useSearchPageModeOnHomePage: false,
   searchPageModeWallpaperFixed: false,
   preserveForYouState: false,

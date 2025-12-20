@@ -3,11 +3,12 @@
  * 优化的懒加载图片组件
  * 使用 Intersection Observer API 实现精确的懒加载控制
  * 只在图片即将进入视口时才开始加载，减少不必要的网络请求
- * 通过全局队列限制并发加载数量
+ * 通过全局队列限制并发加载数量（可在设置中开关）
  */
 
 import { useGlobalScrollState } from '~/composables/useGlobalScrollState'
 import { enqueueImageLoad } from '~/composables/useImageLoadQueue'
+import { settings } from '~/logic'
 
 interface Props {
   src: string
@@ -50,6 +51,12 @@ function isInViewport(): boolean {
   return rect.top < window.innerHeight && rect.bottom > 0
 }
 
+// 直接加载图片（不经过队列）
+function loadDirectly() {
+  isVisible.value = true
+  actualSrc.value = props.src
+}
+
 // 开始加载图片（由队列调度）
 function startLoad() {
   // 再次检查是否在视口附近，不在则跳过
@@ -83,12 +90,17 @@ if (props.loading === 'eager') {
 // 使用全局共享的滚动状态
 const { isScrolling } = useGlobalScrollState()
 
-// 监听滚动停止，将待加载的图片加入队列
+// 监听滚动停止，将待加载的图片加入队列或直接加载
 watch(isScrolling, (scrolling) => {
   if (!scrolling && pendingLoad.value && !isVisible.value && !queueHandle) {
     pendingLoad.value = false
-    // 视口内的图片优先加载
-    queueHandle = enqueueImageLoad(startLoad, isInViewport())
+    if (settings.value.enableImageLoadConcurrencyLimit) {
+      // 视口内的图片优先加载
+      queueHandle = enqueueImageLoad(startLoad, isInViewport())
+    }
+    else {
+      loadDirectly()
+    }
   }
 })
 
@@ -103,9 +115,12 @@ onMounted(() => {
           if (isScrolling.value) {
             pendingLoad.value = true
           }
-          else {
+          else if (settings.value.enableImageLoadConcurrencyLimit) {
             // 视口内的图片优先加载
             queueHandle = enqueueImageLoad(startLoad, isInViewport())
+          }
+          else {
+            loadDirectly()
           }
           observer?.disconnect()
         }

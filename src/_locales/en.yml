@@ -247,6 +247,10 @@ settings:
   grid_columns: Show
   grid_columns_unit: cols
   grid_add_breakpoint: Add Breakpoint
+  enable_image_load_concurrency_limit: Enable image load concurrency limit
+  enable_image_load_concurrency_limit_desc: Limit the number of images loading simultaneously to reduce page lag
+  image_load_concurrency_count: Image load concurrency
+  image_load_concurrency_count_desc: Maximum number of images to load at once, adjust based on device performance
 
   home_adaptive_title_auto_size: Auto adjust title font size
   home_adaptive_title_auto_size_desc: Adjusts title font size based on the grid width

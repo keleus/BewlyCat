@@ -2,7 +2,10 @@
  * 全局图片加载队列（单例模式）
  * 限制同时加载的图片数量，避免并发过高
  * 支持优先级：视口内的图片优先加载
+ * 并发数可通过设置调整
  */
+
+import { settings } from '~/logic'
 
 type LoadCallback = () => void
 
@@ -14,10 +17,15 @@ interface QueueItem {
 // 全局状态（单例）
 const queue: QueueItem[] = []
 const loading = new Set<symbol>()
-const MAX_CONCURRENT = 4
+
+function getMaxConcurrent(): number {
+  const count = settings.value.imageLoadConcurrencyCount
+  return Math.max(1, Math.min(6, count || 4))
+}
 
 function processQueue() {
-  while (loading.size < MAX_CONCURRENT && queue.length > 0) {
+  const maxConcurrent = getMaxConcurrent()
+  while (loading.size < maxConcurrent && queue.length > 0) {
     const item = queue.shift()
     if (item) {
       loading.add(item.id)
