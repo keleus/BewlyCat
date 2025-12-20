@@ -113,7 +113,7 @@ const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
   needToLoginFirst: false,
   showPreview: false,
   showWatchLater: true,
-  moreBtn: false,
+  moreBtn: true,
   initialSkeletonCount: 30,
   isSkeletonItem: undefined,
   enableRowPadding: false,
@@ -711,7 +711,9 @@ function getUniqueKey(item: T, index: number): string | number {
 }
 
 :deep(.video-card-container) {
-  contain: layout;
+  contain: layout style paint;
+  content-visibility: auto;
+  contain-intrinsic-size: auto none;
   min-width: 0;
 }
 
