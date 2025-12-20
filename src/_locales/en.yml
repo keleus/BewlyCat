@@ -140,6 +140,8 @@ settings:
     After this setting is turned on, like the top bar, you must click on items
     to view more information instead of hovering over them. (This feature is not
     supported by the old top bar.)
+  show_home_button_in_touch_mode: Show Home button
+  show_home_button_in_touch_mode_desc: When touch screen optimization is enabled, show a Home button next to the top bar Logo to navigate directly to the homepage.
   chk_box:
     show: Show
     hidden: Hidden

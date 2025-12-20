@@ -173,6 +173,7 @@ export function useTopBarInteraction() {
   function handleClickTopBarItem(event: MouseEvent, key: string) {
     if (settings.value.touchScreenOptimization) {
       event.preventDefault()
+      event.stopPropagation()
       closeAllPopups(key)
       topBarStore.popupVisible[key] = !topBarStore.popupVisible[key]
       currentClickedTopBarItem.value = key

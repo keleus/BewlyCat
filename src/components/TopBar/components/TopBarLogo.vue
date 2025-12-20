@@ -86,7 +86,7 @@ const channels = setupTopBarItemHoverEvent('channels')
 
       <!-- 首页按钮（仅在触屏模式下显示） -->
       <a
-        v-if="settings.touchScreenOptimization"
+        v-if="settings.touchScreenOptimization && settings.showHomeButtonInTouchMode"
         href="//www.bilibili.com"
         target="_top"
         class="group home-button"

@@ -321,6 +321,17 @@ function toggleChannel(value: string) {
                   {{ $t('common.operation.reset') }}
                 </Button>
               </div>
+
+              <!-- Home 按钮设置（仅在触屏优化开启时显示） -->
+              <div v-if="settings.touchScreenOptimization" bg="$bew-fill-1" rounded="$bew-radius" p-3>
+                <SettingsItem :title="$t('settings.show_home_button_in_touch_mode')">
+                  <Radio v-model="settings.showHomeButtonInTouchMode" />
+                </SettingsItem>
+                <div text-sm opacity-70 mt-2>
+                  {{ $t('settings.show_home_button_in_touch_mode_desc') }}
+                </div>
+              </div>
+
               <div text-sm opacity-80 mb-2>
                 Logo 点击可展开频道列表，以下选择的频道将固定显示在顶栏上。{{ $t('settings.topbar_pinned_channels_hint') }}
               </div>

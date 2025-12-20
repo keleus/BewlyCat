@@ -280,6 +280,30 @@ function updateConflictingHeaderVisibility() {
 
 let conflictingHeaderObserver: ReturnType<typeof useMutationObserver> | undefined
 
+// 处理点击外部关闭 POP 窗（仅在触屏优化开启时）
+function handleClickOutsidePopup(event: MouseEvent) {
+  if (!settings.value.touchScreenOptimization)
+    return
+
+  if (!hasActivePopup.value)
+    return
+
+  const target = event.target as HTMLElement
+
+  // 检查点击是否在顶栏项目按钮上（这些按钮会自己处理切换逻辑）
+  const isTopBarItemButton = target.closest('.logo, .right-side-item, .home-button')
+  if (isTopBarItemButton)
+    return
+
+  // 检查点击是否在弹窗内
+  const isInPopup = target.closest('.bew-popover')
+  if (isInPopup)
+    return
+
+  // 点击在弹窗外部，关闭所有弹窗
+  topBarStore.closeAllPopups()
+}
+
 // 生命周期钩子
 onMounted(() => {
   nextTick(() => {
@@ -306,6 +330,9 @@ onMounted(() => {
 
     // 设置URL变化检查定时器
     urlCheckTimer = window.setInterval(checkUrlChange, 1000)
+
+    // 添加全局点击事件监听器（用于触屏模式下点击外部关闭弹窗）
+    document.addEventListener('click', handleClickOutsidePopup)
   })
 })
 
@@ -325,6 +352,9 @@ onUnmounted(() => {
   cleanupScrollListeners()
   // 使用 store 中的方法清理定时器
   topBarStore.cleanup()
+
+  // 移除全局点击事件监听器
+  document.removeEventListener('click', handleClickOutsidePopup)
 })
 
 // 快捷键

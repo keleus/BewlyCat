@@ -134,6 +134,8 @@ settings:
   touch_screen_optimization: 觸控螢幕體驗改進
   touch_screen_optimization_desc: |
     呢個設定開咗之後，好似頂欄噉，撳咗啲嘢先至可以睇到更多嘅資料，而唔係淨係靠游標懸停就睇到。（舊版頂欄唔支援呢個功能）
+  show_home_button_in_touch_mode: 顯示 Home 掣
+  show_home_button_in_touch_mode_desc: 喺觸控螢幕優化開咗嗰陣，喺頂欄 Logo 隔籬顯示一個可以直接跳去首頁嘅掣。
   chk_box:
     show: 擺出嚟
     hidden: 收埋

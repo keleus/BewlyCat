@@ -139,6 +139,9 @@ const { isScrolling } = useGlobalScrollState()
 // 获取 shadow 样式变量（避免依赖外部传入）
 const { shadowStyleVars } = useVideoCardShadowStyle()
 
+// 最少渲染数量阈值：数据量达到此值或 noMoreContent 时才显示实际内容
+const MIN_ITEMS_TO_RENDER = 20
+
 // 骨架屏数量使用固定值，避免依赖列数计算
 const dynamicSkeletonCount = computed(() => {
   // 估算视口高度能容纳的行数 (假设每个卡片平均400px高)
@@ -397,9 +400,15 @@ const gridContainerStyle = computed(() => ({
   ...gridCssVars,
 }))
 
-// 是否显示初始骨架屏（只在首次加载且没有数据时）
+// 是否显示初始骨架屏（数据量不足阈值且还有更多内容时）
 const showInitialSkeleton = computed(() => {
-  return props.loading && props.items.length === 0
+  if (props.needToLoginFirst)
+    return false
+  if (props.noMoreContent)
+    return false
+  if (props.items.length >= MIN_ITEMS_TO_RENDER)
+    return false
+  return true
 })
 
 // 生成初始骨架屏数据（仅用于首次加载）
@@ -413,9 +422,9 @@ const initialSkeletonItems = computed(() => {
   })) as T[]
 })
 
-// 是否正在加载更多（有数据且loading）
+// 是否正在加载更多（数据已达阈值且loading）
 const isLoadingMore = computed(() => {
-  return props.loading && props.items.length > 0
+  return props.loading && props.items.length >= MIN_ITEMS_TO_RENDER
 })
 
 // 生成加载更多时的骨架屏数据（使用固定数量，由 CSS Grid 自动处理布局）
@@ -443,9 +452,9 @@ const displayItems = computed(() => {
   return props.items
 })
 
-// 判断是否应该显示空状态
+// 判断是否应该显示空状态（确认无更多内容且数据为空）
 const showEmptyState = computed(() => {
-  return !props.loading && props.items.length === 0 && !props.needToLoginFirst
+  return props.noMoreContent && props.items.length === 0 && !props.needToLoginFirst
 })
 
 // 判断是否为骨架屏项
