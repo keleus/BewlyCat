@@ -1,6 +1,5 @@
 <script lang="ts" setup>
-import type { Ref } from 'vue'
-import { computed, inject, ref, watch, watchEffect } from 'vue'
+import { computed, ref, watch, watchEffect } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
@@ -38,10 +37,6 @@ const layout = computed((): 'modern' | 'old' => {
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
 const logic = useVideoCardLogic(props)
 const { mainAppRef } = useBewlyApp()
-
-// inject 父组件提供的卡片宽度（由 VideoCardGrid 计算并 provide）
-// 用于基于宽度的响应式显示，避免 CSS Container Query 在特定缩放下的性能问题
-const cardWidth = inject<Ref<number>>('videoCardWidth', ref(300))
 
 // Modern layout specific: cover stats calculation
 const statSuffixPattern = /(播放量?|观看|弹幕|点赞|views?|likes?|danmakus?|comments?|回复|人气|转发|分享|[次条人])/gi
@@ -84,7 +79,6 @@ const coverStatValues = computed(() => {
 
 const coverStatsVisibility = computed(() => {
   const { view, danmaku, like, duration } = coverStatValues.value
-  const width = cardWidth.value
 
   // 无用户信息模式下，只显示播放量和时长
   if (props.hideAuthor) {
@@ -96,14 +90,12 @@ const coverStatsVisibility = computed(() => {
     }
   }
 
-  // 基于卡片宽度控制显示（替代 CSS Container Query，避免缩放性能问题）
-  // 使用滞后阈值防止边界抖动：隐藏时用低阈值，显示时用高阈值
-  // 实际断点：点赞 200px，弹幕 160px，播放量 120px
-  // 由于 cardWidth 已 round，这里直接比较即可
+  // 所有统计项默认显示，由 CSS Container Query 控制响应式隐藏
+  // 这避免了 JS 监听宽度变化带来的性能问题
   return {
-    view: Boolean(view) && width > 120,
-    danmaku: Boolean(danmaku) && width > 160,
-    like: Boolean(like) && width > 200,
+    view: Boolean(view),
+    danmaku: Boolean(danmaku),
+    like: Boolean(like),
     duration: Boolean(duration),
   }
 })
@@ -306,16 +298,9 @@ const imageLoaded = ref(false)
 // Cover 骨架屏状态：只依赖数据骨架屏，让图片能立即开始加载
 const coverSkeleton = computed(() => props.skeleton)
 
-// Info 骨架屏状态：数据骨架屏 || 图片未加载完成
-const infoSkeleton = computed(() => {
-  // 如果是数据骨架屏，直接返回true
-  if (props.skeleton)
-    return true
-  // 如果数据已加载，但图片未加载完成，Info部分继续显示骨架屏
-  if (!imageLoaded.value)
-    return true
-  return false
-})
+// Info 骨架屏状态：只依赖数据骨架屏，不等待图片加载
+// 这避免了滚动时图片加载触发的大量 DOM 重构
+const infoSkeleton = computed(() => props.skeleton)
 
 // 监听skeleton prop变化，重置imageLoaded状态
 watch(() => props.skeleton, (newVal) => {
@@ -443,9 +428,12 @@ provide('getVideoType', () => props.type!)
 <style lang="scss" scoped>
 /* 优化性能：使用更高效的 containment 策略 */
 .video-card-container {
+  /* 设置为容器，用于 Container Query */
+  container-type: inline-size;
+  container-name: video-card;
+
   /* 使用 content-visibility 由父组件 VideoCardGrid 统一控制 */
   /* 这里只设置 contain 限制重排范围 */
-  /* 移除 size 以允许内容自动撑开高度，避免高度跳动 */
   contain: layout style;
   min-width: 0;
 
@@ -477,17 +465,39 @@ provide('getVideoType', () => props.type!)
   overflow: hidden;
 }
 
-/* 使用固定样式，不使用容器查询 - 大幅减少滚动时的计算开销 */
+/* 使用固定样式变量 */
 :deep(.video-card-stats) {
   --video-card-stats-font-size: 0.75rem;
   --video-card-stats-overlay-scale: 1.4;
   --video-card-stats-icon-size: 0.825rem;
 }
 
-/* 使用媒体查询替代容器查询 - 在小屏幕隐藏部分统计信息 */
-@media (max-width: 768px) {
+/* CSS Container Query 控制统计信息的响应式显示 */
+/* 默认隐藏所有可选统计项，在足够宽时显示 */
+:deep(.cover-stat-like),
+:deep(.cover-stat-danmaku),
+:deep(.cover-stat-view) {
+  display: none;
+}
+
+/* 容器宽度 > 120px 时显示播放量 */
+@container video-card (min-width: 120px) {
+  :deep(.cover-stat-view) {
+    display: inline-flex;
+  }
+}
+
+/* 容器宽度 > 160px 时显示弹幕 */
+@container video-card (min-width: 160px) {
+  :deep(.cover-stat-danmaku) {
+    display: inline-flex;
+  }
+}
+
+/* 容器宽度 > 200px 时显示点赞 */
+@container video-card (min-width: 200px) {
   :deep(.cover-stat-like) {
-    display: none !important;
+    display: inline-flex;
   }
 }
 </style>

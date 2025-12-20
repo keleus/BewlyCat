@@ -6,8 +6,8 @@ import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { originalSettings, settings } from '~/logic'
-import type { GridBreakpoint, VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
-import { defaultGridBreakpoints, gridBreakpoints } from '~/logic/storage'
+import type { GridColumnsConfig, VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
+import { defaultGridColumns, GRID_BREAKPOINTS, gridColumns } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -56,37 +56,22 @@ function resetShadowSettings() {
   settings.value.videoCardShadowHeight = originalSettings.videoCardShadowHeight
 }
 
-// Grid breakpoints management
-function updateBreakpoint(index: number, field: keyof GridBreakpoint, value: number) {
-  const breakpoints = [...gridBreakpoints.value]
-  breakpoints[index] = { ...breakpoints[index], [field]: value }
-  gridBreakpoints.value = breakpoints
+// Grid columns management - 固定断点，只修改列数
+const breakpointLabels: { key: keyof GridColumnsConfig, label: string }[] = [
+  { key: 'base', label: '< 640px' },
+  { key: 'sm', label: `≥ ${GRID_BREAKPOINTS.sm}px` },
+  { key: 'md', label: `≥ ${GRID_BREAKPOINTS.md}px` },
+  { key: 'lg', label: `≥ ${GRID_BREAKPOINTS.lg}px` },
+  { key: 'xl', label: `≥ ${GRID_BREAKPOINTS.xl}px` },
+  { key: 'xxl', label: `≥ ${GRID_BREAKPOINTS.xxl}px` },
+]
+
+function updateColumns(key: keyof GridColumnsConfig, value: number) {
+  gridColumns.value = { ...gridColumns.value, [key]: value }
 }
 
-function sortBreakpoints() {
-  const breakpoints = [...gridBreakpoints.value]
-  breakpoints.sort((a, b) => a.minWidth - b.minWidth)
-  gridBreakpoints.value = breakpoints
-}
-
-function addBreakpoint() {
-  const breakpoints = [...gridBreakpoints.value]
-  // Find the largest minWidth and add 200
-  const maxWidth = Math.max(...breakpoints.map(b => b.minWidth))
-  const maxColumns = Math.max(...breakpoints.map(b => b.columns))
-  breakpoints.push({ minWidth: maxWidth + 200, columns: maxColumns + 1 })
-  breakpoints.sort((a, b) => a.minWidth - b.minWidth)
-  gridBreakpoints.value = breakpoints
-}
-
-function removeBreakpoint(index: number) {
-  const breakpoints = [...gridBreakpoints.value]
-  breakpoints.splice(index, 1)
-  gridBreakpoints.value = breakpoints
-}
-
-function resetBreakpoints() {
-  gridBreakpoints.value = [...defaultGridBreakpoints]
+function resetColumns() {
+  gridColumns.value = { ...defaultGridColumns }
 }
 </script>
 
@@ -114,52 +99,23 @@ function resetBreakpoints() {
         <template #bottom>
           <div flex="~ col gap-3" w-full>
             <div
-              v-for="(breakpoint, index) in gridBreakpoints"
-              :key="index"
+              v-for="bp in breakpointLabels"
+              :key="bp.key"
               flex="~ items-center gap-3"
             >
-              <span text-sm shrink-0 min-w-12>{{ $t('settings.grid_min_width') }}</span>
+              <span text-sm shrink-0 min-w-24>{{ bp.label }}</span>
               <Input
-                :model-value="breakpoint.minWidth"
-                type="number"
-                :min="0"
-                :max="4000"
-                :step="50"
-                w-28
-                @update:model-value="(v) => updateBreakpoint(index, 'minWidth', Number(v) || 0)"
-                @blur="sortBreakpoints"
-              />
-              <span text-sm shrink-0>px</span>
-              <span text-sm shrink-0 ml-2>{{ $t('settings.grid_columns') }}</span>
-              <Input
-                :model-value="breakpoint.columns"
+                :model-value="gridColumns[bp.key]"
                 type="number"
                 :min="1"
                 :max="12"
                 w-20
-                @update:model-value="(v) => updateBreakpoint(index, 'columns', Number(v) || 1)"
-                @blur="sortBreakpoints"
+                @update:model-value="(v) => updateColumns(bp.key, Number(v) || 1)"
               />
               <span text-sm shrink-0>{{ $t('settings.grid_columns_unit') }}</span>
-              <Button
-                type="tertiary"
-                size="small"
-                ml-2
-                @click="removeBreakpoint(index)"
-              >
-                <template #left>
-                  <div i-mingcute:delete-2-line />
-                </template>
-              </Button>
             </div>
             <div flex="~ gap-2" mt-2>
-              <Button type="secondary" size="small" @click="addBreakpoint">
-                <template #left>
-                  <div i-mingcute:add-line />
-                </template>
-                {{ $t('settings.grid_add_breakpoint') }}
-              </Button>
-              <Button type="tertiary" size="small" @click="resetBreakpoints">
+              <Button type="tertiary" size="small" @click="resetColumns">
                 {{ $t('common.operation.reset') }}
               </Button>
             </div>

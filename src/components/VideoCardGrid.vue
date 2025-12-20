@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T = any">
-import { useDebounceFn, useElementSize } from '@vueuse/core'
+import { useDebounceFn } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
 import { useGlobalScrollState } from '~/composables/useGlobalScrollState'
@@ -130,31 +130,8 @@ const gridContainerRef = ref<HTMLElement | null>(null)
 const loadMoreSentinelRef = ref<HTMLElement | null>(null)
 const isLoadMoreSentinelIntersecting = ref(false)
 
-// 使用共享的 Grid 布局 composable，传递容器 ref 以使用容器宽度
-const { gridClass, gridStyle, columnCount } = useGridLayout(() => props.gridLayout, gridContainerRef)
-
-// 获取容器宽度用于计算卡片宽度
-const { width: containerWidth } = useElementSize(gridContainerRef)
-
-// 计算单个卡片的宽度（用于子组件响应式逻辑，避免 Container Query 性能问题）
-const cardWidth = computed(() => {
-  const width = containerWidth.value
-  const cols = columnCount.value
-  if (width <= 0 || cols <= 0)
-    return 300 // 默认宽度
-
-  // adaptive 使用 20px gap，其他使用 16px (1rem)
-  const gap = props.gridLayout === 'adaptive' ? 20 : 16
-  // (总宽度 - 总间隙) / 列数
-  const raw = (width - (cols - 1) * gap) / cols
-  // 按 10px 量化，减少宽度变化频率，避免频繁 UI 更新
-  // 例如: 203px -> 200px, 197px -> 190px
-  const quantized = Math.floor(raw / 10) * 10
-  return Math.max(100, quantized)
-})
-
-// 提供给子组件使用
-provide('videoCardWidth', cardWidth)
+// 使用共享的 Grid 布局 composable（CSS 媒体查询驱动，无 JS 计算开销）
+const { gridClass, gridCssVars } = useGridLayout(() => props.gridLayout)
 
 // 使用全局滚动状态来优化性能
 const { isScrolling } = useGlobalScrollState()
@@ -162,18 +139,16 @@ const { isScrolling } = useGlobalScrollState()
 // 获取 shadow 样式变量（避免依赖外部传入）
 const { shadowStyleVars } = useVideoCardShadowStyle()
 
-// 动态计算骨架屏数量（基于视口大小和布局，确保是列数的整数倍）
+// 骨架屏数量使用固定值，避免依赖列数计算
 const dynamicSkeletonCount = computed(() => {
-  const columnsPerRow = columnCount.value
   // 估算视口高度能容纳的行数 (假设每个卡片平均400px高)
   const rowsInViewport = Math.ceil(window.innerHeight / 400)
-  // 多加载1.5倍的视口内容作为缓冲
+  // 多加载1.5倍的视口内容作为缓冲，假设最多5列
   const bufferedRows = Math.ceil(rowsInViewport * 1.5)
-  // 计算总数（完整的行数 * 列数）
-  const totalCount = bufferedRows * columnsPerRow
-  // 不超过设定的上限，但确保是列数的整数倍
-  const maxCount = Math.floor(props.initialSkeletonCount / columnsPerRow) * columnsPerRow
-  return Math.min(totalCount, maxCount)
+  const estimatedColumns = 5
+  const totalCount = bufferedRows * estimatedColumns
+  // 不超过设定的上限
+  return Math.min(totalCount, props.initialSkeletonCount)
 })
 
 // 递归加载保护机制
@@ -415,10 +390,11 @@ const isHorizontal = computed(() => {
 })
 
 // 滚动时禁用 pointer-events，减少 hover 触发的样式重计算
-// 同时合并 shadow 样式变量
+// 同时合并 shadow 样式变量和 grid 列数变量
 const gridContainerStyle = computed(() => ({
   pointerEvents: (isScrolling.value ? 'none' : 'auto') as 'none' | 'auto',
   ...shadowStyleVars.value,
+  ...gridCssVars,
 }))
 
 // 是否显示初始骨架屏（只在首次加载且没有数据时）
@@ -442,31 +418,13 @@ const isLoadingMore = computed(() => {
   return props.loading && props.items.length > 0
 })
 
-// 计算当前行不足时需要填充的骨架屏数量
-const rowPaddingCount = computed(() => {
-  const cols = columnCount.value
-  if (cols <= 0 || props.items.length === 0)
-    return 0
-
-  const itemsInLastRow = props.items.length % cols
-  if (itemsInLastRow === 0)
-    return 0
-
-  return cols - itemsInLastRow
-})
-
-// 生成加载更多时的骨架屏数据（追加到列表末尾，确保是完整的行）
+// 生成加载更多时的骨架屏数据（使用固定数量，由 CSS Grid 自动处理布局）
 const loadingMoreSkeletonItems = computed(() => {
   if (!isLoadingMore.value)
     return []
 
-  const columnsPerRow = columnCount.value
-  // 计算当前items补全到整行需要几个
-  const fillToCompleteRow = rowPaddingCount.value
-
-  // 加载更多时显示：补全当前行 + 2行完整的骨架屏
-  const skeletonRows = 2
-  const totalSkeletons = fillToCompleteRow + skeletonRows * columnsPerRow
+  // 加载更多时显示固定数量的骨架屏，CSS Grid 会自动处理布局
+  const totalSkeletons = 10
 
   return Array.from({ length: totalSkeletons }, (_, i) => ({
     _isSkeleton: true,
@@ -474,39 +432,14 @@ const loadingMoreSkeletonItems = computed(() => {
   })) as T[]
 })
 
-// 生成行尾填充的骨架屏（非loading状态，但还有更多数据时，填满当前行）
-const rowPaddingSkeletonItems = computed(() => {
-  // 需要显式启用 enableRowPadding 才会填充
-  if (!props.enableRowPadding)
-    return []
-
-  // 只有在非loading、非noMoreContent、有数据时才填充
-  if (props.loading || props.noMoreContent || props.items.length === 0)
-    return []
-
-  const padding = rowPaddingCount.value
-  if (padding === 0)
-    return []
-
-  return Array.from({ length: padding }, (_, i) => ({
-    _isSkeleton: true,
-    _skeletonId: `skeleton-padding-${i}`,
-  })) as T[]
-})
-
 // 合并实际数据和骨架屏
 const displayItems = computed(() => {
-  // 加载更多时：数据 + 填充骨架屏 + 额外行骨架屏
+  // 加载更多时：数据 + 骨架屏
   if (isLoadingMore.value) {
     return [...props.items, ...loadingMoreSkeletonItems.value]
   }
 
-  // 非loading、有更多数据时：数据 + 行尾填充骨架屏
-  if (rowPaddingSkeletonItems.value.length > 0) {
-    return [...props.items, ...rowPaddingSkeletonItems.value]
-  }
-
-  // 其他情况：只显示数据（noMoreContent时不填充，保持原样）
+  // 其他情况：只显示数据
   return props.items
 })
 
@@ -675,7 +608,7 @@ function getUniqueKey(item: T, index: number): string | number {
       :style="gridContainerStyle"
     >
       <!-- 初始加载骨架屏 -->
-      <div v-if="showInitialSkeleton" :class="gridClass" :style="gridStyle">
+      <div v-if="showInitialSkeleton" :class="gridClass">
         <VideoCard
           v-for="item in initialSkeletonItems"
           :key="(item as any)._skeletonId"
@@ -689,11 +622,10 @@ function getUniqueKey(item: T, index: number): string | number {
       </div>
 
       <!-- Grid 内容 -->
-      <div v-else :class="gridClass" :style="gridStyle">
+      <div v-else :class="gridClass">
         <VideoCard
           v-for="(item, index) in displayItems"
           :key="getUniqueKey(item, index)"
-          v-memo="[getUniqueKey(item, index), isHorizontal]"
           :skeleton="isSkeleton(item)"
           :type="inferVideoType(item)"
           :video="getTransformedVideo(item)"
@@ -717,37 +649,70 @@ function getUniqueKey(item: T, index: number): string | number {
 </template>
 
 <style lang="scss" scoped>
-/* Grid 样式类定义 */
-.grid-two-columns {
-  --uno: "grid cols-1 xl:cols-2 gap-4";
-  align-items: stretch; /* 同行卡片拉伸到统一高度 */
-}
-
-.grid-one-column {
-  --uno: "grid cols-1 gap-4";
+// Grid 布局 - 使用 Tailwind CSS 标准媒体断点 + CSS 变量控制列数
+.grid-adaptive {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(var(--grid-cols-base, 1), 1fr);
+  contain: layout style;
   align-items: stretch;
 }
 
-/**
- * Adaptive Grid - 列数由 JS 根据断点配置控制
- * gridStyle 会设置 display: grid, grid-template-columns, gap
- */
-.grid-adaptive {
-  contain: layout style;
-  align-items: stretch; /* 同行卡片拉伸到统一高度 */
+@media (min-width: 640px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-sm, 2), 1fr);
+  }
 }
 
-/* 优化性能：VideoCard 使用 contain 属性并固定高度 */
+@media (min-width: 768px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-md, 3), 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-lg, 4), 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-xl, 5), 1fr);
+  }
+}
+
+@media (min-width: 1536px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-xxl, 6), 1fr);
+  }
+}
+
+.grid-two-columns {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+  contain: layout style;
+  align-items: stretch;
+}
+
+@media (min-width: 1280px) {
+  .grid-two-columns {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.grid-one-column {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+  contain: layout style;
+  align-items: stretch;
+}
+
 :deep(.video-card-container) {
   contain: layout;
-  /* 关键：防止 grid 项目内容撑开超出容器 */
   min-width: 0;
-}
-
-/* 非 adaptive 布局也需要优化 */
-.grid-two-columns,
-.grid-one-column {
-  contain: layout style;
 }
 
 .load-more-sentinel {

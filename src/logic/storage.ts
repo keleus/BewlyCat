@@ -660,15 +660,51 @@ export const gridLayout = useStorageLocal('gridLayout', ref<GridLayout>({
 }), { mergeDefaults: true })
 
 /**
- * 网格断点配置
- * 定义在不同屏幕宽度下显示的列数
+ * 网格列数配置
+ * 固定的媒体断点，只允许配置每个断点的列数
  */
-export interface GridBreakpoint {
-  minWidth: number // 最小宽度 (px)
-  columns: number // 列数
+export interface GridColumnsConfig {
+  base: number // 默认列数 (< 640px)
+  sm: number // >= 640px
+  md: number // >= 768px
+  lg: number // >= 1024px
+  xl: number // >= 1280px
+  xxl: number // >= 1536px
 }
 
-// 默认断点配置
+// 默认列数配置
+export const defaultGridColumns: GridColumnsConfig = {
+  base: 1,
+  sm: 2,
+  md: 3,
+  lg: 4,
+  xl: 5,
+  xxl: 6,
+}
+
+// 固定的断点宽度（基于 Tailwind CSS 标准断点）
+export const GRID_BREAKPOINTS = {
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  xl: 1280,
+  xxl: 1536,
+} as const
+
+export const gridColumns = useStorageLocal<GridColumnsConfig>(
+  'gridColumns',
+  ref({ ...defaultGridColumns }),
+  { mergeDefaults: true },
+)
+
+// 保留旧的导出以兼容，但标记为废弃
+/** @deprecated 使用 gridColumns 代替 */
+export interface GridBreakpoint {
+  minWidth: number
+  columns: number
+}
+
+/** @deprecated 使用 defaultGridColumns 代替 */
 export const defaultGridBreakpoints: GridBreakpoint[] = [
   { minWidth: 0, columns: 1 },
   { minWidth: 640, columns: 2 },
@@ -678,6 +714,7 @@ export const defaultGridBreakpoints: GridBreakpoint[] = [
   { minWidth: 1800, columns: 6 },
 ]
 
+/** @deprecated 使用 gridColumns 代替 */
 export const gridBreakpoints = useStorageLocal<GridBreakpoint[]>(
   'gridBreakpoints',
   ref(defaultGridBreakpoints),
