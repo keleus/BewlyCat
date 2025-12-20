@@ -478,7 +478,9 @@ onBeforeUnmount(() => {
   opacity: 1;
   transition: opacity 0.2s ease;
   pointer-events: none;
-  border-radius: inherit;
+  /* 只让下面两个角继承圆角，上面保持直线 */
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
   /* 确保容器不会溢出 */
   overflow: hidden;
 }
