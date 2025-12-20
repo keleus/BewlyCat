@@ -723,9 +723,10 @@ validateAndRestoreLocalWallpaper()
 // 启动自动播放用户修改监听
 startAutoPlayUserChangeMonitoring()
 
-// 为 message.bilibili.com 在 iframe 中运行时添加 ESC 键监听
-if (isInIframe() && isNotificationPage()) {
-  console.log('[Bewly IFrame] ESC listener initialized for message.bilibili.com')
+// 为 iframe 中运行时添加 ESC 键监听（消息页面和视频页面）
+if (isInIframe() && (isNotificationPage() || isVideoOrBangumiPage())) {
+  const pageType = isNotificationPage() ? 'message' : 'video'
+  console.log(`[Bewly IFrame] ESC listener initialized for ${pageType} page`)
 
   window.addEventListener('keydown', (e: KeyboardEvent) => {
     // 只处理ESC键
@@ -750,6 +751,22 @@ if (isInIframe() && isNotificationPage()) {
     if (isInputElement) {
       console.log('[Bewly IFrame] Focus in input element, ignoring ESC')
       return
+    }
+
+    // 视频页面：检查视频播放器是否处于网页全屏或宽屏状态
+    if (isVideoOrBangumiPage()) {
+      const webFullBtn = document.querySelector('.bpx-player-ctrl-btn.bpx-player-ctrl-web')
+      const wideBtn = document.querySelector('.bpx-player-ctrl-btn.bpx-player-ctrl-wide')
+      const isWebFull = webFullBtn?.classList.contains('bpx-state-entered')
+      const isWide = wideBtn?.classList.contains('bpx-state-entered')
+
+      console.log('[Bewly IFrame] Video state - webFull:', isWebFull, 'wide:', isWide)
+
+      // 如果视频处于网页全屏或宽屏状态，让播放器自己处理ESC
+      if (isWebFull || isWide) {
+        console.log('[Bewly IFrame] Video in fullscreen/wide mode, letting player handle ESC')
+        return
+      }
     }
 
     // 焦点不在输入框，通知父窗口关闭抽屉

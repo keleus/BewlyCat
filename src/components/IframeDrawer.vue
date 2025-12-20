@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onKeyStroke, useEventListener } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 
 import { DrawerType, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
@@ -239,10 +239,13 @@ const escPressedTimer = ref<NodeJS.Timeout | null>(null)
 const disableEscPress = ref<boolean>(false)
 
 /**
- * Listen to Escape key on the main window, not iframe
+ * Listen to Escape key on the main window using capture phase
  * Only active when this drawer is the active drawer
  */
-onKeyStroke('Escape', (e: KeyboardEvent) => {
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key !== 'Escape' && e.code !== 'Escape')
+    return
+
   console.log('[IframeDrawer] ESC key pressed!')
   console.log('[IframeDrawer] show.value:', show.value)
   console.log('[IframeDrawer] activeDrawer.value:', activeDrawer.value)
@@ -257,6 +260,8 @@ onKeyStroke('Escape', (e: KeyboardEvent) => {
 
   console.log('[IframeDrawer] Processing ESC key')
   e.preventDefault()
+  e.stopPropagation()
+
   if (settings.value.closeDrawerWithoutPressingEscAgain) {
     console.log('[IframeDrawer] closeDrawerWithoutPressingEscAgain = true, closing immediately')
     clearTimeout(escPressedTimer.value!)
@@ -281,6 +286,16 @@ onKeyStroke('Escape', (e: KeyboardEvent) => {
       isEscPressed.value = false
     }, 1300)
   }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeydown, true)
+  document.addEventListener('keydown', handleKeydown, true)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown, true)
+  document.removeEventListener('keydown', handleKeydown, true)
 })
 
 watchEffect(() => {
@@ -298,6 +313,31 @@ watchEffect(() => {
         headerShow.value = true
         disableEscPress.value = false
         isPageFullscreen.value = false
+        break
+      case 'BEWLY_DRAWER_CLOSE_REQUEST':
+        // 来自 iframe 的关闭请求
+        if (data.source === 'iframe' && activeDrawer.value === DrawerType.IframeDrawer) {
+          console.log('[IframeDrawer] Received close request from iframe')
+          if (settings.value.closeDrawerWithoutPressingEscAgain) {
+            handleClose()
+          }
+          else {
+            if (isEscPressed.value) {
+              console.log('[IframeDrawer] Second ESC from iframe, closing')
+              handleClose()
+            }
+            else {
+              console.log('[IframeDrawer] First ESC from iframe, waiting for second press')
+              isEscPressed.value = true
+              if (escPressedTimer.value) {
+                clearTimeout(escPressedTimer.value)
+              }
+              escPressedTimer.value = setTimeout(() => {
+                isEscPressed.value = false
+              }, 1300)
+            }
+          }
+        }
         break
     }
     // 兼容旧的消息格式（没有 type 字段）
