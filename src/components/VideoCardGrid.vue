@@ -397,7 +397,7 @@ const isHorizontal = computed(() => {
 const gridContainerStyle = computed(() => ({
   pointerEvents: (isScrolling.value ? 'none' : 'auto') as 'none' | 'auto',
   ...shadowStyleVars.value,
-  ...gridCssVars,
+  ...gridCssVars.value,
 }))
 
 // 是否显示初始骨架屏（数据量不足阈值且还有更多内容时）
