@@ -39,17 +39,22 @@ export function detachOriginalBilibiliTopBar(doc: Document) {
 }
 
 export function ensureOriginalBilibiliTopBarAppended(doc: Document): boolean {
-  if (getDocumentTopBar(doc))
-    return true
-
-  if (!cachedOriginalTopBar)
+  const header = getDocumentTopBar(doc) || cachedOriginalTopBar
+  if (!header)
     return false
 
-  // Keep behavior consistent with the previous implementation: hide extra header contents.
-  const innerUselessContents = cachedOriginalTopBar.querySelectorAll<HTMLElement>(':scope > *:not(.bili-header__bar)')
+  // 1. 隐藏多余段落（如 banner 等），只保留顶栏条
+  const innerUselessContents = header.querySelectorAll<HTMLElement>(':scope > *:not(.bili-header__bar)')
   innerUselessContents.forEach(item => (item.style.display = 'none'))
 
-  doc.body.prepend(cachedOriginalTopBar)
+  // 2. 确保顶栏是 body 的直接子元素且位于最前
+  // 即使 header 已存在，如果它在某个被隐藏的父容器里，这里也会将其移动到 body 下
+  if (header.parentElement !== doc.body || header !== doc.body.firstElementChild) {
+    doc.body.prepend(header)
+  }
+
+  // 更新缓存引用
+  cachedOriginalTopBar = header
   return true
 }
 

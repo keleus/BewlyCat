@@ -409,7 +409,7 @@ async function onDOMLoaded() {
     // 推荐使用方案2：CSS隐藏
     // 使用 CSS 隐藏 B 站原始页面，保留 DOM 结构
     injectCSS(`
-      body > *:not(#bewly):not(script):not(style) {
+      body > *:not(#bewly):not(script):not(style):not(.bili-header) {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
@@ -418,6 +418,13 @@ async function onDOMLoaded() {
       }
       .home-redesign-base, .bilibili-gate-root {
         display: none !important;
+      }
+      /* Ensure the original top bar remains visible and properly positioned */
+      /* The visibility/display will be controlled by .remove-top-bar class in removeTopBar.scss */
+      .bili-header {
+        position: relative !important;
+        left: 0 !important;
+        pointer-events: auto !important;
       }
     `)
 
