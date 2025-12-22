@@ -419,6 +419,13 @@ async function onDOMLoaded() {
       .home-redesign-base, .bilibili-gate-root {
         display: none !important;
       }
+      /* Ensure the original top bar remains visible and properly positioned */
+      /* The visibility/display will be controlled by .remove-top-bar class in removeTopBar.scss */
+      .bili-header {
+        position: relative !important;
+        left: 0 !important;
+        pointer-events: auto !important;
+      }
     `)
 
     // 温和的脚本清理（可选，减少后台资源消耗）
