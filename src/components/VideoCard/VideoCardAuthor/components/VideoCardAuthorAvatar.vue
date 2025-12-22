@@ -84,7 +84,8 @@ const isKetang = computed(() => {
       <Picture
         :src="`${removeHttpFromUrl(item.authorFace)}@50w_50h_1c`"
         loading="lazy"
-        w-inherit h-inherit
+        w-full h-full
+        aspect-ratio="1/1"
         rounded="1/2"
       />
 
