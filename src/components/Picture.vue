@@ -1,9 +1,12 @@
 <script setup lang="ts">
-defineProps<{
+withDefaults(defineProps<{
   src: string
   loading?: 'lazy' | 'eager'
   alt?: string
-}>()
+  aspectRatio?: string
+}>(), {
+  aspectRatio: '16 / 9',
+})
 </script>
 
 <template>
@@ -11,7 +14,7 @@ defineProps<{
     w-full max-w-full align-middle object-cover
     rounded="$bew-radius"
     bg="$bew-skeleton"
-    style="aspect-ratio: 16 / 9; display: block;"
+    :style="{ aspectRatio, display: 'block' }"
   >
     <source :srcset="`${src}.avif`" type="image/avif">
     <source :srcset="`${src}.webp`" type="image/webp">
@@ -22,7 +25,7 @@ defineProps<{
       decoding="async"
       block w-full h-full object-cover
       rounded-inherit
-      style="aspect-ratio: 16 / 9;"
+      :style="{ aspectRatio }"
     >
   </picture>
 </template>
