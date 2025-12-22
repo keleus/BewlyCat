@@ -210,8 +210,10 @@ function setCurrentTitle() {
           <!-- Mask -->
           <div
             pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
+            bg="$bew-elevated-alt"
             style="
-              mask-image: linear-gradient(to bottom,  black 0, transparent 100%);
+              opacity: 0.9;
+              mask-image: linear-gradient(to bottom, black 0, transparent 100%);
               -webkit-mask-image: linear-gradient(to bottom, black 0, transparent 100%);
               backdrop-filter: blur(6px);
             "
@@ -238,8 +240,8 @@ function setCurrentTitle() {
         <OverlayScrollbarsComponent
           ref="scrollbarRef"
           style="
-            mask-image: linear-gradient(to bottom, transparent 0%, black 80px 30%);
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 80px 30%);
+            mask-image: linear-gradient(to bottom, transparent 0, black 80px);
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0, black 80px);
           "
           element="div" defer
           h-inherit

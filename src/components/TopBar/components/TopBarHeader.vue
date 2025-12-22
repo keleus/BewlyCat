@@ -120,10 +120,13 @@ function refreshSearchContent() {
       v-if="!reachTop"
       style="
         mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
+        -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
       "
       pos="absolute top-0 left-0" w-full h="$bew-top-bar-height"
       pointer-events-none
+      bg="$bew-bg"
       :style="{
+        opacity: 0.9,
         backdropFilter: settings.enableFrostedGlass ? 'blur(12px)' : 'none',
       }"
     />
