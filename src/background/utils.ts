@@ -195,7 +195,11 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
       }
 
       // get cant take body
-      const fetchOpt: any = { method, headers: requestHeaders }
+      const fetchOpt: any = {
+        method,
+        headers: requestHeaders,
+        credentials: 'include', // 重要：在Chrome/Edge中必须添加此项才能携带Cookie
+      }
       if (!isGET)
         fetchOpt.body = requestBody
 
