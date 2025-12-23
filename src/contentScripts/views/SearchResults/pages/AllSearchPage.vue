@@ -642,29 +642,9 @@ defineExpose({
         </div>
       </div>
 
-      <!-- 视频（始终渲染，由 Grid 统一处理空状态） -->
-      <div>
-        <h3 v-if="videoList.length > 0" text="lg $bew-text-1" font-medium mb-3 mt-6>
-          视频
-        </h3>
-        <VideoCardGrid
-          :items="videoList"
-          :transform-item="(item: any) => item.type === 'live_room' ? convertLiveRoomData(item) : convertVideoData(item)"
-          :get-item-key="(item: any) => item.aid || item.id || item.roomid"
-          grid-layout="adaptive"
-          :loading="isLoading"
-          :no-more-content="!hasMore"
-          :show-preview="true"
-          :show-watcher-later="true"
-          :empty-description="t('common.no_data')"
-          enable-row-padding
-          @load-more="handleLoadMore"
-        />
-      </div>
-
       <!-- 各类 section -->
       <template v-for="(section, index) in results?.result" :key="`${section?.result_type ?? 'unknown'}-${index}`">
-        <!-- 跳过视频（已在上面渲染） -->
+        <!-- 跳过视频（将在最后渲染） -->
         <template v-if="section?.result_type === 'video'" />
 
         <!-- 番剧/影视 -->
@@ -907,6 +887,26 @@ defineExpose({
           />
         </div>
       </template>
+
+      <!-- 视频（放在最后，因为有滚动加载） -->
+      <div>
+        <h3 v-if="videoList.length > 0" text="lg $bew-text-1" font-medium mb-3 mt-6>
+          视频
+        </h3>
+        <VideoCardGrid
+          :items="videoList"
+          :transform-item="(item: any) => item.type === 'live_room' ? convertLiveRoomData(item) : convertVideoData(item)"
+          :get-item-key="(item: any) => item.aid || item.id || item.roomid"
+          grid-layout="adaptive"
+          :loading="isLoading"
+          :no-more-content="!hasMore"
+          :show-preview="true"
+          :show-watcher-later="true"
+          :empty-description="t('common.no_data')"
+          enable-row-padding
+          @load-more="handleLoadMore"
+        />
+      </div>
     </div>
 
     <!-- Pagination -->

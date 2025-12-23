@@ -484,6 +484,10 @@ function getTransformedVideo(item: T): Video | undefined {
   if (!item)
     return undefined
 
+  // 检查是否为骨架屏占位，骨架屏不需要转换
+  if ((item as any)?._isSkeleton)
+    return undefined
+
   try {
     const keyType = typeof item
     if (keyType === 'object' || keyType === 'function') {
