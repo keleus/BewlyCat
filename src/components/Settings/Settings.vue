@@ -210,9 +210,7 @@ function setCurrentTitle() {
           <!-- Mask -->
           <div
             pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
-            bg="$bew-elevated-alt"
             style="
-              opacity: 0.9;
               mask-image: linear-gradient(to bottom, black 0, transparent 100%);
               -webkit-mask-image: linear-gradient(to bottom, black 0, transparent 100%);
               backdrop-filter: blur(6px);

@@ -124,9 +124,7 @@ function refreshSearchContent() {
       "
       pos="absolute top-0 left-0" w-full h="$bew-top-bar-height"
       pointer-events-none
-      bg="$bew-bg"
       :style="{
-        opacity: 0.9,
         backdropFilter: settings.enableFrostedGlass ? 'blur(12px)' : 'none',
       }"
     />
