@@ -199,6 +199,8 @@ settings:
   home_adaptive_title_auto_size_desc: 根據網格闊度自動調整標題字體大小
   home_adaptive_title_font_size: 標題字體大小
   home_adaptive_title_font_size_desc: 固定標題字體大小（像素），開啟自動時唔生效
+  video_card_title_font_size: 標題字體大小
+  video_card_title_font_size_desc: 控制影片卡片標題嘅字體大小。
   video_card_author_font_size: UP 資訊字體大小
   video_card_author_font_size_desc: 控制影片卡片上 UP 主名稱嘅字體大小。
   video_card_meta_font_size: 標籤同時間字體大小

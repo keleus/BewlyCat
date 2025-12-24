@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { settings } from '~/logic'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 
 import type { Video } from '../types'
@@ -16,6 +15,7 @@ interface Props {
   videoUrl?: string
   moreBtn: boolean
   showVideoOptions: boolean
+  titleFontSizeClass: string
   titleStyle: Record<string, string | number>
   authorFontSizeClass: string
   metaFontSizeClass: string
@@ -30,7 +30,6 @@ const emit = defineEmits<{
 }>()
 
 const moreBtnRef = ref<HTMLDivElement | null>(null)
-const titleRef = ref<HTMLElement | null>(null)
 
 defineExpose({
   moreBtnRef,
@@ -76,12 +75,12 @@ const primaryTags = computed(() => {
             text="overflow-ellipsis $bew-text-1 lg"
           >
             <!-- 使用与真实文本相同的行高填充，考虑 line-height -->
-            <div w-full bg="$bew-skeleton" rounded-4px class="animate-pulse" style="height: 1em; margin-bottom: calc((var(--bew-title-line-height, 1.35) - 1) * 0.5em);" />
-            <div w="3/4" bg="$bew-skeleton" rounded-4px class="animate-pulse" style="height: 1em;" />
+            <div w-full bg="$bew-skeleton" rounded-4px style="height: 1em; margin-bottom: calc((var(--bew-title-line-height, 1.35) - 1) * 0.5em);" />
+            <div w="3/4" bg="$bew-skeleton" rounded-4px style="height: 1em;" />
           </div>
           <div
             v-if="layout === 'modern'" shrink-0 w-8 h-8 rounded="1/2"
-            bg="$bew-skeleton" class="animate-pulse"
+            bg="$bew-skeleton"
           />
         </div>
 
@@ -93,18 +92,17 @@ const primaryTags = computed(() => {
         >
           <div
             w="34px" h="34px" rounded="1/2" bg="$bew-skeleton" shrink-0
-            class="animate-pulse"
           />
           <div flex="~ col gap-1" w="[calc(100%-50px)]">
             <!-- 作者名称骨架：使用与真实文本相同的字体大小和行高 -->
             <div
-              w="60%" bg="$bew-skeleton" rounded-4px class="animate-pulse"
+              w="60%" bg="$bew-skeleton" rounded-4px
               :class="authorFontSizeClass"
               style="height: 1em;"
             />
             <!-- 标签骨架：使用与真实标签相同的高度，包括 padding -->
             <div
-              w="80%" bg="$bew-skeleton" rounded-4px class="animate-pulse"
+              w="80%" bg="$bew-skeleton" rounded-4px
               :class="metaFontSizeClass"
               style="height: calc(1em + 0.24em);"
             />
@@ -118,7 +116,7 @@ const primaryTags = computed(() => {
           :class="metaFontSizeClass"
         >
           <div
-            w="60px" bg="$bew-skeleton" rounded="$bew-radius" class="animate-pulse"
+            w="60px" bg="$bew-skeleton" rounded="$bew-radius"
             style="height: calc(1em + 0.24em);"
           />
         </div>
@@ -133,7 +131,7 @@ const primaryTags = computed(() => {
             :class="metaFontSizeClass"
           >
             <div
-              bg="$bew-skeleton" rounded="$bew-radius" class="animate-pulse"
+              bg="$bew-skeleton" rounded="$bew-radius"
               lh-6 p="x-2" w="60px"
               style="height: calc(1em + 0.24em);"
             />
@@ -153,9 +151,9 @@ const primaryTags = computed(() => {
               <div
                 v-if="horizontal"
                 w="34px" h="34px" rounded="1/2" bg="$bew-skeleton"
-                shrink-0 m-r-2 class="animate-pulse"
+                shrink-0 m-r-2
               />
-              <div w="100px" bg="$bew-skeleton" rounded-4px class="animate-pulse" style="height: 1em;" />
+              <div w="100px" bg="$bew-skeleton" rounded-4px style="height: 1em;" />
             </div>
 
             <!-- View & Danmaku skeleton -->
@@ -164,7 +162,7 @@ const primaryTags = computed(() => {
                 :class="metaFontSizeClass"
                 text="$bew-text-2"
               >
-                <div w="150px" bg="$bew-skeleton" rounded-4px class="animate-pulse" style="height: 1em; display: inline-block;" />
+                <div w="150px" bg="$bew-skeleton" rounded-4px style="height: 1em; display: inline-block;" />
               </div>
             </div>
 
@@ -175,7 +173,7 @@ const primaryTags = computed(() => {
               :class="metaFontSizeClass"
             >
               <div
-                bg="$bew-skeleton" rounded="$bew-radius" class="animate-pulse"
+                bg="$bew-skeleton" rounded="$bew-radius"
                 lh-6 p="x-2" w="60px"
                 style="height: calc(1em + 0.24em);"
               />
@@ -197,13 +195,12 @@ const primaryTags = computed(() => {
       <div class="group/desc" flex="~ col" :class="layout === 'modern' ? 'gap-2' : ''" w="full" align="items-start">
         <div flex="~ gap-1 justify-between items-start" w="full" pos="relative">
           <h3
-            ref="titleRef"
             :class="[
               video.liveStatus === 1 ? 'keep-one-line' : 'keep-two-lines',
-              { 'bew-title-auto': settings.homeAdaptiveTitleAutoSize },
               layout === 'modern' ? 'video-card-title' : '',
+              titleFontSizeClass,
             ]"
-            text="overflow-ellipsis $bew-text-1 lg"
+            text="overflow-ellipsis $bew-text-1"
             :style="titleStyle"
             cursor="pointer"
             :title="video.title"
@@ -497,13 +494,6 @@ const primaryTags = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-.bew-title-auto {
-  /* Auto scale by actual card width (fallback to base grid width)
-     Increase responsiveness and use unitless line-height for better small-size rendering */
-  font-size: clamp(12px, calc((var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 20px), 30px);
-  line-height: clamp(1.15, calc(1.1 + (var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 0.2), 1.5);
-}
-
 .video-card-title {
   &.keep-two-lines {
     min-height: calc(var(--bew-title-line-height, 1.35) * 2em);

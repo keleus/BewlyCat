@@ -258,6 +258,8 @@ export interface Settings {
   homeAdaptiveTitleFontSize: number
   // Auto adjust title font size based on grid width
   homeAdaptiveTitleAutoSize: boolean
+  // Video card title font size token
+  videoCardTitleFontSize: VideoCardFontSizeSetting
   // Video card author (UP) font size token
   videoCardAuthorFontSize: VideoCardFontSizeSetting
   // Video card tag/meta font size token
@@ -464,6 +466,7 @@ export const originalSettings: Settings = {
   homeAdaptiveCardMinWidth: 280,
   homeAdaptiveTitleFontSize: 16,
   homeAdaptiveTitleAutoSize: true,
+  videoCardTitleFontSize: 'base',
   videoCardAuthorFontSize: 'sm',
   videoCardMetaFontSize: 'xs',
   videoCardLayout: 'modern',

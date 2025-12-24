@@ -245,13 +245,12 @@ onBeforeUnmount(() => {
     overflow-hidden
     cursor-pointer
     group-hover:z-2
-    style="aspect-ratio: 16 / 9; contain: layout style;"
+    style="aspect-ratio: 16 / 9; contain: layout style; will-change: auto;"
   >
     <!-- Skeleton mode -->
     <div
       v-if="skeleton"
       w-full h-full bg="$bew-skeleton" rounded="$bew-radius"
-      class="animate-pulse"
       style="aspect-ratio: 16 / 9;"
     />
 
@@ -491,18 +490,10 @@ onBeforeUnmount(() => {
   left: 0;
   right: 0;
   bottom: 0;
+  /* 简化渐变：从6层减少到3层，提升性能 */
   background: var(
     --bew-video-card-shadow-gradient,
-    linear-gradient(
-      to top,
-      rgba(0, 0, 0, 0.8) 0%,
-      rgba(0, 0, 0, 0.7) 30%,
-      rgba(0, 0, 0, 0.5) 50%,
-      rgba(0, 0, 0, 0.3) 70%,
-      rgba(0, 0, 0, 0.15) 85%,
-      rgba(0, 0, 0, 0.05) 95%,
-      transparent 100%
-    )
+    linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 50%, transparent 100%)
   );
   height: var(--bew-video-card-shadow-height-multiplier, calc(var(--video-card-stats-overlay-scale, 1.4) * 100%));
   border-bottom-left-radius: inherit;

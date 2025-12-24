@@ -2,6 +2,7 @@
 import { computed, ref, watch, watchEffect } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
 import { settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
 import { calcCurrentTime, numFormatter } from '~/utils/dataFormatter'
@@ -37,6 +38,9 @@ const layout = computed((): 'modern' | 'old' => {
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
 const logic = useVideoCardLogic(props)
 const { mainAppRef } = useBewlyApp()
+
+// 使用共享样式（避免每个卡片重复计算）
+const { titleFontSizeClass, titleStyle, authorFontSizeClass, metaFontSizeClass } = useVideoCardSharedStyles()
 
 // Modern layout specific: cover stats calculation
 const statSuffixPattern = /(播放量?|观看|弹幕|点赞|views?|likes?|danmakus?|comments?|回复|人气|转发|分享|[次条人])/gi
@@ -142,26 +146,6 @@ const coverStatsStyle = computed(() => {
 
   // 所有响应式样式都通过 CSS 容器查询处理，这里只设置基础值
   return {}
-})
-
-// Title and text sizing
-const DEFAULT_TITLE_LINE_HEIGHT = 1.35
-const CUSTOM_TITLE_LINE_HEIGHT = 1.25
-
-const titleStyle = computed((): Record<string, string | number> => {
-  const { homeAdaptiveTitleAutoSize, homeAdaptiveTitleFontSize } = settings.value
-
-  if (!homeAdaptiveTitleAutoSize && homeAdaptiveTitleFontSize) {
-    return {
-      fontSize: `${homeAdaptiveTitleFontSize}px`,
-      lineHeight: CUSTOM_TITLE_LINE_HEIGHT.toString(),
-      '--bew-title-line-height': CUSTOM_TITLE_LINE_HEIGHT.toString(),
-    }
-  }
-
-  return {
-    '--bew-title-line-height': DEFAULT_TITLE_LINE_HEIGHT.toString(),
-  }
 })
 
 // Highlight tags calculation - 使用查找表优化性能
@@ -276,16 +260,6 @@ function parseDurationStr(durationStr?: string) {
   return seconds
 }
 
-const VIDEO_CARD_FONT_SIZE_MAP = {
-  xs: 'text-xs',
-  sm: 'text-sm',
-  base: 'text-base',
-  lg: 'text-lg',
-} as const
-
-const authorFontSizeClass = computed(() => VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardAuthorFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.sm)
-const metaFontSizeClass = computed(() => VIDEO_CARD_FONT_SIZE_MAP[settings.value.videoCardMetaFontSize] ?? VIDEO_CARD_FONT_SIZE_MAP.xs)
-
 const coverImageUrl = computed(() =>
   props.video ? `${logic.removeHttpFromUrl(props.video.cover)}@672w_378h_1c_!web-home-common-cover` : '',
 )
@@ -397,6 +371,7 @@ provide('getVideoType', () => props.type!)
           :video-url="logic.videoUrl.value"
           :more-btn="moreBtn"
           :show-video-options="logic.showVideoOptions.value"
+          :title-font-size-class="titleFontSizeClass"
           :title-style="titleStyle"
           :author-font-size-class="authorFontSizeClass"
           :meta-font-size-class="metaFontSizeClass"
@@ -442,6 +417,10 @@ provide('getVideoType', () => props.type!)
   /* 防止字体度量变化 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* 防止骨架屏和真实内容切换时的布局偏移：
+     确保容器在加载过程中保持稳定的最小高度 */
+  min-height: fit-content;
 }
 
 .horizontal-card-cover {

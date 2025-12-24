@@ -168,25 +168,11 @@ function resetColumns() {
         <Radio v-model="settings.showVideoCardRecommendTag" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.home_adaptive_title_auto_size')" :desc="$t('settings.home_adaptive_title_auto_size_desc')">
-        <Radio v-model="settings.homeAdaptiveTitleAutoSize" />
-      </SettingsItem>
-
-      <SettingsItem :title="$t('settings.home_adaptive_title_font_size')" :desc="$t('settings.home_adaptive_title_font_size_desc')">
-        <div flex="~ justify-end" w-full>
-          <Input
-            v-model="settings.homeAdaptiveTitleFontSize"
-            type="number"
-            :min="12"
-            :max="28"
-            flex-1
-            :disabled="settings.homeAdaptiveTitleAutoSize"
-          >
-            <template #suffix>
-              px
-            </template>
-          </Input>
-        </div>
+      <SettingsItem
+        :title="$t('settings.video_card_title_font_size')"
+        :desc="$t('settings.video_card_title_font_size_desc')"
+      >
+        <Select v-model="settings.videoCardTitleFontSize" :options="videoCardFontSizeOptions" w="full" />
       </SettingsItem>
 
       <SettingsItem

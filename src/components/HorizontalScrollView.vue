@@ -81,8 +81,9 @@ function handleMouseScroll(event: WheelEvent) {
 </template>
 
 <style lang="scss" scoped>
+/* 简化遮罩渐变：使用3个关键点代替4个，提升性能 */
 .scroll-mask {
-  mask-image: linear-gradient(to right, transparent 0, black 40px, black calc(100% - 40px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0, black 40px, black calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, black 40px, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, black 40px, transparent 100%);
 }
 </style>

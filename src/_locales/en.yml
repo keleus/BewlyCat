@@ -256,6 +256,8 @@ settings:
   home_adaptive_title_auto_size_desc: Adjusts title font size based on the grid width
   home_adaptive_title_font_size: Title font size
   home_adaptive_title_font_size_desc: Fixed title font size (px); disabled when auto is on
+  video_card_title_font_size: Title Font Size
+  video_card_title_font_size_desc: Controls the font size of the video card title.
   video_card_author_font_size: UP info font size
   video_card_author_font_size_desc: Controls the font size for uploader names shown on video cards.
   video_card_meta_font_size: Tag & timestamp font size
