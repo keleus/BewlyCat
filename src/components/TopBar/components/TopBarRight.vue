@@ -514,7 +514,7 @@ const shouldShowDivider = computed(() => {
           :style="{ opacity: popupVisible?.userPanel ? 1 : 0 }"
           bg="[url(https://i0.hdslb.com/bfs/seed/jinkela/short/user-avatar/big-vip.svg)] contain no-repeat"
           w="28%" h="28%" z-1
-          pos="absolute bottom--20px right-28px" duration-300
+          pos="absolute bottom-18px right-11px" duration-300
         />
 
         <Transition name="slide-in">
