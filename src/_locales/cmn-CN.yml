@@ -53,15 +53,6 @@ common:
     right: 右侧
     top: 顶部
     bottom: 底部
-update_log:
-  title: 更新日志
-  current_version: 当前版本
-  whats_new: 新功能上线
-  check_details: 查看本次更新的新功能和改进内容
-  view_full_changelog: 查看完整更新日志
-  close: 关闭
-  close_and_never_show: 关闭,本版本不再提示
-  new_version_available: 版本已更新
 iframe_drawer:
   open_in_new_tab: 在新标签页打开
   close: 关闭
@@ -449,7 +440,6 @@ settings:
   follow_bilibili_evolved_color: 使用 Bilibili Evolved 主题色
   follow_bilibili_evolved_color_desc: 每次选完 Bilibili Evolved 主题色时，记得重新选中这一选项以更新配置。
   links: 链接
-  changelog: 更新日志
   import_settings: 导入设置
   export_settings: 导出设置
   export_settings_desc: 一些敏感的数据，例如 access key，可能需要重新获取。
@@ -457,7 +447,7 @@ settings:
   reset_settings_confirm: |-
     重置设置？
     该操作无法撤销。你确定要重置你的设置吗？
-  contributors: BewlyCat贡献者
+  contributors: BewlyBewly历史贡献者
   enable_undo_refresh_button: 启用撤销刷新按钮（仅在Web推荐模式下有效）
   enable_undo_refresh_button_desc: 刷新页面后显示撤销按钮，点击可恢复刷新前的内容
   shortcuts:

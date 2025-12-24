@@ -3,14 +3,12 @@ import { defineConfig } from 'vite'
 
 import packageJson from './package.json'
 import { isDev, isFirefox, isSafari, r } from './scripts/utils'
-import { BuildInfoPlugin } from './scripts/vite-plugin-build-info'
 import { sharedConfig } from './vite.config'
 
 // bundling the content script using Vite
 export default defineConfig({
   ...sharedConfig,
   plugins: [
-    BuildInfoPlugin(),
     UnoCSS(),
     ...sharedConfig.plugins!,
   ],

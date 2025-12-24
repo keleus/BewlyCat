@@ -4,10 +4,9 @@
   "type": "module",
   "version": "1.5.1",
   "private": true,
-  "packageManager": "pnpm@10.24.0",
+  "packageManager": "pnpm@10.21.0",
   "description": "Just make a few small changes to your Bilibili homepage.",
   "homepage": "https://github.com/keleus/BewlyCat",
-  "changelog": "https://github.com/keleus/BewlyCat/releases",
   "scripts": {
     "build-pack": "pnpm build && pnpm build-firefox && pnpm pack:zip && pnpm pack:zip-firefox && pnpm pack:zip-firefox-sources",
     "dev": "npm run clear && cross-env NODE_ENV=development run-p dev:*",

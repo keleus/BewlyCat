@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { onKeyStroke, useEventListener, useThrottleFn, useToggle } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { nextTick, provide, ref, watch } from 'vue'
+import { provide, ref } from 'vue'
 
-import UpdateLogNotifier from '~/components/UpdateLogNotifier.vue'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
@@ -17,7 +16,6 @@ import { useSettingsStore } from '~/stores/settingsStore'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
-import { getChangelogUrl, getExtensionVersion, shouldShowUpdateLog } from '~/utils/updateLog'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
@@ -29,11 +27,6 @@ function isFestivalPage(): boolean {
 const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
 const topBarStore = useTopBarStore()
-
-// Update log notifier state
-const showUpdateLogNotifier = ref(false)
-const currentVersion = ref('')
-const changelogUrl = ref('')
 
 // Conditionally use dark mode (skip on festival pages)
 let isDark: Ref<boolean>
@@ -347,57 +340,8 @@ watch([() => showTopBar.value, () => activatedPage.value], () => {
 // Setup necessary settings watchers
 setupNecessarySettingsWatchers()
 
-// Update log dialog handlers
-function handleCloseAndNeverShowUpdateLog() {
-  // Hide notifier immediately in current tab
-  showUpdateLogNotifier.value = false
-
-  // Save current version as read
-  // This will trigger storage change event and sync to all tabs automatically
-  settings.value.lastReadVersion = currentVersion.value
-}
-
-// Check if we should show update log notifier
-async function checkUpdateLog() {
-  // Only show update log on homepage, not in iframes or other pages
-  if (!isHomePage() || isInIframe())
-    return
-
-  const version = await getExtensionVersion()
-  currentVersion.value = version
-  changelogUrl.value = await getChangelogUrl()
-
-  // Important: Only show if version is different from last read
-  // This prevents showing on refresh when already read
-  if (shouldShowUpdateLog(settings.value.lastReadVersion, version)) {
-    // Show the notifier icon immediately
-    showUpdateLogNotifier.value = true
-  }
-  else {
-    // Explicitly set to false to ensure it's hidden
-    showUpdateLogNotifier.value = false
-  }
-}
-
-// Watch settings.lastReadVersion for changes from other tabs
-// useStorageLocal uses browser.storage which automatically syncs across tabs
-watch(() => settings.value.lastReadVersion, (newVersion, oldVersion) => {
-  // Ignore if currentVersion hasn't been set yet
-  if (!currentVersion.value)
-    return
-
-  // Only react if the value actually changed and matches current version
-  if (oldVersion !== newVersion && newVersion === currentVersion.value) {
-    // Version has been marked as read in another tab
-    showUpdateLogNotifier.value = false
-  }
-})
-
 onMounted(() => {
   window.dispatchEvent(new CustomEvent(BEWLY_MOUNTED))
-
-  // Check for updates and show update log notifier if needed
-  checkUpdateLog()
 
   if (isHomePage()) {
     // Force overwrite Bilibili Evolved body tag & html tag background color
@@ -929,13 +873,6 @@ if (settings.value.cleanUrlArgument) {
       v-if="showIframeDrawer"
       :url="iframeDrawerURL"
       @close="showIframeDrawer = false"
-    />
-
-    <UpdateLogNotifier
-      v-if="showUpdateLogNotifier"
-      :version="currentVersion"
-      :changelog-url="changelogUrl"
-      @close-and-never-show="handleCloseAndNeverShowUpdateLog"
     />
   </div>
 </template>

@@ -53,15 +53,6 @@ common:
     right: Right
     top: Top
     bottom: Bottom
-update_log:
-  title: What's New
-  current_version: Current Version
-  whats_new: New Features Available
-  check_details: Check out the new features and improvements in this update
-  view_full_changelog: View Full Changelog
-  close: Close
-  close_and_never_show: Close and don't show again for this version
-  new_version_available: Version updated
 iframe_drawer:
   open_in_new_tab: Open in new tab
   close: Close
@@ -459,7 +450,6 @@ settings:
     After changing the theme color in Bilibili Evolved, you will need to
     re-select this option in order to update the theme color.
   links: Links
-  changelog: Changelog
   import_settings: Import Settings
   export_settings: Export Settings
   export_settings_desc: >-
@@ -471,7 +461,7 @@ settings:
 
     This operation cannot be reversed. Are you sure you want to reset your
     settings?
-  contributors: BewlyCat Contributors
+  contributors: BewlyBewly History Contributors
   enable_settings_sync: Allow syncing settings
   enable_settings_sync_desc: >-
     Sync extension settings across different devices (requires signing into the
