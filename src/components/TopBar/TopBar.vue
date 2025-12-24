@@ -119,6 +119,9 @@ const scrollTop = ref<number>(0)
 const oldScrollTop = ref<number>(0)
 const SCROLL_THRESHOLD = 10 // 滚动阈值，只有滚动超过这个值才触发顶栏显示/隐藏
 
+// 保存overlay scroll的handler引用，用于正确移除监听器
+let overlayScrollHandler: ((scrollTop: number) => void) | null = null
+
 function handleScroll(arg?: number | Event): void {
   // 优先使用传入的 scrollTop 值，避免重复 DOM 读取
   if (typeof arg === 'number') {
@@ -234,7 +237,8 @@ function setupScrollListeners() {
     toggleTopBarVisible(true)
   }
 
-  emitter.off(OVERLAY_SCROLL_BAR_SCROLL)
+  // 清理之前的监听器
+  cleanupScrollListeners()
 
   // 在视频页面根据配置决定是否设置滚动监听
   if (isVideoOrBangumiPage()) {
@@ -247,9 +251,11 @@ function setupScrollListeners() {
 
   // 设置滚动监听
   if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
-    emitter.on(OVERLAY_SCROLL_BAR_SCROLL, (payloadScrollTop) => {
+    // 创建并保存handler引用
+    overlayScrollHandler = (payloadScrollTop: number) => {
       handleScroll(payloadScrollTop)
-    })
+    }
+    emitter.on(OVERLAY_SCROLL_BAR_SCROLL, overlayScrollHandler)
   }
   else {
     window.addEventListener('scroll', handleScroll)
@@ -258,7 +264,11 @@ function setupScrollListeners() {
 
 function cleanupScrollListeners() {
   window.removeEventListener('scroll', handleScroll)
-  emitter.off(OVERLAY_SCROLL_BAR_SCROLL)
+  // 只移除我们自己的handler，不影响其他组件（如VideoCardGrid）的监听器
+  if (overlayScrollHandler) {
+    emitter.off(OVERLAY_SCROLL_BAR_SCROLL, overlayScrollHandler)
+    overlayScrollHandler = null
+  }
 }
 
 function updateConflictingHeaderVisibility() {

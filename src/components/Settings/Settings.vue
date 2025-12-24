@@ -210,11 +210,11 @@ function setCurrentTitle() {
           <!-- Mask -->
           <div
             pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
-            style="
-              mask-image: linear-gradient(to bottom,  black 0, transparent 100%);
-              -webkit-mask-image: linear-gradient(to bottom,  black 0, transparent 100%);
-              backdrop-filter: blur(6px);
-            "
+            :style="{
+              maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, black 0, transparent 100%)' : 'none',
+              WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, black 0, transparent 100%)' : 'none',
+              backdropFilter: 'blur(6px)',
+            }"
             z--1 rounded-inherit
           />
           <div text="3xl" fw-bold>
@@ -237,10 +237,10 @@ function setCurrentTitle() {
         </header>
         <OverlayScrollbarsComponent
           ref="scrollbarRef"
-          style="
-            mask-image: linear-gradient(to bottom, transparent 0%, black 80px 30%);
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 80px 30%);
-          "
+          :style="{
+            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
+            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
+          }"
           element="div" defer
           h-inherit
           :options="{
