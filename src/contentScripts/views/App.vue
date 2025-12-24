@@ -7,7 +7,7 @@ import UpdateLogNotifier from '~/components/UpdateLogNotifier.vue'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
-import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
+import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
@@ -514,6 +514,7 @@ function handleBackToTop(targetScrollTop = 0 as number) {
 
 // 添加滚动结束检测
 let scrollEndTimer: ReturnType<typeof setTimeout> | null = null
+let scrollStateTimer: ReturnType<typeof setTimeout> | null = null
 let lastScrollTop = 0
 let rafId: number | null = null
 
@@ -521,6 +522,9 @@ function handleOsScroll() {
   // 如果已经有 RAF 在等待，跳过本次滚动事件
   if (rafId !== null)
     return
+
+  // 发出滚动开始信号（用于 useGlobalScrollState）
+  emitter.emit(OVERLAY_SCROLL_STATE_CHANGE, true)
 
   // 使用 RAF 将所有 DOM 读取合并到下一帧
   rafId = requestAnimationFrame(() => {
@@ -559,6 +563,16 @@ function handleOsScroll() {
     if (scrollEndTimer) {
       clearTimeout(scrollEndTimer)
     }
+
+    // 清除之前的滚动状态定时器
+    if (scrollStateTimer) {
+      clearTimeout(scrollStateTimer)
+    }
+
+    // 设置滚动状态结束检测，150ms后发出滚动结束信号
+    scrollStateTimer = setTimeout(() => {
+      emitter.emit(OVERLAY_SCROLL_STATE_CHANGE, false)
+    }, 150)
 
     // 设置滚动结束检测，在滚动停止150ms后再检查一次
     // 缓存当前的滚动值，避免在 setTimeout 中再次读取 DOM

@@ -10,7 +10,7 @@ import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
-import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles } from '~/utils/bilibiliTopBar'
+import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
@@ -433,6 +433,9 @@ async function onDOMLoaded() {
 
     ensureOriginalBilibiliTopBarAppended(document)
 
+    // Setup login button click handlers for the original Bilibili top bar
+    setupLoginButtonClickHandlers(document)
+
     // 如果要使用方案1（删除DOM），取消注释以下代码并注释掉上面的 CSS 方案：
     /*
     // 清理 B 站脚本资源，避免内存泄漏和性能问题
@@ -686,8 +689,11 @@ window.addEventListener('message', (event) => {
       return
 
     document.documentElement.classList.toggle('remove-top-bar', !useOriginalBilibiliTopBar)
-    if (useOriginalBilibiliTopBar)
+    if (useOriginalBilibiliTopBar) {
       resetBilibiliTopBarInlineStyles(document)
+      // Setup login button click handlers when switching to original top bar
+      setupLoginButtonClickHandlers(document)
+    }
   }
 }, { passive: true })
 

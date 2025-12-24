@@ -70,3 +70,61 @@ export function resetBilibiliTopBarInlineStyles(doc: Document) {
     })
   }
 }
+
+/**
+ * Add click event listeners to login buttons in the original Bilibili top bar
+ * to redirect users to the login page.
+ */
+export function setupLoginButtonClickHandlers(doc: Document) {
+  const LOGIN_URL = 'https://passport.bilibili.com/login'
+
+  // Function to handle login button binding
+  function bindLoginButton(button: HTMLElement) {
+    if (button.hasAttribute('data-bewly-login-handler'))
+      return
+
+    button.setAttribute('data-bewly-login-handler', 'true')
+    button.style.cursor = 'pointer'
+    button.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      window.location.href = LOGIN_URL
+    })
+  }
+
+  // Bind existing login buttons
+  const existingButtons = doc.querySelectorAll<HTMLElement>('.login-btn')
+  existingButtons.forEach(bindLoginButton)
+
+  // Use MutationObserver to handle dynamically added popup elements
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        // Check if the added node is an element
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const element = node as HTMLElement
+
+          // Check if the added node itself is a login button
+          if (element.classList.contains('login-btn')) {
+            bindLoginButton(element)
+          }
+
+          // Check if the added node contains login buttons
+          const loginButtons = element.querySelectorAll<HTMLElement>('.login-btn')
+          loginButtons.forEach(bindLoginButton)
+        }
+      })
+    })
+  })
+
+  // Observe the entire document for popup elements
+  observer.observe(doc.body, {
+    childList: true,
+    subtree: true,
+  })
+
+  // Return cleanup function
+  return () => {
+    observer.disconnect()
+  }
+}
