@@ -69,9 +69,9 @@ interface VideoCardGridProps<T = any> {
   transformItem: (item: T) => Video | undefined
 
   /**
-   * 生成唯一ID的函数
+   * 生成唯一ID的函数（可选接收 index 参数以确保唯一性）
    */
-  getItemKey: (item: T) => string | number
+  getItemKey: (item: T, index?: number) => string | number
 
   /**
    * 是否为骨架屏项（判断函数）
@@ -594,7 +594,7 @@ function getUniqueKey(item: T, index: number): string | number {
 
   try {
     // 否则使用正常的 key
-    return props.getItemKey(item)
+    return props.getItemKey(item, index)
   }
   catch {
     // 如果获取 key 失败，使用稳定的 index 作为 key

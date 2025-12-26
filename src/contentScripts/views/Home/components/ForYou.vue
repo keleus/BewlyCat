@@ -770,7 +770,7 @@ defineExpose({
       :no-more-content="noMoreContent"
       :need-to-login-first="needToLoginFirst"
       :transform-item="(item: VideoElement | AppVideoElement) => item.displayData"
-      :get-item-key="(item: VideoElement | AppVideoElement) => item.uniqueId"
+      :get-item-key="(item: VideoElement | AppVideoElement, index?: number) => `${item.uniqueId}-${index ?? 0}`"
       :video-type="settings.recommendationMode === 'web' ? 'rcmd' : 'appRcmd'"
       show-preview
       more-btn
