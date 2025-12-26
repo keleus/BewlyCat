@@ -210,7 +210,7 @@ function toggleTabContentLoading(loading: boolean) {
       >
         <section
           v-if="!(!settings.alwaysShowTabsOnHomePage && currentTabs.length === 1)"
-          style="backdrop-filter: var(--bew-filter-glass-1)"
+          class="glass-panel"
           bg="$bew-elevated" p-1
           w="[calc(100%-280px)]" max-w="fit"
           h-38px rounded-full
@@ -260,7 +260,7 @@ function toggleTabContentLoading(loading: boolean) {
 
         <div
           v-if="settings.enableGridLayoutSwitcher"
-          style="backdrop-filter: var(--bew-filter-glass-1)"
+          class="glass-panel"
           flex="~ gap-1 shrink-0" p-1 h-38px bg="$bew-elevated"
           ml-auto rounded-full
           shadow="[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]"
@@ -281,14 +281,16 @@ function toggleTabContentLoading(loading: boolean) {
       </header>
 
       <Transition name="page-fade">
-        <Component
-          :is="pages[activatedPage]" :key="activatedPage"
-          ref="tabPageRef"
-          :grid-layout="gridLayout.home"
-          :top-bar-visibility="topBarVisibility"
-          @before-loading="toggleTabContentLoading(true)"
-          @after-loading="toggleTabContentLoading(false)"
-        />
+        <KeepAlive :max="3">
+          <Component
+            :is="pages[activatedPage]" :key="activatedPage"
+            ref="tabPageRef"
+            :grid-layout="gridLayout.home"
+            :top-bar-visibility="topBarVisibility"
+            @before-loading="toggleTabContentLoading(true)"
+            @after-loading="toggleTabContentLoading(false)"
+          />
+        </KeepAlive>
       </Transition>
     </main>
   </div>
@@ -321,6 +323,14 @@ function toggleTabContentLoading(loading: boolean) {
 
 .hide {
   --uno: "important-translate-y--70px";
+}
+
+.glass-panel {
+  backdrop-filter: var(--bew-filter-glass-1);
+  /* 关键优化：绘制隔离，防止重绘传播 */
+  contain: paint layout;
+  /* 创建独立堆叠上下文，减少合成压力 */
+  isolation: isolate;
 }
 
 .home-tabs-inside {
