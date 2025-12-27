@@ -125,6 +125,8 @@ function refreshSearchContent() {
       pos="absolute top-0 left-0" w-full h="$bew-top-bar-height"
       pointer-events-none
       :style="{
+        backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-bg)',
+        opacity: settings.enableFrostedGlass ? 1 : 0.9,
         backdropFilter: settings.enableFrostedGlass ? 'blur(12px)' : 'none',
       }"
     />
