@@ -70,9 +70,20 @@ function handleClick(event: MouseEvent) {
   }
 
   // 在触屏模式下，topBar 类型的链接不执行打开操作，只显示弹窗
+  // 但有以下例外情况应该允许点击并响应打开行为设置：
+  // 1. 链接在弹窗内部（.bew-popover）
+  // 2. Home按钮（.home-button）
+  // 3. 固定分区（.pinned-channels__item）
   if (props.type === 'topBar' && settings.value.touchScreenOptimization) {
-    event.preventDefault()
-    return
+    const target = event.target as HTMLElement
+    const isInsidePopup = target.closest('.bew-popover')
+    const isHomeButton = target.closest('.home-button')
+    const isPinnedChannel = target.closest('.pinned-channels__item')
+
+    if (!isInsidePopup && !isHomeButton && !isPinnedChannel) {
+      event.preventDefault()
+      return
+    }
   }
 
   if (openMode.value === 'drawer') {
