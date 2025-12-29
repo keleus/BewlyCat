@@ -3,12 +3,9 @@
  * 优化的懒加载图片组件
  * 使用 Intersection Observer API 实现精确的懒加载控制
  * 只在图片即将进入视口时才开始加载，减少不必要的网络请求
- * 通过全局队列限制并发加载数量（可在设置中开关）
  */
 
 import { useGlobalScrollState } from '~/composables/useGlobalScrollState'
-import { enqueueImageLoad } from '~/composables/useImageLoadQueue'
-import { settings } from '~/logic'
 
 interface Props {
   src: string
@@ -37,51 +34,16 @@ const isLoaded = ref(false)
 const actualSrc = ref('')
 const pendingLoad = ref(false)
 
-// 队列控制句柄
-let queueHandle: { cancel: () => void, done: () => void } | null = null
-
-// IntersectionObserver 实例（需要在 startLoad 中可能重新观察）
+// IntersectionObserver 实例
 let observer: IntersectionObserver | null = null
 
-// 检查元素是否在视口内（不含 rootMargin）
-function isInViewport(): boolean {
-  if (!imgRef.value)
-    return false
-  const rect = imgRef.value.getBoundingClientRect()
-  return rect.top < window.innerHeight && rect.bottom > 0
-}
-
-// 直接加载图片（不经过队列）
-function loadDirectly() {
-  isVisible.value = true
-  actualSrc.value = props.src
-}
-
-// 开始加载图片（由队列调度）
+// 开始加载图片
 function startLoad() {
-  // 再次检查是否在视口附近，不在则跳过
-  if (!imgRef.value) {
-    queueHandle?.done()
-    queueHandle = null
-    return
-  }
-  const rect = imgRef.value.getBoundingClientRect()
-  const buffer = window.innerHeight // 一个视口高度的缓冲区
-  if (rect.bottom < -buffer || rect.top > window.innerHeight + buffer) {
-    // 图片已经离开视口太远，跳过加载，重新观察
-    queueHandle?.done()
-    queueHandle = null
-    if (observer && imgRef.value) {
-      observer.observe(imgRef.value)
-    }
-    return
-  }
-
   isVisible.value = true
   actualSrc.value = props.src
 }
 
-// 如果是 eager 模式，立即加载（不经过队列）
+// 如果是 eager 模式，立即加载
 if (props.loading === 'eager') {
   isVisible.value = true
   actualSrc.value = props.src
@@ -90,17 +52,11 @@ if (props.loading === 'eager') {
 // 使用全局共享的滚动状态
 const { isScrolling } = useGlobalScrollState()
 
-// 监听滚动停止，将待加载的图片加入队列或直接加载
+// 监听滚动停止，加载待加载的图片
 watch(isScrolling, (scrolling) => {
-  if (!scrolling && pendingLoad.value && !isVisible.value && !queueHandle) {
+  if (!scrolling && pendingLoad.value && !isVisible.value) {
     pendingLoad.value = false
-    if (settings.value.enableImageLoadConcurrencyLimit) {
-      // 视口内的图片优先加载
-      queueHandle = enqueueImageLoad(startLoad, isInViewport())
-    }
-    else {
-      loadDirectly()
-    }
+    startLoad()
   }
 })
 
@@ -111,16 +67,12 @@ onMounted(() => {
   observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting && !isVisible.value && !queueHandle) {
+        if (entry.isIntersecting && !isVisible.value) {
           if (isScrolling.value) {
             pendingLoad.value = true
           }
-          else if (settings.value.enableImageLoadConcurrencyLimit) {
-            // 视口内的图片优先加载
-            queueHandle = enqueueImageLoad(startLoad, isInViewport())
-          }
           else {
-            loadDirectly()
+            startLoad()
           }
           observer?.disconnect()
         }
@@ -138,20 +90,13 @@ onMounted(() => {
 
   onBeforeUnmount(() => {
     observer?.disconnect()
-    queueHandle?.cancel()
   })
 })
 
 // 监听图片加载完成
 function handleImageLoad() {
   isLoaded.value = true
-  queueHandle?.done()
   emit('loaded')
-}
-
-// 监听图片加载失败（释放队列槽位）
-function handleImageError() {
-  queueHandle?.done()
 }
 
 // 监听 src 变化（用于图片切换场景）
@@ -196,7 +141,6 @@ watch(() => props.src, (newSrc) => {
         :style="{ opacity: isLoaded ? 1 : 0 }"
         class="image-transition"
         @load="handleImageLoad"
-        @error="handleImageError"
       >
     </template>
   </picture>

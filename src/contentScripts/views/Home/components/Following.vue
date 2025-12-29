@@ -145,7 +145,7 @@ const emit = defineEmits<{
 
 useI18n()
 
-const { scrollbarRef } = useBewlyApp()
+const { scrollViewportRef } = useBewlyApp()
 const videoList = ref<VideoElement[]>([])
 const uploaderList = ref<UploaderInfo[]>([])
 const selectedUploader = ref<number | null>(null) // null means "All"
@@ -153,19 +153,6 @@ const previousSelectedUploader = ref<number | null>(null)
 const isLoadingUploaderTimes = ref<boolean>(false) // 是否正在后台加载UP主时间
 const loadedUploaderTimesCount = ref<number>(0) // 已加载时间的UP主数量
 const selectionToken = ref<number>(0) // 用于防止竞态条件的令牌
-
-// 侧边栏滚动配置（提取为常量避免重新渲染时重置滚动位置）
-const sidebarScrollOptions = {
-  scrollbars: { autoHide: 'scroll' },
-  update: {
-    debounce: {
-      mutations: [100, 100],
-      resizes: [100, 100],
-      events: [100, 100],
-      environmental: [100, 100],
-    },
-  },
-}
 
 // Provide selectedUploader to child components for preview loading control
 provide('moments-selected-uploader', selectedUploader)
@@ -1224,10 +1211,10 @@ function selectUploader(mid: number | null) {
   const currentToken = ++selectionToken.value
 
   // 即时滚动到顶部（或搜索页面模式下的偏移位置）
-  const osInstance = scrollbarRef.value?.osInstance()
-  if (osInstance) {
+  const viewport = scrollViewportRef.value
+  if (viewport) {
     const scrollTarget = settings.value.useSearchPageModeOnHomePage ? 510 : 0
-    osInstance.elements().viewport.scrollTop = scrollTarget
+    viewport.scrollTop = scrollTarget
   }
 
   // 重置视频列表和分页状态
@@ -1428,11 +1415,7 @@ defineExpose({ initData })
       ease-in-out
       :class="{ hide: shouldMoveAsideUp }"
     >
-      <OverlayScrollbarsComponent
-        h-inherit p="x-20px b-20px t-8px" m--20px
-        defer
-        :options="sidebarScrollOptions"
-      >
+      <div h-inherit p="x-20px b-20px t-8px" m--20px of-y-auto of-x-hidden>
         <!-- Search Box -->
         <div mb-3>
           <input
@@ -1517,7 +1500,7 @@ defineExpose({ initData })
             </a>
           </li>
         </TransitionGroup>
-      </OverlayScrollbarsComponent>
+      </div>
     </aside>
 
     <!-- Right Panel: Video Feed -->

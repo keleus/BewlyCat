@@ -2,7 +2,7 @@
 import { useThrottleFn } from '@vueuse/core'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
+import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { gridLayout, settings } from '~/logic'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
@@ -12,8 +12,11 @@ import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
 
 const mainStore = useMainStore()
-const { handleBackToTop, scrollbarRef, homeActivatedPage } = useBewlyApp()
+const { handleBackToTop, homeActivatedPage } = useBewlyApp()
 const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => handleBackToTop(targetScrollTop), 1000)
+
+// ✅ 性能优化：缓存 scrollTop 值，避免重复 DOM 读取
+const cachedScrollTop = ref(0)
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
@@ -69,6 +72,12 @@ function computeTabs(): HomeTab[] {
 
 onMounted(() => {
   showSearchPageMode.value = true
+
+  // ✅ 性能优化：订阅滚动事件以缓存 scrollTop，避免后续 DOM 读取
+  emitter.on(OVERLAY_SCROLL_BAR_SCROLL, (scrollTop: number) => {
+    cachedScrollTop.value = scrollTop
+  })
+
   emitter.off(TOP_BAR_VISIBILITY_CHANGE)
   emitter.on(TOP_BAR_VISIBILITY_CHANGE, (val) => {
     topBarVisibility.value = val
@@ -87,8 +96,8 @@ onMounted(() => {
       }
       else {
         // fix #349
-        const osInstance = scrollbarRef.value?.osInstance()
-        const scrollTop = osInstance.elements().viewport.scrollTop as number
+        // ✅ 性能优化：使用缓存的 scrollTop，避免 DOM 读取
+        const scrollTop = cachedScrollTop.value
 
         if (val)
           shouldMoveTabsUp.value = false
@@ -107,12 +116,13 @@ onMounted(() => {
 
 onUnmounted(() => {
   emitter.off(TOP_BAR_VISIBILITY_CHANGE)
+  emitter.off(OVERLAY_SCROLL_BAR_SCROLL)
 })
 
 function handleChangeTab(tab: HomeTab) {
   if (activatedPage.value === tab.page) {
-    const osInstance = scrollbarRef.value?.osInstance()
-    const scrollTop = osInstance.elements().viewport.scrollTop as number
+    // ✅ 性能优化：使用缓存的 scrollTop，避免 DOM 读取
+    const scrollTop = cachedScrollTop.value
 
     if ((!settings.value.useSearchPageModeOnHomePage && scrollTop > 0) || (settings.value.useSearchPageModeOnHomePage && scrollTop > 510)) {
       handleThrottledBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
@@ -218,44 +228,30 @@ function toggleTabContentLoading(loading: boolean) {
           shadow="[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]"
           box-border border="1 $bew-border-color"
         >
-          <OverlayScrollbarsComponent
-            class="home-tabs-inside"
-            element="div" defer
-            :options="{
-              x: 'scroll',
-              y: 'hidden',
-              update: {
-                debounce: {
-                  mutations: [100, 100],
-                  resizes: [100, 100],
-                  events: [100, 100],
-                  environmental: [100, 100],
-                },
-              },
-            }"
-            h-full of-hidden
-          >
-            <button
-              v-for="tab in currentTabs" :key="tab.page"
-              :class="{ 'tab-activated': activatedPage === tab.page }"
-              px-3 h-inherit
-              bg="transparent hover:$bew-fill-2" text="$bew-text-2 hover:$bew-text-1" fw-bold rounded-full
-              cursor-pointer duration-300
-              flex="~ gap-2 items-center shrink-0" relative
-              @click="handleChangeTab(tab)"
-            >
-              <span class="text-center">{{ $t(tab.i18nKey) }}</span>
+          <div class="home-tabs-scroll" h-full of-x-auto of-y-hidden>
+            <div class="home-tabs-inside" flex="~ items-center gap-1" h-inherit rounded="$bew-radius-half" w-max>
+              <button
+                v-for="tab in currentTabs" :key="tab.page"
+                :class="{ 'tab-activated': activatedPage === tab.page }"
+                px-3 h-inherit
+                bg="transparent hover:$bew-fill-2" text="$bew-text-2 hover:$bew-text-1" fw-bold rounded-full
+                cursor-pointer duration-300
+                flex="~ gap-2 items-center shrink-0" relative
+                @click="handleChangeTab(tab)"
+              >
+                <span class="text-center">{{ $t(tab.i18nKey) }}</span>
 
-              <Transition name="fade">
-                <div
-                  v-show="activatedPage === tab.page && tabContentLoading"
-                  i-svg-spinners:ring-resize
-                  pos="absolute right-4px top-4px" duration-300
-                  text="8px white"
-                />
-              </Transition>
-            </button>
-          </OverlayScrollbarsComponent>
+                <Transition name="fade">
+                  <div
+                    v-show="activatedPage === tab.page && tabContentLoading"
+                    i-svg-spinners:ring-resize
+                    pos="absolute right-4px top-4px" duration-300
+                    text="8px white"
+                  />
+                </Transition>
+              </button>
+            </div>
+          </div>
         </section>
 
         <div
@@ -333,12 +329,11 @@ function toggleTabContentLoading(loading: boolean) {
   isolation: isolate;
 }
 
-.home-tabs-inside {
-  :deep([data-overlayscrollbars-contents]) {
-    --uno: "flex items-center gap-1 h-inherit rounded-$bew-radius-half";
-  }
-  :deep(.os-scrollbar) {
-    --uno: "mb--4px";
+.home-tabs-scroll {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 

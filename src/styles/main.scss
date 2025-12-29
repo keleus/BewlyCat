@@ -34,6 +34,12 @@ html.bewly-design > ::-webkit-scrollbar-track {
   background: transparent;
 }
 
+:host,
+:root {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 140, 0.44) transparent;
+}
+
 html.bewly-design,
 .bewly-design body {
   // font-size: 14px !important;
@@ -144,18 +150,6 @@ img {
       color: var(--bew-theme-color-80);
     }
   }
-}
-
-// Prevent the scrollbar from being covered by the other elements
-.os-scrollbar {
-  --uno: "z-100000";
-}
-
-// Change OverlayScrollbar color
-.os-scrollbar .os-scrollbar-handle {
-  --os-handle-bg: rgba(120, 120, 140, 0.44);
-  --os-handle-bg-hover: rgba(120, 120, 140, 0.55);
-  --os-handle-bg-active: rgba(120, 120, 140, 0.66);
 }
 
 /* Color Mode transition */

@@ -2,7 +2,6 @@
 import { useDebounceFn } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
-import { useGlobalScrollState } from '~/composables/useGlobalScrollState'
 import { useGridLayout } from '~/composables/useGridLayout'
 import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
@@ -133,9 +132,6 @@ const isLoadMoreSentinelIntersecting = ref(false)
 // 使用共享的 Grid 布局 composable（CSS 媒体查询驱动，无 JS 计算开销）
 const { gridClass, gridCssVars } = useGridLayout(() => props.gridLayout)
 
-// 使用全局滚动状态来优化性能
-const { isScrolling } = useGlobalScrollState()
-
 // 获取 shadow 样式变量（避免依赖外部传入）
 const { shadowStyleVars } = useVideoCardShadowStyle()
 
@@ -159,10 +155,81 @@ const consecutiveEmptyLoads = ref(0)
 const MAX_CONSECUTIVE_EMPTY_LOADS = 2
 const lastItemsCount = ref(0)
 
+// 分块渲染：渲染限制（在 displayItems 定义之前声明，避免循环依赖）
+const renderLimit = ref(0)
+
+// 是否显示初始骨架屏（数据量不足阈值且还有更多内容时）
+// 改为计算是否需要填充骨架屏，而不是完全切换
+const needSkeletonPadding = computed(() => {
+  if (props.needToLoginFirst)
+    return false
+  if (props.noMoreContent)
+    return false
+  if (props.items.length >= MIN_ITEMS_TO_RENDER)
+    return false
+  return true
+})
+
+// 生成填充骨架屏数据（填补到最小渲染数量）
+const paddingSkeletonItems = computed(() => {
+  if (!needSkeletonPadding.value)
+    return []
+
+  const currentCount = props.items.length
+  const targetCount = dynamicSkeletonCount.value
+  const paddingCount = Math.max(0, targetCount - currentCount)
+
+  return Array.from({ length: paddingCount }, (_, i) => ({
+    _isSkeleton: true,
+    _skeletonId: `skeleton-padding-${i}`,
+  })) as T[]
+})
+
+// 是否正在加载更多（数据已达阈值且loading）
+const isLoadingMore = computed(() => {
+  return props.loading && props.items.length >= MIN_ITEMS_TO_RENDER
+})
+
+// 生成加载更多时的骨架屏数据（使用固定数量，由 CSS Grid 自动处理布局）
+const loadingMoreSkeletonItems = computed(() => {
+  if (!isLoadingMore.value)
+    return []
+
+  // 加载更多时显示固定数量的骨架屏，CSS Grid 会自动处理布局
+  const totalSkeletons = 10
+
+  return Array.from({ length: totalSkeletons }, (_, i) => ({
+    _isSkeleton: true,
+    _skeletonId: `skeleton-more-${i}`,
+  })) as T[]
+})
+
+// 合并实际数据和骨架屏
+const displayItems = computed(() => {
+  // 数据不足时：数据 + 填充骨架屏
+  if (needSkeletonPadding.value) {
+    return [...props.items, ...paddingSkeletonItems.value]
+  }
+
+  // 加载更多时：数据 + 骨架屏
+  if (isLoadingMore.value) {
+    return [...props.items, ...loadingMoreSkeletonItems.value]
+  }
+
+  // 其他情况：只显示数据
+  return props.items
+})
+
 // 检查是否可以加载更多
 function canLoadMore(): boolean {
   // 连续空加载次数超过限制时停止
   if (consecutiveEmptyLoads.value >= MAX_CONSECUTIVE_EMPTY_LOADS) {
+    return false
+  }
+
+  // 关键：避免在上一批次未渲染完成时触发 loadMore
+  // 否则 sentinel 会保持"太高"，IO/scroll 检查会链式加载
+  if (renderLimit.value < displayItems.value.length) {
     return false
   }
 
@@ -363,7 +430,37 @@ watch(loadMoreSentinelRef, () => {
   setupIntersectionObserver()
 })
 
+// 监听 displayItems 变化，触发分块渲染
+watch(
+  () => displayItems.value.length,
+  (newLen, oldLen) => {
+    // 刷新路径（数据被清空）
+    if (newLen === 0) {
+      renderLimit.value = 0
+      return
+    }
+
+    // 列表收缩，立即夹紧
+    if (newLen < renderLimit.value) {
+      renderLimit.value = newLen
+      return
+    }
+
+    // 只在追加时分块渲染
+    if (newLen > oldLen) {
+      scheduleChunkRender(newLen)
+      return
+    }
+
+    // 兜底：保持同步
+    renderLimit.value = newLen
+  },
+)
+
 onMounted(() => {
+  // 初始化 renderLimit：对于已存在的数据，立即全部渲染（无渐进式加载）
+  renderLimit.value = displayItems.value.length
+
   setupScrollListeners()
   setupIntersectionObserver()
   // 初始检查
@@ -392,79 +489,120 @@ const isHorizontal = computed(() => {
   return props.gridLayout !== 'adaptive'
 })
 
-// 滚动时禁用 pointer-events，减少 hover 触发的样式重计算
-// 同时合并 shadow 样式变量和 grid 列数变量
+// 合并 shadow 样式变量和 grid 列数变量
 const gridContainerStyle = computed(() => ({
-  pointerEvents: (isScrolling.value ? 'none' : 'auto') as 'none' | 'auto',
   ...shadowStyleVars.value,
   ...gridCssVars.value,
 }))
 
-// 是否显示初始骨架屏（数据量不足阈值且还有更多内容时）
-// 改为计算是否需要填充骨架屏，而不是完全切换
-const needSkeletonPadding = computed(() => {
-  if (props.needToLoginFirst)
-    return false
-  if (props.noMoreContent)
-    return false
-  if (props.items.length >= MIN_ITEMS_TO_RENDER)
-    return false
-  return true
-})
-
-// 生成填充骨架屏数据（填补到最小渲染数量）
-const paddingSkeletonItems = computed(() => {
-  if (!needSkeletonPadding.value)
-    return []
-
-  const currentCount = props.items.length
-  const targetCount = dynamicSkeletonCount.value
-  const paddingCount = Math.max(0, targetCount - currentCount)
-
-  return Array.from({ length: paddingCount }, (_, i) => ({
-    _isSkeleton: true,
-    _skeletonId: `skeleton-padding-${i}`,
-  })) as T[]
-})
-
-// 是否正在加载更多（数据已达阈值且loading）
-const isLoadingMore = computed(() => {
-  return props.loading && props.items.length >= MIN_ITEMS_TO_RENDER
-})
-
-// 生成加载更多时的骨架屏数据（使用固定数量，由 CSS Grid 自动处理布局）
-const loadingMoreSkeletonItems = computed(() => {
-  if (!isLoadingMore.value)
-    return []
-
-  // 加载更多时显示固定数量的骨架屏，CSS Grid 会自动处理布局
-  const totalSkeletons = 10
-
-  return Array.from({ length: totalSkeletons }, (_, i) => ({
-    _isSkeleton: true,
-    _skeletonId: `skeleton-more-${i}`,
-  })) as T[]
-})
-
-// 合并实际数据和骨架屏
-const displayItems = computed(() => {
-  // 数据不足时：数据 + 填充骨架屏
-  if (needSkeletonPadding.value) {
-    return [...props.items, ...paddingSkeletonItems.value]
-  }
-
-  // 加载更多时：数据 + 骨架屏
-  if (isLoadingMore.value) {
-    return [...props.items, ...loadingMoreSkeletonItems.value]
-  }
-
-  // 其他情况：只显示数据
-  return props.items
-})
-
 // 判断是否应该显示空状态（确认无更多内容且数据为空）
 const showEmptyState = computed(() => {
   return props.noMoreContent && props.items.length === 0 && !props.needToLoginFirst
+})
+
+// -------------------------
+// 分块渲染（Chunked Rendering）- 解决批量 DOM 插入导致的样式重算风暴
+// -------------------------
+let renderJobToken = 0
+
+function scheduleChunkRender(target: number) {
+  const token = ++renderJobToken
+
+  const useRIC = typeof window !== 'undefined' && 'requestIdleCallback' in window
+
+  const step = (deadline?: IdleDeadline) => {
+    if (token !== renderJobToken)
+      return
+
+    const remaining = target - renderLimit.value
+    if (remaining <= 0) {
+      return
+    }
+
+    // 保守的默认值；如果浏览器报告有足够的空闲时间则提高
+    let chunk = 8
+    if (deadline && typeof deadline.timeRemaining === 'function') {
+      const budget = deadline.timeRemaining()
+      if (budget > 12)
+        chunk = 20
+      else if (budget > 8)
+        chunk = 12
+    }
+
+    renderLimit.value += Math.min(chunk, remaining)
+
+    if (useRIC) {
+      ;(window as any).requestIdleCallback(step, { timeout: 50 })
+    }
+    else {
+      requestAnimationFrame(() => step())
+    }
+  }
+
+  // 立即开始（但仍然通过 rIC/rAF yield）
+  step()
+}
+
+// 限制实际渲染的 items（分块显示）
+const limitedDisplayItems = computed(() => displayItems.value.slice(0, renderLimit.value))
+
+// 类型定义：每个 VideoCard 的渲染所需数据
+interface VideoCardRenderItem {
+  key: string | number
+  item: T
+  skeleton: boolean
+  type: 'rcmd' | 'appRcmd' | 'bangumi' | 'common'
+  video: Video | undefined
+}
+
+// 辅助函数：从 video 对象推断类型
+function inferVideoTypeFromVideo(video: Video | undefined): 'rcmd' | 'appRcmd' | 'bangumi' | 'common' {
+  if (!video)
+    return props.videoType || 'common'
+  if (video.epid || video.goto === 'bangumi' || video.type === 'bangumi')
+    return 'bangumi'
+  if (props.videoType === 'rcmd' || props.videoType === 'appRcmd')
+    return props.videoType
+  return props.videoType || 'common'
+}
+
+// 关键优化：把 isSkeleton / inferVideoType / transform 从 template 挪到 computed，
+// 避免任何"无关更新"(例如 scroll state)导致 11k 次函数调用。
+const renderItems = computed<VideoCardRenderItem[]>(() => {
+  const items = limitedDisplayItems.value // 使用分块限制的 items
+  const fallbackType = props.videoType || 'common'
+  const out: VideoCardRenderItem[] = Array.from({ length: items.length })
+
+  for (let index = 0; index < items.length; index++) {
+    const item = items[index] as T
+    const key = getUniqueKey(item, index)
+
+    // 自动生成骨架屏
+    if ((item as any)?._isSkeleton) {
+      out[index] = { key, item, skeleton: true, type: fallbackType, video: undefined }
+      continue
+    }
+
+    // 外部骨架判断（命中时不做 transform）
+    if (props.isSkeletonItem) {
+      try {
+        if (props.isSkeletonItem(item)) {
+          out[index] = { key, item, skeleton: true, type: fallbackType, video: undefined }
+          continue
+        }
+      }
+      catch {
+        // ignore
+      }
+    }
+
+    const video = getTransformedVideo(item)
+    const skeleton = !video || !video.id
+    const type = skeleton ? fallbackType : inferVideoTypeFromVideo(video)
+    out[index] = { key, item, skeleton, type, video }
+  }
+
+  return out
 })
 
 // 判断是否为骨架屏项
@@ -517,58 +655,6 @@ function getTransformedVideo(item: T): Video | undefined {
   }
   catch {
     return undefined
-  }
-}
-
-function isSkeleton(item: T): boolean {
-  // 1. 检查是否为自动生成的骨架屏占位
-  if ((item as any)?._isSkeleton)
-    return true
-
-  // 2. 使用自定义判断函数
-  if (props.isSkeletonItem) {
-    try {
-      return props.isSkeletonItem(item)
-    }
-    catch {
-      // 忽略错误，继续兜底判断
-    }
-  }
-
-  // 3. 默认：检查是否可以成功转换为视频数据
-  // 如果转换失败或 item 无效，显示骨架屏
-  if (!item)
-    return true
-
-  const video = getTransformedVideo(item)
-  return !video || !video.id
-}
-
-// 智能推断视频类型
-function inferVideoType(item: T): 'rcmd' | 'appRcmd' | 'bangumi' | 'common' {
-  // 如果是骨架屏，返回默认类型
-  if (isSkeleton(item))
-    return props.videoType || 'common'
-
-  try {
-    const video = getTransformedVideo(item)
-    if (!video)
-      return props.videoType || 'common'
-
-    // 1. 检查是否为番剧
-    if (video.epid || video.goto === 'bangumi' || video.type === 'bangumi')
-      return 'bangumi'
-
-    // 2. 如果父组件提供了 videoType，优先使用（用于区分 rcmd/appRcmd）
-    if (props.videoType === 'rcmd' || props.videoType === 'appRcmd')
-      return props.videoType
-
-    // 3. 默认返回 common（适用于直播、普通视频等）
-    return props.videoType || 'common'
-  }
-  catch {
-    // 转换失败时返回默认类型
-    return props.videoType || 'common'
   }
 }
 
@@ -633,18 +719,19 @@ function getUniqueKey(item: T, index: number): string | number {
       <!-- Grid 内容（统一渲染，避免 v-if/v-else 切换导致的滚动跳动） -->
       <div :class="gridClass">
         <VideoCard
-          v-for="(item, index) in displayItems"
-          :key="getUniqueKey(item, index)"
-          :skeleton="isSkeleton(item)"
-          :type="inferVideoType(item)"
-          :video="getTransformedVideo(item)"
+          v-for="renderItem in renderItems"
+          :key="renderItem.key"
+          v-memo="[renderItem.key, renderItem.skeleton, renderItem.type, renderItem.video, showPreview, showWatchLater, isHorizontal, moreBtn]"
+          :skeleton="renderItem.skeleton"
+          :type="renderItem.type"
+          :video="renderItem.video"
           :show-preview="showPreview"
           :show-watcher-later="showWatchLater"
           :horizontal="isHorizontal"
           :more-btn="moreBtn"
         >
           <template v-for="(_, name) in $slots" #[name]>
-            <slot :name="name" :item="item" />
+            <slot :name="name" :item="renderItem.item" />
           </template>
         </VideoCard>
       </div>

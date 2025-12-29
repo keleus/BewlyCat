@@ -70,7 +70,7 @@ const appFilterFunc = useFilter(
   ],
 )
 
-const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, handleUndoRefresh, handleForwardRefresh, handleBackToTop, scrollbarRef } = useBewlyApp()
+const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, handleUndoRefresh, handleForwardRefresh, handleBackToTop, scrollViewportRef } = useBewlyApp()
 
 // 先声明数据变量
 const videoList = ref<VideoElement[]>([])
@@ -149,8 +149,7 @@ onMounted(() => {
     // 恢复滚动位置
     if (savedState.scrollTop) {
       nextTick(() => {
-        const osInstance = scrollbarRef.value?.osInstance()
-        const viewport = osInstance?.elements().viewport
+        const viewport = scrollViewportRef.value
         if (viewport)
           viewport.scrollTop = savedState.scrollTop || 0
       })
@@ -184,9 +183,7 @@ onBeforeUnmount(() => {
   // 如果启用状态保留，保存当前状态到store
   if (settings.value.preserveForYouState) {
     // 获取当前滚动位置
-    const osInstance = scrollbarRef.value?.osInstance()
-    const viewport = osInstance?.elements().viewport
-    const scrollTop = viewport?.scrollTop || 0
+    const scrollTop = scrollViewportRef.value?.scrollTop || 0
 
     const currentState = {
       videoList: [...videoList.value],
@@ -397,7 +394,7 @@ function initPageAction() {
     // 根据当前模式保存数据
     if (settings.value.recommendationMode === 'web') {
       // 总是保存刷新前的当前状态到后退缓存
-      cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
+      cachedVideoList.value = structuredClone(videoList.value)
       cachedRefreshIdx.value = refreshIdx.value
       hasBackState.value = true
 
@@ -410,7 +407,7 @@ function initPageAction() {
     }
     else if (settings.value.recommendationMode === 'app') {
       // APP 模式下保存刷新前的当前状态到后退缓存
-      cachedAppVideoList.value = JSON.parse(JSON.stringify(appVideoList.value))
+      cachedAppVideoList.value = structuredClone(appVideoList.value)
       hasBackState.value = true
 
       // 清空前进状态（因为刷新会产生新的分支）
@@ -433,12 +430,12 @@ function initPageAction() {
 
         // Web模式下的后退操作
         // 保存当前数据到前进状态
-        forwardVideoList.value = JSON.parse(JSON.stringify(videoList.value))
+        forwardVideoList.value = structuredClone(videoList.value)
         forwardRefreshIdx.value = refreshIdx.value
         hasForwardState.value = true
 
         // 恢复缓存的数据
-        videoList.value = JSON.parse(JSON.stringify(cachedVideoList.value))
+        videoList.value = structuredClone(cachedVideoList.value)
         refreshIdx.value = cachedRefreshIdx.value
 
         hasBackState.value = false
@@ -451,11 +448,11 @@ function initPageAction() {
 
         // APP模式下的后退操作
         // 保存当前数据到前进状态
-        forwardAppVideoList.value = JSON.parse(JSON.stringify(appVideoList.value))
+        forwardAppVideoList.value = structuredClone(appVideoList.value)
         hasForwardState.value = true
 
         // 恢复缓存的数据
-        appVideoList.value = JSON.parse(JSON.stringify(cachedAppVideoList.value))
+        appVideoList.value = structuredClone(cachedAppVideoList.value)
 
         hasBackState.value = false
         undoForwardState.value = UndoForwardState.Hidden
@@ -473,12 +470,12 @@ function initPageAction() {
 
         // Web模式下的前进操作
         // 保存当前数据到后退状态
-        cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
+        cachedVideoList.value = structuredClone(videoList.value)
         cachedRefreshIdx.value = refreshIdx.value
         hasBackState.value = true
 
         // 恢复前进状态的数据
-        videoList.value = JSON.parse(JSON.stringify(forwardVideoList.value))
+        videoList.value = structuredClone(forwardVideoList.value)
         refreshIdx.value = forwardRefreshIdx.value
 
         // 标记为已经前进
@@ -493,11 +490,11 @@ function initPageAction() {
 
         // APP模式下的前进操作
         // 保存当前数据到后退状态
-        cachedAppVideoList.value = JSON.parse(JSON.stringify(appVideoList.value))
+        cachedAppVideoList.value = structuredClone(appVideoList.value)
         hasBackState.value = true
 
         // 恢复前进状态的数据
-        appVideoList.value = JSON.parse(JSON.stringify(forwardAppVideoList.value))
+        appVideoList.value = structuredClone(forwardAppVideoList.value)
 
         // 标记为已经前进
         hasForwardState.value = false

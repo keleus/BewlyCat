@@ -305,9 +305,10 @@ provide('getVideoType', () => props.type!)
     class="video-card-container"
     duration-300 ease-in-out
     rounded="$bew-radius"
-    :ring="skeleton ? '' : 'hover:8 hover:$bew-fill-2 active:8 active:$bew-fill-3'"
-    :bg="skeleton ? '' : 'hover:$bew-fill-2 active:$bew-fill-3'"
-    :class="layout === 'modern' ? 'mb-3' : 'mb-4'"
+    :class="[
+      layout === 'modern' ? 'mb-3' : 'mb-4',
+      skeleton ? 'video-card-container--skeleton' : 'video-card-container--interactive',
+    ]"
   >
     <div
       class="video-card group"
@@ -401,16 +402,22 @@ provide('getVideoType', () => props.type!)
 </template>
 
 <style lang="scss" scoped>
-/* 优化性能：使用更高效的 containment 策略 */
+/* ✅ 性能优化：移除Container Query，减少11,206个容器的查询计算开销 */
 .video-card-container {
-  /* 设置为容器，用于 Container Query */
-  container-type: inline-size;
-  container-name: video-card;
+  /* ❌ 移除 container-type 和 container-name，避免大规模容器查询计算 */
+  /* container-type: inline-size; */
+  /* container-name: video-card; */
 
-  /* 使用 content-visibility 由父组件 VideoCardGrid 统一控制 */
-  /* 这里只设置 contain 限制重排范围 */
-  contain: layout style;
+  /* ✅ 增强 containment：添加 paint 以进一步隔离绘制 */
+  contain: layout style paint;
   min-width: 0;
+
+  /**
+   * 关键优化：让浏览器跳过 offscreen 子树的 layout/style/paint。
+   * 使用 content-visibility: auto 大幅减少 11k 卡片的渲染开销。
+   */
+  content-visibility: auto;
+  contain-intrinsic-size: 360px 260px;
 
   /* 防止字体加载导致的layout shift */
   text-rendering: optimizeSpeed;
@@ -421,6 +428,39 @@ provide('getVideoType', () => props.type!)
   /* 防止骨架屏和真实内容切换时的布局偏移：
      确保容器在加载过程中保持稳定的最小高度 */
   min-height: fit-content;
+}
+
+/* 骨架屏状态：禁用交互 */
+.video-card-container--skeleton {
+  pointer-events: none;
+}
+
+/* 优化 hover 效果：使用 opacity 代替 box-shadow，避免昂贵的绘制成本 */
+.video-card-container--interactive {
+  position: relative;
+}
+
+.video-card-container--interactive::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--bew-fill-2);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+/* 只在支持 hover 的设备上启用 hover 效果（避免触屏设备的性能损失） */
+@media (hover: hover) and (pointer: fine) {
+  .video-card-container--interactive:hover::before {
+    opacity: 1;
+  }
+}
+
+.video-card-container--interactive:active::before {
+  background: var(--bew-fill-3);
+  opacity: 1;
 }
 
 .horizontal-card-cover {
@@ -449,34 +489,5 @@ provide('getVideoType', () => props.type!)
   --video-card-stats-font-size: 0.75rem;
   --video-card-stats-overlay-scale: 1.4;
   --video-card-stats-icon-size: 0.825rem;
-}
-
-/* CSS Container Query 控制统计信息的响应式显示 */
-/* 默认隐藏所有可选统计项，在足够宽时显示 */
-:deep(.cover-stat-like),
-:deep(.cover-stat-danmaku),
-:deep(.cover-stat-view) {
-  display: none;
-}
-
-/* 容器宽度 > 120px 时显示播放量 */
-@container video-card (min-width: 120px) {
-  :deep(.cover-stat-view) {
-    display: inline-flex;
-  }
-}
-
-/* 容器宽度 > 160px 时显示弹幕 */
-@container video-card (min-width: 160px) {
-  :deep(.cover-stat-danmaku) {
-    display: inline-flex;
-  }
-}
-
-/* 容器宽度 > 200px 时显示点赞 */
-@container video-card (min-width: 200px) {
-  :deep(.cover-stat-like) {
-    display: inline-flex;
-  }
 }
 </style>

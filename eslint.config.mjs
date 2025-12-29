@@ -10,6 +10,15 @@ export default antfu(
         singleQuote: false,
       },
     },
+    ignores: [
+      '**/dist/**',
+      '**/node_modules/**',
+      '**/.pnpm-store/**',
+      '**/public/**',
+      '**/extension/**',
+      '**/extension-firefox/**',
+      '**/.kiro/**',
+    ],
     rules: {
       'vue/max-attributes-per-line': [
         'error',
@@ -25,16 +34,6 @@ export default antfu(
       'no-alert': 'off',
       'style/quote-props': 'off',
       'vue/no-required-prop-with-default': 'off',
-    },
-    eslint: {
-      ignorePatterns: [
-        'dist',
-        'node_modules',
-        'public',
-        'extension',
-        'extension-firefox',
-        '.kiro',
-      ],
     },
   },
   {

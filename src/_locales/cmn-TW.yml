@@ -181,10 +181,6 @@ settings:
   grid_columns: 顯示
   grid_columns_unit: 列
   grid_add_breakpoint: 新增斷點
-  enable_image_load_concurrency_limit: 啟用圖片載入並行限制
-  enable_image_load_concurrency_limit_desc: 限制同時載入的圖片數量，減少頁面卡頓
-  image_load_concurrency_count: 圖片載入並行數
-  image_load_concurrency_count_desc: 同時載入圖片的最大數量，可依裝置效能調整
 
   home_adaptive_title_auto_size: 標題字級自適應
   home_adaptive_title_auto_size_desc: 依據網格寬度自動調整標題字級

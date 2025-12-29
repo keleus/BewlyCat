@@ -4,7 +4,8 @@
   // 原版首頁最右則推介內容
   .floor-single-card,
   // 首頁不能使用不感興趣的影片都當廣告殺了
-  .feed-card:has(.bili-video-card.is-rcmd:not(.enable-no-interest)),
+  // NOTE: 避免使用 :has()，會在滾動動態插入卡片時引發大範圍樣式重算
+  .feed-card.bewly-blocked-feed-card,
   .bili-video-card.is-rcmd:not(.enable-no-interest),
   .ad-report,
   .brand-ad-list,

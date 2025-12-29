@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onKeyStroke, useEventListener, useThrottleFn, useToggle } from '@vueuse/core'
+import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn, useToggle } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { provide, ref } from 'vue'
 
@@ -118,7 +118,8 @@ const pages = {
   [AppPage.Moments]: defineAsyncComponent(() => import('./Moments/Moments.vue')),
 }
 const mainAppRef = ref<HTMLElement>() as Ref<HTMLElement>
-const scrollbarRef = ref()
+const scrollViewportRef = ref<HTMLElement | null>(null)
+const loadMoreSentinelRef = ref<HTMLElement>() // ✅ IntersectionObserver 哨兵元素
 const handlePageRefresh = ref<() => void>()
 const handleReachBottom = ref<() => void>()
 const handleUndoRefresh = ref<() => void>()
@@ -126,12 +127,11 @@ const handleForwardRefresh = ref<() => void>()
 // 使用新的枚举状态管理撤销/前进按钮
 const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
 const handleThrottledPageRefresh = useThrottleFn(() => {
-  const osInstance = scrollbarRef.value?.osInstance()
-  if (!osInstance) {
+  const viewport = scrollViewportRef.value
+  if (!viewport) {
     handlePageRefresh.value?.()
     return
   }
-  const { viewport } = osInstance.elements()
   if (viewport.scrollTop === 0) {
     handlePageRefresh.value?.()
   }
@@ -315,10 +315,7 @@ watch(
       window.history.replaceState({}, '', url.toString())
     }
 
-    if (scrollbarRef.value) {
-      const osInstance = scrollbarRef.value.osInstance()
-      osInstance.elements().viewport.scrollTop = 0
-    }
+    scrollViewportRef.value?.scrollTo({ top: 0 })
     isFirstTimeActivatedPageChange.value = false
   },
   { immediate: true },
@@ -339,9 +336,34 @@ watch([() => showTopBar.value, () => activatedPage.value], () => {
 
 // Setup necessary settings watchers
 setupNecessarySettingsWatchers()
+let scrollingEmitted = false
 
 onMounted(() => {
   window.dispatchEvent(new CustomEvent(BEWLY_MOUNTED))
+
+  // ✅ 设置 IntersectionObserver 用于无限滚动底部检测（仅在首页且使用Bewly页面时）
+  // 避免在每次滚动时读取 scrollHeight/clientHeight
+  if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
+    nextTick(() => {
+      const viewport = scrollViewportRef.value
+      if (!viewport)
+        return
+
+      useIntersectionObserver(
+        loadMoreSentinelRef,
+        ([{ isIntersecting }]) => {
+          if (isIntersecting) {
+            handleThrottledReachBottom()
+          }
+        },
+        {
+          root: viewport,
+          rootMargin: '200px', // 提前 200px 触发加载
+          threshold: 0,
+        },
+      )
+    })
+  }
 
   if (isHomePage()) {
     // Force overwrite Bilibili Evolved body tag & html tag background color
@@ -350,14 +372,12 @@ onMounted(() => {
     // 聚焦到滚动容器的函数
     const focusScrollContainer = () => {
       nextTick(() => {
-        if (scrollbarRef.value) {
-          const osInstance = scrollbarRef.value.osInstance()
-          const viewport = osInstance?.elements().viewport
-          if (viewport) {
-            viewport.setAttribute('tabindex', '0')
-            viewport.focus({ preventScroll: true })
-          }
-        }
+        const viewport = scrollViewportRef.value
+        if (!viewport)
+          return
+
+        viewport.setAttribute('tabindex', '0')
+        viewport.focus({ preventScroll: true })
       })
     }
 
@@ -431,8 +451,7 @@ function handleDockItemClick(dockItem: DockItem) {
 }
 
 function changeActivatePage(pageName: AppPage) {
-  const osInstance = scrollbarRef.value?.osInstance()
-  const scrollTop: number = osInstance.elements().viewport.scrollTop
+  const scrollTop: number = scrollViewportRef.value?.scrollTop ?? 0
 
   if (activatedPage.value === pageName) {
     if (activatedPage.value !== AppPage.Search && activatedPage.value !== AppPage.SearchResults) {
@@ -447,9 +466,9 @@ function changeActivatePage(pageName: AppPage) {
 }
 
 function handleBackToTop(targetScrollTop = 0 as number) {
-  const osInstance = scrollbarRef.value?.osInstance()
-  if (osInstance) {
-    scrollToTop(osInstance.elements().viewport, targetScrollTop)
+  const viewport = scrollViewportRef.value
+  if (viewport) {
+    scrollToTop(viewport, targetScrollTop)
     topBarRef.value?.toggleTopBarVisible(true)
   }
 
@@ -461,26 +480,25 @@ let scrollEndTimer: ReturnType<typeof setTimeout> | null = null
 let scrollStateTimer: ReturnType<typeof setTimeout> | null = null
 let lastScrollTop = 0
 let rafId: number | null = null
+let latestScrollTop = 0
 
-function handleOsScroll() {
+function handleOsScroll(_instance: any, event: Event) {
+  // 从事件的 target 读取 scrollTop，避免调用 osInstance().elements() 触发强制布局
+  latestScrollTop = (event.target as HTMLElement | null)?.scrollTop ?? 0
+
   // 如果已经有 RAF 在等待，跳过本次滚动事件
   if (rafId !== null)
     return
 
-  // 发出滚动开始信号（用于 useGlobalScrollState）
-  emitter.emit(OVERLAY_SCROLL_STATE_CHANGE, true)
+  // 只在滚动开始时发出一次信号（避免额外的响应式开销）
+  if (!scrollingEmitted) {
+    emitter.emit(OVERLAY_SCROLL_STATE_CHANGE, true)
+    scrollingEmitted = true
+  }
 
   // 使用 RAF 将所有 DOM 读取合并到下一帧
   rafId = requestAnimationFrame(() => {
-    const osInstance = scrollbarRef.value?.osInstance()
-    if (!osInstance) {
-      rafId = null
-      return
-    }
-
-    const { viewport } = osInstance.elements()
-    // 一次性批量读取所有 DOM 属性，避免多次强制布局
-    const { scrollTop, scrollHeight, clientHeight } = viewport
+    const scrollTop = latestScrollTop
 
     emitter.emit(OVERLAY_SCROLL_BAR_SCROLL, scrollTop)
 
@@ -490,18 +508,10 @@ function handleOsScroll() {
       lastScrollTop = scrollTop
     }
 
-    if (scrollTop === 0) {
-      reachTop.value = true
-    }
-    else {
-      reachTop.value = false
-    }
+    reachTop.value = scrollTop === 0
 
-    // 优化滚动检测：降低阈值，提高敏感度
-    const threshold = Math.min(200, clientHeight * 0.2) // 动态阈值，最大200px或20%屏幕高度
-    if (clientHeight + scrollTop >= scrollHeight - threshold) {
-      handleThrottledReachBottom()
-    }
+    // ✅ 移除手动的"到达底部"检测，改用 IntersectionObserver（见 loadMoreSentinelRef）
+    // 这避免了在每次滚动时计算 threshold 和读取 scrollHeight/clientHeight
 
     // 清除之前的滚动结束定时器
     if (scrollEndTimer) {
@@ -516,26 +526,20 @@ function handleOsScroll() {
     // 设置滚动状态结束检测，150ms后发出滚动结束信号
     scrollStateTimer = setTimeout(() => {
       emitter.emit(OVERLAY_SCROLL_STATE_CHANGE, false)
+      scrollingEmitted = false
     }, 150)
 
-    // 设置滚动结束检测，在滚动停止150ms后再检查一次
-    // 缓存当前的滚动值，避免在 setTimeout 中再次读取 DOM
-    const cachedScrollTop = scrollTop
-    const cachedScrollHeight = scrollHeight
-    const cachedClientHeight = clientHeight
-
+    // ✅ 简化滚动结束检测：移除 DOM 读取，IntersectionObserver 会处理底部检测
     scrollEndTimer = setTimeout(() => {
-      // 使用缓存的值进行最终检测，避免 DOM 查询
-      const threshold = Math.min(200, cachedClientHeight * 0.2)
-
-      // 滚动结束后的最终检测，使用更大的阈值确保不遗漏
-      if (cachedClientHeight + cachedScrollTop >= cachedScrollHeight - threshold * 1.5) {
-        handleReachBottom.value?.()
-      }
+      // IntersectionObserver 会处理底部触发，这里只保留定时器结构以备将来扩展
     }, 150)
 
     rafId = null
   })
+}
+
+function handleNativeScroll(event: Event) {
+  handleOsScroll(null, event)
 }
 
 function openIframeDrawer(url: string) {
@@ -562,20 +566,15 @@ function openIframeDrawer(url: string) {
 
 /**
  * Checks if the current viewport has a scrollbar.
- * @returns {boolean} Returns true if the viewport has a scrollbar, false otherwise.
+ * @returns {Promise<boolean>} Returns true if the viewport has a scrollbar, false otherwise.
  */
 async function haveScrollbar() {
   await nextTick()
-  const osInstance = scrollbarRef.value?.osInstance()
-  // If the scrollbarRef is not ready, return false
-  if (osInstance) {
-    const { viewport } = osInstance.elements()
-    const { scrollHeight } = viewport // get scroll offset
-    return scrollHeight > window.innerHeight
-  }
-  else {
+  const viewport = scrollViewportRef.value
+  if (!viewport)
     return false
-  }
+
+  return viewport.scrollHeight > viewport.clientHeight
 }
 
 // In drawer video, watch btn className changed and post message to parent
@@ -611,7 +610,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   activatedPage,
   homeActivatedPage,
   mainAppRef,
-  scrollbarRef,
+  scrollViewportRef,
   reachTop,
   handleBackToTop,
   handlePageRefresh,
@@ -833,22 +832,11 @@ if (settings.value.cleanUrlArgument) {
     >
       <Transition name="fade">
         <template v-if="showBewlyPage">
-          <OverlayScrollbarsComponent
-            ref="scrollbarRef" element="div" h-inherit defer
-            :options="{
-              overflow: {
-                x: 'hidden',
-              },
-              update: {
-                debounce: {
-                  mutations: [100, 100],
-                  resizes: [100, 100],
-                  events: [100, 100],
-                  environmental: [100, 100],
-                },
-              },
-            }"
-            @os-scroll="handleOsScroll"
+          <div
+            ref="scrollViewportRef"
+            h-inherit of-y-auto of-x-hidden
+            style="overscroll-behavior: contain;"
+            @scroll.passive="handleNativeScroll"
           >
             <main m-auto max-w="$bew-page-max-width">
               <div
@@ -858,9 +846,12 @@ if (settings.value.cleanUrlArgument) {
                 <Transition name="page-fade">
                   <Component :is="pages[activatedPage]" :key="activatedPage" />
                 </Transition>
+
+                <!-- ✅ IntersectionObserver 哨兵：用于检测滚动到底部，避免在 RAF 中读取 scrollHeight -->
+                <div ref="loadMoreSentinelRef" h-1px w-full pointer-events-none opacity-0 />
               </div>
             </main>
-          </OverlayScrollbarsComponent>
+          </div>
         </template>
       </Transition>
 

@@ -36,13 +36,12 @@ useEventListener(window, 'resize', () => {
   })
 })
 
-const scrollbarRef = ref()
+const scrollViewportRef = ref<HTMLElement>()
 
 watch(
   () => activatedMenuItem.value,
   () => {
-    const osInstance = scrollbarRef.value.osInstance()
-    osInstance.elements().viewport.scrollTop = 0
+    scrollViewportRef.value?.scrollTo({ top: 0 })
   },
 )
 
@@ -235,35 +234,23 @@ function setCurrentTitle() {
             <div i-ic-baseline-clear />
           </div>
         </header>
-        <OverlayScrollbarsComponent
-          ref="scrollbarRef"
+        <div
+          ref="scrollViewportRef"
           :style="{
             maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
             WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
           }"
-          element="div" defer
-          h-inherit
-          :options="{
-            update: {
-              debounce: {
-                mutations: [100, 100],
-                resizes: [100, 100],
-                events: [100, 100],
-                environmental: [100, 100],
-              },
-            },
-          }"
+          h-inherit of-y-auto of-x-hidden
+          style="padding-top: 80px;"
         >
-          <main
-            pos="absolute top-80px left-0" w-full min-h="[calc(100%-80px)]" p="x-12 b-10"
-          >
+          <main w-full min-h="[calc(100%-80px)]" p="x-12 b-10">
             <!-- <div h-80px mt--8 /> -->
 
             <Transition name="page-fade">
               <Component :is="settingsMenu[activatedMenuItem as keyof typeof settingsMenu]" />
             </Transition>
           </main>
-        </OverlayScrollbarsComponent>
+        </div>
       </div>
     </div>
   </div>

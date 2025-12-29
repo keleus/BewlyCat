@@ -15,7 +15,7 @@ import NotificationsDrawer from './components/NotificationsDrawer.vue'
 import TopBarHeader from './components/TopBarHeader.vue'
 import { useTopBarInteraction } from './composables/useTopBarInteraction'
 
-const { scrollbarRef, reachTop } = useBewlyApp()
+const { reachTop } = useBewlyApp()
 // 顶栏状态管理
 const topBarStore = useTopBarStore()
 const { forceWhiteIcon } = useTopBarInteraction()
@@ -123,20 +123,22 @@ const SCROLL_THRESHOLD = 10 // 滚动阈值，只有滚动超过这个值才触�
 let overlayScrollHandler: ((scrollTop: number) => void) | null = null
 
 function handleScroll(arg?: number | Event): void {
-  // 优先使用传入的 scrollTop 值，避免重复 DOM 读取
+  // ✅ 性能优化：优先使用传入的 scrollTop 值，避免重复 DOM 读取
   if (typeof arg === 'number') {
     scrollTop.value = arg
   }
-  else if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
-    // 仅在非首页或使用原始页面时才读取 DOM
-    const osInstance = scrollbarRef.value?.osInstance()
-    if (osInstance) {
-      scrollTop.value = osInstance.elements().viewport.scrollTop
-    }
-    return
-  }
   else {
-    scrollTop.value = document.documentElement.scrollTop
+    // ✅ 只在非首页或使用原始页面时才需要读取 DOM
+    // 首页场景下必须通过 OVERLAY_SCROLL_BAR_SCROLL 事件接收 scrollTop
+    if (!isHomePage() || settings.value.useOriginalBilibiliHomepage) {
+      scrollTop.value = document.documentElement.scrollTop
+    }
+    else {
+      // 首页且使用 Bewly 页面时，必须通过事件传递 scrollTop
+      // 如果执行到这里说明事件没有正确传递参数，警告并返回
+      console.warn('[TopBar Performance] Missing scrollTop parameter from OVERLAY_SCROLL_BAR_SCROLL event')
+      return
+    }
   }
 
   // 计算滚动距离，只有超过阈值才处理

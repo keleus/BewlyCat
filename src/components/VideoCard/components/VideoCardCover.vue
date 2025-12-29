@@ -565,4 +565,30 @@ onBeforeUnmount(() => {
     transform: rotate(360deg);
   }
 }
+
+/* ✅ 性能优化：从父组件 :deep() 移至本地 scoped，减少跨组件选择器匹配 */
+/* 播放量和时长始终显示，弹幕和点赞在较宽屏幕显示 */
+.cover-stat-view {
+  display: inline-flex; /* 播放量始终显示 */
+}
+
+.cover-stat-danmaku,
+.cover-stat-like {
+  display: none; /* 默认隐藏弹幕和点赞 */
+}
+
+/* 使用媒体查询代替容器查询（性能更好） */
+/* 屏幕宽度 > 768px 时显示弹幕 */
+@media (min-width: 768px) {
+  .cover-stat-danmaku {
+    display: inline-flex;
+  }
+}
+
+/* 屏幕宽度 > 1024px 时显示点赞 */
+@media (min-width: 1024px) {
+  .cover-stat-like {
+    display: inline-flex;
+  }
+}
 </style>

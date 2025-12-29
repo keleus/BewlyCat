@@ -5,6 +5,7 @@
 .trae
 .kiro
 .claude
+.pnpm-store/
 *.backup
 *.crx
 *.local
@@ -21,3 +22,4 @@ node_modules
 *-web-ext-profile
 extension-safari-macos/
 # src/old-extension/
+.playwright-mcp/

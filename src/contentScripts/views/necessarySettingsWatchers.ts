@@ -1,6 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
+import { setUselessFeedCardBlockerEnabled } from '~/contentScripts/features/blockUselessFeedCards'
 import { LanguageType } from '~/enums/appEnums'
 import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
 import { resetBilibiliTopBarInlineStyles } from '~/utils/bilibiliTopBar'
@@ -218,7 +219,20 @@ export function setupNecessarySettingsWatchers() {
       document.documentElement.classList.add('block-useless-contents')
     else
       document.documentElement.classList.remove('block-useless-contents')
+
+    // Avoid expensive :has() selectors by using a JS marker on homepage feed cards.
+    setUselessFeedCardBlockerEnabled(settings.value.blockAds && isHomePage() && !isInIframe())
   }, { immediate: true })
+
+  // SPA navigation: homepage state can change without a full reload.
+  if (!isInIframe()) {
+    const refreshUselessFeedCardBlocker = () => {
+      setUselessFeedCardBlockerEnabled(settings.value.blockAds && isHomePage() && !isInIframe())
+    }
+    window.addEventListener('pushstate', refreshUselessFeedCardBlocker)
+    window.addEventListener('popstate', refreshUselessFeedCardBlocker)
+    window.addEventListener('hashchange', refreshUselessFeedCardBlocker)
+  }
 
   /**
    * 搜尋結果的上方的廣告，但有時是年末總結、年度報告這些

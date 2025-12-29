@@ -122,24 +122,6 @@ function resetColumns() {
           </div>
         </template>
       </SettingsItem>
-
-      <SettingsItem :title="$t('settings.enable_image_load_concurrency_limit')" :desc="$t('settings.enable_image_load_concurrency_limit_desc')">
-        <Radio v-model="settings.enableImageLoadConcurrencyLimit" />
-      </SettingsItem>
-
-      <SettingsItem
-        v-if="settings.enableImageLoadConcurrencyLimit"
-        :title="$t('settings.image_load_concurrency_count')"
-        :desc="$t('settings.image_load_concurrency_count_desc')"
-      >
-        <Input
-          v-model="settings.imageLoadConcurrencyCount"
-          type="number"
-          :min="1"
-          :max="6"
-          w-20
-        />
-      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_video_card')">

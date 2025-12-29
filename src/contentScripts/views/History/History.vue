@@ -69,7 +69,7 @@ function getHistoryList() {
           ? historyList[historyList.length - 1].view_at
           : 0,
   })
-    .then((res: HistoryResult) => {
+    .then(async (res: HistoryResult) => {
       if (res.code === 0) {
         if (Array.isArray(res.data.list) && res.data.list.length > 0)
           historyList.push(...res.data.list)
@@ -82,7 +82,8 @@ function getHistoryList() {
 
         noMoreContent.value = false
 
-        if (!haveScrollbar() && !noMoreContent.value) {
+        // ✅ 修复：添加 await，因为 haveScrollbar() 是异步函数
+        if (!(await haveScrollbar()) && !noMoreContent.value) {
           getHistoryList()
         }
       }

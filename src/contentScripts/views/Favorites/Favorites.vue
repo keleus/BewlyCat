@@ -158,7 +158,8 @@ async function getFavoriteResources(
       if (!res.data.medias)
         noMoreContent.value = true
 
-      if (!haveScrollbar() && !noMoreContent.value) {
+      // ✅ 修复：添加 await，因为 haveScrollbar() 是异步函数
+      if (!(await haveScrollbar()) && !noMoreContent.value) {
         if (searchScope.value === 'all') {
           const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
           await getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword, 1)
