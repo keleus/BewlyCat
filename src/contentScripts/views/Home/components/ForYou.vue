@@ -394,7 +394,7 @@ function initPageAction() {
     // 根据当前模式保存数据
     if (settings.value.recommendationMode === 'web') {
       // 总是保存刷新前的当前状态到后退缓存
-      cachedVideoList.value = structuredClone(videoList.value)
+      cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
       cachedRefreshIdx.value = refreshIdx.value
       hasBackState.value = true
 
@@ -407,7 +407,7 @@ function initPageAction() {
     }
     else if (settings.value.recommendationMode === 'app') {
       // APP 模式下保存刷新前的当前状态到后退缓存
-      cachedAppVideoList.value = structuredClone(appVideoList.value)
+      cachedAppVideoList.value = JSON.parse(JSON.stringify(appVideoList.value))
       hasBackState.value = true
 
       // 清空前进状态（因为刷新会产生新的分支）
@@ -430,12 +430,12 @@ function initPageAction() {
 
         // Web模式下的后退操作
         // 保存当前数据到前进状态
-        forwardVideoList.value = structuredClone(videoList.value)
+        forwardVideoList.value = JSON.parse(JSON.stringify(videoList.value))
         forwardRefreshIdx.value = refreshIdx.value
         hasForwardState.value = true
 
         // 恢复缓存的数据
-        videoList.value = structuredClone(cachedVideoList.value)
+        videoList.value = JSON.parse(JSON.stringify(cachedVideoList.value))
         refreshIdx.value = cachedRefreshIdx.value
 
         hasBackState.value = false
@@ -448,11 +448,11 @@ function initPageAction() {
 
         // APP模式下的后退操作
         // 保存当前数据到前进状态
-        forwardAppVideoList.value = structuredClone(appVideoList.value)
+        forwardAppVideoList.value = JSON.parse(JSON.stringify(appVideoList.value))
         hasForwardState.value = true
 
         // 恢复缓存的数据
-        appVideoList.value = structuredClone(cachedAppVideoList.value)
+        appVideoList.value = JSON.parse(JSON.stringify(cachedAppVideoList.value))
 
         hasBackState.value = false
         undoForwardState.value = UndoForwardState.Hidden
@@ -470,12 +470,12 @@ function initPageAction() {
 
         // Web模式下的前进操作
         // 保存当前数据到后退状态
-        cachedVideoList.value = structuredClone(videoList.value)
+        cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
         cachedRefreshIdx.value = refreshIdx.value
         hasBackState.value = true
 
         // 恢复前进状态的数据
-        videoList.value = structuredClone(forwardVideoList.value)
+        videoList.value = JSON.parse(JSON.stringify(forwardVideoList.value))
         refreshIdx.value = forwardRefreshIdx.value
 
         // 标记为已经前进
@@ -490,11 +490,11 @@ function initPageAction() {
 
         // APP模式下的前进操作
         // 保存当前数据到后退状态
-        cachedAppVideoList.value = structuredClone(appVideoList.value)
+        cachedAppVideoList.value = JSON.parse(JSON.stringify(appVideoList.value))
         hasBackState.value = true
 
         // 恢复前进状态的数据
-        appVideoList.value = structuredClone(forwardAppVideoList.value)
+        appVideoList.value = JSON.parse(JSON.stringify(forwardAppVideoList.value))
 
         // 标记为已经前进
         hasForwardState.value = false
