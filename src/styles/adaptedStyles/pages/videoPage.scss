@@ -65,10 +65,14 @@
     }
 
     .note-list .list-note-operation,
-    .note-pc .note-container .note-header .note-operation,
     .note-up .up-desc-container .desc-top .attention-btn-container:not(.is-attention),
     .up-detail .up-detail-top .live-status:hover {
       background-color: var(--bew-theme-color);
+    }
+
+    .note-pc .note-container .note-header .note-operation {
+      background-color: transparent;
+      color: var(--bew-theme-color);
     }
 
     .user-card-m-exp .user-info-wrapper .info .user .user-label,
@@ -78,7 +82,6 @@
     }
 
     .note-list .list-note-operation:hover,
-    .note-pc .note-container .note-header .note-operation:hover,
     .user-card-m-exp .user-info-wrapper .info .btn-box .like:not(.liked):hover,
     .coin-operated-m-exp .coin-bottom .bi-btn:hover,
     .video-share-popover
@@ -94,6 +97,11 @@
     .collection-m-exp .bottom .btn:not(.disable):hover,
     .upinfo-btn-panel .following-charge-btn:hover {
       background-color: var(--bew-theme-color-80);
+    }
+
+    .note-pc .note-container .note-header .note-operation:hover {
+      background-color: var(--bew-theme-color-80);
+      color: white;
     }
 
     .upinfo-btn-panel .follow-btn.not-follow:hover {
@@ -428,7 +436,11 @@
       color: var(--bew-theme-color-80) !important;
     }
 
-    .note-pc .note-container .note-header .note-operation.detail,
+    .note-pc .note-container .note-header .note-operation.detail {
+      background-color: var(--bew-theme-color);
+      color: white;
+    }
+
     .note-up .up-desc-container .desc-top .attention-btn-container:hover {
       color: white;
     }
