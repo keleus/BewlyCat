@@ -122,6 +122,38 @@ export interface LocalSettings {
   customizeCSSContent: string
 }
 
+/**
+ * 网格列数配置
+ * 固定的媒体断点，只允许配置每个断点的列数
+ */
+export interface GridColumnsConfig {
+  base: number // 默认列数 (< 640px)
+  sm: number // >= 640px
+  md: number // >= 768px
+  lg: number // >= 1024px
+  xl: number // >= 1280px
+  xxl: number // >= 1536px
+}
+
+// 默认列数配置
+export const defaultGridColumns: GridColumnsConfig = {
+  base: 1,
+  sm: 2,
+  md: 3,
+  lg: 4,
+  xl: 5,
+  xxl: 6,
+}
+
+// 固定的断点宽度（基于 Tailwind CSS 标准断点）
+export const GRID_BREAKPOINTS = {
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  xl: 1280,
+  xxl: 1536,
+} as const
+
 export interface Settings {
   touchScreenOptimization: boolean
   showHomeButtonInTouchMode: boolean
@@ -132,6 +164,9 @@ export interface Settings {
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
   externalWatchLaterButton: boolean // 稍后再看按钮外置
+
+  // Grid 相关设置
+  gridColumns: GridColumnsConfig
 
   language: string
   customizeFont: 'default' | 'recommend' | 'custom'
@@ -180,8 +215,6 @@ export interface Settings {
   autoHideDock: boolean
   halfHideDock: boolean
   dockPosition: 'left' | 'right' | 'bottom'
-  /** @deprecated use dockItemsConfig instead */
-  dockItemVisibilityList: { page: AppPage, visible: boolean }[]
   dockItemsConfig: { page: AppPage, visible: boolean, openInNewTab: boolean, useOriginalBiliPage: boolean }[]
   disableDockGlowingEffect: boolean
   disableLightDarkModeSwitcherOnDock: boolean
@@ -249,8 +282,6 @@ export interface Settings {
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
   alwaysShowTabsOnHomePage: boolean
-  // Adaptive grid card min width (px) for Home page
-  homeAdaptiveCardMinWidth: number
   // Title font size for cards (px); when auto is enabled, this is ignored
   homeAdaptiveTitleFontSize: number
   // Auto adjust title font size based on grid width
@@ -330,6 +361,10 @@ export const originalSettings: Settings = {
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
   externalWatchLaterButton: false, // 默认关闭稍后再看按钮外置
+
+  // Grid 相关默认设置
+  gridColumns: { ...defaultGridColumns },
+
   language: '',
   customizeFont: 'default',
   fontFamily: '',
@@ -384,8 +419,6 @@ export const originalSettings: Settings = {
   autoHideDock: false,
   halfHideDock: false,
   dockPosition: 'right',
-  /** @deprecated use dockItemsConfig instead */
-  dockItemVisibilityList: [],
   dockItemsConfig: [],
   disableDockGlowingEffect: false,
   disableLightDarkModeSwitcherOnDock: false,
@@ -453,7 +486,6 @@ export const originalSettings: Settings = {
 
   homePageTabVisibilityList: [],
   alwaysShowTabsOnHomePage: false,
-  homeAdaptiveCardMinWidth: 280,
   homeAdaptiveTitleFontSize: 16,
   homeAdaptiveTitleAutoSize: true,
   videoCardTitleFontSize: 'base',
@@ -589,6 +621,50 @@ watch(
       // 清理旧的字段
       Reflect.deleteProperty(record, 'disableFrostedGlass')
     }
+
+    // 迁移 gridColumns：从独立存储迁移到 settings
+    // 检查当前值是否有效（不是空对象且包含必需字段）
+    const hasValidGridColumns = record.gridColumns
+      && typeof record.gridColumns === 'object'
+      && 'base' in record.gridColumns
+      && Object.keys(record.gridColumns).length > 0
+
+    // 如果当前值无效，尝试从旧存储迁移
+    if (!hasValidGridColumns) {
+      browser.storage.local.get(['gridColumns']).then((result) => {
+        if (result.gridColumns) {
+          try {
+            // useStorageLocal 可能直接存储对象，也可能存储 JSON 字符串
+            let oldGridColumns = result.gridColumns
+            if (typeof oldGridColumns === 'string') {
+              oldGridColumns = JSON.parse(oldGridColumns)
+            }
+
+            // 验证数据结构是否正确
+            if (oldGridColumns && typeof oldGridColumns === 'object' && 'base' in oldGridColumns) {
+              // 迁移数据（即使等于默认值也要迁移，因为当前值无效）
+              record.gridColumns = oldGridColumns
+              settings.value = record as Settings
+
+              // 清理旧的独立存储
+              browser.storage.local.remove(['gridColumns'])
+            }
+            else {
+              record.gridColumns = { ...defaultGridColumns }
+              settings.value = record as Settings
+            }
+          }
+          catch {
+            record.gridColumns = { ...defaultGridColumns }
+            settings.value = record as Settings
+          }
+        }
+        else {
+          record.gridColumns = { ...defaultGridColumns }
+          settings.value = record as Settings
+        }
+      })
+    }
   },
   { immediate: true },
 )
@@ -656,38 +732,6 @@ export interface GridLayout {
 export const gridLayout = useStorageLocal('gridLayout', ref<GridLayout>({
   home: 'adaptive',
 }), { mergeDefaults: true })
-
-/**
- * 网格列数配置
- * 固定的媒体断点，只允许配置每个断点的列数
- */
-export interface GridColumnsConfig {
-  base: number // 默认列数 (< 640px)
-  sm: number // >= 640px
-  md: number // >= 768px
-  lg: number // >= 1024px
-  xl: number // >= 1280px
-  xxl: number // >= 1536px
-}
-
-// 默认列数配置
-export const defaultGridColumns: GridColumnsConfig = {
-  base: 1,
-  sm: 2,
-  md: 3,
-  lg: 4,
-  xl: 5,
-  xxl: 6,
-}
-
-// 固定的断点宽度（基于 Tailwind CSS 标准断点）
-export const GRID_BREAKPOINTS = {
-  sm: 640,
-  md: 768,
-  lg: 1024,
-  xl: 1280,
-  xxl: 1536,
-} as const
 
 export const gridColumns = useStorageLocal<GridColumnsConfig>(
   'gridColumns',

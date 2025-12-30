@@ -7,7 +7,7 @@ import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { originalSettings, settings } from '~/logic'
 import type { GridColumnsConfig, VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
-import { defaultGridColumns, GRID_BREAKPOINTS, gridColumns } from '~/logic/storage'
+import { defaultGridColumns, GRID_BREAKPOINTS } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -67,11 +67,11 @@ const breakpointLabels: { key: keyof GridColumnsConfig, label: string }[] = [
 ]
 
 function updateColumns(key: keyof GridColumnsConfig, value: number) {
-  gridColumns.value = { ...gridColumns.value, [key]: value }
+  settings.value.gridColumns = { ...settings.value.gridColumns, [key]: value }
 }
 
 function resetColumns() {
-  gridColumns.value = { ...defaultGridColumns }
+  settings.value.gridColumns = { ...defaultGridColumns }
 }
 </script>
 
@@ -105,7 +105,7 @@ function resetColumns() {
             >
               <span text-sm shrink-0 min-w-24>{{ bp.label }}</span>
               <Input
-                :model-value="gridColumns[bp.key]"
+                :model-value="settings.gridColumns[bp.key]"
                 type="number"
                 :min="1"
                 :max="12"

@@ -151,17 +151,6 @@ watch(() => JSON.stringify(settings.value.dockItemsConfig), () => {
 }, { immediate: true })
 
 function computeDockItem(): DockItem[] {
-  // Transfer the data from dockItemVisibilityList into dockItemsConfig
-  if (settings.value.dockItemVisibilityList.length > 0 && settings.value.dockItemsConfig.length === 0) {
-    settings.value.dockItemsConfig = settings.value.dockItemVisibilityList.map(item =>
-      ({
-        page: item.page,
-        visible: item.visible,
-        openInNewTab: false,
-        useOriginalBiliPage: false,
-      }))
-  }
-
   if (Array.isArray(settings.value.dockItemsConfig) && settings.value.dockItemsConfig.length < mainStore.dockItems.length) {
     // Add missing items to dockItemsConfig
     const missingItems = mainStore.dockItems.filter(dock => !settings.value.dockItemsConfig.some(item => item.page === dock.page))
@@ -170,7 +159,7 @@ function computeDockItem(): DockItem[] {
       ...missingItems.map(dock => ({ page: dock.page, visible: true, openInNewTab: false, useOriginalBiliPage: false })),
     ]
   }
-  // if dockItemVisibilityList not fresh , set it to default
+  // if dockItemsConfig not fresh, set it to default
   else if (!Array.isArray(settings.value.dockItemsConfig) || settings.value.dockItemsConfig.length !== mainStore.dockItems.length) {
     settings.value.dockItemsConfig = mainStore.dockItems.map(dock =>
       ({ page: dock.page, visible: true, openInNewTab: false, useOriginalBiliPage: false }),

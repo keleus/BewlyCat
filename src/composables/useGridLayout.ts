@@ -2,18 +2,18 @@ import type { CSSProperties } from 'vue'
 import { computed } from 'vue'
 
 import type { GridLayoutType } from '~/logic'
-import { gridColumns } from '~/logic'
-
-const gridCssVars = computed<CSSProperties>(() => ({
-  '--grid-cols-base': gridColumns.value.base,
-  '--grid-cols-sm': gridColumns.value.sm,
-  '--grid-cols-md': gridColumns.value.md,
-  '--grid-cols-lg': gridColumns.value.lg,
-  '--grid-cols-xl': gridColumns.value.xl,
-  '--grid-cols-xxl': gridColumns.value.xxl,
-}))
+import { settings } from '~/logic'
 
 export function useGridLayout(gridLayout: () => GridLayoutType) {
+  const gridCssVars = computed<CSSProperties>(() => ({
+    '--grid-cols-base': settings.value.gridColumns.base,
+    '--grid-cols-sm': settings.value.gridColumns.sm,
+    '--grid-cols-md': settings.value.gridColumns.md,
+    '--grid-cols-lg': settings.value.gridColumns.lg,
+    '--grid-cols-xl': settings.value.gridColumns.xl,
+    '--grid-cols-xxl': settings.value.gridColumns.xxl,
+  }))
+
   const gridClass = computed((): string => {
     const layout = gridLayout()
     if (layout === 'adaptive')
