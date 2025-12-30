@@ -445,11 +445,18 @@ export function setLoopState(enable: boolean) {
 
 // 用户手动修改自动播放状态的标志
 let userManuallyChangedAutoPlay = false
+// 标记是否为程序自动修改
+let isProgrammaticChange = false
 
 // 监听用户手动修改自动播放状态
 export function startAutoPlayUserChangeMonitoring() {
   // 使用事件委托监听点击
   document.addEventListener('click', (e) => {
+    // 如果是程序自动修改，忽略
+    if (isProgrammaticChange) {
+      return
+    }
+
     const target = e.target as HTMLElement
     // 检查是否点击了自动播放开关
     const switchBtn = target.closest('.auto-play .switch-btn, .continuous-btn .switch-btn')
@@ -477,7 +484,15 @@ function setAutoPlayState(enable: boolean) {
 
     // 如果当前状态与目标状态不一致，则切换
     if (isOn !== enable) {
-      button.click()
+      isProgrammaticChange = true
+      try {
+        button.click()
+      }
+      finally {
+        setTimeout(() => {
+          isProgrammaticChange = false
+        }, 0)
+      }
     }
 
     return true
