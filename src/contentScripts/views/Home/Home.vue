@@ -153,12 +153,17 @@ function toggleTabContentLoading(loading: boolean) {
 </script>
 
 <template>
-  <div>
+  <div pos="relative">
     <!-- Home search page mode background -->
     <Transition name="bg">
       <div
         v-if="settings.useSearchPageModeOnHomePage && settings.individuallySetSearchPageWallpaper && showSearchPageMode"
-        pos="absolute left-0 top-0" w-full h-580px
+        pos="absolute" w-screen h-580px z-0
+        :style="{
+          left: '50%',
+          transform: 'translateX(-50%)',
+          top: 'calc(-1 * (var(--bew-top-bar-height) + 10px))',
+        }"
       >
         <div
           pos="absolute left-0 top-0" w-full h-inherit bg="cover center" z-1
@@ -172,7 +177,7 @@ function toggleTabContentLoading(loading: boolean) {
         <Transition name="fade">
           <div
             v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
-            pos="absolute left-0 top-0" w-full h-inherit pointer-events-none duration-300
+            pos="relative left-0 top-0" w-full h-inherit pointer-events-none duration-300
             z-1
             :style="{
               backdropFilter: `blur(${settings.individuallySetSearchPageWallpaper ? settings.searchPageWallpaperBlurIntensity : settings.wallpaperBlurIntensity}px)`,
