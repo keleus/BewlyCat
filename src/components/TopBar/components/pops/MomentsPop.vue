@@ -59,7 +59,7 @@ function handleReachBottom() {
 useOptimizedScroll(
   momentsWrap,
   { onReachBottom: handleReachBottom },
-  { bottomThreshold: 20, throttleDelay: 100 },
+  { bottomThreshold: 400, throttleDelay: 100 },
 )
 
 function onClickTab(tab: MomentTab) {
@@ -314,7 +314,7 @@ defineExpose({
 
       <!-- loading -->
       <Transition name="fade">
-        <Loading v-if="topBarStore.isLoadingMoments && topBarStore.moments.length !== 0" m="-t-4" />
+        <Loading v-if="topBarStore.isLoadingMoments && topBarStore.moments.length !== 0" m="b-4" />
       </Transition>
     </main>
   </div>
