@@ -61,33 +61,76 @@ watch(isScrolling, (scrolling) => {
 })
 
 onMounted(() => {
-  if (props.loading === 'eager')
+  // eager 模式直接加载
+  if (props.loading === 'eager') {
     return
+  }
 
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting && !isVisible.value) {
-          if (isScrolling.value) {
-            pendingLoad.value = true
+  // 创建并绑定 IntersectionObserver 的函数
+  const createObserver = () => {
+    // 先断开之前的 observer，避免重复
+    observer?.disconnect()
+
+    observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !isVisible.value) {
+            if (isScrolling.value) {
+              // 用户正在滚动，先延迟加载
+              pendingLoad.value = true
+            }
+            else {
+              // 可见且未滚动，立即加载
+              startLoad()
+            }
+            // 一旦加载，断开 observer，避免重复触发
+            observer?.disconnect()
           }
-          else {
-            startLoad()
-          }
-          observer?.disconnect()
-        }
-      })
-    },
-    {
-      rootMargin: props.rootMargin,
-      threshold: 0.01,
+        })
+      },
+      {
+        rootMargin: props.rootMargin,
+        threshold: 0.01,
+      },
+    )
+
+    if (imgRef.value) {
+      observer.observe(imgRef.value)
+    }
+  }
+
+  // 初次创建 observer
+  createObserver()
+
+  // 监听 imgRef.value，如果 DOM 刷新或替换，重新绑定 observer
+  watch(
+    () => imgRef.value,
+    (newEl) => {
+      if (newEl && !isVisible.value) {
+        createObserver()
+      }
     },
   )
 
-  if (imgRef.value) {
-    observer.observe(imgRef.value)
-  }
+  // 可选：强制检查可视区立即加载图片（解决刷新后顶部不显示问题）
+  nextTick(() => {
+    if (imgRef.value && !isVisible.value) {
+      const rect = imgRef.value.getBoundingClientRect()
+      if (rect.bottom > 0 && rect.top < window.innerHeight) {
+        startLoad()
+      }
+    }
+  })
 
+  // 页面滚动停止时加载 pending 图片
+  watch(isScrolling, (scrolling) => {
+    if (!scrolling && pendingLoad.value && !isVisible.value) {
+      pendingLoad.value = false
+      startLoad()
+    }
+  })
+
+  // 页面卸载时断开 observer
   onBeforeUnmount(() => {
     observer?.disconnect()
   })
