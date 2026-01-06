@@ -28,7 +28,7 @@ const otherLinks = computed(() => {
   <div
     style="backdrop-filter: var(--bew-filter-glass-1);"
     h="[calc(100vh-100px)]" max-h="445px"
-    w="[calc(100vw-100px)]" max-w="fit"
+    w="fit"
     of-y-auto of-x-hidden
     shadow="[var(--bew-shadow-3),var(--bew-shadow-edge-glow-1)]"
     bg="$bew-elevated-alt"
