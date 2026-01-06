@@ -48,7 +48,7 @@ const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
 const isInitialized = ref<boolean>(false)
-const { handleReachBottom, handlePageRefresh } = useBewlyApp()
+const { handlePageRefresh } = useBewlyApp()
 
 // 合并直播和视频列表用于虚拟滚动
 const combinedVideoList = computed(() => {
@@ -76,7 +76,12 @@ async function handleVisibilityChange() {
 
 onMounted(() => {
   initData()
-  initPageAction()
+
+  // 确保在 nextTick 中调用，以保证所有依赖都已准备好
+  nextTick(() => {
+    initPageAction()
+  })
+
   // 监听页面可见性变化
   document.addEventListener('visibilitychange', handleVisibilityChange)
   // 初始化页面可见性状态
@@ -100,18 +105,9 @@ onDeactivated(() => {
 })
 
 function initPageAction() {
-  handleReachBottom.value = async () => {
-    if (isLoading.value)
-      return
-    if (noMoreContent.value)
-      return
+  // 滚动加载完全由 VideoCardGrid 组件处理（通过 @load-more 事件）
+  // 移除 handleReachBottom 注册以避免与 VideoCardGrid 的内置滚动监听冲突
 
-    // 优化：添加延迟执行而不是直接阻止
-    setTimeout(() => {
-      if (!isLoading.value && !noMoreContent.value)
-        getData()
-    }, 50) // 短暂延迟确保滚动结束
-  }
   handlePageRefresh.value = async () => {
     if (isLoading.value)
       return

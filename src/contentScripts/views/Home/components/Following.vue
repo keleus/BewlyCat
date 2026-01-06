@@ -148,7 +148,7 @@ const emit = defineEmits<{
 
 useI18n()
 
-const { scrollViewportRef, handlePageRefresh, handleReachBottom } = useBewlyApp()
+const { scrollViewportRef, handlePageRefresh } = useBewlyApp()
 const videoList = ref<VideoElement[]>([])
 const uploaderList = ref<UploaderInfo[]>([])
 const selectedUploader = ref<number | null>(null) // null means "All"
@@ -1465,7 +1465,11 @@ function jumpToLoginPage() {
 
 onMounted(() => {
   initData()
-  initPageAction()
+
+  // 确保在 nextTick 中调用，以保证所有依赖都已准备好
+  nextTick(() => {
+    initPageAction()
+  })
 })
 
 onActivated(() => {
@@ -1473,12 +1477,8 @@ onActivated(() => {
 })
 
 function initPageAction() {
-  handleReachBottom.value = async () => {
-    if (isLoading.value || noMoreContent.value)
-      return
-
-    handleLoadMore()
-  }
+  // 滚动加载完全由 VideoCardGrid 组件处理（通过 @load-more 事件）
+  // 移除 handleReachBottom 注册以避免与 VideoCardGrid 的内置滚动监听冲突
 
   handlePageRefresh.value = async () => {
     if (isLoading.value)
@@ -1541,7 +1541,7 @@ defineExpose({ initData })
                 <div font-medium text-sm>
                   {{ $t('topbar.moments_dropdown.tabs.all') }}
                 </div>
-                <div v-if="unreadUploadersCount > 0" text="xs $bew-text-2">
+                <div v-if="unreadUploadersCount > 0" class="secondary-text">
                   {{ $t('home.uploaders_with_updates', { count: unreadUploadersCount }) }}
                 </div>
               </div>
@@ -1577,7 +1577,7 @@ defineExpose({ initData })
                 <div font-medium truncate text-sm>
                   {{ uploader.name }}
                 </div>
-                <div text="xs $bew-text-2">
+                <div class="secondary-text">
                   {{ calcTimeSince(uploader.lastUpdateTime) }}
                 </div>
               </div>
@@ -1609,12 +1609,15 @@ defineExpose({ initData })
 </template>
 
 <style lang="scss" scoped>
+.secondary-text {
+  --uno: "text-xs text-$bew-text-2";
+}
+
 .active {
   --uno: "bg-$bew-theme-color-auto text-$bew-text-auto shadow-$bew-shadow-2";
 
-  // 选中状态下，小字使用反转颜色提高可读性
-  :deep([class*="text-xs"]) {
-    color: rgba(255, 255, 255, 0.85) !important;
+  .secondary-text {
+    --uno: "text-$bew-text-auto opacity-85";
   }
 }
 
