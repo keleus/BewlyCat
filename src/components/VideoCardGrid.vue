@@ -597,7 +597,7 @@ const renderItems = computed<VideoCardRenderItem[]>(() => {
     }
 
     const video = getTransformedVideo(item)
-    const skeleton = !video || !video.id
+    const skeleton = !video || (video.id == null && !video.bvid)
     const type = skeleton ? fallbackType : inferVideoTypeFromVideo(video)
     out[index] = { key, item, skeleton, type, video }
   }

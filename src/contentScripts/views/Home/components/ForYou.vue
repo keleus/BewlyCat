@@ -271,6 +271,8 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
   }
 
   return {
+    // 注意：aid 可能为 0 或 undefined，但只要有 bvid 就是有效视频
+    // VideoCardGrid 的骨架屏判断已优化为同时检查 id 和 bvid
     id: item.args?.aid ?? 0,
     durationStr: item.cover_right_text,
     title: decodeHtmlEntities(item.title),
@@ -652,6 +654,11 @@ async function getAppRecommendVideos() {
 
           // 应用过滤函数
           if (appFilterFunc.value && !appFilterFunc.value(item))
+            return
+
+          // 过滤掉没有有效 ID 的视频（既没有 aid 也没有 bvid）
+          const hasValidId = (item.args?.aid && item.args.aid > 0) || (item.bvid && item.bvid.trim() !== '')
+          if (!hasValidId)
             return
 
           // 检查是否已经存在该视频，避免重复
