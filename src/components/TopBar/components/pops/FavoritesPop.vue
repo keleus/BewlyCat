@@ -62,7 +62,7 @@ function handleReachBottom() {
 useOptimizedScroll(
   favoriteVideosWrap,
   { onReachBottom: handleReachBottom },
-  { bottomThreshold: 20, throttleDelay: 100 },
+  { bottomThreshold: 400, throttleDelay: 100 },
 )
 
 async function initData() {
@@ -87,33 +87,45 @@ async function getFavoriteCategories() {
 /**
  * Get favorite video resources
  */
-function getFavoriteResources() {
+async function getFavoriteResources() {
+  if (isLoading.value)
+    return
+
   isLoading.value = true
-  api.favorite.getFavoriteResources({
-    media_id: activatedMediaId.value,
-    pn: currentPageNum.value,
-    keyword: '',
-  })
-    .then((res) => {
-      const { code, data } = res
-      if (code === 0) {
-        if (data && 'medias' in data && Array.isArray(data.medias) && data.medias.length > 0)
-          favoriteResources.push(...data.medias)
 
-        if (
-          !data
-          || !data.medias
-          || (data.medias.length < 20 && favoriteResources.length > 0)
-        ) {
-          isLoading.value = false
-          noMoreContent.value = true
-          return
-        }
+  try {
+    const res = await api.favorite.getFavoriteResources({
+      media_id: activatedMediaId.value,
+      pn: currentPageNum.value,
+      keyword: '',
+    })
 
+    const { code, data } = res
+    if (code === 0) {
+      // 检查是否还有更多内容
+      if (data && 'has_more' in data && !data.has_more) {
+        noMoreContent.value = true
+      }
+      else {
         noMoreContent.value = false
       }
-      isLoading.value = false
-    })
+
+      // 添加数据到列表
+      if (data && 'medias' in data && Array.isArray(data.medias) && data.medias.length > 0) {
+        favoriteResources.push(...data.medias)
+      }
+      else if (!data || !data.medias || data.medias.length === 0) {
+        // 如果没有数据返回，也标记为没有更多内容
+        noMoreContent.value = true
+      }
+    }
+  }
+  catch (error) {
+    console.error('Failed to load favorite resources:', error)
+  }
+  finally {
+    isLoading.value = false
+  }
 }
 
 function refreshFavoriteResources() {
@@ -293,7 +305,7 @@ defineExpose({
 
         <!-- loading -->
         <Transition name="fade">
-          <Loading v-if="isLoading && favoriteResources.length !== 0" m="-t-4" />
+          <Loading v-if="isLoading && favoriteResources.length !== 0" m="b-4" />
         </Transition>
       </div>
     </main>

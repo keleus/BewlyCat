@@ -85,7 +85,7 @@ function handleReachBottom() {
 useOptimizedScroll(
   historysWrap,
   { onReachBottom: handleReachBottom },
-  { bottomThreshold: 20, throttleDelay: 100 },
+  { bottomThreshold: 400, throttleDelay: 100 },
 )
 
 function onClickTab(tabId: number) {
@@ -135,28 +135,39 @@ function getHistoryUrl(item: HistoryItem) {
  * @param type
  * @param view_at Last viewed timestamp
  */
-function getHistoryList(type: Business, view_at = 0 as number) {
+async function getHistoryList(type: Business, view_at = 0 as number) {
   if (isLoading.value)
     return
   if (noMoreContent.value)
     return
 
   isLoading.value = true
-  api.history.getHistoryList({
-    type,
-    view_at,
-  })
-    .then((res: HistoryResult) => {
-      if (res.code === 0) {
-        if (Array.isArray(res.data.list) && res.data.list.length > 0)
-          historys.push(...res.data.list)
 
-        if (res.data.list.length < 20) {
-          noMoreContent.value = true
-        }
-      }
-      isLoading.value = false
+  try {
+    const res: HistoryResult = await api.history.getHistoryList({
+      type,
+      view_at,
     })
+
+    if (res.code === 0) {
+      // 如果返回的数据为空，说明没有更多内容了
+      if (!res.data.list || res.data.list.length === 0) {
+        noMoreContent.value = true
+        return
+      }
+
+      // 添加数据到列表
+      if (Array.isArray(res.data.list) && res.data.list.length > 0) {
+        historys.push(...res.data.list)
+      }
+    }
+  }
+  catch (error) {
+    console.error('Failed to load history list:', error)
+  }
+  finally {
+    isLoading.value = false
+  }
 }
 
 function deleteHistoryItem(index: number, historyItem: HistoryItem) {
@@ -443,7 +454,7 @@ defineExpose({
       </TransitionGroup>
       <!-- loading -->
       <Transition name="fade">
-        <Loading v-if="isLoading && historys.length !== 0" m="-t-4" />
+        <Loading v-if="isLoading && historys.length !== 0" m="b-4" />
       </Transition>
     </main>
   </div>

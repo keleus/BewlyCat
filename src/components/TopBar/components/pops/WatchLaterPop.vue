@@ -37,7 +37,7 @@ function handleReachBottom() {
 useOptimizedScroll(
   scrollContainer,
   { onReachBottom: handleReachBottom },
-  { bottomThreshold: 100, throttleDelay: 100 },
+  { bottomThreshold: 400, throttleDelay: 100 },
 )
 
 onMounted(async () => {
@@ -227,7 +227,7 @@ function deleteWatchLaterItem(index: number, aid: number) {
 
       <!-- loading -->
       <Transition name="fade">
-        <Loading v-if="isLoadingWatchLater && watchLaterList.length !== 0" m="-t-4" />
+        <Loading v-if="isLoadingWatchLater && watchLaterList.length !== 0" m="b-4" />
       </Transition>
 
       <!-- no more content -->

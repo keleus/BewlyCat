@@ -119,6 +119,8 @@ export function useOptimizedScroll(
     // 滚动结束检测
     scrollTimeout = setTimeout(() => {
       isScrolling.value = false
+      // 在滚动停止时强制检查一次位置，防止快速滚动时因节流错过触发点
+      handleScrollLogic()
     }, 150)
   }
 
