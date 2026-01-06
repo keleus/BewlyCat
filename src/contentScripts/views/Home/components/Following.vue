@@ -107,6 +107,7 @@ import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
+import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
 import type { DataItem as MomentItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { calcTimeSince, parseStatNumber } from '~/utils/dataFormatter'
@@ -129,8 +130,10 @@ interface VideoElement {
   uniqueId: string
   bvid?: string
   item?: MomentItem
+  liveItem?: FollowingLiveItem
   authorList?: Author[]
   displayData?: Video
+  isLive?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -145,7 +148,7 @@ const emit = defineEmits<{
 
 useI18n()
 
-const { scrollViewportRef } = useBewlyApp()
+const { scrollViewportRef, handlePageRefresh, handleReachBottom } = useBewlyApp()
 const videoList = ref<VideoElement[]>([])
 const uploaderList = ref<UploaderInfo[]>([])
 const selectedUploader = ref<number | null>(null) // null means "All"
@@ -153,6 +156,7 @@ const previousSelectedUploader = ref<number | null>(null)
 const isLoadingUploaderTimes = ref<boolean>(false) // 是否正在后台加载UP主时间
 const loadedUploaderTimesCount = ref<number>(0) // 已加载时间的UP主数量
 const selectionToken = ref<number>(0) // 用于防止竞态条件的令牌
+const liveListLoaded = ref<boolean>(false) // 标记直播列表是否已加载（防止重复加载）
 
 // Provide selectedUploader to child components for preview loading control
 provide('moments-selected-uploader', selectedUploader)
@@ -491,7 +495,7 @@ async function getCurrentUserInfo() {
   return 0
 }
 
-// 加载关注列表（独立API）- 加载所有关注的UP主
+// 加载关注列表（独立API）- 渐进式加载所有关注的UP主
 async function loadFollowingList() {
   console.log('[Following] Loading all following list...')
 
@@ -504,12 +508,13 @@ async function loadFollowingList() {
   }
 
   try {
-    const allFollowings: any[] = []
     let currentPage = 1
     const pageSize = 50
     let hasMore = true
+    const viewed = getViewedUploaders()
+    const cachedTimes = getCachedUploaderTimes()
 
-    // 持续加载所有关注的UP主
+    // 持续加载所有关注的UP主，每页加载后立即显示
     while (hasMore) {
       console.log(`[Following] Loading following list page ${currentPage}...`)
 
@@ -528,13 +533,33 @@ async function loadFollowingList() {
 
       if (response.code === 0 && response.data?.list) {
         const followings = response.data.list
-        allFollowings.push(...followings)
+
+        // 立即处理并追加当前页的UP主到列表
+        const newUploaders = followings.map((user: any) => {
+          const cachedTime = cachedTimes[user.mid]
+          const lastUpdateTime = cachedTime ? cachedTime.time : user.mtime * 1000
+          const viewedTime = viewed[user.mid] || 0
+
+          return {
+            mid: user.mid,
+            name: user.uname,
+            face: user.face,
+            hasUpdate: calculateHasUpdate(lastUpdateTime, viewedTime),
+            lastUpdateTime,
+          }
+        })
+
+        // 立即追加到列表并排序
+        uploaderList.value = [...uploaderList.value, ...newUploaders]
+        updateUploaderStatus()
+
+        console.log(`[Following] Page ${currentPage} loaded. Current total:`, uploaderList.value.length)
 
         // 检查是否还有更多
         const total = response.data.total
-        if (allFollowings.length >= total || followings.length < pageSize) {
+        if (uploaderList.value.length >= total || followings.length < pageSize) {
           hasMore = false
-          console.log('[Following] All followings loaded. Total:', allFollowings.length)
+          console.log('[Following] All followings loaded. Total:', uploaderList.value.length)
         }
         else {
           currentPage++
@@ -546,34 +571,7 @@ async function loadFollowingList() {
       }
     }
 
-    if (allFollowings.length > 0) {
-      const viewed = getViewedUploaders()
-      const cachedTimes = getCachedUploaderTimes()
-
-      uploaderList.value = allFollowings.map((user: any) => {
-        const cachedTime = cachedTimes[user.mid]
-        return {
-          mid: user.mid,
-          name: user.uname,
-          face: user.face,
-          hasUpdate: true,
-          // 优先使用缓存的时间，否则使用关注时间
-          lastUpdateTime: cachedTime ? cachedTime.time : user.mtime * 1000,
-        }
-      })
-
-      // 更新已读状态
-      uploaderList.value = uploaderList.value.map((uploader) => {
-        const viewedTime = viewed[uploader.mid] || 0
-        return {
-          ...uploader,
-          hasUpdate: calculateHasUpdate(uploader.lastUpdateTime, viewedTime),
-        }
-      })
-
-      // 初始排序
-      updateUploaderStatus()
-
+    if (uploaderList.value.length > 0) {
       console.log('[Following] Successfully loaded', uploaderList.value.length, 'followings')
       console.log('[Following] Loaded from cache:', Object.keys(cachedTimes).length, 'uploader times')
 
@@ -844,7 +842,41 @@ async function loadSingleUploaderTime(mid: number, retryCount: number = 0) {
   }
 }
 
-// 加载ALL视图的动态流（限制3页）
+// 加载关注的直播列表（仅加载正在直播的）
+async function loadFollowingLiveList(): Promise<VideoElement[]> {
+  if (!settings.value.followingTabShowLivestreamingVideos) {
+    return []
+  }
+
+  try {
+    console.log('[Following] Loading following live list...')
+    const response: FollowingLiveResult = await api.live.getFollowingLiveList({
+      page: 1,
+      page_size: 30,
+    })
+
+    if (response.code === 0 && response.data.list) {
+      // 只保留正在直播的（live_status === 1）
+      const liveItems = response.data.list
+        .filter((liveItem: FollowingLiveItem) => liveItem.live_status === 1)
+        .map((liveItem: FollowingLiveItem) => ({
+          uniqueId: `live-${liveItem.roomid}`,
+          liveItem,
+          displayData: mapLiveItemToVideo(liveItem),
+          isLive: true,
+        }))
+      console.log(`[Following] Loaded ${liveItems.length} live streams (filtered from ${response.data.list.length} total)`)
+      return liveItems
+    }
+  }
+  catch (error) {
+    console.error('[Following] Failed to load live list:', error)
+  }
+
+  return []
+}
+
+// 加载ALL视图的动态流（渐进式加载，每页加载后立即显示）
 async function loadAllViewVideos(maxPages: number = 3, token?: number) {
   console.log('[Following] Loading ALL view videos (max', maxPages, 'pages)...')
   emit('beforeLoading')
@@ -854,6 +886,16 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
   const uploaderLatestTimes = new Map<number, number>()
 
   try {
+    // 只在首次加载且未加载过直播列表时，才加载直播列表（防止重复加载）
+    if (!allViewOffset.value && !liveListLoaded.value && settings.value.followingTabShowLivestreamingVideos) {
+      const liveItems = await loadFollowingLiveList()
+      if (liveItems.length > 0) {
+        videoList.value = [...liveItems, ...videoList.value]
+      }
+      // 标记为已加载，无论成功与否都不再重复加载
+      liveListLoaded.value = true
+    }
+
     let tempOffset = allViewOffset.value || undefined
     let pageCount = 0
 
@@ -1040,7 +1082,7 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
   }
 }
 
-// 加载单个UP主的动态（限制3页）
+// 加载单个UP主的动态（渐进式加载，每页加载后立即显示）
 async function loadUserMoments(mid: number, maxPages: number = 3, token?: number) {
   console.log('[Following] Loading moments for UP', mid, '(max', maxPages, 'pages)...')
   emit('beforeLoading')
@@ -1232,11 +1274,12 @@ function selectUploader(mid: number | null) {
     selectedUploader.value = null
     previousSelectedUploader.value = null
 
-    // 重置ALL视图分页
+    // 重置ALL视图分页和直播加载标志
     allViewOffset.value = ''
     allViewUpdateBaseline.value = ''
+    liveListLoaded.value = false // 重置直播加载标志，允许重新加载
 
-    // 加载ALL视图
+    // 加载ALL视图（初始加载3页，每页加载后立即显示）
     loadAllViewVideos(3, currentToken)
   }
   else {
@@ -1268,8 +1311,27 @@ function selectUploader(mid: number | null) {
       loadSingleUploaderTime(mid)
     }
 
-    // 加载UP主动态
+    // 加载UP主动态（初始加载3页，每页加载后立即显示）
     loadUserMoments(mid, 3, currentToken)
+  }
+}
+
+// 将直播item转换为Video格式
+function mapLiveItemToVideo(liveItem: FollowingLiveItem): Video {
+  return {
+    id: liveItem.roomid,
+    title: decodeHtmlEntities(liveItem.title),
+    cover: liveItem.room_cover,
+    author: {
+      name: decodeHtmlEntities(liveItem.uname),
+      authorFace: liveItem.face,
+      mid: liveItem.uid,
+    },
+    viewStr: liveItem.text_small,
+    tag: decodeHtmlEntities(liveItem.area_name_v2),
+    roomid: liveItem.roomid,
+    liveStatus: liveItem.live_status,
+    threePointV2: [],
   }
 }
 
@@ -1366,6 +1428,7 @@ function initData() {
   userMomentsOffset.value = ''
   noMoreContent.value = false
   needToLoginFirst.value = false
+  liveListLoaded.value = false // 重置直播加载标志
 
   // 如果当前已经选中了某个UP主，刷新该UP主的动态
   if (currentSelectedUploader !== null) {
@@ -1402,7 +1465,28 @@ function jumpToLoginPage() {
 
 onMounted(() => {
   initData()
+  initPageAction()
 })
+
+onActivated(() => {
+  initPageAction()
+})
+
+function initPageAction() {
+  handleReachBottom.value = async () => {
+    if (isLoading.value || noMoreContent.value)
+      return
+
+    handleLoadMore()
+  }
+
+  handlePageRefresh.value = async () => {
+    if (isLoading.value)
+      return
+
+    initData()
+  }
+}
 
 defineExpose({ initData })
 </script>
