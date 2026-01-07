@@ -156,7 +156,6 @@ watch(() => props.src, (newSrc) => {
     ref="imgRef"
     w-full max-w-full align-middle
     rounded="$bew-radius"
-    bg="$bew-skeleton"
     style="aspect-ratio: 16 / 9; display: block; overflow: hidden; contain: layout style;"
   >
     <!-- 骨架屏 - 图片未可见时显示（仅当 showSkeleton 为 true 时） -->

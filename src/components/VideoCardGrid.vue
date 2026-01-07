@@ -807,7 +807,7 @@ function getUniqueKey(item: T, index: number): string | number {
 }
 
 :deep(.video-card-container) {
-  contain: layout style paint;
+  contain: layout style;
   content-visibility: auto;
   contain-intrinsic-size: auto none;
   min-width: 0;

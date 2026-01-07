@@ -408,8 +408,8 @@ provide('getVideoType', () => props.type!)
   /* container-type: inline-size; */
   /* container-name: video-card; */
 
-  /* ✅ 增强 containment：添加 paint 以进一步隔离绘制 */
-  contain: layout style paint;
+  /* ✅ 增强 containment：移除 paint 以允许 hover 背景向外扩展 */
+  contain: layout style;
   min-width: 0;
 
   /**
@@ -435,9 +435,12 @@ provide('getVideoType', () => props.type!)
   pointer-events: none;
 }
 
-/* 优化 hover 效果：使用 opacity 代替 box-shadow，避免昂贵的绘制成本 */
+/* 优化 hover 效果：使用 background + box-shadow 实现内外双层背景 */
 .video-card-container--interactive {
   position: relative;
+  transition:
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .video-card-container--interactive::before {
@@ -456,11 +459,20 @@ provide('getVideoType', () => props.type!)
   .video-card-container--interactive:hover::before {
     opacity: 1;
   }
+
+  .video-card-container--interactive:hover {
+    /* 用 box-shadow 在外部6px处创建背景色效果，添加1px模糊消除圆角处的细线 */
+    box-shadow: 0 0 1px 6px var(--bew-fill-2);
+  }
 }
 
 .video-card-container--interactive:active::before {
   background: var(--bew-fill-3);
   opacity: 1;
+}
+
+.video-card-container--interactive:active {
+  box-shadow: 0 0 1px 6px var(--bew-fill-3);
 }
 
 .horizontal-card-cover {
