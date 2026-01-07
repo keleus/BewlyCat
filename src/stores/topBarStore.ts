@@ -306,7 +306,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       if (res.code === 0) {
         // 领取成功，更新状态并显示消息
         vipExpAlreadyReceived.value = true
-        toast.success('大会员经验自动领取成功')
+        toast.success('大会员经验自动领取成功', { timeout: 1500 })
       }
       else if (res.code === 69198) {
         // 经验已领取，静默更新状态

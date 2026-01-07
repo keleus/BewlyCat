@@ -26,6 +26,8 @@ export async function setupApp(app: App) {
       maxToasts: 20,
       newestOnTop: true,
       position: POSITION.TOP_RIGHT,
+      timeout: 3000,
+      hideProgressBar: false,
     })
   app.use(components)
   app.use(pinia)
