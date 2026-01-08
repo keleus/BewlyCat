@@ -277,6 +277,8 @@ export interface Settings {
   filterByPublishTime: number // 单位：天
 
   followingTabShowLivestreamingVideos: boolean
+  followingFilterChargingVideos: boolean // 过滤充电专属视频
+  followingFilterDynamicVideos: boolean // 过滤动态视频
   useFollowingNewLayout: boolean
   followingInactiveDays: number // UP主超过N天未更新则移至黑名单
 
@@ -481,6 +483,8 @@ export const originalSettings: Settings = {
   filterByPublishTime: 30, // 默认30天
 
   followingTabShowLivestreamingVideos: false,
+  followingFilterChargingVideos: false, // 默认不过滤充电视频
+  followingFilterDynamicVideos: false, // 默认不过滤动态视频
   useFollowingNewLayout: false, // 默认使用旧布局
   followingInactiveDays: 100, // 默认100天
 

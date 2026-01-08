@@ -349,6 +349,10 @@ settings:
   filter_by_user_table:
     username_or_mid: 用戶名 / MID
   following_tab_show_livestreaming_videos: 喺「跟緊啲人」入邊顯示實況直播
+  following_filter_charging_videos: 過濾充電專屬影片
+  following_filter_charging_videos_desc: 啟用後，喺「跟緊啲人」頁面入邊會隱藏需要充電先至可以睇嘅付費影片
+  following_filter_dynamic_videos: 過濾動態影片
+  following_filter_dynamic_videos_desc: 啟用後，喺「跟緊啲人」頁面入邊會隱藏標記為動態影片嘅內容
   use_following_new_layout: 用跟緊啲人新版面
   use_following_new_layout_desc: 左邊顯示關注嘅UP主名單，右邊顯示影片流
   following_inactive_days: UP主唔活躍天數

@@ -351,6 +351,8 @@ export interface Badge {
 export enum BadgeText {
   投稿视频 = '投稿视频',
   番剧 = '番剧',
+  充电专属 = '充电专属',
+  动态视频 = '动态视频',
 }
 
 export interface Stat {

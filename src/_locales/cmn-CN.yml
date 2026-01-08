@@ -413,6 +413,10 @@ settings:
   filter_by_user_table:
     username_or_mid: 用户名 / MID
   following_tab_show_livestreaming_videos: 在 "正在关注" 中显示直播视频
+  following_filter_charging_videos: 过滤充电专属视频
+  following_filter_charging_videos_desc: 开启后，在 "正在关注" 页面中将隐藏需要充电才能观看的付费视频
+  following_filter_dynamic_videos: 过滤动态视频
+  following_filter_dynamic_videos_desc: 开启后，在 "正在关注" 页面中将隐藏标记为动态视频的内容
   use_following_new_layout: 使用正在关注新布局
   use_following_new_layout_desc: 左侧显示关注的UP主列表，右侧显示视频流
   following_inactive_days: UP主不活跃天数

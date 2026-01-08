@@ -417,6 +417,10 @@ settings:
   filter_by_user_table:
     username_or_mid: Username / MID
   following_tab_show_livestreaming_videos: Show Live-streaming videos in the "Following" tab
+  following_filter_charging_videos: Filter charging exclusive videos
+  following_filter_charging_videos_desc: When enabled, paid videos that require charging to watch will be hidden in the "Following" page
+  following_filter_dynamic_videos: Filter dynamic videos
+  following_filter_dynamic_videos_desc: When enabled, videos marked as dynamic videos will be hidden in the "Following" page
   use_following_new_layout: Use new layout for Following tab
   use_following_new_layout_desc: Display followed UPs list on the left and video feed on the right
   following_inactive_days: UP inactive days
