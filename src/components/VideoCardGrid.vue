@@ -104,6 +104,13 @@ interface VideoCardGridProps<T = any> {
    * @default false
    */
   enableRowPadding?: boolean
+
+  /**
+   * 是否为 Following 页面
+   * 用于在右键菜单中默认显示"取消关注"选项
+   * @default false
+   */
+  isFollowingPage?: boolean
 }
 
 const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
@@ -729,6 +736,7 @@ function getUniqueKey(item: T, index: number): string | number {
           :show-watcher-later="showWatchLater"
           :horizontal="isHorizontal"
           :more-btn="moreBtn"
+          :is-following-page="props.isFollowingPage"
         >
           <template v-for="(_, name) in $slots" #[name]>
             <slot :name="name" :item="renderItem.item" />

@@ -28,6 +28,7 @@ interface Props {
   showPreview?: boolean
   moreBtn?: boolean
   hideAuthor?: boolean
+  isFollowingPage?: boolean
 }
 
 const layout = computed((): 'modern' | 'old' => {
@@ -394,6 +395,7 @@ provide('getVideoType', () => props.type!)
           url: logic.videoUrl.value,
         }"
         :context-menu-styles="logic.videoOptionsFloatingStyles.value"
+        :is-following-page="props.isFollowingPage"
         @close="logic.showVideoOptions.value = false"
         @removed="logic.handleRemoved"
       />

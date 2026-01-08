@@ -692,7 +692,17 @@ video_card:
     copy_bv_number: 复制 BV 号
     copy_av_number: 复制 AV 号
     view_the_original_cover: 查看封面
+    follow_user: 关注用户
+    unfollow_user: 取消关注
     block_user: 拉黑用户
+  follow_user_confirm:
+    title: 确认关注用户
+    message: 确定要关注 {name} 吗？
+    warning: 关注后，你将能看到该用户发布的最新内容。
+  unfollow_user_confirm:
+    title: 确认取消关注
+    message: 确定要取消关注 {name} 吗？
+    warning: 取消关注后，该用户的内容将不再出现在你的关注列表中。
   block_user_confirm:
     title: 确认拉黑用户
     message: 确定要拉黑 {name} 吗？

@@ -766,7 +766,17 @@ video_card:
     copy_bv_number: Copy BV Number
     copy_av_number: Copy AV Number
     view_the_original_cover: View the Original Cover
+    follow_user: Follow User
+    unfollow_user: Unfollow User
     block_user: Block User
+  follow_user_confirm:
+    title: Confirm Follow User
+    message: Are you sure you want to follow {name}?
+    warning: After following, you will see the latest content from this user.
+  unfollow_user_confirm:
+    title: Confirm Unfollow User
+    message: Are you sure you want to unfollow {name}?
+    warning: After unfollowing, this user's content will no longer appear in your following list.
   block_user_confirm:
     title: Confirm Block User
     message: Are you sure you want to block {name}?

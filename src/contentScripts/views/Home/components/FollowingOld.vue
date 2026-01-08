@@ -437,6 +437,7 @@ defineExpose({ initData })
       :transform-item="transformCombinedItem"
       :get-item-key="(item: VideoElement | LiveVideoElement) => item.uniqueId"
       :show-watcher-later="false"
+      is-following-page
       show-preview
       @refresh="initData"
       @login="jumpToLoginPage"

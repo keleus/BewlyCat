@@ -1599,6 +1599,7 @@ defineExpose({ initData })
         :transform-item="transformVideoItem"
         :get-item-key="(item: VideoElement) => item.uniqueId"
         :show-watcher-later="false"
+        is-following-page
         show-preview
         @refresh="initData"
         @login="jumpToLoginPage"

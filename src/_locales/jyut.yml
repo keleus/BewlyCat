@@ -641,7 +641,17 @@ video_card:
     copy_bv_number: 複製 BV 號
     copy_av_number: 複製 AV 號
     view_the_original_cover: 睇吓封面
+    follow_user: 關注用戶
+    unfollow_user: 取消關注
     block_user: 拉黑用戶
+  follow_user_confirm:
+    title: 確認關注用戶
+    message: 確定要關注 {name} 嗎？
+    warning: 關注咗之後，你就可以睇到該用戶發佈嘅最新內容。
+  unfollow_user_confirm:
+    title: 確認取消關注
+    message: 確定要取消關注 {name} 嗎？
+    warning: 取消關注咗之後，該用戶嘅內容就唔會再出現喺你嘅關注清單入面。
   block_user_confirm:
     title: 確認拉黑用戶
     message: 確定要拉黑 {name} 嗎？

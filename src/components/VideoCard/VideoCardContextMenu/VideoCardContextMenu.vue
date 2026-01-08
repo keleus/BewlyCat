@@ -11,11 +11,16 @@ import { openLinkInBackground } from '~/utils/tabs'
 import type { Video } from '../types'
 import BlockUserConfirmDialog from './components/BlockUserConfirmDialog.vue'
 import DislikeDialog from './components/DislikeDialog.vue'
+import FollowUserConfirmDialog from './components/FollowUserConfirmDialog.vue'
+import UnfollowUserConfirmDialog from './components/UnfollowUserConfirmDialog.vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   video: Video
   contextMenuStyles: CSSProperties
-}>()
+  isFollowingPage?: boolean
+}>(), {
+  isFollowingPage: false,
+})
 const emit = defineEmits<{
   (event: 'removed', selectedOpt?: { dislikeReasonId: number }): void
   (event: 'close'): void
@@ -67,6 +72,8 @@ const { t } = useI18n()
 const showContextMenu = ref<boolean>(false)
 const showDislikeDialog = ref<boolean>(false)
 const showBlockUserDialog = ref<boolean>(false)
+const showFollowUserDialog = ref<boolean>(false)
+const showUnfollowUserDialog = ref<boolean>(false)
 const showPipWindow = ref<boolean>(false)
 const { openIframeDrawer } = useBewlyApp()
 
@@ -84,11 +91,15 @@ enum VideoOption {
   CopyBVNumber,
   CopyAVNumber,
 
+  FollowUser,
+  UnfollowUser,
   BlockUser,
 }
 
-const commonOptions = computed((): { command: VideoOption, name: string, icon: string, color?: string }[][] => {
-  let result = [
+interface OptionItem { command: VideoOption, name: string, icon: string, color?: string }
+
+const commonOptions = computed((): OptionItem[][] => {
+  let result: OptionItem[][] = [
     [
       { command: VideoOption.OpenInNewTab, name: t('video_card.operation.open_in_new_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
       { command: VideoOption.OpenInBackground, name: t('video_card.operation.open_in_background'), icon: 'i-solar:square-top-down-bold-duotone' },
@@ -106,11 +117,37 @@ const commonOptions = computed((): { command: VideoOption, name: string, icon: s
     [
       { command: VideoOption.ViewTheOriginalCover, name: t('video_card.operation.view_the_original_cover'), icon: 'i-solar:gallery-minimalistic-bold-duotone' },
     ],
-
-    [
-      { command: VideoOption.BlockUser, name: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone', color: 'text-red-500' },
-    ],
   ]
+
+  // 添加关注/取消关注选项
+  // 1. 如果明确传入了 followed 状态，根据状态显示
+  // 2. 如果在 Following 页面且未传入 followed，默认显示"取消关注"（因为都是已关注的UP主）
+  // 3. 其他情况不显示
+  const authorFollowed = Array.isArray(props.video.author)
+    ? props.video.author[0]?.followed
+    : props.video.author?.followed
+
+  if (authorFollowed !== undefined || props.isFollowingPage) {
+    // 判断是否已关注：明确为 true，或者在 Following 页面且未明确为 false
+    const isFollowed = authorFollowed === true || (props.isFollowingPage && authorFollowed !== false)
+
+    if (isFollowed) {
+      result.push([
+        { command: VideoOption.UnfollowUser, name: t('video_card.operation.unfollow_user'), icon: 'i-solar:user-minus-bold-duotone', color: 'text-orange-500' },
+      ])
+    }
+    else {
+      result.push([
+        { command: VideoOption.FollowUser, name: t('video_card.operation.follow_user'), icon: 'i-solar:user-plus-bold-duotone', color: 'text-blue-500' },
+      ])
+    }
+  }
+
+  // 添加拉黑用户选项
+  result.push([
+    { command: VideoOption.BlockUser, name: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone', color: 'text-red-500' },
+  ])
+
   if (getVideoType() === 'bangumi' || getVideoType() === 'live') {
     result = result.map((group) => {
       return group.filter((opt) => {
@@ -209,6 +246,12 @@ function handleCommonCommand(command: VideoOption) {
       handleClose()
       break
 
+    case VideoOption.FollowUser:
+      openFollowUserConfirmDialog()
+      break
+    case VideoOption.UnfollowUser:
+      openUnfollowUserConfirmDialog()
+      break
     case VideoOption.BlockUser:
       openBlockUserConfirmDialog()
       break
@@ -217,6 +260,16 @@ function handleCommonCommand(command: VideoOption) {
 
 function openAppDislikeDialog() {
   showDislikeDialog.value = true
+  showContextMenu.value = false
+}
+
+function openFollowUserConfirmDialog() {
+  showFollowUserDialog.value = true
+  showContextMenu.value = false
+}
+
+function openUnfollowUserConfirmDialog() {
+  showUnfollowUserDialog.value = true
   showContextMenu.value = false
 }
 
@@ -277,6 +330,78 @@ async function blockUser() {
   }
   catch (error) {
     console.error('Block user error:', error)
+  }
+}
+
+async function followUser() {
+  if (!props.video.author) {
+    console.error('No author information available')
+    return
+  }
+
+  const authorMid = Array.isArray(props.video.author)
+    ? props.video.author[0]?.mid
+    : props.video.author.mid
+
+  if (!authorMid) {
+    console.error('No author mid available')
+    return
+  }
+
+  try {
+    const response = await api.user.relationModify({
+      fid: authorMid.toString(),
+      act: 1, // 1表示关注用户
+      re_src: 11,
+      csrf: getCSRF(),
+    })
+
+    if (response.code === 0) {
+      // 关注成功
+      handleClose()
+    }
+    else {
+      console.error('Follow user failed:', response.message)
+    }
+  }
+  catch (error) {
+    console.error('Follow user error:', error)
+  }
+}
+
+async function unfollowUser() {
+  if (!props.video.author) {
+    console.error('No author information available')
+    return
+  }
+
+  const authorMid = Array.isArray(props.video.author)
+    ? props.video.author[0]?.mid
+    : props.video.author.mid
+
+  if (!authorMid) {
+    console.error('No author mid available')
+    return
+  }
+
+  try {
+    const response = await api.user.relationModify({
+      fid: authorMid.toString(),
+      act: 2, // 2表示取消关注用户
+      re_src: 11,
+      csrf: getCSRF(),
+    })
+
+    if (response.code === 0) {
+      // 取消关注成功
+      handleClose()
+    }
+    else {
+      console.error('Unfollow user failed:', response.message)
+    }
+  }
+  catch (error) {
+    console.error('Unfollow user error:', error)
   }
 }
 </script>
@@ -377,6 +502,22 @@ async function blockUser() {
       :video="video"
       @close="handleClose"
       @removed="handleRemoved"
+    />
+
+    <FollowUserConfirmDialog
+      v-if="showFollowUserDialog"
+      v-model="showFollowUserDialog"
+      :video="video"
+      @close="handleClose"
+      @confirm="followUser"
+    />
+
+    <UnfollowUserConfirmDialog
+      v-if="showUnfollowUserDialog"
+      v-model="showUnfollowUserDialog"
+      :video="video"
+      @close="handleClose"
+      @confirm="unfollowUser"
     />
 
     <BlockUserConfirmDialog
