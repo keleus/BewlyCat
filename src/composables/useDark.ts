@@ -99,9 +99,7 @@ export function useDark() {
       // Only apply global dark mode if not on festival pages
       if (!isSelectiveDark) {
         document.documentElement.classList.add('dark')
-        nextTick(() => {
-          document.body?.classList.add('dark')
-        })
+        document.body?.classList.add('dark')
         // bili_dark is bilibili's official dark mode class
         document.documentElement.classList.add('bili_dark')
       }
@@ -118,9 +116,7 @@ export function useDark() {
       // Only remove global classes if we're not in selective mode or if we applied them
       if (!isSelectiveDark) {
         document.documentElement.classList.remove('dark')
-        nextTick(() => {
-          document.body?.classList.remove('dark')
-        })
+        document.body?.classList.remove('dark')
         document.documentElement.classList.remove('bili_dark')
       }
 
@@ -173,6 +169,16 @@ export function useDark() {
       style.appendChild(document.createTextNode(styleString))
       document.head.appendChild(style)
 
+      const viewTransitionStyle = document.createElement('style')
+      viewTransitionStyle.textContent = `
+            ::view-transition-old(root),
+            ::view-transition-new(root) {
+              animation: none !important;
+              mix-blend-mode: normal;
+            }
+            `
+      document.head.appendChild(viewTransitionStyle)
+
       // Since the above normal dom style cannot be applied in shadow dom style
       // We need to add this style again to the shadow dom
       const shadowDomStyle = document.createElement('style')
@@ -194,28 +200,41 @@ export function useDark() {
       })
 
       transition.ready.then(() => {
+        const isDarkNow = document.documentElement.classList.contains('dark')
+
+        const zIndexStyle = document.createElement('style')
+        zIndexStyle.textContent = `
+            ::view-transition-old(root) { z-index: ${isDarkNow ? 1 : 9999}; }
+            ::view-transition-new(root) { z-index: ${isDarkNow ? 9999 : 1}; }
+            `
+        document.head.appendChild(zIndexStyle)
+
         const clipPath = [
           `circle(0px at ${x}px ${y}px)`,
           `circle(${endRadius}px at ${x}px ${y}px)`,
         ]
         const animation = document.documentElement.animate(
           {
-            clipPath: currentAppColorScheme.value === 'dark'
-              ? [...clipPath].reverse()
-              : clipPath,
+            clipPath: isDarkNow ? clipPath : [...clipPath].reverse(),
           },
           {
             duration: 300,
             easing: 'ease-in-out',
-            pseudoElement: currentAppColorScheme.value === 'dark'
-              ? '::view-transition-old(root)'
-              : '::view-transition-new(root)',
+            pseudoElement: isDarkNow
+              ? '::view-transition-new(root)'
+              : '::view-transition-old(root)',
           },
         )
-        animation.addEventListener('finish', () => {
-          document.head.removeChild(style!)
-          bewlyWrapper.removeChild(shadowDomStyle!)
-        }, { once: true })
+
+        animation.finished.then(() => {
+          zIndexStyle.remove()
+        })
+      })
+
+      transition.finished.then(() => {
+        style.remove()
+        viewTransitionStyle.remove()
+        shadowDomStyle.remove()
       })
     }
   }

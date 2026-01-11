@@ -152,28 +152,5 @@ img {
   }
 }
 
-/* Color Mode transition */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none !important;
-  mix-blend-mode: normal;
-  transition: none !important;
-}
-::view-transition-old(*),
-::view-transition-new(*),
-::view-transition-old(*::after),
-::view-transition-new(*::before) {
-  transition: none !important;
-}
-::view-transition-old(root) {
-  z-index: 1;
-}
-::view-transition-new(root) {
-  z-index: 2147483646;
-}
-.dark::view-transition-old(root) {
-  z-index: 2147483646;
-}
-.dark::view-transition-new(root) {
-  z-index: 1;
-}
+// Note: View Transition styles for theme toggle are injected dynamically via JS in useDark.ts
+// because this file is loaded in Shadow DOM and cannot affect document-level ::view-transition pseudo-elements
