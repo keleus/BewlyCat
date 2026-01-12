@@ -2,6 +2,12 @@
 // https://github.com/BewlyBewly/BewlyBewly/issues/998
 // 注意: 这些样式需要通过 JavaScript 注入到 Shadow DOM 中才能生效
 // 见 src/inject/index.ts 中的 bili-comments-vote-card 处理逻辑
+// 下面是原始实现
+// :host(bili-comments-vote-card) {
+//   .option-info {
+//     color: var(--bew-text-1);
+//   }
+// }
 
 :host(bili-comment-user-info) {
   #user-name a[style*="color"] {
