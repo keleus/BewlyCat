@@ -9,7 +9,7 @@ let settingsReady = false
 const VOTE_CARD_DARK_STYLES = `
   /* 投票卡片暗色模式样式 - BewlyCat */
   #card {
-    background-color: rgba(255, 255, 255, 0.06) !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
   }
   #title {
@@ -29,9 +29,6 @@ const VOTE_CARD_DARK_STYLES = `
   }
   .option {
     color: rgba(255, 255, 255, 0.9) !important;
-  }
-  .option-skew {
-    background-color: rgba(255, 255, 255, 0.1) !important;
   }
   bili-icon {
     color: rgba(255, 255, 255, 0.7) !important;
