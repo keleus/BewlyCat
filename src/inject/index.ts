@@ -154,6 +154,25 @@ function updateInfoElement(
   return element
 }
 
+// 投票卡片样式同步辅助函数
+function syncVoteCardStyle(root: ShadowRoot | null | undefined, isDark: boolean) {
+  if (!root)
+    return
+
+  const darkStyleEl = root.querySelector('#bewly-vote-card-dark-style') as HTMLStyleElement
+  if (isDark) {
+    if (!darkStyleEl) {
+      const style = document.createElement('style')
+      style.id = 'bewly-vote-card-dark-style'
+      style.textContent = VOTE_CARD_DARK_STYLES
+      root.appendChild(style)
+    }
+  }
+  else if (darkStyleEl) {
+    darkStyleEl.remove()
+  }
+}
+
 // 判断当前页面URL是否支持IP显示
 function isSupportedPage(): boolean {
   const currentUrl = window.location.href
@@ -277,25 +296,9 @@ if (window.customElements && isSupportedPage()) {
           if (!root)
             return result
 
-          // 检测是否处于暗色模式
+          // 同步投票卡片暗色模式样式
           const isDark = document.documentElement.classList.contains('dark')
-
-          // 查找或创建暗色模式样式元素
-          let darkStyleEl = root.querySelector('#bewly-vote-card-dark-style') as HTMLStyleElement
-          if (isDark) {
-            if (!darkStyleEl) {
-              darkStyleEl = document.createElement('style')
-              darkStyleEl.id = 'bewly-vote-card-dark-style'
-              darkStyleEl.textContent = VOTE_CARD_DARK_STYLES
-              root.appendChild(darkStyleEl)
-            }
-          }
-          else {
-            // 移除暗色模式样式
-            if (darkStyleEl) {
-              darkStyleEl.remove()
-            }
-          }
+          syncVoteCardStyle(root, isDark)
 
           return result
         }
@@ -338,28 +341,10 @@ window.postMessage({
 
 // 投票卡片暗色模式样式更新函数
 function updateVoteCardDarkStyles(isDark: boolean) {
-  // 查找所有投票卡片元素
+  // 查找所有投票卡片元素并同步样式
   const voteCards = document.querySelectorAll('bili-comments-vote-card')
   voteCards.forEach((card) => {
-    const root = (card as any).shadowRoot
-    if (!root)
-      return
-
-    let darkStyleEl = root.querySelector('#bewly-vote-card-dark-style') as HTMLStyleElement
-    if (isDark) {
-      if (!darkStyleEl) {
-        darkStyleEl = document.createElement('style')
-        darkStyleEl.id = 'bewly-vote-card-dark-style'
-        darkStyleEl.textContent = VOTE_CARD_DARK_STYLES
-        root.appendChild(darkStyleEl)
-      }
-    }
-    else {
-      // 移除暗色模式样式
-      if (darkStyleEl) {
-        darkStyleEl.remove()
-      }
-    }
+    syncVoteCardStyle((card as any).shadowRoot, isDark)
   })
 }
 
