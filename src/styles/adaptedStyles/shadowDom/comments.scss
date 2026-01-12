@@ -1,10 +1,7 @@
-// :host(bili-comments-vote-card) {
-//   // https://github.com/BewlyBewly/BewlyBewly/issues/998
-//   // 這裏好像怎麼調都是用淺色狀態下文字顏色
-//   .option-info {
-//     color: var(--bew-text-1);
-//   }
-// }
+// bili-comments-vote-card 投票卡片暗色模式适配
+// https://github.com/BewlyBewly/BewlyBewly/issues/998
+// 注意: 这些样式需要通过 JavaScript 注入到 Shadow DOM 中才能生效
+// 见 src/inject/index.ts 中的 bili-comments-vote-card 处理逻辑
 
 :host(bili-comment-user-info) {
   #user-name a[style*="color"] {
