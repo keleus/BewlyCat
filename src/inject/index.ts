@@ -5,35 +5,60 @@ import type { Settings } from '~/logic/storage'
 let currentSettings: Settings | null = null
 let settingsReady = false
 
-// 投票卡片暗色模式样式
-const VOTE_CARD_DARK_STYLES = `
-  /* 投票卡片暗色模式样式 - BewlyCat */
-  #card {
-    background-color: rgba(255, 255, 255, 0.04) !important;
-    border-color: rgba(255, 255, 255, 0.1) !important;
+// Shadow DOM 暗色模式样式注册表
+const SHADOW_DOM_DARK_STYLES: Record<string, string> = {
+  'bili-comments-vote-card': `
+    /* 投票卡片暗色模式样式 - BewlyCat */
+    /* https://github.com/BewlyBewly/BewlyBewly/issues/998 */
+    #card {
+      background-color: rgba(255, 255, 255, 0.04) !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+    #title, #title span {
+      color: rgba(255, 255, 255, 0.9) !important;
+    }
+    #desc, #count {
+      color: rgba(255, 255, 255, 0.6) !important;
+    }
+    .option-desc, .option-info, .option {
+      color: rgba(255, 255, 255, 0.9) !important;
+    }
+    bili-icon {
+      color: rgba(255, 255, 255, 0.7) !important;
+    }
+  `,
+  // 可扩展其他 Shadow DOM 组件: bili-other-component': `...styles...`,
+}
+
+// 通用 Shadow DOM 暗色模式样式同步函数
+function syncShadowDomDarkStyle(root: ShadowRoot | null | undefined, tagName: string, isDark: boolean) {
+  if (!root)
+    return
+
+  const styleId = `bewly-${tagName}-dark-style`
+  const existingStyle = root.querySelector(`#${styleId}`) as HTMLStyleElement
+
+  if (isDark) {
+    if (!existingStyle && SHADOW_DOM_DARK_STYLES[tagName]) {
+      const style = document.createElement('style')
+      style.id = styleId
+      style.textContent = SHADOW_DOM_DARK_STYLES[tagName]
+      root.appendChild(style)
+    }
   }
-  #title {
-    color: rgba(255, 255, 255, 0.9) !important;
+  else if (existingStyle) {
+    existingStyle.remove()
   }
-  #title span {
-    color: rgba(255, 255, 255, 0.9) !important;
-  }
-  #desc, #count {
-    color: rgba(255, 255, 255, 0.6) !important;
-  }
-  .option-desc {
-    color: rgba(255, 255, 255, 0.9) !important;
-  }
-  .option-info {
-    color: rgba(255, 255, 255, 0.9) !important;
-  }
-  .option {
-    color: rgba(255, 255, 255, 0.9) !important;
-  }
-  bili-icon {
-    color: rgba(255, 255, 255, 0.7) !important;
-  }
-`
+}
+
+// 统一更新所有已注册的 Shadow DOM 组件暗色样式
+function syncAllShadowDomDarkStyles(isDark: boolean) {
+  Object.keys(SHADOW_DOM_DARK_STYLES).forEach((tagName) => {
+    document.querySelectorAll(tagName).forEach((el) => {
+      syncShadowDomDarkStyle((el as any).shadowRoot, tagName, isDark)
+    })
+  })
+}
 
 // 之前inject.js的内容
 const isArray = (val: any): boolean => Array.isArray(val)
@@ -149,25 +174,6 @@ function updateInfoElement(
   }
 
   return element
-}
-
-// 投票卡片样式同步辅助函数
-function syncVoteCardStyle(root: ShadowRoot | null | undefined, isDark: boolean) {
-  if (!root)
-    return
-
-  const darkStyleEl = root.querySelector('#bewly-vote-card-dark-style') as HTMLStyleElement
-  if (isDark) {
-    if (!darkStyleEl) {
-      const style = document.createElement('style')
-      style.id = 'bewly-vote-card-dark-style'
-      style.textContent = VOTE_CARD_DARK_STYLES
-      root.appendChild(style)
-    }
-  }
-  else if (darkStyleEl) {
-    darkStyleEl.remove()
-  }
 }
 
 // 判断当前页面URL是否支持IP显示
@@ -289,14 +295,8 @@ if (window.customElements && isSupportedPage()) {
         const originalUpdate = classConstructor.prototype.update
         classConstructor.prototype.update = function (...updateArgs: any[]) {
           const result = originalUpdate.apply(this, updateArgs)
-          const root = this.shadowRoot
-          if (!root)
-            return result
-
-          // 同步投票卡片暗色模式样式
           const isDark = document.documentElement.classList.contains('dark')
-          syncVoteCardStyle(root, isDark)
-
+          syncShadowDomDarkStyle(this.shadowRoot, name, isDark)
           return result
         }
         return Reflect.apply(target, thisArg, args)
@@ -336,30 +336,8 @@ window.postMessage({
   type: 'BEWLY_REQUEST_SETTINGS',
 }, '*')
 
-// 投票卡片暗色模式样式更新函数
-function updateVoteCardDarkStyles(isDark: boolean) {
-  // 查找所有投票卡片元素并同步样式
-  const voteCards = document.querySelectorAll('bili-comments-vote-card')
-  voteCards.forEach((card) => {
-    syncVoteCardStyle((card as any).shadowRoot, isDark)
-  })
-}
-
-// 监听主题变化事件
+// 统一监听主题变化事件
 window.addEventListener('global.themeChange', ((event: CustomEvent) => {
   const isDark = event.detail === 'dark'
-  updateVoteCardDarkStyles(isDark)
+  syncAllShadowDomDarkStyles(isDark)
 }) as EventListener)
-
-// 页面加载完成后初始化投票卡片样式
-document.addEventListener('DOMContentLoaded', () => {
-  const isDark = document.documentElement.classList.contains('dark')
-  if (isDark) {
-    // 延迟执行，确保投票卡片已渲染
-    setTimeout(() => {
-      updateVoteCardDarkStyles(true)
-    }, 1000)
-  }
-})
-
-// 页面加载完成后初始化随机播放（功能已迁移到contentScripts）
