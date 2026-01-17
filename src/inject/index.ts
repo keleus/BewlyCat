@@ -234,6 +234,32 @@ if (window.customElements && isSupportedPage()) {
         return Reflect.apply(target, thisArg, args)
       }
 
+      // 处理评论投票卡片组件（修复深色模式下的文字颜色）
+      if (name === 'bili-comments-vote-card') {
+        const originalUpdate = classConstructor.prototype.update
+        classConstructor.prototype.update = function (...updateArgs: any[]) {
+          const result = originalUpdate.apply(this, updateArgs)
+          const root = this.shadowRoot
+          if (!root)
+            return result
+
+          // 检查是否已经注入过样式
+          if (!root.querySelector('#bewly-vote-card-style')) {
+            const style = document.createElement('style')
+            style.id = 'bewly-vote-card-style'
+            style.textContent = `
+              :host {
+                --option-color: var(--bew-text-1, #18191c) !important;
+              }
+            `
+            root.appendChild(style)
+          }
+
+          return result
+        }
+        return Reflect.apply(target, thisArg, args)
+      }
+
       return Reflect.apply(target, thisArg, args)
     },
   })

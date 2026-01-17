@@ -1,10 +1,5 @@
-// :host(bili-comments-vote-card) {
-//   // https://github.com/BewlyBewly/BewlyBewly/issues/998
-//   // 這裏好像怎麼調都是用淺色狀態下文字顏色
-//   .option-info {
-//     color: var(--bew-text-1);
-//   }
-// }
+// bili-comments-vote-card 的样式通过 inject/index.ts 注入到 Shadow DOM 内部
+// 这里的 :host() 选择器无法直接生效，因为样式不在 Shadow DOM 内
 
 :host(bili-comment-user-info) {
   #user-name a[style*="color"] {
