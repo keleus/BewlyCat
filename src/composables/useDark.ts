@@ -13,6 +13,14 @@ function isFestivalPage(): boolean {
   return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
 }
 
+function isSafariRuntime(): boolean {
+  const ua = navigator.userAgent
+  const vendor = navigator.vendor
+  const isSafari = /Safari/i.test(ua)
+  const isChromeLike = /Chrome|Chromium|Edg/i.test(ua)
+  return isSafari && !isChromeLike && /Apple/i.test(vendor)
+}
+
 /**
  * 设置深色模式基准颜色
  */
@@ -28,6 +36,53 @@ function setDarkModeBaseColor(color: string) {
   }
 }
 
+function collectCssVariablesByPrefixes(
+  style: CSSStyleDeclaration,
+  prefixes: string[],
+): Record<string, string> {
+  const variables: Record<string, string> = {}
+  for (let i = 0; i < style.length; i += 1) {
+    const name = style[i]
+    if (!prefixes.some(prefix => name.startsWith(prefix)))
+      continue
+    const value = style.getPropertyValue(name).trim()
+    if (value)
+      variables[name] = value
+  }
+  return variables
+}
+
+function syncCommentsThemeVariables(targets?: Element[]) {
+  const hosts = targets ?? Array.from(document.querySelectorAll('bili-comments, bili-user-profile'))
+  if (!hosts.length)
+    return
+  const rootStyle = getComputedStyle(document.documentElement)
+  const variables = collectCssVariablesByPrefixes(rootStyle, ['--bg', '--text', '--graph', '--line'])
+  if (!Object.keys(variables).length)
+    return
+  hosts.forEach((host) => {
+    Object.entries(variables).forEach(([name, value]) => {
+      host.style.setProperty(name, value)
+    })
+  })
+}
+
+function clearCommentsThemeVariables() {
+  const hosts = Array.from(document.querySelectorAll('bili-comments, bili-user-profile'))
+  if (!hosts.length)
+    return
+  const rootStyle = getComputedStyle(document.documentElement)
+  const variables = collectCssVariablesByPrefixes(rootStyle, ['--bg', '--text', '--graph', '--line'])
+  const variableNames = Object.keys(variables)
+  if (!variableNames.length)
+    return
+  hosts.forEach((host) => {
+    variableNames.forEach((name) => {
+      host.style.removeProperty(name)
+    })
+  })
+}
+
 export function useDark() {
   const isPreferredDark = usePreferredDark()
   const currentSystemColorScheme = computed(() => isPreferredDark.value ? 'dark' : 'light')
@@ -39,6 +94,9 @@ export function useDark() {
   })
   const isDark = computed(() => currentAppColorScheme.value === 'dark')
   let themeChangeTimer: NodeJS.Timeout | null = null
+  let wasDark = false
+  let commentThemeObserver: MutationObserver | null = null
+  const shouldSyncBiliCommentsTheme = isSafariRuntime()
 
   // Watch for changes in the 'settings.value.theme' variable and add the 'dark' class to the 'mainApp' element
   // to prevent some Unocss dark-specific styles from failing to take effect
@@ -107,6 +165,9 @@ export function useDark() {
       // 确保深色模式基准颜色被正确应用
       setDarkModeBaseColor(settings.value.darkModeBaseColor)
 
+      if (shouldSyncBiliCommentsTheme)
+        syncCommentsThemeVariables()
+
       setCookie('theme_style', 'dark', 365 * 10)
       window.dispatchEvent(new CustomEvent('global.themeChange', { detail: 'dark' }))
     }
@@ -119,6 +180,9 @@ export function useDark() {
         document.body?.classList.remove('dark')
         document.documentElement.classList.remove('bili_dark')
       }
+
+      if (shouldSyncBiliCommentsTheme)
+        clearCommentsThemeVariables()
 
       setCookie('theme_style', 'light', 365 * 10)
       window.dispatchEvent(new CustomEvent('global.themeChange', { detail: 'light' }))
@@ -137,6 +201,37 @@ export function useDark() {
     //     document.documentElement.classList.add('bili_dark')
     //   }
     // }
+
+    if (isDark.value && !wasDark && shouldSyncBiliCommentsTheme) {
+      if (!commentThemeObserver) {
+        commentThemeObserver = new MutationObserver((mutations) => {
+          if (!isDark.value)
+            return
+          const hosts: Element[] = []
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (!(node instanceof Element))
+                return
+              if (node.matches('bili-comments, bili-user-profile'))
+                hosts.push(node)
+              node.querySelectorAll?.('bili-comments, bili-user-profile').forEach((el) => {
+                hosts.push(el)
+              })
+            })
+          })
+          if (hosts.length)
+            syncCommentsThemeVariables(hosts)
+        })
+        commentThemeObserver.observe(document.documentElement, { childList: true, subtree: true })
+      }
+    }
+
+    if (!isDark.value && commentThemeObserver && shouldSyncBiliCommentsTheme) {
+      commentThemeObserver.disconnect()
+      commentThemeObserver = null
+    }
+
+    wasDark = isDark.value
   }
 
   function toggleDark(e: MouseEvent) {
