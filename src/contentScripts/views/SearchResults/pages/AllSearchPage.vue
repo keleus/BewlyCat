@@ -209,8 +209,13 @@ function getLvIcon(level: number): string {
 
 // 关注操作
 async function handleUserFollow(mid: number) {
-  if (!userRelations.value[mid])
-    return
+  // 如果用户关系状态不存在，先初始化一个默认状态
+  if (!userRelations.value[mid]) {
+    userRelations.value[mid] = {
+      isFollowing: false,
+      isLoading: false,
+    }
+  }
 
   const state = userRelations.value[mid]
   if (state.isLoading)
