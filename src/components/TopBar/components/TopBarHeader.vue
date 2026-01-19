@@ -116,20 +116,22 @@ function refreshSearchContent() {
     h="$bew-top-bar-height"
   >
     <!-- Top bar mask -->
-    <div
-      v-if="!reachTop"
-      style="
-        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
-        -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
-      "
-      pos="absolute top-0 left-0" w-full h="$bew-top-bar-height"
-      pointer-events-none
-      :style="{
-        backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-bg)',
-        opacity: settings.enableFrostedGlass ? 1 : 0.9,
-        backdropFilter: settings.enableFrostedGlass ? 'blur(12px)' : 'none',
-      }"
-    />
+    <Transition name="fade">
+      <div
+        v-if="!reachTop"
+        style="
+          mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
+          -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
+        "
+        pos="absolute top-0 left-0" w-full h="$bew-top-bar-height"
+        pointer-events-none
+        :style="{
+          backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-bg)',
+          opacity: settings.enableFrostedGlass ? 1 : 0.9,
+          backdropFilter: settings.enableFrostedGlass ? 'blur(12px)' : 'none',
+        }"
+      />
+    </Transition>
 
     <div
       pos="absolute top-0 left-0" w-full
