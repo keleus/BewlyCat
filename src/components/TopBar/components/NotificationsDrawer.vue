@@ -107,7 +107,7 @@ function handleOpen() {
       console.log('[NotificationsDrawer] Focusing drawer container')
       drawerRef.value?.focus()
     })
-  }, 100) // 短暂延迟，确保抽屉显示动画开始
+  }, 350) // 等待抽屉滑入动画完成(300ms)后再显示iframe，避免动画冲突
 }
 
 onBeforeUnmount(() => {
