@@ -652,6 +652,8 @@ topbar:
     my_courses: 我的课程
     bilibili_premium_rewards: 大会员福利领取
     log_out: 退出登录
+    last_login_time: 最后登录
+    last_login_location: 登录地点
   noti_dropdown:
     replys: 回复我的
     mentions: 提到我的

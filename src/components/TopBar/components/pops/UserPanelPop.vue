@@ -13,6 +13,15 @@ import { getCSRF, getUserID, isHomePage } from '~/utils/main'
 
 import type { UserInfo, UserStat } from '../../types'
 
+interface LoginLogItem {
+  ip: string
+  time: number
+  time_at: string
+  status: number
+  type: number
+  geo: string
+}
+
 const props = defineProps<{
   userInfo: UserInfo
 }>()
@@ -86,12 +95,20 @@ const levelProgressBarWidth = computed(() => {
 })
 
 const userStat = reactive<UserStat>({} as UserStat)
+const loginLog = reactive<Partial<LoginLogItem>>({})
 
 onMounted(() => {
   api.user.getUserStat()
     .then((res) => {
       if (res.code === 0)
         Object.assign(userStat, res.data)
+    })
+
+  // 获取最近一周登录情况的第一条记录
+  api.user.getLoginLog()
+    .then((res) => {
+      if (res.code === 0 && res.data?.list?.length > 0)
+        Object.assign(loginLog, res.data.list[0])
     })
 })
 
@@ -189,54 +206,74 @@ function handleClickChannel() {
     </div>
 
     <ALink
+      v-if="userInfo?.level_info?.current_level < 6"
       href="//account.bilibili.com/account/record?type=exp"
       type="topBar"
-      block mb-2 w-full
+      block mt-2 mb-2 w-full
       flex="~ col justify-center items-start"
     >
-      <template v-if="userInfo?.level_info?.current_level < 6">
+      <div
+        flex="~ items-center justify-center gap-2"
+        w-full
+      >
         <div
-          flex="~ items-center justify-center gap-2"
-          w-full
-        >
-          <div
-            flex="~ items-center"
-            class="level"
-            v-html="DOMPurify.sanitize(getLvIcon(userInfo.level_info.current_level))"
-          />
-          <div relative w="full" h="2px" bg="$bew-fill-3">
-            <div
-              pos="absolute top-0 left-0" h-2px
-              h="2px"
-              rounded="2px"
-              bg="$bew-warning-color"
-              :style="{ width: levelProgressBarWidth }"
-            />
-          </div>
-          <div
-            class="level level-next"
-            flex="~ items-center"
-            v-html="DOMPurify.sanitize(getLvIcon(userInfo.level_info.current_level + 1))"
-          />
-        </div>
-        <div w-full text="xs $bew-text-3">
-          {{
-            $t('topbar.user_dropdown.exp_desc', {
-              current_exp: userInfo.level_info.current_exp,
-              level: userInfo.level_info.current_level + 1,
-              need_exp: userInfo.level_info.next_exp - userInfo.level_info.current_exp || 0,
-            })
-          }}
-        </div>
-      </template>
-      <template v-else>
-        <div
-          :style="{ width: userInfo?.is_senior_member ? '36px' : '28px' }"
+          flex="~ items-center"
           class="level"
-          h-20px block
-          v-html="DOMPurify.sanitize(getLvIcon(userInfo?.level_info?.current_level, userInfo?.is_senior_member))"
+          v-html="DOMPurify.sanitize(getLvIcon(userInfo.level_info.current_level))"
         />
-      </template>
+        <div relative w="full" h="2px" bg="$bew-fill-3">
+          <div
+            pos="absolute top-0 left-0" h-2px
+            h="2px"
+            rounded="2px"
+            bg="$bew-warning-color"
+            :style="{ width: levelProgressBarWidth }"
+          />
+        </div>
+        <div
+          class="level level-next"
+          flex="~ items-center"
+          v-html="DOMPurify.sanitize(getLvIcon(userInfo.level_info.current_level + 1))"
+        />
+      </div>
+      <div w-full text="xs $bew-text-3">
+        {{
+          $t('topbar.user_dropdown.exp_desc', {
+            current_exp: userInfo.level_info.current_exp,
+            level: userInfo.level_info.current_level + 1,
+            need_exp: userInfo.level_info.next_exp - userInfo.level_info.current_exp || 0,
+          })
+        }}
+      </div>
+    </ALink>
+
+    <ALink
+      v-else
+      href="//account.bilibili.com/account/record?type=exp"
+      type="topBar"
+      block mt-2 mb-2 w-full
+      p-2
+      bg="$bew-fill-alt"
+      rounded="$bew-radius"
+      shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-1)]"
+      duration-300
+      hover:bg="$bew-fill-2"
+      flex="~ items-center gap-2"
+    >
+      <div
+        :style="{ width: userInfo?.is_senior_member ? '36px' : '28px' }"
+        class="level"
+        h-20px
+        v-html="DOMPurify.sanitize(getLvIcon(userInfo?.level_info?.current_level, userInfo?.is_senior_member))"
+      />
+      <div flex="~ col 1" text="xs $bew-text-3">
+        <div v-if="loginLog.time_at">
+          {{ $t('topbar.user_dropdown.last_login_time') }}: {{ loginLog.time_at }}
+        </div>
+        <div v-if="loginLog.geo">
+          {{ $t('topbar.user_dropdown.last_login_location') }}: {{ loginLog.geo }}
+        </div>
+      </div>
     </ALink>
 
     <div grid="~ cols-3 gap-2" mb-2>

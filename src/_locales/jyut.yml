@@ -601,6 +601,8 @@ topbar:
     my_courses: 我嘅課程
     log_out: 登出
     bilibili_premium_rewards: 大會員福利領取
+    last_login_time: 最後登入
+    last_login_location: 登入地點
   noti_dropdown:
     replys: 覆我
     mentions: 提我

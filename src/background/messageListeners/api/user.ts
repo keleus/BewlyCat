@@ -109,6 +109,17 @@ const API_USER = {
     },
     afterHandle: AHS.J_D,
   },
+  // https://socialsisteryi.github.io/bilibili-API-collect/docs/login/login_notice.html
+  getLoginLog: {
+    url: 'https://api.bilibili.com/x/member/web/login/log',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      jsonp: 'jsonp',
+    },
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_USER

@@ -726,6 +726,8 @@ topbar:
     my_courses: My courses
     log_out: Log out
     bilibili_premium_rewards: Premium Member Rewards
+    last_login_time: Last login
+    last_login_location: Location
   noti_dropdown:
     replys: Replys
     mentions: Mentions
