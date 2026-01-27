@@ -409,7 +409,7 @@ async function onDOMLoaded() {
     // 推荐使用方案2：CSS隐藏
     // 使用 CSS 隐藏 B 站原始页面，保留 DOM 结构
     injectCSS(`
-      body > *:not(#bewly):not(script):not(style):not(.bili-header):not(.custom-navbar) {
+      body > *:not(#bewly):not(script):not(style):not(.bili-header):not(.custom-navbar):not(.be-settings) {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
