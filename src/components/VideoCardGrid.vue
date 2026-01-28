@@ -720,6 +720,7 @@ function getUniqueKey(item: T, index: number): string | number {
     <div
       v-else
       ref="gridContainerRef"
+      class="video-card-grid-container"
       m="b-0 t-0" relative w-full
       :style="gridContainerStyle"
     >
@@ -803,6 +804,54 @@ function getUniqueKey(item: T, index: number): string | number {
 @media (min-width: 1280px) {
   .grid-two-columns {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@supports (container-type: inline-size) {
+  .video-card-grid-container {
+    container-type: inline-size;
+  }
+
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-base, 1), 1fr);
+  }
+
+  .grid-two-columns {
+    grid-template-columns: repeat(1, 1fr);
+  }
+
+  @container (min-width: 640px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-sm, 2), 1fr);
+    }
+  }
+
+  @container (min-width: 768px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-md, 3), 1fr);
+    }
+  }
+
+  @container (min-width: 1024px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-lg, 4), 1fr);
+    }
+  }
+
+  @container (min-width: 1280px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-xl, 5), 1fr);
+    }
+
+    .grid-two-columns {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @container (min-width: 1536px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-xxl, 6), 1fr);
+    }
   }
 }
 
