@@ -49,6 +49,17 @@ export function openLinkToNewTab(url: string, features: string = '') {
   window.open(url, '_blank', features)
 }
 
+export function isElectron(): boolean {
+  if (typeof navigator === 'undefined')
+    return false
+
+  // 检测 userAgent
+  if (/Electron/i.test(navigator.userAgent))
+    return true
+
+  return false
+}
+
 /**
  * Convert a hex color value to HSLA, thanks ChatGPT 🫡
  * @param hex hex color value
