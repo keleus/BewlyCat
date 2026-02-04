@@ -64,6 +64,7 @@ export const useTopBarStore = defineStore('topBar', () => {
   const livePage = ref<number>(1)
   const momentUpdateBaseline = ref<string>('')
   const momentOffset = ref<string>('')
+  const collaborativeVideoMap = new Map<string, { item: any, moment?: any }>()
 
   // B币领取状态
   const privilegeInfo = reactive<PrivilegeInfo>({} as PrivilegeInfo)
@@ -445,6 +446,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     livePage.value = 1
     noMoreMomentsContent.value = false
     isLoadingMoments.value = false // 重置加载状态,防止卡住
+    collaborativeVideoMap.clear()
 
     // 获取初始数据
     getMomentsData(selectedType)
@@ -521,8 +523,8 @@ export const useTopBarStore = defineStore('topBar', () => {
               newMomentsCount.value = actualNewCount
             }
 
-            moments.push(
-              ...processedItems.map((item: any) => ({
+            processedItems.forEach((item: any) => {
+              const momentItem = {
                 type: selectedType,
                 title: item.title,
                 author: item.authors ? item.authors.map((a: any) => a.name).join(' / ') : item.author.name,
@@ -534,8 +536,21 @@ export const useTopBarStore = defineStore('topBar', () => {
                 rid: item.rid,
                 isCollaborative: !!item.authors,
                 authors: item.authors,
-              })),
-            )
+              }
+
+              moments.push(momentItem)
+
+              if (selectedType === 'video' && item.type === 8) {
+                const bvid = extractBvid(item)
+                if (!bvid)
+                  return
+                const entry = collaborativeVideoMap.get(bvid)
+                if (!entry)
+                  return
+                entry.moment = momentItem
+                updateMomentCollaborative(momentItem, entry.item)
+              }
+            })
           }
         }
       })
@@ -543,47 +558,86 @@ export const useTopBarStore = defineStore('topBar', () => {
       .finally(() => isLoadingMoments.value = false)
   }
 
-  // 合并联合投稿视频的辅助函数
-  function mergeCollaborativeVideos(items: any[]) {
-    const videoMap = new Map<string, any>()
+  function extractBvid(item: any): string | null {
+    const jumpUrl = typeof item.jump_url === 'string' ? item.jump_url : ''
+    const bvMatch = jumpUrl.match(/\/(BV\w+)/)
+    if (bvMatch?.[1])
+      return bvMatch[1]
 
-    items.forEach((item: any) => {
-      // 从 jump_url 中提取视频 ID (BV号)
-      const bvMatch = item.jump_url?.match(/\/(BV\w+)/)
-      if (!bvMatch)
-        return
+    const directBvid = item?.bvid || item?.modules?.module_dynamic?.major?.archive?.bvid
+    return typeof directBvid === 'string' && directBvid ? directBvid : null
+  }
 
-      const bvid = bvMatch[1]
+  function normalizeAuthor(author: any) {
+    return {
+      name: author?.name,
+      face: author?.face,
+      jump_url: author?.jump_url,
+    }
+  }
 
-      if (videoMap.has(bvid)) {
-        // 如果已存在该视频，合并作者信息
-        const existing = videoMap.get(bvid)
-        if (!existing.authors) {
-          // 第一次发现是联合投稿，初始化 authors 数组
-          existing.authors = [
-            { name: existing.author.name, face: existing.author.face, jump_url: existing.author.jump_url },
-            { name: item.author.name, face: item.author.face, jump_url: item.author.jump_url },
-          ]
-        }
-        else {
-          // 已经是联合投稿，添加新作者（避免重复）
-          const authorExists = existing.authors.some((a: any) => a.jump_url === item.author.jump_url)
-          if (!authorExists) {
-            existing.authors.push({
-              name: item.author.name,
-              face: item.author.face,
-              jump_url: item.author.jump_url,
-            })
-          }
-        }
-      }
-      else {
-        // 首次遇到该视频，添加到 map
-        videoMap.set(bvid, { ...item })
-      }
+  function collectAuthors(item: any): any[] {
+    if (Array.isArray(item.authors) && item.authors.length > 0)
+      return item.authors.map(normalizeAuthor)
+    if (item.author)
+      return [normalizeAuthor(item.author)]
+    return []
+  }
+
+  function mergeAuthors(targetItem: any, incomingItem: any) {
+    const incomingAuthors = collectAuthors(incomingItem)
+    if (incomingAuthors.length === 0)
+      return
+
+    const targetAuthors = Array.isArray(targetItem.authors)
+      ? targetItem.authors
+      : collectAuthors(targetItem)
+
+    incomingAuthors.forEach((author) => {
+      const authorKey = author.jump_url || author.name
+      const exists = targetAuthors.some((a: any) => (a.jump_url || a.name) === authorKey)
+      if (!exists)
+        targetAuthors.push(author)
     })
 
-    return Array.from(videoMap.values())
+    if (targetAuthors.length > 1)
+      targetItem.authors = targetAuthors
+  }
+
+  function updateMomentCollaborative(moment: any, item: any) {
+    if (!Array.isArray(item.authors) || item.authors.length <= 1)
+      return
+
+    moment.isCollaborative = true
+    moment.authors = item.authors
+    moment.author = item.authors.map((a: any) => a.name).join(' / ')
+  }
+
+  // 合并联合投稿视频的辅助函数（跨页合并）
+  function mergeCollaborativeVideos(items: any[]) {
+    const newItems: any[] = []
+
+    items.forEach((item: any) => {
+      const bvid = extractBvid(item)
+      if (!bvid) {
+        newItems.push(item)
+        return
+      }
+
+      const existingEntry = collaborativeVideoMap.get(bvid)
+      if (!existingEntry) {
+        const storedItem = { ...item }
+        collaborativeVideoMap.set(bvid, { item: storedItem })
+        newItems.push(storedItem)
+        return
+      }
+
+      mergeAuthors(existingEntry.item, item)
+      if (existingEntry.moment)
+        updateMomentCollaborative(existingEntry.moment, existingEntry.item)
+    })
+
+    return newItems
   }
 
   function getTopBarLiveMoments() {
