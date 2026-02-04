@@ -48,6 +48,7 @@ const {
   currentPage,
   totalResults,
   totalPages,
+  hasMore: paginationHasMore,
   extractPagination,
   updatePage,
   getNextPage,
@@ -59,6 +60,7 @@ const {
   exhausted,
   requestLoadMore,
   handleLoadMoreCompletion,
+  setHasMore,
   setExhausted,
   reset: resetLoadMore,
 } = useLoadMore(async () => {
@@ -140,6 +142,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
 
   extractPagination(rawData, incomingList.length)
   updatePage(targetPage)
+  setHasMore(paginationHasMore.value)
 
   // 检查是否已耗尽（仅在滚动模式下）
   if (paginationMode.value === 'scroll') {
@@ -197,6 +200,7 @@ async function handlePageChange(page: number) {
   // 提取分页信息
   extractPagination(rawData, incomingList.length)
   updatePage(page)
+  setHasMore(paginationHasMore.value)
 
   isPageChanging.value = false
 

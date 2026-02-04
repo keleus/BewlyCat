@@ -79,6 +79,7 @@ const {
   totalResults,
   totalPages,
   context,
+  hasMore: paginationHasMore,
   extractPagination,
   updatePage,
   getNextPage,
@@ -91,6 +92,7 @@ const {
   exhausted,
   requestLoadMore,
   handleLoadMoreCompletion,
+  setHasMore,
   setExhausted,
   reset: resetLoadMore,
 } = useLoadMore(async () => {
@@ -399,6 +401,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   }, 0)
   extractPagination(rawData, fallbackLength)
   updatePage(targetPage)
+  setHasMore(paginationHasMore.value)
 
   if (paginationMode.value === 'scroll') {
     const finalLength = getCurrentResultLength()
@@ -570,6 +573,7 @@ async function handlePageChange(page: number) {
   }, 0)
   extractPagination(rawData, fallbackLength)
   updatePage(page)
+  setHasMore(paginationHasMore.value)
 
   isPageChanging.value = false
   emit('updatePage', page)
