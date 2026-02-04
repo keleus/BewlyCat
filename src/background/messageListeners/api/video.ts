@@ -14,6 +14,9 @@ const API_VIDEO = {
       homepage_ver: 1, // 首页版本
       ps: 12, // 单页记录数，默认12，最大30（调用时可覆盖）
       fresh_idx: 1, // 翻页号，从1开始（调用时会动态传入）
+      fresh_idx_1h: 1, // 翻页号(一小时前?)，默认与 fresh_idx 相同
+      fetch_row: undefined, // 本次抓取的最后一行行号（可选）
+      last_showlist: '', // 上次抓取的视频av号列表（可选）
     },
     afterHandle: AHS.J_D,
   },

@@ -295,6 +295,41 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
   }
 }
 
+function getWebVideoKey(item: VideoItem): string {
+  const bvid = item.bvid?.trim()
+  if (bvid)
+    return bvid
+  return `${item.id}`
+}
+
+function buildLastShowlist(items: VideoItem[]): string {
+  const parts: string[] = []
+  const seen = new Set<number>()
+
+  items.forEach((item) => {
+    if (!item?.id || item.goto !== 'av' || seen.has(item.id))
+      return
+
+    seen.add(item.id)
+    const followedFlag = item.is_followed ? 'n_' : ''
+    parts.push(`av_${followedFlag}${item.id}`)
+  })
+
+  return parts.join('_')
+}
+
+function getLastShowlistFromList(list: VideoElement[], limit: number): string {
+  const items = list
+    .map(video => video.item)
+    .filter((item): item is VideoItem => !!item && !!item.id)
+
+  return buildLastShowlist(items.slice(-limit))
+}
+
+function getWebFetchRow(list: VideoElement[]): number {
+  return list.reduce((count, video) => (video.item ? count + 1 : count), 0)
+}
+
 watch(() => settings.value.recommendationMode, () => {
   noMoreContent.value = false
   refreshIdx.value = 1
@@ -522,9 +557,15 @@ async function getRecommendVideos() {
 
     // 使用当前的 refreshIdx，只在成功时才递增
     const currentRefreshIdx = refreshIdx.value
+    const fetchRow = getWebFetchRow(videoList.value)
+    const lastShowlist = getLastShowlistFromList(videoList.value, PAGE_SIZE)
+
     const response: forYouResult = await api.video.getRecommendVideos({
       fresh_idx: currentRefreshIdx,
+      fresh_idx_1h: currentRefreshIdx,
       ps: PAGE_SIZE,
+      fetch_row: fetchRow > 0 ? fetchRow : undefined,
+      last_showlist: lastShowlist || undefined,
     })
 
     if (!response) {
@@ -543,6 +584,12 @@ async function getRecommendVideos() {
       refreshIdx.value++
 
       const resData = [] as VideoItem[]
+      const existingIds = new Set<string>()
+
+      videoList.value.forEach((video) => {
+        if (video.item)
+          existingIds.add(getWebVideoKey(video.item))
+      })
 
       response.data.item.forEach((item: VideoItem) => {
         // 过滤掉广告卡片
@@ -550,19 +597,24 @@ async function getRecommendVideos() {
           return
 
         // 过滤掉缺少必要字段的数据（owner 或 stat 为 null）
-        if (!item.owner || !item.stat) {
-          console.warn('[ForYou] Filtered out item with null owner or stat:', item.id, item.goto)
+        if (!item.owner || !item.stat)
           return
-        }
 
-        if (!filterFunc.value || filterFunc.value(item))
-          resData.push(item)
+        if (filterFunc.value && !filterFunc.value(item))
+          return
+
+        const itemKey = getWebVideoKey(item)
+        if (existingIds.has(itemKey))
+          return
+
+        existingIds.add(itemKey)
+        resData.push(item)
       })
 
       // when videoList has length property, it means it is the first time to load
       if (!beforeLoadCount) {
         videoList.value = resData.map(item => ({
-          uniqueId: `${item.id}`,
+          uniqueId: getWebVideoKey(item),
           item,
           displayData: transformWebVideo(item),
         }))
@@ -573,7 +625,7 @@ async function getRecommendVideos() {
           // skep the `findFirstEmptyItemIndex` check to enhance the performance
           if (!filterFunc.value) {
             videoList.value.push({
-              uniqueId: `${item.id}`,
+              uniqueId: getWebVideoKey(item),
               item,
               displayData: transformWebVideo(item),
             })
@@ -582,14 +634,14 @@ async function getRecommendVideos() {
             const findFirstEmptyItemIndex = videoList.value.findIndex(video => !video.item)
             if (findFirstEmptyItemIndex !== -1) {
               videoList.value[findFirstEmptyItemIndex] = {
-                uniqueId: `${item.id}`,
+                uniqueId: getWebVideoKey(item),
                 item,
                 displayData: transformWebVideo(item),
               }
             }
             else {
               videoList.value.push({
-                uniqueId: `${item.id}`,
+                uniqueId: getWebVideoKey(item),
                 item,
                 displayData: transformWebVideo(item),
               })
