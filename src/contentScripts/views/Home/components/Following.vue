@@ -869,6 +869,20 @@ async function loadSingleUploaderTime(mid: number, retryCount: number = 0) {
 }
 
 // 加载关注的直播列表（仅加载正在直播的）
+const OFFLINE_LIVE_TEXT = /未开播|休息|离线|下播|轮播|回放/
+
+function isLiveStreamingItem(liveItem: FollowingLiveItem): boolean {
+  const liveStatus = Number(liveItem.live_status)
+  if (liveStatus !== 1)
+    return false
+
+  const statusText = (liveItem.text_small ?? '').trim()
+  if (statusText && OFFLINE_LIVE_TEXT.test(statusText))
+    return false
+
+  return true
+}
+
 async function loadFollowingLiveList(): Promise<VideoElement[]> {
   if (!settings.value.followingTabShowLivestreamingVideos) {
     return []
@@ -884,7 +898,7 @@ async function loadFollowingLiveList(): Promise<VideoElement[]> {
     if (response.code === 0 && response.data.list) {
       // 只保留正在直播的（live_status === 1）
       const liveItems = response.data.list
-        .filter((liveItem: FollowingLiveItem) => liveItem.live_status === 1)
+        .filter((liveItem: FollowingLiveItem) => isLiveStreamingItem(liveItem))
         .map((liveItem: FollowingLiveItem) => ({
           uniqueId: `live-${liveItem.roomid}`,
           liveItem,

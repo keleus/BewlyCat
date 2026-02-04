@@ -58,6 +58,20 @@ const combinedVideoList = computed(() => {
   return videoList.value as Array<VideoElement | LiveVideoElement>
 })
 
+const OFFLINE_LIVE_TEXT = /未开播|休息|离线|下播|轮播|回放/
+
+function isLiveStreamingItem(liveItem: FollowingLiveItem): boolean {
+  const liveStatus = Number(liveItem.live_status)
+  if (liveStatus !== 1)
+    return false
+
+  const statusText = (liveItem.text_small ?? '').trim()
+  if (statusText && OFFLINE_LIVE_TEXT.test(statusText))
+    return false
+
+  return true
+}
+
 // 页面可见性变化处理函数
 async function handleVisibilityChange() {
   const wasVisible = isPageVisible.value
@@ -174,7 +188,7 @@ async function getLiveVideoList() {
 
       response.data.list.forEach((item: FollowingLiveItem) => {
         // 只保留正在直播的
-        if (item.live_status === 1)
+        if (isLiveStreamingItem(item))
           resData.push(item)
       })
 
