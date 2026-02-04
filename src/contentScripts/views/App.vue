@@ -652,6 +652,11 @@ if (settings.value.cleanUrlArgument) {
     'hotRank',
     'broadcast_type',
     'trackid',
+    'buvid',
+    'mid',
+    'spmid',
+    'timestamp',
+    'up_id',
   ]
 
   let isCleaningUrl = false // 防止重复执行
