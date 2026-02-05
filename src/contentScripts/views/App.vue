@@ -623,7 +623,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
 })
 
 if (settings.value.cleanUrlArgument) {
-  const PARAMS_TO_REMOVE = [
+  const BASE_PARAMS_TO_REMOVE = new Set([
     'spm_id_from',
     'from_source',
     'msource',
@@ -652,7 +652,14 @@ if (settings.value.cleanUrlArgument) {
     'hotRank',
     'broadcast_type',
     'trackid',
-  ]
+  ])
+  const VIDEO_ONLY_PARAMS_TO_REMOVE = new Set([
+    'buvid',
+    'mid',
+    'spmid',
+    'timestamp',
+    'up_id',
+  ])
 
   let isCleaningUrl = false // 防止重复执行
   let cleanupTimer: ReturnType<typeof setTimeout> | null = null
@@ -668,12 +675,20 @@ if (settings.value.cleanUrlArgument) {
       const currentUrl = new URL(window.location.href)
       let hasChanged = false
 
-      PARAMS_TO_REMOVE.forEach((param) => {
+      for (const param of BASE_PARAMS_TO_REMOVE) {
         if (currentUrl.searchParams.has(param)) {
           currentUrl.searchParams.delete(param)
           hasChanged = true
         }
-      })
+      }
+      if (currentUrl.hostname.endsWith('bilibili.com') && currentUrl.pathname.startsWith('/video/')) {
+        for (const param of VIDEO_ONLY_PARAMS_TO_REMOVE) {
+          if (currentUrl.searchParams.has(param)) {
+            currentUrl.searchParams.delete(param)
+            hasChanged = true
+          }
+        }
+      }
 
       if (hasChanged) {
         const newUrl = currentUrl.toString()
