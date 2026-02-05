@@ -10,6 +10,19 @@
   .header .header-upinfo {
     z-index: 1;
   }
+
+  // Keep the visitor-preview tips bar visible and aligned to page width.
+  .header .preview-tips-bar,
+  .header .header-previewtipsbar {
+    z-index: 2;
+    width: 100%;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+    left: 50%;
+    transform: translateX(-50%);
+  }
   // #endregion
 
   .header .header-upinfo-bg-shadow .top {
