@@ -3,6 +3,7 @@ import { DrawerType, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
+import { lockPageScroll, unlockPageScroll } from '~/utils/pageScrollLock'
 
 // TODO: support shortcuts like `Ctrl+Alt+T` to open in new tab, `Esc` to close
 
@@ -24,6 +25,7 @@ const currentUrl = ref<string>(props.url || 'https://message.bilibili.com/')
 const showIframe = ref(false)
 const isIframeLoaded = ref(false)
 const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
+const isPageScrollLocked = ref(false)
 
 // 计算属性：只有在显示iframe时才设置src，避免隐藏时提前加载
 const src = computed(() => showIframe.value ? currentUrl.value : undefined)
@@ -94,6 +96,10 @@ function handleOpen() {
   isIframeLoaded.value = false // 重置加载状态
   setActiveDrawer(DrawerType.NotificationsDrawer) // 设置为当前活跃抽屉
   console.log('[NotificationsDrawer] show.value:', show.value, 'activeDrawer:', activeDrawer.value)
+  if (!isPageScrollLocked.value) {
+    lockPageScroll()
+    isPageScrollLocked.value = true
+  }
 
   if (beforeUrl.value !== props.url) {
     currentUrl.value = props.url
@@ -111,6 +117,10 @@ function handleOpen() {
 }
 
 onBeforeUnmount(() => {
+  if (isPageScrollLocked.value) {
+    unlockPageScroll()
+    isPageScrollLocked.value = false
+  }
   releaseIframeResources()
 })
 
@@ -118,6 +128,10 @@ async function handleClose() {
   console.log('[NotificationsDrawer] handleClose called')
   if (delayCloseTimer.value) {
     clearTimeout(delayCloseTimer.value)
+  }
+  if (isPageScrollLocked.value) {
+    unlockPageScroll()
+    isPageScrollLocked.value = false
   }
   show.value = false
   showIframe.value = false // 重置iframe显示状态
@@ -312,6 +326,10 @@ onBeforeUnmount(() => {
   console.log('[NotificationsDrawer] onBeforeUnmount - removing keydown listener')
   window.removeEventListener('keydown', handleKeydown, true)
   document.removeEventListener('keydown', handleKeydown, true)
+  if (isPageScrollLocked.value) {
+    unlockPageScroll()
+    isPageScrollLocked.value = false
+  }
   releaseIframeResources()
 })
 
@@ -319,6 +337,10 @@ onDeactivated(() => {
   console.log('[NotificationsDrawer] onDeactivated - removing keydown listener')
   window.removeEventListener('keydown', handleKeydown, true)
   document.removeEventListener('keydown', handleKeydown, true)
+  if (isPageScrollLocked.value) {
+    unlockPageScroll()
+    isPageScrollLocked.value = false
+  }
 })
 
 // 辅助方法：处理点击/鼠标按下，隐藏提示并聚焦抽屉

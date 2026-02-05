@@ -6,6 +6,7 @@ import { useDark } from '~/composables/useDark'
 import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { isHomePage, isInIframe } from '~/utils/main'
+import { lockPageScroll, unlockPageScroll } from '~/utils/pageScrollLock'
 
 // TODO: support shortcuts like `Ctrl+Alt+T` to open in new tab, `Esc` to close
 
@@ -30,6 +31,7 @@ const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
 const removeTopBarClassInjected = ref<boolean>(false)
 const originUrl = ref<string>()
 const isPageFullscreen = ref<boolean>(false)
+const isPageScrollLocked = ref(false)
 
 // 计算iframe容器的样式
 const iframeContainerClasses = computed(() => {
@@ -149,6 +151,10 @@ onMounted(() => {
   headerShow.value = true
   setActiveDrawer(DrawerType.IframeDrawer) // 设置为当前活跃抽屉
   console.log('[IframeDrawer] show.value:', show.value, 'activeDrawer:', activeDrawer.value)
+  if (!isPageScrollLocked.value) {
+    lockPageScroll()
+    isPageScrollLocked.value = true
+  }
   nextTick(() => {
     if (iframeRef.value) {
       setupIframeListeners()
@@ -157,6 +163,10 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (isPageScrollLocked.value) {
+    unlockPageScroll()
+    isPageScrollLocked.value = false
+  }
   releaseIframeResources()
 })
 
@@ -195,6 +205,10 @@ async function handleClose() {
   console.log('[IframeDrawer] handleClose called')
   if (delayCloseTimer.value) {
     clearTimeout(delayCloseTimer.value)
+  }
+  if (isPageScrollLocked.value) {
+    unlockPageScroll()
+    isPageScrollLocked.value = false
   }
   await releaseIframeResources()
   show.value = false
