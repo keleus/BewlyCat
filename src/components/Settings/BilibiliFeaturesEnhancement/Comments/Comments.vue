@@ -17,6 +17,10 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
         <Radio v-model="settings.showSex" />
       </SettingsItem>
 
+      <SettingsItem :title="$t('settings.show_comment_host_tag')" :desc="$t('settings.show_comment_host_tag_desc')">
+        <Radio v-model="settings.showCommentHostTag" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.adjust_comment_image_height')" :desc="$t('settings.adjust_comment_image_height_desc')">
         <Radio v-model="settings.adjustCommentImageHeight" />
       </SettingsItem>

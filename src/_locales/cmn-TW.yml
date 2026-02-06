@@ -532,6 +532,8 @@ settings:
   show_ip_location_desc: 在視頻/動態評論區顯示IP歸屬地
   show_sex: 顯示使用者性別
   show_sex_desc: 在視頻/動態評論區顯示使用者性別
+  show_comment_host_tag: 顯示樓主標示
+  show_comment_host_tag_desc: 在評論回覆詳情頁標示樓主
   adjust_comment_image_height: 調整評論區圖片高度
   adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
   video_player_scroll: 調整顯示模式後滾動

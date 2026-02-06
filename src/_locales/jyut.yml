@@ -515,6 +515,8 @@ settings:
   show_ip_location_desc: 喺影片/動向頁留言區顯示 IP 歸屬地。
   show_sex: 顯示用戶性別
   show_sex_desc: 喺影片/動向頁留言區顯示用戶性別。
+  show_comment_host_tag: 顯示樓主標示
+  show_comment_host_tag_desc: 喺留言回覆詳情頁標示樓主。
   video_player_scroll: 校好顯示模式後自動轆到合適嘅位置
   video_player_scroll_desc: 啓用後，若果顯示模式係闊螢幕或預設嗰陣，會自動轆到合適嘅位置。
   enlarge_favorite_dialog: 放大收藏彈窗

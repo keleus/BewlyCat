@@ -73,6 +73,102 @@ else {
     return replyItem?.member?.sex
   }
 
+  const HOST_TAG_TEXTS: Record<string, string> = {
+    en: 'OP',
+    'cmn-TW': '樓主',
+    jyut: '樓主',
+    'cmn-CN': '楼主',
+  }
+
+  function getHostTagText() {
+    const language = currentSettings?.language || 'cmn-CN'
+    return HOST_TAG_TEXTS[language] ?? '楼主'
+  }
+
+  const rootReplyAuthorByThread = new Map<string, string>()
+
+  function toIdString(id: unknown): string | null {
+    if (id === null || id === undefined || id === '')
+      return null
+    return String(id)
+  }
+
+  function getReplyOid(replyItem: any): string | null {
+    return toIdString(replyItem?.oid_str ?? replyItem?.oid)
+  }
+
+  function getReplyRpid(replyItem: any): string | null {
+    return toIdString(replyItem?.rpid_str ?? replyItem?.rpid)
+  }
+
+  function getReplyRootRpid(replyItem: any): string | null {
+    return toIdString(replyItem?.root_str ?? replyItem?.root)
+  }
+
+  function getReplyMemberMid(replyItem: any): string | null {
+    return toIdString(replyItem?.member?.mid)
+  }
+
+  function getThreadRootKey(replyItem: any, rootRpid: string): string {
+    const oid = getReplyOid(replyItem)
+    return oid ? `${oid}:${rootRpid}` : rootRpid
+  }
+
+  function cacheRootReplyAuthor(replyItem: any) {
+    const replyRpid = getReplyRpid(replyItem)
+    const rootRpid = getReplyRootRpid(replyItem)
+    const authorMid = getReplyMemberMid(replyItem)
+    if (!replyRpid || !authorMid)
+      return
+
+    const isRootReply = !rootRpid || rootRpid === '0' || rootRpid === replyRpid
+    if (!isRootReply)
+      return
+
+    const threadRootKey = getThreadRootKey(replyItem, replyRpid)
+    rootReplyAuthorByThread.set(threadRootKey, authorMid)
+  }
+
+  function tryResolveRootAuthorFromDom(replyItem: any, rootRpid: string): string | null {
+    const rootReplyElements = document.querySelectorAll('bili-comment-user-info')
+    for (let i = 0; i < rootReplyElements.length; i += 1) {
+      const component = rootReplyElements[i] as any
+      const data = component?.data
+      if (!data)
+        continue
+
+      const dataRpid = getReplyRpid(data)
+      if (dataRpid !== rootRpid)
+        continue
+
+      const rootAuthorMid = getReplyMemberMid(data)
+      if (rootAuthorMid)
+        return rootAuthorMid
+    }
+
+    return null
+  }
+
+  function isSubReplyByRootAuthor(replyItem: any): boolean {
+    const rootRpid = getReplyRootRpid(replyItem)
+    if (!rootRpid || rootRpid === '0')
+      return false
+
+    const authorMid = getReplyMemberMid(replyItem)
+    if (!authorMid)
+      return false
+
+    const threadRootKey = getThreadRootKey(replyItem, rootRpid)
+    let rootAuthorMid = rootReplyAuthorByThread.get(threadRootKey)
+    if (!rootAuthorMid) {
+      rootAuthorMid = tryResolveRootAuthorFromDom(replyItem, rootRpid) ?? undefined
+      if (rootAuthorMid)
+        rootReplyAuthorByThread.set(threadRootKey, rootAuthorMid)
+    }
+
+    return rootAuthorMid === authorMid
+  }
+
   function updateInfoElement(
     root: ShadowRoot | null | undefined,
     id: string,
@@ -118,6 +214,11 @@ else {
     // 如果是IP地理位置元素，使用Tag样式显示
     else if (id === 'location') {
       element.style.cssText = `display: inline-block; margin-left: 4px; padding: 1px 4px; font-size: 11px; color: var(--bew-ip-tag-text); background-color: var(--bew-ip-tag-bg); border-radius: 3px; vertical-align: middle; line-height: 1.4;`
+      element.textContent = String(text)
+    }
+    // 楼主标签使用主题色，明暗模式由主题变量自动适配
+    else if (id === 'host-tag') {
+      element.style.cssText = `display: inline-block; margin-left: 4px; padding: 1px 4px; font-size: 11px; font-weight: 500; color: var(--bew-theme-color); background-color: var(--bew-theme-color-10); border-radius: 3px; vertical-align: middle; line-height: 1.4;`
       element.textContent = String(text)
     }
     else {
@@ -213,15 +314,25 @@ else {
             // 找到用户名元素
             const userNameEl = root.querySelector('#user-name')
             if (userNameEl) {
-            // 显示性别
+              cacheRootReplyAuthor(this.data)
+
+              // 显示性别
               const sexString = getSexString(this.data)
               const shouldShowSex = Boolean(currentSettings?.showSex && sexString)
               const sexEl = updateInfoElement(root, 'sex', shouldShowSex, sexString, userNameEl)
 
+              // 在楼中楼里给最外层楼主的回复添加标识
+              const shouldShowHostTag = Boolean(
+                currentSettings?.showCommentHostTag
+                && isSubReplyByRootAuthor(this.data),
+              )
+              const hostAnchor = sexEl ?? userNameEl
+              const hostEl = updateInfoElement(root, 'host-tag', shouldShowHostTag, getHostTagText(), hostAnchor)
+
               // 显示IP地理位置
               const locationString = getLocationString(this.data)
               const shouldShowLocation = Boolean(currentSettings?.showIPLocation && locationString)
-              const locationAnchor = sexEl ?? userNameEl
+              const locationAnchor = hostEl ?? sexEl ?? userNameEl
               updateInfoElement(root, 'location', shouldShowLocation, locationString, locationAnchor)
             }
 
