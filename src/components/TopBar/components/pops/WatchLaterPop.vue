@@ -5,10 +5,13 @@ import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import Picture from '~/components/Picture.vue'
 import Progress from '~/components/Progress.vue'
+import Tooltip from '~/components/Tooltip.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
+import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { calcCurrentTime } from '~/utils/dataFormatter'
-import { removeHttpFromUrl } from '~/utils/main'
+import { isHomePage, isInIframe, removeHttpFromUrl } from '~/utils/main'
+import { openLinkInBackground } from '~/utils/tabs'
 
 const topBarStore = useTopBarStore()
 const { watchLaterList, isLoadingWatchLater, watchLaterCount } = storeToRefs(topBarStore)
@@ -53,8 +56,42 @@ function getWatchLaterUrl(bvid: string): string {
   return `https://www.bilibili.com/list/watchlater?bvid=${bvid}`
 }
 
+function getVideoPageUrl(bvid: string): string {
+  return `https://www.bilibili.com/video/${bvid}/`
+}
+
+function openVideoPage(url: string) {
+  if (settings.value.topBarLinkOpenMode === 'background') {
+    void openLinkInBackground(url)
+    return
+  }
+
+  if (settings.value.topBarLinkOpenMode === 'currentTabIfNotHomepage') {
+    // Keep the behavior consistent with ALink's target logic.
+    if (isInIframe() || isHomePage()) {
+      window.open(url, '_blank')
+    }
+    else {
+      window.open(url, '_top')
+    }
+    return
+  }
+
+  if (settings.value.topBarLinkOpenMode === 'newTab') {
+    window.open(url, '_blank')
+    return
+  }
+
+  window.open(url, '_top')
+}
+
 function deleteWatchLaterItem(index: number, aid: number) {
   topBarStore.deleteWatchLaterItem(index, aid)
+}
+
+function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) {
+  openVideoPage(getVideoPageUrl(bvid))
+  deleteWatchLaterItem(index, aid)
 }
 </script>
 
@@ -155,6 +192,24 @@ function deleteWatchLaterItem(index: number, aid: number) {
               border="rounded-$bew-radius-half"
               overflow="hidden"
             >
+              <!-- Open in video page and remove button -->
+              <Tooltip :content="$t('watch_later.play_video')" placement="top">
+                <button
+                  class="group-hover:opacity-100 opacity-0"
+                  type="button"
+                  pos="absolute top-0 left-0" z-1 w-24px h-24px
+                  bg="black opacity-60 hover:$bew-theme-color"
+                  grid="~ place-items-center"
+                  m="1"
+                  text="white xs"
+                  duration-300
+                  border="rounded-full"
+                  @click.stop.prevent="handleOpenVideoPageAndRemove(index, item.aid, item.bvid)"
+                >
+                  <i i-tabler:player-play />
+                </button>
+              </Tooltip>
+
               <!-- Delete button -->
               <div
                 class="group-hover:opacity-100 opacity-0"

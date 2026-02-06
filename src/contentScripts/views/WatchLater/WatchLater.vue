@@ -186,6 +186,11 @@ function handleVideoLinkClick(bvid: string) {
     openLinkToNewTab(videoUrl) // 在新标签页打开
   }
 }
+
+function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) {
+  handleVideoLinkClick(bvid)
+  deleteWatchLaterItem(index, aid)
+}
 </script>
 
 <template>
@@ -324,7 +329,7 @@ function handleVideoLinkClick(bvid: string) {
                       opacity-0 group-hover:opacity-100
                       p-2
                       duration-300
-                      @click.prevent.stop="handleVideoLinkClick(item.bvid)"
+                      @click.prevent.stop="handleOpenVideoPageAndRemove(index, item.bvid, item.aid)"
                     >
                       <div i-tabler:player-play />
                     </button>

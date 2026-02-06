@@ -733,7 +733,7 @@ watch_later:
   remove_watched_videos_confirm: |-
     係咪要剷走你睇過啲片呀？
     噉做冇得返轉頭噃，你確定要剷走你睇過啲片？
-  play_video: 播片
+  play_video: 剷走兼入去影片頁
   play_in_watch_later: 清單播
   remove_from_watch_later: 剷走
 search_bar:
