@@ -164,7 +164,7 @@ settings:
   disable_shadow: 禁用阴影
   link_opening_behavior_opt:
     current_tab: 当前标签页
-    current_tab_if_not_homepage: 不在首页则当前标签页打开，否则在新标签页
+    current_tab_if_not_homepage: 首页新标签页，其他当前页
     background: 后台打开（如果可以的话）
     new_tab: 新标签页
     drawer: 抽屉打开

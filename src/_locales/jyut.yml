@@ -162,7 +162,7 @@ settings:
   disable_shadow: 閂咗陰影
   link_opening_behavior_opt:
     current_tab: 目前分頁
-    current_tab_if_not_homepage: 唔喺主頁就喺目前分頁度開啓，否則開新嘅分頁
+    current_tab_if_not_homepage: 主頁開新分頁，其他用目前分頁
     new_tab: 新開分頁
     drawer: 喺櫃桶度開啓
     background: 後臺打開（若然得嘅話）

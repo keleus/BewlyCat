@@ -175,7 +175,7 @@ settings:
   disable_shadow: Disable shadow
   link_opening_behavior_opt:
     current_tab: Current tab
-    current_tab_if_not_homepage: Current tab if not the homepage, otherwise new tab
+    current_tab_if_not_homepage: New tab on homepage, otherwise current tab
     background: New tab,but in background
     new_tab: New tab
     drawer: Open in drawer
