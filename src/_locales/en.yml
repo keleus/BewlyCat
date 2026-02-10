@@ -601,6 +601,20 @@ settings:
     toggle_follow_desc: Toggle follow status of the uploader on video page
   clean_url_argument: Clean URL Tracking Parameters
   clean_url_argument_desc: Automatically clean tracking parameters from URLs to make links cleaner
+
+  # Clean Share Link
+  group_clean_share_link: Clean Share Link
+  enable_clean_share_link: Enable clean share link
+  enable_clean_share_link_desc: >
+    When enabled, the share link will be cleaned by removing tracking parameters and optionally including the video title.
+    This applies to BewlyCat's copy link feature and intercepts Bilibili's native share button.
+  clean_share_link_include_title: Include video title in shared link
+  clean_share_link_include_title_desc: >
+    When sharing, the video title will be added before the link, e.g. "Video Title https://www.bilibili.com/video/BVxxx"
+  clean_share_link_remove_tracking_params: Remove tracking parameters from link
+  clean_share_link_remove_tracking_params_desc: >
+    Remove tracking parameters like spm_id_from, vd_source, share_source, etc. from the share link.
+
   show_ip_location: Show IP home location
   show_ip_location_desc: Display IP home in the video/dynamic comment area
   show_sex: Show user gender
@@ -771,6 +785,7 @@ video_card:
     open_in_current_tab: Open in Current Tab
     open_in_drawer: Open in Drawer
     copy_video_link: Copy Video Link
+    copy_clean_video_link: Copy Clean Video Link
     copy_bv_number: Copy BV Number
     copy_av_number: Copy AV Number
     view_the_original_cover: View the Original Cover

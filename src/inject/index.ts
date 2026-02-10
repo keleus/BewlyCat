@@ -412,4 +412,60 @@ else {
   }, '*')
 
 // 页面加载完成后初始化随机播放（功能已迁移到contentScripts）
+
+  // Bilibili tracking parameters to be removed from URLs
+  const BILIBILI_TRACKING_PARAMS = [
+    'spm_id_from', 'vd_source', 'share_source', 'share_medium', 'share_plat',
+    'share_session_id', 'share_tag', 'share_times', 'unique_k', 'bbid', 'ts',
+    'from_source', 'from_spmid', 'from', 'buvid', 'is_story_h5', 'mid', 'p',
+    'plat_id', 'share_from', 'timestamp', 'csource', 'launch_id', '-Arouter',
+  ]
+
+  function cleanUrl(url: string): string {
+    try {
+      const urlObj = new URL(url)
+      if (!urlObj.hostname.includes('bilibili.com') && !urlObj.hostname.includes('b23.tv'))
+        return url
+      for (const param of BILIBILI_TRACKING_PARAMS)
+        urlObj.searchParams.delete(param)
+      let cleaned = urlObj.toString()
+      if (urlObj.searchParams.toString() === '')
+        cleaned = cleaned.replace(/\?$/, '')
+      return cleaned
+    }
+    catch { return url }
+  }
+
+  function cleanShareText(text: string, includeTitle: boolean, removeTracking: boolean): string {
+    const shareMatch = text.match(/【(.+?)】\s*(https?:\/\/\S+)/)
+    if (shareMatch) {
+      let url = shareMatch[2]
+      if (removeTracking)
+        url = cleanUrl(url)
+      return includeTitle ? `${shareMatch[1]} ${url}` : url
+    }
+    if (removeTracking) {
+      return text.replace(/(https?:\/\/\S+)/g, url => cleanUrl(url))
+    }
+    return text
+  }
+
+  // Intercept navigator.clipboard.writeText to enable clean share link feature
+  const originalWriteText = navigator.clipboard.writeText.bind(navigator.clipboard)
+  navigator.clipboard.writeText = function (text: string) {
+    if (!currentSettings?.enableCleanShareLink)
+      return originalWriteText(text)
+
+    const isBilibiliShare = /【.+?】\s*https?:\/\//.test(text)
+    const hasBilibiliUrl = /https?:\/\/(?:www\.)?bilibili\.com\//.test(text) || /https?:\/\/b23\.tv\//.test(text)
+
+    if (isBilibiliShare || hasBilibiliUrl) {
+      const includeTitle = currentSettings?.cleanShareLinkIncludeTitle ?? false
+      const removeTracking = currentSettings?.cleanShareLinkRemoveTrackingParams !== false
+      const cleanedText = cleanShareText(text, includeTitle, removeTracking)
+      return originalWriteText(cleanedText)
+    }
+
+    return originalWriteText(text)
+  }
 }
