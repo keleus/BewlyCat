@@ -5,7 +5,7 @@ import { setUselessFeedCardBlockerEnabled } from '~/contentScripts/features/bloc
 import { LanguageType } from '~/enums/appEnums'
 import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
 import { resetBilibiliTopBarInlineStyles } from '~/utils/bilibiliTopBar'
-import { getUserID, injectCSS, isHomePage, isInIframe } from '~/utils/main'
+import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe } from '~/utils/main'
 
 export function setupNecessarySettingsWatchers() {
   const { locale } = useI18n()
@@ -393,6 +393,56 @@ export function setupNecessarySettingsWatchers() {
         document.documentElement.classList.add('bewly-design')
       else
         document.documentElement.classList.remove('bewly-design')
+    },
+    { immediate: true },
+  )
+
+  // Clean Share Link - intercept clipboard copy events
+  let cleanShareLinkCopyHandler: ((e: ClipboardEvent) => void) | null = null
+
+  watch(
+    [
+      () => settings.value.enableCleanShareLink,
+      () => settings.value.cleanShareLinkIncludeTitle,
+      () => settings.value.cleanShareLinkRemoveTrackingParams,
+    ],
+    () => {
+      // Remove previous handler if exists
+      if (cleanShareLinkCopyHandler) {
+        document.removeEventListener('copy', cleanShareLinkCopyHandler, true)
+        cleanShareLinkCopyHandler = null
+      }
+
+      if (settings.value.enableCleanShareLink) {
+        // Handle document copy events (e.g., Ctrl+C)
+        cleanShareLinkCopyHandler = (e: ClipboardEvent) => {
+          const clipboardData = e.clipboardData
+          if (!clipboardData)
+            return
+
+          const text = clipboardData.getData('text/plain')
+          if (!text)
+            return
+
+          // Only process text that looks like a Bilibili share text or contains Bilibili URLs
+          const isBilibiliShare = /【.+?】\s*https?:\/\//.test(text)
+          const hasBilibiliUrl = /https?:\/\/(?:www\.)?bilibili\.com\//.test(text) || /https?:\/\/b23\.tv\//.test(text)
+
+          if (isBilibiliShare || hasBilibiliUrl) {
+            const cleanedText = cleanBilibiliShareText(text, {
+              includeTitle: settings.value.cleanShareLinkIncludeTitle,
+              removeTrackingParams: settings.value.cleanShareLinkRemoveTrackingParams,
+            })
+
+            if (cleanedText !== text) {
+              e.preventDefault()
+              clipboardData.setData('text/plain', cleanedText)
+            }
+          }
+        }
+
+        document.addEventListener('copy', cleanShareLinkCopyHandler, true)
+      }
     },
     { immediate: true },
   )

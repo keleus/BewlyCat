@@ -191,6 +191,11 @@ export interface Settings {
   blockTopSearchPageAds: boolean
   cleanUrlArgument: boolean // 清理URL追踪参数
 
+  // Clean Share Link
+  enableCleanShareLink: boolean
+  cleanShareLinkIncludeTitle: boolean
+  cleanShareLinkRemoveTrackingParams: boolean
+
   enableVideoCtrlBarOnVideoCard: boolean
   hoverVideoCardDelayed: boolean
   showVideoCardRecommendTag: boolean
@@ -388,6 +393,11 @@ export const originalSettings: Settings = {
   blockAds: false,
   blockTopSearchPageAds: false,
   cleanUrlArgument: true, // 默认开启清理URL追踪参数
+
+  // Clean Share Link
+  enableCleanShareLink: false,
+  cleanShareLinkIncludeTitle: false,
+  cleanShareLinkRemoveTrackingParams: true,
 
   enableVideoPreview: true,
   enableVideoCtrlBarOnVideoCard: false,

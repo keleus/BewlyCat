@@ -393,6 +393,20 @@ settings:
     showOnScroll: 捲動嗰陣顯示
   clean_url_argument: 清理 URL 追蹤參數
   clean_url_argument_desc: 自動清理 URL 嘅最終參數，令到連結更加企理。
+
+  # Clean Share Link
+  group_clean_share_link: 分享連結淨化
+  enable_clean_share_link: 使用分享連結淨化
+  enable_clean_share_link_desc: >
+    開咗之後，分享連結會自動移除追蹤參數，仲可以揀要唔要加埋影片標題。
+    呢個功能適用於 BewlyCat 嘅複製連結功能，同時亦會攔截 Bilibili 原生分享掣嘅複製內容。
+  clean_share_link_include_title: 分享時加埋影片標題
+  clean_share_link_include_title_desc: >
+    分享嗰陣喺連結前面加埋影片標題，例如 "影片標題 https://www.bilibili.com/video/BVxxx"
+  clean_share_link_remove_tracking_params: 移除連結入面嘅追蹤參數
+  clean_share_link_remove_tracking_params_desc: >
+    移除分享連結入面嘅追蹤參數，好似 spm_id_from、vd_source、share_source 噉。
+
   keep_collection_video_default_mode: 合集影片保持預設模式
   keep_collection_video_default_mode_desc: 啟用嗰陣，合集影片會一直用預設播放器模式，唔會套用寬螢幕或者全螢幕設定
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播完後自動退出
@@ -646,6 +660,7 @@ video_card:
     open_in_current_tab: 目前分頁開啓
     open_in_drawer: 櫃桶開啓
     copy_video_link: 複製影片連結
+    copy_clean_video_link: 複製乾淨連結
     copy_bv_number: 複製 BV 號
     copy_av_number: 複製 AV 號
     view_the_original_cover: 睇吓封面

@@ -141,6 +141,20 @@ watch(() => settings.value.language, (newValue) => {
         <Radio v-model="settings.cleanUrlArgument" />
       </SettingsItem>
     </SettingsItemGroup>
+
+    <SettingsItemGroup :title="$t('settings.group_clean_share_link')">
+      <SettingsItem :title="$t('settings.enable_clean_share_link')" :desc="$t('settings.enable_clean_share_link_desc')">
+        <Radio v-model="settings.enableCleanShareLink" />
+      </SettingsItem>
+      <template v-if="settings.enableCleanShareLink">
+        <SettingsItem :title="$t('settings.clean_share_link_include_title')" :desc="$t('settings.clean_share_link_include_title_desc')">
+          <Radio v-model="settings.cleanShareLinkIncludeTitle" />
+        </SettingsItem>
+        <SettingsItem :title="$t('settings.clean_share_link_remove_tracking_params')" :desc="$t('settings.clean_share_link_remove_tracking_params_desc')">
+          <Radio v-model="settings.cleanShareLinkRemoveTrackingParams" />
+        </SettingsItem>
+      </template>
+    </SettingsItemGroup>
   </div>
 </template>
 

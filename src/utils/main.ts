@@ -427,3 +427,106 @@ export function isInIframe(): boolean {
     return true
   }
 }
+
+/**
+ * Bilibili tracking parameters to be removed from URLs
+ */
+const BILIBILI_TRACKING_PARAMS = [
+  'spm_id_from',
+  'vd_source',
+  'share_source',
+  'share_medium',
+  'share_plat',
+  'share_session_id',
+  'share_tag',
+  'share_times',
+  'unique_k',
+  'bbid',
+  'ts',
+  'from_source',
+  'from_spmid',
+  'from',
+  'buvid',
+  'is_story_h5',
+  'mid',
+  'p',
+  'plat_id',
+  'share_from',
+  'timestamp',
+  'csource',
+  'launch_id',
+  '-Arouter',
+]
+
+/**
+ * Clean a Bilibili URL by removing tracking parameters
+ * @param url the URL to clean
+ * @returns the cleaned URL
+ */
+export function cleanBilibiliUrl(url: string): string {
+  try {
+    const urlObj = new URL(url)
+
+    // Only clean bilibili.com URLs
+    if (!urlObj.hostname.includes('bilibili.com') && !urlObj.hostname.includes('b23.tv'))
+      return url
+
+    // Remove tracking parameters
+    for (const param of BILIBILI_TRACKING_PARAMS) {
+      urlObj.searchParams.delete(param)
+    }
+
+    // If no search params left, return URL without trailing ?
+    let cleanedUrl = urlObj.toString()
+    if (urlObj.searchParams.toString() === '')
+      cleanedUrl = cleanedUrl.replace(/\?$/, '')
+
+    return cleanedUrl
+  }
+  catch {
+    return url
+  }
+}
+
+/**
+ * Clean the share text from Bilibili's share button
+ * Bilibili share text format: 【Title】 URL
+ * @param text the share text to clean
+ * @param options options for cleaning
+ * @param options.includeTitle whether to include the video title in the cleaned text
+ * @param options.removeTrackingParams whether to remove tracking parameters from the URL
+ * @returns the cleaned share text
+ */
+export function cleanBilibiliShareText(
+  text: string,
+  options: { includeTitle?: boolean, removeTrackingParams?: boolean } = {},
+): string {
+  const { includeTitle = false, removeTrackingParams = true } = options
+
+  // Match Bilibili share text format: 【Title】 URL
+  const shareTextRegex = /【(.+?)】\s*(https?:\/\/\S+)/
+  const match = text.match(shareTextRegex)
+
+  if (match) {
+    const title = match[1]
+    let url = match[2]
+
+    if (removeTrackingParams)
+      url = cleanBilibiliUrl(url)
+
+    if (includeTitle)
+      return `${title} ${url}`
+
+    return url
+  }
+
+  // If it doesn't match the share format, try to clean URLs in the text
+  const urlRegex = /(https?:\/\/\S+)/g
+  if (removeTrackingParams) {
+    return text.replace(urlRegex, (url) => {
+      return cleanBilibiliUrl(url)
+    })
+  }
+
+  return text
+}

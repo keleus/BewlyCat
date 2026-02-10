@@ -536,6 +536,20 @@ settings:
     toggle_follow_desc: 在视频页切换关注UP主状态
   clean_url_argument: 清理URL追踪参数
   clean_url_argument_desc: 自动清理URL中的追踪参数，使链接更加简洁
+
+  # Clean Share Link
+  group_clean_share_link: 分享链接净化
+  enable_clean_share_link: 启用分享链接净化
+  enable_clean_share_link_desc: >
+    启用后，分享链接将自动移除追踪参数，并可选择是否包含视频标题。
+    此功能适用于 BewlyCat 的复制链接功能，同时也会拦截 Bilibili 原生分享按钮的复制内容。
+  clean_share_link_include_title: 分享时包含视频标题
+  clean_share_link_include_title_desc: >
+    分享时在链接前添加视频标题，例如 "视频标题 https://www.bilibili.com/video/BVxxx"
+  clean_share_link_remove_tracking_params: 移除链接中的追踪参数
+  clean_share_link_remove_tracking_params_desc: >
+    移除分享链接中的追踪参数，如 spm_id_from、vd_source、share_source 等。
+
   show_ip_location: 显示IP归属地
   show_ip_location_desc: 在视频/动态评论区显示IP归属地
   show_sex: 显示用户性别
@@ -697,6 +711,7 @@ video_card:
     open_in_current_tab: 当前标签页打开
     open_in_drawer: 抽屉打开
     copy_video_link: 复制视频链接
+    copy_clean_video_link: 复制干净链接
     copy_bv_number: 复制 BV 号
     copy_av_number: 复制 AV 号
     view_the_original_cover: 查看封面
