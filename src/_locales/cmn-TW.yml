@@ -528,6 +528,20 @@ settings:
     toggle_follow_desc: 在視頻頁切換關注UP主狀態
   clean_url_argument: 清理URL追蹤參數
   clean_url_argument_desc: 自動清理URL中的追蹤參數，使連結更加簡潔
+
+  # Clean Share Link
+  group_clean_share_link: 分享連結淨化
+  enable_clean_share_link: 啓用分享連結淨化
+  enable_clean_share_link_desc: >
+    啓用後，分享連結將自動移除追蹤參數，並可選擇是否包含影片標題。
+    此功能適用於 BewlyCat 的複製連結功能，同時也會攔截 Bilibili 原生分享按鈕的複製內容。
+  clean_share_link_include_title: 分享時包含影片標題
+  clean_share_link_include_title_desc: >
+    分享時在連結前新增影片標題，例如 "影片標題 https://www.bilibili.com/video/BVxxx"
+  clean_share_link_remove_tracking_params: 移除連結中的追蹤參數
+  clean_share_link_remove_tracking_params_desc: >
+    移除分享連結中的追蹤參數，如 spm_id_from、vd_source、share_source 等。
+
   show_ip_location: 顯示IP歸屬地
   show_ip_location_desc: 在視頻/動態評論區顯示IP歸屬地
   show_sex: 顯示使用者性別
@@ -712,6 +726,7 @@ video_card:
     open_in_current_tab: 目前索引標籤開啓
     open_in_drawer: 抽屜開啓
     copy_video_link: 複製影片連結
+    copy_clean_video_link: 複製乾淨連結
     copy_bv_number: 複製 BV 號
     copy_av_number: 複製 AV 號
     view_the_original_cover: 檢視封面

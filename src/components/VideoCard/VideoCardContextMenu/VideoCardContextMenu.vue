@@ -3,9 +3,10 @@ import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { settings } from '~/logic'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
 import api from '~/utils/api'
-import { getCSRF, openLinkToNewTab } from '~/utils/main'
+import { cleanBilibiliUrl, getCSRF, openLinkToNewTab } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { Video } from '../types'
@@ -88,6 +89,7 @@ enum VideoOption {
   ViewThisUserChannel,
 
   CopyVideoLink,
+  CopyCleanVideoLink,
   CopyBVNumber,
   CopyAVNumber,
 
@@ -110,6 +112,9 @@ const commonOptions = computed((): OptionItem[][] => {
 
     [
       { command: VideoOption.CopyVideoLink, name: t('video_card.operation.copy_video_link'), icon: 'i-solar:copy-bold-duotone' },
+      ...(settings.value.enableCleanShareLink
+        ? [{ command: VideoOption.CopyCleanVideoLink, name: t('video_card.operation.copy_clean_video_link'), icon: 'i-solar:link-minimalistic-2-bold-duotone' }]
+        : []),
       { command: VideoOption.CopyBVNumber, name: t('video_card.operation.copy_bv_number'), icon: 'i-solar:copy-bold-duotone' },
       { command: VideoOption.CopyAVNumber, name: t('video_card.operation.copy_av_number'), icon: 'i-solar:copy-bold-duotone' },
     ],
@@ -151,7 +156,7 @@ const commonOptions = computed((): OptionItem[][] => {
   if (getVideoType() === 'bangumi' || getVideoType() === 'live') {
     result = result.map((group) => {
       return group.filter((opt) => {
-        return opt.command !== VideoOption.CopyBVNumber && opt.command !== VideoOption.CopyAVNumber && opt.command !== VideoOption.ViewThisUserChannel
+        return opt.command !== VideoOption.CopyBVNumber && opt.command !== VideoOption.CopyAVNumber && opt.command !== VideoOption.CopyCleanVideoLink && opt.command !== VideoOption.ViewThisUserChannel
       })
     })
   }
@@ -229,9 +234,22 @@ function handleCommonCommand(command: VideoOption) {
       break
 
     case VideoOption.CopyVideoLink:
-      navigator.clipboard.writeText(props.video.url!)
+      navigator.clipboard.writeText(
+        settings.value.enableCleanShareLink && settings.value.cleanShareLinkRemoveTrackingParams
+          ? cleanBilibiliUrl(props.video.url!)
+          : props.video.url!,
+      )
       handleClose()
       break
+    case VideoOption.CopyCleanVideoLink: {
+      const cleanUrl = cleanBilibiliUrl(props.video.url!)
+      const text = settings.value.cleanShareLinkIncludeTitle && props.video.title
+        ? `${props.video.title} ${cleanUrl}`
+        : cleanUrl
+      navigator.clipboard.writeText(text)
+      handleClose()
+      break
+    }
     case VideoOption.CopyBVNumber:
       navigator.clipboard.writeText(props.video.bvid!)
       handleClose()
