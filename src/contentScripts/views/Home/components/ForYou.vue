@@ -35,6 +35,7 @@ const filterFunc = useFilter(
   [
     FilterType.duration,
     FilterType.viewCount,
+    FilterType.likeCount,
     FilterType.title,
     FilterType.user,
     FilterType.user,
@@ -43,6 +44,7 @@ const filterFunc = useFilter(
   [
     ['duration'],
     ['stat', 'view'],
+    ['stat', 'like'],
     ['title'],
     ['owner', 'name'],
     ['owner', 'mid'],

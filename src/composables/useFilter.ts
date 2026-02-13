@@ -6,6 +6,7 @@ const get = (obj: any, path: string[]) => path.reduce((acc, part) => acc && acc[
 export enum FilterType {
   filterOutVerticalVideos,
   viewCount,
+  likeCount,
   viewCountStr,
   duration,
   title,
@@ -146,6 +147,11 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
       enabledKey: 'enableFilterByViewCount',
       valueKey: 'filterByViewCount',
     },
+    [FilterType.likeCount]: {
+      func: compareNumber,
+      enabledKey: 'enableFilterByLikeCount',
+      valueKey: 'filterByLikeCount',
+    },
     [FilterType.duration]: {
       func: compareNumber,
       enabledKey: 'enableFilterByDuration',
@@ -179,16 +185,18 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
     settings.value.filterOutVerticalVideos,
     settings.value.enableFilterByDuration,
     settings.value.enableFilterByViewCount,
+    settings.value.enableFilterByLikeCount,
     settings.value.enableFilterByTitle,
     settings.value.enableFilterByUser,
     settings.value.enableFilterByPublishTime,
     settings.value.filterByDuration,
     settings.value.filterByViewCount,
+    settings.value.filterByLikeCount,
     settings.value.filterByTitle,
     settings.value.filterByUser,
     settings.value.filterByPublishTime,
-  ], ([filterOutVerticalVideos, durationFilter, viewCountFilter, titleFilter, userFilter, publishTimeFilter]) => {
-    if (!filterOutVerticalVideos && !durationFilter && !viewCountFilter && !titleFilter && !userFilter && !publishTimeFilter) {
+  ], ([filterOutVerticalVideos, durationFilter, viewCountFilter, likeCountFilter, titleFilter, userFilter, publishTimeFilter]) => {
+    if (!filterOutVerticalVideos && !durationFilter && !viewCountFilter && !likeCountFilter && !titleFilter && !userFilter && !publishTimeFilter) {
       filter.value = null
       return
     }

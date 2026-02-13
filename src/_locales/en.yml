@@ -376,6 +376,9 @@ settings:
   filter_by_view_count: Filter by view count
   filter_by_view_count_desc: Filtered out videos with less than the view count you set.
   filter_by_view_count_unit: views
+  filter_by_like_count: Filter by like count
+  filter_by_like_count_desc: Filter out videos with fewer likes than you set.
+  filter_by_like_count_unit: likes
   filter_by_duration: Filter by duration
   filter_by_duration_desc: Filtered out videos with less than the duration you set.
   filter_by_duration_unit: sec

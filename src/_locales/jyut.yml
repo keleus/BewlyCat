@@ -315,6 +315,9 @@ settings:
   filter_by_view_count: 根據觀看次數篩選
   filter_by_view_count_desc: 避開啲觀看次數唔夠你設嗰個數嘅片。
   filter_by_view_count_unit: 次
+  filter_by_like_count: 根據點讚數篩選
+  filter_by_like_count_desc: 避開啲點讚數唔夠你設嗰個數嘅片。
+  filter_by_like_count_unit: 次
   filter_by_duration: 根據條片長度篩選
   filter_by_duration_desc: 避開啲片長唔夠你設嗰個時間嘅片。
   filter_by_duration_unit: 秒

@@ -393,6 +393,9 @@ settings:
   filter_by_view_count: 按播放数筛选
   filter_by_view_count_desc: 筛选掉播放数小于您设置的视频。
   filter_by_view_count_unit: 次
+  filter_by_like_count: 按点赞数筛选
+  filter_by_like_count_desc: 筛选掉点赞数小于您设置的视频。
+  filter_by_like_count_unit: 次
   filter_by_duration: 按时长筛选
   filter_by_duration_desc: 筛选掉时长小于您设置的视频。
   filter_by_duration_unit: 秒

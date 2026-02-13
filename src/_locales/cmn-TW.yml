@@ -333,6 +333,9 @@ settings:
   filter_by_view_count: 按觀看次數篩選
   filter_by_view_count_desc: 篩選掉觀看次數少於您設定的影片。
   filter_by_view_count_unit: 次
+  filter_by_like_count: 按讚數篩選
+  filter_by_like_count_desc: 篩選掉按讚數少於您設定的影片。
+  filter_by_like_count_unit: 次
   filter_by_duration: 按影片長度篩選
   filter_by_duration_desc: 篩選掉時長少於您設定的影片。
   filter_by_duration_unit: 秒
