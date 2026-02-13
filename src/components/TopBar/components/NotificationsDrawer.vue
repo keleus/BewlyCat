@@ -39,6 +39,18 @@ function clearRevealIframeTimer() {
   }
 }
 
+function scheduleRevealIframe() {
+  if (!showIframe.value || !isIframeLoaded.value)
+    return
+
+  clearRevealIframeTimer()
+  revealIframeTimer.value = setTimeout(() => {
+    if (showIframe.value && isIframeLoaded.value)
+      isIframeDisplayReady.value = true
+    revealIframeTimer.value = null
+  }, isDark.value ? 360 : 120)
+}
+
 function syncIframeDarkModeState() {
   if (iframeRef.value?.contentWindow) {
     try {
@@ -55,6 +67,11 @@ function syncIframeDarkModeState() {
 }
 
 function handleIframeLoad() {
+  // Ignore hidden or empty-src iframe load events (e.g. initial about:blank).
+  const iframeSrc = iframeRef.value?.getAttribute('src')
+  if (!showIframe.value || !iframeSrc || iframeSrc === 'about:blank')
+    return
+
   isIframeLoaded.value = true
 }
 
@@ -77,13 +94,12 @@ watch(() => isIframeLoaded.value, (newValue) => {
   syncIframeDarkModeState()
   setTimeout(syncIframeDarkModeState, 120)
   setTimeout(syncIframeDarkModeState, 320)
+  scheduleRevealIframe()
+})
 
-  clearRevealIframeTimer()
-  revealIframeTimer.value = setTimeout(() => {
-    if (showIframe.value && isIframeLoaded.value)
-      isIframeDisplayReady.value = true
-    revealIframeTimer.value = null
-  }, isDark.value ? 360 : 120)
+watch(() => showIframe.value, (newValue) => {
+  if (newValue)
+    scheduleRevealIframe()
 })
 
 onMounted(() => {
