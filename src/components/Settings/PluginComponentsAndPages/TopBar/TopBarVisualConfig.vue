@@ -434,6 +434,14 @@ function toggleChannel(value: string) {
                 />
               </SettingsItem>
 
+              <SettingsItem
+                v-if="selectedElement === 'notifications'"
+                :title="$t('settings.show_like_notification_reminder')"
+                :desc="$t('settings.show_like_notification_reminder_desc')"
+              >
+                <Radio v-model="settings.showLikeNotificationReminder" />
+              </SettingsItem>
+
               <!-- 动态特殊设置 -->
               <SettingsItem
                 v-if="selectedElement === 'moments'"

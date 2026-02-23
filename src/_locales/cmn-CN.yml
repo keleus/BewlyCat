@@ -260,6 +260,8 @@ settings:
   auto_receive_vip_exp: 大会员经验自动领取
   auto_receive_vip_exp_desc: 启用后，将自动领取大会员每日经验
   open_notifications_page_as_drawer: 以抽屉形式打开通知页面
+  show_like_notification_reminder: 显示点赞提醒
+  show_like_notification_reminder_desc: 启用后，顶栏通知角标会将收到的赞计入总数。
 
   # Video Card Grid Settings
   group_video_card_grid: 视频卡片网格

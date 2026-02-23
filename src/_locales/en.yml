@@ -229,6 +229,8 @@ settings:
   auto_receive_vip_exp: Auto receive VIP experience
   auto_receive_vip_exp_desc: When enabled, will automatically receive daily VIP experience
   open_notifications_page_as_drawer: Open notifications page as drawer
+  show_like_notification_reminder: Show like notifications
+  show_like_notification_reminder_desc: When enabled, likes are included in the top bar notifications badge count.
 
   # Video Card Grid Settings
   group_video_card_grid: Video Card Grid

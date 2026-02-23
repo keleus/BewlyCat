@@ -233,6 +233,8 @@ settings:
   topbar_pinned_channels_empty: 仲未揀任何固定分區。
   topbar_pinned_channels_order_tip: 撳嘅順序決定顯示，再撳一次就會取消固定。
   open_notifications_page_as_drawer: 用櫃桶打開通知頁面
+  show_like_notification_reminder: 顯示點讚提醒
+  show_like_notification_reminder_desc: 開咗之後，頂欄通知角標會將點讚提醒計埋入總數。
   always_use_dock: 點都要用 Dock
   always_use_dock_desc: 啓用後，Dock 點都要用佢而唔係用側邊欄。我哋推介你同時啓用自動收埋 Dock 去。
   auto_hide_dock: 自動收埋 Dock

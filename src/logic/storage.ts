@@ -212,6 +212,7 @@ export interface Settings {
   topBarComponentsConfig: { key: string, visible: boolean, badgeType: 'number' | 'dot' | 'none' }[]
   topBarPinnedChannels: string[]
   openNotificationsPageAsDrawer: boolean
+  showLikeNotificationReminder: boolean
   showBCoinReceiveReminder: boolean
   autoReceiveBCoinCoupon: boolean
   autoReceiveVipExp: boolean
@@ -426,6 +427,7 @@ export const originalSettings: Settings = {
   ],
   topBarPinnedChannels: [],
   openNotificationsPageAsDrawer: true,
+  showLikeNotificationReminder: false,
   showBCoinReceiveReminder: true,
   autoReceiveBCoinCoupon: false,
   autoReceiveVipExp: false,

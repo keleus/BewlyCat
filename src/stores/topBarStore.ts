@@ -30,15 +30,27 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   const MESSAGE_KEYS_TO_COUNT: Array<keyof UnReadMessage> = ['reply', 'at', 'chat', 'sys_msg']
 
+  function getLikeUnreadCount(): number {
+    const likeCount = typeof unReadMessage.like === 'number' ? unReadMessage.like : 0
+    const recvLike = (unReadMessage as UnReadMessage & { recv_like?: number }).recv_like
+    const recvLikeCount = typeof recvLike === 'number' ? recvLike : 0
+
+    return Math.max(likeCount, recvLikeCount)
+  }
+
   const unReadMessageCount = computed((): number => {
     let result = 0
 
-    // 只统计需要在顶栏展示的消息类型，过滤掉点赞等提醒
+    // 统计顶栏默认展示的消息类型
     MESSAGE_KEYS_TO_COUNT.forEach((key) => {
       const value = unReadMessage[key]
       if (typeof value === 'number')
         result += value
     })
+
+    // 可选地将点赞提醒计入顶栏通知角标
+    if (settings.value.showLikeNotificationReminder)
+      result += getLikeUnreadCount()
 
     // 计算 unReadDm 中的未读消息
     if (typeof unReadDm.follow_unread === 'number')

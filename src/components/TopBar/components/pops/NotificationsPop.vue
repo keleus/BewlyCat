@@ -52,7 +52,9 @@ watch(() => props.unReadMessage, (newVal) => {
   if (newVal) {
     list.value[0].unreadCount = newVal.reply || 0
     list.value[1].unreadCount = newVal.at || 0
-    const likesCount = newVal.like ?? newVal.recv_like ?? 0
+    const likeCount = typeof newVal.like === 'number' ? newVal.like : 0
+    const recvLikeCount = typeof newVal.recv_like === 'number' ? newVal.recv_like : 0
+    const likesCount = Math.max(likeCount, recvLikeCount)
     list.value[2].unreadCount = likesCount
     list.value[3].unreadCount = newVal.sys_msg || 0
   }
