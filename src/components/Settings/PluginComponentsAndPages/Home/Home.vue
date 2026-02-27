@@ -414,7 +414,7 @@ function handleToggleHomeTab(tab: any) {
       <SettingsItem :title="$t('settings.following_inactive_days')" :desc="$t('settings.following_inactive_days_desc')">
         <Input
           v-model="settings.followingInactiveDays" type="number" :min="1" :max="365"
-          w-130px
+          w-120px
         >
           <template #suffix>
             <span text="sm $bew-text-2" whitespace-nowrap>{{ $t('common.days') }}</span>
