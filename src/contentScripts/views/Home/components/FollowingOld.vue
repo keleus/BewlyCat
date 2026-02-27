@@ -6,6 +6,7 @@ import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
 import type { DataItem as MomentItem, MomentResult } from '~/models/moment/moment'
+import { BadgeText } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { parseStatNumber } from '~/utils/dataFormatter'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
@@ -262,6 +263,10 @@ async function getFollowedUsersVideos() {
       const resData = [] as VideoElement[]
 
       response.data.items.forEach((item: MomentItem) => {
+        // 如果应该过滤该视频（充电专属视频/动态视频），则跳过
+        if (shouldFilterVideo(item))
+          return
+
         const authors: Author[] = []
 
         // 检查是否有联合投稿信息
@@ -320,6 +325,33 @@ async function getFollowedUsersVideos() {
   finally {
     recursionDepth.value--
   }
+}
+
+// 检查视频是否为充电专属视频
+function isChargingVideo(item: MomentItem): boolean {
+  const badgeText = item.modules?.module_dynamic?.major?.archive?.badge?.text
+  return badgeText === BadgeText.充电专属
+}
+
+// 检查视频是否为动态视频
+function isDynamicVideo(item: MomentItem): boolean {
+  const badgeText = item.modules?.module_dynamic?.major?.archive?.badge?.text
+  return badgeText === BadgeText.动态视频
+}
+
+// 判断视频是否应该被过滤
+function shouldFilterVideo(item: MomentItem): boolean {
+  // 如果开启了过滤充电视频设置，且该视频是充电专属视频，则返回 true（表示应该过滤）
+  if (settings.value.followingFilterChargingVideos && isChargingVideo(item)) {
+    return true
+  }
+
+  // 如果开启了过滤动态视频设置，且该视频是动态视频，则返回 true（表示应该过滤）
+  if (settings.value.followingFilterDynamicVideos && isDynamicVideo(item)) {
+    return true
+  }
+
+  return false
 }
 
 // 供 VideoCardGrid 预加载调用的函数
