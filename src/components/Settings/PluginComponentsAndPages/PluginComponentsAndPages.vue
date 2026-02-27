@@ -75,8 +75,10 @@ const pages = [
             duration-300
             @click="activePage = page.value"
           >
-            <div class="flex items-center min-w-0">
-              <div :class="activePage === page.value ? page.iconActivated : page.icon" class="mr-2 text-lg shrink-0" />
+            <div class="flex items-start min-w-0">
+              <div class="mr-2 w-5 h-5 shrink-0 flex items-center justify-center">
+                <div :class="activePage === page.value ? page.iconActivated : page.icon" class="text-lg leading-none" />
+              </div>
               <span class="flex-1 min-w-0" leading-5 whitespace-normal break-normal>{{ page.title }}</span>
             </div>
           </li>
