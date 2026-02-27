@@ -64,7 +64,7 @@ const pages = [
 <template>
   <div flex="~" ml--8>
     <!-- Sidebar -->
-    <div w-140px shrink-0>
+    <div w-200px shrink-0>
       <div w-inherit pos="fixed">
         <ul flex="~ col gap-1">
           <li
@@ -75,9 +75,9 @@ const pages = [
             duration-300
             @click="activePage = page.value"
           >
-            <div class="flex items-center">
-              <div :class="activePage === page.value ? page.iconActivated : page.icon" class="mr-2 text-lg" />
-              <span>{{ page.title }}</span>
+            <div class="flex items-center min-w-0">
+              <div :class="activePage === page.value ? page.iconActivated : page.icon" class="mr-2 text-lg shrink-0" />
+              <span whitespace-nowrap>{{ page.title }}</span>
             </div>
           </li>
         </ul>
