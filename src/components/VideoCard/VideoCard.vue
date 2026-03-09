@@ -437,44 +437,28 @@ provide('getVideoType', () => props.type!)
   pointer-events: none;
 }
 
-/* 优化 hover 效果：使用 background + box-shadow 实现内外双层背景 */
+/* hover/active 效果全部在最外层容器，background-color + box-shadow 同一元素同步动画，无时序差 */
 .video-card-container--interactive {
   position: relative;
+  /* 零值初始状态，确保 box-shadow 能正确插值过渡 */
+  background-color: transparent;
+  box-shadow: 0 0 0 0 transparent;
   transition:
     background-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-.video-card-container--interactive::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--bew-fill-2);
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-}
-
 /* 只在支持 hover 的设备上启用 hover 效果（避免触屏设备的性能损失） */
 @media (hover: hover) and (pointer: fine) {
-  .video-card-container--interactive:hover::before {
-    opacity: 1;
-  }
-
   .video-card-container--interactive:hover {
-    /* 用 box-shadow 在外部6px处创建背景色效果，添加1px模糊消除圆角处的细线 */
-    box-shadow: 0 0 1px 6px var(--bew-fill-2);
+    background-color: var(--bew-fill-2);
+    box-shadow: 0 0 0 6px var(--bew-fill-2);
   }
-}
-
-.video-card-container--interactive:active::before {
-  background: var(--bew-fill-3);
-  opacity: 1;
 }
 
 .video-card-container--interactive:active {
-  box-shadow: 0 0 1px 6px var(--bew-fill-3);
+  background-color: var(--bew-fill-3);
+  box-shadow: 0 0 0 6px var(--bew-fill-3);
 }
 
 .horizontal-card-cover {
