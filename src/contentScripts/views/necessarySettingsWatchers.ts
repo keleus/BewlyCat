@@ -37,13 +37,19 @@ export function setupNecessarySettingsWatchers() {
       return
     }
 
-    // 设置页已增加了相应警告，不再限制模糊强度
-    const blur1Value = `blur(${clampedValue}px)`
-    const blur2Value = `blur(${clampedValue + FROSTED_GLASS_DIALOG_OFFSET_PX}px)`
+    const blur1Value = `blur(${clampedValue}px) saturate(180%)`
+    const dialogBlur = clampedValue === 0 ? 0 : clampedValue + FROSTED_GLASS_DIALOG_OFFSET_PX
+    const blur2Value = `blur(${dialogBlur}px) saturate(180%)`
 
     targets.forEach((element) => {
-      element.style.setProperty('--bew-filter-glass-1', blur1Value)
-      element.style.setProperty('--bew-filter-glass-2', blur2Value)
+      if (Math.abs(clampedValue - DEFAULT_FROSTED_GLASS_BLUR_PX) < 0.01) {
+        element.style.removeProperty('--bew-filter-glass-1')
+        element.style.removeProperty('--bew-filter-glass-2')
+      }
+      else {
+        element.style.setProperty('--bew-filter-glass-1', blur1Value)
+        element.style.setProperty('--bew-filter-glass-2', blur2Value)
+      }
     })
   }
 
