@@ -162,6 +162,7 @@ const liveListLoaded = ref<boolean>(false) // 标记直播列表是否已加载�
 // Provide selectedUploader to child components for preview loading control
 provide('moments-selected-uploader', selectedUploader)
 const isLoading = ref<boolean>(false)
+const requestFailed = ref<boolean>(false)
 const noMoreContent = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
 const shouldMoveAsideUp = ref<boolean>(false)
@@ -921,6 +922,7 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
   console.log('[Following] Loading ALL view videos (max', maxPages, 'pages)...')
   emit('beforeLoading')
   isLoading.value = true
+  requestFailed.value = false
 
   // 追踪每个UP主在ALL视图中的最新视频时间
   const uploaderLatestTimes = new Map<number, number>()
@@ -1034,6 +1036,7 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
       }
       else {
         console.error('[Following] API returned error code:', response.code)
+        requestFailed.value = true
         noMoreContent.value = true // 出错时也设置 noMoreContent
         break
       }
@@ -1116,6 +1119,7 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
   }
   catch (error) {
     console.error('[Following] Failed to load ALL view:', error)
+    requestFailed.value = true
     noMoreContent.value = true // 异常时也设置 noMoreContent
   }
   finally {
@@ -1132,6 +1136,7 @@ async function loadUserMoments(mid: number, maxPages: number = 3, token?: number
   console.log('[Following] Loading moments for UP', mid, '(max', maxPages, 'pages)...')
   emit('beforeLoading')
   isLoading.value = true
+  requestFailed.value = false
 
   // 收集所有视频时间用于计算更新间隔
   const allVideoTimes: number[] = []
@@ -1231,6 +1236,7 @@ async function loadUserMoments(mid: number, maxPages: number = 3, token?: number
       }
       else {
         console.error('[Following] API returned error code:', response.code)
+        requestFailed.value = true
         noMoreContent.value = true // 出错时也设置 noMoreContent
         break
       }
@@ -1284,6 +1290,7 @@ async function loadUserMoments(mid: number, maxPages: number = 3, token?: number
   }
   catch (error) {
     console.error('[Following] Failed to load user moments:', error)
+    requestFailed.value = true
     noMoreContent.value = true // 异常时也设置 noMoreContent
   }
   finally {
@@ -1478,6 +1485,7 @@ function initData() {
   userMomentsOffset.value = ''
   noMoreContent.value = false
   needToLoginFirst.value = false
+  requestFailed.value = false
   liveListLoaded.value = false // 重置直播加载标志
 
   // 如果当前已经选中了某个UP主，刷新该UP主的动态
@@ -1646,6 +1654,7 @@ defineExpose({ initData })
         :loading="isLoading"
         :no-more-content="noMoreContent"
         :need-to-login-first="needToLoginFirst"
+        :request-failed="requestFailed"
         :transform-item="transformVideoItem"
         :get-item-key="(item: VideoElement) => item.uniqueId"
         :show-watcher-later="false"

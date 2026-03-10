@@ -111,6 +111,14 @@ interface VideoCardGridProps<T = any> {
    * @default false
    */
   isFollowingPage?: boolean
+
+  /**
+   * 最近一次请求是否失败（API 错误/网络异常等）
+   * 父组件在请求失败时设为 true，成功时设为 false
+   * 连续失败超过阈值后停止触发 loadMore
+   * @default false
+   */
+  requestFailed?: boolean
 }
 
 const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
@@ -123,6 +131,7 @@ const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
   initialSkeletonCount: 30,
   isSkeletonItem: undefined,
   enableRowPadding: false,
+  requestFailed: false,
 })
 
 const emit = defineEmits<{
@@ -161,6 +170,10 @@ const dynamicSkeletonCount = computed(() => {
 const consecutiveEmptyLoads = ref(0)
 const MAX_CONSECUTIVE_EMPTY_LOADS = 2
 const lastItemsCount = ref(0)
+
+// 连续请求失败保护机制
+const consecutiveFailures = ref(0)
+const MAX_CONSECUTIVE_FAILURES = 3
 
 // 分块渲染：渲染限制（在 displayItems 定义之前声明，避免循环依赖）
 const renderLimit = ref(0)
@@ -229,6 +242,11 @@ const displayItems = computed(() => {
 
 // 检查是否可以加载更多
 function canLoadMore(): boolean {
+  // 连续请求失败次数超过限制时停止
+  if (consecutiveFailures.value >= MAX_CONSECUTIVE_FAILURES) {
+    return false
+  }
+
   // 连续空加载次数超过限制时停止
   if (consecutiveEmptyLoads.value >= MAX_CONSECUTIVE_EMPTY_LOADS) {
     return false
@@ -389,6 +407,14 @@ watch(() => props.loading, (newLoading, oldLoading) => {
       loadMoreRequestTimeout = null
     }
 
+    // 跟踪连续请求失败
+    if (props.requestFailed) {
+      consecutiveFailures.value++
+      if (consecutiveFailures.value >= MAX_CONSECUTIVE_FAILURES) {
+        console.warn(`[VideoCardGrid] 连续请求失败 ${consecutiveFailures.value} 次，停止加载`)
+      }
+    }
+
     // 检测空加载：loading 结束但 items 数量没变化
     if (lastItemsCount.value > 0 && props.items.length === lastItemsCount.value) {
       consecutiveEmptyLoads.value++
@@ -408,13 +434,15 @@ watch(() => props.items.length, (newCount, oldCount) => {
   // items 被清空，重置状态（用户刷新了页面）
   if (newCount === 0 && oldCount > 0) {
     consecutiveEmptyLoads.value = 0
+    consecutiveFailures.value = 0
     lastItemsCount.value = 0
     return
   }
 
-  // 成功加载了新数据，重置空加载计数
+  // 成功加载了新数据，重置空加载计数和失败计数
   if (newCount > lastItemsCount.value) {
     consecutiveEmptyLoads.value = 0
+    consecutiveFailures.value = 0
   }
   lastItemsCount.value = newCount
 
@@ -430,6 +458,7 @@ watch(() => props.items.length, (newCount, oldCount) => {
 watch(() => props.noMoreContent, (newVal, oldVal) => {
   if (oldVal && !newVal) {
     consecutiveEmptyLoads.value = 0
+    consecutiveFailures.value = 0
   }
 })
 

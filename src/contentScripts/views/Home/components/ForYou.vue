@@ -84,6 +84,7 @@ const currentVideoList = computed(() =>
 )
 
 const isLoading = ref<boolean>(false)
+const requestFailed = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
 const refreshIdx = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
@@ -364,12 +365,14 @@ async function initData() {
   APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
+  requestFailed.value = false // 重置请求失败状态
   await getData()
 }
 
 async function getData() {
   emit('beforeLoading')
   isLoading.value = true
+  requestFailed.value = false
 
   try {
     if (settings.value.recommendationMode === 'web') {
@@ -381,12 +384,14 @@ async function getData() {
       }
       catch (error) {
         console.error('App recommendation failed:', error)
+        requestFailed.value = true
 
         // 检查是否启用自动切换
         if (settings.value.autoSwitchRecommendationMode) {
           // 切换到 web 模式并提示用户
           settings.value.recommendationMode = 'web'
           toast.warning('App 推荐数据加载失败，已自动切换至 Web 模式')
+          requestFailed.value = false
           await getRecommendVideos()
         }
         else {
@@ -394,6 +399,9 @@ async function getData() {
         }
       }
     }
+  }
+  catch {
+    requestFailed.value = true
   }
   finally {
     isLoading.value = false
@@ -572,11 +580,13 @@ async function getRecommendVideos() {
 
     if (!response) {
       console.error('Failed to load web recommendations: Response is undefined')
+      requestFailed.value = true
       noMoreContent.value = true
       return
     }
 
     if (!response.data) {
+      requestFailed.value = true
       noMoreContent.value = true
       return
     }
@@ -669,6 +679,7 @@ async function getRecommendVideos() {
     else {
       // 其他错误码也应该停止加载，避免无限重试
       console.error('API returned error code:', response.code, response.message)
+      requestFailed.value = true
       noMoreContent.value = true
     }
   }
@@ -735,6 +746,7 @@ async function getAppRecommendVideos() {
 
       if (!response) {
         console.error('Failed to load batch', batch, 'Response is undefined')
+        requestFailed.value = true
         break
       }
 
@@ -776,6 +788,7 @@ async function getAppRecommendVideos() {
     }
     catch (error) {
       console.error('Failed to load batch', batch, error)
+      requestFailed.value = true
       break
     }
   }
@@ -865,6 +878,7 @@ defineExpose({
       :loading="isLoading"
       :no-more-content="noMoreContent"
       :need-to-login-first="needToLoginFirst"
+      :request-failed="requestFailed"
       :transform-item="(item: VideoElement | AppVideoElement) => item.displayData"
       :get-item-key="(item: VideoElement | AppVideoElement, index?: number) => `${item.uniqueId}-${index ?? 0}`"
       :video-type="settings.recommendationMode === 'web' ? 'rcmd' : 'appRcmd'"

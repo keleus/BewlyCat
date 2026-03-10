@@ -909,6 +909,7 @@ defineExpose({
           grid-layout="adaptive"
           :loading="isLoading"
           :no-more-content="!hasMore"
+          :request-failed="!!error"
           :show-preview="true"
           :show-watcher-later="true"
           :empty-description="t('common.no_data')"

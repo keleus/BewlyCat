@@ -705,6 +705,7 @@ defineExpose({
             :get-item-key="(room: any) => room.id || room.roomid"
             :loading="isLoading"
             :no-more-content="!hasMore"
+            :request-failed="!!error"
             :show-watcher-later="false"
             :empty-description="t('common.no_data')"
             enable-row-padding

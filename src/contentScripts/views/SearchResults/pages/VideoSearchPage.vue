@@ -311,6 +311,7 @@ defineExpose({
       :grid-layout="gridLayout"
       :loading="isLoading"
       :no-more-content="paginationMode === 'scroll' && !hasMore"
+      :request-failed="!!error"
       :transform-item="transformVideo"
       :get-item-key="(video: any) => video.aid || video.id"
       :empty-description="$t('common.no_data')"
