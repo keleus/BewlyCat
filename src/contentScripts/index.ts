@@ -414,15 +414,15 @@ else {
       // 推荐使用方案2：CSS隐藏
       // 使用 CSS 隐藏 B 站原始页面，保留 DOM 结构
       injectCSS(`
-      body > *:not(#bewly):not(script):not(style):not(.bili-header):not(.custom-navbar):not(.be-settings) {
+      /* Hide Bilibili's own page elements, preserving third-party extensions (e.g., Bili-Evolved) */
+      body > #app,
+      .home-redesign-base,
+      .bilibili-gate-root {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
         position: absolute !important;
         left: -9999px !important;
-      }
-      .home-redesign-base, .bilibili-gate-root {
-        display: none !important;
       }
       /* Ensure the original top bar remains visible and properly positioned */
       /* The visibility/display will be controlled by .remove-top-bar class in removeTopBar.scss */

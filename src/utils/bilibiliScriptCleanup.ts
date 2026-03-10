@@ -50,30 +50,3 @@ export function cleanupBilibiliScripts() {
     console.error('[BewlyBewly] Error during script cleanup:', e)
   }
 }
-
-/**
- * 使用 CSS 隐藏原始页面（推荐方式）
- * 比直接删除 DOM 更温和，减少脚本错误
- */
-export function hideOriginalBilibiliPage() {
-  try {
-    // 使用 CSS 隐藏而不是删除 DOM
-    const style = document.createElement('style')
-    style.id = 'bewly-hide-original'
-    style.textContent = `
-      body > *:not(#bewly):not(script):not(style) {
-        display: none !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-        position: absolute !important;
-        left: -9999px !important;
-      }
-    `
-    document.head.appendChild(style)
-
-    console.log('[BewlyBewly] Hidden original Bilibili page using CSS')
-  }
-  catch (e) {
-    console.error('[BewlyBewly] Error hiding original page:', e)
-  }
-}
