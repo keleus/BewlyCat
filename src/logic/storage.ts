@@ -27,7 +27,7 @@ export const defaultAppAuthTokens: AppAuthTokens = {
   lastUpdatedAt: null,
 }
 
-export const appAuthTokens = useStorageLocal<AppAuthTokens>('appAuthTokens', defaultAppAuthTokens, { mergeDefaults: true })
+export const appAuthTokens = useStorageLocal<AppAuthTokens>('appAuthTokens', defaultAppAuthTokens, { mergeDefaults: true, writeDefaults: false })
 
 const legacyAccessKey = useStorageLocal('accessKey', '')
 
@@ -592,7 +592,10 @@ export const originalSettings: Settings = {
   minVideosForRandom: 5, // 启用随机播放的最小视频数量
 }
 
-export const settings = useStorageLocal('settings', originalSettings, { mergeDefaults: true })
+// 本地存储配置（不会同步到云端）
+export const localSettings = useStorageLocal('localSettings', originalLocalSettings, { mergeDefaults: true, writeDefaults: false })
+
+export const settings = useStorageLocal('settings', originalSettings, { mergeDefaults: true, writeDefaults: false })
 
 watch(
   () => settings.value,
@@ -644,6 +647,19 @@ watch(
       Reflect.deleteProperty(record, 'disableFrostedGlass')
     }
 
+    // 迁移旧的 locallyUploadedWallpaper/customizeCSS/customizeCSSContent 到 localSettings
+    if ('locallyUploadedWallpaper' in record || 'customizeCSS' in record || 'customizeCSSContent' in record) {
+      localSettings.value = {
+        locallyUploadedWallpaper: record.locallyUploadedWallpaper ?? localSettings.value.locallyUploadedWallpaper,
+        customizeCSS: record.customizeCSS ?? localSettings.value.customizeCSS,
+        customizeCSSContent: record.customizeCSSContent ?? localSettings.value.customizeCSSContent,
+      }
+
+      Reflect.deleteProperty(record, 'locallyUploadedWallpaper')
+      Reflect.deleteProperty(record, 'customizeCSS')
+      Reflect.deleteProperty(record, 'customizeCSSContent')
+    }
+
     // 迁移 gridColumns：从独立存储迁移到 settings
     // 检查当前值是否有效（不是空对象且包含必需字段）
     const hasValidGridColumns = record.gridColumns
@@ -654,6 +670,9 @@ watch(
     // 如果当前值无效，尝试从旧存储迁移
     if (!hasValidGridColumns) {
       browser.storage.local.get(['gridColumns']).then((result) => {
+        // 在回调执行时重新读取当前 settings.value，避免使用闭包中过期的 record 引用
+        let migratedGridColumns: GridColumnsConfig = { ...defaultGridColumns }
+
         if (result.gridColumns) {
           try {
             // useStorageLocal 可能直接存储对象，也可能存储 JSON 字符串
@@ -664,86 +683,25 @@ watch(
 
             // 验证数据结构是否正确
             if (oldGridColumns && typeof oldGridColumns === 'object' && 'base' in oldGridColumns) {
-              // 迁移数据（即使等于默认值也要迁移，因为当前值无效）
-              record.gridColumns = oldGridColumns
-              settings.value = record as Settings
-
+              migratedGridColumns = oldGridColumns as GridColumnsConfig
               // 清理旧的独立存储
               browser.storage.local.remove(['gridColumns'])
             }
-            else {
-              record.gridColumns = { ...defaultGridColumns }
-              settings.value = record as Settings
-            }
           }
           catch {
-            record.gridColumns = { ...defaultGridColumns }
-            settings.value = record as Settings
+            // JSON 解析失败，使用默认值
           }
         }
-        else {
-          record.gridColumns = { ...defaultGridColumns }
-          settings.value = record as Settings
-        }
+
+        // 只更新 gridColumns 字段，不覆盖整个 settings
+        settings.value = { ...settings.value, gridColumns: migratedGridColumns }
       })
     }
   },
   { immediate: true },
 )
 
-// 本地存储配置（不会同步到云端）
-export const localSettings = useStorageLocal('localSettings', originalLocalSettings, { mergeDefaults: true })
-
-// 数据迁移：将旧的设置迁移到新的本地设置中
-async function migrateOldSettings() {
-  try {
-    // 获取原始的存储数据
-    const rawSettings = await browser.storage.local.get('settings')
-    const settingsData = rawSettings.settings
-
-    if (settingsData && typeof settingsData === 'string') {
-      const parsedSettings = JSON.parse(settingsData)
-
-      // 检查是否存在需要迁移的字段
-      const needsMigration
-        = 'locallyUploadedWallpaper' in parsedSettings
-          || 'customizeCSS' in parsedSettings
-          || 'customizeCSSContent' in parsedSettings
-
-      if (needsMigration) {
-        // 迁移到 localSettings
-        const migratedLocalSettings = {
-          locallyUploadedWallpaper: parsedSettings.locallyUploadedWallpaper || null,
-          customizeCSS: parsedSettings.customizeCSS || false,
-          customizeCSSContent: parsedSettings.customizeCSSContent || '',
-        }
-
-        // 保存到 localSettings
-        await browser.storage.local.set({
-          localSettings: JSON.stringify(migratedLocalSettings),
-        })
-
-        // 从 settings 中移除这些字段
-        delete parsedSettings.locallyUploadedWallpaper
-        delete parsedSettings.customizeCSS
-        delete parsedSettings.customizeCSSContent
-
-        // 更新 settings
-        await browser.storage.local.set({
-          settings: JSON.stringify(parsedSettings),
-        })
-
-        console.log('✅ 设置迁移完成：已将本地存储相关设置迁移到独立存储')
-      }
-    }
-  }
-  catch (error) {
-    console.error('❌ 设置迁移失败:', error)
-  }
-}
-
-// 执行迁移
-migrateOldSettings()
+void browser.storage.local.remove(['gridBreakpoints']).catch(() => {})
 
 export type GridLayoutType = 'adaptive' | 'twoColumns' | 'oneColumn'
 
@@ -753,40 +711,16 @@ export interface GridLayout {
 
 export const gridLayout = useStorageLocal('gridLayout', ref<GridLayout>({
   home: 'adaptive',
-}), { mergeDefaults: true })
+}), { mergeDefaults: true, writeDefaults: false })
 
 export const gridColumns = useStorageLocal<GridColumnsConfig>(
   'gridColumns',
   ref({ ...defaultGridColumns }),
-  { mergeDefaults: true },
-)
-
-// 保留旧的导出以兼容，但标记为废弃
-/** @deprecated 使用 gridColumns 代替 */
-export interface GridBreakpoint {
-  minWidth: number
-  columns: number
-}
-
-/** @deprecated 使用 defaultGridColumns 代替 */
-export const defaultGridBreakpoints: GridBreakpoint[] = [
-  { minWidth: 0, columns: 1 },
-  { minWidth: 640, columns: 2 },
-  { minWidth: 900, columns: 3 },
-  { minWidth: 1200, columns: 4 },
-  { minWidth: 1500, columns: 5 },
-  { minWidth: 1800, columns: 6 },
-]
-
-/** @deprecated 使用 gridColumns 代替 */
-export const gridBreakpoints = useStorageLocal<GridBreakpoint[]>(
-  'gridBreakpoints',
-  ref(defaultGridBreakpoints),
-  { mergeDefaults: true },
+  { mergeDefaults: true, writeDefaults: false },
 )
 
 export const sidePanel = useStorageLocal('sidePanel', ref<{
   home: boolean
 }>({
   home: true,
-}), { mergeDefaults: true })
+}), { mergeDefaults: true, writeDefaults: false })
