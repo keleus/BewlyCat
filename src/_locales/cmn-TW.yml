@@ -34,7 +34,7 @@ common:
     delete: 刪除
     confirm: 確定
     cancel: 取消
-    enable: 啓用
+    enable: 啟用
     disable: 停用
     refresh: 重新整理
     reset: 重設
@@ -54,13 +54,13 @@ common:
     top: 頂部
     bottom: 底部
 iframe_drawer:
-  open_in_new_tab: 在新索引標籤開啓連結
+  open_in_new_tab: 在新索引標籤開啟連結
   close: 關閉
   press_esc_again_to_close: 再次按下 Esc 關閉
 settings:
   title: 設定
-  menu_plugin_components_and_pages: BewlyCat界面
-  menu_bilibili_features_enhancement: Bilibili功能
+  menu_plugin_components_and_pages: BewlyCat 介面
+  menu_bilibili_features_enhancement: Bilibili 功能
   menu_appearance: 外觀
   menu_compatibility: 相容性
   menu_about: 關於
@@ -75,7 +75,7 @@ settings:
     dock_and_sidebar: Dock
     home: 首頁
     search: 搜尋頁
-    volume_balance: 音量均衡
+    volume_balance: 音訊均衡
 
   # B站功能增強 子選單
   bilibili_features:
@@ -92,7 +92,7 @@ settings:
   group_ad_blocking: 廣告攔截
   group_comments: 評論
   group_languages_and_fonts: 語言與字型
-  group_link_opening_behavior: 連結開啓行爲
+  group_link_opening_behavior: 連結開啟行為
   group_video_card: 影片卡片
   group_performance: 毛玻璃與效能
   group_player_settings: 播放器設定
@@ -109,9 +109,9 @@ settings:
   group_wallpaper: 背景圖片
   group_logo: LOGO
   group_search_bar: 搜尋欄
-  group_hot_search: 熱搜
-  group_recommendation_mode: 「爲你推薦」推薦模式
-  group_recommendation_filters: 「爲你推薦」過濾
+  group_hot_search: 熱門搜尋
+  group_recommendation_mode: 「為你推薦」推薦模式
+  group_recommendation_filters: 「為你推薦」過濾
   group_recommendation_filters_desc: |
     限制的數值不要設太大，不然載入時間可能會增加！頻繁請求可能會導致B站對IP的封禁!
   group_following: 正在跟隨
@@ -124,15 +124,15 @@ settings:
     open_settings: 打開設定...
   touch_screen_optimization: 觸控螢幕體驗改進
   touch_screen_optimization_desc: |
-    啓用後，如頂欄，你可能需要點選項目才能看到更多資訊，而不是滑鼠移過去就會顯示。（舊版頂欄不支援此功能）
+    啟用後，如頂欄，你可能需要點選項目才能看到更多資訊，而不是滑鼠移過去就會顯示。（舊版頂欄不支援此功能）
   show_home_button_in_touch_mode: 顯示 Home 按鈕
   show_home_button_in_touch_mode_desc: 在觸控螢幕優化開啟時，在頂欄 Logo 旁邊顯示一個可以直接跳轉到首頁的按鈕。
   chk_box:
     show: 顯示
     hidden: 隱藏
-  enable_grid_layout_switcher: 啓用版面格線佈局切換器
-  enable_horizontal_scrolling: 啓用橫向捲動
-  enable_horizontal_scrolling_desc: 啓用後，滑鼠捲動時將直接捲動橫向捲軸列表。
+  enable_grid_layout_switcher: 啟用版面格線佈局切換器
+  enable_horizontal_scrolling: 啟用橫向捲動
+  enable_horizontal_scrolling_desc: 啟用後，滑鼠捲動時將直接捲動橫向捲軸列表。
   select_language: 介面語言
   select_language_opt:
     english: 英文
@@ -150,14 +150,14 @@ settings:
     href="https://github.com/ayaka14732/FanWunHak" target="_blank">Fan Wun Hak
     (繁媛黑體)</a>。
 
-    這些字型還具有將簡體中文轉換爲繁體/繁體中文的能力。
+    這些字型還具有將簡體中文轉換為繁體/繁體中文的能力。
   override_danmaku_font: 覆蓋彈幕字型
   override_danmaku_font_desc: |
     設定彈幕字型爲您的自訂字型以覆蓋預設值。影片播放器將無法在之後更改彈幕字型。
   remove_the_indent_from_chinese_punctuation: 移除中文標點符號的縮排
   remove_the_indent_from_chinese_punctuation_desc: |
     Bilibili 預設會特別處理中文標點符號以達到左對齊。 如果你正在使用自訂字型，建議移除縮排。
-  enable_frosted_glass: 啓用毛玻璃效果
+  enable_frosted_glass: 啟用毛玻璃效果
   frosted_glass_blur_intensity: 毛玻璃模糊強度
   disable_shadow: 停用陰影
   link_opening_behavior_opt:
@@ -165,10 +165,10 @@ settings:
     current_tab_if_not_homepage: 首頁新分頁，其他目前分頁
     background: 後台打開
     new_tab: 新索引標籤
-    drawer: 抽屜開啓
-  top_bar_link_opening_behavior: 頂欄連結開啓行爲
-  video_card_link_opening_behavior: 影片和番劇卡片連結開啓行爲
-  search_bar_link_opening_behavior: 搜尋欄連結開啓行爲
+    drawer: 抽屜開啟
+  top_bar_link_opening_behavior: 頂欄連結開啟行為
+  video_card_link_opening_behavior: 影片和番劇卡片連結開啟行為
+  search_bar_link_opening_behavior: 搜尋欄連結開啟行為
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉
   block_ads: 封鎖廣告
   block_top_search_page_ads: 封鎖 Bilibili 搜尋頁上方的廣告
@@ -212,16 +212,16 @@ settings:
     有時候，搜尋結果上方的廣告實際上是年末總結、年度報告這些。 如果你不想這些內容被誤刪，請停用此選項。
   video_default_player_mode: 影片預設顯示模式
   video_danmaku_default_state: 影片預設彈幕狀態
-  video_danmaku_default_state_desc: 開啓影片時自動調整彈幕開關，也可以保持原樣。
+  video_danmaku_default_state_desc: 開啟影片時自動調整彈幕開關，也可以保持原樣。
   video_danmaku_default_state_opt:
     system: 不調整
-    on: 預設開啓
+    on: 預設開啟
     off: 預設關閉
   video_player_mode:
     default: 預設
     web_fullscreen: 網頁全螢幕
     widescreen: 寬螢幕
-  enable_video_preview: 啓用影片預覽功能（如果可以的話）
+  enable_video_preview: 啟用影片預覽功能（如果可以的話）
   enable_video_ctrl_bar_on_video_card: 在影片卡片上顯示影片控制欄
   hover_video_card_delayed: 將滑鼠懸停在影片卡片上時延遲影片預覽
   show_video_card_recommend_tag: 顯示插件計算的推薦標籤
@@ -246,21 +246,21 @@ settings:
   show_watch_later_badge: 顯示稍後再看角標
   show_bcoin_receive_reminder: 大會員B幣領取提醒
   auto_receive_bcoin_coupon: 大會員B幣自動領取
-  auto_receive_bcoin_coupon_desc: 啓用後，當檢測到有未領取的B幣券時將自動領取
+  auto_receive_bcoin_coupon_desc: 啟用後，當檢測到有未領取的B幣券時將自動領取
   auto_receive_vip_exp: 大會員經驗自動領取
-  auto_receive_vip_exp_desc: 啓用後，將自動領取大會員每日經驗
+  auto_receive_vip_exp_desc: 啟用後，將自動領取大會員每日經驗
   open_notifications_page_as_drawer: 以抽屜形式打開通知頁面
   show_like_notification_reminder: 顯示按讚提醒
-  show_like_notification_reminder_desc: 啓用後，頂欄通知角標會將按讚提醒計入總數。
+  show_like_notification_reminder_desc: 啟用後，頂欄通知角標會將按讚提醒計入總數。
   always_use_dock: 總是使用 Dock
-  always_use_dock_desc: 啓用後，Dock 將始終顯示，側邊欄將隱藏。我們推薦你同時啓用自動隱藏 Dock。
+  always_use_dock_desc: 啟用後，Dock 將始終顯示，側邊欄將隱藏。我們推薦你同時啟用自動隱藏 Dock。
   auto_hide_dock: 自動隱藏 Dock
   half_hide_dock: 半隱藏 Dock
   dock_position: Dock 位置
   dock_position_desc: 螢幕上的位置。
   dock_content_adjustment: Dock 內容調整
-  dock_content_adjustment_desc: 第一個啓用的 Dock 項目的頁面將是起始頁面。
-  dock_item_open_in_new_tab: 在新索引標籤開啓
+  dock_content_adjustment_desc: 第一個啟用的 Dock 項目的頁面將是起始頁面。
+  dock_item_open_in_new_tab: 在新索引標籤開啟
   dock_item_use_original_bili_web_page: 使用原版 Bilibili 網頁
   disable_dock_glowing_effect: 關閉 Dock 發光效果
   disable_light_dark_mode_switcher: 關閉淺/深色模式切換按鈕
@@ -287,9 +287,9 @@ settings:
     https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/wallpapers/rocky-mountain-cloudscape.jpg
 
     https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/wallpapers/green-white-mountains.jpg
-  enable_wallpaper_masking: 啓用背景遮蔽效果
+  enable_wallpaper_masking: 啟用背景遮蔽效果
   wallpaper_cache_time: 背景圖片快取時間
-  wallpaper_cache_time_desc: 設定URL壁紙的快取時間(小時)。0表示不快取,每次都重新載入。本地上傳的圖片不受此設定影響。
+  wallpaper_cache_time_desc: 設定 URL 背景圖的快取時間(小時)。0表示不快取，每次都重新載入。本地上傳的圖片不受此設定影響。
   no_cache: 不快取
   wallpaper_mask_opacity: 背景遮蔽透明度調節
   wallpaper_blur_intensity: 背景模糊強度調節
@@ -304,15 +304,15 @@ settings:
   search_results_pagination_mode_opt:
     scroll: 滾動加載
     pagination: 翻頁
-  enable_logo_glowing_effect: 啓用 Logo 發光效果
+  enable_logo_glowing_effect: 啟用 Logo 發光效果
   logo_visibility: Logo 可視性
   bg_darkens_when_the_search_bar_is_focused: 當搜尋欄聚焦時背景變暗
   bg_blurs_when_the_search_bar_is_focused: 當搜尋欄聚焦時背景變模糊
   choose_search_bar_focused_character: 選擇搜尋欄聚焦時出現的人物
-  show_hot_search_in_top_bar: 在頂欄顯示熱搜
-  show_hot_search_in_top_bar_desc: 在頂欄搜尋框中顯示熱搜列表
-  show_hot_search_in_search_page: 在搜尋頁顯示熱搜
-  show_hot_search_in_search_page_desc: 在搜尋頁面顯示熱搜排行榜
+  show_hot_search_in_top_bar: 在頂欄顯示熱門搜尋
+  show_hot_search_in_top_bar_desc: 在頂欄搜尋框中顯示熱門搜尋列表
+  show_hot_search_in_search_page: 在搜尋頁顯示熱門搜尋
+  show_hot_search_in_search_page_desc: 在搜尋頁面顯示熱門搜尋排行榜
   show_search_recommendation: 顯示搜尋推薦
   show_search_recommendation_desc: 在搜尋框中顯示推薦的搜尋詞作為佔位符，空白輸入時按回車將搜尋該推薦詞
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
@@ -330,7 +330,7 @@ settings:
   scan_qrcode_desc: 使用 Bilibili 手機應用程式掃描這個 QR Code，以授權取得 access key。
   disable_filters_for_followed_users: 正在跟隨的使用者不受過濾條件限制
   disable_filters_for_followed_users_desc: |
-    如果啓用此選項，正在跟隨的使用者不受過濾條件限制。
+    如果啟用此選項，正在跟隨的使用者不受過濾條件限制。
   filter_out_vertical_videos: 過濾直式影片（僅在 app 推薦模式下有效）
   filter_by_view_count: 按觀看次數篩選
   filter_by_view_count_desc: 篩選掉觀看次數少於您設定的影片。
@@ -372,22 +372,22 @@ settings:
   filter_by_user_table:
     username_or_mid: 使用者名稱 / MID
   following_tab_show_livestreaming_videos: 在「正在跟隨」中顯示實況直播
-  following_filter_charging_videos: 過濾充電專屬視頻
-  following_filter_charging_videos_desc: 啟用後，在「正在跟隨」頁面中將隱藏需要充電才能觀看的付費視頻
-  following_filter_dynamic_videos: 過濾動態視頻
-  following_filter_dynamic_videos_desc: 啟用後，在「正在跟隨」頁面中將隱藏標記為動態視頻的內容
+  following_filter_charging_videos: 過濾充電專屬影片
+  following_filter_charging_videos_desc: 啟用後，在「正在跟隨」頁面中將隱藏需要充電才能觀看的付費影片
+  following_filter_dynamic_videos: 過濾動態影片
+  following_filter_dynamic_videos_desc: 啟用後，在「正在跟隨」頁面中將隱藏標記為動態影片的內容
   use_following_new_layout: 使用正在跟隨新版面
-  use_following_new_layout_desc: 左側顯示關注的UP主列表，右側顯示影片流
-  following_inactive_days: UP主不活躍天數
-  following_inactive_days_desc: 當UP主超過指定天數未更新或無投稿時，將自動移至黑名單。在ALL視圖中出現更新或點擊該UP主時會自動移出黑名單
+  use_following_new_layout_desc: 左側顯示關注的 UP 主列表，右側顯示影片流
+  following_inactive_days: UP 主不活躍天數
+  following_inactive_days_desc: 當 UP 主超過指定天數未更新或無投稿時，將自動移至黑名單。在ALL視圖中出現更新或點擊該 UP 主時會自動移出黑名單
   preserve_for_you_state: 留存為你推薦切換前狀態
-  preserve_for_you_state_desc: 當從dock欄切換到其他頁面時，留存為你推薦頁面的瀏覽狀態，返回時保持切換前的內容
+  preserve_for_you_state_desc: 當從 Dock 欄切換到其他頁面時，留存為你推薦頁面的瀏覽狀態，返回時保持切換前的內容
   use_search_page_mode: 首頁使用搜尋頁模式
   settings_shared_with_the_search_page: 與搜尋頁共用的設定
   settings_shared_with_the_search_page_desc: 這些設定都與搜尋頁共用。
   search_page_mode_wallpaper_fixed: 將搜尋頁模式的背景固定
   home_tabs_adjustment: 標籤欄調整
-  home_tabs_adjustment_desc: 第一個啓用的標籤項目調整頁面將是起始頁面。
+  home_tabs_adjustment_desc: 第一個啟用的標籤項目調整頁面將是起始頁面。
   always_show_tabs_on_home_page: 總是顯示首頁標籤欄
   topbar_visibility: 頂欄可視性
   topbar_visibility_desc: 如果你正在使用 Bilibili Evolved 的頂欄，你可以在這裏關閉 BewlyBewly 的頂欄。
@@ -406,15 +406,15 @@ settings:
   reset_settings_confirm: |-
     重設設定？
     此操作無法撤消，你確定要重設你的設定嗎？
-  contributors: BewlyBewly歷史貢獻者
+  contributors: BewlyBewly 歷史貢獻者
   enable_settings_sync: 允許同步設定
-  enable_settings_sync_desc: 在不同設備間同步擴展設定（需要登入瀏覽器帳號）
-  keep_collection_video_default_mode: 合集視頻保持預設模式
-  keep_collection_video_default_mode_desc: 當啟用時，合集視頻將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
+  enable_settings_sync_desc: 在不同裝置間同步擴展設定（需要登入瀏覽器帳號）
+  keep_collection_video_default_mode: 合集影片保持預設模式
+  keep_collection_video_default_mode_desc: 當啟用時，合集影片將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   remember_playback_rate: 記住倍速
-  remember_playback_rate_desc: 啟用後，播放器會記住您上次設置的倍速，並在下次打開視頻時自動應用
+  remember_playback_rate_desc: 啟用後，播放器會記住您上次設定的倍速，並在下次打開影片時自動套用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播放完畢後自動退出
-  auto_exit_fullscreen_on_end_desc: 啟用後，當視頻播放結束時會自動退出全螢幕模式
+  auto_exit_fullscreen_on_end_desc: 啟用後，當影片播放結束時會自動退出全螢幕模式
   auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
   auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，在自動連播下播放結束時不會自動退出全螢幕，方便連續觀看
   use_bilibili_default_auto_play: 使用B站預設自動播放行為
@@ -424,29 +424,29 @@ settings:
   auto_play_mode_auto_play_with_recommend: 自動連播(含推薦)
   auto_play_mode_pause_at_end: 播完暫停
   auto_play_mode_loop: 單集循環
-  auto_play_multipart: 分P視頻
-  auto_play_multipart_desc: 選擇分P視頻的自動播放行為
-  auto_play_collection: 合集視頻
-  auto_play_collection_desc: 選擇合集視頻的自動播放行為
-  auto_play_recommend: 單視頻推薦
-  auto_play_recommend_desc: 選擇單視頻播放結束後的自動播放行為
+  auto_play_multipart: 分P影片
+  auto_play_multipart_desc: 選擇分P影片的自動播放行為
+  auto_play_collection: 合集影片
+  auto_play_collection_desc: 選擇合集影片的自動播放行為
+  auto_play_recommend: 單影片推薦
+  auto_play_recommend_desc: 選擇單影片播放結束後的自動播放行為
   auto_play_playlist: 收藏列表
   auto_play_playlist_desc: 選擇收藏列表的自動播放行為
-  enable_random_play: 啟用視頻合集隨機播放
-  enable_random_play_desc: 為多P視頻或合集添加隨機播放功能
+  enable_random_play: 啟用影片合集隨機播放
+  enable_random_play_desc: 為多P影片或合集添加隨機播放功能
   random_play_mode: 隨機播放模式
   random_play_mode_desc: 選擇隨機播放的啟用方式
   random_play_mode_manual: 手動切換
   random_play_mode_auto: 自動啟用
-  min_videos_for_random: 啟用隨機播放的最小視頻數
-  min_videos_for_random_desc: 當視頻數量不少於此值時才會啟用隨機播放功能
+  min_videos_for_random: 啟用隨機播放的最小影片數
+  min_videos_for_random_desc: 當影片數量不少於此值時才會啟用隨機播放功能
   random_play: 隨機播放
   random_play_enabled: 隨機播放已啟用
   random_play_disabled: 隨機播放已禁用
   random_play_not_enabled: 隨機播放功能未啟用
-  random_play_min_videos_required: 需要至少{count}個視頻才能啟用隨機播放
-  enable_undo_refresh_button: 啟用撤銷刷新按鈕（僅在Web推薦模式下有效）
-  enable_undo_refresh_button_desc: 刷新頁面後顯示撤銷按鈕，點擊可恢復刷新前的內容
+  random_play_min_videos_required: 需要至少{count}個影片才能啟用隨機播放
+  enable_undo_refresh_button: 啟用撤銷重新整理按鈕（僅在Web推薦模式下有效）
+  enable_undo_refresh_button_desc: 重新整理頁面後顯示撤銷按鈕，點擊可恢復重新整理前的內容
   shortcuts:
     title: 快捷鍵
     enable_all_shortcuts_toggle: 啟用鍵盤快捷鍵
@@ -463,7 +463,7 @@ settings:
       backward: 後退5秒
       volume_up: 音量增加
       volume_down: 音量減少
-      exit_fullscreen: 退出全螢幕
+      exit_fullscreen: 結束全螢幕
       fullscreen: 切換全螢幕模式
       danmu_toggle: 彈幕開關
       mute: 靜音切換
@@ -480,7 +480,7 @@ settings:
     reset_all_ext_shortcuts: 重置所有擴充套件快捷鍵
     press_keys: 點擊輸入框，按下快捷鍵
     danmu_status: 顯示彈幕狀態
-    danmu_status_desc: 顯示當前彈幕開關狀態
+    danmu_status_desc: 顯示目前彈幕開關狀態
     web_fullscreen: 網頁全螢幕
     web_fullscreen_desc: 切換網頁全螢幕模式
     widescreen: 寬螢幕模式
@@ -527,18 +527,18 @@ settings:
     video_time_desc: 顯示/隱藏視訊時間
     clock_time: 時鐘
     clock_time_desc: 顯示/隱藏系統時間
-    home_refresh: 首頁刷新
-    home_refresh_desc: 刷新首頁內容
+    home_refresh: 首頁重新整理
+    home_refresh_desc: 重新整理首頁內容
     toggle_follow: 關注/取消關注
-    toggle_follow_desc: 在視頻頁切換關注UP主狀態
-  clean_url_argument: 清理URL追蹤參數
-  clean_url_argument_desc: 自動清理URL中的追蹤參數，使連結更加簡潔
+    toggle_follow_desc: 在影片頁切換關注 UP 主狀態
+  clean_url_argument: 清理 URL 追蹤參數
+  clean_url_argument_desc: 自動清理 URL 中的追蹤參數，使連結更加簡潔
 
   # Clean Share Link
   group_clean_share_link: 分享連結淨化
-  enable_clean_share_link: 啓用分享連結淨化
+  enable_clean_share_link: 啟用分享連結淨化
   enable_clean_share_link_desc: >
-    啓用後，分享連結將自動移除追蹤參數，並可選擇是否包含影片標題。
+    啟用後，分享連結將自動移除追蹤參數，並可選擇是否包含影片標題。
     此功能適用於 BewlyCat 的複製連結功能，同時也會攔截 Bilibili 原生分享按鈕的複製內容。
   clean_share_link_include_title: 分享時包含影片標題
   clean_share_link_include_title_desc: >
@@ -547,10 +547,10 @@ settings:
   clean_share_link_remove_tracking_params_desc: >
     移除分享連結中的追蹤參數，如 spm_id_from、vd_source、share_source 等。
 
-  show_ip_location: 顯示IP歸屬地
-  show_ip_location_desc: 在視頻/動態評論區顯示IP歸屬地
+  show_ip_location: 顯示 IP 歸屬地
+  show_ip_location_desc: 在影片/動態評論區顯示IP歸屬地
   show_sex: 顯示使用者性別
-  show_sex_desc: 在視頻/動態評論區顯示使用者性別
+  show_sex_desc: 在影片/動態評論區顯示使用者性別
   show_comment_host_tag: 顯示樓主標示
   show_comment_host_tag_desc: 在評論回覆詳情頁標示樓主
   adjust_comment_image_height: 調整評論區圖片高度
@@ -564,7 +564,7 @@ settings:
   volume_normalization:
     title: 音量均衡
     enable: 啟用音量均衡
-    enable_desc: 實時檢測影片人聲響度，自動調整音量到統一級別
+    enable_desc: 即時偵測影片人聲響度，自動調整音量到統一級別
     target_volume: 目標音量
     target_volume_desc: 目標響度級別（0-100），50 對應 -20dBFS，值越大音量越響
     strength: 平滑強度
@@ -574,7 +574,7 @@ settings:
     voice_gate: 人聲檢測閾值
     voice_gate_desc: 低於此響度的聲音會被忽略（-60 到 -10 dB），推薦 -40 到 -30
     debug: 調試模式
-    debug_desc: 在控制台輸出音量均衡調試信息
+    debug_desc: 在控制台輸出音量均衡調試資訊
     usage_guide:
       title: 使用說明
       desc: |-
@@ -594,8 +594,8 @@ settings:
   group_fonts: 字體
   group_visual_effects: 視覺效果
   badge_type: 角標類型
-  group_topbar_components: 頂欄組件設置
-  topbar_components_adjustment: 頂欄組件角標設置
+  group_topbar_components: 頂欄組件設定
+  topbar_components_adjustment: 頂欄組件角標設定
   topbar_components_adjustment_desc: 配置各個頂欄圖標的角標顯示方式
   group_topbar_pinned_channels: 頂欄常駐分區
   topbar_pinned_channels_desc: 可將 Logo 展開內的分區固定在頂欄外側，並調整顯示順序。
@@ -605,11 +605,11 @@ settings:
   topbar_pinned_channels_empty: 尚未新增任何常駐分區。
   topbar_pinned_channels_order_tip: 點擊順序決定顯示順序，再點一次即可取消固定。
   visibility: 顯示
-  group_search_results: 搜索結果
-  use_plugin_search_results_page: 使用插件搜索結果頁
-  use_plugin_search_results_page_desc: 啟用後，搜索時將使用插件內置的搜索結果頁面，支持分類篩選等功能
-  search_results_pagination_mode: 搜索結果分頁模式
-  search_results_pagination_mode_desc: 選擇搜索結果的展示方式：滾動自動加載或翻頁
+  group_search_results: 搜尋結果
+  use_plugin_search_results_page: 使用插件搜尋結果頁
+  use_plugin_search_results_page_desc: 啟用後，搜尋時將使用插件內置的搜尋結果頁面，支持分類篩選等功能
+  search_results_pagination_mode: 搜尋結果分頁模式
+  search_results_pagination_mode_desc: 選擇搜尋結果的展示方式：滾動自動加載或翻頁
 auth:
   auth_access_key_first: 在這之前請先授權 BewlyBewly 使用 access key
 topbar:
@@ -638,7 +638,7 @@ topbar:
     cinephile: 影視
     showbiz: 娛樂
     knowledge: 知識
-    technology: 科技數碼
+    technology: 數位科技
     news: 資訊
     foods: 美食
     shortplay: 小劇場
@@ -648,7 +648,7 @@ topbar:
     animals: 動物圈
     vlog: VLOG
     painting: 繪畫
-    ai: 人工智能
+    ai: 人工智慧
     home: 家裝房產
     outdoors: 戶外潮流
     gym: 健身
@@ -718,18 +718,18 @@ dock:
   history: 觀看記錄
   watch_later: 稍後觀看
   favorites: 收藏
-  moments: 動向
+  moments: 動態
   dark_mode: 深色模式
   light_mode: 淺色模式
   settings: 設定
 video_card:
   operation:
     not_interested: 不感興趣
-    open_in_new_tab: 新標籤頁開啓
-    open_in_background: 後台開啓
-    open_in_new_window: 新視窗開啓
-    open_in_current_tab: 目前索引標籤開啓
-    open_in_drawer: 抽屜開啓
+    open_in_new_tab: 新標籤頁開啟
+    open_in_background: 背景開啟
+    open_in_new_window: 新視窗開啟
+    open_in_current_tab: 目前索引標籤開啟
+    open_in_drawer: 抽屜開啟
     copy_video_link: 複製影片連結
     copy_clean_video_link: 複製乾淨連結
     copy_bv_number: 複製 BV 號
@@ -753,11 +753,11 @@ video_card:
   group_contribution: '{firstAuthor} 等 {num} 人共同創作'
   video_removed: 影片已移除
 home:
-  tell_us_why: 爲什麼這樣做...
+  tell_us_why: 為什麼這樣做...
   not_interested_desc: >
     你可以用 <kbd>↑</kbd> 和 <kbd>↓</kbd> 來選擇原因，或者直接使用數字鍵來選擇原因，按 <kbd>Enter</kbd>
     就直接提交。
-  for_you: 爲你推薦
+  for_you: 為你推薦
   following: 正在跟隨
   trending: 發燒影片
   ranking: 排行
@@ -766,7 +766,7 @@ home:
   precious: 入站必刷
   live: 直播
   moments: 動態
-  uploaders_with_updates: '{count}個UP主有更新'
+  uploaders_with_updates: '{count}個 UP 主有更新'
 ranking:
   all: 全部
   original_content: 原創內容
@@ -791,7 +791,7 @@ anime:
       sun: 週日
 history:
   title: 觀看記錄
-  turn_on_watch_history: 啓用觀看記錄
+  turn_on_watch_history: 啟用觀看記錄
   pause_watch_history: 暫停追蹤觀看記錄
   clear_all_watch_history: 清除所有觀看記錄
   clear_all_watch_history_confirm: |-
@@ -802,18 +802,18 @@ history:
     你確定要暫停追蹤觀看記錄嗎？
   search_watch_history: 搜尋觀看記錄
   turn_on_watch_history_confirm: |-
-    要啓用觀看記錄嗎？
-    你確定要啓用觀看記錄嗎？
+    要啟用觀看記錄嗎？
+    你確定要啟用觀看記錄嗎？
 favorites:
   unfavorite: 取消收藏
   unfavorite_confirm: |-
     要取消收藏選中的影片嗎？
     此操作無法撤消，你確定要取消收藏選中的影片嗎？
-  global_search_hint: 請輸入關鍵詞以搜索全部收藏夾
-  global_search_placeholder: 搜索全部收藏夾
+  global_search_hint: 請輸入關鍵詞以搜尋全部收藏夾
+  global_search_placeholder: 搜尋全部收藏夾
   search_all_folders: 全部
-  search_current_folder: 當前
-  search_placeholder: 搜索當前收藏夾
+  search_current_folder: 目前
+  search_placeholder: 搜尋目前收藏夾
 watch_later:
   title: 稍後觀看
   clear_all: 清空稍後觀看
@@ -829,10 +829,10 @@ watch_later:
   remove_from_watch_later: 移除
 search_bar:
   history_title: 搜尋記錄
-  hot_search_title: 熱搜
+  hot_search_title: 熱門搜尋
   clear_history: 清除所有搜尋記錄
 search_page:
-  hot_search_ranking: 熱搜排行榜
+  hot_search_ranking: 熱門搜尋排行榜
   loading: 載入中...
-  no_hot_search_data: 暫無熱搜資料
+  no_hot_search_data: 暫無熱門搜尋資料
   view_all_esports: 檢視全部賽事
