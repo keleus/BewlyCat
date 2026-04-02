@@ -14,6 +14,7 @@ import { openLinkInBackground } from '~/utils/tabs'
 
 import type { Video } from '../types'
 import { getCurrentTime, getCurrentVideoUrl } from '../utils'
+import { releaseVideoPreviewCacheEntry, retainVideoPreviewCacheEntry } from './videoPreviewCache'
 
 interface VideoCardProps {
   skeleton?: boolean
@@ -54,10 +55,16 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const videoElement = ref<HTMLVideoElement | null>(null)
   const cardRootRef = ref<HTMLElement | null>(null)
   const isDisposed = ref<boolean>(false) // 跟踪组件是否已卸载
+  const previewCacheKey = Symbol('video-preview-cache')
+
+  function clearPreviewVideoUrl() {
+    previewVideoUrl.value = ''
+  }
 
   // 清理函数 - 在组件卸载时调用
   onScopeDispose(() => {
     isDisposed.value = true
+    releaseVideoPreviewCacheEntry(previewCacheKey)
 
     // 清除所有待处理的超时
     if (mouseEnterTimeOut.value) {
@@ -175,7 +182,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
             qn: 80, // 流畅画质，适合预览
           })
           // 再次检查是否已卸载
-          if (isDisposed.value)
+          if (isDisposed.value || !isHover.value)
             return
           if (res.code === 0 && res.data.durl && res.data.durl.length > 0) {
             previewVideoUrl.value = res.data.durl[0].url
@@ -194,7 +201,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
               bvid: props.value.video.bvid,
             })
             // 检查是否已卸载
-            if (isDisposed.value)
+            if (isDisposed.value || !isHover.value)
               return
             if (res.code === 0)
               cid = res.data.cid
@@ -211,13 +218,30 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
           cid,
         }).then((res: VideoPreviewResult) => {
           // 检查是否已卸载，已卸载则不更新状态
-          if (isDisposed.value)
+          if (isDisposed.value || !isHover.value)
             return
           if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
             previewVideoUrl.value = res.data.durl[0].url
         })
       }
     }
+  })
+
+  watch([previewVideoUrl, isHover], ([url, hover]) => {
+    if (!url) {
+      releaseVideoPreviewCacheEntry(previewCacheKey)
+      return
+    }
+
+    retainVideoPreviewCacheEntry(previewCacheKey, clearPreviewVideoUrl, hover)
+  }, { immediate: true })
+
+  watch([() => props.value.showPreview, () => settings.value.enableVideoPreview], ([showPreview, enableVideoPreview]) => {
+    if (showPreview && enableVideoPreview)
+      return
+
+    previewVideoUrl.value = ''
+    isHover.value = false
   })
 
   // Methods

@@ -52,8 +52,49 @@ const emit = defineEmits<{
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 const isLoadingStream = ref<boolean>(false)
+const showVideoControls = ref<boolean>(false)
+const shouldEnableVideoControls = computed(() => settings.value.enableVideoCtrlBarOnVideoCard && !props.video?.roomid)
 let hls: Hls | null = null
 let flvPlayer: flvjs.Player | null = null
+let controlsHideTimeout: number | null = null
+
+function clearControlsHideTimeout() {
+  if (controlsHideTimeout !== null) {
+    clearTimeout(controlsHideTimeout)
+    controlsHideTimeout = null
+  }
+}
+
+function scheduleControlsHide() {
+  clearControlsHideTimeout()
+  controlsHideTimeout = window.setTimeout(() => {
+    showVideoControls.value = false
+  }, 3000)
+}
+
+function showControlsTemporarily() {
+  if (!shouldEnableVideoControls.value)
+    return
+
+  showVideoControls.value = true
+  scheduleControlsHide()
+}
+
+function handlePreviewMouseMove() {
+  if (!shouldEnableVideoControls.value || !props.previewVideoUrl || !props.isHover)
+    return
+
+  if (!showVideoControls.value)
+    showVideoControls.value = true
+
+  scheduleControlsHide()
+}
+
+function resetVideoElement(videoEl: HTMLVideoElement) {
+  videoEl.pause()
+  videoEl.removeAttribute('src')
+  videoEl.load()
+}
 
 function cleanupPlayers() {
   if (hls) {
@@ -70,7 +111,7 @@ function cleanupPlayers() {
   isLoadingStream.value = false
 }
 
-async function setupStream(url: string, videoEl: HTMLVideoElement) {
+async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
   // Check if URL is FLV stream
   if (url.includes('.flv')) {
     try {
@@ -81,10 +122,7 @@ async function setupStream(url: string, videoEl: HTMLVideoElement) {
       if (flvjs.isSupported()) {
         // Cleanup previous players and clear video src
         cleanupPlayers()
-
-        // Clear video element src to prevent conflicts
-        videoEl.removeAttribute('src')
-        videoEl.load()
+        resetVideoElement(videoEl)
 
         isLoadingStream.value = true
 
@@ -139,10 +177,7 @@ async function setupStream(url: string, videoEl: HTMLVideoElement) {
     if (Hls.isSupported()) {
       // Cleanup previous players and clear video src
       cleanupPlayers()
-
-      // Clear video element src to prevent conflicts
-      videoEl.removeAttribute('src')
-      videoEl.load()
+      resetVideoElement(videoEl)
 
       isLoadingStream.value = true
 
@@ -192,6 +227,8 @@ async function setupStream(url: string, videoEl: HTMLVideoElement) {
     }
     // cSpell:ignore mpegurl
     else if (videoEl.canPlayType('application/vnd.apple.mpegurl')) {
+      cleanupPlayers()
+      resetVideoElement(videoEl)
       // Native HLS support (Safari)
       isLoadingStream.value = true
       videoEl.src = url
@@ -208,28 +245,47 @@ async function setupStream(url: string, videoEl: HTMLVideoElement) {
       })
     }
   }
+  else {
+    cleanupPlayers()
+    resetVideoElement(videoEl)
+    showControlsTemporarily()
+    videoEl.src = url
+    videoEl.load()
+    videoEl.play().catch(() => {
+      // Ignore autoplay errors
+    })
+  }
 }
 
 // Watch for preview URL and videoRef changes
 watch([() => props.previewVideoUrl, () => props.isHover, videoRef], ([url, isHover, videoEl]) => {
-  if (!isHover) {
+  if (!videoEl)
+    return
+
+  if (!isHover || !url) {
     cleanupPlayers()
-    if (videoEl) {
-      // Clear video src when not hovering
-      videoEl.removeAttribute('src')
-      videoEl.load()
-    }
+    clearControlsHideTimeout()
+    showVideoControls.value = false
+    resetVideoElement(videoEl)
     return
   }
 
-  if (!url || !videoEl)
-    return
+  setupPreviewVideo(url, videoEl)
+})
 
-  setupStream(url, videoEl)
+watch([shouldEnableVideoControls, () => props.previewVideoUrl, () => props.isHover], ([controlsEnabled, url, isHover]) => {
+  if (!controlsEnabled || !url || !isHover) {
+    clearControlsHideTimeout()
+    showVideoControls.value = false
+    return
+  }
+
+  showControlsTemporarily()
 })
 
 // Cleanup on unmount
 onBeforeUnmount(() => {
+  clearControlsHideTimeout()
   cleanupPlayers()
 })
 
@@ -289,16 +345,15 @@ onBeforeUnmount(() => {
         <div
           v-if="previewVideoUrl && isHover"
           pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-radius" bg-black
+          @mousemove="handlePreviewMouseMove"
         >
           <video
             ref="videoRef"
             autoplay muted
-            :controls="settings.enableVideoCtrlBarOnVideoCard && !video?.roomid"
-            :style="{ pointerEvents: settings.enableVideoCtrlBarOnVideoCard && !video?.roomid ? 'auto' : 'none' }"
+            :controls="showVideoControls"
+            :style="{ pointerEvents: showVideoControls ? 'auto' : 'none' }"
             w-full h-full
-          >
-            <source :src="previewVideoUrl">
-          </video>
+          />
 
           <!-- Loading indicator -->
           <Transition name="fade">

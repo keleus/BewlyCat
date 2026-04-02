@@ -198,6 +198,7 @@ export interface Settings {
 
   enableVideoCtrlBarOnVideoCard: boolean
   hoverVideoCardDelayed: boolean
+  onlyCoverVideoPreview: boolean
   showVideoCardRecommendTag: boolean
 
   // Desktop & Dock
@@ -405,6 +406,7 @@ export const originalSettings: Settings = {
   enableVideoPreview: true,
   enableVideoCtrlBarOnVideoCard: false,
   hoverVideoCardDelayed: false,
+  onlyCoverVideoPreview: false,
   showVideoCardRecommendTag: true,
 
   // Desktop & Dock

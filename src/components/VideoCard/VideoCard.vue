@@ -128,6 +128,29 @@ const shouldHideCoverStats = computed(() =>
   && logic.shouldHideOverlayElements.value,
 )
 
+const hoverPreviewOnCoverOnly = computed(() =>
+  Boolean(props.showPreview && settings.value.enableVideoPreview && settings.value.onlyCoverVideoPreview),
+)
+
+const linkEvents = computed(() => ({
+  click: logic.handleClick,
+  ...(hoverPreviewOnCoverOnly.value
+    ? {}
+    : {
+        mouseenter: logic.handleMouseEnter,
+        mouseleave: logic.handelMouseLeave,
+      }),
+}))
+
+const coverEvents = computed(() =>
+  hoverPreviewOnCoverOnly.value
+    ? {
+        mouseenter: logic.handleMouseEnter,
+        mouseleave: logic.handelMouseLeave,
+      }
+    : {},
+)
+
 const primaryTags = computed(() => {
   const video = props.video
   if (!video)
@@ -324,15 +347,12 @@ provide('getVideoType', () => props.type!)
           type: 'videoCard',
           customClickEvent: settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'background',
         }"
-        v-on="coverSkeleton ? {} : {
-          mouseenter: logic.handleMouseEnter,
-          mouseleave: logic.handelMouseLeave,
-          click: logic.handleClick,
-        }"
+        v-on="coverSkeleton ? {} : linkEvents"
       >
         <!-- Cover -->
         <div
           :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
+          v-on="coverSkeleton ? {} : coverEvents"
         >
           <VideoCardCover
             :skeleton="coverSkeleton"

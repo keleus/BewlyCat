@@ -144,6 +144,10 @@ function resetColumns() {
         <SettingsItem :title="$t('settings.hover_video_card_delayed')">
           <Radio v-model="settings.hoverVideoCardDelayed" />
         </SettingsItem>
+
+        <SettingsItem :title="$t('settings.only_cover_video_preview')">
+          <Radio v-model="settings.onlyCoverVideoPreview" />
+        </SettingsItem>
       </template>
 
       <SettingsItem :title="$t('settings.show_video_card_recommend_tag')" :desc="$t('settings.show_video_card_recommend_tag_desc')">
