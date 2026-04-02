@@ -25,6 +25,7 @@ interface ManagedVideoListeners {
   video: HTMLVideoElement
   onPlay: () => void
   onPause: () => void
+  onEnded: () => void
   onLoadStart: () => void
   onEmptied: () => void
 }
@@ -273,13 +274,22 @@ function connectBypassGraph() {
   audioNodes.source.connect(audioContext.destination)
 }
 
+function disconnectGraphForIdlePlayback(resetAnalysis = false) {
+  disconnectCurrentGraph()
+
+  if (resetAnalysis) {
+    resetLoudnessAnalysis()
+  }
+}
+
 function unbindCurrentVideoListeners() {
   if (!currentVideoListeners)
     return
 
-  const { video, onPlay, onPause, onLoadStart, onEmptied } = currentVideoListeners
+  const { video, onPlay, onPause, onEnded, onLoadStart, onEmptied } = currentVideoListeners
   video.removeEventListener('play', onPlay)
   video.removeEventListener('pause', onPause)
+  video.removeEventListener('ended', onEnded)
   video.removeEventListener('loadstart', onLoadStart)
   video.removeEventListener('emptied', onEmptied)
 
@@ -293,14 +303,18 @@ function bindVideoListeners(video: HTMLVideoElement) {
     if (video !== currentVideoElement)
       return
 
-    if (settings.value.enableVolumeNormalization && !tempDisabled) {
-      startLoudnessAnalysis()
-    }
+    updateProcessingState()
   }
 
   const onPause = () => {
     if (video === currentVideoElement) {
-      stopLoudnessAnalysis()
+      disconnectGraphForIdlePlayback(true)
+    }
+  }
+
+  const onEnded = () => {
+    if (video === currentVideoElement) {
+      disconnectGraphForIdlePlayback(true)
     }
   }
 
@@ -308,12 +322,12 @@ function bindVideoListeners(video: HTMLVideoElement) {
     if (video !== currentVideoElement)
       return
 
-    stopLoudnessAnalysis()
-    resetLoudnessAnalysis()
+    disconnectGraphForIdlePlayback(true)
   }
 
   video.addEventListener('play', onPlay)
   video.addEventListener('pause', onPause)
+  video.addEventListener('ended', onEnded)
   video.addEventListener('loadstart', resetForNewSource)
   video.addEventListener('emptied', resetForNewSource)
 
@@ -321,6 +335,7 @@ function bindVideoListeners(video: HTMLVideoElement) {
     video,
     onPlay,
     onPause,
+    onEnded,
     onLoadStart: resetForNewSource,
     onEmptied: resetForNewSource,
   }
@@ -509,6 +524,18 @@ function updateProcessingState() {
     return
 
   try {
+    const isPlaybackActive = !!currentVideoElement
+      && !currentVideoElement.paused
+      && !currentVideoElement.ended
+
+    if (!isPlaybackActive) {
+      disconnectGraphForIdlePlayback(true)
+      log('Audio graph disconnected while playback is inactive')
+      return
+    }
+
+    resumeAudioContext(audioContext)
+
     if (settings.value.enableVolumeNormalization && !tempDisabled) {
       connectProcessingGraph()
       resetLoudnessAnalysis()
