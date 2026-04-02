@@ -824,16 +824,10 @@ function getUniqueKey(item: T, index: number): string | number {
 
 .grid-two-columns {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   contain: layout style;
   align-items: stretch;
-}
-
-@media (min-width: 1280px) {
-  .grid-two-columns {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 @supports (container-type: inline-size) {
@@ -843,10 +837,6 @@ function getUniqueKey(item: T, index: number): string | number {
 
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-base, 1), 1fr);
-  }
-
-  .grid-two-columns {
-    grid-template-columns: repeat(1, 1fr);
   }
 
   @container (min-width: 640px) {
@@ -870,10 +860,6 @@ function getUniqueKey(item: T, index: number): string | number {
   @container (min-width: 1280px) {
     .grid-adaptive {
       grid-template-columns: repeat(var(--grid-cols-xl, 5), 1fr);
-    }
-
-    .grid-two-columns {
-      grid-template-columns: repeat(2, 1fr);
     }
   }
 

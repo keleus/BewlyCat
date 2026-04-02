@@ -273,10 +273,14 @@ defineExpose({ initData })
 }
 
 .grid-two-columns {
-  --uno: "grid cols-1 xl:cols-2 gap-5";
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .grid-one-column {
-  --uno: "grid cols-1 gap-5";
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 20px;
 }
 </style>
