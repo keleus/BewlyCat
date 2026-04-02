@@ -251,6 +251,8 @@ function transformWebVideo(item: VideoItem): VideoCardDisplayData {
     publishedTimestamp: item.pubdate,
     bvid: item.bvid,
     cid: item.cid,
+    goto: item.goto,
+    trackId: item.track_id,
     threePointV2: [],
   }
 }
@@ -292,6 +294,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     danmakuStr: item.cover_left_text_2,
     cid: item?.player_args?.cid,
     goto: item?.goto,
+    trackId: item?.track_id,
     url: item?.goto === 'bangumi' ? item.uri : '',
     type,
     threePointV2: item?.three_point_v2 || [],

@@ -402,6 +402,9 @@ export function needsWbiSign(url: string): boolean {
   // 排除bili_ticket接口
   if (url.includes('https://api.bilibili.com/x/web-interface/bili_ticket'))
     return false
+  // 首页推荐的 web dislike 接口也要求附带 w_rid/wts
+  if (url.includes('https://api.bilibili.com/x/web-interface/feedback/dislike'))
+    return true
 
   // WBI签名判断规则：
   // 1. URL中明确包含 /wbi/

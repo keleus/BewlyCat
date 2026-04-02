@@ -27,6 +27,7 @@ export interface VideoCardDisplayData {
   cid?: number
   capsuleText?: string
   goto?: string
+  trackId?: string
   url?: string
   type?: 'horizontal' | 'vertical' | 'bangumi'
   threePointV2: any

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
@@ -70,12 +71,14 @@ const videoOptions = reactive<{ id: number, name: string }[]>([
 ])
 
 const { t } = useI18n()
+const toast = useToast()
 const showContextMenu = ref<boolean>(false)
 const showDislikeDialog = ref<boolean>(false)
 const showBlockUserDialog = ref<boolean>(false)
 const showFollowUserDialog = ref<boolean>(false)
 const showUnfollowUserDialog = ref<boolean>(false)
 const showPipWindow = ref<boolean>(false)
+const loadingWebDislike = ref<boolean>(false)
 const { openIframeDrawer } = useBewlyApp()
 
 enum VideoOption {
@@ -197,8 +200,57 @@ onUnmounted(() => {
   }
 })
 
-function handleMoreCommand(_command: number) {
-  handleRemoved()
+function getAuthorMid() {
+  if (!props.video.author)
+    return undefined
+
+  return Array.isArray(props.video.author)
+    ? props.video.author[0]?.mid
+    : props.video.author.mid
+}
+
+async function handleMoreCommand(command: number) {
+  const csrf = getCSRF()
+  const authorMid = getAuthorMid()
+
+  if (!csrf) {
+    toast.warning(t('common.please_log_in_first'))
+    return
+  }
+
+  if (!props.video.id || !authorMid) {
+    console.error('Missing dislike params', { aid: props.video.id, mid: authorMid, trackId: props.video.trackId })
+    return
+  }
+
+  if (loadingWebDislike.value)
+    return
+
+  loadingWebDislike.value = true
+
+  try {
+    const response = await api.video.webDislikeVideo({
+      goto: props.video.goto || 'av',
+      id: props.video.id,
+      mid: authorMid,
+      track_id: props.video.trackId || '',
+      reason_id: command,
+      csrf,
+    })
+
+    if (response.code === 0) {
+      handleRemoved({ dislikeReasonId: command })
+    }
+    else {
+      toast.error(response.message)
+    }
+  }
+  catch (error) {
+    console.error('Web dislike error:', error)
+  }
+  finally {
+    loadingWebDislike.value = false
+  }
 }
 
 function handleAppMoreCommand(command: ThreePointV2Type) {
@@ -316,14 +368,7 @@ function handleRemoved(selectedOpt?: { dislikeReasonId: number }) {
 }
 
 async function blockUser() {
-  if (!props.video.author) {
-    console.error('No author information available')
-    return
-  }
-
-  const authorMid = Array.isArray(props.video.author)
-    ? props.video.author[0]?.mid
-    : props.video.author.mid
+  const authorMid = getAuthorMid()
 
   if (!authorMid) {
     console.error('No author mid available')
@@ -352,14 +397,7 @@ async function blockUser() {
 }
 
 async function followUser() {
-  if (!props.video.author) {
-    console.error('No author information available')
-    return
-  }
-
-  const authorMid = Array.isArray(props.video.author)
-    ? props.video.author[0]?.mid
-    : props.video.author.mid
+  const authorMid = getAuthorMid()
 
   if (!authorMid) {
     console.error('No author mid available')
@@ -388,14 +426,7 @@ async function followUser() {
 }
 
 async function unfollowUser() {
-  if (!props.video.author) {
-    console.error('No author information available')
-    return
-  }
-
-  const authorMid = Array.isArray(props.video.author)
-    ? props.video.author[0]?.mid
-    : props.video.author.mid
+  const authorMid = getAuthorMid()
 
   if (!authorMid) {
     console.error('No author mid available')

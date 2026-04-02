@@ -34,6 +34,7 @@ export interface Video {
 
   followed?: boolean
   liveStatus?: number
+  trackId?: string
 
   tag?: string | string[]
   rank?: number

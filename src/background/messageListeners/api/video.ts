@@ -57,6 +57,29 @@ const API_VIDEO = {
     },
     afterHandle: AHS.J_D,
   },
+  webDislikeVideo: {
+    url: 'https://api.bilibili.com/x/web-interface/feedback/dislike',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      body: {
+        app_id: 100,
+        platform: 5,
+        from_spmid: '',
+        spmid: '333.1007.0.0',
+        goto: 'av',
+        id: 0,
+        mid: 0,
+        track_id: '',
+        feedback_page: 1,
+        reason_id: 1,
+        csrf: '',
+      },
+    },
+    afterHandle: AHS.J_D,
+  },
   // https://github.com/indefined/UserScripts/blob/master/bilibiliHome/bilibiliHome.API.md#%E6%92%A4%E9%94%80%E4%B8%8D%E5%96%9C%E6%AC%A2
   undoDislikeVideo: {
     url: 'https://app.bilibili.com/x/feed/dislike/cancel',
