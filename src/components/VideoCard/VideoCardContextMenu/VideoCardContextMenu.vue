@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useToast } from 'vue-toastification'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
@@ -71,7 +70,6 @@ const videoOptions = reactive<{ id: number, name: string }[]>([
 ])
 
 const { t } = useI18n()
-const toast = useToast()
 const showContextMenu = ref<boolean>(false)
 const showDislikeDialog = ref<boolean>(false)
 const showBlockUserDialog = ref<boolean>(false)
@@ -209,19 +207,12 @@ function getAuthorMid() {
     : props.video.author.mid
 }
 
-async function handleMoreCommand(command: number) {
+async function submitWebDislike(command: number) {
   const csrf = getCSRF()
   const authorMid = getAuthorMid()
 
-  if (!csrf) {
-    toast.warning(t('common.please_log_in_first'))
+  if (!csrf || !props.video.id || !authorMid)
     return
-  }
-
-  if (!props.video.id || !authorMid) {
-    console.error('Missing dislike params', { aid: props.video.id, mid: authorMid, trackId: props.video.trackId })
-    return
-  }
 
   if (loadingWebDislike.value)
     return
@@ -238,19 +229,20 @@ async function handleMoreCommand(command: number) {
       csrf,
     })
 
-    if (response.code === 0) {
-      handleRemoved({ dislikeReasonId: command })
-    }
-    else {
-      toast.error(response.message)
-    }
+    if (response.code !== 0)
+      console.warn('Web dislike request failed:', response.message)
   }
   catch (error) {
-    console.error('Web dislike error:', error)
+    console.warn('Web dislike request error:', error)
   }
   finally {
     loadingWebDislike.value = false
   }
+}
+
+function handleMoreCommand(command: number) {
+  handleRemoved({ dislikeReasonId: command })
+  void submitWebDislike(command)
 }
 
 function handleAppMoreCommand(command: ThreePointV2Type) {
