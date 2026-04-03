@@ -508,9 +508,9 @@ export const originalSettings: Settings = {
   followingFilterChargingVideos: false, // 默认不过滤充电视频
   followingFilterDynamicVideos: false, // 默认不过滤动态视频
   useFollowingNewLayout: false, // 默认使用旧布局
-  // 2026-04-03 Propelf Code Modification:改为默认关闭，这里与原先版本不一致！
-  enableFollowingInactiveBlacklist: false,
-  followingInactiveDays: 40000, // 默认40000天
+  // 2026-04-03 Propelf Code Modification:改为默认开启，这里与原先版本一致！
+  enableFollowingInactiveBlacklist: true,
+  followingInactiveDays: 100, // 默认100天
   homePageTabVisibilityList: [],
   alwaysShowTabsOnHomePage: false,
   homeAdaptiveTitleFontSize: 16,
