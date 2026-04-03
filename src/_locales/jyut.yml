@@ -362,10 +362,10 @@ settings:
   use_following_new_layout: 用跟緊啲人新版面
   use_following_new_layout_desc: 左邊顯示關注嘅UP主名單，右邊顯示影片流
   # 2026-04-03 Propelf Code Modification:唔活躍自動黑名單主開關文案
-  enable_following_inactive_blacklist: 啟用唔活躍自動黑名單
-  enable_following_inactive_blacklist_desc: 閂咗之後唔會因為超過唔活躍日數或者冇投稿就自動入黑名單；已經有嘅黑名單同 ALL 視圖／撳 UP 移出規則唔變。
+  enable_following_inactive_blacklist: 啟用唔活躍名單
+  enable_following_inactive_blacklist_desc: 閂咗之後唔會因為超過唔活躍日數或者冇投稿就自動入唔活躍名單；已經有嘅唔活躍名單同 ALL 視圖／撳 UP 移出規則唔變。
   following_inactive_days: UP主唔活躍天數
-  following_inactive_days_desc: 當UP主超過指定天數未更新或者冇投稿嗰陣，會自動移去黑名單。喺ALL視圖中出現更新或者撳咗個UP主嗰陣會自動移出黑名單
+  following_inactive_days_desc: 套用『用跟緊啲人新版面』之後個功能就會生效。同你自己加嘅用戶黑名單冇關，只係改咗『跟緊啲人』頁面嘅推薦內容。
   preserve_for_you_state: 留存估你心水切換前狀態
   preserve_for_you_state_desc: 喺dock欄切換到其它頁面嗰陣，留存估你心水頁面嘅瀏覽狀態，返嚟嗰陣保持切換前嘅內容
   use_search_page_mode: 主頁使用搵嘢頁模式

@@ -827,8 +827,7 @@ async function loadSingleUploaderTime(mid: number, retryCount: number = 0) {
 
             console.log(`[Following] Updated time for UP ${mid} (${loadedUploaderTimesCount.value}/${uploaderList.value.length})${updateInterval ? `, interval: ${Math.round(updateInterval / (24 * 60 * 60 * 1000))}d` : ''}`)
 
-            // 2026-04-03 Propelf Code Modification：仅开启「不活跃自动黑名单」时才写入黑名单
-            // 检查是否应该加入黑名单（超过指定天数未更新）
+            // 检查是否应该加入不活跃名单（超过指定天数未更新）
             if (settings.value.enableFollowingInactiveBlacklist && shouldBeBlacklisted(uploader)) {
               addToBlacklist(mid)
             }
