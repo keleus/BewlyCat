@@ -290,6 +290,8 @@ export interface Settings {
   followingFilterChargingVideos: boolean // 过滤充电专属视频
   followingFilterDynamicVideos: boolean // 过滤动态视频
   useFollowingNewLayout: boolean
+  // 2026-04-03 Propelf Code Modification:不活跃自动黑名单总开关（关闭则不自动 addToBlacklist）
+  enableFollowingInactiveBlacklist: boolean
   followingInactiveDays: number // UP主超过N天未更新则移至黑名单
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
@@ -506,8 +508,9 @@ export const originalSettings: Settings = {
   followingFilterChargingVideos: false, // 默认不过滤充电视频
   followingFilterDynamicVideos: false, // 默认不过滤动态视频
   useFollowingNewLayout: false, // 默认使用旧布局
-  followingInactiveDays: 100, // 默认100天
-
+  // 2026-04-03 Propelf Code Modification:改为默认关闭，这里与原先版本不一致！
+  enableFollowingInactiveBlacklist: false,
+  followingInactiveDays: 40000, // 默认40000天
   homePageTabVisibilityList: [],
   alwaysShowTabsOnHomePage: false,
   homeAdaptiveTitleFontSize: 16,

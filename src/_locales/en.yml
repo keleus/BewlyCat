@@ -429,6 +429,9 @@ settings:
   following_filter_dynamic_videos_desc: When enabled, videos marked as dynamic videos will be hidden in the "Following" page
   use_following_new_layout: Use new layout for Following tab
   use_following_new_layout_desc: Display followed UPs list on the left and video feed on the right
+  # 2026-04-03 Propelf Code Modification:master switch copy for inactive auto-blacklist
+  enable_following_inactive_blacklist: Enable inactive auto-blacklist
+  enable_following_inactive_blacklist_desc: When off, UPs are not auto-added for inactivity or having no videos. Existing blacklist entries and removal via ALL view or click are unchanged.
   following_inactive_days: UP inactive days
   following_inactive_days_desc: When a UP has not posted for the specified number of days or has no videos, they will be automatically moved to the blacklist. They will be removed from the blacklist when appearing in ALL view or when clicked
   preserve_for_you_state: Preserve "For You" pre-switch state

@@ -827,8 +827,9 @@ async function loadSingleUploaderTime(mid: number, retryCount: number = 0) {
 
             console.log(`[Following] Updated time for UP ${mid} (${loadedUploaderTimesCount.value}/${uploaderList.value.length})${updateInterval ? `, interval: ${Math.round(updateInterval / (24 * 60 * 60 * 1000))}d` : ''}`)
 
+            // 2026-04-03 Propelf Code Modification：仅开启「不活跃自动黑名单」时才写入黑名单
             // 检查是否应该加入黑名单（超过指定天数未更新）
-            if (shouldBeBlacklisted(uploader)) {
+            if (settings.value.enableFollowingInactiveBlacklist && shouldBeBlacklisted(uploader)) {
               addToBlacklist(mid)
             }
 
@@ -841,9 +842,10 @@ async function loadSingleUploaderTime(mid: number, retryCount: number = 0) {
         }
       }
       else {
+        // 2026-04-03 Propelf Code Modification:主开关关闭时不因无投稿自动进黑名单
         // API返回成功但没有视频数据，该UP主完全没有投稿，添加到黑名单
         const uploader = uploaderList.value.find(u => u.mid === mid)
-        if (uploader) {
+        if (uploader && settings.value.enableFollowingInactiveBlacklist) {
           addToBlacklist(mid)
           console.log(`[Following] No video data for UP ${mid}, added to blacklist`)
         }
