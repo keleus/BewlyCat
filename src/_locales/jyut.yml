@@ -361,7 +361,6 @@ settings:
   following_filter_dynamic_videos_desc: 啟用後，喺「跟緊啲人」頁面入邊會隱藏標記為動態影片嘅內容
   use_following_new_layout: 用跟緊啲人新版面
   use_following_new_layout_desc: 左邊顯示關注嘅UP主名單，右邊顯示影片流
-  # 2026-04-03 Propelf Code Modification:唔活躍自動黑名單主開關文案
   enable_following_inactive_blacklist: 啟用唔活躍名單
   enable_following_inactive_blacklist_desc: 閂咗之後唔會因為超過唔活躍日數或者冇投稿就自動入唔活躍名單；已經有嘅唔活躍名單同 ALL 視圖／撳 UP 移出規則唔變。
   following_inactive_days: UP主唔活躍天數

@@ -509,6 +509,7 @@ export const originalSettings: Settings = {
   useFollowingNewLayout: false, // 默认使用旧布局
   enableFollowingInactiveBlacklist: true,
   followingInactiveDays: 100, // 默认100天
+
   homePageTabVisibilityList: [],
   alwaysShowTabsOnHomePage: false,
   homeAdaptiveTitleFontSize: 16,

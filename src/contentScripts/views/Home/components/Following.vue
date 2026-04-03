@@ -841,7 +841,6 @@ async function loadSingleUploaderTime(mid: number, retryCount: number = 0) {
         }
       }
       else {
-        // 2026-04-03 Propelf Code Modification:主开关关闭时不因无投稿自动进黑名单
         // API返回成功但没有视频数据，该UP主完全没有投稿，添加到黑名单
         const uploader = uploaderList.value.find(u => u.mid === mid)
         if (uploader && settings.value.enableFollowingInactiveBlacklist) {
