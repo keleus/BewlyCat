@@ -827,8 +827,8 @@ async function loadSingleUploaderTime(mid: number, retryCount: number = 0) {
 
             console.log(`[Following] Updated time for UP ${mid} (${loadedUploaderTimesCount.value}/${uploaderList.value.length})${updateInterval ? `, interval: ${Math.round(updateInterval / (24 * 60 * 60 * 1000))}d` : ''}`)
 
-            // 检查是否应该加入黑名单（超过指定天数未更新）
-            if (shouldBeBlacklisted(uploader)) {
+            // 检查是否应该加入不活跃名单（超过指定天数未更新）
+            if (settings.value.enableFollowingInactiveBlacklist && shouldBeBlacklisted(uploader)) {
               addToBlacklist(mid)
             }
 
@@ -843,7 +843,7 @@ async function loadSingleUploaderTime(mid: number, retryCount: number = 0) {
       else {
         // API返回成功但没有视频数据，该UP主完全没有投稿，添加到黑名单
         const uploader = uploaderList.value.find(u => u.mid === mid)
-        if (uploader) {
+        if (uploader && settings.value.enableFollowingInactiveBlacklist) {
           addToBlacklist(mid)
           console.log(`[Following] No video data for UP ${mid}, added to blacklist`)
         }

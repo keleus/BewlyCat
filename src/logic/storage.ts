@@ -290,7 +290,8 @@ export interface Settings {
   followingFilterChargingVideos: boolean // 过滤充电专属视频
   followingFilterDynamicVideos: boolean // 过滤动态视频
   useFollowingNewLayout: boolean
-  followingInactiveDays: number // UP主超过N天未更新则移至黑名单
+  enableFollowingInactiveBlacklist: boolean // 启用不活跃名单
+  followingInactiveDays: number // UP主超过N天未更新则移至不活跃名单
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
   alwaysShowTabsOnHomePage: boolean
@@ -506,6 +507,7 @@ export const originalSettings: Settings = {
   followingFilterChargingVideos: false, // 默认不过滤充电视频
   followingFilterDynamicVideos: false, // 默认不过滤动态视频
   useFollowingNewLayout: false, // 默认使用旧布局
+  enableFollowingInactiveBlacklist: true, // 默认启用不活跃名单
   followingInactiveDays: 100, // 默认100天
 
   homePageTabVisibilityList: [],
