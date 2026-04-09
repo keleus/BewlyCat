@@ -343,7 +343,7 @@ export function setupNecessarySettingsWatchers() {
       applyOuterTopBarPolicy()
 
       // Sync top bar visibility preference to embedded Bilibili iframes.
-      // `useStorageAsync` (webextension storage) doesn't automatically sync reactive state across frames,
+      // WebExtension storage doesn't automatically sync reactive state across frames,
       // so the iframe may not update until reload without this message.
       if (!isInIframe()) {
         const message = {

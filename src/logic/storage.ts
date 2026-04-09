@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { watch } from '@vue/reactivity'
 import browser from 'webextension-polyfill'
 
 import { useStorageLocal } from '~/composables/useStorageLocal'
@@ -713,18 +713,18 @@ export interface GridLayout {
   home: GridLayoutType
 }
 
-export const gridLayout = useStorageLocal('gridLayout', ref<GridLayout>({
+export const gridLayout = useStorageLocal<GridLayout>('gridLayout', {
   home: 'adaptive',
-}), { mergeDefaults: true, writeDefaults: false })
+}, { mergeDefaults: true, writeDefaults: false })
 
 export const gridColumns = useStorageLocal<GridColumnsConfig>(
   'gridColumns',
-  ref({ ...defaultGridColumns }),
+  { ...defaultGridColumns },
   { mergeDefaults: true, writeDefaults: false },
 )
 
-export const sidePanel = useStorageLocal('sidePanel', ref<{
+export const sidePanel = useStorageLocal<{
   home: boolean
-}>({
+}>('sidePanel', {
   home: true,
-}), { mergeDefaults: true, writeDefaults: false })
+}, { mergeDefaults: true, writeDefaults: false })

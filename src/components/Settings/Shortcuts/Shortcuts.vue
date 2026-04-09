@@ -14,9 +14,6 @@ import { setupShortcutHandlers } from '~/utils/shortcuts'
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 
-// 直接使用settings以保持响应式
-// settings 是 RemovableRef<Settings> 类型，需要使用 settings 访问其值
-
 const { t } = useI18n()
 
 // --- 类型定义 ---
