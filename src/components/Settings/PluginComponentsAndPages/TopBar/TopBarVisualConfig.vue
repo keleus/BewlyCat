@@ -457,6 +457,13 @@ function toggleChannel(value: string) {
               <div text-lg font-semibold>
                 {{ $t('topbar.user_dropdown.account_settings') }}
               </div>
+
+              <SettingsItem
+                :title="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop')"
+                :desc="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop_desc')"
+              >
+                <Radio v-model="settings.hideTopBarUserPanelLv6LastLoginLocation" />
+              </SettingsItem>
             </div>
           </div>
         </Transition>

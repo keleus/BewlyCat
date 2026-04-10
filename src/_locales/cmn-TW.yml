@@ -127,6 +127,8 @@ settings:
     啟用後，如頂欄，你可能需要點選項目才能看到更多資訊，而不是滑鼠移過去就會顯示。（舊版頂欄不支援此功能）
   show_home_button_in_touch_mode: 顯示 Home 按鈕
   show_home_button_in_touch_mode_desc: 在觸控螢幕優化開啟時，在頂欄 Logo 旁邊顯示一個可以直接跳轉到首頁的按鈕。
+  hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
+  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開啟後，頂欄頭像彈窗中的 LV6 等級資訊區域將不再顯示最後登入時間和地點，也不會請求登入記錄。
   chk_box:
     show: 顯示
     hidden: 隱藏

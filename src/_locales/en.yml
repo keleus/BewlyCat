@@ -133,6 +133,8 @@ settings:
     supported by the old top bar.)
   show_home_button_in_touch_mode: Show Home button
   show_home_button_in_touch_mode_desc: When touch screen optimization is enabled, show a Home button next to the top bar Logo to navigate directly to the homepage.
+  hide_lv6_last_login_location_in_top_bar_user_pop: Hide LV6 last login info
+  hide_lv6_last_login_location_in_top_bar_user_pop_desc: When enabled, the LV6 section in the top bar user popup will no longer show the last login time or location, and no login log request will be made.
   chk_box:
     show: Show
     hidden: Hidden

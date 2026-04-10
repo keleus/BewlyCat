@@ -97,6 +97,10 @@ const levelProgressBarWidth = computed(() => {
 const userStat = reactive<UserStat>({} as UserStat)
 const loginLog = reactive<Partial<LoginLogItem>>({})
 
+const showLv6LastLoginInfo = computed(() => {
+  return !(props.userInfo?.level_info?.current_level >= 6 && settings.value.hideTopBarUserPanelLv6LastLoginLocation)
+})
+
 onMounted(() => {
   api.user.getUserStat()
     .then((res) => {
@@ -104,12 +108,14 @@ onMounted(() => {
         Object.assign(userStat, res.data)
     })
 
-  // 获取最近一周登录情况的第一条记录
-  api.user.getLoginLog()
-    .then((res) => {
-      if (res.code === 0 && res.data?.list?.length > 0)
-        Object.assign(loginLog, res.data.list[0])
-    })
+  if (showLv6LastLoginInfo.value) {
+    // 获取最近一周登录情况的第一条记录
+    api.user.getLoginLog()
+      .then((res) => {
+        if (res.code === 0 && res.data?.list?.length > 0)
+          Object.assign(loginLog, res.data.list[0])
+      })
+  }
 })
 
 async function logout() {
@@ -251,14 +257,11 @@ function handleClickChannel() {
       v-else
       href="//account.bilibili.com/account/record?type=exp"
       type="topBar"
-      block mt-2 mb-2 w-full
-      p-2
-      bg="$bew-fill-alt"
-      rounded="$bew-radius"
-      shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-1)]"
+      mt-2 mb-2
       duration-300
-      hover:bg="$bew-fill-2"
       flex="~ items-center gap-2"
+      class="lv6-entry"
+      :class="showLv6LastLoginInfo ? 'lv6-entry--card' : 'lv6-entry--compact'"
     >
       <div
         :style="{ width: userInfo?.is_senior_member ? '36px' : '28px' }"
@@ -266,7 +269,7 @@ function handleClickChannel() {
         h-20px
         v-html="DOMPurify.sanitize(getLvIcon(userInfo?.level_info?.current_level, userInfo?.is_senior_member))"
       />
-      <div flex="~ col 1" text="xs $bew-text-3">
+      <div v-if="showLv6LastLoginInfo" flex="~ col 1" text="xs $bew-text-3">
         <div v-if="loginLog.time_at">
           {{ $t('topbar.user_dropdown.last_login_time') }}: {{ loginLog.time_at }}
         </div>
@@ -399,6 +402,20 @@ function handleClickChannel() {
 
 .level-next :deep(svg .level-bg) {
   --uno: "fill-#c9ccd0";
+}
+
+.lv6-entry--card {
+  --uno: "w-full p-2 bg-$bew-fill-alt rounded-$bew-radius hover:bg-$bew-fill-2";
+  box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
+}
+
+.lv6-entry--compact {
+  display: inline-flex;
+  width: fit-content;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .channel-info-item {

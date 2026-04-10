@@ -127,6 +127,8 @@ settings:
     呢個設定開咗之後，好似頂欄噉，撳咗啲嘢先至可以睇到更多嘅資料，而唔係淨係靠游標懸停就睇到。（舊版頂欄唔支援呢個功能）
   show_home_button_in_touch_mode: 顯示 Home 掣
   show_home_button_in_touch_mode_desc: 喺觸控螢幕優化開咗嗰陣，喺頂欄 Logo 隔籬顯示一個可以直接跳去首頁嘅掣。
+  hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
+  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開咗之後，頂欄頭像彈窗入面嘅 LV6 等級資訊區域就唔會再顯示最後登入時間同地點，亦都唔會請求登入記錄。
   chk_box:
     show: 擺出嚟
     hidden: 收埋
