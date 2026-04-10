@@ -52,6 +52,7 @@ const emit = defineEmits<{
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 const isLoadingStream = ref<boolean>(false)
+const isPreviewFullscreen = ref<boolean>(false)
 const showVideoControls = ref<boolean>(false)
 const shouldEnableVideoControls = computed(() => settings.value.enableVideoCtrlBarOnVideoCard && !props.video?.roomid)
 let hls: Hls | null = null
@@ -77,23 +78,68 @@ function showControlsTemporarily() {
     return
 
   showVideoControls.value = true
+  if (isPreviewFullscreen.value) {
+    clearControlsHideTimeout()
+    return
+  }
+
   scheduleControlsHide()
 }
 
 function handlePreviewMouseMove() {
-  if (!shouldEnableVideoControls.value || !props.previewVideoUrl || !props.isHover)
+  if (!shouldEnableVideoControls.value || !props.previewVideoUrl)
     return
 
-  if (!showVideoControls.value)
-    showVideoControls.value = true
+  if (!props.isHover && !isPreviewFullscreen.value)
+    return
 
-  scheduleControlsHide()
+  showControlsTemporarily()
 }
 
 function resetVideoElement(videoEl: HTMLVideoElement) {
   videoEl.pause()
   videoEl.removeAttribute('src')
   videoEl.load()
+}
+
+function stopPreview(videoEl: HTMLVideoElement) {
+  cleanupPlayers()
+  clearControlsHideTimeout()
+  showVideoControls.value = false
+  resetVideoElement(videoEl)
+}
+
+function getFullscreenElement() {
+  const doc = document as Document & {
+    webkitFullscreenElement?: Element | null
+  }
+
+  return doc.fullscreenElement ?? doc.webkitFullscreenElement ?? null
+}
+
+function syncPreviewFullscreenState() {
+  const isFullscreen = Boolean(videoRef.value && getFullscreenElement() === videoRef.value)
+
+  if (isPreviewFullscreen.value === isFullscreen)
+    return
+
+  isPreviewFullscreen.value = isFullscreen
+
+  if (isFullscreen) {
+    clearControlsHideTimeout()
+    showVideoControls.value = true
+    return
+  }
+
+  if (!videoRef.value)
+    return
+
+  if (!props.isHover || !props.previewVideoUrl) {
+    stopPreview(videoRef.value)
+    return
+  }
+
+  showControlsTemporarily()
 }
 
 function cleanupPlayers() {
@@ -263,10 +309,10 @@ watch([() => props.previewVideoUrl, () => props.isHover, videoRef], ([url, isHov
     return
 
   if (!isHover || !url) {
-    cleanupPlayers()
-    clearControlsHideTimeout()
-    showVideoControls.value = false
-    resetVideoElement(videoEl)
+    if (isPreviewFullscreen.value)
+      return
+
+    stopPreview(videoEl)
     return
   }
 
@@ -274,6 +320,12 @@ watch([() => props.previewVideoUrl, () => props.isHover, videoRef], ([url, isHov
 })
 
 watch([shouldEnableVideoControls, () => props.previewVideoUrl, () => props.isHover], ([controlsEnabled, url, isHover]) => {
+  if (isPreviewFullscreen.value) {
+    if (controlsEnabled && url)
+      showVideoControls.value = true
+    return
+  }
+
   if (!controlsEnabled || !url || !isHover) {
     clearControlsHideTimeout()
     showVideoControls.value = false
@@ -284,7 +336,14 @@ watch([shouldEnableVideoControls, () => props.previewVideoUrl, () => props.isHov
 })
 
 // Cleanup on unmount
+onMounted(() => {
+  document.addEventListener('fullscreenchange', syncPreviewFullscreenState)
+  document.addEventListener('webkitfullscreenchange', syncPreviewFullscreenState as EventListener)
+})
+
 onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', syncPreviewFullscreenState)
+  document.removeEventListener('webkitfullscreenchange', syncPreviewFullscreenState as EventListener)
   clearControlsHideTimeout()
   cleanupPlayers()
 })
