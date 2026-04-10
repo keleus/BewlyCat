@@ -1,6 +1,5 @@
-import { isProxy, ref, shallowRef, toRaw, toValue } from '@vue/reactivity'
-import { getCurrentScope, onScopeDispose, watch } from '@vue/runtime-core'
 import type { MaybeRef, Ref, WatchOptions } from 'vue'
+import { getCurrentScope, isProxy, onScopeDispose, ref, shallowRef, toRaw, toValue, watch } from 'vue'
 import browser from 'webextension-polyfill'
 
 type Awaitable<T> = T | Promise<T>

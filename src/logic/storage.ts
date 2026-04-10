@@ -1,4 +1,4 @@
-import { watch } from '@vue/reactivity'
+import { watch } from 'vue'
 import browser from 'webextension-polyfill'
 
 import { useStorageLocal } from '~/composables/useStorageLocal'
@@ -214,6 +214,7 @@ export interface Settings {
   topBarPinnedChannels: string[]
   openNotificationsPageAsDrawer: boolean
   showLikeNotificationReminder: boolean
+  hideTopBarUserPanelLv6LastLoginLocation: boolean
   showBCoinReceiveReminder: boolean
   autoReceiveBCoinCoupon: boolean
   autoReceiveVipExp: boolean
@@ -431,6 +432,7 @@ export const originalSettings: Settings = {
   topBarPinnedChannels: [],
   openNotificationsPageAsDrawer: true,
   showLikeNotificationReminder: false,
+  hideTopBarUserPanelLv6LastLoginLocation: false,
   showBCoinReceiveReminder: true,
   autoReceiveBCoinCoupon: false,
   autoReceiveVipExp: false,
