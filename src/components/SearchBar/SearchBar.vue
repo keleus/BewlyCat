@@ -558,6 +558,7 @@ function handleClearKeyword() {
       <Transition name="focus-character">
         <img
           v-show="focusedCharacter && isFocus" :src="focusedCharacter"
+          class="focus-character-image"
           width="100" object-contain pos="absolute right-0 bottom-40px"
         >
       </Transition>
@@ -791,9 +792,20 @@ function handleClearKeyword() {
   }
 
   .search-bar {
+    .focus-character-image {
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    > button {
+      z-index: 2;
+    }
+
     input {
       @include card-content;
       appearance: none;
+      position: relative;
+      z-index: 1;
 
       &[type="search"]::-webkit-search-cancel-button,
       &[type="search"]::-webkit-search-decoration,
