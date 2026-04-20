@@ -19,23 +19,6 @@ function isExtensionUri(url: string) {
   return new URL(url).origin === new URL(browser.runtime.getURL('')).origin
 }
 
-function isHomePageUrl(url: string) {
-  return (
-    /https?:\/\/(?:www\.)?bilibili.com\/?(?:#\/?)?$/.test(url)
-    || /https?:\/\/(?:www\.)?bilibili.com\/index\.html$/.test(url)
-    || /https?:\/\/(?:www\.)?bilibili.com\/\?spm_id_from=.*/.test(url)
-    || /https?:\/\/www\.bilibili\.com\/\?.*$/.test(url)
-  )
-}
-
-function isVideoPreviewRequestUrl(url: string) {
-  return /^https?:\/\/(?:[^/]+\.)?(?:bilivideo\.com|bilivideo\.cn|hdslb\.com|acgvideo\.com)\//.test(url)
-}
-
-function isVideoPreviewResourceType(type?: string) {
-  return type === 'media' || type === 'xmlhttprequest'
-}
-
 // Firefox specific header handling
 // eslint-disable-next-line node/prefer-global/process
 if (process.env.FIREFOX) {
@@ -44,16 +27,11 @@ if (process.env.FIREFOX) {
       const requestHeaders: browser.WebRequest.HttpHeaders = []
       if (details.documentUrl) {
         const url = new URL(details.documentUrl)
-        const shouldRewritePreviewReferer = (
-          isHomePageUrl(details.documentUrl)
-          && isVideoPreviewRequestUrl(details.url)
-          && isVideoPreviewResourceType(details.type)
-          && !isExtensionUri(details.documentUrl)
-        )
+        const extensionUri = isExtensionUri(details.documentUrl)
         details.requestHeaders = details.requestHeaders || []
         for (let i = 0; i < details.requestHeaders.length; i++) {
-          if (shouldRewritePreviewReferer && (details.requestHeaders[i].name.toLowerCase() === 'origin' || details.requestHeaders[i].name.toLowerCase() === 'referer'))
-            requestHeaders.push({ name: details.requestHeaders[i].name, value: url.origin })
+          if (details.requestHeaders[i].name.toLowerCase() === 'origin' || details.requestHeaders[i].name.toLowerCase() === 'referer')
+            requestHeaders.push({ name: details.requestHeaders[i].name, value: extensionUri ? 'https://www.bilibili.com' : url.origin })
           else
             requestHeaders.push(details.requestHeaders[i])
 

@@ -45,9 +45,6 @@ export async function getManifest() {
     host_permissions: [
       '*://*.bilibili.com/*',
       '*://*.hdslb.com/*',
-      '*://*.bilivideo.com/*',
-      '*://*.bilivideo.cn/*',
-      '*://*.acgvideo.com/*',
     ],
     content_scripts: [
       {
