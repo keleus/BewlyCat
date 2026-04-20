@@ -273,7 +273,13 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
                 {{ item.title }}
               </h3>
               <div text="$bew-text-2 sm" m="t-4" flex="~" align="items-center">
-                {{ item.owner.name }}
+                <ALink
+                  :href="`https://space.bilibili.com/${item.owner.mid}`"
+                  type="topBar"
+                  :stop-propagation="true"
+                >
+                  {{ item.owner.name }}
+                </ALink>
               </div>
             </div>
           </section>

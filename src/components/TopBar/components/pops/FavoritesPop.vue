@@ -296,7 +296,13 @@ defineExpose({
                   flex="~"
                   items-center
                 >
-                  {{ item.upper.name }}
+                  <ALink
+                    :href="`https://space.bilibili.com/${item.upper.mid}`"
+                    type="topBar"
+                    :stop-propagation="true"
+                  >
+                    {{ item.upper.name }}
+                  </ALink>
                 </div>
               </div>
             </section>
