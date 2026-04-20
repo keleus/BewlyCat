@@ -31,14 +31,14 @@ export function useTopBarInteraction() {
   const { activatedPage, reachTop } = useBewlyApp()
 
   // 监听 URL 变化，使其响应式
-  const currentLocationSearch = ref(window.location.search)
+  const currentLocationHref = ref(window.location.href)
 
-  function updateCurrentLocationSearch() {
-    currentLocationSearch.value = window.location.search
+  function updateCurrentLocationHref() {
+    currentLocationHref.value = window.location.href
   }
 
-  useEventListener(window, 'pushstate', updateCurrentLocationSearch)
-  useEventListener(window, 'popstate', updateCurrentLocationSearch)
+  useEventListener(window, 'pushstate', updateCurrentLocationHref)
+  useEventListener(window, 'popstate', updateCurrentLocationHref)
 
   // TopBar 相关计算属性
   const forceWhiteIcon = computed((): boolean => {
@@ -92,7 +92,8 @@ export function useTopBarInteraction() {
   })
 
   const showSearchBar = computed((): boolean => {
-    const isSearchPage = SEARCH_PAGE_URL.test(location.href)
+    const currentUrl = currentLocationHref.value
+    const isSearchPage = SEARCH_PAGE_URL.test(currentUrl)
 
     if (isHomePage()) {
       if (settings.value.useOriginalBilibiliHomepage)
@@ -114,6 +115,9 @@ export function useTopBarInteraction() {
         return false
     }
     else if (isSearchPage) {
+      // 原生搜索站点本身已有搜索框；启用插件搜索结果页后，隐藏顶栏搜索框以避免重复。
+      if (settings.value.usePluginSearchResultsPage)
+        return false
       return true
     }
 
