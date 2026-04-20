@@ -37,6 +37,11 @@ const pendingLoad = ref(false)
 // IntersectionObserver 实例
 let observer: IntersectionObserver | null = null
 
+function cleanupObserver() {
+  observer?.disconnect()
+  observer = null
+}
+
 // 开始加载图片
 function startLoad() {
   isVisible.value = true
@@ -69,7 +74,7 @@ onMounted(() => {
   // 创建并绑定 IntersectionObserver 的函数
   const createObserver = () => {
     // 先断开之前的 observer，避免重复
-    observer?.disconnect()
+    cleanupObserver()
 
     observer = new IntersectionObserver(
       (entries) => {
@@ -84,7 +89,7 @@ onMounted(() => {
               startLoad()
             }
             // 一旦加载，断开 observer，避免重复触发
-            observer?.disconnect()
+            cleanupObserver()
           }
         })
       },
@@ -121,19 +126,14 @@ onMounted(() => {
       }
     }
   })
+})
 
-  // 页面滚动停止时加载 pending 图片
-  watch(isScrolling, (scrolling) => {
-    if (!scrolling && pendingLoad.value && !isVisible.value) {
-      pendingLoad.value = false
-      startLoad()
-    }
-  })
-
-  // 页面卸载时断开 observer
-  onBeforeUnmount(() => {
-    observer?.disconnect()
-  })
+onBeforeUnmount(() => {
+  cleanupObserver()
+  pendingLoad.value = false
+  actualSrc.value = ''
+  isVisible.value = false
+  isLoaded.value = false
 })
 
 // 监听图片加载完成

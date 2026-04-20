@@ -375,7 +375,7 @@ onBeforeUnmount(() => {
       <LazyPicture
         :src="coverImageUrl"
         loading="lazy"
-        root-margin="150px"
+        root-margin="96px"
         :show-skeleton="false"
         @loaded="emit('imageLoaded')"
       />
