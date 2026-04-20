@@ -147,7 +147,7 @@ pnpm build-firefox
 
 #### 其他临时分支
 
-- **feat/**: 此分支用于提交新的功能
+- **feat/**: 此分支用于提交新的功能。
 - **doc/**: 此分支专门用于修复文档, 不涉及功能改动。
 - **fix/**: 此分支专门用于修复 dev 分支中出现的错误。
 
@@ -164,11 +164,11 @@ pnpm build-firefox
 - `chore`：构建过程或工具链的变更
 - `perf`：性能改进
 - `ci`：持续集成/交付的变更
-也欢迎增加 scope 和 footer
-例如:
-`fix(dock): xxx`
-`变更描述`
-`相关 PR: url`
+
+也欢迎增加 scope 和 footer，例如：
+- fix(dock): xxx
+- 变更描述
+- 相关 PR: url
 
 ### I18n
 

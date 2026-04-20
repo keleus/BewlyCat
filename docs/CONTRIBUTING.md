@@ -144,7 +144,7 @@ Then package it to the `extension-firefox` folder
 
 #### Other Temporary Branches
 
-- **feat/**: This branch is used to submit new features
+- **feat/**: This branch is used to submit new features.
 - **doc/**: This branch is specifically used for fixing documentation, no functional changes.
 - **fix/**: This branch is specifically used for fixing errors in the dev branch.
 
@@ -161,11 +161,11 @@ You can also refer to the [Angular commit message guidelines](https://github.com
 - `chore`: Changes to the build process or toolchain
 - `perf`: Performance improvement
 - `ci`: Changes to continuous integration/delivery
-Also welcome to add scope and footer
-For example:
-`fix(dock): xxx`
-`Change description`
-`Related PR: url`
+
+Also welcome to add scope and footer, for example:
+- fix(dock): xxx
+- Change description
+- Related PR: url
 
 ### I18n
 
