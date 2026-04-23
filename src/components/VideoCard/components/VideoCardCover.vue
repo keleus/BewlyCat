@@ -509,8 +509,11 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Watcher later button -->
-        <button
+        <div
           v-if="showWatcherLater"
+          role="button"
+          tabindex="0"
+          :aria-label="isInWatchLater ? $t('common.added') : $t('common.save_to_watch_later')"
           pos="absolute top-0 right-0" z="2"
           p="x-2 y-1" m="1"
           rounded="$bew-radius"
@@ -520,6 +523,8 @@ onBeforeUnmount(() => {
           transform="scale-70 group-hover/cover:scale-100"
           duration-300
           @click.prevent.stop="emit('toggleWatchLater')"
+          @keydown.enter.prevent.stop="emit('toggleWatchLater')"
+          @keydown.space.prevent.stop="emit('toggleWatchLater')"
         >
           <Tooltip v-if="!isInWatchLater" :content="$t('common.save_to_watch_later')" placement="bottom-right" type="dark">
             <div i-mingcute:carplay-line />
@@ -527,7 +532,7 @@ onBeforeUnmount(() => {
           <Tooltip v-else :content="$t('common.added')" placement="bottom-right" type="dark">
             <Icon icon="line-md:confirm" />
           </Tooltip>
-        </button>
+        </div>
 
         <!-- Modern layout: Cover stats (bottom overlay) -->
         <div
