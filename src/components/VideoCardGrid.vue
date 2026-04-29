@@ -1228,9 +1228,14 @@ function getUniqueKey(item: T, index: number): string | number {
   overflow-anchor: none;
 }
 
+.video-card-grid-container {
+  overflow-anchor: none;
+}
+
 :deep(.video-card-container) {
   contain: layout style;
   content-visibility: auto;
+  overflow-anchor: none;
   contain-intrinsic-size: auto none;
   min-width: 0;
 }
