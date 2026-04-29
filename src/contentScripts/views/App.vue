@@ -126,7 +126,13 @@ const handleUndoRefresh = ref<() => void>()
 const handleForwardRefresh = ref<() => void>()
 // 使用新的枚举状态管理撤销/前进按钮
 const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
+const canRefreshCurrentPage = computed((): boolean => {
+  return activatedPage.value !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou
+})
 const handleThrottledPageRefresh = useThrottleFn(() => {
+  if (!canRefreshCurrentPage.value)
+    return
+
   const viewport = scrollViewportRef.value
   if (!viewport) {
     handlePageRefresh.value?.()

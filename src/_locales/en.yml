@@ -443,7 +443,7 @@ settings:
   search_page_mode_wallpaper_fixed: Make the wallpaper of the search page mode fixed
   home_tabs_adjustment: Tabs adjustment
   home_tabs_adjustment_desc: The first activated tab is the default page.
-  always_show_tabs_on_home_page: Always show tabs on the home page
+  always_show_tabs_on_home_page: Hide home tabs while scrolling
   topbar_visibility: BewlyBewly's top bar visibility
   topbar_visibility_desc: >-
     If you are using Bilibili Evolved's top bar, you can turn BewlyBewly's top

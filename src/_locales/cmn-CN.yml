@@ -439,7 +439,7 @@ settings:
   search_page_mode_wallpaper_fixed: 将搜索页模式的壁纸固定
   home_tabs_adjustment: 标签栏调整
   home_tabs_adjustment_desc: 第一个激活的标签项是默认界面
-  always_show_tabs_on_home_page: 总是显示首页标签栏
+  always_show_tabs_on_home_page: 滚动隐藏首页标签栏
   topbar_visibility: 顶栏可见性
   topbar_visibility_desc: 如果您正在使用 Bilibili Evolved 的顶栏，您可以在这里关闭 BewlyCat 的顶栏。
   use_original_bilibili_homepage: 使用原版 Bilibili 首页

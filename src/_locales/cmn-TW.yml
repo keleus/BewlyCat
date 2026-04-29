@@ -393,7 +393,7 @@ settings:
   search_page_mode_wallpaper_fixed: 將搜尋頁模式的背景固定
   home_tabs_adjustment: 標籤欄調整
   home_tabs_adjustment_desc: 第一個啟用的標籤項目調整頁面將是起始頁面。
-  always_show_tabs_on_home_page: 總是顯示首頁標籤欄
+  always_show_tabs_on_home_page: 捲動時隱藏首頁標籤欄
   topbar_visibility: 頂欄可視性
   topbar_visibility_desc: 如果你正在使用 Bilibili Evolved 的頂欄，你可以在這裏關閉 BewlyBewly 的頂欄。
   use_original_bilibili_homepage: 使用原版 Bilibili 首頁

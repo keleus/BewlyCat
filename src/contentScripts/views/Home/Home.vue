@@ -2,7 +2,7 @@
 import { useThrottleFn } from '@vueuse/core'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
+import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { gridLayout, settings } from '~/logic'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
@@ -17,6 +17,10 @@ const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => 
 
 // ✅ 性能优化：缓存 scrollTop 值，避免重复 DOM 读取
 const cachedScrollTop = ref(0)
+const previousScrollTop = ref(0)
+const homeTabsVisibilityAnchorScrollTop = ref(0)
+const HOME_TABS_HIDE_SCROLL_THRESHOLD = 20
+const HOME_TABS_SHOW_SCROLL_THRESHOLD = 20
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
@@ -37,7 +41,7 @@ const shouldMoveTabsUp = ref<boolean>(false)
 const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
-const topBarVisibility = ref<boolean>(false)
+const topBarVisibility = ref<boolean>(true)
 const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   return [
     { icon: 'i-mingcute:table-3-line', iconActivated: 'i-mingcute:table-3-fill', value: 'adaptive' },
@@ -45,6 +49,12 @@ const gridLayoutIcons = computed((): GridLayoutIcon[] => {
     { icon: 'i-mingcute:list-check-3-line', iconActivated: 'i-mingcute:list-check-3-fill', value: 'oneColumn' },
   ]
 })
+
+interface TopBarScrollVisibilityPayload {
+  visible: boolean
+  scrollTop: number
+  scrollDelta: number
+}
 
 // 使用deep监听
 watch(() => settings.value.homePageTabVisibilityList, () => {
@@ -70,42 +80,125 @@ function computeTabs(): HomeTab[] {
   return targetTabs
 }
 
+function shouldFollowTopBarScrollVisibility() {
+  return settings.value.alwaysShowTabsOnHomePage && settings.value.autoHideTopBar && settings.value.showTopBar
+}
+
+function setHomeTabsHidden(hidden: boolean, scrollTop: number) {
+  if (!hidden)
+    homeTabsVisibilityAnchorScrollTop.value = scrollTop
+
+  shouldMoveTabsUp.value = hidden
+}
+
+function syncHomeTabsVisibilityWithTopBar(payload: TopBarScrollVisibilityPayload) {
+  if (!settings.value.alwaysShowTabsOnHomePage) {
+    setHomeTabsHidden(false, payload.scrollTop)
+    return
+  }
+
+  const visibleTop = settings.value.useSearchPageModeOnHomePage ? 510 : 0
+  if (payload.scrollTop <= visibleTop) {
+    setHomeTabsHidden(false, payload.scrollTop)
+    return
+  }
+
+  if (payload.visible) {
+    setHomeTabsHidden(false, payload.scrollTop)
+    return
+  }
+
+  if (payload.scrollDelta <= 0)
+    return
+
+  setHomeTabsHidden(true, payload.scrollTop)
+}
+
+function updateHomeTabsScrollVisibility(scrollTop: number) {
+  if (!settings.value.alwaysShowTabsOnHomePage) {
+    setHomeTabsHidden(false, scrollTop)
+    previousScrollTop.value = scrollTop
+    return
+  }
+
+  if (shouldFollowTopBarScrollVisibility()) {
+    previousScrollTop.value = scrollTop
+    return
+  }
+
+  const visibleTop = settings.value.useSearchPageModeOnHomePage ? 510 : 0
+  if (scrollTop <= visibleTop) {
+    setHomeTabsHidden(false, scrollTop)
+    previousScrollTop.value = scrollTop
+    return
+  }
+
+  const scrollDelta = scrollTop - previousScrollTop.value
+  if (shouldMoveTabsUp.value) {
+    if (scrollDelta > 0) {
+      homeTabsVisibilityAnchorScrollTop.value = scrollTop
+    }
+    else if (scrollDelta < 0 && homeTabsVisibilityAnchorScrollTop.value - scrollTop > HOME_TABS_SHOW_SCROLL_THRESHOLD) {
+      setHomeTabsHidden(false, scrollTop)
+    }
+  }
+  else {
+    if (scrollDelta < 0) {
+      homeTabsVisibilityAnchorScrollTop.value = scrollTop
+    }
+    else if (
+      scrollDelta > 0
+      && scrollTop - homeTabsVisibilityAnchorScrollTop.value > HOME_TABS_HIDE_SCROLL_THRESHOLD
+    ) {
+      setHomeTabsHidden(true, scrollTop)
+    }
+  }
+
+  previousScrollTop.value = scrollTop
+}
+
+watch([
+  () => settings.value.alwaysShowTabsOnHomePage,
+  () => settings.value.autoHideTopBar,
+  () => settings.value.showTopBar,
+  () => settings.value.useSearchPageModeOnHomePage,
+], ([enabled]) => {
+  if (!enabled) {
+    setHomeTabsHidden(false, cachedScrollTop.value)
+  }
+  else if (shouldFollowTopBarScrollVisibility()) {
+    syncHomeTabsVisibilityWithTopBar({
+      visible: topBarVisibility.value,
+      scrollTop: cachedScrollTop.value,
+      scrollDelta: 0,
+    })
+  }
+  else {
+    updateHomeTabsScrollVisibility(cachedScrollTop.value)
+  }
+
+  previousScrollTop.value = cachedScrollTop.value
+})
+
 onMounted(() => {
   showSearchPageMode.value = true
 
   // ✅ 性能优化：订阅滚动事件以缓存 scrollTop，避免后续 DOM 读取
   emitter.on(OVERLAY_SCROLL_BAR_SCROLL, (scrollTop: number) => {
     cachedScrollTop.value = scrollTop
+    updateHomeTabsScrollVisibility(scrollTop)
   })
 
   emitter.off(TOP_BAR_VISIBILITY_CHANGE)
   emitter.on(TOP_BAR_VISIBILITY_CHANGE, (val) => {
     topBarVisibility.value = val
-    shouldMoveTabsUp.value = false
+  })
 
-    // Allow moving tabs up only when the top bar is not hidden & is set to auto-hide
-    // This feature is primarily designed to compatible with the Bilibili Evolved's top bar
-    // Even when the BewlyBewly top bar is hidden, the Bilibili Evolved top bar still exists, so not moving up
-    if (settings.value.autoHideTopBar && settings.value.showTopBar) {
-      if (!settings.value.useSearchPageModeOnHomePage) {
-        if (val)
-          shouldMoveTabsUp.value = false
-
-        else
-          shouldMoveTabsUp.value = true
-      }
-      else {
-        // fix #349
-        // ✅ 性能优化：使用缓存的 scrollTop，避免 DOM 读取
-        const scrollTop = cachedScrollTop.value
-
-        if (val)
-          shouldMoveTabsUp.value = false
-
-        else if (scrollTop > 510 + 40)
-          shouldMoveTabsUp.value = true
-      }
-    }
+  emitter.off(TOP_BAR_SCROLL_VISIBILITY_CHANGE)
+  emitter.on(TOP_BAR_SCROLL_VISIBILITY_CHANGE, (payload: TopBarScrollVisibilityPayload) => {
+    topBarVisibility.value = payload.visible
+    if (shouldFollowTopBarScrollVisibility())
+      syncHomeTabsVisibilityWithTopBar(payload)
   })
 
   currentTabs.value = computeTabs()
@@ -116,6 +209,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   emitter.off(TOP_BAR_VISIBILITY_CHANGE)
+  emitter.off(TOP_BAR_SCROLL_VISIBILITY_CHANGE)
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL)
 })
 
@@ -224,7 +318,7 @@ function toggleTabContentLoading(loading: boolean) {
         :class="{ hide: shouldMoveTabsUp }"
       >
         <section
-          v-if="!(!settings.alwaysShowTabsOnHomePage && currentTabs.length === 1)"
+          v-if="currentTabs.length > 0"
           class="glass-panel"
           bg="$bew-elevated" p-1
           w="[calc(100%-280px)]" max-w="fit"
@@ -323,7 +417,10 @@ function toggleTabContentLoading(loading: boolean) {
 }
 
 .hide {
-  --uno: "important-translate-y--70px";
+  transform: translateY(calc(-100% - 12px)) !important;
+  opacity: 0;
+  pointer-events: none;
+  transition-property: transform, opacity;
 }
 
 .glass-panel {

@@ -375,7 +375,7 @@ settings:
   search_page_mode_wallpaper_fixed: 定住搵嘢頁模式嘅背景
   home_tabs_adjustment: 分頁欄調整
   home_tabs_adjustment_desc: 第一個啓用嘅分頁項目會係開始頁面。
-  always_show_tabs_on_home_page: 永遠顯示主頁分頁欄
+  always_show_tabs_on_home_page: 捲動時隱藏主頁分頁欄
   topbar_visibility: BewlyBewly 頂欄可視性
   topbar_visibility_desc: 若然你係用緊 Bilibili Evolved 嘅頂欄，你可以喺度閂咗 BewlyBewly 嘅頂欄去。
   use_original_bilibili_homepage: 用返原本嘅 Bilibili 主頁

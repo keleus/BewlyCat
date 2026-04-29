@@ -133,6 +133,17 @@ const showBackToTopOrRefreshButton = computed((): boolean => {
   return isHomePage()
 })
 
+const canRefreshCurrentPage = computed((): boolean => {
+  if (props.activatedPage === AppPage.Search || props.activatedPage === AppPage.SearchResults)
+    return false
+
+  return props.activatedPage !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou
+})
+
+const showBackToTopOrRefreshActions = computed((): boolean => {
+  return showBackToTopOrRefreshButton.value && (canRefreshCurrentPage.value || !reachTop.value)
+})
+
 /**
  * Whether to show the undo/forward buttons
  * Only show on Home page when current sub-page is ForYou
@@ -217,14 +228,11 @@ function handleBackToTopOrRefresh(action: 'backToTop' | 'refresh' | 'auto' = 'au
     emit('backToTop')
   }
   else if (action === 'refresh') {
-    emit('refresh')
+    if (canRefreshCurrentPage.value)
+      emit('refresh')
   }
   else {
-    // 搜索页面和搜索结果页只显示返回顶部，不显示刷新
-    if (props.activatedPage === AppPage.Search || props.activatedPage === AppPage.SearchResults) {
-      emit('backToTop')
-    }
-    else if (reachTop.value) {
+    if (reachTop.value && canRefreshCurrentPage.value) {
       emit('refresh')
     }
     else {
@@ -406,7 +414,7 @@ function handleHomeRefreshKeydown(event: KeyboardEvent) {
       return
 
     // 如果没有输入框获得焦点且显示刷新按钮，则触发刷新
-    if (showBackToTopOrRefreshButton.value) {
+    if (showBackToTopOrRefreshButton.value && canRefreshCurrentPage.value) {
       event.preventDefault()
       handleBackToTopOrRefresh('refresh')
     }
@@ -557,7 +565,7 @@ onUnmounted(() => {
 
       <!-- Back to top & refresh buttons -->
       <div
-        v-if="showBackToTopOrRefreshButton"
+        v-if="showBackToTopOrRefreshActions"
         :style="{
           bottom: settings.dockPosition === 'bottom' ? 'unset' : 0,
           right: settings.dockPosition === 'bottom' ? 0 : 'unset',
@@ -573,7 +581,7 @@ onUnmounted(() => {
           <template v-for="key in 2" :key="key">
             <Transition name="fade">
               <button
-                v-if="(key === 1 && activatedPage !== AppPage.Search && activatedPage !== AppPage.SearchResults) || (key === 2 && !reachTop)"
+                v-if="(key === 1 && canRefreshCurrentPage) || (key === 2 && !reachTop)"
                 class="back-to-top-or-refresh-btn"
                 :class="{
                   inactive: hoveringDockItem.themeMode && isDark,
@@ -604,7 +612,7 @@ onUnmounted(() => {
           >
             <Transition name="fade">
               <Icon
-                v-if="reachTop && activatedPage !== AppPage.Search && activatedPage !== AppPage.SearchResults"
+                v-if="reachTop && canRefreshCurrentPage"
                 icon="line-md:rotate-270"
                 shrink-0 rotate-90 absolute text-2xl
               />

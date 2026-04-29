@@ -1,4 +1,5 @@
 export const TOP_BAR_VISIBILITY_CHANGE = 'topBarVisibilityChange'
+export const TOP_BAR_SCROLL_VISIBILITY_CHANGE = 'topBarScrollVisibilityChange'
 export const OVERLAY_SCROLL_BAR_SCROLL = 'overlayScrollBarScroll'
 export const OVERLAY_SCROLL_STATE_CHANGE = 'overlayScrollStateChange'
 export const BEWLY_MOUNTED = 'bewlyMounted'

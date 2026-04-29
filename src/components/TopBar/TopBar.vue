@@ -4,7 +4,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
-import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
+import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -117,7 +117,9 @@ watch(() => topBarStore.isSwitcherButtonVisible, () => {
 // 滚动处理
 const scrollTop = ref<number>(0)
 const oldScrollTop = ref<number>(0)
-const SCROLL_THRESHOLD = 10 // 滚动阈值，只有滚动超过这个值才触发顶栏显示/隐藏
+const topBarVisibilityAnchorScrollTop = ref<number>(0)
+const TOP_BAR_HIDE_SCROLL_THRESHOLD = 20
+const TOP_BAR_SHOW_SCROLL_THRESHOLD = 20
 
 // 保存overlay scroll的handler引用，用于正确移除监听器
 let overlayScrollHandler: ((scrollTop: number) => void) | null = null
@@ -143,6 +145,9 @@ function handleScroll(arg?: number | Event): void {
 
   // 计算滚动距离，只有超过阈值才处理
   const scrollDelta = scrollTop.value - oldScrollTop.value
+  const finishScrollHandling = () => {
+    oldScrollTop.value = scrollTop.value
+  }
 
   // 在视频页面处理不同的配置
   if (isVideoOrBangumiPage()) {
@@ -151,77 +156,88 @@ function handleScroll(arg?: number | Event): void {
     // 总是显示：不处理滚动隐藏
     if (config === VideoPageTopBarConfig.AlwaysShow) {
       // 不做任何处理，保持显示
-      oldScrollTop.value = scrollTop.value
+      finishScrollHandling()
       return
     }
 
     // 总是隐藏：不处理滚动显示
     if (config === VideoPageTopBarConfig.AlwaysHide) {
       // 不做任何处理，保持隐藏
-      oldScrollTop.value = scrollTop.value
+      finishScrollHandling()
       return
     }
 
     // 鼠标显示：不处理滚动事件
     if (config === VideoPageTopBarConfig.ShowOnMouse) {
-      oldScrollTop.value = scrollTop.value
+      finishScrollHandling()
       return
     }
 
     // 滚动显示：处理滚动逻辑
     if (config === VideoPageTopBarConfig.ShowOnScroll) {
       if (scrollTop.value === 0) {
-        toggleTopBarVisible(true)
-        oldScrollTop.value = scrollTop.value
+        setTopBarVisibleFromScroll(true, scrollDelta)
       }
-      else if (Math.abs(scrollDelta) > SCROLL_THRESHOLD) {
+      else if (!hideTopBar.value && scrollDelta < 0) {
+        topBarVisibilityAnchorScrollTop.value = scrollTop.value
+      }
+      else if (hideTopBar.value && scrollDelta > 0) {
+        topBarVisibilityAnchorScrollTop.value = scrollTop.value
+      }
+      else if (!hideTopBar.value && scrollDelta > 0 && scrollTop.value - topBarVisibilityAnchorScrollTop.value > TOP_BAR_HIDE_SCROLL_THRESHOLD) {
         // 只有滚动超过阈值才更新状态
-        if (scrollDelta > 0) {
-          toggleTopBarVisible(false)
-        }
-        else {
-          toggleTopBarVisible(true)
-        }
-        oldScrollTop.value = scrollTop.value
+        setTopBarVisibleFromScroll(false, scrollDelta)
+      }
+      else if (hideTopBar.value && scrollDelta < 0 && topBarVisibilityAnchorScrollTop.value - scrollTop.value > TOP_BAR_SHOW_SCROLL_THRESHOLD) {
+        setTopBarVisibleFromScroll(true, scrollDelta)
       }
     }
+    finishScrollHandling()
   }
   // 处理其他页面的自动隐藏逻辑
   else {
     if (scrollTop.value === 0) {
-      toggleTopBarVisible(true)
-      oldScrollTop.value = scrollTop.value
-      return
-    }
-
-    // 只有滚动超过阈值才处理
-    if (Math.abs(scrollDelta) <= SCROLL_THRESHOLD) {
+      setTopBarVisibleFromScroll(true, scrollDelta)
+      finishScrollHandling()
       return
     }
 
     // 在用户首页强制开启滚动隐藏，无论设置如何
-    if (isUserSpacePage()) {
-      if (isOutsideTopBar.value && scrollTop.value !== 0) {
-        if (scrollDelta > 0)
-          toggleTopBarVisible(false)
-        else
-          toggleTopBarVisible(true)
+    if (isUserSpacePage() || settings.value.autoHideTopBar) {
+      if (!hideTopBar.value && scrollDelta < 0) {
+        topBarVisibilityAnchorScrollTop.value = scrollTop.value
+      }
+      else if (hideTopBar.value && scrollDelta > 0) {
+        topBarVisibilityAnchorScrollTop.value = scrollTop.value
+      }
+      else if (!hideTopBar.value && scrollDelta > 0 && scrollTop.value - topBarVisibilityAnchorScrollTop.value > TOP_BAR_HIDE_SCROLL_THRESHOLD) {
+        setTopBarVisibleFromScroll(false, scrollDelta)
+      }
+      else if (hideTopBar.value && scrollDelta < 0 && topBarVisibilityAnchorScrollTop.value - scrollTop.value > TOP_BAR_SHOW_SCROLL_THRESHOLD) {
+        setTopBarVisibleFromScroll(true, scrollDelta)
       }
     }
-    else if (settings.value.autoHideTopBar && isOutsideTopBar.value && scrollTop.value !== 0) {
-      if (scrollDelta > 0)
-        toggleTopBarVisible(false)
-      else
-        toggleTopBarVisible(true)
-    }
-
-    oldScrollTop.value = scrollTop.value
+    finishScrollHandling()
   }
 }
 
 function toggleTopBarVisible(visible: boolean) {
   desiredTopBarVisible.value = visible
   applyTopBarVisibility()
+}
+
+function setTopBarVisibleFromScroll(visible: boolean, scrollDelta: number) {
+  topBarVisibilityAnchorScrollTop.value = scrollTop.value
+  toggleTopBarVisible(visible)
+  emitTopBarScrollVisibilityChange(!hideTopBar.value, scrollDelta)
+}
+
+function emitTopBarScrollVisibilityChange(visible: boolean, scrollDelta: number) {
+  emitter.emit(TOP_BAR_SCROLL_VISIBILITY_CHANGE, {
+    visible,
+    scrollTop: scrollTop.value,
+    scrollDelta,
+  })
 }
 
 function setupScrollListeners() {
