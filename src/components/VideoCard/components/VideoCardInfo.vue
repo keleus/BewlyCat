@@ -10,7 +10,7 @@ import VideoCardAuthorName from '../VideoCardAuthor/components/VideoCardAuthorNa
 interface Props {
   skeleton?: boolean
   video?: Video
-  layout: 'modern' | 'old'
+  layout: 'modern' | 'compact' | 'old'
   horizontal?: boolean
   videoUrl?: string
   moreBtn: boolean
@@ -43,13 +43,15 @@ const primaryTags = computed(() => {
     return tag.filter(Boolean)
   return [tag]
 })
+
+const isModernLikeLayout = computed(() => props.layout === 'modern' || props.layout === 'compact')
 </script>
 
 <template>
   <div
     :style="{
       width: horizontal ? '100%' : 'unset',
-      marginTop: horizontal ? '0' : layout === 'modern' ? '0.5rem' : '1rem',
+      marginTop: horizontal ? '0' : isModernLikeLayout ? '0.5rem' : '1rem',
     }"
     flex="~"
   >
@@ -62,14 +64,14 @@ const primaryTags = computed(() => {
         shrink-0
       />
 
-      <div class="group/desc" flex="~ col" :class="layout === 'modern' ? 'gap-2' : ''" w="full" align="items-start">
+      <div class="group/desc" flex="~ col" :class="isModernLikeLayout ? 'gap-2' : ''" w="full" align="items-start">
         <!-- Title skeleton -->
         <div flex="~ gap-1 justify-between items-start" w="full">
           <!-- 使用与真实标题完全相同的样式和高度 -->
           <div
             class="keep-two-lines" :class="[
-              layout === 'modern' ? 'w-[calc(100%-40px)]' : 'w-full',
-              layout === 'modern' ? 'video-card-title' : '',
+              isModernLikeLayout ? 'w-[calc(100%-40px)]' : 'w-full',
+              isModernLikeLayout ? 'video-card-title' : '',
             ]"
             :style="titleStyle"
             text="overflow-ellipsis $bew-text-1 lg"
@@ -79,7 +81,7 @@ const primaryTags = computed(() => {
             <div w="3/4" bg="$bew-skeleton" rounded-4px style="height: 1em;" />
           </div>
           <div
-            v-if="layout === 'modern'" shrink-0 w-8 h-8 rounded="1/2"
+            v-if="isModernLikeLayout" shrink-0 w-8 h-8 rounded="1/2"
             bg="$bew-skeleton"
           />
         </div>
@@ -192,12 +194,12 @@ const primaryTags = computed(() => {
         :is-live="video.liveStatus === 1"
       />
 
-      <div class="group/desc" flex="~ col" :class="layout === 'modern' ? 'gap-2' : ''" w="full" align="items-start">
+      <div class="group/desc" flex="~ col" :class="isModernLikeLayout ? 'gap-2' : ''" w="full" align="items-start">
         <div flex="~ gap-1 justify-between items-start" w="full" pos="relative">
           <h3
             :class="[
               video.liveStatus === 1 ? 'keep-one-line' : 'keep-two-lines',
-              layout === 'modern' ? 'video-card-title' : '',
+              isModernLikeLayout ? 'video-card-title' : '',
               titleFontSizeClass,
             ]"
             text="overflow-ellipsis $bew-text-1"
@@ -216,7 +218,7 @@ const primaryTags = computed(() => {
             class="video-card__more-btn"
             :class="[
               { 'more-active': showVideoOptions },
-              layout === 'modern' ? 'overflow-hidden rounded-full' : '',
+              isModernLikeLayout ? 'overflow-hidden rounded-full' : '',
             ]"
             bg="hover:$bew-fill-2 active:$bew-fill-3"
             shrink-0 w-32px h-32px m="t--3px r--4px"

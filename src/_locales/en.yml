@@ -264,6 +264,7 @@ settings:
   video_card_layout_desc: Switch between the redesigned card and the legacy layout.
   video_card_layout_option:
     modern: Modern layout
+    compact: Compact layout
     old: Classic layout
   font_size_option:
     xs: Extra small

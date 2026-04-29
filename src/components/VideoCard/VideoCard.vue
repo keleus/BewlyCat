@@ -5,7 +5,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
 import { settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
-import { calcCurrentTime, numFormatter } from '~/utils/dataFormatter'
+import { calcCurrentTime, calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 
 import VideoCardCover from './components/VideoCardCover.vue'
 import VideoCardInfo from './components/VideoCardInfo.vue'
@@ -31,9 +31,9 @@ interface Props {
   isFollowingPage?: boolean
 }
 
-const layout = computed((): 'modern' | 'old' => {
+const layout = computed((): VideoCardLayoutSetting => {
   const layoutSetting = settings.value.videoCardLayout as VideoCardLayoutSetting | undefined
-  return layoutSetting === 'old' ? 'old' : 'modern'
+  return layoutSetting === 'old' || layoutSetting === 'compact' ? layoutSetting : 'modern'
 })
 
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
@@ -61,12 +61,13 @@ function formatStatValue(count?: number, countStr?: string) {
 }
 
 const coverStatValues = computed(() => {
-  if (!props.video || layout.value !== 'modern') {
+  if (!props.video || layout.value === 'old') {
     return {
       view: '',
       danmaku: '',
       like: '',
       duration: '',
+      published: '',
     }
   }
 
@@ -79,11 +80,24 @@ const coverStatValues = computed(() => {
     duration: props.video.duration
       ? calcCurrentTime(props.video.duration)
       : props.video.durationStr ?? '',
+    published: props.video.publishedTimestamp
+      ? calcTimeSince(props.video.publishedTimestamp * 1000)
+      : props.video.capsuleText?.trim() ?? '',
   }
 })
 
 const coverStatsVisibility = computed(() => {
-  const { view, danmaku, like, duration } = coverStatValues.value
+  const { view, danmaku, like, duration, published } = coverStatValues.value
+
+  if (layout.value === 'compact') {
+    return {
+      view: false,
+      danmaku: false,
+      like: false,
+      duration: Boolean(duration),
+      published: Boolean(published),
+    }
+  }
 
   // 无用户信息模式下，只显示播放量和时长
   if (props.hideAuthor) {
@@ -92,6 +106,7 @@ const coverStatsVisibility = computed(() => {
       danmaku: false,
       like: false,
       duration: Boolean(duration),
+      published: false,
     }
   }
 
@@ -102,11 +117,12 @@ const coverStatsVisibility = computed(() => {
     danmaku: Boolean(danmaku),
     like: Boolean(like),
     duration: Boolean(duration),
+    published: false,
   }
 })
 
 const hasCoverStats = computed(() => {
-  if (layout.value !== 'modern')
+  if (layout.value === 'old')
     return false
 
   const visibility = coverStatsVisibility.value
@@ -117,6 +133,7 @@ const hasCoverStats = computed(() => {
     || (visibility.danmaku && values.danmaku)
     || (visibility.like && values.like)
     || (visibility.duration && values.duration)
+    || (visibility.published && values.published)
   )
 })
 
@@ -165,7 +182,7 @@ const primaryTags = computed(() => {
 
 // 使用 CSS 变量定义，让浏览器通过 CSS 容器查询自动响应
 const coverStatsStyle = computed(() => {
-  if (layout.value !== 'modern')
+  if (layout.value === 'old')
     return {}
 
   // 所有响应式样式都通过 CSS 容器查询处理，这里只设置基础值
@@ -330,7 +347,7 @@ provide('getVideoType', () => props.type!)
     duration-300 ease-in-out
     rounded="$bew-radius"
     :class="[
-      layout === 'modern' ? 'mb-3' : 'mb-4',
+      layout !== 'old' ? 'mb-3' : 'mb-4',
       skeleton ? 'video-card-container--skeleton' : 'video-card-container--interactive',
     ]"
   >

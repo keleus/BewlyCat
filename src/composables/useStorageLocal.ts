@@ -188,6 +188,25 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
   let hasStoredValue = false
   let suppressedWriteCount = 0
   let syncStarted = false
+  const pendingOwnStorageChanges: unknown[] = []
+
+  const normalizePendingStorageValue = (value: unknown) => value ?? null
+
+  const enqueuePendingOwnStorageChange = (value: unknown) => {
+    pendingOwnStorageChanges.push(normalizePendingStorageValue(value))
+    if (pendingOwnStorageChanges.length > 20)
+      pendingOwnStorageChanges.shift()
+  }
+
+  const consumePendingOwnStorageChange = (value: unknown) => {
+    const normalizedValue = normalizePendingStorageValue(value)
+    const index = pendingOwnStorageChanges.findIndex(pendingValue => Object.is(pendingValue, normalizedValue))
+    if (index === -1)
+      return false
+
+    pendingOwnStorageChanges.splice(index, 1)
+    return true
+  }
 
   const stopDirtyWatch = watch(
     data,
@@ -199,10 +218,27 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
   )
 
   const persistValue = async () => {
-    if (data.value == null)
-      await browser.storage.local.remove(key)
-    else
-      await browser.storage.local.set({ [key]: await serializer.write(data.value) })
+    if (data.value == null) {
+      enqueuePendingOwnStorageChange(null)
+      try {
+        await browser.storage.local.remove(key)
+      }
+      catch (error) {
+        consumePendingOwnStorageChange(null)
+        throw error
+      }
+    }
+    else {
+      const serializedValue = await serializer.write(data.value)
+      enqueuePendingOwnStorageChange(serializedValue)
+      try {
+        await browser.storage.local.set({ [key]: serializedValue })
+      }
+      catch (error) {
+        consumePendingOwnStorageChange(serializedValue)
+        throw error
+      }
+    }
   }
 
   const startSync = () => {
@@ -242,6 +278,9 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
         const change = changes[key]
 
         try {
+          if (consumePendingOwnStorageChange(change.newValue))
+            return
+
           suppressedWriteCount++
           if (change.newValue == null) {
             data.value = createInitialValue(initialValue) as T

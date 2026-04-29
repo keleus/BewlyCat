@@ -10,7 +10,7 @@ defineProps<{
 <template>
   <!-- Modern Video Card Skeleton -->
   <div
-    v-if="settings.videoCardLayout === 'modern' && !horizontal"
+    v-if="settings.videoCardLayout !== 'old' && !horizontal"
     mb-3 pointer-events-none select-none
     style="aspect-ratio: 11 / 10;"
   >
@@ -24,7 +24,7 @@ defineProps<{
         <div shrink-0 w-8 h-8 rounded="1/2" bg="$bew-skeleton" />
       </div>
 
-      <div flex="~ gap-2 items-center" w="full" mt-1>
+      <div v-if="settings.videoCardLayout === 'modern'" flex="~ gap-2 items-center" w="full" mt-1>
         <div w="34px" h="34px" rounded="1/2" bg="$bew-skeleton" shrink-0 />
         <div flex="~ col gap-1" w="[calc(100%-50px)]">
           <div w="60%" h-3 bg="$bew-skeleton" rounded-4px />
@@ -36,7 +36,7 @@ defineProps<{
 
   <!-- Modern Video Card Skeleton (Horizontal) -->
   <div
-    v-else-if="settings.videoCardLayout === 'modern' && horizontal"
+    v-else-if="settings.videoCardLayout !== 'old' && horizontal"
     flex="~ gap-6"
     mb-3 pointer-events-none select-none
     style="contain: layout; min-height: 180px;"
@@ -55,7 +55,7 @@ defineProps<{
         <div shrink-0 w-8 h-8 rounded="1/2" bg="$bew-skeleton" />
       </div>
 
-      <div flex="~ gap-2 items-center" w="full" mt-2>
+      <div v-if="settings.videoCardLayout === 'modern'" flex="~ gap-2 items-center" w="full" mt-2>
         <div w="30px" h="30px" rounded="1/2" bg="$bew-skeleton" shrink-0 />
         <div flex="~ col gap-1" w="[calc(100%-46px)]">
           <div w="60%" h-3 bg="$bew-skeleton" rounded-4px />

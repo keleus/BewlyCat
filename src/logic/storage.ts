@@ -104,7 +104,7 @@ export interface ShortcutsSettings {
 }
 
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
-export type VideoCardLayoutSetting = 'modern' | 'old'
+export type VideoCardLayoutSetting = 'modern' | 'compact' | 'old'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 
 export interface ShadowCurvePoint {

@@ -204,6 +204,7 @@ settings:
   video_card_layout_desc: 在新版與舊版影片卡片呈現之間切換。
   video_card_layout_option:
     modern: 新版
+    compact: 緊湊
     old: 經典版
   font_size_option:
     xs: 特小
