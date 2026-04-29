@@ -416,6 +416,7 @@ else {
       injectCSS(`
       /* Hide Bilibili's own page elements, preserving third-party extensions (e.g., Bili-Evolved) */
       body > #app,
+      body > #i_cecream,
       .home-redesign-base,
       .bilibili-gate-root {
         display: none !important;

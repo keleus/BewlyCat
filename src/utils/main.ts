@@ -163,15 +163,15 @@ export function delay(ms: number) {
  * @returns true if the current page is the home page
  */
 export function isHomePage(url: string = location.href): boolean {
-  if (
-    /https?:\/\/(?:www\.)?bilibili.com\/?(?:#\/?)?$/.test(url)
-    || /https?:\/\/(?:www\.)?bilibili.com\/index\.html$/.test(url)
-    || /https?:\/\/(?:www\.)?bilibili.com\/\?spm_id_from=.*/.test(url)
-    || /https?:\/\/www\.bilibili\.com\/\?.*$/.test(url)
-  ) {
-    return true
+  try {
+    const urlObj = new URL(url)
+    const isHttp = urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
+    const isBilibiliHomeHost = urlObj.hostname === 'www.bilibili.com' || urlObj.hostname === 'bilibili.com'
+    return isHttp && isBilibiliHomeHost && (urlObj.pathname === '/' || urlObj.pathname === '/index.html')
   }
-  return false
+  catch {
+    return false
+  }
 }
 
 /**
