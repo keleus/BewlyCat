@@ -310,6 +310,31 @@ const showTopBar = computed((): boolean => {
     || !isHomePage()
 })
 
+function getActiveElement(): Element | null {
+  const shadowRoot = document.getElementById('bewly')?.shadowRoot
+  return shadowRoot?.activeElement || document.activeElement
+}
+
+function isEditableElement(element: Element | null): boolean {
+  return element instanceof HTMLInputElement
+    || element instanceof HTMLTextAreaElement
+    || element instanceof HTMLSelectElement
+    || (element instanceof HTMLElement && (element.isContentEditable || !!element.closest('[contenteditable="true"]')))
+}
+
+function focusScrollViewport(options: { force?: boolean } = {}) {
+  nextTick(() => {
+    const viewport = scrollViewportRef.value
+    if (!viewport || !showBewlyPage.value)
+      return
+
+    if (!options.force && (showSettings.value || activeDrawer.value !== DrawerType.None || isEditableElement(getActiveElement())))
+      return
+
+    viewport.focus({ preventScroll: true })
+  })
+}
+
 const isFirstTimeActivatedPageChange = ref<boolean>(true)
 watch(
   () => activatedPage.value,
@@ -322,9 +347,19 @@ watch(
     }
 
     scrollViewportRef.value?.scrollTo({ top: 0 })
+    focusScrollViewport()
     isFirstTimeActivatedPageChange.value = false
   },
   { immediate: true },
+)
+
+watch(
+  () => showBewlyPage.value,
+  (visible) => {
+    if (visible)
+      focusScrollViewport()
+  },
+  { immediate: true, flush: 'post' },
 )
 
 watch([() => showTopBar.value, () => activatedPage.value], () => {
@@ -375,22 +410,12 @@ onMounted(() => {
     // Force overwrite Bilibili Evolved body tag & html tag background color
     document.body.style.setProperty('background-color', 'unset', 'important')
 
-    // 聚焦到滚动容器的函数
-    const focusScrollContainer = () => {
-      nextTick(() => {
-        const viewport = scrollViewportRef.value
-        if (!viewport)
-          return
-
-        viewport.setAttribute('tabindex', '0')
-        viewport.focus({ preventScroll: true })
-      })
-    }
+    focusScrollViewport()
 
     // Windows/Linux: 监听 Home 键
     onKeyStroke('Home', (e) => {
       handleThrottledBackToTop()
-      focusScrollContainer()
+      focusScrollViewport({ force: true })
       e.preventDefault()
     })
 
@@ -399,7 +424,7 @@ onMounted(() => {
       // 确保只有同时按下 Command 和 ArrowUp 键时才触发
       if (e.key === 'ArrowUp' && e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
         handleThrottledBackToTop()
-        focusScrollContainer()
+        focusScrollViewport({ force: true })
         e.preventDefault()
       }
     })
@@ -854,6 +879,7 @@ if (settings.value.cleanUrlArgument) {
           <div
             ref="scrollViewportRef"
             h-inherit of-y-auto of-x-hidden
+            tabindex="-1"
             style="overscroll-behavior: contain;"
             @scroll.passive="handleNativeScroll"
           >

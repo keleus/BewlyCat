@@ -96,6 +96,17 @@ const visibleKeyboardSelectionMode = computed<KeyboardSelectionMode>(() => {
     return 'history'
   return 'none'
 })
+const shouldShowSearchDropdown = computed(() => {
+  if (!isFocus.value)
+    return false
+
+  const hasHotSearch = (props.showHotSearch ?? settings.value.showHotSearchInTopBar) && hotSearchList.value.length > 0
+  const hasSearchHistory = searchHistory.value.length !== 0
+  if (!hasHotSearch && !hasSearchHistory)
+    return false
+
+  return keyword.value.length === 0 || keyboardSelectionMode.value === 'history'
+})
 
 // 计算 placeholder 显示文本
 const placeholderText = computed(() => {
@@ -572,7 +583,6 @@ function handleClearKeyword() {
         autocorrect="off"
         class="group"
         enterkeyhint="search"
-        inputmode="search"
         name="search"
         rounded="60px"
         p="l-6 r-18 y-3"
@@ -581,7 +591,6 @@ function handleClearKeyword() {
         text="$b-search-bar-normal-text-color group-focus-within:$b-search-bar-focus-text-color group-hover:$b-search-bar-hover-text-color"
         un-border="1 solid $bew-border-color"
         transition="all duration-300"
-        type="search"
         @focus="isFocus = true"
         @input="handleNativeInput"
         @keydown.enter.stop="handleKeyEnter"
@@ -618,11 +627,7 @@ function handleClearKeyword() {
 
     <Transition name="result-list">
       <div
-        v-if="
-          isFocus
-            && keyword.length === 0
-            && (searchHistory.length !== 0 || ((showHotSearch ?? settings.showHotSearchInTopBar) && hotSearchList.length > 0))
-        "
+        v-if="shouldShowSearchDropdown"
         id="search-dropdown"
       >
         <!-- 热搜区块 -->
@@ -806,13 +811,6 @@ function handleClearKeyword() {
       appearance: none;
       position: relative;
       z-index: 1;
-
-      &[type="search"]::-webkit-search-cancel-button,
-      &[type="search"]::-webkit-search-decoration,
-      &[type="search"]::-webkit-search-results-button,
-      &[type="search"]::-webkit-search-results-decoration {
-        appearance: none;
-      }
 
       &:hover {
         --uno: "bg-$b-search-bar-hover-color";
