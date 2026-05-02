@@ -115,10 +115,8 @@ export function useTopBarInteraction() {
         return false
     }
     else if (isSearchPage) {
-      // 原生搜索站点本身已有搜索框；启用插件搜索结果页后，隐藏顶栏搜索框以避免重复。
-      if (settings.value.usePluginSearchResultsPage)
-        return false
-      return true
+      // 原生搜索页面本身已有搜索框，隐藏顶栏搜索框避免重复
+      return false
     }
 
     return true
