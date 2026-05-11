@@ -42,6 +42,8 @@ const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
 const topBarVisibility = ref<boolean>(true)
+const shouldShowHomeTabs = computed(() => currentTabs.value.length > 1)
+const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value || settings.value.enableGridLayoutSwitcher)
 const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   return [
     { icon: 'i-mingcute:table-3-line', iconActivated: 'i-mingcute:table-3-fill', value: 'adaptive' },
@@ -58,7 +60,7 @@ interface TopBarScrollVisibilityPayload {
 
 // 使用deep监听
 watch(() => settings.value.homePageTabVisibilityList, () => {
-  currentTabs.value = computeTabs()
+  syncCurrentTabs()
 }, { deep: true })
 
 function computeTabs(): HomeTab[] {
@@ -78,6 +80,17 @@ function computeTabs(): HomeTab[] {
   }
 
   return targetTabs
+}
+
+function syncCurrentTabs() {
+  const nextTabs = computeTabs()
+  currentTabs.value = nextTabs
+
+  const fallbackPage = nextTabs[0]?.page || mainStore.homeTabs[0].page
+  if (!nextTabs.some(tab => tab.page === activatedPage.value)) {
+    activatedPage.value = fallbackPage
+    homeActivatedPage.value = fallbackPage
+  }
 }
 
 function shouldFollowTopBarScrollVisibility() {
@@ -201,10 +214,7 @@ onMounted(() => {
       syncHomeTabsVisibilityWithTopBar(payload)
   })
 
-  currentTabs.value = computeTabs()
-  activatedPage.value = currentTabs.value[0].page
-  // Initialize global home activated page state
-  homeActivatedPage.value = currentTabs.value[0].page
+  syncCurrentTabs()
 })
 
 onUnmounted(() => {
@@ -313,12 +323,13 @@ function toggleTabContentLoading(loading: boolean) {
       </Transition>
 
       <header
+        v-if="shouldShowHomeHeader"
         pos="sticky top-[calc(var(--bew-top-bar-height)+10px)]" w-full z-9 m="b-4" duration-300
         ease-in-out flex="~ justify-between items-start gap-4"
         :class="{ hide: shouldMoveTabsUp }"
       >
         <section
-          v-if="currentTabs.length > 0"
+          v-if="shouldShowHomeTabs"
           class="glass-panel"
           bg="$bew-elevated" p-1
           w="[calc(100%-280px)]" max-w="fit"
