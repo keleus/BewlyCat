@@ -49,7 +49,7 @@ const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
 const isInitialized = ref<boolean>(false)
-const { handlePageRefresh } = useBewlyApp()
+const { handlePageRefresh, canRefreshHomeSubPage } = useBewlyApp()
 
 // 合并直播和视频列表用于虚拟滚动
 const combinedVideoList = computed(() => {
@@ -90,6 +90,7 @@ async function handleVisibilityChange() {
 }
 
 onMounted(() => {
+  canRefreshHomeSubPage.value = true
   initData()
 
   // 确保在 nextTick 中调用，以保证所有依赖都已准备好
@@ -104,17 +105,20 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  canRefreshHomeSubPage.value = false
   // 清理页面可见性监听器
   document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onActivated(() => {
+  canRefreshHomeSubPage.value = true
   initPageAction()
   // 组件激活时重新检查页面可见性
   isPageVisible.value = !document.hidden
 })
 
 onDeactivated(() => {
+  canRefreshHomeSubPage.value = false
   // 组件失活时设置为不可见
   isPageVisible.value = false
 })

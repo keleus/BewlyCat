@@ -27,6 +27,7 @@ export interface BewlyAppProvider {
   mainAppRef: Ref<HTMLElement>
   handleReachBottom: Ref<(() => void) | undefined>
   handlePageRefresh: Ref<(() => void) | undefined>
+  canRefreshHomeSubPage: Ref<boolean>
   // 添加撤销刷新的处理函数
   handleUndoRefresh: Ref<(() => void) | undefined>
   handleForwardRefresh: Ref<(() => void) | undefined>

@@ -124,10 +124,11 @@ const handlePageRefresh = ref<() => void>()
 const handleReachBottom = ref<() => void>()
 const handleUndoRefresh = ref<() => void>()
 const handleForwardRefresh = ref<() => void>()
+const canRefreshHomeSubPage = ref<boolean>(false)
 // 使用新的枚举状态管理撤销/前进按钮
 const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
 const canRefreshCurrentPage = computed((): boolean => {
-  return activatedPage.value !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou
+  return activatedPage.value !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou || canRefreshHomeSubPage.value
 })
 const handleThrottledPageRefresh = useThrottleFn(() => {
   if (!canRefreshCurrentPage.value)
@@ -643,6 +644,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   reachTop,
   handleBackToTop,
   handlePageRefresh,
+  canRefreshHomeSubPage,
   handleReachBottom,
   handleUndoRefresh,
   handleForwardRefresh,

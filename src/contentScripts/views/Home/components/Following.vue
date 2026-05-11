@@ -149,7 +149,7 @@ const emit = defineEmits<{
 
 useI18n()
 
-const { scrollViewportRef, handlePageRefresh } = useBewlyApp()
+const { scrollViewportRef, handlePageRefresh, canRefreshHomeSubPage } = useBewlyApp()
 const videoList = ref<VideoElement[]>([])
 const uploaderList = ref<UploaderInfo[]>([])
 const selectedUploader = ref<number | null>(null) // null means "All"
@@ -166,6 +166,7 @@ const requestFailed = ref<boolean>(false)
 const noMoreContent = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
 const shouldMoveAsideUp = ref<boolean>(false)
+const isRefreshContextActive = ref<boolean>(false)
 
 // 分别管理ALL和单个UP主的分页状态
 const allViewOffset = ref<string>('')
@@ -173,6 +174,12 @@ const allViewUpdateBaseline = ref<string>('')
 const userMomentsOffset = ref<string>('')
 
 const currentUserMid = ref<number>(0) // 当前登录用户的mid
+
+function syncRefreshAvailability() {
+  canRefreshHomeSubPage.value = isRefreshContextActive.value && selectedUploader.value === null
+}
+
+watch(selectedUploader, syncRefreshAvailability, { immediate: true })
 
 // Watch topBarVisibility to control aside position
 watch(() => props.topBarVisibility, () => {
@@ -1522,6 +1529,8 @@ function jumpToLoginPage() {
 }
 
 onMounted(() => {
+  isRefreshContextActive.value = true
+  syncRefreshAvailability()
   initData()
 
   // 确保在 nextTick 中调用，以保证所有依赖都已准备好
@@ -1531,7 +1540,19 @@ onMounted(() => {
 })
 
 onActivated(() => {
+  isRefreshContextActive.value = true
+  syncRefreshAvailability()
   initPageAction()
+})
+
+onDeactivated(() => {
+  isRefreshContextActive.value = false
+  syncRefreshAvailability()
+})
+
+onUnmounted(() => {
+  isRefreshContextActive.value = false
+  syncRefreshAvailability()
 })
 
 function initPageAction() {

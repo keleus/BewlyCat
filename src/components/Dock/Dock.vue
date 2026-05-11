@@ -32,7 +32,7 @@ const emit = defineEmits<{
 
 const mainStore = useMainStore()
 const { isDark, toggleDark } = useDark()
-const { reachTop, homeActivatedPage, undoForwardState } = useBewlyApp()
+const { reachTop, homeActivatedPage, undoForwardState, canRefreshHomeSubPage } = useBewlyApp()
 
 // 计算属性：是否显示撤销按钮
 const showUndo = computed(() => undoForwardState.value === UndoForwardState.ShowUndo)
@@ -137,7 +137,7 @@ const canRefreshCurrentPage = computed((): boolean => {
   if (props.activatedPage === AppPage.Search || props.activatedPage === AppPage.SearchResults)
     return false
 
-  return props.activatedPage !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou
+  return props.activatedPage !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou || canRefreshHomeSubPage.value
 })
 
 const showBackToTopOrRefreshActions = computed((): boolean => {
