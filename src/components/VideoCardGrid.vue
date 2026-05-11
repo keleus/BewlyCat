@@ -1,4 +1,5 @@
 <script setup lang="ts" generic="T = any">
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useDebounceFn } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
@@ -155,12 +156,11 @@ const emit = defineEmits<{
 
 // Grid 容器 ref
 const gridContainerRef = ref<HTMLElement | null>(null)
-const gridContentRef = ref<HTMLElement | null>(null)
 const loadMoreSentinelRef = ref<HTMLElement | null>(null)
 const isLoadMoreSentinelIntersecting = ref(false)
 
 // 使用共享的 Grid 布局 composable（CSS 媒体查询驱动，无 JS 计算开销）
-const { gridClass, gridCssVars } = useGridLayout(() => props.gridLayout)
+const { gridCssVars } = useGridLayout(() => props.gridLayout)
 
 // 获取 shadow 样式变量（避免依赖外部传入）
 const { shadowStyleVars } = useVideoCardShadowStyle()
@@ -346,10 +346,6 @@ function setupIntersectionObserver() {
 
 // RAF 标志，用于批量处理 DOM 读取
 let checkPreloadRAF: number | null = null
-let virtualWindowRAF: number | null = null
-let measureRowSpanRAF: number | null = null
-let scrollPositionRestoreRAF: number | null = null
-let scrollPositionRestoreToken = 0
 let containerResizeObserver: ResizeObserver | null = null
 
 // 检查是否需要预加载
@@ -532,14 +528,11 @@ onMounted(() => {
   setupIntersectionObserver()
   // 初始检查
   nextTick(() => {
-    scheduleMeasureGridRowSpan()
-    scheduleVirtualWindowUpdate()
     checkShouldPreload()
   })
 })
 
 onUnmounted(() => {
-  scrollPositionRestoreToken++
   cleanupScrollListeners()
   cleanupContainerResizeObserver()
   cleanupIntersectionObserver()
@@ -550,18 +543,6 @@ onUnmounted(() => {
   if (checkPreloadRAF !== null) {
     cancelAnimationFrame(checkPreloadRAF)
     checkPreloadRAF = null
-  }
-  if (virtualWindowRAF !== null) {
-    cancelAnimationFrame(virtualWindowRAF)
-    virtualWindowRAF = null
-  }
-  if (measureRowSpanRAF !== null) {
-    cancelAnimationFrame(measureRowSpanRAF)
-    measureRowSpanRAF = null
-  }
-  if (scrollPositionRestoreRAF !== null) {
-    cancelAnimationFrame(scrollPositionRestoreRAF)
-    scrollPositionRestoreRAF = null
   }
   resetTransformCaches()
 })
@@ -630,12 +611,8 @@ function scheduleChunkRender(target: number) {
 // 限制实际渲染的 items（分块显示）
 const limitedDisplayItems = computed(() => displayItems.value.slice(0, renderLimit.value))
 
-const INITIAL_VIRTUAL_ROWS = 6
 const containerWidth = ref(0)
 const viewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 0)
-const measuredRowSpan = ref(getEstimatedRowSpan(props.gridLayout))
-const virtualStartRow = ref(0)
-const virtualEndRow = ref(INITIAL_VIRTUAL_ROWS)
 
 function normalizePositiveInt(value: unknown, fallback: number): number {
   const normalized = Number(value)
@@ -681,6 +658,35 @@ function getEstimatedRowSpan(layout: GridLayoutType): number {
   return 352
 }
 
+function getFallbackEstimatedRowHeight(layout: GridLayoutType): number {
+  return Math.max(1, getEstimatedRowSpan(layout) - getGridGap(layout))
+}
+
+function getEstimatedAdaptiveRowHeight(width: number, columns: number): number {
+  if (width <= 0 || columns <= 0)
+    return getFallbackEstimatedRowHeight('adaptive')
+
+  const gap = getGridGap('adaptive')
+  const cardWidth = Math.max(1, (width - gap * (columns - 1)) / columns)
+  const coverHeight = cardWidth * 9 / 16
+
+  // Keep the first virtual pass close to the actual card height so rows do
+  // not render with a large temporary gap before ResizeObserver catches up.
+  switch (settings.value.videoCardLayout) {
+    case 'compact':
+      return coverHeight + 66
+    case 'old':
+      return coverHeight + 132
+    case 'modern':
+    default:
+      return coverHeight + 112
+  }
+}
+
+function getHorizontalItemHeight(layout: GridLayoutType): number {
+  return layout === 'twoColumns' ? 220 : 172
+}
+
 const resolvedContainerWidth = computed(() => {
   if (containerWidth.value > 0)
     return containerWidth.value
@@ -700,67 +706,38 @@ const currentColumnCount = computed(() =>
 
 const currentGridGap = computed(() => getGridGap(props.gridLayout))
 
-const totalRowCount = computed(() => {
-  if (limitedDisplayItems.value.length === 0)
-    return 0
-  return Math.ceil(limitedDisplayItems.value.length / currentColumnCount.value)
+const VIRTUAL_RETAIN_SCREENS = 2
+
+const virtualItemWidth = computed(() => {
+  const columns = currentColumnCount.value
+  const width = resolvedContainerWidth.value
+  if (columns <= 1)
+    return Math.max(1, width)
+  return Math.max(1, (width - currentGridGap.value * (columns - 1)) / columns)
+})
+
+const estimatedItemHeight = computed(() => {
+  if (props.gridLayout === 'adaptive')
+    return getEstimatedAdaptiveRowHeight(resolvedContainerWidth.value, currentColumnCount.value)
+  return getHorizontalItemHeight(props.gridLayout)
 })
 
 const visibleRowCount = computed(() => {
-  const rowSpan = Math.max(1, measuredRowSpan.value)
+  const rowSpan = Math.max(1, estimatedItemHeight.value + currentGridGap.value)
   return Math.max(1, Math.ceil(viewportHeight.value / rowSpan))
 })
 
 const overscanRowCount = computed(() =>
-  Math.max(2, Math.ceil(visibleRowCount.value * (isFirefox ? 1.5 : 1))),
+  Math.max(2, Math.ceil(visibleRowCount.value * VIRTUAL_RETAIN_SCREENS)),
 )
 
-const virtualWindowRowCount = computed(() =>
-  Math.max(INITIAL_VIRTUAL_ROWS, visibleRowCount.value + overscanRowCount.value * 2),
+const overscanItemCount = computed(() =>
+  overscanRowCount.value * currentColumnCount.value,
 )
 
-const shouldVirtualize = computed(() => {
-  return false
-})
-
-type ScrollElement = HTMLElement | Window
-
-function isWindowScrollElement(scrollElement: ScrollElement): scrollElement is Window {
-  return scrollElement === window
-}
-
-function getWindowScrollTop(): number {
-  return document.scrollingElement?.scrollTop ?? window.scrollY ?? 0
-}
-
-function getScrollTop(scrollElement: ScrollElement): number {
-  if (isWindowScrollElement(scrollElement))
-    return getWindowScrollTop()
-  return scrollElement.scrollTop
-}
-
-function getMaxScrollTop(scrollElement: ScrollElement): number {
-  if (isWindowScrollElement(scrollElement)) {
-    const scrollingElement = document.scrollingElement ?? document.documentElement
-    return Math.max(0, scrollingElement.scrollHeight - window.innerHeight)
-  }
-
-  return Math.max(0, scrollElement.scrollHeight - scrollElement.clientHeight)
-}
-
-function setScrollTop(scrollElement: ScrollElement, scrollTop: number) {
-  const nextScrollTop = Math.max(0, Math.min(scrollTop, getMaxScrollTop(scrollElement)))
-  if (isWindowScrollElement(scrollElement)) {
-    window.scrollTo(0, nextScrollTop)
-    return
-  }
-
-  scrollElement.scrollTop = nextScrollTop
-}
-
-function findScrollElement(): ScrollElement | null {
+function findScrollElement(): HTMLElement | null {
   if (settings.value.useOriginalBilibiliHomepage)
-    return window
+    return document.scrollingElement as HTMLElement | null
 
   let element = gridContainerRef.value?.parentElement ?? null
   while (element) {
@@ -774,144 +751,23 @@ function findScrollElement(): ScrollElement | null {
   return null
 }
 
-function scheduleScrollTopRestore(scrollElement: ScrollElement, targetScrollTop: number) {
-  const token = ++scrollPositionRestoreToken
+const itemVirtualizer = useVirtualizer<HTMLElement, HTMLElement>(computed(() => ({
+  count: limitedDisplayItems.value.length,
+  getScrollElement: () => findScrollElement(),
+  estimateSize: () => estimatedItemHeight.value,
+  overscan: overscanItemCount.value,
+  gap: currentGridGap.value,
+  lanes: currentColumnCount.value,
+  getItemKey: index => getUniqueKey(limitedDisplayItems.value[index], index),
+  shouldAdjustScrollPositionOnItemSizeChange: () => false,
+})))
 
-  nextTick(() => {
-    if (token !== scrollPositionRestoreToken)
-      return
-
-    if (scrollPositionRestoreRAF !== null)
-      cancelAnimationFrame(scrollPositionRestoreRAF)
-
-    scrollPositionRestoreRAF = requestAnimationFrame(() => {
-      scrollPositionRestoreRAF = null
-
-      if (token !== scrollPositionRestoreToken || !shouldVirtualize.value)
-        return
-
-      const currentScrollTop = getScrollTop(scrollElement)
-      if (Math.abs(currentScrollTop - targetScrollTop) > 1)
-        setScrollTop(scrollElement, targetScrollTop)
-    })
-  })
-}
-
-function syncVirtualWindowRows(startRow: number, endRow: number): boolean {
-  const totalRows = totalRowCount.value
-  const safeStart = Math.max(0, Math.min(startRow, totalRows))
-  const safeEnd = Math.max(safeStart, Math.min(endRow, totalRows))
-  const changed = virtualStartRow.value !== safeStart || virtualEndRow.value !== safeEnd
-
-  if (virtualStartRow.value !== safeStart)
-    virtualStartRow.value = safeStart
-  if (virtualEndRow.value !== safeEnd)
-    virtualEndRow.value = safeEnd
-
-  return changed
-}
-
-function updateVirtualWindow() {
-  viewportHeight.value = typeof window !== 'undefined' ? window.innerHeight : viewportHeight.value
-
-  const totalRows = totalRowCount.value
-  if (!shouldVirtualize.value || totalRows === 0) {
-    syncVirtualWindowRows(0, totalRows)
-    return
-  }
-
-  const container = gridContainerRef.value
-  if (!container) {
-    syncVirtualWindowRows(0, Math.min(totalRows, virtualWindowRowCount.value))
-    return
-  }
-
-  const rowSpan = Math.max(1, measuredRowSpan.value)
-  const rect = container.getBoundingClientRect()
-  const maxScrollOffset = Math.max(0, totalRows * rowSpan - viewportHeight.value)
-  const scrollOffset = Math.min(Math.max(-rect.top, 0), maxScrollOffset)
-  const firstVisibleRow = Math.floor(scrollOffset / rowSpan)
-  const startRow = Math.max(0, firstVisibleRow - overscanRowCount.value)
-  const endRow = Math.min(
-    totalRows,
-    firstVisibleRow + visibleRowCount.value + overscanRowCount.value,
-  )
-
-  const scrollElement = findScrollElement()
-  const scrollTop = scrollElement ? getScrollTop(scrollElement) : 0
-  const changed = syncVirtualWindowRows(startRow, endRow)
-
-  if (changed && scrollElement && scrollTop > 0)
-    scheduleScrollTopRestore(scrollElement, scrollTop)
-}
-
-function scheduleVirtualWindowUpdate() {
-  if (virtualWindowRAF !== null)
-    return
-
-  virtualWindowRAF = requestAnimationFrame(() => {
-    virtualWindowRAF = null
-    updateVirtualWindow()
-  })
-}
-
-function measureGridRowSpan() {
-  const grid = gridContentRef.value
-  const fallbackRowSpan = getEstimatedRowSpan(props.gridLayout)
-
-  if (!grid) {
-    if (Math.abs(measuredRowSpan.value - fallbackRowSpan) > 1)
-      measuredRowSpan.value = fallbackRowSpan
-    return
-  }
-
-  const sampleCard = grid.querySelector('.video-card-container') as HTMLElement | null
-  if (!sampleCard) {
-    if (Math.abs(measuredRowSpan.value - fallbackRowSpan) > 1)
-      measuredRowSpan.value = fallbackRowSpan
-    return
-  }
-
-  const sampleHeight = sampleCard.getBoundingClientRect().height
-  if (sampleHeight <= 0)
-    return
-
-  const styles = window.getComputedStyle(grid)
-  const rowGap = Number.parseFloat(styles.rowGap || styles.gap || '') || currentGridGap.value
-  const nextRowSpan = Math.max(sampleHeight + rowGap, fallbackRowSpan * 0.75)
-
-  if (Math.abs(nextRowSpan - measuredRowSpan.value) > 1) {
-    const previousRowSpan = measuredRowSpan.value
-    const topSpacerDelta = shouldVirtualize.value
-      ? virtualStartRow.value * (nextRowSpan - previousRowSpan)
-      : 0
-    const scrollElement = topSpacerDelta !== 0 ? findScrollElement() : null
-    const scrollTop = scrollElement ? getScrollTop(scrollElement) : 0
-
-    measuredRowSpan.value = nextRowSpan
-
-    if (scrollElement && scrollTop > 0)
-      scheduleScrollTopRestore(scrollElement, scrollTop + topSpacerDelta)
-
-    scheduleVirtualWindowUpdate()
-  }
-}
-
-function scheduleMeasureGridRowSpan() {
-  if (measureRowSpanRAF !== null)
-    return
-
-  measureRowSpanRAF = requestAnimationFrame(() => {
-    measureRowSpanRAF = null
-    measureGridRowSpan()
-  })
-}
+const virtualItems = computed(() => itemVirtualizer.value.getVirtualItems())
+const virtualTotalHeight = computed(() => itemVirtualizer.value.getTotalSize())
 
 function handleResize() {
   viewportHeight.value = typeof window !== 'undefined' ? window.innerHeight : viewportHeight.value
-  measuredRowSpan.value = getEstimatedRowSpan(props.gridLayout)
-  scheduleMeasureGridRowSpan()
-  scheduleVirtualWindowUpdate()
+  itemVirtualizer.value.measure()
   debouncedCheck()
 }
 
@@ -942,61 +798,11 @@ function setupContainerResizeObserver() {
 
     containerWidth.value = nextWidth
     viewportHeight.value = typeof window !== 'undefined' ? window.innerHeight : viewportHeight.value
-    scheduleMeasureGridRowSpan()
-    scheduleVirtualWindowUpdate()
+    itemVirtualizer.value.measure()
   })
 
   containerResizeObserver.observe(container)
 }
-
-const virtualStartIndex = computed(() => {
-  if (!shouldVirtualize.value)
-    return 0
-  return Math.min(limitedDisplayItems.value.length, virtualStartRow.value * currentColumnCount.value)
-})
-
-const virtualEndIndex = computed(() => {
-  if (!shouldVirtualize.value)
-    return limitedDisplayItems.value.length
-  return Math.min(limitedDisplayItems.value.length, virtualEndRow.value * currentColumnCount.value)
-})
-
-const topSpacerHeight = computed(() => {
-  if (!shouldVirtualize.value)
-    return 0
-  return Math.max(0, virtualStartRow.value * measuredRowSpan.value)
-})
-
-const bottomSpacerHeight = computed(() => {
-  if (!shouldVirtualize.value)
-    return 0
-
-  const remainingRows = Math.max(0, totalRowCount.value - virtualEndRow.value)
-  return remainingRows * measuredRowSpan.value
-})
-
-interface WindowedDisplayItem<T = any> {
-  index: number
-  item: T
-  key: string | number
-}
-
-const virtualWindowItems = computed<WindowedDisplayItem<T>[]>(() => {
-  const items = limitedDisplayItems.value
-  const startIndex = virtualStartIndex.value
-  const endIndex = virtualEndIndex.value
-  const slicedItems = shouldVirtualize.value ? items.slice(startIndex, endIndex) : items
-  const baseIndex = shouldVirtualize.value ? startIndex : 0
-
-  return slicedItems.map((item, localIndex) => {
-    const index = baseIndex + localIndex
-    return {
-      index,
-      item,
-      key: getUniqueKey(item, index),
-    }
-  })
-})
 
 // 类型定义：每个 VideoCard 的渲染所需数据
 interface VideoCardRenderItem {
@@ -1019,57 +825,66 @@ function inferVideoTypeFromVideo(video: Video | undefined): 'rcmd' | 'appRcmd' |
   return props.videoType || 'common'
 }
 
-// 关键优化：把 isSkeleton / inferVideoType / transform 从 template 挪到 computed，
-// 避免任何"无关更新"(例如 scroll state)导致 11k 次函数调用。
-const renderItems = computed<VideoCardRenderItem[]>(() => {
-  const items = virtualWindowItems.value
+function createRenderItem(item: T, index: number): VideoCardRenderItem {
+  const key = getUniqueKey(item, index)
   const fallbackType = props.videoType || 'common'
-  const out: VideoCardRenderItem[] = Array.from({ length: items.length })
 
-  for (let index = 0; index < items.length; index++) {
-    const entry = items[index]!
-    const { item, key } = entry
-
-    // 自动生成骨架屏
-    if ((item as any)?._isSkeleton) {
-      out[index] = {
-        key,
-        index: entry.index,
-        item,
-        skeleton: true,
-        type: fallbackType,
-        video: undefined,
-      }
-      continue
+  // 自动生成骨架屏
+  if ((item as any)?._isSkeleton) {
+    return {
+      key,
+      index,
+      item,
+      skeleton: true,
+      type: fallbackType,
+      video: undefined,
     }
-
-    // 外部骨架判断（命中时不做 transform）
-    if (props.isSkeletonItem) {
-      try {
-        if (props.isSkeletonItem(item)) {
-          out[index] = {
-            key,
-            index: entry.index,
-            item,
-            skeleton: true,
-            type: fallbackType,
-            video: undefined,
-          }
-          continue
-        }
-      }
-      catch {
-        // ignore
-      }
-    }
-
-    const video = getTransformedVideo(item, key)
-    const skeleton = !video || (video.id == null && !video.bvid)
-    const type = skeleton ? fallbackType : inferVideoTypeFromVideo(video)
-    out[index] = { key, index: entry.index, item, skeleton, type, video }
   }
 
-  return out
+  // 外部骨架判断（命中时不做 transform）
+  if (props.isSkeletonItem) {
+    try {
+      if (props.isSkeletonItem(item)) {
+        return {
+          key,
+          index,
+          item,
+          skeleton: true,
+          type: fallbackType,
+          video: undefined,
+        }
+      }
+    }
+    catch {
+      // ignore
+    }
+  }
+
+  const video = getTransformedVideo(item, key)
+  const skeleton = !video || (video.id == null && !video.bvid)
+  const type = skeleton ? fallbackType : inferVideoTypeFromVideo(video)
+  return { key, index, item, skeleton, type, video }
+}
+
+interface VirtualCardRenderItem extends VideoCardRenderItem {
+  lane: number
+  start: number
+}
+
+// 关键优化：用 TanStack lanes 直接虚拟化卡片，避免行容器与 Grid 布局互相修正。
+const renderItems = computed<VirtualCardRenderItem[]>(() => {
+  const sourceItems = limitedDisplayItems.value
+  return virtualItems.value.flatMap((virtualItem) => {
+    const item = sourceItems[virtualItem.index]
+    if (!item)
+      return []
+
+    return [{
+      ...createRenderItem(item, virtualItem.index),
+      lane: virtualItem.lane,
+      start: virtualItem.start,
+    }]
+  })
 })
 
 interface VideoTransformCacheEntry<T = any> {
@@ -1088,7 +903,7 @@ watch(() => props.transformItem, () => {
 })
 
 watch(
-  () => virtualWindowItems.value.map(item => item.key),
+  () => renderItems.value.map(item => item.key),
   (activeKeys) => {
     const activeKeySet = new Set(activeKeys)
 
@@ -1124,16 +939,13 @@ function getTransformedVideo(item: T, key: string | number): Video | undefined {
 
 watch(gridContainerRef, () => {
   setupContainerResizeObserver()
-  scheduleMeasureGridRowSpan()
-  scheduleVirtualWindowUpdate()
+  itemVirtualizer.value.measure()
 })
 
 watch(
-  [currentColumnCount, () => props.gridLayout],
+  [currentColumnCount, () => props.gridLayout, () => settings.value.videoCardLayout],
   () => {
-    measuredRowSpan.value = getEstimatedRowSpan(props.gridLayout)
-    scheduleMeasureGridRowSpan()
-    scheduleVirtualWindowUpdate()
+    itemVirtualizer.value.measure()
   },
   { flush: 'post' },
 )
@@ -1141,16 +953,7 @@ watch(
 watch(
   () => limitedDisplayItems.value.length,
   () => {
-    scheduleMeasureGridRowSpan()
-    scheduleVirtualWindowUpdate()
-  },
-  { flush: 'post' },
-)
-
-watch(
-  [() => virtualStartIndex.value, () => virtualEndIndex.value, currentColumnCount],
-  () => {
-    scheduleMeasureGridRowSpan()
+    itemVirtualizer.value.measure()
   },
   { flush: 'post' },
 )
@@ -1216,39 +1019,36 @@ function getUniqueKey(item: T, index: number): string | number {
       :style="gridContainerStyle"
     >
       <div
-        v-if="topSpacerHeight > 0"
-        class="virtual-spacer"
-        :style="{ height: `${topSpacerHeight}px` }"
-        aria-hidden="true"
-      />
-
-      <!-- Grid 内容（统一渲染，避免 v-if/v-else 切换导致的滚动跳动） -->
-      <div ref="gridContentRef" :class="gridClass">
-        <VideoCard
+        class="virtual-rows"
+        :style="{ height: `${virtualTotalHeight}px` }"
+      >
+        <div
           v-for="renderItem in renderItems"
           :key="renderItem.key"
-          v-memo="[renderItem.key, renderItem.skeleton, renderItem.type, renderItem.video, showPreview, showWatchLater, isHorizontal, moreBtn]"
-          :skeleton="renderItem.skeleton"
-          :type="renderItem.type"
-          :video="renderItem.video"
-          :show-preview="showPreview"
-          :show-watcher-later="showWatchLater"
-          :horizontal="isHorizontal"
-          :more-btn="moreBtn"
-          :is-following-page="props.isFollowingPage"
+          class="virtual-item"
+          :style="{
+            top: `${renderItem.start}px`,
+            left: `${renderItem.lane * (virtualItemWidth + currentGridGap)}px`,
+            width: `${virtualItemWidth}px`,
+            height: `${estimatedItemHeight}px`,
+          }"
         >
-          <template v-for="(_, name) in $slots" #[name]>
-            <slot :name="name" :item="renderItem.item" />
-          </template>
-        </VideoCard>
+          <VideoCard
+            :skeleton="renderItem.skeleton"
+            :type="renderItem.type"
+            :video="renderItem.video"
+            :show-preview="showPreview"
+            :show-watcher-later="showWatchLater"
+            :horizontal="isHorizontal"
+            :more-btn="moreBtn"
+            :is-following-page="props.isFollowingPage"
+          >
+            <template v-for="(_, name) in $slots" #[name]>
+              <slot :name="name" :item="renderItem.item" />
+            </template>
+          </VideoCard>
+        </div>
       </div>
-
-      <div
-        v-if="bottomSpacerHeight > 0"
-        class="virtual-spacer"
-        :style="{ height: `${bottomSpacerHeight}px` }"
-        aria-hidden="true"
-      />
 
       <div ref="loadMoreSentinelRef" class="load-more-sentinel" aria-hidden="true" />
     </div>
@@ -1354,11 +1154,34 @@ function getUniqueKey(item: T, index: number): string | number {
   align-items: stretch;
 }
 
-.virtual-spacer {
+.virtual-rows {
+  position: relative;
   width: 100%;
-  pointer-events: none;
   contain: layout style;
   overflow-anchor: none;
+}
+
+.virtual-item {
+  position: absolute;
+  left: 0;
+  contain: layout style;
+  overflow-anchor: none;
+  overflow: visible;
+
+  &:hover,
+  &:focus-within {
+    z-index: 2;
+  }
+
+  :deep(.video-card-container) {
+    height: 100%;
+    content-visibility: visible;
+    contain-intrinsic-size: auto none;
+  }
+
+  :deep(.video-card-container > .video-card) {
+    height: 100%;
+  }
 }
 
 .video-card-grid-container {
