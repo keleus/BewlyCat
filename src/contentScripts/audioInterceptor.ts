@@ -30,6 +30,8 @@ interface ManagedVideoListeners {
   onEmptied: () => void
 }
 
+type AudioGraphMode = 'disconnected' | 'processing' | 'bypass'
+
 const PLAYER_VIDEO_SELECTOR = [
   '#bilibiliPlayer video',
   '#bilibili-player video',
@@ -120,6 +122,7 @@ function getGainControlProfile() {
 // Audio Context and Nodes
 let audioContext: AudioContext | null = null
 let audioNodes: AudioNodeBundle | null = null
+let audioGraphMode: AudioGraphMode = 'disconnected'
 const audioNodeCache = new WeakMap<HTMLVideoElement, AudioNodeBundle>()
 
 // Analysis State
@@ -238,8 +241,10 @@ function safelyDisconnect(node: AudioNode | null | undefined) {
 function disconnectCurrentGraph() {
   stopLoudnessAnalysis()
 
-  if (!audioNodes)
+  if (!audioNodes) {
+    audioGraphMode = 'disconnected'
     return
+  }
 
   safelyDisconnect(audioNodes.source)
   safelyDisconnect(audioNodes.analysisHighpass)
@@ -247,11 +252,17 @@ function disconnectCurrentGraph() {
   safelyDisconnect(audioNodes.analyser)
   safelyDisconnect(audioNodes.adaptiveGain)
   safelyDisconnect(audioNodes.limiter)
+  audioGraphMode = 'disconnected'
 }
 
 function connectProcessingGraph() {
   if (!audioNodes || !audioContext)
     return
+
+  if (audioGraphMode === 'processing') {
+    applyLimiterSettings(audioNodes, audioContext)
+    return
+  }
 
   disconnectCurrentGraph()
   applyLimiterSettings(audioNodes, audioContext)
@@ -264,18 +275,23 @@ function connectProcessingGraph() {
   source.connect(adaptiveGain)
   adaptiveGain.connect(limiter)
   limiter.connect(audioContext.destination)
+  audioGraphMode = 'processing'
 }
 
 function connectBypassGraph() {
   if (!audioNodes || !audioContext)
     return
 
+  if (audioGraphMode === 'bypass')
+    return
+
   disconnectCurrentGraph()
   audioNodes.source.connect(audioContext.destination)
+  audioGraphMode = 'bypass'
 }
 
-function disconnectGraphForIdlePlayback(resetAnalysis = false) {
-  disconnectCurrentGraph()
+function suspendProcessingForIdlePlayback(resetAnalysis = false) {
+  stopLoudnessAnalysis()
 
   if (resetAnalysis) {
     resetLoudnessAnalysis()
@@ -308,13 +324,13 @@ function bindVideoListeners(video: HTMLVideoElement) {
 
   const onPause = () => {
     if (video === currentVideoElement) {
-      disconnectGraphForIdlePlayback(true)
+      suspendProcessingForIdlePlayback(true)
     }
   }
 
   const onEnded = () => {
     if (video === currentVideoElement) {
-      disconnectGraphForIdlePlayback(true)
+      suspendProcessingForIdlePlayback(true)
     }
   }
 
@@ -322,7 +338,7 @@ function bindVideoListeners(video: HTMLVideoElement) {
     if (video !== currentVideoElement)
       return
 
-    disconnectGraphForIdlePlayback(true)
+    suspendProcessingForIdlePlayback(true)
   }
 
   video.addEventListener('play', onPlay)
@@ -529,8 +545,8 @@ function updateProcessingState() {
       && !currentVideoElement.ended
 
     if (!isPlaybackActive) {
-      disconnectGraphForIdlePlayback(true)
-      log('Audio graph disconnected while playback is inactive')
+      suspendProcessingForIdlePlayback(true)
+      log('Loudness analysis suspended while playback is inactive')
       return
     }
 

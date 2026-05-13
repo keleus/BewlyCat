@@ -148,6 +148,7 @@ else {
 
   let beforeLoadedStyleEl: HTMLStyleElement | undefined
   let lastUrl = location.href
+  let lastVideoNavigationKey = getVideoNavigationKey(location.href)
   let hasAppliedPlayerMode = false // 添加标志变量
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
@@ -293,17 +294,58 @@ else {
     }
   }
 
+  function getVideoNavigationKey(url: string) {
+    try {
+      const urlObj = new URL(url)
+      if (!isVideoOrBangumiPage(urlObj.href))
+        return ''
+
+      const semanticParams = [
+        'avid',
+        'bvid',
+        'cid',
+        'ep_id',
+        'p',
+        'page',
+        'season_id',
+      ]
+      const params = new URLSearchParams()
+
+      for (const param of semanticParams) {
+        const value = urlObj.searchParams.get(param)
+        if (value !== null)
+          params.set(param, value)
+      }
+
+      const query = params.toString()
+      return `${urlObj.origin}${urlObj.pathname}${query ? `?${query}` : ''}`
+    }
+    catch {
+      return url.split('?')[0].split('#')[0]
+    }
+  }
+
   function checkForUrlChanges() {
     if (location.href !== lastUrl) {
-      lastUrl = location.href
-      hasAppliedPlayerMode = false // URL变化时重置标志
-      watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
-      // 不再重置用户手动修改标志，保持用户的自动播放偏好设置
+      const currentVideoNavigationKey = getVideoNavigationKey(location.href)
+      const isMeaningfulVideoNavigation = currentVideoNavigationKey !== lastVideoNavigationKey
 
-      // 重置随机播放初始化状态，避免重复加载
-      resetRandomPlayInitialization()
+      lastUrl = location.href
+      lastVideoNavigationKey = currentVideoNavigationKey
 
       if (isVideoOrBangumiPage()) {
+        if (!isMeaningfulVideoNavigation) {
+          requestAnimationFrame(checkForUrlChanges)
+          return
+        }
+
+        hasAppliedPlayerMode = false // URL变化时重置标志
+        watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
+        // 不再重置用户手动修改标志，保持用户的自动播放偏好设置
+
+        // 重置随机播放初始化状态，避免重复加载
+        resetRandomPlayInitialization()
+
         applyDefaultPlayerMode()
         // 如果是视频页面内部跳转，延迟执行滚动
         if (isVideoOrBangumiPage()) {

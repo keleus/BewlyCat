@@ -5,6 +5,7 @@ let isRandomPlayEnabled = false
 let isRandomPlayInitialized = false
 const visitedEpisodes: Set<number> = new Set()
 let originalEndedListener: (() => void) | null = null
+let originalPauseListener: (() => void) | null = null
 let userManuallySetRandomPlay = false // 用户手动设置的随机播放状态标志
 
 // 获取随机播放文本
@@ -339,7 +340,11 @@ export function enableRandomPlay(): void {
     // 移除之前的监听器
     if (originalEndedListener) {
       video.removeEventListener('ended', originalEndedListener)
-      video.removeEventListener('pause', originalEndedListener)
+      originalEndedListener = null
+    }
+    if (originalPauseListener) {
+      video.removeEventListener('pause', originalPauseListener)
+      originalPauseListener = null
     }
 
     // 标记视频元素，防止重复添加监听器
@@ -402,14 +407,16 @@ export function enableRandomPlay(): void {
     // 监听多个事件以确保兼容性
     video.addEventListener('ended', randomPlayListener)
     // 有些情况下pause事件可能更可靠
-    video.addEventListener('pause', () => {
+    const randomPlayPauseListener = () => {
       // 检查是否是播放结束（当前时间和总时间相近）
       if (video.currentTime > 0 && video.duration > 0 && (video.duration - video.currentTime) < 1) {
         randomPlayListener()
       }
-    })
+    }
+    video.addEventListener('pause', randomPlayPauseListener)
 
     originalEndedListener = randomPlayListener
+    originalPauseListener = randomPlayPauseListener
   }
 
   // 立即尝试设置监听器
@@ -432,13 +439,16 @@ export function enableRandomPlay(): void {
 // 禁用随机播放
 export function disableRandomPlay(): void {
   const video = document.querySelector('video')
-  if (!video || !originalEndedListener) {
+  if (!video || (!originalEndedListener && !originalPauseListener)) {
     return
   }
 
-  video.removeEventListener('ended', originalEndedListener)
-  video.removeEventListener('pause', originalEndedListener)
+  if (originalEndedListener)
+    video.removeEventListener('ended', originalEndedListener)
+  if (originalPauseListener)
+    video.removeEventListener('pause', originalPauseListener)
   originalEndedListener = null
+  originalPauseListener = null
 
   // 移除标记，以便下次可以重新添加
   video.removeAttribute('data-bewly-random-play-listener')
