@@ -880,6 +880,7 @@ if (settings.value.cleanUrlArgument) {
         <template v-if="showBewlyPage">
           <div
             ref="scrollViewportRef"
+            class="bewly-scroll-viewport"
             h-inherit of-y-auto of-x-hidden
             tabindex="-1"
             style="overscroll-behavior: contain;"
@@ -921,5 +922,9 @@ if (settings.value.cleanUrlArgument) {
   > * > * {
     filter: var(--bew-filter-force-dark);
   }
+}
+
+.bewly-scroll-viewport {
+  outline: none;
 }
 </style>
