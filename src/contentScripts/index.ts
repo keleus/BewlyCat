@@ -15,7 +15,7 @@ import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
-import { applyAutoPlayByVideoType, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isVideoPage, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isPlayerDisplayModeReady, isVideoPage, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
@@ -150,6 +150,7 @@ else {
   let lastUrl = location.href
   let lastVideoNavigationKey = getVideoNavigationKey(location.href)
   let hasAppliedPlayerMode = false // 添加标志变量
+  let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
   if (isSupportedPages() || isSupportedIframePages()) {
@@ -215,6 +216,11 @@ else {
 
   // 应用默认播放器模式
   function applyDefaultPlayerMode() {
+    if (!isVideoOrBangumiPage()) {
+      clearPlayerModeRetry()
+      return
+    }
+
     if (hasAppliedPlayerMode)
       return // 如果已经应用过，直接返回
 
@@ -230,18 +236,28 @@ else {
     }
 
     const playerMode = settings.value.defaultVideoPlayerMode
+    const targetPlayerMode = settings.value.keepCollectionVideoDefaultMode && isCollectionVideo()
+      ? 'default'
+      : playerMode
+
+    if (!isPlayerDisplayModeReady(targetPlayerMode)) {
+      schedulePlayerModeRetry()
+      return
+    }
+
+    clearPlayerModeRetry()
 
     // 检查是否为合集视频且启用了保持默认模式
-    if (settings.value.keepCollectionVideoDefaultMode && isCollectionVideo()) {
+    if (targetPlayerMode === 'default' && settings.value.keepCollectionVideoDefaultMode) {
     // 合集视频强制使用默认模式
       defaultMode()
     }
-    else if (!playerMode || playerMode === 'default') {
+    else if (!targetPlayerMode || targetPlayerMode === 'default') {
     // 默认模式也需要居中显示
       defaultMode()
     }
     else {
-      switch (playerMode) {
+      switch (targetPlayerMode) {
         case 'webFullscreen':
           webFullscreen()
           break
@@ -264,6 +280,23 @@ else {
 
     // 延迟添加稍后再看按钮
     scheduleAddWatchLaterButton()
+  }
+
+  function clearPlayerModeRetry() {
+    if (playerModeRetryTimer) {
+      clearTimeout(playerModeRetryTimer)
+      playerModeRetryTimer = undefined
+    }
+  }
+
+  function schedulePlayerModeRetry() {
+    if (playerModeRetryTimer)
+      return
+
+    playerModeRetryTimer = setTimeout(() => {
+      playerModeRetryTimer = undefined
+      applyDefaultPlayerMode()
+    }, document.visibilityState === 'visible' ? 500 : 1000)
   }
 
   // 延迟添加稍后再看按钮
@@ -335,7 +368,7 @@ else {
 
       if (isVideoOrBangumiPage()) {
         if (!isMeaningfulVideoNavigation) {
-          requestAnimationFrame(checkForUrlChanges)
+          scheduleUrlChangeCheck()
           return
         }
 
@@ -359,9 +392,17 @@ else {
         }
       }
     }
-    requestAnimationFrame(checkForUrlChanges)
+    scheduleUrlChangeCheck()
   }
-  requestAnimationFrame(checkForUrlChanges)
+
+  function scheduleUrlChangeCheck() {
+    if (document.visibilityState === 'visible')
+      requestAnimationFrame(checkForUrlChanges)
+    else
+      setTimeout(checkForUrlChanges, 1000)
+  }
+
+  scheduleUrlChangeCheck()
 
   // 处理页面可见性变化
   function handleVisibilityChange() {

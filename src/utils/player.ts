@@ -34,6 +34,8 @@ const _videoClassTag = {
   upLink: 'a[href*="space.bilibili.com"],.up-name[href*="space.bilibili.com"],.upinfo-btn-panel .name[href*="space.bilibili.com"]',
 }
 
+export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen'
+
 // 重试任务类，用于处理重试逻辑
 export class RetryTask {
   private count = 0
@@ -67,6 +69,18 @@ let clockInterval: number | null = null
 // 获取视频元素
 export function getVideoElement(): HTMLVideoElement | null {
   return document.querySelector(_videoClassTag.video)
+}
+
+export function isPlayerDisplayModeReady(mode: DefaultVideoPlayerMode): boolean {
+  if (mode === 'widescreen') {
+    return !!document.querySelector('[data-screen=\'wide\'], .bpx-player-ctrl-wide, .bilibili-player-video-btn-widescreen, .squirtle-video-widescreen')
+  }
+
+  if (mode === 'webFullscreen') {
+    return !!document.querySelector('[data-screen=\'web\'], .bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen, .squirtle-video-pagefullscreen')
+  }
+
+  return !!(document.querySelector(_videoClassTag.player) || getVideoElement())
 }
 
 // 判断是否为视频页面
