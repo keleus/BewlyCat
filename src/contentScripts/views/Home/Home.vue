@@ -12,7 +12,7 @@ import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
 
 const mainStore = useMainStore()
-const { handleBackToTop, homeActivatedPage } = useBewlyApp()
+const { handleBackToTop, homeActivatedPage, homeActivatedPageTouched } = useBewlyApp()
 const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => handleBackToTop(targetScrollTop), 1000)
 
 // ✅ 性能优化：缓存 scrollTop 值，避免重复 DOM 读取
@@ -224,6 +224,8 @@ onUnmounted(() => {
 })
 
 function handleChangeTab(tab: HomeTab) {
+  homeActivatedPageTouched.value = true
+
   if (activatedPage.value === tab.page) {
     // ✅ 性能优化：使用缓存的 scrollTop，避免 DOM 读取
     const scrollTop = cachedScrollTop.value

@@ -22,6 +22,7 @@ export interface BewlyAppProvider {
   activatedPage: Ref<AppPage>
   // 添加Home页面的子页面状态
   homeActivatedPage: Ref<HomeSubPage>
+  homeActivatedPageTouched: Ref<boolean>
   scrollViewportRef: Ref<HTMLElement | null>
   reachTop: Ref<boolean>
   mainAppRef: Ref<HTMLElement>
