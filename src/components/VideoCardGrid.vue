@@ -683,8 +683,16 @@ function getEstimatedAdaptiveRowHeight(width: number, columns: number): number {
   }
 }
 
-function getHorizontalItemHeight(layout: GridLayoutType): number {
-  return layout === 'twoColumns' ? 220 : 172
+function getEstimatedHorizontalItemHeight(layout: GridLayoutType, itemWidth: number): number {
+  const fallbackHeight = layout === 'twoColumns' ? 220 : 236
+
+  if (itemWidth <= 0)
+    return fallbackHeight
+
+  const coverWidth = Math.min(itemWidth, 400)
+  const coverHeight = coverWidth * 9 / 16
+
+  return Math.max(fallbackHeight, Math.ceil(coverHeight))
 }
 
 const resolvedContainerWidth = computed(() => {
@@ -719,7 +727,7 @@ const virtualItemWidth = computed(() => {
 const estimatedItemHeight = computed(() => {
   if (props.gridLayout === 'adaptive')
     return getEstimatedAdaptiveRowHeight(resolvedContainerWidth.value, currentColumnCount.value)
-  return getHorizontalItemHeight(props.gridLayout)
+  return getEstimatedHorizontalItemHeight(props.gridLayout, virtualItemWidth.value)
 })
 
 const visibleRowCount = computed(() => {
@@ -1025,12 +1033,13 @@ function getUniqueKey(item: T, index: number): string | number {
         <div
           v-for="renderItem in renderItems"
           :key="renderItem.key"
+          :ref="(el) => itemVirtualizer.measureElement(el as HTMLElement | null)"
+          :data-index="renderItem.index"
           class="virtual-item"
           :style="{
             top: `${renderItem.start}px`,
             left: `${renderItem.lane * (virtualItemWidth + currentGridGap)}px`,
             width: `${virtualItemWidth}px`,
-            height: `${estimatedItemHeight}px`,
           }"
         >
           <VideoCard
@@ -1174,13 +1183,8 @@ function getUniqueKey(item: T, index: number): string | number {
   }
 
   :deep(.video-card-container) {
-    height: 100%;
     content-visibility: visible;
     contain-intrinsic-size: auto none;
-  }
-
-  :deep(.video-card-container > .video-card) {
-    height: 100%;
   }
 }
 
