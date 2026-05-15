@@ -615,6 +615,7 @@ function openIframeDrawer(url: string) {
     return
   }
 
+  setActiveDrawer(DrawerType.IframeDrawer)
   iframeDrawerURL.value = url
   showIframeDrawer.value = true
 }

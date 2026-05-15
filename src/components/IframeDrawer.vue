@@ -40,6 +40,7 @@ const disableEscPress = ref<boolean>(false)
 let stopIframePushStateListener: (() => void) | null = null
 let stopIframePopStateListener: (() => void) | null = null
 let stopIframeDOMContentLoadedListener: (() => void) | null = null
+let focusRetryTimer: ReturnType<typeof setTimeout> | null = null
 
 // 计算iframe容器的样式
 const iframeContainerClasses = computed(() => {
@@ -134,6 +135,39 @@ function cleanupIframeWindowListeners() {
   stopIframeDOMContentLoadedListener = null
 }
 
+function clearFocusRetryTimer() {
+  if (focusRetryTimer) {
+    clearTimeout(focusRetryTimer)
+    focusRetryTimer = null
+  }
+}
+
+function focusIframe(retryCount = 3) {
+  clearFocusRetryTimer()
+
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const iframe = iframeRef.value
+      if (!iframe || !show.value || activeDrawer.value !== DrawerType.IframeDrawer)
+        return
+
+      iframe.focus({ preventScroll: true })
+      try {
+        iframe.contentWindow?.focus()
+      }
+      catch {
+        // Cross-origin frames may block direct window focus.
+      }
+
+      if (retryCount > 0) {
+        focusRetryTimer = setTimeout(() => {
+          focusIframe(retryCount - 1)
+        }, 120)
+      }
+    })
+  })
+}
+
 function injectStyleClass() {
   if (headerShow.value && iframeRef.value?.contentWindow?.document) {
     try {
@@ -158,8 +192,8 @@ function handleIframeLoad() {
   stopIframePushStateListener = useEventListener(iframeWindow, 'pushstate', updateCurrentUrl)
   stopIframePopStateListener = useEventListener(iframeWindow, 'popstate', updateCurrentUrl)
   stopIframeDOMContentLoadedListener = useEventListener(iframeWindow, 'DOMContentLoaded', injectStyleClass)
-  iframeRef.value?.focus()
   showIframe.value = true
+  focusIframe()
 }
 
 async function remountIframe(url: string) {
@@ -198,6 +232,7 @@ onBeforeUnmount(async () => {
   if (escPressedTimer.value) {
     clearTimeout(escPressedTimer.value)
   }
+  clearFocusRetryTimer()
   await releaseIframeResources()
 })
 
@@ -252,6 +287,7 @@ async function handleClose() {
 }
 
 async function releaseIframeResources() {
+  clearFocusRetryTimer()
   cleanupIframeWindowListeners()
   showIframe.value = false
   removeTopBarClassInjected.value = false
@@ -486,6 +522,7 @@ watchEffect(() => {
             sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-modals"
             :style="iframeStyles"
             frameborder="0"
+            tabindex="-1"
             pointer-events-auto
             :pos="isPageFullscreen ? undefined : 'relative left-0'"
             allow="fullscreen"
