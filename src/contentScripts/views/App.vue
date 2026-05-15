@@ -891,7 +891,7 @@ if (settings.value.cleanUrlArgument) {
       <BewlyOrBiliTopBarSwitcher v-if="settings.showBewlyOrBiliTopBarSwitcher" />
 
       <TopBar
-        pos="top-0 left-0" z="99 hover:1001" w-full
+        pos="top-0 left-0" z="1 hover:1001" w-full
       />
     </div>
 
