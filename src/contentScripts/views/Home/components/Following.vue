@@ -137,7 +137,7 @@ interface VideoElement {
   isLive?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   gridLayout: 'adaptive',
   topBarVisibility: true,
 })
@@ -165,7 +165,6 @@ const isLoading = ref<boolean>(false)
 const requestFailed = ref<boolean>(false)
 const noMoreContent = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
-const shouldMoveAsideUp = ref<boolean>(false)
 const isRefreshContextActive = ref<boolean>(false)
 
 // 分别管理ALL和单个UP主的分页状态
@@ -180,19 +179,6 @@ function syncRefreshAvailability() {
 }
 
 watch(selectedUploader, syncRefreshAvailability, { immediate: true })
-
-// Watch topBarVisibility to control aside position
-watch(() => props.topBarVisibility, () => {
-  shouldMoveAsideUp.value = false
-
-  // Allow moving tabs up only when the top bar is not hidden & is set to auto-hide
-  if (settings.value.autoHideTopBar && settings.value.showTopBar) {
-    if (props.topBarVisibility)
-      shouldMoveAsideUp.value = false
-    else
-      shouldMoveAsideUp.value = true
-  }
-})
 
 // Track viewed uploaders in localStorage
 const VIEWED_UPLOADERS_KEY = 'bewlycat_moments_viewed_uploaders'
@@ -1576,7 +1562,6 @@ defineExpose({ initData })
     <aside
       pos="sticky top-150px" h="[calc(100vh-140px)]" w-200px shrink-0 duration-300
       ease-in-out
-      :class="{ hide: shouldMoveAsideUp }"
     >
       <div h-inherit p="x-20px b-20px t-8px" m--20px of-y-auto of-x-hidden>
         <!-- Search Box -->
@@ -1700,10 +1685,6 @@ defineExpose({ initData })
   .secondary-text {
     --uno: "text-$bew-text-auto opacity-85";
   }
-}
-
-.hide {
-  --uno: "h-[calc(100vh-70px)] translate-y--70px";
 }
 
 /* TransitionGroup 列表过渡效果 */
