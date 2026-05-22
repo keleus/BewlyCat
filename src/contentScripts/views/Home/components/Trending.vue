@@ -2,6 +2,9 @@
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { FilterType, useFilter } from '~/composables/useFilter'
+import { useUpInfoFilter } from '~/composables/useUpInfoCache'
+import { useVideoTagFilter } from '~/composables/useVideoTagCache'
 import type { GridLayoutType } from '~/logic'
 import type { List as VideoItem, TrendingResult } from '~/models/video/trending'
 import api from '~/utils/api'
@@ -27,6 +30,15 @@ const isLoading = ref<boolean>(false)
 const pn = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
 const { handleReachBottom, handlePageRefresh } = useBewlyApp()
+
+const filterFunc = useFilter(
+  [], // Trending has no "followed" concept
+  [FilterType.viewCount, FilterType.likeCount, FilterType.duration, FilterType.title, FilterType.user, FilterType.user, FilterType.publishTime],
+  [['stat', 'view'], ['stat', 'like'], ['duration'], ['title'], ['owner', 'name'], ['owner', 'mid'], ['pubdate']],
+)
+
+const { filteredList: fansFilteredList } = useUpInfoFilter<VideoElement>(videoList, el => el.item?.owner?.mid ?? 0)
+const { filteredList } = useVideoTagFilter<VideoElement>(fansFilteredList, el => el.item?.bvid ?? '')
 
 onMounted(() => {
   initData()
@@ -147,11 +159,11 @@ defineExpose({ initData })
 
 <template>
   <VideoCardGrid
-    :items="videoList"
+    :items="filteredList"
     :grid-layout="gridLayout"
     :loading="isLoading"
     :no-more-content="noMoreContent"
-    :transform-item="(item: VideoElement) => item.displayData"
+    :transform-item="(item: VideoElement) => filterFunc.value && item.item ? filterFunc.value(item.item) ? item.displayData : undefined : item.displayData"
     :get-item-key="(item: VideoElement) => item.uniqueId"
     show-preview
     @refresh="initData"

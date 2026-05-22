@@ -5,6 +5,8 @@ import { useToast } from 'vue-toastification'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { FilterType, useFilter } from '~/composables/useFilter'
+import { useUpInfoFilter } from '~/composables/useUpInfoCache'
+import { useVideoTagFilter } from '~/composables/useVideoTagCache'
 import { LanguageType } from '~/enums/appEnums'
 import type { GridLayoutType } from '~/logic'
 import { appAuthTokens, settings } from '~/logic'
@@ -78,9 +80,17 @@ const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, h
 const videoList = ref<VideoElement[]>([])
 const appVideoList = ref<AppVideoElement[]>([])
 
+// UP fans count filter — async, applied reactively
+const { filteredList: fansFilteredWebVideoList } = useUpInfoFilter<VideoElement>(videoList, el => el.item?.owner?.mid ?? 0)
+const { filteredList: fansFilteredAppVideoList } = useUpInfoFilter<AppVideoElement>(appVideoList, el => el.item?.args?.up_id ?? 0)
+
+// Video tag filter — async, applied on top of fans filter
+const { filteredList: filteredWebVideoList } = useVideoTagFilter<VideoElement>(fansFilteredWebVideoList, el => el.item?.bvid ?? '')
+const { filteredList: filteredAppVideoList } = useVideoTagFilter<AppVideoElement>(fansFilteredAppVideoList, el => el.item?.bvid ?? '')
+
 // 当前使用的视频列表（根据推荐模式）
 const currentVideoList = computed(() =>
-  settings.value.recommendationMode === 'web' ? videoList.value : appVideoList.value,
+  settings.value.recommendationMode === 'web' ? filteredWebVideoList.value : filteredAppVideoList.value,
 )
 
 const isLoading = ref<boolean>(false)

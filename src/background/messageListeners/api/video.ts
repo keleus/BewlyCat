@@ -157,6 +157,17 @@ const API_VIDEO = {
     },
     afterHandle: AHS.J_D,
   },
+  // https://socialsisteryi.github.io/bilibili-API-collect/docs/video/tags.html#%E8%8E%B7%E5%8F%96%E8%A7%86%E9%A2%91%E6%A0%87%E7%AD%BE-web%E7%AB%AF
+  getVideoTags: {
+    url: 'https://api.bilibili.com/x/web-interface/view/detail/tag',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      bvid: '',
+    },
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_VIDEO
