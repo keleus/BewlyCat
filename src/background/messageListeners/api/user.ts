@@ -120,6 +120,18 @@ const API_USER = {
     },
     afterHandle: AHS.J_D,
   },
+  // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/user/info.md#用户名片信息
+  getUpCardInfo: {
+    url: 'https://api.bilibili.com/x/web-interface/card',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      mid: 0,
+      photo: false,
+    },
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_USER
