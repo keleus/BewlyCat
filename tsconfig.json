@@ -10,9 +10,6 @@
       "~/*": ["./src/*"]
     },
     "resolveJsonModule": true,
-    "types": [
-      "vite/client"
-    ],
     "strict": true,
     "noImplicitAny": false,
     "noUnusedLocals": true,
