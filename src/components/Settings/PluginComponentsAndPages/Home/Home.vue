@@ -13,6 +13,8 @@ import { getTVLoginQRCode, hasValidAppAuthTokens, pollTVLoginQRCode, revokeAcces
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SearchPage from '../SearchPage/SearchPage.vue'
+import BlockHotSearchTable from './components/BlockHotSearchTable.vue'
+import FilterByTagTable from './components/FilterByTagTable.vue'
 import FilterByTitleTable from './components/FilterByTitleTable.vue'
 import FilterByUserTable from './components/FilterByUserTable.vue'
 
@@ -100,8 +102,16 @@ function handleCloseQRCodeDialog() {
   showQRCodeDialog.value = false
 }
 
-function handleExport(filterType: 'title' | 'user') {
-  const filters = filterType === 'title' ? settings.value.filterByTitle : settings.value.filterByUser
+function handleExport(filterType: 'title' | 'user' | 'tag' | 'hotSearch') {
+  let filters: { keyword: string, remark: string }[]
+  if (filterType === 'title')
+    filters = settings.value.filterByTitle
+  else if (filterType === 'user')
+    filters = settings.value.filterByUser
+  else if (filterType === 'tag')
+    filters = settings.value.filterByTag
+  else
+    filters = settings.value.blockHotSearch
   const jsonString = JSON.stringify(filters, null, 2) // Pretty print JSON
   const blob = new Blob([jsonString], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
@@ -112,7 +122,7 @@ function handleExport(filterType: 'title' | 'user') {
   URL.revokeObjectURL(url)
 }
 
-function handleImport(filterType: 'title' | 'user') {
+function handleImport(filterType: 'title' | 'user' | 'tag' | 'hotSearch') {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.json'
@@ -132,8 +142,14 @@ function handleImport(filterType: 'title' | 'user') {
       if (filterType === 'title') {
         settings.value.filterByTitle = importedFilters
       }
-      else {
+      else if (filterType === 'user') {
         settings.value.filterByUser = importedFilters
+      }
+      else if (filterType === 'tag') {
+        settings.value.filterByTag = importedFilters
+      }
+      else {
+        settings.value.blockHotSearch = importedFilters
       }
       // toast.success(`${filterType} filters imported successfully`)
     }
@@ -163,6 +179,22 @@ function handleExportFilterByUser() {
 
 function handleImportFilterByUser() {
   handleImport('user')
+}
+
+function handleExportFilterByTag() {
+  handleExport('tag')
+}
+
+function handleImportFilterByTag() {
+  handleImport('tag')
+}
+
+function handleExportBlockHotSearch() {
+  handleExport('hotSearch')
+}
+
+function handleImportBlockHotSearch() {
+  handleImport('hotSearch')
 }
 
 function resetHomeTabs() {
@@ -402,6 +434,79 @@ function handleToggleHomeTab(tab: any) {
             </div>
 
             <FilterByUserTable />
+          </template>
+        </SettingsItem>
+      </div>
+
+      <SettingsItem :title="$t('settings.filter_by_up_fans_count')" :desc="$t('settings.filter_by_up_fans_count_desc')">
+        <div flex="~ justify-end" w-full>
+          <Input
+            v-if="settings.enableFilterByUpFansCount"
+            v-model="settings.filterByUpFansCount" type="number" :min="0"
+            flex-1
+          >
+            <template #suffix>
+              {{ $t('settings.filter_by_up_fans_count_unit') }}
+            </template>
+          </Input>
+          <Radio v-model="settings.enableFilterByUpFansCount" />
+        </div>
+      </SettingsItem>
+
+      <div grid="~ lg:gap-4 lg:cols-1 cols-1">
+        <SettingsItem
+          class="unrestricted-width-settings-item"
+          :title="$t('settings.filter_by_tag')"
+        >
+          <Radio v-model="settings.enableFilterByTag" />
+          <template v-if="settings.enableFilterByTag" #bottom>
+            <div text="$bew-text-2 sm" mb-2 v-html="$t('settings.filter_by_tag_desc')" />
+            <div flex="~ gap-2" mb-2>
+              <Button type="secondary" size="small" @click="handleImportFilterByTag">
+                <template #left>
+                  <div i-uil:import />
+                </template>
+                <input type="file" accept=".json" hidden>
+                {{ $t('common.operation.import') }}
+              </Button>
+              <Button type="secondary" size="small" @click="handleExportFilterByTag">
+                <template #left>
+                  <div i-uil:export />
+                </template>
+                {{ $t('common.operation.export') }}
+              </Button>
+            </div>
+            <FilterByTagTable />
+          </template>
+        </SettingsItem>
+      </div>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup :title="$t('settings.group_hot_search_filter')">
+      <div grid="~ lg:gap-4 lg:cols-1 cols-1">
+        <SettingsItem
+          class="unrestricted-width-settings-item"
+          :title="$t('settings.filter_hot_search')"
+        >
+          <Radio v-model="settings.enableBlockHotSearch" />
+          <template v-if="settings.enableBlockHotSearch" #bottom>
+            <div text="$bew-text-2 sm" mb-2 v-html="$t('settings.filter_hot_search_desc')" />
+            <div flex="~ gap-2" mb-2>
+              <Button type="secondary" size="small" @click="handleImportBlockHotSearch">
+                <template #left>
+                  <div i-uil:import />
+                </template>
+                <input type="file" accept=".json" hidden>
+                {{ $t('common.operation.import') }}
+              </Button>
+              <Button type="secondary" size="small" @click="handleExportBlockHotSearch">
+                <template #left>
+                  <div i-uil:export />
+                </template>
+                {{ $t('common.operation.export') }}
+              </Button>
+            </div>
+            <BlockHotSearchTable />
           </template>
         </SettingsItem>
       </div>

@@ -46,6 +46,9 @@ common:
     index: Index
     title: Title
     name: Name
+    keyword: Keyword
+    tag: Tag
+    category: Category
     remark: Remark
     operations: Operations
   position:
@@ -425,6 +428,42 @@ settings:
     Double-click the column to edit the current column.
   filter_by_user_table:
     username_or_mid: Username / MID
+  filter_by_up_fans_count: Filter by UP fans count
+  filter_by_up_fans_count_desc: >-
+    Filter out videos from UP hosts with fewer than the specified number of followers.
+    Info is fetched in the background after videos load; videos from unfetched UPs are shown until their info arrives.
+  filter_by_up_fans_count_unit: followers
+  filter_by_tag: Filter by tag
+  filter_by_tag_desc: >-
+    Filter out videos that have any matching keyword tag (标签) attached to them (case-insensitive).
+    Tag info is fetched in the background after videos load; videos from unfetched entries are shown until their tags arrive.
+    Works on the Trending tab and For You recommendations (both web and app mode).
+
+    Alternatively, use regex, such as <code>/abc&#124;\d+/</code>, wrapped in <code>/</code>.
+
+    <br/>
+
+    In the table below, you can press the <kbd>Enter</kbd> key to add a new
+    filter or confirm a modification.
+
+    Press the <kbd>Esc</kbd> key to cancel the modification.
+
+    Double-click the column to edit the current column.
+  group_hot_search_filter: Hot Search Filter
+  filter_hot_search: Block hot search keywords
+  filter_hot_search_desc: >-
+    Block specific keywords from appearing in the hot search dropdown (case-insensitive).
+
+    Alternatively, use regex, such as <code>/abc&#124;\d+/</code>, wrapped in <code>/</code>.
+
+    <br/>
+
+    In the table below, you can press the <kbd>Enter</kbd> key to add a new
+    filter or confirm a modification.
+
+    Press the <kbd>Esc</kbd> key to cancel the modification.
+
+    Double-click the column to edit the current column.
   following_tab_show_livestreaming_videos: Show Live-streaming videos in the "Following" tab
   following_filter_charging_videos: Filter charging exclusive videos
   following_filter_charging_videos_desc: When enabled, paid videos that require charging to watch will be hidden in the "Following" page

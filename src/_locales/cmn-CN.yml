@@ -46,6 +46,9 @@ common:
     index: 索引
     title: 标题
     name: 名称
+    keyword: 关键词
+    tag: 标签
+    category: 分区
     remark: 备注
     operations: 操作
   position:
@@ -421,6 +424,38 @@ settings:
     <kbd>Enter</kbd> 键添加新的筛选条件或确认修改。 按 <kbd>Esc</kbd> 键取消修改。 双击列以编辑当前列。
   filter_by_user_table:
     username_or_mid: 用户名 / MID
+  filter_by_up_fans_count: 按 UP 主粉丝数过滤
+  filter_by_up_fans_count_desc: 过滤粉丝数少于指定数量的 UP 主的视频。视频加载后在后台获取信息，未获取完成的 UP 主的视频会临时显示。
+  filter_by_up_fans_count_unit: 个粉丝
+  filter_by_tag: 按标签过滤
+  filter_by_tag_desc: >-
+    过滤含有指定关键词标签（标签/tag）的视频（不区分大小写）。
+    视频加载后在后台获取标签信息，未获取完成的视频会临时显示。
+    支持「热门」和「为你推荐」（网页模式和 App 模式）。
+
+    支持正则，格式为 <code>/abc&#124;\d+/</code>，前后需加 <code>/</code>。
+
+    <br/>
+
+    在下方的表格中，可以按 <kbd>Enter</kbd> 键新增或确认修改。
+
+    按 <kbd>Esc</kbd> 键取消修改。
+
+    双击列可以编辑当前列。
+  group_hot_search_filter: 热搜过滤
+  filter_hot_search: 屏蔽热搜内容
+  filter_hot_search_desc: >-
+    屏蔽包含指定关键词的热搜条目（不区分大小写）。
+
+    支持正则，格式为 <code>/abc&#124;\d+/</code>，前后需加 <code>/</code>。
+
+    <br/>
+
+    在下方的表格中，可以按 <kbd>Enter</kbd> 键新增或确认修改。
+
+    按 <kbd>Esc</kbd> 键取消修改。
+
+    双击列可以编辑当前列。
   following_tab_show_livestreaming_videos: 在 "正在关注" 中显示直播视频
   following_filter_charging_videos: 过滤充电专属视频
   following_filter_charging_videos_desc: 开启后，在 "正在关注" 页面中将隐藏需要充电才能观看的付费视频

@@ -46,6 +46,9 @@ common:
     index: 索引
     title: 標題
     name: 名稱
+    keyword: 關鍵詞
+    tag: 標籤
+    category: 分區
     remark: 備註
     operations: 操作
   position:
@@ -357,6 +360,39 @@ settings:
     撳兩吓欄位就可以改返入邊嘅嘢。
   filter_by_user_table:
     username_or_mid: 用戶名 / MID
+  filter_by_up_fans_count: 按 UP 主粉絲數过濾
+  filter_by_up_fans_count_desc: 过濾粉絲數少於指定數量的 UP 主的影片。影片載入後在後台取得資訊，未取得資訊的 UP 主影片會暫時顯示。
+  filter_by_up_fans_count_unit: 位粉絲
+
+  filter_by_tag: 按標籤过滤
+  filter_by_tag_desc: >-
+    过滤含有指定關鍵詞標籤（標籤/tag）的影片（不區分大小寫）。
+    影片載入後在後台取得標籤資訊，未取得資訊的影片會暫時顯示。
+    支援「熱門」同「為你推荐」（網頁模式同 App 模式）。
+
+    支援正規，格式為 <code>/abc&#124;\d+/</code>，前後須加 <code>/</code>。
+
+    <br/>
+
+    在下影表格度，可按 <kbd>Enter</kbd> 键新增或確認修改。
+
+    按 <kbd>Esc</kbd> 键取消修改。
+
+    雙擊列可編輯。
+  group_hot_search_filter: 熱搜过濾
+  filter_hot_search: 屏蔽熱搜内容
+  filter_hot_search_desc: >-
+    屏蔽包含指定关键词的熱搜條目（不區分大小寫）。
+
+    支援正規，格式為 <code>/abc&#124;\d+/</code>，前後須加 <code>/</code>。
+
+    <br/>
+
+    在下影表格度，可按 <kbd>Enter</kbd> 键新增或確認修改。
+
+    按 <kbd>Esc</kbd> 键取消修改。
+
+    雙擊列可編輯。
   following_tab_show_livestreaming_videos: 喺「跟緊啲人」入邊顯示實況直播
   following_filter_charging_videos: 過濾充電專屬影片
   following_filter_charging_videos_desc: 啟用後，喺「跟緊啲人」頁面入邊會隱藏需要充電先至可以睇嘅付費影片

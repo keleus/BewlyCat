@@ -46,6 +46,9 @@ common:
     index: 索引
     title: 標題
     name: 名稱
+    keyword: 關鍵詞
+    tag: 標籤
+    category: 分區
     remark: 備註
     operations: 操作
   position:
@@ -375,6 +378,38 @@ settings:
     按兩下欄位以編輯目前欄位。
   filter_by_user_table:
     username_or_mid: 使用者名稱 / MID
+  filter_by_up_fans_count: 依照 UP 主粉絲數過濾
+  filter_by_up_fans_count_desc: 過濾粉絲數少於指定數量的 UP 主的影片。影片載入後在背景取得資訊，未取得資訊的 UP 主影片會暫時顯示。
+  filter_by_up_fans_count_unit: 位粉絲
+  filter_by_tag: 依標籤過濾
+  filter_by_tag_desc: >-
+    過濾包含指定關鍵詞標籤（標籤/tag）的影片（不區分大小寫）。
+    影片載入後在背景取得標籤資訊，未取得資訊的影片會暫時顯示。
+    支援「熱門」和「為你推薦」（網頁模式和 App 模式）。
+
+    支援正規表達式，格式為 <code>/abc&#124;\d+/</code>，前後須加 <code>/</code>。
+
+    <br/>
+
+    在下方的表格中，可以按 <kbd>Enter</kbd> 鍵新增或確認修改。
+
+    按 <kbd>Esc</kbd> 鍵取消修改。
+
+    雙擊欄位可以編輯目前欄位。
+  group_hot_search_filter: 熱搜過濾
+  filter_hot_search: 封鎖熱搜內容
+  filter_hot_search_desc: >-
+    封鎖包含指定關鍵詞的熱搜條目（不區分大小寫）。
+
+    支援正規表達式，格式為 <code>/abc&#124;\d+/</code>，前後須加 <code>/</code>。
+
+    <br/>
+
+    在下方的表格中，可以按 <kbd>Enter</kbd> 鍵新增或確認修改。
+
+    按 <kbd>Esc</kbd> 鍵取消修改。
+
+    雙擊欄位可以編輯目前欄位。
   following_tab_show_livestreaming_videos: 在「正在跟隨」中顯示實況直播
   following_filter_charging_videos: 過濾充電專屬影片
   following_filter_charging_videos_desc: 啟用後，在「正在跟隨」頁面中將隱藏需要充電才能觀看的付費影片

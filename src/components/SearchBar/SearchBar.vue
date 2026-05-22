@@ -83,6 +83,24 @@ const searchHistory = shallowRef<HistoryItem[]>([])
 // 热搜相关状态
 const hotSearchList = ref<HotSearchItem[]>([])
 const isLoadingHotSearch = ref<boolean>(false)
+
+const filteredHotSearchList = computed<HotSearchItem[]>(() => {
+  if (!settings.value.enableBlockHotSearch || settings.value.blockHotSearch.length === 0)
+    return hotSearchList.value
+
+  const blockedStrings = settings.value.blockHotSearch
+    .filter(b => !(b.keyword.startsWith('/') && b.keyword.endsWith('/')))
+    .map(b => b.keyword.toUpperCase())
+  const blockedRegexes = settings.value.blockHotSearch
+    .filter(b => b.keyword.startsWith('/') && b.keyword.endsWith('/'))
+    .map(b => new RegExp(b.keyword.slice(1, -1), 'i'))
+
+  return hotSearchList.value.filter((item) => {
+    const kw = item.keyword.toUpperCase()
+    return !blockedStrings.some(b => kw.includes(b))
+      && !blockedRegexes.some(r => r.test(item.keyword))
+  })
+})
 // 搜索推荐相关状态
 const searchRecommendation = ref<SearchRecommendationItem | null>(null)
 const isLoadingSearchRecommendation = ref<boolean>(false)
@@ -100,7 +118,7 @@ const shouldShowSearchDropdown = computed(() => {
   if (!isFocus.value)
     return false
 
-  const hasHotSearch = (props.showHotSearch ?? settings.value.showHotSearchInTopBar) && hotSearchList.value.length > 0
+  const hasHotSearch = (props.showHotSearch ?? settings.value.showHotSearchInTopBar) && filteredHotSearchList.value.length > 0
   const hasSearchHistory = searchHistory.value.length !== 0
   if (!hasHotSearch && !hasSearchHistory)
     return false
@@ -632,7 +650,7 @@ function handleClearKeyword() {
       >
         <!-- 热搜区块 -->
         <div
-          v-if="(showHotSearch ?? settings.showHotSearchInTopBar) && hotSearchList.length > 0"
+          v-if="(showHotSearch ?? settings.showHotSearchInTopBar) && filteredHotSearchList.length > 0"
           class="hot-search-section"
         >
           <div class="title p-2 pb-0">
@@ -641,7 +659,7 @@ function handleClearKeyword() {
 
           <div class="hot-search-container p-2 grid grid-cols-2 gap-x-4 gap-y-1">
             <ALink
-              v-for="(item, index) in hotSearchList.slice(0, 10)" :key="item.keyword"
+              v-for="(item, index) in filteredHotSearchList.slice(0, 10)" :key="item.keyword"
               :href="buildKeywordHref(item.keyword)"
               type="searchBar"
               :custom-click-event="true"
@@ -674,7 +692,7 @@ function handleClearKeyword() {
 
         <!-- 分割线 -->
         <div
-          v-if="(showHotSearch ?? settings.showHotSearchInTopBar) && hotSearchList.length > 0 && searchHistory.length > 0"
+          v-if="(showHotSearch ?? settings.showHotSearchInTopBar) && filteredHotSearchList.length > 0 && searchHistory.length > 0"
           class="divider"
           mx-2 my-1 h-px bg="$bew-border-color"
         />

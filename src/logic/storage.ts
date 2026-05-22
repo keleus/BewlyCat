@@ -287,6 +287,18 @@ export interface Settings {
   enableFilterByPublishTime: boolean
   filterByPublishTime: number // 单位：天
 
+  // video tag (标签) filter — requires async /x/web-interface/view/detail/tag API fetch
+  enableFilterByTag: boolean
+  filterByTag: { keyword: string, remark: string }[]
+
+  // UP fans count filter — requires async API fetch, applied in ForYou
+  enableFilterByUpFansCount: boolean
+  filterByUpFansCount: number
+
+  // hot search keyword blocklist — applied in SearchBar
+  enableBlockHotSearch: boolean
+  blockHotSearch: { keyword: string, remark: string }[]
+
   followingTabShowLivestreamingVideos: boolean
   followingFilterChargingVideos: boolean // 过滤充电专属视频
   followingFilterDynamicVideos: boolean // 过滤动态视频
@@ -504,6 +516,15 @@ export const originalSettings: Settings = {
   filterByUser: [],
   enableFilterByPublishTime: false,
   filterByPublishTime: 30, // 默认30天
+
+  enableFilterByTag: false,
+  filterByTag: [],
+
+  enableFilterByUpFansCount: false,
+  filterByUpFansCount: 10000,
+
+  enableBlockHotSearch: false,
+  blockHotSearch: [],
 
   followingTabShowLivestreamingVideos: false,
   followingFilterChargingVideos: false, // 默认不过滤充电视频
