@@ -23,25 +23,25 @@ function changeThemeColor(color: string) {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_common')">
-      <SettingsItem :title="$t('settings.topbar_visibility')" :desc="$t('settings.topbar_visibility_desc')">
+      <SettingsItem :title="$t('settings.topbar_visibility')" :desc="$t('settings.topbar_visibility_desc')" right-width="auto">
         <Radio v-model="settings.showTopBar" :label="settings.showTopBar ? $t('settings.chk_box.show') : $t('settings.chk_box.hidden')" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.use_original_bilibili_topbar')">
+      <SettingsItem :title="$t('settings.use_original_bilibili_topbar')" right-width="auto">
         <Radio v-model="settings.useOriginalBilibiliTopBar" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.use_original_bilibili_homepage')">
+      <SettingsItem :title="$t('settings.use_original_bilibili_homepage')" right-width="auto">
         <template #desc>
           <span color="$bew-error-color" v-text="$t('settings.use_original_bilibili_homepage_desc')" />
         </template>
         <Radio v-model="settings.useOriginalBilibiliHomepage" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.adapt_to_other_page_styles')" :desc="$t('settings.adapt_to_other_page_styles_desc')">
+      <SettingsItem :title="$t('settings.adapt_to_other_page_styles')" :desc="$t('settings.adapt_to_other_page_styles_desc')" right-width="auto">
         <Radio v-model="settings.adaptToOtherPageStyles" />
       </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup title="Bilibili Evolved">
-      <SettingsItem :title="$t('settings.follow_bilibili_evolved_color')" :desc="$t('settings.follow_bilibili_evolved_color_desc')">
+      <SettingsItem :title="$t('settings.follow_bilibili_evolved_color')" :desc="$t('settings.follow_bilibili_evolved_color_desc')" right-width="auto">
         <div
           w-20px h-20px rounded-8 cursor-pointer transition
           duration-300 box-border

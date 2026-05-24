@@ -21,8 +21,8 @@ function changeSearchBarFocusCharacter(url: string) {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_logo')">
-      <SettingsItem :title="$t('settings.logo_color')">
-        <div w-full flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
+      <SettingsItem :title="$t('settings.logo_color')" right-width="auto">
+        <div w="220px" flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
           <div
             flex="1 ~" items-center justify-center py-1 cursor-pointer
             text-center rounded="$bew-radius"
@@ -48,25 +48,25 @@ function changeSearchBarFocusCharacter(url: string) {
         </div>
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.enable_logo_glowing_effect')">
+      <SettingsItem :title="$t('settings.enable_logo_glowing_effect')" right-width="auto">
         <Radio v-model="settings.searchPageLogoGlow" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.logo_visibility')">
+      <SettingsItem :title="$t('settings.logo_visibility')" right-width="auto">
         <Radio v-model="settings.searchPageShowLogo" />
       </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_search_bar')">
-      <SettingsItem :title="$t('settings.show_search_recommendation')" :desc="$t('settings.show_search_recommendation_desc')">
+      <SettingsItem :title="$t('settings.show_search_recommendation')" :desc="$t('settings.show_search_recommendation_desc')" right-width="auto">
         <Radio v-model="settings.showSearchRecommendation" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.bg_darkens_when_the_search_bar_is_focused')">
+      <SettingsItem :title="$t('settings.bg_darkens_when_the_search_bar_is_focused')" right-width="auto">
         <Radio v-model="settings.searchPageDarkenOnSearchFocus" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.bg_blurs_when_the_search_bar_is_focused')">
+      <SettingsItem :title="$t('settings.bg_blurs_when_the_search_bar_is_focused')" right-width="auto">
         <template #desc>
           <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
         </template>
@@ -105,7 +105,7 @@ function changeSearchBarFocusCharacter(url: string) {
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_hot_search')">
-      <SettingsItem :title="$t('settings.show_hot_search_in_search_page')">
+      <SettingsItem :title="$t('settings.show_hot_search_in_search_page')" right-width="auto">
         <template #desc>
           <span>{{ $t('settings.show_hot_search_in_search_page_desc') }}</span>
         </template>
@@ -114,18 +114,18 @@ function changeSearchBarFocusCharacter(url: string) {
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_search_results')">
-      <SettingsItem :title="$t('settings.use_plugin_search_results_page')">
+      <SettingsItem :title="$t('settings.use_plugin_search_results_page')" right-width="auto">
         <template #desc>
           <span>{{ $t('settings.use_plugin_search_results_page_desc') }}</span>
         </template>
         <Radio v-model="settings.usePluginSearchResultsPage" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.search_results_pagination_mode')">
+      <SettingsItem :title="$t('settings.search_results_pagination_mode')" right-width="auto">
         <template #desc>
           <span>{{ $t('settings.search_results_pagination_mode_desc') }}</span>
         </template>
-        <div w-full flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
+        <div w="220px" flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
           <div
             flex="1 ~" items-center justify-center py-1 cursor-pointer
             text-center rounded="$bew-radius"

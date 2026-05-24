@@ -29,6 +29,7 @@ function handleVolumeChange(newValue: number) {
       <SettingsItem
         :title="t('settings.volume_normalization.enable')"
         :desc="t('settings.volume_normalization.enable_desc')"
+        right-width="auto"
       >
         <Radio v-model="settings.enableVolumeNormalization" />
       </SettingsItem>
@@ -37,8 +38,9 @@ function handleVolumeChange(newValue: number) {
         v-if="settings.enableVolumeNormalization"
         :title="t('settings.volume_normalization.target_volume')"
         :desc="t('settings.volume_normalization.target_volume_desc')"
+        right-width="auto"
       >
-        <div flex="~ justify-end items-center" w-full gap-2>
+        <div flex="~ justify-end items-center" gap-2>
           <Input
             :model-value="settings.targetVolume"
             type="number"
@@ -55,8 +57,9 @@ function handleVolumeChange(newValue: number) {
         v-if="settings.enableVolumeNormalization"
         :title="t('settings.volume_normalization.strength')"
         :desc="t('settings.volume_normalization.strength_desc')"
+        right-width="auto"
       >
-        <div flex="~ justify-end items-center" w-full gap-2>
+        <div flex="~ justify-end items-center" gap-2>
           <Input
             :model-value="settings.normalizationStrength"
             type="number"
@@ -72,8 +75,9 @@ function handleVolumeChange(newValue: number) {
         v-if="settings.enableVolumeNormalization"
         :title="t('settings.volume_normalization.adaptive_speed')"
         :desc="t('settings.volume_normalization.adaptive_speed_desc')"
+        right-width="auto"
       >
-        <div flex="~ justify-end items-center" w-full gap-2>
+        <div flex="~ justify-end items-center" gap-2>
           <Input
             v-model="settings.adaptiveGainSpeed"
             type="number"
@@ -88,8 +92,9 @@ function handleVolumeChange(newValue: number) {
         v-if="settings.enableVolumeNormalization"
         :title="t('settings.volume_normalization.voice_gate')"
         :desc="t('settings.volume_normalization.voice_gate_desc')"
+        right-width="auto"
       >
-        <div flex="~ justify-end items-center" w-full gap-2>
+        <div flex="~ justify-end items-center" gap-2>
           <Input
             v-model="settings.voiceGateDb"
             type="number"
@@ -105,6 +110,7 @@ function handleVolumeChange(newValue: number) {
         v-if="settings.enableVolumeNormalization"
         :title="t('settings.volume_normalization.debug')"
         :desc="t('settings.volume_normalization.debug_desc')"
+        right-width="auto"
       >
         <Radio v-model="settings.volumeNormalizationDebug" />
       </SettingsItem>

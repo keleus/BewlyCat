@@ -186,7 +186,7 @@ function handleToggleHomeTab(tab: any) {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_recommendation_mode')">
-      <SettingsItem :title="$t('settings.recommendation_mode')">
+      <SettingsItem :title="$t('settings.recommendation_mode')" right-width="auto">
         <template #desc>
           <p>{{ $t('settings.recommendation_mode_desc') }}</p>
         </template>
@@ -227,7 +227,7 @@ function handleToggleHomeTab(tab: any) {
         </div>
       </SettingsItem>
 
-      <SettingsItem v-if="settings.recommendationMode === 'app'" :title="$t('settings.authorize_app')">
+      <SettingsItem v-if="settings.recommendationMode === 'app'" :title="$t('settings.authorize_app')" right-width="auto">
         <template #desc>
           {{ $t('settings.authorize_app_desc') }}
           <br>
@@ -237,11 +237,11 @@ function handleToggleHomeTab(tab: any) {
         </template>
 
         <div w-full>
-          <Button v-if="!appAccessToken" type="primary" center block @click="handleAuthorize">
+          <Button v-if="!appAccessToken" type="primary" center @click="handleAuthorize">
             {{ $t('settings.btn.authorize') }}...
           </Button>
           <Button
-            v-else type="secondary" center block style="--b-button-text-color: var(--bew-error-color)"
+            v-else type="secondary" center style="--b-button-text-color: var(--bew-error-color)"
             @click="handleRevoke"
           >
             {{ $t('settings.btn.revoke') }}
@@ -249,11 +249,11 @@ function handleToggleHomeTab(tab: any) {
         </div>
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.auto_switch_recommendation_mode')" :desc="$t('settings.auto_switch_recommendation_mode_desc')">
+      <SettingsItem :title="$t('settings.auto_switch_recommendation_mode')" :desc="$t('settings.auto_switch_recommendation_mode_desc')" right-width="auto">
         <Radio v-model="settings.autoSwitchRecommendationMode" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.preserve_for_you_state')" :desc="$t('settings.preserve_for_you_state_desc')">
+      <SettingsItem :title="$t('settings.preserve_for_you_state')" :desc="$t('settings.preserve_for_you_state_desc')" right-width="auto">
         <Radio v-model="settings.preserveForYouState" />
       </SettingsItem>
 
@@ -299,14 +299,14 @@ function handleToggleHomeTab(tab: any) {
       :title="$t('settings.group_recommendation_filters')"
       :desc="$t('settings.group_recommendation_filters_desc')"
     >
-      <SettingsItem :title="$t('settings.disable_filters_for_followed_users')" :desc="$t('settings.disable_filters_for_followed_users_desc')">
+      <SettingsItem :title="$t('settings.disable_filters_for_followed_users')" :desc="$t('settings.disable_filters_for_followed_users_desc')" right-width="auto">
         <Radio v-model="settings.disableFilterForFollowedUser" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.filter_out_vertical_videos')">
+      <SettingsItem :title="$t('settings.filter_out_vertical_videos')" right-width="auto">
         <Radio v-model="settings.filterOutVerticalVideos" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.filter_by_view_count')" :desc="$t('settings.filter_by_view_count_desc')">
-        <div flex="~ justify-end" w-full>
+      <SettingsItem :title="$t('settings.filter_by_view_count')" :desc="$t('settings.filter_by_view_count_desc')" right-width="auto">
+        <div class="filter-control" :class="{ 'filter-control--enabled': settings.enableFilterByViewCount }" flex="~ justify-end">
           <Input
             v-if="settings.enableFilterByViewCount"
             v-model="settings.filterByViewCount" type="number" :min="1" :max="1000000"
@@ -319,8 +319,8 @@ function handleToggleHomeTab(tab: any) {
           <Radio v-model="settings.enableFilterByViewCount" />
         </div>
       </SettingsItem>
-      <SettingsItem :title="$t('settings.filter_by_like_count')" :desc="$t('settings.filter_by_like_count_desc')">
-        <div flex="~ justify-end" w-full>
+      <SettingsItem :title="$t('settings.filter_by_like_count')" :desc="$t('settings.filter_by_like_count_desc')" right-width="auto">
+        <div class="filter-control" :class="{ 'filter-control--enabled': settings.enableFilterByLikeCount }" flex="~ justify-end">
           <Input
             v-if="settings.enableFilterByLikeCount"
             v-model="settings.filterByLikeCount" type="number" :min="1" :max="1000000"
@@ -333,8 +333,8 @@ function handleToggleHomeTab(tab: any) {
           <Radio v-model="settings.enableFilterByLikeCount" />
         </div>
       </SettingsItem>
-      <SettingsItem :title="$t('settings.filter_by_duration')" :desc="$t('settings.filter_by_duration_desc')">
-        <div flex="~ justify-end" w-full>
+      <SettingsItem :title="$t('settings.filter_by_duration')" :desc="$t('settings.filter_by_duration_desc')" right-width="auto">
+        <div class="filter-control" :class="{ 'filter-control--enabled': settings.enableFilterByDuration }" flex="~ justify-end">
           <Input
             v-if="settings.enableFilterByDuration"
             v-model="settings.filterByDuration" type="number" :min="1" :max="1000000"
@@ -347,8 +347,8 @@ function handleToggleHomeTab(tab: any) {
           <Radio v-model="settings.enableFilterByDuration" />
         </div>
       </SettingsItem>
-      <SettingsItem :title="$t('settings.filter_by_publish_time')" :desc="$t('settings.filter_by_publish_time_desc')">
-        <div flex="~ justify-end" w-full>
+      <SettingsItem :title="$t('settings.filter_by_publish_time')" :desc="$t('settings.filter_by_publish_time_desc')" right-width="auto">
+        <div class="filter-control" :class="{ 'filter-control--enabled': settings.enableFilterByPublishTime }" flex="~ justify-end">
           <Input
             v-if="settings.enableFilterByPublishTime"
             v-model="settings.filterByPublishTime" type="number" :min="7" :max="365"
@@ -366,6 +366,7 @@ function handleToggleHomeTab(tab: any) {
         <SettingsItem
           class="unrestricted-width-settings-item"
           :title="$t('settings.filter_by_title')"
+          right-width="auto"
           border="lg:none t-1 $bew-border-color"
         >
           <Radio v-model="settings.enableFilterByTitle" />
@@ -393,6 +394,7 @@ function handleToggleHomeTab(tab: any) {
         <SettingsItem
           class="unrestricted-width-settings-item"
           :title="$t('settings.filter_by_user')"
+          right-width="auto"
           border="lg:none b-1 $bew-border-color"
         >
           <Radio v-model="settings.enableFilterByUser" />
@@ -421,14 +423,14 @@ function handleToggleHomeTab(tab: any) {
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_following')">
-      <SettingsItem :title="$t('settings.use_following_new_layout')" :desc="$t('settings.use_following_new_layout_desc')">
+      <SettingsItem :title="$t('settings.use_following_new_layout')" :desc="$t('settings.use_following_new_layout_desc')" right-width="auto">
         <Radio v-model="settings.useFollowingNewLayout" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.enable_following_inactive_blacklist')" :desc="$t('settings.enable_following_inactive_blacklist_desc')">
+      <SettingsItem :title="$t('settings.enable_following_inactive_blacklist')" :desc="$t('settings.enable_following_inactive_blacklist_desc')" right-width="auto">
         <Radio v-model="settings.enableFollowingInactiveBlacklist" />
       </SettingsItem>
       <template v-if="settings.enableFollowingInactiveBlacklist">
-        <SettingsItem :title="$t('settings.following_inactive_days')" :desc="$t('settings.following_inactive_days_desc')">
+        <SettingsItem :title="$t('settings.following_inactive_days')" :desc="$t('settings.following_inactive_days_desc')" right-width="auto">
           <Input
             v-model="settings.followingInactiveDays" type="number" :min="1" :max="365"
             w-120px
@@ -439,13 +441,13 @@ function handleToggleHomeTab(tab: any) {
           </Input>
         </SettingsItem>
       </template>
-      <SettingsItem :title="$t('settings.following_tab_show_livestreaming_videos')">
+      <SettingsItem :title="$t('settings.following_tab_show_livestreaming_videos')" right-width="auto">
         <Radio v-model="settings.followingTabShowLivestreamingVideos" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.following_filter_charging_videos')" :desc="$t('settings.following_filter_charging_videos_desc')">
+      <SettingsItem :title="$t('settings.following_filter_charging_videos')" :desc="$t('settings.following_filter_charging_videos_desc')" right-width="auto">
         <Radio v-model="settings.followingFilterChargingVideos" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.following_filter_dynamic_videos')" :desc="$t('settings.following_filter_dynamic_videos_desc')">
+      <SettingsItem :title="$t('settings.following_filter_dynamic_videos')" :desc="$t('settings.following_filter_dynamic_videos_desc')" right-width="auto">
         <Radio v-model="settings.followingFilterDynamicVideos" />
       </SettingsItem>
     </SettingsItemGroup>
@@ -453,7 +455,7 @@ function handleToggleHomeTab(tab: any) {
     <SettingsItemGroup
       :title="$t('settings.group_home_tabs')"
     >
-      <SettingsItem :desc="$t('settings.home_tabs_adjustment_desc')">
+      <SettingsItem :desc="$t('settings.home_tabs_adjustment_desc')" right-width="auto">
         <template #title>
           <div flex="~ gap-4 items-center">
             {{ $t('settings.home_tabs_adjustment') }}
@@ -491,15 +493,15 @@ function handleToggleHomeTab(tab: any) {
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_search_page_mode')">
-      <SettingsItem :title="$t('settings.use_search_page_mode')">
+      <SettingsItem :title="$t('settings.use_search_page_mode')" right-width="auto">
         <Radio v-model="settings.useSearchPageModeOnHomePage" />
       </SettingsItem>
       <template v-if="settings.useSearchPageModeOnHomePage">
-        <SettingsItem :title="$t('settings.settings_shared_with_the_search_page')">
+        <SettingsItem :title="$t('settings.settings_shared_with_the_search_page')" right-width="auto">
           <template #desc>
             <span color="$bew-warning-color">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
           </template>
-          <Button type="secondary" block center @click="showSearchPageModeSharedSettings = true">
+          <Button type="secondary" center @click="showSearchPageModeSharedSettings = true">
             {{ $t('settings.btn.open_settings') }}
           </Button>
 
@@ -521,7 +523,7 @@ function handleToggleHomeTab(tab: any) {
           </Dialog>
         </SettingsItem>
 
-        <SettingsItem :title="$t('settings.search_page_mode_wallpaper_fixed')">
+        <SettingsItem :title="$t('settings.search_page_mode_wallpaper_fixed')" right-width="auto">
           <Radio v-model="settings.searchPageModeWallpaperFixed" />
         </SettingsItem>
       </template>
@@ -542,13 +544,21 @@ function handleToggleHomeTab(tab: any) {
 
 .recommendation-mode-selector {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) minmax(0, 0.8fr);
-  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 300px;
 }
 
 .recommendation-mode-option {
   min-width: 0;
   padding-inline: 0.5rem;
   white-space: nowrap;
+}
+
+.filter-control {
+  width: auto;
+}
+
+.filter-control--enabled {
+  width: 220px;
 }
 </style>

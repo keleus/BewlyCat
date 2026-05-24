@@ -239,6 +239,7 @@ function setCurrentTitle() {
           :style="{
             maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
             WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
+            scrollbarGutter: 'stable',
           }"
           h-inherit of-y-auto of-x-hidden
           style="padding-top: 80px;"

@@ -117,11 +117,11 @@ function changeWallpaper(url: string) {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_color')">
-      <SettingsItem :title="$t('settings.theme')">
-        <Select v-model="settings.theme" w-full :options="themeOptions" />
+      <SettingsItem :title="$t('settings.theme')" right-width="auto">
+        <Select v-model="settings.theme" w="160px" :options="themeOptions" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.theme_color')">
-        <div flex="~ gap-2 wrap" justify-end>
+      <SettingsItem :title="$t('settings.theme_color')" right-width="auto">
+        <div class="theme-color-options" flex="~ gap-2 wrap" justify-end>
           <div
             v-for="color in themeColorOptions" :key="color"
             w-20px h-20px rounded-8 cursor-pointer transition
@@ -159,8 +159,8 @@ function changeWallpaper(url: string) {
         </div>
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.dark_mode_base_color')">
-        <div flex="~ gap-2 wrap" justify-end>
+      <SettingsItem :title="$t('settings.dark_mode_base_color')" right-width="auto">
+        <div class="dark-mode-base-color-options" flex="~ gap-2 wrap" justify-end>
           <div
             v-for="color in darkModeBaseColorOptions" :key="color"
             w-20px h-20px rounded-8 cursor-pointer transition
@@ -198,7 +198,7 @@ function changeWallpaper(url: string) {
         </div>
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.gradient_theme_color_background')">
+      <SettingsItem :title="$t('settings.gradient_theme_color_background')" right-width="auto">
         <Radio v-model="settings.useLinearGradientThemeColorBackground" />
       </SettingsItem>
     </SettingsItemGroup>
@@ -206,7 +206,7 @@ function changeWallpaper(url: string) {
     <ChangeWallpaper type="global" />
 
     <SettingsItemGroup :title="$t('settings.group_visual_effects')">
-      <SettingsItem :title="$t('settings.enable_frosted_glass')">
+      <SettingsItem :title="$t('settings.enable_frosted_glass')" right-width="auto">
         <template #desc>
           <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
         </template>
@@ -216,41 +216,44 @@ function changeWallpaper(url: string) {
       <SettingsItem
         v-if="settings.enableFrostedGlass"
         :title="$t('settings.frosted_glass_blur_intensity')"
+        right-width="auto"
       >
-        <Slider
-          v-model="settings.frostedGlassBlurIntensity"
-          :min="FROSTED_GLASS_BLUR_MIN_PX"
-          :max="FROSTED_GLASS_BLUR_MAX_PX"
-          :label="`${settings.frostedGlassBlurIntensity}`"
-        />
+        <div class="slider-control">
+          <Slider
+            v-model="settings.frostedGlassBlurIntensity"
+            :min="FROSTED_GLASS_BLUR_MIN_PX"
+            :max="FROSTED_GLASS_BLUR_MAX_PX"
+            :label="`${settings.frostedGlassBlurIntensity}`"
+          />
+        </div>
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_shadow')">
+      <SettingsItem :title="$t('settings.disable_shadow')" right-width="auto">
         <Radio v-model="settings.disableShadow" />
       </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_fonts')">
-      <SettingsItem :title="$t('settings.customize_font')">
+      <SettingsItem :title="$t('settings.customize_font')" right-width="auto">
         <Select
           v-model="settings.customizeFont"
           :options="fontPreferenceOptions"
-          w="full"
+          w="160px"
         />
         <template v-if="settings.customizeFont === 'custom'" #bottom>
           <Input v-model="settings.fontFamily" @keydown.stop.passive="() => {}" />
           <div text="sm $bew-text-2" mt-1 v-html="t('settings.customize_font_desc')" />
         </template>
       </SettingsItem>
-      <SettingsItem :title="$t('settings.remove_the_indent_from_chinese_punctuation')" :desc="$t('settings.remove_the_indent_from_chinese_punctuation_desc')">
+      <SettingsItem :title="$t('settings.remove_the_indent_from_chinese_punctuation')" :desc="$t('settings.remove_the_indent_from_chinese_punctuation_desc')" right-width="auto">
         <Radio v-model="settings.removeTheIndentFromChinesePunctuation" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.override_danmaku_font')" :desc="$t('settings.override_danmaku_font_desc')">
+      <SettingsItem :title="$t('settings.override_danmaku_font')" :desc="$t('settings.override_danmaku_font_desc')" right-width="auto">
         <Radio v-model="settings.overrideDanmakuFont" />
       </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup>
-      <SettingsItem :title="$t('settings.customize_css')">
+      <SettingsItem :title="$t('settings.customize_css')" right-width="auto">
         <Radio v-model="localSettings.customizeCSS" />
         <template #desc>
           <span text="$bew-error-color">
@@ -266,4 +269,15 @@ function changeWallpaper(url: string) {
 </template>
 
 <style lang="scss" scoped>
+.theme-color-options {
+  width: 312px;
+}
+
+.dark-mode-base-color-options {
+  width: 252px;
+}
+
+.slider-control {
+  width: 220px;
+}
 </style>

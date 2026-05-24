@@ -81,48 +81,48 @@ watch(() => settings.value.language, (newValue) => {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_common')">
-      <SettingsItem :title="$t('settings.touch_screen_optimization')" :desc="$t('settings.touch_screen_optimization_desc')">
+      <SettingsItem :title="$t('settings.touch_screen_optimization')" :desc="$t('settings.touch_screen_optimization_desc')" right-width="auto">
         <Radio v-model="settings.touchScreenOptimization" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.enable_grid_layout_switcher')">
+      <SettingsItem :title="$t('settings.enable_grid_layout_switcher')" right-width="auto">
         <Radio v-model="settings.enableGridLayoutSwitcher" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.enable_horizontal_scrolling')" :desc="$t('settings.enable_horizontal_scrolling_desc')">
+      <SettingsItem :title="$t('settings.enable_horizontal_scrolling')" :desc="$t('settings.enable_horizontal_scrolling_desc')" right-width="auto">
         <Radio v-model="settings.enableHorizontalScrolling" />
       </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_language')">
-      <SettingsItem :title="$t('settings.select_language')">
+      <SettingsItem :title="$t('settings.select_language')" right-width="auto">
         <Select
           v-model="settings.language"
           :options="langOptions"
-          w="full"
+          w="160px"
         />
       </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_link_opening_behavior')">
-      <SettingsItem :title="$t('settings.top_bar_link_opening_behavior')">
-        <Select v-model="settings.topBarLinkOpenMode" :options="openModeOptions" w="full" />
+      <SettingsItem :title="$t('settings.top_bar_link_opening_behavior')" :desc="$t('settings.link_opening_behavior_desc')" right-width="auto">
+        <Select v-model="settings.topBarLinkOpenMode" :options="openModeOptions" w="160px" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.video_card_link_opening_behavior')">
+      <SettingsItem :title="$t('settings.video_card_link_opening_behavior')" :desc="$t('settings.video_card_link_opening_behavior_desc')" right-width="auto">
         <Select
           v-model="settings.videoCardLinkOpenMode"
           :options="videoCardOpenModeOptions"
-          w="full"
+          w="160px"
         />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.search_bar_link_opening_behavior')">
+      <SettingsItem :title="$t('settings.search_bar_link_opening_behavior')" :desc="$t('settings.link_opening_behavior_desc')" right-width="auto">
         <Select
           v-model="settings.searchBarLinkOpenMode"
           :options="openModeOptions"
-          w="full"
+          w="160px"
         />
       </SettingsItem>
-      <SettingsItem>
+      <SettingsItem right-width="auto">
         <template #title>
           <div v-html="$t('settings.close_drawer_without_pressing_esc_again')" />
         </template>
@@ -131,26 +131,26 @@ watch(() => settings.value.language, (newValue) => {
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_ad_blocking')">
-      <SettingsItem :title="$t('settings.block_ads')">
+      <SettingsItem :title="$t('settings.block_ads')" right-width="auto">
         <Radio v-model="settings.blockAds" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.block_top_search_page_ads')" :desc="$t('settings.block_top_search_page_ads_desc')">
+      <SettingsItem :title="$t('settings.block_top_search_page_ads')" :desc="$t('settings.block_top_search_page_ads_desc')" right-width="auto">
         <Radio v-model="settings.blockTopSearchPageAds" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.clean_url_argument')" :desc="$t('settings.clean_url_argument_desc')">
+      <SettingsItem :title="$t('settings.clean_url_argument')" :desc="$t('settings.clean_url_argument_desc')" right-width="auto">
         <Radio v-model="settings.cleanUrlArgument" />
       </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_clean_share_link')">
-      <SettingsItem :title="$t('settings.enable_clean_share_link')" :desc="$t('settings.enable_clean_share_link_desc')">
+      <SettingsItem :title="$t('settings.enable_clean_share_link')" :desc="$t('settings.enable_clean_share_link_desc')" right-width="auto">
         <Radio v-model="settings.enableCleanShareLink" />
       </SettingsItem>
       <template v-if="settings.enableCleanShareLink">
-        <SettingsItem :title="$t('settings.clean_share_link_include_title')" :desc="$t('settings.clean_share_link_include_title_desc')">
+        <SettingsItem :title="$t('settings.clean_share_link_include_title')" :desc="$t('settings.clean_share_link_include_title_desc')" right-width="auto">
           <Radio v-model="settings.cleanShareLinkIncludeTitle" />
         </SettingsItem>
-        <SettingsItem :title="$t('settings.clean_share_link_remove_tracking_params')" :desc="$t('settings.clean_share_link_remove_tracking_params_desc')">
+        <SettingsItem :title="$t('settings.clean_share_link_remove_tracking_params')" :desc="$t('settings.clean_share_link_remove_tracking_params_desc')" right-width="auto">
           <Radio v-model="settings.cleanShareLinkRemoveTrackingParams" />
         </SettingsItem>
       </template>

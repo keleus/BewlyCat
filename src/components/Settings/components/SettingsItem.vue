@@ -1,14 +1,22 @@
 <script setup lang="ts">
-defineProps<{
+type RightWidth = 'default' | 'auto'
+
+withDefaults(defineProps<{
   title?: string
   desc?: string
-}>()
+  rightWidth?: RightWidth
+}>(), {
+  rightWidth: 'default',
+})
 </script>
 
 <template>
   <div class="b-settings-item" py-4>
-    <div flex="~ gap-4" justify-between items-center text-base>
-      <div class="left-content" w="5/7">
+    <div
+      class="b-settings-item-row" :class="`right-width-${rightWidth}`" flex="~ gap-4" justify-between items-center
+      text-base
+    >
+      <div class="left-content" flex-1 min-w-0>
         <div>
           <slot name="title">
             {{ title }}
@@ -26,7 +34,7 @@ defineProps<{
         </div>
       </div>
 
-      <div class="right-content" w="2/7">
+      <div class="right-content" w-auto shrink-0>
         <slot />
       </div>
     </div>
@@ -38,6 +46,16 @@ defineProps<{
 </template>
 
 <style lang="scss" scoped>
+.right-width-auto {
+  .left-content {
+    --uno: "w-auto flex-1 min-w-0";
+  }
+
+  .right-content {
+    --uno: "w-auto shrink-0";
+  }
+}
+
 :deep(.right-content > *) {
   --uno: "float-right clear-both";
 }

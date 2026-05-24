@@ -164,12 +164,14 @@ settings:
   disable_shadow: 閂咗陰影
   link_opening_behavior_opt:
     current_tab: 目前分頁
-    current_tab_if_not_homepage: 主頁開新分頁，其他用目前分頁
+    current_tab_if_not_homepage: 主頁外目前分頁
     new_tab: 新開分頁
     drawer: 喺櫃桶度開啓
-    background: 後臺打開（若然得嘅話）
+    background: 後臺打開
   top_bar_link_opening_behavior: 頂欄連結開啓行爲
   video_card_link_opening_behavior: 影片同番劇卡片連結開啓行爲
+  link_opening_behavior_desc: 控制撳連結之後喺邊度開。「主頁外目前分頁」表示：目前頁面係主頁時用新分頁開，其他頁面用目前分頁開；「後臺打開」會喺瀏覽器容許時開到背景分頁。
+  video_card_link_opening_behavior_desc: 控制撳影片同番劇卡片之後喺邊度開，可以揀目前分頁、櫃桶、背景分頁或者新分頁。
   search_bar_link_opening_behavior: 搜尋欄連結開啓行爲
   close_drawer_without_pressing_esc_again: 閂櫃桶嗰陣唔使再撳多次 <kbd>Esc</kbd>
   block_ads: 封鎖廣告
@@ -305,7 +307,7 @@ settings:
   recommendation_mode: 推介模式
   recommendation_mode_desc: |
     Web：普通網頁版推介模式。無 Cookie：請求首頁推介時唔帶 Cookie。App：手機版推介模式，要先授權 access key。
-  recommendation_mode_web_no_cookie: 無Cookie
+  recommendation_mode_web_no_cookie: 無 Cookie
   auto_switch_recommendation_mode: 自動切換推介模式
   auto_switch_recommendation_mode_desc: |
     當手機版推介壞咗嗰陣自動切換到網頁模式。
@@ -397,12 +399,12 @@ settings:
     噉做冇得返轉頭噃，你確定要重設你之前嘅設定？
   contributors: 貢獻者
   video_page_top_bar_config: 影片頁頂欄配置
-  video_page_top_bar_config_desc: 設定頂欄喺影片頁嘅顯示方式。
+  video_page_top_bar_config_desc: 控制影片頁頂欄嘅顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「捲動顯示」表示頁面捲動時顯示。
   video_page_top_bar_config_opt:
     alwaysShow: 一直顯示
     alwaysHide: 一直隱藏
-    showOnMouse: 滑鼠移入嗰陣顯示
-    showOnScroll: 捲動嗰陣顯示
+    showOnMouse: 滑鼠顯示
+    showOnScroll: 捲動顯示
   clean_url_argument: 清理 URL 追蹤參數
   clean_url_argument_desc: 自動清理 URL 嘅最終參數，令到連結更加企理。
 
@@ -429,17 +431,17 @@ settings:
   use_bilibili_default_auto_play_desc: 啟用後會用B站嘅預設自動播放行為，下面嘅自訂自動播放設定會隱藏同埋無效
   auto_play_mode_default: B站預設
   auto_play_mode_auto_play: 自動連播
-  auto_play_mode_auto_play_with_recommend: 自動連播(含推薦)
+  auto_play_mode_auto_play_with_recommend: 連播推薦
   auto_play_mode_pause_at_end: 播完暫停
   auto_play_mode_loop: 單集循環
   auto_play_multipart: 分P影片
-  auto_play_multipart_desc: 揀分P影片嘅自動播放行為
+  auto_play_multipart_desc: 揀分P影片嘅自動播放行為。「連播推薦」表示目前影片完咗之後繼續播推薦影片。
   auto_play_collection: 合集影片
-  auto_play_collection_desc: 揀合集影片嘅自動播放行為
+  auto_play_collection_desc: 揀合集影片嘅自動播放行為。「連播推薦」表示目前影片完咗之後繼續播推薦影片。
   auto_play_recommend: 單影片推薦
-  auto_play_recommend_desc: 揀單影片睇完之後嘅自動播放行為
+  auto_play_recommend_desc: 揀單影片睇完之後嘅自動播放行為。「連播推薦」表示目前影片完咗之後繼續播推薦影片。
   auto_play_playlist: 收藏列表
-  auto_play_playlist_desc: 揀收藏列表嘅自動播放行為
+  auto_play_playlist_desc: 揀收藏列表嘅自動播放行為。「連播推薦」表示目前影片完咗之後繼續播推薦影片。
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 喺唔同設備度同步延伸功能設定 (需要登入瀏覽器帳戶)。
   enable_undo_refresh_button: 啓用復原更新掣（淨係得 Web 推介模式下有效）

@@ -88,20 +88,20 @@ function handleToggleDockItem(dockItem: any) {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_dock')">
-      <SettingsItem :title="$t('settings.always_use_dock')" :desc="$t('settings.always_use_dock_desc')">
+      <SettingsItem :title="$t('settings.always_use_dock')" :desc="$t('settings.always_use_dock_desc')" right-width="auto">
         <Radio v-model="settings.alwaysUseDock" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.auto_hide_dock')">
+      <SettingsItem :title="$t('settings.auto_hide_dock')" right-width="auto">
         <Radio v-model="settings.autoHideDock" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.half_hide_dock')">
+      <SettingsItem :title="$t('settings.half_hide_dock')" right-width="auto">
         <Radio v-model="settings.halfHideDock" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.dock_position')" :desc="$t('settings.dock_position_desc')">
+      <SettingsItem :title="$t('settings.dock_position')" :desc="$t('settings.dock_position_desc')" right-width="auto">
         <Select
           v-model="settings.dockPosition"
           :options="dockPositions"
-          w="full"
+          w="160px"
         />
       </SettingsItem>
       <SettingsItem :desc="$t('settings.dock_content_adjustment_desc')">
@@ -156,25 +156,25 @@ function handleToggleDockItem(dockItem: any) {
           </draggable>
         </template>
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_dock_glowing_effect')">
+      <SettingsItem :title="$t('settings.disable_dock_glowing_effect')" right-width="auto">
         <Radio v-model="settings.disableDockGlowingEffect" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_light_dark_mode_switcher')">
+      <SettingsItem :title="$t('settings.disable_light_dark_mode_switcher')" right-width="auto">
         <Radio v-model="settings.disableLightDarkModeSwitcherOnDock" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.back_to_top_and_refresh_buttons_are_separated')">
+      <SettingsItem :title="$t('settings.back_to_top_and_refresh_buttons_are_separated')" right-width="auto">
         <Radio v-model="settings.backToTopAndRefreshButtonsAreSeparated" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.enable_undo_refresh_button')" :desc="$t('settings.enable_undo_refresh_button_desc')">
+      <SettingsItem :title="$t('settings.enable_undo_refresh_button')" :desc="$t('settings.enable_undo_refresh_button_desc')" right-width="auto">
         <Radio v-model="settings.enableUndoRefreshButton" />
       </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_sidebar')" :desc="$t('settings.group_sidebar_desc')">
-      <SettingsItem :title="$t('settings.sidebar_position')">
-        <Select v-model="settings.sidebarPosition" :options="sidebarPositions" w="full" />
+      <SettingsItem :title="$t('settings.sidebar_position')" right-width="auto">
+        <Select v-model="settings.sidebarPosition" :options="sidebarPositions" w="160px" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.auto_hide_sidebar')">
+      <SettingsItem :title="$t('settings.auto_hide_sidebar')" right-width="auto">
         <Radio v-model="settings.autoHideSidebar" />
       </SettingsItem>
     </SettingsItemGroup>

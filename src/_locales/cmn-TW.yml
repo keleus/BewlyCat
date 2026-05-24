@@ -164,12 +164,14 @@ settings:
   disable_shadow: 停用陰影
   link_opening_behavior_opt:
     current_tab: 目前索引標籤
-    current_tab_if_not_homepage: 首頁新分頁，其他目前分頁
+    current_tab_if_not_homepage: 首頁外目前分頁
     background: 後台打開
     new_tab: 新索引標籤
     drawer: 抽屜開啟
   top_bar_link_opening_behavior: 頂欄連結開啟行為
   video_card_link_opening_behavior: 影片和番劇卡片連結開啟行為
+  link_opening_behavior_desc: 控制點擊連結後的開啟位置。「首頁外目前分頁」表示：目前頁面為首頁時使用新索引標籤開啟，其他頁面使用目前索引標籤開啟；「後台打開」會在瀏覽器允許時開到背景索引標籤。
+  video_card_link_opening_behavior_desc: 控制點擊影片和番劇卡片後的開啟位置，可選擇目前索引標籤、抽屜、背景索引標籤或新索引標籤。
   search_bar_link_opening_behavior: 搜尋欄連結開啟行為
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉
   block_ads: 封鎖廣告
@@ -232,7 +234,7 @@ settings:
   show_video_card_recommend_tag_desc: 顯示插件計算的標籤，如「高讚」、「高互動」、「百萬播放」等
   auto_hide_top_bar: 自動隱藏頂欄
   video_page_top_bar_config: 影片頁頂欄配置
-  video_page_top_bar_config_desc: 配置在影片頁面頂欄的顯示行為
+  video_page_top_bar_config_desc: 控制影片頁頂欄的顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「滾動顯示」表示頁面滾動時顯示。
   video_page_top_bar_config_opt:
     alwaysShow: 總是顯示
     alwaysHide: 總是隱藏
@@ -323,7 +325,7 @@ settings:
   recommendation_mode: 推薦模式
   recommendation_mode_desc: |
     Web：普通網頁端推薦模式。無 Cookie：請求首頁推薦時不攜帶 Cookie。App：手機端推薦模式，需先授權 access key。
-  recommendation_mode_web_no_cookie: 無Cookie
+  recommendation_mode_web_no_cookie: 無 Cookie
   auto_switch_recommendation_mode: 自動切換推薦模式
   auto_switch_recommendation_mode_desc: |
     當手機端推薦失敗時自動切換至網頁模式。
@@ -428,17 +430,17 @@ settings:
   use_bilibili_default_auto_play_desc: 啟用後將使用B站的預設自動播放行為，下方的自訂自動播放設定將被隱藏且無效
   auto_play_mode_default: B站預設
   auto_play_mode_auto_play: 自動連播
-  auto_play_mode_auto_play_with_recommend: 自動連播(含推薦)
+  auto_play_mode_auto_play_with_recommend: 連播推薦
   auto_play_mode_pause_at_end: 播完暫停
   auto_play_mode_loop: 單集循環
   auto_play_multipart: 分P影片
-  auto_play_multipart_desc: 選擇分P影片的自動播放行為
+  auto_play_multipart_desc: 選擇分P影片的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
   auto_play_collection: 合集影片
-  auto_play_collection_desc: 選擇合集影片的自動播放行為
+  auto_play_collection_desc: 選擇合集影片的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
   auto_play_recommend: 單影片推薦
-  auto_play_recommend_desc: 選擇單影片播放結束後的自動播放行為
+  auto_play_recommend_desc: 選擇單影片播放結束後的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
   auto_play_playlist: 收藏列表
-  auto_play_playlist_desc: 選擇收藏列表的自動播放行為
+  auto_play_playlist_desc: 選擇收藏列表的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
   enable_random_play: 啟用影片合集隨機播放
   enable_random_play_desc: 為多P影片或合集添加隨機播放功能
   random_play_mode: 隨機播放模式

@@ -78,14 +78,14 @@ function resetColumns() {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_link_opening_behavior')">
-      <SettingsItem :title="$t('settings.video_card_link_opening_behavior')">
+      <SettingsItem :title="$t('settings.video_card_link_opening_behavior')" :desc="$t('settings.video_card_link_opening_behavior_desc')" right-width="auto">
         <Select
           v-model="settings.videoCardLinkOpenMode"
           :options="videoCardOpenModeOptions"
-          w="full"
+          w="160px"
         />
       </SettingsItem>
-      <SettingsItem>
+      <SettingsItem right-width="auto">
         <template #title>
           <div v-html="$t('settings.close_drawer_without_pressing_esc_again')" />
         </template>
@@ -95,7 +95,7 @@ function resetColumns() {
 
     <!-- Video Card Grid Settings -->
     <SettingsItemGroup :title="$t('settings.group_video_card_grid')">
-      <SettingsItem :title="$t('settings.grid_breakpoints')" :desc="$t('settings.grid_breakpoints_desc')">
+      <SettingsItem :title="$t('settings.grid_breakpoints')" :desc="$t('settings.grid_breakpoints_desc')" right-width="auto">
         <template #bottom>
           <div flex="~ col gap-3" w-full>
             <div
@@ -128,61 +128,65 @@ function resetColumns() {
       <SettingsItem
         :title="$t('settings.video_card_layout')"
         :desc="$t('settings.video_card_layout_desc')"
+        right-width="auto"
       >
-        <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="full" />
+        <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="160px" />
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.enable_video_preview')">
+      <SettingsItem :title="$t('settings.enable_video_preview')" right-width="auto">
         <Radio v-model="settings.enableVideoPreview" />
       </SettingsItem>
 
       <template v-if="settings.enableVideoPreview">
-        <SettingsItem :title="$t('settings.enable_video_ctrl_bar_on_video_card')">
+        <SettingsItem :title="$t('settings.enable_video_ctrl_bar_on_video_card')" right-width="auto">
           <Radio v-model="settings.enableVideoCtrlBarOnVideoCard" />
         </SettingsItem>
 
-        <SettingsItem :title="$t('settings.hover_video_card_delayed')">
+        <SettingsItem :title="$t('settings.hover_video_card_delayed')" right-width="auto">
           <Radio v-model="settings.hoverVideoCardDelayed" />
         </SettingsItem>
 
-        <SettingsItem :title="$t('settings.only_cover_video_preview')">
+        <SettingsItem :title="$t('settings.only_cover_video_preview')" right-width="auto">
           <Radio v-model="settings.onlyCoverVideoPreview" />
         </SettingsItem>
       </template>
 
-      <SettingsItem :title="$t('settings.show_video_card_recommend_tag')" :desc="$t('settings.show_video_card_recommend_tag_desc')">
+      <SettingsItem :title="$t('settings.show_video_card_recommend_tag')" :desc="$t('settings.show_video_card_recommend_tag_desc')" right-width="auto">
         <Radio v-model="settings.showVideoCardRecommendTag" />
       </SettingsItem>
 
       <SettingsItem
         :title="$t('settings.video_card_title_font_size')"
         :desc="$t('settings.video_card_title_font_size_desc')"
+        right-width="auto"
       >
-        <Select v-model="settings.videoCardTitleFontSize" :options="videoCardFontSizeOptions" w="full" />
+        <Select v-model="settings.videoCardTitleFontSize" :options="videoCardFontSizeOptions" w="160px" />
       </SettingsItem>
 
       <SettingsItem
         :title="$t('settings.video_card_author_font_size')"
         :desc="$t('settings.video_card_author_font_size_desc')"
+        right-width="auto"
       >
-        <Select v-model="settings.videoCardAuthorFontSize" :options="videoCardFontSizeOptions" w="full" />
+        <Select v-model="settings.videoCardAuthorFontSize" :options="videoCardFontSizeOptions" w="160px" />
       </SettingsItem>
 
       <SettingsItem
         :title="$t('settings.video_card_meta_font_size')"
         :desc="$t('settings.video_card_meta_font_size_desc')"
+        right-width="auto"
       >
-        <Select v-model="settings.videoCardMetaFontSize" :options="videoCardFontSizeOptions" w="full" />
+        <Select v-model="settings.videoCardMetaFontSize" :options="videoCardFontSizeOptions" w="160px" />
       </SettingsItem>
 
       <!-- Shadow settings - only for modern layout -->
       <template v-if="isModernLayout">
-        <SettingsItem :title="$t('settings.video_card_shadow_curve')" :desc="$t('settings.video_card_shadow_curve_desc')">
+        <SettingsItem :title="$t('settings.video_card_shadow_curve')" :desc="$t('settings.video_card_shadow_curve_desc')" right-width="auto">
           <ShadowCurveEditor v-model="settings.videoCardShadowCurve" />
         </SettingsItem>
 
-        <SettingsItem :title="$t('settings.video_card_shadow_height')" :desc="$t('settings.video_card_shadow_height_desc')">
-          <div flex="~ items-center gap-2" w-full>
+        <SettingsItem :title="$t('settings.video_card_shadow_height')" :desc="$t('settings.video_card_shadow_height_desc')" right-width="auto">
+          <div class="shadow-height-control" flex="~ items-center gap-2">
             <input
               v-model.number="settings.videoCardShadowHeight"
               type="range"
@@ -196,7 +200,7 @@ function resetColumns() {
           </div>
         </SettingsItem>
 
-        <SettingsItem>
+        <SettingsItem right-width="auto">
           <Button type="secondary" center @click="resetShadowSettings">
             {{ $t('settings.video_card_shadow_reset') }}
           </Button>
@@ -207,4 +211,7 @@ function resetColumns() {
 </template>
 
 <style lang="scss" scoped>
+.shadow-height-control {
+  width: 220px;
+}
 </style>

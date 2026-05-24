@@ -177,12 +177,14 @@ settings:
   disable_shadow: Disable shadow
   link_opening_behavior_opt:
     current_tab: Current tab
-    current_tab_if_not_homepage: New tab on homepage, otherwise current tab
-    background: New tab,but in background
+    current_tab_if_not_homepage: Current outside home
+    background: Background tab
     new_tab: New tab
     drawer: Open in drawer
   top_bar_link_opening_behavior: Top bar link opening behavior
   video_card_link_opening_behavior: Video card and bangumi card link opening behavior
+  link_opening_behavior_desc: 'Controls where links open. "Current outside home" means: use a new tab on the home page, and use the current tab on other pages; "Background tab" opens in the background when the browser allows it.'
+  video_card_link_opening_behavior_desc: Controls where video and bangumi cards open. You can choose the current tab, drawer, background tab, or new tab.
   search_bar_link_opening_behavior: Search bar link opening behavior
   close_drawer_without_pressing_esc_again: Close the drawer without pressing <kbd>Esc</kbd> again
   block_ads: Block ads
@@ -210,12 +212,12 @@ settings:
   show_video_card_recommend_tag_desc: Display tags calculated by the plugin, such as "High Engagement", "Popular", etc.
   auto_hide_top_bar: Auto-hide top bar
   video_page_top_bar_config: Video page top bar configuration
-  video_page_top_bar_config_desc: Configure the display behavior of the top bar on video pages
+  video_page_top_bar_config_desc: 'Controls when the top bar appears on video pages. "On hover" shows it when the pointer enters the top of the page; "On scroll" shows it while the page scrolls.'
   video_page_top_bar_config_opt:
     alwaysShow: Always show
     alwaysHide: Always hide
-    showOnMouse: Show on mouse
-    showOnScroll: Show on scroll
+    showOnMouse: On hover
+    showOnScroll: On scroll
   always_use_transparent_top_bar: Always use transparent (legacy) style for top bar
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
   show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
@@ -500,17 +502,17 @@ settings:
     When enabled, Bilibili's default auto-play behavior will be used, and custom auto-play settings below will be hidden and disabled
   auto_play_mode_default: Bilibili Default
   auto_play_mode_auto_play: Auto-play
-  auto_play_mode_auto_play_with_recommend: Auto-play (with Recommendations)
+  auto_play_mode_auto_play_with_recommend: Play recommendations
   auto_play_mode_pause_at_end: Pause at End
   auto_play_mode_loop: Single Loop
   auto_play_multipart: Multi-part Videos
-  auto_play_multipart_desc: Choose auto-play behavior for multi-part videos
+  auto_play_multipart_desc: Choose auto-play behavior for multi-part videos. "Play recommendations" continues with recommended videos after the current video ends.
   auto_play_collection: Collection Videos
-  auto_play_collection_desc: Choose auto-play behavior for collection videos
+  auto_play_collection_desc: Choose auto-play behavior for collection videos. "Play recommendations" continues with recommended videos after the current video ends.
   auto_play_recommend: Recommended Videos
-  auto_play_recommend_desc: Choose auto-play behavior when video ends
+  auto_play_recommend_desc: Choose auto-play behavior when video ends. "Play recommendations" continues with recommended videos after the current video ends.
   auto_play_playlist: Playlist Videos
-  auto_play_playlist_desc: Choose auto-play behavior for playlist videos
+  auto_play_playlist_desc: Choose auto-play behavior for playlist videos. "Play recommendations" continues with recommended videos after the current video ends.
   enable_random_play: Enable video collection random play
   enable_random_play_desc: Add random play feature for multi-part videos or collections
   random_play_mode: Random play mode
