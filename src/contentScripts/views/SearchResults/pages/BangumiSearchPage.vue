@@ -68,6 +68,8 @@ const {
   const success = await performSearch(true)
   const itemsCount = results.value?.length || 0
   return { success, itemsCount }
+}, {
+  isLoading: () => isLoading.value,
 })
 
 // 将番剧分组为番剧和影视

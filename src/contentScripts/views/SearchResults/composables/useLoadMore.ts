@@ -4,11 +4,14 @@ export interface LoadMoreOptions {
   cooldownMs?: number
   retryDelayMs?: number
   maxAutoFillAttempts?: number
+  isLoading?: () => boolean
 }
 
 export interface LoadMoreState {
   pending: boolean
+  running: boolean
   lastTriggered: number
+  lastCompleted: number
   lastAppended: number
   autoFillAttempts: number
 }
@@ -25,6 +28,7 @@ export function useLoadMore(
     cooldownMs = 800,
     retryDelayMs = 120,
     maxAutoFillAttempts = 2,
+    isLoading = () => false,
   } = options
 
   const page = ref(0)
@@ -33,7 +37,9 @@ export function useLoadMore(
 
   const state = ref<LoadMoreState>({
     pending: false,
+    running: false,
     lastTriggered: 0,
+    lastCompleted: 0,
     lastAppended: 0,
     autoFillAttempts: 0,
   })
@@ -54,6 +60,11 @@ export function useLoadMore(
    * 调度加载更多尝试
    */
   function scheduleAttempt(delay: number) {
+    if (isLoading()) {
+      state.value.pending = false
+      return
+    }
+
     clearTimer()
     const effectiveDelay = Math.max(delay, 0)
     state.value.pending = true
@@ -68,6 +79,14 @@ export function useLoadMore(
    * 尝试加载更多
    */
   async function attemptLoadMore() {
+    if (state.value.running)
+      return
+
+    if (isLoading()) {
+      state.value.pending = false
+      return
+    }
+
     if (!hasMore.value || exhausted.value) {
       state.value.pending = false
       state.value.autoFillAttempts = 0
@@ -75,17 +94,23 @@ export function useLoadMore(
     }
 
     state.value.pending = false
+    state.value.running = true
     state.value.lastTriggered = Date.now()
-    state.value.autoFillAttempts = 0
 
-    const result = await loadFn()
+    try {
+      const result = await loadFn()
 
-    if (result.success) {
-      page.value += 1
-      state.value.lastAppended = result.itemsCount
+      if (result.success) {
+        page.value += 1
+        state.value.lastAppended = result.itemsCount
 
-      if (result.itemsCount === 0)
-        exhausted.value = true
+        if (result.itemsCount === 0)
+          exhausted.value = true
+      }
+    }
+    finally {
+      state.value.lastCompleted = Date.now()
+      state.value.running = false
     }
   }
 
@@ -93,11 +118,12 @@ export function useLoadMore(
    * 请求加载更多（带防抖）
    */
   function requestLoadMore() {
-    if (!hasMore.value || exhausted.value)
+    if (!hasMore.value || exhausted.value || isLoading() || state.value.running)
       return
 
     const now = Date.now()
-    const elapsed = now - state.value.lastTriggered
+    const lastRequestBoundary = Math.max(state.value.lastTriggered, state.value.lastCompleted)
+    const elapsed = now - lastRequestBoundary
 
     // 如果在冷却期内，标记为pending并调度延迟加载
     if (elapsed < cooldownMs) {
@@ -118,8 +144,14 @@ export function useLoadMore(
   async function handleLoadMoreCompletion(haveScrollbar: () => Promise<boolean>) {
     await waitForRender()
 
+    if (isLoading()) {
+      state.value.pending = false
+      return
+    }
+
     const now = Date.now()
-    const elapsed = now - state.value.lastTriggered
+    const lastRequestBoundary = Math.max(state.value.lastTriggered, state.value.lastCompleted)
+    const elapsed = now - lastRequestBoundary
     const remainingCooldown = Math.max(cooldownMs - elapsed, 0)
 
     // 如果有挂起的请求，继续调度
@@ -164,7 +196,9 @@ export function useLoadMore(
     exhausted.value = false
     state.value = {
       pending: false,
+      running: false,
       lastTriggered: 0,
+      lastCompleted: 0,
       lastAppended: 0,
       autoFillAttempts: 0,
     }

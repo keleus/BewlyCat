@@ -67,6 +67,8 @@ const {
   const success = await performSearch(true)
   const itemsCount = results.value?.length || 0
   return { success, itemsCount }
+}, {
+  isLoading: () => isLoading.value,
 })
 
 watch(() => props.keyword, async (newKeyword, oldKeyword) => {

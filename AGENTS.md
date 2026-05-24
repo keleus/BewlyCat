@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
@@ -20,7 +20,6 @@ BewlyCat is a browser extension that enhances the Bilibili homepage experience. 
 The project uses a multi-target build system:
 - Chrome/Edge: builds to `extension/` directory
 - Firefox: builds to `extension-firefox/` directory
-- Safari: builds to `extension-safari/` directory
 
 ## Architecture Overview
 
@@ -67,7 +66,6 @@ The project uses a multi-target build system:
 - `src/_locales` - I18n
 
 ## Development Notes
-- The relevant Bilibili API documentation can be found in `context7`’s `Bilibili API Collect`(`socialsisteryi/bilibili-api-collect`)
 - Uses Vue 3 with Composition API and TypeScript
 - Vite for build tooling with multiple config files for different targets
 - UnoCSS for utility-first styling

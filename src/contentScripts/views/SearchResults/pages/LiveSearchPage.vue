@@ -86,6 +86,8 @@ const {
   const success = await performSearch(true)
   const itemsCount = getCurrentResultLength()
   return { success, itemsCount }
+}, {
+  isLoading: () => isLoading.value,
 })
 
 // 获取直播间列表
@@ -320,7 +322,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
       : incomingRooms
 
     const mergedUsers = isLoadMore
-      ? dedupeByKey([...prevUsers, ...incomingUsers], item => String(item?.mid ?? JSON.stringify(item)))
+      ? prevUsers
       : incomingUsers
 
     results.value = {
@@ -368,7 +370,6 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
 
     const incomingLength = props.filters.subCategory === 'all'
       ? (Array.isArray(rawData?.result?.live_room) ? rawData.result.live_room.length : 0)
-      + (Array.isArray(rawData?.result?.live_user) ? rawData.result.live_user.length : 0)
       : (Array.isArray(rawData?.result) ? rawData.result.length : 0)
 
     if (incomingLength === 0) {
@@ -603,13 +604,13 @@ function handleSwitchToLiveUser() {
 }
 
 // 预加载更多直播间
-async function handleLoadMore() {
+function handleLoadMore() {
   if (paginationMode.value !== 'scroll')
     return
   if (isLoading.value || exhausted.value)
     return
 
-  await performSearch(true)
+  requestLoadMore()
 }
 
 // 暴露给父组件

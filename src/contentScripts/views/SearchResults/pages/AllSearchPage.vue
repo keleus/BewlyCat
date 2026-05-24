@@ -99,6 +99,8 @@ const {
   const success = await performSearch(true)
   const itemsCount = getCurrentResultLength()
   return { success, itemsCount }
+}, {
+  isLoading: () => isLoading.value,
 })
 
 // 是否激活视频筛选
@@ -380,7 +382,9 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   const incomingSections = Array.isArray(normalizedData?.result) ? normalizedData.result : []
 
   if (isLoadMore && results.value) {
-    results.value = mergeSections(results.value, normalizedData)
+    results.value = mergeSections(results.value, normalizedData, {
+      appendVideoOnly: paginationMode.value === 'scroll',
+    })
   }
   else {
     results.value = normalizedData
@@ -407,6 +411,8 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     const finalLength = getCurrentResultLength()
     const newItems = Math.max(finalLength - previousLength, 0)
     const incomingLength = incomingSections.reduce((sum: number, section: any) => {
+      if (isLoadMore && section?.result_type !== 'video')
+        return sum
       if (Array.isArray(section?.data))
         return sum + section.data.length
       return sum
@@ -424,7 +430,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   return true
 }
 
-function mergeSections(previous: any, incoming: any) {
+function mergeSections(previous: any, incoming: any, options: { appendVideoOnly?: boolean } = {}) {
   const prevSections = Array.isArray(previous?.result) ? previous.result : []
   const incomingSections = Array.isArray(incoming?.result) ? incoming.result : []
   const sectionMap = new Map<string, any>()
@@ -437,6 +443,9 @@ function mergeSections(previous: any, incoming: any) {
   })
 
   incomingSections.forEach((section: any) => {
+    if (options.appendVideoOnly && section?.result_type !== 'video')
+      return
+
     const data = Array.isArray(section?.data) ? [...section.data] : []
     if (sectionMap.has(section.result_type)) {
       const existing = sectionMap.get(section.result_type)
@@ -586,13 +595,13 @@ function resetAll() {
   results.value = null
 }
 
-async function handleLoadMore() {
+function handleLoadMore() {
   if (paginationMode.value !== 'scroll')
     return
   if (isLoading.value || exhausted.value)
     return
 
-  await performSearch(true)
+  requestLoadMore()
 }
 
 defineExpose({

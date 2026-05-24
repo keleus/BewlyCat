@@ -72,6 +72,8 @@ const {
   const success = await performSearch(true)
   const itemsCount = results.value?.length || 0
   return { success, itemsCount }
+}, {
+  isLoading: () => isLoading.value,
 })
 
 // 监听关键词变化
@@ -272,13 +274,13 @@ function resetAll() {
 }
 
 // 供 VideoCardGrid 预加载调用
-async function handleLoadMore() {
+function handleLoadMore() {
   if (paginationMode.value !== 'scroll')
     return
   if (isLoading.value || exhausted.value)
     return
 
-  await performSearch(true)
+  requestLoadMore()
 }
 
 // Transform 函数：数据已经转换过了，直接返回
