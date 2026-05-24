@@ -304,7 +304,8 @@ settings:
   individually_set_search_page_wallpaper: 單獨設定搵嘢頁背景
   recommendation_mode: 推介模式
   recommendation_mode_desc: |
-    若然你想用手機版嘅推介演算法，就要俾 BewlyBewly 批准使用存取 access key。
+    Web：普通網頁版推介模式。無 Cookie：請求首頁推介時唔帶 Cookie。App：手機版推介模式，要先授權 access key。
+  recommendation_mode_web_no_cookie: 無Cookie
   auto_switch_recommendation_mode: 自動切換推介模式
   auto_switch_recommendation_mode_desc: |
     當手機版推介壞咗嗰陣自動切換到網頁模式。

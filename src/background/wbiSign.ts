@@ -13,6 +13,7 @@ let wbiKeysCache: WbiKeys | null = null
 
 // 正在获取密钥的Promise，用于避免并发重复获取
 let fetchingKeysPromise: Promise<boolean> | null = null
+let fetchingNoCookieKeysPromise: Promise<boolean> | null = null
 
 /**
  * 简单的MD5实现（用于WBI签名）
@@ -326,22 +327,28 @@ async function getBilibiliCookies(): Promise<string> {
  * 应该在扩展启动时调用
  * 使用单例模式避免并发重复获取
  */
-export async function initWbiKeys(): Promise<boolean> {
+export async function initWbiKeys(options: { noCookie?: boolean } = {}): Promise<boolean> {
+  const noCookie = options.noCookie === true
+
   // 如果已经有密钥且未过期，直接返回成功
   if (getWbiKeys()) {
     return true
   }
 
   // 如果正在获取中，等待当前获取完成
-  if (fetchingKeysPromise) {
+  if (noCookie) {
+    if (fetchingNoCookieKeysPromise)
+      return await fetchingNoCookieKeysPromise
+  }
+  else if (fetchingKeysPromise) {
     return await fetchingKeysPromise
   }
 
   // 开始新的获取流程
-  fetchingKeysPromise = (async () => {
+  const fetchPromise = (async () => {
     try {
       // 获取B站cookie
-      const cookieStr = await getBilibiliCookies()
+      const cookieStr = noCookie ? '' : await getBilibiliCookies()
 
       const headers: HeadersInit = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -356,7 +363,7 @@ export async function initWbiKeys(): Promise<boolean> {
       const navResponse = await fetch('https://api.bilibili.com/x/web-interface/nav', {
         method: 'GET',
         headers,
-        credentials: 'include',
+        credentials: noCookie ? 'omit' : 'include',
       })
       const navData = await navResponse.json()
 
@@ -385,11 +392,19 @@ export async function initWbiKeys(): Promise<boolean> {
     }
     finally {
       // 清除获取中的Promise标志
-      fetchingKeysPromise = null
+      if (noCookie)
+        fetchingNoCookieKeysPromise = null
+      else
+        fetchingKeysPromise = null
     }
   })()
 
-  return await fetchingKeysPromise
+  if (noCookie)
+    fetchingNoCookieKeysPromise = fetchPromise
+  else
+    fetchingKeysPromise = fetchPromise
+
+  return await fetchPromise
 }
 
 /**

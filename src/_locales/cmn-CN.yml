@@ -383,7 +383,8 @@ settings:
   individually_set_search_page_wallpaper: 单独设置搜索页背景
   recommendation_mode: 推荐模式
   recommendation_mode_desc: |
-    如果您想使用 app 端的推荐算法，请先授权 BewlyCat 使用 access key。
+    Web：普通网页端推荐模式。无 Cookie：请求首页推荐时不携带 Cookie。App：移动端推荐模式，需先授权 access key。
+  recommendation_mode_web_no_cookie: 无Cookie
   auto_switch_recommendation_mode: 自动切换推荐模式
   auto_switch_recommendation_mode_desc: |
     当 App 推荐失败时自动切换至 Web 模式。

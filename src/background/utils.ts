@@ -71,6 +71,7 @@ interface _FETCH {
     [key: string]: any
   }
   body?: any
+  credentials?: RequestCredentials
 }
 
 interface API {
@@ -102,6 +103,9 @@ function apiListenerFactory(API_MAP: APIMAP) {
 
     // eslint-disable-next-line node/prefer-global/process
     if (process.env.FIREFOX && sender && sender.tab?.id) {
+      if (api._fetch.credentials === 'omit')
+        return await doRequest(typedMessage, api)
+
       // 获取tab信息以获取正确的cookieStoreId
       const tab = await browser.tabs.get(sender.tab.id)
       const storeId = tab.cookieStoreId || 'default'
@@ -120,7 +124,7 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
     rest = rest || {}
 
     let { _fetch, url, params = {}, afterHandle } = api
-    const { method, headers = {}, body } = _fetch as _FETCH
+    const { method, headers = {}, body, credentials = 'include' } = _fetch as _FETCH
     const isGET = method.toLocaleLowerCase() === 'get'
     // merge params and body
     const targetParams = Object.assign({}, params)
@@ -138,7 +142,7 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
     // 如果需要WBI签名但没有密钥，主动获取密钥
     if (needsWbi && !getWbiKeys()) {
       try {
-        await initWbiKeys()
+        await initWbiKeys({ noCookie: credentials === 'omit' })
       }
       catch (error) {
         // 获取密钥失败，继续执行（降级到无签名请求）
@@ -179,7 +183,7 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
 
       // generate cookies
       const requestHeaders = { ...headers }
-      if (cookies) {
+      if (cookies && credentials !== 'omit') {
         const cookieStr = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ')
         requestHeaders['firefox-multi-account-cookie'] = cookieStr
       }
@@ -198,7 +202,7 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
       const fetchOpt: any = {
         method,
         headers: requestHeaders,
-        credentials: 'include', // 重要：在Chrome/Edge中必须添加此项才能携带Cookie
+        credentials,
       }
       if (!isGET)
         fetchOpt.body = requestBody

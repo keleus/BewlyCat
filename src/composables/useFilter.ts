@@ -243,7 +243,7 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
   }
 
   function isAllowedContent(item: any): boolean {
-    if (settings.value.recommendationMode === 'web') {
+    if (settings.value.recommendationMode !== 'app') {
       const isFollowed = get(item, isFollowedKeyPath)
       return isFollowed && settings.value.disableFilterForFollowedUser
     }

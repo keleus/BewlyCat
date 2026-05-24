@@ -322,7 +322,8 @@ settings:
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
   recommendation_mode: 推薦模式
   recommendation_mode_desc: |
-    如果您想要使用手機端的推薦演算法，請先授權 BewlyBewly 使用 access key。
+    Web：普通網頁端推薦模式。無 Cookie：請求首頁推薦時不攜帶 Cookie。App：手機端推薦模式，需先授權 access key。
+  recommendation_mode_web_no_cookie: 無Cookie
   auto_switch_recommendation_mode: 自動切換推薦模式
   auto_switch_recommendation_mode_desc: |
     當手機端推薦失敗時自動切換至網頁模式。
