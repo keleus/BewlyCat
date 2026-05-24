@@ -106,6 +106,7 @@ export interface ShortcutsSettings {
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'compact' | 'old'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
+export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
 
 export interface ShadowCurvePoint {
   position: number
@@ -268,7 +269,7 @@ export interface Settings {
   usePluginSearchResultsPage: boolean
   searchResultsPaginationMode: 'scroll' | 'pagination' // 搜索结果分页模式：滚动加载或翻页
 
-  recommendationMode: 'web' | 'app'
+  recommendationMode: RecommendationMode
   autoSwitchRecommendationMode: boolean
 
   // filter setting

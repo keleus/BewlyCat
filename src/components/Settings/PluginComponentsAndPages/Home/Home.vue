@@ -190,9 +190,10 @@ function handleToggleHomeTab(tab: any) {
         <template #desc>
           <p>{{ $t('settings.recommendation_mode_desc') }}</p>
         </template>
-        <div w-full flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
+        <div class="recommendation-mode-selector" rounded="$bew-radius" bg="$bew-fill-1" p-1>
           <div
-            flex-1 py-1 cursor-pointer text-center rounded="$bew-radius"
+            class="recommendation-mode-option"
+            py-1 cursor-pointer text-center rounded="$bew-radius"
             :style="{
               background: settings.recommendationMode === 'web' ? 'var(--bew-theme-color)' : '',
               color: settings.recommendationMode === 'web' ? 'white' : '',
@@ -202,7 +203,19 @@ function handleToggleHomeTab(tab: any) {
             Web
           </div>
           <div
-            flex-1 py-1 cursor-pointer text-center rounded="$bew-radius"
+            class="recommendation-mode-option"
+            py-1 cursor-pointer text-center rounded="$bew-radius"
+            :style="{
+              background: settings.recommendationMode === 'webNoCookie' ? 'var(--bew-theme-color)' : '',
+              color: settings.recommendationMode === 'webNoCookie' ? 'white' : '',
+            }"
+            @click="settings.recommendationMode = 'webNoCookie'"
+          >
+            {{ $t('settings.recommendation_mode_web_no_cookie') }}
+          </div>
+          <div
+            class="recommendation-mode-option"
+            py-1 cursor-pointer text-center rounded="$bew-radius"
             :style="{
               background: settings.recommendationMode === 'app' ? 'var(--bew-theme-color)' : '',
               color: settings.recommendationMode === 'app' ? 'white' : '',
@@ -525,5 +538,17 @@ function handleToggleHomeTab(tab: any) {
   :deep(.right-content) {
     --uno: w-auto;
   }
+}
+
+.recommendation-mode-selector {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr) minmax(0, 0.8fr);
+  width: 100%;
+}
+
+.recommendation-mode-option {
+  min-width: 0;
+  padding-inline: 0.5rem;
+  white-space: nowrap;
 }
 </style>

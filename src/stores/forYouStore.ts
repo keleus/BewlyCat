@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 
+import type { RecommendationMode } from '~/logic'
 import type { Item as AppVideoItem } from '~/models/video/appForYou'
 import type { Item as VideoItem } from '~/models/video/forYou'
 
@@ -59,6 +60,9 @@ export interface ForYouState {
 
   // 是否已初始化
   isInitialized: boolean
+
+  // 推荐模式，用于避免跨模式恢复旧推荐流
+  recommendationMode?: RecommendationMode
 }
 
 export const useForYouStore = defineStore('forYou', () => {
@@ -73,6 +77,7 @@ export const useForYouStore = defineStore('forYou', () => {
 
     // 是否已初始化
     isInitialized: false,
+    recommendationMode: undefined,
   })
 
   // 简化的API - 只保存和恢复完整状态
@@ -92,6 +97,7 @@ export const useForYouStore = defineStore('forYou', () => {
       refreshIdx: 1,
       noMoreContent: false,
       isInitialized: false,
+      recommendationMode: undefined,
     }
   }
 

@@ -359,8 +359,10 @@ settings:
   individually_set_search_page_wallpaper: Individually set search page wallpaper
   recommendation_mode: Recommendation mode
   recommendation_mode_desc: >
-    If you want to use the recommendation algorithm on the app, please ensure
-    that you authorize the BewlyBewly to use the access key first.
+    Web: normal web recommendation mode. No Cookie: request homepage
+    recommendations without cookies. App: mobile recommendation mode, requires
+    an access key first.
+  recommendation_mode_web_no_cookie: No Cookie
   auto_switch_recommendation_mode: Auto switch recommendation mode
   auto_switch_recommendation_mode_desc: >
     Automatically switch from App mode to Web mode when App recommendation fails.

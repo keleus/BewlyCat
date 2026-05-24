@@ -78,9 +78,12 @@ const { handleReachBottom, handlePageRefresh, haveScrollbar, undoForwardState, h
 const videoList = ref<VideoElement[]>([])
 const appVideoList = ref<AppVideoElement[]>([])
 
+const isWebRecommendationMode = computed(() => settings.value.recommendationMode !== 'app')
+let requestVersion = 0
+
 // 当前使用的视频列表（根据推荐模式）
 const currentVideoList = computed(() =>
-  settings.value.recommendationMode === 'web' ? videoList.value : appVideoList.value,
+  isWebRecommendationMode.value ? videoList.value : appVideoList.value,
 )
 
 const isLoading = ref<boolean>(false)
@@ -130,7 +133,11 @@ onMounted(() => {
   document.addEventListener('visibilitychange', handleVisibilityChange)
 
   // 如果启用状态保留且store中有数据，则恢复状态
-  if (settings.value.preserveForYouState && forYouStore.state.isInitialized) {
+  if (
+    settings.value.preserveForYouState
+    && forYouStore.state.isInitialized
+    && forYouStore.state.recommendationMode === settings.value.recommendationMode
+  ) {
     // 恢复关键状态
     const savedState = forYouStore.getCompleteState()
     videoList.value = [...savedState.videoList]
@@ -194,6 +201,7 @@ onBeforeUnmount(() => {
       refreshIdx: refreshIdx.value,
       noMoreContent: noMoreContent.value,
       isInitialized: true,
+      recommendationMode: settings.value.recommendationMode,
       scrollTop, // 保存滚动位置
     }
     forYouStore.saveCompleteState(currentState)
@@ -337,6 +345,7 @@ function getWebFetchRow(list: VideoElement[]): number {
 }
 
 watch(() => settings.value.recommendationMode, () => {
+  requestVersion++
   noMoreContent.value = false
   refreshIdx.value = 1
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
@@ -361,6 +370,7 @@ watch(() => settings.value.recommendationMode, () => {
 })
 
 async function initData() {
+  requestVersion++
   // 直接清空列表，骨架屏由 VideoCardGrid 自动处理
   videoList.value = []
   appVideoList.value = []
@@ -369,46 +379,52 @@ async function initData() {
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
   requestFailed.value = false // 重置请求失败状态
+  needToLoginFirst.value = false
   await getData()
 }
 
 async function getData() {
+  const version = requestVersion
   emit('beforeLoading')
   isLoading.value = true
   requestFailed.value = false
 
   try {
-    if (settings.value.recommendationMode === 'web') {
-      await getRecommendVideos()
+    if (isWebRecommendationMode.value) {
+      await getRecommendVideos(version)
     }
     else {
       try {
-        await getAppRecommendVideos()
+        await getAppRecommendVideos(version)
       }
       catch (error) {
+        if (version !== requestVersion || settings.value.recommendationMode !== 'app')
+          return
+
         console.error('App recommendation failed:', error)
-        requestFailed.value = true
 
         // 检查是否启用自动切换
         if (settings.value.autoSwitchRecommendationMode) {
           // 切换到 web 模式并提示用户
           settings.value.recommendationMode = 'web'
           toast.warning('App 推荐数据加载失败，已自动切换至 Web 模式')
-          requestFailed.value = false
-          await getRecommendVideos()
         }
         else {
+          requestFailed.value = true
           toast.error('App 推荐数据加载失败，请手动切换至 Web 模式或稍后重试')
         }
       }
     }
   }
   catch {
-    requestFailed.value = true
+    if (version === requestVersion)
+      requestFailed.value = true
   }
   finally {
-    isLoading.value = false
-    emit('afterLoading')
+    if (version === requestVersion) {
+      isLoading.value = false
+      emit('afterLoading')
+    }
   }
 }
 
@@ -442,7 +458,7 @@ function initPageAction() {
       return
 
     // 根据当前模式保存数据
-    if (settings.value.recommendationMode === 'web') {
+    if (isWebRecommendationMode.value) {
       // 总是保存刷新前的当前状态到后退缓存
       cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
       cachedRefreshIdx.value = refreshIdx.value
@@ -474,7 +490,7 @@ function initPageAction() {
   // 修改撤销刷新的处理函数
   handleUndoRefresh.value = () => {
     if (hasBackState.value) {
-      if (settings.value.recommendationMode === 'web' && cachedVideoList.value.length > 0) {
+      if (isWebRecommendationMode.value && cachedVideoList.value.length > 0) {
         // 滚动到页面顶部
         handleBackToTop()
 
@@ -514,7 +530,7 @@ function initPageAction() {
   // 添加前进功能
   handleForwardRefresh.value = () => {
     if (hasForwardState.value) {
-      if (settings.value.recommendationMode === 'web' && forwardVideoList.value.length > 0) {
+      if (isWebRecommendationMode.value && forwardVideoList.value.length > 0) {
         // 滚动到页面顶部
         handleBackToTop()
 
@@ -557,7 +573,10 @@ function initPageAction() {
   }
 }
 
-async function getRecommendVideos() {
+async function getRecommendVideos(version = requestVersion) {
+  const recommendationMode = settings.value.recommendationMode
+  let canFillViewport = false
+
   try {
     // 检查是否达到最大空加载次数，防止无限递归
     if (consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
@@ -573,13 +592,20 @@ async function getRecommendVideos() {
     const fetchRow = getWebFetchRow(videoList.value)
     const lastShowlist = getLastShowlistFromList(videoList.value, PAGE_SIZE)
 
-    const response: forYouResult = await api.video.getRecommendVideos({
+    const getWebRecommendVideos = recommendationMode === 'webNoCookie'
+      ? api.video.getNoCookieRecommendVideos
+      : api.video.getRecommendVideos
+
+    const response: forYouResult = await getWebRecommendVideos({
       fresh_idx: currentRefreshIdx,
       fresh_idx_1h: currentRefreshIdx,
       ps: PAGE_SIZE,
       fetch_row: fetchRow > 0 ? fetchRow : undefined,
       last_showlist: lastShowlist || undefined,
     })
+
+    if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+      return
 
     if (!response) {
       console.error('Failed to load web recommendations: Response is undefined')
@@ -675,6 +701,7 @@ async function getRecommendVideos() {
         // 没有加载到新内容，增加空加载计数器
         consecutiveEmptyLoads.value++
       }
+      canFillViewport = true
     }
     else if (response.code === 62011) {
       needToLoginFirst.value = true
@@ -687,33 +714,37 @@ async function getRecommendVideos() {
     }
   }
   finally {
-    const filledItems = videoList.value.filter(video => video.item)
-    videoList.value = filledItems
+    if (canFillViewport && version === requestVersion && recommendationMode === settings.value.recommendationMode) {
+      const filledItems = videoList.value.filter(video => video.item)
+      videoList.value = filledItems
 
-    if (!needToLoginFirst.value && !noMoreContent.value) {
-      await nextTick()
+      if (!needToLoginFirst.value && !noMoreContent.value) {
+        await nextTick()
 
-      const hasScrollbar = await haveScrollbar()
-      if (!hasScrollbar || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
-        if (isPageVisible.value && consecutiveEmptyLoads.value < MAX_EMPTY_LOADS) {
-          // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
-          isRecursiveLoading.value = true
-          try {
-            await getRecommendVideos()
+        const hasScrollbar = await haveScrollbar()
+        if (!hasScrollbar || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
+          if (isPageVisible.value && consecutiveEmptyLoads.value < MAX_EMPTY_LOADS) {
+            // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
+            isRecursiveLoading.value = true
+            try {
+              await getRecommendVideos(version)
+            }
+            finally {
+              isRecursiveLoading.value = false
+            }
           }
-          finally {
-            isRecursiveLoading.value = false
+          else if (consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+            noMoreContent.value = true
           }
-        }
-        else if (consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
-          noMoreContent.value = true
         }
       }
     }
   }
 }
 
-async function getAppRecommendVideos() {
+async function getAppRecommendVideos(version = requestVersion) {
+  const recommendationMode = settings.value.recommendationMode
+
   // 检查是否达到最大空加载次数，防止无限递归
   if (appConsecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
     console.warn('APP模式达到最大连续空加载次数，停止加载')
@@ -746,6 +777,9 @@ async function getAppRecommendVideos() {
         appkey: TVAppKey.appkey,
         idx: lastIdx,
       })
+
+      if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+        return
 
       if (!response) {
         console.error('Failed to load batch', batch, 'Response is undefined')
@@ -790,6 +824,9 @@ async function getAppRecommendVideos() {
       }
     }
     catch (error) {
+      if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+        return
+
       console.error('Failed to load batch', batch, error)
       requestFailed.value = true
       break
@@ -797,6 +834,9 @@ async function getAppRecommendVideos() {
   }
 
   // 检查是否成功添加了新内容
+  if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+    return
+
   const afterLoadCount = appVideoList.value.length
   if (afterLoadCount > beforeLoadCount) {
     // 成功加载了新内容，重置空加载计数器
@@ -830,7 +870,7 @@ async function getAppRecommendVideos() {
       // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
       isRecursiveLoading.value = true
       try {
-        await getAppRecommendVideos()
+        await getAppRecommendVideos(version)
       }
       finally {
         isRecursiveLoading.value = false
@@ -856,14 +896,14 @@ defineExpose({
     handleForwardRefresh.value?.()
   },
   canGoBack: () => {
-    if (settings.value.recommendationMode === 'web')
+    if (isWebRecommendationMode.value)
       return hasBackState.value && cachedVideoList.value.length > 0
     else if (settings.value.recommendationMode === 'app')
       return hasBackState.value && cachedAppVideoList.value.length > 0
     return false
   },
   canGoForward: () => {
-    if (settings.value.recommendationMode === 'web')
+    if (isWebRecommendationMode.value)
       return hasForwardState.value && forwardVideoList.value.length > 0
     else if (settings.value.recommendationMode === 'app')
       return hasForwardState.value && forwardAppVideoList.value.length > 0
@@ -884,7 +924,7 @@ defineExpose({
       :request-failed="requestFailed"
       :transform-item="(item: VideoElement | AppVideoElement) => item.displayData"
       :get-item-key="(item: VideoElement | AppVideoElement, index?: number) => `${item.uniqueId}-${index ?? 0}`"
-      :video-type="settings.recommendationMode === 'web' ? 'rcmd' : 'appRcmd'"
+      :video-type="isWebRecommendationMode ? 'rcmd' : 'appRcmd'"
       show-preview
       more-btn
       @refresh="initData"
