@@ -1,59 +1,56 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { PluginPage } from '../types'
-
-const { t } = useI18n()
 
 const activePage = ref<PluginPage>(PluginPage.General)
 
 const pages = [
   {
     value: PluginPage.General,
-    title: t('settings.plugin.general'),
+    titleKey: 'settings.plugin.general',
     icon: 'i-mingcute:settings-3-line',
     iconActivated: 'i-mingcute:settings-3-fill',
     component: defineAsyncComponent(() => import('./General/General.vue')),
   },
   {
     value: PluginPage.VideoCard,
-    title: t('settings.plugin.video_card'),
+    titleKey: 'settings.plugin.video_card',
     icon: 'i-mingcute:video-camera-line',
     iconActivated: 'i-mingcute:video-camera-fill',
     component: defineAsyncComponent(() => import('./VideoCard/VideoCard.vue')),
   },
   {
     value: PluginPage.TopBar,
-    title: t('settings.plugin.topbar'),
+    titleKey: 'settings.plugin.topbar',
     icon: 'i-mingcute:layout-top-line',
     iconActivated: 'i-mingcute:layout-top-fill',
     component: defineAsyncComponent(() => import('./TopBar/TopBar.vue')),
   },
   {
     value: PluginPage.DockAndSidebar,
-    title: t('settings.plugin.dock_and_sidebar'),
+    titleKey: 'settings.plugin.dock_and_sidebar',
     icon: 'i-mingcute:navigation-line',
     iconActivated: 'i-mingcute:navigation-fill',
     component: defineAsyncComponent(() => import('./DockAndSidebar/DockAndSidebar.vue')),
   },
   {
     value: PluginPage.Home,
-    title: t('settings.plugin.home'),
+    titleKey: 'settings.plugin.home',
     icon: 'i-mingcute:home-5-line',
     iconActivated: 'i-mingcute:home-5-fill',
     component: defineAsyncComponent(() => import('./Home/Home.vue')),
   },
   {
     value: PluginPage.Search,
-    title: t('settings.plugin.search'),
+    titleKey: 'settings.plugin.search',
     icon: 'i-mingcute:search-2-line',
     iconActivated: 'i-mingcute:search-2-fill',
     component: defineAsyncComponent(() => import('./SearchPage/SearchPage.vue')),
   },
   {
     value: PluginPage.VolumeBalance,
-    title: t('settings.plugin.volume_balance'),
+    titleKey: 'settings.plugin.volume_balance',
     icon: 'i-mingcute:volume-line',
     iconActivated: 'i-mingcute:volume-fill',
     component: defineAsyncComponent(() => import('./VolumeBalance/VolumeBalance.vue')),
@@ -79,7 +76,7 @@ const pages = [
               <div class="mr-2 w-5 h-5 shrink-0 flex items-center justify-center">
                 <div :class="activePage === page.value ? page.iconActivated : page.icon" class="text-lg leading-none" />
               </div>
-              <span class="flex-1 min-w-0" leading-5 whitespace-normal break-normal>{{ page.title }}</span>
+              <span class="flex-1 min-w-0" leading-5 whitespace-normal break-normal>{{ $t(page.titleKey) }}</span>
             </div>
           </li>
         </ul>
