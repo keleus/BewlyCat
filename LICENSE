@@ -1,26 +1,13 @@
-MIT License
+Custom License
 
-Copyright (c) 2021 Hakadao <hakadao2000@gmail.com>
 Copyright (c) 2025 Keleus <jen.hs@outlook.com>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+本项目源码仅允许用于查看、学习、研究和非商业性修改。
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+未经版权持有人明确书面授权，禁止将本项目或基于本项目修改、衍生的代码用于以下用途：
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. 将本浏览器插件封装、转换、打包或集成为独立客户端、桌面应用、移动应用或其他非浏览器插件形态的软件；
+2. 以客户端、套壳客户端、桌面端、移动端 App 或类似形式发布、分发、传播或提供下载；
+3. 基于本项目代码开发、发布或分发与本项目功能实质相同或高度相似的客户端产品。
 
----
-
-本插件及Fork代码禁止以任何形式的客户端封装。
+除上述限制外，允许用户查看源码、学习实现方式，并在遵守本许可条款的前提下进行修改。
