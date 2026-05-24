@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
-import SmoothLoading from '~/components/SmoothLoading.vue'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
@@ -317,15 +316,10 @@ defineExpose({
         :get-item-key="(video: any) => video.aid || video.id"
         :empty-description="$t('common.no_data')"
         :show-loading-more-skeleton="false"
+        :show-load-more-indicator="paginationMode === 'scroll' && (results?.length || 0) > 0 && hasMore"
         enable-row-padding
         show-preview
         @load-more="handleLoadMore"
-      />
-
-      <SmoothLoading
-        v-if="paginationMode === 'scroll' && (results?.length || 0) > 0 && hasMore"
-        :show="isLoading"
-        :keep-space="true"
       />
     </template>
 

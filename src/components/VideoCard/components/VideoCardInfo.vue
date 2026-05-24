@@ -44,6 +44,28 @@ const primaryTags = computed(() => {
   return [tag]
 })
 
+const MAX_LEADING_TAG_COUNT = 2
+
+const visiblePrimaryTags = computed(() =>
+  primaryTags.value.slice(0, MAX_LEADING_TAG_COUNT),
+)
+
+const visibleHighlightTags = computed(() => {
+  const remainingCount = MAX_LEADING_TAG_COUNT - visiblePrimaryTags.value.length
+  if (remainingCount <= 0)
+    return []
+  return props.highlightTags.slice(0, remainingCount)
+})
+
+const hasVisibleMeta = computed(() =>
+  visiblePrimaryTags.value.length > 0
+  || visibleHighlightTags.value.length > 0
+  || Boolean(props.video?.publishedTimestamp)
+  || Boolean(props.video?.capsuleText)
+  || props.video?.type === 'vertical'
+  || props.video?.type === 'bangumi',
+)
+
 const isModernLikeLayout = computed(() => props.layout === 'modern' || props.layout === 'compact')
 </script>
 
@@ -232,12 +254,13 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
 
         <!-- Modern layout with hideAuthor: Tags directly under title -->
         <div
-          v-if="layout === 'modern' && hideAuthor && (primaryTags.length || highlightTags.length || video.publishedTimestamp || video.capsuleText || video.type === 'vertical' || video.type === 'bangumi')"
+          v-if="layout === 'modern' && hideAuthor && hasVisibleMeta"
+          class="video-card-meta-row"
           flex="~ items-center gap-2 wrap"
           :class="metaFontSizeClass"
         >
           <span
-            v-for="primaryTag in primaryTags"
+            v-for="primaryTag in visiblePrimaryTags"
             :key="`primary-${primaryTag}`"
             class="video-card-meta__chip"
             text="$bew-theme-color"
@@ -250,7 +273,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
           </span>
 
           <span
-            v-for="extraTag in highlightTags"
+            v-for="extraTag in visibleHighlightTags"
             :key="`highlight-${extraTag}`"
             class="video-card-meta__chip"
             text="$bew-theme-color"
@@ -309,12 +332,13 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             </div>
 
             <div
-              v-if="primaryTags.length || highlightTags.length || video.publishedTimestamp || video.capsuleText || video.type === 'vertical' || video.type === 'bangumi'"
+              v-if="hasVisibleMeta"
+              class="video-card-meta-row"
               flex="~ items-center gap-2 wrap"
               :class="metaFontSizeClass"
             >
               <span
-                v-for="primaryTag in primaryTags"
+                v-for="primaryTag in visiblePrimaryTags"
                 :key="`primary-${primaryTag}`"
                 class="video-card-meta__chip"
                 text="$bew-theme-color"
@@ -327,7 +351,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
               </span>
 
               <span
-                v-for="extraTag in highlightTags"
+                v-for="extraTag in visibleHighlightTags"
                 :key="`highlight-${extraTag}`"
                 class="video-card-meta__chip"
                 text="$bew-theme-color"
@@ -368,20 +392,21 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
           <!-- Old layout with hideAuthor: Only tags -->
           <div
             v-if="hideAuthor"
+            class="video-card-meta-row"
             mt-2
             flex="~ gap-1 wrap"
             :class="metaFontSizeClass"
           >
             <!-- Tag -->
             <span
-              v-for="primaryTag in primaryTags"
+              v-for="primaryTag in visiblePrimaryTags"
               :key="`legacy-primary-${primaryTag}`"
               text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
             >
               {{ primaryTag }}
             </span>
             <span
-              v-for="extraTag in highlightTags"
+              v-for="extraTag in visibleHighlightTags"
               :key="`highlight-${extraTag}`"
               text="$bew-theme-color"
               lh-6
@@ -452,20 +477,21 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             </div>
 
             <div
+              class="video-card-meta-row"
               mt-2
               flex="~ gap-1 wrap"
               :class="metaFontSizeClass"
             >
               <!-- Tag -->
               <span
-                v-for="primaryTag in primaryTags"
+                v-for="primaryTag in visiblePrimaryTags"
                 :key="`legacy-primary-${primaryTag}`"
                 text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
               >
                 {{ primaryTag }}
               </span>
               <span
-                v-for="extraTag in highlightTags"
+                v-for="extraTag in visibleHighlightTags"
                 :key="`highlight-${extraTag}`"
                 text="$bew-theme-color"
                 lh-6
@@ -520,11 +546,41 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
   --uno: "opacity-100";
 }
 
+.video-card-meta {
+  min-height: 46px;
+  max-height: 46px;
+  overflow: hidden;
+}
+
+.video-card-meta > div:last-child {
+  min-width: 0;
+}
+
+.video-card-meta > div:last-child > div:last-child {
+  flex-wrap: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+}
+
+.video-card-meta-row {
+  flex-wrap: nowrap;
+  overflow: hidden;
+  max-width: 100%;
+  min-height: 24px;
+  max-height: 24px;
+}
+
 .video-card-meta__chip {
   display: inline-flex;
   align-items: center;
   font-size: inherit;
   line-height: inherit;
   padding-block: calc(var(--bew-base-font-size) * 0.12);
+  flex: 0 0 auto;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

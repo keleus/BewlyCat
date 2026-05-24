@@ -709,14 +709,10 @@ defineExpose({
             :show-watcher-later="false"
             :empty-description="t('common.no_data')"
             :show-loading-more-skeleton="false"
+            :show-load-more-indicator="paginationMode === 'scroll' && transformedLiveRoomList.length > 0 && hasMore"
             enable-row-padding
             show-preview
             @load-more="handleLoadMore"
-          />
-          <SmoothLoading
-            v-if="paginationMode === 'scroll' && transformedLiveRoomList.length > 0 && hasMore"
-            :show="isLoading"
-            :keep-space="true"
           />
         </div>
       </template>
