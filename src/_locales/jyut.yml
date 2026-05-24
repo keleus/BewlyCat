@@ -537,6 +537,7 @@ settings:
     default: 預設
     web_fullscreen: 網頁全螢幕
     widescreen: 闊螢幕
+    bewly_widescreen: Bewly闊螢幕
   show_ip_location: 顯示 IP 歸屬地
   show_ip_location_desc: 喺影片/動向頁留言區顯示 IP 歸屬地。
   show_sex: 顯示用戶性別

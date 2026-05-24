@@ -9,6 +9,7 @@ import { localSettings, settings } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
+import { applyBewlyWidescreen, exitBewlyWidescreen } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
@@ -20,6 +21,7 @@ import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPla
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
+import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
 
 import { version } from '../../package.json'
 import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
@@ -258,6 +260,9 @@ else {
     }
     else {
       switch (targetPlayerMode) {
+        case 'bewlyWidescreen':
+          applyBewlyWidescreen()
+          break
         case 'webFullscreen':
           webFullscreen()
           break
@@ -268,6 +273,7 @@ else {
     }
     setupShortcutHandlers()
     applyDefaultDanmakuState()
+    initVerticalVideoZoom()
     // 应用自动连播设置，延迟更长时间确保播放器完全初始化
     setTimeout(() => {
       applyAutoPlayByVideoType()
@@ -372,6 +378,8 @@ else {
           return
         }
 
+        exitBewlyWidescreen()
+        resetVerticalVideoZoom()
         hasAppliedPlayerMode = false // URL变化时重置标志
         watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
         // 不再重置用户手动修改标志，保持用户的自动播放偏好设置

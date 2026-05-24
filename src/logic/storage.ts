@@ -106,6 +106,7 @@ export interface ShortcutsSettings {
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'compact' | 'old'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
+export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen' | 'bewlyWidescreen'
 export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
 
 export interface ShadowCurvePoint {
@@ -322,7 +323,7 @@ export interface Settings {
   useOriginalBilibiliHomepage: boolean
 
   // Video Player
-  defaultVideoPlayerMode: 'default' | 'webFullscreen' | 'widescreen'
+  defaultVideoPlayerMode: DefaultVideoPlayerMode
   defaultDanmakuState: 'system' | 'on' | 'off'
   keepCollectionVideoDefaultMode: boolean // 合集视频保持默认模式
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出

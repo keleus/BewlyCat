@@ -25,6 +25,10 @@ const videoPlayerModeOptions = computed(() => {
       label: t('settings.video_player_mode.widescreen'),
       value: 'widescreen',
     },
+    {
+      label: t('settings.video_player_mode.bewly_widescreen'),
+      value: 'bewlyWidescreen',
+    },
   ]
 })
 

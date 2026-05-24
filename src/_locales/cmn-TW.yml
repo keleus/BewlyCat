@@ -224,6 +224,7 @@ settings:
     default: 預設
     web_fullscreen: 網頁全螢幕
     widescreen: 寬螢幕
+    bewly_widescreen: Bewly寬螢幕
   enable_video_preview: 啟用影片預覽功能（如果可以的話）
   enable_video_ctrl_bar_on_video_card: 在影片卡片上顯示影片控制欄
   hover_video_card_delayed: 將滑鼠懸停在影片卡片上時延遲影片預覽

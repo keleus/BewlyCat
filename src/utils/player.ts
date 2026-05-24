@@ -1,6 +1,6 @@
 // 更完善的播放器元素选择器
 import { settings } from '~/logic'
-import type { AutoPlayMode } from '~/logic/storage'
+import type { AutoPlayMode, DefaultVideoPlayerMode } from '~/logic/storage'
 
 import { applyVolumeNormalization } from './audioNormalization'
 
@@ -33,8 +33,6 @@ const _videoClassTag = {
   upName: '.up-name,.up-info-name,.upinfo-btn-panel .name,.video-info-detail-list .name',
   upLink: 'a[href*="space.bilibili.com"],.up-name[href*="space.bilibili.com"],.upinfo-btn-panel .name[href*="space.bilibili.com"]',
 }
-
-export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen'
 
 // 重试任务类，用于处理重试逻辑
 export class RetryTask {
@@ -72,6 +70,10 @@ export function getVideoElement(): HTMLVideoElement | null {
 }
 
 export function isPlayerDisplayModeReady(mode: DefaultVideoPlayerMode): boolean {
+  if (mode === 'bewlyWidescreen') {
+    return !!(document.querySelector(_videoClassTag.player) || document.querySelector('#playerWrap') || getVideoElement())
+  }
+
   if (mode === 'widescreen') {
     return !!document.querySelector('[data-screen=\'wide\'], .bpx-player-ctrl-wide, .bilibili-player-video-btn-widescreen, .squirtle-video-widescreen')
   }

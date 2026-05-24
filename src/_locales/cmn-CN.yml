@@ -189,6 +189,7 @@ settings:
     default: 默认
     web_fullscreen: 网页全屏
     widescreen: 宽屏
+    bewly_widescreen: Bewly宽屏
   video_player_scroll: 调整显示模式后滚动
   video_player_scroll_desc: 启用后，在默认模式为宽屏和默认时，会自动滚动到合适位置。
   enlarge_favorite_dialog: 放大收藏弹窗
