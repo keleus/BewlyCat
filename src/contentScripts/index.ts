@@ -238,9 +238,11 @@ else {
     }
 
     const playerMode = settings.value.defaultVideoPlayerMode
-    const targetPlayerMode = settings.value.keepCollectionVideoDefaultMode && isCollectionVideo()
+    let targetPlayerMode = settings.value.keepCollectionVideoDefaultMode && isCollectionVideo()
       ? 'default'
       : playerMode
+    if (isFestivalPage() && targetPlayerMode === 'bewlyWidescreen')
+      targetPlayerMode = 'widescreen'
 
     if (!isPlayerDisplayModeReady(targetPlayerMode)) {
       schedulePlayerModeRetry()

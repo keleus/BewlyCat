@@ -27,6 +27,7 @@ interface BewlyWidescreenState {
   resizeObserver?: ResizeObserver
   mutationObserver?: MutationObserver
   metadataListener?: () => void
+  resizeSyncTimers?: Array<ReturnType<typeof setTimeout>>
 }
 
 const ROOT_ID = 'bewly-widescreen-root'
@@ -62,6 +63,8 @@ const selectors = {
     '.video-title',
     'h1.video-title',
     '.video-info-title h1',
+    '.bpx-player-top-title',
+    '[class*="mediainfo_mediaTitle"]',
     '#viewbox_report .title',
     'h1[title]',
   ],
@@ -87,6 +90,8 @@ const selectors = {
     '.danmaku-box .bpx-player-dm-setting-left',
   ],
   comment: [
+    '#comment-module',
+    '#comment-body',
     '#commentapp',
     '.commentapp',
     '.comment-container',
@@ -94,11 +99,17 @@ const selectors = {
     '.bb-comment',
   ],
   danmaku: [
+    '#danmukuBox',
+    '[class*="DanmukuBox_wrap"]',
     '.danmaku-box',
     '.danmaku-wrap',
     '.bpx-player-dm-wrap',
   ],
   playlist: [
+    '[class*="eplist_ep_list_wrapper"]',
+    '#eplist_module',
+    '[class*="numberList_wrapper"]',
+    '[class*="imageList_wrap"]',
     '.video-pod',
     '.video-pod__body',
     '.multi-page',
@@ -109,6 +120,7 @@ const selectors = {
     '.playlist-container',
   ],
   recommend: [
+    '[class*="recommend_wrap"]',
     '.recommend-list-v1',
     '.recommend-list',
     '.rec-list',
@@ -158,6 +170,25 @@ function moveNode(node: HTMLElement | null, target: HTMLElement, movedNodes: Mov
   return true
 }
 
+function moveMatchingNodes(selectors: string[], target: HTMLElement, movedNodes: MovedNode[], limit = 8) {
+  let moved = 0
+  for (const selector of selectors) {
+    const candidates = Array.from(document.querySelectorAll<HTMLElement>(selector))
+    for (const candidate of candidates) {
+      if (moved >= limit)
+        return moved
+      if (candidate.closest(`#${ROOT_ID}`) || !candidate.parentNode || target.contains(candidate))
+        continue
+
+      if (moveNode(candidate, target, movedNodes)) {
+        moved++
+        continue
+      }
+    }
+  }
+  return moved
+}
+
 function restoreMovedNodes(movedNodes: MovedNode[]) {
   for (const { node, placeholder } of [...movedNodes].reverse()) {
     const parent = placeholder.parentNode
@@ -203,6 +234,7 @@ function setSidebarMode(nextMode: BewlyWidescreenSidebarMode) {
   state.sidebarToggleButton.title = isFit ? '显示窄右栏' : '收起右栏'
   state.sidebarToggleButton.setAttribute('aria-label', state.sidebarToggleButton.title)
   updateSidebarToggleState()
+  schedulePlayerResizeSync(state)
 }
 
 function getTitleText() {
@@ -357,6 +389,10 @@ function injectLayoutStyle() {
       --bewly-widescreen-sidebar-column-width: min(var(--bewly-widescreen-sidebar-narrow-width), var(--bewly-widescreen-sidebar-max));
       --bewly-widescreen-sidebar-panel-width: var(--bewly-widescreen-sidebar-column-width);
       --bewly-widescreen-sidebar-offset: 0px;
+    }
+
+    #${ROOT_ID}[data-sidebar-mode="narrow"] {
+      --bewly-widescreen-player-target-width: calc(100vw - var(--bewly-widescreen-sidebar-column-width));
     }
 
     #${ROOT_ID}[data-sidebar-mode="fit"] {
@@ -518,6 +554,17 @@ function injectLayoutStyle() {
       height: 100% !important;
     }
 
+    #${ROOT_ID} .bpx-player-primary-area,
+    #${ROOT_ID} .bpx-player-video-area,
+    #${ROOT_ID} .bpx-player-video-wrap,
+    #${ROOT_ID} .bilibili-player-video-area,
+    #${ROOT_ID} .bilibili-player-video-wrap {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: 100% !important;
+      max-height: 100% !important;
+    }
+
     #${ROOT_ID} .bewly-widescreen-sidebar {
       display: flex;
       flex-direction: column;
@@ -533,7 +580,7 @@ function injectLayoutStyle() {
       transform: translateX(var(--bewly-widescreen-sidebar-offset));
       transition: transform 180ms ease;
       will-change: transform;
-      z-index: 20;
+      z-index: 2002;
     }
 
     #${ROOT_ID}[data-sidebar-mode="narrow"] .bewly-widescreen-sidebar {
@@ -548,7 +595,7 @@ function injectLayoutStyle() {
       position: absolute;
       right: 0;
       top: 50%;
-      z-index: 21;
+      z-index: 2003;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -952,6 +999,30 @@ function injectLayoutStyle() {
       margin-right: 0 !important;
     }
 
+    #${ROOT_ID} .bewly-widescreen-panel [class*="eplist_ep_list_wrapper"],
+    #${ROOT_ID} .bewly-widescreen-panel [class*="recommend_wrap"],
+    #${ROOT_ID} .bewly-widescreen-panel #danmukuBox,
+    #${ROOT_ID} .bewly-widescreen-panel [class*="DanmukuBox_wrap"],
+    #${ROOT_ID} .bewly-widescreen-panel #comment-module,
+    #${ROOT_ID} .bewly-widescreen-panel #comment-body {
+      position: relative !important;
+      left: auto !important;
+      right: auto !important;
+      top: auto !important;
+      bottom: auto !important;
+      transform: none !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 0 12px !important;
+      z-index: auto !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel [class*="numberList_wrapper"],
+    #${ROOT_ID} .bewly-widescreen-panel [class*="imageList_wrap"] {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
     #${ROOT_ID} .bewly-widescreen-panel .video-page-card-small {
       width: 100% !important;
     }
@@ -1045,6 +1116,8 @@ function updateAspectRatio() {
   state?.root.style.setProperty('--bewly-widescreen-aspect', String(aspect))
   state?.root.style.setProperty('--bewly-widescreen-layout-aspect', String(layoutAspect))
   updateSidebarToggleState()
+  if (state)
+    schedulePlayerResizeSync(state)
 }
 
 function updateSidebarToggleState() {
@@ -1076,6 +1149,7 @@ function updateDanmakuDockHeight() {
 
   state.root.style.setProperty('--bewly-widescreen-danmaku-height', `${height}px`)
   updateSidebarToggleState()
+  schedulePlayerResizeSync(state)
 }
 
 function parseRgbColor(value: string) {
@@ -1151,6 +1225,26 @@ function syncActionAnimationTheme(currentState: BewlyWidescreenState) {
   )
 }
 
+function clearPlayerResizeSync(currentState: BewlyWidescreenState) {
+  currentState.resizeSyncTimers?.forEach(timer => clearTimeout(timer))
+  currentState.resizeSyncTimers = []
+}
+
+function schedulePlayerResizeSync(currentState: BewlyWidescreenState) {
+  if (!state || state !== currentState)
+    return
+
+  clearPlayerResizeSync(currentState)
+  currentState.resizeSyncTimers = [0, 80, 180, 360, 720].map(delay =>
+    setTimeout(() => {
+      if (!state || state !== currentState)
+        return
+
+      window.dispatchEvent(new Event('resize'))
+    }, delay),
+  )
+}
+
 function setupAspectObservers(currentState: BewlyWidescreenState) {
   const video = getVideoElement()
   if (video) {
@@ -1166,6 +1260,7 @@ function setupAspectObservers(currentState: BewlyWidescreenState) {
   currentState.resizeObserver.observe(currentState.root)
   currentState.resizeObserver.observe(currentState.danmakuDock)
   updateAspectRatio()
+  schedulePlayerResizeSync(currentState)
 }
 
 function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
@@ -1230,6 +1325,7 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   else
     clearEmptyPanel(currentState.panels.danmaku)
 
+  moveMatchingNodes(['[class*="eplist_ep_list_wrapper"]'], currentState.panels.playlist, currentState.movedNodes)
   const existingPlaylist = currentState.panels.playlist.querySelector(selectors.playlist.join(','))
   const existingRecommend = currentState.panels.playlist.querySelector(selectors.recommend.join(','))
   const playlist = existingPlaylist ? null : findMovable(selectors.playlist)
@@ -1275,6 +1371,7 @@ function cleanupState(currentState: BewlyWidescreenState) {
   currentState.metadataListener?.()
   currentState.resizeObserver?.disconnect()
   currentState.mutationObserver?.disconnect()
+  clearPlayerResizeSync(currentState)
   clearSidebarRefreshTimer()
   restoreMovedNodes(currentState.movedNodes)
   currentState.root.remove()
