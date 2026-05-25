@@ -557,7 +557,7 @@ export const originalSettings: Settings = {
   videoPlayerScroll: true, // 默认开启视频播放器滚动
   shortcuts: {
     danmuStatus: { key: 'Shift+D', enabled: true },
-    webFullscreen: { key: 'W', enabled: true },
+    webFullscreen: { key: 'Shift+W', enabled: true },
     widescreen: { key: 'T', enabled: true },
     shortStepBackward: { key: 'J', enabled: true },
     longStepBackward: { key: 'Shift+J', enabled: true },
@@ -646,6 +646,9 @@ watch(
     if (!('useBilibiliDefaultAutoPlay' in record)) {
       record.useBilibiliDefaultAutoPlay = true
     }
+
+    if (record.shortcuts?.webFullscreen?.key === 'W')
+      record.shortcuts.webFullscreen.key = originalSettings.shortcuts.webFullscreen?.key
 
     // 迁移旧的 disableFrostedGlass 到 enableFrostedGlass
     if ('disableFrostedGlass' in record) {

@@ -551,6 +551,9 @@ settings:
       fullscreen: Toggle Fullscreen
       danmu_toggle: Toggle Danmu
       mute: Toggle Mute
+      like: Like
+      coin: Coin
+      favorite: Favorite
       prev_video: Play Previous Video
       next_video: Play Next Video
       speed_1: Set Speed to 1x

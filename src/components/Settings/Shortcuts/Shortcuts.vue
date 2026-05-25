@@ -47,6 +47,9 @@ const officialShortcuts: OfficialShortcut[] = [
   { key: 'F', description: t('settings.shortcuts.official.fullscreen') },
   { key: 'D', description: t('settings.shortcuts.official.danmu_toggle') },
   { key: 'M', description: t('settings.shortcuts.official.mute') },
+  { key: 'Q', description: t('settings.shortcuts.official.like') },
+  { key: 'W', description: t('settings.shortcuts.official.coin') },
+  { key: 'E', description: t('settings.shortcuts.official.favorite') },
   { key: '[', description: t('settings.shortcuts.official.prev_video') },
   { key: ']', description: t('settings.shortcuts.official.next_video') },
   { key: 'Shift + 1', description: t('settings.shortcuts.official.speed_1') },
@@ -65,7 +68,7 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
     title: t('settings.shortcuts.group.general'),
     shortcuts: [
       { id: 'danmuStatus', name: t('settings.shortcuts.danmu_status'), description: t('settings.shortcuts.danmu_status_desc'), defaultKey: 'Shift+D' },
-      { id: 'webFullscreen', name: t('settings.shortcuts.web_fullscreen'), description: t('settings.shortcuts.web_fullscreen_desc'), defaultKey: 'W' },
+      { id: 'webFullscreen', name: t('settings.shortcuts.web_fullscreen'), description: t('settings.shortcuts.web_fullscreen_desc'), defaultKey: 'Shift+W' },
       { id: 'widescreen', name: t('settings.shortcuts.widescreen'), description: t('settings.shortcuts.widescreen_desc'), defaultKey: 'T' },
       { id: 'shortStepBackward', name: t('settings.shortcuts.short_step_backward'), description: t('settings.shortcuts.short_step_backward_desc'), defaultKey: 'J' },
       { id: 'longStepBackward', name: t('settings.shortcuts.long_step_backward'), description: t('settings.shortcuts.long_step_backward_desc'), defaultKey: 'Shift+J' },

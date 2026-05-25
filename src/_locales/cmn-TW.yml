@@ -477,6 +477,9 @@ settings:
       fullscreen: 切換全螢幕模式
       danmu_toggle: 彈幕開關
       mute: 靜音切換
+      like: 按讚
+      coin: 投幣
+      favorite: 收藏
       prev_video: 播放上一個視訊
       next_video: 播放下一個視訊
       speed_1: 播放速度設為1倍速

@@ -489,6 +489,9 @@ settings:
       fullscreen: 切換全螢幕模式
       input_danmu: 輸入彈幕
       mute: 切換靜音
+      like: 讚好
+      coin: 投幣
+      favorite: 收藏
       next_video: 播下一條片
       play_pause: 播放/暫停
       prev_video: 播上一條片
