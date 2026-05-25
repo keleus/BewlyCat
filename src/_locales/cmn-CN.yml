@@ -803,6 +803,7 @@ history:
     要开启观看历史吗？
     你确定要开启观看历史吗？
 favorites:
+  collected_season_prefix: 合集
   unfavorite: 取消收藏
   unfavorite_confirm: |-
     要取消收藏选中的视频吗？

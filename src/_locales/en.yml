@@ -879,6 +879,7 @@ history:
   turn_on_watch_history: Turn on watch history
   turn_on_watch_history_confirm: Turn on watch history? Are you sure you want to turn on watch history?
 favorites:
+  collected_season_prefix: Season
   unfavorite: Unfavorite
   unfavorite_confirm: >-
     Remove selected video(s)?

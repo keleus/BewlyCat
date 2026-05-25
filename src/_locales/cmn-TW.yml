@@ -818,6 +818,7 @@ history:
     要啟用觀看記錄嗎？
     你確定要啟用觀看記錄嗎？
 favorites:
+  collected_season_prefix: 合集
   unfavorite: 取消收藏
   unfavorite_confirm: |-
     要取消收藏選中的影片嗎？

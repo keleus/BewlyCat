@@ -752,6 +752,7 @@ history:
     係咪要開返收睇記錄呀？
     你確定要開返收睇記錄？
 favorites:
+  collected_season_prefix: 合集
   unfavorite: 唔愛喇
   unfavorite_confirm: |-
     係咪要剷走你揀過啲片呀？

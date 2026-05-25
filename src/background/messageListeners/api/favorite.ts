@@ -31,6 +31,33 @@ const API_FAVORITE = {
     },
     afterHandle: AHS.J_D,
   },
+  getCollectedFavoriteSeasons: {
+    url: 'https://api.bilibili.com/x/v3/fav/folder/collected/list',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      pn: 1,
+      ps: 50,
+      up_mid: '',
+      platform: 'web',
+      web_location: '333.1387',
+    },
+    afterHandle: AHS.J_D,
+  },
+  getFavoriteSeasonResources: {
+    url: 'https://api.bilibili.com/x/space/fav/season/list',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      season_id: -1,
+      pn: 1,
+      ps: 40,
+      web_location: '333.1387',
+    },
+    afterHandle: AHS.J_D,
+  },
   // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/fav/action.md#%E6%89%B9%E9%87%8F%E5%88%A0%E9%99%A4%E5%86%85%E5%AE%B9
   patchDelFavoriteResources: {
     url: 'https://api.bilibili.com/x/v3/fav/resource/batch-del',

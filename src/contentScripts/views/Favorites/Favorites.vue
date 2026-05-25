@@ -2,7 +2,7 @@
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { FavoriteCategory, FavoriteResource } from '~/components/TopBar/types'
+import type { FavoriteResource } from '~/components/TopBar/types'
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
@@ -10,17 +10,27 @@ import { TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favorite'
 import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/video/favoriteCategory'
+import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia, FavoriteSeasonResourcesResult } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
 import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
 const { t } = useI18n()
 
-const favoriteCategories = reactive<CategoryItem[]>([])
-const favoriteResources = reactive<FavoriteItem[]>([])
-const categoryOptions = reactive<Array<{ value: FavoriteCategory, label: string }>>([])
+type FavoriteCategorySource = 'folder' | 'season'
+type ViewCategory = CategoryItem & {
+  source: FavoriteCategorySource
+  cover?: string
+  state?: number
+  link?: string
+}
 
-const selectedCategory = ref<FavoriteCategory>()
+const favoriteCategories = reactive<CategoryItem[]>([])
+const collectedFavoriteSeasons = reactive<CollectedFavoriteSeason[]>([])
+const favoriteResources = reactive<FavoriteItem[]>([])
+const categoryOptions = reactive<Array<{ value: ViewCategory, label: string }>>([])
+
+const selectedCategory = ref<ViewCategory>()
 const activatedCategoryCover = ref<string>('')
 
 const shouldMoveCtrlBarUp = ref<boolean>(false)
@@ -64,8 +74,9 @@ onMounted(() => {
 
 async function initData() {
   await getFavoriteCategories()
-  if (favoriteCategories.length > 0) {
-    changeCategory(favoriteCategories[0])
+  await getCollectedFavoriteSeasons()
+  if (categoryOptions.length > 0) {
+    changeCategory(categoryOptions[0].value)
   }
 }
 
@@ -87,6 +98,9 @@ function initPageAction() {
           const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
           getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword.value, 1)
         }
+        else if (selectedCategory.value?.source === 'season') {
+          getFavoriteSeasonResources(selectedCategory.value.id, ++currentPageNum.value)
+        }
         else {
           getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword.value, 0)
         }
@@ -104,6 +118,45 @@ function initPageAction() {
   }
 }
 
+function toFolderCategory(item: CategoryItem): ViewCategory {
+  return {
+    ...item,
+    source: 'folder',
+  }
+}
+
+function toSeasonCategory(item: CollectedFavoriteSeason): ViewCategory {
+  return {
+    id: item.id,
+    fid: item.fid,
+    mid: item.mid,
+    attr: item.attr,
+    title: item.title,
+    fav_state: item.fav_state,
+    media_count: item.media_count,
+    source: 'season',
+    cover: item.cover,
+    state: item.state,
+    link: item.link,
+  }
+}
+
+function rebuildCategoryOptions() {
+  categoryOptions.length = 0
+  favoriteCategories.forEach((item) => {
+    categoryOptions.push({
+      label: item.title,
+      value: toFolderCategory(item),
+    })
+  })
+  collectedFavoriteSeasons.forEach((item) => {
+    categoryOptions.push({
+      label: `${t('favorites.collected_season_prefix')} ${item.title}`,
+      value: toSeasonCategory(item),
+    })
+  })
+}
+
 async function getFavoriteCategories() {
   await api.favorite.getFavoriteCategories({
     up_mid: getUserID(),
@@ -111,14 +164,19 @@ async function getFavoriteCategories() {
     .then((res: FavoritesCategoryResult) => {
       if (res.code === 0) {
         Object.assign(favoriteCategories, res.data.list)
+        rebuildCategoryOptions()
+      }
+    })
+}
 
-        categoryOptions.length = 0
-        favoriteCategories.forEach((item) => {
-          categoryOptions.push({
-            label: item.title,
-            value: item,
-          })
-        })
+async function getCollectedFavoriteSeasons() {
+  await api.favorite.getCollectedFavoriteSeasons({
+    up_mid: getUserID(),
+  })
+    .then((res: CollectedFavoriteSeasonsResult) => {
+      if (res.code === 0) {
+        Object.assign(collectedFavoriteSeasons, res.data.list)
+        rebuildCategoryOptions()
       }
     })
 }
@@ -164,6 +222,9 @@ async function getFavoriteResources(
           const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
           await getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword, 1)
         }
+        else if (selectedCategory.value?.source === 'season') {
+          await getFavoriteSeasonResources(selectedCategory.value.id, ++currentPageNum.value)
+        }
         else {
           await getFavoriteResources(selectedCategory.value!.id, ++currentPageNum.value, keyword, 0)
         }
@@ -176,7 +237,77 @@ async function getFavoriteResources(
   }
 }
 
-async function changeCategory(categoryItem: FavoriteCategory) {
+async function getFavoriteSeasonResources(
+  season_id: number,
+  pn: number,
+) {
+  if (pn === 1)
+    isFullPageLoading.value = true
+  isLoading.value = true
+  try {
+    const res: FavoriteSeasonResourcesResult = await api.favorite.getFavoriteSeasonResources({
+      season_id,
+      pn,
+    })
+
+    if (res.code === 0 && res.data) {
+      activatedCategoryCover.value = res.data.info?.cover || selectedCategory.value?.cover || ''
+
+      const medias = Array.isArray(res.data.medias) ? res.data.medias : []
+      if (medias.length > 0)
+        favoriteResources.push(...medias.map(normalizeSeasonMedia))
+
+      if (medias.length < 40)
+        noMoreContent.value = true
+
+      if (!(await haveScrollbar()) && !noMoreContent.value)
+        await getFavoriteSeasonResources(season_id, ++currentPageNum.value)
+    }
+    else {
+      noMoreContent.value = true
+    }
+  }
+  finally {
+    isLoading.value = false
+    isFullPageLoading.value = false
+  }
+}
+
+function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteItem {
+  return {
+    id: item.id,
+    type: 2,
+    title: item.title,
+    cover: item.cover,
+    intro: '',
+    page: 1,
+    duration: item.duration,
+    upper: {
+      ...item.upper,
+      face: '',
+    },
+    attr: 0,
+    cnt_info: {
+      ...item.cnt_info,
+      play_switch: 0,
+      reply: 0,
+      view_text_1: '',
+    },
+    link: item.bvid ? `https://www.bilibili.com/video/${item.bvid}` : '',
+    ctime: item.pubtime,
+    pubtime: item.pubtime,
+    fav_time: item.pubtime,
+    bv_id: item.bvid,
+    bvid: item.bvid,
+    season: null,
+    ogv: null,
+    ugc: {
+      first_cid: 0,
+    },
+  }
+}
+
+async function changeCategory(categoryItem: ViewCategory) {
   if (isLoading.value)
     return
   currentPageNum.value = 1
@@ -186,8 +317,11 @@ async function changeCategory(categoryItem: FavoriteCategory) {
 
   // 切换收藏夹时，如果是搜索当前收藏夹模式，则立即加载数据
   if (searchScope.value === 'current') {
-    activatedCategoryCover.value = ''
-    getFavoriteResources(categoryItem.id, 1, keyword.value, 0)
+    activatedCategoryCover.value = categoryItem.source === 'season' ? categoryItem.cover || '' : ''
+    if (categoryItem.source === 'season')
+      getFavoriteSeasonResources(categoryItem.id, 1)
+    else
+      getFavoriteResources(categoryItem.id, 1, keyword.value, 0)
   }
   else {
     // 全局搜索模式下，清空封面但不立即搜索
@@ -196,6 +330,14 @@ async function changeCategory(categoryItem: FavoriteCategory) {
 }
 
 function handleSearch() {
+  if (selectedCategory.value?.source === 'season' && searchScope.value === 'current') {
+    currentPageNum.value = 1
+    favoriteResources.length = 0
+    noMoreContent.value = false
+    getFavoriteSeasonResources(selectedCategory.value.id, currentPageNum.value)
+    return
+  }
+
   if (searchScope.value === 'all' && !keyword.value.trim()) {
     return
   }
@@ -231,7 +373,20 @@ function handlePlayAll() {
   if (searchScope.value === 'all') {
     return
   }
-  openLinkToNewTab(`https://www.bilibili.com/list/ml${selectedCategory.value?.id}`)
+  if (selectedCategory.value?.source === 'season')
+    openLinkToNewTab(getFavoriteSeasonUrl(selectedCategory.value))
+  else
+    openLinkToNewTab(`https://www.bilibili.com/list/ml${selectedCategory.value?.id}`)
+}
+
+function getFavoriteSeasonUrl(category: ViewCategory) {
+  const fallbackUrl = `https://www.bilibili.com/list/season/${category.id}`
+  const matchedVideoLink = category.link?.match(/^bilibili:\/\/video\/(\d+)(\?.*)?$/)
+
+  if (!matchedVideoLink)
+    return fallbackUrl
+
+  return `https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`
 }
 
 function jumpToLoginPage() {
@@ -239,6 +394,9 @@ function jumpToLoginPage() {
 }
 
 function handleUnfavorite(favoriteResource: FavoriteResource) {
+  if (selectedCategory.value?.source === 'season')
+    return
+
   const result = confirm(
     t('favorites.unfavorite_confirm'),
   )
@@ -289,7 +447,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
         bg="$bew-elevated-solid" rounded="$bew-radius" shadow="$bew-shadow-2" mt--2 transition="all 300 ease-in-out"
         :class="{ hide: shouldMoveCtrlBarUp }"
       >
-        <Select v-model="selectedCategory" w-150px :options="categoryOptions" @change="(val: FavoriteCategory) => changeCategory(val)" />
+        <Select v-model="selectedCategory" w-150px :options="categoryOptions" @change="(val: ViewCategory) => changeCategory(val)" />
         <Select v-model="searchScope" w-120px :options="searchScopeOptions" @change="handleSearchScopeChange" />
         <Input
           v-model="keyword"
@@ -329,7 +487,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
         enable-row-padding
         @refresh="() => handlePageRefresh?.()"
       >
-        <template #coverTopLeft="{ item }">
+        <template v-if="searchScope !== 'current' || selectedCategory?.source !== 'season'" #coverTopLeft="{ item }">
           <button
             p="x-2 y-1" m="1"
             rounded="$bew-radius"
