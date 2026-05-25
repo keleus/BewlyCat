@@ -21,6 +21,7 @@ const VIEWPORT_CLASS = 'bewly-vertical-video-zoom-viewport'
 const MAX_REFRESH_ATTEMPTS = 40
 const DEFAULT_ZOOM_POSITION_Y = 50
 const MAP_HEIGHT = 160
+const MINIMAP_FRAME_REFRESH_INTERVAL = 30000
 
 let styleEl: HTMLStyleElement | null = null
 let button: HTMLButtonElement | null = null
@@ -32,9 +33,10 @@ let currentHost: HTMLElement | null = null
 let observedVideo: HTMLVideoElement | null = null
 let metadataListener: (() => void) | null = null
 let refreshTimer: ReturnType<typeof setTimeout> | null = null
+let minimapRenderTimer: ReturnType<typeof setTimeout> | null = null
 let refreshAttempts = 0
 let zoomPositionY = DEFAULT_ZOOM_POSITION_Y
-let hasRenderedMinimapFrame = false
+let lastMinimapRenderAt = 0
 
 function injectStyle() {
   if (styleEl?.isConnected)
@@ -249,7 +251,7 @@ function ensureButton(host: HTMLElement) {
         resetZoomPosition()
       }
       else {
-        renderMinimapFrame()
+        scheduleMinimapFrameRender(0, true)
         syncZoomPosition()
       }
       syncButtonLabel()
@@ -313,7 +315,7 @@ function ensureControl(host: HTMLElement) {
   if (control.parentElement !== host)
     host.appendChild(control)
 
-  renderMinimapFrame()
+  scheduleMinimapFrameRender(0, true)
   syncZoomPosition()
 }
 
@@ -370,7 +372,7 @@ function renderMinimapFrame() {
   const video = getVideoElement()
   if (!canvasElement || !video?.videoWidth || !video.videoHeight)
     return
-  if (hasRenderedMinimapFrame)
+  if (!isVideoFrameDrawable(video))
     return
 
   syncMinimapGeometry()
@@ -388,10 +390,6 @@ function renderMinimapFrame() {
   if (!ctx)
     return
 
-  ctx.clearRect(0, 0, width, height)
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, width, height)
-
   const scale = Math.min(width / video.videoWidth, height / video.videoHeight)
   const drawWidth = video.videoWidth * scale
   const drawHeight = video.videoHeight * scale
@@ -399,12 +397,65 @@ function renderMinimapFrame() {
   const y = (height - drawHeight) / 2
 
   try {
-    ctx.drawImage(video, x, y, drawWidth, drawHeight)
-    hasRenderedMinimapFrame = true
+    const frameCanvas = document.createElement('canvas')
+    frameCanvas.width = width
+    frameCanvas.height = height
+    const frameCtx = frameCanvas.getContext('2d', { alpha: false })
+    if (!frameCtx)
+      return
+
+    frameCtx.fillStyle = '#000'
+    frameCtx.fillRect(0, 0, width, height)
+    frameCtx.drawImage(video, x, y, drawWidth, drawHeight)
+    if (isCanvasFrameEffectivelyBlack(frameCtx, width, height))
+      return
+
+    ctx.clearRect(0, 0, width, height)
+    ctx.drawImage(frameCanvas, 0, 0)
+    lastMinimapRenderAt = Date.now()
   }
   catch {
     // The live frame can be temporarily unavailable while Bilibili swaps streams.
   }
+}
+
+function isVideoFrameDrawable(video: HTMLVideoElement) {
+  if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA)
+    return false
+
+  return true
+}
+
+function isCanvasFrameEffectivelyBlack(ctx: CanvasRenderingContext2D, width: number, height: number) {
+  const sampleSize = Math.max(1, Math.min(18, width, height))
+  const sampleX = Math.max(0, Math.floor((width - sampleSize) / 2))
+  const sampleY = Math.max(0, Math.floor((height - sampleSize) / 2))
+
+  try {
+    const data = ctx.getImageData(sampleX, sampleY, sampleSize, sampleSize).data
+    let brightPixels = 0
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i] + data[i + 1] + data[i + 2] > 30)
+        brightPixels++
+    }
+    return brightPixels / (data.length / 4) < 0.02
+  }
+  catch {
+    return false
+  }
+}
+
+function scheduleMinimapFrameRender(delay = 80, force = false) {
+  if (!force && Date.now() - lastMinimapRenderAt < MINIMAP_FRAME_REFRESH_INTERVAL)
+    return
+
+  if (minimapRenderTimer)
+    clearTimeout(minimapRenderTimer)
+
+  minimapRenderTimer = setTimeout(() => {
+    minimapRenderTimer = null
+    renderMinimapFrame()
+  }, delay)
 }
 
 function syncVideoState() {
@@ -429,15 +480,29 @@ function bindVideoMetadata(video: HTMLVideoElement | null) {
   metadataListener?.()
   observedVideo = video
   metadataListener = null
-  hasRenderedMinimapFrame = false
+  lastMinimapRenderAt = 0
   resetZoomPosition()
 
   if (!video)
     return
 
   const onLoadedMetadata = () => syncVideoState()
+  const onFrameReady = () => scheduleMinimapFrameRender()
+  const onFrameReadyNow = () => scheduleMinimapFrameRender(0, true)
   video.addEventListener('loadedmetadata', onLoadedMetadata)
-  metadataListener = () => video.removeEventListener('loadedmetadata', onLoadedMetadata)
+  video.addEventListener('loadeddata', onFrameReadyNow)
+  video.addEventListener('canplay', onFrameReadyNow)
+  video.addEventListener('playing', onFrameReadyNow)
+  video.addEventListener('seeked', onFrameReadyNow)
+  video.addEventListener('timeupdate', onFrameReady)
+  metadataListener = () => {
+    video.removeEventListener('loadedmetadata', onLoadedMetadata)
+    video.removeEventListener('loadeddata', onFrameReadyNow)
+    video.removeEventListener('canplay', onFrameReadyNow)
+    video.removeEventListener('playing', onFrameReadyNow)
+    video.removeEventListener('seeked', onFrameReadyNow)
+    video.removeEventListener('timeupdate', onFrameReady)
+  }
 }
 
 function scheduleRefresh(delay = 300) {
@@ -487,6 +552,10 @@ export function resetVerticalVideoZoom() {
     clearTimeout(refreshTimer)
     refreshTimer = null
   }
+  if (minimapRenderTimer) {
+    clearTimeout(minimapRenderTimer)
+    minimapRenderTimer = null
+  }
 
   metadataListener?.()
   metadataListener = null
@@ -499,7 +568,7 @@ export function resetVerticalVideoZoom() {
   currentHost?.style.removeProperty('--bewly-vertical-video-zoom-y')
   currentHost = null
   zoomPositionY = DEFAULT_ZOOM_POSITION_Y
-  hasRenderedMinimapFrame = false
+  lastMinimapRenderAt = 0
   mapElement = null
   canvasElement = null
   viewportElement = null
