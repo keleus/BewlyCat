@@ -2,6 +2,7 @@ import { injectCSS } from './main'
 import { getVideoElement } from './player'
 
 type BewlyWidescreenTab = 'comment' | 'danmaku' | 'playlist'
+type BewlyWidescreenSidebarMode = 'fit' | 'narrow'
 
 interface MovedNode {
   node: HTMLElement
@@ -18,26 +19,27 @@ interface BewlyWidescreenState {
   toolbarSlot: HTMLElement
   panels: Record<BewlyWidescreenTab, HTMLElement>
   tabButtons: Record<BewlyWidescreenTab, HTMLButtonElement>
+  sidebarToggleButton: HTMLButtonElement
   movedNodes: MovedNode[]
   styleEl: HTMLStyleElement
   activeTab: BewlyWidescreenTab
+  sidebarMode: BewlyWidescreenSidebarMode
   resizeObserver?: ResizeObserver
   mutationObserver?: MutationObserver
   metadataListener?: () => void
-  sidebarLockTimer?: ReturnType<typeof setTimeout>
 }
 
 const ROOT_ID = 'bewly-widescreen-root'
 const BODY_CLASS = 'bewly-widescreen-active'
 const EMPTY_CLASS = 'bewly-widescreen-empty'
-const SIDEBAR_MIN_WIDTH = 420
+const SIDEBAR_NARROW_MIN_WIDTH = 360
+const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
 const LOAD_SETTLE_DELAY = 1200
 const READY_RETRY_INTERVAL = 500
 const READY_RETRY_MAX = 30
 const SIDEBAR_REFRESH_DELAY = 800
 const SIDEBAR_REFRESH_MAX = 8
-const SIDEBAR_WIDTH_LOCK_DELAY = 900
 const BILIBILI_ACTION_ANIMATION_HUE = 196
 
 let state: BewlyWidescreenState | null = null
@@ -190,6 +192,19 @@ function setActiveTab(nextTab: BewlyWidescreenTab) {
     expandDanmakuTab(state)
 }
 
+function setSidebarMode(nextMode: BewlyWidescreenSidebarMode) {
+  if (!state)
+    return
+
+  state.sidebarMode = nextMode
+  state.root.dataset.sidebarMode = nextMode
+  const isFit = nextMode === 'fit'
+  state.sidebarToggleButton.textContent = isFit ? '‹' : '›'
+  state.sidebarToggleButton.title = isFit ? '显示窄右栏' : '收起右栏'
+  state.sidebarToggleButton.setAttribute('aria-label', state.sidebarToggleButton.title)
+  updateSidebarToggleState()
+}
+
 function getTitleText() {
   const titleElement = findFirst(selectors.title)
   const title = titleElement?.getAttribute('title') || titleElement?.textContent?.trim()
@@ -231,6 +246,16 @@ function createTabButton(tab: BewlyWidescreenTab, label: string) {
   return button
 }
 
+function createSidebarToggleButton() {
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.className = 'bewly-widescreen-sidebar-toggle'
+  button.addEventListener('click', () => {
+    setSidebarMode(state?.sidebarMode === 'fit' ? 'narrow' : 'fit')
+  })
+  return button
+}
+
 function createRoot() {
   const root = document.createElement('div')
   root.id = ROOT_ID
@@ -244,7 +269,8 @@ function createRoot() {
   playerFrame.className = 'bewly-widescreen-player-frame'
   const danmakuDock = document.createElement('div')
   danmakuDock.className = 'bewly-widescreen-danmaku-dock'
-  playerSlot.append(playerFrame, danmakuDock)
+  const sidebarToggleButton = createSidebarToggleButton()
+  playerSlot.append(playerFrame, danmakuDock, sidebarToggleButton)
 
   const sidebar = document.createElement('aside')
   sidebar.className = 'bewly-widescreen-sidebar'
@@ -288,7 +314,7 @@ function createRoot() {
   root.appendChild(stage)
   document.body.appendChild(root)
 
-  return { root, playerSlot, playerFrame, danmakuDock, sidebarTop, upSlot, toolbarSlot, panels, tabButtons }
+  return { root, playerSlot, playerFrame, danmakuDock, sidebarTop, upSlot, toolbarSlot, panels, tabButtons, sidebarToggleButton }
 }
 
 function injectLayoutStyle() {
@@ -314,18 +340,34 @@ function injectLayoutStyle() {
       color: #f4f6fb;
       background: #0f1115;
       font-family: var(--bew-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
-      --bewly-widescreen-sidebar-min: ${SIDEBAR_MIN_WIDTH}px;
+      --bewly-widescreen-sidebar-narrow-width: clamp(
+        ${SIDEBAR_NARROW_MIN_WIDTH}px,
+        26vw,
+        ${SIDEBAR_NARROW_MAX_WIDTH}px
+      );
       --bewly-widescreen-sidebar-max: 40vw;
-      --bewly-widescreen-sidebar-min-effective: min(var(--bewly-widescreen-sidebar-min), var(--bewly-widescreen-sidebar-max));
-      --bewly-widescreen-layout-aspect: var(--bewly-widescreen-aspect, 1.7777778);
+      --bewly-widescreen-layout-aspect: 1.7777778;
       --bewly-widescreen-player-available-height: calc(100dvh - var(--bewly-widescreen-danmaku-height, 0px));
       --bewly-widescreen-player-target-width: calc(var(--bewly-widescreen-player-available-height) * var(--bewly-widescreen-layout-aspect));
-      --bewly-widescreen-sidebar-width: clamp(
-        var(--bewly-widescreen-sidebar-min-effective),
+      --bewly-widescreen-sidebar-fit-width: clamp(
+        0px,
         calc(100vw - var(--bewly-widescreen-player-target-width)),
         var(--bewly-widescreen-sidebar-max)
       );
-      --bewly-widescreen-effective-sidebar-width: var(--bewly-widescreen-sidebar-locked-width, var(--bewly-widescreen-sidebar-width));
+      --bewly-widescreen-sidebar-column-width: min(var(--bewly-widescreen-sidebar-narrow-width), var(--bewly-widescreen-sidebar-max));
+      --bewly-widescreen-sidebar-panel-width: var(--bewly-widescreen-sidebar-column-width);
+      --bewly-widescreen-sidebar-offset: 0px;
+    }
+
+    #${ROOT_ID}[data-sidebar-mode="fit"] {
+      --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-fit-width);
+      --bewly-widescreen-sidebar-panel-width: max(
+        var(--bewly-widescreen-sidebar-fit-width),
+        var(--bewly-widescreen-sidebar-narrow-width)
+      );
+      --bewly-widescreen-sidebar-offset: calc(
+        var(--bewly-widescreen-sidebar-panel-width) - var(--bewly-widescreen-sidebar-column-width)
+      );
     }
 
     #${ROOT_ID} * {
@@ -335,8 +377,8 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-stage {
       display: grid;
       grid-template-columns:
-        minmax(0, calc(100vw - var(--bewly-widescreen-effective-sidebar-width)))
-        minmax(0, var(--bewly-widescreen-effective-sidebar-width));
+        minmax(0, calc(100vw - var(--bewly-widescreen-sidebar-column-width)))
+        minmax(0, var(--bewly-widescreen-sidebar-column-width));
       width: 100%;
       height: 100dvh;
       overflow: hidden;
@@ -479,12 +521,65 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-sidebar {
       display: flex;
       flex-direction: column;
+      justify-self: end;
+      width: var(--bewly-widescreen-sidebar-panel-width);
       min-width: 0;
       min-height: 0;
       background: #f7f8fa;
       color: #18191c;
       border-left: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: -12px 0 28px rgba(0, 0, 0, 0.28);
       overflow: hidden;
+      transform: translateX(var(--bewly-widescreen-sidebar-offset));
+      transition: transform 180ms ease;
+      will-change: transform;
+      z-index: 20;
+    }
+
+    #${ROOT_ID}[data-sidebar-mode="narrow"] .bewly-widescreen-sidebar {
+      box-shadow: none;
+    }
+
+    #${ROOT_ID}[data-sidebar-mode="fit"] .bewly-widescreen-sidebar:hover {
+      transform: translateX(0);
+    }
+
+    #${ROOT_ID} .bewly-widescreen-sidebar-toggle {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      z-index: 21;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 42px;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px 0 0 8px;
+      color: #fff;
+      background: rgba(24, 25, 28, 0.72);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(10px);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-50%);
+      transition: opacity 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    }
+
+    #${ROOT_ID}[data-sidebar-toggle-visible="true"] .bewly-widescreen-player-slot:hover .bewly-widescreen-sidebar-toggle,
+    #${ROOT_ID}[data-sidebar-toggle-visible="true"] .bewly-widescreen-sidebar-toggle:focus-visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-sidebar-toggle:hover {
+      background: var(--bew-theme-color, #00aeec);
+      border-color: var(--bew-theme-color, #00aeec);
     }
 
     #${ROOT_ID} .bewly-widescreen-sidebar-top {
@@ -759,6 +854,9 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-action-slot .video-coin-info,
     #${ROOT_ID} .bewly-widescreen-action-slot .video-fav-info,
     #${ROOT_ID} .bewly-widescreen-action-slot .video-share-info {
+      display: inline-flex !important;
+      align-items: center !important;
+      margin-left: 0 !important;
       max-width: 52px !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
@@ -771,13 +869,6 @@ function injectLayoutStyle() {
 
     #${ROOT_ID} .bewly-widescreen-action-slot .bewly-watch-later-btn {
       display: none !important;
-    }
-
-    @container (max-width: 380px) {
-      #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-item-text,
-      #${ROOT_ID} .bewly-widescreen-action-slot .video-share-info {
-        display: none !important;
-      }
     }
 
     #${ROOT_ID} .bewly-widescreen-sidebar-top .up-panel-container,
@@ -907,6 +998,9 @@ function injectLayoutStyle() {
     @media (max-width: ${MOBILE_BREAKPOINT}px) {
       #${ROOT_ID} {
         --bewly-widescreen-player-available-height: calc(56dvh - var(--bewly-widescreen-danmaku-height, 0px));
+        --bewly-widescreen-sidebar-column-width: 100vw;
+        --bewly-widescreen-sidebar-panel-width: 100vw;
+        --bewly-widescreen-sidebar-offset: 0px;
       }
 
       #${ROOT_ID} .bewly-widescreen-stage {
@@ -916,6 +1010,17 @@ function injectLayoutStyle() {
 
       #${ROOT_ID} .bewly-widescreen-player-slot {
         padding: 0;
+      }
+
+      #${ROOT_ID} .bewly-widescreen-sidebar {
+        width: 100%;
+        transform: none;
+        transition: none;
+        box-shadow: none;
+      }
+
+      #${ROOT_ID} .bewly-widescreen-sidebar-toggle {
+        display: none;
       }
 
       #${ROOT_ID} .bewly-widescreen-player-frame > * {
@@ -935,10 +1040,30 @@ function updateAspectRatio() {
   const aspect = video?.videoWidth && video.videoHeight
     ? video.videoWidth / video.videoHeight
     : 16 / 9
-  const layoutAspect = Math.max(aspect, 1.35)
+  const layoutAspect = Math.min(aspect, 16 / 9)
 
   state?.root.style.setProperty('--bewly-widescreen-aspect', String(aspect))
   state?.root.style.setProperty('--bewly-widescreen-layout-aspect', String(layoutAspect))
+  updateSidebarToggleState()
+}
+
+function updateSidebarToggleState() {
+  if (!state)
+    return
+
+  const availableHeight = state.playerFrame.getBoundingClientRect().height
+  const layoutAspect = Number.parseFloat(state.root.style.getPropertyValue('--bewly-widescreen-layout-aspect')) || 16 / 9
+  const fitWidth = Math.min(
+    Math.max(window.innerWidth - availableHeight * layoutAspect, 0),
+    window.innerWidth * 0.4,
+  )
+  const narrowWidth = Math.min(
+    Math.max(SIDEBAR_NARROW_MIN_WIDTH, window.innerWidth * 0.26),
+    SIDEBAR_NARROW_MAX_WIDTH,
+    window.innerWidth * 0.4,
+  )
+  const needsHover = narrowWidth - fitWidth > 1
+  state.root.dataset.sidebarToggleVisible = String(needsHover)
 }
 
 function updateDanmakuDockHeight() {
@@ -950,6 +1075,7 @@ function updateDanmakuDockHeight() {
     : 0
 
   state.root.style.setProperty('--bewly-widescreen-danmaku-height', `${height}px`)
+  updateSidebarToggleState()
 }
 
 function parseRgbColor(value: string) {
@@ -1025,33 +1151,6 @@ function syncActionAnimationTheme(currentState: BewlyWidescreenState) {
   )
 }
 
-function clearSidebarWidthLockTimer(currentState: BewlyWidescreenState) {
-  if (!currentState.sidebarLockTimer)
-    return
-
-  clearTimeout(currentState.sidebarLockTimer)
-  currentState.sidebarLockTimer = undefined
-}
-
-function scheduleSidebarWidthLock(currentState: BewlyWidescreenState) {
-  clearSidebarWidthLockTimer(currentState)
-  currentState.sidebarLockTimer = setTimeout(() => {
-    if (!state || state !== currentState)
-      return
-
-    const sidebar = currentState.root.querySelector<HTMLElement>('.bewly-widescreen-sidebar')
-    const width = sidebar?.getBoundingClientRect().width ?? 0
-    if (width <= 0)
-      return
-
-    const maxWidth = window.innerWidth * 0.4
-    currentState.root.style.setProperty(
-      '--bewly-widescreen-sidebar-locked-width',
-      `${Math.min(width, maxWidth)}px`,
-    )
-  }, SIDEBAR_WIDTH_LOCK_DELAY)
-}
-
 function setupAspectObservers(currentState: BewlyWidescreenState) {
   const video = getVideoElement()
   if (video) {
@@ -1067,7 +1166,6 @@ function setupAspectObservers(currentState: BewlyWidescreenState) {
   currentState.resizeObserver.observe(currentState.root)
   currentState.resizeObserver.observe(currentState.danmakuDock)
   updateAspectRatio()
-  scheduleSidebarWidthLock(currentState)
 }
 
 function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
@@ -1177,7 +1275,6 @@ function cleanupState(currentState: BewlyWidescreenState) {
   currentState.metadataListener?.()
   currentState.resizeObserver?.disconnect()
   currentState.mutationObserver?.disconnect()
-  clearSidebarWidthLockTimer(currentState)
   clearSidebarRefreshTimer()
   restoreMovedNodes(currentState.movedNodes)
   currentState.root.remove()
@@ -1204,7 +1301,7 @@ function applyNow() {
   if (!player)
     return false
 
-  const { root, playerSlot, playerFrame, danmakuDock, sidebarTop, upSlot, toolbarSlot, panels, tabButtons } = createRoot()
+  const { root, playerSlot, playerFrame, danmakuDock, sidebarTop, upSlot, toolbarSlot, panels, tabButtons, sidebarToggleButton } = createRoot()
   const styleEl = injectLayoutStyle()
   const movedNodes: MovedNode[] = []
 
@@ -1218,13 +1315,16 @@ function applyNow() {
     toolbarSlot,
     panels,
     tabButtons,
+    sidebarToggleButton,
     movedNodes,
     styleEl,
     activeTab: 'comment',
+    sidebarMode: 'fit',
   }
 
   state = nextState
   document.body.classList.add(BODY_CLASS)
+  setSidebarMode('fit')
 
   moveNode(player, playerFrame, movedNodes)
   fillSidebar(nextState)
