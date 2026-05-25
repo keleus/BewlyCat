@@ -145,7 +145,7 @@ onMounted(() => {
 
 <template>
   <SettingsItemGroup :title="$t('settings.group_wallpaper')">
-    <SettingsItem v-if="!isGlobal" :title="$t('settings.individually_set_search_page_wallpaper')">
+    <SettingsItem v-if="!isGlobal" :title="$t('settings.individually_set_search_page_wallpaper')" right-width="auto">
       <template #desc>
         <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
       </template>
@@ -154,8 +154,8 @@ onMounted(() => {
     </SettingsItem>
 
     <template v-if="isGlobal || (settings.individuallySetSearchPageWallpaper && !isGlobal)">
-      <SettingsItem :title="$t('settings.wallpaper_mode')" :desc="$t('settings.wallpaper_mode_desc')">
-        <div w-full flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
+      <SettingsItem :title="$t('settings.wallpaper_mode')" :desc="$t('settings.wallpaper_mode_desc')" right-width="auto">
+        <div w="220px" flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
           <div
             flex-1 py-1 cursor-pointer text-center rounded="$bew-radius"
             :style="{
@@ -180,7 +180,7 @@ onMounted(() => {
       </SettingsItem>
 
       <!-- 缓存时间设置 - 对所有URL壁纸生效 -->
-      <SettingsItem :title="$t('settings.wallpaper_cache_time')">
+      <SettingsItem :title="$t('settings.wallpaper_cache_time')" right-width="auto">
         <template #desc>
           {{ $t('settings.wallpaper_cache_time_desc') }}
         </template>
@@ -328,7 +328,7 @@ onMounted(() => {
         </template>
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.enable_wallpaper_masking')">
+      <SettingsItem :title="$t('settings.enable_wallpaper_masking')" right-width="auto">
         <template #desc>
           <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
         </template>
@@ -336,13 +336,17 @@ onMounted(() => {
         <Radio v-if="isGlobal" v-model="settings.enableWallpaperMasking" />
         <Radio v-else v-model="settings.searchPageEnableWallpaperMasking" />
       </SettingsItem>
-      <SettingsItem v-if="isGlobal ? settings.enableWallpaperMasking : settings.searchPageEnableWallpaperMasking" :title="$t('settings.wallpaper_mask_opacity')">
-        <Slider v-if="isGlobal" v-model="settings.wallpaperMaskOpacity" :label="`${settings.wallpaperMaskOpacity}%`" />
-        <Slider v-else v-model="settings.searchPageWallpaperMaskOpacity" :label="`${settings.searchPageWallpaperMaskOpacity}%`" />
+      <SettingsItem v-if="isGlobal ? settings.enableWallpaperMasking : settings.searchPageEnableWallpaperMasking" :title="$t('settings.wallpaper_mask_opacity')" right-width="auto">
+        <div class="slider-control">
+          <Slider v-if="isGlobal" v-model="settings.wallpaperMaskOpacity" :label="`${settings.wallpaperMaskOpacity}%`" />
+          <Slider v-else v-model="settings.searchPageWallpaperMaskOpacity" :label="`${settings.searchPageWallpaperMaskOpacity}%`" />
+        </div>
       </SettingsItem>
-      <SettingsItem v-if="isGlobal ? settings.enableWallpaperMasking : settings.searchPageEnableWallpaperMasking" :title="$t('settings.wallpaper_blur_intensity')">
-        <Slider v-if="isGlobal" v-model="settings.wallpaperBlurIntensity" :min="0" :max="60" :label="`${settings.wallpaperBlurIntensity}px`" />
-        <Slider v-else v-model="settings.searchPageWallpaperBlurIntensity" :min="0" :max="60" :label="`${settings.searchPageWallpaperBlurIntensity}px`" />
+      <SettingsItem v-if="isGlobal ? settings.enableWallpaperMasking : settings.searchPageEnableWallpaperMasking" :title="$t('settings.wallpaper_blur_intensity')" right-width="auto">
+        <div class="slider-control">
+          <Slider v-if="isGlobal" v-model="settings.wallpaperBlurIntensity" :min="0" :max="60" :label="`${settings.wallpaperBlurIntensity}px`" />
+          <Slider v-else v-model="settings.searchPageWallpaperBlurIntensity" :min="0" :max="60" :label="`${settings.searchPageWallpaperBlurIntensity}px`" />
+        </div>
       </SettingsItem>
     </template>
   </SettingsItemGroup>
@@ -351,5 +355,9 @@ onMounted(() => {
 <style lang="scss" scoped>
 .selected-wallpaper {
   --uno: "border-$bew-theme-color-60";
+}
+
+.slider-control {
+  width: 220px;
 }
 </style>

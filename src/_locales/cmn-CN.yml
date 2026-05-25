@@ -166,12 +166,14 @@ settings:
   disable_shadow: 禁用阴影
   link_opening_behavior_opt:
     current_tab: 当前标签页
-    current_tab_if_not_homepage: 首页新标签页，其他当前页
-    background: 后台打开（如果可以的话）
+    current_tab_if_not_homepage: 首页外当前页
+    background: 后台打开
     new_tab: 新标签页
     drawer: 抽屉打开
   top_bar_link_opening_behavior: 顶栏链接打开行为
   video_card_link_opening_behavior: 视频卡片和番剧卡片链接打开行为
+  link_opening_behavior_desc: 控制点击链接后的打开位置。“首页外当前页”表示：当前页为首页时使用新标签页打开，其他页面使用当前标签页打开；“后台打开”会在浏览器允许时打开到后台标签页。
+  video_card_link_opening_behavior_desc: 控制点击视频卡片和番剧卡片后的打开位置，可选择当前标签页、抽屉、后台标签页或新标签页。
   search_bar_link_opening_behavior: 搜索栏链接打开行为
   close_drawer_without_pressing_esc_again: 关闭抽屉时不用再次按 <kbd>Esc</kbd> 关闭
   block_ads: 屏蔽广告
@@ -208,17 +210,17 @@ settings:
   use_bilibili_default_auto_play_desc: 启用后将使用B站的默认自动播放行为，下方的自定义自动播放设置将被隐藏且无效
   auto_play_mode_default: B站默认
   auto_play_mode_auto_play: 自动连播
-  auto_play_mode_auto_play_with_recommend: 自动连播(含推荐)
+  auto_play_mode_auto_play_with_recommend: 连播推荐
   auto_play_mode_pause_at_end: 播完暂停
   auto_play_mode_loop: 单集循环
   auto_play_multipart: 分P视频
-  auto_play_multipart_desc: 选择分P视频的自动播放行为
+  auto_play_multipart_desc: 选择分P视频的自动播放行为。“连播推荐”表示当前视频结束后继续播放推荐视频。
   auto_play_collection: 合集视频
-  auto_play_collection_desc: 选择合集视频的自动播放行为
+  auto_play_collection_desc: 选择合集视频的自动播放行为。“连播推荐”表示当前视频结束后继续播放推荐视频。
   auto_play_recommend: 单视频推荐
-  auto_play_recommend_desc: 选择单视频播放结束后的自动播放行为
+  auto_play_recommend_desc: 选择单视频播放结束后的自动播放行为。“连播推荐”表示当前视频结束后继续播放推荐视频。
   auto_play_playlist: 收藏列表
-  auto_play_playlist_desc: 选择收藏列表的自动播放行为
+  auto_play_playlist_desc: 选择收藏列表的自动播放行为。“连播推荐”表示当前视频结束后继续播放推荐视频。
   enable_random_play: 启用视频合集随机播放
   enable_random_play_desc: 为多P视频或合集添加随机播放功能
   random_play_mode: 随机播放模式
@@ -240,7 +242,7 @@ settings:
   show_video_card_recommend_tag_desc: 显示插件计算的标签，如"高赞"、"高互动"、"百万播放"等
   auto_hide_top_bar: 自动隐藏顶栏
   video_page_top_bar_config: 视频页顶栏配置
-  video_page_top_bar_config_desc: 配置在视频页面顶栏的显示行为
+  video_page_top_bar_config_desc: 控制视频页顶栏的显示时机。“鼠标显示”表示鼠标移入页面顶部时显示；“滚动显示”表示页面滚动时显示。
   video_page_top_bar_config_opt:
     alwaysShow: 总是显示
     alwaysHide: 总是隐藏
@@ -385,7 +387,7 @@ settings:
   recommendation_mode: 推荐模式
   recommendation_mode_desc: |
     Web：普通网页端推荐模式。无 Cookie：请求首页推荐时不携带 Cookie。App：移动端推荐模式，需先授权 access key。
-  recommendation_mode_web_no_cookie: 无Cookie
+  recommendation_mode_web_no_cookie: 无 Cookie
   auto_switch_recommendation_mode: 自动切换推荐模式
   auto_switch_recommendation_mode_desc: |
     当 App 推荐失败时自动切换至 Web 模式。

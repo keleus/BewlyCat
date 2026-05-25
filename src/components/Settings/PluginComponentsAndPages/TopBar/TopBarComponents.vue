@@ -159,7 +159,7 @@ watchEffect(() => {
                 <Select
                   v-model="settings.topBarComponentsConfig[index].badgeType"
                   :options="badgeOptions"
-                  w="120px"
+                  w="160px"
                 />
               </div>
               <div v-else h="32px" />

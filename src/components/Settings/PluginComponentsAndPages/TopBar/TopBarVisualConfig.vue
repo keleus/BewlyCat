@@ -324,7 +324,7 @@ function toggleChannel(value: string) {
 
               <!-- Home 按钮设置（仅在触屏优化开启时显示） -->
               <div v-if="settings.touchScreenOptimization" bg="$bew-fill-1" rounded="$bew-radius" p-3>
-                <SettingsItem :title="$t('settings.show_home_button_in_touch_mode')">
+                <SettingsItem :title="$t('settings.show_home_button_in_touch_mode')" right-width="auto">
                   <Radio v-model="settings.showHomeButtonInTouchMode" />
                 </SettingsItem>
                 <div text-sm opacity-70 mt-2>
@@ -375,7 +375,7 @@ function toggleChannel(value: string) {
               </div>
 
               <div bg="$bew-fill-1" rounded="$bew-radius" p-3>
-                <SettingsItem :title="$t('settings.show_bewly_or_bili_page_switcher')">
+                <SettingsItem :title="$t('settings.show_bewly_or_bili_page_switcher')" right-width="auto">
                   <Radio v-model="settings.showBewlyOrBiliPageSwitcher" />
                 </SettingsItem>
                 <div text-sm opacity-70 mt-2>
@@ -384,7 +384,7 @@ function toggleChannel(value: string) {
               </div>
 
               <div bg="$bew-fill-1" rounded="$bew-radius" p-3>
-                <SettingsItem :title="$t('settings.show_bewly_or_bili_top_bar_switcher')">
+                <SettingsItem :title="$t('settings.show_bewly_or_bili_top_bar_switcher')" right-width="auto">
                   <Radio v-model="settings.showBewlyOrBiliTopBarSwitcher" />
                 </SettingsItem>
                 <div text-sm opacity-70 mt-2>
@@ -394,14 +394,14 @@ function toggleChannel(value: string) {
             </div>
 
             <!-- 搜索框配置 -->
-            <div v-else-if="selectedElement === 'search'" flex="~ col gap-4">
+            <div v-else-if="selectedElement === 'search'" flex="~ col">
               <div text-lg font-semibold>
                 {{ $t('settings.group_search_bar') }}
               </div>
-              <SettingsItem :title="$t('settings.show_hot_search_in_top_bar')" :desc="$t('settings.show_hot_search_in_top_bar_desc')">
+              <SettingsItem :title="$t('settings.show_hot_search_in_top_bar')" :desc="$t('settings.show_hot_search_in_top_bar_desc')" right-width="auto">
                 <Radio v-model="settings.showHotSearchInTopBar" />
               </SettingsItem>
-              <SettingsItem :title="$t('settings.show_search_recommendation')" :desc="$t('settings.show_search_recommendation_desc')">
+              <SettingsItem :title="$t('settings.show_search_recommendation')" :desc="$t('settings.show_search_recommendation_desc')" right-width="auto">
                 <Radio v-model="settings.showSearchRecommendation" />
               </SettingsItem>
             </div>
@@ -409,13 +409,13 @@ function toggleChannel(value: string) {
             <!-- PopIcon 配置 -->
             <div
               v-else-if="topBarElements.find(e => e.id === selectedElement && e.type === 'popIcon')"
-              flex="~ col gap-4"
+              flex="~ col"
             >
               <div text-lg font-semibold>
                 {{ topBarElements.find(e => e.id === selectedElement)?.label }}
               </div>
 
-              <SettingsItem :title="$t('settings.visibility')">
+              <SettingsItem :title="$t('settings.visibility')" right-width="auto">
                 <Radio
                   :model-value="getElementConfig(selectedElement)?.visible ?? true"
                   @update:model-value="toggleComponentVisibility(selectedElement)"
@@ -425,11 +425,12 @@ function toggleChannel(value: string) {
               <SettingsItem
                 v-if="topBarElements.find(e => e.id === selectedElement)?.supportsBadge"
                 :title="$t('settings.badge_type')"
+                right-width="auto"
               >
                 <Select
                   v-model="getElementConfig(selectedElement)!.badgeType"
                   :options="badgeOptions"
-                  w="full"
+                  w="160px"
                   :disabled="!getElementConfig(selectedElement)?.visible"
                 />
               </SettingsItem>
@@ -438,6 +439,7 @@ function toggleChannel(value: string) {
                 v-if="selectedElement === 'notifications'"
                 :title="$t('settings.show_like_notification_reminder')"
                 :desc="$t('settings.show_like_notification_reminder_desc')"
+                right-width="auto"
               >
                 <Radio v-model="settings.showLikeNotificationReminder" />
               </SettingsItem>
@@ -447,13 +449,14 @@ function toggleChannel(value: string) {
                 v-if="selectedElement === 'moments'"
                 title="过滤专栏"
                 desc="在动态列表中过滤掉专栏内容，仅显示视频"
+                right-width="auto"
               >
                 <Radio v-model="settings.filterArticlesInMoments" />
               </SettingsItem>
             </div>
 
             <!-- 头像配置 -->
-            <div v-else-if="selectedElement === 'avatar'" flex="~ col gap-4">
+            <div v-else-if="selectedElement === 'avatar'" flex="~ col">
               <div text-lg font-semibold>
                 {{ $t('topbar.user_dropdown.account_settings') }}
               </div>
@@ -461,6 +464,7 @@ function toggleChannel(value: string) {
               <SettingsItem
                 :title="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop')"
                 :desc="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop_desc')"
+                right-width="auto"
               >
                 <Radio v-model="settings.hideTopBarUserPanelLv6LastLoginLocation" />
               </SettingsItem>
@@ -469,28 +473,29 @@ function toggleChannel(value: string) {
         </Transition>
 
         <!-- 全局设置 -->
-        <div mt-6 pt-6 border-t="1 $bew-border-color">
-          <div flex="~ col gap-4">
-            <SettingsItem :title="$t('settings.auto_hide_top_bar')">
+        <div mt-4 border-t="1 $bew-border-color">
+          <div flex="~ col">
+            <SettingsItem :title="$t('settings.auto_hide_top_bar')" right-width="auto">
               <Radio v-model="settings.autoHideTopBar" />
             </SettingsItem>
 
             <SettingsItem
               :title="$t('settings.video_page_top_bar_config')"
               :desc="$t('settings.video_page_top_bar_config_desc')"
+              right-width="auto"
             >
-              <Select v-model="settings.videoPageTopBarConfig" :options="videoPageTopBarConfigOptions" w="full" />
+              <Select v-model="settings.videoPageTopBarConfig" :options="videoPageTopBarConfigOptions" w="160px" />
             </SettingsItem>
 
-            <SettingsItem :title="$t('settings.always_use_transparent_top_bar')">
+            <SettingsItem :title="$t('settings.always_use_transparent_top_bar')" right-width="auto">
               <Radio v-model="settings.alwaysUseTransparentTopBar" />
             </SettingsItem>
 
-            <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')">
+            <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
               <Radio v-model="settings.showTopBarThemeColorGradient" />
             </SettingsItem>
 
-            <SettingsItem :title="$t('settings.open_notifications_page_as_drawer')">
+            <SettingsItem :title="$t('settings.open_notifications_page_as_drawer')" right-width="auto">
               <Radio v-model="settings.openNotificationsPageAsDrawer" />
             </SettingsItem>
 

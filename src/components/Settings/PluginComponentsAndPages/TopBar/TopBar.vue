@@ -35,14 +35,14 @@ const openModeOptions = computed(() => {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_link_opening_behavior')">
-      <SettingsItem :title="$t('settings.top_bar_link_opening_behavior')">
-        <Select v-model="settings.topBarLinkOpenMode" :options="openModeOptions" w="full" />
+      <SettingsItem :title="$t('settings.top_bar_link_opening_behavior')" :desc="$t('settings.link_opening_behavior_desc')" right-width="auto">
+        <Select v-model="settings.topBarLinkOpenMode" :options="openModeOptions" w="160px" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.search_bar_link_opening_behavior')">
+      <SettingsItem :title="$t('settings.search_bar_link_opening_behavior')" :desc="$t('settings.link_opening_behavior_desc')" right-width="auto">
         <Select
           v-model="settings.searchBarLinkOpenMode"
           :options="openModeOptions"
-          w="full"
+          w="160px"
         />
       </SettingsItem>
     </SettingsItemGroup>

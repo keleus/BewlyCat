@@ -53,13 +53,14 @@ const videoDanmakuDefaultStateOptions = computed(() => {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_player_settings')">
-      <SettingsItem :title="$t('settings.video_default_player_mode')">
-        <Select v-model="settings.defaultVideoPlayerMode" :options="videoPlayerModeOptions" w="full" />
+      <SettingsItem :title="$t('settings.video_default_player_mode')" right-width="auto">
+        <Select v-model="settings.defaultVideoPlayerMode" :options="videoPlayerModeOptions" w="160px" />
       </SettingsItem>
 
       <SettingsItem
         :title="t('settings.keep_collection_video_default_mode')"
         :desc="t('settings.keep_collection_video_default_mode_desc')"
+        right-width="auto"
       >
         <Radio v-model="settings.keepCollectionVideoDefaultMode" />
       </SettingsItem>
@@ -67,6 +68,7 @@ const videoDanmakuDefaultStateOptions = computed(() => {
       <SettingsItem
         :title="t('settings.video_player_scroll')"
         :desc="t('settings.video_player_scroll_desc')"
+        right-width="auto"
       >
         <Radio v-model="settings.videoPlayerScroll" />
       </SettingsItem>
@@ -74,6 +76,7 @@ const videoDanmakuDefaultStateOptions = computed(() => {
       <SettingsItem
         :title="t('settings.auto_exit_fullscreen_on_end')"
         :desc="t('settings.auto_exit_fullscreen_on_end_desc')"
+        right-width="auto"
       >
         <Radio v-model="settings.autoExitFullscreenOnEnd" />
       </SettingsItem>
@@ -82,6 +85,7 @@ const videoDanmakuDefaultStateOptions = computed(() => {
         <SettingsItem
           :title="t('settings.auto_exit_fullscreen_exclude_auto_play')"
           :desc="t('settings.auto_exit_fullscreen_exclude_auto_play_desc')"
+          right-width="auto"
         >
           <Radio v-model="settings.autoExitFullscreenExcludeAutoPlay" />
         </SettingsItem>
@@ -92,13 +96,15 @@ const videoDanmakuDefaultStateOptions = computed(() => {
       <SettingsItem
         :title="t('settings.video_danmaku_default_state')"
         :desc="t('settings.video_danmaku_default_state_desc')"
+        right-width="auto"
       >
-        <Select v-model="settings.defaultDanmakuState" :options="videoDanmakuDefaultStateOptions" w="full" />
+        <Select v-model="settings.defaultDanmakuState" :options="videoDanmakuDefaultStateOptions" w="160px" />
       </SettingsItem>
 
       <SettingsItem
         :title="t('settings.remember_playback_rate')"
         :desc="t('settings.remember_playback_rate_desc')"
+        right-width="auto"
       >
         <Radio v-model="settings.rememberPlaybackRate" />
       </SettingsItem>
@@ -106,6 +112,7 @@ const videoDanmakuDefaultStateOptions = computed(() => {
       <SettingsItem
         :title="t('settings.enlarge_favorite_dialog')"
         :desc="t('settings.enlarge_favorite_dialog_desc')"
+        right-width="auto"
       >
         <Radio v-model="settings.enlargeFavoriteDialog" />
       </SettingsItem>
@@ -113,6 +120,7 @@ const videoDanmakuDefaultStateOptions = computed(() => {
       <SettingsItem
         :title="t('settings.external_watch_later_button')"
         :desc="t('settings.external_watch_later_button_desc')"
+        right-width="auto"
       >
         <Radio v-model="settings.externalWatchLaterButton" />
       </SettingsItem>
