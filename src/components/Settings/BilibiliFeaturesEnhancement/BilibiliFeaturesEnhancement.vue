@@ -1,38 +1,35 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { BilibiliFeaturesPage } from '../types'
-
-const { t } = useI18n()
 
 const activePage = ref<BilibiliFeaturesPage>(BilibiliFeaturesPage.Comments)
 
 const pages = [
   {
     value: BilibiliFeaturesPage.Comments,
-    title: t('settings.bilibili_features.comments'),
+    titleKey: 'settings.bilibili_features.comments',
     icon: 'i-mingcute:comment-line',
     iconActivated: 'i-mingcute:comment-fill',
     component: defineAsyncComponent(() => import('./Comments/Comments.vue')),
   },
   {
     value: BilibiliFeaturesPage.VideoPlayback,
-    title: t('settings.bilibili_features.video_playback'),
+    titleKey: 'settings.bilibili_features.video_playback',
     icon: 'i-mingcute:play-circle-line',
     iconActivated: 'i-mingcute:play-circle-fill',
     component: defineAsyncComponent(() => import('./VideoPlayback/VideoPlayback.vue')),
   },
   {
     value: BilibiliFeaturesPage.AutoPlay,
-    title: t('settings.bilibili_features.auto_play'),
+    titleKey: 'settings.bilibili_features.auto_play',
     icon: 'i-mingcute:list-check-line',
     iconActivated: 'i-mingcute:list-check-fill',
     component: defineAsyncComponent(() => import('./AutoPlay/AutoPlay.vue')),
   },
   {
     value: BilibiliFeaturesPage.VipFeatures,
-    title: t('settings.bilibili_features.vip_features'),
+    titleKey: 'settings.bilibili_features.vip_features',
     icon: 'i-mingcute:vip-1-line',
     iconActivated: 'i-mingcute:vip-1-fill',
     component: defineAsyncComponent(() => import('./VipFeatures/VipFeatures.vue')),
@@ -56,7 +53,7 @@ const pages = [
           >
             <div class="flex items-center">
               <div :class="activePage === page.value ? page.iconActivated : page.icon" class="mr-2 text-lg" />
-              <span>{{ page.title }}</span>
+              <span>{{ $t(page.titleKey) }}</span>
             </div>
           </li>
         </ul>

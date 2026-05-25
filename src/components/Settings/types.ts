@@ -34,6 +34,6 @@ export interface MenuItem {
   value: MenuType
   icon: string
   iconActivated: string
-  title: string
+  titleKey: string
   badge?: string
 }
