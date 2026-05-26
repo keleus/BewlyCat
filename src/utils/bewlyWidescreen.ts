@@ -14,6 +14,7 @@ interface BewlyWidescreenState {
   playerSlot: HTMLElement
   playerFrame: HTMLElement
   danmakuDock: HTMLElement
+  sidebarEl: HTMLElement
   sidebarTop: HTMLElement
   upSlot: HTMLElement
   toolbarSlot: HTMLElement
@@ -28,6 +29,7 @@ interface BewlyWidescreenState {
   mutationObserver?: MutationObserver
   metadataListener?: () => void
   resizeSyncTimers?: Array<ReturnType<typeof setTimeout>>
+  sidebarFocusCleanup?: () => void
 }
 
 const ROOT_ID = 'bewly-widescreen-root'
@@ -346,7 +348,7 @@ function createRoot() {
   root.appendChild(stage)
   document.body.appendChild(root)
 
-  return { root, playerSlot, playerFrame, danmakuDock, sidebarTop, upSlot, toolbarSlot, panels, tabButtons, sidebarToggleButton }
+  return { root, playerSlot, playerFrame, danmakuDock, sidebarEl: sidebar, sidebarTop, upSlot, toolbarSlot, panels, tabButtons, sidebarToggleButton }
 }
 
 function injectLayoutStyle() {
@@ -377,6 +379,7 @@ function injectLayoutStyle() {
         26vw,
         ${SIDEBAR_NARROW_MAX_WIDTH}px
       );
+      --bewly-widescreen-sidebar-expanded-width: clamp(480px, 32vw, 600px);
       --bewly-widescreen-sidebar-max: 40vw;
       --bewly-widescreen-layout-aspect: 1.7777778;
       --bewly-widescreen-player-available-height: calc(100dvh - var(--bewly-widescreen-danmaku-height, 0px));
@@ -399,7 +402,7 @@ function injectLayoutStyle() {
       --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-fit-width);
       --bewly-widescreen-sidebar-panel-width: max(
         var(--bewly-widescreen-sidebar-fit-width),
-        var(--bewly-widescreen-sidebar-narrow-width)
+        var(--bewly-widescreen-sidebar-expanded-width)
       );
       --bewly-widescreen-sidebar-offset: calc(
         var(--bewly-widescreen-sidebar-panel-width) - var(--bewly-widescreen-sidebar-column-width)
@@ -587,7 +590,8 @@ function injectLayoutStyle() {
       box-shadow: none;
     }
 
-    #${ROOT_ID}[data-sidebar-mode="fit"] .bewly-widescreen-sidebar:hover {
+    #${ROOT_ID}[data-sidebar-mode="fit"] .bewly-widescreen-sidebar:hover,
+    #${ROOT_ID}[data-sidebar-mode="fit"][data-sidebar-focus="true"] .bewly-widescreen-sidebar {
       transform: translateX(0);
     }
 
@@ -1263,6 +1267,43 @@ function setupAspectObservers(currentState: BewlyWidescreenState) {
   schedulePlayerResizeSync(currentState)
 }
 
+function setupSidebarFocusTracking(currentState: BewlyWidescreenState) {
+  const sidebar = currentState.sidebarEl
+
+  function isEditable(el: EventTarget | null): boolean {
+    if (!(el instanceof HTMLElement))
+      return false
+    const tag = el.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA')
+      return true
+    if (el.isContentEditable)
+      return true
+    return false
+  }
+
+  function onFocusIn(e: FocusEvent) {
+    if (isEditable(e.target))
+      currentState.root.dataset.sidebarFocus = 'true'
+  }
+
+  function onFocusOut(e: FocusEvent) {
+    // Only clear if the new focus target is not another editable inside the sidebar
+    const related = e.relatedTarget as HTMLElement | null
+    if (related && sidebar.contains(related) && isEditable(related))
+      return
+    currentState.root.dataset.sidebarFocus = 'false'
+  }
+
+  sidebar.addEventListener('focusin', onFocusIn)
+  sidebar.addEventListener('focusout', onFocusOut)
+
+  currentState.sidebarFocusCleanup = () => {
+    sidebar.removeEventListener('focusin', onFocusIn)
+    sidebar.removeEventListener('focusout', onFocusOut)
+    delete currentState.root.dataset.sidebarFocus
+  }
+}
+
 function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
   currentState.mutationObserver = new MutationObserver(() => {
     if (!state || state !== currentState)
@@ -1368,6 +1409,7 @@ function shortenCommentTimes(panel: HTMLElement) {
 }
 
 function cleanupState(currentState: BewlyWidescreenState) {
+  currentState.sidebarFocusCleanup?.()
   currentState.metadataListener?.()
   currentState.resizeObserver?.disconnect()
   currentState.mutationObserver?.disconnect()
@@ -1398,7 +1440,7 @@ function applyNow() {
   if (!player)
     return false
 
-  const { root, playerSlot, playerFrame, danmakuDock, sidebarTop, upSlot, toolbarSlot, panels, tabButtons, sidebarToggleButton } = createRoot()
+  const { root, playerSlot, playerFrame, danmakuDock, sidebarEl, sidebarTop, upSlot, toolbarSlot, panels, tabButtons, sidebarToggleButton } = createRoot()
   const styleEl = injectLayoutStyle()
   const movedNodes: MovedNode[] = []
 
@@ -1407,6 +1449,7 @@ function applyNow() {
     playerSlot,
     playerFrame,
     danmakuDock,
+    sidebarEl,
     sidebarTop,
     upSlot,
     toolbarSlot,
@@ -1428,6 +1471,7 @@ function applyNow() {
   setActiveTab('comment')
   setupAspectObservers(nextState)
   setupDomRefreshObserver(nextState)
+  setupSidebarFocusTracking(nextState)
   setTimeout(() => window.dispatchEvent(new Event('resize')), 0)
 
   return true
