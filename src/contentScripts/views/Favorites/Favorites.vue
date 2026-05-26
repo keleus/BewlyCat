@@ -1084,6 +1084,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 
 .favorites-main {
   min-width: 0;
+  min-height: 100vh;
   padding-top: 14px;
 }
 

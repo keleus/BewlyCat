@@ -953,5 +953,6 @@ if (settings.value.cleanUrlArgument) {
 
 .bewly-scroll-viewport {
   outline: none;
+  scrollbar-gutter: stable;
 }
 </style>
