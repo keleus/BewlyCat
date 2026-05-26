@@ -753,10 +753,29 @@ history:
     你確定要開返收睇記錄？
 favorites:
   collected_season_prefix: 合集
+  folder_section_title: 所有收藏夾
+  season_section_title: 收藏嘅合集
+  video_count: 影片數：{count}
   unfavorite: 唔愛喇
   unfavorite_confirm: |-
     係咪要剷走你揀過啲片呀？
     噉做冇得返轉頭噃，你確定要剷走你揀過啲片？
+  batch_manage: 批量管理
+  batch_select_all: 揀晒本頁
+  batch_unselect_all: 取消全選
+  batch_select_item: 揀影片
+  batch_selected_count: 已揀 {count} 個
+  batch_copy: 複製
+  batch_move: 移動
+  batch_copy_dialog_title: 複製到收藏夾
+  batch_move_dialog_title: 移動到收藏夾
+  batch_copy_dialog_desc: 揀目標收藏夾，確認後會複製已揀嘅 {count} 條片。
+  batch_move_dialog_desc: 揀目標收藏夾，確認後會移動已揀嘅 {count} 條片。
+  batch_target_folder: 目標收藏夾
+  batch_unfavorite: 唔愛喇
+  batch_unfavorite_confirm: |-
+    係咪要剷走已揀嘅 {count} 條片呀？
+    噉做冇得返轉頭噃，你確定要剷走呢啲片？
 watch_later:
   title: 陣間至睇
   clear_all: 剷曬陣間至睇啲片

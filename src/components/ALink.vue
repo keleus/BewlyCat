@@ -10,6 +10,7 @@ const props = defineProps<{
   rel?: string
   type: 'topBar' | 'videoCard' | 'searchBar'
   customClickEvent?: boolean
+  customClickEventIncludesModifiers?: boolean
   stopPropagation?: boolean
 }>()
 
@@ -60,14 +61,17 @@ function handleClick(event: MouseEvent) {
     event.stopPropagation()
   }
 
-  if (event.ctrlKey || event.metaKey || event.altKey)
-    return
-
   if (props.customClickEvent) {
+    if (!props.customClickEventIncludesModifiers && (event.ctrlKey || event.metaKey || event.altKey))
+      return
+
     event.preventDefault()
     emit('click', event)
     return
   }
+
+  if (event.ctrlKey || event.metaKey || event.altKey)
+    return
 
   // 在触屏模式下，topBar 类型的链接不执行打开操作，只显示弹窗
   // 但有以下例外情况应该允许点击并响应打开行为设置：

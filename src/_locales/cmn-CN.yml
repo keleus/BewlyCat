@@ -804,10 +804,29 @@ history:
     你确定要开启观看历史吗？
 favorites:
   collected_season_prefix: 合集
+  folder_section_title: 所有收藏夹
+  season_section_title: 收藏的合集
+  video_count: 视频数：{count}
   unfavorite: 取消收藏
   unfavorite_confirm: |-
     要取消收藏选中的视频吗？
     该操作无法撤销，你确定要取消收藏选中的视频吗？
+  batch_manage: 批量管理
+  batch_select_all: 全选本页
+  batch_unselect_all: 取消全选
+  batch_select_item: 选择视频
+  batch_selected_count: 已选 {count} 个
+  batch_copy: 复制
+  batch_move: 移动
+  batch_copy_dialog_title: 复制到收藏夹
+  batch_move_dialog_title: 移动到收藏夹
+  batch_copy_dialog_desc: 选择目标收藏夹，确认后将复制已选的 {count} 个视频。
+  batch_move_dialog_desc: 选择目标收藏夹，确认后将移动已选的 {count} 个视频。
+  batch_target_folder: 目标收藏夹
+  batch_unfavorite: 取消收藏
+  batch_unfavorite_confirm: |-
+    要取消收藏已选的 {count} 个视频吗？
+    该操作无法撤销，你确定要取消收藏这些视频吗？
   search_current_folder: 当前
   search_all_folders: 全部
   search_placeholder: 搜索当前收藏夹

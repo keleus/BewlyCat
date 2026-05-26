@@ -880,12 +880,31 @@ history:
   turn_on_watch_history_confirm: Turn on watch history? Are you sure you want to turn on watch history?
 favorites:
   collected_season_prefix: Season
+  folder_section_title: All folders
+  season_section_title: Collected seasons
+  video_count: 'Videos: {count}'
   unfavorite: Unfavorite
   unfavorite_confirm: >-
     Remove selected video(s)?
 
     This operation cannot be reversed. Are you sure you want to remove the
     selected video(s) from your favorites?
+  batch_manage: Batch manage
+  batch_select_all: Select page
+  batch_unselect_all: Unselect all
+  batch_select_item: Select video
+  batch_selected_count: '{count} selected'
+  batch_copy: Copy
+  batch_move: Move
+  batch_copy_dialog_title: Copy to folder
+  batch_move_dialog_title: Move to folder
+  batch_copy_dialog_desc: Choose a target folder. {count} selected video(s) will be copied after confirmation.
+  batch_move_dialog_desc: Choose a target folder. {count} selected video(s) will be moved after confirmation.
+  batch_target_folder: Target folder
+  batch_unfavorite: Unfavorite
+  batch_unfavorite_confirm: |-
+    Remove {count} selected video(s)?
+    This operation cannot be reversed. Are you sure you want to remove these video(s) from your favorites?
   global_search_hint: Search for all favorites
   global_search_placeholder: Search all favorites
   search_all_folders: all

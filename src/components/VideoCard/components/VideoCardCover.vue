@@ -24,6 +24,7 @@ interface Props {
   videoElement: HTMLVideoElement | null
   isInWatchLater: boolean
   showWatcherLater: boolean
+  coverTopLeftAlwaysVisible?: boolean
   coverImageUrl: string
   // Modern layout specific
   coverStatValues?: {
@@ -478,8 +479,8 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          class="opacity-0 group-hover/cover:opacity-100"
-          transform="scale-70 group-hover/cover:scale-100"
+          :class="coverTopLeftAlwaysVisible ? 'opacity-100' : 'opacity-0 group-hover/cover:opacity-100'"
+          :transform="coverTopLeftAlwaysVisible ? 'scale-100' : 'scale-70 group-hover/cover:scale-100'"
           duration-300
           pos="absolute top-0 left-0" z-2
           @click.stop=""

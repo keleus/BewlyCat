@@ -63,12 +63,55 @@ const API_FAVORITE = {
     url: 'https://api.bilibili.com/x/v3/fav/resource/batch-del',
     _fetch: {
       method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        resources: '',
+        media_id: 0,
+        platform: 'web',
+        csrf: '',
+      },
     },
-    params: {
-      resources: '',
-      media_id: 0,
-      csrf: '',
+    params: {},
+    afterHandle: AHS.J_D,
+  },
+  moveFavoriteResources: {
+    url: 'https://api.bilibili.com/x/v3/fav/resource/move',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        resources: '',
+        src_media_id: 0,
+        tar_media_id: 0,
+        mid: '',
+        platform: 'web',
+        csrf: '',
+      },
     },
+    params: {},
+    afterHandle: AHS.J_D,
+  },
+  copyFavoriteResources: {
+    url: 'https://api.bilibili.com/x/v3/fav/resource/copy',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        resources: '',
+        src_media_id: 0,
+        tar_media_id: 0,
+        mid: '',
+        platform: 'web',
+        csrf: '',
+      },
+    },
+    params: {},
     afterHandle: AHS.J_D,
   },
 } satisfies APIMAP

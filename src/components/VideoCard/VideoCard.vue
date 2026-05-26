@@ -29,6 +29,8 @@ interface Props {
   moreBtn?: boolean
   hideAuthor?: boolean
   isFollowingPage?: boolean
+  customClickHandler?: (event: MouseEvent) => void
+  coverTopLeftAlwaysVisible?: boolean
 }
 
 const layout = computed((): VideoCardLayoutSetting => {
@@ -150,7 +152,7 @@ const hoverPreviewOnCoverOnly = computed(() =>
 )
 
 const linkEvents = computed(() => ({
-  click: logic.handleClick,
+  click: props.customClickHandler || logic.handleClick,
   ...(hoverPreviewOnCoverOnly.value
     ? {}
     : {
@@ -362,7 +364,8 @@ provide('getVideoType', () => props.type!)
         v-bind="coverSkeleton ? {} : {
           href: logic.videoUrl.value,
           type: 'videoCard',
-          customClickEvent: settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'background',
+          customClickEvent: Boolean(props.customClickHandler) || settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'background',
+          customClickEventIncludesModifiers: Boolean(props.customClickHandler),
         }"
         v-on="coverSkeleton ? {} : linkEvents"
       >
@@ -383,6 +386,7 @@ provide('getVideoType', () => props.type!)
             :video-element="logic.videoElement.value || null"
             :is-in-watch-later="logic.isInWatchLater.value"
             :show-watcher-later="showWatcherLater"
+            :cover-top-left-always-visible="coverTopLeftAlwaysVisible"
             :cover-image-url="coverImageUrl"
             :cover-stat-values="coverStatValues"
             :cover-stats-visibility="coverStatsVisibility"

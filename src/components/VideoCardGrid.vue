@@ -70,6 +70,17 @@ interface VideoCardGridProps<T = any> {
   transformItem: (item: T) => Video | undefined
 
   /**
+   * 自定义卡片点击处理。未传入时 VideoCard 使用设置中的默认打开行为。
+   */
+  cardClickHandler?: (item: T, event: MouseEvent) => void
+
+  /**
+   * 是否让封面左上角插槽常驻显示。
+   * @default false
+   */
+  coverTopLeftAlwaysVisible?: boolean
+
+  /**
    * 生成唯一ID的函数（可选接收 index 参数以确保唯一性）
    */
   getItemKey: (item: T, index?: number) => string | number
@@ -1057,6 +1068,8 @@ function getUniqueKey(item: T, index: number): string | number {
             :horizontal="isHorizontal"
             :more-btn="moreBtn"
             :is-following-page="props.isFollowingPage"
+            :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
+            :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
           >
             <template v-for="(_, name) in $slots" #[name]>
               <slot :name="name" :item="renderItem.item" />

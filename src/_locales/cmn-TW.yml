@@ -819,10 +819,29 @@ history:
     你確定要啟用觀看記錄嗎？
 favorites:
   collected_season_prefix: 合集
+  folder_section_title: 所有收藏夾
+  season_section_title: 收藏的合集
+  video_count: 影片數：{count}
   unfavorite: 取消收藏
   unfavorite_confirm: |-
     要取消收藏選中的影片嗎？
     此操作無法撤消，你確定要取消收藏選中的影片嗎？
+  batch_manage: 批次管理
+  batch_select_all: 全選本頁
+  batch_unselect_all: 取消全選
+  batch_select_item: 選擇影片
+  batch_selected_count: 已選 {count} 個
+  batch_copy: 複製
+  batch_move: 移動
+  batch_copy_dialog_title: 複製到收藏夾
+  batch_move_dialog_title: 移動到收藏夾
+  batch_copy_dialog_desc: 選擇目標收藏夾，確認後將複製已選的 {count} 個影片。
+  batch_move_dialog_desc: 選擇目標收藏夾，確認後將移動已選的 {count} 個影片。
+  batch_target_folder: 目標收藏夾
+  batch_unfavorite: 取消收藏
+  batch_unfavorite_confirm: |-
+    要取消收藏已選的 {count} 個影片嗎？
+    此操作無法撤消，你確定要取消收藏這些影片嗎？
   global_search_hint: 請輸入關鍵詞以搜尋全部收藏夾
   global_search_placeholder: 搜尋全部收藏夾
   search_all_folders: 全部
