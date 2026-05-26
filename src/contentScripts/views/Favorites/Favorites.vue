@@ -369,7 +369,7 @@ async function getFavoriteResources(
       }
 
       if (Array.isArray(res.data.medias) && res.data.medias.length > 0)
-        favoriteResources.push(...res.data.medias)
+        favoriteResources.push(...res.data.medias.filter((m: any) => m != null))
 
       if (!res.data.medias)
         noMoreContent.value = true
@@ -411,7 +411,7 @@ async function getFavoriteSeasonResources(
     if (res.code === 0 && res.data) {
       activatedCategoryCover.value = res.data.info?.cover || selectedCategory.value?.cover || ''
 
-      const medias = Array.isArray(res.data.medias) ? res.data.medias : []
+      const medias = Array.isArray(res.data.medias) ? res.data.medias.filter((m: any) => m != null) : []
       if (medias.length > 0)
         favoriteResources.push(...medias.map(normalizeSeasonMedia))
 

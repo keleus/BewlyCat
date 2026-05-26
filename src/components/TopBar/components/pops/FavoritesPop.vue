@@ -173,7 +173,7 @@ async function getFavoriteResources() {
 
       // 添加数据到列表
       if (data && 'medias' in data && Array.isArray(data.medias) && data.medias.length > 0) {
-        favoriteResources.push(...data.medias)
+        favoriteResources.push(...data.medias.filter((m: any) => m != null))
       }
       else if (!data || !data.medias || data.medias.length === 0) {
         // 如果没有数据返回，也标记为没有更多内容
@@ -196,7 +196,7 @@ async function getFavoriteSeasonResources() {
   })
 
   if (res.code === 0 && res.data) {
-    const medias = Array.isArray(res.data.medias) ? res.data.medias : []
+    const medias = Array.isArray(res.data.medias) ? res.data.medias.filter((m: any) => m != null) : []
     if (medias.length > 0)
       favoriteResources.push(...medias.map(normalizeSeasonMedia))
 
