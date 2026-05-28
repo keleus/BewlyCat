@@ -114,16 +114,14 @@ function getDefaultShortcutSetting(id: ConfigurableShortcutId): BaseShortcutSett
 }
 
 // --- Conflict Detection ---
-// This function checks if a shortcut key is already used by another action
-// Returns information about any conflicts found
+// Only extension shortcuts block each other. Official Bilibili shortcuts are
+// intentionally allowed so extension actions can override them at runtime.
 function checkShortcutConflict(key: string, currentId: ConfigurableShortcutId): { hasConflict: boolean, conflictInfo: { id: string, name: string } | null } {
   if (!settings.value.shortcuts)
     return { hasConflict: false, conflictInfo: null }
 
-  // Check for conflicts with other shortcuts
   for (const group of configurableShortcutsGroups) {
     for (const shortcut of group.shortcuts) {
-      // Skip the current shortcut being edited
       if (shortcut.id === currentId)
         continue
 
@@ -138,19 +136,6 @@ function checkShortcutConflict(key: string, currentId: ConfigurableShortcutId): 
             },
           }
         }
-      }
-    }
-  }
-
-  // Check for conflicts with official shortcuts
-  for (const shortcut of officialShortcuts) {
-    if (shortcut.key.toLowerCase() === key.toLowerCase()) {
-      return {
-        hasConflict: true,
-        conflictInfo: {
-          id: 'official',
-          name: shortcut.description,
-        },
       }
     }
   }
@@ -298,21 +283,13 @@ function handleKeyUp(event: KeyboardEvent, id: ConfigurableShortcutId) {
         return
       }
 
-      // Check for conflicts
       const conflictResult = checkShortcutConflict(keyCombo, id)
 
       if (conflictResult.hasConflict && conflictResult.conflictInfo) {
-        // Use a generic message if translation is not available
-        const message = `此快捷键与"${conflictResult.conflictInfo.name}"冲突。是否要覆盖它？`
-        if (confirm(message)) {
-          saveShortcutKey(id, keyCombo)
-        }
-        else {
-          cancelEdit()
-        }
+        alert(`此快捷键已被插件快捷键"${conflictResult.conflictInfo.name}"使用，不能重复设置。`)
+        cancelEdit()
       }
       else {
-        // No conflict, save directly
         saveShortcutKey(id, keyCombo)
       }
     }
