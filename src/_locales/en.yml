@@ -494,7 +494,7 @@ settings:
     automatically apply it when opening videos
   auto_exit_fullscreen_on_end: Auto exit fullscreen/webFullscreen when video ends
   auto_exit_fullscreen_on_end_desc: >
-    When enabled, the player will automatically exit fullscreen mode when the video finishes playing
+    When enabled, the player will automatically exit fullscreen mode when the video finishes playing and no single-loop, random-play, or auto-play behavior is active
   auto_exit_fullscreen_exclude_auto_play: Exclude auto-play mode
   auto_exit_fullscreen_exclude_auto_play_desc: >
     When enabled, videos in auto-play mode will not auto-exit fullscreen when finished, allowing continuous viewing

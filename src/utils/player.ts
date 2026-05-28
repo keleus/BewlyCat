@@ -296,37 +296,15 @@ export function applyDefaultDanmakuState() {
 // 检测是否为合集视频
 export function isCollectionVideo(): boolean {
   // 检测多P视频选集
-  const episodes = document.querySelectorAll('.video-pod__item')
-  if (episodes.length > 0) {
+  if (document.querySelector('.video-pod__item, .multi-page__item, .page-item')) {
     return true
   }
 
-  // 检测多P视频的其他容器
-  const multiPageItems = document.querySelectorAll('.multi-page__item, .page-item')
-  if (multiPageItems.length > 0) {
-    return true
-  }
-
-  // 检测合集视频容器
-  const videoSectionsContainer = document.querySelector('.video-sections-content-list, .base-video-sections-v1, .video-sections-v1')
-  if (videoSectionsContainer) {
-    return true
-  }
-
-  // 检测其他可能的选集容器，但排除推荐列表区域
-  const otherEpisodes = document.querySelectorAll('.list-item, .episode-item, .section-item, .collect-item')
-  const hasVideoLinks = Array.from(otherEpisodes).some((item) => {
-    // 排除推荐列表和相关推荐区域
-    const isInRecommendArea = (item as Element).closest('.recommend-list-v1, .rec-list, .next-play, .video-page-card-small, .recommend-list')
-    if (isInRecommendArea) {
-      return false
-    }
-
-    const link = item.querySelector('a[href*="/video/"]')
-    return link !== null
-  })
-
-  return hasVideoLinks
+  // 只在明确的选集/合集容器内做兜底，避免进入视频页时扫描评论区等大块动态 DOM
+  const videoSectionsContainer = document.querySelector(
+    '.video-sections-content-list, .base-video-sections-v1, .video-sections-v1, .video-sections',
+  )
+  return !!videoSectionsContainer?.querySelector('a[href*="/video/"]')
 }
 
 // 检测自动连播是否开启
@@ -334,6 +312,33 @@ export function isAutoPlayEnabled(): boolean {
   // 查找自动连播开关按钮（on状态）
   const autoPlaySwitchOn = document.querySelector(_videoClassTag.autoPlaySwitchOn)
   return autoPlaySwitchOn !== null
+}
+
+// 检测单集循环是否开启
+function isLoopEnabled(): boolean {
+  const loopCheckbox = document.querySelector(
+    '.bpx-player-ctrl-setting-loop input[type=checkbox]',
+  ) as HTMLInputElement | null
+
+  return loopCheckbox?.checked === true
+}
+
+// 收藏列表/稍后再看等场景使用播放设置中的 handoff 单选项控制自动切集
+function isPlaylistHandoffEnabled(): boolean {
+  const autoHandoffRadio = document.querySelector(
+    '.bpx-player-ctrl-setting-handoff input[type=radio][value="0"]',
+  ) as HTMLInputElement | null
+
+  return autoHandoffRadio?.checked === true
+}
+
+async function hasHigherPriorityEndPlaybackBehavior(): Promise<boolean> {
+  if (isLoopEnabled() || isAutoPlayEnabled() || isPlaylistHandoffEnabled()) {
+    return true
+  }
+
+  const { isRandomPlayActive } = await import('~/utils/randomPlay')
+  return isRandomPlayActive()
 }
 
 // 视频类型枚举
@@ -1359,17 +1364,9 @@ export function startAutoExitFullscreenMonitoring() {
 
     // 非互动视频且开启了自动退出全屏
     if (settings.value.autoExitFullscreenOnEnd) {
-      // 如果开启了自动连播下除外选项，并且当前自动连播已开启，则不自动退出
-      if (settings.value.autoExitFullscreenExcludeAutoPlay && isAutoPlayEnabled()) {
+      // 单集循环、随机播放、自动连播等播放行为优先级高于自动退出全屏
+      if (await hasHigherPriorityEndPlaybackBehavior()) {
         return
-      }
-
-      // 如果启用了随机播放功能，并且随机播放已激活，也不自动退出
-      if (settings.value.enableRandomPlay) {
-        const { isRandomPlayActive } = await import('~/utils/randomPlay')
-        if (isRandomPlayActive()) {
-          return
-        }
       }
 
       // 检查是否处于全屏状态

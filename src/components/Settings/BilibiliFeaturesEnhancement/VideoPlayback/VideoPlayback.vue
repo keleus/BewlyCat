@@ -80,16 +80,6 @@ const videoDanmakuDefaultStateOptions = computed(() => {
       >
         <Radio v-model="settings.autoExitFullscreenOnEnd" />
       </SettingsItem>
-
-      <template v-if="settings.autoExitFullscreenOnEnd">
-        <SettingsItem
-          :title="t('settings.auto_exit_fullscreen_exclude_auto_play')"
-          :desc="t('settings.auto_exit_fullscreen_exclude_auto_play_desc')"
-          right-width="auto"
-        >
-          <Radio v-model="settings.autoExitFullscreenExcludeAutoPlay" />
-        </SettingsItem>
-      </template>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="t('settings.group_player_components')">

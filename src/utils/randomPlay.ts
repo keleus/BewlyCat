@@ -8,6 +8,23 @@ let originalEndedListener: (() => void) | null = null
 let originalPauseListener: (() => void) | null = null
 let userManuallySetRandomPlay = false // 用户手动设置的随机播放状态标志
 
+const episodeRootSelector = [
+  '.video-pod',
+  '.multi-page',
+  '.video-sections-content-list',
+  '.base-video-sections-v1',
+  '.video-sections-v1',
+  '.video-sections',
+].join(', ')
+
+function queryEpisodeItems(selector: string): HTMLElement[] {
+  const directItems = Array.from(document.querySelectorAll(selector)) as HTMLElement[]
+  const scopedItems = Array.from(document.querySelectorAll(episodeRootSelector))
+    .flatMap(root => Array.from(root.querySelectorAll(selector)) as HTMLElement[])
+
+  return Array.from(new Set([...directItems, ...scopedItems]))
+}
+
 // 获取随机播放文本
 export function getRandomPlayText(): string {
   // 尝试获取扩展设置的语言
@@ -29,14 +46,15 @@ export function getRandomPlayText(): string {
 // 获取视频选集
 export function getVideoEpisodes(): HTMLElement[] {
   // 多P视频选集（B站标准选集列表）
-  const episodes = Array.from(document.querySelectorAll('.video-pod__item, .multi-page__item, .page-item')) as HTMLElement[]
+  const episodes = queryEpisodeItems('.video-pod__item, .multi-page__item, .page-item')
 
   if (episodes.length > 0) {
     return episodes
   }
 
-  // 合集视频选集（稍后再看、收藏夹等）
-  const collectionEpisodes = Array.from(document.querySelectorAll('.list-item, .episode-item, .section-item, .collect-item')) as HTMLElement[]
+  // 合集视频选集（稍后再看、收藏夹等），只在明确的选集容器内查找，避免扫描评论区
+  const collectionEpisodes = Array.from(document.querySelectorAll(episodeRootSelector))
+    .flatMap(root => Array.from(root.querySelectorAll('.list-item, .episode-item, .section-item, .collect-item')) as HTMLElement[])
   const validCollectionEpisodes = collectionEpisodes.filter((item) => {
     const link = item.querySelector('a[href*="/video/"]')
     return link !== null
@@ -46,14 +64,7 @@ export function getVideoEpisodes(): HTMLElement[] {
     return validCollectionEpisodes
   }
 
-  // 尝试更通用的选择器
-  const genericEpisodes = Array.from(document.querySelectorAll('[class*="episode"], [class*="item"], [class*="video"]')) as HTMLElement[]
-  const validGenericEpisodes = genericEpisodes.filter((item) => {
-    const link = item.querySelector('a[href*="/video/"]')
-    return link !== null && !item.classList.contains('active') && !item.classList.contains('current')
-  })
-
-  return validGenericEpisodes
+  return []
 }
 
 // 获取当前选集索引

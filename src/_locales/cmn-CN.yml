@@ -203,7 +203,7 @@ settings:
   remember_playback_rate: 记住倍速
   remember_playback_rate_desc: 启用后，播放器会记住您上次设置的倍速，并在下次打开视频时自动应用
   auto_exit_fullscreen_on_end: 全屏/网页全屏播放完毕后自动退出
-  auto_exit_fullscreen_on_end_desc: 启用后，当视频播放结束时会自动退出全屏模式
+  auto_exit_fullscreen_on_end_desc: 启用后，当视频播放结束且没有单集循环、随机播放、自动连播等后续播放行为时，会自动退出全屏模式
   auto_exit_fullscreen_exclude_auto_play: 自动连播下除外
   auto_exit_fullscreen_exclude_auto_play_desc: 启用后，在自动连播下播放结束时不会自动退出全屏，方便连续观看
   use_bilibili_default_auto_play: 使用B站默认自动播放行为
