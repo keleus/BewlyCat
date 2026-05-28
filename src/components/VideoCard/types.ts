@@ -27,6 +27,7 @@ export interface Video {
   roomid?: number
   epid?: number
   goto?: string
+  param?: string
   /** After set the `url`, clicking the video will navigate to this url. It won't be affected by aid, bvid or epid */
   url?: string
   /** Better to provide cid, otherwise video preview will need to call another API to get it */

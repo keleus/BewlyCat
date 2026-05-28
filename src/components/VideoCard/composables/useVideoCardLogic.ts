@@ -26,6 +26,25 @@ interface VideoCardProps {
   moreBtn?: boolean
 }
 
+interface AppFeedFeedbackSelection {
+  reasonId?: number
+  feedbackId?: number
+}
+
+function createAppFeedFeedbackParams(video: Video, selection?: AppFeedFeedbackSelection) {
+  return {
+    access_key: appAuthTokens.value.accessToken,
+    goto: video.goto,
+    id: video.param || video.id,
+    reason_id: selection?.reasonId,
+    feedback_id: selection?.feedbackId,
+    build: 1,
+    mobi_app: 'android',
+    appkey: TVAppKey.appkey,
+    ts: Math.floor(Date.now() / 1000).toString(),
+  }
+}
+
 export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps>) {
   const toast = useToast()
   const { openIframeDrawer } = useBewlyApp()
@@ -44,7 +63,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const removed = ref<boolean>(false)
   const moreBtnRef = ref<HTMLDivElement | null>(null)
   const contextMenuRef = ref<HTMLDivElement | null>(null)
-  const selectedDislikeOpt = ref<{ dislikeReasonId: number }>()
+  const selectedDislikeOpt = ref<AppFeedFeedbackSelection>()
   const videoCurrentTime = ref<number | null>(null)
   const isInWatchLater = ref<boolean>(false)
   const isHover = ref<boolean>(false)
@@ -374,18 +393,10 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   }
 
   function handleUndo() {
-    if (props.value.type === 'appRcmd') {
-      const params = {
-        access_key: appAuthTokens.value.accessToken,
-        goto: props.value.video?.goto,
-        id: props.value.video?.id,
-        idx: Number((Date.now() / 1000).toFixed(0)),
-        reason_id: selectedDislikeOpt.value?.dislikeReasonId,
-        build: 74800100,
-        device: 'pad',
-        mobi_app: 'iphone',
-        appkey: TVAppKey.appkey,
-      }
+    const video = props.value.video
+
+    if (props.value.type === 'appRcmd' && video) {
+      const params = createAppFeedFeedbackParams(video, selectedDislikeOpt.value)
 
       api.video.undoDislikeVideo({
         ...params,
@@ -404,7 +415,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     }
   }
 
-  function handleRemoved(selectedOpt?: { dislikeReasonId: number }) {
+  function handleRemoved(selectedOpt?: AppFeedFeedbackSelection) {
     selectedDislikeOpt.value = selectedOpt
     removed.value = true
   }

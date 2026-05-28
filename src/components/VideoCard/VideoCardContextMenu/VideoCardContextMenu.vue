@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<{
   isFollowingPage: false,
 })
 const emit = defineEmits<{
-  (event: 'removed', selectedOpt?: { dislikeReasonId: number }): void
+  (event: 'removed', selectedOpt?: { reasonId?: number, feedbackId?: number }): void
   (event: 'close'): void
   (event: 'reopen'): void
 }>()
@@ -241,7 +241,7 @@ async function submitWebDislike(command: number) {
 }
 
 function handleMoreCommand(command: number) {
-  handleRemoved({ dislikeReasonId: command })
+  handleRemoved()
   void submitWebDislike(command)
 }
 
@@ -354,7 +354,7 @@ function handleReopen() {
   handleClose()
 }
 
-function handleRemoved(selectedOpt?: { dislikeReasonId: number }) {
+function handleRemoved(selectedOpt?: { reasonId?: number, feedbackId?: number }) {
   emit('removed', selectedOpt)
   handleClose()
 }
