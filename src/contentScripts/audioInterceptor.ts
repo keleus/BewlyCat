@@ -132,6 +132,8 @@ let currentVideoElement: HTMLVideoElement | null = null
 let currentVideoListeners: ManagedVideoListeners | null = null
 const pendingMetadataVideos = new WeakSet<HTMLVideoElement>()
 let hasAttached = false
+let interceptorTimer: ReturnType<typeof setInterval> | null = null
+let hasSetupSettingsWatcher = false
 
 // 临时启用/禁用状态（用于播放器控件）
 let tempDisabled = false
@@ -324,13 +326,13 @@ function bindVideoListeners(video: HTMLVideoElement) {
 
   const onPause = () => {
     if (video === currentVideoElement) {
-      suspendProcessingForIdlePlayback(true)
+      suspendProcessingForIdlePlayback(!document.hidden)
     }
   }
 
   const onEnded = () => {
     if (video === currentVideoElement) {
-      suspendProcessingForIdlePlayback(true)
+      suspendProcessingForIdlePlayback(!document.hidden)
     }
   }
 
@@ -338,7 +340,7 @@ function bindVideoListeners(video: HTMLVideoElement) {
     if (video !== currentVideoElement)
       return
 
-    suspendProcessingForIdlePlayback(true)
+    suspendProcessingForIdlePlayback(!document.hidden)
   }
 
   video.addEventListener('play', onPlay)
@@ -545,7 +547,7 @@ function updateProcessingState() {
       && !currentVideoElement.ended
 
     if (!isPlaybackActive) {
-      suspendProcessingForIdlePlayback(true)
+      suspendProcessingForIdlePlayback(!document.hidden)
       log('Loudness analysis suspended while playback is inactive')
       return
     }
@@ -553,14 +555,20 @@ function updateProcessingState() {
     resumeAudioContext(audioContext)
 
     if (settings.value.enableVolumeNormalization && !tempDisabled) {
+      const wasProcessing = audioGraphMode === 'processing'
       connectProcessingGraph()
-      resetLoudnessAnalysis()
+
+      if (!wasProcessing) {
+        resetLoudnessAnalysis()
+      }
 
       if (currentVideoElement && !currentVideoElement.paused) {
         startLoudnessAnalysis()
       }
 
-      console.log('[BewlyAudio] Volume normalization ENABLED')
+      if (!wasProcessing) {
+        console.log('[BewlyAudio] Volume normalization ENABLED')
+      }
     }
     else {
       connectBypassGraph()
@@ -664,14 +672,19 @@ function isVideoPage(): boolean {
 }
 
 export function initAudioInterceptor() {
+  if (interceptorTimer)
+    return
+
   if (isVideoPage()) {
     log('Initializing Audio Interceptor')
   }
 
   let lastUrl = location.href
 
-  setInterval(() => {
-    if (location.href !== lastUrl) {
+  interceptorTimer = setInterval(() => {
+    const urlChanged = location.href !== lastUrl
+
+    if (urlChanged) {
       lastUrl = location.href
       if (isVideoPage()) {
         log('URL changed')
@@ -683,6 +696,10 @@ export function initAudioInterceptor() {
         log('Not on video page, detaching')
         detach()
       }
+      return
+    }
+
+    if (hasAttached && currentVideoElement?.isConnected && !urlChanged) {
       return
     }
 
@@ -708,6 +725,11 @@ export function initAudioInterceptor() {
 }
 
 export function setupSettingsWatcher() {
+  if (hasSetupSettingsWatcher)
+    return
+
+  hasSetupSettingsWatcher = true
+
   watch(() => settings.value.enableVolumeNormalization, (newVal) => {
     log('Settings changed: enableVolumeNormalization =', newVal)
 

@@ -22,6 +22,7 @@ const equalizerOffIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8
 let controlContainer: HTMLElement | null = null
 let volumeSlider: HTMLInputElement | null = null
 let isInjected = false
+let hasInitialized = false
 
 // 创建控件容器
 function createControlContainer(): HTMLElement {
@@ -294,6 +295,11 @@ function removeControl() {
 
 // 初始化
 export function initVolumeNormalizationControl() {
+  if (hasInitialized)
+    return
+
+  hasInitialized = true
+
   // 检查是否为直播页面
   if (location.hostname.includes('live.bilibili.com'))
     return
