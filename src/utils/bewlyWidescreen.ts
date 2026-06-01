@@ -29,7 +29,7 @@ interface BewlyWidescreenState {
   mutationObserver?: MutationObserver
   metadataListener?: () => void
   resizeSyncTimers?: Array<ReturnType<typeof setTimeout>>
-  sidebarFocusCleanup?: () => void
+  sidebarInteractionCleanup?: () => void
 }
 
 const ROOT_ID = 'bewly-widescreen-root'
@@ -590,8 +590,7 @@ function injectLayoutStyle() {
       box-shadow: none;
     }
 
-    #${ROOT_ID}[data-sidebar-mode="fit"] .bewly-widescreen-sidebar:hover,
-    #${ROOT_ID}[data-sidebar-mode="fit"][data-sidebar-focus="true"] .bewly-widescreen-sidebar {
+    #${ROOT_ID}[data-sidebar-mode="fit"][data-sidebar-expanded="true"] .bewly-widescreen-sidebar {
       transform: translateX(0);
     }
 
@@ -1267,40 +1266,42 @@ function setupAspectObservers(currentState: BewlyWidescreenState) {
   schedulePlayerResizeSync(currentState)
 }
 
-function setupSidebarFocusTracking(currentState: BewlyWidescreenState) {
+function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   const sidebar = currentState.sidebarEl
+  const playerFrame = currentState.playerFrame
 
-  function isEditable(el: EventTarget | null): boolean {
-    if (!(el instanceof HTMLElement))
+  function isPointInRect({ clientX, clientY }: PointerEvent, rect: DOMRect) {
+    return clientX >= rect.left
+      && clientX <= rect.right
+      && clientY >= rect.top
+      && clientY <= rect.bottom
+  }
+
+  function isPointInVisibleVideoArea(e: PointerEvent) {
+    if (!isPointInRect(e, playerFrame.getBoundingClientRect()))
       return false
-    const tag = el.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA')
-      return true
-    if (el.isContentEditable)
-      return true
-    return false
+
+    return !isPointInRect(e, sidebar.getBoundingClientRect())
   }
 
-  function onFocusIn(e: FocusEvent) {
-    if (isEditable(e.target))
-      currentState.root.dataset.sidebarFocus = 'true'
+  function expandSidebar() {
+    currentState.root.dataset.sidebarExpanded = 'true'
   }
 
-  function onFocusOut(e: FocusEvent) {
-    // Only clear if the new focus target is not another editable inside the sidebar
-    const related = e.relatedTarget as HTMLElement | null
-    if (related && sidebar.contains(related) && isEditable(related))
-      return
-    currentState.root.dataset.sidebarFocus = 'false'
+  function collapseSidebar(e: PointerEvent) {
+    if (isPointInVisibleVideoArea(e))
+      currentState.root.dataset.sidebarExpanded = 'false'
   }
 
-  sidebar.addEventListener('focusin', onFocusIn)
-  sidebar.addEventListener('focusout', onFocusOut)
+  sidebar.addEventListener('pointerenter', expandSidebar)
+  playerFrame.addEventListener('pointerenter', collapseSidebar)
+  playerFrame.addEventListener('pointermove', collapseSidebar)
 
-  currentState.sidebarFocusCleanup = () => {
-    sidebar.removeEventListener('focusin', onFocusIn)
-    sidebar.removeEventListener('focusout', onFocusOut)
-    delete currentState.root.dataset.sidebarFocus
+  currentState.sidebarInteractionCleanup = () => {
+    sidebar.removeEventListener('pointerenter', expandSidebar)
+    playerFrame.removeEventListener('pointerenter', collapseSidebar)
+    playerFrame.removeEventListener('pointermove', collapseSidebar)
+    delete currentState.root.dataset.sidebarExpanded
   }
 }
 
@@ -1409,7 +1410,7 @@ function shortenCommentTimes(panel: HTMLElement) {
 }
 
 function cleanupState(currentState: BewlyWidescreenState) {
-  currentState.sidebarFocusCleanup?.()
+  currentState.sidebarInteractionCleanup?.()
   currentState.metadataListener?.()
   currentState.resizeObserver?.disconnect()
   currentState.mutationObserver?.disconnect()
@@ -1471,7 +1472,7 @@ function applyNow() {
   setActiveTab('comment')
   setupAspectObservers(nextState)
   setupDomRefreshObserver(nextState)
-  setupSidebarFocusTracking(nextState)
+  setupSidebarInteractionTracking(nextState)
   setTimeout(() => window.dispatchEvent(new Event('resize')), 0)
 
   return true
