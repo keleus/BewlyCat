@@ -236,6 +236,7 @@ export interface Settings {
   autoHideSidebar: boolean
 
   theme: 'light' | 'dark' | 'auto'
+  videoPageDarkMode: boolean
   themeColor: string
   darkModeBaseColor: string // 深色模式基准颜色
   useLinearGradientThemeColorBackground: boolean
@@ -454,6 +455,7 @@ export const originalSettings: Settings = {
   autoHideSidebar: false,
 
   theme: 'auto',
+  videoPageDarkMode: false,
   themeColor: '#00a1d6',
   darkModeBaseColor: '#2a2d32', // 默认深色模式基准颜色
   useLinearGradientThemeColorBackground: false,

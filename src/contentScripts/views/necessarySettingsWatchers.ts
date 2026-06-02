@@ -5,11 +5,16 @@ import { setUselessFeedCardBlockerEnabled } from '~/contentScripts/features/bloc
 import { LanguageType } from '~/enums/appEnums'
 import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
 import { resetBilibiliTopBarInlineStyles } from '~/utils/bilibiliTopBar'
-import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe } from '~/utils/main'
+import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe, isVideoPlaybackPage } from '~/utils/main'
+
+function isFestivalPage(): boolean {
+  return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(location.href)
+}
 
 export function setupNecessarySettingsWatchers() {
   const { locale } = useI18n()
   let syncingTopBarSettings = false
+  let lastBewlyDesignHref = location.href
 
   const DEFAULT_FROSTED_GLASS_BLUR_PX = originalSettings.frostedGlassBlurIntensity
   const FROSTED_GLASS_DIALOG_OFFSET_PX = 10
@@ -392,16 +397,38 @@ export function setupNecessarySettingsWatchers() {
     }
   }
 
+  const applyBewlyDesignClasses = () => {
+    const shouldApply = settings.value.adaptToOtherPageStyles
+      ? !isFestivalPage()
+      : settings.value.videoPageDarkMode && isVideoPlaybackPage()
+    const shouldApplyVideoDarkOnly = !settings.value.adaptToOtherPageStyles
+      && settings.value.videoPageDarkMode
+      && isVideoPlaybackPage()
+
+    document.documentElement.classList.toggle('bewly-design', shouldApply)
+    document.documentElement.classList.toggle('bewly-video-dark-only', shouldApplyVideoDarkOnly)
+  }
+
   watch(
-    () => settings.value.adaptToOtherPageStyles,
-    () => {
-      if (settings.value.adaptToOtherPageStyles)
-        document.documentElement.classList.add('bewly-design')
-      else
-        document.documentElement.classList.remove('bewly-design')
-    },
+    [
+      () => settings.value.adaptToOtherPageStyles,
+      () => settings.value.videoPageDarkMode,
+    ],
+    applyBewlyDesignClasses,
     { immediate: true },
   )
+
+  const refreshBewlyDesignOnRouteChange = () => {
+    if (lastBewlyDesignHref === location.href)
+      return
+
+    lastBewlyDesignHref = location.href
+    applyBewlyDesignClasses()
+  }
+
+  window.addEventListener('popstate', refreshBewlyDesignOnRouteChange)
+  window.addEventListener('hashchange', refreshBewlyDesignOnRouteChange)
+  window.setInterval(refreshBewlyDesignOnRouteChange, 800)
 
   // Clean Share Link - intercept clipboard copy events
   let cleanShareLinkCopyHandler: ((e: ClipboardEvent) => void) | null = null

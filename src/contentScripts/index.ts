@@ -15,7 +15,7 @@ import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, re
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
-import { compareVersions, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage } from '~/utils/main'
+import { compareVersions, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
 import { applyAutoPlayByVideoType, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isPlayerDisplayModeReady, isVideoPage, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
@@ -155,15 +155,32 @@ else {
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
-  if (isSupportedPages() || isSupportedIframePages()) {
-  // Always use dark mode if enabled, but let useDark() handle selective application
+  function shouldApplyBewlyDesign() {
     if (settings.value.adaptToOtherPageStyles)
+      return !isFestivalPage()
+
+    return settings.value.videoPageDarkMode && isVideoPlaybackPage()
+  }
+
+  function shouldApplyVideoPageDarkOnly() {
+    return !settings.value.adaptToOtherPageStyles
+      && settings.value.videoPageDarkMode
+      && isVideoPlaybackPage()
+  }
+
+  function applyBewlyDesignClasses() {
+    const shouldApply = shouldApplyBewlyDesign()
+    document.documentElement.classList.toggle('bewly-design', shouldApply)
+    document.documentElement.classList.toggle('bewly-video-dark-only', shouldApplyVideoPageDarkOnly())
+    return shouldApply
+  }
+
+  if (isSupportedPages() || isSupportedIframePages()) {
+    if (settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode)
       useDark()
 
-    const shouldApplyFullStyles = settings.value.adaptToOtherPageStyles && !isFestivalPage()
+    const shouldApplyFullStyles = applyBewlyDesignClasses()
     if (shouldApplyFullStyles) {
-      document.documentElement.classList.add('bewly-design')
-
       // Setup iframe photo viewer detector (only in iframe)
       if (isInIframe())
         setupIframePhotoViewerDetector()
@@ -174,10 +191,6 @@ else {
         if (darkModeStyle)
           document.head.removeChild(darkModeStyle)
       })
-    }
-
-    else {
-      document.documentElement.classList.remove('bewly-design')
     }
   }
 
@@ -373,6 +386,7 @@ else {
 
       lastUrl = location.href
       lastVideoNavigationKey = currentVideoNavigationKey
+      applyBewlyDesignClasses()
 
       if (isVideoOrBangumiPage()) {
         if (!isMeaningfulVideoNavigation) {

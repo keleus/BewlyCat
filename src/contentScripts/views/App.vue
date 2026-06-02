@@ -28,10 +28,9 @@ const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
 const topBarStore = useTopBarStore()
 
-// Conditionally use dark mode (skip on festival pages)
+// Conditionally use dark mode. `useDark()` handles the video-page-only route gate.
 let isDark: Ref<boolean>
-// Always use dark mode if enabled, but let useDark() handle selective application
-const shouldUseDark = settings.value.adaptToOtherPageStyles
+const shouldUseDark = settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode
 
 if (shouldUseDark) {
   const darkResult = useDark()
