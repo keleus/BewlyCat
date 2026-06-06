@@ -418,6 +418,59 @@
   --Lb10: color-mix(in oklab, var(--bew-theme-color), white 75%);
 }
 
+:root.bewly-video-dark-only,
+:root.bewly-video-dark-only * {
+  --brand_pink: #ff6699;
+  --brand_pink_thin: #ffecf1;
+  --brand_blue: #00aeec;
+  --brand_blue_thin: #dff6fd;
+
+  --brand_pink_hover: #e84b85;
+  --brand_pink_active: #e84b85;
+  --brand_pink_disabled: #ffb3ca;
+  --brand_blue_hover: #008ac5;
+  --brand_blue_active: #008ac5;
+  --brand_blue_disabled: #80daf6;
+
+  --text_link: #00699d;
+
+  --bpx-fn-color: #00aeec;
+  --bpx-primary-color: #00aeec;
+  --bpx-fn-hover-color: #008ac5;
+  --bpx-toast-fn-color: #00aeec;
+  --bpx-toast-fn-hover-color: #008ac5;
+}
+
+:root.dark.bewly-video-dark-only,
+:root.dark.bewly-video-dark-only * {
+  --brand_pink: #d44e7d;
+  --brand_pink_thin: #2f1a22;
+  --brand_blue: #0087bd;
+  --brand_blue_thin: #0b202a;
+
+  --brand_pink_hover: #dc6d94;
+  --brand_pink_active: #dc6d94;
+  --brand_pink_disabled: #76304b;
+  --brand_blue_hover: #2c9cc8;
+  --brand_blue_active: #2c9cc8;
+  --brand_blue_disabled: #064a69;
+
+  --text_link: #58b1d4;
+
+  --bpx-fn-color: #0087bd;
+  --bpx-primary-color: #0087bd;
+  --bpx-fn-hover-color: #2c9cc8;
+  --bpx-toast-fn-color: #0087bd;
+  --bpx-toast-fn-hover-color: #2c9cc8;
+
+  --bpx-dmsend-main-bg: var(--Ga0);
+  --bpx-dmsend-input-bg: var(--Ga1_s);
+  --bpx-dmsend-info-font: var(--Ga7);
+  --bpx-dmsend-switch-icon: var(--Ga7);
+  --bpx-dmsend-border: var(--Ga2);
+  --bpx-dmsend-input-font: var(--Ga10);
+}
+
 // #region Bilibili original css variables
 :root.bewly-design {
   --Ga0: #f6f7f8;

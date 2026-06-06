@@ -693,3 +693,52 @@
   }
   //  #endregion
 }
+
+.bewly-design.videoPage.bewly-video-dark-only {
+  .up-detail .up-detail-top .up-name.is_vip,
+  .up-detail .up-detail-top .up-name.small-vip,
+  .up-detail .up-detail-top .up-name.vip,
+  .up-detail .up-detail-top .up-name[style*="color: rgb(251, 114, 153)"],
+  .up-detail .up-detail-top .up-name[style*="color:#FB7299;"] {
+    color: var(--brand_pink) !important;
+  }
+
+  .up-detail .up-detail-top .up-name.is_vip:hover,
+  .up-detail .up-detail-top .up-name.small-vip:hover,
+  .up-detail .up-detail-top .up-name.vip:hover,
+  .up-detail .up-detail-top .up-name[style*="color: rgb(251, 114, 153)"]:hover,
+  .up-detail .up-detail-top .up-name[style*="color:#FB7299;"]:hover {
+    color: var(--brand_pink_hover) !important;
+  }
+
+  .upinfo-btn-panel .not-follow-charge-btn,
+  .upinfo-btn-panel .new-charge-btn {
+    color: var(--brand_pink) !important;
+    border-color: var(--brand_pink) !important;
+  }
+
+  .upinfo-btn-panel .not-follow-charge-btn:hover,
+  .upinfo-btn-panel .new-charge-btn:hover {
+    color: var(--brand_pink_hover) !important;
+    border-color: var(--brand_pink_hover) !important;
+  }
+
+  .upinfo-btn-panel .new-charge-btn .charge-btn-icon img {
+    filter: none !important;
+  }
+
+  &.dark {
+    .bpx-player-container[data-revision="1"]
+      .bpx-player-sending-bar
+      .bpx-player-video-inputbar
+      .bpx-player-dm-btn-send.bui-disabled
+      .bui-button-blue,
+    .bpx-player-container[data-revision="2"]
+      .bpx-player-sending-bar
+      .bpx-player-video-inputbar
+      .bpx-player-dm-btn-send.bui-disabled
+      .bui-button-blue {
+      background-color: var(--Ga3);
+    }
+  }
+}

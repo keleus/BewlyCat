@@ -261,6 +261,8 @@ settings:
     light: 淺色
     dark: 深色
     auto: 自動
+  video_page_dark_mode: 淨係影片播放頁用深色模式
+  video_page_dark_mode_desc: 保持全站色系設定唔變，淨係喺影片播放頁啟用 BewlyCat 深色樣式。
   theme_color: 主題色
   gradient_theme_color_background: 使用漸層主題色作爲深色模式嘅背景
   wallpaper_mode: 背景圖片模式

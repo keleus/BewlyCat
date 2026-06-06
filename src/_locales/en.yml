@@ -307,6 +307,8 @@ settings:
     light: Light
     dark: Dark
     auto: Auto
+  video_page_dark_mode: Video page dark mode only
+  video_page_dark_mode_desc: Keep the global theme unchanged and enable BewlyCat dark styles only on video playback pages.
   theme_color: Theme color
   dark_mode_base_color: Dark mode base color
   gradient_theme_color_background: Use a gradient theme color as the background in dark mode

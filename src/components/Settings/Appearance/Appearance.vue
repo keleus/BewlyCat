@@ -120,6 +120,13 @@ function changeWallpaper(url: string) {
       <SettingsItem :title="$t('settings.theme')" right-width="auto">
         <Select v-model="settings.theme" w="160px" :options="themeOptions" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.video_page_dark_mode')" right-width="auto">
+        <template #desc>
+          {{ $t('settings.video_page_dark_mode_desc') }}
+        </template>
+
+        <Radio v-model="settings.videoPageDarkMode" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.theme_color')" right-width="auto">
         <div class="theme-color-options" flex="~ gap-2 wrap" justify-end>
           <div

@@ -197,6 +197,24 @@ export function isVideoOrBangumiPage(url: string = location.href): boolean {
 }
 
 /**
+ * Check if the current page is a playback page that should use video-page-only dark mode.
+ * This intentionally excludes festival pages because they already use selective dark handling.
+ *
+ * @param url the url to check
+ * @returns true if the current page is a video playback page
+ */
+export function isVideoPlaybackPage(url: string = location.href): boolean {
+  return (
+    // normal video page and playlist video page
+    /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(url)
+    // anime, movie, and course playback pages
+    || /https?:\/\/(?:www\.)?bilibili\.com\/(?:bangumi|cheese)\/play\/.*/.test(url)
+    // media playlist playback pages
+    || /https?:\/\/(?:www\.)?bilibili\.com\/medialist\/play\/.*/.test(url)
+  )
+}
+
+/**
  * Check if the current page is the notifications page
  * @param url the url to check
  * @returns true if the current page is the notifications page

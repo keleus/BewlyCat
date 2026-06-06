@@ -3,14 +3,33 @@ import { usePreferredDark } from '@vueuse/core'
 import { DARK_MODE_BASE_COLOR_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { runWhenIdle } from '~/utils/lazyLoad'
-import { setCookie } from '~/utils/main'
+import { isVideoPlaybackPage, setCookie } from '~/utils/main'
 import { executeTimes } from '~/utils/timer'
+
+const currentUrl = ref(typeof location === 'undefined' ? '' : location.href)
+let isRouteWatcherStarted = false
 
 /**
  * Check if current page is festival page
  */
 function isFestivalPage(): boolean {
   return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
+}
+
+function startRouteWatcher() {
+  if (isRouteWatcherStarted || typeof window === 'undefined')
+    return
+
+  isRouteWatcherStarted = true
+
+  const updateCurrentUrl = () => {
+    if (currentUrl.value !== location.href)
+      currentUrl.value = location.href
+  }
+
+  window.addEventListener('popstate', updateCurrentUrl)
+  window.addEventListener('hashchange', updateCurrentUrl)
+  window.setInterval(updateCurrentUrl, 800)
 }
 
 /**
@@ -29,6 +48,8 @@ function setDarkModeBaseColor(color: string) {
 }
 
 export function useDark() {
+  startRouteWatcher()
+
   const isPreferredDark = usePreferredDark()
   const currentSystemColorScheme = computed(() => isPreferredDark.value ? 'dark' : 'light')
   const currentAppColorScheme = computed((): 'dark' | 'light' => {
@@ -37,13 +58,16 @@ export function useDark() {
     else
       return currentSystemColorScheme.value
   })
-  const isDark = computed(() => currentAppColorScheme.value === 'dark')
+  const isVideoPageDark = computed(() => {
+    return settings.value.videoPageDarkMode && isVideoPlaybackPage(currentUrl.value)
+  })
+  const isDark = computed(() => currentAppColorScheme.value === 'dark' || isVideoPageDark.value)
   let themeChangeTimer: NodeJS.Timeout | null = null
 
   // Watch for changes in the 'settings.value.theme' variable and add the 'dark' class to the 'mainApp' element
   // to prevent some Unocss dark-specific styles from failing to take effect
   watch(
-    () => [settings.value.theme, isPreferredDark.value],
+    () => [settings.value.theme, settings.value.videoPageDarkMode, isPreferredDark.value, currentUrl.value],
     () => {
       setAppAppearance()
     },
