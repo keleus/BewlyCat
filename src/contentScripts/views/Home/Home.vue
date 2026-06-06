@@ -192,6 +192,7 @@ function toggleTabContentLoading(loading: boolean) {
           items-center relative
           w-full z-10 mb-4
           h-500px
+          pointer-events-none
         >
           <Logo
             v-if="settings.searchPageShowLogo" :size="180" :color="settings.searchPageLogoColor === 'white' ? 'white' : 'var(--bew-theme-color)'"
@@ -199,6 +200,7 @@ function toggleTabContentLoading(loading: boolean) {
             m="t--70px b-12" z-1
           />
           <SearchBar
+            pointer-events-auto
             :darken-on-focus="settings.searchPageDarkenOnSearchFocus"
             :blurred-on-focus="settings.searchPageBlurredOnSearchFocus"
             :focused-character="settings.searchPageSearchBarFocusCharacter"
