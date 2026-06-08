@@ -227,6 +227,15 @@ function handleToggleHomeTab(tab: any) {
         </div>
       </SettingsItem>
 
+      <SettingsItem
+        v-if="settings.recommendationMode === 'webNoCookie'"
+        :title="$t('settings.remember_no_cookie_recommendation_state')"
+        :desc="$t('settings.remember_no_cookie_recommendation_state_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.rememberNoCookieRecommendationState" />
+      </SettingsItem>
+
       <SettingsItem v-if="settings.recommendationMode === 'app'" :title="$t('settings.authorize_app')" right-width="auto">
         <template #desc>
           {{ $t('settings.authorize_app_desc') }}

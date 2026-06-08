@@ -390,6 +390,8 @@ settings:
   recommendation_mode_desc: |
     Web：普通网页端推荐模式。无 Cookie：请求首页推荐时不携带 Cookie。App：移动端推荐模式，需先授权 access key。
   recommendation_mode_web_no_cookie: 无 Cookie
+  remember_no_cookie_recommendation_state: 减少无 Cookie 推荐重复
+  remember_no_cookie_recommendation_state_desc: 刷新页面后延续推荐刷新进度，并向推荐接口带上最近曝光记录，以减少重复推荐。仅无 Cookie 模式生效。
   auto_switch_recommendation_mode: 自动切换推荐模式
   auto_switch_recommendation_mode_desc: |
     当 App 推荐失败时自动切换至 Web 模式。
