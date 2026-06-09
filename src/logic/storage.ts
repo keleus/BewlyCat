@@ -29,6 +29,17 @@ export const defaultAppAuthTokens: AppAuthTokens = {
 
 export const appAuthTokens = useStorageLocal<AppAuthTokens>('appAuthTokens', defaultAppAuthTokens, { mergeDefaults: true, writeDefaults: false })
 
+export interface NoCookieForYouRecommendationState {
+  showlistGroups: string[]
+  nextFreshIdx: number
+}
+
+export const noCookieForYouRecommendationState = useStorageLocal<NoCookieForYouRecommendationState>(
+  'noCookieForYouRecommendationState',
+  { showlistGroups: [], nextFreshIdx: 1 },
+  { mergeDefaults: true, writeDefaults: false },
+)
+
 const legacyAccessKey = useStorageLocal('accessKey', '')
 
 watch(
@@ -317,6 +328,7 @@ export interface Settings {
   useSearchPageModeOnHomePage: boolean
   searchPageModeWallpaperFixed: boolean
   preserveForYouState: boolean
+  rememberNoCookieRecommendationState: boolean
 
   adaptToOtherPageStyles: boolean
   showTopBar: boolean
@@ -533,6 +545,7 @@ export const originalSettings: Settings = {
   useSearchPageModeOnHomePage: false,
   searchPageModeWallpaperFixed: false,
   preserveForYouState: false,
+  rememberNoCookieRecommendationState: true,
 
   adaptToOtherPageStyles: true,
   showTopBar: true,

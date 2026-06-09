@@ -7,7 +7,7 @@ import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { FilterType, useFilter } from '~/composables/useFilter'
 import { LanguageType } from '~/enums/appEnums'
 import type { GridLayoutType } from '~/logic'
-import { appAuthTokens, settings } from '~/logic'
+import { appAuthTokens, noCookieForYouRecommendationState, settings } from '~/logic'
 import type { AppForYouResult, Item as AppVideoItem } from '~/models/video/appForYou'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
 import type { forYouResult, Item as VideoItem } from '~/models/video/forYou'
@@ -80,19 +80,21 @@ const appVideoList = ref<AppVideoElement[]>([])
 
 const isWebRecommendationMode = computed(() => settings.value.recommendationMode !== 'app')
 let requestVersion = 0
+type WebRecommendRequestType = 'refresh' | 'loadMore'
 
 // 当前使用的视频列表（根据推荐模式）
 const currentVideoList = computed(() =>
   isWebRecommendationMode.value ? videoList.value : appVideoList.value,
 )
 
-const isLoading = ref<boolean>(false)
+const isLoading = ref<boolean>(true)
 const requestFailed = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
 const refreshIdx = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
 const activatedAppVideo = ref<AppVideoItem | null>()
 const showDislikeDialog = ref<boolean>(false)
+const hasInitializedData = ref<boolean>(false)
 
 // 页面可见性状态
 const isPageVisible = ref<boolean>(!document.hidden)
@@ -115,13 +117,24 @@ const hasBackState = ref<boolean>(false)
 const hasForwardState = ref<boolean>(false)
 
 const PAGE_SIZE = 30
+const WEB_REFRESH_PAGE_SIZE = 10
+const WEB_LOAD_MORE_PAGE_SIZE = 12
+const NO_COOKIE_RECOMMEND_STATE_MAX_SHOWLIST_GROUPS = 3
+const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
 const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，初始化时为1
 const scrollLoadStartLength = ref<number>(0) // 滚动加载开始时的列表长度
 const consecutiveEmptyLoads = ref<number>(0) // 连续空加载次数，用于防止无限递归（Web模式）
 const appConsecutiveEmptyLoads = ref<number>(0) // APP模式连续空加载次数
-const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
 // 递归加载锁，防止双重触发
 const isRecursiveLoading = ref<boolean>(false)
+const webFetchRow = ref<number>(1)
+const webShowlistGroups = ref<string[]>([])
+
+const cachedWebFetchRow = ref<number>(1)
+const cachedWebShowlistGroups = ref<string[]>([])
+
+const forwardWebFetchRow = ref<number>(1)
+const forwardWebShowlistGroups = ref<string[]>([])
 
 // 监听页面可见性变化
 function handleVisibilityChange() {
@@ -144,6 +157,9 @@ onMounted(() => {
     appVideoList.value = [...savedState.appVideoList]
     refreshIdx.value = savedState.refreshIdx
     noMoreContent.value = savedState.noMoreContent
+    rebuildShowlistGroupsFromList(videoList.value)
+    hasInitializedData.value = true
+    isLoading.value = false
 
     // 确保撤销按钮不显示（因为这是状态恢复，不是刷新操作）
     hasBackState.value = false
@@ -317,38 +333,96 @@ function getWebVideoKey(item: VideoItem): string {
   return `${item.id}`
 }
 
-function buildLastShowlist(items: VideoItem[]): string {
+function getWebShowlistEntry(item: VideoItem): string | undefined {
+  const goto = `${item.goto || ''}`.trim()
+  if (!goto)
+    return undefined
+
+  const id = item.id || 'undefined'
+  if (goto === 'av')
+    return `av_n_${id}`
+  if (goto === 'live')
+    return `live_n_${id}`
+  if (goto === 'ad')
+    return `ad_${id}`
+
+  return `${goto}_${id}`
+}
+
+function buildLastShowlistGroup(items: VideoItem[]): string {
   const parts: string[] = []
-  const seen = new Set<number>()
+  const seen = new Set<string>()
 
   items.forEach((item) => {
-    if (!item?.id || item.goto !== 'av' || seen.has(item.id))
+    const entry = getWebShowlistEntry(item)
+    if (!entry || seen.has(entry))
       return
 
-    seen.add(item.id)
-    const followedFlag = item.is_followed ? 'n_' : ''
-    parts.push(`av_${followedFlag}${item.id}`)
+    seen.add(entry)
+    parts.push(entry)
   })
 
-  return parts.join('_')
+  return parts.join(',')
 }
 
-function getLastShowlistFromList(list: VideoElement[], limit: number): string {
+function getLastShowlistFromGroups(): string {
+  return webShowlistGroups.value.filter(Boolean).join(';')
+}
+
+function getNoCookieStoredLastShowlist(): string {
+  if (!settings.value.rememberNoCookieRecommendationState)
+    return ''
+
+  return noCookieForYouRecommendationState.value.showlistGroups
+    .filter(Boolean)
+    .slice(-NO_COOKIE_RECOMMEND_STATE_MAX_SHOWLIST_GROUPS)
+    .join(';')
+}
+
+function getNoCookieNextFreshIdx(): number {
+  if (!settings.value.rememberNoCookieRecommendationState)
+    return refreshIdx.value
+
+  const nextFreshIdx = noCookieForYouRecommendationState.value.nextFreshIdx
+  return Number.isFinite(nextFreshIdx) && nextFreshIdx > 0 ? Math.floor(nextFreshIdx) : 1
+}
+
+function saveNoCookieRecommendationState(group: string, recommendationMode: string, nextFreshIdx?: number) {
+  if (recommendationMode !== 'webNoCookie' || !settings.value.rememberNoCookieRecommendationState)
+    return
+  if (!group && nextFreshIdx === undefined)
+    return
+
+  const groups = noCookieForYouRecommendationState.value.showlistGroups
+    .filter(storedGroup => storedGroup && storedGroup !== group)
+
+  if (group)
+    groups.push(group)
+
+  noCookieForYouRecommendationState.value = {
+    showlistGroups: groups.slice(-NO_COOKIE_RECOMMEND_STATE_MAX_SHOWLIST_GROUPS),
+    nextFreshIdx: nextFreshIdx ?? noCookieForYouRecommendationState.value.nextFreshIdx,
+  }
+}
+
+function rebuildShowlistGroupsFromList(list: VideoElement[]) {
   const items = list
     .map(video => video.item)
-    .filter((item): item is VideoItem => !!item && !!item.id)
-
-  return buildLastShowlist(items.slice(-limit))
+    .filter((item): item is VideoItem => !!item)
+  const group = buildLastShowlistGroup(items)
+  webShowlistGroups.value = group ? [group] : []
 }
 
-function getWebFetchRow(list: VideoElement[]): number {
-  return list.reduce((count, video) => (video.item ? count + 1 : count), 0)
+function resetWebRecommendState() {
+  refreshIdx.value = 1
+  webFetchRow.value = 1
+  webShowlistGroups.value = []
 }
 
 watch(() => settings.value.recommendationMode, () => {
   requestVersion++
   noMoreContent.value = false
-  refreshIdx.value = 1
+  resetWebRecommendState()
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
 
@@ -358,6 +432,10 @@ watch(() => settings.value.recommendationMode, () => {
   cachedVideoList.value = []
   forwardAppVideoList.value = []
   cachedAppVideoList.value = []
+  cachedWebFetchRow.value = 1
+  cachedWebShowlistGroups.value = []
+  forwardWebFetchRow.value = 1
+  forwardWebShowlistGroups.value = []
 
   // 重置前进后退状态
   hasBackState.value = false
@@ -372,6 +450,10 @@ watch(() => settings.value.recommendationMode, () => {
 
 async function initData() {
   requestVersion++
+  hasInitializedData.value = false
+  if (isWebRecommendationMode.value)
+    webFetchRow.value = 1
+
   // 直接清空列表，骨架屏由 VideoCardGrid 自动处理
   videoList.value = []
   appVideoList.value = []
@@ -381,10 +463,15 @@ async function initData() {
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
   requestFailed.value = false // 重置请求失败状态
   needToLoginFirst.value = false
-  await getData()
+  try {
+    await getData('refresh')
+  }
+  finally {
+    hasInitializedData.value = true
+  }
 }
 
-async function getData() {
+async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
   const version = requestVersion
   emit('beforeLoading')
   isLoading.value = true
@@ -392,7 +479,7 @@ async function getData() {
 
   try {
     if (isWebRecommendationMode.value) {
-      await getRecommendVideos(version)
+      await getRecommendVideos(version, webRequestType)
     }
     else {
       try {
@@ -432,7 +519,7 @@ async function getData() {
 // 供 VideoCardGrid 预加载调用的函数
 function handleLoadMore() {
   // 如果正在递归加载中，跳过外部触发的加载请求
-  if (isLoading.value || noMoreContent.value || isRecursiveLoading.value)
+  if (!hasInitializedData.value || isLoading.value || noMoreContent.value || isRecursiveLoading.value)
     return
 
   // 滚动加载时，APP模式记录开始长度，触发持续加载
@@ -441,7 +528,7 @@ function handleLoadMore() {
     scrollLoadStartLength.value = appVideoList.value.length
   }
 
-  getData()
+  getData('loadMore')
 }
 
 function initPageAction() {
@@ -463,10 +550,14 @@ function initPageAction() {
       // 总是保存刷新前的当前状态到后退缓存
       cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
       cachedRefreshIdx.value = refreshIdx.value
+      cachedWebFetchRow.value = webFetchRow.value
+      cachedWebShowlistGroups.value = [...webShowlistGroups.value]
       hasBackState.value = true
 
       // 清空前进状态（因为刷新会产生新的分支）
       forwardVideoList.value = []
+      forwardWebFetchRow.value = 1
+      forwardWebShowlistGroups.value = []
       hasForwardState.value = false
 
       // 显示撤销按钮
@@ -499,11 +590,15 @@ function initPageAction() {
         // 保存当前数据到前进状态
         forwardVideoList.value = JSON.parse(JSON.stringify(videoList.value))
         forwardRefreshIdx.value = refreshIdx.value
+        forwardWebFetchRow.value = webFetchRow.value
+        forwardWebShowlistGroups.value = [...webShowlistGroups.value]
         hasForwardState.value = true
 
         // 恢复缓存的数据
         videoList.value = JSON.parse(JSON.stringify(cachedVideoList.value))
         refreshIdx.value = cachedRefreshIdx.value
+        webFetchRow.value = cachedWebFetchRow.value
+        webShowlistGroups.value = [...cachedWebShowlistGroups.value]
 
         hasBackState.value = false
         undoForwardState.value = UndoForwardState.Hidden
@@ -539,11 +634,15 @@ function initPageAction() {
         // 保存当前数据到后退状态
         cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
         cachedRefreshIdx.value = refreshIdx.value
+        cachedWebFetchRow.value = webFetchRow.value
+        cachedWebShowlistGroups.value = [...webShowlistGroups.value]
         hasBackState.value = true
 
         // 恢复前进状态的数据
         videoList.value = JSON.parse(JSON.stringify(forwardVideoList.value))
         refreshIdx.value = forwardRefreshIdx.value
+        webFetchRow.value = forwardWebFetchRow.value
+        webShowlistGroups.value = [...forwardWebShowlistGroups.value]
 
         // 标记为已经前进
         hasForwardState.value = false
@@ -574,7 +673,7 @@ function initPageAction() {
   }
 }
 
-async function getRecommendVideos(version = requestVersion) {
+async function getRecommendVideos(version = requestVersion, requestType: WebRecommendRequestType = 'refresh') {
   const recommendationMode = settings.value.recommendationMode
   let canFillViewport = false
 
@@ -589,19 +688,24 @@ async function getRecommendVideos(version = requestVersion) {
     const beforeLoadCount = videoList.value.filter(video => video.item).length
 
     // 使用当前的 refreshIdx，只在成功时才递增
-    const currentRefreshIdx = refreshIdx.value
-    const fetchRow = getWebFetchRow(videoList.value)
-    const lastShowlist = getLastShowlistFromList(videoList.value, PAGE_SIZE)
+    const isLoadMoreRequest = requestType === 'loadMore'
+    const shouldUseNoCookieStoredFreshIdx = !isLoadMoreRequest && recommendationMode === 'webNoCookie' && settings.value.rememberNoCookieRecommendationState
+    const currentRefreshIdx = shouldUseNoCookieStoredFreshIdx ? getNoCookieNextFreshIdx() : refreshIdx.value
+    const pageSize = isLoadMoreRequest ? WEB_LOAD_MORE_PAGE_SIZE : WEB_REFRESH_PAGE_SIZE
+    const fetchRow = isLoadMoreRequest ? webFetchRow.value + 3 : 1
+    const currentLastShowlist = getLastShowlistFromGroups()
+    const lastShowlist = currentLastShowlist || (!isLoadMoreRequest && recommendationMode === 'webNoCookie' ? getNoCookieStoredLastShowlist() : '')
 
     const getWebRecommendVideos = recommendationMode === 'webNoCookie'
       ? api.video.getNoCookieRecommendVideos
       : api.video.getRecommendVideos
 
     const response: forYouResult = await getWebRecommendVideos({
+      fresh_type: isLoadMoreRequest ? 4 : 5,
       fresh_idx: currentRefreshIdx,
       fresh_idx_1h: currentRefreshIdx,
-      ps: PAGE_SIZE,
-      fetch_row: fetchRow > 0 ? fetchRow : undefined,
+      ps: pageSize,
+      fetch_row: fetchRow,
       last_showlist: lastShowlist || undefined,
     })
 
@@ -623,7 +727,8 @@ async function getRecommendVideos(version = requestVersion) {
 
     if (response.code === 0) {
       // 只在成功时递增 refreshIdx
-      refreshIdx.value++
+      refreshIdx.value = currentRefreshIdx + 1
+      webFetchRow.value = fetchRow
 
       const resData = [] as VideoItem[]
       const existingIds = new Set<string>()
@@ -652,6 +757,10 @@ async function getRecommendVideos(version = requestVersion) {
         existingIds.add(itemKey)
         resData.push(item)
       })
+
+      const showlistGroup = buildLastShowlistGroup(resData)
+      if (showlistGroup)
+        webShowlistGroups.value.push(showlistGroup)
 
       // when videoList has length property, it means it is the first time to load
       if (!beforeLoadCount) {
@@ -692,6 +801,12 @@ async function getRecommendVideos(version = requestVersion) {
         })
       }
 
+      saveNoCookieRecommendationState(
+        showlistGroup,
+        recommendationMode,
+        shouldUseNoCookieStoredFreshIdx ? currentRefreshIdx + 1 : undefined,
+      )
+
       // 检查是否成功添加了新内容
       const afterLoadCount = videoList.value.filter(video => video.item).length
       if (afterLoadCount > beforeLoadCount) {
@@ -728,7 +843,7 @@ async function getRecommendVideos(version = requestVersion) {
             // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
             isRecursiveLoading.value = true
             try {
-              await getRecommendVideos(version)
+              await getRecommendVideos(version, 'loadMore')
             }
             finally {
               isRecursiveLoading.value = false

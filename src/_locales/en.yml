@@ -368,6 +368,8 @@ settings:
     recommendations without cookies. App: mobile recommendation mode, requires
     an access key first.
   recommendation_mode_web_no_cookie: No Cookie
+  remember_no_cookie_recommendation_state: Reduce No Cookie recommendation repeats
+  remember_no_cookie_recommendation_state_desc: After reloading the page, continue the recommendation refresh progress and send recent exposure records with recommendation requests to reduce repeats. Only applies in No Cookie mode.
   auto_switch_recommendation_mode: Auto switch recommendation mode
   auto_switch_recommendation_mode_desc: >
     Automatically switch from App mode to Web mode when App recommendation fails.

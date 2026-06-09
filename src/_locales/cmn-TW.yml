@@ -329,6 +329,8 @@ settings:
   recommendation_mode_desc: |
     Web：普通網頁端推薦模式。無 Cookie：請求首頁推薦時不攜帶 Cookie。App：手機端推薦模式，需先授權 access key。
   recommendation_mode_web_no_cookie: 無 Cookie
+  remember_no_cookie_recommendation_state: 減少無 Cookie 推薦重複
+  remember_no_cookie_recommendation_state_desc: 重新整理頁面後延續推薦刷新進度，並向推薦接口帶上最近曝光記錄，以減少重複推薦。僅無 Cookie 模式生效。
   auto_switch_recommendation_mode: 自動切換推薦模式
   auto_switch_recommendation_mode_desc: |
     當手機端推薦失敗時自動切換至網頁模式。
