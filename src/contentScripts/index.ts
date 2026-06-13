@@ -5,7 +5,7 @@ import { createApp } from 'vue'
 
 import { useDark } from '~/composables/useDark'
 import { BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
-import { localSettings, settings } from '~/logic'
+import { localSettings, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
@@ -683,6 +683,10 @@ else {
     }, '*')
   }
 
+  void settingsReady.then(() => {
+    sendSettingsToPage(settings.value)
+  })
+
   // 监听设置变化
   watch(settings, (newSettings, oldSettings) => {
     sendSettingsToPage(newSettings)
@@ -751,7 +755,9 @@ else {
 
     if (type === 'BEWLY_REQUEST_SETTINGS') {
     // 发送当前设置到网页环境
-      sendSettingsToPage(settings.value)
+      void settingsReady.then(() => {
+        sendSettingsToPage(settings.value)
+      })
     }
   })
 

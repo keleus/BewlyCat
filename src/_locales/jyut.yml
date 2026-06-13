@@ -305,6 +305,12 @@ settings:
   show_hot_search_in_search_page_desc: 喺搵嘢頁面顯示熱搜排行榜
   show_search_recommendation: 顯示搜尋推介
   show_search_recommendation_desc: 喺搜尋框度顯示推介嘅搜尋詞做佔位符,空白輸入時撳回車會搜尋呢個推介詞
+  use_plugin_search_results_page: 使用插件搜尋結果頁
+  use_plugin_search_results_page_desc: 開啟後，搜尋會使用插件內置嘅搜尋結果頁，支援分類篩選等功能
+  depersonalize_search_results: 去個人化搜尋
+  depersonalize_search_results_desc: 開啟後，搜尋結果請求唔會帶登入 Cookie。
+  search_results_pagination_mode: 搜尋結果分頁模式
+  search_results_pagination_mode_desc: 揀搜尋結果顯示方式：捲動自動加載或者翻頁
   individually_set_search_page_wallpaper: 單獨設定搵嘢頁背景
   recommendation_mode: 推介模式
   recommendation_mode_desc: |

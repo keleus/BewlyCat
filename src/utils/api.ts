@@ -1,5 +1,7 @@
 import type { API_COLLECTION } from '~/background/messageListeners/api'
+import { settings } from '~/logic'
 import { sendMessage } from '~/utils/messaging'
+import { isPageNoCookieSearchMethod, requestPageNoCookieSearch } from '~/utils/pageNoCookieSearch'
 
 type CamelCase<S extends string> = S extends `${infer P1}_${infer P2}${infer P3}`
   ? `${Lowercase<P1>}${Uppercase<P2>}${CamelCase<P3>}`
@@ -32,10 +34,21 @@ export class APIClient {
           const api = new Proxy({}, {
             get(_, p) {
               return (options?: object) => {
-                return sendMessage(p as string, {
+                if (
+                  namespace === 'search'
+                  && typeof p === 'string'
+                  && settings.value.depersonalizeSearchResults
+                  && isPageNoCookieSearchMethod(p)
+                ) {
+                  return requestPageNoCookieSearch(p, options as Record<string, unknown> | undefined)
+                }
+
+                const message: Record<string, any> = {
                   contentScriptQuery: p as string,
                   ...options,
-                })
+                }
+
+                return sendMessage(p as string, message)
               }
             },
           })
