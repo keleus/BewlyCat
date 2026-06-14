@@ -30,6 +30,7 @@ interface BewlyWidescreenState {
   metadataListener?: () => void
   resizeSyncTimers?: Array<ReturnType<typeof setTimeout>>
   sidebarInteractionCleanup?: () => void
+  sidebarToggleAutoHideCleanup?: () => void
 }
 
 const ROOT_ID = 'bewly-widescreen-root'
@@ -43,6 +44,7 @@ const READY_RETRY_INTERVAL = 500
 const READY_RETRY_MAX = 30
 const SIDEBAR_REFRESH_DELAY = 800
 const SIDEBAR_REFRESH_MAX = 8
+const SIDEBAR_TOGGLE_IDLE_DELAY = 1000
 const BILIBILI_ACTION_ANIMATION_HUE = 196
 
 let state: BewlyWidescreenState | null = null
@@ -621,7 +623,8 @@ function injectLayoutStyle() {
       transition: opacity 160ms ease, background-color 160ms ease, border-color 160ms ease;
     }
 
-    #${ROOT_ID}[data-sidebar-toggle-visible="true"] .bewly-widescreen-player-slot:hover .bewly-widescreen-sidebar-toggle,
+    #${ROOT_ID}[data-sidebar-toggle-visible="true"][data-pointer-active="true"] .bewly-widescreen-player-slot:hover .bewly-widescreen-sidebar-toggle,
+    #${ROOT_ID}[data-sidebar-toggle-visible="true"] .bewly-widescreen-sidebar-toggle:hover,
     #${ROOT_ID}[data-sidebar-toggle-visible="true"] .bewly-widescreen-sidebar-toggle:focus-visible {
       opacity: 1;
       pointer-events: auto;
@@ -1305,6 +1308,61 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   }
 }
 
+function setupSidebarToggleAutoHide(currentState: BewlyWidescreenState) {
+  const { playerSlot, sidebarToggleButton, root } = currentState
+  let idleTimer: ReturnType<typeof setTimeout> | undefined
+  let hoveringToggle = false
+
+  function clearIdleTimer() {
+    if (idleTimer) {
+      clearTimeout(idleTimer)
+      idleTimer = undefined
+    }
+  }
+
+  function hideToggle() {
+    root.dataset.pointerActive = 'false'
+  }
+
+  function showToggle() {
+    root.dataset.pointerActive = 'true'
+    clearIdleTimer()
+    // 鼠标停在按钮上时保持显示，避免误隐藏
+    if (!hoveringToggle)
+      idleTimer = setTimeout(hideToggle, SIDEBAR_TOGGLE_IDLE_DELAY)
+  }
+
+  function onPointerLeave() {
+    clearIdleTimer()
+    hideToggle()
+  }
+
+  function onToggleEnter() {
+    hoveringToggle = true
+    root.dataset.pointerActive = 'true'
+    clearIdleTimer()
+  }
+
+  function onToggleLeave() {
+    hoveringToggle = false
+    showToggle()
+  }
+
+  playerSlot.addEventListener('pointermove', showToggle)
+  playerSlot.addEventListener('pointerleave', onPointerLeave)
+  sidebarToggleButton.addEventListener('pointerenter', onToggleEnter)
+  sidebarToggleButton.addEventListener('pointerleave', onToggleLeave)
+
+  currentState.sidebarToggleAutoHideCleanup = () => {
+    clearIdleTimer()
+    playerSlot.removeEventListener('pointermove', showToggle)
+    playerSlot.removeEventListener('pointerleave', onPointerLeave)
+    sidebarToggleButton.removeEventListener('pointerenter', onToggleEnter)
+    sidebarToggleButton.removeEventListener('pointerleave', onToggleLeave)
+    delete root.dataset.pointerActive
+  }
+}
+
 function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
   currentState.mutationObserver = new MutationObserver(() => {
     if (!state || state !== currentState)
@@ -1411,6 +1469,7 @@ function shortenCommentTimes(panel: HTMLElement) {
 
 function cleanupState(currentState: BewlyWidescreenState) {
   currentState.sidebarInteractionCleanup?.()
+  currentState.sidebarToggleAutoHideCleanup?.()
   currentState.metadataListener?.()
   currentState.resizeObserver?.disconnect()
   currentState.mutationObserver?.disconnect()
@@ -1473,6 +1532,7 @@ function applyNow() {
   setupAspectObservers(nextState)
   setupDomRefreshObserver(nextState)
   setupSidebarInteractionTracking(nextState)
+  setupSidebarToggleAutoHide(nextState)
   setTimeout(() => window.dispatchEvent(new Event('resize')), 0)
 
   return true
