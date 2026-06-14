@@ -280,6 +280,7 @@ export interface Settings {
 
   // 搜索结果页设置
   usePluginSearchResultsPage: boolean
+  depersonalizeSearchResults: boolean
   searchResultsPaginationMode: 'scroll' | 'pagination' // 搜索结果分页模式：滚动加载或翻页
 
   recommendationMode: RecommendationMode
@@ -500,6 +501,7 @@ export const originalSettings: Settings = {
 
   // 搜索结果页设置
   usePluginSearchResultsPage: true,
+  depersonalizeSearchResults: false,
   searchResultsPaginationMode: 'scroll', // 默认使用滚动加载
 
   recommendationMode: 'web',
@@ -618,7 +620,16 @@ export const originalSettings: Settings = {
 // 本地存储配置（不会同步到云端）
 export const localSettings = useStorageLocal('localSettings', originalLocalSettings, { mergeDefaults: true, writeDefaults: false })
 
-export const settings = useStorageLocal('settings', originalSettings, { mergeDefaults: true, writeDefaults: false })
+let resolveSettingsReady: (value: Settings) => void = () => {}
+export const settingsReady = new Promise<Settings>((resolve) => {
+  resolveSettingsReady = resolve
+})
+
+export const settings = useStorageLocal('settings', originalSettings, {
+  mergeDefaults: true,
+  writeDefaults: false,
+  onReady: value => resolveSettingsReady(value),
+})
 
 watch(
   () => settings.value,

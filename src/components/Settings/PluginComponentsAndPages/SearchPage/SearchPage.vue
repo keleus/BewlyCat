@@ -121,6 +121,13 @@ function changeSearchBarFocusCharacter(url: string) {
         <Radio v-model="settings.usePluginSearchResultsPage" />
       </SettingsItem>
 
+      <SettingsItem :title="$t('settings.depersonalize_search_results')" right-width="auto">
+        <template #desc>
+          <span>{{ $t('settings.depersonalize_search_results_desc') }}</span>
+        </template>
+        <Radio v-model="settings.depersonalizeSearchResults" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.search_results_pagination_mode')" right-width="auto">
         <template #desc>
           <span>{{ $t('settings.search_results_pagination_mode_desc') }}</span>

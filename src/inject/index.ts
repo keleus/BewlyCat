@@ -1,10 +1,15 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
+import { PAGE_NO_COOKIE_SEARCH_REQUEST, PAGE_NO_COOKIE_SEARCH_RESPONSE } from '~/constants/api'
 import type { Settings } from '~/logic/storage'
 import { isElectron } from '~/utils/main'
 
 // 存储当前设置状态
 let currentSettings: Settings | null = null
 let settingsReady = false
+let resolveSettingsReady: (() => void) | null = null
+const settingsReadyPromise = new Promise<void>((resolve) => {
+  resolveSettingsReady = resolve
+})
 
 const isElectronEnv = isElectron()
 if (isElectronEnv) {
@@ -397,6 +402,8 @@ else {
         const isFirstTime = !settingsReady
         currentSettings = data
         settingsReady = true
+        resolveSettingsReady?.()
+        resolveSettingsReady = null
 
         // 只在首次启用时输出日志
         if (isFirstTime && data.enableVolumeNormalization) {
@@ -410,6 +417,129 @@ else {
   window.postMessage({
     type: 'BEWLY_REQUEST_SETTINGS',
   }, '*')
+
+  const SEARCH_RESULT_API_PATHS = [
+    '/x/web-interface/wbi/search/all',
+    '/x/web-interface/wbi/search/type',
+    '/x/web-interface/search/type',
+  ]
+
+  function getFetchInputUrl(input: RequestInfo | URL): string {
+    if (typeof input === 'string')
+      return input
+    if (input instanceof URL)
+      return input.href
+    return input.url
+  }
+
+  function isSearchResultFetch(input: RequestInfo | URL): boolean {
+    if (window.location.hostname !== 'search.bilibili.com')
+      return false
+
+    try {
+      const requestUrl = new URL(getFetchInputUrl(input), window.location.href)
+      return requestUrl.hostname === 'api.bilibili.com'
+        && SEARCH_RESULT_API_PATHS.some(path => requestUrl.pathname.startsWith(path))
+    }
+    catch {
+      return false
+    }
+  }
+
+  const originalFetch = window.fetch
+
+  function isAllowedPageNoCookieSearchUrl(url: string): boolean {
+    try {
+      const requestUrl = new URL(url, window.location.href)
+      return requestUrl.hostname === 'api.bilibili.com'
+        && SEARCH_RESULT_API_PATHS.some(path => requestUrl.pathname.startsWith(path))
+    }
+    catch {
+      return false
+    }
+  }
+
+  async function handlePageNoCookieSearchRequest(data: any) {
+    const id = data?.id
+    const url = data?.url
+    if (typeof id !== 'string' || typeof url !== 'string')
+      return
+
+    try {
+      if (!isAllowedPageNoCookieSearchUrl(url))
+        throw new Error('Unsupported no-cookie search request')
+
+      const response = await originalFetch.call(window, url, {
+        method: 'GET',
+        credentials: 'omit',
+      })
+      const text = await response.text()
+      let parsedResponse: unknown
+
+      try {
+        parsedResponse = text ? JSON.parse(text) : null
+      }
+      catch {
+        throw new Error('Invalid no-cookie search response')
+      }
+
+      window.postMessage({
+        type: PAGE_NO_COOKIE_SEARCH_RESPONSE,
+        data: {
+          id,
+          ok: response.ok,
+          status: response.status,
+          response: parsedResponse,
+        },
+      }, '*')
+    }
+    catch (error) {
+      window.postMessage({
+        type: PAGE_NO_COOKIE_SEARCH_RESPONSE,
+        data: {
+          id,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      }, '*')
+    }
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window)
+      return
+
+    const { type, data } = event.data || {}
+    if (type === PAGE_NO_COOKIE_SEARCH_REQUEST)
+      void handlePageNoCookieSearchRequest(data)
+  })
+
+  function fetchWithSearchSettings(thisArg: unknown, input: RequestInfo | URL, init?: RequestInit) {
+    if (!currentSettings?.depersonalizeSearchResults)
+      return originalFetch.call(thisArg, input, init)
+
+    const newInit: RequestInit = {
+      ...init,
+      credentials: 'omit',
+    }
+
+    if (input instanceof Request)
+      return originalFetch.call(thisArg, new Request(input, newInit))
+
+    return originalFetch.call(thisArg, input, newInit)
+  }
+
+  window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    if (!isSearchResultFetch(input))
+      return originalFetch.call(this, input, init)
+
+    if (!settingsReady) {
+      return settingsReadyPromise.then(() => {
+        return fetchWithSearchSettings(this, input, init)
+      })
+    }
+
+    return fetchWithSearchSettings(this, input, init)
+  }
 
   // 页面加载完成后初始化随机播放（功能已迁移到contentScripts）
 
