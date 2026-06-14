@@ -376,6 +376,15 @@ function injectLayoutStyle() {
       color: #f4f6fb;
       background: #0f1115;
       font-family: var(--bew-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+      --bewly-widescreen-sidebar-bg: #f7f8fa;
+      --bewly-widescreen-surface-bg: #fff;
+      --bewly-widescreen-text-primary: #18191c;
+      --bewly-widescreen-text-secondary: #61666d;
+      --bewly-widescreen-text-muted: #9499a0;
+      --bewly-widescreen-sidebar-border: rgba(255, 255, 255, 0.08);
+      --bewly-widescreen-divider: rgba(0, 0, 0, 0.08);
+      --bewly-widescreen-control-bg: #f1f2f3;
+      --bewly-widescreen-control-hover-bg: #e3e5e7;
       --bewly-widescreen-sidebar-narrow-width: clamp(
         ${SIDEBAR_NARROW_MIN_WIDTH}px,
         26vw,
@@ -394,6 +403,18 @@ function injectLayoutStyle() {
       --bewly-widescreen-sidebar-column-width: min(var(--bewly-widescreen-sidebar-narrow-width), var(--bewly-widescreen-sidebar-max));
       --bewly-widescreen-sidebar-panel-width: var(--bewly-widescreen-sidebar-column-width);
       --bewly-widescreen-sidebar-offset: 0px;
+    }
+
+    html.dark #${ROOT_ID} {
+      --bewly-widescreen-sidebar-bg: var(--bew-content-alt-solid, #2f3238);
+      --bewly-widescreen-surface-bg: var(--bew-content-solid, #2b2e33);
+      --bewly-widescreen-text-primary: var(--bew-text-1, #f1f2f3);
+      --bewly-widescreen-text-secondary: var(--bew-text-2, #c9ccd0);
+      --bewly-widescreen-text-muted: var(--bew-text-3, #9499a0);
+      --bewly-widescreen-sidebar-border: var(--bew-border-color, rgba(255, 255, 255, 0.08));
+      --bewly-widescreen-divider: var(--bew-border-color, rgba(255, 255, 255, 0.08));
+      --bewly-widescreen-control-bg: var(--bew-fill-1, rgba(255, 255, 255, 0.08));
+      --bewly-widescreen-control-hover-bg: var(--bew-fill-2, rgba(255, 255, 255, 0.16));
     }
 
     #${ROOT_ID}[data-sidebar-mode="narrow"] {
@@ -466,7 +487,7 @@ function injectLayoutStyle() {
       max-width: 100%;
       min-height: 0;
       flex: 0 0 auto;
-      background: #fff;
+      background: var(--bewly-widescreen-surface-bg);
     }
 
     #${ROOT_ID} .bewly-widescreen-danmaku-dock:empty {
@@ -577,9 +598,9 @@ function injectLayoutStyle() {
       width: var(--bewly-widescreen-sidebar-panel-width);
       min-width: 0;
       min-height: 0;
-      background: #f7f8fa;
-      color: #18191c;
-      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--bewly-widescreen-sidebar-bg);
+      color: var(--bewly-widescreen-text-primary);
+      border-left: 1px solid var(--bewly-widescreen-sidebar-border);
       box-shadow: -12px 0 28px rgba(0, 0, 0, 0.28);
       overflow: hidden;
       transform: translateX(var(--bewly-widescreen-sidebar-offset));
@@ -638,8 +659,8 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-sidebar-top {
       flex: 0 0 auto;
       padding: 8px 10px 8px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-      background: #fff;
+      border-bottom: 1px solid var(--bewly-widescreen-divider);
+      background: var(--bewly-widescreen-surface-bg);
     }
 
     #${ROOT_ID} .bewly-widescreen-toolbar {
@@ -660,8 +681,8 @@ function injectLayoutStyle() {
       width: 28px;
       height: 28px;
       padding: 0;
-      color: #61666d;
-      background: #f1f2f3;
+      color: var(--bewly-widescreen-text-secondary);
+      background: var(--bewly-widescreen-control-bg);
       cursor: pointer;
       font-size: 0;
       line-height: 1;
@@ -684,8 +705,8 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID} .bewly-widescreen-close:hover {
-      color: #18191c;
-      background: #e3e5e7;
+      color: var(--bewly-widescreen-text-primary);
+      background: var(--bewly-widescreen-control-hover-bg);
     }
 
     #${ROOT_ID} .bewly-widescreen-title {
@@ -695,7 +716,7 @@ function injectLayoutStyle() {
       flex: 1 1 auto;
       overflow: hidden;
       margin: 0;
-      color: #18191c;
+      color: var(--bewly-widescreen-text-primary);
       font-size: 18px;
       font-weight: 600;
       line-height: 24px;
@@ -779,7 +800,7 @@ function injectLayoutStyle() {
       padding: 0 !important;
       border: 0 !important;
       border-radius: 0 !important;
-      color: #61666d !important;
+      color: var(--bewly-widescreen-text-secondary) !important;
       background: transparent !important;
       font-size: 13px !important;
       line-height: 20px !important;
@@ -948,14 +969,14 @@ function injectLayoutStyle() {
       grid-template-columns: repeat(3, 1fr);
       flex: 0 0 auto;
       height: 42px;
-      background: #fff;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      background: var(--bewly-widescreen-surface-bg);
+      border-bottom: 1px solid var(--bewly-widescreen-divider);
     }
 
     #${ROOT_ID} .bewly-widescreen-tab {
       position: relative;
       border: 0;
-      color: #61666d;
+      color: var(--bewly-widescreen-text-secondary);
       background: transparent;
       cursor: pointer;
       font-size: 14px;
@@ -983,7 +1004,7 @@ function injectLayoutStyle() {
       flex: 1 1 auto;
       min-height: 0;
       overflow: hidden;
-      background: #f7f8fa;
+      background: var(--bewly-widescreen-sidebar-bg);
     }
 
     #${ROOT_ID} .bewly-widescreen-panel {
@@ -1068,7 +1089,7 @@ function injectLayoutStyle() {
       align-items: center;
       justify-content: center;
       min-height: 160px;
-      color: #9499a0;
+      color: var(--bewly-widescreen-text-muted);
       font-size: 14px;
     }
 
