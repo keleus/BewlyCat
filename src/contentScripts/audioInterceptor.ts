@@ -46,6 +46,7 @@ const ANALYSIS_INTERVAL_MS = 100
 const SHORT_TERM_WINDOW = 20
 const INTEGRATED_WINDOW = 100
 const ANALYSIS_EPSILON = 1e-8
+const PLAYBACK_END_TOLERANCE_SECONDS = 1
 
 // Debug logger
 function log(msg: string, ...args: any[]) {
@@ -134,6 +135,8 @@ const pendingMetadataVideos = new WeakSet<HTMLVideoElement>()
 let hasAttached = false
 let interceptorTimer: ReturnType<typeof setInterval> | null = null
 let hasSetupSettingsWatcher = false
+let hasSetupVisibilityListener = false
+let shouldResetAnalysisOnNextPlayback = false
 
 // 临时启用/禁用状态（用于播放器控件）
 let tempDisabled = false
@@ -228,6 +231,8 @@ function resetLoudnessAnalysis() {
   if (audioNodes && audioContext) {
     audioNodes.adaptiveGain.gain.setValueAtTime(1.0, audioContext.currentTime)
   }
+
+  shouldResetAnalysisOnNextPlayback = false
 }
 
 function safelyDisconnect(node: AudioNode | null | undefined) {
@@ -297,7 +302,33 @@ function suspendProcessingForIdlePlayback(resetAnalysis = false) {
 
   if (resetAnalysis) {
     resetLoudnessAnalysis()
+    return
   }
+
+  if (audioNodes && audioContext) {
+    const gain = audioNodes.adaptiveGain.gain
+    const currentTime = audioContext.currentTime
+
+    if (typeof gain.cancelAndHoldAtTime === 'function') {
+      gain.cancelAndHoldAtTime(currentTime)
+    }
+    else {
+      const currentGain = gain.value
+      gain.cancelScheduledValues(currentTime)
+      gain.setValueAtTime(currentGain, currentTime)
+    }
+  }
+}
+
+function resetProcessingForPlaybackBoundary() {
+  stopLoudnessAnalysis()
+
+  if (document.hidden) {
+    shouldResetAnalysisOnNextPlayback = true
+    return
+  }
+
+  resetLoudnessAnalysis()
 }
 
 function unbindCurrentVideoListeners() {
@@ -325,14 +356,21 @@ function bindVideoListeners(video: HTMLVideoElement) {
   }
 
   const onPause = () => {
-    if (video === currentVideoElement) {
-      suspendProcessingForIdlePlayback(!document.hidden)
+    if (video === currentVideoElement && video.paused) {
+      if (isPlaybackAtEnd(video)) {
+        stopLoudnessAnalysis()
+      }
+      else {
+        // A tab switch can deliver a delayed pause after the page becomes visible
+        // again. Keep the current gain so resuming does not cause an audible jump.
+        suspendProcessingForIdlePlayback()
+      }
     }
   }
 
   const onEnded = () => {
     if (video === currentVideoElement) {
-      suspendProcessingForIdlePlayback(!document.hidden)
+      resetProcessingForPlaybackBoundary()
     }
   }
 
@@ -340,7 +378,7 @@ function bindVideoListeners(video: HTMLVideoElement) {
     if (video !== currentVideoElement)
       return
 
-    suspendProcessingForIdlePlayback(!document.hidden)
+    resetProcessingForPlaybackBoundary()
   }
 
   video.addEventListener('play', onPlay)
@@ -376,6 +414,17 @@ function getActiveVideoElement(): HTMLVideoElement | null {
     || candidates.find(isVisibleVideo)
     || candidates[0]
     || null
+}
+
+function isPlaybackAtEnd(video: HTMLVideoElement) {
+  return video.ended
+    || (Number.isFinite(video.duration)
+      && video.duration > 0
+      && video.currentTime >= video.duration - PLAYBACK_END_TOLERANCE_SECONDS)
+}
+
+function isPlaybackActive(video: HTMLVideoElement | null): video is HTMLVideoElement {
+  return !!video && !video.paused && !isPlaybackAtEnd(video)
 }
 
 function waitForVideoReady(video: HTMLVideoElement) {
@@ -419,7 +468,7 @@ function startLoudnessAnalysis() {
   if (!audioNodes || !loudnessAnalysis || !audioContext || !currentVideoElement)
     return
 
-  if (!settings.value.enableVolumeNormalization || tempDisabled)
+  if (!settings.value.enableVolumeNormalization || tempDisabled || document.hidden)
     return
 
   if (loudnessAnalysis.animationId)
@@ -542,12 +591,13 @@ function updateProcessingState() {
     return
 
   try {
-    const isPlaybackActive = !!currentVideoElement
-      && !currentVideoElement.paused
-      && !currentVideoElement.ended
-
-    if (!isPlaybackActive) {
-      suspendProcessingForIdlePlayback(!document.hidden)
+    if (!isPlaybackActive(currentVideoElement)) {
+      if (currentVideoElement && isPlaybackAtEnd(currentVideoElement)) {
+        stopLoudnessAnalysis()
+      }
+      else {
+        suspendProcessingForIdlePlayback()
+      }
       log('Loudness analysis suspended while playback is inactive')
       return
     }
@@ -558,7 +608,7 @@ function updateProcessingState() {
       const wasProcessing = audioGraphMode === 'processing'
       connectProcessingGraph()
 
-      if (!wasProcessing) {
+      if (!wasProcessing || shouldResetAnalysisOnNextPlayback) {
         resetLoudnessAnalysis()
       }
 
@@ -657,6 +707,7 @@ export function detach() {
   loudnessAnalysis = null
   currentVideoElement = null
   hasAttached = false
+  shouldResetAnalysisOnNextPlayback = false
 
   log('Detached')
 }
@@ -680,6 +731,21 @@ export function initAudioInterceptor() {
   }
 
   let lastUrl = location.href
+
+  if (!hasSetupVisibilityListener) {
+    hasSetupVisibilityListener = true
+    document.addEventListener('visibilitychange', () => {
+      if (!isPlaybackActive(currentVideoElement))
+        return
+
+      if (document.hidden) {
+        suspendProcessingForIdlePlayback()
+      }
+      else {
+        updateProcessingState()
+      }
+    })
+  }
 
   interceptorTimer = setInterval(() => {
     const urlChanged = location.href !== lastUrl
