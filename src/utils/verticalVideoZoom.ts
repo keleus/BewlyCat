@@ -193,13 +193,17 @@ function injectStyle() {
     }
 
     .${HOST_CLASS}.${ZOOMED_CLASS} video {
-      width: 100% !important;
+      position: absolute !important;
+      left: 50% !important;
+      top: 0 !important;
+      width: auto !important;
       height: 100% !important;
+      aspect-ratio: 1 / 1 !important;
       max-width: none !important;
       max-height: none !important;
       object-fit: cover !important;
       object-position: center var(--bewly-vertical-video-zoom-y, 50%) !important;
-      transform: none !important;
+      transform: translateX(-50%) !important;
     }
   `)
 }
@@ -336,21 +340,14 @@ function getViewportHeight() {
     return 50
 
   const video = getVideoElement()
-  const videoAspect = video?.videoWidth && video.videoHeight
+  // The zoomed view shows the largest 1:1 (square) crop of the video, so the
+  // visible vertical slice equals the video width — its fraction of the full
+  // frame height is simply videoWidth / videoHeight.
+  const visibleRatio = video?.videoWidth && video.videoHeight
     ? video.videoWidth / video.videoHeight
     : 9 / 16
-  const playerRect = getPlayerVideoRect(currentHost)
-  const playerAspect = playerRect.width > 0 && playerRect.height > 0
-    ? playerRect.width / playerRect.height
-    : 16 / 9
-  const visibleRatio = Math.max(0.16, Math.min(1, videoAspect / playerAspect))
-  return Math.max(24, Math.min(MAP_HEIGHT, Math.round(MAP_HEIGHT * visibleRatio)))
-}
-
-function getPlayerVideoRect(host: HTMLElement) {
-  const videoArea = host.querySelector<HTMLElement>('.bpx-player-video-area, .bilibili-player-video-area, .bpx-player-video-wrap, .bilibili-player-video-wrap')
-  const rect = videoArea?.getBoundingClientRect() || host.getBoundingClientRect()
-  return rect.width > 0 && rect.height > 0 ? rect : host.getBoundingClientRect()
+  const clampedRatio = Math.max(0.1, Math.min(1, visibleRatio))
+  return Math.max(24, Math.min(MAP_HEIGHT, Math.round(MAP_HEIGHT * clampedRatio)))
 }
 
 function syncMinimapGeometry() {
