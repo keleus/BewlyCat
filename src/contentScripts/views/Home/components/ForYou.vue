@@ -532,14 +532,8 @@ function handleLoadMore() {
 }
 
 function initPageAction() {
-  handleReachBottom.value = async () => {
-    if (isLoading.value)
-      return
-    if (noMoreContent.value)
-      return
-
-    handleLoadMore()
-  }
+  // VideoCardGrid owns infinite scrolling. Clear callbacks left by other kept-alive tabs.
+  handleReachBottom.value = undefined
 
   handlePageRefresh.value = async () => {
     if (isLoading.value)

@@ -291,6 +291,8 @@ function triggerLoadMore() {
 const supportsIntersectionObserver = typeof window !== 'undefined' && 'IntersectionObserver' in window
 const isFirefox = typeof navigator !== 'undefined' && /\bFirefox\//.test(navigator.userAgent)
 let intersectionObserver: IntersectionObserver | null = null
+let isGridActive = false
+let scrollListenersActive = false
 
 function cleanupIntersectionObserver() {
   if (intersectionObserver) {
@@ -301,7 +303,7 @@ function cleanupIntersectionObserver() {
 }
 
 function setupIntersectionObserver() {
-  if (!supportsIntersectionObserver)
+  if (!supportsIntersectionObserver || !isGridActive)
     return
 
   cleanupIntersectionObserver()
@@ -312,6 +314,9 @@ function setupIntersectionObserver() {
 
   intersectionObserver = new IntersectionObserver(
     (entries) => {
+      if (!isGridActive)
+        return
+
       const entry = entries[0]
       if (!entry)
         return
@@ -343,6 +348,9 @@ let containerResizeObserver: ResizeObserver | null = null
 
 // 检查是否需要预加载
 function checkShouldPreload() {
+  if (!isGridActive)
+    return
+
   if (props.loading) {
     if (isLoadMoreSentinelIntersecting.value)
       reachedLoadMoreDuringLoading.value = true
@@ -396,6 +404,11 @@ function handleScroll() {
 
 // 设置滚动监听
 function setupScrollListeners() {
+  if (scrollListenersActive)
+    return
+
+  scrollListenersActive = true
+
   // Bewly 自己的页面都在内部滚动容器中，通过全局事件同步 scrollTop
   if (!settings.value.useOriginalBilibiliHomepage) {
     emitter.on(OVERLAY_SCROLL_BAR_SCROLL, handleScroll)
@@ -409,6 +422,10 @@ function setupScrollListeners() {
 
 // 清理滚动监听
 function cleanupScrollListeners() {
+  if (!scrollListenersActive)
+    return
+
+  scrollListenersActive = false
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL, handleScroll)
   window.removeEventListener('scroll', handleScroll)
   window.removeEventListener('resize', handleResize)
@@ -530,23 +547,49 @@ watch(
   },
 )
 
-onMounted(() => {
-  // 初始化 renderLimit：对于已存在的数据，立即全部渲染（无渐进式加载）
-  renderLimit.value = displayItems.value.length
+function activateGrid() {
+  if (isGridActive)
+    return
 
+  isGridActive = true
   setupScrollListeners()
   setupContainerResizeObserver()
-  setupIntersectionObserver()
-  // 初始检查
+
   nextTick(() => {
+    if (!isGridActive)
+      return
+
+    setupIntersectionObserver()
     checkShouldPreload()
   })
-})
+}
 
-onUnmounted(() => {
+function deactivateGrid() {
+  if (!isGridActive)
+    return
+
+  isGridActive = false
   cleanupScrollListeners()
   cleanupContainerResizeObserver()
   cleanupIntersectionObserver()
+
+  if (checkPreloadRAF !== null) {
+    cancelAnimationFrame(checkPreloadRAF)
+    checkPreloadRAF = null
+  }
+}
+
+onMounted(() => {
+  // 初始化 renderLimit：对于已存在的数据，立即全部渲染（无渐进式加载）
+  renderLimit.value = displayItems.value.length
+  activateGrid()
+})
+
+onActivated(activateGrid)
+onDeactivated(deactivateGrid)
+
+onUnmounted(() => {
+  deactivateGrid()
   if (loadMoreRequestTimeout !== null) {
     window.clearTimeout(loadMoreRequestTimeout)
     loadMoreRequestTimeout = null

@@ -149,7 +149,7 @@ const emit = defineEmits<{
 
 useI18n()
 
-const { scrollViewportRef, handlePageRefresh, canRefreshHomeSubPage } = useBewlyApp()
+const { scrollViewportRef, handlePageRefresh, handleReachBottom, canRefreshHomeSubPage } = useBewlyApp()
 const videoList = ref<VideoElement[]>([])
 const uploaderList = ref<UploaderInfo[]>([])
 const selectedUploader = ref<number | null>(null) // null means "All"
@@ -1542,8 +1542,8 @@ onUnmounted(() => {
 })
 
 function initPageAction() {
-  // 滚动加载完全由 VideoCardGrid 组件处理（通过 @load-more 事件）
-  // 移除 handleReachBottom 注册以避免与 VideoCardGrid 的内置滚动监听冲突
+  // VideoCardGrid owns infinite scrolling. Clear callbacks left by other kept-alive tabs.
+  handleReachBottom.value = undefined
 
   handlePageRefresh.value = async () => {
     if (isLoading.value)

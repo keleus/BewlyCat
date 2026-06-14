@@ -49,7 +49,7 @@ const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
 const isInitialized = ref<boolean>(false)
-const { handlePageRefresh, canRefreshHomeSubPage } = useBewlyApp()
+const { handlePageRefresh, handleReachBottom, canRefreshHomeSubPage } = useBewlyApp()
 
 // 合并直播和视频列表用于虚拟滚动
 const combinedVideoList = computed(() => {
@@ -124,8 +124,8 @@ onDeactivated(() => {
 })
 
 function initPageAction() {
-  // 滚动加载完全由 VideoCardGrid 组件处理（通过 @load-more 事件）
-  // 移除 handleReachBottom 注册以避免与 VideoCardGrid 的内置滚动监听冲突
+  // VideoCardGrid owns infinite scrolling. Clear callbacks left by other kept-alive tabs.
+  handleReachBottom.value = undefined
 
   handlePageRefresh.value = async () => {
     if (isLoading.value)
