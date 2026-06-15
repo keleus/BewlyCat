@@ -118,6 +118,7 @@ export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'compact' | 'old'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen' | 'bewlyWidescreen'
+export type BewlyWidescreenSidebarPosition = 'left' | 'right'
 export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
 
 export interface ShadowCurvePoint {
@@ -338,6 +339,7 @@ export interface Settings {
 
   // Video Player
   defaultVideoPlayerMode: DefaultVideoPlayerMode
+  bewlyWidescreenSidebarPosition: BewlyWidescreenSidebarPosition
   defaultDanmakuState: 'system' | 'on' | 'off'
   keepCollectionVideoDefaultMode: boolean // 合集视频保持默认模式
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
@@ -556,6 +558,7 @@ export const originalSettings: Settings = {
 
   // Video Player
   defaultVideoPlayerMode: 'default',
+  bewlyWidescreenSidebarPosition: 'right',
   defaultDanmakuState: 'system',
   keepCollectionVideoDefaultMode: false, // 合集视频保持默认模式，默认关闭
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭

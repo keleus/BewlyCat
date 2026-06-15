@@ -276,7 +276,7 @@ else {
     else {
       switch (targetPlayerMode) {
         case 'bewlyWidescreen':
-          applyBewlyWidescreen()
+          applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right')
           break
         case 'webFullscreen':
           webFullscreen()

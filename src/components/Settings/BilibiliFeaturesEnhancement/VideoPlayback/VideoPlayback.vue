@@ -10,6 +10,19 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 
 const { t } = useI18n()
 
+const bewlyWidescreenSidebarPositionOptions = computed(() => {
+  return [
+    {
+      label: t('settings.video_player_mode.bewly_widescreen_sidebar_position_left'),
+      value: 'left',
+    },
+    {
+      label: t('settings.video_player_mode.bewly_widescreen_sidebar_position_right'),
+      value: 'right',
+    },
+  ]
+})
+
 // 视频播放器模式选项
 const videoPlayerModeOptions = computed(() => {
   return [
@@ -55,6 +68,15 @@ const videoDanmakuDefaultStateOptions = computed(() => {
     <SettingsItemGroup :title="$t('settings.group_player_settings')">
       <SettingsItem :title="$t('settings.video_default_player_mode')" right-width="auto">
         <Select v-model="settings.defaultVideoPlayerMode" :options="videoPlayerModeOptions" w="160px" />
+      </SettingsItem>
+
+      <SettingsItem
+        v-if="settings.defaultVideoPlayerMode === 'bewlyWidescreen'"
+        :title="t('settings.video_player_mode.bewly_widescreen_sidebar_position')"
+        :desc="t('settings.video_player_mode.bewly_widescreen_sidebar_position_desc')"
+        right-width="auto"
+      >
+        <Select v-model="settings.bewlyWidescreenSidebarPosition" :options="bewlyWidescreenSidebarPositionOptions" w="160px" />
       </SettingsItem>
 
       <SettingsItem

@@ -205,6 +205,10 @@ settings:
     web_fullscreen: Web Fullscreen
     widescreen: Widescreen
     bewly_widescreen: Bewly Widescreen
+    bewly_widescreen_sidebar_position: Bewly Widescreen Sidebar Position
+    bewly_widescreen_sidebar_position_desc: Choose the sidebar position in Bewly Widescreen mode
+    bewly_widescreen_sidebar_position_left: Left
+    bewly_widescreen_sidebar_position_right: Right
   enable_video_preview: Enable video preview feature (if possible)
   enable_video_ctrl_bar_on_video_card: Display the video control bar on the video card
   hover_video_card_delayed: Delayed video preview on hover over the video card

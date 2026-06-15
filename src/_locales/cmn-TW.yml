@@ -227,6 +227,10 @@ settings:
     web_fullscreen: 網頁全螢幕
     widescreen: 寬螢幕
     bewly_widescreen: Bewly寬螢幕
+    bewly_widescreen_sidebar_position: Bewly寬螢幕側邊欄位置
+    bewly_widescreen_sidebar_position_desc: 選擇 Bewly 寬螢幕模式下側邊欄的顯示位置
+    bewly_widescreen_sidebar_position_left: 左側
+    bewly_widescreen_sidebar_position_right: 右側
   enable_video_preview: 啟用影片預覽功能（如果可以的話）
   enable_video_ctrl_bar_on_video_card: 在影片卡片上顯示影片控制欄
   hover_video_card_delayed: 將滑鼠懸停在影片卡片上時延遲影片預覽

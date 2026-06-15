@@ -25,6 +25,7 @@ interface BewlyWidescreenState {
   styleEl: HTMLStyleElement
   activeTab: BewlyWidescreenTab
   sidebarMode: BewlyWidescreenSidebarMode
+  sidebarPosition: 'left' | 'right'
   resizeObserver?: ResizeObserver
   mutationObserver?: MutationObserver
   metadataListener?: () => void
@@ -54,6 +55,7 @@ let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined
 let readyRetryCount = 0
 let sidebarRefreshCount = 0
 let waitingForLoad = false
+let pendingSidebarPosition: 'left' | 'right' = 'right'
 
 const selectors = {
   player: [
@@ -234,8 +236,13 @@ function setSidebarMode(nextMode: BewlyWidescreenSidebarMode) {
   state.sidebarMode = nextMode
   state.root.dataset.sidebarMode = nextMode
   const isFit = nextMode === 'fit'
-  state.sidebarToggleButton.textContent = isFit ? '‹' : '›'
-  state.sidebarToggleButton.title = isFit ? '显示窄右栏' : '收起右栏'
+  const isRight = state.sidebarPosition === 'right'
+  state.sidebarToggleButton.textContent = isRight
+    ? (isFit ? '‹' : '›')
+    : (isFit ? '›' : '‹')
+  state.sidebarToggleButton.title = isFit
+    ? (isRight ? '显示窄右栏' : '显示窄左栏')
+    : (isRight ? '收起右栏' : '收起左栏')
   state.sidebarToggleButton.setAttribute('aria-label', state.sidebarToggleButton.title)
   updateSidebarToggleState()
   schedulePlayerResizeSync(state)
@@ -292,9 +299,10 @@ function createSidebarToggleButton() {
   return button
 }
 
-function createRoot() {
+function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
   const root = document.createElement('div')
   root.id = ROOT_ID
+  root.dataset.sidebarPosition = sidebarPosition
 
   const stage = document.createElement('div')
   stage.className = 'bewly-widescreen-stage'
@@ -346,7 +354,10 @@ function createRoot() {
   }
 
   sidebar.append(sidebarTop, tablist, panelWrap)
-  stage.append(playerSlot, sidebar)
+  if (sidebarPosition === 'left')
+    stage.append(sidebar, playerSlot)
+  else
+    stage.append(playerSlot, sidebar)
   root.appendChild(stage)
   document.body.appendChild(root)
 
@@ -617,6 +628,29 @@ function injectLayoutStyle() {
       transform: translateX(0);
     }
 
+    #${ROOT_ID}[data-sidebar-position="left"] .bewly-widescreen-stage {
+      grid-template-columns:
+        minmax(0, var(--bewly-widescreen-sidebar-column-width))
+        minmax(0, calc(100vw - var(--bewly-widescreen-sidebar-column-width)));
+    }
+
+    #${ROOT_ID}[data-sidebar-position="left"] .bewly-widescreen-sidebar {
+      justify-self: start;
+      border-left: none;
+      border-right: 1px solid var(--bewly-widescreen-sidebar-border);
+      box-shadow: 12px 0 28px rgba(0, 0, 0, 0.28);
+    }
+
+    #${ROOT_ID}[data-sidebar-position="left"][data-sidebar-mode="narrow"] .bewly-widescreen-sidebar {
+      box-shadow: none;
+    }
+
+    #${ROOT_ID}[data-sidebar-position="left"][data-sidebar-mode="fit"] {
+      --bewly-widescreen-sidebar-offset: calc(
+        var(--bewly-widescreen-sidebar-column-width) - var(--bewly-widescreen-sidebar-panel-width)
+      );
+    }
+
     #${ROOT_ID} .bewly-widescreen-sidebar-toggle {
       position: absolute;
       right: 0;
@@ -642,6 +676,12 @@ function injectLayoutStyle() {
       pointer-events: none;
       transform: translateY(-50%);
       transition: opacity 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    }
+
+    #${ROOT_ID}[data-sidebar-position="left"] .bewly-widescreen-sidebar-toggle {
+      right: auto;
+      left: 0;
+      border-radius: 0 8px 8px 0;
     }
 
     #${ROOT_ID}[data-sidebar-toggle-visible="true"][data-pointer-active="true"] .bewly-widescreen-player-slot:hover .bewly-widescreen-sidebar-toggle,
@@ -1514,14 +1554,14 @@ function isReadyForLayout() {
   return !!player.querySelector('video, bwp-video, .bpx-player-video-area, .bilibili-player-video-wrap')
 }
 
-function applyNow() {
+function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
   exitBewlyWidescreen()
 
   const player = findMovable(selectors.player)
   if (!player)
     return false
 
-  const { root, playerSlot, playerFrame, danmakuDock, sidebarEl, sidebarTop, upSlot, toolbarSlot, panels, tabButtons, sidebarToggleButton } = createRoot()
+  const { root, playerSlot, playerFrame, danmakuDock, sidebarEl, sidebarTop, upSlot, toolbarSlot, panels, tabButtons, sidebarToggleButton } = createRoot(sidebarPosition)
   const styleEl = injectLayoutStyle()
   const movedNodes: MovedNode[] = []
 
@@ -1541,6 +1581,7 @@ function applyNow() {
     styleEl,
     activeTab: 'comment',
     sidebarMode: 'fit',
+    sidebarPosition,
   }
 
   state = nextState
@@ -1589,7 +1630,7 @@ function scheduleReadyRetry(delay = READY_RETRY_INTERVAL) {
       return
 
     if (isReadyForLayout()) {
-      applyNow()
+      applyNow(pendingSidebarPosition)
       return
     }
 
@@ -1599,13 +1640,14 @@ function scheduleReadyRetry(delay = READY_RETRY_INTERVAL) {
   }, delay)
 }
 
-function startAfterPageLoad() {
+function startAfterPageLoad(sidebarPosition: 'left' | 'right' = 'right') {
   if (state)
     return
 
   waitingForLoad = false
   clearLoadFallbackTimer()
   readyRetryCount = 0
+  pendingSidebarPosition = sidebarPosition
   scheduleReadyRetry(LOAD_SETTLE_DELAY)
 }
 
@@ -1623,19 +1665,21 @@ function scheduleSidebarRefresh() {
   }, SIDEBAR_REFRESH_DELAY)
 }
 
-export function applyBewlyWidescreen() {
+export function applyBewlyWidescreen(sidebarPosition: 'left' | 'right' = 'right') {
   if (state || waitingForLoad || readyRetryTimer)
     return
 
   sidebarRefreshCount = 0
+  pendingSidebarPosition = sidebarPosition
 
   if (document.readyState === 'complete') {
-    startAfterPageLoad()
+    startAfterPageLoad(sidebarPosition)
     return
   }
 
   waitingForLoad = true
-  window.addEventListener('load', startAfterPageLoad, { once: true })
+  const loadHandler = () => startAfterPageLoad(sidebarPosition)
+  window.addEventListener('load', loadHandler, { once: true })
 
   clearLoadFallbackTimer()
   loadFallbackTimer = setTimeout(() => {
