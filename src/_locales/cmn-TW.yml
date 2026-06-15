@@ -100,7 +100,7 @@ settings:
   group_playback_behavior: 播放行為
   group_auto_play: 自動連播
   group_random_play: 隨機播放
-  group_topbar: 頂欄
+  group_topbar: 頂部列
   group_navigation: Dock與側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄
@@ -108,7 +108,7 @@ settings:
   group_color: 顏色
   group_wallpaper: 背景圖片
   group_logo: LOGO
-  group_search_bar: 搜尋欄
+  group_search_bar: 搜尋列
   group_hot_search: 熱門搜尋
   group_recommendation_mode: 「為你推薦」推薦模式
   group_recommendation_filters: 「為你推薦」過濾
@@ -122,13 +122,13 @@ settings:
     authorize: 授權
     revoke: 解除授權
     open_settings: 打開設定...
-  touch_screen_optimization: 觸控螢幕體驗改進
+  touch_screen_optimization: 改進觸控螢幕體驗
   touch_screen_optimization_desc: |
-    啟用後，如頂欄，你可能需要點選項目才能看到更多資訊，而不是滑鼠移過去就會顯示。（舊版頂欄不支援此功能）
+    啟用後，如頂部列，你可能需要點選項目才能看到更多資訊，而不是滑鼠移過去就會顯示。（舊版頂部列不支援此功能）
   show_home_button_in_touch_mode: 顯示 Home 按鈕
-  show_home_button_in_touch_mode_desc: 在觸控螢幕優化開啟時，在頂欄 Logo 旁邊顯示一個可以直接跳轉到首頁的按鈕。
+  show_home_button_in_touch_mode_desc: 在觸控螢幕優化開啟時，在頂部列 Logo 旁邊顯示一個可以直接跳轉到首頁的按鈕。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
-  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開啟後，頂欄頭像彈窗中的 LV6 等級資訊區域將不再顯示最後登入時間和地點，也不會請求登入記錄。
+  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開啟後，頂部列頭像彈窗中的 LV6 等級資訊區域將不再顯示最後登入時間和地點，也不會請求登入記錄。
   chk_box:
     show: 顯示
     hidden: 隱藏
@@ -147,7 +147,7 @@ settings:
     recommend: 推介
     custom: 自訂
   customize_font_desc: >
-    對於喜歡舊字形的用戶，我們推薦 <a class="link" href="https://github.com/GuiWonder/Shanggu"
+    對於喜歡舊字形的使用者，我們推薦 <a class="link" href="https://github.com/GuiWonder/Shanggu"
     target="_blank">Shanggu Fonts (尚古字型)</a> 和 <a class="link"
     href="https://github.com/ayaka14732/FanWunHak" target="_blank">Fan Wun Hak
     (繁媛黑體)</a>。
@@ -155,7 +155,7 @@ settings:
     這些字型還具有將簡體中文轉換為繁體/繁體中文的能力。
   override_danmaku_font: 覆蓋彈幕字型
   override_danmaku_font_desc: |
-    設定彈幕字型爲您的自訂字型以覆蓋預設值。影片播放器將無法在之後更改彈幕字型。
+    設定彈幕字型為你的自訂字型以覆蓋預設值。影片播放器將無法在之後更改彈幕字型。
   remove_the_indent_from_chinese_punctuation: 移除中文標點符號的縮排
   remove_the_indent_from_chinese_punctuation_desc: |
     Bilibili 預設會特別處理中文標點符號以達到左對齊。 如果你正在使用自訂字型，建議移除縮排。
@@ -165,14 +165,14 @@ settings:
   link_opening_behavior_opt:
     current_tab: 目前索引標籤
     current_tab_if_not_homepage: 首頁外目前分頁
-    background: 後台打開
+    background: 背景打開
     new_tab: 新索引標籤
     drawer: 抽屜開啟
-  top_bar_link_opening_behavior: 頂欄連結開啟行為
+  top_bar_link_opening_behavior: 頂部列連結開啟行為
   video_card_link_opening_behavior: 影片和番劇卡片連結開啟行為
   link_opening_behavior_desc: 控制點擊連結後的開啟位置。「首頁外目前分頁」表示：目前頁面為首頁時使用新索引標籤開啟，其他頁面使用目前索引標籤開啟；「後台打開」會在瀏覽器允許時開到背景索引標籤。
   video_card_link_opening_behavior_desc: 控制點擊影片和番劇卡片後的開啟位置，可選擇目前索引標籤、抽屜、背景索引標籤或新索引標籤。
-  search_bar_link_opening_behavior: 搜尋欄連結開啟行為
+  search_bar_link_opening_behavior: 搜尋列連結開啟行為
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉
   block_ads: 封鎖廣告
   block_top_search_page_ads: 封鎖 Bilibili 搜尋頁上方的廣告
@@ -233,17 +233,17 @@ settings:
   only_cover_video_preview: 僅封面影片預覽
   show_video_card_recommend_tag: 顯示插件計算的推薦標籤
   show_video_card_recommend_tag_desc: 顯示插件計算的標籤，如「高讚」、「高互動」、「百萬播放」等
-  auto_hide_top_bar: 自動隱藏頂欄
-  video_page_top_bar_config: 影片頁頂欄配置
-  video_page_top_bar_config_desc: 控制影片頁頂欄的顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「滾動顯示」表示頁面滾動時顯示。
+  auto_hide_top_bar: 自動隱藏頂部列
+  video_page_top_bar_config: 影片頁頂部列配置
+  video_page_top_bar_config_desc: 控制影片頁頂部列的顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「滾動顯示」表示頁面滾動時顯示。
   video_page_top_bar_config_opt:
     alwaysShow: 總是顯示
     alwaysHide: 總是隱藏
     showOnMouse: 滑鼠顯示
     showOnScroll: 滾動顯示
-  always_use_transparent_top_bar: 頂欄始終使用透明(舊版)樣式
-  show_top_bar_theme_color_gradient: 在頂欄顯示主題色漸變（僅在深色模式下有效）
-  show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂欄切換器
+  always_use_transparent_top_bar: 頂部列始終使用透明(舊版)樣式
+  show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）
+  show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂部列切換器
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器
   top_bar_icon_badges: 圖示標記樣式
   top_bar_icon_badges_opt:
@@ -271,7 +271,7 @@ settings:
   dock_item_use_original_bili_web_page: 使用原版 Bilibili 網頁
   disable_dock_glowing_effect: 關閉 Dock 發光效果
   disable_light_dark_mode_switcher: 關閉淺/深色模式切換按鈕
-  back_to_top_and_refresh_buttons_are_separated: 分離回到頂部和重新整理按鈕
+  back_to_top_and_refresh_buttons_are_separated: 分離回到頂部列和重新整理按鈕
   sidebar_position: 側邊欄位置
   auto_hide_sidebar: 自動隱藏側邊欄
   theme: 主題
@@ -311,20 +311,20 @@ settings:
     white: 白
     theme_color: 主題顏色
   search_results_pagination_mode_opt:
-    scroll: 滾動加載
+    scroll: 滾動載入
     pagination: 翻頁
   enable_logo_glowing_effect: 啟用 Logo 發光效果
   logo_visibility: Logo 可視性
-  bg_darkens_when_the_search_bar_is_focused: 當搜尋欄聚焦時背景變暗
-  bg_blurs_when_the_search_bar_is_focused: 當搜尋欄聚焦時背景變模糊
-  choose_search_bar_focused_character: 選擇搜尋欄聚焦時出現的人物
-  show_hot_search_in_top_bar: 在頂欄顯示熱門搜尋
-  show_hot_search_in_top_bar_desc: 在頂欄搜尋框中顯示熱門搜尋列表
+  bg_darkens_when_the_search_bar_is_focused: 當搜尋列聚焦時背景變暗
+  bg_blurs_when_the_search_bar_is_focused: 當搜尋列聚焦時背景變模糊
+  choose_search_bar_focused_character: 選擇搜尋列聚焦時出現的人物
+  show_hot_search_in_top_bar: 在頂部列顯示熱門搜尋
+  show_hot_search_in_top_bar_desc: 在頂部列搜尋框中顯示熱門搜尋列表
   show_hot_search_in_search_page: 在搜尋頁顯示熱門搜尋
   show_hot_search_in_search_page_desc: 在搜尋頁面顯示熱門搜尋排行榜
   show_search_recommendation: 顯示搜尋推薦
   show_search_recommendation_desc: 在搜尋框中顯示推薦的搜尋詞作為佔位符，空白輸入時按回車將搜尋該推薦詞
-  depersonalize_search_results: 去個人化搜尋
+  depersonalize_search_results: 去除個人化搜尋
   depersonalize_search_results_desc: 啟用後，搜尋結果請求不攜帶登入 Cookie。
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
   recommendation_mode: 推薦模式
@@ -338,47 +338,47 @@ settings:
     當手機端推薦失敗時自動切換至網頁模式。
   authorize_app: 授權 BewlyBewly 使用 access key
   authorize_app_desc: >
-    授權使用後能在首頁推送 bilibili 手機端推介演算法的影片，授權 key 的有效期約爲一個月，過了有效期後，請記得重新取得授權以取得 access
+    授權使用後能在首頁推送 bilibili 手機端推介演算法的影片，授權金鑰的有效期約為一個月，過了有效期後，請記得重新取得授權以取得 access
     key。
   authorize_app_more_info_access_key: 關於 access key
-  scan_qrcode_desc: 使用 Bilibili 手機應用程式掃描這個 QR Code，以授權取得 access key。
+  scan_qrcode_desc: 使用 Bilibili 手機應用程式掃描這個行動條碼，以授權取得 access key。
   disable_filters_for_followed_users: 正在跟隨的使用者不受過濾條件限制
   disable_filters_for_followed_users_desc: |
     如果啟用此選項，正在跟隨的使用者不受過濾條件限制。
   filter_out_vertical_videos: 過濾直式影片（僅在 app 推薦模式下有效）
-  filter_by_view_count: 按觀看次數篩選
-  filter_by_view_count_desc: 篩選掉觀看次數少於您設定的影片。
+  filter_by_view_count: 依觀看次數篩選
+  filter_by_view_count_desc: 篩選掉觀看次數少於你設定的影片。
   filter_by_view_count_unit: 次
-  filter_by_like_count: 按讚數篩選
-  filter_by_like_count_desc: 篩選掉按讚數少於您設定的影片。
+  filter_by_like_count: 依按讚數篩選
+  filter_by_like_count_desc: 篩選掉按讚數少於你設定的影片。
   filter_by_like_count_unit: 次
-  filter_by_duration: 按影片長度篩選
-  filter_by_duration_desc: 篩選掉時長少於您設定的影片。
+  filter_by_duration: 依影片長度篩選
+  filter_by_duration_desc: 篩選掉時長少於你設定的影片。
   filter_by_duration_unit: 秒
-  filter_by_publish_time: 按發布時間篩選
+  filter_by_publish_time: 依發布時間篩選
   filter_by_publish_time_desc: 篩選掉發布時間超過設定天數的影片（僅在 Web 推薦模式下有效，最少 7 天）。
   filter_by_publish_time_unit: 天
   filter_item_already_exist: 這個篩選項目已經存在！
-  filter_by_title: 按標題篩選
+  filter_by_title: 依標題篩選
   filter_by_title_desc: >
-    按標題篩選掉包含您設定的字串的影片（不區分大小寫），或使用正規表示式，如 <code>/abc&#124;\d+/</code>，用
-    <code>/</code> 包裏。
+    依標題篩選掉包含你設定的字串的影片（不區分大小寫），或使用正規表示式，如 <code>/abc&#124;\d+/</code>，用
+    <code>/</code> 包裡。
 
     <br/>
 
-    在下面的表格中，您可以按 <kbd>Enter</kbd> 鍵新增新的篩選條件或確認變更。
+    在下面的表格中，你可以按 <kbd>Enter</kbd> 鍵新增新的篩選條件或確認變更。
 
     按 <kbd>Esc</kbd> 鍵取消變更。
 
     按兩下欄位以編輯目前欄位。
   filter_by_user: 按使用者篩選
   filter_by_user_desc: >
-    篩選掉包含您設定的使用者名稱（全名，不區分大小寫）或 MID 所上傳的影片，或使用正規表示式，如
+    篩選掉包含你設定的使用者名稱（全名，不區分大小寫）或 MID 所上傳的影片，或使用正規表示式，如
     <code>/abc&#124;\d+/</code>，用 <code>/</code> 包裏。
 
     <br/>
 
-    在下面的表格中，您可以按 <kbd>Enter</kbd> 鍵建立新的篩選條件或確認變更。
+    在下面的表格中，你可以按 <kbd>Enter</kbd> 鍵建立新的篩選條件或確認變更。
 
     按 <kbd>Esc</kbd> 鍵取消變更。
 
@@ -395,20 +395,20 @@ settings:
   enable_following_inactive_blacklist: 啟用不活躍名單
   enable_following_inactive_blacklist_desc: 當UP主超過指定天數未更新或無投稿時，將自動移至不活躍名單。在ALL視圖中出現更新或點擊該UP主時會自動移出不活躍名單。
   following_inactive_days: UP 主不活躍天數
-  following_inactive_days_desc: 套用『使用正在關注新佈局』後該功能生效。與自主添加的用戶黑名單無關，僅更改『正在關注』頁面推薦。
+  following_inactive_days_desc: 套用『使用正在關注新佈局』後該功能生效。與自主新增的使用者黑名單無關，僅更改『正在關注』頁面推薦。
   preserve_for_you_state: 留存為你推薦切換前狀態
-  preserve_for_you_state_desc: 當從 Dock 欄切換到其他頁面時，留存為你推薦頁面的瀏覽狀態，返回時保持切換前的內容
+  preserve_for_you_state_desc: 當從 Dock 列切換到其他頁面時，留存為你推薦頁面的瀏覽狀態，返回時保持切換前的內容
   use_search_page_mode: 首頁使用搜尋頁模式
   settings_shared_with_the_search_page: 與搜尋頁共用的設定
   settings_shared_with_the_search_page_desc: 這些設定都與搜尋頁共用。
   search_page_mode_wallpaper_fixed: 將搜尋頁模式的背景固定
-  home_tabs_adjustment: 標籤欄調整
+  home_tabs_adjustment: 標籤列調整
   home_tabs_adjustment_desc: 第一個啟用的標籤項目調整頁面將是起始頁面。
-  always_show_tabs_on_home_page: 捲動時隱藏首頁標籤欄
-  topbar_visibility: 頂欄可視性
+  always_show_tabs_on_home_page: 捲動時隱藏首頁標籤列
+  topbar_visibility: 頂部列可視性
   topbar_visibility_desc: 如果你正在使用 Bilibili Evolved 的頂欄，你可以在這裏關閉 BewlyBewly 的頂欄。
   use_original_bilibili_homepage: 使用原版 Bilibili 首頁
-  use_original_bilibili_homepage_desc: 當您變更此設定後，如果在首頁上，頁面將自動重新整理！
+  use_original_bilibili_homepage_desc: 當你變更此設定後，如果在首頁上，頁面將自動重新整理！
   use_original_bilibili_topbar: 使用原版 Bilibili 頂欄
   adapt_to_other_page_styles: 適應其他頁面風格
   adapt_to_other_page_styles_desc: 適應一些常見頁面，以配合 BewlyBewly 主題。
@@ -428,7 +428,7 @@ settings:
   keep_collection_video_default_mode: 合集影片保持預設模式
   keep_collection_video_default_mode_desc: 當啟用時，合集影片將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   remember_playback_rate: 記住倍速
-  remember_playback_rate_desc: 啟用後，播放器會記住您上次設定的倍速，並在下次打開影片時自動套用
+  remember_playback_rate_desc: 啟用後，播放器會記住你上次設定的倍速，並在下次打開影片時自動套用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播放完畢後自動退出
   auto_exit_fullscreen_on_end_desc: 啟用後，當影片播放結束且沒有單集循環、隨機播放、自動連播等後續播放行為時，會自動退出全螢幕模式
   auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
@@ -613,11 +613,11 @@ settings:
   group_fonts: 字體
   group_visual_effects: 視覺效果
   badge_type: 角標類型
-  group_topbar_components: 頂欄組件設定
-  topbar_components_adjustment: 頂欄組件角標設定
-  topbar_components_adjustment_desc: 配置各個頂欄圖標的角標顯示方式
-  group_topbar_pinned_channels: 頂欄常駐分區
-  topbar_pinned_channels_desc: 可將 Logo 展開內的分區固定在頂欄外側，並調整顯示順序。
+  group_topbar_components: 頂部列工具設定
+  topbar_components_adjustment: 頂部列工具角標設定
+  topbar_components_adjustment_desc: 配置各個頂部列圖像的角標顯示方式
+  group_topbar_pinned_channels: 頂部列常駐分區
+  topbar_pinned_channels_desc: 可將 Logo 展開內的分區固定在頂部列外側，並調整顯示順序。
   topbar_pinned_channels_title: 常駐分區
   topbar_pinned_channels_hint: 點擊卡片即可固定或取消，點擊順序決定顯示順序。排在後面的分區會在空間不足時優先隱藏。
   topbar_pinned_channels_all_selected: 所有可用分區都已加入。
@@ -632,8 +632,8 @@ settings:
 auth:
   auth_access_key_first: 在這之前請先授權 BewlyBewly 使用 access key
 topbar:
-  switch_to_bewly_top_bar: 切換到 BewlyBewly 頂部欄
-  switch_to_bili_top_bar: 切換到 Bilibili/Bilibili-Evolved 頂部欄
+  switch_to_bewly_top_bar: 切換到 BewlyBewly 頂部列
+  switch_to_bili_top_bar: 切換到 Bilibili/Bilibili-Evolved 頂部列
   sign_in: 登入
   notifications: 通知
   moments: 動態
@@ -645,7 +645,7 @@ topbar:
   logo_dropdown:
     anime: 番劇
     movies: 電影
-    chinese_anime: 國創
+    chinese_anime: 內地原創
     tv_shows: 電視劇
     variety_shows: 綜藝
     documentary_films: 紀錄片
