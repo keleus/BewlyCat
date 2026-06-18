@@ -192,6 +192,10 @@ settings:
     web_fullscreen: 网页全屏
     widescreen: 宽屏
     bewly_widescreen: Bewly宽屏
+    bewly_widescreen_sidebar_position: Bewly宽屏侧边栏位置
+    bewly_widescreen_sidebar_position_desc: 选择 Bewly 宽屏模式下侧边栏的显示位置
+    bewly_widescreen_sidebar_position_left: 左侧
+    bewly_widescreen_sidebar_position_right: 右侧
   video_player_scroll: 调整显示模式后滚动
   video_player_scroll_desc: 启用后，在默认模式为宽屏和默认时，会自动滚动到合适位置。
   enlarge_favorite_dialog: 放大收藏弹窗

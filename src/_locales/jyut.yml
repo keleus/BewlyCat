@@ -553,6 +553,10 @@ settings:
     web_fullscreen: 網頁全螢幕
     widescreen: 闊螢幕
     bewly_widescreen: Bewly闊螢幕
+    bewly_widescreen_sidebar_position: Bewly闊螢幕側邊欄位置
+    bewly_widescreen_sidebar_position_desc: 選擇 Bewly 闊螢幕模式下側邊欄嘅顯示位置
+    bewly_widescreen_sidebar_position_left: 左側
+    bewly_widescreen_sidebar_position_right: 右側
   show_ip_location: 顯示 IP 歸屬地
   show_ip_location_desc: 喺影片/動向頁留言區顯示 IP 歸屬地。
   show_sex: 顯示用戶性別
