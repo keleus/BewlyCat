@@ -237,10 +237,36 @@ const initialSkeletonItems = computed(() => {
   })) as T[]
 })
 
+// 有真实数据时，用与视频卡片相同结构的骨架卡片表示下一批数据正在加载。
+const showLoadingMoreSkeletonItems = computed(() => {
+  return props.showLoadingMoreSkeleton
+    && props.loading
+    && props.items.length > 0
+    && !props.needToLoginFirst
+})
+
+const loadingMoreSkeletonItems = computed(() => {
+  if (!showLoadingMoreSkeletonItems.value)
+    return []
+
+  const minimumSkeletonCount = normalizePositiveInt(props.loadingMoreSkeletonCount, 10)
+  const columns = getRenderedColumnCount()
+  const remainder = (props.items.length + minimumSkeletonCount) % columns
+  const skeletonCount = minimumSkeletonCount + (remainder === 0 ? 0 : columns - remainder)
+  return Array.from({ length: skeletonCount }, (_, i) => ({
+    _isSkeleton: true,
+    _skeletonId: `skeleton-more-${i}`,
+  })) as T[]
+})
+
 // 合并实际数据和骨架屏
 const displayItems = computed(() => {
   if (showInitialSkeleton.value)
     return initialSkeletonItems.value
+
+  if (showLoadingMoreSkeletonItems.value)
+    return [...props.items, ...loadingMoreSkeletonItems.value]
+
   return props.items
 })
 
@@ -312,6 +338,9 @@ function setupIntersectionObserver() {
   if (!sentinel)
     return
 
+  const scrollElement = findScrollElement()
+  const preloadDistance = getPreloadDistance(scrollElement)
+
   intersectionObserver = new IntersectionObserver(
     (entries) => {
       if (!isGridActive)
@@ -332,9 +361,9 @@ function setupIntersectionObserver() {
       }
     },
     {
-      root: findScrollElement(),
-      // 预加载：当列表底部进入"一个视口高度"范围内触发
-      rootMargin: '0px 0px 100% 0px',
+      root: scrollElement,
+      // 使用滚动容器的一页实际高度，避免百分比 rootMargin 按宽度解析。
+      rootMargin: `0px 0px ${preloadDistance}px 0px`,
       threshold: 0,
     },
   )
@@ -360,35 +389,21 @@ function checkShouldPreload() {
   if (!canLoadMore())
     return
 
-  // 优先使用 IntersectionObserver 的结果（避免 scroll 下频繁 layout）
-  if (supportsIntersectionObserver) {
-    if (isLoadMoreSentinelIntersecting.value)
-      triggerLoadMore()
+  // 优先使用 IntersectionObserver 的结果。
+  if (supportsIntersectionObserver && isLoadMoreSentinelIntersecting.value) {
+    triggerLoadMore()
     return
   }
 
-  // Fallback: 使用 RAF 批量读取 DOM，避免 Forced Reflow
+  // observer 回调可能滞后；用滚动几何位置兜底，保证至少提前一页加载。
   if (checkPreloadRAF !== null)
     return
 
   checkPreloadRAF = requestAnimationFrame(() => {
     checkPreloadRAF = null
 
-    const container = gridContainerRef.value
-    if (!container)
-      return
-
-    // 批量读取 DOM 属性
-    const rect = container.getBoundingClientRect()
-    const viewportHeight = window.innerHeight
-
-    // grid 底部到视口底部的距离（剩余未显示的内容高度）
-    const remainingHeight = rect.bottom - viewportHeight
-
-    // 如果剩余高度不足一个视口高度（一页），触发预加载
-    if (remainingHeight < viewportHeight) {
+    if (isWithinPreloadDistance())
       triggerLoadMore()
-    }
   })
 }
 
@@ -431,6 +446,18 @@ function cleanupScrollListeners() {
   window.removeEventListener('resize', handleResize)
 }
 
+function getRenderedColumnCount(): number {
+  const containerWidth = gridContainerRef.value?.clientWidth
+    || (typeof window !== 'undefined' ? window.innerWidth : 0)
+  return getCurrentColumnCount(props.gridLayout, containerWidth)
+}
+
+function getMissingItemsInLastRow(): number {
+  const columns = getRenderedColumnCount()
+  const remainder = props.items.length % columns
+  return remainder === 0 ? 0 : columns - remainder
+}
+
 // 监听 loading 结束后检查是否需要继续加载
 watch(() => props.loading, (newLoading, oldLoading) => {
   if (newLoading && isLoadMoreSentinelIntersecting.value && props.items.length > 0)
@@ -458,13 +485,33 @@ watch(() => props.loading, (newLoading, oldLoading) => {
   }
 
   if (oldLoading && !newLoading) {
-    if (reachedLoadMoreDuringLoading.value) {
-      reachedLoadMoreDuringLoading.value = false
-      return
-    }
+    const stayedInPreloadArea = reachedLoadMoreDuringLoading.value
+    reachedLoadMoreDuringLoading.value = false
 
     // 加载完成后，延迟检查是否需要继续加载
     nextTick(() => {
+      // 用户可能在请求结束前刚好滚到底部。此时 sentinel 没有新的相交变化，
+      // 直接按滚动容器几何位置补触发，避免丢掉这次 loadMore。
+      if (isScrollAtBottom()) {
+        triggerLoadMore()
+        return
+      }
+
+      // 首页保留一页预加载缓冲。上一批结束后仍处于缓冲区时继续预取，
+      // 直到新内容把列表底部推出这一页范围。
+      if (stayedInPreloadArea && props.showLoadingMoreSkeleton && isWithinPreloadDistance()) {
+        checkShouldPreload()
+        return
+      }
+
+      // sentinel 在整个请求期间都处于相交状态时，IntersectionObserver 不会再次回调。
+      // 只在末行差 1-2 张卡片时主动补查，避免恢复无条件递归加载。
+      if (stayedInPreloadArea) {
+        const missingItems = getMissingItemsInLastRow()
+        if (missingItems === 0 || missingItems > 2)
+          return
+      }
+
       checkShouldPreload()
     })
   }
@@ -813,6 +860,30 @@ function findScrollElement(): HTMLElement | null {
   return null
 }
 
+function getPreloadDistance(scrollElement: HTMLElement | null = findScrollElement()): number {
+  return Math.max(1, scrollElement?.clientHeight || (typeof window !== 'undefined' ? window.innerHeight : 0))
+}
+
+function getRemainingScroll(scrollElement: HTMLElement): number {
+  return scrollElement.scrollHeight - scrollElement.clientHeight - scrollElement.scrollTop
+}
+
+function isWithinPreloadDistance(): boolean {
+  const scrollElement = findScrollElement()
+  if (!scrollElement)
+    return false
+
+  return getRemainingScroll(scrollElement) <= getPreloadDistance(scrollElement)
+}
+
+function isScrollAtBottom(): boolean {
+  const scrollElement = findScrollElement()
+  if (!scrollElement)
+    return false
+
+  return getRemainingScroll(scrollElement) <= 2
+}
+
 const itemVirtualizer = useVirtualizer<HTMLElement, HTMLElement>(computed(() => ({
   count: displayItems.value.length,
   getScrollElement: () => findScrollElement(),
@@ -1098,6 +1169,7 @@ function getUniqueKey(item: T, index: number): string | number {
             'top': `${renderItem.start}px`,
             'left': `${renderItem.lane * (virtualItemWidth + currentGridGap)}px`,
             'width': `${virtualItemWidth}px`,
+            'height': `${estimatedItemHeight}px`,
             'minHeight': `${estimatedItemHeight}px`,
             '--bew-video-card-virtual-height': `${estimatedItemHeight}px`,
           }"
@@ -1260,6 +1332,13 @@ function getUniqueKey(item: T, index: number): string | number {
     content-visibility: visible;
     contain-intrinsic-size: auto none;
     min-height: var(--bew-video-card-virtual-height);
+  }
+
+  :deep(.video-card-container--skeleton) {
+    box-sizing: border-box;
+    height: var(--bew-video-card-virtual-height);
+    max-height: var(--bew-video-card-virtual-height);
+    overflow: hidden;
   }
 }
 

@@ -1,3 +1,32 @@
+<script lang="ts">
+const MAX_REMEMBERED_PICTURES = 1000
+const loadedPictureSources = new Set<string>()
+
+function hasLoadedPicture(src: string): boolean {
+  if (!src || !loadedPictureSources.has(src))
+    return false
+
+  // 刷新插入顺序，使最近重新使用的封面更晚被淘汰。
+  loadedPictureSources.delete(src)
+  loadedPictureSources.add(src)
+  return true
+}
+
+function rememberLoadedPicture(src: string) {
+  if (!src)
+    return
+
+  loadedPictureSources.delete(src)
+  loadedPictureSources.add(src)
+
+  if (loadedPictureSources.size > MAX_REMEMBERED_PICTURES) {
+    const oldestSource = loadedPictureSources.values().next().value
+    if (oldestSource)
+      loadedPictureSources.delete(oldestSource)
+  }
+}
+</script>
+
 <script setup lang="ts">
 /**
  * 优化的懒加载图片组件
@@ -32,10 +61,12 @@ const emit = defineEmits<{
   loaded: []
 }>()
 
+const initiallyLoaded = hasLoadedPicture(props.src)
 const imgRef = ref<HTMLElement>()
-const isVisible = ref(false)
-const isLoaded = ref(false)
-const actualSrc = ref('')
+const isVisible = ref(props.loading === 'eager' || initiallyLoaded)
+const isLoaded = ref(initiallyLoaded)
+const actualSrc = ref(isVisible.value ? props.src : '')
+const skipRevealTransition = ref(initiallyLoaded)
 
 // IntersectionObserver 实例
 let observer: IntersectionObserver | null = null
@@ -47,6 +78,9 @@ function cleanupObserver() {
 
 // 开始加载图片
 function startLoad() {
+  const loadedBefore = hasLoadedPicture(props.src)
+  isLoaded.value = loadedBefore
+  skipRevealTransition.value = loadedBefore
   isVisible.value = true
   actualSrc.value = props.src
 }
@@ -57,7 +91,9 @@ function releaseImage() {
 
   actualSrc.value = ''
   isVisible.value = false
-  isLoaded.value = false
+  const loadedBefore = hasLoadedPicture(props.src)
+  isLoaded.value = loadedBefore
+  skipRevealTransition.value = loadedBefore
 }
 
 function getObserverRootMargin() {
@@ -79,12 +115,6 @@ function isElementInRetainedRange(element: HTMLElement): boolean {
   const rect = element.getBoundingClientRect()
 
   return rect.bottom >= -margin && rect.top <= window.innerHeight + margin
-}
-
-// 如果是 eager 模式，立即加载
-if (props.loading === 'eager') {
-  isVisible.value = true
-  actualSrc.value = props.src
 }
 
 onMounted(() => {
@@ -153,15 +183,19 @@ onBeforeUnmount(() => {
 
 // 监听图片加载完成
 function handleImageLoad() {
+  rememberLoadedPicture(actualSrc.value)
   isLoaded.value = true
   emit('loaded')
 }
 
 // 监听 src 变化（用于图片切换场景）
 watch(() => props.src, (newSrc) => {
+  const loadedBefore = hasLoadedPicture(newSrc)
+  isLoaded.value = loadedBefore
+  skipRevealTransition.value = loadedBefore
+
   if (isVisible.value) {
     actualSrc.value = newSrc
-    isLoaded.value = false
   }
 })
 </script>
@@ -171,17 +205,19 @@ watch(() => props.src, (newSrc) => {
     ref="imgRef"
     w-full max-w-full align-middle
     rounded="$bew-radius"
-    style="aspect-ratio: 16 / 9; display: block; overflow: hidden; contain: layout style;"
+    style="aspect-ratio: 16 / 9; display: block; position: relative; overflow: hidden; contain: layout style;"
   >
-    <!-- 骨架屏 - 图片未可见时显示（仅当 showSkeleton 为 true 时） -->
-    <div
-      v-if="!isVisible && showSkeleton"
-      w-full h-full
-      bg="$bew-skeleton"
-      rounded="$bew-radius"
-      class="animate-pulse"
-      style="aspect-ratio: 16 / 9;"
-    />
+    <!-- 图片完成加载前持续显示骨架层，与真实图片交叉淡出。 -->
+    <Transition name="skeleton-fade">
+      <div
+        v-if="showSkeleton && !isLoaded"
+        aria-hidden="true"
+        w-full h-full
+        bg="$bew-skeleton"
+        rounded="$bew-radius"
+        class="lazy-picture-skeleton animate-pulse"
+      />
+    </Transition>
 
     <!-- 实际图片 - 图片可见后加载 -->
     <template v-if="isVisible && actualSrc">
@@ -190,13 +226,14 @@ watch(() => props.src, (newSrc) => {
       <img
         :src="actualSrc"
         :alt="alt"
-        loading="lazy"
+        :loading="skipRevealTransition ? 'eager' : loading"
         decoding="async"
         block w-full h-full
         rounded-inherit
         style="aspect-ratio: 16 / 9; object-fit: cover; object-position: center;"
         :style="{ opacity: isLoaded ? 1 : 0 }"
         class="image-transition"
+        :class="{ 'image-transition--instant': skipRevealTransition }"
         @load="handleImageLoad"
       >
     </template>
@@ -204,9 +241,36 @@ watch(() => props.src, (newSrc) => {
 </template>
 
 <style scoped>
+.lazy-picture-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
 .image-transition {
-  transition: opacity 0.5s ease-out;
+  position: relative;
+  z-index: 1;
+  transition: opacity 0.35s ease-out;
   will-change: opacity;
+}
+
+.image-transition--instant {
+  transition: none;
+}
+
+.skeleton-fade-leave-active {
+  transition: opacity 0.35s ease-out;
+}
+
+.skeleton-fade-leave-to {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-transition,
+  .skeleton-fade-leave-active {
+    transition: none;
+  }
 }
 
 @keyframes pulse {

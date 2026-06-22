@@ -476,6 +476,24 @@ provide('getVideoType', () => props.type!)
 /* 骨架屏状态：禁用交互 */
 .video-card-container--skeleton {
   pointer-events: none;
+  animation: video-card-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes video-card-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-card-container--skeleton {
+    animation: none;
+  }
 }
 
 /* hover/active 效果全部在最外层容器，background-color + box-shadow 同一元素同步动画，无时序差 */

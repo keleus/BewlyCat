@@ -379,7 +379,7 @@ onBeforeUnmount(() => {
         :src="coverImageUrl"
         loading="lazy"
         root-margin="96px"
-        :show-skeleton="false"
+        :show-skeleton="true"
         @loaded="emit('imageLoaded')"
       />
 
