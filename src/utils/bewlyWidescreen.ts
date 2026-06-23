@@ -47,7 +47,6 @@ const LOAD_SETTLE_DELAY = 1200
 const READY_RETRY_INTERVAL = 500
 const READY_RETRY_MAX = 30
 const SIDEBAR_REFRESH_DELAY = 800
-const SIDEBAR_REFRESH_MAX = 8
 const SIDEBAR_TOGGLE_IDLE_DELAY = 1000
 const BILIBILI_ACTION_ANIMATION_HUE = 196
 
@@ -56,7 +55,6 @@ let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
 let loadFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined
 let readyRetryCount = 0
-let sidebarRefreshCount = 0
 let waitingForLoad = false
 let pendingSidebarPosition: 'left' | 'right' = 'right'
 
@@ -211,6 +209,35 @@ function restoreMovedNodes(movedNodes: MovedNode[]) {
     }
   }
   movedNodes.length = 0
+}
+
+function removeMovedNode(node: HTMLElement, movedNodes: MovedNode[]) {
+  const index = movedNodes.findIndex(movedNode => movedNode.node === node)
+  if (index >= 0) {
+    const [movedNode] = movedNodes.splice(index, 1)
+    movedNode.placeholder.remove()
+  }
+
+  node.remove()
+}
+
+function moveOrReplaceNode(selectors: string[], target: HTMLElement, movedNodes: MovedNode[], allowInsideLayout = false) {
+  const existing = findFirst(selectors, target)
+  const next = allowInsideLayout
+    ? findFirst(selectors, target) || findMovable(selectors)
+    : findMovable(selectors)
+
+  if (existing && next && existing !== next) {
+    removeMovedNode(existing, movedNodes)
+    const moved = moveNode(next, target, movedNodes, allowInsideLayout)
+    return { found: moved, changed: moved }
+  }
+
+  if (existing)
+    return { found: true, changed: false }
+
+  const moved = moveNode(next, target, movedNodes, allowInsideLayout)
+  return { found: moved, changed: moved }
 }
 
 function createPanelEmpty(label: string) {
@@ -558,8 +585,8 @@ function injectLayoutStyle() {
       filter: none !important;
     }
 
-    #${ROOT_ID} .player-wrap *,
-    #${ROOT_ID} .bpx-player-container *,
+    #${ROOT_ID} .player-wrap *:not(.bili-danmaku-x-guide, .bili-danmaku-x-guide *),
+    #${ROOT_ID} .bpx-player-container *:not(.bili-danmaku-x-guide, .bili-danmaku-x-guide *),
     #${ROOT_ID} .bpx-player-primary-area,
     #${ROOT_ID} .bpx-player-video-area,
     #${ROOT_ID} .bpx-player-video-wrap,
@@ -588,23 +615,6 @@ function injectLayoutStyle() {
       border: 0 !important;
     }
 
-    #${ROOT_ID} .bili-danmaku-x-guide.bili-danmaku-x-guide-all {
-      background: color-mix(
-        in srgb,
-        rgba(20, 22, 27, 0.88) 88%,
-        var(--bew-theme-color, #00aeec) 12%
-      ) !important;
-      box-shadow:
-        0 8px 24px rgba(0, 0, 0, 0.4),
-        inset 0 0 0 1px color-mix(in srgb, var(--bew-theme-color, #00aeec) 32%, transparent) !important;
-    }
-
-    #${ROOT_ID} .bili-danmaku-x-guide-three > span.bili-danmaku-x-active svg,
-    #${ROOT_ID} .bili-danmaku-x-guide-three > span.bili-danmaku-x-active svg * {
-      color: var(--bew-theme-color, #00aeec) !important;
-      fill: var(--bew-theme-color, #00aeec) !important;
-    }
-
     #${ROOT_ID} .bili-danmaku-x-guide:not(.bili-danmaku-x-guide-followed) .bili-danmaku-x-guide-follow,
     #${ROOT_ID} .bili-danmaku-x-guide-electric {
       background: var(--bew-theme-color, #00aeec) !important;
@@ -615,7 +625,10 @@ function injectLayoutStyle() {
       background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 82%, white) !important;
     }
 
-    #${ROOT_ID} .bili-danmaku-x-guide-animate > span,
+    #${ROOT_ID} .bili-danmaku-x-guide-three {
+      display: none !important;
+    }
+
     #${ROOT_ID} .bili-danmaku-x-guide-cyc > span {
       filter: var(--bewly-widescreen-action-canvas-filter, none) !important;
     }
@@ -1437,7 +1450,10 @@ function schedulePlayerResizeSync(currentState: BewlyWidescreenState) {
 function setupAspectObservers(currentState: BewlyWidescreenState) {
   const video = getVideoElement()
   if (video) {
-    const onLoadedMetadata = () => updateAspectRatio()
+    const onLoadedMetadata = () => {
+      updateAspectRatio()
+      scheduleSidebarRefresh()
+    }
     video.addEventListener('loadedmetadata', onLoadedMetadata)
     currentState.metadataListener = () => video.removeEventListener('loadedmetadata', onLoadedMetadata)
   }
@@ -1635,26 +1651,29 @@ function syncDescription(currentState: BewlyWidescreenState) {
   descriptionSlot.classList.toggle('is-expanded', canExpand && currentState.descriptionExpanded)
 }
 
+function syncSidebarTitle(currentState: BewlyWidescreenState) {
+  const titleElement = currentState.sidebarTop.querySelector<HTMLElement>('.bewly-widescreen-title')
+  const nextTitle = getTitleText()
+  if (titleElement && nextTitle && titleElement.textContent !== nextTitle)
+    titleElement.textContent = nextTitle
+}
+
 function fillSidebar(currentState: BewlyWidescreenState) {
   syncActionAnimationTheme(currentState)
+  syncSidebarTitle(currentState)
 
-  if (!currentState.toolbarSlot.querySelector(selectors.toolbar.join(',')))
-    moveNode(findMovable(selectors.toolbar), currentState.toolbarSlot, currentState.movedNodes)
+  moveOrReplaceNode(selectors.toolbar, currentState.toolbarSlot, currentState.movedNodes)
 
-  if (!currentState.upSlot.querySelector(selectors.upPanel.join(',')))
-    moveNode(findMovable(selectors.upPanel), currentState.upSlot, currentState.movedNodes)
+  moveOrReplaceNode(selectors.upPanel, currentState.upSlot, currentState.movedNodes)
 
-  if (!currentState.descriptionSlot.querySelector(selectors.description.join(','))) {
-    const moved = moveNode(findMovable(selectors.description), currentState.descriptionSlot, currentState.movedNodes)
-    if (moved)
-      currentState.descriptionExpanded = false
-  }
+  const descriptionResult = moveOrReplaceNode(selectors.description, currentState.descriptionSlot, currentState.movedNodes)
+  if (descriptionResult.changed)
+    currentState.descriptionExpanded = false
   syncDescription(currentState)
 
   moveDanmakuInput(currentState)
-  const commentMoved = currentState.panels.comment.querySelector(selectors.comment.join(','))
-    || moveNode(findMovable(selectors.comment), currentState.panels.comment, currentState.movedNodes)
-  if (!commentMoved) {
+  const commentResult = moveOrReplaceNode(selectors.comment, currentState.panels.comment, currentState.movedNodes)
+  if (!commentResult.found) {
     ensureEmptyPanel(currentState.panels.comment, '评论区加载中')
   }
   else {
@@ -1662,9 +1681,8 @@ function fillSidebar(currentState: BewlyWidescreenState) {
     shortenCommentTimes(currentState.panels.comment)
   }
 
-  const danmakuMoved = currentState.panels.danmaku.querySelector(selectors.danmaku.join(','))
-    || moveNode(findMovable(selectors.danmaku), currentState.panels.danmaku, currentState.movedNodes)
-  if (!danmakuMoved)
+  const danmakuResult = moveOrReplaceNode(selectors.danmaku, currentState.panels.danmaku, currentState.movedNodes)
+  if (!danmakuResult.found)
     ensureEmptyPanel(currentState.panels.danmaku, '弹幕列表加载中')
   else
     clearEmptyPanel(currentState.panels.danmaku)
@@ -1838,7 +1856,7 @@ function startAfterPageLoad(sidebarPosition: 'left' | 'right' = 'right') {
 }
 
 function scheduleSidebarRefresh() {
-  if (!state || sidebarRefreshTimer || sidebarRefreshCount >= SIDEBAR_REFRESH_MAX)
+  if (!state || sidebarRefreshTimer)
     return
 
   sidebarRefreshTimer = setTimeout(() => {
@@ -1846,7 +1864,6 @@ function scheduleSidebarRefresh() {
     if (!state)
       return
 
-    sidebarRefreshCount++
     fillSidebar(state)
   }, SIDEBAR_REFRESH_DELAY)
 }
@@ -1855,7 +1872,6 @@ export function applyBewlyWidescreen(sidebarPosition: 'left' | 'right' = 'right'
   if (state || waitingForLoad || readyRetryTimer)
     return
 
-  sidebarRefreshCount = 0
   pendingSidebarPosition = sidebarPosition
 
   if (document.readyState === 'complete') {
