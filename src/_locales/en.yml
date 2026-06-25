@@ -662,7 +662,7 @@ settings:
   external_watch_later_button: External watch later button
   external_watch_later_button_desc: When enabled, a standalone watch later button will be displayed on the video page toolbar for quick access.
   enable_mediasession_helper: Enhance system media controls
-  enable_mediasession_helper_desc: Send Bilibili video, live, and bangumi title, author, and artwork to the browser MediaSession API.
+  enable_mediasession_helper_desc: Send Bilibili video and bangumi title, author, and artwork to the browser MediaSession API.
   bangumi_mediasession_cover_source: Bangumi artwork source
   bangumi_mediasession_cover_source_desc: Choose which artwork bangumi pages use in system media controls.
   bangumi_mediasession_cover_source_opt:

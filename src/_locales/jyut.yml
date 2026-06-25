@@ -571,7 +571,7 @@ settings:
   external_watch_later_button: 稍後再睇按鈕外置
   external_watch_later_button_desc: 啓用後，影片頁會喺工具欄顯示獨立嘅稍後再睇按鈕，方便快速添加影片到稍後再睇。
   enable_mediasession_helper: 增強系統媒體控制資訊
-  enable_mediasession_helper_desc: 啓用後，向瀏覽器 MediaSession 提供 Bilibili 影片、直播同番劇嘅標題、作者同封面。
+  enable_mediasession_helper_desc: 啓用後，向瀏覽器 MediaSession 提供 Bilibili 影片同番劇嘅標題、作者同封面。
   bangumi_mediasession_cover_source: 番劇封面來源
   bangumi_mediasession_cover_source_desc: 控制番劇喺系統媒體控制入面用邊張封面。
   bangumi_mediasession_cover_source_opt:
