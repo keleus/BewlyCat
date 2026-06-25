@@ -97,6 +97,7 @@ settings:
   group_performance: 毛玻璃與效能
   group_player_settings: 播放器設定
   group_player_components: 播放器組件
+  group_mediasession: 媒體控制
   group_playback_behavior: 播放行為
   group_auto_play: 自動連播
   group_random_play: 隨機播放
@@ -431,6 +432,14 @@ settings:
   enable_settings_sync_desc: 在不同裝置間同步擴展設定（需要登入瀏覽器帳號）
   keep_collection_video_default_mode: 合集影片保持預設模式
   keep_collection_video_default_mode_desc: 當啟用時，合集影片將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
+  enable_mediasession_helper: 增強系統媒體控制資訊
+  enable_mediasession_helper_desc: 啟用後，向瀏覽器 MediaSession 提供 Bilibili 影片、直播和番劇的標題、作者與封面。
+  bangumi_mediasession_cover_source: 番劇封面來源
+  bangumi_mediasession_cover_source_desc: 控制番劇在系統媒體控制裡使用哪張封面。
+  bangumi_mediasession_cover_source_opt:
+    episode: 目前集數封面
+    season: 番劇主封面
+    square: 方形主封面
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住你上次設定的倍速，並在下次打開影片時自動套用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播放完畢後自動退出

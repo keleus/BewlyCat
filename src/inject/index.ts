@@ -65,6 +65,133 @@ else {
     },
   )
 
+  let updateMediaSessionMetadata: (() => void) | null = null
+  let mediaSessionHelperInitialized = false
+
+  function initBilibiliMediaSessionHelper() {
+    if (mediaSessionHelperInitialized)
+      return
+    if (!('mediaSession' in navigator) || window.self !== window.top)
+      return
+
+    const mediaSession = navigator.mediaSession
+    const proxy = new Proxy(mediaSession, {
+      set: (target, key, value) => {
+        if (!currentSettings?.enableMediaSessionHelper)
+          return Reflect.set(target, key, value)
+        return true
+      },
+      get: (target, key) => {
+        const value = (target as any)[key]
+        return value?.bind ? value.bind(target) : value
+      },
+    })
+
+    try {
+      Object.defineProperty(navigator, 'mediaSession', {
+        get: () => proxy,
+      })
+    }
+    catch {
+      return
+    }
+    mediaSessionHelperInitialized = true
+
+    const normalizeCoverUrl = (url?: string) => url?.replace(/^https?:/, '')
+
+    const getNextSeasonData = () => {
+      const text = document.getElementById('__NEXT_DATA__')?.textContent
+      const queries = text ? JSON.parse(text).props?.pageProps?.dehydratedState?.queries : []
+      return queries?.find((item: any) => item.queryKey?.[0] === 'pgc/view/web/simple/season')?.state?.data
+    }
+
+    const getCurrentEpisodeCover = (id: string) =>
+      (document.querySelector(`a[href*="/bangumi/play/ep${id}"] .imageListItem_coverWrap__evIUp img`) as HTMLImageElement | null)?.src
+
+    const getBangumiCover = (episodeCover?: string, seasonCover?: string, squareCover?: string) => ({
+      episode: episodeCover || seasonCover,
+      season: seasonCover || episodeCover,
+      square: squareCover || seasonCover || episodeCover,
+    })[currentSettings?.bangumiMediaSessionCoverSource || 'episode'] || episodeCover || seasonCover
+
+    const updateMetadata = () =>
+      Promise.resolve()
+        .then(async () => {
+          if (!currentSettings?.enableMediaSessionHelper)
+            return
+
+          const url = window.location.href
+          const liveId = url.match(/live\.bilibili\.com\/(\d+)/)?.[1]
+          const videoId = url.match(/bilibili\.com\/video\/(?:av|BV)(\w+)/)?.[1]
+          const bangumiId = url.match(/bilibili\.com\/bangumi\/play\/(\w+)/)?.[1]
+          if (liveId) {
+            const response = await fetch(`//api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom?room_id=${liveId}`)
+            const body = await response.json()
+            const data = body.data
+            return {
+              ...data.room_info,
+              artist: data.anchor_info.base_info.uname,
+            }
+          }
+          else if (videoId) {
+            const videoData = (window as any).__INITIAL_STATE__?.videoData
+            return {
+              title: videoData?.title,
+              artist: videoData?.owner?.name,
+              cover: normalizeCoverUrl(videoData?.pic),
+            }
+          }
+          else if (bangumiId) {
+            const state = (window as any).__INITIAL_STATE__ || {}
+            const { progress = {} } = (window as any).__PGC_USERSTATE__ || {}
+            const { epInfo = {}, epList = [], mediaInfo = {}, sections = [] } = state
+            const seasonData = getNextSeasonData()
+            let epId = bangumiId
+            if (epId.startsWith('ss'))
+              epId = String(epInfo.id === -1 ? progress.last_ep_id : epInfo.id)
+            else if (epId.startsWith('ep'))
+              epId = epId.slice(2)
+
+            const epListFromSections = sections.reduce((output: any[], section: any) => output.concat(section.epList || []), [])
+            const targetEpInfo = epList.concat(epListFromSections).find((item: any) => item.id?.toString() === epId?.toString()) || {}
+            const episodeCover = targetEpInfo.cover || getCurrentEpisodeCover(epId)
+            const seasonCover = mediaInfo.cover || seasonData?.cover
+            return {
+              title: mediaInfo.title || seasonData?.title,
+              artist: [targetEpInfo.titleFormat, targetEpInfo.longTitle].join(' ').trim()
+                || document.getElementById('player-title')?.textContent?.trim(),
+              cover: normalizeCoverUrl(getBangumiCover(episodeCover, seasonCover, seasonData?.square_cover)),
+            }
+          }
+        })
+        .then((data) => {
+          if (!data?.title || !data.cover)
+            return
+
+          const image = new Image()
+          image.onload = () => {
+            mediaSession.metadata = new window.MediaMetadata({
+              title: data.title,
+              artist: data.artist,
+              artwork: [{ src: data.cover, sizes: `${image.naturalWidth}x${image.naturalHeight}`, type: 'image/jpeg' }],
+            })
+          }
+          image.src = data.cover
+        })
+        .catch(() => undefined)
+
+    const queueUpdateMetadata = () => {
+      void updateMetadata()
+      window.setTimeout(() => void updateMetadata(), 800)
+    }
+
+    updateMediaSessionMetadata = queueUpdateMetadata
+    queueUpdateMetadata()
+    window.addEventListener('pushstate', queueUpdateMetadata)
+    window.addEventListener('popstate', queueUpdateMetadata)
+    injectFunction(window.history, ['replaceState'], queueUpdateMetadata)
+  }
+
   // 获取IP地理位置字符串
   function getLocationString(replyItem: any) {
     const location = replyItem?.reply_control?.location
@@ -404,6 +531,8 @@ else {
         settingsReady = true
         resolveSettingsReady?.()
         resolveSettingsReady = null
+        initBilibiliMediaSessionHelper()
+        updateMediaSessionMetadata?.()
 
         // 只在首次启用时输出日志
         if (isFirstTime && data.enableVolumeNormalization) {

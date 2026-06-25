@@ -97,6 +97,7 @@ settings:
   group_performance: Frosted Glass & Performance
   group_player_settings: Player Settings
   group_player_components: Player Components
+  group_mediasession: Media Controls
   group_playback_behavior: Playback Behavior
   group_auto_play: Auto Play
   group_random_play: Random Play
@@ -660,6 +661,14 @@ settings:
   enlarge_favorite_dialog_desc: When enabled, the favorite dialog on video pages will be displayed in a larger size for easier viewing and management.
   external_watch_later_button: External watch later button
   external_watch_later_button_desc: When enabled, a standalone watch later button will be displayed on the video page toolbar for quick access.
+  enable_mediasession_helper: Enhance system media controls
+  enable_mediasession_helper_desc: Send Bilibili video, live, and bangumi title, author, and artwork to the browser MediaSession API.
+  bangumi_mediasession_cover_source: Bangumi artwork source
+  bangumi_mediasession_cover_source_desc: Choose which artwork bangumi pages use in system media controls.
+  bangumi_mediasession_cover_source_opt:
+    episode: Current episode artwork
+    season: Season cover
+    square: Square season cover
   volume_normalization:
     title: Volume Normalization
     enable: Enable volume normalization
