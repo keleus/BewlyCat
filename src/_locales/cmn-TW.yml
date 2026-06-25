@@ -433,7 +433,7 @@ settings:
   keep_collection_video_default_mode: 合集影片保持預設模式
   keep_collection_video_default_mode_desc: 當啟用時，合集影片將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   enable_mediasession_helper: 增強系統媒體控制資訊
-  enable_mediasession_helper_desc: 啟用後，向瀏覽器 MediaSession 提供 Bilibili 影片、直播和番劇的標題、作者與封面。
+  enable_mediasession_helper_desc: 啟用後，向瀏覽器 MediaSession 提供 Bilibili 影片和番劇的標題、作者與封面。
   bangumi_mediasession_cover_source: 番劇封面來源
   bangumi_mediasession_cover_source_desc: 控制番劇在系統媒體控制裡使用哪張封面。
   bangumi_mediasession_cover_source_opt:
