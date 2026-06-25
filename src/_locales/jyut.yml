@@ -97,6 +97,7 @@ settings:
   group_performance: 毛玻璃同效能
   group_player_settings: 播放器設定
   group_player_components: 播放器組件
+  group_mediasession: 媒體控制
   group_playback_behavior: 播放行為
   group_auto_play: 自動連播
   group_random_play: 隨機播放
@@ -569,6 +570,14 @@ settings:
   enlarge_favorite_dialog_desc: 啓用後，影片頁收藏彈窗會用更大嘅尺寸顯示，方便睇同管理收藏夾。
   external_watch_later_button: 稍後再睇按鈕外置
   external_watch_later_button_desc: 啓用後，影片頁會喺工具欄顯示獨立嘅稍後再睇按鈕，方便快速添加影片到稍後再睇。
+  enable_mediasession_helper: 增強系統媒體控制資訊
+  enable_mediasession_helper_desc: 啓用後，向瀏覽器 MediaSession 提供 Bilibili 影片、直播同番劇嘅標題、作者同封面。
+  bangumi_mediasession_cover_source: 番劇封面來源
+  bangumi_mediasession_cover_source_desc: 控制番劇喺系統媒體控制入面用邊張封面。
+  bangumi_mediasession_cover_source_opt:
+    episode: 當前話封面
+    season: 番劇主封面
+    square: 方形主封面
   group_fonts: ''
   group_visual_effects: ''
 auth:
