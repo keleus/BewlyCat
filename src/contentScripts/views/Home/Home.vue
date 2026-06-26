@@ -210,6 +210,7 @@ function toggleTabContentLoading(loading: boolean) {
 
       <header
         v-if="shouldShowHomeHeader"
+        :class="{ 'home-header-fixed': settings.fixedHomeTabsOnHomePage }"
         w-full z-9 m="b-4" duration-300
         ease-in-out flex="~ justify-between items-start gap-4"
       >
@@ -330,6 +331,10 @@ function toggleTabContentLoading(loading: boolean) {
 
 .tab-activated {
   --uno: "bg-$bew-theme-color-auto text-$bew-text-auto";
+}
+
+.home-header-fixed {
+  --uno: "sticky top-[calc(var(--bew-top-bar-height)+10px)]";
 }
 
 .grid-layout-item-activated {
