@@ -88,7 +88,10 @@ else {
     })
 
     try {
+      const originalDescriptor = Object.getOwnPropertyDescriptor(navigator, 'mediaSession')
       Object.defineProperty(navigator, 'mediaSession', {
+        configurable: originalDescriptor?.configurable ?? true,
+        enumerable: originalDescriptor?.enumerable ?? true,
         get: () => proxy,
       })
     }
