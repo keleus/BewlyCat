@@ -14,7 +14,7 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 const { t } = useI18n()
 
 // 当前选中的顶栏元素
-const selectedElement = ref<string>('')
+const selectedElement = ref<string>('switchers')
 
 // 顶栏元素类型定义
 interface TopBarElement {
@@ -113,6 +113,10 @@ const topBarElements = computed<TopBarElement[]>(() => {
   })
 
   return elements
+})
+
+const selectedTopBarElement = computed(() => {
+  return topBarElements.value.find(element => element.id === selectedElement.value)
 })
 
 // 点击顶栏元素
@@ -216,8 +220,16 @@ function toggleChannel(value: string) {
     <SettingsItem>
       <template #bottom>
         <!-- 提示文字 -->
-        <div text-sm opacity-70 mb-3>
-          点击顶栏对应元素进行设置
+        <div class="topbar-config-hint" mb-3>
+          <div class="topbar-config-hint__icon" i-mingcute:cursor-click-line />
+          <div class="topbar-config-hint__content">
+            <div class="topbar-config-hint__title">
+              点击顶栏预览中的元素切换设置项
+            </div>
+            <div class="topbar-config-hint__desc">
+              当前正在设置：{{ selectedTopBarElement?.label ?? '未选择' }}
+            </div>
+          </div>
         </div>
 
         <!-- 缩略顶栏预览 -->
@@ -519,11 +531,49 @@ function toggleChannel(value: string) {
   position: relative;
 }
 
+.topbar-config-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--bew-theme-color-30);
+  border-radius: var(--bew-radius);
+  background: color-mix(in oklab, var(--bew-theme-color-20), transparent 25%);
+  color: var(--bew-text-1);
+
+  &__icon {
+    flex: 0 0 auto;
+    margin-top: 2px;
+    color: var(--bew-theme-color);
+    font-size: 18px;
+  }
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  &__desc {
+    color: var(--bew-text-2);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
+
 .topbar-element {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0.5rem;
+  border: 1px solid transparent;
   border-radius: var(--bew-radius);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -537,6 +587,8 @@ function toggleChannel(value: string) {
 
   &.active {
     background: var(--bew-theme-color-20);
+    border-color: var(--bew-theme-color-30);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--bew-theme-color-30), transparent 35%);
     color: var(--bew-theme-color);
   }
 
