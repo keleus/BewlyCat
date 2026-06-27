@@ -592,9 +592,10 @@ else {
     if (removeOriginalTopBar)
       document.documentElement.removeChild(removeOriginalTopBar)
 
-    // Initialize Audio Interceptor
-    initAudioInterceptor()
+    // Initialize Audio Interceptor only when volume normalization is enabled.
     setupSettingsWatcher()
+    if (settings.value.enableVolumeNormalization)
+      initAudioInterceptor()
     initVolumeNormalizationControl()
 
     // Initialize Favorite Dialog Enhancement (for video pages)

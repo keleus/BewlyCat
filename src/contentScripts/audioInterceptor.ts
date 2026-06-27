@@ -135,7 +135,7 @@ const pendingMetadataVideos = new WeakSet<HTMLVideoElement>()
 let hasAttached = false
 let interceptorTimer: ReturnType<typeof setInterval> | null = null
 let hasSetupSettingsWatcher = false
-let hasSetupVisibilityListener = false
+let visibilityChangeHandler: (() => void) | null = null
 let shouldResetAnalysisOnNextPlayback = false
 
 // 临时启用/禁用状态（用于播放器控件）
@@ -735,8 +735,22 @@ function isVideoPage(): boolean {
     || path.startsWith('/cheese/play/')
 }
 
+function stopAudioInterceptor() {
+  if (interceptorTimer) {
+    clearInterval(interceptorTimer)
+    interceptorTimer = null
+  }
+
+  if (visibilityChangeHandler) {
+    document.removeEventListener('visibilitychange', visibilityChangeHandler)
+    visibilityChangeHandler = null
+  }
+
+  stopLoudnessAnalysis()
+}
+
 export function initAudioInterceptor() {
-  if (interceptorTimer)
+  if (interceptorTimer || !settings.value.enableVolumeNormalization)
     return
 
   if (isVideoPage()) {
@@ -745,9 +759,8 @@ export function initAudioInterceptor() {
 
   let lastUrl = location.href
 
-  if (!hasSetupVisibilityListener) {
-    hasSetupVisibilityListener = true
-    document.addEventListener('visibilitychange', () => {
+  if (!visibilityChangeHandler) {
+    visibilityChangeHandler = () => {
       if (document.hidden) {
         if (currentVideoElement)
           suspendProcessingForIdlePlayback()
@@ -761,7 +774,8 @@ export function initAudioInterceptor() {
       else {
         updateProcessingState()
       }
-    })
+    }
+    document.addEventListener('visibilitychange', visibilityChangeHandler)
   }
 
   interceptorTimer = setInterval(() => {
@@ -817,13 +831,16 @@ export function setupSettingsWatcher() {
     log('Settings changed: enableVolumeNormalization =', newVal)
 
     if (newVal) {
+      initAudioInterceptor()
       const video = getActiveVideoElement()
       if (video && !document.hidden) {
         attachToVideo(video)
       }
     }
-    else if (currentVideoElement) {
-      updateProcessingState()
+    else {
+      if (audioNodes && audioContext)
+        connectBypassGraph()
+      stopAudioInterceptor()
     }
   })
 
