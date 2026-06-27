@@ -410,7 +410,15 @@ function getActiveVideoElement(): HTMLVideoElement | null {
     return document.querySelector('video')
   }
 
-  return candidates.find(video => isVisibleVideo(video) && !video.ended)
+  if (currentVideoElement
+    && candidates.includes(currentVideoElement)
+    && isPlaybackActive(currentVideoElement)) {
+    return currentVideoElement
+  }
+
+  return candidates.find(video => isVisibleVideo(video) && !video.paused && !video.ended)
+    || candidates.find(video => !video.paused && !video.ended)
+    || candidates.find(video => isVisibleVideo(video) && !video.ended)
     || candidates.find(isVisibleVideo)
     || candidates[0]
     || null
@@ -636,6 +644,11 @@ export function attachToVideo(video: HTMLVideoElement) {
     return
   }
 
+  // 后台加载时播放器可能仍在替换临时 video，等标签页可见后再绑定 Web Audio。
+  if (document.hidden) {
+    return
+  }
+
   if (!video.isConnected) {
     return
   }
@@ -735,11 +748,15 @@ export function initAudioInterceptor() {
   if (!hasSetupVisibilityListener) {
     hasSetupVisibilityListener = true
     document.addEventListener('visibilitychange', () => {
-      if (!isPlaybackActive(currentVideoElement))
-        return
-
       if (document.hidden) {
-        suspendProcessingForIdlePlayback()
+        if (currentVideoElement)
+          suspendProcessingForIdlePlayback()
+        return
+      }
+
+      const video = getActiveVideoElement()
+      if (video && (video !== currentVideoElement || !hasAttached)) {
+        attachToVideo(video)
       }
       else {
         updateProcessingState()
@@ -765,7 +782,7 @@ export function initAudioInterceptor() {
       return
     }
 
-    if (hasAttached && currentVideoElement?.isConnected && !urlChanged) {
+    if (document.hidden) {
       return
     }
 
@@ -801,7 +818,7 @@ export function setupSettingsWatcher() {
 
     if (newVal) {
       const video = getActiveVideoElement()
-      if (video) {
+      if (video && !document.hidden) {
         attachToVideo(video)
       }
     }
