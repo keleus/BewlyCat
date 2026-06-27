@@ -751,6 +751,8 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID} .bewly-widescreen-sidebar-top {
+      position: relative;
+      z-index: 0;
       flex: 0 0 auto;
       padding: 8px 10px 8px;
       border-bottom: 1px solid var(--bewly-widescreen-divider);
@@ -1140,6 +1142,8 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID} .bewly-widescreen-tabs {
+      position: relative;
+      z-index: 0;
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       flex: 0 0 auto;
@@ -1176,6 +1180,8 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID} .bewly-widescreen-panels {
+      position: relative;
+      z-index: 1;
       flex: 1 1 auto;
       min-height: 0;
       overflow: hidden;
