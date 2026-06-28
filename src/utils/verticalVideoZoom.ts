@@ -139,10 +139,14 @@ function injectStyle() {
       top: var(--bewly-vertical-video-zoom-window-top, 49px) !important;
       width: 100% !important;
       height: var(--bewly-vertical-video-zoom-window-height, 50px) !important;
-      border: 2px solid var(--bew-theme-color, #00aeec) !important;
-      border-color: var(--bew-theme-color, #00aeec) !important;
+      border: 0 !important;
       border-radius: 0 !important;
-      background: transparent !important;
+      /* Bewly widescreen resets descendant borders and shadows; background layers keep all four edges visible. */
+      background:
+        linear-gradient(var(--bew-theme-color, #00aeec), var(--bew-theme-color, #00aeec)) top / 100% 2px no-repeat,
+        linear-gradient(var(--bew-theme-color, #00aeec), var(--bew-theme-color, #00aeec)) right / 2px 100% no-repeat,
+        linear-gradient(var(--bew-theme-color, #00aeec), var(--bew-theme-color, #00aeec)) bottom / 100% 2px no-repeat,
+        linear-gradient(var(--bew-theme-color, #00aeec), var(--bew-theme-color, #00aeec)) left / 2px 100% no-repeat !important;
       box-shadow: none !important;
       box-sizing: border-box !important;
       pointer-events: none !important;
@@ -163,13 +167,8 @@ function injectStyle() {
     }
 
     #bewly-widescreen-root .${HOST_CLASS} .${VIEWPORT_CLASS} {
-      border: 2px solid var(--bew-theme-color, #00aeec) !important;
-      border-top-color: var(--bew-theme-color, #00aeec) !important;
-      border-right-color: var(--bew-theme-color, #00aeec) !important;
-      border-bottom-color: var(--bew-theme-color, #00aeec) !important;
-      border-left-color: var(--bew-theme-color, #00aeec) !important;
+      border: 0 !important;
       border-radius: 0 !important;
-      box-shadow: none !important;
       filter: none !important;
     }
 
