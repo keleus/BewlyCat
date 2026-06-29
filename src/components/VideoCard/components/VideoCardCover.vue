@@ -442,14 +442,14 @@ onBeforeUnmount(() => {
         duration-300
       >
         <div
-          v-if="Number(video.rank) <= 3"
+          v-if="Number(video?.rank) <= 3"
           bg="$bew-theme-color" text-center lh-0 h-30px w-30px
           text-white rounded="1/2" shadow="$bew-shadow-1"
           border="1 $bew-theme-color"
           grid="~ place-content-center"
           text="xl" fw-bold
         >
-          {{ video.rank }}
+          {{ video?.rank }}
         </div>
         <div
           v-else
@@ -457,14 +457,14 @@ onBeforeUnmount(() => {
           rounded="1/2" shadow="$bew-shadow-1"
           border="1 $bew-border-color"
         >
-          {{ video.rank }}
+          {{ video?.rank }}
         </div>
       </div>
 
       <template v-if="!removed && video">
         <!-- Old layout: Video Duration (right bottom) -->
         <div
-          v-if="layout === 'old' && (video.duration || video.durationStr)"
+          v-if="layout === 'old' && (video?.duration || video?.durationStr)"
           pos="absolute bottom-0 right-0"
           z="2"
           p="x-2 y-1"
@@ -475,7 +475,7 @@ onBeforeUnmount(() => {
           :class="{ 'opacity-0': shouldHideOverlayElements }"
           duration-300
         >
-          {{ video.duration ? calcCurrentTime(video.duration) : video.durationStr }}
+          {{ video?.duration ? calcCurrentTime(video?.duration ?? 0) : video?.durationStr }}
         </div>
 
         <div
@@ -489,7 +489,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          v-if="video.liveStatus === 1"
+          v-if="video?.liveStatus === 1"
           :class="layout !== 'old' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
           pos="absolute left-0 top-0" bg="$bew-theme-color" text="xs white" fw-bold
           p="x-2 y-1" m-1 inline-block rounded="$bew-radius" duration-300
@@ -499,21 +499,21 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          v-if="video.badge && Object.keys(video.badge).length > 0"
+          v-if="Object.keys(video?.badge ?? {}).length > 0"
           :class="layout !== 'old' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
           :style="{
-            backgroundColor: video.badge.bgColor,
-            color: video.badge.color,
+            backgroundColor: video?.badge?.bgColor,
+            color: video?.badge?.color,
           }"
           pos="absolute right-0 top-0" bg="$bew-theme-color" text="xs white"
           p="x-2 y-1" m-1 inline-block rounded="$bew-radius" duration-300
         >
-          {{ video.badge.text }}
+          {{ video?.badge?.text }}
         </div>
 
-        <!-- Watcher later button -->
+        <!-- Watcher later button: mount only when needed so resting cards do not carry Tooltip/Icon/i18n cost. -->
         <div
-          v-if="showWatcherLater"
+          v-if="showWatcherLater && (isHover || isInWatchLater)"
           role="button"
           tabindex="0"
           :aria-label="isInWatchLater ? $t('common.added') : $t('common.save_to_watch_later')"
