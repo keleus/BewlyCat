@@ -304,6 +304,7 @@ settings:
   disable_dock_glowing_effect: Disable the dock glowing effect
   disable_light_dark_mode_switcher: Disable light/dark mode switcher
   back_to_top_and_refresh_buttons_are_separated: Separate Back to Top and Refresh Buttons
+  always_show_dock_actions_when_auto_hide: Always show action buttons when the dock auto-hides
   sidebar_position: Sidebar position
   auto_hide_sidebar: Automatically hide the sidebar
   theme: Theme
