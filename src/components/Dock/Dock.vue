@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
+import type { CSSProperties } from 'vue'
 import { computed, ref } from 'vue'
 
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
@@ -150,6 +151,26 @@ const showBackToTopOrRefreshActions = computed((): boolean => {
  */
 const shouldShowUndoForwardButtons = computed((): boolean => {
   return props.activatedPage === AppPage.Home && homeActivatedPage.value === HomeSubPage.ForYou
+})
+
+const showUndoForwardActions = computed((): boolean => {
+  return shouldShowUndoForwardButtons.value && (showUndo.value || showForward.value) && settings.value.enableUndoRefreshButton
+})
+
+const showDockActionButtons = computed((): boolean => {
+  return showBackToTopOrRefreshActions.value || showUndoForwardActions.value
+})
+
+const detachDockActionButtons = computed((): boolean => {
+  return settings.value.autoHideDock && settings.value.alwaysShowDockActionsWhenAutoHide
+})
+
+const showInlineDockActionButtons = computed((): boolean => {
+  return showDockActionButtons.value && !detachDockActionButtons.value
+})
+
+const showDetachedDockActionButtons = computed((): boolean => {
+  return showDockActionButtons.value && detachDockActionButtons.value
 })
 
 watch(() => settings.value.autoHideDock, (newValue) => {
@@ -312,7 +333,11 @@ const dockScale = computed((): number => {
   let additionalHeight = 0
   let additionalWidth = 0
 
-  if (settings.value.dockPosition === 'bottom') {
+  if (detachDockActionButtons.value) {
+    additionalHeight = 0
+    additionalWidth = 0
+  }
+  else if (settings.value.dockPosition === 'bottom') {
     const maxButtonCount = settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1
     const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
     additionalWidth = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
@@ -337,6 +362,41 @@ const dockScale = computed((): number => {
 
   // Use the smaller scale to ensure dock fits in both dimensions
   return Math.min(heightScale, widthScale)
+})
+
+const dockActionButtonsStyle = computed<CSSProperties>(() => {
+  return {
+    bottom: settings.value.dockPosition === 'bottom' ? 'unset' : 0,
+    right: settings.value.dockPosition === 'bottom' ? 0 : 'unset',
+    transform: settings.value.dockPosition === 'bottom' ? 'translate(100%, 0)' : 'translateY(100%)',
+    flexDirection: settings.value.dockPosition === 'bottom' ? 'row' : 'column',
+  }
+})
+
+const detachedDockActionButtonsStyle = computed<CSSProperties>(() => {
+  const scale = dockScale.value
+  const gap = 8
+  const actionButtonSize = windowWidth.value >= 1024 ? 45 : 35
+  const sideActionInset = `${gap + Math.max(0, ((dockWidth.value - actionButtonSize) * scale) / 2)}px`
+
+  if (settings.value.dockPosition === 'bottom') {
+    return {
+      left: `calc(50% + ${(dockWidth.value * scale) / 2 + gap}px)`,
+      bottom: '8px',
+      transform: `scale(${scale})`,
+      transformOrigin: 'left bottom',
+      flexDirection: 'row',
+    }
+  }
+
+  return {
+    top: `calc(50% + ${(dockHeight.value * scale) / 2 + gap}px)`,
+    left: settings.value.dockPosition === 'left' ? sideActionInset : 'unset',
+    right: settings.value.dockPosition === 'right' ? sideActionInset : 'unset',
+    transform: `scale(${scale})`,
+    transformOrigin: settings.value.dockPosition === 'left' ? 'left top' : 'right top',
+    flexDirection: 'column',
+  }
 })
 
 const dockTransformStyle = computed((): { transform: string, transformOrigin: string } => {
@@ -565,13 +625,8 @@ onUnmounted(() => {
 
       <!-- Back to top & refresh buttons -->
       <div
-        v-if="showBackToTopOrRefreshActions"
-        :style="{
-          bottom: settings.dockPosition === 'bottom' ? 'unset' : 0,
-          right: settings.dockPosition === 'bottom' ? 0 : 'unset',
-          transform: settings.dockPosition === 'bottom' ? 'translate(100%, 0)' : 'translateY(100%)',
-          flexDirection: settings.dockPosition === 'bottom' ? 'row' : 'column',
-        }"
+        v-if="showInlineDockActionButtons"
+        :style="dockActionButtonsStyle"
         pos="absolute"
         flex="~ gap-2"
       >
@@ -627,7 +682,7 @@ onUnmounted(() => {
         <!-- 将原来的两个按钮替换为一个 -->
         <Transition name="fade">
           <button
-            v-if="shouldShowUndoForwardButtons && (showUndo || showForward) && settings.enableUndoRefreshButton"
+            v-if="showUndoForwardActions"
             class="back-to-top-or-refresh-btn"
             :class="{
               inactive: hoveringDockItem.themeMode && isDark,
@@ -647,6 +702,58 @@ onUnmounted(() => {
           </button>
         </Transition>
       </div>
+    </div>
+
+    <!-- Detached action buttons stay visible when the dock itself is auto-hidden. -->
+    <div
+      v-if="showDetachedDockActionButtons"
+      class="detached-dock-actions"
+      :style="detachedDockActionButtonsStyle"
+      pos="absolute"
+      flex="~ gap-2"
+    >
+      <Transition name="fade">
+        <button
+          v-if="showBackToTopOrRefreshButton && canRefreshCurrentPage"
+          class="back-to-top-or-refresh-btn"
+          @click="handleBackToTopOrRefresh('refresh')"
+        >
+          <Icon
+            icon="line-md:rotate-270"
+            shrink-0 rotate-90 absolute text-2xl
+          />
+        </button>
+      </Transition>
+      <Transition name="fade">
+        <button
+          v-if="showBackToTopOrRefreshButton && !reachTop"
+          class="back-to-top-or-refresh-btn"
+          @click="handleBackToTopOrRefresh('backToTop')"
+        >
+          <Icon
+            icon="line-md:arrow-small-up"
+            shrink-0 absolute text-2xl
+          />
+        </button>
+      </Transition>
+      <Transition name="fade">
+        <button
+          v-if="showUndoForwardActions"
+          class="back-to-top-or-refresh-btn"
+          @click="handleHistoryNavigation"
+        >
+          <Icon
+            v-if="showUndo"
+            icon="mdi:undo-variant"
+            shrink-0 absolute text-2xl
+          />
+          <Icon
+            v-else-if="showForward"
+            icon="mdi:redo-variant"
+            shrink-0 absolute text-2xl
+          />
+        </button>
+      </Transition>
     </div>
   </aside>
 </template>
@@ -675,6 +782,28 @@ onUnmounted(() => {
 
   &-bottom {
     --uno: "left-0 bottom-0 w-full h-14px hover-h-60px";
+  }
+}
+
+.detached-dock-actions {
+  --uno: "pointer-events-auto z-1";
+
+  .back-to-top-or-refresh-btn {
+    --uno: "transform active:important-scale-90 hover:scale-110";
+    --uno: "lg:w-45px w-35px lg:h-45px h-35px";
+    --uno: "grid place-items-center";
+    --uno: "filter-$bew-filter-glass-1";
+    --uno: "bg-$bew-elevated hover:bg-$bew-content-hover";
+    --uno: "rounded-full shadow-$bew-shadow-2 border-1 border-$bew-border-color";
+
+    backdrop-filter: var(--bew-filter-glass-1);
+    transition:
+      transform 300ms cubic-bezier(0.34, 2, 0.6, 1),
+      background 300ms ease,
+      color 300ms ease,
+      box-shadow 300ms ease,
+      opacity 600ms ease;
+    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
   }
 }
 
