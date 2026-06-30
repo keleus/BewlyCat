@@ -1,8 +1,8 @@
 <script setup lang="ts" generic="T = any">
-import { useVirtualizer } from '@tanstack/vue-virtual'
 import { useDebounceFn } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
+import { useGridLayout } from '~/composables/useGridLayout'
 import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
@@ -186,6 +186,9 @@ const loadMoreSentinelRef = ref<HTMLElement | null>(null)
 const isLoadMoreSentinelIntersecting = ref(false)
 const reachedLoadMoreDuringLoading = ref(false)
 
+// 使用共享的 Grid 布局 composable（CSS 媒体查询驱动，无 JS 计算开销）
+const { gridClass, gridCssVars } = useGridLayout(() => props.gridLayout)
+
 // 获取 shadow 样式变量（避免依赖外部传入）
 const { shadowStyleVars } = useVideoCardShadowStyle()
 
@@ -210,10 +213,7 @@ const lastItemsCount = ref(0)
 const consecutiveFailures = ref(0)
 const MAX_CONSECUTIVE_FAILURES = 3
 
-// 分块渲染：渲染限制（在 displayItems 定义之前声明，避免循环依赖）
-const renderLimit = ref(0)
-
-// 仅首屏空数据加载时显示骨架屏；滚动加载时不再向虚拟列表插入临时卡片。
+// 仅首屏空数据加载时显示骨架屏；滚动加载时不再向列表插入临时卡片。
 const showInitialSkeleton = computed(() => {
   if (props.needToLoginFirst)
     return false
@@ -275,12 +275,6 @@ function canLoadMore(): boolean {
 
   // 连续空加载次数超过限制时停止
   if (consecutiveEmptyLoads.value >= MAX_CONSECUTIVE_EMPTY_LOADS) {
-    return false
-  }
-
-  // 关键：避免在上一批次未渲染完成时触发 loadMore
-  // 否则 sentinel 会保持"太高"，IO/scroll 检查会链式加载
-  if (renderLimit.value < displayItems.value.length) {
     return false
   }
 
@@ -369,7 +363,6 @@ function setupIntersectionObserver() {
 
 // RAF 标志，用于批量处理 DOM 读取
 let checkPreloadRAF: number | null = null
-let containerResizeObserver: ResizeObserver | null = null
 
 // 检查是否需要预加载
 function checkShouldPreload() {
@@ -413,6 +406,10 @@ function handleScroll() {
   debouncedCheck()
 }
 
+function handleResize() {
+  debouncedCheck()
+}
+
 // 设置滚动监听
 function setupScrollListeners() {
   if (scrollListenersActive)
@@ -443,7 +440,8 @@ function cleanupScrollListeners() {
 }
 
 function getRenderedColumnCount(): number {
-  const containerWidth = gridContainerRef.value?.clientWidth || 0
+  const containerWidth = gridContainerRef.value?.clientWidth
+    || (typeof window !== 'undefined' ? window.innerWidth : 0)
   return getCurrentColumnCount(props.gridLayout, containerWidth)
 }
 
@@ -553,49 +551,12 @@ watch(loadMoreSentinelRef, () => {
   setupIntersectionObserver()
 })
 
-// 监听 displayItems 变化，触发分块渲染
-watch(
-  () => displayItems.value.length,
-  (newLen, oldLen) => {
-    // 刷新路径（数据被清空）
-    if (newLen === 0) {
-      renderLimit.value = 0
-      return
-    }
-
-    // 列表收缩，立即夹紧
-    if (newLen < renderLimit.value) {
-      renderLimit.value = newLen
-      return
-    }
-
-    // 只在追加时分块渲染
-    if (newLen > oldLen) {
-      // 虚拟滚动激活时，跳过分块渲染——虚拟窗口已经限制了 DOM 数量，
-      // 分块渲染的 requestIdleCallback 在快速滚动时反而会导致渲染滞后
-      const estimatedColumns = getCurrentColumnCount(props.gridLayout, gridContainerRef.value?.clientWidth || 0)
-      const virtualThreshold = 6 * estimatedColumns
-      if (newLen > virtualThreshold) {
-        renderLimit.value = newLen
-      }
-      else {
-        scheduleChunkRender(newLen)
-      }
-      return
-    }
-
-    // 兜底：保持同步
-    renderLimit.value = newLen
-  },
-)
-
 function activateGrid() {
   if (isGridActive)
     return
 
   isGridActive = true
   setupScrollListeners()
-  setupContainerResizeObserver()
 
   nextTick(() => {
     if (!isGridActive)
@@ -612,7 +573,6 @@ function deactivateGrid() {
 
   isGridActive = false
   cleanupScrollListeners()
-  cleanupContainerResizeObserver()
   cleanupIntersectionObserver()
 
   if (checkPreloadRAF !== null) {
@@ -622,8 +582,6 @@ function deactivateGrid() {
 }
 
 onMounted(() => {
-  // 初始化 renderLimit：对于已存在的数据，立即全部渲染（无渐进式加载）
-  renderLimit.value = displayItems.value.length
   activateGrid()
 })
 
@@ -650,59 +608,16 @@ const isHorizontal = computed(() => {
   return props.gridLayout !== 'adaptive'
 })
 
+// 合并 shadow 样式变量和 grid 列数变量
+const gridContainerStyle = computed(() => ({
+  ...shadowStyleVars.value,
+  ...gridCssVars.value,
+}))
+
 // 判断是否应该显示空状态（确认无更多内容且数据为空）
 const showEmptyState = computed(() => {
   return props.noMoreContent && props.items.length === 0 && !props.needToLoginFirst
 })
-
-// -------------------------
-// 分块渲染（Chunked Rendering）- 解决批量 DOM 插入导致的样式重算风暴
-// -------------------------
-let renderJobToken = 0
-
-function scheduleChunkRender(target: number) {
-  const token = ++renderJobToken
-
-  const useRIC = typeof window !== 'undefined' && 'requestIdleCallback' in window
-
-  const step = (deadline?: IdleDeadline) => {
-    if (token !== renderJobToken)
-      return
-
-    const remaining = target - renderLimit.value
-    if (remaining <= 0) {
-      nextTick(() => {
-        checkShouldPreload()
-      })
-      return
-    }
-
-    // 保守的默认值；如果浏览器报告有足够的空闲时间则提高
-    let chunk = 8
-    if (deadline && typeof deadline.timeRemaining === 'function') {
-      const budget = deadline.timeRemaining()
-      if (budget > 12)
-        chunk = 20
-      else if (budget > 8)
-        chunk = 12
-    }
-
-    renderLimit.value += Math.min(chunk, remaining)
-
-    if (useRIC) {
-      ;(window as any).requestIdleCallback(step, { timeout: 50 })
-    }
-    else {
-      requestAnimationFrame(() => step())
-    }
-  }
-
-  // 立即开始（但仍然通过 rIC/rAF yield）
-  step()
-}
-
-const containerWidth = ref(0)
-const viewportHeight = ref(typeof window !== 'undefined' ? window.innerHeight : 0)
 
 function normalizePositiveInt(value: unknown, fallback: number): number {
   const normalized = Number(value)
@@ -735,103 +650,6 @@ function getCurrentColumnCount(layout: GridLayoutType, width: number): number {
     return 1
   return getAdaptiveGridColumns(width)
 }
-
-function getGridGap(layout: GridLayoutType): number {
-  return layout === 'adaptive' ? 20 : 16
-}
-
-function getEstimatedRowSpan(layout: GridLayoutType): number {
-  if (layout === 'twoColumns')
-    return 236
-  if (layout === 'oneColumn')
-    return 188
-  return 352
-}
-
-function getFallbackEstimatedRowHeight(layout: GridLayoutType): number {
-  return Math.max(1, getEstimatedRowSpan(layout) - getGridGap(layout))
-}
-
-function getEstimatedAdaptiveRowHeight(width: number, columns: number): number {
-  if (width <= 0 || columns <= 0)
-    return getFallbackEstimatedRowHeight('adaptive')
-
-  const gap = getGridGap('adaptive')
-  const cardWidth = Math.max(1, (width - gap * (columns - 1)) / columns)
-  const coverHeight = cardWidth * 9 / 16
-
-  // Keep the first virtual pass close to the actual card height so rows do
-  // not render with a large temporary gap before ResizeObserver catches up.
-  switch (settings.value.videoCardLayout) {
-    case 'compact':
-      return coverHeight + 66
-    case 'old':
-      return coverHeight + 132
-    case 'modern':
-    default:
-      return coverHeight + 112
-  }
-}
-
-function getEstimatedHorizontalItemHeight(layout: GridLayoutType, itemWidth: number): number {
-  const fallbackHeight = layout === 'twoColumns' ? 220 : 236
-
-  if (itemWidth <= 0)
-    return fallbackHeight
-
-  const coverWidth = Math.min(itemWidth, 400)
-  const coverHeight = coverWidth * 9 / 16
-
-  return Math.max(fallbackHeight, Math.ceil(coverHeight))
-}
-
-const resolvedContainerWidth = computed(() => {
-  if (containerWidth.value > 0)
-    return containerWidth.value
-
-  return 0
-})
-
-const currentColumnCount = computed(() =>
-  getCurrentColumnCount(props.gridLayout, resolvedContainerWidth.value),
-)
-
-const currentGridGap = computed(() => getGridGap(props.gridLayout))
-
-const VIRTUAL_RETAIN_SCREENS = 2
-
-const estimatedCardWidth = computed(() => {
-  const columns = currentColumnCount.value
-  const width = resolvedContainerWidth.value
-  if (columns <= 1)
-    return Math.max(1, width)
-  return Math.max(1, (width - currentGridGap.value * (columns - 1)) / columns)
-})
-
-const estimatedRowHeight = computed(() => {
-  if (props.gridLayout === 'adaptive')
-    return getEstimatedAdaptiveRowHeight(resolvedContainerWidth.value, currentColumnCount.value)
-  return getEstimatedHorizontalItemHeight(props.gridLayout, estimatedCardWidth.value)
-})
-
-const visibleRowCount = computed(() => {
-  const rowSpan = Math.max(1, estimatedRowHeight.value + currentGridGap.value)
-  return Math.max(1, Math.ceil(viewportHeight.value / rowSpan))
-})
-
-const overscanRowCount = computed(() =>
-  Math.max(2, Math.ceil(visibleRowCount.value * VIRTUAL_RETAIN_SCREENS)),
-)
-
-const totalRowCount = computed(() =>
-  Math.ceil(displayItems.value.length / currentColumnCount.value),
-)
-
-const gridContainerStyle = computed(() => ({
-  ...shadowStyleVars.value,
-  '--virtual-grid-columns': currentColumnCount.value,
-  '--virtual-grid-column-gap': `${currentGridGap.value}px`,
-}))
 
 function findScrollElement(): HTMLElement | null {
   if (settings.value.useOriginalBilibiliHomepage)
@@ -871,68 +689,6 @@ function isScrollAtBottom(): boolean {
     return false
 
   return getRemainingScroll(scrollElement) <= 2
-}
-
-function getVirtualRowKey(rowIndex: number): string {
-  const firstItemIndex = rowIndex * currentColumnCount.value
-  const firstItem = displayItems.value[firstItemIndex]
-  const firstItemKey = firstItem
-    ? getUniqueKey(firstItem, firstItemIndex)
-    : firstItemIndex
-  return `${currentColumnCount.value}:${firstItemKey}`
-}
-
-const rowVirtualizer = useVirtualizer<HTMLElement, HTMLElement>(computed(() => ({
-  count: totalRowCount.value,
-  getScrollElement: () => findScrollElement(),
-  estimateSize: () => estimatedRowHeight.value,
-  overscan: overscanRowCount.value,
-  gap: currentGridGap.value,
-  getItemKey: getVirtualRowKey,
-  measureElement: () => estimatedRowHeight.value,
-  shouldAdjustScrollPositionOnItemSizeChange: () => false,
-})))
-
-const virtualRows = computed(() => rowVirtualizer.value.getVirtualItems())
-const virtualTotalHeight = computed(() => rowVirtualizer.value.getTotalSize())
-
-function handleResize() {
-  viewportHeight.value = typeof window !== 'undefined' ? window.innerHeight : viewportHeight.value
-  rowVirtualizer.value.measure()
-  debouncedCheck()
-}
-
-function cleanupContainerResizeObserver() {
-  if (containerResizeObserver) {
-    containerResizeObserver.disconnect()
-    containerResizeObserver = null
-  }
-}
-
-function setupContainerResizeObserver() {
-  cleanupContainerResizeObserver()
-
-  const container = gridContainerRef.value
-  if (!container || typeof ResizeObserver === 'undefined')
-    return
-
-  containerWidth.value = container.clientWidth
-
-  containerResizeObserver = new ResizeObserver((entries) => {
-    const entry = entries[0]
-    if (!entry)
-      return
-
-    const nextWidth = entry.contentRect.width
-    if (Math.abs(nextWidth - containerWidth.value) <= 0.5)
-      return
-
-    containerWidth.value = nextWidth
-    viewportHeight.value = typeof window !== 'undefined' ? window.innerHeight : viewportHeight.value
-    rowVirtualizer.value.measure()
-  })
-
-  containerResizeObserver.observe(container)
 }
 
 // 类型定义：每个 VideoCard 的渲染所需数据
@@ -997,38 +753,10 @@ function createRenderItem(item: T, index: number): VideoCardRenderItem {
   return { key, index, item, skeleton, type, video }
 }
 
-interface VirtualGridRow {
-  key: string
-  index: number
-  start: number
-  items: VideoCardRenderItem[]
-}
-
-// 仅虚拟化纵向行；行内宽度和列间距完全交给 CSS Grid。
-const renderRows = computed<VirtualGridRow[]>(() => {
-  const sourceItems = displayItems.value
-  const columns = currentColumnCount.value
-
-  return virtualRows.value.flatMap((virtualRow) => {
-    const startIndex = virtualRow.index * columns
-    if (startIndex >= renderLimit.value)
-      return []
-
-    const endIndex = Math.min(startIndex + columns, renderLimit.value, sourceItems.length)
-    const rowItems = sourceItems
-      .slice(startIndex, endIndex)
-      .map((item, offset) => createRenderItem(item, startIndex + offset))
-
-    if (rowItems.length === 0)
-      return []
-
-    return [{
-      key: String(virtualRow.key),
-      index: virtualRow.index,
-      start: virtualRow.start,
-      items: rowItems,
-    }]
-  })
+// 普通追加渲染：按 displayItems 顺序保留所有已加载卡片，
+// 对齐 B 站原生首页的连续滚动体验，不做虚拟窗口回收。
+const renderItems = computed<VideoCardRenderItem[]>(() => {
+  return displayItems.value.map((item, index) => createRenderItem(item, index))
 })
 
 interface VideoTransformCacheEntry<T = any> {
@@ -1047,7 +775,7 @@ watch(() => props.transformItem, () => {
 })
 
 watch(
-  () => renderRows.value.flatMap(row => row.items.map(item => item.key)),
+  () => renderItems.value.map(item => item.key),
   (activeKeys) => {
     const activeKeySet = new Set(activeKeys)
 
@@ -1080,27 +808,6 @@ function getTransformedVideo(item: T, key: string | number): Video | undefined {
     return undefined
   }
 }
-
-watch(gridContainerRef, () => {
-  setupContainerResizeObserver()
-  rowVirtualizer.value.measure()
-})
-
-watch(
-  [currentColumnCount, () => props.gridLayout, () => settings.value.videoCardLayout],
-  () => {
-    rowVirtualizer.value.measure()
-  },
-  { flush: 'post' },
-)
-
-watch(
-  () => displayItems.value.length,
-  () => {
-    rowVirtualizer.value.measure()
-  },
-  { flush: 'post' },
-)
 
 // 处理登录
 function handleLogin() {
@@ -1158,47 +865,29 @@ function getUniqueKey(item: T, index: number): string | number {
       v-else
       ref="gridContainerRef"
       class="video-card-grid-container"
-      :class="{ 'is-firefox': isFirefox }"
+      :class="[gridClass, { 'is-firefox': isFirefox }]"
       m="b-0 t-0" relative w-full
       :style="gridContainerStyle"
     >
-      <div
-        class="virtual-rows"
-        :style="{ height: `${virtualTotalHeight}px` }"
+      <VideoCard
+        v-for="renderItem in renderItems"
+        :key="renderItem.key"
+        :data-index="renderItem.index"
+        :skeleton="renderItem.skeleton"
+        :type="renderItem.type"
+        :video="renderItem.video"
+        :show-preview="showPreview"
+        :show-watcher-later="showWatchLater"
+        :horizontal="isHorizontal"
+        :more-btn="moreBtn"
+        :is-following-page="props.isFollowingPage"
+        :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
+        :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
       >
-        <div
-          v-for="renderRow in renderRows"
-          :key="renderRow.key"
-          :ref="(el) => rowVirtualizer.measureElement(el as HTMLElement | null)"
-          :data-index="renderRow.index"
-          class="virtual-row"
-          :style="{
-            'top': `${renderRow.start}px`,
-            'height': `${estimatedRowHeight}px`,
-            'minHeight': `${estimatedRowHeight}px`,
-            '--bew-video-card-virtual-height': `${estimatedRowHeight}px`,
-          }"
-        >
-          <VideoCard
-            v-for="renderItem in renderRow.items"
-            :key="renderItem.key"
-            :skeleton="renderItem.skeleton"
-            :type="renderItem.type"
-            :video="renderItem.video"
-            :show-preview="showPreview"
-            :show-watcher-later="showWatchLater"
-            :horizontal="isHorizontal"
-            :more-btn="moreBtn"
-            :is-following-page="props.isFollowingPage"
-            :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
-            :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
-          >
-            <template v-for="(_, name) in $slots" #[name]>
-              <slot :name="name" :item="renderItem.item" />
-            </template>
-          </VideoCard>
-        </div>
-      </div>
+        <template v-for="(_, name) in $slots" #[name]>
+          <slot :name="name" :item="renderItem.item" />
+        </template>
+      </VideoCard>
 
       <div ref="loadMoreSentinelRef" class="load-more-sentinel" aria-hidden="true" />
     </div>
@@ -1221,50 +910,102 @@ function getUniqueKey(item: T, index: number): string | number {
   overflow-anchor: none;
 }
 
-.virtual-rows {
-  position: relative;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
+// Grid 布局 - 使用 Tailwind CSS 标准媒体断点 + CSS 变量控制列数
+.grid-adaptive {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(var(--grid-cols-base, 1), 1fr);
   contain: layout style;
-  overflow-anchor: none;
+  align-items: stretch;
 }
 
-.virtual-row {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  min-width: 0;
+@media (min-width: 640px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-sm, 2), 1fr);
+  }
+}
+
+@media (min-width: 768px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-md, 3), 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-lg, 4), 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-xl, 5), 1fr);
+  }
+}
+
+@media (min-width: 1536px) {
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-xxl, 6), 1fr);
+  }
+}
+
+.grid-two-columns {
   display: grid;
-  grid-template-columns: repeat(var(--virtual-grid-columns, 1), minmax(0, 1fr));
-  column-gap: var(--virtual-grid-column-gap, 20px);
-  align-items: stretch;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
   contain: layout style;
-  overflow-anchor: none;
-  overflow: visible;
+  align-items: stretch;
+}
 
-  &:hover,
-  &:focus-within {
-    z-index: 2;
+@supports (container-type: inline-size) {
+  .video-card-grid-root {
+    container-type: inline-size;
   }
 
-  :deep(.video-card-container) {
-    content-visibility: visible;
-    contain-intrinsic-size: auto none;
-    min-height: var(--bew-video-card-virtual-height);
+  .grid-adaptive {
+    grid-template-columns: repeat(var(--grid-cols-base, 1), 1fr);
   }
 
-  :deep(.video-card-container--skeleton) {
-    box-sizing: border-box;
-    height: var(--bew-video-card-virtual-height);
-    max-height: var(--bew-video-card-virtual-height);
-    overflow: hidden;
+  @container (min-width: 640px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-sm, 2), 1fr);
+    }
   }
+
+  @container (min-width: 768px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-md, 3), 1fr);
+    }
+  }
+
+  @container (min-width: 1024px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-lg, 4), 1fr);
+    }
+  }
+
+  @container (min-width: 1280px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-xl, 5), 1fr);
+    }
+  }
+
+  @container (min-width: 1536px) {
+    .grid-adaptive {
+      grid-template-columns: repeat(var(--grid-cols-xxl, 6), 1fr);
+    }
+  }
+}
+
+.grid-one-column {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 16px;
+  contain: layout style;
+  align-items: stretch;
 }
 
 .video-card-grid-container {
-  min-width: 0;
-  max-width: 100%;
   overflow-anchor: none;
 
   &.is-firefox :deep(.video-card-container) {
@@ -1282,6 +1023,7 @@ function getUniqueKey(item: T, index: number): string | number {
 }
 
 .load-more-sentinel {
+  grid-column: 1 / -1;
   width: 100%;
   height: 1px;
   overflow-anchor: none;
