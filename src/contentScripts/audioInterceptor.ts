@@ -416,9 +416,19 @@ function getActiveVideoElement(): HTMLVideoElement | null {
     return currentVideoElement
   }
 
-  return candidates.find(video => isVisibleVideo(video) && !video.paused && !video.ended)
+  const playingVideo = candidates.find(video => isVisibleVideo(video) && !video.paused && !video.ended)
     || candidates.find(video => !video.paused && !video.ended)
-    || candidates.find(video => isVisibleVideo(video) && !video.ended)
+
+  if (playingVideo)
+    return playingVideo
+
+  // Visibility changes can briefly report the bound video as paused. Prefer the
+  // existing element in that transition instead of attaching to another idle
+  // video node and rebuilding the Web Audio graph.
+  if (currentVideoElement && candidates.includes(currentVideoElement))
+    return currentVideoElement
+
+  return candidates.find(video => isVisibleVideo(video) && !video.ended)
     || candidates.find(isVisibleVideo)
     || candidates[0]
     || null
@@ -767,12 +777,17 @@ export function initAudioInterceptor() {
         return
       }
 
-      const video = getActiveVideoElement()
-      if (video && (video !== currentVideoElement || !hasAttached)) {
-        attachToVideo(video)
-      }
-      else {
+      // Returning to a tab must not reselect and reattach an already-bound
+      // video. Browsers may expose a transient paused state during this event,
+      // while Bilibili can keep additional idle video elements in the player.
+      if (hasAttached && currentVideoElement?.isConnected && audioNodes) {
         updateProcessingState()
+        return
+      }
+
+      const video = getActiveVideoElement()
+      if (video) {
+        attachToVideo(video)
       }
     }
     document.addEventListener('visibilitychange', visibilityChangeHandler)
