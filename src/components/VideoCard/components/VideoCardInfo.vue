@@ -111,6 +111,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
         <!-- Modern layout: Author info skeleton -->
         <div
           v-if="layout === 'modern' && !hideAuthor"
+          class="video-card-meta"
           flex="~ gap-2 items-center"
           w="full"
         >
@@ -136,6 +137,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
         <!-- Modern layout with hideAuthor: Tags skeleton -->
         <div
           v-if="layout === 'modern' && hideAuthor"
+          class="video-card-meta-row"
           flex="~ items-center gap-2"
           :class="metaFontSizeClass"
         >
