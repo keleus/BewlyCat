@@ -155,7 +155,12 @@ watch(isFocus, async (focus) => {
   // 延后加载搜索历史
   if (focus) {
     try {
-      searchHistory.value = await getSearchHistory()
+      if (settings.value.enableSearchHistory) {
+        searchHistory.value = await getSearchHistory()
+      }
+      else {
+        searchHistory.value = []
+      }
     }
     catch (error) {
       console.error('Failed to load search history:', error)
@@ -260,6 +265,14 @@ watch(() => settings.value.showSearchRecommendation, (enabled) => {
   }
 })
 
+// 监听搜索历史设置变化
+watch(() => settings.value.enableSearchHistory, async (enabled, wasEnabled) => {
+  if (wasEnabled === true && enabled === false) {
+    await clearAllSearchHistory()
+    searchHistory.value = []
+  }
+})
+
 // 组件挂载时初始化
 onMounted(() => {
   if (settings.value.showSearchRecommendation) {
@@ -360,15 +373,17 @@ async function navigateToSearchResultPage(rawKeyword: string) {
   if (!normalized)
     return
 
-  const searchItem = {
-    value: normalized,
-    timestamp: Number(new Date()),
-  }
-  try {
-    searchHistory.value = await addSearchHistory(searchItem)
-  }
-  catch (error) {
-    console.error('Failed to add search history:', error)
+  if (settings.value.enableSearchHistory) {
+    const searchItem = {
+      value: normalized,
+      timestamp: Number(new Date()),
+    }
+    try {
+      searchHistory.value = await addSearchHistory(searchItem)
+    }
+    catch (error) {
+      console.error('Failed to add search history:', error)
+    }
   }
 
   // 如果是就地搜索模式，则 emit 事件（这是组件级别的行为设置）

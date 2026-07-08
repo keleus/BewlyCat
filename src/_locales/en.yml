@@ -362,6 +362,8 @@ settings:
   show_hot_search_in_search_page_desc: Display hot search ranking on the search page
   show_search_recommendation: Show search recommendation
   show_search_recommendation_desc: Display recommended search terms as placeholder in the search box, and search for them when pressing Enter with an empty input
+  enable_search_history: Enable search history
+  enable_search_history_desc: When enabled, the search bar will record and display your search history. Disabling this will clear all history
   use_plugin_search_results_page: Use plugin search results page
   use_plugin_search_results_page_desc: When enabled, searches will use the plugin's built-in search results page with category filtering and more features
   depersonalize_search_results: Depersonalized search

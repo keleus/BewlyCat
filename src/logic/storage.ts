@@ -280,6 +280,9 @@ export interface Settings {
   // 搜索推荐功能设置
   showSearchRecommendation: boolean
 
+  // 搜索历史功能设置
+  enableSearchHistory: boolean
+
   // 搜索结果页设置
   usePluginSearchResultsPage: boolean
   depersonalizeSearchResults: boolean
@@ -503,6 +506,9 @@ export const originalSettings: Settings = {
 
   // 搜索推荐功能设置
   showSearchRecommendation: false,
+
+  // 搜索历史功能设置
+  enableSearchHistory: true,
 
   // 搜索结果页设置
   usePluginSearchResultsPage: true,

@@ -62,6 +62,10 @@ function changeSearchBarFocusCharacter(url: string) {
         <Radio v-model="settings.showSearchRecommendation" />
       </SettingsItem>
 
+      <SettingsItem :title="$t('settings.enable_search_history')" :desc="$t('settings.enable_search_history_desc')" right-width="auto">
+        <Radio v-model="settings.enableSearchHistory" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.bg_darkens_when_the_search_bar_is_focused')" right-width="auto">
         <Radio v-model="settings.searchPageDarkenOnSearchFocus" />
       </SettingsItem>
