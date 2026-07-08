@@ -306,6 +306,8 @@ settings:
   show_hot_search_in_search_page_desc: 喺搵嘢頁面顯示熱搜排行榜
   show_search_recommendation: 顯示搜尋推介
   show_search_recommendation_desc: 喺搜尋框度顯示推介嘅搜尋詞做佔位符,空白輸入時撳回車會搜尋呢個推介詞
+  enable_search_history: 啓用搜尋歷史
+  enable_search_history_desc: 啓用後，搜尋欄會記同顯示你嘅搜尋歷史。關咗之後會剷晒所有歷史
   use_plugin_search_results_page: 使用插件搜尋結果頁
   use_plugin_search_results_page_desc: 開啟後，搜尋會使用插件內置嘅搜尋結果頁，支援分類篩選等功能
   depersonalize_search_results: 去個人化搜尋

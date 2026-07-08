@@ -329,6 +329,8 @@ settings:
   show_hot_search_in_search_page_desc: 在搜尋頁面顯示熱門搜尋排行榜
   show_search_recommendation: 顯示搜尋推薦
   show_search_recommendation_desc: 在搜尋框中顯示推薦的搜尋詞作為佔位符，空白輸入時按回車將搜尋該推薦詞
+  enable_search_history: 啟用搜尋歷史
+  enable_search_history_desc: 啟用後，搜尋欄將記錄和顯示您的搜尋歷史記錄。關閉後將清除所有歷史記錄
   depersonalize_search_results: 去除個人化搜尋
   depersonalize_search_results_desc: 啟用後，搜尋結果請求不攜帶登入 Cookie。
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
