@@ -293,6 +293,42 @@ export function applyDefaultDanmakuState() {
   }).start()
 }
 
+// 根据设置应用默认字幕状态
+export function applyDefaultCaptionState() {
+  const preference = settings.value.defaultCaptionState
+  if (!preference)
+    return
+
+  const shouldEnable = preference === 'remember' ? settings.value.lastCaptionState : preference === 'on'
+
+  new RetryTask(20, 500, () => {
+    const closeSwitch = document.querySelector<HTMLElement>('.bpx-player-ctrl-subtitle-close-switch')
+    const languageItem = document.querySelector<HTMLElement>('.bpx-player-ctrl-subtitle-language-item')
+
+    if (closeSwitch && languageItem) {
+      const isCurrentlyOn = !closeSwitch.classList.contains('bpx-state-active')
+      if (isCurrentlyOn === shouldEnable)
+        return true
+
+      if (shouldEnable)
+        languageItem.click()
+      else
+        closeSwitch.click()
+
+      return true
+    }
+
+    return false
+  }).start()
+
+  saveCaptionState(shouldEnable)
+}
+
+// 保存字幕状态，供“记住上次状态”使用
+export function saveCaptionState(enabled: boolean) {
+  settings.value.lastCaptionState = enabled
+}
+
 // 检测是否为合集视频
 export function isCollectionVideo(): boolean {
   // 检测多P视频选集
@@ -779,6 +815,7 @@ export function toggleCaption() {
     else {
       closeSwitch.click()
     }
+    saveCaptionState(isClosed)
     return
   }
 
