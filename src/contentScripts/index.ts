@@ -253,6 +253,8 @@ else {
 
     // 如果播放器已经在全屏状态，跳过应用模式（避免互动视频退出全屏）
     if (isInFullscreen || isInWebFullscreen) {
+      applyDefaultDanmakuState()
+      applyDefaultCaptionState()
       hasAppliedPlayerMode = true // 标记已应用，避免重复检查
       return
     }
