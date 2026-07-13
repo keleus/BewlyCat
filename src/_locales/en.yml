@@ -203,6 +203,7 @@ settings:
   video_caption_default_state: Default caption state
   video_caption_default_state_desc: Automatically toggle captions when a video loads, or remember last state.
   video_caption_default_state_opt:
+    system: Do not enable
     remember: Remember last state
     on: Always enable
     off: Always disable

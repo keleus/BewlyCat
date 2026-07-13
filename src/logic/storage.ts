@@ -346,7 +346,7 @@ export interface Settings {
   defaultVideoPlayerMode: DefaultVideoPlayerMode
   bewlyWidescreenSidebarPosition: BewlyWidescreenSidebarPosition
   defaultDanmakuState: 'system' | 'on' | 'off'
-  defaultCaptionState: 'remember' | 'on' | 'off'
+  defaultCaptionState: 'system' | 'remember' | 'on' | 'off'
   lastCaptionState: boolean
   keepCollectionVideoDefaultMode: boolean // 合集视频保持默认模式
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出

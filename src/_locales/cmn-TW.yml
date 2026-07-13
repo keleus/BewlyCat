@@ -225,6 +225,7 @@ settings:
   video_caption_default_state: 影片預設字幕狀態
   video_caption_default_state_desc: 開啟影片時自動調整字幕開關，或記住上次狀態。
   video_caption_default_state_opt:
+    system: 不啟用
     remember: 記住上次狀態
     on: 預設開啟
     off: 預設關閉

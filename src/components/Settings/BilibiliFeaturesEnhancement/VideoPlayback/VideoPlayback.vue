@@ -65,6 +65,10 @@ const videoDanmakuDefaultStateOptions = computed(() => {
 const videoCaptionDefaultStateOptions = computed(() => {
   return [
     {
+      label: t('settings.video_caption_default_state_opt.system'),
+      value: 'system',
+    },
+    {
       label: t('settings.video_caption_default_state_opt.remember'),
       value: 'remember',
     },

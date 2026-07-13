@@ -296,10 +296,11 @@ export function applyDefaultDanmakuState() {
 // 根据设置应用默认字幕状态
 export function applyDefaultCaptionState() {
   const preference = settings.value.defaultCaptionState
-  if (!preference)
+  if (!preference || preference === 'system')
     return
 
-  const shouldEnable = preference === 'remember' ? settings.value.lastCaptionState : preference === 'on'
+  const isRemember = preference === 'remember'
+  const shouldEnable = isRemember ? settings.value.lastCaptionState : preference === 'on'
 
   new RetryTask(20, 500, () => {
     const closeSwitch = document.querySelector<HTMLElement>('.bpx-player-ctrl-subtitle-close-switch')
@@ -321,10 +322,11 @@ export function applyDefaultCaptionState() {
     return false
   }).start()
 
-  saveCaptionState(shouldEnable)
+  if (isRemember)
+    saveCaptionState(shouldEnable)
 }
 
-// 保存字幕状态，供“记住上次状态”使用
+// 保存字幕状态，供"记住上次状态"使用
 export function saveCaptionState(enabled: boolean) {
   settings.value.lastCaptionState = enabled
 }
@@ -815,7 +817,8 @@ export function toggleCaption() {
     else {
       closeSwitch.click()
     }
-    saveCaptionState(isClosed)
+    if (settings.value.defaultCaptionState === 'remember')
+      saveCaptionState(isClosed)
     return
   }
 
