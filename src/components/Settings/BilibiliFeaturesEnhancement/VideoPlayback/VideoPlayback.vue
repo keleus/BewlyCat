@@ -61,6 +61,27 @@ const videoDanmakuDefaultStateOptions = computed(() => {
     },
   ]
 })
+
+const videoCaptionDefaultStateOptions = computed(() => {
+  return [
+    {
+      label: t('settings.video_caption_default_state_opt.system'),
+      value: 'system',
+    },
+    {
+      label: t('settings.video_caption_default_state_opt.remember'),
+      value: 'remember',
+    },
+    {
+      label: t('settings.video_caption_default_state_opt.on'),
+      value: 'on',
+    },
+    {
+      label: t('settings.video_caption_default_state_opt.off'),
+      value: 'off',
+    },
+  ]
+})
 </script>
 
 <template>
@@ -111,6 +132,14 @@ const videoDanmakuDefaultStateOptions = computed(() => {
         right-width="auto"
       >
         <Select v-model="settings.defaultDanmakuState" :options="videoDanmakuDefaultStateOptions" w="160px" />
+      </SettingsItem>
+
+      <SettingsItem
+        :title="t('settings.video_caption_default_state')"
+        :desc="t('settings.video_caption_default_state_desc')"
+        right-width="auto"
+      >
+        <Select v-model="settings.defaultCaptionState" :options="videoCaptionDefaultStateOptions" w="160px" />
       </SettingsItem>
 
       <SettingsItem

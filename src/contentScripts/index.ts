@@ -16,7 +16,7 @@ import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
-import { applyAutoPlayByVideoType, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isPlayerDisplayModeReady, isVideoPage, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isPlayerDisplayModeReady, isVideoPage, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
@@ -253,6 +253,8 @@ else {
 
     // 如果播放器已经在全屏状态，跳过应用模式（避免互动视频退出全屏）
     if (isInFullscreen || isInWebFullscreen) {
+      applyDefaultDanmakuState()
+      applyDefaultCaptionState()
       hasAppliedPlayerMode = true // 标记已应用，避免重复检查
       return
     }
@@ -295,6 +297,7 @@ else {
     }
     setupShortcutHandlers()
     applyDefaultDanmakuState()
+    applyDefaultCaptionState()
     initVerticalVideoZoom()
     // 应用自动连播设置，延迟更长时间确保播放器完全初始化
     setTimeout(() => {

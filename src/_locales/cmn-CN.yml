@@ -187,6 +187,13 @@ settings:
     system: 不调整
     on: 默认开启
     off: 默认关闭
+  video_caption_default_state: 视频默认字幕状态
+  video_caption_default_state_desc: 打开视频时自动调整字幕开关，或记住上次状态。
+  video_caption_default_state_opt:
+    system: 不启用
+    remember: 记住上次状态
+    on: 默认开启
+    off: 默认关闭
   video_player_mode:
     default: 默认
     web_fullscreen: 网页全屏
