@@ -586,21 +586,42 @@ else {
     catch { return url }
   }
 
+  // 提取文本中第一个成对的「【...】」内容，支持嵌套
+  function extractFirstBracketContent(text: string): string | null {
+    const start = text.indexOf('【')
+    if (start === -1)
+      return null
+    let depth = 0
+    for (let i = start; i < text.length; i++) {
+      if (text[i] === '【')
+        depth++
+      else if (text[i] === '】')
+        depth--
+      if (depth === 0 && i > start)
+        return text.slice(start + 1, i)
+    }
+    return null
+  }
+
   function cleanShareText(text: string, includeTitle: boolean, removeTracking: boolean): string {
-    const shareMatch = text.match(/【(.+?)】\s*(https?:\/\/\S+)/)
-    if (shareMatch) {
-      let url = shareMatch[2]
-      if (removeTracking)
-        url = cleanUrl(url)
-      return includeTitle ? `${shareMatch[1]} ${url}` : url
+    // 分别解析标题与链接，标题内部可能存在嵌套的「【...】」
+    const title = extractFirstBracketContent(text)
+    const urlMatch = text.match(/(https?:\/\/\S+)/)
+    const url = urlMatch?.[1]
+
+    if (url) {
+      const cleanedUrl = removeTracking ? cleanUrl(url) : url
+      if (title)
+        return includeTitle ? `${title} ${cleanedUrl}` : cleanedUrl
+      return cleanedUrl
     }
-    if (removeTracking) {
-      return text.replace(/(https?:\/\/\S+)/g, url => cleanUrl(url))
-    }
+
+    if (removeTracking)
+      return text.replace(/(https?:\/\/\S+)/g, u => cleanUrl(u))
     return text
   }
 
-  // Intercept navigator.clipboard.writeText to enable clean share link feature
+  // 拦截 navigator.clipboard.writeText，启用净化分享链接功能
   const originalWriteText = navigator.clipboard.writeText.bind(navigator.clipboard)
   navigator.clipboard.writeText = function (text: string) {
     if (!currentSettings?.enableCleanShareLink)

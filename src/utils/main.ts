@@ -447,7 +447,7 @@ export function isInIframe(): boolean {
 }
 
 /**
- * Bilibili tracking parameters to be removed from URLs
+ * 需要从链接中移除的 B 站追踪参数
  */
 const BILIBILI_TRACKING_PARAMS = [
   'spm_id_from',
@@ -521,29 +521,38 @@ export function cleanBilibiliShareText(
 ): string {
   const { includeTitle = false, removeTrackingParams = true } = options
 
-  // Match Bilibili share text format: 【Title】 URL
-  const shareTextRegex = /【(.+?)】\s*(https?:\/\/\S+)/
-  const match = text.match(shareTextRegex)
-
-  if (match) {
-    const title = match[1]
-    let url = match[2]
-
-    if (removeTrackingParams)
-      url = cleanBilibiliUrl(url)
-
-    if (includeTitle)
-      return `${title} ${url}`
-
-    return url
+  // 提取文本中第一个成对的「【...】」内容，支持嵌套
+  const extractFirstBracketContent = (s: string): string | null => {
+    const start = s.indexOf('【')
+    if (start === -1)
+      return null
+    let depth = 0
+    for (let i = start; i < s.length; i++) {
+      if (s[i] === '【')
+        depth++
+      else if (s[i] === '】')
+        depth--
+      if (depth === 0 && i > start)
+        return s.slice(start + 1, i)
+    }
+    return null
   }
 
-  // If it doesn't match the share format, try to clean URLs in the text
-  const urlRegex = /(https?:\/\/\S+)/g
+  // 分别解析标题与链接，标题内部可能存在嵌套的「【...】」
+  const title = extractFirstBracketContent(text)
+  const urlMatch = text.match(/(https?:\/\/\S+)/)
+  const url = urlMatch?.[1]
+
+  if (url) {
+    const cleanedUrl = removeTrackingParams ? cleanBilibiliUrl(url) : url
+    if (title)
+      return includeTitle ? `${title} ${cleanedUrl}` : cleanedUrl
+    return cleanedUrl
+  }
+
+  // 不符合分享格式时，尝试清理文本中的链接
   if (removeTrackingParams) {
-    return text.replace(urlRegex, (url) => {
-      return cleanBilibiliUrl(url)
-    })
+    return text.replace(/(https?:\/\/\S+)/g, url => cleanBilibiliUrl(url))
   }
 
   return text
