@@ -49,6 +49,9 @@ const READY_RETRY_MAX = 30
 const SIDEBAR_REFRESH_DELAY = 800
 const SIDEBAR_TOGGLE_IDLE_DELAY = 1000
 const BILIBILI_ACTION_ANIMATION_HUE = 196
+const COMMENT_ROOT_ID_SELECTOR = '#comment-module, #comment-body, #commentapp'
+const COMMENT_NESTED_UI_SELECTOR = '.reply-item, .sub-reply-item, bili-comment-renderer'
+const COMMENT_CONTENT_MARKER_SELECTOR = 'bili-comment-box, bili-comment-renderer, .reply-list, .comment-list, .reply-box, .comment-header'
 
 let state: BewlyWidescreenState | null = null
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
@@ -130,6 +133,10 @@ const selectors = {
     '.video-sections-content-list',
     '.playlist-container',
   ],
+  playlistControls: [
+    '.auto-play',
+    '.continuous-btn',
+  ],
   recommend: [
     '[class*="recommend_wrap"]',
     '.recommend-list-v1',
@@ -161,6 +168,36 @@ function findMovable(selectors: string[]): HTMLElement | null {
       return element
   }
   return null
+}
+
+function isLikelyCommentRoot(candidate: HTMLElement) {
+  if (candidate.closest(COMMENT_NESTED_UI_SELECTOR))
+    return false
+
+  const parentCommentRoot = candidate.parentElement?.closest<HTMLElement>(selectors.comment.join(','))
+  if (parentCommentRoot)
+    return false
+
+  if (candidate.matches(`${COMMENT_ROOT_ID_SELECTOR}, .commentapp`))
+    return true
+
+  return !!candidate.querySelector(COMMENT_CONTENT_MARKER_SELECTOR)
+}
+
+function findCommentRoot(root: ParentNode = document, excludeWidescreenRoot = false): HTMLElement | null {
+  const candidates: HTMLElement[] = []
+
+  for (const selector of selectors.comment) {
+    for (const candidate of Array.from(root.querySelectorAll<HTMLElement>(selector))) {
+      if (excludeWidescreenRoot && candidate.closest(`#${ROOT_ID}`))
+        continue
+      if (!isLikelyCommentRoot(candidate))
+        continue
+      candidates.push(candidate)
+    }
+  }
+
+  return candidates.find(candidate => candidate.offsetParent !== null) ?? candidates[0] ?? null
 }
 
 function moveNode(node: HTMLElement | null, target: HTMLElement, movedNodes: MovedNode[], allowInsideLayout = false) {
@@ -238,6 +275,44 @@ function moveOrReplaceNode(selectors: string[], target: HTMLElement, movedNodes:
 
   const moved = moveNode(next, target, movedNodes, allowInsideLayout)
   return { found: moved, changed: moved }
+}
+
+function moveCommentRoot(target: HTMLElement, movedNodes: MovedNode[]) {
+  // Once mounted, keep the same root. Replacing it in response to every body
+  // mutation can race Bilibili's renderer and create another comment editor.
+  const existing = findCommentRoot(target)
+  if (existing)
+    return { found: true, changed: false }
+
+  const next = findCommentRoot(document, true)
+  const moved = moveNode(next, target, movedNodes)
+  return { found: moved, changed: moved }
+}
+
+function movePlaylistControls(target: HTMLElement, movedNodes: MovedNode[]) {
+  if (findFirst(selectors.playlistControls, target))
+    return true
+
+  if (!findFirst(selectors.playlist, target) && !findMovable(selectors.playlist))
+    return false
+
+  const control = findMovable(selectors.playlistControls)
+  const playlistSelector = selectors.playlist.join(',')
+  let playlistRoot = control?.closest<HTMLElement>(playlistSelector)
+  while (playlistRoot?.parentElement) {
+    const parentPlaylistRoot = playlistRoot.parentElement.closest<HTMLElement>(playlistSelector)
+    if (!parentPlaylistRoot || parentPlaylistRoot === playlistRoot)
+      break
+    playlistRoot = parentPlaylistRoot
+  }
+  const controlRow = playlistRoot ?? control?.parentElement
+  if (!controlRow || controlRow === document.body)
+    return false
+
+  // The autoplay switch and the episode list are siblings in Bilibili's
+  // eplist layout. Move their original row so its listeners and adjacent
+  // controls (such as random play) remain intact.
+  return moveNode(controlRow, target, movedNodes)
 }
 
 function createPanelEmpty(label: string) {
@@ -1678,7 +1753,7 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   syncDescription(currentState)
 
   moveDanmakuInput(currentState)
-  const commentResult = moveOrReplaceNode(selectors.comment, currentState.panels.comment, currentState.movedNodes)
+  const commentResult = moveCommentRoot(currentState.panels.comment, currentState.movedNodes)
   if (!commentResult.found) {
     ensureEmptyPanel(currentState.panels.comment, '评论区加载中')
   }
@@ -1693,6 +1768,7 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   else
     clearEmptyPanel(currentState.panels.danmaku)
 
+  movePlaylistControls(currentState.panels.playlist, currentState.movedNodes)
   moveMatchingNodes(['[class*="eplist_ep_list_wrapper"]'], currentState.panels.playlist, currentState.movedNodes)
   const existingPlaylist = currentState.panels.playlist.querySelector(selectors.playlist.join(','))
   const existingRecommend = currentState.panels.playlist.querySelector(selectors.recommend.join(','))
@@ -1744,6 +1820,14 @@ function cleanupState(currentState: BewlyWidescreenState) {
   currentState.descriptionCleanup?.()
   clearPlayerResizeSync(currentState)
   clearSidebarRefreshTimer()
+
+  // If Bilibili created a replacement while its original comment root was in
+  // the sidebar, keep the replacement instead of restoring a duplicate editor.
+  const movedCommentRoot = findCommentRoot(currentState.panels.comment)
+  const replacementCommentRoot = findCommentRoot(document, true)
+  if (movedCommentRoot && replacementCommentRoot)
+    removeMovedNode(movedCommentRoot, currentState.movedNodes)
+
   restoreMovedNodes(currentState.movedNodes)
   currentState.root.remove()
   currentState.styleEl.remove()
