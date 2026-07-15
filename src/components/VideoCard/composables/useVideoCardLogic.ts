@@ -327,7 +327,10 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     contentVisibility.value = 'visible'
     if (mouseEnterTimeOut.value)
       clearTimeout(mouseEnterTimeOut.value)
-    const delay = settings.value.hoverVideoCardDelayed ? 1200 : 500
+    const previewEnabled = props.value.showPreview && settings.value.enableVideoPreview
+    const delay = previewEnabled
+      ? (settings.value.hoverVideoCardDelayed ? 1200 : 500)
+      : 1000
     mouseEnterTimeOut.value = window.setTimeout(() => {
       mouseEnterTimeOut.value = null
       isHover.value = true

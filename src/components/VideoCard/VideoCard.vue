@@ -147,8 +147,12 @@ const shouldHideCoverStats = computed(() =>
   && logic.shouldHideOverlayElements.value,
 )
 
+const previewEnabled = computed(() =>
+  Boolean(props.showPreview && settings.value.enableVideoPreview),
+)
+
 const hoverPreviewOnCoverOnly = computed(() =>
-  Boolean(props.showPreview && settings.value.enableVideoPreview && settings.value.onlyCoverVideoPreview),
+  previewEnabled.value && settings.value.onlyCoverVideoPreview,
 )
 
 const linkEvents = computed(() => ({
@@ -381,6 +385,7 @@ provide('getVideoType', () => props.type!)
             :horizontal="horizontal"
             :removed="logic.removed.value"
             :is-hover="logic.isHover.value"
+            :preview-enabled="previewEnabled"
             :should-hide-overlay-elements="Boolean(logic.shouldHideOverlayElements.value)"
             :preview-video-url="logic.previewVideoUrl.value || ''"
             :video-element="logic.videoElement.value || null"
