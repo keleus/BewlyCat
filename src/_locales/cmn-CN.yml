@@ -473,6 +473,8 @@ settings:
   use_original_bilibili_topbar: 使用原版 Bilibili 顶栏
   adapt_to_other_page_styles: 适应其他页面样式
   adapt_to_other_page_styles_desc: 适应一些常见页面，以与 BewlyCat 主题相匹配。
+  nvidia_rtx_video_enhancement_compatibility: NVIDIA RTX 视频增强功能兼容
+  nvidia_rtx_video_enhancement_compatibility_desc: 开启后，将在视频播放页自动禁用毛玻璃效果，避免 NVIDIA RTX 视频增强功能异常。
   follow_bilibili_evolved_color: 使用 Bilibili Evolved 主题色
   follow_bilibili_evolved_color_desc: 每次选完 Bilibili Evolved 主题色时，记得重新选中这一选项以更新配置。
   links: 链接

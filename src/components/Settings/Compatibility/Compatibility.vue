@@ -38,6 +38,13 @@ function changeThemeColor(color: string) {
       <SettingsItem :title="$t('settings.adapt_to_other_page_styles')" :desc="$t('settings.adapt_to_other_page_styles_desc')" right-width="auto">
         <Radio v-model="settings.adaptToOtherPageStyles" />
       </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.nvidia_rtx_video_enhancement_compatibility')"
+        :desc="$t('settings.nvidia_rtx_video_enhancement_compatibility_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.nvidiaRtxVideoEnhancementCompatibility" />
+      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup title="Bilibili Evolved">

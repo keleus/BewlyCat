@@ -341,6 +341,7 @@ export interface Settings {
   showTopBar: boolean
   useOriginalBilibiliTopBar: boolean
   useOriginalBilibiliHomepage: boolean
+  nvidiaRtxVideoEnhancementCompatibility: boolean
 
   // Video Player
   defaultVideoPlayerMode: DefaultVideoPlayerMode
@@ -567,6 +568,7 @@ export const originalSettings: Settings = {
   showTopBar: true,
   useOriginalBilibiliTopBar: false,
   useOriginalBilibiliHomepage: false,
+  nvidiaRtxVideoEnhancementCompatibility: false,
 
   // Video Player
   defaultVideoPlayerMode: 'default',

@@ -698,8 +698,12 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   <div v-if="getCSRF()" class="favorites-page">
     <aside class="favorites-sidebar">
       <nav class="favorites-nav-panel">
-        <section class="favorites-nav-section">
-          <button class="nav-section-header" @click="folderSectionExpanded = !folderSectionExpanded">
+        <section class="favorites-nav-section" :class="{ collapsed: !folderSectionExpanded }">
+          <button
+            class="nav-section-header"
+            :aria-expanded="folderSectionExpanded"
+            @click="folderSectionExpanded = !folderSectionExpanded"
+          >
             <span>{{ t('favorites.folder_section_title') }}</span>
             <span class="nav-section-count">{{ favoriteCategories.length }}</span>
             <span class="nav-section-arrow" :class="{ collapsed: !folderSectionExpanded }" i-tabler:chevron-up />
@@ -721,8 +725,12 @@ function transformFavoriteItem(item: FavoriteItem): Video {
           </ul>
         </section>
 
-        <section class="favorites-nav-section">
-          <button class="nav-section-header" @click="seasonSectionExpanded = !seasonSectionExpanded">
+        <section class="favorites-nav-section" :class="{ collapsed: !seasonSectionExpanded }">
+          <button
+            class="nav-section-header"
+            :aria-expanded="seasonSectionExpanded"
+            @click="seasonSectionExpanded = !seasonSectionExpanded"
+          >
             <span>{{ t('favorites.season_section_title') }}</span>
             <span class="nav-section-count">{{ collectedFavoriteSeasons.length }}</span>
             <span class="nav-section-arrow" :class="{ collapsed: !seasonSectionExpanded }" i-tabler:chevron-up />
@@ -975,6 +983,10 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   min-height: 0;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--bew-border-color);
+}
+
+.favorites-nav-section.collapsed {
+  flex: 0 0 auto;
 }
 
 .favorites-nav-section:last-child {

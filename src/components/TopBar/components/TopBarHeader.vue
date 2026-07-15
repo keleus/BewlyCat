@@ -128,7 +128,7 @@ function refreshSearchContent() {
         :style="{
           backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-bg)',
           opacity: settings.enableFrostedGlass ? 1 : 0.9,
-          backdropFilter: settings.enableFrostedGlass ? 'blur(12px)' : 'none',
+          backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
         }"
       />
     </Transition>
