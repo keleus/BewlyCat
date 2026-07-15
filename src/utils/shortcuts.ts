@@ -185,7 +185,9 @@ export function setupShortcutHandlers() {
             continue
 
           // 如果快捷键匹配
-          if (configKey.toLowerCase() === keyCombo.toLowerCase()) {
+          // 兼容：配置为 '+' 时，允许直接按 '=' 键触发（标准键盘上 '+' 需要 Shift+=）
+          if (configKey.toLowerCase() === keyCombo.toLowerCase()
+            || (configKey === '+' && keyCombo === '=')) {
             // 获取处理函数
             const handler = shortcutHandlers[id]
             if (handler) {

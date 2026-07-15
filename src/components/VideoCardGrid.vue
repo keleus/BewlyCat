@@ -901,7 +901,11 @@ function getUniqueKey(item: T, index: number): string | number {
     />
 
     <!-- 无更多内容提示（仅在有数据时显示，避免与空列表提示重复） -->
-    <Empty v-if="noMoreContent && !needToLoginFirst && items.length > 0" class="pb-4" :description="$t('common.no_more_content')" />
+    <Empty v-if="noMoreContent && !needToLoginFirst && items.length > 0" class="pb-4" :description="$t('common.no_more_content')">
+      <Button type="primary" @click="handleRefresh">
+        {{ refreshButtonText || $t('common.operation.refresh') }}
+      </Button>
+    </Empty>
   </div>
 </template>
 
