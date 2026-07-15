@@ -60,6 +60,10 @@ export async function getManifest() {
           '*://passport.bilibili.com/*',
           '*://music.bilibili.com/*',
         ],
+        exclude_matches: [
+          '*://www.bilibili.com/match/game*',
+          '*://www.bilibili.com/toy*',
+        ],
         js: ['./dist/contentScripts/index.global.js'],
         css: ['./dist/contentScripts/style.css'],
         run_at: 'document_start',
@@ -78,6 +82,10 @@ export async function getManifest() {
           '*://www.hdslb.com/*',
           '*://passport.bilibili.com/*',
           '*://music.bilibili.com/*',
+        ],
+        exclude_matches: [
+          '*://www.bilibili.com/match/game*',
+          '*://www.bilibili.com/toy*',
         ],
         js: ['./dist/contentScripts/inject.global.js'],
         run_at: 'document_start',
