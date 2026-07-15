@@ -51,6 +51,7 @@ const emit = defineEmits<{
   toggleWatchLater: []
   undo: []
   imageLoaded: []
+  previewFullscreenChange: [isFullscreen: boolean]
 }>()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
@@ -127,6 +128,7 @@ function syncPreviewFullscreenState() {
     return
 
   isPreviewFullscreen.value = isFullscreen
+  emit('previewFullscreenChange', isFullscreen)
 
   if (isFullscreen) {
     clearControlsHideTimeout()
@@ -405,15 +407,14 @@ onBeforeUnmount(() => {
       <!-- Video preview -->
       <Transition v-if="!removed && settings.enableVideoPreview" name="fade">
         <div
-          v-if="previewVideoUrl && isHover"
+          v-if="previewVideoUrl && (isHover || isPreviewFullscreen)"
           pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-radius" bg-black
-          @mousemove="handlePreviewMouseMove"
+          @pointermove.capture="handlePreviewMouseMove"
         >
           <video
             ref="videoRef"
             autoplay muted
             :controls="showVideoControls"
-            :style="{ pointerEvents: showVideoControls ? 'auto' : 'none' }"
             w-full h-full
           />
 
