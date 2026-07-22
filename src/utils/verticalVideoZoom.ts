@@ -53,8 +53,9 @@ function injectStyle() {
 
     .${BUTTON_CLASS} {
       position: absolute !important;
-      top: 52px !important;
-      right: 12px !important;
+      top: 12px !important;
+      left: 12px !important;
+      right: auto !important;
       z-index: 100 !important;
       display: none;
       align-items: center !important;
