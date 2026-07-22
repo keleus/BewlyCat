@@ -5,20 +5,36 @@
 
 /**
  * 从URL中提取视频ID
+ * 支持 /video/BV...、/video/av...，以及 /list/...?bvid= / ?avid= 等合集/列表页
  * @param url 视频页面URL，默认为当前页面URL
  * @returns 包含bvid或aid的对象
  */
 export function extractVideoIds(url: string = location.href): { bvid?: string, aid?: number } {
-  // 提取BVID
+  // 提取路径中的 BVID（普通视频页）
   const bvidMatch = url.match(/\/video\/(BV[a-zA-Z0-9]+)/)
   if (bvidMatch) {
     return { bvid: bvidMatch[1] }
   }
 
-  // 提取AID
+  // 提取路径中的 AID
   const aidMatch = url.match(/\/video\/av(\d+)/)
   if (aidMatch) {
     return { aid: Number.parseInt(aidMatch[1]) }
+  }
+
+  // 合集/列表页：ID 在 query 中（SPA 切集时 pathname 不变，bvid/avid 会变）
+  try {
+    const searchParams = new URL(url).searchParams
+    const bvid = searchParams.get('bvid')
+    if (bvid)
+      return { bvid }
+
+    const avid = searchParams.get('avid') || searchParams.get('aid')
+    if (avid)
+      return { aid: Number.parseInt(avid) }
+  }
+  catch {
+    // ignore invalid URL
   }
 
   return {}
@@ -39,9 +55,9 @@ export function addWatchLaterButton() {
     return
   }
 
-  // 获取视频ID
-  const { bvid, aid } = extractVideoIds()
-  if (!bvid && !aid) {
+  // 进入页时至少能解析出视频 ID 才挂按钮；真正提交时再读一次当前 URL
+  const initialIds = extractVideoIds()
+  if (!initialIds.bvid && !initialIds.aid) {
     return
   }
 
@@ -93,6 +109,13 @@ export function addWatchLaterButton() {
       const { default: api } = await import('~/utils/api')
       const { getCSRF } = await import('~/utils/main')
       const { useTopBarStore } = await import('~/stores/topBarStore')
+
+      // 必须在点击时读取当前 URL：合集/列表 SPA 切集后 bvid 会变，不能用创建按钮时的闭包值
+      const { bvid, aid } = extractVideoIds()
+      if (!bvid && !aid) {
+        watchLaterBtn.style.pointerEvents = 'auto'
+        return
+      }
 
       const params: { bvid?: string, aid?: number, csrf: string } = {
         csrf: getCSRF(),
