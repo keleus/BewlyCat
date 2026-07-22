@@ -1,13 +1,21 @@
 const BLOCKED_FEED_CARD_CLASS = 'bewly-blocked-feed-card'
+const VIDEO_CARD_CLASS = 'bili-video-card'
 
 // Homepage recommended cards (that do NOT support "not interested")
 const RCMD_VIDEO_CARD_SELECTOR = '.bili-video-card.is-rcmd:not(.enable-no-interest)'
+const FEED_CARD_SELECTOR = '.feed-card'
+const OBSERVER_OPTIONS: MutationObserverInit = {
+  attributeFilter: ['class'],
+  attributeOldValue: true,
+  attributes: true,
+  childList: true,
+  subtree: true,
+}
 
 let feedCardObserver: MutationObserver | null = null
 let observeRoot: Element | null = null
 let flushScheduled = false
 const pendingRoots = new Set<Element>()
-const recheckScheduled = new WeakSet<HTMLElement>()
 
 function getObserveRoot(): Element {
   // Prefer the feed container if it exists; fallback to body.
@@ -25,7 +33,7 @@ function ensureObserveRoot() {
 
   try {
     feedCardObserver.disconnect()
-    feedCardObserver.observe(preferred, { childList: true, subtree: true })
+    feedCardObserver.observe(preferred, OBSERVER_OPTIONS)
     observeRoot = preferred
   }
   catch {
@@ -33,42 +41,22 @@ function ensureObserveRoot() {
   }
 }
 
-function scheduleRecheckBlockedFeedCard(feedCard: HTMLElement) {
-  if (recheckScheduled.has(feedCard))
-    return
-
-  recheckScheduled.add(feedCard)
-
-  // Defensive: some classes are attached asynchronously after upgrade/hydration.
-  window.setTimeout(() => {
-    recheckScheduled.delete(feedCard)
-
-    if (!feedCard.isConnected)
-      return
-
-    if (!feedCard.querySelector(RCMD_VIDEO_CARD_SELECTOR)) {
-      feedCard.classList.remove(BLOCKED_FEED_CARD_CLASS)
-    }
-  }, 1500)
-}
-
-function markBlockedFeedCardFromVideoCard(videoCard: Element) {
-  const feedCard = videoCard.closest<HTMLElement>('.feed-card')
-  if (!feedCard)
-    return
-
-  if (!feedCard.classList.contains(BLOCKED_FEED_CARD_CLASS)) {
-    feedCard.classList.add(BLOCKED_FEED_CARD_CLASS)
-    scheduleRecheckBlockedFeedCard(feedCard)
-  }
+function syncFeedCard(feedCard: HTMLElement) {
+  feedCard.classList.toggle(
+    BLOCKED_FEED_CARD_CLASS,
+    feedCard.querySelector(RCMD_VIDEO_CARD_SELECTOR) !== null,
+  )
 }
 
 function scanForRcmdCards(root: ParentNode) {
-  // When root itself is a target element
-  if (root instanceof Element && root.matches(RCMD_VIDEO_CARD_SELECTOR))
-    markBlockedFeedCardFromVideoCard(root)
+  // An inserted or updated node can be inside an existing feed card.
+  if (root instanceof Element) {
+    const closestFeedCard = root.closest<HTMLElement>(FEED_CARD_SELECTOR)
+    if (closestFeedCard)
+      syncFeedCard(closestFeedCard)
+  }
 
-  root.querySelectorAll?.(RCMD_VIDEO_CARD_SELECTOR).forEach(markBlockedFeedCardFromVideoCard)
+  root.querySelectorAll?.<HTMLElement>(FEED_CARD_SELECTOR).forEach(syncFeedCard)
 }
 
 function flushPending() {
@@ -100,6 +88,21 @@ function start() {
 
   feedCardObserver = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
+      if (mutation.type === 'attributes') {
+        const target = mutation.target
+        const wasVideoCard = mutation.oldValue?.split(/\s+/).includes(VIDEO_CARD_CLASS)
+
+        // Bilibili attaches recommendation classes asynchronously during hydration.
+        if (target instanceof Element && (target.classList.contains(VIDEO_CARD_CLASS) || wasVideoCard))
+          pendingRoots.add(target)
+
+        continue
+      }
+
+      // If the matching child is removed, resync its existing feed-card parent.
+      if (mutation.removedNodes.length > 0 && mutation.target instanceof Element)
+        pendingRoots.add(mutation.target)
+
       for (let index = 0; index < mutation.addedNodes.length; index++) {
         const node = mutation.addedNodes[index]
         if (node.nodeType !== Node.ELEMENT_NODE)
@@ -113,7 +116,7 @@ function start() {
   })
 
   observeRoot = getObserveRoot()
-  feedCardObserver.observe(observeRoot, { childList: true, subtree: true })
+  feedCardObserver.observe(observeRoot, OBSERVER_OPTIONS)
 }
 
 function stop() {
