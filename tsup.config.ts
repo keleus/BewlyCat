@@ -26,6 +26,7 @@ export default defineConfig(() => ({
     '__DEV__': JSON.stringify(isDev),
     'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
     'process.env.FIREFOX': isFirefox ? 'true' : 'false',
+    'process.env.SAFARI': isSafari ? 'true' : 'false',
   },
   platform: 'browser',
   minifyWhitespace: !isDev,

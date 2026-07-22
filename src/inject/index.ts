@@ -11,11 +11,19 @@ const settingsReadyPromise = new Promise<void>((resolve) => {
   resolveSettingsReady = resolve
 })
 
+const pageScriptGlobal = globalThis as typeof globalThis & {
+  __BEWLYCAT_PAGE_SCRIPT_INITIALIZED__?: boolean
+}
+const shouldInitializePageScript = !pageScriptGlobal.__BEWLYCAT_PAGE_SCRIPT_INITIALIZED__
+
+if (shouldInitializePageScript)
+  pageScriptGlobal.__BEWLYCAT_PAGE_SCRIPT_INITIALIZED__ = true
+
 const isElectronEnv = isElectron()
 if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 }
-else {
+else if (shouldInitializePageScript) {
 // 之前inject.js的内容
   const isArray = (val: any): boolean => Array.isArray(val)
   function injectFunction(
