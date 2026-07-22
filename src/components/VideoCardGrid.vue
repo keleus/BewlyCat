@@ -7,6 +7,7 @@ import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
+import { getListLayoutColumnCount } from '~/utils/gridLayout'
 import emitter from '~/utils/mitt'
 
 import SmoothLoading from './SmoothLoading.vue'
@@ -647,7 +648,7 @@ function getCurrentColumnCount(layout: GridLayoutType, width: number): number {
   if (layout === 'twoColumns')
     return 2
   if (layout === 'oneColumn')
-    return 1
+    return getListLayoutColumnCount(width)
   return getAdaptiveGridColumns(width)
 }
 
@@ -1003,7 +1004,7 @@ function getUniqueKey(item: T, index: number): string | number {
 
 .grid-one-column {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr));
   gap: 16px;
   contain: layout style;
   align-items: stretch;

@@ -280,7 +280,7 @@ defineExpose({ initData })
 
 .grid-one-column {
   display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr));
   gap: 20px;
 }
 </style>
