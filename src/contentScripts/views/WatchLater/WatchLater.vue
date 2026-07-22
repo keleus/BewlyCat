@@ -206,7 +206,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
           <ALink
             v-for="(item, index) in currentWatchLaterList"
             :key="item.aid"
-            :href="`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`"
+            :href="`https://www.bilibili.com/video/${item.bvid}/`"
             type="videoCard"
             class="group"
             flex cursor-pointer
@@ -283,7 +283,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                     class="keep-two-lines"
                     overflow="hidden"
                     un-text="lg overflow-ellipsis"
-                    @click.stop.prevent="handleLinkClick(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`)"
+                    @click.stop.prevent="handleVideoLinkClick(item.bvid)"
                   >
                     {{ item.title }}
                   </a>
