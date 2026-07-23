@@ -1,0 +1,2 @@
+# Keep the generated declaration stable across platforms.
+/src/auto-imports.d.ts text eol=lf
