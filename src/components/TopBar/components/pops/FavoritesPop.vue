@@ -46,17 +46,17 @@ const viewAllUrl = computed((): string => {
 })
 
 const playAllUrl = computed((): string => {
+  // 订阅合集一律走 handleSeasonPlayAll；href 若仍是入口会导致
+  // 异步解析打开目标页的同时，浏览器再按 <a> 打开第一期（双开）
   if (activatedCategorySource.value === 'season')
-    return buildFavoriteSeasonEntryUrl(activatedMediaId.value, activatedCategoryLink.value)
+    return ''
 
   return `https://www.bilibili.com/list/ml${activatedMediaId.value}`
 })
 
 const useCustomSeasonPlayAll = computed(() => activatedCategorySource.value === 'season')
-/** 非「合集开头」时走自定义解析（含 modifier），避免仍打开入口 URL */
-const interceptSeasonPlayAllModifiers = computed(() =>
-  useCustomSeasonPlayAll.value && settings.value.collectedSeasonPlayAllMode !== 'beginning',
-)
+/** 订阅合集播放全部均走自定义解析（含 modifier） */
+const interceptSeasonPlayAllModifiers = computed(() => useCustomSeasonPlayAll.value)
 
 const isResolvingSeasonPlayAll = ref(false)
 
