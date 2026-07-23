@@ -53,6 +53,39 @@ describe('useless homepage feed card blocker', () => {
     expect(feedCard.classList.contains(BLOCKED_FEED_CARD_CLASS)).toBe(true)
   })
 
+  it('marks a lazy-loaded card without the outer feed-card wrapper', () => {
+    const feedCard = document.createElement('div')
+    feedCard.className = 'bili-feed-card'
+
+    const videoCard = document.createElement('div')
+    videoCard.className = 'bili-video-card is-rcmd'
+    feedCard.append(videoCard)
+    document.body.append(feedCard)
+
+    setUselessFeedCardBlockerEnabled(true)
+
+    expect(feedCard.classList.contains(BLOCKED_FEED_CARD_CLASS)).toBe(true)
+  })
+
+  it('marks the outer slot instead of its nested bili-feed-card', () => {
+    const outerFeedCard = document.createElement('div')
+    outerFeedCard.className = 'feed-card'
+
+    const innerFeedCard = document.createElement('div')
+    innerFeedCard.className = 'bili-feed-card'
+
+    const videoCard = document.createElement('div')
+    videoCard.className = 'bili-video-card is-rcmd'
+    innerFeedCard.append(videoCard)
+    outerFeedCard.append(innerFeedCard)
+    document.body.append(outerFeedCard)
+
+    setUselessFeedCardBlockerEnabled(true)
+
+    expect(outerFeedCard.classList.contains(BLOCKED_FEED_CARD_CLASS)).toBe(true)
+    expect(innerFeedCard.classList.contains(BLOCKED_FEED_CARD_CLASS)).toBe(false)
+  })
+
   it('removes the outer marker when a card stops matching', async () => {
     const feedCard = document.createElement('div')
     feedCard.className = 'feed-card'
