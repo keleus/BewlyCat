@@ -1,7 +1,15 @@
 .homePage .bili-header > .bili-header__channel,
-.homePage .bili-header > .bewly-bili-fixed-channel,
 .homePage .bili-header > .bewly-bili-channel-panel {
   display: none !important;
+}
+
+.homePage .header-channel {
+  display: none !important;
+}
+
+.homePage .header-channel.bewly-original-fixed-channel-visible {
+  display: flex !important;
+  top: var(--bew-top-bar-height) !important;
 }
 
 .homePage .bili-header {
@@ -12,8 +20,17 @@
 }
 
 .homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
   background-color: #fff !important;
   backdrop-filter: none;
+}
+
+.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 .dark.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
@@ -56,20 +73,25 @@
     border-right: 2px solid currentColor;
     border-bottom: 2px solid currentColor;
     transform: translateY(-2px) rotate(45deg);
+    transition: transform 0.3s;
+
+    &.arrow-up {
+      transform: translateY(-2px) rotate(45deg);
+    }
   }
 
-  > .bewly-bili-fixed-channel {
-    display: flex !important;
-    position: fixed !important;
-    top: var(--bew-top-bar-height) !important;
-    left: 0 !important;
-    width: 100% !important;
-    max-width: none !important;
-    z-index: 1001 !important;
+  .mini-header__arrow {
+    transform: rotate(-90deg);
+    transition: transform 0.3s;
+
+    &.arrow-up {
+      transform: rotate(0);
+    }
   }
 }
 
-.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled.bewly-original-channel-open {
+.homePage:not(.remove-top-bar)
+  .bili-header.bewly-original-top-bar-scrolled:is(.bewly-original-channel-open, .bewly-original-channel-closing) {
   > .bewly-bili-channel-panel {
     display: flex !important;
     position: fixed !important;
@@ -83,6 +105,33 @@
     border-radius: 0 0 8px 8px;
     background-color: var(--bew-elevated-solid) !important;
     box-shadow: var(--bew-shadow-2);
+  }
+}
+
+.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled.bewly-original-channel-open {
+  > .bewly-bili-channel-panel {
+    animation: bewly-bili-channel-panel-enter 0.3s;
+  }
+}
+
+.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled.bewly-original-channel-closing {
+  > .bewly-bili-channel-panel {
+    animation: bewly-bili-channel-panel-leave 0.3s forwards;
+    pointer-events: none;
+  }
+}
+
+@keyframes bewly-bili-channel-panel-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -5px, 0);
+  }
+}
+
+@keyframes bewly-bili-channel-panel-leave {
+  to {
+    opacity: 0;
+    transform: translate3d(0, -5px, 0);
   }
 }
 
@@ -133,8 +182,8 @@
   // remove the original top bar and adjust the height of the top bar to match the bewly top bar
   .bili-header .bili-header__bar,
   .bili-header > .bili-header__channel,
-  .bili-header > .bewly-bili-fixed-channel,
   .bili-header > .bewly-bili-channel-panel,
+  .header-channel,
   #internationalHeader,
   .link-navbar,
   #home_nav,

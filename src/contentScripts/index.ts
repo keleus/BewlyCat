@@ -598,9 +598,34 @@ else if (shouldInitializeContentScript) {
         position: absolute !important;
         left: -9999px !important;
       }
+      /* 保留新版首页中由 Vue 管理的原版顶栏，避免移动节点破坏组件父子关系 */
+      body > #app:has(> .bili-feed4 > .bili-header) {
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        height: 0 !important;
+        pointer-events: none !important;
+        position: relative !important;
+        left: 0 !important;
+        overflow: visible !important;
+      }
+      body > #app:has(> .bili-feed4 > .bili-header) > *:not(.bili-feed4),
+      body > #app > .bili-feed4 > *:not(.bili-header):not(.header-channel) {
+        display: none !important;
+      }
+      body > #app > .bili-feed4 {
+        display: block !important;
+        visibility: visible !important;
+        height: 0 !important;
+        pointer-events: none !important;
+        position: relative !important;
+        left: 0 !important;
+        overflow: visible !important;
+      }
       /* Ensure the original top bar remains visible and properly positioned */
       /* The visibility/display will be controlled by .remove-top-bar class in removeTopBar.scss */
-      .bili-header {
+      .bili-header,
+      .header-channel {
         position: relative !important;
         left: 0 !important;
         pointer-events: auto !important;

@@ -41,9 +41,8 @@ describe('b 站原版顶栏滚动状态', () => {
     expect(document.querySelector('.entry-title .bewly-home-entry-arrow')).not.toBeNull()
     expect(document.querySelectorAll('.bewly-bili-channel-panel .channel-panel__column')).toHaveLength(5)
     expect(document.querySelectorAll('.bewly-bili-channel-panel .channel-panel__icon').length).toBeGreaterThan(0)
-    expect(document.querySelector('body > .header-channel:not(.bewly-bili-fixed-channel)')).not.toBeNull()
-    expect(document.querySelector('.bili-header > .bewly-bili-fixed-channel')).not.toBeNull()
-    expect(document.querySelector('.bewly-bili-fixed-channel .header-channel-fixed-right-item')?.textContent).toBe('番剧')
+    expect(document.querySelector('body > .header-channel')).not.toBeNull()
+    expect(document.querySelector('.bili-header > .header-channel')).toBeNull()
   })
 
   it('在 B 站脚本移除下拉类名后自动恢复', async () => {
@@ -62,10 +61,12 @@ describe('b 站原版顶栏滚动状态', () => {
     setOriginalBilibiliTopBarScrolled(document, true)
     expect(header?.classList.contains('bewly-original-top-bar-scrolled')).toBe(true)
     expect(bar?.classList.contains('slide-down')).toBe(true)
+    expect(document.querySelector('.header-channel')?.classList.contains('bewly-original-fixed-channel-visible')).toBe(true)
 
     setOriginalBilibiliTopBarScrolled(document, false)
     expect(header?.classList.contains('bewly-original-top-bar-scrolled')).toBe(false)
     expect(bar?.classList.contains('slide-down')).toBe(false)
+    expect(document.querySelector('.header-channel')?.classList.contains('bewly-original-fixed-channel-visible')).toBe(false)
   })
 
   it('保留原版顶栏的分区面板供悬浮样式控制', () => {
@@ -86,41 +87,48 @@ describe('b 站原版顶栏滚动状态', () => {
     home.dispatchEvent(new Event('pointerover', { bubbles: true }))
 
     expect(header?.classList.contains('bewly-original-channel-open')).toBe(true)
+    expect(header?.querySelector('.bewly-home-entry-arrow')?.classList.contains('arrow-up')).toBe(true)
 
     setOriginalBilibiliTopBarScrolled(document, false)
     expect(header?.classList.contains('bewly-original-channel-open')).toBe(false)
+    expect(header?.querySelector('.bewly-home-entry-arrow')?.classList.contains('arrow-up')).toBe(false)
   })
 
-  it('悬停原版固定频道栏时展开全部标签', () => {
-    const fixedChannel = document.querySelector<HTMLElement>('.bewly-bili-fixed-channel')
-    const fixedChannelContent = fixedChannel?.querySelector('.header-channel-fixed')
+  it('下滑状态下恢复被 B 站脚本隐藏的第一行顶栏', async () => {
+    const header = document.querySelector<HTMLElement>('.bili-header')
+    const bar = document.querySelector<HTMLElement>('.bili-header__bar')
+    setOriginalBilibiliTopBarScrolled(document, true)
 
-    fixedChannel?.dispatchEvent(new Event('pointerenter'))
-    expect(fixedChannelContent?.classList.contains('header-channel-fixed-down')).toBe(true)
-
-    fixedChannel?.dispatchEvent(new Event('pointerleave'))
-    expect(fixedChannelContent?.classList.contains('header-channel-fixed-down')).toBe(false)
-  })
-
-  it('等待原版频道标签异步完成后再创建副本', async () => {
-    document.querySelector('.bewly-bili-fixed-channel')?.remove()
-    const nativeFixedChannel = document.querySelector<HTMLElement>(
-      'body > .header-channel:not(.bewly-bili-fixed-channel)',
-    )
-    const nativeItems = nativeFixedChannel?.querySelector<HTMLElement>('.header-channel-fixed-right')
-    if (nativeItems)
-      nativeItems.innerHTML = ''
-
-    ensureOriginalBilibiliTopBarAppended(document)
-    expect(document.querySelector('.bewly-bili-fixed-channel')).toBeNull()
-
-    const item = document.createElement('a')
-    item.className = 'header-channel-fixed-right-item'
-    item.textContent = '番剧'
-    nativeItems?.appendChild(item)
+    header!.style.display = 'none'
+    bar!.style.visibility = 'hidden'
+    bar!.style.opacity = '0'
     await Promise.resolve()
 
-    expect(document.querySelector('.bili-header > .bewly-bili-fixed-channel')).not.toBeNull()
-    expect(nativeFixedChannel?.parentElement).toBe(document.body)
+    expect(header?.style.display).toBe('')
+    expect(bar?.style.visibility).toBe('')
+    expect(bar?.style.opacity).toBe('')
+    expect(bar?.classList.contains('slide-down')).toBe(true)
+  })
+
+  it('原版顶栏始终保留在 Vue 管理的父节点中', () => {
+    const header = document.querySelector('.bili-header')
+    const originalParent = header?.parentElement
+
+    ensureOriginalBilibiliTopBarAppended(document)
+
+    expect(header?.parentElement).toBe(originalParent)
+  })
+
+  it('b 站替换顶栏节点后恢复当前滚动状态', async () => {
+    setOriginalBilibiliTopBarScrolled(document, true)
+    const oldHeader = document.querySelector<HTMLElement>('.bili-header')
+    const newHeader = oldHeader?.cloneNode(true) as HTMLElement
+    newHeader.classList.remove('bewly-original-top-bar-scrolled')
+    newHeader.querySelector('.bili-header__bar')?.classList.remove('slide-down')
+    oldHeader?.replaceWith(newHeader)
+    await Promise.resolve()
+
+    expect(newHeader.classList.contains('bewly-original-top-bar-scrolled')).toBe(true)
+    expect(newHeader.querySelector('.bili-header__bar')?.classList.contains('slide-down')).toBe(true)
   })
 })
