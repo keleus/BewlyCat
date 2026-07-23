@@ -42,6 +42,13 @@ const pages = [
     component: defineAsyncComponent(() => import('./Home/Home.vue')),
   },
   {
+    value: PluginPage.Favorites,
+    titleKey: 'settings.plugin.favorites',
+    icon: 'i-mingcute:bookmark-line',
+    iconActivated: 'i-mingcute:bookmark-fill',
+    component: defineAsyncComponent(() => import('./Favorites/Favorites.vue')),
+  },
+  {
     value: PluginPage.Search,
     titleKey: 'settings.plugin.search',
     icon: 'i-mingcute:search-2-line',

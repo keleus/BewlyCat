@@ -77,6 +77,7 @@ settings:
     topbar: 顶栏
     dock_and_sidebar: Dock栏
     home: 首页
+    favorites: 收藏
     search: 搜索页
     volume_balance: 音量均衡
 
@@ -119,6 +120,7 @@ settings:
   group_recommendation_filters_desc: |
     请勿将限制值设置得太大，不然可能会增加加载时间！频繁请求可能会导致B站对IP的封禁!
   group_following: 正在关注
+  group_favorites: 收藏
   group_search_page_mode: 搜索页模式
   group_home_tabs: 首页标签栏
   group_home_layout: 首页布局
@@ -455,6 +457,8 @@ settings:
   following_filter_dynamic_videos_desc: 开启后，在 "正在关注" 页面中将隐藏标记为动态视频的内容
   use_following_new_layout: 使用正在关注新布局
   use_following_new_layout_desc: 左侧显示关注的UP主列表，右侧显示视频流
+  use_favorites_new_layout: 使用新版收藏页
+  use_favorites_new_layout_desc: 关闭后使用旧版收藏页；旧版不显示收藏合集。
   enable_following_inactive_blacklist: 启用不活跃名单
   enable_following_inactive_blacklist_desc: 当UP主超过指定天数未更新或无投稿时，将自动移至不活跃名单。在ALL视图中出现更新或点击该UP主时会自动移出不活跃名单
   following_inactive_days: UP主不活跃天数

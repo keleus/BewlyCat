@@ -13,6 +13,7 @@ export enum PluginPage {
   TopBar = 'TopBar',
   DockAndSidebar = 'DockAndSidebar',
   Home = 'Home',
+  Favorites = 'Favorites',
   Search = 'Search',
   VolumeBalance = 'VolumeBalance',
 }

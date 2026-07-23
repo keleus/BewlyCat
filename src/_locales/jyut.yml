@@ -77,6 +77,7 @@ settings:
     topbar: 頂欄
     dock_and_sidebar: Dock
     home: 主頁
+    favorites: 收藏
     search: 搵嘢頁
     volume_balance: 音量均衡
 
@@ -118,6 +119,7 @@ settings:
   group_recommendation_filters_desc: |
     限制嘅數值唔好設太大，唔係嘅話會影響載入時間！頻繁請求可能會導致B站對IP嘅封禁!
   group_following: 跟緊啲人
+  group_favorites: 收藏
   group_search_page_mode: 搵嘢頁模式
   group_home_tabs: 主頁分頁欄
   group_home_layout: 主頁版面
@@ -383,6 +385,8 @@ settings:
   following_filter_dynamic_videos_desc: 啟用後，喺「跟緊啲人」頁面入邊會隱藏標記為動態影片嘅內容
   use_following_new_layout: 用跟緊啲人新版面
   use_following_new_layout_desc: 左邊顯示關注嘅UP主名單，右邊顯示影片流
+  use_favorites_new_layout: 使用新版收藏頁
+  use_favorites_new_layout_desc: 關閉之後會使用舊版收藏頁；舊版唔會顯示收藏合集。
   enable_following_inactive_blacklist: 啟用唔活躍名單
   enable_following_inactive_blacklist_desc: 閂咗之後唔會因為超過唔活躍日數或者冇投稿就自動入唔活躍名單；已經有嘅唔活躍名單同 ALL 視圖／撳 UP 移出規則唔變。
   following_inactive_days: UP主唔活躍天數

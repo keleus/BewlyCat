@@ -77,6 +77,7 @@ settings:
     topbar: Top Bar
     dock_and_sidebar: Dock
     home: Home
+    favorites: Favorites
     search: Search
     volume_balance: Volume Normalization
 
@@ -122,6 +123,7 @@ settings:
     Do not set the restricted value too large, as this may increase loading
     time! Frequent requests may result in IP blocking by Bilibili!
   group_following: Following
+  group_favorites: Favorites
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs
   group_home_layout: Home Layout
@@ -460,6 +462,8 @@ settings:
   following_filter_dynamic_videos_desc: When enabled, videos marked as dynamic videos will be hidden in the "Following" page
   use_following_new_layout: Use new layout for Following tab
   use_following_new_layout_desc: Display followed UPs list on the left and video feed on the right
+  use_favorites_new_layout: Use the new Favorites page
+  use_favorites_new_layout_desc: Turn this off to use the legacy Favorites page, which does not show collected series.
   enable_following_inactive_blacklist: Enable Inactive List
   enable_following_inactive_blacklist_desc: When a UP has not posted for the specified number of days or has no videos, they will be automatically moved to the Inactive List. They will be removed from the Inactive List when appearing in ALL view or when clicked
   following_inactive_days: UP inactive days
