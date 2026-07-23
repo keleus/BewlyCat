@@ -28,10 +28,12 @@ export interface FavoriteSeasonPlayTarget {
   /**
    * UI 已通过同一套分页语义加载过的列表。
    * complete=true 时可跳过再次全量请求。
+   * expectedCount 来自合集 media_count，用于 complete 标记未同步时的兜底判定。
    */
   preloaded?: {
     medias: FavoriteSeasonMedia[]
     complete: boolean
+    expectedCount?: number
   }
 }
 
@@ -282,8 +284,22 @@ async function resolveSeasonMedias(
   seasonId: number,
   preloaded?: FavoriteSeasonPlayTarget['preloaded'],
 ): Promise<FetchAllSeasonMediasResult> {
+  // 已完整加载：直接复用，避免收藏页再打一遍接口
   if (preloaded?.complete && preloaded.medias.length > 0)
     return { medias: preloaded.medias, complete: true }
+
+  // 未标 complete，但条数已达已知总数：也视为完整（避免 flag 与 media_count 不同步）
+  if (
+    preloaded
+    && typeof preloaded.expectedCount === 'number'
+    && preloaded.expectedCount > 0
+    && preloaded.medias.length >= preloaded.expectedCount
+  ) {
+    return {
+      medias: preloaded.medias.slice(0, preloaded.expectedCount),
+      complete: true,
+    }
+  }
 
   return fetchAllFavoriteSeasonMedias(seasonId)
 }
