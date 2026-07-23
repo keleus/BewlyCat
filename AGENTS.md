@@ -72,3 +72,7 @@ The project uses a multi-target build system:
 - Auto-imports for Vue and webextension-polyfill
 - Extensive use of Shadow DOM for style isolation
 - Platform-specific builds with conditional manifest generation
+
+## 语言规范
+- 新增或修改的代码注释统一使用中文。
+- Pull Request 的标题和正文统一使用中文。

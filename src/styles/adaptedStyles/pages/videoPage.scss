@@ -52,6 +52,14 @@
       background: unset;
     }
 
+    .video-info-container .video-info-title-inner .video-title .video-title-href:hover,
+    .simple-base-item:hover .title,
+    .simple-base-item.active .title,
+    .normal-base-item:hover .info .title,
+    .normal-base-item.active .info .title {
+      color: var(--bew-theme-color) !important;
+    }
+
     // Firefox specific fix for checkbox visibility
     @-moz-document url-prefix() {
       .content .group-list li input[type="checkbox"]:checked + i,
@@ -567,6 +575,12 @@
 
   // #region dark mode adaption part
   &.dark {
+    .collection-m-exp .content .group-list li label.disable input[type="checkbox"] + i,
+    .collection-m-exp .content .group-list li label.disable input[type="checkbox"]:hover + i {
+      background: var(--bew-fill-1) !important;
+      border-color: var(--bew-border-color) !important;
+    }
+
     .video-ai-assistant .video-ai-assistant-bg::before,
     .note-pc .note-container .note-header .back-note-list:hover,
     .note-pc .note-container .note-header .jump-note-package:hover,
