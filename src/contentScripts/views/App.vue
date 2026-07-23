@@ -187,6 +187,21 @@ const handleThrottledPageForwardRefresh = useThrottleFn(() => handleForwardRefre
 const topBarRef = ref()
 const reachTop = ref<boolean>(true)
 
+// 直接传入响应式元素引用，确保 Firefox 恢复会话时滚动容器延迟挂载后
+// IntersectionObserver 能自动使用真实容器，而不是永久停留在首次的空引用状态。
+useIntersectionObserver(
+  loadMoreSentinelRef,
+  ([entry]) => {
+    if (entry?.isIntersecting)
+      handleThrottledReachBottom()
+  },
+  {
+    root: scrollViewportRef,
+    rootMargin: '200px',
+    threshold: 0,
+  },
+)
+
 const iframeDrawerURL = ref<string>('')
 const showIframeDrawer = ref<boolean>(false)
 
@@ -407,30 +422,6 @@ let scrollingEmitted = false
 
 onMounted(() => {
   window.dispatchEvent(new CustomEvent(BEWLY_MOUNTED))
-
-  // ✅ 设置 IntersectionObserver 用于无限滚动底部检测（仅在首页且使用Bewly页面时）
-  // 避免在每次滚动时读取 scrollHeight/clientHeight
-  if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
-    nextTick(() => {
-      const viewport = scrollViewportRef.value
-      if (!viewport)
-        return
-
-      useIntersectionObserver(
-        loadMoreSentinelRef,
-        ([{ isIntersecting }]) => {
-          if (isIntersecting) {
-            handleThrottledReachBottom()
-          }
-        },
-        {
-          root: viewport,
-          rootMargin: '200px', // 提前 200px 触发加载
-          threshold: 0,
-        },
-      )
-    })
-  }
 
   if (isHomePage()) {
     // Force overwrite Bilibili Evolved body tag & html tag background color
