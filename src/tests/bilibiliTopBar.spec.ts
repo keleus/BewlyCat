@@ -79,6 +79,10 @@ describe('b 站原版顶栏滚动状态', () => {
   it('由兼容层控制下拉后的分区面板展开', () => {
     ensureOriginalBilibiliTopBarAppended(document)
     const header = document.querySelector('.bili-header')
+    const nativePopover = document.createElement('div')
+    nativePopover.className = 'v-popover is-bottom-start'
+    nativePopover.innerHTML = '<div class="bili-header-channel-panel"></div>'
+    header?.appendChild(nativePopover)
     const home = document.createElement('a')
     home.className = 'entry-title'
     header?.querySelector('.bili-header__bar')?.appendChild(home)
@@ -87,10 +91,12 @@ describe('b 站原版顶栏滚动状态', () => {
     home.dispatchEvent(new Event('pointerover', { bubbles: true }))
 
     expect(header?.classList.contains('bewly-original-channel-open')).toBe(true)
+    expect(nativePopover.classList.contains('bewly-original-native-channel-open')).toBe(true)
     expect(header?.querySelector('.bewly-home-entry-arrow')?.classList.contains('arrow-up')).toBe(true)
 
     setOriginalBilibiliTopBarScrolled(document, false)
     expect(header?.classList.contains('bewly-original-channel-open')).toBe(false)
+    expect(nativePopover.classList.contains('bewly-original-native-channel-open')).toBe(false)
     expect(header?.querySelector('.bewly-home-entry-arrow')?.classList.contains('arrow-up')).toBe(false)
   })
 

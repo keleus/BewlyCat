@@ -112,6 +112,10 @@ export function setOriginalBilibiliTopBarScrolled(doc: Document, scrolled: boole
   if (!scrolled) {
     header?.classList.remove('bewly-original-channel-open')
     header?.classList.remove('bewly-original-channel-closing')
+    getOriginalTopBarNativeChannelPopover(header)?.classList.remove(
+      'bewly-original-native-channel-open',
+      'bewly-original-native-channel-closing',
+    )
     setOriginalTopBarHomeArrowExpanded(header, false)
   }
 }
@@ -270,13 +274,17 @@ function setOriginalTopBarHomeArrowExpanded(header: HTMLElement | null, expanded
     .toggle('arrow-up', expanded)
 }
 
+function getOriginalTopBarNativeChannelPopover(header: HTMLElement | null) {
+  return header
+    ?.querySelector('.bili-header-channel-panel:not(.bewly-bili-channel-panel)')
+    ?.closest<HTMLElement>('.v-popover') ?? null
+}
+
 function setupOriginalTopBarChannelHover(header: HTMLElement) {
   if (initializedHoverHeaders.has(header))
     return
 
   initializedHoverHeaders.add(header)
-  if (header.querySelector('.bili-header-channel-panel:not(.bewly-bili-channel-panel)'))
-    return
 
   let closeTimer: ReturnType<typeof setTimeout> | null = null
   let closeAnimationTimer: ReturnType<typeof setTimeout> | null = null
@@ -294,30 +302,37 @@ function setupOriginalTopBarChannelHover(header: HTMLElement) {
 
   header.addEventListener('pointerover', (event) => {
     const target = event.target as Element | null
-    if (!target?.closest('.entry-title, .left-entry__title, .bewly-bili-channel-panel'))
+    if (!target?.closest('.entry-title, .left-entry__title, .bewly-bili-channel-panel, .bili-header-channel-panel'))
       return
 
     clearCloseTimer()
     if (header.classList.contains('bewly-original-top-bar-scrolled')) {
+      const nativePopover = getOriginalTopBarNativeChannelPopover(header)
       header.classList.remove('bewly-original-channel-closing')
       header.classList.add('bewly-original-channel-open')
+      nativePopover?.classList.remove('bewly-original-native-channel-closing')
+      nativePopover?.classList.add('bewly-original-native-channel-open')
       setOriginalTopBarHomeArrowExpanded(header, true)
     }
   })
 
   header.addEventListener('pointerout', (event) => {
     const target = event.target as Element | null
-    if (!target?.closest('.entry-title, .left-entry__title, .bewly-bili-channel-panel'))
+    if (!target?.closest('.entry-title, .left-entry__title, .bewly-bili-channel-panel, .bili-header-channel-panel'))
       return
 
     clearCloseTimer()
     closeTimer = setTimeout(() => {
+      const nativePopover = getOriginalTopBarNativeChannelPopover(header)
       closeTimer = null
       header.classList.remove('bewly-original-channel-open')
       header.classList.add('bewly-original-channel-closing')
+      nativePopover?.classList.remove('bewly-original-native-channel-open')
+      nativePopover?.classList.add('bewly-original-native-channel-closing')
       setOriginalTopBarHomeArrowExpanded(header, false)
       closeAnimationTimer = setTimeout(() => {
         header.classList.remove('bewly-original-channel-closing')
+        nativePopover?.classList.remove('bewly-original-native-channel-closing')
         closeAnimationTimer = null
       }, 300)
     }, 120)
@@ -334,6 +349,10 @@ export function detachOriginalBilibiliTopBar(doc: Document) {
     'bewly-original-top-bar-scrolled',
     'bewly-original-channel-open',
     'bewly-original-channel-closing',
+  )
+  getOriginalTopBarNativeChannelPopover(header)?.classList.remove(
+    'bewly-original-native-channel-open',
+    'bewly-original-native-channel-closing',
   )
   header.querySelector('.bili-header__bar')?.classList.remove('slide-down')
   getOriginalFixedChannel(header)?.classList.remove('bewly-original-fixed-channel-visible')

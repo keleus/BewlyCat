@@ -76,18 +76,36 @@
     transition: transform 0.3s;
 
     &.arrow-up {
-      transform: translateY(-2px) rotate(45deg);
+      transform: translateY(2px) rotate(225deg);
     }
   }
 
   .mini-header__arrow {
-    transform: rotate(-90deg);
     transition: transform 0.3s;
 
     &.arrow-up {
-      transform: rotate(0);
+      transform: rotate(180deg);
     }
   }
+}
+
+.homePage:not(.remove-top-bar)
+  .bili-header.bewly-original-top-bar-scrolled
+  .v-popover:is(.bewly-original-native-channel-open, .bewly-original-native-channel-closing) {
+  display: block !important;
+}
+
+.homePage:not(.remove-top-bar)
+  .bili-header.bewly-original-top-bar-scrolled
+  .v-popover.bewly-original-native-channel-open {
+  animation: bewly-bili-channel-panel-enter 0.3s;
+}
+
+.homePage:not(.remove-top-bar)
+  .bili-header.bewly-original-top-bar-scrolled
+  .v-popover.bewly-original-native-channel-closing {
+  animation: bewly-bili-channel-panel-leave 0.3s forwards;
+  pointer-events: none;
 }
 
 .homePage:not(.remove-top-bar)

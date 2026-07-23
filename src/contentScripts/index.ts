@@ -624,9 +624,12 @@ else if (shouldInitializeContentScript) {
       }
       /* Ensure the original top bar remains visible and properly positioned */
       /* The visibility/display will be controlled by .remove-top-bar class in removeTopBar.scss */
-      .bili-header,
-      .header-channel {
+      .bili-header {
         position: relative !important;
+        left: 0 !important;
+        pointer-events: auto !important;
+      }
+      .header-channel {
         left: 0 !important;
         pointer-events: auto !important;
       }
