@@ -245,14 +245,27 @@ async function getFavoriteSeasonResources() {
   const res: FavoriteSeasonResourcesResult = await api.favorite.getFavoriteSeasonResources({
     season_id: activatedMediaId.value,
     pn: currentPageNum.value,
+    ps: 40,
   })
 
   if (res.code === 0 && res.data) {
     const medias = Array.isArray(res.data.medias) ? res.data.medias.filter((m: any) => m != null) : []
-    if (medias.length > 0)
-      favoriteResources.push(...medias.map(normalizeSeasonMedia))
-
-    noMoreContent.value = medias.length < 40
+    const mediaCount = res.data.info?.media_count
+    if (medias.length > 0) {
+      if (typeof mediaCount === 'number' && mediaCount >= 0 && medias.length >= mediaCount && currentPageNum.value === 1) {
+        favoriteResources.length = 0
+        favoriteResources.push(...medias.slice(0, mediaCount).map(normalizeSeasonMedia))
+        noMoreContent.value = true
+      }
+      else {
+        favoriteResources.push(...medias.map(normalizeSeasonMedia))
+        noMoreContent.value = medias.length < 40
+          || (typeof mediaCount === 'number' && mediaCount >= 0 && favoriteResources.length >= mediaCount)
+      }
+    }
+    else {
+      noMoreContent.value = true
+    }
   }
   else {
     noMoreContent.value = true

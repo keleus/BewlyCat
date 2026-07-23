@@ -409,17 +409,34 @@ async function getFavoriteSeasonResources(
     const res: FavoriteSeasonResourcesResult = await api.favorite.getFavoriteSeasonResources({
       season_id,
       pn,
+      ps: 40,
     })
 
     if (res.code === 0 && res.data) {
       activatedCategoryCover.value = res.data.info?.cover || selectedCategory.value?.cover || ''
 
       const medias = Array.isArray(res.data.medias) ? res.data.medias.filter((m: any) => m != null) : []
-      if (medias.length > 0)
-        favoriteResources.push(...medias.map(normalizeSeasonMedia))
-
-      if (medias.length < 40)
+      const mediaCount = res.data.info?.media_count
+      // 接口常无视 ps、一次返回全量；若仍按「满页继续翻」会连打同一批数据，拖垮后续「播放全部」请求
+      if (medias.length > 0) {
+        if (typeof mediaCount === 'number' && mediaCount >= 0 && medias.length >= mediaCount) {
+          favoriteResources.length = 0
+          favoriteResources.push(...medias.slice(0, mediaCount).map(normalizeSeasonMedia))
+          noMoreContent.value = true
+        }
+        else {
+          favoriteResources.push(...medias.map(normalizeSeasonMedia))
+          if (
+            medias.length < 40
+            || (typeof mediaCount === 'number' && mediaCount >= 0 && favoriteResources.length >= mediaCount)
+          ) {
+            noMoreContent.value = true
+          }
+        }
+      }
+      else {
         noMoreContent.value = true
+      }
 
       if (!(await haveScrollbar()) && !noMoreContent.value)
         await getFavoriteSeasonResources(season_id, ++currentPageNum.value)
