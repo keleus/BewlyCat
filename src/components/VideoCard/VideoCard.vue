@@ -413,6 +413,7 @@ provide('getVideoType', () => props.type!)
         <VideoCardInfo
           v-if="!logic.removed.value"
           ref="infoComponentRef"
+          :class="{ 'horizontal-card-info': horizontal }"
           :skeleton="infoSkeleton"
           :video="props.video"
           :layout="layout"
@@ -528,6 +529,13 @@ provide('getVideoType', () => props.type!)
 
 .horizontal-card-cover {
   --uno: "w-full max-w-400px aspect-video";
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.horizontal-card-info {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .vertical-card-cover {
