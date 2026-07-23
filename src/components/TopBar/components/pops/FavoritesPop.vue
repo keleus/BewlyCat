@@ -41,6 +41,7 @@ const loadedSeasonComplete = ref(false)
 const activatedMediaId = ref<number>(0)
 const activatedCategorySource = ref<FavoriteCategorySource>('folder')
 const activatedCategoryLink = ref<string>('')
+const activatedCategoryMid = ref<number>(0)
 const activatedFavoriteTitle = ref<string>()
 const currentPageNum = ref<number>(1)
 
@@ -50,8 +51,13 @@ const noMoreContent = ref<boolean>(false)
 const favoriteVideosWrap = ref<HTMLElement>() as Ref<HTMLElement>
 
 const viewAllUrl = computed((): string => {
-  if (activatedCategorySource.value === 'season')
+  if (activatedCategorySource.value === 'season') {
+    // 「查看全部」进 UP 合集页浏览；「播放全部」按设置起播，职责分开
+    if (activatedCategoryMid.value > 0) {
+      return `https://space.bilibili.com/${activatedCategoryMid.value}/channel/collectiondetail?sid=${activatedMediaId.value}`
+    }
     return buildFavoriteSeasonEntryUrl(activatedMediaId.value, activatedCategoryLink.value)
+  }
 
   return `//space.bilibili.com/${getUserID()}/favlist?fid=${
     activatedMediaId.value
@@ -109,6 +115,9 @@ async function handleSeasonPlayAll() {
       preloaded: {
         medias: loadedSeasonMedias.value,
         complete: loadedSeasonComplete.value,
+        expectedCount: favoriteCategories.find(
+          item => item.source === 'season' && item.id === activatedMediaId.value,
+        )?.media_count,
       },
     })
     if (result.usedFallback && result.reason !== 'beginning')
@@ -340,6 +349,7 @@ function changeCategory(categoryItem: ViewCategory) {
   activatedMediaId.value = categoryItem.id
   activatedCategorySource.value = categoryItem.source
   activatedCategoryLink.value = categoryItem.link || ''
+  activatedCategoryMid.value = categoryItem.mid || 0
   activatedFavoriteTitle.value = categoryItem.title
 }
 

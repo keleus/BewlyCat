@@ -579,6 +579,7 @@ async function handlePlayAll() {
         preloaded: {
           medias: loadedSeasonMedias.value,
           complete: loadedSeasonComplete.value,
+          expectedCount: selectedCategory.value.media_count,
         },
       })
       if (result.usedFallback && result.reason !== 'beginning')

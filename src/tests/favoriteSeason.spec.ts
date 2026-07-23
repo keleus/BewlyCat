@@ -132,13 +132,14 @@ describe('favoriteSeason utils', () => {
     expect(mocks.getFavoriteSeasonResources).toHaveBeenCalledTimes(1)
   })
 
-  it('reuses preloaded complete medias without refetching', async () => {
+  it('reuses preloaded medias when count matches even if complete flag is false', async () => {
     await expect(resolveFavoriteSeasonPlayAllUrl({
       seasonId: 42,
       link: 'bilibili://video/100',
       mode: 'latest',
       preloaded: {
-        complete: true,
+        complete: false,
+        expectedCount: 2,
         medias: [
           { id: 1, bvid: 'BV1Old', title: 'old' } as any,
           { id: 2, bvid: 'BV1Latest', title: 'latest' } as any,
