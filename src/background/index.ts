@@ -1,6 +1,7 @@
 import browser from 'webextension-polyfill'
 
 import { setupAppAuthScheduler } from './appAuthScheduler'
+import { setupContentScriptRecovery } from './contentScriptRecovery'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
 import { initWbiKeys } from './wbiSign'
@@ -52,3 +53,4 @@ if (process.env.FIREFOX) {
 setupApiMsgListeners()
 setupTabMsgListeners()
 setupAppAuthScheduler()
+setupContentScriptRecovery()

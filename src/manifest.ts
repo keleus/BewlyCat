@@ -3,6 +3,7 @@ import type { Manifest } from 'webextension-polyfill'
 
 import type PkgType from '../package.json'
 import { isDev, isFirefox, isSafari, port, r } from '../scripts/utils'
+import { CONTENT_SCRIPT_EXCLUDE_MATCHES, CONTENT_SCRIPT_MATCHES } from './constants/contentScript'
 
 export async function getManifest() {
   const pkg = await fs.readJSON(r('package.json')) as typeof PkgType
@@ -38,6 +39,7 @@ export async function getManifest() {
     permissions: [
       'storage',
       'declarativeNetRequest',
+      ...(!isFirefox && !isSafari ? ['scripting'] : []),
       ...isFirefox
         ? ['webRequest', 'webRequestBlocking', 'cookies']
         : [],
@@ -48,22 +50,8 @@ export async function getManifest() {
     ],
     content_scripts: [
       {
-        matches: [
-          '*://www.bilibili.com/*',
-          '*://search.bilibili.com/*',
-          '*://t.bilibili.com/*',
-          '*://space.bilibili.com/*',
-          '*://message.bilibili.com/*',
-          '*://member.bilibili.com/*',
-          '*://account.bilibili.com/*',
-          '*://www.hdslb.com/*',
-          '*://passport.bilibili.com/*',
-          '*://music.bilibili.com/*',
-        ],
-        exclude_matches: [
-          '*://www.bilibili.com/match/game*',
-          '*://www.bilibili.com/toy*',
-        ],
+        matches: [...CONTENT_SCRIPT_MATCHES],
+        exclude_matches: [...CONTENT_SCRIPT_EXCLUDE_MATCHES],
         js: ['./dist/contentScripts/index.global.js'],
         css: ['./dist/contentScripts/style.css'],
         run_at: 'document_start',
@@ -71,22 +59,8 @@ export async function getManifest() {
         all_frames: true,
       },
       {
-        matches: [
-          '*://www.bilibili.com/*',
-          '*://search.bilibili.com/*',
-          '*://t.bilibili.com/*',
-          '*://space.bilibili.com/*',
-          '*://message.bilibili.com/*',
-          '*://member.bilibili.com/*',
-          '*://account.bilibili.com/*',
-          '*://www.hdslb.com/*',
-          '*://passport.bilibili.com/*',
-          '*://music.bilibili.com/*',
-        ],
-        exclude_matches: [
-          '*://www.bilibili.com/match/game*',
-          '*://www.bilibili.com/toy*',
-        ],
+        matches: [...CONTENT_SCRIPT_MATCHES],
+        exclude_matches: [...CONTENT_SCRIPT_EXCLUDE_MATCHES],
         js: ['./dist/contentScripts/inject.global.js'],
         run_at: 'document_start',
         match_about_blank: true,
