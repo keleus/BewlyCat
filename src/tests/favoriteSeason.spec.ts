@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { Business } from '~/models/history/history'
 import {
   buildFavoriteSeasonEntryUrl,
   buildFavoriteSeasonListPlayUrl,
@@ -8,12 +9,16 @@ import {
 
 const mocks = vi.hoisted(() => ({
   getFavoriteSeasonResources: vi.fn(),
+  getHistoryList: vi.fn(),
 }))
 
 vi.mock('~/utils/api', () => ({
   default: {
     favorite: {
       getFavoriteSeasonResources: mocks.getFavoriteSeasonResources,
+    },
+    history: {
+      getHistoryList: mocks.getHistoryList,
     },
   },
 }))
@@ -34,7 +39,7 @@ describe('favoriteSeason utils', () => {
     expect(buildFavoriteSeasonListPlayUrl(99, 'BV1Latest', 888)).toBe('https://www.bilibili.com/list/season/99?bvid=BV1Latest&oid=888')
   })
 
-  it('resolves play-all to the last media when playFromLatest is enabled', async () => {
+  it('resolves latest mode to the last media', async () => {
     mocks.getFavoriteSeasonResources
       .mockResolvedValueOnce({
         code: 0,
@@ -59,10 +64,45 @@ describe('favoriteSeason utils', () => {
     await expect(resolveFavoriteSeasonPlayAllUrl({
       seasonId: 42,
       link: 'bilibili://video/100',
-      playFromLatest: true,
+      mode: 'latest',
     })).resolves.toBe('https://www.bilibili.com/list/season/42?bvid=BV1Latest&oid=3')
 
     expect(mocks.getFavoriteSeasonResources).toHaveBeenCalledTimes(2)
+    expect(mocks.getHistoryList).not.toHaveBeenCalled()
+  })
+
+  it('resolves lastWatched mode from recent archive history', async () => {
+    mocks.getFavoriteSeasonResources.mockResolvedValueOnce({
+      code: 0,
+      data: {
+        info: { media_count: 2 },
+        medias: [
+          { id: 1, bvid: 'BV1Old', title: 'old' },
+          { id: 2, bvid: 'BV1Watched', title: 'watched' },
+        ],
+      },
+    })
+    mocks.getHistoryList.mockResolvedValueOnce({
+      code: 0,
+      data: {
+        list: [
+          {
+            view_at: 200,
+            history: { business: Business.ARCHIVE, bvid: 'BV1Other', oid: 999 },
+          },
+          {
+            view_at: 100,
+            history: { business: Business.ARCHIVE, bvid: 'BV1Watched', oid: 2 },
+          },
+        ],
+      },
+    })
+
+    await expect(resolveFavoriteSeasonPlayAllUrl({
+      seasonId: 42,
+      link: 'bilibili://video/100',
+      mode: 'lastWatched',
+    })).resolves.toBe('https://www.bilibili.com/list/season/42?bvid=BV1Watched&oid=2')
   })
 
   it('falls back to entry url when pagination fails mid-way instead of using a partial last item', async () => {
@@ -86,15 +126,15 @@ describe('favoriteSeason utils', () => {
     await expect(resolveFavoriteSeasonPlayAllUrl({
       seasonId: 42,
       link: 'bilibili://video/100',
-      playFromLatest: true,
+      mode: 'latest',
     })).resolves.toBe('https://www.bilibili.com/video/av100')
   })
 
-  it('keeps the default entry url when playFromLatest is disabled', async () => {
+  it('keeps the default entry url for beginning mode', async () => {
     await expect(resolveFavoriteSeasonPlayAllUrl({
       seasonId: 42,
       link: 'bilibili://video/100',
-      playFromLatest: false,
+      mode: 'beginning',
     })).resolves.toBe('https://www.bilibili.com/video/av100')
 
     expect(mocks.getFavoriteSeasonResources).not.toHaveBeenCalled()

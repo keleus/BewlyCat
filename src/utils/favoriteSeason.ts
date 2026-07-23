@@ -3,17 +3,25 @@
  * 供 Dock 新版收藏页与顶栏收藏弹层共用
  */
 
+import type { CollectedSeasonPlayAllMode } from '~/logic/storage'
+import type { List as HistoryItem } from '~/models/history/history'
+import { Business } from '~/models/history/history'
 import type { FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
 
 const SEASON_PAGE_SIZE = 40
 /** 防止异常接口一直返回满页时死循环 */
 const MAX_SEASON_PAGES = 100
+const HISTORY_PAGE_SIZE = 20
+/** 在最近历史中查找合集内上次观看（约 300 条） */
+const MAX_HISTORY_PAGES = 15
+
+export type { CollectedSeasonPlayAllMode }
 
 export interface FavoriteSeasonPlayTarget {
   seasonId: number
   link?: string
-  playFromLatest?: boolean
+  mode?: CollectedSeasonPlayAllMode
 }
 
 interface FetchAllSeasonMediasResult {
@@ -102,23 +110,105 @@ export async function fetchAllFavoriteSeasonMedias(seasonId: number): Promise<Fe
   return { medias, complete: false }
 }
 
+function matchSeasonMediaFromHistory(
+  medias: FavoriteSeasonMedia[],
+  historyItems: HistoryItem[],
+): FavoriteSeasonMedia | undefined {
+  const byBvid = new Map(
+    medias
+      .filter(item => typeof item.bvid === 'string' && item.bvid.length > 0)
+      .map(item => [item.bvid, item]),
+  )
+  const byAid = new Map(medias.map(item => [item.id, item]))
+
+  for (const item of historyItems) {
+    if (item.history?.business && item.history.business !== Business.ARCHIVE)
+      continue
+
+    const byVid = item.history?.bvid ? byBvid.get(item.history.bvid) : undefined
+    if (byVid)
+      return byVid
+
+    const oid = item.history?.oid
+    if (typeof oid === 'number' && byAid.has(oid))
+      return byAid.get(oid)
+  }
+
+  return undefined
+}
+
+/**
+ * 在最近观看历史中找合集内最近一次看过的稿件（历史按时间倒序）
+ */
+export async function findLastWatchedSeasonMedia(
+  medias: FavoriteSeasonMedia[],
+): Promise<FavoriteSeasonMedia | undefined> {
+  if (medias.length === 0)
+    return undefined
+
+  let viewAt = 0
+
+  for (let page = 0; page < MAX_HISTORY_PAGES; page++) {
+    let res: Awaited<ReturnType<typeof api.history.getHistoryList>>
+    try {
+      res = await api.history.getHistoryList({
+        type: 'archive',
+        view_at: viewAt,
+        ps: HISTORY_PAGE_SIZE,
+      })
+    }
+    catch {
+      return undefined
+    }
+
+    if (res.code !== 0 || !res.data)
+      return undefined
+
+    const list = Array.isArray(res.data.list) ? res.data.list as HistoryItem[] : []
+    if (list.length === 0)
+      return undefined
+
+    const matched = matchSeasonMediaFromHistory(medias, list)
+    if (matched)
+      return matched
+
+    viewAt = list[list.length - 1]?.view_at ?? 0
+    if (!viewAt || list.length < HISTORY_PAGE_SIZE)
+      return undefined
+  }
+
+  return undefined
+}
+
 /**
  * 解析「播放全部」目标地址
- * playFromLatest：仅在完整拉完全部稿件后，用末项起播（API 默认可视为正序，末项≈最新）
+ * - beginning：合集入口（默认）
+ * - latest：完整列表末项（≈最新一期）
+ * - lastWatched：观看历史中该合集最近一次看过的稿件；找不到则回退 beginning
  */
 export async function resolveFavoriteSeasonPlayAllUrl(target: FavoriteSeasonPlayTarget): Promise<string> {
-  const { seasonId, link, playFromLatest = false } = target
+  const { seasonId, link, mode = 'beginning' } = target
+  const entryUrl = buildFavoriteSeasonEntryUrl(seasonId, link)
 
-  if (!playFromLatest)
-    return buildFavoriteSeasonEntryUrl(seasonId, link)
+  if (mode === 'beginning')
+    return entryUrl
 
   const { medias, complete } = await fetchAllFavoriteSeasonMedias(seasonId)
-  if (!complete)
-    return buildFavoriteSeasonEntryUrl(seasonId, link)
+  if (!complete || medias.length === 0)
+    return entryUrl
 
-  const latest = medias.at(-1)
-  if (!latest?.bvid)
-    return buildFavoriteSeasonEntryUrl(seasonId, link)
+  if (mode === 'latest') {
+    const latest = medias.at(-1)
+    if (!latest?.bvid)
+      return entryUrl
+    return buildFavoriteSeasonListPlayUrl(seasonId, latest.bvid, latest.id)
+  }
 
-  return buildFavoriteSeasonListPlayUrl(seasonId, latest.bvid, latest.id)
+  // lastWatched：历史扫描不要求「必须完整」以外的额外条件，但上面已要求 complete，
+  // 避免用残缺合集集合误匹配到其它历史项之外的错觉；找不到则回退入口
+  const lastWatched = await findLastWatchedSeasonMedia(medias)
+  if (!lastWatched?.bvid)
+    return entryUrl
+
+  return buildFavoriteSeasonListPlayUrl(seasonId, lastWatched.bvid, lastWatched.id)
 }

@@ -553,7 +553,7 @@ async function handlePlayAll() {
       const url = await resolveFavoriteSeasonPlayAllUrl({
         seasonId: selectedCategory.value.id,
         link: selectedCategory.value.link,
-        playFromLatest: settings.value.playCollectedSeasonFromLatest,
+        mode: settings.value.collectedSeasonPlayAllMode,
       })
       openLinkToNewTab(url)
     }
