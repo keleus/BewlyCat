@@ -41,7 +41,7 @@ describe('b 站原版顶栏滚动状态', () => {
     expect(document.querySelector('.entry-title .bewly-home-entry-arrow')).not.toBeNull()
     expect(document.querySelectorAll('.bewly-bili-channel-panel .channel-panel__column')).toHaveLength(5)
     expect(document.querySelectorAll('.bewly-bili-channel-panel .channel-panel__icon').length).toBeGreaterThan(0)
-    expect(document.querySelector('body > .header-channel:not(.bewly-bili-fixed-channel)')).toBeNull()
+    expect(document.querySelector('body > .header-channel:not(.bewly-bili-fixed-channel)')).not.toBeNull()
     expect(document.querySelector('.bili-header > .bewly-bili-fixed-channel')).not.toBeNull()
     expect(document.querySelector('.bewly-bili-fixed-channel .header-channel-fixed-right-item')?.textContent).toBe('番剧')
   })
@@ -100,5 +100,27 @@ describe('b 站原版顶栏滚动状态', () => {
 
     fixedChannel?.dispatchEvent(new Event('pointerleave'))
     expect(fixedChannelContent?.classList.contains('header-channel-fixed-down')).toBe(false)
+  })
+
+  it('等待原版频道标签异步完成后再创建副本', async () => {
+    document.querySelector('.bewly-bili-fixed-channel')?.remove()
+    const nativeFixedChannel = document.querySelector<HTMLElement>(
+      'body > .header-channel:not(.bewly-bili-fixed-channel)',
+    )
+    const nativeItems = nativeFixedChannel?.querySelector<HTMLElement>('.header-channel-fixed-right')
+    if (nativeItems)
+      nativeItems.innerHTML = ''
+
+    ensureOriginalBilibiliTopBarAppended(document)
+    expect(document.querySelector('.bewly-bili-fixed-channel')).toBeNull()
+
+    const item = document.createElement('a')
+    item.className = 'header-channel-fixed-right-item'
+    item.textContent = '番剧'
+    nativeItems?.appendChild(item)
+    await Promise.resolve()
+
+    expect(document.querySelector('.bili-header > .bewly-bili-fixed-channel')).not.toBeNull()
+    expect(nativeFixedChannel?.parentElement).toBe(document.body)
   })
 })
