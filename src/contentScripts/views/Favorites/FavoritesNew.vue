@@ -14,6 +14,7 @@ import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/vid
 import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
 import {
+  enrichFavoriteSeasonMediaFaces,
   FAVORITE_SEASON_PAGE_SIZE,
   fetchFavoriteSeasonPage,
   mergeFavoriteSeasonPage,
@@ -436,12 +437,12 @@ async function getFavoriteSeasonResources(
       pageSize: FAVORITE_SEASON_PAGE_SIZE,
     })
 
-    loadedSeasonMedias.value = merged.medias
+    loadedSeasonMedias.value = await enrichFavoriteSeasonMediaFaces(merged.medias)
     loadedSeasonComplete.value = !merged.hasMore
     noMoreContent.value = !merged.hasMore
 
     favoriteResources.length = 0
-    favoriteResources.push(...merged.medias.map(normalizeSeasonMedia))
+    favoriteResources.push(...loadedSeasonMedias.value.map(normalizeSeasonMedia))
 
     if (!(await haveScrollbar()) && merged.hasMore) {
       currentPageNum.value = pn + 1
@@ -464,8 +465,9 @@ function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteItem {
     page: 1,
     duration: item.duration,
     upper: {
-      ...item.upper,
-      face: '',
+      mid: item.upper.mid,
+      name: item.upper.name,
+      face: item.upper.face || '',
     },
     attr: 0,
     cnt_info: {

@@ -12,6 +12,7 @@ import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import {
   buildFavoriteSeasonEntryUrl,
+  enrichFavoriteSeasonMediaFaces,
   FAVORITE_SEASON_PAGE_SIZE,
   fetchFavoriteSeasonPage,
   mergeFavoriteSeasonPage,
@@ -297,18 +298,18 @@ async function getFavoriteSeasonResources() {
     pageSize: FAVORITE_SEASON_PAGE_SIZE,
   })
 
-  loadedSeasonMedias.value = merged.medias
+  loadedSeasonMedias.value = await enrichFavoriteSeasonMediaFaces(merged.medias)
   loadedSeasonComplete.value = !merged.hasMore
   noMoreContent.value = !merged.hasMore
 
   // 顶栏是滚动追加：首页替换，后续页只追加本页增量
   if (currentPageNum.value === 1) {
     favoriteResources.length = 0
-    favoriteResources.push(...merged.medias.map(normalizeSeasonMedia))
+    favoriteResources.push(...loadedSeasonMedias.value.map(normalizeSeasonMedia))
   }
   else {
     const previousCount = favoriteResources.length
-    favoriteResources.push(...merged.medias.slice(previousCount).map(normalizeSeasonMedia))
+    favoriteResources.push(...loadedSeasonMedias.value.slice(previousCount).map(normalizeSeasonMedia))
   }
 }
 
@@ -322,8 +323,9 @@ function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteResource {
     page: 1,
     duration: item.duration,
     upper: {
-      ...item.upper,
-      face: '',
+      mid: item.upper.mid,
+      name: item.upper.name,
+      face: item.upper.face || '',
     },
     cnt_info: {
       collect: item.cnt_info.collect,

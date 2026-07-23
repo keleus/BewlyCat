@@ -10,6 +10,18 @@ const API_USER = {
     },
     afterHandle: AHS.J_D,
   },
+  // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/user/info.md#%E7%94%A8%E6%88%B7%E5%90%8D%E7%89%87%E4%BF%A1%E6%81%AF
+  getUserCard: {
+    url: 'https://api.bilibili.com/x/web-interface/card',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      mid: '',
+      photo: false,
+    },
+    afterHandle: AHS.J_D,
+  },
   getUserStat: {
     url: 'https://api.bilibili.com/x/web-interface/nav/stat',
     _fetch: {
