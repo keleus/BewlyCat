@@ -1,6 +1,140 @@
+.homePage .bili-header > .bili-header__channel,
+.homePage .bili-header > .bewly-bili-fixed-channel,
+.homePage .bili-header > .bewly-bili-channel-panel {
+  display: none !important;
+}
+
+.homePage .bili-header {
+  .bewly-bili-logo-entry,
+  .bewly-home-entry-arrow {
+    display: none;
+  }
+}
+
+.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
+  background-color: #fff !important;
+  backdrop-filter: none;
+}
+
+.dark.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
+  background-color: rgb(36 38 40) !important;
+}
+
+.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled {
+  .bewly-bili-logo-entry {
+    display: flex;
+    align-items: center;
+    margin-right: 16px;
+
+    a {
+      display: flex;
+      align-items: center;
+      height: var(--bew-top-bar-height);
+    }
+
+    img {
+      display: block;
+      width: 88px;
+      max-height: 42px;
+      object-fit: contain;
+    }
+  }
+
+  .entry-title {
+    gap: 8px;
+    margin-right: 15px;
+
+    .zhuzhan-icon {
+      display: none;
+    }
+  }
+
+  .bewly-home-entry-arrow {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+  }
+
+  > .bewly-bili-fixed-channel {
+    display: flex !important;
+    position: fixed !important;
+    top: var(--bew-top-bar-height) !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    z-index: 1001 !important;
+  }
+}
+
+.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled.bewly-original-channel-open {
+  > .bewly-bili-channel-panel {
+    display: flex !important;
+    position: fixed !important;
+    top: var(--bew-top-bar-height) !important;
+    left: 24px !important;
+    width: max-content;
+    max-width: calc(100vw - 48px);
+    z-index: 1003 !important;
+    padding: 16px 0;
+    overflow-x: auto;
+    border-radius: 0 0 8px 8px;
+    background-color: var(--bew-elevated-solid) !important;
+    box-shadow: var(--bew-shadow-2);
+  }
+}
+
+.bewly-bili-channel-panel {
+  .channel-panel__column {
+    display: flex;
+    width: 152px;
+    flex: none;
+    flex-direction: column;
+    flex-wrap: wrap;
+    padding: 0 16px;
+    border-right: 1px solid var(--bew-fill-2);
+
+    &:last-child {
+      border-right: 0;
+    }
+  }
+
+  .channel-panel__item {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 32px;
+    margin: 3px 0;
+    padding: 6px;
+    border-radius: 4px;
+    color: var(--bew-text-1);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: var(--bew-fill-2);
+    }
+  }
+
+  .channel-panel__icon,
+  .navigation-channel-icon {
+    width: 24px;
+    height: 24px;
+    flex: none;
+    margin-right: 10px;
+  }
+}
+
 .remove-top-bar {
   // remove the original top bar and adjust the height of the top bar to match the bewly top bar
   .bili-header .bili-header__bar,
+  .bili-header > .bili-header__channel,
+  .bili-header > .bewly-bili-fixed-channel,
+  .bili-header > .bewly-bili-channel-panel,
   #internationalHeader,
   .link-navbar,
   #home_nav,

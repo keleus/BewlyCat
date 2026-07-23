@@ -60,6 +60,11 @@ iframe_drawer:
   open_in_new_tab: 在新标签页打开
   close: 关闭
   press_esc_again_to_close: 再次按下 Esc 关闭
+player_screenshot:
+  capture: 截取当前视频帧
+  saved: 截图已保存
+  failed: 截图失败
+  video_unavailable: 当前视频画面不可用
 settings:
   title: 设置
   menu_plugin_components_and_pages: BewlyCat界面
@@ -124,6 +129,7 @@ settings:
   group_search_page_mode: 搜索页模式
   group_home_tabs: 首页标签栏
   group_home_layout: 首页布局
+  group_version_reminder: 版本提醒
   btn:
     authorize: 授权
     revoke: 取消授权
@@ -464,6 +470,8 @@ settings:
   collected_season_play_all_mode_beginning: 合集开头
   collected_season_play_all_mode_latest: 最新一期
   collected_season_play_all_mode_last_watched: 上次观看
+  enable_version_reminder: 新版本提醒
+  enable_version_reminder_desc: 在插件首页提醒尚未确认的新版本；每个版本只提醒一次。
   enable_following_inactive_blacklist: 启用不活跃名单
   enable_following_inactive_blacklist_desc: 当UP主超过指定天数未更新或无投稿时，将自动移至不活跃名单。在ALL视图中出现更新或点击该UP主时会自动移出不活跃名单
   following_inactive_days: UP主不活跃天数
@@ -870,6 +878,17 @@ favorites:
   global_search_placeholder: 搜索全部收藏夹
   global_search_hint: 请输入关键词以搜索全部收藏夹
   season_play_all_fallback: 合集列表未就绪，已回退到合集开头
+version_reminder:
+  trigger: 新版本说明
+  title: BewlyCat 已更新
+  current_version: 当前版本 v{version}
+  description: 查看本版本的更新记录与最新动态。确认后，本版本将不再显示提醒。
+  github_releases: GitHub Releases
+  github_releases_desc: 查看完整版本记录与下载信息
+  bilibili_dynamic: B站动态
+  bilibili_dynamic_desc: 查看开发者发布的更新动态
+  acknowledge: 已知晓，本版本不再提示
+  settings_hint: 可在“设置 → BewlyCat界面 → 首页”中关闭“新版本提醒”。
 watch_later:
   title: 稍后再看
   clear_all: 清空稍后再看

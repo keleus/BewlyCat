@@ -8,6 +8,7 @@ import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import emitter from '~/utils/mitt'
 
+import VersionReminder from './components/VersionReminder.vue'
 import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
 
@@ -285,6 +286,8 @@ function toggleTabContentLoading(loading: boolean) {
         </KeepAlive>
       </Transition>
     </main>
+
+    <VersionReminder />
   </div>
 </template>
 

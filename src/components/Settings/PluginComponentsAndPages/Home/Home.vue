@@ -185,6 +185,16 @@ function handleToggleHomeTab(tab: any) {
 
 <template>
   <div>
+    <SettingsItemGroup :title="$t('settings.group_version_reminder')">
+      <SettingsItem
+        :title="$t('settings.enable_version_reminder')"
+        :desc="$t('settings.enable_version_reminder_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.enableVersionReminder" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
     <SettingsItemGroup :title="$t('settings.group_recommendation_mode')">
       <SettingsItem :title="$t('settings.recommendation_mode')" right-width="auto">
         <template #desc>
