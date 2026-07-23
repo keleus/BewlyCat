@@ -465,7 +465,7 @@ settings:
   use_favorites_new_layout: Use the new Favorites page
   use_favorites_new_layout_desc: Turn this off to use the legacy Favorites page, which does not show collected series.
   collected_season_play_all_mode: Collected series Play All start position
-  collected_season_play_all_mode_desc: Controls Play All for collected series on the Favorites page and Top Bar pop. Beginning uses the series entry; Latest opens the last item; Last watched matches the most recent series episode in watch history, falling back to Beginning if none is found. Does not reverse the list UI or playlist direction.
+  collected_season_play_all_mode_desc: Controls Play All for collected series on the Favorites page, Top Bar pop, and the native space favlist collected-season page. Beginning uses the series entry; Latest opens the last item; Last watched matches the most recent series episode in watch history, falling back to Beginning if none is found. Does not reverse the list UI or playlist direction.
   collected_season_play_all_mode_beginning: Series beginning
   collected_season_play_all_mode_latest: Latest episode
   collected_season_play_all_mode_last_watched: Last watched

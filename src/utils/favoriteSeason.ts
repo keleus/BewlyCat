@@ -24,6 +24,8 @@ export type { CollectedSeasonPlayAllMode }
 export interface FavoriteSeasonPlayTarget {
   seasonId: number
   link?: string
+  /** beginning 模式入口补充（无 link 时用） */
+  bvid?: string
   mode?: CollectedSeasonPlayAllMode
   /**
    * UI 已通过同一套分页语义加载过的列表。
@@ -313,8 +315,8 @@ async function resolveSeasonMedias(
 export async function resolveFavoriteSeasonPlayAllUrl(
   target: FavoriteSeasonPlayTarget,
 ): Promise<FavoriteSeasonPlayAllResult> {
-  const { seasonId, link, mode = 'beginning', preloaded } = target
-  const entryUrl = buildFavoriteSeasonEntryUrl(seasonId, link)
+  const { seasonId, link, bvid, mode = 'beginning', preloaded } = target
+  const entryUrl = buildFavoriteSeasonEntryUrl(seasonId, link, bvid)
 
   if (mode === 'beginning') {
     return { url: entryUrl, usedFallback: false, reason: 'beginning' }
