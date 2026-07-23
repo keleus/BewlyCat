@@ -18,6 +18,8 @@ const MAX_SEASON_PAGES = 100
 const HISTORY_PAGE_SIZE = 20
 /** 在最近历史中查找合集内上次观看（约 300 条） */
 const MAX_HISTORY_PAGES = 15
+/** mid → face，跨合集复用，避免重复打卡片接口 */
+const userFaceCache = new Map<number, string>()
 
 export type { CollectedSeasonPlayAllMode }
 
@@ -61,6 +63,45 @@ export interface FavoriteSeasonPageMergeResult {
 interface FetchAllSeasonMediasResult {
   medias: FavoriteSeasonMedia[]
   complete: boolean
+}
+
+/**
+ * 合集列表接口通常不带 upper.face；按 mid 补全头像（同 UP 只请求一次）
+ */
+export async function enrichFavoriteSeasonMediaFaces(
+  medias: FavoriteSeasonMedia[],
+): Promise<FavoriteSeasonMedia[]> {
+  const missingMids = [...new Set(
+    medias
+      .map(item => item.upper?.mid)
+      .filter((mid): mid is number => typeof mid === 'number' && mid > 0 && !userFaceCache.has(mid)),
+  )]
+
+  await Promise.all(missingMids.map(async (mid) => {
+    try {
+      const res = await api.user.getUserCard({ mid: String(mid) })
+      const face = res?.data?.card?.face
+      if (res?.code === 0 && typeof face === 'string' && face.length > 0)
+        userFaceCache.set(mid, face)
+    }
+    catch {
+      // 单个失败不影响其它
+    }
+  }))
+
+  return medias.map((item) => {
+    const mid = item.upper?.mid
+    const cachedFace = typeof mid === 'number' ? userFaceCache.get(mid) : undefined
+    if (!cachedFace || item.upper?.face === cachedFace)
+      return item
+    return {
+      ...item,
+      upper: {
+        ...item.upper,
+        face: cachedFace,
+      },
+    }
+  })
 }
 
 /**
