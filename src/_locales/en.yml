@@ -60,6 +60,11 @@ iframe_drawer:
   open_in_new_tab: Open in new tab
   close: Close
   press_esc_again_to_close: Press Esc again to close
+player_screenshot:
+  capture: Capture current video frame
+  saved: Screenshot saved
+  failed: Failed to capture screenshot
+  video_unavailable: The current video frame is unavailable
 settings:
   title: Settings
   menu_plugin_components_and_pages: BewlyCat Interface

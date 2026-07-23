@@ -60,6 +60,11 @@ iframe_drawer:
   open_in_new_tab: 在新索引標籤開啟連結
   close: 關閉
   press_esc_again_to_close: 再次按下 Esc 關閉
+player_screenshot:
+  capture: 擷取目前影片畫面
+  saved: 截圖已儲存
+  failed: 截圖失敗
+  video_unavailable: 目前影片畫面無法使用
 settings:
   title: 設定
   menu_plugin_components_and_pages: BewlyCat 介面
