@@ -390,6 +390,14 @@ onKeyStroke('/', () => {
   toggleTopBarVisible(true)
 })
 
+onKeyStroke('Escape', (event: KeyboardEvent) => {
+  if (!settings.value.touchScreenOptimization || !hasActivePopup.value)
+    return
+
+  event.preventDefault()
+  topBarStore.closeAllPopups()
+})
+
 defineExpose({
   toggleTopBarVisible,
   handleScroll,
