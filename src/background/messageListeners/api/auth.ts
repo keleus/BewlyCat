@@ -1,4 +1,3 @@
-// 由于 sendResponse 复杂, 所以使用自定义的函数
 import type { APIMAP } from '../../utils'
 import { AHS } from '../../utils'
 
@@ -19,7 +18,7 @@ const API_AUTH = {
     params: {
       biliCSRF: '',
     },
-    afterHandle: AHS.J_S,
+    afterHandle: AHS.J_D,
   },
   getLoginQRCode: {
     url: 'https://passport.bilibili.com/x/passport-tv-login/qrcode/auth_code',
@@ -35,7 +34,7 @@ const API_AUTH = {
       ts: '0',
       sign: 'e134154ed6add881d28fbdf68653cd9c',
     },
-    afterHandle: AHS.J_S,
+    afterHandle: AHS.J_D,
   },
   qrCodeLogin: {
     url: 'https://passport.bilibili.com/x/passport-tv-login/qrcode/auth_code',
@@ -52,7 +51,7 @@ const API_AUTH = {
       ts: '0',
       sign: 'e134154ed6add881d28fbdf68653cd9c',
     },
-    afterHandle: AHS.J_S,
+    afterHandle: AHS.J_D,
   },
 } satisfies APIMAP
 
