@@ -693,17 +693,6 @@ watch(
       }
     }
 
-    // 迁移旧的布尔 playCollectedSeasonFromLatest → collectedSeasonPlayAllMode
-    if (typeof record.playCollectedSeasonFromLatest === 'boolean') {
-      record.collectedSeasonPlayAllMode = record.playCollectedSeasonFromLatest ? 'latest' : 'beginning'
-      Reflect.deleteProperty(record, 'playCollectedSeasonFromLatest')
-    }
-
-    if (!('collectedSeasonPlayAllMode' in record)
-      || !['beginning', 'latest', 'lastWatched'].includes(record.collectedSeasonPlayAllMode)) {
-      record.collectedSeasonPlayAllMode = originalSettings.collectedSeasonPlayAllMode
-    }
-
     // 确保 useBilibiliDefaultAutoPlay 存在（新用户或旧版本升级）
     if (!('useBilibiliDefaultAutoPlay' in record)) {
       record.useBilibiliDefaultAutoPlay = true

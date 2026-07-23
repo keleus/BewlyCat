@@ -32,27 +32,27 @@ interface FetchAllSeasonMediasResult {
 
 /**
  * 合集入口 URL（B 站默认「播放全部」行为）
- * 优先用 collected season 的 bilibili://video/{aid} link，否则回退 list/season
+ * 优先用 collected season 的 bilibili://video/{aid} link，否则用封面/入口 bvid
  */
-export function buildFavoriteSeasonEntryUrl(seasonId: number, link?: string): string {
-  const fallbackUrl = `https://www.bilibili.com/list/season/${seasonId}`
+export function buildFavoriteSeasonEntryUrl(seasonId: number, link?: string, bvid?: string): string {
   const matchedVideoLink = link?.match(/^bilibili:\/\/video\/(\d+)(\?.*)?$/)
 
-  if (!matchedVideoLink)
-    return fallbackUrl
+  if (matchedVideoLink)
+    return `https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`
 
-  return `https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`
+  if (bvid)
+    return `https://www.bilibili.com/video/${bvid}/`
+
+  // list/season/{id} 对 UGC 订阅合集常 404，仅作无 link/bvid 时的最后兜底
+  return `https://www.bilibili.com/list/season/${seasonId}`
 }
 
 /**
- * 在合集列表播放页打开指定稿件（保留侧栏连播上下文）
+ * 打开合集内指定稿件。
+ * 实测 /list/season/{id}?bvid= 对订阅合集会 404；普通 /video/{bvid} 可播且仍带合集侧栏。
  */
-export function buildFavoriteSeasonListPlayUrl(seasonId: number, bvid: string, oid?: number): string {
-  const url = new URL(`https://www.bilibili.com/list/season/${seasonId}`)
-  url.searchParams.set('bvid', bvid)
-  if (typeof oid === 'number' && Number.isFinite(oid) && oid > 0)
-    url.searchParams.set('oid', String(oid))
-  return url.toString()
+export function buildFavoriteSeasonListPlayUrl(_seasonId: number, bvid: string, _oid?: number): string {
+  return `https://www.bilibili.com/video/${bvid}/`
 }
 
 /**
@@ -93,6 +93,10 @@ export async function fetchAllFavoriteSeasonMedias(seasonId: number): Promise<Fe
     }
 
     medias.push(...pageMedias)
+
+    // 部分接口会无视 ps、一次返回全部；够数就停，避免重复翻页
+    if (expectedCount !== undefined && medias.length >= expectedCount)
+      return { medias: medias.slice(0, expectedCount), complete: true }
 
     if (pageMedias.length < SEASON_PAGE_SIZE) {
       if (expectedCount !== undefined && medias.length < expectedCount)
@@ -204,8 +208,7 @@ export async function resolveFavoriteSeasonPlayAllUrl(target: FavoriteSeasonPlay
     return buildFavoriteSeasonListPlayUrl(seasonId, latest.bvid, latest.id)
   }
 
-  // lastWatched：历史扫描不要求「必须完整」以外的额外条件，但上面已要求 complete，
-  // 避免用残缺合集集合误匹配到其它历史项之外的错觉；找不到则回退入口
+  // lastWatched：找不到则回退入口
   const lastWatched = await findLastWatchedSeasonMedia(medias)
   if (!lastWatched?.bvid)
     return entryUrl
