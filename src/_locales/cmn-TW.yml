@@ -414,7 +414,7 @@ settings:
   use_favorites_new_layout: 使用新版收藏頁
   use_favorites_new_layout_desc: 關閉後使用舊版收藏頁；舊版不顯示收藏合集。
   collected_season_play_all_mode: 訂閱合集「播放全部」起播位置
-  collected_season_play_all_mode_desc: 控制收藏頁、頂欄收藏彈層，以及空間頁「訂閱合集」原生「播放全部」的起播位置。開頭為合集入口；最新為列表最後一期；上次觀看會在觀看歷史中匹配該合集最近看過的一期，找不到則回退到開頭。不影響列表顯示順序與連播方向。
+  collected_season_play_all_mode_desc: 控制收藏頁、頂欄與空間頁訂閱合集「播放全部」的起播位置。預設為合集開頭；找不到上次觀看時回退到開頭。不影響列表順序與連播方向。
   collected_season_play_all_mode_beginning: 合集開頭
   collected_season_play_all_mode_latest: 最新一期
   collected_season_play_all_mode_last_watched: 上次觀看

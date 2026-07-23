@@ -71,4 +71,28 @@ describe('nativeFavoriteSeasonPlayAll', () => {
     expect(isNativeSeasonPlayAllTarget(seasonBtn)).toBe(true)
     expect(isNativeSeasonPlayAllTarget(folderBtn)).toBe(false)
   })
+
+  it('recognizes new favlist playall-btn targets', async () => {
+    const { isNativeSeasonPlayAllTarget } = await import('~/utils/nativeFavoriteSeasonPlayAll')
+
+    document.body.innerHTML = `
+      <div class="favlist-info-detail__actions">
+        <button class="vui_button action-btn blue playall-btn">
+          <i class="vui_icon sic-fsp-play_fill icon"></i>
+          <span>播放全部</span>
+        </button>
+      </div>
+      <div class="other-actions">
+        <button class="action-btn">播放全部</button>
+      </div>
+    `
+
+    const playAllBtn = document.querySelector('.playall-btn')!
+    const playAllSpan = playAllBtn.querySelector('span')!
+    const otherBtn = document.querySelector('.other-actions .action-btn')!
+
+    expect(isNativeSeasonPlayAllTarget(playAllBtn)).toBe(true)
+    expect(isNativeSeasonPlayAllTarget(playAllSpan)).toBe(true)
+    expect(isNativeSeasonPlayAllTarget(otherBtn)).toBe(false)
+  })
 })

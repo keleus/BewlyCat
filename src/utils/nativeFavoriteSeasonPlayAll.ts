@@ -40,15 +40,22 @@ export function getSeasonIdFromFavlistUrl(url: string = location.href): number |
 }
 
 export function isNativeSeasonPlayAllTarget(el: Element): boolean {
+  // 新版空间收藏：.favlist-info-detail__actions .playall-btn
+  if (el.closest('.favlist-info-detail__actions .playall-btn, button.playall-btn'))
+    return true
+
+  // 旧版：.collection-details .collection-btn
   if (el.closest('.favInfo-box .collection-details .collection-btn'))
     return true
 
   // 文本兜底：合集详情区内的「播放全部」
-  const inCollectionDetails = el.closest('.favInfo-box .collection-details')
-  if (!inCollectionDetails)
+  const inSeasonDetail = el.closest(
+    '.favlist-info-detail__actions, .favlist-info-detail, .favInfo-box .collection-details',
+  )
+  if (!inSeasonDetail)
     return false
 
-  const clickable = el.closest('a,button,[role="button"],.collection-btn')
+  const clickable = el.closest('a,button,[role="button"],.collection-btn,.playall-btn,.action-btn')
   if (!(clickable instanceof HTMLElement))
     return false
 
@@ -63,9 +70,15 @@ function extractEntryFromClickTarget(el: Element): { link?: string, bvid?: strin
       return fromHref
   }
 
-  const firstCard = document.querySelector<HTMLAnchorElement>(
-    '#page-fav .fav-main a[href*="/video/"], .favInfo-box ~ * a[href*="/video/"], #page-fav a[href*="/video/"]',
-  )
+  // 新按钮是 <button> 无 href；尽量从列表首卡取入口
+  const firstCard = document.querySelector<HTMLAnchorElement>([
+    '#page-fav .fav-main a[href*="/video/"]',
+    '.favlist-main a[href*="/video/"]',
+    '.favlist-content a[href*="/video/"]',
+    '.favInfo-box ~ * a[href*="/video/"]',
+    '#page-fav a[href*="/video/"]',
+    'a[href*="/video/BV"]',
+  ].join(', '))
   if (firstCard)
     return extractVideoIdsFromHref(firstCard.href)
 
@@ -100,8 +113,9 @@ async function handleNativeSeasonPlayAll(event: MouseEvent) {
   if (!isNativeSeasonPlayAllTarget(target))
     return
 
-  // 保留用户显式新标签手势给浏览器；仍走我们的解析
+  // 新 UI 是 button + 捕获阶段拦截，需 stopImmediatePropagation 阻止原生起播
   event.preventDefault()
+  event.stopImmediatePropagation()
   event.stopPropagation()
 
   if (isResolving)
