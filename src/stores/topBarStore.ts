@@ -15,10 +15,31 @@ import {
 } from '~/components/TopBar/constants/urls'
 import { updateInterval } from '~/components/TopBar/notify'
 import type { PrivilegeInfo, UnReadDm, UnReadMessage, UserInfo } from '~/components/TopBar/types'
+import { TOP_BAR_STATE_MESSAGE } from '~/constants/topBarState'
 import { settings } from '~/logic'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { getCSRF, isHomePage } from '~/utils/main'
+import { sendMessage } from '~/utils/messaging'
+
+interface TopBarSharedState {
+  isLogin: boolean
+  userInfo: UserInfo
+  unReadMessage: UnReadMessage
+  unReadDm: UnReadDm
+  newMomentsCount: number
+  watchLaterCount: number
+  watchLaterList: VideoItem[]
+  privilegeInfo: PrivilegeInfo
+  hasBCoinToReceive: boolean
+  bCoinAlreadyReceived: boolean
+  vipExpAlreadyReceived: boolean
+}
+
+interface TopBarRefreshClaim {
+  shouldRefresh: boolean
+  snapshot?: TopBarSharedState
+}
 
 export const useTopBarStore = defineStore('topBar', () => {
   const toast = useToast()
@@ -739,18 +760,90 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   let updateTimer: ReturnType<typeof setInterval> | null = null
+  let sharedStateRetryTimer: ReturnType<typeof setTimeout> | null = null
 
-  async function initData() {
+  function createSharedStateSnapshot(): TopBarSharedState {
+    return {
+      isLogin: isLogin.value,
+      userInfo: { ...userInfo },
+      unReadMessage: { ...unReadMessage },
+      unReadDm: { ...unReadDm },
+      newMomentsCount: newMomentsCount.value,
+      watchLaterCount: watchLaterCount.value,
+      watchLaterList: [...watchLaterList],
+      privilegeInfo: { ...privilegeInfo },
+      hasBCoinToReceive: hasBCoinToReceive.value,
+      bCoinAlreadyReceived: bCoinAlreadyReceived.value,
+      vipExpAlreadyReceived: vipExpAlreadyReceived.value,
+    }
+  }
+
+  function applySharedState(snapshot: TopBarSharedState) {
+    isLogin.value = snapshot.isLogin
+    Object.assign(userInfo, snapshot.userInfo)
+    Object.assign(unReadMessage, snapshot.unReadMessage)
+    Object.assign(unReadDm, snapshot.unReadDm)
+    newMomentsCount.value = snapshot.newMomentsCount
+    watchLaterCount.value = snapshot.watchLaterCount
+    watchLaterList.splice(0, watchLaterList.length, ...snapshot.watchLaterList)
+    Object.assign(privilegeInfo, snapshot.privilegeInfo)
+    hasBCoinToReceive.value = snapshot.hasBCoinToReceive
+    bCoinAlreadyReceived.value = snapshot.bCoinAlreadyReceived
+    vipExpAlreadyReceived.value = snapshot.vipExpAlreadyReceived
+  }
+
+  async function refreshSharedData() {
     await getUserInfo()
 
     // 只有在登录状态下才调用这些需要登录的API
     if (isLogin.value) {
-      checkBCoinReceiveStatus()
-      autoReceiveVipExp()
-      getUnreadMessageCount()
-      getTopBarNewMomentsCount()
-      getAllWatchLaterList()
+      await Promise.all([
+        checkBCoinReceiveStatus(),
+        autoReceiveVipExp(),
+        getUnreadMessageCount(),
+        getTopBarNewMomentsCount(),
+        getAllWatchLaterList(),
+      ])
     }
+  }
+
+  async function syncSharedData() {
+    const claim = await sendMessage<{ maxAge: number }, TopBarRefreshClaim>(
+      TOP_BAR_STATE_MESSAGE.CLAIM_REFRESH,
+      { maxAge: updateInterval },
+    )
+
+    if (claim.snapshot)
+      applySharedState(claim.snapshot)
+
+    if (!claim.shouldRefresh) {
+      // 首次并发加载时等待负责刷新的标签页发布快照，避免其他标签页空白到下个周期
+      if (!claim.snapshot && !sharedStateRetryTimer) {
+        sharedStateRetryTimer = setTimeout(() => {
+          sharedStateRetryTimer = null
+          syncSharedData().catch((error) => {
+            console.error('重试同步顶栏共享状态失败:', error)
+          })
+        }, 1000)
+      }
+      return
+    }
+
+    try {
+      await refreshSharedData()
+      await sendMessage(
+        TOP_BAR_STATE_MESSAGE.PUBLISH,
+        { snapshot: createSharedStateSnapshot() },
+      )
+    }
+    catch (error) {
+      await sendMessage(TOP_BAR_STATE_MESSAGE.RELEASE_REFRESH)
+      throw error
+    }
+  }
+
+  async function initData() {
+    await syncSharedData()
   }
 
   function startUpdateTimer() {
@@ -759,16 +852,9 @@ export const useTopBarStore = defineStore('topBar', () => {
       updateTimer = null
     }
     updateTimer = setInterval(() => {
-      if (isLogin.value) {
-        getUnreadMessageCount()
-        // 只有在弹窗未显示时才更新计数，避免与 watch 重复调用
-        if (!popupVisible.moments)
-          getTopBarNewMomentsCount()
-        if (!popupVisible.watchLater)
-          getWatchLaterCount()
-        checkBCoinReceiveStatus()
-        autoReceiveVipExp()
-      }
+      syncSharedData().catch((error) => {
+        console.error('同步顶栏共享状态失败:', error)
+      })
     }, updateInterval)
   }
   function stopUpdateTimer() {
@@ -780,6 +866,10 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   function cleanup() {
     stopUpdateTimer()
+    if (sharedStateRetryTimer) {
+      clearTimeout(sharedStateRetryTimer)
+      sharedStateRetryTimer = null
+    }
 
     Object.keys(unReadMessage).forEach((key) => {
       unReadMessage[key as keyof UnReadMessage] = 0

@@ -4,6 +4,7 @@ import { setupAppAuthScheduler } from './appAuthScheduler'
 import { setupContentScriptRecovery } from './contentScriptRecovery'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
+import { setupTopBarStateBroker } from './topBarStateBroker'
 import { initWbiKeys } from './wbiSign'
 
 // Initialize extension and set up message handlers
@@ -52,5 +53,6 @@ if (process.env.FIREFOX) {
 // Setup all message listeners
 setupApiMsgListeners()
 setupTabMsgListeners()
+setupTopBarStateBroker()
 setupAppAuthScheduler()
 setupContentScriptRecovery()
