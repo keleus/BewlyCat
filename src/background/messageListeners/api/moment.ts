@@ -42,6 +42,19 @@ const API_MOMENT = {
       type: 'all',
       offset: '',
       update_baseline: '',
+      // itemOpusStyle: 图文/纯文字走 opus 结构；listOnlyfans: 充电专属列表字段
+      features: 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,forwardListHidden,ugcDelete,onlyfansQaCard',
+    },
+    afterHandle: AHS.J_D,
+  },
+  getMomentDetail: {
+    url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/detail',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      id: '',
+      features: 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,htmlNewStyle',
     },
     afterHandle: AHS.J_D,
   },

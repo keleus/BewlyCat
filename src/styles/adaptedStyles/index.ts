@@ -32,6 +32,14 @@ async function setupStyles() {
     || /https?:\/\/www\.bilibili\.com\/opus\/.*/.test(currentUrl)) {
     await import('./pages/momentsPage.scss')
     document.documentElement.classList.add('momentsPage')
+
+    // 插件动态页通过抽屉 iframe 打开详情时，隐藏原站冗余布局并聚焦正文。
+    const isMomentDetail = /https?:\/\/t\.bilibili\.com\/\d+/.test(currentUrl)
+      || /https?:\/\/(?:www\.)?bilibili\.com\/opus\/\d+/.test(currentUrl)
+    if (isInIframe() && isMomentDetail) {
+      document.documentElement.classList.add('drawer')
+      document.documentElement.classList.add('remove-top-bar-without-placeholder')
+    }
   }
 
   // history page 历史记录页

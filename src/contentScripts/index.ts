@@ -29,6 +29,7 @@ import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { version } from '../../package.json'
 import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
+import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
 import { initVolumeNormalizationControl } from './volumeNormalizationControl'
@@ -141,6 +142,8 @@ export function isSupportedIframePages(): boolean {
       // https://github.com/BewlyBewly/BewlyBewly/issues/1266
       // https://github.com/keleus/BewlyCat/issues/150
       || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share|\/pages\/nav).*/.test(currentUrl)
+      // moment detail (opus)
+      || /https?:\/\/(?:www\.)?bilibili\.com\/opus\/.*/.test(currentUrl)
       // notifications page, for `Open the notifications page as a drawer`
       || isNotificationPage()
     )
@@ -222,6 +225,11 @@ else if (shouldInitializeContentScript) {
       useDark()
 
     const shouldApplyFullStyles = applyBewlyDesignClasses()
+
+    // opus 详情分栏布局不依赖“适配其他页样式”，只要在 iframe 内就尝试重排
+    if (isInIframe())
+      setupOpusDetailDrawerLayout()
+
     if (shouldApplyFullStyles) {
       // Setup iframe photo viewer detector (only in iframe)
       if (isInIframe())
@@ -925,9 +933,11 @@ else if (shouldInitializeContentScript) {
   // 启动自动播放用户修改监听
   startAutoPlayUserChangeMonitoring()
 
-  // 为 iframe 中运行时添加 ESC 键监听（消息页面和视频页面）
-  if (isInIframe() && (isNotificationPage() || isVideoOrBangumiPage())) {
-    const pageType = isNotificationPage() ? 'message' : 'video'
+  // 为 iframe 中运行时添加 ESC 键监听（消息页面、视频页面、动态详情）
+  const isMomentDetailPage = /https?:\/\/t\.bilibili\.com\/\d+/.test(currentUrl)
+    || /https?:\/\/(?:www\.)?bilibili\.com\/opus\/\d+/.test(currentUrl)
+  if (isInIframe() && (isNotificationPage() || isVideoOrBangumiPage() || isMomentDetailPage)) {
+    const pageType = isNotificationPage() ? 'message' : isVideoOrBangumiPage() ? 'video' : 'moment-detail'
     console.log(`[Bewly IFrame] ESC listener initialized for ${pageType} page`)
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
