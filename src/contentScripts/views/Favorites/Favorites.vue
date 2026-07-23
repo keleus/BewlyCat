@@ -888,6 +888,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
         :no-more-content="noMoreContent"
         :empty-description="$t('common.no_more_content')"
         :more-btn="!isBatchManaging"
+        :hide-author="searchScope === 'current' && selectedCategory?.source === 'season'"
         :card-click-handler="isBatchManaging ? handleFavoriteCardClick : undefined"
         :cover-top-left-always-visible="isBatchManaging"
         enable-row-padding
