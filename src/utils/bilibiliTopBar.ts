@@ -15,7 +15,6 @@ const BILIBILI_TOP_BAR_SELECTORS = [
 let cachedOriginalTopBar: HTMLElement | null = null
 const initializedHoverHeaders = new WeakSet<HTMLElement>()
 const initializedScrollStateHeaders = new WeakSet<HTMLElement>()
-const initializedFixedChannelSources = new WeakSet<HTMLElement>()
 const channelPanelColumns = [
   [
     ['番剧', '//www.bilibili.com/anime/', '#channel-anime'],
@@ -167,50 +166,19 @@ function ensureOriginalTopBarScrolledLayout(header: HTMLElement) {
       '.header-channel:not(.bewly-bili-fixed-channel)',
     )
     if (nativeFixedChannel) {
-      if (nativeFixedChannel.querySelector('.header-channel-fixed-right-item')) {
-        const fixedChannel = nativeFixedChannel.cloneNode(true) as HTMLElement
-        fixedChannel.classList.add('bewly-bili-fixed-channel')
-        fixedChannel.style.removeProperty('display')
+      const fixedChannel = nativeFixedChannel
+      fixedChannel.classList.add('bewly-bili-fixed-channel')
+      fixedChannel.style.removeProperty('display')
 
-        fixedChannel.addEventListener('pointerenter', () => {
-          fixedChannel
-            .querySelector('.header-channel-fixed')
-            ?.classList
-            .add('header-channel-fixed-down')
-        })
-        fixedChannel.addEventListener('pointerleave', () => {
-          fixedChannel
-            .querySelector('.header-channel-fixed')
-            ?.classList
-            .remove('header-channel-fixed-down')
-        })
-        fixedChannel.querySelector('.header-channel-fixed-arrow')?.addEventListener('click', () => {
-          fixedChannel
-            .querySelector('.header-channel-fixed')
-            ?.classList
-            .toggle('header-channel-fixed-down')
-        })
+      const fixedChannelContent = fixedChannel.querySelector('.header-channel-fixed')
+      fixedChannel.addEventListener('pointerenter', () => {
+        fixedChannelContent?.classList.add('header-channel-fixed-down')
+      })
+      fixedChannel.addEventListener('pointerleave', () => {
+        fixedChannelContent?.classList.remove('header-channel-fixed-down')
+      })
 
-        header.appendChild(fixedChannel)
-      }
-      else if (!initializedFixedChannelSources.has(nativeFixedChannel)) {
-        initializedFixedChannelSources.add(nativeFixedChannel)
-        const observer = new MutationObserver(() => {
-          if (!header.isConnected) {
-            observer.disconnect()
-            return
-          }
-          if (!nativeFixedChannel.querySelector('.header-channel-fixed-right-item'))
-            return
-
-          observer.disconnect()
-          ensureOriginalTopBarScrolledLayout(header)
-        })
-        observer.observe(nativeFixedChannel, {
-          childList: true,
-          subtree: true,
-        })
-      }
+      header.appendChild(fixedChannel)
     }
   }
 
