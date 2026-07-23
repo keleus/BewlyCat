@@ -869,6 +869,7 @@ favorites:
   search_placeholder: 搜索当前收藏夹
   global_search_placeholder: 搜索全部收藏夹
   global_search_hint: 请输入关键词以搜索全部收藏夹
+  season_play_all_fallback: 合集列表未就绪，已回退到合集开头
 watch_later:
   title: 稍后再看
   clear_all: 清空稍后再看

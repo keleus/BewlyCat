@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 import type { FavoriteResource } from '~/components/TopBar/types'
 import type { Video } from '~/components/VideoCard/types'
@@ -10,14 +11,20 @@ import { TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favorite'
 import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/video/favoriteCategory'
-import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia, FavoriteSeasonResourcesResult } from '~/models/video/favoriteSeason'
+import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
-import { resolveFavoriteSeasonPlayAllUrl } from '~/utils/favoriteSeason'
+import {
+  FAVORITE_SEASON_PAGE_SIZE,
+  fetchFavoriteSeasonPage,
+  mergeFavoriteSeasonPage,
+  resolveFavoriteSeasonPlayAllUrl,
+} from '~/utils/favoriteSeason'
 import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
 // 新版收藏页支持收藏夹与订阅合集。
 const { t } = useI18n()
+const toast = useToast()
 
 type FavoriteCategorySource = 'folder' | 'season'
 type BatchTransferAction = 'copy' | 'move'
@@ -48,6 +55,9 @@ const noMoreContent = ref<boolean>(false)
 const isBatchManaging = ref<boolean>(false)
 const isBatchOperating = ref<boolean>(false)
 const isResolvingSeasonPlayAll = ref<boolean>(false)
+/** 当前订阅合集的原始 medias（与列表同套分页语义），供播放全部复用 */
+const loadedSeasonMedias = ref<FavoriteSeasonMedia[]>([])
+const loadedSeasonComplete = ref(false)
 const selectedResourceKeys = ref<string[]>([])
 const folderSectionExpanded = ref<boolean>(true)
 const seasonSectionExpanded = ref<boolean>(true)
@@ -402,47 +412,40 @@ async function getFavoriteSeasonResources(
   season_id: number,
   pn: number,
 ) {
-  if (pn === 1)
+  if (pn === 1) {
     isFullPageLoading.value = true
+    loadedSeasonMedias.value = []
+    loadedSeasonComplete.value = false
+  }
   isLoading.value = true
   try {
-    const res: FavoriteSeasonResourcesResult = await api.favorite.getFavoriteSeasonResources({
-      season_id,
+    const page = await fetchFavoriteSeasonPage(season_id, pn, FAVORITE_SEASON_PAGE_SIZE)
+    if (!page.ok) {
+      noMoreContent.value = true
+      loadedSeasonComplete.value = false
+      return
+    }
+
+    activatedCategoryCover.value = page.cover || selectedCategory.value?.cover || ''
+
+    const merged = mergeFavoriteSeasonPage({
       pn,
-      ps: 40,
+      pageMedias: page.pageMedias,
+      mediaCount: page.mediaCount,
+      previousMedias: loadedSeasonMedias.value,
+      pageSize: FAVORITE_SEASON_PAGE_SIZE,
     })
 
-    if (res.code === 0 && res.data) {
-      activatedCategoryCover.value = res.data.info?.cover || selectedCategory.value?.cover || ''
+    loadedSeasonMedias.value = merged.medias
+    loadedSeasonComplete.value = !merged.hasMore
+    noMoreContent.value = !merged.hasMore
 
-      const medias = Array.isArray(res.data.medias) ? res.data.medias.filter((m: any) => m != null) : []
-      const mediaCount = res.data.info?.media_count
-      // 接口常无视 ps、一次返回全量；若仍按「满页继续翻」会连打同一批数据，拖垮后续「播放全部」请求
-      if (medias.length > 0) {
-        if (typeof mediaCount === 'number' && mediaCount >= 0 && medias.length >= mediaCount) {
-          favoriteResources.length = 0
-          favoriteResources.push(...medias.slice(0, mediaCount).map(normalizeSeasonMedia))
-          noMoreContent.value = true
-        }
-        else {
-          favoriteResources.push(...medias.map(normalizeSeasonMedia))
-          if (
-            medias.length < 40
-            || (typeof mediaCount === 'number' && mediaCount >= 0 && favoriteResources.length >= mediaCount)
-          ) {
-            noMoreContent.value = true
-          }
-        }
-      }
-      else {
-        noMoreContent.value = true
-      }
+    favoriteResources.length = 0
+    favoriteResources.push(...merged.medias.map(normalizeSeasonMedia))
 
-      if (!(await haveScrollbar()) && !noMoreContent.value)
-        await getFavoriteSeasonResources(season_id, ++currentPageNum.value)
-    }
-    else {
-      noMoreContent.value = true
+    if (!(await haveScrollbar()) && merged.hasMore) {
+      currentPageNum.value = pn + 1
+      await getFavoriteSeasonResources(season_id, currentPageNum.value)
     }
   }
   finally {
@@ -494,6 +497,8 @@ async function changeCategory(categoryItem: ViewCategory) {
   if (targetCategory.value?.id === categoryItem.id)
     targetCategory.value = undefined
   favoriteResources.length = 0
+  loadedSeasonMedias.value = []
+  loadedSeasonComplete.value = false
   noMoreContent.value = false
 
   // 切换收藏夹时，如果是搜索当前收藏夹模式，则立即加载数据
@@ -567,12 +572,18 @@ async function handlePlayAll() {
   if (selectedCategory.value.source === 'season') {
     isResolvingSeasonPlayAll.value = true
     try {
-      const url = await resolveFavoriteSeasonPlayAllUrl({
+      const result = await resolveFavoriteSeasonPlayAllUrl({
         seasonId: selectedCategory.value.id,
         link: selectedCategory.value.link,
         mode: settings.value.collectedSeasonPlayAllMode,
+        preloaded: {
+          medias: loadedSeasonMedias.value,
+          complete: loadedSeasonComplete.value,
+        },
       })
-      openLinkToNewTab(url)
+      if (result.usedFallback && result.reason !== 'beginning')
+        toast.warning(t('favorites.season_play_all_fallback'))
+      openLinkToNewTab(result.url)
     }
     finally {
       isResolvingSeasonPlayAll.value = false

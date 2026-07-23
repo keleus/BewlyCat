@@ -944,6 +944,7 @@ favorites:
     This operation cannot be reversed. Are you sure you want to remove these video(s) from your favorites?
   global_search_hint: Search for all favorites
   global_search_placeholder: Search all favorites
+  season_play_all_fallback: Season list not ready, fell back to the beginning
   search_all_folders: all
   search_current_folder: current
   search_placeholder: Search for current favorites
