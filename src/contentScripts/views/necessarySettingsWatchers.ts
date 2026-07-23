@@ -4,7 +4,7 @@ import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { setUselessFeedCardBlockerEnabled } from '~/contentScripts/features/blockUselessFeedCards'
 import { LanguageType } from '~/enums/appEnums'
 import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
-import { resetBilibiliTopBarInlineStyles } from '~/utils/bilibiliTopBar'
+import { resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe, isVideoPlaybackPage } from '~/utils/main'
 
 function isFestivalPage(): boolean {
@@ -515,6 +515,14 @@ export function setupNecessarySettingsWatchers() {
 
       if (settings.value.useOriginalBilibiliTopBar && !shouldHideOuterBiliTopBar)
         resetBilibiliTopBarInlineStyles(document)
+
+      if (settings.value.useOriginalBilibiliTopBar && !shouldHideOuterBiliTopBar) {
+        const scrollTop = document.getElementById('bewly')
+          ?.shadowRoot
+          ?.querySelector<HTMLElement>('.bewly-scroll-viewport')
+          ?.scrollTop ?? 0
+        setOriginalBilibiliTopBarScrolled(document, scrollTop > 0)
+      }
     }
     else {
       // Handle non-homepage pages

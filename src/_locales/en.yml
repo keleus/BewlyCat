@@ -60,6 +60,11 @@ iframe_drawer:
   open_in_new_tab: Open in new tab
   close: Close
   press_esc_again_to_close: Press Esc again to close
+player_screenshot:
+  capture: Capture current video frame
+  saved: Screenshot saved
+  failed: Failed to capture screenshot
+  video_unavailable: The current video frame is unavailable
 settings:
   title: Settings
   menu_plugin_components_and_pages: BewlyCat Interface
@@ -127,6 +132,7 @@ settings:
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs
   group_home_layout: Home Layout
+  group_version_reminder: Version reminders
   btn:
     authorize: Authorize
     revoke: Revoke
@@ -469,6 +475,8 @@ settings:
   collected_season_play_all_mode_beginning: Series beginning
   collected_season_play_all_mode_latest: Latest episode
   collected_season_play_all_mode_last_watched: Last watched
+  enable_version_reminder: New version reminders
+  enable_version_reminder_desc: Show unacknowledged version updates on the extension home page; each version is shown only once.
   enable_following_inactive_blacklist: Enable Inactive List
   enable_following_inactive_blacklist_desc: When a UP has not posted for the specified number of days or has no videos, they will be automatically moved to the Inactive List. They will be removed from the Inactive List when appearing in ALL view or when clicked
   following_inactive_days: UP inactive days
@@ -948,6 +956,17 @@ favorites:
   search_all_folders: all
   search_current_folder: current
   search_placeholder: Search for current favorites
+version_reminder:
+  trigger: What's new
+  title: BewlyCat has been updated
+  current_version: Current version v{version}
+  description: View the release notes and latest updates for this version. After confirmation, this version will not be shown again.
+  github_releases: GitHub Releases
+  github_releases_desc: View the full release history and downloads
+  bilibili_dynamic: Bilibili posts
+  bilibili_dynamic_desc: View update posts from the developer
+  acknowledge: Got it, don't show this version again
+  settings_hint: You can turn off “New version reminders” under Settings → BewlyCat Interface → Home.
 watch_later:
   title: Watch Later
   clear_all: Clear all watch later

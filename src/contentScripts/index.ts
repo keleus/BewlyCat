@@ -30,6 +30,7 @@ import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { version } from '../../package.json'
 import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
+import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
 import { initVolumeNormalizationControl } from './volumeNormalizationControl'
 
@@ -656,6 +657,7 @@ else if (shouldInitializeContentScript) {
     if (settings.value.enableVolumeNormalization)
       initAudioInterceptor()
     initVolumeNormalizationControl()
+    initVideoScreenshotControl()
 
     // Initialize Favorite Dialog Enhancement (for video pages)
     if (isVideoOrBangumiPage()) {
