@@ -359,8 +359,9 @@ else if (shouldInitializeContentScript) {
     setTimeout(() => {
       if (!watchLaterButtonAdded && settings.value.externalWatchLaterButton) {
         import('~/utils/watchLaterButton').then(({ addWatchLaterButton }) => {
-          addWatchLaterButton()
-          watchLaterButtonAdded = true
+          if (!settings.value.externalWatchLaterButton)
+            return
+          watchLaterButtonAdded = addWatchLaterButton()
         }).catch(err => console.error('添加稍后再看按钮失败:', err))
       }
     }, 5000) // 5秒后添加，确保页面已完全稳定
@@ -423,6 +424,7 @@ else if (shouldInitializeContentScript) {
         exitBewlyWidescreen()
         resetVerticalVideoZoom()
         hasAppliedPlayerMode = false // URL变化时重置标志
+        document.querySelector('.bewly-watch-later-btn')?.remove()
         watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
         // 不再重置用户手动修改标志，保持用户的自动播放偏好设置
 
@@ -764,10 +766,8 @@ else if (shouldInitializeContentScript) {
         else {
         // 移除稍后再看按钮
           const existingButton = document.querySelector('.bewly-watch-later-btn')
-          if (existingButton) {
-            existingButton.remove()
-            watchLaterButtonAdded = false
-          }
+          existingButton?.remove()
+          watchLaterButtonAdded = false
         }
       }
     }

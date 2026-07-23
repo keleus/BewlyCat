@@ -24,6 +24,9 @@ common:
   please_log_in_first: Please log in first
   login: Login
   save_to_watch_later: Save to Watch later
+  add_to_watch_later: Add to Watch later
+  added_to_watch_later: Added to Watch later
+  remove_from_watch_later: Remove from Watch later
   added: Added
   performance_impact_warn: This feature may cause performance *DECREASE*!
   no_data: No data available
@@ -672,7 +675,7 @@ settings:
   enlarge_favorite_dialog: Enlarge favorite dialog
   enlarge_favorite_dialog_desc: When enabled, the favorite dialog on video pages will be displayed in a larger size for easier viewing and management.
   external_watch_later_button: External watch later button
-  external_watch_later_button_desc: When enabled, a standalone watch later button will be displayed on the video page toolbar for quick access.
+  external_watch_later_button_desc: Show a standalone Watch later button in the video toolbar. It displays the current state and can add or remove the video.
   volume_normalization:
     title: Volume Normalization
     enable: Enable volume normalization

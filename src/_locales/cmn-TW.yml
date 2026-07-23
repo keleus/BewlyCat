@@ -24,6 +24,9 @@ common:
   please_log_in_first: 請先登入
   login: 登入
   save_to_watch_later: 稍後觀看
+  add_to_watch_later: 加入稍後觀看
+  added_to_watch_later: 已加入稍後觀看
+  remove_from_watch_later: 從稍後觀看中移除
   added: 已新增
   performance_impact_warn: 這個功能可能會降低效能！
   no_data: 暫無資料
@@ -596,7 +599,7 @@ settings:
   enlarge_favorite_dialog: 放大收藏彈窗
   enlarge_favorite_dialog_desc: 啟用後，影片頁收藏彈窗將以更大的尺寸顯示，方便查看和管理收藏夾。
   external_watch_later_button: 稍後再看按鈕外置
-  external_watch_later_button_desc: 啟用後，影片頁將在工具欄顯示獨立的稍後再看按鈕，方便快速添加影片到稍後再看。
+  external_watch_later_button_desc: 啟用後，影片頁工具欄會顯示獨立的稍後觀看按鈕；按鈕會顯示目前影片狀態，可點擊加入或移除。
   volume_normalization:
     title: 音量均衡
     enable: 啟用音量均衡

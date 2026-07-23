@@ -24,6 +24,9 @@ common:
   please_log_in_first: 唔該登入先
   login: 登入
   save_to_watch_later: 陣間至睇
+  add_to_watch_later: 加到陣間至睇
+  added_to_watch_later: 已加到陣間至睇
+  remove_from_watch_later: 由陣間至睇剷走
   added: 已添加
   performance_impact_warn: 呢個功能可能會降低效能！
   no_data: 暫時冇數據
@@ -581,7 +584,7 @@ settings:
   enlarge_favorite_dialog: 放大收藏彈窗
   enlarge_favorite_dialog_desc: 啓用後，影片頁收藏彈窗會用更大嘅尺寸顯示，方便睇同管理收藏夾。
   external_watch_later_button: 稍後再睇按鈕外置
-  external_watch_later_button_desc: 啓用後，影片頁會喺工具欄顯示獨立嘅稍後再睇按鈕，方便快速添加影片到稍後再睇。
+  external_watch_later_button_desc: 啓用後，影片頁工具欄會顯示獨立嘅陣間至睇按鈕；按鈕會顯示目前影片狀態，可以撳一下加入或者剷走。
   group_fonts: ''
   group_visual_effects: ''
 auth:

@@ -401,7 +401,7 @@ export const originalSettings: Settings = {
   showCommentHostTag: true, // 默认启用楼主标识显示
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
-  externalWatchLaterButton: false, // 默认关闭稍后再看按钮外置
+  externalWatchLaterButton: true, // 默认开启稍后再看按钮外置
 
   // Grid 相关默认设置
   gridColumns: { ...defaultGridColumns },
