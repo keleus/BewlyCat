@@ -67,6 +67,48 @@ player_screenshot:
   video_unavailable: The current video frame is unavailable
 settings:
   title: Settings
+  menu_general: General
+  menu_browsing: Home & Browsing
+  menu_navigation: Navigation & Search
+  menu_playback: Playback & Audio
+  menu_advanced: Advanced & Maintenance
+  category_navigation: Settings category navigation
+  badge_performance_impact: Performance impact
+  badge_advanced: Advanced
+  badge_irreversible: Irreversible
+  badge_use_with_caution: Use with caution
+  search:
+    placeholder: Search settings
+    no_results: No matching settings
+  category_general_desc: Configure language, interaction, link behavior, content cleanup, and favorites.
+  category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, and custom styles.
+  category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
+  breadcrumb: Settings location
+  group_interaction_layout: Interaction & Layout
+  category_browsing_home_desc: Configure home recommendations, content filters, following, and home tabs.
+  category_browsing_video_card_desc: Configure video card layout, previews, metadata, and link behavior.
+  category_browsing_favorites_desc: Configure how favorite content is displayed and opened.
+  category_navigation_topbar_desc: Adjust top bar layout, components, channels, search, and notifications in one place.
+  category_navigation_dock_desc: Configure Dock and sidebar position, visibility, and quick actions.
+  category_navigation_search_desc: Configure search appearance, suggestions, history, trending, and results.
+  category_playback_player_desc: Configure player mode, scrolling, danmaku, captions, and playback state.
+  category_playback_autoplay_desc: Configure autoplay and random playback behavior.
+  category_playback_volume_desc: The official player already provides loudness normalization, and most videos have good loudness levels. Any normalization can cause clipping, degraded audio quality, or reduced dynamic range; leave it off unless you have a clear problem.
+  category_bilibili_comments_desc: Enhance user information and content displayed in comments.
+  category_bilibili_vip_desc: Configure reminders related to premium membership benefits.
+  category_advanced_compatibility_desc: Configure compatibility with original pages, third-party extensions, and other pages.
+  category_advanced_maintenance_desc: Export a backup, import settings, or restore BewlyCat defaults.
+  maintenance:
+    title: Backup & Reset
+    backup_title: Settings backup
+    backup_desc: Export settings for backup or migration, or restore an existing backup.
+    import_desc: Import recognized settings from a BewlyCat JSON backup.
+    import_failed: The settings file could not be read. Make sure it is a valid JSON backup.
+    import_no_matches: No recognized settings were found in this backup.
+    import_success: 'Import complete: applied {imported} settings and ignored {ignored} unknown settings.'
+    reset_title: Restore default settings
+    reset_desc: Actions in this section affect all BewlyCat settings.
+    reset_warning: This cannot be undone. Your current language will be preserved.
   menu_plugin_components_and_pages: BewlyCat Interface
   menu_bilibili_features_enhancement: Bilibili Features
   menu_appearance: Appearance
@@ -103,6 +145,7 @@ settings:
   group_languages_and_fonts: Languages & Fonts
   group_link_opening_behavior: Link Opening Behavior
   group_video_card: Video Card
+  group_video_card_display: Display & Preview
   group_performance: Frosted Glass & Performance
   group_player_settings: Player Settings
   group_player_components: Player Components
@@ -157,8 +200,8 @@ settings:
   select_language: Language
   select_language_opt:
     english: English
-    mandarin_cn: Mandarin - Simplified Chinese
-    mandarin_tw: Mandarin - Traditional Chinese
+    mandarin_cn: Simplified Chinese
+    mandarin_tw: Traditional Chinese
     jyut: Cantonese
   customize_font: Customize font
   customize_font_opt:
@@ -515,6 +558,8 @@ settings:
 
     This operation cannot be reversed. Are you sure you want to reset your
     settings?
+  current_contributors: BewlyCat Contributors
+  contributors_image_failed: Contributor image failed to load
   contributors: BewlyBewly History Contributors
   enable_settings_sync: Allow syncing settings
   enable_settings_sync_desc: >-

@@ -67,6 +67,48 @@ player_screenshot:
   video_unavailable: 目前影片畫面無法使用
 settings:
   title: 設定
+  menu_general: 一般
+  menu_browsing: 首頁與瀏覽
+  menu_navigation: 導覽與搜尋
+  menu_playback: 播放與聲音
+  menu_advanced: 進階與維護
+  category_navigation: 設定分類導覽
+  badge_performance_impact: 效能影響
+  badge_advanced: 進階
+  badge_irreversible: 無法復原
+  badge_use_with_caution: 謹慎開啟
+  search:
+    placeholder: 搜尋設定
+    no_results: 找不到相關設定
+  category_general_desc: 設定語言、互動版面、連結行為、內容清理與收藏。
+  category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型與自訂樣式。
+  category_shortcuts_desc: 啟用、修改或還原 BewlyCat 與播放器快速鍵。
+  breadcrumb: 設定位置
+  group_interaction_layout: 互動與版面
+  category_browsing_home_desc: 設定首頁推薦、內容過濾、關注頁和首頁分頁。
+  category_browsing_video_card_desc: 設定影片卡片的版面、預覽、資訊顯示與開啟方式。
+  category_browsing_favorites_desc: 設定收藏內容的顯示與互動方式。
+  category_navigation_topbar_desc: 統一調整頂欄版面、元件、頻道、搜尋入口和通知顯示。
+  category_navigation_dock_desc: 設定 Dock 列與側欄的位置、顯示和快捷操作。
+  category_navigation_search_desc: 設定搜尋頁外觀、建議、歷史、熱門搜尋與結果頁。
+  category_playback_player_desc: 設定播放器模式、捲動行為、彈幕、字幕和播放狀態。
+  category_playback_autoplay_desc: 設定自動連播與隨機播放的觸發規則。
+  category_playback_volume_desc: 官方播放器已經實作響度平衡，而且多數影片的響度表現良好。任何響度平衡處理都可能造成爆音、音質劣化或動態範圍縮小；沒有明顯問題時不應開啟。
+  category_bilibili_comments_desc: 增強留言區的使用者資訊與內容顯示。
+  category_bilibili_vip_desc: 設定大會員權益相關的提醒功能。
+  category_advanced_compatibility_desc: 設定原版頁面、第三方擴充功能和其他頁面的相容行為。
+  category_advanced_maintenance_desc: 匯出備份、匯入設定或還原 BewlyCat 預設配置。
+  maintenance:
+    title: 備份與重設
+    backup_title: 設定備份
+    backup_desc: 匯出設定以便備份或移轉，也可以從現有備份還原。
+    import_desc: 從 BewlyCat JSON 備份匯入可識別的設定項目。
+    import_failed: 無法讀取設定檔，請確認它是有效的 JSON 備份。
+    import_no_matches: 備份中沒有可匯入的設定項目。
+    import_success: 匯入成功：已套用 {imported} 項，忽略 {ignored} 項未知設定。
+    reset_title: 還原預設設定
+    reset_desc: 此區域的操作會影響所有 BewlyCat 設定。
+    reset_warning: 還原後無法復原，目前的語言設定將會保留。
   menu_plugin_components_and_pages: BewlyCat 介面
   menu_bilibili_features_enhancement: Bilibili 功能
   menu_appearance: 外觀
@@ -103,6 +145,7 @@ settings:
   group_languages_and_fonts: 語言與字型
   group_link_opening_behavior: 連結開啟行為
   group_video_card: 影片卡片
+  group_video_card_display: 顯示與預覽
   group_performance: 毛玻璃與效能
   group_player_settings: 播放器設定
   group_player_components: 播放器組件
@@ -149,8 +192,8 @@ settings:
   select_language: 介面語言
   select_language_opt:
     english: 英文
-    mandarin_cn: 官话 - 简体中文
-    mandarin_tw: 官話 - 繁體中文
+    mandarin_cn: 简体中文
+    mandarin_tw: 繁體中文
     jyut: 廣東話
   customize_font: 自訂字型
   customize_font_opt:
@@ -454,6 +497,8 @@ settings:
   reset_settings_confirm: |-
     重設設定？
     此操作無法撤消，你確定要重設你的設定嗎？
+  current_contributors: BewlyCat 貢獻者
+  contributors_image_failed: 貢獻者圖片載入失敗
   contributors: BewlyBewly 歷史貢獻者
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 在不同裝置間同步擴展設定（需要登入瀏覽器帳號）

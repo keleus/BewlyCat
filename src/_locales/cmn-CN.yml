@@ -67,6 +67,48 @@ player_screenshot:
   video_unavailable: 当前视频画面不可用
 settings:
   title: 设置
+  menu_general: 通用
+  menu_browsing: 首页与浏览
+  menu_navigation: 导航与搜索
+  menu_playback: 播放与声音
+  menu_advanced: 高级与维护
+  category_navigation: 设置分类导航
+  badge_performance_impact: 性能影响
+  badge_advanced: 高级
+  badge_irreversible: 不可撤销
+  badge_use_with_caution: 谨慎开启
+  search:
+    placeholder: 搜索设置
+    no_results: 没有找到相关设置
+  category_general_desc: 配置语言、交互布局、链接行为、内容清理与收藏。
+  category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体与自定义样式。
+  category_shortcuts_desc: 启用、修改或恢复 BewlyCat 与播放器快捷键。
+  breadcrumb: 设置位置
+  group_interaction_layout: 交互与布局
+  category_browsing_home_desc: 配置首页推荐、内容过滤、关注页和首页标签。
+  category_browsing_video_card_desc: 配置视频卡片的布局、预览、信息展示与打开方式。
+  category_browsing_favorites_desc: 配置收藏内容的显示与交互方式。
+  category_navigation_topbar_desc: 统一调整顶栏布局、组件、频道、搜索入口和通知显示。
+  category_navigation_dock_desc: 配置 Dock 栏与侧栏的位置、显隐和快捷操作。
+  category_navigation_search_desc: 配置搜索页外观、搜索建议、历史、热搜与结果页。
+  category_playback_player_desc: 配置播放器模式、滚动行为、弹幕、字幕和播放状态。
+  category_playback_autoplay_desc: 配置自动连播与随机播放的触发规则。
+  category_playback_volume_desc: 官方播放器已经实现响度均衡，且多数视频的响度表现良好。任何响度均衡处理都可能造成爆音、音质劣化或动态范围缩小；没有明显问题时不应开启。
+  category_bilibili_comments_desc: 增强评论区的用户信息与内容显示。
+  category_bilibili_vip_desc: 配置大会员权益相关的提醒功能。
+  category_advanced_compatibility_desc: 配置原版页面、第三方扩展和其他页面的兼容行为。
+  category_advanced_maintenance_desc: 导出备份、导入设置或恢复 BewlyCat 默认配置。
+  maintenance:
+    title: 备份与重置
+    backup_title: 设置备份
+    backup_desc: 导出设置用于备份或迁移，也可以从已有备份恢复。
+    import_desc: 从 BewlyCat JSON 备份中导入已识别的设置项。
+    import_failed: 设置文件无法读取，请确认它是有效的 JSON 备份。
+    import_no_matches: 备份中没有可导入的设置项。
+    import_success: 导入成功：已应用 {imported} 项，忽略 {ignored} 项未知设置。
+    reset_title: 恢复默认设置
+    reset_desc: 此区域的操作会影响全部 BewlyCat 设置。
+    reset_warning: 恢复后无法撤销，当前语言设置会保留。
   menu_plugin_components_and_pages: BewlyCat界面
   menu_bilibili_features_enhancement: Bilibili功能
   menu_appearance: 外观
@@ -103,6 +145,7 @@ settings:
   group_languages_and_fonts: 语言和字体
   group_link_opening_behavior: 链接打开行为
   group_video_card: 视频卡片
+  group_video_card_display: 显示与预览
   group_performance: 毛玻璃和性能
   group_player_settings: 播放器设置
   group_player_components: 播放器组件
@@ -151,8 +194,8 @@ settings:
   select_language: 界面语言
   select_language_opt:
     english: 英文
-    mandarin_cn: 官话 - 简体中文
-    mandarin_tw: 官話 - 繁體中文
+    mandarin_cn: 简体中文
+    mandarin_tw: 繁體中文
     jyut: 粤语
   customize_font: 自定义字体
   customize_font_opt:
@@ -500,6 +543,8 @@ settings:
   reset_settings_confirm: |-
     重置设置？
     该操作无法撤销。你确定要重置你的设置吗？
+  current_contributors: BewlyCat 贡献者
+  contributors_image_failed: 贡献者图片加载失败
   contributors: BewlyBewly历史贡献者
   enable_undo_refresh_button: 启用撤销刷新按钮（仅在Web推荐模式下有效）
   enable_undo_refresh_button_desc: 刷新页面后显示撤销按钮，点击可恢复刷新前的内容

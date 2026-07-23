@@ -24,8 +24,7 @@ function handleVolumeChange(newValue: number) {
 
 <template>
   <div>
-    <!-- 响度均衡设置组 -->
-    <SettingsItemGroup :title="t('settings.volume_normalization.title')">
+    <SettingsItemGroup>
       <SettingsItem
         :title="t('settings.volume_normalization.enable')"
         :desc="t('settings.volume_normalization.enable_desc')"

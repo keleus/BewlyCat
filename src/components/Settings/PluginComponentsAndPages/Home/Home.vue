@@ -317,6 +317,8 @@ function handleToggleHomeTab(tab: any) {
     <SettingsItemGroup
       :title="$t('settings.group_recommendation_filters')"
       :desc="$t('settings.group_recommendation_filters_desc')"
+      collapsible
+      default-collapsed
     >
       <SettingsItem :title="$t('settings.disable_filters_for_followed_users')" :desc="$t('settings.disable_filters_for_followed_users_desc')" right-width="auto">
         <Radio v-model="settings.disableFilterForFollowedUser" />
