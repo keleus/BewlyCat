@@ -312,6 +312,7 @@ export interface Settings {
   followingFilterDynamicVideos: boolean // 过滤动态视频
   useFollowingNewLayout: boolean
   useFavoritesNewLayout: boolean
+  playCollectedSeasonFromLatest: boolean // 订阅合集「播放全部」从最新一期开始
   enableFollowingInactiveBlacklist: boolean // 启用不活跃名单
   followingInactiveDays: number // UP主超过N天未更新则移至不活跃名单
 
@@ -543,6 +544,7 @@ export const originalSettings: Settings = {
   followingFilterDynamicVideos: false, // 默认不过滤动态视频
   useFollowingNewLayout: false, // 默认使用旧布局
   useFavoritesNewLayout: true, // 默认使用新版收藏页
+  playCollectedSeasonFromLatest: false, // 默认保持 B 站从合集开头播放
   enableFollowingInactiveBlacklist: true, // 默认启用不活跃名单
   followingInactiveDays: 100, // 默认100天
 

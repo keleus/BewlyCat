@@ -413,6 +413,8 @@ settings:
   use_following_new_layout_desc: 左側顯示關注的 UP 主列表，右側顯示影片流
   use_favorites_new_layout: 使用新版收藏頁
   use_favorites_new_layout_desc: 關閉後使用舊版收藏頁；舊版不顯示收藏合集。
+  play_collected_season_from_latest: 訂閱合集從最新一期播放
+  play_collected_season_from_latest_desc: 開啟後，收藏頁與頂欄收藏彈層中訂閱合集的「播放全部」會從最新一期進入合集列表頁；預設仍從合集開頭播放。不影響列表顯示順序與連播方向。
   enable_following_inactive_blacklist: 啟用不活躍名單
   enable_following_inactive_blacklist_desc: 當UP主超過指定天數未更新或無投稿時，將自動移至不活躍名單。在ALL視圖中出現更新或點擊該UP主時會自動移出不活躍名單。
   following_inactive_days: UP 主不活躍天數
