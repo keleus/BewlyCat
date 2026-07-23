@@ -60,6 +60,52 @@ else {
   const COMMENT_COMPONENT_PATCHED = Symbol('bewly-comment-component-patched')
   const pendingCommentEnhancements = new WeakSet<object>()
 
+  const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: string }> = {
+    'bili-comment-replies-renderer': {
+      id: 'bewly-comment-replies-style',
+      css: `
+        #spinner {
+          background: var(--bew-comment-replies-mask-bg, rgba(var(--bg1_rgb), 0.85)) !important;
+        }
+      `,
+    },
+    'bili-comment-renderer': {
+      id: 'bewly-comment-renderer-style',
+      css: `
+        #body.dark .tag {
+          --bili-comment-tag-color: var(--bew-comment-tag-color, var(--bili-comment-tag-color-dark)) !important;
+          --bili-comment-tag-bg: var(--bew-comment-tag-bg, var(--bili-comment-tag-bg-dark)) !important;
+        }
+      `,
+    },
+    'bili-comment-box': {
+      id: 'bewly-comment-box-style',
+      css: `
+        #editor:not(:hover):not(.active) {
+          border-color: var(--bew-comment-editor-border, var(--Ga1)) !important;
+        }
+      `,
+    },
+    'bili-comments-vote-card': {
+      id: 'bewly-vote-card-style',
+      css: `
+        :host {
+          --option-color: var(--bew-text-1, #18191c) !important;
+        }
+      `,
+    },
+  }
+
+  function ensureCommentShadowStyle(root: ShadowRoot, id: string, css: string) {
+    if (root.querySelector(`#${id}`))
+      return
+
+    const style = document.createElement('style')
+    style.id = id
+    style.textContent = css
+    root.appendChild(style)
+  }
+
   function patchCommentComponentUpdate(
     name: string,
     classConstructor: any,
@@ -329,6 +375,23 @@ else {
           return Reflect.apply(target, thisArg, args)
         }
 
+        const shadowStylePatch = COMMENT_SHADOW_STYLE_PATCHES[name]
+        if (shadowStylePatch) {
+          try {
+            patchCommentComponentUpdate(name, classConstructor, (component) => {
+              const root = component.shadowRoot
+              if (!root)
+                return
+
+              ensureCommentShadowStyle(root, shadowStylePatch.id, shadowStylePatch.css)
+            })
+          }
+          catch (error) {
+            console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
+          }
+          return Reflect.apply(target, thisArg, args)
+        }
+
         // 处理评论区图片组件
         if (name === 'bili-comment-pictures-renderer') {
           try {
@@ -391,33 +454,6 @@ else {
               const shouldShowLocation = Boolean(currentSettings?.showIPLocation && locationString)
               const locationAnchor = hostEl ?? sexEl ?? userNameEl
               updateInfoElement(root, 'location', shouldShowLocation, locationString, locationAnchor)
-            })
-          }
-          catch (error) {
-            console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
-          }
-          return Reflect.apply(target, thisArg, args)
-        }
-
-        // 处理评论投票卡片组件（修复深色模式下的文字颜色）
-        if (name === 'bili-comments-vote-card') {
-          try {
-            patchCommentComponentUpdate(name, classConstructor, (component) => {
-              const root = component.shadowRoot
-              if (!root)
-                return
-
-              // 检查是否已经注入过样式
-              if (!root.querySelector('#bewly-vote-card-style')) {
-                const style = document.createElement('style')
-                style.id = 'bewly-vote-card-style'
-                style.textContent = `
-                :host {
-                  --option-color: var(--bew-text-1, #18191c) !important;
-                }
-              `
-                root.appendChild(style)
-              }
             })
           }
           catch (error) {

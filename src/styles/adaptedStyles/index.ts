@@ -77,6 +77,8 @@ async function setupStyles() {
     || /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater.*/.test(currentUrl)
     // favorite playlist 收藏播放页
     || /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(currentUrl)
+    // legacy favorite playlist playback page 旧版收藏播放页
+    || /https?:\/\/(?:www\.)?bilibili\.com\/medialist\/play\/.*/.test(currentUrl)
     // 视频合集
     || /https?:\/\/(?:www\.)?bilibili\.com\/list\/.*/.test(currentUrl)
   ) {
