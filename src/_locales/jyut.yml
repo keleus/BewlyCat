@@ -817,6 +817,7 @@ favorites:
   batch_unfavorite_confirm: |-
     係咪要剷走已揀嘅 {count} 條片呀？
     噉做冇得返轉頭噃，你確定要剷走呢啲片？
+  season_play_all_fallback: 合集列表未就緒，已退回合集開頭
 watch_later:
   title: 陣間至睇
   clear_all: 剷曬陣間至睇啲片

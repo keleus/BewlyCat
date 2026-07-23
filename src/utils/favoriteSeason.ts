@@ -1,6 +1,8 @@
 /**
- * 收藏「订阅合集」相关工具
- * 供 Dock 新版收藏页与顶栏收藏弹层共用
+ * 订阅合集：单一数据层
+ * - 分页语义（含「接口一次返回全量」）
+ * - 播放全部起播解析
+ * Dock 收藏页与顶栏弹层共用，UI 只负责触发加载/展示。
  */
 
 import type { CollectedSeasonPlayAllMode } from '~/logic/storage'
@@ -9,7 +11,8 @@ import { Business } from '~/models/history/history'
 import type { FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
 
-const SEASON_PAGE_SIZE = 40
+/** 与 B 站 fav/season/list 默认 ps、以及收藏页「一屏约 40」展示一致 */
+export const FAVORITE_SEASON_PAGE_SIZE = 40
 /** 防止异常接口一直返回满页时死循环 */
 const MAX_SEASON_PAGES = 100
 const HISTORY_PAGE_SIZE = 20
@@ -22,17 +25,43 @@ export interface FavoriteSeasonPlayTarget {
   seasonId: number
   link?: string
   mode?: CollectedSeasonPlayAllMode
+  /**
+   * UI 已通过同一套分页语义加载过的列表。
+   * complete=true 时可跳过再次全量请求。
+   */
+  preloaded?: {
+    medias: FavoriteSeasonMedia[]
+    complete: boolean
+  }
+}
+
+export interface FavoriteSeasonPlayAllResult {
+  url: string
+  /** 是否回退到合集入口（开头 / 数据不完整 / 无历史等） */
+  usedFallback: boolean
+  reason: 'beginning' | 'resolved' | 'incomplete' | 'empty' | 'missing-bvid' | 'no-history'
+}
+
+export interface FavoriteSeasonPageFetchResult {
+  ok: boolean
+  pageMedias: FavoriteSeasonMedia[]
+  mediaCount?: number
+  cover?: string
+}
+
+export interface FavoriteSeasonPageMergeResult {
+  medias: FavoriteSeasonMedia[]
+  hasMore: boolean
 }
 
 interface FetchAllSeasonMediasResult {
   medias: FavoriteSeasonMedia[]
-  /** 是否完整拉完（失败中断时为 false，调用方不得把末项当「最新」） */
   complete: boolean
 }
 
 /**
- * 合集入口 URL（B 站默认「播放全部」行为）
- * 优先用 collected season 的 bilibili://video/{aid} link，否则用封面/入口 bvid
+ * 合集入口 URL（B 站默认「从开头播放」）
+ * 优先 collected season 的 bilibili://video/{aid} link，否则封面/入口 bvid
  */
 export function buildFavoriteSeasonEntryUrl(seasonId: number, link?: string, bvid?: string): string {
   const matchedVideoLink = link?.match(/^bilibili:\/\/video\/(\d+)(\?.*)?$/)
@@ -48,68 +77,133 @@ export function buildFavoriteSeasonEntryUrl(seasonId: number, link?: string, bvi
 }
 
 /**
- * 打开合集内指定稿件。
- * 实测 /list/season/{id}?bvid= 对订阅合集会 404；普通 /video/{bvid} 可播且仍带合集侧栏。
+ * 打开合集内指定稿件（普通视频页，仍可带合集侧栏）
+ * 实测 /list/season/{id}?bvid= 对订阅合集会 404
  */
-export function buildFavoriteSeasonListPlayUrl(_seasonId: number, bvid: string, _oid?: number): string {
+export function buildFavoriteSeasonVideoUrl(bvid: string): string {
   return `https://www.bilibili.com/video/${bvid}/`
 }
 
 /**
- * 拉取订阅合集全部稿件（API 无排序参数，只能翻页）
- * complete=false 表示中途失败或异常截断，medias 可能不完整
+ * 合并一页合集稿件，并给出是否还有更多。
+ * 顶栏滚动加载 / 收藏页列表 / 播放全部全量拉取 共用此语义。
  */
-export async function fetchAllFavoriteSeasonMedias(seasonId: number): Promise<FetchAllSeasonMediasResult> {
-  const medias: FavoriteSeasonMedia[] = []
-  let pn = 1
-  let expectedCount: number | undefined
+export function mergeFavoriteSeasonPage(input: {
+  pn: number
+  pageMedias: FavoriteSeasonMedia[]
+  mediaCount?: number
+  previousMedias: FavoriteSeasonMedia[]
+  pageSize?: number
+}): FavoriteSeasonPageMergeResult {
+  const pageSize = input.pageSize ?? FAVORITE_SEASON_PAGE_SIZE
+  const count = typeof input.mediaCount === 'number' && input.mediaCount >= 0
+    ? input.mediaCount
+    : undefined
+  const pageMedias = input.pageMedias
 
-  while (pn <= MAX_SEASON_PAGES) {
-    let res: Awaited<ReturnType<typeof api.favorite.getFavoriteSeasonResources>>
-    try {
-      res = await api.favorite.getFavoriteSeasonResources({
-        season_id: seasonId,
-        pn,
-        ps: SEASON_PAGE_SIZE,
-      })
+  if (pageMedias.length === 0) {
+    return {
+      medias: input.previousMedias,
+      hasMore: false,
     }
-    catch {
-      return { medias, complete: false }
+  }
+
+  // 接口无视 ps、一次返回 ≥ media_count：整表替换，不再翻页
+  if (count !== undefined && pageMedias.length >= count) {
+    return {
+      medias: pageMedias.slice(0, count),
+      hasMore: false,
     }
+  }
 
-    if (res.code !== 0 || !res.data)
-      return { medias, complete: false }
+  // 无可靠 count，但首页就超过 pageSize：视为一次性全量（避免狂翻）
+  if (input.pn === 1 && pageMedias.length > pageSize) {
+    return {
+      medias: pageMedias,
+      hasMore: false,
+    }
+  }
 
-    if (typeof res.data.info?.media_count === 'number' && res.data.info.media_count >= 0)
-      expectedCount = res.data.info.media_count
+  const medias = input.pn === 1
+    ? [...pageMedias]
+    : [...input.previousMedias, ...pageMedias]
+
+  if (count !== undefined && medias.length >= count) {
+    return {
+      medias: medias.slice(0, count),
+      hasMore: false,
+    }
+  }
+
+  return {
+    medias,
+    hasMore: pageMedias.length >= pageSize,
+  }
+}
+
+/** 拉取合集单页原始数据 */
+export async function fetchFavoriteSeasonPage(
+  seasonId: number,
+  pn: number,
+  pageSize: number = FAVORITE_SEASON_PAGE_SIZE,
+): Promise<FavoriteSeasonPageFetchResult> {
+  try {
+    const res = await api.favorite.getFavoriteSeasonResources({
+      season_id: seasonId,
+      pn,
+      ps: pageSize,
+    })
+
+    if (res.code !== 0 || !res.data) {
+      return { ok: false, pageMedias: [] }
+    }
 
     const pageMedias = Array.isArray(res.data.medias)
       ? res.data.medias.filter((item: FavoriteSeasonMedia | null | undefined): item is FavoriteSeasonMedia => item != null)
       : []
 
-    if (pageMedias.length === 0) {
-      // 首页就空：完整空合集；后续页突然空：视为异常截断
-      return { medias, complete: pn === 1 || (expectedCount !== undefined && medias.length >= expectedCount) }
+    const mediaCount = typeof res.data.info?.media_count === 'number' && res.data.info.media_count >= 0
+      ? res.data.info.media_count
+      : undefined
+
+    return {
+      ok: true,
+      pageMedias,
+      mediaCount,
+      cover: res.data.info?.cover,
     }
+  }
+  catch {
+    return { ok: false, pageMedias: [] }
+  }
+}
 
-    medias.push(...pageMedias)
+/**
+ * 拉取订阅合集全部稿件
+ * complete=false 表示中途失败或异常截断，不得把末项当「最新」
+ */
+export async function fetchAllFavoriteSeasonMedias(seasonId: number): Promise<FetchAllSeasonMediasResult> {
+  let medias: FavoriteSeasonMedia[] = []
+  let pn = 1
 
-    // 部分接口会无视 ps、一次返回全部；够数就停，避免重复翻页
-    if (expectedCount !== undefined && medias.length >= expectedCount)
-      return { medias: medias.slice(0, expectedCount), complete: true }
+  while (pn <= MAX_SEASON_PAGES) {
+    const page = await fetchFavoriteSeasonPage(seasonId, pn)
+    if (!page.ok)
+      return { medias, complete: false }
 
-    if (pageMedias.length < SEASON_PAGE_SIZE) {
-      if (expectedCount !== undefined && medias.length < expectedCount)
-        return { medias, complete: false }
+    const merged = mergeFavoriteSeasonPage({
+      pn,
+      pageMedias: page.pageMedias,
+      mediaCount: page.mediaCount,
+      previousMedias: medias,
+    })
+    medias = merged.medias
+
+    if (!merged.hasMore)
       return { medias, complete: true }
-    }
 
     pn += 1
   }
-
-  // 触达页数上限：若已知总数且已对齐，仍算完整；否则不信任末项
-  if (expectedCount !== undefined && medias.length >= expectedCount)
-    return { medias, complete: true }
 
   return { medias, complete: false }
 }
@@ -184,34 +278,48 @@ export async function findLastWatchedSeasonMedia(
   return undefined
 }
 
+async function resolveSeasonMedias(
+  seasonId: number,
+  preloaded?: FavoriteSeasonPlayTarget['preloaded'],
+): Promise<FetchAllSeasonMediasResult> {
+  if (preloaded?.complete && preloaded.medias.length > 0)
+    return { medias: preloaded.medias, complete: true }
+
+  return fetchAllFavoriteSeasonMedias(seasonId)
+}
+
 /**
  * 解析「播放全部」目标地址
- * - beginning：合集入口（默认）
- * - latest：完整列表末项（≈最新一期）
- * - lastWatched：观看历史中该合集最近一次看过的稿件；找不到则回退 beginning
+ * - beginning：合集入口
+ * - latest：完整列表末项
+ * - lastWatched：观看历史中该合集最近一次；找不到则回退入口
  */
-export async function resolveFavoriteSeasonPlayAllUrl(target: FavoriteSeasonPlayTarget): Promise<string> {
-  const { seasonId, link, mode = 'beginning' } = target
+export async function resolveFavoriteSeasonPlayAllUrl(
+  target: FavoriteSeasonPlayTarget,
+): Promise<FavoriteSeasonPlayAllResult> {
+  const { seasonId, link, mode = 'beginning', preloaded } = target
   const entryUrl = buildFavoriteSeasonEntryUrl(seasonId, link)
 
-  if (mode === 'beginning')
-    return entryUrl
+  if (mode === 'beginning') {
+    return { url: entryUrl, usedFallback: false, reason: 'beginning' }
+  }
 
-  const { medias, complete } = await fetchAllFavoriteSeasonMedias(seasonId)
-  if (!complete || medias.length === 0)
-    return entryUrl
+  const { medias, complete } = await resolveSeasonMedias(seasonId, preloaded)
+  if (!complete)
+    return { url: entryUrl, usedFallback: true, reason: 'incomplete' }
+  if (medias.length === 0)
+    return { url: entryUrl, usedFallback: true, reason: 'empty' }
 
   if (mode === 'latest') {
     const latest = medias.at(-1)
     if (!latest?.bvid)
-      return entryUrl
-    return buildFavoriteSeasonListPlayUrl(seasonId, latest.bvid, latest.id)
+      return { url: entryUrl, usedFallback: true, reason: 'missing-bvid' }
+    return { url: buildFavoriteSeasonVideoUrl(latest.bvid), usedFallback: false, reason: 'resolved' }
   }
 
-  // lastWatched：找不到则回退入口
   const lastWatched = await findLastWatchedSeasonMedia(medias)
   if (!lastWatched?.bvid)
-    return entryUrl
+    return { url: entryUrl, usedFallback: true, reason: 'no-history' }
 
-  return buildFavoriteSeasonListPlayUrl(seasonId, lastWatched.bvid, lastWatched.id)
+  return { url: buildFavoriteSeasonVideoUrl(lastWatched.bvid), usedFallback: false, reason: 'resolved' }
 }

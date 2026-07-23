@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Business } from '~/models/history/history'
 import {
   buildFavoriteSeasonEntryUrl,
-  buildFavoriteSeasonListPlayUrl,
+  buildFavoriteSeasonVideoUrl,
+  FAVORITE_SEASON_PAGE_SIZE,
+  mergeFavoriteSeasonPage,
   resolveFavoriteSeasonPlayAllUrl,
 } from '~/utils/favoriteSeason'
 
@@ -35,13 +37,38 @@ describe('favoriteSeason utils', () => {
     expect(buildFavoriteSeasonEntryUrl(123, undefined, 'BV1Entry')).toBe('https://www.bilibili.com/video/BV1Entry/')
   })
 
-  it('builds play urls as normal video pages (list/season?bvid is 404 for ugc seasons)', () => {
-    expect(buildFavoriteSeasonListPlayUrl(99, 'BV1Latest')).toBe('https://www.bilibili.com/video/BV1Latest/')
-    expect(buildFavoriteSeasonListPlayUrl(99, 'BV1Latest', 888)).toBe('https://www.bilibili.com/video/BV1Latest/')
+  it('builds play urls as normal video pages', () => {
+    expect(buildFavoriteSeasonVideoUrl('BV1Latest')).toBe('https://www.bilibili.com/video/BV1Latest/')
+  })
+
+  it('mergeFavoriteSeasonPage stops when API returns a full dump', () => {
+    const pageMedias = Array.from({ length: 80 }, (_, index) => ({
+      id: index + 1,
+      bvid: `BV${index}`,
+      title: `${index}`,
+      cover: '',
+      duration: 1,
+      pubtime: index,
+      upper: { mid: 1, name: '' },
+      cnt_info: { collect: 0, play: 0, danmaku: 0, vt: 0 },
+      enable_vt: 0,
+      vt_display: '',
+      is_self_view: false,
+    }))
+
+    const merged = mergeFavoriteSeasonPage({
+      pn: 1,
+      pageMedias,
+      mediaCount: 80,
+      previousMedias: [],
+      pageSize: FAVORITE_SEASON_PAGE_SIZE,
+    })
+
+    expect(merged.hasMore).toBe(false)
+    expect(merged.medias).toHaveLength(80)
   })
 
   it('resolves latest mode to the last media', async () => {
-    // 正常分页：满页后续页，末页不足 ps
     mocks.getFavoriteSeasonResources
       .mockResolvedValueOnce({
         code: 0,
@@ -69,15 +96,17 @@ describe('favoriteSeason utils', () => {
       seasonId: 42,
       link: 'bilibili://video/100',
       mode: 'latest',
-    })).resolves.toBe('https://www.bilibili.com/video/BV1Latest/')
+    })).resolves.toEqual({
+      url: 'https://www.bilibili.com/video/BV1Latest/',
+      usedFallback: false,
+      reason: 'resolved',
+    })
 
     expect(mocks.getFavoriteSeasonResources).toHaveBeenCalledTimes(2)
     expect(mocks.getHistoryList).not.toHaveBeenCalled()
   })
 
   it('stops after one request when API ignores ps and returns the full season every page', async () => {
-    // 实测 fav/season/list 常无视 ps，每页都吐回全部 medias；若不按 media_count 提前结束，
-    // 会连打到页数上限或中途失败，最终回退到合集入口（第一期）。
     const fullList = Array.from({ length: 80 }, (_, index) => ({
       id: index + 1,
       bvid: `BV1Full_${index}`,
@@ -95,9 +124,32 @@ describe('favoriteSeason utils', () => {
       seasonId: 42,
       link: 'bilibili://video/100',
       mode: 'latest',
-    })).resolves.toBe('https://www.bilibili.com/video/BV1Full_79/')
+    })).resolves.toMatchObject({
+      url: 'https://www.bilibili.com/video/BV1Full_79/',
+      usedFallback: false,
+    })
 
     expect(mocks.getFavoriteSeasonResources).toHaveBeenCalledTimes(1)
+  })
+
+  it('reuses preloaded complete medias without refetching', async () => {
+    await expect(resolveFavoriteSeasonPlayAllUrl({
+      seasonId: 42,
+      link: 'bilibili://video/100',
+      mode: 'latest',
+      preloaded: {
+        complete: true,
+        medias: [
+          { id: 1, bvid: 'BV1Old', title: 'old' } as any,
+          { id: 2, bvid: 'BV1Latest', title: 'latest' } as any,
+        ],
+      },
+    })).resolves.toMatchObject({
+      url: 'https://www.bilibili.com/video/BV1Latest/',
+      usedFallback: false,
+    })
+
+    expect(mocks.getFavoriteSeasonResources).not.toHaveBeenCalled()
   })
 
   it('resolves lastWatched mode from recent archive history', async () => {
@@ -131,7 +183,10 @@ describe('favoriteSeason utils', () => {
       seasonId: 42,
       link: 'bilibili://video/100',
       mode: 'lastWatched',
-    })).resolves.toBe('https://www.bilibili.com/video/BV1Watched/')
+    })).resolves.toMatchObject({
+      url: 'https://www.bilibili.com/video/BV1Watched/',
+      usedFallback: false,
+    })
   })
 
   it('falls back to entry url when pagination fails mid-way instead of using a partial last item', async () => {
@@ -156,7 +211,11 @@ describe('favoriteSeason utils', () => {
       seasonId: 42,
       link: 'bilibili://video/100',
       mode: 'latest',
-    })).resolves.toBe('https://www.bilibili.com/video/av100')
+    })).resolves.toEqual({
+      url: 'https://www.bilibili.com/video/av100',
+      usedFallback: true,
+      reason: 'incomplete',
+    })
   })
 
   it('keeps the default entry url for beginning mode', async () => {
@@ -164,7 +223,11 @@ describe('favoriteSeason utils', () => {
       seasonId: 42,
       link: 'bilibili://video/100',
       mode: 'beginning',
-    })).resolves.toBe('https://www.bilibili.com/video/av100')
+    })).resolves.toEqual({
+      url: 'https://www.bilibili.com/video/av100',
+      usedFallback: false,
+      reason: 'beginning',
+    })
 
     expect(mocks.getFavoriteSeasonResources).not.toHaveBeenCalled()
   })

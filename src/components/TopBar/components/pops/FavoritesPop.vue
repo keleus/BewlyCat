@@ -1,14 +1,22 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
-import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia, FavoriteSeasonResourcesResult } from '~/models/video/favoriteSeason'
+import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
-import { buildFavoriteSeasonEntryUrl, resolveFavoriteSeasonPlayAllUrl } from '~/utils/favoriteSeason'
+import {
+  buildFavoriteSeasonEntryUrl,
+  FAVORITE_SEASON_PAGE_SIZE,
+  fetchFavoriteSeasonPage,
+  mergeFavoriteSeasonPage,
+  resolveFavoriteSeasonPlayAllUrl,
+} from '~/utils/favoriteSeason'
 import { getUserID, isHomePage, isInIframe, removeHttpFromUrl, scrollToTop } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
@@ -21,9 +29,14 @@ type ViewCategory = FavoriteCategory & {
   link?: string
 }
 
+const { t } = useI18n()
+const toast = useToast()
+
 const favoriteCategories = reactive<Array<ViewCategory>>([])
 const collectedFavoriteSeasons = reactive<Array<CollectedFavoriteSeason>>([])
 const favoriteResources = reactive<Array<FavoriteResource>>([])
+const loadedSeasonMedias = ref<FavoriteSeasonMedia[]>([])
+const loadedSeasonComplete = ref(false)
 
 const activatedMediaId = ref<number>(0)
 const activatedCategorySource = ref<FavoriteCategorySource>('folder')
@@ -89,12 +102,18 @@ async function handleSeasonPlayAll() {
 
   isResolvingSeasonPlayAll.value = true
   try {
-    const url = await resolveFavoriteSeasonPlayAllUrl({
+    const result = await resolveFavoriteSeasonPlayAllUrl({
       seasonId: activatedMediaId.value,
       link: activatedCategoryLink.value,
       mode: settings.value.collectedSeasonPlayAllMode,
+      preloaded: {
+        medias: loadedSeasonMedias.value,
+        complete: loadedSeasonComplete.value,
+      },
     })
-    openTopBarLink(url)
+    if (result.usedFallback && result.reason !== 'beginning')
+      toast.warning(t('favorites.season_play_all_fallback'))
+    openTopBarLink(result.url)
   }
   finally {
     isResolvingSeasonPlayAll.value = false
@@ -106,6 +125,8 @@ watch([activatedMediaId, activatedCategorySource], ([newId, newSource], [oldId, 
     return
 
   favoriteResources.length = 0
+  loadedSeasonMedias.value = []
+  loadedSeasonComplete.value = false
   if (favoriteVideosWrap.value)
     scrollToTop(favoriteVideosWrap.value)
 
@@ -242,33 +263,43 @@ async function getFavoriteResources() {
 }
 
 async function getFavoriteSeasonResources() {
-  const res: FavoriteSeasonResourcesResult = await api.favorite.getFavoriteSeasonResources({
-    season_id: activatedMediaId.value,
+  if (currentPageNum.value === 1) {
+    loadedSeasonMedias.value = []
+    loadedSeasonComplete.value = false
+  }
+
+  const page = await fetchFavoriteSeasonPage(
+    activatedMediaId.value,
+    currentPageNum.value,
+    FAVORITE_SEASON_PAGE_SIZE,
+  )
+
+  if (!page.ok) {
+    noMoreContent.value = true
+    loadedSeasonComplete.value = false
+    return
+  }
+
+  const merged = mergeFavoriteSeasonPage({
     pn: currentPageNum.value,
-    ps: 40,
+    pageMedias: page.pageMedias,
+    mediaCount: page.mediaCount,
+    previousMedias: loadedSeasonMedias.value,
+    pageSize: FAVORITE_SEASON_PAGE_SIZE,
   })
 
-  if (res.code === 0 && res.data) {
-    const medias = Array.isArray(res.data.medias) ? res.data.medias.filter((m: any) => m != null) : []
-    const mediaCount = res.data.info?.media_count
-    if (medias.length > 0) {
-      if (typeof mediaCount === 'number' && mediaCount >= 0 && medias.length >= mediaCount && currentPageNum.value === 1) {
-        favoriteResources.length = 0
-        favoriteResources.push(...medias.slice(0, mediaCount).map(normalizeSeasonMedia))
-        noMoreContent.value = true
-      }
-      else {
-        favoriteResources.push(...medias.map(normalizeSeasonMedia))
-        noMoreContent.value = medias.length < 40
-          || (typeof mediaCount === 'number' && mediaCount >= 0 && favoriteResources.length >= mediaCount)
-      }
-    }
-    else {
-      noMoreContent.value = true
-    }
+  loadedSeasonMedias.value = merged.medias
+  loadedSeasonComplete.value = !merged.hasMore
+  noMoreContent.value = !merged.hasMore
+
+  // 顶栏是滚动追加：首页替换，后续页只追加本页增量
+  if (currentPageNum.value === 1) {
+    favoriteResources.length = 0
+    favoriteResources.push(...merged.medias.map(normalizeSeasonMedia))
   }
   else {
-    noMoreContent.value = true
+    const previousCount = favoriteResources.length
+    favoriteResources.push(...merged.medias.slice(previousCount).map(normalizeSeasonMedia))
   }
 }
 
