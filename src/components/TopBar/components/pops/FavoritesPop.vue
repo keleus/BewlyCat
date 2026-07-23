@@ -53,9 +53,9 @@ const playAllUrl = computed((): string => {
 })
 
 const useCustomSeasonPlayAll = computed(() => activatedCategorySource.value === 'season')
-/** 开启「从最新播放」时连 modifier 点击也走自定义解析，避免 Ctrl/中键仍打开合集开头 */
+/** 非「合集开头」时走自定义解析（含 modifier），避免仍打开入口 URL */
 const interceptSeasonPlayAllModifiers = computed(() =>
-  useCustomSeasonPlayAll.value && settings.value.playCollectedSeasonFromLatest,
+  useCustomSeasonPlayAll.value && settings.value.collectedSeasonPlayAllMode !== 'beginning',
 )
 
 const isResolvingSeasonPlayAll = ref(false)
@@ -92,7 +92,7 @@ async function handleSeasonPlayAll() {
     const url = await resolveFavoriteSeasonPlayAllUrl({
       seasonId: activatedMediaId.value,
       link: activatedCategoryLink.value,
-      playFromLatest: settings.value.playCollectedSeasonFromLatest,
+      mode: settings.value.collectedSeasonPlayAllMode,
     })
     openTopBarLink(url)
   }

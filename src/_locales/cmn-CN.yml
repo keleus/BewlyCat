@@ -459,8 +459,11 @@ settings:
   use_following_new_layout_desc: 左侧显示关注的UP主列表，右侧显示视频流
   use_favorites_new_layout: 使用新版收藏页
   use_favorites_new_layout_desc: 关闭后使用旧版收藏页；旧版不显示收藏合集。
-  play_collected_season_from_latest: 订阅合集从最新一期播放
-  play_collected_season_from_latest_desc: 开启后，收藏页与顶栏收藏弹层中订阅合集的「播放全部」会从最新一期进入合集列表页；默认仍从合集开头播放。不影响列表显示顺序与连播方向。
+  collected_season_play_all_mode: 订阅合集「播放全部」起播位置
+  collected_season_play_all_mode_desc: 控制收藏页与顶栏收藏弹层中订阅合集的「播放全部」。开头为合集入口；最新为列表最后一期；上次观看会在观看历史中匹配该合集最近看过的一期，找不到则回退到开头。不影响列表显示顺序与连播方向。
+  collected_season_play_all_mode_beginning: 合集开头
+  collected_season_play_all_mode_latest: 最新一期
+  collected_season_play_all_mode_last_watched: 上次观看
   enable_following_inactive_blacklist: 启用不活跃名单
   enable_following_inactive_blacklist_desc: 当UP主超过指定天数未更新或无投稿时，将自动移至不活跃名单。在ALL视图中出现更新或点击该UP主时会自动移出不活跃名单
   following_inactive_days: UP主不活跃天数

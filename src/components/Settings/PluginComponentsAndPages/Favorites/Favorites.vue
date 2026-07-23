@@ -1,9 +1,30 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import Radio from '~/components/Radio.vue'
+import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
+import type { CollectedSeasonPlayAllMode } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+
+const { t } = useI18n()
+
+const collectedSeasonPlayAllModeOptions = computed(() => [
+  {
+    label: t('settings.collected_season_play_all_mode_beginning'),
+    value: 'beginning' satisfies CollectedSeasonPlayAllMode,
+  },
+  {
+    label: t('settings.collected_season_play_all_mode_latest'),
+    value: 'latest' satisfies CollectedSeasonPlayAllMode,
+  },
+  {
+    label: t('settings.collected_season_play_all_mode_last_watched'),
+    value: 'lastWatched' satisfies CollectedSeasonPlayAllMode,
+  },
+])
 </script>
 
 <template>
@@ -16,11 +37,15 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
       <Radio v-model="settings.useFavoritesNewLayout" />
     </SettingsItem>
     <SettingsItem
-      :title="$t('settings.play_collected_season_from_latest')"
-      :desc="$t('settings.play_collected_season_from_latest_desc')"
+      :title="$t('settings.collected_season_play_all_mode')"
+      :desc="$t('settings.collected_season_play_all_mode_desc')"
       right-width="auto"
     >
-      <Radio v-model="settings.playCollectedSeasonFromLatest" />
+      <Select
+        v-model="settings.collectedSeasonPlayAllMode"
+        :options="collectedSeasonPlayAllModeOptions"
+        w="180px"
+      />
     </SettingsItem>
   </SettingsItemGroup>
 </template>

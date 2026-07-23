@@ -387,8 +387,11 @@ settings:
   use_following_new_layout_desc: 左邊顯示關注嘅UP主名單，右邊顯示影片流
   use_favorites_new_layout: 使用新版收藏頁
   use_favorites_new_layout_desc: 關閉之後會使用舊版收藏頁；舊版唔會顯示收藏合集。
-  play_collected_season_from_latest: 訂閱合集由最新一集開始播
-  play_collected_season_from_latest_desc: 開咗之後，收藏頁同頂欄收藏彈層入面訂閱合集嘅「播放全部」會由最新一集入去合集列表頁；預設仍然由合集開頭播。唔會改列表顯示次序同連播方向。
+  collected_season_play_all_mode: 訂閱合集「播放全部」起播位置
+  collected_season_play_all_mode_desc: 控制收藏頁同頂欄收藏彈層入面訂閱合集嘅「播放全部」。開頭係合集入口；最新係列表最後一期；上次觀看會喺觀看歷史入面搵呢個合集最近睇過嘅一期，搵唔到就退回開頭。唔會改列表顯示次序同連播方向。
+  collected_season_play_all_mode_beginning: 合集開頭
+  collected_season_play_all_mode_latest: 最新一期
+  collected_season_play_all_mode_last_watched: 上次觀看
   enable_following_inactive_blacklist: 啟用唔活躍名單
   enable_following_inactive_blacklist_desc: 閂咗之後唔會因為超過唔活躍日數或者冇投稿就自動入唔活躍名單；已經有嘅唔活躍名單同 ALL 視圖／撳 UP 移出規則唔變。
   following_inactive_days: UP主唔活躍天數
