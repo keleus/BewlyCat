@@ -851,6 +851,8 @@ video_card:
     warning: After blocking, you will not be able to see any content published by this user.
   group_contribution: '{firstAuthor} and {num} others contributed'
   video_removed: Video removed
+  watched: Watched
+  visited_recently: Visited within the past month
 home:
   tell_us_why: Choose a reason why
   not_interested_desc: >-

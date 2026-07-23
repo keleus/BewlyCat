@@ -24,6 +24,7 @@ import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
+import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 
 import { version } from '../../package.json'
 import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
@@ -171,6 +172,8 @@ else if (shouldInitializeContentScript) {
   let hasAppliedPlayerMode = false // 添加标志变量
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
+
+  recordVideoVisitFromUrl(lastUrl)
 
   function setupPluginSearchLinkNavigation() {
     document.addEventListener('click', (event) => {
@@ -435,6 +438,7 @@ else if (shouldInitializeContentScript) {
 
       lastUrl = location.href
       lastVideoNavigationKey = currentVideoNavigationKey
+      recordVideoVisitFromUrl(lastUrl)
       applyBewlyDesignClasses()
 
       if (isVideoOrBangumiPage()) {

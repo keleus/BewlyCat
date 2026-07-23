@@ -6,6 +6,7 @@ import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles
 import { settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
 import { calcCurrentTime, calcTimeSince, numFormatter } from '~/utils/dataFormatter'
+import { wasVideoVisitedRecently } from '~/utils/videoVisitHistory'
 
 import VideoCardCover from './components/VideoCardCover.vue'
 import VideoCardInfo from './components/VideoCardInfo.vue'
@@ -185,6 +186,10 @@ const primaryTags = computed(() => {
     return tag.filter(Boolean)
   return [tag]
 })
+
+const wasVisitedRecently = computed(() =>
+  Boolean(props.isFollowingPage && props.video && wasVideoVisitedRecently(props.video)),
+)
 
 // 使用 CSS 变量定义，让浏览器通过 CSS 容器查询自动响应
 const coverStatsStyle = computed(() => {
@@ -376,6 +381,7 @@ provide('getVideoType', () => props.type!)
         <!-- Cover -->
         <div
           :class="horizontal ? 'horizontal-card-cover' : 'vertical-card-cover'"
+          relative
           v-on="coverSkeleton ? {} : coverEvents"
         >
           <VideoCardCover
@@ -407,6 +413,15 @@ provide('getVideoType', () => props.type!)
               <slot name="coverTopLeft" />
             </template>
           </VideoCardCover>
+
+          <div
+            v-if="wasVisitedRecently"
+            class="video-card-visited-marker"
+            :title="$t('video_card.visited_recently')"
+            :aria-label="$t('video_card.visited_recently')"
+          >
+            {{ $t('video_card.watched') }}
+          </div>
         </div>
 
         <!-- Other Information -->
@@ -540,6 +555,23 @@ provide('getVideoType', () => props.type!)
 
 .vertical-card-cover {
   --uno: "w-full";
+}
+
+.video-card-visited-marker {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 3;
+  color: rgb(255 255 255 / 90%);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  opacity: 0.48;
+  pointer-events: none;
+  text-shadow:
+    0 1px 2px rgb(0 0 0 / 85%),
+    0 0 4px rgb(0 0 0 / 55%);
 }
 
 .bew-title-auto {

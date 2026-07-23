@@ -729,6 +729,8 @@ video_card:
     warning: 拉黑咗之後，你就睇唔到該用戶發佈嘅所有內容。
   group_contribution: '{firstAuthor} 等 {num} 人一齊創作'
   video_removed: 經已鏟咗條片
+  watched: 睇過
+  visited_recently: 近一個月內睇過
 home:
   tell_us_why: 點解噉做...
   not_interested_desc: >

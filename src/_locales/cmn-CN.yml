@@ -776,6 +776,8 @@ video_card:
     warning: 拉黑后，你将无法看到该用户发布的所有内容。
   group_contribution: '{firstAuthor} 等 {num} 人联合创作'
   video_removed: 视频已移除
+  watched: 已观看
+  visited_recently: 近一个月内浏览过
 home:
   tell_us_why: 为什么这么做...
   not_interested_desc: >

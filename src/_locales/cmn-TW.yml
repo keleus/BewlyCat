@@ -791,6 +791,8 @@ video_card:
     warning: 拉黑後，你將無法看到該用戶發佈的所有內容。
   group_contribution: '{firstAuthor} 等 {num} 人共同創作'
   video_removed: 影片已移除
+  watched: 已觀看
+  visited_recently: 近一個月內瀏覽過
 home:
   tell_us_why: 為什麼這樣做...
   not_interested_desc: >
