@@ -60,6 +60,11 @@ iframe_drawer:
   open_in_new_tab: 在新索引標籤開啟連結
   close: 關閉
   press_esc_again_to_close: 再次按下 Esc 關閉
+player_screenshot:
+  capture: 擷取目前影片畫面
+  saved: 截圖已儲存
+  failed: 截圖失敗
+  video_unavailable: 目前影片畫面無法使用
 settings:
   title: 設定
   menu_plugin_components_and_pages: BewlyCat 介面
@@ -123,6 +128,7 @@ settings:
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄
   group_home_layout: 首頁版面
+  group_version_reminder: 版本提醒
   btn:
     authorize: 授權
     revoke: 解除授權
@@ -413,6 +419,8 @@ settings:
   use_following_new_layout_desc: 左側顯示關注的 UP 主列表，右側顯示影片流
   use_favorites_new_layout: 使用新版收藏頁
   use_favorites_new_layout_desc: 關閉後使用舊版收藏頁；舊版不顯示收藏合集。
+  enable_version_reminder: 新版本提醒
+  enable_version_reminder_desc: 在外掛首頁提醒尚未確認的新版本；每個版本只提醒一次。
   enable_following_inactive_blacklist: 啟用不活躍名單
   enable_following_inactive_blacklist_desc: 當UP主超過指定天數未更新或無投稿時，將自動移至不活躍名單。在ALL視圖中出現更新或點擊該UP主時會自動移出不活躍名單。
   following_inactive_days: UP 主不活躍天數
@@ -879,6 +887,17 @@ favorites:
   search_all_folders: 全部
   search_current_folder: 目前
   search_placeholder: 搜尋目前收藏夾
+version_reminder:
+  trigger: 新版本說明
+  title: BewlyCat 已更新
+  current_version: 目前版本 v{version}
+  description: 查看此版本的更新記錄與最新動態。確認後，此版本將不再顯示提醒。
+  github_releases: GitHub Releases
+  github_releases_desc: 查看完整版本記錄與下載資訊
+  bilibili_dynamic: B站動態
+  bilibili_dynamic_desc: 查看開發者發佈的更新動態
+  acknowledge: 已知曉，此版本不再提示
+  settings_hint: 可在「設定 → BewlyCat 介面 → 首頁」中關閉「新版本提醒」。
 watch_later:
   title: 稍後觀看
   clear_all: 清空稍後觀看
