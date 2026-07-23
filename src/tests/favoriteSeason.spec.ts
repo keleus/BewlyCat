@@ -25,38 +25,42 @@ vi.mock('~/utils/api', () => ({
 
 describe('favoriteSeason utils', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
-  it('builds entry urls from bilibili deep links or season fallback', () => {
+  it('builds entry urls from bilibili deep links or video bvid', () => {
     expect(buildFavoriteSeasonEntryUrl(123)).toBe('https://www.bilibili.com/list/season/123')
     expect(buildFavoriteSeasonEntryUrl(123, 'bilibili://video/456789')).toBe('https://www.bilibili.com/video/av456789')
     expect(buildFavoriteSeasonEntryUrl(123, 'bilibili://video/456789?from=fav')).toBe('https://www.bilibili.com/video/av456789?from=fav')
+    expect(buildFavoriteSeasonEntryUrl(123, undefined, 'BV1Entry')).toBe('https://www.bilibili.com/video/BV1Entry/')
   })
 
-  it('builds list play urls with bvid and optional oid', () => {
-    expect(buildFavoriteSeasonListPlayUrl(99, 'BV1Latest')).toBe('https://www.bilibili.com/list/season/99?bvid=BV1Latest')
-    expect(buildFavoriteSeasonListPlayUrl(99, 'BV1Latest', 888)).toBe('https://www.bilibili.com/list/season/99?bvid=BV1Latest&oid=888')
+  it('builds play urls as normal video pages (list/season?bvid is 404 for ugc seasons)', () => {
+    expect(buildFavoriteSeasonListPlayUrl(99, 'BV1Latest')).toBe('https://www.bilibili.com/video/BV1Latest/')
+    expect(buildFavoriteSeasonListPlayUrl(99, 'BV1Latest', 888)).toBe('https://www.bilibili.com/video/BV1Latest/')
   })
 
   it('resolves latest mode to the last media', async () => {
+    // 正常分页：满页后续页，末页不足 ps
     mocks.getFavoriteSeasonResources
       .mockResolvedValueOnce({
         code: 0,
         data: {
-          info: { media_count: 3 },
-          medias: [
-            { id: 1, bvid: 'BV1Old', title: 'old' },
-            { id: 2, bvid: 'BV1Mid', title: 'mid' },
-          ],
+          info: { media_count: 42 },
+          medias: Array.from({ length: 40 }, (_, index) => ({
+            id: index + 1,
+            bvid: `BV1Page1_${index}`,
+            title: `p1-${index}`,
+          })),
         },
       })
       .mockResolvedValueOnce({
         code: 0,
         data: {
-          info: { media_count: 3 },
+          info: { media_count: 42 },
           medias: [
-            { id: 3, bvid: 'BV1Latest', title: 'latest' },
+            { id: 41, bvid: 'BV1Almost', title: 'almost' },
+            { id: 42, bvid: 'BV1Latest', title: 'latest' },
           ],
         },
       })
@@ -65,10 +69,35 @@ describe('favoriteSeason utils', () => {
       seasonId: 42,
       link: 'bilibili://video/100',
       mode: 'latest',
-    })).resolves.toBe('https://www.bilibili.com/list/season/42?bvid=BV1Latest&oid=3')
+    })).resolves.toBe('https://www.bilibili.com/video/BV1Latest/')
 
     expect(mocks.getFavoriteSeasonResources).toHaveBeenCalledTimes(2)
     expect(mocks.getHistoryList).not.toHaveBeenCalled()
+  })
+
+  it('stops after one request when API ignores ps and returns the full season every page', async () => {
+    // 实测 fav/season/list 常无视 ps，每页都吐回全部 medias；若不按 media_count 提前结束，
+    // 会连打到页数上限或中途失败，最终回退到合集入口（第一期）。
+    const fullList = Array.from({ length: 80 }, (_, index) => ({
+      id: index + 1,
+      bvid: `BV1Full_${index}`,
+      title: `full-${index}`,
+    }))
+    mocks.getFavoriteSeasonResources.mockResolvedValue({
+      code: 0,
+      data: {
+        info: { media_count: 80 },
+        medias: fullList,
+      },
+    })
+
+    await expect(resolveFavoriteSeasonPlayAllUrl({
+      seasonId: 42,
+      link: 'bilibili://video/100',
+      mode: 'latest',
+    })).resolves.toBe('https://www.bilibili.com/video/BV1Full_79/')
+
+    expect(mocks.getFavoriteSeasonResources).toHaveBeenCalledTimes(1)
   })
 
   it('resolves lastWatched mode from recent archive history', async () => {
@@ -102,7 +131,7 @@ describe('favoriteSeason utils', () => {
       seasonId: 42,
       link: 'bilibili://video/100',
       mode: 'lastWatched',
-    })).resolves.toBe('https://www.bilibili.com/list/season/42?bvid=BV1Watched&oid=2')
+    })).resolves.toBe('https://www.bilibili.com/video/BV1Watched/')
   })
 
   it('falls back to entry url when pagination fails mid-way instead of using a partial last item', async () => {
