@@ -17,6 +17,19 @@ let observeRoot: Element | null = null
 let flushScheduled = false
 const pendingRoots = new Set<Element>()
 
+interface UselessFeedCardBlockerContext {
+  blockAds: boolean
+  homePage: boolean
+  inIframe: boolean
+}
+
+export function shouldEnableUselessFeedCardBlocker({
+  blockAds,
+  homePage,
+}: UselessFeedCardBlockerContext) {
+  return blockAds && homePage
+}
+
 function getObserveRoot(): Element {
   // Prefer the feed container if it exists; fallback to body.
   const firstFeedCard = document.querySelector('.feed-card')

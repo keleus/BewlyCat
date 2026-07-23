@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { setUselessFeedCardBlockerEnabled } from '~/contentScripts/features/blockUselessFeedCards'
+import {
+  setUselessFeedCardBlockerEnabled,
+  shouldEnableUselessFeedCardBlocker,
+} from '~/contentScripts/features/blockUselessFeedCards'
 
 const BLOCKED_FEED_CARD_CLASS = 'bewly-blocked-feed-card'
 
@@ -22,6 +25,14 @@ describe('useless homepage feed card blocker', () => {
     setUselessFeedCardBlockerEnabled(false)
     vi.unstubAllGlobals()
     document.body.replaceChildren()
+  })
+
+  it('enables the blocker for an embedded Bilibili homepage', () => {
+    expect(shouldEnableUselessFeedCardBlocker({
+      blockAds: true,
+      homePage: true,
+      inIframe: true,
+    })).toBe(true)
   })
 
   it('marks the outer feed card when recommendation classes are attached asynchronously', async () => {

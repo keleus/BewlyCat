@@ -1,7 +1,7 @@
 import { useI18n } from 'vue-i18n'
 
 import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
-import { setUselessFeedCardBlockerEnabled } from '~/contentScripts/features/blockUselessFeedCards'
+import { setUselessFeedCardBlockerEnabled, shouldEnableUselessFeedCardBlocker } from '~/contentScripts/features/blockUselessFeedCards'
 import { LanguageType } from '~/enums/appEnums'
 import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
 import { resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
@@ -225,27 +225,32 @@ export function setupNecessarySettingsWatchers() {
     }
   }, { immediate: true })
 
+  const refreshUselessFeedCardBlocker = () => {
+    // 原版 Bilibili 页面也可能运行在 BewlyCat 的 iframe 中，每个文档都要独立标记外层卡片。
+    setUselessFeedCardBlockerEnabled(
+      shouldEnableUselessFeedCardBlocker({
+        blockAds: settings.value.blockAds,
+        homePage: isHomePage(),
+        inIframe: isInIframe(),
+      }),
+    )
+  }
+
   watch(() => settings.value.blockAds, () => {
-    // Do not use the "ads" keyword. AdGuard, AdBlock, and some ad-blocking extensions will
-    // detect and remove it when the class name contains "ads"
+    // 不要在类名中使用 "ads"，否则可能被 AdGuard、AdBlock 等扩展误删。
     if (settings.value.blockAds)
       document.documentElement.classList.add('block-useless-contents')
     else
       document.documentElement.classList.remove('block-useless-contents')
 
-    // Avoid expensive :has() selectors by using a JS marker on homepage feed cards.
-    setUselessFeedCardBlockerEnabled(settings.value.blockAds && isHomePage() && !isInIframe())
+    // 使用 JS 标记首页信息流卡片，避免代价较高的 :has() 选择器。
+    refreshUselessFeedCardBlocker()
   }, { immediate: true })
 
-  // SPA navigation: homepage state can change without a full reload.
-  if (!isInIframe()) {
-    const refreshUselessFeedCardBlocker = () => {
-      setUselessFeedCardBlockerEnabled(settings.value.blockAds && isHomePage() && !isInIframe())
-    }
-    window.addEventListener('pushstate', refreshUselessFeedCardBlocker)
-    window.addEventListener('popstate', refreshUselessFeedCardBlocker)
-    window.addEventListener('hashchange', refreshUselessFeedCardBlocker)
-  }
+  // iframe 内的原版页面同样可能通过 SPA 导航离开或返回首页。
+  window.addEventListener('pushstate', refreshUselessFeedCardBlocker)
+  window.addEventListener('popstate', refreshUselessFeedCardBlocker)
+  window.addEventListener('hashchange', refreshUselessFeedCardBlocker)
 
   /**
    * 搜尋結果的上方的廣告，但有時是年末總結、年度報告這些
