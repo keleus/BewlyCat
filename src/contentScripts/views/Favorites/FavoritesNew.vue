@@ -12,6 +12,7 @@ import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favo
 import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/video/favoriteCategory'
 import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia, FavoriteSeasonResourcesResult } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
+import { resolveFavoriteSeasonPlayAllUrl } from '~/utils/favoriteSeason'
 import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
@@ -46,6 +47,7 @@ const isFullPageLoading = ref<boolean>(true)
 const noMoreContent = ref<boolean>(false)
 const isBatchManaging = ref<boolean>(false)
 const isBatchOperating = ref<boolean>(false)
+const isResolvingSeasonPlayAll = ref<boolean>(false)
 const selectedResourceKeys = ref<string[]>([])
 const folderSectionExpanded = ref<boolean>(true)
 const seasonSectionExpanded = ref<boolean>(true)
@@ -538,24 +540,30 @@ function handleSearchScopeChange() {
   }
 }
 
-function handlePlayAll() {
+async function handlePlayAll() {
   if (searchScope.value === 'all') {
     return
   }
-  if (selectedCategory.value?.source === 'season')
-    openLinkToNewTab(getFavoriteSeasonUrl(selectedCategory.value))
-  else
-    openLinkToNewTab(`https://www.bilibili.com/list/ml${selectedCategory.value?.id}`)
-}
+  if (!selectedCategory.value || isResolvingSeasonPlayAll.value)
+    return
 
-function getFavoriteSeasonUrl(category: ViewCategory) {
-  const fallbackUrl = `https://www.bilibili.com/list/season/${category.id}`
-  const matchedVideoLink = category.link?.match(/^bilibili:\/\/video\/(\d+)(\?.*)?$/)
+  if (selectedCategory.value.source === 'season') {
+    isResolvingSeasonPlayAll.value = true
+    try {
+      const url = await resolveFavoriteSeasonPlayAllUrl({
+        seasonId: selectedCategory.value.id,
+        link: selectedCategory.value.link,
+        playFromLatest: settings.value.playCollectedSeasonFromLatest,
+      })
+      openLinkToNewTab(url)
+    }
+    finally {
+      isResolvingSeasonPlayAll.value = false
+    }
+    return
+  }
 
-  if (!matchedVideoLink)
-    return fallbackUrl
-
-  return `https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`
+  openLinkToNewTab(`https://www.bilibili.com/list/ml${selectedCategory.value.id}`)
 }
 
 function jumpToLoginPage() {
@@ -778,7 +786,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
           <div class="favorites-hero-actions">
             <Button
               type="primary"
-              :disabled="searchScope === 'all' || !selectedCategory"
+              :disabled="searchScope === 'all' || !selectedCategory || isResolvingSeasonPlayAll"
               @click="handlePlayAll"
             >
               <template #left>

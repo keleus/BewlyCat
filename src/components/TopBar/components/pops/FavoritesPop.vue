@@ -4,10 +4,13 @@ import type { Ref } from 'vue'
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
+import { settings } from '~/logic'
 import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia, FavoriteSeasonResourcesResult } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
-import { getUserID, removeHttpFromUrl, scrollToTop } from '~/utils/main'
+import { buildFavoriteSeasonEntryUrl, resolveFavoriteSeasonPlayAllUrl } from '~/utils/favoriteSeason'
+import { getUserID, isHomePage, isInIframe, removeHttpFromUrl, scrollToTop } from '~/utils/main'
+import { openLinkInBackground } from '~/utils/tabs'
 
 import type { FavoriteCategory, FavoriteResource } from '../../types'
 
@@ -35,7 +38,7 @@ const favoriteVideosWrap = ref<HTMLElement>() as Ref<HTMLElement>
 
 const viewAllUrl = computed((): string => {
   if (activatedCategorySource.value === 'season')
-    return getFavoriteSeasonUrl()
+    return buildFavoriteSeasonEntryUrl(activatedMediaId.value, activatedCategoryLink.value)
 
   return `//space.bilibili.com/${getUserID()}/favlist?fid=${
     activatedMediaId.value
@@ -44,10 +47,59 @@ const viewAllUrl = computed((): string => {
 
 const playAllUrl = computed((): string => {
   if (activatedCategorySource.value === 'season')
-    return getFavoriteSeasonUrl()
+    return buildFavoriteSeasonEntryUrl(activatedMediaId.value, activatedCategoryLink.value)
 
   return `https://www.bilibili.com/list/ml${activatedMediaId.value}`
 })
+
+const useCustomSeasonPlayAll = computed(() => activatedCategorySource.value === 'season')
+/** 开启「从最新播放」时连 modifier 点击也走自定义解析，避免 Ctrl/中键仍打开合集开头 */
+const interceptSeasonPlayAllModifiers = computed(() =>
+  useCustomSeasonPlayAll.value && settings.value.playCollectedSeasonFromLatest,
+)
+
+const isResolvingSeasonPlayAll = ref(false)
+
+function openTopBarLink(url: string) {
+  const mode = settings.value.topBarLinkOpenMode
+  if (mode === 'background') {
+    void openLinkInBackground(url)
+    return
+  }
+
+  if (mode === 'currentTabIfNotHomepage') {
+    if (isInIframe() || isHomePage())
+      window.open(url, '_blank')
+    else
+      window.open(url, '_top')
+    return
+  }
+
+  if (mode === 'newTab') {
+    window.open(url, '_blank')
+    return
+  }
+
+  window.open(url, '_top')
+}
+
+async function handleSeasonPlayAll() {
+  if (isResolvingSeasonPlayAll.value)
+    return
+
+  isResolvingSeasonPlayAll.value = true
+  try {
+    const url = await resolveFavoriteSeasonPlayAllUrl({
+      seasonId: activatedMediaId.value,
+      link: activatedCategoryLink.value,
+      playFromLatest: settings.value.playCollectedSeasonFromLatest,
+    })
+    openTopBarLink(url)
+  }
+  finally {
+    isResolvingSeasonPlayAll.value = false
+  }
+}
 
 watch([activatedMediaId, activatedCategorySource], ([newId, newSource], [oldId, oldSource]) => {
   if (newId === oldId && newSource === oldSource)
@@ -234,16 +286,6 @@ function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteResource {
   }
 }
 
-function getFavoriteSeasonUrl() {
-  const fallbackUrl = `https://www.bilibili.com/list/season/${activatedMediaId.value}`
-  const matchedVideoLink = activatedCategoryLink.value.match(/^bilibili:\/\/video\/(\d+)(\?.*)?$/)
-
-  if (!matchedVideoLink)
-    return fallbackUrl
-
-  return `https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`
-}
-
 function refreshFavoriteResources() {
   favoriteResources.length = 0
   currentPageNum.value = 1
@@ -296,6 +338,9 @@ defineExpose({
           :href="playAllUrl"
           type="topBar"
           flex="~" items="center"
+          :custom-click-event="useCustomSeasonPlayAll"
+          :custom-click-event-includes-modifiers="interceptSeasonPlayAllModifiers"
+          @click="handleSeasonPlayAll"
         >
           <span text="sm">{{ $t('common.play_all') }}</span>
         </ALink>

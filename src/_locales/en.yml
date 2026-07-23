@@ -464,6 +464,8 @@ settings:
   use_following_new_layout_desc: Display followed UPs list on the left and video feed on the right
   use_favorites_new_layout: Use the new Favorites page
   use_favorites_new_layout_desc: Turn this off to use the legacy Favorites page, which does not show collected series.
+  play_collected_season_from_latest: Play collected series from the latest episode
+  play_collected_season_from_latest_desc: When enabled, Play All for a collected series on the Favorites page and Top Bar pop opens the series list at the latest episode. Off keeps the default start-from-beginning behavior. Does not reverse the list UI or playlist direction.
   enable_following_inactive_blacklist: Enable Inactive List
   enable_following_inactive_blacklist_desc: When a UP has not posted for the specified number of days or has no videos, they will be automatically moved to the Inactive List. They will be removed from the Inactive List when appearing in ALL view or when clicked
   following_inactive_days: UP inactive days

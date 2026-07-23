@@ -15,5 +15,12 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
     >
       <Radio v-model="settings.useFavoritesNewLayout" />
     </SettingsItem>
+    <SettingsItem
+      :title="$t('settings.play_collected_season_from_latest')"
+      :desc="$t('settings.play_collected_season_from_latest_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.playCollectedSeasonFromLatest" />
+    </SettingsItem>
   </SettingsItemGroup>
 </template>
