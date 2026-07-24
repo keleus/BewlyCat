@@ -202,9 +202,8 @@ const showUtilityActionGroup = computed(() => {
         important-w-auto
       >
         <a href="https://passport.bilibili.com/login" class="login">
-          <div i-solar:user-circle-bold-duotone class="text-xl mr-2" />{{
-            $t('topbar.sign_in')
-          }}
+          <div i-solar:user-circle-bold-duotone class="text-xl login-icon" />
+          <span class="login-label">{{ $t('topbar.sign_in') }}</span>
         </a>
       </div>
       <template v-if="isLogin">
@@ -558,6 +557,21 @@ const showUtilityActionGroup = computed(() => {
     &::before {
       background: rgba(255, 255, 255, 0.1);
     }
+  }
+}
+
+.login {
+  gap: 8px;
+}
+
+@media (max-width: 767px) {
+  .others {
+    gap: 4px;
+    padding-inline: 0;
+  }
+
+  .login-label {
+    display: none;
   }
 }
 </style>

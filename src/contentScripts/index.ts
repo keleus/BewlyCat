@@ -597,6 +597,14 @@ else if (shouldInitializeContentScript) {
       // 推荐使用方案2：CSS隐藏
       // 使用 CSS 隐藏 B 站原始页面，保留 DOM 结构
       injectCSS(`
+      /* 自定义首页始终以当前可视视口为尺寸基准，避免原站最小宽度撑大文档。 */
+      html,
+      body {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
       /* Hide Bilibili's own page elements, preserving third-party extensions (e.g., Bili-Evolved) */
       body > #app,
       body > #i_cecream,
@@ -626,6 +634,9 @@ else if (shouldInitializeContentScript) {
       body > #app > .bili-feed4 {
         display: block !important;
         visibility: visible !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
         height: 0 !important;
         pointer-events: none !important;
         position: relative !important;
@@ -752,6 +763,25 @@ else if (shouldInitializeContentScript) {
     }
 
     const root = document.createElement('div')
+    const useViewportLayout = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
+
+    if (useViewportLayout) {
+      Object.assign(container.style, {
+        position: 'fixed',
+        inset: '0',
+        width: 'auto',
+        minWidth: '0',
+        maxWidth: 'none',
+        height: '100dvh',
+        overflow: 'hidden',
+      })
+      Object.assign(root.style, {
+        width: '100%',
+        height: '100%',
+        minWidth: '0',
+      })
+    }
+
     const styleEl = document.createElement('link')
     // Fix #69 https://github.com/hakadao/BewlyBewly/issues/69
     // https://medium.com/@emilio_martinez/shadow-dom-open-vs-closed-1a8cf286088a - open shadow dom

@@ -502,6 +502,8 @@ settings:
   use_original_bilibili_topbar: Use the original Bilibili top bar
   adapt_to_other_page_styles: Adapt to other page styles
   adapt_to_other_page_styles_desc: Adapt to some common pages to match with the BewlyBewly theme.
+  prevent_mobile_redirect: Prevent mobile redirect
+  prevent_mobile_redirect_desc: When enabled, a desktop UA is used only for www.bilibili.com to prevent redirects to m.bilibili.com. Direct visits to the mobile site are unaffected.
   nvidia_rtx_video_enhancement_compatibility: NVIDIA RTX Video Enhancement compatibility
   nvidia_rtx_video_enhancement_compatibility_desc: When enabled, frosted glass is automatically disabled on video playback pages to prevent NVIDIA RTX Video Enhancement issues.
   follow_bilibili_evolved_color: Follow the Bilibili Evolved theme color

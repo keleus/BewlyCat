@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMutationObserver } from '@vueuse/core'
+import { useMediaQuery, useMutationObserver } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 
 import { settings } from '~/logic'
@@ -15,6 +15,7 @@ defineProps<{
 }>()
 
 const { forceWhiteIcon, handleNotificationsItemClick, showSearchBar } = useTopBarInteraction()
+const isNarrowLayout = useMediaQuery('(max-width: 767px)')
 
 const isArticlePage = /^https?:\/\/(?:www\.)?bilibili\.com\/(?:read|opus)\//.test(location.href)
 
@@ -96,6 +97,10 @@ const maxOffset = computed(() => {
 })
 
 const searchOffset = computed(() => {
+  // 窄屏优先把完整的中间栏交给搜索框，避免平移后浪费可用宽度。
+  if (isNarrowLayout.value)
+    return 0
+
   // 略微减弱左右宽度补偿，为搜索框右侧的切换器和功能组留出呼吸空间
   const desired = (rightWidth.value - leftWidth.value) * 0.3
   const limit = maxOffset.value
@@ -114,7 +119,7 @@ function refreshSearchContent() {
 <template>
   <main
     class="top-bar-header"
-    max-w="$bew-top-bar-max-width"
+    w-full
     grid="~ cols-[auto_1fr_auto] items-center gap-4"
     p="x-4 md:x-6 xl:x-8" m-auto
     h="$bew-top-bar-height"
@@ -203,6 +208,9 @@ function refreshSearchContent() {
 <style scoped lang="scss">
 .top-bar-header {
   grid-template-columns: auto minmax(0, 1fr) auto;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: var(--bew-top-bar-height);
 }
 
 .top-bar-header__divider {
@@ -247,14 +255,15 @@ function refreshSearchContent() {
 .top-bar-header__search {
   display: flex;
   justify-content: center;
+  width: 100%;
   min-width: 0;
   transition: transform 0.2s ease;
 }
 
 .top-bar-header__search-content {
   display: flex;
-  width: min(100%, clamp(440px, 36vw, 620px));
-  max-width: 100%;
+  width: 100%;
+  max-width: 600px;
   min-width: 0;
   align-items: center;
   justify-content: center;
@@ -271,20 +280,12 @@ function refreshSearchContent() {
     gap: 12px;
     padding-inline: 16px;
   }
-
-  .top-bar-header__search-content {
-    width: min(100%, clamp(300px, 34vw, 420px));
-  }
 }
 
 @media (max-width: 767px) {
   .top-bar-header {
     gap: 8px;
     padding-inline: 8px;
-  }
-
-  .top-bar-header__search-content {
-    width: min(100%, clamp(120px, 42vw, 280px));
   }
 }
 </style>

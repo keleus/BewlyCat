@@ -100,6 +100,7 @@ function handleSearch(keyword: string) {
         :style="searchBarStyles"
         :show-hot-search="settings.showHotSearchInTopBar"
         :search-behavior="searchBehavior"
+        :top-bar-mode="true"
         @search="handleSearch"
       />
     </Transition>

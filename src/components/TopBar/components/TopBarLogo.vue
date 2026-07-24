@@ -185,7 +185,7 @@ const channels = setupTopBarItemHoverEvent('channels')
 
 @media (max-width: 1100px) {
   .top-bar-brand-button {
-    height: 42px;
+    height: 46px;
     padding: 0 7px;
 
     &__logo {
@@ -197,8 +197,8 @@ const channels = setupTopBarItemHoverEvent('channels')
 
 @media (max-width: 767px) {
   .top-bar-brand-button {
-    width: 40px;
-    height: 40px;
+    width: 46px;
+    height: 46px;
     padding: 0 8px;
 
     &__logo {

@@ -421,6 +421,8 @@ settings:
   use_original_bilibili_topbar: 用返原本嘅 Bilibili 頂欄
   adapt_to_other_page_styles: 適應其他版面風格
   adapt_to_other_page_styles_desc: 執執啲常用嘅版面，襯返 BewlyBewly 主題風格。
+  prevent_mobile_redirect: 防止跳轉去流動版
+  prevent_mobile_redirect_desc: 開啟之後，只會喺進入 www.bilibili.com 時使用桌面版 UA，避免跳轉去 m.bilibili.com；直接進入流動版唔受影響。
   nvidia_rtx_video_enhancement_compatibility: NVIDIA RTX 影片增強功能相容
   nvidia_rtx_video_enhancement_compatibility_desc: 啓用之後，會喺影片播放頁自動停用毛玻璃效果，避免 NVIDIA RTX 影片增強功能異常。
   follow_bilibili_evolved_color: 跟返 Bilibili Evolved 主題色
