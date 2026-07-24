@@ -86,6 +86,30 @@ function canAccessIframeDocument(iframeWindow: Window): boolean {
   }
 }
 
+function syncIframeTopBarVisibility(useOriginalBilibiliTopBar: boolean) {
+  const iframeWindow = iframeRef.value?.contentWindow
+  if (!iframeWindow)
+    return
+
+  // 同源时直接同步类名，避免 iframe 消息监听器尚未就绪时短暂显示原版顶栏
+  try {
+    iframeWindow.document.documentElement.classList.toggle('remove-top-bar', !useOriginalBilibiliTopBar)
+  }
+  catch {
+    // 跨域页面继续使用 postMessage 同步
+  }
+
+  try {
+    iframeWindow.postMessage({
+      type: IFRAME_TOP_BAR_CHANGE,
+      useOriginalBilibiliTopBar,
+    }, '*')
+  }
+  catch (error) {
+    console.warn('Failed to send top bar change message to iframe:', error)
+  }
+}
+
 watch(() => isDark.value, (newValue) => {
   if (iframeRef.value?.contentWindow) {
     try {
@@ -101,17 +125,7 @@ watch(() => isDark.value, (newValue) => {
 })
 
 watch(() => settings.value.useOriginalBilibiliTopBar, (newValue) => {
-  if (iframeRef.value?.contentWindow) {
-    try {
-      iframeRef.value.contentWindow.postMessage({
-        type: IFRAME_TOP_BAR_CHANGE,
-        useOriginalBilibiliTopBar: newValue,
-      }, '*')
-    }
-    catch (error) {
-      console.warn('Failed to send top bar change message to iframe:', error)
-    }
-  }
+  syncIframeTopBarVisibility(newValue)
 }, { immediate: true })
 
 // 监听深色模式基准颜色变化
@@ -144,6 +158,7 @@ function handleIframeLoad() {
   showLoading.value = false
 
   setupIframeScrollSync()
+  syncIframeTopBarVisibility(settings.value.useOriginalBilibiliTopBar)
 
   // 当iframe加载完成后，发送当前的黑暗模式状态（仅在跨域时需要）
   if (iframeRef.value?.contentWindow) {
@@ -154,10 +169,7 @@ function handleIframeLoad() {
           isDark: isDark.value,
           darkModeBaseColor: settings.value.darkModeBaseColor,
         }, '*')
-        iframeRef.value?.contentWindow?.postMessage({
-          type: IFRAME_TOP_BAR_CHANGE,
-          useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
-        }, '*')
+        syncIframeTopBarVisibility(settings.value.useOriginalBilibiliTopBar)
       }
       catch (error) {
         console.warn('Failed to send initial dark mode state to iframe:', error)

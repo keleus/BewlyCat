@@ -211,28 +211,27 @@ function toggleTabContentLoading(loading: boolean) {
 
       <header
         v-if="shouldShowHomeHeader"
+        class="home-header"
         :class="{ 'home-header-fixed': settings.fixedHomeTabsOnHomePage }"
-        w-full z-9 m="b-4" duration-300
-        ease-in-out flex="~ justify-between items-start gap-4"
+        w-full z-9 duration-300 ease-in-out
       >
         <section
           v-if="shouldShowHomeTabs"
-          class="glass-panel"
-          bg="$bew-elevated" p-1
-          w="[calc(100%-280px)]" max-w="fit"
-          h-38px rounded-full
-          text="sm"
-          shadow="[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]"
-          box-border border="1 $bew-border-color"
+          class="glass-panel home-tabs-panel"
+          h-40px
         >
           <div class="home-tabs-scroll" h-full of-x-auto of-y-hidden>
-            <div class="home-tabs-inside" flex="~ items-center gap-1" h-inherit rounded="$bew-radius-half" w-max>
+            <div
+              class="home-tabs-inside" flex="~ items-center gap-1" h-inherit w-max p-2px
+              box-border
+            >
               <button
                 v-for="tab in currentTabs" :key="tab.page"
+                class="home-tab-button"
                 :class="{ 'tab-activated': activatedPage === tab.page }"
-                px-3 h-inherit
-                bg="transparent hover:$bew-fill-2" text="$bew-text-2 hover:$bew-text-1" fw-bold rounded-full
-                cursor-pointer duration-300
+                px-4 h-full
+                bg="transparent hover:$bew-fill-1" text="$bew-text-2 hover:$bew-text-1" rounded-full
+                cursor-pointer
                 flex="~ gap-2 items-center shrink-0" relative
                 @click="handleChangeTab(tab)"
               >
@@ -243,7 +242,7 @@ function toggleTabContentLoading(loading: boolean) {
                     v-show="activatedPage === tab.page && tabContentLoading"
                     i-svg-spinners:ring-resize
                     pos="absolute right-4px top-4px" duration-300
-                    text="8px white"
+                    text="8px $bew-theme-color"
                   />
                 </Transition>
               </button>
@@ -253,10 +252,9 @@ function toggleTabContentLoading(loading: boolean) {
 
         <div
           v-if="settings.enableGridLayoutSwitcher"
-          class="glass-panel"
-          flex="~ gap-1 shrink-0" p-1 h-38px bg="$bew-elevated"
-          ml-auto rounded-full
-          shadow="[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]"
+          class="glass-panel home-grid-layout-switcher"
+          flex="~ gap-1 shrink-0" p-1 h-38px
+          rounded-full
           box-border border="1 $bew-border-color"
         >
           <div
@@ -324,6 +322,34 @@ function toggleTabContentLoading(loading: boolean) {
   isolation: isolate;
 }
 
+.home-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.home-tabs-panel {
+  grid-column: 2;
+  max-width: calc(100vw - 320px);
+  justify-self: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.home-grid-layout-switcher {
+  grid-column: 3;
+  justify-self: end;
+  border-color: color-mix(in oklab, var(--bew-border-color), transparent 24%);
+  background: color-mix(in oklab, var(--bew-elevated), transparent 28%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 1px 3px rgb(0 0 0 / 0.05);
+}
+
 .home-tabs-scroll {
   scrollbar-width: none;
 
@@ -332,15 +358,52 @@ function toggleTabContentLoading(loading: boolean) {
   }
 }
 
+.home-tab-button {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
+}
+
 .tab-activated {
-  --uno: "bg-$bew-theme-color-auto text-$bew-text-auto";
+  color: var(--bew-theme-color);
+  background: var(--bew-theme-color-20);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 2px 6px var(--bew-theme-color-10);
+  transform: translateY(-0.5px);
+}
+
+.grid-layout-item-activated {
+  color: var(--bew-theme-color);
+  background: color-mix(in oklab, var(--bew-theme-color), var(--bew-elevated) 82%);
+  box-shadow:
+    inset 0 0 0 1px var(--bew-theme-color-20),
+    0 1px 3px var(--bew-theme-color-10);
+  transform: translateY(-0.5px);
 }
 
 .home-header-fixed {
   --uno: "sticky top-[calc(var(--bew-top-bar-height)+10px)]";
 }
 
-.grid-layout-item-activated {
-  --uno: "bg-$bew-theme-color-auto text-$bew-text-auto";
+@media (max-width: 1000px) {
+  .home-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .home-tabs-panel {
+    grid-column: 1;
+    max-width: 100%;
+    justify-self: start;
+  }
+
+  .home-grid-layout-switcher {
+    grid-column: 2;
+  }
 }
 </style>

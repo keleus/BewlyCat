@@ -1,11 +1,16 @@
 :host,
 :root {
   --bew-page-max-width: 2280px;
+  --bew-top-bar-max-width: 1840px;
 
   --bew-base-font-size: 14.8px;
 
   --bew-radius: 12px;
   --bew-radius-half: calc(var(--bew-radius) / 2);
+  --bew-top-bar-control-height: 40px;
+  --bew-top-bar-control-radius: 999px;
+  --bew-top-bar-control-border-color: color-mix(in oklab, var(--bew-border-color), transparent 40%);
+  --bew-top-bar-control-background: color-mix(in oklab, var(--bew-elevated), transparent 45%);
 
   --bew-top-bar-height: 64px;
 

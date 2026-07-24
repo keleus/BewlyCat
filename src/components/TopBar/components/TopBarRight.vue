@@ -175,21 +175,14 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
   emit('notificationsClick', item)
 }
 
-// 判断分割线是否应该显示
-const shouldShowDivider = computed(() => {
-  // 分割线左边的组件：moments、favorites、history、watchLater、creatorCenter
-  const leftSideVisible = isComponentVisible('moments')
-    || isComponentVisible('favorites')
-    || isComponentVisible('history')
-    || isComponentVisible('watchLater')
-    || isComponentVisible('creatorCenter')
+// 分组内没有可见功能时隐藏容器，避免出现空胶囊
+const showContentActionGroup = computed(() => {
+  return ['moments', 'favorites', 'history', 'watchLater', 'creatorCenter']
+    .some(key => isComponentVisible(key))
+})
 
-  // 分割线右边的组件：upload、notifications
-  const rightSideVisible = isComponentVisible('upload')
-    || isComponentVisible('notifications')
-
-  // 只有当左右两边都至少有一边显示时才显示分割线
-  return leftSideVisible && rightSideVisible
+const showUtilityActionGroup = computed(() => {
+  return ['upload', 'notifications'].some(key => isComponentVisible(key))
 })
 </script>
 
@@ -200,7 +193,7 @@ const shouldShowDivider = computed(() => {
   >
     <div
       class="others"
-      flex="~ items-center gap-1" h-46px px-5px
+      flex="~ items-center gap-2" h-46px px-5px
       text="$bew-text-1"
     >
       <div
@@ -215,7 +208,11 @@ const shouldShowDivider = computed(() => {
         </a>
       </div>
       <template v-if="isLogin">
-        <div class="hidden lg:flex" gap-1>
+        <div
+          v-if="showContentActionGroup"
+          class="top-bar-action-group top-bar-action-group--content hidden lg:flex"
+          :class="{ 'top-bar-action-group--white': forceWhiteIcon }"
+        >
           <!-- Moments -->
           <div
             v-if="isComponentVisible('moments')"
@@ -387,15 +384,11 @@ const shouldShowDivider = computed(() => {
           </Transition>
         </div>
 
-        <div class="hidden lg:flex" gap-1 items-center>
-          <!-- Divider -->
-          <div
-            v-if="shouldShowDivider"
-            :class="{ 'white-icon': forceWhiteIcon }"
-            w-2px h-16px bg="$bew-border-color" mx-1
-            rounded-4px
-          />
-
+        <div
+          v-if="showUtilityActionGroup"
+          class="top-bar-action-group top-bar-action-group--utility hidden lg:flex"
+          :class="{ 'top-bar-action-group--white': forceWhiteIcon }"
+        >
           <!-- Upload -->
           <div
             v-if="isComponentVisible('upload')"
@@ -535,4 +528,25 @@ const shouldShowDivider = computed(() => {
 
 <style lang="scss" scoped>
 @use "../styles/index.scss";
+
+.top-bar-action-group {
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 2px;
+  height: var(--bew-top-bar-control-height);
+  padding: 2px 3px;
+  border: 1px solid var(--bew-top-bar-control-border-color);
+  border-radius: var(--bew-top-bar-control-radius);
+  background: var(--bew-top-bar-control-background);
+  backdrop-filter: var(--bew-filter-glass-1);
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+
+  &--white {
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
 </style>

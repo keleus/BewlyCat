@@ -793,6 +793,8 @@ function handleClearKeyword() {
 }
 
 #search-wrap {
+  max-width: var(--b-search-bar-max-width, 550px);
+
   --b-search-bar-normal-color: var(--bew-content);
   --b-search-bar-hover-color: var(--bew-content-hover);
   --b-search-bar-focus-color: var(--bew-content-hover);

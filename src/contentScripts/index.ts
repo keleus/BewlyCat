@@ -559,7 +559,14 @@ else if (shouldInitializeContentScript) {
 
   // Set the original Bilibili top bar to `display: none` to prevent it from showing before the load
   // see: https://github.com/BewlyBewly/BewlyBewly/issues/967
-  const removeOriginalTopBar = injectCSS(`.bili-header, #biliMainHeader { visibility: hidden !important; }`)
+  const removeOriginalTopBar = injectCSS(`
+    .bili-header,
+    #biliMainHeader,
+    .header-channel,
+    .bili-header-channel-panel {
+      visibility: hidden !important;
+    }
+  `)
 
   async function onDOMLoaded() {
     const pluginSearchResultsUrl = !isInIframe() && getPluginSearchResultsUrl(location.href)
