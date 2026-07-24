@@ -36,7 +36,7 @@ const {
   hasBCoinToReceive,
 } = storeToRefs(topBarStore)
 
-const { getUnreadMessageCount, getTopBarNewMomentsCount, checkBCoinReceiveStatus } = topBarStore
+const { getUnreadMessageCount, getTopBarNewMomentsCount, syncSharedData } = topBarStore
 
 // 将 DOM 引用移到组件内部
 const avatarImg = ref<HTMLElement | null>(null)
@@ -121,9 +121,9 @@ if (isComponentVisible('notifications')) {
 const focused = useWindowFocus()
 watch(() => focused.value, (newVal, _) => {
   if (newVal && isLogin.value) {
-    getUnreadMessageCount()
-    getTopBarNewMomentsCount('video')
-    checkBCoinReceiveStatus()
+    syncSharedData().catch((error) => {
+      console.error('同步顶栏共享状态失败:', error)
+    })
   }
 })
 
@@ -175,21 +175,14 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
   emit('notificationsClick', item)
 }
 
-// 判断分割线是否应该显示
-const shouldShowDivider = computed(() => {
-  // 分割线左边的组件：moments、favorites、history、watchLater、creatorCenter
-  const leftSideVisible = isComponentVisible('moments')
-    || isComponentVisible('favorites')
-    || isComponentVisible('history')
-    || isComponentVisible('watchLater')
-    || isComponentVisible('creatorCenter')
+// 分组内没有可见功能时隐藏容器，避免出现空胶囊
+const showContentActionGroup = computed(() => {
+  return ['moments', 'favorites', 'history', 'watchLater', 'creatorCenter']
+    .some(key => isComponentVisible(key))
+})
 
-  // 分割线右边的组件：upload、notifications
-  const rightSideVisible = isComponentVisible('upload')
-    || isComponentVisible('notifications')
-
-  // 只有当左右两边都至少有一边显示时才显示分割线
-  return leftSideVisible && rightSideVisible
+const showUtilityActionGroup = computed(() => {
+  return ['upload', 'notifications'].some(key => isComponentVisible(key))
 })
 </script>
 
@@ -200,7 +193,7 @@ const shouldShowDivider = computed(() => {
   >
     <div
       class="others"
-      flex="~ items-center gap-1" h-46px px-5px
+      flex="~ items-center gap-2" h-46px px-5px
       text="$bew-text-1"
     >
       <div
@@ -209,13 +202,16 @@ const shouldShowDivider = computed(() => {
         important-w-auto
       >
         <a href="https://passport.bilibili.com/login" class="login">
-          <div i-solar:user-circle-bold-duotone class="text-xl mr-2" />{{
-            $t('topbar.sign_in')
-          }}
+          <div i-solar:user-circle-bold-duotone class="text-xl login-icon" />
+          <span class="login-label">{{ $t('topbar.sign_in') }}</span>
         </a>
       </div>
       <template v-if="isLogin">
-        <div class="hidden lg:flex" gap-1>
+        <div
+          v-if="showContentActionGroup"
+          class="top-bar-action-group top-bar-action-group--content hidden xl:flex"
+          :class="{ 'top-bar-action-group--white': forceWhiteIcon }"
+        >
           <!-- Moments -->
           <div
             v-if="isComponentVisible('moments')"
@@ -366,7 +362,7 @@ const shouldShowDivider = computed(() => {
         <!-- More -->
         <div
           ref="more"
-          class="right-side-item lg:!hidden flex"
+          class="right-side-item xl:!hidden flex"
           :class="{ active: popupVisible?.more }"
           @click="(event: MouseEvent) => handleClickTopBarItem(event, 'more')"
         >
@@ -387,15 +383,11 @@ const shouldShowDivider = computed(() => {
           </Transition>
         </div>
 
-        <div class="hidden lg:flex" gap-1 items-center>
-          <!-- Divider -->
-          <div
-            v-if="shouldShowDivider"
-            :class="{ 'white-icon': forceWhiteIcon }"
-            w-2px h-16px bg="$bew-border-color" mx-1
-            rounded-4px
-          />
-
+        <div
+          v-if="showUtilityActionGroup"
+          class="top-bar-action-group top-bar-action-group--utility hidden xl:flex"
+          :class="{ 'top-bar-action-group--white': forceWhiteIcon }"
+        >
           <!-- Upload -->
           <div
             v-if="isComponentVisible('upload')"
@@ -535,4 +527,51 @@ const shouldShowDivider = computed(() => {
 
 <style lang="scss" scoped>
 @use "../styles/index.scss";
+
+.top-bar-action-group {
+  position: relative;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 2px;
+  height: var(--bew-top-bar-control-height);
+  padding: 2px 3px;
+  border: 1px solid var(--bew-top-bar-control-border-color);
+  border-radius: var(--bew-top-bar-control-radius);
+  transition: border-color 0.3s ease;
+
+  // 将胶囊磨砂放在伪元素上，避免父级背板阻断子级 POP 的背景模糊
+  &::before {
+    position: absolute;
+    border-radius: inherit;
+    background: var(--bew-top-bar-control-background);
+    backdrop-filter: var(--bew-filter-glass-1);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    transition: background-color 0.3s ease;
+  }
+
+  &--white {
+    border-color: rgba(255, 255, 255, 0.18);
+
+    &::before {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+.login {
+  gap: 8px;
+}
+
+@media (max-width: 767px) {
+  .others {
+    gap: 4px;
+    padding-inline: 0;
+  }
+
+  .login-label {
+    display: none;
+  }
+}
 </style>

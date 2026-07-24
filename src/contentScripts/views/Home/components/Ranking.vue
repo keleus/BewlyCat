@@ -221,6 +221,7 @@ defineExpose({ initData })
             'grid-adaptive-bangumi': gridLayout === 'adaptive',
             'grid-two-columns': gridLayout === 'twoColumns',
             'grid-one-column': gridLayout === 'oneColumn',
+            'grid-list-auto-switch': gridLayout === 'twoColumns' && settings.autoSwitchListLayout,
           }"
         >
           <BangumiCard
@@ -280,7 +281,13 @@ defineExpose({ initData })
 
 .grid-one-column {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr));
+  grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 20px;
+}
+
+@media (max-width: 639.98px) {
+  .grid-two-columns.grid-list-auto-switch {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
 }
 </style>

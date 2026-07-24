@@ -840,7 +840,10 @@ if (settings.value.cleanUrlArgument) {
     id="bewly-wrapper"
     ref="mainAppRef"
     class="bewly-wrapper"
-    :class="{ dark: isDark }"
+    :class="{
+      'dark': isDark,
+      'bewly-wrapper--viewport': isHomePage() && !settings.useOriginalBilibiliHomepage,
+    }"
     text="$bew-text-1 size-$bew-base-font-size"
   >
     <!-- Background -->
@@ -894,7 +897,8 @@ if (settings.value.cleanUrlArgument) {
       <BewlyOrBiliTopBarSwitcher v-if="settings.showBewlyOrBiliTopBarSwitcher" />
 
       <TopBar
-        pos="top-0 left-0" z="1 hover:1001" w-full
+        class="top-bar-layer"
+        pos="top-0 left-0" w-full
       />
     </div>
 
@@ -917,8 +921,8 @@ if (settings.value.cleanUrlArgument) {
           >
             <main m-auto max-w="$bew-page-max-width">
               <div
+                class="bewly-page-content"
                 p="t-[calc(var(--bew-top-bar-height)+10px)]" m-auto
-                w="lg:[calc(100%-200px)] [calc(100%-150px)]"
                 :style="settings.useOriginalBilibiliTopBar && !reachTop
                   ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
                   : undefined"
@@ -949,6 +953,10 @@ if (settings.value.cleanUrlArgument) {
 </template>
 
 <style lang="scss" scoped>
+.top-bar-layer {
+  z-index: 1001;
+}
+
 .bewly-wrapper {
   // To fix the filter used in `.bewly-wrapper` that cause the positions of elements become discorded.
   > * > * {
@@ -956,8 +964,22 @@ if (settings.value.cleanUrlArgument) {
   }
 }
 
+.bewly-wrapper--viewport {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
 .bewly-scroll-viewport {
   outline: none;
   scrollbar-gutter: stable;
+}
+
+.bewly-page-content {
+  box-sizing: border-box;
+  width: 100%;
+  padding-inline: clamp(16px, 4vw, 80px);
 }
 </style>

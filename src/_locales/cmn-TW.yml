@@ -190,6 +190,8 @@ settings:
 
   # Video Card Grid Settings
   group_video_card_grid: 影片卡片網格
+  auto_switch_list_layout: 根據螢幕寬度自動切換單雙列
+  auto_switch_list_layout_desc: 開啟後，雙列模式會在螢幕寬度小於 640px 時自動切換為單列。
   grid_breakpoints: 網格斷點配置
   grid_breakpoints_desc: 設定不同螢幕寬度下顯示的列數。當螢幕寬度大於等於設定值時，使用對應的列數。
   grid_min_width: 寬度 ≥
@@ -419,6 +421,11 @@ settings:
   use_following_new_layout_desc: 左側顯示關注的 UP 主列表，右側顯示影片流
   use_favorites_new_layout: 使用新版收藏頁
   use_favorites_new_layout_desc: 關閉後使用舊版收藏頁；舊版不顯示收藏合集。
+  collected_season_play_all_mode: 訂閱合集「播放全部」起播位置
+  collected_season_play_all_mode_desc: 控制收藏頁、頂欄與空間頁訂閱合集「播放全部」的起播位置。預設為合集開頭；找不到上次觀看時回退到開頭。不影響列表順序與連播方向。
+  collected_season_play_all_mode_beginning: 合集開頭
+  collected_season_play_all_mode_latest: 最新一期
+  collected_season_play_all_mode_last_watched: 上次觀看
   enable_version_reminder: 新版本提醒
   enable_version_reminder_desc: 在外掛首頁提醒尚未確認的新版本；每個版本只提醒一次。
   enable_following_inactive_blacklist: 啟用不活躍名單
@@ -442,6 +449,8 @@ settings:
   use_original_bilibili_topbar: 使用原版 Bilibili 頂欄
   adapt_to_other_page_styles: 適應其他頁面風格
   adapt_to_other_page_styles_desc: 適應一些常見頁面，以配合 BewlyBewly 主題。
+  prevent_mobile_redirect: 防止跳轉至行動版
+  prevent_mobile_redirect_desc: 啟用後，僅在造訪 www.bilibili.com 時使用桌面版 UA，避免被跳轉至 m.bilibili.com；直接造訪行動版不受影響。
   nvidia_rtx_video_enhancement_compatibility: NVIDIA RTX 影片增強功能相容
   nvidia_rtx_video_enhancement_compatibility_desc: 啟用後，將在影片播放頁自動停用毛玻璃效果，避免 NVIDIA RTX 影片增強功能異常。
   follow_bilibili_evolved_color: 使用 Bilibili Evolved 主題色
@@ -884,6 +893,7 @@ favorites:
     此操作無法撤消，你確定要取消收藏這些影片嗎？
   global_search_hint: 請輸入關鍵詞以搜尋全部收藏夾
   global_search_placeholder: 搜尋全部收藏夾
+  season_play_all_fallback: 合集列表尚未就緒，已退回合集開頭
   search_all_folders: 全部
   search_current_folder: 目前
   search_placeholder: 搜尋目前收藏夾

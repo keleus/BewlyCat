@@ -12,11 +12,12 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { applyBewlyWidescreen, exitBewlyWidescreen } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
-import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
+import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers, setupOriginalBilibiliTopBarSearchHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
+import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isPlayerDisplayModeReady, isVideoPage, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
@@ -25,6 +26,7 @@ import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
 import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
+import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
 import { version } from '../../package.json'
 import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
@@ -567,9 +569,18 @@ else if (shouldInitializeContentScript) {
 
   // Set the original Bilibili top bar to `display: none` to prevent it from showing before the load
   // see: https://github.com/BewlyBewly/BewlyBewly/issues/967
-  const removeOriginalTopBar = injectCSS(`.bili-header, #biliMainHeader { visibility: hidden !important; }`)
+  const removeOriginalTopBar = injectCSS(`
+    .bili-header,
+    #biliMainHeader,
+    .header-channel,
+    .bili-header-channel-panel {
+      visibility: hidden !important;
+    }
+  `)
 
   async function onDOMLoaded() {
+    setupOriginalBilibiliTopBarSearchHandlers(document, () => settings.value.usePluginSearchResultsPage)
+
     const pluginSearchResultsUrl = !isInIframe() && getPluginSearchResultsUrl(location.href)
 
     if (pluginSearchResultsUrl) {
@@ -583,9 +594,12 @@ else if (shouldInitializeContentScript) {
 
     const changeHomePage = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
 
-    // Remove the original Bilibili homepage if in Bilibili homepage & useOriginalBilibiliHomepage is enabled
+    // 启用自定义首页时隐藏 B 站原始首页。
     if (changeHomePage) {
-    // Capture the original top bar early so we can optionally re-attach it later.
+      // 移动端缺少 viewport 声明时会按 980px 排版后整体缩放，导致响应式断点失效。
+      ensureResponsiveViewport(document)
+
+      // 提前保存原始顶栏，以便需要时重新挂载。
       captureOriginalBilibiliTopBar(document)
 
       // 方案选择：
@@ -595,6 +609,14 @@ else if (shouldInitializeContentScript) {
       // 推荐使用方案2：CSS隐藏
       // 使用 CSS 隐藏 B 站原始页面，保留 DOM 结构
       injectCSS(`
+      /* 自定义首页始终以当前可视视口为尺寸基准，避免原站最小宽度撑大文档。 */
+      html,
+      body {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+      }
       /* Hide Bilibili's own page elements, preserving third-party extensions (e.g., Bili-Evolved) */
       body > #app,
       body > #i_cecream,
@@ -606,10 +628,41 @@ else if (shouldInitializeContentScript) {
         position: absolute !important;
         left: -9999px !important;
       }
+      /* 保留新版首页中由 Vue 管理的原版顶栏，避免移动节点破坏组件父子关系 */
+      body > #app:has(> .bili-feed4 > .bili-header) {
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        height: 0 !important;
+        pointer-events: none !important;
+        position: relative !important;
+        left: 0 !important;
+        overflow: visible !important;
+      }
+      body > #app:has(> .bili-feed4 > .bili-header) > *:not(.bili-feed4),
+      body > #app > .bili-feed4 > *:not(.bili-header):not(.header-channel) {
+        display: none !important;
+      }
+      body > #app > .bili-feed4 {
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: 0 !important;
+        pointer-events: none !important;
+        position: relative !important;
+        left: 0 !important;
+        overflow: visible !important;
+      }
       /* Ensure the original top bar remains visible and properly positioned */
       /* The visibility/display will be controlled by .remove-top-bar class in removeTopBar.scss */
       .bili-header {
         position: relative !important;
+        left: 0 !important;
+        pointer-events: auto !important;
+      }
+      .header-channel {
         left: 0 !important;
         pointer-events: auto !important;
       }
@@ -670,6 +723,9 @@ else if (shouldInitializeContentScript) {
     if (isVideoOrBangumiPage()) {
       initFavoriteDialogEnhancement()
     }
+
+    // 原生空间订阅合集 favlist「播放全部」按设置起播
+    initNativeFavoriteSeasonPlayAllIntercept()
   }
 
   if (document.readyState !== 'loading') {
@@ -719,6 +775,25 @@ else if (shouldInitializeContentScript) {
     }
 
     const root = document.createElement('div')
+    const useViewportLayout = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
+
+    if (useViewportLayout) {
+      Object.assign(container.style, {
+        position: 'fixed',
+        inset: '0',
+        width: 'auto',
+        minWidth: '0',
+        maxWidth: 'none',
+        height: '100dvh',
+        overflow: 'hidden',
+      })
+      Object.assign(root.style, {
+        width: '100%',
+        height: '100%',
+        minWidth: '0',
+      })
+    }
+
     const styleEl = document.createElement('link')
     // Fix #69 https://github.com/hakadao/BewlyBewly/issues/69
     // https://medium.com/@emilio_martinez/shadow-dom-open-vs-closed-1a8cf286088a - open shadow dom

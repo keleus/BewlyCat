@@ -7,7 +7,7 @@ import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
-import { getListLayoutColumnCount } from '~/utils/gridLayout'
+import { getAdaptiveGridColumnCount, getListGridColumnCount } from '~/utils/gridLayout'
 import emitter from '~/utils/mitt'
 
 import SmoothLoading from './SmoothLoading.vue'
@@ -448,7 +448,11 @@ function cleanupScrollListeners() {
 function getRenderedColumnCount(): number {
   const containerWidth = gridContainerRef.value?.clientWidth
     || (typeof window !== 'undefined' ? window.innerWidth : 0)
-  return getCurrentColumnCount(props.gridLayout, containerWidth)
+  // CSS 响应式布局使用视口断点，这里让骨架屏和补位计算保持相同的宽度基准。
+  const responsiveWidth = (props.gridLayout === 'adaptive' || settings.value.autoSwitchListLayout) && typeof window !== 'undefined'
+    ? window.innerWidth
+    : containerWidth
+  return getCurrentColumnCount(props.gridLayout, responsiveWidth)
 }
 
 function getMissingItemsInLastRow(): number {
@@ -632,29 +636,10 @@ function normalizePositiveInt(value: unknown, fallback: number): number {
   return Math.max(1, Math.round(normalized))
 }
 
-function getAdaptiveGridColumns(width: number): number {
-  const gridColumns = settings.value.gridColumns
-
-  if (width >= 1536)
-    return normalizePositiveInt(gridColumns.xxl, 6)
-  if (width >= 1280)
-    return normalizePositiveInt(gridColumns.xl, 5)
-  if (width >= 1024)
-    return normalizePositiveInt(gridColumns.lg, 4)
-  if (width >= 768)
-    return normalizePositiveInt(gridColumns.md, 3)
-  if (width >= 640)
-    return normalizePositiveInt(gridColumns.sm, 2)
-
-  return normalizePositiveInt(gridColumns.base, 1)
-}
-
 function getCurrentColumnCount(layout: GridLayoutType, width: number): number {
-  if (layout === 'twoColumns')
-    return 2
-  if (layout === 'oneColumn')
-    return getListLayoutColumnCount(width)
-  return getAdaptiveGridColumns(width)
+  if (layout === 'adaptive')
+    return getAdaptiveGridColumnCount(width, settings.value.gridColumns)
+  return getListGridColumnCount(layout, width, settings.value.autoSwitchListLayout)
 }
 
 function findScrollElement(): HTMLElement | null {
@@ -921,7 +906,7 @@ function getUniqueKey(item: T, index: number): string | number {
   overflow-anchor: none;
 }
 
-// Grid 布局 - 使用 Tailwind CSS 标准媒体断点 + CSS 变量控制列数
+// Grid 布局 - 根据设置页声明的视口断点和 CSS 变量控制列数
 .grid-adaptive {
   display: grid;
   gap: 20px;
@@ -968,52 +953,18 @@ function getUniqueKey(item: T, index: number): string | number {
   align-items: stretch;
 }
 
-@supports (container-type: inline-size) {
-  .video-card-grid-root {
-    container-type: inline-size;
-  }
-
-  .grid-adaptive {
-    grid-template-columns: repeat(var(--grid-cols-base, 1), 1fr);
-  }
-
-  @container (min-width: 640px) {
-    .grid-adaptive {
-      grid-template-columns: repeat(var(--grid-cols-sm, 2), 1fr);
-    }
-  }
-
-  @container (min-width: 768px) {
-    .grid-adaptive {
-      grid-template-columns: repeat(var(--grid-cols-md, 3), 1fr);
-    }
-  }
-
-  @container (min-width: 1024px) {
-    .grid-adaptive {
-      grid-template-columns: repeat(var(--grid-cols-lg, 4), 1fr);
-    }
-  }
-
-  @container (min-width: 1280px) {
-    .grid-adaptive {
-      grid-template-columns: repeat(var(--grid-cols-xl, 5), 1fr);
-    }
-  }
-
-  @container (min-width: 1536px) {
-    .grid-adaptive {
-      grid-template-columns: repeat(var(--grid-cols-xxl, 6), 1fr);
-    }
-  }
-}
-
 .grid-one-column {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr));
+  grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 16px;
   contain: layout style;
   align-items: stretch;
+}
+
+@media (max-width: 639.98px) {
+  .grid-two-columns.grid-list-auto-switch {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
 }
 
 .video-card-grid-container {

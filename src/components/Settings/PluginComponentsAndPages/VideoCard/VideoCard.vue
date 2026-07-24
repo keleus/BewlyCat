@@ -95,6 +95,14 @@ function resetColumns() {
 
     <!-- Video Card Grid Settings -->
     <SettingsItemGroup :title="$t('settings.group_video_card_grid')">
+      <SettingsItem
+        :title="$t('settings.auto_switch_list_layout')"
+        :desc="$t('settings.auto_switch_list_layout_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.autoSwitchListLayout" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.grid_breakpoints')" :desc="$t('settings.grid_breakpoints_desc')" right-width="auto">
         <template #bottom>
           <div flex="~ col gap-3" w-full>

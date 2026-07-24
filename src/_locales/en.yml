@@ -262,6 +262,8 @@ settings:
 
   # Video Card Grid Settings
   group_video_card_grid: Video Card Grid
+  auto_switch_list_layout: Automatically switch list columns based on screen width
+  auto_switch_list_layout_desc: When enabled, two-column mode switches to one column when the screen is narrower than 640px.
   grid_breakpoints: Grid Breakpoints
   grid_breakpoints_desc: Set the number of columns at different screen widths. When screen width is greater than or equal to the set value, use the corresponding columns.
   grid_min_width: Width ≥
@@ -470,6 +472,11 @@ settings:
   use_following_new_layout_desc: Display followed UPs list on the left and video feed on the right
   use_favorites_new_layout: Use the new Favorites page
   use_favorites_new_layout_desc: Turn this off to use the legacy Favorites page, which does not show collected series.
+  collected_season_play_all_mode: Collected series Play All start position
+  collected_season_play_all_mode_desc: Controls Play All start position for collected series on Favorites, Top Bar, and the native space page. Defaults to series beginning; falls back to beginning if last watched is not found. Does not change list order or playlist direction.
+  collected_season_play_all_mode_beginning: Series beginning
+  collected_season_play_all_mode_latest: Latest episode
+  collected_season_play_all_mode_last_watched: Last watched
   enable_version_reminder: New version reminders
   enable_version_reminder_desc: Show unacknowledged version updates on the extension home page; each version is shown only once.
   enable_following_inactive_blacklist: Enable Inactive List
@@ -497,6 +504,8 @@ settings:
   use_original_bilibili_topbar: Use the original Bilibili top bar
   adapt_to_other_page_styles: Adapt to other page styles
   adapt_to_other_page_styles_desc: Adapt to some common pages to match with the BewlyBewly theme.
+  prevent_mobile_redirect: Prevent mobile redirect
+  prevent_mobile_redirect_desc: When enabled, a desktop UA is used only for www.bilibili.com to prevent redirects to m.bilibili.com. Direct visits to the mobile site are unaffected.
   nvidia_rtx_video_enhancement_compatibility: NVIDIA RTX Video Enhancement compatibility
   nvidia_rtx_video_enhancement_compatibility_desc: When enabled, frosted glass is automatically disabled on video playback pages to prevent NVIDIA RTX Video Enhancement issues.
   follow_bilibili_evolved_color: Follow the Bilibili Evolved theme color
@@ -947,6 +956,7 @@ favorites:
     This operation cannot be reversed. Are you sure you want to remove these video(s) from your favorites?
   global_search_hint: Search for all favorites
   global_search_placeholder: Search all favorites
+  season_play_all_fallback: Season list not ready, fell back to the beginning
   search_all_folders: all
   search_current_folder: current
   search_placeholder: Search for current favorites

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 import type { FavoriteResource } from '~/components/TopBar/types'
 import type { Video } from '~/components/VideoCard/types'
@@ -10,13 +11,21 @@ import { TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favorite'
 import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/video/favoriteCategory'
-import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia, FavoriteSeasonResourcesResult } from '~/models/video/favoriteSeason'
+import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
+import {
+  enrichFavoriteSeasonMediaFaces,
+  FAVORITE_SEASON_PAGE_SIZE,
+  fetchFavoriteSeasonPage,
+  mergeFavoriteSeasonPage,
+  resolveFavoriteSeasonPlayAllUrl,
+} from '~/utils/favoriteSeason'
 import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
 // 新版收藏页支持收藏夹与订阅合集。
 const { t } = useI18n()
+const toast = useToast()
 
 type FavoriteCategorySource = 'folder' | 'season'
 type BatchTransferAction = 'copy' | 'move'
@@ -46,6 +55,10 @@ const isFullPageLoading = ref<boolean>(true)
 const noMoreContent = ref<boolean>(false)
 const isBatchManaging = ref<boolean>(false)
 const isBatchOperating = ref<boolean>(false)
+const isResolvingSeasonPlayAll = ref<boolean>(false)
+/** 当前订阅合集的原始 medias（与列表同套分页语义），供播放全部复用 */
+const loadedSeasonMedias = ref<FavoriteSeasonMedia[]>([])
+const loadedSeasonComplete = ref(false)
 const selectedResourceKeys = ref<string[]>([])
 const folderSectionExpanded = ref<boolean>(true)
 const seasonSectionExpanded = ref<boolean>(true)
@@ -400,30 +413,40 @@ async function getFavoriteSeasonResources(
   season_id: number,
   pn: number,
 ) {
-  if (pn === 1)
+  if (pn === 1) {
     isFullPageLoading.value = true
+    loadedSeasonMedias.value = []
+    loadedSeasonComplete.value = false
+  }
   isLoading.value = true
   try {
-    const res: FavoriteSeasonResourcesResult = await api.favorite.getFavoriteSeasonResources({
-      season_id,
+    const page = await fetchFavoriteSeasonPage(season_id, pn, FAVORITE_SEASON_PAGE_SIZE)
+    if (!page.ok) {
+      noMoreContent.value = true
+      loadedSeasonComplete.value = false
+      return
+    }
+
+    activatedCategoryCover.value = page.cover || selectedCategory.value?.cover || ''
+
+    const merged = mergeFavoriteSeasonPage({
       pn,
+      pageMedias: page.pageMedias,
+      mediaCount: page.mediaCount,
+      previousMedias: loadedSeasonMedias.value,
+      pageSize: FAVORITE_SEASON_PAGE_SIZE,
     })
 
-    if (res.code === 0 && res.data) {
-      activatedCategoryCover.value = res.data.info?.cover || selectedCategory.value?.cover || ''
+    loadedSeasonMedias.value = await enrichFavoriteSeasonMediaFaces(merged.medias)
+    loadedSeasonComplete.value = !merged.hasMore
+    noMoreContent.value = !merged.hasMore
 
-      const medias = Array.isArray(res.data.medias) ? res.data.medias.filter((m: any) => m != null) : []
-      if (medias.length > 0)
-        favoriteResources.push(...medias.map(normalizeSeasonMedia))
+    favoriteResources.length = 0
+    favoriteResources.push(...loadedSeasonMedias.value.map(normalizeSeasonMedia))
 
-      if (medias.length < 40)
-        noMoreContent.value = true
-
-      if (!(await haveScrollbar()) && !noMoreContent.value)
-        await getFavoriteSeasonResources(season_id, ++currentPageNum.value)
-    }
-    else {
-      noMoreContent.value = true
+    if (!(await haveScrollbar()) && merged.hasMore) {
+      currentPageNum.value = pn + 1
+      await getFavoriteSeasonResources(season_id, currentPageNum.value)
     }
   }
   finally {
@@ -442,8 +465,9 @@ function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteItem {
     page: 1,
     duration: item.duration,
     upper: {
-      ...item.upper,
-      face: '',
+      mid: item.upper.mid,
+      name: item.upper.name,
+      face: item.upper.face || '',
     },
     attr: 0,
     cnt_info: {
@@ -475,6 +499,8 @@ async function changeCategory(categoryItem: ViewCategory) {
   if (targetCategory.value?.id === categoryItem.id)
     targetCategory.value = undefined
   favoriteResources.length = 0
+  loadedSeasonMedias.value = []
+  loadedSeasonComplete.value = false
   noMoreContent.value = false
 
   // 切换收藏夹时，如果是搜索当前收藏夹模式，则立即加载数据
@@ -538,24 +564,37 @@ function handleSearchScopeChange() {
   }
 }
 
-function handlePlayAll() {
+async function handlePlayAll() {
   if (searchScope.value === 'all') {
     return
   }
-  if (selectedCategory.value?.source === 'season')
-    openLinkToNewTab(getFavoriteSeasonUrl(selectedCategory.value))
-  else
-    openLinkToNewTab(`https://www.bilibili.com/list/ml${selectedCategory.value?.id}`)
-}
+  if (!selectedCategory.value || isResolvingSeasonPlayAll.value)
+    return
 
-function getFavoriteSeasonUrl(category: ViewCategory) {
-  const fallbackUrl = `https://www.bilibili.com/list/season/${category.id}`
-  const matchedVideoLink = category.link?.match(/^bilibili:\/\/video\/(\d+)(\?.*)?$/)
+  if (selectedCategory.value.source === 'season') {
+    isResolvingSeasonPlayAll.value = true
+    try {
+      const result = await resolveFavoriteSeasonPlayAllUrl({
+        seasonId: selectedCategory.value.id,
+        link: selectedCategory.value.link,
+        mode: settings.value.collectedSeasonPlayAllMode,
+        preloaded: {
+          medias: loadedSeasonMedias.value,
+          complete: loadedSeasonComplete.value,
+          expectedCount: selectedCategory.value.media_count,
+        },
+      })
+      if (result.usedFallback && result.reason !== 'beginning')
+        toast.warning(t('favorites.season_play_all_fallback'))
+      openLinkToNewTab(result.url)
+    }
+    finally {
+      isResolvingSeasonPlayAll.value = false
+    }
+    return
+  }
 
-  if (!matchedVideoLink)
-    return fallbackUrl
-
-  return `https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`
+  openLinkToNewTab(`https://www.bilibili.com/list/ml${selectedCategory.value.id}`)
 }
 
 function jumpToLoginPage() {
@@ -778,7 +817,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
           <div class="favorites-hero-actions">
             <Button
               type="primary"
-              :disabled="searchScope === 'all' || !selectedCategory"
+              :disabled="searchScope === 'all' || !selectedCategory || isResolvingSeasonPlayAll"
               @click="handlePlayAll"
             >
               <template #left>

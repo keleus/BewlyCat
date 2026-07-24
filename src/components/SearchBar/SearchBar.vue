@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onClickOutside, onKeyStroke, useDebounceFn } from '@vueuse/core'
+import { onClickOutside, onKeyStroke, useDebounceFn, useElementBounding, useMediaQuery } from '@vueuse/core'
 import DOMPurify from 'dompurify'
+import type { CSSProperties } from 'vue'
 import { computed, inject, reactive, ref, shallowRef, watch } from 'vue'
 
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
-import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage } from '~/utils/main'
@@ -64,6 +64,7 @@ const props = defineProps<{
   showHotSearch?: boolean
   modelValue?: string
   searchBehavior?: 'navigate' | 'stay'
+  topBarMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -72,6 +73,7 @@ const emit = defineEmits<{
 }>()
 
 const searchWrapRef = ref<HTMLElement>()
+const { left: searchWrapLeft, top: searchWrapTop } = useElementBounding(searchWrapRef)
 const keywordRef = ref<HTMLInputElement>()
 const isFocus = ref<boolean>(false)
 const keyword = ref<string>(props.modelValue ?? '')
@@ -86,9 +88,28 @@ const isLoadingHotSearch = ref<boolean>(false)
 // 搜索推荐相关状态
 const searchRecommendation = ref<SearchRecommendationItem | null>(null)
 const isLoadingSearchRecommendation = ref<boolean>(false)
+const isNarrowLayout = useMediaQuery('(max-width: 767px)')
 
 const searchMode = computed(() => props.searchBehavior ?? 'navigate')
 const isInPlaceSearch = computed(() => searchMode.value === 'stay')
+const visibleHotSearchList = computed(() => {
+  const limit = props.topBarMode && isNarrowLayout.value ? 5 : 10
+  return hotSearchList.value.slice(0, limit)
+})
+const narrowTopBarPopupStyle = computed<CSSProperties | undefined>(() => {
+  if (!props.topBarMode || !isNarrowLayout.value)
+    return undefined
+
+  return {
+    position: 'absolute',
+    top: `calc(var(--bew-top-bar-height) + 4px - ${searchWrapTop.value}px)`,
+    right: 'auto',
+    left: `calc(8px - ${searchWrapLeft.value}px)`,
+    width: 'calc(100vw - 16px)',
+    maxHeight: 'calc(100dvh - var(--bew-top-bar-height) - 12px)',
+    marginTop: '0',
+  }
+})
 const visibleKeyboardSelectionMode = computed<KeyboardSelectionMode>(() => {
   if (isFocus.value && keyword.value.trim().length > 0 && suggestions.length !== 0)
     return 'suggestions'
@@ -118,9 +139,6 @@ const placeholderText = computed(() => {
 
 // 尝试获取 BEWLY_APP（在首页时可用）
 const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
-
-// 获取登录状态
-const topBarStore = useTopBarStore()
 
 // 判断是否在搜索结果页且启用了插件搜索
 const shouldHandleInCurrentPage = computed(() => {
@@ -338,16 +356,10 @@ function handleNativeInput(event: Event) {
 function buildKeywordHref(keyword: string) {
   const encoded = encodeURIComponent(keyword)
 
-  // 如果未登录，直接返回 B 站原版搜索页面 URL
-  if (!topBarStore.isLogin) {
-    return `https://search.bilibili.com/all?keyword=${encoded}`
-  }
-
   if (settings.value.usePluginSearchResultsPage) {
-    // 写死插件搜索结果页面 URL
     return `https://www.bilibili.com/?page=SearchResults&keyword=${encoded}`
   }
-  // 写死B站原版搜索页面 URL
+
   return `https://search.bilibili.com/all?keyword=${encoded}`
 }
 
@@ -545,6 +557,7 @@ function handleClearKeyword() {
   <div
     id="search-wrap"
     ref="searchWrapRef"
+    :class="{ 'search-wrap--top-bar': topBarMode }"
     w="full"
     max-w="550px"
     h-46px
@@ -644,6 +657,7 @@ function handleClearKeyword() {
       <div
         v-if="shouldShowSearchDropdown"
         id="search-dropdown"
+        :style="narrowTopBarPopupStyle"
       >
         <!-- 热搜区块 -->
         <div
@@ -656,7 +670,7 @@ function handleClearKeyword() {
 
           <div class="hot-search-container p-2 grid grid-cols-2 gap-x-4 gap-y-1">
             <ALink
-              v-for="(item, index) in hotSearchList.slice(0, 10)" :key="item.keyword"
+              v-for="(item, index) in visibleHotSearchList" :key="item.keyword"
               :href="buildKeywordHref(item.keyword)"
               type="searchBar"
               :custom-click-event="true"
@@ -737,6 +751,7 @@ function handleClearKeyword() {
       <div
         v-if="isFocus && suggestions.length !== 0 && keyword.length > 0"
         id="search-suggestion"
+        :style="narrowTopBarPopupStyle"
       >
         <div
           v-for="(item, index) in suggestions"
@@ -793,6 +808,9 @@ function handleClearKeyword() {
 }
 
 #search-wrap {
+  min-width: 0;
+  max-width: var(--b-search-bar-max-width, 550px);
+
   --b-search-bar-normal-color: var(--bew-content);
   --b-search-bar-hover-color: var(--bew-content-hover);
   --b-search-bar-focus-color: var(--bew-content-hover);
@@ -824,6 +842,7 @@ function handleClearKeyword() {
     input {
       @include card-content;
       appearance: none;
+      min-width: 0;
       position: relative;
       z-index: 1;
 
@@ -942,6 +961,19 @@ function handleClearKeyword() {
 
       &.active {
         --uno: "bg-$bew-fill-2 shadow-[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]";
+      }
+    }
+  }
+
+  &.search-wrap--top-bar {
+    @media (max-width: 767px) {
+      #search-dropdown,
+      #search-suggestion {
+        max-height: calc(100dvh - var(--bew-top-bar-height) - 12px);
+      }
+
+      #search-dropdown .hot-search-container {
+        grid-template-columns: minmax(0, 1fr);
       }
     }
   }

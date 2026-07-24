@@ -334,9 +334,14 @@ function handleClickOutsidePopup(event: MouseEvent) {
 
 // 生命周期钩子
 onMounted(() => {
-  nextTick(() => {
+  nextTick(async () => {
     // 初始化数据和更新定时器
-    topBarStore.initData()
+    try {
+      await topBarStore.initData()
+    }
+    catch (error) {
+      console.error('初始化顶栏数据失败:', error)
+    }
     // 只有在登录状态下才启动更新定时器
     if (topBarStore.isLogin)
       topBarStore.startUpdateTimer()

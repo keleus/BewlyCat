@@ -1,11 +1,13 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
 import { PAGE_NO_COOKIE_SEARCH_REQUEST, PAGE_NO_COOKIE_SEARCH_RESPONSE } from '~/constants/api'
 import type { Settings } from '~/logic/storage'
+import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isElectron } from '~/utils/main'
 
 // 存储当前设置状态
 let currentSettings: Settings | null = null
 let settingsReady = false
+let preventMobileRedirectEnabled = false
 let resolveSettingsReady: (() => void) | null = null
 const settingsReadyPromise = new Promise<void>((resolve) => {
   resolveSettingsReady = resolve
@@ -24,7 +26,58 @@ if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 }
 else if (shouldInitializePageScript) {
-// 之前inject.js的内容
+  // 根据兼容性设置动态返回桌面 UA，默认保持浏览器原始值。
+  if (isBilibiliWwwUrl(location.href)) {
+    const originalNavigatorValues = {
+      appVersion: navigator.appVersion,
+      platform: navigator.platform,
+      userAgent: navigator.userAgent,
+    }
+    const defineNavigatorValue = (property: 'appVersion' | 'platform' | 'userAgent', value: string) => {
+      try {
+        Object.defineProperty(navigator, property, {
+          configurable: true,
+          get: () => preventMobileRedirectEnabled ? value : originalNavigatorValues[property],
+        })
+      }
+      catch {
+        // 个别浏览器不允许覆盖 Navigator 实例属性，网络层规则仍会提供桌面 UA。
+      }
+    }
+
+    defineNavigatorValue('userAgent', BILIBILI_DESKTOP_USER_AGENT)
+    defineNavigatorValue('appVersion', BILIBILI_DESKTOP_USER_AGENT.replace(/^Mozilla\//, ''))
+    defineNavigatorValue('platform', 'Win32')
+
+    const userAgentData = (navigator as Navigator & {
+      userAgentData?: {
+        mobile?: boolean
+        platform?: string
+      }
+    }).userAgentData
+
+    if (userAgentData) {
+      const originalMobile = userAgentData.mobile
+      const originalUserAgentDataPlatform = userAgentData.platform
+      try {
+        Object.defineProperties(userAgentData, {
+          mobile: {
+            configurable: true,
+            get: () => preventMobileRedirectEnabled ? false : originalMobile,
+          },
+          platform: {
+            configurable: true,
+            get: () => preventMobileRedirectEnabled ? 'Windows' : originalUserAgentDataPlatform,
+          },
+        })
+      }
+      catch {
+        // UA Client Hints 不可配置时交由网络层请求头规则处理。
+      }
+    }
+  }
+
+  // 之前inject.js的内容
   const isArray = (val: any): boolean => Array.isArray(val)
   function injectFunction(
     origin: any,
@@ -489,6 +542,7 @@ else if (shouldInitializePageScript) {
       if (data) {
         const isFirstTime = !settingsReady
         currentSettings = data
+        preventMobileRedirectEnabled = data.preventMobileRedirect === true
         settingsReady = true
         resolveSettingsReady?.()
         resolveSettingsReady = null

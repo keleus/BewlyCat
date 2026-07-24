@@ -1,26 +1,52 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  getListLayoutColumnCount,
-  LIST_LAYOUT_GRID_GAP,
-  LIST_LAYOUT_MIN_CARD_WIDTH,
+  getAdaptiveGridColumnCount,
+  getListGridColumnCount,
+  MOBILE_LIST_LAYOUT_BREAKPOINT,
 } from '~/utils/gridLayout'
 
-describe('list grid layout', () => {
-  function minimumWidthForColumns(columns: number): number {
-    return columns * LIST_LAYOUT_MIN_CARD_WIDTH
-      + (columns - 1) * LIST_LAYOUT_GRID_GAP
+describe('adaptive grid layout', () => {
+  const columns = {
+    base: 1,
+    sm: 2,
+    md: 3,
+    lg: 4,
+    xl: 5,
+    xxl: 6,
   }
 
-  it('adds columns whenever another minimum-width card fits', () => {
-    expect(getListLayoutColumnCount(minimumWidthForColumns(2) - 1)).toBe(1)
-    expect(getListLayoutColumnCount(minimumWidthForColumns(2))).toBe(2)
-    expect(getListLayoutColumnCount(minimumWidthForColumns(3))).toBe(3)
-    expect(getListLayoutColumnCount(minimumWidthForColumns(4))).toBe(4)
+  it('uses the configured column count at each viewport breakpoint', () => {
+    expect(getAdaptiveGridColumnCount(639, columns)).toBe(1)
+    expect(getAdaptiveGridColumnCount(640, columns)).toBe(2)
+    expect(getAdaptiveGridColumnCount(768, columns)).toBe(3)
+    expect(getAdaptiveGridColumnCount(1024, columns)).toBe(4)
+    expect(getAdaptiveGridColumnCount(1280, columns)).toBe(5)
+    expect(getAdaptiveGridColumnCount(1536, columns)).toBe(6)
   })
 
-  it('falls back to one column for invalid or non-positive widths', () => {
-    expect(getListLayoutColumnCount(0)).toBe(1)
-    expect(getListLayoutColumnCount(Number.NaN)).toBe(1)
+  it('normalizes invalid configured values at the active breakpoint', () => {
+    expect(getAdaptiveGridColumnCount(1280, { ...columns, xl: 0 })).toBe(5)
+    expect(getAdaptiveGridColumnCount(1280, { ...columns, xl: 4.6 })).toBe(5)
+  })
+})
+
+describe('list grid layout', () => {
+  it('keeps the selected list layout when auto switching is disabled', () => {
+    expect(getListGridColumnCount('oneColumn', 320, false)).toBe(1)
+    expect(getListGridColumnCount('oneColumn', 1920, false)).toBe(1)
+    expect(getListGridColumnCount('twoColumns', 320, false)).toBe(2)
+    expect(getListGridColumnCount('twoColumns', 1920, false)).toBe(2)
+  })
+
+  it('switches two-column layout to one column below the mobile breakpoint', () => {
+    expect(getListGridColumnCount('twoColumns', MOBILE_LIST_LAYOUT_BREAKPOINT - 1, true)).toBe(1)
+    expect(getListGridColumnCount('twoColumns', MOBILE_LIST_LAYOUT_BREAKPOINT, true)).toBe(2)
+    expect(getListGridColumnCount('oneColumn', 1920, true)).toBe(1)
+  })
+
+  it('falls back to one column when the viewport width is invalid', () => {
+    expect(getListGridColumnCount('twoColumns', 0, true)).toBe(1)
+    expect(getListGridColumnCount('twoColumns', Number.NaN, true)).toBe(1)
   })
 })

@@ -15,6 +15,7 @@ const { searchKeyword } = storeToRefs(topBarStore)
 
 // 可以考虑添加一个计算属性来处理样式
 const searchBarStyles = computed(() => ({
+  '--b-search-bar-max-width': '100%',
   '--b-search-bar-normal-color': settings.value.enableFrostedGlass ? 'color-mix(in oklab, var(--bew-elevated-solid), transparent 60%)' : 'var(--bew-elevated)',
   '--b-search-bar-hover-color': 'var(--bew-elevated-hover)',
   '--b-search-bar-focus-color': 'var(--bew-elevated)',
@@ -99,6 +100,7 @@ function handleSearch(keyword: string) {
         :style="searchBarStyles"
         :show-hot-search="settings.showHotSearchInTopBar"
         :search-behavior="searchBehavior"
+        :top-bar-mode="true"
         @search="handleSearch"
       />
     </Transition>
