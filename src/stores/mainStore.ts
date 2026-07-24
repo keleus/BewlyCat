@@ -89,9 +89,9 @@ export const useMainStore = defineStore('main', () => {
         iconActivated: 'i-tabler:windmill-filled',
         page: AppPage.Moments,
         openInNewTab: false,
-        useOriginalBiliPage: true,
+        useOriginalBiliPage: false,
         url: `https://t.bilibili.com`,
-        hasBewlyPage: false,
+        hasBewlyPage: true,
       },
     ]
   })

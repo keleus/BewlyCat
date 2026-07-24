@@ -237,6 +237,12 @@ export interface Settings {
   autoReceiveBCoinCoupon: boolean
   autoReceiveVipExp: boolean
   filterArticlesInMoments: boolean
+  momentsSidebarShowUserCard: boolean
+  momentsSidebarShowPublish: boolean
+  momentsSidebarShowLive: boolean
+  momentsEnableLivePreview: boolean
+  momentsEnableVideoPreview: boolean
+  momentsCardOpenMode: 'dialog' | 'newTab'
 
   alwaysUseDock: boolean
   autoHideDock: boolean
@@ -474,6 +480,12 @@ export const originalSettings: Settings = {
   autoReceiveBCoinCoupon: false,
   autoReceiveVipExp: false,
   filterArticlesInMoments: true,
+  momentsSidebarShowUserCard: true,
+  momentsSidebarShowPublish: true,
+  momentsSidebarShowLive: true,
+  momentsEnableLivePreview: true,
+  momentsEnableVideoPreview: true,
+  momentsCardOpenMode: 'dialog',
 
   alwaysUseDock: false,
   autoHideDock: false,

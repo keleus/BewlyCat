@@ -15,6 +15,47 @@
     background-color: var(--bew-homepage-bg);
   }
 
+  // iframe 内 opus 详情：仅做轻量收口。
+  // 强制 overflow:hidden / 左右分栏由 opusDetailDrawerLayout 在内容就绪后处理，避免竞态白屏。
+  &.drawer {
+    &,
+    body,
+    #app,
+    #opus-detail-app {
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+
+    body {
+      background: var(--bew-bg, var(--bg1)) !important;
+    }
+
+    .bili-header,
+    #biliMainHeader,
+    #bili-header-container,
+    .bili-header__bar,
+    #internationalHeader,
+    .fixed-bg,
+    #app .bg,
+    #app .bgc,
+    .right-sidebar-wrap,
+    .right-sidebar,
+    .side-toolbar {
+      display: none !important;
+    }
+
+    .opus-detail,
+    .bili-opus-view,
+    .bili-opus-view-wrap {
+      width: min(920px, 100%) !important;
+      max-width: 100% !important;
+      min-width: 0 !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      box-sizing: border-box !important;
+    }
+  }
+
   .bili-dyn-home--member {
     z-index: 1;
     position: relative;

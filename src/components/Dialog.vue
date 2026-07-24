@@ -12,8 +12,18 @@ const props = withDefaults(defineProps<{
   appendToBewlyBody?: boolean
   width?: string | number
   maxWidth?: string | number
+  /** 对话框整体高度（含 header/footer） */
+  height?: string | number
   contentHeight?: string | number
   contentMaxHeight?: string | number
+  /** 顶部偏移；设置后改为顶部对齐（类似小红书 note 详情），不再垂直居中 */
+  topOffset?: string | number
+  /** 去掉内容区内边距（保留顶部 header），用于 iframe 详情等贴边场景 */
+  contentFlush?: boolean
+  /** 是否显示对话框顶栏 */
+  showHeader?: boolean
+  /** 是否显示边框和边缘光 */
+  showBorder?: boolean
   showFooter?: boolean
   centerFooter?: boolean
   loading?: boolean
@@ -21,7 +31,10 @@ const props = withDefaults(defineProps<{
 }>(), {
   preventCloseWhenLoading: true,
   frostedGlass: true,
+  showHeader: true,
+  showBorder: true,
   showFooter: true,
+  contentFlush: false,
 })
 
 const emit = defineEmits(['close', 'confirm'])
@@ -61,11 +74,38 @@ const dialogWidth = computed(() => {
 const dialogMaxWidth = computed(() => {
   return typeof props.maxWidth === 'number' ? `${props.maxWidth}px` : props.maxWidth || 'unset'
 })
+const dialogHeight = computed(() => {
+  if (props.height === undefined || props.height === null || props.height === '')
+    return undefined
+  return typeof props.height === 'number' ? `${props.height}px` : props.height
+})
+const dialogTopOffset = computed(() => {
+  if (props.topOffset === undefined || props.topOffset === null || props.topOffset === '')
+    return undefined
+  return typeof props.topOffset === 'number' ? `${props.topOffset}px` : props.topOffset
+})
 const dialogContentHeight = computed(() => {
   return typeof props.contentHeight === 'number' ? `${props.contentHeight}px` : props.contentHeight || 'auto'
 })
 const dialogContentMaxHeight = computed(() => {
   return typeof props.contentMaxHeight === 'number' ? `${props.contentMaxHeight}px` : props.contentMaxHeight || 'auto'
+})
+const dialogPanelStyle = computed(() => {
+  const topAligned = dialogTopOffset.value !== undefined
+  return {
+    width: dialogWidth.value,
+    maxWidth: dialogMaxWidth.value,
+    height: dialogHeight.value,
+    top: topAligned ? dialogTopOffset.value : '50%',
+    left: '50%',
+    transform: topAligned ? 'translateX(-50%)' : 'translate(-50%, -50%)',
+    transition: 'transform 0.4s, width 0.4s, height 0.4s',
+    overflow: topAligned ? 'visible' : undefined,
+    border: props.showBorder ? undefined : '0',
+    backdropFilter: props.frostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
+    backgroundColor: props.frostedGlass ? 'var(--bew-elevated)' : 'var(--bew-elevated-solid)',
+    boxShadow: props.showBorder ? 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)' : 'var(--bew-shadow-4)',
+  }
 })
 
 onKeyStroke('Alt', (e: KeyboardEvent) => {
@@ -119,19 +159,13 @@ function handleConfirm() {
           pos="absolute top-0 left-0" w-full h-full z-0
           @click="handleClose"
         />
+        <slot name="floating-actions" />
         <div
-          style="
-            box-shadow: var(--bew-shadow-4), var(--bew-shadow-edge-glow-2);
-          "
-          :style="{
-            width: dialogWidth,
-            maxWidth: dialogMaxWidth,
-            backdropFilter: frostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
-            backgroundColor: frostedGlass ? 'var(--bew-elevated)' : 'var(--bew-elevated-solid)',
-          }"
-          pos="absolute top-1/2 left-1/2" rounded="$bew-radius" border="1 $bew-border-color"
-          transform="translate--1/2" z-2
+          :style="dialogPanelStyle"
+          pos="absolute" rounded="$bew-radius" border="1 $bew-border-color"
+          z-2
           antialiased
+          class="dialog__panel"
         >
           <!-- loading masking -->
           <Transition name="fade">
@@ -145,6 +179,7 @@ function handleConfirm() {
           </Transition>
 
           <header
+            v-if="showHeader"
             style="
               text-shadow: 0 0 15px var(--bew-elevated-solid), 0 0 20px var(--bew-elevated-solid)
             "
@@ -189,9 +224,15 @@ function handleConfirm() {
             :style="{
               height: dialogContentHeight,
               maxHeight: dialogContentMaxHeight,
-              paddingBottom: !showFooter ? '2rem' : '0.5rem',
+              flex: dialogHeight ? '1 1 auto' : undefined,
+              minHeight: dialogHeight ? '0' : undefined,
+              ...(contentFlush
+                ? { padding: '0' }
+                : { paddingBottom: !showFooter ? '2rem' : '0.5rem' }),
             }"
-            p="x-12 y-2" relative overflow="x-hidden y-overlay"
+            :p="contentFlush ? undefined : 'x-12 y-2'"
+            relative
+            :overflow="contentFlush ? 'hidden' : 'x-hidden y-overlay'"
           >
             <!-- <div h-80px mt--8 /> -->
             <slot />
@@ -235,4 +276,9 @@ function handleConfirm() {
 </template>
 
 <style lang="scss" scoped>
+.dialog__panel {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
 </style>

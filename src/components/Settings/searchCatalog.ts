@@ -52,6 +52,11 @@ const homeRoute: SearchRoute = {
   secondaryPage: 'home',
   secondaryTitleKey: 'settings.plugin.home',
 }
+const momentsRoute: SearchRoute = {
+  menu: MenuType.Navigation,
+  secondaryPage: 'moments',
+  secondaryTitleKey: 'settings.plugin.moments',
+}
 const videoCardRoute: SearchRoute = {
   menu: MenuType.Navigation,
   secondaryPage: 'video-card',
@@ -171,6 +176,18 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.use_search_page_mode',
     'settings.settings_shared_with_the_search_page',
     'settings.search_page_mode_wallpaper_fixed',
+  ]),
+
+  ...createEntries(momentsRoute, [
+    'settings.plugin.moments',
+    'settings.group_moments_sidebar',
+    'settings.moments_show_user_card',
+    'settings.moments_show_publish',
+    'settings.moments_show_live',
+    'settings.group_moments_interaction',
+    'settings.moments_enable_live_preview',
+    'settings.moments_enable_video_preview',
+    'settings.moments_card_open_mode',
   ]),
 
   ...createEntries(videoCardRoute, [

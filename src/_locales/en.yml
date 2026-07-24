@@ -93,6 +93,7 @@ settings:
   category_navigation_topbar_desc: Adjust top bar layout, components, channels, search, and notifications in one place.
   category_navigation_dock_desc: Configure Dock and sidebar position, visibility, and quick actions.
   category_navigation_search_desc: Configure search appearance, suggestions, history, trending, and results.
+  category_navigation_moments_desc: Configure the dynamic feed sidebar and how dynamic cards are opened.
   category_playback_player_desc: Configure player mode, scrolling, danmaku, captions, and playback state.
   category_playback_autoplay_desc: Configure autoplay and random playback behavior.
   category_playback_volume_desc: Any normalization can cause clipping, degraded audio quality, or reduced dynamic range; leave it off unless you have a clear problem.
@@ -126,6 +127,7 @@ settings:
     topbar: Top Bar
     dock_and_sidebar: Dock
     home: Home
+    moments: Dynamic Feed
     favorites: Favorites
     search: Search
     volume_balance: Volume Normalization
@@ -177,7 +179,21 @@ settings:
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs
   group_home_layout: Home Layout
+  group_moments_sidebar: Dynamic Feed Sidebar
+  group_moments_interaction: Dynamic Card Interaction
   group_version_reminder: Version reminders
+  moments_show_user_card: Show user card
+  moments_show_publish: Show publish action
+  moments_show_live: Show live users
+  moments_enable_live_preview: Preview live dynamics on hover
+  moments_enable_live_preview_desc: Play a live preview when hovering over a live dynamic cover.
+  moments_enable_video_preview: Preview video dynamics on hover
+  moments_enable_video_preview_desc: Play a video preview when hovering over a video dynamic cover.
+  moments_card_open_mode: Dynamic card click behavior
+  moments_card_open_mode_desc: Choose whether dynamic cards open in a dialog or a new tab. Live dynamics can only open in a new tab.
+  moments_card_open_mode_opt:
+    dialog: Dialog
+    new_tab: New tab
   btn:
     authorize: Authorize
     revoke: Revoke

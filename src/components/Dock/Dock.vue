@@ -177,6 +177,12 @@ watch(() => settings.value.autoHideDock, (newValue) => {
   hideDock.value = newValue
 }, { immediate: true })
 
+// 动态页此前没有插件实现，旧配置会被强制保存为原始 B 站页面。
+// 此处仅迁移这一历史默认值，之后用户仍可自行切换回原页面。
+const legacyMomentsConfig = settings.value.dockItemsConfig.find(item => item.page === AppPage.Moments)
+if (legacyMomentsConfig?.useOriginalBiliPage)
+  legacyMomentsConfig.useOriginalBiliPage = false
+
 // use Json stringify to watch the changes of the array item properties
 watch(() => JSON.stringify(settings.value.dockItemsConfig), () => {
   currentDockItems.value = computeDockItem()
