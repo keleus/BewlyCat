@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { setUselessFeedCardBlockerEnabled } from '~/contentScripts/features/blockUselessFeedCards'
 import { LanguageType } from '~/enums/appEnums'
-import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, LIQUID_GLASS_TINT_MAX_PERCENT, LIQUID_GLASS_TINT_MIN_PERCENT, localSettings, originalSettings, settings } from '~/logic'
+import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, LIQUID_GLASS_TINT_FULL_PERCENT, LIQUID_GLASS_TINT_MAX_PERCENT, LIQUID_GLASS_TINT_MIN_PERCENT, localSettings, originalSettings, settings } from '~/logic'
 import { resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe, isVideoPlaybackPage } from '~/utils/main'
 
@@ -34,10 +34,12 @@ export function setupNecessarySettingsWatchers() {
   }
 
   const applyLiquidGlassTint = (rawValue: number) => {
-    const tintRatio = clampLiquidGlassTint(rawValue) / LIQUID_GLASS_TINT_MAX_PERCENT
+    const clampedTint = clampLiquidGlassTint(rawValue)
+    const tintRatio = clampedTint / LIQUID_GLASS_TINT_FULL_PERCENT
     const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
     const targets: HTMLElement[] = [document.documentElement]
     const darkenAlpha = (0.22 * tintRatio).toFixed(3)
+    const backdropBrightness = Math.max(35, 100 - clampedTint * 0.45).toFixed(1)
     const legacySurfaceAlphaProperties = [
       '--bew-liquid-glass-content-alpha',
       '--bew-liquid-glass-content-hover-alpha',
@@ -59,6 +61,7 @@ export function setupNecessarySettingsWatchers() {
     targets.forEach((element) => {
       legacySurfaceAlphaProperties.forEach(property => element.style.removeProperty(property))
       element.style.setProperty('--bew-liquid-glass-darken-alpha', darkenAlpha)
+      element.style.setProperty('--bew-liquid-glass-backdrop-brightness', `${backdropBrightness}%`)
     })
   }
 
@@ -85,7 +88,7 @@ export function setupNecessarySettingsWatchers() {
     }
 
     const liquidGlassFilter = settings.value.enableLiquidGlass
-      ? 'saturate(210%) contrast(108%) brightness(104%)'
+      ? 'saturate(185%) contrast(108%) brightness(var(--bew-liquid-glass-backdrop-brightness, 55%))'
       : 'saturate(180%)'
     const blur1Value = `blur(${clampedValue}px) ${liquidGlassFilter}`
     const dialogBlur = clampedValue === 0 ? 0 : clampedValue + FROSTED_GLASS_DIALOG_OFFSET_PX

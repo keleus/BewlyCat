@@ -194,7 +194,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 </script>
 
 <template>
-  <div v-if="getCSRF()" flex="~ col md:row lg:row" gap-4>
+  <div v-if="getCSRF()" class="watch-later-page" flex="~ col md:row lg:row" gap-4>
     <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" mb-6>
       <h3 text="3xl $bew-text-1" font-bold mb-6>
         {{ t('watch_later.title') }} ({{ watchLaterCount }})
@@ -212,6 +212,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
             flex cursor-pointer
           >
             <section
+              class="watch-later-card liquid-glass-surface"
               rounded="$bew-radius"
               flex="~ gap-6 col md:col lg:row items-start"
               relative
@@ -400,6 +401,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 
         <!-- Content -->
         <main
+          class="watch-later-summary liquid-glass-surface"
           pos="absolute top-0 left-0"
           w-full h-inherit
           overflow-overlay
@@ -461,4 +463,8 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 </template>
 
 <style lang="scss" scoped>
+.watch-later-card,
+.watch-later-summary {
+  background-color: var(--bew-content);
+}
 </style>

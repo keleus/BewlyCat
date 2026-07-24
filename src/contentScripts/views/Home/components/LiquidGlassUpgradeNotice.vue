@@ -36,8 +36,8 @@ function acknowledgeNotice() {
 <style scoped lang="scss">
 .liquid-glass-notice {
   position: fixed;
-  left: 24px;
-  bottom: 80px;
+  right: 24px;
+  bottom: max(24px, env(safe-area-inset-bottom, 0px));
   z-index: 51;
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr) auto;
@@ -113,8 +113,8 @@ function acknowledgeNotice() {
 
 @media (max-width: 640px) {
   .liquid-glass-notice {
-    left: 16px;
-    bottom: 72px;
+    right: 16px;
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
     grid-template-columns: 24px minmax(0, 1fr);
     width: calc(100vw - 32px);
   }

@@ -12,7 +12,8 @@
   --bew-liquid-glass-border-alpha: 0.14;
   --bew-liquid-glass-sheen-strong-alpha: 0.06;
   --bew-liquid-glass-sheen-weak-alpha: 0.03;
-  --bew-liquid-glass-darken-alpha: 0.066;
+  --bew-liquid-glass-darken-alpha: 0.22;
+  --bew-liquid-glass-backdrop-brightness: 55%;
   --bew-content-opacity: var(--bew-liquid-glass-content-alpha);
   --bew-content: rgb(255 255 255 / var(--bew-liquid-glass-content-alpha));
   --bew-content-hover: rgb(255 255 255 / var(--bew-liquid-glass-content-hover-alpha));
@@ -49,7 +50,7 @@
 
 :host(.enable-liquid-glass.dark:not(.disable-frosted-glass)),
 :root.enable-liquid-glass.dark:not(.disable-frosted-glass) {
-  --bew-liquid-glass-darken-alpha: 0.066;
+  --bew-liquid-glass-darken-alpha: 0.22;
   --bew-content: rgb(
     from color-mix(in oklab, var(--bew-dark-base-color), white 8%) r g b / var(--bew-liquid-glass-content-alpha)
   );
@@ -140,7 +141,12 @@
 }
 
 :root.enable-liquid-glass:not(.disable-frosted-glass) {
-  :is(.bewly-design .bili-header .slide-down, .bewly-design .bili-header .mini-header) {
+  :is(
+    .bewly-design .bili-header .slide-down,
+    .bewly-design .bili-header .mini-header,
+    .bewly-design.watchLaterPage .watchlater-list-nav.fixed,
+    .bewly-design.watchLaterPage .watch-later-list
+  ) {
     background-image: var(--bew-liquid-glass-sheen) !important;
     background-position: 0% 0%;
     background-size: 160% 160%;
@@ -163,7 +169,12 @@
   }
 
   :root.enable-liquid-glass:not(.disable-frosted-glass) {
-    :is(.bewly-design .bili-header .slide-down, .bewly-design .bili-header .mini-header) {
+    :is(
+      .bewly-design .bili-header .slide-down,
+      .bewly-design .bili-header .mini-header,
+      .bewly-design.watchLaterPage .watchlater-list-nav.fixed,
+      .bewly-design.watchLaterPage .watch-later-list
+    ) {
       animation: bew-liquid-glass-flow 12s ease-in-out infinite alternate;
     }
   }

@@ -71,7 +71,8 @@ export function resetAppAuthTokens() {
 export const FROSTED_GLASS_BLUR_MIN_PX = 1
 export const FROSTED_GLASS_BLUR_MAX_PX = 20
 export const LIQUID_GLASS_TINT_MIN_PERCENT = 0
-export const LIQUID_GLASS_TINT_MAX_PERCENT = 100
+export const LIQUID_GLASS_TINT_FULL_PERCENT = 100
+export const LIQUID_GLASS_TINT_MAX_PERCENT = 200
 
 // 快捷键基础配置接口
 export interface BaseShortcutSetting {
@@ -422,8 +423,8 @@ export const originalSettings: Settings = {
 
   enableFrostedGlass: true,
   enableLiquidGlass: true,
-  liquidGlassTintIntensity: 30,
-  frostedGlassBlurIntensity: 20,
+  liquidGlassTintIntensity: 53,
+  frostedGlassBlurIntensity: 14,
   disableShadow: false,
 
   // Link Opening Behavior
