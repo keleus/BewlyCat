@@ -26,6 +26,7 @@ interface ManagedVideoListeners {
   onPlay: () => void
   onPause: () => void
   onEnded: () => void
+  onTimeUpdate: () => void
   onLoadStart: () => void
   onEmptied: () => void
 }
@@ -47,6 +48,7 @@ const SHORT_TERM_WINDOW = 20
 const INTEGRATED_WINDOW = 100
 const ANALYSIS_EPSILON = 1e-8
 const PLAYBACK_END_TOLERANCE_SECONDS = 1
+const VISIBILITY_RESUME_PROGRESS_SECONDS = 0.5
 
 // Debug logger
 function log(msg: string, ...args: any[]) {
@@ -137,6 +139,7 @@ let interceptorTimer: ReturnType<typeof setInterval> | null = null
 let hasSetupSettingsWatcher = false
 let visibilityChangeHandler: (() => void) | null = null
 let shouldResetAnalysisOnNextPlayback = false
+let visibilityResumeStartTime: number | null = null
 
 // 临时启用/禁用状态（用于播放器控件）
 let tempDisabled = false
@@ -335,10 +338,11 @@ function unbindCurrentVideoListeners() {
   if (!currentVideoListeners)
     return
 
-  const { video, onPlay, onPause, onEnded, onLoadStart, onEmptied } = currentVideoListeners
+  const { video, onPlay, onPause, onEnded, onTimeUpdate, onLoadStart, onEmptied } = currentVideoListeners
   video.removeEventListener('play', onPlay)
   video.removeEventListener('pause', onPause)
   video.removeEventListener('ended', onEnded)
+  video.removeEventListener('timeupdate', onTimeUpdate)
   video.removeEventListener('loadstart', onLoadStart)
   video.removeEventListener('emptied', onEmptied)
 
@@ -350,6 +354,12 @@ function bindVideoListeners(video: HTMLVideoElement) {
 
   const onPlay = () => {
     if (video !== currentVideoElement)
+      return
+
+    // Visibility restoration can be followed by a synthetic/delayed play event.
+    // Keep the frozen gain until media time has progressed again instead of
+    // immediately sampling and rewriting the AudioParam during the tab switch.
+    if (visibilityResumeStartTime !== null)
       return
 
     updateProcessingState()
@@ -370,20 +380,42 @@ function bindVideoListeners(video: HTMLVideoElement) {
 
   const onEnded = () => {
     if (video === currentVideoElement) {
+      visibilityResumeStartTime = null
       resetProcessingForPlaybackBoundary()
     }
+  }
+
+  const onTimeUpdate = () => {
+    if (video !== currentVideoElement
+      || document.hidden
+      || visibilityResumeStartTime === null
+      || !isPlaybackActive(video)
+      || video.currentTime - visibilityResumeStartTime < VISIBILITY_RESUME_PROGRESS_SECONDS) {
+      return
+    }
+
+    visibilityResumeStartTime = null
+
+    if (audioContext)
+      resumeAudioContext(audioContext)
+
+    // Continue with the existing loudness windows and gain. This is a resume,
+    // not a recalculation/reset caused by visibilitychange.
+    startLoudnessAnalysis()
   }
 
   const resetForNewSource = () => {
     if (video !== currentVideoElement)
       return
 
+    visibilityResumeStartTime = null
     resetProcessingForPlaybackBoundary()
   }
 
   video.addEventListener('play', onPlay)
   video.addEventListener('pause', onPause)
   video.addEventListener('ended', onEnded)
+  video.addEventListener('timeupdate', onTimeUpdate)
   video.addEventListener('loadstart', resetForNewSource)
   video.addEventListener('emptied', resetForNewSource)
 
@@ -392,6 +424,7 @@ function bindVideoListeners(video: HTMLVideoElement) {
     onPlay,
     onPause,
     onEnded,
+    onTimeUpdate,
     onLoadStart: resetForNewSource,
     onEmptied: resetForNewSource,
   }
@@ -731,6 +764,7 @@ export function detach() {
   currentVideoElement = null
   hasAttached = false
   shouldResetAnalysisOnNextPlayback = false
+  visibilityResumeStartTime = null
 
   log('Detached')
 }
@@ -757,6 +791,7 @@ function stopAudioInterceptor() {
   }
 
   stopLoudnessAnalysis()
+  visibilityResumeStartTime = null
 }
 
 export function initAudioInterceptor() {
@@ -772,6 +807,7 @@ export function initAudioInterceptor() {
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
       if (document.hidden) {
+        visibilityResumeStartTime = null
         if (currentVideoElement)
           suspendProcessingForIdlePlayback()
         return
@@ -781,7 +817,8 @@ export function initAudioInterceptor() {
       // video. Browsers may expose a transient paused state during this event,
       // while Bilibili can keep additional idle video elements in the player.
       if (hasAttached && currentVideoElement?.isConnected && audioNodes) {
-        updateProcessingState()
+        if (!isPlaybackAtEnd(currentVideoElement))
+          visibilityResumeStartTime = currentVideoElement.currentTime
         return
       }
 
