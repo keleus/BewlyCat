@@ -886,6 +886,12 @@ version_reminder:
   bilibili_dynamic_desc: 查看开发者发布的更新动态
   acknowledge: 已知晓，本版本不再提示
   settings_hint: 可在“设置 → BewlyCat界面 → 首页”中关闭“新版本提醒”。
+
+liquid_glass_upgrade_notice:
+  title: 毛玻璃与 Liquid Glass 现已默认开启
+  description: 如果遇到卡顿、耗电或视频增强异常，可前往“设置 → 外观 → 视觉效果”关闭。
+  acknowledge: 知道了
+
 watch_later:
   title: 稍后再看
   clear_all: 清空稍后再看

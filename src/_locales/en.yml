@@ -964,6 +964,12 @@ version_reminder:
   bilibili_dynamic_desc: View update posts from the developer
   acknowledge: Got it, don't show this version again
   settings_hint: You can turn off “New version reminders” under Settings → BewlyCat Interface → Home.
+
+liquid_glass_upgrade_notice:
+  title: Frosted Glass and Liquid Glass are now enabled by default
+  description: If you notice lag, increased power use, or video enhancement issues, turn them off under Settings → Appearance → Visual Effects.
+  acknowledge: Got it
+
 watch_later:
   title: Watch Later
   clear_all: Clear all watch later

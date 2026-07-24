@@ -193,6 +193,7 @@ export interface Settings {
 
   enableFrostedGlass: boolean
   enableLiquidGlass: boolean
+  liquidGlassPerformanceNoticeAcknowledged: boolean
   liquidGlassTintIntensity: number
   frostedGlassBlurIntensity: number
   disableShadow: boolean
@@ -419,8 +420,9 @@ export const originalSettings: Settings = {
   overrideDanmakuFont: true,
   removeTheIndentFromChinesePunctuation: false,
 
-  enableFrostedGlass: false,
-  enableLiquidGlass: false,
+  enableFrostedGlass: true,
+  enableLiquidGlass: true,
+  liquidGlassPerformanceNoticeAcknowledged: true,
   liquidGlassTintIntensity: 30,
   frostedGlassBlurIntensity: 20,
   disableShadow: false,
@@ -656,8 +658,28 @@ export const settingsReady = new Promise<Settings>((resolve) => {
   resolveSettingsReady = resolve
 })
 
+export function mergeSettingsWithDefaults(storedValue: Settings, defaults: Settings): Settings {
+  const storedRecord = storedValue as unknown as Record<string, unknown>
+  const hasLiquidGlassSetting = 'enableLiquidGlass' in storedRecord
+  const hasPerformanceNoticeState = typeof storedRecord.liquidGlassPerformanceNoticeAcknowledged === 'boolean'
+
+  return {
+    ...defaults,
+    ...storedValue,
+    ...(!hasLiquidGlassSetting
+      ? {
+          enableFrostedGlass: true,
+          enableLiquidGlass: true,
+        }
+      : {}),
+    liquidGlassPerformanceNoticeAcknowledged: hasPerformanceNoticeState
+      ? storedRecord.liquidGlassPerformanceNoticeAcknowledged as boolean
+      : hasLiquidGlassSetting,
+  }
+}
+
 export const settings = useStorageLocal('settings', originalSettings, {
-  mergeDefaults: true,
+  mergeDefaults: mergeSettingsWithDefaults,
   writeDefaults: false,
   onReady: value => resolveSettingsReady(value),
 })

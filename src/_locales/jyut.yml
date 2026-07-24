@@ -834,6 +834,12 @@ version_reminder:
   bilibili_dynamic_desc: 睇開發者發佈嘅更新動態
   acknowledge: 知道喇，呢個版本唔再提示
   settings_hint: 可以去「設定 → BewlyCat界面 → 主頁」閂咗「新版本提醒」。
+
+liquid_glass_upgrade_notice:
+  title: 毛玻璃同 Liquid Glass 而家預設開啓
+  description: 如果遇到窒、食電或者影片增強異常，可以去「設定 → 外觀 → 視覺效果」閂咗佢哋。
+  acknowledge: 知道喇
+
 watch_later:
   title: 陣間至睇
   clear_all: 剷曬陣間至睇啲片
