@@ -1096,7 +1096,8 @@ function transformFavoriteItem(item: FavoriteItem): Video {
               <span class="nav-section-count">{{ favoriteCategories.length }}</span>
               <span class="nav-section-arrow" :class="{ collapsed: !folderSectionExpanded }" i-tabler:chevron-up />
             </button>
-            <Tooltip :content="t('favorites.sidebar_manage')" placement="top" type="dark">
+            <!-- 侧栏右缘按钮：Tooltip 向左展开，避免被 sidebar overflow 裁切 -->
+            <Tooltip :content="t('favorites.sidebar_manage')" placement="left" type="dark">
               <button
                 class="nav-manage-btn"
                 :class="{ active: isManagingFolder }"
@@ -1117,7 +1118,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
               {{ t('favorites.batch_selected_count', { count: selectedFolderCount }) }}
             </span>
             <div class="manage-bar-actions">
-              <Tooltip :content="t('favorites.rename_folder')" placement="top" type="dark">
+              <Tooltip :content="t('favorites.rename_folder')" placement="left" type="dark">
                 <button
                   class="manage-bar-btn"
                   :disabled="!canRenameSelectedFolder || isSidebarOperating"
@@ -1127,7 +1128,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
                   <span i-tabler:edit />
                 </button>
               </Tooltip>
-              <Tooltip :content="t('common.operation.delete')" placement="top" type="dark">
+              <Tooltip :content="t('common.operation.delete')" placement="left" type="dark">
                 <button
                   class="manage-bar-btn danger"
                   :disabled="selectedFolderCount === 0 || isSidebarOperating"
@@ -1191,7 +1192,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
               <span class="nav-section-count">{{ collectedFavoriteSeasons.length }}</span>
               <span class="nav-section-arrow" :class="{ collapsed: !seasonSectionExpanded }" i-tabler:chevron-up />
             </button>
-            <Tooltip :content="t('favorites.sidebar_manage')" placement="top" type="dark">
+            <Tooltip :content="t('favorites.sidebar_manage')" placement="left" type="dark">
               <button
                 class="nav-manage-btn"
                 :class="{ active: isManagingSeason }"
@@ -1212,7 +1213,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
               {{ t('favorites.batch_selected_count', { count: selectedSeasonCount }) }}
             </span>
             <div class="manage-bar-actions">
-              <Tooltip :content="t('favorites.unfavorite')" placement="top" type="dark">
+              <Tooltip :content="t('favorites.unfavorite')" placement="left" type="dark">
                 <button
                   class="manage-bar-btn danger"
                   :disabled="selectedSeasonCount === 0 || isSidebarOperating"
