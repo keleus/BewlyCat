@@ -932,6 +932,21 @@ favorites:
   global_search_placeholder: 搜索全部收藏夹
   global_search_hint: 请输入关键词以搜索全部收藏夹
   season_play_all_fallback: 合集列表未就绪，已回退到合集开头
+  sidebar_manage: 管理
+  sidebar_manage_exit: 退出管理
+  select_all: 全选
+  unselect_all: 取消全选
+  rename_folder: 重命名
+  rename_folder_dialog_title: 重命名收藏夹
+  rename_folder_placeholder: 请输入收藏夹名称
+  rename_folder_empty: 收藏夹名称不能为空
+  default_folder_locked: 默认收藏夹不可重命名或删除
+  delete_folders_confirm: |-
+    要删除已选的 {count} 个收藏夹吗？
+    夹内视频的收藏关系将一并移除，该操作无法撤销。
+  delete_folders_failed: 收藏夹删除失败，请稍后重试
+  unfav_seasons_confirm: 确定取消收藏已选的 {count} 个合集吗？
+  unfav_seasons_failed: '{count} 个合集取消收藏失败'
 version_reminder:
   trigger: 新版本说明
   title: BewlyCat 已更新
