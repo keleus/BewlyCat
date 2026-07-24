@@ -93,6 +93,7 @@ settings:
   category_navigation_topbar_desc: 統一調整頂欄版面、元件、頻道、搜尋入口和通知顯示。
   category_navigation_dock_desc: 設定 Dock 列與側欄的位置、顯示和快捷操作。
   category_navigation_search_desc: 設定搜尋頁外觀、建議、歷史、熱門搜尋與結果頁。
+  category_navigation_moments_desc: 設定插件動態頁的左側元件和動態卡片開啟方式。
   category_playback_player_desc: 設定播放器模式、捲動行為、彈幕、字幕和播放狀態。
   category_playback_autoplay_desc: 設定自動連播與隨機播放的觸發規則。
   category_playback_volume_desc: 任何響度平衡處理都可能造成爆音、音質劣化或動態範圍縮小；沒有明顯問題時不應開啟。
@@ -126,6 +127,7 @@ settings:
     topbar: 頂欄
     dock_and_sidebar: Dock
     home: 首頁
+    moments: 動態頁
     favorites: 收藏
     search: 搜尋頁
     volume_balance: 音訊均衡
@@ -173,7 +175,21 @@ settings:
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄
   group_home_layout: 首頁版面
+  group_moments_sidebar: 動態頁左側元件
+  group_moments_interaction: 動態卡片互動
   group_version_reminder: 版本提醒
+  moments_show_user_card: 顯示使用者卡片
+  moments_show_publish: 顯示發布動態元件
+  moments_show_live: 顯示正在直播元件
+  moments_enable_live_preview: 直播動態懸停預覽
+  moments_enable_live_preview_desc: 滑鼠懸停直播動態封面時播放直播預覽。
+  moments_enable_video_preview: 影片動態懸停預覽
+  moments_enable_video_preview_desc: 滑鼠懸停影片動態封面時播放影片預覽。
+  moments_card_open_mode: 動態卡片點擊行為
+  moments_card_open_mode_desc: 選擇點擊動態卡片時使用彈窗或新分頁。直播動態只能在新分頁開啟。
+  moments_card_open_mode_opt:
+    dialog: 彈窗
+    new_tab: 新分頁
   btn:
     authorize: 授權
     revoke: 解除授權

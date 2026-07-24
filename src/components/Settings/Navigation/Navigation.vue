@@ -11,6 +11,14 @@ const pages = [
     component: defineAsyncComponent(() => import('../PluginComponentsAndPages/Home/Home.vue')),
   },
   {
+    value: 'moments',
+    titleKey: 'settings.plugin.moments',
+    descriptionKey: 'settings.category_navigation_moments_desc',
+    icon: 'i-mingcute:moment-line',
+    iconActivated: 'i-mingcute:moment-fill',
+    component: defineAsyncComponent(() => import('../PluginComponentsAndPages/Moments/Moments.vue')),
+  },
+  {
     value: 'video-card',
     titleKey: 'settings.plugin.video_card',
     descriptionKey: 'settings.category_browsing_video_card_desc',

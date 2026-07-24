@@ -93,6 +93,7 @@ settings:
   category_navigation_topbar_desc: 统一调整顶栏布局、组件、频道、搜索入口和通知显示。
   category_navigation_dock_desc: 配置 Dock 栏与侧栏的位置、显隐和快捷操作。
   category_navigation_search_desc: 配置搜索页外观、搜索建议、历史、热搜与结果页。
+  category_navigation_moments_desc: 配置插件动态页的左侧组件和动态卡片打开方式。
   category_playback_player_desc: 配置播放器模式、滚动行为、弹幕、字幕和播放状态。
   category_playback_autoplay_desc: 配置自动连播与随机播放的触发规则。
   category_playback_volume_desc: 任何响度均衡处理都可能造成爆音、音质劣化或动态范围缩小；没有明显问题时不应开启。
@@ -126,6 +127,7 @@ settings:
     topbar: 顶栏
     dock_and_sidebar: Dock栏
     home: 首页
+    moments: 动态页
     favorites: 收藏
     search: 搜索页
     volume_balance: 音量均衡
@@ -174,7 +176,21 @@ settings:
   group_search_page_mode: 搜索页模式
   group_home_tabs: 首页标签栏
   group_home_layout: 首页布局
+  group_moments_sidebar: 动态页左侧组件
+  group_moments_interaction: 动态卡片交互
   group_version_reminder: 版本提醒
+  moments_show_user_card: 显示用户卡片
+  moments_show_publish: 显示发布动态组件
+  moments_show_live: 显示正在直播组件
+  moments_enable_live_preview: 直播动态悬停预览
+  moments_enable_live_preview_desc: 鼠标悬停直播动态封面时播放直播预览。
+  moments_enable_video_preview: 视频动态悬停预览
+  moments_enable_video_preview_desc: 鼠标悬停视频动态封面时播放视频预览。
+  moments_card_open_mode: 动态卡片点击行为
+  moments_card_open_mode_desc: 选择点击动态卡片时使用弹窗或新建标签页。直播动态只能在新建标签页打开。
+  moments_card_open_mode_opt:
+    dialog: 弹窗
+    new_tab: 新建标签页
   btn:
     authorize: 授权
     revoke: 取消授权
