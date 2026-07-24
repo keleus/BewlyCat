@@ -16,6 +16,8 @@ defineProps<{
 
 const { forceWhiteIcon, handleNotificationsItemClick, showSearchBar } = useTopBarInteraction()
 
+const isArticlePage = /^https?:\/\/(?:www\.)?bilibili\.com\/(?:read|opus)\//.test(location.href)
+
 const leftSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
 const searchSection = ref<HTMLElement | null>(null)
@@ -191,7 +193,7 @@ function refreshSearchContent() {
     <div
       class="top-bar-header__divider"
       :class="{
-        'top-bar-header__divider--visible': !reachTop,
+        'top-bar-header__divider--visible': !reachTop && !isArticlePage,
         'top-bar-header__divider--white': forceWhiteIcon,
       }"
     />
@@ -251,7 +253,7 @@ function refreshSearchContent() {
 
 .top-bar-header__search-content {
   display: flex;
-  width: fit-content;
+  width: min(100%, clamp(440px, 36vw, 620px));
   max-width: 100%;
   min-width: 0;
   align-items: center;
@@ -260,15 +262,29 @@ function refreshSearchContent() {
 
 .top-bar-header__search-control {
   width: 100%;
-  max-width: clamp(520px, 40vw, 720px);
   min-width: 0;
   flex: 1 1 auto;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 1279px) {
+  .top-bar-header {
+    gap: 12px;
+    padding-inline: 16px;
+  }
+
+  .top-bar-header__search-content {
+    width: min(100%, clamp(300px, 34vw, 420px));
+  }
+}
+
+@media (max-width: 767px) {
   .top-bar-header {
     gap: 8px;
     padding-inline: 8px;
+  }
+
+  .top-bar-header__search-content {
+    width: min(100%, clamp(120px, 42vw, 280px));
   }
 }
 </style>

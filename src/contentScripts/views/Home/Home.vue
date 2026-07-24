@@ -40,6 +40,9 @@ const tabPageRef = ref()
 const topBarVisibility = ref<boolean>(true)
 const shouldShowHomeTabs = computed(() => currentTabs.value.length > 1)
 const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value || settings.value.enableGridLayoutSwitcher)
+const shouldShowFixedTabsBackground = computed(() => {
+  return settings.value.fixedHomeTabsOnHomePage && cachedScrollTop.value > 8
+})
 const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   return [
     { icon: 'i-mingcute:table-3-line', iconActivated: 'i-mingcute:table-3-fill', value: 'adaptive' },
@@ -218,6 +221,7 @@ function toggleTabContentLoading(loading: boolean) {
         <section
           v-if="shouldShowHomeTabs"
           class="glass-panel home-tabs-panel"
+          :class="{ 'home-tabs-panel--scrolled': shouldShowFixedTabsBackground }"
           h-40px
         >
           <div class="home-tabs-scroll" h-full of-x-auto of-y-hidden>
@@ -335,9 +339,25 @@ function toggleTabContentLoading(loading: boolean) {
   max-width: calc(100vw - 320px);
   justify-self: center;
   background: transparent;
-  border: 0;
+  border: 1px solid transparent;
+  border-radius: 9999px;
   box-shadow: none;
+  box-sizing: border-box;
   backdrop-filter: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    backdrop-filter 0.2s ease;
+}
+
+.home-tabs-panel--scrolled {
+  border-color: color-mix(in oklab, var(--bew-border-color), transparent 24%);
+  background: color-mix(in oklab, var(--bew-elevated), transparent 18%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 16px rgb(0 0 0 / 0.08);
+  backdrop-filter: var(--bew-filter-glass-1);
 }
 
 .home-grid-layout-switcher {
