@@ -412,7 +412,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.use_original_bilibili_homepage',
     'settings.adapt_to_other_page_styles',
     'settings.prevent_mobile_redirect',
-    'settings.nvidia_rtx_video_enhancement_compatibility',
     'settings.follow_bilibili_evolved_color',
     'settings.maintenance.title',
     'settings.maintenance.backup_title',

@@ -356,7 +356,6 @@ export interface Settings {
   showTopBar: boolean
   useOriginalBilibiliTopBar: boolean
   useOriginalBilibiliHomepage: boolean
-  nvidiaRtxVideoEnhancementCompatibility: boolean
   preventMobileRedirect: boolean
 
   // Video Player
@@ -596,7 +595,6 @@ export const originalSettings: Settings = {
   showTopBar: true,
   useOriginalBilibiliTopBar: false,
   useOriginalBilibiliHomepage: false,
-  nvidiaRtxVideoEnhancementCompatibility: false,
   preventMobileRedirect: false,
 
   // Video Player
@@ -723,6 +721,9 @@ watch(
 
     if (record.shortcuts?.webFullscreen?.key === 'W')
       record.shortcuts.webFullscreen.key = originalSettings.shortcuts.webFullscreen?.key
+
+    // 清理已移除的 NVIDIA RTX 视频增强兼容设置
+    Reflect.deleteProperty(record, 'nvidiaRtxVideoEnhancementCompatibility')
 
     // 迁移旧的 disableFrostedGlass 到 enableFrostedGlass
     if ('disableFrostedGlass' in record) {
