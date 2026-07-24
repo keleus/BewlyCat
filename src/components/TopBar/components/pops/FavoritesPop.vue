@@ -473,21 +473,21 @@ defineExpose({
             class="group"
             transition="~ duration-300"
           >
-            <section flex="~ gap-4" item-start>
+            <section flex="~ gap-4" items-start>
               <div
                 bg="$bew-skeleton"
                 w="120px"
                 flex="shrink-0"
                 rounded="$bew-radius-half"
                 overflow="hidden"
+                class="aspect-video"
               >
-                <div pos="relative">
+                <div pos="relative" w-full h-full>
                   <img
-                    w="120px"
-                    class="aspect-video"
+                    w-full h-full
                     :src="`${removeHttpFromUrl(item.cover)}@256w_144h_1c`"
                     :alt="item.title"
-                    bg="contain"
+                    object-cover
                   >
                   <div
                     pos="absolute bottom-0 right-0"
