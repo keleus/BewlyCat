@@ -47,6 +47,17 @@ const API_MOMENT = {
     },
     afterHandle: AHS.J_D,
   },
+  getMomentsPortal: {
+    url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/portal',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      up_list_more: 1,
+      web_location: '333.1365',
+    },
+    afterHandle: AHS.J_D,
+  },
   getMomentDetail: {
     url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/detail',
     _fetch: {
@@ -55,6 +66,25 @@ const API_MOMENT = {
     params: {
       id: '',
       features: 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,htmlNewStyle',
+    },
+    afterHandle: AHS.J_D,
+  },
+  setMomentLike: {
+    url: 'https://api.bilibili.com/x/dynamic/feed/dyn/thumb',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        dyn_id_str: '',
+        up: 1,
+        spmid: '333.1369.0.0',
+        from_spmid: '333.999.0.0',
+      },
+    },
+    params: {
+      csrf: '',
     },
     afterHandle: AHS.J_D,
   },
