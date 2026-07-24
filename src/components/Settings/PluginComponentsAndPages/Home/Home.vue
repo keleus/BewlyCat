@@ -1,12 +1,15 @@
 <script lang="ts" setup>
 import QRCodeVue from 'qrcode.vue'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import draggable from 'vuedraggable'
 
 import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
+import Select from '~/components/Select.vue'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
+import type { HomeTabsPosition } from '~/logic/storage'
 import { useMainStore } from '~/stores/mainStore'
 import { getTVLoginQRCode, hasValidAppAuthTokens, pollTVLoginQRCode, revokeAccessKey, saveAppAuthTokens } from '~/utils/authProvider'
 
@@ -17,7 +20,19 @@ import FilterByTitleTable from './components/FilterByTitleTable.vue'
 import FilterByUserTable from './components/FilterByUserTable.vue'
 
 const mainStore = useMainStore()
+const { t } = useI18n()
 const toast = useToast()
+
+const homeTabsPositionOptions = computed(() => [
+  {
+    label: t('common.position.center'),
+    value: 'center' satisfies HomeTabsPosition,
+  },
+  {
+    label: t('common.position.left'),
+    value: 'left' satisfies HomeTabsPosition,
+  },
+])
 
 const showSearchPageModeSharedSettings = ref<boolean>(false)
 const showQRCodeDialog = ref<boolean>(false)
@@ -317,6 +332,8 @@ function handleToggleHomeTab(tab: any) {
     <SettingsItemGroup
       :title="$t('settings.group_recommendation_filters')"
       :desc="$t('settings.group_recommendation_filters_desc')"
+      collapsible
+      default-collapsed
     >
       <SettingsItem :title="$t('settings.disable_filters_for_followed_users')" :desc="$t('settings.disable_filters_for_followed_users_desc')" right-width="auto">
         <Radio v-model="settings.disableFilterForFollowedUser" />
@@ -474,7 +491,11 @@ function handleToggleHomeTab(tab: any) {
     <SettingsItemGroup
       :title="$t('settings.group_home_tabs')"
     >
-      <SettingsItem :desc="$t('settings.home_tabs_adjustment_desc')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.home_tabs_adjustment')"
+        :desc="$t('settings.home_tabs_adjustment_desc')"
+        right-width="auto"
+      >
         <template #title>
           <div flex="~ gap-4 items-center">
             {{ $t('settings.home_tabs_adjustment') }}
@@ -508,6 +529,9 @@ function handleToggleHomeTab(tab: any) {
             </template>
           </draggable>
         </template>
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.home_tabs_position')" right-width="auto">
+        <Select v-model="settings.homeTabsPosition" :options="homeTabsPositionOptions" w="160px" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.fixed_home_tabs_on_home_page')" right-width="auto">
         <Radio v-model="settings.fixedHomeTabsOnHomePage" />

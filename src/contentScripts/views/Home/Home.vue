@@ -215,7 +215,10 @@ function toggleTabContentLoading(loading: boolean) {
       <header
         v-if="shouldShowHomeHeader"
         class="home-header"
-        :class="{ 'home-header-fixed': settings.fixedHomeTabsOnHomePage }"
+        :class="{
+          'home-header--tabs-left': settings.homeTabsPosition === 'left',
+          'home-header-fixed': settings.fixedHomeTabsOnHomePage,
+        }"
         w-full z-9 duration-300 ease-in-out
       >
         <section
@@ -351,6 +354,20 @@ function toggleTabContentLoading(loading: boolean) {
     backdrop-filter 0.2s ease;
 }
 
+.home-header--tabs-left {
+  grid-template-columns: minmax(0, 1fr) auto;
+
+  .home-tabs-panel {
+    grid-column: 1;
+    max-width: 100%;
+    justify-self: start;
+  }
+
+  .home-grid-layout-switcher {
+    grid-column: 2;
+  }
+}
+
 .home-tabs-panel--scrolled {
   border-color: color-mix(in oklab, var(--bew-border-color), transparent 24%);
   background: color-mix(in oklab, var(--bew-elevated), transparent 18%);
@@ -419,6 +436,9 @@ function toggleTabContentLoading(loading: boolean) {
   .home-tabs-panel {
     grid-column: 1;
     max-width: 100%;
+  }
+
+  .home-header--tabs-left .home-tabs-panel {
     justify-self: start;
   }
 

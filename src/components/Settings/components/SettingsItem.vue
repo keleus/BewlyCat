@@ -5,22 +5,26 @@ withDefaults(defineProps<{
   title?: string
   desc?: string
   rightWidth?: RightWidth
+  badge?: string
 }>(), {
   rightWidth: 'default',
 })
 </script>
 
 <template>
-  <div class="b-settings-item" py-4>
+  <div class="b-settings-item" :data-settings-title="title" py-4>
     <div
       class="b-settings-item-row" :class="`right-width-${rightWidth}`" flex="~ gap-4" justify-between items-center
       text-base
     >
       <div class="left-content" flex-1 min-w-0>
         <div>
-          <slot name="title">
-            {{ title }}
-          </slot>
+          <span class="settings-item-title">
+            <slot name="title">
+              {{ title }}
+            </slot>
+            <span v-if="badge" class="settings-item-badge">{{ badge }}</span>
+          </span>
         </div>
 
         <div
@@ -62,5 +66,21 @@ withDefaults(defineProps<{
 
 .b-settings-item + .b-settings-item {
   --uno: "border-t-1 border-$bew-border-color";
+}
+
+.settings-item-title {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.settings-item-badge {
+  padding: 2px 7px;
+  color: var(--bew-warning-color);
+  background: color-mix(in oklab, var(--bew-warning-color), transparent 88%);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
 }
 </style>

@@ -53,6 +53,7 @@ common:
     operations: 操作
   position:
     left: 左邊
+    center: 置中
     right: 右邊
     top: 上頭
     bottom: 下低
@@ -67,6 +68,49 @@ player_screenshot:
   video_unavailable: 而家嘅影片畫面用唔到
 settings:
   title: 設定
+  menu_general: 一般
+  menu_navigation: 瀏覽同導覽
+  menu_playback: 播放同聲音
+  menu_advanced: 進階同維護
+  category_navigation: 設定分類導覽
+  badge_performance_impact: 效能影響
+  badge_advanced: 進階
+  badge_irreversible: 無法復原
+  badge_use_with_caution: 小心開啟
+  search:
+    placeholder: 搜尋設定
+    no_results: 搵唔到相關設定
+    located: 已定位到呢個設定
+  category_general_desc: 設定語言、互動版面、連結行為、內容清理同收藏。
+  category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型同自訂樣式。
+  category_shortcuts_desc: 啟用、修改或者還原 BewlyCat 同播放器快捷鍵。
+  breadcrumb: 設定位置
+  group_interaction_layout: 互動同版面
+  category_browsing_home_desc: 設定首頁推薦、內容過濾、關注頁同首頁分頁。
+  category_browsing_video_card_desc: 設定影片卡片嘅版面、預覽、資料顯示同開啟方式。
+  category_browsing_favorites_desc: 設定收藏內容嘅顯示同互動方式。
+  category_navigation_link_opening_desc: 統一設定頂欄、影片卡片同搜尋列連結嘅開啟位置同抽屜行為。
+  category_navigation_topbar_desc: 統一調整頂欄版面、元件、頻道、搜尋入口同通知顯示。
+  category_navigation_dock_desc: 設定 Dock 欄同側欄嘅位置、顯示同快捷操作。
+  category_navigation_search_desc: 設定搜尋頁外觀、建議、歷史、熱門搜尋同結果頁。
+  category_playback_player_desc: 設定播放器模式、捲動、彈幕、字幕同播放狀態。
+  category_playback_autoplay_desc: 設定自動連播同隨機播放規則。
+  category_playback_volume_desc: 任何響度平衡處理都可能造成爆音、音質劣化或者動態範圍縮細；冇明顯問題時唔應該開啟。
+  category_bilibili_comments_desc: 加強留言區嘅用戶資料同內容顯示。
+  category_bilibili_vip_desc: 設定大會員權益相關嘅提醒功能。
+  category_advanced_compatibility_desc: 設定原版頁面、第三方擴充功能同其他頁面嘅相容行為。
+  category_advanced_maintenance_desc: 匯出備份、匯入設定或者還原 BewlyCat 預設配置。
+  maintenance:
+    title: 備份同重設
+    backup_title: 設定備份
+    backup_desc: 匯出設定做備份或搬移，亦可以由現有備份還原。
+    import_desc: 由 BewlyCat JSON 備份匯入可識別嘅設定。
+    import_failed: 讀唔到設定檔，請確認係有效嘅 JSON 備份。
+    import_no_matches: 備份入面冇可以匯入嘅設定。
+    import_success: 匯入成功：已套用 {imported} 項，忽略 {ignored} 項未知設定。
+    reset_title: 還原預設設定
+    reset_desc: 呢區嘅操作會影響全部 BewlyCat 設定。
+    reset_warning: 還原之後無法復原，而家嘅語言設定會保留。
   menu_plugin_components_and_pages: BewlyCat界面
   menu_bilibili_features_enhancement: Bilibili功能
   menu_appearance: 版面
@@ -103,6 +147,7 @@ settings:
   group_languages_and_fonts: 語言同字型
   group_link_opening_behavior: 連結開啓行爲
   group_video_card: 影片卡片
+  group_video_card_display: 顯示同預覽
   group_performance: 毛玻璃同效能
   group_player_settings: 播放器設定
   group_player_components: 播放器組件
@@ -149,8 +194,8 @@ settings:
   select_language: 介面語言
   select_language_opt:
     english: 英文
-    mandarin_cn: 官话 - 简体中文
-    mandarin_tw: 官話 - 繁體中文
+    mandarin_cn: 简体中文
+    mandarin_tw: 繁體中文
     jyut: 廣東話
   customize_font: 自訂字型
   customize_font_opt:
@@ -239,6 +284,8 @@ settings:
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂欄切換掣
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換掣
+  filter_articles_in_moments: 過濾專欄
+  filter_articles_in_moments_desc: 喺動態列表過濾專欄內容，只顯示影片
   top_bar_icon_badges: 圖標邊位標記
   top_bar_icon_badges_opt:
     number: 數字
@@ -414,6 +461,7 @@ settings:
   search_page_mode_wallpaper_fixed: 定住搵嘢頁模式嘅背景
   home_tabs_adjustment: 分頁欄調整
   home_tabs_adjustment_desc: 第一個啓用嘅分頁項目會係開始頁面。
+  home_tabs_position: 分頁欄位置
   always_show_tabs_on_home_page: 捲動時隱藏主頁分頁欄
   fixed_home_tabs_on_home_page: 固定主頁分頁欄
   topbar_visibility: BewlyBewly 頂欄可視性
@@ -437,7 +485,9 @@ settings:
   reset_settings_confirm: |-
     重設設定？
     噉做冇得返轉頭噃，你確定要重設你之前嘅設定？
-  contributors: 貢獻者
+  current_contributors: BewlyCat 貢獻者
+  contributors_image_failed: 貢獻者圖片載入失敗
+  contributors: BewlyBewly 歷史貢獻者
   video_page_top_bar_config: 影片頁頂欄配置
   video_page_top_bar_config_desc: 控制影片頁頂欄嘅顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「捲動顯示」表示頁面捲動時顯示。
   video_page_top_bar_config_opt:

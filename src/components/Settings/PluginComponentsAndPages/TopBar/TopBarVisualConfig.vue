@@ -10,11 +10,19 @@ import { settings } from '~/logic'
 import { allChannelConfigs } from '../../../TopBar/constants/channels'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import { topBarElementStorageKey } from '../../searchCatalog'
 
 const { t } = useI18n()
 
 // 当前选中的顶栏元素
-const selectedElement = ref<string>('switchers')
+const selectedElement = ref<string>(sessionStorage.getItem(topBarElementStorageKey) ?? 'switchers')
+
+watch(selectedElement, (element) => {
+  if (element)
+    sessionStorage.setItem(topBarElementStorageKey, element)
+  else
+    sessionStorage.removeItem(topBarElementStorageKey)
+})
 
 // 顶栏元素类型定义
 interface TopBarElement {
@@ -217,8 +225,8 @@ function toggleChannel(value: string) {
 
 <template>
   <SettingsItemGroup :title="$t('settings.group_topbar')">
-    <SettingsItem>
-      <template #bottom>
+    <div class="topbar-visual-config">
+      <div>
         <!-- 提示文字 -->
         <div class="topbar-config-hint" mb-3>
           <div class="topbar-config-hint__icon" i-mingcute:cursor-click-line />
@@ -318,7 +326,10 @@ function toggleChannel(value: string) {
             <!-- Logo + 固定分区配置 -->
             <div v-if="selectedElement === 'logoAndChannels'" flex="~ col gap-4">
               <div flex="~ items-center justify-between">
-                <div text-lg font-semibold>
+                <div
+                  :data-settings-title="$t('settings.topbar_pinned_channels_title')"
+                  text-lg font-semibold
+                >
                   Logo & {{ $t('settings.topbar_pinned_channels_title') }}
                 </div>
                 <Button
@@ -407,7 +418,10 @@ function toggleChannel(value: string) {
 
             <!-- 搜索框配置 -->
             <div v-else-if="selectedElement === 'search'" flex="~ col">
-              <div text-lg font-semibold>
+              <div
+                :data-settings-title="$t('settings.group_search_bar')"
+                text-lg font-semibold
+              >
                 {{ $t('settings.group_search_bar') }}
               </div>
               <SettingsItem :title="$t('settings.show_hot_search_in_top_bar')" :desc="$t('settings.show_hot_search_in_top_bar_desc')" right-width="auto">
@@ -459,8 +473,8 @@ function toggleChannel(value: string) {
               <!-- 动态特殊设置 -->
               <SettingsItem
                 v-if="selectedElement === 'moments'"
-                title="过滤专栏"
-                desc="在动态列表中过滤掉专栏内容，仅显示视频"
+                :title="$t('settings.filter_articles_in_moments')"
+                :desc="$t('settings.filter_articles_in_moments_desc')"
                 right-width="auto"
               >
                 <Radio v-model="settings.filterArticlesInMoments" />
@@ -521,12 +535,16 @@ function toggleChannel(value: string) {
             </div>
           </div>
         </div>
-      </template>
-    </SettingsItem>
+      </div>
+    </div>
   </SettingsItemGroup>
 </template>
 
 <style lang="scss" scoped>
+.topbar-visual-config {
+  padding: 16px 0;
+}
+
 .topbar-preview {
   position: relative;
 }
