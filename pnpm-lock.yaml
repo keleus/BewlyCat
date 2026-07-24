@@ -99,9 +99,6 @@ importers:
       fs-extra:
         specifier: ^11.3.1
         version: 11.3.1
-      jsdom:
-        specifier: ^26.1.0
-        version: 26.1.0
       knip:
         specifier: ^5.62.0
         version: 5.62.0(@types/node@24.3.0)(typescript@5.9.2)
@@ -147,9 +144,6 @@ importers:
       vite:
         specifier: ^7.1.3
         version: 7.1.3(@types/node@24.3.0)(jiti@2.5.1)(sass@1.90.0)(terser@5.43.1)(tsx@4.20.4)(yaml@2.8.1)
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.3.0)(jiti@2.5.1)(jsdom@26.1.0)(sass@1.90.0)(terser@5.43.1)(tsx@4.20.4)(yaml@2.8.1)
       vue:
         specifier: ^3.5.19
         version: 3.5.19(typescript@5.9.2)
@@ -5865,6 +5859,7 @@ snapshots:
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-tokenizer': 3.0.4
       lru-cache: 10.4.3
+    optional: true
 
   '@babel/code-frame@7.27.1':
     dependencies:
@@ -5939,12 +5934,14 @@ snapshots:
       conventional-commits-filter: 5.0.0
       conventional-commits-parser: 6.2.0
 
-  '@csstools/color-helpers@5.0.2': {}
+  '@csstools/color-helpers@5.0.2':
+    optional: true
 
   '@csstools/css-calc@2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)':
     dependencies:
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-tokenizer': 3.0.4
+    optional: true
 
   '@csstools/css-color-parser@3.0.10(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)':
     dependencies:
@@ -5952,12 +5949,15 @@ snapshots:
       '@csstools/css-calc': 2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-tokenizer': 3.0.4
+    optional: true
 
   '@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4)':
     dependencies:
       '@csstools/css-tokenizer': 3.0.4
+    optional: true
 
-  '@csstools/css-tokenizer@3.0.4': {}
+  '@csstools/css-tokenizer@3.0.4':
+    optional: true
 
   '@devicefarmer/adbkit-logcat@2.1.3': {}
 
@@ -6819,12 +6819,14 @@ snapshots:
   '@types/chai@5.2.2':
     dependencies:
       '@types/deep-eql': 4.0.2
+    optional: true
 
   '@types/debug@4.1.12':
     dependencies:
       '@types/ms': 2.1.0
 
-  '@types/deep-eql@4.0.2': {}
+  '@types/deep-eql@4.0.2':
+    optional: true
 
   '@types/estree@1.0.8': {}
 
@@ -7150,6 +7152,7 @@ snapshots:
       '@vitest/utils': 3.2.4
       chai: 5.3.1
       tinyrainbow: 2.0.0
+    optional: true
 
   '@vitest/mocker@3.2.4(vite@7.1.3(@types/node@24.3.0)(jiti@2.5.1)(sass@1.90.0)(terser@5.43.1)(tsx@4.20.4)(yaml@2.8.1))':
     dependencies:
@@ -7158,32 +7161,38 @@ snapshots:
       magic-string: 0.30.17
     optionalDependencies:
       vite: 7.1.3(@types/node@24.3.0)(jiti@2.5.1)(sass@1.90.0)(terser@5.43.1)(tsx@4.20.4)(yaml@2.8.1)
+    optional: true
 
   '@vitest/pretty-format@3.2.4':
     dependencies:
       tinyrainbow: 2.0.0
+    optional: true
 
   '@vitest/runner@3.2.4':
     dependencies:
       '@vitest/utils': 3.2.4
       pathe: 2.0.3
       strip-literal: 3.0.0
+    optional: true
 
   '@vitest/snapshot@3.2.4':
     dependencies:
       '@vitest/pretty-format': 3.2.4
       magic-string: 0.30.17
       pathe: 2.0.3
+    optional: true
 
   '@vitest/spy@3.2.4':
     dependencies:
       tinyspy: 4.0.3
+    optional: true
 
   '@vitest/utils@3.2.4':
     dependencies:
       '@vitest/pretty-format': 3.2.4
       loupe: 3.2.0
       tinyrainbow: 2.0.0
+    optional: true
 
   '@volar/language-core@2.4.22':
     dependencies:
@@ -7497,7 +7506,8 @@ snapshots:
     dependencies:
       safer-buffer: 2.1.2
 
-  assertion-error@2.0.1: {}
+  assertion-error@2.0.1:
+    optional: true
 
   ast-types@0.13.4:
     dependencies:
@@ -7725,6 +7735,7 @@ snapshots:
       deep-eql: 5.0.2
       loupe: 3.2.0
       pathval: 2.0.1
+    optional: true
 
   chalk@2.4.2:
     dependencies:
@@ -7780,7 +7791,8 @@ snapshots:
 
   charenc@0.0.2: {}
 
-  check-error@2.1.1: {}
+  check-error@2.1.1:
+    optional: true
 
   cheerio-select@2.1.0:
     dependencies:
@@ -8064,6 +8076,7 @@ snapshots:
     dependencies:
       '@asamuzakjp/css-color': 3.2.0
       rrweb-cssom: 0.8.0
+    optional: true
 
   csstype@3.1.3: {}
 
@@ -8073,6 +8086,7 @@ snapshots:
     dependencies:
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
+    optional: true
 
   data-view-buffer@1.0.2:
     dependencies:
@@ -8106,13 +8120,15 @@ snapshots:
 
   decamelize@6.0.0: {}
 
-  decimal.js@10.6.0: {}
+  decimal.js@10.6.0:
+    optional: true
 
   decode-named-character-reference@1.2.0:
     dependencies:
       character-entities: 2.0.2
 
-  deep-eql@5.0.2: {}
+  deep-eql@5.0.2:
+    optional: true
 
   deep-extend@0.6.0: {}
 
@@ -8806,7 +8822,8 @@ snapshots:
       strip-final-newline: 4.0.0
       yoctocolors: 2.1.2
 
-  expect-type@1.2.2: {}
+  expect-type@1.2.2:
+    optional: true
 
   exsolve@1.0.7: {}
 
@@ -9181,6 +9198,7 @@ snapshots:
   html-encoding-sniffer@4.0.0:
     dependencies:
       whatwg-encoding: 3.1.1
+    optional: true
 
   html-escaper@3.0.3: {}
 
@@ -9548,6 +9566,7 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+    optional: true
 
   jsesc@3.0.2: {}
 
@@ -9767,7 +9786,8 @@ snapshots:
 
   longest-streak@3.1.0: {}
 
-  loupe@3.2.0: {}
+  loupe@3.2.0:
+    optional: true
 
   lru-cache@10.4.3: {}
 
@@ -10288,7 +10308,8 @@ snapshots:
     dependencies:
       boolbase: 1.0.0
 
-  nwsapi@2.2.21: {}
+  nwsapi@2.2.21:
+    optional: true
 
   nypm@0.5.4:
     dependencies:
@@ -10571,7 +10592,8 @@ snapshots:
 
   pathe@2.0.3: {}
 
-  pathval@2.0.1: {}
+  pathval@2.0.1:
+    optional: true
 
   pbf@3.3.0:
     dependencies:
@@ -10968,7 +10990,8 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.46.4
       fsevents: 2.3.3
 
-  rrweb-cssom@0.8.0: {}
+  rrweb-cssom@0.8.0:
+    optional: true
 
   run-applescript@5.0.0:
     dependencies:
@@ -11026,6 +11049,7 @@ snapshots:
   saxes@6.0.0:
     dependencies:
       xmlchars: 2.2.0
+    optional: true
 
   scslre@0.3.0:
     dependencies:
@@ -11114,7 +11138,8 @@ snapshots:
       side-channel-map: 1.0.1
       side-channel-weakmap: 1.0.2
 
-  siginfo@2.0.0: {}
+  siginfo@2.0.0:
+    optional: true
 
   signal-exit@3.0.7: {}
 
@@ -11210,7 +11235,8 @@ snapshots:
     dependencies:
       through: 2.3.8
 
-  stackback@0.0.2: {}
+  stackback@0.0.2:
+    optional: true
 
   std-env@3.9.0: {}
 
@@ -11352,7 +11378,8 @@ snapshots:
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
-  symbol-tree@3.2.4: {}
+  symbol-tree@3.2.4:
+    optional: true
 
   synckit@0.11.11:
     dependencies:
@@ -11405,7 +11432,8 @@ snapshots:
 
   through@2.3.8: {}
 
-  tinybench@2.9.0: {}
+  tinybench@2.9.0:
+    optional: true
 
   tinyexec@0.3.2: {}
 
@@ -11416,19 +11444,24 @@ snapshots:
       fdir: 6.5.0(picomatch@4.0.3)
       picomatch: 4.0.3
 
-  tinypool@1.1.1: {}
+  tinypool@1.1.1:
+    optional: true
 
-  tinyrainbow@2.0.0: {}
+  tinyrainbow@2.0.0:
+    optional: true
 
-  tinyspy@4.0.3: {}
+  tinyspy@4.0.3:
+    optional: true
 
   titleize@3.0.0: {}
 
-  tldts-core@6.1.86: {}
+  tldts-core@6.1.86:
+    optional: true
 
   tldts@6.1.86:
     dependencies:
       tldts-core: 6.1.86
+    optional: true
 
   tmp@0.2.3: {}
 
@@ -11445,6 +11478,7 @@ snapshots:
   tough-cookie@5.1.2:
     dependencies:
       tldts: 6.1.86
+    optional: true
 
   tr46@1.0.1:
     dependencies:
@@ -11453,6 +11487,7 @@ snapshots:
   tr46@5.1.1:
     dependencies:
       punycode: 2.3.1
+    optional: true
 
   tree-kill@1.2.2: {}
 
@@ -11794,6 +11829,7 @@ snapshots:
       - terser
       - tsx
       - yaml
+    optional: true
 
   vscode-uri@3.1.0: {}
 
@@ -11846,6 +11882,7 @@ snapshots:
   w3c-xmlserializer@5.0.0:
     dependencies:
       xml-name-validator: 5.0.0
+    optional: true
 
   walk-up-path@4.0.0: {}
 
@@ -11931,7 +11968,8 @@ snapshots:
 
   webidl-conversions@4.0.2: {}
 
-  webidl-conversions@7.0.0: {}
+  webidl-conversions@7.0.0:
+    optional: true
 
   webpack-virtual-modules@0.6.2: {}
 
@@ -11940,13 +11978,16 @@ snapshots:
   whatwg-encoding@3.1.1:
     dependencies:
       iconv-lite: 0.6.3
+    optional: true
 
-  whatwg-mimetype@4.0.0: {}
+  whatwg-mimetype@4.0.0:
+    optional: true
 
   whatwg-url@14.2.0:
     dependencies:
       tr46: 5.1.1
       webidl-conversions: 7.0.0
+    optional: true
 
   whatwg-url@7.1.0:
     dependencies:
@@ -12016,6 +12057,7 @@ snapshots:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
+    optional: true
 
   widest-line@5.0.0:
     dependencies:
@@ -12059,7 +12101,8 @@ snapshots:
 
   ws@8.18.1: {}
 
-  ws@8.18.3: {}
+  ws@8.18.3:
+    optional: true
 
   wsl-utils@0.1.0:
     dependencies:
@@ -12133,7 +12176,8 @@ snapshots:
 
   xml-name-validator@4.0.0: {}
 
-  xml-name-validator@5.0.0: {}
+  xml-name-validator@5.0.0:
+    optional: true
 
   xml2js@0.6.2:
     dependencies:
@@ -12142,7 +12186,8 @@ snapshots:
 
   xmlbuilder@11.0.1: {}
 
-  xmlchars@2.2.0: {}
+  xmlchars@2.2.0:
+    optional: true
 
   y18n@5.0.8: {}
 

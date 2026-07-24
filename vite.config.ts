@@ -1,5 +1,3 @@
-/// <reference types="vitest" />
-
 import { dirname, relative } from 'node:path'
 
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
@@ -100,9 +98,5 @@ export default defineConfig(({ command }) => ({
       },
     },
     minify: 'terser',
-  },
-  test: {
-    globals: true,
-    environment: 'jsdom',
   },
 }))

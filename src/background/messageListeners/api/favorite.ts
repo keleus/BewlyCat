@@ -114,6 +114,58 @@ const API_FAVORITE = {
     params: {},
     afterHandle: AHS.J_D,
   },
+  // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/fav/action.md#%E4%BF%AE%E6%94%B9%E6%94%B6%E8%97%8F%E5%A4%B9
+  editFavoriteFolder: {
+    url: 'https://api.bilibili.com/x/v3/fav/folder/edit',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        media_id: 0,
+        title: '',
+        platform: 'web',
+        csrf: '',
+      },
+    },
+    params: {},
+    afterHandle: AHS.J_D,
+  },
+  // 删除收藏夹，media_ids 支持逗号拼接批量删除
+  delFavoriteFolder: {
+    url: 'https://api.bilibili.com/x/v3/fav/folder/del',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        media_ids: '',
+        platform: 'web',
+        csrf: '',
+      },
+    },
+    params: {},
+    afterHandle: AHS.J_D,
+  },
+  // 取消收藏合集（他人合集只能整体取消收藏）
+  unfavFavoriteSeason: {
+    url: 'https://api.bilibili.com/x/v3/fav/season/unfav',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        season_id: 0,
+        platform: 'web',
+        csrf: '',
+      },
+    },
+    params: {},
+    afterHandle: AHS.J_D,
+  },
 } satisfies APIMAP
 
 export default API_FAVORITE
