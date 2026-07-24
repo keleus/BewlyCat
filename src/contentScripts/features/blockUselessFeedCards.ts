@@ -3,7 +3,7 @@ const VIDEO_CARD_CLASS = 'bili-video-card'
 
 // Homepage recommended cards (that do NOT support "not interested")
 const RCMD_VIDEO_CARD_SELECTOR = '.bili-video-card.is-rcmd:not(.enable-no-interest)'
-const FEED_CARD_SELECTOR = '.feed-card'
+const FEED_CARD_SELECTOR = '.feed-card, .bili-feed-card'
 const OBSERVER_OPTIONS: MutationObserverInit = {
   attributeFilter: ['class'],
   attributeOldValue: true,
@@ -16,6 +16,19 @@ let feedCardObserver: MutationObserver | null = null
 let observeRoot: Element | null = null
 let flushScheduled = false
 const pendingRoots = new Set<Element>()
+
+interface UselessFeedCardBlockerContext {
+  blockAds: boolean
+  homePage: boolean
+  inIframe: boolean
+}
+
+export function shouldEnableUselessFeedCardBlocker({
+  blockAds,
+  homePage,
+}: UselessFeedCardBlockerContext) {
+  return blockAds && homePage
+}
 
 function getObserveRoot(): Element {
   // Prefer the feed container if it exists; fallback to body.
@@ -48,15 +61,29 @@ function syncFeedCard(feedCard: HTMLElement) {
   )
 }
 
+function getFeedCardSlot(element: Element): HTMLElement | null {
+  // 首屏卡片有 .feed-card 外层，后续懒加载卡片则可能直接使用 .bili-feed-card。
+  return element.closest<HTMLElement>('.feed-card')
+    || element.closest<HTMLElement>('.bili-feed-card')
+}
+
 function scanForRcmdCards(root: ParentNode) {
-  // An inserted or updated node can be inside an existing feed card.
+  const feedCardSlots = new Set<HTMLElement>()
+
+  // 新增或更新的节点可能位于已有卡片内部。
   if (root instanceof Element) {
-    const closestFeedCard = root.closest<HTMLElement>(FEED_CARD_SELECTOR)
+    const closestFeedCard = getFeedCardSlot(root)
     if (closestFeedCard)
-      syncFeedCard(closestFeedCard)
+      feedCardSlots.add(closestFeedCard)
   }
 
-  root.querySelectorAll?.<HTMLElement>(FEED_CARD_SELECTOR).forEach(syncFeedCard)
+  root.querySelectorAll?.<HTMLElement>(FEED_CARD_SELECTOR).forEach((feedCard) => {
+    const feedCardSlot = getFeedCardSlot(feedCard)
+    if (feedCardSlot)
+      feedCardSlots.add(feedCardSlot)
+  })
+
+  feedCardSlots.forEach(syncFeedCard)
 }
 
 function flushPending() {

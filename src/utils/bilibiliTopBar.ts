@@ -13,8 +13,10 @@ const BILIBILI_TOP_BAR_SELECTORS = [
 ]
 
 let cachedOriginalTopBar: HTMLElement | null = null
+const originalTopBarSearchCleanups = new WeakMap<Document, () => void>()
 const initializedHoverHeaders = new WeakSet<HTMLElement>()
 const initializedScrollStateHeaders = new WeakSet<HTMLElement>()
+const initializedTopBarDocuments = new WeakSet<Document>()
 const channelPanelColumns = [
   [
     ['番剧', '//www.bilibili.com/anime/', '#channel-anime'],
@@ -86,6 +88,7 @@ export function captureOriginalBilibiliTopBar(doc: Document) {
     return null
 
   cachedOriginalTopBar = header
+  keepOriginalTopBarAvailable(doc)
   setOriginalBilibiliTopBarScrolled(doc, false)
   ensureOriginalTopBarScrolledLayout(header)
   return cachedOriginalTopBar
@@ -97,12 +100,60 @@ export function captureOriginalBilibiliTopBar(doc: Document) {
  */
 export function setOriginalBilibiliTopBarScrolled(doc: Document, scrolled: boolean) {
   const header = getDocumentTopBar(doc) || cachedOriginalTopBar
+  if (header && header !== cachedOriginalTopBar)
+    cachedOriginalTopBar = header
   header?.classList.toggle('bewly-original-top-bar-scrolled', scrolled)
   header?.querySelector('.bili-header__bar')?.classList.toggle('slide-down', scrolled)
-  if (header)
+  getOriginalFixedChannel(header)?.classList.toggle('bewly-original-fixed-channel-visible', scrolled)
+  if (header) {
+    if (scrolled)
+      restoreOriginalTopBarVisibility(header)
     keepOriginalTopBarScrolled(header)
-  if (!scrolled)
+  }
+  if (!scrolled) {
     header?.classList.remove('bewly-original-channel-open')
+    header?.classList.remove('bewly-original-channel-closing')
+    getOriginalTopBarNativeChannelPopover(header)?.classList.remove(
+      'bewly-original-native-channel-open',
+      'bewly-original-native-channel-closing',
+    )
+    setOriginalTopBarHomeArrowExpanded(header, false)
+  }
+}
+
+function getOriginalFixedChannel(header: HTMLElement | null) {
+  return header?.parentElement?.querySelector<HTMLElement>(':scope > .header-channel') ?? null
+}
+
+function keepOriginalTopBarAvailable(doc: Document) {
+  if (initializedTopBarDocuments.has(doc))
+    return
+
+  initializedTopBarDocuments.add(doc)
+  const observer = new MutationObserver(() => {
+    const header = getDocumentTopBar(doc)
+    if (!header || header === cachedOriginalTopBar)
+      return
+
+    const scrolled = cachedOriginalTopBar?.classList.contains('bewly-original-top-bar-scrolled') ?? false
+    cachedOriginalTopBar = header
+    setupOriginalTopBarChannelHover(header)
+    ensureOriginalTopBarScrolledLayout(header)
+    setOriginalBilibiliTopBarScrolled(doc, scrolled)
+  })
+  observer.observe(doc.documentElement, {
+    childList: true,
+    subtree: true,
+  })
+}
+
+function restoreOriginalTopBarVisibility(header: HTMLElement) {
+  const bar = header.querySelector<HTMLElement>('.bili-header__bar')
+  for (const element of [header, bar]) {
+    element?.style.removeProperty('display')
+    element?.style.removeProperty('visibility')
+    element?.style.removeProperty('opacity')
+  }
 }
 
 function keepOriginalTopBarScrolled(header: HTMLElement) {
@@ -117,11 +168,12 @@ function keepOriginalTopBarScrolled(header: HTMLElement) {
     const bar = header.querySelector('.bili-header__bar')
     if (bar && !bar.classList.contains('slide-down'))
       bar.classList.add('slide-down')
+    restoreOriginalTopBarVisibility(header)
     ensureOriginalTopBarScrolledLayout(header)
   })
   observer.observe(header, {
     attributes: true,
-    attributeFilter: ['class'],
+    attributeFilter: ['class', 'style'],
     childList: true,
     subtree: true,
   })
@@ -129,7 +181,7 @@ function keepOriginalTopBarScrolled(header: HTMLElement) {
 
 function ensureOriginalTopBarScrolledLayout(header: HTMLElement) {
   const leftEntry = header.querySelector<HTMLElement>('.bili-header__bar .left-entry')
-  const homeEntry = leftEntry?.querySelector<HTMLElement>('.entry-title')
+  const homeEntry = leftEntry?.querySelector<HTMLElement>('.entry-title, .left-entry__title')
   if (!leftEntry || !homeEntry)
     return
   const doc = header.ownerDocument
@@ -154,32 +206,11 @@ function ensureOriginalTopBarScrolledLayout(header: HTMLElement) {
     }
   }
 
-  if (!homeEntry.querySelector('.bewly-home-entry-arrow')) {
+  if (!homeEntry.querySelector('.mini-header__arrow, .bewly-home-entry-arrow')) {
     const arrow = doc.createElement('span')
     arrow.className = 'bewly-home-entry-arrow'
     arrow.setAttribute('aria-hidden', 'true')
     homeEntry.appendChild(arrow)
-  }
-
-  if (!header.querySelector(':scope > .bewly-bili-fixed-channel')) {
-    const nativeFixedChannel = doc.querySelector<HTMLElement>(
-      '.header-channel:not(.bewly-bili-fixed-channel)',
-    )
-    if (nativeFixedChannel) {
-      const fixedChannel = nativeFixedChannel
-      fixedChannel.classList.add('bewly-bili-fixed-channel')
-      fixedChannel.style.removeProperty('display')
-
-      const fixedChannelContent = fixedChannel.querySelector('.header-channel-fixed')
-      fixedChannel.addEventListener('pointerenter', () => {
-        fixedChannelContent?.classList.add('header-channel-fixed-down')
-      })
-      fixedChannel.addEventListener('pointerleave', () => {
-        fixedChannelContent?.classList.remove('header-channel-fixed-down')
-      })
-
-      header.appendChild(fixedChannel)
-    }
   }
 
   if (!header.querySelector('.bewly-bili-channel-panel')) {
@@ -188,9 +219,6 @@ function ensureOriginalTopBarScrolledLayout(header: HTMLElement) {
     )
 
     if (nativePanel) {
-      const panel = nativePanel.cloneNode(true) as HTMLElement
-      panel.classList.add('bewly-bili-channel-panel')
-      header.appendChild(panel)
       return
     }
 
@@ -236,40 +264,78 @@ function ensureOriginalTopBarScrolledLayout(header: HTMLElement) {
   }
 }
 
+function setOriginalTopBarHomeArrowExpanded(header: HTMLElement | null, expanded: boolean) {
+  header
+    ?.querySelector('.mini-header__arrow')
+    ?.classList
+    .toggle('arrow-up', expanded)
+  header
+    ?.querySelector('.bewly-home-entry-arrow')
+    ?.classList
+    .toggle('arrow-up', expanded)
+}
+
+function getOriginalTopBarNativeChannelPopover(header: HTMLElement | null) {
+  return header
+    ?.querySelector('.bili-header-channel-panel:not(.bewly-bili-channel-panel)')
+    ?.closest<HTMLElement>('.v-popover') ?? null
+}
+
 function setupOriginalTopBarChannelHover(header: HTMLElement) {
   if (initializedHoverHeaders.has(header))
     return
 
   initializedHoverHeaders.add(header)
+
   let closeTimer: ReturnType<typeof setTimeout> | null = null
+  let closeAnimationTimer: ReturnType<typeof setTimeout> | null = null
 
   const clearCloseTimer = () => {
-    if (!closeTimer)
-      return
-
-    clearTimeout(closeTimer)
-    closeTimer = null
+    if (closeTimer) {
+      clearTimeout(closeTimer)
+      closeTimer = null
+    }
+    if (closeAnimationTimer) {
+      clearTimeout(closeAnimationTimer)
+      closeAnimationTimer = null
+    }
   }
 
   header.addEventListener('pointerover', (event) => {
     const target = event.target as Element | null
-    if (!target?.closest('.entry-title, .bewly-bili-channel-panel'))
+    if (!target?.closest('.entry-title, .left-entry__title, .bewly-bili-channel-panel, .bili-header-channel-panel'))
       return
 
     clearCloseTimer()
-    if (header.classList.contains('bewly-original-top-bar-scrolled'))
+    if (header.classList.contains('bewly-original-top-bar-scrolled')) {
+      const nativePopover = getOriginalTopBarNativeChannelPopover(header)
+      header.classList.remove('bewly-original-channel-closing')
       header.classList.add('bewly-original-channel-open')
+      nativePopover?.classList.remove('bewly-original-native-channel-closing')
+      nativePopover?.classList.add('bewly-original-native-channel-open')
+      setOriginalTopBarHomeArrowExpanded(header, true)
+    }
   })
 
   header.addEventListener('pointerout', (event) => {
     const target = event.target as Element | null
-    if (!target?.closest('.entry-title, .bewly-bili-channel-panel'))
+    if (!target?.closest('.entry-title, .left-entry__title, .bewly-bili-channel-panel, .bili-header-channel-panel'))
       return
 
     clearCloseTimer()
     closeTimer = setTimeout(() => {
-      header.classList.remove('bewly-original-channel-open')
+      const nativePopover = getOriginalTopBarNativeChannelPopover(header)
       closeTimer = null
+      header.classList.remove('bewly-original-channel-open')
+      header.classList.add('bewly-original-channel-closing')
+      nativePopover?.classList.remove('bewly-original-native-channel-open')
+      nativePopover?.classList.add('bewly-original-native-channel-closing')
+      setOriginalTopBarHomeArrowExpanded(header, false)
+      closeAnimationTimer = setTimeout(() => {
+        header.classList.remove('bewly-original-channel-closing')
+        nativePopover?.classList.remove('bewly-original-native-channel-closing')
+        closeAnimationTimer = null
+      }, 300)
     }, 120)
   })
 }
@@ -280,7 +346,17 @@ export function detachOriginalBilibiliTopBar(doc: Document) {
     return
 
   cachedOriginalTopBar = header
-  header.remove()
+  header.classList.remove(
+    'bewly-original-top-bar-scrolled',
+    'bewly-original-channel-open',
+    'bewly-original-channel-closing',
+  )
+  getOriginalTopBarNativeChannelPopover(header)?.classList.remove(
+    'bewly-original-native-channel-open',
+    'bewly-original-native-channel-closing',
+  )
+  header.querySelector('.bili-header__bar')?.classList.remove('slide-down')
+  getOriginalFixedChannel(header)?.classList.remove('bewly-original-fixed-channel-visible')
 }
 
 export function ensureOriginalBilibiliTopBarAppended(doc: Document): boolean {
@@ -297,13 +373,7 @@ export function ensureOriginalBilibiliTopBarAppended(doc: Document): boolean {
   setupOriginalTopBarChannelHover(header)
   ensureOriginalTopBarScrolledLayout(header)
 
-  // 2. 确保顶栏是 body 的直接子元素且位于最前
-  // 即使 header 已存在，如果它在某个被隐藏的父容器里，这里也会将其移动到 body 下
-  if (header.parentElement !== doc.body || header !== doc.body.firstElementChild) {
-    doc.body.prepend(header)
-  }
-
-  // 更新缓存引用
+  // 原版顶栏继续留在 B 站 Vue 管理的父节点中，避免组件更新时节点丢失
   cachedOriginalTopBar = header
   return true
 }
@@ -377,4 +447,100 @@ export function setupLoginButtonClickHandlers(doc: Document) {
   return () => {
     observer.disconnect()
   }
+}
+
+/**
+ * 在启用插件搜索结果页时，接管原版 B 站顶栏的搜索提交。
+ * 捕获阶段拦截可以避免 B 站自身的点击处理器先跳到 search.bilibili.com。
+ */
+export function setupOriginalBilibiliTopBarSearchHandlers(
+  doc: Document,
+  shouldUsePluginSearchResultsPage: () => boolean,
+) {
+  originalTopBarSearchCleanups.get(doc)?.()
+
+  const SEARCH_FORM_SELECTOR = [
+    '#nav-searchform',
+    '.nav-search-form',
+    '.nav-search-content',
+  ].join(', ')
+  const SEARCH_INPUT_SELECTOR = [
+    '.nav-search-input',
+    'input[name="keyword"]',
+    'input[type="search"]',
+  ].join(', ')
+  const SEARCH_SUBMIT_SELECTOR = [
+    '.nav-search-btn',
+    '.nav-search-submit',
+    'button[type="submit"]',
+  ].join(', ')
+
+  function getOriginalTopBarSearchContext(target: EventTarget | null) {
+    if (!(target instanceof Element))
+      return null
+
+    const header = target.closest('.bili-header, #biliMainHeader, #internationalHeader')
+    if (!header)
+      return null
+
+    const form = target.closest(SEARCH_FORM_SELECTOR) || header.querySelector(SEARCH_FORM_SELECTOR)
+    const input = (form || header).querySelector<HTMLInputElement>(SEARCH_INPUT_SELECTOR)
+    return { form, input }
+  }
+
+  function navigateToPluginSearch(event: Event, input: HTMLInputElement | null | undefined) {
+    if (!shouldUsePluginSearchResultsPage())
+      return false
+
+    const keyword = input?.value.trim()
+    if (!keyword)
+      return false
+
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+
+    const params = new URLSearchParams()
+    params.set('page', 'SearchResults')
+    params.set('keyword', keyword)
+    window.location.assign(`https://www.bilibili.com/?${params.toString()}`)
+    return true
+  }
+
+  function handleSubmit(event: SubmitEvent) {
+    const context = getOriginalTopBarSearchContext(event.target)
+    if (context)
+      navigateToPluginSearch(event, context.input)
+  }
+
+  function handleClick(event: MouseEvent) {
+    if (!(event.target instanceof Element) || !event.target.closest(SEARCH_SUBMIT_SELECTOR))
+      return
+
+    const context = getOriginalTopBarSearchContext(event.target)
+    if (context)
+      navigateToPluginSearch(event, context.input)
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Enter' || event.isComposing)
+      return
+
+    const context = getOriginalTopBarSearchContext(event.target)
+    if (context?.input === event.target)
+      navigateToPluginSearch(event, context.input)
+  }
+
+  doc.addEventListener('submit', handleSubmit, true)
+  doc.addEventListener('click', handleClick, true)
+  doc.addEventListener('keydown', handleKeydown, true)
+
+  const cleanup = () => {
+    doc.removeEventListener('submit', handleSubmit, true)
+    doc.removeEventListener('click', handleClick, true)
+    doc.removeEventListener('keydown', handleKeydown, true)
+    originalTopBarSearchCleanups.delete(doc)
+  }
+  originalTopBarSearchCleanups.set(doc, cleanup)
+  return cleanup
 }

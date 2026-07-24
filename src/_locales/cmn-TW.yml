@@ -419,6 +419,11 @@ settings:
   use_following_new_layout_desc: 左側顯示關注的 UP 主列表，右側顯示影片流
   use_favorites_new_layout: 使用新版收藏頁
   use_favorites_new_layout_desc: 關閉後使用舊版收藏頁；舊版不顯示收藏合集。
+  collected_season_play_all_mode: 訂閱合集「播放全部」起播位置
+  collected_season_play_all_mode_desc: 控制收藏頁、頂欄與空間頁訂閱合集「播放全部」的起播位置。預設為合集開頭；找不到上次觀看時回退到開頭。不影響列表順序與連播方向。
+  collected_season_play_all_mode_beginning: 合集開頭
+  collected_season_play_all_mode_latest: 最新一期
+  collected_season_play_all_mode_last_watched: 上次觀看
   enable_version_reminder: 新版本提醒
   enable_version_reminder_desc: 在外掛首頁提醒尚未確認的新版本；每個版本只提醒一次。
   enable_following_inactive_blacklist: 啟用不活躍名單
@@ -884,6 +889,7 @@ favorites:
     此操作無法撤消，你確定要取消收藏這些影片嗎？
   global_search_hint: 請輸入關鍵詞以搜尋全部收藏夾
   global_search_placeholder: 搜尋全部收藏夾
+  season_play_all_fallback: 合集列表尚未就緒，已退回合集開頭
   search_all_folders: 全部
   search_current_folder: 目前
   search_placeholder: 搜尋目前收藏夾

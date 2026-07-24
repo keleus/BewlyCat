@@ -12,11 +12,12 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { applyBewlyWidescreen, exitBewlyWidescreen } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
-import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
+import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers, setupOriginalBilibiliTopBarSearchHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
+import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isPlayerDisplayModeReady, isVideoPage, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
@@ -569,6 +570,8 @@ else if (shouldInitializeContentScript) {
   `)
 
   async function onDOMLoaded() {
+    setupOriginalBilibiliTopBarSearchHandlers(document, () => settings.value.usePluginSearchResultsPage)
+
     const pluginSearchResultsUrl = !isInIframe() && getPluginSearchResultsUrl(location.href)
 
     if (pluginSearchResultsUrl) {
@@ -605,10 +608,38 @@ else if (shouldInitializeContentScript) {
         position: absolute !important;
         left: -9999px !important;
       }
+      /* 保留新版首页中由 Vue 管理的原版顶栏，避免移动节点破坏组件父子关系 */
+      body > #app:has(> .bili-feed4 > .bili-header) {
+        display: block !important;
+        visibility: visible !important;
+        width: 100% !important;
+        height: 0 !important;
+        pointer-events: none !important;
+        position: relative !important;
+        left: 0 !important;
+        overflow: visible !important;
+      }
+      body > #app:has(> .bili-feed4 > .bili-header) > *:not(.bili-feed4),
+      body > #app > .bili-feed4 > *:not(.bili-header):not(.header-channel) {
+        display: none !important;
+      }
+      body > #app > .bili-feed4 {
+        display: block !important;
+        visibility: visible !important;
+        height: 0 !important;
+        pointer-events: none !important;
+        position: relative !important;
+        left: 0 !important;
+        overflow: visible !important;
+      }
       /* Ensure the original top bar remains visible and properly positioned */
       /* The visibility/display will be controlled by .remove-top-bar class in removeTopBar.scss */
       .bili-header {
         position: relative !important;
+        left: 0 !important;
+        pointer-events: auto !important;
+      }
+      .header-channel {
         left: 0 !important;
         pointer-events: auto !important;
       }
@@ -669,6 +700,9 @@ else if (shouldInitializeContentScript) {
     if (isVideoOrBangumiPage()) {
       initFavoriteDialogEnhancement()
     }
+
+    // 原生空间订阅合集 favlist「播放全部」按设置起播
+    initNativeFavoriteSeasonPlayAllIntercept()
   }
 
   if (document.readyState !== 'loading') {
