@@ -176,7 +176,7 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1280px) {
   .bewly-bili-switcher-button {
     padding: 0 16px;
 
@@ -187,6 +187,12 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     &__short {
       display: none;
     }
+  }
+}
+
+@media (max-width: 640px) {
+  .bewly-bili-switcher {
+    display: none;
   }
 }
 </style>

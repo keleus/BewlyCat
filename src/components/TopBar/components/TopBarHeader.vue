@@ -111,6 +111,7 @@ function refreshSearchContent() {
 
 <template>
   <main
+    class="top-bar-header"
     max-w="$bew-top-bar-max-width"
     grid="~ cols-[auto_1fr_auto] items-center gap-4"
     p="x-4 md:x-6 xl:x-8" m-auto
@@ -198,6 +199,10 @@ function refreshSearchContent() {
 </template>
 
 <style scoped lang="scss">
+.top-bar-header {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
 .top-bar-header__divider {
   position: absolute;
   right: 0;
@@ -254,8 +259,16 @@ function refreshSearchContent() {
 }
 
 .top-bar-header__search-control {
-  width: clamp(520px, 40vw, 720px);
+  width: 100%;
+  max-width: clamp(520px, 40vw, 720px);
   min-width: 0;
   flex: 1 1 auto;
+}
+
+@media (max-width: 640px) {
+  .top-bar-header {
+    gap: 8px;
+    padding-inline: 8px;
+  }
 }
 </style>

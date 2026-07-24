@@ -306,4 +306,10 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
     border-color: rgba(255, 255, 255, 0.3);
   }
 }
+
+@media (max-width: 1279px) {
+  .pinned-channels {
+    display: none;
+  }
+}
 </style>

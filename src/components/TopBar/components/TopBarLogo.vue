@@ -195,6 +195,23 @@ const channels = setupTopBarItemHoverEvent('channels')
   }
 }
 
+@media (max-width: 767px) {
+  .top-bar-brand-button {
+    width: 40px;
+    height: 40px;
+    padding: 0 8px;
+
+    &__logo {
+      width: 24px;
+      height: 24px;
+      mask-position: left center;
+      mask-size: auto 24px;
+      -webkit-mask-position: left center;
+      -webkit-mask-size: auto 24px;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .top-bar-brand-button {
     transition: none;

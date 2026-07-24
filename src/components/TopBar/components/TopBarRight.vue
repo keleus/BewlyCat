@@ -210,7 +210,7 @@ const showUtilityActionGroup = computed(() => {
       <template v-if="isLogin">
         <div
           v-if="showContentActionGroup"
-          class="top-bar-action-group top-bar-action-group--content hidden lg:flex"
+          class="top-bar-action-group top-bar-action-group--content hidden xl:flex"
           :class="{ 'top-bar-action-group--white': forceWhiteIcon }"
         >
           <!-- Moments -->
@@ -363,7 +363,7 @@ const showUtilityActionGroup = computed(() => {
         <!-- More -->
         <div
           ref="more"
-          class="right-side-item lg:!hidden flex"
+          class="right-side-item xl:!hidden flex"
           :class="{ active: popupVisible?.more }"
           @click="(event: MouseEvent) => handleClickTopBarItem(event, 'more')"
         >
@@ -386,7 +386,7 @@ const showUtilityActionGroup = computed(() => {
 
         <div
           v-if="showUtilityActionGroup"
-          class="top-bar-action-group top-bar-action-group--utility hidden lg:flex"
+          class="top-bar-action-group top-bar-action-group--utility hidden xl:flex"
           :class="{ 'top-bar-action-group--white': forceWhiteIcon }"
         >
           <!-- Upload -->
@@ -530,7 +530,7 @@ const showUtilityActionGroup = computed(() => {
 @use "../styles/index.scss";
 
 .top-bar-action-group {
-  display: flex;
+  position: relative;
   box-sizing: border-box;
   align-items: center;
   gap: 2px;
@@ -538,15 +538,26 @@ const showUtilityActionGroup = computed(() => {
   padding: 2px 3px;
   border: 1px solid var(--bew-top-bar-control-border-color);
   border-radius: var(--bew-top-bar-control-radius);
-  background: var(--bew-top-bar-control-background);
-  backdrop-filter: var(--bew-filter-glass-1);
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
+  transition: border-color 0.3s ease;
+
+  // 将胶囊磨砂放在伪元素上，避免父级背板阻断子级 POP 的背景模糊
+  &::before {
+    position: absolute;
+    border-radius: inherit;
+    background: var(--bew-top-bar-control-background);
+    backdrop-filter: var(--bew-filter-glass-1);
+    content: "";
+    inset: 0;
+    pointer-events: none;
+    transition: background-color 0.3s ease;
+  }
 
   &--white {
     border-color: rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.1);
+
+    &::before {
+      background: rgba(255, 255, 255, 0.1);
+    }
   }
 }
 </style>
