@@ -8,6 +8,7 @@ import { FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, se
 import ChangeWallpaper from '../components/ChangeWallpaper.vue'
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
+import SettingsSectionHeading from '../components/SettingsSectionHeading.vue'
 
 const { t } = useI18n()
 
@@ -116,6 +117,43 @@ function changeWallpaper(url: string) {
 
 <template>
   <div>
+    <SettingsSectionHeading
+      :title="$t('settings.menu_appearance')"
+      :desc="$t('settings.category_appearance_desc')"
+      icon="i-mingcute:paint-brush-fill"
+    />
+
+    <SettingsItemGroup :title="$t('settings.group_visual_effects')">
+      <SettingsItem
+        :title="$t('settings.enable_frosted_glass')"
+        :badge="$t('settings.badge_performance_impact')"
+        right-width="auto"
+      >
+        <template #desc>
+          <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
+        </template>
+
+        <Radio v-model="settings.enableFrostedGlass" />
+      </SettingsItem>
+      <SettingsItem
+        v-if="settings.enableFrostedGlass"
+        :title="$t('settings.frosted_glass_blur_intensity')"
+        right-width="auto"
+      >
+        <div class="slider-control">
+          <Slider
+            v-model="settings.frostedGlassBlurIntensity"
+            :min="FROSTED_GLASS_BLUR_MIN_PX"
+            :max="FROSTED_GLASS_BLUR_MAX_PX"
+            :label="`${settings.frostedGlassBlurIntensity}`"
+          />
+        </div>
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.disable_shadow')" right-width="auto">
+        <Radio v-model="settings.disableShadow" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
     <SettingsItemGroup :title="$t('settings.group_color')">
       <SettingsItem :title="$t('settings.theme')" right-width="auto">
         <Select v-model="settings.theme" w="160px" :options="themeOptions" />
@@ -212,33 +250,6 @@ function changeWallpaper(url: string) {
 
     <ChangeWallpaper type="global" />
 
-    <SettingsItemGroup :title="$t('settings.group_visual_effects')">
-      <SettingsItem :title="$t('settings.enable_frosted_glass')" right-width="auto">
-        <template #desc>
-          <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
-        </template>
-
-        <Radio v-model="settings.enableFrostedGlass" />
-      </SettingsItem>
-      <SettingsItem
-        v-if="settings.enableFrostedGlass"
-        :title="$t('settings.frosted_glass_blur_intensity')"
-        right-width="auto"
-      >
-        <div class="slider-control">
-          <Slider
-            v-model="settings.frostedGlassBlurIntensity"
-            :min="FROSTED_GLASS_BLUR_MIN_PX"
-            :max="FROSTED_GLASS_BLUR_MAX_PX"
-            :label="`${settings.frostedGlassBlurIntensity}`"
-          />
-        </div>
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_shadow')" right-width="auto">
-        <Radio v-model="settings.disableShadow" />
-      </SettingsItem>
-    </SettingsItemGroup>
-
     <SettingsItemGroup :title="$t('settings.group_fonts')">
       <SettingsItem :title="$t('settings.customize_font')" right-width="auto">
         <Select
@@ -260,7 +271,11 @@ function changeWallpaper(url: string) {
     </SettingsItemGroup>
 
     <SettingsItemGroup>
-      <SettingsItem :title="$t('settings.customize_css')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.customize_css')"
+        :badge="$t('settings.badge_advanced')"
+        right-width="auto"
+      >
         <Radio v-model="localSettings.customizeCSS" />
         <template #desc>
           <span text="$bew-error-color">

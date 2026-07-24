@@ -1,9 +1,11 @@
 export enum MenuType {
-  PluginComponentsAndPages = 'PluginComponentsAndPages',
-  BilibiliFeaturesEnhancement = 'BilibiliFeaturesEnhancement',
+  General = 'General',
+  Navigation = 'Navigation',
+  Playback = 'Playback',
   Appearance = 'Appearance',
   Shortcuts = 'Shortcuts',
-  Compatibility = 'Compatibility',
+  BilibiliFeaturesEnhancement = 'BilibiliFeaturesEnhancement',
+  Advanced = 'Advanced',
   About = 'About',
 }
 
@@ -37,4 +39,5 @@ export interface MenuItem {
   iconActivated: string
   titleKey: string
   badge?: string
+  sectionStart?: boolean
 }
