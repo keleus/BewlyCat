@@ -87,6 +87,7 @@ settings:
   category_browsing_home_desc: 設定首頁推薦、內容過濾、關注頁和首頁分頁。
   category_browsing_video_card_desc: 設定影片卡片的版面、預覽、資訊顯示與開啟方式。
   category_browsing_favorites_desc: 設定收藏內容的顯示與互動方式。
+  category_navigation_link_opening_desc: 統一設定頂欄、影片卡片與搜尋列連結的開啟位置和抽屜行為。
   category_navigation_topbar_desc: 統一調整頂欄版面、元件、頻道、搜尋入口和通知顯示。
   category_navigation_dock_desc: 設定 Dock 列與側欄的位置、顯示和快捷操作。
   category_navigation_search_desc: 設定搜尋頁外觀、建議、歷史、熱門搜尋與結果頁。

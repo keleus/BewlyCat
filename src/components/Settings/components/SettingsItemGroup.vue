@@ -31,7 +31,7 @@ const collapsed = ref(props.defaultCollapsed)
         :class="{ collapsed }"
       />
     </button>
-    <template v-else>
+    <template v-else-if="title || desc">
       <p text="base $bew-text-1" fw-bold>
         {{ title }}
       </p>

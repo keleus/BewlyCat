@@ -87,6 +87,7 @@ settings:
   category_browsing_home_desc: Configure home recommendations, content filters, following, and home tabs.
   category_browsing_video_card_desc: Configure video card layout, previews, metadata, and link behavior.
   category_browsing_favorites_desc: Configure how favorite content is displayed and opened.
+  category_navigation_link_opening_desc: Configure where top bar, video card, and search links open, including drawer behavior.
   category_navigation_topbar_desc: Adjust top bar layout, components, channels, search, and notifications in one place.
   category_navigation_dock_desc: Configure Dock and sidebar position, visibility, and quick actions.
   category_navigation_search_desc: Configure search appearance, suggestions, history, trending, and results.

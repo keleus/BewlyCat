@@ -19,6 +19,14 @@ const pages = [
     component: defineAsyncComponent(() => import('../PluginComponentsAndPages/VideoCard/VideoCard.vue')),
   },
   {
+    value: 'link-opening',
+    titleKey: 'settings.group_link_opening_behavior',
+    descriptionKey: 'settings.category_navigation_link_opening_desc',
+    icon: 'i-mingcute:external-link-line',
+    iconActivated: 'i-mingcute:external-link-line',
+    component: defineAsyncComponent(() => import('./LinkOpening.vue')),
+  },
+  {
     value: 'topbar',
     titleKey: 'settings.plugin.topbar',
     descriptionKey: 'settings.category_navigation_topbar_desc',

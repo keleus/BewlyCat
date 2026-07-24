@@ -87,6 +87,7 @@ settings:
   category_browsing_home_desc: 配置首页推荐、内容过滤、关注页和首页标签。
   category_browsing_video_card_desc: 配置视频卡片的布局、预览、信息展示与打开方式。
   category_browsing_favorites_desc: 配置收藏内容的显示与交互方式。
+  category_navigation_link_opening_desc: 统一配置顶栏、视频卡片与搜索栏链接的打开位置和抽屉行为。
   category_navigation_topbar_desc: 统一调整顶栏布局、组件、频道、搜索入口和通知显示。
   category_navigation_dock_desc: 配置 Dock 栏与侧栏的位置、显隐和快捷操作。
   category_navigation_search_desc: 配置搜索页外观、搜索建议、历史、热搜与结果页。
