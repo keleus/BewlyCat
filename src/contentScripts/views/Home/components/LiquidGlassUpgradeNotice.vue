@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { settings } from '~/logic'
+import { liquidGlassUpgradeNoticePending } from '~/logic'
 
-const visible = computed(() => !settings.value.liquidGlassPerformanceNoticeAcknowledged)
+const visible = computed(() => liquidGlassUpgradeNoticePending.value)
 
 function acknowledgeNotice() {
-  settings.value.liquidGlassPerformanceNoticeAcknowledged = true
+  liquidGlassUpgradeNoticePending.value = false
 }
 </script>
 

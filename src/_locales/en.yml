@@ -187,7 +187,7 @@ settings:
   frosted_glass_blur_intensity: Frosted glass blur intensity
   enable_liquid_glass: Enable Liquid Glass effect (experimental)
   enable_liquid_glass_desc: Adds fluid highlights, translucent edges, and subtle motion to frosted glass.
-  liquid_glass_tint_intensity: Liquid Glass tint intensity
+  liquid_glass_tint_intensity: Liquid Glass dark tint intensity
   disable_shadow: Disable shadow
   link_opening_behavior_opt:
     current_tab: Current tab

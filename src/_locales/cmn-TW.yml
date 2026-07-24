@@ -174,7 +174,7 @@ settings:
   frosted_glass_blur_intensity: 毛玻璃模糊強度
   enable_liquid_glass: 啟用 Liquid Glass 效果（實驗性）
   enable_liquid_glass_desc: 在毛玻璃上增加液態高光、通透邊緣和輕微流動效果。
-  liquid_glass_tint_intensity: Liquid Glass 著色強度
+  liquid_glass_tint_intensity: Liquid Glass 深色著色強度
   disable_shadow: 停用陰影
   link_opening_behavior_opt:
     current_tab: 目前索引標籤

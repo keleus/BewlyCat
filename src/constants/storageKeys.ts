@@ -1,0 +1,1 @@
+export const LIQUID_GLASS_UPGRADE_NOTICE_STORAGE_KEY = 'liquidGlassUpgradeNoticePending'

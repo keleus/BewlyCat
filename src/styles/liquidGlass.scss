@@ -1,18 +1,18 @@
 :host(.enable-liquid-glass:not(.disable-frosted-glass)),
 :root.enable-liquid-glass:not(.disable-frosted-glass) {
-  --bew-liquid-glass-content-alpha: 0.188;
-  --bew-liquid-glass-content-hover-alpha: 0.266;
-  --bew-liquid-glass-content-alt-alpha: 0.176;
-  --bew-liquid-glass-content-alt-hover-alpha: 0.254;
-  --bew-liquid-glass-elevated-alpha: 0.214;
-  --bew-liquid-glass-elevated-hover-alpha: 0.286;
-  --bew-liquid-glass-elevated-alt-alpha: 0.198;
-  --bew-liquid-glass-elevated-alt-hover-alpha: 0.27;
-  --bew-liquid-glass-fill-alt-alpha: 0.114;
-  --bew-liquid-glass-border-alpha: 0.182;
-  --bew-liquid-glass-sheen-strong-alpha: 0.096;
-  --bew-liquid-glass-sheen-weak-alpha: 0.054;
-  --bew-liquid-glass-darken-alpha: 0.065;
+  --bew-liquid-glass-content-alpha: 0.08;
+  --bew-liquid-glass-content-hover-alpha: 0.14;
+  --bew-liquid-glass-content-alt-alpha: 0.08;
+  --bew-liquid-glass-content-alt-hover-alpha: 0.14;
+  --bew-liquid-glass-elevated-alpha: 0.1;
+  --bew-liquid-glass-elevated-hover-alpha: 0.16;
+  --bew-liquid-glass-elevated-alt-alpha: 0.09;
+  --bew-liquid-glass-elevated-alt-hover-alpha: 0.15;
+  --bew-liquid-glass-fill-alt-alpha: 0.06;
+  --bew-liquid-glass-border-alpha: 0.14;
+  --bew-liquid-glass-sheen-strong-alpha: 0.06;
+  --bew-liquid-glass-sheen-weak-alpha: 0.03;
+  --bew-liquid-glass-darken-alpha: 0.066;
   --bew-content-opacity: var(--bew-liquid-glass-content-alpha);
   --bew-content: rgb(255 255 255 / var(--bew-liquid-glass-content-alpha));
   --bew-content-hover: rgb(255 255 255 / var(--bew-liquid-glass-content-hover-alpha));
@@ -49,7 +49,7 @@
 
 :host(.enable-liquid-glass.dark:not(.disable-frosted-glass)),
 :root.enable-liquid-glass.dark:not(.disable-frosted-glass) {
-  --bew-liquid-glass-darken-alpha: 0.1;
+  --bew-liquid-glass-darken-alpha: 0.066;
   --bew-content: rgb(
     from color-mix(in oklab, var(--bew-dark-base-color), white 8%) r g b / var(--bew-liquid-glass-content-alpha)
   );

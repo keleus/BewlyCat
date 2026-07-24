@@ -3,6 +3,7 @@ import browser from 'webextension-polyfill'
 
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import type { wallpaperItem } from '~/constants/imgs'
+import { LIQUID_GLASS_UPGRADE_NOTICE_STORAGE_KEY } from '~/constants/storageKeys'
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
@@ -193,7 +194,6 @@ export interface Settings {
 
   enableFrostedGlass: boolean
   enableLiquidGlass: boolean
-  liquidGlassPerformanceNoticeAcknowledged: boolean
   liquidGlassTintIntensity: number
   frostedGlassBlurIntensity: number
   disableShadow: boolean
@@ -422,7 +422,6 @@ export const originalSettings: Settings = {
 
   enableFrostedGlass: true,
   enableLiquidGlass: true,
-  liquidGlassPerformanceNoticeAcknowledged: true,
   liquidGlassTintIntensity: 30,
   frostedGlassBlurIntensity: 20,
   disableShadow: false,
@@ -661,7 +660,6 @@ export const settingsReady = new Promise<Settings>((resolve) => {
 export function mergeSettingsWithDefaults(storedValue: Settings, defaults: Settings): Settings {
   const storedRecord = storedValue as unknown as Record<string, unknown>
   const hasLiquidGlassSetting = 'enableLiquidGlass' in storedRecord
-  const hasPerformanceNoticeState = typeof storedRecord.liquidGlassPerformanceNoticeAcknowledged === 'boolean'
 
   return {
     ...defaults,
@@ -672,11 +670,14 @@ export function mergeSettingsWithDefaults(storedValue: Settings, defaults: Setti
           enableLiquidGlass: true,
         }
       : {}),
-    liquidGlassPerformanceNoticeAcknowledged: hasPerformanceNoticeState
-      ? storedRecord.liquidGlassPerformanceNoticeAcknowledged as boolean
-      : hasLiquidGlassSetting,
   }
 }
+
+export const liquidGlassUpgradeNoticePending = useStorageLocal(
+  LIQUID_GLASS_UPGRADE_NOTICE_STORAGE_KEY,
+  false,
+  { writeDefaults: false },
+)
 
 export const settings = useStorageLocal('settings', originalSettings, {
   mergeDefaults: mergeSettingsWithDefaults,

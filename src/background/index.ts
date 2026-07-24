@@ -2,13 +2,22 @@ import browser from 'webextension-polyfill'
 
 import { setupAppAuthScheduler } from './appAuthScheduler'
 import { setupContentScriptRecovery } from './contentScriptRecovery'
+import { initializeLiquidGlassUpgrade } from './liquidGlassUpgrade'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
 import { initWbiKeys } from './wbiSign'
 
-// Initialize extension and set up message handlers
-browser.runtime.onInstalled.addListener(async () => {
-  console.log('Extension installed')
+browser.runtime.onInstalled.addListener((details) => {
+  const trigger = details.reason === 'install' ? 'install' : 'update'
+
+  void initializeLiquidGlassUpgrade(browser.storage.local, trigger).catch((error) => {
+    console.error('[BewlyCat] Liquid Glass 升级迁移失败:', error)
+  })
+})
+
+// 兼容已经加载过开发版本、但尚未写入独立提示状态的用户。
+void initializeLiquidGlassUpgrade(browser.storage.local, 'startup').catch((error) => {
+  console.error('[BewlyCat] Liquid Glass 升级提示初始化失败:', error)
 })
 
 // 扩展启动时初始化 WBI 密钥

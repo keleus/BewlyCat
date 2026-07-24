@@ -37,27 +37,28 @@ export function setupNecessarySettingsWatchers() {
     const tintRatio = clampLiquidGlassTint(rawValue) / LIQUID_GLASS_TINT_MAX_PERCENT
     const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
     const targets: HTMLElement[] = [document.documentElement]
-    const mixAlpha = (minimum: number, range: number) => (minimum + range * tintRatio).toFixed(3)
-    const variables = {
-      '--bew-liquid-glass-content-alpha': mixAlpha(0.08, 0.36),
-      '--bew-liquid-glass-content-hover-alpha': mixAlpha(0.14, 0.42),
-      '--bew-liquid-glass-content-alt-alpha': mixAlpha(0.08, 0.32),
-      '--bew-liquid-glass-content-alt-hover-alpha': mixAlpha(0.14, 0.38),
-      '--bew-liquid-glass-elevated-alpha': mixAlpha(0.1, 0.38),
-      '--bew-liquid-glass-elevated-hover-alpha': mixAlpha(0.16, 0.42),
-      '--bew-liquid-glass-elevated-alt-alpha': mixAlpha(0.09, 0.36),
-      '--bew-liquid-glass-elevated-alt-hover-alpha': mixAlpha(0.15, 0.4),
-      '--bew-liquid-glass-fill-alt-alpha': mixAlpha(0.06, 0.18),
-      '--bew-liquid-glass-border-alpha': mixAlpha(0.14, 0.14),
-      '--bew-liquid-glass-sheen-strong-alpha': mixAlpha(0.06, 0.12),
-      '--bew-liquid-glass-sheen-weak-alpha': mixAlpha(0.03, 0.08),
-    }
+    const darkenAlpha = (0.22 * tintRatio).toFixed(3)
+    const legacySurfaceAlphaProperties = [
+      '--bew-liquid-glass-content-alpha',
+      '--bew-liquid-glass-content-hover-alpha',
+      '--bew-liquid-glass-content-alt-alpha',
+      '--bew-liquid-glass-content-alt-hover-alpha',
+      '--bew-liquid-glass-elevated-alpha',
+      '--bew-liquid-glass-elevated-hover-alpha',
+      '--bew-liquid-glass-elevated-alt-alpha',
+      '--bew-liquid-glass-elevated-alt-hover-alpha',
+      '--bew-liquid-glass-fill-alt-alpha',
+      '--bew-liquid-glass-border-alpha',
+      '--bew-liquid-glass-sheen-strong-alpha',
+      '--bew-liquid-glass-sheen-weak-alpha',
+    ]
 
     if (bewlyElement)
       targets.push(bewlyElement)
 
     targets.forEach((element) => {
-      Object.entries(variables).forEach(([property, value]) => element.style.setProperty(property, value))
+      legacySurfaceAlphaProperties.forEach(property => element.style.removeProperty(property))
+      element.style.setProperty('--bew-liquid-glass-darken-alpha', darkenAlpha)
     })
   }
 
