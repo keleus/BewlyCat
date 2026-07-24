@@ -354,7 +354,6 @@ export interface Settings {
 
   adaptToOtherPageStyles: boolean
   useOriginalBilibiliTopBar: boolean
-  hideOriginalBilibiliTopBarChannel: boolean
   useOriginalBilibiliHomepage: boolean
   nvidiaRtxVideoEnhancementCompatibility: boolean
   preventMobileRedirect: boolean
@@ -594,7 +593,6 @@ export const originalSettings: Settings = {
 
   adaptToOtherPageStyles: true,
   useOriginalBilibiliTopBar: false,
-  hideOriginalBilibiliTopBarChannel: false,
   useOriginalBilibiliHomepage: false,
   nvidiaRtxVideoEnhancementCompatibility: false,
   preventMobileRedirect: false,

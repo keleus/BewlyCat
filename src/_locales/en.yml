@@ -563,8 +563,6 @@ settings:
     homepage!
   use_original_bilibili_topbar: Use the original Bilibili top bar
   use_original_bilibili_topbar_desc: Switch between the BewlyCat top bar and the original or a third-party top bar. When enabled, the BewlyCat top bar is hidden.
-  hide_original_bilibili_topbar_channel: Hide the original channel row after scrolling
-  hide_original_bilibili_topbar_channel_desc: When enabled with the original Bilibili top bar, the homepage channel row containing moments, popular content, and categories stays hidden after scrolling. Disabled by default.
   adapt_to_other_page_styles: Adapt to other page styles
   adapt_to_other_page_styles_desc: Adapt to some common pages to match with the BewlyBewly theme.
   prevent_mobile_redirect: Prevent mobile redirect

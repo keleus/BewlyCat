@@ -102,11 +102,9 @@ export function setOriginalBilibiliTopBarScrolled(doc: Document, scrolled: boole
   const header = getDocumentTopBar(doc) || cachedOriginalTopBar
   if (header && header !== cachedOriginalTopBar)
     cachedOriginalTopBar = header
-  const showFixedChannel = scrolled
-    && !doc.documentElement.classList.contains('hide-original-topbar-channel')
   header?.classList.toggle('bewly-original-top-bar-scrolled', scrolled)
   header?.querySelector('.bili-header__bar')?.classList.toggle('slide-down', scrolled)
-  getOriginalFixedChannel(header)?.classList.toggle('bewly-original-fixed-channel-visible', showFixedChannel)
+  getOriginalFixedChannel(header)?.classList.toggle('bewly-original-fixed-channel-visible', scrolled)
   if (header) {
     if (scrolled)
       restoreOriginalTopBarVisibility(header)

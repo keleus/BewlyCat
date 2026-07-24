@@ -26,9 +26,6 @@ function changeThemeColor(color: string) {
       <SettingsItem :title="$t('settings.use_original_bilibili_topbar')" :desc="$t('settings.use_original_bilibili_topbar_desc')" right-width="auto">
         <Radio v-model="settings.useOriginalBilibiliTopBar" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.hide_original_bilibili_topbar_channel')" :desc="$t('settings.hide_original_bilibili_topbar_channel_desc')" right-width="auto">
-        <Radio v-model="settings.hideOriginalBilibiliTopBarChannel" />
-      </SettingsItem>
       <SettingsItem :title="$t('settings.use_original_bilibili_homepage')" right-width="auto">
         <template #desc>
           <span color="$bew-error-color" v-text="$t('settings.use_original_bilibili_homepage_desc')" />

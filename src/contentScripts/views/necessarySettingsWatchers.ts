@@ -322,18 +322,11 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
-    [
-      () => settings.value.useOriginalBilibiliHomepage,
-      () => settings.value.hideOriginalBilibiliTopBarChannel,
-    ],
-    ([useOriginalBilibiliHomepage, hideOriginalBilibiliTopBarChannel]) => {
-      // 只有外层 BewlyCat 自定义首页需要接管原版频道行，原版首页交还给 B 站或第三方顶栏控制。
+    () => settings.value.useOriginalBilibiliHomepage,
+    (useOriginalBilibiliHomepage) => {
+      // 只有外层 BewlyCat 自定义首页需要接管原版顶栏第二行，原版首页交还给 B 站或第三方顶栏控制。
       const useBewlyHomepage = !isInIframe() && isHomePage() && !useOriginalBilibiliHomepage
       document.documentElement.classList.toggle('bewly-custom-homepage', useBewlyHomepage)
-      document.documentElement.classList.toggle(
-        'hide-original-topbar-channel',
-        useBewlyHomepage && hideOriginalBilibiliTopBarChannel,
-      )
 
       if (useBewlyHomepage && settings.value.useOriginalBilibiliTopBar) {
         const scrollTop = document.getElementById('bewly')

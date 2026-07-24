@@ -556,8 +556,6 @@ settings:
   use_original_bilibili_homepage_desc: 在您更改此设置后，如果在首页上，页面将自动刷新！
   use_original_bilibili_topbar: 使用原版 Bilibili 顶栏
   use_original_bilibili_topbar_desc: 在 BewlyCat 顶栏与原版或第三方顶栏之间切换。开启后不再显示 BewlyCat 顶栏。
-  hide_original_bilibili_topbar_channel: 隐藏滚动后的原版频道行
-  hide_original_bilibili_topbar_channel_desc: 开启后，使用原版 Bilibili 顶栏时，首页滚动后不再显示动态、热门和分区频道行。默认关闭。
   adapt_to_other_page_styles: 适应其他页面样式
   adapt_to_other_page_styles_desc: 适应一些常见页面，以与 BewlyCat 主题相匹配。
   prevent_mobile_redirect: 防止跳转移动端

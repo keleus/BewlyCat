@@ -12,10 +12,6 @@
   top: var(--bew-top-bar-height) !important;
 }
 
-.homePage.bewly-custom-homepage.hide-original-topbar-channel .header-channel.bewly-original-fixed-channel-visible {
-  display: none !important;
-}
-
 .homePage .bili-header {
   .bewly-bili-logo-entry,
   .bewly-home-entry-arrow {
@@ -212,8 +208,7 @@
     height: var(--bew-top-bar-height) !important;
   }
 
-  // 使用 BewlyCat 顶栏时一并隐藏原版频道行。
-  .bili-header__channel,
+  // BewlyCat 顶栏下保留首屏频道行，仅隐藏滚动后出现的原版顶栏第二行。
   .header-channel,
   .bili-header-channel-panel,
   .bewly-bili-fixed-channel,
