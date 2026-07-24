@@ -23,11 +23,11 @@ function changeThemeColor(color: string) {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_common')">
-      <SettingsItem :title="$t('settings.topbar_visibility')" :desc="$t('settings.topbar_visibility_desc')" right-width="auto">
-        <Radio v-model="settings.showTopBar" :label="settings.showTopBar ? $t('settings.chk_box.show') : $t('settings.chk_box.hidden')" />
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.use_original_bilibili_topbar')" right-width="auto">
+      <SettingsItem :title="$t('settings.use_original_bilibili_topbar')" :desc="$t('settings.use_original_bilibili_topbar_desc')" right-width="auto">
         <Radio v-model="settings.useOriginalBilibiliTopBar" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.hide_original_bilibili_topbar_channel')" :desc="$t('settings.hide_original_bilibili_topbar_channel_desc')" right-width="auto">
+        <Radio v-model="settings.hideOriginalBilibiliTopBarChannel" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.use_original_bilibili_homepage')" right-width="auto">
         <template #desc>

@@ -506,11 +506,12 @@ settings:
   home_tabs_position: 標籤列位置
   always_show_tabs_on_home_page: 捲動時隱藏首頁標籤列
   fixed_home_tabs_on_home_page: 固定首頁標籤列
-  topbar_visibility: 頂部列可視性
-  topbar_visibility_desc: 如果你正在使用 Bilibili Evolved 的頂欄，你可以在這裏關閉 BewlyBewly 的頂欄。
   use_original_bilibili_homepage: 使用原版 Bilibili 首頁
   use_original_bilibili_homepage_desc: 當你變更此設定後，如果在首頁上，頁面將自動重新整理！
   use_original_bilibili_topbar: 使用原版 Bilibili 頂欄
+  use_original_bilibili_topbar_desc: 在 BewlyCat 頂欄與原版或第三方頂欄之間切換。啟用後不再顯示 BewlyCat 頂欄。
+  hide_original_bilibili_topbar_channel: 隱藏捲動後的原版頻道列
+  hide_original_bilibili_topbar_channel_desc: 啟用後，使用原版 Bilibili 頂欄時，首頁捲動後不再顯示動態、熱門和分區頻道列。預設關閉。
   adapt_to_other_page_styles: 適應其他頁面風格
   adapt_to_other_page_styles_desc: 適應一些常見頁面，以配合 BewlyBewly 主題。
   prevent_mobile_redirect: 防止跳轉至行動版

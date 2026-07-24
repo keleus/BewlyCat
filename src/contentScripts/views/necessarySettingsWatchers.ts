@@ -13,7 +13,6 @@ function isFestivalPage(): boolean {
 
 export function setupNecessarySettingsWatchers() {
   const { locale } = useI18n()
-  let syncingTopBarSettings = false
   let lastBewlyDesignHref = location.href
 
   const DEFAULT_FROSTED_GLASS_BLUR_PX = originalSettings.frostedGlassBlurIntensity
@@ -323,35 +322,33 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
-    () => settings.value.showTopBar,
-    (newVal) => {
-      // `showTopBar` is the Bewly top bar toggle. Keep `useOriginalBilibiliTopBar` in sync,
-      // but avoid ping-pong writes that can race in async storage.
-      if (syncingTopBarSettings)
-        return
+    [
+      () => settings.value.useOriginalBilibiliHomepage,
+      () => settings.value.hideOriginalBilibiliTopBarChannel,
+    ],
+    ([useOriginalBilibiliHomepage, hideOriginalBilibiliTopBarChannel]) => {
+      // 只有外层 BewlyCat 自定义首页需要接管原版频道行，原版首页交还给 B 站或第三方顶栏控制。
+      const useBewlyHomepage = !isInIframe() && isHomePage() && !useOriginalBilibiliHomepage
+      document.documentElement.classList.toggle('bewly-custom-homepage', useBewlyHomepage)
+      document.documentElement.classList.toggle(
+        'hide-original-topbar-channel',
+        useBewlyHomepage && hideOriginalBilibiliTopBarChannel,
+      )
 
-      const desiredUseOriginal = !newVal
-      if (settings.value.useOriginalBilibiliTopBar === desiredUseOriginal)
-        return
-
-      syncingTopBarSettings = true
-      settings.value.useOriginalBilibiliTopBar = desiredUseOriginal
-      syncingTopBarSettings = false
+      if (useBewlyHomepage && settings.value.useOriginalBilibiliTopBar) {
+        const scrollTop = document.getElementById('bewly')
+          ?.shadowRoot
+          ?.querySelector<HTMLElement>('.bewly-scroll-viewport')
+          ?.scrollTop ?? 0
+        setOriginalBilibiliTopBarScrolled(document, scrollTop > 0)
+      }
     },
     { immediate: true },
   )
 
   watch(
     () => settings.value.useOriginalBilibiliTopBar,
-    (newVal) => {
-      // `useOriginalBilibiliTopBar` is the source-of-truth for "which top bar to use".
-      // Sync `showTopBar` (Bewly top bar visible) with minimal writes.
-      const desiredShowTopBar = !newVal
-      if (!syncingTopBarSettings && settings.value.showTopBar !== desiredShowTopBar) {
-        syncingTopBarSettings = true
-        settings.value.showTopBar = desiredShowTopBar
-        syncingTopBarSettings = false
-      }
+    () => {
       applyOuterTopBarPolicy()
 
       // Sync top bar visibility preference to embedded Bilibili iframes.

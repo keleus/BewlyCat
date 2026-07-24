@@ -182,7 +182,7 @@ onMounted(() => {
   emitter.on(TOP_BAR_VISIBILITY_CHANGE, (val) => {
     shouldMoveCtrlBarUp.value = false
 
-    if (settings.value.autoHideTopBar && settings.value.showTopBar) {
+    if (settings.value.autoHideTopBar && !settings.value.useOriginalBilibiliTopBar) {
       if (val)
         shouldMoveCtrlBarUp.value = false
 

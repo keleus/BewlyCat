@@ -1,15 +1,19 @@
-.homePage .bili-header > .bili-header__channel,
-.homePage .bili-header > .bewly-bili-channel-panel {
+.homePage.bewly-custom-homepage .bili-header > .bili-header__channel,
+.homePage.bewly-custom-homepage .bili-header > .bewly-bili-channel-panel {
   display: none !important;
 }
 
-.homePage .header-channel {
+.homePage.bewly-custom-homepage .header-channel {
   display: none !important;
 }
 
-.homePage .header-channel.bewly-original-fixed-channel-visible {
+.homePage.bewly-custom-homepage .header-channel.bewly-original-fixed-channel-visible {
   display: flex !important;
   top: var(--bew-top-bar-height) !important;
+}
+
+.homePage.bewly-custom-homepage.hide-original-topbar-channel .header-channel.bewly-original-fixed-channel-visible {
+  display: none !important;
 }
 
 .homePage .bili-header {
@@ -208,7 +212,7 @@
     height: var(--bew-top-bar-height) !important;
   }
 
-  // 原版首页频道行不需要占位，否则会在 BewlyCat 顶栏下形成第二行
+  // 使用 BewlyCat 顶栏时一并隐藏原版频道行。
   .bili-header__channel,
   .header-channel,
   .bili-header-channel-panel,

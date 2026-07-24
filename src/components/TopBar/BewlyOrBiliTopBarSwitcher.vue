@@ -60,11 +60,11 @@ const topMargin = computed(() => {
     >
       <i i-mingcute:transfer-3-line text-xs />
       <span>
-        <template v-if="settings.showTopBar">
-          {{ $t('topbar.switch_to_bili_top_bar') }}
+        <template v-if="settings.useOriginalBilibiliTopBar">
+          {{ $t('topbar.switch_to_bewly_top_bar') }}
         </template>
         <template v-else>
-          {{ $t('topbar.switch_to_bewly_top_bar') }}
+          {{ $t('topbar.switch_to_bili_top_bar') }}
         </template>
       </span>
     </button>

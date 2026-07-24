@@ -353,8 +353,8 @@ export interface Settings {
   rememberNoCookieRecommendationState: boolean
 
   adaptToOtherPageStyles: boolean
-  showTopBar: boolean
   useOriginalBilibiliTopBar: boolean
+  hideOriginalBilibiliTopBarChannel: boolean
   useOriginalBilibiliHomepage: boolean
   nvidiaRtxVideoEnhancementCompatibility: boolean
   preventMobileRedirect: boolean
@@ -593,8 +593,8 @@ export const originalSettings: Settings = {
   rememberNoCookieRecommendationState: true,
 
   adaptToOtherPageStyles: true,
-  showTopBar: true,
   useOriginalBilibiliTopBar: false,
+  hideOriginalBilibiliTopBarChannel: false,
   useOriginalBilibiliHomepage: false,
   nvidiaRtxVideoEnhancementCompatibility: false,
   preventMobileRedirect: false,
@@ -668,6 +668,16 @@ export const originalSettings: Settings = {
 // 本地存储配置（不会同步到云端）
 export const localSettings = useStorageLocal('localSettings', originalLocalSettings, { mergeDefaults: true, writeDefaults: false })
 
+function migrateLegacyTopBarSetting(value: Settings) {
+  const legacySettings = value as Settings & { showTopBar?: boolean }
+  if (typeof legacySettings.showTopBar !== 'boolean')
+    return false
+
+  legacySettings.useOriginalBilibiliTopBar = !legacySettings.showTopBar
+  Reflect.deleteProperty(legacySettings, 'showTopBar')
+  return true
+}
+
 let resolveSettingsReady: (value: Settings) => void = () => {}
 export const settingsReady = new Promise<Settings>((resolve) => {
   resolveSettingsReady = resolve
@@ -676,13 +686,25 @@ export const settingsReady = new Promise<Settings>((resolve) => {
 export const settings = useStorageLocal('settings', originalSettings, {
   mergeDefaults: true,
   writeDefaults: false,
-  onReady: value => resolveSettingsReady(value),
+  onReady: (value) => {
+    const migratedLegacyTopBarSetting = migrateLegacyTopBarSetting(value)
+    resolveSettingsReady(value)
+
+    // 等存储监听启动后触发一次替换，将删除旧字段后的结构持久化。
+    if (migratedLegacyTopBarSetting) {
+      queueMicrotask(() => {
+        settings.value = { ...settings.value }
+      })
+    }
+  },
 })
 
 watch(
   () => settings.value,
   (value) => {
     const record = value as Record<string, any>
+
+    migrateLegacyTopBarSetting(value)
 
     if (!Number.isFinite(record.frostedGlassBlurIntensity))
       record.frostedGlassBlurIntensity = originalSettings.frostedGlassBlurIntensity

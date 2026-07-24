@@ -150,7 +150,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       return false
     }
 
-    if (settings.value.showTopBar)
+    if (!settings.value.useOriginalBilibiliTopBar)
       return true
     return false
   })
