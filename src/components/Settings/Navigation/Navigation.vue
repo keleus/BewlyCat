@@ -3,6 +3,22 @@ import SettingsCategoryLayout from '../components/SettingsCategoryLayout.vue'
 
 const pages = [
   {
+    value: 'home',
+    titleKey: 'settings.plugin.home',
+    descriptionKey: 'settings.category_browsing_home_desc',
+    icon: 'i-mingcute:home-5-line',
+    iconActivated: 'i-mingcute:home-5-fill',
+    component: defineAsyncComponent(() => import('../PluginComponentsAndPages/Home/Home.vue')),
+  },
+  {
+    value: 'video-card',
+    titleKey: 'settings.plugin.video_card',
+    descriptionKey: 'settings.category_browsing_video_card_desc',
+    icon: 'i-mingcute:video-camera-line',
+    iconActivated: 'i-mingcute:video-camera-fill',
+    component: defineAsyncComponent(() => import('../PluginComponentsAndPages/VideoCard/VideoCard.vue')),
+  },
+  {
     value: 'topbar',
     titleKey: 'settings.plugin.topbar',
     descriptionKey: 'settings.category_navigation_topbar_desc',

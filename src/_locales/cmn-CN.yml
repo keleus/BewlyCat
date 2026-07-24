@@ -68,8 +68,7 @@ player_screenshot:
 settings:
   title: 设置
   menu_general: 通用
-  menu_browsing: 首页与浏览
-  menu_navigation: 导航与搜索
+  menu_navigation: 浏览与导航
   menu_playback: 播放与声音
   menu_advanced: 高级与维护
   category_navigation: 设置分类导航

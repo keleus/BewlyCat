@@ -21,7 +21,6 @@ provide('setSettingsBreadcrumb', (detail?: string) => {
 
 const settingsMenu = {
   [MenuType.General]: defineAsyncComponent(() => import('./PluginComponentsAndPages/General/General.vue')),
-  [MenuType.Browsing]: defineAsyncComponent(() => import('./Browsing/Browsing.vue')),
   [MenuType.Navigation]: defineAsyncComponent(() => import('./Navigation/Navigation.vue')),
   [MenuType.Playback]: defineAsyncComponent(() => import('./Playback/Playback.vue')),
   [MenuType.Appearance]: defineAsyncComponent(() => import('./Appearance/Appearance.vue')),
@@ -31,10 +30,13 @@ const settingsMenu = {
   [MenuType.About]: defineAsyncComponent(() => import('./About/About.vue')),
 }
 const settingsMenuStorageKey = 'bewly-settings-active-menu'
-const storedMenuItem = sessionStorage.getItem(settingsMenuStorageKey) as MenuType | null
+const storedMenuItem = sessionStorage.getItem(settingsMenuStorageKey)
+const initialMenuItem = storedMenuItem === 'Browsing'
+  ? MenuType.Navigation
+  : storedMenuItem as MenuType | null
 const activatedMenuItem = ref<MenuType>(
-  storedMenuItem && Object.values(MenuType).includes(storedMenuItem)
-    ? storedMenuItem
+  initialMenuItem && Object.values(MenuType).includes(initialMenuItem)
+    ? initialMenuItem
     : MenuType.General,
 )
 const settingsWindow = ref<HTMLDivElement>()
@@ -70,15 +72,9 @@ const settingsMenuItems: MenuItem[] = [
     titleKey: 'settings.menu_general',
   },
   {
-    value: MenuType.Browsing,
+    value: MenuType.Navigation,
     icon: 'i-mingcute:compass-line',
     iconActivated: 'i-mingcute:compass-fill',
-    titleKey: 'settings.menu_browsing',
-  },
-  {
-    value: MenuType.Navigation,
-    icon: 'i-mingcute:navigation-line',
-    iconActivated: 'i-mingcute:navigation-fill',
     titleKey: 'settings.menu_navigation',
   },
   {
@@ -145,13 +141,55 @@ const settingsSearchEntries: SettingsSearchEntry[] = [
   { titleKey: 'settings.group_clean_share_link', menu: MenuType.General, targetTitleKey: 'settings.group_clean_share_link' },
   { titleKey: 'settings.enable_clean_share_link', menu: MenuType.General, targetTitleKey: 'settings.group_clean_share_link' },
   { titleKey: 'settings.group_favorites', menu: MenuType.General, targetTitleKey: 'settings.group_favorites' },
-  { titleKey: 'settings.plugin.home', menu: MenuType.Browsing, targetTitleKey: 'settings.plugin.home' },
-  { titleKey: 'settings.group_recommendation_filters', menu: MenuType.Browsing, targetTitleKey: 'settings.group_recommendation_filters' },
-  { titleKey: 'settings.filter_out_vertical_videos', menu: MenuType.Browsing, targetTitleKey: 'settings.group_recommendation_filters' },
-  { titleKey: 'settings.filter_by_view_count', menu: MenuType.Browsing, targetTitleKey: 'settings.group_recommendation_filters' },
-  { titleKey: 'settings.plugin.video_card', menu: MenuType.Browsing, targetTitleKey: 'settings.plugin.video_card' },
-  { titleKey: 'settings.group_video_card_grid', menu: MenuType.Browsing, targetTitleKey: 'settings.group_video_card_grid' },
-  { titleKey: 'settings.video_card_shadow_curve', menu: MenuType.Browsing, targetTitleKey: 'settings.video_card_shadow_curve' },
+  {
+    titleKey: 'settings.plugin.home',
+    menu: MenuType.Navigation,
+    targetTitleKey: 'settings.plugin.home',
+    secondaryPage: 'home',
+    secondaryStorageKey: 'bewly-settings-navigation-page',
+  },
+  {
+    titleKey: 'settings.group_recommendation_filters',
+    menu: MenuType.Navigation,
+    targetTitleKey: 'settings.group_recommendation_filters',
+    secondaryPage: 'home',
+    secondaryStorageKey: 'bewly-settings-navigation-page',
+  },
+  {
+    titleKey: 'settings.filter_out_vertical_videos',
+    menu: MenuType.Navigation,
+    targetTitleKey: 'settings.group_recommendation_filters',
+    secondaryPage: 'home',
+    secondaryStorageKey: 'bewly-settings-navigation-page',
+  },
+  {
+    titleKey: 'settings.filter_by_view_count',
+    menu: MenuType.Navigation,
+    targetTitleKey: 'settings.group_recommendation_filters',
+    secondaryPage: 'home',
+    secondaryStorageKey: 'bewly-settings-navigation-page',
+  },
+  {
+    titleKey: 'settings.plugin.video_card',
+    menu: MenuType.Navigation,
+    targetTitleKey: 'settings.plugin.video_card',
+    secondaryPage: 'video-card',
+    secondaryStorageKey: 'bewly-settings-navigation-page',
+  },
+  {
+    titleKey: 'settings.group_video_card_grid',
+    menu: MenuType.Navigation,
+    targetTitleKey: 'settings.group_video_card_grid',
+    secondaryPage: 'video-card',
+    secondaryStorageKey: 'bewly-settings-navigation-page',
+  },
+  {
+    titleKey: 'settings.video_card_shadow_curve',
+    menu: MenuType.Navigation,
+    targetTitleKey: 'settings.video_card_shadow_curve',
+    secondaryPage: 'video-card',
+    secondaryStorageKey: 'bewly-settings-navigation-page',
+  },
   {
     titleKey: 'settings.plugin.topbar',
     menu: MenuType.Navigation,
@@ -348,7 +386,7 @@ function changeMenuItem(menuItem: MenuType) {
       >
         <header
           flex justify-between items-center w-full h-80px
-          pos="fixed top-0 left-0" p="x-11"
+          pos="fixed top-0 left-0" p="x-11" box-border gap-4
           z-1 rounded="t-$bew-radius"
           style="
             text-shadow: 0 0 10px var(--bew-elevated-solid), 0 0 15px var(--bew-elevated-solid)
@@ -448,8 +486,10 @@ function changeMenuItem(menuItem: MenuType) {
 
 .settings-breadcrumb {
   display: flex;
+  overflow: hidden;
   gap: 7px;
   align-items: center;
+  flex: 1 1 auto;
   min-width: 0;
   color: var(--bew-text-2);
   font-size: 15px;
@@ -461,6 +501,8 @@ function changeMenuItem(menuItem: MenuType) {
   }
 
   strong {
+    min-width: 0;
+    flex: 0 1 auto;
     overflow: hidden;
     color: var(--bew-text-1);
     font-size: 18px;
@@ -468,13 +510,20 @@ function changeMenuItem(menuItem: MenuType) {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  strong:last-child {
+    flex: 1 1 auto;
+  }
 }
 
 .settings-search {
   position: relative;
   display: flex;
+  box-sizing: border-box;
   align-items: center;
+  flex: 0 1 auto;
   width: min(280px, 34%);
+  min-width: 42px;
   height: 36px;
   padding: 0 11px;
   background: var(--bew-fill-1);

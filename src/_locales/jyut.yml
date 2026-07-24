@@ -68,8 +68,7 @@ player_screenshot:
 settings:
   title: 設定
   menu_general: 一般
-  menu_browsing: 首頁同瀏覽
-  menu_navigation: 導覽同搜尋
+  menu_navigation: 瀏覽同導覽
   menu_playback: 播放同聲音
   menu_advanced: 進階同維護
   category_navigation: 設定分類導覽

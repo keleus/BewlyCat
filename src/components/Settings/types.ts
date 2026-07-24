@@ -1,6 +1,5 @@
 export enum MenuType {
   General = 'General',
-  Browsing = 'Browsing',
   Navigation = 'Navigation',
   Playback = 'Playback',
   Appearance = 'Appearance',

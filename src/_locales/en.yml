@@ -68,8 +68,7 @@ player_screenshot:
 settings:
   title: Settings
   menu_general: General
-  menu_browsing: Home & Browsing
-  menu_navigation: Navigation & Search
+  menu_navigation: Browsing & Navigation
   menu_playback: Playback & Audio
   menu_advanced: Advanced & Maintenance
   category_navigation: Settings category navigation
