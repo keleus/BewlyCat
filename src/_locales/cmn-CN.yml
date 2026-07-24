@@ -53,6 +53,7 @@ common:
     operations: 操作
   position:
     left: 左侧
+    center: 居中
     right: 右侧
     top: 顶部
     bottom: 底部
@@ -532,6 +533,7 @@ settings:
   search_page_mode_wallpaper_fixed: 将搜索页模式的壁纸固定
   home_tabs_adjustment: 标签栏调整
   home_tabs_adjustment_desc: 第一个激活的标签项是默认界面
+  home_tabs_position: 标签栏位置
   always_show_tabs_on_home_page: 滚动隐藏首页标签栏
   fixed_home_tabs_on_home_page: 固定首页标签栏
   topbar_visibility: 顶栏可见性

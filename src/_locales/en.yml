@@ -53,6 +53,7 @@ common:
     operations: Operations
   position:
     left: Left
+    center: Center
     right: Right
     top: Top
     bottom: Bottom
@@ -537,6 +538,7 @@ settings:
   search_page_mode_wallpaper_fixed: Make the wallpaper of the search page mode fixed
   home_tabs_adjustment: Tabs adjustment
   home_tabs_adjustment_desc: The first activated tab is the default page.
+  home_tabs_position: Home tabs position
   always_show_tabs_on_home_page: Hide home tabs while scrolling
   fixed_home_tabs_on_home_page: Fix home tabs to the top
   topbar_visibility: BewlyBewly's top bar visibility

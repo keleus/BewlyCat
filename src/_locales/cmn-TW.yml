@@ -53,6 +53,7 @@ common:
     operations: 操作
   position:
     left: 左側
+    center: 置中
     right: 右側
     top: 頂部
     bottom: 底部
@@ -486,6 +487,7 @@ settings:
   search_page_mode_wallpaper_fixed: 將搜尋頁模式的背景固定
   home_tabs_adjustment: 標籤列調整
   home_tabs_adjustment_desc: 第一個啟用的標籤項目調整頁面將是起始頁面。
+  home_tabs_position: 標籤列位置
   always_show_tabs_on_home_page: 捲動時隱藏首頁標籤列
   fixed_home_tabs_on_home_page: 固定首頁標籤列
   topbar_visibility: 頂部列可視性

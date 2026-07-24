@@ -165,6 +165,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.following_filter_dynamic_videos',
     'settings.group_home_tabs',
     'settings.home_tabs_adjustment',
+    'settings.home_tabs_position',
     'settings.fixed_home_tabs_on_home_page',
     'settings.group_search_page_mode',
     'settings.use_search_page_mode',
