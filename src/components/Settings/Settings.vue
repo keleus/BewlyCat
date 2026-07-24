@@ -171,6 +171,38 @@ const searchResults = computed(() => {
     .slice(0, 12)
 })
 
+const activeSearchResultIndex = ref(-1)
+
+watch(searchQuery, () => {
+  activeSearchResultIndex.value = -1
+})
+
+function moveSearchResultSelection(event: KeyboardEvent, direction: 1 | -1) {
+  if (event.isComposing)
+    return
+
+  const resultCount = searchResults.value.length
+  if (!resultCount)
+    return
+
+  event.preventDefault()
+  if (activeSearchResultIndex.value < 0)
+    activeSearchResultIndex.value = direction > 0 ? 0 : resultCount - 1
+  else
+    activeSearchResultIndex.value = (activeSearchResultIndex.value + direction + resultCount) % resultCount
+}
+
+function activateSearchResult(event: KeyboardEvent) {
+  if (event.isComposing)
+    return
+
+  const entry = searchResults.value[activeSearchResultIndex.value] ?? searchResults.value[0]
+  if (entry) {
+    event.preventDefault()
+    navigateToSearchResult(entry)
+  }
+}
+
 function getMenuTitle(menu: MenuType) {
   const menuItem = settingsMenuItems.find(item => item.value === menu)
   return menuItem ? t(menuItem.titleKey) : t('settings.title')
@@ -230,7 +262,10 @@ function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: n
     return
 
   const target = Array.from(settingsWindow.value?.querySelectorAll<HTMLElement>('[data-settings-title]') ?? [])
-    .find(element => element.dataset.settingsTitle === expectedTitle)
+    .find(element =>
+      element.dataset.settingsTitle === expectedTitle
+      && !element.closest('.page-fade-leave-active'),
+    )
 
   if (target) {
     expandSearchTarget(target)
@@ -251,7 +286,8 @@ function navigateToSearchResult(entry: SettingsSearchEntry) {
   entry.storageValues?.forEach(({ key, value }) => sessionStorage.setItem(key, value))
 
   activatedMenuItem.value = entry.menu
-  settingsContentKey.value++
+  if (entry.storageValues?.length)
+    settingsContentKey.value++
   searchQuery.value = ''
   const targetTitle = entry.targetTitleKey
     ? t(entry.targetTitleKey)
@@ -395,13 +431,31 @@ function changeMenuItem(menuItem: MenuType) {
               v-model="searchQuery"
               type="search"
               :placeholder="$t('settings.search.placeholder')"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="settings-search-results"
+              :aria-expanded="Boolean(searchQuery)"
+              :aria-activedescendant="activeSearchResultIndex >= 0 ? `settings-search-result-${activeSearchResultIndex}` : undefined"
               @keydown.esc="searchQuery = ''"
+              @keydown.down="moveSearchResultSelection($event, 1)"
+              @keydown.up="moveSearchResultSelection($event, -1)"
+              @keydown.enter="activateSearchResult"
             >
-            <div v-if="searchQuery" class="settings-search-results">
+            <div
+              v-if="searchQuery"
+              id="settings-search-results"
+              class="settings-search-results"
+              role="listbox"
+            >
               <button
                 v-for="(entry, index) in searchResults"
+                :id="`settings-search-result-${index}`"
                 :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
                 type="button"
+                role="option"
+                :aria-selected="index === activeSearchResultIndex"
+                :class="{ active: index === activeSearchResultIndex }"
+                @mouseenter="activeSearchResultIndex = index"
                 @click="navigateToSearchResult(entry)"
               >
                 <strong>{{ getSearchEntryTitle(entry) }}</strong>
@@ -551,6 +605,14 @@ function changeMenuItem(menuItem: MenuType) {
     &:hover {
       background: var(--bew-fill-2);
     }
+
+    &.active {
+      background: var(--bew-fill-2);
+
+      strong {
+        color: var(--bew-theme-color);
+      }
+    }
   }
 
   strong {
@@ -573,7 +635,24 @@ function changeMenuItem(menuItem: MenuType) {
 :deep(.settings-search-target) {
   position: relative;
   z-index: 2;
+  isolation: isolate;
   border-radius: var(--bew-radius);
+}
+
+:deep(.settings-search-target > *) {
+  position: relative;
+  z-index: 1;
+}
+
+:deep(.settings-search-target::before) {
+  position: absolute;
+  inset: 0 -12px;
+  z-index: 0;
+  background: var(--bew-theme-color);
+  border-radius: var(--bew-radius);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
   animation: settings-search-target-flash 2.4s ease-in-out;
 }
 
@@ -599,18 +678,18 @@ function changeMenuItem(menuItem: MenuType) {
 @keyframes settings-search-target-flash {
   0%,
   100% {
-    background: transparent;
+    opacity: 0;
   }
 
   18%,
   48%,
   78% {
-    background: var(--bew-theme-color-20);
+    opacity: 0.18;
   }
 
   33%,
   63% {
-    background: transparent;
+    opacity: 0;
   }
 }
 
