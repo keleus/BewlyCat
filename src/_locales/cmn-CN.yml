@@ -174,6 +174,9 @@ settings:
     Bilibili 默认会专门处理中文标点符号以实现左对齐。 如果你正在使用自定义字体，建议移除缩进。
   enable_frosted_glass: 启用毛玻璃效果
   frosted_glass_blur_intensity: 毛玻璃模糊强度
+  enable_liquid_glass: 启用 Liquid Glass 效果（实验性）
+  enable_liquid_glass_desc: 在毛玻璃上增加液态高光、通透边缘和轻微流动效果。
+  liquid_glass_tint_intensity: Liquid Glass 着色强度
   disable_shadow: 禁用阴影
   link_opening_behavior_opt:
     current_tab: 当前标签页

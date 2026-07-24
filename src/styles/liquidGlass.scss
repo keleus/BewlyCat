@@ -1,0 +1,178 @@
+:host(.enable-liquid-glass:not(.disable-frosted-glass)),
+:root.enable-liquid-glass:not(.disable-frosted-glass) {
+  --bew-liquid-glass-content-alpha: 0.188;
+  --bew-liquid-glass-content-hover-alpha: 0.266;
+  --bew-liquid-glass-content-alt-alpha: 0.176;
+  --bew-liquid-glass-content-alt-hover-alpha: 0.254;
+  --bew-liquid-glass-elevated-alpha: 0.214;
+  --bew-liquid-glass-elevated-hover-alpha: 0.286;
+  --bew-liquid-glass-elevated-alt-alpha: 0.198;
+  --bew-liquid-glass-elevated-alt-hover-alpha: 0.27;
+  --bew-liquid-glass-fill-alt-alpha: 0.114;
+  --bew-liquid-glass-border-alpha: 0.182;
+  --bew-liquid-glass-sheen-strong-alpha: 0.096;
+  --bew-liquid-glass-sheen-weak-alpha: 0.054;
+  --bew-liquid-glass-darken-alpha: 0.065;
+  --bew-content-opacity: var(--bew-liquid-glass-content-alpha);
+  --bew-content: rgb(255 255 255 / var(--bew-liquid-glass-content-alpha));
+  --bew-content-hover: rgb(255 255 255 / var(--bew-liquid-glass-content-hover-alpha));
+  --bew-content-alt: rgb(244 247 255 / var(--bew-liquid-glass-content-alt-alpha));
+  --bew-content-alt-hover: rgb(238 243 255 / var(--bew-liquid-glass-content-alt-hover-alpha));
+  --bew-elevated: rgb(255 255 255 / var(--bew-liquid-glass-elevated-alpha));
+  --bew-elevated-hover: rgb(255 255 255 / var(--bew-liquid-glass-elevated-hover-alpha));
+  --bew-elevated-alt: rgb(248 250 255 / var(--bew-liquid-glass-elevated-alt-alpha));
+  --bew-elevated-alt-hover: rgb(244 248 255 / var(--bew-liquid-glass-elevated-alt-hover-alpha));
+  --bew-fill-alt: rgb(255 255 255 / var(--bew-liquid-glass-fill-alt-alpha));
+  --bew-border-color: rgb(255 255 255 / var(--bew-liquid-glass-border-alpha));
+  --bew-shadow-edge-glow-1:
+    inset 0 0.5px 0.35px rgb(255 255 255 / 48%), inset 0.5px 0 0.35px rgb(255 255 255 / 26%),
+    inset 0 -0.5px 0.45px color-mix(in oklab, var(--bew-theme-color), transparent 88%),
+    inset -0.5px 0 0.45px rgb(96 165 250 / 10%), inset 0 0 8px rgb(255 255 255 / 7%);
+  --bew-shadow-edge-glow-2:
+    inset 0 0.75px 0.5px rgb(255 255 255 / 54%), inset 0.75px 0 0.5px rgb(255 255 255 / 30%),
+    inset 0 -0.75px 0.6px color-mix(in oklab, var(--bew-theme-color), transparent 85%),
+    inset -0.75px 0 0.6px rgb(96 165 250 / 12%), inset 0 0 12px rgb(255 255 255 / 9%);
+  --bew-liquid-glass-sheen:
+    linear-gradient(
+      rgb(10 14 22 / var(--bew-liquid-glass-darken-alpha)),
+      rgb(10 14 22 / var(--bew-liquid-glass-darken-alpha))
+    ),
+    radial-gradient(circle at 16% 0%, rgb(255 255 255 / var(--bew-liquid-glass-sheen-strong-alpha)), transparent 38%),
+    linear-gradient(
+      135deg,
+      rgb(255 255 255 / var(--bew-liquid-glass-sheen-weak-alpha)) 0%,
+      transparent 38%,
+      color-mix(in oklab, var(--bew-theme-color), transparent 95%) 72%,
+      rgb(255 255 255 / var(--bew-liquid-glass-sheen-weak-alpha)) 100%
+    );
+}
+
+:host(.enable-liquid-glass.dark:not(.disable-frosted-glass)),
+:root.enable-liquid-glass.dark:not(.disable-frosted-glass) {
+  --bew-liquid-glass-darken-alpha: 0.1;
+  --bew-content: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 8%) r g b / var(--bew-liquid-glass-content-alpha)
+  );
+  --bew-content-hover: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 14%) r g b / var(--bew-liquid-glass-content-hover-alpha)
+  );
+  --bew-content-alt: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 10%) r g b / var(--bew-liquid-glass-content-alt-alpha)
+  );
+  --bew-content-alt-hover: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 16%) r g b /
+      var(--bew-liquid-glass-content-alt-hover-alpha)
+  );
+  --bew-elevated: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 14%) r g b / var(--bew-liquid-glass-elevated-alpha)
+  );
+  --bew-elevated-hover: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 20%) r g b / var(--bew-liquid-glass-elevated-hover-alpha)
+  );
+  --bew-elevated-alt: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 16%) r g b / var(--bew-liquid-glass-elevated-alt-alpha)
+  );
+  --bew-elevated-alt-hover: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color), white 22%) r g b /
+      var(--bew-liquid-glass-elevated-alt-hover-alpha)
+  );
+  --bew-fill-alt: rgb(255 255 255 / var(--bew-liquid-glass-fill-alt-alpha));
+  --bew-border-color: rgb(255 255 255 / var(--bew-liquid-glass-border-alpha));
+  --bew-shadow-edge-glow-1:
+    inset 0 0.5px 0.35px rgb(255 255 255 / 20%), inset 0.5px 0 0.35px rgb(255 255 255 / 10%),
+    inset 0 -0.5px 0.45px color-mix(in oklab, var(--bew-theme-color), transparent 88%),
+    inset -0.5px 0 0.45px rgb(96 165 250 / 8%), inset 0 0 8px rgb(255 255 255 / 3%);
+  --bew-shadow-edge-glow-2:
+    inset 0 0.75px 0.5px rgb(255 255 255 / 24%), inset 0.75px 0 0.5px rgb(255 255 255 / 12%),
+    inset 0 -0.75px 0.6px color-mix(in oklab, var(--bew-theme-color), transparent 85%),
+    inset -0.75px 0 0.6px rgb(96 165 250 / 10%), inset 0 0 12px rgb(255 255 255 / 4%);
+  --bew-liquid-glass-sheen:
+    linear-gradient(
+      rgb(0 0 0 / var(--bew-liquid-glass-darken-alpha)),
+      rgb(0 0 0 / var(--bew-liquid-glass-darken-alpha))
+    ),
+    radial-gradient(circle at 16% 0%, rgb(255 255 255 / var(--bew-liquid-glass-sheen-strong-alpha)), transparent 38%),
+    linear-gradient(
+      135deg,
+      rgb(255 255 255 / var(--bew-liquid-glass-sheen-weak-alpha)) 0%,
+      transparent 38%,
+      color-mix(in oklab, var(--bew-theme-color), transparent 94%) 72%,
+      rgb(255 255 255 / var(--bew-liquid-glass-sheen-weak-alpha)) 100%
+    );
+}
+
+:host(.enable-liquid-glass:not(.disable-frosted-glass)) {
+  :is(
+    .glass-panel,
+    .settings-content,
+    .dock-content-inner,
+    .bew-popover,
+    .liquid-glass-surface,
+    #search-wrap .search-bar input
+  ) {
+    background-image: var(--bew-liquid-glass-sheen);
+    background-position: 0% 0%;
+    background-size: 160% 160%;
+  }
+
+  .liquid-glass-surface {
+    border: 0.5px solid var(--bew-border-color);
+    backdrop-filter: var(--bew-filter-glass-1);
+    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
+  }
+
+  :is(
+    .bewly-bili-switcher-button.active,
+    .pinned-channels__item:hover,
+    .pinned-channels__more:hover,
+    .top-bar .right-side-item.active > a,
+    .top-bar .right-side-item > a:hover,
+    .top-bar .right-side-item > .notifications:hover,
+    .top-bar .logo:hover,
+    .top-bar .logo.activated,
+    .top-bar .home-button:hover
+  ) {
+    background-image: var(--bew-liquid-glass-sheen);
+    background-position: 50% 50%;
+    box-shadow: var(--bew-shadow-edge-glow-1);
+  }
+}
+
+:root.enable-liquid-glass:not(.disable-frosted-glass) {
+  :is(.bewly-design .bili-header .slide-down, .bewly-design .bili-header .mini-header) {
+    background-image: var(--bew-liquid-glass-sheen) !important;
+    background-position: 0% 0%;
+    background-size: 160% 160%;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :host(.enable-liquid-glass:not(.disable-frosted-glass)) {
+    :is(
+      .glass-panel,
+      .settings-content,
+      .dock-content-inner,
+      .bew-popover,
+      .liquid-glass-surface,
+      #search-wrap .search-bar input
+    ) {
+      animation: bew-liquid-glass-flow 12s ease-in-out infinite alternate;
+    }
+  }
+
+  :root.enable-liquid-glass:not(.disable-frosted-glass) {
+    :is(.bewly-design .bili-header .slide-down, .bewly-design .bili-header .mini-header) {
+      animation: bew-liquid-glass-flow 12s ease-in-out infinite alternate;
+    }
+  }
+}
+
+@keyframes bew-liquid-glass-flow {
+  from {
+    background-position: 0% 0%;
+  }
+
+  to {
+    background-position: 100% 100%;
+  }
+}

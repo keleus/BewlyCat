@@ -175,7 +175,7 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
   <div
     v-if="validPinnedKeys.length"
     ref="containerRef"
-    class="pinned-channels"
+    class="pinned-channels liquid-glass-surface"
     :class="{ 'white-theme': props.forceWhiteIcon }"
   >
     <div ref="listRef" class="pinned-channels__list">

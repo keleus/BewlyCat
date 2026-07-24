@@ -172,6 +172,9 @@ settings:
     Bilibili 預設會專登執吓中文標點符號，令到佢可以左對齊。如果你係用緊自訂字字型，最好係移除縮排。
   enable_frosted_glass: 啓用毛玻璃效果
   frosted_glass_blur_intensity: 毛玻璃模糊強度
+  enable_liquid_glass: 啓用 Liquid Glass 效果（實驗性）
+  enable_liquid_glass_desc: 喺毛玻璃上增加液態高光、通透邊緣同輕微流動效果。
+  liquid_glass_tint_intensity: Liquid Glass 着色強度
   disable_shadow: 閂咗陰影
   link_opening_behavior_opt:
     current_tab: 目前分頁

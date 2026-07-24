@@ -47,7 +47,7 @@ const topMargin = computed(() => {
       style="backdrop-filter: var(--bew-filter-glass-1);"
       pos="absolute"
       :class="isButtonVisible ? 'opacity-100' : 'opacity-0'"
-      class="pointer-events-auto"
+      class="pointer-events-auto liquid-glass-surface"
       :style="{
         transform: isButtonVisible ? 'translateY(0)' : 'translateY(-100%)',
       }"

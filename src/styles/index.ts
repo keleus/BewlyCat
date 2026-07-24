@@ -1,4 +1,5 @@
 import './variables.scss'
+import './liquidGlass.scss'
 import './main.scss'
 import './adaptedStyles'
 import './transitionAndTransitionGroup.scss'

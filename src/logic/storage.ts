@@ -69,6 +69,8 @@ export function resetAppAuthTokens() {
 
 export const FROSTED_GLASS_BLUR_MIN_PX = 1
 export const FROSTED_GLASS_BLUR_MAX_PX = 20
+export const LIQUID_GLASS_TINT_MIN_PERCENT = 0
+export const LIQUID_GLASS_TINT_MAX_PERCENT = 100
 
 // 快捷键基础配置接口
 export interface BaseShortcutSetting {
@@ -190,6 +192,8 @@ export interface Settings {
   removeTheIndentFromChinesePunctuation: boolean
 
   enableFrostedGlass: boolean
+  enableLiquidGlass: boolean
+  liquidGlassTintIntensity: number
   frostedGlassBlurIntensity: number
   disableShadow: boolean
 
@@ -416,6 +420,8 @@ export const originalSettings: Settings = {
   removeTheIndentFromChinesePunctuation: false,
 
   enableFrostedGlass: false,
+  enableLiquidGlass: false,
+  liquidGlassTintIntensity: 30,
   frostedGlassBlurIntensity: 20,
   disableShadow: false,
 
@@ -663,6 +669,15 @@ watch(
 
     if (!Number.isFinite(record.frostedGlassBlurIntensity))
       record.frostedGlassBlurIntensity = originalSettings.frostedGlassBlurIntensity
+
+    if (!Number.isFinite(record.liquidGlassTintIntensity))
+      record.liquidGlassTintIntensity = originalSettings.liquidGlassTintIntensity
+
+    if (record.liquidGlassTintIntensity < LIQUID_GLASS_TINT_MIN_PERCENT)
+      record.liquidGlassTintIntensity = LIQUID_GLASS_TINT_MIN_PERCENT
+
+    if (record.liquidGlassTintIntensity > LIQUID_GLASS_TINT_MAX_PERCENT)
+      record.liquidGlassTintIntensity = LIQUID_GLASS_TINT_MAX_PERCENT
 
     if ('reduceFrostedGlassBlur' in record) {
       if (record.reduceFrostedGlassBlur === true && record.frostedGlassBlurIntensity === originalSettings.frostedGlassBlurIntensity)

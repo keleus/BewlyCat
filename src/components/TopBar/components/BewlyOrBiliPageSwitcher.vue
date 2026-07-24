@@ -59,7 +59,7 @@ function switchPage(useOriginalBiliPage: boolean) {
 <template>
   <div
     v-if="showBewlyOrBiliPageSwitcher"
-    class="bewly-bili-switcher"
+    class="bewly-bili-switcher liquid-glass-surface"
     :class="{ 'disable-frosted-glass': !settings.enableFrostedGlass }"
     style="backdrop-filter: var(--bew-filter-glass-1);"
     flex="~ gap-1" bg="$bew-elevated" p-1 rounded-full

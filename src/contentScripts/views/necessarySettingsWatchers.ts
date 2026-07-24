@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { setUselessFeedCardBlockerEnabled } from '~/contentScripts/features/blockUselessFeedCards'
 import { LanguageType } from '~/enums/appEnums'
-import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
+import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, LIQUID_GLASS_TINT_MAX_PERCENT, LIQUID_GLASS_TINT_MIN_PERCENT, localSettings, originalSettings, settings } from '~/logic'
 import { resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe, isVideoPlaybackPage } from '~/utils/main'
 
@@ -24,6 +24,41 @@ export function setupNecessarySettingsWatchers() {
       return DEFAULT_FROSTED_GLASS_BLUR_PX
 
     return Math.min(FROSTED_GLASS_BLUR_MAX_PX, Math.max(FROSTED_GLASS_BLUR_MIN_PX, value))
+  }
+
+  const clampLiquidGlassTint = (value: number) => {
+    if (!Number.isFinite(value))
+      return originalSettings.liquidGlassTintIntensity
+
+    return Math.min(LIQUID_GLASS_TINT_MAX_PERCENT, Math.max(LIQUID_GLASS_TINT_MIN_PERCENT, value))
+  }
+
+  const applyLiquidGlassTint = (rawValue: number) => {
+    const tintRatio = clampLiquidGlassTint(rawValue) / LIQUID_GLASS_TINT_MAX_PERCENT
+    const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
+    const targets: HTMLElement[] = [document.documentElement]
+    const mixAlpha = (minimum: number, range: number) => (minimum + range * tintRatio).toFixed(3)
+    const variables = {
+      '--bew-liquid-glass-content-alpha': mixAlpha(0.08, 0.36),
+      '--bew-liquid-glass-content-hover-alpha': mixAlpha(0.14, 0.42),
+      '--bew-liquid-glass-content-alt-alpha': mixAlpha(0.08, 0.32),
+      '--bew-liquid-glass-content-alt-hover-alpha': mixAlpha(0.14, 0.38),
+      '--bew-liquid-glass-elevated-alpha': mixAlpha(0.1, 0.38),
+      '--bew-liquid-glass-elevated-hover-alpha': mixAlpha(0.16, 0.42),
+      '--bew-liquid-glass-elevated-alt-alpha': mixAlpha(0.09, 0.36),
+      '--bew-liquid-glass-elevated-alt-hover-alpha': mixAlpha(0.15, 0.4),
+      '--bew-liquid-glass-fill-alt-alpha': mixAlpha(0.06, 0.18),
+      '--bew-liquid-glass-border-alpha': mixAlpha(0.14, 0.14),
+      '--bew-liquid-glass-sheen-strong-alpha': mixAlpha(0.06, 0.12),
+      '--bew-liquid-glass-sheen-weak-alpha': mixAlpha(0.03, 0.08),
+    }
+
+    if (bewlyElement)
+      targets.push(bewlyElement)
+
+    targets.forEach((element) => {
+      Object.entries(variables).forEach(([property, value]) => element.style.setProperty(property, value))
+    })
   }
 
   // Chromium routes videos through a different compositor path when a page uses
@@ -48,12 +83,15 @@ export function setupNecessarySettingsWatchers() {
       return
     }
 
-    const blur1Value = `blur(${clampedValue}px) saturate(180%)`
+    const liquidGlassFilter = settings.value.enableLiquidGlass
+      ? 'saturate(210%) contrast(108%) brightness(104%)'
+      : 'saturate(180%)'
+    const blur1Value = `blur(${clampedValue}px) ${liquidGlassFilter}`
     const dialogBlur = clampedValue === 0 ? 0 : clampedValue + FROSTED_GLASS_DIALOG_OFFSET_PX
-    const blur2Value = `blur(${dialogBlur}px) saturate(180%)`
+    const blur2Value = `blur(${dialogBlur}px) ${liquidGlassFilter}`
 
     targets.forEach((element) => {
-      if (Math.abs(clampedValue - DEFAULT_FROSTED_GLASS_BLUR_PX) < 0.01) {
+      if (!settings.value.enableLiquidGlass && Math.abs(clampedValue - DEFAULT_FROSTED_GLASS_BLUR_PX) < 0.01) {
         element.style.removeProperty('--bew-filter-glass-1')
         element.style.removeProperty('--bew-filter-glass-2')
       }
@@ -67,9 +105,12 @@ export function setupNecessarySettingsWatchers() {
   const applyFrostedGlassState = () => {
     const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
     const shouldDisable = !isFrostedGlassActive()
+    const shouldEnableLiquidGlass = !shouldDisable && settings.value.enableLiquidGlass
 
     bewlyElement?.classList.toggle('disable-frosted-glass', shouldDisable)
+    bewlyElement?.classList.toggle('enable-liquid-glass', shouldEnableLiquidGlass)
     document.documentElement.classList.toggle('disable-frosted-glass', shouldDisable)
+    document.documentElement.classList.toggle('enable-liquid-glass', shouldEnableLiquidGlass)
     applyFrostedGlassBlur(settings.value.frostedGlassBlurIntensity)
   }
 
@@ -188,6 +229,7 @@ export function setupNecessarySettingsWatchers() {
   watch(
     [
       () => settings.value.enableFrostedGlass,
+      () => settings.value.enableLiquidGlass,
       () => settings.value.nvidiaRtxVideoEnhancementCompatibility,
     ],
     applyFrostedGlassState,
@@ -205,6 +247,21 @@ export function setupNecessarySettingsWatchers() {
       }
 
       applyFrostedGlassBlur(clamped)
+    },
+    { immediate: true },
+  )
+
+  watch(
+    () => settings.value.liquidGlassTintIntensity,
+    (value) => {
+      const clamped = clampLiquidGlassTint(value)
+
+      if (clamped !== value) {
+        settings.value.liquidGlassTintIntensity = clamped
+        return
+      }
+
+      applyLiquidGlassTint(clamped)
     },
     { immediate: true },
   )
