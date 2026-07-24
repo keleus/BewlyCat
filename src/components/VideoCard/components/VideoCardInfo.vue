@@ -266,7 +266,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             v-for="primaryTag in visiblePrimaryTags"
             :key="`primary-${primaryTag}`"
             class="video-card-meta__chip"
-            text="$bew-theme-color"
+            un-text="$bew-theme-color"
             p="x-2"
             lh-6
             rounded="$bew-radius"
@@ -347,7 +347,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
                 v-for="primaryTag in visiblePrimaryTags"
                 :key="`primary-${primaryTag}`"
                 class="video-card-meta__chip"
-                text="$bew-theme-color"
+                un-text="$bew-theme-color"
                 p="x-2"
                 lh-6
                 rounded="$bew-radius"
@@ -410,7 +410,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             <a
               v-for="primaryTag in visiblePrimaryTags"
               :key="`legacy-primary-${primaryTag}`"
-              text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
+              un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
               :href="getTagSearchUrl(primaryTag)"
               target="_blank"
               @click.stop=""
@@ -498,7 +498,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
               <a
                 v-for="primaryTag in visiblePrimaryTags"
                 :key="`legacy-primary-${primaryTag}`"
-                text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
+                un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
                 :href="getTagSearchUrl(primaryTag)"
                 target="_blank"
                 @click.stop=""
