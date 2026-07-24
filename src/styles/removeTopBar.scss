@@ -197,11 +197,8 @@
 }
 
 .remove-top-bar {
-  // remove the original top bar and adjust the height of the top bar to match the bewly top bar
+  // 隐藏原版第一行顶栏，并保留与 BewlyCat 顶栏一致的页面占位
   .bili-header .bili-header__bar,
-  .bili-header > .bili-header__channel,
-  .bili-header > .bewly-bili-channel-panel,
-  .header-channel,
   #internationalHeader,
   .link-navbar,
   #home_nav,
@@ -209,6 +206,20 @@
   #bili-header-container {
     visibility: hidden !important;
     height: var(--bew-top-bar-height) !important;
+  }
+
+  // 原版首页频道行不需要占位，否则会在 BewlyCat 顶栏下形成第二行
+  .bili-header__channel,
+  .header-channel,
+  .bili-header-channel-panel,
+  .bewly-bili-fixed-channel,
+  .bewly-bili-channel-panel {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   // Remove the Bilibili Evolved's top bar
@@ -228,6 +239,8 @@
   #biliMainHeader,
   .bili-header,
   .bili-header__bar,
+  .header-channel,
+  .bili-header-channel-panel,
   #internationalHeader,
   .link-navbar,
   #home_nav,

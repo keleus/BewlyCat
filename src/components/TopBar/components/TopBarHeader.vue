@@ -14,7 +14,9 @@ defineProps<{
   isDark: boolean
 }>()
 
-const { forceWhiteIcon, handleNotificationsItemClick } = useTopBarInteraction()
+const { forceWhiteIcon, handleNotificationsItemClick, showSearchBar } = useTopBarInteraction()
+
+const isArticlePage = /^https?:\/\/(?:www\.)?bilibili\.com\/(?:read|opus)\//.test(location.href)
 
 const leftSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
@@ -94,7 +96,8 @@ const maxOffset = computed(() => {
 })
 
 const searchOffset = computed(() => {
-  const desired = (rightWidth.value - leftWidth.value) / 2
+  // 略微减弱左右宽度补偿，为搜索框右侧的切换器和功能组留出呼吸空间
+  const desired = (rightWidth.value - leftWidth.value) * 0.3
   const limit = maxOffset.value
   if (!limit)
     return 0
@@ -102,7 +105,7 @@ const searchOffset = computed(() => {
 })
 
 function refreshSearchContent() {
-  const el = searchSection.value?.querySelector('#search-wrap') as HTMLElement | null
+  const el = searchSection.value?.querySelector<HTMLElement>('[data-top-bar-search-content]')
   searchContent.value = el ?? null
   searchContentWidth.value = el?.offsetWidth ?? 0
 }
@@ -110,9 +113,10 @@ function refreshSearchContent() {
 
 <template>
   <main
-    max-w="$bew-page-max-width"
+    class="top-bar-header"
+    max-w="$bew-top-bar-max-width"
     grid="~ cols-[auto_1fr_auto] items-center gap-4"
-    p="x-12" m-auto
+    p="x-4 md:x-6 xl:x-8" m-auto
     h="$bew-top-bar-height"
   >
     <!-- Top bar mask -->
@@ -166,7 +170,17 @@ function refreshSearchContent() {
       class="top-bar-header__search"
       :style="{ transform: `translateX(${searchOffset}px)` }"
     >
-      <TopBarSearch />
+      <div
+        class="top-bar-header__search-content"
+        data-top-bar-search-content
+      >
+        <div
+          v-if="showSearchBar"
+          class="top-bar-header__search-control"
+        >
+          <TopBarSearch />
+        </div>
+      </div>
     </div>
 
     <!-- right content -->
@@ -175,10 +189,46 @@ function refreshSearchContent() {
         @notifications-click="handleNotificationsItemClick"
       />
     </div>
+
+    <div
+      class="top-bar-header__divider"
+      :class="{
+        'top-bar-header__divider--visible': !reachTop && !isArticlePage,
+        'top-bar-header__divider--white': forceWhiteIcon,
+      }"
+    />
   </main>
 </template>
 
 <style scoped lang="scss">
+.top-bar-header {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.top-bar-header__divider {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  pointer-events: none;
+  background: color-mix(in oklab, var(--bew-border-color), transparent 35%);
+  opacity: 0;
+  transform: scaleX(0.96);
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+
+  &--visible {
+    opacity: 0.65;
+    transform: scaleX(1);
+  }
+
+  &--white {
+    background: rgba(255, 255, 255, 0.16);
+  }
+}
+
 .top-bar-header__side {
   display: flex;
   align-items: center;
@@ -191,6 +241,7 @@ function refreshSearchContent() {
 
 .top-bar-header__side--right {
   justify-self: end;
+  gap: 8px;
 }
 
 .top-bar-header__search {
@@ -198,5 +249,42 @@ function refreshSearchContent() {
   justify-content: center;
   min-width: 0;
   transition: transform 0.2s ease;
+}
+
+.top-bar-header__search-content {
+  display: flex;
+  width: min(100%, clamp(440px, 36vw, 620px));
+  max-width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.top-bar-header__search-control {
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+@media (max-width: 1279px) {
+  .top-bar-header {
+    gap: 12px;
+    padding-inline: 16px;
+  }
+
+  .top-bar-header__search-content {
+    width: min(100%, clamp(300px, 34vw, 420px));
+  }
+}
+
+@media (max-width: 767px) {
+  .top-bar-header {
+    gap: 8px;
+    padding-inline: 8px;
+  }
+
+  .top-bar-header__search-content {
+    width: min(100%, clamp(120px, 42vw, 280px));
+  }
 }
 </style>

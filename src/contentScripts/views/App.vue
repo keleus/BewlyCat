@@ -894,7 +894,8 @@ if (settings.value.cleanUrlArgument) {
       <BewlyOrBiliTopBarSwitcher v-if="settings.showBewlyOrBiliTopBarSwitcher" />
 
       <TopBar
-        pos="top-0 left-0" z="1 hover:1001" w-full
+        class="top-bar-layer"
+        pos="top-0 left-0" w-full
       />
     </div>
 
@@ -949,6 +950,10 @@ if (settings.value.cleanUrlArgument) {
 </template>
 
 <style lang="scss" scoped>
+.top-bar-layer {
+  z-index: 1001;
+}
+
 .bewly-wrapper {
   // To fix the filter used in `.bewly-wrapper` that cause the positions of elements become discorded.
   > * > * {
