@@ -36,7 +36,7 @@ const {
   hasBCoinToReceive,
 } = storeToRefs(topBarStore)
 
-const { getUnreadMessageCount, getTopBarNewMomentsCount, checkBCoinReceiveStatus } = topBarStore
+const { getUnreadMessageCount, getTopBarNewMomentsCount, syncSharedData } = topBarStore
 
 // 将 DOM 引用移到组件内部
 const avatarImg = ref<HTMLElement | null>(null)
@@ -121,9 +121,9 @@ if (isComponentVisible('notifications')) {
 const focused = useWindowFocus()
 watch(() => focused.value, (newVal, _) => {
   if (newVal && isLogin.value) {
-    getUnreadMessageCount()
-    getTopBarNewMomentsCount('video')
-    checkBCoinReceiveStatus()
+    syncSharedData().catch((error) => {
+      console.error('同步顶栏共享状态失败:', error)
+    })
   }
 })
 

@@ -15,10 +15,21 @@ import {
 } from '~/components/TopBar/constants/urls'
 import { updateInterval } from '~/components/TopBar/notify'
 import type { PrivilegeInfo, UnReadDm, UnReadMessage, UserInfo } from '~/components/TopBar/types'
+import type {
+  TopBarRefreshClaim,
+  TopBarSharedState,
+  TopBarStateClaim,
+  TopBarStatePublish,
+  TopBarStateRelease,
+} from '~/constants/topBarState'
+import {
+  TOP_BAR_STATE_MESSAGE,
+} from '~/constants/topBarState'
 import { settings } from '~/logic'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { getCSRF, isHomePage } from '~/utils/main'
+import { onMessage, sendMessage } from '~/utils/messaging'
 
 export const useTopBarStore = defineStore('topBar', () => {
   const toast = useToast()
@@ -177,10 +188,8 @@ export const useTopBarStore = defineStore('topBar', () => {
         // 其他错误码
         // 对于非未登录的错误，如果还有重试机会，则重试
         if (retryCount < maxRetries) {
-          setTimeout(() => {
-            getUserInfo(retryCount + 1)
-          }, retryDelay)
-          return
+          await new Promise(resolve => setTimeout(resolve, retryDelay))
+          return getUserInfo(retryCount + 1)
         }
 
         isLogin.value = false
@@ -192,10 +201,8 @@ export const useTopBarStore = defineStore('topBar', () => {
     catch {
       // 如果还有重试机会，则重试
       if (retryCount < maxRetries) {
-        setTimeout(() => {
-          getUserInfo(retryCount + 1)
-        }, retryDelay)
-        return
+        await new Promise(resolve => setTimeout(resolve, retryDelay))
+        return getUserInfo(retryCount + 1)
       }
 
       // 重试次数用尽，标记为未登录
@@ -369,7 +376,6 @@ export const useTopBarStore = defineStore('topBar', () => {
       })
       if (res.code === 0) {
         watchLaterCount.value = res.data.count
-        Object.assign(watchLaterList, res.data.list)
       }
     }
     catch (error) {
@@ -740,17 +746,103 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   let updateTimer: ReturnType<typeof setInterval> | null = null
 
+  function createSharedStateSnapshot(): TopBarSharedState {
+    return {
+      unReadMessage: { ...unReadMessage },
+      unReadDm: { ...unReadDm },
+      newMomentsCount: newMomentsCount.value,
+      watchLaterCount: watchLaterCount.value,
+      hasBCoinToReceive: hasBCoinToReceive.value,
+      bCoinAlreadyReceived: bCoinAlreadyReceived.value,
+      vipExpAlreadyReceived: vipExpAlreadyReceived.value,
+    }
+  }
+
+  function applySharedState(snapshot: TopBarSharedState) {
+    Object.assign(unReadMessage, snapshot.unReadMessage)
+    Object.assign(unReadDm, snapshot.unReadDm)
+    newMomentsCount.value = snapshot.newMomentsCount
+    watchLaterCount.value = snapshot.watchLaterCount
+    hasBCoinToReceive.value = snapshot.hasBCoinToReceive
+    bCoinAlreadyReceived.value = snapshot.bCoinAlreadyReceived
+    vipExpAlreadyReceived.value = snapshot.vipExpAlreadyReceived
+  }
+
+  onMessage<TopBarStatePublish>(
+    TOP_BAR_STATE_MESSAGE.UPDATED,
+    ({ accountId, snapshot }) => {
+      if (accountId === userInfo.mid)
+        applySharedState(snapshot)
+    },
+  )
+
+  async function refreshSharedData() {
+    await Promise.all([
+      getUnreadMessageCount(),
+      getTopBarNewMomentsCount(),
+      getWatchLaterCount(),
+      checkBCoinReceiveStatus(),
+      autoReceiveVipExp(),
+    ])
+  }
+
+  async function syncSharedData() {
+    if (!isLogin.value)
+      return
+
+    const accountId = userInfo.mid
+    if (!accountId)
+      return
+
+    const claim = await sendMessage<TopBarStateClaim, TopBarRefreshClaim>(
+      TOP_BAR_STATE_MESSAGE.CLAIM_REFRESH,
+      {
+        accountId,
+        maxAge: updateInterval,
+      },
+    )
+
+    if (claim.snapshot)
+      applySharedState(claim.snapshot)
+
+    if (!claim.shouldRefresh)
+      return
+
+    if (claim.refreshId === undefined)
+      return
+
+    const refreshId = claim.refreshId
+
+    try {
+      await refreshSharedData()
+      await sendMessage<TopBarStatePublish>(
+        TOP_BAR_STATE_MESSAGE.PUBLISH,
+        {
+          accountId,
+          snapshot: createSharedStateSnapshot(),
+          refreshId,
+        },
+      )
+    }
+    catch (error) {
+      await sendMessage<TopBarStateRelease>(
+        TOP_BAR_STATE_MESSAGE.RELEASE_REFRESH,
+        {
+          accountId,
+          refreshId,
+        },
+      )
+      throw error
+    }
+  }
+
   async function initData() {
     await getUserInfo()
 
-    // 只有在登录状态下才调用这些需要登录的API
-    if (isLogin.value) {
-      checkBCoinReceiveStatus()
-      autoReceiveVipExp()
-      getUnreadMessageCount()
-      getTopBarNewMomentsCount()
-      getAllWatchLaterList()
-    }
+    if (!isLogin.value)
+      return
+
+    await syncSharedData()
   }
 
   function startUpdateTimer() {
@@ -759,16 +851,12 @@ export const useTopBarStore = defineStore('topBar', () => {
       updateTimer = null
     }
     updateTimer = setInterval(() => {
-      if (isLogin.value) {
-        getUnreadMessageCount()
-        // 只有在弹窗未显示时才更新计数，避免与 watch 重复调用
-        if (!popupVisible.moments)
-          getTopBarNewMomentsCount()
-        if (!popupVisible.watchLater)
-          getWatchLaterCount()
-        checkBCoinReceiveStatus()
-        autoReceiveVipExp()
-      }
+      if (!isLogin.value)
+        return
+
+      syncSharedData().catch((error) => {
+        console.error('同步顶栏共享状态失败:', error)
+      })
     }, updateInterval)
   }
   function stopUpdateTimer() {
@@ -848,11 +936,9 @@ export const useTopBarStore = defineStore('topBar', () => {
     isMouseOverPopup,
     setMouseOverPopup,
     getMouseOverPopup,
+    syncSharedData,
     startUpdateTimer,
     stopUpdateTimer,
-    checkBCoinReceiveStatus,
-    autoReceiveBCoin,
-    autoReceiveVipExp,
 
     moments,
     addedWatchLaterList,
