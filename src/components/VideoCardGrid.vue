@@ -313,6 +313,7 @@ function triggerLoadMore() {
 const supportsIntersectionObserver = typeof window !== 'undefined' && 'IntersectionObserver' in window
 const isFirefox = typeof navigator !== 'undefined' && /\bFirefox\//.test(navigator.userAgent)
 let intersectionObserver: IntersectionObserver | null = null
+let intersectionObserverRoot: HTMLElement | null = null
 let isGridActive = false
 let scrollListenersActive = false
 
@@ -321,6 +322,7 @@ function cleanupIntersectionObserver() {
     intersectionObserver.disconnect()
     intersectionObserver = null
   }
+  intersectionObserverRoot = null
   isLoadMoreSentinelIntersecting.value = false
 }
 
@@ -336,6 +338,7 @@ function setupIntersectionObserver() {
 
   const scrollElement = findScrollElement()
   const preloadDistance = getPreloadDistance(scrollElement)
+  intersectionObserverRoot = scrollElement
 
   intersectionObserver = new IntersectionObserver(
     (entries) => {
@@ -409,10 +412,17 @@ const debouncedCheck = useDebounceFn(checkShouldPreload, 100)
 // emitter 路径已在 App.vue 的 RAF 内，直接同步更新避免双 RAF 延迟
 // native 路径浏览器已限制为每帧一次，也可直接更新
 function handleScroll() {
+  // Firefox 恢复会话时，网格可能先于内部滚动容器完成布局。
+  // 首次滚动时若真实容器已经出现，立即迁移 observer 的 root。
+  if (intersectionObserver && findScrollElement() !== intersectionObserverRoot)
+    setupIntersectionObserver()
+
   debouncedCheck()
 }
 
 function handleResize() {
+  // rootMargin 取决于容器高度，窗口恢复或尺寸变化后需要重新计算。
+  setupIntersectionObserver()
   debouncedCheck()
 }
 
