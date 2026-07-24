@@ -225,8 +225,8 @@ function toggleChannel(value: string) {
 
 <template>
   <SettingsItemGroup :title="$t('settings.group_topbar')">
-    <SettingsItem>
-      <template #bottom>
+    <div class="topbar-visual-config">
+      <div>
         <!-- 提示文字 -->
         <div class="topbar-config-hint" mb-3>
           <div class="topbar-config-hint__icon" i-mingcute:cursor-click-line />
@@ -535,12 +535,16 @@ function toggleChannel(value: string) {
             </div>
           </div>
         </div>
-      </template>
-    </SettingsItem>
+      </div>
+    </div>
   </SettingsItemGroup>
 </template>
 
 <style lang="scss" scoped>
+.topbar-visual-config {
+  padding: 16px 0;
+}
+
 .topbar-preview {
   position: relative;
 }

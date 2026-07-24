@@ -79,6 +79,7 @@ settings:
   search:
     placeholder: 搜尋設定
     no_results: 搵唔到相關設定
+    located: 已定位到呢個設定
   category_general_desc: 設定語言、互動版面、連結行為、內容清理同收藏。
   category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型同自訂樣式。
   category_shortcuts_desc: 啟用、修改或者還原 BewlyCat 同播放器快捷鍵。
@@ -93,7 +94,7 @@ settings:
   category_navigation_search_desc: 設定搜尋頁外觀、建議、歷史、熱門搜尋同結果頁。
   category_playback_player_desc: 設定播放器模式、捲動、彈幕、字幕同播放狀態。
   category_playback_autoplay_desc: 設定自動連播同隨機播放規則。
-  category_playback_volume_desc: 官方播放器已經有響度平衡，而且大部分影片嘅響度表現良好。任何響度平衡處理都可能造成爆音、音質劣化或者動態範圍縮細；冇明顯問題時唔應該開啟。
+  category_playback_volume_desc: 任何響度平衡處理都可能造成爆音、音質劣化或者動態範圍縮細；冇明顯問題時唔應該開啟。
   category_bilibili_comments_desc: 加強留言區嘅用戶資料同內容顯示。
   category_bilibili_vip_desc: 設定大會員權益相關嘅提醒功能。
   category_advanced_compatibility_desc: 設定原版頁面、第三方擴充功能同其他頁面嘅相容行為。

@@ -79,6 +79,7 @@ settings:
   search:
     placeholder: Search settings
     no_results: No matching settings
+    located: Setting located
   category_general_desc: Configure language, interaction, link behavior, content cleanup, and favorites.
   category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, and custom styles.
   category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
@@ -93,7 +94,7 @@ settings:
   category_navigation_search_desc: Configure search appearance, suggestions, history, trending, and results.
   category_playback_player_desc: Configure player mode, scrolling, danmaku, captions, and playback state.
   category_playback_autoplay_desc: Configure autoplay and random playback behavior.
-  category_playback_volume_desc: The official player already provides loudness normalization, and most videos have good loudness levels. Any normalization can cause clipping, degraded audio quality, or reduced dynamic range; leave it off unless you have a clear problem.
+  category_playback_volume_desc: Any normalization can cause clipping, degraded audio quality, or reduced dynamic range; leave it off unless you have a clear problem.
   category_bilibili_comments_desc: Enhance user information and content displayed in comments.
   category_bilibili_vip_desc: Configure reminders related to premium membership benefits.
   category_advanced_compatibility_desc: Configure compatibility with original pages, third-party extensions, and other pages.

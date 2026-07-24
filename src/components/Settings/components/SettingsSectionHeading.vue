@@ -20,6 +20,7 @@ const collapsed = defineModel<boolean>('collapsed', {
     v-if="collapsible"
     type="button"
     class="settings-section-heading settings-section-heading--button"
+    :class="{ 'settings-section-heading--warning': warning }"
     :data-settings-title="title"
     :aria-expanded="!collapsed"
     @click="collapsed = !collapsed"
@@ -38,7 +39,12 @@ const collapsed = defineModel<boolean>('collapsed', {
       :class="{ collapsed }"
     />
   </button>
-  <header v-else class="settings-section-heading" :data-settings-title="title">
+  <header
+    v-else
+    class="settings-section-heading"
+    :class="{ 'settings-section-heading--warning': warning }"
+    :data-settings-title="title"
+  >
     <span v-if="icon" class="settings-section-heading__icon" :class="icon" />
     <span class="settings-section-heading__content">
       <h2>
@@ -78,6 +84,17 @@ const collapsed = defineModel<boolean>('collapsed', {
   cursor: pointer;
 }
 
+.settings-section-heading--warning {
+  padding: 10px 12px;
+  background: color-mix(in oklab, var(--bew-warning-color), transparent 88%);
+  border: 1px solid color-mix(in oklab, var(--bew-warning-color), transparent 62%);
+  border-radius: var(--bew-radius);
+
+  .settings-section-heading__icon {
+    color: var(--bew-warning-color);
+  }
+}
+
 .settings-section-heading__chevron {
   width: 22px;
   height: 22px;
@@ -102,9 +119,9 @@ h2 {
   display: inline-flex;
   margin-left: 7px;
   padding: 2px 7px;
-  color: var(--bew-warning-color);
+  color: color-mix(in oklab, var(--bew-warning-color), black 75%);
   vertical-align: middle;
-  background: color-mix(in oklab, var(--bew-warning-color), transparent 88%);
+  background: var(--bew-warning-color);
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
@@ -118,6 +135,6 @@ p {
 }
 
 p.warning {
-  color: var(--bew-warning-color);
+  color: var(--bew-text-2);
 }
 </style>

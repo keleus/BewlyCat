@@ -176,40 +176,78 @@ function getMenuTitle(menu: MenuType) {
   return menuItem ? t(menuItem.titleKey) : t('settings.title')
 }
 
-function scrollToSearchTarget(expectedTitle?: string, attempts = 0) {
-  if (!expectedTitle || attempts > 12)
+let highlightedSearchTarget: HTMLElement | undefined
+let searchTargetHighlightTimer: number | undefined
+let searchNavigationId = 0
+
+function clearSearchTargetHighlight() {
+  if (searchTargetHighlightTimer)
+    window.clearTimeout(searchTargetHighlightTimer)
+
+  highlightedSearchTarget?.classList.remove('settings-search-target')
+  highlightedSearchTarget?.removeAttribute('data-settings-search-highlight')
+  highlightedSearchTarget = undefined
+  searchTargetHighlightTimer = undefined
+}
+
+function highlightSearchTarget(target: HTMLElement) {
+  clearSearchTargetHighlight()
+  const visualTarget = target.matches('.b-settings-item-group')
+    ? target.querySelector<HTMLElement>(':scope > .group-heading') ?? target
+    : target
+
+  highlightedSearchTarget = visualTarget
+  visualTarget.dataset.settingsSearchHighlight = t('settings.search.located')
+  visualTarget.classList.add('settings-search-target')
+  searchTargetHighlightTimer = window.setTimeout(clearSearchTargetHighlight, 2400)
+}
+
+function expandSearchTarget(target: HTMLElement) {
+  const collapsedControls: HTMLElement[] = []
+
+  if (target.matches('[aria-expanded="false"]'))
+    collapsedControls.push(target)
+
+  let ancestor: HTMLElement | null = target
+  while (ancestor && ancestor !== settingsWindow.value) {
+    const control = ancestor.matches('.b-settings-item-group')
+      ? ancestor.querySelector<HTMLElement>(':scope > .group-heading[aria-expanded="false"]')
+      : ancestor.matches('section')
+        ? ancestor.querySelector<HTMLElement>(':scope > .settings-section-heading[aria-expanded="false"]')
+        : undefined
+
+    if (control)
+      collapsedControls.push(control)
+
+    ancestor = ancestor.parentElement
+  }
+
+  Array.from(new Set(collapsedControls)).reverse().forEach(control => control.click())
+}
+
+function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: number, attempts = 0) {
+  if (!expectedTitle || navigationId !== searchNavigationId || attempts > 30)
     return
 
   const target = Array.from(settingsWindow.value?.querySelectorAll<HTMLElement>('[data-settings-title]') ?? [])
     .find(element => element.dataset.settingsTitle === expectedTitle)
 
   if (target) {
-    const collapsedControls = [
-      target.matches('[aria-expanded="false"]') ? target : undefined,
-      target.closest<HTMLElement>('.b-settings-item-group')
-        ?.querySelector<HTMLElement>(':scope > .group-heading[aria-expanded="false"]'),
-      target.closest<HTMLElement>('section')
-        ?.querySelector<HTMLElement>(':scope > .settings-section-heading[aria-expanded="false"]'),
-    ].filter((control): control is HTMLElement => Boolean(control))
-
-    new Set(collapsedControls).forEach(control => control.click())
+    expandSearchTarget(target)
     nextTick(() => {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      target.animate(
-        [
-          { outline: '2px solid var(--bew-theme-color)', outlineOffset: '4px' },
-          { outline: '2px solid transparent', outlineOffset: '8px' },
-        ],
-        { duration: 1400, easing: 'ease-out' },
-      )
+      window.requestAnimationFrame(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        highlightSearchTarget(target)
+      })
     })
     return
   }
 
-  window.setTimeout(() => scrollToSearchTarget(expectedTitle, attempts + 1), 100)
+  window.setTimeout(() => scrollToSearchTarget(expectedTitle, navigationId, attempts + 1), 100)
 }
 
 function navigateToSearchResult(entry: SettingsSearchEntry) {
+  const navigationId = ++searchNavigationId
   entry.storageValues?.forEach(({ key, value }) => sessionStorage.setItem(key, value))
 
   activatedMenuItem.value = entry.menu
@@ -218,8 +256,13 @@ function navigateToSearchResult(entry: SettingsSearchEntry) {
   const targetTitle = entry.targetTitleKey
     ? t(entry.targetTitleKey)
     : entry.targetTitle ?? getSearchEntryTitle(entry)
-  nextTick(() => scrollToSearchTarget(targetTitle))
+  nextTick(() => scrollToSearchTarget(targetTitle, navigationId))
 }
+
+onBeforeUnmount(() => {
+  searchNavigationId++
+  clearSearchTargetHighlight()
+})
 
 function handleClose() {
   emit('close')
@@ -524,6 +567,68 @@ function changeMenuItem(menuItem: MenuType) {
   p {
     padding: 12px;
     text-align: center;
+  }
+}
+
+:deep(.settings-search-target) {
+  position: relative;
+  z-index: 2;
+  border-radius: var(--bew-radius);
+  animation: settings-search-target-flash 2.4s ease-in-out;
+}
+
+:deep(.settings-search-target::after) {
+  position: absolute;
+  top: -13px;
+  right: 12px;
+  z-index: 3;
+  padding: 5px 9px;
+  color: white;
+  background: var(--bew-theme-color);
+  border-radius: 999px;
+  box-shadow: var(--bew-shadow-2);
+  content: attr(data-settings-search-highlight);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: settings-search-target-label 2.4s ease-out;
+}
+
+@keyframes settings-search-target-flash {
+  0%,
+  100% {
+    background: transparent;
+  }
+
+  18%,
+  48%,
+  78% {
+    background: var(--bew-theme-color-20);
+  }
+
+  33%,
+  63% {
+    background: transparent;
+  }
+}
+
+@keyframes settings-search-target-label {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  14%,
+  72% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-5px);
   }
 }
 

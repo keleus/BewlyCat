@@ -178,6 +178,7 @@ function resetColumns() {
             :step="0.1"
             flex-1
             class="shadow-height-slider"
+            :style="{ '--shadow-height-progress': `${settings.videoCardShadowHeight * 50}%` }"
           >
           <span text-sm min-w-8 text-right>{{ settings.videoCardShadowHeight.toFixed(1) }}</span>
         </div>
@@ -195,5 +196,56 @@ function resetColumns() {
 <style lang="scss" scoped>
 .shadow-height-control {
   width: 220px;
+}
+
+.shadow-height-slider {
+  height: 4px;
+  appearance: none;
+  background: linear-gradient(
+    to right,
+    var(--bew-theme-color) 0,
+    var(--bew-theme-color) var(--shadow-height-progress),
+    var(--bew-fill-2) var(--shadow-height-progress),
+    var(--bew-fill-2) 100%
+  );
+  border-radius: 999px;
+  cursor: pointer;
+  accent-color: var(--bew-theme-color);
+
+  &::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+    appearance: none;
+    background: var(--bew-theme-color);
+    border: 2px solid var(--bew-elevated-solid);
+    border-radius: 50%;
+    box-shadow: var(--bew-shadow-1);
+  }
+
+  &::-moz-range-track {
+    height: 4px;
+    background: var(--bew-fill-2);
+    border-radius: 999px;
+  }
+
+  &::-moz-range-progress {
+    height: 4px;
+    background: var(--bew-theme-color);
+    border-radius: 999px;
+  }
+
+  &::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--bew-theme-color);
+    border: 2px solid var(--bew-elevated-solid);
+    border-radius: 50%;
+    box-shadow: var(--bew-shadow-1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color-40);
+    outline-offset: 5px;
+  }
 }
 </style>
