@@ -12,7 +12,7 @@ withDefaults(defineProps<{
 </script>
 
 <template>
-  <div class="b-settings-item" py-4>
+  <div class="b-settings-item" :data-settings-title="title" py-4>
     <div
       class="b-settings-item-row" :class="`right-width-${rightWidth}`" flex="~ gap-4" justify-between items-center
       text-base

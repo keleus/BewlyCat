@@ -317,6 +317,8 @@ settings:
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 显示 BewlyCat/Bilibili 顶栏切换器
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
+  filter_articles_in_moments: 过滤专栏
+  filter_articles_in_moments_desc: 在动态列表中过滤掉专栏内容，仅显示视频
   enable_settings_sync: 启用设置同步
   enable_settings_sync_desc: 在不同设备间同步扩展设置（需要登录浏览器账号）
   top_bar_icon_badges: 图标角标

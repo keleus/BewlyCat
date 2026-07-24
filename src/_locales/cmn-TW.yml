@@ -312,6 +312,8 @@ settings:
   show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂部列切換器
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器
+  filter_articles_in_moments: 過濾專欄
+  filter_articles_in_moments_desc: 在動態列表中過濾專欄內容，僅顯示影片
   top_bar_icon_badges: 圖示標記樣式
   top_bar_icon_badges_opt:
     number: 數字

@@ -20,6 +20,7 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const setBreadcrumb = inject<(detail?: string) => void>('setSettingsBreadcrumb')
+const scrollSettingsContentToTop = inject<() => void>('scrollSettingsContentToTop')
 const savedPage = sessionStorage.getItem(props.storageKey)
 const activePage = ref(
   props.pages.some(page => page.value === savedPage)
@@ -33,6 +34,14 @@ const currentPage = computed(() =>
 
 watch(activePage, page => sessionStorage.setItem(props.storageKey, page))
 watchEffect(() => setBreadcrumb?.(currentPage.value ? t(currentPage.value.titleKey) : undefined))
+
+function selectPage(page: string) {
+  if (page === activePage.value)
+    return
+
+  scrollSettingsContentToTop?.()
+  activePage.value = page
+}
 </script>
 
 <template>
@@ -44,7 +53,7 @@ watchEffect(() => setBreadcrumb?.(currentPage.value ? t(currentPage.value.titleK
         type="button"
         class="settings-category-button"
         :class="{ active: activePage === page.value }"
-        @click="activePage = page.value"
+        @click="selectPage(page.value)"
       >
         <span
           class="settings-category-icon"
@@ -60,9 +69,7 @@ watchEffect(() => setBreadcrumb?.(currentPage.value ? t(currentPage.value.titleK
         :desc="currentPage.descriptionKey ? $t(currentPage.descriptionKey) : undefined"
         :icon="currentPage.iconActivated"
       />
-      <Transition name="page-fade" mode="out-in">
-        <Component :is="currentPage.component" :key="currentPage.value" />
-      </Transition>
+      <Component :is="currentPage.component" :key="currentPage.value" />
     </section>
   </div>
 </template>

@@ -72,7 +72,7 @@ const videoCardOpenModeOptions = computed(() => {
         w="160px"
       />
     </SettingsItem>
-    <SettingsItem right-width="auto">
+    <SettingsItem :title="$t('settings.close_drawer_without_pressing_esc_again')" right-width="auto">
       <template #title>
         <div v-html="$t('settings.close_drawer_without_pressing_esc_again')" />
       </template>

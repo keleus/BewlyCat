@@ -104,7 +104,10 @@ function handleToggleDockItem(dockItem: any) {
           w="160px"
         />
       </SettingsItem>
-      <SettingsItem :desc="$t('settings.dock_content_adjustment_desc')">
+      <SettingsItem
+        :title="$t('settings.dock_content_adjustment')"
+        :desc="$t('settings.dock_content_adjustment_desc')"
+      >
         <template #title>
           <div flex="~ gap-4 items-center">
             {{ $t('settings.dock_content_adjustment') }}

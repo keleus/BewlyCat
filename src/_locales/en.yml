@@ -288,6 +288,8 @@ settings:
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
   show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher
+  filter_articles_in_moments: Filter articles
+  filter_articles_in_moments_desc: Hide articles from the moments feed and only show videos
   top_bar_icon_badges: Icon badges
   top_bar_icon_badges_opt:
     number: Number

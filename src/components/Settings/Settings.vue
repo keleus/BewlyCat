@@ -5,12 +5,14 @@ import { useI18n } from 'vue-i18n'
 import { settings } from '~/logic'
 import { createTransformer } from '~/utils/transformer'
 
+import type { SettingsSearchEntry } from './searchCatalog'
+import { settingsSearchEntries } from './searchCatalog'
 import type { MenuItem } from './types'
 import { MenuType } from './types'
 
 const emit = defineEmits(['close'])
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const breadcrumbDetail = ref<string>()
 const searchQuery = ref('')
 const settingsContentKey = ref(0)
@@ -54,6 +56,10 @@ useEventListener(window, 'resize', () => {
 })
 
 const scrollViewportRef = ref<HTMLElement>()
+
+provide('scrollSettingsContentToTop', () => {
+  scrollViewportRef.value?.scrollTo({ top: 0 })
+})
 
 watch(
   () => activatedMenuItem.value,
@@ -122,132 +128,47 @@ const title = computed(() => {
   return currentMenuItem ? t(currentMenuItem.titleKey) : t('settings.title')
 })
 
-interface SettingsSearchEntry {
-  titleKey: string
-  menu: MenuType
-  targetTitleKey?: string
-  secondaryPage?: string
-  secondaryStorageKey?: string
+function getSearchEntryTitle(entry: SettingsSearchEntry) {
+  return entry.titleKey ? t(entry.titleKey) : entry.title ?? ''
 }
 
-const settingsSearchEntries: SettingsSearchEntry[] = [
-  { titleKey: 'settings.group_language', menu: MenuType.General, targetTitleKey: 'settings.group_language' },
-  { titleKey: 'settings.select_language', menu: MenuType.General, targetTitleKey: 'settings.group_language' },
-  { titleKey: 'settings.group_interaction_layout', menu: MenuType.General, targetTitleKey: 'settings.group_interaction_layout' },
-  { titleKey: 'settings.touch_screen_optimization', menu: MenuType.General, targetTitleKey: 'settings.group_interaction_layout' },
-  {
-    titleKey: 'settings.group_link_opening_behavior',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.group_link_opening_behavior',
-    secondaryPage: 'link-opening',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  { titleKey: 'settings.group_ad_blocking', menu: MenuType.General, targetTitleKey: 'settings.group_ad_blocking' },
-  { titleKey: 'settings.block_ads', menu: MenuType.General, targetTitleKey: 'settings.group_ad_blocking' },
-  { titleKey: 'settings.group_clean_share_link', menu: MenuType.General, targetTitleKey: 'settings.group_clean_share_link' },
-  { titleKey: 'settings.enable_clean_share_link', menu: MenuType.General, targetTitleKey: 'settings.group_clean_share_link' },
-  { titleKey: 'settings.group_favorites', menu: MenuType.General, targetTitleKey: 'settings.group_favorites' },
-  {
-    titleKey: 'settings.plugin.home',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.plugin.home',
-    secondaryPage: 'home',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  {
-    titleKey: 'settings.group_recommendation_filters',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.group_recommendation_filters',
-    secondaryPage: 'home',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  {
-    titleKey: 'settings.filter_out_vertical_videos',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.group_recommendation_filters',
-    secondaryPage: 'home',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  {
-    titleKey: 'settings.filter_by_view_count',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.group_recommendation_filters',
-    secondaryPage: 'home',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  {
-    titleKey: 'settings.plugin.video_card',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.plugin.video_card',
-    secondaryPage: 'video-card',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  {
-    titleKey: 'settings.group_video_card_grid',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.group_video_card_grid',
-    secondaryPage: 'video-card',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  {
-    titleKey: 'settings.video_card_shadow_curve',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.video_card_shadow_curve',
-    secondaryPage: 'video-card',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  {
-    titleKey: 'settings.plugin.topbar',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.plugin.topbar',
-    secondaryPage: 'topbar',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  {
-    titleKey: 'settings.plugin.dock_and_sidebar',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.plugin.dock_and_sidebar',
-    secondaryPage: 'dock',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  {
-    titleKey: 'settings.plugin.search',
-    menu: MenuType.Navigation,
-    targetTitleKey: 'settings.plugin.search',
-    secondaryPage: 'search',
-    secondaryStorageKey: 'bewly-settings-navigation-page',
-  },
-  { titleKey: 'settings.bilibili_features.video_playback', menu: MenuType.Playback, targetTitleKey: 'settings.bilibili_features.video_playback' },
-  { titleKey: 'settings.video_default_player_mode', menu: MenuType.Playback, targetTitleKey: 'settings.bilibili_features.video_playback' },
-  { titleKey: 'settings.bilibili_features.auto_play', menu: MenuType.Playback, targetTitleKey: 'settings.bilibili_features.auto_play' },
-  { titleKey: 'settings.plugin.volume_balance', menu: MenuType.Playback, targetTitleKey: 'settings.plugin.volume_balance' },
-  { titleKey: 'settings.group_visual_effects', menu: MenuType.Appearance, targetTitleKey: 'settings.group_visual_effects' },
-  { titleKey: 'settings.enable_frosted_glass', menu: MenuType.Appearance, targetTitleKey: 'settings.group_visual_effects' },
-  { titleKey: 'settings.group_color', menu: MenuType.Appearance, targetTitleKey: 'settings.group_color' },
-  { titleKey: 'settings.theme', menu: MenuType.Appearance, targetTitleKey: 'settings.group_color' },
-  { titleKey: 'settings.theme_color', menu: MenuType.Appearance, targetTitleKey: 'settings.group_color' },
-  { titleKey: 'settings.group_wallpaper', menu: MenuType.Appearance, targetTitleKey: 'settings.group_wallpaper' },
-  { titleKey: 'settings.group_fonts', menu: MenuType.Appearance, targetTitleKey: 'settings.group_fonts' },
-  { titleKey: 'settings.customize_font', menu: MenuType.Appearance, targetTitleKey: 'settings.group_fonts' },
-  { titleKey: 'settings.customize_css', menu: MenuType.Appearance, targetTitleKey: 'settings.menu_appearance' },
-  { titleKey: 'settings.bilibili_features.comments', menu: MenuType.BilibiliFeaturesEnhancement, targetTitleKey: 'settings.bilibili_features.comments' },
-  { titleKey: 'settings.bilibili_features.vip_features', menu: MenuType.BilibiliFeaturesEnhancement, targetTitleKey: 'settings.bilibili_features.vip_features' },
-  { titleKey: 'settings.shortcuts.title', menu: MenuType.Shortcuts, targetTitleKey: 'settings.shortcuts.title' },
-  { titleKey: 'settings.menu_compatibility', menu: MenuType.Advanced, targetTitleKey: 'settings.menu_compatibility' },
-  { titleKey: 'settings.maintenance.title', menu: MenuType.Advanced, targetTitleKey: 'settings.maintenance.title' },
-  { titleKey: 'settings.import_settings', menu: MenuType.Advanced, targetTitleKey: 'settings.maintenance.title' },
-  { titleKey: 'settings.export_settings', menu: MenuType.Advanced, targetTitleKey: 'settings.maintenance.title' },
-  { titleKey: 'settings.reset_settings', menu: MenuType.Advanced, targetTitleKey: 'settings.maintenance.title' },
-]
+function getSearchEntryLocation(entry: SettingsSearchEntry) {
+  const primaryTitle = getMenuTitle(entry.menu)
+  return entry.secondaryTitleKey
+    ? `${primaryTitle} / ${t(entry.secondaryTitleKey)}`
+    : primaryTitle
+}
+
+function getSearchEntryText(entry: SettingsSearchEntry) {
+  const inferredDescriptionKey = entry.titleKey ? `${entry.titleKey}_desc` : undefined
+  const translatedKeywords = entry.keywordKeys
+    ?.filter(key => te(key))
+    .map(key => t(key)) ?? []
+  const inferredDescription = inferredDescriptionKey && te(inferredDescriptionKey)
+    ? t(inferredDescriptionKey)
+    : ''
+
+  return [
+    getSearchEntryTitle(entry),
+    getSearchEntryLocation(entry),
+    inferredDescription,
+    ...translatedKeywords,
+    ...(entry.keywords ?? []),
+  ].join(' ').toLocaleLowerCase()
+}
 
 const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase()
   if (!query)
     return []
 
+  const queryParts = query.split(/\s+/).filter(Boolean)
   return settingsSearchEntries
-    .filter(entry => t(entry.titleKey).toLocaleLowerCase().includes(query))
-    .slice(0, 8)
+    .filter((entry) => {
+      const searchableText = getSearchEntryText(entry)
+      return queryParts.every(part => searchableText.includes(part))
+    })
+    .slice(0, 12)
 })
 
 function getMenuTitle(menu: MenuType) {
@@ -255,41 +176,49 @@ function getMenuTitle(menu: MenuType) {
   return menuItem ? t(menuItem.titleKey) : t('settings.title')
 }
 
-function scrollToSearchTarget(titleKey?: string, attempts = 0) {
-  if (!titleKey || attempts > 12)
+function scrollToSearchTarget(expectedTitle?: string, attempts = 0) {
+  if (!expectedTitle || attempts > 12)
     return
 
-  const expectedTitle = t(titleKey)
-  const target = Array.from(document.querySelectorAll<HTMLElement>('[data-settings-title]'))
+  const target = Array.from(settingsWindow.value?.querySelectorAll<HTMLElement>('[data-settings-title]') ?? [])
     .find(element => element.dataset.settingsTitle === expectedTitle)
 
   if (target) {
-    const collapsedControl = target.matches('[aria-expanded="false"]')
-      ? target
-      : target.querySelector<HTMLElement>('[aria-expanded="false"]')
-    collapsedControl?.click()
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    target.animate(
-      [
-        { outline: '2px solid var(--bew-theme-color)', outlineOffset: '4px' },
-        { outline: '2px solid transparent', outlineOffset: '8px' },
-      ],
-      { duration: 1400, easing: 'ease-out' },
-    )
+    const collapsedControls = [
+      target.matches('[aria-expanded="false"]') ? target : undefined,
+      target.closest<HTMLElement>('.b-settings-item-group')
+        ?.querySelector<HTMLElement>(':scope > .group-heading[aria-expanded="false"]'),
+      target.closest<HTMLElement>('section')
+        ?.querySelector<HTMLElement>(':scope > .settings-section-heading[aria-expanded="false"]'),
+    ].filter((control): control is HTMLElement => Boolean(control))
+
+    new Set(collapsedControls).forEach(control => control.click())
+    nextTick(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      target.animate(
+        [
+          { outline: '2px solid var(--bew-theme-color)', outlineOffset: '4px' },
+          { outline: '2px solid transparent', outlineOffset: '8px' },
+        ],
+        { duration: 1400, easing: 'ease-out' },
+      )
+    })
     return
   }
 
-  window.setTimeout(() => scrollToSearchTarget(titleKey, attempts + 1), 100)
+  window.setTimeout(() => scrollToSearchTarget(expectedTitle, attempts + 1), 100)
 }
 
 function navigateToSearchResult(entry: SettingsSearchEntry) {
-  if (entry.secondaryPage && entry.secondaryStorageKey)
-    sessionStorage.setItem(entry.secondaryStorageKey, entry.secondaryPage)
+  entry.storageValues?.forEach(({ key, value }) => sessionStorage.setItem(key, value))
 
   activatedMenuItem.value = entry.menu
   settingsContentKey.value++
   searchQuery.value = ''
-  nextTick(() => scrollToSearchTarget(entry.targetTitleKey))
+  const targetTitle = entry.targetTitleKey
+    ? t(entry.targetTitleKey)
+    : entry.targetTitle ?? getSearchEntryTitle(entry)
+  nextTick(() => scrollToSearchTarget(targetTitle))
 }
 
 function handleClose() {
@@ -427,13 +356,13 @@ function changeMenuItem(menuItem: MenuType) {
             >
             <div v-if="searchQuery" class="settings-search-results">
               <button
-                v-for="entry in searchResults"
-                :key="`${entry.menu}-${entry.titleKey}`"
+                v-for="(entry, index) in searchResults"
+                :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
                 type="button"
                 @click="navigateToSearchResult(entry)"
               >
-                <strong>{{ $t(entry.titleKey) }}</strong>
-                <span>{{ getMenuTitle(entry.menu) }}</span>
+                <strong>{{ getSearchEntryTitle(entry) }}</strong>
+                <span>{{ getSearchEntryLocation(entry) }}</span>
               </button>
               <p v-if="searchResults.length === 0">
                 {{ $t('settings.search.no_results') }}

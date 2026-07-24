@@ -476,7 +476,11 @@ function handleToggleHomeTab(tab: any) {
     <SettingsItemGroup
       :title="$t('settings.group_home_tabs')"
     >
-      <SettingsItem :desc="$t('settings.home_tabs_adjustment_desc')" right-width="auto">
+      <SettingsItem
+        :title="$t('settings.home_tabs_adjustment')"
+        :desc="$t('settings.home_tabs_adjustment_desc')"
+        right-width="auto"
+      >
         <template #title>
           <div flex="~ gap-4 items-center">
             {{ $t('settings.home_tabs_adjustment') }}
