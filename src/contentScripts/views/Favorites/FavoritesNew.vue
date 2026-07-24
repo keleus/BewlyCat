@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
+import type { CSSProperties, Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
+import type { ContextMenuOption } from '~/components/ContextMenu.vue'
 import type { FavoriteResource } from '~/components/TopBar/types'
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
@@ -29,6 +30,7 @@ const toast = useToast()
 
 type FavoriteCategorySource = 'folder' | 'season'
 type BatchTransferAction = 'copy' | 'move'
+type SidebarManageSection = 'folder' | 'season'
 type ViewCategory = CategoryItem & {
   source: FavoriteCategorySource
   cover?: string
@@ -64,6 +66,19 @@ const folderSectionExpanded = ref<boolean>(true)
 const seasonSectionExpanded = ref<boolean>(true)
 const batchTransferDialogVisible = ref<boolean>(false)
 const batchTransferAction = ref<BatchTransferAction>('copy')
+
+// 侧栏收藏夹/合集层级的管理模式
+const sidebarManageSection = ref<SidebarManageSection | null>(null)
+const selectedFolderIds = ref<number[]>([])
+const selectedSeasonIds = ref<number[]>([])
+const isSidebarOperating = ref<boolean>(false)
+const renameDialogVisible = ref<boolean>(false)
+const renameFolderId = ref<number>()
+const renameFolderTitle = ref<string>('')
+
+// 侧栏单项快捷菜单（竖三点）
+const itemMenuTarget = ref<{ type: SidebarManageSection, id: number } | null>(null)
+const itemMenuStyles = ref<CSSProperties>({})
 
 // 搜索范围选项
 const searchScopeOptions = computed(() => [
@@ -104,6 +119,42 @@ const isAllCurrentPageSelected = computed(() => {
 const selectedCategoryKey = computed(() => selectedCategory.value ? getCategoryKey(selectedCategory.value) : '')
 
 const selectedCategoryCover = computed(() => activatedCategoryCover.value || selectedCategory.value?.cover || '')
+
+const isManagingFolder = computed(() => sidebarManageSection.value === 'folder')
+const isManagingSeason = computed(() => sidebarManageSection.value === 'season')
+
+// list-all 接口恒定将默认收藏夹放在首位，默认收藏夹不可重命名或删除
+const defaultFolderId = computed(() => favoriteCategories[0]?.id)
+
+const editableFolderIds = computed(() => favoriteCategories.filter(item => item.id !== defaultFolderId.value).map(item => item.id))
+
+const selectedFolderCount = computed(() => selectedFolderIds.value.length)
+
+const selectedSeasonCount = computed(() => selectedSeasonIds.value.length)
+
+const isAllFoldersSelected = computed(() => {
+  return editableFolderIds.value.length > 0 && editableFolderIds.value.every(id => selectedFolderIds.value.includes(id))
+})
+
+const isAllSeasonsSelected = computed(() => {
+  return collectedFavoriteSeasons.length > 0 && collectedFavoriteSeasons.every(item => selectedSeasonIds.value.includes(item.id))
+})
+
+const canRenameSelectedFolder = computed(() => selectedFolderIds.value.length === 1)
+
+const itemMenuOptions = computed((): ContextMenuOption[] => {
+  if (!itemMenuTarget.value)
+    return []
+
+  if (itemMenuTarget.value.type === 'folder') {
+    return [
+      { value: 'rename', label: t('favorites.rename_folder'), icon: 'i-tabler:edit' },
+      { value: 'delete', label: t('common.operation.delete'), icon: 'i-tabler:trash', danger: true },
+    ]
+  }
+
+  return [{ value: 'unfav', label: t('favorites.unfavorite'), icon: 'i-tabler:star-off', danger: true }]
+})
 
 const selectedCategoryCount = computed(() => selectedCategory.value?.media_count ?? 0)
 
@@ -233,6 +284,294 @@ function resetBatchSelection() {
   selectedResourceKeys.value = []
 }
 
+function exitSidebarManage() {
+  sidebarManageSection.value = null
+  selectedFolderIds.value = []
+  selectedSeasonIds.value = []
+}
+
+function toggleSidebarManage(section: SidebarManageSection) {
+  closeItemMenu()
+  if (sidebarManageSection.value === section) {
+    exitSidebarManage()
+    return
+  }
+
+  // 与视频级批量管理互斥，同一时刻只允许一种管理模式
+  closeBatchManage()
+  exitSidebarManage()
+  sidebarManageSection.value = section
+
+  if (section === 'folder')
+    folderSectionExpanded.value = true
+  else
+    seasonSectionExpanded.value = true
+}
+
+function toggleFolderSelection(item: CategoryItem) {
+  if (item.id === defaultFolderId.value)
+    return
+
+  if (selectedFolderIds.value.includes(item.id))
+    selectedFolderIds.value = selectedFolderIds.value.filter(id => id !== item.id)
+  else
+    selectedFolderIds.value = [...selectedFolderIds.value, item.id]
+}
+
+function toggleSeasonSelection(item: CollectedFavoriteSeason) {
+  if (selectedSeasonIds.value.includes(item.id))
+    selectedSeasonIds.value = selectedSeasonIds.value.filter(id => id !== item.id)
+  else
+    selectedSeasonIds.value = [...selectedSeasonIds.value, item.id]
+}
+
+function handleFolderItemClick(item: CategoryItem) {
+  if (isManagingFolder.value) {
+    toggleFolderSelection(item)
+    return
+  }
+  changeCategory(toFolderCategory(item))
+}
+
+function handleSeasonItemClick(item: CollectedFavoriteSeason) {
+  if (isManagingSeason.value) {
+    toggleSeasonSelection(item)
+    return
+  }
+  changeCategory(toSeasonCategory(item))
+}
+
+function toggleSelectAllFolders() {
+  selectedFolderIds.value = isAllFoldersSelected.value ? [] : [...editableFolderIds.value]
+}
+
+function toggleSelectAllSeasons() {
+  selectedSeasonIds.value = isAllSeasonsSelected.value ? [] : collectedFavoriteSeasons.map(item => item.id)
+}
+
+function openRenameFolderDialog() {
+  if (!canRenameSelectedFolder.value || isSidebarOperating.value)
+    return
+
+  openSingleRenameFolder(selectedFolderIds.value[0])
+}
+
+function openSingleRenameFolder(folderId: number) {
+  const folder = favoriteCategories.find(item => item.id === folderId)
+  if (!folder)
+    return
+
+  renameFolderId.value = folder.id
+  renameFolderTitle.value = folder.title
+  renameDialogVisible.value = true
+}
+
+function closeRenameFolderDialog() {
+  renameDialogVisible.value = false
+}
+
+function fallbackToFirstCategory() {
+  if (categoryOptions.length > 0)
+    changeCategory(categoryOptions[0].value, true)
+  else
+    selectedCategory.value = undefined
+}
+
+async function handleRenameFolderConfirm() {
+  const title = renameFolderTitle.value.trim()
+  if (!title) {
+    toast.warning(t('favorites.rename_folder_empty'))
+    return
+  }
+
+  const folderId = renameFolderId.value
+  if (!folderId)
+    return
+
+  isSidebarOperating.value = true
+  try {
+    const res = await api.favorite.editFavoriteFolder({
+      media_id: folderId,
+      title,
+      csrf: getCSRF(),
+    })
+    if (res.code === 0) {
+      const folder = favoriteCategories.find(item => item.id === folderId)
+      if (folder)
+        folder.title = title
+      if (selectedCategory.value?.source === 'folder' && selectedCategory.value.id === folderId)
+        selectedCategory.value.title = title
+      rebuildCategoryOptions()
+      closeRenameFolderDialog()
+      exitSidebarManage()
+    }
+    else {
+      toast.error(res.message)
+    }
+  }
+  finally {
+    isSidebarOperating.value = false
+  }
+}
+
+async function deleteFolders(ids: number[]): Promise<boolean> {
+  try {
+    const res = await api.favorite.delFavoriteFolder({
+      media_ids: ids.join(','),
+      csrf: getCSRF(),
+    })
+    if (res.code !== 0) {
+      toast.error(res.message || t('favorites.delete_folders_failed'))
+      return false
+    }
+  }
+  catch {
+    toast.error(t('favorites.delete_folders_failed'))
+    return false
+  }
+
+  for (let i = favoriteCategories.length - 1; i >= 0; i--) {
+    if (ids.includes(favoriteCategories[i].id))
+      favoriteCategories.splice(i, 1)
+  }
+  rebuildCategoryOptions()
+
+  // 当前查看的收藏夹被删除时，回退到第一个可用分类
+  if (selectedCategory.value?.source === 'folder' && ids.includes(selectedCategory.value.id))
+    fallbackToFirstCategory()
+
+  return true
+}
+
+async function unfavSeasons(ids: number[]): Promise<number[]> {
+  // B 站无批量取消收藏合集接口，逐个调用并统计失败项
+  const failedIds: number[] = []
+  for (const seasonId of ids) {
+    try {
+      const res = await api.favorite.unfavFavoriteSeason({
+        season_id: seasonId,
+        csrf: getCSRF(),
+      })
+      if (res.code !== 0)
+        failedIds.push(seasonId)
+    }
+    catch {
+      failedIds.push(seasonId)
+    }
+  }
+
+  const removedIds = ids.filter(id => !failedIds.includes(id))
+  for (let i = collectedFavoriteSeasons.length - 1; i >= 0; i--) {
+    if (removedIds.includes(collectedFavoriteSeasons[i].id))
+      collectedFavoriteSeasons.splice(i, 1)
+  }
+  rebuildCategoryOptions()
+
+  if (selectedCategory.value?.source === 'season' && removedIds.includes(selectedCategory.value.id))
+    fallbackToFirstCategory()
+
+  if (failedIds.length > 0)
+    toast.error(t('favorites.unfav_seasons_failed', { count: failedIds.length }))
+
+  return failedIds
+}
+
+async function handleBatchDeleteFolders() {
+  if (selectedFolderCount.value === 0 || isSidebarOperating.value)
+    return
+
+  const result = confirm(t('favorites.delete_folders_confirm', { count: selectedFolderCount.value }))
+  if (!result)
+    return
+
+  isSidebarOperating.value = true
+  try {
+    // 删除失败时保留勾选，便于就地重试
+    const success = await deleteFolders([...selectedFolderIds.value])
+    if (success)
+      exitSidebarManage()
+  }
+  finally {
+    isSidebarOperating.value = false
+  }
+}
+
+async function handleBatchUnfavSeasons() {
+  if (selectedSeasonCount.value === 0 || isSidebarOperating.value)
+    return
+
+  const result = confirm(t('favorites.unfav_seasons_confirm', { count: selectedSeasonCount.value }))
+  if (!result)
+    return
+
+  isSidebarOperating.value = true
+  try {
+    const failedIds = await unfavSeasons([...selectedSeasonIds.value])
+    // 全部成功才退出管理模式；有失败项时保留失败项勾选，便于就地重试
+    if (failedIds.length === 0)
+      exitSidebarManage()
+    else
+      selectedSeasonIds.value = failedIds
+  }
+  finally {
+    isSidebarOperating.value = false
+  }
+}
+
+function openItemMenu(type: SidebarManageSection, id: number, event: MouseEvent) {
+  itemMenuTarget.value = { type, id }
+
+  // 与视频卡片菜单一致：底部空间不足时向上展开
+  const menuHeight = itemMenuOptions.value.length * 36 + 12
+  const bottomSpace = window.innerHeight - event.y
+  const offsetTop = bottomSpace > menuHeight + 10 ? 0 : -menuHeight - 8
+  itemMenuStyles.value = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    transform: `translate(${event.x}px, ${event.y + offsetTop}px)`,
+  }
+}
+
+function closeItemMenu() {
+  itemMenuTarget.value = null
+}
+
+async function handleItemMenuSelect(value: string | number) {
+  const target = itemMenuTarget.value
+  if (!target || isSidebarOperating.value)
+    return
+
+  if (target.type === 'folder') {
+    if (value === 'rename') {
+      openSingleRenameFolder(target.id)
+      return
+    }
+    const result = confirm(t('favorites.delete_folders_confirm', { count: 1 }))
+    if (!result)
+      return
+    isSidebarOperating.value = true
+    try {
+      await deleteFolders([target.id])
+    }
+    finally {
+      isSidebarOperating.value = false
+    }
+    return
+  }
+
+  const result = confirm(t('favorites.unfav_seasons_confirm', { count: 1 }))
+  if (!result)
+    return
+  isSidebarOperating.value = true
+  try {
+    await unfavSeasons([target.id])
+  }
+  finally {
+    isSidebarOperating.value = false
+  }
+}
+
 function getCategoryKey(category: ViewCategory) {
   return `${category.source}:${category.id}`
 }
@@ -251,6 +590,9 @@ function toggleBatchManage() {
   if (!canBatchManage.value)
     return
 
+  // 与侧栏收藏夹/合集管理互斥
+  exitSidebarManage()
+  closeItemMenu()
   isBatchManaging.value = true
 }
 
@@ -490,10 +832,13 @@ function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteItem {
   }
 }
 
-async function changeCategory(categoryItem: ViewCategory) {
-  if (isLoading.value)
+async function changeCategory(categoryItem: ViewCategory, force = false) {
+  // 删除当前查看的分类后需要强制回退，此时即使正在加载也不能被拦截
+  if (isLoading.value && !force)
     return
   closeBatchManage()
+  exitSidebarManage()
+  closeItemMenu()
   currentPageNum.value = 1
   selectedCategory.value = categoryItem
   if (targetCategory.value?.id === categoryItem.id)
@@ -549,6 +894,8 @@ function handleSearch() {
 
 function handleSearchScopeChange() {
   closeBatchManage()
+  exitSidebarManage()
+  closeItemMenu()
 
   // 切换搜索范围时，不清空当前结果，保持用户体验的连续性
   // 只重置分页状态，等待用户主动搜索时再更新结果
@@ -739,59 +1086,187 @@ function transformFavoriteItem(item: FavoriteItem): Video {
     <aside class="favorites-sidebar">
       <nav class="favorites-nav-panel">
         <section class="favorites-nav-section" :class="{ collapsed: !folderSectionExpanded }">
-          <button
-            class="nav-section-header"
-            :aria-expanded="folderSectionExpanded"
-            @click="folderSectionExpanded = !folderSectionExpanded"
-          >
-            <span>{{ t('favorites.folder_section_title') }}</span>
-            <span class="nav-section-count">{{ favoriteCategories.length }}</span>
-            <span class="nav-section-arrow" :class="{ collapsed: !folderSectionExpanded }" i-tabler:chevron-up />
-          </button>
+          <div class="nav-section-header">
+            <button
+              class="nav-section-toggle"
+              :aria-expanded="folderSectionExpanded"
+              @click="folderSectionExpanded = !folderSectionExpanded"
+            >
+              <span>{{ t('favorites.folder_section_title') }}</span>
+              <span class="nav-section-count">{{ favoriteCategories.length }}</span>
+              <span class="nav-section-arrow" :class="{ collapsed: !folderSectionExpanded }" i-tabler:chevron-up />
+            </button>
+            <!-- 侧栏右缘按钮：Tooltip 向左展开，避免被 sidebar overflow 裁切 -->
+            <Tooltip :content="t('favorites.sidebar_manage')" placement="left" type="dark">
+              <button
+                class="nav-manage-btn"
+                :class="{ active: isManagingFolder }"
+                :aria-label="t('favorites.sidebar_manage')"
+                @click="toggleSidebarManage('folder')"
+              >
+                <span :class="isManagingFolder ? 'i-tabler:x' : 'i-tabler:adjustments-horizontal'" />
+              </button>
+            </Tooltip>
+          </div>
+
+          <div v-if="isManagingFolder" class="sidebar-manage-bar">
+            <button class="manage-bar-select" @click="toggleSelectAllFolders">
+              <span :class="isAllFoldersSelected ? 'i-tabler:checkbox' : 'i-tabler:square'" />
+              {{ isAllFoldersSelected ? t('favorites.unselect_all') : t('favorites.select_all') }}
+            </button>
+            <span class="batch-selected-count">
+              {{ t('favorites.batch_selected_count', { count: selectedFolderCount }) }}
+            </span>
+            <div class="manage-bar-actions">
+              <Tooltip :content="t('favorites.rename_folder')" placement="left" type="dark">
+                <button
+                  class="manage-bar-btn"
+                  :disabled="!canRenameSelectedFolder || isSidebarOperating"
+                  :aria-label="t('favorites.rename_folder')"
+                  @click="openRenameFolderDialog"
+                >
+                  <span i-tabler:edit />
+                </button>
+              </Tooltip>
+              <Tooltip :content="t('common.operation.delete')" placement="left" type="dark">
+                <button
+                  class="manage-bar-btn danger"
+                  :disabled="selectedFolderCount === 0 || isSidebarOperating"
+                  :aria-label="t('common.operation.delete')"
+                  @click="handleBatchDeleteFolders"
+                >
+                  <span i-tabler:trash />
+                </button>
+              </Tooltip>
+            </div>
+          </div>
 
           <ul v-show="folderSectionExpanded" class="category-list">
-            <li v-for="item in favoriteCategories" :key="`folder:${item.id}`">
+            <li v-for="item in favoriteCategories" :key="`folder:${item.id}`" class="category-item">
               <button
                 class="category-nav-item"
-                :class="{ active: selectedCategoryKey === `folder:${item.id}` }"
+                :class="{
+                  active: !isManagingFolder && selectedCategoryKey === `folder:${item.id}`,
+                  selected: isManagingFolder && selectedFolderIds.includes(item.id),
+                  locked: isManagingFolder && item.id === defaultFolderId,
+                }"
                 :disabled="isFullPageLoading"
-                @click="changeCategory(toFolderCategory(item))"
+                @click="handleFolderItemClick(item)"
               >
-                <span class="category-icon" i-tabler:folder />
+                <template v-if="isManagingFolder">
+                  <span
+                    v-if="item.id === defaultFolderId"
+                    class="category-icon" i-tabler:lock
+                  />
+                  <span
+                    v-else
+                    class="category-icon"
+                    :class="selectedFolderIds.includes(item.id) ? 'i-tabler:checkbox' : 'i-tabler:square'"
+                  />
+                </template>
+                <span v-else class="category-icon" i-tabler:folder />
                 <span class="category-title">{{ item.title }}</span>
                 <span class="category-count">{{ item.media_count }}</span>
+              </button>
+              <button
+                v-if="!isManagingFolder && item.id !== defaultFolderId"
+                class="item-more-btn"
+                :class="{ 'menu-open': itemMenuTarget?.type === 'folder' && itemMenuTarget.id === item.id }"
+                :disabled="isFullPageLoading"
+                @click.prevent.stop="openItemMenu('folder', item.id, $event)"
+              >
+                <span i-mingcute:more-2-line />
               </button>
             </li>
           </ul>
         </section>
 
         <section class="favorites-nav-section" :class="{ collapsed: !seasonSectionExpanded }">
-          <button
-            class="nav-section-header"
-            :aria-expanded="seasonSectionExpanded"
-            @click="seasonSectionExpanded = !seasonSectionExpanded"
-          >
-            <span>{{ t('favorites.season_section_title') }}</span>
-            <span class="nav-section-count">{{ collectedFavoriteSeasons.length }}</span>
-            <span class="nav-section-arrow" :class="{ collapsed: !seasonSectionExpanded }" i-tabler:chevron-up />
-          </button>
+          <div class="nav-section-header">
+            <button
+              class="nav-section-toggle"
+              :aria-expanded="seasonSectionExpanded"
+              @click="seasonSectionExpanded = !seasonSectionExpanded"
+            >
+              <span>{{ t('favorites.season_section_title') }}</span>
+              <span class="nav-section-count">{{ collectedFavoriteSeasons.length }}</span>
+              <span class="nav-section-arrow" :class="{ collapsed: !seasonSectionExpanded }" i-tabler:chevron-up />
+            </button>
+            <Tooltip :content="t('favorites.sidebar_manage')" placement="left" type="dark">
+              <button
+                class="nav-manage-btn"
+                :class="{ active: isManagingSeason }"
+                :aria-label="t('favorites.sidebar_manage')"
+                @click="toggleSidebarManage('season')"
+              >
+                <span :class="isManagingSeason ? 'i-tabler:x' : 'i-tabler:adjustments-horizontal'" />
+              </button>
+            </Tooltip>
+          </div>
+
+          <div v-if="isManagingSeason" class="sidebar-manage-bar">
+            <button class="manage-bar-select" @click="toggleSelectAllSeasons">
+              <span :class="isAllSeasonsSelected ? 'i-tabler:checkbox' : 'i-tabler:square'" />
+              {{ isAllSeasonsSelected ? t('favorites.unselect_all') : t('favorites.select_all') }}
+            </button>
+            <span class="batch-selected-count">
+              {{ t('favorites.batch_selected_count', { count: selectedSeasonCount }) }}
+            </span>
+            <div class="manage-bar-actions">
+              <Tooltip :content="t('favorites.unfavorite')" placement="left" type="dark">
+                <button
+                  class="manage-bar-btn danger"
+                  :disabled="selectedSeasonCount === 0 || isSidebarOperating"
+                  :aria-label="t('favorites.unfavorite')"
+                  @click="handleBatchUnfavSeasons"
+                >
+                  <span i-tabler:star-off />
+                </button>
+              </Tooltip>
+            </div>
+          </div>
 
           <ul v-show="seasonSectionExpanded" class="category-list">
-            <li v-for="item in collectedFavoriteSeasons" :key="`season:${item.id}`">
+            <li v-for="item in collectedFavoriteSeasons" :key="`season:${item.id}`" class="category-item">
               <button
                 class="category-nav-item"
-                :class="{ active: selectedCategoryKey === `season:${item.id}` }"
+                :class="{
+                  active: !isManagingSeason && selectedCategoryKey === `season:${item.id}`,
+                  selected: isManagingSeason && selectedSeasonIds.includes(item.id),
+                }"
                 :disabled="isFullPageLoading"
-                @click="changeCategory(toSeasonCategory(item))"
+                @click="handleSeasonItemClick(item)"
               >
-                <span class="category-icon" i-tabler:stack-2 />
+                <span
+                  v-if="isManagingSeason"
+                  class="category-icon"
+                  :class="selectedSeasonIds.includes(item.id) ? 'i-tabler:checkbox' : 'i-tabler:square'"
+                />
+                <span v-else class="category-icon" i-tabler:stack-2 />
                 <span class="category-title">{{ item.title }}</span>
                 <span class="category-count">{{ item.media_count }}</span>
+              </button>
+              <button
+                v-if="!isManagingSeason"
+                class="item-more-btn"
+                :class="{ 'menu-open': itemMenuTarget?.type === 'season' && itemMenuTarget.id === item.id }"
+                :disabled="isFullPageLoading"
+                @click.prevent.stop="openItemMenu('season', item.id, $event)"
+              >
+                <span i-mingcute:more-2-line />
               </button>
             </li>
           </ul>
         </section>
       </nav>
+
+      <ContextMenu
+        v-if="itemMenuTarget"
+        :options="itemMenuOptions"
+        :menu-styles="itemMenuStyles"
+        @select="handleItemMenuSelect"
+        @close="closeItemMenu"
+      />
     </aside>
 
     <main class="favorites-main">
@@ -852,8 +1327,9 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 
           <div class="toolbar-action-group">
             <Button
+              v-if="canBatchManage"
               :type="isBatchManaging ? 'tertiary' : 'secondary'"
-              :disabled="!canBatchManage || isBatchOperating"
+              :disabled="isBatchOperating"
               @click="toggleBatchManage"
             >
               <template #left>
@@ -958,6 +1434,22 @@ function transformFavoriteItem(item: FavoriteItem): Video {
       </VideoCardGrid>
 
       <Dialog
+        v-if="renameDialogVisible"
+        :title="t('favorites.rename_folder_dialog_title')"
+        width="420px"
+        append-to-bewly-body
+        :loading="isSidebarOperating"
+        @close="closeRenameFolderDialog"
+        @confirm="handleRenameFolderConfirm"
+      >
+        <Input
+          v-model="renameFolderTitle"
+          :placeholder="t('favorites.rename_folder_placeholder')"
+          @enter="handleRenameFolderConfirm"
+        />
+      </Dialog>
+
+      <Dialog
         v-if="batchTransferDialogVisible"
         :title="batchTransferDialogTitle"
         :desc="batchTransferDialogDesc"
@@ -1035,26 +1527,143 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   padding-bottom: 0;
 }
 
-.nav-section-header,
+.nav-section-header {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 8px 8px;
+}
+
+.nav-section-toggle {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  flex: 1 1 auto;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  min-height: 30px;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nav-section-toggle,
+.nav-manage-btn,
 .category-nav-item {
-  width: 100%;
   border: 0;
   color: var(--bew-text-1);
   background: transparent;
   font: inherit;
 }
 
-.nav-section-header {
+.nav-manage-btn {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--bew-text-3);
+  border-radius: 6px;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.nav-manage-btn:hover {
+  color: var(--bew-text-1);
+  background: var(--bew-fill-2);
+}
+
+.nav-manage-btn.active {
+  color: var(--bew-theme-color);
+  background: var(--bew-theme-color-10);
+}
+
+.nav-manage-btn span {
+  width: 17px;
+  height: 17px;
+}
+
+.sidebar-manage-bar {
+  display: flex;
   gap: 8px;
   align-items: center;
-  min-height: 38px;
+  min-height: 34px;
   padding: 0 8px 8px;
-  font-size: 16px;
-  font-weight: 700;
-  text-align: left;
+}
+
+.manage-bar-select {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0;
+  color: var(--bew-text-2);
+  font-size: 13px;
+  border: 0;
+  background: transparent;
   cursor: pointer;
+}
+
+.manage-bar-select:hover {
+  color: var(--bew-text-1);
+}
+
+.manage-bar-select span {
+  width: 16px;
+  height: 16px;
+}
+
+.sidebar-manage-bar .batch-selected-count {
+  flex: 1 1 auto;
+  text-align: right;
+}
+
+.manage-bar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 4px;
+  align-items: center;
+}
+
+.manage-bar-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--bew-text-2);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.manage-bar-btn:hover:not(:disabled) {
+  color: var(--bew-theme-color);
+  background: var(--bew-theme-color-10);
+}
+
+.manage-bar-btn.danger:hover:not(:disabled) {
+  color: #fff;
+  background: var(--bew-error-color);
+}
+
+.manage-bar-btn:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.manage-bar-btn span {
+  width: 16px;
+  height: 16px;
 }
 
 .nav-section-count {
@@ -1074,6 +1683,56 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   transform: rotate(180deg);
 }
 
+.category-item {
+  display: flex;
+  align-items: center;
+}
+
+.category-item .category-nav-item {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.item-more-btn {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 0;
+  height: 26px;
+  margin-right: 0;
+  padding: 0;
+  overflow: hidden;
+  color: var(--bew-text-3);
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    width 160ms ease,
+    margin-right 160ms ease,
+    opacity 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.category-item:hover .item-more-btn,
+.item-more-btn.menu-open {
+  width: 26px;
+  margin-right: 6px;
+  opacity: 1;
+}
+
+.item-more-btn:hover {
+  color: var(--bew-text-1);
+  background: var(--bew-fill-2);
+}
+
+.item-more-btn span {
+  width: 16px;
+  height: 16px;
+}
+
 .category-list {
   display: flex;
   flex: 1 1 auto;
@@ -1091,6 +1750,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   grid-template-columns: 20px minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
+  width: 100%;
   min-height: 38px;
   padding: 0 10px;
   border-radius: 8px;
@@ -1109,6 +1769,21 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 .category-nav-item.active {
   color: #fff;
   background: var(--bew-theme-color);
+}
+
+.category-nav-item.selected {
+  color: var(--bew-theme-color);
+  background: var(--bew-theme-color-10);
+}
+
+.category-nav-item.locked {
+  cursor: default;
+  opacity: 0.56;
+}
+
+.category-nav-item.locked:hover:not(:disabled) {
+  color: var(--bew-text-2);
+  background: transparent;
 }
 
 .category-nav-item:disabled {

@@ -172,6 +172,7 @@ const searchResults = computed(() => {
 })
 
 const activeSearchResultIndex = ref(-1)
+const searchResultsRef = ref<HTMLElement>()
 
 watch(searchQuery, () => {
   activeSearchResultIndex.value = -1
@@ -190,6 +191,11 @@ function moveSearchResultSelection(event: KeyboardEvent, direction: 1 | -1) {
     activeSearchResultIndex.value = direction > 0 ? 0 : resultCount - 1
   else
     activeSearchResultIndex.value = (activeSearchResultIndex.value + direction + resultCount) % resultCount
+
+  // 键盘导航时让选中项滚动到可视区内
+  nextTick(() => {
+    searchResultsRef.value?.children[activeSearchResultIndex.value]?.scrollIntoView({ block: 'nearest' })
+  })
 }
 
 function activateSearchResult(event: KeyboardEvent) {
@@ -444,6 +450,7 @@ function changeMenuItem(menuItem: MenuType) {
             <div
               v-if="searchQuery"
               id="settings-search-results"
+              ref="searchResultsRef"
               class="settings-search-results"
               role="listbox"
             >

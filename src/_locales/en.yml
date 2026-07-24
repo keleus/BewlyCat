@@ -1007,6 +1007,21 @@ favorites:
   global_search_hint: Search for all favorites
   global_search_placeholder: Search all favorites
   season_play_all_fallback: Season list not ready, fell back to the beginning
+  sidebar_manage: Manage
+  sidebar_manage_exit: Exit manage
+  select_all: Select all
+  unselect_all: Deselect all
+  rename_folder: Rename
+  rename_folder_dialog_title: Rename folder
+  rename_folder_placeholder: Enter folder name
+  rename_folder_empty: Folder name cannot be empty
+  default_folder_locked: The default folder cannot be renamed or deleted
+  delete_folders_confirm: |-
+    Delete the {count} selected folders?
+    Videos in them will be unfavorited as well. This cannot be undone.
+  delete_folders_failed: Failed to delete folders, please try again later
+  unfav_seasons_confirm: Unfavorite the {count} selected seasons?
+  unfav_seasons_failed: Failed to unfavorite {count} seasons
   search_all_folders: all
   search_current_folder: current
   search_placeholder: Search for current favorites

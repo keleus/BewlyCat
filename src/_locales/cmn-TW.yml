@@ -944,6 +944,21 @@ favorites:
   global_search_hint: 請輸入關鍵詞以搜尋全部收藏夾
   global_search_placeholder: 搜尋全部收藏夾
   season_play_all_fallback: 合集列表尚未就緒，已退回合集開頭
+  sidebar_manage: 管理
+  sidebar_manage_exit: 退出管理
+  select_all: 全選
+  unselect_all: 取消全選
+  rename_folder: 重新命名
+  rename_folder_dialog_title: 重新命名收藏夾
+  rename_folder_placeholder: 請輸入收藏夾名稱
+  rename_folder_empty: 收藏夾名稱不能為空
+  default_folder_locked: 預設收藏夾不可重新命名或刪除
+  delete_folders_confirm: |-
+    要刪除已選的 {count} 個收藏夾嗎？
+    夾內影片的收藏關係將一併移除，該操作無法撤銷。
+  delete_folders_failed: 收藏夾刪除失敗，請稍後重試
+  unfav_seasons_confirm: 確定取消收藏已選的 {count} 個合集嗎？
+  unfav_seasons_failed: '{count} 個合集取消收藏失敗'
   search_all_folders: 全部
   search_current_folder: 目前
   search_placeholder: 搜尋目前收藏夾

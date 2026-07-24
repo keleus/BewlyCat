@@ -880,6 +880,21 @@ favorites:
     係咪要剷走已揀嘅 {count} 條片呀？
     噉做冇得返轉頭噃，你確定要剷走呢啲片？
   season_play_all_fallback: 合集列表未就緒，已退回合集開頭
+  sidebar_manage: 管理
+  sidebar_manage_exit: 退出管理
+  select_all: 全選
+  unselect_all: 取消全選
+  rename_folder: 改名
+  rename_folder_dialog_title: 收藏夾改名
+  rename_folder_placeholder: 請輸入收藏夾名稱
+  rename_folder_empty: 收藏夾名稱唔可以為空
+  default_folder_locked: 預設收藏夾唔可以改名或者刪除
+  delete_folders_confirm: |-
+    要刪除已選嘅 {count} 個收藏夾嗎？
+    入面影片嘅收藏關係會一併移除，呢個操作無法撤銷。
+  delete_folders_failed: 收藏夾刪除失敗，請稍後再試
+  unfav_seasons_confirm: 確定取消收藏已選嘅 {count} 個合集嗎？
+  unfav_seasons_failed: '{count} 個合集取消收藏失敗'
 version_reminder:
   trigger: 新版本說明
   title: BewlyCat 已更新
