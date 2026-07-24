@@ -386,7 +386,7 @@ function changeMenuItem(menuItem: MenuType) {
       >
         <header
           flex justify-between items-center w-full h-80px
-          pos="fixed top-0 left-0" p="x-11" box-border gap-4
+          pos="absolute top-0 left-0" p="x-11" box-border gap-4
           z-1 rounded="t-$bew-radius"
           style="
             text-shadow: 0 0 10px var(--bew-elevated-solid), 0 0 15px var(--bew-elevated-solid)
