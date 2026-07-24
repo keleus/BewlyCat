@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   getAdaptiveGridColumnCount,
-  getListLayoutColumnCount,
-  LIST_LAYOUT_GRID_GAP,
-  LIST_LAYOUT_MIN_CARD_WIDTH,
+  getListGridColumnCount,
+  MOBILE_LIST_LAYOUT_BREAKPOINT,
 } from '~/utils/gridLayout'
 
 describe('adaptive grid layout', () => {
@@ -33,20 +32,21 @@ describe('adaptive grid layout', () => {
 })
 
 describe('list grid layout', () => {
-  function minimumWidthForColumns(columns: number): number {
-    return columns * LIST_LAYOUT_MIN_CARD_WIDTH
-      + (columns - 1) * LIST_LAYOUT_GRID_GAP
-  }
-
-  it('adds columns whenever another minimum-width card fits', () => {
-    expect(getListLayoutColumnCount(minimumWidthForColumns(2) - 1)).toBe(1)
-    expect(getListLayoutColumnCount(minimumWidthForColumns(2))).toBe(2)
-    expect(getListLayoutColumnCount(minimumWidthForColumns(3))).toBe(3)
-    expect(getListLayoutColumnCount(minimumWidthForColumns(4))).toBe(4)
+  it('keeps the selected list layout when auto switching is disabled', () => {
+    expect(getListGridColumnCount('oneColumn', 320, false)).toBe(1)
+    expect(getListGridColumnCount('oneColumn', 1920, false)).toBe(1)
+    expect(getListGridColumnCount('twoColumns', 320, false)).toBe(2)
+    expect(getListGridColumnCount('twoColumns', 1920, false)).toBe(2)
   })
 
-  it('falls back to one column for invalid or non-positive widths', () => {
-    expect(getListLayoutColumnCount(0)).toBe(1)
-    expect(getListLayoutColumnCount(Number.NaN)).toBe(1)
+  it('switches two-column layout to one column below the mobile breakpoint', () => {
+    expect(getListGridColumnCount('twoColumns', MOBILE_LIST_LAYOUT_BREAKPOINT - 1, true)).toBe(1)
+    expect(getListGridColumnCount('twoColumns', MOBILE_LIST_LAYOUT_BREAKPOINT, true)).toBe(2)
+    expect(getListGridColumnCount('oneColumn', 1920, true)).toBe(1)
+  })
+
+  it('falls back to one column when the viewport width is invalid', () => {
+    expect(getListGridColumnCount('twoColumns', 0, true)).toBe(1)
+    expect(getListGridColumnCount('twoColumns', Number.NaN, true)).toBe(1)
   })
 })

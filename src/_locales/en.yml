@@ -262,6 +262,8 @@ settings:
 
   # Video Card Grid Settings
   group_video_card_grid: Video Card Grid
+  auto_switch_list_layout: Automatically switch list columns based on screen width
+  auto_switch_list_layout_desc: When enabled, two-column mode switches to one column when the screen is narrower than 640px.
   grid_breakpoints: Grid Breakpoints
   grid_breakpoints_desc: Set the number of columns at different screen widths. When screen width is greater than or equal to the set value, use the corresponding columns.
   grid_min_width: Width ≥

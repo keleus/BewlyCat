@@ -293,6 +293,8 @@ settings:
 
   # Video Card Grid Settings
   group_video_card_grid: 视频卡片网格
+  auto_switch_list_layout: 根据屏幕宽度自动切换单双列
+  auto_switch_list_layout_desc: 开启后，双列模式会在屏幕宽度小于 640px 时自动切换为单列。
   grid_breakpoints: 网格断点配置
   grid_breakpoints_desc: 设置不同屏幕宽度下显示的列数。当屏幕宽度大于等于设定值时，使用对应的列数。
   grid_min_width: 宽度 ≥

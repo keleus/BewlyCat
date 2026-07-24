@@ -7,7 +7,7 @@ import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
-import { getAdaptiveGridColumnCount, getListLayoutColumnCount } from '~/utils/gridLayout'
+import { getAdaptiveGridColumnCount, getListGridColumnCount } from '~/utils/gridLayout'
 import emitter from '~/utils/mitt'
 
 import SmoothLoading from './SmoothLoading.vue'
@@ -448,8 +448,8 @@ function cleanupScrollListeners() {
 function getRenderedColumnCount(): number {
   const containerWidth = gridContainerRef.value?.clientWidth
     || (typeof window !== 'undefined' ? window.innerWidth : 0)
-  // 自适应网格的 CSS 使用视口断点，这里保持骨架屏和补位计算使用同一宽度基准。
-  const responsiveWidth = props.gridLayout === 'adaptive' && typeof window !== 'undefined'
+  // CSS 响应式布局使用视口断点，这里让骨架屏和补位计算保持相同的宽度基准。
+  const responsiveWidth = (props.gridLayout === 'adaptive' || settings.value.autoSwitchListLayout) && typeof window !== 'undefined'
     ? window.innerWidth
     : containerWidth
   return getCurrentColumnCount(props.gridLayout, responsiveWidth)
@@ -637,11 +637,9 @@ function normalizePositiveInt(value: unknown, fallback: number): number {
 }
 
 function getCurrentColumnCount(layout: GridLayoutType, width: number): number {
-  if (layout === 'twoColumns')
-    return 2
-  if (layout === 'oneColumn')
-    return getListLayoutColumnCount(width)
-  return getAdaptiveGridColumnCount(width, settings.value.gridColumns)
+  if (layout === 'adaptive')
+    return getAdaptiveGridColumnCount(width, settings.value.gridColumns)
+  return getListGridColumnCount(layout, width, settings.value.autoSwitchListLayout)
 }
 
 function findScrollElement(): HTMLElement | null {
@@ -957,10 +955,16 @@ function getUniqueKey(item: T, index: number): string | number {
 
 .grid-one-column {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 500px), 1fr));
+  grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 16px;
   contain: layout style;
   align-items: stretch;
+}
+
+@media (max-width: 639.98px) {
+  .grid-two-columns.grid-list-auto-switch {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
 }
 
 .video-card-grid-container {

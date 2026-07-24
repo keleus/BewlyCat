@@ -1,5 +1,6 @@
-export const LIST_LAYOUT_MIN_CARD_WIDTH = 500
-export const LIST_LAYOUT_GRID_GAP = 16
+export const MOBILE_LIST_LAYOUT_BREAKPOINT = 640
+
+export type ListGridLayout = 'twoColumns' | 'oneColumn'
 
 export interface AdaptiveGridColumns {
   base: number
@@ -43,15 +44,16 @@ export function getAdaptiveGridColumnCount(width: number, columns: AdaptiveGridC
   return normalizeColumnCount(columns[breakpoint], DEFAULT_ADAPTIVE_GRID_COLUMNS[breakpoint])
 }
 
-export function getListLayoutColumnCount(width: number): number {
-  if (!Number.isFinite(width) || width <= 0)
+export function getListGridColumnCount(
+  layout: ListGridLayout,
+  viewportWidth: number,
+  autoSwitch: boolean,
+): number {
+  if (layout === 'oneColumn')
     return 1
 
-  return Math.max(
-    1,
-    Math.floor(
-      (width + LIST_LAYOUT_GRID_GAP)
-      / (LIST_LAYOUT_MIN_CARD_WIDTH + LIST_LAYOUT_GRID_GAP),
-    ),
-  )
+  if (!autoSwitch)
+    return 2
+
+  return Number.isFinite(viewportWidth) && viewportWidth >= MOBILE_LIST_LAYOUT_BREAKPOINT ? 2 : 1
 }

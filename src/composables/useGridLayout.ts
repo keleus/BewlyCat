@@ -14,13 +14,16 @@ export function useGridLayout(gridLayout: () => GridLayoutType) {
     '--grid-cols-xxl': settings.value.gridColumns.xxl,
   }))
 
-  const gridClass = computed((): string => {
+  const gridClass = computed((): string[] => {
     const layout = gridLayout()
     if (layout === 'adaptive')
-      return 'grid-adaptive'
-    if (layout === 'twoColumns')
-      return 'grid-two-columns'
-    return 'grid-one-column'
+      return ['grid-adaptive']
+    if (layout === 'twoColumns') {
+      return settings.value.autoSwitchListLayout
+        ? ['grid-two-columns', 'grid-list-auto-switch']
+        : ['grid-two-columns']
+    }
+    return ['grid-one-column']
   })
 
   return { gridClass, gridCssVars }

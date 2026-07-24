@@ -26,6 +26,7 @@ import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
 import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
+import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
 import { version } from '../../package.json'
 import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
@@ -585,9 +586,12 @@ else if (shouldInitializeContentScript) {
 
     const changeHomePage = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
 
-    // Remove the original Bilibili homepage if in Bilibili homepage & useOriginalBilibiliHomepage is enabled
+    // 启用自定义首页时隐藏 B 站原始首页。
     if (changeHomePage) {
-    // Capture the original top bar early so we can optionally re-attach it later.
+      // 移动端缺少 viewport 声明时会按 980px 排版后整体缩放，导致响应式断点失效。
+      ensureResponsiveViewport(document)
+
+      // 提前保存原始顶栏，以便需要时重新挂载。
       captureOriginalBilibiliTopBar(document)
 
       // 方案选择：
