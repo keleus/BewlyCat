@@ -13,6 +13,7 @@ const BILIBILI_TOP_BAR_SELECTORS = [
 ]
 
 let cachedOriginalTopBar: HTMLElement | null = null
+const originalTopBarSearchCleanups = new WeakMap<Document, () => void>()
 const initializedHoverHeaders = new WeakSet<HTMLElement>()
 const initializedScrollStateHeaders = new WeakSet<HTMLElement>()
 const channelPanelColumns = [
@@ -377,4 +378,100 @@ export function setupLoginButtonClickHandlers(doc: Document) {
   return () => {
     observer.disconnect()
   }
+}
+
+/**
+ * 在启用插件搜索结果页时，接管原版 B 站顶栏的搜索提交。
+ * 捕获阶段拦截可以避免 B 站自身的点击处理器先跳到 search.bilibili.com。
+ */
+export function setupOriginalBilibiliTopBarSearchHandlers(
+  doc: Document,
+  shouldUsePluginSearchResultsPage: () => boolean,
+) {
+  originalTopBarSearchCleanups.get(doc)?.()
+
+  const SEARCH_FORM_SELECTOR = [
+    '#nav-searchform',
+    '.nav-search-form',
+    '.nav-search-content',
+  ].join(', ')
+  const SEARCH_INPUT_SELECTOR = [
+    '.nav-search-input',
+    'input[name="keyword"]',
+    'input[type="search"]',
+  ].join(', ')
+  const SEARCH_SUBMIT_SELECTOR = [
+    '.nav-search-btn',
+    '.nav-search-submit',
+    'button[type="submit"]',
+  ].join(', ')
+
+  function getOriginalTopBarSearchContext(target: EventTarget | null) {
+    if (!(target instanceof Element))
+      return null
+
+    const header = target.closest('.bili-header, #biliMainHeader, #internationalHeader')
+    if (!header)
+      return null
+
+    const form = target.closest(SEARCH_FORM_SELECTOR) || header.querySelector(SEARCH_FORM_SELECTOR)
+    const input = (form || header).querySelector<HTMLInputElement>(SEARCH_INPUT_SELECTOR)
+    return { form, input }
+  }
+
+  function navigateToPluginSearch(event: Event, input: HTMLInputElement | null | undefined) {
+    if (!shouldUsePluginSearchResultsPage())
+      return false
+
+    const keyword = input?.value.trim()
+    if (!keyword)
+      return false
+
+    event.preventDefault()
+    event.stopPropagation()
+    event.stopImmediatePropagation()
+
+    const params = new URLSearchParams()
+    params.set('page', 'SearchResults')
+    params.set('keyword', keyword)
+    window.location.assign(`https://www.bilibili.com/?${params.toString()}`)
+    return true
+  }
+
+  function handleSubmit(event: SubmitEvent) {
+    const context = getOriginalTopBarSearchContext(event.target)
+    if (context)
+      navigateToPluginSearch(event, context.input)
+  }
+
+  function handleClick(event: MouseEvent) {
+    if (!(event.target instanceof Element) || !event.target.closest(SEARCH_SUBMIT_SELECTOR))
+      return
+
+    const context = getOriginalTopBarSearchContext(event.target)
+    if (context)
+      navigateToPluginSearch(event, context.input)
+  }
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key !== 'Enter' || event.isComposing)
+      return
+
+    const context = getOriginalTopBarSearchContext(event.target)
+    if (context?.input === event.target)
+      navigateToPluginSearch(event, context.input)
+  }
+
+  doc.addEventListener('submit', handleSubmit, true)
+  doc.addEventListener('click', handleClick, true)
+  doc.addEventListener('keydown', handleKeydown, true)
+
+  const cleanup = () => {
+    doc.removeEventListener('submit', handleSubmit, true)
+    doc.removeEventListener('click', handleClick, true)
+    doc.removeEventListener('keydown', handleKeydown, true)
+    originalTopBarSearchCleanups.delete(doc)
+  }
+  originalTopBarSearchCleanups.set(doc, cleanup)
+  return cleanup
 }
