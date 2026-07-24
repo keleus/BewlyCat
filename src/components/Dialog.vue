@@ -20,6 +20,10 @@ const props = withDefaults(defineProps<{
   topOffset?: string | number
   /** 去掉内容区内边距（保留顶部 header），用于 iframe 详情等贴边场景 */
   contentFlush?: boolean
+  /** 是否显示对话框顶栏 */
+  showHeader?: boolean
+  /** 是否显示边框和边缘光 */
+  showBorder?: boolean
   showFooter?: boolean
   centerFooter?: boolean
   loading?: boolean
@@ -27,6 +31,8 @@ const props = withDefaults(defineProps<{
 }>(), {
   preventCloseWhenLoading: true,
   frostedGlass: true,
+  showHeader: true,
+  showBorder: true,
   showFooter: true,
   contentFlush: false,
 })
@@ -95,9 +101,10 @@ const dialogPanelStyle = computed(() => {
     transform: topAligned ? 'translateX(-50%)' : 'translate(-50%, -50%)',
     transition: 'transform 0.4s, width 0.4s, height 0.4s',
     overflow: topAligned ? 'visible' : undefined,
+    border: props.showBorder ? undefined : '0',
     backdropFilter: props.frostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
     backgroundColor: props.frostedGlass ? 'var(--bew-elevated)' : 'var(--bew-elevated-solid)',
-    boxShadow: 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)',
+    boxShadow: props.showBorder ? 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)' : 'var(--bew-shadow-4)',
   }
 })
 
@@ -152,6 +159,7 @@ function handleConfirm() {
           pos="absolute top-0 left-0" w-full h-full z-0
           @click="handleClose"
         />
+        <slot name="floating-actions" />
         <div
           :style="dialogPanelStyle"
           pos="absolute" rounded="$bew-radius" border="1 $bew-border-color"
@@ -171,6 +179,7 @@ function handleConfirm() {
           </Transition>
 
           <header
+            v-if="showHeader"
             style="
               text-shadow: 0 0 15px var(--bew-elevated-solid), 0 0 20px var(--bew-elevated-solid)
             "

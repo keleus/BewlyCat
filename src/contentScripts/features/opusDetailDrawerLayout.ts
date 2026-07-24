@@ -1,3 +1,6 @@
+import { Icon } from '@iconify/vue'
+import { createVNode, render } from 'vue'
+
 import { isInIframe } from '~/utils/main'
 
 const SPLIT_FLAG = 'bewlyOpusSplit'
@@ -65,6 +68,9 @@ let teardownCount = 0
 let lastMutationAt = 0
 let stableTimer: ReturnType<typeof setTimeout> | null = null
 let galleryKeyHandler: ((e: KeyboardEvent) => void) | null = null
+let galleryViewerMessageHandler: ((e: MessageEvent) => void) | null = null
+let galleryViewerAckTimer: ReturnType<typeof setTimeout> | null = null
+let galleryIconHosts: HTMLElement[] = []
 let layoutReadyNotified = false
 
 const BASE_CSS = `
@@ -174,6 +180,29 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode [class*="Direc
   box-sizing: border-box !important;
   overflow-x: hidden !important;
 }
+/*
+ * 新版专栏目录使用 fixed 定位，原站的 left 会在窄 iframe 中算成负值。
+ * 不修改目录内部样式，仅为原生 240px 目录预留空间并修正横向位置。
+ */
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-detail:has(.opus-toc) {
+  width: min(980px, calc(100% - 20px)) !important;
+  padding: 12px 0 40px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .bili-opus-view-wrap:has(> .opus-toc) {
+  width: min(708px, calc(100% - 264px)) !important;
+  margin-right: 0 !important;
+  margin-left: 264px !important;
+  padding: 0 !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .bili-opus-view-wrap:has(> .opus-toc) > .bili-opus-view {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 12px 12px 40px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-toc {
+  left: max(10px, calc((100vw - 980px) / 2 + 20px)) !important;
+  right: auto !important;
+}
 .bewly-opus-iframe-loading {
   position: fixed !important;
   inset: 0 !important;
@@ -235,9 +264,9 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media {
   min-width: 0 !important;
   min-height: 0 !important;
   height: 100% !important;
-  /* 外层不滚动；浅色底避免滚到底露出黑边 */
+  /* 外层不滚动；媒体区统一使用黑色舞台 */
   overflow: hidden !important;
-  background: var(--bg1, #fff) !important;
+  background: #000 !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery {
   position: relative !important;
@@ -248,6 +277,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   min-height: 0 !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
+  background: #000 !important;
 }
 /* 仅大图 stage 纵向滚动：滚动条覆盖在图片上，不与缩略图同级 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage {
@@ -267,7 +297,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none !important;
   scrollbar-color: transparent transparent !important;
-  background: var(--bg1, #fff) !important;
+  background: #000 !important;
   /* 永不预留 gutter：图片始终全宽 */
   scrollbar-gutter: auto !important;
   z-index: 1 !important;
@@ -311,7 +341,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   position: absolute !important;
   top: 8px !important;
   right: 2px !important;
-  bottom: 84px !important;
+  bottom: 64px !important;
   width: 11px !important;
   z-index: 8 !important;
   border-radius: 0 !important;
@@ -333,20 +363,20 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   width: 7px !important;
   min-height: 36px !important;
   border-radius: 999px !important;
-  /* 白底上的原生感灰色滑块 */
-  background: rgba(0, 0, 0, 0.28) !important;
+  /* 黑色舞台上的原生感浅色滑块 */
+  background: rgba(255, 255, 255, 0.34) !important;
   border: 0 !important;
   box-shadow: none !important;
   cursor: default !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__scroll-rail:hover .bewly-opus-gallery__scroll-thumb {
-  background: rgba(0, 0, 0, 0.4) !important;
+  background: rgba(255, 255, 255, 0.48) !important;
   width: 9px !important;
   left: 1px !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__scroll-thumb:active {
   cursor: default !important;
-  background: rgba(0, 0, 0, 0.48) !important;
+  background: rgba(255, 255, 255, 0.58) !important;
 }
 /* 横向平移滑轨：三页窗口（左/中/右），切换时整页平移 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__slider {
@@ -357,7 +387,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   width: 100% !important;
   height: 100% !important;
   overflow: hidden !important;
-  background: var(--bg1, #fff) !important;
+  background: #000 !important;
   z-index: 1 !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__track {
@@ -386,6 +416,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   min-width: 0 !important;
   position: relative !important;
   overflow: hidden !important;
+  background: #000 !important;
 }
 /* 每页舞台：长图可纵向滚动 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage {
@@ -404,7 +435,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none !important;
   scrollbar-color: transparent transparent !important;
-  background: var(--bg1, #fff) !important;
+  background: #000 !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__image {
   display: block !important;
@@ -418,12 +449,20 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   border-radius: 0 !important;
   user-select: none !important;
   -webkit-user-drag: none !important;
-  pointer-events: none !important;
+  pointer-events: auto !important;
+  cursor: zoom-in !important;
   vertical-align: top !important;
 }
-/* 有缩略图底栏时，长图底部留白，避免最后一段被半透明底栏挡住 */
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery:has(.bewly-opus-gallery__footer) .bewly-opus-gallery__image {
-  margin-bottom: 76px !important;
+/* 横图不需要纵向滚动，在左侧舞台内垂直居中展示 */
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage.is-landscape {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow-y: hidden !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage.is-landscape .bewly-opus-gallery__image {
+  margin: 0 auto !important;
+  object-position: center center !important;
 }
 /* 舞台壳：承载滑轨 + 固定悬浮切换按钮 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage-shell {
@@ -433,7 +472,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   width: 100% !important;
   height: 100% !important;
   overflow: hidden !important;
-  background: var(--bg1, #fff) !important;
+  background: #000 !important;
   display: block !important;
 }
 /* 左右切换：固定在图片可视区两侧，不随长图滚动；默认隐藏，悬停显示 */
@@ -473,6 +512,13 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav:hover {
   background: rgba(0, 0, 0, 0.72) !important;
 }
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav > svg,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > svg {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+  flex: 0 0 auto !important;
+}
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav:disabled {
   opacity: 0.28 !important;
   cursor: default !important;
@@ -483,32 +529,33 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav--next {
   right: 10px !important;
 }
-/* 底栏叠在大图底部：滚动条只在大图 stage 上，不与缩略图同级 */
+/* 缩略图直接悬浮在图片上；与左右切换按钮一样，仅在操作舞台时显示 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__footer {
   position: absolute !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
+  left: 12px !important;
+  right: 64px !important;
+  bottom: 8px !important;
   flex: none !important;
   display: flex !important;
   align-items: center !important;
-  gap: 10px !important;
-  width: 100% !important;
+  width: auto !important;
   min-width: 0 !important;
-  padding: 18px 12px 12px !important;
+  padding: 0 !important;
   box-sizing: border-box !important;
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.58) 0%,
-    rgba(0, 0, 0, 0.32) 55%,
-    rgba(0, 0, 0, 0.08) 85%,
-    rgba(0, 0, 0, 0) 100%
-  ) !important;
-  box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.3) !important;
-  backdrop-filter: blur(2px) !important;
-  -webkit-backdrop-filter: blur(2px) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   z-index: 6 !important;
+  opacity: 0 !important;
+  transform: translateY(8px) !important;
+  transition: opacity 0.18s ease, transform 0.18s ease !important;
   pointer-events: none !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage-shell:hover .bewly-opus-gallery__footer,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage-shell:focus-within .bewly-opus-gallery__footer {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__footer > * {
   pointer-events: auto !important;
@@ -545,8 +592,10 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   border-radius: 999px !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__counter {
-  flex: 0 0 auto !important;
-  margin-left: auto !important;
+  position: absolute !important;
+  right: 12px !important;
+  bottom: 12px !important;
+  margin: 0 !important;
   padding: 4px 8px !important;
   border-radius: 999px !important;
   color: #fff !important;
@@ -556,6 +605,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   line-height: 1.2 !important;
   white-space: nowrap !important;
   z-index: 7 !important;
+  pointer-events: none !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__thumb {
   flex: 0 0 auto !important;
@@ -590,6 +640,150 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   white-space: nowrap !important;
   pointer-events: none !important;
   opacity: 0 !important;
+}
+/* 图片查看器 */
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 100000 !important;
+  display: none !important;
+  overflow: hidden !important;
+  background: rgba(18, 18, 18, 0.72) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  color: #fff !important;
+  touch-action: none !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer.is-open {
+  display: block !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__stage {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 72px 96px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__image {
+  display: block !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  user-select: none !important;
+  -webkit-user-drag: none !important;
+  transform-origin: center center !important;
+  transition: transform 0.12s ease-out !important;
+  cursor: zoom-in !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__image.is-zoomed {
+  cursor: grab !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__image.is-dragging {
+  cursor: grabbing !important;
+  transition: none !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__tool {
+  border: 0 !important;
+  color: #fff !important;
+  background: rgba(0, 0, 0, 0.48) !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close:hover,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav:hover,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__tool:hover {
+  background: rgba(0, 0, 0, 0.72) !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__close {
+  position: absolute !important;
+  top: 20px !important;
+  left: 20px !important;
+  z-index: 4 !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  font-size: 28px !important;
+  line-height: 1 !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav {
+  position: absolute !important;
+  top: 50% !important;
+  z-index: 4 !important;
+  width: 44px !important;
+  height: 56px !important;
+  border-radius: 10px !important;
+  transform: translateY(-50%) !important;
+  font-size: 32px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > svg {
+  width: 24px !important;
+  height: 24px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav:disabled {
+  display: none !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav--prev {
+  left: 16px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav--next {
+  right: 16px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__toolbar {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 24px !important;
+  z-index: 4 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 12px !important;
+  border-radius: 999px !important;
+  background: rgba(0, 0, 0, 0.55) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.28) !important;
+  transform: translateX(-50%) !important;
+  white-space: nowrap !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__tool {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  font-size: 20px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__counter,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__zoom {
+  min-width: 48px !important;
+  text-align: center !important;
+  font-size: 13px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__divider {
+  width: 1px !important;
+  height: 24px !important;
+  margin: 0 4px !important;
+  background: rgba(255, 255, 255, 0.24) !important;
+}
+@media (max-width: 640px) {
+  html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__stage {
+    padding: 68px 12px 92px !important;
+  }
+  html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav {
+    top: auto !important;
+    bottom: 24px !important;
+    width: 36px !important;
+    height: 42px !important;
+    transform: none !important;
+  }
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel {
   min-width: 0 !important;
@@ -736,6 +930,8 @@ function isRootReady(root: HTMLElement): boolean {
 const CATALOG_SELECTORS = [
   '.catalog',
   '.catalog-panel',
+  '.opus-toc',
+  '.opus-toc__panel',
   '.opus-catalog',
   '.opus-directory',
   '.article-catalog',
@@ -1028,7 +1224,33 @@ function unbindGalleryKeyboard() {
   galleryKeyHandler = null
 }
 
+function unbindGalleryViewerBridge() {
+  if (galleryViewerMessageHandler) {
+    window.removeEventListener('message', galleryViewerMessageHandler)
+    galleryViewerMessageHandler = null
+  }
+  if (galleryViewerAckTimer) {
+    clearTimeout(galleryViewerAckTimer)
+    galleryViewerAckTimer = null
+  }
+}
+
+/** iframe 内复用项目现有 Iconify 图标组件，不依赖字体基线或页面图标样式 */
+function mountGalleryIcon(host: HTMLElement, icon: string) {
+  render(createVNode(Icon, {
+    icon,
+    'aria-hidden': 'true',
+  }), host)
+  galleryIconHosts.push(host)
+}
+
+function unmountGalleryIcons() {
+  galleryIconHosts.forEach(host => render(null, host))
+  galleryIconHosts = []
+}
+
 function createImageGallery(urls: string[]): HTMLElement {
+  unmountGalleryIcons()
   const gallery = document.createElement('div')
   gallery.className = 'bewly-opus-gallery'
   gallery.dataset.bewlyGallery = '1'
@@ -1069,13 +1291,13 @@ function createImageGallery(urls: string[]): HTMLElement {
   prevBtn.type = 'button'
   prevBtn.className = 'bewly-opus-gallery__nav bewly-opus-gallery__nav--prev'
   prevBtn.setAttribute('aria-label', '上一张')
-  prevBtn.textContent = '‹'
+  mountGalleryIcon(prevBtn, 'tabler:chevron-left')
 
   const nextBtn = document.createElement('button')
   nextBtn.type = 'button'
   nextBtn.className = 'bewly-opus-gallery__nav bewly-opus-gallery__nav--next'
   nextBtn.setAttribute('aria-label', '下一张')
-  nextBtn.textContent = '›'
+  mountGalleryIcon(nextBtn, 'tabler:chevron-right')
 
   const footer = document.createElement('div')
   footer.className = 'bewly-opus-gallery__footer'
@@ -1083,8 +1305,90 @@ function createImageGallery(urls: string[]): HTMLElement {
   const thumbs = document.createElement('div')
   thumbs.className = 'bewly-opus-gallery__thumbs'
 
+  const viewer = document.createElement('div')
+  viewer.className = 'bewly-opus-viewer'
+  viewer.setAttribute('role', 'dialog')
+  viewer.setAttribute('aria-modal', 'true')
+  viewer.setAttribute('aria-label', '动态图片查看器')
+  viewer.tabIndex = -1
+
+  const viewerStage = document.createElement('div')
+  viewerStage.className = 'bewly-opus-viewer__stage'
+  const viewerImage = document.createElement('img')
+  viewerImage.className = 'bewly-opus-viewer__image'
+  viewerImage.alt = '动态图片大图'
+  viewerImage.draggable = false
+  viewerImage.decoding = 'async'
+  viewerStage.appendChild(viewerImage)
+
+  const viewerClose = document.createElement('button')
+  viewerClose.type = 'button'
+  viewerClose.className = 'bewly-opus-viewer__close'
+  viewerClose.setAttribute('aria-label', '关闭图片查看器')
+  viewerClose.textContent = '×'
+
+  const viewerPrev = document.createElement('button')
+  viewerPrev.type = 'button'
+  viewerPrev.className = 'bewly-opus-viewer__nav bewly-opus-viewer__nav--prev'
+  viewerPrev.setAttribute('aria-label', '上一张')
+  mountGalleryIcon(viewerPrev, 'tabler:chevron-left')
+
+  const viewerNext = document.createElement('button')
+  viewerNext.type = 'button'
+  viewerNext.className = 'bewly-opus-viewer__nav bewly-opus-viewer__nav--next'
+  viewerNext.setAttribute('aria-label', '下一张')
+  mountGalleryIcon(viewerNext, 'tabler:chevron-right')
+
+  const viewerToolbar = document.createElement('div')
+  viewerToolbar.className = 'bewly-opus-viewer__toolbar'
+  const viewerCounter = document.createElement('span')
+  viewerCounter.className = 'bewly-opus-viewer__counter'
+  const viewerZoom = document.createElement('span')
+  viewerZoom.className = 'bewly-opus-viewer__zoom'
+  const viewerDivider = document.createElement('span')
+  viewerDivider.className = 'bewly-opus-viewer__divider'
+
+  const createViewerTool = (label: string, text: string) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'bewly-opus-viewer__tool'
+    button.setAttribute('aria-label', label)
+    button.title = label
+    button.textContent = text
+    return button
+  }
+  const viewerZoomOut = createViewerTool('缩小', '−')
+  const viewerZoomIn = createViewerTool('放大', '+')
+  const viewerReset = createViewerTool('适应窗口', '1:1')
+  const viewerRotate = createViewerTool('顺时针旋转', '↻')
+
+  viewerToolbar.appendChild(viewerCounter)
+  viewerToolbar.appendChild(viewerDivider)
+  viewerToolbar.appendChild(viewerZoomOut)
+  viewerToolbar.appendChild(viewerZoom)
+  viewerToolbar.appendChild(viewerZoomIn)
+  viewerToolbar.appendChild(viewerReset)
+  viewerToolbar.appendChild(viewerRotate)
+  viewer.appendChild(viewerStage)
+  viewer.appendChild(viewerClose)
+  viewer.appendChild(viewerPrev)
+  viewer.appendChild(viewerNext)
+  viewer.appendChild(viewerToolbar)
+
   let index = 0
   let isAnimating = false
+  let viewerOpen = false
+  let viewerHostedByParent = false
+  let viewerIndex = 0
+  let viewerScale = 1
+  let viewerRotation = 0
+  let viewerPanX = 0
+  let viewerPanY = 0
+  let viewerDragging = false
+  let viewerDragStartX = 0
+  let viewerDragStartY = 0
+  let viewerDragOriginX = 0
+  let viewerDragOriginY = 0
   let wheelLockUntil = 0
   let wheelAccum = 0
   let wheelResetTimer: ReturnType<typeof setTimeout> | null = null
@@ -1152,6 +1456,7 @@ function createImageGallery(urls: string[]): HTMLElement {
         markStageScrolling(stage)
     }, { passive: true })
     image.addEventListener('load', () => {
+      stage.classList.toggle('is-landscape', image.naturalWidth > image.naturalHeight)
       if (stage === getCenterStage())
         syncOverlayScrollbar()
     })
@@ -1242,6 +1547,7 @@ function createImageGallery(urls: string[]): HTMLElement {
     const { image, stage } = slides[slot]
     const url = urls[wrapIndex(urlIndex)]
     if (image.src !== url) {
+      stage.classList.remove('is-landscape')
       image.src = url
       preloadUrl(url)
     }
@@ -1327,6 +1633,176 @@ function createImageGallery(urls: string[]): HTMLElement {
     }, ANIM_MS)
   }
 
+  const syncViewerTransform = () => {
+    viewerImage.style.transform = `translate3d(${viewerPanX}px, ${viewerPanY}px, 0) scale(${viewerScale}) rotate(${viewerRotation}deg)`
+    viewerImage.classList.toggle('is-zoomed', viewerScale > 1)
+    viewerZoom.textContent = `${Math.round(viewerScale * 100)}%`
+  }
+
+  const resetViewerTransform = () => {
+    viewerScale = 1
+    viewerRotation = 0
+    viewerPanX = 0
+    viewerPanY = 0
+    syncViewerTransform()
+  }
+
+  const setViewerScale = (scale: number) => {
+    viewerScale = Math.min(4, Math.max(0.25, scale))
+    if (viewerScale <= 1) {
+      viewerPanX = 0
+      viewerPanY = 0
+    }
+    syncViewerTransform()
+  }
+
+  const showViewerImage = (nextIndex: number) => {
+    viewerIndex = wrapIndex(nextIndex)
+    viewerImage.src = urls[viewerIndex]
+    viewerCounter.textContent = `${viewerIndex + 1}/${urls.length}`
+    viewerPrev.disabled = urls.length <= 1
+    viewerNext.disabled = urls.length <= 1
+    resetViewerTransform()
+    preloadAround(viewerIndex)
+  }
+
+  const openLocalViewer = (nextIndex: number) => {
+    viewerOpen = true
+    viewer.classList.add('is-open')
+    showViewerImage(nextIndex)
+    requestAnimationFrame(() => viewer.focus({ preventScroll: true }))
+  }
+
+  const openViewer = (nextIndex: number) => {
+    const target = wrapIndex(nextIndex)
+    if (window.parent !== window) {
+      viewerIndex = target
+      viewerHostedByParent = false
+      window.parent.postMessage({
+        type: 'BEWLY_OPUS_IMAGE_VIEWER_OPEN',
+        urls,
+        index: target,
+      }, '*')
+      if (galleryViewerAckTimer)
+        clearTimeout(galleryViewerAckTimer)
+      // 非动态 Dialog 场景没有父级查看器时，回退到 iframe 内查看
+      galleryViewerAckTimer = setTimeout(() => {
+        galleryViewerAckTimer = null
+        if (!viewerHostedByParent)
+          openLocalViewer(target)
+      }, 180)
+      return
+    }
+    openLocalViewer(target)
+  }
+
+  const closeViewer = () => {
+    if (!viewerOpen)
+      return
+    viewerOpen = false
+    viewer.classList.remove('is-open')
+    viewerImage.removeAttribute('src')
+    resetViewerTransform()
+    if (viewerIndex !== index)
+      go(viewerIndex, 0)
+  }
+
+  slides.forEach(({ image }, slot) => {
+    image.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      openViewer(index + slot - 1)
+    })
+  })
+
+  viewerClose.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    closeViewer()
+  })
+  viewerPrev.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    showViewerImage(viewerIndex - 1)
+  })
+  viewerNext.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    showViewerImage(viewerIndex + 1)
+  })
+  viewerZoomOut.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setViewerScale(viewerScale - 0.25)
+  })
+  viewerZoomIn.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setViewerScale(viewerScale + 0.25)
+  })
+  viewerReset.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    resetViewerTransform()
+  })
+  viewerRotate.addEventListener('click', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    viewerRotation = (viewerRotation + 90) % 360
+    syncViewerTransform()
+  })
+  viewerStage.addEventListener('click', (e) => {
+    if (e.target === viewerStage)
+      closeViewer()
+  })
+  viewerImage.addEventListener('dblclick', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (viewerScale > 1)
+      resetViewerTransform()
+    else
+      setViewerScale(2)
+  })
+  viewer.addEventListener('wheel', (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setViewerScale(viewerScale * (e.deltaY < 0 ? 1.15 : 0.87))
+  }, { passive: false })
+  viewerImage.addEventListener('pointerdown', (e) => {
+    if (viewerScale <= 1)
+      return
+    e.preventDefault()
+    e.stopPropagation()
+    viewerDragging = true
+    viewerDragStartX = e.clientX
+    viewerDragStartY = e.clientY
+    viewerDragOriginX = viewerPanX
+    viewerDragOriginY = viewerPanY
+    viewerImage.classList.add('is-dragging')
+    viewerImage.setPointerCapture(e.pointerId)
+  })
+  viewerImage.addEventListener('pointermove', (e) => {
+    if (!viewerDragging)
+      return
+    viewerPanX = viewerDragOriginX + e.clientX - viewerDragStartX
+    viewerPanY = viewerDragOriginY + e.clientY - viewerDragStartY
+    syncViewerTransform()
+  })
+  const stopViewerDrag = (e: PointerEvent) => {
+    if (!viewerDragging)
+      return
+    viewerDragging = false
+    viewerImage.classList.remove('is-dragging')
+    try {
+      viewerImage.releasePointerCapture(e.pointerId)
+    }
+    catch {
+      // 忽略已释放的指针
+    }
+  }
+  viewerImage.addEventListener('pointerup', stopViewerDrag)
+  viewerImage.addEventListener('pointercancel', stopViewerDrag)
+
   prevBtn.addEventListener('click', (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -1372,14 +1848,16 @@ function createImageGallery(urls: string[]): HTMLElement {
     })
 
     footer.appendChild(thumbs)
-    footer.appendChild(counter)
     // 缩略图叠在大图底部，滚动条只属于 stage 大图区域
     stageShell.appendChild(footer)
+    // 页码独立于缩略图，常驻右下角
+    stageShell.appendChild(counter)
     gallery.appendChild(stageShell)
   }
   else {
     gallery.appendChild(stageShell)
   }
+  gallery.appendChild(viewer)
 
   // 横向滚轮切图：阈值限制 + 阈值阈值阈值阈值阈值阈值阈值
   gallery.addEventListener('wheel', (e) => {
@@ -1429,7 +1907,63 @@ function createImageGallery(urls: string[]): HTMLElement {
 
   // 点击舞台空白不切图（仅按钮/缩略图）
   unbindGalleryKeyboard()
+  unbindGalleryViewerBridge()
+  galleryViewerMessageHandler = (e: MessageEvent) => {
+    if (e.source !== window.parent)
+      return
+    if (e.data?.type === 'BEWLY_OPUS_IMAGE_VIEWER_ACK') {
+      viewerHostedByParent = true
+      if (galleryViewerAckTimer) {
+        clearTimeout(galleryViewerAckTimer)
+        galleryViewerAckTimer = null
+      }
+      return
+    }
+    if (e.data?.type === 'BEWLY_OPUS_IMAGE_VIEWER_CLOSE') {
+      viewerHostedByParent = false
+      const nextIndex = Number(e.data.index)
+      if (Number.isFinite(nextIndex)) {
+        viewerIndex = wrapIndex(nextIndex)
+        if (viewerIndex !== index)
+          go(viewerIndex, 0)
+      }
+    }
+  }
+  window.addEventListener('message', galleryViewerMessageHandler)
   galleryKeyHandler = (e: KeyboardEvent) => {
+    if (viewerOpen) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        e.stopPropagation()
+        closeViewer()
+      }
+      else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        e.stopPropagation()
+        showViewerImage(viewerIndex - 1)
+      }
+      else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        e.stopPropagation()
+        showViewerImage(viewerIndex + 1)
+      }
+      else if (e.key === '+' || e.key === '=') {
+        e.preventDefault()
+        e.stopPropagation()
+        setViewerScale(viewerScale + 0.25)
+      }
+      else if (e.key === '-' || e.key === '_') {
+        e.preventDefault()
+        e.stopPropagation()
+        setViewerScale(viewerScale - 0.25)
+      }
+      else if (e.key === '0') {
+        e.preventDefault()
+        e.stopPropagation()
+        resetViewerTransform()
+      }
+      return
+    }
     if (urls.length <= 1)
       return
     if (e.key === 'ArrowLeft') {
@@ -1451,6 +1985,8 @@ function createImageGallery(urls: string[]): HTMLElement {
 function teardownSplit(root: HTMLElement, permanent = false) {
   const split = root.querySelector<HTMLElement>(':scope > .bewly-opus-split')
   unbindGalleryKeyboard()
+  unbindGalleryViewerBridge()
+  unmountGalleryIcons()
   if (!split) {
     markSplitReady(false)
     appliedSuccessfully = false
@@ -1728,6 +2264,7 @@ export function disposeOpusDetailDrawerLayout() {
   }
 
   unbindGalleryKeyboard()
+  unbindGalleryViewerBridge()
   hideIframeLoading()
 
   try {
