@@ -20,6 +20,7 @@ vi.mock('webextension-polyfill', () => ({
 }))
 
 const MAX_AGE = 5 * 60 * 1000
+const ACCOUNT_ID = 100
 
 function createSnapshot(seed: number): TopBarSharedState {
   return {
@@ -42,6 +43,16 @@ function createSnapshot(seed: number): TopBarSharedState {
     },
     newMomentsCount: seed,
     watchLaterCount: seed,
+    hasBCoinToReceive: seed % 2 === 1,
+    bCoinAlreadyReceived: seed % 3 === 0,
+    vipExpAlreadyReceived: seed % 2 === 0,
+  }
+}
+
+function createClaimData(accountId = ACCOUNT_ID) {
+  return {
+    accountId,
+    maxAge: MAX_AGE,
   }
 }
 
@@ -110,8 +121,8 @@ describe('顶栏共享状态协调器', () => {
     const broker = createTopBarStateBroker(extensionApi)
 
     const [firstClaim, secondClaim] = await Promise.all([
-      broker.claimRefresh({ maxAge: MAX_AGE }, createSender(1)),
-      broker.claimRefresh({ maxAge: MAX_AGE }, createSender(2)),
+      broker.claimRefresh(createClaimData(), createSender(1)),
+      broker.claimRefresh(createClaimData(), createSender(2)),
     ])
 
     expect(firstClaim).toEqual({
@@ -137,8 +148,9 @@ describe('顶栏共享状态协调器', () => {
     ])
     tabs.sendMessage.mockResolvedValue(undefined)
 
-    const claim = await broker.claimRefresh({ maxAge: MAX_AGE }, createSender(1))
+    const claim = await broker.claimRefresh(createClaimData(), createSender(1))
     await broker.publish({
+      accountId: ACCOUNT_ID,
       snapshot,
       refreshId: claim.refreshId!,
     }, createSender(1))
@@ -146,13 +158,21 @@ describe('顶栏共享状态协调器', () => {
     expect(tabs.sendMessage).toHaveBeenCalledTimes(2)
     expect(tabs.sendMessage).toHaveBeenNthCalledWith(1, 1, {
       type: TOP_BAR_STATE_MESSAGE.UPDATED,
-      data: { snapshot },
+      data: {
+        accountId: ACCOUNT_ID,
+        snapshot,
+        refreshId: claim.refreshId,
+      },
     })
     expect(tabs.sendMessage).toHaveBeenNthCalledWith(2, 2, {
       type: TOP_BAR_STATE_MESSAGE.UPDATED,
-      data: { snapshot },
+      data: {
+        accountId: ACCOUNT_ID,
+        snapshot,
+        refreshId: claim.refreshId,
+      },
     })
-    await expect(broker.claimRefresh({ maxAge: MAX_AGE }, createSender(2))).resolves.toEqual({
+    await expect(broker.claimRefresh(createClaimData(), createSender(2))).resolves.toEqual({
       shouldRefresh: false,
       snapshot,
     })
@@ -169,26 +189,28 @@ describe('顶栏共享状态协调器', () => {
     ])
     tabs.sendMessage.mockResolvedValue(undefined)
 
-    const initialClaim = await broker.claimRefresh({ maxAge: MAX_AGE }, createSender(1))
+    const initialClaim = await broker.claimRefresh(createClaimData(), createSender(1))
     await broker.publish({
+      accountId: ACCOUNT_ID,
       snapshot: oldSnapshot,
       refreshId: initialClaim.refreshId!,
     }, createSender(1))
     vi.advanceTimersByTime(MAX_AGE + 1)
 
-    const refreshClaim = await broker.claimRefresh({ maxAge: MAX_AGE }, createSender(1))
+    const refreshClaim = await broker.claimRefresh(createClaimData(), createSender(1))
     expect(refreshClaim).toEqual({
       shouldRefresh: true,
       snapshot: oldSnapshot,
       refreshId: 2,
     })
-    await expect(broker.claimRefresh({ maxAge: MAX_AGE }, createSender(2))).resolves.toEqual({
+    await expect(broker.claimRefresh(createClaimData(), createSender(2))).resolves.toEqual({
       shouldRefresh: false,
       snapshot: oldSnapshot,
     })
 
     tabs.sendMessage.mockClear()
     await broker.publish({
+      accountId: ACCOUNT_ID,
       snapshot: newSnapshot,
       refreshId: refreshClaim.refreshId!,
     }, createSender(1))
@@ -196,7 +218,11 @@ describe('顶栏共享状态协调器', () => {
     expect(tabs.sendMessage).toHaveBeenCalledTimes(2)
     expect(tabs.sendMessage).toHaveBeenCalledWith(2, {
       type: TOP_BAR_STATE_MESSAGE.UPDATED,
-      data: { snapshot: newSnapshot },
+      data: {
+        accountId: ACCOUNT_ID,
+        snapshot: newSnapshot,
+        refreshId: refreshClaim.refreshId,
+      },
     })
   })
 
@@ -205,13 +231,38 @@ describe('顶栏共享状态协调器', () => {
     const broker = createTopBarStateBroker(extensionApi)
 
     await expect(broker.claimRefresh(
-      { maxAge: MAX_AGE },
+      createClaimData(),
       createSender(1, 'firefox-container-1'),
     )).resolves.toMatchObject({ shouldRefresh: true })
     await expect(broker.claimRefresh(
-      { maxAge: MAX_AGE },
+      createClaimData(),
       createSender(2, 'firefox-container-2'),
     )).resolves.toMatchObject({ shouldRefresh: true })
+  })
+
+  it('同一容器切换账号后不会复用旧账号快照', async () => {
+    const { extensionApi, tabs } = createExtensionApi()
+    const broker = createTopBarStateBroker(extensionApi)
+    const oldAccountSnapshot = createSnapshot(5)
+    tabs.query.mockResolvedValue([])
+
+    const oldAccountClaim = await broker.claimRefresh(
+      createClaimData(ACCOUNT_ID),
+      createSender(1),
+    )
+    await broker.publish({
+      accountId: ACCOUNT_ID,
+      snapshot: oldAccountSnapshot,
+      refreshId: oldAccountClaim.refreshId!,
+    }, createSender(1))
+
+    await expect(
+      broker.claimRefresh(createClaimData(ACCOUNT_ID + 1), createSender(1)),
+    ).resolves.toEqual({
+      shouldRefresh: true,
+      snapshot: undefined,
+      refreshId: 1,
+    })
   })
 
   it('后台重建后从会话存储恢复新鲜快照', async () => {
@@ -221,8 +272,9 @@ describe('顶栏共享状态协调器', () => {
     firstExtension.tabs.query.mockResolvedValue([])
 
     const firstBroker = createTopBarStateBroker(firstExtension.extensionApi)
-    const claim = await firstBroker.claimRefresh({ maxAge: MAX_AGE }, createSender(1))
+    const claim = await firstBroker.claimRefresh(createClaimData(), createSender(1))
     await firstBroker.publish({
+      accountId: ACCOUNT_ID,
       snapshot,
       refreshId: claim.refreshId!,
     }, createSender(1))
@@ -231,7 +283,7 @@ describe('顶栏共享状态协调器', () => {
     const rebuiltBroker = createTopBarStateBroker(rebuiltExtension.extensionApi)
 
     await expect(
-      rebuiltBroker.claimRefresh({ maxAge: MAX_AGE }, createSender(2)),
+      rebuiltBroker.claimRefresh(createClaimData(), createSender(2)),
     ).resolves.toEqual({
       shouldRefresh: false,
       snapshot,
@@ -244,7 +296,7 @@ describe('顶栏共享状态协调器', () => {
     const firstBroker = createTopBarStateBroker(firstExtension.extensionApi)
 
     const firstClaim = await firstBroker.claimRefresh(
-      { maxAge: MAX_AGE },
+      createClaimData(),
       createSender(1),
     )
     expect(firstClaim).toMatchObject({
@@ -256,13 +308,13 @@ describe('顶栏共享状态协调器', () => {
     const rebuiltBroker = createTopBarStateBroker(rebuiltExtension.extensionApi)
 
     await expect(
-      rebuiltBroker.claimRefresh({ maxAge: MAX_AGE }, createSender(2)),
+      rebuiltBroker.claimRefresh(createClaimData(), createSender(2)),
     ).resolves.toMatchObject({ shouldRefresh: false })
 
     vi.advanceTimersByTime(30_001)
 
     const takeoverClaim = await rebuiltBroker.claimRefresh(
-      { maxAge: MAX_AGE },
+      createClaimData(),
       createSender(2),
     )
     expect(takeoverClaim).toMatchObject({
@@ -272,12 +324,13 @@ describe('顶栏共享状态协调器', () => {
 
     const staleSnapshot = createSnapshot(9)
     await rebuiltBroker.publish({
+      accountId: ACCOUNT_ID,
       snapshot: staleSnapshot,
       refreshId: firstClaim.refreshId!,
     }, createSender(1))
 
     await expect(
-      rebuiltBroker.claimRefresh({ maxAge: MAX_AGE }, createSender(3)),
+      rebuiltBroker.claimRefresh(createClaimData(), createSender(3)),
     ).resolves.toEqual({
       shouldRefresh: false,
       snapshot: undefined,
@@ -286,12 +339,13 @@ describe('顶栏共享状态协调器', () => {
     rebuiltExtension.tabs.query.mockResolvedValue([])
     const currentSnapshot = createSnapshot(10)
     await rebuiltBroker.publish({
+      accountId: ACCOUNT_ID,
       snapshot: currentSnapshot,
       refreshId: takeoverClaim.refreshId!,
     }, createSender(2))
 
     await expect(
-      rebuiltBroker.claimRefresh({ maxAge: MAX_AGE }, createSender(3)),
+      rebuiltBroker.claimRefresh(createClaimData(), createSender(3)),
     ).resolves.toEqual({
       shouldRefresh: false,
       snapshot: currentSnapshot,
@@ -308,14 +362,15 @@ describe('顶栏共享状态协调器', () => {
     } as unknown as TopBarStateBrokerBrowser)
     const snapshot = createSnapshot(8)
 
-    const claim = await broker.claimRefresh({ maxAge: MAX_AGE }, createSender(1))
+    const claim = await broker.claimRefresh(createClaimData(), createSender(1))
     await broker.publish({
+      accountId: ACCOUNT_ID,
       snapshot,
       refreshId: claim.refreshId!,
     }, createSender(1))
 
     await expect(
-      broker.claimRefresh({ maxAge: MAX_AGE }, createSender(2)),
+      broker.claimRefresh(createClaimData(), createSender(2)),
     ).resolves.toEqual({
       shouldRefresh: false,
       snapshot,

@@ -18,6 +18,7 @@ import type { PrivilegeInfo, UnReadDm, UnReadMessage, UserInfo } from '~/compone
 import type {
   TopBarRefreshClaim,
   TopBarSharedState,
+  TopBarStateClaim,
   TopBarStatePublish,
   TopBarStateRelease,
 } from '~/constants/topBarState'
@@ -751,6 +752,9 @@ export const useTopBarStore = defineStore('topBar', () => {
       unReadDm: { ...unReadDm },
       newMomentsCount: newMomentsCount.value,
       watchLaterCount: watchLaterCount.value,
+      hasBCoinToReceive: hasBCoinToReceive.value,
+      bCoinAlreadyReceived: bCoinAlreadyReceived.value,
+      vipExpAlreadyReceived: vipExpAlreadyReceived.value,
     }
   }
 
@@ -759,11 +763,17 @@ export const useTopBarStore = defineStore('topBar', () => {
     Object.assign(unReadDm, snapshot.unReadDm)
     newMomentsCount.value = snapshot.newMomentsCount
     watchLaterCount.value = snapshot.watchLaterCount
+    hasBCoinToReceive.value = snapshot.hasBCoinToReceive
+    bCoinAlreadyReceived.value = snapshot.bCoinAlreadyReceived
+    vipExpAlreadyReceived.value = snapshot.vipExpAlreadyReceived
   }
 
   onMessage<TopBarStatePublish>(
     TOP_BAR_STATE_MESSAGE.UPDATED,
-    ({ snapshot }) => applySharedState(snapshot),
+    ({ accountId, snapshot }) => {
+      if (accountId === userInfo.mid)
+        applySharedState(snapshot)
+    },
   )
 
   async function refreshSharedData() {
@@ -771,6 +781,8 @@ export const useTopBarStore = defineStore('topBar', () => {
       getUnreadMessageCount(),
       getTopBarNewMomentsCount(),
       getWatchLaterCount(),
+      checkBCoinReceiveStatus(),
+      autoReceiveVipExp(),
     ])
   }
 
@@ -778,9 +790,16 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (!isLogin.value)
       return
 
-    const claim = await sendMessage<{ maxAge: number }, TopBarRefreshClaim>(
+    const accountId = userInfo.mid
+    if (!accountId)
+      return
+
+    const claim = await sendMessage<TopBarStateClaim, TopBarRefreshClaim>(
       TOP_BAR_STATE_MESSAGE.CLAIM_REFRESH,
-      { maxAge: updateInterval },
+      {
+        accountId,
+        maxAge: updateInterval,
+      },
     )
 
     if (claim.snapshot)
@@ -799,6 +818,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       await sendMessage<TopBarStatePublish>(
         TOP_BAR_STATE_MESSAGE.PUBLISH,
         {
+          accountId,
           snapshot: createSharedStateSnapshot(),
           refreshId,
         },
@@ -807,7 +827,10 @@ export const useTopBarStore = defineStore('topBar', () => {
     catch (error) {
       await sendMessage<TopBarStateRelease>(
         TOP_BAR_STATE_MESSAGE.RELEASE_REFRESH,
-        { refreshId },
+        {
+          accountId,
+          refreshId,
+        },
       )
       throw error
     }
@@ -819,11 +842,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (!isLogin.value)
       return
 
-    await Promise.all([
-      checkBCoinReceiveStatus(),
-      autoReceiveVipExp(),
-      syncSharedData(),
-    ])
+    await syncSharedData()
   }
 
   function startUpdateTimer() {
@@ -835,11 +854,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       if (!isLogin.value)
         return
 
-      Promise.all([
-        checkBCoinReceiveStatus(),
-        autoReceiveVipExp(),
-        syncSharedData(),
-      ]).catch((error) => {
+      syncSharedData().catch((error) => {
         console.error('同步顶栏共享状态失败:', error)
       })
     }, updateInterval)
@@ -921,11 +936,9 @@ export const useTopBarStore = defineStore('topBar', () => {
     isMouseOverPopup,
     setMouseOverPopup,
     getMouseOverPopup,
+    syncSharedData,
     startUpdateTimer,
     stopUpdateTimer,
-    checkBCoinReceiveStatus,
-    autoReceiveBCoin,
-    autoReceiveVipExp,
 
     moments,
     addedWatchLaterList,

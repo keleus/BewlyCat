@@ -5,6 +5,7 @@ import { CONTENT_SCRIPT_MATCHES } from '~/constants/contentScript'
 import type {
   TopBarRefreshClaim,
   TopBarSharedState,
+  TopBarStateClaim,
   TopBarStatePublish,
   TopBarStateRelease,
 } from '~/constants/topBarState'
@@ -29,7 +30,7 @@ export interface TopBarStateBrokerBrowser {
 
 export interface TopBarStateBroker {
   claimRefresh: (
-    data: { maxAge: number },
+    data: TopBarStateClaim,
     sender?: Browser.Runtime.MessageSender,
   ) => Promise<TopBarRefreshClaim>
   publish: (
@@ -43,8 +44,8 @@ export interface TopBarStateBroker {
 }
 
 const REFRESH_LEASE_TIMEOUT = 30_000
-const TOP_BAR_STATE_STORAGE_KEY = 'topBarStateBroker:v1'
-const TOP_BAR_STATE_STORAGE_VERSION = 1
+const TOP_BAR_STATE_STORAGE_KEY = 'topBarStateBroker:v2'
+const TOP_BAR_STATE_STORAGE_VERSION = 2
 
 interface PersistedTopBarState {
   version: typeof TOP_BAR_STATE_STORAGE_VERSION
@@ -61,6 +62,9 @@ function isTopBarSharedState(value: unknown): value is TopBarSharedState {
     && isRecord(value.unReadDm)
     && typeof value.newMomentsCount === 'number'
     && typeof value.watchLaterCount === 'number'
+    && typeof value.hasBCoinToReceive === 'boolean'
+    && typeof value.bCoinAlreadyReceived === 'boolean'
+    && typeof value.vipExpAlreadyReceived === 'boolean'
 }
 
 function isTopBarStateEntry(value: unknown): value is TopBarStateEntry {
@@ -78,7 +82,13 @@ function isPersistedTopBarState(value: unknown): value is PersistedTopBarState {
     && Object.values(value.entries).every(isTopBarStateEntry)
 }
 
-function getStateKey(tab?: Browser.Tabs.Tab) {
+function getStateKey(tab: Browser.Tabs.Tab | undefined, accountId: number) {
+  const cookieStoreId = tab?.cookieStoreId || 'default'
+  const privacyContext = tab?.incognito ? 'private' : 'normal'
+  return `${privacyContext}:${cookieStoreId}:${accountId}`
+}
+
+function getBrowserContextKey(tab?: Browser.Tabs.Tab) {
   const cookieStoreId = tab?.cookieStoreId || 'default'
   const privacyContext = tab?.incognito ? 'private' : 'normal'
   return `${privacyContext}:${cookieStoreId}`
@@ -142,8 +152,8 @@ export function createTopBarStateBroker(
     }
   }
 
-  function getEntry(sender?: Browser.Runtime.MessageSender) {
-    const key = getStateKey(sender?.tab)
+  function getEntry(accountId: number, sender?: Browser.Runtime.MessageSender) {
+    const key = getStateKey(sender?.tab, accountId)
     let entry = stateByCookieStore.get(key)
 
     if (!entry) {
@@ -159,10 +169,10 @@ export function createTopBarStateBroker(
   }
 
   async function broadcastSnapshot(
-    snapshot: TopBarSharedState,
+    data: TopBarStatePublish,
     sender?: Browser.Runtime.MessageSender,
   ): Promise<void> {
-    const stateKey = getStateKey(sender?.tab)
+    const browserContextKey = getBrowserContextKey(sender?.tab)
     let tabs: Browser.Tabs.Tab[]
 
     try {
@@ -176,20 +186,20 @@ export function createTopBarStateBroker(
 
     await Promise.allSettled(
       tabs
-        .filter(tab => tab.id !== undefined && getStateKey(tab) === stateKey)
+        .filter(tab => tab.id !== undefined && getBrowserContextKey(tab) === browserContextKey)
         .map(tab => extensionApi.tabs.sendMessage(tab.id!, {
           type: TOP_BAR_STATE_MESSAGE.UPDATED,
-          data: { snapshot },
+          data,
         })),
     )
   }
 
   return {
-    claimRefresh({ maxAge }, sender) {
+    claimRefresh({ accountId, maxAge }, sender) {
       return runExclusive(async () => {
         await ensureStateLoaded()
 
-        const entry = getEntry(sender)
+        const entry = getEntry(accountId, sender)
         const now = Date.now()
         const snapshotFresh = entry.snapshot !== undefined && now - entry.updatedAt < maxAge
         const refreshInProgress = entry.refreshStartedAt > 0
@@ -210,11 +220,12 @@ export function createTopBarStateBroker(
       })
     },
 
-    async publish({ snapshot, refreshId }, sender) {
+    async publish(data, sender) {
+      const { accountId, snapshot, refreshId } = data
       const published = await runExclusive(async () => {
         await ensureStateLoaded()
 
-        const entry = getEntry(sender)
+        const entry = getEntry(accountId, sender)
         if (entry.refreshId !== refreshId)
           return false
 
@@ -226,13 +237,13 @@ export function createTopBarStateBroker(
       })
 
       if (published)
-        await broadcastSnapshot(snapshot, sender)
+        await broadcastSnapshot(data, sender)
     },
 
-    releaseRefresh({ refreshId }, sender) {
+    releaseRefresh({ accountId, refreshId }, sender) {
       return runExclusive(async () => {
         await ensureStateLoaded()
-        const entry = getEntry(sender)
+        const entry = getEntry(accountId, sender)
         if (entry.refreshId !== refreshId)
           return
 
@@ -246,7 +257,7 @@ export function createTopBarStateBroker(
 export function setupTopBarStateBroker() {
   const broker = createTopBarStateBroker()
 
-  onMessage<{ maxAge: number }>(
+  onMessage<TopBarStateClaim>(
     TOP_BAR_STATE_MESSAGE.CLAIM_REFRESH,
     (data, sender) => broker.claimRefresh(data, sender),
   )

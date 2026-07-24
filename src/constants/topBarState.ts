@@ -5,6 +5,14 @@ export interface TopBarSharedState {
   unReadDm: UnReadDm
   newMomentsCount: number
   watchLaterCount: number
+  hasBCoinToReceive: boolean
+  bCoinAlreadyReceived: boolean
+  vipExpAlreadyReceived: boolean
+}
+
+export interface TopBarStateClaim {
+  accountId: number
+  maxAge: number
 }
 
 export interface TopBarRefreshClaim {
@@ -14,11 +22,13 @@ export interface TopBarRefreshClaim {
 }
 
 export interface TopBarStatePublish {
+  accountId: number
   snapshot: TopBarSharedState
   refreshId: number
 }
 
 export interface TopBarStateRelease {
+  accountId: number
   refreshId: number
 }
 
