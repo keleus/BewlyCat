@@ -1,13 +1,25 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
-import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia, FavoriteSeasonResourcesResult } from '~/models/video/favoriteSeason'
+import { settings } from '~/logic'
+import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
-import { getUserID, removeHttpFromUrl, scrollToTop } from '~/utils/main'
+import {
+  buildFavoriteSeasonEntryUrl,
+  enrichFavoriteSeasonMediaFaces,
+  FAVORITE_SEASON_PAGE_SIZE,
+  fetchFavoriteSeasonPage,
+  mergeFavoriteSeasonPage,
+  resolveFavoriteSeasonPlayAllUrl,
+} from '~/utils/favoriteSeason'
+import { getUserID, isHomePage, isInIframe, removeHttpFromUrl, scrollToTop } from '~/utils/main'
+import { openLinkInBackground } from '~/utils/tabs'
 
 import type { FavoriteCategory, FavoriteResource } from '../../types'
 
@@ -18,13 +30,19 @@ type ViewCategory = FavoriteCategory & {
   link?: string
 }
 
+const { t } = useI18n()
+const toast = useToast()
+
 const favoriteCategories = reactive<Array<ViewCategory>>([])
 const collectedFavoriteSeasons = reactive<Array<CollectedFavoriteSeason>>([])
 const favoriteResources = reactive<Array<FavoriteResource>>([])
+const loadedSeasonMedias = ref<FavoriteSeasonMedia[]>([])
+const loadedSeasonComplete = ref(false)
 
 const activatedMediaId = ref<number>(0)
 const activatedCategorySource = ref<FavoriteCategorySource>('folder')
 const activatedCategoryLink = ref<string>('')
+const activatedCategoryMid = ref<number>(0)
 const activatedFavoriteTitle = ref<string>()
 const currentPageNum = ref<number>(1)
 
@@ -34,8 +52,13 @@ const noMoreContent = ref<boolean>(false)
 const favoriteVideosWrap = ref<HTMLElement>() as Ref<HTMLElement>
 
 const viewAllUrl = computed((): string => {
-  if (activatedCategorySource.value === 'season')
-    return getFavoriteSeasonUrl()
+  if (activatedCategorySource.value === 'season') {
+    // 「查看全部」进 UP 合集页浏览；「播放全部」按设置起播，职责分开
+    if (activatedCategoryMid.value > 0) {
+      return `https://space.bilibili.com/${activatedCategoryMid.value}/channel/collectiondetail?sid=${activatedMediaId.value}`
+    }
+    return buildFavoriteSeasonEntryUrl(activatedMediaId.value, activatedCategoryLink.value)
+  }
 
   return `//space.bilibili.com/${getUserID()}/favlist?fid=${
     activatedMediaId.value
@@ -43,17 +66,77 @@ const viewAllUrl = computed((): string => {
 })
 
 const playAllUrl = computed((): string => {
+  // 订阅合集一律走 handleSeasonPlayAll；href 若仍是入口会导致
+  // 异步解析打开目标页的同时，浏览器再按 <a> 打开第一期（双开）
   if (activatedCategorySource.value === 'season')
-    return getFavoriteSeasonUrl()
+    return ''
 
   return `https://www.bilibili.com/list/ml${activatedMediaId.value}`
 })
+
+const useCustomSeasonPlayAll = computed(() => activatedCategorySource.value === 'season')
+/** 订阅合集播放全部均走自定义解析（含 modifier） */
+const interceptSeasonPlayAllModifiers = computed(() => useCustomSeasonPlayAll.value)
+
+const isResolvingSeasonPlayAll = ref(false)
+
+function openTopBarLink(url: string) {
+  const mode = settings.value.topBarLinkOpenMode
+  if (mode === 'background') {
+    void openLinkInBackground(url)
+    return
+  }
+
+  if (mode === 'currentTabIfNotHomepage') {
+    if (isInIframe() || isHomePage())
+      window.open(url, '_blank')
+    else
+      window.open(url, '_top')
+    return
+  }
+
+  if (mode === 'newTab') {
+    window.open(url, '_blank')
+    return
+  }
+
+  window.open(url, '_top')
+}
+
+async function handleSeasonPlayAll() {
+  if (isResolvingSeasonPlayAll.value)
+    return
+
+  isResolvingSeasonPlayAll.value = true
+  try {
+    const result = await resolveFavoriteSeasonPlayAllUrl({
+      seasonId: activatedMediaId.value,
+      link: activatedCategoryLink.value,
+      mode: settings.value.collectedSeasonPlayAllMode,
+      preloaded: {
+        medias: loadedSeasonMedias.value,
+        complete: loadedSeasonComplete.value,
+        expectedCount: favoriteCategories.find(
+          item => item.source === 'season' && item.id === activatedMediaId.value,
+        )?.media_count,
+      },
+    })
+    if (result.usedFallback && result.reason !== 'beginning')
+      toast.warning(t('favorites.season_play_all_fallback'))
+    openTopBarLink(result.url)
+  }
+  finally {
+    isResolvingSeasonPlayAll.value = false
+  }
+}
 
 watch([activatedMediaId, activatedCategorySource], ([newId, newSource], [oldId, oldSource]) => {
   if (newId === oldId && newSource === oldSource)
     return
 
   favoriteResources.length = 0
+  loadedSeasonMedias.value = []
+  loadedSeasonComplete.value = false
   if (favoriteVideosWrap.value)
     scrollToTop(favoriteVideosWrap.value)
 
@@ -190,20 +273,43 @@ async function getFavoriteResources() {
 }
 
 async function getFavoriteSeasonResources() {
-  const res: FavoriteSeasonResourcesResult = await api.favorite.getFavoriteSeasonResources({
-    season_id: activatedMediaId.value,
+  if (currentPageNum.value === 1) {
+    loadedSeasonMedias.value = []
+    loadedSeasonComplete.value = false
+  }
+
+  const page = await fetchFavoriteSeasonPage(
+    activatedMediaId.value,
+    currentPageNum.value,
+    FAVORITE_SEASON_PAGE_SIZE,
+  )
+
+  if (!page.ok) {
+    noMoreContent.value = true
+    loadedSeasonComplete.value = false
+    return
+  }
+
+  const merged = mergeFavoriteSeasonPage({
     pn: currentPageNum.value,
+    pageMedias: page.pageMedias,
+    mediaCount: page.mediaCount,
+    previousMedias: loadedSeasonMedias.value,
+    pageSize: FAVORITE_SEASON_PAGE_SIZE,
   })
 
-  if (res.code === 0 && res.data) {
-    const medias = Array.isArray(res.data.medias) ? res.data.medias.filter((m: any) => m != null) : []
-    if (medias.length > 0)
-      favoriteResources.push(...medias.map(normalizeSeasonMedia))
+  loadedSeasonMedias.value = await enrichFavoriteSeasonMediaFaces(merged.medias)
+  loadedSeasonComplete.value = !merged.hasMore
+  noMoreContent.value = !merged.hasMore
 
-    noMoreContent.value = medias.length < 40
+  // 顶栏是滚动追加：首页替换，后续页只追加本页增量
+  if (currentPageNum.value === 1) {
+    favoriteResources.length = 0
+    favoriteResources.push(...loadedSeasonMedias.value.map(normalizeSeasonMedia))
   }
   else {
-    noMoreContent.value = true
+    const previousCount = favoriteResources.length
+    favoriteResources.push(...loadedSeasonMedias.value.slice(previousCount).map(normalizeSeasonMedia))
   }
 }
 
@@ -217,8 +323,9 @@ function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteResource {
     page: 1,
     duration: item.duration,
     upper: {
-      ...item.upper,
-      face: '',
+      mid: item.upper.mid,
+      name: item.upper.name,
+      face: item.upper.face || '',
     },
     cnt_info: {
       collect: item.cnt_info.collect,
@@ -234,16 +341,6 @@ function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteResource {
   }
 }
 
-function getFavoriteSeasonUrl() {
-  const fallbackUrl = `https://www.bilibili.com/list/season/${activatedMediaId.value}`
-  const matchedVideoLink = activatedCategoryLink.value.match(/^bilibili:\/\/video\/(\d+)(\?.*)?$/)
-
-  if (!matchedVideoLink)
-    return fallbackUrl
-
-  return `https://www.bilibili.com/video/av${matchedVideoLink[1]}${matchedVideoLink[2] || ''}`
-}
-
 function refreshFavoriteResources() {
   favoriteResources.length = 0
   currentPageNum.value = 1
@@ -254,6 +351,7 @@ function changeCategory(categoryItem: ViewCategory) {
   activatedMediaId.value = categoryItem.id
   activatedCategorySource.value = categoryItem.source
   activatedCategoryLink.value = categoryItem.link || ''
+  activatedCategoryMid.value = categoryItem.mid || 0
   activatedFavoriteTitle.value = categoryItem.title
 }
 
@@ -296,6 +394,9 @@ defineExpose({
           :href="playAllUrl"
           type="topBar"
           flex="~" items="center"
+          :custom-click-event="useCustomSeasonPlayAll"
+          :custom-click-event-includes-modifiers="interceptSeasonPlayAllModifiers"
+          @click="handleSeasonPlayAll"
         >
           <span text="sm">{{ $t('common.play_all') }}</span>
         </ALink>

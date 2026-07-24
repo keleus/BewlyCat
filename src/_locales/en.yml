@@ -470,6 +470,11 @@ settings:
   use_following_new_layout_desc: Display followed UPs list on the left and video feed on the right
   use_favorites_new_layout: Use the new Favorites page
   use_favorites_new_layout_desc: Turn this off to use the legacy Favorites page, which does not show collected series.
+  collected_season_play_all_mode: Collected series Play All start position
+  collected_season_play_all_mode_desc: Controls Play All start position for collected series on Favorites, Top Bar, and the native space page. Defaults to series beginning; falls back to beginning if last watched is not found. Does not change list order or playlist direction.
+  collected_season_play_all_mode_beginning: Series beginning
+  collected_season_play_all_mode_latest: Latest episode
+  collected_season_play_all_mode_last_watched: Last watched
   enable_version_reminder: New version reminders
   enable_version_reminder_desc: Show unacknowledged version updates on the extension home page; each version is shown only once.
   enable_following_inactive_blacklist: Enable Inactive List
@@ -947,6 +952,7 @@ favorites:
     This operation cannot be reversed. Are you sure you want to remove these video(s) from your favorites?
   global_search_hint: Search for all favorites
   global_search_placeholder: Search all favorites
+  season_play_all_fallback: Season list not ready, fell back to the beginning
   search_all_folders: all
   search_current_folder: current
   search_placeholder: Search for current favorites

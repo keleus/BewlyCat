@@ -393,6 +393,11 @@ settings:
   use_following_new_layout_desc: 左邊顯示關注嘅UP主名單，右邊顯示影片流
   use_favorites_new_layout: 使用新版收藏頁
   use_favorites_new_layout_desc: 關閉之後會使用舊版收藏頁；舊版唔會顯示收藏合集。
+  collected_season_play_all_mode: 訂閱合集「播放全部」起播位置
+  collected_season_play_all_mode_desc: 控制收藏頁、頂欄同空間頁訂閱合集「播放全部」嘅起播位置。預設係合集開頭；搵唔到上次觀看就退回開頭。唔會改列表次序同連播方向。
+  collected_season_play_all_mode_beginning: 合集開頭
+  collected_season_play_all_mode_latest: 最新一期
+  collected_season_play_all_mode_last_watched: 上次觀看
   enable_version_reminder: 新版本提醒
   enable_version_reminder_desc: 喺外掛主頁提醒未確認嘅新版本；每個版本只會提醒一次。
   enable_following_inactive_blacklist: 啟用唔活躍名單
@@ -820,6 +825,7 @@ favorites:
   batch_unfavorite_confirm: |-
     係咪要剷走已揀嘅 {count} 條片呀？
     噉做冇得返轉頭噃，你確定要剷走呢啲片？
+  season_play_all_fallback: 合集列表未就緒，已退回合集開頭
 version_reminder:
   trigger: 新版本說明
   title: BewlyCat 已更新
