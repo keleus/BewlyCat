@@ -1238,7 +1238,7 @@ function markCardReady(id: string) {
   cardEnterTimers.set(id, setTimeout(() => {
     enteringCardIds.delete(id)
     cardEnterTimers.delete(id)
-  }, 440))
+  }, 240))
 }
 
 function bindCardEl(el: Element | null, moment: DisplayMoment) {
@@ -2855,8 +2855,8 @@ watch(
   visibility: hidden;
 }
 .moment-card--entering {
-  will-change: clip-path, opacity, transform;
-  animation: moment-card-enter 0.4s cubic-bezier(0.22, 0.72, 0.32, 1) both;
+  will-change: opacity;
+  animation: moment-card-enter 0.2s ease both;
 }
 .moments-grid__column {
   display: flex;
@@ -2898,18 +2898,14 @@ watch(
 @keyframes moment-card-enter {
   from {
     opacity: 0;
-    clip-path: inset(0 0 100% 0 round 16px);
-    transform: translateY(-10px);
   }
   to {
     opacity: 1;
-    clip-path: inset(0 0 0 0 round 16px);
-    transform: translateY(0);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .moment-card--entering {
-    animation-duration: 0.01ms;
+    animation: none;
   }
 }
 .moment-card__cover {

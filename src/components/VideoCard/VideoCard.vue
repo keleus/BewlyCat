@@ -495,26 +495,39 @@ provide('getVideoType', () => props.type!)
   min-height: fit-content;
 }
 
-/* 骨架屏状态：禁用交互 */
+/* 骨架屏状态：禁用交互，使用轻量 shimmer 表达加载中 */
 .video-card-container--skeleton {
   pointer-events: none;
-  animation: video-card-skeleton-pulse 1.4s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
 }
 
-@keyframes video-card-skeleton-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
+.video-card-container--skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--bew-bg, #fff) 35%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: video-card-skeleton-shimmer 1.4s ease-in-out infinite;
+}
 
-  50% {
-    opacity: 0.55;
+@keyframes video-card-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .video-card-container--skeleton {
+  .video-card-container--skeleton::after {
     animation: none;
+    display: none;
   }
 }
 
