@@ -165,6 +165,14 @@ const videoCaptionDefaultStateOptions = computed(() => {
       >
         <Radio v-model="settings.externalWatchLaterButton" />
       </SettingsItem>
+
+      <SettingsItem
+        :title="t('settings.show_video_screenshot_button')"
+        :desc="t('settings.show_video_screenshot_button_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showVideoScreenshotButton" />
+      </SettingsItem>
     </SettingsItemGroup>
   </div>
 </template>

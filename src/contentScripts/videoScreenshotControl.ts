@@ -1,3 +1,6 @@
+import { watch } from 'vue'
+
+import { settings } from '~/logic'
 import { i18n } from '~/utils/i18n'
 import { showState } from '~/utils/player'
 
@@ -156,6 +159,13 @@ function createControlContainer(): HTMLElement {
 }
 
 function injectControl() {
+  if (!settings.value.showVideoScreenshotButton) {
+    controlContainer?.remove()
+    controlContainer = null
+    document.querySelector<HTMLElement>('.bewly-video-screenshot-control')?.remove()
+    return
+  }
+
   if (controlContainer?.isConnected)
     return
 
@@ -184,6 +194,10 @@ export function initVideoScreenshotControl() {
 
   hasInitialized = true
   injectControl()
+  watch(
+    () => settings.value.showVideoScreenshotButton,
+    () => injectControl(),
+  )
 
   setInterval(() => {
     injectControl()
