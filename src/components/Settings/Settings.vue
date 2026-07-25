@@ -400,7 +400,8 @@ function changeMenuItem(menuItem: MenuType) {
           --un-shadow: var(--bew-shadow-4), var(--bew-shadow-edge-glow-2);
           backdrop-filter: var(--bew-filter-glass-2);
         "
-        relative overflow="x-hidden" flex-1 min-w-0 h-full
+        relative overflow="x-hidden" flex-1 min-w-0 max-w-960px
+        h-full
         bg="$bew-elevated-alt"
         shadow rounded="$bew-radius" border="1 $bew-border-color"
       >
