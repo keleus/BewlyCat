@@ -333,25 +333,51 @@ const lastItemsCount = ref(0)
 const consecutiveFailures = ref(0)
 const MAX_CONSECUTIVE_FAILURES = 3
 
-// 首屏未凑够一屏前继续骨架，避免“先冒出几张再撑开”的割裂感。
+// 首屏按整行凑满再揭示；后续加载按整行推进，且不回退已经展示过的半行。
 const hasRevealedInitialContent = ref(false)
+// 当前允许展示的真实卡片数（只增不减，直到列表清空）
+const revealedItemCount = ref(0)
+
+function getGridColumnCount(): number {
+  return Math.max(1, getRenderedColumnCount())
+}
+
+/** 仅统计已凑满整行的条目数（自定义列数对齐） */
+function getCompleteRowItemCount(itemCount: number, columns = getGridColumnCount()): number {
+  if (itemCount <= 0)
+    return 0
+  if (columns <= 1)
+    return itemCount
+  return Math.floor(itemCount / columns) * columns
+}
+
+function resetRowRevealState() {
+  hasRevealedInitialContent.value = false
+  revealedItemCount.value = 0
+}
 
 const minInitialRevealCount = computed(() => {
-  const columns = Math.max(1, getRenderedColumnCount())
-  // 按约 1.5 屏估算首屏数量：避免 web 首包 10 条就提前露出。
+  const columns = getGridColumnCount()
+  // 按约 1.5 屏估算目标行数，并强制对齐到整行（columns 的倍数）。
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900
-  const rows = Math.max(2, Math.ceil(viewportHeight / 360))
-  const targetRows = Math.min(3, Math.max(2, Math.ceil(rows * 0.75)))
-  return Math.min(30, Math.max(12, columns * targetRows))
+  const estimatedRows = Math.max(2, Math.ceil(viewportHeight / 360))
+  const targetRows = Math.min(3, Math.max(2, Math.ceil(estimatedRows * 0.75)))
+  // 下限也按整行对齐，避免阈值落在半行。
+  const minRows = columns <= 1 ? 12 : Math.ceil(12 / columns)
+  const maxRows = columns <= 1 ? 30 : Math.floor(30 / columns)
+  const rows = Math.min(Math.max(targetRows, minRows), Math.max(minRows, maxRows))
+  return columns * rows
 })
+
+const completeRowItemCount = computed(() => getCompleteRowItemCount(props.items.length))
 
 const showInitialSkeleton = computed(() => {
   if (props.needToLoginFirst)
     return false
 
-  // 首次揭示前：loading 中且数量不足时继续占位
+  // 首次揭示前：loading 中且整行数量不足时继续占位
   if (!hasRevealedInitialContent.value) {
-    if (props.loading && props.items.length < minInitialRevealCount.value)
+    if (props.loading && completeRowItemCount.value < minInitialRevealCount.value)
       return true
     // 刷新刚清空、下一帧数据尚未写入时也保持骨架，避免空闪
     if (props.loading && props.items.length === 0)
@@ -362,18 +388,58 @@ const showInitialSkeleton = computed(() => {
   return props.loading && props.items.length === 0
 })
 
-watch(
-  () => [props.items.length, props.loading, props.noMoreContent, minInitialRevealCount.value] as const,
-  ([itemCount, loading, noMoreContent, minCount]) => {
-    if (hasRevealedInitialContent.value)
-      return
-    if (itemCount <= 0)
-      return
+/**
+ * 同步“可展示数量”：
+ * - 首屏：只按整行推进，凑满阈值后再揭示
+ * - 后续加载：已展示内容不回退；新增数据仍按整行跳出
+ * - 空闲/无更多：展示全部（允许最后一行不满）
+ */
+function syncRevealedItemCount() {
+  const total = props.items.length
+  if (total <= 0) {
+    revealedItemCount.value = 0
+    return
+  }
 
-    // 数量达标，或本轮加载结束/无更多内容时，允许揭示真实列表
-    if (itemCount >= minCount || !loading || noMoreContent)
-      hasRevealedInitialContent.value = true
+  const columns = getGridColumnCount()
+  const completeCount = getCompleteRowItemCount(total, columns)
+
+  // 加载结束或没有更多时，允许露出最后未满行
+  if (!props.loading || props.noMoreContent || columns <= 1) {
+    revealedItemCount.value = total
+    return
+  }
+
+  if (!hasRevealedInitialContent.value) {
+    // 首屏阶段只累计整行，避免半行先露出来
+    revealedItemCount.value = completeCount
+    return
+  }
+
+  // 后续加载：不回退已展示数量，仅把新数据按整行往前推
+  revealedItemCount.value = Math.min(
+    total,
+    Math.max(revealedItemCount.value, completeCount),
+  )
+}
+
+watch(
+  () => [
+    completeRowItemCount.value,
+    props.items.length,
+    props.loading,
+    props.noMoreContent,
+    minInitialRevealCount.value,
+  ] as const,
+  ([completeCount, itemCount, loading, noMoreContent, minCount]) => {
+    if (!hasRevealedInitialContent.value) {
+      if (itemCount > 0 && (completeCount >= minCount || !loading || noMoreContent))
+        hasRevealedInitialContent.value = true
+    }
+
+    syncRevealedItemCount()
   },
+  { immediate: true },
 )
 
 // 生成首屏骨架屏数据
@@ -387,22 +453,35 @@ const initialSkeletonItems = computed(() => {
   })) as T[]
 })
 
+// 实际展示的真实卡片：按 revealedItemCount 截断
+const visibleRealItems = computed(() => {
+  const count = Math.max(0, Math.min(revealedItemCount.value, props.items.length))
+  if (count >= props.items.length)
+    return props.items
+  return props.items.slice(0, count)
+})
+
 // 有真实数据时，用与视频卡片相同结构的骨架卡片表示下一批数据正在加载。
 const showLoadingMoreSkeletonItems = computed(() => {
   return props.showLoadingMoreSkeleton
     && props.loading
     && props.items.length > 0
     && !props.needToLoginFirst
+    && hasRevealedInitialContent.value
 })
 
 const loadingMoreSkeletonItems = computed(() => {
   if (!showLoadingMoreSkeletonItems.value)
     return []
 
+  const columns = getGridColumnCount()
+  const visibleCount = visibleRealItems.value.length
+  const pendingCount = Math.max(0, props.items.length - visibleCount)
   const minimumSkeletonCount = normalizePositiveInt(props.loadingMoreSkeletonCount, 10)
-  const columns = getRenderedColumnCount()
-  const remainder = (props.items.length + minimumSkeletonCount) % columns
-  const skeletonCount = minimumSkeletonCount + (remainder === 0 ? 0 : columns - remainder)
+  // 先补齐“暂存未满行”，再保证至少 minimum 个骨架，最后对齐到整行。
+  const baseSkeletonCount = Math.max(minimumSkeletonCount, pendingCount)
+  const remainder = columns > 0 ? (visibleCount + baseSkeletonCount) % columns : 0
+  const skeletonCount = baseSkeletonCount + (remainder === 0 ? 0 : columns - remainder)
   return Array.from({ length: skeletonCount }, (_, i) => ({
     _isSkeleton: true,
     _skeletonId: `skeleton-more-${i}`,
@@ -415,9 +494,9 @@ const displayItems = computed(() => {
     return initialSkeletonItems.value
 
   if (showLoadingMoreSkeletonItems.value)
-    return [...props.items, ...loadingMoreSkeletonItems.value]
+    return [...visibleRealItems.value, ...loadingMoreSkeletonItems.value]
 
-  return props.items
+  return visibleRealItems.value
 })
 
 // 检查是否可以加载更多
@@ -747,7 +826,7 @@ watch(() => props.items.length, (newCount, oldCount) => {
     consecutiveFailures.value = 0
     lastItemsCount.value = 0
     reachedLoadMoreDuringLoading.value = false
-    hasRevealedInitialContent.value = false
+    resetRowRevealState()
     clearCardEnterState()
     clearContinuePreloadTimer()
     return
