@@ -367,6 +367,7 @@ export interface Settings {
   keepCollectionVideoDefaultMode: boolean // 合集视频保持默认模式
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
   autoExitFullscreenExcludeAutoPlay: boolean // 全屏自动退出时排除自动连播
+  showVideoScreenshotButton: boolean // 显示播放器截图按钮
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: boolean // 使用B站默认自动播放行为（总开关）
@@ -606,6 +607,7 @@ export const originalSettings: Settings = {
   keepCollectionVideoDefaultMode: false, // 合集视频保持默认模式，默认关闭
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
   autoExitFullscreenExcludeAutoPlay: false, // 全屏自动退出时排除自动连播，默认关闭
+  showVideoScreenshotButton: true, // 默认显示播放器截图按钮
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: true, // 使用B站默认自动播放行为（总开关），默认开启

@@ -312,6 +312,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.remember_playback_rate',
     'settings.enlarge_favorite_dialog',
     'settings.external_watch_later_button',
+    'settings.show_video_screenshot_button',
     'settings.bilibili_features.auto_play',
     'settings.group_auto_play',
     'settings.use_bilibili_default_auto_play',
