@@ -314,6 +314,24 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
+    () => settings.value.useOriginalBilibiliHomepage,
+    (useOriginalBilibiliHomepage) => {
+      // 只有外层 BewlyCat 自定义首页需要接管原版顶栏第二行，原版首页交还给 B 站或第三方顶栏控制。
+      const useBewlyHomepage = !isInIframe() && isHomePage() && !useOriginalBilibiliHomepage
+      document.documentElement.classList.toggle('bewly-custom-homepage', useBewlyHomepage)
+
+      if (useBewlyHomepage && settings.value.useOriginalBilibiliTopBar) {
+        const scrollTop = document.getElementById('bewly')
+          ?.shadowRoot
+          ?.querySelector<HTMLElement>('.bewly-scroll-viewport')
+          ?.scrollTop ?? 0
+        setOriginalBilibiliTopBarScrolled(document, scrollTop > 0)
+      }
+    },
+    { immediate: true },
+  )
+
+  watch(
     () => settings.value.showTopBar,
     (newVal) => {
       // `showTopBar` is the Bewly top bar toggle. Keep `useOriginalBilibiliTopBar` in sync,
