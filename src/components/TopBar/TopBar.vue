@@ -425,7 +425,7 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
         v-if="topBarStore.showTopBar"
         ref="headerTarget"
         class="top-bar"
-        w="full" transition="all 300 ease-in-out"
+        w="full" transition="opacity duration-300, transform duration-300, background-color duration-300"
         :class="{ 'hide': hideTopBar, 'force-white-icon': forceWhiteIcon }"
       >
         <TopBarHeader

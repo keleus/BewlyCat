@@ -43,7 +43,7 @@ defineExpose({ focus })
     :style="{ height, padding }"
     focus-within:ring="2px $bew-theme-color"
     p="x-4"
-    rounded="$bew-radius" transition-all duration-300
+    rounded="$bew-radius" transition="border-color duration-300, background-color duration-300, box-shadow duration-300"
     bg="$bew-fill-1" flex="~ gap-2"
   >
     <div v-if="$slots.prefix" class="prefix">

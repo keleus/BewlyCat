@@ -100,8 +100,8 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             text="overflow-ellipsis $bew-text-1 lg"
           >
             <!-- 使用与真实文本相同的行高填充，考虑 line-height -->
-            <div w-full bg="$bew-skeleton" rounded-4px style="height: 1em; margin-bottom: calc((var(--bew-title-line-height, 1.35) - 1) * 0.5em);" />
-            <div w="3/4" bg="$bew-skeleton" rounded-4px style="height: 1em;" />
+            <div w-full bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em; margin-bottom: calc((var(--bew-title-line-height, 1.35) - 1) * 0.5em);" />
+            <div w="3/4" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em;" />
           </div>
           <div
             v-if="isModernLikeLayout" shrink-0 w-8 h-8 rounded="1/2"
@@ -122,13 +122,13 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
           <div flex="~ col gap-1" w="[calc(100%-50px)]">
             <!-- 作者名称骨架：使用与真实文本相同的字体大小和行高 -->
             <div
-              w="60%" bg="$bew-skeleton" rounded-4px
+              w="60%" bg="$bew-skeleton" rounded="$bew-radius-sm"
               :class="authorFontSizeClass"
               style="height: 1em;"
             />
             <!-- 标签骨架：使用与真实标签相同的高度，包括 padding -->
             <div
-              w="80%" bg="$bew-skeleton" rounded-4px
+              w="80%" bg="$bew-skeleton" rounded="$bew-radius-sm"
               :class="metaFontSizeClass"
               style="height: calc(1em + 0.24em);"
             />
@@ -180,7 +180,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
                 w="34px" h="34px" rounded="1/2" bg="$bew-skeleton"
                 shrink-0 m-r-2
               />
-              <div w="100px" bg="$bew-skeleton" rounded-4px style="height: 1em;" />
+              <div w="100px" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em;" />
             </div>
 
             <!-- View & Danmaku skeleton -->
@@ -189,7 +189,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
                 :class="metaFontSizeClass"
                 text="$bew-text-2"
               >
-                <div w="150px" bg="$bew-skeleton" rounded-4px style="height: 1em; display: inline-block;" />
+                <div w="150px" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em; display: inline-block;" />
               </div>
             </div>
 

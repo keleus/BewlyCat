@@ -423,7 +423,7 @@ defineExpose({
             :class="activatedMediaId === item.id && activatedCategorySource === item.source ? 'activated-category' : ''"
             p="y-2 x-6"
             cursor="pointer"
-            transition="~ duration-300"
+            transition="background-color duration-200, color duration-200, opacity duration-200"
             @click="changeCategory(item)"
           >
             {{ item.source === 'season' ? `${$t('favorites.collected_season_prefix')} ${item.title}` : item.title }}
@@ -471,7 +471,7 @@ defineExpose({
             rounded="$bew-radius"
             m="last:b-4" p="2"
             class="group"
-            transition="~ duration-300"
+            transition="background-color duration-200, color duration-200, opacity duration-200"
           >
             <section flex="~ gap-4" items-start>
               <div

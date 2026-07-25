@@ -18,8 +18,8 @@ defineProps<{
     <div flex="~ col gap-2" mt-2>
       <div flex="~ gap-1 justify-between items-start" w="full">
         <div flex="~ col gap-2" w="[calc(100%-40px)]">
-          <div w-full h-5 bg="$bew-skeleton" rounded-4px />
-          <div w="3/4" h-5 bg="$bew-skeleton" rounded-4px />
+          <div w-full h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
+          <div w="3/4" h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
         </div>
         <div shrink-0 w-8 h-8 rounded="1/2" bg="$bew-skeleton" />
       </div>
@@ -27,8 +27,8 @@ defineProps<{
       <div v-if="settings.videoCardLayout === 'modern'" flex="~ gap-2 items-center" w="full" mt-1>
         <div w="34px" h="34px" rounded="1/2" bg="$bew-skeleton" shrink-0 />
         <div flex="~ col gap-1" w="[calc(100%-50px)]">
-          <div w="60%" h-3 bg="$bew-skeleton" rounded-4px />
-          <div w="80%" h-3 bg="$bew-skeleton" rounded-4px />
+          <div w="60%" h-3 bg="$bew-skeleton" rounded="$bew-radius-sm" />
+          <div w="80%" h-3 bg="$bew-skeleton" rounded="$bew-radius-sm" />
         </div>
       </div>
     </div>
@@ -51,15 +51,15 @@ defineProps<{
     <!-- Other Information -->
     <div w-full mt-0 flex="~ col gap-2">
       <div flex="~ gap-1 justify-between items-start" w="full">
-        <div w-full h-5 bg="$bew-skeleton" rounded-4px />
+        <div w-full h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
         <div shrink-0 w-8 h-8 rounded="1/2" bg="$bew-skeleton" />
       </div>
 
       <div v-if="settings.videoCardLayout === 'modern'" flex="~ gap-2 items-center" w="full" mt-2>
         <div w="30px" h="30px" rounded="1/2" bg="$bew-skeleton" shrink-0 />
         <div flex="~ col gap-1" w="[calc(100%-46px)]">
-          <div w="60%" h-3 bg="$bew-skeleton" rounded-4px />
-          <div w="80%" h-3 bg="$bew-skeleton" rounded-4px />
+          <div w="60%" h-3 bg="$bew-skeleton" rounded="$bew-radius-sm" />
+          <div w="80%" h-3 bg="$bew-skeleton" rounded="$bew-radius-sm" />
         </div>
       </div>
     </div>
@@ -79,16 +79,16 @@ defineProps<{
       />
       <div w="[calc(100%-34px)]">
         <div flex="~ col gap-2" mb-4 w-inherit>
-          <div w-full h-5 bg="$bew-skeleton" rounded-4px />
-          <div w="3/4" h-5 bg="$bew-skeleton" rounded-4px />
+          <div w-full h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
+          <div w="3/4" h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
         </div>
         <div flex="~ col gap-2" mb-3>
-          <div w="40%" h-3 bg="$bew-skeleton" rounded-4px />
-          <div w="60%" h-3 bg="$bew-skeleton" rounded-4px />
+          <div w="40%" h-3 bg="$bew-skeleton" rounded="$bew-radius-sm" />
+          <div w="60%" h-3 bg="$bew-skeleton" rounded="$bew-radius-sm" />
         </div>
         <div
           text="transparent sm" inline-block p="x-2" lh-22px
-          bg="$bew-skeleton" rounded-4
+          bg="$bew-skeleton" rounded="$bew-radius-sm"
         >
           hello world
         </div>
@@ -116,7 +116,7 @@ defineProps<{
     >
       <div w="[calc(100%-30px)]">
         <div grid gap-2>
-          <div w-full h-5 bg="$bew-skeleton" rounded-4px />
+          <div w-full h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
         </div>
 
         <div mt-4 flex="~ col gap-2">
@@ -126,13 +126,13 @@ defineProps<{
               shrink-0
             />
 
-            <div w="40%" h-5 bg="$bew-skeleton" rounded-4px />
+            <div w="40%" h-5 bg="$bew-skeleton" rounded="$bew-radius-sm" />
           </div>
-          <div w="60%" h-4 bg="$bew-skeleton" rounded-4px />
+          <div w="60%" h-4 bg="$bew-skeleton" rounded="$bew-radius-sm" />
           <div
             text="transparent sm" inline-block w-fit
             lh-6 p="x-2" mt-1
-            bg="$bew-skeleton" rounded-4
+            bg="$bew-skeleton" rounded="$bew-radius-sm"
           >
             hello world
           </div>

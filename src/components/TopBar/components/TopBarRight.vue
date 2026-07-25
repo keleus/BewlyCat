@@ -403,7 +403,7 @@ const shouldShowDivider = computed(() => {
             v-if="shouldShowDivider"
             :class="{ 'white-icon': forceWhiteIcon }"
             w-2px h-16px bg="$bew-border-color" mx-1
-            rounded-4px
+            rounded="$bew-radius-sm"
           />
 
           <!-- Upload -->

@@ -1,6 +1,8 @@
 .top-bar-enter-active,
 .top-bar-leave-active {
-  transition: all 0.5s ease;
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }
 
 .top-bar-enter-from,
@@ -10,7 +12,11 @@
 
 .slide-in-enter-active,
 .slide-in-leave-active {
-  --uno: "transition-all duration-250 pointer-events-none";
+  transition:
+    opacity 250ms var(--bew-ease-standard, ease),
+    transform 250ms var(--bew-ease-standard, ease),
+    margin-top 250ms var(--bew-ease-standard, ease);
+  pointer-events: none;
 }
 
 .slide-in-leave-to,
@@ -20,7 +26,10 @@
 
 .slide-out-enter-active,
 .slide-out-leave-active {
-  --uno: "transition-all duration-300 pointer-events-none";
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
+  pointer-events: none;
 }
 
 .slide-out-leave-to,
@@ -30,7 +39,7 @@
 
 .fade-enter-active,
 .fade-leave-active {
-  --uno: "transition-all duration-600";
+  --uno: "transition-opacity duration-300";
 }
 
 .fade-leave-to,

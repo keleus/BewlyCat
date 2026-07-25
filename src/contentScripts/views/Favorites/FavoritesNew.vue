@@ -1567,7 +1567,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   height: 26px;
   padding: 0;
   color: var(--bew-text-3);
-  border-radius: 6px;
+  border-radius: var(--bew-radius-half);
   cursor: pointer;
   transition:
     background-color 160ms ease,
@@ -1638,7 +1638,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   padding: 0;
   color: var(--bew-text-2);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--bew-radius-half);
   background: transparent;
   cursor: pointer;
   transition:
@@ -1753,7 +1753,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   width: 100%;
   min-height: 38px;
   padding: 0 10px;
-  border-radius: 8px;
+  border-radius: var(--bew-radius);
   color: var(--bew-text-2);
   cursor: pointer;
   transition:
@@ -1833,7 +1833,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   overflow: hidden;
   color: var(--bew-text-3);
   background: var(--bew-fill-2);
-  border-radius: 8px;
+  border-radius: var(--bew-radius);
   aspect-ratio: 16 / 9;
 }
 
@@ -1962,7 +1962,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   text-align: left;
   background: var(--bew-fill-1);
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--bew-radius);
   cursor: pointer;
   transition:
     background-color 160ms ease,
@@ -2007,7 +2007,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   color: #fff;
   background: rgba(0, 0, 0, 0.62);
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--bew-radius);
   cursor: pointer;
   transition: background-color 160ms ease;
 }

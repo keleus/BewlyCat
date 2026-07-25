@@ -244,7 +244,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                   m="2"
                   p="x-2 y-1"
                   text="white xs"
-                  rounded-8
+                  rounded="$bew-radius-half"
                 >
                   {{ calcCurrentTime(item.duration) }}
                 </div> -->
@@ -255,7 +255,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                   m="2"
                   p="x-2 y-1"
                   text="white xs"
-                  rounded-8
+                  rounded="$bew-radius-half"
                 >
                   <!--  When progress = -1 means that the user watched the full video -->
                   {{

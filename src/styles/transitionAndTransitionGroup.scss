@@ -21,7 +21,9 @@
 
 .slide-fade-enter-active,
 .slide-fade-leave-active {
-  --uno: "opacity-100 transition-all duration-500";
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }
 .slide-fade-enter,
 .slide-fade-leave-to {
@@ -30,7 +32,9 @@
 
 .list-enter-active,
 .list-leave-active {
-  --uno: "transition-all duration-500";
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }
 .list-enter-from,
 .list-leave-to {
@@ -42,24 +46,26 @@
 
 .modal-enter-active,
 .modal-leave-active {
-  --uno: "transition-all duration-500";
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }
 .modal-enter-from,
 .modal-leave-to {
-  --uno: "opacity-0 scale-105";
+  --uno: "opacity-0 scale-95";
 }
 
 .dropdown-enter-active,
 .dropdown-leave-active {
   // 仅过渡视觉属性，避免 top/left/width 被 all 带着从 0 飞到真实坐标
   transition:
-    opacity 300ms ease,
-    transform 300ms ease,
-    filter 300ms ease;
+    opacity var(--bew-duration-moderate, 300ms) ease,
+    transform var(--bew-duration-moderate, 300ms) ease,
+    filter var(--bew-duration-moderate, 300ms) ease;
 }
 .dropdown-enter-from,
 .dropdown-leave-to {
   opacity: 0;
-  transform: scale(0.95) translateY(-1rem);
-  filter: blur(4px);
+  transform: scale(0.96) translateY(-0.5rem);
+  filter: blur(2px);
 }

@@ -218,7 +218,7 @@ defineExpose({ initData })
           ml-2
           display="inline-block"
           :transform="`~ ${!showDropdown ? 'rotate-45 -translate-y-1/4' : 'rotate-225 translate-y-1/4'}`"
-          transition="all duration-300"
+          transition="background-color duration-200, color duration-200, border-color duration-200, box-shadow duration-200"
         />
       </div>
 
@@ -247,7 +247,7 @@ defineExpose({ initData })
                 w-full px-3 py-2 rounded="$bew-radius"
                 bg="$bew-fill-2" border="1px solid transparent"
                 text="$bew-text-1" outline-none
-                transition="all duration-300"
+                transition="background-color duration-200, color duration-200, border-color duration-200, box-shadow duration-200"
                 focus:border="$bew-theme-color"
               >
             </div>
@@ -262,7 +262,7 @@ defineExpose({ initData })
                 p="x-2 y-2"
                 rounded="$bew-radius"
                 cursor-pointer
-                transition="all duration-300"
+                transition="background-color duration-200, color duration-200, border-color duration-200, box-shadow duration-200"
                 bg="hover:$bew-fill-2"
                 @click="selectSeries(item)"
               >

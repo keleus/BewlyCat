@@ -613,7 +613,7 @@ function handleClearKeyword() {
         spellcheck="false"
         text="$b-search-bar-normal-text-color group-focus-within:$b-search-bar-focus-text-color group-hover:$b-search-bar-hover-text-color"
         un-border="1 solid $bew-border-color"
-        transition="all duration-300"
+        transition="background-color duration-200, color duration-200, opacity duration-200, box-shadow duration-200"
         @focus="isFocus = true"
         @input="handleNativeInput"
         @keydown.enter.stop="handleKeyEnter"
@@ -623,7 +623,7 @@ function handleClearKeyword() {
       >
       <button
         v-if="isFocus && keyword"
-        pos="absolute right-12" bg="$bew-fill-1 hover:$bew-fill-2" text="xs" rounded-10
+        pos="absolute right-12" bg="$bew-fill-1 hover:$bew-fill-2" text="xs" rounded="$bew-radius-half"
         p-1
         flex="~ items-center justify-between"
         @click="handleClearKeyword"
@@ -635,7 +635,7 @@ function handleClearKeyword() {
         p-2
         rounded-full
         text="lg leading-0 $b-search-bar-normal-icon-color group-hover:$b-search-bar-hover-icon-color group-focus-within:$b-search-bar-focus-icon-color"
-        transition="all duration-300"
+        transition="background-color duration-200, color duration-200, opacity duration-200, box-shadow duration-200"
         border-none
         outline-none
         pos="absolute right-6px"

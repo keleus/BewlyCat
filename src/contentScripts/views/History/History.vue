@@ -282,7 +282,7 @@ function jumpToLoginPage() {
               bg="$bew-fill-1"
               group-hover:bg="$bew-theme-color-20"
               p="x-3 y-1"
-              rounded-8
+              rounded="$bew-radius-half"
               duration-300
             >
               {{
@@ -350,7 +350,7 @@ function jumpToLoginPage() {
                 m="2"
                 p="x-2 y-1"
                 text="white xs"
-                rounded-8
+                rounded="$bew-radius-half"
               >
                 <!--  When progress = -1 means that the user watched the full video -->
                 {{

@@ -147,7 +147,12 @@ function goToNextPage() {
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
 
   &:hover:not(:disabled):not(.active) {
     background-color: var(--bew-elevated-2);

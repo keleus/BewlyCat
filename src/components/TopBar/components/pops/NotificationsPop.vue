@@ -96,7 +96,7 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
       p="x-4 y-2"
       bg="hover:$bew-fill-2"
       rounded="$bew-radius"
-      transition="all duration-300"
+      transition="background-color duration-200, color duration-200, opacity duration-200"
       m="b-1 last:b-0"
       :custom-click-event="settings.openNotificationsPageAsDrawer"
       @click="(event: MouseEvent) => handleClick(event, item)"

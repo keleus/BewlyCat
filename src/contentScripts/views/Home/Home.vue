@@ -299,7 +299,7 @@ function toggleTabContentLoading(loading: boolean) {
 <style scoped lang="scss">
 .bg-enter-active,
 .bg-leave-active {
-  --uno: "duration-1000 ease-in-out";
+  --uno: "duration-500 ease-in-out";
 }
 .bg-enter-from,
 .bg-leave-to {
@@ -311,7 +311,7 @@ function toggleTabContentLoading(loading: boolean) {
 
 .content-enter-active,
 .content-leave-active {
-  --uno: "duration-1000 ease-in-out";
+  --uno: "duration-500 ease-in-out";
 }
 .content-enter-from,
 .content-leave-to {

@@ -159,7 +159,12 @@ const awayScore = computed(() => {
 <style scoped lang="scss">
 .esports-match-card {
   background: var(--bew-elevated);
-  transition: all 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
   aspect-ratio: 5 / 3; // 固定宽高比 5:3
   overflow: hidden;
 

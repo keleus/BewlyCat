@@ -21,16 +21,16 @@ defineProps<{
       <p
         w-full h-5 mt-2 mb-3 my-4
         bg="$bew-skeleton"
-        rounded-4px
+        rounded="$bew-radius-sm"
       />
-      <div text="$bew-skeleton" mb-10 flex items-center rounded-4px>
+      <div text="$bew-skeleton" mb-10 flex items-center rounded="$bew-radius-sm">
         <div
           text="transparent" bg="$bew-skeleton" p="x-3 y-1" mr-2 h-24px
-          rounded-4
+          rounded="$bew-radius-sm"
         >
           0.0
         </div>
-        <div w="60%" h-22px bg="$bew-skeleton" rounded-4px />
+        <div w="60%" h-22px bg="$bew-skeleton" rounded="$bew-radius-sm" />
       </div>
     </div>
   </div>

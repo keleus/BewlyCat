@@ -36,8 +36,8 @@ function formatCount(count: number): string {
         :class="{ active: props.currentCategory === category.value }"
         flex
         items-center gap-1.5 px-4 py-2 rounded="$bew-radius-half"
-        transition-all
-        duration-200 hover:bg="$bew-fill-1"
+        transition-colors duration-200
+        hover:bg="$bew-fill-1"
         type="button"
         @click="handleSelect(category.value)"
       >

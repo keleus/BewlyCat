@@ -111,7 +111,7 @@ function toggleHideSidebar(hide: boolean) {
           <div mt--2px>
             <i
               i-mingcute:settings-3-line w-20px h-20px group-hover:rotate-180
-              transition="all 2000 ease-out"
+              transition="transform duration-400 ease-out"
             />
           </div>
         </Button>

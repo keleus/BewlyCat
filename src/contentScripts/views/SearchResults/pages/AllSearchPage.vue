@@ -1155,7 +1155,12 @@ defineExpose({
   font-size: 0.875rem;
   border: 1px solid var(--bew-theme-color);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
   white-space: nowrap;
   min-width: 80px;
   user-select: none;
@@ -1232,7 +1237,12 @@ defineExpose({
   color: var(--bew-theme-color);
   text-decoration: none;
   border-radius: var(--bew-radius);
-  transition: all 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
 
   &:hover {
     background: var(--bew-theme-color-10);

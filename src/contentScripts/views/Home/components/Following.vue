@@ -1571,12 +1571,12 @@ defineExpose({ initData })
             type="text"
             :placeholder="$t('common.search')"
             px-4 py-2 w-full
-            rounded-lg
+            rounded="$bew-radius"
             bg="$bew-fill-1"
             border="1 $bew-border-color"
             text="sm $bew-text-1"
             outline-none
-            transition="all 300"
+            transition="border-color duration-300, background-color duration-300"
             focus:border="$bew-theme-color"
             focus:bg="$bew-fill-2"
             placeholder:text="$bew-text-3"
@@ -1589,8 +1589,8 @@ defineExpose({ initData })
             <a
               :class="{ active: selectedUploader === null }"
               px-4 py-2 hover:bg="$bew-fill-2" w-inherit
-              block rounded-lg cursor-pointer transition="all 300 ease-out"
-              hover:scale-105 un-text="$bew-text-1"
+              block rounded="$bew-radius" cursor-pointer transition="background-color duration-200, color duration-200, box-shadow duration-200"
+              un-text="$bew-text-1"
               flex="~ items-center gap-3"
               @click="selectUploader(null)"
             >
@@ -1617,8 +1617,8 @@ defineExpose({ initData })
             <a
               :class="{ active: selectedUploader === uploader.mid }"
               px-4 py-2 hover:bg="$bew-fill-2" w-inherit
-              block rounded-lg cursor-pointer transition="all 300 ease-out"
-              hover:scale-105 un-text="$bew-text-1"
+              block rounded="$bew-radius" cursor-pointer transition="background-color duration-200, color duration-200, box-shadow duration-200"
+              un-text="$bew-text-1"
               flex="~ items-center gap-3"
               @click="selectUploader(uploader.mid)"
             >
@@ -1691,7 +1691,10 @@ defineExpose({ initData })
 .list-move,
 .list-enter-active,
 .list-leave-active {
-  transition: all 0.5s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .list-enter-from,

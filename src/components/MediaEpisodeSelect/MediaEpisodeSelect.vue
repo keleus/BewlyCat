@@ -122,7 +122,7 @@ watchEffect(() => {
         m="l-2"
         display="inline-block"
         :transform="`~ ${!isOpen ? 'rotate-45 -translate-y-1/4' : 'rotate-225 translate-y-1/4'} `"
-        transition="all duration-300"
+        transition="background-color duration-200, color duration-200, box-shadow duration-200"
       />
     </button>
 
@@ -161,7 +161,7 @@ watchEffect(() => {
             rounded="$bew-radius"
             w="full"
             bg="hover:$bew-fill-2"
-            transition="all duration-300"
+            transition="background-color duration-200, color duration-200, box-shadow duration-200"
             cursor="pointer"
             :title="episode.longTitle || episode.title"
             @click.stop="handleEpisodeClick(episode.url || fallbackUrl)"

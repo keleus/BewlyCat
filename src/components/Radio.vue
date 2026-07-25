@@ -55,7 +55,11 @@ input[type="checkbox"] {
 
   & + span,
   & + span::after {
-    transition: 0.3s cubic-bezier(0.25, 0.15, 0.29, 1.51);
+    transition:
+      transform 0.25s var(--bew-ease-emphasized, cubic-bezier(0.34, 1.3, 0.64, 1)),
+      background-color 0.25s ease,
+      border-color 0.25s ease,
+      box-shadow 0.25s ease;
   }
 
   &:checked + span::after {

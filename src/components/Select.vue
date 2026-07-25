@@ -153,7 +153,7 @@ function onMouseEnter() {
         m="l-2"
         display="inline-block"
         :transform="`~ ${!showOptions ? 'rotate-45 -translate-y-1/4' : 'rotate-225 translate-y-1/4'} `"
-        transition="all duration-300"
+        transition="background-color duration-200, border-color duration-200, transform duration-200"
       />
     </div>
 
@@ -183,7 +183,7 @@ function onMouseEnter() {
             rounded="$bew-radius"
             w="full"
             bg="hover:$bew-fill-2"
-            transition="all duration-300"
+            transition="background-color duration-200, border-color duration-200, transform duration-200"
             cursor="pointer"
             @click="onClickOption(option)"
           >
