@@ -21,10 +21,40 @@
   --bew-ease-emphasized: cubic-bezier(0.34, 1.3, 0.64, 1);
   // #endregion
 
-  --bew-top-bar-control-height: 40px;
-  --bew-top-bar-control-radius: 999px;
-  --bew-top-bar-control-border-color: color-mix(in oklab, var(--bew-border-color), transparent 40%);
-  --bew-top-bar-control-background: color-mix(in oklab, var(--bew-elevated), transparent 45%);
+  // Shared capsule style for top-bar / segment controls
+  // (bewly switcher, avatar/right icons, pinned channels, home tabs / grid switcher)
+  // Secondary controls: 34px; switcher inner/outer ring inset 2px → item 30px.
+  --bew-top-bar-control-height: 34px;
+  // Full capsule for all circular / pill top-bar controls
+  --bew-top-bar-control-radius: 9999px;
+  // Search and logo stay one step larger (still full capsule/circle)
+  --bew-top-bar-primary-control-height: 46px;
+  --bew-top-bar-primary-control-radius: 9999px;
+  --bew-top-bar-control-border-width: 0px;
+  --bew-top-bar-control-padding: 2px;
+  --bew-top-bar-control-gap: 4px;
+  // Item fits the border-box exactly: 34px - 2 * (0px border + 2px padding) = 30px
+  --bew-top-bar-control-item-height: calc(
+    var(--bew-top-bar-control-height) - (var(--bew-top-bar-control-border-width) + var(--bew-top-bar-control-padding)) *
+      2
+  );
+  // Full capsule ends (9999px) so radius never fights width/height morphing.
+  // Concentric with outer: item half-height + padding ≈ outer half-height.
+  --bew-top-bar-control-item-radius: 9999px;
+  --bew-top-bar-control-background: var(--bew-elevated);
+  --bew-top-bar-control-background-white: color-mix(in oklab, var(--bew-elevated-solid), transparent 80%);
+  --bew-top-bar-control-border-color: transparent;
+
+  // Interaction tokens aligned with home tab buttons
+  --bew-segment-item-hover-bg: var(--bew-fill-1);
+  --bew-segment-item-hover-color: var(--bew-text-1);
+  --bew-segment-item-active-bg: var(--bew-theme-color-20);
+  --bew-segment-item-active-color: var(--bew-theme-color);
+  --bew-segment-item-active-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 2px 6px var(--bew-theme-color-10);
+  --bew-segment-item-hover-bg-white: rgba(255, 255, 255, 0.16);
+  --bew-segment-item-active-bg-white: color-mix(in oklab, var(--bew-theme-color), transparent 55%);
+  --bew-segment-item-active-shadow-white:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 6px color-mix(in oklab, var(--bew-theme-color), transparent 55%);
 
   --bew-top-bar-height: 64px;
 
