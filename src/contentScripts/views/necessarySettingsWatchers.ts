@@ -26,12 +26,6 @@ export function setupNecessarySettingsWatchers() {
     return Math.min(FROSTED_GLASS_BLUR_MAX_PX, Math.max(FROSTED_GLASS_BLUR_MIN_PX, value))
   }
 
-  // Chromium routes videos through a different compositor path when a page uses
-  // backdrop filters. In compatibility mode, avoid that path on playback pages
-  // so NVIDIA RTX Video Enhancement can process the video.
-  const isFrostedGlassActive = () => settings.value.enableFrostedGlass
-    && !(settings.value.nvidiaRtxVideoEnhancementCompatibility && isVideoPlaybackPage())
-
   const applyFrostedGlassBlur = (rawValue: number) => {
     const clampedValue = clampFrostedGlassBlur(rawValue)
     const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
@@ -40,7 +34,7 @@ export function setupNecessarySettingsWatchers() {
     if (bewlyElement)
       targets.push(bewlyElement)
 
-    if (!isFrostedGlassActive()) {
+    if (!settings.value.enableFrostedGlass) {
       targets.forEach((element) => {
         element.style.removeProperty('--bew-filter-glass-1')
         element.style.removeProperty('--bew-filter-glass-2')
@@ -66,7 +60,7 @@ export function setupNecessarySettingsWatchers() {
 
   const applyFrostedGlassState = () => {
     const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
-    const shouldDisable = !isFrostedGlassActive()
+    const shouldDisable = !settings.value.enableFrostedGlass
 
     bewlyElement?.classList.toggle('disable-frosted-glass', shouldDisable)
     document.documentElement.classList.toggle('disable-frosted-glass', shouldDisable)
@@ -186,10 +180,7 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
-    [
-      () => settings.value.enableFrostedGlass,
-      () => settings.value.nvidiaRtxVideoEnhancementCompatibility,
-    ],
+    () => settings.value.enableFrostedGlass,
     applyFrostedGlassState,
     { immediate: true },
   )
@@ -431,7 +422,6 @@ export function setupNecessarySettingsWatchers() {
 
     lastBewlyDesignHref = location.href
     applyBewlyDesignClasses()
-    applyFrostedGlassState()
   }
 
   window.addEventListener('popstate', refreshBewlyDesignOnRouteChange)

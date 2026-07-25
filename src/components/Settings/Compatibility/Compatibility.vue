@@ -45,13 +45,6 @@ function changeThemeColor(color: string) {
       >
         <Radio v-model="settings.preventMobileRedirect" />
       </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.nvidia_rtx_video_enhancement_compatibility')"
-        :desc="$t('settings.nvidia_rtx_video_enhancement_compatibility_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.nvidiaRtxVideoEnhancementCompatibility" />
-      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup title="Bilibili Evolved">
