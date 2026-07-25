@@ -44,7 +44,9 @@ onUnmounted(() => {
 })
 
 function handleWindowResize() {
-  calculatePosition(dropdownRef.value?.scrollHeight ?? 0)
+  if (!showOptions.value)
+    return
+  calculatePosition(dropdownRef.value?.scrollHeight ?? DROPDOWN_MAX_HEIGHT)
 }
 
 /** 计算下拉菜单绝对位置，空间不足时自动向上弹出并限制最大高度 */
@@ -57,7 +59,9 @@ function calculatePosition(desiredHeight: number) {
   const spaceAbove = rect.top - DROPDOWN_MARGIN
 
   // 下方放不下且上方更宽敞时向上弹出；最大高度限制在所选方向的可用空间内
-  const openUp = spaceBelow < desiredHeight && spaceAbove > spaceBelow
+  const openUp = desiredHeight > 0
+    ? spaceBelow < desiredHeight && spaceAbove > spaceBelow
+    : false
   const availableSpace = openUp ? spaceAbove : spaceBelow
 
   dropdownPosition.value = {
@@ -70,23 +74,31 @@ function calculatePosition(desiredHeight: number) {
   }
 }
 
-// 显示选项时定位：先按当前状态渲染，再用真实高度校正方向
+function openOptions() {
+  // 先写好坐标再挂载，避免 enter 动画把 top/left 从 0 过渡到真实位置（左上角飞入）
+  calculatePosition(DROPDOWN_MAX_HEIGHT)
+  showOptions.value = true
+}
+
+function toggleOptions() {
+  if (showOptions.value)
+    showOptions.value = false
+  else
+    openOptions()
+}
+
+// 打开后再用真实内容高度校正方向与 maxHeight（此时坐标已接近正确，不再从 0,0 起步）
 watch(showOptions, async (visible) => {
   if (!visible)
     return
 
-  calculatePosition(dropdownRef.value?.scrollHeight ?? 0)
   await nextTick()
-
-  // 用 scrollHeight（未被 max-height 夹取的完整内容高度）重新决策，
-  // 避免第一遍的 maxHeight 污染测量导致该翻转而没翻；
-  // 翻转后 maxHeight 收缩到另一侧可用空间内，菜单必然完整可见，无需二次校正
   if (dropdownRef.value)
     calculatePosition(dropdownRef.value.scrollHeight)
 }, { flush: 'post' })
 
 function onClickOption(val: OptionType) {
-  window.removeEventListener('click', () => {})
+  window.removeEventListener('click', closeOptions)
   label.value = val.label
   emit('update:modelValue', val.value)
   emit('change', val.value)
@@ -124,7 +136,7 @@ function onMouseEnter() {
       justify="between"
       items="center" w="full"
       :ring="showOptions ? '2px $bew-theme-color' : ''" duration-300
-      @click="showOptions = !showOptions"
+      @click="toggleOptions"
     >
       <div
         truncate
@@ -194,9 +206,13 @@ function onMouseEnter() {
 <style lang="scss" scoped>
 // 向上弹出时的过渡：方向与全局 .dropdown（向下开）相反
 // 使用独立的 translate 属性而非 transform，避免覆盖定位用的 inline transform
+// 不要 transition: all，否则二次校正坐标时会带动 top/left 飞入
 .dropdown-up-enter-active,
 .dropdown-up-leave-active {
-  transition: all 300ms ease;
+  transition:
+    opacity 300ms ease,
+    translate 300ms ease,
+    filter 300ms ease;
 }
 
 .dropdown-up-enter-from,
