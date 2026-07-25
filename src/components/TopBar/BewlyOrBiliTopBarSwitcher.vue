@@ -44,7 +44,7 @@ const topMargin = computed(() => {
     @mouseleave="isButtonVisible = false"
   >
     <button
-      style="backdrop-filter: var(--bew-filter-glass-1);"
+      style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
       pos="absolute"
       :class="isButtonVisible ? 'opacity-100' : 'opacity-0'"
       class="pointer-events-auto"

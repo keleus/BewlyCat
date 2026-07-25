@@ -73,7 +73,7 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     class="bewly-bili-switcher"
     :class="{
       'bewly-bili-switcher--white': props.forceWhiteIcon,
-      'bewly-bili-switcher--solid': !settings.enableFrostedGlass,
+      'bewly-bili-switcher--solid': !settings.enableFrostedGlass && !settings.enableLiquidGlass,
     }"
     role="group"
     aria-label="Homepage mode"
@@ -110,9 +110,11 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   border: 0;
   border-radius: var(--bew-top-bar-control-radius);
   background: var(--bew-elevated);
+  background-image: var(--bew-liquid-glass-surface-image);
   backdrop-filter: var(--bew-filter-glass-1);
 
   &--solid {
+    background-image: none;
     backdrop-filter: none;
   }
 

@@ -336,9 +336,12 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(appearanceRoute, [
     'settings.menu_appearance',
     'settings.group_visual_effects',
+    'settings.disable_shadow',
     'settings.enable_frosted_glass',
     'settings.frosted_glass_blur_intensity',
-    'settings.disable_shadow',
+    'settings.enable_liquid_glass',
+    'settings.liquid_glass_blur_intensity',
+    'settings.liquid_glass_tint_intensity',
     'settings.group_color',
     'settings.theme',
     'settings.video_page_dark_mode',

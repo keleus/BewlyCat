@@ -158,6 +158,7 @@ function onMouseEnter() {
             // 向上弹出时锚点移到触发器顶部，用 transform 上移自身高度，无需先测量实际高度
             transform: dropdownPosition.openUp ? `translateY(calc(-100% - ${DROPDOWN_MARGIN}px))` : undefined,
             marginTop: dropdownPosition.openUp ? undefined : `${DROPDOWN_MARGIN}px`,
+            backgroundImage: 'var(--bew-liquid-glass-surface-image)',
             backdropFilter: 'var(--bew-filter-glass-1)',
           }"
           pos="absolute" bg="$bew-elevated" shadow="$bew-shadow-2" p="2"

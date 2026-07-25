@@ -265,7 +265,7 @@ onMounted(() => {
                   pos="absolute top-4px right-4px" z-1 text="14px" flex="~ gap-1"
                 >
                   <button
-                    style="backdrop-filter: var(--bew-filter-glass-1);"
+                    style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
                     bg="$bew-content" rounded-full w-28px h-28px
                     grid place-items-center
                     @click="handleUploadWallpaper"
@@ -273,7 +273,7 @@ onMounted(() => {
                     <i i-mingcute:edit-2-line />
                   </button>
                   <button
-                    style="backdrop-filter: var(--bew-filter-glass-1);"
+                    style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
                     bg="$bew-content" rounded-full w-28px h-28px
                     grid place-items-center
                     @click="handleRemoveCustomWallpaper"

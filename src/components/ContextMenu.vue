@@ -28,7 +28,7 @@ const { mainAppRef } = useBewlyApp()
     <div
       class="context-menu-container"
       :style="menuStyles"
-      style="backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1); z-index: 9999;"
+      style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1); z-index: 9999;"
       p-1 bg="$bew-elevated" rounded="$bew-radius"
       min-w-140px m="t-1 l-[calc(-140px+0.5rem)]"
       border="1 $bew-border-color"

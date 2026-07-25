@@ -69,6 +69,11 @@ export function resetAppAuthTokens() {
 
 export const FROSTED_GLASS_BLUR_MIN_PX = 1
 export const FROSTED_GLASS_BLUR_MAX_PX = 20
+export const LIQUID_GLASS_BLUR_MIN_PX = 0
+export const LIQUID_GLASS_BLUR_MAX_PX = 20
+export const LIQUID_GLASS_TINT_MIN_PERCENT = 0
+export const LIQUID_GLASS_TINT_MAX_PERCENT = 200
+export const LIQUID_GLASS_TINT_DEFAULT_PERCENT = 40
 
 // 快捷键基础配置接口
 export interface BaseShortcutSetting {
@@ -195,6 +200,9 @@ export interface Settings {
 
   enableFrostedGlass: boolean
   frostedGlassBlurIntensity: number
+  enableLiquidGlass: boolean
+  liquidGlassBlurIntensity: number
+  liquidGlassTintIntensity: number
   disableShadow: boolean
 
   enableVideoPreview: boolean
@@ -431,6 +439,9 @@ export const originalSettings: Settings = {
 
   enableFrostedGlass: false,
   frostedGlassBlurIntensity: 20,
+  enableLiquidGlass: false,
+  liquidGlassBlurIntensity: 8,
+  liquidGlassTintIntensity: LIQUID_GLASS_TINT_DEFAULT_PERCENT,
   disableShadow: false,
 
   // Link Opening Behavior
@@ -700,6 +711,39 @@ watch(
     if (record.frostedGlassBlurIntensity > FROSTED_GLASS_BLUR_MAX_PX)
       record.frostedGlassBlurIntensity = FROSTED_GLASS_BLUR_MAX_PX
 
+    if (!Number.isFinite(record.liquidGlassBlurIntensity))
+      record.liquidGlassBlurIntensity = originalSettings.liquidGlassBlurIntensity
+
+    record.liquidGlassBlurIntensity = Math.min(
+      LIQUID_GLASS_BLUR_MAX_PX,
+      Math.max(LIQUID_GLASS_BLUR_MIN_PX, record.liquidGlassBlurIntensity),
+    )
+
+    if ('enableHomeLiquidGlass' in record) {
+      record.enableLiquidGlass = record.enableHomeLiquidGlass === true
+      Reflect.deleteProperty(record, 'enableHomeLiquidGlass')
+    }
+
+    if ('homeLiquidGlassRefractionIntensity' in record) {
+      Reflect.deleteProperty(record, 'homeLiquidGlassRefractionIntensity')
+    }
+
+    if ('liquidGlassRefractionIntensity' in record)
+      Reflect.deleteProperty(record, 'liquidGlassRefractionIntensity')
+
+    if ('homeLiquidGlassTintIntensity' in record) {
+      record.liquidGlassTintIntensity = record.homeLiquidGlassTintIntensity
+      Reflect.deleteProperty(record, 'homeLiquidGlassTintIntensity')
+    }
+
+    if (!Number.isFinite(record.liquidGlassTintIntensity))
+      record.liquidGlassTintIntensity = originalSettings.liquidGlassTintIntensity
+
+    record.liquidGlassTintIntensity = Math.min(
+      LIQUID_GLASS_TINT_MAX_PERCENT,
+      Math.max(LIQUID_GLASS_TINT_MIN_PERCENT, record.liquidGlassTintIntensity),
+    )
+
     // 迁移旧的布尔类型自动播放设置到新的 AutoPlayMode 类型
     const autoPlayFields = ['autoPlayMultipart', 'autoPlayCollection', 'autoPlayRecommend', 'autoPlayPlaylist'] as const
 
@@ -731,6 +775,10 @@ watch(
       // 清理旧的字段
       Reflect.deleteProperty(record, 'disableFrostedGlass')
     }
+
+    // 两种玻璃效果互斥；旧配置同时开启时优先保留 Liquid Glass。
+    if (record.enableLiquidGlass === true && record.enableFrostedGlass === true)
+      record.enableFrostedGlass = false
 
     // 迁移旧的 locallyUploadedWallpaper/customizeCSS/customizeCSSContent 到 localSettings
     if ('locallyUploadedWallpaper' in record || 'customizeCSS' in record || 'customizeCSSContent' in record) {

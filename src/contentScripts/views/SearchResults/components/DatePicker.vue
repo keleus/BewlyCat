@@ -472,6 +472,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   width: 280px;
   padding: 12px;
   background: var(--bew-elevated);
+  background-image: var(--bew-liquid-glass-surface-image);
   border-radius: var(--bew-radius);
   box-shadow: var(--bew-shadow-3);
   backdrop-filter: var(--bew-filter-glass-1);

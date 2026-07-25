@@ -17,7 +17,7 @@ const list = computed((): { name: string, url: string, icon: string }[] => [
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);"
+    style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
     h="[calc(100vh-100px)]" max-h-264px important-overflow-y-auto
     w="180px"
     bg="$bew-elevated"

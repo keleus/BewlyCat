@@ -36,7 +36,7 @@ const list = computed(() => {
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);"
+    style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
     bg="$bew-elevated"
     rounded="$bew-radius"
     p="4"

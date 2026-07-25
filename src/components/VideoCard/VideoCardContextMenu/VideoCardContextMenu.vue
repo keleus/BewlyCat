@@ -452,7 +452,7 @@ async function unfollowUser() {
     <!-- more popup -->
     <div v-if="showContextMenu">
       <div
-        style="backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);"
+        style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);"
         :style="contextMenuStyles"
         p-1 bg="$bew-elevated" rounded="$bew-radius"
         min-w-200px m="t-4 l-[calc(-200px+1rem)]"

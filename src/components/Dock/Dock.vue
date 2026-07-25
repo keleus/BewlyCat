@@ -549,7 +549,6 @@ onUnmounted(() => {
               class="dock-item group"
               :class="{
                 'active': isDockItemActivated(dockItem),
-                'inactive': hoveringDockItem.themeMode && isDark,
                 'disable-glowing-effect': settings.disableDockGlowingEffect,
               }"
               @click="handleDockItemClick($event, dockItem)"
@@ -575,27 +574,13 @@ onUnmounted(() => {
         <Tooltip
           v-if="!settings.disableLightDarkModeSwitcherOnDock"
           :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" :placement="tooltipPlacement"
-          class="group"
           pointer-events-none
         >
-          <!-- moon -->
-          <div
-            v-if="isDark"
-            pos="absolute top-0 left-0 group-hover:top-2px group-hover:left--4px"
-            w-full h-full bg-white rounded="1/2"
-            z--2 pointer-events-none
-            :shadow="
-              settings.disableDockGlowingEffect
-                ? 'none'
-                : 'group-hover:[-8px_4px_160px_20px_hsla(226deg,85%,77%,1),-8px_4px_100px_12px_hsla(226deg,85%,77%,0.8),-8px_4px_60px_10px_hsla(226deg,85%,77%,0.6),-8px_4px_20px_4px_hsla(226deg,85%,77%,0.4),-4px_2px_8px_0_hsla(226deg,85%,77%,0.8)]'"
-            opacity-0 group-hover:opacity-100
-            duration-600
-          />
-
           <button
             class="dock-item"
-            bg="!dark-hover:$bew-bg" transform="!dark-hover:scale-100"
-            :shadow="settings.disableDockGlowingEffect ? 'none' : '!dark-hover:[inset_4px_-2px_8px_hsla(226deg,85%,77%,1)]'"
+            :class="{
+              'disable-glowing-effect': settings.disableDockGlowingEffect,
+            }"
             pointer-events-auto
             @click="toggleDark"
             @mouseenter="hoveringDockItem.themeMode = true"
@@ -620,7 +605,7 @@ onUnmounted(() => {
           <button
             class="dock-item group"
             :class="{
-              inactive: hoveringDockItem.themeMode && isDark,
+              'disable-glowing-effect': settings.disableDockGlowingEffect,
             }"
             @click="emit('settingsVisibilityChange')"
           >
@@ -644,9 +629,6 @@ onUnmounted(() => {
               <button
                 v-if="(key === 1 && canRefreshCurrentPage) || (key === 2 && !reachTop)"
                 class="back-to-top-or-refresh-btn"
-                :class="{
-                  inactive: hoveringDockItem.themeMode && isDark,
-                }"
                 @click="handleBackToTopOrRefresh(key === 1 ? 'refresh' : 'backToTop')"
               >
                 <Icon
@@ -666,9 +648,6 @@ onUnmounted(() => {
         <template v-else>
           <button
             class="back-to-top-or-refresh-btn"
-            :class="{
-              inactive: hoveringDockItem.themeMode && isDark,
-            }"
             @click="handleBackToTopOrRefresh('auto')"
           >
             <Transition name="fade">
@@ -690,9 +669,6 @@ onUnmounted(() => {
           <button
             v-if="showUndoForwardActions"
             class="back-to-top-or-refresh-btn"
-            :class="{
-              inactive: hoveringDockItem.themeMode && isDark,
-            }"
             @click="handleHistoryNavigation"
           >
             <Icon
@@ -798,11 +774,11 @@ onUnmounted(() => {
     --uno: "transform active:important-scale-90 hover:scale-110";
     --uno: "lg:w-45px w-35px lg:h-45px h-35px";
     --uno: "grid place-items-center";
-    --uno: "filter-$bew-filter-glass-1";
     --uno: "bg-$bew-elevated hover:bg-$bew-content-hover";
     --uno: "rounded-full shadow-$bew-shadow-2 border-1 border-$bew-border-color";
 
-    backdrop-filter: var(--bew-filter-glass-1);
+    background-image: var(--bew-liquid-glass-surface-image);
+    backdrop-filter: var(--bew-filter-glass-dock, var(--bew-filter-glass-1));
     transition:
       transform 300ms cubic-bezier(0.34, 2, 0.6, 1),
       background 300ms ease,
@@ -860,7 +836,8 @@ onUnmounted(() => {
     --uno: "flex flex-col gap-2 shrink-0";
     --uno: "rounded-full border-1 border-$bew-border-color";
     box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
-    backdrop-filter: var(--bew-filter-glass-1);
+    background-image: var(--bew-liquid-glass-surface-image);
+    backdrop-filter: var(--bew-filter-glass-dock, var(--bew-filter-glass-1));
   }
 
   &.bottom .dock-content-inner {
@@ -871,11 +848,11 @@ onUnmounted(() => {
     --uno: "transform active:important-scale-90 hover:scale-110";
     --uno: "lg:w-45px w-35px lg:h-45px h-35px";
     --uno: "grid place-items-center";
-    --uno: "filter-$bew-filter-glass-1";
     --uno: "bg-$bew-elevated hover:bg-$bew-content-hover";
     --uno: "rounded-full shadow-$bew-shadow-2 border-1 border-$bew-border-color";
 
-    backdrop-filter: var(--bew-filter-glass-1);
+    background-image: var(--bew-liquid-glass-surface-image);
+    backdrop-filter: var(--bew-filter-glass-dock, var(--bew-filter-glass-1));
     transition:
       transform 300ms cubic-bezier(0.34, 2, 0.6, 1),
       background 300ms ease,
@@ -888,10 +865,6 @@ onUnmounted(() => {
       --uno: "important-bg-$bew-theme-color-auto text-$bew-text-auto";
       --uno: "shadow-$shadow-active dark:shadow-$shadow-dark";
       --uno: "active:shadow-$shadow-active-active dark-active:shadow-$shadow-dark-active";
-    }
-
-    &.inactive {
-      --uno: "opacity-80 !shadow-none";
     }
   }
 
@@ -941,12 +914,94 @@ onUnmounted(() => {
     --uno: "active:shadow-$shadow-active-active dark-active:shadow-$shadow-dark-active";
   }
 
-  &.inactive {
-    --uno: "opacity-80 !shadow-none";
-  }
-
   svg {
     --uno: "lg:w-22px w-18px lg:h-22px h-18px block align-middle";
+  }
+}
+</style>
+
+<style lang="scss">
+:host(.enable-liquid-glass) {
+  .dock-content-inner,
+  .back-to-top-or-refresh-btn {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    border-color: color-mix(in oklab, var(--bew-border-color), white 24%);
+    background-color: color-mix(in oklab, var(--bew-elevated), transparent 10%);
+    background-image:
+      linear-gradient(150deg, rgb(255 255 255 / 0.2), transparent 38%), var(--bew-liquid-glass-surface-image);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.36),
+      inset 0 -1px 0 rgb(0 0 0 / 0.09),
+      inset 1px 0 0 rgb(255 255 255 / 0.12),
+      var(--bew-liquid-shadow-dock-panel);
+  }
+
+  .dock-content-inner::before,
+  .back-to-top-or-refresh-btn::before {
+    position: absolute;
+    z-index: 0;
+    inset: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+    content: "";
+    background: linear-gradient(
+      135deg,
+      transparent 12%,
+      rgb(255 255 255 / 0.06) 34%,
+      rgb(255 255 255 / 0.3) 48%,
+      color-mix(in oklab, var(--bew-theme-color), transparent 82%) 58%,
+      transparent 76%
+    );
+    background-position: 100% 100%;
+    background-size: 220% 220%;
+    opacity: 0.72;
+    transition:
+      background-position 650ms cubic-bezier(0.16, 1, 0.3, 1),
+      opacity 300ms ease;
+  }
+
+  .dock-content-inner > *,
+  .back-to-top-or-refresh-btn > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .dock-content:hover .dock-content-inner::before,
+  .back-to-top-or-refresh-btn:hover::before {
+    background-position: 0 0;
+    opacity: 1;
+  }
+
+  .dock-content.right .dock-content-inner::before {
+    background-size: 180% 180%;
+    opacity: 0.2;
+  }
+
+  .dock-content.right:hover .dock-content-inner::before {
+    background-position: 58% 58%;
+    opacity: 0.4;
+  }
+
+  .dock-item:not(.active):hover {
+    background-color: color-mix(in oklab, var(--bew-fill-2), white 10%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.32),
+      inset 0 0 0 1px rgb(255 255 255 / 0.12),
+      var(--bew-liquid-shadow-floating);
+  }
+}
+
+:host(.enable-liquid-glass.dark) {
+  .dock-content-inner,
+  .back-to-top-or-refresh-btn {
+    border-color: color-mix(in oklab, var(--bew-border-color), white 12%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.2),
+      inset 0 -1px 0 rgb(0 0 0 / 0.22),
+      inset 1px 0 0 rgb(255 255 255 / 0.07),
+      var(--bew-liquid-shadow-dock-panel);
   }
 }
 </style>

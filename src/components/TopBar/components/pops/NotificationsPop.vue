@@ -76,7 +76,7 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);"
+    style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
     bg="$bew-elevated"
     p="4"
     rounded="$bew-radius"

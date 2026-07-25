@@ -92,7 +92,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);"
+    style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
     h="[calc(100vh-100px)]" max-h-500px important-overflow-y-overlay
     bg="$bew-elevated"
     w="380px"

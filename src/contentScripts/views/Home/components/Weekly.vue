@@ -230,6 +230,7 @@ defineExpose({ initData })
               top: `${dropdownPosition.top}px`,
               left: `${dropdownPosition.left}px`,
               width: `${dropdownPosition.width}px`,
+              backgroundImage: 'var(--bew-liquid-glass-surface-image)',
               backdropFilter: 'var(--bew-filter-glass-1)',
             }"
             pos="absolute" bg="$bew-elevated" shadow="$bew-shadow-2"

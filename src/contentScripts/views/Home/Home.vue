@@ -3,9 +3,10 @@ import { useThrottleFn } from '@vueuse/core'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
-import { gridLayout, settings } from '~/logic'
+import { gridLayout, LIQUID_GLASS_TINT_DEFAULT_PERCENT, LIQUID_GLASS_TINT_MAX_PERCENT, LIQUID_GLASS_TINT_MIN_PERCENT, settings } from '~/logic'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
+import { createPillDisplacementMap } from '~/utils/liquidGlass'
 import emitter from '~/utils/mitt'
 
 import VersionReminder from './components/VersionReminder.vue'
@@ -43,6 +44,145 @@ const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value || settings
 const shouldShowFixedTabsBackground = computed(() => {
   return settings.value.fixedHomeTabsOnHomePage && cachedScrollTop.value > 8
 })
+const supportsHomeLiquidGlassRefraction = typeof CSS !== 'undefined'
+  && (
+    CSS.supports('backdrop-filter', 'url("#bew-home-tab-liquid-glass-filter")')
+    || CSS.supports('-webkit-backdrop-filter', 'url("#bew-home-tab-liquid-glass-filter")')
+  )
+
+interface HomeLiquidGlassMap {
+  height: number
+  href: string
+  width: number
+}
+
+const homeHeaderRef = ref<HTMLElement>()
+const homeTabLiquidGlassMap = shallowRef<HomeLiquidGlassMap>()
+const homeGridLiquidGlassMap = shallowRef<HomeLiquidGlassMap>()
+const homeLiquidGlassMapCache = new Map<string, string>()
+const HOME_LIQUID_GLASS_MAP_CACHE_LIMIT = 24
+let homeLiquidGlassResizeObserver: ResizeObserver | undefined
+let homeLiquidGlassUpdateFrame: number | undefined
+
+function clampLiquidGlassTint(value: number) {
+  return Math.min(
+    LIQUID_GLASS_TINT_MAX_PERCENT,
+    Math.max(LIQUID_GLASS_TINT_MIN_PERCENT, Number.isFinite(value) ? value : LIQUID_GLASS_TINT_DEFAULT_PERCENT),
+  )
+}
+
+const homeLiquidGlassRefractionScale = 3.5
+const homeLiquidGlassStyle = computed(() => {
+  const tint = clampLiquidGlassTint(settings.value.liquidGlassTintIntensity) / 100
+  const surfaceAlpha = 0.06 + tint * 0.05
+  const themeAlpha = 0.005 + tint * 0.025
+
+  return {
+    '--bew-home-liquid-glass-surface': `color-mix(in oklab, var(--bew-elevated), transparent ${(100 - surfaceAlpha * 100).toFixed(2)}%)`,
+    '--bew-home-liquid-glass-theme-tint': `color-mix(in oklab, var(--bew-theme-color), transparent ${(100 - themeAlpha * 100).toFixed(2)}%)`,
+    '--bew-home-liquid-glass-rim-opacity': '0.190',
+    '--bew-home-liquid-glass-focus-alpha': (0.075 + tint * 0.055).toFixed(3),
+  }
+})
+const shouldUseHomeLiquidGlassRefraction = computed(() => {
+  return settings.value.enableLiquidGlass
+    && supportsHomeLiquidGlassRefraction
+    && Boolean(homeTabLiquidGlassMap.value || homeGridLiquidGlassMap.value)
+})
+
+function createElementLiquidGlassMap(
+  element: HTMLElement | null,
+  currentMap: HomeLiquidGlassMap | undefined,
+): HomeLiquidGlassMap | undefined {
+  if (!element)
+    return undefined
+
+  const rect = element.getBoundingClientRect()
+  const width = Math.max(1, Math.round(rect.width))
+  const height = Math.max(1, Math.round(rect.height))
+
+  if (currentMap?.width === width && currentMap.height === height)
+    return currentMap
+
+  const cacheKey = `${width}x${height}`
+  const cachedHref = homeLiquidGlassMapCache.get(cacheKey)
+  if (cachedHref) {
+    homeLiquidGlassMapCache.delete(cacheKey)
+    homeLiquidGlassMapCache.set(cacheKey, cachedHref)
+    return { height, href: cachedHref, width }
+  }
+
+  const href = createPillDisplacementMap(width, height)
+  if (href) {
+    const oldestKey = homeLiquidGlassMapCache.keys().next().value
+    if (homeLiquidGlassMapCache.size >= HOME_LIQUID_GLASS_MAP_CACHE_LIMIT && oldestKey !== undefined)
+      homeLiquidGlassMapCache.delete(oldestKey)
+    homeLiquidGlassMapCache.set(cacheKey, href)
+  }
+
+  return href ? { height, href, width } : undefined
+}
+
+function updateHomeLiquidGlassMaps() {
+  homeLiquidGlassUpdateFrame = undefined
+  const header = homeHeaderRef.value
+  homeTabLiquidGlassMap.value = createElementLiquidGlassMap(
+    header?.querySelector<HTMLElement>('.tab-activated') ?? null,
+    homeTabLiquidGlassMap.value,
+  )
+  homeGridLiquidGlassMap.value = createElementLiquidGlassMap(
+    header?.querySelector<HTMLElement>('.grid-layout-item-activated') ?? null,
+    homeGridLiquidGlassMap.value,
+  )
+}
+
+function scheduleHomeLiquidGlassMapUpdate() {
+  if (homeLiquidGlassUpdateFrame !== undefined)
+    return
+
+  if (typeof requestAnimationFrame === 'undefined') {
+    updateHomeLiquidGlassMaps()
+    return
+  }
+
+  homeLiquidGlassUpdateFrame = requestAnimationFrame(updateHomeLiquidGlassMaps)
+}
+
+function cancelHomeLiquidGlassMapUpdate() {
+  if (homeLiquidGlassUpdateFrame === undefined)
+    return
+
+  if (typeof cancelAnimationFrame !== 'undefined')
+    cancelAnimationFrame(homeLiquidGlassUpdateFrame)
+  homeLiquidGlassUpdateFrame = undefined
+}
+
+function refreshHomeLiquidGlassTargets() {
+  void nextTick(() => {
+    homeLiquidGlassResizeObserver?.disconnect()
+
+    if (!settings.value.enableLiquidGlass || !supportsHomeLiquidGlassRefraction) {
+      cancelHomeLiquidGlassMapUpdate()
+      homeTabLiquidGlassMap.value = undefined
+      homeGridLiquidGlassMap.value = undefined
+      return
+    }
+
+    const header = homeHeaderRef.value
+    const activeTab = header?.querySelector<HTMLElement>('.tab-activated') ?? null
+    const activeGridItem = header?.querySelector<HTMLElement>('.grid-layout-item-activated') ?? null
+
+    if (typeof ResizeObserver !== 'undefined') {
+      homeLiquidGlassResizeObserver ??= new ResizeObserver(scheduleHomeLiquidGlassMapUpdate)
+      if (activeTab)
+        homeLiquidGlassResizeObserver.observe(activeTab)
+      if (activeGridItem)
+        homeLiquidGlassResizeObserver.observe(activeGridItem)
+    }
+
+    scheduleHomeLiquidGlassMapUpdate()
+  })
+}
 const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   return [
     { icon: 'i-mingcute:table-3-line', iconActivated: 'i-mingcute:table-3-fill', value: 'adaptive' },
@@ -55,6 +195,18 @@ const gridLayoutIcons = computed((): GridLayoutIcon[] => {
 watch(() => settings.value.homePageTabVisibilityList, () => {
   syncCurrentTabs()
 }, { deep: true })
+
+watch(
+  [
+    () => settings.value.enableLiquidGlass,
+    () => settings.value.enableGridLayoutSwitcher,
+    () => activatedPage.value,
+    () => gridLayout.value.home,
+    () => currentTabs.value.map(tab => tab.page).join('|'),
+  ],
+  refreshHomeLiquidGlassTargets,
+  { flush: 'post' },
+)
 
 function handleOverlayScroll(scrollTop: number) {
   cachedScrollTop.value = scrollTop
@@ -102,9 +254,13 @@ onMounted(() => {
   emitter.on(TOP_BAR_VISIBILITY_CHANGE, handleTopBarVisibilityChange)
 
   syncCurrentTabs()
+  refreshHomeLiquidGlassTargets()
 })
 
 onUnmounted(() => {
+  homeLiquidGlassResizeObserver?.disconnect()
+  cancelHomeLiquidGlassMapUpdate()
+  homeLiquidGlassMapCache.clear()
   emitter.off(TOP_BAR_VISIBILITY_CHANGE, handleTopBarVisibilityChange)
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL, handleOverlayScroll)
 })
@@ -146,6 +302,71 @@ function toggleTabContentLoading(loading: boolean) {
 
 <template>
   <div pos="relative">
+    <svg
+      v-if="shouldUseHomeLiquidGlassRefraction"
+      class="home-liquid-glass-definitions"
+      width="0"
+      height="0"
+      aria-hidden="true"
+    >
+      <defs>
+        <filter
+          v-if="homeTabLiquidGlassMap"
+          id="bew-home-tab-liquid-glass-filter"
+          x="-8"
+          y="-8"
+          :width="homeTabLiquidGlassMap.width + 16"
+          :height="homeTabLiquidGlassMap.height + 16"
+          filterUnits="userSpaceOnUse"
+          color-interpolation-filters="sRGB"
+        >
+          <feImage
+            :href="homeTabLiquidGlassMap.href"
+            x="0"
+            y="0"
+            :width="homeTabLiquidGlassMap.width"
+            :height="homeTabLiquidGlassMap.height"
+            preserveAspectRatio="none"
+            result="displacement-map"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="displacement-map"
+            :scale="homeLiquidGlassRefractionScale"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+        <filter
+          v-if="homeGridLiquidGlassMap"
+          id="bew-home-grid-liquid-glass-filter"
+          x="-8"
+          y="-8"
+          :width="homeGridLiquidGlassMap.width + 16"
+          :height="homeGridLiquidGlassMap.height + 16"
+          filterUnits="userSpaceOnUse"
+          color-interpolation-filters="sRGB"
+        >
+          <feImage
+            :href="homeGridLiquidGlassMap.href"
+            x="0"
+            y="0"
+            :width="homeGridLiquidGlassMap.width"
+            :height="homeGridLiquidGlassMap.height"
+            preserveAspectRatio="none"
+            result="displacement-map"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="displacement-map"
+            :scale="homeLiquidGlassRefractionScale"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </defs>
+    </svg>
+
     <!-- Home search page mode background -->
     <Transition name="bg">
       <div
@@ -214,11 +435,15 @@ function toggleTabContentLoading(loading: boolean) {
 
       <header
         v-if="shouldShowHomeHeader"
+        ref="homeHeaderRef"
         class="home-header"
         :class="{
           'home-header--tabs-left': settings.homeTabsPosition === 'left',
           'home-header-fixed': settings.fixedHomeTabsOnHomePage,
+          'home-header--liquid-glass': settings.enableLiquidGlass,
+          'home-header--liquid-glass-refraction': shouldUseHomeLiquidGlassRefraction,
         }"
+        :style="homeLiquidGlassStyle"
         w-full z-9 duration-300 ease-in-out
       >
         <section
@@ -243,15 +468,6 @@ function toggleTabContentLoading(loading: boolean) {
                 @click="handleChangeTab(tab)"
               >
                 <span class="text-center">{{ $t(tab.i18nKey) }}</span>
-
-                <Transition name="fade">
-                  <div
-                    v-show="activatedPage === tab.page && tabContentLoading"
-                    i-svg-spinners:ring-resize
-                    pos="absolute right-4px top-4px" duration-300
-                    text="8px $bew-theme-color"
-                  />
-                </Transition>
               </button>
             </div>
           </div>
@@ -322,11 +538,18 @@ function toggleTabContentLoading(loading: boolean) {
 }
 
 .glass-panel {
+  background-image: var(--bew-liquid-glass-surface-image);
   backdrop-filter: var(--bew-filter-glass-1);
   /* 关键优化：绘制隔离，防止重绘传播 */
   contain: paint layout;
   /* 创建独立堆叠上下文，减少合成压力 */
   isolation: isolate;
+}
+
+.home-liquid-glass-definitions {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .home-header {
@@ -371,9 +594,11 @@ function toggleTabContentLoading(loading: boolean) {
 .home-tabs-panel--scrolled {
   border-color: color-mix(in oklab, var(--bew-border-color), transparent 24%);
   background: color-mix(in oklab, var(--bew-elevated), transparent 18%);
+  background-image: var(--bew-liquid-glass-surface-image);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 4px 16px rgb(0 0 0 / 0.08);
+    var(--bew-liquid-shadow-control);
+  -webkit-backdrop-filter: var(--bew-filter-glass-1);
   backdrop-filter: var(--bew-filter-glass-1);
 }
 
@@ -384,7 +609,85 @@ function toggleTabContentLoading(loading: boolean) {
   background: color-mix(in oklab, var(--bew-elevated), transparent 28%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 1px 3px rgb(0 0 0 / 0.05);
+    var(--bew-liquid-shadow-subtle);
+}
+
+.home-header--liquid-glass {
+  .glass-panel {
+    --bew-home-liquid-glass-background:
+      linear-gradient(145deg, rgb(255 255 255 / 0.1), transparent 46%),
+      linear-gradient(
+        105deg,
+        var(--bew-home-liquid-glass-surface),
+        transparent 72%,
+        var(--bew-home-liquid-glass-theme-tint)
+      );
+
+    position: relative;
+    overflow: hidden;
+    border-color: color-mix(in oklab, var(--bew-border-color), transparent 48%);
+    background: transparent;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.2),
+      inset 0 -1px 0 rgb(0 0 0 / 0.055),
+      var(--bew-liquid-shadow-floating);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .home-tabs-panel--scrolled {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .glass-panel::before {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    content: "";
+    background: var(--bew-home-liquid-glass-background);
+    -webkit-backdrop-filter: var(--bew-filter-glass-1);
+    backdrop-filter: var(--bew-filter-glass-1);
+  }
+
+  .glass-panel > * {
+    position: relative;
+    z-index: 2;
+  }
+
+  .home-tab-button:not(.tab-activated):hover,
+  .home-grid-layout-switcher > div:not(.grid-layout-item-activated):hover {
+    background: rgb(255 255 255 / 0.075);
+  }
+
+  .tab-activated,
+  .grid-layout-item-activated {
+    border: 0;
+    background: linear-gradient(
+      145deg,
+      rgb(255 255 255 / var(--bew-home-liquid-glass-focus-alpha)),
+      rgb(255 255 255 / 0.018) 58%,
+      var(--bew-home-liquid-glass-theme-tint)
+    );
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / var(--bew-home-liquid-glass-rim-opacity)),
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
+      inset 0 -1px 0 rgb(0 0 0 / 0.06);
+  }
+}
+
+.home-header--liquid-glass-refraction {
+  .tab-activated {
+    -webkit-backdrop-filter: url("#bew-home-tab-liquid-glass-filter") blur(0.75px) saturate(125%);
+    backdrop-filter: url("#bew-home-tab-liquid-glass-filter") blur(0.75px) saturate(125%);
+  }
+
+  .grid-layout-item-activated {
+    -webkit-backdrop-filter: url("#bew-home-grid-liquid-glass-filter") blur(0.75px) saturate(125%);
+    backdrop-filter: url("#bew-home-grid-liquid-glass-filter") blur(0.75px) saturate(125%);
+  }
 }
 
 .home-tabs-scroll {
@@ -411,7 +714,7 @@ function toggleTabContentLoading(loading: boolean) {
   background: var(--bew-theme-color-20);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 2px 6px var(--bew-theme-color-10);
+    var(--bew-liquid-shadow-focus);
   transform: translateY(-0.5px);
 }
 
@@ -420,7 +723,7 @@ function toggleTabContentLoading(loading: boolean) {
   background: color-mix(in oklab, var(--bew-theme-color), var(--bew-elevated) 82%);
   box-shadow:
     inset 0 0 0 1px var(--bew-theme-color-20),
-    0 1px 3px var(--bew-theme-color-10);
+    var(--bew-liquid-shadow-focus);
   transform: translateY(-0.5px);
 }
 

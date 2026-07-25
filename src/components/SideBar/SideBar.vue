@@ -81,7 +81,7 @@ function toggleHideSidebar(hide: boolean) {
       <Tooltip :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" placement="left">
         <Button
           class="ctrl-btn"
-          style="backdrop-filter: var(--bew-filter-glass-1);"
+          style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
           center size="small" round
           @click="toggleDark"
           @mouseenter="hoveringDockItem.themeMode = true"
@@ -104,7 +104,7 @@ function toggleHideSidebar(hide: boolean) {
       <Tooltip :content="$t('dock.settings')" placement="left">
         <Button
           class="ctrl-btn group"
-          style="backdrop-filter: var(--bew-filter-glass-1);"
+          style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
           center size="small" round
           @click="emit('settingsVisibilityChange')"
         >

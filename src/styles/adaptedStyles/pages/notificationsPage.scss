@@ -76,11 +76,13 @@ html.bewly-design.notificationsPage {
 
   .space-left {
     background-color: color-mix(in oklab, var(--bew-content-solid), transparent 40%);
+    background-image: var(--bew-liquid-glass-surface-image);
     backdrop-filter: var(--bew-filter-glass-1);
   }
 
   .space-right {
     background-color: color-mix(in oklab, var(--bew-content-solid), transparent 60%);
+    background-image: var(--bew-liquid-glass-surface-image);
     backdrop-filter: var(--bew-filter-glass-1);
   }
 

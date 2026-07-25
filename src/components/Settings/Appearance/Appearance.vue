@@ -3,7 +3,7 @@ import { useThrottleFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import Select from '~/components/Select.vue'
-import { FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, settings } from '~/logic'
+import { FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, LIQUID_GLASS_BLUR_MAX_PX, LIQUID_GLASS_BLUR_MIN_PX, LIQUID_GLASS_TINT_MAX_PERCENT, LIQUID_GLASS_TINT_MIN_PERCENT, localSettings, settings } from '~/logic'
 
 import ChangeWallpaper from '../components/ChangeWallpaper.vue'
 import SettingsItem from '../components/SettingsItem.vue'
@@ -90,6 +90,24 @@ const themeOptions = computed<Array<{ value: string, label: string }>>(() => {
   ]
 })
 
+const frostedGlassEnabled = computed({
+  get: () => settings.value.enableFrostedGlass,
+  set: (enabled: boolean) => {
+    settings.value.enableFrostedGlass = enabled
+    if (enabled)
+      settings.value.enableLiquidGlass = false
+  },
+})
+
+const liquidGlassEnabled = computed({
+  get: () => settings.value.enableLiquidGlass,
+  set: (enabled: boolean) => {
+    settings.value.enableLiquidGlass = enabled
+    if (enabled)
+      settings.value.enableFrostedGlass = false
+  },
+})
+
 watch(() => settings.value.wallpaper, (newValue) => {
   changeWallpaper(newValue)
 })
@@ -124,6 +142,9 @@ function changeWallpaper(url: string) {
     />
 
     <SettingsItemGroup :title="$t('settings.group_visual_effects')">
+      <SettingsItem :title="$t('settings.disable_shadow')" right-width="auto">
+        <Radio v-model="settings.disableShadow" />
+      </SettingsItem>
       <SettingsItem
         :title="$t('settings.enable_frosted_glass')"
         :badge="$t('settings.badge_performance_impact')"
@@ -133,7 +154,7 @@ function changeWallpaper(url: string) {
           <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
         </template>
 
-        <Radio v-model="settings.enableFrostedGlass" />
+        <Radio v-model="frostedGlassEnabled" />
       </SettingsItem>
       <SettingsItem
         v-if="settings.enableFrostedGlass"
@@ -149,9 +170,45 @@ function changeWallpaper(url: string) {
           />
         </div>
       </SettingsItem>
-      <SettingsItem :title="$t('settings.disable_shadow')" right-width="auto">
-        <Radio v-model="settings.disableShadow" />
+      <SettingsItem
+        :title="$t('settings.enable_liquid_glass')"
+        :badge="$t('settings.badge_performance_impact')"
+        right-width="auto"
+      >
+        <template #desc>
+          <span color="$bew-warning-color">{{ $t('settings.enable_liquid_glass_desc') }}</span>
+        </template>
+
+        <Radio v-model="liquidGlassEnabled" />
       </SettingsItem>
+      <template v-if="settings.enableLiquidGlass">
+        <SettingsItem
+          :title="$t('settings.liquid_glass_blur_intensity')"
+          right-width="auto"
+        >
+          <div class="slider-control">
+            <Slider
+              v-model="settings.liquidGlassBlurIntensity"
+              :min="LIQUID_GLASS_BLUR_MIN_PX"
+              :max="LIQUID_GLASS_BLUR_MAX_PX"
+              :label="`${settings.liquidGlassBlurIntensity}px`"
+            />
+          </div>
+        </SettingsItem>
+        <SettingsItem
+          :title="$t('settings.liquid_glass_tint_intensity')"
+          right-width="auto"
+        >
+          <div class="slider-control">
+            <Slider
+              v-model="settings.liquidGlassTintIntensity"
+              :min="LIQUID_GLASS_TINT_MIN_PERCENT"
+              :max="LIQUID_GLASS_TINT_MAX_PERCENT"
+              :label="`${settings.liquidGlassTintIntensity}%`"
+            />
+          </div>
+        </SettingsItem>
+      </template>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_color')">

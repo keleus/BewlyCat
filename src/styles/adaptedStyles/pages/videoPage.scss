@@ -20,6 +20,216 @@
     --app_graph_bg: var(--bew-fill-1);
   }
 
+  &.enable-liquid-glass {
+    @mixin liquid-glass-panel {
+      background-color: var(--bew-elevated) !important;
+      background-image: var(--bew-liquid-glass-surface-image) !important;
+      background-clip: padding-box;
+      border-color: color-mix(in oklab, var(--bew-border-color), white 18%) !important;
+      border-radius: 8px;
+      outline: 1px solid color-mix(in oklab, var(--bew-border-color), white 12%);
+      outline-offset: -1px;
+      box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-liquid-shadow-panel);
+      -webkit-backdrop-filter: var(--bew-filter-glass-1);
+      backdrop-filter: var(--bew-filter-glass-1);
+    }
+
+    // 选集与合集只在面板外壳合成玻璃，避免为长列表中的每一项重复启用模糊。
+    :is(
+      #eplist_module,
+      [class*="eplist_ep_list_wrapper"],
+      [class*="numberList_wrapper"],
+      [class*="imageList_wrap"],
+      .video-pod,
+      .multi-page,
+      .multi-page-v1,
+      .base-video-sections-v1,
+      .video-sections-v1,
+      .playlist-container
+    ):not(
+      :is(
+          #eplist_module,
+          [class*="eplist_ep_list_wrapper"],
+          [class*="numberList_wrapper"],
+          [class*="imageList_wrap"],
+          .video-pod,
+          .multi-page,
+          .multi-page-v1,
+          .base-video-sections-v1,
+          .video-sections-v1,
+          .playlist-container
+        )
+        *
+    ) {
+      @include liquid-glass-panel;
+    }
+
+    // 多个候选容器嵌套时，仅让最外层参与模糊合成。
+    :is(
+        #eplist_module,
+        [class*="eplist_ep_list_wrapper"],
+        [class*="numberList_wrapper"],
+        [class*="imageList_wrap"],
+        .video-pod,
+        .multi-page,
+        .multi-page-v1,
+        .base-video-sections-v1,
+        .video-sections-v1,
+        .playlist-container
+      )
+      :is(
+        #eplist_module,
+        [class*="eplist_ep_list_wrapper"],
+        [class*="numberList_wrapper"],
+        [class*="imageList_wrap"],
+        .video-pod,
+        .multi-page,
+        .multi-page-v1,
+        .base-video-sections-v1,
+        .video-sections-v1,
+        .playlist-container
+      ) {
+      border-color: transparent !important;
+      outline: none;
+      background-color: transparent !important;
+      background-image: none !important;
+      box-shadow: none;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    // 折叠组件本身覆盖标题和列表，是弹幕区域唯一的玻璃合成层。
+    :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap, .bpx-player-dm-wrap)
+      :is(.bui-collapse, .bui-collapse-wrap):not(:is(.bui-collapse, .bui-collapse-wrap) *),
+    :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap, .bpx-player-dm-wrap):not(
+        :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap, .bpx-player-dm-wrap) *
+      ):not(:has(:is(.bui-collapse, .bui-collapse-wrap))) {
+      @include liquid-glass-panel;
+      box-sizing: border-box;
+      overflow: hidden;
+      border: 1px solid color-mix(in oklab, var(--bew-border-color), white 18%) !important;
+      outline: none;
+    }
+
+    :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap, .bpx-player-dm-wrap)
+      :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap, .bpx-player-dm-wrap) {
+      outline: none;
+      background-color: transparent !important;
+      background-image: none !important;
+      box-shadow: none;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    // 清除弹幕标题栏的不透明底色，让外壳材质保持连续。
+    :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap, .bpx-player-dm-wrap)
+      :is(
+        .bui-collapse-header,
+        .bpx-player-dm-title,
+        .bpx-player-dm-function,
+        .bpx-player-dm-list,
+        .danmaku-list,
+        [class*="DanmukuBox_header"]
+      ) {
+      background-color: transparent !important;
+      background-image: none !important;
+    }
+
+    // 展开区透出同一块玻璃材质，不再绘制独立矩形边界或创建第二个模糊层。
+    :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap, .bpx-player-dm-wrap)
+      :is(
+        .bui-collapse-body,
+        .bpx-player-dm-container,
+        .bpx-player-dm-list,
+        .danmaku-list,
+        [class*="DanmukuBox_list"]
+      ) {
+      border-radius: 0;
+      background-color: transparent !important;
+      background-image: none !important;
+      box-shadow: none;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    // 清除选集与合集内部标题、滚动区域的不透明底色。
+    :is(
+        #eplist_module,
+        [class*="eplist_ep_list_wrapper"],
+        [class*="numberList_wrapper"],
+        [class*="imageList_wrap"],
+        .video-pod,
+        .multi-page,
+        .multi-page-v1,
+        .base-video-sections-v1,
+        .video-sections-v1,
+        .playlist-container
+      )
+      :is(
+        .video-pod__header,
+        .video-pod__body,
+        .head-con,
+        .cur-list,
+        .list-box,
+        .video-sections-head,
+        .video-sections-content-list,
+        [class*="eplist_ep_list_header"],
+        [class*="eplist_ep_list_content"]
+      ) {
+      background-color: transparent !important;
+      background-image: none !important;
+    }
+
+    :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap, .bpx-player-dm-wrap)
+      :is(.bpx-player-dm-list-row, .danmaku-info-row) {
+      border-radius: 6px;
+      transition: background-color 160ms ease;
+
+      &:hover {
+        background-color: var(--bew-fill-2) !important;
+      }
+    }
+
+    :is(
+        #eplist_module,
+        [class*="eplist_ep_list_wrapper"],
+        [class*="numberList_wrapper"],
+        [class*="imageList_wrap"],
+        .video-pod,
+        .multi-page,
+        .multi-page-v1,
+        .base-video-sections-v1,
+        .video-sections-v1,
+        .playlist-container
+      )
+      :is(
+        .video-pod__item,
+        .multi-page__item,
+        .page-item,
+        .simple-base-item,
+        .normal-base-item,
+        .video-section-list,
+        [class*="numberListItem_number_list_item"],
+        [class*="imageListItem_wrap"]
+      ) {
+      background-color: transparent !important;
+      border-radius: 6px;
+      box-shadow: inset 0 0 0 1px transparent;
+      transition:
+        background-color 160ms ease,
+        box-shadow 160ms ease;
+
+      &:hover {
+        background-color: var(--bew-fill-2) !important;
+      }
+
+      &:is(.active, .on, [class*="numberListItem_select"], [class*="imageListItem_select"]) {
+        background-color: var(--bew-theme-color-10) !important;
+        box-shadow: inset 0 0 0 1px var(--bew-theme-color-20);
+      }
+    }
+  }
+
   // #region theme color adaption part
   // Increase the priority of the style inside by writing a non-existent selector in `:not()`
   :not(foobar) {

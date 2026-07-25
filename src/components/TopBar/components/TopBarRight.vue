@@ -399,7 +399,7 @@ const showUtilityActionGroup = computed(() => {
             <a
               class="upload"
               :class="{ 'white-icon': forceWhiteIcon }"
-              style="backdrop-filter: var(--bew-filter-glass-1);"
+              style="background-image: var(--bew-liquid-glass-surface-image); backdrop-filter: var(--bew-filter-glass-1);"
               href="https://member.bilibili.com/platform/upload/video/frame"
               target="_blank"
               :title="$t('topbar.upload')"
@@ -544,6 +544,7 @@ const showUtilityActionGroup = computed(() => {
     position: absolute;
     border-radius: inherit;
     background: var(--bew-top-bar-control-background);
+    background-image: var(--bew-liquid-glass-surface-image);
     backdrop-filter: var(--bew-filter-glass-1);
     content: "";
     inset: 0;

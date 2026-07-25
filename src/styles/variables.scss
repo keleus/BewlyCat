@@ -20,6 +20,8 @@
   // Use this in dialogs if you want to add a frosted glass effect
   --bew-filter-glass-2: blur(30px) saturate(180%);
 
+  --bew-liquid-glass-surface-image: none;
+
   // Apply this to the Bilibili icon if it is an image with the brand's original blue or pink color
   // Change it to glow effect to matches the user's theme color
   --bew-filter-icon-glow: saturate(0) brightness(2) drop-shadow(0 0 0.2px white)
@@ -40,6 +42,14 @@
   // Only used in the dialog
   --bew-shadow-4:
     0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.1), 0 30px 40px -8px rgb(0 0 0 / 0.12);
+
+  // Liquid Glass 的外投影单独管理，确保“禁用阴影”能完整关闭。
+  --bew-liquid-shadow-panel: 0 10px 28px rgb(0 0 0 / 0.1);
+  --bew-liquid-shadow-dock-panel: 0 10px 28px rgb(0 0 0 / 0.12);
+  --bew-liquid-shadow-floating: 0 6px 18px rgb(0 0 0 / 0.06);
+  --bew-liquid-shadow-control: 0 4px 12px rgb(0 0 0 / 0.06);
+  --bew-liquid-shadow-subtle: 0 1px 3px rgb(0 0 0 / 0.05);
+  --bew-liquid-shadow-focus: 0 2px 6px var(--bew-theme-color-10);
 
   // Use this to imitate the frosted glass edge effect in components with a frosted glass design (except dialogs)
   --bew-shadow-edge-glow-1:
@@ -221,6 +231,9 @@
   --bew-shadow-4:
     0 34px 50px -20px rgb(0 0 0 / 0.14), 0 32px 45px -12px rgb(0 0 0 / 0.12), 0 30px 40px -8px rgb(0 0 0 / 0.14);
 
+  --bew-liquid-shadow-dock-panel: 0 12px 30px rgb(0 0 0 / 0.28);
+  --bew-liquid-shadow-control: 0 5px 14px rgb(0 0 0 / 0.14);
+
   --bew-shadow-edge-glow-1:
     inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.06), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.03),
     inset 0 0 10px rgba(255, 255, 255, 0.02);
@@ -295,6 +308,99 @@
   --bew-filter-force-dark: invert(0.98) hue-rotate(180deg) brightness(1.1);
 }
 
+// 伪 Liquid Glass 复用现有毛玻璃合成层，只调整材质透明度、着色与边缘高光。
+:host(.enable-liquid-glass),
+:root.enable-liquid-glass {
+  --bew-content-opacity: var(--bew-liquid-glass-content-opacity, 0.57);
+  --bew-liquid-glass-surface-image:
+    linear-gradient(145deg, rgb(255 255 255 / 0.16) 0%, rgb(255 255 255 / 0.035) 34%, transparent 56%),
+    linear-gradient(315deg, var(--bew-liquid-glass-surface-tint, transparent) 0%, transparent 48%);
+  --bew-content: color-mix(
+    in oklab,
+    hsl(0 0% 100% / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-content-hover: color-mix(
+    in oklab,
+    hsl(0 0% 88% / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-content-alt: color-mix(
+    in oklab,
+    hsl(240 31% 95% / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-content-alt-hover: color-mix(
+    in oklab,
+    hsl(240 20% 82% / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-elevated: color-mix(
+    in oklab,
+    hsl(0 0% 100% / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-elevated-hover: color-mix(
+    in oklab,
+    hsl(0 0% 88% / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-elevated-alt: var(--bew-content-alt);
+  --bew-elevated-alt-hover: var(--bew-content-alt-hover);
+  --bew-fill-alt: color-mix(in oklab, var(--bew-content), transparent 25%);
+  --bew-shadow-edge-glow-1:
+    inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 rgb(0 0 0 / 0.055), inset 1px 0 0 rgb(255 255 255 / 0.06),
+    inset -1px 0 0 rgb(0 0 0 / 0.025);
+  --bew-shadow-edge-glow-2:
+    inset 0 1px 0 rgb(255 255 255 / 0.26), inset 0 -1px 0 rgb(0 0 0 / 0.065), inset 1px 0 0 rgb(255 255 255 / 0.075),
+    inset -1px 0 0 rgb(0 0 0 / 0.03);
+}
+
+:host(.enable-liquid-glass.dark),
+:root.enable-liquid-glass.dark {
+  --bew-liquid-glass-surface-image:
+    linear-gradient(145deg, rgb(255 255 255 / 0.1) 0%, rgb(255 255 255 / 0.018) 36%, transparent 58%),
+    linear-gradient(315deg, var(--bew-liquid-glass-surface-tint, transparent) 0%, transparent 50%);
+  --bew-content: color-mix(
+    in oklab,
+    rgb(from color-mix(in oklab, var(--bew-dark-base-color), white 3%) r g b / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-content-hover: color-mix(
+    in oklab,
+    rgb(from color-mix(in oklab, var(--bew-dark-base-color), white 8%) r g b / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-content-alt: color-mix(
+    in oklab,
+    rgb(from color-mix(in oklab, var(--bew-dark-base-color), white 5%) r g b / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-content-alt-hover: color-mix(
+    in oklab,
+    rgb(from color-mix(in oklab, var(--bew-dark-base-color), white 10%) r g b / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-elevated: color-mix(
+    in oklab,
+    rgb(from color-mix(in oklab, var(--bew-dark-base-color), white 6%) r g b / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-elevated-hover: color-mix(
+    in oklab,
+    rgb(from color-mix(in oklab, var(--bew-dark-base-color), white 11%) r g b / var(--bew-content-opacity)),
+    var(--bew-theme-color) var(--bew-liquid-glass-theme-mix, 1%)
+  );
+  --bew-elevated-alt: var(--bew-elevated);
+  --bew-elevated-alt-hover: var(--bew-elevated-hover);
+  --bew-shadow-edge-glow-1:
+    inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 -1px 0 rgb(0 0 0 / 0.14), inset 1px 0 0 rgb(255 255 255 / 0.04),
+    inset -1px 0 0 rgb(0 0 0 / 0.055);
+  --bew-shadow-edge-glow-2:
+    inset 0 1px 0 rgb(255 255 255 / 0.15), inset 0 -1px 0 rgb(0 0 0 / 0.17), inset 1px 0 0 rgb(255 255 255 / 0.05),
+    inset -1px 0 0 rgb(0 0 0 / 0.065);
+}
+
 :host(.disable-frosted-glass),
 :root.disable-frosted-glass {
   --bew-content-opacity: 1;
@@ -302,6 +408,7 @@
   --bew-filter-glass-2: none;
   --bew-shadow-edge-glow-1: 0 0 0 transparent;
   --bew-shadow-edge-glow-2: 0 0 0 transparent;
+  --bew-liquid-glass-surface-image: none;
   --bew-fill-alt: var(--bew-content-solid);
 }
 
@@ -316,6 +423,12 @@
   --bew-shadow-2: 0 0 0 transparent;
   --bew-shadow-3: 0 0 0 transparent;
   --bew-shadow-4: 0 0 0 transparent;
+  --bew-liquid-shadow-panel: 0 0 0 transparent;
+  --bew-liquid-shadow-dock-panel: 0 0 0 transparent;
+  --bew-liquid-shadow-floating: 0 0 0 transparent;
+  --bew-liquid-shadow-control: 0 0 0 transparent;
+  --bew-liquid-shadow-subtle: 0 0 0 transparent;
+  --bew-liquid-shadow-focus: 0 0 0 transparent;
 }
 :root.bewly-design,
 :root.bewly-design * {

@@ -344,6 +344,7 @@ function changeMenuItem(menuItem: MenuType) {
           <!-- https://github.com/BewlyBewly/BewlyBewly/issues/1162 -->
           <div
             style="
+              background-image: var(--bew-liquid-glass-surface-image);
               box-shadow: var(--bew-shadow-edge-glow-2);
               backdrop-filter: var(--bew-filter-glass-2);
             "
@@ -397,6 +398,7 @@ function changeMenuItem(menuItem: MenuType) {
       <div
         class="settings-content"
         style="
+          background-image: var(--bew-liquid-glass-surface-image);
           --un-shadow: var(--bew-shadow-4), var(--bew-shadow-edge-glow-2);
           backdrop-filter: var(--bew-filter-glass-2);
         "
@@ -416,8 +418,8 @@ function changeMenuItem(menuItem: MenuType) {
           <div
             pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
             :style="{
-              maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, black 0, transparent 100%)' : 'none',
-              WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, black 0, transparent 100%)' : 'none',
+              maskImage: settings.enableFrostedGlass || settings.enableLiquidGlass ? 'linear-gradient(to bottom, black 0, transparent 100%)' : 'none',
+              WebkitMaskImage: settings.enableFrostedGlass || settings.enableLiquidGlass ? 'linear-gradient(to bottom, black 0, transparent 100%)' : 'none',
               backdropFilter: 'blur(6px)',
             }"
             z--1 rounded-inherit
@@ -475,6 +477,7 @@ function changeMenuItem(menuItem: MenuType) {
           </div>
           <div
             style="
+              background-image: var(--bew-liquid-glass-surface-image);
               backdrop-filter: var(--bew-filter-glass-1);
               box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
             "
@@ -491,8 +494,8 @@ function changeMenuItem(menuItem: MenuType) {
         <div
           ref="scrollViewportRef"
           :style="{
-            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
-            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
+            maskImage: settings.enableFrostedGlass || settings.enableLiquidGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
+            WebkitMaskImage: settings.enableFrostedGlass || settings.enableLiquidGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
             scrollbarGutter: 'stable',
           }"
           h-inherit of-y-auto of-x-hidden

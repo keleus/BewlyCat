@@ -3,6 +3,110 @@
     box-sizing: unset;
   }
 
+  &.enable-liquid-glass {
+    // 番剧选集沿用播放页的单层玻璃合成，列表项本身不启用模糊。
+    :is(
+      #eplist_module,
+      [class*="eplist_ep_list_wrapper"],
+      [class*="numberList_wrapper"],
+      [class*="imageList_wrap"],
+      .ep-list-wrapper,
+      .ep-section-module
+    ):not(
+      :is(
+          #eplist_module,
+          [class*="eplist_ep_list_wrapper"],
+          [class*="numberList_wrapper"],
+          [class*="imageList_wrap"],
+          .ep-list-wrapper,
+          .ep-section-module
+        )
+        *
+    ) {
+      background-color: var(--bew-elevated) !important;
+      background-image: var(--bew-liquid-glass-surface-image) !important;
+      background-clip: padding-box;
+      border-color: color-mix(in oklab, var(--bew-border-color), white 18%) !important;
+      border-radius: 8px;
+      outline: 1px solid color-mix(in oklab, var(--bew-border-color), white 12%);
+      outline-offset: -1px;
+      box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-liquid-shadow-panel);
+      -webkit-backdrop-filter: var(--bew-filter-glass-1);
+      backdrop-filter: var(--bew-filter-glass-1);
+    }
+
+    :is(
+        #eplist_module,
+        [class*="eplist_ep_list_wrapper"],
+        [class*="numberList_wrapper"],
+        [class*="imageList_wrap"],
+        .ep-list-wrapper,
+        .ep-section-module
+      )
+      :is(
+        #eplist_module,
+        [class*="eplist_ep_list_wrapper"],
+        [class*="numberList_wrapper"],
+        [class*="imageList_wrap"],
+        .ep-list-wrapper,
+        .ep-section-module
+      ) {
+      border-color: transparent !important;
+      outline: none;
+      background-color: transparent !important;
+      background-image: none !important;
+      box-shadow: none;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    :is(
+        #eplist_module,
+        [class*="eplist_ep_list_wrapper"],
+        [class*="numberList_wrapper"],
+        [class*="imageList_wrap"],
+        .ep-list-wrapper,
+        .ep-section-module
+      )
+      :is(
+        [class*="eplist_ep_list_header"],
+        [class*="eplist_ep_list_content"],
+        .list-title,
+        .list-wrapper,
+        .section-title,
+        .section-ep-wrapper
+      ) {
+      background-color: transparent !important;
+      background-image: none !important;
+    }
+
+    :is(
+        #eplist_module,
+        [class*="eplist_ep_list_wrapper"],
+        [class*="numberList_wrapper"],
+        [class*="imageList_wrap"],
+        .ep-list-wrapper,
+        .ep-section-module
+      )
+      :is([class*="numberListItem_number_list_item"], [class*="imageListItem_wrap"], .ep-item) {
+      background-color: transparent !important;
+      border-radius: 6px;
+      box-shadow: inset 0 0 0 1px transparent;
+      transition:
+        background-color 160ms ease,
+        box-shadow 160ms ease;
+
+      &:hover {
+        background-color: var(--bew-fill-2) !important;
+      }
+
+      &:is(.cursor, [class*="numberListItem_select"], [class*="imageListItem_select"]) {
+        background-color: var(--bew-theme-color-10) !important;
+        box-shadow: inset 0 0 0 1px var(--bew-theme-color-20);
+      }
+    }
+  }
+
   body .special-cover::after {
     content: "";
     position: absolute;

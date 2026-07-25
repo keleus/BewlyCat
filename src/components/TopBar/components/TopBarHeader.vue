@@ -127,7 +127,7 @@ function refreshSearchContent() {
     <!-- Top bar mask -->
     <Transition name="fade">
       <div
-        v-if="!reachTop && settings.enableFrostedGlass"
+        v-if="!reachTop && (settings.enableFrostedGlass || settings.enableLiquidGlass)"
         style="
           mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
           -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
@@ -135,9 +135,10 @@ function refreshSearchContent() {
         pos="absolute top-0 left-0" w-full h="$bew-top-bar-height"
         pointer-events-none
         :style="{
-          backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-bg)',
-          opacity: settings.enableFrostedGlass ? 1 : 0.9,
-          backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
+          backgroundColor: settings.enableFrostedGlass || settings.enableLiquidGlass ? 'transparent' : 'var(--bew-bg)',
+          backgroundImage: settings.enableFrostedGlass || settings.enableLiquidGlass ? 'var(--bew-liquid-glass-surface-image)' : 'none',
+          opacity: settings.enableFrostedGlass || settings.enableLiquidGlass ? 1 : 0.9,
+          backdropFilter: settings.enableFrostedGlass || settings.enableLiquidGlass ? 'var(--bew-filter-glass-1)' : 'none',
         }"
       />
     </Transition>

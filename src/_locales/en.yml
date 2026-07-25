@@ -246,6 +246,10 @@ settings:
     the indent.
   enable_frosted_glass: Enable frosted glass effect
   frosted_glass_blur_intensity: Frosted glass blur intensity
+  enable_liquid_glass: Enable pseudo Liquid Glass effect
+  enable_liquid_glass_desc: For performance, large surfaces use enhanced frosted glass styled after Liquid Glass, while the Dock and selected Home controls retain local refraction. It is mutually exclusive with regular frosted glass and may still affect performance.
+  liquid_glass_blur_intensity: Liquid Glass blur intensity
+  liquid_glass_tint_intensity: Liquid Glass tint
   disable_shadow: Disable shadow
   link_opening_behavior_opt:
     current_tab: Current tab

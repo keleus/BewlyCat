@@ -472,3 +472,165 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
   height: 20px;
 }
 </style>
+
+<style lang="scss">
+// 顶栏只复用已有模糊层，按钮本身使用静态高光与阴影模拟玻璃厚度。
+:host(.enable-liquid-glass) .top-bar {
+  --bew-top-bar-liquid-border: color-mix(in oklab, var(--bew-border-color), transparent 52%);
+  --bew-top-bar-liquid-surface: color-mix(in oklab, var(--bew-elevated), transparent 38%);
+  --bew-top-bar-liquid-surface-image:
+    linear-gradient(155deg, rgb(255 255 255 / 0.14) 0%, rgb(255 255 255 / 0.025) 32%, transparent 55%),
+    linear-gradient(330deg, var(--bew-liquid-glass-surface-tint, transparent) 0%, transparent 58%);
+  --bew-top-bar-liquid-button-hover: color-mix(in oklab, var(--bew-content-hover), transparent 72%);
+
+  .top-bar-action-group,
+  .pinned-channels,
+  .bewly-bili-switcher {
+    border-width: 0.5px;
+    border-color: var(--bew-top-bar-liquid-border);
+    background-color: var(--bew-top-bar-liquid-surface);
+    background-image: var(--bew-top-bar-liquid-surface-image);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.18),
+      inset 0 -1px 0 rgb(0 0 0 / 0.055),
+      var(--bew-liquid-shadow-control);
+  }
+
+  .top-bar-action-group::before {
+    background-color: transparent;
+    background-image: var(--bew-top-bar-liquid-surface-image);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+
+  .right-side .right-side-item:not(.avatar) > a:not(.login),
+  .right-side .right-side-item > .notifications,
+  .pinned-channels__item,
+  .pinned-channels__more,
+  .bewly-bili-switcher-button,
+  .home-button,
+  .search-wrap--top-bar .search-bar > button:last-of-type {
+    box-sizing: border-box;
+    border: 0.5px solid transparent;
+    background-color: transparent;
+    background-image: none !important;
+    box-shadow: none;
+    transform: translateY(0) scale(1);
+    transition:
+      transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      border-color 220ms ease,
+      background-color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .right-side .right-side-item.active:not(.avatar) > a:not(.login),
+  .right-side .right-side-item.active > .notifications,
+  .bewly-bili-switcher-button.active {
+    border-color: color-mix(in oklab, var(--bew-theme-color), transparent 68%);
+    background-color: color-mix(in oklab, var(--bew-theme-color), transparent 88%);
+    background-image: none !important;
+    box-shadow: none;
+  }
+
+  .right-side .right-side-item:not(.avatar):not(.active) > a:not(.login):hover,
+  .right-side .right-side-item:not(.active) > .notifications:hover,
+  .pinned-channels__item:hover,
+  .pinned-channels__more:hover,
+  .bewly-bili-switcher-button:not(.active):hover,
+  .home-button:hover,
+  .search-wrap--top-bar .search-bar > button:last-of-type:hover {
+    border-color: transparent;
+    background-color: var(--bew-top-bar-liquid-button-hover);
+    background-image: none !important;
+    box-shadow: none;
+    transform: none;
+  }
+
+  .right-side .right-side-item:not(.avatar) > a:not(.login):active,
+  .right-side .right-side-item > .notifications:active,
+  .pinned-channels__item:active,
+  .bewly-bili-switcher-button:active,
+  .home-button:active,
+  .search-wrap--top-bar .search-bar > button:last-of-type:active {
+    box-shadow: none;
+    transform: translateY(0) scale(0.94);
+  }
+
+  .top-bar-brand-button {
+    border: 0.5px solid transparent;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    transition:
+      transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+      border-color 220ms ease,
+      background-color 220ms ease,
+      box-shadow 220ms ease,
+      color 220ms ease;
+
+    &:is(:hover, .activated) {
+      border-color: var(--bew-top-bar-liquid-border);
+      background-color: var(--bew-top-bar-liquid-surface);
+      background-image: var(--bew-top-bar-liquid-surface-image) !important;
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.18),
+        inset 0 -1px 0 rgb(0 0 0 / 0.055),
+        var(--bew-liquid-shadow-control);
+      -webkit-backdrop-filter: var(--bew-filter-glass-1);
+      backdrop-filter: var(--bew-filter-glass-1);
+      color: var(--bew-theme-color);
+      transform: none;
+    }
+
+    &.top-bar-brand-button--white:is(.activated, :hover) {
+      color: white;
+    }
+
+    &:active {
+      transform: translateY(0) scale(0.97);
+    }
+  }
+
+  .search-wrap--top-bar .search-bar input {
+    border-color: var(--bew-top-bar-liquid-border);
+    background-color: var(--bew-top-bar-liquid-surface);
+    background-image:
+      linear-gradient(155deg, rgb(255 255 255 / 0.24), rgb(255 255 255 / 0.035) 42%, transparent 62%),
+      linear-gradient(330deg, var(--bew-liquid-glass-surface-tint, transparent), transparent 64%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.38),
+      inset 0 -1px 0 rgb(0 0 0 / 0.09),
+      var(--bew-liquid-shadow-floating);
+  }
+}
+
+:host(.enable-liquid-glass.dark) .top-bar {
+  --bew-top-bar-liquid-border: color-mix(in oklab, var(--bew-border-color), transparent 46%);
+  --bew-top-bar-liquid-surface: color-mix(in oklab, var(--bew-elevated), transparent 30%);
+
+  .top-bar-action-group,
+  .pinned-channels,
+  .bewly-bili-switcher {
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.14),
+      inset 0 -1px 0 rgb(0 0 0 / 0.16),
+      var(--bew-liquid-shadow-control);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host(.enable-liquid-glass) .top-bar {
+    .right-side .right-side-item:not(.avatar) > a:not(.login),
+    .right-side .right-side-item > .notifications,
+    .pinned-channels__item,
+    .pinned-channels__more,
+    .bewly-bili-switcher-button,
+    .home-button,
+    .top-bar-brand-button,
+    .search-wrap--top-bar .search-bar > button:last-of-type {
+      transition: none;
+    }
+  }
+}
+</style>

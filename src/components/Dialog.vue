@@ -104,6 +104,7 @@ const dialogPanelStyle = computed(() => {
     border: props.showBorder ? undefined : '0',
     backdropFilter: props.frostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
     backgroundColor: props.frostedGlass ? 'var(--bew-elevated)' : 'var(--bew-elevated-solid)',
+    backgroundImage: props.frostedGlass ? 'var(--bew-liquid-glass-surface-image)' : 'none',
     boxShadow: props.showBorder ? 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)' : 'var(--bew-shadow-4)',
   }
 })
@@ -205,6 +206,7 @@ function handleConfirm() {
 
             <div
               style="
+                background-image: var(--bew-liquid-glass-surface-image);
                 backdrop-filter: var(--bew-filter-glass-1);
                 box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
               "
