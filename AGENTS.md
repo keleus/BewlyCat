@@ -16,6 +16,14 @@ BewlyCat is a browser extension that enhances the Bilibili homepage experience. 
 - `pnpm lint:fix` - Run ESLint with auto-fix
 - `pnpm typecheck` - Run TypeScript type checking
 
+### Verification Requirement (MANDATORY)
+After **every** code change—no matter how small—agents MUST run both commands below and ensure they pass before considering the work complete:
+```powershell
+pnpm lint
+pnpm typecheck
+```
+This is non-negotiable. A "one-line cosmetic change" can still break TypeScript (e.g. a component prop that became `required` upstream) or trip ESLint rules. Local `typecheck` passing is the leading indicator for CI; skipping it lets failures reach the PR and wastes a CI cycle.
+
 ### Build Process
 The project uses a multi-target build system:
 - Chrome/Edge: builds to `extension/` directory

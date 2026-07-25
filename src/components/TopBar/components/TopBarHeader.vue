@@ -119,9 +119,9 @@ function refreshSearchContent() {
 <template>
   <main
     class="top-bar-header"
-    w-full
+    max-w="$bew-page-max-width"
     grid="~ cols-[auto_1fr_auto] items-center gap-4"
-    p="x-4 md:x-6 xl:x-8" m-auto
+    p="x-12" m-auto
     h="$bew-top-bar-height"
   >
     <!-- Top bar mask -->
@@ -275,6 +275,7 @@ function refreshSearchContent() {
   flex: 1 1 auto;
 }
 
+// 窄屏响应式 padding（避免窄屏下 x-48px 过于挤压）
 @media (max-width: 1279px) {
   .top-bar-header {
     gap: 12px;

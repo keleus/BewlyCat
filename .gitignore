@@ -23,3 +23,5 @@ node_modules
 extension-safari-macos/
 # src/old-extension/
 .playwright-mcp/
+# 本地计划
+UI-FIX-PLAN.md

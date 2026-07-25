@@ -188,14 +188,18 @@ function handleNotificationsClick(item: { name: string, url: string, unreadCount
   emit('notificationsClick', item)
 }
 
-// 分组内没有可见功能时隐藏容器，避免出现空胶囊
-const showContentActionGroup = computed(() => {
-  return ['moments', 'favorites', 'history', 'watchLater', 'creatorCenter']
-    .some(key => isComponentVisible(key))
-})
+// 判断分割线是否应该显示：左右两组至少各有一个可见时才显示
+const shouldShowDivider = computed(() => {
+  const leftSideVisible = isComponentVisible('moments')
+    || isComponentVisible('favorites')
+    || isComponentVisible('history')
+    || isComponentVisible('watchLater')
+    || isComponentVisible('creatorCenter')
 
-const showUtilityActionGroup = computed(() => {
-  return ['upload', 'notifications'].some(key => isComponentVisible(key))
+  const rightSideVisible = isComponentVisible('upload')
+    || isComponentVisible('notifications')
+
+  return leftSideVisible && rightSideVisible
 })
 </script>
 
@@ -206,7 +210,7 @@ const showUtilityActionGroup = computed(() => {
   >
     <div
       class="others"
-      flex="~ items-center gap-2" h-46px px-5px
+      flex="~ items-center gap-1" h-46px px-5px
       text="$bew-text-1"
     >
       <div
@@ -215,16 +219,13 @@ const showUtilityActionGroup = computed(() => {
         important-w-auto
       >
         <a href="https://passport.bilibili.com/login" class="login">
-          <div i-solar:user-circle-bold-duotone class="text-xl login-icon" />
-          <span class="login-label">{{ $t('topbar.sign_in') }}</span>
+          <div i-solar:user-circle-bold-duotone class="text-xl mr-2" />{{
+            $t('topbar.sign_in')
+          }}
         </a>
       </div>
       <template v-if="isLogin">
-        <div
-          v-if="showContentActionGroup"
-          class="top-bar-action-group top-bar-action-group--content hidden xl:flex"
-          :class="{ 'top-bar-action-group--white': forceWhiteIcon }"
-        >
+        <div class="hidden lg:flex" gap-1>
           <!-- Moments -->
           <div
             v-if="isComponentVisible('moments')"
@@ -375,7 +376,7 @@ const showUtilityActionGroup = computed(() => {
         <!-- More -->
         <div
           ref="more"
-          class="right-side-item xl:!hidden flex"
+          class="right-side-item lg:!hidden flex"
           :class="{ active: popupVisible?.more }"
           @click="(event: MouseEvent) => handleClickTopBarItem(event, 'more')"
         >
@@ -396,11 +397,15 @@ const showUtilityActionGroup = computed(() => {
           </Transition>
         </div>
 
-        <div
-          v-if="showUtilityActionGroup"
-          class="top-bar-action-group top-bar-action-group--utility hidden xl:flex"
-          :class="{ 'top-bar-action-group--white': forceWhiteIcon }"
-        >
+        <div class="hidden lg:flex" gap-1 items-center>
+          <!-- Divider -->
+          <div
+            v-if="shouldShowDivider"
+            :class="{ 'white-icon': forceWhiteIcon }"
+            w-2px h-16px bg="$bew-border-color" mx-1
+            rounded-4px
+          />
+
           <!-- Upload -->
           <div
             v-if="isComponentVisible('upload')"
@@ -540,51 +545,4 @@ const showUtilityActionGroup = computed(() => {
 
 <style lang="scss" scoped>
 @use "../styles/index.scss";
-
-.top-bar-action-group {
-  position: relative;
-  box-sizing: border-box;
-  align-items: center;
-  gap: 2px;
-  height: var(--bew-top-bar-control-height);
-  padding: 2px 3px;
-  border: 1px solid var(--bew-top-bar-control-border-color);
-  border-radius: var(--bew-top-bar-control-radius);
-  transition: border-color 0.3s ease;
-
-  // 将胶囊磨砂放在伪元素上，避免父级背板阻断子级 POP 的背景模糊
-  &::before {
-    position: absolute;
-    border-radius: inherit;
-    background: var(--bew-top-bar-control-background);
-    backdrop-filter: var(--bew-filter-glass-1);
-    content: "";
-    inset: 0;
-    pointer-events: none;
-    transition: background-color 0.3s ease;
-  }
-
-  &--white {
-    border-color: rgba(255, 255, 255, 0.18);
-
-    &::before {
-      background: rgba(255, 255, 255, 0.1);
-    }
-  }
-}
-
-.login {
-  gap: 8px;
-}
-
-@media (max-width: 767px) {
-  .others {
-    gap: 4px;
-    padding-inline: 0;
-  }
-
-  .login-label {
-    display: none;
-  }
-}
 </style>
