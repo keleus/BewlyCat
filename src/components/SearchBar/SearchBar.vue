@@ -10,6 +10,7 @@ import { settings } from '~/logic'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage } from '~/utils/main'
+import { buildKeywordSearchUrl } from '~/utils/searchNavigation'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { HistoryItem, SuggestionItem, SuggestionResponse } from './searchHistoryProvider'
@@ -354,13 +355,7 @@ function handleNativeInput(event: Event) {
 }
 
 function buildKeywordHref(keyword: string) {
-  const encoded = encodeURIComponent(keyword)
-
-  if (settings.value.usePluginSearchResultsPage) {
-    return `https://www.bilibili.com/?page=SearchResults&keyword=${encoded}`
-  }
-
-  return `https://search.bilibili.com/all?keyword=${encoded}`
+  return buildKeywordSearchUrl(keyword)
 }
 
 // 从URL中提取搜索关键词

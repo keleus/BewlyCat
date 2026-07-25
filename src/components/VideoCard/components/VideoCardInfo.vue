@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 
 import type { Video } from '../types'
+import { getTagSearchUrl } from '../utils'
 import VideoCardAuthorAvatar from '../VideoCardAuthor/components/VideoCardAuthorAvatar.vue'
 import VideoCardAuthorName from '../VideoCardAuthor/components/VideoCardAuthorName.vue'
 
@@ -261,18 +262,21 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
           flex="~ items-center gap-2 wrap"
           :class="metaFontSizeClass"
         >
-          <span
+          <a
             v-for="primaryTag in visiblePrimaryTags"
             :key="`primary-${primaryTag}`"
             class="video-card-meta__chip"
-            text="$bew-theme-color"
+            un-text="$bew-theme-color"
             p="x-2"
             lh-6
             rounded="$bew-radius"
-            bg="$bew-theme-color-20"
+            bg="$bew-theme-color-20 hover:$bew-theme-color-30"
+            :href="getTagSearchUrl(primaryTag)"
+            target="_blank"
+            @click.stop=""
           >
             {{ primaryTag }}
-          </span>
+          </a>
 
           <span
             v-for="extraTag in visibleHighlightTags"
@@ -339,18 +343,21 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
               flex="~ items-center gap-2 wrap"
               :class="metaFontSizeClass"
             >
-              <span
+              <a
                 v-for="primaryTag in visiblePrimaryTags"
                 :key="`primary-${primaryTag}`"
                 class="video-card-meta__chip"
-                text="$bew-theme-color"
+                un-text="$bew-theme-color"
                 p="x-2"
                 lh-6
                 rounded="$bew-radius"
-                bg="$bew-theme-color-20"
+                bg="$bew-theme-color-20 hover:$bew-theme-color-30"
+                :href="getTagSearchUrl(primaryTag)"
+                target="_blank"
+                @click.stop=""
               >
                 {{ primaryTag }}
-              </span>
+              </a>
 
               <span
                 v-for="extraTag in visibleHighlightTags"
@@ -400,13 +407,16 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             :class="metaFontSizeClass"
           >
             <!-- Tag -->
-            <span
+            <a
               v-for="primaryTag in visiblePrimaryTags"
               :key="`legacy-primary-${primaryTag}`"
-              text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
+              un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
+              :href="getTagSearchUrl(primaryTag)"
+              target="_blank"
+              @click.stop=""
             >
               {{ primaryTag }}
-            </span>
+            </a>
             <span
               v-for="extraTag in visibleHighlightTags"
               :key="`highlight-${extraTag}`"
@@ -485,13 +495,16 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
               :class="metaFontSizeClass"
             >
               <!-- Tag -->
-              <span
+              <a
                 v-for="primaryTag in visiblePrimaryTags"
                 :key="`legacy-primary-${primaryTag}`"
-                text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
+                un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
+                :href="getTagSearchUrl(primaryTag)"
+                target="_blank"
+                @click.stop=""
               >
                 {{ primaryTag }}
-              </span>
+              </a>
               <span
                 v-for="extraTag in visibleHighlightTags"
                 :key="`highlight-${extraTag}`"
