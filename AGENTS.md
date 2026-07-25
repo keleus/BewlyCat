@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to coding agents working in this repository.
 
 ## Project Overview
 
@@ -81,6 +81,7 @@ The project uses a multi-target build system:
 - Extensive use of Shadow DOM for style isolation
 - Platform-specific builds with conditional manifest generation
 
-## 语言规范
-- 新增或修改的代码注释统一使用中文。
-- Pull Request 的标题和正文统一使用中文。
+## 提交规范
+- 提交信息使用 Conventional Commits 格式，如 `feat:`、`fix:`、`refactor:`、`docs:`、`chore:`。
+- 冒号后的提交说明使用中文，并准确概括本次修改。
+- 禁止PR提交tests文件和AGENTS.md
