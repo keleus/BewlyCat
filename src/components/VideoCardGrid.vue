@@ -333,14 +333,48 @@ const lastItemsCount = ref(0)
 const consecutiveFailures = ref(0)
 const MAX_CONSECUTIVE_FAILURES = 3
 
-// 仅首屏空数据加载时显示骨架屏；滚动加载时不再向列表插入临时卡片。
+// 首屏未凑够一屏前继续骨架，避免“先冒出几张再撑开”的割裂感。
+const hasRevealedInitialContent = ref(false)
+
+const minInitialRevealCount = computed(() => {
+  const columns = Math.max(1, getRenderedColumnCount())
+  // 按约 1.5 屏估算首屏数量：避免 web 首包 10 条就提前露出。
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900
+  const rows = Math.max(2, Math.ceil(viewportHeight / 360))
+  const targetRows = Math.min(3, Math.max(2, Math.ceil(rows * 0.75)))
+  return Math.min(30, Math.max(12, columns * targetRows))
+})
+
 const showInitialSkeleton = computed(() => {
   if (props.needToLoginFirst)
     return false
-  if (!props.loading)
-    return false
-  return props.items.length === 0
+
+  // 首次揭示前：loading 中且数量不足时继续占位
+  if (!hasRevealedInitialContent.value) {
+    if (props.loading && props.items.length < minInitialRevealCount.value)
+      return true
+    // 刷新刚清空、下一帧数据尚未写入时也保持骨架，避免空闪
+    if (props.loading && props.items.length === 0)
+      return true
+  }
+
+  // 已揭示后：仅在列表被清空的刷新过程显示骨架
+  return props.loading && props.items.length === 0
 })
+
+watch(
+  () => [props.items.length, props.loading, props.noMoreContent, minInitialRevealCount.value] as const,
+  ([itemCount, loading, noMoreContent, minCount]) => {
+    if (hasRevealedInitialContent.value)
+      return
+    if (itemCount <= 0)
+      return
+
+    // 数量达标，或本轮加载结束/无更多内容时，允许揭示真实列表
+    if (itemCount >= minCount || !loading || noMoreContent)
+      hasRevealedInitialContent.value = true
+  },
+)
 
 // 生成首屏骨架屏数据
 const initialSkeletonItems = computed(() => {
@@ -713,6 +747,7 @@ watch(() => props.items.length, (newCount, oldCount) => {
     consecutiveFailures.value = 0
     lastItemsCount.value = 0
     reachedLoadMoreDuringLoading.value = false
+    hasRevealedInitialContent.value = false
     clearCardEnterState()
     clearContinuePreloadTimer()
     return
