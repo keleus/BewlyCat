@@ -210,8 +210,9 @@ const shouldShowDivider = computed(() => {
   >
     <div
       class="others"
-      flex="~ items-center gap-1" h-46px px-5px
+      flex="~ items-center gap-1" px-5px
       text="$bew-text-1"
+      :style="{ height: 'var(--bew-top-bar-control-height)' }"
     >
       <div
         v-if="!isLogin"

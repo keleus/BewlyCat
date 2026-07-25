@@ -46,9 +46,7 @@ const channels = setupTopBarItemHoverEvent('channels')
             activated: popupVisible.channels,
           }"
           grid="~ place-items-center"
-          rounded="46px"
           duration-300
-          w-46px h-46px
           bg="hover:$bew-theme-color"
           @click="(event: MouseEvent) => handleClickTopBarItem(event, 'channels')"
         >
@@ -91,9 +89,7 @@ const channels = setupTopBarItemHoverEvent('channels')
         target="_top"
         class="group home-button"
         grid="~ place-items-center"
-        rounded="46px"
         duration-300
-        w-46px h-46px
         bg="hover:$bew-theme-color"
         shrink-0
       >
@@ -125,6 +121,10 @@ const channels = setupTopBarItemHoverEvent('channels')
 }
 
 .logo {
+  width: var(--bew-top-bar-primary-control-height);
+  height: var(--bew-top-bar-primary-control-height);
+  border-radius: var(--bew-top-bar-primary-control-radius);
+
   &.activated {
     background-color: var(--bew-theme-color);
     svg {
@@ -135,6 +135,10 @@ const channels = setupTopBarItemHoverEvent('channels')
 }
 
 .home-button {
+  width: var(--bew-top-bar-primary-control-height);
+  height: var(--bew-top-bar-primary-control-height);
+  border-radius: var(--bew-top-bar-primary-control-radius);
+
   .home-icon {
     transition: all 0.3s;
   }

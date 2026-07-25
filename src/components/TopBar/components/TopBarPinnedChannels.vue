@@ -176,7 +176,10 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
     v-if="validPinnedKeys.length"
     ref="containerRef"
     class="pinned-channels"
-    :class="{ 'white-theme': props.forceWhiteIcon }"
+    :class="{
+      'white-theme': props.forceWhiteIcon,
+      'pinned-channels--solid': !settings.enableFrostedGlass,
+    }"
   >
     <div ref="listRef" class="pinned-channels__list">
       <ALink
@@ -214,20 +217,27 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
 
 <style scoped lang="scss">
 .pinned-channels {
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: var(--bew-top-bar-control-gap);
   min-width: 0;
   flex: 0 1 auto;
-  padding: 2px;
-  border-radius: 28px;
-  background: color-mix(in oklab, var(--bew-elevated), transparent 55%);
-  border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 50%);
+  height: var(--bew-top-bar-control-height);
+  padding: var(--bew-top-bar-control-padding);
+  border: var(--bew-top-bar-control-border-width) solid var(--bew-top-bar-control-border-color);
+  border-radius: var(--bew-top-bar-control-radius);
+  background: var(--bew-top-bar-control-background);
+  backdrop-filter: var(--bew-filter-glass-1);
+
+  &--solid {
+    backdrop-filter: none;
+  }
 
   &__list {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: var(--bew-top-bar-control-gap);
     overflow: hidden;
     min-width: 0;
   }
@@ -235,75 +245,78 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
   &__item {
     display: grid;
     place-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 999px;
+    width: var(--bew-top-bar-control-item-height);
+    height: var(--bew-top-bar-control-item-height);
+    border-radius: var(--bew-top-bar-control-item-radius);
     color: var(--bew-text-1);
     background: transparent;
     transition:
-      background-color 0.3s ease,
-      color 0.3s ease;
+      background-color var(--bew-duration-normal, 200ms) ease,
+      color var(--bew-duration-normal, 200ms) ease;
 
     &:hover {
-      background: var(--bew-fill-2);
+      background: var(--bew-segment-item-hover-bg);
     }
 
     &.white-icon {
       color: white;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: var(--bew-segment-item-hover-bg-white);
       }
     }
   }
 
   &__icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     display: grid;
     place-items: center;
 
     svg {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       fill: currentColor;
     }
 
     i {
-      font-size: 20px;
+      font-size: 18px;
     }
   }
 
   &__more {
     display: grid;
     place-items: center;
-    height: 34px;
-    min-width: 34px;
-    padding: 0 10px;
-    border-radius: 40px;
-    background: var(--bew-fill-1);
+    height: var(--bew-top-bar-control-item-height);
+    min-width: var(--bew-top-bar-control-item-height);
+    padding: 0 8px;
+    border-radius: var(--bew-top-bar-control-item-radius);
+    background: transparent;
     color: var(--bew-text-2);
-    font-size: 14px;
-    filter: drop-shadow(0 0 4px var(--bew-bg));
-    transition: background-color 0.3s ease;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    transition:
+      background-color var(--bew-duration-normal, 200ms) ease,
+      color var(--bew-duration-normal, 200ms) ease;
 
     &:hover {
-      background: var(--bew-fill-2);
+      color: var(--bew-segment-item-hover-color);
+      background: var(--bew-segment-item-hover-bg);
     }
 
     &.white-icon {
       color: white;
-      background: rgba(255, 255, 255, 0.12);
+      background: transparent;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.2);
+        background: var(--bew-segment-item-hover-bg-white);
       }
     }
   }
 
-  &.white-theme {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.3);
+  &.white-theme:not(.pinned-channels--solid) {
+    background: var(--bew-top-bar-control-background-white);
   }
 }
 
