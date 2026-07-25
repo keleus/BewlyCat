@@ -13,6 +13,7 @@ export interface TopBarSharedState {
 export interface TopBarStateClaim {
   accountId: number
   maxAge: number
+  force?: boolean
 }
 
 export interface TopBarRefreshClaim {

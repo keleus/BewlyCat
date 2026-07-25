@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia'
 import ALink from '~/components/ALink.vue'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
-import { getUserID, removeHttpFromUrl } from '~/utils/main'
+import { getUserID, isInIframe, removeHttpFromUrl } from '~/utils/main'
 import { isComponentVisible, shouldShowBadge, shouldShowDotBadge, shouldShowNumberBadge } from '~/utils/topBarBadge'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
@@ -36,7 +36,13 @@ const {
   hasBCoinToReceive,
 } = storeToRefs(topBarStore)
 
-const { getUnreadMessageCount, getTopBarNewMomentsCount, syncSharedData } = topBarStore
+const { getTopBarNewMomentsCount, syncSharedData, syncUnreadMessageState } = topBarStore
+
+function refreshUnreadMessageSharedState() {
+  syncUnreadMessageState().catch((error) => {
+    console.error('同步未读消息共享状态失败:', error)
+  })
+}
 
 // 将 DOM 引用移到组件内部
 const avatarImg = ref<HTMLElement | null>(null)
@@ -101,7 +107,7 @@ if (isComponentVisible('notifications')) {
         return
 
       if (!newVal)
-        getUnreadMessageCount()
+        refreshUnreadMessageSharedState()
     },
     { immediate: true },
   )
@@ -113,18 +119,25 @@ if (isComponentVisible('notifications')) {
         return
 
       if (!newVal)
-        getUnreadMessageCount()
+        refreshUnreadMessageSharedState()
     },
   )
 }
 
 const focused = useWindowFocus()
 watch(() => focused.value, (newVal, _) => {
-  if (newVal && isLogin.value) {
-    syncSharedData().catch((error) => {
-      console.error('同步顶栏共享状态失败:', error)
-    })
+  if (!isLogin.value)
+    return
+
+  if (!newVal) {
+    if (MESSAGE_URL.test(location.href) && !isInIframe())
+      refreshUnreadMessageSharedState()
+    return
   }
+
+  syncSharedData().catch((error) => {
+    console.error('同步顶栏共享状态失败:', error)
+  })
 })
 
 watch(

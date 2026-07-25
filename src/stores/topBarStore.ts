@@ -786,7 +786,12 @@ export const useTopBarStore = defineStore('topBar', () => {
     ])
   }
 
-  async function syncSharedData() {
+  interface SyncSharedDataOptions {
+    force?: boolean
+    refresh?: () => Promise<void>
+  }
+
+  async function syncSharedData(options: SyncSharedDataOptions = {}) {
     if (!isLogin.value)
       return
 
@@ -799,6 +804,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       {
         accountId,
         maxAge: updateInterval,
+        force: options.force,
       },
     )
 
@@ -814,7 +820,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     const refreshId = claim.refreshId
 
     try {
-      await refreshSharedData()
+      await (options.refresh?.() ?? refreshSharedData())
       await sendMessage<TopBarStatePublish>(
         TOP_BAR_STATE_MESSAGE.PUBLISH,
         {
@@ -834,6 +840,13 @@ export const useTopBarStore = defineStore('topBar', () => {
       )
       throw error
     }
+  }
+
+  function syncUnreadMessageState() {
+    return syncSharedData({
+      force: true,
+      refresh: getUnreadMessageCount,
+    })
   }
 
   async function initData() {
@@ -937,6 +950,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     setMouseOverPopup,
     getMouseOverPopup,
     syncSharedData,
+    syncUnreadMessageState,
     startUpdateTimer,
     stopUpdateTimer,
 

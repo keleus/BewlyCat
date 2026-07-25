@@ -195,7 +195,7 @@ export function createTopBarStateBroker(
   }
 
   return {
-    claimRefresh({ accountId, maxAge }, sender) {
+    claimRefresh({ accountId, maxAge, force = false }, sender) {
       return runExclusive(async () => {
         await ensureStateLoaded()
 
@@ -204,7 +204,7 @@ export function createTopBarStateBroker(
         const snapshotFresh = entry.snapshot !== undefined && now - entry.updatedAt < maxAge
         const refreshInProgress = entry.refreshStartedAt > 0
           && now - entry.refreshStartedAt < REFRESH_LEASE_TIMEOUT
-        const shouldRefresh = !snapshotFresh && !refreshInProgress
+        const shouldRefresh = force || (!snapshotFresh && !refreshInProgress)
 
         if (shouldRefresh) {
           entry.refreshStartedAt = now
