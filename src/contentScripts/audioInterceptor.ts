@@ -49,6 +49,8 @@ const INTEGRATED_WINDOW = 100
 const ANALYSIS_EPSILON = 1e-8
 const PLAYBACK_END_TOLERANCE_SECONDS = 1
 const VISIBILITY_RESUME_PROGRESS_SECONDS = 0.5
+const ATTACH_SETTLE_MS = 450
+const MIN_ATTACH_READY_STATE = HTMLMediaElement.HAVE_CURRENT_DATA
 
 // Debug logger
 function log(msg: string, ...args: any[]) {
@@ -134,6 +136,7 @@ let loudnessAnalysis: LoudnessAnalysisState | null = null
 let currentVideoElement: HTMLVideoElement | null = null
 let currentVideoListeners: ManagedVideoListeners | null = null
 const pendingMetadataVideos = new WeakSet<HTMLVideoElement>()
+const pendingAttachTimers = new WeakMap<HTMLVideoElement, ReturnType<typeof setTimeout>>()
 let hasAttached = false
 let interceptorTimer: ReturnType<typeof setInterval> | null = null
 let hasSetupSettingsWatcher = false
@@ -478,23 +481,77 @@ function isPlaybackActive(video: HTMLVideoElement | null): video is HTMLVideoEle
   return !!video && !video.paused && !isPlaybackAtEnd(video)
 }
 
-function waitForVideoReady(video: HTMLVideoElement) {
-  if (pendingMetadataVideos.has(video))
+function clearPendingAttachTimer(video: HTMLVideoElement) {
+  const timer = pendingAttachTimers.get(video)
+  if (!timer)
     return
 
-  pendingMetadataVideos.add(video)
-  video.addEventListener('loadedmetadata', () => {
+  clearTimeout(timer)
+  pendingAttachTimers.delete(video)
+}
+
+function scheduleAttachToVideo(video: HTMLVideoElement) {
+  clearPendingAttachTimer(video)
+
+  const timer = setTimeout(() => {
+    pendingAttachTimers.delete(video)
     pendingMetadataVideos.delete(video)
 
-    if (!video.isConnected)
+    if (!video.isConnected || document.hidden)
       return
 
     const activeVideo = getActiveVideoElement()
-    if (activeVideo !== video)
+    if (activeVideo && activeVideo !== video)
       return
 
     attachToVideo(video)
-  }, { once: true })
+  }, ATTACH_SETTLE_MS)
+
+  pendingAttachTimers.set(video, timer)
+}
+
+function isVideoSafeToAttach(video: HTMLVideoElement) {
+  if (!video.isConnected || document.hidden)
+    return false
+
+  // Keep the media element free while Bilibili is still bootstrapping the first buffer.
+  if (!video.currentSrc && !video.srcObject)
+    return false
+
+  if (video.readyState >= MIN_ATTACH_READY_STATE)
+    return true
+
+  // Some streams stay below HAVE_CURRENT_DATA until the first frames are decoded.
+  return isPlaybackActive(video) && video.readyState >= HTMLMediaElement.HAVE_METADATA
+}
+
+function waitForVideoReady(video: HTMLVideoElement) {
+  if (pendingMetadataVideos.has(video) || pendingAttachTimers.has(video))
+    return
+
+  if (isVideoSafeToAttach(video)) {
+    scheduleAttachToVideo(video)
+    return
+  }
+
+  pendingMetadataVideos.add(video)
+
+  const onReady = () => {
+    video.removeEventListener('loadeddata', onReady)
+    video.removeEventListener('canplay', onReady)
+    video.removeEventListener('playing', onReady)
+
+    if (!video.isConnected) {
+      pendingMetadataVideos.delete(video)
+      return
+    }
+
+    scheduleAttachToVideo(video)
+  }
+
+  video.addEventListener('loadeddata', onReady)
+  video.addEventListener('canplay', onReady)
+  video.addEventListener('playing', onReady)
 }
 
 function trimBlocks(blocks: number[], maxLength: number) {
@@ -642,37 +699,36 @@ function updateProcessingState() {
     return
 
   try {
-    if (!isPlaybackActive(currentVideoElement)) {
-      if (currentVideoElement && isPlaybackAtEnd(currentVideoElement)) {
-        stopLoudnessAnalysis()
-      }
-      else {
-        suspendProcessingForIdlePlayback()
-      }
-      log('Loudness analysis suspended while playback is inactive')
-      return
-    }
-
     resumeAudioContext(audioContext)
 
+    // MediaElementSource must stay connected to a destination. Leaving it
+    // disconnected after createMediaElementSource can stall Bilibili's player
+    // loading UI even when media data is already available.
     if (settings.value.enableVolumeNormalization && !tempDisabled) {
       const wasProcessing = audioGraphMode === 'processing'
       connectProcessingGraph()
 
-      if (!wasProcessing || shouldResetAnalysisOnNextPlayback) {
+      if (!isPlaybackActive(currentVideoElement)) {
+        if (currentVideoElement && isPlaybackAtEnd(currentVideoElement))
+          stopLoudnessAnalysis()
+        else
+          suspendProcessingForIdlePlayback()
+        log('Loudness analysis suspended while playback is inactive')
+        return
+      }
+
+      if (!wasProcessing || shouldResetAnalysisOnNextPlayback)
         resetLoudnessAnalysis()
-      }
 
-      if (currentVideoElement && !currentVideoElement.paused) {
+      if (currentVideoElement && !currentVideoElement.paused)
         startLoudnessAnalysis()
-      }
 
-      if (!wasProcessing) {
+      if (!wasProcessing)
         console.log('[BewlyAudio] Volume normalization ENABLED')
-      }
     }
     else {
       connectBypassGraph()
+      stopLoudnessAnalysis()
       console.log('[BewlyAudio] Volume normalization DISABLED (Bypass)')
     }
   }
@@ -701,10 +757,13 @@ export function attachToVideo(video: HTMLVideoElement) {
     return
   }
 
-  if (video.readyState < 1) {
+  if (!isVideoSafeToAttach(video)) {
     waitForVideoReady(video)
     return
   }
+
+  clearPendingAttachTimer(video)
+  pendingMetadataVideos.delete(video)
 
   log('Attaching to video element', video)
 
@@ -734,6 +793,13 @@ export function attachToVideo(video: HTMLVideoElement) {
 
     audioNodes = nodes
     loudnessAnalysis = createLoudnessAnalysis(nodes.dataArray)
+
+    // Connect immediately in the same turn so the media element never has a
+    // dangling MediaElementSource during Bilibili player bootstrap.
+    if (settings.value.enableVolumeNormalization && !tempDisabled)
+      connectProcessingGraph()
+    else
+      connectBypassGraph()
 
     updateProcessingState()
     log('Successfully attached')
