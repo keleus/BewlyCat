@@ -110,7 +110,7 @@ const channels = setupTopBarItemHoverEvent('channels')
       </a>
     </div>
 
-    <BewlyOrBiliPageSwitcher v-if="settings.showBewlyOrBiliPageSwitcher" z-1 />
+    <BewlyOrBiliPageSwitcher v-if="settings.showBewlyOrBiliPageSwitcher" :force-white-icon="forceWhiteIcon" z-1 />
 
     <TopBarPinnedChannels :force-white-icon="forceWhiteIcon" />
   </div>
