@@ -8,6 +8,8 @@ import type { DataItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { getCSRF } from '~/utils/main'
 
+const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
+
 interface DisplayMoment {
   id: string
   author: { name: string, face: string }
@@ -2259,7 +2261,7 @@ watch(
         }"
       >
         <div class="moment-detail-frame__loading" aria-hidden="true">
-          <span i-svg-spinners:ring-resize />
+          <img class="moment-detail-frame__loading-icon" :src="loadingGifUrl" alt="" aria-hidden="true">
           {{ selectedMoment.isLive ? '正在打开直播间…' : selectedMoment.isVideo ? '正在打开视频…' : selectedMoment.isForward ? '正在打开转发动态…' : '正在加载动态详情…' }}
         </div>
         <iframe
@@ -3240,12 +3242,17 @@ watch(
   justify-content: center;
   gap: 8px;
   color: var(--bew-text-2);
-  background: color-mix(in oklab, var(--bew-bg) 92%, transparent);
-  backdrop-filter: blur(3px);
+  background: var(--bew-bg);
   font-size: 13px;
   pointer-events: auto;
   opacity: 1;
   transition: opacity 0.18s ease;
+}
+.moment-detail-frame__loading-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .moment-detail-frame:not(.is-loading) .moment-detail-frame__loading {
   opacity: 0;

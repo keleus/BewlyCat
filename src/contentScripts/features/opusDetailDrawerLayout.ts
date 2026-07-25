@@ -1,5 +1,6 @@
 import { Icon } from '@iconify/vue'
 import { createVNode, render } from 'vue'
+import browser from 'webextension-polyfill'
 
 import { isInIframe } from '~/utils/main'
 
@@ -211,8 +212,8 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-toc {
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
-  background: color-mix(in oklab, var(--bg1, #fff) 92%, transparent) !important;
-  color: var(--text2, #666) !important;
+  background: var(--bew-bg, var(--bg1, #fff)) !important;
+  color: var(--bew-text-2, var(--text2, #666)) !important;
   font-size: 13px !important;
   pointer-events: all !important;
   transition: opacity 0.18s ease !important;
@@ -221,16 +222,11 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-toc {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-.bewly-opus-iframe-loading__spinner {
-  width: 18px !important;
-  height: 18px !important;
-  border: 2px solid rgba(0,0,0,0.15) !important;
-  border-top-color: currentColor !important;
-  border-radius: 50% !important;
-  animation: bewly-opus-spin 0.8s linear infinite !important;
-}
-@keyframes bewly-opus-spin {
-  to { transform: rotate(360deg); }
+.bewly-opus-iframe-loading__icon {
+  width: 36px !important;
+  height: 36px !important;
+  object-fit: contain !important;
+  flex-shrink: 0 !important;
 }
 `
 
@@ -868,7 +864,15 @@ function showIframeLoading(text = '正在整理动态详情…') {
   if (!loadingEl) {
     loadingEl = document.createElement('div')
     loadingEl.className = 'bewly-opus-iframe-loading'
-    loadingEl.innerHTML = `<div class="bewly-opus-iframe-loading__spinner"></div><span></span>`
+    let iconHtml = ''
+    try {
+      const gifUrl = browser.runtime.getURL('/assets/loading.gif')
+      iconHtml = `<img class="bewly-opus-iframe-loading__icon" src="${gifUrl}" alt="" aria-hidden="true">`
+    }
+    catch {
+      // ignore extension url resolution failures
+    }
+    loadingEl.innerHTML = `${iconHtml}<span></span>`
     document.documentElement.appendChild(loadingEl)
   }
   const label = loadingEl.querySelector('span')
