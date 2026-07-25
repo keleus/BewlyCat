@@ -85,3 +85,4 @@ The project uses a multi-target build system:
 - 提交信息使用 Conventional Commits 格式，如 `feat:`、`fix:`、`refactor:`、`docs:`、`chore:`。
 - 冒号后的提交说明使用中文，并准确概括本次修改。
 - 禁止PR提交tests文件和AGENTS.md
+- 如果在[issues](https://github.com/keleus/BewlyCat/issues)存在对应的issue，commit信息后通过`#{issue}`关联对应的issue
