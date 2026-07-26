@@ -38,7 +38,7 @@ const list = computed((): { name: string, url: string, icon: string }[] => [
       p="x-4 y-2"
       bg="hover:$bew-fill-2"
       rounded="$bew-radius"
-      transition="all duration-300"
+      transition="background-color duration-200, color duration-200, opacity duration-200"
       m="b-1 last:b-0"
       flex="~"
       items="center"

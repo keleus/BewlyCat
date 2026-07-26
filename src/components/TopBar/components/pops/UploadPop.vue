@@ -57,7 +57,7 @@ const list = computed(() => {
       p="x-4 y-2"
       bg="hover:$bew-fill-2"
       rounded="$bew-radius"
-      transition="all duration-300"
+      transition="background-color duration-200, color duration-200, opacity duration-200"
       m="b-1 last:b-0"
     >
       <i :class="item.icon" text="$bew-text-2" />

@@ -419,12 +419,12 @@ function handleClickChannel() {
 }
 
 .channel-info-item {
-  --uno: "p-2 m-0 rounded-$bew-radius text-sm flex flex-col items-center transition-all duration-300";
+  --uno: "p-2 m-0 rounded-$bew-radius text-sm flex flex-col items-center transition-colors duration-200";
   --uno: "bg-$bew-fill-alt hover:bg-$bew-fill-2";
   --uno: "shadow-[var(--bew-shadow-edge-glow-1),var(--bew-shadow-1)]";
 
   > * {
-    --uno: "transition-all duration-300";
+    --uno: "transition-colors duration-200";
   }
 
   .num {

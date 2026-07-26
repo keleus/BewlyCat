@@ -79,7 +79,7 @@ const { isDark } = useDark()
       type="videoCard"
       gap-4 hover:bg="$bew-fill-2" hover:ring="8 $bew-fill-2"
       content-visibility-auto intrinsic-size-400px
-      transition="all ease-in-out 300"
+      transition="background-color duration-300, box-shadow duration-300"
       rounded="$bew-radius" h-fit
     >
       <!-- Cover -->
@@ -132,7 +132,7 @@ const { isDark } = useDark()
               flex="~ col justify-end"
               opacity-0 group-hover:opacity-100
               transform="~ translate-y-4 group-hover:translate-y-0"
-              transition="all duration-300"
+              transition="opacity duration-300, transform duration-300"
               z-1
               style="
                 background: linear-gradient(
@@ -174,7 +174,7 @@ const { isDark } = useDark()
               rounded="$bew-radius"
               aspect="12/16"
               transform="~ scale-110 group-hover:scale-100"
-              transition="all duration-340"
+              transition="opacity duration-300, transform duration-300"
               bg="cover center"
               pos="absolute top-0 left-0"
               opacity-0 group-hover:opacity-100

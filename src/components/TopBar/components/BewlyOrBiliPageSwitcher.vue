@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
 import { IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
@@ -39,6 +40,17 @@ const isOriginalBiliPageActive = computed(() => {
   return getDockItemConfigByPage(activatedPage.value)?.useOriginalBiliPage ?? false
 })
 
+const switcherRef = ref<HTMLElement | null>(null)
+const { indicatorStyle, isMoving, updateIndicator } = useLiquidSegmentIndicator({
+  containerRef: switcherRef,
+  activeKey: isOriginalBiliPageActive,
+})
+
+watch(showBewlyOrBiliPageSwitcher, (visible) => {
+  if (visible)
+    void updateIndicator(true)
+})
+
 function switchPage(nextUseOriginalBiliPage: boolean) {
   if (nextUseOriginalBiliPage === isOriginalBiliPageActive.value)
     return
@@ -70,6 +82,7 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 <template>
   <div
     v-if="showBewlyOrBiliPageSwitcher"
+    ref="switcherRef"
     class="bewly-bili-switcher"
     :class="{
       'bewly-bili-switcher--white': props.forceWhiteIcon,
@@ -78,9 +91,21 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     role="group"
     aria-label="Homepage mode"
   >
+    <div
+      class="bew-liquid-indicator"
+      :class="{
+        'is-moving': isMoving,
+        'bew-liquid-indicator--white': props.forceWhiteIcon && settings.enableFrostedGlass,
+      }"
+      :style="indicatorStyle"
+      aria-hidden="true"
+    />
+
     <button
       v-for="option in options" :key="option.name"
       class="bewly-bili-switcher-button"
+      data-segment-item
+      :data-active="option.useOriginalBiliPage === isOriginalBiliPageActive ? 'true' : undefined"
       :class="{
         active: option.useOriginalBiliPage === isOriginalBiliPageActive,
       }"
@@ -100,35 +125,41 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 
 <style lang="scss" scoped>
 .bewly-bili-switcher {
+  position: relative;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   flex: none;
-  gap: 4px;
-  height: 34px;
-  padding: 4px;
-  border: 0;
+  gap: var(--bew-top-bar-control-gap);
+  height: var(--bew-top-bar-control-height);
+  padding: var(--bew-top-bar-control-padding);
+  border: var(--bew-top-bar-control-border-width) solid var(--bew-top-bar-control-border-color);
   border-radius: var(--bew-top-bar-control-radius);
-  background: var(--bew-elevated);
+  background: var(--bew-top-bar-control-background);
   backdrop-filter: var(--bew-filter-glass-1);
+  overflow: hidden;
 
   &--solid {
     backdrop-filter: none;
   }
 
   &--white:not(.bewly-bili-switcher--solid) {
-    background: color-mix(in oklab, var(--bew-elevated-solid), transparent 80%);
+    background: var(--bew-top-bar-control-background-white);
 
     .bewly-bili-switcher-button {
       color: white;
 
-      &:hover {
-        background: rgba(255, 255, 255, 0.2);
+      &:hover:not(.active) {
+        color: white;
+        background: var(--bew-segment-item-hover-bg-white);
       }
 
-      &.active {
+      &.active,
+      &.active:hover,
+      &.active:focus-visible {
         color: white;
-        background: rgba(255, 255, 255, 0.3);
+        background: transparent;
+        box-shadow: none;
       }
     }
   }
@@ -136,12 +167,14 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 
 .bewly-bili-switcher-button {
   appearance: none;
+  position: relative;
+  z-index: 1;
   display: grid;
-  height: 26px;
+  height: var(--bew-top-bar-control-item-height);
   place-items: center;
-  padding: 0 8px;
+  padding: 0 12px;
   border: 0;
-  border-radius: inherit;
+  border-radius: var(--bew-top-bar-control-item-radius);
   background: transparent;
   color: var(--bew-text-2);
   cursor: pointer;
@@ -149,22 +182,26 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   font-weight: 700;
   line-height: 1;
   transition:
-    color 0.2s ease,
-    background-color 0.2s ease;
+    color var(--bew-duration-normal, 200ms) ease,
+    background-color var(--bew-duration-normal, 200ms) ease;
 
-  &:hover {
-    color: var(--bew-text-1);
-    background: var(--bew-fill-2);
+  &:hover:not(.active) {
+    color: var(--bew-segment-item-hover-color);
+    background: var(--bew-segment-item-hover-bg);
   }
 
-  &:focus-visible {
-    outline: 2px solid var(--bew-theme-color-40);
-    outline-offset: 1px;
+  &:focus-visible:not(.active) {
+    outline: none;
+    color: var(--bew-segment-item-active-color);
+    background: var(--bew-segment-item-hover-bg);
   }
 
-  &.active {
-    color: var(--bew-text-1);
-    background: var(--bew-fill-3);
+  &.active,
+  &.active:hover,
+  &.active:focus-visible {
+    color: var(--bew-segment-item-active-color);
+    background: transparent;
+    box-shadow: none;
   }
 
   &__full {

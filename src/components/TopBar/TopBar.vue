@@ -8,6 +8,7 @@ import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VI
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { isHomePage, isUserSpacePage, isVideoOrBangumiPage } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
@@ -28,6 +29,7 @@ const { isDark } = useDark()
 const hideTopBar = ref<boolean>(false)
 const desiredTopBarVisible = ref(true)
 const forceHideTopBar = ref(false)
+const bewlyWidescreenActive = ref(false)
 const headerTarget = ref(null)
 const topAreaTarget = ref(null)
 const { isOutside: isOutsideTopBar } = useMouseInElement(headerTarget)
@@ -55,7 +57,8 @@ const hasActivePopup = computed(() => {
 })
 
 function applyTopBarVisibility() {
-  const shouldShow = desiredTopBarVisible.value
+  const shouldShow = !bewlyWidescreenActive.value
+    && desiredTopBarVisible.value
     && (
       !forceHideTopBar.value
       || hasActivePopup.value
@@ -69,6 +72,9 @@ function applyTopBarVisibility() {
 
 // 处理顶栏显示/隐藏逻辑的函数
 function handleTopBarVisibility() {
+  if (bewlyWidescreenActive.value)
+    return
+
   if (isVideoOrBangumiPage() && settings.value.videoPageTopBarConfig === VideoPageTopBarConfig.ShowOnMouse) {
     // 清除之前的计时器
     if (hideTimer) {
@@ -290,6 +296,8 @@ function cleanupScrollListeners() {
 }
 
 function updateConflictingHeaderVisibility() {
+  bewlyWidescreenActive.value = isBewlyWidescreenActive()
+
   const hasVisibleHeader = conflictingHeaderSelectors.some((selector) => {
     const el = document.querySelector(selector) as HTMLElement | null
     if (!el)
@@ -304,6 +312,7 @@ function updateConflictingHeaderVisibility() {
   })
 
   forceHideTopBar.value = hasVisibleHeader
+  applyTopBarVisibility()
 }
 
 let conflictingHeaderObserver: ReturnType<typeof useMutationObserver> | undefined
@@ -416,7 +425,7 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
   <div class="top-bar-container">
     <!-- 顶部监听区域 -->
     <div
-      v-if="isVideoOrBangumiPage() && settings.videoPageTopBarConfig === VideoPageTopBarConfigEnum.ShowOnMouse"
+      v-if="!bewlyWidescreenActive && isVideoOrBangumiPage() && settings.videoPageTopBarConfig === VideoPageTopBarConfigEnum.ShowOnMouse"
       ref="topAreaTarget"
       class="top-area-listener"
     />
@@ -425,7 +434,7 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
         v-if="topBarStore.showTopBar"
         ref="headerTarget"
         class="top-bar"
-        w="full" transition="all 300 ease-in-out"
+        w="full" transition="opacity duration-300, transform duration-300, background-color duration-300"
         :class="{ 'hide': hideTopBar, 'force-white-icon': forceWhiteIcon }"
       >
         <TopBarHeader

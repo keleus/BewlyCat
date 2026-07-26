@@ -1,6 +1,8 @@
 .top-bar-enter-active,
 .top-bar-leave-active {
-  transition: all 0.5s ease;
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }
 
 .top-bar-enter-from,
@@ -10,7 +12,11 @@
 
 .slide-in-enter-active,
 .slide-in-leave-active {
-  --uno: "transition-all duration-250 pointer-events-none";
+  transition:
+    opacity 250ms var(--bew-ease-standard, ease),
+    transform 250ms var(--bew-ease-standard, ease),
+    margin-top 250ms var(--bew-ease-standard, ease);
+  pointer-events: none;
 }
 
 .slide-in-leave-to,
@@ -20,7 +26,10 @@
 
 .slide-out-enter-active,
 .slide-out-leave-active {
-  --uno: "transition-all duration-300 pointer-events-none";
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
+  pointer-events: none;
 }
 
 .slide-out-leave-to,
@@ -30,7 +39,7 @@
 
 .fade-enter-active,
 .fade-leave-active {
-  --uno: "transition-all duration-600";
+  --uno: "transition-opacity duration-300";
 }
 
 .fade-leave-to,
@@ -67,7 +76,10 @@
 
 .right-side {
   .avatar {
-    --uno: "flex justify-center items-center relative z-1 rounded-1/2 w-46px h-46px";
+    --uno: "flex justify-center items-center relative z-1";
+    width: var(--bew-top-bar-control-height);
+    height: var(--bew-top-bar-control-height);
+    border-radius: var(--bew-top-bar-control-radius);
 
     &:hover::after,
     &.hover::after {
@@ -76,10 +88,13 @@
 
     .avatar-img,
     .avatar-shadow {
-      --uno: "shrink-0 duration-300 rounded-1/2 w-34px h-34px bg-cover bg-center";
+      --uno: "shrink-0 duration-300 bg-cover bg-center";
+      width: var(--bew-top-bar-control-height);
+      height: var(--bew-top-bar-control-height);
+      border-radius: var(--bew-top-bar-control-radius);
 
       &.hover {
-        --uno: "transform scale-230 translate-y-50px translate-x--36px";
+        --uno: "transform scale-195 translate-y-50px translate-x--36px";
       }
     }
 
@@ -125,8 +140,10 @@
 
     &:not(.avatar) a,
     & .notifications {
-      --uno: "text-lg grid place-items-center rounded-40px duration-300 relative z-5";
-      --uno: "h-34px w-34px";
+      --uno: "text-lg grid place-items-center duration-300 relative z-5";
+      width: var(--bew-top-bar-control-height);
+      height: var(--bew-top-bar-control-height);
+      border-radius: var(--bew-top-bar-control-radius);
       filter: drop-shadow(0 0 4px var(--bew-bg));
     }
 

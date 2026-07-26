@@ -210,8 +210,9 @@ const shouldShowDivider = computed(() => {
   >
     <div
       class="others"
-      flex="~ items-center gap-1" h-46px px-5px
+      flex="~ items-center gap-1" px-5px
       text="$bew-text-1"
+      :style="{ height: 'var(--bew-top-bar-control-height)' }"
     >
       <div
         v-if="!isLogin"
@@ -403,7 +404,7 @@ const shouldShowDivider = computed(() => {
             v-if="shouldShowDivider"
             :class="{ 'white-icon': forceWhiteIcon }"
             w-2px h-16px bg="$bew-border-color" mx-1
-            rounded-4px
+            rounded="$bew-radius-sm"
           />
 
           <!-- Upload -->

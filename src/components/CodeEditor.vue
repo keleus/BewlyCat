@@ -9,7 +9,7 @@ const model = defineModel<string | number>()
 <template>
   <textarea
     v-model="model"
-    w-full h-500px border="1 solid $bew-border-color" rounded="4px" p-2
+    w-full h-500px border="1 solid $bew-border-color" rounded="$bew-radius-sm" p-2
     outline-none bg="$bew-fill-1"
   />
 </template>

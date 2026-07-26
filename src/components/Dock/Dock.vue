@@ -2,11 +2,12 @@
 import { Icon } from '@iconify/vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useDelayedHover } from '~/composables/useDelayedHover'
+import { LIQUID_MOVE_DURATION_MS, useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
@@ -298,6 +299,170 @@ function isDockItemActivated(dockItem: DockItem): boolean {
   return props.activatedPage === dockItem.page && isHomePage()
 }
 
+const dockPagesRef = ref<HTMLElement | null>(null)
+const dockActiveKey = computed(() => `${props.activatedPage}:${isHomePage() ? 'home' : 'away'}`)
+
+const {
+  indicatorStyle: dockIndicatorStyle,
+  isMoving: dockIndicatorMoving,
+  updateIndicator: updateDockIndicator,
+  setPreview: setDockIndicatorPreview,
+  clearPreview: clearDockIndicatorPreview,
+} = useLiquidSegmentIndicator({
+  containerRef: dockPagesRef,
+  activeKey: dockActiveKey,
+})
+
+watch(currentDockItems, () => {
+  void updateDockIndicator(true)
+})
+
+// Threshold maps 0→1 preview progress; cooldown matches liquid morph so one gesture = one page.
+const DOCK_WHEEL_THRESHOLD = 130
+const DOCK_WHEEL_IDLE_RESET_MS = 260
+const DOCK_WHEEL_COOLDOWN_MS = LIQUID_MOVE_DURATION_MS
+let dockWheelAccum = 0
+let dockWheelLocked = false
+let dockWheelResetTimer: ReturnType<typeof setTimeout> | undefined
+let dockWheelCooldownTimer: ReturnType<typeof setTimeout> | undefined
+
+function getActivatedDockItemIndex(): number {
+  return currentDockItems.value.findIndex(item => isDockItemActivated(item))
+}
+
+function resolveDockWheelDelta(event: WheelEvent): number {
+  const position = settings.value.dockPosition
+  // Bottom dock prefers horizontal delta; side docks prefer vertical.
+  // Fall back to the other axis so both mouse wheel and trackpad work.
+  const primary = position === 'bottom'
+    ? (Math.abs(event.deltaX) >= Math.abs(event.deltaY) ? event.deltaX : event.deltaY)
+    : (Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX)
+
+  let delta = primary
+  if (event.deltaMode === 1)
+    delta *= 16
+  else if (event.deltaMode === 2)
+    delta *= window.innerHeight || 800
+
+  return delta
+}
+
+function getDockSegmentElement(page: AppPage): HTMLElement | null {
+  return dockPagesRef.value?.querySelector(`[data-segment-item][data-page="${page}"]`) as HTMLElement | null
+}
+
+function clearDockWheelTimers() {
+  if (dockWheelResetTimer !== undefined) {
+    clearTimeout(dockWheelResetTimer)
+    dockWheelResetTimer = undefined
+  }
+  if (dockWheelCooldownTimer !== undefined) {
+    clearTimeout(dockWheelCooldownTimer)
+    dockWheelCooldownTimer = undefined
+  }
+}
+
+function resetDockWheelState(animateBack = true) {
+  dockWheelAccum = 0
+  clearDockIndicatorPreview(animateBack)
+  if (dockWheelResetTimer !== undefined) {
+    clearTimeout(dockWheelResetTimer)
+    dockWheelResetTimer = undefined
+  }
+}
+
+function scheduleDockWheelIdleReset() {
+  if (dockWheelResetTimer !== undefined)
+    clearTimeout(dockWheelResetTimer)
+  dockWheelResetTimer = setTimeout(() => {
+    if (!dockWheelLocked)
+      resetDockWheelState(true)
+  }, DOCK_WHEEL_IDLE_RESET_MS)
+}
+
+function lockDockWheelForMorph() {
+  dockWheelLocked = true
+  dockWheelAccum = 0
+  if (dockWheelCooldownTimer !== undefined)
+    clearTimeout(dockWheelCooldownTimer)
+  dockWheelCooldownTimer = setTimeout(() => {
+    dockWheelLocked = false
+    dockWheelAccum = 0
+    dockWheelCooldownTimer = undefined
+  }, DOCK_WHEEL_COOLDOWN_MS)
+}
+
+function switchDockPageByOffset(offset: number) {
+  const index = getActivatedDockItemIndex()
+  if (index < 0)
+    return false
+  const nextIndex = index + offset
+  if (nextIndex < 0 || nextIndex >= currentDockItems.value.length)
+    return false
+
+  const nextItem = currentDockItems.value[nextIndex]
+  // Drop remainder — never chain-skip pages in one gesture
+  clearDockIndicatorPreview(false)
+  dockWheelAccum = 0
+  if (dockWheelResetTimer !== undefined) {
+    clearTimeout(dockWheelResetTimer)
+    dockWheelResetTimer = undefined
+  }
+  lockDockWheelForMorph()
+  activatedDockItem.value = nextItem
+  emit('dockItemClick', nextItem)
+  return true
+}
+
+function handleDockPagesWheel(event: WheelEvent) {
+  // Only while pointer is over the dock page list.
+  if (currentDockItems.value.length <= 1)
+    return
+
+  event.stopPropagation()
+
+  // During morph cooldown: swallow wheel so it cannot overshoot to the next page
+  if (dockWheelLocked)
+    return
+
+  const delta = resolveDockWheelDelta(event)
+  if (delta === 0)
+    return
+
+  const index = getActivatedDockItemIndex()
+  if (index < 0)
+    return
+
+  // Hard clamp — progress never exceeds one page step
+  dockWheelAccum = Math.max(-DOCK_WHEEL_THRESHOLD, Math.min(DOCK_WHEEL_THRESHOLD, dockWheelAccum + delta))
+  const direction = dockWheelAccum > 0 ? 1 : (dockWheelAccum < 0 ? -1 : 0)
+  if (direction === 0) {
+    setDockIndicatorPreview(null, 0)
+    return
+  }
+
+  const neighborIndex = index + direction
+  if (neighborIndex < 0 || neighborIndex >= currentDockItems.value.length) {
+    // Soft rubber-band at ends, no page change
+    dockWheelAccum = Math.max(-DOCK_WHEEL_THRESHOLD * 0.22, Math.min(DOCK_WHEEL_THRESHOLD * 0.22, dockWheelAccum))
+    setDockIndicatorPreview(null, 0)
+    scheduleDockWheelIdleReset()
+    return
+  }
+
+  const progress = Math.abs(dockWheelAccum) / DOCK_WHEEL_THRESHOLD
+  const neighbor = currentDockItems.value[neighborIndex]
+  const neighborEl = getDockSegmentElement(neighbor.page)
+  setDockIndicatorPreview(neighborEl, progress)
+
+  if (progress >= 1) {
+    switchDockPageByOffset(direction)
+    return
+  }
+
+  scheduleDockWheelIdleReset()
+}
+
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 const { width: dockWidth, height: dockHeight } = useElementSize(dockContentRef)
 
@@ -506,6 +671,9 @@ onUnmounted(() => {
   if (mouseLeaveTimer) {
     clearTimeout(mouseLeaveTimer)
   }
+  clearDockWheelTimers()
+  dockWheelLocked = false
+  dockWheelAccum = 0
 })
 </script>
 
@@ -543,10 +711,31 @@ onUnmounted(() => {
       <div
         class="dock-content-inner"
       >
-        <template v-for="dockItem in currentDockItems" :key="dockItem.page">
-          <Tooltip :content="$t(dockItem.i18nKey)" :placement="tooltipPlacement">
+        <div
+          ref="dockPagesRef"
+          class="dock-pages"
+          @wheel.prevent="handleDockPagesWheel"
+        >
+          <div
+            class="bew-liquid-indicator bew-liquid-indicator--dock"
+            :class="{
+              'is-moving': dockIndicatorMoving,
+              'is-disabled-glow': settings.disableDockGlowingEffect,
+            }"
+            :style="dockIndicatorStyle"
+            aria-hidden="true"
+          />
+          <Tooltip
+            v-for="dockItem in currentDockItems"
+            :key="dockItem.page"
+            :content="$t(dockItem.i18nKey)"
+            :placement="tooltipPlacement"
+          >
             <button
-              class="dock-item group"
+              class="dock-item dock-item--page group"
+              data-segment-item
+              :data-page="dockItem.page"
+              :data-active="isDockItemActivated(dockItem) ? 'true' : undefined"
               :class="{
                 'active': isDockItemActivated(dockItem),
                 'inactive': hoveringDockItem.themeMode && isDark,
@@ -567,7 +756,7 @@ onUnmounted(() => {
               />
             </button>
           </Tooltip>
-        </template>
+        </div>
 
         <!-- dividing line -->
         <div class="divider" />
@@ -589,7 +778,7 @@ onUnmounted(() => {
                 ? 'none'
                 : 'group-hover:[-8px_4px_160px_20px_hsla(226deg,85%,77%,1),-8px_4px_100px_12px_hsla(226deg,85%,77%,0.8),-8px_4px_60px_10px_hsla(226deg,85%,77%,0.6),-8px_4px_20px_4px_hsla(226deg,85%,77%,0.4),-4px_2px_8px_0_hsla(226deg,85%,77%,0.8)]'"
             opacity-0 group-hover:opacity-100
-            duration-600
+            duration-300
           />
 
           <button
@@ -624,7 +813,7 @@ onUnmounted(() => {
             }"
             @click="emit('settingsVisibilityChange')"
           >
-            <div i-mingcute:settings-3-line text-xl group-hover:rotate-180 transition="all 2000 ease-out" />
+            <div i-mingcute:settings-3-line text-xl group-hover:rotate-180 transition="transform duration-400 ease-out" />
           </button>
         </Tooltip>
       </div>
@@ -804,11 +993,11 @@ onUnmounted(() => {
 
     backdrop-filter: var(--bew-filter-glass-1);
     transition:
-      transform 300ms cubic-bezier(0.34, 2, 0.6, 1),
+      transform 300ms var(--bew-ease-emphasized, cubic-bezier(0.34, 1.3, 0.64, 1)),
       background 300ms ease,
       color 300ms ease,
       box-shadow 300ms ease,
-      opacity 600ms ease;
+      opacity 300ms ease;
     box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
   }
 }
@@ -847,7 +1036,7 @@ onUnmounted(() => {
   }
 
   .divider {
-    --uno: "my-1 mx-3 h-3px bg-$bew-border-color rounded-4";
+    --uno: "my-1 mx-3 h-3px bg-$bew-border-color rounded-full";
   }
 
   &.bottom .divider {
@@ -867,6 +1056,15 @@ onUnmounted(() => {
     --uno: "flex-row";
   }
 
+  .dock-pages {
+    --uno: "relative flex flex-col gap-2 shrink-0";
+    overscroll-behavior: contain;
+  }
+
+  &.bottom .dock-pages {
+    --uno: "flex-row";
+  }
+
   .back-to-top-or-refresh-btn {
     --uno: "transform active:important-scale-90 hover:scale-110";
     --uno: "lg:w-45px w-35px lg:h-45px h-35px";
@@ -877,11 +1075,11 @@ onUnmounted(() => {
 
     backdrop-filter: var(--bew-filter-glass-1);
     transition:
-      transform 300ms cubic-bezier(0.34, 2, 0.6, 1),
+      transform 300ms var(--bew-ease-emphasized, cubic-bezier(0.34, 1.3, 0.64, 1)),
       background 300ms ease,
       color 300ms ease,
       box-shadow 300ms ease,
-      opacity 600ms ease;
+      opacity 300ms ease;
     box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
 
     &.active {
@@ -906,23 +1104,23 @@ onUnmounted(() => {
   --shadow-dark-active: 0 4px 20px rgba(255, 255, 255, 0.8);
   --shadow-active-active: 0 4px 20px var(--bew-theme-color-80);
 
-  --uno: "relative transform active:important-scale-90 hover:scale-110";
+  --uno: "relative z-1 transform active:important-scale-90 hover:scale-110";
   --uno: "lg:w-45px w-35px";
   --uno: "lg:lh-45px lh-35px";
   --uno: "p-0 flex items-center justify-center";
   --uno: "aspect-square relative";
   --uno: "leading-0";
-  --uno: "rounded-60px antialiased";
+  --uno: "rounded-full antialiased";
   --uno: "bg-$bew-fill-alt hover:bg-$bew-fill-2 cursor-pointer";
   --uno: "dark:bg-$bew-fill-1 dark-hover:bg-$bew-fill-4";
 
   box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
   transition:
-    transform 300ms cubic-bezier(0.34, 2, 0.6, 1),
+    transform 300ms var(--bew-ease-emphasized, cubic-bezier(0.34, 1.3, 0.64, 1)),
     background 300ms ease,
     color 300ms ease,
-    box-shadow 600ms ease,
-    opacity 600ms ease;
+    box-shadow 300ms ease,
+    opacity 300ms ease;
 
   &:hover {
     box-shadow:
@@ -935,7 +1133,16 @@ onUnmounted(() => {
     box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1) !important;
   }
 
-  &.active {
+  // Page items: solid fill/glow lives on the liquid indicator
+  &--page.active,
+  &--page.active:hover {
+    --uno: "important-bg-transparent text-white !dark:text-black";
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // Non-page dock controls keep the original solid active treatment
+  &:not(.dock-item--page).active {
     --uno: "important-bg-$bew-theme-color text-white !dark:bg-white !dark:text-black";
     --uno: "shadow-$shadow-active dark:shadow-$shadow-dark";
     --uno: "active:shadow-$shadow-active-active dark-active:shadow-$shadow-dark-active";

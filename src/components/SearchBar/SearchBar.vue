@@ -555,7 +555,6 @@ function handleClearKeyword() {
     :class="{ 'search-wrap--top-bar': topBarMode }"
     w="full"
     max-w="550px"
-    h-46px
     pos="relative"
     @focusout="handleFocusOut"
   >
@@ -613,7 +612,7 @@ function handleClearKeyword() {
         spellcheck="false"
         text="$b-search-bar-normal-text-color group-focus-within:$b-search-bar-focus-text-color group-hover:$b-search-bar-hover-text-color"
         un-border="1 solid $bew-border-color"
-        transition="all duration-300"
+        transition="background-color duration-200, color duration-200, opacity duration-200, box-shadow duration-200"
         @focus="isFocus = true"
         @input="handleNativeInput"
         @keydown.enter.stop="handleKeyEnter"
@@ -623,7 +622,7 @@ function handleClearKeyword() {
       >
       <button
         v-if="isFocus && keyword"
-        pos="absolute right-12" bg="$bew-fill-1 hover:$bew-fill-2" text="xs" rounded-10
+        pos="absolute right-12" bg="$bew-fill-1 hover:$bew-fill-2" text="xs" rounded="$bew-radius-half"
         p-1
         flex="~ items-center justify-between"
         @click="handleClearKeyword"
@@ -632,16 +631,13 @@ function handleClearKeyword() {
       </button>
 
       <button
+        class="search-submit-btn"
         p-2
         rounded-full
-        text="lg leading-0 $b-search-bar-normal-icon-color group-hover:$b-search-bar-hover-icon-color group-focus-within:$b-search-bar-focus-icon-color"
-        transition="all duration-300"
+        text="lg leading-0"
         border-none
         outline-none
         pos="absolute right-6px"
-        bg="hover:$bew-fill-2"
-        filter="group-focus-within:~"
-        style="--un-drop-shadow: drop-shadow(0 0 6px var(--bew-theme-color))"
         @click="navigateToSearchResultPage(keyword)"
       >
         <div i-tabler:search block align-middle />
@@ -805,9 +801,9 @@ function handleClearKeyword() {
 #search-wrap {
   min-width: 0;
   max-width: var(--b-search-bar-max-width, 550px);
+  height: var(--b-search-bar-height, var(--bew-top-bar-primary-control-height, 46px));
 
   --b-search-bar-normal-color: var(--bew-content);
-  --b-search-bar-hover-color: var(--bew-content-hover);
   --b-search-bar-focus-color: var(--bew-content-hover);
 
   --b-search-bar-normal-icon-color: var(--bew-text-1);
@@ -840,10 +836,7 @@ function handleClearKeyword() {
       min-width: 0;
       position: relative;
       z-index: 1;
-
-      &:hover {
-        --uno: "bg-$b-search-bar-hover-color";
-      }
+      border-radius: var(--b-search-bar-radius, 60px);
 
       &:focus {
         --uno: "bg-$b-search-bar-focus-color";
@@ -856,6 +849,50 @@ function handleClearKeyword() {
         0 0 0 2px var(--bew-theme-color),
         0 6px 16px var(--bew-theme-color-40),
         inset 0 0 6px var(--bew-theme-color-30);
+    }
+
+    .search-submit-btn {
+      position: absolute;
+      color: var(--b-search-bar-normal-icon-color);
+      background: transparent;
+      isolation: isolate;
+      transition: color 280ms ease;
+
+      &::before {
+        content: "";
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+        background: var(--bew-theme-color);
+        filter: blur(4px);
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.25);
+        transition:
+          transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+          opacity 320ms ease;
+      }
+
+      > * {
+        position: relative;
+        z-index: 1;
+      }
+    }
+
+    &:hover .search-submit-btn,
+    &:focus-within .search-submit-btn,
+    .search-submit-btn:hover,
+    .search-submit-btn:focus-visible {
+      color: var(--b-search-bar-hover-icon-color, var(--bew-theme-color));
+
+      &::before {
+        opacity: 0.4;
+        transform: translate(-50%, -50%) scale(1.1);
+      }
     }
   }
 

@@ -681,7 +681,7 @@ defineExpose({
               px-6 py-2 rounded="$bew-radius-half"
               bg="$bew-fill-1 hover:$bew-fill-2"
               text="sm $bew-text-1"
-              transition-all
+              transition-colors duration-200
               @click="handleSwitchToLiveUser"
             >
               查看更多主播 ({{ Math.max((liveUserTotalResults || 0) - 6, 0) }}+)

@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { useThrottleFn } from '@vueuse/core'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { gridLayout, settings } from '~/logic'
 import type { HomeTab } from '~/stores/mainStore'
@@ -45,10 +47,40 @@ const shouldShowFixedTabsBackground = computed(() => {
 })
 const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   return [
-    { icon: 'i-mingcute:table-3-line', iconActivated: 'i-mingcute:table-3-fill', value: 'adaptive' },
-    { icon: 'i-mingcute:layout-grid-line', iconActivated: 'i-mingcute:layout-grid-fill', value: 'twoColumns' },
-    { icon: 'i-mingcute:list-check-3-line', iconActivated: 'i-mingcute:list-check-3-fill', value: 'oneColumn' },
+    { icon: 'mingcute:table-3-line', iconActivated: 'mingcute:table-3-fill', value: 'adaptive' },
+    { icon: 'mingcute:layout-grid-line', iconActivated: 'mingcute:layout-grid-fill', value: 'twoColumns' },
+    { icon: 'mingcute:list-check-3-line', iconActivated: 'mingcute:list-check-3-fill', value: 'oneColumn' },
   ]
+})
+
+const homeTabsInsideRef = ref<HTMLElement | null>(null)
+const gridSwitcherRef = ref<HTMLElement | null>(null)
+
+const {
+  indicatorStyle: tabsIndicatorStyle,
+  isMoving: tabsIndicatorMoving,
+  updateIndicator: updateTabsIndicator,
+} = useLiquidSegmentIndicator({
+  containerRef: homeTabsInsideRef,
+  activeKey: activatedPage,
+})
+
+const {
+  indicatorStyle: gridIndicatorStyle,
+  isMoving: gridIndicatorMoving,
+  updateIndicator: updateGridIndicator,
+} = useLiquidSegmentIndicator({
+  containerRef: gridSwitcherRef,
+  activeKey: () => gridLayout.value.home,
+})
+
+watch(currentTabs, () => {
+  void updateTabsIndicator(true)
+})
+
+watch(() => settings.value.enableGridLayoutSwitcher, (enabled) => {
+  if (enabled)
+    void updateGridIndicator(true)
 })
 
 // 使用deep监听
@@ -225,19 +257,26 @@ function toggleTabContentLoading(loading: boolean) {
           v-if="shouldShowHomeTabs"
           class="glass-panel home-tabs-panel"
           :class="{ 'home-tabs-panel--scrolled': shouldShowFixedTabsBackground }"
-          h-40px
         >
           <div class="home-tabs-scroll" h-full of-x-auto of-y-hidden>
             <div
-              class="home-tabs-inside" flex="~ items-center gap-1" h-inherit w-max p-2px
+              ref="homeTabsInsideRef"
+              class="home-tabs-inside" flex="~ items-center" h-inherit w-max
               box-border
             >
+              <div
+                class="bew-liquid-indicator"
+                :class="{ 'is-moving': tabsIndicatorMoving }"
+                :style="tabsIndicatorStyle"
+                aria-hidden="true"
+              />
               <button
                 v-for="tab in currentTabs" :key="tab.page"
                 class="home-tab-button"
+                data-segment-item
+                :data-active="activatedPage === tab.page ? 'true' : undefined"
                 :class="{ 'tab-activated': activatedPage === tab.page }"
                 px-4 h-full
-                bg="transparent hover:$bew-fill-1" text="$bew-text-2 hover:$bew-text-1" rounded-full
                 cursor-pointer
                 flex="~ gap-2 items-center shrink-0" relative
                 @click="handleChangeTab(tab)"
@@ -259,22 +298,34 @@ function toggleTabContentLoading(loading: boolean) {
 
         <div
           v-if="settings.enableGridLayoutSwitcher"
+          ref="gridSwitcherRef"
           class="glass-panel home-grid-layout-switcher"
-          flex="~ gap-1 shrink-0" p-1 h-38px
-          rounded-full
-          box-border border="1 $bew-border-color"
+          flex="~ shrink-0 items-center"
+          box-border
         >
           <div
+            class="bew-liquid-indicator"
+            :class="{ 'is-moving': gridIndicatorMoving }"
+            :style="gridIndicatorStyle"
+            aria-hidden="true"
+          />
+          <button
             v-for="icon in gridLayoutIcons" :key="icon.value"
+            type="button"
+            class="home-grid-layout-item"
+            data-segment-item
+            :data-active="gridLayout.home === icon.value ? 'true' : undefined"
             :class="{ 'grid-layout-item-activated': gridLayout.home === icon.value }"
-            flex="~ justify-center items-center"
-            h-full aspect-square text="$bew-text-2 hover:$bew-text-1"
-            rounded-full bg="hover:$bew-fill-2" duration-300
-            cursor-pointer
+            :aria-pressed="gridLayout.home === icon.value"
+            :title="icon.value"
             @click="gridLayout.home = icon.value"
           >
-            <div :class="gridLayout.home === icon.value ? icon.iconActivated : icon.icon" text-base />
-          </div>
+            <Icon
+              class="home-grid-layout-item__icon"
+              :icon="gridLayout.home === icon.value ? icon.iconActivated : icon.icon"
+              aria-hidden="true"
+            />
+          </button>
         </div>
       </header>
 
@@ -299,7 +350,7 @@ function toggleTabContentLoading(loading: boolean) {
 <style scoped lang="scss">
 .bg-enter-active,
 .bg-leave-active {
-  --uno: "duration-1000 ease-in-out";
+  --uno: "duration-500 ease-in-out";
 }
 .bg-enter-from,
 .bg-leave-to {
@@ -311,7 +362,7 @@ function toggleTabContentLoading(loading: boolean) {
 
 .content-enter-active,
 .content-leave-active {
-  --uno: "duration-1000 ease-in-out";
+  --uno: "duration-500 ease-in-out";
 }
 .content-enter-from,
 .content-leave-to {
@@ -332,7 +383,7 @@ function toggleTabContentLoading(loading: boolean) {
 .home-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: start;
+  align-items: center;
   gap: 16px;
   margin-bottom: 20px;
 }
@@ -341,9 +392,10 @@ function toggleTabContentLoading(loading: boolean) {
   grid-column: 2;
   max-width: calc(100vw - 320px);
   justify-self: center;
+  height: var(--bew-top-bar-control-height);
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 9999px;
+  border: var(--bew-top-bar-control-border-width) solid transparent;
+  border-radius: var(--bew-top-bar-control-radius);
   box-shadow: none;
   box-sizing: border-box;
   backdrop-filter: none;
@@ -378,13 +430,65 @@ function toggleTabContentLoading(loading: boolean) {
 }
 
 .home-grid-layout-switcher {
+  position: relative;
   grid-column: 3;
   justify-self: end;
-  border-color: color-mix(in oklab, var(--bew-border-color), transparent 24%);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--bew-top-bar-control-height);
+  gap: var(--bew-top-bar-control-gap);
+  padding: var(--bew-top-bar-control-padding);
+  border: var(--bew-top-bar-control-border-width) solid color-mix(in oklab, var(--bew-border-color), transparent 24%);
+  border-radius: var(--bew-top-bar-control-radius);
   background: color-mix(in oklab, var(--bew-elevated), transparent 28%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 1px 3px rgb(0 0 0 / 0.05);
+  overflow: hidden;
+}
+
+.home-grid-layout-item {
+  appearance: none;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  // Use fixed square size instead of height:100% + aspect-ratio,
+  // so icon cells stay optically centered inside the padded capsule.
+  width: var(--bew-top-bar-control-item-height);
+  height: var(--bew-top-bar-control-item-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--bew-top-bar-control-item-radius);
+  background: transparent;
+  color: var(--bew-text-2);
+  cursor: pointer;
+  transition:
+    color var(--bew-duration-normal, 200ms) ease,
+    background-color var(--bew-duration-normal, 200ms) ease;
+
+  // Match home tab button hover (skip when already activated)
+  &:hover:not(.grid-layout-item-activated) {
+    color: var(--bew-segment-item-hover-color);
+    background: var(--bew-segment-item-hover-bg);
+  }
+
+  // Match home tab activated visual for keyboard focus
+  &:focus-visible:not(.grid-layout-item-activated) {
+    outline: none;
+    color: var(--bew-segment-item-active-color);
+    background: var(--bew-segment-item-active-bg);
+    box-shadow: var(--bew-segment-item-active-shadow);
+  }
+
+  &__icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+    flex: none;
+    font-size: 16px;
+  }
 }
 
 .home-tabs-scroll {
@@ -395,33 +499,54 @@ function toggleTabContentLoading(loading: boolean) {
   }
 }
 
+.home-tabs-inside {
+  position: relative;
+  box-sizing: border-box;
+  padding: var(--bew-top-bar-control-padding);
+  gap: var(--bew-top-bar-control-gap);
+}
+
 .home-tab-button {
+  position: relative;
+  z-index: 1;
+  border: 0;
+  border-radius: var(--bew-top-bar-control-item-radius);
+  background: transparent;
+  color: var(--bew-text-2);
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.01em;
   transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.15s ease;
+    color var(--bew-duration-normal, 200ms) ease,
+    background-color var(--bew-duration-normal, 200ms) ease;
+
+  &:hover:not(.tab-activated) {
+    color: var(--bew-segment-item-hover-color);
+    background: var(--bew-segment-item-hover-bg);
+  }
+
+  &:focus-visible:not(.tab-activated) {
+    outline: none;
+    color: var(--bew-segment-item-active-color);
+    background: var(--bew-segment-item-active-bg);
+    box-shadow: var(--bew-segment-item-active-shadow);
+  }
 }
 
-.tab-activated {
-  color: var(--bew-theme-color);
-  background: var(--bew-theme-color-20);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 2px 6px var(--bew-theme-color-10);
-  transform: translateY(-0.5px);
-}
-
+.tab-activated,
 .grid-layout-item-activated {
-  color: var(--bew-theme-color);
-  background: color-mix(in oklab, var(--bew-theme-color), var(--bew-elevated) 82%);
-  box-shadow:
-    inset 0 0 0 1px var(--bew-theme-color-20),
-    0 1px 3px var(--bew-theme-color-10);
-  transform: translateY(-0.5px);
+  color: var(--bew-segment-item-active-color);
+  background: transparent;
+  box-shadow: none;
+}
+
+.tab-activated:hover,
+.tab-activated:focus-visible,
+.grid-layout-item-activated:hover,
+.grid-layout-item-activated:focus-visible {
+  color: var(--bew-segment-item-active-color);
+  background: transparent;
+  box-shadow: none;
 }
 
 .home-header-fixed {

@@ -1,0 +1,57 @@
+// Liquid sliding indicator for segmented controls (tabs / switchers / dock)
+.bew-liquid-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 9999px;
+  background: var(--bew-segment-item-active-bg, var(--bew-theme-color-20));
+  box-shadow: var(--bew-segment-item-active-shadow);
+  // Geometry (x/y/w/h/clip-path) is driven by JS for droplet morph —
+  // only paint props transition here.
+  transition:
+    opacity 200ms ease,
+    background-color 220ms ease,
+    box-shadow 220ms ease;
+  will-change: transform, width, height;
+  transform-origin: center center;
+
+  &.is-moving {
+    filter: saturate(1.06);
+  }
+}
+
+.bew-liquid-indicator--white {
+  background: var(--bew-segment-item-active-bg-white);
+  box-shadow: var(--bew-segment-item-active-shadow-white);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bew-liquid-indicator {
+    transition: opacity 120ms ease !important;
+  }
+}
+
+// Dock selected pill: solid theme disc + soft bloom
+.bew-liquid-indicator--dock {
+  background: var(--bew-theme-color);
+  box-shadow: 0 4px 30px var(--bew-theme-color-60);
+
+  &.is-moving {
+    filter: saturate(1.08);
+  }
+
+  &.is-disabled-glow {
+    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
+  }
+}
+
+:is(html.dark, :host(.dark), .dark) .bew-liquid-indicator--dock {
+  background: #fff;
+  box-shadow: 0 4px 30px 4px rgba(255, 255, 255, 0.6);
+
+  &.is-disabled-glow {
+    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
+  }
+}

@@ -155,7 +155,12 @@ const maxDate = computed(() => formatDate(new Date()))
   font-size: var(--bew-base-font-size);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
   white-space: nowrap;
   user-select: none;
 
@@ -181,7 +186,12 @@ const maxDate = computed(() => formatDate(new Date()))
   padding: 0.35rem 0.75rem;
   user-select: none;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 
   &:hover {
     span {

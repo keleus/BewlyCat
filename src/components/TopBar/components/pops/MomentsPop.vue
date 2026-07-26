@@ -140,7 +140,7 @@ defineExpose({
           v-for="tab in momentTabs"
           :key="tab.type"
           m="r-4"
-          transition="all duration-300"
+          transition="background-color duration-200, color duration-200, opacity duration-200"
           class="tab"
           :class="tab.type === selectedMomentTab.type ? 'tab-selected' : ''"
           cursor="pointer"
@@ -326,7 +326,7 @@ defineExpose({
 
   &::after {
     --uno: "absolute bottom-0 left-0 w-full h-12px bg-$bew-theme-color opacity-0 transform scale-x-0 -z-1";
-    --uno: "transition-all duration-300";
+    --uno: "transition-colors duration-200";
     content: "";
   }
 }

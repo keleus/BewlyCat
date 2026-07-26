@@ -211,7 +211,7 @@ function handleConfirm() {
               text="!16px hover:$bew-theme-color" w="32px" h="32px"
               flex="~ items-center justify-center shrink-0"
               bg="$bew-fill-1 hover:$bew-theme-color-30"
-              ml-8 rounded-8 cursor="pointer" border="1 $bew-border-color"
+              ml-8 rounded="$bew-radius-half" cursor="pointer" border="1 $bew-border-color"
               box-border
               duration-300
               @click="handleClose"
@@ -247,7 +247,7 @@ function handleConfirm() {
                 {{ $t('common.operation.cancel') }}
                 <span
                   v-show="showShortcut"
-                  text="xs $bew-text-2 lh-0" p="x-1" rounded-4px bg="$bew-fill-1"
+                  text="xs $bew-text-2 lh-0" p="x-1" rounded="$bew-radius-sm" bg="$bew-fill-1"
                   border="1 $bew-border-color"
                   mix-blend-color-dodge
                 >
@@ -260,7 +260,7 @@ function handleConfirm() {
                 {{ $t('common.operation.confirm') }}
                 <span
                   v-show="showShortcut"
-                  text="xs $bew-text-2 lh-0" p="x-1" rounded-4px bg="$bew-fill-1"
+                  text="xs $bew-text-2 lh-0" p="x-1" rounded="$bew-radius-sm" bg="$bew-fill-1"
                   border="1 $bew-border-color"
                   mix-blend-color-dodge
                 >

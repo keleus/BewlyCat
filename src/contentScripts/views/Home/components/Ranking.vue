@@ -192,8 +192,8 @@ defineExpose({ initData })
             <a
               :class="{ active: activatedRankingType.id === rankingType.id }"
               px-4 lh-30px h-30px hover:bg="$bew-fill-2" w-inherit
-              block rounded="$bew-radius" cursor-pointer transition="all 300 ease-out"
-              hover:scale-105 un-text="$bew-text-1"
+              block rounded="$bew-radius" cursor-pointer transition="background-color duration-200, color duration-200, box-shadow duration-200, transform duration-200"
+              un-text="$bew-text-1"
               @click="activatedRankingType = rankingType"
             >{{ rankingType.name }}</a>
           </li>
@@ -260,7 +260,7 @@ defineExpose({ initData })
 
 <style lang="scss" scoped>
 .active {
-  --uno: "scale-110 bg-$bew-theme-color-auto text-$bew-text-auto shadow-$bew-shadow-2";
+  --uno: "scale-105 bg-$bew-theme-color-auto text-$bew-text-auto shadow-$bew-shadow-2";
 }
 
 .hide {

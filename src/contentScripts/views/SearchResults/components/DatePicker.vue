@@ -421,7 +421,12 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   color: var(--bew-text-3);
   font-size: 0.8125rem;
   letter-spacing: -0.01em;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
   outline: none;
 
   &::placeholder {
@@ -453,7 +458,12 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   border: none;
   color: var(--bew-text-3);
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 
   &:hover {
     color: var(--bew-theme-color);
@@ -513,7 +523,12 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   border-radius: var(--bew-radius-half);
   color: var(--bew-text-2);
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 
   &:hover {
     background: var(--bew-fill-1);
@@ -560,7 +575,12 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   color: var(--bew-text-1);
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 
   &:hover:not(.disabled) {
     background: var(--bew-fill-1);
@@ -610,7 +630,12 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   border-radius: var(--bew-radius-half);
   font-size: 0.875rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 
   &.clear {
     color: var(--bew-text-2);
@@ -637,7 +662,12 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 // 过渡动画
 .picker-fade-enter-active,
 .picker-fade-leave-active {
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
 }
 
 .picker-fade-enter-from {
