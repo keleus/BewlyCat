@@ -363,6 +363,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_sex',
     'settings.show_comment_host_tag',
     'settings.adjust_comment_image_height',
+    'settings.detect_comment_shadow_ban',
     'settings.bilibili_features.vip_features',
     'settings.show_bcoin_receive_reminder',
     'settings.auto_receive_bcoin_coupon',

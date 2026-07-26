@@ -24,6 +24,10 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
       <SettingsItem :title="$t('settings.adjust_comment_image_height')" :desc="$t('settings.adjust_comment_image_height_desc')" right-width="auto">
         <Radio v-model="settings.adjustCommentImageHeight" />
       </SettingsItem>
+
+      <SettingsItem :title="$t('settings.detect_comment_shadow_ban')" :desc="$t('settings.detect_comment_shadow_ban_desc')" right-width="auto">
+        <Radio v-model="settings.detectCommentShadowBan" />
+      </SettingsItem>
     </SettingsItemGroup>
   </div>
 </template>

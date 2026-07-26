@@ -5,7 +5,7 @@
 import type Browser from 'webextension-polyfill'
 import browser from 'webextension-polyfill'
 
-import { addWbiSign, getWbiKeys, initWbiKeys, needsWbiSign, storeWbiKeys } from './wbiSign'
+import { addWbiSign, clearWbiKeys, getWbiKeys, initWbiKeys, needsWbiSign, storeWbiKeys } from './wbiSign'
 
 export class ApiRiskControlError extends Error {
   constructor(message: string = '检测到风控页面，API返回了HTML而不是JSON') {
@@ -138,11 +138,12 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
 
     const baseUrl = url
     const needsWbi = needsWbiSign(url)
+    const wbiKeyOptions = { noCookie: credentials === 'omit' }
 
     // 如果需要WBI签名但没有密钥，主动获取密钥
-    if (needsWbi && !getWbiKeys()) {
+    if (needsWbi && !getWbiKeys(wbiKeyOptions)) {
       try {
-        await initWbiKeys({ noCookie: credentials === 'omit' })
+        await initWbiKeys(wbiKeyOptions)
       }
       catch (error) {
         // 获取密钥失败，继续执行（降级到无签名请求）
@@ -157,7 +158,7 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
 
       // 为需要WBI签名的API添加签名
       if (needsWbi && useWbi) {
-        requestParams = addWbiSign(requestParams)
+        requestParams = addWbiSign(requestParams, wbiKeyOptions)
       }
       // generate params
       if (Object.keys(requestParams).length) {
@@ -212,6 +213,16 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
 
     // 标记是否已经尝试过无 WBI 重试
     let hasTriedWithoutWbi = false
+    let hasRefreshedWbiKeys = false
+
+    function isWbiSignatureRejected(response: unknown): boolean {
+      return Boolean(
+        response
+        && typeof response === 'object'
+        && 'code' in response
+        && response.code === -403,
+      )
+    }
 
     // 执行完整请求流程的函数（包括响应处理）
     const executeFullRequest = async (useWbi: boolean) => {
@@ -227,7 +238,7 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
           if (data.code === 0 && data.data && data.data.wbi_img) {
             const { img_url, sub_url } = data.data.wbi_img
             if (img_url && sub_url) {
-              storeWbiKeys(img_url, sub_url)
+              storeWbiKeys(img_url, sub_url, wbiKeyOptions)
             }
           }
         }
@@ -253,7 +264,19 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
     const executeRequestWithRetry = async () => {
       try {
         // 首次请求（使用 WBI 签名，如果需要）
-        return await executeFullRequest(true)
+        let response = await executeFullRequest(true)
+
+        // WBI 密钥可能在缓存有效期内被服务端轮换。收到 -403 时强制刷新一次，
+        // 避免把签名失效误判成业务侧的访问权限不足。
+        if (needsWbi && !hasRefreshedWbiKeys && isWbiSignatureRejected(response)) {
+          hasRefreshedWbiKeys = true
+          clearWbiKeys(wbiKeyOptions)
+          const refreshed = await initWbiKeys(wbiKeyOptions)
+          if (refreshed)
+            response = await executeFullRequest(true)
+        }
+
+        return response
       }
       catch (error) {
         // 如果使用了 WBI 签名且失败，尝试不带 WBI 签名重试

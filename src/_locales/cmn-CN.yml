@@ -695,6 +695,8 @@ settings:
   show_comment_host_tag_desc: 在评论回复详情页中标注楼主
   adjust_comment_image_height: 调整评论区图片高度
   adjust_comment_image_height_desc: 自动调整评论区图片高度以匹配实际长宽比，避免图片变形
+  detect_comment_shadow_ban: 检测评论仅自己可见
+  detect_comment_shadow_ban_desc: 发送评论约 5 秒后，分别以无登录和登录状态检查公开可见性；结果仅供参考
   volume_normalization:
     title: 音量均衡
     enable: 启用音量均衡
@@ -727,6 +729,13 @@ settings:
   menu_volume_normalization: 音量均衡
   group_fonts: 字体
   group_visual_effects: 视觉效果
+comment_shadow_ban_detection:
+  ok: 评论可正常公开显示。
+  shadowban: 该评论疑似仅自己可见（ShadowBan）。
+  deleted: 该评论疑似已被系统删除。
+  invisible: 该评论已被 Bilibili 标记为不可见。
+  suspicious: 该评论可能仍在审核中，或评论区处于限制状态。
+  error: 暂时无法确认评论状态，请稍后重试。
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key
 topbar:
