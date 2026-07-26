@@ -360,11 +360,13 @@ function changeMenuItem(menuItem: MenuType) {
             :key="menuItem.value"
             :class="{ 'menu-section-start': menuItem.sectionStart }"
           >
-            <a
+            <button
+              type="button"
               cursor-pointer w="40px group-hover:190px" h-40px
               rounded-30px flex items-center overflow-x-hidden
               duration-300 bg="hover:$bew-fill-2"
               :class="{ 'menu-item-activated': menuItem.value === activatedMenuItem }"
+              :aria-current="menuItem.value === activatedMenuItem ? 'page' : undefined"
               @click="changeMenuItem(menuItem.value)"
             >
               <div
@@ -391,7 +393,7 @@ function changeMenuItem(menuItem: MenuType) {
                   {{ menuItem.badge }}
                 </span>
               </div>
-            </a>
+            </button>
           </li>
         </ul>
       </aside>
