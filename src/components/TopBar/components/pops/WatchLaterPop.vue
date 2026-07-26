@@ -44,7 +44,7 @@ useOptimizedScroll(
 )
 
 onMounted(async () => {
-  topBarStore.getAllWatchLaterList()
+  await topBarStore.syncWatchLaterState(true)
 })
 
 /**

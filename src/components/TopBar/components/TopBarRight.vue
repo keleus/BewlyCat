@@ -36,7 +36,7 @@ const {
   hasBCoinToReceive,
 } = storeToRefs(topBarStore)
 
-const { getTopBarNewMomentsCount, invalidateUnreadMessageState, syncSharedData, syncUnreadMessageState } = topBarStore
+const { invalidateUnreadMessageState, syncMomentsState, syncSharedData, syncUnreadMessageState } = topBarStore
 
 function refreshUnreadMessageSharedState() {
   syncUnreadMessageState().catch((error) => {
@@ -152,7 +152,7 @@ watch(
     // 弹窗关闭时更新
     if (isLogin.value) {
       if (!newVal) {
-        await getTopBarNewMomentsCount('video')
+        await syncMomentsState('video')
       }
       else {
         nextTick(() => {

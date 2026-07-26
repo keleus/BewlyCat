@@ -89,8 +89,10 @@ function toggleWatchLater(aid: number) {
       csrf: getCSRF(),
     })
       .then((res) => {
-        if (res.code === 0)
+        if (res.code === 0) {
           topBarStore.addedWatchLaterList.push(aid)
+          void topBarStore.syncWatchLaterState()
+        }
       })
   }
   else {
@@ -102,6 +104,7 @@ function toggleWatchLater(aid: number) {
         if (res.code === 0) {
           topBarStore.addedWatchLaterList.length = 0
           Object.assign(topBarStore.addedWatchLaterList, topBarStore.addedWatchLaterList.filter(item => item !== aid))
+          void topBarStore.syncWatchLaterState()
         }
       })
   }

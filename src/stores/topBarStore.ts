@@ -448,7 +448,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       })
       if (res.code === 0) {
         watchLaterList.splice(index, 1)
-        watchLaterCount.value = watchLaterList.length
+        await syncWatchLaterState()
       }
     }
     catch (error) {
@@ -862,6 +862,20 @@ export const useTopBarStore = defineStore('topBar', () => {
     })
   }
 
+  function syncMomentsState(selectedType: string = 'video') {
+    return syncSharedData({
+      force: true,
+      refresh: () => getTopBarNewMomentsCount(selectedType),
+    })
+  }
+
+  function syncWatchLaterState(includeList = false) {
+    return syncSharedData({
+      force: true,
+      refresh: includeList ? getAllWatchLaterList : getWatchLaterCount,
+    })
+  }
+
   function invalidateUnreadMessageState() {
     const accountId = userInfo.mid
     if (!accountId)
@@ -975,6 +989,8 @@ export const useTopBarStore = defineStore('topBar', () => {
     getMouseOverPopup,
     syncSharedData,
     syncUnreadMessageState,
+    syncMomentsState,
+    syncWatchLaterState,
     invalidateUnreadMessageState,
     startUpdateTimer,
     stopUpdateTimer,
