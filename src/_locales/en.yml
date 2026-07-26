@@ -299,6 +299,8 @@ settings:
     bewly_widescreen_sidebar_position_right: Right
   enable_video_preview: Enable video preview feature (if possible)
   enable_video_ctrl_bar_on_video_card: Display the video control bar on the video card
+  video_preview_swipe_seek: Swipe to seek nearby
+  video_preview_swipe_seek_desc: Press and drag horizontally on a video preview to seek backward or forward near the current position.
   hover_video_card_delayed: Delayed video preview on hover over the video card
   only_cover_video_preview: Preview videos only when hovering the cover
   show_video_card_author_avatar: Show uploader avatar

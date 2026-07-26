@@ -135,6 +135,11 @@ const previewEnabled = computed(() =>
   Boolean(props.showPreview && settings.value.enableVideoPreview),
 )
 
+const shouldDisableLinkDragging = computed(() =>
+  previewEnabled.value
+  && settings.value.enableVideoPreviewSwipeSeek,
+)
+
 const hoverPreviewOnCoverOnly = computed(() =>
   previewEnabled.value && settings.value.onlyCoverVideoPreview,
 )
@@ -358,6 +363,7 @@ provide('getVideoType', () => props.type!)
           type: 'videoCard',
           customClickEvent: Boolean(props.customClickHandler) || settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'background',
           customClickEventIncludesModifiers: Boolean(props.customClickHandler),
+          disableDragging: shouldDisableLinkDragging,
         }"
         v-on="coverSkeleton ? {} : linkEvents"
       >

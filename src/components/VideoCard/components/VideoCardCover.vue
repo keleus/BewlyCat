@@ -58,10 +58,22 @@ const isLoadingStream = ref<boolean>(false)
 const isPreviewFullscreen = ref<boolean>(false)
 const isPreviewPlaying = ref<boolean>(false)
 const showVideoControls = ref<boolean>(false)
+const isScrubbing = ref<boolean>(false)
+const scrubProgress = ref<number>(0)
 const shouldEnableVideoControls = computed(() => settings.value.enableVideoCtrlBarOnVideoCard && !props.video?.roomid)
+const shouldEnableSwipeSeek = computed(() => settings.value.enableVideoPreviewSwipeSeek && !props.video?.roomid)
 let hls: Hls | null = null
 let flvPlayer: flvjs.Player | null = null
 let controlsHideTimeout: number | null = null
+let activeScrubPointerId: number | null = null
+let scrubStartX = 0
+let scrubStartTime = 0
+let hasDragGesture = false
+let suppressPreviewClick = false
+let suppressPreviewClickTimeout: number | null = null
+
+const SCRUB_START_THRESHOLD_PX = 8
+const NEARBY_SEEK_RANGE_SECONDS = 30
 
 const shouldShowWatchLater = computed(() =>
   props.previewEnabled ? isPreviewPlaying.value : props.isHover,
@@ -109,6 +121,106 @@ function handlePreviewMouseMove() {
   showControlsTemporarily()
 }
 
+function updateScrubProgress(videoEl: HTMLVideoElement) {
+  scrubProgress.value = Number.isFinite(videoEl.duration) && videoEl.duration > 0
+    ? Math.min(100, Math.max(0, videoEl.currentTime / videoEl.duration * 100))
+    : 0
+}
+
+function resetPreviewScrub() {
+  activeScrubPointerId = null
+  hasDragGesture = false
+  isScrubbing.value = false
+}
+
+function updateVideoTimeFromPointer(previewEl: HTMLElement, videoEl: HTMLVideoElement, pointerX: number) {
+  const rect = previewEl.getBoundingClientRect()
+  if (rect.width <= 0)
+    return
+
+  const seekRange = Math.min(videoEl.duration, NEARBY_SEEK_RANGE_SECONDS)
+  const deltaX = pointerX - scrubStartX
+  videoEl.currentTime = Math.min(videoEl.duration, Math.max(0, scrubStartTime + deltaX / rect.width * seekRange))
+
+  updateScrubProgress(videoEl)
+}
+
+function handlePreviewPointerDown(event: PointerEvent) {
+  const videoEl = videoRef.value
+  const previewEl = event.currentTarget as HTMLElement
+
+  if (!shouldEnableSwipeSeek.value || !videoEl || event.button !== 0)
+    return
+  if (!Number.isFinite(videoEl.duration) || videoEl.duration <= 0)
+    return
+
+  // Keep the native control bar interactive when it is enabled.
+  const rect = previewEl.getBoundingClientRect()
+  if (shouldEnableVideoControls.value && event.clientY >= rect.bottom - 40)
+    return
+
+  activeScrubPointerId = event.pointerId
+  scrubStartX = event.clientX
+  scrubStartTime = videoEl.currentTime
+  hasDragGesture = false
+  updateScrubProgress(videoEl)
+  previewEl.setPointerCapture(event.pointerId)
+}
+
+function handlePreviewPointerMove(event: PointerEvent) {
+  if (activeScrubPointerId !== event.pointerId)
+    return
+
+  const videoEl = videoRef.value
+  const previewEl = event.currentTarget as HTMLElement
+  if (!videoEl || !Number.isFinite(videoEl.duration) || videoEl.duration <= 0)
+    return
+
+  const deltaX = event.clientX - scrubStartX
+  if (!hasDragGesture && Math.abs(deltaX) < SCRUB_START_THRESHOLD_PX)
+    return
+
+  hasDragGesture = true
+  isScrubbing.value = true
+  updateVideoTimeFromPointer(previewEl, videoEl, event.clientX)
+  event.preventDefault()
+  event.stopPropagation()
+}
+
+function finishPreviewScrub(event: PointerEvent, cancelled = false) {
+  if (activeScrubPointerId !== event.pointerId)
+    return
+
+  const previewEl = event.currentTarget as HTMLElement
+  if (previewEl.hasPointerCapture(event.pointerId))
+    previewEl.releasePointerCapture(event.pointerId)
+
+  activeScrubPointerId = null
+  isScrubbing.value = false
+
+  if (!hasDragGesture || cancelled)
+    return
+
+  suppressPreviewClick = true
+  if (suppressPreviewClickTimeout !== null)
+    clearTimeout(suppressPreviewClickTimeout)
+  suppressPreviewClickTimeout = window.setTimeout(() => {
+    suppressPreviewClick = false
+    suppressPreviewClickTimeout = null
+  }, 0)
+  event.preventDefault()
+  event.stopPropagation()
+}
+
+function handlePreviewClick(event: MouseEvent) {
+  if (!suppressPreviewClick)
+    return
+
+  suppressPreviewClick = false
+  event.preventDefault()
+  event.stopPropagation()
+}
+
 function resetVideoElement(videoEl: HTMLVideoElement) {
   videoEl.pause()
   videoEl.removeAttribute('src')
@@ -118,6 +230,7 @@ function resetVideoElement(videoEl: HTMLVideoElement) {
 function stopPreview(videoEl: HTMLVideoElement) {
   cleanupPlayers()
   clearControlsHideTimeout()
+  resetPreviewScrub()
   showVideoControls.value = false
   resetVideoElement(videoEl)
 }
@@ -361,6 +474,9 @@ onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', syncPreviewFullscreenState)
   document.removeEventListener('webkitfullscreenchange', syncPreviewFullscreenState as EventListener)
   clearControlsHideTimeout()
+  resetPreviewScrub()
+  if (suppressPreviewClickTimeout !== null)
+    clearTimeout(suppressPreviewClickTimeout)
   cleanupPlayers()
 })
 
@@ -421,16 +537,36 @@ onBeforeUnmount(() => {
       <Transition v-if="!removed && settings.enableVideoPreview" name="fade">
         <div
           v-if="previewVideoUrl && (isHover || isPreviewFullscreen)"
+          class="video-card-preview"
+          :class="{ 'video-card-preview--scrubbable': shouldEnableSwipeSeek }"
           pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-radius" bg-black
           @pointermove.capture="handlePreviewMouseMove"
+          @pointerdown.capture="handlePreviewPointerDown"
+          @pointermove="handlePreviewPointerMove"
+          @pointerup="finishPreviewScrub"
+          @pointercancel="finishPreviewScrub($event, true)"
+          @click.capture="handlePreviewClick"
+          @dragstart.prevent
         >
           <video
             ref="videoRef"
             autoplay muted
+            :draggable="false"
             :controls="showVideoControls"
             w-full h-full
             @playing="handlePreviewPlaying"
           />
+
+          <div
+            v-if="isScrubbing && !shouldEnableVideoControls"
+            class="video-card-preview__scrub-progress"
+            aria-hidden="true"
+          >
+            <div
+              class="video-card-preview__scrub-progress-value"
+              :style="{ width: `${scrubProgress}%` }"
+            />
+          </div>
 
           <!-- Loading indicator -->
           <Transition name="fade">
@@ -600,6 +736,36 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scoped>
+.video-card-preview--scrubbable {
+  cursor: ew-resize;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.video-card-preview--scrubbable video {
+  -webkit-user-drag: none;
+}
+
+.video-card-preview__scrub-progress {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  z-index: 3;
+  height: 0.25rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 35%);
+  pointer-events: none;
+}
+
+.video-card-preview__scrub-progress-value {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bew-theme-color);
+}
+
 .video-card-cover-stats {
   position: absolute;
   left: 0;

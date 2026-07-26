@@ -322,6 +322,8 @@ settings:
     bewly_widescreen_sidebar_position_right: 右側
   enable_video_preview: 啟用影片預覽功能（如果可以的話）
   enable_video_ctrl_bar_on_video_card: 在影片卡片上顯示影片控制欄
+  video_preview_swipe_seek: 滑動小範圍跳轉
+  video_preview_swipe_seek_desc: 在影片預覽上按住並直接左右滑動，在目前播放位置附近倒退或快進。
   hover_video_card_delayed: 將滑鼠懸停在影片卡片上時延遲影片預覽
   only_cover_video_preview: 僅封面影片預覽
   show_video_card_author_avatar: 顯示使用者頭像

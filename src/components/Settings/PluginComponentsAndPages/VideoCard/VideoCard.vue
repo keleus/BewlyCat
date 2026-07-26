@@ -75,6 +75,14 @@ function resetColumns() {
           <Radio v-model="settings.enableVideoCtrlBarOnVideoCard" />
         </SettingsItem>
 
+        <SettingsItem
+          :title="$t('settings.video_preview_swipe_seek')"
+          :desc="$t('settings.video_preview_swipe_seek_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.enableVideoPreviewSwipeSeek" />
+        </SettingsItem>
+
         <SettingsItem :title="$t('settings.hover_video_card_delayed')" right-width="auto">
           <Radio v-model="settings.hoverVideoCardDelayed" />
         </SettingsItem>

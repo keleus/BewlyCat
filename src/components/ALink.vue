@@ -12,6 +12,7 @@ const props = defineProps<{
   customClickEvent?: boolean
   customClickEventIncludesModifiers?: boolean
   stopPropagation?: boolean
+  disableDragging?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -111,6 +112,7 @@ function handleClick(event: MouseEvent) {
     :target="target"
     :title="title"
     :rel="rel"
+    :draggable="disableDragging ? false : undefined"
     @click="handleClick"
   >
     <slot />

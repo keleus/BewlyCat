@@ -216,6 +216,7 @@ export interface Settings {
   cleanShareLinkRemoveTrackingParams: boolean
 
   enableVideoCtrlBarOnVideoCard: boolean
+  enableVideoPreviewSwipeSeek: boolean
   hoverVideoCardDelayed: boolean
   onlyCoverVideoPreview: boolean
   showVideoCardAuthorAvatar: boolean
@@ -463,6 +464,7 @@ export const originalSettings: Settings = {
 
   enableVideoPreview: true,
   enableVideoCtrlBarOnVideoCard: false,
+  enableVideoPreviewSwipeSeek: false,
   hoverVideoCardDelayed: false,
   onlyCoverVideoPreview: false,
   showVideoCardAuthorAvatar: true,
