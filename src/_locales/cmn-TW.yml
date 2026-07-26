@@ -179,6 +179,7 @@ settings:
   group_recommendation_filters_desc: |
     限制的數值不要設太大，不然載入時間可能會增加！頻繁請求可能會導致B站對IP的封禁!
   group_following: 正在跟隨
+  group_following_desc: 設定「正在跟隨」頁面的版面、不活躍 UP 主名單、直播內容與影片過濾規則。
   group_favorites: 收藏
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄

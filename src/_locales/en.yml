@@ -183,6 +183,7 @@ settings:
     Do not set the restricted value too large, as this may increase loading
     time! Frequent requests may result in IP blocking by Bilibili!
   group_following: Following
+  group_following_desc: Configure the Following page layout, inactive uploader list, live content, and video filters.
   group_favorites: Favorites
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs

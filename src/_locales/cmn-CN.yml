@@ -180,6 +180,7 @@ settings:
   group_recommendation_filters_desc: |
     请勿将限制值设置得太大，不然可能会增加加载时间！频繁请求可能会导致B站对IP的封禁!
   group_following: 正在关注
+  group_following_desc: 配置“正在关注”页面的布局、不活跃 UP 主名单、直播内容与视频过滤规则。
   group_favorites: 收藏
   group_search_page_mode: 搜索页模式
   group_home_tabs: 首页标签栏
