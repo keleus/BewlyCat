@@ -125,6 +125,12 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 
 <style lang="scss" scoped>
 .bewly-bili-switcher {
+  --bew-segment-item-active-bg: var(--bew-fill-3);
+  --bew-segment-item-active-color: var(--bew-text-1);
+  --bew-segment-item-active-shadow: none;
+  --bew-segment-item-active-bg-white: rgba(255, 255, 255, 0.3);
+  --bew-segment-item-active-shadow-white: none;
+
   position: relative;
   box-sizing: border-box;
   display: inline-flex;

@@ -36,7 +36,8 @@ interface LiquidGeometry {
 
 /**
  * Liquid capsule morph: always keeps full item-sized rounded pill.
- * Never collapses into a ball — stretches along travel, mildly thins on cross-axis.
+ * Never collapses into a ball or compresses on the cross-axis.
+ * The sticky feel comes only from stretching along the travel direction.
  */
 function computeLiquidGeometry(from: LiquidSegmentRect, to: LiquidSegmentRect, t: number): LiquidGeometry {
   const progress = clamp(t, 0, 1)
@@ -67,26 +68,22 @@ function computeLiquidGeometry(from: LiquidSegmentRect, to: LiquidSegmentRect, t
   // so short steps stay subtle and long steps feel liquid without becoming a ball.
   const mid = Math.sin(Math.PI * progress)
   const stretch = Math.min(dist * 0.42, Math.max(baseW, baseH) * 0.85) * mid
-  // Mild cross-axis squeeze — never extreme enough to look pointed
-  const squash = 1 - 0.14 * mid
 
   if (isHoriz) {
     const width = baseW + stretch
-    const height = Math.max(baseH * squash, Math.min(from.height, to.height) * 0.72)
     return {
       x: baseCx - width / 2,
-      y: baseCy - height / 2,
+      y: baseCy - baseH / 2,
       width,
-      height,
+      height: baseH,
     }
   }
 
   const height = baseH + stretch
-  const width = Math.max(baseW * squash, Math.min(from.width, to.width) * 0.72)
   return {
-    x: baseCx - width / 2,
+    x: baseCx - baseW / 2,
     y: baseCy - height / 2,
-    width,
+    width: baseW,
     height,
   }
 }
