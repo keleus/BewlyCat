@@ -1,8 +1,6 @@
-import 'vue-toastification/dist/index.css'
-
 import { createPinia } from 'pinia'
 import type { App } from 'vue'
-import Toast, { POSITION } from 'vue-toastification'
+import Toast, { POSITION, TYPE } from 'vue-toastification'
 
 import components from '~/components'
 import { i18n } from '~/utils/i18n'
@@ -22,12 +20,28 @@ export async function setupApp(app: App) {
   app.use(i18n)
   app
     .use(Toast, {
-      transition: 'Vue-Toastification__fade',
-      maxToasts: 20,
+      transition: {
+        enter: 'bewly-toast-enter-active',
+        leave: 'bewly-toast-leave-active',
+        move: 'bewly-toast-move',
+      },
+      containerClassName: 'bewly-toast-container',
+      toastClassName: 'bewly-toast',
+      bodyClassName: 'bewly-toast__body',
+      closeButtonClassName: 'bewly-toast__close',
+      maxToasts: 4,
       newestOnTop: true,
       position: POSITION.TOP_RIGHT,
-      timeout: 3000,
+      timeout: 4000,
       hideProgressBar: false,
+      closeOnClick: false,
+      showCloseButtonOnHover: false,
+      toastDefaults: {
+        [TYPE.SUCCESS]: { timeout: 3000 },
+        [TYPE.INFO]: { timeout: 4000 },
+        [TYPE.WARNING]: { timeout: 5000 },
+        [TYPE.ERROR]: { timeout: 6500 },
+      },
     })
   app.use(components)
   app.use(pinia)

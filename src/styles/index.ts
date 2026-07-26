@@ -1,5 +1,7 @@
+import 'vue-toastification/dist/index.css'
 import './variables.scss'
 import './main.scss'
+import './toast.scss'
 import './adaptedStyles'
 import './transitionAndTransitionGroup.scss'
 import './segmentLiquidIndicator.scss'
