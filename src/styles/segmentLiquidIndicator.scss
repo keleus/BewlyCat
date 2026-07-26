@@ -1,4 +1,4 @@
-// Liquid sliding indicator for segmented controls (tabs / switchers / dock)
+// Liquid sliding indicator for segmented controls (tabs / switchers)
 .bew-liquid-indicator {
   position: absolute;
   top: 0;
@@ -30,28 +30,5 @@
 @media (prefers-reduced-motion: reduce) {
   .bew-liquid-indicator {
     transition: opacity 120ms ease !important;
-  }
-}
-
-// Dock selected pill: solid theme disc + soft bloom
-.bew-liquid-indicator--dock {
-  background: var(--bew-theme-color);
-  box-shadow: 0 4px 30px var(--bew-theme-color-60);
-
-  &.is-moving {
-    filter: saturate(1.08);
-  }
-
-  &.is-disabled-glow {
-    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
-  }
-}
-
-:is(html.dark, :host(.dark), .dark) .bew-liquid-indicator--dock {
-  background: #fff;
-  box-shadow: 0 4px 30px 4px rgba(255, 255, 255, 0.6);
-
-  &.is-disabled-glow {
-    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
   }
 }
