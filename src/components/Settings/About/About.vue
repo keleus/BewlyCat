@@ -4,7 +4,7 @@ import browser from 'webextension-polyfill'
 import { version } from '../../../../package.json'
 
 const hasNewVersion = ref<boolean>(false)
-const contributorImageFailures = ref<Record<string, true>>({})
+const contributorsImageFailed = ref(false)
 
 const isDev = computed((): boolean => import.meta.env.DEV)
 
@@ -33,11 +33,8 @@ async function checkGitHubRelease() {
   }
 }
 
-function handleContributorImageError(repository: string) {
-  contributorImageFailures.value = {
-    ...contributorImageFailures.value,
-    [repository]: true,
-  }
+function handleContributorImageError() {
+  contributorsImageFailed.value = true
 }
 </script>
 
@@ -115,50 +112,27 @@ function handleContributorImageError(repository: string) {
             </a>
           </div>
         </section>
-        <div class="contributors-grid">
-          <section>
-            <h3 class="title">
-              {{ $t('settings.current_contributors') }}
-            </h3>
-            <p v-if="contributorImageFailures.BewlyCat" class="contributors-error">
-              {{ $t('settings.contributors_image_failed') }}
-            </p>
-            <a
-              v-else
-              href="https://github.com/keleus/BewlyCat/graphs/contributors"
-              target="_blank"
-              class="contributors-image-link"
+        <section w-full>
+          <h3 class="title">
+            {{ $t('settings.current_contributors') }}
+          </h3>
+          <p v-if="contributorsImageFailed" class="contributors-error">
+            {{ $t('settings.contributors_image_failed') }}
+          </p>
+          <a
+            v-else
+            href="https://github.com/keleus/BewlyCat/graphs/contributors"
+            target="_blank"
+            class="contributors-image-link"
+          >
+            <img
+              src="https://contrib.rocks/image?repo=keleus/BewlyCat"
+              :alt="$t('settings.current_contributors')"
+              loading="lazy"
+              @error="handleContributorImageError"
             >
-              <img
-                src="https://contrib.rocks/image?repo=keleus/BewlyCat"
-                :alt="$t('settings.current_contributors')"
-                loading="lazy"
-                @error="handleContributorImageError('BewlyCat')"
-              >
-            </a>
-          </section>
-          <section>
-            <h3 class="title">
-              {{ $t('settings.contributors') }}
-            </h3>
-            <p v-if="contributorImageFailures.BewlyBewly" class="contributors-error">
-              {{ $t('settings.contributors_image_failed') }}
-            </p>
-            <a
-              v-else
-              href="https://github.com/hakadao/BewlyBewly/graphs/contributors"
-              target="_blank"
-              class="contributors-image-link"
-            >
-              <img
-                src="https://contrib.rocks/image?repo=hakadao/BewlyBewly"
-                :alt="$t('settings.contributors')"
-                loading="lazy"
-                @error="handleContributorImageError('BewlyBewly')"
-              >
-            </a>
-          </section>
-        </div>
+          </a>
+        </section>
       </section>
     </div>
   </div>
@@ -174,25 +148,11 @@ function handleContributorImageError(repository: string) {
   --uno: "fw-bold mb-2";
 }
 
-.contributors-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 20px;
-  width: 100%;
-
-  section {
-    min-width: 0;
-  }
-
-  img {
-    display: block;
-  }
-}
-
 .contributors-image-link {
   display: block;
 
   img {
+    display: block;
     max-width: 100%;
     height: auto;
   }

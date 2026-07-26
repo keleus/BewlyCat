@@ -522,9 +522,8 @@ settings:
   reset_settings_confirm: |-
     重設設定？
     噉做冇得返轉頭噃，你確定要重設你之前嘅設定？
-  current_contributors: BewlyCat 貢獻者
+  current_contributors: BewlyCat（含 BewlyBewly）貢獻者
   contributors_image_failed: 貢獻者圖片載入失敗
-  contributors: BewlyBewly 歷史貢獻者
   video_page_top_bar_config: 影片頁頂欄配置
   video_page_top_bar_config_desc: 控制影片頁頂欄嘅顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「捲動顯示」表示頁面捲動時顯示。
   video_page_top_bar_config_opt:

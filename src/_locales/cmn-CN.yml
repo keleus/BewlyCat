@@ -596,9 +596,8 @@ settings:
   reset_settings_confirm: |-
     重置设置？
     该操作无法撤销。你确定要重置你的设置吗？
-  current_contributors: BewlyCat 贡献者
+  current_contributors: BewlyCat（含 BewlyBewly）贡献者
   contributors_image_failed: 贡献者图片加载失败
-  contributors: BewlyBewly历史贡献者
   enable_undo_refresh_button: 启用撤销刷新按钮（仅在Web推荐模式下有效）
   enable_undo_refresh_button_desc: 刷新页面后显示撤销按钮，点击可恢复刷新前的内容
   shortcuts:

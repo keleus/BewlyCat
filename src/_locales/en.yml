@@ -611,9 +611,8 @@ settings:
 
     This operation cannot be reversed. Are you sure you want to reset your
     settings?
-  current_contributors: BewlyCat Contributors
+  current_contributors: BewlyCat Contributors (including BewlyBewly)
   contributors_image_failed: Contributor image failed to load
-  contributors: BewlyBewly History Contributors
   enable_settings_sync: Allow syncing settings
   enable_settings_sync_desc: >-
     Sync extension settings across different devices (requires signing into the
