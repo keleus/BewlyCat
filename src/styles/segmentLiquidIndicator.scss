@@ -1,20 +1,16 @@
-// Liquid sliding indicator for segmented controls (tabs / switchers)
+// Liquid sliding indicator for segmented controls (tabs / switchers / dock)
 .bew-liquid-indicator {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 0;
   pointer-events: none;
-  // Always a full capsule: radius follows the shorter side while width/height morph,
-  // so end-caps stay smooth instead of fighting a fixed px radius mid-travel.
   border-radius: 9999px;
   background: var(--bew-segment-item-active-bg, var(--bew-theme-color-20));
   box-shadow: var(--bew-segment-item-active-shadow);
-  // Keep translate / size on related easings so corner→edge silhouette stays coherent.
+  // Geometry (x/y/w/h/clip-path) is driven by JS for droplet morph —
+  // only paint props transition here.
   transition:
-    transform 520ms var(--bew-ease-standard, cubic-bezier(0.22, 0.61, 0.36, 1)),
-    width 560ms cubic-bezier(0.45, 0.05, 0.25, 1),
-    height 520ms cubic-bezier(0.45, 0.05, 0.25, 1),
     opacity 200ms ease,
     background-color 220ms ease,
     box-shadow 220ms ease;
@@ -22,8 +18,7 @@
   transform-origin: center center;
 
   &.is-moving {
-    // Subtle organic squash without breaking the capsule silhouette
-    filter: saturate(1.04);
+    filter: saturate(1.06);
   }
 }
 
@@ -34,10 +29,29 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bew-liquid-indicator {
-    transition:
-      transform 1ms linear,
-      width 1ms linear,
-      height 1ms linear,
-      opacity 120ms ease !important;
+    transition: opacity 120ms ease !important;
+  }
+}
+
+// Dock selected pill: solid theme disc + soft bloom
+.bew-liquid-indicator--dock {
+  background: var(--bew-theme-color);
+  box-shadow: 0 4px 30px var(--bew-theme-color-60);
+
+  &.is-moving {
+    filter: saturate(1.08);
+  }
+
+  &.is-disabled-glow {
+    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
+  }
+}
+
+:is(html.dark, :host(.dark), .dark) .bew-liquid-indicator--dock {
+  background: #fff;
+  box-shadow: 0 4px 30px 4px rgba(255, 255, 255, 0.6);
+
+  &.is-disabled-glow {
+    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
   }
 }
