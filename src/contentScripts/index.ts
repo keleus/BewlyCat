@@ -188,11 +188,11 @@ else if (shouldInitializeContentScript) {
       if (!settings.value.usePluginSearchResultsPage || !getCookie('DedeUserID'))
         return
 
-      const target = event.target
-      if (!(target instanceof Element))
-        return
-
-      const anchor = target.closest('a[href]')
+      // 评论区等 B 站 Web Component 会把点击目标重新指向 Shadow Host，
+      // 需要从完整事件路径中找到实际的搜索链接。
+      const anchor = event.composedPath().find(
+        (target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement && target.hasAttribute('href'),
+      ) ?? (event.target instanceof Element ? event.target.closest('a[href]') : null)
       if (!(anchor instanceof HTMLAnchorElement))
         return
 
