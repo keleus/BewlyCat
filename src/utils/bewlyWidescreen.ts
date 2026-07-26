@@ -36,6 +36,7 @@ interface BewlyWidescreenState {
   sidebarInteractionCleanup?: () => void
   sidebarToggleAutoHideCleanup?: () => void
   descriptionCleanup?: () => void
+  escapeKeyCleanup?: () => void
   descriptionExpanded: boolean
 }
 
@@ -2026,6 +2027,7 @@ function shortenCommentTimes(panel: HTMLElement) {
 }
 
 function cleanupState(currentState: BewlyWidescreenState) {
+  currentState.escapeKeyCleanup?.()
   currentState.sidebarInteractionCleanup?.()
   currentState.sidebarToggleAutoHideCleanup?.()
   currentState.metadataListener?.()
@@ -2092,6 +2094,18 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
 
   state = nextState
   document.body.classList.add(BODY_CLASS)
+
+  const handleEscapeKey = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape')
+      return
+
+    event.preventDefault()
+    event.stopPropagation()
+    exitBewlyWidescreen()
+  }
+  document.addEventListener('keydown', handleEscapeKey, true)
+  nextState.escapeKeyCleanup = () => document.removeEventListener('keydown', handleEscapeKey, true)
+
   setSidebarMode('fit')
 
   moveNode(player, playerFrame, movedNodes)
