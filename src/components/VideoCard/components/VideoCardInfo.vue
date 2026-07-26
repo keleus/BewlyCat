@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { settings } from '~/logic'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 
 import type { Video } from '../types'
@@ -11,7 +12,7 @@ import VideoCardAuthorName from '../VideoCardAuthor/components/VideoCardAuthorNa
 interface Props {
   skeleton?: boolean
   video?: Video
-  layout: 'modern' | 'compact' | 'old'
+  layout: 'modern' | 'old'
   horizontal?: boolean
   videoUrl?: string
   moreBtn: boolean
@@ -48,33 +49,80 @@ const primaryTags = computed(() => {
 const MAX_LEADING_TAG_COUNT = 2
 
 const visiblePrimaryTags = computed(() =>
-  primaryTags.value.slice(0, MAX_LEADING_TAG_COUNT),
+  settings.value.showVideoCardVideoTag
+    ? primaryTags.value.slice(0, MAX_LEADING_TAG_COUNT)
+    : [],
 )
 
 const visibleHighlightTags = computed(() => {
+  if (!settings.value.showVideoCardRecommendTag)
+    return []
+
   const remainingCount = MAX_LEADING_TAG_COUNT - visiblePrimaryTags.value.length
   if (remainingCount <= 0)
     return []
   return props.highlightTags.slice(0, remainingCount)
 })
 
+const authorAvatarEnabled = computed(() =>
+  !props.hideAuthor && settings.value.showVideoCardAuthorAvatar,
+)
+
+const authorNameEnabled = computed(() =>
+  !props.hideAuthor && settings.value.showVideoCardAuthorName,
+)
+
+const showAuthorAvatar = computed(() => authorAvatarEnabled.value && Boolean(props.video?.author))
+
+const showAuthorName = computed(() => authorNameEnabled.value && Boolean(props.video?.author))
+
+const showPublishTime = computed(() =>
+  settings.value.showVideoCardPublishTime
+  && (Boolean(props.video?.publishedTimestamp) || Boolean(props.video?.capsuleText)),
+)
+
+const showVideoType = computed(() =>
+  props.video?.type === 'vertical' || props.video?.type === 'bangumi',
+)
+
+const showLegacyViewCount = computed(() =>
+  settings.value.showVideoCardViewCount
+  && (Boolean(props.video?.view) || Boolean(props.video?.viewStr)),
+)
+
+const showLegacyDanmakuCount = computed(() =>
+  settings.value.showVideoCardDanmakuCount
+  && (Boolean(props.video?.danmaku) || Boolean(props.video?.danmakuStr)),
+)
+
+const hasLegacyStats = computed(() => showLegacyViewCount.value || showLegacyDanmakuCount.value)
+
+const metaPlaceholderEnabled = computed(() =>
+  settings.value.showVideoCardVideoTag
+  || settings.value.showVideoCardRecommendTag
+  || settings.value.showVideoCardPublishTime
+  || Boolean(props.video?.type),
+)
+
+const statsPlaceholderEnabled = computed(() =>
+  settings.value.showVideoCardViewCount || settings.value.showVideoCardDanmakuCount,
+)
+
 const hasVisibleMeta = computed(() =>
   visiblePrimaryTags.value.length > 0
   || visibleHighlightTags.value.length > 0
-  || Boolean(props.video?.publishedTimestamp)
-  || Boolean(props.video?.capsuleText)
-  || props.video?.type === 'vertical'
-  || props.video?.type === 'bangumi',
+  || showPublishTime.value
+  || showVideoType.value,
 )
 
-const isModernLikeLayout = computed(() => props.layout === 'modern' || props.layout === 'compact')
+const isModernLayout = computed(() => props.layout === 'modern')
 </script>
 
 <template>
   <div
     :style="{
       width: horizontal ? '100%' : 'unset',
-      marginTop: horizontal ? '0' : isModernLikeLayout ? '0.5rem' : '1rem',
+      marginTop: horizontal ? '0' : isModernLayout ? '0.5rem' : '1rem',
     }"
     flex="~"
   >
@@ -82,19 +130,19 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
     <template v-if="skeleton">
       <!-- Old layout skeleton: Avatar on left -->
       <div
-        v-if="layout === 'old' && !horizontal && !hideAuthor"
+        v-if="layout === 'old' && !horizontal && authorAvatarEnabled"
         m="r-4" w="34px" h="34px" rounded="1/2" bg="$bew-skeleton"
         shrink-0
       />
 
-      <div class="group/desc" flex="~ col" :class="isModernLikeLayout ? 'gap-2' : ''" w="full" align="items-start">
+      <div class="group/desc" flex="~ col" :class="isModernLayout ? 'gap-2' : ''" w="full" align="items-start">
         <!-- Title skeleton -->
         <div flex="~ gap-1 justify-between items-start" w="full">
           <!-- 使用与真实标题完全相同的样式和高度 -->
           <div
             class="keep-two-lines" :class="[
-              isModernLikeLayout ? 'w-[calc(100%-40px)]' : 'w-full',
-              isModernLikeLayout ? 'video-card-title' : '',
+              isModernLayout ? 'w-[calc(100%-40px)]' : 'w-full',
+              isModernLayout ? 'video-card-title' : '',
             ]"
             :style="titleStyle"
             text="overflow-ellipsis $bew-text-1 lg"
@@ -104,30 +152,33 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             <div w="3/4" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em;" />
           </div>
           <div
-            v-if="isModernLikeLayout" shrink-0 w-8 h-8 rounded="1/2"
+            v-if="isModernLayout" shrink-0 w-8 h-8 rounded="1/2"
             bg="$bew-skeleton"
           />
         </div>
 
         <!-- Modern layout: Author info skeleton -->
         <div
-          v-if="layout === 'modern' && !hideAuthor"
+          v-if="layout === 'modern' && (authorAvatarEnabled || authorNameEnabled)"
           class="video-card-meta"
           flex="~ gap-2 items-center"
           w="full"
         >
           <div
+            v-if="authorAvatarEnabled"
             w="34px" h="34px" rounded="1/2" bg="$bew-skeleton" shrink-0
           />
-          <div flex="~ col gap-1" w="[calc(100%-50px)]">
+          <div v-if="authorNameEnabled || metaPlaceholderEnabled" flex="~ col gap-1" w="[calc(100%-50px)]">
             <!-- 作者名称骨架：使用与真实文本相同的字体大小和行高 -->
             <div
+              v-if="authorNameEnabled"
               w="60%" bg="$bew-skeleton" rounded="$bew-radius-sm"
               :class="authorFontSizeClass"
               style="height: 1em;"
             />
             <!-- 标签骨架：使用与真实标签相同的高度，包括 padding -->
             <div
+              v-if="metaPlaceholderEnabled"
               w="80%" bg="$bew-skeleton" rounded="$bew-radius-sm"
               :class="metaFontSizeClass"
               style="height: calc(1em + 0.24em);"
@@ -137,7 +188,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
 
         <!-- Modern layout with hideAuthor: Tags skeleton -->
         <div
-          v-if="layout === 'modern' && hideAuthor"
+          v-if="layout === 'modern' && !authorAvatarEnabled && !authorNameEnabled && metaPlaceholderEnabled"
           class="video-card-meta-row"
           flex="~ items-center gap-2"
           :class="metaFontSizeClass"
@@ -152,7 +203,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
         <template v-else-if="layout === 'old'">
           <!-- Old layout with hideAuthor: Only tags skeleton -->
           <div
-            v-if="hideAuthor"
+            v-if="hideAuthor && metaPlaceholderEnabled"
             mt-2
             flex="~ gap-1"
             :class="metaFontSizeClass"
@@ -165,9 +216,10 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
           </div>
 
           <!-- Old layout with author info: Full skeleton -->
-          <template v-else>
+          <template v-else-if="!hideAuthor">
             <!-- Author name skeleton -->
             <div
+              v-if="authorNameEnabled || (horizontal && authorAvatarEnabled)"
               text="$bew-text-2"
               w-fit
               m="t-2"
@@ -176,15 +228,15 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             >
               <!-- Horizontal mode avatar -->
               <div
-                v-if="horizontal"
+                v-if="horizontal && authorAvatarEnabled"
                 w="34px" h="34px" rounded="1/2" bg="$bew-skeleton"
                 shrink-0 m-r-2
               />
-              <div w="100px" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em;" />
+              <div v-if="authorNameEnabled" w="100px" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em;" />
             </div>
 
             <!-- View & Danmaku skeleton -->
-            <div flex="~ items-center gap-1">
+            <div v-if="statsPlaceholderEnabled" flex="~ items-center gap-1">
               <div
                 :class="metaFontSizeClass"
                 text="$bew-text-2"
@@ -195,6 +247,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
 
             <!-- Tags skeleton -->
             <div
+              v-if="metaPlaceholderEnabled"
               mt-2
               flex="~ gap-1"
               :class="metaFontSizeClass"
@@ -214,17 +267,17 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
     <template v-else-if="video">
       <!-- Old layout: Author Avatar (left side) -->
       <VideoCardAuthorAvatar
-        v-if="layout === 'old' && !horizontal && video.author && !hideAuthor"
+        v-if="layout === 'old' && !horizontal && showAuthorAvatar && video.author"
         :author="video.author"
         :is-live="video.liveStatus === 1"
       />
 
-      <div class="group/desc" flex="~ col" :class="isModernLikeLayout ? 'gap-2' : ''" w="full" align="items-start">
+      <div class="group/desc" flex="~ col" :class="isModernLayout ? 'gap-2' : ''" w="full" align="items-start">
         <div flex="~ gap-1 justify-between items-start" w="full" pos="relative">
           <h3
             :class="[
               video.liveStatus === 1 ? 'keep-one-line' : 'keep-two-lines',
-              isModernLikeLayout ? 'video-card-title' : '',
+              isModernLayout ? 'video-card-title' : '',
               titleFontSizeClass,
             ]"
             text="overflow-ellipsis $bew-text-1"
@@ -243,7 +296,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             class="video-card__more-btn"
             :class="[
               { 'more-active': showVideoOptions },
-              isModernLikeLayout ? 'overflow-hidden rounded-full' : '',
+              isModernLayout ? 'overflow-hidden rounded-full' : '',
             ]"
             bg="hover:$bew-fill-2 active:$bew-fill-3"
             shrink-0 w-32px h-32px m="t--3px r--4px"
@@ -257,7 +310,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
 
         <!-- Modern layout with hideAuthor: Tags directly under title -->
         <div
-          v-if="layout === 'modern' && hideAuthor && hasVisibleMeta"
+          v-if="layout === 'modern' && !showAuthorAvatar && !showAuthorName && hasVisibleMeta"
           class="video-card-meta-row"
           flex="~ items-center gap-2 wrap"
           :class="metaFontSizeClass"
@@ -292,7 +345,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
           </span>
 
           <span
-            v-if="video.publishedTimestamp || video.capsuleText"
+            v-if="showPublishTime"
             class="video-card-meta__chip"
             bg="$bew-fill-1"
             p="x-2"
@@ -304,7 +357,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
           </span>
 
           <span
-            v-if="video.type === 'vertical' || video.type === 'bangumi'"
+            v-if="showVideoType"
             text="$bew-text-2"
             grid="~ place-items-center"
           >
@@ -313,23 +366,23 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
           </span>
         </div>
 
-        <!-- Modern layout: Compact author info -->
+        <!-- Modern layout: Author info -->
         <div
-          v-if="layout === 'modern' && !hideAuthor"
+          v-if="layout === 'modern' && (showAuthorAvatar || showAuthorName)"
           class="video-card-meta"
           flex="~ gap-2 items-center"
           w="full"
         >
           <VideoCardAuthorAvatar
-            v-if="video.author"
+            v-if="showAuthorAvatar && video.author"
             :author="video.author"
             :is-live="video.liveStatus === 1"
             compact
           />
 
-          <div flex="~ col gap-1" w="full">
+          <div v-if="showAuthorName || hasVisibleMeta" flex="~ col gap-1" w="full">
             <div
-              v-if="video.author"
+              v-if="showAuthorName"
               flex="~ items-center gap-2"
               text="$bew-text-2"
               :class="authorFontSizeClass"
@@ -373,7 +426,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
               </span>
 
               <span
-                v-if="video.publishedTimestamp || video.capsuleText"
+                v-if="showPublishTime"
                 class="video-card-meta__chip"
                 bg="$bew-fill-1"
                 p="x-2"
@@ -385,7 +438,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
               </span>
 
               <span
-                v-if="video.type === 'vertical' || video.type === 'bangumi'"
+                v-if="showVideoType"
                 text="$bew-text-2"
                 grid="~ place-items-center"
               >
@@ -400,7 +453,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
         <template v-else-if="layout === 'old'">
           <!-- Old layout with hideAuthor: Only tags -->
           <div
-            v-if="hideAuthor"
+            v-if="hideAuthor && hasVisibleMeta"
             class="video-card-meta-row"
             mt-2
             flex="~ gap-1 wrap"
@@ -429,14 +482,14 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
               {{ extraTag }}
             </span>
             <span
-              v-if="video.publishedTimestamp || video.capsuleText"
+              v-if="showPublishTime"
               bg="$bew-fill-1" p="x-2" rounded="$bew-radius" text="$bew-text-3" lh-6
               mr-1
             >
               {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
             </span>
             <!-- Video type -->
-            <span text="$bew-text-2" grid="~ place-items-center">
+            <span v-if="showVideoType" text="$bew-text-2" grid="~ place-items-center">
               <div v-if="video.type === 'vertical'" i-mingcute:cellphone-2-line />
               <div v-else-if="video.type === 'bangumi'" i-mingcute:movie-line />
             </span>
@@ -445,6 +498,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
           <!-- Old layout with author info -->
           <template v-else>
             <div
+              v-if="showAuthorName || (horizontal && showAuthorAvatar)"
               text="$bew-text-2"
               w-fit
               m="t-2"
@@ -459,17 +513,18 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
                 flex="inline items-center"
               >
                 <VideoCardAuthorAvatar
-                  v-if="horizontal && video.author"
+                  v-if="horizontal && showAuthorAvatar && video.author"
                   :author="video.author"
                   :is-live="video.liveStatus === 1"
                 />
                 <VideoCardAuthorName
+                  v-if="showAuthorName"
                   :author="video.author"
                 />
               </span>
             </div>
 
-            <div flex="~ items-center gap-1 wrap">
+            <div v-if="hasLegacyStats" flex="~ items-center gap-1 wrap">
               <!-- View & Danmaku Count -->
               <div
                 text="$bew-text-2"
@@ -477,11 +532,11 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
                 inline-block
                 :class="metaFontSizeClass"
               >
-                <span v-if="video.view || video.viewStr">
+                <span v-if="showLegacyViewCount">
                   {{ video.view ? $t('common.view', { count: numFormatter(video.view) }, video.view) : `${numFormatter(video.viewStr || '0')}${$t('common.viewWithoutNum')}` }}
                 </span>
-                <template v-if="video.danmaku || video.danmakuStr">
-                  <span text-xs font-light mx-4px>•</span>
+                <template v-if="showLegacyDanmakuCount">
+                  <span v-if="showLegacyViewCount" text-xs font-light mx-4px>•</span>
                   <span>{{ video.danmaku ? $t('common.danmaku', { count: numFormatter(video.danmaku) }, video.danmaku) : `${numFormatter(video.danmakuStr || '0')}${$t('common.danmakuWithoutNum')}` }}</span>
                 </template>
                 <br>
@@ -489,6 +544,7 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
             </div>
 
             <div
+              v-if="hasVisibleMeta"
               class="video-card-meta-row"
               mt-2
               flex="~ gap-1 wrap"
@@ -517,14 +573,14 @@ const isModernLikeLayout = computed(() => props.layout === 'modern' || props.lay
                 {{ extraTag }}
               </span>
               <span
-                v-if="video.publishedTimestamp || video.capsuleText"
+                v-if="showPublishTime"
                 bg="$bew-fill-1" p="x-2" rounded="$bew-radius" text="$bew-text-3" lh-6
                 mr-1
               >
                 {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
               </span>
               <!-- Video type -->
-              <span text="$bew-text-2" grid="~ place-items-center">
+              <span v-if="showVideoType" text="$bew-text-2" grid="~ place-items-center">
                 <div v-if="video.type === 'vertical'" i-mingcute:cellphone-2-line />
                 <div v-else-if="video.type === 'bangumi'" i-mingcute:movie-line />
               </span>

@@ -15,7 +15,7 @@ import type { Video } from '../types'
 interface Props {
   skeleton?: boolean
   video?: Video
-  layout: 'modern' | 'compact' | 'old'
+  layout: 'modern' | 'old'
   horizontal?: boolean
   removed: boolean
   isHover: boolean
@@ -33,14 +33,12 @@ interface Props {
     danmaku: string
     like: string
     duration: string
-    published: string
   }
   coverStatsVisibility?: {
     view: boolean
     danmaku: boolean
     like: boolean
     duration: boolean
-    published: boolean
   }
   hasCoverStats?: boolean
   shouldHideCoverStats?: boolean
@@ -481,7 +479,7 @@ onBeforeUnmount(() => {
       <template v-if="!removed && video">
         <!-- Old layout: Video Duration (right bottom) -->
         <div
-          v-if="layout === 'old' && (video?.duration || video?.durationStr)"
+          v-if="layout === 'old' && settings.showVideoCardDuration && (video?.duration || video?.durationStr)"
           pos="absolute bottom-0 right-0"
           z="2"
           p="x-2 y-1"
@@ -559,19 +557,11 @@ onBeforeUnmount(() => {
           v-if="layout !== 'old' && hasCoverStats"
           class="video-card-cover-stats video-card-stats"
           :class="{
-            'video-card-cover-stats--compact': layout === 'compact',
             'video-card-cover-stats--hidden': shouldHideCoverStats,
           }"
           :style="coverStatsStyle"
         >
           <div class="video-card-cover-stats__items">
-            <span
-              v-if="coverStatsVisibility?.published"
-              class="video-card-cover-stats__item video-card-cover-stats__item--published"
-            >
-              <span class="video-card-cover-stats__value">{{ coverStatValues?.published }}</span>
-            </span>
-
             <span
               v-if="coverStatsVisibility?.view"
               class="video-card-cover-stats__item cover-stat-view"
@@ -690,28 +680,6 @@ onBeforeUnmount(() => {
   font-size: var(--video-card-stats-font-size, 0.75rem);
   /* 时长固定在最右侧，不收缩 */
   flex-shrink: 0;
-}
-
-.video-card-cover-stats--compact {
-  --video-card-stats-overlay-scale: 1.1;
-  padding: calc(var(--video-card-stats-font-size, 0.75rem) * 0.5)
-    calc(var(--video-card-stats-font-size, 0.75rem) * 0.65);
-}
-
-.video-card-cover-stats--compact .video-card-cover-stats__items {
-  overflow: hidden;
-  flex-shrink: 1;
-}
-
-.video-card-cover-stats__item--published {
-  min-width: 0;
-  overflow: hidden;
-}
-
-.video-card-cover-stats__item--published .video-card-cover-stats__value {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* 响应式显示控制已移至 VideoCard.vue 的 coverStatsVisibility 计算属性 */

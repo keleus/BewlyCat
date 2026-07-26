@@ -153,6 +153,11 @@ settings:
   group_link_opening_behavior: 链接打开行为
   group_video_card: 视频卡片
   group_video_card_display: 显示与预览
+  group_video_card_content: 卡片内容
+  group_video_card_content_desc: 自定义视频卡片上各项信息与操作的显示。
+  video_card_content_region_stats: 数据
+  video_card_content_region_tags: 标签
+  video_card_content_region_other: 其它
   group_performance: 毛玻璃和性能
   group_player_settings: 播放器设置
   group_player_components: 播放器组件
@@ -326,8 +331,18 @@ settings:
   enable_video_ctrl_bar_on_video_card: 在视频卡片上显示视频控制栏
   hover_video_card_delayed: 将鼠标悬停在视频卡片上时延迟视频预览
   only_cover_video_preview: 仅封面视频预览
+  show_video_card_author_avatar: 显示用户头像
+  show_video_card_author_name: 显示用户昵称
+  show_video_card_video_tag: 显示视频标签
+  show_video_card_video_tag_desc: 显示搜索页等场景提供的视频分类标签。
   show_video_card_recommend_tag: 显示插件计算的推荐标签
   show_video_card_recommend_tag_desc: 显示插件计算的标签，如"高赞"、"高互动"、"百万播放"等
+  show_video_card_publish_time: 显示发布时间
+  show_video_card_view_count: 显示播放量
+  show_video_card_danmaku_count: 显示弹幕数
+  show_video_card_like_count: 显示点赞数
+  show_video_card_duration: 显示视频时长
+  show_video_card_watch_later: 显示稍后再看按钮
   auto_hide_top_bar: 自动隐藏顶栏
   video_page_top_bar_config: 视频页顶栏配置
   video_page_top_bar_config_desc: 控制视频页顶栏的显示时机。“鼠标显示”表示鼠标移入页面顶部时显示；“滚动显示”表示页面滚动时显示。
@@ -390,7 +405,6 @@ settings:
   video_card_layout_desc: 在新版与旧版视频卡片显示样式之间切换。
   video_card_layout_option:
     modern: 新版
-    compact: 紧凑
     old: 经典版
   font_size_option:
     xs: 特小

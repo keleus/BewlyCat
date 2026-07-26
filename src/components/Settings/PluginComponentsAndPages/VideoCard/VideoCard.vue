@@ -12,11 +12,12 @@ import { defaultGridColumns, GRID_BREAKPOINTS } from '~/logic/storage'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import ShadowCurveEditor from '../../components/ShadowCurveEditor.vue'
+import VideoCardContentEditor from './VideoCardContentEditor.vue'
 
 const { t } = useI18n()
 
 const fontSizeOptionValues: VideoCardFontSizeSetting[] = ['xs', 'sm', 'base', 'lg']
-const videoCardLayoutOptionValues: VideoCardLayoutSetting[] = ['modern', 'compact', 'old']
+const videoCardLayoutOptionValues: VideoCardLayoutSetting[] = ['modern', 'old']
 
 const videoCardFontSizeOptions = computed(() => fontSizeOptionValues.map(value => ({
   label: t(`settings.font_size_option.${value}`),
@@ -28,7 +29,7 @@ const videoCardLayoutOptions = computed(() => videoCardLayoutOptionValues.map(va
   value,
 })))
 
-const isModernLayout = computed(() => settings.value.videoCardLayout === 'modern' || settings.value.videoCardLayout === 'compact')
+const isModernLayout = computed(() => settings.value.videoCardLayout === 'modern')
 
 function resetShadowSettings() {
   settings.value.videoCardShadowCurve = [...originalSettings.videoCardShadowCurve]
@@ -56,6 +57,34 @@ function resetColumns() {
 
 <template>
   <div>
+    <SettingsItemGroup :title="$t('settings.group_video_card_display')">
+      <SettingsItem
+        :title="$t('settings.video_card_layout')"
+        :desc="$t('settings.video_card_layout_desc')"
+        right-width="auto"
+      >
+        <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="160px" />
+      </SettingsItem>
+
+      <SettingsItem :title="$t('settings.enable_video_preview')" right-width="auto">
+        <Radio v-model="settings.enableVideoPreview" />
+      </SettingsItem>
+
+      <template v-if="settings.enableVideoPreview">
+        <SettingsItem :title="$t('settings.enable_video_ctrl_bar_on_video_card')" right-width="auto">
+          <Radio v-model="settings.enableVideoCtrlBarOnVideoCard" />
+        </SettingsItem>
+
+        <SettingsItem :title="$t('settings.hover_video_card_delayed')" right-width="auto">
+          <Radio v-model="settings.hoverVideoCardDelayed" />
+        </SettingsItem>
+
+        <SettingsItem :title="$t('settings.only_cover_video_preview')" right-width="auto">
+          <Radio v-model="settings.onlyCoverVideoPreview" />
+        </SettingsItem>
+      </template>
+    </SettingsItemGroup>
+
     <!-- 视频卡片网格详细设置默认折叠 -->
     <SettingsItemGroup
       :title="$t('settings.group_video_card_grid')"
@@ -100,36 +129,11 @@ function resetColumns() {
       </SettingsItem>
     </SettingsItemGroup>
 
-    <SettingsItemGroup :title="$t('settings.group_video_card_display')">
-      <SettingsItem
-        :title="$t('settings.video_card_layout')"
-        :desc="$t('settings.video_card_layout_desc')"
-        right-width="auto"
-      >
-        <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="160px" />
-      </SettingsItem>
-
-      <SettingsItem :title="$t('settings.enable_video_preview')" right-width="auto">
-        <Radio v-model="settings.enableVideoPreview" />
-      </SettingsItem>
-
-      <template v-if="settings.enableVideoPreview">
-        <SettingsItem :title="$t('settings.enable_video_ctrl_bar_on_video_card')" right-width="auto">
-          <Radio v-model="settings.enableVideoCtrlBarOnVideoCard" />
-        </SettingsItem>
-
-        <SettingsItem :title="$t('settings.hover_video_card_delayed')" right-width="auto">
-          <Radio v-model="settings.hoverVideoCardDelayed" />
-        </SettingsItem>
-
-        <SettingsItem :title="$t('settings.only_cover_video_preview')" right-width="auto">
-          <Radio v-model="settings.onlyCoverVideoPreview" />
-        </SettingsItem>
-      </template>
-
-      <SettingsItem :title="$t('settings.show_video_card_recommend_tag')" :desc="$t('settings.show_video_card_recommend_tag_desc')" right-width="auto">
-        <Radio v-model="settings.showVideoCardRecommendTag" />
-      </SettingsItem>
+    <SettingsItemGroup
+      :title="$t('settings.group_video_card_content')"
+      :desc="$t('settings.group_video_card_content_desc')"
+    >
+      <VideoCardContentEditor />
 
       <SettingsItem
         :title="$t('settings.video_card_title_font_size')"
@@ -156,7 +160,7 @@ function resetColumns() {
       </SettingsItem>
     </SettingsItemGroup>
 
-    <!-- 阴影设置仅适用于现代与紧凑布局，默认折叠 -->
+    <!-- 阴影设置仅适用于现代布局，默认折叠 -->
     <SettingsItemGroup
       v-if="isModernLayout"
       :title="$t('settings.video_card_shadow_curve')"

@@ -5,7 +5,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
 import { settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
-import { calcCurrentTime, calcTimeSince, numFormatter } from '~/utils/dataFormatter'
+import { calcCurrentTime, numFormatter } from '~/utils/dataFormatter'
 import { wasVideoVisitedRecently } from '~/utils/videoVisitHistory'
 
 import VideoCardCover from './components/VideoCardCover.vue'
@@ -36,7 +36,7 @@ interface Props {
 
 const layout = computed((): VideoCardLayoutSetting => {
   const layoutSetting = settings.value.videoCardLayout as VideoCardLayoutSetting | undefined
-  return layoutSetting === 'old' || layoutSetting === 'compact' ? layoutSetting : 'modern'
+  return layoutSetting === 'old' ? 'old' : 'modern'
 })
 
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
@@ -70,7 +70,6 @@ const coverStatValues = computed(() => {
       danmaku: '',
       like: '',
       duration: '',
-      published: '',
     }
   }
 
@@ -83,44 +82,29 @@ const coverStatValues = computed(() => {
     duration: props.video.duration
       ? calcCurrentTime(props.video.duration)
       : props.video.durationStr ?? '',
-    published: props.video.publishedTimestamp
-      ? calcTimeSince(props.video.publishedTimestamp * 1000)
-      : props.video.capsuleText?.trim() ?? '',
   }
 })
 
 const coverStatsVisibility = computed(() => {
-  const { view, danmaku, like, duration, published } = coverStatValues.value
-
-  if (layout.value === 'compact') {
-    return {
-      view: false,
-      danmaku: false,
-      like: false,
-      duration: Boolean(duration),
-      published: Boolean(published),
-    }
-  }
+  const { view, danmaku, like, duration } = coverStatValues.value
 
   // 无用户信息模式下，只显示播放量和时长
   if (props.hideAuthor) {
     return {
-      view: Boolean(view),
+      view: settings.value.showVideoCardViewCount && Boolean(view),
       danmaku: false,
       like: false,
-      duration: Boolean(duration),
-      published: false,
+      duration: settings.value.showVideoCardDuration && Boolean(duration),
     }
   }
 
   // 所有统计项默认显示，由 CSS Container Query 控制响应式隐藏
   // 这避免了 JS 监听宽度变化带来的性能问题
   return {
-    view: Boolean(view),
-    danmaku: Boolean(danmaku),
-    like: Boolean(like),
-    duration: Boolean(duration),
-    published: false,
+    view: settings.value.showVideoCardViewCount && Boolean(view),
+    danmaku: settings.value.showVideoCardDanmakuCount && Boolean(danmaku),
+    like: settings.value.showVideoCardLikeCount && Boolean(like),
+    duration: settings.value.showVideoCardDuration && Boolean(duration),
   }
 })
 
@@ -136,7 +120,6 @@ const hasCoverStats = computed(() => {
     || (visibility.danmaku && values.danmaku)
     || (visibility.like && values.like)
     || (visibility.duration && values.duration)
-    || (visibility.published && values.published)
   )
 })
 
@@ -396,7 +379,7 @@ provide('getVideoType', () => props.type!)
             :preview-video-url="logic.previewVideoUrl.value || ''"
             :video-element="logic.videoElement.value || null"
             :is-in-watch-later="logic.isInWatchLater.value"
-            :show-watcher-later="showWatcherLater"
+            :show-watcher-later="showWatcherLater && settings.showVideoCardWatchLater"
             :cover-top-left-always-visible="coverTopLeftAlwaysVisible"
             :cover-image-url="coverImageUrl"
             :cover-stat-values="coverStatValues"

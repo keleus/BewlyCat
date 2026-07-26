@@ -153,6 +153,11 @@ settings:
   group_link_opening_behavior: 連結開啓行爲
   group_video_card: 影片卡片
   group_video_card_display: 顯示同預覽
+  group_video_card_content: 卡片內容
+  group_video_card_content_desc: 自訂影片卡片上各項資訊同操作嘅顯示。
+  video_card_content_region_stats: 數據
+  video_card_content_region_tags: 標籤
+  video_card_content_region_other: 其它
   group_performance: 毛玻璃同效能
   group_player_settings: 播放器設定
   group_player_components: 播放器組件
@@ -283,7 +288,6 @@ settings:
   video_card_layout_desc: 喺新版同舊版嘅影片卡片樣式之間切換。
   video_card_layout_option:
     modern: 新版
-    compact: 緊湊
     old: 經典版
   font_size_option:
     xs: 特細
@@ -296,8 +300,18 @@ settings:
   enable_video_ctrl_bar_on_video_card: 喺影片卡片上顯示影片控制欄
   hover_video_card_delayed: 滑鼠停留喺影片卡片嗰陣遲啲進行影片預覽
   only_cover_video_preview: 淨係喺封面做影片預覽
+  show_video_card_author_avatar: 顯示用戶頭像
+  show_video_card_author_name: 顯示用戶暱稱
+  show_video_card_video_tag: 顯示影片標籤
+  show_video_card_video_tag_desc: 顯示搵嘢頁等情況提供嘅影片分類標籤。
   show_video_card_recommend_tag: 顯示插件計算嘅推薦標籤
   show_video_card_recommend_tag_desc: 顯示插件計算嘅標籤，好似「高讚」、「高互動」、「百萬播放」咁
+  show_video_card_publish_time: 顯示發佈時間
+  show_video_card_view_count: 顯示播放量
+  show_video_card_danmaku_count: 顯示彈幕數
+  show_video_card_like_count: 顯示讚好數
+  show_video_card_duration: 顯示影片時長
+  show_video_card_watch_later: 顯示稍後再睇按鈕
   auto_hide_top_bar: 自動收埋頂欄
   always_use_transparent_top_bar: 頂欄始終使用透明(舊版)樣式
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）

@@ -115,7 +115,7 @@ export interface ShortcutsSettings {
 }
 
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
-export type VideoCardLayoutSetting = 'modern' | 'compact' | 'old'
+export type VideoCardLayoutSetting = 'modern' | 'old'
 export type HomeTabsPosition = 'left' | 'center'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 /** 订阅合集「播放全部」起播策略 */
@@ -218,7 +218,16 @@ export interface Settings {
   enableVideoCtrlBarOnVideoCard: boolean
   hoverVideoCardDelayed: boolean
   onlyCoverVideoPreview: boolean
+  showVideoCardAuthorAvatar: boolean
+  showVideoCardAuthorName: boolean
+  showVideoCardVideoTag: boolean
   showVideoCardRecommendTag: boolean
+  showVideoCardPublishTime: boolean
+  showVideoCardViewCount: boolean
+  showVideoCardDanmakuCount: boolean
+  showVideoCardLikeCount: boolean
+  showVideoCardDuration: boolean
+  showVideoCardWatchLater: boolean
 
   // Desktop & Dock
   autoHideTopBar: boolean
@@ -456,7 +465,16 @@ export const originalSettings: Settings = {
   enableVideoCtrlBarOnVideoCard: false,
   hoverVideoCardDelayed: false,
   onlyCoverVideoPreview: false,
+  showVideoCardAuthorAvatar: true,
+  showVideoCardAuthorName: true,
+  showVideoCardVideoTag: true,
   showVideoCardRecommendTag: true,
+  showVideoCardPublishTime: true,
+  showVideoCardViewCount: true,
+  showVideoCardDanmakuCount: true,
+  showVideoCardLikeCount: true,
+  showVideoCardDuration: true,
+  showVideoCardWatchLater: true,
 
   // Desktop & Dock
   autoHideTopBar: false,
@@ -729,6 +747,10 @@ watch(
 
     if (record.shortcuts?.webFullscreen?.key === 'W')
       record.shortcuts.webFullscreen.key = originalSettings.shortcuts.webFullscreen?.key
+
+    // 紧凑布局已由卡片元素显示设置替代
+    if (record.videoCardLayout === 'compact')
+      record.videoCardLayout = 'modern'
 
     // 清理已移除的 NVIDIA RTX 视频增强兼容设置
     Reflect.deleteProperty(record, 'nvidiaRtxVideoEnhancementCompatibility')

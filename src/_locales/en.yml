@@ -153,6 +153,11 @@ settings:
   group_link_opening_behavior: Link Opening Behavior
   group_video_card: Video Card
   group_video_card_display: Display & Preview
+  group_video_card_content: Card Content
+  group_video_card_content_desc: Choose which information and actions appear on video cards.
+  video_card_content_region_stats: Stats
+  video_card_content_region_tags: Tags
+  video_card_content_region_other: Other
   group_performance: Frosted Glass & Performance
   group_player_settings: Player Settings
   group_player_components: Player Components
@@ -295,8 +300,18 @@ settings:
   enable_video_ctrl_bar_on_video_card: Display the video control bar on the video card
   hover_video_card_delayed: Delayed video preview on hover over the video card
   only_cover_video_preview: Preview videos only when hovering the cover
+  show_video_card_author_avatar: Show uploader avatar
+  show_video_card_author_name: Show uploader name
+  show_video_card_video_tag: Show video tags
+  show_video_card_video_tag_desc: Show video category tags provided on search and other pages.
   show_video_card_recommend_tag: Show plugin-calculated recommendation tags
   show_video_card_recommend_tag_desc: Display tags calculated by the plugin, such as "High Engagement", "Popular", etc.
+  show_video_card_publish_time: Show publish time
+  show_video_card_view_count: Show view count
+  show_video_card_danmaku_count: Show danmaku count
+  show_video_card_like_count: Show like count
+  show_video_card_duration: Show video duration
+  show_video_card_watch_later: Show Watch Later button
   auto_hide_top_bar: Auto-hide top bar
   video_page_top_bar_config: Video page top bar configuration
   video_page_top_bar_config_desc: 'Controls when the top bar appears on video pages. "On hover" shows it when the pointer enters the top of the page; "On scroll" shows it while the page scrolls.'
@@ -357,7 +372,6 @@ settings:
   video_card_layout_desc: Switch between the redesigned card and the legacy layout.
   video_card_layout_option:
     modern: Modern layout
-    compact: Compact layout
     old: Classic layout
   font_size_option:
     xs: Extra small
