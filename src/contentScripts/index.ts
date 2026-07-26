@@ -284,7 +284,7 @@ else if (shouldInitializeContentScript) {
   })
 
   // 应用默认播放器模式
-  function applyDefaultPlayerMode() {
+  function applyDefaultPlayerMode(showBewlyWidescreenLoading = true) {
     if (!isVideoOrBangumiPage()) {
       clearPlayerModeRetry()
       return
@@ -321,7 +321,7 @@ else if (shouldInitializeContentScript) {
       targetPlayerMode = 'widescreen'
 
     if (!isPlayerDisplayModeReady(targetPlayerMode)) {
-      schedulePlayerModeRetry()
+      schedulePlayerModeRetry(showBewlyWidescreenLoading)
       return
     }
 
@@ -339,7 +339,10 @@ else if (shouldInitializeContentScript) {
     else {
       switch (targetPlayerMode) {
         case 'bewlyWidescreen':
-          applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right')
+          applyBewlyWidescreen(
+            settings.value.bewlyWidescreenSidebarPosition || 'right',
+            showBewlyWidescreenLoading,
+          )
           break
         case 'webFullscreen':
           webFullscreen()
@@ -374,13 +377,13 @@ else if (shouldInitializeContentScript) {
     }
   }
 
-  function schedulePlayerModeRetry() {
+  function schedulePlayerModeRetry(showBewlyWidescreenLoading = true) {
     if (playerModeRetryTimer)
       return
 
     playerModeRetryTimer = setTimeout(() => {
       playerModeRetryTimer = undefined
-      applyDefaultPlayerMode()
+      applyDefaultPlayerMode(showBewlyWidescreenLoading)
     }, document.visibilityState === 'visible' ? 500 : 1000)
   }
 
@@ -470,7 +473,8 @@ else if (shouldInitializeContentScript) {
         // 重置随机播放初始化状态，避免重复加载
         resetRandomPlayInitialization()
 
-        applyDefaultPlayerMode()
+        // B 站站内切集会立即开始播放，静默重建宽屏布局，避免加载遮罩盖住视频。
+        applyDefaultPlayerMode(false)
         // 如果是视频页面内部跳转，延迟执行滚动
         if (isVideoOrBangumiPage()) {
           handleVideoPageNavigation()

@@ -2194,12 +2194,16 @@ function scheduleSidebarRefresh() {
   }, SIDEBAR_REFRESH_DELAY)
 }
 
-export function applyBewlyWidescreen(sidebarPosition: 'left' | 'right' = 'right') {
+export function applyBewlyWidescreen(
+  sidebarPosition: 'left' | 'right' = 'right',
+  showLoading = true,
+) {
   if (state || waitingForLoad || readyRetryTimer)
     return
 
   pendingSidebarPosition = sidebarPosition
-  showWidescreenLoading()
+  if (showLoading)
+    showWidescreenLoading()
 
   if (document.readyState === 'complete') {
     startAfterPageLoad(sidebarPosition)
