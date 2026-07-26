@@ -27,116 +27,72 @@ function easeInOutCubic(t: number) {
     : 1 - ((-2 * p + 2) ** 3) / 2
 }
 
-function centerOf(rect: LiquidSegmentRect) {
-  return {
-    x: rect.x + rect.width / 2,
-    y: rect.y + rect.height / 2,
-  }
-}
-
 interface LiquidGeometry {
   x: number
   y: number
   width: number
   height: number
-  /** 1 = rest, >1 stretched along travel, <1 squeezed on cross-axis */
-  scaleX: number
-  scaleY: number
 }
 
 /**
- * Smooth capsule droplet between two items.
- * Always a full rounded pill (border-radius 9999) — no clip-path, so no cusps/arrows.
- * "Liquid" feel comes from lead/trail lag + mild mid-travel squash/stretch.
+ * Liquid capsule morph: always keeps full item-sized rounded pill.
+ * Never collapses into a ball — stretches along travel, mildly thins on cross-axis.
  */
 function computeLiquidGeometry(from: LiquidSegmentRect, to: LiquidSegmentRect, t: number): LiquidGeometry {
   const progress = clamp(t, 0, 1)
-  const c0 = centerOf(from)
-  const c1 = centerOf(to)
-  const dx = c1.x - c0.x
-  const dy = c1.y - c0.y
-  const isHoriz = Math.abs(dx) >= Math.abs(dy)
 
   if (progress <= 0.001) {
-    return {
-      x: from.x,
-      y: from.y,
-      width: from.width,
-      height: from.height,
-      scaleX: 1,
-      scaleY: 1,
-    }
+    return { x: from.x, y: from.y, width: from.width, height: from.height }
   }
   if (progress >= 0.999) {
-    return {
-      x: to.x,
-      y: to.y,
-      width: to.width,
-      height: to.height,
-      scaleX: 1,
-      scaleY: 1,
-    }
+    return { x: to.x, y: to.y, width: to.width, height: to.height }
   }
 
-  // Lead advances first; trail lags → mass is squeezed toward the destination
-  const leadT = easeInOutCubic(clamp(progress * 1.05, 0, 1))
-  const trailT = easeInOutCubic(clamp((progress - 0.14) / 0.86, 0, 1))
+  const dx = (to.x + to.width / 2) - (from.x + from.width / 2)
+  const dy = (to.y + to.height / 2) - (from.y + from.height / 2)
+  const dist = Math.hypot(dx, dy)
+  const isHoriz = Math.abs(dx) >= Math.abs(dy)
 
-  const lead = {
-    x: lerp(c0.x, c1.x, leadT),
-    y: lerp(c0.y, c1.y, leadT),
-  }
-  const trail = {
-    x: lerp(c0.x, c1.x, trailT),
-    y: lerp(c0.y, c1.y, trailT),
-  }
+  // Position eases with a slight lead so the blob reaches destination first
+  const posT = easeInOutCubic(progress)
+  // Size eases a bit slower → elastic length change
+  const sizeT = easeInOutCubic(clamp((progress - 0.02) / 0.98, 0, 1))
 
-  const r0 = Math.min(from.width, from.height) / 2
-  const r1 = Math.min(to.width, to.height) / 2
-  const radius = lerp(r0, r1, (leadT + trailT) / 2)
+  const baseW = lerp(from.width, to.width, sizeT)
+  const baseH = lerp(from.height, to.height, sizeT)
+  const baseCx = lerp(from.x + from.width / 2, to.x + to.width / 2, posT)
+  const baseCy = lerp(from.y + from.height / 2, to.y + to.height / 2, posT)
 
-  // How far apart the two "masses" are (drives elongation)
-  const span = Math.hypot(lead.x - trail.x, lead.y - trail.y)
-  // Mid-travel emphasis for squash (smooth, peaks at 0.5)
+  // Mid-travel stretch (peaks at 0.5). Caps at a fraction of travel distance
+  // so short steps stay subtle and long steps feel liquid without becoming a ball.
   const mid = Math.sin(Math.PI * progress)
+  const stretch = Math.min(dist * 0.42, Math.max(baseW, baseH) * 0.85) * mid
+  // Mild cross-axis squeeze — never extreme enough to look pointed
+  const squash = 1 - 0.14 * mid
 
   if (isHoriz) {
-    const width = Math.max(span + radius * 2, radius * 2)
-    const height = radius * 2
-    const cx = (lead.x + trail.x) / 2
-    const cy = (lead.y + trail.y) / 2
-    // Stretch along X, gently squeeze Y at mid (still fully round caps)
-    const scaleX = 1 + 0.06 * mid
-    const scaleY = 1 - 0.16 * mid
+    const width = baseW + stretch
+    const height = Math.max(baseH * squash, Math.min(from.height, to.height) * 0.72)
     return {
-      x: cx - width / 2,
-      y: cy - height / 2,
+      x: baseCx - width / 2,
+      y: baseCy - height / 2,
       width,
       height,
-      scaleX,
-      scaleY,
     }
   }
 
-  const height = Math.max(span + radius * 2, radius * 2)
-  const width = radius * 2
-  const cx = (lead.x + trail.x) / 2
-  const cy = (lead.y + trail.y) / 2
-  const scaleX = 1 - 0.16 * mid
-  const scaleY = 1 + 0.06 * mid
+  const height = baseH + stretch
+  const width = Math.max(baseW * squash, Math.min(from.width, to.width) * 0.72)
   return {
-    x: cx - width / 2,
-    y: cy - height / 2,
+    x: baseCx - width / 2,
+    y: baseCy - height / 2,
     width,
     height,
-    scaleX,
-    scaleY,
   }
 }
 
 /**
- * Sliding liquid droplet indicator for segmented controls.
- * Morphs as a smooth rounded capsule (no pointed clip-paths).
+ * Sliding liquid indicator for segmented controls / dock.
  */
 export function useLiquidSegmentIndicator(options: {
   containerRef: Ref<HTMLElement | null | undefined>
@@ -148,8 +104,6 @@ export function useLiquidSegmentIndicator(options: {
   const activeItemSelector = options.activeItemSelector ?? `${itemSelector}[data-active="true"]`
 
   const rect = ref<LiquidSegmentRect>({ x: 0, y: 0, width: 0, height: 0 })
-  const scaleX = ref(1)
-  const scaleY = ref(1)
   const visible = ref(false)
   const isMoving = ref(false)
   const scrubbing = ref(false)
@@ -164,12 +118,12 @@ export function useLiquidSegmentIndicator(options: {
 
   const indicatorStyle = computed(() => {
     const { x, y, width, height } = rect.value
-    // Position by top-left, then scale from center for mid-travel squash
     return {
       width: `${Math.max(width, 0)}px`,
       height: `${Math.max(height, 0)}px`,
       opacity: visible.value ? '1' : '0',
-      transform: `translate3d(${x}px, ${y}px, 0) scale(${scaleX.value}, ${scaleY.value})`,
+      transform: `translate3d(${x}px, ${y}px, 0)`,
+      // Geometry driven by rAF; only paint props use CSS transition
       transition: 'opacity 200ms ease, background-color 220ms ease, box-shadow 220ms ease',
     } as Record<string, string | undefined>
   })
@@ -204,15 +158,11 @@ export function useLiquidSegmentIndicator(options: {
       width: geo.width,
       height: geo.height,
     }
-    scaleX.value = geo.scaleX
-    scaleY.value = geo.scaleY
   }
 
   function applySettled(next: LiquidSegmentRect) {
-    rect.value = next
-    scaleX.value = 1
-    scaleY.value = 1
-    fromRect = next
+    rect.value = { ...next }
+    fromRect = { ...next }
   }
 
   function readItemRect(container: HTMLElement, el: HTMLElement): LiquidSegmentRect {
@@ -231,7 +181,7 @@ export function useLiquidSegmentIndicator(options: {
     const token = ++animToken
     const start = performance.now()
     markMoving(LIQUID_MOVE_DURATION_MS)
-    fromRect = from
+    fromRect = { ...from }
 
     const tick = (now: number) => {
       if (token !== animToken)
