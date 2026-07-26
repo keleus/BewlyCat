@@ -10,9 +10,13 @@ const searchInput = ref<string>('')
 const topBarStore = useTopBarStore()
 const { searchKeyword: topBarSearchKeyword } = storeToRefs(topBarStore)
 
-// 页面卸载时清空顶栏搜索框（真正离开搜索页面）
+// 仅在真正离开搜索流程时清空顶栏搜索框。
+// 从 Search 切换到 SearchResults 时，目标页会先把 URL 中的关键词同步到顶栏；
+// 此处若无条件清空，会在组件切换期间覆盖该关键词。
 onUnmounted(() => {
-  topBarSearchKeyword.value = ''
+  const destinationPage = new URLSearchParams(window.location.search).get('page')
+  if (destinationPage !== 'SearchResults')
+    topBarSearchKeyword.value = ''
 })
 
 function performInPlaceSearch(keyword: string) {
