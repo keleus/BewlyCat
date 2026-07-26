@@ -7,7 +7,48 @@ import { isVideoPlaybackPage, setCookie } from '~/utils/main'
 import { executeTimes } from '~/utils/timer'
 
 const currentUrl = ref(typeof location === 'undefined' ? '' : location.href)
+const currentMinuteOfDay = ref(getCurrentMinuteOfDay())
 let isRouteWatcherStarted = false
+let isScheduleClockStarted = false
+
+function getCurrentMinuteOfDay(): number {
+  const now = new Date()
+  return now.getHours() * 60 + now.getMinutes()
+}
+
+function parseTime(value: string, fallback: number): number {
+  const match = /^(\d{2}):(\d{2})$/.exec(value)
+  if (!match)
+    return fallback
+
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  if (hours > 23 || minutes > 59)
+    return fallback
+
+  return hours * 60 + minutes
+}
+
+function isWithinLightSchedule(current: number, startTime: string, endTime: string): boolean {
+  const start = parseTime(startTime, 6 * 60)
+  const end = parseTime(endTime, 18 * 60)
+
+  if (start === end)
+    return true
+  if (start < end)
+    return current >= start && current < end
+  return current >= start || current < end
+}
+
+function startScheduleClock() {
+  if (isScheduleClockStarted || typeof window === 'undefined')
+    return
+
+  isScheduleClockStarted = true
+  window.setInterval(() => {
+    currentMinuteOfDay.value = getCurrentMinuteOfDay()
+  }, 30_000)
+}
 
 /**
  * Check if current page is festival page
@@ -49,14 +90,22 @@ function setDarkModeBaseColor(color: string) {
 
 export function useDark() {
   startRouteWatcher()
+  startScheduleClock()
 
   const isPreferredDark = usePreferredDark()
   const currentSystemColorScheme = computed(() => isPreferredDark.value ? 'dark' : 'light')
   const currentAppColorScheme = computed((): 'dark' | 'light' => {
-    if (settings.value.theme !== 'auto')
+    if (settings.value.theme === 'light' || settings.value.theme === 'dark')
       return settings.value.theme
-    else
-      return currentSystemColorScheme.value
+    if (settings.value.theme === 'scheduled') {
+      const shouldUseLightTheme = isWithinLightSchedule(
+        currentMinuteOfDay.value,
+        settings.value.themeScheduleStart,
+        settings.value.themeScheduleEnd,
+      )
+      return shouldUseLightTheme ? 'light' : 'dark'
+    }
+    return currentSystemColorScheme.value
   })
   const isVideoPageDark = computed(() => {
     return settings.value.videoPageDarkMode && isVideoPlaybackPage(currentUrl.value)
@@ -67,7 +116,15 @@ export function useDark() {
   // Watch for changes in the 'settings.value.theme' variable and add the 'dark' class to the 'mainApp' element
   // to prevent some Unocss dark-specific styles from failing to take effect
   watch(
-    () => [settings.value.theme, settings.value.videoPageDarkMode, isPreferredDark.value, currentUrl.value],
+    () => [
+      settings.value.theme,
+      settings.value.themeScheduleStart,
+      settings.value.themeScheduleEnd,
+      settings.value.videoPageDarkMode,
+      isPreferredDark.value,
+      currentMinuteOfDay.value,
+      currentUrl.value,
+    ],
     () => {
       setAppAppearance()
     },

@@ -258,7 +258,9 @@ export interface Settings {
   sidebarPosition: 'left' | 'right'
   autoHideSidebar: boolean
 
-  theme: 'light' | 'dark' | 'auto'
+  theme: 'light' | 'dark' | 'auto' | 'scheduled'
+  themeScheduleStart: string
+  themeScheduleEnd: string
   videoPageDarkMode: boolean
   themeColor: string
   darkModeBaseColor: string // 深色模式基准颜色
@@ -502,6 +504,8 @@ export const originalSettings: Settings = {
   autoHideSidebar: false,
 
   theme: 'auto',
+  themeScheduleStart: '06:00',
+  themeScheduleEnd: '18:00',
   videoPageDarkMode: false,
   themeColor: '#00a1d6',
   darkModeBaseColor: '#2a2d32', // 默认深色模式基准颜色

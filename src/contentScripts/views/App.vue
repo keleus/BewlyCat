@@ -242,7 +242,7 @@ useEventListener(window, 'message', ({ data, source }) => {
 
   if (type === 'iframeDarkModeChange') {
     // 在iframe环境中，只更新DOM样式，不修改用户的主题设置
-    // 避免覆盖用户设置的"auto"模式
+    // 避免覆盖用户选择的设备或定时主题模式
     if (isInIframe()) {
       // Check if we should apply selective dark mode (plugin UI only) on festival pages
       const isSelectiveDark = isFestivalPage()

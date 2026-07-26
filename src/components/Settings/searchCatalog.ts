@@ -342,6 +342,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.disable_shadow',
     'settings.group_color',
     'settings.theme',
+    'settings.theme_schedule',
     'settings.video_page_dark_mode',
     'settings.theme_color',
     'settings.dark_mode_base_color',

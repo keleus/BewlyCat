@@ -397,7 +397,10 @@ settings:
   theme_opt:
     light: Light
     dark: Dark
-    auto: Auto
+    auto: Device
+    scheduled: Scheduled
+  theme_schedule: Light mode hours
+  theme_schedule_desc: Use light mode during this time range and dark mode outside it.
   video_page_dark_mode: Video page dark mode only
   video_page_dark_mode_desc: Keep the global theme unchanged and enable BewlyCat dark styles only on video playback pages.
   theme_color: Theme color

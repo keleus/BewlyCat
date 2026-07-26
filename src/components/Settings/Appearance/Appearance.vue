@@ -12,6 +12,22 @@ import SettingsSectionHeading from '../components/SettingsSectionHeading.vue'
 
 const { t } = useI18n()
 
+const themeScheduleStart = ref(settings.value.themeScheduleStart)
+const themeScheduleEnd = ref(settings.value.themeScheduleEnd)
+
+watch(() => settings.value.themeScheduleStart, (value) => {
+  themeScheduleStart.value = value
+})
+
+watch(() => settings.value.themeScheduleEnd, (value) => {
+  themeScheduleEnd.value = value
+})
+
+function saveThemeSchedule() {
+  settings.value.themeScheduleStart = themeScheduleStart.value
+  settings.value.themeScheduleEnd = themeScheduleEnd.value
+}
+
 const themeColorOptions = computed<Array<string>>(() => {
   return [
     '#22c55e',
@@ -76,16 +92,20 @@ const fontPreferenceOptions = computed(() => {
 const themeOptions = computed<Array<{ value: string, label: string }>>(() => {
   return [
     {
-      label: t('settings.theme_opt.light'),
-      value: 'light',
-    },
-    {
       label: t('settings.theme_opt.dark'),
       value: 'dark',
     },
     {
+      label: t('settings.theme_opt.light'),
+      value: 'light',
+    },
+    {
       label: t('settings.theme_opt.auto'),
       value: 'auto',
+    },
+    {
+      label: t('settings.theme_opt.scheduled'),
+      value: 'scheduled',
     },
   ]
 })
@@ -157,6 +177,18 @@ function changeWallpaper(url: string) {
     <SettingsItemGroup :title="$t('settings.group_color')">
       <SettingsItem :title="$t('settings.theme')" right-width="auto">
         <Select v-model="settings.theme" w="160px" :options="themeOptions" />
+      </SettingsItem>
+      <SettingsItem
+        v-if="settings.theme === 'scheduled'"
+        :title="$t('settings.theme_schedule')"
+        :desc="$t('settings.theme_schedule_desc')"
+        right-width="auto"
+      >
+        <div class="theme-schedule" flex="~ items-center gap-2">
+          <input v-model="themeScheduleStart" type="time" @blur="saveThemeSchedule">
+          <span>–</span>
+          <input v-model="themeScheduleEnd" type="time" @blur="saveThemeSchedule">
+        </div>
       </SettingsItem>
       <SettingsItem :title="$t('settings.video_page_dark_mode')" right-width="auto">
         <template #desc>
@@ -297,6 +329,15 @@ function changeWallpaper(url: string) {
 
 .dark-mode-base-color-options {
   width: 252px;
+}
+
+.theme-schedule input {
+  padding: 8px 10px;
+  color: var(--bew-text-1);
+  background: var(--bew-fill-1);
+  border: 1px solid var(--bew-fill-3);
+  border-radius: var(--bew-radius);
+  color-scheme: inherit;
 }
 
 .slider-control {
