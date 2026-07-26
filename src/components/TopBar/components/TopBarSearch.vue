@@ -13,15 +13,19 @@ const { showSearchBar, forceWhiteIcon } = useTopBarInteraction()
 const topBarStore = useTopBarStore()
 const { searchKeyword } = storeToRefs(topBarStore)
 
-// 可以考虑添加一个计算属性来处理样式
+const useLightText = computed(() => forceWhiteIcon.value && settings.value.enableFrostedGlass)
+
+// 顶栏覆盖在图片上且使用毛玻璃时，切换为高对比度亮色文字
 const searchBarStyles = computed(() => ({
   '--b-search-bar-max-width': '100%',
   '--b-search-bar-height': 'var(--bew-top-bar-primary-control-height)',
   '--b-search-bar-radius': 'var(--bew-top-bar-primary-control-radius)',
   '--b-search-bar-normal-color': settings.value.enableFrostedGlass ? 'color-mix(in oklab, var(--bew-elevated-solid), transparent 60%)' : 'var(--bew-elevated)',
   '--b-search-bar-focus-color': 'var(--bew-elevated)',
-  '--b-search-bar-normal-icon-color': forceWhiteIcon.value && settings.value.enableFrostedGlass ? 'white' : 'var(--bew-text-1)',
-  '--b-search-bar-normal-text-color': forceWhiteIcon.value && settings.value.enableFrostedGlass ? 'white' : 'var(--bew-text-1)',
+  '--b-search-bar-normal-icon-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
+  '--b-search-bar-normal-text-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
+  '--b-search-bar-hover-text-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
+  '--b-search-bar-placeholder-opacity': useLightText.value ? '0.9' : '0.65',
 }))
 
 const currentLocation = ref(window.location.href)

@@ -838,6 +838,11 @@ function handleClearKeyword() {
       z-index: 1;
       border-radius: var(--b-search-bar-radius, 60px);
 
+      &::placeholder {
+        color: inherit;
+        opacity: var(--b-search-bar-placeholder-opacity, 0.65);
+      }
+
       &:focus {
         --uno: "bg-$b-search-bar-focus-color";
       }
