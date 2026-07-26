@@ -68,9 +68,7 @@ watch(() => props.unReadDm, (newVal) => {
 }, { immediate: true, deep: true })
 
 function handleClick(event: MouseEvent, item: { name: string, url: string, unreadCount: number, icon: string }) {
-  if (settings.value.openNotificationsPageAsDrawer) {
-    emit('itemClick', item)
-  }
+  emit('itemClick', item)
 }
 </script>
 

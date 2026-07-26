@@ -6,6 +6,7 @@ import type {
   TopBarRefreshClaim,
   TopBarSharedState,
   TopBarStateClaim,
+  TopBarStateInvalidate,
   TopBarStatePublish,
   TopBarStateRelease,
 } from '~/constants/topBarState'
@@ -39,6 +40,10 @@ export interface TopBarStateBroker {
   ) => Promise<void>
   releaseRefresh: (
     data: TopBarStateRelease,
+    sender?: Browser.Runtime.MessageSender,
+  ) => Promise<void>
+  invalidate: (
+    data: TopBarStateInvalidate,
     sender?: Browser.Runtime.MessageSender,
   ) => Promise<void>
 }
@@ -194,6 +199,28 @@ export function createTopBarStateBroker(
     )
   }
 
+  async function broadcastInvalidation(
+    data: TopBarStateInvalidate,
+    sender?: Browser.Runtime.MessageSender,
+  ): Promise<void> {
+    const browserContextKey = getBrowserContextKey(sender?.tab)
+
+    try {
+      const tabs = await extensionApi.tabs.query({ url: [...CONTENT_SCRIPT_MATCHES] })
+      await Promise.allSettled(
+        tabs
+          .filter(tab => tab.id !== undefined && getBrowserContextKey(tab) === browserContextKey)
+          .map(tab => extensionApi.tabs.sendMessage(tab.id!, {
+            type: TOP_BAR_STATE_MESSAGE.INVALIDATED,
+            data,
+          })),
+      )
+    }
+    catch {
+      // 页面可能已关闭；后续初始化仍会从已失效的缓存重新请求
+    }
+  }
+
   return {
     claimRefresh({ accountId, maxAge, force = false }, sender) {
       return runExclusive(async () => {
@@ -204,7 +231,7 @@ export function createTopBarStateBroker(
         const snapshotFresh = entry.snapshot !== undefined && now - entry.updatedAt < maxAge
         const refreshInProgress = entry.refreshStartedAt > 0
           && now - entry.refreshStartedAt < REFRESH_LEASE_TIMEOUT
-        const shouldRefresh = force || (!snapshotFresh && !refreshInProgress)
+        const shouldRefresh = !refreshInProgress && (force || !snapshotFresh)
 
         if (shouldRefresh) {
           entry.refreshStartedAt = now
@@ -251,6 +278,19 @@ export function createTopBarStateBroker(
         await persistState()
       })
     },
+
+    async invalidate(data, sender) {
+      await runExclusive(async () => {
+        await ensureStateLoaded()
+        const entry = getEntry(data.accountId, sender)
+        entry.updatedAt = 0
+        entry.refreshStartedAt = 0
+        entry.refreshId += 1
+        await persistState()
+      })
+
+      await broadcastInvalidation(data, sender)
+    },
   }
 }
 
@@ -270,5 +310,10 @@ export function setupTopBarStateBroker() {
   onMessage<TopBarStateRelease>(
     TOP_BAR_STATE_MESSAGE.RELEASE_REFRESH,
     (data, sender) => broker.releaseRefresh(data, sender),
+  )
+
+  onMessage<TopBarStateInvalidate>(
+    TOP_BAR_STATE_MESSAGE.INVALIDATE,
+    (data, sender) => broker.invalidate(data, sender),
   )
 }

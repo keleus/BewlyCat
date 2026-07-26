@@ -36,7 +36,7 @@ const {
   hasBCoinToReceive,
 } = storeToRefs(topBarStore)
 
-const { getTopBarNewMomentsCount, syncSharedData, syncUnreadMessageState } = topBarStore
+const { getTopBarNewMomentsCount, invalidateUnreadMessageState, syncSharedData, syncUnreadMessageState } = topBarStore
 
 function refreshUnreadMessageSharedState() {
   syncUnreadMessageState().catch((error) => {
@@ -185,6 +185,9 @@ watch(
 
 // 修改通知点击处理
 function handleNotificationsClick(item: { name: string, url: string, unreadCount: number, icon: string }) {
+  invalidateUnreadMessageState().catch((error) => {
+    console.error('标记未读消息缓存失效失败:', error)
+  })
   emit('notificationsClick', item)
 }
 

@@ -19,6 +19,7 @@ import type {
   TopBarRefreshClaim,
   TopBarSharedState,
   TopBarStateClaim,
+  TopBarStateInvalidate,
   TopBarStatePublish,
   TopBarStateRelease,
 } from '~/constants/topBarState'
@@ -776,6 +777,18 @@ export const useTopBarStore = defineStore('topBar', () => {
     },
   )
 
+  onMessage<TopBarStateInvalidate>(
+    TOP_BAR_STATE_MESSAGE.INVALIDATED,
+    ({ accountId }) => {
+      if (accountId !== userInfo.mid)
+        return
+
+      syncSharedData({ refresh: getUnreadMessageCount }).catch((error) => {
+        console.error('刷新已失效的未读消息状态失败:', error)
+      })
+    },
+  )
+
   async function refreshSharedData() {
     await Promise.all([
       getUnreadMessageCount(),
@@ -847,6 +860,17 @@ export const useTopBarStore = defineStore('topBar', () => {
       force: true,
       refresh: getUnreadMessageCount,
     })
+  }
+
+  function invalidateUnreadMessageState() {
+    const accountId = userInfo.mid
+    if (!accountId)
+      return Promise.resolve()
+
+    return sendMessage<TopBarStateInvalidate>(
+      TOP_BAR_STATE_MESSAGE.INVALIDATE,
+      { accountId },
+    )
   }
 
   async function initData() {
@@ -951,6 +975,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     getMouseOverPopup,
     syncSharedData,
     syncUnreadMessageState,
+    invalidateUnreadMessageState,
     startUpdateTimer,
     stopUpdateTimer,
 
