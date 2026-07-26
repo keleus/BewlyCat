@@ -325,19 +325,21 @@ function changeMenuItem(menuItem: MenuType) {
       id="settings-window"
       ref="settingsWindow"
       pos="fixed top-1/2 left-1/2" w="90%" h="90%"
-      max-w-1200px max-h-900px transform="~ translate-x--1/2 translate-y--1/2 gpu"
+      max-w-1000px max-h-900px transform="~ translate-x--1/2 translate-y--1/2 gpu"
       flex="~ justify-between items-center"
     >
       <aside
-        class="settings-primary-navigation"
-        shrink-0 p="r-4" z-2
+        class="settings-primary-navigation group"
+        shrink-0 p="x-4"
+        pos="absolute xl:left--84px left--44px" z-2
       >
         <ul
           style="
             box-shadow: var(--bew-shadow-4);
           "
-          relative flex="~ gap-2 col" rounded="25px" p-2
-          bg="$bew-content-alt dark:$bew-elevated"
+          relative flex="~ gap-2 col" rounded="30px group-hover:25px" p-2
+          bg="$bew-content-alt group-hover:$bew-elevated dark:$bew-elevated dark-group-hover:$bew-elevated"
+          scale="group-hover:105" duration-300
           overflow-hidden antialiased
         >
           <!-- frosted glass background -->
@@ -359,7 +361,7 @@ function changeMenuItem(menuItem: MenuType) {
             :class="{ 'menu-section-start': menuItem.sectionStart }"
           >
             <a
-              cursor-pointer w-full h-40px
+              cursor-pointer w="40px group-hover:190px" h-40px
               rounded-30px flex items-center overflow-x-hidden
               duration-300 bg="hover:$bew-fill-2"
               :class="{ 'menu-item-activated': menuItem.value === activatedMenuItem }"
@@ -400,7 +402,8 @@ function changeMenuItem(menuItem: MenuType) {
           --un-shadow: var(--bew-shadow-4), var(--bew-shadow-edge-glow-2);
           backdrop-filter: var(--bew-filter-glass-2);
         "
-        relative overflow="x-hidden" flex-1 min-w-0 h-full
+        relative overflow="x-hidden" flex-1 min-w-0
+        h-full
         bg="$bew-elevated-alt"
         shadow rounded="$bew-radius" border="1 $bew-border-color"
       >
@@ -517,10 +520,6 @@ function changeMenuItem(menuItem: MenuType) {
 <style lang="scss" scoped>
 .menu-item-activated {
   --uno: "text-$bew-text-auto bg-$bew-theme-color-auto";
-}
-
-.settings-primary-navigation {
-  width: 220px;
 }
 
 .settings-breadcrumb {
@@ -720,6 +719,9 @@ function changeMenuItem(menuItem: MenuType) {
 
 @media (max-width: 760px) {
   .settings-primary-navigation {
+    /* 窄屏：取消浮动，改为常驻图标列，避免遮挡 content（触屏无 hover） */
+    position: relative;
+    left: auto !important;
     width: 72px;
     box-sizing: border-box;
 
