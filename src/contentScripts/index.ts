@@ -591,17 +591,6 @@ else if (shouldInitializeContentScript) {
 
     setupOriginalBilibiliTopBarSearchHandlers(document, () => settings.value.usePluginSearchResultsPage)
 
-    const pluginSearchResultsUrl = !isInIframe() && getPluginSearchResultsUrl(location.href)
-
-    if (pluginSearchResultsUrl) {
-      await settingsReady
-
-      if (settings.value.usePluginSearchResultsPage && getCookie('DedeUserID')) {
-        location.replace(pluginSearchResultsUrl)
-        return
-      }
-    }
-
     const changeHomePage = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
     document.documentElement.classList.toggle('bewly-custom-homepage', changeHomePage)
 
