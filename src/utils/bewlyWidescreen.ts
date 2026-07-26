@@ -67,6 +67,7 @@ let state: BewlyWidescreenState | null = null
 let loadingOverlay: HTMLElement | null = null
 let loadingStyleEl: HTMLStyleElement | null = null
 let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
+let loadingPlaybackCleanup: (() => void) | undefined
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
 let loadFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined
@@ -591,9 +592,26 @@ function showWidescreenLoading() {
   const mountTarget = document.body ?? document.documentElement
   mountTarget.appendChild(overlay)
   loadingOverlay = overlay
+
+  const handlePlaying = (event: Event) => {
+    if (event.target === getVideoElement())
+      removeWidescreenLoading()
+  }
+  document.addEventListener('playing', handlePlaying, true)
+  loadingPlaybackCleanup = () => {
+    document.removeEventListener('playing', handlePlaying, true)
+    loadingPlaybackCleanup = undefined
+  }
+
+  // The player may already be running before the widescreen loading UI mounts.
+  const video = getVideoElement()
+  if (video && !video.paused && !video.ended)
+    removeWidescreenLoading()
 }
 
 function removeWidescreenLoading(immediate = false) {
+  loadingPlaybackCleanup?.()
+
   if (loadingFadeTimer) {
     clearTimeout(loadingFadeTimer)
     loadingFadeTimer = undefined
