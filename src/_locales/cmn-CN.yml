@@ -206,7 +206,7 @@ settings:
     open_settings: 打开设置...
   touch_screen_optimization: 触屏体验改进
   touch_screen_optimization_desc: |
-    启用后，如顶栏，你可能需要点击项目以查看更多信息，而不是鼠标直接悬停查看。（旧版顶栏不支持此功能）
+    启用后，如顶栏，你可能需要点击项目以查看更多信息，而不是鼠标直接悬停查看。视频页支持双击播放、暂停或快进快退，按住左右滑动调整播放进度，以及从播放器左右边缘上下滑动调节音量。（旧版顶栏不支持此功能）
   show_home_button_in_touch_mode: 显示 Home 按钮
   show_home_button_in_touch_mode_desc: 在触屏优化开启时，在顶栏 Logo 旁边显示一个可以直接跳转到首页的按钮。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隐藏 LV6 等级最后登录信息显示

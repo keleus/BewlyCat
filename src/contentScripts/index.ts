@@ -34,6 +34,7 @@ import { setupCommentShadowBanDetection } from './features/commentShadowBanDetec
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
+import { initTouchPlayerGestures } from './touchPlayerGestures'
 import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
 import { initVolumeNormalizationControl } from './volumeNormalizationControl'
@@ -720,6 +721,7 @@ else if (shouldInitializeContentScript) {
       initAudioInterceptor()
     initVolumeNormalizationControl()
     initVideoScreenshotControl()
+    initTouchPlayerGestures()
 
     // Initialize Favorite Dialog Enhancement (for video pages)
     if (isVideoOrBangumiPage()) {

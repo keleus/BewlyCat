@@ -211,7 +211,9 @@ settings:
   touch_screen_optimization_desc: >
     After this setting is turned on, like the top bar, you must click on items
     to view more information instead of hovering over them. (This feature is not
-    supported by the old top bar.)
+    supported by the old top bar.) On video pages, double-tap to play, pause, or
+    seek, drag horizontally to scrub through the video, and swipe vertically
+    from either player edge to adjust volume.
   show_home_button_in_touch_mode: Show Home button
   show_home_button_in_touch_mode_desc: When touch screen optimization is enabled, show a Home button next to the top bar Logo to navigate directly to the homepage.
   hide_lv6_last_login_location_in_top_bar_user_pop: Hide LV6 last login info
