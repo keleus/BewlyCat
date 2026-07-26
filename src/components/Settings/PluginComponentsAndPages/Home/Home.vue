@@ -545,7 +545,7 @@ function handleToggleHomeTab(tab: any) {
       <template v-if="settings.useSearchPageModeOnHomePage">
         <SettingsItem :title="$t('settings.settings_shared_with_the_search_page')" right-width="auto">
           <template #desc>
-            <span color="$bew-warning-color">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
+            <span class="bew-warning-text">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
           </template>
           <Button type="secondary" center @click="showSearchPageModeSharedSettings = true">
             {{ $t('settings.btn.open_settings') }}
@@ -562,7 +562,7 @@ function handleToggleHomeTab(tab: any) {
             @close="showSearchPageModeSharedSettings = false"
           >
             <template #desc>
-              <span color="$bew-warning-color">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
+              <span class="bew-warning-text">{{ $t('settings.settings_shared_with_the_search_page_desc') }}</span>
             </template>
 
             <SearchPage />

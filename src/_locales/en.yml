@@ -69,10 +69,13 @@ player_screenshot:
 settings:
   title: Settings
   menu_general: General
-  menu_navigation: Browsing & Navigation
+  menu_navigation: Pages & Components
   menu_playback: Playback & Audio
   menu_advanced: Advanced & Maintenance
   category_navigation: Settings category navigation
+  category_group_pages: Pages
+  category_group_components: Components
+  category_group_behavior: Behavior
   badge_performance_impact: Performance impact
   badge_advanced: Advanced
   badge_irreversible: Irreversible

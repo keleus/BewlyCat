@@ -234,7 +234,8 @@ function handleContributorImageError(login: string) {
           <span>BewlyCat</span>
           <span
             v-if="isDev"
-            inline-block text="$bew-warning-color"
+            class="bew-warning-text"
+            inline-block
           >
             Dev
           </span>

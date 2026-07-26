@@ -72,7 +72,7 @@ function changeSearchBarFocusCharacter(url: string) {
 
       <SettingsItem :title="$t('settings.bg_blurs_when_the_search_bar_is_focused')" right-width="auto">
         <template #desc>
-          <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
+          <span class="bew-warning-text">{{ $t('common.performance_impact_warn') }}</span>
         </template>
 
         <Radio v-model="settings.searchPageBlurredOnSearchFocus" />

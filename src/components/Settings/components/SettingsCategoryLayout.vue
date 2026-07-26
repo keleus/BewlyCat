@@ -4,13 +4,14 @@ import { useI18n } from 'vue-i18n'
 
 import SettingsSectionHeading from './SettingsSectionHeading.vue'
 
-interface CategoryPage {
+export interface CategoryPage {
   value: string
   titleKey: string
   descriptionKey?: string
   icon: string
   iconActivated: string
   component: Component
+  groupKey?: string
 }
 
 const props = defineProps<{
@@ -32,6 +33,22 @@ const currentPage = computed(() =>
   props.pages.find(page => page.value === activePage.value) ?? props.pages[0],
 )
 
+const pageGroups = computed(() => {
+  const groups: Array<{ key: string | null, pages: CategoryPage[] }> = []
+
+  for (const page of props.pages) {
+    const groupKey = page.groupKey ?? null
+    const lastGroup = groups[groups.length - 1]
+    if (!lastGroup || lastGroup.key !== groupKey) {
+      groups.push({ key: groupKey, pages: [page] })
+      continue
+    }
+    lastGroup.pages.push(page)
+  }
+
+  return groups
+})
+
 watch(activePage, page => sessionStorage.setItem(props.storageKey, page))
 watchEffect(() => setBreadcrumb?.(currentPage.value ? t(currentPage.value.titleKey) : undefined))
 
@@ -42,25 +59,47 @@ function selectPage(page: string) {
   scrollSettingsContentToTop?.()
   activePage.value = page
 }
+
+function handlePageMouseDown(event: MouseEvent) {
+  // Keep keyboard focus, but prevent the browser from scrolling the focused
+  // secondary-nav item into view (can nudge the settings panel upward).
+  if (event.button !== 0)
+    return
+
+  event.preventDefault()
+  if (event.currentTarget instanceof HTMLElement)
+    event.currentTarget.focus({ preventScroll: true })
+}
 </script>
 
 <template>
   <div class="settings-category-layout">
     <nav class="settings-category-nav" :aria-label="$t('settings.category_navigation')">
-      <button
-        v-for="page in pages"
-        :key="page.value"
-        type="button"
-        class="settings-category-button"
-        :class="{ active: activePage === page.value }"
-        @click="selectPage(page.value)"
+      <div
+        v-for="(group, groupIndex) in pageGroups"
+        :key="group.key ?? `ungrouped-${groupIndex}`"
+        class="settings-category-group"
+        :class="{ 'has-label': !!group.key }"
       >
-        <span
-          class="settings-category-icon"
-          :class="activePage === page.value ? page.iconActivated : page.icon"
-        />
-        <span>{{ $t(page.titleKey) }}</span>
-      </button>
+        <div v-if="group.key" class="settings-category-group-label">
+          {{ $t(group.key) }}
+        </div>
+        <button
+          v-for="page in group.pages"
+          :key="page.value"
+          type="button"
+          class="settings-category-button"
+          :class="{ active: activePage === page.value }"
+          @mousedown="handlePageMouseDown"
+          @click="selectPage(page.value)"
+        >
+          <span
+            class="settings-category-icon"
+            :class="activePage === page.value ? page.iconActivated : page.icon"
+          />
+          <span>{{ $t(page.titleKey) }}</span>
+        </button>
+      </div>
     </nav>
 
     <section v-if="currentPage" class="settings-category-content">
@@ -80,6 +119,7 @@ function selectPage(page: string) {
   grid-template-columns: 180px minmax(0, 1fr);
   gap: 24px;
   margin-left: -32px;
+  overflow-anchor: none;
 }
 
 .settings-category-nav {
@@ -88,7 +128,23 @@ function selectPage(page: string) {
   display: flex;
   flex-direction: column;
   align-self: start;
+  gap: 10px;
+  overflow-anchor: none;
+}
+
+.settings-category-group {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+}
+
+.settings-category-group-label {
+  padding: 0 14px 2px;
+  color: var(--bew-text-3);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
 }
 
 .settings-category-button {
@@ -96,10 +152,12 @@ function selectPage(page: string) {
   gap: 10px;
   align-items: center;
   width: 100%;
+  min-height: 40px;
   padding: 10px 14px;
   color: var(--bew-text-1);
   text-align: left;
   border-radius: var(--bew-radius);
+  overflow-anchor: none;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
@@ -112,6 +170,11 @@ function selectPage(page: string) {
     color: var(--bew-theme-color);
     background: var(--bew-fill-3);
     font-weight: 600;
+  }
+
+  > span:last-child {
+    min-width: 0;
+    line-height: 1.3;
   }
 }
 
@@ -135,8 +198,19 @@ function selectPage(page: string) {
   .settings-category-nav {
     position: static;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
     margin-bottom: 20px;
+  }
+
+  .settings-category-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .settings-category-group-label {
+    grid-column: 1 / -1;
+    padding: 4px 6px 2px;
   }
 }
 </style>

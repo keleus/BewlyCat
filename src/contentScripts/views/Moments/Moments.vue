@@ -8,6 +8,8 @@ import type { DataItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { getCSRF } from '~/utils/main'
 
+const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
+
 interface DisplayMoment {
   id: string
   author: { name: string, face: string }
@@ -1236,7 +1238,7 @@ function markCardReady(id: string) {
   cardEnterTimers.set(id, setTimeout(() => {
     enteringCardIds.delete(id)
     cardEnterTimers.delete(id)
-  }, 440))
+  }, 240))
 }
 
 function bindCardEl(el: Element | null, moment: DisplayMoment) {
@@ -2259,7 +2261,7 @@ watch(
         }"
       >
         <div class="moment-detail-frame__loading" aria-hidden="true">
-          <span i-svg-spinners:ring-resize />
+          <img class="moment-detail-frame__loading-icon" :src="loadingGifUrl" alt="" aria-hidden="true">
           {{ selectedMoment.isLive ? '正在打开直播间…' : selectedMoment.isVideo ? '正在打开视频…' : selectedMoment.isForward ? '正在打开转发动态…' : '正在加载动态详情…' }}
         </div>
         <iframe
@@ -2853,8 +2855,8 @@ watch(
   visibility: hidden;
 }
 .moment-card--entering {
-  will-change: clip-path, opacity, transform;
-  animation: moment-card-enter 0.4s cubic-bezier(0.22, 0.72, 0.32, 1) both;
+  will-change: opacity;
+  animation: moment-card-enter 0.2s ease both;
 }
 .moments-grid__column {
   display: flex;
@@ -2896,18 +2898,14 @@ watch(
 @keyframes moment-card-enter {
   from {
     opacity: 0;
-    clip-path: inset(0 0 100% 0 round 16px);
-    transform: translateY(-10px);
   }
   to {
     opacity: 1;
-    clip-path: inset(0 0 0 0 round 16px);
-    transform: translateY(0);
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .moment-card--entering {
-    animation-duration: 0.01ms;
+    animation: none;
   }
 }
 .moment-card__cover {
@@ -3240,12 +3238,17 @@ watch(
   justify-content: center;
   gap: 8px;
   color: var(--bew-text-2);
-  background: color-mix(in oklab, var(--bew-bg) 92%, transparent);
-  backdrop-filter: blur(3px);
+  background: var(--bew-bg);
   font-size: 13px;
   pointer-events: auto;
   opacity: 1;
   transition: opacity 0.18s ease;
+}
+.moment-detail-frame__loading-icon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 .moment-detail-frame:not(.is-loading) .moment-detail-frame__loading {
   opacity: 0;

@@ -147,7 +147,7 @@ onMounted(() => {
   <SettingsItemGroup :title="$t('settings.group_wallpaper')">
     <SettingsItem v-if="!isGlobal" :title="$t('settings.individually_set_search_page_wallpaper')" right-width="auto">
       <template #desc>
-        <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
+        <span class="bew-warning-text">{{ $t('common.performance_impact_warn') }}</span>
       </template>
 
       <Radio v-model="settings.individuallySetSearchPageWallpaper" />
@@ -330,7 +330,7 @@ onMounted(() => {
 
       <SettingsItem :title="$t('settings.enable_wallpaper_masking')" right-width="auto">
         <template #desc>
-          <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
+          <span class="bew-warning-text">{{ $t('common.performance_impact_warn') }}</span>
         </template>
 
         <Radio v-if="isGlobal" v-model="settings.enableWallpaperMasking" />

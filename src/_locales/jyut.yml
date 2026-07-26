@@ -69,10 +69,13 @@ player_screenshot:
 settings:
   title: 設定
   menu_general: 一般
-  menu_navigation: 瀏覽同導覽
+  menu_navigation: 頁面同元件
   menu_playback: 播放同聲音
   menu_advanced: 進階同維護
   category_navigation: 設定分類導覽
+  category_group_pages: 頁面
+  category_group_components: 元件
+  category_group_behavior: 行為
   badge_performance_impact: 效能影響
   badge_advanced: 進階
   badge_irreversible: 無法復原

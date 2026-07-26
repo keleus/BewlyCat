@@ -79,8 +79,8 @@ const settingsMenuItems: MenuItem[] = [
   },
   {
     value: MenuType.Navigation,
-    icon: 'i-mingcute:compass-line',
-    iconActivated: 'i-mingcute:compass-fill',
+    icon: 'i-mingcute:web-line',
+    iconActivated: 'i-mingcute:web-fill',
     titleKey: 'settings.menu_navigation',
   },
   {

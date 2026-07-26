@@ -154,3 +154,7 @@ img {
 
 // Note: View Transition styles for theme toggle are injected dynamically via JS in useDark.ts
 // because this file is loaded in Shadow DOM and cannot affect document-level ::view-transition pseudo-elements
+
+.bew-warning-text {
+  color: var(--bew-warning-color);
+}

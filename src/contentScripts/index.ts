@@ -579,6 +579,10 @@ else if (shouldInitializeContentScript) {
   `)
 
   async function onDOMLoaded() {
+    // 首页需要先完成设置读取，避免默认值误把原版首页当成自定义首页并吞掉分区行。
+    if (isHomePage())
+      await settingsReady
+
     setupOriginalBilibiliTopBarSearchHandlers(document, () => settings.value.usePluginSearchResultsPage)
 
     const pluginSearchResultsUrl = !isInIframe() && getPluginSearchResultsUrl(location.href)
@@ -593,6 +597,7 @@ else if (shouldInitializeContentScript) {
     }
 
     const changeHomePage = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
+    document.documentElement.classList.toggle('bewly-custom-homepage', changeHomePage)
 
     // 启用自定义首页时隐藏 B 站原始首页。
     if (changeHomePage) {

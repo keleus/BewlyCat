@@ -2,6 +2,7 @@
 import { useDebounceFn } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
+import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { useGridLayout } from '~/composables/useGridLayout'
 import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
@@ -191,12 +192,125 @@ const gridContainerRef = ref<HTMLElement | null>(null)
 const loadMoreSentinelRef = ref<HTMLElement | null>(null)
 const isLoadMoreSentinelIntersecting = ref(false)
 const reachedLoadMoreDuringLoading = ref(false)
+const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
 
 // 使用共享的 Grid 布局 composable（CSS 媒体查询驱动，无 JS 计算开销）
 const { gridClass, gridCssVars } = useGridLayout(() => props.gridLayout)
 
 // 获取 shadow 样式变量（避免依赖外部传入）
 const { shadowStyleVars } = useVideoCardShadowStyle()
+
+// 卡片入场：仅对新增真实卡片播放，区分 grid / list
+const GRID_ENTER_DURATION_MS = 200
+const LIST_ENTER_DURATION_MS = 180
+const GRID_ENTER_STAGGER_MS = 24
+const GRID_ENTER_MAX_DELAY_MS = 192
+const revealedCardKeys = new Set<string | number>()
+const enteringCardMeta = reactive(new Map<string | number, { mode: 'grid' | 'list', delay: number }>())
+const cardEnterTimers = new Map<string | number, ReturnType<typeof setTimeout>>()
+const prefersReducedMotion = ref(false)
+let reducedMotionMediaQuery: MediaQueryList | null = null
+
+const cardEnterMode = computed<'grid' | 'list'>(() => {
+  return props.gridLayout === 'adaptive' ? 'grid' : 'list'
+})
+
+function clearCardEnterState() {
+  revealedCardKeys.clear()
+  enteringCardMeta.clear()
+  cardEnterTimers.forEach(timer => clearTimeout(timer))
+  cardEnterTimers.clear()
+}
+
+function getCardEnterClass(key: string | number) {
+  const meta = enteringCardMeta.get(key)
+  if (!meta)
+    return null
+  return meta.mode === 'grid'
+    ? 'video-card-grid-item--enter-grid'
+    : 'video-card-grid-item--enter-list'
+}
+
+function getCardEnterStyle(key: string | number) {
+  const meta = enteringCardMeta.get(key)
+  if (!meta || meta.delay <= 0)
+    return undefined
+  return {
+    '--enter-delay': `${meta.delay}ms`,
+  }
+}
+
+function markRenderItemsEntering(items: VideoCardRenderItem[]) {
+  if (prefersReducedMotion.value) {
+    for (const item of items) {
+      if (!item.skeleton)
+        revealedCardKeys.add(item.key)
+    }
+    enteringCardMeta.clear()
+    return
+  }
+
+  const mode = cardEnterMode.value
+  let batchIndex = 0
+
+  for (const item of items) {
+    if (item.skeleton || revealedCardKeys.has(item.key) || enteringCardMeta.has(item.key))
+      continue
+
+    revealedCardKeys.add(item.key)
+
+    const delay = mode === 'grid'
+      ? Math.min(batchIndex * GRID_ENTER_STAGGER_MS, GRID_ENTER_MAX_DELAY_MS)
+      : 0
+    batchIndex++
+
+    enteringCardMeta.set(item.key, { mode, delay })
+
+    const previousTimer = cardEnterTimers.get(item.key)
+    if (previousTimer)
+      clearTimeout(previousTimer)
+
+    const duration = (mode === 'grid' ? GRID_ENTER_DURATION_MS : LIST_ENTER_DURATION_MS) + delay
+    cardEnterTimers.set(item.key, setTimeout(() => {
+      enteringCardMeta.delete(item.key)
+      cardEnterTimers.delete(item.key)
+    }, duration + 40))
+  }
+}
+
+function handleReducedMotionChange(event: MediaQueryListEvent) {
+  prefersReducedMotion.value = event.matches
+  if (event.matches) {
+    enteringCardMeta.clear()
+    cardEnterTimers.forEach(timer => clearTimeout(timer))
+    cardEnterTimers.clear()
+  }
+}
+
+function setupReducedMotionWatcher() {
+  if (typeof window === 'undefined' || !window.matchMedia)
+    return
+
+  reducedMotionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+  prefersReducedMotion.value = reducedMotionMediaQuery.matches
+
+  if (typeof reducedMotionMediaQuery.addEventListener === 'function')
+    reducedMotionMediaQuery.addEventListener('change', handleReducedMotionChange)
+  else
+    reducedMotionMediaQuery.addListener(handleReducedMotionChange)
+}
+
+function cleanupReducedMotionWatcher() {
+  if (!reducedMotionMediaQuery)
+    return
+  if (typeof reducedMotionMediaQuery.removeEventListener === 'function')
+    reducedMotionMediaQuery.removeEventListener('change', handleReducedMotionChange)
+  else
+    reducedMotionMediaQuery.removeListener(handleReducedMotionChange)
+  reducedMotionMediaQuery = null
+}
+
+setupReducedMotionWatcher()
 
 // 骨架屏数量使用固定值，避免依赖列数计算
 const dynamicSkeletonCount = computed(() => {
@@ -219,14 +333,114 @@ const lastItemsCount = ref(0)
 const consecutiveFailures = ref(0)
 const MAX_CONSECUTIVE_FAILURES = 3
 
-// 仅首屏空数据加载时显示骨架屏；滚动加载时不再向列表插入临时卡片。
+// 首屏按整行凑满再揭示；后续加载按整行推进，且不回退已经展示过的半行。
+const hasRevealedInitialContent = ref(false)
+// 当前允许展示的真实卡片数（只增不减，直到列表清空）
+const revealedItemCount = ref(0)
+
+function getGridColumnCount(): number {
+  return Math.max(1, getRenderedColumnCount())
+}
+
+/** 仅统计已凑满整行的条目数（自定义列数对齐） */
+function getCompleteRowItemCount(itemCount: number, columns = getGridColumnCount()): number {
+  if (itemCount <= 0)
+    return 0
+  if (columns <= 1)
+    return itemCount
+  return Math.floor(itemCount / columns) * columns
+}
+
+function resetRowRevealState() {
+  hasRevealedInitialContent.value = false
+  revealedItemCount.value = 0
+}
+
+const minInitialRevealCount = computed(() => {
+  const columns = getGridColumnCount()
+  // 按约 1.5 屏估算目标行数，并强制对齐到整行（columns 的倍数）。
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 900
+  const estimatedRows = Math.max(2, Math.ceil(viewportHeight / 360))
+  const targetRows = Math.min(3, Math.max(2, Math.ceil(estimatedRows * 0.75)))
+  // 下限也按整行对齐，避免阈值落在半行。
+  const minRows = columns <= 1 ? 12 : Math.ceil(12 / columns)
+  const maxRows = columns <= 1 ? 30 : Math.floor(30 / columns)
+  const rows = Math.min(Math.max(targetRows, minRows), Math.max(minRows, maxRows))
+  return columns * rows
+})
+
+const completeRowItemCount = computed(() => getCompleteRowItemCount(props.items.length))
+
 const showInitialSkeleton = computed(() => {
   if (props.needToLoginFirst)
     return false
-  if (!props.loading)
-    return false
-  return props.items.length === 0
+
+  // 首次揭示前：loading 中且整行数量不足时继续占位
+  if (!hasRevealedInitialContent.value) {
+    if (props.loading && completeRowItemCount.value < minInitialRevealCount.value)
+      return true
+    // 刷新刚清空、下一帧数据尚未写入时也保持骨架，避免空闪
+    if (props.loading && props.items.length === 0)
+      return true
+  }
+
+  // 已揭示后：仅在列表被清空的刷新过程显示骨架
+  return props.loading && props.items.length === 0
 })
+
+/**
+ * 同步“可展示数量”：
+ * - 首屏：只按整行推进，凑满阈值后再揭示
+ * - 后续加载：已展示内容不回退；新增数据仍按整行跳出
+ * - 空闲/无更多：展示全部（允许最后一行不满）
+ */
+function syncRevealedItemCount() {
+  const total = props.items.length
+  if (total <= 0) {
+    revealedItemCount.value = 0
+    return
+  }
+
+  const columns = getGridColumnCount()
+  const completeCount = getCompleteRowItemCount(total, columns)
+
+  // 加载结束或没有更多时，允许露出最后未满行
+  if (!props.loading || props.noMoreContent || columns <= 1) {
+    revealedItemCount.value = total
+    return
+  }
+
+  if (!hasRevealedInitialContent.value) {
+    // 首屏阶段只累计整行，避免半行先露出来
+    revealedItemCount.value = completeCount
+    return
+  }
+
+  // 后续加载：不回退已展示数量，仅把新数据按整行往前推
+  revealedItemCount.value = Math.min(
+    total,
+    Math.max(revealedItemCount.value, completeCount),
+  )
+}
+
+watch(
+  () => [
+    completeRowItemCount.value,
+    props.items.length,
+    props.loading,
+    props.noMoreContent,
+    minInitialRevealCount.value,
+  ] as const,
+  ([completeCount, itemCount, loading, noMoreContent, minCount]) => {
+    if (!hasRevealedInitialContent.value) {
+      if (itemCount > 0 && (completeCount >= minCount || !loading || noMoreContent))
+        hasRevealedInitialContent.value = true
+    }
+
+    syncRevealedItemCount()
+  },
+  { immediate: true },
+)
 
 // 生成首屏骨架屏数据
 const initialSkeletonItems = computed(() => {
@@ -239,22 +453,35 @@ const initialSkeletonItems = computed(() => {
   })) as T[]
 })
 
+// 实际展示的真实卡片：按 revealedItemCount 截断
+const visibleRealItems = computed(() => {
+  const count = Math.max(0, Math.min(revealedItemCount.value, props.items.length))
+  if (count >= props.items.length)
+    return props.items
+  return props.items.slice(0, count)
+})
+
 // 有真实数据时，用与视频卡片相同结构的骨架卡片表示下一批数据正在加载。
 const showLoadingMoreSkeletonItems = computed(() => {
   return props.showLoadingMoreSkeleton
     && props.loading
     && props.items.length > 0
     && !props.needToLoginFirst
+    && hasRevealedInitialContent.value
 })
 
 const loadingMoreSkeletonItems = computed(() => {
   if (!showLoadingMoreSkeletonItems.value)
     return []
 
+  const columns = getGridColumnCount()
+  const visibleCount = visibleRealItems.value.length
+  const pendingCount = Math.max(0, props.items.length - visibleCount)
   const minimumSkeletonCount = normalizePositiveInt(props.loadingMoreSkeletonCount, 10)
-  const columns = getRenderedColumnCount()
-  const remainder = (props.items.length + minimumSkeletonCount) % columns
-  const skeletonCount = minimumSkeletonCount + (remainder === 0 ? 0 : columns - remainder)
+  // 先补齐“暂存未满行”，再保证至少 minimum 个骨架，最后对齐到整行。
+  const baseSkeletonCount = Math.max(minimumSkeletonCount, pendingCount)
+  const remainder = columns > 0 ? (visibleCount + baseSkeletonCount) % columns : 0
+  const skeletonCount = baseSkeletonCount + (remainder === 0 ? 0 : columns - remainder)
   return Array.from({ length: skeletonCount }, (_, i) => ({
     _isSkeleton: true,
     _skeletonId: `skeleton-more-${i}`,
@@ -267,9 +494,9 @@ const displayItems = computed(() => {
     return initialSkeletonItems.value
 
   if (showLoadingMoreSkeletonItems.value)
-    return [...props.items, ...loadingMoreSkeletonItems.value]
+    return [...visibleRealItems.value, ...loadingMoreSkeletonItems.value]
 
-  return props.items
+  return visibleRealItems.value
 })
 
 // 检查是否可以加载更多
@@ -290,45 +517,84 @@ function canLoadMore(): boolean {
 // 触发加载更多
 const loadMoreRequested = ref(false)
 let loadMoreRequestTimeout: number | null = null
+let continuePreloadTimer: number | null = null
 
 function triggerLoadMore() {
-  if (canLoadMore()) {
-    if (loadMoreRequested.value)
-      return
+  if (!canLoadMore())
+    return
+  if (loadMoreRequested.value)
+    return
 
-    loadMoreRequested.value = true
-    emit('loadMore')
+  loadMoreRequested.value = true
+  emit('loadMore')
 
-    // 防止父组件未及时更新 loading 导致的"卡死"
-    if (loadMoreRequestTimeout !== null)
-      window.clearTimeout(loadMoreRequestTimeout)
-    loadMoreRequestTimeout = window.setTimeout(() => {
-      if (!props.loading)
-        loadMoreRequested.value = false
-      loadMoreRequestTimeout = null
-    }, 1500)
-  }
+  // 防止父组件未及时更新 loading 导致的"卡死"
+  if (loadMoreRequestTimeout !== null)
+    window.clearTimeout(loadMoreRequestTimeout)
+  loadMoreRequestTimeout = window.setTimeout(() => {
+    if (!props.loading)
+      loadMoreRequested.value = false
+    loadMoreRequestTimeout = null
+  }, 1500)
 }
 
 const supportsIntersectionObserver = typeof window !== 'undefined' && 'IntersectionObserver' in window
+const supportsResizeObserver = typeof window !== 'undefined' && 'ResizeObserver' in window
 const isFirefox = typeof navigator !== 'undefined' && /\bFirefox\//.test(navigator.userAgent)
 let intersectionObserver: IntersectionObserver | null = null
+let scrollResizeObserver: ResizeObserver | null = null
 let isGridActive = false
 let scrollListenersActive = false
+let cachedScrollElement: HTMLElement | null = null
+let lastObserverRoot: Element | null | undefined
+let lastObserverPreloadDistance = -1
+let checkPreloadRAF: number | null = null
+let postLoadCheckRAF: number | null = null
 
-function cleanupIntersectionObserver() {
+function invalidateScrollElementCache() {
+  cachedScrollElement = null
+}
+
+function cleanupIntersectionObserver(options?: { preserveIntersecting?: boolean }) {
   if (intersectionObserver) {
     intersectionObserver.disconnect()
     intersectionObserver = null
   }
-  isLoadMoreSentinelIntersecting.value = false
+  lastObserverRoot = undefined
+  lastObserverPreloadDistance = -1
+  if (!options?.preserveIntersecting)
+    isLoadMoreSentinelIntersecting.value = false
 }
 
-function setupIntersectionObserver() {
-  if (!supportsIntersectionObserver || !isGridActive)
+function cleanupScrollResizeObserver() {
+  if (scrollResizeObserver) {
+    scrollResizeObserver.disconnect()
+    scrollResizeObserver = null
+  }
+}
+
+function setupScrollResizeObserver() {
+  cleanupScrollResizeObserver()
+  if (!supportsResizeObserver || !isGridActive)
     return
 
-  cleanupIntersectionObserver()
+  const scrollElement = findScrollElement()
+  if (!scrollElement || scrollElement === document.scrollingElement || scrollElement === document.documentElement || scrollElement === document.body)
+    return
+
+  scrollResizeObserver = new ResizeObserver(() => {
+    if (!isGridActive)
+      return
+    // 视口高度变化会让 rootMargin 失真，需要重建 observer。
+    setupIntersectionObserver(true)
+    schedulePreloadCheck()
+  })
+  scrollResizeObserver.observe(scrollElement)
+}
+
+function setupIntersectionObserver(force = false) {
+  if (!supportsIntersectionObserver || !isGridActive)
+    return
 
   const sentinel = loadMoreSentinelRef.value
   if (!sentinel)
@@ -336,6 +602,18 @@ function setupIntersectionObserver() {
 
   const scrollElement = findScrollElement()
   const preloadDistance = getPreloadDistance(scrollElement)
+
+  if (
+    !force
+    && intersectionObserver
+    && lastObserverRoot === scrollElement
+    && lastObserverPreloadDistance === preloadDistance
+  ) {
+    return
+  }
+
+  // 重建时保留相交状态，避免 loading 过程中短暂丢失 reached 标记。
+  cleanupIntersectionObserver({ preserveIntersecting: true })
 
   intersectionObserver = new IntersectionObserver(
     (entries) => {
@@ -350,11 +628,11 @@ function setupIntersectionObserver() {
 
       if (!entry.isIntersecting)
         reachedLoadMoreDuringLoading.value = false
+      else if (props.loading)
+        reachedLoadMoreDuringLoading.value = true
 
-      if (entry.isIntersecting) {
-        // 进入预加载区间时触发加载
+      if (entry.isIntersecting)
         checkShouldPreload()
-      }
     },
     {
       root: scrollElement,
@@ -364,11 +642,22 @@ function setupIntersectionObserver() {
     },
   )
 
+  lastObserverRoot = scrollElement
+  lastObserverPreloadDistance = preloadDistance
   intersectionObserver.observe(sentinel)
 }
 
-// RAF 标志，用于批量处理 DOM 读取
-let checkPreloadRAF: number | null = null
+function schedulePreloadCheck() {
+  if (!isGridActive)
+    return
+  if (checkPreloadRAF !== null)
+    return
+
+  checkPreloadRAF = requestAnimationFrame(() => {
+    checkPreloadRAF = null
+    checkShouldPreload()
+  })
+}
 
 // 检查是否需要预加载
 function checkShouldPreload() {
@@ -376,7 +665,7 @@ function checkShouldPreload() {
     return
 
   if (props.loading) {
-    if (isLoadMoreSentinelIntersecting.value)
+    if (isLoadMoreSentinelIntersecting.value || isWithinPreloadDistance())
       reachedLoadMoreDuringLoading.value = true
     return
   }
@@ -391,32 +680,46 @@ function checkShouldPreload() {
   }
 
   // observer 回调可能滞后；用滚动几何位置兜底，保证至少提前一页加载。
-  if (checkPreloadRAF !== null)
-    return
-
-  checkPreloadRAF = requestAnimationFrame(() => {
-    checkPreloadRAF = null
-
-    if (isWithinPreloadDistance())
-      triggerLoadMore()
-  })
+  if (isWithinPreloadDistance())
+    triggerLoadMore()
 }
 
-// 防抖的滚动检查
-const debouncedCheck = useDebounceFn(checkShouldPreload, 100)
+// 滚动路径节流：IO 负责主路径，这里只做兜底，避免每帧布局读取。
+const throttledScrollCheck = useDebounceFn(() => {
+  if (!isGridActive || props.loading)
+    return
+  schedulePreloadCheck()
+}, 80)
 
-// 监听滚动
-// emitter 路径已在 App.vue 的 RAF 内，直接同步更新避免双 RAF 延迟
-// native 路径浏览器已限制为每帧一次，也可直接更新
 function handleScroll() {
-  debouncedCheck()
+  if (!isGridActive)
+    return
+
+  // loading 中只记录是否仍停留在预加载区，不做额外触发。
+  if (props.loading) {
+    if (isLoadMoreSentinelIntersecting.value)
+      reachedLoadMoreDuringLoading.value = true
+    return
+  }
+
+  // IO 已确认进入预加载区时，直接走同步检查（通常会被 loadMoreRequested 挡住）。
+  if (isLoadMoreSentinelIntersecting.value) {
+    checkShouldPreload()
+    return
+  }
+
+  throttledScrollCheck()
 }
 
 function handleResize() {
-  debouncedCheck()
+  if (!isGridActive)
+    return
+  invalidateScrollElementCache()
+  setupIntersectionObserver(true)
+  setupScrollResizeObserver()
+  schedulePreloadCheck()
 }
 
-// 设置滚动监听
 function setupScrollListeners() {
   if (scrollListenersActive)
     return
@@ -424,17 +727,14 @@ function setupScrollListeners() {
   scrollListenersActive = true
 
   // Bewly 自己的页面都在内部滚动容器中，通过全局事件同步 scrollTop
-  if (!settings.value.useOriginalBilibiliHomepage) {
+  if (!settings.value.useOriginalBilibiliHomepage)
     emitter.on(OVERLAY_SCROLL_BAR_SCROLL, handleScroll)
-  }
-  else {
+  else
     window.addEventListener('scroll', handleScroll, { passive: true })
-  }
 
   window.addEventListener('resize', handleResize, { passive: true })
 }
 
-// 清理滚动监听
 function cleanupScrollListeners() {
   if (!scrollListenersActive)
     return
@@ -455,16 +755,39 @@ function getRenderedColumnCount(): number {
   return getCurrentColumnCount(props.gridLayout, responsiveWidth)
 }
 
-function getMissingItemsInLastRow(): number {
-  const columns = getRenderedColumnCount()
-  const remainder = props.items.length % columns
-  return remainder === 0 ? 0 : columns - remainder
+function clearContinuePreloadTimer() {
+  if (continuePreloadTimer !== null) {
+    window.clearTimeout(continuePreloadTimer)
+    continuePreloadTimer = null
+  }
+  if (postLoadCheckRAF !== null) {
+    cancelAnimationFrame(postLoadCheckRAF)
+    postLoadCheckRAF = null
+  }
+}
+
+function scheduleContinuePreloadCheck() {
+  clearContinuePreloadTimer()
+
+  // 等骨架替换与列表高度稳定后，再决定是否继续预取。
+  nextTick(() => {
+    postLoadCheckRAF = requestAnimationFrame(() => {
+      postLoadCheckRAF = null
+      if (!isGridActive || props.loading || !canLoadMore())
+        return
+
+      if (isLoadMoreSentinelIntersecting.value || isWithinPreloadDistance())
+        triggerLoadMore()
+    })
+  })
 }
 
 // 监听 loading 结束后检查是否需要继续加载
 watch(() => props.loading, (newLoading, oldLoading) => {
-  if (newLoading && isLoadMoreSentinelIntersecting.value && props.items.length > 0)
-    reachedLoadMoreDuringLoading.value = true
+  if (newLoading && props.items.length > 0) {
+    if (isLoadMoreSentinelIntersecting.value || isWithinPreloadDistance())
+      reachedLoadMoreDuringLoading.value = true
+  }
 
   if (!newLoading) {
     loadMoreRequested.value = false
@@ -476,47 +799,22 @@ watch(() => props.loading, (newLoading, oldLoading) => {
     // 跟踪连续请求失败
     if (props.requestFailed) {
       consecutiveFailures.value++
-      if (consecutiveFailures.value >= MAX_CONSECUTIVE_FAILURES) {
+      if (consecutiveFailures.value >= MAX_CONSECUTIVE_FAILURES)
         console.warn(`[VideoCardGrid] 连续请求失败 ${consecutiveFailures.value} 次，停止加载`)
-      }
+    }
+    else if (props.items.length > lastItemsCount.value) {
+      consecutiveFailures.value = 0
     }
 
     // 检测空加载：loading 结束但 items 数量没变化
-    if (lastItemsCount.value > 0 && props.items.length === lastItemsCount.value) {
+    if (lastItemsCount.value > 0 && props.items.length === lastItemsCount.value)
       consecutiveEmptyLoads.value++
-    }
   }
 
   if (oldLoading && !newLoading) {
-    const stayedInPreloadArea = reachedLoadMoreDuringLoading.value
     reachedLoadMoreDuringLoading.value = false
-
-    // 加载完成后，延迟检查是否需要继续加载
-    nextTick(() => {
-      // 用户可能在请求结束前刚好滚到底部。此时 sentinel 没有新的相交变化，
-      // 直接按滚动容器几何位置补触发，避免丢掉这次 loadMore。
-      if (isScrollAtBottom()) {
-        triggerLoadMore()
-        return
-      }
-
-      // 首页保留一页预加载缓冲。上一批结束后仍处于缓冲区时继续预取，
-      // 直到新内容把列表底部推出这一页范围。
-      if (stayedInPreloadArea && props.showLoadingMoreSkeleton && isWithinPreloadDistance()) {
-        checkShouldPreload()
-        return
-      }
-
-      // sentinel 在整个请求期间都处于相交状态时，IntersectionObserver 不会再次回调。
-      // 只在末行差 1-2 张卡片时主动补查，避免恢复无条件递归加载。
-      if (stayedInPreloadArea) {
-        const missingItems = getMissingItemsInLastRow()
-        if (missingItems === 0 || missingItems > 2)
-          return
-      }
-
-      checkShouldPreload()
-    })
+    // 布局稳定后按实时几何位置决定是否续载：用户已上滑会自然跳过。
+    scheduleContinuePreloadCheck()
   }
 })
 
@@ -528,6 +826,9 @@ watch(() => props.items.length, (newCount, oldCount) => {
     consecutiveFailures.value = 0
     lastItemsCount.value = 0
     reachedLoadMoreDuringLoading.value = false
+    resetRowRevealState()
+    clearCardEnterState()
+    clearContinuePreloadTimer()
     return
   }
 
@@ -544,8 +845,12 @@ watch(() => props.items.length, (newCount, oldCount) => {
   if (props.loading || reachedLoadMoreDuringLoading.value)
     return
 
+  // 首屏内容不足一页时补齐；滚动中途新增内容由 IO / 滚动兜底负责。
   nextTick(() => {
-    checkShouldPreload()
+    if (!isGridActive || props.loading || !canLoadMore())
+      return
+    if (isLoadMoreSentinelIntersecting.value || isWithinPreloadDistance())
+      triggerLoadMore()
   })
 })
 
@@ -558,7 +863,7 @@ watch(() => props.noMoreContent, (newVal, oldVal) => {
 })
 
 watch(loadMoreSentinelRef, () => {
-  setupIntersectionObserver()
+  setupIntersectionObserver(true)
 })
 
 function activateGrid() {
@@ -566,14 +871,16 @@ function activateGrid() {
     return
 
   isGridActive = true
+  invalidateScrollElementCache()
   setupScrollListeners()
 
   nextTick(() => {
     if (!isGridActive)
       return
 
-    setupIntersectionObserver()
-    checkShouldPreload()
+    setupIntersectionObserver(true)
+    setupScrollResizeObserver()
+    schedulePreloadCheck()
   })
 }
 
@@ -583,7 +890,10 @@ function deactivateGrid() {
 
   isGridActive = false
   cleanupScrollListeners()
+  cleanupScrollResizeObserver()
   cleanupIntersectionObserver()
+  clearContinuePreloadTimer()
+  invalidateScrollElementCache()
 
   if (checkPreloadRAF !== null) {
     cancelAnimationFrame(checkPreloadRAF)
@@ -608,6 +918,9 @@ onUnmounted(() => {
     cancelAnimationFrame(checkPreloadRAF)
     checkPreloadRAF = null
   }
+  clearContinuePreloadTimer()
+  clearCardEnterState()
+  cleanupReducedMotionWatcher()
   resetTransformCaches()
 })
 
@@ -643,22 +956,38 @@ function getCurrentColumnCount(layout: GridLayoutType, width: number): number {
 }
 
 function findScrollElement(): HTMLElement | null {
-  if (settings.value.useOriginalBilibiliHomepage)
-    return document.scrollingElement as HTMLElement | null
+  if (cachedScrollElement?.isConnected)
+    return cachedScrollElement
+
+  if (settings.value.useOriginalBilibiliHomepage) {
+    cachedScrollElement = document.scrollingElement as HTMLElement | null
+    return cachedScrollElement
+  }
+
+  // 优先使用 App 提供的滚动视口，避免每次滚动都向上遍历并读 computedStyle。
+  const appViewport = bewlyApp?.scrollViewportRef?.value
+  if (appViewport?.isConnected) {
+    cachedScrollElement = appViewport
+    return cachedScrollElement
+  }
 
   let element = gridContainerRef.value?.parentElement ?? null
   while (element) {
     const styles = window.getComputedStyle(element)
     const canScrollY = /auto|scroll|overlay/.test(styles.overflowY)
-    if (canScrollY)
-      return element
+    if (canScrollY) {
+      cachedScrollElement = element
+      return cachedScrollElement
+    }
     element = element.parentElement
   }
 
+  cachedScrollElement = null
   return null
 }
 
 function getPreloadDistance(scrollElement: HTMLElement | null = findScrollElement()): number {
+  // 预取约一屏内容；高度读取集中在缓存后的滚动根上。
   return Math.max(1, scrollElement?.clientHeight || (typeof window !== 'undefined' ? window.innerHeight : 0))
 }
 
@@ -672,14 +1001,6 @@ function isWithinPreloadDistance(): boolean {
     return false
 
   return getRemainingScroll(scrollElement) <= getPreloadDistance(scrollElement)
-}
-
-function isScrollAtBottom(): boolean {
-  const scrollElement = findScrollElement()
-  if (!scrollElement)
-    return false
-
-  return getRemainingScroll(scrollElement) <= 2
 }
 
 // 类型定义：每个 VideoCard 的渲染所需数据
@@ -749,6 +1070,14 @@ function createRenderItem(item: T, index: number): VideoCardRenderItem {
 const renderItems = computed<VideoCardRenderItem[]>(() => {
   return displayItems.value.map((item, index) => createRenderItem(item, index))
 })
+
+watch(
+  renderItems,
+  (items) => {
+    markRenderItemsEntering(items)
+  },
+  { flush: 'post' },
+)
 
 interface VideoTransformCacheEntry<T = any> {
   item: T
@@ -860,26 +1189,32 @@ function getUniqueKey(item: T, index: number): string | number {
       m="b-0 t-0" relative w-full
       :style="gridContainerStyle"
     >
-      <VideoCard
+      <div
         v-for="renderItem in renderItems"
         :key="renderItem.key"
+        class="video-card-grid-item"
+        :class="getCardEnterClass(renderItem.key)"
+        :style="getCardEnterStyle(renderItem.key)"
         :data-index="renderItem.index"
-        :skeleton="renderItem.skeleton"
-        :type="renderItem.type"
-        :video="renderItem.video"
-        :show-preview="showPreview"
-        :show-watcher-later="showWatchLater"
-        :horizontal="isHorizontal"
-        :more-btn="moreBtn"
-        :hide-author="hideAuthor"
-        :is-following-page="props.isFollowingPage"
-        :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
-        :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
       >
-        <template v-for="(_, name) in $slots" #[name]>
-          <slot :name="name" :item="renderItem.item" />
-        </template>
-      </VideoCard>
+        <VideoCard
+          :skeleton="renderItem.skeleton"
+          :type="renderItem.type"
+          :video="renderItem.video"
+          :show-preview="showPreview"
+          :show-watcher-later="showWatchLater"
+          :horizontal="isHorizontal"
+          :more-btn="moreBtn"
+          :hide-author="hideAuthor"
+          :is-following-page="props.isFollowingPage"
+          :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
+          :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
+        >
+          <template v-for="(_, name) in $slots" #[name]>
+            <slot :name="name" :item="renderItem.item" />
+          </template>
+        </VideoCard>
+      </div>
 
       <div ref="loadMoreSentinelRef" class="load-more-sentinel" aria-hidden="true" />
     </div>
@@ -973,6 +1308,49 @@ function getUniqueKey(item: T, index: number): string | number {
   &.is-firefox :deep(.video-card-container) {
     content-visibility: visible;
     contain-intrinsic-size: auto none;
+  }
+}
+
+.video-card-grid-item {
+  min-width: 0;
+  overflow-anchor: none;
+}
+
+.video-card-grid-item--enter-grid {
+  animation: video-card-grid-enter-grid 200ms ease both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+
+.video-card-grid-item--enter-list {
+  animation: video-card-grid-enter-list 180ms ease both;
+}
+
+@keyframes video-card-grid-enter-grid {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes video-card-grid-enter-list {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-card-grid-item--enter-grid,
+  .video-card-grid-item--enter-list {
+    animation: none;
   }
 }
 

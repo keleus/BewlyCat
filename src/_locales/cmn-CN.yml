@@ -69,10 +69,13 @@ player_screenshot:
 settings:
   title: 设置
   menu_general: 通用
-  menu_navigation: 浏览与导航
+  menu_navigation: 页面与组件
   menu_playback: 播放与声音
   menu_advanced: 高级与维护
   category_navigation: 设置分类导航
+  category_group_pages: 页面
+  category_group_components: 组件
+  category_group_behavior: 行为
   badge_performance_impact: 性能影响
   badge_advanced: 高级
   badge_irreversible: 不可撤销

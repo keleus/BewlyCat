@@ -51,9 +51,15 @@
 
 .dropdown-enter-active,
 .dropdown-leave-active {
-  --uno: "transition-all duration-300";
+  // 仅过渡视觉属性，避免 top/left/width 被 all 带着从 0 飞到真实坐标
+  transition:
+    opacity 300ms ease,
+    transform 300ms ease,
+    filter 300ms ease;
 }
 .dropdown-enter-from,
 .dropdown-leave-to {
-  --uno: "opacity-0 scale-95 -translate-y-4 filter blur-sm";
+  opacity: 0;
+  transform: scale(0.95) translateY(-1rem);
+  filter: blur(4px);
 }

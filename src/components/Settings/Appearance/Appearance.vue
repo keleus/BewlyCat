@@ -130,7 +130,7 @@ function changeWallpaper(url: string) {
         right-width="auto"
       >
         <template #desc>
-          <span color="$bew-warning-color">{{ $t('common.performance_impact_warn') }}</span>
+          <span class="bew-warning-text">{{ $t('common.performance_impact_warn') }}</span>
         </template>
 
         <Radio v-model="settings.enableFrostedGlass" />
