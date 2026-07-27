@@ -3,6 +3,8 @@ import { useI18n } from 'vue-i18n'
 
 import { settings } from '~/logic'
 
+import SettingsVisibilityTag from '../../components/SettingsVisibilityTag.vue'
+
 const { t } = useI18n()
 
 type ContentSettingKey
@@ -71,18 +73,14 @@ function toggleElement(element: ContentElement) {
       <span class="content-row__label">{{ group.label }}</span>
 
       <div class="content-row__elements">
-        <button
+        <SettingsVisibilityTag
           v-for="element in group.elements"
           :key="element.setting"
-          type="button"
-          class="content-element"
-          :class="{ 'content-element--visible': settings[element.setting] }"
-          :aria-pressed="settings[element.setting]"
-          @click="toggleElement(element)"
-        >
-          <span class="content-element__icon" :class="element.icon" />
-          <span>{{ element.label }}</span>
-        </button>
+          :visible="settings[element.setting]"
+          :label="element.label"
+          :icon="element.icon"
+          @toggle="toggleElement(element)"
+        />
       </div>
     </div>
   </div>
@@ -117,51 +115,6 @@ function toggleElement(element: ContentElement) {
   flex-wrap: wrap;
   gap: 0.375rem;
   padding: 0.5rem 0;
-}
-
-.content-element {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-height: 2rem;
-  padding: 0.375rem 0.625rem;
-  color: var(--bew-text-3);
-  font-size: 0.75rem;
-  line-height: 1;
-  background: var(--bew-fill-1);
-  border: 1px solid transparent;
-  border-radius: 0.625rem;
-  opacity: 0.65;
-  transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    opacity 0.2s ease,
-    transform 0.2s ease;
-}
-
-.content-element:hover {
-  color: var(--bew-text-1);
-  background: var(--bew-fill-2);
-  opacity: 1;
-}
-
-.content-element:active {
-  transform: scale(0.96);
-}
-
-.content-element--visible {
-  color: var(--bew-theme-color);
-  background: var(--bew-theme-color-20);
-  border-color: color-mix(in srgb, var(--bew-theme-color) 35%, transparent);
-  opacity: 1;
-}
-
-.content-element__icon {
-  width: 0.875rem;
-  height: 0.875rem;
-  flex: 0 0 auto;
-  font-size: 0.875rem;
 }
 
 @media (max-width: 520px) {
