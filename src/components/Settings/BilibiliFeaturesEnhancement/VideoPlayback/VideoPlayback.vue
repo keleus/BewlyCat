@@ -71,7 +71,6 @@ const usesBewlyWidescreen = computed(() => settings.value.defaultVideoPlayerMode
 type ToggleSetting
   = | 'rememberPlaybackRate'
     | 'rememberVideoAspectRatio'
-    | 'enlargeFavoriteDialog'
     | 'externalWatchLaterButton'
     | 'showVideoScreenshotButton'
 
@@ -94,7 +93,6 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
 ])
 
 const videoPageActionOptions = computed<ToggleTagOption[]>(() => [
-  { setting: 'enlargeFavoriteDialog', label: t('settings.enlarge_favorite_dialog'), icon: 'i-tabler-arrows-maximize' },
   { setting: 'externalWatchLaterButton', label: t('settings.external_watch_later_button'), icon: 'i-tabler-clock-plus' },
   { setting: 'showVideoScreenshotButton', label: t('settings.show_video_screenshot_button'), icon: 'i-tabler-camera' },
 ])
@@ -204,6 +202,14 @@ const videoPageActionOptions = computed<ToggleTagOption[]>(() => [
         :title="t('settings.group_video_page_actions')"
         :desc="t('settings.group_video_page_actions_desc')"
       >
+        <SettingsItem
+          :title="t('settings.enlarge_favorite_dialog')"
+          :desc="t('settings.enlarge_favorite_dialog_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.enlargeFavoriteDialog" />
+        </SettingsItem>
+
         <div class="video-setting-tags" role="group" :aria-label="t('settings.group_video_page_actions')">
           <SettingsToggleTag
             v-for="option in videoPageActionOptions"

@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 
+import Radio from '~/components/Radio.vue'
 import { settings } from '~/logic'
 
+import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
@@ -12,8 +14,6 @@ type CommentToggleSetting
   = | 'showIPLocation'
     | 'showSex'
     | 'showCommentHostTag'
-    | 'adjustCommentImageHeight'
-    | 'detectCommentShadowBan'
 
 interface CommentToggleOption {
   setting: CommentToggleSetting
@@ -26,8 +26,6 @@ const commentToggleOptions = computed<CommentToggleOption[]>(() => [
   { setting: 'showIPLocation', label: t('settings.show_ip_location'), description: t('settings.show_ip_location_desc'), icon: 'i-tabler-map-pin' },
   { setting: 'showSex', label: t('settings.show_sex'), description: t('settings.show_sex_desc'), icon: 'i-tabler-gender-bigender' },
   { setting: 'showCommentHostTag', label: t('settings.show_comment_host_tag'), description: t('settings.show_comment_host_tag_desc'), icon: 'i-tabler-user-star' },
-  { setting: 'adjustCommentImageHeight', label: t('settings.adjust_comment_image_height'), description: t('settings.adjust_comment_image_height_desc'), icon: 'i-tabler-photo' },
-  { setting: 'detectCommentShadowBan', label: t('settings.detect_comment_shadow_ban'), description: t('settings.detect_comment_shadow_ban_desc'), icon: 'i-tabler-eye-search' },
 ])
 </script>
 
@@ -44,6 +42,22 @@ const commentToggleOptions = computed<CommentToggleOption[]>(() => [
         :show-state-icon="false"
       />
     </div>
+
+    <SettingsItem
+      :title="$t('settings.adjust_comment_image_height')"
+      :desc="$t('settings.adjust_comment_image_height_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.adjustCommentImageHeight" />
+    </SettingsItem>
+
+    <SettingsItem
+      :title="$t('settings.detect_comment_shadow_ban')"
+      :desc="$t('settings.detect_comment_shadow_ban_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.detectCommentShadowBan" />
+    </SettingsItem>
   </SettingsItemGroup>
 </template>
 

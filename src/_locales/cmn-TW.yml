@@ -166,7 +166,7 @@ settings:
   group_playback_memory: 播放狀態記憶
   group_playback_memory_desc: 選擇是否記住倍速和影片比例。
   group_video_page_actions: 影片頁功能
-  group_video_page_actions_desc: 點擊標籤切換影片頁和播放器控制列中的輔助功能。
+  group_video_page_actions_desc: 標籤僅用於切換影片頁和播放器控制列中相關按鈕的顯示。
   group_playback_behavior: 播放行為
   group_auto_play: 自動連播
   group_custom_auto_play_behavior: 播放結束行為

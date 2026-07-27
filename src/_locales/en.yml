@@ -166,7 +166,7 @@ settings:
   group_playback_memory: Playback Memory
   group_playback_memory_desc: Choose whether to remember playback rate and video aspect ratio.
   group_video_page_actions: Video Page Features
-  group_video_page_actions_desc: Click a tag to toggle features on the video page and player toolbar.
+  group_video_page_actions_desc: Tags only toggle the visibility of related controls on the video page and player toolbar.
   group_playback_behavior: Playback Behavior
   group_auto_play: Auto Play
   group_custom_auto_play_behavior: End-of-playback Behavior
