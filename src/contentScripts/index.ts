@@ -19,7 +19,7 @@ import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/uti
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
-import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
+import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
@@ -407,7 +407,7 @@ else if (shouldInitializeContentScript) {
   // 初始化随机播放功能
   function initRandomPlayFeature() {
   // 只在视频页面初始化随机播放功能
-    if (isVideoPage() && settings.value.enableRandomPlay) {
+    if (isCustomPlayPage() && settings.value.enableRandomPlay) {
       initRandomPlay()
     }
   }
@@ -476,7 +476,7 @@ else if (shouldInitializeContentScript) {
           handleVideoPageNavigation()
         }
         // 重新初始化随机播放功能
-        if (isVideoPage() && settings.value.enableRandomPlay) {
+        if (isCustomPlayPage() && settings.value.enableRandomPlay) {
           setTimeout(() => {
             initRandomPlayFeature()
           }, 2000) // 延迟2秒初始化，确保页面完全加载
@@ -509,15 +509,16 @@ else if (shouldInitializeContentScript) {
   window.addEventListener('load', () => {
     if (isVideoPage()) {
       applyDefaultPlayerMode()
-      // 初始化随机播放功能
-      if (settings.value.enableRandomPlay) {
-        setTimeout(() => {
-          initRandomPlayFeature()
-        }, 3000) // 延迟3秒初始化，确保页面完全加载
-      }
     }
     else if (isVideoOrBangumiPage()) {
       applyDefaultPlayerMode()
+    }
+
+    // 初始化自定义播放功能
+    if (isCustomPlayPage() && settings.value.enableRandomPlay) {
+      setTimeout(() => {
+        initRandomPlayFeature()
+      }, 3000) // 延迟3秒初始化，确保页面完全加载
     }
 
     // 添加搜索页面视频卡片点击事件处理
@@ -840,31 +841,60 @@ else if (shouldInitializeContentScript) {
     sendSettingsToPage(settings.value)
   })
 
-  // 监听设置变化
-  watch(settings, (newSettings, oldSettings) => {
-    sendSettingsToPage(newSettings)
-
-    // 监听随机播放设置变化
-    if (newSettings.enableRandomPlay !== undefined) {
-      if (isVideoPage()) {
-        if (newSettings.enableRandomPlay) {
-        // 启用随机播放
+  watch(
+    [
+      () => settings.value.enableRandomPlay,
+      () => settings.value.randomPlayMode,
+      () => settings.value.minVideosForRandom,
+      () => settings.value.defaultCustomPlayOrder,
+      () => settings.value.useBilibiliDefaultAutoPlay,
+      () => settings.value.autoPlayMultipart,
+      () => settings.value.autoPlayCollection,
+      () => settings.value.autoPlayPlaylist,
+    ],
+    ([enabled, activationMode, minVideos, defaultCustomPlayOrder, useBilibiliDefault, multipartMode, collectionMode, playlistMode], [previousEnabled, previousActivationMode, previousMinVideos, previousDefaultCustomPlayOrder, previousUseBilibiliDefault, previousMultipartMode, previousCollectionMode, previousPlaylistMode]) => {
+      if (enabled !== previousEnabled && isCustomPlayPage()) {
+        if (enabled) {
           setTimeout(() => {
             initRandomPlayFeature()
           }, 1000)
         }
         else {
-        // 禁用随机播放，重置状态
-          resetRandomPlayInitialization()
+          destroyRandomPlay()
         }
       }
-    }
+
+      if (
+        useBilibiliDefault !== previousUseBilibiliDefault
+        || defaultCustomPlayOrder !== previousDefaultCustomPlayOrder
+        || multipartMode !== previousMultipartMode
+        || collectionMode !== previousCollectionMode
+        || playlistMode !== previousPlaylistMode
+      ) {
+        syncRandomPlayOrder()
+        applyRandomPlayActivationSettings()
+      }
+
+      if (
+        activationMode !== previousActivationMode
+        || minVideos !== previousMinVideos
+      ) {
+        applyRandomPlayActivationSettings()
+      }
+    },
+  )
+
+  // 监听设置变化
+  watch(settings, (newSettings, oldSettings) => {
+    sendSettingsToPage(newSettings)
 
     // 监听自动播放设置变化
-    if (isVideoPage()) {
+    if (isCustomPlayPage()) {
     // 检查自动播放相关设置是否发生变化
       const autoPlaySettingsChanged = oldSettings && (
-        newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
+        newSettings.useBilibiliDefaultAutoPlay !== oldSettings.useBilibiliDefaultAutoPlay
+        || newSettings.enableRandomPlay !== oldSettings.enableRandomPlay
+        || newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
         || newSettings.autoPlayCollection !== oldSettings.autoPlayCollection
         || newSettings.autoPlayRecommend !== oldSettings.autoPlayRecommend
         || newSettings.autoPlayPlaylist !== oldSettings.autoPlayPlaylist
@@ -875,6 +905,7 @@ else if (shouldInitializeContentScript) {
       // 延迟时间增加，确保页面元素已经渲染
         setTimeout(() => {
           applyAutoPlayByVideoType()
+          applyRandomPlayActivationSettings()
         }, 1000)
       }
     }

@@ -1515,6 +1515,34 @@ function injectLayoutStyle() {
       margin-right: 0 !important;
     }
 
+    /* B 站的选集组件会继承普通视频页的固定高度。宽屏模式下由整个
+       选集面板负责滚动，列表便可以使用直到视口底部的全部剩余空间。 */
+    #${ROOT_ID} .bewly-widescreen-panel-playlist {
+      overflow-y: auto;
+      scrollbar-gutter: stable;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .video-pod,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .video-pod__body,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .video-pod__list,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .multi-page,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .multi-page-v1,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .cur-list,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .list-box,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .base-video-sections-v1,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .video-sections-v1,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .video-sections-content-list,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .playlist-container,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist #eplist_module,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="eplist_ep_list_wrapper"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="numberList_wrapper"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="imageList_wrap"] {
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
     #${ROOT_ID} .bewly-widescreen-panel [class*="eplist_ep_list_wrapper"],
     #${ROOT_ID} .bewly-widescreen-panel [class*="recommend_wrap"],
     #${ROOT_ID} .bewly-widescreen-panel #danmukuBox,

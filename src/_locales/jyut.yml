@@ -98,7 +98,7 @@ settings:
   category_navigation_search_desc: 設定搜尋頁外觀、建議、歷史、熱門搜尋同結果頁。
   category_navigation_moments_desc: 設定插件動態頁左邊嘅元件同動態卡片開啟方式。
   category_playback_player_desc: 設定播放器模式、捲動、彈幕、字幕同播放狀態。
-  category_playback_autoplay_desc: 設定自動連播同隨機播放規則。
+  category_playback_autoplay_desc: 設定自動連播同自訂播放行為。
   category_playback_volume_desc: 任何響度平衡處理都可能造成爆音、音質劣化或者動態範圍縮細；冇明顯問題時唔應該開啟。
   category_bilibili_comments_desc: 加強留言區嘅用戶資料同內容顯示。
   category_bilibili_vip_desc: 設定大會員權益相關嘅提醒功能。
@@ -139,7 +139,7 @@ settings:
   bilibili_features:
     comments: 評論
     video_playback: 播放器
-    auto_play: 自動連播
+    auto_play: 播放行為
     vip_features: 大會員
     vip_features_placeholder: 大會員功能增強將喺未來版本加入。
 
@@ -171,9 +171,36 @@ settings:
   group_auto_play: 自動連播
   group_custom_auto_play_behavior: 播放結束行為
   group_custom_auto_play_behavior_desc: 關咗 B 站預設行為之後，可以分別設定唔同影片類型嘅後續動作。「連播推薦」會喺目前影片播完之後繼續播推薦影片。
-  group_random_play: 隨機播放
-  group_random_play_options: 隨機播放選項
-  group_random_play_options_desc: 設定隨機播放嘅啟用方式同適用影片數量。
+  group_playback_end_behavior: 播放結束行為
+  group_video_type_end_behavior: 按影片類型設定
+  group_playlist_start_behavior: 播放列表起點
+  group_random_play: 自訂播放
+  group_random_play_settings: 隨機播放設定
+  group_random_play_settings_desc: 用喺按影片類型揀嘅「隨機播放（自訂）」；用B站預設行為嗰陣，淨係喺預設自訂播放係隨機播放時生效。
+  enable_random_play: 啟用影片合集自訂播放
+  enable_random_play_desc: 為多P影片、合集或者播放列表加入順序、倒序、隨機播放同清單編輯功能；啟用後播放結束行為會顯示相應嘅自訂選項
+  default_custom_play_order: 預設自訂播放選項
+  default_custom_play_order_desc: 淨係控制播放器預設揀中嘅順序，唔控制開關狀態；類型專屬嘅自訂行為會覆蓋呢個選項
+  random_play_mode: 隨機播放啟用方式
+  random_play_mode_desc: 隨機播放適用嗰陣保持關閉等用戶手動開啟，或者影片數量達到條件嗰陣自動開啟
+  random_play_mode_manual: 手動切換
+  random_play_mode_auto: 自動啟用
+  min_videos_for_random: 啟用隨機播放嘅最少影片數
+  min_videos_for_random_desc: 淨係喺隨機播放啟用方式係自動嗰陣生效
+  random_play: 自訂播放
+  random_play_order_sequential: 順序播放
+  random_play_order_reverse: 倒序播放
+  random_play_order_random: 隨機播放
+  random_play_edit_playlist: 編輯播放清單
+  random_play_finish_editing: 完成播放清單編輯
+  random_play_edit_playlist_desc: 入咗編輯模式之後，直接拖動B站選集項目嚟調整播放次序。
+  random_play_edit_playlist_empty: 而家冇可以編輯嘅播放清單
+  random_play_edit_playlist_save: 儲存
+  random_play_edit_playlist_cancel: 取消
+  random_play_enabled: 自訂播放已啟用
+  random_play_disabled: 自訂播放已關閉
+  random_play_not_enabled: 自訂播放功能未啟用
+  random_play_min_videos_required: 最少要有{count}條影片先可以啟用隨機播放
   group_topbar: 頂欄
   group_navigation: Dock同側邊欄
   group_dock: Dock
@@ -590,12 +617,15 @@ settings:
   auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
   auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，自動連播下播完唔會自動退出全螢幕，方便連續睇
   use_bilibili_default_auto_play: 用B站預設自動播放行為
-  use_bilibili_default_auto_play_desc: 啟用後會用B站嘅預設自動播放行為，下面嘅自訂自動播放設定會隱藏同埋無效
+  use_bilibili_default_auto_play_desc: 啟用後用B站預設播放行為，入頁面嗰陣自訂播放預設關閉；如果預設自訂播放係隨機播放，仍然會跟隨隨機播放啟用方式
   auto_play_mode_default: B站預設
   auto_play_mode_auto_play: 自動連播
   auto_play_mode_auto_play_with_recommend: 連播推薦
   auto_play_mode_pause_at_end: 播完暫停
   auto_play_mode_loop: 單集循環
+  auto_play_mode_custom_sequential: 順序播放（自訂）
+  auto_play_mode_custom_reverse: 倒序播放（自訂）
+  auto_play_mode_custom_random: 隨機播放（自訂）
   auto_play_multipart: 分P影片
   auto_play_multipart_desc: 揀分P影片嘅自動播放行為。「連播推薦」表示目前影片完咗之後繼續播推薦影片。
   auto_play_collection: 合集影片

@@ -672,35 +672,106 @@ function setPlaylistHandoffMode(enable: boolean) {
   }).start()
 }
 
+export function isCustomAutoPlayMode(mode: AutoPlayMode): boolean {
+  return mode === 'customSequential' || mode === 'customReverse' || mode === 'customRandom'
+}
+
+export function supportsCustomPlaybackForVideoType(videoType = detectVideoType()): boolean {
+  return videoType !== VideoType.RECOMMEND
+}
+
+interface NativeEndPlaybackSnapshot {
+  videoType: VideoType
+  autoPlay: boolean | null
+  loop: boolean | null
+  playlistHandoff: boolean | null
+}
+
+let nativeEndPlaybackSnapshot: NativeEndPlaybackSnapshot | null = null
+
+function captureNativeEndPlaybackBehavior(videoType: VideoType): void {
+  if (nativeEndPlaybackSnapshot?.videoType === videoType)
+    return
+
+  const loopCheckbox = document.querySelector<HTMLInputElement>(
+    '.bpx-player-ctrl-setting-loop input[type=checkbox]',
+  )
+  const handoffRadio = document.querySelector<HTMLInputElement>(
+    '.bpx-player-ctrl-setting-handoff input[type=radio][value="0"]',
+  )
+  nativeEndPlaybackSnapshot = {
+    videoType,
+    autoPlay: findAutoPlaySwitchButton()?.isOn ?? null,
+    loop: loopCheckbox?.checked ?? null,
+    playlistHandoff: handoffRadio?.checked ?? null,
+  }
+}
+
+function restoreNativeEndPlaybackBehavior(): void {
+  const snapshot = nativeEndPlaybackSnapshot
+  nativeEndPlaybackSnapshot = null
+  if (!snapshot)
+    return
+
+  if (snapshot.loop !== null)
+    setLoopState(snapshot.loop)
+
+  if (snapshot.videoType === VideoType.PLAYLIST) {
+    if (snapshot.playlistHandoff !== null)
+      setPlaylistHandoffMode(snapshot.playlistHandoff)
+  }
+  else if (snapshot.autoPlay !== null) {
+    setAutoPlayState(snapshot.autoPlay)
+  }
+}
+
+export function getAutoPlayModeForVideoType(videoType = detectVideoType()): AutoPlayMode {
+  switch (videoType) {
+    case VideoType.MULTIPART:
+      return settings.value.autoPlayMultipart
+    case VideoType.COLLECTION:
+      return settings.value.autoPlayCollection
+    case VideoType.RECOMMEND:
+      return settings.value.autoPlayRecommend
+    case VideoType.PLAYLIST:
+      return settings.value.autoPlayPlaylist
+    default:
+      return 'default'
+  }
+}
+
+/** 关闭 B 站原生的续播行为，让自定义播放独占视频结束后的切集。 */
+export function disableNativeEndPlaybackBehavior(videoType = detectVideoType()): void {
+  captureNativeEndPlaybackBehavior(videoType)
+  setLoopState(false)
+  if (videoType === VideoType.PLAYLIST)
+    setPlaylistHandoffMode(false)
+  else
+    setAutoPlayState(false)
+}
+
 // 根据视频类型和设置应用自动连播状态
 export function applyAutoPlayByVideoType() {
-  // 如果启用了B站默认自动播放行为，不进行任何操作
+  // 使用 B 站默认行为时，撤销自定义播放对原生开关的临时接管。
   if (settings.value.useBilibiliDefaultAutoPlay) {
-    return
-  }
-
-  // 如果用户手动修改过自动播放状态,跳过自动应用
-  if (userManuallyChangedAutoPlay) {
+    restoreNativeEndPlaybackBehavior()
     return
   }
 
   const videoType = detectVideoType()
-  let mode: AutoPlayMode = 'default'
+  const mode = getAutoPlayModeForVideoType(videoType)
 
-  // 根据视频类型获取对应的设置
-  switch (videoType) {
-    case VideoType.MULTIPART:
-      mode = settings.value.autoPlayMultipart
-      break
-    case VideoType.COLLECTION:
-      mode = settings.value.autoPlayCollection
-      break
-    case VideoType.RECOMMEND:
-      mode = settings.value.autoPlayRecommend
-      break
-    case VideoType.PLAYLIST:
-      mode = settings.value.autoPlayPlaylist
-      break
+  // 选择自定义播放时必须关闭 B 站原生续播；总开关关闭时同样回退为播完暂停。
+  if (isCustomAutoPlayMode(mode)) {
+    disableNativeEndPlaybackBehavior(videoType)
+    return
+  }
+
+  nativeEndPlaybackSnapshot = null
+
+  // 如果用户手动修改过自动播放状态,跳过自动应用
+  if (userManuallyChangedAutoPlay) {
+    return
   }
 
   // 收藏列表使用特殊的播放方式控制（自动切集/播完暂停）

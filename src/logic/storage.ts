@@ -117,7 +117,9 @@ export interface ShortcutsSettings {
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
 export type HomeTabsPosition = 'left' | 'center'
-export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
+export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop' | 'customSequential' | 'customReverse' | 'customRandom'
+export type RandomPlayOrder = 'sequential' | 'reverse' | 'random'
+export type DefaultCustomPlayOrder = RandomPlayOrder
 /** 订阅合集「播放全部」起播策略 */
 export type CollectedSeasonPlayAllMode = 'beginning' | 'latest' | 'lastWatched'
 export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen' | 'bewlyWidescreen'
@@ -428,8 +430,9 @@ export interface Settings {
   rememberVideoAspectRatio: boolean // 启用视频比例记忆功能
   savedVideoAspectRatio: VideoAspectRatio | null // 记住的视频比例；首次启用时沿用播放器当前值
 
-  // 随机播放设置
-  enableRandomPlay: boolean // 启用视频合集随机播放功能
+  // 自定义播放设置
+  enableRandomPlay: boolean // 启用视频合集自定义播放功能
+  defaultCustomPlayOrder: DefaultCustomPlayOrder // 播放器自定义播放控件的默认选中顺序
   randomPlayMode: 'manual' | 'auto' // 随机播放模式：手动切换或自动启用
   minVideosForRandom: number // 启用随机播放的最小视频数量
 }
@@ -728,8 +731,9 @@ export const originalSettings: Settings = {
   rememberVideoAspectRatio: false, // 启用视频比例记忆功能
   savedVideoAspectRatio: null, // 首次启用时记住播放器当前比例
 
-  // 随机播放设置
-  enableRandomPlay: false, // 启用视频合集随机播放功能
+  // 自定义播放设置
+  enableRandomPlay: false, // 启用视频合集自定义播放功能
+  defaultCustomPlayOrder: 'random', // 默认选中随机播放，但不直接开启自定义播放
   randomPlayMode: 'manual', // 随机播放模式：手动切换或自动启用
   minVideosForRandom: 5, // 启用随机播放的最小视频数量
 }
@@ -789,6 +793,21 @@ watch(
     if (!('useBilibiliDefaultAutoPlay' in record)) {
       record.useBilibiliDefaultAutoPlay = true
     }
+
+    const legacyRandomPlayOrder = record.randomPlayOrder
+    if (
+      record.customPlayDefaultEnabled === true
+      && (legacyRandomPlayOrder === 'sequential' || legacyRandomPlayOrder === 'reverse' || legacyRandomPlayOrder === 'random')
+    ) {
+      record.defaultCustomPlayOrder = legacyRandomPlayOrder
+    }
+
+    const validDefaultCustomPlayOrders: DefaultCustomPlayOrder[] = ['sequential', 'reverse', 'random']
+    if (!validDefaultCustomPlayOrders.includes(record.defaultCustomPlayOrder))
+      record.defaultCustomPlayOrder = 'random'
+
+    Reflect.deleteProperty(record, 'customPlayDefaultEnabled')
+    Reflect.deleteProperty(record, 'randomPlayOrder')
 
     if (record.shortcuts?.webFullscreen?.key === 'W')
       record.shortcuts.webFullscreen.key = originalSettings.shortcuts.webFullscreen?.key

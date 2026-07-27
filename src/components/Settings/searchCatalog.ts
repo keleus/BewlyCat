@@ -158,7 +158,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.clean_share_link_remove_tracking_params',
     'settings.group_favorites',
     'settings.use_favorites_new_layout',
-    'settings.collected_season_play_all_mode',
   ]),
 
   ...createEntries(homeRoute, [
@@ -370,18 +369,24 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
 
   ...createEntries(autoPlayRoute, [
     'settings.bilibili_features.auto_play',
-    'settings.group_auto_play',
+    'settings.group_random_play',
+    'settings.enable_random_play',
+    'settings.default_custom_play_order',
+    'settings.group_random_play_settings',
+    'settings.random_play_mode',
+    'settings.min_videos_for_random',
+    'settings.group_playback_end_behavior',
     'settings.use_bilibili_default_auto_play',
-    'settings.group_custom_auto_play_behavior',
+    'settings.group_video_type_end_behavior',
     'settings.auto_play_multipart',
     'settings.auto_play_collection',
     'settings.auto_play_recommend',
     'settings.auto_play_playlist',
-    'settings.group_random_play',
-    'settings.enable_random_play',
-    'settings.group_random_play_options',
-    'settings.random_play_mode',
-    'settings.min_videos_for_random',
+    'settings.auto_play_mode_custom_sequential',
+    'settings.auto_play_mode_custom_reverse',
+    'settings.auto_play_mode_custom_random',
+    'settings.group_playlist_start_behavior',
+    'settings.collected_season_play_all_mode',
   ]),
 
   ...createEntries(volumeBalanceRoute, [

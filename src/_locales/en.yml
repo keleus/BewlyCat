@@ -98,7 +98,7 @@ settings:
   category_navigation_search_desc: Configure search appearance, suggestions, history, trending, and results.
   category_navigation_moments_desc: Configure the dynamic feed sidebar and how dynamic cards are opened.
   category_playback_player_desc: Configure player mode, scrolling, danmaku, captions, and playback state.
-  category_playback_autoplay_desc: Configure autoplay and random playback behavior.
+  category_playback_autoplay_desc: Configure autoplay and custom playback behavior.
   category_playback_volume_desc: Any normalization can cause clipping, degraded audio quality, or reduced dynamic range; leave it off unless you have a clear problem.
   category_bilibili_comments_desc: Enhance user information and content displayed in comments.
   category_bilibili_vip_desc: Configure reminders related to premium membership benefits.
@@ -139,7 +139,7 @@ settings:
   bilibili_features:
     comments: Comments
     video_playback: Player
-    auto_play: Auto Play
+    auto_play: Playback Behavior
     vip_features: VIP Features
     vip_features_placeholder: VIP feature enhancements will be added here in future updates.
 
@@ -171,9 +171,12 @@ settings:
   group_auto_play: Auto Play
   group_custom_auto_play_behavior: End-of-playback Behavior
   group_custom_auto_play_behavior_desc: Set what happens for each video type when Bilibili's default behavior is disabled. “Play recommendations” continues with recommended videos.
-  group_random_play: Random Play
-  group_random_play_options: Random Play Options
-  group_random_play_options_desc: Configure how random play is enabled and the minimum applicable video count.
+  group_playback_end_behavior: End-of-playback Behavior
+  group_video_type_end_behavior: Per-video-type Behavior
+  group_playlist_start_behavior: Playlist Start
+  group_random_play: Custom Playback
+  group_random_play_settings: Random Playback Settings
+  group_random_play_settings_desc: Applies to video types using Random (Custom). With Bilibili's default behavior enabled, it only applies when the default custom playback is Random.
   group_topbar: Top Bar
   group_navigation: Dock & Sidebar
   group_dock: Dock
@@ -680,12 +683,15 @@ settings:
     When enabled, videos in auto-play mode will not auto-exit fullscreen when finished, allowing continuous viewing
   use_bilibili_default_auto_play: Use Bilibili's default auto-play behavior
   use_bilibili_default_auto_play_desc: >
-    When enabled, Bilibili's default auto-play behavior will be used, and custom auto-play settings below will be hidden and disabled
+    Uses Bilibili's default playback behavior and starts custom playback off. If the default custom playback is Random, the random activation setting still applies.
   auto_play_mode_default: Bilibili Default
   auto_play_mode_auto_play: Auto-play
   auto_play_mode_auto_play_with_recommend: Play recommendations
   auto_play_mode_pause_at_end: Pause at End
   auto_play_mode_loop: Single Loop
+  auto_play_mode_custom_sequential: Sequential (Custom)
+  auto_play_mode_custom_reverse: Reverse (Custom)
+  auto_play_mode_custom_random: Random (Custom)
   auto_play_multipart: Multi-part Videos
   auto_play_multipart_desc: Choose auto-play behavior for multi-part videos. "Play recommendations" continues with recommended videos after the current video ends.
   auto_play_collection: Collection Videos
@@ -694,18 +700,29 @@ settings:
   auto_play_recommend_desc: Choose auto-play behavior when video ends. "Play recommendations" continues with recommended videos after the current video ends.
   auto_play_playlist: Playlist Videos
   auto_play_playlist_desc: Choose auto-play behavior for playlist videos. "Play recommendations" continues with recommended videos after the current video ends.
-  enable_random_play: Enable video collection random play
-  enable_random_play_desc: Add random play feature for multi-part videos or collections
-  random_play_mode: Random play mode
-  random_play_mode_desc: Choose how random play is enabled
+  enable_random_play: Enable custom playback for video collections
+  enable_random_play_desc: Add sequential, reverse, and random playback plus playlist editing to multi-part videos, collections, and playlists. Enabling this also exposes custom end behaviors.
+  default_custom_play_order: Default custom playback option
+  default_custom_play_order_desc: Only controls the order selected by default in the player, not the switch state. A type-specific custom behavior overrides it.
+  random_play_mode: Random play activation
+  random_play_mode_desc: Keep random playback off until manually enabled, or enable it automatically when the playlist reaches the configured size.
   random_play_mode_manual: Manual toggle
   random_play_mode_auto: Auto enable
   min_videos_for_random: Minimum videos for random play
-  min_videos_for_random_desc: Random play will only be enabled when video count is no less than this value
-  random_play: Random Play
-  random_play_enabled: Random play enabled
-  random_play_disabled: Random play disabled
-  random_play_not_enabled: Random play feature not enabled
+  min_videos_for_random_desc: Only applies when random playback uses automatic activation
+  random_play: Custom Playback
+  random_play_order_sequential: Play in order
+  random_play_order_reverse: Play in reverse
+  random_play_order_random: Shuffle
+  random_play_edit_playlist: Edit playlist
+  random_play_finish_editing: Finish editing playlist
+  random_play_edit_playlist_desc: Enter edit mode, then drag Bilibili episode items directly to change playback order.
+  random_play_edit_playlist_empty: There is no editable playlist on this page
+  random_play_edit_playlist_save: Save
+  random_play_edit_playlist_cancel: Cancel
+  random_play_enabled: Custom playback enabled
+  random_play_disabled: Custom playback disabled
+  random_play_not_enabled: Custom playback is not enabled
   random_play_min_videos_required: At least {count} videos required to enable random play
   enable_undo_refresh_button: Enable Undo Refresh Button(only effective in Web recommendation mode)
   enable_undo_refresh_button_desc: >-
