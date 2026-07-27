@@ -184,8 +184,8 @@ settings:
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄
   group_home_layout: 首頁版面
-  group_original_moments_page: 原版動態頁
-  group_new_moments_page: 新動態頁（實驗性）
+  group_original_moments_page: Bilibili頁面
+  group_new_moments_page: Bewly動態頁
   group_new_moments_page_desc: 此頁面並非最終成品，相關形式後續可能會有較大調整。
   group_moments_sidebar: 動態頁左側元件
   group_moments_interaction: 動態卡片互動
@@ -199,10 +199,23 @@ settings:
   moments_show_user_card: 顯示使用者卡片
   moments_show_publish: 顯示發布動態元件
   moments_show_live: 顯示正在直播元件
+  moments_visible_components: 顯示元件
+  moments_visible_components_desc: 點擊標籤切換顯示狀態。主題色表示顯示，灰色劃線眼睛表示不顯示該元件。
+  moments_filtered_types: 過濾動態
+  moments_filtered_types_desc: 點擊標籤切換過濾狀態。主題色表示顯示，灰色劃線眼睛表示屏蔽該類動態。
   moments_enable_live_preview: 直播動態懸停預覽
   moments_enable_live_preview_desc: 滑鼠懸停直播動態封面時播放直播預覽。
   moments_enable_video_preview: 影片動態懸停預覽
   moments_enable_video_preview_desc: 滑鼠懸停影片動態封面時播放影片預覽。
+  moments_filter_up_recommendation: 過濾：UP主的推薦
+  moments_filter_up_recommendation_desc: 過濾所有帶有「UP主的推薦」附加資訊的動態。
+  moments_filter_up_recommendation_short: UP主的推薦
+  moments_filter_charge_dynamic: 充電動態
+  moments_filter_video_reservation: 影片預約動態
+  moments_filter_live_reservation: 直播預約動態
+  moments_filter_live_dynamic: 直播動態
+  moments_hide_charge_exclusive: 隱藏充電專屬動態
+  moments_hide_charge_exclusive_desc: 從外掛動態流中過濾所有充電專屬動態。
   moments_card_open_mode: 動態卡片點擊行為
   moments_card_open_mode_desc: 選擇點擊動態卡片時使用彈窗或新分頁。直播動態只能在新分頁開啟。
   moments_card_open_mode_opt:

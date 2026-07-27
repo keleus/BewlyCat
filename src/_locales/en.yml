@@ -188,8 +188,8 @@ settings:
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs
   group_home_layout: Home Layout
-  group_original_moments_page: Original Bilibili Dynamic Feed
-  group_new_moments_page: New Dynamic Feed (Experimental)
+  group_original_moments_page: Bilibili Page
+  group_new_moments_page: Bewly Dynamic Feed
   group_new_moments_page_desc: This page is not final and may change significantly in future updates.
   group_moments_sidebar: Dynamic Feed Sidebar
   group_moments_interaction: Dynamic Card Interaction
@@ -203,10 +203,23 @@ settings:
   moments_show_user_card: Show user card
   moments_show_publish: Show publish action
   moments_show_live: Show live users
+  moments_visible_components: Visible components
+  moments_visible_components_desc: Click a tag to toggle visibility. Theme-colored tags are shown; gray tags with a crossed-out eye are hidden.
+  moments_filtered_types: Filter dynamics
+  moments_filtered_types_desc: Click a tag to toggle filtering. Theme-colored tags are shown; gray tags with a crossed-out eye are blocked.
   moments_enable_live_preview: Preview live dynamics on hover
   moments_enable_live_preview_desc: Play a live preview when hovering over a live dynamic cover.
   moments_enable_video_preview: Preview video dynamics on hover
   moments_enable_video_preview_desc: Play a video preview when hovering over a video dynamic cover.
+  moments_filter_up_recommendation: Filter uploader recommendations
+  moments_filter_up_recommendation_desc: Filter out every dynamic that contains an uploader recommendation attachment.
+  moments_filter_up_recommendation_short: Uploader recommendations
+  moments_filter_charge_dynamic: Charge dynamics
+  moments_filter_video_reservation: Video reservation dynamics
+  moments_filter_live_reservation: Live reservation dynamics
+  moments_filter_live_dynamic: Live dynamics
+  moments_hide_charge_exclusive: Hide charge-exclusive dynamics
+  moments_hide_charge_exclusive_desc: Filter all charge-exclusive dynamics out of the extension feed.
   moments_card_open_mode: Dynamic card click behavior
   moments_card_open_mode_desc: Choose whether dynamic cards open in a dialog or a new tab. Live dynamics can only open in a new tab.
   moments_card_open_mode_opt:

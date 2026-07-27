@@ -43,7 +43,7 @@ const collapsed = ref(props.defaultCollapsed)
       <p text="base $bew-text-1" fw-bold>
         {{ title }}
       </p>
-      <p v-if="desc" text="sm $bew-text-2">
+      <p v-if="desc" text="sm $bew-text-2" :class="{ 'warning-desc': warningDesc }">
         {{ desc }}
       </p>
     </template>

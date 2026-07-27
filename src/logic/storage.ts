@@ -258,6 +258,11 @@ export interface Settings {
   momentsSidebarShowLive: boolean
   momentsEnableLivePreview: boolean
   momentsEnableVideoPreview: boolean
+  momentsFilterUpRecommendation: boolean
+  momentsHideChargeExclusive: boolean
+  momentsHideVideoReservation: boolean
+  momentsHideLiveReservation: boolean
+  momentsHideLiveDynamics: boolean
   momentsCardOpenMode: 'dialog' | 'newTab'
 
   alwaysUseDock: boolean
@@ -519,6 +524,11 @@ export const originalSettings: Settings = {
   momentsSidebarShowLive: true,
   momentsEnableLivePreview: true,
   momentsEnableVideoPreview: true,
+  momentsFilterUpRecommendation: false,
+  momentsHideChargeExclusive: false,
+  momentsHideVideoReservation: false,
+  momentsHideLiveReservation: false,
+  momentsHideLiveDynamics: false,
   momentsCardOpenMode: 'dialog',
 
   alwaysUseDock: false,
