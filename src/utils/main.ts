@@ -175,6 +175,33 @@ export function isHomePage(url: string = location.href): boolean {
 }
 
 /**
+ * Check if the URL points to Bilibili's watch later list page.
+ * Supports both the canonical path and the legacy hash route used by the
+ * user-space favorites entry. See https://github.com/keleus/BewlyCat/issues/841
+ *
+ * @param url the url to check
+ * @returns true if the URL is a watch later list page
+ */
+export function isWatchLaterListPage(url: string): boolean {
+  try {
+    const urlObj = new URL(url)
+    const isHttp = urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
+    const isBilibiliHost = urlObj.hostname === 'www.bilibili.com' || urlObj.hostname === 'bilibili.com'
+    if (!isHttp || !isBilibiliHost)
+      return false
+
+    if (urlObj.pathname === '/watchlater/list' || urlObj.pathname === '/watchlater/list/')
+      return true
+
+    const isLegacyWatchLaterPath = urlObj.pathname === '/watchlater' || urlObj.pathname === '/watchlater/'
+    return isLegacyWatchLaterPath && /^#\/list(?:[/?]|$)/.test(urlObj.hash)
+  }
+  catch {
+    return false
+  }
+}
+
+/**
  * Check if the current page is a video or bangumi page
  * @param url the url to check
  * @returns true if the current page is a video or bangumi page

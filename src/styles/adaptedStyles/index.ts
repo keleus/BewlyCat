@@ -3,7 +3,7 @@ import './shadowDom'
 import './thirdParties'
 
 import { settings, settingsReady } from '~/logic/storage'
-import { isHomePage, isInIframe } from '~/utils/main'
+import { isHomePage, isInIframe, isWatchLaterListPage } from '~/utils/main'
 
 async function setupStyles() {
   const currentUrl = document.URL
@@ -96,10 +96,7 @@ async function setupStyles() {
   }
 
   // watch later page 稍候再看页
-  else if (
-    /https?:\/\/(?:www\.)?bilibili\.com\/watchlater\/list.*/.test(currentUrl)
-    || /https?:\/\/(?:www\.)?bilibili\.com\/watchlater\/#\/list.*/.test(currentUrl)
-  ) {
+  else if (isWatchLaterListPage(currentUrl)) {
     await import('./pages/watchLaterPage.scss')
     document.documentElement.classList.add('watchLaterPage')
   }

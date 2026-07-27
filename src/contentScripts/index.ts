@@ -16,7 +16,7 @@ import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, re
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
-import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
+import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder } from '~/utils/randomPlay'
@@ -72,8 +72,8 @@ function isSupportedPages(): boolean {
     isHomePage()
     // video or bangumi page
     || isVideoOrBangumiPage()
-    // watchlater list page
-    || /https?:\/\/(?:www\.)?bilibili\.com\/watchlater\/list.*/.test(currentUrl)
+    // watch later list page
+    || isWatchLaterListPage(currentUrl)
     // popular page https://www.bilibili.com/v/popular/all
     || /https?:\/\/(?:www\.)?bilibili\.com\/v\/popular\/all.*/.test(currentUrl)
     // search page
@@ -89,9 +89,6 @@ function isSupportedPages(): boolean {
     // history page
     || /https?:\/\/(?:www\.)?bilibili\.com\/history.*/.test(currentUrl)
     || /https?:\/\/(?:www\.)?bilibili\.com\/account\/history.*/.test(currentUrl)
-    // watcher later page
-    || /https?:\/\/(?:www\.)?bilibili\.com\/watchlater\/#\/list.*/.test(currentUrl)
-    || /https?:\/\/(?:www\.)?bilibili\.com\/watchlater\/list.*/.test(currentUrl)
     // user space page
     || /https?:\/\/space\.bilibili\.com\.*/.test(currentUrl)
     // notifications page
@@ -140,8 +137,7 @@ export function isSupportedIframePages(): boolean {
       || /https?:\/\/www\.bilibili\.com\/anime.*/.test(currentUrl)
       || /https?:\/\/space\.bilibili\.com\/\d+\/favlist.*/.test(currentUrl)
       || /https?:\/\/www\.bilibili\.com\/history.*/.test(currentUrl)
-      || /https?:\/\/www\.bilibili\.com\/watchlater\/#\/list.*/.test(currentUrl)
-      || /https?:\/\/www\.bilibili\.com\/watchlater\/list.*/.test(currentUrl)
+      || isWatchLaterListPage(currentUrl)
       // moments page
       // https://github.com/BewlyBewly/BewlyBewly/issues/1246
       // https://github.com/BewlyBewly/BewlyBewly/issues/1256
