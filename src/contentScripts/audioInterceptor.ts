@@ -143,6 +143,7 @@ let hasSetupSettingsWatcher = false
 let visibilityChangeHandler: (() => void) | null = null
 let shouldResetAnalysisOnNextPlayback = false
 let visibilityResumeStartTime: number | null = null
+let wasPlaybackActiveBeforeHidden = false
 
 // 临时启用/禁用状态（用于播放器控件）
 let tempDisabled = false
@@ -358,6 +359,9 @@ function bindVideoListeners(video: HTMLVideoElement) {
   const onPlay = () => {
     if (video !== currentVideoElement)
       return
+
+    if (audioContext)
+      resumeAudioContext(audioContext)
 
     // Visibility restoration can be followed by a synthetic/delayed play event.
     // Keep the frozen gain until media time has progressed again instead of
@@ -831,6 +835,7 @@ export function detach() {
   hasAttached = false
   shouldResetAnalysisOnNextPlayback = false
   visibilityResumeStartTime = null
+  wasPlaybackActiveBeforeHidden = false
 
   log('Detached')
 }
@@ -858,6 +863,7 @@ function stopAudioInterceptor() {
 
   stopLoudnessAnalysis()
   visibilityResumeStartTime = null
+  wasPlaybackActiveBeforeHidden = false
 }
 
 export function initAudioInterceptor() {
@@ -873,6 +879,7 @@ export function initAudioInterceptor() {
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
       if (document.hidden) {
+        wasPlaybackActiveBeforeHidden = isPlaybackActive(currentVideoElement)
         visibilityResumeStartTime = null
         if (currentVideoElement)
           suspendProcessingForIdlePlayback()
@@ -883,10 +890,19 @@ export function initAudioInterceptor() {
       // video. Browsers may expose a transient paused state during this event,
       // while Bilibili can keep additional idle video elements in the player.
       if (hasAttached && currentVideoElement?.isConnected && audioNodes) {
-        if (!isPlaybackAtEnd(currentVideoElement))
+        if (audioContext)
+          resumeAudioContext(audioContext)
+
+        if (wasPlaybackActiveBeforeHidden && !isPlaybackAtEnd(currentVideoElement))
           visibilityResumeStartTime = currentVideoElement.currentTime
+        else
+          visibilityResumeStartTime = null
+
+        wasPlaybackActiveBeforeHidden = false
         return
       }
+
+      wasPlaybackActiveBeforeHidden = false
 
       const video = getActiveVideoElement()
       if (video) {
