@@ -3,7 +3,7 @@ import browser from 'webextension-polyfill'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl, isPreventMobileRedirectEnabled } from '~/utils/bilibiliDesktopNavigation'
 
 import { setupAppAuthScheduler } from './appAuthScheduler'
-import { setupContentScriptRecovery } from './contentScriptRecovery'
+import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
 import { setupTopBarStateBroker } from './topBarStateBroker'
@@ -144,4 +144,4 @@ setupApiMsgListeners()
 setupTabMsgListeners()
 setupTopBarStateBroker()
 setupAppAuthScheduler()
-setupContentScriptRecovery()
+setupContentScriptRefreshPrompt()
