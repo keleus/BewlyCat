@@ -329,6 +329,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.video_default_player_mode',
     'settings.video_player_mode.bewly_widescreen_sidebar_position',
     'settings.keep_collection_video_default_mode',
+    'settings.keep_watch_later_video_default_mode',
     'settings.video_player_scroll',
     'settings.auto_exit_fullscreen_on_end',
     'settings.group_player_components',

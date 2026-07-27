@@ -109,6 +109,14 @@ const videoCaptionDefaultStateOptions = computed(() => {
       </SettingsItem>
 
       <SettingsItem
+        :title="t('settings.keep_watch_later_video_default_mode')"
+        :desc="t('settings.keep_watch_later_video_default_mode_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.keepWatchLaterVideoDefaultMode" />
+      </SettingsItem>
+
+      <SettingsItem
         :title="t('settings.video_player_scroll')"
         :desc="t('settings.video_player_scroll_desc')"
         right-width="auto"

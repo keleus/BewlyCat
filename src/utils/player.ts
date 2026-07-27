@@ -90,6 +90,11 @@ export function isVideoPage() {
   return location.pathname.startsWith('/video/')
 }
 
+// 判断是否为稍后再看播放页
+export function isWatchLaterVideo(): boolean {
+  return location.pathname === '/list/watchlater' || location.pathname === '/list/watchlater/'
+}
+
 // 格式化时间
 export function formatTime(seconds: number): string {
   const minutes = Math.floor(seconds / 60)

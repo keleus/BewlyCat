@@ -18,7 +18,7 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
-import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isPlayerDisplayModeReady, isVideoPage, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isPlayerDisplayModeReady, isVideoPage, isWatchLaterVideo, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
@@ -317,7 +317,10 @@ else if (shouldInitializeContentScript) {
     }
 
     const playerMode = settings.value.defaultVideoPlayerMode
-    let targetPlayerMode = settings.value.keepCollectionVideoDefaultMode && isCollectionVideo()
+    const shouldKeepDefaultMode
+      = (settings.value.keepCollectionVideoDefaultMode && isCollectionVideo())
+        || (settings.value.keepWatchLaterVideoDefaultMode && isWatchLaterVideo())
+    let targetPlayerMode = shouldKeepDefaultMode
       ? 'default'
       : playerMode
     if (isFestivalPage() && targetPlayerMode === 'bewlyWidescreen')
@@ -330,9 +333,8 @@ else if (shouldInitializeContentScript) {
 
     clearPlayerModeRetry()
 
-    // 检查是否为合集视频且启用了保持默认模式
-    if (targetPlayerMode === 'default' && settings.value.keepCollectionVideoDefaultMode) {
-    // 合集视频强制使用默认模式
+    // 合集或稍后再看视频启用对应设置时，强制使用默认模式
+    if (targetPlayerMode === 'default' && shouldKeepDefaultMode) {
       defaultMode()
     }
     else if (!targetPlayerMode || targetPlayerMode === 'default') {

@@ -645,6 +645,10 @@ settings:
   keep_collection_video_default_mode_desc: >-
     When enabled, collection videos will always use the default player mode and
     won't apply widescreen or fullscreen settings
+  keep_watch_later_video_default_mode: Keep Watch Later videos in default mode
+  keep_watch_later_video_default_mode_desc: >-
+    When enabled, videos played from Watch Later will always use the default
+    player mode and won't apply widescreen or fullscreen settings
   remember_playback_rate: Remember playback rate
   remember_playback_rate_desc: >
     When enabled, the player will remember your last set playback rate and

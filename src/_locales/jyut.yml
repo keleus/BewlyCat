@@ -571,6 +571,8 @@ settings:
 
   keep_collection_video_default_mode: 合集影片保持預設模式
   keep_collection_video_default_mode_desc: 啟用嗰陣，合集影片會一直用預設播放器模式，唔會套用寬螢幕或者全螢幕設定
+  keep_watch_later_video_default_mode: 稍後再睇保持預設模式
+  keep_watch_later_video_default_mode_desc: 啟用後，稍後再睇入面嘅影片會一直用預設播放器模式，唔會套用寬螢幕或者全螢幕設定
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播完後自動退出
   auto_exit_fullscreen_on_end_desc: 啟用後，影片播完而且冇單集循環、隨機播放、自動連播等後續播放行為時，會自動退出全螢幕模式
   auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
