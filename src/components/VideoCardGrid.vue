@@ -520,6 +520,8 @@ let loadMoreRequestTimeout: number | null = null
 let continuePreloadTimer: number | null = null
 
 function triggerLoadMore() {
+  if (bewlyApp?.isHomeTabSwitching.value)
+    return
   if (!canLoadMore())
     return
   if (loadMoreRequested.value)
@@ -866,6 +868,11 @@ watch(loadMoreSentinelRef, () => {
   setupIntersectionObserver(true)
 })
 
+watch(() => bewlyApp?.isHomeTabSwitching.value, (switching) => {
+  if (!switching && isGridActive)
+    schedulePreloadCheck()
+})
+
 function activateGrid() {
   if (isGridActive)
     return
@@ -939,7 +946,7 @@ const gridContainerStyle = computed(() => ({
 
 // 判断是否应该显示空状态（确认无更多内容且数据为空）
 const showEmptyState = computed(() => {
-  return props.noMoreContent && props.items.length === 0 && !props.needToLoginFirst
+  return !props.loading && props.noMoreContent && props.items.length === 0 && !props.needToLoginFirst
 })
 
 function normalizePositiveInt(value: unknown, fallback: number): number {

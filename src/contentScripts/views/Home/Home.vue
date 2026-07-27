@@ -15,11 +15,19 @@ import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
 
 const mainStore = useMainStore()
-const { handleBackToTop, homeActivatedPage, homeActivatedPageTouched } = useBewlyApp()
+const {
+  handleBackToTop,
+  homeActivatedPage,
+  homeActivatedPageTouched,
+  isHomeTabSwitching,
+  scrollViewportRef,
+} = useBewlyApp()
 const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => handleBackToTop(targetScrollTop), 1000)
 
 // ✅ 性能优化：缓存 scrollTop 值，避免重复 DOM 读取
 const cachedScrollTop = ref(0)
+const tabScrollPositions = new Map<HomeSubPage, number>()
+let pendingTabScrollTop: number | null = null
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
@@ -84,6 +92,39 @@ watch(() => settings.value.enableGridLayoutSwitcher, (enabled) => {
     void updateGridIndicator(true)
 })
 
+function getInitialTabScrollTop(): number {
+  return settings.value.useSearchPageModeOnHomePage ? 510 : 0
+}
+
+function restoreTabScrollPosition() {
+  if (pendingTabScrollTop === null)
+    return
+
+  const viewport = scrollViewportRef.value
+  if (viewport)
+    viewport.scrollTop = pendingTabScrollTop
+
+  pendingTabScrollTop = null
+}
+
+function finishTabSwitch() {
+  // Also restore here as a safeguard for transitions that skip the enter hook.
+  restoreTabScrollPosition()
+  requestAnimationFrame(() => {
+    isHomeTabSwitching.value = false
+  })
+}
+
+watch(activatedPage, (newPage, oldPage) => {
+  const viewport = scrollViewportRef.value
+  if (!viewport)
+    return
+
+  tabScrollPositions.set(oldPage, viewport.scrollTop)
+  pendingTabScrollTop = tabScrollPositions.get(newPage) ?? getInitialTabScrollTop()
+  isHomeTabSwitching.value = true
+}, { flush: 'sync' })
+
 // 使用deep监听
 watch(() => settings.value.homePageTabVisibilityList, () => {
   syncCurrentTabs()
@@ -140,14 +181,14 @@ onMounted(() => {
 onUnmounted(() => {
   emitter.off(TOP_BAR_VISIBILITY_CHANGE, handleTopBarVisibilityChange)
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL, handleOverlayScroll)
+  isHomeTabSwitching.value = false
 })
 
 function handleChangeTab(tab: HomeTab) {
   homeActivatedPageTouched.value = true
 
   if (activatedPage.value === tab.page) {
-    // ✅ 性能优化：使用缓存的 scrollTop，避免 DOM 读取
-    const scrollTop = cachedScrollTop.value
+    const scrollTop = scrollViewportRef.value?.scrollTop ?? cachedScrollTop.value
 
     if ((!settings.value.useSearchPageModeOnHomePage && scrollTop > 0) || (settings.value.useSearchPageModeOnHomePage && scrollTop > 510)) {
       handleThrottledBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
@@ -160,10 +201,6 @@ function handleChangeTab(tab: HomeTab) {
     }
     return
   }
-  else {
-    handleThrottledBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
-  }
-
   if (tabContentLoading.value)
     toggleTabContentLoading(false)
 
@@ -334,7 +371,12 @@ function toggleTabContentLoading(loading: boolean) {
         </div>
       </header>
 
-      <Transition :name="tabTransitionName" mode="out-in">
+      <Transition
+        :name="tabTransitionName"
+        mode="out-in"
+        @enter="restoreTabScrollPosition"
+        @after-enter="finishTabSwitch"
+      >
         <KeepAlive :max="3">
           <Component
             :is="pages[activatedPage]" :key="activatedPage"

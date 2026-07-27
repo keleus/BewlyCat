@@ -120,6 +120,7 @@ function getDefaultHomeSubPage(tabConfig: { page: HomeSubPage, visible: boolean 
 // 添加Home页面的子页面状态
 const homeActivatedPage = ref<HomeSubPage>(getDefaultHomeSubPage(settings.value.homePageTabVisibilityList))
 const homeActivatedPageTouched = ref<boolean>(false)
+const isHomeTabSwitching = ref<boolean>(false)
 watch(
   () => settings.value.homePageTabVisibilityList,
   (tabConfig) => {
@@ -186,6 +187,26 @@ const handleThrottledPageUnRefresh = useThrottleFn(() => handleUndoRefresh.value
 const handleThrottledPageForwardRefresh = useThrottleFn(() => handleForwardRefresh.value?.(), 500)
 const topBarRef = ref()
 const reachTop = ref<boolean>(true)
+
+watch(isHomeTabSwitching, (switching) => {
+  if (switching)
+    return
+
+  // IntersectionObserver may have reported an intersection while callbacks were
+  // suspended. Recheck once after restoration so a genuinely short/bottom page
+  // can still request more content without waiting for another scroll event.
+  requestAnimationFrame(() => {
+    const viewport = scrollViewportRef.value
+    const sentinel = loadMoreSentinelRef.value
+    if (!viewport || !sentinel || isHomeTabSwitching.value)
+      return
+
+    const viewportRect = viewport.getBoundingClientRect()
+    const sentinelRect = sentinel.getBoundingClientRect()
+    if (sentinelRect.top <= viewportRect.bottom + 200 && sentinelRect.bottom >= viewportRect.top)
+      handleThrottledReachBottom()
+  })
+})
 
 const iframeDrawerURL = ref<string>('')
 const showIframeDrawer = ref<boolean>(false)
@@ -419,7 +440,7 @@ onMounted(() => {
       useIntersectionObserver(
         loadMoreSentinelRef,
         ([{ isIntersecting }]) => {
-          if (isIntersecting) {
+          if (isIntersecting && !isHomeTabSwitching.value) {
             handleThrottledReachBottom()
           }
         },
@@ -668,6 +689,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   activatedPage,
   homeActivatedPage,
   homeActivatedPageTouched,
+  isHomeTabSwitching,
   mainAppRef,
   scrollViewportRef,
   reachTop,

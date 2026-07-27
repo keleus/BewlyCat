@@ -24,7 +24,7 @@ const emit = defineEmits<{
 
 const { handleBackToTop, handlePageRefresh, mainAppRef } = useBewlyApp()
 
-const isLoading = ref<boolean>(false)
+const isLoading = ref<boolean>(true)
 
 const seriesList = ref<PopularSeriesItem[]>([])
 const activatedSeries = ref<PopularSeriesItem | null>(null)
@@ -90,7 +90,7 @@ function transformWeeklyVideo(item: PopularSeriesVideoItem, rank: number): Video
 }
 
 onMounted(() => {
-  initData()
+  void initData()
   initPageAction()
   window.addEventListener('resize', calculatePosition)
 })
@@ -111,54 +111,66 @@ function initPageAction() {
   }
 }
 
-function initData() {
-  videoList.value.length = 0
-  seriesList.value.length = 0
-  activatedSeries.value = null
-  getSeriesList()
-}
-
-function getSeriesList() {
-  api.ranking.getPopularSeriesList()
-    .then((res: PopularSeriesListResult) => {
-      if (res && res.code === 0 && res.data && Array.isArray(res.data.list)) {
-        // sort by number desc (latest first) if available
-        seriesList.value = [...res.data.list].sort((a, b) => (b.number || 0) - (a.number || 0))
-        if (seriesList.value.length) {
-          // 默认选择第一期（通常为最新期）
-          activatedSeries.value = seriesList.value[0]
-          handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
-          getSeriesOne()
-        }
-      }
-    })
-}
-
-function getSeriesOne() {
-  if (!activatedSeries.value)
-    return
+async function initData() {
   emit('beforeLoading')
   isLoading.value = true
   videoList.value.length = 0
-  api.ranking.getPopularSeriesOne({
-    number: (activatedSeries.value as PopularSeriesItem).number,
-  }).then((res: PopularSeriesOneResult) => {
+  seriesList.value.length = 0
+  activatedSeries.value = null
+
+  try {
+    const res: PopularSeriesListResult = await api.ranking.getPopularSeriesList()
     if (res && res.code === 0 && res.data && Array.isArray(res.data.list)) {
-      videoList.value = res.data.list.map((item, index) => ({
-        ...item,
-        displayData: transformWeeklyVideo(item, index + 1),
-      }))
+      // sort by number desc (latest first) if available
+      seriesList.value = [...res.data.list].sort((a, b) => (b.number || 0) - (a.number || 0))
+      if (seriesList.value.length) {
+        // 默认选择第一期（通常为最新期）
+        activatedSeries.value = seriesList.value[0]
+        handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
+        await fetchSeriesOne()
+      }
     }
-  }).finally(() => {
+  }
+  finally {
     isLoading.value = false
     emit('afterLoading')
+  }
+}
+
+async function fetchSeriesOne() {
+  if (!activatedSeries.value)
+    return
+
+  const res: PopularSeriesOneResult = await api.ranking.getPopularSeriesOne({
+    number: (activatedSeries.value as PopularSeriesItem).number,
   })
+  if (res && res.code === 0 && res.data && Array.isArray(res.data.list)) {
+    videoList.value = res.data.list.map((item, index) => ({
+      ...item,
+      displayData: transformWeeklyVideo(item, index + 1),
+    }))
+  }
+}
+
+async function getSeriesOne() {
+  emit('beforeLoading')
+  isLoading.value = true
+  videoList.value.length = 0
+  try {
+    await fetchSeriesOne()
+  }
+  finally {
+    isLoading.value = false
+    emit('afterLoading')
+  }
 }
 
 function selectSeries(item: PopularSeriesItem) {
   activatedSeries.value = item
   showDropdown.value = false
   searchQuery.value = ''
+  handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
+  void getSeriesOne()
 }
 
 function closeDropdown() {
@@ -173,13 +185,6 @@ function onMouseLeave() {
 function onMouseEnter() {
   window.removeEventListener('click', closeDropdown)
 }
-
-watch(() => activatedSeries.value?.number, (newVal, oldVal) => {
-  if (newVal && newVal !== oldVal) {
-    handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
-    getSeriesOne()
-  }
-})
 
 defineExpose({ initData })
 </script>
