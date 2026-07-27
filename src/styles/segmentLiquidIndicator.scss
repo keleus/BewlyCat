@@ -14,11 +14,14 @@
     opacity 200ms ease,
     background-color 220ms ease,
     box-shadow 220ms ease;
-  will-change: transform, width, height;
+  // Only transform is compositor-friendly; width/height are set via JS
+  // inline styles and don't benefit from will-change hints.
+  will-change: transform;
+  contain: layout style;
   transform-origin: center center;
 
   &.is-moving {
-    filter: saturate(1.06);
+    filter: saturate(1.12);
   }
 }
 
