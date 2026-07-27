@@ -1,4 +1,15 @@
 .bewly-design {
+  // 评论图片预览打开时隐藏页面滚动条，避免其显示在遮罩右侧。
+  &:has(.pswp.pswp--open),
+  &:has(.pswp.pswp--open) body {
+    scrollbar-width: none !important;
+  }
+
+  &:has(.pswp.pswp--open)::-webkit-scrollbar,
+  &:has(.pswp.pswp--open) body::-webkit-scrollbar {
+    display: none;
+  }
+
   // #region new comments components
 
   // #region theme color adaption part
