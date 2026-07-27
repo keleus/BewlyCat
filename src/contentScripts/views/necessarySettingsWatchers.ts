@@ -238,6 +238,24 @@ export function setupNecessarySettingsWatchers() {
     refreshUselessFeedCardBlocker()
   }, { immediate: true })
 
+  watch(
+    [
+      () => settings.value.originalMomentsShowUserCard,
+      () => settings.value.originalMomentsShowLiveList,
+      () => settings.value.originalMomentsShowCommunityCenter,
+      () => settings.value.originalMomentsShowHotSearch,
+      () => settings.value.originalMomentsShowUpList,
+    ],
+    ([showUserCard, showLiveList, showCommunityCenter, showHotSearch, showUpList]) => {
+      document.documentElement.classList.toggle('moments-hide-original-user-card', !showUserCard)
+      document.documentElement.classList.toggle('moments-hide-original-live-list', !showLiveList)
+      document.documentElement.classList.toggle('moments-hide-original-community-center', !showCommunityCenter)
+      document.documentElement.classList.toggle('moments-hide-original-hot-search', !showHotSearch)
+      document.documentElement.classList.toggle('moments-hide-original-up-list', !showUpList)
+    },
+    { immediate: true },
+  )
+
   // iframe 内的原版页面同样可能通过 SPA 导航离开或返回首页。
   window.addEventListener('pushstate', refreshUselessFeedCardBlocker)
   window.addEventListener('popstate', refreshUselessFeedCardBlocker)

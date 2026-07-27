@@ -188,9 +188,18 @@ settings:
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs
   group_home_layout: Home Layout
+  group_original_moments_page: Original Bilibili Dynamic Feed
+  group_new_moments_page: New Dynamic Feed (Experimental)
+  group_new_moments_page_desc: This page is not final and may change significantly in future updates.
   group_moments_sidebar: Dynamic Feed Sidebar
   group_moments_interaction: Dynamic Card Interaction
   group_version_reminder: Version reminders
+  moments_experimental_confirm: The dynamic feed is experimental and not a final product. Its design may change significantly. Continue switching?
+  original_moments_show_user_card: Show user card
+  original_moments_show_live_list: Show live list
+  original_moments_show_community_center: Show community center
+  original_moments_show_hot_search: Show hot search
+  original_moments_show_up_list: Show dynamic uploader banner
   moments_show_user_card: Show user card
   moments_show_publish: Show publish action
   moments_show_live: Show live users

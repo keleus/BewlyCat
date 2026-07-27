@@ -1,7 +1,10 @@
 <script lang="ts" setup>
+import { useI18n } from 'vue-i18n'
+
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
 import { IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
+import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
@@ -11,6 +14,7 @@ const props = defineProps<{
   forceWhiteIcon: boolean
 }>()
 
+const { t } = useI18n()
 const { activatedPage } = useBewlyApp()
 const { getDockItemByPage } = useMainStore()
 const { getDockItemConfigByPage } = useSettingsStore()
@@ -54,6 +58,14 @@ watch(showBewlyOrBiliPageSwitcher, (visible) => {
 function switchPage(nextUseOriginalBiliPage: boolean) {
   if (nextUseOriginalBiliPage === isOriginalBiliPageActive.value)
     return
+
+  if (
+    activatedPage.value === AppPage.Moments
+    && !nextUseOriginalBiliPage
+    && !window.confirm(t('settings.moments_experimental_confirm'))
+  ) {
+    return
+  }
 
   const dockItem = settings.value.dockItemsConfig.find(dockItem => dockItem.page === activatedPage.value)
   if (dockItem) {

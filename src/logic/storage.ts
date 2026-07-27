@@ -248,6 +248,11 @@ export interface Settings {
   autoReceiveBCoinCoupon: boolean
   autoReceiveVipExp: boolean
   filterArticlesInMoments: boolean
+  originalMomentsShowUserCard: boolean
+  originalMomentsShowLiveList: boolean
+  originalMomentsShowCommunityCenter: boolean
+  originalMomentsShowHotSearch: boolean
+  originalMomentsShowUpList: boolean
   momentsSidebarShowUserCard: boolean
   momentsSidebarShowPublish: boolean
   momentsSidebarShowLive: boolean
@@ -504,6 +509,11 @@ export const originalSettings: Settings = {
   autoReceiveBCoinCoupon: false,
   autoReceiveVipExp: false,
   filterArticlesInMoments: true,
+  originalMomentsShowUserCard: true,
+  originalMomentsShowLiveList: true,
+  originalMomentsShowCommunityCenter: true,
+  originalMomentsShowHotSearch: true,
+  originalMomentsShowUpList: true,
   momentsSidebarShowUserCard: true,
   momentsSidebarShowPublish: true,
   momentsSidebarShowLive: true,

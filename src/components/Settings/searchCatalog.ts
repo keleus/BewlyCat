@@ -180,11 +180,16 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
 
   ...createEntries(momentsRoute, [
     'settings.plugin.moments',
-    'settings.group_moments_sidebar',
+    'settings.group_original_moments_page',
+    'settings.original_moments_show_user_card',
+    'settings.original_moments_show_live_list',
+    'settings.original_moments_show_community_center',
+    'settings.original_moments_show_hot_search',
+    'settings.original_moments_show_up_list',
+    'settings.group_new_moments_page',
     'settings.moments_show_user_card',
     'settings.moments_show_publish',
     'settings.moments_show_live',
-    'settings.group_moments_interaction',
     'settings.moments_enable_live_preview',
     'settings.moments_enable_video_preview',
     'settings.moments_card_open_mode',

@@ -1,3 +1,46 @@
+.momentsPage {
+  &.moments-hide-original-user-card {
+    .bili-dyn-home--member > aside.left > section:has(.bili-dyn-my-info),
+    .bili-dyn-home--member > aside.left > section:has(.bili-dyn-my-info--skeleton),
+    .bili-dyn-my-info,
+    .bili-dyn-my-info--skeleton {
+      display: none !important;
+    }
+  }
+
+  &.moments-hide-original-live-list {
+    .bili-dyn-home--member > aside.left > section:has(.bili-dyn-live-users),
+    .bili-dyn-live-users {
+      display: none !important;
+    }
+  }
+
+  &.moments-hide-original-community-center {
+    .bili-dyn-home--member > aside.right > section:has(.bili-dyn-banner),
+    .bili-dyn-banner {
+      display: none !important;
+    }
+  }
+
+  &.moments-hide-original-hot-search {
+    .bili-dyn-home--member > aside.right > section:has(.bili-dyn-topic-box),
+    .bili-dyn-home--member > aside.right > section:has(.bili-dyn-search-trendings),
+    .bili-dyn-home--member > aside.right > section:has(.topic-panel),
+    .bili-dyn-topic-box,
+    .bili-dyn-search-trendings,
+    .topic-panel {
+      display: none !important;
+    }
+  }
+
+  &.moments-hide-original-up-list {
+    .bili-dyn-home--member > main > section:has(.bili-dyn-up-list),
+    .bili-dyn-up-list {
+      display: none !important;
+    }
+  }
+}
+
 .bewly-design.momentsPage {
   // .bili-dyn-home--member {
   //   // margin-top: 10px;

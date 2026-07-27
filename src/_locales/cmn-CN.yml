@@ -185,9 +185,18 @@ settings:
   group_search_page_mode: 搜索页模式
   group_home_tabs: 首页标签栏
   group_home_layout: 首页布局
+  group_original_moments_page: 原版动态页
+  group_new_moments_page: 新动态页（实验性）
+  group_new_moments_page_desc: 此页面并非最终成品，相关形态后续可能会有较大调整。
   group_moments_sidebar: 动态页左侧组件
   group_moments_interaction: 动态卡片交互
   group_version_reminder: 版本提醒
+  moments_experimental_confirm: 动态页目前仍处于实验阶段，并非最终成品，相关形态后续可能会有较大调整。是否继续切换？
+  original_moments_show_user_card: 显示用户卡片
+  original_moments_show_live_list: 显示直播列表
+  original_moments_show_community_center: 显示社区中心
+  original_moments_show_hot_search: 显示热搜
+  original_moments_show_up_list: 显示动态 UP 横幅
   moments_show_user_card: 显示用户卡片
   moments_show_publish: 显示发布动态组件
   moments_show_live: 显示正在直播组件

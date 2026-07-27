@@ -24,7 +24,31 @@ const openModeOptions = computed(() => [
 
 <template>
   <div>
-    <SettingsItemGroup :title="$t('settings.group_moments_sidebar')">
+    <SettingsItemGroup :title="$t('settings.group_original_moments_page')">
+      <SettingsItem :title="$t('settings.original_moments_show_user_card')" right-width="auto">
+        <Radio v-model="settings.originalMomentsShowUserCard" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.original_moments_show_live_list')" right-width="auto">
+        <Radio v-model="settings.originalMomentsShowLiveList" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.original_moments_show_community_center')" right-width="auto">
+        <Radio v-model="settings.originalMomentsShowCommunityCenter" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.original_moments_show_hot_search')" right-width="auto">
+        <Radio v-model="settings.originalMomentsShowHotSearch" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.original_moments_show_up_list')" right-width="auto">
+        <Radio v-model="settings.originalMomentsShowUpList" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="$t('settings.group_new_moments_page')"
+      :desc="$t('settings.group_new_moments_page_desc')"
+      collapsible
+      default-collapsed
+      warning-desc
+    >
       <SettingsItem :title="$t('settings.moments_show_user_card')" right-width="auto">
         <Radio v-model="settings.momentsSidebarShowUserCard" />
       </SettingsItem>
@@ -34,9 +58,6 @@ const openModeOptions = computed(() => [
       <SettingsItem :title="$t('settings.moments_show_live')" right-width="auto">
         <Radio v-model="settings.momentsSidebarShowLive" />
       </SettingsItem>
-    </SettingsItemGroup>
-
-    <SettingsItemGroup :title="$t('settings.group_moments_interaction')">
       <SettingsItem
         :title="$t('settings.moments_enable_live_preview')"
         :desc="$t('settings.moments_enable_live_preview_desc')"

@@ -184,9 +184,18 @@ settings:
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄
   group_home_layout: 首頁版面
+  group_original_moments_page: 原版動態頁
+  group_new_moments_page: 新動態頁（實驗性）
+  group_new_moments_page_desc: 此頁面並非最終成品，相關形式後續可能會有較大調整。
   group_moments_sidebar: 動態頁左側元件
   group_moments_interaction: 動態卡片互動
   group_version_reminder: 版本提醒
+  moments_experimental_confirm: 動態頁目前仍處於實驗階段，並非最終成品，相關形式後續可能會有較大調整。是否繼續切換？
+  original_moments_show_user_card: 顯示使用者卡片
+  original_moments_show_live_list: 顯示直播列表
+  original_moments_show_community_center: 顯示社群中心
+  original_moments_show_hot_search: 顯示熱門搜尋
+  original_moments_show_up_list: 顯示動態 UP 橫幅
   moments_show_user_card: 顯示使用者卡片
   moments_show_publish: 顯示發布動態元件
   moments_show_live: 顯示正在直播元件

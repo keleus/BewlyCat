@@ -4,9 +4,11 @@ const props = withDefaults(defineProps<{
   desc?: string
   collapsible?: boolean
   defaultCollapsed?: boolean
+  warningDesc?: boolean
 }>(), {
   collapsible: false,
   defaultCollapsed: false,
+  warningDesc: false,
 })
 
 const collapsed = ref(props.defaultCollapsed)
@@ -23,7 +25,13 @@ const collapsed = ref(props.defaultCollapsed)
     >
       <span>
         <span text="base $bew-text-1" fw-bold>{{ title }}</span>
-        <span v-if="desc" block text="sm $bew-text-2" fw-normal>{{ desc }}</span>
+        <span
+          v-if="desc"
+          block text="sm $bew-text-2" fw-normal
+          :class="{ 'warning-desc': warningDesc }"
+        >
+          {{ desc }}
+        </span>
       </span>
       <i
         i-mingcute:down-line
@@ -77,5 +85,9 @@ const collapsed = ref(props.defaultCollapsed)
   &.collapsed {
     transform: rotate(-90deg);
   }
+}
+
+.warning-desc {
+  color: var(--bew-warning-color);
 }
 </style>
