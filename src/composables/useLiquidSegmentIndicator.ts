@@ -10,7 +10,7 @@ export interface LiquidSegmentRect {
 }
 
 /** Keep in sync with CSS move duration for wheel threshold / cooldown */
-export const LIQUID_MOVE_DURATION_MS = 580
+export const LIQUID_MOVE_DURATION_MS = 400
 
 function lerp(from: number, to: number, progress: number) {
   return from + (to - from) * progress
@@ -20,11 +20,9 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function easeInOutCubic(t: number) {
+function easeOutCubic(t: number) {
   const p = clamp(t, 0, 1)
-  return p < 0.5
-    ? 4 * p * p * p
-    : 1 - ((-2 * p + 2) ** 3) / 2
+  return 1 - (1 - p) ** 3
 }
 
 interface LiquidGeometry {
@@ -54,20 +52,22 @@ function computeLiquidGeometry(from: LiquidSegmentRect, to: LiquidSegmentRect, t
   const dist = Math.hypot(dx, dy)
   const isHoriz = Math.abs(dx) >= Math.abs(dy)
 
-  // Position eases with a slight lead so the blob reaches destination first
-  const posT = easeInOutCubic(progress)
-  // Size eases a bit slower → elastic length change
-  const sizeT = easeInOutCubic(clamp((progress - 0.02) / 0.98, 0, 1))
-
-  const baseW = lerp(from.width, to.width, sizeT)
-  const baseH = lerp(from.height, to.height, sizeT)
+  // Position and size share the same eased progress so width/height never
+  // lag behind translation — that was what produced the "runs, then shrinks"
+  // two-stage read.
+  const posT = easeOutCubic(progress)
+  const baseW = lerp(from.width, to.width, posT)
+  const baseH = lerp(from.height, to.height, posT)
   const baseCx = lerp(from.x + from.width / 2, to.x + to.width / 2, posT)
   const baseCy = lerp(from.y + from.height / 2, to.y + to.height / 2, posT)
 
-  // Mid-travel stretch (peaks at 0.5). Caps at a fraction of travel distance
-  // so short steps stay subtle and long steps feel liquid without becoming a ball.
-  const mid = Math.sin(Math.PI * progress)
-  const stretch = Math.min(dist * 0.42, Math.max(baseW, baseH) * 0.85) * mid
+  // Stretch is bound to *remaining* distance, not an independent envelope:
+  // the blob elongates while it still has ground to cover and snaps back to
+  // its resting pill shape the instant it arrives. This is what makes the
+  // motion read as a single liquid gesture instead of move + settle.
+  const remaining = 1 - posT
+  const envelope = remaining ** 0.5
+  const stretch = Math.min(dist * 0.40, Math.max(baseW, baseH) * 0.8) * envelope
 
   if (isHoriz) {
     const width = baseW + stretch
