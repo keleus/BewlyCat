@@ -3,6 +3,7 @@ import { useToast } from 'vue-toastification'
 
 import Dialog from '~/components/Dialog.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
 import { settings } from '~/logic'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
@@ -15,6 +16,7 @@ interface DisplayMoment {
   author: { name: string, face: string }
   title: string
   text: string
+  richText: DisplayRichTextSegment[]
   images: string[]
   time: string
   likeCount: number
@@ -32,10 +34,18 @@ interface DisplayMoment {
   isForward: boolean
   /** 专栏动态：详情走专栏布局（可有目录） */
   isArticle: boolean
+  /** 是否带有“UP主的推荐”附加信息，用于整条动态过滤 */
+  isUpRecommendation: boolean
+  /** 是否为视频预约动态，用于整条动态过滤 */
+  isVideoReservation: boolean
+  /** 是否为直播预约动态，用于整条动态过滤 */
+  isLiveReservation: boolean
   chargeBadge?: string
   chargeHint?: string
   chargeCover?: string
   mediaMeta: string
+  liveArea: string
+  livePopularity: string
   roomId?: number
   duration: string
   bvid?: string
@@ -55,6 +65,17 @@ interface DisplayAdditional {
   cover: string
   action: string
   url: string
+  isUpRecommendation: boolean
+  isVideoReservation: boolean
+  isLiveReservation: boolean
+}
+
+interface DisplayRichTextSegment {
+  type: 'text' | 'emoji' | 'link'
+  text: string
+  imageUrl?: string
+  url?: string
+  size?: number
 }
 
 interface MomentsPortalUser {
@@ -109,6 +130,14 @@ const momentFilters: Array<{ value: MomentFilter, label: string }> = [
   { value: 'article', label: '专栏' },
 ]
 const activeMomentFilter = ref<MomentFilter>('all')
+const momentFilterInsideRef = ref<HTMLElement | null>(null)
+const {
+  indicatorStyle: momentFilterIndicatorStyle,
+  isMoving: momentFilterIndicatorMoving,
+} = useLiquidSegmentIndicator({
+  containerRef: momentFilterInsideRef,
+  activeKey: activeMomentFilter,
+})
 const portalUser = ref<MomentsPortalUser | null>(null)
 const portalLiveUsers = ref<MomentsPortalLiveUser[]>([])
 const portalLiveCount = ref(0)
@@ -131,10 +160,11 @@ const detailImageViewerSource = shallowRef<Window | null>(null)
 let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
 const layoutRef = ref<HTMLElement | null>(null)
 const gridRef = ref<HTMLElement | null>(null)
-/** 瀑布流卡片严格最大宽度 */
-const CARD_MAX_WIDTH = 280
-const CARD_MIN_WIDTH = 200
-const GRID_GAP = 12
+/** 宽卡信息流最多三列 */
+const CARD_MAX_WIDTH = 520
+const CARD_MIN_WIDTH = 360
+const CARD_COMPACT_MIN_WIDTH = 260
+const GRID_GAP = 14
 const SIDEBAR_WIDTH = 248
 const SIDEBAR_MIN_LAYOUT_WIDTH = SIDEBAR_WIDTH + GRID_GAP + CARD_MIN_WIDTH
 const gridColumnCount = ref(1)
@@ -145,6 +175,8 @@ const previewUrls = reactive<Record<string, string>>({})
 const likingMomentIds = reactive(new Set<string>())
 const videoCidCache = new Map<string, number>()
 const videoCidRequests = new Map<string, Promise<number | undefined>>()
+const videoAspectRatios = reactive<Record<string, number>>({})
+const videoAspectRatioRequests = new Map<string, Promise<number | undefined>>()
 const cardHeights = reactive<Record<string, number>>({})
 const visibleMomentIds = reactive(new Set<string>())
 const readyCoverIds = reactive(new Set<string>())
@@ -159,10 +191,11 @@ interface VirtualColumn {
   items: DisplayMoment[]
 }
 const virtualColumns = ref<VirtualColumn[]>([])
-/** 封面宽高比（宽/高），竖图最长按 3:4 裁剪 */
+/** 单图宽高比（宽/高），比 1:2 更长的竖图才裁剪 */
 const coverRatios = reactive<Record<string, number>>({})
-const MAX_PORTRAIT_RATIO = 3 / 4
-const SKELETON_COVER_HEIGHTS = [168, 248, 198, 280, 218, 184]
+const longImageIds = reactive(new Set<string>())
+const MIN_SINGLE_IMAGE_RATIO = 1 / 2
+const LONG_IMAGE_DISPLAY_RATIO = 3 / 4
 let gridObserver: ResizeObserver | undefined
 let liveFlvPlayer: any = null
 let liveHlsPlayer: any = null
@@ -176,6 +209,8 @@ const OVERSCAN_PX = 1200
 const MAX_PREVIEW_CACHE = 12
 const MAX_VIDEO_CID_CACHE = 80
 const MAX_POST_LOAD_AUTOFILL_PAGES = 3
+/** 虚拟瀑布流需要在全局哨兵进入视口前主动预取，避免高度修正后漏掉相交事件 */
+const LOAD_MORE_AHEAD_PX = 640
 const DETAIL_DIALOG_MIN_WIDTH = 860
 let scrollListenerAttached = false
 let cardMeasureObserver: ResizeObserver | undefined
@@ -196,6 +231,21 @@ const settledHeights = new Set<string>()
 
 function httpsUrl(url = '') {
   return url.replace(/^http:/, 'https:')
+}
+
+function normalizeRichTextJumpUrl(url = '') {
+  if (!url)
+    return ''
+
+  try {
+    const normalized = new URL(url.startsWith('//') ? `https:${url}` : url, 'https://www.bilibili.com')
+    return normalized.protocol === 'http:' || normalized.protocol === 'https:'
+      ? httpsUrl(normalized.toString())
+      : ''
+  }
+  catch {
+    return ''
+  }
 }
 
 function getMomentThumbnailUrl(url = '', width = 560) {
@@ -223,10 +273,6 @@ function formatCount(value: number) {
   return value > 9999 ? `${(value / 10000).toFixed(1)}万` : value || 0
 }
 
-function getSkeletonCoverHeight(columnIndex: number, itemIndex: number) {
-  return SKELETON_COVER_HEIGHTS[(columnIndex * 2 + itemIndex) % SKELETON_COVER_HEIGHTS.length]
-}
-
 /** 卡片文字预览：展示正文开头，不出现“点击查看详情”类占位 */
 function getCardPreviewText(moment: DisplayMoment) {
   const text = (moment.text || '').trim()
@@ -247,6 +293,26 @@ function getCardPreviewText(moment: DisplayMoment) {
   }
 
   return ''
+}
+
+function isLandscapeSingleImage(moment: DisplayMoment) {
+  return !moment.isVideo
+    && !moment.isLive
+    && moment.images.length === 1
+    && (coverRatios[moment.id] || 0) >= 1
+}
+
+function isLongSingleImage(moment: DisplayMoment) {
+  return !moment.isVideo
+    && !moment.isLive
+    && moment.images.length === 1
+    && longImageIds.has(moment.id)
+}
+
+function getSingleImageDisplayRatio(moment: DisplayMoment) {
+  return isLongSingleImage(moment)
+    ? LONG_IMAGE_DISPLAY_RATIO
+    : (coverRatios[moment.id] || MIN_SINGLE_IMAGE_RATIO)
 }
 
 function parseLiveInfo(content?: string) {
@@ -288,6 +354,38 @@ function normalizeDescText(desc: any) {
   if (typeof desc === 'string')
     return desc.trim()
   return pickText(desc.text, desc)
+}
+
+function extractRichTextSegments(...nodeLists: any[]): DisplayRichTextSegment[] {
+  const nodes = nodeLists.find(value => Array.isArray(value) && value.length)
+  if (!nodes)
+    return []
+
+  return nodes.flatMap((node: any) => {
+    const text = typeof node?.text === 'string'
+      ? node.text
+      : typeof node?.orig_text === 'string'
+        ? node.orig_text
+        : ''
+    const emoji = node?.emoji
+    const imageUrl = httpsUrl(emoji?.webp_url || emoji?.gif_url || emoji?.icon_url || '')
+    if (node?.type === 'RICH_TEXT_NODE_TYPE_EMOJI' && imageUrl) {
+      return [{
+        type: 'emoji' as const,
+        text: text || emoji?.text || '表情',
+        imageUrl,
+        size: Number(emoji?.size || 1),
+      }]
+    }
+
+    const isSupportedLink = node?.type === 'RICH_TEXT_NODE_TYPE_TOPIC'
+      || node?.type === 'RICH_TEXT_NODE_TYPE_WEB'
+    const url = isSupportedLink ? normalizeRichTextJumpUrl(node?.jump_url) : ''
+    if (text && url)
+      return [{ type: 'link' as const, text, url }]
+
+    return text ? [{ type: 'text' as const, text }] : []
+  })
 }
 
 function extractOpusImages(opus: any) {
@@ -366,6 +464,10 @@ function getMomentContent(item: any) {
     || additional.match
     || additional.upower_lottery
     || {}
+  const liveArea = pickText(live?.area_name, live?.desc_first)
+  const livePopularity = live?.online
+    ? `${formatCount(Number(live.online))} 人气`
+    : pickText(live?.desc_second)
 
   const chargeBadge = pickText(iconBadge.text, isChargeExclusive ? '充电专属' : '')
   const chargeCover = httpsUrl(iconBadge.render_img || iconBadge.icon || blocked?.cover || '')
@@ -384,6 +486,10 @@ function getMomentContent(item: any) {
     article.desc,
     common.desc,
   )
+  const richText = extractRichTextSegments(
+    opus.summary?.rich_text_nodes,
+    dynamic.desc?.rich_text_nodes,
+  )
 
   // 充电未解锁：列表往往无 desc/major，用提示文案顶上
   if (!text && isChargeExclusive)
@@ -391,7 +497,7 @@ function getMomentContent(item: any) {
 
   let additionalView = additional.type
     ? {
-        title: pickText(additionalCard.title, additionalCard.head_text, additionalCard.desc?.text),
+        title: pickText(additionalCard.head_text, additionalCard.title, additionalCard.desc?.text),
         desc: pickText(
           typeof additionalCard.desc1 === 'string' ? additionalCard.desc1 : additionalCard.desc1?.text,
           typeof additionalCard.desc2 === 'string' ? additionalCard.desc2 : additionalCard.desc2?.text,
@@ -400,6 +506,12 @@ function getMomentContent(item: any) {
         cover: httpsUrl(additionalCard.cover || additionalCard.icon || ''),
         action: getAdditionalActionText(additionalCard.button),
         url: additionalCard.jump_url || additionalCard.button?.jump_url || '',
+        isUpRecommendation: additional.type === 'ADDITIONAL_TYPE_UP_RCMD'
+          || pickText(additionalCard.head_text, additionalCard.title) === 'UP主的推荐',
+        isVideoReservation: additional.type === 'ADDITIONAL_TYPE_RESERVE'
+          && Number(additionalCard.button?.type) === 1,
+        isLiveReservation: additional.type === 'ADDITIONAL_TYPE_RESERVE'
+          && Number(additionalCard.button?.type) === 2,
       }
     : undefined
 
@@ -412,12 +524,16 @@ function getMomentContent(item: any) {
       cover: '',
       action: blocked?.buttonText || '去充电',
       url: blocked?.buttonUrl || '',
+      isUpRecommendation: false,
+      isVideoReservation: false,
+      isLiveReservation: false,
     }
   }
 
   return {
     title: pickText(live?.title, opus.title, archive.title, article.title, common.title),
     text,
+    richText,
     images: [...images, ...(cover ? [cover] : [])].map(httpsUrl).filter(Boolean).filter((url: string, index: number, list: string[]) => list.indexOf(url) === index),
     isVideo: item.type === 'DYNAMIC_TYPE_AV' || Boolean(major.archive || major.pgc),
     isPgc: item.type === 'DYNAMIC_TYPE_PGC_UNION' || Boolean(major.pgc),
@@ -431,8 +547,10 @@ function getMomentContent(item: any) {
     bvid: archive.bvid || undefined,
     videoUrl: archive.jump_url ? httpsUrl(archive.jump_url.startsWith('//') ? `https:${archive.jump_url}` : archive.jump_url) : undefined,
     mediaMeta: live
-      ? `${live.live_status === 1 ? '直播中' : '直播回放'}${live.area_name ? ` · ${live.area_name}` : ''}${live.online ? ` · ${formatCount(Number(live.online))} 人气` : ''}`
+      ? liveArea
       : (isChargeExclusive ? (chargeBadge || '充电专属') : (archive.duration_text || article.label || '')),
+    liveArea,
+    livePopularity,
     additional: additionalView,
   }
 }
@@ -495,15 +613,42 @@ function isPlayerMoment(moment: DisplayMoment | null | undefined) {
   return Boolean(moment?.isVideo || moment?.isLive)
 }
 
+function getDimensionAspectRatio(dimension: any) {
+  let width = Number(dimension?.width || 0)
+  let height = Number(dimension?.height || 0)
+  const rotation = Math.abs(Number(dimension?.rotate || 0)) % 180
+  if (rotation === 90)
+    [width, height] = [height, width]
+  return width > 0 && height > 0 ? width / height : undefined
+}
+
 /** 图文：小红书 note 风格固定宽高；视频/直播：按视口比例缩放 */
 const isOpusDetailMoment = computed(() => Boolean(selectedMoment.value && !isPlayerMoment(selectedMoment.value)))
 
-/** 视频/直播 dialog 相对视口等比缩放（宽高同一比例，保持与网页可视区域一致） */
+/** 播放器弹窗保持现有高度；横屏按 17:9 收窄，竖屏额外预留右侧页面布局宽度。 */
 const PLAYER_DIALOG_SCALE = 0.92
+const selectedVideoAspectRatio = computed(() => {
+  const moment = selectedMoment.value
+  if (!moment?.isVideo || moment.isLive || moment.isPgc)
+    return undefined
+  return (moment.bvid ? videoAspectRatios[moment.bvid] : undefined)
+    || coverRatios[moment.id]
+})
+const isSelectedVerticalVideo = computed(() => {
+  const ratio = selectedVideoAspectRatio.value
+  return Boolean(ratio && ratio < 0.9)
+})
 
 const detailDialogWidth = computed(() => {
-  if (isPlayerMoment(selectedMoment.value))
+  if (selectedMoment.value?.isLive)
     return `${PLAYER_DIALOG_SCALE * 100}vw`
+  if (selectedMoment.value?.isVideo) {
+    if (isSelectedVerticalVideo.value) {
+      const ratio = Math.max(0.4, selectedVideoAspectRatio.value || 9 / 16)
+      return `min(max(960px, calc(${PLAYER_DIALOG_SCALE * 100}dvh * ${ratio} + 420px)), calc(100vw - 32px))`
+    }
+    return `min(calc(${PLAYER_DIALOG_SCALE * 100}dvh * 17 / 9), calc(100vw - 32px))`
+  }
   // 参考小红书 note-container: 1088px
   return 'min(1088px, calc(100vw - 64px))'
 })
@@ -684,6 +829,9 @@ function openMomentDetail(moment: DisplayMoment) {
     return
   }
 
+  if (moment.isVideo && !moment.isLive && moment.bvid)
+    void loadVideoAspectRatio(moment.bvid)
+
   // 若已有详情在开，先销毁旧 iframe，避免叠内存
   if (selectedMoment.value || detailFrameUrl.value)
     destroyDetailIframe()
@@ -832,13 +980,20 @@ function mapMoment(item: DataItem): DisplayMoment {
   const text = isForward
     ? (normalizeDescText(dynamic.desc) || '转发了动态')
     : content.text
+  const richText = isForward
+    ? extractRichTextSegments(dynamic.desc?.rich_text_nodes)
+    : content.richText
+  const additional = content.additional || selfContent.additional
+  const isChargeExclusive = content.isChargeExclusive || selfContent.isChargeExclusive
 
   return {
     id,
     author: { name: author.name || 'B站用户', face: httpsUrl(author.face || '') },
     title: content.title,
     text,
-    images: content.images,
+    richText,
+    // 转发卡片只展示原动态摘要，不能把原动态图片提升为外层卡片媒体。
+    images: isForward || (isChargeExclusive && !content.isVideo) ? [] : content.images,
     time: author.pub_time || '',
     likeCount: Number(raw.modules?.module_stat?.like?.count || 0),
     isLiked: raw.modules?.module_stat?.like?.status === true
@@ -859,16 +1014,21 @@ function mapMoment(item: DataItem): DisplayMoment {
       || Number(contentRaw.basic?.comment_type) === 12
       || raw.modules?.module_dynamic?.major?.type === 'MAJOR_TYPE_ARTICLE'
       || contentRaw.modules?.module_dynamic?.major?.type === 'MAJOR_TYPE_ARTICLE',
-    isChargeExclusive: content.isChargeExclusive || selfContent.isChargeExclusive,
+    isUpRecommendation: Boolean(additional?.isUpRecommendation),
+    isVideoReservation: Boolean(additional?.isVideoReservation),
+    isLiveReservation: Boolean(additional?.isLiveReservation),
+    isChargeExclusive,
     chargeBadge: content.chargeBadge || selfContent.chargeBadge,
     chargeHint: content.chargeHint || selfContent.chargeHint,
     chargeCover: content.chargeCover || selfContent.chargeCover,
     mediaMeta: content.mediaMeta,
+    liveArea: content.liveArea,
+    livePopularity: content.livePopularity,
     roomId: content.roomId,
     duration: content.duration,
     bvid: content.bvid,
     videoUrl: content.videoUrl,
-    additional: content.additional || selfContent.additional,
+    additional,
     forward: isForward
       ? {
           author: forwardedAuthor.name || '原作者',
@@ -891,14 +1051,37 @@ function mapMoment(item: DataItem): DisplayMoment {
 }
 
 function estimateCardHeight(moment: DisplayMoment) {
-  const columnWidth = Math.max(CARD_MIN_WIDTH, gridCardWidth.value || CARD_MAX_WIDTH)
-  if (moment.isVideo || moment.isLive)
-    return Math.round(columnWidth * 9 / 16) + 132
-  if (moment.images.length) {
-    const ratio = coverRatios[moment.id] || MAX_PORTRAIT_RATIO
-    return Math.round(columnWidth / ratio) + 128
+  const columnWidth = Math.max(CARD_COMPACT_MIN_WIDTH, gridCardWidth.value || CARD_MAX_WIDTH)
+  if (moment.isChargeExclusive && !moment.isVideo)
+    return 230
+  if (columnWidth < CARD_MIN_WIDTH) {
+    if (moment.isVideo || moment.isLive)
+      return Math.round(columnWidth * 9 / 16) + 210
+    if (moment.images.length)
+      return Math.round(columnWidth / getSingleImageDisplayRatio(moment)) + 210
   }
-  return 268
+  if (moment.isLive)
+    return Math.round((columnWidth - 32) * 9 / 16) + 190
+  if (moment.isVideo)
+    return 330
+  if (moment.images.length === 1) {
+    const contentWidth = Math.max(0, columnWidth - 32)
+    if (isLandscapeSingleImage(moment))
+      return Math.round(contentWidth / (coverRatios[moment.id] || 1)) + 230
+    const mediaWidth = Math.max(170, (contentWidth - 14) * 0.44)
+    return Math.round(mediaWidth / getSingleImageDisplayRatio(moment)) + 120
+  }
+  if (moment.images.length > 1) {
+    const galleryRatio = moment.images.length <= 3
+      ? moment.images.length
+      : moment.images.length <= 4
+        ? 1
+        : moment.images.length <= 6
+          ? 3 / 2
+          : 1
+    return Math.round((columnWidth - 32) / galleryRatio) + 220
+  }
+  return 230
 }
 
 function handleMomentFilterChange(filter: MomentFilter) {
@@ -1011,10 +1194,7 @@ function redistributeColumns() {
   updateVirtualColumns()
 }
 
-/**
- * 列数：按卡片最大宽 280 + gap 计算。
- * 不够再开一列时保持 280 并居中留白；容器小于 280 时才缩小卡片。
- */
+/** 按宽卡的最小可读宽度计算列数，空间足够时展示三列，最多三列。 */
 function updateGridColumnCount() {
   const layoutWidth = layoutRef.value?.clientWidth || Math.max(CARD_MAX_WIDTH, window.innerWidth - 220)
   const hasSidebarContent = settings.value.momentsSidebarShowUserCard
@@ -1022,19 +1202,14 @@ function updateGridColumnCount() {
     || settings.value.momentsSidebarShowLive
   showMomentsSidebar.value = hasSidebarContent && layoutWidth >= SIDEBAR_MIN_LAYOUT_WIDTH
   const sidebarSpace = showMomentsSidebar.value ? SIDEBAR_WIDTH + GRID_GAP : 0
-  const containerWidth = Math.max(CARD_MIN_WIDTH, layoutWidth - sidebarSpace)
-
-  let nextCols = 1
-  let nextCardWidth = CARD_MAX_WIDTH
-
-  if (containerWidth < CARD_MAX_WIDTH) {
-    nextCols = 1
-    nextCardWidth = Math.max(CARD_MIN_WIDTH, Math.floor(containerWidth))
-  }
-  else {
-    nextCols = Math.max(1, Math.floor((containerWidth + GRID_GAP) / (CARD_MAX_WIDTH + GRID_GAP)))
-    nextCardWidth = CARD_MAX_WIDTH
-  }
+  const containerWidth = Math.max(CARD_COMPACT_MIN_WIDTH, layoutWidth - sidebarSpace)
+  const maxColumns = 3
+  const nextCols = Math.min(
+    maxColumns,
+    Math.max(1, Math.floor((containerWidth + GRID_GAP) / (CARD_MIN_WIDTH + GRID_GAP))),
+  )
+  const availableCardWidth = Math.floor((containerWidth - GRID_GAP * (nextCols - 1)) / nextCols)
+  const nextCardWidth = Math.max(CARD_COMPACT_MIN_WIDTH, Math.min(CARD_MAX_WIDTH, availableCardWidth))
 
   const colsChanged = nextCols !== gridColumnCount.value
   const widthChanged = nextCardWidth !== gridCardWidth.value
@@ -1145,7 +1320,20 @@ function scheduleVirtualUpdate() {
   virtualRaf = window.requestAnimationFrame(() => {
     virtualRaf = 0
     updateVirtualColumns()
+    maybeLoadMoreNearBottom()
   })
+}
+
+/** 全局触底哨兵的本地兜底：滚动到最后一屏附近时直接请求下一页。 */
+function maybeLoadMoreNearBottom() {
+  const viewport = scrollViewportRef.value
+  if (!viewport || isInitialLoading.value || isLoading.value || noMoreContent.value || !moments.value.length)
+    return
+
+  const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
+  const threshold = Math.max(LOAD_MORE_AHEAD_PX, viewport.clientHeight * 0.6)
+  if (distanceFromBottom <= threshold)
+    void loadMoments()
 }
 
 function getGridOffsetTop() {
@@ -1361,14 +1549,16 @@ function handleCoverLoad(event: Event, momentId: string) {
 
   readyCoverIds.add(momentId)
   const ratio = img.naturalWidth / img.naturalHeight
-  // 横向占满；竖图保留原比例，超过 3:4 再纵向裁剪
-  const nextRatio = Math.max(ratio, MAX_PORTRAIT_RATIO)
+  const moment = moments.value.find(item => item.id === momentId)
+  if (moment && !moment.isVideo && !moment.isLive && moment.images.length === 1)
+    longImageIds[ratio < MIN_SINGLE_IMAGE_RATIO ? 'add' : 'delete'](momentId)
+  // 普通单图保持完整比例；超过 1:2 的长图在卡片上按 3:4 裁切展示
+  const nextRatio = Math.max(ratio, MIN_SINGLE_IMAGE_RATIO)
   const prevRatio = coverRatios[momentId]
   coverRatios[momentId] = nextRatio
 
   // 封面比例变化会改估算高度；若尚未实测稳定，用估算高度更新并补偿滚动
   if (!settledHeights.has(momentId) && (!prevRatio || Math.abs(prevRatio - nextRatio) > 0.01)) {
-    const moment = moments.value.find(item => item.id === momentId)
     if (moment && !cardHeights[momentId]) {
       commitCardHeight(momentId, estimateCardHeight(moment), { force: true })
       scheduleVirtualUpdate()
@@ -1396,7 +1586,9 @@ async function prepareMomentCovers(items: DisplayMoment[], requestToken: number)
     image.onload = async () => {
       if (requestToken === feedRequestToken && image.naturalWidth && image.naturalHeight) {
         const ratio = image.naturalWidth / image.naturalHeight
-        coverRatios[item.id] = Math.max(ratio, MAX_PORTRAIT_RATIO)
+        coverRatios[item.id] = Math.max(ratio, MIN_SINGLE_IMAGE_RATIO)
+        if (!item.isVideo && !item.isLive && item.images.length === 1)
+          longImageIds[ratio < MIN_SINGLE_IMAGE_RATIO ? 'add' : 'delete'](item.id)
       }
       try {
         await image.decode()
@@ -1413,11 +1605,11 @@ async function prepareMomentCovers(items: DisplayMoment[], requestToken: number)
   })))
 }
 
-function getCoverStyle(momentId: string) {
-  const ratio = coverRatios[momentId]
+function getCoverStyle(moment: DisplayMoment) {
+  const ratio = coverRatios[moment.id]
   if (!ratio)
     return undefined
-  return { aspectRatio: String(ratio) }
+  return { aspectRatio: String(getSingleImageDisplayRatio(moment)) }
 }
 
 function cleanupLivePreviewPlayer() {
@@ -1521,6 +1713,36 @@ function cacheVideoCid(bvid: string, cid: number) {
   }
 }
 
+function cacheVideoAspectRatio(bvid: string, dimension: any) {
+  const ratio = getDimensionAspectRatio(dimension)
+  if (ratio)
+    videoAspectRatios[bvid] = ratio
+  return ratio
+}
+
+function loadVideoAspectRatio(bvid: string) {
+  if (videoAspectRatios[bvid])
+    return Promise.resolve(videoAspectRatios[bvid])
+
+  const pendingRequest = videoAspectRatioRequests.get(bvid)
+  if (pendingRequest)
+    return pendingRequest
+
+  const request = api.video.getVideoInfo({ bvid })
+    .then((response) => {
+      if (response.code !== 0)
+        return undefined
+      return cacheVideoAspectRatio(
+        bvid,
+        response.data?.dimension || response.data?.pages?.[0]?.dimension,
+      )
+    })
+    .catch(() => undefined)
+    .finally(() => videoAspectRatioRequests.delete(bvid))
+  videoAspectRatioRequests.set(bvid, request)
+  return request
+}
+
 async function getVideoCid(bvid: string) {
   const cachedCid = videoCidCache.get(bvid)
   if (cachedCid) {
@@ -1534,6 +1756,8 @@ async function getVideoCid(bvid: string) {
 
   const request = api.video.getVideoPageList({ bvid })
     .then((response) => {
+      if (response.code === 0)
+        cacheVideoAspectRatio(bvid, response.data?.[0]?.dimension)
       const cid = Number(response.code === 0 ? response.data?.[0]?.cid : 0)
       if (!cid)
         return undefined
@@ -1669,6 +1893,7 @@ async function loadMoments(reset = false, autoFillDepth = 0) {
     Object.keys(cardHeights).forEach(key => delete cardHeights[key])
     Object.keys(previewUrls).forEach(key => delete previewUrls[key])
     Object.keys(coverRatios).forEach(key => delete coverRatios[key])
+    longImageIds.clear()
     readyCoverIds.clear()
     readyCardIds.clear()
     enteringCardIds.clear()
@@ -1703,7 +1928,22 @@ async function loadMoments(reset = false, autoFillDepth = 0) {
     if (requestToken !== feedRequestToken || requestType !== activeMomentFilter.value || response.code !== 0)
       return
 
-    const items = (response.data?.items || []).map(mapMoment)
+    const rawItems = response.data?.items || []
+    const items = rawItems
+      .map(mapMoment)
+      .filter((moment) => {
+        if (settings.value.momentsFilterUpRecommendation && moment.isUpRecommendation)
+          return false
+        if (settings.value.momentsHideChargeExclusive && moment.isChargeExclusive)
+          return false
+        if (settings.value.momentsHideVideoReservation && moment.isVideoReservation)
+          return false
+        if (settings.value.momentsHideLiveReservation && moment.isLiveReservation)
+          return false
+        if (settings.value.momentsHideLiveDynamics && moment.isLive)
+          return false
+        return true
+      })
     await prepareMomentCovers(items, requestToken)
     if (requestToken !== feedRequestToken || requestType !== activeMomentFilter.value)
       return
@@ -1719,7 +1959,7 @@ async function loadMoments(reset = false, autoFillDepth = 0) {
 
     offset.value = response.data?.offset || ''
     updateBaseline.value = response.data?.update_baseline || ''
-    noMoreContent.value = !response.data?.has_more || items.length === 0
+    noMoreContent.value = !response.data?.has_more || rawItems.length === 0
     pageApplied = true
   }
   finally {
@@ -1865,6 +2105,8 @@ onBeforeUnmount(() => {
   Object.keys(previewUrls).forEach(key => delete previewUrls[key])
   videoCidCache.clear()
   videoCidRequests.clear()
+  Object.keys(videoAspectRatios).forEach(key => delete videoAspectRatios[key])
+  videoAspectRatioRequests.clear()
   visibleMomentIds.clear()
   cardElements.clear()
   cardEnterTimers.forEach(timer => clearTimeout(timer))
@@ -1925,6 +2167,21 @@ watch(
 
 watch(
   () => [
+    settings.value.momentsFilterUpRecommendation,
+    settings.value.momentsHideChargeExclusive,
+    settings.value.momentsHideVideoReservation,
+    settings.value.momentsHideLiveReservation,
+    settings.value.momentsHideLiveDynamics,
+  ],
+  () => {
+    if (scrollViewportRef.value)
+      scrollViewportRef.value.scrollTop = 0
+    void loadMoments(true)
+  },
+)
+
+watch(
+  () => [
     settings.value.momentsEnableLivePreview,
     settings.value.momentsEnableVideoPreview,
   ],
@@ -1951,12 +2208,20 @@ watch(
       <header class="moments-filter-header">
         <section class="moments-filter-panel">
           <div class="moments-filter-scroll">
-            <div class="moments-filter-inside">
+            <div ref="momentFilterInsideRef" class="moments-filter-inside">
+              <div
+                class="bew-liquid-indicator"
+                :class="{ 'is-moving': momentFilterIndicatorMoving }"
+                :style="momentFilterIndicatorStyle"
+                aria-hidden="true"
+              />
               <button
                 v-for="filter in momentFilters"
                 :key="filter.value"
                 type="button"
                 class="moments-filter-button"
+                data-segment-item
+                :data-active="activeMomentFilter === filter.value ? 'true' : undefined"
                 :class="{ 'is-active': activeMomentFilter === filter.value }"
                 :aria-pressed="activeMomentFilter === filter.value"
                 @click="handleMomentFilterChange(filter.value)"
@@ -2057,23 +2322,26 @@ watch(
               class="moments-skeleton-column"
             >
               <article
-                v-for="itemIndex in 5"
+                v-for="itemIndex in 4"
                 :key="itemIndex"
                 class="moments-skeleton-card"
               >
-                <div
-                  class="moments-skeleton-card__cover moments-skeleton-block"
-                  :style="{ height: `${getSkeletonCoverHeight(columnIndex, itemIndex)}px` }"
-                />
-                <div class="moments-skeleton-card__body">
-                  <div class="moments-skeleton-card__title moments-skeleton-block" />
-                  <div class="moments-skeleton-card__line moments-skeleton-block" />
-                  <div class="moments-skeleton-card__line moments-skeleton-card__line--short moments-skeleton-block" />
-                  <div class="moments-skeleton-card__footer">
-                    <span class="moments-skeleton-card__avatar moments-skeleton-block" />
+                <div class="moments-skeleton-card__header">
+                  <span class="moments-skeleton-card__avatar moments-skeleton-block" />
+                  <span class="moments-skeleton-card__identity">
                     <span class="moments-skeleton-card__author moments-skeleton-block" />
-                    <span class="moments-skeleton-card__count moments-skeleton-block" />
+                    <span class="moments-skeleton-card__time moments-skeleton-block" />
+                  </span>
+                </div>
+                <div class="moments-skeleton-card__main">
+                  <div class="moments-skeleton-card__cover moments-skeleton-block" />
+                  <div class="moments-skeleton-card__body">
+                    <div class="moments-skeleton-card__title moments-skeleton-block" />
+                    <div v-for="lineIndex in 5" :key="lineIndex" class="moments-skeleton-card__line moments-skeleton-block" :class="{ 'moments-skeleton-card__line--short': lineIndex === 5 }" />
                   </div>
+                </div>
+                <div class="moments-skeleton-card__footer">
+                  <span v-for="actionIndex in 3" :key="actionIndex" class="moments-skeleton-card__action moments-skeleton-block" />
                 </div>
               </article>
             </div>
@@ -2101,113 +2369,202 @@ watch(
               role="button"
               @click="openMomentDetail(moment)" @keydown.enter="openMomentDetail(moment)"
             >
-              <div
-                v-if="moment.images.length && (moment.isVideo || moment.isLive)"
-                class="moment-card__cover moment-card__cover--media"
-                @mouseenter="handleMediaEnter(moment)"
-                @mouseleave="handleMediaLeave(moment)"
-              >
-                <img
-                  :src="getMomentThumbnailUrl(moment.images[0])"
-                  :alt="moment.title"
-                  :class="{ 'is-ready': readyCoverIds.has(moment.id) }"
-                  loading="lazy"
-                  decoding="async"
-                  @load="handleCoverLoad($event, moment.id)"
-                >
-                <video
-                  v-if="hoveredMediaId === moment.id && previewUrls[moment.id]"
-                  :ref="(el) => bindPreviewVideo(el as Element | null, moment)"
-                  :src="moment.isLive ? undefined : previewUrls[moment.id]"
-                  autoplay
-                  muted
-                  :loop="!moment.isLive"
-                  playsinline
-                  @canplay="playPreview"
-                />
-                <span v-if="moment.isVideo" class="moment-card__video-mark"><span i-tabler-player-play-filled /> {{ moment.duration || '视频' }}</span>
-                <span v-if="moment.isLive" class="moment-card__live-mark"><span i-tabler-live-photo /> {{ moment.mediaMeta || '直播' }}</span>
-                <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
-                  {{ moment.chargeBadge || '充电专属' }}
+              <header class="moment-card__header">
+                <img :src="getAvatarThumbnailUrl(moment.author.face)" :alt="moment.author.name" class="moment-card__avatar" loading="lazy" decoding="async">
+                <span class="moment-card__identity">
+                  <strong>{{ moment.author.name }}</strong>
+                  <small>{{ moment.time || '刚刚' }}</small>
                 </span>
-              </div>
+              </header>
+
               <div
-                v-else-if="moment.images.length"
-                class="moment-card__cover"
-                :class="{ 'moment-card__cover--sized': !!coverRatios[moment.id] }"
-                :style="getCoverStyle(moment.id)"
+                class="moment-card__main"
+                :class="{
+                  'moment-card__main--has-media': (!moment.isChargeExclusive || moment.isVideo) && (
+                    (moment.images.length > 0 && (moment.isVideo || moment.isLive))
+                    || moment.images.length === 1
+                    || (!moment.images.length && (moment.isVideo || moment.isLive))
+                  ),
+                  'moment-card__main--video': moment.isVideo || (!moment.isChargeExclusive && moment.isLive),
+                  'moment-card__main--live': !moment.isChargeExclusive && moment.isLive,
+                  'moment-card__main--single-landscape': isLandscapeSingleImage(moment),
+                }"
               >
-                <img
-                  :src="getMomentThumbnailUrl(moment.images[0])"
-                  :alt="moment.text"
-                  :class="{ 'is-ready': readyCoverIds.has(moment.id) }"
-                  loading="lazy"
-                  decoding="async"
-                  @load="handleCoverLoad($event, moment.id)"
-                >
-                <span v-if="moment.images.length > 1" class="moment-card__image-count"><span i-tabler-photo /> {{ moment.images.length }}</span>
-                <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
-                  {{ moment.chargeBadge || '充电专属' }}
-                </span>
-              </div>
-              <div v-else-if="moment.isChargeExclusive" class="moment-card__text-cover moment-card__text-cover--charge">
-                <strong>{{ moment.chargeBadge || '充电专属' }}</strong>
-              </div>
-              <div v-else-if="moment.isVideo" class="moment-card__text-cover moment-card__text-cover--video">
-                <span v-if="moment.isVideo" i-tabler-player-play-filled class="moment-card__text-cover-icon" />
-                <span>{{ moment.isVideo ? '视频动态' : '发布了新动态' }}</span>
-              </div>
-              <div class="moment-card__body">
-                <p v-if="moment.title" class="moment-card__title">
-                  {{ moment.title }}
-                </p>
-                <p v-if="moment.mediaMeta && !moment.isLive && !moment.isChargeExclusive" class="moment-card__media-meta">
-                  {{ moment.mediaMeta }}
-                </p>
-                <p v-if="getCardPreviewText(moment)" class="moment-card__desc">
-                  {{ getCardPreviewText(moment) }}
-                </p>
-                <div v-if="moment.forward" class="moment-card__forward">
-                  <strong>@{{ moment.forward.author }}</strong>
-                  <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
-                </div>
-                <a
-                  v-if="moment.additional"
-                  :href="moment.additional.url || undefined"
-                  class="moment-card__additional"
-                  :class="{ 'moment-card__additional--no-cover': moment.isChargeExclusive || !moment.additional.cover }"
-                  @click.stop
+                <div
+                  v-if="moment.images.length && (moment.isVideo || moment.isLive)"
+                  class="moment-card__media moment-card__cover moment-card__cover--media"
+                  @mouseenter="handleMediaEnter(moment)"
+                  @mouseleave="handleMediaLeave(moment)"
                 >
                   <img
-                    v-if="moment.additional.cover && !moment.isChargeExclusive"
-                    :src="getMomentThumbnailUrl(moment.additional.cover, 80)"
-                    alt=""
+                    :src="getMomentThumbnailUrl(moment.images[0])"
+                    :alt="moment.title"
+                    :class="{ 'is-ready': readyCoverIds.has(moment.id) }"
                     loading="lazy"
                     decoding="async"
+                    @load="handleCoverLoad($event, moment.id)"
                   >
-                  <span><strong>{{ moment.additional.title || '附加内容' }}</strong><small>{{ moment.additional.desc }}</small></span>
-                  <em>{{ moment.additional.action }}</em>
-                </a>
-                <footer class="moment-card__footer">
-                  <img :src="getAvatarThumbnailUrl(moment.author.face)" :alt="moment.author.name" class="moment-card__avatar" loading="lazy" decoding="async">
-                  <span class="moment-card__author">{{ moment.author.name }}</span>
-                  <button
-                    type="button"
-                    class="moment-card__likes"
-                    :class="{ 'is-liked': moment.isLiked, 'is-unavailable': moment.isLikeDisabled }"
-                    :disabled="likingMomentIds.has(moment.id) || moment.isLikeDisabled"
-                    :aria-label="moment.isLikeDisabled ? '该动态暂不支持点赞' : moment.isLiked ? '取消点赞' : '点赞'"
-                    :aria-pressed="moment.isLiked"
-                    :title="moment.isLikeDisabled ? '该动态暂不支持点赞' : moment.isLiked ? '取消点赞' : '点赞'"
-                    @click.stop="toggleMomentLike(moment)"
-                    @keydown.enter.stop
+                  <video
+                    v-if="hoveredMediaId === moment.id && previewUrls[moment.id]"
+                    :ref="(el) => bindPreviewVideo(el as Element | null, moment)"
+                    :src="moment.isLive ? undefined : previewUrls[moment.id]"
+                    autoplay
+                    muted
+                    :loop="!moment.isLive"
+                    playsinline
+                    @canplay="playPreview"
+                  />
+                  <span v-if="moment.isVideo" class="moment-card__video-mark"><span i-tabler-player-play-filled /> {{ moment.duration || '视频' }}</span>
+                  <span v-if="moment.isLive" class="moment-card__live-mark">
+                    LIVE
+                    <span i-svg-spinners:pulse-3 aria-hidden="true" />
+                  </span>
+                  <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
+                    {{ moment.chargeBadge || '充电专属' }}
+                  </span>
+                </div>
+                <div
+                  v-else-if="moment.images.length === 1"
+                  class="moment-card__media moment-card__cover moment-card__cover--single"
+                  :class="{ 'moment-card__cover--sized': !!coverRatios[moment.id] }"
+                  :style="getCoverStyle(moment)"
+                >
+                  <img
+                    :src="getMomentThumbnailUrl(moment.images[0])"
+                    :alt="moment.text"
+                    :class="{ 'is-ready': readyCoverIds.has(moment.id) }"
+                    loading="lazy"
+                    decoding="async"
+                    @load="handleCoverLoad($event, moment.id)"
                   >
-                    <span v-if="moment.isLiked" i-tabler-heart-filled />
-                    <span v-else i-tabler-heart />
-                    {{ formatCount(moment.likeCount) }}
-                  </button>
-                </footer>
+                  <span v-if="isLongSingleImage(moment)" class="moment-card__long-image-mark">长图</span>
+                  <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
+                    {{ moment.chargeBadge || '充电专属' }}
+                  </span>
+                </div>
+                <div v-else-if="(moment.isVideo || moment.isLive) && (!moment.isChargeExclusive || moment.isVideo)" class="moment-card__media moment-card__text-cover moment-card__text-cover--video">
+                  <span v-if="moment.isLive" i-tabler-live-photo class="moment-card__text-cover-icon" />
+                  <span v-else i-tabler-player-play-filled class="moment-card__text-cover-icon" />
+                  <span>{{ moment.isLive ? '直播动态' : '视频动态' }}</span>
+                </div>
+
+                <div class="moment-card__body">
+                  <p v-if="moment.title" class="moment-card__title">
+                    {{ moment.title }}
+                  </p>
+                  <p
+                    v-if="moment.mediaMeta && !moment.isChargeExclusive && (!moment.isVideo || moment.isLive)"
+                    class="moment-card__media-meta"
+                    :class="{ 'moment-card__media-meta--live': moment.isLive }"
+                  >
+                    {{ moment.mediaMeta }}
+                  </p>
+                  <p v-if="!moment.isLive && (moment.richText.length || getCardPreviewText(moment))" class="moment-card__desc">
+                    <template v-if="moment.richText.length">
+                      <template v-for="(segment, segmentIndex) in moment.richText" :key="`${moment.id}-${segmentIndex}`">
+                        <img
+                          v-if="segment.type === 'emoji' && segment.imageUrl"
+                          :src="segment.imageUrl"
+                          :alt="segment.text"
+                          :title="segment.text"
+                          class="moment-card__emoji"
+                          :class="{ 'moment-card__emoji--large': segment.size === 2 }"
+                          loading="lazy"
+                          decoding="async"
+                        >
+                        <a
+                          v-else-if="segment.type === 'link' && segment.url"
+                          :href="segment.url"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="moment-card__rich-link"
+                          @click.stop
+                        >
+                          {{ segment.text }}
+                        </a>
+                        <template v-else>
+                          {{ segment.text }}
+                        </template>
+                      </template>
+                    </template>
+                    <template v-else>
+                      {{ getCardPreviewText(moment) }}
+                    </template>
+                  </p>
+                  <div v-if="moment.forward" class="moment-card__forward">
+                    <strong>@{{ moment.forward.author }}</strong>
+                    <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
+                  </div>
+                </div>
+
+                <div
+                  v-if="moment.images.length > 1 && !moment.isVideo && !moment.isLive"
+                  class="moment-card__gallery"
+                  :class="`moment-card__gallery--${Math.min(moment.images.length, 9)}`"
+                >
+                  <img
+                    v-for="(image, imageIndex) in moment.images.slice(0, 9)"
+                    :key="image"
+                    :src="getMomentThumbnailUrl(image, 360)"
+                    :alt="`${moment.author.name} 的动态图片 ${imageIndex + 1}`"
+                    loading="lazy"
+                    decoding="async"
+                    @load="handleCoverLoad($event, moment.id)"
+                  >
+                  <span v-if="moment.images.length > 9" class="moment-card__image-count">+{{ moment.images.length - 9 }}</span>
+                  <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
+                    {{ moment.chargeBadge || '充电专属' }}
+                  </span>
+                </div>
               </div>
+
+              <a
+                v-if="moment.additional"
+                :href="moment.additional.url || undefined"
+                class="moment-card__additional moment-card__additional--footer"
+                :class="{ 'moment-card__additional--no-cover': moment.isChargeExclusive || !moment.additional.cover }"
+                @click.stop
+              >
+                <img
+                  v-if="moment.additional.cover && !moment.isChargeExclusive"
+                  :src="getMomentThumbnailUrl(moment.additional.cover, 80)"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                >
+                <span><strong>{{ moment.additional.title || '附加内容' }}</strong><small v-if="moment.additional.desc">{{ moment.additional.desc }}</small></span>
+                <em>{{ moment.additional.action }}</em>
+              </a>
+
+              <footer class="moment-card__footer">
+                <a :href="moment.url" target="_blank" rel="noopener noreferrer" aria-label="新建标签页打开动态" @click.stop>
+                  <span i-tabler-external-link />
+                  <span class="moment-card__open-label">新标签页打开</span>
+                </a>
+                <button v-if="!moment.isLive" type="button" aria-label="查看评论" @click.stop="openMomentDetail(moment)">
+                  <span i-tabler-message-circle />
+                  {{ formatCount(moment.commentCount) }}
+                </button>
+                <span v-else class="moment-card__footer-stat" :aria-label="`直播人气 ${moment.livePopularity || '暂无数据'}`">
+                  <span i-tabler-users />
+                  {{ moment.livePopularity || '直播中' }}
+                </span>
+                <button
+                  type="button"
+                  class="moment-card__likes"
+                  :class="{ 'is-liked': moment.isLiked, 'is-unavailable': moment.isLikeDisabled }"
+                  :disabled="likingMomentIds.has(moment.id) || moment.isLikeDisabled"
+                  :aria-label="moment.isLikeDisabled ? '该动态暂不支持点赞' : moment.isLiked ? '取消点赞' : '点赞'"
+                  :aria-pressed="moment.isLiked"
+                  :title="moment.isLikeDisabled ? '该动态暂不支持点赞' : moment.isLiked ? '取消点赞' : '点赞'"
+                  @click.stop="toggleMomentLike(moment)"
+                  @keydown.enter.stop
+                >
+                  <span v-if="moment.isLiked" i-tabler-heart-filled />
+                  <span v-else i-tabler-heart />
+                  {{ formatCount(moment.likeCount) }}
+                </button>
+              </footer>
             </article>
             <div v-if="column.bottomPad" class="moments-grid__spacer" :style="{ height: `${column.bottomPad}px` }" />
           </div>
@@ -2239,6 +2596,7 @@ watch(
       v-if="selectedMoment && detailFrameUrl"
       append-to-bewly-body
       content-flush
+      transition-name="moments-dialog"
       :show-header="false"
       :show-border="false"
       :show-footer="false"
@@ -2373,14 +2731,14 @@ watch(
 
 <style scoped lang="scss">
 .moments-page {
-  padding: 8px 0 48px;
+  padding: 8px 12px 48px;
 }
 .moments-layout {
   display: grid;
   grid-template-columns: 248px auto;
   align-items: start;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
 }
 .moments-layout--without-sidebar {
@@ -2402,7 +2760,7 @@ watch(
 .moments-sidebar-skeleton {
   overflow: hidden;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--bew-radius);
   background: var(--bew-elevated);
   box-shadow: none;
 }
@@ -2494,7 +2852,7 @@ watch(
   min-height: 44px;
   padding: 0 14px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--bew-radius);
   color: var(--bew-text-1);
   background: var(--bew-elevated);
   box-shadow: none;
@@ -2683,20 +3041,22 @@ watch(
   display: grid;
   align-items: start;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
 }
 .moments-skeleton-column {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
-  max-width: 280px;
+  max-width: 520px;
   min-width: 0;
 }
 .moments-skeleton-card {
+  container-type: inline-size;
+  min-height: 316px;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: var(--bew-radius);
   background: color-mix(in oklab, var(--bew-elevated), transparent 42%);
   box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--bew-border-color), transparent 72%);
 }
@@ -2710,12 +3070,32 @@ watch(
   background-size: 400% 100%;
   animation: moment-shimmer 1.5s ease infinite;
 }
+.moments-skeleton-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 12px;
+}
+.moments-skeleton-card__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.moments-skeleton-card__main {
+  display: grid;
+  grid-template-columns: minmax(170px, 44%) minmax(0, 1fr);
+  gap: 14px;
+  min-height: 202px;
+  padding: 0 16px 14px;
+}
 .moments-skeleton-card__cover {
   width: 100%;
+  min-height: 202px;
+  border-radius: var(--bew-radius);
   opacity: 0.68;
 }
 .moments-skeleton-card__body {
-  padding: 13px 14px 12px;
+  padding: 3px 0 0;
 }
 .moments-skeleton-card__title {
   width: 72%;
@@ -2733,41 +3113,53 @@ watch(
   margin-top: 7px;
 }
 .moments-skeleton-card__footer {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   align-items: center;
-  gap: 7px;
-  margin-top: 15px;
+  gap: 26px;
+  height: 42px;
+  padding: 0 34px;
+  border-top: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 72%);
 }
 .moments-skeleton-card__avatar {
-  width: 21px;
-  height: 21px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
 }
 .moments-skeleton-card__author {
-  width: 72px;
-  height: 10px;
+  display: block;
+  width: 92px;
+  height: 12px;
   border-radius: 4px;
 }
-.moments-skeleton-card__count {
-  width: 38px;
-  height: 10px;
-  margin-left: auto;
+.moments-skeleton-card__time {
+  display: block;
+  width: 58px;
+  height: 8px;
+  border-radius: 4px;
+}
+.moments-skeleton-card__action {
+  height: 11px;
   border-radius: 4px;
 }
 .moments-filter-header {
+  position: relative;
+  z-index: 8;
   grid-column: 1 / -1;
   display: flex;
   justify-content: center;
   width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
 }
 .moments-filter-panel {
-  height: 40px;
-  max-width: calc(100vw - 320px);
+  height: var(--bew-top-bar-control-height);
+  max-width: 100%;
   overflow: hidden;
-  border: 1px solid transparent;
-  border-radius: 9999px;
+  border: var(--bew-top-bar-control-border-width) solid transparent;
+  border-radius: var(--bew-top-bar-control-radius);
   background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
   box-sizing: border-box;
 }
 .moments-filter-scroll {
@@ -2780,21 +3172,23 @@ watch(
   display: none;
 }
 .moments-filter-inside {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--bew-top-bar-control-gap);
   width: max-content;
   height: 100%;
-  padding: 2px;
+  padding: var(--bew-top-bar-control-padding);
   box-sizing: border-box;
 }
 .moments-filter-button {
   position: relative;
+  z-index: 1;
   flex: 0 0 auto;
   height: 100%;
   padding: 0 16px;
   border: 0;
-  border-radius: 9999px;
+  border-radius: var(--bew-top-bar-control-item-radius);
   color: var(--bew-text-2);
   background: transparent;
   font-family: inherit;
@@ -2803,22 +3197,22 @@ watch(
   letter-spacing: 0.01em;
   cursor: pointer;
   transition:
-    color 0.2s ease,
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.15s ease;
+    color var(--bew-duration-normal, 200ms) ease,
+    background-color var(--bew-duration-normal, 200ms) ease;
 }
-.moments-filter-button:hover {
-  color: var(--bew-text-1);
-  background: var(--bew-fill-1);
+.moments-filter-button:hover:not(.is-active) {
+  color: var(--bew-segment-item-hover-color);
+  background: var(--bew-segment-item-hover-bg);
+}
+.moments-filter-button:focus-visible:not(.is-active) {
+  outline: none;
+  color: var(--bew-segment-item-active-color);
+  background: var(--bew-segment-item-active-bg);
+  box-shadow: var(--bew-segment-item-active-shadow);
 }
 .moments-filter-button.is-active {
-  color: var(--bew-theme-color);
-  background: var(--bew-theme-color-20);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 8%),
-    0 2px 6px var(--bew-theme-color-10);
-  transform: translateY(-0.5px);
+  color: var(--bew-segment-item-active-color);
+  background: transparent;
 }
 @media (max-width: 1000px) {
   .moments-filter-panel {
@@ -2844,7 +3238,7 @@ watch(
 }
 .moments-grid {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   width: 100%;
   justify-content: center;
   justify-items: stretch;
@@ -2861,14 +3255,14 @@ watch(
 .moments-grid__column {
   display: flex;
   width: 100%;
-  max-width: 280px;
+  max-width: 520px;
   min-width: 0;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 .moments-grid .moment-card {
   width: 100%;
-  max-width: 280px;
+  max-width: 520px;
 }
 .moments-grid__spacer {
   flex: 0 0 auto;
@@ -2876,11 +3270,12 @@ watch(
   pointer-events: none;
 }
 .moment-card {
+  container-type: inline-size;
   break-inside: avoid;
   margin: 0;
   overflow: hidden;
   border: 0;
-  border-radius: 16px;
+  border-radius: var(--bew-radius);
   background: var(--bew-elevated);
   cursor: pointer;
   box-shadow: none;
@@ -2927,7 +3322,7 @@ watch(
 .moment-card__cover > img.is-ready {
   opacity: 1;
 }
-/* 已拿到尺寸后按比例定高，超长竖图被限制并裁剪 */
+/* 已拿到尺寸后按比例定高，超过 1:2 的长图会按 3:4 裁剪 */
 .moment-card__cover--sized > img {
   position: absolute;
   inset: 0;
@@ -2969,8 +3364,27 @@ watch(
   left: 10px;
 }
 .moment-card__live-mark {
-  left: 10px;
-  background: rgb(251 114 153 / 88%);
+  top: 8px;
+  left: 8px;
+  bottom: auto;
+  z-index: 2;
+  border-radius: var(--bew-radius);
+  background: var(--bew-theme-color);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.moment-card__long-image-mark {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 4px 8px;
+  border-radius: var(--bew-radius);
+  color: #fff;
+  background: rgb(0 0 0 / 62%);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
 }
 .moment-card__charge-badge {
   position: absolute;
@@ -3051,6 +3465,14 @@ watch(
   color: var(--bew-text-2);
   font-size: 12px;
 }
+.moment-card__media-meta--live {
+  align-self: flex-start;
+  padding: 4px 8px;
+  border-radius: var(--bew-radius);
+  color: var(--bew-theme-color);
+  background: var(--bew-theme-color-10);
+  line-height: 1.35;
+}
 .moment-card__desc {
   margin: 0;
   color: var(--bew-text-1);
@@ -3093,10 +3515,10 @@ watch(
   display: grid;
   grid-template-columns: 40px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   margin-top: 11px;
-  padding: 8px;
-  border-radius: 10px;
+  padding: 12px 16px;
+  border-radius: var(--bew-radius);
   color: inherit;
   background: var(--bew-fill-1);
   text-decoration: none;
@@ -3111,7 +3533,11 @@ watch(
   object-fit: cover;
 }
 .moment-card__additional span {
+  display: flex;
   min-width: 0;
+  min-height: 40px;
+  flex-direction: column;
+  justify-content: center;
 }
 .moment-card__additional strong,
 .moment-card__additional small {
@@ -3126,6 +3552,8 @@ watch(
   font-size: 11px;
 }
 .moment-card__additional em {
+  margin-left: 12px;
+  padding-right: 4px;
   color: var(--bew-theme-color);
   font-size: 12px;
   font-style: normal;
@@ -3177,6 +3605,314 @@ watch(
 }
 .moment-card__likes.is-unavailable {
   cursor: not-allowed;
+}
+
+/* 宽卡信息流：作者在上、内容居中、操作在下，媒体与正文优先横向排布。 */
+.moment-card__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 12px;
+}
+.moment-card__header .moment-card__avatar {
+  width: 36px;
+  height: 36px;
+}
+.moment-card__identity {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+}
+.moment-card__identity strong,
+.moment-card__identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.moment-card__identity strong {
+  color: var(--bew-theme-color);
+  font-size: 14px;
+  font-weight: 650;
+}
+.moment-card__identity small {
+  color: var(--bew-text-3);
+  font-size: 11px;
+}
+.moment-card__main {
+  padding: 0 16px 14px;
+}
+.moment-card__main--has-media {
+  display: grid;
+  grid-template-columns: minmax(170px, 44%) minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+.moment-card__main--live {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.moment-card__main--live .moment-card__body {
+  order: 1;
+  height: auto;
+  max-height: none;
+}
+.moment-card__main--live .moment-card__media {
+  order: 2;
+  width: 100%;
+}
+.moment-card__main--live .moment-card__cover--media {
+  aspect-ratio: 16 / 9;
+}
+.moment-card__main--single-landscape {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.moment-card__main--single-landscape .moment-card__body {
+  order: 1;
+}
+.moment-card__main--single-landscape .moment-card__body:empty {
+  display: none;
+}
+.moment-card__main--single-landscape .moment-card__cover--single {
+  order: 2;
+  width: 100%;
+}
+.moment-card__media {
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--bew-radius);
+}
+.moment-card__cover--media {
+  aspect-ratio: 4 / 3;
+}
+.moment-card__cover--single {
+  max-height: none;
+}
+.moment-card__gallery {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 3px;
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: var(--bew-radius);
+  aspect-ratio: 1;
+  background: var(--bew-fill-1);
+}
+.moment-card__gallery--2,
+.moment-card__gallery--4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.moment-card__gallery--2 {
+  aspect-ratio: 2 / 1;
+}
+.moment-card__gallery--3 {
+  aspect-ratio: 3 / 1;
+}
+.moment-card__gallery--5,
+.moment-card__gallery--6 {
+  aspect-ratio: 3 / 2;
+}
+.moment-card__gallery > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  background: var(--bew-fill-1);
+}
+.moment-card__gallery .moment-card__image-count {
+  right: 8px;
+  bottom: 8px;
+}
+.moment-card__text-cover {
+  min-height: 176px;
+  box-sizing: border-box;
+}
+.moment-card__body {
+  min-width: 0;
+  padding: 1px 0 0;
+}
+.moment-card__main--video .moment-card__body {
+  display: flex;
+  height: calc((100cqw - 32px) * 0.33);
+  flex-direction: column;
+  overflow: hidden;
+}
+.moment-card__main--video.moment-card__main--live .moment-card__body {
+  height: auto;
+  max-height: none;
+}
+.moment-card__main--video .moment-card__desc {
+  flex: 1 1 auto;
+  -webkit-line-clamp: 4;
+  text-overflow: ellipsis;
+}
+.moment-card__main--video:not(.moment-card__main--live) .moment-card__title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  text-overflow: ellipsis;
+}
+.moment-card--text .moment-card__body {
+  min-height: 120px;
+  padding-top: 0;
+}
+.moment-card--text .moment-card__desc {
+  -webkit-line-clamp: 7;
+}
+.moment-card__title {
+  margin-bottom: 8px;
+  color: var(--bew-text-1);
+  font-size: 15px;
+}
+.moment-card__desc {
+  color: var(--bew-text-2);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-line-clamp: 7;
+}
+.moment-card__emoji {
+  display: inline-block;
+  width: 1.35em;
+  height: 1.35em;
+  margin: 0 0.08em;
+  vertical-align: -0.28em;
+  object-fit: contain;
+}
+.moment-card__emoji--large {
+  width: 1.6em;
+  height: 1.6em;
+  vertical-align: -0.4em;
+}
+.moment-card__rich-link {
+  color: var(--bew-theme-color);
+  text-decoration: none;
+  text-underline-offset: 0.15em;
+}
+.moment-card__rich-link:hover {
+  text-decoration: underline;
+}
+.moment-card__forward {
+  margin-top: 10px;
+}
+.moment-card__additional--footer {
+  margin: 0 16px 14px;
+}
+.moment-card__footer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  gap: 0;
+  min-height: 42px;
+  margin: 0;
+  border-top: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 64%);
+  color: var(--bew-text-2);
+  font-size: 12px;
+}
+.moment-card__footer > a,
+.moment-card__footer > button,
+.moment-card__footer > .moment-card__footer-stat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+  box-sizing: border-box;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color 0.16s ease,
+    background-color 0.16s ease;
+}
+.moment-card__footer-stat {
+  cursor: default;
+}
+.moment-card__footer > a:hover,
+.moment-card__footer > button:hover {
+  color: var(--bew-theme-color);
+  background: color-mix(in srgb, var(--bew-theme-color) 8%, transparent);
+}
+.moment-card__footer > :not(:first-child) {
+  border-left: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 72%);
+}
+.moment-card__footer .moment-card__likes:active {
+  transform: none;
+}
+.moment-card__footer .moment-card__likes:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+@container (max-width: 459px) {
+  .moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
+    -webkit-line-clamp: 3;
+  }
+}
+
+@container (max-width: 379px) {
+  .moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
+    -webkit-line-clamp: 2;
+  }
+}
+
+@container (max-width: 359px) {
+  .moment-card__main--has-media {
+    display: flex;
+    flex-direction: column;
+  }
+  .moment-card__media {
+    width: 100%;
+  }
+  .moment-card__cover--single {
+    max-height: none;
+  }
+  .moment-card__main--video .moment-card__body {
+    height: auto;
+    max-height: 220px;
+  }
+  .moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
+    -webkit-line-clamp: 6;
+  }
+  .moment-card--text .moment-card__body {
+    min-height: 0;
+  }
+  .moments-skeleton-card__main {
+    display: block;
+  }
+  .moments-skeleton-card__cover {
+    min-height: 240px;
+  }
+  .moments-skeleton-card__body {
+    padding-top: 16px;
+  }
+}
+
+@container (max-width: 379px) {
+  .moment-card__open-label {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .moments-page {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
 }
 .moments-page__loading {
   display: flex;

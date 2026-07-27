@@ -22,6 +22,8 @@ const props = withDefaults(defineProps<{
   contentFlush?: boolean
   /** 是否显示对话框顶栏 */
   showHeader?: boolean
+  /** Vue Transition 名称；可为需要避免缩放的详情弹窗指定独立过渡 */
+  transitionName?: string
   /** 是否显示边框和边缘光 */
   showBorder?: boolean
   showFooter?: boolean
@@ -35,6 +37,7 @@ const props = withDefaults(defineProps<{
   showBorder: true,
   showFooter: true,
   contentFlush: false,
+  transitionName: 'modal',
 })
 
 const emit = defineEmits(['close', 'confirm'])
@@ -147,7 +150,7 @@ function handleConfirm() {
 
 <template>
   <Teleport :to="mainAppRef" :disabled="!appendToBewlyBody">
-    <Transition name="modal">
+    <Transition :name="transitionName">
       <div
         v-if="showDialog"
         class="dialog"
@@ -280,5 +283,15 @@ function handleConfirm() {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+.moments-dialog-enter-active,
+.moments-dialog-leave-active {
+  transition: opacity 140ms var(--bew-ease-standard, ease);
+}
+
+.moments-dialog-enter-from,
+.moments-dialog-leave-to {
+  opacity: 0;
 }
 </style>
