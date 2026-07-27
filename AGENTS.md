@@ -8,12 +8,14 @@ BewlyCat：基于 BewlyBewly 的 bilibili 浏览器扩展（Vue 3 + TS + Vite + 
 - `pnpm typecheck`
 - 构建产物：Chrome/Edge → `extension/`，Firefox → `extension-firefox/`
 
-**提交前必须**先通过：
+仅当本次任务实际执行 `git commit` 时，提交前必须通过：
 
 ```sh
 pnpm lint
 pnpm typecheck
 ```
+
+未执行 `git commit` 时，不要求运行上述检查。
 
 ## 结构（速查）
 
