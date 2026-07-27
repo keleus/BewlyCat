@@ -124,7 +124,9 @@ function handlePageMouseDown(event: MouseEvent) {
 
 .settings-category-nav {
   position: sticky;
-  top: 12px;
+  // The scroll viewport already reserves the 80px header with padding. A zero
+  // inset keeps the sticky position aligned with the nav's natural position.
+  top: 0;
   display: flex;
   flex-direction: column;
   align-self: start;
