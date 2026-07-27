@@ -74,17 +74,22 @@ const pages = [
           <li
             v-for="page in pages"
             :key="page.value"
-            :style="{ backgroundColor: activePage === page.value ? 'var(--bew-fill-3)' : '' }"
-            cursor-pointer p="y-2 x-4" rounded="$bew-radius" bg="hover:$bew-fill-2"
-            duration-300
-            @click="activePage = page.value"
           >
-            <div class="flex items-start min-w-0">
-              <div class="mr-2 w-5 h-5 shrink-0 flex items-center justify-center">
-                <div :class="activePage === page.value ? page.iconActivated : page.icon" class="text-lg leading-none" />
+            <button
+              type="button"
+              :style="{ backgroundColor: activePage === page.value ? 'var(--bew-fill-3)' : '' }"
+              :aria-current="activePage === page.value ? 'page' : undefined"
+              cursor-pointer w-full p="y-2 x-4" rounded="$bew-radius" bg="hover:$bew-fill-2"
+              text-left duration-300
+              @click="activePage = page.value"
+            >
+              <div class="flex items-start min-w-0">
+                <div class="mr-2 w-5 h-5 shrink-0 flex items-center justify-center">
+                  <div :class="activePage === page.value ? page.iconActivated : page.icon" class="text-lg leading-none" />
+                </div>
+                <span class="flex-1 min-w-0" leading-5 whitespace-normal break-normal>{{ $t(page.titleKey) }}</span>
               </div>
-              <span class="flex-1 min-w-0" leading-5 whitespace-normal break-normal>{{ $t(page.titleKey) }}</span>
-            </div>
+            </button>
           </li>
         </ul>
       </div>
