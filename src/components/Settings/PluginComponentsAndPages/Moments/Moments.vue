@@ -7,7 +7,7 @@ import { settings } from '~/logic'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
-import SettingsVisibilityTag from '../../components/SettingsVisibilityTag.vue'
+import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
 const { t } = useI18n()
 
@@ -54,10 +54,6 @@ const pluginFilterOptions = computed<MomentTagOption[]>(() => [
   { setting: 'momentsHideLiveDynamics', label: t('settings.moments_filter_live_dynamic'), icon: 'i-tabler-broadcast' },
 ])
 
-function toggleMomentSetting(setting: MomentToggleSetting) {
-  settings.value[setting] = !settings.value[setting]
-}
-
 const openModeOptions = computed(() => [
   {
     label: t('settings.moments_card_open_mode_opt.dialog'),
@@ -75,17 +71,15 @@ const openModeOptions = computed(() => [
     <SettingsItemGroup :title="$t('settings.group_original_moments_page')">
       <SettingsItem
         :title="$t('settings.moments_visible_components')"
-        :desc="$t('settings.moments_visible_components_desc')"
       >
         <template #bottom>
           <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
-            <SettingsVisibilityTag
+            <SettingsToggleTag
               v-for="option in originalComponentOptions"
               :key="option.setting"
-              :visible="settings[option.setting]"
+              v-model="settings[option.setting]"
               :label="option.label"
               :icon="option.icon"
-              @toggle="toggleMomentSetting(option.setting)"
             />
           </div>
         </template>
@@ -99,17 +93,15 @@ const openModeOptions = computed(() => [
     >
       <SettingsItem
         :title="$t('settings.moments_visible_components')"
-        :desc="$t('settings.moments_visible_components_desc')"
       >
         <template #bottom>
           <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
-            <SettingsVisibilityTag
+            <SettingsToggleTag
               v-for="option in pluginComponentOptions"
               :key="option.setting"
-              :visible="settings[option.setting]"
+              v-model="settings[option.setting]"
               :label="option.label"
               :icon="option.icon"
-              @toggle="toggleMomentSetting(option.setting)"
             />
           </div>
         </template>
@@ -134,13 +126,13 @@ const openModeOptions = computed(() => [
       >
         <template #bottom>
           <div class="moment-setting-tags moment-setting-tags--filters" role="group" :aria-label="$t('settings.moments_filtered_types')">
-            <SettingsVisibilityTag
+            <SettingsToggleTag
               v-for="option in pluginFilterOptions"
               :key="option.setting"
-              :visible="!settings[option.setting]"
+              v-model="settings[option.setting]"
               :label="option.label"
               :icon="option.icon"
-              @toggle="toggleMomentSetting(option.setting)"
+              inverted
             />
           </div>
         </template>

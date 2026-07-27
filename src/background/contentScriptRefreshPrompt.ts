@@ -119,6 +119,7 @@ function showRefreshPrompt(...args: unknown[]): void {
   const themeStyles = getComputedStyle(themeSource)
   const themeProperties = [
     '--bew-theme-color',
+    '--bew-text-auto',
     '--bew-dark-base-color',
     '--bew-text-1',
     '--bew-text-2',
@@ -130,6 +131,10 @@ function showRefreshPrompt(...args: unknown[]): void {
     '--bew-fill-2',
     '--bew-filter-glass-1',
     '--bew-radius',
+    '--bew-duration-fast',
+    '--bew-duration-moderate',
+    '--bew-ease-emphasized',
+    '--bew-ease-standard',
     '--bew-shadow-3',
     '--bew-shadow-edge-glow-1',
   ]
@@ -138,12 +143,14 @@ function showRefreshPrompt(...args: unknown[]): void {
     if (value)
       host.style.setProperty(property, value)
   })
+  if (themeStyles.fontFamily)
+    host.style.setProperty('font-family', themeStyles.fontFamily, 'important')
 
   const shadow = host.attachShadow({ mode: 'open' })
   const style = document.createElement('style')
   style.textContent = `
     :host {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: inherit;
     }
     :host([data-theme="light"]) {
       color-scheme: light;
@@ -154,8 +161,9 @@ function showRefreshPrompt(...args: unknown[]): void {
     .prompt {
       position: relative;
       box-sizing: border-box;
-      width: min(360px, calc(100vw - 32px));
-      padding: 12px 14px;
+      width: min(360px, calc(100vw - 24px));
+      min-height: 0;
+      padding: 10px 12px;
       color: var(--bew-text-1, #18191c);
       background: var(--bew-elevated-solid, rgb(255 255 255 / 96%));
       background: color-mix(in oklab, var(--bew-elevated-solid, white) 90%, transparent);
@@ -163,6 +171,7 @@ function showRefreshPrompt(...args: unknown[]): void {
       border-radius: var(--bew-radius, 12px);
       box-shadow: var(--bew-shadow-edge-glow-1, 0 0 0 transparent), var(--bew-shadow-3, 0 8px 30px rgb(0 0 0 / 18%));
       backdrop-filter: var(--bew-filter-glass-1, blur(12px));
+      animation: prompt-in var(--bew-duration-moderate, 300ms) var(--bew-ease-emphasized, ease) both;
       overflow: hidden;
     }
     .content {
@@ -171,33 +180,40 @@ function showRefreshPrompt(...args: unknown[]): void {
     .title {
       margin: 0;
       font-size: 14px;
-      font-weight: 700;
-      line-height: 1.45;
+      font-weight: 600;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
     }
     .description {
       margin: 3px 0 0;
       color: var(--bew-text-2, #61666d);
       font-size: 12px;
-      line-height: 1.55;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
     }
     .actions {
       display: flex;
       justify-content: flex-end;
       gap: 8px;
-      margin-top: 12px;
+      margin-top: 10px;
     }
     button {
-      min-height: 32px;
-      padding: 0 13px;
-      color: var(--bew-text-2, #61666d);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 30px;
+      padding: 0 12px;
+      color: var(--bew-text-1, #18191c);
       font: inherit;
       font-size: 12px;
-      font-weight: 600;
+      line-height: 30px;
       background: transparent;
       border: 0;
-      border-radius: var(--bew-radius, 8px);
+      border-radius: var(--bew-radius, 12px);
       cursor: pointer;
-      transition: background-color 160ms ease, transform 160ms ease;
+      transition:
+        background-color var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+        transform var(--bew-duration-moderate, 300ms) var(--bew-ease-emphasized, ease);
     }
     button:hover {
       color: var(--bew-text-1, #18191c);
@@ -207,12 +223,10 @@ function showRefreshPrompt(...args: unknown[]): void {
       transform: scale(0.95);
     }
     .primary {
-      color: white;
+      color: var(--bew-text-auto, white);
       background: var(--bew-theme-color, #00aeec);
-      border-color: transparent;
     }
     .primary:hover {
-      filter: brightness(1.06);
       background: var(--bew-theme-color, #00aeec);
     }
     :host([data-theme="dark"]) .prompt {
@@ -229,17 +243,26 @@ function showRefreshPrompt(...args: unknown[]): void {
       color: var(--bew-text-2, #c9ccd0);
       border-color: var(--bew-border-color, rgb(255 255 255 / 14%));
     }
-    :host([data-theme="dark"]) button:hover {
-      background: var(--bew-fill-1, rgb(255 255 255 / 8%));
-    }
     :host([data-theme="dark"]) .primary,
     :host([data-theme="dark"]) .primary:hover {
-      color: white;
+      color: var(--bew-text-auto, black);
       background: var(--bew-theme-color, #00aeec);
     }
     @supports not (background: color-mix(in oklab, black, white)) {
       :host([data-theme="dark"]) .prompt {
         background: #2b2d31;
+      }
+    }
+    @keyframes prompt-in {
+      from {
+        opacity: 0;
+        filter: blur(3px);
+        transform: translate3d(-18px, 4px, 0) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        filter: blur(0);
+        transform: translate3d(0, 0, 0) scale(1);
       }
     }
   `

@@ -161,9 +161,19 @@ settings:
   group_performance: 毛玻璃和性能
   group_player_settings: 播放器设置
   group_player_components: 播放器组件
+  group_player_display_mode: 播放模式
+  group_player_display_mode_desc: 设置基础显示模式，并按需覆盖特定播放场景。
+  group_playback_memory: 播放状态记忆
+  group_playback_memory_desc: 选择是否记住倍速和视频比例。
+  group_video_page_actions: 视频页功能
+  group_video_page_actions_desc: 点击标签切换视频页和播放器控制栏中的辅助功能。
   group_playback_behavior: 播放行为
   group_auto_play: 自动连播
+  group_custom_auto_play_behavior: 播放结束行为
+  group_custom_auto_play_behavior_desc: 关闭 B 站默认行为后，可分别设置不同视频类型的后续动作。“连播推荐”会在当前视频结束后继续播放推荐视频。
   group_random_play: 随机播放
+  group_random_play_options: 随机播放选项
+  group_random_play_options_desc: 设置随机播放的启用方式和适用视频数量。
   group_topbar: 顶栏
   group_navigation: Dock和侧边栏
   group_dock: Dock 栏
@@ -201,7 +211,6 @@ settings:
   moments_show_publish: 显示发布动态组件
   moments_show_live: 显示正在直播组件
   moments_visible_components: 显示组件
-  moments_visible_components_desc: 点击标签切换显示状态。主题色表示显示，灰色划线眼睛表示不显示该组件。
   moments_filtered_types: 过滤动态
   moments_filtered_types_desc: 点击标签切换过滤状态。主题色表示显示，灰色划线眼睛表示屏蔽该类动态。
   moments_enable_live_preview: 直播动态悬停预览
@@ -284,24 +293,30 @@ settings:
   block_top_search_page_ads_desc: |
     有时候，搜索结果上方的广告实际上是年末总结或年度报告。 如果你不想这些内容被误删除，请禁用此选项。
   video_default_player_mode: 视频默认显示模式
-  video_danmaku_default_state: 视频默认弹幕状态
+  video_danmaku_default_state: 弹幕默认状态
   video_danmaku_default_state_desc: 打开视频时自动调整弹幕开关，也可以保持原样。
-  video_danmaku_default_state_opt:
-    system: 不调整
-    on: 默认开启
-    off: 默认关闭
-  video_caption_default_state: 视频默认字幕状态
-  video_caption_default_state_desc: 打开视频时自动调整字幕开关，或记住上次状态。
-  video_caption_default_state_opt:
-    system: 不启用
+  video_caption_default_state: 字幕默认状态
+  video_caption_default_state_desc: 打开视频时自动调整字幕开关，也可以保持原样。
+  video_default_state_opt:
+    system: B站默认
     remember: 记住上次状态
-    on: 默认开启
-    off: 默认关闭
+    on: 开启
+    off: 关闭
   video_player_mode:
+    inherit: 继承默认
     default: 默认
     web_fullscreen: 网页全屏
     widescreen: 宽屏
     bewly_widescreen: Bewly宽屏
+    enable_overrides: 启用按场景覆盖
+    enable_overrides_desc: 开启后，下方各播放场景的显示模式设置才会生效。
+    overrides: 场景显示模式
+    overrides_desc: 选择“继承默认”时会使用上方的基础显示模式。
+    context_multipart: 分P视频
+    context_collection: 合集视频
+    context_bangumi: 番剧 / 影视
+    context_watch_later: 稍后再看
+    context_playlist: 收藏 / 播放列表
     bewly_widescreen_sidebar_position: Bewly宽屏侧边栏位置
     bewly_widescreen_sidebar_position_desc: 选择 Bewly 宽屏模式下侧边栏的显示位置
     bewly_widescreen_sidebar_position_left: 左侧
@@ -320,6 +335,8 @@ settings:
   keep_watch_later_video_default_mode_desc: 启用后，稍后再看中的视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   remember_playback_rate: 记住倍速
   remember_playback_rate_desc: 启用后，播放器会记住您上次设置的倍速，并在下次打开视频时自动应用
+  remember_video_aspect_ratio: 记住视频比例
+  remember_video_aspect_ratio_desc: 启用后，播放器会记住您上次选择的视频比例，并在下次打开视频时自动应用
   auto_exit_fullscreen_on_end: 全屏/网页全屏播放完毕后自动退出
   auto_exit_fullscreen_on_end_desc: 启用后，当视频播放结束且没有单集循环、随机播放、自动连播等后续播放行为时，会自动退出全屏模式
   auto_exit_fullscreen_exclude_auto_play: 自动连播下除外

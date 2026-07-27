@@ -55,13 +55,6 @@ const pages = [
     iconActivated: 'i-mingcute:search-2-fill',
     component: defineAsyncComponent(() => import('./SearchPage/SearchPage.vue')),
   },
-  {
-    value: PluginPage.VolumeBalance,
-    titleKey: 'settings.plugin.volume_balance',
-    icon: 'i-mingcute:volume-line',
-    iconActivated: 'i-mingcute:volume-fill',
-    component: defineAsyncComponent(() => import('./VolumeBalance/VolumeBalance.vue')),
-  },
 ]
 </script>
 

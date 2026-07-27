@@ -20,7 +20,6 @@ const collapsed = defineModel<boolean>('collapsed', {
     v-if="collapsible"
     type="button"
     class="settings-section-heading settings-section-heading--button"
-    :class="{ 'settings-section-heading--warning': warning }"
     :data-settings-title="title"
     :aria-expanded="!collapsed"
     @click="collapsed = !collapsed"
@@ -42,7 +41,6 @@ const collapsed = defineModel<boolean>('collapsed', {
   <header
     v-else
     class="settings-section-heading"
-    :class="{ 'settings-section-heading--warning': warning }"
     :data-settings-title="title"
   >
     <span v-if="icon" class="settings-section-heading__icon" :class="icon" />
@@ -82,17 +80,6 @@ const collapsed = defineModel<boolean>('collapsed', {
   color: inherit;
   text-align: left;
   cursor: pointer;
-}
-
-.settings-section-heading--warning {
-  padding: 10px 12px;
-  background: color-mix(in oklab, var(--bew-warning-color), transparent 88%);
-  border: 1px solid color-mix(in oklab, var(--bew-warning-color), transparent 62%);
-  border-radius: var(--bew-radius);
-
-  .settings-section-heading__icon {
-    color: var(--bew-warning-color);
-  }
 }
 
 .settings-section-heading__chevron {
@@ -135,6 +122,6 @@ p {
 }
 
 p.warning {
-  color: var(--bew-text-2);
+  color: var(--bew-warning-color);
 }
 </style>

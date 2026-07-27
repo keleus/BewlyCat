@@ -161,9 +161,19 @@ settings:
   group_performance: Frosted Glass & Performance
   group_player_settings: Player Settings
   group_player_components: Player Components
+  group_player_display_mode: Display Mode
+  group_player_display_mode_desc: Set a base display mode and override it for specific playback contexts when needed.
+  group_playback_memory: Playback Memory
+  group_playback_memory_desc: Choose whether to remember playback rate and video aspect ratio.
+  group_video_page_actions: Video Page Features
+  group_video_page_actions_desc: Click a tag to toggle features on the video page and player toolbar.
   group_playback_behavior: Playback Behavior
   group_auto_play: Auto Play
+  group_custom_auto_play_behavior: End-of-playback Behavior
+  group_custom_auto_play_behavior_desc: Set what happens for each video type when Bilibili's default behavior is disabled. “Play recommendations” continues with recommended videos.
   group_random_play: Random Play
+  group_random_play_options: Random Play Options
+  group_random_play_options_desc: Configure how random play is enabled and the minimum applicable video count.
   group_topbar: Top Bar
   group_navigation: Dock & Sidebar
   group_dock: Dock
@@ -204,7 +214,6 @@ settings:
   moments_show_publish: Show publish action
   moments_show_live: Show live users
   moments_visible_components: Visible components
-  moments_visible_components_desc: Click a tag to toggle visibility. Theme-colored tags are shown; gray tags with a crossed-out eye are hidden.
   moments_filtered_types: Filter dynamics
   moments_filtered_types_desc: Click a tag to toggle filtering. Theme-colored tags are shown; gray tags with a crossed-out eye are blocked.
   moments_enable_live_preview: Preview live dynamics on hover
@@ -301,22 +310,28 @@ settings:
   video_default_player_mode: Default video display mode
   video_danmaku_default_state: Default danmaku state
   video_danmaku_default_state_desc: Automatically toggle danmaku when a video loads, or leave it unchanged.
-  video_danmaku_default_state_opt:
-    system: Do not adjust
-    on: Always enable
-    off: Always disable
   video_caption_default_state: Default caption state
-  video_caption_default_state_desc: Automatically toggle captions when a video loads, or remember last state.
-  video_caption_default_state_opt:
-    system: Do not enable
-    remember: Remember last state
-    on: Always enable
-    off: Always disable
+  video_caption_default_state_desc: Automatically toggle captions when a video loads, or leave them unchanged.
+  video_default_state_opt:
+    system: Bilibili Default
+    remember: Remember Last State
+    on: On
+    off: Off
   video_player_mode:
+    inherit: Inherit Default
     default: Default
     web_fullscreen: Web Fullscreen
     widescreen: Widescreen
     bewly_widescreen: Bewly Widescreen
+    enable_overrides: Enable Context Overrides
+    enable_overrides_desc: Display mode settings for individual playback contexts only apply when enabled.
+    overrides: Context Display Modes
+    overrides_desc: Selecting “Inherit Default” uses the base display mode above.
+    context_multipart: Multi-part Videos
+    context_collection: Collections
+    context_bangumi: Series / Movies
+    context_watch_later: Watch Later
+    context_playlist: Favorites / Playlists
     bewly_widescreen_sidebar_position: Bewly Widescreen Sidebar Position
     bewly_widescreen_sidebar_position_desc: Choose the sidebar position in Bewly Widescreen mode
     bewly_widescreen_sidebar_position_left: Left
@@ -653,6 +668,10 @@ settings:
   remember_playback_rate_desc: >
     When enabled, the player will remember your last set playback rate and
     automatically apply it when opening videos
+  remember_video_aspect_ratio: Remember video aspect ratio
+  remember_video_aspect_ratio_desc: >
+    When enabled, the player will remember your last selected video aspect ratio
+    and automatically apply it when opening videos
   auto_exit_fullscreen_on_end: Auto exit fullscreen/webFullscreen when video ends
   auto_exit_fullscreen_on_end_desc: >
     When enabled, the player will automatically exit fullscreen mode when the video finishes playing and no single-loop, random-play, or auto-play behavior is active

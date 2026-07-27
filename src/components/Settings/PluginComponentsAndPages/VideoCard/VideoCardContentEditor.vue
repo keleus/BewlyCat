@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import { settings } from '~/logic'
 
-import SettingsVisibilityTag from '../../components/SettingsVisibilityTag.vue'
+import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
 const { t } = useI18n()
 
@@ -61,10 +61,6 @@ const groups = computed<ContentGroup[]>(() => [
     ],
   },
 ])
-
-function toggleElement(element: ContentElement) {
-  settings.value[element.setting] = !settings.value[element.setting]
-}
 </script>
 
 <template>
@@ -73,13 +69,12 @@ function toggleElement(element: ContentElement) {
       <span class="content-row__label">{{ group.label }}</span>
 
       <div class="content-row__elements">
-        <SettingsVisibilityTag
+        <SettingsToggleTag
           v-for="element in group.elements"
           :key="element.setting"
-          :visible="settings[element.setting]"
+          v-model="settings[element.setting]"
           :label="element.label"
           :icon="element.icon"
-          @toggle="toggleElement(element)"
         />
       </div>
     </div>

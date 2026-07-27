@@ -32,10 +32,25 @@ const settingsMenu = {
   [MenuType.About]: defineAsyncComponent(() => import('./About/About.vue')),
 }
 const settingsMenuStorageKey = 'bewly-settings-active-menu'
+const playbackPageStorageKey = 'bewly-settings-playback-page'
 const storedMenuItem = sessionStorage.getItem(settingsMenuStorageKey)
-const initialMenuItem = storedMenuItem === 'Browsing'
-  ? MenuType.Navigation
-  : storedMenuItem as MenuType | null
+const legacyPlaybackPages: Record<string, string> = {
+  Player: 'player',
+  AutoPlay: 'auto-play',
+  VolumeBalance: 'volume-balance',
+}
+if (storedMenuItem && legacyPlaybackPages[storedMenuItem])
+  sessionStorage.setItem(playbackPageStorageKey, legacyPlaybackPages[storedMenuItem])
+
+const legacyMenuAliases: Record<string, MenuType> = {
+  Browsing: MenuType.Navigation,
+  Player: MenuType.Playback,
+  AutoPlay: MenuType.Playback,
+  VolumeBalance: MenuType.Playback,
+}
+const initialMenuItem = storedMenuItem
+  ? legacyMenuAliases[storedMenuItem] ?? storedMenuItem as MenuType
+  : null
 const activatedMenuItem = ref<MenuType>(
   initialMenuItem && Object.values(MenuType).includes(initialMenuItem)
     ? initialMenuItem

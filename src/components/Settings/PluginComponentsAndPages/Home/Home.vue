@@ -9,12 +9,13 @@ import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
-import type { HomeTabsPosition } from '~/logic/storage'
+import type { HomeTabsPosition, RecommendationMode } from '~/logic/storage'
 import { useMainStore } from '~/stores/mainStore'
 import { getTVLoginQRCode, hasValidAppAuthTokens, pollTVLoginQRCode, revokeAccessKey, saveAppAuthTokens } from '~/utils/authProvider'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 import SearchPage from '../SearchPage/SearchPage.vue'
 import FilterByTitleTable from './components/FilterByTitleTable.vue'
 import FilterByUserTable from './components/FilterByUserTable.vue'
@@ -34,6 +35,12 @@ const homeTabsPositionOptions = computed(() => [
   },
 ])
 
+const recommendationModeOptions = computed<{ label: string, value: RecommendationMode }[]>(() => [
+  { label: 'Web', value: 'web' },
+  { label: t('settings.recommendation_mode_web_no_cookie'), value: 'webNoCookie' },
+  { label: 'App', value: 'app' },
+])
+
 const showSearchPageModeSharedSettings = ref<boolean>(false)
 const showQRCodeDialog = ref<boolean>(false)
 const loginQRCodeUrl = ref<string>()
@@ -51,9 +58,8 @@ onBeforeUnmount(() => {
   clearInterval(pollLoginQRCodeInterval.value)
 })
 
-function changeAppRecommendationMode() {
-  settings.value.recommendationMode = 'app'
-  if (!hasValidAppAuthTokens())
+function handleRecommendationModeChange(mode: RecommendationMode) {
+  if (mode === 'app' && !hasValidAppAuthTokens())
     handleAuthorize()
 }
 
@@ -215,41 +221,12 @@ function handleToggleHomeTab(tab: any) {
         <template #desc>
           <p>{{ $t('settings.recommendation_mode_desc') }}</p>
         </template>
-        <div class="recommendation-mode-selector" rounded="$bew-radius" bg="$bew-fill-1" p-1>
-          <div
-            class="recommendation-mode-option"
-            py-1 cursor-pointer text-center rounded="$bew-radius"
-            :style="{
-              background: settings.recommendationMode === 'web' ? 'var(--bew-theme-color)' : '',
-              color: settings.recommendationMode === 'web' ? 'white' : '',
-            }"
-            @click="settings.recommendationMode = 'web'"
-          >
-            Web
-          </div>
-          <div
-            class="recommendation-mode-option"
-            py-1 cursor-pointer text-center rounded="$bew-radius"
-            :style="{
-              background: settings.recommendationMode === 'webNoCookie' ? 'var(--bew-theme-color)' : '',
-              color: settings.recommendationMode === 'webNoCookie' ? 'white' : '',
-            }"
-            @click="settings.recommendationMode = 'webNoCookie'"
-          >
-            {{ $t('settings.recommendation_mode_web_no_cookie') }}
-          </div>
-          <div
-            class="recommendation-mode-option"
-            py-1 cursor-pointer text-center rounded="$bew-radius"
-            :style="{
-              background: settings.recommendationMode === 'app' ? 'var(--bew-theme-color)' : '',
-              color: settings.recommendationMode === 'app' ? 'white' : '',
-            }"
-            @click="changeAppRecommendationMode"
-          >
-            App
-          </div>
-        </div>
+        <SettingsSegmentedControl
+          v-model="settings.recommendationMode"
+          :label="$t('settings.recommendation_mode')"
+          :options="recommendationModeOptions"
+          @change="handleRecommendationModeChange"
+        />
       </SettingsItem>
 
       <SettingsItem
@@ -591,18 +568,6 @@ function handleToggleHomeTab(tab: any) {
   :deep(.right-content) {
     --uno: w-auto;
   }
-}
-
-.recommendation-mode-selector {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: 300px;
-}
-
-.recommendation-mode-option {
-  min-width: 0;
-  padding-inline: 0.5rem;
-  white-space: nowrap;
 }
 
 .filter-control {

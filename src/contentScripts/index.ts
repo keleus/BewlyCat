@@ -18,7 +18,7 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
-import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isCollectionVideo, isPlayerDisplayModeReady, isVideoPage, isWatchLaterVideo, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { initRandomPlay, resetRandomPlayInitialization } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
@@ -35,6 +35,7 @@ import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDete
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { initTouchPlayerGestures } from './touchPlayerGestures'
+import { initVideoAspectRatioMemory } from './videoAspectRatioMemory'
 import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
 import { initVolumeNormalizationControl } from './volumeNormalizationControl'
@@ -316,13 +317,7 @@ else if (shouldInitializeContentScript) {
       return
     }
 
-    const playerMode = settings.value.defaultVideoPlayerMode
-    const shouldKeepDefaultMode
-      = (settings.value.keepCollectionVideoDefaultMode && isCollectionVideo())
-        || (settings.value.keepWatchLaterVideoDefaultMode && isWatchLaterVideo())
-    let targetPlayerMode = shouldKeepDefaultMode
-      ? 'default'
-      : playerMode
+    let targetPlayerMode = resolveDefaultVideoPlayerMode()
     if (isFestivalPage() && targetPlayerMode === 'bewlyWidescreen')
       targetPlayerMode = 'widescreen'
 
@@ -333,11 +328,7 @@ else if (shouldInitializeContentScript) {
 
     clearPlayerModeRetry()
 
-    // 合集或稍后再看视频启用对应设置时，强制使用默认模式
-    if (targetPlayerMode === 'default' && shouldKeepDefaultMode) {
-      defaultMode()
-    }
-    else if (!targetPlayerMode || targetPlayerMode === 'default') {
+    if (!targetPlayerMode || targetPlayerMode === 'default') {
     // 默认模式也需要居中显示
       defaultMode()
     }
@@ -722,6 +713,7 @@ else if (shouldInitializeContentScript) {
     if (settings.value.enableVolumeNormalization)
       initAudioInterceptor()
     initVolumeNormalizationControl()
+    initVideoAspectRatioMemory()
     initVideoScreenshotControl()
     initTouchPlayerGestures()
 

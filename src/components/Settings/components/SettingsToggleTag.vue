@@ -1,34 +1,43 @@
 <script setup lang="ts">
-defineProps<{
-  visible: boolean
+const props = defineProps<{
   label: string
+  description?: string
   icon: string
+  inverted?: boolean
+  showStateIcon?: boolean
 }>()
 
-defineEmits<{
-  toggle: []
-}>()
+const model = defineModel<boolean>({ required: true })
+const active = computed(() => props.inverted ? !model.value : model.value)
+
+function toggle() {
+  model.value = !model.value
+}
 </script>
 
 <template>
   <button
     type="button"
-    class="settings-visibility-tag"
-    :class="{ 'is-visible': visible }"
-    :aria-pressed="visible"
-    @click="$emit('toggle')"
+    class="settings-toggle-tag"
+    :class="{ 'is-active': active }"
+    :data-settings-title="label"
+    :aria-pressed="active"
+    :aria-label="description ? `${label}：${description}` : label"
+    :title="description"
+    @click="toggle"
   >
     <span :class="icon" />
     <span>{{ label }}</span>
     <span
-      class="settings-visibility-tag__state"
-      :class="visible ? 'i-tabler-eye' : 'i-tabler-eye-off'"
+      v-if="showStateIcon !== false"
+      class="settings-toggle-tag__state"
+      :class="active ? 'i-tabler-eye' : 'i-tabler-eye-off'"
     />
   </button>
 </template>
 
 <style scoped lang="scss">
-.settings-visibility-tag {
+.settings-toggle-tag {
   display: inline-flex;
   min-height: 36px;
   align-items: center;
@@ -44,38 +53,32 @@ defineEmits<{
   transition:
     color 0.18s ease,
     border-color 0.18s ease,
-    background-color 0.18s ease,
-    transform 0.18s ease;
+    background-color 0.18s ease;
 }
 
-.settings-visibility-tag:hover {
+.settings-toggle-tag:hover {
   color: var(--bew-text-2);
   background: var(--bew-fill-2);
-  transform: translateY(-1px);
 }
 
-.settings-visibility-tag:active {
-  transform: scale(0.97);
+.settings-toggle-tag:focus-visible {
+  box-shadow: inset 0 0 0 1px currentColor;
+  outline: 0;
 }
 
-.settings-visibility-tag:focus-visible {
-  outline: 2px solid var(--bew-theme-color-40);
-  outline-offset: 2px;
-}
-
-.settings-visibility-tag.is-visible {
+.settings-toggle-tag.is-active {
   border-color: var(--bew-theme-color-30);
   color: var(--bew-theme-color);
   background: color-mix(in oklab, var(--bew-theme-color-20), transparent 28%);
 }
 
-.settings-visibility-tag.is-visible:hover {
+.settings-toggle-tag.is-active:hover {
   border-color: var(--bew-theme-color);
   color: var(--bew-theme-color);
   background: color-mix(in oklab, var(--bew-theme-color-20), transparent 10%);
 }
 
-.settings-visibility-tag__state {
+.settings-toggle-tag__state {
   margin-left: 1px;
   font-size: 14px;
 }

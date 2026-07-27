@@ -1,6 +1,6 @@
 // 更完善的播放器元素选择器
 import { settings } from '~/logic'
-import type { AutoPlayMode, DefaultVideoPlayerMode } from '~/logic/storage'
+import type { AutoPlayMode, DefaultVideoPlayerMode, VideoPlayerModeContext, VideoPlayerModeOverride } from '~/logic/storage'
 
 import { applyVolumeNormalization } from './audioNormalization'
 
@@ -32,6 +32,38 @@ const _videoClassTag = {
   autoPlaySwitchOff: '.auto-play .switch-btn:not(.on)',
   upName: '.up-name,.up-info-name,.upinfo-btn-panel .name,.video-info-detail-list .name',
   upLink: 'a[href*="space.bilibili.com"],.up-name[href*="space.bilibili.com"],.upinfo-btn-panel .name[href*="space.bilibili.com"]',
+}
+
+const monitoredDanmakuSwitches = new WeakSet<HTMLInputElement>()
+const monitoredCaptionControls = new WeakSet<HTMLElement>()
+
+function monitorDanmakuState(danmakuSwitch: HTMLInputElement) {
+  if (monitoredDanmakuSwitches.has(danmakuSwitch))
+    return
+
+  monitoredDanmakuSwitches.add(danmakuSwitch)
+  danmakuSwitch.addEventListener('change', () => {
+    if (settings.value.defaultDanmakuState === 'remember')
+      saveDanmakuState(danmakuSwitch.checked)
+  })
+}
+
+function monitorCaptionState(closeSwitch: HTMLElement, languageItem: HTMLElement) {
+  if (!monitoredCaptionControls.has(closeSwitch)) {
+    monitoredCaptionControls.add(closeSwitch)
+    closeSwitch.addEventListener('click', () => {
+      if (settings.value.defaultCaptionState === 'remember')
+        saveCaptionState(false)
+    })
+  }
+
+  if (!monitoredCaptionControls.has(languageItem)) {
+    monitoredCaptionControls.add(languageItem)
+    languageItem.addEventListener('click', () => {
+      if (settings.value.defaultCaptionState === 'remember')
+        saveCaptionState(true)
+    })
+  }
 }
 
 // 重试任务类，用于处理重试逻辑
@@ -271,12 +303,15 @@ export function applyDefaultDanmakuState() {
   if (!preference || preference === 'system')
     return
 
-  const shouldEnable = preference === 'on'
+  const isRemember = preference === 'remember'
+  const shouldEnable = isRemember ? settings.value.lastDanmakuState : preference === 'on'
 
   new RetryTask(20, 500, () => {
     const danmuSwitch = document.querySelector(_videoClassTag.danmuBtn) as HTMLInputElement | null
     if (!danmuSwitch)
       return false
+
+    monitorDanmakuState(danmuSwitch)
 
     if (danmuSwitch.checked === shouldEnable)
       return true
@@ -312,6 +347,8 @@ export function applyDefaultCaptionState() {
     const languageItem = document.querySelector<HTMLElement>('.bpx-player-ctrl-subtitle-language-item')
 
     if (closeSwitch && languageItem) {
+      monitorCaptionState(closeSwitch, languageItem)
+
       const isCurrentlyOn = !closeSwitch.classList.contains('bpx-state-active')
       if (isCurrentlyOn === shouldEnable)
         return true
@@ -326,12 +363,14 @@ export function applyDefaultCaptionState() {
 
     return false
   }).start()
-
-  if (isRemember)
-    saveCaptionState(shouldEnable)
 }
 
-// 保存字幕状态，供"记住上次状态"使用
+// 保存弹幕状态，供“记住上次状态”使用
+export function saveDanmakuState(enabled: boolean) {
+  settings.value.lastDanmakuState = enabled
+}
+
+// 保存字幕状态，供“记住上次状态”使用
 export function saveCaptionState(enabled: boolean) {
   settings.value.lastCaptionState = enabled
 }
@@ -442,6 +481,48 @@ export function detectVideoType(): VideoType {
 
   // 默认为单视频推荐
   return VideoType.RECOMMEND
+}
+
+export function detectVideoPlayerModeContext(): VideoPlayerModeContext | null {
+  if (isWatchLaterVideo())
+    return 'watchLater'
+
+  if (location.pathname.startsWith('/bangumi/play/'))
+    return 'bangumi'
+
+  switch (detectVideoType()) {
+    case VideoType.MULTIPART:
+      return 'multipart'
+    case VideoType.COLLECTION:
+      return 'collection'
+    case VideoType.PLAYLIST:
+      return 'playlist'
+    default:
+      return null
+  }
+}
+
+function isVideoPlayerModeOverride(value: unknown): value is VideoPlayerModeOverride {
+  return value === 'inherit'
+    || value === 'default'
+    || value === 'webFullscreen'
+    || value === 'widescreen'
+    || value === 'bewlyWidescreen'
+}
+
+export function resolveDefaultVideoPlayerMode(): DefaultVideoPlayerMode {
+  if (!settings.value.enableVideoPlayerModeOverrides)
+    return settings.value.defaultVideoPlayerMode
+
+  const context = detectVideoPlayerModeContext()
+  if (!context)
+    return settings.value.defaultVideoPlayerMode
+
+  const override = settings.value.videoPlayerModeOverrides?.[context]
+  if (!isVideoPlayerModeOverride(override) || override === 'inherit')
+    return settings.value.defaultVideoPlayerMode
+
+  return override
 }
 
 // 查找自动播放开关按钮（支持多种 DOM 结构）

@@ -12,6 +12,8 @@ export interface CategoryPage {
   iconActivated: string
   component: Component
   groupKey?: string
+  warning?: boolean
+  badgeKey?: string
 }
 
 const props = defineProps<{
@@ -107,6 +109,8 @@ function handlePageMouseDown(event: MouseEvent) {
         :title="$t(currentPage.titleKey)"
         :desc="currentPage.descriptionKey ? $t(currentPage.descriptionKey) : undefined"
         :icon="currentPage.iconActivated"
+        :warning="currentPage.warning"
+        :badge="currentPage.badgeKey ? $t(currentPage.badgeKey) : undefined"
       />
       <Component :is="currentPage.component" :key="currentPage.value" />
     </section>

@@ -122,6 +122,11 @@ export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'p
 export type CollectedSeasonPlayAllMode = 'beginning' | 'latest' | 'lastWatched'
 export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen' | 'bewlyWidescreen'
 export type BewlyWidescreenSidebarPosition = 'left' | 'right'
+export type PlayerDefaultState = 'system' | 'remember' | 'on' | 'off'
+export type VideoAspectRatio = '0:0' | '4:3' | '16:9'
+export type VideoPlayerModeOverride = DefaultVideoPlayerMode | 'inherit'
+export type VideoPlayerModeContext = 'multipart' | 'collection' | 'bangumi' | 'watchLater' | 'playlist'
+export type VideoPlayerModeOverrides = Record<VideoPlayerModeContext, VideoPlayerModeOverride>
 export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
 
 export interface ShadowCurvePoint {
@@ -384,11 +389,12 @@ export interface Settings {
   // Video Player
   defaultVideoPlayerMode: DefaultVideoPlayerMode
   bewlyWidescreenSidebarPosition: BewlyWidescreenSidebarPosition
-  defaultDanmakuState: 'system' | 'on' | 'off'
-  defaultCaptionState: 'system' | 'remember' | 'on' | 'off'
+  defaultDanmakuState: PlayerDefaultState
+  defaultCaptionState: PlayerDefaultState
+  lastDanmakuState: boolean
   lastCaptionState: boolean
-  keepCollectionVideoDefaultMode: boolean // 合集视频保持默认模式
-  keepWatchLaterVideoDefaultMode: boolean // 稍后再看视频保持默认模式
+  enableVideoPlayerModeOverrides: boolean // 启用按场景覆盖播放器显示模式
+  videoPlayerModeOverrides: VideoPlayerModeOverrides // 不同播放场景的显示模式覆盖
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
   autoExitFullscreenExcludeAutoPlay: boolean // 全屏自动退出时排除自动连播
   showVideoScreenshotButton: boolean // 显示播放器截图按钮
@@ -417,6 +423,10 @@ export interface Settings {
   // 倍速记忆设置
   rememberPlaybackRate: boolean // 启用倍速记忆功能
   savedPlaybackRate: number // 记住的倍速值 (0.25-5)
+
+  // 视频比例记忆设置
+  rememberVideoAspectRatio: boolean // 启用视频比例记忆功能
+  savedVideoAspectRatio: VideoAspectRatio | null // 记住的视频比例；首次启用时沿用播放器当前值
 
   // 随机播放设置
   enableRandomPlay: boolean // 启用视频合集随机播放功能
@@ -649,10 +659,17 @@ export const originalSettings: Settings = {
   defaultVideoPlayerMode: 'default',
   bewlyWidescreenSidebarPosition: 'right',
   defaultDanmakuState: 'system',
-  defaultCaptionState: 'off',
+  defaultCaptionState: 'system',
+  lastDanmakuState: true,
   lastCaptionState: false,
-  keepCollectionVideoDefaultMode: false, // 合集视频保持默认模式，默认关闭
-  keepWatchLaterVideoDefaultMode: false, // 稍后再看视频保持默认模式，默认关闭
+  enableVideoPlayerModeOverrides: false,
+  videoPlayerModeOverrides: {
+    multipart: 'inherit',
+    collection: 'inherit',
+    bangumi: 'inherit',
+    watchLater: 'inherit',
+    playlist: 'inherit',
+  },
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
   autoExitFullscreenExcludeAutoPlay: false, // 全屏自动退出时排除自动连播，默认关闭
   showVideoScreenshotButton: true, // 默认显示播放器截图按钮
@@ -706,6 +723,10 @@ export const originalSettings: Settings = {
   // 倍速记忆设置
   rememberPlaybackRate: false, // 启用倍速记忆功能
   savedPlaybackRate: 1, // 记住的倍速值 (0.25-5)
+
+  // 视频比例记忆设置
+  rememberVideoAspectRatio: false, // 启用视频比例记忆功能
+  savedVideoAspectRatio: null, // 首次启用时记住播放器当前比例
 
   // 随机播放设置
   enableRandomPlay: false, // 启用视频合集随机播放功能
@@ -775,6 +796,39 @@ watch(
     // 紧凑布局已由卡片元素显示设置替代
     if (record.videoCardLayout === 'compact')
       record.videoCardLayout = 'modern'
+
+    if (record.rememberDanmakuState === true)
+      record.defaultDanmakuState = 'remember'
+    if (record.rememberCaptionState === true)
+      record.defaultCaptionState = 'remember'
+    Reflect.deleteProperty(record, 'rememberDanmakuState')
+    Reflect.deleteProperty(record, 'rememberCaptionState')
+
+    const validPlayerDefaultStates: PlayerDefaultState[] = ['system', 'remember', 'on', 'off']
+    if (!validPlayerDefaultStates.includes(record.defaultDanmakuState))
+      record.defaultDanmakuState = originalSettings.defaultDanmakuState
+    if (!validPlayerDefaultStates.includes(record.defaultCaptionState))
+      record.defaultCaptionState = originalSettings.defaultCaptionState
+
+    // 旧开关与新的按场景覆盖语义不同，直接清理并让用户重新设置。
+    Reflect.deleteProperty(record, 'keepCollectionVideoDefaultMode')
+    Reflect.deleteProperty(record, 'keepWatchLaterVideoDefaultMode')
+
+    const modeOverrideContexts: VideoPlayerModeContext[] = ['multipart', 'collection', 'bangumi', 'watchLater', 'playlist']
+    const validModeOverrides: VideoPlayerModeOverride[] = ['inherit', 'default', 'webFullscreen', 'widescreen', 'bewlyWidescreen']
+    const storedModeOverrides = record.videoPlayerModeOverrides
+    const needsModeOverrideNormalization = !storedModeOverrides
+      || typeof storedModeOverrides !== 'object'
+      || modeOverrideContexts.some(context => !validModeOverrides.includes(storedModeOverrides[context]))
+
+    if (needsModeOverrideNormalization) {
+      record.videoPlayerModeOverrides = Object.fromEntries(
+        modeOverrideContexts.map((context) => {
+          const storedValue = storedModeOverrides?.[context]
+          return [context, validModeOverrides.includes(storedValue) ? storedValue : 'inherit']
+        }),
+      ) as VideoPlayerModeOverrides
+    }
 
     // 清理已移除的 NVIDIA RTX 视频增强兼容设置
     Reflect.deleteProperty(record, 'nvidiaRtxVideoEnhancementCompatibility')

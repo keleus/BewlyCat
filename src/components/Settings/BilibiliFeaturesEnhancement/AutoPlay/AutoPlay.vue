@@ -8,6 +8,7 @@ import type { AutoPlayMode } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
 
 const { t } = useI18n()
 
@@ -45,10 +46,13 @@ const randomPlayModeOptions = computed(() => {
         <Radio v-model="settings.useBilibiliDefaultAutoPlay" />
       </SettingsItem>
 
-      <template v-if="!settings.useBilibiliDefaultAutoPlay">
+      <SettingsItemSubgroup
+        v-if="!settings.useBilibiliDefaultAutoPlay"
+        :title="t('settings.group_custom_auto_play_behavior')"
+        :desc="t('settings.group_custom_auto_play_behavior_desc')"
+      >
         <SettingsItem
           :title="t('settings.auto_play_multipart')"
-          :desc="t('settings.auto_play_multipart_desc')"
           right-width="auto"
         >
           <Select
@@ -60,7 +64,6 @@ const randomPlayModeOptions = computed(() => {
 
         <SettingsItem
           :title="t('settings.auto_play_collection')"
-          :desc="t('settings.auto_play_collection_desc')"
           right-width="auto"
         >
           <Select
@@ -72,7 +75,6 @@ const randomPlayModeOptions = computed(() => {
 
         <SettingsItem
           :title="t('settings.auto_play_recommend')"
-          :desc="t('settings.auto_play_recommend_desc')"
           right-width="auto"
         >
           <Select
@@ -84,7 +86,6 @@ const randomPlayModeOptions = computed(() => {
 
         <SettingsItem
           :title="t('settings.auto_play_playlist')"
-          :desc="t('settings.auto_play_playlist_desc')"
           right-width="auto"
         >
           <Select
@@ -93,7 +94,7 @@ const randomPlayModeOptions = computed(() => {
             w="160px"
           />
         </SettingsItem>
-      </template>
+      </SettingsItemSubgroup>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="t('settings.group_random_play')">
@@ -105,10 +106,13 @@ const randomPlayModeOptions = computed(() => {
         <Radio v-model="settings.enableRandomPlay" />
       </SettingsItem>
 
-      <template v-if="settings.enableRandomPlay">
+      <SettingsItemSubgroup
+        v-if="settings.enableRandomPlay"
+        :title="t('settings.group_random_play_options')"
+        :desc="t('settings.group_random_play_options_desc')"
+      >
         <SettingsItem
           :title="t('settings.random_play_mode')"
-          :desc="t('settings.random_play_mode_desc')"
           right-width="auto"
         >
           <Select v-model="settings.randomPlayMode" :options="randomPlayModeOptions" w="160px" />
@@ -116,7 +120,6 @@ const randomPlayModeOptions = computed(() => {
 
         <SettingsItem
           :title="t('settings.min_videos_for_random')"
-          :desc="t('settings.min_videos_for_random_desc')"
           right-width="auto"
         >
           <Input
@@ -125,7 +128,7 @@ const randomPlayModeOptions = computed(() => {
             w="120px"
           />
         </SettingsItem>
-      </template>
+      </SettingsItemSubgroup>
     </SettingsItemGroup>
   </div>
 </template>

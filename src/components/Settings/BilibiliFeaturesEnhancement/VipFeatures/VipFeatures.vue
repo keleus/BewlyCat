@@ -8,7 +8,7 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 
 <template>
   <div>
-    <SettingsItemGroup :title="$t('settings.bilibili_features.vip_features')">
+    <SettingsItemGroup>
       <SettingsItem :title="$t('settings.show_bcoin_receive_reminder')" right-width="auto">
         <Radio v-model="settings.showBCoinReceiveReminder" />
       </SettingsItem>

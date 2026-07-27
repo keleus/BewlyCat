@@ -21,9 +21,11 @@ interface SearchRoute {
   menu: MenuType
   secondaryPage?: string
   secondaryTitleKey?: string
+  storageKey?: string
 }
 
 const navigationStorageKey = 'bewly-settings-navigation-page'
+const playbackStorageKey = 'bewly-settings-playback-page'
 export const topBarElementStorageKey = 'bewly-settings-topbar-element'
 
 function createEntries(
@@ -34,7 +36,7 @@ function createEntries(
   } = {},
 ): SettingsSearchEntry[] {
   const routeStorageValues = route.secondaryPage
-    ? [{ key: navigationStorageKey, value: route.secondaryPage }]
+    ? [{ key: route.storageKey ?? navigationStorageKey, value: route.secondaryPage }]
     : []
 
   return titleKeys.map(titleKey => ({
@@ -82,7 +84,24 @@ const searchPageRoute: SearchRoute = {
   secondaryPage: 'search',
   secondaryTitleKey: 'settings.plugin.search',
 }
-const playbackRoute: SearchRoute = { menu: MenuType.Playback }
+const playerRoute: SearchRoute = {
+  menu: MenuType.Playback,
+  secondaryPage: 'player',
+  secondaryTitleKey: 'settings.bilibili_features.video_playback',
+  storageKey: playbackStorageKey,
+}
+const autoPlayRoute: SearchRoute = {
+  menu: MenuType.Playback,
+  secondaryPage: 'auto-play',
+  secondaryTitleKey: 'settings.bilibili_features.auto_play',
+  storageKey: playbackStorageKey,
+}
+const volumeBalanceRoute: SearchRoute = {
+  menu: MenuType.Playback,
+  secondaryPage: 'volume-balance',
+  secondaryTitleKey: 'settings.plugin.volume_balance',
+  storageKey: playbackStorageKey,
+}
 const appearanceRoute: SearchRoute = { menu: MenuType.Appearance }
 const bilibiliFeaturesRoute: SearchRoute = { menu: MenuType.BilibiliFeaturesEnhancement }
 const shortcutsRoute: SearchRoute = { menu: MenuType.Shortcuts }
@@ -323,33 +342,49 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     ...wallpaperTitleKeys,
   ]),
 
-  ...createEntries(playbackRoute, [
+  ...createEntries(playerRoute, [
     'settings.bilibili_features.video_playback',
-    'settings.group_player_settings',
+    'settings.group_player_display_mode',
     'settings.video_default_player_mode',
     'settings.video_player_mode.bewly_widescreen_sidebar_position',
-    'settings.keep_collection_video_default_mode',
-    'settings.keep_watch_later_video_default_mode',
+    'settings.video_player_mode.enable_overrides',
+    'settings.video_player_mode.overrides',
+    'settings.video_player_mode.context_multipart',
+    'settings.video_player_mode.context_collection',
+    'settings.video_player_mode.context_bangumi',
+    'settings.video_player_mode.context_watch_later',
+    'settings.video_player_mode.context_playlist',
     'settings.video_player_scroll',
     'settings.auto_exit_fullscreen_on_end',
     'settings.group_player_components',
     'settings.video_danmaku_default_state',
     'settings.video_caption_default_state',
+    'settings.group_playback_memory',
     'settings.remember_playback_rate',
+    'settings.remember_video_aspect_ratio',
+    'settings.group_video_page_actions',
     'settings.enlarge_favorite_dialog',
     'settings.external_watch_later_button',
     'settings.show_video_screenshot_button',
+  ]),
+
+  ...createEntries(autoPlayRoute, [
     'settings.bilibili_features.auto_play',
     'settings.group_auto_play',
     'settings.use_bilibili_default_auto_play',
+    'settings.group_custom_auto_play_behavior',
     'settings.auto_play_multipart',
     'settings.auto_play_collection',
     'settings.auto_play_recommend',
     'settings.auto_play_playlist',
     'settings.group_random_play',
     'settings.enable_random_play',
+    'settings.group_random_play_options',
     'settings.random_play_mode',
     'settings.min_videos_for_random',
+  ]),
+
+  ...createEntries(volumeBalanceRoute, [
     'settings.plugin.volume_balance',
     'settings.volume_normalization.enable',
     'settings.volume_normalization.target_volume',

@@ -17,7 +17,6 @@ export enum PluginPage {
   Home = 'Home',
   Favorites = 'Favorites',
   Search = 'Search',
-  VolumeBalance = 'VolumeBalance',
 }
 
 export enum BilibiliFeaturesPage {
