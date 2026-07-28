@@ -425,7 +425,7 @@ function changeMenuItem(menuItem: MenuType) {
         shadow rounded="$bew-radius" border="1 $bew-border-color"
       >
         <header
-          flex justify-between items-center w-full h-80px
+          flex justify-between items-center w-full h-100px
           pos="absolute top-0 left-0" p="x-11" box-border gap-4
           z-1 rounded="t-$bew-radius"
           style="
@@ -436,9 +436,9 @@ function changeMenuItem(menuItem: MenuType) {
           <div
             pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
             :style="{
-              maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, black 0, transparent 100%)' : 'none',
-              WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, black 0, transparent 100%)' : 'none',
-              backdropFilter: 'blur(6px)',
+              maskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+              backdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'blur(3px)',
             }"
             z--1 rounded-inherit
           />
@@ -511,15 +511,15 @@ function changeMenuItem(menuItem: MenuType) {
         <div
           ref="scrollViewportRef"
           :style="{
-            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
-            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 80px 30%)' : 'none',
+            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
+            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
             scrollbarGutter: 'stable',
             overflowAnchor: 'none',
           }"
           h-inherit of-y-auto of-x-hidden
-          style="padding-top: 80px;"
+          style="padding-top: 92px;"
         >
-          <main w-full min-h="[calc(100%-80px)]" p="x-12 b-10">
+          <main w-full min-h="[calc(100%-92px)]" p="x-12 b-10">
             <!-- <div h-80px mt--8 /> -->
 
             <Transition name="page-fade">
@@ -582,9 +582,26 @@ function changeMenuItem(menuItem: MenuType) {
   min-width: 42px;
   height: 36px;
   padding: 0 11px;
-  background: var(--bew-fill-1);
+  color: var(--bew-text-1);
+  background: var(--bew-content);
   border: 1px solid var(--bew-border-color);
-  border-radius: 10px;
+  border-radius: var(--bew-radius);
+  box-shadow: var(--bew-shadow-edge-glow-1);
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    background-color 200ms ease;
+
+  &:hover {
+    border-color: var(--bew-theme-color-40);
+  }
+
+  &:focus-within {
+    border-color: var(--bew-theme-color);
+    box-shadow:
+      var(--bew-shadow-edge-glow-1),
+      0 0 0 2px var(--bew-theme-color);
+  }
 
   > i {
     width: 18px;
@@ -612,10 +629,11 @@ function changeMenuItem(menuItem: MenuType) {
   width: 320px;
   max-width: 75vw;
   padding: 6px;
-  background: var(--bew-elevated-solid);
+  background: var(--bew-elevated);
   border: 1px solid var(--bew-border-color);
   border-radius: var(--bew-radius);
-  box-shadow: var(--bew-shadow-3);
+  box-shadow: var(--bew-shadow-3), var(--bew-shadow-edge-glow-1);
+  backdrop-filter: var(--bew-filter-glass-2);
 
   button {
     display: flex;
