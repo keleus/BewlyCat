@@ -332,11 +332,14 @@ function changeWallpaper(url: string) {
 }
 
 .theme-schedule input {
-  padding: 8px 10px;
+  min-height: var(--bew-control-height);
+  padding: 0 var(--bew-space-3);
   color: var(--bew-text-1);
   background: var(--bew-fill-1);
   border: 1px solid var(--bew-fill-3);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-interactive-radius);
+  font-size: var(--bew-font-size-body);
+  line-height: var(--bew-line-height-body);
   color-scheme: inherit;
 }
 

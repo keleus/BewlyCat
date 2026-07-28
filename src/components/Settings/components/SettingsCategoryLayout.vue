@@ -121,8 +121,8 @@ function handlePageMouseDown(event: MouseEvent) {
 .settings-category-layout {
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);
-  gap: 24px;
-  margin-left: -32px;
+  gap: var(--bew-space-6);
+  margin-left: calc(var(--bew-space-8) * -1);
   overflow-anchor: none;
 }
 
@@ -134,35 +134,38 @@ function handlePageMouseDown(event: MouseEvent) {
   display: flex;
   flex-direction: column;
   align-self: start;
-  gap: 10px;
+  gap: var(--bew-space-2);
   overflow-anchor: none;
 }
 
 .settings-category-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--bew-space-1);
 }
 
 .settings-category-group-label {
-  padding: 0 14px 2px;
+  padding: 0 var(--bew-space-3) var(--bew-space-0-5);
   color: var(--bew-text-3);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
   letter-spacing: 0.02em;
   line-height: 1.4;
 }
 
 .settings-category-button {
   display: flex;
-  gap: 10px;
+  gap: var(--bew-space-2);
   align-items: center;
   width: 100%;
   min-height: 40px;
-  padding: 10px 14px;
+  padding: var(--bew-space-2) var(--bew-space-3);
   color: var(--bew-text-1);
   text-align: left;
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-interactive-radius);
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-body);
   overflow-anchor: none;
   transition:
     background-color 0.2s ease,
@@ -175,7 +178,6 @@ function handlePageMouseDown(event: MouseEvent) {
   &.active {
     color: var(--bew-theme-color);
     background: var(--bew-fill-3);
-    font-weight: 600;
   }
 
   > span:last-child {
@@ -188,7 +190,7 @@ function handlePageMouseDown(event: MouseEvent) {
   width: 20px;
   height: 20px;
   flex: 0 0 auto;
-  font-size: 20px;
+  font-size: var(--bew-icon-size-md);
 }
 
 .settings-category-content {

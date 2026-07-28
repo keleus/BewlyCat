@@ -399,7 +399,8 @@ watch(() => [props.width, props.height], draw)
 }
 
 .hint {
-  font-size: 11px;
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
   color: var(--bew-text-3);
   margin: 0;
 }

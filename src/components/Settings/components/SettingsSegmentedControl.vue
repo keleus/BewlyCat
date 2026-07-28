@@ -18,7 +18,7 @@ function selectOption(value: T) {
 
 <template>
   <div
-    class="settings-segmented-control"
+    class="settings-segmented-control bew-segment-control bew-segment-control--solid bew-segment-control--static"
     role="radiogroup"
     :aria-label="label"
   >
@@ -26,8 +26,9 @@ function selectOption(value: T) {
       v-for="option in options"
       :key="option.value"
       type="button"
-      class="settings-segmented-control__option"
+      class="settings-segmented-control__option bew-segment-control__item"
       :class="{ 'is-selected': modelValue === option.value }"
+      :data-active="modelValue === option.value ? 'true' : undefined"
       role="radio"
       :aria-checked="modelValue === option.value"
       @click="selectOption(option.value)"
@@ -43,40 +44,12 @@ function selectOption(value: T) {
   width: 300px;
   max-width: 100%;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding: 0.25rem;
-  border-radius: var(--bew-radius);
-  background: var(--bew-fill-1);
 }
 
 .settings-segmented-control__option {
   min-width: 0;
-  padding: 0.25rem 0.5rem;
   overflow: hidden;
-  border: 0;
-  border-radius: var(--bew-radius);
-  color: inherit;
-  background: transparent;
-  font: inherit;
-  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
-  cursor: pointer;
-  transition:
-    color 0.18s ease,
-    background-color 0.18s ease;
-}
-
-.settings-segmented-control__option:hover:not(.is-selected) {
-  background: var(--bew-fill-2);
-}
-
-.settings-segmented-control__option.is-selected {
-  color: white;
-  background: var(--bew-theme-color);
-}
-
-.settings-segmented-control__option:focus-visible {
-  box-shadow: inset 0 0 0 1px currentColor;
-  outline: 0;
 }
 </style>

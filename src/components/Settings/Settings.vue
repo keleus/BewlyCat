@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
+import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { settings } from '~/logic'
@@ -57,6 +58,40 @@ const activatedMenuItem = ref<MenuType>(
     : MenuType.General,
 )
 const settingsWindow = ref<HTMLDivElement>()
+const settingsSearchRef = ref<HTMLElement>()
+const searchInputRef = ref<HTMLInputElement>()
+const searchPopoverStyle = ref<CSSProperties>({})
+
+function updateSearchPopoverBounds() {
+  const searchElement = settingsSearchRef.value
+  const contentElement = searchElement?.closest<HTMLElement>('.settings-content')
+  if (!searchElement || !contentElement)
+    return
+
+  const searchRect = searchElement.getBoundingClientRect()
+  const contentRect = contentElement.getBoundingClientRect()
+  const edgeInset = 8
+  const popoverGap = 8
+  const narrowLayout = window.innerWidth <= 760
+  const bottomEdge = Math.min(window.innerHeight - edgeInset, contentRect.bottom - edgeInset)
+
+  // Match the top-bar search behavior: follow the trigger on wide layouts,
+  // then use the containing surface as a collision boundary on narrow ones.
+  searchPopoverStyle.value = {
+    left: narrowLayout ? `${contentRect.left + edgeInset - searchRect.left}px` : 'auto',
+    right: narrowLayout ? 'auto' : '0',
+    width: narrowLayout ? `${Math.max(0, contentRect.width - edgeInset * 2)}px` : '100%',
+    maxHeight: `${Math.max(0, bottomEdge - searchRect.bottom - popoverGap)}px`,
+  }
+}
+
+function focusSettingsSearch(event: MouseEvent) {
+  if (event.target instanceof Element && event.target.closest('.settings-search-results'))
+    return
+
+  searchInputRef.value?.focus({ preventScroll: true })
+  nextTick(updateSearchPopoverBounds)
+}
 
 useEventListener(window, 'resize', () => {
   createTransformer(settingsWindow, {
@@ -68,6 +103,7 @@ useEventListener(window, 'resize', () => {
       y: true,
     },
   })
+  nextTick(updateSearchPopoverBounds)
 })
 
 const scrollViewportRef = ref<HTMLElement>()
@@ -189,8 +225,10 @@ const searchResults = computed(() => {
 const activeSearchResultIndex = ref(-1)
 const searchResultsRef = ref<HTMLElement>()
 
-watch(searchQuery, () => {
+watch(searchQuery, (query) => {
   activeSearchResultIndex.value = -1
+  if (query)
+    nextTick(updateSearchPopoverBounds)
 })
 
 function moveSearchResultSelection(event: KeyboardEvent, direction: 1 | -1) {
@@ -349,12 +387,13 @@ function changeMenuItem(menuItem: MenuType) {
         pos="absolute xl:left--84px left--44px" z-2
       >
         <ul
+          class="settings-primary-navigation__list"
           style="
             box-shadow: var(--bew-shadow-4);
           "
-          relative flex="~ gap-2 col" rounded="30px group-hover:25px" p-2
+          relative flex="~ gap-2 col" p-2
           bg="$bew-content-alt group-hover:$bew-elevated dark:$bew-elevated dark-group-hover:$bew-elevated"
-          scale="group-hover:105" duration-300
+          scale="group-hover:105"
           overflow-hidden antialiased
         >
           <!-- frosted glass background -->
@@ -367,7 +406,7 @@ function changeMenuItem(menuItem: MenuType) {
             pos="absolute top-0 left-0" z--1
             w-full h-full pointer-events-none
             border="1 $bew-border-color"
-            rounded-inherit duration-inherit
+            rounded-inherit
           />
 
           <li
@@ -377,9 +416,10 @@ function changeMenuItem(menuItem: MenuType) {
           >
             <button
               type="button"
+              class="settings-primary-navigation__item"
               cursor-pointer w="40px group-hover:190px" h-40px
-              rounded-30px flex items-center overflow-x-hidden
-              duration-300 bg="hover:$bew-fill-2"
+              flex items-center overflow-x-hidden
+              bg="hover:$bew-fill-2"
               :class="{ 'menu-item-activated': menuItem.value === activatedMenuItem }"
               :aria-current="menuItem.value === activatedMenuItem ? 'page' : undefined"
               @click="changeMenuItem(menuItem.value)"
@@ -419,15 +459,16 @@ function changeMenuItem(menuItem: MenuType) {
           --un-shadow: var(--bew-shadow-4), var(--bew-shadow-edge-glow-2);
           backdrop-filter: var(--bew-filter-glass-2);
         "
-        relative overflow="x-hidden" flex-1 min-w-0
+        relative overflow-hidden flex-1 min-w-0
         h-full
         bg="$bew-elevated-alt"
-        shadow rounded="$bew-radius" border="1 $bew-border-color"
+        shadow rounded="$bew-modal-radius" border="1 $bew-border-color"
       >
         <header
+          class="settings-header"
           flex justify-between items-center w-full h-92px
           pos="absolute top-0 left-0" p="x-11" box-border gap-4
-          z-1 rounded="t-$bew-radius"
+          z-1 rounded="t-$bew-modal-radius"
           style="
             text-shadow: 0 0 10px var(--bew-elevated-solid), 0 0 15px var(--bew-elevated-solid)
           "
@@ -451,9 +492,15 @@ function changeMenuItem(menuItem: MenuType) {
               <strong>{{ breadcrumbDetail }}</strong>
             </template>
           </nav>
-          <div class="settings-search">
+          <div
+            ref="settingsSearchRef"
+            class="settings-search"
+            :class="{ 'has-query': Boolean(searchQuery) }"
+            @click="focusSettingsSearch"
+          >
             <i i-mingcute:search-2-line />
             <input
+              ref="searchInputRef"
               v-model="searchQuery"
               type="search"
               :placeholder="$t('settings.search.placeholder')"
@@ -466,32 +513,36 @@ function changeMenuItem(menuItem: MenuType) {
               @keydown.down="moveSearchResultSelection($event, 1)"
               @keydown.up="moveSearchResultSelection($event, -1)"
               @keydown.enter="activateSearchResult"
+              @focus="updateSearchPopoverBounds"
             >
-            <div
-              v-if="searchQuery"
-              id="settings-search-results"
-              ref="searchResultsRef"
-              class="settings-search-results"
-              role="listbox"
-            >
-              <button
-                v-for="(entry, index) in searchResults"
-                :id="`settings-search-result-${index}`"
-                :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
-                type="button"
-                role="option"
-                :aria-selected="index === activeSearchResultIndex"
-                :class="{ active: index === activeSearchResultIndex }"
-                @mouseenter="activeSearchResultIndex = index"
-                @click="navigateToSearchResult(entry)"
+            <Transition name="settings-search-popover">
+              <div
+                v-if="searchQuery"
+                id="settings-search-results"
+                ref="searchResultsRef"
+                class="settings-search-results bew-popover-surface"
+                role="listbox"
+                :style="searchPopoverStyle"
               >
-                <strong>{{ getSearchEntryTitle(entry) }}</strong>
-                <span>{{ getSearchEntryLocation(entry) }}</span>
-              </button>
-              <p v-if="searchResults.length === 0">
-                {{ $t('settings.search.no_results') }}
-              </p>
-            </div>
+                <button
+                  v-for="(entry, index) in searchResults"
+                  :id="`settings-search-result-${index}`"
+                  :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
+                  type="button"
+                  role="option"
+                  :aria-selected="index === activeSearchResultIndex"
+                  :class="{ active: index === activeSearchResultIndex }"
+                  @mouseenter="activeSearchResultIndex = index"
+                  @click="navigateToSearchResult(entry)"
+                >
+                  <strong>{{ getSearchEntryTitle(entry) }}</strong>
+                  <span>{{ getSearchEntryLocation(entry) }}</span>
+                </button>
+                <p v-if="searchResults.length === 0">
+                  {{ $t('settings.search.no_results') }}
+                </p>
+              </div>
+            </Transition>
           </div>
           <div
             style="
@@ -540,15 +591,47 @@ function changeMenuItem(menuItem: MenuType) {
   --uno: "text-$bew-text-auto bg-$bew-theme-color-auto";
 }
 
+// Animate from the capsule's real geometric radius instead of `radius-full`.
+// Interpolating from 9999px stays visually clamped until the final frames and
+// makes the corners appear to snap when the rail expands.
+.settings-primary-navigation__list {
+  border-radius: 28px; // 40px item + 8px padding on each side, divided by two.
+  transition:
+    border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
+}
+
+.settings-primary-navigation__item {
+  border-radius: var(--bew-space-5); // Half of the collapsed 40px item.
+  transition:
+    width var(--bew-duration-moderate) var(--bew-ease-standard),
+    border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.settings-primary-navigation:hover {
+  .settings-primary-navigation__list {
+    border-radius: var(--bew-radius-2xl);
+  }
+
+  .settings-primary-navigation__item {
+    border-radius: var(--bew-radius-xl);
+  }
+}
+
 .settings-breadcrumb {
   display: flex;
   overflow: hidden;
-  gap: 7px;
+  gap: var(--bew-space-2);
   align-items: center;
   flex: 1 1 auto;
   min-width: 0;
   color: var(--bew-text-2);
-  font-size: 15px;
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-regular);
+  line-height: var(--bew-line-height-body);
 
   i {
     width: 16px;
@@ -561,8 +644,9 @@ function changeMenuItem(menuItem: MenuType) {
     flex: 0 1 auto;
     overflow: hidden;
     color: var(--bew-text-1);
-    font-size: 18px;
-    font-weight: 600;
+    font-size: var(--bew-font-size-heading);
+    font-weight: var(--bew-font-weight-semibold);
+    line-height: var(--bew-line-height-heading);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -578,19 +662,20 @@ function changeMenuItem(menuItem: MenuType) {
   box-sizing: border-box;
   align-items: center;
   flex: 0 1 auto;
-  width: min(280px, 34%);
+  width: min(320px, 38%);
   min-width: 42px;
-  height: 36px;
-  padding: 0 11px;
+  height: var(--bew-control-height);
+  padding: 0 var(--bew-space-3);
   color: var(--bew-text-1);
   background: var(--bew-content);
   border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-interactive-radius);
   box-shadow: var(--bew-shadow-edge-glow-1);
   transition:
-    border-color 200ms ease,
-    box-shadow 200ms ease,
-    background-color 200ms ease;
+    width var(--bew-duration-moderate) var(--bew-ease-standard),
+    border-color var(--bew-duration-normal) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard);
 
   &:hover {
     border-color: var(--bew-theme-color-40);
@@ -608,16 +693,20 @@ function changeMenuItem(menuItem: MenuType) {
     height: 18px;
     flex: 0 0 auto;
     color: var(--bew-text-2);
+    pointer-events: none;
   }
 
   input {
     width: 100%;
     min-width: 0;
-    margin-left: 8px;
+    margin-left: var(--bew-space-2);
     color: var(--bew-text-1);
     background: transparent;
     border: 0;
     outline: 0;
+    font-size: var(--bew-font-size-body);
+    font-weight: var(--bew-font-weight-regular);
+    line-height: var(--bew-line-height-body);
   }
 }
 
@@ -626,23 +715,23 @@ function changeMenuItem(menuItem: MenuType) {
   top: calc(100% + 8px);
   right: 0;
   z-index: 10;
-  width: 320px;
-  max-width: 75vw;
-  padding: 6px;
-  background: var(--bew-elevated);
-  border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-radius);
-  box-shadow: var(--bew-shadow-3), var(--bew-shadow-edge-glow-1);
-  backdrop-filter: var(--bew-filter-glass-2);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--bew-space-2);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 
   button {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: var(--bew-space-3);
     width: 100%;
-    padding: 9px 10px;
+    min-height: var(--bew-control-height);
+    padding: var(--bew-space-2) var(--bew-space-4);
     text-align: left;
-    border-radius: 8px;
+    border-radius: var(--bew-panel-radius);
 
     &:hover {
       background: var(--bew-fill-2);
@@ -650,6 +739,7 @@ function changeMenuItem(menuItem: MenuType) {
 
     &.active {
       background: var(--bew-fill-2);
+      box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
 
       strong {
         color: var(--bew-theme-color);
@@ -658,14 +748,28 @@ function changeMenuItem(menuItem: MenuType) {
   }
 
   strong {
+    min-width: 0;
+    overflow: hidden;
     color: var(--bew-text-1);
-    font-size: 14px;
+    font-size: var(--bew-font-size-body);
+    font-weight: var(--bew-font-weight-semibold);
+    line-height: var(--bew-line-height-body);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   span,
   p {
     color: var(--bew-text-2);
-    font-size: 12px;
+    font-size: var(--bew-font-size-control);
+    line-height: var(--bew-line-height-control);
+  }
+
+  span {
+    flex: 0 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   p {
@@ -674,11 +778,24 @@ function changeMenuItem(menuItem: MenuType) {
   }
 }
 
+.settings-search-popover-enter-active,
+.settings-search-popover-leave-active {
+  transition:
+    opacity var(--bew-duration-moderate) var(--bew-ease-in-out),
+    transform var(--bew-duration-moderate) var(--bew-ease-in-out);
+}
+
+.settings-search-popover-enter-from,
+.settings-search-popover-leave-to {
+  opacity: 0;
+  transform: translateY(var(--bew-space-1)) scale(0.95);
+}
+
 :deep(.settings-search-target) {
   position: relative;
   z-index: 2;
   isolation: isolate;
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-panel-radius);
 }
 
 :deep(.settings-search-target > *) {
@@ -691,7 +808,7 @@ function changeMenuItem(menuItem: MenuType) {
   inset: 0 -12px;
   z-index: 0;
   background: var(--bew-theme-color);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-panel-radius);
   content: "";
   opacity: 0;
   pointer-events: none;
@@ -703,15 +820,15 @@ function changeMenuItem(menuItem: MenuType) {
   top: -13px;
   right: 12px;
   z-index: 3;
-  padding: 5px 9px;
+  padding: var(--bew-space-1) var(--bew-space-2);
   color: white;
   background: var(--bew-theme-color);
-  border-radius: 999px;
+  border-radius: var(--bew-badge-radius);
   box-shadow: var(--bew-shadow-2);
   content: attr(data-settings-search-highlight);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
   pointer-events: none;
   white-space: nowrap;
   animation: settings-search-target-label 2.4s ease-out;
@@ -754,6 +871,11 @@ function changeMenuItem(menuItem: MenuType) {
 }
 
 @media (max-width: 760px) {
+  .settings-header {
+    gap: var(--bew-space-2);
+    padding-inline: var(--bew-space-4);
+  }
+
   .settings-primary-navigation {
     /* 窄屏：取消浮动，改为常驻图标列，避免遮挡 content（触屏无 hover） */
     position: relative;
@@ -786,13 +908,34 @@ function changeMenuItem(menuItem: MenuType) {
 
   .settings-search {
     width: 42px;
+    flex: 0 0 42px;
+    cursor: pointer;
 
     input {
-      margin-left: 4px;
+      width: 0;
+      margin-left: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition:
+        width var(--bew-duration-moderate) var(--bew-ease-standard),
+        margin-left var(--bew-duration-moderate) var(--bew-ease-standard),
+        opacity var(--bew-duration-normal) var(--bew-ease-standard);
     }
 
-    input::placeholder {
-      color: transparent;
+    &:focus-within,
+    &.has-query {
+      position: absolute;
+      right: calc(var(--bew-space-4) + 32px + var(--bew-space-2));
+      left: var(--bew-space-4);
+      z-index: 3;
+      width: auto;
+
+      input {
+        width: 100%;
+        margin-left: var(--bew-space-2);
+        opacity: 1;
+        pointer-events: auto;
+      }
     }
   }
 }

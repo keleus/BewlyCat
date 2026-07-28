@@ -82,12 +82,12 @@ const collapsed = ref(props.defaultCollapsed)
 .group-title {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--bew-space-2);
 }
 
 .group-title > i {
   color: var(--bew-theme-color);
-  font-size: 18px;
+  font-size: var(--bew-icon-size-md);
 }
 
 .collapse-icon {
@@ -95,7 +95,7 @@ const collapsed = ref(props.defaultCollapsed)
   height: 20px;
   flex: 0 0 auto;
   color: var(--bew-text-2);
-  font-size: 20px;
+  font-size: var(--bew-icon-size-md);
   transition: transform 0.2s ease;
 
   &.collapsed {

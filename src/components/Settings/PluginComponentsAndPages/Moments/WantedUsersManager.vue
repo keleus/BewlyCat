@@ -199,10 +199,12 @@ function removeUser(mid: string) {
   height: 40px;
   padding: 0 12px;
   border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-radius-sm);
+  border-radius: var(--bew-interactive-radius);
   outline: none;
   color: var(--bew-text-1);
   background: var(--bew-fill-1);
+  font-size: var(--bew-font-size-body);
+  line-height: var(--bew-line-height-body);
 }
 .wanted-users-manager__form input:focus {
   border-color: var(--bew-theme-color);
@@ -211,13 +213,16 @@ function removeUser(mid: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: var(--bew-space-1);
   min-width: 78px;
   border: 0;
-  border-radius: var(--bew-radius-sm);
+  border-radius: var(--bew-interactive-radius);
   color: #fff;
   background: var(--bew-theme-color);
   cursor: pointer;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
 }
 .wanted-users-manager__form button:disabled {
   opacity: 0.55;
@@ -225,10 +230,10 @@ function removeUser(mid: string) {
 }
 .wanted-users-manager__error {
   display: flex;
-  gap: 6px;
-  margin: 10px 0 0;
+  gap: var(--bew-space-2);
+  margin: var(--bew-space-3) 0 0;
   color: #d9485f;
-  font-size: 12px;
+  font-size: var(--bew-font-size-control);
 }
 .wanted-users-manager__candidates {
   display: grid;
@@ -239,11 +244,11 @@ function removeUser(mid: string) {
 .wanted-users-manager__candidates > button {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--bew-space-3);
   min-width: 0;
   padding: 8px;
   border: 1px solid transparent;
-  border-radius: var(--bew-radius-sm);
+  border-radius: var(--bew-interactive-radius);
   color: inherit;
   background: var(--bew-fill-1);
   text-align: left;
@@ -278,30 +283,32 @@ function removeUser(mid: string) {
 }
 .wanted-users-manager__candidates strong {
   color: var(--bew-text-1);
-  font-size: 13px;
+  font-size: var(--bew-font-size-body);
+  line-height: var(--bew-line-height-body);
 }
 .wanted-users-manager__candidates small {
   color: var(--bew-text-3);
-  font-size: 11px;
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
 }
 .wanted-users-manager__candidates em {
   color: var(--bew-theme-color);
-  font-size: 12px;
+  font-size: var(--bew-font-size-control);
   font-style: normal;
 }
 .wanted-users-manager__list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: 8px;
-  margin-top: 14px;
+  margin-top: var(--bew-space-4);
 }
 .wanted-users-manager__list article {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--bew-space-3);
   min-width: 0;
   padding: 8px;
-  border-radius: var(--bew-radius-sm);
+  border-radius: var(--bew-interactive-radius);
   background: var(--bew-fill-1);
 }
 .wanted-users-manager__list img {
@@ -325,19 +332,21 @@ function removeUser(mid: string) {
 }
 .wanted-users-manager__list strong {
   color: var(--bew-text-1);
-  font-size: 13px;
+  font-size: var(--bew-font-size-body);
+  line-height: var(--bew-line-height-body);
 }
 .wanted-users-manager__list small,
 .wanted-users-manager__empty {
   color: var(--bew-text-3);
-  font-size: 11px;
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
 }
 .wanted-users-manager__list button {
   display: grid;
   width: 32px;
   height: 32px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--bew-interactive-radius);
   color: var(--bew-text-3);
   background: transparent;
   place-items: center;

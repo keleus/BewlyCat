@@ -28,7 +28,7 @@ const collapsed = defineModel<boolean>('collapsed', {
     <span class="settings-section-heading__content">
       <h2>
         {{ title }}
-        <span v-if="badge" class="settings-risk-badge">{{ badge }}</span>
+        <span v-if="badge" class="settings-risk-badge bew-warning-badge">{{ badge }}</span>
       </h2>
       <p v-if="desc" :class="{ warning }">{{ desc }}</p>
     </span>
@@ -47,7 +47,7 @@ const collapsed = defineModel<boolean>('collapsed', {
     <span class="settings-section-heading__content">
       <h2>
         {{ title }}
-        <span v-if="badge" class="settings-risk-badge">{{ badge }}</span>
+        <span v-if="badge" class="settings-risk-badge bew-warning-badge">{{ badge }}</span>
       </h2>
       <p v-if="desc" :class="{ warning }">{{ desc }}</p>
     </span>
@@ -57,10 +57,10 @@ const collapsed = defineModel<boolean>('collapsed', {
 <style lang="scss" scoped>
 .settings-section-heading {
   display: flex;
-  gap: 12px;
+  gap: var(--bew-space-3);
   align-items: center;
-  margin-bottom: 16px;
-  padding: 0 2px;
+  margin-bottom: var(--bew-space-4);
+  padding: 0 var(--bew-space-0-5);
 }
 
 .settings-section-heading__icon {
@@ -68,7 +68,7 @@ const collapsed = defineModel<boolean>('collapsed', {
   height: 24px;
   flex: 0 0 auto;
   color: var(--bew-theme-color);
-  font-size: 24px;
+  font-size: var(--bew-icon-size-lg);
 }
 
 .settings-section-heading__content {
@@ -88,7 +88,7 @@ const collapsed = defineModel<boolean>('collapsed', {
   flex: 0 0 auto;
   margin-left: auto;
   color: var(--bew-text-2);
-  font-size: 22px;
+  font-size: var(--bew-icon-size-md);
   transition: transform 0.2s ease;
 
   &.collapsed {
@@ -98,27 +98,21 @@ const collapsed = defineModel<boolean>('collapsed', {
 
 h2 {
   color: var(--bew-text-1);
-  font-size: 17px;
-  font-weight: 600;
+  font-size: var(--bew-font-size-title);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-title);
 }
 
 .settings-risk-badge {
-  display: inline-flex;
-  margin-left: 7px;
-  padding: 2px 7px;
-  color: color-mix(in oklab, var(--bew-warning-color), black 75%);
+  margin-left: var(--bew-space-2);
   vertical-align: middle;
-  background: var(--bew-warning-color);
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
 }
 
 p {
-  margin-top: 3px;
+  margin-top: var(--bew-space-1);
   color: var(--bew-text-2);
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: var(--bew-font-size-body);
+  line-height: var(--bew-line-height-body);
 }
 
 p.warning {

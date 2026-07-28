@@ -83,7 +83,7 @@ const groups = computed<ContentGroup[]>(() => [
 
 <style lang="scss" scoped>
 .video-card-content-editor {
-  padding: 0.75rem 0;
+  padding: var(--bew-space-3) 0;
   border-bottom: 1px solid var(--bew-border-color);
 }
 
@@ -91,7 +91,7 @@ const groups = computed<ContentGroup[]>(() => [
   display: grid;
   grid-template-columns: 3.5rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--bew-space-3);
   min-height: 3rem;
 }
 
@@ -101,15 +101,16 @@ const groups = computed<ContentGroup[]>(() => [
 
 .content-row__label {
   color: var(--bew-text-1);
-  font-size: 1rem;
-  font-weight: 400;
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-regular);
+  line-height: var(--bew-line-height-body);
 }
 
 .content-row__elements {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
-  padding: 0.5rem 0;
+  gap: var(--bew-space-1);
+  padding: var(--bew-space-2) 0;
 }
 
 @media (max-width: 520px) {

@@ -220,7 +220,7 @@ function resetColumns() {
     var(--bew-fill-2) var(--shadow-height-progress),
     var(--bew-fill-2) 100%
   );
-  border-radius: 999px;
+  border-radius: var(--bew-radius-full);
   cursor: pointer;
   accent-color: var(--bew-theme-color);
 
@@ -237,13 +237,13 @@ function resetColumns() {
   &::-moz-range-track {
     height: 4px;
     background: var(--bew-fill-2);
-    border-radius: 999px;
+    border-radius: var(--bew-radius-full);
   }
 
   &::-moz-range-progress {
     height: 4px;
     background: var(--bew-theme-color);
-    border-radius: 999px;
+    border-radius: var(--bew-radius-full);
   }
 
   &::-moz-range-thumb {
@@ -257,7 +257,7 @@ function resetColumns() {
 
   &:focus-visible {
     outline: 2px solid var(--bew-theme-color-40);
-    outline-offset: 5px;
+    outline-offset: var(--bew-space-1);
   }
 }
 </style>

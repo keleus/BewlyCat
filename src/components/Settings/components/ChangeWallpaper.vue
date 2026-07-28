@@ -222,7 +222,7 @@ onMounted(() => {
               :class="{ 'selected-wallpaper': isGlobal ? settings.wallpaper === '' : settings.searchPageWallpaper === '' }"
               @click="changeWallpaper('')"
             >
-              <div i-tabler:photo-off text="3xl $bew-text-3" />
+              <div i-tabler:photo-off text="size-$bew-icon-size-xl $bew-text-3" />
             </picture>
 
             <Tooltip v-for="item in WALLPAPERS" :key="item.url" placement="top" :content="item.name" aspect-video>
@@ -288,7 +288,7 @@ onMounted(() => {
                 >
                   <div
                     i-tabler:photo-up
-                    text="3xl $bew-text-3"
+                    text="size-$bew-icon-size-xl $bew-text-3"
                   />
                 </div>
                 <img

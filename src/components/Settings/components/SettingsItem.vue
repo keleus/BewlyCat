@@ -23,7 +23,7 @@ withDefaults(defineProps<{
             <slot name="title">
               {{ title }}
             </slot>
-            <span v-if="badge" class="settings-item-badge">{{ badge }}</span>
+            <span v-if="badge" class="settings-item-badge bew-warning-badge">{{ badge }}</span>
           </span>
         </div>
 
@@ -70,17 +70,8 @@ withDefaults(defineProps<{
 
 .settings-item-title {
   display: inline-flex;
-  gap: 7px;
+  gap: var(--bew-space-2);
   align-items: center;
   flex-wrap: wrap;
-}
-
-.settings-item-badge {
-  padding: 2px 7px;
-  color: var(--bew-warning-color);
-  background: color-mix(in oklab, var(--bew-warning-color), transparent 88%);
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
 }
 </style>

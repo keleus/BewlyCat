@@ -38,28 +38,28 @@ defineProps<{
 .subgroup-heading {
   width: 100%;
   min-width: 0;
-  padding: 0.125rem 0 0.5rem;
+  padding: var(--bew-space-0-5) 0 var(--bew-space-2);
 }
 
 .subgroup-title {
   color: var(--bew-text-1);
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.4;
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-body);
 }
 
 .subgroup-desc {
-  margin-top: 0.125rem;
+  margin-top: var(--bew-space-0-5);
   color: var(--bew-text-3);
-  font-size: 0.75rem;
-  line-height: 1.5;
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
 }
 
 .subgroup-content {
-  margin-top: 0.25rem;
+  margin-top: var(--bew-space-1);
 
   :deep(.b-settings-item) {
-    padding: 0.75rem 0;
+    padding: var(--bew-space-3) 0;
   }
 }
 </style>

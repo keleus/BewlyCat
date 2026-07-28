@@ -39,16 +39,18 @@ function toggle() {
 <style scoped lang="scss">
 .settings-toggle-tag {
   display: inline-flex;
-  min-height: 36px;
+  min-height: var(--bew-control-height);
   align-items: center;
-  gap: 7px;
-  padding: 7px 11px;
+  gap: var(--bew-control-gap);
+  padding: var(--bew-control-padding) var(--bew-control-item-padding-x);
   border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 32%);
-  border-radius: 999px;
+  border-radius: var(--bew-badge-radius);
   color: var(--bew-text-3);
   background: var(--bew-fill-1);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
   cursor: pointer;
   transition:
     color 0.18s ease,
@@ -79,7 +81,7 @@ function toggle() {
 }
 
 .settings-toggle-tag__state {
-  margin-left: 1px;
-  font-size: 14px;
+  margin-left: var(--bew-space-0-5);
+  font-size: var(--bew-font-size-body);
 }
 </style>

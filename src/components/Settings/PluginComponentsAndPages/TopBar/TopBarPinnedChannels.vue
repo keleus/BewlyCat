@@ -123,8 +123,8 @@ function resetPinnedChannels() {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 14px;
-    border-radius: var(--bew-radius);
+    padding: var(--bew-space-3);
+    border-radius: var(--bew-interactive-radius);
     background: var(--bew-fill-1);
     color: var(--bew-text-1);
     transition:
@@ -154,7 +154,7 @@ function resetPinnedChannels() {
     height: 32px;
     display: grid;
     place-items: center;
-    border-radius: 12px;
+    border-radius: var(--bew-interactive-radius);
     background: color-mix(in oklab, white, transparent 20%);
     border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 30%);
 
@@ -164,14 +164,16 @@ function resetPinnedChannels() {
     }
 
     i {
-      font-size: 22px;
+      font-size: var(--bew-icon-size-lg);
     }
   }
 
   &__label {
     flex: 1;
     text-align: left;
-    font-size: 14px;
+    font-size: var(--bew-font-size-body);
+    font-weight: var(--bew-font-weight-medium);
+    line-height: var(--bew-line-height-body);
   }
 
   &__overlay {
@@ -184,8 +186,8 @@ function resetPinnedChannels() {
     display: grid;
     place-items: center;
     pointer-events: none;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--bew-font-size-control);
+    font-weight: var(--bew-font-weight-semibold);
     color: white;
     background: var(--bew-theme-color);
   }

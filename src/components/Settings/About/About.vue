@@ -55,8 +55,8 @@ function handleContributorImageError() {
           NEW
         </a>
       </div>
-      <section text-2xl text-center mt-2>
-        <p flex="inline gap-2" fw-900>
+      <section class="about-brand" text-center mt-2>
+        <p flex="inline gap-2">
           <span>BewlyCat</span>
           <span
             v-if="isDev"
@@ -148,6 +148,12 @@ function handleContributorImageError() {
   --uno: "fw-bold mb-2";
 }
 
+.about-brand {
+  font-size: var(--bew-font-size-display);
+  font-weight: var(--bew-font-weight-bold);
+  line-height: var(--bew-line-height-data);
+}
+
 .contributors-image-link {
   display: block;
 
@@ -159,11 +165,11 @@ function handleContributorImageError() {
 }
 
 .contributors-error {
-  padding: 14px;
+  padding: var(--bew-space-4);
   color: var(--bew-error-color);
   text-align: center;
   background: var(--bew-fill-1);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-panel-radius);
 }
 
 .link-card {

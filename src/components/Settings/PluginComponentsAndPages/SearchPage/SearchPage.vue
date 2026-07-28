@@ -88,7 +88,7 @@ function changeSearchBarFocusCharacter(url: string) {
               :class="{ 'selected-wallpaper': settings.searchPageSearchBarFocusCharacter === '' }"
               @click="changeSearchBarFocusCharacter('')"
             >
-              <div i-tabler:photo-off text="3xl $bew-text-3" />
+              <div i-tabler:photo-off text="size-$bew-icon-size-xl $bew-text-3" />
             </picture>
             <Tooltip v-for="item in SEARCH_BAR_CHARACTERS" :key="item.url" placement="top" :content="item.name" aspect-square>
               <picture

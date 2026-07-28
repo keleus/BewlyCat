@@ -552,10 +552,10 @@ function toggleChannel(value: string) {
 .topbar-config-hint {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: var(--bew-space-3);
+  padding: var(--bew-space-3);
   border: 1px solid var(--bew-theme-color-30);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-panel-radius);
   background: color-mix(in oklab, var(--bew-theme-color-20), transparent 25%);
   color: var(--bew-text-1);
 
@@ -563,7 +563,7 @@ function toggleChannel(value: string) {
     flex: 0 0 auto;
     margin-top: 2px;
     color: var(--bew-theme-color);
-    font-size: 18px;
+    font-size: var(--bew-icon-size-md);
   }
 
   &__content {
@@ -574,15 +574,15 @@ function toggleChannel(value: string) {
   }
 
   &__title {
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 1.4;
+    font-size: var(--bew-font-size-body);
+    font-weight: var(--bew-font-weight-semibold);
+    line-height: var(--bew-line-height-body);
   }
 
   &__desc {
     color: var(--bew-text-2);
-    font-size: 12px;
-    line-height: 1.4;
+    font-size: var(--bew-font-size-control);
+    line-height: var(--bew-line-height-control);
   }
 }
 
@@ -592,9 +592,14 @@ function toggleChannel(value: string) {
   justify-content: center;
   padding: 0.5rem;
   border: 1px solid transparent;
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-interactive-radius);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    border-color var(--bew-duration-normal) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
+    transform var(--bew-duration-normal) var(--bew-ease-emphasized);
   color: var(--bew-text-2);
   position: relative;
 
@@ -653,11 +658,12 @@ function toggleChannel(value: string) {
     min-width: 16px;
     height: 16px;
     padding: 0 4px;
-    border-radius: 8px;
+    border-radius: var(--bew-badge-radius);
     background: var(--bew-theme-color);
     color: white;
-    font-size: 10px;
-    font-weight: 600;
+    font-size: var(--bew-font-size-caption);
+    font-weight: var(--bew-font-weight-semibold);
+    line-height: var(--bew-line-height-caption);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -708,8 +714,8 @@ function toggleChannel(value: string) {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 14px;
-    border-radius: var(--bew-radius);
+    padding: var(--bew-space-3);
+    border-radius: var(--bew-interactive-radius);
     background: var(--bew-fill-1);
     color: var(--bew-text-1);
     transition:
@@ -739,7 +745,7 @@ function toggleChannel(value: string) {
     height: 32px;
     display: grid;
     place-items: center;
-    border-radius: 12px;
+    border-radius: var(--bew-interactive-radius);
     background: color-mix(in oklab, white, transparent 20%);
     border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 30%);
 
@@ -749,14 +755,16 @@ function toggleChannel(value: string) {
     }
 
     i {
-      font-size: 22px;
+      font-size: var(--bew-icon-size-lg);
     }
   }
 
   &__label {
     flex: 1;
     text-align: left;
-    font-size: 14px;
+    font-size: var(--bew-font-size-body);
+    font-weight: var(--bew-font-weight-medium);
+    line-height: var(--bew-line-height-body);
   }
 
   &__overlay {
@@ -769,8 +777,8 @@ function toggleChannel(value: string) {
     display: grid;
     place-items: center;
     pointer-events: none;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--bew-font-size-control);
+    font-weight: var(--bew-font-weight-semibold);
     color: white;
     background: var(--bew-theme-color);
   }
