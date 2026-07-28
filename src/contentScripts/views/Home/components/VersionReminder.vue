@@ -101,26 +101,40 @@ function acknowledgeCurrentVersion() {
 
 <style scoped lang="scss">
 .version-reminder-trigger {
+  appearance: none;
   position: fixed;
-  left: 24px;
-  bottom: 24px;
+  left: var(--bew-space-6);
+  bottom: var(--bew-space-6);
   z-index: 50;
   display: flex;
-  gap: 8px;
+  gap: var(--bew-space-2);
   align-items: center;
   min-height: 42px;
-  padding: 7px 12px;
+  padding: var(--bew-space-2) var(--bew-space-3);
   color: white;
   background: var(--bew-theme-color);
   border: 1px solid var(--bew-theme-color);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-panel-radius);
   box-shadow: var(--bew-shadow-2);
   cursor: pointer;
-  transition: box-shadow 160ms ease;
+  transition:
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard),
+    border-color var(--bew-duration-fast) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-fast) var(--bew-ease-standard),
+    transform var(--bew-duration-fast) var(--bew-ease-emphasized);
 }
 
 .version-reminder-trigger:hover {
+  color: white;
+  background: var(--bew-theme-color-80);
+  border-color: var(--bew-theme-color-80);
   box-shadow: var(--bew-shadow-4);
+}
+
+.version-reminder-trigger:focus-visible {
+  outline: 2px solid var(--bew-theme-color-40);
+  outline-offset: var(--bew-space-0-5);
 }
 
 .version-reminder-trigger:active {
@@ -137,50 +151,51 @@ function acknowledgeCurrentVersion() {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  line-height: 1.2;
+  line-height: var(--bew-line-height-control);
 }
 
 .version-reminder-trigger__text strong {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-bold);
 }
 
 .version-reminder-trigger__text small {
-  margin-top: 2px;
-  font-size: 11px;
+  margin-top: var(--bew-space-0-5);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
   color: rgb(255 255 255 / 78%);
 }
 
 .version-reminder-dialog {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 2px 0 0;
+  gap: var(--bew-space-4);
+  padding: var(--bew-space-0-5) 0 0;
 }
 
 .version-reminder-dialog__intro {
   margin: 0;
   color: var(--bew-text-2);
-  font-size: 14px;
-  line-height: 1.7;
+  font-size: var(--bew-font-size-body);
+  line-height: var(--bew-line-height-body);
 }
 
 .version-reminder-dialog__links {
   display: grid;
-  gap: 10px;
+  gap: var(--bew-space-3);
 }
 
 .version-reminder-dialog__link {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr) 18px;
-  gap: 12px;
+  gap: var(--bew-space-3);
   align-items: center;
   min-height: 64px;
-  padding: 10px 14px;
+  padding: var(--bew-space-3);
   color: var(--bew-text-1);
   background: var(--bew-fill-1);
   border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-card-radius);
   transition:
     color 160ms ease,
     background-color 160ms ease,
@@ -198,7 +213,7 @@ function acknowledgeCurrentVersion() {
   height: 38px;
   padding: 8px;
   background: currentColor;
-  border-radius: 10px;
+  border-radius: var(--bew-interactive-radius);
 }
 
 .version-reminder-dialog__link-icon--github {
@@ -215,13 +230,16 @@ function acknowledgeCurrentVersion() {
 }
 
 .version-reminder-dialog__link strong {
-  font-size: 14px;
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-body);
 }
 
 .version-reminder-dialog__link small {
-  margin-top: 4px;
+  margin-top: var(--bew-space-1);
   color: var(--bew-text-3);
-  font-size: 12px;
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
 }
 
 .version-reminder-dialog__arrow {
@@ -230,10 +248,10 @@ function acknowledgeCurrentVersion() {
 }
 
 .version-reminder-dialog__hint {
-  margin: -6px 0 0;
+  margin: calc(var(--bew-space-1) * -1) 0 0;
   color: var(--bew-text-3);
-  font-size: 11px;
-  line-height: 1.55;
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
   text-align: center;
 }
 

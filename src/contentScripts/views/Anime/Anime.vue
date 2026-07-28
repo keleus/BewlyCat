@@ -129,7 +129,7 @@ function getPopularAnimeList() {
       <!-- Your Watchlist -->
       <section v-if="getUserID()" class="anime-section">
         <div flex justify-between items-center mb-6>
-          <h3 text="3xl $bew-text-1" font="bold">
+          <h3 class="bew-page-heading" text="$bew-text-1">
             {{ $t('anime.your_watch_list') }}
           </h3>
           <Button
@@ -192,7 +192,7 @@ function getPopularAnimeList() {
       <!-- Popular Anime -->
       <section class="anime-section">
         <div flex justify-between items-center mb-6>
-          <h3 text="3xl $bew-text-1" font="bold">
+          <h3 class="bew-page-heading" text="$bew-text-1">
             {{ $t('anime.popular_anime') }}
           </h3>
           <Button
@@ -246,7 +246,7 @@ function getPopularAnimeList() {
       <!-- Anime Timetable -->
       <section class="anime-section">
         <div flex justify-between items-end>
-          <h3 text="3xl $bew-text-1" font="bold">
+          <h3 class="bew-page-heading" text="$bew-text-1">
             {{ $t('anime.anime_timetable.title') }}
           </h3>
         </div>
@@ -256,7 +256,7 @@ function getPopularAnimeList() {
 
       <!-- Recommended for you -->
       <section class="anime-section">
-        <h3 text="3xl $bew-text-1" font="bold" mb-6>
+        <h3 class="bew-page-heading" text="$bew-text-1" mb-6>
           {{ $t('anime.recommended_for_you') }}
         </h3>
         <div grid="~ 2xl:cols-6 xl:cols-5 lg:cols-4 md:cols-3 sm:cols-2 cols-1 gap-6">

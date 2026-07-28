@@ -953,7 +953,7 @@ defineExpose({
   gap: 1rem;
   padding: 1rem;
   background: var(--bew-elevated);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-card-radius);
   text-decoration: none;
   color: inherit;
 }
@@ -962,7 +962,7 @@ defineExpose({
   width: 120px;
   min-width: 120px;
   aspect-ratio: 4 / 3;
-  border-radius: calc(var(--bew-radius) - 8px);
+  border-radius: var(--bew-media-radius);
   overflow: hidden;
   background: var(--bew-skeleton);
 
@@ -980,16 +980,16 @@ defineExpose({
 }
 
 .activity-title {
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: var(--bew-font-size-title);
+  font-weight: var(--bew-font-weight-semibold);
   color: var(--bew-text-1);
-  line-height: 1.4;
+  line-height: var(--bew-line-height-title);
 }
 
 .activity-desc {
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-body);
   color: var(--bew-text-2);
-  line-height: 1.5;
+  line-height: var(--bew-line-height-body);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   line-clamp: 3;
@@ -1000,10 +1000,10 @@ defineExpose({
 .activity-badge {
   align-self: flex-start;
   padding: 0.25rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--bew-badge-radius);
   background: var(--bew-theme-color-20);
   color: var(--bew-theme-color);
-  font-size: 0.75rem;
+  font-size: var(--bew-font-size-control);
 }
 
 .bangumi-highlight-grid,
@@ -1023,7 +1023,7 @@ defineExpose({
   gap: 1rem;
   padding: 1rem;
   background: var(--bew-elevated);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-card-radius);
 }
 
 .bangumi-highlight-cover,
@@ -1032,7 +1032,7 @@ defineExpose({
   width: 160px;
   min-width: 160px;
   aspect-ratio: 3 / 4;
-  border-radius: calc(var(--bew-radius) - 4px);
+  border-radius: var(--bew-media-radius);
   overflow: hidden;
   position: relative;
 
@@ -1049,10 +1049,10 @@ defineExpose({
   top: 0.75rem;
   left: 0.75rem;
   padding: 0.25rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--bew-badge-radius);
   background: rgba(0, 0, 0, 0.65);
   color: #fff;
-  font-size: 0.75rem;
+  font-size: var(--bew-font-size-control);
 }
 
 .bangumi-highlight-info,
@@ -1065,9 +1065,9 @@ defineExpose({
 
 .bangumi-highlight-desc,
 .media-ft-highlight-desc {
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-body);
   color: var(--bew-text-2);
-  line-height: 1.5;
+  line-height: var(--bew-line-height-body);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   line-clamp: 3;
@@ -1082,10 +1082,10 @@ defineExpose({
 
   span {
     padding: 0.25rem 0.5rem;
-    border-radius: 999px;
+    border-radius: var(--bew-badge-radius);
     background: var(--bew-fill-1);
     color: var(--bew-text-3);
-    font-size: 0.75rem;
+    font-size: var(--bew-font-size-control);
   }
 }
 
@@ -1103,10 +1103,12 @@ defineExpose({
   align-items: center;
   justify-content: center;
   padding: 0.5rem 1.25rem;
-  border-radius: var(--bew-radius-half);
+  min-height: var(--bew-control-height);
+  border-radius: var(--bew-interactive-radius);
   background: var(--bew-theme-color);
   color: #fff;
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
   text-decoration: none;
   transition: background-color 0.2s ease;
 
@@ -1122,7 +1124,7 @@ defineExpose({
 
 .user-highlight-card {
   background: var(--bew-elevated);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-card-radius);
   padding: 1rem;
   display: flex;
   flex-direction: column;
@@ -1140,19 +1142,21 @@ defineExpose({
 .user-highlight-verify {
   margin-left: 0.5rem;
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--bew-badge-radius);
   background: var(--bew-theme-color-20);
   color: var(--bew-theme-color);
-  font-size: 0.75rem;
+  font-size: var(--bew-font-size-control);
 }
 
 .user-highlight-follow {
   margin-left: auto;
   padding: 0.5rem 1.25rem;
-  border-radius: var(--bew-radius-half);
+  min-height: var(--bew-control-height);
+  border-radius: var(--bew-interactive-radius);
   background: var(--bew-theme-color);
   color: white;
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
   border: 1px solid var(--bew-theme-color);
   cursor: pointer;
   transition:
@@ -1186,9 +1190,9 @@ defineExpose({
 }
 
 .user-highlight-desc {
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-body);
   color: var(--bew-text-2);
-  line-height: 1.5;
+  line-height: var(--bew-line-height-body);
 }
 
 .user-level-badge-icon {
@@ -1207,7 +1211,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
+  font-size: var(--bew-font-size-title);
   flex-shrink: 0;
 
   &.gender-male {
@@ -1233,10 +1237,10 @@ defineExpose({
   display: block;
   text-align: center;
   padding: 0.5rem;
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-control);
   color: var(--bew-theme-color);
   text-decoration: none;
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-interactive-radius);
   transition:
     background-color 0.3s ease,
     color 0.3s ease,

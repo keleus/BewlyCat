@@ -198,7 +198,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 <template>
   <div v-if="getCSRF()" flex="~ col md:row lg:row" gap-4>
     <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" mb-6>
-      <h3 text="3xl $bew-text-1" font-bold mb-6>
+      <h3 class="bew-page-heading" text="$bew-text-1" mb-6>
         {{ t('watch_later.title') }} ({{ watchLaterCount }})
       </h3>
       <Empty v-if="watchLaterCount === 0 && !isLoading" />
@@ -326,7 +326,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                 <div flex items-center gap-1>
                   <Tooltip :content="t('watch_later.play_video')" placement="top">
                     <button
-                      text="2xl $bew-text-3"
+                      text="size-$bew-icon-size-lg $bew-text-3"
                       hover:color="$bew-theme-color"
                       opacity-0 group-hover:opacity-100
                       p-2
@@ -338,7 +338,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                   </Tooltip>
                   <Tooltip :content="t('watch_later.play_in_watch_later')" placement="top">
                     <button
-                      text="2xl $bew-text-3"
+                      text="size-$bew-icon-size-lg $bew-text-3"
                       hover:color="$bew-theme-color"
                       opacity-0 group-hover:opacity-100
                       p-2
@@ -350,7 +350,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                   </Tooltip>
                   <Tooltip :content="t('watch_later.remove_from_watch_later')" placement="top">
                     <button
-                      text="2xl $bew-text-3"
+                      text="size-$bew-icon-size-lg $bew-text-3"
                       hover:color="$bew-theme-color"
                       opacity-0 group-hover:opacity-100
                       p-2
@@ -419,7 +419,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
             >
           </picture>
 
-          <h3 text="3xl white" fw-600 style="text-shadow: 0 0 12px rgba(0,0,0,.3)">
+          <h3 class="bew-page-heading" text="white" style="text-shadow: 0 0 12px rgba(0,0,0,.3)">
             {{ t('watch_later.title') }} ({{ watchLaterCount }})
           </h3>
           <p v-if="watchLaterCount > 0" flex="~ col" gap-4>

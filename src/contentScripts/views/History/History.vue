@@ -240,7 +240,7 @@ function jumpToLoginPage() {
 <template>
   <div v-if="getCSRF()" flex="~ col md:row lg:row" gap-4>
     <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" mb-6>
-      <h3 text="3xl $bew-text-1" font-bold mb-6>
+      <h3 class="bew-page-heading" text="$bew-text-1" mb-6>
         {{ $t('history.title') }}
       </h3>
       <!-- historyList -->
@@ -461,7 +461,7 @@ function jumpToLoginPage() {
               </div>
 
               <button
-                text="2xl $bew-text-3"
+                text="size-$bew-icon-size-lg $bew-text-3"
                 hover:color="$bew-theme-color"
                 opacity-0 group-hover:opacity-100
                 p-2

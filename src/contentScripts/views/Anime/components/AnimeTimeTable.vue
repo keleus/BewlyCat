@@ -80,7 +80,7 @@ defineExpose({ refreshAnimeTimeTable })
               "
             />
             <h3 :text="item.is_today ? '$bew-text-1' : '$bew-text-3'">
-              <span text="2xl" font-bold>{{
+              <span class="anime-timetable__day">{{
                 daysOfTheWeekList[item.day_of_week - 1]
               }}</span>
               <span
@@ -160,3 +160,11 @@ defineExpose({ refreshAnimeTimeTable })
     </HorizontalScrollView>
   </div>
 </template>
+
+<style scoped lang="scss">
+.anime-timetable__day {
+  font-size: var(--bew-font-size-display);
+  font-weight: var(--bew-font-weight-bold);
+  line-height: var(--bew-line-height-data);
+}
+</style>

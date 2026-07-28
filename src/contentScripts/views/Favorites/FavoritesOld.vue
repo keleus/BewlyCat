@@ -375,7 +375,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
             <div v-else aspect-video w-full />
           </picture>
 
-          <h3 text="3xl white" fw-600 style="text-shadow: 0 0 12px rgba(0,0,0,.3)">
+          <h3 class="bew-page-heading" text="white" style="text-shadow: 0 0 12px rgba(0,0,0,.3)">
             {{ selectedCategory?.title }}
           </h3>
 
@@ -437,7 +437,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 
   &::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.35);
-    border-radius: 20px;
+    border-radius: var(--bew-radius-full);
   }
 
   &::-webkit-scrollbar-corner {

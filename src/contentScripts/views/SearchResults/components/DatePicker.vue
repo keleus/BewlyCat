@@ -334,7 +334,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
     <!-- 日历弹出框 -->
     <Transition name="picker-fade">
-      <div v-if="showPicker" class="date-picker-panel">
+      <div v-if="showPicker" class="date-picker-panel bew-popover-surface">
         <!-- 头部：年月选择 -->
         <div class="picker-header">
           <div class="year-controls">
@@ -414,12 +414,15 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 .date-picker-input {
   flex: 1;
   width: 100%;
-  padding: 0.35rem 1.5rem 0.35rem 0.5rem;
+  min-height: 28px;
+  padding: 0 var(--bew-space-6) 0 var(--bew-space-2);
   background: var(--bew-fill-1);
   border: 1px solid transparent;
-  border-radius: var(--bew-radius-half);
+  border-radius: var(--bew-interactive-radius);
   color: var(--bew-text-3);
-  font-size: 0.8125rem;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-regular);
+  line-height: var(--bew-line-height-control);
   letter-spacing: -0.01em;
   transition:
     background-color 0.2s ease,
@@ -480,35 +483,32 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   left: 0;
   z-index: 1000;
   width: 280px;
-  padding: 12px;
-  background: var(--bew-elevated);
-  border-radius: var(--bew-radius);
-  box-shadow: var(--bew-shadow-3);
-  backdrop-filter: var(--bew-filter-glass-1);
+  padding: var(--bew-space-3);
 }
 
 .picker-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  padding: 0 4px;
+  gap: var(--bew-space-3);
+  margin-bottom: var(--bew-space-3);
+  padding: 0 var(--bew-space-1);
 }
 
 .year-controls,
 .month-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--bew-space-1);
 }
 
 .year-text,
 .month-text {
   min-width: 60px;
   text-align: center;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-body);
   color: var(--bew-text-1);
 }
 
@@ -520,7 +520,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   height: 24px;
   background: transparent;
   border: none;
-  border-radius: var(--bew-radius-half);
+  border-radius: var(--bew-interactive-radius);
   color: var(--bew-text-2);
   cursor: pointer;
   transition:
@@ -543,8 +543,8 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 .picker-weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 4px;
+  gap: var(--bew-space-1);
+  margin-bottom: var(--bew-space-1);
 }
 
 .weekday {
@@ -552,16 +552,16 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   align-items: center;
   justify-content: center;
   height: 32px;
-  font-size: 0.75rem;
+  font-size: var(--bew-font-size-control);
   color: var(--bew-text-3);
-  font-weight: 500;
+  font-weight: var(--bew-font-weight-medium);
 }
 
 .picker-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: var(--bew-space-1);
+  margin-bottom: var(--bew-space-3);
 }
 
 .day-cell {
@@ -571,9 +571,9 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
   height: 32px;
   background: transparent;
   border: none;
-  border-radius: var(--bew-radius-half);
+  border-radius: var(--bew-interactive-radius);
   color: var(--bew-text-1);
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-body);
   cursor: pointer;
   transition:
     background-color 0.2s ease,
@@ -598,13 +598,13 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 
   &.today {
     color: var(--bew-theme-color);
-    font-weight: 600;
+    font-weight: var(--bew-font-weight-semibold);
   }
 
   &.selected {
     background: var(--bew-theme-color);
     color: white;
-    font-weight: 600;
+    font-weight: var(--bew-font-weight-semibold);
 
     &:hover {
       background: var(--bew-theme-color);
@@ -619,16 +619,19 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
 .picker-footer {
   display: flex;
   justify-content: space-between;
-  padding-top: 8px;
+  padding-top: var(--bew-space-2);
   border-top: 1px solid var(--bew-border-color);
 }
 
 .footer-btn {
-  padding: 4px 12px;
+  min-height: 28px;
+  padding: 0 var(--bew-space-3);
   background: transparent;
   border: none;
-  border-radius: var(--bew-radius-half);
-  font-size: 0.875rem;
+  border-radius: var(--bew-interactive-radius);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-control);
   cursor: pointer;
   transition:
     background-color 0.2s ease,
