@@ -3,8 +3,10 @@ import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn, 
 import type { Ref } from 'vue'
 import { provide, ref } from 'vue'
 
+import Dialog from '~/components/Dialog.vue'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
+import { confirmDialogKey } from '~/composables/useConfirmDialog'
 import { useDark } from '~/composables/useDark'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
@@ -41,6 +43,61 @@ else {
   isDark = ref(false)
 }
 const [showSettings, toggleSettings] = useToggle(false)
+
+interface ConfirmDialogRequest {
+  message: string
+  resolve: (confirmed: boolean) => void
+  settled: boolean
+}
+
+const activeConfirmDialog = ref<ConfirmDialogRequest>()
+const confirmDialogQueue: ConfirmDialogRequest[] = []
+let confirmDialogClosing = false
+
+function showNextConfirmDialog() {
+  activeConfirmDialog.value = confirmDialogQueue.shift()
+}
+
+function showConfirmDialog(message: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const request: ConfirmDialogRequest = {
+      message,
+      resolve,
+      settled: false,
+    }
+
+    if (activeConfirmDialog.value || confirmDialogClosing)
+      confirmDialogQueue.push(request)
+    else
+      activeConfirmDialog.value = request
+  })
+}
+
+function settleConfirmDialog(confirmed: boolean) {
+  const request = activeConfirmDialog.value
+  if (!request || request.settled)
+    return
+
+  request.settled = true
+  request.resolve(confirmed)
+}
+
+function closeConfirmDialog() {
+  if (!activeConfirmDialog.value)
+    return
+
+  settleConfirmDialog(false)
+  confirmDialogClosing = true
+  activeConfirmDialog.value = undefined
+  setTimeout(() => {
+    confirmDialogClosing = false
+    showNextConfirmDialog()
+  }, 0)
+}
+
+provide(confirmDialogKey, {
+  confirm: showConfirmDialog,
+})
 
 // Get the 'page' query parameter from the URL
 function getPageParam(): AppPage | null {
@@ -971,6 +1028,18 @@ if (settings.value.cleanUrlArgument) {
       :url="iframeDrawerURL"
       @close="showIframeDrawer = false"
     />
+
+    <Dialog
+      v-if="activeConfirmDialog"
+      :title="$t('common.operation.confirm')"
+      width="420px"
+      @confirm="settleConfirmDialog(true)"
+      @close="closeConfirmDialog"
+    >
+      <p whitespace-pre-line text="$bew-text-1">
+        {{ activeConfirmDialog.message }}
+      </p>
+    </Dialog>
   </div>
 </template>
 

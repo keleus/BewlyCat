@@ -207,7 +207,6 @@ settings:
   group_moments_sidebar: Dynamic Feed Sidebar
   group_moments_interaction: Dynamic Card Interaction
   group_version_reminder: Version reminders
-  moments_experimental_confirm: The dynamic feed is experimental and not a final product. Its design may change significantly. Continue switching?
   original_moments_show_user_card: Show user card
   original_moments_show_live_list: Show live list
   original_moments_show_community_center: Show community center
@@ -763,6 +762,7 @@ settings:
     reset_all_button: Reset All Shortcuts
     reset_all_ext_shortcuts: Reset All Extension Shortcuts
     press_keys: Click the input box, then press the shortcut keys
+    conflict: The shortcut is already used by the extension shortcut “{name}” and cannot be assigned again.
     danmu_status: Show Danmu Status
     danmu_status_desc: Show current danmu toggle status
     web_fullscreen: Web Fullscreen

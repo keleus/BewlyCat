@@ -227,7 +227,6 @@ settings:
   group_moments_sidebar: 動態頁左邊元件
   group_moments_interaction: 動態卡片互動
   group_version_reminder: 版本提醒
-  moments_experimental_confirm: 動態頁而家仲係實驗階段，唔係最終成品，相關形態之後可能會有較大改動。係咪繼續切換？
   original_moments_show_user_card: 顯示用戶卡片
   original_moments_show_live_list: 顯示直播列表
   original_moments_show_community_center: 顯示社羣中心
@@ -696,6 +695,7 @@ settings:
     play_pause_ext: 播放/暫停
     play_pause_ext_desc: 播放或暫停影片（延伸功能）。
     press_keys: 點擊輸入框，跟住撳低快捷鍵
+    conflict: 呢個快捷鍵已經俾延伸功能快捷鍵「{name}」用緊，唔可以重複設定。
     previous_frame: 上一影格
     previous_frame_desc: 去返上一影格（暫停時）。
     replay: 重播

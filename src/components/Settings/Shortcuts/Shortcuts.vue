@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 import Button from '~/components/Button.vue' // Assuming Button component exists
 import Radio from '~/components/Radio.vue'
@@ -16,6 +17,7 @@ import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 import SettingsSectionHeading from '../components/SettingsSectionHeading.vue'
 
 const { t } = useI18n()
+const toast = useToast()
 
 // --- 类型定义 ---
 interface OfficialShortcut {
@@ -287,7 +289,7 @@ function handleKeyUp(event: KeyboardEvent, id: ConfigurableShortcutId) {
       const conflictResult = checkShortcutConflict(keyCombo, id)
 
       if (conflictResult.hasConflict && conflictResult.conflictInfo) {
-        alert(`此快捷键已被插件快捷键"${conflictResult.conflictInfo.name}"使用，不能重复设置。`)
+        toast.warning(t('settings.shortcuts.conflict', { name: conflictResult.conflictInfo.name }))
         cancelEdit()
       }
       else {

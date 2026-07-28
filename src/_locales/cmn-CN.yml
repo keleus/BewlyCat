@@ -204,7 +204,6 @@ settings:
   group_moments_sidebar: 动态页左侧组件
   group_moments_interaction: 动态卡片交互
   group_version_reminder: 版本提醒
-  moments_experimental_confirm: 动态页目前仍处于实验阶段，并非最终成品，相关形态后续可能会有较大调整。是否继续切换？
   original_moments_show_user_card: 显示用户卡片
   original_moments_show_live_list: 显示直播列表
   original_moments_show_community_center: 显示社区中心
@@ -693,6 +692,7 @@ settings:
     reset_all_button: 重置所有快捷键
     reset_all_ext_shortcuts: 重置所有扩展快捷键
     press_keys: 点击输入框，按下快捷键
+    conflict: 此快捷键已被插件快捷键“{name}”使用，不能重复设置。
     danmu_status: 显示弹幕状态
     danmu_status_desc: 显示当前弹幕开关状态
     web_fullscreen: 网页全屏

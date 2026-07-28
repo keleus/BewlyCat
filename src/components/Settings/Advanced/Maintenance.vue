@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { originalSettings, settings } from '~/logic'
 
 import SettingsItem from '../components/SettingsItem.vue'
@@ -9,6 +10,7 @@ import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 
 const { t } = useI18n()
 const toast = useToast()
+const { confirm: showConfirmDialog } = useConfirmDialog()
 const importSettingsRef = ref<HTMLInputElement>()
 
 function handleImportSettings() {
@@ -73,8 +75,8 @@ function handleExportSettings() {
   URL.revokeObjectURL(url)
 }
 
-function handleResetSettings() {
-  if (!confirm(t('settings.reset_settings_confirm')))
+async function handleResetSettings() {
+  if (!await showConfirmDialog(t('settings.reset_settings_confirm')))
     return
 
   // 重置时保留用户当前使用的语言

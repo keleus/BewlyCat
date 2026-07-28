@@ -3,6 +3,7 @@ import { onKeyStroke } from '@vueuse/core'
 
 import Button from '~/components/Button.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { settings } from '~/logic'
 
 const props = withDefaults(defineProps<{
   title?: string
@@ -93,6 +94,7 @@ const dialogContentHeight = computed(() => {
 const dialogContentMaxHeight = computed(() => {
   return typeof props.contentMaxHeight === 'number' ? `${props.contentMaxHeight}px` : props.contentMaxHeight || 'auto'
 })
+const frostedGlassEnabled = computed(() => settings.value.enableFrostedGlass && props.frostedGlass !== false)
 const dialogPanelStyle = computed(() => {
   const topAligned = dialogTopOffset.value !== undefined
   return {
@@ -103,10 +105,11 @@ const dialogPanelStyle = computed(() => {
     left: '50%',
     transform: topAligned ? 'translateX(-50%)' : 'translate(-50%, -50%)',
     transition: 'transform 0.4s, width 0.4s, height 0.4s',
-    overflow: topAligned ? 'visible' : undefined,
+    overflow: topAligned ? 'visible' : 'hidden',
     border: props.showBorder ? undefined : '0',
-    backdropFilter: props.frostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
-    backgroundColor: props.frostedGlass ? 'var(--bew-elevated)' : 'var(--bew-elevated-solid)',
+    backdropFilter: frostedGlassEnabled.value ? 'var(--bew-filter-glass-2)' : 'none',
+    WebkitBackdropFilter: frostedGlassEnabled.value ? 'var(--bew-filter-glass-2)' : 'none',
+    backgroundColor: frostedGlassEnabled.value ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
     boxShadow: props.showBorder ? 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)' : 'var(--bew-shadow-4)',
   }
 })
@@ -184,12 +187,22 @@ function handleConfirm() {
           <header
             v-if="showHeader"
             style="
-              text-shadow: 0 0 15px var(--bew-elevated-solid), 0 0 20px var(--bew-elevated-solid)
+              text-shadow: 0 0 10px var(--bew-elevated-solid), 0 0 15px var(--bew-elevated-solid)
             "
-            pos="sticky top-0 left-0" w-full h-70px px-12 flex
+            pos="sticky top-0 left-0" w-full h-70px px-8 flex
             items-center justify-between
             rounded="t-$bew-radius" z-1
           >
+            <div
+              pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
+              :style="{
+                maskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+                backdropFilter: frostedGlassEnabled ? 'blur(3px) saturate(180%)' : 'none',
+                WebkitBackdropFilter: frostedGlassEnabled ? 'blur(3px) saturate(180%)' : 'none',
+              }"
+              z--1 rounded-inherit
+            />
             <div
               :style="{ textAlign: center ? 'center' : 'left' }"
               w-full
@@ -209,12 +222,12 @@ function handleConfirm() {
             <div
               style="
                 backdrop-filter: var(--bew-filter-glass-1);
-                box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
+                box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
               "
               text="!16px hover:$bew-theme-color" w="32px" h="32px"
               flex="~ items-center justify-center shrink-0"
-              bg="$bew-fill-1 hover:$bew-theme-color-30"
-              ml-8 rounded="$bew-radius-half" cursor="pointer" border="1 $bew-border-color"
+              bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
+              ml-8 rounded-8 cursor="pointer" border="1 $bew-border-color"
               box-border
               duration-300
               @click="handleClose"
@@ -231,9 +244,9 @@ function handleConfirm() {
               minHeight: dialogHeight ? '0' : undefined,
               ...(contentFlush
                 ? { padding: '0' }
-                : { paddingBottom: !showFooter ? '2rem' : '0.5rem' }),
+                : { paddingBottom: !showFooter ? '1.5rem' : '0.5rem' }),
             }"
-            :p="contentFlush ? undefined : 'x-12 y-2'"
+            :p="contentFlush ? undefined : 'x-8 y-2'"
             relative
             :overflow="contentFlush ? 'hidden' : 'x-hidden y-overlay'"
           >
@@ -243,7 +256,7 @@ function handleConfirm() {
           <footer
             v-if="showFooter"
             :style="{ justifyContent: centerFooter || center ? 'center' : 'flex-end' }"
-            flex="~ gap-2" p="x-12 t-2 b-6"
+            flex="~ gap-2" p="x-8 t-2 b-6"
           >
             <Button type="tertiary" @click="handleClose">
               <div>

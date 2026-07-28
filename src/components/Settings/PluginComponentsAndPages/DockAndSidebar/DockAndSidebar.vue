@@ -5,7 +5,6 @@ import draggable from 'vuedraggable'
 import Button from '~/components/Button.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
-import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
@@ -86,15 +85,6 @@ function handleToggleDockItem(dockItem: any) {
 }
 
 function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean) {
-  if (
-    dockItem.page === AppPage.Moments
-    && dockItem.useOriginalBiliPage
-    && !useOriginalBiliPage
-    && !window.confirm(t('settings.moments_experimental_confirm'))
-  ) {
-    return
-  }
-
   dockItem.useOriginalBiliPage = useOriginalBiliPage
 }
 </script>

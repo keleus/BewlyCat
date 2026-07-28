@@ -49,7 +49,6 @@ function acknowledgeCurrentVersion() {
     width="480px"
     max-width="calc(100vw - 32px)"
     content-max-height="calc(100vh - 180px)"
-    :frosted-glass="false"
     :show-footer="false"
     append-to-bewly-body
     @close="dialogVisible = false"
@@ -66,7 +65,7 @@ function acknowledgeCurrentVersion() {
           rel="noopener noreferrer"
           class="version-reminder-dialog__link"
         >
-          <span class="version-reminder-dialog__link-icon" i-mingcute:github-line />
+          <span class="version-reminder-dialog__link-icon version-reminder-dialog__link-icon--github" i-mingcute:github-line />
           <span>
             <strong>{{ $t('version_reminder.github_releases') }}</strong>
             <small>{{ $t('version_reminder.github_releases_desc') }}</small>
@@ -80,7 +79,7 @@ function acknowledgeCurrentVersion() {
           rel="noopener noreferrer"
           class="version-reminder-dialog__link"
         >
-          <span class="version-reminder-dialog__link-icon" i-mingcute:bilibili-line />
+          <span class="version-reminder-dialog__link-icon version-reminder-dialog__link-icon--bilibili" i-mingcute:bilibili-line />
           <span>
             <strong>{{ $t('version_reminder.bilibili_dynamic') }}</strong>
             <small>{{ $t('version_reminder.bilibili_dynamic_desc') }}</small>
@@ -156,7 +155,7 @@ function acknowledgeCurrentVersion() {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 2px 0 18px;
+  padding: 2px 0 0;
 }
 
 .version-reminder-dialog__intro {
@@ -198,8 +197,16 @@ function acknowledgeCurrentVersion() {
   width: 38px;
   height: 38px;
   padding: 8px;
-  background: var(--bew-fill-2);
+  background: currentColor;
   border-radius: 10px;
+}
+
+.version-reminder-dialog__link-icon--github {
+  color: var(--bew-text-1);
+}
+
+.version-reminder-dialog__link-icon--bilibili {
+  color: var(--bew-theme-color);
 }
 
 .version-reminder-dialog__link strong,

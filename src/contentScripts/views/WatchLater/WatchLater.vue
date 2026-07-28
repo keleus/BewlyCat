@@ -3,6 +3,7 @@ import { useDateFormat } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { settings } from '~/logic'
 import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
 import api from '~/utils/api'
@@ -11,6 +12,7 @@ import { getCSRF, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 const { t } = useI18n()
+const { confirm: showConfirmDialog } = useConfirmDialog()
 const { openIframeDrawer } = useBewlyApp()
 
 const isLoading = ref<boolean>()
@@ -115,8 +117,8 @@ function deleteWatchLaterItem(index: number, aid: number) {
     })
 }
 
-function handleClearAllWatchLater() {
-  const result = confirm(
+async function handleClearAllWatchLater() {
+  const result = await showConfirmDialog(
     t('watch_later.clear_all_confirm'),
   )
   if (result) {
@@ -132,8 +134,8 @@ function handleClearAllWatchLater() {
   }
 }
 
-function handleRemoveWatchedVideos() {
-  const result = confirm(
+async function handleRemoveWatchedVideos() {
+  const result = await showConfirmDialog(
     t('watch_later.remove_watched_videos_confirm'),
   )
   if (result) {

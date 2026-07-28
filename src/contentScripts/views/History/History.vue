@@ -3,6 +3,7 @@ import { useDateFormat } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import type { HistoryResult, List as HistoryItem } from '~/models/history/history'
 import { Business } from '~/models/history/history'
 import type { HistorySearchResult, List as HistorySearchItem } from '~/models/video/historySearch'
@@ -11,6 +12,7 @@ import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getCSRF, removeHttpFromUrl } from '~/utils/main'
 
 const { t } = useI18n()
+const { confirm: showConfirmDialog } = useConfirmDialog()
 
 const isLoading = ref<boolean>()
 const noMoreContent = ref<boolean>(false)
@@ -206,24 +208,24 @@ function clearAllHistory() {
     })
 }
 
-function handleClearAllWatchHistory() {
-  const result = confirm(
+async function handleClearAllWatchHistory() {
+  const result = await showConfirmDialog(
     t('history.clear_all_watch_history_confirm'),
   )
   if (result)
     clearAllHistory()
 }
 
-function handlePauseWatchHistory() {
-  const result = confirm(
+async function handlePauseWatchHistory() {
+  const result = await showConfirmDialog(
     t('history.pause_watch_history_confirm'),
   )
   if (result)
     setHistoryPauseStatus(true)
 }
 
-function handleTurnOnWatchHistory() {
-  const result = confirm(
+async function handleTurnOnWatchHistory() {
+  const result = await showConfirmDialog(
     t('history.turn_on_watch_history_confirm'),
   )
   if (result)

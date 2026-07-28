@@ -6,6 +6,7 @@ import type { FavoriteCategory, FavoriteResource } from '~/components/TopBar/typ
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favorite'
@@ -15,6 +16,7 @@ import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils
 import emitter from '~/utils/mitt'
 
 const { t } = useI18n()
+const { confirm: showConfirmDialog } = useConfirmDialog()
 
 const favoriteCategories = reactive<CategoryItem[]>([])
 const favoriteResources = reactive<FavoriteItem[]>([])
@@ -227,8 +229,8 @@ function jumpToLoginPage() {
   location.href = 'https://passport.bilibili.com/login'
 }
 
-function handleUnfavorite(favoriteResource: FavoriteResource) {
-  const result = confirm(
+async function handleUnfavorite(favoriteResource: FavoriteResource) {
+  const result = await showConfirmDialog(
     t('favorites.unfavorite_confirm'),
   )
   if (result) {

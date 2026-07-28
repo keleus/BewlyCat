@@ -8,6 +8,7 @@ import type { FavoriteResource } from '~/components/TopBar/types'
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favorite'
@@ -27,6 +28,7 @@ import emitter from '~/utils/mitt'
 // 新版收藏页支持收藏夹与订阅合集。
 const { t } = useI18n()
 const toast = useToast()
+const { confirm: showConfirmDialog } = useConfirmDialog()
 
 type FavoriteCategorySource = 'folder' | 'season'
 type BatchTransferAction = 'copy' | 'move'
@@ -480,7 +482,7 @@ async function handleBatchDeleteFolders() {
   if (selectedFolderCount.value === 0 || isSidebarOperating.value)
     return
 
-  const result = confirm(t('favorites.delete_folders_confirm', { count: selectedFolderCount.value }))
+  const result = await showConfirmDialog(t('favorites.delete_folders_confirm', { count: selectedFolderCount.value }))
   if (!result)
     return
 
@@ -500,7 +502,7 @@ async function handleBatchUnfavSeasons() {
   if (selectedSeasonCount.value === 0 || isSidebarOperating.value)
     return
 
-  const result = confirm(t('favorites.unfav_seasons_confirm', { count: selectedSeasonCount.value }))
+  const result = await showConfirmDialog(t('favorites.unfav_seasons_confirm', { count: selectedSeasonCount.value }))
   if (!result)
     return
 
@@ -547,7 +549,7 @@ async function handleItemMenuSelect(value: string | number) {
       openSingleRenameFolder(target.id)
       return
     }
-    const result = confirm(t('favorites.delete_folders_confirm', { count: 1 }))
+    const result = await showConfirmDialog(t('favorites.delete_folders_confirm', { count: 1 }))
     if (!result)
       return
     isSidebarOperating.value = true
@@ -560,7 +562,7 @@ async function handleItemMenuSelect(value: string | number) {
     return
   }
 
-  const result = confirm(t('favorites.unfav_seasons_confirm', { count: 1 }))
+  const result = await showConfirmDialog(t('favorites.unfav_seasons_confirm', { count: 1 }))
   if (!result)
     return
   isSidebarOperating.value = true
@@ -948,11 +950,11 @@ function jumpToLoginPage() {
   location.href = 'https://passport.bilibili.com/login'
 }
 
-function handleUnfavorite(favoriteResource: FavoriteResource) {
+async function handleUnfavorite(favoriteResource: FavoriteResource) {
   if (selectedCategory.value?.source === 'season')
     return
 
-  const result = confirm(
+  const result = await showConfirmDialog(
     t('favorites.unfavorite_confirm'),
   )
   if (result) {
@@ -971,7 +973,7 @@ async function handleBatchDelete() {
   if (!selectedCategory.value || selectedCount.value === 0)
     return
 
-  const result = confirm(t('favorites.batch_unfavorite_confirm', { count: selectedCount.value }))
+  const result = await showConfirmDialog(t('favorites.batch_unfavorite_confirm', { count: selectedCount.value }))
   if (!result)
     return
 

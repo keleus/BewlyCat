@@ -203,7 +203,6 @@ settings:
   group_moments_sidebar: 動態頁左側元件
   group_moments_interaction: 動態卡片互動
   group_version_reminder: 版本提醒
-  moments_experimental_confirm: 動態頁目前仍處於實驗階段，並非最終成品，相關形式後續可能會有較大調整。是否繼續切換？
   original_moments_show_user_card: 顯示使用者卡片
   original_moments_show_live_list: 顯示直播列表
   original_moments_show_community_center: 顯示社群中心
@@ -683,6 +682,7 @@ settings:
     reset_all_button: 重置所有快捷鍵
     reset_all_ext_shortcuts: 重置所有擴充套件快捷鍵
     press_keys: 點擊輸入框，按下快捷鍵
+    conflict: 此快捷鍵已被擴充套件快捷鍵「{name}」使用，不能重複設定。
     danmu_status: 顯示彈幕狀態
     danmu_status_desc: 顯示目前彈幕開關狀態
     web_fullscreen: 網頁全螢幕
