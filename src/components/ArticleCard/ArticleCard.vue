@@ -68,8 +68,8 @@ function formatDate(timestamp: number | undefined) {
     class="article-card"
     flex gap-4 p-4
     bg="$bew-elevated hover:$bew-elevated-hover"
-    rounded="$bew-radius"
-    transition-all duration-300 cursor-pointer
+    rounded="$bew-card-radius"
+    cursor-pointer
   >
     <!-- 左侧内容 -->
     <div class="article-content" flex-1 min-w-0>
@@ -145,7 +145,7 @@ function formatDate(timestamp: number | undefined) {
       v-if="cover"
       class="article-cover"
       w-32 h-24
-      rounded="$bew-radius-half"
+      rounded="$bew-media-radius"
       overflow-hidden
       flex-shrink-0
       bg="$bew-fill-1"
@@ -164,6 +164,10 @@ function formatDate(timestamp: number | undefined) {
   text-decoration: none;
   color: inherit;
   display: flex;
+  transition:
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard),
+    transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
 
   &:hover {
     transform: translateY(-2px);

@@ -344,7 +344,7 @@ provide('getVideoType', () => props.type!)
     :ref="(el) => logic.cardRootRef.value = el as HTMLElement"
     class="video-card-container"
     duration-300 ease-in-out
-    rounded="$bew-radius"
+    rounded="$bew-card-radius"
     :class="[
       layout !== 'old' ? 'mb-3' : 'mb-4',
       skeleton ? 'video-card-container--skeleton' : 'video-card-container--interactive',
@@ -353,7 +353,7 @@ provide('getVideoType', () => props.type!)
     <div
       class="video-card group"
       w="full"
-      rounded="$bew-radius"
+      rounded="$bew-card-radius"
     >
       <component
         :is="coverSkeleton ? 'div' : 'ALink'"
@@ -565,8 +565,8 @@ provide('getVideoType', () => props.type!)
   left: 0.5rem;
   z-index: 3;
   color: rgb(255 255 255 / 90%);
-  font-size: 0.6875rem;
-  font-weight: 600;
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-semibold);
   line-height: 1;
   letter-spacing: 0.04em;
   opacity: 0.48;
@@ -578,7 +578,7 @@ provide('getVideoType', () => props.type!)
 
 .bew-title-auto {
   /* 使用固定的响应式字体大小，不使用容器查询单位 */
-  font-size: clamp(12px, 2.5vw, 18px);
+  font-size: clamp(var(--bew-font-size-control), 2.5vw, var(--bew-font-size-heading));
   line-height: clamp(1.15, 1.35, 1.5);
 }
 
@@ -591,7 +591,7 @@ provide('getVideoType', () => props.type!)
 
 /* 使用固定样式变量 */
 :deep(.video-card-stats) {
-  --video-card-stats-font-size: 0.75rem;
+  --video-card-stats-font-size: var(--bew-font-size-control);
   --video-card-stats-overlay-scale: 1.4;
   --video-card-stats-icon-size: 0.825rem;
 }

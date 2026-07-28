@@ -87,10 +87,10 @@ const metaText = computed(() => {
 .movie-card {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 1rem;
+  gap: var(--bew-space-3);
+  padding: var(--bew-space-4);
   background: var(--bew-elevated);
-  border-radius: var(--bew-radius);
+  border-radius: var(--bew-card-radius);
   transition:
     transform 0.2s ease,
     background-color 0.2s ease;
@@ -105,7 +105,7 @@ const metaText = computed(() => {
 .poster {
   position: relative;
   width: 100%;
-  border-radius: calc(var(--bew-radius) - 4px);
+  border-radius: var(--bew-media-radius);
   overflow: hidden;
   background: var(--bew-skeleton);
   aspect-ratio: 2 / 3;
@@ -120,37 +120,39 @@ const metaText = computed(() => {
 
 .score-chip {
   position: absolute;
-  bottom: 0.5rem;
-  right: 0.5rem;
-  padding: 0.125rem 0.5rem;
-  border-radius: 999px;
+  bottom: var(--bew-space-2);
+  right: var(--bew-space-2);
+  padding: var(--bew-space-0-5) var(--bew-space-2);
+  border-radius: var(--bew-badge-radius);
   background: rgba(0, 0, 0, 0.78);
   color: white;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
 }
 
 .type-chip {
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  padding: 0.125rem 0.5rem;
-  border-radius: 999px;
+  top: var(--bew-space-2);
+  left: var(--bew-space-2);
+  padding: var(--bew-space-0-5) var(--bew-space-2);
+  border-radius: var(--bew-badge-radius);
   background: rgba(0, 0, 0, 0.65);
   color: white;
-  font-size: 0.75rem;
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
 }
 
 .info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--bew-space-2);
 }
 
 .title {
-  font-weight: 600;
+  font-weight: var(--bew-font-weight-semibold);
   color: var(--bew-text-1);
-  line-height: 1.35;
+  line-height: var(--bew-line-height-body);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -158,14 +160,15 @@ const metaText = computed(() => {
 }
 
 .meta {
-  font-size: 0.8125rem;
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
   color: var(--bew-text-3);
 }
 
 .description {
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-body);
   color: var(--bew-text-2);
-  line-height: 1.5;
+  line-height: var(--bew-line-height-body);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -175,14 +178,15 @@ const metaText = computed(() => {
 .tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--bew-space-2);
 
   span {
-    font-size: 0.75rem;
+    font-size: var(--bew-font-size-control);
+    line-height: var(--bew-line-height-control);
     color: var(--bew-text-3);
     background: var(--bew-fill-1);
-    border-radius: 999px;
-    padding: 0.125rem 0.5rem;
+    border-radius: var(--bew-badge-radius);
+    padding: var(--bew-space-0-5) var(--bew-space-2);
   }
 }
 </style>

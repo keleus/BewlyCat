@@ -579,12 +579,20 @@ async function unfollowUser() {
 
 <style lang="scss" scoped>
 .context-menu-item {
-  --uno: "hover:bg-$bew-fill-2 text-sm px-2.5 py-1.75 rounded-$bew-radius-half cursor-pointer";
+  --uno: "hover:bg-$bew-fill-2 rounded-$bew-interactive-radius cursor-pointer";
   --uno: "flex items-center";
+
+  min-height: 32px;
+  padding: var(--bew-space-2);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-control);
 }
 
 .item-icon {
-  --uno: "mr-2 inline-block color-$bew-text-color-2";
+  --uno: "inline-block color-$bew-text-color-2";
+
+  margin-right: var(--bew-space-2);
 }
 
 .divider {

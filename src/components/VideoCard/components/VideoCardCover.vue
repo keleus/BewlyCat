@@ -488,7 +488,7 @@ onBeforeUnmount(() => {
   <div
     class="group/cover"
     shrink-0
-    relative bg="$bew-skeleton" rounded="$bew-radius"
+    relative bg="$bew-skeleton" rounded="$bew-media-radius"
     overflow-hidden
     cursor-pointer
     group-hover:z-2
@@ -497,7 +497,7 @@ onBeforeUnmount(() => {
     <!-- Skeleton mode -->
     <div
       v-if="skeleton"
-      w-full h-full bg="$bew-skeleton" rounded="$bew-radius"
+      w-full h-full bg="$bew-skeleton" rounded="$bew-media-radius"
       style="aspect-ratio: 16 / 9;"
     />
 
@@ -517,7 +517,7 @@ onBeforeUnmount(() => {
       <div
         v-if="removed"
         pos="absolute top-0 left-0" w-full h-fit aspect-video flex="~ col gap-2 items-center justify-center"
-        bg="$bew-fill-4" backdrop-blur-20px mix-blend-luminosity rounded="$bew-radius" z-2
+        bg="$bew-fill-4" backdrop-blur-20px mix-blend-luminosity rounded="$bew-media-radius" z-2
       >
         <p mb-2 color-white text-lg>
           {{ $t('video_card.video_removed') }}
@@ -539,7 +539,7 @@ onBeforeUnmount(() => {
           v-if="previewVideoUrl && (isHover || isPreviewFullscreen)"
           class="video-card-preview"
           :class="{ 'video-card-preview--scrubbable': shouldEnableSwipeSeek }"
-          pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-radius" bg-black
+          pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-media-radius" bg-black
           @pointermove.capture="handlePreviewMouseMove"
           @pointerdown.capture="handlePreviewPointerDown"
           @pointermove="handlePreviewPointerMove"
@@ -755,7 +755,7 @@ onBeforeUnmount(() => {
   z-index: 3;
   height: 0.25rem;
   overflow: hidden;
-  border-radius: 9999px;
+  border-radius: var(--bew-radius-full);
   background: rgb(255 255 255 / 35%);
   pointer-events: none;
 }

@@ -176,8 +176,8 @@ function createEpisodeEntry(number: number): EpisodeEntry {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  gap: var(--bew-space-2);
+  margin-top: var(--bew-space-3);
 }
 
 .episode-button {
@@ -186,17 +186,19 @@ function createEpisodeEntry(number: number): EpisodeEntry {
   justify-content: center;
   min-width: 44px;
   height: 32px;
-  padding: 0 0.75rem;
-  border-radius: var(--bew-radius-half);
+  padding: 0 var(--bew-space-3);
+  border-radius: var(--bew-interactive-radius);
   background: var(--bew-fill-1);
   color: var(--bew-text-1);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-control);
   border: 1px solid transparent;
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    border-color var(--bew-duration-normal) var(--bew-ease-standard),
+    color var(--bew-duration-normal) var(--bew-ease-standard);
 
   &:hover {
     background: var(--bew-fill-2);
@@ -215,6 +217,6 @@ function createEpisodeEntry(number: number): EpisodeEntry {
   width: 32px;
   height: 32px;
   color: var(--bew-text-3);
-  font-size: 1rem;
+  font-size: var(--bew-font-size-title);
 }
 </style>

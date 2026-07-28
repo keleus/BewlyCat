@@ -138,7 +138,7 @@ async function handleFollowClick(e: Event) {
     <ALink
       :href="`https://space.bilibili.com/${mid}`"
       type="videoCard"
-      class="user-card transition-all duration-300 cursor-pointer compact"
+      class="user-card cursor-pointer compact"
       relative
       flex
       align-items-center
@@ -171,7 +171,7 @@ async function handleFollowClick(e: Event) {
         </div>
 
         <!-- 右侧：用户信息 + 简介 + 关注按钮 -->
-        <div flex="~ col gap-1.5" flex-1 min-w-0>
+        <div flex="~ col gap-2" flex-1 min-w-0>
           <!-- 用户名 + 等级 + 性别 -->
           <div flex items-center gap-2>
             <div
@@ -243,7 +243,7 @@ async function handleFollowClick(e: Event) {
   <!-- 非Compact模式布局 -->
   <template v-else>
     <div
-      class="user-card transition-all duration-300 cursor-pointer"
+      class="user-card cursor-pointer"
       :class="{ horizontal }"
       relative
       flex
@@ -347,6 +347,10 @@ async function handleFollowClick(e: Event) {
 .user-card {
   text-decoration: none;
   color: inherit;
+  transition:
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard),
+    transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
 
   &:not(.compact):hover {
     transform: translateY(-2px);
@@ -365,7 +369,10 @@ async function handleFollowClick(e: Event) {
   &.compact {
     display: flex;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition:
+      background-color var(--bew-duration-normal) var(--bew-ease-standard),
+      box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
+      transform var(--bew-duration-normal) var(--bew-ease-emphasized);
 
     &:hover {
       transform: translateY(-2px);
@@ -402,7 +409,7 @@ async function handleFollowClick(e: Event) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-body);
   flex-shrink: 0;
 
   &.gender-male {
@@ -422,14 +429,22 @@ async function handleFollowClick(e: Event) {
 }
 
 .follow-button {
-  padding: 0.5rem 1.25rem;
-  border-radius: var(--bew-radius-half);
+  min-height: var(--bew-control-height);
+  padding: 0 var(--bew-space-5);
+  border-radius: var(--bew-interactive-radius);
   background: var(--bew-theme-color);
   color: white;
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    border-color var(--bew-duration-normal) var(--bew-ease-standard),
+    filter var(--bew-duration-normal) var(--bew-ease-standard),
+    transform var(--bew-duration-normal) var(--bew-ease-emphasized);
   white-space: nowrap;
   min-width: 80px;
 
@@ -457,14 +472,14 @@ async function handleFollowClick(e: Event) {
 .sample-list {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.75rem;
+  gap: var(--bew-space-3);
+  margin-top: var(--bew-space-3);
 }
 
 .sample-card {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--bew-space-2);
   cursor: pointer;
 
   &:hover .sample-title {
@@ -476,7 +491,7 @@ async function handleFollowClick(e: Event) {
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  border-radius: calc(var(--bew-radius-half) - 2px);
+  border-radius: var(--bew-radius-sm);
   overflow: hidden;
   background: var(--bew-skeleton);
 
@@ -489,25 +504,25 @@ async function handleFollowClick(e: Event) {
 
 .sample-duration {
   position: absolute;
-  bottom: 0.5rem;
-  right: 0.5rem;
-  padding: 0.125rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
+  bottom: var(--bew-space-2);
+  right: var(--bew-space-2);
+  padding: var(--bew-space-0-5) var(--bew-space-2);
+  border-radius: var(--bew-badge-radius);
+  font-size: var(--bew-font-size-control);
   background: rgba(0, 0, 0, 0.65);
   color: #fff;
 }
 
 .sample-play {
   position: absolute;
-  left: 0.5rem;
-  bottom: 0.5rem;
+  left: var(--bew-space-2);
+  bottom: var(--bew-space-2);
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.125rem 0.5rem;
-  border-radius: 999px;
-  font-size: 0.75rem;
+  gap: var(--bew-space-1);
+  padding: var(--bew-space-0-5) var(--bew-space-2);
+  border-radius: var(--bew-badge-radius);
+  font-size: var(--bew-font-size-control);
   color: #fff;
   background: rgba(0, 0, 0, 0.5);
 
@@ -517,9 +532,9 @@ async function handleFollowClick(e: Event) {
 }
 
 .sample-title {
-  font-size: 0.8125rem;
+  font-size: var(--bew-font-size-control);
   color: var(--bew-text-1);
-  line-height: 1.35;
+  line-height: var(--bew-line-height-control);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -575,18 +590,26 @@ async function handleFollowClick(e: Event) {
 
 .live-status-badge {
   color: var(--bew-theme-color);
-  font-weight: 500;
+  font-weight: var(--bew-font-weight-medium);
 }
 
 .follow-button-compact {
-  padding: 0.35rem 0.75rem;
-  border-radius: var(--bew-radius-half);
+  min-height: 28px;
+  padding: 0 var(--bew-space-3);
+  border-radius: var(--bew-interactive-radius);
   background: var(--bew-theme-color);
   color: white;
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
   border: 1px solid var(--bew-theme-color);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition:
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    border-color var(--bew-duration-normal) var(--bew-ease-standard),
+    filter var(--bew-duration-normal) var(--bew-ease-standard),
+    transform var(--bew-duration-normal) var(--bew-ease-emphasized);
   white-space: nowrap;
   min-width: 60px;
   user-select: none;

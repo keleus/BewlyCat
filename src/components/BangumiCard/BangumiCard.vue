@@ -80,15 +80,15 @@ const { isDark } = useDark()
       gap-4 hover:bg="$bew-fill-2" hover:ring="8 $bew-fill-2"
       content-visibility-auto intrinsic-size-400px
       transition="background-color duration-300, box-shadow duration-300"
-      rounded="$bew-radius" h-fit
+      rounded="$bew-card-radius" h-fit
     >
       <!-- Cover -->
       <div
         :style="{ width: horizontal ? '170px' : '100%' }"
         tabindex="-1" block
-        rounded="$bew-radius" w-full bg="$bew-skeleton" relative shrink-0
+        rounded="$bew-media-radius" w-full bg="$bew-skeleton" relative shrink-0
       >
-        <div aspect="12/16" overflow-hidden rounded="$bew-radius">
+        <div aspect="12/16" overflow-hidden rounded="$bew-media-radius">
           <!-- badge -->
           <div
             v-if="bangumi.badge && bangumi.badge.text"
@@ -96,7 +96,7 @@ const { isDark } = useDark()
               backgroundColor: isDark ? bangumi.badge.bgColorDark : bangumi.badge.bgColor,
             }"
             pos="absolute top-0 right-0"
-            p="x-2 y-1" m-1 rounded="$bew-radius"
+            p="x-2 y-1" m-1 rounded="$bew-badge-radius"
             opacity-100 group-hover:opacity-0 duration-300
             text="sm white" z-1
           >
@@ -106,12 +106,13 @@ const { isDark } = useDark()
           <!-- rank -->
           <div
             v-if="bangumi.rank"
+            class="bangumi-rank"
             w-full
             pos="absolute bottom-0" z-1
-            text="white 7xl shadow"
+            text="white shadow"
             p-2 fw-bold h-150px flex items-end
             bg="gradient-to-b gradient-from-transparent gradient-to-[rgba(0,0,0,.6)]"
-            rounded-b="$bew-radius"
+            rounded-b="$bew-media-radius"
             :style="{
               '--un-text-shadow': bangumi.rank <= 3 ? '4px 4px 0 var(--bew-theme-color), 6px 6px 0 var(--bew-theme-color-60)' : '',
             }"
@@ -121,7 +122,7 @@ const { isDark } = useDark()
 
           <div
             overflow-hidden
-            rounded="$bew-radius"
+            rounded="$bew-media-radius"
             aspect="12/16"
             pos="relative"
           >
@@ -164,14 +165,14 @@ const { isDark } = useDark()
             <img
               :src="`${removeHttpFromUrl(bangumi.cover)}@466w_622h.webp`"
               :alt="bangumi.title"
-              rounded="$bew-radius" aspect="12/16" max-w-full w-full
+              rounded="$bew-media-radius" aspect="12/16" max-w-full w-full
             >
 
             <!-- image after hovering -->
             <div
               v-if="bangumi.coverHover"
               w-full
-              rounded="$bew-radius"
+              rounded="$bew-media-radius"
               aspect="12/16"
               transform="~ scale-110 group-hover:scale-100"
               transition="opacity duration-300, transform duration-300"
@@ -210,12 +211,13 @@ const { isDark } = useDark()
         <div text="sm $bew-text-2" flex flex-wrap gap-2 items-center>
           <div
             v-if="bangumi.capsuleText && bangumi.capsuleText.trim()"
+            class="bangumi-capsule"
             text="$bew-theme-color" bg="$bew-theme-color-20"
-            p="x-2" h-22px lh-22px rounded-24px
+            p="x-2" rounded="$bew-badge-radius"
           >
             {{ bangumi.capsuleText }}
           </div>
-          <span lh-22px> {{ bangumi.desc }} </span>
+          <span lh="$bew-line-height-body"> {{ bangumi.desc }} </span>
         </div>
       </div>
     </ALink>
@@ -227,9 +229,26 @@ const { isDark } = useDark()
   </div>
 </template>
 
+<style scoped lang="scss">
+.bangumi-capsule {
+  display: inline-flex;
+  min-height: calc(var(--bew-line-height-control) + var(--bew-space-2));
+  align-items: center;
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+}
+
+// Ranking numbers are decorative data, scaled from the shared emphasis token
+// rather than introducing another arbitrary text size.
+.bangumi-rank {
+  font-size: calc(var(--bew-font-size-data-emphasis) * 2.5);
+  line-height: 1;
+}
+</style>
+
 <style lang="scss" scoped>
 .bew-title-auto {
-  font-size: clamp(12px, calc((var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 20px), 30px);
-  line-height: clamp(1.15, calc(1.1 + (var(--bew-card-width, var(--bew-home-card-min-width, 280px)) / 280) * 0.2), 1.5);
+  font-size: clamp(var(--bew-font-size-control), 5cqw, var(--bew-font-size-heading));
+  line-height: var(--bew-line-height-heading);
 }
 </style>
