@@ -171,6 +171,9 @@ watch(keyword, (value) => {
 })
 
 watch(isFocus, async (focus) => {
+  if (props.darkenOnFocus && bewlyApp)
+    bewlyApp.searchFocusOverlayActive.value = focus
+
   // 延后加载搜索历史
   if (focus) {
     try {
@@ -301,6 +304,9 @@ onMounted(() => {
 
 // 组件卸载时清理定时器
 onBeforeUnmount(() => {
+  if (props.darkenOnFocus && bewlyApp)
+    bewlyApp.searchFocusOverlayActive.value = false
+
   cleanupRecommendationTimer()
 })
 

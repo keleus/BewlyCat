@@ -3,6 +3,7 @@ import browser from 'webextension-polyfill'
 
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import type { wallpaperItem } from '~/constants/imgs'
+import { DEFAULT_SEARCH_BAR_CHARACTER } from '~/constants/imgs'
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
@@ -591,7 +592,7 @@ export const originalSettings: Settings = {
   searchPageLogoColor: 'themeColor',
   searchPageLogoGlow: true,
   searchPageShowLogo: true,
-  searchPageSearchBarFocusCharacter: '',
+  searchPageSearchBarFocusCharacter: DEFAULT_SEARCH_BAR_CHARACTER,
   individuallySetSearchPageWallpaper: false,
   searchPageWallpaperMode: 'buildIn',
   searchPageWallpaper: '',

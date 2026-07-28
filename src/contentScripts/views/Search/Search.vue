@@ -55,6 +55,7 @@ function handleSearch(keyword: string) {
     justify-center
     items-center
     w-full z-10
+    pos="relative"
     m="t-20vh"
   >
     <Logo

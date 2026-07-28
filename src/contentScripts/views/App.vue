@@ -43,6 +43,7 @@ else {
   isDark = ref(false)
 }
 const [showSettings, toggleSettings] = useToggle(false)
+const searchFocusOverlayActive = ref(false)
 
 interface ConfirmDialogRequest {
   message: string
@@ -750,6 +751,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   mainAppRef,
   scrollViewportRef,
   reachTop,
+  searchFocusOverlayActive,
   handleBackToTop,
   handlePageRefresh,
   canRefreshHomeSubPage,
@@ -966,6 +968,8 @@ if (settings.value.cleanUrlArgument) {
     <!-- TopBar -->
     <div
       v-if="showTopBar"
+      class="top-bar-host"
+      :class="{ 'top-bar-host--behind-search-overlay': searchFocusOverlayActive }"
       m-auto max-w="$bew-page-max-width"
       :style="{
         opacity: hideUIForIframePhotoViewer ? 0 : 1,
@@ -1046,6 +1050,11 @@ if (settings.value.cleanUrlArgument) {
 <style lang="scss" scoped>
 .top-bar-layer {
   z-index: 1001;
+}
+
+.top-bar-host--behind-search-overlay {
+  position: relative;
+  z-index: 0;
 }
 
 .bewly-wrapper {
