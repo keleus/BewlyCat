@@ -1,24 +1,28 @@
 import { watch } from 'vue'
 
-// Watch settings
 import { settings } from '~/logic'
+
+interface NormalizerStateMessage {
+  type: 'state'
+  gainDb: number
+  weightedDb?: number
+  shortTermDb?: number
+  integratedDb?: number
+  targetDb?: number
+}
 
 interface AudioNodeBundle {
   source: MediaElementAudioSourceNode
-  analyser: AnalyserNode
   analysisHighpass: BiquadFilterNode
   analysisPresence: BiquadFilterNode
-  adaptiveGain: GainNode
+  normalizer: AudioWorkletNode
   limiter: DynamicsCompressorNode
-  dataArray: Float32Array
-}
-
-interface LoudnessAnalysisState {
-  dataArray: Float32Array
-  shortTermBlocks: number[]
-  integratedBlocks: number[]
-  animationId: number | null
-  silenceFrames: number
+  processedOutput: GainNode
+  emergencyOutput: GainNode
+  connected: boolean
+  processorFailed: boolean
+  gainDb: number
+  lastState: NormalizerStateMessage | null
 }
 
 interface ManagedVideoListeners {
@@ -26,12 +30,12 @@ interface ManagedVideoListeners {
   onPlay: () => void
   onPause: () => void
   onEnded: () => void
-  onTimeUpdate: () => void
   onLoadStart: () => void
   onEmptied: () => void
 }
 
-type AudioGraphMode = 'disconnected' | 'processing' | 'bypass'
+type AudioGraphMode = 'disconnected' | 'processing' | 'bypass' | 'emergency'
+type WorkletModuleState = 'not-loaded' | 'loading' | 'ready' | 'retry-wait' | 'unsupported'
 
 const PLAYER_VIDEO_SELECTOR = [
   '#bilibiliPlayer video',
@@ -43,203 +47,188 @@ const PLAYER_VIDEO_SELECTOR = [
   '[aria-label="哔哩哔哩播放器"] video',
 ].join(',')
 
-const ANALYSIS_INTERVAL_MS = 100
-const SHORT_TERM_WINDOW = 20
-const INTEGRATED_WINDOW = 100
-const ANALYSIS_EPSILON = 1e-8
+const WORKLET_PROCESSOR_NAME = 'bewly-volume-normalizer'
+const WORKLET_MODULE_PATH = 'dist/audioWorklets/volume-normalization.js'
 const PLAYBACK_END_TOLERANCE_SECONDS = 1
-const VISIBILITY_RESUME_PROGRESS_SECONDS = 0.5
 const ATTACH_SETTLE_MS = 450
 const MIN_ATTACH_READY_STATE = HTMLMediaElement.HAVE_CURRENT_DATA
+const WORKLET_RETRY_DELAY_MS = 5000
+const DEBUG_SNAPSHOT_INTERVAL_MS = 1000
+const VIDEO_MISSING_GRACE_MS = 3000
 
-// Debug logger
-function log(msg: string, ...args: any[]) {
-  if (settings.value.volumeNormalizationDebug) {
-    console.log(`[BewlyAudio] ${msg}`, ...args)
-  }
+let audioContext: AudioContext | null = null
+let audioWorkletModulePromise: Promise<void> | null = null
+let audioWorkletRetryAfter = 0
+let hasReportedWorkletLoadFailure = false
+let workletModuleState: WorkletModuleState = 'not-loaded'
+let audioNodes: AudioNodeBundle | null = null
+let audioGraphMode: AudioGraphMode = 'disconnected'
+const audioNodeCache = new WeakMap<HTMLVideoElement, AudioNodeBundle>()
+
+let currentVideoElement: HTMLVideoElement | null = null
+let currentVideoListeners: ManagedVideoListeners | null = null
+const pendingMetadataVideos = new WeakSet<HTMLVideoElement>()
+const pendingAttachTimers = new WeakMap<HTMLVideoElement, ReturnType<typeof setTimeout>>()
+let attachRequestId = 0
+let hasAttached = false
+let interceptorTimer: ReturnType<typeof setInterval> | null = null
+let hasSetupSettingsWatcher = false
+let visibilityChangeHandler: (() => void) | null = null
+let hasSetupActivationResume = false
+let lastDebugSnapshotAt = 0
+let managedVideoMissingSince: number | null = null
+
+// 临时启用/禁用状态（用于播放器控件）
+let tempDisabled = false
+
+function logEvent(message: string, details?: Record<string, unknown>) {
+  if (!settings.value.volumeNormalizationDebug)
+    return
+
+  const prefix = `[BewlyAudio][事件][${getFrameDebugState()}] ${message}`
+  if (details)
+    console.log(prefix, details)
+  else
+    console.log(prefix)
 }
 
-function error(msg: string, ...args: any[]) {
-  console.error(`[BewlyAudio] ${msg}`, ...args)
+function error(message: string, ...args: unknown[]) {
+  console.error(`[BewlyAudio][错误] ${message}`, ...args)
 }
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function average(values: number[]) {
-  if (values.length === 0)
-    return 0
-
-  let sum = 0
-  for (let i = 0; i < values.length; i++) {
-    sum += values[i]
-  }
-  return sum / values.length
-}
-
-function rmsToPower(rms: number) {
-  return Math.max(rms * rms, ANALYSIS_EPSILON)
-}
-
-function powerToDb(power: number) {
-  return 10 * Math.log10(Math.max(power, ANALYSIS_EPSILON))
-}
-
-function gainToDb(gain: number) {
-  return 20 * Math.log10(Math.max(gain, 0.01))
-}
-
-function dbToGain(db: number) {
-  return 10 ** (db / 20)
+function finiteOr(value: number, fallback: number) {
+  return Number.isFinite(value) ? value : fallback
 }
 
 function getStrengthNormalized() {
-  return (clamp(settings.value.normalizationStrength || 12, 1, 20) - 1) / 19
+  return (clamp(finiteOr(settings.value.normalizationStrength, 12), 1, 20) - 1) / 19
 }
 
-function getSpeedNormalized() {
-  return (clamp(settings.value.adaptiveGainSpeed || 5, 1, 10) - 1) / 9
+function isNormalizationEnabled() {
+  return settings.value.enableVolumeNormalization && !tempDisabled
 }
 
-function getTargetLoudnessDb() {
-  const targetVolume = clamp(settings.value.targetVolume || 50, 0, 100)
-  return -30 + (targetVolume / 100) * 20
-}
-
-function getGainControlProfile() {
-  const strength = getStrengthNormalized()
-  const speed = getSpeedNormalized()
-
+function getWorkletConfiguration() {
   return {
-    correctionFactor: 0.45 + strength * 0.55,
-    maxBoostDb: 5 + strength * 6,
-    maxCutDb: 7 + strength * 7,
-    deadbandDb: 0.9 - strength * 0.25,
-    maxStepUpDb: 0.18 + speed * 0.42,
-    maxStepDownDb: 0.45 + speed * 0.75,
-    attackTimeConstant: 0.28 - speed * 0.18,
-    releaseTimeConstant: 2.8 - speed * 1.8,
-    silenceReleaseTimeConstant: 3.2 - speed * 1.6,
+    enabled: isNormalizationEnabled(),
+    debug: settings.value.volumeNormalizationDebug,
+    targetVolume: clamp(finiteOr(settings.value.targetVolume, 50), 0, 100),
+    strength: clamp(finiteOr(settings.value.normalizationStrength, 12), 1, 20),
+    speed: clamp(finiteOr(settings.value.adaptiveGainSpeed, 5), 1, 10),
+    voiceGateDb: finiteOr(settings.value.voiceGateDb, -34),
   }
 }
 
-// Audio Context and Nodes
-let audioContext: AudioContext | null = null
-let audioNodes: AudioNodeBundle | null = null
-let audioGraphMode: AudioGraphMode = 'disconnected'
-const audioNodeCache = new WeakMap<HTMLVideoElement, AudioNodeBundle>()
-
-// Analysis State
-let loudnessAnalysis: LoudnessAnalysisState | null = null
-
-let currentVideoElement: HTMLVideoElement | null = null
-let currentVideoListeners: ManagedVideoListeners | null = null
-const pendingMetadataVideos = new WeakSet<HTMLVideoElement>()
-const pendingAttachTimers = new WeakMap<HTMLVideoElement, ReturnType<typeof setTimeout>>()
-let hasAttached = false
-let interceptorTimer: ReturnType<typeof setInterval> | null = null
-let hasSetupSettingsWatcher = false
-let visibilityChangeHandler: (() => void) | null = null
-let shouldResetAnalysisOnNextPlayback = false
-let visibilityResumeStartTime: number | null = null
-let wasPlaybackActiveBeforeHidden = false
-
-// 临时启用/禁用状态（用于播放器控件）
-let tempDisabled = false
-
-// Initialize Audio Context
 function initAudioContext() {
   if (!audioContext) {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
-    if (AudioContextClass) {
-      audioContext = new AudioContextClass({ latencyHint: 'playback' })
-      log('AudioContext initialized', audioContext.state)
+    const AudioContextClass = window.AudioContext || (window as typeof window & {
+      webkitAudioContext?: typeof AudioContext
+    }).webkitAudioContext
+
+    if (!AudioContextClass) {
+      error('当前浏览器不支持 AudioContext')
+      return null
     }
-    else {
-      error('AudioContext not supported')
-    }
+
+    audioContext = new AudioContextClass({ latencyHint: 'playback' })
+    logEvent('AudioContext 已创建', { state: audioContext.state })
   }
+
   return audioContext
 }
 
-function applyLimiterSettings(nodes: AudioNodeBundle, context: AudioContext) {
+async function ensureAudioWorklet(context: AudioContext) {
+  if (!context.audioWorklet) {
+    workletModuleState = 'unsupported'
+    if (!hasReportedWorkletLoadFailure) {
+      hasReportedWorkletLoadFailure = true
+      error('当前浏览器不支持 AudioWorklet，保持原生音频输出')
+    }
+    throw new Error('AudioWorklet is not supported')
+  }
+
+  if (!audioWorkletModulePromise) {
+    if (Date.now() < audioWorkletRetryAfter)
+      throw new Error('AudioWorklet module is waiting before retry')
+
+    const moduleUrl = browser.runtime.getURL(WORKLET_MODULE_PATH)
+    workletModuleState = 'loading'
+    logEvent('正在加载 AudioWorklet')
+    audioWorkletModulePromise = context.audioWorklet.addModule(moduleUrl)
+      .then(() => {
+        audioWorkletRetryAfter = 0
+        hasReportedWorkletLoadFailure = false
+        workletModuleState = 'ready'
+        logEvent('AudioWorklet 已就绪')
+        reportDebugStatus('Worklet 模块加载完成', true)
+      })
+      .catch((cause) => {
+        audioWorkletModulePromise = null
+        audioWorkletRetryAfter = Date.now() + WORKLET_RETRY_DELAY_MS
+        workletModuleState = 'retry-wait'
+        if (!hasReportedWorkletLoadFailure) {
+          hasReportedWorkletLoadFailure = true
+          error('AudioWorklet 模块加载失败，保持原生音频输出', cause)
+        }
+        throw cause
+      })
+  }
+
+  await audioWorkletModulePromise
+}
+
+function resumeAudioContext(context: AudioContext) {
+  if (context.state !== 'suspended')
+    return
+
+  void context.resume()
+    .then(() => {
+      logEvent('AudioContext 已恢复', { state: context.state })
+      reportDebugStatus('上下文恢复', true)
+    })
+    .catch(cause => error('AudioContext 恢复失败', cause))
+}
+
+function setupActivationResume() {
+  if (hasSetupActivationResume)
+    return
+
+  hasSetupActivationResume = true
+
+  const resumeFromUserActivation = () => {
+    if (audioContext && currentVideoElement)
+      resumeAudioContext(audioContext)
+  }
+
+  document.addEventListener('pointerdown', resumeFromUserActivation, true)
+  document.addEventListener('keydown', resumeFromUserActivation, true)
+}
+
+function applyProcessingLimiterSettings(nodes: AudioNodeBundle, context: AudioContext) {
   const strength = getStrengthNormalized()
   const { limiter } = nodes
+  const now = context.currentTime
 
-  limiter.threshold.setValueAtTime(-7 + strength * 2, context.currentTime)
-  limiter.knee.setValueAtTime(8 + strength * 6, context.currentTime)
-  limiter.ratio.setValueAtTime(6 + strength * 10, context.currentTime)
-  limiter.attack.setValueAtTime(0.003, context.currentTime)
-  limiter.release.setValueAtTime(0.18 + (1 - strength) * 0.18, context.currentTime)
+  limiter.threshold.setValueAtTime(-7 + strength * 2, now)
+  limiter.knee.setValueAtTime(8 + strength * 6, now)
+  limiter.ratio.setValueAtTime(6 + strength * 10, now)
+  limiter.attack.setValueAtTime(0.003, now)
+  limiter.release.setValueAtTime(0.18 + (1 - strength) * 0.18, now)
 }
 
-// Create Processing Chain
-function createProcessingChain(context: AudioContext, source: MediaElementAudioSourceNode): AudioNodeBundle {
-  try {
-    const analyser = context.createAnalyser()
-    analyser.fftSize = 4096
-    analyser.smoothingTimeConstant = 0.1
+function applyNeutralLimiterSettings(nodes: AudioNodeBundle, context: AudioContext) {
+  const { limiter } = nodes
+  const now = context.currentTime
 
-    // Approximate K-weighting for analysis only so playback tone stays unchanged.
-    const analysisHighpass = context.createBiquadFilter()
-    analysisHighpass.type = 'highpass'
-    analysisHighpass.frequency.setValueAtTime(80, context.currentTime)
-    analysisHighpass.Q.setValueAtTime(0.707, context.currentTime)
-
-    const analysisPresence = context.createBiquadFilter()
-    analysisPresence.type = 'highshelf'
-    analysisPresence.frequency.setValueAtTime(1600, context.currentTime)
-    analysisPresence.gain.setValueAtTime(4, context.currentTime)
-
-    const adaptiveGain = context.createGain()
-    adaptiveGain.gain.setValueAtTime(1.0, context.currentTime)
-
-    const limiter = context.createDynamicsCompressor()
-    const nodes = {
-      source,
-      analyser,
-      analysisHighpass,
-      analysisPresence,
-      adaptiveGain,
-      limiter,
-      dataArray: new Float32Array(analyser.fftSize),
-    }
-    applyLimiterSettings(nodes, context)
-
-    log('Audio processing nodes created')
-
-    return nodes
-  }
-  catch (e) {
-    error('Failed to create processing chain', e)
-    throw e
-  }
-}
-
-function createLoudnessAnalysis(dataArray: Float32Array): LoudnessAnalysisState {
-  return {
-    dataArray,
-    shortTermBlocks: [],
-    integratedBlocks: [],
-    animationId: null,
-    silenceFrames: 0,
-  }
-}
-
-function resetLoudnessAnalysis() {
-  if (loudnessAnalysis) {
-    loudnessAnalysis.shortTermBlocks = []
-    loudnessAnalysis.integratedBlocks = []
-    loudnessAnalysis.animationId = null
-    loudnessAnalysis.silenceFrames = 0
-  }
-
-  if (audioNodes && audioContext) {
-    audioNodes.adaptiveGain.gain.setValueAtTime(1.0, audioContext.currentTime)
-  }
-
-  shouldResetAnalysisOnNextPlayback = false
+  limiter.threshold.setValueAtTime(0, now)
+  limiter.knee.setValueAtTime(0, now)
+  limiter.ratio.setValueAtTime(1, now)
+  limiter.attack.setValueAtTime(0.003, now)
+  limiter.release.setValueAtTime(0.25, now)
 }
 
 function safelyDisconnect(node: AudioNode | null | undefined) {
@@ -252,43 +241,96 @@ function safelyDisconnect(node: AudioNode | null | undefined) {
   catch {}
 }
 
-function disconnectCurrentGraph() {
-  stopLoudnessAnalysis()
-
-  if (!audioNodes) {
-    audioGraphMode = 'disconnected'
+function connectBundle(nodes: AudioNodeBundle, context: AudioContext) {
+  if (nodes.connected)
     return
-  }
 
-  safelyDisconnect(audioNodes.source)
-  safelyDisconnect(audioNodes.analysisHighpass)
-  safelyDisconnect(audioNodes.analysisPresence)
-  safelyDisconnect(audioNodes.analyser)
-  safelyDisconnect(audioNodes.adaptiveGain)
-  safelyDisconnect(audioNodes.limiter)
+  // Input 0 is the unmodified playback signal. Input 1 is the K-weighting
+  // approximation used only for loudness analysis inside the Worklet.
+  nodes.source.connect(nodes.normalizer, 0, 0)
+  nodes.source.connect(nodes.analysisHighpass)
+  nodes.analysisHighpass.connect(nodes.analysisPresence)
+  nodes.analysisPresence.connect(nodes.normalizer, 0, 1)
+  nodes.normalizer.connect(nodes.limiter)
+  nodes.limiter.connect(nodes.processedOutput)
+  nodes.processedOutput.connect(context.destination)
+
+  // Keep an emergency route connected at zero gain. It is only raised if the
+  // Worklet processor crashes, so normal setting and visibility changes never
+  // rebuild the Web Audio graph.
+  nodes.source.connect(nodes.emergencyOutput)
+  nodes.emergencyOutput.connect(context.destination)
+  nodes.connected = true
+}
+
+function disconnectBundle(nodes: AudioNodeBundle) {
+  safelyDisconnect(nodes.source)
+  safelyDisconnect(nodes.analysisHighpass)
+  safelyDisconnect(nodes.analysisPresence)
+  safelyDisconnect(nodes.normalizer)
+  safelyDisconnect(nodes.limiter)
+  safelyDisconnect(nodes.processedOutput)
+  safelyDisconnect(nodes.emergencyOutput)
+  nodes.connected = false
+}
+
+function disconnectCurrentGraph() {
+  if (audioNodes)
+    disconnectBundle(audioNodes)
+
   audioGraphMode = 'disconnected'
+}
+
+function setOutputPath(nodes: AudioNodeBundle, context: AudioContext, emergency: boolean) {
+  const now = context.currentTime
+  const processedGain = nodes.processedOutput.gain
+  const emergencyGain = nodes.emergencyOutput.gain
+
+  processedGain.cancelScheduledValues(now)
+  emergencyGain.cancelScheduledValues(now)
+  processedGain.setTargetAtTime(emergency ? 0 : 1, now, 0.015)
+  emergencyGain.setTargetAtTime(emergency ? 1 : 0, now, 0.015)
+}
+
+function postWorkletConfiguration(nodes = audioNodes) {
+  if (!nodes || nodes.processorFailed)
+    return
+
+  nodes.normalizer.port.postMessage({
+    type: 'configure',
+    config: getWorkletConfiguration(),
+  })
+}
+
+function postPlaybackState(active: boolean, nodes = audioNodes) {
+  if (!nodes || nodes.processorFailed)
+    return
+
+  nodes.normalizer.port.postMessage({ type: 'playback', active })
+}
+
+function resetWorklet(nodes = audioNodes) {
+  if (!nodes || nodes.processorFailed)
+    return
+
+  nodes.normalizer.port.postMessage({ type: 'reset' })
 }
 
 function connectProcessingGraph() {
   if (!audioNodes || !audioContext)
     return
 
-  if (audioGraphMode === 'processing') {
-    applyLimiterSettings(audioNodes, audioContext)
+  connectBundle(audioNodes, audioContext)
+
+  if (audioNodes.processorFailed) {
+    setOutputPath(audioNodes, audioContext, true)
+    audioGraphMode = 'emergency'
     return
   }
 
-  disconnectCurrentGraph()
-  applyLimiterSettings(audioNodes, audioContext)
-
-  const { source, analysisHighpass, analysisPresence, analyser, adaptiveGain, limiter } = audioNodes
-  source.connect(analysisHighpass)
-  analysisHighpass.connect(analysisPresence)
-  analysisPresence.connect(analyser)
-
-  source.connect(adaptiveGain)
-  adaptiveGain.connect(limiter)
-  limiter.connect(audioContext.destination)
+  setOutputPath(audioNodes, audioContext, false)
+  applyProcessingLimiterSettings(audioNodes, audioContext)
+  postWorkletConfiguration(audioNodes)
   audioGraphMode = 'processing'
 }
 
@@ -296,61 +338,224 @@ function connectBypassGraph() {
   if (!audioNodes || !audioContext)
     return
 
-  if (audioGraphMode === 'bypass')
-    return
+  connectBundle(audioNodes, audioContext)
 
-  disconnectCurrentGraph()
-  audioNodes.source.connect(audioContext.destination)
+  if (audioNodes.processorFailed) {
+    setOutputPath(audioNodes, audioContext, true)
+    audioGraphMode = 'emergency'
+    return
+  }
+
+  setOutputPath(audioNodes, audioContext, false)
+  applyNeutralLimiterSettings(audioNodes, audioContext)
+  postWorkletConfiguration(audioNodes)
   audioGraphMode = 'bypass'
 }
 
-function suspendProcessingForIdlePlayback(resetAnalysis = false) {
-  stopLoudnessAnalysis()
-
-  if (resetAnalysis) {
-    resetLoudnessAnalysis()
-    return
-  }
-
-  if (audioNodes && audioContext) {
-    const gain = audioNodes.adaptiveGain.gain
-    const currentTime = audioContext.currentTime
-
-    if (typeof gain.cancelAndHoldAtTime === 'function') {
-      gain.cancelAndHoldAtTime(currentTime)
-    }
-    else {
-      const currentGain = gain.value
-      gain.cancelScheduledValues(currentTime)
-      gain.setValueAtTime(currentGain, currentTime)
-    }
-  }
+function formatDebugDb(value: number | undefined) {
+  return value !== undefined && Number.isFinite(value)
+    ? Math.round(value * 10) / 10
+    : null
 }
 
-function resetProcessingForPlaybackBoundary() {
-  stopLoudnessAnalysis()
+function getPlaybackDebugState() {
+  if (!currentVideoElement)
+    return '未绑定'
+  if (isPlaybackAtEnd(currentVideoElement))
+    return '已结束'
+  return currentVideoElement.paused ? '已暂停' : '播放中'
+}
 
-  if (document.hidden) {
-    shouldResetAnalysisOnNextPlayback = true
+function getNormalizationDebugState(nodes: AudioNodeBundle | null) {
+  if (nodes?.processorFailed || audioGraphMode === 'emergency')
+    return '紧急旁路'
+  if (!settings.value.enableVolumeNormalization)
+    return '设置关闭'
+  if (tempDisabled)
+    return '临时禁用'
+  if (!nodes)
+    return '等待绑定'
+  return audioGraphMode === 'processing' ? '实时均衡' : '直通'
+}
+
+function getFrameDebugState() {
+  return window.self === window.top ? '主页面' : '内嵌页'
+}
+
+function reportDebugStatus(
+  reason: string,
+  force = false,
+  nodes: AudioNodeBundle | null = audioNodes,
+) {
+  if (!settings.value.volumeNormalizationDebug)
     return
+
+  // Content scripts also run in Bilibili iframes. An iframe without its own
+  // managed video is not an audio state and should not look like an "unbound"
+  // transition of the active top-level player.
+  if (!nodes && window.self !== window.top)
+    return
+
+  const now = Date.now()
+  if (!force && now - lastDebugSnapshotAt < DEBUG_SNAPSHOT_INTERVAL_MS)
+    return
+
+  lastDebugSnapshotAt = now
+  const state = nodes?.lastState
+  const tab = document.hidden ? '后台' : '前台'
+  const frame = getFrameDebugState()
+  const contextState = audioContext?.state ?? '未创建'
+  const playback = getPlaybackDebugState()
+  const normalization = getNormalizationDebugState(nodes)
+  const worklet = nodes?.processorFailed ? 'processor-failed' : workletModuleState
+  const gainDb = formatDebugDb(state?.gainDb ?? nodes?.gainDb)
+  const snapshot = {
+    tab,
+    frame,
+    audioContext: contextState,
+    playback,
+    normalization,
+    graph: audioGraphMode,
+    worklet,
+    gainDb,
+    weightedDb: formatDebugDb(state?.weightedDb),
+    shortTermDb: formatDebugDb(state?.shortTermDb),
+    integratedDb: formatDebugDb(state?.integratedDb),
+    targetDb: formatDebugDb(state?.targetDb),
+    limiterReductionDb: nodes ? formatDebugDb(nodes.limiter.reduction) : null,
+    settings: {
+      targetVolume: settings.value.targetVolume,
+      strength: settings.value.normalizationStrength,
+      speed: settings.value.adaptiveGainSpeed,
+      voiceGateDb: settings.value.voiceGateDb,
+    },
+  }
+  const gainLabel = gainDb === null ? '--' : `${gainDb} dB`
+
+  console.log(
+    `[BewlyAudio][状态] ${reason} | ${frame} | ${tab} | ${playback} | ${normalization} | context=${contextState} | worklet=${worklet} | gain=${gainLabel}`,
+    snapshot,
+  )
+}
+
+function handleWorkletState(nodes: AudioNodeBundle, message: NormalizerStateMessage) {
+  if (message.type !== 'state')
+    return
+
+  nodes.gainDb = message.gainDb
+  nodes.lastState = message
+
+  // Pause/ended events already emit one forced snapshot. Do not keep printing
+  // periodic Worklet reports while playback is inactive.
+  if (nodes === audioNodes && isPlaybackActive(currentVideoElement))
+    reportDebugStatus('运行中', false, nodes)
+}
+
+function createProcessingChain(
+  context: AudioContext,
+  video: HTMLVideoElement,
+): AudioNodeBundle {
+  const analysisHighpass = context.createBiquadFilter()
+  analysisHighpass.type = 'highpass'
+  analysisHighpass.frequency.setValueAtTime(80, context.currentTime)
+  analysisHighpass.Q.setValueAtTime(0.707, context.currentTime)
+
+  const analysisPresence = context.createBiquadFilter()
+  analysisPresence.type = 'highshelf'
+  analysisPresence.frequency.setValueAtTime(1600, context.currentTime)
+  analysisPresence.gain.setValueAtTime(4, context.currentTime)
+
+  const normalizer = new AudioWorkletNode(context, WORKLET_PROCESSOR_NAME, {
+    numberOfInputs: 2,
+    numberOfOutputs: 1,
+    outputChannelCount: [2],
+    channelCount: 2,
+    channelCountMode: 'max',
+    channelInterpretation: 'speakers',
+  })
+  const limiter = context.createDynamicsCompressor()
+  const processedOutput = context.createGain()
+  const emergencyOutput = context.createGain()
+  processedOutput.gain.setValueAtTime(1, context.currentTime)
+  emergencyOutput.gain.setValueAtTime(0, context.currentTime)
+
+  // Create the MediaElement source last. If Worklet/node creation is
+  // unsupported, the video is never captured away from its native output.
+  const source = context.createMediaElementSource(video)
+  const nodes: AudioNodeBundle = {
+    source,
+    analysisHighpass,
+    analysisPresence,
+    normalizer,
+    limiter,
+    processedOutput,
+    emergencyOutput,
+    connected: false,
+    processorFailed: false,
+    gainDb: 0,
+    lastState: null,
   }
 
-  resetLoudnessAnalysis()
+  normalizer.port.onmessage = (event: MessageEvent<NormalizerStateMessage>) => {
+    handleWorkletState(nodes, event.data)
+  }
+  normalizer.onprocessorerror = () => {
+    nodes.processorFailed = true
+    error('AudioWorklet 处理器异常，正在切换紧急旁路')
+
+    if (nodes === audioNodes && audioContext) {
+      setOutputPath(nodes, audioContext, true)
+      audioGraphMode = 'emergency'
+      reportDebugStatus('Worklet 异常，已切换紧急旁路', true, nodes)
+    }
+  }
+
+  applyProcessingLimiterSettings(nodes, context)
+  return nodes
 }
 
 function unbindCurrentVideoListeners() {
   if (!currentVideoListeners)
     return
 
-  const { video, onPlay, onPause, onEnded, onTimeUpdate, onLoadStart, onEmptied } = currentVideoListeners
+  const { video, onPlay, onPause, onEnded, onLoadStart, onEmptied } = currentVideoListeners
   video.removeEventListener('play', onPlay)
   video.removeEventListener('pause', onPause)
   video.removeEventListener('ended', onEnded)
-  video.removeEventListener('timeupdate', onTimeUpdate)
   video.removeEventListener('loadstart', onLoadStart)
   video.removeEventListener('emptied', onEmptied)
-
   currentVideoListeners = null
+}
+
+function isPlaybackAtEnd(video: HTMLVideoElement) {
+  return video.ended
+    || (Number.isFinite(video.duration)
+      && video.duration > 0
+      && video.currentTime >= video.duration - PLAYBACK_END_TOLERANCE_SECONDS)
+}
+
+function isPlaybackActive(video: HTMLVideoElement | null): video is HTMLVideoElement {
+  return !!video && !video.paused && !isPlaybackAtEnd(video)
+}
+
+function updateProcessingState(shouldResumeContext = false) {
+  if (!audioNodes || !audioContext)
+    return
+
+  try {
+    if (shouldResumeContext)
+      resumeAudioContext(audioContext)
+
+    if (isNormalizationEnabled())
+      connectProcessingGraph()
+    else
+      connectBypassGraph()
+
+    postPlaybackState(isPlaybackActive(currentVideoElement))
+  }
+  catch (cause) {
+    error('更新音频处理状态失败', cause)
+  }
 }
 
 function bindVideoListeners(video: HTMLVideoElement) {
@@ -360,69 +565,40 @@ function bindVideoListeners(video: HTMLVideoElement) {
     if (video !== currentVideoElement)
       return
 
-    if (audioContext)
-      resumeAudioContext(audioContext)
-
-    // Visibility restoration can be followed by a synthetic/delayed play event.
-    // Keep the frozen gain until media time has progressed again instead of
-    // immediately sampling and rewriting the AudioParam during the tab switch.
-    if (visibilityResumeStartTime !== null)
-      return
-
-    updateProcessingState()
+    // A real playback event/user activation may resume an autoplay-suspended
+    // context. Visibility changes deliberately never resume or reset it.
+    updateProcessingState(true)
+    reportDebugStatus('视频开始播放', true)
   }
 
   const onPause = () => {
-    if (video === currentVideoElement && video.paused) {
-      if (isPlaybackAtEnd(video)) {
-        stopLoudnessAnalysis()
-      }
-      else {
-        // A tab switch can deliver a delayed pause after the page becomes visible
-        // again. Keep the current gain so resuming does not cause an audible jump.
-        suspendProcessingForIdlePlayback()
-      }
+    if (video === currentVideoElement) {
+      postPlaybackState(false)
+      reportDebugStatus('视频已暂停，保持当前增益', true)
     }
   }
 
   const onEnded = () => {
-    if (video === currentVideoElement) {
-      visibilityResumeStartTime = null
-      resetProcessingForPlaybackBoundary()
-    }
-  }
-
-  const onTimeUpdate = () => {
-    if (video !== currentVideoElement
-      || document.hidden
-      || visibilityResumeStartTime === null
-      || !isPlaybackActive(video)
-      || video.currentTime - visibilityResumeStartTime < VISIBILITY_RESUME_PROGRESS_SECONDS) {
+    if (video !== currentVideoElement)
       return
-    }
 
-    visibilityResumeStartTime = null
-
-    if (audioContext)
-      resumeAudioContext(audioContext)
-
-    // Continue with the existing loudness windows and gain. This is a resume,
-    // not a recalculation/reset caused by visibilitychange.
-    startLoudnessAnalysis()
+    postPlaybackState(false)
+    resetWorklet()
+    reportDebugStatus('视频播放结束，均衡状态已重置', true)
   }
 
   const resetForNewSource = () => {
     if (video !== currentVideoElement)
       return
 
-    visibilityResumeStartTime = null
-    resetProcessingForPlaybackBoundary()
+    postPlaybackState(false)
+    resetWorklet()
+    reportDebugStatus('检测到新音频源，均衡状态已重置', true)
   }
 
   video.addEventListener('play', onPlay)
   video.addEventListener('pause', onPause)
   video.addEventListener('ended', onEnded)
-  video.addEventListener('timeupdate', onTimeUpdate)
   video.addEventListener('loadstart', resetForNewSource)
   video.addEventListener('emptied', resetForNewSource)
 
@@ -431,7 +607,6 @@ function bindVideoListeners(video: HTMLVideoElement) {
     onPlay,
     onPause,
     onEnded,
-    onTimeUpdate,
     onLoadStart: resetForNewSource,
     onEmptied: resetForNewSource,
   }
@@ -446,9 +621,8 @@ function getActiveVideoElement(): HTMLVideoElement | null {
   const candidates = Array.from(document.querySelectorAll<HTMLVideoElement>(PLAYER_VIDEO_SELECTOR))
     .filter(video => video.isConnected)
 
-  if (candidates.length === 0) {
+  if (candidates.length === 0)
     return document.querySelector('video')
-  }
 
   if (currentVideoElement
     && candidates.includes(currentVideoElement)
@@ -456,15 +630,14 @@ function getActiveVideoElement(): HTMLVideoElement | null {
     return currentVideoElement
   }
 
-  const playingVideo = candidates.find(video => isVisibleVideo(video) && !video.paused && !video.ended)
-    || candidates.find(video => !video.paused && !video.ended)
+  const playingVideo = candidates.find(video => isVisibleVideo(video) && isPlaybackActive(video))
+    || candidates.find(video => isPlaybackActive(video))
 
   if (playingVideo)
     return playingVideo
 
-  // Visibility changes can briefly report the bound video as paused. Prefer the
-  // existing element in that transition instead of attaching to another idle
-  // video node and rebuilding the Web Audio graph.
+  // Player transitions can briefly report the managed video as paused. Keep
+  // that element instead of binding a temporary sibling and rebuilding audio.
   if (currentVideoElement && candidates.includes(currentVideoElement))
     return currentVideoElement
 
@@ -474,15 +647,21 @@ function getActiveVideoElement(): HTMLVideoElement | null {
     || null
 }
 
-function isPlaybackAtEnd(video: HTMLVideoElement) {
-  return video.ended
-    || (Number.isFinite(video.duration)
-      && video.duration > 0
-      && video.currentTime >= video.duration - PLAYBACK_END_TOLERANCE_SECONDS)
+function clearManagedVideoMissingState() {
+  managedVideoMissingSince = null
 }
 
-function isPlaybackActive(video: HTMLVideoElement | null): video is HTMLVideoElement {
-  return !!video && !video.paused && !isPlaybackAtEnd(video)
+function hasManagedVideoBeenMissingLongEnough() {
+  const now = Date.now()
+  if (managedVideoMissingSince === null) {
+    managedVideoMissingSince = now
+    logEvent('播放器节点暂时不可用，等待 DOM 稳定', {
+      graceMs: VIDEO_MISSING_GRACE_MS,
+    })
+    return false
+  }
+
+  return now - managedVideoMissingSince >= VIDEO_MISSING_GRACE_MS
 }
 
 function clearPendingAttachTimer(video: HTMLVideoElement) {
@@ -518,14 +697,12 @@ function isVideoSafeToAttach(video: HTMLVideoElement) {
   if (!video.isConnected || document.hidden)
     return false
 
-  // Keep the media element free while Bilibili is still bootstrapping the first buffer.
   if (!video.currentSrc && !video.srcObject)
     return false
 
   if (video.readyState >= MIN_ATTACH_READY_STATE)
     return true
 
-  // Some streams stay below HAVE_CURRENT_DATA until the first frames are decoded.
   return isPlaybackActive(video) && video.readyState >= HTMLMediaElement.HAVE_METADATA
 }
 
@@ -558,205 +735,12 @@ function waitForVideoReady(video: HTMLVideoElement) {
   video.addEventListener('playing', onReady)
 }
 
-function trimBlocks(blocks: number[], maxLength: number) {
-  if (blocks.length > maxLength) {
-    blocks.splice(0, blocks.length - maxLength)
-  }
-}
-
-function computeWeightedRms(dataArray: Float32Array) {
-  let sum = 0
-
-  for (let i = 0; i < dataArray.length; i++) {
-    const sample = dataArray[i]
-    sum += sample * sample
-  }
-
-  return Math.sqrt(sum / dataArray.length)
-}
-
-// Loudness Analysis Loop
-function startLoudnessAnalysis() {
-  if (!audioNodes || !loudnessAnalysis || !audioContext || !currentVideoElement)
+async function attachToVideoInternal(video: HTMLVideoElement) {
+  if (!settings.value.enableVolumeNormalization || document.hidden || !video.isConnected)
     return
-
-  if (!settings.value.enableVolumeNormalization || tempDisabled || document.hidden)
-    return
-
-  if (loudnessAnalysis.animationId)
-    return
-
-  const { analyser, adaptiveGain, limiter } = audioNodes
-  const { dataArray } = loudnessAnalysis
-  const context = audioContext
-
-  function analyze() {
-    if (!audioNodes || !loudnessAnalysis || !audioContext || !currentVideoElement) {
-      if (loudnessAnalysis)
-        loudnessAnalysis.animationId = null
-      return
-    }
-
-    if (!settings.value.enableVolumeNormalization || tempDisabled) {
-      loudnessAnalysis.animationId = null
-      return
-    }
-
-    loudnessAnalysis.animationId = window.setTimeout(analyze, ANALYSIS_INTERVAL_MS)
-
-    if (currentVideoElement.paused) {
-      return
-    }
-
-    analyser.getFloatTimeDomainData(dataArray as any)
-
-    const weightedRms = computeWeightedRms(dataArray)
-    const weightedPower = rmsToPower(weightedRms)
-    const weightedDb = powerToDb(weightedPower)
-
-    const voiceGateDb = settings.value.voiceGateDb || -34
-    const { correctionFactor, maxBoostDb, maxCutDb, deadbandDb, maxStepUpDb, maxStepDownDb, attackTimeConstant, releaseTimeConstant, silenceReleaseTimeConstant } = getGainControlProfile()
-
-    if (weightedDb <= voiceGateDb) {
-      loudnessAnalysis.silenceFrames += 1
-
-      if (loudnessAnalysis.silenceFrames === 8) {
-        loudnessAnalysis.shortTermBlocks = []
-      }
-
-      if (loudnessAnalysis.silenceFrames === 24) {
-        loudnessAnalysis.integratedBlocks = loudnessAnalysis.integratedBlocks.slice(-12)
-      }
-
-      if (loudnessAnalysis.silenceFrames >= 6) {
-        adaptiveGain.gain.setTargetAtTime(1.0, context.currentTime, silenceReleaseTimeConstant)
-      }
-
-      return
-    }
-
-    loudnessAnalysis.silenceFrames = 0
-    loudnessAnalysis.shortTermBlocks.push(weightedPower)
-    loudnessAnalysis.integratedBlocks.push(weightedPower)
-    trimBlocks(loudnessAnalysis.shortTermBlocks, SHORT_TERM_WINDOW)
-    trimBlocks(loudnessAnalysis.integratedBlocks, INTEGRATED_WINDOW)
-
-    const shortTermPower = average(loudnessAnalysis.shortTermBlocks)
-    const integratedPower = average(loudnessAnalysis.integratedBlocks)
-    const shortTermDb = powerToDb(shortTermPower)
-    const integratedDb = powerToDb(integratedPower)
-    const blendedLoudnessDb = shortTermDb * 0.7 + integratedDb * 0.3
-    const targetLoudnessDb = getTargetLoudnessDb()
-
-    const desiredGainDb = clamp(
-      (targetLoudnessDb - blendedLoudnessDb) * correctionFactor,
-      -maxCutDb,
-      maxBoostDb,
-    )
-
-    applyLimiterSettings(audioNodes, context)
-
-    const currentGainDb = gainToDb(adaptiveGain.gain.value)
-    const deltaDb = desiredGainDb - currentGainDb
-
-    if (Math.abs(deltaDb) < deadbandDb) {
-      log(`Weighted: ${weightedDb.toFixed(1)}dB | ST: ${shortTermDb.toFixed(1)}dB | INT: ${integratedDb.toFixed(1)}dB | Gain hold: ${currentGainDb.toFixed(1)}dB`)
-      return
-    }
-
-    const maxStepDb = deltaDb < 0 ? maxStepDownDb : maxStepUpDb
-    const steppedGainDb = currentGainDb + clamp(deltaDb, -maxStepDb, maxStepDb)
-    const timeConstant = deltaDb < 0 ? attackTimeConstant : releaseTimeConstant
-
-    adaptiveGain.gain.setTargetAtTime(
-      dbToGain(steppedGainDb),
-      context.currentTime,
-      timeConstant,
-    )
-
-    log(`Weighted: ${weightedDb.toFixed(1)}dB | ST: ${shortTermDb.toFixed(1)}dB | INT: ${integratedDb.toFixed(1)}dB | Gain: ${currentGainDb.toFixed(1)} -> ${steppedGainDb.toFixed(1)}dB | Target: ${targetLoudnessDb.toFixed(1)}dB | Reduction: ${limiter.reduction.toFixed(1)}dB`)
-  }
-
-  analyze()
-  log('Loudness analysis started')
-}
-
-function stopLoudnessAnalysis() {
-  if (loudnessAnalysis?.animationId) {
-    clearTimeout(loudnessAnalysis.animationId)
-    loudnessAnalysis.animationId = null
-    log('Loudness analysis stopped')
-  }
-}
-
-function resumeAudioContext(context: AudioContext) {
-  if (context.state !== 'suspended')
-    return
-
-  context.resume().then(() => {
-    log('AudioContext resumed')
-  }).catch(e => error('Failed to resume AudioContext', e))
-}
-
-function updateProcessingState() {
-  if (!audioNodes || !audioContext)
-    return
-
-  try {
-    resumeAudioContext(audioContext)
-
-    // MediaElementSource must stay connected to a destination. Leaving it
-    // disconnected after createMediaElementSource can stall Bilibili's player
-    // loading UI even when media data is already available.
-    if (settings.value.enableVolumeNormalization && !tempDisabled) {
-      const wasProcessing = audioGraphMode === 'processing'
-      connectProcessingGraph()
-
-      if (!isPlaybackActive(currentVideoElement)) {
-        if (currentVideoElement && isPlaybackAtEnd(currentVideoElement))
-          stopLoudnessAnalysis()
-        else
-          suspendProcessingForIdlePlayback()
-        log('Loudness analysis suspended while playback is inactive')
-        return
-      }
-
-      if (!wasProcessing || shouldResetAnalysisOnNextPlayback)
-        resetLoudnessAnalysis()
-
-      if (currentVideoElement && !currentVideoElement.paused)
-        startLoudnessAnalysis()
-
-      if (!wasProcessing)
-        console.log('[BewlyAudio] Volume normalization ENABLED')
-    }
-    else {
-      connectBypassGraph()
-      stopLoudnessAnalysis()
-      console.log('[BewlyAudio] Volume normalization DISABLED (Bypass)')
-    }
-  }
-  catch (e) {
-    error('Error updating processing state', e)
-  }
-}
-
-// Attach to Video
-export function attachToVideo(video: HTMLVideoElement) {
-  if (!settings.value.enableVolumeNormalization) {
-    return
-  }
-
-  // 后台加载时播放器可能仍在替换临时 video，等标签页可见后再绑定 Web Audio。
-  if (document.hidden) {
-    return
-  }
-
-  if (!video.isConnected) {
-    return
-  }
 
   if (hasAttached && currentVideoElement === video && audioNodes) {
+    clearManagedVideoMissingState()
     updateProcessingState()
     return
   }
@@ -769,78 +753,89 @@ export function attachToVideo(video: HTMLVideoElement) {
   clearPendingAttachTimer(video)
   pendingMetadataVideos.delete(video)
 
-  log('Attaching to video element', video)
-
+  const requestId = ++attachRequestId
   const context = initAudioContext()
   if (!context)
     return
 
-  resumeAudioContext(context)
+  // Load and register the processor before createMediaElementSource. If module
+  // loading fails, the page's native audio remains untouched.
+  try {
+    await ensureAudioWorklet(context)
+  }
+  catch {
+    return
+  }
+
+  if (requestId !== attachRequestId
+    || !settings.value.enableVolumeNormalization
+    || document.hidden
+    || !video.isConnected) {
+    return
+  }
+
+  const activeVideo = getActiveVideoElement()
+  if (activeVideo && activeVideo !== video)
+    return
 
   disconnectCurrentGraph()
   unbindCurrentVideoListeners()
-
-  currentVideoElement = video
-  hasAttached = true
-  bindVideoListeners(video)
 
   try {
     let nodes = audioNodeCache.get(video)
     if (!nodes) {
-      const source = context.createMediaElementSource(video)
-      nodes = createProcessingChain(context, source)
+      nodes = createProcessingChain(context, video)
       audioNodeCache.set(video, nodes)
     }
     else {
-      log('Reusing cached audio nodes')
+      logEvent('复用现有 AudioWorklet 音频图')
     }
 
     audioNodes = nodes
-    loudnessAnalysis = createLoudnessAnalysis(nodes.dataArray)
+    currentVideoElement = video
+    hasAttached = true
+    clearManagedVideoMissingState()
+    bindVideoListeners(video)
 
-    // Connect immediately in the same turn so the media element never has a
-    // dangling MediaElementSource during Bilibili player bootstrap.
-    if (settings.value.enableVolumeNormalization && !tempDisabled)
-      connectProcessingGraph()
-    else
-      connectBypassGraph()
-
-    updateProcessingState()
-    log('Successfully attached')
+    connectBundle(nodes, context)
+    postWorkletConfiguration(nodes)
+    postPlaybackState(isPlaybackActive(video), nodes)
+    updateProcessingState(isPlaybackActive(video))
+    logEvent('已绑定视频音频')
+    reportDebugStatus('绑定完成', true, nodes)
   }
-  catch (e: any) {
+  catch (cause) {
     hasAttached = false
     currentVideoElement = null
     audioNodes = null
-    loudnessAnalysis = null
     unbindCurrentVideoListeners()
 
-    if (e.message?.includes('already connected')) {
-      error('Failed to attach because the video element is already bound to another audio source node', e)
-    }
-    else {
-      error('Error attaching to video', e)
-    }
+    if (cause instanceof Error && cause.message.includes('already connected'))
+      error('视频元素已被其他 MediaElementAudioSourceNode 绑定', cause)
+    else
+      error('AudioWorklet 音频图绑定失败', cause)
   }
+}
+
+// Attach to Video
+export function attachToVideo(video: HTMLVideoElement) {
+  void attachToVideoInternal(video)
 }
 
 // Detach/Reset
 export function detach() {
+  attachRequestId += 1
   disconnectCurrentGraph()
   unbindCurrentVideoListeners()
 
   audioNodes = null
-  loudnessAnalysis = null
   currentVideoElement = null
   hasAttached = false
-  shouldResetAnalysisOnNextPlayback = false
-  visibilityResumeStartTime = null
-  wasPlaybackActiveBeforeHidden = false
-
-  log('Detached')
+  clearManagedVideoMissingState()
+  logEvent('已解除视频音频绑定')
+  reportDebugStatus('已解绑', true, null)
 }
 
-// 检查是否在视频播放页面
 function isVideoPage(): boolean {
   const path = location.pathname
   return path.includes('/video/')
@@ -860,99 +855,93 @@ function stopAudioInterceptor() {
     document.removeEventListener('visibilitychange', visibilityChangeHandler)
     visibilityChangeHandler = null
   }
-
-  stopLoudnessAnalysis()
-  visibilityResumeStartTime = null
-  wasPlaybackActiveBeforeHidden = false
 }
 
 export function initAudioInterceptor() {
   if (interceptorTimer || !settings.value.enableVolumeNormalization)
     return
 
-  if (isVideoPage()) {
-    log('Initializing Audio Interceptor')
-  }
+  setupActivationResume()
+
+  if (isVideoPage())
+    logEvent('音量均衡拦截器已启动')
 
   let lastUrl = location.href
 
   if (!visibilityChangeHandler) {
     visibilityChangeHandler = () => {
+      // A running graph keeps processing in the background. Visibility never
+      // changes its gain, playback state, connections, or AudioContext state.
       if (document.hidden) {
-        wasPlaybackActiveBeforeHidden = isPlaybackActive(currentVideoElement)
-        visibilityResumeStartTime = null
-        if (currentVideoElement)
-          suspendProcessingForIdlePlayback()
+        if (hasAttached && audioNodes)
+          reportDebugStatus('标签页进入后台，均衡保持运行', true)
         return
       }
 
-      // Returning to a tab must not reselect and reattach an already-bound
-      // video. Browsers may expose a transient paused state during this event,
-      // while Bilibili can keep additional idle video elements in the player.
-      if (hasAttached && currentVideoElement?.isConnected && audioNodes) {
-        if (audioContext)
-          resumeAudioContext(audioContext)
+      if (hasAttached && audioNodes)
+        reportDebugStatus('标签页回到前台', true)
 
-        if (wasPlaybackActiveBeforeHidden && !isPlaybackAtEnd(currentVideoElement))
-          visibilityResumeStartTime = currentVideoElement.currentTime
-        else
-          visibilityResumeStartTime = null
-
-        wasPlaybackActiveBeforeHidden = false
+      // Pages opened in the background attach only after first becoming visible.
+      if (hasAttached && currentVideoElement?.isConnected && audioNodes)
         return
-      }
-
-      wasPlaybackActiveBeforeHidden = false
 
       const video = getActiveVideoElement()
-      if (video) {
+      if (video && video !== currentVideoElement)
         attachToVideo(video)
-      }
     }
     document.addEventListener('visibilitychange', visibilityChangeHandler)
   }
 
   interceptorTimer = setInterval(() => {
     const urlChanged = location.href !== lastUrl
-
     if (urlChanged) {
       lastUrl = location.href
-      if (isVideoPage()) {
-        log('URL changed')
-      }
+      if (isVideoPage())
+        logEvent('检测到视频页面切换', { path: location.pathname })
     }
 
     if (!isVideoPage()) {
-      if (hasAttached) {
-        log('Not on video page, detaching')
+      if (hasAttached)
         detach()
-      }
       return
     }
 
-    if (document.hidden) {
+    if (document.hidden)
       return
-    }
-
-    if (currentVideoElement && !currentVideoElement.isConnected) {
-      log('Current video element was removed, detaching')
-      detach()
-    }
 
     const video = getActiveVideoElement()
     if (!video) {
-      if (hasAttached) {
-        log('Active video element missing, detaching')
+      if (hasAttached && hasManagedVideoBeenMissingLongEnough())
         detach()
-      }
       return
     }
 
-    if ((video !== currentVideoElement || !hasAttached) && settings.value.enableVolumeNormalization) {
-      log('New video element detected')
-      attachToVideo(video)
+    if (currentVideoElement && !currentVideoElement.isConnected && video === currentVideoElement) {
+      if (hasManagedVideoBeenMissingLongEnough())
+        detach()
+      return
     }
+
+    clearManagedVideoMissingState()
+
+    if ((video !== currentVideoElement || !hasAttached) && settings.value.enableVolumeNormalization)
+      attachToVideo(video)
   }, 1000)
+}
+
+function updateWorkletSettings() {
+  if (!audioNodes || !audioContext)
+    return
+
+  if (isNormalizationEnabled()) {
+    applyProcessingLimiterSettings(audioNodes, audioContext)
+    connectProcessingGraph()
+  }
+  else {
+    connectBypassGraph()
+  }
+
+  postWorkletConfiguration()
 }
 
 export function setupSettingsWatcher() {
@@ -961,60 +950,63 @@ export function setupSettingsWatcher() {
 
   hasSetupSettingsWatcher = true
 
-  watch(() => settings.value.enableVolumeNormalization, (newVal) => {
-    log('Settings changed: enableVolumeNormalization =', newVal)
+  watch(() => settings.value.enableVolumeNormalization, (enabled) => {
+    logEvent(enabled ? '音量均衡设置已启用' : '音量均衡设置已关闭')
 
-    if (newVal) {
+    if (enabled) {
       initAudioInterceptor()
       const video = getActiveVideoElement()
-      if (video && !document.hidden) {
+      if (video && !document.hidden)
         attachToVideo(video)
-      }
     }
     else {
-      if (audioNodes && audioContext)
-        connectBypassGraph()
+      updateWorkletSettings()
+      reportDebugStatus('设置已关闭，音频保持直通', true)
       stopAudioInterceptor()
     }
   })
 
-  watch(() => settings.value.targetVolume, (newVal) => {
-    log('Target volume updated', newVal)
-  })
+  watch(
+    () => [
+      settings.value.targetVolume,
+      settings.value.normalizationStrength,
+      settings.value.adaptiveGainSpeed,
+      settings.value.voiceGateDb,
+    ],
+    () => {
+      updateWorkletSettings()
+      reportDebugStatus('均衡参数已更新', true)
+    },
+  )
 
-  watch(() => settings.value.normalizationStrength, (newVal) => {
-    log('Normalization strength updated', newVal)
-    if (currentVideoElement) {
-      updateProcessingState()
-    }
+  watch(() => settings.value.volumeNormalizationDebug, (enabled) => {
+    updateWorkletSettings()
+    if (enabled)
+      reportDebugStatus('调试日志已启用', true)
+    else if (hasAttached && audioNodes)
+      console.log(`[BewlyAudio][事件][${getFrameDebugState()}] 调试日志已关闭`)
   })
 }
 
 // 临时禁用音量均衡（不修改设置）
 export function setTempDisabled(disabled: boolean) {
   tempDisabled = disabled
-
-  if (currentVideoElement) {
-    updateProcessingState()
-  }
+  updateWorkletSettings()
+  reportDebugStatus(disabled ? '播放器按钮临时禁用均衡' : '播放器按钮恢复实时均衡', true)
 }
 
-// 获取临时禁用状态
 export function isTempDisabled(): boolean {
   return tempDisabled
 }
 
-// 获取当前是否有音频处理链
 export function isAudioProcessingActive(): boolean {
   return hasAttached
     && audioNodes !== null
-    && settings.value.enableVolumeNormalization
-    && !tempDisabled
+    && audioGraphMode === 'processing'
+    && !audioNodes.processorFailed
+    && isNormalizationEnabled()
 }
 
-// 获取当前增益值（用于显示）
 export function getCurrentGainDb(): number | null {
-  if (!audioNodes)
-    return null
-  return gainToDb(audioNodes.adaptiveGain.gain.value)
+  return audioNodes?.gainDb ?? null
 }
