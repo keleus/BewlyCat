@@ -581,7 +581,6 @@ function toggleTabContentLoading(loading: boolean) {
 .home-tabs-inside {
   position: relative;
   box-sizing: border-box;
-  padding: var(--bew-top-bar-control-padding);
   gap: var(--bew-top-bar-control-gap);
 }
 
