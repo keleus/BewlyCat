@@ -909,6 +909,24 @@ function changeMenuItem(menuItem: MenuType) {
   }
 }
 
+@media (max-width: 1279px) {
+  #settings-window {
+    /* 侧栏进入布局后先维持 1000px 内容宽度，空间不足时再连续收缩。 */
+    width: min(calc(1000px + 72px), calc(100% - var(--bew-space-6)));
+    max-width: none;
+    margin-left: calc(-1 * var(--bew-space-1));
+  }
+
+  .settings-primary-navigation {
+    /* xl 以下外侧空间不足：让折叠导航占据布局宽度，展开时仍可覆盖 content。 */
+    position: relative;
+    left: auto !important;
+    width: 72px;
+    box-sizing: border-box;
+    padding-inline: var(--bew-space-2);
+  }
+}
+
 @media (max-width: 760px) {
   .settings-header {
     gap: var(--bew-space-2);
@@ -916,13 +934,7 @@ function changeMenuItem(menuItem: MenuType) {
   }
 
   .settings-primary-navigation {
-    /* 窄屏：取消浮动，改为常驻图标列，避免遮挡 content（触屏无 hover） */
-    position: relative;
-    left: auto !important;
-    width: 72px;
-    box-sizing: border-box;
-    padding-inline: var(--bew-space-2);
-
+    /* 触屏窄屏不依赖 hover，保持常驻图标列。 */
     li {
       width: 100%;
     }
