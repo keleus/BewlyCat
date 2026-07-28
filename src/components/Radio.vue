@@ -19,7 +19,8 @@ const model = defineModel()
 label {
   --b-switch-width: 44px;
   --b-switch-height: 24px;
-  --b-switch-inset: 2px;
+  --b-switch-border-width: 1px;
+  --b-switch-edge-inset: 2px;
   --b-switch-thumb-size: 20px;
 }
 
@@ -41,7 +42,7 @@ label {
   height: var(--b-switch-height);
   flex: 0 0 auto;
   background: var(--bew-fill-1);
-  border: 1px solid var(--bew-border-color);
+  border: var(--b-switch-border-width) solid var(--bew-border-color);
   border-radius: var(--bew-badge-radius);
 
   &::after {
@@ -49,8 +50,10 @@ label {
     --b-switch-thumb-scale: 1;
 
     position: absolute;
-    top: var(--b-switch-inset);
-    left: var(--b-switch-inset);
+    // Absolute offsets start at the padding edge, so subtract the track border
+    // to retain an actual 2px visual inset on every side.
+    top: calc(var(--b-switch-edge-inset) - var(--b-switch-border-width));
+    left: calc(var(--b-switch-edge-inset) - var(--b-switch-border-width));
     width: var(--b-switch-thumb-size);
     height: var(--b-switch-thumb-size);
     background: white;
@@ -97,8 +100,10 @@ input[type="checkbox"] {
   }
 
   &:checked + .radio-switch::after {
-    // Track width minus the thumb and equal inset on both sides.
-    --b-switch-thumb-offset: calc(var(--b-switch-width) - var(--b-switch-thumb-size) - var(--b-switch-inset) * 2);
+    // Track width minus the thumb and equal outer-edge inset on both sides.
+    --b-switch-thumb-offset: calc(
+      var(--b-switch-width) - var(--b-switch-thumb-size) - var(--b-switch-edge-inset) - var(--b-switch-edge-inset)
+    );
   }
 }
 </style>
