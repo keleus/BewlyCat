@@ -51,9 +51,6 @@ const tabPageRef = ref()
 const topBarVisibility = ref<boolean>(true)
 const shouldShowHomeTabs = computed(() => currentTabs.value.length > 1)
 const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value || settings.value.enableGridLayoutSwitcher)
-const shouldShowFixedTabsBackground = computed(() => {
-  return settings.value.fixedHomeTabsOnHomePage && cachedScrollTop.value > 8
-})
 const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   return [
     { icon: 'mingcute:table-3-line', iconActivated: 'mingcute:table-3-fill', value: 'adaptive' },
@@ -297,8 +294,7 @@ function toggleTabContentLoading(loading: boolean) {
       >
         <section
           v-if="shouldShowHomeTabs"
-          class="glass-panel home-tabs-panel"
-          :class="{ 'home-tabs-panel--scrolled': shouldShowFixedTabsBackground }"
+          class="glass-panel home-tabs-panel bew-segment-control bew-segment-control--surface"
         >
           <div class="home-tabs-scroll" h-full of-x-auto of-y-hidden>
             <div
@@ -314,12 +310,9 @@ function toggleTabContentLoading(loading: boolean) {
               />
               <button
                 v-for="tab in currentTabs" :key="tab.page"
-                class="home-tab-button"
+                class="home-tab-button bew-segment-control__item bew-segment-control__item--wide"
                 data-segment-item
                 :data-active="activatedPage === tab.page ? 'true' : undefined"
-                :class="{ 'tab-activated': activatedPage === tab.page }"
-                px-4 h-full
-                cursor-pointer
                 flex="~ gap-2 items-center shrink-0" relative
                 @click="handleChangeTab(tab)"
               >
@@ -341,7 +334,7 @@ function toggleTabContentLoading(loading: boolean) {
         <div
           v-if="settings.enableGridLayoutSwitcher"
           ref="gridSwitcherRef"
-          class="glass-panel home-grid-layout-switcher"
+          class="glass-panel home-grid-layout-switcher bew-segment-control bew-segment-control--surface"
           flex="~ shrink-0 items-center"
           box-border
         >
@@ -354,16 +347,15 @@ function toggleTabContentLoading(loading: boolean) {
           <button
             v-for="icon in gridLayoutIcons" :key="icon.value"
             type="button"
-            class="home-grid-layout-item"
+            class="home-grid-layout-item bew-segment-control__item bew-segment-control__item--icon"
             data-segment-item
             :data-active="gridLayout.home === icon.value ? 'true' : undefined"
-            :class="{ 'grid-layout-item-activated': gridLayout.home === icon.value }"
             :aria-pressed="gridLayout.home === icon.value"
             :title="icon.value"
             @click="gridLayout.home = icon.value"
           >
             <Icon
-              class="home-grid-layout-item__icon"
+              class="home-grid-layout-item__icon bew-segment-control__icon"
               :icon="gridLayout.home === icon.value ? icon.iconActivated : icon.icon"
               aria-hidden="true"
             />
@@ -457,29 +449,14 @@ function toggleTabContentLoading(loading: boolean) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  gap: var(--bew-space-4);
+  margin-bottom: var(--bew-space-5);
 }
 
 .home-tabs-panel {
   grid-column: 2;
   max-width: calc(100vw - 320px);
   justify-self: center;
-  // Local override: 顶栏 control token (34px/2px) 是为纯图标按钮设计的，
-  // home-tabs 含 15px 中文文字，需要更宽松的尺寸
-  height: 40px;
-  padding: 3px;
-  background: transparent;
-  border: var(--bew-top-bar-control-border-width) solid transparent;
-  border-radius: var(--bew-top-bar-control-radius);
-  box-shadow: none;
-  box-sizing: border-box;
-  backdrop-filter: none;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    backdrop-filter 0.2s ease;
 }
 
 .home-header--tabs-left {
@@ -496,77 +473,14 @@ function toggleTabContentLoading(loading: boolean) {
   }
 }
 
-.home-tabs-panel--scrolled {
-  border-color: var(--bew-border-color);
-  background: var(--bew-elevated);
-  box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
-  backdrop-filter: var(--bew-filter-glass-1);
-}
-
 .home-grid-layout-switcher {
-  --home-grid-layout-control-height: 40px;
-  --home-grid-layout-control-padding: 3px;
-  --home-grid-layout-item-size: calc(
-    var(--home-grid-layout-control-height) -
-      (var(--bew-top-bar-control-border-width) + var(--home-grid-layout-control-padding)) * 2
-  );
-
-  position: relative;
   grid-column: 3;
   justify-self: end;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-  height: var(--home-grid-layout-control-height);
-  gap: var(--bew-top-bar-control-gap);
-  padding: var(--home-grid-layout-control-padding);
-  border: var(--bew-top-bar-control-border-width) solid var(--bew-border-color);
-  border-radius: var(--bew-top-bar-control-radius);
-  background: var(--bew-elevated);
-  box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
-  overflow: hidden;
 }
 
 .home-grid-layout-item {
-  appearance: none;
-  position: relative;
-  z-index: 1;
-  display: grid;
-  place-items: center;
-  // Use fixed square size instead of height:100% + aspect-ratio,
-  // so icon cells stay optically centered inside the padded capsule.
-  width: var(--home-grid-layout-item-size);
-  height: var(--home-grid-layout-item-size);
-  padding: 0;
-  border: 0;
-  border-radius: var(--bew-top-bar-control-item-radius);
-  background: transparent;
-  color: var(--bew-text-2);
-  cursor: pointer;
-  transition:
-    color var(--bew-duration-normal, 200ms) ease,
-    background-color var(--bew-duration-normal, 200ms) ease;
-
-  // Match home tab button hover (skip when already activated)
-  &:hover:not(.grid-layout-item-activated) {
-    color: var(--bew-segment-item-hover-color);
-    background: var(--bew-segment-item-hover-bg);
-  }
-
-  // Match home tab activated visual for keyboard focus
-  &:focus-visible:not(.grid-layout-item-activated) {
-    outline: none;
-    color: var(--bew-segment-item-active-color);
-    background: var(--bew-segment-item-active-bg);
-    box-shadow: var(--bew-segment-item-active-shadow);
-  }
-
   &__icon {
-    display: block;
-    width: 16px;
-    height: 16px;
-    flex: none;
-    font-size: 16px;
+    pointer-events: none;
   }
 }
 
@@ -581,51 +495,7 @@ function toggleTabContentLoading(loading: boolean) {
 .home-tabs-inside {
   position: relative;
   box-sizing: border-box;
-  padding: var(--bew-top-bar-control-padding);
-  gap: var(--bew-top-bar-control-gap);
-}
-
-.home-tab-button {
-  position: relative;
-  z-index: 1;
-  border: 0;
-  border-radius: var(--bew-top-bar-control-item-radius);
-  background: transparent;
-  color: var(--bew-text-2);
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  transition:
-    color var(--bew-duration-normal, 200ms) ease,
-    background-color var(--bew-duration-normal, 200ms) ease;
-
-  &:hover:not(.tab-activated) {
-    color: var(--bew-segment-item-hover-color);
-    background: var(--bew-segment-item-hover-bg);
-  }
-
-  &:focus-visible:not(.tab-activated) {
-    outline: none;
-    color: var(--bew-segment-item-active-color);
-    background: var(--bew-segment-item-active-bg);
-    box-shadow: var(--bew-segment-item-active-shadow);
-  }
-}
-
-.tab-activated,
-.grid-layout-item-activated {
-  color: var(--bew-segment-item-active-color);
-  background: transparent;
-  box-shadow: none;
-}
-
-.tab-activated:hover,
-.tab-activated:focus-visible,
-.grid-layout-item-activated:hover,
-.grid-layout-item-activated:focus-visible {
-  color: var(--bew-segment-item-active-color);
-  background: transparent;
-  box-shadow: none;
+  gap: var(--bew-control-gap);
 }
 
 .home-header-fixed {
