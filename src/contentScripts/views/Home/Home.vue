@@ -504,15 +504,22 @@ function toggleTabContentLoading(loading: boolean) {
 }
 
 .home-grid-layout-switcher {
+  --home-grid-layout-control-height: 40px;
+  --home-grid-layout-control-padding: 3px;
+  --home-grid-layout-item-size: calc(
+    var(--home-grid-layout-control-height) -
+      (var(--bew-top-bar-control-border-width) + var(--home-grid-layout-control-padding)) * 2
+  );
+
   position: relative;
   grid-column: 3;
   justify-self: end;
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  height: 40px;
+  height: var(--home-grid-layout-control-height);
   gap: var(--bew-top-bar-control-gap);
-  padding: 3px;
+  padding: var(--home-grid-layout-control-padding);
   border: var(--bew-top-bar-control-border-width) solid var(--bew-border-color);
   border-radius: var(--bew-top-bar-control-radius);
   background: var(--bew-elevated);
@@ -528,8 +535,8 @@ function toggleTabContentLoading(loading: boolean) {
   place-items: center;
   // Use fixed square size instead of height:100% + aspect-ratio,
   // so icon cells stay optically centered inside the padded capsule.
-  width: var(--bew-top-bar-control-item-height);
-  height: var(--bew-top-bar-control-item-height);
+  width: var(--home-grid-layout-item-size);
+  height: var(--home-grid-layout-item-size);
   padding: 0;
   border: 0;
   border-radius: var(--bew-top-bar-control-item-radius);
