@@ -250,6 +250,7 @@ export interface Settings {
   showVideoCardLikeCount: boolean
   showVideoCardDuration: boolean
   showVideoCardWatchLater: boolean
+  showVideoWatchedBadge: boolean
 
   // Desktop & Dock
   autoHideTopBar: boolean
@@ -515,6 +516,7 @@ export const originalSettings: Settings = {
   showVideoCardLikeCount: true,
   showVideoCardDuration: true,
   showVideoCardWatchLater: true,
+  showVideoWatchedBadge: false,
 
   // Desktop & Dock
   autoHideTopBar: false,

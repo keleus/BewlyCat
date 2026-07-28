@@ -377,6 +377,7 @@ settings:
   show_video_card_like_count: 顯示按讚數
   show_video_card_duration: 顯示影片時長
   show_video_card_watch_later: 顯示稍後再看按鈕
+  show_video_watched_badge: 記錄並顯示已觀看
   auto_hide_top_bar: 自動隱藏頂部列
   video_page_top_bar_config: 影片頁頂部列配置
   video_page_top_bar_config_desc: 控制影片頁頂部列的顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「滾動顯示」表示頁面滾動時顯示。

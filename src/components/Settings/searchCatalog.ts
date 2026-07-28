@@ -244,6 +244,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_video_card_danmaku_count',
     'settings.show_video_card_like_count',
     'settings.show_video_card_duration',
+    'settings.show_video_watched_badge',
     'settings.show_video_card_watch_later',
     'settings.video_card_title_font_size',
     'settings.video_card_author_font_size',

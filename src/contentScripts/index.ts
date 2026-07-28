@@ -181,7 +181,7 @@ else if (shouldInitializeContentScript) {
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
-  recordVideoVisitFromUrl(lastUrl)
+  void settingsReady.then(() => recordVideoVisitFromUrl(lastUrl))
 
   function setupPluginSearchLinkNavigation() {
     document.addEventListener('click', (event) => {

@@ -356,6 +356,7 @@ settings:
   show_video_card_like_count: Show like count
   show_video_card_duration: Show video duration
   show_video_card_watch_later: Show Watch Later button
+  show_video_watched_badge: Track and show watched
   auto_hide_top_bar: Auto-hide top bar
   video_page_top_bar_config: Video page top bar configuration
   video_page_top_bar_config_desc: 'Controls when the top bar appears on video pages. "On hover" shows it when the pointer enters the top of the page; "On scroll" shows it while the page scrolls.'

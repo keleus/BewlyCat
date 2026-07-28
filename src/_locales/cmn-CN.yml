@@ -403,6 +403,7 @@ settings:
   show_video_card_like_count: 显示点赞数
   show_video_card_duration: 显示视频时长
   show_video_card_watch_later: 显示稍后再看按钮
+  show_video_watched_badge: 记录并显示已观看
   auto_hide_top_bar: 自动隐藏顶栏
   video_page_top_bar_config: 视频页顶栏配置
   video_page_top_bar_config_desc: 控制视频页顶栏的显示时机。“鼠标显示”表示鼠标移入页面顶部时显示；“滚动显示”表示页面滚动时显示。

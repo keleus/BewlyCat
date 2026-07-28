@@ -372,6 +372,7 @@ settings:
   show_video_card_like_count: 顯示讚好數
   show_video_card_duration: 顯示影片時長
   show_video_card_watch_later: 顯示稍後再睇按鈕
+  show_video_watched_badge: 記錄並顯示睇過
   auto_hide_top_bar: 自動收埋頂欄
   always_use_transparent_top_bar: 頂欄始終使用透明(舊版)樣式
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）

@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { settings } from '~/logic'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 
+import VideoWatchedTag from '../../VideoWatchedTag.vue'
 import type { Video } from '../types'
 import { getTagSearchUrl } from '../utils'
 import VideoCardAuthorAvatar from '../VideoCardAuthor/components/VideoCardAuthorAvatar.vue'
@@ -286,6 +287,11 @@ const isModernLayout = computed(() => props.layout === 'modern')
             :title="video.title"
           >
             <a :href="videoUrl" target="_blank">
+              <VideoWatchedTag
+                v-if="!video.roomid"
+                :aid="video.aid ?? video.id"
+                :bvid="video.bvid"
+              />
               {{ video.title }}
             </a>
           </h3>

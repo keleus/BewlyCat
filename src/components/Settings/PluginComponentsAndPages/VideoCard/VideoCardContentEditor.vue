@@ -18,6 +18,7 @@ type ContentSettingKey
     | 'showVideoCardLikeCount'
     | 'showVideoCardDuration'
     | 'showVideoCardWatchLater'
+    | 'showVideoWatchedBadge'
 
 interface ContentElement {
   setting: ContentSettingKey
@@ -57,6 +58,7 @@ const groups = computed<ContentGroup[]>(() => [
     elements: [
       { setting: 'showVideoCardAuthorAvatar', label: t('settings.show_video_card_author_avatar'), icon: 'i-mingcute:user-4-line' },
       { setting: 'showVideoCardAuthorName', label: t('settings.show_video_card_author_name'), icon: 'i-mingcute:edit-3-line' },
+      { setting: 'showVideoWatchedBadge', label: t('settings.show_video_watched_badge'), icon: 'i-mingcute:eye-2-line' },
       { setting: 'showVideoCardWatchLater', label: t('settings.show_video_card_watch_later'), icon: 'i-mingcute:carplay-line' },
     ],
   },

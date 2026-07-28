@@ -3,6 +3,7 @@ import { useToast } from 'vue-toastification'
 
 import Dialog from '~/components/Dialog.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
+import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import { settings } from '~/logic'
@@ -10,6 +11,7 @@ import { momentsWantedUsers } from '~/logic/storage'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { getCSRF } from '~/utils/main'
+import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
 const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
 
@@ -53,6 +55,7 @@ interface DisplayMoment {
   duration: string
   videoPlay: string
   videoDanmaku: string
+  aid?: number | string
   bvid?: string
   videoUrl?: string
   additional?: DisplayAdditional
@@ -72,6 +75,8 @@ interface DisplayForwardVideo {
   play: string
   danmaku: string
   url: string
+  aid?: number | string
+  bvid?: string
 }
 
 interface DisplayAdditional {
@@ -592,6 +597,7 @@ function getMomentContent(item: any) {
     chargeCover,
     roomId: live?.room_id ? Number(live.room_id) : undefined,
     duration: archive.duration_text || '',
+    aid: archive.aid || undefined,
     bvid: archive.bvid || undefined,
     videoUrl: archive.jump_url ? httpsUrl(archive.jump_url.startsWith('//') ? `https:${archive.jump_url}` : archive.jump_url) : undefined,
     videoPlay: pickText(archive.stat?.play),
@@ -610,6 +616,8 @@ function resolveVideoUrl(moment: DisplayMoment) {
     return moment.videoUrl
   if (moment.bvid)
     return `https://www.bilibili.com/video/${moment.bvid}`
+  if (moment.aid)
+    return `https://www.bilibili.com/video/av${moment.aid}`
   return ''
 }
 
@@ -873,6 +881,9 @@ function openMomentInNewTab(moment: DisplayMoment) {
 }
 
 function openMomentDetail(moment: DisplayMoment) {
+  if (moment.isVideo && !moment.isLive)
+    recordVideoVisit(moment)
+
   // 小屏与直播直接使用新标签页，避免狭窄 Dialog 和跨域直播页占用资源
   if (shouldOpenMomentInNewTab(moment)) {
     openMomentInNewTab(moment)
@@ -1087,6 +1098,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     duration: content.duration,
     videoPlay: content.videoPlay,
     videoDanmaku: content.videoDanmaku,
+    aid: content.aid,
     bvid: content.bvid,
     videoUrl: content.videoUrl,
     additional,
@@ -1113,7 +1125,14 @@ function mapMoment(item: DataItem): DisplayMoment {
                 duration: pickText(forwardedArchive.duration_text, content.duration),
                 play: pickText(forwardedArchive.stat?.play, content.videoPlay),
                 danmaku: pickText(forwardedArchive.stat?.danmaku, content.videoDanmaku),
-                url: content.videoUrl || (content.bvid ? `https://www.bilibili.com/video/${content.bvid}` : ''),
+                url: content.videoUrl
+                  || (content.bvid
+                    ? `https://www.bilibili.com/video/${content.bvid}`
+                    : content.aid
+                      ? `https://www.bilibili.com/video/av${content.aid}`
+                      : ''),
+                aid: content.aid,
+                bvid: content.bvid,
               }
             : undefined,
         }
@@ -2075,6 +2094,10 @@ function handleMediaLeave(moment: DisplayMoment) {
     delete previewUrls[moment.id]
 }
 
+function handleForwardVideoClick(video: DisplayForwardVideo) {
+  recordVideoVisit(video)
+}
+
 function bindPreviewVideo(el: Element | null, moment: DisplayMoment) {
   if (!(el instanceof HTMLVideoElement))
     return
@@ -2925,6 +2948,11 @@ watch(
 
                 <div class="moment-card__body">
                   <p v-if="moment.title && !moment.forward?.video" class="moment-card__title">
+                    <VideoWatchedTag
+                      v-if="moment.isVideo"
+                      :aid="moment.aid"
+                      :bvid="moment.bvid"
+                    />
                     {{ moment.title }}
                   </p>
                   <p
@@ -2973,7 +3001,7 @@ watch(
                     rel="noopener noreferrer"
                     class="moment-card__forward-video"
                     :aria-label="`打开原视频：${moment.forward.video.title}`"
-                    @click.stop
+                    @click.stop="handleForwardVideoClick(moment.forward.video)"
                   >
                     <span class="moment-card__forward-video-cover">
                       <img
@@ -3004,7 +3032,13 @@ watch(
                       </span>
                     </span>
                     <span class="moment-card__forward-video-info">
-                      <strong>{{ moment.forward.video.title || moment.forward.fallback }}</strong>
+                      <strong>
+                        <VideoWatchedTag
+                          :aid="moment.forward.video.aid"
+                          :bvid="moment.forward.video.bvid"
+                        />
+                        {{ moment.forward.video.title || moment.forward.fallback }}
+                      </strong>
                       <small><span i-tabler-user aria-hidden="true" />{{ moment.forward.author }}</small>
                     </span>
                   </a>
