@@ -2,12 +2,71 @@
 :root {
   --bew-page-max-width: 2280px;
 
-  --bew-base-font-size: 14.8px;
+  // #region Typography
+  // Use semantic roles instead of one-off size/weight pairs. Keep interface text
+  // to this compact five-step scale; reserve bold for branding or rare emphasis.
+  --bew-font-size-caption: 11px;
+  --bew-font-size-control: 12px;
+  --bew-font-size-body: 14px;
+  --bew-font-size-title: 16px;
+  --bew-font-size-heading: 18px;
+  // Rare display text and large numerals are not part of the interface text scale.
+  --bew-font-size-display: 24px;
+  --bew-font-size-data: var(--bew-font-size-display);
+  --bew-font-size-data-emphasis: 28px;
+  --bew-line-height-caption: 16px;
+  --bew-line-height-control: 16px;
+  --bew-line-height-body: 20px;
+  --bew-line-height-title: 22px;
+  --bew-line-height-heading: 24px;
+  --bew-line-height-data: 32px;
+  --bew-font-weight-regular: 400;
+  --bew-font-weight-medium: 500;
+  --bew-font-weight-semibold: 600;
+  --bew-font-weight-bold: 700;
+  --bew-base-font-size: var(--bew-font-size-body);
+  // #endregion
 
-  --bew-radius: 12px;
-  --bew-radius-half: calc(var(--bew-radius) / 2);
-  // Small chips / skeleton bars / micro badges (≈4px when radius=12)
-  --bew-radius-sm: calc(var(--bew-radius) / 3);
+  // Icon-font glyphs use their own scale and must not be mistaken for text.
+  --bew-icon-size-sm: 16px;
+  --bew-icon-size-md: 20px;
+  --bew-icon-size-lg: 24px;
+  --bew-icon-size-xl: 32px;
+
+  // #region Radius
+  // Primitive radius scale. Use the semantic aliases below for components so
+  // cards, media and popovers can evolve without page-level overrides.
+  --bew-radius-sm: 4px;
+  --bew-radius-half: 6px;
+  --bew-radius-md: 8px;
+  --bew-radius-lg: 12px;
+  --bew-radius-xl: 16px;
+  --bew-radius-2xl: 24px;
+  --bew-radius-full: 9999px;
+  --bew-radius: var(--bew-radius-lg);
+  --bew-card-radius: var(--bew-radius-lg);
+  --bew-media-radius: var(--bew-radius-lg);
+  --bew-panel-radius: var(--bew-radius-lg);
+  --bew-modal-radius: var(--bew-radius-2xl);
+  --bew-popover-radius: var(--bew-radius-lg);
+  --bew-interactive-radius: var(--bew-radius-md);
+  --bew-badge-radius: var(--bew-radius-full);
+  // #endregion
+
+  // #region Spacing
+  // Layout uses a 4px grid. The 2px step is reserved for borders, rings and
+  // optical nudges rather than normal sibling spacing or container padding.
+  --bew-space-0-5: 2px;
+  --bew-space-1: 4px;
+  --bew-space-2: 8px;
+  --bew-space-3: 12px;
+  --bew-space-4: 16px;
+  --bew-space-5: 20px;
+  --bew-space-6: 24px;
+  --bew-space-8: 32px;
+  --bew-space-10: 40px;
+  --bew-space-12: 48px;
+  // #endregion
 
   // #region Motion
   // Prefer specific transition properties over `transition: all` to avoid layout jumps.
@@ -21,29 +80,33 @@
   --bew-ease-emphasized: cubic-bezier(0.34, 1.3, 0.64, 1);
   // #endregion
 
-  // Shared capsule style for top-bar / segment controls
-  // (bewly switcher, avatar/right icons, pinned channels, home tabs / grid switcher)
-  // Secondary controls: 34px; switcher inner/outer ring inset 2px → item 30px.
-  --bew-top-bar-control-height: 34px;
-  // Full capsule for all circular / pill top-bar controls
-  --bew-top-bar-control-radius: 9999px;
+  // #region Compact controls
+  // Shared geometry and typography for top-bar controls, segmented tabs and
+  // icon switchers. 36px outer - 2 * 4px padding = a 28px item target.
+  --bew-control-height: 36px;
+  --bew-control-padding: var(--bew-space-1);
+  --bew-control-gap: var(--bew-space-1);
+  --bew-control-border-width: 0px;
+  --bew-control-radius: var(--bew-radius-full);
+  --bew-control-item-height: calc(
+    var(--bew-control-height) - (var(--bew-control-border-width) + var(--bew-control-padding)) * 2
+  );
+  --bew-control-item-padding-x: var(--bew-space-3);
+  --bew-control-item-padding-x-wide: var(--bew-space-4);
+  --bew-control-item-radius: var(--bew-radius-full);
+  --bew-control-icon-size: 16px;
+  --bew-control-label-size: var(--bew-font-size-control);
+  --bew-control-label-line-height: var(--bew-line-height-control);
+  --bew-control-label-weight: var(--bew-font-weight-semibold);
+  --bew-control-brand-label-weight: var(--bew-font-weight-bold);
+  --bew-control-background: var(--bew-elevated);
+  --bew-control-background-white: color-mix(in oklab, var(--bew-elevated-solid), transparent 80%);
+  --bew-control-border-color: transparent;
+  // #endregion
+
   // Search and logo stay one step larger (still full capsule/circle)
   --bew-top-bar-primary-control-height: 46px;
-  --bew-top-bar-primary-control-radius: 9999px;
-  --bew-top-bar-control-border-width: 0px;
-  --bew-top-bar-control-padding: 2px;
-  --bew-top-bar-control-gap: 4px;
-  // Item fits the border-box exactly: 34px - 2 * (0px border + 2px padding) = 30px
-  --bew-top-bar-control-item-height: calc(
-    var(--bew-top-bar-control-height) - (var(--bew-top-bar-control-border-width) + var(--bew-top-bar-control-padding)) *
-      2
-  );
-  // Full capsule ends (9999px) so radius never fights width/height morphing.
-  // Concentric with outer: item half-height + padding ≈ outer half-height.
-  --bew-top-bar-control-item-radius: 9999px;
-  --bew-top-bar-control-background: var(--bew-elevated);
-  --bew-top-bar-control-background-white: color-mix(in oklab, var(--bew-elevated-solid), transparent 80%);
-  --bew-top-bar-control-border-color: transparent;
+  --bew-top-bar-primary-control-radius: var(--bew-radius-full);
 
   // Interaction tokens aligned with home tab buttons
   --bew-segment-item-hover-bg: var(--bew-fill-1);

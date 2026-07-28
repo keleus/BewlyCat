@@ -7,8 +7,8 @@
   font-family: inherit;
 
   &.top-right {
-    top: calc(var(--bew-top-bar-height, 64px) + 10px);
-    right: 12px;
+    top: calc(var(--bew-top-bar-height, 64px) + var(--bew-space-3));
+    right: var(--bew-space-3);
   }
 }
 
@@ -22,14 +22,14 @@
   min-height: 0;
   max-width: none;
   margin: 0 0 8px;
-  padding: 10px 10px 10px 12px;
-  gap: 8px;
+  padding: var(--bew-space-3);
+  gap: var(--bew-space-2);
   align-items: flex-start;
   color: var(--bew-text-1);
   background: var(--bew-elevated-solid);
   background: color-mix(in oklab, var(--bew-elevated-solid) 90%, transparent);
   border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-radius, 12px);
+  border-radius: var(--bew-panel-radius, 12px);
   box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-3);
   backdrop-filter: var(--bew-filter-glass-1);
   font-family: inherit;
@@ -41,7 +41,7 @@
     bottom: 8px;
     left: 0;
     width: 2px;
-    border-radius: 0 999px 999px 0;
+    border-radius: 0 var(--bew-radius-full) var(--bew-radius-full) 0;
     background: var(--bew-toast-accent);
     box-shadow: 0 0 12px var(--bew-toast-accent-soft);
     content: "";
@@ -81,9 +81,9 @@
     min-width: 0;
     padding: 0;
     color: var(--bew-text-1);
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.5;
+    font-size: var(--bew-font-size-body);
+    font-weight: var(--bew-font-weight-medium);
+    line-height: var(--bew-line-height-body);
     overflow-wrap: anywhere;
     white-space: pre-wrap;
   }
@@ -95,14 +95,14 @@
     flex: 0 0 24px;
     align-items: center;
     justify-content: center;
-    margin: -3px -3px -3px 0;
+    margin: calc(var(--bew-space-0-5) * -1) calc(var(--bew-space-0-5) * -1) calc(var(--bew-space-0-5) * -1) 0;
     padding: 0;
     color: var(--bew-text-2);
     background: var(--bew-fill-1);
     border: 0;
     border-radius: var(--bew-radius-half, 6px);
-    font-size: 18px;
-    font-weight: 400;
+    font-size: var(--bew-font-size-heading);
+    font-weight: var(--bew-font-weight-regular);
     line-height: 1;
     opacity: 1;
     transition:

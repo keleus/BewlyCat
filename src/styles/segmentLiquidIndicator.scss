@@ -1,11 +1,13 @@
-// Liquid sliding indicator for segmented controls (tabs / switchers)
+// Liquid sliding indicator for segmented controls (tabs / switchers).
+// Pair it with `.bew-segment-control`, `data-segment-item` and
+// `data-active="true"`; component-specific files should not restyle its geometry.
 .bew-liquid-indicator {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 0;
   pointer-events: none;
-  border-radius: 9999px;
+  border-radius: var(--bew-radius-full);
   background: var(--bew-segment-item-active-bg, var(--bew-theme-color-20));
   box-shadow: var(--bew-segment-item-active-shadow);
   // Geometry (x/y/w/h/clip-path) is driven by JS for droplet morph —

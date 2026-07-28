@@ -27,7 +27,7 @@ html.bewly-design > ::-webkit-scrollbar-track {
 
 ::-webkit-scrollbar-thumb {
   background-color: rgba(120, 120, 140, 0.44);
-  border-radius: 20px;
+  border-radius: var(--bew-radius-full);
 }
 
 ::-webkit-scrollbar-corner {
@@ -42,7 +42,6 @@ html.bewly-design > ::-webkit-scrollbar-track {
 
 html.bewly-design,
 .bewly-design body {
-  // font-size: 14px !important;
   min-width: unset !important;
   filter: none !important;
   color: var(--bew-text-1);
@@ -91,6 +90,29 @@ img {
     -moz-osx-font-smoothing: grayscale;
   }
 
+  .bew-page-heading {
+    margin: 0;
+    font-size: var(--bew-font-size-heading);
+    font-weight: var(--bew-font-weight-bold);
+    line-height: var(--bew-line-height-heading);
+  }
+
+  // Baseline keyboard feedback for legacy/raw controls. Component-specific
+  // focus styles may refine this ring but must not remove it without replacement.
+  :where(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [role="tab"],
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+    outline: 2px solid var(--bew-theme-color-40);
+    outline-offset: var(--bew-space-0-5);
+  }
+
   .keep-one-line {
     overflow: hidden;
     text-overflow: ellipsis;
@@ -113,7 +135,7 @@ img {
     padding: 0 0.5em;
     margin: 0.14em 0.2em;
     border-radius: var(--bew-radius-sm);
-    font-weight: 600;
+    font-weight: var(--bew-font-weight-semibold);
     line-height: 1.24;
   }
 
@@ -160,4 +182,28 @@ img {
 
 .bew-warning-text {
   color: var(--bew-warning-color);
+}
+
+// Warning badges share one visual language across settings headings and items.
+.bew-warning-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--bew-space-0-5) var(--bew-space-2);
+  color: var(--bew-warning-color);
+  background: color-mix(in oklab, var(--bew-warning-color), transparent 88%);
+  border-radius: var(--bew-badge-radius);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-caption);
+}
+
+// Shared surface for search suggestions, filters and other anchored Pop UI.
+.bew-popover-surface {
+  box-sizing: border-box;
+  color: var(--bew-text-1);
+  background: var(--bew-elevated);
+  border: 1px solid var(--bew-border-color);
+  border-radius: var(--bew-popover-radius);
+  box-shadow: var(--bew-shadow-2), var(--bew-shadow-edge-glow-1);
+  backdrop-filter: var(--bew-filter-glass-1);
 }

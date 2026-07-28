@@ -1,0 +1,120 @@
+// Shared visual contract for compact segmented controls. Page components own
+// layout/position only; geometry, typography and interaction states live here.
+.bew-segment-control {
+  position: relative;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bew-control-gap);
+  height: var(--bew-control-height);
+  padding: var(--bew-control-padding);
+  border: var(--bew-control-border-width) solid var(--bew-control-border-color);
+  border-radius: var(--bew-control-radius);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: hidden;
+}
+
+.bew-segment-control--surface {
+  background: var(--bew-segment-surface-background, var(--bew-control-background));
+  box-shadow: var(--bew-segment-surface-shadow, var(--bew-shadow-1), var(--bew-shadow-edge-glow-1));
+  backdrop-filter: var(--bew-segment-surface-filter, var(--bew-filter-glass-1));
+}
+
+.bew-segment-control--solid {
+  backdrop-filter: none;
+}
+
+.bew-segment-control__item {
+  appearance: none;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bew-control-gap);
+  box-sizing: border-box;
+  height: var(--bew-control-item-height);
+  padding: 0 var(--bew-control-item-padding-x);
+  border: 0;
+  border-radius: var(--bew-control-item-radius);
+  color: var(--bew-segment-item-color, var(--bew-text-2));
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: var(--bew-control-label-size);
+  font-weight: var(--bew-control-label-weight);
+  line-height: var(--bew-control-label-line-height);
+  letter-spacing: normal;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
+    opacity var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.bew-segment-control__item--wide {
+  padding-inline: var(--bew-control-item-padding-x-wide);
+}
+
+.bew-segment-control__item--icon {
+  display: grid;
+  width: var(--bew-control-item-height);
+  padding: 0;
+  place-items: center;
+}
+
+.bew-segment-control__item:hover:not([data-active="true"]):not(:disabled) {
+  color: var(--bew-segment-item-hover-current-color, var(--bew-segment-item-hover-color));
+  background: var(--bew-segment-item-hover-current-bg, var(--bew-segment-item-hover-bg));
+}
+
+.bew-segment-control__item:focus-visible:not([data-active="true"]):not(:disabled) {
+  outline: none;
+  color: var(--bew-segment-item-focus-color, var(--bew-segment-item-active-color));
+  background: var(--bew-segment-item-focus-bg, var(--bew-segment-item-active-bg));
+  box-shadow: var(--bew-segment-item-focus-shadow, var(--bew-segment-item-active-shadow));
+}
+
+.bew-segment-control__item[data-active="true"] {
+  color: var(--bew-segment-item-current-color, var(--bew-segment-item-active-color));
+  background: transparent;
+  box-shadow: none;
+}
+
+.bew-segment-control__item[data-active="true"]:focus-visible {
+  outline: 2px solid var(--bew-segment-item-focus-ring-color, var(--bew-theme-color-40));
+  outline-offset: -2px;
+}
+
+// Static groups have no liquid indicator, so the selected item paints itself.
+.bew-segment-control--static > .bew-segment-control__item[data-active="true"] {
+  background: var(--bew-segment-item-active-bg);
+  box-shadow: var(--bew-segment-item-active-shadow);
+}
+
+.bew-segment-control__item:disabled {
+  color: var(--bew-text-3);
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.bew-segment-control__icon {
+  display: block;
+  width: var(--bew-control-icon-size);
+  height: var(--bew-control-icon-size);
+  flex: none;
+  font-size: var(--bew-control-icon-size);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bew-segment-control__item {
+    transition-duration: 1ms;
+  }
+}
