@@ -10,7 +10,7 @@ export interface LiquidSegmentRect {
 }
 
 /** Keep in sync with CSS move duration for wheel threshold / cooldown */
-export const LIQUID_MOVE_DURATION_MS = 400
+export const LIQUID_MOVE_DURATION_MS = 300
 
 function lerp(from: number, to: number, progress: number) {
   return from + (to - from) * progress
@@ -20,9 +20,9 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
 }
 
-function easeOutCubic(t: number) {
+function easeOutQuadratic(t: number) {
   const p = clamp(t, 0, 1)
-  return 1 - (1 - p) ** 3
+  return 1 - (1 - p) ** 2
 }
 
 interface LiquidGeometry {
@@ -52,22 +52,18 @@ function computeLiquidGeometry(from: LiquidSegmentRect, to: LiquidSegmentRect, t
   const dist = Math.hypot(dx, dy)
   const isHoriz = Math.abs(dx) >= Math.abs(dy)
 
-  // Position and size share the same eased progress so width/height never
-  // lag behind translation — that was what produced the "runs, then shrinks"
-  // two-stage read.
-  const posT = easeOutCubic(progress)
+  // Keep enough travel in the latter half of the animation so the capsule does
+  // not appear to arrive early and spend the remaining time only shrinking.
+  const posT = easeOutQuadratic(progress)
   const baseW = lerp(from.width, to.width, posT)
   const baseH = lerp(from.height, to.height, posT)
   const baseCx = lerp(from.x + from.width / 2, to.x + to.width / 2, posT)
   const baseCy = lerp(from.y + from.height / 2, to.y + to.height / 2, posT)
 
-  // Stretch is bound to *remaining* distance, not an independent envelope:
-  // the blob elongates while it still has ground to cover and snaps back to
-  // its resting pill shape the instant it arrives. This is what makes the
-  // motion read as a single liquid gesture instead of move + settle.
-  const remaining = 1 - posT
-  const envelope = remaining ** 0.5
-  const stretch = Math.min(dist * 0.40, Math.max(baseW, baseH) * 0.8) * envelope
+  // Start and end at the exact item geometry. The old remaining-distance
+  // envelope jumped from zero to almost maximum stretch on the first frame.
+  const envelope = Math.sin(Math.PI * progress)
+  const stretch = Math.min(dist * 0.22, Math.max(baseW, baseH) * 0.5) * envelope
 
   if (isHoriz) {
     const width = baseW + stretch
@@ -105,13 +101,17 @@ export function useLiquidSegmentIndicator(options: {
   const isMoving = ref(false)
   const scrubbing = ref(false)
 
-  let moveTimer: ReturnType<typeof setTimeout> | undefined
   let rafId: number | undefined
+  let measureFrameId: number | undefined
   let ready = false
   let fromRect: LiquidSegmentRect | null = null
   let previewTarget: HTMLElement | null = null
   let previewProgress = 0
   let animToken = 0
+  let pendingImmediateMeasure = false
+  let reducedMotionMediaQuery: MediaQueryList | undefined
+  let disposed = false
+  const prefersReducedMotion = ref(false)
 
   const indicatorStyle = computed(() => {
     const { x, y, width, height } = rect.value
@@ -123,13 +123,6 @@ export function useLiquidSegmentIndicator(options: {
     } as Record<string, string | undefined>
   })
 
-  function clearMoveTimer() {
-    if (moveTimer !== undefined) {
-      clearTimeout(moveTimer)
-      moveTimer = undefined
-    }
-  }
-
   function cancelRaf() {
     if (rafId !== undefined) {
       cancelAnimationFrame(rafId)
@@ -137,13 +130,15 @@ export function useLiquidSegmentIndicator(options: {
     }
   }
 
-  function markMoving(duration = LIQUID_MOVE_DURATION_MS) {
+  function cancelMeasureFrame() {
+    if (measureFrameId !== undefined) {
+      cancelAnimationFrame(measureFrameId)
+      measureFrameId = undefined
+    }
+  }
+
+  function markMoving() {
     isMoving.value = true
-    clearMoveTimer()
-    moveTimer = setTimeout(() => {
-      isMoving.value = false
-      moveTimer = undefined
-    }, duration)
   }
 
   function applyGeometry(geo: LiquidGeometry) {
@@ -175,7 +170,7 @@ export function useLiquidSegmentIndicator(options: {
     cancelRaf()
     const token = ++animToken
     const start = performance.now()
-    markMoving(LIQUID_MOVE_DURATION_MS)
+    markMoving()
     fromRect = { ...from }
 
     const tick = (now: number) => {
@@ -198,13 +193,17 @@ export function useLiquidSegmentIndicator(options: {
   function measure(immediate = false) {
     const container = options.containerRef.value
     if (!container) {
+      cancelRaf()
       visible.value = false
+      isMoving.value = false
       return
     }
 
     const activeEl = container.querySelector(activeItemSelector) as HTMLElement | null
     if (!activeEl) {
+      cancelRaf()
       visible.value = false
+      isMoving.value = false
       return
     }
 
@@ -218,7 +217,7 @@ export function useLiquidSegmentIndicator(options: {
       return
     }
 
-    if (immediate || !ready || !visible.value || !fromRect) {
+    if (immediate || prefersReducedMotion.value || !ready || !visible.value || !fromRect) {
       cancelRaf()
       animToken++
       applySettled(activeRect)
@@ -228,7 +227,10 @@ export function useLiquidSegmentIndicator(options: {
       return
     }
 
-    const origin = fromRect
+    // Continue from the currently painted geometry when a rapid second click
+    // interrupts an in-flight morph. Restarting from the last settled tab
+    // caused the indicator to visibly jump backwards.
+    const origin = rafId !== undefined ? { ...rect.value } : fromRect
     const changed = Math.abs(activeRect.x - origin.x) > 0.5
       || Math.abs(activeRect.y - origin.y) > 0.5
       || Math.abs(activeRect.width - origin.width) > 0.5
@@ -245,10 +247,27 @@ export function useLiquidSegmentIndicator(options: {
   }
 
   async function updateIndicator(immediate = false) {
+    pendingImmediateMeasure ||= immediate
     await nextTick()
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => measure(immediate))
+    if (disposed)
+      return
+
+    // One coalesced frame is enough after Vue has patched data-active. The old
+    // nested rAF added visible input latency and allowed stale measurements to
+    // race with newer tab selections.
+    cancelMeasureFrame()
+    measureFrameId = requestAnimationFrame(() => {
+      measureFrameId = undefined
+      const shouldMeasureImmediately = pendingImmediateMeasure
+      pendingImmediateMeasure = false
+      measure(shouldMeasureImmediately)
     })
+  }
+
+  function handleReducedMotionChange(event: MediaQueryListEvent) {
+    prefersReducedMotion.value = event.matches
+    if (event.matches)
+      void updateIndicator(true)
   }
 
   function setPreview(targetEl: HTMLElement | null, progress: number) {
@@ -300,11 +319,16 @@ export function useLiquidSegmentIndicator(options: {
   })
 
   onMounted(() => {
+    reducedMotionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    prefersReducedMotion.value = reducedMotionMediaQuery.matches
+    reducedMotionMediaQuery.addEventListener('change', handleReducedMotionChange)
     void updateIndicator(true)
   })
 
   onBeforeUnmount(() => {
-    clearMoveTimer()
+    disposed = true
+    reducedMotionMediaQuery?.removeEventListener('change', handleReducedMotionChange)
+    cancelMeasureFrame()
     cancelRaf()
   })
 
