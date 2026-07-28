@@ -51,6 +51,8 @@ interface DisplayMoment {
   livePopularity: string
   roomId?: number
   duration: string
+  videoPlay: string
+  videoDanmaku: string
   bvid?: string
   videoUrl?: string
   additional?: DisplayAdditional
@@ -59,7 +61,17 @@ interface DisplayMoment {
     title: string
     text: string
     fallback: string
+    video?: DisplayForwardVideo
   }
+}
+
+interface DisplayForwardVideo {
+  title: string
+  cover: string
+  duration: string
+  play: string
+  danmaku: string
+  url: string
 }
 
 interface DisplayAdditional {
@@ -224,6 +236,7 @@ const coverRatios = reactive<Record<string, number>>({})
 const longImageIds = reactive(new Set<string>())
 const MIN_SINGLE_IMAGE_RATIO = 1 / 2
 const LONG_IMAGE_DISPLAY_RATIO = 3 / 4
+const STACKED_SINGLE_IMAGE_RATIO = 4 / 3
 let gridObserver: ResizeObserver | undefined
 let liveFlvPlayer: any = null
 let liveHlsPlayer: any = null
@@ -332,7 +345,17 @@ function isLandscapeSingleImage(moment: DisplayMoment) {
   return !moment.isVideo
     && !moment.isLive
     && moment.images.length === 1
-    && (coverRatios[moment.id] || 0) >= 1
+    && (coverRatios[moment.id] || 0) > STACKED_SINGLE_IMAGE_RATIO
+}
+
+function isCompactPlainTextMoment(moment: DisplayMoment) {
+  return !moment.images.length
+    && !moment.isVideo
+    && !moment.isLive
+    && !moment.isChargeExclusive
+    && !moment.title
+    && !moment.forward
+    && !moment.additional
 }
 
 function isLongSingleImage(moment: DisplayMoment) {
@@ -579,6 +602,8 @@ function getMomentContent(item: any) {
     duration: archive.duration_text || '',
     bvid: archive.bvid || undefined,
     videoUrl: archive.jump_url ? httpsUrl(archive.jump_url.startsWith('//') ? `https:${archive.jump_url}` : archive.jump_url) : undefined,
+    videoPlay: pickText(archive.stat?.play),
+    videoDanmaku: pickText(archive.stat?.danmaku),
     mediaMeta: live
       ? liveArea
       : (isChargeExclusive ? (chargeBadge || '充电专属') : (archive.duration_text || article.label || '')),
@@ -1006,6 +1031,9 @@ function mapMoment(item: DataItem): DisplayMoment {
   const isForward = raw.type === 'DYNAMIC_TYPE_FORWARD' && raw.orig
   const contentRaw = isForward ? raw.orig : raw
   const content = getMomentContent(contentRaw)
+  const forwardedArchive = isForward
+    ? contentRaw.modules?.module_dynamic?.major?.archive
+    : undefined
   // 转发时作者侧也可能挂充电角标
   const selfContent = isForward ? getMomentContent(raw) : content
   const forwardedAuthor = contentRaw.modules?.module_author || {}
@@ -1042,7 +1070,8 @@ function mapMoment(item: DataItem): DisplayMoment {
     ),
     commentCount: Number(raw.modules?.module_stat?.comment?.count || 0),
     url: `https://www.bilibili.com/opus/${id}`,
-    isVideo: content.isVideo,
+    // 转发视频仍然是“转发动态”；原视频由卡片内的独立视频摘要展示。
+    isVideo: !isForward && content.isVideo,
     isPgc: content.isPgc,
     isLive: content.isLive,
     isForward,
@@ -1064,6 +1093,8 @@ function mapMoment(item: DataItem): DisplayMoment {
     livePopularity: content.livePopularity,
     roomId: content.roomId,
     duration: content.duration,
+    videoPlay: content.videoPlay,
+    videoDanmaku: content.videoDanmaku,
     bvid: content.bvid,
     videoUrl: content.videoUrl,
     additional,
@@ -1083,6 +1114,16 @@ function mapMoment(item: DataItem): DisplayMoment {
                   : content.text
                     ? '纯文字动态'
                     : '原动态',
+          video: forwardedArchive
+            ? {
+                title: pickText(forwardedArchive.title, content.title),
+                cover: httpsUrl(forwardedArchive.cover || content.images[0] || ''),
+                duration: pickText(forwardedArchive.duration_text, content.duration),
+                play: pickText(forwardedArchive.stat?.play, content.videoPlay),
+                danmaku: pickText(forwardedArchive.stat?.danmaku, content.videoDanmaku),
+                url: content.videoUrl || (content.bvid ? `https://www.bilibili.com/video/${content.bvid}` : ''),
+              }
+            : undefined,
         }
       : undefined,
   }
@@ -1090,6 +1131,18 @@ function mapMoment(item: DataItem): DisplayMoment {
 
 function estimateCardHeight(moment: DisplayMoment) {
   const columnWidth = Math.max(CARD_COMPACT_MIN_WIDTH, gridCardWidth.value || CARD_MAX_WIDTH)
+  if (isCompactPlainTextMoment(moment)) {
+    const charsPerLine = Math.max(12, Math.floor((columnWidth - 32) / 14))
+    const lineCount = Math.min(7, Math.max(1, (moment.text || '').split('\n').reduce(
+      (total, line) => total + Math.max(1, Math.ceil(Array.from(line).length / charsPerLine)),
+      0,
+    )))
+    return 118 + lineCount * 21
+  }
+  if (moment.forward?.video) {
+    const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
+    return 238 + introLines * 21
+  }
   if (moment.isChargeExclusive && !moment.isVideo)
     return 230
   if (columnWidth < CARD_MIN_WIDTH) {
@@ -1100,8 +1153,10 @@ function estimateCardHeight(moment: DisplayMoment) {
   }
   if (moment.isLive)
     return Math.round((columnWidth - 32) * 9 / 16) + 190
-  if (moment.isVideo)
-    return 330
+  if (moment.isVideo) {
+    const mediaWidth = Math.max(170, (columnWidth - 32) * 0.44)
+    return Math.round(mediaWidth * 9 / 16) + 120 + (moment.additional ? 68 : 0)
+  }
   if (moment.images.length === 1) {
     const contentWidth = Math.max(0, columnWidth - 32)
     if (isLandscapeSingleImage(moment))
@@ -1164,7 +1219,12 @@ function getValidMomentsCache(filter: MomentFilter) {
   const entry = momentsFeedCache.value[filter]
   if (!entry)
     return undefined
-  if (Date.now() - entry.updatedAt < MOMENTS_CACHE_TTL_MS)
+  const usesCurrentVideoShape = entry.items.every(moment => (
+    typeof moment.videoPlay === 'string'
+    && typeof moment.videoDanmaku === 'string'
+    && !(moment.isForward && moment.isVideo)
+  ))
+  if (usesCurrentVideoShape && Date.now() - entry.updatedAt < MOMENTS_CACHE_TTL_MS)
     return entry
 
   const { [filter]: _expired, ...validEntries } = momentsFeedCache.value
@@ -2759,7 +2819,9 @@ watch(
               :ref="(el) => bindCardEl(el as Element | null, moment)"
               class="moment-card"
               :class="{
-                'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive,
+                'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video,
+                'moment-card--compact-text': isCompactPlainTextMoment(moment),
+                'moment-card--forward-video': !!moment.forward?.video,
                 'moment-card--charge': moment.isChargeExclusive,
                 'moment-card--preparing': !readyCardIds.has(moment.id),
                 'moment-card--entering': enteringCardIds.has(moment.id),
@@ -2813,7 +2875,28 @@ watch(
                     playsinline
                     @canplay="playPreview"
                   />
-                  <span v-if="moment.isVideo" class="moment-card__video-mark"><span i-tabler-player-play-filled /> {{ moment.duration || '视频' }}</span>
+                  <span
+                    v-if="moment.isVideo && (
+                      (settings.showVideoCardViewCount && moment.videoPlay)
+                      || (settings.showVideoCardDanmakuCount && moment.videoDanmaku)
+                      || (settings.showVideoCardDuration && moment.duration)
+                    )"
+                    class="moment-card__video-stats"
+                  >
+                    <span class="moment-card__video-stat-group">
+                      <span v-if="settings.showVideoCardViewCount && moment.videoPlay">
+                        <span i-tabler-player-play aria-hidden="true" />
+                        {{ moment.videoPlay }}
+                      </span>
+                      <span v-if="settings.showVideoCardDanmakuCount && moment.videoDanmaku">
+                        <span i-tabler-message-circle aria-hidden="true" />
+                        {{ moment.videoDanmaku }}
+                      </span>
+                    </span>
+                    <span v-if="settings.showVideoCardDuration && moment.duration">
+                      {{ moment.duration }}
+                    </span>
+                  </span>
                   <span v-if="moment.isLive" class="moment-card__live-mark">
                     LIVE
                     <span i-svg-spinners:pulse-3 aria-hidden="true" />
@@ -2848,7 +2931,7 @@ watch(
                 </div>
 
                 <div class="moment-card__body">
-                  <p v-if="moment.title" class="moment-card__title">
+                  <p v-if="moment.title && !moment.forward?.video" class="moment-card__title">
                     {{ moment.title }}
                   </p>
                   <p
@@ -2890,7 +2973,49 @@ watch(
                       {{ getCardPreviewText(moment) }}
                     </template>
                   </p>
-                  <div v-if="moment.forward" class="moment-card__forward">
+                  <a
+                    v-if="moment.forward?.video"
+                    :href="moment.forward.video.url || undefined"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="moment-card__forward-video"
+                    :aria-label="`打开原视频：${moment.forward.video.title}`"
+                    @click.stop
+                  >
+                    <span class="moment-card__forward-video-cover">
+                      <img
+                        :src="getMomentThumbnailUrl(moment.forward.video.cover)"
+                        :alt="moment.forward.video.title"
+                        loading="lazy"
+                        decoding="async"
+                      >
+                      <span
+                        v-if="(settings.showVideoCardViewCount && moment.forward.video.play)
+                          || (settings.showVideoCardDanmakuCount && moment.forward.video.danmaku)
+                          || (settings.showVideoCardDuration && moment.forward.video.duration)"
+                        class="moment-card__video-stats"
+                      >
+                        <span class="moment-card__video-stat-group">
+                          <span v-if="settings.showVideoCardViewCount && moment.forward.video.play">
+                            <span i-tabler-player-play aria-hidden="true" />
+                            {{ moment.forward.video.play }}
+                          </span>
+                          <span v-if="settings.showVideoCardDanmakuCount && moment.forward.video.danmaku">
+                            <span i-tabler-message-circle aria-hidden="true" />
+                            {{ moment.forward.video.danmaku }}
+                          </span>
+                        </span>
+                        <span v-if="settings.showVideoCardDuration && moment.forward.video.duration">
+                          {{ moment.forward.video.duration }}
+                        </span>
+                      </span>
+                    </span>
+                    <span class="moment-card__forward-video-info">
+                      <strong>{{ moment.forward.video.title || moment.forward.fallback }}</strong>
+                      <small><span i-tabler-user aria-hidden="true" />{{ moment.forward.author }}</small>
+                    </span>
+                  </a>
+                  <div v-else-if="moment.forward" class="moment-card__forward">
                     <strong>@{{ moment.forward.author }}</strong>
                     <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
                   </div>
@@ -4161,7 +4286,7 @@ watch(
   border-radius: var(--bew-radius);
 }
 .moment-card__cover--media {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
 }
 .moment-card__cover--single {
   max-height: none;
@@ -4214,7 +4339,7 @@ watch(
 }
 .moment-card__main--video .moment-card__body {
   display: flex;
-  height: calc((100cqw - 32px) * 0.33);
+  height: max(95.625px, calc((100cqw - 32px) * 0.2475));
   flex-direction: column;
   overflow: hidden;
 }
@@ -4240,6 +4365,9 @@ watch(
 }
 .moment-card--text .moment-card__desc {
   -webkit-line-clamp: 7;
+}
+.moment-card--compact-text .moment-card__body {
+  min-height: 0;
 }
 .moment-card__title {
   margin-bottom: 8px;
@@ -4275,6 +4403,101 @@ watch(
 }
 .moment-card__forward {
   margin-top: 10px;
+}
+.moment-card--forward-video .moment-card__desc {
+  -webkit-line-clamp: 7;
+}
+.moment-card__forward-video {
+  display: grid;
+  grid-template-columns: minmax(150px, 44%) minmax(0, 1fr);
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 58%);
+  border-radius: var(--bew-radius);
+  color: inherit;
+  background: var(--bew-fill-1);
+  text-decoration: none;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
+}
+.moment-card__forward-video:hover,
+.moment-card__forward-video:focus-visible {
+  border-color: color-mix(in oklab, var(--bew-theme-color), transparent 48%);
+  background: color-mix(in oklab, var(--bew-theme-color) 7%, var(--bew-fill-1));
+  outline: none;
+}
+.moment-card__forward-video-cover {
+  position: relative;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: #111;
+}
+.moment-card__forward-video-cover > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.moment-card__video-stats {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 28px;
+  padding: 12px 8px 4px;
+  color: #fff;
+  background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 72%));
+  box-sizing: border-box;
+  font-size: 11px;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 65%);
+}
+.moment-card__video-stat-group,
+.moment-card__video-stat-group > span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+}
+.moment-card__video-stat-group {
+  gap: 8px;
+}
+.moment-card__video-stat-group > span {
+  gap: 3px;
+}
+.moment-card__forward-video-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 12px;
+}
+.moment-card__forward-video-info strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--bew-text-1);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.moment-card__forward-video-info small {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  color: var(--bew-text-3);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .moment-card__additional--footer {
   margin: 0 16px 14px;
