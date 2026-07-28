@@ -2,8 +2,8 @@
 import { Icon } from '@iconify/vue'
 import { useThrottleFn } from '@vueuse/core'
 
+import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { gridLayout, settings } from '~/logic'
 import type { HomeTab } from '~/stores/mainStore'
@@ -59,34 +59,16 @@ const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   ]
 })
 
-const homeTabsInsideRef = ref<HTMLElement | null>(null)
-const gridSwitcherRef = ref<HTMLElement | null>(null)
-
-const {
-  indicatorStyle: tabsIndicatorStyle,
-  isMoving: tabsIndicatorMoving,
-  updateIndicator: updateTabsIndicator,
-} = useLiquidSegmentIndicator({
-  containerRef: homeTabsInsideRef,
-  activeKey: activatedPage,
-})
-
-const {
-  indicatorStyle: gridIndicatorStyle,
-  isMoving: gridIndicatorMoving,
-  updateIndicator: updateGridIndicator,
-} = useLiquidSegmentIndicator({
-  containerRef: gridSwitcherRef,
-  activeKey: () => gridLayout.value.home,
-})
+const tabsIndicatorRef = ref<InstanceType<typeof LiquidSegmentIndicator> | null>(null)
+const gridIndicatorRef = ref<InstanceType<typeof LiquidSegmentIndicator> | null>(null)
 
 watch(currentTabs, () => {
-  void updateTabsIndicator(true)
+  void tabsIndicatorRef.value?.updateIndicator(true)
 })
 
 watch(() => settings.value.enableGridLayoutSwitcher, (enabled) => {
   if (enabled)
-    void updateGridIndicator(true)
+    void gridIndicatorRef.value?.updateIndicator(true)
 })
 
 function getInitialTabScrollTop(): number {
@@ -298,16 +280,10 @@ function toggleTabContentLoading(loading: boolean) {
         >
           <div class="home-tabs-scroll" h-full of-x-auto of-y-hidden>
             <div
-              ref="homeTabsInsideRef"
               class="home-tabs-inside" flex="~ items-center" h-inherit w-max
               box-border
             >
-              <div
-                class="bew-liquid-indicator"
-                :class="{ 'is-moving': tabsIndicatorMoving }"
-                :style="tabsIndicatorStyle"
-                aria-hidden="true"
-              />
+              <LiquidSegmentIndicator ref="tabsIndicatorRef" :active-key="activatedPage" />
               <button
                 v-for="tab in currentTabs" :key="tab.page"
                 class="home-tab-button bew-segment-control__item bew-segment-control__item--wide"
@@ -333,17 +309,11 @@ function toggleTabContentLoading(loading: boolean) {
 
         <div
           v-if="settings.enableGridLayoutSwitcher"
-          ref="gridSwitcherRef"
           class="glass-panel home-grid-layout-switcher bew-segment-control bew-segment-control--surface"
           flex="~ shrink-0 items-center"
           box-border
         >
-          <div
-            class="bew-liquid-indicator"
-            :class="{ 'is-moving': gridIndicatorMoving }"
-            :style="gridIndicatorStyle"
-            aria-hidden="true"
-          />
+          <LiquidSegmentIndicator ref="gridIndicatorRef" :active-key="gridLayout.home" />
           <button
             v-for="icon in gridLayoutIcons" :key="icon.value"
             type="button"

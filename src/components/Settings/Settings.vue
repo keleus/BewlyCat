@@ -3,6 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { settings } from '~/logic'
 import { createTransformer } from '~/utils/transformer'
 
@@ -391,7 +392,7 @@ function changeMenuItem(menuItem: MenuType) {
           style="
             box-shadow: var(--bew-shadow-4);
           "
-          relative flex="~ gap-2 col" p-2
+          relative
           bg="$bew-content-alt group-hover:$bew-elevated dark:$bew-elevated dark-group-hover:$bew-elevated"
           scale="group-hover:105"
           overflow-hidden antialiased
@@ -399,15 +400,15 @@ function changeMenuItem(menuItem: MenuType) {
           <!-- frosted glass background -->
           <!-- https://github.com/BewlyBewly/BewlyBewly/issues/1162 -->
           <div
+            class="settings-primary-navigation__surface"
             style="
               box-shadow: var(--bew-shadow-edge-glow-2);
               backdrop-filter: var(--bew-filter-glass-2);
             "
-            pos="absolute top-0 left-0" z--1
-            w-full h-full pointer-events-none
-            border="1 $bew-border-color"
-            rounded-inherit
+            z--1 pointer-events-none rounded-inherit
           />
+
+          <LiquidSegmentIndicator :active-key="activatedMenuItem" />
 
           <li
             v-for="menuItem in settingsMenuItems"
@@ -417,10 +418,11 @@ function changeMenuItem(menuItem: MenuType) {
             <button
               type="button"
               class="settings-primary-navigation__item"
-              cursor-pointer w="40px group-hover:190px" h-40px
-              flex items-center overflow-x-hidden
+              data-segment-item
+              cursor-pointer
               bg="hover:$bew-fill-2"
               :class="{ 'menu-item-activated': menuItem.value === activatedMenuItem }"
+              :data-active="menuItem.value === activatedMenuItem ? 'true' : undefined"
               :aria-current="menuItem.value === activatedMenuItem ? 'page' : undefined"
               @click="changeMenuItem(menuItem.value)"
             >
@@ -588,24 +590,59 @@ function changeMenuItem(menuItem: MenuType) {
 
 <style lang="scss" scoped>
 .menu-item-activated {
-  --uno: "text-$bew-text-auto bg-$bew-theme-color-auto";
+  --uno: "text-$bew-text-auto";
 }
 
 // Animate from the capsule's real geometric radius instead of `radius-full`.
 // Interpolating from 9999px stays visually clamped until the final frames and
 // makes the corners appear to snap when the rail expands.
 .settings-primary-navigation__list {
+  --settings-primary-nav-inset: var(--bew-space-2);
+  --settings-primary-nav-item-size: 40px;
+  --settings-primary-nav-expanded-item-width: 190px;
+  --bew-liquid-indicator-bg: var(--bew-theme-color-auto);
+  --bew-liquid-indicator-shadow: none;
+  --bew-liquid-indicator-radius: var(--bew-space-5);
+
+  display: flex;
+  box-sizing: border-box;
+  width: calc(
+    var(--settings-primary-nav-item-size) + var(--settings-primary-nav-inset) + var(--settings-primary-nav-inset)
+  );
+  padding: var(--settings-primary-nav-inset);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--bew-space-2);
   border-radius: 28px; // 40px item + 8px padding on each side, divided by two.
   transition:
+    width var(--bew-duration-moderate) var(--bew-ease-standard),
     border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
     background-color var(--bew-duration-moderate) var(--bew-ease-standard),
     transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
+
+  > li {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+}
+
+.settings-primary-navigation__surface {
+  position: absolute;
+  inset: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--bew-border-color);
 }
 
 .settings-primary-navigation__item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  height: var(--settings-primary-nav-item-size);
+  align-items: center;
+  overflow-x: hidden;
   border-radius: var(--bew-space-5); // Half of the collapsed 40px item.
   transition:
-    width var(--bew-duration-moderate) var(--bew-ease-standard),
     border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
     color var(--bew-duration-normal) var(--bew-ease-standard),
     background-color var(--bew-duration-normal) var(--bew-ease-standard);
@@ -613,7 +650,12 @@ function changeMenuItem(menuItem: MenuType) {
 
 .settings-primary-navigation:hover {
   .settings-primary-navigation__list {
+    width: calc(
+      var(--settings-primary-nav-expanded-item-width) + var(--settings-primary-nav-inset) +
+        var(--settings-primary-nav-inset)
+    );
     border-radius: var(--bew-radius-2xl);
+    --bew-liquid-indicator-radius: var(--bew-radius-xl);
   }
 
   .settings-primary-navigation__item {
@@ -882,27 +924,39 @@ function changeMenuItem(menuItem: MenuType) {
     left: auto !important;
     width: 72px;
     box-sizing: border-box;
+    padding-inline: var(--bew-space-2);
 
     li {
-      display: flex;
-      justify-content: center;
       width: 100%;
     }
 
-    a {
-      width: 40px;
-      flex: 0 0 40px;
+    button {
       justify-content: center;
     }
 
-    a > div:last-child {
+    button > div:last-child {
       display: none;
     }
 
-    a > div:first-child,
-    a > div:nth-child(2) {
+    button > div:first-child,
+    button > div:nth-child(2) {
       width: 40px;
       flex: 0 0 40px;
+    }
+
+    &:hover {
+      .settings-primary-navigation__list {
+        width: calc(
+          var(--settings-primary-nav-item-size) + var(--settings-primary-nav-inset) + var(--settings-primary-nav-inset)
+        );
+        border-radius: 28px;
+        transform: none;
+        --bew-liquid-indicator-radius: var(--bew-space-5);
+      }
+
+      .settings-primary-navigation__item {
+        border-radius: var(--bew-space-5);
+      }
     }
   }
 
@@ -942,8 +996,7 @@ function changeMenuItem(menuItem: MenuType) {
 
 .menu-section-start {
   position: relative;
-  margin-top: 9px;
-  padding-top: 9px;
+  padding-top: calc(var(--bew-space-2) + 1px);
 
   &::before {
     position: absolute;

@@ -118,6 +118,13 @@
   --bew-segment-item-active-bg-white: color-mix(in oklab, var(--bew-theme-color), transparent 55%);
   --bew-segment-item-active-shadow-white:
     inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 2px 6px color-mix(in oklab, var(--bew-theme-color), transparent 55%);
+  --bew-liquid-indicator-bg: var(--bew-segment-item-active-bg);
+  --bew-liquid-indicator-shadow: var(--bew-segment-item-active-shadow);
+  --bew-liquid-indicator-radius: var(--bew-control-item-radius);
+  --bew-liquid-indicator-bg-white: var(--bew-segment-item-active-bg-white);
+  --bew-liquid-indicator-shadow-white: var(--bew-segment-item-active-shadow-white);
+  --bew-liquid-indicator-fade-duration: var(--bew-duration-normal);
+  --bew-liquid-indicator-paint-duration: var(--bew-duration-normal);
 
   --bew-top-bar-height: 64px;
 

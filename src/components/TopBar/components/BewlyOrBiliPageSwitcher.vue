@@ -1,6 +1,6 @@
 <script lang="ts" setup>
+import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
 import { IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
@@ -40,15 +40,11 @@ const isOriginalBiliPageActive = computed(() => {
   return getDockItemConfigByPage(activatedPage.value)?.useOriginalBiliPage ?? false
 })
 
-const switcherRef = ref<HTMLElement | null>(null)
-const { indicatorStyle, isMoving, updateIndicator } = useLiquidSegmentIndicator({
-  containerRef: switcherRef,
-  activeKey: isOriginalBiliPageActive,
-})
+const liquidIndicatorRef = ref<InstanceType<typeof LiquidSegmentIndicator> | null>(null)
 
 watch(showBewlyOrBiliPageSwitcher, (visible) => {
   if (visible)
-    void updateIndicator(true)
+    void liquidIndicatorRef.value?.updateIndicator(true)
 })
 
 function switchPage(nextUseOriginalBiliPage: boolean) {
@@ -82,7 +78,6 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 <template>
   <div
     v-if="showBewlyOrBiliPageSwitcher"
-    ref="switcherRef"
     class="bewly-bili-switcher bew-segment-control bew-segment-control--surface"
     :class="{
       'bewly-bili-switcher--white': props.forceWhiteIcon,
@@ -91,14 +86,10 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     role="group"
     aria-label="Homepage mode"
   >
-    <div
-      class="bew-liquid-indicator"
-      :class="{
-        'is-moving': isMoving,
-        'bew-liquid-indicator--white': props.forceWhiteIcon && settings.enableFrostedGlass,
-      }"
-      :style="indicatorStyle"
-      aria-hidden="true"
+    <LiquidSegmentIndicator
+      ref="liquidIndicatorRef"
+      :active-key="isOriginalBiliPageActive"
+      :white="props.forceWhiteIcon && settings.enableFrostedGlass"
     />
 
     <button

@@ -2,8 +2,8 @@
 import { useToast } from 'vue-toastification'
 
 import Dialog from '~/components/Dialog.vue'
+import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
-import { useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import { settings } from '~/logic'
 import { momentsWantedUsers } from '~/logic/storage'
@@ -170,14 +170,6 @@ const momentsFeedCache = useStorageLocal<MomentsFeedCache>('momentsFeedCache', {
 type MomentGroup = 'all' | 'wanted'
 const activeMomentGroup = ref<MomentGroup>('all')
 const wantedCacheCursor = ref(0)
-const momentFilterInsideRef = ref<HTMLElement | null>(null)
-const {
-  indicatorStyle: momentFilterIndicatorStyle,
-  isMoving: momentFilterIndicatorMoving,
-} = useLiquidSegmentIndicator({
-  containerRef: momentFilterInsideRef,
-  activeKey: activeMomentFilter,
-})
 const portalUser = ref<MomentsPortalUser | null>(null)
 const portalLiveUsers = ref<MomentsPortalLiveUser[]>([])
 const portalLiveCount = ref(0)
@@ -2650,13 +2642,8 @@ watch(
       <header class="moments-filter-header">
         <section class="moments-filter-panel bew-segment-control bew-segment-control--surface">
           <div class="moments-filter-scroll">
-            <div ref="momentFilterInsideRef" class="moments-filter-inside">
-              <div
-                class="bew-liquid-indicator"
-                :class="{ 'is-moving': momentFilterIndicatorMoving }"
-                :style="momentFilterIndicatorStyle"
-                aria-hidden="true"
-              />
+            <div class="moments-filter-inside">
+              <LiquidSegmentIndicator :active-key="activeMomentFilter" />
               <button
                 v-for="filter in momentFilters"
                 :key="filter.value"

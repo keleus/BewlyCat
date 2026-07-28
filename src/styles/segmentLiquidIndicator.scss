@@ -7,15 +7,15 @@
   left: 0;
   z-index: 0;
   pointer-events: none;
-  border-radius: var(--bew-radius-full);
-  background: var(--bew-segment-item-active-bg, var(--bew-theme-color-20));
-  box-shadow: var(--bew-segment-item-active-shadow);
+  border-radius: var(--bew-liquid-indicator-radius);
+  background: var(--bew-liquid-indicator-bg, var(--bew-theme-color-20));
+  box-shadow: var(--bew-liquid-indicator-shadow);
   // Geometry (x/y/w/h/clip-path) is driven by JS for droplet morph —
   // only paint props transition here.
   transition:
-    opacity 200ms ease,
-    background-color 220ms ease,
-    box-shadow 220ms ease;
+    opacity var(--bew-liquid-indicator-fade-duration) var(--bew-ease-standard),
+    background-color var(--bew-liquid-indicator-paint-duration) var(--bew-ease-standard),
+    box-shadow var(--bew-liquid-indicator-paint-duration) var(--bew-ease-standard);
   // Only transform is compositor-friendly; width/height are set via JS
   // inline styles and don't benefit from will-change hints.
   will-change: transform;
@@ -28,8 +28,8 @@
 }
 
 .bew-liquid-indicator--white {
-  background: var(--bew-segment-item-active-bg-white);
-  box-shadow: var(--bew-segment-item-active-shadow-white);
+  background: var(--bew-liquid-indicator-bg-white);
+  box-shadow: var(--bew-liquid-indicator-shadow-white);
 }
 
 @media (prefers-reduced-motion: reduce) {

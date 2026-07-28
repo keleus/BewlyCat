@@ -120,8 +120,6 @@ export function useLiquidSegmentIndicator(options: {
       height: `${Math.max(height, 0)}px`,
       opacity: visible.value ? '1' : '0',
       transform: `translate3d(${x}px, ${y}px, 0)`,
-      // Geometry driven by rAF; only paint props use CSS transition
-      transition: 'opacity 200ms ease, background-color 220ms ease, box-shadow 220ms ease',
     } as Record<string, string | undefined>
   })
 
