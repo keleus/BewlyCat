@@ -419,7 +419,7 @@ function handleFocusDrawer(e?: Event) {
             bg="$bew-bg"
             @mousedown="handleFocusDrawer"
           >
-            <h3 text="xl" fw-bold>
+            <h3 class="notifications-drawer__title">
               {{ $t('topbar.notifications') }}
             </h3>
             <div flex="~ items-center gap-2">
@@ -428,7 +428,7 @@ function handleFocusDrawer(e?: Event) {
                 <div
                   v-if="showEscHint"
                   pointer-events-auto
-                  bg="$bew-theme-color" text="white sm" px-3 py-2 rounded-8px
+                  bg="$bew-theme-color" text="white sm" px-3 py-2 rounded="$bew-interactive-radius"
                   flex="~ items-center gap-2"
                 >
                   <i i-mingcute:information-line />
@@ -465,7 +465,7 @@ function handleFocusDrawer(e?: Event) {
                 </template>
                 {{ $t('iframe_drawer.close') }}
                 <kbd
-                  ml-1 px-1.5 py-0.5 rounded text-xs
+                  ml-1 px-2 py-0.5 rounded="$bew-radius-sm" text-xs
                   bg="$bew-fill-2" text="$bew-text-2"
                 >Esc</kbd>
               </Button>
@@ -480,7 +480,7 @@ function handleFocusDrawer(e?: Event) {
                 </template>
                 {{ $t('iframe_drawer.press_esc_again_to_close') }}
                 <kbd
-                  ml-1 px-1.5 py-0.5 rounded text-xs
+                  ml-1 px-2 py-0.5 rounded="$bew-radius-sm" text-xs
                   bg="red-700" text="white"
                 >Esc</kbd>
               </Button>
@@ -557,5 +557,12 @@ function handleFocusDrawer(e?: Event) {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.notifications-drawer__title {
+  margin: 0;
+  font-size: var(--bew-font-size-heading);
+  font-weight: var(--bew-font-weight-bold);
+  line-height: var(--bew-line-height-heading);
 }
 </style>

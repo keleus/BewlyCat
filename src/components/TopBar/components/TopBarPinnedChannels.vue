@@ -175,10 +175,10 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
   <div
     v-if="validPinnedKeys.length"
     ref="containerRef"
-    class="pinned-channels"
+    class="pinned-channels bew-segment-control bew-segment-control--surface"
     :class="{
       'white-theme': props.forceWhiteIcon,
-      'pinned-channels--solid': !settings.enableFrostedGlass,
+      'bew-segment-control--solid': !settings.enableFrostedGlass,
     }"
   >
     <div ref="listRef" class="pinned-channels__list">
@@ -187,8 +187,7 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
         :key="channel.key"
         :href="channel.href"
         type="topBar"
-        class="pinned-channels__item"
-        :class="{ 'white-icon': props.forceWhiteIcon }"
+        class="pinned-channels__item bew-segment-control__item bew-segment-control__item--icon"
         :title="channel.name"
       >
         <div v-if="channel.icon.startsWith('#')" class="pinned-channels__icon">
@@ -217,85 +216,48 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
 
 <style scoped lang="scss">
 .pinned-channels {
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: var(--bew-top-bar-control-gap);
+  --bew-segment-item-color: var(--bew-text-1);
+
   min-width: 0;
   flex: 0 1 auto;
-  height: var(--bew-top-bar-control-height);
-  padding: var(--bew-top-bar-control-padding);
-  border: var(--bew-top-bar-control-border-width) solid var(--bew-top-bar-control-border-color);
-  border-radius: var(--bew-top-bar-control-radius);
-  background: var(--bew-top-bar-control-background);
-  backdrop-filter: var(--bew-filter-glass-1);
-
-  &--solid {
-    backdrop-filter: none;
-  }
 
   &__list {
     display: flex;
     align-items: center;
-    gap: var(--bew-top-bar-control-gap);
+    gap: var(--bew-control-gap);
     overflow: hidden;
     min-width: 0;
   }
 
-  &__item {
-    display: grid;
-    place-items: center;
-    width: var(--bew-top-bar-control-item-height);
-    height: var(--bew-top-bar-control-item-height);
-    border-radius: var(--bew-top-bar-control-item-radius);
-    color: var(--bew-text-1);
-    background: transparent;
-    transition:
-      background-color var(--bew-duration-normal, 200ms) ease,
-      color var(--bew-duration-normal, 200ms) ease;
-
-    &:hover {
-      background: var(--bew-segment-item-hover-bg);
-    }
-
-    &.white-icon {
-      color: white;
-
-      &:hover {
-        background: var(--bew-segment-item-hover-bg-white);
-      }
-    }
-  }
-
   &__icon {
-    width: 18px;
-    height: 18px;
+    width: var(--bew-control-icon-size);
+    height: var(--bew-control-icon-size);
     display: grid;
     place-items: center;
 
     svg {
-      width: 18px;
-      height: 18px;
+      width: var(--bew-control-icon-size);
+      height: var(--bew-control-icon-size);
       fill: currentColor;
     }
 
     i {
-      font-size: 18px;
+      font-size: var(--bew-control-icon-size);
     }
   }
 
   &__more {
     display: grid;
     place-items: center;
-    height: var(--bew-top-bar-control-item-height);
-    min-width: var(--bew-top-bar-control-item-height);
+    height: var(--bew-control-item-height);
+    min-width: var(--bew-control-item-height);
     padding: 0 8px;
-    border-radius: var(--bew-top-bar-control-item-radius);
+    border-radius: var(--bew-control-item-radius);
     background: transparent;
     color: var(--bew-text-2);
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1;
+    font-size: var(--bew-control-label-size);
+    font-weight: var(--bew-control-brand-label-weight);
+    line-height: var(--bew-control-label-line-height);
     transition:
       background-color var(--bew-duration-normal, 200ms) ease,
       color var(--bew-duration-normal, 200ms) ease;
@@ -315,8 +277,12 @@ function arraysEqual<T>(a: T[], b: T[]): boolean {
     }
   }
 
-  &.white-theme:not(.pinned-channels--solid) {
-    background: var(--bew-top-bar-control-background-white);
+  &.white-theme:not(.bew-segment-control--solid) {
+    --bew-segment-surface-background: var(--bew-control-background-white);
+    --bew-segment-surface-shadow: none;
+    --bew-segment-item-color: white;
+    --bew-segment-item-hover-current-color: white;
+    --bew-segment-item-hover-current-bg: var(--bew-segment-item-hover-bg-white);
   }
 }
 

@@ -83,10 +83,10 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   <div
     v-if="showBewlyOrBiliPageSwitcher"
     ref="switcherRef"
-    class="bewly-bili-switcher"
+    class="bewly-bili-switcher bew-segment-control bew-segment-control--surface"
     :class="{
       'bewly-bili-switcher--white': props.forceWhiteIcon,
-      'bewly-bili-switcher--solid': !settings.enableFrostedGlass,
+      'bew-segment-control--solid': !settings.enableFrostedGlass,
     }"
     role="group"
     aria-label="Homepage mode"
@@ -103,7 +103,7 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 
     <button
       v-for="option in options" :key="option.name"
-      class="bewly-bili-switcher-button"
+      class="bewly-bili-switcher-button bew-segment-control__item"
       data-segment-item
       :data-active="option.useOriginalBiliPage === isOriginalBiliPageActive ? 'true' : undefined"
       :class="{
@@ -127,85 +127,25 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 .bewly-bili-switcher {
   --bew-segment-item-active-bg-white: rgba(255, 255, 255, 0.3);
   --bew-segment-item-active-shadow-white: none;
+  --bew-control-label-weight: var(--bew-control-brand-label-weight);
 
-  position: relative;
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
   flex: none;
-  gap: var(--bew-top-bar-control-gap);
-  height: var(--bew-top-bar-control-height);
-  padding: var(--bew-top-bar-control-padding);
-  border: var(--bew-top-bar-control-border-width) solid var(--bew-top-bar-control-border-color);
-  border-radius: var(--bew-top-bar-control-radius);
-  background: var(--bew-top-bar-control-background);
-  backdrop-filter: var(--bew-filter-glass-1);
-  overflow: hidden;
 
-  &--solid {
-    backdrop-filter: none;
-  }
-
-  &--white:not(.bewly-bili-switcher--solid) {
-    background: var(--bew-top-bar-control-background-white);
-
-    .bewly-bili-switcher-button {
-      color: white;
-
-      &:hover:not(.active) {
-        color: white;
-        background: var(--bew-segment-item-hover-bg-white);
-      }
-
-      &.active,
-      &.active:hover,
-      &.active:focus-visible {
-        color: white;
-        background: transparent;
-        box-shadow: none;
-      }
-    }
+  &--white:not(.bew-segment-control--solid) {
+    --bew-segment-surface-background: var(--bew-control-background-white);
+    --bew-segment-surface-shadow: none;
+    --bew-segment-item-color: white;
+    --bew-segment-item-hover-current-color: white;
+    --bew-segment-item-hover-current-bg: var(--bew-segment-item-hover-bg-white);
+    --bew-segment-item-focus-color: white;
+    --bew-segment-item-focus-bg: var(--bew-segment-item-hover-bg-white);
+    --bew-segment-item-current-color: white;
   }
 }
 
 .bewly-bili-switcher-button {
-  appearance: none;
-  position: relative;
-  z-index: 1;
   display: grid;
-  height: var(--bew-top-bar-control-item-height);
   place-items: center;
-  padding: 0 12px;
-  border: 0;
-  border-radius: var(--bew-top-bar-control-item-radius);
-  background: transparent;
-  color: var(--bew-text-2);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  transition:
-    color var(--bew-duration-normal, 200ms) ease,
-    background-color var(--bew-duration-normal, 200ms) ease;
-
-  &:hover:not(.active) {
-    color: var(--bew-segment-item-hover-color);
-    background: var(--bew-segment-item-hover-bg);
-  }
-
-  &:focus-visible:not(.active) {
-    outline: none;
-    color: var(--bew-segment-item-active-color);
-    background: var(--bew-segment-item-hover-bg);
-  }
-
-  &.active,
-  &.active:hover,
-  &.active:focus-visible {
-    color: var(--bew-segment-item-active-color);
-    background: transparent;
-    box-shadow: none;
-  }
 
   &__full {
     display: none;
@@ -218,7 +158,7 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 
 @media (min-width: 1280px) {
   .bewly-bili-switcher-button {
-    padding: 0 16px;
+    padding-inline: var(--bew-control-item-padding-x-wide);
 
     &__full {
       display: block;

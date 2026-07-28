@@ -231,7 +231,7 @@ function handleClickChannel() {
           <div
             pos="absolute top-0 left-0" h-2px
             h="2px"
-            rounded="2px"
+            rounded="$bew-radius-full"
             bg="$bew-warning-color"
             :style="{ width: levelProgressBarWidth }"
           />

@@ -59,7 +59,7 @@
 
   .entry-title {
     gap: 8px;
-    margin-right: 15px;
+    margin-right: var(--bew-space-4);
 
     .zhuzhan-icon {
       display: none;
@@ -173,13 +173,13 @@
     align-items: center;
     box-sizing: border-box;
     height: 32px;
-    margin: 3px 0;
-    padding: 6px;
-    border-radius: 4px;
+    margin: var(--bew-space-1) 0;
+    padding: var(--bew-space-1);
+    border-radius: var(--bew-interactive-radius);
     color: var(--bew-text-1);
-    font-size: 14px;
-    font-weight: 400;
-    line-height: 20px;
+    font-size: var(--bew-font-size-body);
+    font-weight: var(--bew-font-weight-regular);
+    line-height: var(--bew-line-height-body);
     white-space: nowrap;
 
     &:hover {
@@ -192,7 +192,7 @@
     width: 24px;
     height: 24px;
     flex: none;
-    margin-right: 10px;
+    margin-right: var(--bew-space-3);
   }
 }
 

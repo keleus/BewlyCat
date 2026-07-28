@@ -64,6 +64,7 @@
   --uno: "after:opacity-100 after:w-full after:h-100px";
   --uno: "after:absolute after:top--30px after:left-1/2 after:-z-1";
   --uno: "after:transform after:-translate-x-1/2";
+  border-radius: var(--bew-popover-radius);
 }
 
 .logo.activated {
@@ -77,9 +78,9 @@
 .right-side {
   .avatar {
     --uno: "flex justify-center items-center relative z-1";
-    width: var(--bew-top-bar-control-height);
-    height: var(--bew-top-bar-control-height);
-    border-radius: var(--bew-top-bar-control-radius);
+    width: var(--bew-control-height);
+    height: var(--bew-control-height);
+    border-radius: var(--bew-control-radius);
 
     &:hover::after,
     &.hover::after {
@@ -89,9 +90,9 @@
     .avatar-img,
     .avatar-shadow {
       --uno: "shrink-0 duration-300 bg-cover bg-center";
-      width: var(--bew-top-bar-control-height);
-      height: var(--bew-top-bar-control-height);
-      border-radius: var(--bew-top-bar-control-radius);
+      width: var(--bew-control-height);
+      height: var(--bew-control-height);
+      border-radius: var(--bew-control-radius);
 
       &.hover {
         --uno: "transform scale-195 translate-y-50px translate-x--36px";
@@ -140,10 +141,11 @@
 
     &:not(.avatar) a,
     & .notifications {
-      --uno: "text-lg grid place-items-center duration-300 relative z-5";
-      width: var(--bew-top-bar-control-height);
-      height: var(--bew-top-bar-control-height);
-      border-radius: var(--bew-top-bar-control-radius);
+      --uno: "grid place-items-center duration-300 relative z-5";
+      width: var(--bew-control-height);
+      height: var(--bew-control-height);
+      border-radius: var(--bew-control-radius);
+      font-size: var(--bew-control-icon-size);
       filter: drop-shadow(0 0 4px var(--bew-bg));
     }
 

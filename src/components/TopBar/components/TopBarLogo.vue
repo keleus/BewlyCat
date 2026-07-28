@@ -140,7 +140,10 @@ const channels = setupTopBarItemHoverEvent('channels')
   border-radius: var(--bew-top-bar-primary-control-radius);
 
   .home-icon {
-    transition: all 0.3s;
+    transition:
+      color var(--bew-duration-moderate) var(--bew-ease-standard),
+      filter var(--bew-duration-moderate) var(--bew-ease-standard),
+      transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
   }
 
   &:hover .home-icon {

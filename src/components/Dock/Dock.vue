@@ -654,12 +654,12 @@ onUnmounted(() => {
                 <Icon
                   v-if="key === 1"
                   icon="line-md:rotate-270"
-                  shrink-0 rotate-90 absolute text-2xl
+                  shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
                 />
                 <Icon
                   v-else
                   icon="line-md:arrow-small-up"
-                  shrink-0 absolute text-2xl
+                  shrink-0 absolute text="size-$bew-icon-size-lg"
                 />
               </button>
             </Transition>
@@ -677,12 +677,12 @@ onUnmounted(() => {
               <Icon
                 v-if="reachTop && canRefreshCurrentPage"
                 icon="line-md:rotate-270"
-                shrink-0 rotate-90 absolute text-2xl
+                shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
               />
               <Icon
                 v-else
                 icon="line-md:arrow-small-up"
-                shrink-0 absolute text-2xl
+                shrink-0 absolute text="size-$bew-icon-size-lg"
               />
             </Transition>
           </button>
@@ -700,12 +700,12 @@ onUnmounted(() => {
             <Icon
               v-if="showUndo"
               icon="mdi:undo-variant"
-              shrink-0 absolute text-2xl
+              shrink-0 absolute text="size-$bew-icon-size-lg"
             />
             <Icon
               v-else-if="showForward"
               icon="mdi:redo-variant"
-              shrink-0 absolute text-2xl
+              shrink-0 absolute text="size-$bew-icon-size-lg"
             />
           </button>
         </Transition>
@@ -728,7 +728,7 @@ onUnmounted(() => {
         >
           <Icon
             icon="line-md:rotate-270"
-            shrink-0 rotate-90 absolute text-2xl
+            shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
           />
         </button>
       </Transition>
@@ -740,7 +740,7 @@ onUnmounted(() => {
         >
           <Icon
             icon="line-md:arrow-small-up"
-            shrink-0 absolute text-2xl
+            shrink-0 absolute text="size-$bew-icon-size-lg"
           />
         </button>
       </Transition>
@@ -753,12 +753,12 @@ onUnmounted(() => {
           <Icon
             v-if="showUndo"
             icon="mdi:undo-variant"
-            shrink-0 absolute text-2xl
+            shrink-0 absolute text="size-$bew-icon-size-lg"
           />
           <Icon
             v-else-if="showForward"
             icon="mdi:redo-variant"
-            shrink-0 absolute text-2xl
+            shrink-0 absolute text="size-$bew-icon-size-lg"
           />
         </button>
       </Transition>
