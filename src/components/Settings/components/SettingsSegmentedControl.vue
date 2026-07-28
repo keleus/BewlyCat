@@ -20,7 +20,7 @@ function selectOption(value: T) {
 
 <template>
   <div
-    class="settings-segmented-control bew-segment-control bew-segment-control--solid"
+    class="settings-segmented-control bew-segment-control bew-segment-control--surface bew-segment-control--solid"
     role="radiogroup"
     :aria-label="label"
     :style="{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }"

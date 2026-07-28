@@ -24,7 +24,6 @@ const pages = [
     descriptionKey: 'settings.category_playback_volume_desc',
     icon: 'i-mingcute:volume-line',
     iconActivated: 'i-mingcute:volume-fill',
-    warning: true,
     badgeKey: 'settings.badge_use_with_caution',
     component: defineAsyncComponent(() => import('../PluginComponentsAndPages/VolumeBalance/VolumeBalance.vue')),
   },

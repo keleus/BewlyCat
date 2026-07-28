@@ -3,7 +3,6 @@ import { useEventListener } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { settings } from '~/logic'
 import { createTransformer } from '~/utils/transformer'
 
@@ -394,7 +393,6 @@ function changeMenuItem(menuItem: MenuType) {
           "
           relative
           bg="$bew-content-alt group-hover:$bew-elevated dark:$bew-elevated dark-group-hover:$bew-elevated"
-          scale="group-hover:105"
           overflow-hidden antialiased
         >
           <!-- frosted glass background -->
@@ -408,8 +406,6 @@ function changeMenuItem(menuItem: MenuType) {
             z--1 pointer-events-none rounded-inherit
           />
 
-          <LiquidSegmentIndicator :active-key="activatedMenuItem" />
-
           <li
             v-for="menuItem in settingsMenuItems"
             :key="menuItem.value"
@@ -418,11 +414,8 @@ function changeMenuItem(menuItem: MenuType) {
             <button
               type="button"
               class="settings-primary-navigation__item"
-              data-segment-item
               cursor-pointer
-              bg="hover:$bew-fill-2"
               :class="{ 'menu-item-activated': menuItem.value === activatedMenuItem }"
-              :data-active="menuItem.value === activatedMenuItem ? 'true' : undefined"
               :aria-current="menuItem.value === activatedMenuItem ? 'page' : undefined"
               @click="changeMenuItem(menuItem.value)"
             >
@@ -590,7 +583,7 @@ function changeMenuItem(menuItem: MenuType) {
 
 <style lang="scss" scoped>
 .menu-item-activated {
-  --uno: "text-$bew-text-auto";
+  --uno: "text-$bew-text-auto bg-$bew-theme-color-auto";
 }
 
 // Animate from the capsule's real geometric radius instead of `radius-full`.
@@ -600,9 +593,6 @@ function changeMenuItem(menuItem: MenuType) {
   --settings-primary-nav-inset: var(--bew-space-2);
   --settings-primary-nav-item-size: 40px;
   --settings-primary-nav-expanded-item-width: 190px;
-  --bew-liquid-indicator-bg: var(--bew-theme-color-auto);
-  --bew-liquid-indicator-shadow: none;
-  --bew-liquid-indicator-radius: var(--bew-space-5);
 
   display: flex;
   box-sizing: border-box;
@@ -617,8 +607,7 @@ function changeMenuItem(menuItem: MenuType) {
   transition:
     width var(--bew-duration-moderate) var(--bew-ease-standard),
     border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
-    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
-    transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard);
 
   > li {
     width: 100%;
@@ -646,6 +635,15 @@ function changeMenuItem(menuItem: MenuType) {
     border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
     color var(--bew-duration-normal) var(--bew-ease-standard),
     background-color var(--bew-duration-normal) var(--bew-ease-standard);
+
+  &:hover:not(.menu-item-activated) {
+    background: var(--bew-fill-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color-40);
+    outline-offset: -2px;
+  }
 }
 
 .settings-primary-navigation:hover {
@@ -655,7 +653,6 @@ function changeMenuItem(menuItem: MenuType) {
         var(--settings-primary-nav-inset)
     );
     border-radius: var(--bew-radius-2xl);
-    --bew-liquid-indicator-radius: var(--bew-radius-xl);
   }
 
   .settings-primary-navigation__item {
@@ -950,8 +947,6 @@ function changeMenuItem(menuItem: MenuType) {
           var(--settings-primary-nav-item-size) + var(--settings-primary-nav-inset) + var(--settings-primary-nav-inset)
         );
         border-radius: 28px;
-        transform: none;
-        --bew-liquid-indicator-radius: var(--bew-space-5);
       }
 
       .settings-primary-navigation__item {
