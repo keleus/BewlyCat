@@ -5,6 +5,7 @@ const props = withDefaults(defineProps<{
   collapsible?: boolean
   defaultCollapsed?: boolean
   warningDesc?: boolean
+  icon?: string
 }>(), {
   collapsible: false,
   defaultCollapsed: false,
@@ -24,7 +25,10 @@ const collapsed = ref(props.defaultCollapsed)
       @click="collapsed = !collapsed"
     >
       <span>
-        <span text="base $bew-text-1" fw-bold>{{ title }}</span>
+        <span class="group-title" text="base $bew-text-1" fw-bold>
+          <i v-if="icon" :class="icon" />
+          {{ title }}
+        </span>
         <span
           v-if="desc"
           block text="sm $bew-text-2" fw-normal
@@ -40,7 +44,8 @@ const collapsed = ref(props.defaultCollapsed)
       />
     </button>
     <template v-else-if="title || desc">
-      <p text="base $bew-text-1" fw-bold>
+      <p class="group-title" text="base $bew-text-1" fw-bold>
+        <i v-if="icon" :class="icon" />
         {{ title }}
       </p>
       <p v-if="desc" text="sm $bew-text-2" :class="{ 'warning-desc': warningDesc }">
@@ -72,6 +77,17 @@ const collapsed = ref(props.defaultCollapsed)
   width: 100%;
   color: inherit;
   text-align: left;
+}
+
+.group-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.group-title > i {
+  color: var(--bew-theme-color);
+  font-size: 18px;
 }
 
 .collapse-icon {

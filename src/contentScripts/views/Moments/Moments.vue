@@ -4,7 +4,9 @@ import { useToast } from 'vue-toastification'
 import Dialog from '~/components/Dialog.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLiquidSegmentIndicator } from '~/composables/useLiquidSegmentIndicator'
+import { useStorageLocal } from '~/composables/useStorageLocal'
 import { settings } from '~/logic'
+import { momentsWantedUsers } from '~/logic/storage'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
 import api from '~/utils/api'
 import { getCSRF } from '~/utils/main'
@@ -13,7 +15,8 @@ const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
 
 interface DisplayMoment {
   id: string
-  author: { name: string, face: string }
+  author: { mid: string, name: string, face: string }
+  publishedAt: number
   title: string
   text: string
   richText: DisplayRichTextSegment[]
@@ -130,6 +133,31 @@ const momentFilters: Array<{ value: MomentFilter, label: string }> = [
   { value: 'article', label: '专栏' },
 ]
 const activeMomentFilter = ref<MomentFilter>('all')
+interface MomentsFeedCacheEntry {
+  items: DisplayMoment[]
+  offset: string
+  updateBaseline: string
+  hasMore: boolean
+  updatedAt: number
+  continuation?: {
+    items: DisplayMoment[]
+    offset: string
+    updateBaseline: string
+    hasMore: boolean
+  }
+}
+type MomentsFeedCache = Partial<Record<MomentFilter, MomentsFeedCacheEntry>>
+let resolveMomentsFeedCacheReady: (() => void) | undefined
+const momentsFeedCacheReady = new Promise<void>((resolve) => {
+  resolveMomentsFeedCacheReady = resolve
+})
+const momentsFeedCache = useStorageLocal<MomentsFeedCache>('momentsFeedCache', {}, {
+  writeDefaults: false,
+  onReady: () => resolveMomentsFeedCacheReady?.(),
+})
+type MomentGroup = 'all' | 'wanted'
+const activeMomentGroup = ref<MomentGroup>('all')
+const wantedCacheCursor = ref(0)
 const momentFilterInsideRef = ref<HTMLElement | null>(null)
 const {
   indicatorStyle: momentFilterIndicatorStyle,
@@ -209,6 +237,9 @@ const OVERSCAN_PX = 1200
 const MAX_PREVIEW_CACHE = 12
 const MAX_VIDEO_CID_CACHE = 80
 const MAX_POST_LOAD_AUTOFILL_PAGES = 3
+const WANTED_SCAN_LIMIT = 100
+const MOMENTS_CACHE_MAX_ITEMS = 1000
+const MOMENTS_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000
 /** 虚拟瀑布流需要在全局哨兵进入视口前主动预取，避免高度修正后漏掉相交事件 */
 const LOAD_MORE_AHEAD_PX = 640
 const DETAIL_DIALOG_MIN_WIDTH = 860
@@ -228,6 +259,8 @@ let detailImageViewerDragOriginX = 0
 let detailImageViewerDragOriginY = 0
 /** 高度已稳定的卡片，避免反复 Resize 微抖动 */
 const settledHeights = new Set<string>()
+
+const wantedUserMids = computed(() => new Set(momentsWantedUsers.value.map(user => user.mid)))
 
 function httpsUrl(url = '') {
   return url.replace(/^http:/, 'https:')
@@ -988,7 +1021,12 @@ function mapMoment(item: DataItem): DisplayMoment {
 
   return {
     id,
-    author: { name: author.name || 'B站用户', face: httpsUrl(author.face || '') },
+    author: {
+      mid: String(author.mid || ''),
+      name: author.name || 'B站用户',
+      face: httpsUrl(author.face || ''),
+    },
+    publishedAt: Number(author.pub_ts || 0),
     title: content.title,
     text,
     richText,
@@ -1093,9 +1131,169 @@ function handleMomentFilterChange(filter: MomentFilter) {
   Object.keys(previewUrls).forEach(key => delete previewUrls[key])
   visibleMomentIds.clear()
   activeMomentFilter.value = filter
+  if (filter !== 'all' && filter !== 'video')
+    activeMomentGroup.value = 'all'
   if (scrollViewportRef.value)
     scrollViewportRef.value.scrollTop = 0
   void loadMoments(true)
+}
+
+function handleMomentGroupChange(group: MomentGroup) {
+  if (group === 'wanted' && activeMomentFilter.value !== 'all' && activeMomentFilter.value !== 'video')
+    return
+  if (activeMomentGroup.value === group)
+    return
+
+  activeMomentGroup.value = group
+  if (scrollViewportRef.value)
+    scrollViewportRef.value.scrollTop = 0
+  void loadMoments(true)
+}
+
+function matchesMomentFilter(moment: DisplayMoment) {
+  if (activeMomentFilter.value === 'all')
+    return true
+  if (activeMomentFilter.value === 'video')
+    return moment.isVideo && !moment.isPgc
+  if (activeMomentFilter.value === 'pgc')
+    return moment.isPgc
+  return moment.isArticle
+}
+
+function getValidMomentsCache(filter: MomentFilter) {
+  const entry = momentsFeedCache.value[filter]
+  if (!entry)
+    return undefined
+  if (Date.now() - entry.updatedAt < MOMENTS_CACHE_TTL_MS)
+    return entry
+
+  const { [filter]: _expired, ...validEntries } = momentsFeedCache.value
+  momentsFeedCache.value = validEntries
+  return undefined
+}
+
+function mergeCachedMoments(primary: DisplayMoment[], secondary: DisplayMoment[]) {
+  const result: DisplayMoment[] = []
+  const ids = new Set<string>()
+  for (const moment of [...primary, ...secondary]) {
+    if (ids.has(moment.id))
+      continue
+    ids.add(moment.id)
+    result.push(moment)
+    if (result.length >= MOMENTS_CACHE_MAX_ITEMS)
+      break
+  }
+  return result
+}
+
+function saveMomentsCache(filter: MomentFilter, entry: MomentsFeedCacheEntry) {
+  const items = entry.items.slice(0, MOMENTS_CACHE_MAX_ITEMS)
+  const continuationLimit = Math.max(0, MOMENTS_CACHE_MAX_ITEMS - items.length)
+  const continuation = entry.continuation && continuationLimit > 0
+    ? { ...entry.continuation, items: entry.continuation.items.slice(0, continuationLimit) }
+    : undefined
+  momentsFeedCache.value = {
+    ...momentsFeedCache.value,
+    [filter]: {
+      ...entry,
+      items,
+      continuation,
+      updatedAt: Date.now(),
+    },
+  }
+}
+
+function cacheRegularMomentPage(
+  filter: MomentFilter,
+  pageItems: DisplayMoment[],
+  pageOffset: string,
+  pageUpdateBaseline: string,
+  pageHasMore: boolean,
+  reset: boolean,
+) {
+  if ((filter !== 'all' && filter !== 'video') || !pageItems.length)
+    return
+
+  const existing = getValidMomentsCache(filter)
+  if (!existing) {
+    saveMomentsCache(filter, {
+      items: pageItems,
+      offset: pageOffset,
+      updateBaseline: pageUpdateBaseline,
+      hasMore: pageHasMore,
+      updatedAt: Date.now(),
+    })
+    return
+  }
+
+  const existingIds = new Set(existing.items.map(moment => moment.id))
+  const overlapsCache = pageItems.some(moment => existingIds.has(moment.id))
+  // 顶部刷新若尚未追上旧缓存，保留旧段，后续按每批 100 条继续寻找衔接点。
+  if (reset && !overlapsCache) {
+    saveMomentsCache(filter, {
+      items: pageItems,
+      offset: pageOffset,
+      updateBaseline: pageUpdateBaseline,
+      hasMore: pageHasMore,
+      updatedAt: Date.now(),
+      continuation: {
+        items: existing.items,
+        offset: existing.offset,
+        updateBaseline: existing.updateBaseline,
+        hasMore: existing.hasMore,
+      },
+    })
+    return
+  }
+
+  const continuationIds = new Set(existing.continuation?.items.map(moment => moment.id) || [])
+  const reachesContinuation = pageItems.some(moment => continuationIds.has(moment.id))
+  if (reachesContinuation && existing.continuation) {
+    saveMomentsCache(filter, {
+      items: mergeCachedMoments(existing.items, mergeCachedMoments(pageItems, existing.continuation.items))
+        .sort((a, b) => b.publishedAt - a.publishedAt),
+      offset: existing.continuation.offset,
+      updateBaseline: existing.continuation.updateBaseline,
+      hasMore: existing.continuation.hasMore,
+      updatedAt: Date.now(),
+    })
+    return
+  }
+
+  const existingOldest = Math.min(...existing.items.map(moment => moment.publishedAt || Infinity))
+  const pageOldest = Math.min(...pageItems.map(moment => moment.publishedAt || Infinity))
+  const extendsCachedTail = pageOldest < existingOldest
+  const items = mergeCachedMoments(
+    reset ? pageItems : existing.items,
+    reset ? existing.items : pageItems,
+  )
+    .sort((a, b) => b.publishedAt - a.publishedAt)
+  saveMomentsCache(filter, {
+    items,
+    offset: extendsCachedTail ? pageOffset : existing.offset,
+    updateBaseline: extendsCachedTail ? pageUpdateBaseline : existing.updateBaseline,
+    hasMore: extendsCachedTail ? pageHasMore : existing.hasMore,
+    updatedAt: Date.now(),
+    continuation: existing.continuation,
+  })
+}
+
+function loadMoreWantedMoments() {
+  void loadMoments(false, 0, true)
+}
+
+function passesMomentSettings(moment: DisplayMoment) {
+  if (settings.value.momentsFilterUpRecommendation && moment.isUpRecommendation)
+    return false
+  if (settings.value.momentsHideChargeExclusive && moment.isChargeExclusive)
+    return false
+  if (settings.value.momentsHideVideoReservation && moment.isVideoReservation)
+    return false
+  if (settings.value.momentsHideLiveReservation && moment.isLiveReservation)
+    return false
+  if (settings.value.momentsHideLiveDynamics && moment.isLive)
+    return false
+  return true
 }
 
 function getCardHeight(moment: DisplayMoment) {
@@ -1881,7 +2079,10 @@ async function toggleMomentLike(moment: DisplayMoment) {
   }
 }
 
-async function loadMoments(reset = false, autoFillDepth = 0) {
+async function loadMoments(reset = false, autoFillDepth = 0, wantedManual = false) {
+  // “想看”只允许按钮触发后续批次，避免滚动到底自动扫描下一组 100 条。
+  if (!reset && activeMomentGroup.value === 'wanted' && !wantedManual)
+    return
   if ((!reset && isLoading.value) || (!reset && noMoreContent.value))
     return
 
@@ -1909,6 +2110,7 @@ async function loadMoments(reset = false, autoFillDepth = 0) {
   }
   const requestToken = feedRequestToken
   const requestType = activeMomentFilter.value
+  const requestGroup = activeMomentGroup.value
   let pageApplied = false
   let preservedPaginationScrollTop: number | null = null
   isLoading.value = true
@@ -1919,34 +2121,200 @@ async function loadMoments(reset = false, autoFillDepth = 0) {
   }
 
   try {
-    const response = await api.moment.getMoments({
-      type: requestType,
-      offset: offset.value || undefined,
-      update_baseline: updateBaseline.value || undefined,
-      features: MOMENT_FEED_FEATURES,
-    }) as MomentResult
-    if (requestToken !== feedRequestToken || requestType !== activeMomentFilter.value || response.code !== 0)
-      return
+    let rawItems: DataItem[] = []
+    let cachedBatch: DisplayMoment[] | undefined
+    let hasMore = false
+    let nextOffset = ''
+    let nextUpdateBaseline = ''
 
-    const rawItems = response.data?.items || []
-    const items = rawItems
-      .map(mapMoment)
-      .filter((moment) => {
-        if (settings.value.momentsFilterUpRecommendation && moment.isUpRecommendation)
-          return false
-        if (settings.value.momentsHideChargeExclusive && moment.isChargeExclusive)
-          return false
-        if (settings.value.momentsHideVideoReservation && moment.isVideoReservation)
-          return false
-        if (settings.value.momentsHideLiveReservation && moment.isLiveReservation)
-          return false
-        if (settings.value.momentsHideLiveDynamics && moment.isLive)
-          return false
-        return true
-      })
+    if (requestGroup === 'wanted') {
+      await momentsFeedCacheReady
+      let cacheEntry = getValidMomentsCache(requestType) ?? {
+        items: [],
+        offset: '',
+        updateBaseline: '',
+        hasMore: true,
+        updatedAt: Date.now(),
+      }
+
+      if (!momentsWantedUsers.value.length) {
+        wantedCacheCursor.value = 0
+        cachedBatch = []
+      }
+      else {
+        let cacheChanged = false
+        if (reset) {
+          wantedCacheCursor.value = 0
+          const existingCache = cacheEntry
+          const existingIds = new Set(existingCache.items.map(moment => moment.id))
+          const freshItems: DisplayMoment[] = []
+          let scanOffset = ''
+          let scanUpdateBaseline = ''
+          let canContinue = true
+          let reachedCache = false
+
+          while (canContinue && freshItems.length < WANTED_SCAN_LIMIT && !reachedCache) {
+            const response = await api.moment.getMoments({
+              type: requestType,
+              offset: scanOffset || undefined,
+              update_baseline: scanUpdateBaseline || undefined,
+              features: MOMENT_FEED_FEATURES,
+            }) as MomentResult
+            if (
+              requestToken !== feedRequestToken
+              || requestType !== activeMomentFilter.value
+              || requestGroup !== activeMomentGroup.value
+              || response.code !== 0
+            ) {
+              return
+            }
+
+            const pageItems = (response.data?.items || []).map(mapMoment)
+            reachedCache = pageItems.some(moment => existingIds.has(moment.id))
+            freshItems.push(...pageItems)
+            const responseOffset = response.data?.offset || ''
+            scanUpdateBaseline = response.data?.update_baseline || ''
+            canContinue = Boolean(response.data?.has_more)
+              && pageItems.length > 0
+              && responseOffset !== scanOffset
+            scanOffset = responseOffset
+          }
+
+          cacheEntry = reachedCache
+            ? {
+                ...existingCache,
+                items: mergeCachedMoments(freshItems, existingCache.items),
+              }
+            : {
+                items: mergeCachedMoments(freshItems, []),
+                offset: scanOffset,
+                updateBaseline: scanUpdateBaseline,
+                hasMore: canContinue,
+                updatedAt: Date.now(),
+                continuation: existingCache.items.length
+                  ? {
+                      items: existingCache.items,
+                      offset: existingCache.offset,
+                      updateBaseline: existingCache.updateBaseline,
+                      hasMore: existingCache.hasMore,
+                    }
+                  : undefined,
+              }
+          cacheChanged = true
+        }
+
+        const batchEnd = Math.min(wantedCacheCursor.value + WANTED_SCAN_LIMIT, MOMENTS_CACHE_MAX_ITEMS)
+        while (
+          cacheEntry.items.length < batchEnd
+          && cacheEntry.items.length < MOMENTS_CACHE_MAX_ITEMS
+          && cacheEntry.hasMore
+        ) {
+          const response = await api.moment.getMoments({
+            type: requestType,
+            offset: cacheEntry.offset || undefined,
+            update_baseline: cacheEntry.updateBaseline || undefined,
+            features: MOMENT_FEED_FEATURES,
+          }) as MomentResult
+          if (
+            requestToken !== feedRequestToken
+            || requestType !== activeMomentFilter.value
+            || requestGroup !== activeMomentGroup.value
+            || response.code !== 0
+          ) {
+            return
+          }
+
+          const pageItems = (response.data?.items || []).map(mapMoment)
+          const responseOffset = response.data?.offset || ''
+          const continuationIds = new Set(cacheEntry.continuation?.items.map(moment => moment.id) || [])
+          const reachesContinuation = pageItems.some(moment => continuationIds.has(moment.id))
+          if (reachesContinuation && cacheEntry.continuation) {
+            cacheEntry = {
+              items: mergeCachedMoments(
+                cacheEntry.items,
+                mergeCachedMoments(pageItems, cacheEntry.continuation.items),
+              ),
+              offset: cacheEntry.continuation.offset,
+              updateBaseline: cacheEntry.continuation.updateBaseline,
+              hasMore: cacheEntry.continuation.hasMore,
+              updatedAt: Date.now(),
+            }
+          }
+          else {
+            cacheEntry = {
+              items: mergeCachedMoments(cacheEntry.items, pageItems),
+              offset: responseOffset,
+              updateBaseline: response.data?.update_baseline || '',
+              hasMore: Boolean(response.data?.has_more)
+                && pageItems.length > 0
+                && responseOffset !== cacheEntry.offset,
+              updatedAt: Date.now(),
+              continuation: cacheEntry.continuation,
+            }
+          }
+          cacheChanged = true
+          if (reachesContinuation)
+            break
+        }
+
+        if (cacheChanged)
+          saveMomentsCache(requestType, cacheEntry)
+        // 连续缓存可一次全部展示；存在缺口时仍按 API 原始条数每批推进 100 条。
+        const displayEnd = cacheEntry.continuation ? batchEnd : cacheEntry.items.length
+        cachedBatch = cacheEntry.items.slice(wantedCacheCursor.value, displayEnd)
+        wantedCacheCursor.value += cachedBatch.length
+        nextOffset = cacheEntry.offset
+        nextUpdateBaseline = cacheEntry.updateBaseline
+        hasMore = wantedCacheCursor.value < cacheEntry.items.length
+          || Boolean(cacheEntry.continuation)
+          || (cacheEntry.hasMore && cacheEntry.items.length < MOMENTS_CACHE_MAX_ITEMS)
+      }
+    }
+    else {
+      const response = await api.moment.getMoments({
+        type: requestType,
+        offset: offset.value || undefined,
+        update_baseline: updateBaseline.value || undefined,
+        features: MOMENT_FEED_FEATURES,
+      }) as MomentResult
+      if (
+        requestToken !== feedRequestToken
+        || requestType !== activeMomentFilter.value
+        || requestGroup !== activeMomentGroup.value
+        || response.code !== 0
+      ) {
+        return
+      }
+      rawItems = response.data?.items || []
+      hasMore = Boolean(response.data?.has_more) && rawItems.length > 0
+      nextOffset = response.data?.offset || ''
+      nextUpdateBaseline = response.data?.update_baseline || ''
+    }
+
+    const normalizedItems = cachedBatch ?? rawItems.map(mapMoment)
+    if (requestGroup === 'all') {
+      cacheRegularMomentPage(
+        requestType,
+        normalizedItems,
+        nextOffset,
+        nextUpdateBaseline,
+        hasMore,
+        reset,
+      )
+    }
+    const items = normalizedItems
+      .filter(moment => requestGroup !== 'wanted' || wantedUserMids.value.has(moment.author.mid))
+      .filter(moment => requestGroup !== 'wanted' || matchesMomentFilter(moment))
+      .filter(passesMomentSettings)
+      .sort((a, b) => b.publishedAt - a.publishedAt)
     await prepareMomentCovers(items, requestToken)
-    if (requestToken !== feedRequestToken || requestType !== activeMomentFilter.value)
+    if (
+      requestToken !== feedRequestToken
+      || requestType !== activeMomentFilter.value
+      || requestGroup !== activeMomentGroup.value
+    ) {
       return
+    }
     if (!reset)
       preservedPaginationScrollTop = scrollViewportRef.value?.scrollTop ?? null
     if (!reset)
@@ -1957,13 +2325,17 @@ async function loadMoments(reset = false, autoFillDepth = 0) {
       await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
     }
 
-    offset.value = response.data?.offset || ''
-    updateBaseline.value = response.data?.update_baseline || ''
-    noMoreContent.value = !response.data?.has_more || rawItems.length === 0
+    offset.value = nextOffset
+    updateBaseline.value = nextUpdateBaseline
+    noMoreContent.value = !hasMore
     pageApplied = true
   }
   finally {
-    if (requestToken === feedRequestToken && requestType === activeMomentFilter.value) {
+    if (
+      requestToken === feedRequestToken
+      && requestType === activeMomentFilter.value
+      && requestGroup === activeMomentGroup.value
+    ) {
       isLoading.value = false
       isInitialLoading.value = false
     }
@@ -1973,6 +2345,7 @@ async function loadMoments(reset = false, autoFillDepth = 0) {
     preservedPaginationScrollTop !== null
     && requestToken === feedRequestToken
     && requestType === activeMomentFilter.value
+    && requestGroup === activeMomentGroup.value
   ) {
     // 等卡片、虚拟 spacer 和底部加载提示完成更新后，恢复分页前的滚动位置
     await nextTick()
@@ -1989,6 +2362,7 @@ async function loadMoments(reset = false, autoFillDepth = 0) {
     || autoFillDepth >= MAX_POST_LOAD_AUTOFILL_PAGES
     || requestToken !== feedRequestToken
     || requestType !== activeMomentFilter.value
+    || requestGroup !== activeMomentGroup.value
   ) {
     return
   }
@@ -2166,6 +2540,14 @@ watch(
 )
 
 watch(
+  () => momentsWantedUsers.value.map(user => user.mid).join(','),
+  () => {
+    if (activeMomentGroup.value === 'wanted')
+      void loadMoments(true)
+  },
+)
+
+watch(
   () => [
     settings.value.momentsFilterUpRecommendation,
     settings.value.momentsHideChargeExclusive,
@@ -2231,6 +2613,23 @@ watch(
             </div>
           </div>
         </section>
+        <div
+          class="moments-group-controls"
+          aria-label="动态分组"
+        >
+          <button type="button" :class="{ 'is-active': activeMomentGroup === 'all' }" :aria-pressed="activeMomentGroup === 'all'" @click="handleMomentGroupChange('all')">
+            全部动态
+          </button>
+          <button
+            type="button"
+            :class="{ 'is-active': activeMomentGroup === 'wanted' }"
+            :disabled="activeMomentFilter !== 'all' && activeMomentFilter !== 'video'"
+            :aria-pressed="activeMomentGroup === 'wanted'"
+            @click="handleMomentGroupChange('wanted')"
+          >
+            想看 <span v-if="momentsWantedUsers.length">{{ momentsWantedUsers.length }}</span>
+          </button>
+        </div>
       </header>
 
       <aside v-if="showMomentsSidebar" class="moments-sidebar" aria-label="动态用户信息">
@@ -2570,10 +2969,23 @@ watch(
           </div>
         </div>
         <div v-else-if="!isInitialLoading" class="moments-page__empty">
-          <span i-tabler-windmill text-4xl /><p>暂时没有可展示的动态</p><button @click="refresh">
-            重新加载
+          <span i-tabler-windmill text-4xl /><p>{{ activeMomentGroup === 'wanted' ? (momentsWantedUsers.length ? '近期无更新' : '请先在设置中添加想看的 UP 主') : '暂时没有可展示的动态' }}</p><button
+            v-if="activeMomentGroup !== 'wanted' || momentsWantedUsers.length"
+            :disabled="isLoading"
+            @click="activeMomentGroup === 'wanted' && !noMoreContent ? loadMoreWantedMoments() : refresh()"
+          >
+            {{ isLoading ? '正在加载…' : activeMomentGroup === 'wanted' ? (!noMoreContent ? '加载更多' : '重新检查') : '重新加载' }}
           </button>
         </div>
+        <button
+          v-if="activeMomentGroup === 'wanted' && moments.length && !isLoading && !noMoreContent"
+          type="button"
+          class="moments-wanted-load-more"
+          @click="loadMoreWantedMoments"
+        >
+          <span i-tabler-arrow-down />
+          加载更多
+        </button>
         <p
           v-if="!isInitialLoading && moments.length"
           class="moments-page__loading"
@@ -3146,10 +3558,56 @@ watch(
   position: relative;
   z-index: 8;
   grid-column: 1 / -1;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, max-content) 184px;
   justify-content: center;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   margin-bottom: 2px;
+}
+.moments-group-controls {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 184px;
+  height: var(--bew-top-bar-control-height);
+  padding: var(--bew-top-bar-control-padding);
+  box-sizing: border-box;
+}
+.moments-group-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 100%;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--bew-top-bar-control-item-radius);
+  color: var(--bew-text-2);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.moments-group-controls button:hover,
+.moments-group-controls button.is-active {
+  color: var(--bew-segment-item-active-color);
+  background: var(--bew-segment-item-active-bg);
+}
+.moments-group-controls button:disabled {
+  color: var(--bew-text-3);
+  background: transparent;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.moments-group-controls button > span:not([class*="i-tabler"]) {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--bew-fill-1);
+  font-size: 10px;
 }
 .moments-filter-panel {
   height: var(--bew-top-bar-control-height);
@@ -3219,6 +3677,18 @@ watch(
     max-width: 100%;
   }
 }
+@media (max-width: 600px) {
+  .moments-filter-header {
+    grid-template-columns: minmax(0, 1fr) 160px;
+    gap: 4px;
+  }
+  .moments-group-controls {
+    width: 160px;
+  }
+  .moments-group-controls button {
+    padding: 0 8px;
+  }
+}
 .moments-page__empty button {
   border: 1px solid var(--bew-border-color);
   border-radius: 999px;
@@ -3235,6 +3705,10 @@ watch(
   color: #fff;
   background: var(--bew-theme-color);
   border-color: var(--bew-theme-color);
+}
+.moments-page__empty button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .moments-grid {
   display: grid;
@@ -3932,6 +4406,29 @@ watch(
 .moments-page__loading.is-visible {
   visibility: visible;
   opacity: 1;
+}
+.moments-wanted-load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 124px;
+  height: 38px;
+  margin: 18px auto 0;
+  padding: 0 16px;
+  border: 1px solid var(--bew-border-color);
+  border-radius: 999px;
+  color: var(--bew-text-1);
+  background: var(--bew-elevated);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+.moments-wanted-load-more:hover {
+  color: #fff;
+  border-color: var(--bew-theme-color);
+  background: var(--bew-theme-color);
 }
 .moments-page__empty {
   min-height: 280px;

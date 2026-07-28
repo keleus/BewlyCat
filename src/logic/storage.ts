@@ -40,6 +40,19 @@ export const noCookieForYouRecommendationState = useStorageLocal<NoCookieForYouR
   { mergeDefaults: true, writeDefaults: false },
 )
 
+export interface MomentsWantedUser {
+  mid: string
+  name: string
+  face: string
+}
+
+/** Bewly 动态页“想看”分组；缓存用户资料以避免每次进入页面重复请求。 */
+export const momentsWantedUsers = useStorageLocal<MomentsWantedUser[]>(
+  'momentsWantedUsers',
+  [],
+  { writeDefaults: false },
+)
+
 const legacyAccessKey = useStorageLocal('accessKey', '')
 
 watch(
