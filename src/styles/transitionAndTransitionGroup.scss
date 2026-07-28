@@ -46,13 +46,11 @@
 
 .modal-enter-active,
 .modal-leave-active {
-  transition:
-    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
-    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
+  transition: opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }
 .modal-enter-from,
 .modal-leave-to {
-  --uno: "opacity-0 scale-95";
+  --uno: "opacity-0";
 }
 
 .dropdown-enter-active,

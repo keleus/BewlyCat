@@ -49,6 +49,7 @@ function acknowledgeCurrentVersion() {
     width="480px"
     max-width="calc(100vw - 32px)"
     content-max-height="calc(100vh - 180px)"
+    :frosted-glass="false"
     :show-footer="false"
     append-to-bewly-body
     @close="dialogVisible = false"
