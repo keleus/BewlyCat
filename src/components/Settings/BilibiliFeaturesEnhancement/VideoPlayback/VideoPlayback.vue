@@ -71,8 +71,6 @@ const usesBewlyWidescreen = computed(() => settings.value.defaultVideoPlayerMode
 type ToggleSetting
   = | 'rememberPlaybackRate'
     | 'rememberVideoAspectRatio'
-    | 'externalWatchLaterButton'
-    | 'showVideoScreenshotButton'
 
 interface ToggleTagOption {
   setting: ToggleSetting
@@ -90,11 +88,6 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
   { label: t('settings.video_default_state_opt.remember'), value: 'remember' },
   { label: t('settings.video_default_state_opt.on'), value: 'on' },
   { label: t('settings.video_default_state_opt.off'), value: 'off' },
-])
-
-const videoPageActionOptions = computed<ToggleTagOption[]>(() => [
-  { setting: 'externalWatchLaterButton', label: t('settings.external_watch_later_button'), icon: 'i-tabler-clock-plus' },
-  { setting: 'showVideoScreenshotButton', label: t('settings.show_video_screenshot_button'), icon: 'i-tabler-camera' },
 ])
 </script>
 
@@ -210,16 +203,21 @@ const videoPageActionOptions = computed<ToggleTagOption[]>(() => [
           <Radio v-model="settings.enlargeFavoriteDialog" />
         </SettingsItem>
 
-        <div class="video-setting-tags" role="group" :aria-label="t('settings.group_video_page_actions')">
-          <SettingsToggleTag
-            v-for="option in videoPageActionOptions"
-            :key="option.setting"
-            v-model="settings[option.setting]"
-            :label="option.label"
-            :icon="option.icon"
-            :show-state-icon="false"
-          />
-        </div>
+        <SettingsItem
+          :title="t('settings.external_watch_later_button')"
+          :desc="t('settings.external_watch_later_button_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.externalWatchLaterButton" />
+        </SettingsItem>
+
+        <SettingsItem
+          :title="t('settings.show_video_screenshot_button')"
+          :desc="t('settings.show_video_screenshot_button_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.showVideoScreenshotButton" />
+        </SettingsItem>
       </SettingsItemSubgroup>
     </SettingsItemGroup>
   </div>
