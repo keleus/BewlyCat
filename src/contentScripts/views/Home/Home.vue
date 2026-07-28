@@ -465,7 +465,10 @@ function toggleTabContentLoading(loading: boolean) {
   grid-column: 2;
   max-width: calc(100vw - 320px);
   justify-self: center;
-  height: var(--bew-top-bar-control-height);
+  // Local override: 顶栏 control token (34px/2px) 是为纯图标按钮设计的，
+  // home-tabs 含 15px 中文文字，需要更宽松的尺寸
+  height: 40px;
+  padding: 3px;
   background: transparent;
   border: var(--bew-top-bar-control-border-width) solid transparent;
   border-radius: var(--bew-top-bar-control-radius);
@@ -494,11 +497,9 @@ function toggleTabContentLoading(loading: boolean) {
 }
 
 .home-tabs-panel--scrolled {
-  border-color: color-mix(in oklab, var(--bew-border-color), transparent 24%);
-  background: color-mix(in oklab, var(--bew-elevated), transparent 18%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 4px 16px rgb(0 0 0 / 0.08);
+  border-color: var(--bew-border-color);
+  background: var(--bew-elevated);
+  box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
   backdrop-filter: var(--bew-filter-glass-1);
 }
 
@@ -509,15 +510,13 @@ function toggleTabContentLoading(loading: boolean) {
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  height: var(--bew-top-bar-control-height);
+  height: 40px;
   gap: var(--bew-top-bar-control-gap);
-  padding: var(--bew-top-bar-control-padding);
-  border: var(--bew-top-bar-control-border-width) solid color-mix(in oklab, var(--bew-border-color), transparent 24%);
+  padding: 3px;
+  border: var(--bew-top-bar-control-border-width) solid var(--bew-border-color);
   border-radius: var(--bew-top-bar-control-radius);
-  background: color-mix(in oklab, var(--bew-elevated), transparent 28%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 1px 3px rgb(0 0 0 / 0.05);
+  background: var(--bew-elevated);
+  box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
   overflow: hidden;
 }
 
