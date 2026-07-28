@@ -1146,6 +1146,8 @@ version_reminder:
   github_releases_desc: View the full release history and downloads
   bilibili_dynamic: Bilibili posts
   bilibili_dynamic_desc: View update posts from the developer
+  xiaohongshu_page: Xiaohongshu
+  xiaohongshu_page_desc: Find the latest BewlyCat updates on Xiaohongshu
   acknowledge: Got it, don't show this version again
   settings_hint: You can turn off “New version reminders” under Settings → BewlyCat Interface → Home.
 watch_later:

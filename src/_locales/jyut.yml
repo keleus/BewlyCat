@@ -1024,6 +1024,8 @@ version_reminder:
   github_releases_desc: 睇完整版本記錄同下載資料
   bilibili_dynamic: B站動態
   bilibili_dynamic_desc: 睇開發者發佈嘅更新動態
+  xiaohongshu_page: 小紅書
+  xiaohongshu_page_desc: 喺小紅書搵 BewlyCat 最新動態
   acknowledge: 知道喇，呢個版本唔再提示
   settings_hint: 可以去「設定 → BewlyCat界面 → 主頁」閂咗「新版本提醒」。
 watch_later:

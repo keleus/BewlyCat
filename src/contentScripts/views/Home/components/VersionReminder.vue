@@ -7,6 +7,7 @@ import { version } from '../../../../../package.json'
 
 const GITHUB_RELEASES_URL = 'https://github.com/keleus/BewlyCat/releases'
 const BILIBILI_DYNAMIC_URL = 'https://space.bilibili.com/32487218/dynamic'
+const XIAOHONGSHU_PAGE_URL = 'https://www.xiaohongshu.com/user/profile/5fb77085000000000100060d'
 
 const dialogVisible = ref(false)
 
@@ -83,6 +84,20 @@ function acknowledgeCurrentVersion() {
           <span>
             <strong>{{ $t('version_reminder.bilibili_dynamic') }}</strong>
             <small>{{ $t('version_reminder.bilibili_dynamic_desc') }}</small>
+          </span>
+          <span class="version-reminder-dialog__arrow" i-mingcute:external-link-line />
+        </a>
+
+        <a
+          :href="XIAOHONGSHU_PAGE_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="version-reminder-dialog__link"
+        >
+          <span class="version-reminder-dialog__link-icon version-reminder-dialog__link-icon--xiaohongshu" i-simple-icons:xiaohongshu />
+          <span>
+            <strong>{{ $t('version_reminder.xiaohongshu_page') }}</strong>
+            <small>{{ $t('version_reminder.xiaohongshu_page_desc') }}</small>
           </span>
           <span class="version-reminder-dialog__arrow" i-mingcute:external-link-line />
         </a>
@@ -222,6 +237,10 @@ function acknowledgeCurrentVersion() {
 
 .version-reminder-dialog__link-icon--bilibili {
   color: var(--bew-theme-color);
+}
+
+.version-reminder-dialog__link-icon--xiaohongshu {
+  color: #ff2442;
 }
 
 .version-reminder-dialog__link strong,
