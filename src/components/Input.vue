@@ -17,18 +17,18 @@ const inputRef = ref<HTMLInputElement | null>(null)
 
 const height = computed(() => {
   if (props.size === 'small')
-    return '30px'
+    return '28px'
   if (props.size === 'medium')
-    return '35px'
+    return 'var(--bew-control-height)'
   if (props.size === 'large')
     return '40px'
-  return '35px'
+  return 'var(--bew-control-height)'
 })
 
 const padding = computed(() => {
   if (props.size === 'small')
-    return '0 calc(var(--bew-base-font-size) * 0.5)'
-  return '0 var(--bew-base-font-size)'
+    return '0 var(--bew-space-2)'
+  return '0 var(--bew-space-3)'
 })
 
 function focus() {
@@ -40,10 +40,12 @@ defineExpose({ focus })
 
 <template>
   <div
+    class="b-input"
+    :class="`b-input--${size}`"
     :style="{ height, padding }"
     focus-within:ring="2px $bew-theme-color"
     p="x-4"
-    rounded="$bew-radius" transition="border-color duration-300, background-color duration-300, box-shadow duration-300"
+    rounded="$bew-interactive-radius" transition="border-color duration-300, background-color duration-300, box-shadow duration-300"
     bg="$bew-fill-1" flex="~ gap-2"
   >
     <div v-if="$slots.prefix" class="prefix">
@@ -78,5 +80,17 @@ defineExpose({ focus })
 .prefix,
 .suffix {
   --uno: "flex items-center";
+}
+
+.b-input input {
+  color: var(--bew-text-1);
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-regular);
+  line-height: var(--bew-line-height-body);
+}
+
+.b-input--small input {
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
 }
 </style>

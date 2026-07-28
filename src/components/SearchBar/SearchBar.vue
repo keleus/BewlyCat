@@ -606,7 +606,7 @@ function handleClearKeyword() {
         class="group"
         enterkeyhint="search"
         name="search"
-        rounded="60px"
+        rounded="$bew-top-bar-primary-control-radius"
         p="l-6 r-18 y-3"
         h-inherit
         spellcheck="false"
@@ -648,6 +648,7 @@ function handleClearKeyword() {
       <div
         v-if="shouldShowSearchDropdown"
         id="search-dropdown"
+        class="bew-popover-surface"
         :style="narrowTopBarPopupStyle"
       >
         <!-- 热搜区块 -->
@@ -742,6 +743,7 @@ function handleClearKeyword() {
       <div
         v-if="isFocus && suggestions.length !== 0 && keyword.length > 0"
         id="search-suggestion"
+        class="bew-popover-surface"
         :style="narrowTopBarPopupStyle"
       >
         <div
@@ -765,7 +767,9 @@ function handleClearKeyword() {
 
 .result-list-enter-active,
 .result-list-leave-active {
-  --uno: "transition-all duration-300 ease-in-out";
+  transition:
+    opacity var(--bew-duration-moderate) var(--bew-ease-in-out),
+    transform var(--bew-duration-moderate) var(--bew-ease-in-out);
 }
 
 .result-list-enter-from,
@@ -775,7 +779,9 @@ function handleClearKeyword() {
 
 .focus-character-enter-active,
 .focus-character-leave-active {
-  --uno: "transition-all duration-300 ease-in-out";
+  transition:
+    opacity var(--bew-duration-moderate) var(--bew-ease-in-out),
+    transform var(--bew-duration-moderate) var(--bew-ease-in-out);
 }
 
 .focus-character-enter-from,
@@ -785,7 +791,7 @@ function handleClearKeyword() {
 
 .mask-enter-active,
 .mask-leave-active {
-  --uno: "transition-all duration-300 ease-in-out";
+  transition: opacity var(--bew-duration-moderate) var(--bew-ease-in-out);
 }
 
 .mask-enter-from,
@@ -902,8 +908,7 @@ function handleClearKeyword() {
   }
 
   @mixin search-content {
-    @include card-content;
-    --uno: "p-2 mt-2 absolute rounded-$bew-radius hover:block";
+    --uno: "text-base outline-none w-full p-2 mt-2 absolute hover:block";
   }
 
   @mixin search-content-item {
@@ -912,7 +917,6 @@ function handleClearKeyword() {
 
   #search-dropdown {
     @include search-content;
-    --uno: "bg-$bew-elevated";
     --uno: "max-h-420px important-overflow-y-auto";
     z-index: 1000;
 
@@ -989,7 +993,6 @@ function handleClearKeyword() {
 
   #search-suggestion {
     @include search-content;
-    --uno: "bg-$bew-elevated";
     --uno: "max-h-420px important-overflow-y-auto";
     z-index: 1000;
 

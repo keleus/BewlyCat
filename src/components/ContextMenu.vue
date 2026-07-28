@@ -29,7 +29,7 @@ const { mainAppRef } = useBewlyApp()
       class="context-menu-container"
       :style="menuStyles"
       style="backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1); z-index: 9999;"
-      p-1 bg="$bew-elevated" rounded="$bew-radius"
+      p-1 bg="$bew-elevated" rounded="$bew-popover-radius"
       min-w-140px m="t-1 l-[calc(-140px+0.5rem)]"
       border="1 $bew-border-color"
     >
@@ -58,8 +58,14 @@ const { mainAppRef } = useBewlyApp()
 
 <style lang="scss" scoped>
 .context-menu-item {
-  --uno: "hover:bg-$bew-fill-2 text-sm px-2.5 py-1.75 rounded-$bew-radius-half cursor-pointer";
+  --uno: "hover:bg-$bew-fill-2 rounded-$bew-interactive-radius cursor-pointer";
   --uno: "flex items-center";
+
+  min-height: 32px;
+  padding: var(--bew-space-2);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-control);
 
   &.danger {
     color: var(--bew-error-color);
@@ -71,6 +77,10 @@ const { mainAppRef } = useBewlyApp()
 }
 
 .item-icon {
-  --uno: "mr-2 inline-block color-$bew-text-color-2";
+  --uno: "inline-block color-$bew-text-color-2";
+
+  width: var(--bew-control-icon-size);
+  height: var(--bew-control-icon-size);
+  margin-right: var(--bew-space-2);
 }
 </style>

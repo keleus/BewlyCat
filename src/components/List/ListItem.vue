@@ -8,7 +8,7 @@
     p="x-4 y-2"
     flex="~ gap-2"
     bg="odd:$bew-fill-1 hover:!$bew-fill-2"
-    rounded="$bew-radius"
+    rounded="$bew-interactive-radius"
     duration-300
   >
     <slot />

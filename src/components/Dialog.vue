@@ -168,7 +168,7 @@ function handleConfirm() {
         <slot name="floating-actions" />
         <div
           :style="dialogPanelStyle"
-          pos="absolute" rounded="$bew-radius" border="1 $bew-border-color"
+          pos="absolute" rounded="$bew-modal-radius" border="1 $bew-border-color"
           z-2
           antialiased
           class="dialog__panel"
@@ -178,9 +178,10 @@ function handleConfirm() {
             <div
               v-if="loading"
               pos="absolute top-0 left-0" w-full h-full bg="white dark:black opacity-60 dark:opacity-60" flex="~ justify-center items-center"
+              rounded="$bew-modal-radius"
               z-2
             >
-              <div i-svg-spinners-ring-resize text="4xl" />
+              <div i-svg-spinners-ring-resize text="size-$bew-icon-size-xl" />
             </div>
           </Transition>
 
@@ -191,7 +192,7 @@ function handleConfirm() {
             "
             pos="sticky top-0 left-0" w-full h-70px px-8 flex
             items-center justify-between
-            rounded="t-$bew-radius" z-1
+            rounded="t-$bew-modal-radius" z-1
           >
             <div
               pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
@@ -208,18 +209,21 @@ function handleConfirm() {
               w-full
             >
               <slot name="title">
-                <p text-xl fw-bold>
+                <p class="dialog__title">
                   {{ title }}
                 </p>
               </slot>
-              <p text="sm $bew-text-2">
+              <p class="dialog__description" text="$bew-text-2">
                 <slot name="desc">
                   {{ desc }}
                 </slot>
               </p>
             </div>
 
-            <div
+            <button
+              type="button"
+              aria-label="Close"
+              class="dialog__close"
               style="
                 backdrop-filter: var(--bew-filter-glass-1);
                 box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
@@ -227,13 +231,13 @@ function handleConfirm() {
               text="!16px hover:$bew-theme-color" w="32px" h="32px"
               flex="~ items-center justify-center shrink-0"
               bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
-              ml-8 rounded-8 cursor="pointer" border="1 $bew-border-color"
+              ml-8 rounded="$bew-interactive-radius" cursor="pointer" border="1 $bew-border-color"
               box-border
               duration-300
               @click="handleClose"
             >
               <div i-ic-baseline-clear />
-            </div>
+            </button>
           </header>
 
           <main
@@ -296,6 +300,30 @@ function handleConfirm() {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+.dialog__title {
+  margin: 0;
+  font-size: var(--bew-font-size-title);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-title);
+}
+
+.dialog__description {
+  margin: var(--bew-space-0-5) 0 0;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-regular);
+  line-height: var(--bew-line-height-control);
+}
+
+.dialog__close {
+  appearance: none;
+  padding: 0;
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color-40);
+    outline-offset: var(--bew-space-0-5);
+  }
 }
 
 .moments-dialog-enter-active,

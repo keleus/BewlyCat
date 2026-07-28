@@ -129,7 +129,7 @@ function onMouseEnter() {
     <div
       p="x-4 y-2"
       bg="$bew-fill-1"
-      rounded="$bew-radius"
+      rounded="$bew-interactive-radius"
       text="center $bew-text-1"
       cursor="pointer"
       flex="~"
@@ -162,6 +162,7 @@ function onMouseEnter() {
         <div
           v-if="showOptions"
           ref="dropdownRef"
+          class="bew-popover-surface"
           :style="{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
@@ -170,17 +171,16 @@ function onMouseEnter() {
             // 向上弹出时锚点移到触发器顶部，用 transform 上移自身高度，无需先测量实际高度
             transform: dropdownPosition.openUp ? `translateY(calc(-100% - ${DROPDOWN_MARGIN}px))` : undefined,
             marginTop: dropdownPosition.openUp ? undefined : `${DROPDOWN_MARGIN}px`,
-            backdropFilter: 'var(--bew-filter-glass-1)',
           }"
-          pos="absolute" bg="$bew-elevated" shadow="$bew-shadow-2" p="2"
-          rounded="$bew-radius" z="10004" flex="~ col gap-1"
+          pos="absolute" p="2"
+          z="10004" flex="~ col gap-1"
           w="full" overflow-y-overlay will-change-transform
         >
           <div
             v-for="option in options"
             :key="option.value"
             p="x-2 y-2"
-            rounded="$bew-radius"
+            rounded="$bew-interactive-radius"
             w="full"
             bg="hover:$bew-fill-2"
             transition="background-color duration-200, border-color duration-200, transform duration-200"

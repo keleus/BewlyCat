@@ -33,7 +33,12 @@ const tooltipRef = ref(null)
   --uno: "flex items-center relative";
 
   .b-tooltip {
-    --uno: "absolute px-2 lh-2em rounded-$bew-radius-half pointer-events-none text-sm opacity-0 duration-300 shadow-$bew-shadow-2 whitespace-nowrap z-9999";
+    --uno: "absolute px-2 rounded-$bew-radius-half pointer-events-none opacity-0 duration-300 shadow-$bew-shadow-2 whitespace-nowrap z-9999";
+
+    padding-block: var(--bew-space-1);
+    font-size: var(--bew-font-size-control);
+    font-weight: var(--bew-font-weight-medium);
+    line-height: var(--bew-line-height-control);
 
     &--placement-right {
       --uno: "left-[calc(100%+0.5em)]";

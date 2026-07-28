@@ -38,7 +38,7 @@ function handleClick(evt: MouseEvent) {
     :style="{
       'backgroundColor': color,
       'color': textColor,
-      '--b-button-radius': round ? '50px' : '',
+      '--b-button-radius': round ? 'var(--bew-badge-radius)' : '',
       'width': block ? '100%' : 'var(--b-button-width)',
       'justifyContent': center ? 'center' : '',
     }"
@@ -55,12 +55,14 @@ function handleClick(evt: MouseEvent) {
   --b-button-color: var(--bew-content-solid);
   --b-button-color-hover: var(--bew-content-solid-hover);
   --b-button-text-color: var(--bew-text-1);
-  --b-button-radius: var(--bew-radius);
-  --b-button-padding: 14px;
-  --b-button-font-size: 14px;
-  --b-button-icon-size: 15px;
+  --b-button-radius: var(--bew-interactive-radius);
+  --b-button-padding: var(--bew-space-3);
+  --b-button-font-size: var(--bew-font-size-control);
+  --b-button-font-weight: var(--bew-font-weight-semibold);
+  --b-button-line-height: var(--bew-line-height-control);
+  --b-button-icon-size: var(--bew-control-icon-size);
   --b-button-width: fit-content;
-  --b-button-height: 35px;
+  --b-button-height: var(--bew-control-height);
   --b-button-border-width: 0px;
   --b-button-border-color: var(--bew-border-color);
   --b-button-shadow: none;
@@ -69,10 +71,31 @@ function handleClick(evt: MouseEvent) {
 
   --uno: "bg-$b-button-color hover:bg-$b-button-color-hover box-border";
   --uno: "rounded-$b-button-radius p-x-$b-button-padding active:scale-95";
-  --uno: "duration-300 flex items-center gap-2 text-size-$b-button-font-size";
-  --uno: "text-$b-button-text-color lh-$b-button-height h-$b-button-height";
+  --uno: "flex items-center gap-$bew-space-2 text-size-$b-button-font-size";
+  --uno: "text-$b-button-text-color lh-$b-button-line-height h-$b-button-height";
   --uno: "border-solid border-width-$b-button-border-width border-$b-button-border-color";
   --uno: "shadow-$b-button-shadow hover:shadow-$b-button-shadow-hover active:shadow-$b-button-shadow-active";
+
+  appearance: none;
+  font-weight: var(--b-button-font-weight);
+  cursor: pointer;
+  transition:
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard),
+    border-color var(--bew-duration-fast) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-fast) var(--bew-ease-standard),
+    opacity var(--bew-duration-fast) var(--bew-ease-standard),
+    transform var(--bew-duration-fast) var(--bew-ease-emphasized);
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color-40);
+    outline-offset: var(--bew-space-0-5);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 
   & svg {
     --uno: "text-size-$b-button-icon-size";
@@ -106,16 +129,18 @@ function handleClick(evt: MouseEvent) {
   }
 
   &--size-small {
-    --b-button-padding: 12px;
-    --b-button-font-size: 12px;
-    --b-button-icon-size: 13px;
-    --b-button-height: 30px;
+    --b-button-padding: var(--bew-space-2);
+    --b-button-font-size: var(--bew-font-size-caption);
+    --b-button-line-height: var(--bew-line-height-caption);
+    --b-button-icon-size: 14px;
+    --b-button-height: 28px;
   }
 
   &--size-large {
-    --b-button-padding: 12px;
-    --b-button-font-size: 15px;
-    --b-button-icon-size: 16px;
+    --b-button-padding: var(--bew-space-4);
+    --b-button-font-size: var(--bew-font-size-body);
+    --b-button-line-height: var(--bew-line-height-body);
+    --b-button-icon-size: var(--bew-control-icon-size);
     --b-button-height: 40px;
   }
 
@@ -124,7 +149,7 @@ function handleClick(evt: MouseEvent) {
   }
 
   &--strong {
-    --uno: "fw-800";
+    --b-button-font-weight: var(--bew-font-weight-bold);
   }
 }
 </style>

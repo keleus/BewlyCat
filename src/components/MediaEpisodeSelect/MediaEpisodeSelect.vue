@@ -101,7 +101,7 @@ watchEffect(() => {
       class="select-button"
       p="x-4 y-2"
       bg="$bew-fill-1"
-      rounded="$bew-radius"
+      rounded="$bew-interactive-radius"
       text="$bew-text-1"
       cursor="pointer"
       flex="~"
@@ -130,18 +130,15 @@ watchEffect(() => {
       <Transition name="dropdown">
         <div
           v-if="isOpen"
+          class="bew-popover-surface"
           :style="{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
-            backdropFilter: 'var(--bew-filter-glass-1)',
           }"
           pos="absolute"
-          bg="$bew-elevated"
-          shadow="$bew-shadow-2"
           p="2"
           m="t-2"
-          rounded="$bew-radius"
           z="10004"
           flex="~ col gap-1"
           w="full"
@@ -158,7 +155,7 @@ watchEffect(() => {
             rel="noopener"
             class="dropdown-item"
             p="x-2 y-2"
-            rounded="$bew-radius"
+            rounded="$bew-interactive-radius"
             w="full"
             bg="hover:$bew-fill-2"
             transition="background-color duration-200, color duration-200, box-shadow duration-200"
@@ -188,12 +185,15 @@ watchEffect(() => {
 <style scoped lang="scss">
 .media-episode-select {
   display: inline-block;
-  margin-top: 0.75rem;
+  margin-top: var(--bew-space-3);
 }
 
 .select-button {
+  min-height: var(--bew-control-height);
   border: 1px solid transparent;
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
   user-select: none;
 
   &:hover {
@@ -205,10 +205,11 @@ watchEffect(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: var(--bew-space-3);
   color: var(--bew-text-1);
   text-decoration: none;
-  font-size: 0.875rem;
+  font-size: var(--bew-font-size-body);
+  line-height: var(--bew-line-height-body);
 
   .episode-title {
     flex: 1;
@@ -219,11 +220,12 @@ watchEffect(() => {
 
   .episode-badge {
     flex-shrink: 0;
-    padding: 0.125rem 0.5rem;
-    border-radius: 999px;
+    padding: var(--bew-space-0-5) var(--bew-space-2);
+    border-radius: var(--bew-badge-radius);
     background: var(--bew-theme-color-20);
     color: var(--bew-theme-color);
-    font-size: 0.75rem;
+    font-size: var(--bew-font-size-control);
+    line-height: var(--bew-line-height-control);
   }
 }
 </style>
