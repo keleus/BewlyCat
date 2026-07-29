@@ -224,6 +224,11 @@ function changeWallpaper(url: string) {
             }"
           >
             <span class="frosted-glass-color-preview" aria-hidden="true" />
+            <div
+              i-mingcute:color-picker-line pos="absolute" text-white w-12px h-12px
+              pointer-events-none
+              aria-hidden="true"
+            />
             <input
               :value="settings.frostedGlassBaseColor || settings.darkModeBaseColor"
               type="color"
