@@ -43,7 +43,6 @@ const pages = computed(() => ({
   [HomeSubPage.Weekly]: defineAsyncComponent(() => import('./components/Weekly.vue')),
   [HomeSubPage.Live]: defineAsyncComponent(() => import('./components/Live.vue')),
 }))
-const showSearchPageMode = ref<boolean>(false)
 const tabContentLoading = ref<boolean>(false)
 const tabTransitionName = ref<'home-tab-forward' | 'home-tab-backward'>('home-tab-forward')
 const currentTabs = ref<HomeTab[]>([])
@@ -148,8 +147,6 @@ function syncCurrentTabs() {
 }
 
 onMounted(() => {
-  showSearchPageMode.value = true
-
   // ✅ 性能优化：订阅滚动事件以缓存 scrollTop，避免后续 DOM 读取
   emitter.on(OVERLAY_SCROLL_BAR_SCROLL, handleOverlayScroll)
   emitter.on(TOP_BAR_VISIBILITY_CHANGE, handleTopBarVisibilityChange)
@@ -202,7 +199,7 @@ function toggleTabContentLoading(loading: boolean) {
     <!-- Home search page mode background -->
     <Transition name="bg">
       <div
-        v-if="settings.useSearchPageModeOnHomePage && settings.individuallySetSearchPageWallpaper && showSearchPageMode"
+        v-if="settings.useSearchPageModeOnHomePage && settings.individuallySetSearchPageWallpaper"
         pos="absolute" w-screen h-580px z-0
         :style="{
           left: '50%',
@@ -222,7 +219,7 @@ function toggleTabContentLoading(loading: boolean) {
         <Transition name="fade">
           <div
             v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
-            pos="relative left-0 top-0" w-full h-inherit pointer-events-none duration-300
+            pos="relative left-0 top-0" w-full h-inherit pointer-events-none
             z-1
             :style="{
               backdropFilter: `blur(${settings.individuallySetSearchPageWallpaper ? settings.searchPageWallpaperBlurIntensity : settings.wallpaperBlurIntensity}px)`,
@@ -243,7 +240,7 @@ function toggleTabContentLoading(loading: boolean) {
       <!-- Home search page mode content -->
       <Transition name="content">
         <div
-          v-if="settings.useSearchPageModeOnHomePage && showSearchPageMode"
+          v-if="settings.useSearchPageModeOnHomePage"
           flex="~ col"
           justify-center
           items-center relative
@@ -272,7 +269,7 @@ function toggleTabContentLoading(loading: boolean) {
           'home-header--tabs-left': settings.homeTabsPosition === 'left',
           'home-header-fixed': settings.fixedHomeTabsOnHomePage,
         }"
-        w-full z-9 duration-300 ease-in-out
+        w-full z-9
       >
         <section
           v-if="shouldShowHomeTabs"

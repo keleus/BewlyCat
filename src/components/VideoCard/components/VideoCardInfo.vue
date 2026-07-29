@@ -307,7 +307,6 @@ const isModernLayout = computed(() => props.layout === 'modern')
             bg="hover:$bew-fill-2 active:$bew-fill-3"
             shrink-0 w-32px h-32px m="t--3px r--4px"
             grid place-items-center cursor-pointer rounded="50%"
-            duration-300
             @click.stop.prevent="emit('moreBtnClick', $event)"
           >
             <div i-mingcute:more-2-line text="lg" />
@@ -612,6 +611,9 @@ const isModernLayout = computed(() => props.layout === 'modern')
   position: relative;
   border-radius: 50%;
   overflow: hidden;
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    background-color var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }
 
 .video-card__more-btn::before,

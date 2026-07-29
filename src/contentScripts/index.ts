@@ -800,14 +800,15 @@ else if (shouldInitializeContentScript) {
     shadowDOM.appendChild(resetStyleEl)
     shadowDOM.appendChild(styleEl)
     shadowDOM.appendChild(root)
-    container.style.opacity = '0'
-    container.style.transition = 'opacity 0.5s'
-    styleEl.onload = () => {
-    // To prevent abrupt style transitions caused by sudden style changes
-      setTimeout(() => {
-        container.style.opacity = '1'
-      }, 500)
+
+    // 样式就绪前隐藏整个 Shadow DOM，避免未应用样式的内容闪现。
+    // 就绪后一次性展示，避免容器淡入与壁纸遮罩透明度叠加，造成遮罩延迟出现。
+    container.style.visibility = 'hidden'
+    const revealContainer = () => {
+      container.style.visibility = 'visible'
     }
+    styleEl.addEventListener('load', revealContainer, { once: true })
+    styleEl.addEventListener('error', revealContainer, { once: true })
 
     // startShadowDOMStyleInjection()
 
