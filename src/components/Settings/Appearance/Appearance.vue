@@ -220,10 +220,9 @@ function changeWallpaper(url: string) {
             class="frosted-glass-color-picker"
             :class="{ 'is-selected': isCustomFrostedGlassBaseColor }"
             :style="{
-              '--frosted-glass-preview-color': settings.frostedGlassBaseColor || settings.darkModeBaseColor,
+              background: settings.frostedGlassBaseColor || settings.darkModeBaseColor,
             }"
           >
-            <span class="frosted-glass-color-preview" aria-hidden="true" />
             <div
               i-mingcute:color-picker-line pos="absolute" text-white w-12px h-12px
               pointer-events-none
@@ -444,10 +443,6 @@ function changeWallpaper(url: string) {
     transform: scale(1.12);
   }
 
-  &:active .frosted-glass-color-preview {
-    transform: scale(0.92);
-  }
-
   input {
     position: absolute;
     inset: 0;
@@ -482,16 +477,6 @@ function changeWallpaper(url: string) {
   background: var(--bew-error-color);
   border-radius: var(--bew-radius-full);
   transform: rotate(-45deg);
-}
-
-.frosted-glass-color-preview {
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  background: var(--frosted-glass-preview-color);
-  border-radius: var(--bew-radius-sm);
-  box-shadow: var(--bew-shadow-edge-glow-1);
-  transition: transform 150ms ease;
 }
 
 .theme-schedule input {
