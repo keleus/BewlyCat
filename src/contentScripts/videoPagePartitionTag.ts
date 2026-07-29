@@ -22,6 +22,10 @@ interface VideoPagePartitionPayload extends VideoPageLookup {
 }
 
 const PARTITION_TAG_CLASS = 'bewly-video-page-partition-tag'
+const PARTITION_TAG_HOST_CLASS = 'bewly-video-page-partition-host'
+const PARTITION_TAG_STYLE_ID = 'bewly-video-page-partition-style'
+const PARTITION_TAG_WIDTH_PROPERTY = '--bewly-video-page-partition-width'
+const PARTITION_TAG_HEIGHT_PROPERTY = '--bewly-video-page-partition-height'
 const RETRY_INTERVAL_MS = 500
 const MAX_RETRY_COUNT = 30
 const ALL_PGC_PARTITIONS = Object.values(PGC_VIDEO_PARTITIONS) as readonly VideoPartition[]
@@ -121,7 +125,12 @@ function getPartitionFromPayload(payload: VideoPagePartitionPayload, lookup: Vid
 }
 
 function removePartitionTags() {
-  document.querySelectorAll(`.${PARTITION_TAG_CLASS}`).forEach(element => element.remove())
+  document.querySelectorAll(`body > .${PARTITION_TAG_CLASS}`).forEach(element => element.remove())
+  document.querySelectorAll<HTMLElement>(`.${PARTITION_TAG_HOST_CLASS}`).forEach((panel) => {
+    panel.classList.remove(PARTITION_TAG_HOST_CLASS)
+    panel.style.removeProperty(PARTITION_TAG_WIDTH_PROPERTY)
+    panel.style.removeProperty(PARTITION_TAG_HEIGHT_PROPERTY)
+  })
 }
 
 function findTagPanel() {
@@ -130,8 +139,6 @@ function findTagPanel() {
     '#v_tag .tag-panel',
     '.video-tag-container .tag-area',
     '#v_tag .tag-area',
-    '.video-tag-container',
-    '#v_tag',
   ]
 
   for (const selector of selectors) {
@@ -162,7 +169,7 @@ function getNativePartition(panel: HTMLElement, lookup: VideoPageLookup) {
       pathname = new URL(link.href, location.href).pathname.replace(/\/$/, '')
     }
     catch {
-      // Ignore malformed native links and continue matching by label.
+      // Ignore malformed native links.
     }
 
     const partition = candidates.find((candidate) => {
@@ -178,33 +185,74 @@ function getNativePartition(panel: HTMLElement, lookup: VideoPageLookup) {
 
 function findNativeTagTemplate(panel: HTMLElement) {
   return Array.from(panel.querySelectorAll<HTMLElement>(':scope > .tag'))
-    .find(element => !element.classList.contains(PARTITION_TAG_CLASS)
-      && element.querySelector('.ordinary-tag .tag-link'))
+    .find(element => element.querySelector('.ordinary-tag .tag-link'))
 }
 
-function createPartitionTag(partition: VideoPartition, template?: HTMLElement) {
-  const tag = (template?.cloneNode(true) as HTMLElement | undefined) ?? document.createElement('div')
-  tag.classList.add('tag', 'not-btn-tag', PARTITION_TAG_CLASS)
-  tag.dataset.partitionId = partition.id.toString()
+function ensurePartitionTagStyle() {
+  if (document.getElementById(PARTITION_TAG_STYLE_ID))
+    return
 
-  let ordinaryTag = tag.querySelector<HTMLElement>('.ordinary-tag')
-  if (!ordinaryTag) {
-    ordinaryTag = document.createElement('div')
-    ordinaryTag.className = 'ordinary-tag'
-    tag.replaceChildren(ordinaryTag)
-  }
+  const style = document.createElement('style')
+  style.id = PARTITION_TAG_STYLE_ID
+  style.textContent = `
+    .${PARTITION_TAG_HOST_CLASS}::before {
+      content: '';
+      display: inline-block;
+      box-sizing: border-box;
+      width: var(${PARTITION_TAG_WIDTH_PROPERTY}, 0px);
+      min-width: var(${PARTITION_TAG_WIDTH_PROPERTY}, 0px);
+      height: var(${PARTITION_TAG_HEIGHT_PROPERTY}, 24px);
+      flex: 0 0 var(${PARTITION_TAG_WIDTH_PROPERTY}, 0px);
+      vertical-align: top;
+    }
 
-  let link = ordinaryTag.querySelector<HTMLAnchorElement>('a.tag-link')
-  if (!link) {
-    link = document.createElement('a')
-    link.className = 'tag-link'
-    ordinaryTag.replaceChildren(link)
-  }
+    .${PARTITION_TAG_CLASS} {
+      position: absolute;
+      z-index: 20;
+      display: inline-flex;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      height: var(${PARTITION_TAG_HEIGHT_PROPERTY}, 24px);
+      padding: 0 12px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--bg2, #f1f2f3);
+      color: var(--text2, #61666d);
+      font: 400 12px/16px Arial, Helvetica, sans-serif;
+      text-decoration: none;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: color 0.2s ease, background-color 0.2s ease;
+    }
 
-  link.href = partition.url
-  link.target = '_blank'
-  link.rel = 'noopener noreferrer'
-  link.textContent = partition.name
+    .${PARTITION_TAG_CLASS}:hover {
+      background: var(--graph_bg_thin, #e3e5e7);
+      color: var(--brand_blue, #00aeec);
+    }
+  `
+  const styleHost = document.head ?? document.documentElement
+  styleHost.appendChild(style)
+}
+
+function clearPartitionTagHost(panel: HTMLElement) {
+  panel.classList.remove(PARTITION_TAG_HOST_CLASS)
+  panel.style.removeProperty(PARTITION_TAG_WIDTH_PROPERTY)
+  panel.style.removeProperty(PARTITION_TAG_HEIGHT_PROPERTY)
+}
+
+function getOrCreatePartitionTag() {
+  const existingTag = document.querySelector<HTMLAnchorElement>(`body > .${PARTITION_TAG_CLASS}`)
+  if (existingTag)
+    return existingTag
+  if (!document.body)
+    return undefined
+
+  const tag = document.createElement('a')
+  tag.className = PARTITION_TAG_CLASS
+  tag.target = '_blank'
+  tag.rel = 'noopener noreferrer'
+  document.body.appendChild(tag)
   return tag
 }
 
@@ -213,23 +261,51 @@ function insertPartitionTag(partition: VideoPartition) {
   if (!panel)
     return false
 
-  const existingTag = panel.querySelector<HTMLElement>(`.${PARTITION_TAG_CLASS}`)
   if (hasNativeTagWithLabel(panel, partition.name)) {
-    existingTag?.remove()
+    removePartitionTags()
     return true
   }
 
   const nativeTagTemplate = findNativeTagTemplate(panel)
-  if (existingTag) {
-    const isMissingNativeStructure = !existingTag.querySelector('.ordinary-tag')
-      || Array.from(nativeTagTemplate?.attributes ?? [])
-        .some(attribute => attribute.name.startsWith('data-v-') && !existingTag.hasAttribute(attribute.name))
-    if (nativeTagTemplate && isMissingNativeStructure)
-      existingTag.replaceWith(createPartitionTag(partition, nativeTagTemplate))
-    return true
+  if (!nativeTagTemplate)
+    return false
+
+  ensurePartitionTagStyle()
+  const tag = getOrCreatePartitionTag()
+  if (!tag)
+    return false
+
+  document.querySelectorAll<HTMLElement>(`.${PARTITION_TAG_HOST_CLASS}`).forEach((host) => {
+    if (host !== panel)
+      clearPartitionTagHost(host)
+  })
+  clearPartitionTagHost(panel)
+
+  const anchorRect = nativeTagTemplate.getBoundingClientRect()
+  if (anchorRect.width <= 0 || anchorRect.height <= 0) {
+    tag.hidden = true
+    return false
   }
 
-  panel.prepend(createPartitionTag(partition, nativeTagTemplate))
+  tag.hidden = false
+  tag.dataset.partitionId = partition.id.toString()
+  tag.href = partition.url
+  tag.textContent = partition.name
+  tag.style.setProperty(PARTITION_TAG_HEIGHT_PROPERTY, `${anchorRect.height}px`)
+  tag.style.left = `${window.scrollX + anchorRect.left}px`
+  tag.style.top = `${window.scrollY + anchorRect.top}px`
+
+  const panelStyle = getComputedStyle(panel)
+  const nativeTagStyle = getComputedStyle(nativeTagTemplate)
+  const isGapLayout = /^(?:flex|grid|inline-flex|inline-grid)$/.test(panelStyle.display)
+    && Number.parseFloat(panelStyle.columnGap) > 0
+  const nativeEndMargin = Number.parseFloat(nativeTagStyle.marginRight)
+  const spacing = isGapLayout ? 0 : (Number.isFinite(nativeEndMargin) ? nativeEndMargin : 8)
+  const reservedWidth = Math.ceil(tag.getBoundingClientRect().width + spacing)
+
+  panel.style.setProperty(PARTITION_TAG_WIDTH_PROPERTY, `${reservedWidth}px`)
+  panel.style.setProperty(PARTITION_TAG_HEIGHT_PROPERTY, `${anchorRect.height}px`)
+  panel.classList.add(PARTITION_TAG_HOST_CLASS)
   return true
 }
 
