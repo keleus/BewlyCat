@@ -62,7 +62,7 @@ export function setupNecessarySettingsWatchers() {
     const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
     const targets: HTMLElement[] = [document.documentElement]
     const shouldUseSeparateColor = settings.value.enableFrostedGlass
-      && settings.value.useSeparateFrostedGlassColor
+      && Boolean(settings.value.frostedGlassBaseColor)
 
     if (bewlyElement)
       targets.push(bewlyElement)
@@ -219,10 +219,7 @@ export function setupNecessarySettingsWatchers() {
   )
 
   watch(
-    [
-      () => settings.value.useSeparateFrostedGlassColor,
-      () => settings.value.frostedGlassBaseColor,
-    ],
+    () => settings.value.frostedGlassBaseColor,
     applyFrostedGlassBaseColor,
     { immediate: true },
   )

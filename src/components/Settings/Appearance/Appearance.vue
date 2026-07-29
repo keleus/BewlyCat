@@ -64,12 +64,29 @@ const darkModeBaseColorOptions = computed<Array<string>>(() => {
   ]
 })
 
+const frostedGlassBaseColorOptions = computed<Array<string>>(() => {
+  return [
+    '',
+    '#1a1b1e',
+    '#20252d',
+    '#262230',
+    '#202a26',
+    '#2c2520',
+    '#2b2226',
+  ]
+})
+
 const isCustomColor = computed<boolean>(() => {
   return !themeColorOptions.value.includes(settings.value.themeColor)
 })
 
 const isCustomDarkModeBaseColor = computed<boolean>(() => {
   return !darkModeBaseColorOptions.value.includes(settings.value.darkModeBaseColor)
+})
+
+const isCustomFrostedGlassBaseColor = computed<boolean>(() => {
+  return Boolean(settings.value.frostedGlassBaseColor)
+    && !frostedGlassBaseColorOptions.value.includes(settings.value.frostedGlassBaseColor)
 })
 
 const fontPreferenceOptions = computed(() => {
@@ -176,29 +193,45 @@ function changeWallpaper(url: string) {
       </SettingsItem>
       <SettingsItem
         v-if="settings.enableFrostedGlass"
-        :title="$t('settings.use_separate_frosted_glass_color')"
-        :desc="$t('settings.use_separate_frosted_glass_color_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.useSeparateFrostedGlassColor" />
-      </SettingsItem>
-      <SettingsItem
-        v-if="settings.enableFrostedGlass && settings.useSeparateFrostedGlassColor"
         :title="$t('settings.frosted_glass_base_color')"
+        :desc="$t('settings.frosted_glass_base_color_desc')"
         right-width="auto"
       >
-        <label
-          class="frosted-glass-color-picker"
-          :style="{ '--frosted-glass-preview-color': settings.frostedGlassBaseColor }"
-        >
-          <span class="frosted-glass-color-preview" aria-hidden="true" />
-          <input
-            :value="settings.frostedGlassBaseColor"
-            type="color"
-            :aria-label="$t('settings.frosted_glass_base_color')"
-            @input="(e) => changeFrostedGlassBaseColorThrottle((e.target as HTMLInputElement)?.value)"
+        <div class="frosted-glass-color-options">
+          <button
+            v-for="color in frostedGlassBaseColorOptions"
+            :key="color || 'default'"
+            class="frosted-glass-color-option"
+            :class="{
+              'frosted-glass-color-option--empty': !color,
+              'is-selected': color === settings.frostedGlassBaseColor,
+            }"
+            :style="color ? { background: color } : undefined"
+            type="button"
+            :aria-label="color
+              ? `${$t('settings.frosted_glass_base_color')}: ${color}`
+              : $t('settings.frosted_glass_base_color_default')"
+            :title="color || $t('settings.frosted_glass_base_color_default')"
+            @click="changeFrostedGlassBaseColor(color)"
           >
-        </label>
+            <span v-if="!color" class="frosted-glass-color-empty-mark" aria-hidden="true" />
+          </button>
+          <label
+            class="frosted-glass-color-picker"
+            :class="{ 'is-selected': isCustomFrostedGlassBaseColor }"
+            :style="{
+              '--frosted-glass-preview-color': settings.frostedGlassBaseColor || settings.darkModeBaseColor,
+            }"
+          >
+            <span class="frosted-glass-color-preview" aria-hidden="true" />
+            <input
+              :value="settings.frostedGlassBaseColor || settings.darkModeBaseColor"
+              type="color"
+              :aria-label="$t('settings.frosted_glass_base_color')"
+              @input="(e) => changeFrostedGlassBaseColorThrottle((e.target as HTMLInputElement)?.value)"
+            >
+          </label>
+        </div>
       </SettingsItem>
       <SettingsItem :title="$t('settings.disable_shadow')" right-width="auto">
         <Radio v-model="settings.disableShadow" />
@@ -362,36 +395,52 @@ function changeWallpaper(url: string) {
   width: 252px;
 }
 
+.frosted-glass-color-options {
+  display: flex;
+  gap: var(--bew-space-2);
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.frosted-glass-color-option,
 .frosted-glass-color-picker {
   position: relative;
-  display: flex;
-  width: var(--bew-control-height);
-  min-width: var(--bew-control-height);
-  height: var(--bew-control-height);
-  padding: var(--bew-control-padding);
+  display: grid;
+  width: var(--bew-control-item-height);
+  min-width: var(--bew-control-item-height);
+  height: var(--bew-control-item-height);
+  padding: 0;
   overflow: hidden;
   cursor: pointer;
-  background: var(--bew-control-background);
-  border: 1px solid var(--bew-fill-2);
+  border: 2px solid transparent;
   border-radius: var(--bew-interactive-radius);
   box-sizing: border-box;
+  place-items: center;
   transition:
-    background-color 150ms ease,
     border-color 150ms ease,
-    box-shadow 150ms ease;
+    box-shadow 150ms ease,
+    transform 150ms ease;
 
   &:hover {
-    background: var(--bew-fill-1);
-    border-color: var(--bew-fill-3);
+    transform: scale(1.08);
+  }
+
+  &:focus-visible,
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--bew-theme-color);
+    outline-offset: var(--bew-space-0-5);
+  }
+
+  &.is-selected {
+    border-color: white;
+    box-shadow:
+      0 0 0 1px var(--bew-border-color),
+      var(--bew-shadow-1);
+    transform: scale(1.12);
   }
 
   &:active .frosted-glass-color-preview {
     transform: scale(0.92);
-  }
-
-  &:has(input:focus-visible) {
-    border-color: var(--bew-theme-color);
-    box-shadow: 0 0 0 2px var(--bew-theme-color-30);
   }
 
   input {
@@ -403,6 +452,31 @@ function changeWallpaper(url: string) {
     cursor: pointer;
     opacity: 0;
   }
+}
+
+.frosted-glass-color-option--empty {
+  background:
+    linear-gradient(45deg, var(--bew-fill-1) 25%, transparent 25%, transparent 75%, var(--bew-fill-1) 75%),
+    linear-gradient(
+      45deg,
+      var(--bew-fill-1) 25%,
+      var(--bew-elevated-solid) 25%,
+      var(--bew-elevated-solid) 75%,
+      var(--bew-fill-1) 75%
+    );
+  background-position:
+    0 0,
+    var(--bew-space-1) var(--bew-space-1);
+  background-size: var(--bew-space-2) var(--bew-space-2);
+}
+
+.frosted-glass-color-empty-mark {
+  width: var(--bew-icon-size-sm);
+  height: var(--bew-space-0-5);
+  pointer-events: none;
+  background: var(--bew-error-color);
+  border-radius: var(--bew-radius-full);
+  transform: rotate(-45deg);
 }
 
 .frosted-glass-color-preview {

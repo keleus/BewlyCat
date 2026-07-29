@@ -769,7 +769,7 @@ else if (shouldInitializeContentScript) {
       container.style.setProperty('--bew-dark-base-color', settings.value.darkModeBaseColor)
     }
 
-    if (settings.value.enableFrostedGlass && settings.value.useSeparateFrostedGlassColor) {
+    if (settings.value.enableFrostedGlass && settings.value.frostedGlassBaseColor) {
       container.style.setProperty('--bew-frosted-glass-base-color', settings.value.frostedGlassBaseColor)
     }
 

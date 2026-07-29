@@ -299,9 +299,9 @@ settings:
     Bilibili 預設會專登執吓中文標點符號，令到佢可以左對齊。如果你係用緊自訂字字型，最好係移除縮排。
   enable_frosted_glass: 啓用毛玻璃效果
   frosted_glass_blur_intensity: 毛玻璃模糊強度
-  use_separate_frosted_glass_color: 使用獨立毛玻璃顏色
-  use_separate_frosted_glass_color_desc: 閂咗嗰陣會跟隨深色模式基準顏色；只會喺深色模式生效。
-  frosted_glass_base_color: 毛玻璃基準顏色
+  frosted_glass_base_color: 獨立毛玻璃顏色
+  frosted_glass_base_color_desc: 第一個選項代表跟隨深色模式基準顏色；只會喺深色模式生效。
+  frosted_glass_base_color_default: 跟隨深色模式基準顏色
   disable_shadow: 閂咗陰影
   link_opening_behavior_opt:
     current_tab: 目前分頁

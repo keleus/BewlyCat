@@ -217,7 +217,6 @@ export interface Settings {
 
   enableFrostedGlass: boolean
   frostedGlassBlurIntensity: number
-  useSeparateFrostedGlassColor: boolean
   frostedGlassBaseColor: string
   disableShadow: boolean
 
@@ -486,8 +485,7 @@ export const originalSettings: Settings = {
 
   enableFrostedGlass: false,
   frostedGlassBlurIntensity: 20,
-  useSeparateFrostedGlassColor: false,
-  frostedGlassBaseColor: '#2a2d32',
+  frostedGlassBaseColor: '',
   disableShadow: false,
 
   // Link Opening Behavior
@@ -793,11 +791,19 @@ watch(
     if (record.frostedGlassBlurIntensity > FROSTED_GLASS_BLUR_MAX_PX)
       record.frostedGlassBlurIntensity = FROSTED_GLASS_BLUR_MAX_PX
 
-    if (typeof record.useSeparateFrostedGlassColor !== 'boolean')
-      record.useSeparateFrostedGlassColor = originalSettings.useSeparateFrostedGlassColor
+    if ('useSeparateFrostedGlassColor' in record) {
+      if (record.useSeparateFrostedGlassColor !== true)
+        record.frostedGlassBaseColor = ''
 
-    if (typeof record.frostedGlassBaseColor !== 'string' || !/^#[\da-f]{6}$/i.test(record.frostedGlassBaseColor))
+      Reflect.deleteProperty(record, 'useSeparateFrostedGlassColor')
+    }
+
+    if (
+      typeof record.frostedGlassBaseColor !== 'string'
+      || (record.frostedGlassBaseColor !== '' && !/^#[\da-f]{6}$/i.test(record.frostedGlassBaseColor))
+    ) {
       record.frostedGlassBaseColor = originalSettings.frostedGlassBaseColor
+    }
 
     // 迁移旧的布尔类型自动播放设置到新的 AutoPlayMode 类型
     const autoPlayFields = ['autoPlayMultipart', 'autoPlayCollection', 'autoPlayRecommend', 'autoPlayPlaylist'] as const
