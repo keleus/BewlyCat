@@ -1698,6 +1698,36 @@ function markCardReady(id: string) {
   }, 240))
 }
 
+function fitVideoCardDescription(card: HTMLElement) {
+  const body = card.querySelector<HTMLElement>('.moment-card__main--video:not(.moment-card__main--live) .moment-card__body')
+  const description = body?.querySelector<HTMLElement>('.moment-card__desc')
+  if (!body || !description)
+    return
+
+  // 先解除上一次测量得到的限制，让纵向卡片也能按当前宽高重新展开。
+  body.style.removeProperty('--moment-card-description-lines')
+
+  const bodyStyle = getComputedStyle(body)
+  const title = body.querySelector<HTMLElement>('.moment-card__title')
+  const titleStyle = title ? getComputedStyle(title) : undefined
+  const occupiedHeight = title
+    ? title.getBoundingClientRect().height
+    + Number.parseFloat(titleStyle?.marginTop || '0')
+    + Number.parseFloat(titleStyle?.marginBottom || '0')
+    : 0
+  const availableHeight = body.clientHeight
+    - Number.parseFloat(bodyStyle.paddingTop)
+    - Number.parseFloat(bodyStyle.paddingBottom)
+    - occupiedHeight
+  const lineHeight = Number.parseFloat(getComputedStyle(description).lineHeight)
+
+  if (!Number.isFinite(lineHeight) || lineHeight <= 0)
+    return
+
+  const visibleLines = Math.max(1, Math.floor((availableHeight + 0.5) / lineHeight))
+  body.style.setProperty('--moment-card-description-lines', String(visibleLines))
+}
+
 function bindCardEl(el: Element | null, moment: DisplayMoment) {
   const previous = cardElements.get(moment.id)
   if (!(el instanceof HTMLElement)) {
@@ -1725,14 +1755,17 @@ function bindCardEl(el: Element | null, moment: DisplayMoment) {
   cardMeasureObserver?.observe(el)
   visibilityObserver?.observe(el)
   el.dataset.momentId = moment.id
+  fitVideoCardDescription(el)
 
   // 初次挂载写入实测高度（带阈值，避免反复抖）
   const measured = Math.round(el.getBoundingClientRect().height)
   if (measured > 0) {
     commitCardHeight(moment.id, measured)
     requestAnimationFrame(() => {
-      if (cardElements.get(moment.id) === el)
+      if (cardElements.get(moment.id) === el) {
+        fitVideoCardDescription(el)
         markCardReady(moment.id)
+      }
     })
   }
   else if (!cardHeights[moment.id]) {
@@ -1747,9 +1780,11 @@ function setupVirtualObservers() {
   cardMeasureObserver = new ResizeObserver((entries) => {
     let changed = false
     entries.forEach((entry) => {
-      const id = (entry.target as HTMLElement).dataset.momentId
+      const card = entry.target as HTMLElement
+      const id = card.dataset.momentId
       if (!id)
         return
+      fitVideoCardDescription(card)
       const next = Math.round(entry.contentRect.height)
       if (commitCardHeight(id, next))
         changed = true
@@ -4313,12 +4348,14 @@ watch(
   max-height: none;
 }
 .moment-card__main--video .moment-card__desc {
+  min-height: 0;
   flex: 1 1 auto;
-  -webkit-line-clamp: 4;
+  -webkit-line-clamp: var(--moment-card-description-lines, unset);
   text-overflow: ellipsis;
 }
 .moment-card__main--video:not(.moment-card__main--live) .moment-card__title {
   display: -webkit-box;
+  flex: 0 0 auto;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -4521,18 +4558,6 @@ watch(
   opacity: 0.65;
 }
 
-@container (max-width: 459px) {
-  .moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
-    -webkit-line-clamp: 3;
-  }
-}
-
-@container (max-width: 379px) {
-  .moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
-    -webkit-line-clamp: 2;
-  }
-}
-
 @container (max-width: 359px) {
   .moment-card__main--has-media {
     display: flex;
@@ -4547,9 +4572,6 @@ watch(
   .moment-card__main--video .moment-card__body {
     height: auto;
     max-height: 220px;
-  }
-  .moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
-    -webkit-line-clamp: 6;
   }
   .moment-card--text .moment-card__body {
     min-height: 0;
