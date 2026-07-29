@@ -236,6 +236,9 @@ settings:
   moments_card_open_mode_opt:
     dialog: Dialog
     new_tab: New tab
+  group_moments_wanted_users: Watchlist
+  group_moments_wanted_users_desc: Manage uploaders you want to watch by UID or name. The list is stored only on this device.
+  moments_wanted_users: Watchlisted uploaders
   btn:
     authorize: Authorize
     revoke: Revoke
