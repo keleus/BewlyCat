@@ -6,6 +6,7 @@ export default antfu(
     formatters: {
       css: 'prettier',
       prettierOptions: {
+        endOfLine: 'lf',
         printWidth: 120,
         singleQuote: false,
       },
