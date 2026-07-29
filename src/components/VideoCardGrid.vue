@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T = any">
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useElementSize } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
@@ -189,6 +189,7 @@ const emit = defineEmits<{
 
 // Grid 容器 ref
 const gridContainerRef = ref<HTMLElement | null>(null)
+const { width: gridContainerWidth } = useElementSize(gridContainerRef)
 const loadMoreSentinelRef = ref<HTMLElement | null>(null)
 const isLoadMoreSentinelIntersecting = ref(false)
 const reachedLoadMoreDuringLoading = ref(false)
@@ -748,13 +749,11 @@ function cleanupScrollListeners() {
 }
 
 function getRenderedColumnCount(): number {
-  const containerWidth = gridContainerRef.value?.clientWidth
+  const containerWidth = gridContainerWidth.value
+    || gridContainerRef.value?.clientWidth
     || (typeof window !== 'undefined' ? window.innerWidth : 0)
-  // CSS 响应式布局使用视口断点，这里让骨架屏和补位计算保持相同的宽度基准。
-  const responsiveWidth = (props.gridLayout === 'adaptive' || settings.value.autoSwitchListLayout) && typeof window !== 'undefined'
-    ? window.innerWidth
-    : containerWidth
-  return getCurrentColumnCount(props.gridLayout, responsiveWidth)
+  // CSS container queries and JS row calculations must use the same width basis.
+  return getCurrentColumnCount(props.gridLayout, containerWidth)
 }
 
 function clearContinuePreloadTimer() {
@@ -1245,10 +1244,11 @@ function getUniqueKey(item: T, index: number): string | number {
 
 <style lang="scss" scoped>
 .video-card-grid-root {
+  container-type: inline-size;
   overflow-anchor: none;
 }
 
-// Grid 布局 - 根据设置页声明的视口断点和 CSS 变量控制列数
+// Grid 布局 - 根据设置页声明的容器断点和 CSS 变量控制列数
 .grid-adaptive {
   display: grid;
   gap: 20px;
@@ -1257,31 +1257,31 @@ function getUniqueKey(item: T, index: number): string | number {
   align-items: stretch;
 }
 
-@media (min-width: 640px) {
+@container (min-width: 640px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-sm, 2), 1fr);
   }
 }
 
-@media (min-width: 768px) {
+@container (min-width: 768px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-md, 3), 1fr);
   }
 }
 
-@media (min-width: 1024px) {
+@container (min-width: 1024px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-lg, 4), 1fr);
   }
 }
 
-@media (min-width: 1280px) {
+@container (min-width: 1280px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-xl, 5), 1fr);
   }
 }
 
-@media (min-width: 1536px) {
+@container (min-width: 1536px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-xxl, 6), 1fr);
   }
@@ -1303,7 +1303,7 @@ function getUniqueKey(item: T, index: number): string | number {
   align-items: stretch;
 }
 
-@media (max-width: 639.98px) {
+@container (max-width: 639.98px) {
   .grid-two-columns.grid-list-auto-switch {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
