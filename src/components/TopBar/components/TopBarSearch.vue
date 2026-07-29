@@ -19,7 +19,7 @@ const useLightText = computed(() => forceWhiteIcon.value && settings.value.enabl
 const searchBarStyles = computed(() => ({
   '--b-search-bar-max-width': '100%',
   '--b-search-bar-height': 'var(--bew-top-bar-primary-control-height)',
-  '--b-search-bar-radius': 'var(--bew-top-bar-primary-control-radius)',
+  '--b-search-bar-radius': 'calc(var(--bew-top-bar-primary-control-height) / 2 - 3px)',
   '--b-search-bar-normal-color': settings.value.enableFrostedGlass ? 'color-mix(in oklab, var(--bew-elevated-solid), transparent 60%)' : 'var(--bew-elevated)',
   '--b-search-bar-focus-color': 'var(--bew-elevated)',
   '--b-search-bar-normal-icon-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
