@@ -750,10 +750,11 @@ function changeMenuItem(menuItem: MenuType) {
   color: var(--bew-text-1);
   background: var(--bew-content);
   border: 1px solid var(--bew-border-color);
-  border-radius: calc(var(--bew-radius) + 4px);
+  border-radius: calc(var(--bew-control-height) / 2);
   box-shadow: var(--bew-shadow-edge-glow-1);
   transition:
     width var(--bew-duration-moderate) var(--bew-ease-standard),
+    border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
     border-color var(--bew-duration-normal) var(--bew-ease-standard),
     box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
     background-color var(--bew-duration-normal) var(--bew-ease-standard);
@@ -764,6 +765,7 @@ function changeMenuItem(menuItem: MenuType) {
 
   &:focus-within {
     border-color: var(--bew-theme-color);
+    border-radius: var(--bew-radius);
     box-shadow:
       var(--bew-shadow-edge-glow-1),
       0 0 0 2px var(--bew-theme-color);
