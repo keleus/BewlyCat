@@ -125,12 +125,18 @@ else if (shouldInitializePageScript) {
   const commentRepliesRenderers = new Set<any>()
   const commentReplyTreeStates = new WeakMap<object, CommentReplyTreeState>()
   const MAX_COMMENT_REPLY_TREE_DEPTH = 10
+  const MIN_COMMENT_REPLY_TREE_CONTENT_WIDTH = 150
+  const COMPACT_COMMENT_REPLY_TREE_CONTAINER_WIDTH = 640
+  const DEFAULT_COMMENT_REPLY_TREE_INDENT_STEP = 32
+  const COMPACT_COMMENT_REPLY_TREE_INDENT_STEP = 24
   const COMMENT_REPLY_TREE_INDENT_STEP = 'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
 
   interface CommentReplyTreeState {
     enabled: boolean
     nextOriginalOrder: number
     originalOrderByRenderer: WeakMap<HTMLElement, number>
+    observedContainer?: HTMLElement
+    resizeObserver?: ResizeObserver
   }
 
   interface CommentReplyTreeNode {
@@ -159,12 +165,6 @@ else if (shouldInitializePageScript) {
           display: block;
           margin-inline-start: var(--bew-comment-reply-indent, 0px);
           width: calc(100% - var(--bew-comment-reply-indent, 0px));
-        }
-
-        @media (max-width: 640px) {
-          :host([data-bewly-comment-reply-tree]) {
-            --bew-comment-reply-indent-step: var(--bew-space-6, 24px);
-          }
         }
       `,
     },
@@ -339,6 +339,33 @@ else if (shouldInitializePageScript) {
     return state
   }
 
+  function disconnectCommentReplyTreeResizeObserver(state: CommentReplyTreeState) {
+    state.resizeObserver?.disconnect()
+    state.resizeObserver = undefined
+    state.observedContainer = undefined
+  }
+
+  function observeCommentReplyTreeWidth(
+    component: any,
+    state: CommentReplyTreeState,
+    replyContainer: HTMLElement,
+  ) {
+    if (state.observedContainer === replyContainer)
+      return
+
+    disconnectCommentReplyTreeResizeObserver(state)
+    state.observedContainer = replyContainer
+    state.resizeObserver = new ResizeObserver(() => {
+      if (!component?.isConnected) {
+        disconnectCommentReplyTreeResizeObserver(state)
+        return
+      }
+
+      updateCommentReplyTree(component)
+    })
+    state.resizeObserver.observe(replyContainer)
+  }
+
   function getCommentReplyOriginalOrder(state: CommentReplyTreeState, renderer: HTMLElement): number {
     let originalOrder = state.originalOrderByRenderer.get(renderer)
     if (originalOrder === undefined) {
@@ -375,6 +402,21 @@ else if (shouldInitializePageScript) {
       return COMMENT_REPLY_TREE_INDENT_STEP
 
     return `calc(${Array.from({ length: depth }, () => COMMENT_REPLY_TREE_INDENT_STEP).join(' + ')})`
+  }
+
+  function getCommentReplyTreeIndentStep(replyContainer: HTMLElement): number {
+    return replyContainer.clientWidth <= COMPACT_COMMENT_REPLY_TREE_CONTAINER_WIDTH
+      ? COMPACT_COMMENT_REPLY_TREE_INDENT_STEP
+      : DEFAULT_COMMENT_REPLY_TREE_INDENT_STEP
+  }
+
+  function getCommentReplyTreeDepthLimit(replyContainer: HTMLElement, indentStep: number): number {
+    const availableIndentWidth = Math.max(
+      0,
+      replyContainer.clientWidth - MIN_COMMENT_REPLY_TREE_CONTENT_WIDTH,
+    )
+
+    return Math.min(MAX_COMMENT_REPLY_TREE_DEPTH, Math.floor(availableIndentWidth / indentStep))
   }
 
   function isCommentReplyRenderer(element: Element): element is HTMLElement {
@@ -470,6 +512,8 @@ else if (shouldInitializePageScript) {
     component.toggleAttribute('data-bewly-comment-reply-tree', enabled)
 
     if (!enabled) {
+      disconnectCommentReplyTreeResizeObserver(state)
+      component.style.removeProperty('--bew-comment-reply-indent-step')
       if (state.enabled) {
         const originalOrder = [...replyRenderers].sort((a, b) => (
           getCommentReplyOriginalOrder(state, a) - getCommentReplyOriginalOrder(state, b)
@@ -485,6 +529,8 @@ else if (shouldInitializePageScript) {
       return
     }
 
+    observeCommentReplyTreeWidth(component, state, replyContainer)
+
     const nodes: CommentReplyTreeNode[] = replyRenderers.map((replyRenderer) => {
       const replyItem = getCommentReplyData(replyRenderer)
       return {
@@ -498,9 +544,13 @@ else if (shouldInitializePageScript) {
     })
 
     const orderedNodes = buildCommentReplyTreeOrder(nodes)
+    const indentStep = getCommentReplyTreeIndentStep(replyContainer)
+    const depthLimit = getCommentReplyTreeDepthLimit(replyContainer, indentStep)
+    component.style.setProperty('--bew-comment-reply-indent-step', `${indentStep}px`)
     orderedNodes.forEach(({ depth, node }) => {
-      node.renderer.dataset.bewlyCommentReplyDepth = String(depth)
-      node.renderer.style.setProperty('--bew-comment-reply-indent', getCommentReplyIndent(depth))
+      const visualDepth = Math.min(depth, depthLimit)
+      node.renderer.dataset.bewlyCommentReplyDepth = String(visualDepth)
+      node.renderer.style.setProperty('--bew-comment-reply-indent', getCommentReplyIndent(visualDepth))
     })
     reorderCommentReplyRenderers(
       replyContainer,
@@ -513,6 +563,9 @@ else if (shouldInitializePageScript) {
   function refreshCommentReplyTrees() {
     commentRepliesRenderers.forEach((component) => {
       if (!component?.isConnected) {
+        const state = commentReplyTreeStates.get(component)
+        if (state)
+          disconnectCommentReplyTreeResizeObserver(state)
         commentRepliesRenderers.delete(component)
         return
       }
