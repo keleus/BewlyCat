@@ -838,6 +838,8 @@ settings:
   show_sex_desc: Display user gender in the video/dynamic comment area
   show_comment_host_tag: Show OP tag
   show_comment_host_tag_desc: Show an OP tag on the root comment in reply detail view
+  enable_comment_reply_tree: Show comment replies as a tree
+  enable_comment_reply_tree_desc: Indent nested replies by their parent relationship to make comment threads easier to follow
   adjust_comment_image_height: Adjust comment image height
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
   detect_comment_shadow_ban: Detect comments visible only to you

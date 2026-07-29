@@ -122,6 +122,8 @@ else if (shouldInitializePageScript) {
 
   const COMMENT_COMPONENT_PATCHED = Symbol('bewly-comment-component-patched')
   const pendingCommentEnhancements = new WeakSet<object>()
+  const commentRepliesRenderers = new Set<any>()
+  const MAX_COMMENT_REPLY_TREE_DEPTH = 4
 
   const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: string }> = {
     'bili-comment-replies-renderer': {
@@ -130,6 +132,31 @@ else if (shouldInitializePageScript) {
         #spinner {
           background: var(--bew-comment-replies-mask-bg, rgba(var(--bg1_rgb), 0.85)) !important;
         }
+
+        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth] {
+          --bew-comment-reply-indent: 0px;
+          box-sizing: border-box;
+          display: block;
+          margin-inline-start: var(--bew-comment-reply-indent);
+          width: calc(100% - var(--bew-comment-reply-indent));
+        }
+
+        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth="1"] {
+          --bew-comment-reply-indent: var(--bew-space-6, 24px);
+        }
+
+        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth="2"] {
+          --bew-comment-reply-indent: var(--bew-space-12, 48px);
+        }
+
+        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth="3"] {
+          --bew-comment-reply-indent: calc(var(--bew-space-12, 48px) + var(--bew-space-6, 24px));
+        }
+
+        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth="4"] {
+          --bew-comment-reply-indent: calc(var(--bew-space-12, 48px) + var(--bew-space-12, 48px));
+        }
+
       `,
     },
     'bili-comment-renderer': {
@@ -269,6 +296,10 @@ else if (shouldInitializePageScript) {
     return toIdString(replyItem?.root_str ?? replyItem?.root)
   }
 
+  function getReplyParentRpid(replyItem: any): string | null {
+    return toIdString(replyItem?.parent_str ?? replyItem?.parent)
+  }
+
   function getReplyMemberMid(replyItem: any): string | null {
     return toIdString(replyItem?.member?.mid)
   }
@@ -276,6 +307,109 @@ else if (shouldInitializePageScript) {
   function getThreadRootKey(replyItem: any, rootRpid: string): string {
     const oid = getReplyOid(replyItem)
     return oid ? `${oid}:${rootRpid}` : rootRpid
+  }
+
+  function getCommentReplyData(component: any): any | null {
+    const userInfoData = component?.shadowRoot
+      ?.querySelector('bili-comment-user-info')
+      ?.data
+    const candidates = [component?.data, component?.reply, component?.replyItem, userInfoData]
+    return candidates.find(candidate => candidate && typeof candidate === 'object') ?? null
+  }
+
+  function getCommentReplyDepth(
+    replyItem: any,
+    repliesByRpid: Map<string, any>,
+    depthByRpid: Map<string, number>,
+    resolvingRpids: Set<string>,
+  ): number {
+    const rpid = getReplyRpid(replyItem)
+    if (!rpid)
+      return 0
+
+    const cachedDepth = depthByRpid.get(rpid)
+    if (cachedDepth !== undefined)
+      return cachedDepth
+
+    const parentRpid = getReplyParentRpid(replyItem)
+    const rootRpid = getReplyRootRpid(replyItem)
+    if (
+      !parentRpid
+      || parentRpid === '0'
+      || parentRpid === rootRpid
+      || parentRpid === rpid
+      || resolvingRpids.has(rpid)
+    ) {
+      depthByRpid.set(rpid, 0)
+      return 0
+    }
+
+    const parentReply = repliesByRpid.get(parentRpid)
+    if (!parentReply) {
+      depthByRpid.set(rpid, 0)
+      return 0
+    }
+
+    resolvingRpids.add(rpid)
+    const depth = Math.min(
+      getCommentReplyDepth(parentReply, repliesByRpid, depthByRpid, resolvingRpids) + 1,
+      MAX_COMMENT_REPLY_TREE_DEPTH,
+    )
+    resolvingRpids.delete(rpid)
+    depthByRpid.set(rpid, depth)
+    return depth
+  }
+
+  function updateCommentReplyTree(component: any) {
+    const root = component?.shadowRoot as ShadowRoot | null | undefined
+    if (!root)
+      return
+
+    commentRepliesRenderers.add(component)
+
+    const replyRenderers = Array.from(root.querySelectorAll<HTMLElement>(
+      '#expander-contents > bili-comment-reply-renderer, #expander-contents > bili-comment-renderer',
+    ))
+    const enabled = currentSettings?.enableCommentReplyTree === true
+    component.toggleAttribute('data-bewly-comment-reply-tree', enabled)
+
+    if (!enabled) {
+      replyRenderers.forEach((replyRenderer) => {
+        delete replyRenderer.dataset.bewlyCommentReplyDepth
+      })
+      return
+    }
+
+    const repliesByRpid = new Map<string, any>()
+    replyRenderers.forEach((replyRenderer) => {
+      const replyItem = getCommentReplyData(replyRenderer)
+      const rpid = getReplyRpid(replyItem)
+      if (rpid)
+        repliesByRpid.set(rpid, replyItem)
+    })
+
+    const depthByRpid = new Map<string, number>()
+    replyRenderers.forEach((replyRenderer) => {
+      const replyItem = getCommentReplyData(replyRenderer)
+      if (!replyItem) {
+        delete replyRenderer.dataset.bewlyCommentReplyDepth
+        return
+      }
+
+      const depth = getCommentReplyDepth(replyItem, repliesByRpid, depthByRpid, new Set())
+      replyRenderer.dataset.bewlyCommentReplyDepth = String(depth)
+    })
+  }
+
+  function refreshCommentReplyTrees() {
+    commentRepliesRenderers.forEach((component) => {
+      if (!component?.isConnected) {
+        commentRepliesRenderers.delete(component)
+        return
+      }
+
+      updateCommentReplyTree(component)
+    })
   }
 
   function cacheRootReplyAuthor(replyItem: any) {
@@ -447,6 +581,23 @@ else if (shouldInitializePageScript) {
                 return
 
               ensureCommentShadowStyle(root, shadowStylePatch.id, shadowStylePatch.css)
+              if (name === 'bili-comment-replies-renderer')
+                updateCommentReplyTree(component)
+            })
+          }
+          catch (error) {
+            console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
+          }
+          return Reflect.apply(target, thisArg, args)
+        }
+
+        if (name === 'bili-comment-reply-renderer') {
+          try {
+            patchCommentComponentUpdate(name, classConstructor, (component) => {
+              const rootNode = component.getRootNode?.()
+              const repliesRenderer = rootNode instanceof ShadowRoot ? rootNode.host : null
+              if (repliesRenderer?.localName === 'bili-comment-replies-renderer')
+                updateCommentReplyTree(repliesRenderer)
             })
           }
           catch (error) {
@@ -546,6 +697,7 @@ else if (shouldInitializePageScript) {
         currentSettings = data
         preventMobileRedirectEnabled = data.preventMobileRedirect === true
         settingsReady = true
+        refreshCommentReplyTrees()
         resolveSettingsReady?.()
         resolveSettingsReady = null
 
