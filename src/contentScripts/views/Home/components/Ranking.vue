@@ -206,6 +206,7 @@ defineExpose({ initData })
     <div w-full>
       <template v-if="!('seasonType' in activatedRankingType)">
         <VideoCardGrid
+          eager-initial-partition-loads
           :items="videoList"
           :grid-layout="gridLayout"
           :loading="isLoading"

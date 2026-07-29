@@ -36,6 +36,7 @@ interface Props {
   isFollowingPage?: boolean
   customClickHandler?: (event: MouseEvent) => void
   coverTopLeftAlwaysVisible?: boolean
+  eagerLoadPartition?: boolean
 }
 
 const layout = computed((): VideoCardLayoutSetting => {
@@ -49,7 +50,7 @@ const { mainAppRef } = useBewlyApp()
 
 const cardIsVisible = ref(false)
 const loadedVideoPartition = ref<VideoPartition>()
-const PARTITION_LOAD_DELAY_MS = 600
+const PARTITION_LOAD_DELAY_MS = 500
 let partitionLoadTimer: ReturnType<typeof setTimeout> | undefined
 const providedVideoPartition = computed(() =>
   props.video?.partition ?? getPgcVideoPartition(props.video?.seasonType),
@@ -99,7 +100,7 @@ async function ensureVideoPartition() {
   if (
     !video
     || !lookupKey
-    || !cardIsVisible.value
+    || (!props.eagerLoadPartition && !cardIsVisible.value)
     || !settings.value.showVideoCardPartitionTag
     || providedVideoPartition.value
     || loadedVideoPartition.value
@@ -125,11 +126,16 @@ function scheduleVideoPartitionLoad() {
 
   if (
     !videoPartitionLookupKey.value
-    || !cardIsVisible.value
+    || (!props.eagerLoadPartition && !cardIsVisible.value)
     || !settings.value.showVideoCardPartitionTag
     || providedVideoPartition.value
     || loadedVideoPartition.value
   ) {
+    return
+  }
+
+  if (props.eagerLoadPartition) {
+    void ensureVideoPartition()
     return
   }
 
@@ -147,6 +153,7 @@ watch(videoPartitionLookupKey, () => {
 watch(
   [
     cardIsVisible,
+    () => props.eagerLoadPartition,
     () => settings.value.showVideoCardPartitionTag,
     providedVideoPartition,
   ],

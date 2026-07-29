@@ -156,6 +156,13 @@ interface VideoCardGridProps<T = any> {
   isFollowingPage?: boolean
 
   /**
+   * 首次加载完成时，让当前所有真实卡片立即按顺序请求分区。
+   * 后续追加卡片仍遵循 VideoCard 的可见性延迟策略。
+   * @default false
+   */
+  eagerInitialPartitionLoads?: boolean
+
+  /**
    * 最近一次请求是否失败（API 错误/网络异常等）
    * 父组件在请求失败时设为 true，成功时设为 false
    * 连续失败超过阈值后停止触发 loadMore
@@ -179,6 +186,7 @@ const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
   showLoadMoreIndicator: false,
   loadMoreIndicatorHeight: '110px',
   requestFailed: false,
+  eagerInitialPartitionLoads: false,
 })
 
 const emit = defineEmits<{
@@ -192,6 +200,8 @@ const gridContainerRef = ref<HTMLElement | null>(null)
 const loadMoreSentinelRef = ref<HTMLElement | null>(null)
 const isLoadMoreSentinelIntersecting = ref(false)
 const reachedLoadMoreDuringLoading = ref(false)
+const initialPartitionCardKeys = ref<ReadonlySet<string | number>>(new Set())
+let hasCapturedInitialPartitionCards = false
 const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
 
 // 使用共享的 Grid 布局 composable（CSS 媒体查询驱动，无 JS 计算开销）
@@ -831,6 +841,8 @@ watch(() => props.items.length, (newCount, oldCount) => {
     resetRowRevealState()
     clearCardEnterState()
     clearContinuePreloadTimer()
+    initialPartitionCardKeys.value = new Set()
+    hasCapturedInitialPartitionCards = false
     return
   }
 
@@ -1079,6 +1091,33 @@ const renderItems = computed<VideoCardRenderItem[]>(() => {
 })
 
 watch(
+  [renderItems, () => props.loading],
+  ([items, loading]) => {
+    if (
+      !props.eagerInitialPartitionLoads
+      || hasCapturedInitialPartitionCards
+      || loading
+    ) {
+      return
+    }
+
+    const keys = items
+      .filter(item => !item.skeleton)
+      .map(item => item.key)
+    if (keys.length === 0)
+      return
+
+    initialPartitionCardKeys.value = new Set(keys)
+    hasCapturedInitialPartitionCards = true
+  },
+  { immediate: true },
+)
+
+function shouldEagerLoadInitialPartition(key: string | number) {
+  return initialPartitionCardKeys.value.has(key)
+}
+
+watch(
   renderItems,
   (items) => {
     markRenderItemsEntering(items)
@@ -1214,6 +1253,7 @@ function getUniqueKey(item: T, index: number): string | number {
           :more-btn="moreBtn"
           :hide-author="hideAuthor"
           :is-following-page="props.isFollowingPage"
+          :eager-load-partition="shouldEagerLoadInitialPartition(renderItem.key)"
           :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
           :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
         >

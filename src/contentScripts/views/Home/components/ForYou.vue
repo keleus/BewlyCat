@@ -1033,6 +1033,7 @@ defineExpose({
   <div>
     <VideoCardGrid
       v-if="!needToLoginFirst"
+      eager-initial-partition-loads
       :items="currentVideoList"
       :grid-layout="gridLayout"
       :loading="isLoading"

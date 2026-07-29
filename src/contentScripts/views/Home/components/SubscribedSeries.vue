@@ -176,6 +176,7 @@ defineExpose({ initData })
 <template>
   <div>
     <VideoCardGrid
+      eager-initial-partition-loads
       :items="videoList"
       :grid-layout="gridLayout"
       :loading="isLoading"

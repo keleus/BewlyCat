@@ -298,6 +298,7 @@ defineExpose({ initData })
     <!-- 视频网格 -->
     <div w-full>
       <VideoCardGrid
+        eager-initial-partition-loads
         :items="videoList"
         :grid-layout="gridLayout"
         :loading="isLoading"
