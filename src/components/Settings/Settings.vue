@@ -790,6 +790,10 @@ function changeMenuItem(menuItem: MenuType) {
     font-size: var(--bew-font-size-body);
     font-weight: var(--bew-font-weight-regular);
     line-height: var(--bew-line-height-body);
+
+    &:focus-visible {
+      outline: 0;
+    }
   }
 }
 
