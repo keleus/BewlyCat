@@ -59,7 +59,7 @@ const primaryTags = computed<PrimaryTag[]>(() => {
     seenLabels.add(partition.name.trim().toLocaleLowerCase())
   }
 
-  const tag = props.video?.tag
+  const tag = settings.value.showVideoCardVideoTag ? props.video?.tag : undefined
   if (!tag)
     return tags
 
@@ -83,11 +83,7 @@ const primaryTags = computed<PrimaryTag[]>(() => {
 
 const MAX_LEADING_TAG_COUNT = 2
 
-const visiblePrimaryTags = computed(() =>
-  settings.value.showVideoCardVideoTag
-    ? primaryTags.value.slice(0, MAX_LEADING_TAG_COUNT)
-    : [],
-)
+const visiblePrimaryTags = computed(() => primaryTags.value.slice(0, MAX_LEADING_TAG_COUNT))
 
 const visibleHighlightTags = computed(() => {
   if (!settings.value.showVideoCardRecommendTag)
@@ -134,6 +130,7 @@ const hasLegacyStats = computed(() => showLegacyViewCount.value || showLegacyDan
 
 const metaPlaceholderEnabled = computed(() =>
   settings.value.showVideoCardVideoTag
+  || settings.value.showVideoCardPartitionTag
   || settings.value.showVideoCardRecommendTag
   || settings.value.showVideoCardPublishTime
   || Boolean(props.video?.type),

@@ -54,7 +54,9 @@ let partitionLoadTimer: ReturnType<typeof setTimeout> | undefined
 const providedVideoPartition = computed(() =>
   props.video?.partition ?? getPgcVideoPartition(props.video?.seasonType),
 )
-const videoPartition = computed(() => providedVideoPartition.value ?? loadedVideoPartition.value)
+const videoPartition = computed(() => settings.value.showVideoCardPartitionTag
+  ? providedVideoPartition.value ?? loadedVideoPartition.value
+  : undefined)
 function getVideoAid(video?: Video) {
   if (!video)
     return undefined
@@ -98,7 +100,7 @@ async function ensureVideoPartition() {
     !video
     || !lookupKey
     || !cardIsVisible.value
-    || !settings.value.showVideoCardVideoTag
+    || !settings.value.showVideoCardPartitionTag
     || providedVideoPartition.value
     || loadedVideoPartition.value
   ) {
@@ -124,7 +126,7 @@ function scheduleVideoPartitionLoad() {
   if (
     !videoPartitionLookupKey.value
     || !cardIsVisible.value
-    || !settings.value.showVideoCardVideoTag
+    || !settings.value.showVideoCardPartitionTag
     || providedVideoPartition.value
     || loadedVideoPartition.value
   ) {
@@ -143,7 +145,11 @@ watch(videoPartitionLookupKey, () => {
 })
 
 watch(
-  [cardIsVisible, () => settings.value.showVideoCardVideoTag, providedVideoPartition],
+  [
+    cardIsVisible,
+    () => settings.value.showVideoCardPartitionTag,
+    providedVideoPartition,
+  ],
   () => scheduleVideoPartitionLoad(),
   { immediate: true },
 )

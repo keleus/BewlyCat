@@ -243,6 +243,7 @@ export interface Settings {
   showVideoCardAuthorAvatar: boolean
   showVideoCardAuthorName: boolean
   showVideoCardVideoTag: boolean
+  showVideoCardPartitionTag: boolean
   showVideoCardRecommendTag: boolean
   showVideoCardPublishTime: boolean
   showVideoCardViewCount: boolean
@@ -510,6 +511,7 @@ export const originalSettings: Settings = {
   showVideoCardAuthorAvatar: true,
   showVideoCardAuthorName: true,
   showVideoCardVideoTag: true,
+  showVideoCardPartitionTag: false,
   showVideoCardRecommendTag: true,
   showVideoCardPublishTime: true,
   showVideoCardViewCount: true,

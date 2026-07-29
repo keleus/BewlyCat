@@ -144,6 +144,14 @@ function resetColumns() {
       <VideoCardContentEditor />
 
       <SettingsItem
+        :title="$t('settings.show_video_card_partition_tag')"
+        :desc="`${t('settings.show_video_card_partition_tag_desc')} ${t('settings.partition_api_risk_warning')}`"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showVideoCardPartitionTag" />
+      </SettingsItem>
+
+      <SettingsItem
         :title="$t('settings.video_card_title_font_size')"
         :desc="$t('settings.video_card_title_font_size_desc')"
         right-width="auto"

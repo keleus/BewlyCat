@@ -333,6 +333,7 @@ settings:
   show_video_screenshot_button_desc: 启用后，在视频播放器控制栏中显示截取当前视频画面的按钮。
   show_video_page_partition_tag: 在视频标签中显示分区
   show_video_page_partition_tag_desc: 在视频页原生标签区域显示当前视频所属的完整分区。
+  partition_api_risk_warning: 开启后会增加视频详情 API 请求；大量浏览或频繁切换视频可能触发 B 站风控并造成页面请求异常，请谨慎开启。
   keep_collection_video_default_mode: 合集视频保持默认模式
   keep_collection_video_default_mode_desc: 当启用时，合集视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   keep_watch_later_video_default_mode: 稍后再看保持默认模式
@@ -397,6 +398,8 @@ settings:
   show_video_card_author_name: 显示用户昵称
   show_video_card_video_tag: 显示视频标签
   show_video_card_video_tag_desc: 显示搜索页等场景提供的视频分类标签。
+  show_video_card_partition_tag: 在视频卡片中显示分区
+  show_video_card_partition_tag_desc: 在主页等视频卡片中显示完整分区。
   show_video_card_recommend_tag: 显示插件计算的推荐标签
   show_video_card_recommend_tag_desc: 显示插件计算的标签，如"高赞"、"高互动"、"百万播放"等
   show_video_card_publish_time: 显示发布时间

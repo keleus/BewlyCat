@@ -221,7 +221,7 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
 
         <SettingsItem
           :title="t('settings.show_video_page_partition_tag')"
-          :desc="t('settings.show_video_page_partition_tag_desc')"
+          :desc="`${t('settings.show_video_page_partition_tag_desc')} ${t('settings.partition_api_risk_warning')}`"
           right-width="auto"
         >
           <Radio v-model="settings.showVideoPagePartitionTag" />

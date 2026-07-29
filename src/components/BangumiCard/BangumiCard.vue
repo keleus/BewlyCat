@@ -69,7 +69,7 @@ interface Bangumi {
 
 const { isDark } = useDark()
 const videoPartition = computed(() => {
-  if (!settings.value.showVideoCardVideoTag)
+  if (!settings.value.showVideoCardPartitionTag)
     return undefined
 
   return props.bangumi.partition ?? getPgcVideoPartition(props.bangumi.seasonType)
