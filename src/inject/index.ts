@@ -123,7 +123,24 @@ else if (shouldInitializePageScript) {
   const COMMENT_COMPONENT_PATCHED = Symbol('bewly-comment-component-patched')
   const pendingCommentEnhancements = new WeakSet<object>()
   const commentRepliesRenderers = new Set<any>()
-  const MAX_COMMENT_REPLY_TREE_DEPTH = 4
+  const commentReplyTreeStates = new WeakMap<object, CommentReplyTreeState>()
+  const MAX_COMMENT_REPLY_TREE_DEPTH = 10
+  const COMMENT_REPLY_TREE_INDENT_STEP = 'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
+
+  interface CommentReplyTreeState {
+    enabled: boolean
+    nextOriginalOrder: number
+    originalOrderByRenderer: WeakMap<HTMLElement, number>
+  }
+
+  interface CommentReplyTreeNode {
+    renderer: HTMLElement
+    rpid: string | null
+    parentRpid: string | null
+    ctime: number | null
+    originalOrder: number
+    children: CommentReplyTreeNode[]
+  }
 
   const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: string }> = {
     'bili-comment-replies-renderer': {
@@ -133,30 +150,22 @@ else if (shouldInitializePageScript) {
           background: var(--bew-comment-replies-mask-bg, rgba(var(--bg1_rgb), 0.85)) !important;
         }
 
+        :host([data-bewly-comment-reply-tree]) {
+          --bew-comment-reply-indent-step: var(--bew-space-8, 32px);
+        }
+
         :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth] {
-          --bew-comment-reply-indent: 0px;
           box-sizing: border-box;
           display: block;
-          margin-inline-start: var(--bew-comment-reply-indent);
-          width: calc(100% - var(--bew-comment-reply-indent));
+          margin-inline-start: var(--bew-comment-reply-indent, 0px);
+          width: calc(100% - var(--bew-comment-reply-indent, 0px));
         }
 
-        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth="1"] {
-          --bew-comment-reply-indent: var(--bew-space-6, 24px);
+        @media (max-width: 640px) {
+          :host([data-bewly-comment-reply-tree]) {
+            --bew-comment-reply-indent-step: var(--bew-space-6, 24px);
+          }
         }
-
-        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth="2"] {
-          --bew-comment-reply-indent: var(--bew-space-12, 48px);
-        }
-
-        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth="3"] {
-          --bew-comment-reply-indent: calc(var(--bew-space-12, 48px) + var(--bew-space-6, 24px));
-        }
-
-        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth="4"] {
-          --bew-comment-reply-indent: calc(var(--bew-space-12, 48px) + var(--bew-space-12, 48px));
-        }
-
       `,
     },
     'bili-comment-renderer': {
@@ -317,47 +326,128 @@ else if (shouldInitializePageScript) {
     return candidates.find(candidate => candidate && typeof candidate === 'object') ?? null
   }
 
-  function getCommentReplyDepth(
-    replyItem: any,
-    repliesByRpid: Map<string, any>,
-    depthByRpid: Map<string, number>,
-    resolvingRpids: Set<string>,
-  ): number {
-    const rpid = getReplyRpid(replyItem)
-    if (!rpid)
-      return 0
+  function getCommentReplyTreeState(component: object): CommentReplyTreeState {
+    let state = commentReplyTreeStates.get(component)
+    if (!state) {
+      state = {
+        enabled: false,
+        nextOriginalOrder: 0,
+        originalOrderByRenderer: new WeakMap(),
+      }
+      commentReplyTreeStates.set(component, state)
+    }
+    return state
+  }
 
-    const cachedDepth = depthByRpid.get(rpid)
-    if (cachedDepth !== undefined)
-      return cachedDepth
+  function getCommentReplyOriginalOrder(state: CommentReplyTreeState, renderer: HTMLElement): number {
+    let originalOrder = state.originalOrderByRenderer.get(renderer)
+    if (originalOrder === undefined) {
+      originalOrder = state.nextOriginalOrder
+      state.nextOriginalOrder += 1
+      state.originalOrderByRenderer.set(renderer, originalOrder)
+    }
+    return originalOrder
+  }
 
-    const parentRpid = getReplyParentRpid(replyItem)
-    const rootRpid = getReplyRootRpid(replyItem)
-    if (
-      !parentRpid
-      || parentRpid === '0'
-      || parentRpid === rootRpid
-      || parentRpid === rpid
-      || resolvingRpids.has(rpid)
-    ) {
-      depthByRpid.set(rpid, 0)
-      return 0
+  function getCommentReplyCtime(replyItem: any): number | null {
+    const ctime = replyItem?.ctime
+    if (ctime === null || ctime === undefined || ctime === '')
+      return null
+
+    const numericCtime = Number(ctime)
+    return Number.isFinite(numericCtime) ? numericCtime : null
+  }
+
+  function compareCommentReplyTreeNodes(a: CommentReplyTreeNode, b: CommentReplyTreeNode): number {
+    if (a.ctime !== null && b.ctime !== null && a.ctime !== b.ctime)
+      return a.ctime - b.ctime
+    if (a.ctime !== null && b.ctime === null)
+      return -1
+    if (a.ctime === null && b.ctime !== null)
+      return 1
+    return a.originalOrder - b.originalOrder
+  }
+
+  function getCommentReplyIndent(depth: number): string {
+    if (depth <= 0)
+      return '0px'
+    if (depth === 1)
+      return COMMENT_REPLY_TREE_INDENT_STEP
+
+    return `calc(${Array.from({ length: depth }, () => COMMENT_REPLY_TREE_INDENT_STEP).join(' + ')})`
+  }
+
+  function isCommentReplyRenderer(element: Element): element is HTMLElement {
+    return element.localName === 'bili-comment-reply-renderer'
+      || element.localName === 'bili-comment-renderer'
+  }
+
+  function reorderCommentReplyRenderers(
+    container: HTMLElement,
+    currentRenderers: HTMLElement[],
+    orderedRenderers: HTMLElement[],
+  ) {
+    if (orderedRenderers.every((renderer, index) => renderer === currentRenderers[index]))
+      return
+
+    const replyRendererSet = new Set(currentRenderers)
+    const findNextReplyRenderer = (renderer: HTMLElement): ChildNode | null => {
+      let sibling = renderer.nextSibling
+      while (sibling && !(sibling instanceof HTMLElement && replyRendererSet.has(sibling)))
+        sibling = sibling.nextSibling
+      return sibling
     }
 
-    const parentReply = repliesByRpid.get(parentRpid)
-    if (!parentReply) {
-      depthByRpid.set(rpid, 0)
-      return 0
+    let insertionPoint: ChildNode | null = currentRenderers[0] ?? null
+    orderedRenderers.forEach((renderer) => {
+      if (renderer === insertionPoint)
+        insertionPoint = findNextReplyRenderer(renderer)
+      else
+        container.insertBefore(renderer, insertionPoint)
+    })
+  }
+
+  function buildCommentReplyTreeOrder(nodes: CommentReplyTreeNode[]): Array<{
+    depth: number
+    node: CommentReplyTreeNode
+  }> {
+    const nodeByRpid = new Map<string, CommentReplyTreeNode>()
+    nodes.forEach((node) => {
+      if (node.rpid && !nodeByRpid.has(node.rpid))
+        nodeByRpid.set(node.rpid, node)
+    })
+
+    const rootNodes: CommentReplyTreeNode[] = []
+    nodes.forEach((node) => {
+      const parentNode = node.parentRpid ? nodeByRpid.get(node.parentRpid) : undefined
+      if (parentNode && parentNode !== node)
+        parentNode.children.push(node)
+      else
+        rootNodes.push(node)
+    })
+
+    rootNodes.sort(compareCommentReplyTreeNodes)
+    nodes.forEach(node => node.children.sort(compareCommentReplyTreeNodes))
+
+    // Keep every branch contiguous: parent first, then its time-ordered children.
+    const orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }> = []
+    const visitedRenderers = new Set<HTMLElement>()
+    const visitNode = (node: CommentReplyTreeNode, depth: number) => {
+      if (visitedRenderers.has(node.renderer))
+        return
+
+      visitedRenderers.add(node.renderer)
+      orderedNodes.push({ node, depth: Math.min(depth, MAX_COMMENT_REPLY_TREE_DEPTH) })
+      node.children.forEach(child => visitNode(child, depth + 1))
     }
 
-    resolvingRpids.add(rpid)
-    const depth = Math.min(
-      getCommentReplyDepth(parentReply, repliesByRpid, depthByRpid, resolvingRpids) + 1,
-      MAX_COMMENT_REPLY_TREE_DEPTH,
-    )
-    resolvingRpids.delete(rpid)
-    depthByRpid.set(rpid, depth)
-    return depth
+    rootNodes.forEach(node => visitNode(node, 0))
+    nodes
+      .filter(node => !visitedRenderers.has(node.renderer))
+      .sort(compareCommentReplyTreeNodes)
+      .forEach(node => visitNode(node, 0))
+
+    return orderedNodes
   }
 
   function updateCommentReplyTree(component: any) {
@@ -367,38 +457,57 @@ else if (shouldInitializePageScript) {
 
     commentRepliesRenderers.add(component)
 
-    const replyRenderers = Array.from(root.querySelectorAll<HTMLElement>(
-      '#expander-contents > bili-comment-reply-renderer, #expander-contents > bili-comment-renderer',
-    ))
+    const replyContainer = root.querySelector<HTMLElement>('#expander-contents')
+    if (!replyContainer)
+      return
+
+    const replyRenderers = Array.from(replyContainer.children)
+      .filter(isCommentReplyRenderer)
+    const state = getCommentReplyTreeState(component)
+    replyRenderers.forEach(renderer => getCommentReplyOriginalOrder(state, renderer))
+
     const enabled = currentSettings?.enableCommentReplyTree === true
     component.toggleAttribute('data-bewly-comment-reply-tree', enabled)
 
     if (!enabled) {
+      if (state.enabled) {
+        const originalOrder = [...replyRenderers].sort((a, b) => (
+          getCommentReplyOriginalOrder(state, a) - getCommentReplyOriginalOrder(state, b)
+        ))
+        reorderCommentReplyRenderers(replyContainer, replyRenderers, originalOrder)
+      }
+
       replyRenderers.forEach((replyRenderer) => {
         delete replyRenderer.dataset.bewlyCommentReplyDepth
+        replyRenderer.style.removeProperty('--bew-comment-reply-indent')
       })
+      state.enabled = false
       return
     }
 
-    const repliesByRpid = new Map<string, any>()
-    replyRenderers.forEach((replyRenderer) => {
+    const nodes: CommentReplyTreeNode[] = replyRenderers.map((replyRenderer) => {
       const replyItem = getCommentReplyData(replyRenderer)
-      const rpid = getReplyRpid(replyItem)
-      if (rpid)
-        repliesByRpid.set(rpid, replyItem)
-    })
-
-    const depthByRpid = new Map<string, number>()
-    replyRenderers.forEach((replyRenderer) => {
-      const replyItem = getCommentReplyData(replyRenderer)
-      if (!replyItem) {
-        delete replyRenderer.dataset.bewlyCommentReplyDepth
-        return
+      return {
+        renderer: replyRenderer,
+        rpid: getReplyRpid(replyItem),
+        parentRpid: getReplyParentRpid(replyItem),
+        ctime: getCommentReplyCtime(replyItem),
+        originalOrder: getCommentReplyOriginalOrder(state, replyRenderer),
+        children: [],
       }
-
-      const depth = getCommentReplyDepth(replyItem, repliesByRpid, depthByRpid, new Set())
-      replyRenderer.dataset.bewlyCommentReplyDepth = String(depth)
     })
+
+    const orderedNodes = buildCommentReplyTreeOrder(nodes)
+    orderedNodes.forEach(({ depth, node }) => {
+      node.renderer.dataset.bewlyCommentReplyDepth = String(depth)
+      node.renderer.style.setProperty('--bew-comment-reply-indent', getCommentReplyIndent(depth))
+    })
+    reorderCommentReplyRenderers(
+      replyContainer,
+      replyRenderers,
+      orderedNodes.map(({ node }) => node.renderer),
+    )
+    state.enabled = true
   }
 
   function refreshCommentReplyTrees() {
