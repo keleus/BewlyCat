@@ -18,10 +18,13 @@ interface AnimeDetailResponse {
   }
 }
 
-const MAX_CONCURRENT_REQUESTS = 4
+const MAX_CONCURRENT_REQUESTS = 2
+const MIN_REQUEST_START_INTERVAL_MS = 400
 const partitionCache = new Map<string, Promise<VideoPartition | undefined>>()
 const pendingSlots: Array<() => void> = []
 let activeRequestCount = 0
+let lastRequestStartedAt = 0
+let requestStartTimer: ReturnType<typeof setTimeout> | undefined
 
 function getLookupKey({ aid, bvid, epid, seasonId }: VideoPartitionLookup) {
   const normalizedBvid = bvid?.trim()
@@ -36,16 +39,35 @@ function getLookupKey({ aid, bvid, epid, seasonId }: VideoPartitionLookup) {
   return undefined
 }
 
-async function acquireRequestSlot() {
-  if (activeRequestCount >= MAX_CONCURRENT_REQUESTS)
-    await new Promise<void>(resolve => pendingSlots.push(resolve))
+function startPendingRequests() {
+  if (activeRequestCount >= MAX_CONCURRENT_REQUESTS || pendingSlots.length === 0 || requestStartTimer)
+    return
+
+  const delay = Math.max(0, lastRequestStartedAt + MIN_REQUEST_START_INTERVAL_MS - Date.now())
+  if (delay > 0) {
+    requestStartTimer = setTimeout(() => {
+      requestStartTimer = undefined
+      startPendingRequests()
+    }, delay)
+    return
+  }
 
   activeRequestCount++
+  lastRequestStartedAt = Date.now()
+  pendingSlots.shift()?.()
+  startPendingRequests()
+}
+
+async function acquireRequestSlot() {
+  await new Promise<void>((resolve) => {
+    pendingSlots.push(resolve)
+    startPendingRequests()
+  })
 }
 
 function releaseRequestSlot() {
   activeRequestCount--
-  pendingSlots.shift()?.()
+  startPendingRequests()
 }
 
 function createFallbackPartition(tidV2: number | undefined, name: string | undefined): VideoPartition | undefined {

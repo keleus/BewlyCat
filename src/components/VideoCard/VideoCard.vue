@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useIntersectionObserver } from '@vueuse/core'
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, watchEffect } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
@@ -47,8 +47,10 @@ const layout = computed((): VideoCardLayoutSetting => {
 const logic = useVideoCardLogic(props)
 const { mainAppRef } = useBewlyApp()
 
-const cardIsNearViewport = ref(false)
+const cardIsVisible = ref(false)
 const loadedVideoPartition = ref<VideoPartition>()
+const PARTITION_LOAD_DELAY_MS = 600
+let partitionLoadTimer: ReturnType<typeof setTimeout> | undefined
 const providedVideoPartition = computed(() =>
   props.video?.partition ?? getPgcVideoPartition(props.video?.seasonType),
 )
@@ -84,9 +86,9 @@ const videoPartitionLookupKey = computed(() => {
 useIntersectionObserver(
   logic.cardRootRef,
   ([entry]) => {
-    cardIsNearViewport.value = Boolean(entry?.isIntersecting)
+    cardIsVisible.value = Boolean(entry?.isIntersecting)
   },
-  { rootMargin: '240px' },
+  { rootMargin: '0px' },
 )
 
 async function ensureVideoPartition() {
@@ -95,9 +97,10 @@ async function ensureVideoPartition() {
   if (
     !video
     || !lookupKey
-    || !cardIsNearViewport.value
+    || !cardIsVisible.value
     || !settings.value.showVideoCardVideoTag
     || providedVideoPartition.value
+    || loadedVideoPartition.value
   ) {
     return
   }
@@ -112,16 +115,43 @@ async function ensureVideoPartition() {
     loadedVideoPartition.value = partition
 }
 
+function scheduleVideoPartitionLoad() {
+  if (partitionLoadTimer) {
+    clearTimeout(partitionLoadTimer)
+    partitionLoadTimer = undefined
+  }
+
+  if (
+    !videoPartitionLookupKey.value
+    || !cardIsVisible.value
+    || !settings.value.showVideoCardVideoTag
+    || providedVideoPartition.value
+    || loadedVideoPartition.value
+  ) {
+    return
+  }
+
+  partitionLoadTimer = setTimeout(() => {
+    partitionLoadTimer = undefined
+    void ensureVideoPartition()
+  }, PARTITION_LOAD_DELAY_MS)
+}
+
 watch(videoPartitionLookupKey, () => {
   loadedVideoPartition.value = undefined
-  void ensureVideoPartition()
+  scheduleVideoPartitionLoad()
 })
 
 watch(
-  [cardIsNearViewport, () => settings.value.showVideoCardVideoTag, providedVideoPartition],
-  () => void ensureVideoPartition(),
+  [cardIsVisible, () => settings.value.showVideoCardVideoTag, providedVideoPartition],
+  () => scheduleVideoPartitionLoad(),
   { immediate: true },
 )
+
+onBeforeUnmount(() => {
+  if (partitionLoadTimer)
+    clearTimeout(partitionLoadTimer)
+})
 
 // 使用共享样式（避免每个卡片重复计算）
 const { titleFontSizeClass, titleStyle, authorFontSizeClass, metaFontSizeClass } = useVideoCardSharedStyles()

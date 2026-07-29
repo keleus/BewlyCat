@@ -57,14 +57,22 @@ function removePartitionTags() {
 }
 
 function findTagPanel() {
-  return document.querySelector<HTMLElement>([
+  const selectors = [
     '.video-tag-container .tag-panel',
     '#v_tag .tag-panel',
     '.video-tag-container .tag-area',
     '#v_tag .tag-area',
     '.video-tag-container',
     '#v_tag',
-  ].join(','))
+  ]
+
+  for (const selector of selectors) {
+    const panel = document.querySelector<HTMLElement>(selector)
+    if (panel)
+      return panel
+  }
+
+  return null
 }
 
 function hasNativeTagWithLabel(panel: HTMLElement, label: string) {
@@ -72,6 +80,38 @@ function hasNativeTagWithLabel(panel: HTMLElement, label: string) {
   return Array.from(panel.querySelectorAll<HTMLElement>('a.tag-link, .tag-link'))
     .some(element => !element.closest(`.${PARTITION_TAG_CLASS}`)
       && element.textContent?.trim().toLocaleLowerCase() === normalizedLabel)
+}
+
+function findNativeTagTemplate(panel: HTMLElement) {
+  return Array.from(panel.querySelectorAll<HTMLElement>(':scope > .tag'))
+    .find(element => !element.classList.contains(PARTITION_TAG_CLASS)
+      && element.querySelector('.ordinary-tag .tag-link'))
+}
+
+function createPartitionTag(partition: VideoPartition, template?: HTMLElement) {
+  const tag = (template?.cloneNode(true) as HTMLElement | undefined) ?? document.createElement('div')
+  tag.classList.add('tag', 'not-btn-tag', PARTITION_TAG_CLASS)
+  tag.dataset.partitionId = partition.id.toString()
+
+  let ordinaryTag = tag.querySelector<HTMLElement>('.ordinary-tag')
+  if (!ordinaryTag) {
+    ordinaryTag = document.createElement('div')
+    ordinaryTag.className = 'ordinary-tag'
+    tag.replaceChildren(ordinaryTag)
+  }
+
+  let link = ordinaryTag.querySelector<HTMLAnchorElement>('a.tag-link')
+  if (!link) {
+    link = document.createElement('a')
+    link.className = 'tag-link'
+    ordinaryTag.replaceChildren(link)
+  }
+
+  link.href = partition.url
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  link.textContent = partition.name
+  return tag
 }
 
 function insertPartitionTag(partition: VideoPartition) {
@@ -85,22 +125,17 @@ function insertPartitionTag(partition: VideoPartition) {
     return true
   }
 
-  if (existingTag)
+  const nativeTagTemplate = findNativeTagTemplate(panel)
+  if (existingTag) {
+    const isMissingNativeStructure = !existingTag.querySelector('.ordinary-tag')
+      || Array.from(nativeTagTemplate?.attributes ?? [])
+        .some(attribute => attribute.name.startsWith('data-v-') && !existingTag.hasAttribute(attribute.name))
+    if (nativeTagTemplate && isMissingNativeStructure)
+      existingTag.replaceWith(createPartitionTag(partition, nativeTagTemplate))
     return true
+  }
 
-  const tag = document.createElement('div')
-  tag.className = `tag ${PARTITION_TAG_CLASS}`
-  tag.dataset.partitionId = partition.id.toString()
-
-  const link = document.createElement('a')
-  link.className = 'tag-link'
-  link.href = partition.url
-  link.target = '_blank'
-  link.rel = 'noopener noreferrer'
-  link.textContent = partition.name
-
-  tag.appendChild(link)
-  panel.prepend(tag)
+  panel.prepend(createPartitionTag(partition, nativeTagTemplate))
   return true
 }
 

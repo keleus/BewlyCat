@@ -366,6 +366,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enlarge_favorite_dialog',
     'settings.external_watch_later_button',
     'settings.show_video_screenshot_button',
+    'settings.show_video_page_partition_tag',
   ]),
 
   ...createEntries(autoPlayRoute, [
