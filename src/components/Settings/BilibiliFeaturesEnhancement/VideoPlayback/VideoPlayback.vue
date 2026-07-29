@@ -218,6 +218,14 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         >
           <Radio v-model="settings.showVideoScreenshotButton" />
         </SettingsItem>
+
+        <SettingsItem
+          :title="t('settings.show_video_page_partition_tag')"
+          :desc="t('settings.show_video_page_partition_tag_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.showVideoPagePartitionTag" />
+        </SettingsItem>
       </SettingsItemSubgroup>
     </SettingsItemGroup>
   </div>

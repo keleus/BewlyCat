@@ -71,6 +71,7 @@ function transformSubscribedSeriesVideo(item: VideoElement): Video | undefined {
     likeStr: momentItem.modules.module_dynamic.major.pgc?.stat.like,
     capsuleText: decodeHtmlEntities(momentItem.modules.module_author.pub_time),
     epid: momentItem.modules.module_dynamic.major.pgc?.epid,
+    seasonId: momentItem.modules.module_dynamic.major.pgc?.season_id,
     threePointV2: [],
   }
 }

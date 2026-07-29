@@ -12,7 +12,11 @@ export interface Data {
   aid: number
   videos: number
   tid: number
+  tid_v2?: number
+  tidv2?: number
   tname: string
+  tname_v2?: string
+  tnamev2?: string
   copyright: number
   pic: string
   title: string

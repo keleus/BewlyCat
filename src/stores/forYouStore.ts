@@ -25,6 +25,8 @@ export interface VideoCardDisplayData {
   like?: number
   publishedTimestamp?: number
   bvid: string
+  epid?: number
+  seasonId?: number
   cid?: number
   capsuleText?: string
   goto?: string

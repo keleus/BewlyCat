@@ -299,6 +299,11 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     type = 'vertical'
   }
 
+  const episodeIdMatch = type === 'bangumi' ? item.uri?.match(/\/ep(\d+)/) : undefined
+  const episodeId = episodeIdMatch ? Number(episodeIdMatch[1]) : undefined
+  const seasonIdMatch = type === 'bangumi' ? item.uri?.match(/\/ss(\d+)/) : undefined
+  const seasonId = seasonIdMatch ? Number(seasonIdMatch[1]) : undefined
+
   return {
     // 注意：aid 可能为 0 或 undefined，但只要有 bvid 就是有效视频
     // VideoCardGrid 的骨架屏判断已优化为同时检查 id 和 bvid
@@ -314,6 +319,8 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     },
     capsuleText: decodeHtmlEntities(capsuleText),
     bvid: item.bvid || '',
+    epid: Number.isFinite(episodeId) ? episodeId : undefined,
+    seasonId: Number.isFinite(seasonId) ? seasonId : undefined,
     viewStr: item.cover_left_text_1,
     danmakuStr: item.cover_left_text_2,
     cid: item?.player_args?.cid,

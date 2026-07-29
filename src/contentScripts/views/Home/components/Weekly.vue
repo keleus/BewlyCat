@@ -2,6 +2,7 @@
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { getUgcVideoPartition } from '~/constants/videoPartitions'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { PopularSeriesItem, PopularSeriesListResult, PopularSeriesOneResult, PopularSeriesVideoItem } from '~/models/video/popularSeries'
@@ -83,6 +84,7 @@ function transformWeeklyVideo(item: PopularSeriesVideoItem, rank: number): Video
     likeStr: item.stat?.like_str ?? item.stat?.like,
     publishedTimestamp: item.pubdate,
     bvid: item.bvid,
+    partition: getUgcVideoPartition(item.tid_v2),
     cid: item.cid,
     rank,
     threePointV2: [],

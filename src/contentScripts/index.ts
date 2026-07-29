@@ -36,6 +36,7 @@ import { setupNotificationStateInvalidation } from './features/notificationState
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { initTouchPlayerGestures } from './touchPlayerGestures'
 import { initVideoAspectRatioMemory } from './videoAspectRatioMemory'
+import { initVideoPagePartitionTag, refreshVideoPagePartitionTag } from './videoPagePartitionTag'
 import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
 import { initVolumeNormalizationControl } from './volumeNormalizationControl'
@@ -449,6 +450,9 @@ else if (shouldInitializeContentScript) {
       recordVideoVisitFromUrl(lastUrl)
       applyBewlyDesignClasses()
 
+      if (isMeaningfulVideoNavigation)
+        refreshVideoPagePartitionTag()
+
       if (isVideoOrBangumiPage()) {
         if (!isMeaningfulVideoNavigation) {
           scheduleUrlChangeCheck()
@@ -711,6 +715,7 @@ else if (shouldInitializeContentScript) {
       initAudioInterceptor()
     initVolumeNormalizationControl()
     initVideoAspectRatioMemory()
+    initVideoPagePartitionTag()
     initVideoScreenshotControl()
     initTouchPlayerGestures()
 

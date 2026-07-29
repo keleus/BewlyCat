@@ -2,13 +2,15 @@
 import type { ComponentPublicInstance } from 'vue'
 
 import { useDark } from '~/composables/useDark'
+import type { VideoPartition } from '~/constants/videoPartitions'
+import { getPgcVideoPartition } from '~/constants/videoPartitions'
 import { settings } from '~/logic'
 import { numFormatter } from '~/utils/dataFormatter'
 import { removeHttpFromUrl } from '~/utils/main'
 
 import BangumiCardSkeleton from './BangumiCardSkeleton.vue'
 
-defineProps<{
+const props = defineProps<{
   skeleton?: boolean
   bangumi: Bangumi
   horizontal?: boolean
@@ -56,6 +58,8 @@ interface Bangumi {
   rank?: number
   view?: number
   follow?: number
+  partition?: VideoPartition
+  seasonType?: number
   badge?: {
     text: string
     bgColor: string
@@ -64,6 +68,12 @@ interface Bangumi {
 }
 
 const { isDark } = useDark()
+const videoPartition = computed(() => {
+  if (!settings.value.showVideoCardVideoTag)
+    return undefined
+
+  return props.bangumi.partition ?? getPgcVideoPartition(props.bangumi.seasonType)
+})
 </script>
 
 <template>
@@ -209,6 +219,17 @@ const { isDark } = useDark()
           <span v-if="bangumi.follow">{{ $t('common.anime_follow_count', { count: numFormatter(bangumi.follow) }, bangumi.follow) }}</span>
         </p>
         <div text="sm $bew-text-2" flex flex-wrap gap-2 items-center>
+          <a
+            v-if="videoPartition"
+            class="bangumi-capsule"
+            text="$bew-theme-color" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
+            p="x-2" rounded="$bew-badge-radius"
+            :href="videoPartition.url"
+            target="_blank"
+            @click.stop=""
+          >
+            {{ videoPartition.name }}
+          </a>
           <div
             v-if="bangumi.capsuleText && bangumi.capsuleText.trim()"
             class="bangumi-capsule"

@@ -187,6 +187,10 @@ export function convertBangumiCardData(item: any) {
 
   const evaluate = typeof item.evaluate === 'string' ? removeHighlight(item.evaluate) : ''
   const descText = typeof item.desc === 'string' ? removeHighlight(item.desc) : ''
+  const rawSeasonType = Number(item.season_type)
+  const seasonType = Number.isFinite(rawSeasonType) && rawSeasonType > 0
+    ? rawSeasonType
+    : item.type === 'media_bangumi' ? 1 : undefined
 
   const tags = styles
     .map((style: any) => {
@@ -207,6 +211,7 @@ export function convertBangumiCardData(item: any) {
     desc: sanitizeBangumiDescription(evaluate || descText),
     evaluate,
     tags,
+    seasonType,
     capsuleText: removeHighlight(item.badge || item.badge_info?.text || item.season_type_name || ''),
     view: item.play || item.stat?.view,
     follow: item.follow,

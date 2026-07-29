@@ -17,6 +17,8 @@ export interface List {
   videos: number
   tid: number
   tname: string
+  tid_v2?: number
+  tname_v2?: string
   copyright: number
   pic: string
   title: string

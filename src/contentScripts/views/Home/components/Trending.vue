@@ -2,6 +2,7 @@
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { getUgcVideoPartition } from '~/constants/videoPartitions'
 import type { GridLayoutType } from '~/logic'
 import type { List as VideoItem, TrendingResult } from '~/models/video/trending'
 import api from '~/utils/api'
@@ -67,6 +68,7 @@ function transformTrendingVideo(item: VideoElement): Video | undefined {
     likeStr: (videoItem.stat as any)?.like_str ?? videoItem.stat.like,
     publishedTimestamp: videoItem.pubdate,
     bvid: videoItem.bvid,
+    partition: getUgcVideoPartition(videoItem.tid_v2),
     tag: decodeHtmlEntities(videoItem.rcmd_reason.content),
     cid: videoItem.cid,
     threePointV2: [],

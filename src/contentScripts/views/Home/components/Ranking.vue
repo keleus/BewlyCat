@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { getUgcVideoPartition } from '~/constants/videoPartitions'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { List as RankingVideoItem, RankingResult } from '~/models/video/ranking'
@@ -85,6 +86,7 @@ function transformRankingVideo(item: RankingVideoItem, rank: number): Video {
     likeStr: (item.stat as any)?.like_str ?? item.stat.like,
     publishedTimestamp: item.pubdate,
     bvid: item.bvid,
+    partition: getUgcVideoPartition(item.tid_v2),
     rank,
     cid: item.cid,
     threePointV2: [],
@@ -235,6 +237,7 @@ defineExpose({ initData })
               view: pgc.stat.view,
               follow: pgc.stat.follow,
               rank: pgc.rank,
+              seasonType: activatedRankingType.seasonType,
               capsuleText: pgc.rating.replace('分', ''),
               badge: {
                 text: pgc.badge_info.text || '',

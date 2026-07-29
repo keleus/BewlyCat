@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import type { VideoPartition } from '~/constants/videoPartitions'
 import { settings } from '~/logic'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 
@@ -23,6 +24,7 @@ interface Props {
   authorFontSizeClass: string
   metaFontSizeClass: string
   highlightTags: string[]
+  partition?: VideoPartition
   hideAuthor?: boolean
 }
 
@@ -38,13 +40,45 @@ defineExpose({
   moreBtnRef,
 })
 
-const primaryTags = computed(() => {
+interface PrimaryTag {
+  key: string
+  label: string
+  href: string
+}
+
+const primaryTags = computed<PrimaryTag[]>(() => {
+  const tags: PrimaryTag[] = []
+  const seenLabels = new Set<string>()
+  const partition = props.partition
+  if (partition) {
+    tags.push({
+      key: `partition-${partition.id}`,
+      label: partition.name,
+      href: partition.url,
+    })
+    seenLabels.add(partition.name.trim().toLocaleLowerCase())
+  }
+
   const tag = props.video?.tag
   if (!tag)
-    return []
-  if (Array.isArray(tag))
-    return tag.filter(Boolean)
-  return [tag]
+    return tags
+
+  const videoTags = Array.isArray(tag) ? tag : [tag]
+  for (const videoTag of videoTags) {
+    const label = videoTag.trim()
+    const normalizedLabel = label.toLocaleLowerCase()
+    if (!label || seenLabels.has(normalizedLabel))
+      continue
+
+    tags.push({
+      key: `tag-${label}`,
+      label,
+      href: getTagSearchUrl(label),
+    })
+    seenLabels.add(normalizedLabel)
+  }
+
+  return tags
 })
 
 const MAX_LEADING_TAG_COUNT = 2
@@ -323,18 +357,18 @@ const isModernLayout = computed(() => props.layout === 'modern')
         >
           <a
             v-for="primaryTag in visiblePrimaryTags"
-            :key="`primary-${primaryTag}`"
+            :key="primaryTag.key"
             class="video-card-meta__chip"
             un-text="$bew-theme-color"
             p="x-2"
             lh-6
             rounded="$bew-radius"
             bg="$bew-theme-color-20 hover:$bew-theme-color-30"
-            :href="getTagSearchUrl(primaryTag)"
+            :href="primaryTag.href"
             target="_blank"
             @click.stop=""
           >
-            {{ primaryTag }}
+            {{ primaryTag.label }}
           </a>
 
           <span
@@ -404,18 +438,18 @@ const isModernLayout = computed(() => props.layout === 'modern')
             >
               <a
                 v-for="primaryTag in visiblePrimaryTags"
-                :key="`primary-${primaryTag}`"
+                :key="primaryTag.key"
                 class="video-card-meta__chip"
                 un-text="$bew-theme-color"
                 p="x-2"
                 lh-6
                 rounded="$bew-radius"
                 bg="$bew-theme-color-20 hover:$bew-theme-color-30"
-                :href="getTagSearchUrl(primaryTag)"
+                :href="primaryTag.href"
                 target="_blank"
                 @click.stop=""
               >
-                {{ primaryTag }}
+                {{ primaryTag.label }}
               </a>
 
               <span
@@ -468,13 +502,13 @@ const isModernLayout = computed(() => props.layout === 'modern')
             <!-- Tag -->
             <a
               v-for="primaryTag in visiblePrimaryTags"
-              :key="`legacy-primary-${primaryTag}`"
+              :key="`legacy-${primaryTag.key}`"
               un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
-              :href="getTagSearchUrl(primaryTag)"
+              :href="primaryTag.href"
               target="_blank"
               @click.stop=""
             >
-              {{ primaryTag }}
+              {{ primaryTag.label }}
             </a>
             <span
               v-for="extraTag in visibleHighlightTags"
@@ -559,13 +593,13 @@ const isModernLayout = computed(() => props.layout === 'modern')
               <!-- Tag -->
               <a
                 v-for="primaryTag in visiblePrimaryTags"
-                :key="`legacy-primary-${primaryTag}`"
+                :key="`legacy-${primaryTag.key}`"
                 un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
-                :href="getTagSearchUrl(primaryTag)"
+                :href="primaryTag.href"
                 target="_blank"
                 @click.stop=""
               >
-                {{ primaryTag }}
+                {{ primaryTag.label }}
               </a>
               <span
                 v-for="extraTag in visibleHighlightTags"

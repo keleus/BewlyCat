@@ -1,3 +1,4 @@
+import type { VideoPartition } from '~/constants/videoPartitions'
 import type { ThreePointV2 } from '~/models/video/appForYou'
 
 export interface Video {
@@ -26,6 +27,7 @@ export interface Video {
   // used for live
   roomid?: number
   epid?: number
+  seasonId?: number
   goto?: string
   param?: string
   /** After set the `url`, clicking the video will navigate to this url. It won't be affected by aid, bvid or epid */
@@ -38,6 +40,8 @@ export interface Video {
   trackId?: string
 
   tag?: string | string[]
+  partition?: VideoPartition
+  seasonType?: number
   rank?: number
   type?: 'horizontal' | 'vertical' | 'bangumi' | 'ketang'
   threePointV2: ThreePointV2[]

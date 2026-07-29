@@ -59,7 +59,8 @@ const API_ANIME = {
       method: 'get',
     },
     params: {
-      // ep_id: '234406',
+      ep_id: undefined as number | undefined,
+      season_id: undefined as number | undefined,
     },
     afterHandle: AHS.J_D,
   },

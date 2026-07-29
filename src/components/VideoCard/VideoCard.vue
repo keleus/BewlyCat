@@ -1,11 +1,15 @@
 <script lang="ts" setup>
+import { useIntersectionObserver } from '@vueuse/core'
 import { computed, ref, watch, watchEffect } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
+import type { VideoPartition } from '~/constants/videoPartitions'
+import { getPgcVideoPartition } from '~/constants/videoPartitions'
 import { settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
 import { calcCurrentTime, numFormatter } from '~/utils/dataFormatter'
+import { loadVideoPartition } from '~/utils/videoPartition'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
 import VideoCardCover from './components/VideoCardCover.vue'
@@ -42,6 +46,82 @@ const layout = computed((): VideoCardLayoutSetting => {
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
 const logic = useVideoCardLogic(props)
 const { mainAppRef } = useBewlyApp()
+
+const cardIsNearViewport = ref(false)
+const loadedVideoPartition = ref<VideoPartition>()
+const providedVideoPartition = computed(() =>
+  props.video?.partition ?? getPgcVideoPartition(props.video?.seasonType),
+)
+const videoPartition = computed(() => providedVideoPartition.value ?? loadedVideoPartition.value)
+function getVideoAid(video?: Video) {
+  if (!video)
+    return undefined
+  if (video.aid)
+    return video.aid
+  if (
+    video.bvid
+    || video.roomid
+    || video.epid
+    || video.seasonId
+    || video.type === 'ketang'
+    || video.url?.includes('/audio/')
+  ) {
+    return undefined
+  }
+  return video.id > 0 ? video.id : undefined
+}
+
+const videoPartitionLookupKey = computed(() => {
+  const video = props.video
+  if (!video)
+    return ''
+  return video.bvid?.trim()
+    || (getVideoAid(video) ? `av${getVideoAid(video)}` : '')
+    || (video.epid ? `ep${video.epid}` : '')
+    || (video.seasonId ? `ss${video.seasonId}` : '')
+})
+
+useIntersectionObserver(
+  logic.cardRootRef,
+  ([entry]) => {
+    cardIsNearViewport.value = Boolean(entry?.isIntersecting)
+  },
+  { rootMargin: '240px' },
+)
+
+async function ensureVideoPartition() {
+  const video = props.video
+  const lookupKey = videoPartitionLookupKey.value
+  if (
+    !video
+    || !lookupKey
+    || !cardIsNearViewport.value
+    || !settings.value.showVideoCardVideoTag
+    || providedVideoPartition.value
+  ) {
+    return
+  }
+
+  const partition = await loadVideoPartition({
+    aid: getVideoAid(video),
+    bvid: video.bvid,
+    epid: video.epid,
+    seasonId: video.seasonId,
+  })
+  if (lookupKey === videoPartitionLookupKey.value)
+    loadedVideoPartition.value = partition
+}
+
+watch(videoPartitionLookupKey, () => {
+  loadedVideoPartition.value = undefined
+  void ensureVideoPartition()
+})
+
+watch(
+  [cardIsNearViewport, () => settings.value.showVideoCardVideoTag, providedVideoPartition],
+  () => void ensureVideoPartition(),
+  { immediate: true },
+)
 
 // 使用共享样式（避免每个卡片重复计算）
 const { titleFontSizeClass, titleStyle, authorFontSizeClass, metaFontSizeClass } = useVideoCardSharedStyles()
@@ -425,6 +505,7 @@ provide('getVideoType', () => props.type!)
           :author-font-size-class="authorFontSizeClass"
           :meta-font-size-class="metaFontSizeClass"
           :highlight-tags="highlightTags"
+          :partition="videoPartition"
           :hide-author="hideAuthor"
           @more-btn-click="logic.handleMoreBtnClick"
         />

@@ -2,6 +2,7 @@
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { getUgcVideoPartition } from '~/constants/videoPartitions'
 import type { GridLayoutType } from '~/logic'
 import type { PreciousItem, PreciousResult } from '~/models/video/precious'
 import api from '~/utils/api'
@@ -80,6 +81,7 @@ function transformPreciousVideo(item: PreciousItem): Video {
     likeStr: item.stat?.like_str ?? item.stat?.like,
     publishedTimestamp: item.pubdate,
     bvid: item.bvid,
+    partition: getUgcVideoPartition(item.tid_v2),
     cid: item.cid,
     threePointV2: [],
   }

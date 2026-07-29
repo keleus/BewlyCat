@@ -162,6 +162,7 @@ function getPopularAnimeList() {
                 url: item.url,
                 cover: item.cover,
                 coverHover: item?.horizontal_cover_16_9,
+                seasonType: item.season_type,
                 title: item.title,
                 desc: item.progress !== '' ? item.progress : $t('anime.havent_seen'),
                 evaluate: item.evaluate,
@@ -228,6 +229,7 @@ function getPopularAnimeList() {
               :bangumi="{
                 url: item.url,
                 cover: item.cover,
+                seasonType: 1,
                 title: item.title,
                 desc: $t('anime.follow', { num: numFormatter(item.stat.series_follow) }),
                 capsuleText: item.rating.replace('分', ''),
@@ -267,6 +269,7 @@ function getPopularAnimeList() {
               url: item.link ?? '',
               cover: item.cover,
               coverHover: item?.hover?.img,
+              seasonType: item.season_type || 1,
               tags: item?.hover?.text,
               title: item.title,
               desc: item.sub_title,

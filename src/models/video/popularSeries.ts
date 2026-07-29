@@ -41,6 +41,8 @@ export interface PopularSeriesVideoItem {
   aid: number
   bvid: string
   cid: number
+  tid_v2?: number
+  tname_v2?: string
   title: string
   desc?: string
   pic: string
