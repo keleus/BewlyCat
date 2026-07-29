@@ -32,6 +32,7 @@ import { version } from '../../package.json'
 import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
 import { setupCommentShadowBanDetection } from './features/commentShadowBanDetection'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
+import { setupNotificationMarkAllRead } from './features/notificationMarkAllRead'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { initTouchPlayerGestures } from './touchPlayerGestures'
@@ -700,6 +701,8 @@ else if (shouldInitializeContentScript) {
         await injectAppWhenIdle()
       }
     }
+
+    setupNotificationMarkAllRead()
 
     // Reset the original Bilibili top bar display style
     if (removeOriginalTopBar)

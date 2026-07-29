@@ -1,10 +1,15 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
-import { PAGE_NO_COOKIE_SEARCH_REQUEST, PAGE_NO_COOKIE_SEARCH_RESPONSE } from '~/constants/api'
+import {
+  PAGE_NO_COOKIE_SEARCH_REQUEST,
+  PAGE_NO_COOKIE_SEARCH_RESPONSE,
+  PAGE_PRIVATE_MESSAGE_REQUEST,
+} from '~/constants/api'
 import type { Settings } from '~/logic/storage'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isElectron } from '~/utils/main'
 
 import { handleCommentAddResponse, isCommentAddRequest } from './commentShadowBanDetection'
+import { createPrivateMessageRequestHandler } from './privateMessageBridge'
 
 // 存储当前设置状态
 let currentSettings: Settings | null = null
@@ -591,6 +596,7 @@ else if (shouldInitializePageScript) {
   }
 
   const originalFetch = window.fetch
+  const handlePagePrivateMessageRequest = createPrivateMessageRequestHandler(originalFetch)
 
   function isAllowedPageNoCookieSearchUrl(url: string): boolean {
     try {
@@ -655,6 +661,8 @@ else if (shouldInitializePageScript) {
     const { type, data } = event.data || {}
     if (type === PAGE_NO_COOKIE_SEARCH_REQUEST)
       void handlePageNoCookieSearchRequest(data)
+    else if (type === PAGE_PRIVATE_MESSAGE_REQUEST)
+      void handlePagePrivateMessageRequest(data)
   })
 
   function fetchWithSearchSettings(thisArg: unknown, input: RequestInfo | URL, init?: RequestInit) {

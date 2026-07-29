@@ -61,6 +61,15 @@ iframe_drawer:
   open_in_new_tab: Open in new tab
   close: Close
   press_esc_again_to_close: Press Esc again to close
+notification_mark_all_read:
+  action: Mark all read
+  description: Mark all unread private messages as read
+  processing: Processing… (this may take a while)
+  login_required: Log in before marking private messages
+  no_unread: No unread private messages
+  success: Marked {count} conversations as read
+  partial: Marked {success} conversations; {failed} failed
+  failed: Failed to mark all as read
 player_screenshot:
   capture: Capture current video frame
   saved: Screenshot saved

@@ -1,4 +1,23 @@
 .notificationsPage {
+  .bewly-notification-mark-all-read-control {
+    flex: none;
+    margin-left: auto;
+  }
+
+  .bewly-notification-mark-all-read {
+    color: var(--bew-theme-color);
+
+    &:hover:not(:disabled) {
+      color: var(--bew-theme-color-80);
+      background: var(--bew-theme-color-10);
+    }
+
+    &:active:not(:disabled) {
+      color: var(--bew-theme-color);
+      background: var(--bew-theme-color-20);
+    }
+  }
+
   #message-navbar {
     display: none;
   }

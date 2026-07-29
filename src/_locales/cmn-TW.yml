@@ -61,6 +61,15 @@ iframe_drawer:
   open_in_new_tab: 在新索引標籤開啟連結
   close: 關閉
   press_esc_again_to_close: 再次按下 Esc 關閉
+notification_mark_all_read:
+  action: 全部已讀
+  description: 將全部未讀私訊標記為已讀
+  processing: 處理中…（可能需要較長時間）
+  login_required: 請先登入後再標記私訊
+  no_unread: 沒有未讀私訊
+  success: 已將 {count} 個對話標記為已讀
+  partial: 已標記 {success} 個對話，{failed} 個失敗
+  failed: 標記全部已讀失敗
 player_screenshot:
   capture: 擷取目前影片畫面
   saved: 截圖已儲存

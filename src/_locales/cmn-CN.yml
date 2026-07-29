@@ -61,6 +61,15 @@ iframe_drawer:
   open_in_new_tab: 在新标签页打开
   close: 关闭
   press_esc_again_to_close: 再次按下 Esc 关闭
+notification_mark_all_read:
+  action: 全部已读
+  description: 将全部未读私信标记为已读
+  processing: 处理中…（可能等待较长）
+  login_required: 请先登录后再标记私信
+  no_unread: 没有未读私信
+  success: 已将 {count} 个会话标记为已读
+  partial: 已标记 {success} 个会话，{failed} 个失败
+  failed: 标记全部已读失败
 player_screenshot:
   capture: 截取当前视频帧
   saved: 截图已保存
