@@ -293,15 +293,6 @@ function toggleTabContentLoading(loading: boolean) {
                 @click="handleChangeTab(tab)"
               >
                 <span class="text-center">{{ $t(tab.i18nKey) }}</span>
-
-                <Transition name="fade">
-                  <div
-                    v-show="activatedPage === tab.page && tabContentLoading"
-                    i-svg-spinners:ring-resize
-                    pos="absolute right-4px top-4px" duration-300
-                    text="8px $bew-theme-color"
-                  />
-                </Transition>
               </button>
             </div>
           </div>
