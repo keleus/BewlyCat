@@ -612,13 +612,11 @@ function handleClearKeyword() {
         class="group"
         enterkeyhint="search"
         name="search"
-        rounded="$bew-top-bar-primary-control-radius"
         p="l-6 r-18 y-3"
         h-inherit
         spellcheck="false"
         text="$b-search-bar-normal-text-color group-focus-within:$b-search-bar-focus-text-color group-hover:$b-search-bar-hover-text-color"
         un-border="1 solid $bew-border-color"
-        transition="background-color duration-200, color duration-200, opacity duration-200, box-shadow duration-200"
         @focus="isFocus = true"
         @input="handleNativeInput"
         @keydown.enter.stop="handleKeyEnter"
@@ -849,6 +847,12 @@ function handleClearKeyword() {
       position: relative;
       z-index: 1;
       border-radius: var(--b-search-bar-radius, 60px);
+      transition:
+        background-color var(--bew-duration-normal) var(--bew-ease-standard),
+        color var(--bew-duration-normal) var(--bew-ease-standard),
+        opacity var(--bew-duration-normal) var(--bew-ease-standard),
+        box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
+        border-radius var(--bew-duration-moderate) var(--bew-ease-standard);
 
       &::placeholder {
         color: inherit;
@@ -861,7 +865,8 @@ function handleClearKeyword() {
     }
 
     &.focus input {
-      --uno: "border-$bew-theme-color rounded-$bew-radius";
+      --uno: "border-$bew-theme-color";
+      border-radius: var(--bew-radius);
       box-shadow:
         0 0 0 2px var(--bew-theme-color),
         0 6px 16px var(--bew-theme-color-40),
