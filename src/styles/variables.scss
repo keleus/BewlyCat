@@ -68,6 +68,12 @@
   --bew-space-12: 48px;
   // #endregion
 
+  // Keep fixed Dock controls visually separate from scrollable page content.
+  --bew-dock-item-size: 35px;
+  --bew-dock-content-gap: var(--bew-space-3);
+  // Item size + the Dock's edge offset, shell margin/padding, and content gap.
+  --bew-dock-safe-inset: calc(var(--bew-dock-item-size) + var(--bew-space-10) + var(--bew-dock-content-gap));
+
   // #region Motion
   // Prefer specific transition properties over `transition: all` to avoid layout jumps.
   --bew-duration-fast: 150ms;
@@ -1040,5 +1046,12 @@
   --Lb1_rgb: 11, 32, 42;
   --Lb5_rgb: 0, 135, 189;
   --Lb7_rgb: 88, 177, 212;
+}
+
+@media (min-width: 1024px) {
+  :host,
+  :root {
+    --bew-dock-item-size: 45px;
+  }
 }
 // #endregion
