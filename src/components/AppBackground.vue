@@ -13,7 +13,6 @@ const { isDark } = useDark()
 // 组件挂载时清理过期缓存
 onMounted(() => {
   cleanupExpiredCache()
-  setAppWallpaperMaskingOpacity()
 })
 
 // 计算解析后的壁纸URL(支持本地壁纸和缓存控制)
@@ -120,13 +119,19 @@ watch(() => props.activatedPage, (newValue, oldValue) => {
 })
 
 function setAppWallpaperMaskingOpacity() {
-  const bewlyElement = document.querySelector('#bewly') as HTMLElement
+  const bewlyElement = document.querySelector<HTMLElement>('#bewly')
+  if (!bewlyElement)
+    return
+
   const isSearchPage = props.activatedPage === AppPage.Search
   if (settings.value.individuallySetSearchPageWallpaper && isSearchPage)
     bewlyElement.style.setProperty('--bew-homepage-bg-mask-opacity', `${settings.value.searchPageWallpaperMaskOpacity}%`)
   else
     bewlyElement.style.setProperty('--bew-homepage-bg-mask-opacity', `${settings.value.wallpaperMaskOpacity}%`)
 }
+
+// setup 阶段即写入遮罩透明度，避免首帧沿用 token 的 0 默认值。
+setAppWallpaperMaskingOpacity()
 </script>
 
 <template>
@@ -156,7 +161,7 @@ function setAppWallpaperMaskingOpacity() {
           <div
             v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
             pos="absolute top-0 left-0" w-full h-full pointer-events-none bg="$bew-homepage-bg-mask"
-            duration-300 z--1
+            z--1
             :style="{
               backdropFilter: `blur(${settings.individuallySetSearchPageWallpaper ? settings.searchPageWallpaperBlurIntensity : settings.wallpaperBlurIntensity}px)`,
             }"
@@ -176,7 +181,7 @@ function setAppWallpaperMaskingOpacity() {
           <div
             v-if="settings.enableWallpaperMasking"
             pos="absolute top-0 left-0" w-full h-full pointer-events-none bg="$bew-homepage-bg-mask"
-            duration-300 z--1
+            z--1
             :style="{
               backdropFilter: `blur(${settings.wallpaperBlurIntensity}px)`,
             }"

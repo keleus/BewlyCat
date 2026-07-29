@@ -12,7 +12,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { applyBewlyWidescreen, exitBewlyWidescreen } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
-import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers, setupOriginalBilibiliTopBarSearchHandlers } from '~/utils/bilibiliTopBar'
+import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
@@ -30,7 +30,6 @@ import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
 import { version } from '../../package.json'
 import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
-import { setupCommentShadowBanDetection } from './features/commentShadowBanDetection'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNotificationMarkAllRead } from './features/notificationMarkAllRead'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
@@ -162,7 +161,6 @@ if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 }
 else if (shouldInitializeContentScript) {
-  setupCommentShadowBanDetection()
   setupNotificationStateInvalidation()
   // Fix `OverlayScrollbars` not working in Firefox
   // https://github.com/fingerprintjs/fingerprintjs/issues/683#issuecomment-881210244
@@ -195,6 +193,9 @@ else if (shouldInitializeContentScript) {
         (target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement && target.hasAttribute('href'),
       ) ?? (event.target instanceof Element ? event.target.closest('a[href]') : null)
       if (!(anchor instanceof HTMLAnchorElement))
+        return
+
+      if (anchor.closest('.bili-header, #biliMainHeader, #internationalHeader, #bili-header-container'))
         return
 
       const pluginSearchResultsUrl = getPluginSearchResultsUrl(anchor.href)
@@ -583,8 +584,6 @@ else if (shouldInitializeContentScript) {
     if (isHomePage())
       await settingsReady
 
-    setupOriginalBilibiliTopBarSearchHandlers(document, () => settings.value.usePluginSearchResultsPage)
-
     const changeHomePage = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
     document.documentElement.classList.toggle('bewly-custom-homepage', changeHomePage)
 
@@ -665,7 +664,8 @@ else if (shouldInitializeContentScript) {
       // 温和的脚本清理（可选，减少后台资源消耗）
       cleanupBilibiliScripts()
 
-      ensureOriginalBilibiliTopBarAppended(document)
+      if (settings.value.useOriginalBilibiliTopBar)
+        ensureOriginalBilibiliTopBarAppended(document)
 
       // Setup login button click handlers for the original Bilibili top bar
       setupLoginButtonClickHandlers(document)
@@ -803,14 +803,15 @@ else if (shouldInitializeContentScript) {
     shadowDOM.appendChild(resetStyleEl)
     shadowDOM.appendChild(styleEl)
     shadowDOM.appendChild(root)
-    container.style.opacity = '0'
-    container.style.transition = 'opacity 0.5s'
-    styleEl.onload = () => {
-    // To prevent abrupt style transitions caused by sudden style changes
-      setTimeout(() => {
-        container.style.opacity = '1'
-      }, 500)
+
+    // 样式就绪前隐藏整个 Shadow DOM，避免未应用样式的内容闪现。
+    // 就绪后一次性展示，避免容器淡入与壁纸遮罩透明度叠加，造成遮罩延迟出现。
+    container.style.visibility = 'hidden'
+    const revealContainer = () => {
+      container.style.visibility = 'visible'
     }
+    styleEl.addEventListener('load', revealContainer, { once: true })
+    styleEl.addEventListener('error', revealContainer, { once: true })
 
     // startShadowDOMStyleInjection()
 

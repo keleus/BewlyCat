@@ -19,7 +19,6 @@ interface Props {
   horizontal?: boolean
   removed: boolean
   isHover: boolean
-  previewEnabled: boolean
   shouldHideOverlayElements: boolean
   previewVideoUrl: string
   videoElement: HTMLVideoElement | null
@@ -54,9 +53,9 @@ const emit = defineEmits<{
 }>()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
+const isCoverHovered = ref(false)
 const isLoadingStream = ref<boolean>(false)
 const isPreviewFullscreen = ref<boolean>(false)
-const isPreviewPlaying = ref<boolean>(false)
 const showVideoControls = ref<boolean>(false)
 const isScrubbing = ref<boolean>(false)
 const scrubProgress = ref<number>(0)
@@ -74,15 +73,6 @@ let suppressPreviewClickTimeout: number | null = null
 
 const SCRUB_START_THRESHOLD_PX = 8
 const NEARBY_SEEK_RANGE_SECONDS = 30
-
-const shouldShowWatchLater = computed(() =>
-  props.previewEnabled ? isPreviewPlaying.value : props.isHover,
-)
-
-function handlePreviewPlaying() {
-  if (props.isHover && props.previewVideoUrl)
-    isPreviewPlaying.value = true
-}
 
 function clearControlsHideTimeout() {
   if (controlsHideTimeout !== null) {
@@ -432,8 +422,6 @@ async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
 
 // Watch for preview URL and videoRef changes
 watch([() => props.previewVideoUrl, () => props.isHover, videoRef], ([url, isHover, videoEl]) => {
-  isPreviewPlaying.value = false
-
   if (!videoEl)
     return
 
@@ -493,10 +481,13 @@ onBeforeUnmount(() => {
     cursor-pointer
     group-hover:z-2
     style="aspect-ratio: 16 / 9; contain: layout style; will-change: auto;"
+    @mouseenter="isCoverHovered = true"
+    @mouseleave="isCoverHovered = false"
   >
     <!-- Skeleton mode -->
     <div
       v-if="skeleton"
+      class="video-card-cover-skeleton"
       w-full h-full bg="$bew-skeleton" rounded="$bew-media-radius"
       style="aspect-ratio: 16 / 9;"
     />
@@ -554,7 +545,6 @@ onBeforeUnmount(() => {
             :draggable="false"
             :controls="showVideoControls"
             w-full h-full
-            @playing="handlePreviewPlaying"
           />
 
           <div
@@ -587,10 +577,10 @@ onBeforeUnmount(() => {
       <!-- Ranking Number -->
       <div
         v-if="video?.rank"
+        class="video-card-overlay-transition"
         pos="absolute top-0"
         p-2
         :class="layout !== 'old' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
-        duration-300
       >
         <div
           v-if="Number(video?.rank) <= 3"
@@ -616,6 +606,7 @@ onBeforeUnmount(() => {
         <!-- Old layout: Video Duration (right bottom) -->
         <div
           v-if="layout === 'old' && settings.showVideoCardDuration && (video?.duration || video?.durationStr)"
+          class="video-card-overlay-transition"
           pos="absolute bottom-0 right-0"
           z="2"
           p="x-2 y-1"
@@ -624,15 +615,14 @@ onBeforeUnmount(() => {
           text="!white xs"
           bg="black opacity-60"
           :class="{ 'opacity-0': shouldHideOverlayElements }"
-          duration-300
         >
           {{ video?.duration ? calcCurrentTime(video?.duration ?? 0) : video?.durationStr }}
         </div>
 
         <div
+          class="video-card-overlay-transform-transition"
           :class="coverTopLeftAlwaysVisible ? 'opacity-100' : 'opacity-0 group-hover/cover:opacity-100'"
           :transform="coverTopLeftAlwaysVisible ? 'scale-100' : 'scale-70 group-hover/cover:scale-100'"
-          duration-300
           pos="absolute top-0 left-0" z-2
           @click.stop=""
         >
@@ -641,9 +631,10 @@ onBeforeUnmount(() => {
 
         <div
           v-if="video?.liveStatus === 1"
+          class="video-card-overlay-transition"
           :class="layout !== 'old' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
           pos="absolute left-0 top-0" bg="$bew-theme-color" text="xs white" fw-bold
-          p="x-2 y-1" m-1 inline-block rounded="$bew-radius" duration-300
+          p="x-2 y-1" m-1 inline-block rounded="$bew-radius"
         >
           LIVE
           <i i-svg-spinners:pulse-3 align-middle mt--0.2em />
@@ -651,20 +642,21 @@ onBeforeUnmount(() => {
 
         <div
           v-if="Object.keys(video?.badge ?? {}).length > 0"
+          class="video-card-overlay-transition"
           :class="layout !== 'old' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
           :style="{
             backgroundColor: video?.badge?.bgColor,
             color: video?.badge?.color,
           }"
           pos="absolute right-0 top-0" bg="$bew-theme-color" text="xs white"
-          p="x-2 y-1" m-1 inline-block rounded="$bew-radius" duration-300
+          p="x-2 y-1" m-1 inline-block rounded="$bew-radius"
         >
           {{ video?.badge?.text }}
         </div>
 
-        <!-- Watch later appears after preview playback starts, or after the non-preview hover delay. -->
+        <!-- Track cover hover separately so delayed preview playback does not delay this action. -->
         <div
-          v-if="showWatcherLater && shouldShowWatchLater"
+          v-if="showWatcherLater && isCoverHovered"
           role="button"
           tabindex="0"
           :aria-label="isInWatchLater ? $t('common.added') : $t('common.save_to_watch_later')"
@@ -673,9 +665,8 @@ onBeforeUnmount(() => {
           rounded="$bew-radius"
           text="!white xl"
           bg="black opacity-60"
-          class="opacity-0 group-hover/cover:opacity-100"
+          class="video-card-overlay-transform-transition opacity-0 group-hover/cover:opacity-100"
           transform="scale-70 group-hover/cover:scale-100"
-          duration-300
           @click.prevent.stop="emit('toggleWatchLater')"
           @keydown.enter.prevent.stop="emit('toggleWatchLater')"
           @keydown.space.prevent.stop="emit('toggleWatchLater')"
@@ -736,6 +727,49 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scoped>
+.video-card-overlay-transition {
+  transition: opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
+}
+
+.video-card-overlay-transform-transition {
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
+}
+
+.video-card-cover-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+
+.video-card-cover-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--bew-bg, #fff) 35%, transparent) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: video-card-cover-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes video-card-cover-skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .video-card-cover-skeleton::after {
+    animation: none;
+    display: none;
+  }
+}
+
 .video-card-preview--scrubbable {
   cursor: ew-resize;
   touch-action: pan-y;

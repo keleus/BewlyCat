@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T = any">
-import { useDebounceFn } from '@vueuse/core'
+import { useDebounceFn, useElementSize } from '@vueuse/core'
 
 import type { Video } from '~/components/VideoCard/types'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
@@ -189,6 +189,7 @@ const emit = defineEmits<{
 
 // Grid 容器 ref
 const gridContainerRef = ref<HTMLElement | null>(null)
+const { width: gridContainerWidth } = useElementSize(gridContainerRef)
 const loadMoreSentinelRef = ref<HTMLElement | null>(null)
 const isLoadMoreSentinelIntersecting = ref(false)
 const reachedLoadMoreDuringLoading = ref(false)
@@ -199,118 +200,6 @@ const { gridClass, gridCssVars } = useGridLayout(() => props.gridLayout)
 
 // 获取 shadow 样式变量（避免依赖外部传入）
 const { shadowStyleVars } = useVideoCardShadowStyle()
-
-// 卡片入场：仅对新增真实卡片播放，区分 grid / list
-const GRID_ENTER_DURATION_MS = 200
-const LIST_ENTER_DURATION_MS = 180
-const GRID_ENTER_STAGGER_MS = 24
-const GRID_ENTER_MAX_DELAY_MS = 192
-const revealedCardKeys = new Set<string | number>()
-const enteringCardMeta = reactive(new Map<string | number, { mode: 'grid' | 'list', delay: number }>())
-const cardEnterTimers = new Map<string | number, ReturnType<typeof setTimeout>>()
-const prefersReducedMotion = ref(false)
-let reducedMotionMediaQuery: MediaQueryList | null = null
-
-const cardEnterMode = computed<'grid' | 'list'>(() => {
-  return props.gridLayout === 'adaptive' ? 'grid' : 'list'
-})
-
-function clearCardEnterState() {
-  revealedCardKeys.clear()
-  enteringCardMeta.clear()
-  cardEnterTimers.forEach(timer => clearTimeout(timer))
-  cardEnterTimers.clear()
-}
-
-function getCardEnterClass(key: string | number) {
-  const meta = enteringCardMeta.get(key)
-  if (!meta)
-    return null
-  return meta.mode === 'grid'
-    ? 'video-card-grid-item--enter-grid'
-    : 'video-card-grid-item--enter-list'
-}
-
-function getCardEnterStyle(key: string | number) {
-  const meta = enteringCardMeta.get(key)
-  if (!meta || meta.delay <= 0)
-    return undefined
-  return {
-    '--enter-delay': `${meta.delay}ms`,
-  }
-}
-
-function markRenderItemsEntering(items: VideoCardRenderItem[]) {
-  if (prefersReducedMotion.value) {
-    for (const item of items) {
-      if (!item.skeleton)
-        revealedCardKeys.add(item.key)
-    }
-    enteringCardMeta.clear()
-    return
-  }
-
-  const mode = cardEnterMode.value
-  let batchIndex = 0
-
-  for (const item of items) {
-    if (item.skeleton || revealedCardKeys.has(item.key) || enteringCardMeta.has(item.key))
-      continue
-
-    revealedCardKeys.add(item.key)
-
-    const delay = mode === 'grid'
-      ? Math.min(batchIndex * GRID_ENTER_STAGGER_MS, GRID_ENTER_MAX_DELAY_MS)
-      : 0
-    batchIndex++
-
-    enteringCardMeta.set(item.key, { mode, delay })
-
-    const previousTimer = cardEnterTimers.get(item.key)
-    if (previousTimer)
-      clearTimeout(previousTimer)
-
-    const duration = (mode === 'grid' ? GRID_ENTER_DURATION_MS : LIST_ENTER_DURATION_MS) + delay
-    cardEnterTimers.set(item.key, setTimeout(() => {
-      enteringCardMeta.delete(item.key)
-      cardEnterTimers.delete(item.key)
-    }, duration + 40))
-  }
-}
-
-function handleReducedMotionChange(event: MediaQueryListEvent) {
-  prefersReducedMotion.value = event.matches
-  if (event.matches) {
-    enteringCardMeta.clear()
-    cardEnterTimers.forEach(timer => clearTimeout(timer))
-    cardEnterTimers.clear()
-  }
-}
-
-function setupReducedMotionWatcher() {
-  if (typeof window === 'undefined' || !window.matchMedia)
-    return
-
-  reducedMotionMediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
-  prefersReducedMotion.value = reducedMotionMediaQuery.matches
-
-  if (typeof reducedMotionMediaQuery.addEventListener === 'function')
-    reducedMotionMediaQuery.addEventListener('change', handleReducedMotionChange)
-  else
-    reducedMotionMediaQuery.addListener(handleReducedMotionChange)
-}
-
-function cleanupReducedMotionWatcher() {
-  if (!reducedMotionMediaQuery)
-    return
-  if (typeof reducedMotionMediaQuery.removeEventListener === 'function')
-    reducedMotionMediaQuery.removeEventListener('change', handleReducedMotionChange)
-  else
-    reducedMotionMediaQuery.removeListener(handleReducedMotionChange)
-  reducedMotionMediaQuery = null
-}
-
-setupReducedMotionWatcher()
 
 // 骨架屏数量使用固定值，避免依赖列数计算
 const dynamicSkeletonCount = computed(() => {
@@ -748,13 +637,11 @@ function cleanupScrollListeners() {
 }
 
 function getRenderedColumnCount(): number {
-  const containerWidth = gridContainerRef.value?.clientWidth
+  const containerWidth = gridContainerWidth.value
+    || gridContainerRef.value?.clientWidth
     || (typeof window !== 'undefined' ? window.innerWidth : 0)
-  // CSS 响应式布局使用视口断点，这里让骨架屏和补位计算保持相同的宽度基准。
-  const responsiveWidth = (props.gridLayout === 'adaptive' || settings.value.autoSwitchListLayout) && typeof window !== 'undefined'
-    ? window.innerWidth
-    : containerWidth
-  return getCurrentColumnCount(props.gridLayout, responsiveWidth)
+  // CSS container queries and JS row calculations must use the same width basis.
+  return getCurrentColumnCount(props.gridLayout, containerWidth)
 }
 
 function clearContinuePreloadTimer() {
@@ -829,7 +716,6 @@ watch(() => props.items.length, (newCount, oldCount) => {
     lastItemsCount.value = 0
     reachedLoadMoreDuringLoading.value = false
     resetRowRevealState()
-    clearCardEnterState()
     clearContinuePreloadTimer()
     return
   }
@@ -926,8 +812,6 @@ onUnmounted(() => {
     checkPreloadRAF = null
   }
   clearContinuePreloadTimer()
-  clearCardEnterState()
-  cleanupReducedMotionWatcher()
   resetTransformCaches()
 })
 
@@ -1078,14 +962,6 @@ const renderItems = computed<VideoCardRenderItem[]>(() => {
   return displayItems.value.map((item, index) => createRenderItem(item, index))
 })
 
-watch(
-  renderItems,
-  (items) => {
-    markRenderItemsEntering(items)
-  },
-  { flush: 'post' },
-)
-
 interface VideoTransformCacheEntry<T = any> {
   item: T
   video: Video | undefined
@@ -1196,32 +1072,27 @@ function getUniqueKey(item: T, index: number): string | number {
       m="b-0 t-0" relative w-full
       :style="gridContainerStyle"
     >
-      <div
+      <VideoCard
         v-for="renderItem in renderItems"
         :key="renderItem.key"
-        class="video-card-grid-item"
-        :class="getCardEnterClass(renderItem.key)"
-        :style="getCardEnterStyle(renderItem.key)"
+        :class="{ 'video-card-grid-item--enter': !renderItem.skeleton }"
         :data-index="renderItem.index"
+        :skeleton="renderItem.skeleton"
+        :type="renderItem.type"
+        :video="renderItem.video"
+        :show-preview="showPreview"
+        :show-watcher-later="showWatchLater"
+        :horizontal="isHorizontal"
+        :more-btn="moreBtn"
+        :hide-author="hideAuthor"
+        :is-following-page="props.isFollowingPage"
+        :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
+        :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
       >
-        <VideoCard
-          :skeleton="renderItem.skeleton"
-          :type="renderItem.type"
-          :video="renderItem.video"
-          :show-preview="showPreview"
-          :show-watcher-later="showWatchLater"
-          :horizontal="isHorizontal"
-          :more-btn="moreBtn"
-          :hide-author="hideAuthor"
-          :is-following-page="props.isFollowingPage"
-          :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
-          :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
-        >
-          <template v-for="(_, name) in $slots" #[name]>
-            <slot :name="name" :item="renderItem.item" />
-          </template>
-        </VideoCard>
-      </div>
+        <template v-for="(_, name) in $slots" #[name]>
+          <slot :name="name" :item="renderItem.item" />
+        </template>
+      </VideoCard>
 
       <div ref="loadMoreSentinelRef" class="load-more-sentinel" aria-hidden="true" />
     </div>
@@ -1245,10 +1116,11 @@ function getUniqueKey(item: T, index: number): string | number {
 
 <style lang="scss" scoped>
 .video-card-grid-root {
+  container-type: inline-size;
   overflow-anchor: none;
 }
 
-// Grid 布局 - 根据设置页声明的视口断点和 CSS 变量控制列数
+// Grid 布局 - 根据设置页声明的容器断点和 CSS 变量控制列数
 .grid-adaptive {
   display: grid;
   gap: 20px;
@@ -1257,31 +1129,31 @@ function getUniqueKey(item: T, index: number): string | number {
   align-items: stretch;
 }
 
-@media (min-width: 640px) {
+@container (min-width: 640px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-sm, 2), 1fr);
   }
 }
 
-@media (min-width: 768px) {
+@container (min-width: 768px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-md, 3), 1fr);
   }
 }
 
-@media (min-width: 1024px) {
+@container (min-width: 1024px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-lg, 4), 1fr);
   }
 }
 
-@media (min-width: 1280px) {
+@container (min-width: 1280px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-xl, 5), 1fr);
   }
 }
 
-@media (min-width: 1536px) {
+@container (min-width: 1536px) {
   .grid-adaptive {
     grid-template-columns: repeat(var(--grid-cols-xxl, 6), 1fr);
   }
@@ -1303,7 +1175,7 @@ function getUniqueKey(item: T, index: number): string | number {
   align-items: stretch;
 }
 
-@media (max-width: 639.98px) {
+@container (max-width: 639.98px) {
   .grid-two-columns.grid-list-auto-switch {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
@@ -1318,55 +1190,34 @@ function getUniqueKey(item: T, index: number): string | number {
   }
 }
 
-.video-card-grid-item {
-  min-width: 0;
-  overflow-anchor: none;
-}
-
-.video-card-grid-item--enter-grid {
-  animation: video-card-grid-enter-grid 200ms ease both;
-  animation-delay: var(--enter-delay, 0ms);
-}
-
-.video-card-grid-item--enter-list {
-  animation: video-card-grid-enter-list 180ms ease both;
-}
-
-@keyframes video-card-grid-enter-grid {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes video-card-grid-enter-list {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .video-card-grid-item--enter-grid,
-  .video-card-grid-item--enter-list {
-    animation: none;
-  }
-}
-
 :deep(.video-card-container) {
   contain: layout style;
   content-visibility: auto;
   overflow-anchor: none;
   contain-intrinsic-size: auto 360px 260px;
   min-width: 0;
+}
+
+:deep(.video-card-grid-item--enter) {
+  animation: video-card-grid-item-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes video-card-grid-item-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :deep(.video-card-grid-item--enter) {
+    animation: none;
+  }
 }
 
 .load-more-sentinel {

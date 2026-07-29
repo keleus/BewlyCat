@@ -10,6 +10,11 @@ export type MessageHandler<T = any, R = any> = (
   sender?: browser.Runtime.MessageSender,
 ) => R | Promise<R>
 
+export function isExtensionContextInvalidatedError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.toLowerCase().includes('extension context invalidated')
+}
+
 /**
  * 从 content script 发送消息到 background
  */

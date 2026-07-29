@@ -200,8 +200,8 @@ export interface Settings {
   showIPLocation: boolean // 添加显示IP归属地设置项
   showSex: boolean // 添加显示性别设置项
   showCommentHostTag: boolean // 显示评论回复详情页楼主标识
+  enableCommentReplyTree: boolean // 根据回复关系逐层缩进楼中楼
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
-  detectCommentShadowBan: boolean // 发送评论后检测是否仅自己可见
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
   externalWatchLaterButton: boolean // 稍后再看按钮外置
 
@@ -467,8 +467,8 @@ export const originalSettings: Settings = {
   showIPLocation: true, // 默认启用IP归属地显示
   showSex: true, // 默认启用性别显示
   showCommentHostTag: true, // 默认启用楼主标识显示
+  enableCommentReplyTree: true, // 默认启用评论回复树状缩进
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
-  detectCommentShadowBan: false, // 默认关闭评论可见性检测
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
   externalWatchLaterButton: true, // 默认开启稍后再看按钮外置
 
@@ -772,6 +772,8 @@ watch(
   () => settings.value,
   (value) => {
     const record = value as Record<string, any>
+
+    Reflect.deleteProperty(record, 'detectCommentShadowBan')
 
     if (!Number.isFinite(record.frostedGlassBlurIntensity))
       record.frostedGlassBlurIntensity = originalSettings.frostedGlassBlurIntensity

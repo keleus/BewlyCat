@@ -1005,6 +1005,11 @@ if (settings.value.cleanUrlArgument) {
             <main m-auto max-w="$bew-page-max-width">
               <div
                 class="bewly-page-content"
+                :class="{
+                  'bewly-page-content--dock-left': activatedPage === AppPage.Home && settings.dockPosition === 'left',
+                  'bewly-page-content--dock-right': activatedPage === AppPage.Home && settings.dockPosition === 'right',
+                  'bewly-page-content--dock-bottom': activatedPage === AppPage.Home && settings.dockPosition === 'bottom',
+                }"
                 p="t-[calc(var(--bew-top-bar-height)+10px)]" m-auto
                 :style="settings.useOriginalBilibiliTopBar && !reachTop
                   ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
@@ -1078,8 +1083,22 @@ if (settings.value.cleanUrlArgument) {
 }
 
 .bewly-page-content {
+  --bew-page-inline-padding: clamp(16px, 4vw, 80px);
+
   box-sizing: border-box;
   width: 100%;
-  padding-inline: clamp(16px, 4vw, 80px);
+  padding-inline: var(--bew-page-inline-padding);
+}
+
+.bewly-page-content--dock-left {
+  padding-left: max(var(--bew-page-inline-padding), var(--bew-dock-safe-inset));
+}
+
+.bewly-page-content--dock-right {
+  padding-right: max(var(--bew-page-inline-padding), var(--bew-dock-safe-inset));
+}
+
+.bewly-page-content--dock-bottom {
+  padding-bottom: var(--bew-dock-safe-inset);
 }
 </style>

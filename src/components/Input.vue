@@ -87,6 +87,10 @@ defineExpose({ focus })
   font-size: var(--bew-font-size-body);
   font-weight: var(--bew-font-weight-regular);
   line-height: var(--bew-line-height-body);
+
+  &:focus-visible {
+    outline: none;
+  }
 }
 
 .b-input--small input {

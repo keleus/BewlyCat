@@ -3,7 +3,6 @@ import { onMessage } from '~/utils/messaging'
 import { apiListenerFactory } from '../../utils'
 import API_ANIME from './anime'
 import API_AUTH from './auth'
-import API_COMMENT from './comment'
 import API_FAVORITE from './favorite'
 import API_HISTORY from './history'
 import API_LIVE from './live'
@@ -17,7 +16,6 @@ import API_WATCHLATER from './watchLater'
 
 export const API_COLLECTION = {
   AUTH: API_AUTH,
-  COMMENT: API_COMMENT,
   ANIME: API_ANIME,
   HISTORY: API_HISTORY,
   FAVORITE: API_FAVORITE,

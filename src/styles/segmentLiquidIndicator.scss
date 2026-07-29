@@ -21,10 +21,6 @@
   will-change: transform;
   contain: layout style;
   transform-origin: center center;
-
-  &.is-moving {
-    filter: saturate(1.12);
-  }
 }
 
 .bew-liquid-indicator--white {

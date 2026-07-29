@@ -125,7 +125,7 @@ settings:
     reset_desc: 呢區嘅操作會影響全部 BewlyCat 設定。
     reset_warning: 還原之後無法復原，而家嘅語言設定會保留。
   menu_plugin_components_and_pages: BewlyCat界面
-  menu_bilibili_features_enhancement: Bilibili功能
+  menu_bilibili_features_enhancement: Bilibili 功能
   menu_appearance: 版面
   menu_compatibility: 相容性
   menu_about: 關於
@@ -144,7 +144,7 @@ settings:
     search: 搵嘢頁
     volume_balance: 音量均衡
 
-  # B站功能增強 子選單
+  # Bilibili 功能增強 子選單
   bilibili_features:
     comments: 評論
     video_playback: 播放器
@@ -179,13 +179,13 @@ settings:
   group_playback_behavior: 播放行為
   group_auto_play: 自動連播
   group_custom_auto_play_behavior: 播放結束行為
-  group_custom_auto_play_behavior_desc: 關咗 B 站預設行為之後，可以分別設定唔同影片類型嘅後續動作。「連播推薦」會喺目前影片播完之後繼續播推薦影片。
+  group_custom_auto_play_behavior_desc: 關咗 Bilibili 預設行為之後，可以分別設定唔同影片類型嘅後續動作。「連播推薦」會喺目前影片播完之後繼續播推薦影片。
   group_playback_end_behavior: 播放結束行為
   group_video_type_end_behavior: 按影片類型設定
   group_playlist_start_behavior: 播放列表起點
   group_random_play: 自訂播放
   group_random_play_settings: 隨機播放設定
-  group_random_play_settings_desc: 用喺按影片類型揀嘅「隨機播放（自訂）」；用B站預設行為嗰陣，淨係喺預設自訂播放係隨機播放時生效。
+  group_random_play_settings_desc: 用喺按影片類型揀嘅「隨機播放（自訂）」；用 Bilibili 預設行為嗰陣，淨係喺預設自訂播放係隨機播放時生效。
   enable_random_play: 啟用影片合集自訂播放
   enable_random_play_desc: 為多P影片、合集或者播放列表加入順序、倒序、隨機播放同清單編輯功能；啟用後播放結束行為會顯示相應嘅自訂選項
   default_custom_play_order: 預設自訂播放選項
@@ -202,7 +202,7 @@ settings:
   random_play_order_random: 隨機播放
   random_play_edit_playlist: 編輯播放清單
   random_play_finish_editing: 完成播放清單編輯
-  random_play_edit_playlist_desc: 入咗編輯模式之後，直接拖動B站選集項目嚟調整播放次序。
+  random_play_edit_playlist_desc: 入咗編輯模式之後，直接拖動 Bilibili 選集項目嚟調整播放次序。
   random_play_edit_playlist_empty: 而家冇可以編輯嘅播放清單
   random_play_edit_playlist_save: 儲存
   random_play_edit_playlist_cancel: 取消
@@ -223,14 +223,14 @@ settings:
   group_recommendation_mode: 「估你心水」推介模式
   group_recommendation_filters: 「估你心水」過濾
   group_recommendation_filters_desc: |
-    限制嘅數值唔好設太大，唔係嘅話會影響載入時間！頻繁請求可能會導致B站對IP嘅封禁!
+    限制嘅數值唔好設太大，唔係嘅話會影響載入時間！頻繁請求可能會導致 Bilibili 對 IP 嘅封禁!
   group_following: 跟緊啲人
   group_following_desc: 設定「跟緊啲人」頁面嘅版面、唔活躍 UP 主名單、直播內容同影片過濾規則。
   group_favorites: 收藏
   group_search_page_mode: 搵嘢頁模式
   group_home_tabs: 主頁分頁欄
   group_home_layout: 主頁版面
-  group_original_moments_page: Bilibili頁面
+  group_original_moments_page: Bilibili 頁面
   group_new_moments_page: Bewly動態頁
   group_new_moments_page_desc: 呢個頁面唔係最終成品，相關形態之後可能會有較大改動。
   group_moments_sidebar: 動態頁左邊元件
@@ -265,6 +265,9 @@ settings:
   moments_card_open_mode_opt:
     dialog: 彈窗
     new_tab: 新分頁
+  group_moments_wanted_users: 想睇分組
+  group_moments_wanted_users_desc: 管理想睇嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
+  moments_wanted_users: 想睇嘅 UP 主
   btn:
     authorize: 授權
     revoke: 解除授權
@@ -326,10 +329,10 @@ settings:
 
   # Video Card Grid Settings
   group_video_card_grid: 影片卡片網格
-  auto_switch_list_layout: 根據屏幕闊度自動切換單雙列
-  auto_switch_list_layout_desc: 開啟之後，雙列模式會喺屏幕闊度細過 640px 時自動切換做單列。
+  auto_switch_list_layout: 根據影片卡片區域闊度自動切換單雙列
+  auto_switch_list_layout_desc: 開啟之後，雙列模式會喺影片卡片區域闊度細過 640px 時自動切換做單列。
   grid_breakpoints: 網格斷點設定
-  grid_breakpoints_desc: 設定唔同屏幕闊度時顯示嘅列數。當屏幕闊度大過或者等於設定值時，用對應嘅列數。
+  grid_breakpoints_desc: 設定唔同影片卡片區域闊度時顯示嘅列數。當區域闊度大過或者等於設定值時，用對應嘅列數。
   grid_min_width: 闊度 ≥
   grid_columns: 顯示
   grid_columns_unit: 列
@@ -625,9 +628,9 @@ settings:
   auto_exit_fullscreen_on_end_desc: 啟用後，影片播完而且冇單集循環、隨機播放、自動連播等後續播放行為時，會自動退出全螢幕模式
   auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
   auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，自動連播下播完唔會自動退出全螢幕，方便連續睇
-  use_bilibili_default_auto_play: 用B站預設自動播放行為
-  use_bilibili_default_auto_play_desc: 啟用後用B站預設播放行為，入頁面嗰陣自訂播放預設關閉；如果預設自訂播放係隨機播放，仍然會跟隨隨機播放啟用方式
-  auto_play_mode_default: B站預設
+  use_bilibili_default_auto_play: 用 Bilibili 預設自動播放行為
+  use_bilibili_default_auto_play_desc: 啟用後用 Bilibili 預設播放行為，入頁面嗰陣自訂播放預設關閉；如果預設自訂播放係隨機播放，仍然會跟隨隨機播放啟用方式
+  auto_play_mode_default: Bilibili 預設
   auto_play_mode_auto_play: 自動連播
   auto_play_mode_auto_play_with_recommend: 連播推薦
   auto_play_mode_pause_at_end: 播完暫停
@@ -664,7 +667,7 @@ settings:
       fullscreen_mode: 全螢幕模式快捷鍵
       general: 一般快捷鍵
       global_actions: 全域操作
-      official_bilibili: bilibili 官方快捷鍵
+      official_bilibili: Bilibili 官方快捷鍵
       homepage: ''
     increase_playback_rate: 加速播放
     increase_playback_rate_desc: 校快播放速度。
@@ -739,7 +742,7 @@ settings:
   video_caption_default_state: 字幕預設狀態
   video_caption_default_state_desc: 開片時自動幫你調整字幕開關，亦可以保持唔變。
   video_default_state_opt:
-    system: B站預設
+    system: Bilibili 預設
     remember: 記住上次狀態
     on: 開啟
     off: 關閉
@@ -768,8 +771,8 @@ settings:
   show_sex_desc: 喺影片/動向頁留言區顯示用戶性別。
   show_comment_host_tag: 顯示樓主標示
   show_comment_host_tag_desc: 喺留言回覆詳情頁標示樓主。
-  detect_comment_shadow_ban: 檢測留言係咪得自己睇到
-  detect_comment_shadow_ban_desc: 發送留言大約 5 秒之後，分別用未登入同登入狀態檢查公開可見性；結果只供參考。
+  enable_comment_reply_tree: 樹狀顯示留言回覆
+  enable_comment_reply_tree_desc: 根據回覆關係同發佈時間整理樓中樓，再按層級逐層縮入。
   video_player_scroll: 校好顯示模式後自動轆到合適嘅位置
   video_player_scroll_desc: 啓用後，若果顯示模式係闊螢幕或預設嗰陣，會自動轆到合適嘅位置。
   enlarge_favorite_dialog: 放大收藏彈窗
@@ -780,13 +783,6 @@ settings:
   show_video_screenshot_button_desc: 啓用後，喺影片播放器控制欄顯示擷取目前影片畫面嘅按鈕。
   group_fonts: ''
   group_visual_effects: ''
-comment_shadow_ban_detection:
-  ok: 留言可以正常公開顯示。
-  shadowban: 呢條留言疑似得自己睇到（ShadowBan）。
-  deleted: 呢條留言疑似已經畀系統刪除。
-  invisible: 呢條留言已經畀 Bilibili 標記做不可見。
-  suspicious: 呢條留言可能仲審核緊，或者留言區而家有限制。
-  error: 暫時確認唔到留言狀態，請遲啲再試。
 auth:
   auth_access_key_first: 整之前記得先授權 BewlyBewly 去用 access key
 topbar:
@@ -987,7 +983,10 @@ favorites:
   collected_season_prefix: 合集
   folder_section_title: 所有收藏夾
   season_section_title: 收藏嘅合集
+  article_section_title: 圖文收藏
   video_count: 影片數：{count}
+  article_count: 圖文數：{count}
+  article_load_failed: 圖文收藏載入失敗，請遲啲再試
   unfavorite: 唔愛喇
   unfavorite_confirm: |-
     係咪要剷走你揀過啲片呀？
@@ -1031,7 +1030,7 @@ version_reminder:
   description: 睇吓呢個版本嘅更新記錄同最新動態。確認之後，呢個版本就唔會再顯示提醒。
   github_releases: GitHub Releases
   github_releases_desc: 睇完整版本記錄同下載資料
-  bilibili_dynamic: B站動態
+  bilibili_dynamic: Bilibili 動態
   bilibili_dynamic_desc: 睇開發者發佈嘅更新動態
   xiaohongshu_page: 小紅書
   xiaohongshu_page_desc: 喺小紅書搵 BewlyCat 最新動態
