@@ -865,7 +865,7 @@ function handleClearKeyword() {
     }
 
     &.focus input {
-      --uno: "border-$bew-theme-color";
+      border-color: var(--bew-theme-color);
       border-radius: var(--bew-radius);
       box-shadow:
         0 0 0 2px var(--bew-theme-color),
