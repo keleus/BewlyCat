@@ -1717,7 +1717,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 
 .favorites-nav-section {
   display: flex;
-  flex: 1 1 0;
+  flex: 0 1 auto;
   flex-direction: column;
   min-height: 0;
   padding-bottom: 12px;
@@ -1949,7 +1949,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 
 .category-list {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   flex-direction: column;
   gap: 4px;
   min-height: 0;
@@ -1975,7 +1975,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
     color 160ms ease;
 }
 
-.category-nav-item:hover:not(:disabled) {
+.category-nav-item:hover:not(:disabled):not(.active):not(.selected) {
   color: var(--bew-text-1);
   background: var(--bew-fill-2);
 }
