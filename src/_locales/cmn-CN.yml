@@ -1016,7 +1016,10 @@ favorites:
   collected_season_prefix: 合集
   folder_section_title: 所有收藏夹
   season_section_title: 收藏的合集
+  article_section_title: 图文收藏
   video_count: 视频数：{count}
+  article_count: 图文数：{count}
+  article_load_failed: 图文收藏加载失败，请稍后重试
   unfavorite: 取消收藏
   unfavorite_confirm: |-
     要取消收藏选中的视频吗？
