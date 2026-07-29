@@ -153,6 +153,41 @@ const randomPlayActivationModeOptions = computed(() => {
         <Radio v-model="settings.useBilibiliDefaultAutoPlay" />
       </SettingsItem>
 
+      <SettingsItem
+        v-if="settings.useBilibiliDefaultAutoPlay"
+        :title="t('settings.enable_independent_auto_play')"
+        :desc="t('settings.enable_independent_auto_play_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.enableIndependentAutoPlay" />
+      </SettingsItem>
+
+      <SettingsItemSubgroup
+        v-if="settings.useBilibiliDefaultAutoPlay && settings.enableIndependentAutoPlay"
+        :title="t('settings.group_independent_auto_play_contexts')"
+      >
+        <SettingsItem
+          :title="t('settings.auto_play_watch_later')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.independentAutoPlayStates.watchLater" />
+        </SettingsItem>
+
+        <SettingsItem
+          :title="t('settings.auto_play_favorite')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.independentAutoPlayStates.favorite" />
+        </SettingsItem>
+
+        <SettingsItem
+          :title="t('settings.auto_play_video_and_collection')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.independentAutoPlayStates.video" />
+        </SettingsItem>
+      </SettingsItemSubgroup>
+
       <SettingsItemSubgroup
         v-if="!settings.useBilibiliDefaultAutoPlay"
         :title="t('settings.group_video_type_end_behavior')"

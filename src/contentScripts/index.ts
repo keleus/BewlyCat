@@ -880,6 +880,26 @@ else if (shouldInitializeContentScript) {
     },
   )
 
+  watch(
+    [
+      () => settings.value.useBilibiliDefaultAutoPlay,
+      () => settings.value.enableIndependentAutoPlay,
+      () => settings.value.independentAutoPlayStates.watchLater,
+      () => settings.value.independentAutoPlayStates.favorite,
+      () => settings.value.independentAutoPlayStates.video,
+    ],
+    (currentValues, previousValues) => {
+      if (
+        isVideoOrBangumiPage()
+        && currentValues.some((value, index) => value !== previousValues[index])
+      ) {
+        setTimeout(() => {
+          applyAutoPlayByVideoType()
+        }, 1000)
+      }
+    },
+  )
+
   // 监听设置变化
   watch(settings, (newSettings, oldSettings) => {
     sendSettingsToPage(newSettings)
@@ -889,6 +909,10 @@ else if (shouldInitializeContentScript) {
     // 检查自动播放相关设置是否发生变化
       const autoPlaySettingsChanged = oldSettings && (
         newSettings.useBilibiliDefaultAutoPlay !== oldSettings.useBilibiliDefaultAutoPlay
+        || newSettings.enableIndependentAutoPlay !== oldSettings.enableIndependentAutoPlay
+        || newSettings.independentAutoPlayStates.watchLater !== oldSettings.independentAutoPlayStates.watchLater
+        || newSettings.independentAutoPlayStates.favorite !== oldSettings.independentAutoPlayStates.favorite
+        || newSettings.independentAutoPlayStates.video !== oldSettings.independentAutoPlayStates.video
         || newSettings.enableRandomPlay !== oldSettings.enableRandomPlay
         || newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
         || newSettings.autoPlayCollection !== oldSettings.autoPlayCollection

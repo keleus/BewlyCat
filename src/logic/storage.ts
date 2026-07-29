@@ -132,6 +132,8 @@ export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
 export type HomeTabsPosition = 'left' | 'center'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop' | 'customSequential' | 'customReverse' | 'customRandom'
+export type IndependentAutoPlayContext = 'watchLater' | 'favorite' | 'video'
+export type IndependentAutoPlayStates = Record<IndependentAutoPlayContext, boolean>
 export type RandomPlayOrder = 'sequential' | 'reverse' | 'random'
 export type DefaultCustomPlayOrder = RandomPlayOrder
 /** 订阅合集「播放全部」起播策略 */
@@ -418,6 +420,8 @@ export interface Settings {
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: boolean // 使用B站默认自动播放行为（总开关）
+  enableIndependentAutoPlay: boolean // 启用按播放场景设置自动连播
+  independentAutoPlayStates: IndependentAutoPlayStates // 三类播放场景的自动连播开关
 
   // 分类型自动连播设置
   autoPlayMultipart: AutoPlayMode // 分P视频自动播放模式
@@ -695,6 +699,12 @@ export const originalSettings: Settings = {
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: true, // 使用B站默认自动播放行为（总开关），默认开启
+  enableIndependentAutoPlay: false, // 独立自动连播设置，默认关闭
+  independentAutoPlayStates: {
+    watchLater: false,
+    favorite: false,
+    video: false,
+  },
 
   // 分类型自动连播设置（总开关关闭时生效）
   autoPlayMultipart: 'autoPlay', // 分P视频自动播放模式，默认自动连播
@@ -808,6 +818,29 @@ watch(
     // 确保 useBilibiliDefaultAutoPlay 存在（新用户或旧版本升级）
     if (!('useBilibiliDefaultAutoPlay' in record)) {
       record.useBilibiliDefaultAutoPlay = true
+    }
+
+    const independentAutoPlayContexts: IndependentAutoPlayContext[] = ['watchLater', 'favorite', 'video']
+    const storedIndependentAutoPlayStates = record.independentAutoPlayStates
+    const needsIndependentAutoPlayStateNormalization = !storedIndependentAutoPlayStates
+      || typeof storedIndependentAutoPlayStates !== 'object'
+      || independentAutoPlayContexts.some((context) => {
+        const storedValue = storedIndependentAutoPlayStates[context]
+        return typeof storedValue !== 'boolean'
+      })
+
+    if (needsIndependentAutoPlayStateNormalization) {
+      record.independentAutoPlayStates = Object.fromEntries(
+        independentAutoPlayContexts.map((context) => {
+          const storedValue = storedIndependentAutoPlayStates?.[context]
+          return [
+            context,
+            typeof storedValue === 'boolean'
+              ? storedValue
+              : originalSettings.independentAutoPlayStates[context],
+          ]
+        }),
+      ) as IndependentAutoPlayStates
     }
 
     const legacyRandomPlayOrder = record.randomPlayOrder
