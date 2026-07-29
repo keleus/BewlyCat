@@ -1,9 +1,10 @@
 import { watch } from 'vue'
 
+import { VIDEO_PAGE_PARTITION_DATA_REQUEST, VIDEO_PAGE_PARTITION_DATA_RESPONSE } from '~/constants/globalEvents'
 import type { VideoPartition } from '~/constants/videoPartitions'
+import { getPgcVideoPartition, getUgcVideoPartition, PGC_VIDEO_PARTITIONS, UGC_VIDEO_PARTITIONS } from '~/constants/videoPartitions'
 import { settings } from '~/logic'
 import { isVideoOrBangumiPage } from '~/utils/main'
-import { loadVideoPartition } from '~/utils/videoPartition'
 
 interface VideoPageLookup {
   aid?: number
@@ -12,19 +13,29 @@ interface VideoPageLookup {
   seasonId?: number
 }
 
+interface VideoPagePartitionPayload extends VideoPageLookup {
+  requestId: number
+  url: string
+  seasonType?: number
+  tidV2?: number
+  tnameV2?: string
+}
+
 const PARTITION_TAG_CLASS = 'bewly-video-page-partition-tag'
 const RETRY_INTERVAL_MS = 500
 const MAX_RETRY_COUNT = 30
+const ALL_PGC_PARTITIONS = Object.values(PGC_VIDEO_PARTITIONS) as readonly VideoPartition[]
 
 let refreshToken = 0
 let retryTimer: ReturnType<typeof setTimeout> | undefined
+let currentPartition: VideoPartition | undefined
 let hasInitialized = false
 
-function parsePositiveInteger(value: string | undefined) {
-  if (!value)
+function parsePositiveInteger(value: unknown) {
+  if (value === undefined || value === null || value === '')
     return undefined
 
-  const parsed = Number.parseInt(value, 10)
+  const parsed = typeof value === 'number' ? value : Number.parseInt(String(value), 10)
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : undefined
 }
 
@@ -50,6 +61,63 @@ function getVideoPageLookup(url: string): VideoPageLookup | undefined {
   catch {
     return undefined
   }
+}
+
+function normalizePartitionPayload(value: unknown): VideoPagePartitionPayload | undefined {
+  if (!value || typeof value !== 'object')
+    return undefined
+
+  const payload = value as Record<string, unknown>
+  const requestId = parsePositiveInteger(payload.requestId)
+  if (!requestId || typeof payload.url !== 'string')
+    return undefined
+
+  return {
+    requestId,
+    url: payload.url,
+    aid: parsePositiveInteger(payload.aid),
+    bvid: typeof payload.bvid === 'string' ? payload.bvid.trim() : undefined,
+    epid: parsePositiveInteger(payload.epid),
+    seasonId: parsePositiveInteger(payload.seasonId),
+    seasonType: parsePositiveInteger(payload.seasonType),
+    tidV2: parsePositiveInteger(payload.tidV2),
+    tnameV2: typeof payload.tnameV2 === 'string' ? payload.tnameV2.trim() : undefined,
+  }
+}
+
+function payloadMatchesLookup(payload: VideoPagePartitionPayload, lookup: VideoPageLookup) {
+  if (lookup.bvid)
+    return payload.bvid?.toLocaleLowerCase() === lookup.bvid.toLocaleLowerCase()
+  if (lookup.aid)
+    return payload.aid === lookup.aid
+  if (lookup.epid)
+    return payload.epid === lookup.epid
+  if (lookup.seasonId)
+    return payload.seasonId === lookup.seasonId
+  return false
+}
+
+function createFallbackPartition(id: number | undefined, name: string | undefined) {
+  const normalizedName = name?.trim()
+  if (!normalizedName)
+    return undefined
+
+  return {
+    id: id ?? 0,
+    name: normalizedName,
+    url: `https://search.bilibili.com/all?keyword=${encodeURIComponent(normalizedName)}`,
+  }
+}
+
+function getPartitionFromPayload(payload: VideoPagePartitionPayload, lookup: VideoPageLookup) {
+  if (!payloadMatchesLookup(payload, lookup))
+    return undefined
+
+  if (lookup.epid || lookup.seasonId)
+    return getPgcVideoPartition(payload.seasonType)
+
+  return getUgcVideoPartition(payload.tidV2)
+    ?? createFallbackPartition(payload.tidV2, payload.tnameV2)
 }
 
 function removePartitionTags() {
@@ -80,6 +148,32 @@ function hasNativeTagWithLabel(panel: HTMLElement, label: string) {
   return Array.from(panel.querySelectorAll<HTMLElement>('a.tag-link, .tag-link'))
     .some(element => !element.closest(`.${PARTITION_TAG_CLASS}`)
       && element.textContent?.trim().toLocaleLowerCase() === normalizedLabel)
+}
+
+function getNativePartition(panel: HTMLElement, lookup: VideoPageLookup) {
+  const candidates = lookup.epid || lookup.seasonId ? ALL_PGC_PARTITIONS : UGC_VIDEO_PARTITIONS
+
+  for (const link of Array.from(panel.querySelectorAll<HTMLAnchorElement>('a.tag-link'))) {
+    if (link.closest(`.${PARTITION_TAG_CLASS}`))
+      continue
+
+    let pathname = ''
+    try {
+      pathname = new URL(link.href, location.href).pathname.replace(/\/$/, '')
+    }
+    catch {
+      // Ignore malformed native links and continue matching by label.
+    }
+
+    const partition = candidates.find((candidate) => {
+      const candidatePath = new URL(candidate.url).pathname.replace(/\/$/, '')
+      return Boolean(pathname) && candidatePath === pathname
+    })
+    if (partition)
+      return partition
+  }
+
+  return undefined
 }
 
 function findNativeTagTemplate(panel: HTMLElement) {
@@ -139,23 +233,68 @@ function insertPartitionTag(partition: VideoPartition) {
   return true
 }
 
-function scheduleInsertion(partition: VideoPartition, token: number, attempt = 0) {
+function requestPagePartitionData(token: number) {
+  window.postMessage({
+    type: VIDEO_PAGE_PARTITION_DATA_REQUEST,
+    data: { requestId: token },
+  }, '*')
+}
+
+function schedulePartitionTagRefresh(token: number, attempt = 0) {
   if (token !== refreshToken || !settings.value.showVideoPagePartitionTag || !isVideoOrBangumiPage())
     return
 
-  insertPartitionTag(partition)
+  const lookup = getVideoPageLookup(location.href)
+  if (!lookup)
+    return
+
+  const panel = findTagPanel()
+  currentPartition ??= panel ? getNativePartition(panel, lookup) : undefined
+
+  if (currentPartition)
+    insertPartitionTag(currentPartition)
+  else
+    requestPagePartitionData(token)
+
   if (attempt >= MAX_RETRY_COUNT)
     return
 
   retryTimer = setTimeout(() => {
     retryTimer = undefined
-    scheduleInsertion(partition, token, attempt + 1)
+    schedulePartitionTagRefresh(token, attempt + 1)
   }, RETRY_INTERVAL_MS)
+}
+
+function handlePagePartitionData(event: MessageEvent) {
+  if (event.source !== window || event.data?.type !== VIDEO_PAGE_PARTITION_DATA_RESPONSE)
+    return
+
+  const payload = normalizePartitionPayload(event.data.data)
+  if (
+    !payload
+    || payload.requestId !== refreshToken
+    || !settings.value.showVideoPagePartitionTag
+    || !isVideoOrBangumiPage(payload.url)
+  ) {
+    return
+  }
+
+  const lookup = getVideoPageLookup(location.href)
+  if (!lookup)
+    return
+
+  const partition = getPartitionFromPayload(payload, lookup)
+  if (!partition)
+    return
+
+  currentPartition = partition
+  insertPartitionTag(partition)
 }
 
 export function refreshVideoPagePartitionTag() {
   refreshToken++
   const token = refreshToken
+  currentPartition = undefined
 
   if (retryTimer) {
     clearTimeout(retryTimer)
@@ -166,14 +305,10 @@ export function refreshVideoPagePartitionTag() {
   if (!settings.value.showVideoPagePartitionTag || !isVideoOrBangumiPage())
     return
 
-  const lookup = getVideoPageLookup(location.href)
-  if (!lookup)
+  if (!getVideoPageLookup(location.href))
     return
 
-  void loadVideoPartition(lookup).then((partition) => {
-    if (partition)
-      scheduleInsertion(partition, token)
-  })
+  schedulePartitionTagRefresh(token)
 }
 
 export function initVideoPagePartitionTag() {
@@ -181,6 +316,7 @@ export function initVideoPagePartitionTag() {
     return
 
   hasInitialized = true
+  window.addEventListener('message', handlePagePartitionData)
   refreshVideoPagePartitionTag()
   watch(
     () => settings.value.showVideoPagePartitionTag,

@@ -854,6 +854,7 @@ settings:
   show_video_screenshot_button_desc: Show a button in the video player controls for capturing the current video frame.
   show_video_page_partition_tag: Show partition in video tags
   show_video_page_partition_tag_desc: Show the video's full partition in the native tag area on playback pages.
+  show_video_page_partition_tag_data_source_notice: Reuses data already loaded by the playback page without making another video-detail API request.
   show_video_card_partition_tag: Show partition on video cards
   show_video_card_partition_tag_desc: Show the full partition on homepage and other video cards.
   partition_api_risk_warning: This adds video-detail API requests. Extensive browsing or frequent navigation may trigger Bilibili risk controls and cause page requests to fail. Enable with caution.

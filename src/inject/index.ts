@@ -1,5 +1,6 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
 import { PAGE_NO_COOKIE_SEARCH_REQUEST, PAGE_NO_COOKIE_SEARCH_RESPONSE } from '~/constants/api'
+import { VIDEO_PAGE_PARTITION_DATA_REQUEST, VIDEO_PAGE_PARTITION_DATA_RESPONSE } from '~/constants/globalEvents'
 import type { Settings } from '~/logic/storage'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isElectron } from '~/utils/main'
@@ -531,6 +532,39 @@ else if (shouldInitializePageScript) {
   }
 
   // 添加消息监听器
+  function asRecord(value: unknown): Record<string, unknown> | undefined {
+    return value && typeof value === 'object' ? value as Record<string, unknown> : undefined
+  }
+
+  function asPositiveInteger(value: unknown) {
+    const number = typeof value === 'number' ? value : Number.parseInt(String(value), 10)
+    return Number.isSafeInteger(number) && number > 0 ? number : undefined
+  }
+
+  function asNonEmptyString(value: unknown) {
+    return typeof value === 'string' && value.trim() ? value.trim() : undefined
+  }
+
+  function getVideoPagePartitionData(requestId: unknown) {
+    const initialState = asRecord((window as typeof window & { __INITIAL_STATE__?: unknown }).__INITIAL_STATE__)
+    const videoInfo = asRecord(initialState?.videoInfo)
+    const videoData = asRecord(initialState?.videoData) ?? asRecord(videoInfo?.data) ?? videoInfo
+    const epInfo = asRecord(initialState?.epInfo)
+    const mediaInfo = asRecord(initialState?.mediaInfo)
+
+    return {
+      requestId,
+      url: window.location.href,
+      aid: asPositiveInteger(videoData?.aid ?? initialState?.aid),
+      bvid: asNonEmptyString(videoData?.bvid ?? initialState?.bvid),
+      epid: asPositiveInteger(epInfo?.ep_id ?? epInfo?.id ?? initialState?.ep_id),
+      seasonId: asPositiveInteger(mediaInfo?.season_id ?? epInfo?.season_id ?? initialState?.season_id),
+      seasonType: asPositiveInteger(mediaInfo?.season_type ?? initialState?.season_type),
+      tidV2: asPositiveInteger(videoData?.tid_v2 ?? videoData?.tidv2),
+      tnameV2: asNonEmptyString(videoData?.tname_v2 ?? videoData?.tnamev2),
+    }
+  }
+
   window.addEventListener('message', (event) => {
   // 确保消息来源是插件环境
     if (event.source !== window)
@@ -554,6 +588,12 @@ else if (shouldInitializePageScript) {
           console.log('[AudioInterceptor] 音量均衡已启用')
         }
       }
+    }
+    else if (type === VIDEO_PAGE_PARTITION_DATA_REQUEST) {
+      window.postMessage({
+        type: VIDEO_PAGE_PARTITION_DATA_RESPONSE,
+        data: getVideoPagePartitionData(data?.requestId),
+      }, '*')
     }
   })
 
