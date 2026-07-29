@@ -769,6 +769,10 @@ else if (shouldInitializeContentScript) {
       container.style.setProperty('--bew-dark-base-color', settings.value.darkModeBaseColor)
     }
 
+    if (settings.value.enableFrostedGlass && settings.value.useSeparateFrostedGlassColor) {
+      container.style.setProperty('--bew-frosted-glass-base-color', settings.value.frostedGlassBaseColor)
+    }
+
     const root = document.createElement('div')
     const useViewportLayout = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
 

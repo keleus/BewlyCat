@@ -328,6 +328,8 @@
 
   // 深色模式基准颜色（通过 JS 动态设置）
   --bew-dark-base-color: #2a2d32;
+  // 毛玻璃默认跟随深色模式基准颜色，用户可通过设置单独覆盖
+  --bew-frosted-glass-base-color: var(--bew-dark-base-color);
 
   // #region shadow
   --bew-shadow-1: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
@@ -359,15 +361,17 @@
   --bew-homepage-bg-mask-opacity: 0;
   --bew-homepage-bg-mask: hsl(210 8% 16% / var(--bew-homepage-bg-mask-opacity));
 
-  --bew-content: rgb(from color-mix(in oklab, var(--bew-dark-base-color), white 3%) r g b / var(--bew-content-opacity));
+  --bew-content: rgb(
+    from color-mix(in oklab, var(--bew-frosted-glass-base-color), white 3%) r g b / var(--bew-content-opacity)
+  );
   --bew-content-hover: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 8%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-frosted-glass-base-color), white 8%) r g b / var(--bew-content-opacity)
   );
   --bew-content-alt: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 5%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-frosted-glass-base-color), white 5%) r g b / var(--bew-content-opacity)
   );
   --bew-content-alt-hover: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 10%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-frosted-glass-base-color), white 10%) r g b / var(--bew-content-opacity)
   );
 
   --bew-content-solid: color-mix(in oklab, var(--bew-dark-base-color), white 3%);
@@ -376,10 +380,10 @@
   --bew-content-alt-solid-hover: color-mix(in oklab, var(--bew-dark-base-color), white 10%);
 
   --bew-elevated: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 6%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-frosted-glass-base-color), white 6%) r g b / var(--bew-content-opacity)
   );
   --bew-elevated-hover: rgb(
-    from color-mix(in oklab, var(--bew-dark-base-color), white 11%) r g b / var(--bew-content-opacity)
+    from color-mix(in oklab, var(--bew-frosted-glass-base-color), white 11%) r g b / var(--bew-content-opacity)
   );
   --bew-elevated-alt: var(--bew-elevated);
   --bew-elevated-alt-hover: var(--bew-elevated-hover);

@@ -406,6 +406,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_visual_effects',
     'settings.enable_frosted_glass',
     'settings.frosted_glass_blur_intensity',
+    'settings.use_separate_frosted_glass_color',
+    'settings.frosted_glass_base_color',
     'settings.disable_shadow',
     'settings.group_color',
     'settings.theme',

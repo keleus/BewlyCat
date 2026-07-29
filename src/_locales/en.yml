@@ -290,6 +290,9 @@ settings:
     the indent.
   enable_frosted_glass: Enable frosted glass effect
   frosted_glass_blur_intensity: Frosted glass blur intensity
+  use_separate_frosted_glass_color: Use a separate frosted glass color
+  use_separate_frosted_glass_color_desc: When off, the dark mode base color is used. This only affects dark mode.
+  frosted_glass_base_color: Frosted glass base color
   disable_shadow: Disable shadow
   link_opening_behavior_opt:
     current_tab: Current tab

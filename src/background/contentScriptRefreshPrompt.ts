@@ -122,6 +122,7 @@ function showRefreshPrompt(...args: unknown[]): void {
     '--bew-theme-color-80',
     '--bew-theme-color-40',
     '--bew-dark-base-color',
+    '--bew-frosted-glass-base-color',
     '--bew-text-1',
     '--bew-text-2',
     '--bew-border-color',

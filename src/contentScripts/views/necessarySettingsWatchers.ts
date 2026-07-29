@@ -58,6 +58,23 @@ export function setupNecessarySettingsWatchers() {
     })
   }
 
+  const applyFrostedGlassBaseColor = () => {
+    const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
+    const targets: HTMLElement[] = [document.documentElement]
+    const shouldUseSeparateColor = settings.value.enableFrostedGlass
+      && settings.value.useSeparateFrostedGlassColor
+
+    if (bewlyElement)
+      targets.push(bewlyElement)
+
+    targets.forEach((element) => {
+      if (shouldUseSeparateColor)
+        element.style.setProperty('--bew-frosted-glass-base-color', settings.value.frostedGlassBaseColor)
+      else
+        element.style.removeProperty('--bew-frosted-glass-base-color')
+    })
+  }
+
   const applyFrostedGlassState = () => {
     const bewlyElement = document.querySelector('#bewly') as HTMLElement | null
     const shouldDisable = !settings.value.enableFrostedGlass
@@ -65,6 +82,7 @@ export function setupNecessarySettingsWatchers() {
     bewlyElement?.classList.toggle('disable-frosted-glass', shouldDisable)
     document.documentElement.classList.toggle('disable-frosted-glass', shouldDisable)
     applyFrostedGlassBlur(settings.value.frostedGlassBlurIntensity)
+    applyFrostedGlassBaseColor()
   }
 
   watch(
@@ -197,6 +215,15 @@ export function setupNecessarySettingsWatchers() {
 
       applyFrostedGlassBlur(clamped)
     },
+    { immediate: true },
+  )
+
+  watch(
+    [
+      () => settings.value.useSeparateFrostedGlassColor,
+      () => settings.value.frostedGlassBaseColor,
+    ],
+    applyFrostedGlassBaseColor,
     { immediate: true },
   )
 

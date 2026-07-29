@@ -124,6 +124,11 @@ function changeDarkModeBaseColor(color: string) {
 }
 const changeDarkModeBaseColorThrottle = useThrottleFn((color: string) => changeDarkModeBaseColor(color), 100)
 
+function changeFrostedGlassBaseColor(color: string) {
+  settings.value.frostedGlassBaseColor = color
+}
+const changeFrostedGlassBaseColorThrottle = useThrottleFn((color: string) => changeFrostedGlassBaseColor(color), 100)
+
 function changeWallpaper(url: string) {
   // If you had already set the wallpaper, it enables the wallpaper masking to prevent text hard to see
   if (url)
@@ -168,6 +173,32 @@ function changeWallpaper(url: string) {
             :label="`${settings.frostedGlassBlurIntensity}`"
           />
         </div>
+      </SettingsItem>
+      <SettingsItem
+        v-if="settings.enableFrostedGlass"
+        :title="$t('settings.use_separate_frosted_glass_color')"
+        :desc="$t('settings.use_separate_frosted_glass_color_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.useSeparateFrostedGlassColor" />
+      </SettingsItem>
+      <SettingsItem
+        v-if="settings.enableFrostedGlass && settings.useSeparateFrostedGlassColor"
+        :title="$t('settings.frosted_glass_base_color')"
+        right-width="auto"
+      >
+        <label
+          class="frosted-glass-color-picker"
+          :style="{ '--frosted-glass-preview-color': settings.frostedGlassBaseColor }"
+        >
+          <span class="frosted-glass-color-preview" aria-hidden="true" />
+          <input
+            :value="settings.frostedGlassBaseColor"
+            type="color"
+            :aria-label="$t('settings.frosted_glass_base_color')"
+            @input="(e) => changeFrostedGlassBaseColorThrottle((e.target as HTMLInputElement)?.value)"
+          >
+        </label>
       </SettingsItem>
       <SettingsItem :title="$t('settings.disable_shadow')" right-width="auto">
         <Radio v-model="settings.disableShadow" />
@@ -329,6 +360,59 @@ function changeWallpaper(url: string) {
 
 .dark-mode-base-color-options {
   width: 252px;
+}
+
+.frosted-glass-color-picker {
+  position: relative;
+  display: flex;
+  width: var(--bew-control-height);
+  min-width: var(--bew-control-height);
+  height: var(--bew-control-height);
+  padding: var(--bew-control-padding);
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--bew-control-background);
+  border: 1px solid var(--bew-fill-2);
+  border-radius: var(--bew-interactive-radius);
+  box-sizing: border-box;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+
+  &:hover {
+    background: var(--bew-fill-1);
+    border-color: var(--bew-fill-3);
+  }
+
+  &:active .frosted-glass-color-preview {
+    transform: scale(0.92);
+  }
+
+  &:has(input:focus-visible) {
+    border-color: var(--bew-theme-color);
+    box-shadow: 0 0 0 2px var(--bew-theme-color-30);
+  }
+
+  input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0;
+  }
+}
+
+.frosted-glass-color-preview {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: var(--frosted-glass-preview-color);
+  border-radius: var(--bew-radius-sm);
+  box-shadow: var(--bew-shadow-edge-glow-1);
+  transition: transform 150ms ease;
 }
 
 .theme-schedule input {
