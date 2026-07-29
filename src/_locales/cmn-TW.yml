@@ -772,10 +772,10 @@ settings:
   show_video_screenshot_button_desc: 啟用後，在影片播放器控制列中顯示擷取目前影片畫面的按鈕。
   show_video_page_partition_tag: 在影片標籤中顯示分區
   show_video_page_partition_tag_desc: 在影片頁原生標籤區域顯示目前影片所屬的完整分區。
-  show_video_page_partition_tag_data_source_notice: 僅重用播放頁已有資料，不會額外請求影片詳細資料 API。
+  show_video_page_partition_tag_data_source_notice: 優先重用播放頁已有資料，無法取得時才會補查影片詳細資料 API。
   show_video_card_partition_tag: 在影片卡片中顯示分區
   show_video_card_partition_tag_desc: 在首頁等影片卡片中顯示完整分區。
-  partition_api_risk_warning: 啟用後會增加影片詳細資料 API 請求；大量瀏覽或頻繁切換影片可能觸發 B 站風控並造成頁面請求異常，請謹慎啟用。
+  partition_api_risk_warning: 影片詳細資料補查會增加 API 請求；大量瀏覽或頻繁切換影片可能觸發 B 站風控並造成頁面請求異常，請謹慎啟用。
   volume_normalization:
     title: 音量均衡
     enable: 啟用音量均衡

@@ -5,6 +5,7 @@ import type { VideoPartition } from '~/constants/videoPartitions'
 import { getPgcVideoPartition, getUgcVideoPartition, PGC_VIDEO_PARTITIONS, UGC_VIDEO_PARTITIONS } from '~/constants/videoPartitions'
 import { settings } from '~/logic'
 import { isVideoOrBangumiPage } from '~/utils/main'
+import { loadVideoPartition } from '~/utils/videoPartition'
 
 interface VideoPageLookup {
   aid?: number
@@ -23,16 +24,20 @@ interface VideoPagePartitionPayload extends VideoPageLookup {
 
 const PARTITION_TAG_CLASS = 'bewly-video-page-partition-tag'
 const PARTITION_TAG_HOST_CLASS = 'bewly-video-page-partition-host'
+const PARTITION_TAG_ANCHOR_CLASS = 'bewly-video-page-partition-anchor'
 const PARTITION_TAG_STYLE_ID = 'bewly-video-page-partition-style'
 const PARTITION_TAG_WIDTH_PROPERTY = '--bewly-video-page-partition-width'
 const PARTITION_TAG_HEIGHT_PROPERTY = '--bewly-video-page-partition-height'
+const PARTITION_TAG_SPACING_PROPERTY = '--bewly-video-page-partition-spacing'
 const RETRY_INTERVAL_MS = 500
 const MAX_RETRY_COUNT = 30
+const API_FALLBACK_ATTEMPT = 4
 const ALL_PGC_PARTITIONS = Object.values(PGC_VIDEO_PARTITIONS) as readonly VideoPartition[]
 
 let refreshToken = 0
 let retryTimer: ReturnType<typeof setTimeout> | undefined
 let currentPartition: VideoPartition | undefined
+let hasStartedApiFallback = false
 let hasInitialized = false
 
 function parsePositiveInteger(value: unknown) {
@@ -130,7 +135,10 @@ function removePartitionTags() {
     panel.classList.remove(PARTITION_TAG_HOST_CLASS)
     panel.style.removeProperty(PARTITION_TAG_WIDTH_PROPERTY)
     panel.style.removeProperty(PARTITION_TAG_HEIGHT_PROPERTY)
+    panel.style.removeProperty(PARTITION_TAG_SPACING_PROPERTY)
   })
+  document.querySelectorAll<HTMLElement>(`.${PARTITION_TAG_ANCHOR_CLASS}`)
+    .forEach(element => element.classList.remove(PARTITION_TAG_ANCHOR_CLASS))
 }
 
 function findTagPanel() {
@@ -183,9 +191,13 @@ function getNativePartition(panel: HTMLElement, lookup: VideoPageLookup) {
   return undefined
 }
 
-function findNativeTagTemplate(panel: HTMLElement) {
+function findFirstVisibleNativeTag(panel: HTMLElement) {
   return Array.from(panel.querySelectorAll<HTMLElement>(':scope > .tag'))
-    .find(element => element.querySelector('.ordinary-tag .tag-link'))
+    .find((element) => {
+      const rect = element.getBoundingClientRect()
+      const style = getComputedStyle(element)
+      return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden'
+    })
 }
 
 function ensurePartitionTagStyle() {
@@ -195,40 +207,48 @@ function ensurePartitionTagStyle() {
   const style = document.createElement('style')
   style.id = PARTITION_TAG_STYLE_ID
   style.textContent = `
-    .${PARTITION_TAG_HOST_CLASS}::before {
-      content: '';
-      display: inline-block;
-      box-sizing: border-box;
-      width: var(${PARTITION_TAG_WIDTH_PROPERTY}, 0px);
-      min-width: var(${PARTITION_TAG_WIDTH_PROPERTY}, 0px);
-      height: var(${PARTITION_TAG_HEIGHT_PROPERTY}, 24px);
-      flex: 0 0 var(${PARTITION_TAG_WIDTH_PROPERTY}, 0px);
-      vertical-align: top;
+    .${PARTITION_TAG_ANCHOR_CLASS} {
+      margin-left: calc(
+        var(${PARTITION_TAG_WIDTH_PROPERTY}, 0px)
+        + var(${PARTITION_TAG_SPACING_PROPERTY}, 0px)
+      ) !important;
     }
 
     .${PARTITION_TAG_CLASS} {
       position: absolute;
-      z-index: 20;
+      z-index: 1000;
       display: inline-flex;
       box-sizing: border-box;
       align-items: center;
       justify-content: center;
+      width: var(${PARTITION_TAG_WIDTH_PROPERTY}, auto);
+      min-width: max-content;
+      max-width: none !important;
       height: var(${PARTITION_TAG_HEIGHT_PROPERTY}, 24px);
       padding: 0 12px;
       border: 0;
       border-radius: 6px;
+      overflow: visible !important;
       background: var(--bg2, #f1f2f3);
       color: var(--text2, #61666d);
       font: 400 12px/16px Arial, Helvetica, sans-serif;
       text-decoration: none;
       white-space: nowrap;
       cursor: pointer;
+      clip-path: none !important;
+      contain: none !important;
+      opacity: 1;
       transition: color 0.2s ease, background-color 0.2s ease;
     }
 
     .${PARTITION_TAG_CLASS}:hover {
       background: var(--graph_bg_thin, #e3e5e7);
       color: var(--brand_blue, #00aeec);
+    }
+
+    .${PARTITION_TAG_CLASS}:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--brand_blue, #00aeec) 35%, transparent);
+      outline-offset: 1px;
     }
   `
   const styleHost = document.head ?? document.documentElement
@@ -239,6 +259,9 @@ function clearPartitionTagHost(panel: HTMLElement) {
   panel.classList.remove(PARTITION_TAG_HOST_CLASS)
   panel.style.removeProperty(PARTITION_TAG_WIDTH_PROPERTY)
   panel.style.removeProperty(PARTITION_TAG_HEIGHT_PROPERTY)
+  panel.style.removeProperty(PARTITION_TAG_SPACING_PROPERTY)
+  panel.querySelectorAll<HTMLElement>(`:scope > .${PARTITION_TAG_ANCHOR_CLASS}`)
+    .forEach(element => element.classList.remove(PARTITION_TAG_ANCHOR_CLASS))
 }
 
 function getOrCreatePartitionTag() {
@@ -266,22 +289,20 @@ function insertPartitionTag(partition: VideoPartition) {
     return true
   }
 
-  const nativeTagTemplate = findNativeTagTemplate(panel)
-  if (!nativeTagTemplate)
+  ensurePartitionTagStyle()
+  document.querySelectorAll<HTMLElement>(`.${PARTITION_TAG_HOST_CLASS}`).forEach((host) => {
+    clearPartitionTagHost(host)
+  })
+
+  const nativeTag = findFirstVisibleNativeTag(panel)
+  if (!nativeTag)
     return false
 
-  ensurePartitionTagStyle()
   const tag = getOrCreatePartitionTag()
   if (!tag)
     return false
 
-  document.querySelectorAll<HTMLElement>(`.${PARTITION_TAG_HOST_CLASS}`).forEach((host) => {
-    if (host !== panel)
-      clearPartitionTagHost(host)
-  })
-  clearPartitionTagHost(panel)
-
-  const anchorRect = nativeTagTemplate.getBoundingClientRect()
+  const anchorRect = nativeTag.getBoundingClientRect()
   if (anchorRect.width <= 0 || anchorRect.height <= 0) {
     tag.hidden = true
     return false
@@ -291,21 +312,26 @@ function insertPartitionTag(partition: VideoPartition) {
   tag.dataset.partitionId = partition.id.toString()
   tag.href = partition.url
   tag.textContent = partition.name
+  tag.title = partition.name
+  tag.style.removeProperty(PARTITION_TAG_WIDTH_PROPERTY)
   tag.style.setProperty(PARTITION_TAG_HEIGHT_PROPERTY, `${anchorRect.height}px`)
   tag.style.left = `${window.scrollX + anchorRect.left}px`
   tag.style.top = `${window.scrollY + anchorRect.top}px`
 
   const panelStyle = getComputedStyle(panel)
-  const nativeTagStyle = getComputedStyle(nativeTagTemplate)
+  const nativeTagStyle = getComputedStyle(nativeTag)
   const isGapLayout = /^(?:flex|grid|inline-flex|inline-grid)$/.test(panelStyle.display)
     && Number.parseFloat(panelStyle.columnGap) > 0
   const nativeEndMargin = Number.parseFloat(nativeTagStyle.marginRight)
   const spacing = isGapLayout ? 0 : (Number.isFinite(nativeEndMargin) ? nativeEndMargin : 8)
-  const reservedWidth = Math.ceil(tag.getBoundingClientRect().width + spacing)
+  const tagWidth = Math.ceil(tag.getBoundingClientRect().width)
 
-  panel.style.setProperty(PARTITION_TAG_WIDTH_PROPERTY, `${reservedWidth}px`)
+  tag.style.setProperty(PARTITION_TAG_WIDTH_PROPERTY, `${tagWidth}px`)
+  panel.style.setProperty(PARTITION_TAG_WIDTH_PROPERTY, `${tagWidth}px`)
   panel.style.setProperty(PARTITION_TAG_HEIGHT_PROPERTY, `${anchorRect.height}px`)
+  panel.style.setProperty(PARTITION_TAG_SPACING_PROPERTY, `${spacing}px`)
   panel.classList.add(PARTITION_TAG_HOST_CLASS)
+  nativeTag.classList.add(PARTITION_TAG_ANCHOR_CLASS)
   return true
 }
 
@@ -314,6 +340,26 @@ function requestPagePartitionData(token: number) {
     type: VIDEO_PAGE_PARTITION_DATA_REQUEST,
     data: { requestId: token },
   }, '*')
+}
+
+function startApiFallback(lookup: VideoPageLookup, token: number) {
+  if (hasStartedApiFallback)
+    return
+
+  hasStartedApiFallback = true
+  void loadVideoPartition(lookup).then((partition) => {
+    if (
+      !partition
+      || token !== refreshToken
+      || !settings.value.showVideoPagePartitionTag
+      || !isVideoOrBangumiPage()
+    ) {
+      return
+    }
+
+    currentPartition = partition
+    insertPartitionTag(partition)
+  })
 }
 
 function schedulePartitionTagRefresh(token: number, attempt = 0) {
@@ -327,10 +373,14 @@ function schedulePartitionTagRefresh(token: number, attempt = 0) {
   const panel = findTagPanel()
   currentPartition ??= panel ? getNativePartition(panel, lookup) : undefined
 
-  if (currentPartition)
+  if (currentPartition) {
     insertPartitionTag(currentPartition)
-  else
+  }
+  else {
     requestPagePartitionData(token)
+    if (attempt >= API_FALLBACK_ATTEMPT)
+      startApiFallback(lookup, token)
+  }
 
   if (attempt >= MAX_RETRY_COUNT)
     return
@@ -371,6 +421,7 @@ export function refreshVideoPagePartitionTag() {
   refreshToken++
   const token = refreshToken
   currentPartition = undefined
+  hasStartedApiFallback = false
 
   if (retryTimer) {
     clearTimeout(retryTimer)
