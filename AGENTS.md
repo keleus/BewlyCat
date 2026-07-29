@@ -85,7 +85,21 @@ pnpm typecheck
 
 ## 提交规范
 
-- Conventional Commits：`feat:` / `fix:` / `refactor:` / `docs:` / `chore:`
+- 标头遵循 Conventional Commits：`<type>(<scope>)!: <description>`；`scope` 和表示破坏性变更的 `!` 均为可选项
+- 支持的 `type`：
+  - `feat:`：新增功能
+  - `fix:`：修复问题
+  - `docs:`：仅修改文档
+  - `style:`：仅调整格式，不改变代码行为
+  - `refactor:`：重构代码，不新增功能也不修复问题
+  - `perf:`：性能优化
+  - `test:`：新增或调整测试
+  - `build:`：构建系统或依赖变更
+  - `ci:`：CI 配置或脚本变更
+  - `chore:`：其他维护性变更
+  - `revert:`：回退既有提交
+  - `merge:`：将 PR 或分支合并到目标分支
 - 冒号后说明用中文，准确概括改动
+- 合并 PR 时使用 `merge: 合并 PR #<number> <标题>`
 - 有对应 [issue](https://github.com/keleus/BewlyCat/issues) 时在 commit 后附 `#{issue}`
 - PR 不要提交 tests 文件和 `AGENTS.md`
