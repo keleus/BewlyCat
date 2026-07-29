@@ -256,6 +256,9 @@ settings:
   moments_card_open_mode_opt:
     dialog: 彈窗
     new_tab: 新分頁
+  group_moments_wanted_users: 想睇分組
+  group_moments_wanted_users_desc: 管理想睇嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
+  moments_wanted_users: 想睇嘅 UP 主
   btn:
     authorize: 授權
     revoke: 解除授權

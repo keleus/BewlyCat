@@ -13,7 +13,7 @@ import { MenuType } from './types'
 
 const emit = defineEmits(['close'])
 
-const { t, te } = useI18n()
+const { t, tm, rt } = useI18n()
 const breadcrumbDetail = ref<string>()
 const searchQuery = ref('')
 const settingsContentKey = ref(0)
@@ -190,19 +190,30 @@ function getSearchEntryLocation(entry: SettingsSearchEntry) {
     : primaryTitle
 }
 
+function getTranslatedSearchTerms(key: string): string[] {
+  const collectTerms = (message: unknown): string[] => {
+    if (typeof message === 'string' || typeof message === 'function')
+      return [rt(message as Parameters<typeof rt>[0])]
+    if (Array.isArray(message))
+      return message.flatMap(collectTerms)
+    if (message && typeof message === 'object')
+      return Object.values(message).flatMap(collectTerms)
+    return []
+  }
+
+  return collectTerms(tm(key))
+}
+
 function getSearchEntryText(entry: SettingsSearchEntry) {
-  const inferredDescriptionKey = entry.titleKey ? `${entry.titleKey}_desc` : undefined
-  const translatedKeywords = entry.keywordKeys
-    ?.filter(key => te(key))
-    .map(key => t(key)) ?? []
-  const inferredDescription = inferredDescriptionKey && te(inferredDescriptionKey)
-    ? t(inferredDescriptionKey)
-    : ''
+  const inferredKeywordKeys = entry.titleKey
+    ? [`${entry.titleKey}_desc`, `${entry.titleKey}_opt`, `${entry.titleKey}_option`]
+    : []
+  const translatedKeywords = [...inferredKeywordKeys, ...(entry.keywordKeys ?? [])]
+    .flatMap(getTranslatedSearchTerms)
 
   return [
     getSearchEntryTitle(entry),
     getSearchEntryLocation(entry),
-    inferredDescription,
     ...translatedKeywords,
     ...(entry.keywords ?? []),
   ].join(' ').toLocaleLowerCase()

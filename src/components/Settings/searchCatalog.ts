@@ -119,6 +119,36 @@ const wallpaperTitleKeys = [
   'settings.wallpaper_blur_intensity',
 ]
 
+const linkOpeningOptionKeys = [
+  'settings.link_opening_behavior_opt.current_tab',
+  'settings.link_opening_behavior_opt.current_tab_if_not_homepage',
+  'settings.link_opening_behavior_opt.background',
+  'settings.link_opening_behavior_opt.new_tab',
+]
+const videoCardLinkOpeningOptionKeys = [
+  'settings.link_opening_behavior_opt.current_tab',
+  'settings.link_opening_behavior_opt.drawer',
+  'settings.link_opening_behavior_opt.background',
+  'settings.link_opening_behavior_opt.new_tab',
+]
+const playerModeOptionKeys = [
+  'settings.video_player_mode.default',
+  'settings.video_player_mode.web_fullscreen',
+  'settings.video_player_mode.widescreen',
+  'settings.video_player_mode.bewly_widescreen',
+]
+const autoPlayModeOptionKeys = [
+  'settings.auto_play_mode_auto_play',
+  'settings.auto_play_mode_auto_play_with_recommend',
+  'settings.auto_play_mode_pause_at_end',
+  'settings.auto_play_mode_loop',
+]
+const customAutoPlayModeOptionKeys = [
+  'settings.auto_play_mode_custom_sequential',
+  'settings.auto_play_mode_custom_reverse',
+  'settings.auto_play_mode_custom_random',
+]
+
 const topBarGlobalTitleKeys = [
   'settings.group_topbar',
   'settings.auto_hide_top_bar',
@@ -165,7 +195,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_version_reminder',
     'settings.enable_version_reminder',
     'settings.group_recommendation_mode',
-    'settings.recommendation_mode',
     'settings.remember_no_cookie_recommendation_state',
     'settings.authorize_app',
     'settings.auto_switch_recommendation_mode',
@@ -188,13 +217,21 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.following_filter_dynamic_videos',
     'settings.group_home_tabs',
     'settings.home_tabs_adjustment',
-    'settings.home_tabs_position',
     'settings.fixed_home_tabs_on_home_page',
     'settings.group_search_page_mode',
     'settings.use_search_page_mode',
     'settings.settings_shared_with_the_search_page',
     'settings.search_page_mode_wallpaper_fixed',
   ]),
+  ...createEntries(homeRoute, [
+    'settings.recommendation_mode',
+  ], {
+    keywordKeys: ['settings.recommendation_mode_web_no_cookie'],
+    keywords: ['Web', 'App'],
+  }),
+  ...createEntries(homeRoute, [
+    'settings.home_tabs_position',
+  ], { keywordKeys: ['common.position.center', 'common.position.left'] }),
 
   ...createEntries(momentsRoute, [
     'settings.plugin.moments',
@@ -212,14 +249,20 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_show_live',
     'settings.moments_enable_live_preview',
     'settings.moments_enable_video_preview',
-    'settings.moments_filter_up_recommendation',
     'settings.moments_filter_charge_dynamic',
     'settings.moments_filter_video_reservation',
     'settings.moments_filter_live_reservation',
     'settings.moments_filter_live_dynamic',
-    'settings.moments_hide_charge_exclusive',
     'settings.moments_card_open_mode',
+    'settings.group_moments_wanted_users',
+    'settings.moments_wanted_users',
   ]),
+  ...createEntries(momentsRoute, [
+    'settings.moments_filter_up_recommendation',
+  ], { targetTitleKey: 'settings.moments_filter_up_recommendation_short' }),
+  ...createEntries(momentsRoute, [
+    'settings.moments_hide_charge_exclusive',
+  ], { targetTitleKey: 'settings.moments_filter_charge_dynamic' }),
 
   ...createEntries(videoCardRoute, [
     'settings.plugin.video_card',
@@ -246,20 +289,26 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_video_card_duration',
     'settings.show_video_watched_badge',
     'settings.show_video_card_watch_later',
-    'settings.video_card_title_font_size',
-    'settings.video_card_author_font_size',
-    'settings.video_card_meta_font_size',
     'settings.video_card_shadow_curve',
     'settings.video_card_shadow_height',
   ]),
+  ...createEntries(videoCardRoute, [
+    'settings.video_card_title_font_size',
+    'settings.video_card_author_font_size',
+    'settings.video_card_meta_font_size',
+  ], { keywordKeys: ['settings.font_size_option'] }),
 
   ...createEntries(linkOpeningRoute, [
     'settings.group_link_opening_behavior',
-    'settings.top_bar_link_opening_behavior',
-    'settings.video_card_link_opening_behavior',
-    'settings.search_bar_link_opening_behavior',
     'settings.close_drawer_without_pressing_esc_again',
   ]),
+  ...createEntries(linkOpeningRoute, [
+    'settings.top_bar_link_opening_behavior',
+    'settings.search_bar_link_opening_behavior',
+  ], { keywordKeys: linkOpeningOptionKeys }),
+  ...createEntries(linkOpeningRoute, [
+    'settings.video_card_link_opening_behavior',
+  ], { keywordKeys: videoCardLinkOpeningOptionKeys }),
 
   ...createEntries(topBarRoute, [
     'settings.plugin.topbar',
@@ -299,7 +348,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     ['notifications', 'topbar.notifications'],
   ].flatMap(([element, titleKey]) => createTopBarElementEntries(element!, [titleKey!], {
     targetTitleKey: 'settings.visibility',
-    keywordKeys: ['settings.visibility', 'settings.badge_type'],
+    keywordKeys: ['settings.visibility', 'settings.badge_type', 'settings.top_bar_icon_badges_opt'],
   })),
 
   ...createEntries(dockRoute, [
@@ -308,7 +357,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.always_use_dock',
     'settings.auto_hide_dock',
     'settings.half_hide_dock',
-    'settings.dock_position',
     'settings.dock_content_adjustment',
     'settings.disable_dock_glowing_effect',
     'settings.disable_light_dark_mode_switcher',
@@ -316,9 +364,14 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.always_show_dock_actions_when_auto_hide',
     'settings.enable_undo_refresh_button',
     'settings.group_sidebar',
-    'settings.sidebar_position',
     'settings.auto_hide_sidebar',
   ]),
+  ...createEntries(dockRoute, [
+    'settings.dock_position',
+  ], { keywordKeys: ['common.position.left', 'common.position.right', 'common.position.bottom'] }),
+  ...createEntries(dockRoute, [
+    'settings.sidebar_position',
+  ], { keywordKeys: ['common.position.left', 'common.position.right'] }),
 
   ...createEntries(searchPageRoute, [
     'settings.plugin.search',
@@ -345,20 +398,12 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(playerRoute, [
     'settings.bilibili_features.video_playback',
     'settings.group_player_display_mode',
-    'settings.video_default_player_mode',
     'settings.video_player_mode.bewly_widescreen_sidebar_position',
     'settings.video_player_mode.enable_overrides',
     'settings.video_player_mode.overrides',
-    'settings.video_player_mode.context_multipart',
-    'settings.video_player_mode.context_collection',
-    'settings.video_player_mode.context_bangumi',
-    'settings.video_player_mode.context_watch_later',
-    'settings.video_player_mode.context_playlist',
     'settings.video_player_scroll',
     'settings.auto_exit_fullscreen_on_end',
     'settings.group_player_components',
-    'settings.video_danmaku_default_state',
-    'settings.video_caption_default_state',
     'settings.group_playback_memory',
     'settings.remember_playback_rate',
     'settings.remember_video_aspect_ratio',
@@ -367,28 +412,63 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.external_watch_later_button',
     'settings.show_video_screenshot_button',
   ]),
+  ...createEntries(playerRoute, [
+    'settings.video_default_player_mode',
+  ], { keywordKeys: playerModeOptionKeys }),
+  ...createEntries(playerRoute, [
+    'settings.video_player_mode.context_multipart',
+    'settings.video_player_mode.context_collection',
+    'settings.video_player_mode.context_bangumi',
+    'settings.video_player_mode.context_watch_later',
+    'settings.video_player_mode.context_playlist',
+  ], { keywordKeys: [...playerModeOptionKeys, 'settings.video_player_mode.inherit'] }),
+  ...createEntries(playerRoute, [
+    'settings.video_danmaku_default_state',
+    'settings.video_caption_default_state',
+  ], { keywordKeys: ['settings.video_default_state_opt'] }),
 
   ...createEntries(autoPlayRoute, [
     'settings.bilibili_features.auto_play',
     'settings.group_random_play',
     'settings.enable_random_play',
-    'settings.default_custom_play_order',
     'settings.group_random_play_settings',
-    'settings.random_play_mode',
     'settings.min_videos_for_random',
     'settings.group_playback_end_behavior',
     'settings.use_bilibili_default_auto_play',
     'settings.group_video_type_end_behavior',
+    'settings.group_playlist_start_behavior',
+  ]),
+  ...createEntries(autoPlayRoute, [
     'settings.auto_play_multipart',
     'settings.auto_play_collection',
-    'settings.auto_play_recommend',
     'settings.auto_play_playlist',
-    'settings.auto_play_mode_custom_sequential',
-    'settings.auto_play_mode_custom_reverse',
-    'settings.auto_play_mode_custom_random',
-    'settings.group_playlist_start_behavior',
+  ], { keywordKeys: [...autoPlayModeOptionKeys, ...customAutoPlayModeOptionKeys] }),
+  ...createEntries(autoPlayRoute, [
+    'settings.auto_play_recommend',
+  ], { keywordKeys: autoPlayModeOptionKeys }),
+  ...createEntries(autoPlayRoute, [
+    'settings.default_custom_play_order',
+  ], {
+    keywordKeys: [
+      'settings.random_play_order_sequential',
+      'settings.random_play_order_reverse',
+      'settings.random_play_order_random',
+    ],
+  }),
+  ...createEntries(autoPlayRoute, [
+    'settings.random_play_mode',
+  ], {
+    keywordKeys: ['settings.random_play_mode_manual', 'settings.random_play_mode_auto'],
+  }),
+  ...createEntries(autoPlayRoute, [
     'settings.collected_season_play_all_mode',
-  ]),
+  ], {
+    keywordKeys: [
+      'settings.collected_season_play_all_mode_beginning',
+      'settings.collected_season_play_all_mode_latest',
+      'settings.collected_season_play_all_mode_last_watched',
+    ],
+  }),
 
   ...createEntries(volumeBalanceRoute, [
     'settings.plugin.volume_balance',
