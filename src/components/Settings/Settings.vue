@@ -607,7 +607,8 @@ function changeMenuItem(menuItem: MenuType) {
   transition:
     width var(--bew-duration-moderate) var(--bew-ease-standard),
     border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
-    background-color var(--bew-duration-moderate) var(--bew-ease-standard);
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    transform var(--bew-duration-moderate) var(--bew-ease-standard);
 
   > li {
     width: 100%;
@@ -653,10 +654,7 @@ function changeMenuItem(menuItem: MenuType) {
         var(--settings-primary-nav-inset)
     );
     border-radius: var(--bew-radius-2xl);
-  }
-
-  .settings-primary-navigation__item {
-    border-radius: var(--bew-radius-xl);
+    transform: scale(1.05);
   }
 }
 
