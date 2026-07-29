@@ -4,8 +4,6 @@ import type { Settings } from '~/logic/storage'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isElectron } from '~/utils/main'
 
-import { handleCommentAddResponse, isCommentAddRequest } from './commentShadowBanDetection'
-
 // 存储当前设置状态
 let currentSettings: Settings | null = null
 let settingsReady = false
@@ -987,29 +985,14 @@ else if (shouldInitializePageScript) {
   }
 
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
-    const shouldCheckComment = currentSettings?.detectCommentShadowBan === true
-      && isCommentAddRequest(input)
-    let request: Promise<Response>
-
     if (isSearchResultFetch(input) && !settingsReady) {
-      request = settingsReadyPromise.then(() => {
+      return settingsReadyPromise.then(() => {
         return fetchWithSearchSettings(this, input, init)
       })
     }
-    else if (isSearchResultFetch(input)) {
-      request = fetchWithSearchSettings(this, input, init)
-    }
-    else {
-      request = originalFetch.call(this, input, init)
-    }
-
-    if (shouldCheckComment) {
-      void request.then(handleCommentAddResponse, (error) => {
-        console.error('[BewlyCat] Comment visibility check could not start:', error)
-      })
-    }
-
-    return request
+    if (isSearchResultFetch(input))
+      return fetchWithSearchSettings(this, input, init)
+    return originalFetch.call(this, input, init)
   }
 
   // 页面加载完成后初始化随机播放（功能已迁移到contentScripts）

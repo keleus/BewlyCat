@@ -764,8 +764,6 @@ settings:
   show_comment_host_tag_desc: 喺留言回覆詳情頁標示樓主。
   enable_comment_reply_tree: 樹狀顯示留言回覆
   enable_comment_reply_tree_desc: 根據回覆關係同發佈時間整理樓中樓，再按層級逐層縮入。
-  detect_comment_shadow_ban: 檢測留言係咪得自己睇到
-  detect_comment_shadow_ban_desc: 發送留言大約 5 秒之後，分別用未登入同登入狀態檢查公開可見性；結果只供參考。
   video_player_scroll: 校好顯示模式後自動轆到合適嘅位置
   video_player_scroll_desc: 啓用後，若果顯示模式係闊螢幕或預設嗰陣，會自動轆到合適嘅位置。
   enlarge_favorite_dialog: 放大收藏彈窗
@@ -776,13 +774,6 @@ settings:
   show_video_screenshot_button_desc: 啓用後，喺影片播放器控制欄顯示擷取目前影片畫面嘅按鈕。
   group_fonts: ''
   group_visual_effects: ''
-comment_shadow_ban_detection:
-  ok: 留言可以正常公開顯示。
-  shadowban: 呢條留言疑似得自己睇到（ShadowBan）。
-  deleted: 呢條留言疑似已經畀系統刪除。
-  invisible: 呢條留言已經畀 Bilibili 標記做不可見。
-  suspicious: 呢條留言可能仲審核緊，或者留言區而家有限制。
-  error: 暫時確認唔到留言狀態，請遲啲再試。
 auth:
   auth_access_key_first: 整之前記得先授權 BewlyBewly 去用 access key
 topbar:

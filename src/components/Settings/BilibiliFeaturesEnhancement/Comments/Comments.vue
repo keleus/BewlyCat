@@ -58,14 +58,6 @@ const commentToggleOptions = computed<CommentToggleOption[]>(() => [
     >
       <Radio v-model="settings.adjustCommentImageHeight" />
     </SettingsItem>
-
-    <SettingsItem
-      :title="$t('settings.detect_comment_shadow_ban')"
-      :desc="$t('settings.detect_comment_shadow_ban_desc')"
-      right-width="auto"
-    >
-      <Radio v-model="settings.detectCommentShadowBan" />
-    </SettingsItem>
   </SettingsItemGroup>
 </template>
 

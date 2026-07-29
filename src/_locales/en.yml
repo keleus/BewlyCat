@@ -845,8 +845,6 @@ settings:
   enable_comment_reply_tree_desc: Group replies by parent and posting time, then indent each nested level
   adjust_comment_image_height: Adjust comment image height
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
-  detect_comment_shadow_ban: Detect comments visible only to you
-  detect_comment_shadow_ban_desc: About 5 seconds after posting, compare signed-out and signed-in visibility. Results are indicative only.
   video_player_scroll: Scroll after adjusting the display mode
   video_player_scroll_desc: >-
     When enabled, it will automatically scroll to the appropriate position when
@@ -890,13 +888,6 @@ settings:
   group_fonts: Font
   group_visual_effects: Visual Effects
   visibility: show
-comment_shadow_ban_detection:
-  ok: Your comment is publicly visible.
-  shadowban: This comment appears to be visible only to you (ShadowBan).
-  deleted: This comment appears to have been deleted by the system.
-  invisible: This comment was marked invisible by Bilibili.
-  suspicious: This comment may still be under review, or the comment section may be restricted.
-  error: Could not verify this comment. Please try again later.
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
