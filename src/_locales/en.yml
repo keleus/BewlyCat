@@ -838,6 +838,8 @@ settings:
   show_sex_desc: Display user gender in the video/dynamic comment area
   show_comment_host_tag: Show OP tag
   show_comment_host_tag_desc: Show an OP tag on the root comment in reply detail view
+  show_comment_floor_number: Show comment floor numbers
+  show_comment_floor_number_desc: Read and display original comment and reply floor numbers from Bilibili; enabling this makes additional requests
   adjust_comment_image_height: Adjust comment image height
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
   detect_comment_shadow_ban: Detect comments visible only to you

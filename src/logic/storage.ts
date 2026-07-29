@@ -200,6 +200,7 @@ export interface Settings {
   showIPLocation: boolean // 添加显示IP归属地设置项
   showSex: boolean // 添加显示性别设置项
   showCommentHostTag: boolean // 显示评论回复详情页楼主标识
+  showCommentFloorNumber: boolean // 显示评论与回复的原始楼层号
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   detectCommentShadowBan: boolean // 发送评论后检测是否仅自己可见
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
@@ -467,6 +468,7 @@ export const originalSettings: Settings = {
   showIPLocation: true, // 默认启用IP归属地显示
   showSex: true, // 默认启用性别显示
   showCommentHostTag: true, // 默认启用楼主标识显示
+  showCommentFloorNumber: false, // 默认关闭，避免额外请求评论详情接口
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   detectCommentShadowBan: false, // 默认关闭评论可见性检测
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式

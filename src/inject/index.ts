@@ -4,6 +4,7 @@ import type { Settings } from '~/logic/storage'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isElectron } from '~/utils/main'
 
+import { getCachedCommentFloor, resolveCommentFloor } from './commentFloorNumber'
 import { handleCommentAddResponse, isCommentAddRequest } from './commentShadowBanDetection'
 
 // 存储当前设置状态
@@ -333,6 +334,101 @@ else if (shouldInitializePageScript) {
     return rootAuthorMid === authorMid
   }
 
+  const pendingCommentFloorRpid = new WeakMap<Element, string>()
+
+  function getCommentFloorAnchor(root: ShadowRoot): Element | null {
+    return root.querySelector('#location')
+      ?? root.querySelector('#host-tag')
+      ?? root.querySelector('#sex')
+      ?? root.querySelector('#user-name')
+  }
+
+  async function resolveAndRenderCommentFloor(component: any, expectedRpid: string) {
+    if (
+      !currentSettings?.showCommentFloorNumber
+      || getReplyRpid(component.data) !== expectedRpid
+    ) {
+      return
+    }
+
+    const floor = await resolveCommentFloor(component.data)
+    if (
+      !floor
+      || !currentSettings?.showCommentFloorNumber
+      || getReplyRpid(component.data) !== expectedRpid
+    ) {
+      return
+    }
+
+    const root = component.shadowRoot as ShadowRoot | null
+    if (!root)
+      return
+
+    updateInfoElement(
+      root,
+      'floor-number',
+      true,
+      floor,
+      getCommentFloorAnchor(root),
+    )
+  }
+
+  const commentFloorObserver = typeof IntersectionObserver === 'undefined'
+    ? null
+    : new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting)
+          return
+
+        commentFloorObserver?.unobserve(entry.target)
+        const expectedRpid = pendingCommentFloorRpid.get(entry.target)
+        pendingCommentFloorRpid.delete(entry.target)
+        if (expectedRpid)
+          void resolveAndRenderCommentFloor(entry.target, expectedRpid)
+      })
+    }, {
+      rootMargin: '200px 0px',
+    })
+
+  function updateCommentFloor(component: any, root: ShadowRoot) {
+    const rpid = getReplyRpid(component.data)
+    const shouldShow = Boolean(currentSettings?.showCommentFloorNumber && rpid)
+
+    if (!shouldShow || !rpid) {
+      if (component instanceof Element) {
+        commentFloorObserver?.unobserve(component)
+        pendingCommentFloorRpid.delete(component)
+      }
+      updateInfoElement(root, 'floor-number', false, '', null)
+      return
+    }
+
+    const cachedFloor = getCachedCommentFloor(component.data)
+    if (cachedFloor) {
+      if (component instanceof Element) {
+        commentFloorObserver?.unobserve(component)
+        pendingCommentFloorRpid.delete(component)
+      }
+      updateInfoElement(
+        root,
+        'floor-number',
+        true,
+        cachedFloor,
+        getCommentFloorAnchor(root),
+      )
+      return
+    }
+
+    updateInfoElement(root, 'floor-number', false, '', null)
+    if (commentFloorObserver && component instanceof Element) {
+      pendingCommentFloorRpid.set(component, rpid)
+      commentFloorObserver.observe(component)
+      return
+    }
+
+    void resolveAndRenderCommentFloor(component, rpid)
+  }
+
   function updateInfoElement(
     root: ShadowRoot | null | undefined,
     id: string,
@@ -384,6 +480,10 @@ else if (shouldInitializePageScript) {
     else if (id === 'host-tag') {
       element.style.cssText = `display: inline-block; margin-left: 4px; padding: 1px 4px; font-size: 11px; font-weight: 500; color: var(--bew-theme-color); background-color: var(--bew-theme-color-10); border-radius: 3px; vertical-align: middle; line-height: 1.4;`
       element.textContent = String(text)
+    }
+    else if (id === 'floor-number') {
+      element.style.cssText = `display: inline-flex; align-items: center; margin-left: var(--bew-space-1, 4px); padding: 0 var(--bew-space-1, 4px); font-size: var(--bew-font-size-caption, 11px); line-height: var(--bew-line-height-caption, 16px); font-weight: var(--bew-font-weight-medium, 500); color: var(--bew-text-3, var(--text3, #9499a0)); background: var(--bew-fill-1, var(--bg2, #f1f2f3)); border-radius: var(--bew-radius-sm, 4px); vertical-align: middle; font-variant-numeric: tabular-nums;`
+      element.textContent = `#${String(text)}`
     }
     else {
       element.textContent = String(text)
@@ -517,6 +617,9 @@ else if (shouldInitializePageScript) {
               const shouldShowLocation = Boolean(currentSettings?.showIPLocation && locationString)
               const locationAnchor = hostEl ?? sexEl ?? userNameEl
               updateInfoElement(root, 'location', shouldShowLocation, locationString, locationAnchor)
+
+              // 真实楼层号已从主评论接口移除，按需从详情接口补取。
+              updateCommentFloor(component, root)
             })
           }
           catch (error) {

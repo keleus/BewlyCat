@@ -44,6 +44,15 @@ const commentToggleOptions = computed<CommentToggleOption[]>(() => [
     </div>
 
     <SettingsItem
+      :title="$t('settings.show_comment_floor_number')"
+      :desc="$t('settings.show_comment_floor_number_desc')"
+      :badge="`${$t('settings.experimental')} · ${$t('settings.badge_use_with_caution')}`"
+      right-width="auto"
+    >
+      <Radio v-model="settings.showCommentFloorNumber" />
+    </SettingsItem>
+
+    <SettingsItem
       :title="$t('settings.adjust_comment_image_height')"
       :desc="$t('settings.adjust_comment_image_height_desc')"
       right-width="auto"
