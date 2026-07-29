@@ -1093,7 +1093,10 @@ favorites:
   collected_season_prefix: Season
   folder_section_title: All folders
   season_section_title: Collected seasons
+  article_section_title: Favorite articles
   video_count: 'Videos: {count}'
+  article_count: 'Articles: {count}'
+  article_load_failed: Failed to load favorite articles. Please try again later.
   unfavorite: Unfavorite
   unfavorite_confirm: >-
     Remove selected video(s)?

@@ -58,6 +58,17 @@ const API_FAVORITE = {
     },
     afterHandle: AHS.J_D,
   },
+  getFavoriteArticles: {
+    url: 'https://api.bilibili.com/x/article/favorites/list/all',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      pn: 1,
+      ps: 16,
+    },
+    afterHandle: AHS.J_D,
+  },
   // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/fav/action.md#%E6%89%B9%E9%87%8F%E5%88%A0%E9%99%A4%E5%86%85%E5%AE%B9
   patchDelFavoriteResources: {
     url: 'https://api.bilibili.com/x/v3/fav/resource/batch-del',

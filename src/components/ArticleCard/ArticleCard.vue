@@ -2,7 +2,8 @@
 import ALink from '~/components/ALink.vue'
 
 interface ArticleCardProps {
-  id: number
+  id: number | string
+  url?: string
   title: string
   desc?: string
   cover?: string
@@ -16,7 +17,15 @@ interface ArticleCardProps {
   tags?: Array<{ name: string }>
 }
 
-defineProps<ArticleCardProps>()
+const props = defineProps<ArticleCardProps>()
+
+const articleUrl = computed(() => {
+  if (props.url)
+    return props.url
+
+  const id = String(props.id)
+  return `https://www.bilibili.com/read/${id.startsWith('cv') ? id : `cv${id}`}`
+})
 
 // 格式化数字
 function formatNumber(num: number | undefined) {
@@ -63,7 +72,7 @@ function formatDate(timestamp: number | undefined) {
 
 <template>
   <ALink
-    :href="`https://www.bilibili.com/read/cv${id}`"
+    :href="articleUrl"
     type="videoCard"
     class="article-card"
     flex gap-4 p-4
