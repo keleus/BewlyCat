@@ -1075,6 +1075,7 @@ function getUniqueKey(item: T, index: number): string | number {
       <VideoCard
         v-for="renderItem in renderItems"
         :key="renderItem.key"
+        :class="{ 'video-card-grid-item--enter': !renderItem.skeleton }"
         :data-index="renderItem.index"
         :skeleton="renderItem.skeleton"
         :type="renderItem.type"
@@ -1195,6 +1196,28 @@ function getUniqueKey(item: T, index: number): string | number {
   overflow-anchor: none;
   contain-intrinsic-size: auto 360px 260px;
   min-width: 0;
+}
+
+:deep(.video-card-grid-item--enter) {
+  animation: video-card-grid-item-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes video-card-grid-item-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :deep(.video-card-grid-item--enter) {
+    animation: none;
+  }
 }
 
 .load-more-sentinel {
