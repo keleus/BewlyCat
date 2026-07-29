@@ -12,7 +12,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import { applyBewlyWidescreen, exitBewlyWidescreen } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
-import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers, setupOriginalBilibiliTopBarSearchHandlers } from '~/utils/bilibiliTopBar'
+import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
@@ -194,6 +194,9 @@ else if (shouldInitializeContentScript) {
         (target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement && target.hasAttribute('href'),
       ) ?? (event.target instanceof Element ? event.target.closest('a[href]') : null)
       if (!(anchor instanceof HTMLAnchorElement))
+        return
+
+      if (anchor.closest('.bili-header, #biliMainHeader, #internationalHeader, #bili-header-container'))
         return
 
       const pluginSearchResultsUrl = getPluginSearchResultsUrl(anchor.href)
@@ -582,8 +585,6 @@ else if (shouldInitializeContentScript) {
     if (isHomePage())
       await settingsReady
 
-    setupOriginalBilibiliTopBarSearchHandlers(document, () => settings.value.usePluginSearchResultsPage)
-
     const changeHomePage = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
     document.documentElement.classList.toggle('bewly-custom-homepage', changeHomePage)
 
@@ -664,7 +665,8 @@ else if (shouldInitializeContentScript) {
       // 温和的脚本清理（可选，减少后台资源消耗）
       cleanupBilibiliScripts()
 
-      ensureOriginalBilibiliTopBarAppended(document)
+      if (settings.value.useOriginalBilibiliTopBar)
+        ensureOriginalBilibiliTopBarAppended(document)
 
       // Setup login button click handlers for the original Bilibili top bar
       setupLoginButtonClickHandlers(document)

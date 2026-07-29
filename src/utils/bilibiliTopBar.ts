@@ -13,7 +13,7 @@ const BILIBILI_TOP_BAR_SELECTORS = [
 ]
 
 let cachedOriginalTopBar: HTMLElement | null = null
-const originalTopBarSearchCleanups = new WeakMap<Document, () => void>()
+let cachedOriginalTopBarParent: HTMLElement | null = null
 const initializedHoverHeaders = new WeakSet<HTMLElement>()
 const initializedScrollStateHeaders = new WeakSet<HTMLElement>()
 const initializedTopBarDocuments = new WeakSet<Document>()
@@ -79,6 +79,25 @@ function getDocumentTopBar(doc: Document): HTMLElement | null {
   return doc.querySelector<HTMLElement>('.bili-header')
 }
 
+function getNativeDocumentTopBar(doc: Document): HTMLElement | null {
+  return doc.querySelector<HTMLElement>('body > #app > .bili-feed4 > .bili-header')
+}
+
+function rememberOriginalTopBarParent(doc: Document, header: HTMLElement) {
+  if (header.parentElement && header.parentElement !== doc.body)
+    cachedOriginalTopBarParent = header.parentElement
+}
+
+function prepareOriginalTopBar(header: HTMLElement) {
+  const innerUselessContents = header.querySelectorAll<HTMLElement>(
+    ':scope > *:not(.bili-header__bar):not(.bili-header__channel)',
+  )
+  innerUselessContents.forEach(item => (item.style.display = 'none'))
+  header.querySelector<HTMLElement>(':scope > .bili-header__channel')?.style.removeProperty('display')
+  setupOriginalTopBarChannelHover(header)
+  ensureOriginalTopBarScrolledLayout(header)
+}
+
 export function captureOriginalBilibiliTopBar(doc: Document) {
   if (cachedOriginalTopBar?.isConnected && cachedOriginalTopBar.ownerDocument === doc)
     return cachedOriginalTopBar
@@ -88,9 +107,10 @@ export function captureOriginalBilibiliTopBar(doc: Document) {
     return null
 
   cachedOriginalTopBar = header
+  rememberOriginalTopBarParent(doc, header)
   keepOriginalTopBarAvailable(doc)
   setOriginalBilibiliTopBarScrolled(doc, false)
-  ensureOriginalTopBarScrolledLayout(header)
+  prepareOriginalTopBar(header)
   return cachedOriginalTopBar
 }
 
@@ -131,14 +151,20 @@ function keepOriginalTopBarAvailable(doc: Document) {
 
   initializedTopBarDocuments.add(doc)
   const observer = new MutationObserver(() => {
-    const header = getDocumentTopBar(doc)
+    const header = getNativeDocumentTopBar(doc) || getDocumentTopBar(doc)
     if (!header || header === cachedOriginalTopBar)
       return
 
+    const mountedInBody = cachedOriginalTopBar?.parentElement === doc.body
     const scrolled = cachedOriginalTopBar?.classList.contains('bewly-original-top-bar-scrolled') ?? false
+    if (mountedInBody)
+      cachedOriginalTopBar?.remove()
+
     cachedOriginalTopBar = header
-    setupOriginalTopBarChannelHover(header)
-    ensureOriginalTopBarScrolledLayout(header)
+    rememberOriginalTopBarParent(doc, header)
+    prepareOriginalTopBar(header)
+    if (mountedInBody)
+      doc.body.prepend(header)
     setOriginalBilibiliTopBarScrolled(doc, scrolled)
   })
   observer.observe(doc.documentElement, {
@@ -360,20 +386,53 @@ export function detachOriginalBilibiliTopBar(doc: Document) {
 }
 
 export function ensureOriginalBilibiliTopBarAppended(doc: Document): boolean {
-  const header = getDocumentTopBar(doc) || cachedOriginalTopBar
+  const nativeHeader = getNativeDocumentTopBar(doc)
+  const header = nativeHeader || cachedOriginalTopBar || getDocumentTopBar(doc)
   if (!header)
     return false
 
-  // 1. 隐藏 banner 等首页内容，分区面板由样式在下拉后悬浮“首页”时显示
-  const innerUselessContents = header.querySelectorAll<HTMLElement>(
-    ':scope > *:not(.bili-header__bar):not(.bili-header__channel)',
-  )
-  innerUselessContents.forEach(item => (item.style.display = 'none'))
-  header.querySelector<HTMLElement>(':scope > .bili-header__channel')?.style.removeProperty('display')
-  setupOriginalTopBarChannelHover(header)
-  ensureOriginalTopBarScrolledLayout(header)
+  if (nativeHeader && cachedOriginalTopBar && cachedOriginalTopBar !== nativeHeader && cachedOriginalTopBar.parentElement === doc.body)
+    cachedOriginalTopBar.remove()
 
-  // 原版顶栏继续留在 B 站 Vue 管理的父节点中，避免组件更新时节点丢失
+  cachedOriginalTopBar = header
+  rememberOriginalTopBarParent(doc, header)
+  prepareOriginalTopBar(header)
+
+  // Portal only the live header. The native channel row stays under Bilibili's Vue root.
+  if (header.parentElement !== doc.body || header !== doc.body.firstElementChild)
+    doc.body.prepend(header)
+
+  return true
+}
+
+export function restoreOriginalBilibiliTopBarParent(doc: Document): boolean {
+  const nativeHeader = getNativeDocumentTopBar(doc)
+  const mountedHeader = cachedOriginalTopBar?.parentElement === doc.body
+    ? cachedOriginalTopBar
+    : doc.querySelector<HTMLElement>('body > .bili-header')
+
+  if (nativeHeader && nativeHeader !== mountedHeader) {
+    mountedHeader?.remove()
+    cachedOriginalTopBar = nativeHeader
+    rememberOriginalTopBarParent(doc, nativeHeader)
+    prepareOriginalTopBar(nativeHeader)
+    return true
+  }
+
+  const header = mountedHeader || cachedOriginalTopBar || nativeHeader
+  if (!header)
+    return false
+
+  const parent = cachedOriginalTopBarParent?.isConnected
+    ? cachedOriginalTopBarParent
+    : doc.querySelector<HTMLElement>('body > #app > .bili-feed4')
+  if (!parent)
+    return false
+
+  // Return ownership before the outer header is hidden or replaced by the iframe homepage.
+  if (header.parentElement !== parent)
+    parent.prepend(header)
+
   cachedOriginalTopBar = header
   return true
 }
@@ -447,100 +506,4 @@ export function setupLoginButtonClickHandlers(doc: Document) {
   return () => {
     observer.disconnect()
   }
-}
-
-/**
- * 在启用插件搜索结果页时，接管原版 B 站顶栏的搜索提交。
- * 捕获阶段拦截可以避免 B 站自身的点击处理器先跳到 search.bilibili.com。
- */
-export function setupOriginalBilibiliTopBarSearchHandlers(
-  doc: Document,
-  shouldUsePluginSearchResultsPage: () => boolean,
-) {
-  originalTopBarSearchCleanups.get(doc)?.()
-
-  const SEARCH_FORM_SELECTOR = [
-    '#nav-searchform',
-    '.nav-search-form',
-    '.nav-search-content',
-  ].join(', ')
-  const SEARCH_INPUT_SELECTOR = [
-    '.nav-search-input',
-    'input[name="keyword"]',
-    'input[type="search"]',
-  ].join(', ')
-  const SEARCH_SUBMIT_SELECTOR = [
-    '.nav-search-btn',
-    '.nav-search-submit',
-    'button[type="submit"]',
-  ].join(', ')
-
-  function getOriginalTopBarSearchContext(target: EventTarget | null) {
-    if (!(target instanceof Element))
-      return null
-
-    const header = target.closest('.bili-header, #biliMainHeader, #internationalHeader')
-    if (!header)
-      return null
-
-    const form = target.closest(SEARCH_FORM_SELECTOR) || header.querySelector(SEARCH_FORM_SELECTOR)
-    const input = (form || header).querySelector<HTMLInputElement>(SEARCH_INPUT_SELECTOR)
-    return { form, input }
-  }
-
-  function navigateToPluginSearch(event: Event, input: HTMLInputElement | null | undefined) {
-    if (!shouldUsePluginSearchResultsPage())
-      return false
-
-    const keyword = input?.value.trim()
-    if (!keyword)
-      return false
-
-    event.preventDefault()
-    event.stopPropagation()
-    event.stopImmediatePropagation()
-
-    const params = new URLSearchParams()
-    params.set('page', 'SearchResults')
-    params.set('keyword', keyword)
-    window.location.assign(`https://www.bilibili.com/?${params.toString()}`)
-    return true
-  }
-
-  function handleSubmit(event: SubmitEvent) {
-    const context = getOriginalTopBarSearchContext(event.target)
-    if (context)
-      navigateToPluginSearch(event, context.input)
-  }
-
-  function handleClick(event: MouseEvent) {
-    if (!(event.target instanceof Element) || !event.target.closest(SEARCH_SUBMIT_SELECTOR))
-      return
-
-    const context = getOriginalTopBarSearchContext(event.target)
-    if (context)
-      navigateToPluginSearch(event, context.input)
-  }
-
-  function handleKeydown(event: KeyboardEvent) {
-    if (event.key !== 'Enter' || event.isComposing)
-      return
-
-    const context = getOriginalTopBarSearchContext(event.target)
-    if (context?.input === event.target)
-      navigateToPluginSearch(event, context.input)
-  }
-
-  doc.addEventListener('submit', handleSubmit, true)
-  doc.addEventListener('click', handleClick, true)
-  doc.addEventListener('keydown', handleKeydown, true)
-
-  const cleanup = () => {
-    doc.removeEventListener('submit', handleSubmit, true)
-    doc.removeEventListener('click', handleClick, true)
-    doc.removeEventListener('keydown', handleKeydown, true)
-    originalTopBarSearchCleanups.delete(doc)
-  }
-  originalTopBarSearchCleanups.set(doc, cleanup)
-  return cleanup
 }
