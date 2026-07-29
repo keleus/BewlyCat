@@ -19,7 +19,6 @@ interface Props {
   horizontal?: boolean
   removed: boolean
   isHover: boolean
-  previewEnabled: boolean
   shouldHideOverlayElements: boolean
   previewVideoUrl: string
   videoElement: HTMLVideoElement | null
@@ -54,9 +53,9 @@ const emit = defineEmits<{
 }>()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
+const isCoverHovered = ref(false)
 const isLoadingStream = ref<boolean>(false)
 const isPreviewFullscreen = ref<boolean>(false)
-const isPreviewPlaying = ref<boolean>(false)
 const showVideoControls = ref<boolean>(false)
 const isScrubbing = ref<boolean>(false)
 const scrubProgress = ref<number>(0)
@@ -74,15 +73,6 @@ let suppressPreviewClickTimeout: number | null = null
 
 const SCRUB_START_THRESHOLD_PX = 8
 const NEARBY_SEEK_RANGE_SECONDS = 30
-
-const shouldShowWatchLater = computed(() =>
-  props.previewEnabled ? isPreviewPlaying.value : props.isHover,
-)
-
-function handlePreviewPlaying() {
-  if (props.isHover && props.previewVideoUrl)
-    isPreviewPlaying.value = true
-}
 
 function clearControlsHideTimeout() {
   if (controlsHideTimeout !== null) {
@@ -432,8 +422,6 @@ async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
 
 // Watch for preview URL and videoRef changes
 watch([() => props.previewVideoUrl, () => props.isHover, videoRef], ([url, isHover, videoEl]) => {
-  isPreviewPlaying.value = false
-
   if (!videoEl)
     return
 
@@ -493,6 +481,8 @@ onBeforeUnmount(() => {
     cursor-pointer
     group-hover:z-2
     style="aspect-ratio: 16 / 9; contain: layout style; will-change: auto;"
+    @mouseenter="isCoverHovered = true"
+    @mouseleave="isCoverHovered = false"
   >
     <!-- Skeleton mode -->
     <div
@@ -555,7 +545,6 @@ onBeforeUnmount(() => {
             :draggable="false"
             :controls="showVideoControls"
             w-full h-full
-            @playing="handlePreviewPlaying"
           />
 
           <div
@@ -665,9 +654,9 @@ onBeforeUnmount(() => {
           {{ video?.badge?.text }}
         </div>
 
-        <!-- Watch later appears after preview playback starts, or after the non-preview hover delay. -->
+        <!-- Track cover hover separately so delayed preview playback does not delay this action. -->
         <div
-          v-if="showWatcherLater && shouldShowWatchLater"
+          v-if="showWatcherLater && isCoverHovered"
           role="button"
           tabindex="0"
           :aria-label="isInWatchLater ? $t('common.added') : $t('common.save_to_watch_later')"

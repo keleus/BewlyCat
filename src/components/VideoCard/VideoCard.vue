@@ -383,7 +383,6 @@ provide('getVideoType', () => props.type!)
             :horizontal="horizontal"
             :removed="logic.removed.value"
             :is-hover="logic.isHover.value"
-            :preview-enabled="previewEnabled"
             :should-hide-overlay-elements="Boolean(logic.shouldHideOverlayElements.value)"
             :preview-video-url="logic.previewVideoUrl.value || ''"
             :video-element="logic.videoElement.value || null"
