@@ -18,7 +18,8 @@ const useLightText = computed(() => forceWhiteIcon.value && settings.value.enabl
 // 顶栏覆盖在图片上且使用毛玻璃时，切换为高对比度亮色文字
 const searchBarStyles = computed(() => ({
   '--b-search-bar-max-width': '100%',
-  '--b-search-bar-height': 'var(--bew-top-bar-primary-control-height)',
+  // Keep the initial radius calculation valid before the global tokens finish loading.
+  '--b-search-bar-height': 'var(--bew-top-bar-primary-control-height, 46px)',
   '--b-search-bar-normal-color': settings.value.enableFrostedGlass ? 'color-mix(in oklab, var(--bew-elevated-solid), transparent 60%)' : 'var(--bew-elevated)',
   '--b-search-bar-focus-color': 'var(--bew-elevated)',
   '--b-search-bar-normal-icon-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
