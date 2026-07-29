@@ -846,7 +846,10 @@ function handleClearKeyword() {
       min-width: 0;
       position: relative;
       z-index: 1;
-      border-radius: var(--b-search-bar-radius, 60px);
+      border-radius: var(
+        --b-search-bar-radius,
+        calc(var(--b-search-bar-height, var(--bew-top-bar-primary-control-height, 46px)) / 2)
+      );
       transition:
         background-color var(--bew-duration-normal) var(--bew-ease-standard),
         color var(--bew-duration-normal) var(--bew-ease-standard),
