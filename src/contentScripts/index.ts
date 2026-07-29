@@ -847,9 +847,10 @@ else if (shouldInitializeContentScript) {
       () => settings.value.useBilibiliDefaultAutoPlay,
       () => settings.value.autoPlayMultipart,
       () => settings.value.autoPlayCollection,
+      () => settings.value.autoPlayWatchLater,
       () => settings.value.autoPlayPlaylist,
     ],
-    ([enabled, activationMode, minVideos, defaultCustomPlayOrder, useBilibiliDefault, multipartMode, collectionMode, playlistMode], [previousEnabled, previousActivationMode, previousMinVideos, previousDefaultCustomPlayOrder, previousUseBilibiliDefault, previousMultipartMode, previousCollectionMode, previousPlaylistMode]) => {
+    ([enabled, activationMode, minVideos, defaultCustomPlayOrder, useBilibiliDefault, multipartMode, collectionMode, watchLaterMode, playlistMode], [previousEnabled, previousActivationMode, previousMinVideos, previousDefaultCustomPlayOrder, previousUseBilibiliDefault, previousMultipartMode, previousCollectionMode, previousWatchLaterMode, previousPlaylistMode]) => {
       if (enabled !== previousEnabled && isCustomPlayPage()) {
         if (enabled) {
           setTimeout(() => {
@@ -866,6 +867,7 @@ else if (shouldInitializeContentScript) {
         || defaultCustomPlayOrder !== previousDefaultCustomPlayOrder
         || multipartMode !== previousMultipartMode
         || collectionMode !== previousCollectionMode
+        || watchLaterMode !== previousWatchLaterMode
         || playlistMode !== previousPlaylistMode
       ) {
         syncRandomPlayOrder()
@@ -881,26 +883,6 @@ else if (shouldInitializeContentScript) {
     },
   )
 
-  watch(
-    [
-      () => settings.value.useBilibiliDefaultAutoPlay,
-      () => settings.value.enableIndependentAutoPlay,
-      () => settings.value.independentAutoPlayStates.watchLater,
-      () => settings.value.independentAutoPlayStates.favorite,
-      () => settings.value.independentAutoPlayStates.video,
-    ],
-    (currentValues, previousValues) => {
-      if (
-        isVideoOrBangumiPage()
-        && currentValues.some((value, index) => value !== previousValues[index])
-      ) {
-        setTimeout(() => {
-          applyAutoPlayByVideoType()
-        }, 1000)
-      }
-    },
-  )
-
   // 监听设置变化
   watch(settings, (newSettings, oldSettings) => {
     sendSettingsToPage(newSettings)
@@ -910,14 +892,11 @@ else if (shouldInitializeContentScript) {
     // 检查自动播放相关设置是否发生变化
       const autoPlaySettingsChanged = oldSettings && (
         newSettings.useBilibiliDefaultAutoPlay !== oldSettings.useBilibiliDefaultAutoPlay
-        || newSettings.enableIndependentAutoPlay !== oldSettings.enableIndependentAutoPlay
-        || newSettings.independentAutoPlayStates.watchLater !== oldSettings.independentAutoPlayStates.watchLater
-        || newSettings.independentAutoPlayStates.favorite !== oldSettings.independentAutoPlayStates.favorite
-        || newSettings.independentAutoPlayStates.video !== oldSettings.independentAutoPlayStates.video
         || newSettings.enableRandomPlay !== oldSettings.enableRandomPlay
         || newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
         || newSettings.autoPlayCollection !== oldSettings.autoPlayCollection
         || newSettings.autoPlayRecommend !== oldSettings.autoPlayRecommend
+        || newSettings.autoPlayWatchLater !== oldSettings.autoPlayWatchLater
         || newSettings.autoPlayPlaylist !== oldSettings.autoPlayPlaylist
       )
 

@@ -609,12 +609,7 @@ settings:
   auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，在自動連播下播放結束時不會自動退出全螢幕，方便連續觀看
   use_bilibili_default_auto_play: 使用 Bilibili 預設自動播放行為
   use_bilibili_default_auto_play_desc: 啟用後使用 Bilibili 預設播放行為，進入頁面時自訂播放預設關閉；若預設自訂播放為隨機播放，則仍遵循隨機播放啟用方式
-  enable_independent_auto_play: 獨立自動連播設定
-  enable_independent_auto_play_desc: 啟用後，可分別設定稍後觀看、收藏夾和一般影片/合集的播放方式；開啟時自動切集，關閉時播完暫停
-  group_independent_auto_play_contexts: 按播放情境設定
-  auto_play_watch_later: 稍後觀看自動連播
-  auto_play_favorite: 收藏夾自動連播
-  auto_play_video_and_collection: 一般影片/合集自動連播
+  auto_play_watch_later: 稍後觀看
   auto_play_mode_default: Bilibili 預設
   auto_play_mode_auto_play: 自動連播
   auto_play_mode_auto_play_with_recommend: 連播推薦
