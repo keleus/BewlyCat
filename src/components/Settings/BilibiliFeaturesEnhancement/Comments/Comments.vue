@@ -44,6 +44,14 @@ const commentToggleOptions = computed<CommentToggleOption[]>(() => [
     </div>
 
     <SettingsItem
+      :title="$t('settings.enable_comment_reply_tree')"
+      :desc="$t('settings.enable_comment_reply_tree_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.enableCommentReplyTree" />
+    </SettingsItem>
+
+    <SettingsItem
       :title="$t('settings.adjust_comment_image_height')"
       :desc="$t('settings.adjust_comment_image_height_desc')"
       right-width="auto"

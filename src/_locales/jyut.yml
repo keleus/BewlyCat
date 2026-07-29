@@ -759,6 +759,8 @@ settings:
   show_sex_desc: 喺影片/動向頁留言區顯示用戶性別。
   show_comment_host_tag: 顯示樓主標示
   show_comment_host_tag_desc: 喺留言回覆詳情頁標示樓主。
+  enable_comment_reply_tree: 樹狀顯示留言回覆
+  enable_comment_reply_tree_desc: 根據回覆關係同發佈時間整理樓中樓，再按層級逐層縮入。
   detect_comment_shadow_ban: 檢測留言係咪得自己睇到
   detect_comment_shadow_ban_desc: 發送留言大約 5 秒之後，分別用未登入同登入狀態檢查公開可見性；結果只供參考。
   video_player_scroll: 校好顯示模式後自動轆到合適嘅位置
