@@ -2,6 +2,7 @@ import type { Scripting, Tabs } from 'webextension-polyfill'
 import browser from 'webextension-polyfill'
 
 import { CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG, isContentScriptTargetUrl } from '~/constants/contentScript'
+import { LanguageType } from '~/enums/appEnums'
 
 const CONTENT_SCRIPT_STARTUP_GRACE_PERIOD_MS = 100
 
@@ -25,7 +26,12 @@ export type ContentScriptRefreshResult = 'ineligible' | 'already-injected' | 're
 function getRefreshPromptCopy(locale: string, currentVersion: string): RefreshPromptCopy {
   const normalizedLocale = locale.toLowerCase()
 
-  if (normalizedLocale.startsWith('zh-tw') || normalizedLocale.startsWith('zh-hk')) {
+  if (
+    normalizedLocale === LanguageType.Mandarin_TW.toLowerCase()
+    || normalizedLocale === LanguageType.Cantonese
+    || normalizedLocale.startsWith('zh-tw')
+    || normalizedLocale.startsWith('zh-hk')
+  ) {
     return {
       currentVersion,
       refresh: '立即重新整理',
@@ -37,7 +43,7 @@ function getRefreshPromptCopy(locale: string, currentVersion: string): RefreshPr
     }
   }
 
-  if (normalizedLocale.startsWith('zh')) {
+  if (normalizedLocale === LanguageType.Mandarin_CN.toLowerCase() || normalizedLocale.startsWith('zh')) {
     return {
       currentVersion,
       refresh: '立即刷新',
@@ -81,6 +87,35 @@ function getRefreshPromptCopy(locale: string, currentVersion: string): RefreshPr
     missingDescription: 'The extension was reloaded. Refresh this page to restore all styles and features.',
     updatedTitle: 'BewlyCat was updated',
     updatedDescription: 'This page is still running an older version. Refresh to apply v{version}.',
+  }
+}
+
+function getStoredLanguage(value: unknown): string | undefined {
+  let storedSettings = value
+
+  if (typeof storedSettings === 'string') {
+    try {
+      storedSettings = JSON.parse(storedSettings)
+    }
+    catch {
+      return undefined
+    }
+  }
+
+  if (typeof storedSettings !== 'object' || storedSettings === null || Array.isArray(storedSettings))
+    return undefined
+
+  const language = (storedSettings as Record<string, unknown>).language
+  return typeof language === 'string' && language ? language : undefined
+}
+
+async function getRefreshPromptLocale(): Promise<string> {
+  try {
+    const stored = await browser.storage.local.get('settings')
+    return getStoredLanguage(stored.settings) || browser.i18n.getUILanguage()
+  }
+  catch {
+    return browser.i18n.getUILanguage()
   }
 }
 
@@ -392,7 +427,7 @@ export async function promptContentScriptRefresh(
   if (await pingContentScript(tabId, extensionApi))
     return 'already-injected'
 
-  const copy = getRefreshPromptCopy(browser.i18n.getUILanguage(), browser.runtime.getManifest().version)
+  const copy = getRefreshPromptCopy(await getRefreshPromptLocale(), browser.runtime.getManifest().version)
   await extensionApi.scripting.executeScript({
     target: { tabId, frameIds: [0] },
     func: showRefreshPrompt,
