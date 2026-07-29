@@ -30,7 +30,7 @@ import { settings } from '~/logic'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { getCSRF, isHomePage } from '~/utils/main'
-import { onMessage, sendMessage } from '~/utils/messaging'
+import { isExtensionContextInvalidatedError, onMessage, sendMessage } from '~/utils/messaging'
 
 export const useTopBarStore = defineStore('topBar', () => {
   const toast = useToast()
@@ -746,6 +746,12 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   let updateTimer: ReturnType<typeof setInterval> | null = null
+  let sharedStateMessagingUnavailable = false
+
+  function disableSharedStateMessaging() {
+    sharedStateMessagingUnavailable = true
+    stopUpdateTimer()
+  }
 
   function createSharedStateSnapshot(): TopBarSharedState {
     return {
@@ -804,7 +810,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     refresh?: () => Promise<void>
   }
 
-  async function syncSharedData(options: SyncSharedDataOptions = {}) {
+  async function syncSharedDataFromBroker(options: SyncSharedDataOptions) {
     if (!isLogin.value)
       return
 
@@ -855,6 +861,23 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
   }
 
+  async function syncSharedData(options: SyncSharedDataOptions = {}) {
+    if (sharedStateMessagingUnavailable)
+      return
+
+    try {
+      await syncSharedDataFromBroker(options)
+    }
+    catch (error) {
+      if (!isExtensionContextInvalidatedError(error))
+        throw error
+
+      // 扩展重新加载后，旧 content script 的 runtime 无法恢复。
+      // 停止轮询并让后续同步短路，等待后台刷新提示引导页面加载新脚本。
+      disableSharedStateMessaging()
+    }
+  }
+
   function syncUnreadMessageState() {
     return syncSharedData({
       force: true,
@@ -878,13 +901,18 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   function invalidateUnreadMessageState() {
     const accountId = userInfo.mid
-    if (!accountId)
+    if (!accountId || sharedStateMessagingUnavailable)
       return Promise.resolve()
 
     return sendMessage<TopBarStateInvalidate>(
       TOP_BAR_STATE_MESSAGE.INVALIDATE,
       { accountId },
-    )
+    ).catch((error) => {
+      if (!isExtensionContextInvalidatedError(error))
+        throw error
+
+      disableSharedStateMessaging()
+    })
   }
 
   async function initData() {

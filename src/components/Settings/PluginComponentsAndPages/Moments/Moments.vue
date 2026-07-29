@@ -152,13 +152,13 @@ const openModeOptions = computed(() => [
     </SettingsItemGroup>
 
     <SettingsItemGroup
-      title="想看分组"
-      desc="管理想看的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。"
+      :title="$t('settings.group_moments_wanted_users')"
+      :desc="$t('settings.group_moments_wanted_users_desc')"
       icon="i-tabler-heart-filled"
       collapsible
       default-collapsed
     >
-      <SettingsItem title="想看的 UP 主">
+      <SettingsItem :title="$t('settings.moments_wanted_users')">
         <template #bottom>
           <WantedUsersManager />
         </template>

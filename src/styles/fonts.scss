@@ -8,20 +8,30 @@
   --bew-fonts-fallback:
     sans-serif, ui-sans-serif, system-ui, "Apple Color Emoji", "Twemoji Mozilla", "Noto Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol", emoji;
+  --bew-fonts-monospace:
+    "JetBrains Mono", "Fira Code", "Fira Mono", "Cascadia Code", "Cascadia Mono", ui-monospace, SFMono-Regular, Menlo,
+    Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   --bew-fonts: bilifont, var(--bew-custom-fonts, var(--bew-fonts-basic), var(--bew-fonts-fallback));
+}
+
+.bewly-wrapper {
+  kbd {
+    font-family: inherit;
+  }
 }
 
 .bewly-wrapper,
 .bewly-design {
   code,
-  kbd,
   samp,
   pre {
-    font-family:
-      "JetBrains Mono", "Fira Code", "Fira Mono", "Cascadia Code", "Cascadia Mono", ui-monospace, SFMono-Regular, Menlo,
-      Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-family: var(--bew-fonts-monospace);
   }
+}
+
+.bewly-design kbd {
+  font-family: var(--bew-fonts-monospace);
 }
 
 .modify-fonts .bewly-wrapper,

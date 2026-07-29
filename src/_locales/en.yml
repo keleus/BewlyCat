@@ -236,6 +236,9 @@ settings:
   moments_card_open_mode_opt:
     dialog: Dialog
     new_tab: New tab
+  group_moments_wanted_users: Watchlist
+  group_moments_wanted_users_desc: Manage uploaders you want to watch by UID or name. The list is stored only on this device.
+  moments_wanted_users: Watchlisted uploaders
   btn:
     authorize: Authorize
     revoke: Revoke
@@ -388,10 +391,10 @@ settings:
 
   # Video Card Grid Settings
   group_video_card_grid: Video Card Grid
-  auto_switch_list_layout: Automatically switch list columns based on screen width
-  auto_switch_list_layout_desc: When enabled, two-column mode switches to one column when the screen is narrower than 640px.
+  auto_switch_list_layout: Automatically switch list columns based on video grid width
+  auto_switch_list_layout_desc: When enabled, two-column mode switches to one column when the video grid is narrower than 640px.
   grid_breakpoints: Grid Breakpoints
-  grid_breakpoints_desc: Set the number of columns at different screen widths. When screen width is greater than or equal to the set value, use the corresponding columns.
+  grid_breakpoints_desc: Set the number of columns at different video grid widths. The matching column count is used when the grid reaches each breakpoint.
   grid_min_width: Width ≥
   grid_columns: Show
   grid_columns_unit: cols
@@ -845,10 +848,10 @@ settings:
   show_sex_desc: Display user gender in the video/dynamic comment area
   show_comment_host_tag: Show OP tag
   show_comment_host_tag_desc: Show an OP tag on the root comment in reply detail view
+  enable_comment_reply_tree: Show comment replies as a tree
+  enable_comment_reply_tree_desc: Group replies by parent and posting time, then indent each nested level
   adjust_comment_image_height: Adjust comment image height
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
-  detect_comment_shadow_ban: Detect comments visible only to you
-  detect_comment_shadow_ban_desc: About 5 seconds after posting, compare signed-out and signed-in visibility. Results are indicative only.
   video_player_scroll: Scroll after adjusting the display mode
   video_player_scroll_desc: >-
     When enabled, it will automatically scroll to the appropriate position when
@@ -892,13 +895,6 @@ settings:
   group_fonts: Font
   group_visual_effects: Visual Effects
   visibility: show
-comment_shadow_ban_detection:
-  ok: Your comment is publicly visible.
-  shadowban: This comment appears to be visible only to you (ShadowBan).
-  deleted: This comment appears to have been deleted by the system.
-  invisible: This comment was marked invisible by Bilibili.
-  suspicious: This comment may still be under review, or the comment section may be restricted.
-  error: Could not verify this comment. Please try again later.
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
@@ -1100,7 +1096,10 @@ favorites:
   collected_season_prefix: Season
   folder_section_title: All folders
   season_section_title: Collected seasons
+  article_section_title: Favorite articles
   video_count: 'Videos: {count}'
+  article_count: 'Articles: {count}'
+  article_load_failed: Failed to load favorite articles. Please try again later.
   unfavorite: Unfavorite
   unfavorite_confirm: >-
     Remove selected video(s)?

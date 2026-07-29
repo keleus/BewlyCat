@@ -22,16 +22,19 @@ label {
   --b-switch-border-width: 1px;
   --b-switch-edge-inset: 2px;
   --b-switch-thumb-size: 20px;
+
+  position: relative;
 }
 
 .radio-input {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  white-space: nowrap;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: inherit;
+  opacity: 0;
 }
 
 .radio-switch {

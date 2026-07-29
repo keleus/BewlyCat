@@ -3,22 +3,22 @@
   --bew-page-max-width: 2280px;
 
   // #region Typography
-  // Use semantic roles instead of one-off size/weight pairs. Keep interface text
-  // to this compact five-step scale; reserve bold for branding or rare emphasis.
-  --bew-font-size-caption: 11px;
-  --bew-font-size-control: 12px;
-  --bew-font-size-body: 14px;
-  --bew-font-size-title: 16px;
-  --bew-font-size-heading: 18px;
+  // Use semantic roles instead of one-off size/weight pairs. Body and title share
+  // Bilibili's 15px base, with line height and weight providing their hierarchy.
+  --bew-font-size-caption: 12px;
+  --bew-font-size-control: 13px;
+  --bew-font-size-body: 15px;
+  --bew-font-size-title: 15px;
+  --bew-font-size-heading: 20px;
   // Rare display text and large numerals are not part of the interface text scale.
   --bew-font-size-display: 24px;
   --bew-font-size-data: var(--bew-font-size-display);
   --bew-font-size-data-emphasis: 28px;
   --bew-line-height-caption: 16px;
-  --bew-line-height-control: 16px;
-  --bew-line-height-body: 20px;
+  --bew-line-height-control: 18px;
+  --bew-line-height-body: 24px;
   --bew-line-height-title: 22px;
-  --bew-line-height-heading: 24px;
+  --bew-line-height-heading: 28px;
   --bew-line-height-data: 32px;
   --bew-font-weight-regular: 400;
   --bew-font-weight-medium: 500;
@@ -67,6 +67,12 @@
   --bew-space-10: 40px;
   --bew-space-12: 48px;
   // #endregion
+
+  // Keep fixed Dock controls visually separate from scrollable page content.
+  --bew-dock-item-size: 35px;
+  --bew-dock-content-gap: var(--bew-space-3);
+  // Item size + the Dock's edge offset, shell margin/padding, and content gap.
+  --bew-dock-safe-inset: calc(var(--bew-dock-item-size) + var(--bew-space-10) + var(--bew-dock-content-gap));
 
   // #region Motion
   // Prefer specific transition properties over `transition: all` to avoid layout jumps.
@@ -1040,5 +1046,12 @@
   --Lb1_rgb: 11, 32, 42;
   --Lb5_rgb: 0, 135, 189;
   --Lb7_rgb: 88, 177, 212;
+}
+
+@media (min-width: 1024px) {
+  :host,
+  :root {
+    --bew-dock-item-size: 45px;
+  }
 }
 // #endregion

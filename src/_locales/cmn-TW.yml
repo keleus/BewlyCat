@@ -135,7 +135,7 @@ settings:
     search: 搜尋頁
     volume_balance: 音訊均衡
 
-  # B站功能增強 子選單
+  # Bilibili 功能增強 子選單
   bilibili_features:
     comments: 評論
     video_playback: 播放器
@@ -170,13 +170,13 @@ settings:
   group_playback_behavior: 播放行為
   group_auto_play: 自動連播
   group_custom_auto_play_behavior: 播放結束行為
-  group_custom_auto_play_behavior_desc: 關閉 B 站預設行為後，可分別設定不同影片類型的後續動作。「連播推薦」會在目前影片結束後繼續播放推薦影片。
+  group_custom_auto_play_behavior_desc: 關閉 Bilibili 預設行為後，可分別設定不同影片類型的後續動作。「連播推薦」會在目前影片結束後繼續播放推薦影片。
   group_playback_end_behavior: 播放結束行為
   group_video_type_end_behavior: 依影片類型設定
   group_playlist_start_behavior: 播放列表起點
   group_random_play: 自訂播放
   group_random_play_settings: 隨機播放設定
-  group_random_play_settings_desc: 用於依影片類型選擇的「隨機播放（自訂）」；使用B站預設行為時，僅在預設自訂播放為隨機播放時生效。
+  group_random_play_settings_desc: 用於依影片類型選擇的「隨機播放（自訂）」；使用 Bilibili 預設行為時，僅在預設自訂播放為隨機播放時生效。
   group_topbar: 頂部列
   group_navigation: Dock與側邊欄
   group_dock: Dock
@@ -190,14 +190,14 @@ settings:
   group_recommendation_mode: 「為你推薦」推薦模式
   group_recommendation_filters: 「為你推薦」過濾
   group_recommendation_filters_desc: |
-    限制的數值不要設太大，不然載入時間可能會增加！頻繁請求可能會導致B站對IP的封禁!
+    限制的數值不要設太大，不然載入時間可能會增加！頻繁請求可能會導致 Bilibili 對 IP 的封禁!
   group_following: 正在跟隨
   group_following_desc: 設定「正在跟隨」頁面的版面、不活躍 UP 主名單、直播內容與影片過濾規則。
   group_favorites: 收藏
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄
   group_home_layout: 首頁版面
-  group_original_moments_page: Bilibili頁面
+  group_original_moments_page: Bilibili 頁面
   group_new_moments_page: Bewly動態頁
   group_new_moments_page_desc: 此頁面並非最終成品，相關形式後續可能會有較大調整。
   group_moments_sidebar: 動態頁左側元件
@@ -232,6 +232,9 @@ settings:
   moments_card_open_mode_opt:
     dialog: 彈窗
     new_tab: 新分頁
+  group_moments_wanted_users: 想看分組
+  group_moments_wanted_users_desc: 管理想看的 UP 主；支援輸入 UID 或暱稱，名單僅儲存在本機。
+  moments_wanted_users: 想看的 UP 主
   btn:
     authorize: 授權
     revoke: 解除授權
@@ -293,10 +296,10 @@ settings:
 
   # Video Card Grid Settings
   group_video_card_grid: 影片卡片網格
-  auto_switch_list_layout: 根據螢幕寬度自動切換單雙列
-  auto_switch_list_layout_desc: 開啟後，雙列模式會在螢幕寬度小於 640px 時自動切換為單列。
+  auto_switch_list_layout: 根據影片卡片區域寬度自動切換單雙列
+  auto_switch_list_layout_desc: 開啟後，雙列模式會在影片卡片區域寬度小於 640px 時自動切換為單列。
   grid_breakpoints: 網格斷點配置
-  grid_breakpoints_desc: 設定不同螢幕寬度下顯示的列數。當螢幕寬度大於等於設定值時，使用對應的列數。
+  grid_breakpoints_desc: 設定不同影片卡片區域寬度下顯示的列數。當區域寬度大於等於設定值時，使用對應的列數。
   grid_min_width: 寬度 ≥
   grid_columns: 顯示
   grid_columns_unit: 列
@@ -336,7 +339,7 @@ settings:
   video_caption_default_state: 字幕預設狀態
   video_caption_default_state_desc: 開啟影片時自動調整字幕開關，也可以保持原樣。
   video_default_state_opt:
-    system: B站預設
+    system: Bilibili 預設
     remember: 記住上次狀態
     on: 開啟
     off: 關閉
@@ -604,15 +607,15 @@ settings:
   auto_exit_fullscreen_on_end_desc: 啟用後，當影片播放結束且沒有單集循環、隨機播放、自動連播等後續播放行為時，會自動退出全螢幕模式
   auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
   auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，在自動連播下播放結束時不會自動退出全螢幕，方便連續觀看
-  use_bilibili_default_auto_play: 使用B站預設自動播放行為
-  use_bilibili_default_auto_play_desc: 啟用後使用B站預設播放行為，進入頁面時自訂播放預設關閉；若預設自訂播放為隨機播放，則仍遵循隨機播放啟用方式
+  use_bilibili_default_auto_play: 使用 Bilibili 預設自動播放行為
+  use_bilibili_default_auto_play_desc: 啟用後使用 Bilibili 預設播放行為，進入頁面時自訂播放預設關閉；若預設自訂播放為隨機播放，則仍遵循隨機播放啟用方式
   enable_independent_auto_play: 獨立自動連播設定
   enable_independent_auto_play_desc: 啟用後，可分別設定稍後觀看、收藏夾和一般影片/合集的播放方式；開啟時自動切集，關閉時播完暫停
   group_independent_auto_play_contexts: 按播放情境設定
   auto_play_watch_later: 稍後觀看自動連播
   auto_play_favorite: 收藏夾自動連播
   auto_play_video_and_collection: 一般影片/合集自動連播
-  auto_play_mode_default: B站預設
+  auto_play_mode_default: Bilibili 預設
   auto_play_mode_auto_play: 自動連播
   auto_play_mode_auto_play_with_recommend: 連播推薦
   auto_play_mode_pause_at_end: 播完暫停
@@ -644,7 +647,7 @@ settings:
   random_play_order_random: 隨機播放
   random_play_edit_playlist: 編輯播放列表
   random_play_finish_editing: 完成列表編輯
-  random_play_edit_playlist_desc: 進入編輯後，直接拖曳B站選集項目調整播放順序。
+  random_play_edit_playlist_desc: 進入編輯後，直接拖曳 Bilibili 選集項目調整播放順序。
   random_play_edit_playlist_empty: 目前沒有可編輯的播放列表
   random_play_edit_playlist_save: 儲存
   random_play_edit_playlist_cancel: 取消
@@ -659,7 +662,7 @@ settings:
     enable_all_shortcuts_toggle: 啟用鍵盤快捷鍵
     enable_all_shortcuts_toggle_desc: 啟用或停用所有鍵盤快捷鍵功能
     group:
-      official_bilibili: bilibili 官方快捷鍵
+      official_bilibili: Bilibili 官方快捷鍵
       general: 常規快捷鍵
       fullscreen_mode: 全螢幕模式快捷鍵
       global_actions: 全域操作
@@ -764,10 +767,10 @@ settings:
   show_sex_desc: 在影片/動態評論區顯示使用者性別
   show_comment_host_tag: 顯示樓主標示
   show_comment_host_tag_desc: 在評論回覆詳情頁標示樓主
+  enable_comment_reply_tree: 樹狀顯示評論回覆
+  enable_comment_reply_tree_desc: 根據回覆關係和發佈時間整理樓中樓，並按層級逐層縮進
   adjust_comment_image_height: 調整評論區圖片高度
   adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
-  detect_comment_shadow_ban: 檢測留言僅自己可見
-  detect_comment_shadow_ban_desc: 發送留言約 5 秒後，分別以未登入和登入狀態檢查公開可見性；結果僅供參考
   video_player_scroll: 調整顯示模式後滾動
   video_player_scroll_desc: 啟用後，在默認模式為寬屏和默認時，會自動滾動到合適位置。
   enlarge_favorite_dialog: 放大收藏彈窗
@@ -825,13 +828,6 @@ settings:
   use_plugin_search_results_page_desc: 啟用後，搜尋時將使用插件內置的搜尋結果頁面，支持分類篩選等功能
   search_results_pagination_mode: 搜尋結果分頁模式
   search_results_pagination_mode_desc: 選擇搜尋結果的展示方式：滾動自動加載或翻頁
-comment_shadow_ban_detection:
-  ok: 留言可正常公開顯示。
-  shadowban: 此留言疑似僅自己可見（ShadowBan）。
-  deleted: 此留言疑似已被系統刪除。
-  invisible: 此留言已被 Bilibili 標記為不可見。
-  suspicious: 此留言可能仍在審核中，或留言區處於限制狀態。
-  error: 暫時無法確認留言狀態，請稍後重試。
 auth:
   auth_access_key_first: 在這之前請先授權 BewlyBewly 使用 access key
 topbar:
@@ -1032,7 +1028,10 @@ favorites:
   collected_season_prefix: 合集
   folder_section_title: 所有收藏夾
   season_section_title: 收藏的合集
+  article_section_title: 圖文收藏
   video_count: 影片數：{count}
+  article_count: 圖文數：{count}
+  article_load_failed: 圖文收藏載入失敗，請稍後再試
   unfavorite: 取消收藏
   unfavorite_confirm: |-
     要取消收藏選中的影片嗎？
@@ -1081,7 +1080,7 @@ version_reminder:
   description: 查看此版本的更新記錄與最新動態。確認後，此版本將不再顯示提醒。
   github_releases: GitHub Releases
   github_releases_desc: 查看完整版本記錄與下載資訊
-  bilibili_dynamic: B站動態
+  bilibili_dynamic: Bilibili 動態
   bilibili_dynamic_desc: 查看開發者發佈的更新動態
   xiaohongshu_page: 小紅書
   xiaohongshu_page_desc: 在小紅書搜尋 BewlyCat 最新動態

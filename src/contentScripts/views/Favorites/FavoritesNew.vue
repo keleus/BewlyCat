@@ -3,6 +3,7 @@ import type { CSSProperties, Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
+import ArticleCard from '~/components/ArticleCard/ArticleCard.vue'
 import type { ContextMenuOption } from '~/components/ContextMenu.vue'
 import type { FavoriteResource } from '~/components/TopBar/types'
 import type { Video } from '~/components/VideoCard/types'
@@ -11,6 +12,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
+import type { FavoriteArticle, FavoriteArticlesResult } from '~/models/article/favorite'
 import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favorite'
 import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/video/favoriteCategory'
 import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
@@ -25,12 +27,15 @@ import {
 import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
 import emitter from '~/utils/mitt'
 
-// 新版收藏页支持收藏夹与订阅合集。
+// 新版收藏页支持收藏夹、订阅合集与图文收藏。
 const { t } = useI18n()
 const toast = useToast()
 const { confirm: showConfirmDialog } = useConfirmDialog()
 
-type FavoriteCategorySource = 'folder' | 'season'
+const FAVORITE_ARTICLE_PAGE_SIZE = 16
+const FAVORITE_ARTICLE_CATEGORY_ID = -1
+
+type FavoriteCategorySource = 'folder' | 'season' | 'article'
 type BatchTransferAction = 'copy' | 'move'
 type SidebarManageSection = 'folder' | 'season'
 type ViewCategory = CategoryItem & {
@@ -43,6 +48,7 @@ type ViewCategory = CategoryItem & {
 const favoriteCategories = reactive<CategoryItem[]>([])
 const collectedFavoriteSeasons = reactive<CollectedFavoriteSeason[]>([])
 const favoriteResources = reactive<FavoriteItem[]>([])
+const favoriteArticles = reactive<FavoriteArticle[]>([])
 const categoryOptions = reactive<Array<{ value: ViewCategory, label: string }>>([])
 
 const selectedCategory = ref<ViewCategory>()
@@ -63,6 +69,7 @@ const isResolvingSeasonPlayAll = ref<boolean>(false)
 /** 当前订阅合集的原始 medias（与列表同套分页语义），供播放全部复用 */
 const loadedSeasonMedias = ref<FavoriteSeasonMedia[]>([])
 const loadedSeasonComplete = ref(false)
+const articleFavoriteCount = ref<number>()
 const selectedResourceKeys = ref<string[]>([])
 const folderSectionExpanded = ref<boolean>(true)
 const seasonSectionExpanded = ref<boolean>(true)
@@ -122,6 +129,8 @@ const selectedCategoryKey = computed(() => selectedCategory.value ? getCategoryK
 
 const selectedCategoryCover = computed(() => activatedCategoryCover.value || selectedCategory.value?.cover || '')
 
+const isArticleCategory = computed(() => selectedCategory.value?.source === 'article')
+
 const isManagingFolder = computed(() => sidebarManageSection.value === 'folder')
 const isManagingSeason = computed(() => sidebarManageSection.value === 'season')
 
@@ -158,9 +167,21 @@ const itemMenuOptions = computed((): ContextMenuOption[] => {
   return [{ value: 'unfav', label: t('favorites.unfavorite'), icon: 'i-tabler:star-off', danger: true }]
 })
 
-const selectedCategoryCount = computed(() => selectedCategory.value?.media_count ?? 0)
+const selectedCategoryCount = computed(() => isArticleCategory.value
+  ? articleFavoriteCount.value ?? favoriteArticles.length
+  : selectedCategory.value?.media_count ?? 0)
 
-const selectedCategoryTypeLabel = computed(() => selectedCategory.value?.source === 'season' ? t('favorites.collected_season_prefix') : t('favorites.folder_section_title'))
+const selectedCategoryTypeLabel = computed(() => {
+  if (isArticleCategory.value)
+    return t('favorites.article_section_title')
+  return selectedCategory.value?.source === 'season'
+    ? t('favorites.collected_season_prefix')
+    : t('favorites.folder_section_title')
+})
+
+const selectedCategoryCountLabel = computed(() => isArticleCategory.value
+  ? t('favorites.article_count', { count: selectedCategoryCount.value })
+  : t('favorites.video_count', { count: selectedCategoryCount.value }))
 
 const batchTransferDialogTitle = computed(() => {
   return batchTransferAction.value === 'copy'
@@ -223,6 +244,9 @@ function initPageAction() {
           const firstCategoryId = favoriteCategories.length > 0 ? favoriteCategories[0].id : 0
           getFavoriteResources(firstCategoryId, ++currentPageNum.value, keyword.value, 1)
         }
+        else if (selectedCategory.value?.source === 'article') {
+          getFavoriteArticles(++currentPageNum.value)
+        }
         else if (selectedCategory.value?.source === 'season') {
           getFavoriteSeasonResources(selectedCategory.value.id, ++currentPageNum.value)
         }
@@ -266,6 +290,20 @@ function toSeasonCategory(item: CollectedFavoriteSeason): ViewCategory {
   }
 }
 
+function toArticleCategory(): ViewCategory {
+  return {
+    id: FAVORITE_ARTICLE_CATEGORY_ID,
+    fid: FAVORITE_ARTICLE_CATEGORY_ID,
+    mid: Number(getUserID()),
+    attr: 0,
+    title: t('favorites.article_section_title'),
+    fav_state: 1,
+    media_count: articleFavoriteCount.value ?? favoriteArticles.length,
+    source: 'article',
+    cover: favoriteArticles[0] ? getFavoriteArticleCover(favoriteArticles[0]) : '',
+  }
+}
+
 function rebuildCategoryOptions() {
   categoryOptions.length = 0
   favoriteCategories.forEach((item) => {
@@ -279,6 +317,10 @@ function rebuildCategoryOptions() {
       label: `${t('favorites.collected_season_prefix')} ${item.title}`,
       value: toSeasonCategory(item),
     })
+  })
+  categoryOptions.push({
+    label: t('favorites.article_section_title'),
+    value: toArticleCategory(),
   })
 }
 
@@ -753,6 +795,52 @@ async function getFavoriteResources(
   }
 }
 
+async function getFavoriteArticles(pn: number) {
+  if (pn === 1)
+    isFullPageLoading.value = true
+  isLoading.value = true
+
+  try {
+    const res: FavoriteArticlesResult = await api.favorite.getFavoriteArticles({
+      pn,
+      ps: FAVORITE_ARTICLE_PAGE_SIZE,
+    })
+
+    if (res.code !== 0) {
+      noMoreContent.value = true
+      toast.error(res.message || t('favorites.article_load_failed'))
+      return
+    }
+
+    const pageArticles = Array.isArray(res.data?.favorites)
+      ? res.data.favorites.filter((item): item is FavoriteArticle => item != null)
+      : []
+    favoriteArticles.push(...pageArticles)
+
+    const total = Number(res.data?.count ?? res.data?.total)
+    if (Number.isFinite(total))
+      articleFavoriteCount.value = total
+
+    const firstCover = favoriteArticles[0] ? getFavoriteArticleCover(favoriteArticles[0]) : ''
+    activatedCategoryCover.value = firstCover
+    noMoreContent.value = pageArticles.length < FAVORITE_ARTICLE_PAGE_SIZE
+      || (articleFavoriteCount.value !== undefined && favoriteArticles.length >= articleFavoriteCount.value)
+
+    if (!(await haveScrollbar()) && !noMoreContent.value) {
+      currentPageNum.value = pn + 1
+      await getFavoriteArticles(currentPageNum.value)
+    }
+  }
+  catch {
+    noMoreContent.value = true
+    toast.error(t('favorites.article_load_failed'))
+  }
+  finally {
+    isLoading.value = false
+    isFullPageLoading.value = false
+  }
+}
+
 async function getFavoriteSeasonResources(
   season_id: number,
   pn: number,
@@ -796,6 +884,58 @@ async function getFavoriteSeasonResources(
   finally {
     isLoading.value = false
     isFullPageLoading.value = false
+  }
+}
+
+function getFavoriteArticleCover(item: FavoriteArticle) {
+  return item.image_urls?.[0] || item.cover || item.banner_url || ''
+}
+
+function normalizeFavoriteArticleUrl(url: string) {
+  if (url.startsWith('//'))
+    return `https:${url}`
+  if (url.startsWith('/'))
+    return `https://www.bilibili.com${url}`
+  return url
+}
+
+function getFavoriteArticleUrl(item: FavoriteArticle) {
+  const url = item.url || item.jump_url || item.uri || item.link
+  if (url)
+    return normalizeFavoriteArticleUrl(url)
+
+  const opusId = item.opus_id ?? item.dynamic_id
+  if (opusId)
+    return `https://www.bilibili.com/opus/${opusId}`
+
+  const id = String(item.id)
+  return `https://www.bilibili.com/read/${id.startsWith('cv') ? id : `cv${id}`}`
+}
+
+function transformFavoriteArticle(item: FavoriteArticle) {
+  const tags = item.tags
+    ?.map((tag) => {
+      if (typeof tag === 'string')
+        return { name: tag }
+      const name = tag.name || tag.tag_name
+      return name ? { name } : null
+    })
+    .filter((tag): tag is { name: string } => tag !== null)
+
+  return {
+    id: item.id,
+    url: getFavoriteArticleUrl(item),
+    title: item.title,
+    desc: item.summary || item.desc,
+    cover: getFavoriteArticleCover(item),
+    author: item.author?.name || item.upper?.name || item.author_name || '',
+    authorMid: item.author?.mid || item.upper?.mid || item.mid,
+    view: item.stats?.view ?? item.view,
+    like: item.stats?.like ?? item.like,
+    reply: item.stats?.reply ?? item.reply,
+    publishTime: item.publish_time || item.pub_time || item.ctime,
+    categoryName: item.category?.name || item.category_name,
+    tags,
   }
 }
 
@@ -846,9 +986,17 @@ async function changeCategory(categoryItem: ViewCategory, force = false) {
   if (targetCategory.value?.id === categoryItem.id)
     targetCategory.value = undefined
   favoriteResources.length = 0
+  favoriteArticles.length = 0
   loadedSeasonMedias.value = []
   loadedSeasonComplete.value = false
   noMoreContent.value = false
+
+  if (categoryItem.source === 'article') {
+    searchScope.value = 'current'
+    activatedCategoryCover.value = categoryItem.cover || ''
+    getFavoriteArticles(1)
+    return
+  }
 
   // 切换收藏夹时，如果是搜索当前收藏夹模式，则立即加载数据
   if (searchScope.value === 'current') {
@@ -866,6 +1014,14 @@ async function changeCategory(categoryItem: ViewCategory, force = false) {
 
 function handleSearch() {
   resetBatchSelection()
+
+  if (selectedCategory.value?.source === 'article') {
+    currentPageNum.value = 1
+    favoriteArticles.length = 0
+    noMoreContent.value = false
+    getFavoriteArticles(currentPageNum.value)
+    return
+  }
 
   if (selectedCategory.value?.source === 'season' && searchScope.value === 'current') {
     currentPageNum.value = 1
@@ -918,6 +1074,8 @@ async function handlePlayAll() {
     return
   }
   if (!selectedCategory.value || isResolvingSeasonPlayAll.value)
+    return
+  if (selectedCategory.value.source === 'article')
     return
 
   if (selectedCategory.value.source === 'season') {
@@ -1260,6 +1418,23 @@ function transformFavoriteItem(item: FavoriteItem): Video {
             </li>
           </ul>
         </section>
+
+        <section class="favorites-nav-section favorites-nav-section--single">
+          <ul class="category-list">
+            <li class="category-item">
+              <button
+                class="category-nav-item"
+                :class="{ active: selectedCategoryKey === `article:${FAVORITE_ARTICLE_CATEGORY_ID}` }"
+                :disabled="isFullPageLoading"
+                @click="changeCategory(toArticleCategory())"
+              >
+                <span class="category-icon" i-tabler:article />
+                <span class="category-title">{{ t('favorites.article_section_title') }}</span>
+                <span v-if="articleFavoriteCount !== undefined" class="category-count">{{ articleFavoriteCount }}</span>
+              </button>
+            </li>
+          </ul>
+        </section>
       </nav>
 
       <ContextMenu
@@ -1279,7 +1454,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
             :src="removeHttpFromUrl(`${selectedCategoryCover}@480w_270h_1c`)"
             :alt="selectedCategory?.title"
           >
-          <span v-else i-tabler:folder-star />
+          <span v-else :class="isArticleCategory ? 'i-tabler:article' : 'i-tabler:folder-star'" />
         </picture>
 
         <div class="favorites-hero-content">
@@ -1287,11 +1462,11 @@ function transformFavoriteItem(item: FavoriteItem): Video {
             <h2>{{ selectedCategory?.title }}</h2>
             <p>
               <span>{{ selectedCategoryTypeLabel }}</span>
-              <span>{{ t('favorites.video_count', { count: selectedCategoryCount }) }}</span>
+              <span>{{ selectedCategoryCountLabel }}</span>
             </p>
           </div>
 
-          <div class="favorites-hero-actions">
+          <div v-if="!isArticleCategory" class="favorites-hero-actions">
             <Button
               type="primary"
               :disabled="searchScope === 'all' || !selectedCategory || isResolvingSeasonPlayAll"
@@ -1306,7 +1481,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
         </div>
       </section>
 
-      <div class="favorites-toolbar" :class="{ hide: shouldMoveCtrlBarUp }">
+      <div v-if="!isArticleCategory" class="favorites-toolbar" :class="{ hide: shouldMoveCtrlBarUp }">
         <div class="toolbar-row">
           <div class="toolbar-search-group">
             <Select v-model="searchScope" w-120px :options="searchScopeOptions" @change="handleSearchScopeChange" />
@@ -1389,51 +1564,80 @@ function transformFavoriteItem(item: FavoriteItem): Video {
         </div>
       </div>
 
-      <Empty
-        v-if="searchScope === 'all' && !keyword.trim() && favoriteResources.length === 0 && !isLoading"
-        :style="contentTopStyle"
-        :description="t('favorites.global_search_hint')"
-      />
+      <template v-if="isArticleCategory">
+        <div v-if="favoriteArticles.length > 0" class="article-favorites-content" :style="contentTopStyle">
+          <div class="article-favorites-grid">
+            <ArticleCard
+              v-for="article in favoriteArticles"
+              :key="String(article.id)"
+              v-bind="transformFavoriteArticle(article)"
+            />
+          </div>
+          <div v-if="isLoading" class="article-favorites-loading">
+            <Loading />
+          </div>
+          <Empty
+            v-else-if="noMoreContent"
+            :description="t('common.no_more_content')"
+          />
+        </div>
+        <div v-else-if="isLoading || isFullPageLoading" class="article-favorites-loading article-favorites-loading--initial">
+          <Loading />
+        </div>
+        <Empty
+          v-else
+          :style="contentTopStyle"
+          :description="t('common.no_data')"
+        />
+      </template>
 
-      <VideoCardGrid
-        v-else
-        :style="contentTopStyle"
-        :items="favoriteResources"
-        :transform-item="transformFavoriteItem"
-        :get-item-key="(item) => item.id"
-        grid-layout="adaptive"
-        :loading="isLoading || isFullPageLoading"
-        :no-more-content="noMoreContent"
-        :empty-description="$t('common.no_more_content')"
-        :more-btn="!isBatchManaging"
-        :hide-author="searchScope === 'current' && selectedCategory?.source === 'season'"
-        :card-click-handler="isBatchManaging ? handleFavoriteCardClick : undefined"
-        :cover-top-left-always-visible="isBatchManaging"
-        enable-row-padding
-        @refresh="() => handlePageRefresh?.()"
-      >
-        <template v-if="searchScope !== 'current' || selectedCategory?.source !== 'season'" #coverTopLeft="{ item }">
-          <button
-            v-if="isBatchManaging"
-            class="favorite-card-action"
-            :class="{ selected: isSelectedFavoriteResource(item) }"
-            @click.prevent.stop="toggleFavoriteResourceSelection(item)"
-          >
-            <Tooltip :content="$t('favorites.batch_select_item')" placement="bottom-left" type="dark">
-              <div :class="isSelectedFavoriteResource(item) ? 'i-tabler:checkbox' : 'i-tabler:square'" />
-            </Tooltip>
-          </button>
-          <button
-            v-else
-            class="favorite-card-action danger"
-            @click.prevent.stop="handleUnfavorite(item)"
-          >
-            <Tooltip :content="$t('favorites.unfavorite')" placement="bottom-left" type="dark">
-              <div i-ic-baseline-clear />
-            </Tooltip>
-          </button>
-        </template>
-      </VideoCardGrid>
+      <template v-else>
+        <Empty
+          v-if="searchScope === 'all' && !keyword.trim() && favoriteResources.length === 0 && !isLoading"
+          :style="contentTopStyle"
+          :description="t('favorites.global_search_hint')"
+        />
+
+        <VideoCardGrid
+          v-else
+          :style="contentTopStyle"
+          :items="favoriteResources"
+          :transform-item="transformFavoriteItem"
+          :get-item-key="(item) => item.id"
+          grid-layout="adaptive"
+          :loading="isLoading || isFullPageLoading"
+          :no-more-content="noMoreContent"
+          :empty-description="$t('common.no_more_content')"
+          :more-btn="!isBatchManaging"
+          :hide-author="searchScope === 'current' && selectedCategory?.source === 'season'"
+          :card-click-handler="isBatchManaging ? handleFavoriteCardClick : undefined"
+          :cover-top-left-always-visible="isBatchManaging"
+          enable-row-padding
+          @refresh="() => handlePageRefresh?.()"
+        >
+          <template v-if="searchScope !== 'current' || selectedCategory?.source !== 'season'" #coverTopLeft="{ item }">
+            <button
+              v-if="isBatchManaging"
+              class="favorite-card-action"
+              :class="{ selected: isSelectedFavoriteResource(item) }"
+              @click.prevent.stop="toggleFavoriteResourceSelection(item)"
+            >
+              <Tooltip :content="$t('favorites.batch_select_item')" placement="bottom-left" type="dark">
+                <div :class="isSelectedFavoriteResource(item) ? 'i-tabler:checkbox' : 'i-tabler:square'" />
+              </Tooltip>
+            </button>
+            <button
+              v-else
+              class="favorite-card-action danger"
+              @click.prevent.stop="handleUnfavorite(item)"
+            >
+              <Tooltip :content="$t('favorites.unfavorite')" placement="bottom-left" type="dark">
+                <div i-ic-baseline-clear />
+              </Tooltip>
+            </button>
+          </template>
+        </VideoCardGrid>
+      </template>
 
       <Dialog
         v-if="renameDialogVisible"
@@ -1513,7 +1717,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 
 .favorites-nav-section {
   display: flex;
-  flex: 1 1 0;
+  flex: 0 1 auto;
   flex-direction: column;
   min-height: 0;
   padding-bottom: 12px;
@@ -1521,6 +1725,10 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 }
 
 .favorites-nav-section.collapsed {
+  flex: 0 0 auto;
+}
+
+.favorites-nav-section--single {
   flex: 0 0 auto;
 }
 
@@ -1741,7 +1949,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 
 .category-list {
   display: flex;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   flex-direction: column;
   gap: 4px;
   min-height: 0;
@@ -1767,7 +1975,7 @@ function transformFavoriteItem(item: FavoriteItem): Video {
     color 160ms ease;
 }
 
-.category-nav-item:hover:not(:disabled) {
+.category-nav-item:hover:not(:disabled):not(.active):not(.selected) {
   color: var(--bew-text-1);
   background: var(--bew-fill-2);
 }
@@ -1945,6 +2153,27 @@ function transformFavoriteItem(item: FavoriteItem): Video {
   max-width: 100%;
 }
 
+.article-favorites-content {
+  width: 100%;
+}
+
+.article-favorites-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--bew-space-4);
+}
+
+.article-favorites-loading {
+  display: grid;
+  place-items: center;
+  min-height: 64px;
+  padding: var(--bew-space-4);
+}
+
+.article-favorites-loading--initial {
+  min-height: 240px;
+}
+
 .batch-selected-count {
   color: var(--bew-text-2);
   font-size: var(--bew-font-size-control);
@@ -2086,6 +2315,12 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 
   .favorites-hero-actions {
     justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .article-favorites-grid {
+    grid-template-columns: 1fr;
   }
 }
 

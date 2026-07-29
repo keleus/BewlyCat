@@ -347,7 +347,6 @@ provide('getVideoType', () => props.type!)
   <div
     :ref="(el) => logic.cardRootRef.value = el as HTMLElement"
     class="video-card-container"
-    duration-300 ease-in-out
     rounded="$bew-card-radius"
     :class="[
       layout !== 'old' ? 'mb-3' : 'mb-4',
@@ -384,7 +383,6 @@ provide('getVideoType', () => props.type!)
             :horizontal="horizontal"
             :removed="logic.removed.value"
             :is-hover="logic.isHover.value"
-            :preview-enabled="previewEnabled"
             :should-hide-overlay-elements="Boolean(logic.shouldHideOverlayElements.value)"
             :preview-video-url="logic.previewVideoUrl.value || ''"
             :video-element="logic.videoElement.value || null"
@@ -479,40 +477,9 @@ provide('getVideoType', () => props.type!)
   min-height: fit-content;
 }
 
-/* 骨架屏状态：禁用交互，使用轻量 shimmer 表达加载中 */
+/* 骨架屏状态：禁用交互；各内容块自身已经提供骨架反馈。 */
 .video-card-container--skeleton {
   pointer-events: none;
-  position: relative;
-  overflow: hidden;
-}
-
-.video-card-container--skeleton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--bew-bg, #fff) 35%, transparent) 50%,
-    transparent 100%
-  );
-  transform: translateX(-100%);
-  animation: video-card-skeleton-shimmer 1.4s ease-in-out infinite;
-}
-
-@keyframes video-card-skeleton-shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .video-card-container--skeleton::after {
-    animation: none;
-    display: none;
-  }
 }
 
 /* hover/active 效果全部在最外层容器，background-color + box-shadow 同一元素同步动画，无时序差 */

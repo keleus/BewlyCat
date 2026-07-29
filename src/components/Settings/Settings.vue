@@ -3,6 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import { createTransformer } from '~/utils/transformer'
 
@@ -13,7 +14,7 @@ import { MenuType } from './types'
 
 const emit = defineEmits(['close'])
 
-const { t, te } = useI18n()
+const { t, tm, rt } = useI18n()
 const breadcrumbDetail = ref<string>()
 const searchQuery = ref('')
 const settingsContentKey = ref(0)
@@ -61,6 +62,16 @@ const settingsWindow = ref<HTMLDivElement>()
 const settingsSearchRef = ref<HTMLElement>()
 const searchInputRef = ref<HTMLInputElement>()
 const searchPopoverStyle = ref<CSSProperties>({})
+const isSearchFocused = ref(false)
+const { mainAppRef } = useBewlyApp()
+
+function handleSearchBlur() {
+  isSearchFocused.value = false
+}
+
+function handleSearchFocus() {
+  isSearchFocused.value = true
+}
 
 function updateSearchPopoverBounds() {
   const searchElement = settingsSearchRef.value
@@ -71,16 +82,18 @@ function updateSearchPopoverBounds() {
   const searchRect = searchElement.getBoundingClientRect()
   const contentRect = contentElement.getBoundingClientRect()
   const edgeInset = 8
-  const popoverGap = 8
+  const popoverGap = 10
   const narrowLayout = window.innerWidth <= 760
   const bottomEdge = Math.min(window.innerHeight - edgeInset, contentRect.bottom - edgeInset)
 
-  // Match the top-bar search behavior: follow the trigger on wide layouts,
-  // then use the containing surface as a collision boundary on narrow ones.
+  // Fixed positioning so the popover can be teleported out of the settings
+  // window (which has its own backdrop-filter that would swallow ours).
   searchPopoverStyle.value = {
-    left: narrowLayout ? `${contentRect.left + edgeInset - searchRect.left}px` : 'auto',
-    right: narrowLayout ? 'auto' : '0',
-    width: narrowLayout ? `${Math.max(0, contentRect.width - edgeInset * 2)}px` : '100%',
+    position: 'fixed',
+    top: `${searchRect.bottom + popoverGap}px`,
+    right: narrowLayout ? 'auto' : `${window.innerWidth - searchRect.right}px`,
+    left: narrowLayout ? `${contentRect.left + edgeInset}px` : 'auto',
+    width: narrowLayout ? `${Math.max(0, contentRect.width - edgeInset * 2)}px` : `${searchRect.width}px`,
     maxHeight: `${Math.max(0, bottomEdge - searchRect.bottom - popoverGap)}px`,
   }
 }
@@ -107,6 +120,14 @@ useEventListener(window, 'resize', () => {
 })
 
 const scrollViewportRef = ref<HTMLElement>()
+
+// 滚动时关闭搜索弹窗（保留搜索词）
+useEventListener(() => scrollViewportRef.value, 'scroll', () => {
+  if (isSearchFocused.value) {
+    isSearchFocused.value = false
+    searchInputRef.value?.blur()
+  }
+}, { capture: true })
 
 provide('scrollSettingsContentToTop', () => {
   scrollViewportRef.value?.scrollTo({ top: 0 })
@@ -190,19 +211,30 @@ function getSearchEntryLocation(entry: SettingsSearchEntry) {
     : primaryTitle
 }
 
+function getTranslatedSearchTerms(key: string): string[] {
+  const collectTerms = (message: unknown): string[] => {
+    if (typeof message === 'string' || typeof message === 'function')
+      return [rt(message as Parameters<typeof rt>[0])]
+    if (Array.isArray(message))
+      return message.flatMap(collectTerms)
+    if (message && typeof message === 'object')
+      return Object.values(message).flatMap(collectTerms)
+    return []
+  }
+
+  return collectTerms(tm(key))
+}
+
 function getSearchEntryText(entry: SettingsSearchEntry) {
-  const inferredDescriptionKey = entry.titleKey ? `${entry.titleKey}_desc` : undefined
-  const translatedKeywords = entry.keywordKeys
-    ?.filter(key => te(key))
-    .map(key => t(key)) ?? []
-  const inferredDescription = inferredDescriptionKey && te(inferredDescriptionKey)
-    ? t(inferredDescriptionKey)
-    : ''
+  const inferredKeywordKeys = entry.titleKey
+    ? [`${entry.titleKey}_desc`, `${entry.titleKey}_opt`, `${entry.titleKey}_option`]
+    : []
+  const translatedKeywords = [...inferredKeywordKeys, ...(entry.keywordKeys ?? [])]
+    .flatMap(getTranslatedSearchTerms)
 
   return [
     getSearchEntryTitle(entry),
     getSearchEntryLocation(entry),
-    inferredDescription,
     ...translatedKeywords,
     ...(entry.keywords ?? []),
   ].join(' ').toLocaleLowerCase()
@@ -508,36 +540,9 @@ function changeMenuItem(menuItem: MenuType) {
               @keydown.down="moveSearchResultSelection($event, 1)"
               @keydown.up="moveSearchResultSelection($event, -1)"
               @keydown.enter="activateSearchResult"
-              @focus="updateSearchPopoverBounds"
+              @focus="() => { handleSearchFocus(); updateSearchPopoverBounds() }"
+              @blur="handleSearchBlur"
             >
-            <Transition name="settings-search-popover">
-              <div
-                v-if="searchQuery"
-                id="settings-search-results"
-                ref="searchResultsRef"
-                class="settings-search-results bew-popover-surface"
-                role="listbox"
-                :style="searchPopoverStyle"
-              >
-                <button
-                  v-for="(entry, index) in searchResults"
-                  :id="`settings-search-result-${index}`"
-                  :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
-                  type="button"
-                  role="option"
-                  :aria-selected="index === activeSearchResultIndex"
-                  :class="{ active: index === activeSearchResultIndex }"
-                  @mouseenter="activeSearchResultIndex = index"
-                  @click="navigateToSearchResult(entry)"
-                >
-                  <strong>{{ getSearchEntryTitle(entry) }}</strong>
-                  <span>{{ getSearchEntryLocation(entry) }}</span>
-                </button>
-                <p v-if="searchResults.length === 0">
-                  {{ $t('settings.search.no_results') }}
-                </p>
-              </div>
-            </Transition>
           </div>
           <div
             style="
@@ -578,6 +583,45 @@ function changeMenuItem(menuItem: MenuType) {
         </div>
       </div>
     </div>
+
+    <ClientOnly>
+      <Teleport :to="mainAppRef" :disabled="!mainAppRef">
+        <Transition name="settings-search-popover">
+          <div
+            v-if="searchQuery && isSearchFocused"
+            id="settings-search-results"
+            ref="searchResultsRef"
+            class="settings-search-results bew-popover-surface"
+            role="listbox"
+            :style="[
+              searchPopoverStyle,
+              {
+                backgroundColor: settings.enableFrostedGlass ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
+                zIndex: 10010,
+              },
+            ]"
+          >
+            <button
+              v-for="(entry, index) in searchResults"
+              :id="`settings-search-result-${index}`"
+              :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
+              type="button"
+              role="option"
+              :aria-selected="index === activeSearchResultIndex"
+              :class="{ active: index === activeSearchResultIndex }"
+              @mouseenter="activeSearchResultIndex = index"
+              @click="navigateToSearchResult(entry)"
+            >
+              <strong>{{ getSearchEntryTitle(entry) }}</strong>
+              <span>{{ getSearchEntryLocation(entry) }}</span>
+            </button>
+            <p v-if="searchResults.length === 0">
+              {{ $t('settings.search.no_results') }}
+            </p>
+          </div>
+        </Transition>
+      </Teleport>
+    </ClientOnly>
   </div>
 </template>
 
@@ -607,7 +651,8 @@ function changeMenuItem(menuItem: MenuType) {
   transition:
     width var(--bew-duration-moderate) var(--bew-ease-standard),
     border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
-    background-color var(--bew-duration-moderate) var(--bew-ease-standard);
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    transform var(--bew-duration-moderate) var(--bew-ease-standard);
 
   > li {
     width: 100%;
@@ -653,10 +698,7 @@ function changeMenuItem(menuItem: MenuType) {
         var(--settings-primary-nav-inset)
     );
     border-radius: var(--bew-radius-2xl);
-  }
-
-  .settings-primary-navigation__item {
-    border-radius: var(--bew-radius-xl);
+    transform: scale(1.05);
   }
 }
 
@@ -708,10 +750,11 @@ function changeMenuItem(menuItem: MenuType) {
   color: var(--bew-text-1);
   background: var(--bew-content);
   border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-interactive-radius);
+  border-radius: calc(var(--bew-control-height) / 2);
   box-shadow: var(--bew-shadow-edge-glow-1);
   transition:
     width var(--bew-duration-moderate) var(--bew-ease-standard),
+    border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
     border-color var(--bew-duration-normal) var(--bew-ease-standard),
     box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
     background-color var(--bew-duration-normal) var(--bew-ease-standard);
@@ -722,6 +765,7 @@ function changeMenuItem(menuItem: MenuType) {
 
   &:focus-within {
     border-color: var(--bew-theme-color);
+    border-radius: var(--bew-radius);
     box-shadow:
       var(--bew-shadow-edge-glow-1),
       0 0 0 2px var(--bew-theme-color);
@@ -746,20 +790,20 @@ function changeMenuItem(menuItem: MenuType) {
     font-size: var(--bew-font-size-body);
     font-weight: var(--bew-font-weight-regular);
     line-height: var(--bew-line-height-body);
+
+    &:focus-visible {
+      outline: 0;
+    }
   }
 }
 
 .settings-search-results {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  z-index: 10;
   box-sizing: border-box;
-  width: 100%;
   padding: var(--bew-space-2);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  border-radius: calc(var(--bew-radius) + 4px);
 
   button {
     display: flex;
@@ -770,7 +814,8 @@ function changeMenuItem(menuItem: MenuType) {
     min-height: var(--bew-control-height);
     padding: var(--bew-space-2) var(--bew-space-4);
     text-align: left;
-    border-radius: var(--bew-panel-radius);
+    border-radius: var(--bew-radius);
+    transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
 
     &:hover {
       background: var(--bew-fill-2);
@@ -778,11 +823,6 @@ function changeMenuItem(menuItem: MenuType) {
 
     &.active {
       background: var(--bew-fill-2);
-      box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
-
-      strong {
-        color: var(--bew-theme-color);
-      }
     }
   }
 
@@ -817,17 +857,21 @@ function changeMenuItem(menuItem: MenuType) {
   }
 }
 
+.settings-search-results {
+  transform-origin: top right;
+}
+
 .settings-search-popover-enter-active,
 .settings-search-popover-leave-active {
   transition:
-    opacity var(--bew-duration-moderate) var(--bew-ease-in-out),
-    transform var(--bew-duration-moderate) var(--bew-ease-in-out);
+    opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .settings-search-popover-enter-from,
 .settings-search-popover-leave-to {
   opacity: 0;
-  transform: translateY(var(--bew-space-1)) scale(0.95);
+  transform: translateY(-4px) scale(0.98);
 }
 
 :deep(.settings-search-target) {
@@ -909,6 +953,24 @@ function changeMenuItem(menuItem: MenuType) {
   }
 }
 
+@media (max-width: 1279px) {
+  #settings-window {
+    /* 侧栏进入布局后先维持 1000px 内容宽度，空间不足时再连续收缩。 */
+    width: min(calc(1000px + 72px), calc(100% - var(--bew-space-6)));
+    max-width: none;
+    margin-left: calc(-1 * var(--bew-space-1));
+  }
+
+  .settings-primary-navigation {
+    /* xl 以下外侧空间不足：让折叠导航占据布局宽度，展开时仍可覆盖 content。 */
+    position: relative;
+    left: auto !important;
+    width: 72px;
+    box-sizing: border-box;
+    padding-inline: var(--bew-space-2);
+  }
+}
+
 @media (max-width: 760px) {
   .settings-header {
     gap: var(--bew-space-2);
@@ -916,13 +978,7 @@ function changeMenuItem(menuItem: MenuType) {
   }
 
   .settings-primary-navigation {
-    /* 窄屏：取消浮动，改为常驻图标列，避免遮挡 content（触屏无 hover） */
-    position: relative;
-    left: auto !important;
-    width: 72px;
-    box-sizing: border-box;
-    padding-inline: var(--bew-space-2);
-
+    /* 触屏窄屏不依赖 hover，保持常驻图标列。 */
     li {
       width: 100%;
     }

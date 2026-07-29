@@ -1,2 +1,5 @@
-# Keep the generated declaration stable across platforms.
-/src/auto-imports.d.ts text eol=lf
+# Keep text files stable across platforms, regardless of core.autocrlf.
+* text=auto eol=lf
+
+# Markdown containing stray carriage returns must still be treated as text.
+*.md text eol=lf

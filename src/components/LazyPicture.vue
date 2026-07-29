@@ -6,6 +6,102 @@ import { settings } from '~/logic'
 const MAX_REMEMBERED_PICTURES = 240
 const loadedPictureSources = new Set<string>()
 
+type SharedIntersectionCallback = (entry: IntersectionObserverEntry) => void
+
+interface SharedObserverRecord {
+  root: Element | null
+  rootMargin: string
+  callbacks: Map<Element, SharedIntersectionCallback>
+  observer: IntersectionObserver
+}
+
+const sharedObserverRecords: SharedObserverRecord[] = []
+
+function observeIntersection(
+  element: Element,
+  root: Element | null,
+  rootMargin: string,
+  callback: SharedIntersectionCallback,
+) {
+  let record = sharedObserverRecords.find(item => item.root === root && item.rootMargin === rootMargin)
+
+  if (!record) {
+    const callbacks = new Map<Element, SharedIntersectionCallback>()
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(entry => callbacks.get(entry.target)?.(entry)),
+      { root, rootMargin, threshold: 0.01 },
+    )
+    record = { root, rootMargin, callbacks, observer }
+    sharedObserverRecords.push(record)
+  }
+
+  record.callbacks.set(element, callback)
+  record.observer.observe(element)
+
+  return () => {
+    if (!record)
+      return
+
+    record.observer.unobserve(element)
+    record.callbacks.delete(element)
+
+    if (record.callbacks.size > 0)
+      return
+
+    record.observer.disconnect()
+    const recordIndex = sharedObserverRecords.indexOf(record)
+    if (recordIndex >= 0)
+      sharedObserverRecords.splice(recordIndex, 1)
+  }
+}
+
+interface PendingImageRelease {
+  deadline: number
+  release: () => void
+}
+
+const pendingImageReleases = new Map<Element, PendingImageRelease>()
+let releaseSweepTimer: ReturnType<typeof setTimeout> | null = null
+
+function runReleaseSweep() {
+  releaseSweepTimer = null
+  const now = Date.now()
+  let nextDeadline = Number.POSITIVE_INFINITY
+
+  for (const [element, pendingRelease] of pendingImageReleases) {
+    if (pendingRelease.deadline <= now) {
+      pendingImageReleases.delete(element)
+      pendingRelease.release()
+    }
+    else {
+      nextDeadline = Math.min(nextDeadline, pendingRelease.deadline)
+    }
+  }
+
+  if (Number.isFinite(nextDeadline)) {
+    releaseSweepTimer = setTimeout(
+      runReleaseSweep,
+      Math.max(0, nextDeadline - Date.now()),
+    )
+  }
+}
+
+function scheduleImageRelease(element: Element, delay: number, release: () => void) {
+  pendingImageReleases.set(element, {
+    deadline: Date.now() + Math.max(0, delay),
+    release,
+  })
+
+  if (releaseSweepTimer !== null)
+    clearTimeout(releaseSweepTimer)
+  runReleaseSweep()
+}
+
+function cancelImageRelease(element: Element | undefined) {
+  if (element)
+    pendingImageReleases.delete(element)
+}
+
 function hasLoadedPicture(src: string): boolean {
   if (!src || !loadedPictureSources.has(src))
     return false
@@ -55,6 +151,8 @@ interface Props {
   releaseOffscreen?: boolean
   // 保留可视区域上下多少屏内的图片（释放阈值）
   retainScreens?: number
+  // 离开保留范围后延迟释放，避免快速往返滚动时反复解码
+  releaseDelay?: number
   // 是否显示骨架屏动画
   showSkeleton?: boolean
 }
@@ -65,6 +163,7 @@ const props = withDefaults(defineProps<Props>(), {
   rootMargin: '120px',
   releaseOffscreen: true,
   retainScreens: 1,
+  releaseDelay: 2000,
   showSkeleton: true,
 })
 
@@ -81,11 +180,12 @@ const isLoaded = ref(false)
 const actualSrc = ref(props.loading === 'eager' ? props.src : '')
 const skipRevealTransition = ref(false)
 
-let observer: IntersectionObserver | null = null
+let stopObserving: (() => void) | null = null
+let isWithinRetainedRange = props.loading === 'eager'
 
 function cleanupObserver() {
-  observer?.disconnect()
-  observer = null
+  stopObserving?.()
+  stopObserving = null
 }
 
 function getObserverRoot(): Element | null {
@@ -111,31 +211,12 @@ function getRetainScreens(): number {
 }
 
 function getObserverRootMargin(): string {
-  // release 模式下 rootMargin 同时决定“开始加载/允许释放”的边界。
-  // 必须用保留屏数，否则离开较小 rootMargin 后不会再收到回调，图片无法释放。
   if (!props.releaseOffscreen)
     return props.rootMargin || '120px'
 
-  const screens = getRetainScreens()
-  return `${screens * 100}% 0px`
-}
-
-function isElementInRetainedRange(element: HTMLElement): boolean {
-  if (!props.releaseOffscreen)
-    return true
-
-  const screens = getRetainScreens()
-  const margin = getViewportHeight() * screens
-  const root = getObserverRoot()
-
-  if (root instanceof HTMLElement) {
-    const rootRect = root.getBoundingClientRect()
-    const rect = element.getBoundingClientRect()
-    return rect.bottom >= rootRect.top - margin && rect.top <= rootRect.bottom + margin
-  }
-
-  const rect = element.getBoundingClientRect()
-  return rect.bottom >= -margin && rect.top <= getViewportHeight() + margin
+  // IntersectionObserver 的百分比 rootMargin 按宽度计算，改用视口高度换算的 px。
+  const margin = Math.max(1, Math.round(getViewportHeight() * getRetainScreens()))
+  return `${margin}px 0px`
 }
 
 function startLoad() {
@@ -168,37 +249,49 @@ function releaseImage() {
   skipRevealTransition.value = hasLoadedPicture(props.src)
 }
 
+function cancelScheduledRelease() {
+  cancelImageRelease(imgRef.value)
+}
+
+function scheduleRelease() {
+  const element = imgRef.value
+  if (!element || !isVisible.value || !props.releaseOffscreen || props.loading === 'eager')
+    return
+
+  scheduleImageRelease(element, props.releaseDelay, () => {
+    if (!isWithinRetainedRange)
+      releaseImage()
+  })
+}
+
 function createObserver() {
+  cancelScheduledRelease()
   cleanupObserver()
 
   if (props.loading === 'eager')
     return
 
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          if (!isVisible.value)
-            startLoad()
-          return
-        }
+  const element = imgRef.value
+  if (!element)
+    return
 
-        if (!isVisible.value || !props.releaseOffscreen)
-          return
+  stopObserving = observeIntersection(
+    element,
+    getObserverRoot(),
+    getObserverRootMargin(),
+    (entry) => {
+      isWithinRetainedRange = entry.isIntersecting
 
-        // 离开保留区（rootMargin=retainScreens）后立即卸载图片解码资源。
-        releaseImage()
-      })
-    },
-    {
-      root: getObserverRoot(),
-      rootMargin: getObserverRootMargin(),
-      threshold: 0.01,
+      if (entry.isIntersecting) {
+        cancelScheduledRelease()
+        if (!isVisible.value)
+          startLoad()
+        return
+      }
+
+      scheduleRelease()
     },
   )
-
-  if (imgRef.value)
-    observer.observe(imgRef.value)
 }
 
 function bindImageEl(el: Element | { $el?: unknown } | null) {
@@ -211,25 +304,11 @@ onMounted(() => {
     return
 
   createObserver()
-
-  watch(
-    () => imgRef.value,
-    (newEl) => {
-      if (newEl)
-        createObserver()
-    },
-  )
-
-  // 滚动容器可能晚于图片挂载，延迟一次重建 root。
-  nextTick(() => {
-    createObserver()
-    if (imgRef.value && !isVisible.value && isElementInRetainedRange(imgRef.value))
-      startLoad()
-  })
 })
 
 onBeforeUnmount(() => {
   cleanupObserver()
+  cancelScheduledRelease()
   detachImageElement()
   actualSrc.value = ''
   isVisible.value = false
@@ -295,7 +374,7 @@ watch(
         :ref="bindImageEl"
         :src="actualSrc"
         :alt="alt"
-        :loading="skipRevealTransition ? 'eager' : loading"
+        loading="eager"
         decoding="async"
         block w-full h-full
         rounded-inherit
