@@ -858,7 +858,7 @@ settings:
   show_comment_host_tag: Show OP tag
   show_comment_host_tag_desc: Show an OP tag on the root comment in reply detail view
   enable_comment_reply_tree: Show comment replies as a tree
-  enable_comment_reply_tree_desc: Group replies by parent and posting time, then indent each nested level
+  enable_comment_reply_tree_desc: Group replies by parent and posting time, show each level with indentation and guide lines, and click a guide to collapse its branch
   adjust_comment_image_height: Adjust comment image height
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
   video_player_scroll: Scroll after adjusting the display mode

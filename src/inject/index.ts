@@ -128,8 +128,12 @@ else if (shouldInitializePageScript) {
   const DEFAULT_COMMENT_REPLY_TREE_INDENT_STEP = 32
   const COMPACT_COMMENT_REPLY_TREE_INDENT_STEP = 24
   const COMMENT_REPLY_TREE_INDENT_STEP = 'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
+  const COMMENT_REPLY_TREE_GUIDES_ID = 'bewly-comment-reply-tree-guides'
+  const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
+  const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 
   interface CommentReplyTreeState {
+    collapsedNodeKeys: Set<string>
     enabled: boolean
     nextOriginalOrder: number
     originalOrderByRenderer: WeakMap<HTMLElement, number>
@@ -138,6 +142,7 @@ else if (shouldInitializePageScript) {
   }
 
   interface CommentReplyTreeNode {
+    authorName: string | null
     renderer: HTMLElement
     rpid: string | null
     parentRpid: string | null
@@ -146,7 +151,112 @@ else if (shouldInitializePageScript) {
     children: CommentReplyTreeNode[]
   }
 
+  const COMMENT_REPLY_TREE_GUIDES_CSS = `
+    #${COMMENT_REPLY_TREE_GUIDES_ID} {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch {
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__line,
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__symbol {
+      fill: none;
+      stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
+      stroke-width: var(--bew-space-0-5, 2px);
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vector-effect: non-scaling-stroke;
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__line,
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__symbol,
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__node {
+      pointer-events: none;
+      transition: stroke var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__hit {
+      fill: none;
+      stroke: transparent;
+      stroke-width: var(--bew-space-6, 24px);
+      pointer-events: stroke;
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__node-hit {
+      fill: transparent;
+      stroke: none;
+      pointer-events: all;
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__node {
+      fill: var(--bew-bg, var(--bg1, #fff));
+      stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
+      stroke-width: var(--bew-space-0-5, 2px);
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__focus {
+      fill: none;
+      stroke: transparent;
+      stroke-width: var(--bew-space-0-5, 2px);
+      pointer-events: none;
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__author {
+      fill: var(--bew-text-2, var(--text2, #61666d));
+      font-size: var(--bew-font-size-caption, 12px);
+      font-weight: var(--bew-font-weight-medium, 500);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__node-hit:hover ~ .bewly-comment-reply-branch__author,
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch:focus-visible .bewly-comment-reply-branch__author {
+      opacity: 1;
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch:hover :is(.bewly-comment-reply-branch__line, .bewly-comment-reply-branch__node, .bewly-comment-reply-branch__symbol) {
+      stroke: var(--bew-theme-color, #00aeec);
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch:focus,
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch:focus-visible {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch:focus-visible .bewly-comment-reply-branch__focus {
+      stroke: var(--bew-theme-color, #00aeec);
+    }
+  `
+
   const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: string }> = {
+    'bili-comment-thread-renderer': {
+      id: 'bewly-comment-thread-style',
+      css: `
+        :host {
+          position: relative;
+        }
+
+        :is(#comment, bili-comment-renderer)[data-bewly-comment-reply-collapsed] {
+          box-sizing: border-box;
+          height: var(--bew-space-6, 24px) !important;
+          min-height: var(--bew-space-6, 24px) !important;
+          overflow: hidden !important;
+          visibility: hidden !important;
+        }
+
+        ${COMMENT_REPLY_TREE_GUIDES_CSS}
+      `,
+    },
     'bili-comment-replies-renderer': {
       id: 'bewly-comment-replies-style',
       css: `
@@ -155,15 +265,34 @@ else if (shouldInitializePageScript) {
         }
 
         :host([data-bewly-comment-reply-tree]) {
+          --bew-comment-reply-branch-radius: var(--bew-radius-lg, 12px);
           --bew-comment-reply-indent-step: var(--bew-space-8, 32px);
+        }
+
+        :host([data-bewly-comment-reply-tree]) #expander-contents {
+          position: relative;
         }
 
         :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-depth] {
           box-sizing: border-box;
           display: block;
-          margin-inline-start: var(--bew-comment-reply-indent, 0px);
-          width: calc(100% - var(--bew-comment-reply-indent, 0px));
+          padding-inline-start: var(--bew-comment-reply-indent, 0px);
+          width: 100%;
         }
+
+        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-hidden] {
+          display: none !important;
+        }
+
+        :host([data-bewly-comment-reply-tree]) #expander-contents > :is(bili-comment-reply-renderer, bili-comment-renderer)[data-bewly-comment-reply-collapsed] {
+          box-sizing: border-box;
+          height: var(--bew-space-6, 24px) !important;
+          min-height: var(--bew-space-6, 24px) !important;
+          overflow: hidden !important;
+          visibility: hidden !important;
+        }
+
+        ${COMMENT_REPLY_TREE_GUIDES_CSS}
       `,
     },
     'bili-comment-renderer': {
@@ -278,9 +407,22 @@ else if (shouldInitializePageScript) {
     'cmn-CN': '楼主',
   }
 
+  const COMMENT_REPLY_BRANCH_LABELS: Record<string, { collapse: string, expand: string }> = {
+    en: { collapse: 'Collapse comment and replies', expand: 'Expand comment and replies' },
+    'cmn-TW': { collapse: '收合此評論及回覆', expand: '展開此評論及回覆' },
+    jyut: { collapse: '收起呢條評論同回覆', expand: '展開呢條評論同回覆' },
+    'cmn-CN': { collapse: '收起此评论及回复', expand: '展开此评论及回复' },
+  }
+
   function getHostTagText() {
     const language = currentSettings?.language || 'cmn-CN'
     return HOST_TAG_TEXTS[language] ?? '楼主'
+  }
+
+  function getCommentReplyBranchLabel(collapsed: boolean): string {
+    const language = currentSettings?.language || 'cmn-CN'
+    const labels = COMMENT_REPLY_BRANCH_LABELS[language] ?? COMMENT_REPLY_BRANCH_LABELS['cmn-CN']
+    return collapsed ? labels.expand : labels.collapse
   }
 
   const rootReplyAuthorByThread = new Map<string, string>()
@@ -311,6 +453,13 @@ else if (shouldInitializePageScript) {
     return toIdString(replyItem?.member?.mid)
   }
 
+  function getReplyAuthorName(replyItem: any): string | null {
+    const authorName = replyItem?.member?.uname
+    return typeof authorName === 'string' && authorName.trim()
+      ? authorName.trim()
+      : null
+  }
+
   function getThreadRootKey(replyItem: any, rootRpid: string): string {
     const oid = getReplyOid(replyItem)
     return oid ? `${oid}:${rootRpid}` : rootRpid
@@ -328,6 +477,7 @@ else if (shouldInitializePageScript) {
     let state = commentReplyTreeStates.get(component)
     if (!state) {
       state = {
+        collapsedNodeKeys: new Set(),
         enabled: false,
         nextOriginalOrder: 0,
         originalOrderByRenderer: new WeakMap(),
@@ -415,6 +565,386 @@ else if (shouldInitializePageScript) {
     )
 
     return Math.min(MAX_COMMENT_REPLY_TREE_DEPTH, Math.floor(availableIndentWidth / indentStep))
+  }
+
+  interface CommentReplyAvatarAnchor {
+    bottom: number
+    centerX: number
+    centerY: number
+    left: number
+    toggleY: number
+  }
+
+  interface CommentReplyTreeBranch {
+    childAnchors: CommentReplyAvatarAnchor[]
+    collapsed: boolean
+    key: string
+    parentAnchor: CommentReplyAvatarAnchor
+    parentAuthorName: string | null
+  }
+
+  function getCommentReplyAvatarAnchor(
+    renderer: HTMLElement,
+    containerRect: DOMRect,
+  ): CommentReplyAvatarAnchor | null {
+    const avatar = renderer.shadowRoot?.querySelector<HTMLElement>('#user-avatar')
+      ?? renderer.shadowRoot?.querySelector<HTMLElement>('bili-avatar')
+    if (!avatar)
+      return null
+
+    const avatarRect = avatar.getBoundingClientRect()
+    if (avatarRect.width <= 0 || avatarRect.height <= 0)
+      return null
+
+    if (renderer.hasAttribute('data-bewly-comment-reply-collapsed')) {
+      const rendererRect = renderer.getBoundingClientRect()
+      const centerY = rendererRect.top + rendererRect.height / 2 - containerRect.top
+      return {
+        bottom: centerY,
+        centerX: avatarRect.left + avatarRect.width / 2 - containerRect.left,
+        centerY,
+        left: avatarRect.left - containerRect.left,
+        toggleY: centerY,
+      }
+    }
+
+    const footer = renderer.shadowRoot?.querySelector<HTMLElement>('#footer')
+    const footerRect = footer?.getBoundingClientRect()
+    const avatarBottom = avatarRect.bottom - containerRect.top
+    const footerCenterY = footerRect && footerRect.height > 0
+      ? footerRect.top + footerRect.height / 2 - containerRect.top
+      : avatarBottom
+
+    return {
+      bottom: avatarBottom,
+      centerX: avatarRect.left + avatarRect.width / 2 - containerRect.left,
+      centerY: avatarRect.top + avatarRect.height / 2 - containerRect.top,
+      left: avatarRect.left - containerRect.left,
+      toggleY: Math.max(avatarBottom, footerCenterY),
+    }
+  }
+
+  function getCommentReplyTreeThreadRoot(component: HTMLElement): ShadowRoot | null {
+    const rootNode = component.getRootNode()
+    if (!(rootNode instanceof ShadowRoot) || rootNode.host.localName !== 'bili-comment-thread-renderer')
+      return null
+
+    return rootNode
+  }
+
+  function getCommentReplyTreeRootRenderer(component: HTMLElement): HTMLElement | null {
+    const threadRoot = getCommentReplyTreeThreadRoot(component)
+    if (!threadRoot)
+      return null
+
+    return threadRoot.querySelector<HTMLElement>('#comment')
+      ?? threadRoot.querySelector<HTMLElement>('bili-comment-renderer')
+  }
+
+  function getCommentReplyTreeNodeKey(node: CommentReplyTreeNode): string {
+    return node.rpid ? `reply:${node.rpid}` : `order:${node.originalOrder}`
+  }
+
+  function formatCommentReplyGuideCoordinate(value: number): string {
+    return String(Math.round(value * 100) / 100)
+  }
+
+  function removeCommentReplyTreeGuides(
+    component: HTMLElement,
+    replyContainer: HTMLElement,
+  ) {
+    replyContainer.querySelector(`#${COMMENT_REPLY_TREE_GUIDES_ID}`)?.remove()
+    getCommentReplyTreeThreadRoot(component)
+      ?.querySelector(`#${COMMENT_REPLY_TREE_GUIDES_ID}`)
+      ?.remove()
+  }
+
+  function updateCommentReplyTreeVisibility(
+    component: HTMLElement,
+    state: CommentReplyTreeState,
+    orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }>,
+  ) {
+    const hideDescendantsAtDepth: boolean[] = []
+    const rootCollapsed = state.collapsedNodeKeys.has(COMMENT_REPLY_TREE_ROOT_KEY)
+    getCommentReplyTreeRootRenderer(component)
+      ?.toggleAttribute('data-bewly-comment-reply-collapsed', rootCollapsed)
+
+    orderedNodes.forEach(({ depth, node }) => {
+      const hidden = depth === 0 ? rootCollapsed : hideDescendantsAtDepth[depth - 1] === true
+      const collapsed = state.collapsedNodeKeys.has(getCommentReplyTreeNodeKey(node))
+      node.renderer.toggleAttribute('data-bewly-comment-reply-hidden', hidden)
+      node.renderer.toggleAttribute('data-bewly-comment-reply-collapsed', collapsed)
+      hideDescendantsAtDepth[depth] = hidden || collapsed
+      hideDescendantsAtDepth.length = depth + 1
+    })
+  }
+
+  function getCommentReplyBranchPath(
+    branch: CommentReplyTreeBranch,
+    branchRadius: number,
+  ): string | null {
+    const coordinate = formatCommentReplyGuideCoordinate
+    const { childAnchors, collapsed, parentAnchor } = branch
+
+    if (collapsed)
+      return `M ${coordinate(parentAnchor.centerX)} ${coordinate(parentAnchor.centerY)}`
+
+    if (childAnchors.length === 0)
+      return null
+
+    const pathCommands: string[] = []
+    const appendBranch = (childAnchor: CommentReplyAvatarAnchor, includeTrunk: boolean) => {
+      const horizontalGap = childAnchor.left - parentAnchor.centerX
+      const verticalGap = childAnchor.centerY - parentAnchor.bottom
+      if (horizontalGap <= 0 || verticalGap <= 0)
+        return
+
+      const radius = Math.min(branchRadius, horizontalGap, verticalGap)
+      const branchStartY = childAnchor.centerY - radius
+      const startY = includeTrunk ? parentAnchor.bottom : branchStartY
+      pathCommands.push(
+        `M ${coordinate(parentAnchor.centerX)} ${coordinate(startY)}`,
+        `V ${coordinate(branchStartY)}`,
+        `Q ${coordinate(parentAnchor.centerX)} ${coordinate(childAnchor.centerY)} ${coordinate(parentAnchor.centerX + radius)} ${coordinate(childAnchor.centerY)}`,
+        `H ${coordinate(childAnchor.left)}`,
+      )
+    }
+
+    childAnchors.slice(0, -1).forEach(anchor => appendBranch(anchor, false))
+    appendBranch(childAnchors[childAnchors.length - 1], true)
+    return pathCommands.length > 0 ? pathCommands.join(' ') : null
+  }
+
+  function getCommentReplyBranchToggleY(
+    branch: CommentReplyTreeBranch,
+    toggleHitRadius: number,
+  ): number {
+    const { childAnchors, collapsed, parentAnchor } = branch
+    if (collapsed)
+      return parentAnchor.centerY
+    if (childAnchors.length === 0)
+      return Math.max(parentAnchor.bottom + toggleHitRadius, parentAnchor.toggleY)
+
+    const branchEndY = childAnchors[childAnchors.length - 1].centerY
+    const minimumY = parentAnchor.bottom + toggleHitRadius
+    const maximumY = branchEndY - toggleHitRadius
+    if (maximumY <= minimumY)
+      return parentAnchor.bottom + (branchEndY - parentAnchor.bottom) / 2
+
+    return Math.min(Math.max(parentAnchor.toggleY, minimumY), maximumY)
+  }
+
+  function toggleCommentReplyTreeBranch(
+    component: HTMLElement,
+    state: CommentReplyTreeState,
+    branchKey: string,
+  ) {
+    if (state.collapsedNodeKeys.has(branchKey))
+      state.collapsedNodeKeys.delete(branchKey)
+    else
+      state.collapsedNodeKeys.add(branchKey)
+    updateCommentReplyTree(component)
+  }
+
+  function createCommentReplyTreeBranchElement(
+    component: HTMLElement,
+    state: CommentReplyTreeState,
+    branch: CommentReplyTreeBranch,
+    pathData: string,
+    toggleHitRadius: number,
+    toggleNodeRadius: number,
+  ): SVGGElement {
+    const coordinate = formatCommentReplyGuideCoordinate
+    const toggleY = getCommentReplyBranchToggleY(branch, toggleHitRadius)
+    const symbolHalfSize = toggleNodeRadius / 2
+    const branchGroup = document.createElementNS(SVG_NAMESPACE, 'g')
+    branchGroup.classList.add('bewly-comment-reply-branch')
+    branchGroup.setAttribute('role', 'button')
+    branchGroup.setAttribute('tabindex', '0')
+    branchGroup.setAttribute('aria-expanded', String(!branch.collapsed))
+    branchGroup.setAttribute('aria-label', getCommentReplyBranchLabel(branch.collapsed))
+
+    const visiblePath = document.createElementNS(SVG_NAMESPACE, 'path')
+    visiblePath.classList.add('bewly-comment-reply-branch__line')
+    visiblePath.setAttribute('d', pathData)
+    branchGroup.appendChild(visiblePath)
+
+    const hitPath = document.createElementNS(SVG_NAMESPACE, 'path')
+    hitPath.classList.add('bewly-comment-reply-branch__hit')
+    hitPath.setAttribute('d', pathData)
+    branchGroup.appendChild(hitPath)
+
+    const nodeHitArea = document.createElementNS(SVG_NAMESPACE, 'circle')
+    nodeHitArea.classList.add('bewly-comment-reply-branch__node-hit')
+    nodeHitArea.setAttribute('cx', coordinate(branch.parentAnchor.centerX))
+    nodeHitArea.setAttribute('cy', coordinate(toggleY))
+    nodeHitArea.setAttribute('r', coordinate(toggleHitRadius))
+    branchGroup.appendChild(nodeHitArea)
+
+    const focusRing = document.createElementNS(SVG_NAMESPACE, 'circle')
+    focusRing.classList.add('bewly-comment-reply-branch__focus')
+    focusRing.setAttribute('cx', coordinate(branch.parentAnchor.centerX))
+    focusRing.setAttribute('cy', coordinate(toggleY))
+    focusRing.setAttribute('r', coordinate(toggleHitRadius - 2))
+    branchGroup.appendChild(focusRing)
+
+    const toggleNode = document.createElementNS(SVG_NAMESPACE, 'circle')
+    toggleNode.classList.add('bewly-comment-reply-branch__node')
+    toggleNode.setAttribute('cx', coordinate(branch.parentAnchor.centerX))
+    toggleNode.setAttribute('cy', coordinate(toggleY))
+    toggleNode.setAttribute('r', coordinate(toggleNodeRadius))
+    branchGroup.appendChild(toggleNode)
+
+    const toggleSymbol = document.createElementNS(SVG_NAMESPACE, 'path')
+    toggleSymbol.classList.add('bewly-comment-reply-branch__symbol')
+    const horizontalSymbol = `M ${coordinate(branch.parentAnchor.centerX - symbolHalfSize)} ${coordinate(toggleY)} H ${coordinate(branch.parentAnchor.centerX + symbolHalfSize)}`
+    const verticalSymbol = `M ${coordinate(branch.parentAnchor.centerX)} ${coordinate(toggleY - symbolHalfSize)} V ${coordinate(toggleY + symbolHalfSize)}`
+    toggleSymbol.setAttribute('d', branch.collapsed ? `${horizontalSymbol} ${verticalSymbol}` : horizontalSymbol)
+    branchGroup.appendChild(toggleSymbol)
+
+    if (branch.collapsed && branch.parentAuthorName) {
+      const authorLabel = document.createElementNS(SVG_NAMESPACE, 'text')
+      authorLabel.classList.add('bewly-comment-reply-branch__author')
+      authorLabel.setAttribute('x', coordinate(branch.parentAnchor.centerX + toggleHitRadius + 4))
+      authorLabel.setAttribute('y', coordinate(toggleY))
+      authorLabel.setAttribute('dominant-baseline', 'middle')
+      authorLabel.textContent = branch.parentAuthorName
+      branchGroup.appendChild(authorLabel)
+    }
+
+    const toggleBranch = () => toggleCommentReplyTreeBranch(component, state, branch.key)
+    branchGroup.addEventListener('click', (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      toggleBranch()
+    })
+    branchGroup.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ')
+        return
+      event.preventDefault()
+      event.stopPropagation()
+      toggleBranch()
+    })
+
+    return branchGroup
+  }
+
+  function renderCommentReplyTreeGuides(
+    component: HTMLElement,
+    state: CommentReplyTreeState,
+    replyContainer: HTMLElement,
+    orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }>,
+  ) {
+    removeCommentReplyTreeGuides(component, replyContainer)
+
+    const threadRoot = getCommentReplyTreeThreadRoot(component)
+    const guideContainer: HTMLElement | ShadowRoot = threadRoot ?? replyContainer
+    const coordinateRect = threadRoot
+      ? threadRoot.host.getBoundingClientRect()
+      : replyContainer.getBoundingClientRect()
+    if (coordinateRect.width <= 0)
+      return
+
+    if (threadRoot) {
+      const threadStylePatch = COMMENT_SHADOW_STYLE_PATCHES['bili-comment-thread-renderer']
+      ensureCommentShadowStyle(threadRoot, threadStylePatch.id, threadStylePatch.css)
+    }
+
+    const nodes = orderedNodes.map(({ node }) => node)
+    const avatarAnchorByNode = new Map<CommentReplyTreeNode, CommentReplyAvatarAnchor>()
+    nodes.forEach((node) => {
+      const anchor = getCommentReplyAvatarAnchor(node.renderer, coordinateRect)
+      if (anchor)
+        avatarAnchorByNode.set(node, anchor)
+    })
+
+    const componentStyle = getComputedStyle(component)
+    const branchRadius = Number.parseFloat(
+      componentStyle.getPropertyValue('--bew-comment-reply-branch-radius'),
+    ) || 12
+    const toggleHitRadius = Number.parseFloat(componentStyle.getPropertyValue('--bew-space-3')) || 12
+    const toggleNodeRadius = Number.parseFloat(componentStyle.getPropertyValue('--bew-radius-half')) || 6
+    const branches: CommentReplyTreeBranch[] = []
+
+    const rootNodes = orderedNodes
+      .filter(({ depth }) => depth === 0)
+      .map(({ node }) => node)
+    const threadRootRenderer = getCommentReplyTreeRootRenderer(component)
+    const threadRootAnchor = threadRootRenderer
+      ? getCommentReplyAvatarAnchor(threadRootRenderer, coordinateRect)
+      : null
+    if (threadRootAnchor && rootNodes.length > 0) {
+      branches.push({
+        childAnchors: rootNodes
+          .map(node => avatarAnchorByNode.get(node))
+          .filter((anchor): anchor is CommentReplyAvatarAnchor => Boolean(anchor))
+          .filter(anchor => anchor.left > threadRootAnchor.centerX),
+        collapsed: state.collapsedNodeKeys.has(COMMENT_REPLY_TREE_ROOT_KEY),
+        key: COMMENT_REPLY_TREE_ROOT_KEY,
+        parentAnchor: threadRootAnchor,
+        parentAuthorName: getReplyAuthorName(getCommentReplyData(threadRootRenderer)),
+      })
+    }
+
+    nodes.forEach((node) => {
+      const parentAnchor = avatarAnchorByNode.get(node)
+      if (!parentAnchor || node.children.length === 0)
+        return
+
+      branches.push({
+        childAnchors: node.children
+          .map(child => avatarAnchorByNode.get(child))
+          .filter((anchor): anchor is CommentReplyAvatarAnchor => Boolean(anchor))
+          .filter(anchor => anchor.left > parentAnchor.centerX),
+        collapsed: state.collapsedNodeKeys.has(getCommentReplyTreeNodeKey(node)),
+        key: getCommentReplyTreeNodeKey(node),
+        parentAnchor,
+        parentAuthorName: node.authorName,
+      })
+    })
+
+    const renderedBranches = branches
+      .map(branch => ({ branch, pathData: getCommentReplyBranchPath(branch, branchRadius) }))
+      .filter((entry): entry is { branch: CommentReplyTreeBranch, pathData: string } => Boolean(entry.pathData))
+    if (renderedBranches.length === 0)
+      return
+
+    const minimumX = Math.min(
+      0,
+      ...renderedBranches.map(({ branch }) => branch.parentAnchor.centerX - toggleHitRadius),
+    )
+    const minimumY = Math.min(
+      0,
+      ...renderedBranches.map(({ branch }) => Math.min(
+        branch.parentAnchor.bottom,
+        getCommentReplyBranchToggleY(branch, toggleHitRadius) - toggleHitRadius,
+      )),
+    )
+    const layerWidth = Math.max(1, coordinateRect.width - minimumX)
+    const layerHeight = Math.max(1, coordinateRect.height - minimumY)
+    const guideLayer = document.createElementNS(SVG_NAMESPACE, 'svg')
+    guideLayer.id = COMMENT_REPLY_TREE_GUIDES_ID
+    guideLayer.setAttribute('focusable', 'false')
+    guideLayer.setAttribute('viewBox', `${minimumX} ${minimumY} ${layerWidth} ${layerHeight}`)
+    guideLayer.setAttribute('preserveAspectRatio', 'none')
+    guideLayer.style.left = `${minimumX}px`
+    guideLayer.style.top = `${minimumY}px`
+    guideLayer.style.right = 'auto'
+    guideLayer.style.bottom = 'auto'
+    guideLayer.style.width = `${layerWidth}px`
+    guideLayer.style.height = `${layerHeight}px`
+
+    renderedBranches.forEach(({ branch, pathData }) => {
+      guideLayer.appendChild(createCommentReplyTreeBranchElement(
+        component,
+        state,
+        branch,
+        pathData,
+        toggleHitRadius,
+        toggleNodeRadius,
+      ))
+    })
+    guideContainer.appendChild(guideLayer)
   }
 
   function isCommentReplyRenderer(element: Element): element is HTMLElement {
@@ -512,6 +1042,8 @@ else if (shouldInitializePageScript) {
     if (!enabled) {
       disconnectCommentReplyTreeResizeObserver(state)
       component.style.removeProperty('--bew-comment-reply-indent-step')
+      removeCommentReplyTreeGuides(component, replyContainer)
+      state.collapsedNodeKeys.clear()
       if (state.enabled) {
         const originalOrder = [...replyRenderers].sort((a, b) => (
           getCommentReplyOriginalOrder(state, a) - getCommentReplyOriginalOrder(state, b)
@@ -521,8 +1053,11 @@ else if (shouldInitializePageScript) {
 
       replyRenderers.forEach((replyRenderer) => {
         delete replyRenderer.dataset.bewlyCommentReplyDepth
+        delete replyRenderer.dataset.bewlyCommentReplyHidden
+        delete replyRenderer.dataset.bewlyCommentReplyCollapsed
         replyRenderer.style.removeProperty('--bew-comment-reply-indent')
       })
+      delete getCommentReplyTreeRootRenderer(component)?.dataset.bewlyCommentReplyCollapsed
       state.enabled = false
       return
     }
@@ -532,6 +1067,7 @@ else if (shouldInitializePageScript) {
     const nodes: CommentReplyTreeNode[] = replyRenderers.map((replyRenderer) => {
       const replyItem = getCommentReplyData(replyRenderer)
       return {
+        authorName: getReplyAuthorName(replyItem),
         renderer: replyRenderer,
         rpid: getReplyRpid(replyItem),
         parentRpid: getReplyParentRpid(replyItem),
@@ -550,10 +1086,17 @@ else if (shouldInitializePageScript) {
       node.renderer.dataset.bewlyCommentReplyDepth = String(visualDepth)
       node.renderer.style.setProperty('--bew-comment-reply-indent', getCommentReplyIndent(visualDepth))
     })
+    updateCommentReplyTreeVisibility(component, state, orderedNodes)
     reorderCommentReplyRenderers(
       replyContainer,
       replyRenderers,
       orderedNodes.map(({ node }) => node.renderer),
+    )
+    renderCommentReplyTreeGuides(
+      component,
+      state,
+      replyContainer,
+      orderedNodes,
     )
     state.enabled = true
   }

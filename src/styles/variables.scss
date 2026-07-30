@@ -323,6 +323,9 @@
 
   --bew-border-color: rgb(131 131 145 / 18%);
 
+  // Threaded comments use this subtle rail to keep nested reply ancestry visible.
+  --bew-comment-tree-line-color: var(--bew-fill-2);
+
   // 开关背景色
   --bew-switch-bg: rgb(227, 229, 231);
 

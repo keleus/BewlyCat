@@ -788,7 +788,7 @@ settings:
   show_comment_host_tag: 显示楼主标识
   show_comment_host_tag_desc: 在评论回复详情页中标注楼主
   enable_comment_reply_tree: 树状显示评论回复
-  enable_comment_reply_tree_desc: 根据回复关系和发布时间整理楼中楼，并按层级逐层缩进
+  enable_comment_reply_tree_desc: 根据回复关系和发布时间整理楼中楼，以缩进和引导线展示层级，并可点击引导线折叠分支
   adjust_comment_image_height: 调整评论区图片高度
   adjust_comment_image_height_desc: 自动调整评论区图片高度以匹配实际长宽比，避免图片变形
   volume_normalization:
