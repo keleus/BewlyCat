@@ -48,7 +48,29 @@ export class APIClient {
                   ...options,
                 }
 
+                const apiName = `${String(namespace)}.${String(p)}`
+
                 return sendMessage(p as string, message)
+                  .then((response) => {
+                    if (
+                      response
+                      && typeof response === 'object'
+                      && 'code' in response
+                      && typeof response.code === 'number'
+                      && response.code !== 0
+                    ) {
+                      console.error(`[BewlyCat API] ${apiName} failed`, {
+                        code: response.code,
+                        message: 'message' in response ? response.message : undefined,
+                      })
+                    }
+
+                    return response
+                  })
+                  .catch((error) => {
+                    console.error(`[BewlyCat API] ${apiName} request failed`, error)
+                    throw error
+                  })
               }
             },
           })
