@@ -687,6 +687,7 @@ settings:
   use_bilibili_default_auto_play: Use Bilibili's default auto-play behavior
   use_bilibili_default_auto_play_desc: >
     Uses Bilibili's default playback behavior and starts custom playback off. If the default custom playback is Random, the random activation setting still applies.
+  auto_play_watch_later: Watch Later
   auto_play_mode_default: Bilibili Default
   auto_play_mode_auto_play: Auto-play
   auto_play_mode_auto_play_with_recommend: Play recommendations

@@ -441,6 +441,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(autoPlayRoute, [
     'settings.auto_play_multipart',
     'settings.auto_play_collection',
+    'settings.auto_play_watch_later',
     'settings.auto_play_playlist',
   ], { keywordKeys: [...autoPlayModeOptionKeys, ...customAutoPlayModeOptionKeys] }),
   ...createEntries(autoPlayRoute, [

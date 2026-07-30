@@ -428,13 +428,21 @@ export enum VideoType {
   MULTIPART = 'multipart', // 分P视频
   COLLECTION = 'collection', // 合集视频
   RECOMMEND = 'recommend', // 单视频推荐
+  WATCH_LATER = 'watchLater', // 稍后再看
   PLAYLIST = 'playlist', // 收藏列表
 }
 
 // 检测当前视频类型
 export function detectVideoType(): VideoType {
+  if (isWatchLaterVideo())
+    return VideoType.WATCH_LATER
+
   // 检测是否为收藏列表
-  if (/https?:\/\/(?:www\.)?bilibili\.com\/list\//.test(location.href)) {
+  if (
+    location.pathname.startsWith('/list/')
+    || location.pathname === '/medialist/play'
+    || location.pathname.startsWith('/medialist/play/')
+  ) {
     return VideoType.PLAYLIST
   }
 
@@ -680,6 +688,10 @@ export function supportsCustomPlaybackForVideoType(videoType = detectVideoType()
   return videoType !== VideoType.RECOMMEND
 }
 
+function usesPlaylistHandoff(videoType: VideoType): boolean {
+  return videoType === VideoType.WATCH_LATER || videoType === VideoType.PLAYLIST
+}
+
 interface NativeEndPlaybackSnapshot {
   videoType: VideoType
   autoPlay: boolean | null
@@ -716,7 +728,7 @@ function restoreNativeEndPlaybackBehavior(): void {
   if (snapshot.loop !== null)
     setLoopState(snapshot.loop)
 
-  if (snapshot.videoType === VideoType.PLAYLIST) {
+  if (usesPlaylistHandoff(snapshot.videoType)) {
     if (snapshot.playlistHandoff !== null)
       setPlaylistHandoffMode(snapshot.playlistHandoff)
   }
@@ -733,6 +745,8 @@ export function getAutoPlayModeForVideoType(videoType = detectVideoType()): Auto
       return settings.value.autoPlayCollection
     case VideoType.RECOMMEND:
       return settings.value.autoPlayRecommend
+    case VideoType.WATCH_LATER:
+      return settings.value.autoPlayWatchLater
     case VideoType.PLAYLIST:
       return settings.value.autoPlayPlaylist
     default:
@@ -744,7 +758,7 @@ export function getAutoPlayModeForVideoType(videoType = detectVideoType()): Auto
 export function disableNativeEndPlaybackBehavior(videoType = detectVideoType()): void {
   captureNativeEndPlaybackBehavior(videoType)
   setLoopState(false)
-  if (videoType === VideoType.PLAYLIST)
+  if (usesPlaylistHandoff(videoType))
     setPlaylistHandoffMode(false)
   else
     setAutoPlayState(false)
@@ -774,10 +788,11 @@ export function applyAutoPlayByVideoType() {
     return
   }
 
-  // 收藏列表使用特殊的播放方式控制（自动切集/播完暂停）
-  if (videoType === VideoType.PLAYLIST) {
+  // 收藏列表和稍后再看使用特殊的播放方式控制（自动切集/播完暂停）
+  if (usesPlaylistHandoff(videoType)) {
     switch (mode) {
       case 'autoPlay':
+      case 'autoPlayWithRecommend':
         // 开启自动切集
         setPlaylistHandoffMode(true)
         break

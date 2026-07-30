@@ -12,7 +12,7 @@ import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
 
 const { t } = useI18n()
 
-type AutoPlaySettingKey = 'autoPlayMultipart' | 'autoPlayCollection' | 'autoPlayRecommend' | 'autoPlayPlaylist'
+type AutoPlaySettingKey = 'autoPlayMultipart' | 'autoPlayCollection' | 'autoPlayRecommend' | 'autoPlayWatchLater' | 'autoPlayPlaylist'
 
 const nativeAutoPlayModes: { label: string, value: AutoPlayMode }[] = [
   { label: 'auto_play_mode_auto_play', value: 'autoPlay' },
@@ -64,6 +64,7 @@ function createAutoPlayModeModel(key: AutoPlaySettingKey) {
 const autoPlayMultipartModel = createAutoPlayModeModel('autoPlayMultipart')
 const autoPlayCollectionModel = createAutoPlayModeModel('autoPlayCollection')
 const autoPlayRecommendModel = createAutoPlayModeModel('autoPlayRecommend')
+const autoPlayWatchLaterModel = createAutoPlayModeModel('autoPlayWatchLater')
 const autoPlayPlaylistModel = createAutoPlayModeModel('autoPlayPlaylist')
 
 const collectedSeasonPlayAllModeOptions = computed(() => [
@@ -175,6 +176,17 @@ const randomPlayActivationModeOptions = computed(() => {
         >
           <Select
             v-model="autoPlayCollectionModel"
+            :options="supportedAutoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
+            w="176px"
+          />
+        </SettingsItem>
+
+        <SettingsItem
+          :title="t('settings.auto_play_watch_later')"
+          right-width="auto"
+        >
+          <Select
+            v-model="autoPlayWatchLaterModel"
             :options="supportedAutoPlayModes.map(m => ({ label: $t(`settings.${m.label}`), value: m.value }))"
             w="176px"
           />

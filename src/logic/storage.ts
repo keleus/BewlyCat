@@ -423,6 +423,7 @@ export interface Settings {
   autoPlayMultipart: AutoPlayMode // 分P视频自动播放模式
   autoPlayCollection: AutoPlayMode // 合集视频自动播放模式
   autoPlayRecommend: AutoPlayMode // 单视频推荐自动播放模式
+  autoPlayWatchLater: AutoPlayMode // 稍后再看自动播放模式
   autoPlayPlaylist: AutoPlayMode // 收藏列表自动播放模式
 
   keyboard: boolean
@@ -700,6 +701,7 @@ export const originalSettings: Settings = {
   autoPlayMultipart: 'autoPlay', // 分P视频自动播放模式，默认自动连播
   autoPlayCollection: 'autoPlay', // 合集视频自动播放模式，默认自动连播
   autoPlayRecommend: 'autoPlay', // 单视频推荐自动播放模式，默认自动连播
+  autoPlayWatchLater: 'autoPlay', // 稍后再看自动播放模式，默认自动连播
   autoPlayPlaylist: 'autoPlay', // 收藏列表自动播放模式，默认自动连播
 
   keyboard: true, // 总快捷键开关，默认为 true
@@ -792,7 +794,7 @@ watch(
       record.frostedGlassBlurIntensity = FROSTED_GLASS_BLUR_MAX_PX
 
     // 迁移旧的布尔类型自动播放设置到新的 AutoPlayMode 类型
-    const autoPlayFields = ['autoPlayMultipart', 'autoPlayCollection', 'autoPlayRecommend', 'autoPlayPlaylist'] as const
+    const autoPlayFields = ['autoPlayMultipart', 'autoPlayCollection', 'autoPlayRecommend', 'autoPlayWatchLater', 'autoPlayPlaylist'] as const
 
     // 检查是否存在旧的布尔设置需要迁移
     const needsMigration = autoPlayFields.some(field => typeof record[field] === 'boolean')
@@ -811,6 +813,9 @@ watch(
     if (!('useBilibiliDefaultAutoPlay' in record)) {
       record.useBilibiliDefaultAutoPlay = true
     }
+
+    Reflect.deleteProperty(record, 'enableIndependentAutoPlay')
+    Reflect.deleteProperty(record, 'independentAutoPlayStates')
 
     const legacyRandomPlayOrder = record.randomPlayOrder
     if (

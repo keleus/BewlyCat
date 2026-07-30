@@ -348,6 +348,7 @@ settings:
   auto_exit_fullscreen_exclude_auto_play_desc: 启用后，在自动连播下播放结束时不会自动退出全屏，方便连续观看
   use_bilibili_default_auto_play: 使用 Bilibili 默认自动播放行为
   use_bilibili_default_auto_play_desc: 启用后使用 Bilibili 默认播放行为，进入页面时自定义播放默认关闭；若默认自定义播放为随机播放，则仍遵循随机播放启用方式
+  auto_play_watch_later: 稍后再看
   auto_play_mode_default: Bilibili 默认
   auto_play_mode_auto_play: 自动连播
   auto_play_mode_auto_play_with_recommend: 连播推荐

@@ -847,9 +847,10 @@ else if (shouldInitializeContentScript) {
       () => settings.value.useBilibiliDefaultAutoPlay,
       () => settings.value.autoPlayMultipart,
       () => settings.value.autoPlayCollection,
+      () => settings.value.autoPlayWatchLater,
       () => settings.value.autoPlayPlaylist,
     ],
-    ([enabled, activationMode, minVideos, defaultCustomPlayOrder, useBilibiliDefault, multipartMode, collectionMode, playlistMode], [previousEnabled, previousActivationMode, previousMinVideos, previousDefaultCustomPlayOrder, previousUseBilibiliDefault, previousMultipartMode, previousCollectionMode, previousPlaylistMode]) => {
+    ([enabled, activationMode, minVideos, defaultCustomPlayOrder, useBilibiliDefault, multipartMode, collectionMode, watchLaterMode, playlistMode], [previousEnabled, previousActivationMode, previousMinVideos, previousDefaultCustomPlayOrder, previousUseBilibiliDefault, previousMultipartMode, previousCollectionMode, previousWatchLaterMode, previousPlaylistMode]) => {
       if (enabled !== previousEnabled && isCustomPlayPage()) {
         if (enabled) {
           setTimeout(() => {
@@ -866,6 +867,7 @@ else if (shouldInitializeContentScript) {
         || defaultCustomPlayOrder !== previousDefaultCustomPlayOrder
         || multipartMode !== previousMultipartMode
         || collectionMode !== previousCollectionMode
+        || watchLaterMode !== previousWatchLaterMode
         || playlistMode !== previousPlaylistMode
       ) {
         syncRandomPlayOrder()
@@ -894,6 +896,7 @@ else if (shouldInitializeContentScript) {
         || newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
         || newSettings.autoPlayCollection !== oldSettings.autoPlayCollection
         || newSettings.autoPlayRecommend !== oldSettings.autoPlayRecommend
+        || newSettings.autoPlayWatchLater !== oldSettings.autoPlayWatchLater
         || newSettings.autoPlayPlaylist !== oldSettings.autoPlayPlaylist
       )
 
