@@ -568,6 +568,10 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
 
   ...createEntries(advancedRoute, [
     'settings.menu_advanced',
+    'settings.advanced_performance.title',
+    'settings.advanced_performance.home_grid',
+    'settings.advanced_performance.release_offscreen_images',
+    'settings.advanced_performance.virtualize_home_grid',
     'settings.menu_compatibility',
     'settings.group_common',
     'settings.topbar_visibility',

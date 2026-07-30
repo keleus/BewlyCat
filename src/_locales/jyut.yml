@@ -102,8 +102,18 @@ settings:
   category_playback_volume_desc: 任何響度平衡處理都可能造成爆音、音質劣化或者動態範圍縮細；冇明顯問題時唔應該開啟。
   category_bilibili_comments_desc: 加強留言區嘅用戶資料同內容顯示。
   category_bilibili_vip_desc: 設定大會員權益相關嘅提醒功能。
+  category_advanced_performance_desc: 調整首頁 Grid 嘅記憶體同長清單渲染策略；呢啲選項預設關閉。
   category_advanced_compatibility_desc: 設定原版頁面、第三方擴充功能同其他頁面嘅相容行為。
   category_advanced_maintenance_desc: 匯出備份、匯入設定或者還原 BewlyCat 預設配置。
+  advanced_performance:
+    title: 首頁效能同記憶體
+    home_grid: 首頁 Grid
+    release_offscreen_images: 回收離屏封面記憶體
+    release_offscreen_images_desc: 影片封面離開保留範圍之後卸載圖片資源，減低長清單記憶體用量。
+    release_offscreen_images_warning: 警告：離屏回收記憶體可能會令圖片重新渲染嗰陣窒一窒，預設唔回收。
+    virtualize_home_grid: 回收離屏影片卡片
+    virtualize_home_grid_desc: 只保留畫面附近嘅卡片元件，再用佔位高度維持長清單捲動位置。
+    virtualize_home_grid_warning: 警告：虛擬回收可能會喺快速捲動或者切換版面嗰陣出現短暫空白、抖動或者位置偏差，預設唔開。
   maintenance:
     title: 備份同重設
     backup_title: 設定備份

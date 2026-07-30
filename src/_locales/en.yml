@@ -102,8 +102,18 @@ settings:
   category_playback_volume_desc: Any normalization can cause clipping, degraded audio quality, or reduced dynamic range; leave it off unless you have a clear problem.
   category_bilibili_comments_desc: Enhance user information and content displayed in comments.
   category_bilibili_vip_desc: Configure reminders related to premium membership benefits.
+  category_advanced_performance_desc: Adjust memory and long-list rendering strategies for the home grid. These options are off by default.
   category_advanced_compatibility_desc: Configure compatibility with original pages, third-party extensions, and other pages.
   category_advanced_maintenance_desc: Export a backup, import settings, or restore BewlyCat defaults.
+  advanced_performance:
+    title: Home Performance & Memory
+    home_grid: Home Grid
+    release_offscreen_images: Reclaim offscreen cover memory
+    release_offscreen_images_desc: Unload cover image resources outside the retained range to reduce long-list memory usage.
+    release_offscreen_images_warning: 'Warning: reclaiming offscreen memory may cause stutter when images are rendered again. Images are not reclaimed by default.'
+    virtualize_home_grid: Recycle offscreen video cards
+    virtualize_home_grid_desc: Keep only card components near the viewport and preserve long-list scroll space with placeholders.
+    virtualize_home_grid_warning: 'Warning: virtual recycling may cause brief blanks, jitter, or position drift during fast scrolling or layout changes. It is off by default.'
   maintenance:
     title: Backup & Reset
     backup_title: Settings backup

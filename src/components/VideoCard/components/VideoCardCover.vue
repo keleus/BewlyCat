@@ -487,7 +487,6 @@ onBeforeUnmount(() => {
     <!-- Skeleton mode -->
     <div
       v-if="skeleton"
-      class="video-card-cover-skeleton"
       w-full h-full bg="$bew-skeleton" rounded="$bew-media-radius"
       style="aspect-ratio: 16 / 9;"
     />
@@ -499,7 +498,7 @@ onBeforeUnmount(() => {
         :src="coverImageUrl"
         loading="lazy"
         root-margin="120px"
-        :release-offscreen="true"
+        :release-offscreen="settings.releaseOffscreenVideoCardImages"
         :retain-screens="1"
         :show-skeleton="true"
         @loaded="emit('imageLoaded')"
@@ -735,39 +734,6 @@ onBeforeUnmount(() => {
   transition:
     opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
     transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
-}
-
-.video-card-cover-skeleton {
-  position: relative;
-  overflow: hidden;
-}
-
-.video-card-cover-skeleton::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--bew-bg, #fff) 35%, transparent) 50%,
-    transparent 100%
-  );
-  transform: translateX(-100%);
-  animation: video-card-cover-skeleton-shimmer 1.4s ease-in-out infinite;
-}
-
-@keyframes video-card-cover-skeleton-shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .video-card-cover-skeleton::after {
-    animation: none;
-    display: none;
-  }
 }
 
 .video-card-preview--scrubbable {

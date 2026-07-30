@@ -138,7 +138,7 @@ function forgetLoadedPicture(src: string) {
 /**
  * 优化的懒加载图片组件
  * 使用 Intersection Observer API 实现精确的懒加载控制
- * 只在图片即将进入视口时才开始加载，离开保留区后释放 img，降低滚动内存占用
+ * 只在图片即将进入视口时才开始加载；可选在离开保留区后释放 img
  */
 
 interface Props {
@@ -153,7 +153,7 @@ interface Props {
   retainScreens?: number
   // 离开保留范围后延迟释放，避免快速往返滚动时反复解码
   releaseDelay?: number
-  // 是否显示骨架屏动画
+  // 是否显示骨架占位
   showSkeleton?: boolean
 }
 
@@ -161,7 +161,7 @@ const props = withDefaults(defineProps<Props>(), {
   alt: '',
   loading: 'lazy',
   rootMargin: '120px',
-  releaseOffscreen: true,
+  releaseOffscreen: false,
   retainScreens: 1,
   releaseDelay: 2000,
   showSkeleton: true,
@@ -345,6 +345,11 @@ watch(
     createObserver()
   },
 )
+
+watch(
+  () => [props.releaseOffscreen, props.retainScreens, props.rootMargin] as const,
+  () => createObserver(),
+)
 </script>
 
 <template>
@@ -354,17 +359,14 @@ watch(
     rounded="$bew-radius"
     style="aspect-ratio: 16 / 9; display: block; position: relative; overflow: hidden; contain: layout style;"
   >
-    <!-- 图片完成加载前持续显示骨架层，与真实图片交叉淡出。 -->
-    <Transition name="skeleton-fade">
-      <div
-        v-if="showSkeleton && !isLoaded"
-        aria-hidden="true"
-        w-full h-full
-        bg="$bew-skeleton"
-        rounded="$bew-radius"
-        class="lazy-picture-skeleton animate-pulse"
-      />
-    </Transition>
+    <div
+      v-if="showSkeleton && !isLoaded"
+      aria-hidden="true"
+      w-full h-full
+      bg="$bew-skeleton"
+      rounded="$bew-radius"
+      class="lazy-picture-skeleton"
+    />
 
     <!-- 实际图片 - 仅在进入加载区后挂载，离开保留区后卸载 -->
     <template v-if="isVisible && actualSrc">
@@ -405,28 +407,9 @@ watch(
   transition: none;
 }
 
-.skeleton-fade-leave-active {
-  transition: opacity 0.28s ease-out;
-}
-
-.skeleton-fade-leave-to {
-  opacity: 0;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .image-transition,
-  .skeleton-fade-leave-active {
+  .image-transition {
     transition: none;
-  }
-}
-
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
   }
 }
 </style>

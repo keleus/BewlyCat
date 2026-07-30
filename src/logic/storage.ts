@@ -212,6 +212,8 @@ export interface Settings {
   // Grid 相关设置
   gridColumns: GridColumnsConfig
   autoSwitchListLayout: boolean
+  releaseOffscreenVideoCardImages: boolean
+  enableHomeGridVirtualization: boolean
 
   language: string
   customizeFont: 'default' | 'recommend' | 'custom'
@@ -482,6 +484,8 @@ export const originalSettings: Settings = {
   // Grid 相关默认设置
   gridColumns: { ...defaultGridColumns },
   autoSwitchListLayout: true,
+  releaseOffscreenVideoCardImages: false,
+  enableHomeGridVirtualization: false,
 
   language: '',
   customizeFont: 'default',
