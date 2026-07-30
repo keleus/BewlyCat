@@ -146,7 +146,7 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
                     {{ pageOptions.find(option => option.value === element.page)?.label }}
                   </div>
                 </div>
-                <div flex="~ gap-4 items-center justify-between wrap">
+                <div flex="~ gap-4 items-center justify-between wrap" @click.stop>
                   <div
                     flex="~ items-center"
                   >
