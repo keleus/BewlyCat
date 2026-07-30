@@ -400,6 +400,11 @@ settings:
   topbar_pinned_channels_all_selected: 所有可用分區都已經加入。
   topbar_pinned_channels_empty: 仲未揀任何固定分區。
   topbar_pinned_channels_order_tip: 撳嘅順序決定顯示，再撳一次就會取消固定。
+  top_bar_logo_style: Logo 樣式
+  top_bar_logo_style_desc: 揀頂欄用圓形圖示或者橫向品牌標誌。
+  top_bar_logo_style_opt:
+    icon: 圓形圖示
+    brand: 品牌標誌
   open_notifications_page_as_drawer: 用櫃桶打開通知頁面
   show_like_notification_reminder: 顯示點讚提醒
   show_like_notification_reminder_desc: 開咗之後，頂欄通知角標會將點讚提醒計埋入總數。

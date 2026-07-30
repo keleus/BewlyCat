@@ -118,6 +118,8 @@
     }
 
     .avatar-dot {
+      --uno: "top-0 right-0 z-10";
+
       &.hover {
         --uno: "transform scale-180 translate-y-35px translate-x--20px";
       }
@@ -125,7 +127,8 @@
   }
 
   .unread-num-dot {
-    --uno: "absolute top--2px right--4px";
+    // The controls grew from 34px to 36px; keep the badge on the same visual edge.
+    --uno: "absolute top--2px right--2px";
     --uno: "important:px-1 rounded-full";
     --uno: "text-xs leading-none z-6 min-w-14px h-14px";
     --uno: "grid place-items-center";

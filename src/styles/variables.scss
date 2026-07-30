@@ -113,6 +113,9 @@
   // Search and logo stay one step larger (still full capsule/circle)
   --bew-top-bar-primary-control-height: 46px;
   --bew-top-bar-primary-control-radius: var(--bew-radius-full);
+  --bew-top-bar-brand-logo-width: 84px;
+  --bew-top-bar-brand-logo-height: 28px;
+  --bew-top-bar-brand-logo-compact-size: 24px;
 
   // Interaction tokens aligned with home tab buttons
   --bew-segment-item-hover-bg: var(--bew-fill-1);

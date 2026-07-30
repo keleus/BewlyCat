@@ -131,6 +131,7 @@ export interface ShortcutsSettings {
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
 export type HomeTabsPosition = 'left' | 'center'
+export type TopBarLogoStyle = 'icon' | 'brand'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 export type RandomPlayOrder = 'sequential' | 'reverse' | 'random'
 export type DefaultCustomPlayOrder = RandomPlayOrder
@@ -262,6 +263,7 @@ export interface Settings {
   showTopBarThemeColorGradient: boolean
   showBewlyOrBiliTopBarSwitcher: boolean
   showBewlyOrBiliPageSwitcher: boolean
+  topBarLogoStyle: TopBarLogoStyle
   topBarIconBadges: 'number' | 'dot' | 'none'
   showWatchLaterBadge: boolean
   topBarComponentsConfig: { key: string, visible: boolean, badgeType: 'number' | 'dot' | 'none' }[]
@@ -531,6 +533,7 @@ export const originalSettings: Settings = {
   showTopBarThemeColorGradient: true,
   showBewlyOrBiliTopBarSwitcher: true,
   showBewlyOrBiliPageSwitcher: true,
+  topBarLogoStyle: 'icon',
   topBarIconBadges: 'number',
   showWatchLaterBadge: false,
   topBarComponentsConfig: [
@@ -788,6 +791,10 @@ watch(
     const record = value as Record<string, any>
 
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
+
+    const validTopBarLogoStyles: TopBarLogoStyle[] = ['icon', 'brand']
+    if (!validTopBarLogoStyles.includes(record.topBarLogoStyle))
+      record.topBarLogoStyle = originalSettings.topBarLogoStyle
 
     if (!Number.isFinite(record.frostedGlassBlurIntensity))
       record.frostedGlassBlurIntensity = originalSettings.frostedGlassBlurIntensity

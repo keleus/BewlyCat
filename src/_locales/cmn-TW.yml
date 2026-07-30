@@ -819,6 +819,11 @@ settings:
   topbar_pinned_channels_all_selected: 所有可用分區都已加入。
   topbar_pinned_channels_empty: 尚未新增任何常駐分區。
   topbar_pinned_channels_order_tip: 點擊順序決定顯示順序，再點一次即可取消固定。
+  top_bar_logo_style: Logo 樣式
+  top_bar_logo_style_desc: 選擇頂部列使用圓形圖示或橫向品牌標誌。
+  top_bar_logo_style_opt:
+    icon: 圓形圖示
+    brand: 品牌標誌
   visibility: 顯示
   group_search_results: 搜尋結果
   use_plugin_search_results_page: 使用插件搜尋結果頁

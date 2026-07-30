@@ -500,7 +500,6 @@ const shouldShowDivider = computed(() => {
           v-if="hasBCoinToReceive && settings.showBCoinReceiveReminder"
           class="unread-dot avatar-dot"
           :class="{ hover: popupVisible?.userPanel }"
-          style="z-index: 10; right: 6px; top: 6px;"
         />
 
         <ALink

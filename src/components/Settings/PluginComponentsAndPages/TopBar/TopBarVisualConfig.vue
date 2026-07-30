@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 
+import bilibiliBrandLogoUrl from '~/assets/branding/bilibili-brand-logo.png'
 import Button from '~/components/Button.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
@@ -322,7 +323,7 @@ function toggleChannel(value: string) {
 
         <!-- 元素配置区域 -->
         <Transition name="fade" mode="out-in">
-          <div v-if="selectedElement" class="element-config" bg="$bew-fill-2" rounded="$bew-radius" p-4>
+          <div v-if="selectedElement" class="element-config" rounded="$bew-radius" p-4>
             <!-- Logo + 固定分区配置 -->
             <div v-if="selectedElement === 'logoAndChannels'" flex="~ col gap-4">
               <div flex="~ items-center justify-between">
@@ -344,6 +345,48 @@ function toggleChannel(value: string) {
                   {{ $t('common.operation.reset') }}
                 </Button>
               </div>
+
+              <SettingsItem
+                :title="$t('settings.top_bar_logo_style')"
+                :desc="$t('settings.top_bar_logo_style_desc')"
+                right-width="auto"
+              >
+                <div
+                  class="logo-style-picker bew-segment-control bew-segment-control--surface bew-segment-control--static"
+                  role="radiogroup"
+                  :aria-label="$t('settings.top_bar_logo_style')"
+                >
+                  <button
+                    type="button"
+                    class="bew-segment-control__item bew-segment-control__item--icon"
+                    :data-active="settings.topBarLogoStyle === 'icon'"
+                    role="radio"
+                    :aria-checked="settings.topBarLogoStyle === 'icon'"
+                    :title="$t('settings.top_bar_logo_style_opt.icon')"
+                    @click="settings.topBarLogoStyle = 'icon'"
+                  >
+                    <span class="bew-segment-control__icon i-tabler:brand-bilibili" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    class="logo-style-picker__brand-option bew-segment-control__item"
+                    :data-active="settings.topBarLogoStyle === 'brand'"
+                    role="radio"
+                    :aria-checked="settings.topBarLogoStyle === 'brand'"
+                    :title="$t('settings.top_bar_logo_style_opt.brand')"
+                    @click="settings.topBarLogoStyle = 'brand'"
+                  >
+                    <span
+                      class="logo-style-picker__brand"
+                      :style="{
+                        maskImage: `url(${bilibiliBrandLogoUrl})`,
+                        WebkitMaskImage: `url(${bilibiliBrandLogoUrl})`,
+                      }"
+                      aria-hidden="true"
+                    />
+                  </button>
+                </div>
+              </SettingsItem>
 
               <!-- Home 按钮设置（仅在触屏优化开启时显示） -->
               <div v-if="settings.touchScreenOptimization" bg="$bew-fill-1" rounded="$bew-radius" p-3>
@@ -671,7 +714,32 @@ function toggleChannel(value: string) {
 }
 
 .element-config {
+  background: var(--bew-elevated);
   animation: fadeIn 0.2s ease;
+}
+
+.logo-style-picker {
+  --bew-segment-item-active-bg: var(--bew-theme-color-20);
+  --bew-segment-item-active-color: var(--bew-theme-color);
+  --bew-segment-item-active-shadow: inset 0 0 0 1px var(--bew-theme-color-30);
+
+  &__brand-option {
+    padding-inline: var(--bew-space-3);
+  }
+
+  &__brand {
+    width: calc(var(--bew-control-icon-size) * 4);
+    height: var(--bew-control-icon-size);
+    display: block;
+    flex: none;
+    background: currentColor;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+  }
 }
 
 @keyframes fadeIn {
@@ -703,14 +771,21 @@ function toggleChannel(value: string) {
 }
 
 .channel-grid {
+  // 32px icon + 12px gap + 24px horizontal padding + 2px border + four CJK glyphs.
+  --channel-grid-min-item-width: calc(
+    var(--bew-icon-size-xl) + var(--bew-space-3) + var(--bew-space-6) + var(--bew-space-0-5) + 4em
+  );
+
   display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--bew-space-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--channel-grid-min-item-width)), 1fr));
   width: 100%;
   grid-auto-flow: row dense;
+  font-size: var(--bew-font-size-control);
 
   &__item {
     position: relative;
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -760,11 +835,15 @@ function toggleChannel(value: string) {
   }
 
   &__label {
+    min-width: 0;
     flex: 1;
+    overflow: hidden;
     text-align: left;
-    font-size: var(--bew-font-size-body);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--bew-font-size-control);
     font-weight: var(--bew-font-weight-medium);
-    line-height: var(--bew-line-height-body);
+    line-height: var(--bew-line-height-control);
   }
 
   &__overlay {

@@ -2,6 +2,7 @@
 import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 
+import bilibiliBrandLogoUrl from '~/assets/branding/bilibili-brand-logo.png'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 
@@ -43,14 +44,26 @@ const channels = setupTopBarItemHoverEvent('channels')
           target="_top"
           class="group logo"
           :class="{
-            activated: popupVisible.channels,
+            'activated': popupVisible.channels,
+            'logo--brand': settings.topBarLogoStyle === 'brand',
+            'logo--white': forceWhiteIcon,
           }"
+          aria-label="Bilibili"
           grid="~ place-items-center"
           duration-300
-          bg="hover:$bew-theme-color"
           @click="(event: MouseEvent) => handleClickTopBarItem(event, 'channels')"
         >
+          <span
+            v-if="settings.topBarLogoStyle === 'brand'"
+            class="logo__brand"
+            :style="{
+              maskImage: `url(${bilibiliBrandLogoUrl})`,
+              WebkitMaskImage: `url(${bilibiliBrandLogoUrl})`,
+            }"
+            aria-hidden="true"
+          />
           <svg
+            v-else
             t="1720198072316"
             class="icon"
             viewBox="0 0 1024 1024"
@@ -121,16 +134,61 @@ const channels = setupTopBarItemHoverEvent('channels')
 }
 
 .logo {
+  box-sizing: border-box;
   width: var(--bew-top-bar-primary-control-height);
   height: var(--bew-top-bar-primary-control-height);
+  padding: 0;
+  border: 0;
   border-radius: var(--bew-top-bar-primary-control-radius);
+  background: transparent;
+  color: var(--bew-theme-color);
+  transition:
+    color var(--bew-duration-moderate) var(--bew-ease-standard),
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard);
+
+  &:hover {
+    background: var(--bew-theme-color);
+    color: white;
+  }
+
+  &--brand {
+    display: inline-flex;
+    width: auto;
+    padding-inline: var(--bew-space-2);
+  }
+
+  &--white {
+    color: white;
+  }
+
+  &--brand.logo--white {
+    &:hover:not(.activated) {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
 
   &.activated {
     background-color: var(--bew-theme-color);
+    color: white;
+
     svg {
       fill: white !important;
       filter: none !important;
     }
+  }
+
+  &__brand {
+    width: var(--bew-top-bar-brand-logo-width);
+    height: var(--bew-top-bar-brand-logo-height);
+    flex: none;
+    background: currentColor;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    filter: drop-shadow(0 0 4px currentColor);
   }
 }
 
@@ -155,5 +213,29 @@ const channels = setupTopBarItemHoverEvent('channels')
 .top-bar-logo {
   min-width: 0;
   flex: 0 1 auto;
+}
+
+@media (max-width: 767px) {
+  .logo--brand {
+    width: var(--bew-top-bar-primary-control-height);
+    padding-inline: var(--bew-space-2);
+    overflow: hidden;
+    justify-content: flex-start;
+
+    .logo__brand {
+      width: var(--bew-top-bar-brand-logo-compact-size);
+      height: var(--bew-top-bar-brand-logo-compact-size);
+      mask-position: left center;
+      mask-size: auto var(--bew-top-bar-brand-logo-compact-size);
+      -webkit-mask-position: left center;
+      -webkit-mask-size: auto var(--bew-top-bar-brand-logo-compact-size);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo {
+    transition: none;
+  }
 }
 </style>

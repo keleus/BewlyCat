@@ -40,7 +40,7 @@ pnpm typecheck
 
 ### 排版
 
-- 基础界面文字限定为：caption `11/16px`、control `12/16px`、body `14/20px`、title `16/22px`、heading `18/24px`，优先使用对应的 `--bew-font-size-*` 和 `--bew-line-height-*` token。
+- 基础界面文字限定为：caption `12/16px`、control `13/18px`、body `15/24px`、title `15/22px`、heading `20/28px`，优先使用对应的 `--bew-font-size-*` 和 `--bew-line-height-*` token。
 - 品牌锁定字等极少量展示文字使用 `--bew-font-size-display`，比分等大号数据使用 `--bew-font-size-data/data-emphasis`；图标字体只使用 `--bew-icon-size-sm/md/lg/xl`。这些不参与正文层级，也不要用任意字号模拟。
 - 字重仅使用 `400/500/600/700` 对应的 `--bew-font-weight-regular/medium/semibold/bold`；不要新增 `650`、裸写 `bold` 或其他中间值。
 - 正文默认 `400`，次要强调和普通按钮用 `500`，标签/卡片标题/区块标题用 `600`，`700` 仅用于品牌文字、强标题和少量关键数字。
@@ -50,7 +50,7 @@ pnpm typecheck
 
 ### 紧凑控件
 
-- 默认规格：外层高 `36px`、padding `4px`、gap `4px`、内部项高 `28px`、文字 `12/16px 600`、图标 `16px`。
+- 默认规格：外层高 `36px`、padding `4px`、gap `4px`、内部项高 `28px`、文字 `13/18px 600`、图标 `16px`。
 - 普通文字项水平 padding 为 `12px`；页面主标签使用 `.bew-segment-control__item--wide` 的 `16px`；纯图标项使用 `.bew-segment-control__item--icon`。
 - 必须覆盖 default、hover、focus-visible、active、disabled 状态；不要移除键盘焦点反馈。
 - `src/styles/main.scss` 提供全局 `focus-visible` 兜底；组件可以细化焦点环，但只有在提供等价反馈时才能覆盖或移除。

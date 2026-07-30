@@ -436,6 +436,11 @@ settings:
   topbar_pinned_channels_all_selected: All channels have already been pinned.
   topbar_pinned_channels_empty: You have not pinned any channels yet.
   topbar_pinned_channels_order_tip: Selection order follows your clicks. Click an item again to unpin it.
+  top_bar_logo_style: Logo style
+  top_bar_logo_style_desc: Choose between the circular icon and the horizontal brand mark in the top bar.
+  top_bar_logo_style_opt:
+    icon: Circular icon
+    brand: Brand mark
   badge_type: Badge Type
   always_use_dock: Always use the dock
   always_use_dock_desc: >-

@@ -488,6 +488,11 @@ settings:
   topbar_pinned_channels_all_selected: 所有可用分区都已添加。
   topbar_pinned_channels_empty: 还没有添加任何常驻分区。
   topbar_pinned_channels_order_tip: 点击顺序决定展示顺序，再次点击可取消固定。
+  top_bar_logo_style: Logo 样式
+  top_bar_logo_style_desc: 选择顶栏使用圆形图标或横向品牌标识。
+  top_bar_logo_style_opt:
+    icon: 圆形图标
+    brand: 品牌标识
   badge_type: 角标类型
   always_use_dock: 总是使用 Dock 栏
   always_use_dock_desc: 启用后，Dock 栏将始终显示，侧边栏将隐藏。我们推荐你同时启用自动隐藏 Dock 栏。
