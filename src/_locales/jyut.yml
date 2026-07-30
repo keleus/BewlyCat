@@ -91,7 +91,7 @@ settings:
   group_interaction_layout: 互動同版面
   category_browsing_home_desc: 設定首頁推薦、內容過濾、關注頁同首頁分頁。
   category_browsing_video_card_desc: 設定影片卡片嘅版面、預覽、資料顯示同開啟方式。
-  category_browsing_favorites_desc: 設定收藏內容嘅顯示同互動方式。
+  category_browsing_favorites_desc: 設定收藏內容嘅顯示、互動同自動整理規則。
   category_navigation_link_opening_desc: 統一設定頂欄、影片卡片同搜尋列連結嘅開啟位置同抽屜行為。
   category_navigation_topbar_desc: 統一調整頂欄版面、元件、頻道、搜尋入口同通知顯示。
   category_navigation_dock_desc: 設定 Dock 欄同側欄嘅位置、顯示同快捷操作。
@@ -774,6 +774,80 @@ settings:
   video_player_scroll_desc: 啓用後，若果顯示模式係闊螢幕或預設嗰陣，會自動轆到合適嘅位置。
   enlarge_favorite_dialog: 放大收藏彈窗
   enlarge_favorite_dialog_desc: 啓用後，影片頁收藏彈窗會用更大嘅尺寸顯示，方便睇同管理收藏夾。
+  favorite_organizer_rules: 收藏整理規則
+  favorite_organizer_rules_desc: 同一條件嘅多個值係「其中一個」，唔同條件就要「同時符合」；同一條片可以符合多條規則。
+  favorite_organizer_auto: 自動整理新收藏
+  favorite_organizer_auto_desc: 只處理之後收藏去預設收藏夾嘅影片；符合規則後複製去相應收藏夾，唔會處理現有收藏。
+  favorite_organizer_rule_list: 分流規則
+  favorite_organizer_rule_logic: UP 主按 UID、分區按內置 ID 精確配對；標題同標籤用包含配對。
+  favorite_organizer_add_rule: 新增規則
+  favorite_organizer_add_rule_dialog_title: 新增分流規則
+  favorite_organizer_edit_rule_dialog_title: 編輯分流規則
+  favorite_organizer_rule_editor_desc: 修改內容會喺儲存規則之後先寫入設定。
+  favorite_organizer_edit_rule: 編輯規則
+  favorite_organizer_save_rule: 儲存規則
+  favorite_organizer_rule_incomplete: 請填寫規則名稱、目標收藏夾同全部條件。
+  favorite_organizer_rule_status_enabled: 已啓用
+  favorite_organizer_rule_status_disabled: 已停用
+  favorite_organizer_rule_conditions: 配對條件
+  favorite_organizer_rule_conditions_desc: 同一條件可以加多個值，符合其中一個就得；唔同條件要同時符合。
+  favorite_organizer_loading_folders: 正在讀取收藏夾…
+  favorite_organizer_reload_folders: 重新讀取
+  favorite_organizer_login_required: 請先登入 Bilibili，再使用收藏整理。
+  favorite_organizer_folders_failed: 收藏夾讀取失敗，請稍後再試。
+  favorite_organizer_create_folder_first: 請先喺 Bilibili 建立至少一個目標收藏夾。
+  favorite_organizer_rule_name: 規則名稱
+  favorite_organizer_rule_enabled: 啓用
+  favorite_organizer_copy_rule: 複製規則
+  favorite_organizer_rule_copy_name: '{name} 副本'
+  favorite_organizer_delete_rule: 刪除規則
+  favorite_organizer_delete_rule_confirm: 確定刪除規則「{name}」嗎？
+  favorite_organizer_target_folder: 目標收藏夾
+  favorite_organizer_missing_folder: 收藏夾已經唔存在
+  favorite_organizer_condition_uploader: UP 主係
+  favorite_organizer_condition_category: 分區係
+  favorite_organizer_condition_title: 標題包含
+  favorite_organizer_condition_tag: 影片標籤包含
+  favorite_organizer_condition_uploader_placeholder: 搜尋 UP 主暱稱或 UID
+  favorite_organizer_search_uploader: 搜尋 UP 主
+  favorite_organizer_select_uploader: 選擇
+  favorite_organizer_uploader_selected: 已加入
+  favorite_organizer_uploader_not_found: 搵唔到相關 UP 主
+  favorite_organizer_uploader_search_failed: 搜尋 UP 主失敗，請稍後再試
+  favorite_organizer_condition_category_placeholder: 選擇分區
+  favorite_organizer_condition_title_placeholder: 標題關鍵字
+  favorite_organizer_condition_tag_placeholder: 標籤關鍵字
+  favorite_organizer_delete_condition: 刪除條件
+  favorite_organizer_add_condition: 新增「同時符合」條件
+  favorite_organizer_add_value: 新增配對值
+  favorite_organizer_remove_value: 移除「{value}」
+  favorite_organizer_new_rule: 規則 {number}
+  favorite_organizer_empty_rules: 暫時未有規則，新增一條規則開始整理。
+  favorite_organizer_manual: 手動整理同清理
+  favorite_organizer_manual_desc: 掃描預設收藏夾並套用規則；清理功能會掃描全部自建收藏夾。
+  favorite_organizer_manual_mode: 整理方式
+  favorite_organizer_manual_mode_desc: 複製會保留預設收藏夾入面嘅影片；遷移會喺完成全部分流後由預設收藏夾移除。
+  favorite_organizer_copy: 複製
+  favorite_organizer_move: 遷移
+  favorite_organizer_actions: 執行工作
+  favorite_organizer_request_hint: 請求會依次、分頁並按目標收藏夾批次執行，以降低請求頻率。工作進行期間請保持目前頁面開啓。
+  favorite_organizer_run: 執行整理
+  favorite_organizer_cleanup: 清理失效收藏
+  favorite_organizer_cleanup_confirm: 會掃描所有自建收藏夾並移除失效影片。呢個操作無法復原，係咪繼續？
+  favorite_organizer_organize_complete: 收藏整理完成
+  favorite_organizer_cleanup_complete: 失效收藏清理完成
+  favorite_organizer_no_valid_rules: 請至少啓用一條目標收藏夾同條件都完整嘅規則。
+  favorite_organizer_default_missing: 搵唔到預設收藏夾。
+  favorite_organizer_task_failed: 工作執行失敗，請稍後再試。
+  favorite_organizer_phase_folders: 正在讀取收藏夾
+  favorite_organizer_phase_scanning: 正在掃描收藏
+  favorite_organizer_phase_matching: 正在配對規則
+  favorite_organizer_phase_applying: 正在寫入收藏夾
+  favorite_organizer_phase_cleaning: 正在移除失效收藏
+  favorite_organizer_phase_done: 工作已完成
+  favorite_organizer_progress_detail: '{phase}（{current}/{total}）'
+  favorite_organizer_organize_result: 掃描 {scanned} 條片，符合 {matched} 條，完成 {processed} 項處理，失敗 {failed} 項。
+  favorite_organizer_cleanup_result: 掃描 {scanned} 項收藏，發現 {matched} 項失效內容，清理 {processed} 項，失敗 {failed} 項。
   external_watch_later_button: 稍後再睇按鈕外置
   external_watch_later_button_desc: 啓用後，影片頁工具欄會顯示獨立嘅陣間至睇按鈕；按鈕會顯示目前影片狀態，可以撳一下加入或者剷走。
   show_video_screenshot_button: 顯示播放器截圖按鈕

@@ -91,7 +91,7 @@ settings:
   group_interaction_layout: Interaction & Layout
   category_browsing_home_desc: Configure home recommendations, content filters, following, and home tabs.
   category_browsing_video_card_desc: Configure video card layout, previews, metadata, and link behavior.
-  category_browsing_favorites_desc: Configure how favorite content is displayed and opened.
+  category_browsing_favorites_desc: Configure how favorite content is displayed, opened, and automatically organized.
   category_navigation_link_opening_desc: Configure where top bar, video card, and search links open, including drawer behavior.
   category_navigation_topbar_desc: Adjust top bar layout, components, channels, search, and notifications in one place.
   category_navigation_dock_desc: Configure Dock and sidebar position, visibility, and quick actions.
@@ -857,6 +857,80 @@ settings:
     the default mode is widescreen and default.
   enlarge_favorite_dialog: Enlarge favorite dialog
   enlarge_favorite_dialog_desc: When enabled, the favorite dialog on video pages will be displayed in a larger size for easier viewing and management.
+  favorite_organizer_rules: Favorite organization rules
+  favorite_organizer_rules_desc: Multiple values in one condition use OR logic, while separate conditions use AND logic. A video may match multiple rules.
+  favorite_organizer_auto: Automatically organize new favorites
+  favorite_organizer_auto_desc: Only watches videos added to the default folder after this is enabled. Matching videos are copied to their target folders; existing favorites are unchanged.
+  favorite_organizer_rule_list: Routing rules
+  favorite_organizer_rule_logic: Uploaders match exact UIDs and categories match built-in IDs. Titles and tags use contains matching.
+  favorite_organizer_add_rule: Add rule
+  favorite_organizer_add_rule_dialog_title: Add routing rule
+  favorite_organizer_edit_rule_dialog_title: Edit routing rule
+  favorite_organizer_rule_editor_desc: Changes are written to settings only after you save the rule.
+  favorite_organizer_edit_rule: Edit rule
+  favorite_organizer_save_rule: Save rule
+  favorite_organizer_rule_incomplete: Enter a rule name, target folder, and value for every condition.
+  favorite_organizer_rule_status_enabled: Enabled
+  favorite_organizer_rule_status_disabled: Disabled
+  favorite_organizer_rule_conditions: Match conditions
+  favorite_organizer_rule_conditions_desc: Add multiple values to a condition to match any of them. Separate conditions must all match.
+  favorite_organizer_loading_folders: Loading favorite folders…
+  favorite_organizer_reload_folders: Reload
+  favorite_organizer_login_required: Sign in to Bilibili before using favorite organization.
+  favorite_organizer_folders_failed: Favorite folders could not be loaded. Try again later.
+  favorite_organizer_create_folder_first: Create at least one target folder on Bilibili first.
+  favorite_organizer_rule_name: Rule name
+  favorite_organizer_rule_enabled: Enabled
+  favorite_organizer_copy_rule: Copy rule
+  favorite_organizer_rule_copy_name: '{name} copy'
+  favorite_organizer_delete_rule: Delete rule
+  favorite_organizer_delete_rule_confirm: Delete the rule “{name}”?
+  favorite_organizer_target_folder: Target folder
+  favorite_organizer_missing_folder: Folder no longer exists
+  favorite_organizer_condition_uploader: Uploader is
+  favorite_organizer_condition_category: Category is
+  favorite_organizer_condition_title: Title contains
+  favorite_organizer_condition_tag: Video tag contains
+  favorite_organizer_condition_uploader_placeholder: Search uploader name or UID
+  favorite_organizer_search_uploader: Search uploaders
+  favorite_organizer_select_uploader: Select
+  favorite_organizer_uploader_selected: Added
+  favorite_organizer_uploader_not_found: No matching uploader was found
+  favorite_organizer_uploader_search_failed: Uploader search failed. Try again later.
+  favorite_organizer_condition_category_placeholder: Select a category
+  favorite_organizer_condition_title_placeholder: Title keyword
+  favorite_organizer_condition_tag_placeholder: Tag keyword
+  favorite_organizer_delete_condition: Delete condition
+  favorite_organizer_add_condition: Add AND condition
+  favorite_organizer_add_value: Add match value
+  favorite_organizer_remove_value: Remove “{value}”
+  favorite_organizer_new_rule: Rule {number}
+  favorite_organizer_empty_rules: No rules yet. Add one to start organizing.
+  favorite_organizer_manual: Manual organization and cleanup
+  favorite_organizer_manual_desc: Scans the default folder and applies rules. Cleanup scans every folder you created.
+  favorite_organizer_manual_mode: Organization mode
+  favorite_organizer_manual_mode_desc: Copy keeps videos in the default folder. Move removes them from the default folder after all routing succeeds.
+  favorite_organizer_copy: Copy
+  favorite_organizer_move: Move
+  favorite_organizer_actions: Run task
+  favorite_organizer_request_hint: Requests run serially, page by page, and are batched by target folder to reduce request frequency. Keep this page open while the task runs.
+  favorite_organizer_run: Organize now
+  favorite_organizer_cleanup: Remove unavailable favorites
+  favorite_organizer_cleanup_confirm: This scans all folders you created and removes unavailable videos. This cannot be undone. Continue?
+  favorite_organizer_organize_complete: Favorite organization complete
+  favorite_organizer_cleanup_complete: Unavailable favorites removed
+  favorite_organizer_no_valid_rules: Enable at least one rule with a target folder and complete conditions.
+  favorite_organizer_default_missing: The default favorite folder could not be found.
+  favorite_organizer_task_failed: The task failed. Try again later.
+  favorite_organizer_phase_folders: Loading favorite folders
+  favorite_organizer_phase_scanning: Scanning favorites
+  favorite_organizer_phase_matching: Matching rules
+  favorite_organizer_phase_applying: Updating favorite folders
+  favorite_organizer_phase_cleaning: Removing unavailable favorites
+  favorite_organizer_phase_done: Task complete
+  favorite_organizer_progress_detail: '{phase} ({current}/{total})'
+  favorite_organizer_organize_result: Scanned {scanned} videos, matched {matched}, completed {processed} operations, and failed {failed}.
+  favorite_organizer_cleanup_result: Scanned {scanned} favorites, found {matched} unavailable entries, removed {processed}, and failed {failed}.
   external_watch_later_button: External watch later button
   external_watch_later_button_desc: Show a standalone Watch later button in the video toolbar. It displays the current state and can add or remove the video.
   show_video_screenshot_button: Show player screenshot button

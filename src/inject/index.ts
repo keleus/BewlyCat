@@ -1,5 +1,6 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
 import { PAGE_NO_COOKIE_SEARCH_REQUEST, PAGE_NO_COOKIE_SEARCH_RESPONSE } from '~/constants/api'
+import { BEWLY_FAVORITE_DEAL_SUCCESS } from '~/constants/favoriteOrganizer'
 import type { Settings } from '~/logic/storage'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isElectron } from '~/utils/main'
@@ -903,6 +904,135 @@ else if (shouldInitializePageScript) {
   }
 
   const originalFetch = window.fetch
+  const FAVORITE_DEAL_PATH = '/x/v3/fav/resource/deal'
+
+  function isFavoriteDealUrl(url: string): boolean {
+    try {
+      const requestUrl = new URL(url, window.location.href)
+      return requestUrl.hostname === 'api.bilibili.com'
+        && requestUrl.pathname === FAVORITE_DEAL_PATH
+    }
+    catch {
+      return false
+    }
+  }
+
+  function bodyToSearchParams(body: unknown): URLSearchParams | null {
+    if (typeof body === 'string')
+      return new URLSearchParams(body)
+    if (body instanceof URLSearchParams)
+      return body
+    if (body instanceof FormData) {
+      const params = new URLSearchParams()
+      body.forEach((value, key) => {
+        if (typeof value === 'string')
+          params.append(key, value)
+      })
+      return params
+    }
+    return null
+  }
+
+  async function readFavoriteDealParams(input: RequestInfo | URL, init?: RequestInit) {
+    const directParams = bodyToSearchParams(init?.body)
+    if (directParams)
+      return directParams
+    if (input instanceof Request) {
+      try {
+        return new URLSearchParams(await input.clone().text())
+      }
+      catch {
+        return null
+      }
+    }
+    return null
+  }
+
+  function parseMediaIds(value: string | null) {
+    return (value ?? '')
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean)
+      .map(Number)
+      .filter(Number.isFinite)
+  }
+
+  function dispatchFavoriteDealSuccess(params: URLSearchParams | null) {
+    if (!params)
+      return
+
+    const rid = Number(params.get('rid'))
+    const resourceType = Number(params.get('type') || 2)
+    if (rid <= 0 || !Number.isFinite(rid) || resourceType <= 0 || !Number.isFinite(resourceType))
+      return
+
+    window.postMessage({
+      type: BEWLY_FAVORITE_DEAL_SUCCESS,
+      data: {
+        rid,
+        type: resourceType,
+        addMediaIds: parseMediaIds(params.get('add_media_ids')),
+        delMediaIds: parseMediaIds(params.get('del_media_ids')),
+      },
+    }, '*')
+  }
+
+  async function observeFavoriteFetch(
+    response: Response,
+    paramsPromise: Promise<URLSearchParams | null>,
+  ) {
+    if (!response.ok)
+      return
+
+    try {
+      const result = await response.clone().json()
+      if (result?.code === 0)
+        dispatchFavoriteDealSuccess(await paramsPromise)
+    }
+    catch {
+      // 收藏请求本身仍应正常返回；这里只忽略无法识别的响应。
+    }
+  }
+
+  const favoriteXhrRequests = new WeakMap<XMLHttpRequest, { url: string, body: unknown }>()
+  const originalXhrOpen = XMLHttpRequest.prototype.open
+  const originalXhrSend = XMLHttpRequest.prototype.send
+
+  const patchedXhrOpen = function (
+    this: XMLHttpRequest,
+    method: string,
+    url: string | URL,
+    async = true,
+    username?: string | null,
+    password?: string | null,
+  ) {
+    favoriteXhrRequests.set(this, { url: String(url), body: null })
+    return originalXhrOpen.call(this, method, url, async, username, password)
+  }
+  XMLHttpRequest.prototype.open = patchedXhrOpen as typeof XMLHttpRequest.prototype.open
+
+  XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
+    const request = favoriteXhrRequests.get(this)
+    if (request && isFavoriteDealUrl(request.url)) {
+      request.body = body
+      this.addEventListener('loadend', () => {
+        if (this.status < 200 || this.status >= 300)
+          return
+
+        try {
+          const result = this.responseType === 'json'
+            ? this.response
+            : JSON.parse(this.responseText)
+          if (result?.code === 0)
+            dispatchFavoriteDealSuccess(bodyToSearchParams(request.body))
+        }
+        catch {
+          // 与 fetch 拦截一致，识别失败不影响页面原始收藏行为。
+        }
+      }, { once: true })
+    }
+    return originalXhrSend.call(this, body)
+  }
 
   function isAllowedPageNoCookieSearchUrl(url: string): boolean {
     try {
@@ -985,14 +1115,31 @@ else if (shouldInitializePageScript) {
   }
 
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    const favoriteDealRequest = isFavoriteDealUrl(getFetchInputUrl(input))
+    // Request 的 body 在交给原始 fetch 后可能被标记为已读取，因此要先克隆。
+    const favoriteDealParams = favoriteDealRequest
+      ? readFavoriteDealParams(input, init)
+      : Promise.resolve(null)
+    let responsePromise: Promise<Response>
     if (isSearchResultFetch(input) && !settingsReady) {
-      return settingsReadyPromise.then(() => {
+      responsePromise = settingsReadyPromise.then(() => {
         return fetchWithSearchSettings(this, input, init)
       })
     }
-    if (isSearchResultFetch(input))
-      return fetchWithSearchSettings(this, input, init)
-    return originalFetch.call(this, input, init)
+    else if (isSearchResultFetch(input)) {
+      responsePromise = fetchWithSearchSettings(this, input, init)
+    }
+    else {
+      responsePromise = originalFetch.call(this, input, init)
+    }
+
+    if (favoriteDealRequest) {
+      void responsePromise
+        .then(response => observeFavoriteFetch(response, favoriteDealParams))
+        .catch(() => {})
+    }
+
+    return responsePromise
   }
 
   // 页面加载完成后初始化随机播放（功能已迁移到contentScripts）

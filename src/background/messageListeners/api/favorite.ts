@@ -125,6 +125,26 @@ const API_FAVORITE = {
     params: {},
     afterHandle: AHS.J_D,
   },
+  // 添加或移除单个稿件的收藏夹关系；自动分流时可一次写入多个目标收藏夹
+  dealFavoriteResources: {
+    url: 'https://api.bilibili.com/x/v3/fav/resource/deal',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        rid: 0,
+        type: 2,
+        add_media_ids: '',
+        del_media_ids: '',
+        platform: 'web',
+        csrf: '',
+      },
+    },
+    params: {},
+    afterHandle: AHS.J_D,
+  },
   // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/fav/action.md#%E4%BF%AE%E6%94%B9%E6%94%B6%E8%97%8F%E5%A4%B9
   editFavoriteFolder: {
     url: 'https://api.bilibili.com/x/v3/fav/folder/edit',

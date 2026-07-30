@@ -29,6 +29,9 @@ const props = withDefaults(defineProps<{
   showBorder?: boolean
   showFooter?: boolean
   centerFooter?: boolean
+  confirmText?: string
+  closeOnConfirm?: boolean
+  confirmOnEnter?: boolean
   loading?: boolean
   preventCloseWhenLoading?: boolean
 }>(), {
@@ -39,6 +42,8 @@ const props = withDefaults(defineProps<{
   showFooter: true,
   contentFlush: false,
   transitionName: 'modal',
+  closeOnConfirm: true,
+  confirmOnEnter: true,
 })
 
 const emit = defineEmits(['close', 'confirm'])
@@ -48,6 +53,8 @@ const { mainAppRef } = useBewlyApp()
 const showDialog = ref<boolean>(false)
 
 onKeyStroke('Enter', (e: KeyboardEvent) => {
+  if (!props.confirmOnEnter)
+    return
   e.preventDefault()
   if (!props.loading)
     handleConfirm()
@@ -143,7 +150,7 @@ function handleClose() {
 
 function handleConfirm() {
   emit('confirm')
-  if (!props.loading) {
+  if (!props.loading && props.closeOnConfirm) {
     nextTick(() => {
       handleClose()
     })
@@ -277,7 +284,7 @@ function handleConfirm() {
             </Button>
             <Button type="primary" @click="handleConfirm">
               <div>
-                {{ $t('common.operation.confirm') }}
+                {{ confirmText || $t('common.operation.confirm') }}
                 <span
                   v-show="showShortcut"
                   text="xs $bew-text-2 lh-0" p="x-1" rounded="$bew-radius-sm" bg="$bew-fill-1"

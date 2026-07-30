@@ -148,6 +148,45 @@ export type VideoPlayerModeOverride = DefaultVideoPlayerMode | 'inherit'
 export type VideoPlayerModeContext = 'multipart' | 'collection' | 'bangumi' | 'watchLater' | 'playlist'
 export type VideoPlayerModeOverrides = Record<VideoPlayerModeContext, VideoPlayerModeOverride>
 export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
+export type FavoriteOrganizerConditionField = 'uploader' | 'category' | 'title' | 'tag'
+
+export interface FavoriteOrganizerConditionValue {
+  value: string
+  label?: string
+}
+
+export interface FavoriteOrganizerCondition {
+  id: string
+  field: FavoriteOrganizerConditionField
+  /** 兼容旧版本保存的单值规则。新规则统一写入 values。 */
+  value: string
+  displayValue?: string
+  values: FavoriteOrganizerConditionValue[]
+}
+
+export function getFavoriteOrganizerConditionValues(
+  condition: FavoriteOrganizerCondition,
+): FavoriteOrganizerConditionValue[] {
+  const values = Array.isArray(condition.values)
+    ? condition.values.filter(item => typeof item?.value === 'string' && item.value.trim())
+    : []
+  if (values.length > 0)
+    return values
+
+  const legacyValue = typeof condition.value === 'string' ? condition.value.trim() : ''
+  return legacyValue
+    ? [{ value: legacyValue, label: condition.displayValue || legacyValue }]
+    : []
+}
+
+export interface FavoriteOrganizerRule {
+  id: string
+  name: string
+  enabled: boolean
+  targetFolderId: number | null
+  targetFolderTitle: string
+  conditions: FavoriteOrganizerCondition[]
+}
 
 export interface ShadowCurvePoint {
   position: number
@@ -207,6 +246,8 @@ export interface Settings {
   enableCommentReplyTree: boolean // 根据回复关系逐层缩进楼中楼
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
+  enableAutomaticFavoriteOrganization: boolean // 新收藏自动按规则分流
+  favoriteOrganizerRules: FavoriteOrganizerRule[] // 收藏整理规则
   externalWatchLaterButton: boolean // 稍后再看按钮外置
 
   // Grid 相关设置
@@ -477,6 +518,8 @@ export const originalSettings: Settings = {
   enableCommentReplyTree: true, // 默认启用评论回复树状缩进
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
+  enableAutomaticFavoriteOrganization: false,
+  favoriteOrganizerRules: [],
   externalWatchLaterButton: true, // 默认开启稍后再看按钮外置
 
   // Grid 相关默认设置

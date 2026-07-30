@@ -14,6 +14,7 @@ import { applyBewlyWidescreen, exitBewlyWidescreen } from '~/utils/bewlyWidescre
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
+import { setupAutomaticFavoriteOrganizer } from '~/utils/favoriteOrganizer'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
@@ -204,6 +205,7 @@ else if (shouldInitializeContentScript) {
   }
 
   void settingsReady.then(() => setupPluginSearchLinkNavigation())
+  void settingsReady.then(() => setupAutomaticFavoriteOrganizer())
 
   function shouldApplyBewlyDesign() {
     if (settings.value.adaptToOtherPageStyles)

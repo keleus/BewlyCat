@@ -18,6 +18,9 @@ const { mainAppRef } = useBewlyApp()
 const DROPDOWN_MARGIN = 8
 // UX 上限：菜单不应无限高，实际高度始终与可用空间取小
 const DROPDOWN_MAX_HEIGHT = 300
+const DROPDOWN_PADDING_HEIGHT = 16
+const DROPDOWN_OPTION_HEIGHT = 40
+const DROPDOWN_OPTION_GAP = 4
 
 const label = ref<string>('')
 const showOptions = ref<boolean>(false)
@@ -49,8 +52,8 @@ function handleWindowResize() {
   calculatePosition(dropdownRef.value?.scrollHeight ?? DROPDOWN_MAX_HEIGHT)
 }
 
-/** 计算下拉菜单绝对位置，空间不足时自动向上弹出并限制最大高度 */
-function calculatePosition(desiredHeight: number) {
+/** 计算下拉菜单绝对位置，空间不足时自动向上弹出并限制最大高度。 */
+function calculatePosition(desiredHeight: number, lockedOpenUp?: boolean) {
   if (!containerRef.value)
     return
 
@@ -59,9 +62,9 @@ function calculatePosition(desiredHeight: number) {
   const spaceAbove = rect.top - DROPDOWN_MARGIN
 
   // 下方放不下且上方更宽敞时向上弹出；最大高度限制在所选方向的可用空间内
-  const openUp = desiredHeight > 0
+  const openUp = lockedOpenUp ?? (desiredHeight > 0
     ? spaceBelow < desiredHeight && spaceAbove > spaceBelow
-    : false
+    : false)
   const availableSpace = openUp ? spaceAbove : spaceBelow
 
   dropdownPosition.value = {
@@ -74,9 +77,22 @@ function calculatePosition(desiredHeight: number) {
   }
 }
 
+function estimateDropdownHeight() {
+  const optionCount = props.options.length
+  if (optionCount === 0)
+    return 0
+
+  return Math.min(
+    DROPDOWN_MAX_HEIGHT,
+    DROPDOWN_PADDING_HEIGHT
+    + optionCount * DROPDOWN_OPTION_HEIGHT
+    + Math.max(optionCount - 1, 0) * DROPDOWN_OPTION_GAP,
+  )
+}
+
 function openOptions() {
-  // 先写好坐标再挂载，避免 enter 动画把 top/left 从 0 过渡到真实位置（左上角飞入）
-  calculatePosition(DROPDOWN_MAX_HEIGHT)
+  // 挂载前按选项数量估算真实高度，避免先用最大高度误判打开方向。
+  calculatePosition(estimateDropdownHeight())
   showOptions.value = true
 }
 
@@ -87,14 +103,14 @@ function toggleOptions() {
     openOptions()
 }
 
-// 打开后再用真实内容高度校正方向与 maxHeight（此时坐标已接近正确，不再从 0,0 起步）
+// 打开后只用真实高度校正 maxHeight；本次打开期间锁定方向，避免菜单上下飞移。
 watch(showOptions, async (visible) => {
   if (!visible)
     return
 
   await nextTick()
   if (dropdownRef.value)
-    calculatePosition(dropdownRef.value.scrollHeight)
+    calculatePosition(dropdownRef.value.scrollHeight, dropdownPosition.value.openUp)
 }, { flush: 'post' })
 
 function onClickOption(val: OptionType) {

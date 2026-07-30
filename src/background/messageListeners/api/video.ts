@@ -125,6 +125,17 @@ const API_VIDEO = {
     },
     afterHandle: AHS.J_D,
   },
+  getVideoTags: {
+    url: 'https://api.bilibili.com/x/tag/archive/tags',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      aid: '',
+      bvid: '',
+    },
+    afterHandle: AHS.J_D,
+  },
   getVideoPageList: {
     url: 'https://api.bilibili.com/x/player/pagelist',
     _fetch: {

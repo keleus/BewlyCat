@@ -190,6 +190,11 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(favoritesRoute, [
     'settings.plugin.favorites',
     'settings.group_favorites',
+    'settings.favorite_organizer_rules',
+    'settings.favorite_organizer_auto',
+    'settings.favorite_organizer_manual',
+    'settings.favorite_organizer_manual_mode',
+    'settings.favorite_organizer_cleanup',
   ]),
 
   ...createEntries(homeRoute, [
