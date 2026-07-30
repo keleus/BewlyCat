@@ -82,6 +82,12 @@ interface DisplayForwardVideo {
   bvid?: string
 }
 
+interface WatchLaterTarget {
+  aid?: number | string
+  bvid?: string
+  epid?: number
+}
+
 interface DisplayAdditional {
   title: string
   desc: string
@@ -2196,8 +2202,28 @@ async function toggleMomentLike(moment: DisplayMoment) {
   }
 }
 
-async function toggleMomentWatchLater(moment: DisplayMoment) {
-  if (watchLaterLoadingMomentIds.has(moment.id))
+function getWatchLaterStateKey(target: WatchLaterTarget) {
+  const aid = Number(target.aid || 0)
+  if (aid)
+    return `aid:${aid}`
+  if (target.bvid)
+    return `bvid:${target.bvid}`
+  return target.epid ? `epid:${target.epid}` : ''
+}
+
+function isWatchLaterAdded(target: WatchLaterTarget) {
+  const stateKey = getWatchLaterStateKey(target)
+  return Boolean(stateKey && watchLaterMomentIds.has(stateKey))
+}
+
+function isWatchLaterLoading(target: WatchLaterTarget) {
+  const stateKey = getWatchLaterStateKey(target)
+  return Boolean(stateKey && watchLaterLoadingMomentIds.has(stateKey))
+}
+
+async function toggleMomentWatchLater(target: WatchLaterTarget) {
+  const stateKey = getWatchLaterStateKey(target)
+  if (!stateKey || watchLaterLoadingMomentIds.has(stateKey))
     return
 
   const csrf = getCSRF()
@@ -2206,12 +2232,12 @@ async function toggleMomentWatchLater(moment: DisplayMoment) {
     return
   }
 
-  watchLaterLoadingMomentIds.add(moment.id)
+  watchLaterLoadingMomentIds.add(stateKey)
   try {
-    let aid = Number(moment.aid || 0)
-    let bvid = moment.bvid
-    if (!aid && !bvid && moment.epid) {
-      const ids = await resolvePgcEpisodeVideoIds(moment.epid)
+    let aid = Number(target.aid || 0)
+    let bvid = target.bvid
+    if (!aid && !bvid && target.epid) {
+      const ids = await resolvePgcEpisodeVideoIds(target.epid)
       aid = ids?.aid || 0
       bvid = ids?.bvid
     }
@@ -2221,7 +2247,7 @@ async function toggleMomentWatchLater(moment: DisplayMoment) {
       return
     }
 
-    const isAdded = watchLaterMomentIds.has(moment.id)
+    const isAdded = watchLaterMomentIds.has(stateKey)
     const response = isAdded
       ? await api.watchlater.removeFromWatchLater({ aid, csrf })
       : await api.watchlater.saveToWatchLater({ aid: aid || undefined, bvid, csrf })
@@ -2232,13 +2258,17 @@ async function toggleMomentWatchLater(moment: DisplayMoment) {
     }
 
     if (isAdded)
-      watchLaterMomentIds.delete(moment.id)
+      watchLaterMomentIds.delete(stateKey)
     else
-      watchLaterMomentIds.add(moment.id)
+      watchLaterMomentIds.add(stateKey)
     void topBarStore.syncWatchLaterState()
   }
+  catch (error) {
+    console.error('切换稍后再看状态失败:', error)
+    toast.error(error instanceof Error ? error.message : '稍后再看操作失败，请稍后重试')
+  }
   finally {
-    watchLaterLoadingMomentIds.delete(moment.id)
+    watchLaterLoadingMomentIds.delete(stateKey)
   }
 }
 
@@ -3012,14 +3042,15 @@ watch(
                     v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
                     type="button"
                     class="moment-card__watch-later"
-                    :class="{ 'is-added': watchLaterMomentIds.has(moment.id) }"
-                    :disabled="watchLaterLoadingMomentIds.has(moment.id)"
-                    :aria-label="watchLaterMomentIds.has(moment.id) ? '已添加稍后再看' : '添加至稍后再看'"
-                    :title="watchLaterMomentIds.has(moment.id) ? '已添加' : '稍后再看'"
+                    :class="{ 'is-added': isWatchLaterAdded(moment) }"
+                    :disabled="isWatchLaterLoading(moment)"
+                    :aria-label="isWatchLaterAdded(moment) ? '已添加稍后再看' : '添加至稍后再看'"
+                    :aria-pressed="isWatchLaterAdded(moment)"
+                    :title="isWatchLaterAdded(moment) ? '已添加' : '稍后再看'"
                     @click.stop="toggleMomentWatchLater(moment)"
                   >
-                    <span v-if="watchLaterLoadingMomentIds.has(moment.id)" i-svg-spinners:ring-resize aria-hidden="true" />
-                    <span v-else-if="watchLaterMomentIds.has(moment.id)" i-line-md:confirm aria-hidden="true" />
+                    <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
+                    <span v-else-if="isWatchLaterAdded(moment)" i-line-md:confirm aria-hidden="true" />
                     <span v-else i-mingcute:carplay-line aria-hidden="true" />
                   </button>
                 </div>
@@ -3050,14 +3081,15 @@ watch(
                     v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
                     type="button"
                     class="moment-card__watch-later"
-                    :class="{ 'is-added': watchLaterMomentIds.has(moment.id) }"
-                    :disabled="watchLaterLoadingMomentIds.has(moment.id)"
-                    :aria-label="watchLaterMomentIds.has(moment.id) ? '已添加稍后再看' : '添加至稍后再看'"
-                    :title="watchLaterMomentIds.has(moment.id) ? '已添加' : '稍后再看'"
+                    :class="{ 'is-added': isWatchLaterAdded(moment) }"
+                    :disabled="isWatchLaterLoading(moment)"
+                    :aria-label="isWatchLaterAdded(moment) ? '已添加稍后再看' : '添加至稍后再看'"
+                    :aria-pressed="isWatchLaterAdded(moment)"
+                    :title="isWatchLaterAdded(moment) ? '已添加' : '稍后再看'"
                     @click.stop="toggleMomentWatchLater(moment)"
                   >
-                    <span v-if="watchLaterLoadingMomentIds.has(moment.id)" i-svg-spinners:ring-resize aria-hidden="true" />
-                    <span v-else-if="watchLaterMomentIds.has(moment.id)" i-line-md:confirm aria-hidden="true" />
+                    <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
+                    <span v-else-if="isWatchLaterAdded(moment)" i-line-md:confirm aria-hidden="true" />
                     <span v-else i-mingcute:carplay-line aria-hidden="true" />
                   </button>
                 </div>
@@ -3145,6 +3177,27 @@ watch(
                         <span v-if="settings.showVideoCardDuration && moment.forward.video.duration">
                           {{ moment.forward.video.duration }}
                         </span>
+                      </span>
+                      <span
+                        v-if="settings.showVideoCardWatchLater && getWatchLaterStateKey(moment.forward.video)"
+                        role="button"
+                        :tabindex="isWatchLaterLoading(moment.forward.video) ? -1 : 0"
+                        class="moment-card__watch-later"
+                        :class="{
+                          'is-added': isWatchLaterAdded(moment.forward.video),
+                          'is-disabled': isWatchLaterLoading(moment.forward.video),
+                        }"
+                        :aria-disabled="isWatchLaterLoading(moment.forward.video)"
+                        :aria-label="isWatchLaterAdded(moment.forward.video) ? '已添加稍后再看' : '添加至稍后再看'"
+                        :aria-pressed="isWatchLaterAdded(moment.forward.video)"
+                        :title="isWatchLaterAdded(moment.forward.video) ? '已添加' : '稍后再看'"
+                        @click.stop.prevent="toggleMomentWatchLater(moment.forward.video)"
+                        @keydown.enter.stop.prevent="toggleMomentWatchLater(moment.forward.video)"
+                        @keydown.space.stop.prevent="toggleMomentWatchLater(moment.forward.video)"
+                      >
+                        <span v-if="isWatchLaterLoading(moment.forward.video)" i-svg-spinners:ring-resize aria-hidden="true" />
+                        <span v-else-if="isWatchLaterAdded(moment.forward.video)" i-line-md:confirm aria-hidden="true" />
+                        <span v-else i-mingcute:carplay-line aria-hidden="true" />
                       </span>
                     </span>
                     <span class="moment-card__forward-video-info">
@@ -4060,6 +4113,8 @@ watch(
     background-color var(--bew-duration-normal) var(--bew-ease-standard);
 }
 .moment-card__cover:hover .moment-card__watch-later,
+.moment-card__forward-video-cover:hover .moment-card__watch-later,
+.moment-card__forward-video-cover:focus-within .moment-card__watch-later,
 .moment-card__watch-later:focus-visible,
 .moment-card__watch-later.is-added {
   opacity: 1;
@@ -4073,6 +4128,10 @@ watch(
   outline-offset: 2px;
 }
 .moment-card__watch-later:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+.moment-card__watch-later.is-disabled {
   cursor: wait;
   opacity: 0.72;
 }
