@@ -101,8 +101,9 @@ const searchOffset = computed(() => {
   if (isNarrowLayout.value)
     return 0
 
-  // 略微减弱左右宽度补偿，为搜索框右侧的切换器和功能组留出呼吸空间
-  const desired = (rightWidth.value - leftWidth.value) * 0.3
+  // 左右区域宽度不同时，补偿一半宽度差，让有足够空余的搜索框相对页面居中。
+  // 实际偏移仍受搜索区域剩余空间限制，空间不足时不会挤压两侧控件。
+  const desired = (rightWidth.value - leftWidth.value) / 2
   const limit = maxOffset.value
   if (!limit)
     return 0

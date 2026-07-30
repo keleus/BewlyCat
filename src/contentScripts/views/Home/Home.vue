@@ -415,6 +415,7 @@ function toggleTabContentLoading(loading: boolean) {
   grid-column: 2;
   max-width: calc(100vw - 320px);
   justify-self: center;
+  transform: translateX(calc((var(--bew-page-padding-right) - var(--bew-page-padding-left)) / 2));
 }
 
 .home-header--tabs-left {
@@ -424,6 +425,7 @@ function toggleTabContentLoading(loading: boolean) {
     grid-column: 1;
     max-width: 100%;
     justify-self: start;
+    transform: none;
   }
 
   .home-grid-layout-switcher {
@@ -468,6 +470,7 @@ function toggleTabContentLoading(loading: boolean) {
   .home-tabs-panel {
     grid-column: 1;
     max-width: 100%;
+    transform: none;
   }
 
   .home-header--tabs-left .home-tabs-panel {

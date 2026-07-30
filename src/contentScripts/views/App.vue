@@ -1084,18 +1084,21 @@ if (settings.value.cleanUrlArgument) {
 
 .bewly-page-content {
   --bew-page-inline-padding: clamp(16px, 4vw, 80px);
+  --bew-page-padding-left: var(--bew-page-inline-padding);
+  --bew-page-padding-right: var(--bew-page-inline-padding);
 
   box-sizing: border-box;
   width: 100%;
-  padding-inline: var(--bew-page-inline-padding);
+  padding-left: var(--bew-page-padding-left);
+  padding-right: var(--bew-page-padding-right);
 }
 
 .bewly-page-content--dock-left {
-  padding-left: max(var(--bew-page-inline-padding), var(--bew-dock-safe-inset));
+  --bew-page-padding-left: max(var(--bew-page-inline-padding), var(--bew-dock-safe-inset));
 }
 
 .bewly-page-content--dock-right {
-  padding-right: max(var(--bew-page-inline-padding), var(--bew-dock-safe-inset));
+  --bew-page-padding-right: max(var(--bew-page-inline-padding), var(--bew-dock-safe-inset));
 }
 
 .bewly-page-content--dock-bottom {
