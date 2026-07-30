@@ -90,27 +90,23 @@ interface RecommendRequestLogContext {
   mode: string
   requestType: WebRecommendRequestType
   startedAt: number
-  beforeLoadCount: number
 }
 
 function startRecommendRequestLog(
   mode: string,
   requestType: WebRecommendRequestType,
-  beforeLoadCount: number,
-  details: Record<string, unknown> = {},
 ): RecommendRequestLogContext {
   const context = {
     id: ++recommendRequestLogId,
     mode,
     requestType,
     startedAt: performance.now(),
-    beforeLoadCount,
   }
   console.log(`${HOME_LOAD_LOG_PREFIX} 插件开始请求推荐接口`, {
+    time: new Date().toLocaleString(),
     requestId: context.id,
     mode,
     requestType,
-    ...details,
   })
   return context
 }
@@ -121,33 +117,25 @@ function getRequestDuration(context: RecommendRequestLogContext): number {
 
 function logRecommendRequestSuccess(
   context: RecommendRequestLogContext,
-  afterLoadCount: number,
-  details: Record<string, unknown> = {},
 ) {
-  const loadedCount = Math.max(0, afterLoadCount - context.beforeLoadCount)
-  console.log(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求成功：载入 ${loadedCount} 条数据`, {
+  console.log(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求成功`, {
+    time: new Date().toLocaleString(),
     requestId: context.id,
     mode: context.mode,
     requestType: context.requestType,
-    loadedCount,
-    totalCount: afterLoadCount,
     durationMs: getRequestDuration(context),
-    ...details,
   })
 }
 
 function logRecommendRequestFailure(
   context: RecommendRequestLogContext,
-  afterLoadCount: number,
   details: Record<string, unknown> = {},
 ) {
-  const loadedCount = Math.max(0, afterLoadCount - context.beforeLoadCount)
-  console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败：载入 ${loadedCount} 条数据`, {
+  console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败`, {
+    time: new Date().toLocaleString(),
     requestId: context.id,
     mode: context.mode,
     requestType: context.requestType,
-    loadedCount,
-    totalCount: afterLoadCount,
     durationMs: getRequestDuration(context),
     ...details,
   })
@@ -169,9 +157,9 @@ const hasInitializedData = ref<boolean>(false)
 
 function logHomeLoadComplete(source: 'api' | 'cache', startedAt: number) {
   console.log(`${HOME_LOAD_LOG_PREFIX} 加载完成`, {
+    time: new Date().toLocaleString(),
     source,
     mode: settings.value.recommendationMode,
-    loadedCount: currentVideoList.value.length,
     failed: requestFailed.value,
     needToLogin: needToLoginFirst.value,
     durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
@@ -785,10 +773,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       ? api.video.getNoCookieRecommendVideos
       : api.video.getRecommendVideos
 
-    const requestLog = startRecommendRequestLog(recommendationMode, requestType, beforeLoadCount, {
-      pageSize,
-      fetchRow,
-    })
+    const requestLog = startRecommendRequestLog(recommendationMode, requestType)
     let response: forYouResult
     try {
       response = await getWebRecommendVideos({
@@ -801,7 +786,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       })
     }
     catch (error) {
-      logRecommendRequestFailure(requestLog, videoList.value.filter(video => video.item).length, { error })
+      logRecommendRequestFailure(requestLog, { error })
       throw error
     }
 
@@ -809,14 +794,14 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       return
 
     if (!response) {
-      logRecommendRequestFailure(requestLog, beforeLoadCount, { reason: '响应为空' })
+      logRecommendRequestFailure(requestLog, { reason: '响应为空' })
       requestFailed.value = true
       noMoreContent.value = true
       return
     }
 
     if (!response.data) {
-      logRecommendRequestFailure(requestLog, beforeLoadCount, {
+      logRecommendRequestFailure(requestLog, {
         code: response.code,
         message: response.message,
         reason: '响应数据为空',
@@ -918,13 +903,11 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         // 没有加载到新内容，增加空加载计数器
         consecutiveEmptyLoads.value++
       }
-      logRecommendRequestSuccess(requestLog, afterLoadCount, {
-        responseCount: response.data.item.length,
-      })
+      logRecommendRequestSuccess(requestLog)
       canFillViewport = true
     }
     else if (response.code === 62011) {
-      logRecommendRequestFailure(requestLog, beforeLoadCount, {
+      logRecommendRequestFailure(requestLog, {
         code: response.code,
         message: response.message,
       })
@@ -932,7 +915,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
     }
     else {
       // 其他错误码也应该停止加载，避免无限重试
-      logRecommendRequestFailure(requestLog, beforeLoadCount, {
+      logRecommendRequestFailure(requestLog, {
         code: response.code,
         message: response.message,
       })
@@ -984,11 +967,10 @@ async function getAppRecommendVideos(
 
   // 检查是否有有效的 access token
   if (!appAuthTokens.value.accessToken) {
-    console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败：载入 0 条数据`, {
+    console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败`, {
+      time: new Date().toLocaleString(),
       mode: recommendationMode,
       requestType,
-      loadedCount: 0,
-      totalCount: appVideoList.value.length,
       reason: '缺少 access token',
     })
     needToLoginFirst.value = true
@@ -1005,11 +987,7 @@ async function getAppRecommendVideos(
       const lastIdx = appVideoList.value.length > 0 && appVideoList.value[appVideoList.value.length - 1].item
         ? appVideoList.value[appVideoList.value.length - 1].item!.idx
         : 1
-      const batchBeforeLoadCount = appVideoList.value.length
-      const requestLog = startRecommendRequestLog(recommendationMode, requestType, batchBeforeLoadCount, {
-        batch: batch + 1,
-        batches: batchesToLoad,
-      })
+      const requestLog = startRecommendRequestLog(recommendationMode, requestType)
 
       let response: AppForYouResult
       try {
@@ -1022,7 +1000,7 @@ async function getAppRecommendVideos(
         })
       }
       catch (error) {
-        logRecommendRequestFailure(requestLog, appVideoList.value.length, { error })
+        logRecommendRequestFailure(requestLog, { error })
         throw error
       }
 
@@ -1030,8 +1008,7 @@ async function getAppRecommendVideos(
         return
 
       if (!response) {
-        logRecommendRequestFailure(requestLog, appVideoList.value.length, {
-          batch: batch + 1,
+        logRecommendRequestFailure(requestLog, {
           reason: '响应为空',
         })
         requestFailed.value = true
@@ -1068,14 +1045,10 @@ async function getAppRecommendVideos(
             displayData: transformAppVideo(item),
           })
         })
-        logRecommendRequestSuccess(requestLog, appVideoList.value.length, {
-          batch: batch + 1,
-          responseCount: response.data.items.length,
-        })
+        logRecommendRequestSuccess(requestLog)
       }
       else if (response.code === 62011) {
-        logRecommendRequestFailure(requestLog, appVideoList.value.length, {
-          batch: batch + 1,
+        logRecommendRequestFailure(requestLog, {
           code: response.code,
           message: response.message,
         })
@@ -1083,8 +1056,7 @@ async function getAppRecommendVideos(
         break
       }
       else {
-        logRecommendRequestFailure(requestLog, appVideoList.value.length, {
-          batch: batch + 1,
+        logRecommendRequestFailure(requestLog, {
           code: response.code,
           message: response.message,
         })

@@ -61,6 +61,7 @@ const currentUrl = document.URL
 
 if (shouldInitializeContentScript && isHomePage()) {
   console.log('[BewlyCat][首页加载] 插件开始加载', {
+    time: new Date().toLocaleString(),
     version,
   })
 }
