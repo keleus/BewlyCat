@@ -112,6 +112,8 @@ export function setupNecessarySettingsWatchers() {
   watch(
     [() => settings.value.customizeFont, () => settings.value.fontFamily],
     () => {
+      const bewlyHost = document.getElementById('bewly')
+
       if (typeof settings.value.customizeFont === 'boolean')
         settings.value.customizeFont = 'recommend'
 
@@ -127,12 +129,15 @@ export function setupNecessarySettingsWatchers() {
       // Under default settings, revert to Bilibili's original font-family
       if (settings.value.customizeFont === 'default') {
         document.documentElement.classList.remove('modify-fonts')
+        bewlyHost?.classList.remove('modify-fonts')
       }
       else if (settings.value.customizeFont === 'recommend') {
         document.documentElement.classList.add('modify-fonts')
+        bewlyHost?.classList.add('modify-fonts')
       }
       else {
         document.documentElement.classList.add('modify-fonts')
+        bewlyHost?.classList.add('modify-fonts')
         document.documentElement.style.setProperty('--bew-custom-fonts', settings.value.fontFamily)
       }
     },

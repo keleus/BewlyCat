@@ -34,6 +34,7 @@
   font-family: var(--bew-fonts-monospace);
 }
 
+:host(.modify-fonts) .bewly-wrapper,
 .modify-fonts .bewly-wrapper,
 .bewly-design.modify-fonts,
 // Do not change the danmaku font because the Bilibili video player can change the font of danmaku
