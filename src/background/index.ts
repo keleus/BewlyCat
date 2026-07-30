@@ -15,6 +15,27 @@ browser.runtime.onInstalled.addListener(async () => {
 })
 
 const PREVENT_MOBILE_REDIRECT_RULE_ID = 1001
+const BILIBILI_HD_USER_AGENT = 'Mozilla/5.0 BiliDroid/2.0.1 (bbcallen@gmail.com) os/android model/android_hd mobi_app/android_hd build/2001100 channel/master innerVer/2001100 osVer/15 network/2'
+const APP_AUTH_REQUEST_HEADERS = {
+  'user-agent': BILIBILI_HD_USER_AGENT,
+  'app-key': 'android_hd',
+  'env': 'prod',
+  'x-bili-trace-id': '11111111111111111111111111111111:1111111111111111:0:0',
+  'bili-http-engine': 'cronet',
+} as const
+
+function isAppAuthRequest(url: string) {
+  try {
+    const parsedUrl = new URL(url)
+    return parsedUrl.origin === 'https://passport.bilibili.com'
+      && (parsedUrl.pathname === '/x/passport-tv-login/qrcode/auth_code'
+        || parsedUrl.pathname === '/x/passport-tv-login/qrcode/poll')
+  }
+  catch {
+    return false
+  }
+}
+
 const preventMobileRedirectRule: browser.DeclarativeNetRequest.Rule = {
   id: PREVENT_MOBILE_REDIRECT_RULE_ID,
   priority: 2,
@@ -91,6 +112,23 @@ if (isFirefoxBuild) {
     async (details: any) => {
       const requestHeaders: browser.WebRequest.HttpHeaders = []
       await preventMobileRedirectReady
+      const appAuthRequest = isAppAuthRequest(details.url)
+
+      if (appAuthRequest) {
+        const overriddenHeaderNames = new Set([
+          ...Object.keys(APP_AUTH_REQUEST_HEADERS),
+          'sec-ch-ua',
+          'sec-ch-ua-mobile',
+          'sec-ch-ua-platform',
+        ])
+        details.requestHeaders = (details.requestHeaders || []).filter((header: browser.WebRequest.HttpHeaders[number]) =>
+          !overriddenHeaderNames.has(header.name.toLowerCase()),
+        )
+        details.requestHeaders.push(
+          ...Object.entries(APP_AUTH_REQUEST_HEADERS).map(([name, value]) => ({ name, value })),
+        )
+      }
+
       if (preventMobileRedirectEnabled && details.type === 'main_frame' && isBilibiliWwwUrl(details.url)) {
         let hasUserAgent = false
         for (const header of details.requestHeaders || []) {
@@ -133,6 +171,9 @@ if (isFirefoxBuild) {
 
         return { ...details, requestHeaders }
       }
+
+      if (appAuthRequest)
+        return { ...details, requestHeaders: details.requestHeaders }
     },
     { urls: ['<all_urls>'] },
     ['blocking', 'requestHeaders'],
