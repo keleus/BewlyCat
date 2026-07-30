@@ -14,11 +14,13 @@
   }
 }
 
+.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar,
 .homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
   display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
-  background-color: #fff !important;
+  color: var(--bew-text-1) !important;
+  background-color: var(--bew-elevated-solid) !important;
   backdrop-filter: none;
 }
 
@@ -26,10 +28,6 @@
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-}
-
-.dark.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
-  background-color: rgb(36 38 40) !important;
 }
 
 .homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled {
