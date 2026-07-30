@@ -48,7 +48,7 @@ function queryEpisodeItems(selector: string): HTMLElement[] {
 }
 
 function t(key: string): string {
-  return String(i18n.global.t(key))
+  return String(i18n.global.t(key, settings.value.language))
 }
 
 function getActivePlayOrder(): RandomPlayOrder {

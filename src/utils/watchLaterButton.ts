@@ -1,3 +1,4 @@
+import { settings } from '~/logic'
 import type { List as WatchLaterItem, WatchLaterResult } from '~/models/video/watchLater'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
@@ -69,7 +70,7 @@ function findWatchLaterItem(list: WatchLaterItem[] | undefined, { bvid, aid }: V
 }
 
 function translate(key: string): string {
-  return String(i18n.global.t(key))
+  return String(i18n.global.t(key, settings.value.language))
 }
 
 function updateButtonState(button: HTMLButtonElement, isInWatchLater: boolean) {

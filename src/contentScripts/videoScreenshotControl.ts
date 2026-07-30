@@ -14,7 +14,7 @@ let hasInitialized = false
 let isCapturing = false
 
 function translate(key: string): string {
-  return String(i18n.global.t(key))
+  return String(i18n.global.t(key, settings.value.language))
 }
 
 function findPlayerControlBar(): HTMLElement | null {
