@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { useToast } from 'vue-toastification'
 
 import Dialog from '~/components/Dialog.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
+import Tooltip from '~/components/Tooltip.vue'
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import { settings } from '~/logic'
 import { momentsWantedUsers } from '~/logic/storage'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getCSRF } from '~/utils/main'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
@@ -90,6 +93,11 @@ interface DisplayAdditional {
   isLiveReservation: boolean
 }
 
+interface WatchLaterTarget {
+  aid?: number | string
+  bvid?: string
+}
+
 interface DisplayRichTextSegment {
   type: 'text' | 'emoji' | 'link'
   text: string
@@ -140,6 +148,7 @@ interface MomentsPortalResult {
 /** 动态流 features：补齐 opus 图文与充电列表字段 */
 const MOMENT_FEED_FEATURES = 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,forwardListHidden,ugcDelete,onlyfansQaCard'
 const toast = useToast()
+const topBarStore = useTopBarStore()
 
 const moments = ref<DisplayMoment[]>([])
 type MomentFilter = 'all' | 'video' | 'pgc' | 'article'
@@ -219,6 +228,7 @@ const visibleMomentIds = reactive(new Set<string>())
 const readyCoverIds = reactive(new Set<string>())
 const readyCardIds = reactive(new Set<string>())
 const enteringCardIds = reactive(new Set<string>())
+const togglingWatchLaterAids = reactive(new Set<number>())
 const revealedCardIds = new Set<string>()
 const cardEnterTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const cardElements = new Map<string, HTMLElement>()
@@ -314,6 +324,62 @@ function getSidebarAvatarUrl(url = '', size = 96) {
 
 function formatCount(value: number) {
   return value > 9999 ? `${(value / 10000).toFixed(1)}万` : value || 0
+}
+
+function getWatchLaterAid(target: WatchLaterTarget) {
+  const aid = Number(target.aid)
+  return Number.isFinite(aid) && aid > 0 ? aid : undefined
+}
+
+function isInWatchLater(target: WatchLaterTarget) {
+  const aid = getWatchLaterAid(target)
+  return aid ? topBarStore.addedWatchLaterList.includes(aid) : false
+}
+
+function isWatchLaterToggling(target: WatchLaterTarget) {
+  const aid = getWatchLaterAid(target)
+  return aid ? togglingWatchLaterAids.has(aid) : false
+}
+
+function setMomentWatchLaterState(aid: number, added: boolean) {
+  const index = topBarStore.addedWatchLaterList.indexOf(aid)
+
+  if (added && index === -1) {
+    topBarStore.addedWatchLaterList.push(aid)
+    return
+  }
+
+  if (!added && index !== -1)
+    topBarStore.addedWatchLaterList.splice(index, 1)
+}
+
+async function toggleWatchLater(target: WatchLaterTarget) {
+  const aid = getWatchLaterAid(target)
+  if (!aid || togglingWatchLaterAids.has(aid))
+    return
+
+  const isAdded = isInWatchLater(target)
+  togglingWatchLaterAids.add(aid)
+
+  try {
+    const res = isAdded
+      ? await api.watchlater.removeFromWatchLater({ aid, csrf: getCSRF() })
+      : await api.watchlater.saveToWatchLater({
+          ...(target.bvid ? { bvid: target.bvid } : { aid }),
+          csrf: getCSRF(),
+        })
+
+    if (res.code === 0) {
+      setMomentWatchLaterState(aid, !isAdded)
+      void topBarStore.syncWatchLaterState()
+    }
+    else {
+      toast.error(res.message)
+    }
+  }
+  finally {
+    togglingWatchLaterAids.delete(aid)
+  }
 }
 
 /** 卡片文字预览：展示正文开头，不出现“点击查看详情”类占位 */
@@ -2955,6 +3021,23 @@ watch(
                   <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
                     {{ moment.chargeBadge || '充电专属' }}
                   </span>
+                  <button
+                    v-if="moment.isVideo && getWatchLaterAid(moment)"
+                    type="button"
+                    class="moment-card__watch-later"
+                    :class="{ 'is-added': isInWatchLater(moment) }"
+                    :disabled="isWatchLaterToggling(moment)"
+                    :aria-label="isInWatchLater(moment) ? $t('common.added') : $t('common.save_to_watch_later')"
+                    :aria-pressed="isInWatchLater(moment)"
+                    @click.stop.prevent="toggleWatchLater(moment)"
+                  >
+                    <Tooltip v-if="!isInWatchLater(moment)" :content="$t('common.save_to_watch_later')" placement="bottom-right" type="dark">
+                      <span i-mingcute:carplay-line aria-hidden="true" />
+                    </Tooltip>
+                    <Tooltip v-else :content="$t('common.added')" placement="bottom-right" type="dark">
+                      <Icon icon="line-md:confirm" aria-hidden="true" />
+                    </Tooltip>
+                  </button>
                 </div>
                 <div
                   v-else-if="moment.images.length === 1"
@@ -2979,6 +3062,23 @@ watch(
                   <span v-if="moment.isLive" i-tabler-live-photo class="moment-card__text-cover-icon" />
                   <span v-else i-tabler-player-play-filled class="moment-card__text-cover-icon" />
                   <span>{{ moment.isLive ? '直播动态' : '视频动态' }}</span>
+                  <button
+                    v-if="moment.isVideo && getWatchLaterAid(moment)"
+                    type="button"
+                    class="moment-card__watch-later"
+                    :class="{ 'is-added': isInWatchLater(moment) }"
+                    :disabled="isWatchLaterToggling(moment)"
+                    :aria-label="isInWatchLater(moment) ? $t('common.added') : $t('common.save_to_watch_later')"
+                    :aria-pressed="isInWatchLater(moment)"
+                    @click.stop.prevent="toggleWatchLater(moment)"
+                  >
+                    <Tooltip v-if="!isInWatchLater(moment)" :content="$t('common.save_to_watch_later')" placement="bottom-right" type="dark">
+                      <span i-mingcute:carplay-line aria-hidden="true" />
+                    </Tooltip>
+                    <Tooltip v-else :content="$t('common.added')" placement="bottom-right" type="dark">
+                      <Icon icon="line-md:confirm" aria-hidden="true" />
+                    </Tooltip>
+                  </button>
                 </div>
 
                 <div class="moment-card__body">
@@ -3064,6 +3164,26 @@ watch(
                         <span v-if="settings.showVideoCardDuration && moment.forward.video.duration">
                           {{ moment.forward.video.duration }}
                         </span>
+                      </span>
+                      <span
+                        v-if="getWatchLaterAid(moment.forward.video)"
+                        role="button"
+                        tabindex="0"
+                        class="moment-card__watch-later"
+                        :class="{ 'is-added': isInWatchLater(moment.forward.video), 'is-disabled': isWatchLaterToggling(moment.forward.video) }"
+                        :aria-disabled="isWatchLaterToggling(moment.forward.video)"
+                        :aria-label="isInWatchLater(moment.forward.video) ? $t('common.added') : $t('common.save_to_watch_later')"
+                        :aria-pressed="isInWatchLater(moment.forward.video)"
+                        @click.stop.prevent="toggleWatchLater(moment.forward.video)"
+                        @keydown.enter.stop.prevent="toggleWatchLater(moment.forward.video)"
+                        @keydown.space.stop.prevent="toggleWatchLater(moment.forward.video)"
+                      >
+                        <Tooltip v-if="!isInWatchLater(moment.forward.video)" :content="$t('common.save_to_watch_later')" placement="bottom-right" type="dark">
+                          <span i-mingcute:carplay-line aria-hidden="true" />
+                        </Tooltip>
+                        <Tooltip v-else :content="$t('common.added')" placement="bottom-right" type="dark">
+                          <Icon icon="line-md:confirm" aria-hidden="true" />
+                        </Tooltip>
                       </span>
                     </span>
                     <span class="moment-card__forward-video-info">
@@ -4002,6 +4122,7 @@ watch(
   box-shadow: 0 2px 8px rgb(251 114 153 / 35%);
 }
 .moment-card__text-cover {
+  position: relative;
   min-height: 152px;
   display: flex;
   flex-direction: column;
@@ -4460,6 +4581,53 @@ watch(
   font-size: var(--bew-font-size-caption);
   line-height: var(--bew-line-height-caption);
   text-shadow: 0 1px 2px rgb(0 0 0 / 65%);
+}
+.moment-card__watch-later {
+  position: absolute;
+  top: var(--bew-space-2);
+  right: var(--bew-space-2);
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  color: #fff;
+  background: rgb(0 0 0 / 60%);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 24%);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.72);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease,
+    background-color 0.16s ease;
+}
+.moment-card__watch-later > * {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--bew-icon-size-lg);
+}
+.moment-card__watch-later:hover,
+.moment-card__watch-later.is-added {
+  background: rgb(0 0 0 / 72%);
+}
+.moment-card__watch-later:disabled,
+.moment-card__watch-later.is-disabled {
+  cursor: wait;
+}
+.moment-card__watch-later:focus-visible,
+.moment-card__media:hover .moment-card__watch-later,
+.moment-card__media:focus-within .moment-card__watch-later,
+.moment-card__forward-video-cover:hover .moment-card__watch-later,
+.moment-card__forward-video-cover:focus-within .moment-card__watch-later {
+  opacity: 1;
+  transform: scale(1);
 }
 .moment-card__video-stat-group,
 .moment-card__video-stat-group > span {
