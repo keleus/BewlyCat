@@ -525,28 +525,34 @@ else if (shouldInitializeContentScript) {
       }, 3000) // 延迟3秒初始化，确保页面完全加载
     }
 
-    // 添加搜索页面视频卡片点击事件处理
-    if (/https?:\/\/search\.bilibili\.com\.*/.test(location.href)) {
-      setupBiliVideoCardClickHandler()
-    }
+    // 添加搜索页面视频卡片链接点击事件处理
+    if (/https?:\/\/search\.bilibili\.com\.*/.test(location.href))
+      setupBiliVideoCardLinkClickHandler()
   })
 
-  // 添加bili-video-card点击事件处理
-  function setupBiliVideoCardClickHandler() {
+  // B 站原生视频卡片会在多个页面复用，统一监听稍后再看操作并同步顶栏状态。
+  function setupNativeWatchLaterStateSync() {
+    document.addEventListener('click', (event) => {
+      const watchLaterButton = event.composedPath().find(
+        (target): target is Element => target instanceof Element
+          && target.matches('.bili-watch-later, .bili-watch-later--wrap, .bili-watch-later__icon'),
+      )
+      if (!watchLaterButton)
+        return
+
+      // B 站接口写入存在短暂延迟，稍后强制刷新并广播给顶栏所在实例。
+      window.setTimeout(() => {
+        void useTopBarStore().syncWatchLaterState(true)
+      }, 1000)
+    }, true)
+  }
+
+  setupNativeWatchLaterStateSync()
+
+  // 添加搜索页 bili-video-card 链接点击事件处理
+  function setupBiliVideoCardLinkClickHandler() {
     document.addEventListener('click', (event) => {
       const target = event.target as HTMLElement
-
-      // 检查点击的是否是稍后再看按钮或其子元素
-      const watchLaterButton = target.closest('.bili-watch-later, .bili-watch-later--wrap, .bili-watch-later__icon')
-      if (watchLaterButton) {
-      // 如果点击的是稍后再看按钮，延迟1秒后更新顶栏数据
-        setTimeout(() => {
-        // 动态导入topBarStore来更新稍后再看列表
-          const topBarStore = useTopBarStore()
-          topBarStore.getAllWatchLaterList()
-        }, 1000)
-        return
-      }
 
       const linkElement = target.closest('.bili-video-card a, .bili-video-card__wrap a')
 

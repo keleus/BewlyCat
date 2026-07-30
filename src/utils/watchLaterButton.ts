@@ -118,7 +118,7 @@ function animateButton(button: HTMLButtonElement) {
 function scheduleTopBarRefresh() {
   window.setTimeout(() => {
     try {
-      void useTopBarStore().getAllWatchLaterList()
+      void useTopBarStore().syncWatchLaterState(true)
     }
     catch (error) {
       console.error('刷新稍后再看列表失败:', error)

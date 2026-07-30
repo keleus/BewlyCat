@@ -286,7 +286,7 @@ const content = computed(() => {
               content.isModernLayout ? 'overflow-hidden rounded-full' : '',
             ]"
             bg="hover:$bew-fill-2 active:$bew-fill-3"
-            shrink-0 w-32px h-32px m="t--3px r--4px"
+            shrink-0 w-32px h-32px m="t--3px"
             grid place-items-center cursor-pointer rounded="50%"
             @click.stop.prevent="emit('moreBtnClick', $event)"
           >

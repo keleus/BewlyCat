@@ -10,6 +10,7 @@ import api from '~/utils/api'
 import { getTvSign, TVAppKey } from '~/utils/authProvider'
 import { calcCurrentTime, numFormatter, parseStatNumber } from '~/utils/dataFormatter'
 import { getCSRF, removeHttpFromUrl } from '~/utils/main'
+import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { Video } from '../types'
@@ -66,6 +67,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const selectedDislikeOpt = ref<AppFeedFeedbackSelection>()
   const videoCurrentTime = ref<number | null>(null)
   const isInWatchLater = ref<boolean>(false)
+  const resolvedWatchLaterAid = ref<number>()
   const isHover = ref<boolean>(false)
   const isPreviewFullscreen = ref<boolean>(false)
   const mouseEnterTimeOut = ref<number | null>(null)
@@ -265,9 +267,19 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   })
 
   // Methods
-  function toggleWatchLater() {
+  async function toggleWatchLater() {
     if (!props.value.video)
       return
+
+    const video = props.value.video
+    if (video.epid && !video.aid && !video.bvid) {
+      const ids = await resolvePgcEpisodeVideoIds(video.epid)
+      if (!ids) {
+        toast.error('无法获取该剧集的稍后再看信息')
+        return
+      }
+      resolvedWatchLaterAid.value = ids.aid
+    }
 
     if (!isInWatchLater.value) {
       const params: { bvid?: string, aid?: number, csrf: string } = {
@@ -275,11 +287,11 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       }
 
       // 优先使用bvid，如果没有则使用aid
-      if (props.value.video.bvid) {
-        params.bvid = props.value.video.bvid
+      if (video.bvid) {
+        params.bvid = video.bvid
       }
       else {
-        params.aid = props.value.video.id
+        params.aid = video.aid || resolvedWatchLaterAid.value || video.id
       }
 
       api.watchlater.saveToWatchLater(params)
@@ -288,7 +300,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
             isInWatchLater.value = true
             // 延时1秒后获取稍后再看列表（add成功后居然不是立即生效的）
             setTimeout(() => {
-              topBarStore.getAllWatchLaterList()
+              void topBarStore.syncWatchLaterState(true)
             }, 1000)
           }
           else {
@@ -298,7 +310,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     }
     else {
       api.watchlater.removeFromWatchLater({
-        aid: props.value.video.id,
+        aid: video.aid || resolvedWatchLaterAid.value || video.id,
         csrf: getCSRF(),
       })
         .then((res) => {
@@ -306,7 +318,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
             isInWatchLater.value = false
             // 延时1秒后获取稍后再看列表（add成功后居然不是立即生效的）
             setTimeout(() => {
-              topBarStore.getAllWatchLaterList()
+              void topBarStore.syncWatchLaterState(true)
             }, 1000)
           }
           else {

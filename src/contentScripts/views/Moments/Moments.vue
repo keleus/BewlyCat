@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { useToast } from 'vue-toastification'
 
 import Dialog from '~/components/Dialog.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
-import Tooltip from '~/components/Tooltip.vue'
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useStorageLocal } from '~/composables/useStorageLocal'
@@ -14,6 +12,7 @@ import type { DataItem, MomentResult } from '~/models/moment/moment'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getCSRF } from '~/utils/main'
+import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
 const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
@@ -60,6 +59,7 @@ interface DisplayMoment {
   videoDanmaku: string
   aid?: number | string
   bvid?: string
+  epid?: number
   videoUrl?: string
   additional?: DisplayAdditional
   forward?: {
@@ -91,11 +91,6 @@ interface DisplayAdditional {
   isUpRecommendation: boolean
   isVideoReservation: boolean
   isLiveReservation: boolean
-}
-
-interface WatchLaterTarget {
-  aid?: number | string
-  bvid?: string
 }
 
 interface DisplayRichTextSegment {
@@ -219,6 +214,8 @@ let rebalanceTimer: ReturnType<typeof setTimeout> | null = null
 const hoveredMediaId = ref('')
 const previewUrls = reactive<Record<string, string>>({})
 const likingMomentIds = reactive(new Set<string>())
+const watchLaterMomentIds = reactive(new Set<string>())
+const watchLaterLoadingMomentIds = reactive(new Set<string>())
 const videoCidCache = new Map<string, number>()
 const videoCidRequests = new Map<string, Promise<number | undefined>>()
 const videoAspectRatios = reactive<Record<string, number>>({})
@@ -228,7 +225,6 @@ const visibleMomentIds = reactive(new Set<string>())
 const readyCoverIds = reactive(new Set<string>())
 const readyCardIds = reactive(new Set<string>())
 const enteringCardIds = reactive(new Set<string>())
-const togglingWatchLaterAids = reactive(new Set<number>())
 const revealedCardIds = new Set<string>()
 const cardEnterTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const cardElements = new Map<string, HTMLElement>()
@@ -324,62 +320,6 @@ function getSidebarAvatarUrl(url = '', size = 96) {
 
 function formatCount(value: number) {
   return value > 9999 ? `${(value / 10000).toFixed(1)}万` : value || 0
-}
-
-function getWatchLaterAid(target: WatchLaterTarget) {
-  const aid = Number(target.aid)
-  return Number.isFinite(aid) && aid > 0 ? aid : undefined
-}
-
-function isInWatchLater(target: WatchLaterTarget) {
-  const aid = getWatchLaterAid(target)
-  return aid ? topBarStore.addedWatchLaterList.includes(aid) : false
-}
-
-function isWatchLaterToggling(target: WatchLaterTarget) {
-  const aid = getWatchLaterAid(target)
-  return aid ? togglingWatchLaterAids.has(aid) : false
-}
-
-function setMomentWatchLaterState(aid: number, added: boolean) {
-  const index = topBarStore.addedWatchLaterList.indexOf(aid)
-
-  if (added && index === -1) {
-    topBarStore.addedWatchLaterList.push(aid)
-    return
-  }
-
-  if (!added && index !== -1)
-    topBarStore.addedWatchLaterList.splice(index, 1)
-}
-
-async function toggleWatchLater(target: WatchLaterTarget) {
-  const aid = getWatchLaterAid(target)
-  if (!aid || togglingWatchLaterAids.has(aid))
-    return
-
-  const isAdded = isInWatchLater(target)
-  togglingWatchLaterAids.add(aid)
-
-  try {
-    const res = isAdded
-      ? await api.watchlater.removeFromWatchLater({ aid, csrf: getCSRF() })
-      : await api.watchlater.saveToWatchLater({
-          ...(target.bvid ? { bvid: target.bvid } : { aid }),
-          csrf: getCSRF(),
-        })
-
-    if (res.code === 0) {
-      setMomentWatchLaterState(aid, !isAdded)
-      void topBarStore.syncWatchLaterState()
-    }
-    else {
-      toast.error(res.message)
-    }
-  }
-  finally {
-    togglingWatchLaterAids.delete(aid)
-  }
 }
 
 /** 卡片文字预览：展示正文开头，不出现“点击查看详情”类占位 */
@@ -665,6 +605,7 @@ function getMomentContent(item: any) {
     duration: archive.duration_text || '',
     aid: archive.aid || undefined,
     bvid: archive.bvid || undefined,
+    epid: major.pgc?.epid || undefined,
     videoUrl: archive.jump_url ? httpsUrl(archive.jump_url.startsWith('//') ? `https:${archive.jump_url}` : archive.jump_url) : undefined,
     videoPlay: pickText(archive.stat?.play),
     videoDanmaku: pickText(archive.stat?.danmaku),
@@ -767,7 +708,7 @@ const detailDialogWidth = computed(() => {
   if (selectedMoment.value?.isLive)
     return `${PLAYER_DIALOG_SCALE * 100}vw`
   if (selectedMoment.value?.isVideo) {
-    if (isSelectedVerticalVideo.value) {
+    if (isSelectedVerticalVideo.value && settings.value.defaultVideoPlayerMode === 'bewlyWidescreen') {
       const ratio = Math.max(0.4, selectedVideoAspectRatio.value || 9 / 16)
       return `min(max(960px, calc(${PLAYER_DIALOG_SCALE * 100}dvh * ${ratio} + 420px)), calc(100vw - 32px))`
     }
@@ -2255,6 +2196,52 @@ async function toggleMomentLike(moment: DisplayMoment) {
   }
 }
 
+async function toggleMomentWatchLater(moment: DisplayMoment) {
+  if (watchLaterLoadingMomentIds.has(moment.id))
+    return
+
+  const csrf = getCSRF()
+  if (!csrf) {
+    toast.warning('登录后才能添加稍后再看')
+    return
+  }
+
+  watchLaterLoadingMomentIds.add(moment.id)
+  try {
+    let aid = Number(moment.aid || 0)
+    let bvid = moment.bvid
+    if (!aid && !bvid && moment.epid) {
+      const ids = await resolvePgcEpisodeVideoIds(moment.epid)
+      aid = ids?.aid || 0
+      bvid = ids?.bvid
+    }
+
+    if (!aid && !bvid) {
+      toast.error('无法获取该视频的稍后再看信息')
+      return
+    }
+
+    const isAdded = watchLaterMomentIds.has(moment.id)
+    const response = isAdded
+      ? await api.watchlater.removeFromWatchLater({ aid, csrf })
+      : await api.watchlater.saveToWatchLater({ aid: aid || undefined, bvid, csrf })
+
+    if (response.code !== 0) {
+      toast.error(response.message)
+      return
+    }
+
+    if (isAdded)
+      watchLaterMomentIds.delete(moment.id)
+    else
+      watchLaterMomentIds.add(moment.id)
+    void topBarStore.syncWatchLaterState()
+  }
+  finally {
+    watchLaterLoadingMomentIds.delete(moment.id)
+  }
+}
+
 async function loadMoments(reset = false, autoFillDepth = 0, wantedManual = false) {
   // “想看”只允许按钮触发后续批次，避免滚动到底自动扫描下一组 100 条。
   if (!reset && activeMomentGroup.value === 'wanted' && !wantedManual)
@@ -3022,21 +3009,18 @@ watch(
                     {{ moment.chargeBadge || '充电专属' }}
                   </span>
                   <button
-                    v-if="moment.isVideo && getWatchLaterAid(moment)"
+                    v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
                     type="button"
                     class="moment-card__watch-later"
-                    :class="{ 'is-added': isInWatchLater(moment) }"
-                    :disabled="isWatchLaterToggling(moment)"
-                    :aria-label="isInWatchLater(moment) ? $t('common.added') : $t('common.save_to_watch_later')"
-                    :aria-pressed="isInWatchLater(moment)"
-                    @click.stop.prevent="toggleWatchLater(moment)"
+                    :class="{ 'is-added': watchLaterMomentIds.has(moment.id) }"
+                    :disabled="watchLaterLoadingMomentIds.has(moment.id)"
+                    :aria-label="watchLaterMomentIds.has(moment.id) ? '已添加稍后再看' : '添加至稍后再看'"
+                    :title="watchLaterMomentIds.has(moment.id) ? '已添加' : '稍后再看'"
+                    @click.stop="toggleMomentWatchLater(moment)"
                   >
-                    <Tooltip v-if="!isInWatchLater(moment)" :content="$t('common.save_to_watch_later')" placement="bottom-right" type="dark">
-                      <span i-mingcute:carplay-line aria-hidden="true" />
-                    </Tooltip>
-                    <Tooltip v-else :content="$t('common.added')" placement="bottom-right" type="dark">
-                      <Icon icon="line-md:confirm" aria-hidden="true" />
-                    </Tooltip>
+                    <span v-if="watchLaterLoadingMomentIds.has(moment.id)" i-svg-spinners:ring-resize aria-hidden="true" />
+                    <span v-else-if="watchLaterMomentIds.has(moment.id)" i-line-md:confirm aria-hidden="true" />
+                    <span v-else i-mingcute:carplay-line aria-hidden="true" />
                   </button>
                 </div>
                 <div
@@ -3058,26 +3042,23 @@ watch(
                     {{ moment.chargeBadge || '充电专属' }}
                   </span>
                 </div>
-                <div v-else-if="(moment.isVideo || moment.isLive) && (!moment.isChargeExclusive || moment.isVideo)" class="moment-card__media moment-card__text-cover moment-card__text-cover--video">
+                <div v-else-if="(moment.isVideo || moment.isLive) && (!moment.isChargeExclusive || moment.isVideo)" class="moment-card__media moment-card__cover moment-card__text-cover moment-card__text-cover--video">
                   <span v-if="moment.isLive" i-tabler-live-photo class="moment-card__text-cover-icon" />
                   <span v-else i-tabler-player-play-filled class="moment-card__text-cover-icon" />
                   <span>{{ moment.isLive ? '直播动态' : '视频动态' }}</span>
                   <button
-                    v-if="moment.isVideo && getWatchLaterAid(moment)"
+                    v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
                     type="button"
                     class="moment-card__watch-later"
-                    :class="{ 'is-added': isInWatchLater(moment) }"
-                    :disabled="isWatchLaterToggling(moment)"
-                    :aria-label="isInWatchLater(moment) ? $t('common.added') : $t('common.save_to_watch_later')"
-                    :aria-pressed="isInWatchLater(moment)"
-                    @click.stop.prevent="toggleWatchLater(moment)"
+                    :class="{ 'is-added': watchLaterMomentIds.has(moment.id) }"
+                    :disabled="watchLaterLoadingMomentIds.has(moment.id)"
+                    :aria-label="watchLaterMomentIds.has(moment.id) ? '已添加稍后再看' : '添加至稍后再看'"
+                    :title="watchLaterMomentIds.has(moment.id) ? '已添加' : '稍后再看'"
+                    @click.stop="toggleMomentWatchLater(moment)"
                   >
-                    <Tooltip v-if="!isInWatchLater(moment)" :content="$t('common.save_to_watch_later')" placement="bottom-right" type="dark">
-                      <span i-mingcute:carplay-line aria-hidden="true" />
-                    </Tooltip>
-                    <Tooltip v-else :content="$t('common.added')" placement="bottom-right" type="dark">
-                      <Icon icon="line-md:confirm" aria-hidden="true" />
-                    </Tooltip>
+                    <span v-if="watchLaterLoadingMomentIds.has(moment.id)" i-svg-spinners:ring-resize aria-hidden="true" />
+                    <span v-else-if="watchLaterMomentIds.has(moment.id)" i-line-md:confirm aria-hidden="true" />
+                    <span v-else i-mingcute:carplay-line aria-hidden="true" />
                   </button>
                 </div>
 
@@ -3164,26 +3145,6 @@ watch(
                         <span v-if="settings.showVideoCardDuration && moment.forward.video.duration">
                           {{ moment.forward.video.duration }}
                         </span>
-                      </span>
-                      <span
-                        v-if="getWatchLaterAid(moment.forward.video)"
-                        role="button"
-                        tabindex="0"
-                        class="moment-card__watch-later"
-                        :class="{ 'is-added': isInWatchLater(moment.forward.video), 'is-disabled': isWatchLaterToggling(moment.forward.video) }"
-                        :aria-disabled="isWatchLaterToggling(moment.forward.video)"
-                        :aria-label="isInWatchLater(moment.forward.video) ? $t('common.added') : $t('common.save_to_watch_later')"
-                        :aria-pressed="isInWatchLater(moment.forward.video)"
-                        @click.stop.prevent="toggleWatchLater(moment.forward.video)"
-                        @keydown.enter.stop.prevent="toggleWatchLater(moment.forward.video)"
-                        @keydown.space.stop.prevent="toggleWatchLater(moment.forward.video)"
-                      >
-                        <Tooltip v-if="!isInWatchLater(moment.forward.video)" :content="$t('common.save_to_watch_later')" placement="bottom-right" type="dark">
-                          <span i-mingcute:carplay-line aria-hidden="true" />
-                        </Tooltip>
-                        <Tooltip v-else :content="$t('common.added')" placement="bottom-right" type="dark">
-                          <Icon icon="line-md:confirm" aria-hidden="true" />
-                        </Tooltip>
                       </span>
                     </span>
                     <span class="moment-card__forward-video-info">
@@ -3470,6 +3431,7 @@ watch(
   position: sticky;
   top: calc(var(--bew-top-bar-height, 64px) + var(--bew-space-3));
   display: flex;
+  max-height: calc(100dvh - var(--bew-top-bar-height, 64px) - var(--bew-space-6));
   flex-direction: column;
   gap: var(--bew-space-3);
   min-width: 0;
@@ -3594,10 +3556,14 @@ watch(
   background: color-mix(in oklab, var(--bew-elevated-solid) 92%, var(--bew-text-1) 8%);
 }
 .moments-live-card {
-  padding: var(--bew-space-4) var(--bew-space-3) var(--bew-space-3);
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: var(--bew-space-4) 0 var(--bew-space-3);
 }
 .moments-live-card > header {
-  padding: 0 var(--bew-space-1) var(--bew-space-2);
+  padding: 0 var(--bew-space-4) var(--bew-space-2);
 }
 .moments-live-card > header strong {
   color: var(--bew-text-1);
@@ -3610,14 +3576,23 @@ watch(
 }
 .moments-live-card__list {
   display: flex;
+  /* 五个 72px 直播项加四个 4px 间距，超出后在卡片内滚动。 */
+  max-height: 376px;
+  min-height: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--bew-space-1);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-inline: var(--bew-space-4);
 }
 .moments-live-card__list > a {
   display: flex;
   align-items: center;
   gap: var(--bew-space-3);
+  height: 72px;
   min-width: 0;
+  flex: 0 0 72px;
   padding: var(--bew-space-2) var(--bew-space-1);
   border-radius: var(--bew-interactive-radius);
   color: inherit;
@@ -4061,6 +4036,46 @@ watch(
 .moment-card__cover--media > video {
   z-index: 1;
 }
+.moment-card__watch-later {
+  position: absolute;
+  top: var(--bew-space-2);
+  right: var(--bew-space-2);
+  z-index: 3;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  place-items: center;
+  color: #fff;
+  background: rgb(0 0 0 / 62%);
+  cursor: pointer;
+  font-size: var(--bew-icon-size-md);
+  opacity: 0;
+  transform: scale(0.78);
+  transition:
+    opacity var(--bew-duration-normal) var(--bew-ease-standard),
+    transform var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard);
+}
+.moment-card__cover:hover .moment-card__watch-later,
+.moment-card__watch-later:focus-visible,
+.moment-card__watch-later.is-added {
+  opacity: 1;
+  transform: scale(1);
+}
+.moment-card__watch-later:hover {
+  background: rgb(0 0 0 / 78%);
+}
+.moment-card__watch-later:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+.moment-card__watch-later:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
 .moment-card__image-count,
 .moment-card__video-mark,
 .moment-card__live-mark {
@@ -4122,7 +4137,6 @@ watch(
   box-shadow: 0 2px 8px rgb(251 114 153 / 35%);
 }
 .moment-card__text-cover {
-  position: relative;
   min-height: 152px;
   display: flex;
   flex-direction: column;
@@ -4581,53 +4595,6 @@ watch(
   font-size: var(--bew-font-size-caption);
   line-height: var(--bew-line-height-caption);
   text-shadow: 0 1px 2px rgb(0 0 0 / 65%);
-}
-.moment-card__watch-later {
-  position: absolute;
-  top: var(--bew-space-2);
-  right: var(--bew-space-2);
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: var(--bew-interactive-radius);
-  color: #fff;
-  background: rgb(0 0 0 / 60%);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 24%);
-  cursor: pointer;
-  opacity: 0;
-  transform: scale(0.72);
-  transition:
-    opacity 0.16s ease,
-    transform 0.16s ease,
-    background-color 0.16s ease;
-}
-.moment-card__watch-later > * {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--bew-icon-size-lg);
-}
-.moment-card__watch-later:hover,
-.moment-card__watch-later.is-added {
-  background: rgb(0 0 0 / 72%);
-}
-.moment-card__watch-later:disabled,
-.moment-card__watch-later.is-disabled {
-  cursor: wait;
-}
-.moment-card__watch-later:focus-visible,
-.moment-card__media:hover .moment-card__watch-later,
-.moment-card__media:focus-within .moment-card__watch-later,
-.moment-card__forward-video-cover:hover .moment-card__watch-later,
-.moment-card__forward-video-cover:focus-within .moment-card__watch-later {
-  opacity: 1;
-  transform: scale(1);
 }
 .moment-card__video-stat-group,
 .moment-card__video-stat-group > span {

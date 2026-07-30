@@ -183,7 +183,7 @@ defineExpose({ initData })
       :transform-item="(item: VideoElement) => item.displayData"
       :get-item-key="(item: VideoElement) => item.uniqueId"
       video-type="bangumi"
-      :show-watcher-later="false"
+      :show-watcher-later="true"
       @refresh="initData"
       @login="jumpToLoginPage"
       @load-more="handleLoadMore"
