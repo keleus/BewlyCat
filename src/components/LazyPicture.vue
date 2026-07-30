@@ -145,11 +145,11 @@ interface Props {
   src: string
   alt?: string
   loading?: 'lazy' | 'eager'
-  // 预加载边距（仅控制开始加载），默认 120px
+  // 无法取得滚动视口高度时使用的预加载边距
   rootMargin?: string
   // 是否在图片离开保留范围后释放 img/src
   releaseOffscreen?: boolean
-  // 保留可视区域上下多少屏内的图片（释放阈值）
+  // 提前加载多少屏；开启离屏回收时也作为保留范围
   retainScreens?: number
   // 离开保留范围后延迟释放，避免快速往返滚动时反复解码
   releaseDelay?: number
@@ -160,9 +160,9 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   alt: '',
   loading: 'lazy',
-  rootMargin: '120px',
+  rootMargin: '150px',
   releaseOffscreen: false,
-  retainScreens: 1,
+  retainScreens: 3,
   releaseDelay: 2000,
   showSkeleton: true,
 })
@@ -207,15 +207,16 @@ function getViewportHeight(): number {
 function getRetainScreens(): number {
   return Number.isFinite(props.retainScreens) && props.retainScreens! > 0
     ? props.retainScreens!
-    : 1
+    : 3
 }
 
 function getObserverRootMargin(): string {
-  if (!props.releaseOffscreen)
-    return props.rootMargin || '120px'
+  const viewportHeight = getViewportHeight()
+  if (viewportHeight <= 0)
+    return props.rootMargin || '150px'
 
-  // IntersectionObserver 的百分比 rootMargin 按宽度计算，改用视口高度换算的 px。
-  const margin = Math.max(1, Math.round(getViewportHeight() * getRetainScreens()))
+  // 对齐 1.6.9 的三屏提前加载时机，同时避免百分比 rootMargin 按宽度计算。
+  const margin = Math.max(1, Math.round(viewportHeight * getRetainScreens()))
   return `${margin}px 0px`
 }
 

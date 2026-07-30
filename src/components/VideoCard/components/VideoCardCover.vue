@@ -497,9 +497,8 @@ onBeforeUnmount(() => {
       <LazyPicture
         :src="coverImageUrl"
         loading="lazy"
-        root-margin="120px"
         :release-offscreen="settings.releaseOffscreenVideoCardImages"
-        :retain-screens="1"
+        :retain-screens="3"
         :show-skeleton="true"
         @loaded="emit('imageLoaded')"
       />
