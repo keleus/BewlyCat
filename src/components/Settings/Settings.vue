@@ -18,6 +18,18 @@ const { t, tm, rt } = useI18n()
 const breadcrumbDetail = ref<string>()
 const searchQuery = ref('')
 const settingsContentKey = ref(0)
+const settingsContentReady = ref(false)
+let settingsContentFrame: number | undefined
+
+onMounted(() => {
+  // 先让设置外壳完成首帧绘制，再挂载异步设置页，避免点击反馈被重组件初始化阻塞。
+  settingsContentFrame = requestAnimationFrame(() => {
+    settingsContentFrame = requestAnimationFrame(() => {
+      settingsContentFrame = undefined
+      settingsContentReady.value = true
+    })
+  })
+})
 
 provide('setSettingsBreadcrumb', (detail?: string) => {
   breadcrumbDetail.value = detail
@@ -387,6 +399,8 @@ function navigateToSearchResult(entry: SettingsSearchEntry) {
 }
 
 onBeforeUnmount(() => {
+  if (settingsContentFrame !== undefined)
+    cancelAnimationFrame(settingsContentFrame)
   searchNavigationId++
   clearSearchTargetHighlight()
 })
@@ -431,10 +445,10 @@ function changeMenuItem(menuItem: MenuType) {
           <!-- https://github.com/BewlyBewly/BewlyBewly/issues/1162 -->
           <div
             class="settings-primary-navigation__surface"
-            style="
-              box-shadow: var(--bew-shadow-edge-glow-2);
-              backdrop-filter: var(--bew-filter-glass-2);
-            "
+            :style="{
+              boxShadow: 'var(--bew-shadow-edge-glow-2)',
+              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
+            }"
             z--1 pointer-events-none rounded-inherit
           />
 
@@ -482,10 +496,10 @@ function changeMenuItem(menuItem: MenuType) {
 
       <div
         class="settings-content"
-        style="
-          --un-shadow: var(--bew-shadow-4), var(--bew-shadow-edge-glow-2);
-          backdrop-filter: var(--bew-filter-glass-2);
-        "
+        :style="{
+          '--un-shadow': 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)',
+          'backdropFilter': settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
+        }"
         relative overflow-hidden flex-1 min-w-0
         h-full
         bg="$bew-elevated-alt"
@@ -506,7 +520,7 @@ function changeMenuItem(menuItem: MenuType) {
             :style="{
               maskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
               WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
-              backdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'blur(3px)',
+              backdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'none',
             }"
             z--1 rounded-inherit
           />
@@ -546,9 +560,11 @@ function changeMenuItem(menuItem: MenuType) {
           </div>
           <div
             style="
-              backdrop-filter: var(--bew-filter-glass-1);
               box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
             "
+            :style="{
+              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
+            }"
             text="!16px hover:$bew-theme-color" w="32px" h="32px"
             flex="~ items-center justify-center shrink-0"
             bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
@@ -576,6 +592,7 @@ function changeMenuItem(menuItem: MenuType) {
             <Transition name="page-fade">
               <Component
                 :is="settingsMenu[activatedMenuItem as keyof typeof settingsMenu]"
+                v-if="settingsContentReady"
                 :key="settingsContentKey"
               />
             </Transition>

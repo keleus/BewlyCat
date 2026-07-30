@@ -66,13 +66,21 @@ let flvPlayer: flvjs.Player | null = null
 let controlsHideTimeout: number | null = null
 let activeScrubPointerId: number | null = null
 let scrubStartX = 0
+let scrubStartY = 0
 let scrubStartTime = 0
+let scrubPreviewWidth = 0
 let hasDragGesture = false
 let suppressPreviewClick = false
 let suppressPreviewClickTimeout: number | null = null
+let pendingScrubTime: number | null = null
+let scrubAnimationFrame: number | null = null
+let lastScrubSeekAt = 0
+let lastControlsPointerActivityAt = 0
 
 const SCRUB_START_THRESHOLD_PX = 8
 const NEARBY_SEEK_RANGE_SECONDS = 30
+const SCRUB_SEEK_INTERVAL_MS = 80
+const CONTROLS_POINTER_ACTIVITY_INTERVAL_MS = 100
 
 function clearControlsHideTimeout() {
   if (controlsHideTimeout !== null) {
@@ -101,12 +109,17 @@ function showControlsTemporarily() {
   scheduleControlsHide()
 }
 
-function handlePreviewMouseMove() {
+function handlePreviewMouseMove(event?: PointerEvent) {
   if (!shouldEnableVideoControls.value || !props.previewVideoUrl)
     return
 
   if (!props.isHover && !isPreviewFullscreen.value)
     return
+
+  const eventTimestamp = event?.timeStamp ?? performance.now()
+  if (eventTimestamp - lastControlsPointerActivityAt < CONTROLS_POINTER_ACTIVITY_INTERVAL_MS)
+    return
+  lastControlsPointerActivityAt = eventTimestamp
 
   showControlsTemporarily()
 }
@@ -118,21 +131,47 @@ function updateScrubProgress(videoEl: HTMLVideoElement) {
 }
 
 function resetPreviewScrub() {
+  if (scrubAnimationFrame !== null) {
+    cancelAnimationFrame(scrubAnimationFrame)
+    scrubAnimationFrame = null
+  }
   activeScrubPointerId = null
   hasDragGesture = false
   isScrubbing.value = false
+  pendingScrubTime = null
+  scrubPreviewWidth = 0
+  lastScrubSeekAt = 0
 }
 
-function updateVideoTimeFromPointer(previewEl: HTMLElement, videoEl: HTMLVideoElement, pointerX: number) {
-  const rect = previewEl.getBoundingClientRect()
-  if (rect.width <= 0)
+function getVideoTimeFromPointer(videoEl: HTMLVideoElement, pointerX: number) {
+  if (scrubPreviewWidth <= 0)
+    return null
+
+  const duration = videoEl.duration
+  if (!Number.isFinite(duration) || duration <= 0)
+    return null
+
+  const seekRange = Math.min(duration, NEARBY_SEEK_RANGE_SECONDS)
+  const deltaX = pointerX - scrubStartX
+  return Math.min(duration, Math.max(0, scrubStartTime + deltaX / scrubPreviewWidth * seekRange))
+}
+
+function scheduleVideoTimeUpdate(videoEl: HTMLVideoElement, targetTime: number) {
+  pendingScrubTime = targetTime
+  scrubProgress.value = Math.min(100, Math.max(0, targetTime / videoEl.duration * 100))
+
+  if (scrubAnimationFrame !== null)
     return
 
-  const seekRange = Math.min(videoEl.duration, NEARBY_SEEK_RANGE_SECONDS)
-  const deltaX = pointerX - scrubStartX
-  videoEl.currentTime = Math.min(videoEl.duration, Math.max(0, scrubStartTime + deltaX / rect.width * seekRange))
+  scrubAnimationFrame = requestAnimationFrame((timestamp) => {
+    scrubAnimationFrame = null
+    const nextTime = pendingScrubTime
+    if (nextTime === null || timestamp - lastScrubSeekAt < SCRUB_SEEK_INTERVAL_MS)
+      return
 
-  updateScrubProgress(videoEl)
+    lastScrubSeekAt = timestamp
+    videoEl.currentTime = nextTime
+  })
 }
 
 function handlePreviewPointerDown(event: PointerEvent) {
@@ -151,13 +190,17 @@ function handlePreviewPointerDown(event: PointerEvent) {
 
   activeScrubPointerId = event.pointerId
   scrubStartX = event.clientX
+  scrubStartY = event.clientY
   scrubStartTime = videoEl.currentTime
+  scrubPreviewWidth = rect.width
   hasDragGesture = false
+  pendingScrubTime = videoEl.currentTime
   updateScrubProgress(videoEl)
-  previewEl.setPointerCapture(event.pointerId)
 }
 
 function handlePreviewPointerMove(event: PointerEvent) {
+  handlePreviewMouseMove(event)
+
   if (activeScrubPointerId !== event.pointerId)
     return
 
@@ -167,12 +210,27 @@ function handlePreviewPointerMove(event: PointerEvent) {
     return
 
   const deltaX = event.clientX - scrubStartX
-  if (!hasDragGesture && Math.abs(deltaX) < SCRUB_START_THRESHOLD_PX)
-    return
+  const deltaY = event.clientY - scrubStartY
+  if (!hasDragGesture) {
+    const horizontalDistance = Math.abs(deltaX)
+    const verticalDistance = Math.abs(deltaY)
+    if (horizontalDistance < SCRUB_START_THRESHOLD_PX && verticalDistance < SCRUB_START_THRESHOLD_PX)
+      return
+
+    // 只接管明确的横向手势；纵向移动继续交给页面原生滚动。
+    if (horizontalDistance <= verticalDistance) {
+      resetPreviewScrub()
+      return
+    }
+
+    previewEl.setPointerCapture(event.pointerId)
+  }
 
   hasDragGesture = true
   isScrubbing.value = true
-  updateVideoTimeFromPointer(previewEl, videoEl, event.clientX)
+  const targetTime = getVideoTimeFromPointer(videoEl, event.clientX)
+  if (targetTime !== null)
+    scheduleVideoTimeUpdate(videoEl, targetTime)
   event.preventDefault()
   event.stopPropagation()
 }
@@ -185,11 +243,16 @@ function finishPreviewScrub(event: PointerEvent, cancelled = false) {
   if (previewEl.hasPointerCapture(event.pointerId))
     previewEl.releasePointerCapture(event.pointerId)
 
-  activeScrubPointerId = null
-  isScrubbing.value = false
+  const didDrag = hasDragGesture
+  const finalScrubTime = pendingScrubTime
+  resetPreviewScrub()
 
-  if (!hasDragGesture || cancelled)
+  if (!didDrag || cancelled)
     return
+
+  const videoEl = videoRef.value
+  if (videoEl && finalScrubTime !== null)
+    videoEl.currentTime = finalScrubTime
 
   suppressPreviewClick = true
   if (suppressPreviewClickTimeout !== null)
@@ -210,6 +273,28 @@ function handlePreviewClick(event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
 }
+
+function handlePreviewDragStart(event: DragEvent) {
+  event.preventDefault()
+}
+
+const previewInteractionEvents = computed(() => ({
+  ...(shouldEnableVideoControls.value
+    ? { pointerenter: handlePreviewMouseMove }
+    : {}),
+  ...(shouldEnableVideoControls.value || shouldEnableSwipeSeek.value
+    ? { pointermove: handlePreviewPointerMove }
+    : {}),
+  ...(shouldEnableSwipeSeek.value
+    ? {
+        pointerdown: handlePreviewPointerDown,
+        pointerup: finishPreviewScrub,
+        pointercancel: (event: PointerEvent) => finishPreviewScrub(event, true),
+        click: handlePreviewClick,
+        dragstart: handlePreviewDragStart,
+      }
+    : {}),
+}))
 
 function resetVideoElement(videoEl: HTMLVideoElement) {
   videoEl.pause()
@@ -529,13 +614,7 @@ onBeforeUnmount(() => {
           class="video-card-preview"
           :class="{ 'video-card-preview--scrubbable': shouldEnableSwipeSeek }"
           pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-media-radius" bg-black
-          @pointermove.capture="handlePreviewMouseMove"
-          @pointerdown.capture="handlePreviewPointerDown"
-          @pointermove="handlePreviewPointerMove"
-          @pointerup="finishPreviewScrub"
-          @pointercancel="finishPreviewScrub($event, true)"
-          @click.capture="handlePreviewClick"
-          @dragstart.prevent
+          v-on="previewInteractionEvents"
         >
           <video
             ref="videoRef"
@@ -552,7 +631,7 @@ onBeforeUnmount(() => {
           >
             <div
               class="video-card-preview__scrub-progress-value"
-              :style="{ width: `${scrubProgress}%` }"
+              :style="{ transform: `scaleX(${scrubProgress / 100})` }"
             />
           </div>
 
@@ -760,9 +839,12 @@ onBeforeUnmount(() => {
 }
 
 .video-card-preview__scrub-progress-value {
+  width: 100%;
   height: 100%;
   border-radius: inherit;
   background: var(--bew-theme-color);
+  transform-origin: left center;
+  will-change: transform;
 }
 
 .video-card-cover-stats {
