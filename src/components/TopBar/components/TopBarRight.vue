@@ -255,6 +255,8 @@ const shouldShowDivider = computed(() => {
               href="https://t.bilibili.com"
               :title="$t('topbar.moments')"
               type="topBar"
+              :custom-click-event="!settings.touchScreenOptimization && settings.openTopBarItemsInBewly"
+              @click="(event: MouseEvent) => handleClickTopBarItem(event, 'moments')"
             >
               <div i-tabler:windmill />
             </ALink>
@@ -282,6 +284,8 @@ const shouldShowDivider = computed(() => {
               :href="`https://space.bilibili.com/${mid}/favlist`"
               :title="$t('topbar.favorites')"
               type="topBar"
+              :custom-click-event="!settings.touchScreenOptimization && settings.openTopBarItemsInBewly"
+              @click="(event: MouseEvent) => handleClickTopBarItem(event, 'favorites')"
             >
               <div i-mingcute:star-line />
             </ALink>
@@ -311,6 +315,8 @@ const shouldShowDivider = computed(() => {
               href="https://www.bilibili.com/history"
               :title="$t('topbar.history')"
               type="topBar"
+              :custom-click-event="!settings.touchScreenOptimization && settings.openTopBarItemsInBewly"
+              @click="(event: MouseEvent) => handleClickTopBarItem(event, 'history')"
             >
               <div i-mingcute:time-line />
             </ALink>
@@ -350,6 +356,8 @@ const shouldShowDivider = computed(() => {
               href="https://www.bilibili.com/watchlater/list"
               :title="$t('topbar.watch_later')"
               type="topBar"
+              :custom-click-event="!settings.touchScreenOptimization && settings.openTopBarItemsInBewly"
+              @click="(event: MouseEvent) => handleClickTopBarItem(event, 'watchLater')"
             >
               <div i-mingcute:carplay-line />
             </ALink>
@@ -397,6 +405,7 @@ const shouldShowDivider = computed(() => {
               ref="morePopRef"
               class="bew-popover"
               @click.stop="() => {}"
+              @bewly-page-click="(event: MouseEvent, key: string) => handleClickTopBarItem(event, key)"
             />
           </Transition>
         </div>

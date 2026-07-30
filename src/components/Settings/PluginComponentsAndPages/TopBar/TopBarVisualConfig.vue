@@ -228,6 +228,16 @@ function toggleChannel(value: string) {
   <SettingsItemGroup :title="$t('settings.group_topbar')">
     <div class="topbar-visual-config">
       <div>
+        <SettingsItem
+          v-if="!settings.touchScreenOptimization"
+          :title="$t('settings.open_top_bar_items_in_bewly')"
+          :desc="$t('settings.open_top_bar_items_in_bewly_desc')"
+          right-width="auto"
+          mb-4
+        >
+          <Radio v-model="settings.openTopBarItemsInBewly" />
+        </SettingsItem>
+
         <!-- 提示文字 -->
         <div class="topbar-config-hint" mb-3>
           <div class="topbar-config-hint__icon" i-mingcute:cursor-click-line />

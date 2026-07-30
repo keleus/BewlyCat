@@ -199,6 +199,7 @@ export const GRID_BREAKPOINTS = {
 export interface Settings {
   touchScreenOptimization: boolean
   showHomeButtonInTouchMode: boolean
+  openTopBarItemsInBewly: boolean
   enableGridLayoutSwitcher: boolean
   enableHorizontalScrolling: boolean
   showIPLocation: boolean // 添加显示IP归属地设置项
@@ -471,6 +472,7 @@ export const originalLocalSettings: LocalSettings = {
 export const originalSettings: Settings = {
   touchScreenOptimization: false,
   showHomeButtonInTouchMode: true,
+  openTopBarItemsInBewly: false,
   enableGridLayoutSwitcher: true,
   enableHorizontalScrolling: false,
   showIPLocation: true, // 默认启用IP归属地显示

@@ -254,6 +254,8 @@ settings:
     啟用後，如頂部列，你可能需要點選項目才能看到更多資訊，而不是滑鼠移過去就會顯示。影片頁支援雙擊播放、暫停或快進快退，按住左右滑動調整播放進度，以及從播放器左右邊緣上下滑動調整音量。（舊版頂部列不支援此功能）
   show_home_button_in_touch_mode: 顯示 Home 按鈕
   show_home_button_in_touch_mode_desc: 在觸控螢幕優化開啟時，在頂部列 Logo 旁邊顯示一個可以直接跳轉到首頁的按鈕。
+  open_top_bar_items_in_bewly: 點選頂部列圖示開啟 Bewly 頁面
+  open_top_bar_items_in_bewly_desc: 未啟用觸控螢幕優化時，點選 Logo、動態、收藏、歷史或稍後再看圖示，將切換到對應的 Bewly 頁面；尚未適配的圖示維持原有行為。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開啟後，頂部列頭像彈窗中的 LV6 等級資訊區域將不再顯示最後登入時間和地點，也不會請求登入記錄。
   chk_box:

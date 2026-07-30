@@ -26,6 +26,7 @@ export function useTopBarInteraction() {
 
   // 当前点击的顶栏项
   const currentClickedTopBarItem = ref<string | null>(null)
+  const handledClickEvents = new WeakSet<MouseEvent>()
 
   // 获取 App Provider
   const { activatedPage, reachTop } = useBewlyApp()
@@ -173,13 +174,46 @@ export function useTopBarInteraction() {
 
   // 处理顶栏项点击
   function handleClickTopBarItem(event: MouseEvent, key: string) {
+    if (handledClickEvents.has(event))
+      return
+
     if (settings.value.touchScreenOptimization) {
+      handledClickEvents.add(event)
       event.preventDefault()
       event.stopPropagation()
       closeAllPopups(key)
       topBarStore.popupVisible[key] = !topBarStore.popupVisible[key]
       currentClickedTopBarItem.value = key
+      return
     }
+
+    if (!settings.value.openTopBarItemsInBewly || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
+      return
+
+    const bewlyPageByTopBarItem: Partial<Record<string, AppPage>> = {
+      channels: AppPage.Home,
+      moments: AppPage.Moments,
+      favorites: AppPage.Favorites,
+      history: AppPage.History,
+      watchLater: AppPage.WatchLater,
+    }
+    const page = bewlyPageByTopBarItem[key]
+    if (!page)
+      return
+
+    handledClickEvents.add(event)
+    event.preventDefault()
+    event.stopPropagation()
+    closeAllPopups()
+
+    const dockItem = settings.value.dockItemsConfig.find(item => item.page === page)
+    if (dockItem)
+      dockItem.useOriginalBiliPage = false
+
+    if (isHomePage())
+      activatedPage.value = page
+    else
+      location.href = `https://www.bilibili.com/?page=${page}`
   }
 
   // 处理通知项点击
