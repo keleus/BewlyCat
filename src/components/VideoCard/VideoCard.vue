@@ -29,6 +29,7 @@ interface Props {
   showPreview?: boolean
   moreBtn?: boolean
   hideAuthor?: boolean
+  hideAuthorAvatar?: boolean
   isFollowingPage?: boolean
   customClickHandler?: (event: MouseEvent) => void
   coverTopLeftAlwaysVisible?: boolean
@@ -85,52 +86,6 @@ const coverStatValues = computed(() => {
   }
 })
 
-const coverStatsVisibility = computed(() => {
-  const { view, danmaku, like, duration } = coverStatValues.value
-
-  // 无用户信息模式下，只显示播放量和时长
-  if (props.hideAuthor) {
-    return {
-      view: settings.value.showVideoCardViewCount && Boolean(view),
-      danmaku: false,
-      like: false,
-      duration: settings.value.showVideoCardDuration && Boolean(duration),
-    }
-  }
-
-  // 所有统计项默认显示，由 CSS Container Query 控制响应式隐藏
-  // 这避免了 JS 监听宽度变化带来的性能问题
-  return {
-    view: settings.value.showVideoCardViewCount && Boolean(view),
-    danmaku: settings.value.showVideoCardDanmakuCount && Boolean(danmaku),
-    like: settings.value.showVideoCardLikeCount && Boolean(like),
-    duration: settings.value.showVideoCardDuration && Boolean(duration),
-  }
-})
-
-const hasCoverStats = computed(() => {
-  if (layout.value === 'old')
-    return false
-
-  const visibility = coverStatsVisibility.value
-  const values = coverStatValues.value
-
-  return (
-    (visibility.view && values.view)
-    || (visibility.danmaku && values.danmaku)
-    || (visibility.like && values.like)
-    || (visibility.duration && values.duration)
-  )
-})
-
-const shouldHideCoverStats = computed(() =>
-  props.showPreview
-  && settings.value.enableVideoPreview
-  && logic.isHover.value
-  && logic.previewVideoUrl.value
-  && logic.shouldHideOverlayElements.value,
-)
-
 const previewEnabled = computed(() =>
   Boolean(props.showPreview && settings.value.enableVideoPreview),
 )
@@ -181,15 +136,6 @@ const primaryTags = computed(() => {
   if (Array.isArray(tag))
     return tag.filter(Boolean)
   return [tag]
-})
-
-// 使用 CSS 变量定义，让浏览器通过 CSS 容器查询自动响应
-const coverStatsStyle = computed(() => {
-  if (layout.value === 'old')
-    return {}
-
-  // 所有响应式样式都通过 CSS 容器查询处理，这里只设置基础值
-  return {}
 })
 
 // Highlight tags calculation - 使用查找表优化性能
@@ -390,11 +336,7 @@ provide('getVideoType', () => props.type!)
             :show-watcher-later="showWatcherLater && settings.showVideoCardWatchLater"
             :cover-top-left-always-visible="coverTopLeftAlwaysVisible"
             :cover-image-url="coverImageUrl"
-            :cover-stat-values="coverStatValues"
-            :cover-stats-visibility="coverStatsVisibility"
-            :has-cover-stats="Boolean(hasCoverStats)"
-            :should-hide-cover-stats="Boolean(shouldHideCoverStats)"
-            :cover-stats-style="coverStatsStyle as Record<string, string>"
+            :use-duration-badge="layout !== 'old'"
             @toggle-watch-later="logic.toggleWatchLater"
             @undo="logic.handleUndo"
             @image-loaded="handleImageLoaded"
@@ -422,8 +364,11 @@ provide('getVideoType', () => props.type!)
           :title-style="titleStyle"
           :author-font-size-class="authorFontSizeClass"
           :meta-font-size-class="metaFontSizeClass"
+          :video-type="type"
+          :stat-values="coverStatValues"
           :highlight-tags="highlightTags"
           :hide-author="hideAuthor"
+          :hide-author-avatar="hideAuthorAvatar"
           @more-btn-click="logic.handleMoreBtnClick"
         />
       </component>
@@ -532,12 +477,5 @@ provide('getVideoType', () => props.type!)
   /* 确保两行高度固定 */
   max-height: calc(var(--bew-title-line-height, 1.35) * 2em);
   overflow: hidden;
-}
-
-/* 使用固定样式变量 */
-:deep(.video-card-stats) {
-  --video-card-stats-font-size: var(--bew-font-size-control);
-  --video-card-stats-overlay-scale: 1.4;
-  --video-card-stats-icon-size: 0.825rem;
 }
 </style>

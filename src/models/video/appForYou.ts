@@ -62,7 +62,8 @@ export interface Item {
   cover_left_text_1?: string
   cover_left_text_2?: string
   desc?: string
-  rcmd_reason?: RcmdReason
+  rcmd_reason?: RcmdReason | string
+  desc_button?: DescButton
   can_play?: number
   cover_right_text?: string
   cover_left_icon_1?: number
@@ -78,6 +79,13 @@ export interface Item {
 export interface RcmdReason {
   content?: string
   reason_type?: number
+}
+
+export interface DescButton {
+  text?: string
+  uri?: string
+  event?: string
+  type?: number
 }
 export interface AdInfo {
   creative_id: number
@@ -290,6 +298,8 @@ export enum TrackID {
 export interface Args {
   up_id?: number
   up_name?: string
+  tid?: number
+  tname?: string
   rid?: number
   rname?: string
   aid?: number
@@ -344,6 +354,7 @@ export enum CardGoto {
   AdWebS = 'ad_web_s',
   Banner = 'banner',
   Bangumi = 'bangumi',
+  VerticalAV = 'vertical_av',
 }
 
 export enum CardType {
@@ -386,7 +397,7 @@ export interface PlayerArgs {
 }
 
 export interface ThreePoint {
-  dislike_reasons: DislikeReason[]
+  dislike_reasons?: DislikeReason[]
   feedbacks?: DislikeReason[]
   watch_later?: number
 }

@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
-import { Type as ThreePointV2Type } from '~/models/video/appForYou'
 import api from '~/utils/api'
 import { cleanBilibiliUrl, getCSRF, openLinkToNewTab } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -245,16 +244,6 @@ function handleMoreCommand(command: number) {
   void submitWebDislike(command)
 }
 
-function handleAppMoreCommand(command: ThreePointV2Type) {
-  switch (command) {
-    case ThreePointV2Type.Feedback:
-      break
-    case ThreePointV2Type.Dislike:
-      openAppDislikeDialog()
-      break
-  }
-}
-
 function handleCommonCommand(command: VideoOption) {
   switch (command) {
     case VideoOption.OpenInNewTab:
@@ -476,17 +465,14 @@ async function unfollowUser() {
         >
           <!-- 现有内容不变 -->
           <template v-if="getVideoType() === 'appRcmd'">
-            <template v-for="option in video.threePointV2" :key="option.type">
-              <li
-                v-if="option.type !== ThreePointV2Type.WatchLater && option.type !== ThreePointV2Type.Feedback"
-                class="context-menu-item"
-                @click="handleAppMoreCommand(option.type)"
-              >
-                <i class="item-icon" i-solar:confounded-circle-bold-duotone />
-                <span v-if="option.type === ThreePointV2Type.Dislike">{{ $t('video_card.operation.not_interested') }}</span>
-                <span v-else>{{ option.title }}</span>
-              </li>
-            </template>
+            <li
+              v-if="video.threePoint?.dislike_reasons?.length || video.threePoint?.feedbacks?.length"
+              class="context-menu-item"
+              @click="openAppDislikeDialog"
+            >
+              <i class="item-icon" i-solar:confounded-circle-bold-duotone />
+              <span>{{ $t('video_card.operation.not_interested') }}</span>
+            </li>
           </template>
           <template v-else-if="getVideoType() === 'rcmd'">
             <li

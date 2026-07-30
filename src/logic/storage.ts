@@ -13,6 +13,7 @@ export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
 export interface AppAuthTokens {
   accessToken: string
   refreshToken: string
+  clientType: 'hd' | null
   accessTokenExpiresAt: number | null
   refreshTokenExpiresAt: number | null
   mid: number | null
@@ -22,6 +23,7 @@ export interface AppAuthTokens {
 export const defaultAppAuthTokens: AppAuthTokens = {
   accessToken: '',
   refreshToken: '',
+  clientType: null,
   accessTokenExpiresAt: null,
   refreshTokenExpiresAt: null,
   mid: null,
@@ -72,6 +74,15 @@ watch(
 
     // 清理遗留的 accessKey，避免重复存储
     legacyAccessKey.value = ''
+  },
+  { immediate: true },
+)
+
+watch(
+  () => [appAuthTokens.value.accessToken, appAuthTokens.value.clientType] as const,
+  ([accessToken, clientType]) => {
+    if (accessToken && clientType !== 'hd')
+      resetAppAuthTokens()
   },
   { immediate: true },
 )

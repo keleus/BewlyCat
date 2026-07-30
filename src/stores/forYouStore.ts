@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 
 import type { RecommendationMode } from '~/logic'
-import type { Item as AppVideoItem } from '~/models/video/appForYou'
+import type { Item as AppVideoItem, ThreePoint, ThreePointV2 } from '~/models/video/appForYou'
 import type { Item as VideoItem } from '~/models/video/forYou'
 
 // 预处理的显示数据，减少模板中的计算
@@ -23,8 +23,10 @@ export interface VideoCardDisplayData {
   danmaku?: number
   danmakuStr?: string
   like?: number
+  likeStr?: string
   publishedTimestamp?: number
-  bvid: string
+  bvid?: string
+  aid?: number
   cid?: number
   capsuleText?: string
   goto?: string
@@ -32,7 +34,8 @@ export interface VideoCardDisplayData {
   trackId?: string
   url?: string
   type?: 'horizontal' | 'vertical' | 'bangumi'
-  threePointV2: any
+  threePoint?: ThreePoint
+  threePointV2: ThreePointV2[]
 }
 
 export interface VideoElement {

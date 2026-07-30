@@ -7,7 +7,7 @@ import type { VideoInfo } from '~/models/video/videoInfo'
 import type { VideoPreviewResult } from '~/models/video/videoPreview'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
-import { getTvSign, TVAppKey } from '~/utils/authProvider'
+import { getHDSign, HDAppKey } from '~/utils/authProvider'
 import { calcCurrentTime, numFormatter, parseStatNumber } from '~/utils/dataFormatter'
 import { getCSRF, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -26,21 +26,14 @@ interface VideoCardProps {
   moreBtn?: boolean
 }
 
-interface AppFeedFeedbackSelection {
-  reasonId?: number
-  feedbackId?: number
-}
-
-function createAppFeedFeedbackParams(video: Video, selection?: AppFeedFeedbackSelection) {
+function createAppFeedFeedbackParams(video: Video) {
   return {
     access_key: appAuthTokens.value.accessToken,
     goto: video.goto,
     id: video.param || video.id,
-    reason_id: selection?.reasonId,
-    feedback_id: selection?.feedbackId,
     build: 1,
     mobi_app: 'android',
-    appkey: TVAppKey.appkey,
+    appkey: HDAppKey.appkey,
     ts: Math.floor(Date.now() / 1000).toString(),
   }
 }
@@ -63,7 +56,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const removed = ref<boolean>(false)
   const moreBtnRef = ref<HTMLDivElement | null>(null)
   const contextMenuRef = ref<HTMLDivElement | null>(null)
-  const selectedDislikeOpt = ref<AppFeedFeedbackSelection>()
   const videoCurrentTime = ref<number | null>(null)
   const isInWatchLater = ref<boolean>(false)
   const isHover = ref<boolean>(false)
@@ -427,11 +419,11 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     const video = props.value.video
 
     if (props.value.type === 'appRcmd' && video) {
-      const params = createAppFeedFeedbackParams(video, selectedDislikeOpt.value)
+      const params = createAppFeedFeedbackParams(video)
 
       api.video.undoDislikeVideo({
         ...params,
-        sign: getTvSign(params),
+        sign: getHDSign(params),
       }).then((res) => {
         if (res.code === 0) {
           removed.value = false
@@ -446,8 +438,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     }
   }
 
-  function handleRemoved(selectedOpt?: AppFeedFeedbackSelection) {
-    selectedDislikeOpt.value = selectedOpt
+  function handleRemoved() {
     removed.value = true
   }
 

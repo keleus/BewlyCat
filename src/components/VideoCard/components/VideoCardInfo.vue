@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Icon } from '@iconify/vue'
 import { computed, ref } from 'vue'
 
 import { settings } from '~/logic'
@@ -22,8 +23,16 @@ interface Props {
   titleStyle: Record<string, string | number>
   authorFontSizeClass: string
   metaFontSizeClass: string
+  videoType?: 'rcmd' | 'appRcmd' | 'bangumi' | 'common'
+  statValues?: {
+    view: string
+    danmaku: string
+    like: string
+    duration: string
+  }
   highlightTags: string[]
   hideAuthor?: boolean
+  hideAuthorAvatar?: boolean
 }
 
 const props = defineProps<Props>()
@@ -66,24 +75,51 @@ const visibleHighlightTags = computed(() => {
 })
 
 const authorAvatarEnabled = computed(() =>
-  !props.hideAuthor && settings.value.showVideoCardAuthorAvatar,
+  !props.hideAuthor && !props.hideAuthorAvatar && settings.value.showVideoCardAuthorAvatar,
 )
 
 const authorNameEnabled = computed(() =>
   !props.hideAuthor && settings.value.showVideoCardAuthorName,
 )
 
-const showAuthorAvatar = computed(() => authorAvatarEnabled.value && Boolean(props.video?.author))
+const hasAuthorAvatar = computed(() => {
+  const author = props.video?.author
+  if (Array.isArray(author))
+    return author.some(item => Boolean(item.authorFace))
+  return Boolean(author?.authorFace)
+})
+
+const showAuthorAvatar = computed(() => authorAvatarEnabled.value && hasAuthorAvatar.value)
 
 const showAuthorName = computed(() => authorNameEnabled.value && Boolean(props.video?.author))
 
-const showPublishTime = computed(() =>
-  settings.value.showVideoCardPublishTime
-  && (Boolean(props.video?.publishedTimestamp) || Boolean(props.video?.capsuleText)),
-)
+const showPublishTime = computed(() => {
+  const likeReasonMovedToBottom = props.layout === 'modern'
+    && props.videoType === 'appRcmd'
+    && Boolean(props.video?.likeStr)
+    && /(?:点赞|點讚)$/.test(props.video?.capsuleText || '')
+
+  const hasPublishTime = Boolean(props.video?.publishedTimestamp)
+  const hasCapsuleText = Boolean(props.video?.capsuleText) && !likeReasonMovedToBottom
+  return settings.value.showVideoCardPublishTime && (hasPublishTime || hasCapsuleText)
+})
 
 const showVideoType = computed(() =>
   props.video?.type === 'vertical' || props.video?.type === 'bangumi',
+)
+
+const isModernVideoCard = computed(() => props.layout === 'modern')
+const showModernBottomView = computed(() =>
+  isModernVideoCard.value && settings.value.showVideoCardViewCount && Boolean(props.statValues?.view),
+)
+const showModernBottomDanmaku = computed(() =>
+  isModernVideoCard.value && settings.value.showVideoCardDanmakuCount && Boolean(props.statValues?.danmaku),
+)
+const showModernBottomLike = computed(() =>
+  isModernVideoCard.value && settings.value.showVideoCardLikeCount && Boolean(props.statValues?.like),
+)
+const showModernBottomStats = computed(() =>
+  showModernBottomView.value || showModernBottomDanmaku.value || showModernBottomLike.value,
 )
 
 const showLegacyViewCount = computed(() =>
@@ -107,6 +143,12 @@ const metaPlaceholderEnabled = computed(() =>
 
 const statsPlaceholderEnabled = computed(() =>
   settings.value.showVideoCardViewCount || settings.value.showVideoCardDanmakuCount,
+)
+
+const modernStatsPlaceholderEnabled = computed(() =>
+  settings.value.showVideoCardViewCount
+  || settings.value.showVideoCardDanmakuCount
+  || settings.value.showVideoCardLikeCount,
 )
 
 const hasVisibleMeta = computed(() =>
@@ -162,6 +204,7 @@ const isModernLayout = computed(() => props.layout === 'modern')
         <div
           v-if="layout === 'modern' && (authorAvatarEnabled || authorNameEnabled)"
           class="video-card-meta"
+          :class="{ 'video-card-meta--expanded': metaPlaceholderEnabled && modernStatsPlaceholderEnabled }"
           flex="~ gap-2 items-center"
           w="full"
         >
@@ -169,7 +212,7 @@ const isModernLayout = computed(() => props.layout === 'modern')
             v-if="authorAvatarEnabled"
             w="34px" h="34px" rounded="1/2" bg="$bew-skeleton" shrink-0
           />
-          <div v-if="authorNameEnabled || metaPlaceholderEnabled" flex="~ col gap-1" w="[calc(100%-50px)]">
+          <div v-if="authorNameEnabled || metaPlaceholderEnabled || modernStatsPlaceholderEnabled" flex="~ col gap-1" w="[calc(100%-50px)]">
             <!-- 作者名称骨架：使用与真实文本相同的字体大小和行高 -->
             <div
               v-if="authorNameEnabled"
@@ -183,6 +226,12 @@ const isModernLayout = computed(() => props.layout === 'modern')
               w="80%" bg="$bew-skeleton" rounded="$bew-radius-sm"
               :class="metaFontSizeClass"
               style="height: calc(1em + 0.24em);"
+            />
+            <div
+              v-if="modernStatsPlaceholderEnabled"
+              w="50%" bg="$bew-skeleton" rounded="$bew-radius-sm"
+              :class="metaFontSizeClass"
+              style="height: 1em;"
             />
           </div>
         </div>
@@ -315,66 +364,92 @@ const isModernLayout = computed(() => props.layout === 'modern')
 
         <!-- Modern layout with hideAuthor: Tags directly under title -->
         <div
-          v-if="layout === 'modern' && !showAuthorAvatar && !showAuthorName && hasVisibleMeta"
-          class="video-card-meta-row"
-          flex="~ items-center gap-2 wrap"
+          v-if="layout === 'modern' && !showAuthorAvatar && !showAuthorName && (hasVisibleMeta || showModernBottomStats)"
+          class="video-card-modern-stack"
+          flex="~ col gap-1"
           :class="metaFontSizeClass"
         >
-          <a
-            v-for="primaryTag in visiblePrimaryTags"
-            :key="`primary-${primaryTag}`"
-            class="video-card-meta__chip"
-            un-text="$bew-theme-color"
-            p="x-2"
-            lh-6
-            rounded="$bew-radius"
-            bg="$bew-theme-color-20 hover:$bew-theme-color-30"
-            :href="getTagSearchUrl(primaryTag)"
-            target="_blank"
-            @click.stop=""
-          >
-            {{ primaryTag }}
-          </a>
+          <div v-if="hasVisibleMeta" class="video-card-meta-row" flex="~ items-center gap-2">
+            <a
+              v-for="primaryTag in visiblePrimaryTags"
+              :key="`primary-${primaryTag}`"
+              class="video-card-meta__chip"
+              un-text="$bew-theme-color"
+              p="x-2"
+              lh-6
+              rounded="$bew-radius"
+              bg="$bew-theme-color-20 hover:$bew-theme-color-30"
+              :href="getTagSearchUrl(primaryTag)"
+              target="_blank"
+              @click.stop=""
+            >
+              {{ primaryTag }}
+            </a>
 
-          <span
-            v-for="extraTag in visibleHighlightTags"
-            :key="`highlight-${extraTag}`"
-            class="video-card-meta__chip"
-            text="$bew-theme-color"
-            p="x-2"
-            lh-6
-            rounded="$bew-radius"
-            bg="$bew-theme-color-20"
-          >
-            {{ extraTag }}
-          </span>
+            <span
+              v-for="extraTag in visibleHighlightTags"
+              :key="`highlight-${extraTag}`"
+              class="video-card-meta__chip"
+              text="$bew-theme-color"
+              p="x-2"
+              lh-6
+              rounded="$bew-radius"
+              bg="$bew-theme-color-20"
+            >
+              {{ extraTag }}
+            </span>
 
-          <span
-            v-if="showPublishTime"
-            class="video-card-meta__chip"
-            bg="$bew-fill-1"
-            p="x-2"
-            lh-6
-            rounded="$bew-radius"
-            text="$bew-text-3"
-          >
-            {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
-          </span>
+            <span
+              v-if="showPublishTime"
+              class="video-card-meta__chip"
+              bg="$bew-fill-1"
+              p="x-2"
+              lh-6
+              rounded="$bew-radius"
+              text="$bew-text-3"
+            >
+              {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
+            </span>
 
-          <span
-            v-if="showVideoType"
+            <span
+              v-if="showVideoType"
+              text="$bew-text-2"
+              grid="~ place-items-center"
+            >
+              <div v-if="video.type === 'vertical'" i-mingcute:cellphone-2-line />
+              <div v-else-if="video.type === 'bangumi'" i-mingcute:movie-line />
+            </span>
+          </div>
+
+          <div
+            v-if="showModernBottomStats"
+            class="video-card-bottom-stats"
+            :class="metaFontSizeClass"
             text="$bew-text-2"
-            grid="~ place-items-center"
           >
-            <div v-if="video.type === 'vertical'" i-mingcute:cellphone-2-line />
-            <div v-else-if="video.type === 'bangumi'" i-mingcute:movie-line />
-          </span>
+            <span v-if="showModernBottomView" class="video-card-bottom-stat">
+              <Icon icon="mingcute:play-circle-line" aria-hidden="true" />
+              <span>{{ statValues?.view }}</span>
+            </span>
+            <span v-if="showModernBottomDanmaku" class="video-card-bottom-stat">
+              <Icon icon="mingcute:danmaku-line" aria-hidden="true" />
+              <span>{{ statValues?.danmaku }}</span>
+            </span>
+            <span v-if="showModernBottomLike" class="video-card-bottom-stat">
+              <Icon icon="mingcute:thumb-up-2-line" aria-hidden="true" />
+              <span>{{ statValues?.like }}</span>
+            </span>
+          </div>
         </div>
 
         <!-- Modern layout: Author info -->
         <div
           v-if="layout === 'modern' && (showAuthorAvatar || showAuthorName)"
           class="video-card-meta"
+          :class="{
+            'video-card-meta--top-aligned': isModernVideoCard,
+            'video-card-meta--expanded': hasVisibleMeta && showModernBottomStats,
+          }"
           flex="~ gap-2 items-center"
           w="full"
         >
@@ -385,9 +460,10 @@ const isModernLayout = computed(() => props.layout === 'modern')
             compact
           />
 
-          <div v-if="showAuthorName || hasVisibleMeta" flex="~ col gap-1" w="full">
+          <div v-if="showAuthorName || hasVisibleMeta || showModernBottomStats" flex="~ col gap-1" w="full">
             <div
               v-if="showAuthorName"
+              class="video-card-author-name"
               flex="~ items-center gap-2"
               text="$bew-text-2"
               :class="authorFontSizeClass"
@@ -449,6 +525,26 @@ const isModernLayout = computed(() => props.layout === 'modern')
               >
                 <div v-if="video.type === 'vertical'" i-mingcute:cellphone-2-line />
                 <div v-else-if="video.type === 'bangumi'" i-mingcute:movie-line />
+              </span>
+            </div>
+
+            <div
+              v-if="showModernBottomStats"
+              class="video-card-bottom-stats"
+              :class="metaFontSizeClass"
+              text="$bew-text-2"
+            >
+              <span v-if="showModernBottomView" class="video-card-bottom-stat">
+                <Icon icon="mingcute:play-circle-line" aria-hidden="true" />
+                <span>{{ statValues?.view }}</span>
+              </span>
+              <span v-if="showModernBottomDanmaku" class="video-card-bottom-stat">
+                <Icon icon="mingcute:danmaku-line" aria-hidden="true" />
+                <span>{{ statValues?.danmaku }}</span>
+              </span>
+              <span v-if="showModernBottomLike" class="video-card-bottom-stat">
+                <Icon icon="mingcute:thumb-up-2-line" aria-hidden="true" />
+                <span>{{ statValues?.like }}</span>
               </span>
             </div>
           </div>
@@ -599,12 +695,31 @@ const isModernLayout = computed(() => props.layout === 'modern')
 
 <style lang="scss" scoped>
 .video-card-title {
+  font-weight: var(--bew-font-weight-semibold);
+
   &.keep-two-lines {
     min-height: calc(var(--bew-title-line-height, 1.35) * 2em);
   }
   &.keep-one-line {
     min-height: auto;
   }
+}
+
+.video-card-author-name {
+  font-weight: var(--bew-font-weight-medium);
+}
+
+.video-card-bottom-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bew-space-1);
+  flex: 0 0 auto;
+  font-weight: var(--bew-font-weight-regular);
+}
+
+.video-card-bottom-stat :deep(svg) {
+  width: var(--bew-icon-size-sm);
+  height: var(--bew-icon-size-sm);
 }
 
 .video-card__more-btn {
@@ -629,6 +744,31 @@ const isModernLayout = computed(() => props.layout === 'modern')
   min-height: 46px;
   max-height: 46px;
   overflow: hidden;
+}
+
+.video-card-meta--top-aligned {
+  align-items: flex-start;
+}
+
+.video-card-meta--expanded {
+  min-height: calc(46px + var(--bew-space-6));
+  max-height: calc(46px + var(--bew-space-6));
+}
+
+.video-card-modern-stack {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.video-card-bottom-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-3);
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--bew-line-height-caption);
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .video-card-meta > div:last-child {

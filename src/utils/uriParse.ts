@@ -8,16 +8,22 @@ interface BilibiliUri {
   trackid: string | null
 }
 
-export function isVerticalVideo(uri: string): boolean {
+export function isVerticalVideo(uri?: string): boolean {
+  if (!uri)
+    return false
+
   const bilibiliUri = parseBilibiliUri(uri)
   if (bilibiliUri.player_height == null || bilibiliUri.player_width == null)
     return false
 
-  return bilibiliUri.player_height > bilibiliUri.player_width
+  const rotated = bilibiliUri.player_rotate === 90 || bilibiliUri.player_rotate === 270
+  const displayHeight = rotated ? bilibiliUri.player_width : bilibiliUri.player_height
+  const displayWidth = rotated ? bilibiliUri.player_height : bilibiliUri.player_width
+  return displayHeight > displayWidth
 }
 
 export function parseBilibiliUri(uri: string): BilibiliUri {
-  const params = uri.split('?')[1]
+  const params = uri.split('?')[1] || ''
   const searchParams = new URLSearchParams(params)
   return {
     cid: searchParams.get('cid'),

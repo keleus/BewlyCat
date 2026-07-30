@@ -71,6 +71,11 @@ interface VideoCardGridProps<T = any> {
   hideAuthor?: boolean
 
   /**
+   * 是否只隐藏作者头像（保留作者名称）
+   */
+  hideAuthorAvatar?: boolean
+
+  /**
    * 数据转换函数：将原始数据转换为 VideoCard 所需的格式
    */
   transformItem: (item: T) => Video | undefined
@@ -1085,6 +1090,7 @@ function getUniqueKey(item: T, index: number): string | number {
         :horizontal="isHorizontal"
         :more-btn="moreBtn"
         :hide-author="hideAuthor"
+        :hide-author-avatar="hideAuthorAvatar"
         :is-following-page="props.isFollowingPage"
         :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
         :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"

@@ -18,6 +18,12 @@ function clearTimer() {
 async function ensureFreshTokens() {
   const tokens = appAuthTokens.value
 
+  if (tokens.accessToken && tokens.clientType !== 'hd') {
+    console.warn('[BewlyCat] 检测到旧版 TV APP 授权，清除后需要使用 HD 客户端重新授权。')
+    resetAppAuthTokens()
+    return
+  }
+
   if (!tokens.accessToken || !tokens.refreshToken)
     return
 

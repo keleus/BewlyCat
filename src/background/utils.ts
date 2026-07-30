@@ -67,6 +67,7 @@ interface Message {
 
 interface _FETCH {
   method: string
+  timeoutMs?: number
   headers?: {
     [key: string]: any
   }
@@ -124,7 +125,7 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
     rest = rest || {}
 
     let { _fetch, url, params = {}, afterHandle } = api
-    const { method, headers = {}, body, credentials = 'include' } = _fetch as _FETCH
+    const { method, timeoutMs, headers = {}, body, credentials = 'include' } = _fetch as _FETCH
     const isGET = method.toLocaleLowerCase() === 'get'
     // merge params and body
     const targetParams = Object.assign({}, params)
@@ -204,6 +205,7 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
         method,
         headers: requestHeaders,
         credentials,
+        ...(timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : {}),
       }
       if (!isGET)
         fetchOpt.body = requestBody

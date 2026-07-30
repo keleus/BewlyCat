@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import QRCodeVue from 'qrcode.vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 import draggable from 'vuedraggable'
 
+import AppAuthDialog from '~/components/AppAuthDialog.vue'
 import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
@@ -11,7 +11,7 @@ import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
 import type { HomeTabsPosition, RecommendationMode } from '~/logic/storage'
 import { useMainStore } from '~/stores/mainStore'
-import { getTVLoginQRCode, hasValidAppAuthTokens, pollTVLoginQRCode, revokeAccessKey, saveAppAuthTokens } from '~/utils/authProvider'
+import { hasValidAppAuthTokens, revokeAccessKey } from '~/utils/authProvider'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -43,82 +43,20 @@ const recommendationModeOptions = computed<{ label: string, value: Recommendatio
 
 const showSearchPageModeSharedSettings = ref<boolean>(false)
 const showQRCodeDialog = ref<boolean>(false)
-const loginQRCodeUrl = ref<string>()
-const pollLoginQRCodeInterval = ref<any>(null)
-const authCode = ref<string>('')
-const qrcodeMsg = ref<string>('')
 
 const appAccessToken = computed(() => appAuthTokens.value.accessToken)
-
-onDeactivated(() => {
-  clearInterval(pollLoginQRCodeInterval.value)
-})
-
-onBeforeUnmount(() => {
-  clearInterval(pollLoginQRCodeInterval.value)
-})
 
 function handleRecommendationModeChange(mode: RecommendationMode) {
   if (mode === 'app' && !hasValidAppAuthTokens())
     handleAuthorize()
 }
 
-async function handleAuthorize() {
+function handleAuthorize() {
   showQRCodeDialog.value = true
-  try {
-    await setLoginQRCode()
-    pollLoginQRCode()
-  }
-  catch (error) {
-    console.error(error)
-  }
 }
 
 function handleRevoke() {
   revokeAccessKey()
-}
-
-async function setLoginQRCode() {
-  const res = await getTVLoginQRCode()
-  if (res.code === 0) {
-    loginQRCodeUrl.value = res.data.url
-    authCode.value = res.data.auth_code
-  }
-}
-
-function pollLoginQRCode() {
-  clearInterval(pollLoginQRCodeInterval.value)
-
-  pollLoginQRCodeInterval.value = setInterval(async () => {
-    const pollRes = await pollTVLoginQRCode(authCode.value)
-
-    // 0：成功
-    // -3：API校验密匙错误
-    // -400：请求错误
-    // -404：啥都木有
-    // 86038：二维码已失效
-    // 86039：二维码尚未确认
-    // 86090：二维码已扫码未确认
-    if (pollRes.code !== 0)
-      qrcodeMsg.value = pollRes.message
-    if (pollRes.code === 0) {
-      showQRCodeDialog.value = false
-      saveAppAuthTokens(pollRes.data)
-      clearInterval(pollLoginQRCodeInterval.value)
-      toast.success('授权成功')
-    }
-    else if (pollRes.code === 86038) {
-      await setLoginQRCode()
-    }
-    else if (pollRes.code === -3 || pollRes.code === -400 || pollRes.code === -404) {
-      toast.error(pollRes.message)
-    }
-  }, 3000)
-}
-
-function handleCloseQRCodeDialog() {
-  clearInterval(pollLoginQRCodeInterval.value)
-  showQRCodeDialog.value = false
 }
 
 function handleExport(filterType: 'title' | 'user') {
@@ -268,42 +206,10 @@ function handleToggleHomeTab(tab: any) {
         <Radio v-model="settings.preserveForYouState" />
       </SettingsItem>
 
-      <Dialog
+      <AppAuthDialog
         v-if="showQRCodeDialog"
-        width="50%"
-        max-width="800px"
-        append-to-bewly-body
-        :show-footer="false"
-        :title="$t('settings.authorize_app')" center
-        @close="handleCloseQRCodeDialog"
-      >
-        <div flex="~ col gap-4 items-center">
-          <div>
-            <p mb-2 text-center>
-              {{ $t('settings.scan_qrcode_desc') }}
-            </p>
-            <p text="$bew-text-2 sm">
-              {{ $t('settings.authorize_app_desc') }}
-            </p>
-          </div>
-
-          <div bg-white border="white 4">
-            <QRCodeVue v-if="loginQRCodeUrl" :value="loginQRCodeUrl" :size="150" />
-            <div v-else w-150px h-150px grid="~ place-items-center">
-              <div i-svg-spinners:ring-resize />
-            </div>
-          </div>
-
-          <p>{{ qrcodeMsg }}</p>
-
-          <Button
-            type="secondary"
-            @click="setLoginQRCode"
-          >
-            {{ $t('common.operation.refresh') }}
-          </Button>
-        </div>
-      </Dialog>
+        v-model="showQRCodeDialog"
+      />
     </SettingsItemGroup>
 
     <SettingsItemGroup

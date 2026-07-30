@@ -7,23 +7,30 @@ export function revokeAccessKey() {
   resetAppAuthTokens()
 }
 
-// https://socialsisteryi.github.io/bilibili-API-collect/docs/misc/sign/APPKey.html#appkey
-export const TVAppKey = {
-  appkey: '4409e2ce8ffd12b8',
-  appsec: '59b43e04ad6965f34319062b478f83dd',
+// PiliPlus 使用的 Android HD 客户端密钥，推荐流反馈接口接受该身份。
+export const HDAppKey = {
+  appkey: 'dfca71928277209b',
+  appsec: 'b5475a8825547a4fc26c7d518eaaa02e',
 }
 
-// https://github.com/magicdawn/bilibili-app-recommend/blob/e91722cc076fe65b98116fb0248236851ae6e1dc/src/utility/access-key/tv-qrcode/api.ts#L8
-export function tvSignSearchParams(params: Record<string, any>) {
-  const sign = appSign(params, TVAppKey.appkey, TVAppKey.appsec)
+function hdSignSearchParams(params: Record<string, any>) {
+  const sign = appSign(params, HDAppKey.appkey, HDAppKey.appsec)
   return new URLSearchParams({
     ...params,
     sign,
   })
 }
 
-export function getTvSign(params: Record<string, any>) {
-  return appSign(params, TVAppKey.appkey, TVAppKey.appsec)
+const HD_LOGIN_HEADERS = {
+  'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+  'app-key': 'android_hd',
+  'env': 'prod',
+  'x-bili-trace-id': '11111111111111111111111111111111:1111111111111111:0:0',
+  'bili-http-engine': 'cronet',
+}
+
+export function getHDSign(params: Record<string, any>) {
+  return appSign(params, HDAppKey.appkey, HDAppKey.appsec)
 }
 
 interface PollLoginTokenPayload {
@@ -60,6 +67,7 @@ export function saveAppAuthTokens(payload: PollLoginTokenPayload) {
   appAuthTokens.value = {
     accessToken,
     refreshToken,
+    clientType: 'hd',
     accessTokenExpiresAt: expiresIn ? Date.now() + expiresIn * 1000 : null,
     refreshTokenExpiresAt: refreshExpiresIn ? Date.now() + refreshExpiresIn * 1000 : null,
     mid: mid ?? null,
@@ -98,10 +106,10 @@ export async function refreshAppAccessToken(): Promise<boolean> {
   for (const endpoint of APP_TOKEN_REFRESH_ENDPOINTS) {
     try {
       const payload = { ...basePayload }
-      const sign = appSign({ ...payload }, TVAppKey.appkey, TVAppKey.appsec)
+      const sign = appSign({ ...payload }, HDAppKey.appkey, HDAppKey.appsec)
       const body = new URLSearchParams({
         ...payload,
-        appkey: TVAppKey.appkey,
+        appkey: HDAppKey.appkey,
         sign,
       })
 
@@ -131,6 +139,7 @@ export async function refreshAppAccessToken(): Promise<boolean> {
       appAuthTokens.value = {
         accessToken: nextAccessToken,
         refreshToken: nextRefreshToken,
+        clientType: 'hd',
         accessTokenExpiresAt: expiresIn ? Date.now() + expiresIn * 1000 : null,
         refreshTokenExpiresAt: refreshExpiresIn ? Date.now() + refreshExpiresIn * 1000 : appAuthTokens.value.refreshTokenExpiresAt,
         mid: tokenInfo.mid ?? appAuthTokens.value.mid,
@@ -147,8 +156,8 @@ export async function refreshAppAccessToken(): Promise<boolean> {
 }
 
 export function hasValidAppAuthTokens(bufferMs = 5 * 60 * 1000) {
-  const { accessToken, refreshToken, refreshTokenExpiresAt } = appAuthTokens.value
-  if (!accessToken || !refreshToken)
+  const { accessToken, refreshToken, refreshTokenExpiresAt, clientType } = appAuthTokens.value
+  if (!accessToken || !refreshToken || clientType !== 'hd')
     return false
 
   if (refreshTokenExpiresAt && refreshTokenExpiresAt < Date.now() + bufferMs)
@@ -161,20 +170,18 @@ export function clearAppAuthTokens() {
   appAuthTokens.value = { ...defaultAppAuthTokens }
 }
 
-export function pollTVLoginQRCode(authCode: string): Promise<any> {
+export function pollHDLoginQRCode(authCode: string): Promise<any> {
   const url = 'https://passport.bilibili.com/x/passport-tv-login/qrcode/poll'
 
   return new Promise<void>((resolve, reject) => {
     fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-      },
-      body: tvSignSearchParams({
-        appkey: TVAppKey.appkey,
+      headers: HD_LOGIN_HEADERS,
+      body: hdSignSearchParams({
+        appkey: HDAppKey.appkey,
         auth_code: authCode,
         local_id: '0',
-        ts: '0',
+        ts: Math.floor(Date.now() / 1000).toString(),
       }),
     })
       .then(response => response.json())
@@ -183,19 +190,19 @@ export function pollTVLoginQRCode(authCode: string): Promise<any> {
   })
 }
 
-export function getTVLoginQRCode(): Promise<any> {
+export function getHDLoginQRCode(): Promise<any> {
   const url = 'https://passport.bilibili.com/x/passport-tv-login/qrcode/auth_code'
 
   return new Promise<void>((resolve, reject) => {
     fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-      },
-      body: tvSignSearchParams({
-        appkey: TVAppKey.appkey,
+      headers: HD_LOGIN_HEADERS,
+      body: hdSignSearchParams({
+        appkey: HDAppKey.appkey,
         local_id: '0',
-        ts: '0',
+        platform: 'android',
+        mobi_app: 'android_hd',
+        ts: Math.floor(Date.now() / 1000).toString(),
       }),
     })
       .then(response => response.json())

@@ -1,4 +1,4 @@
-import type { ThreePointV2 } from '~/models/video/appForYou'
+import type { ThreePoint, ThreePointV2 } from '~/models/video/appForYou'
 
 export interface Video {
   id: number
@@ -40,6 +40,7 @@ export interface Video {
   tag?: string | string[]
   rank?: number
   type?: 'horizontal' | 'vertical' | 'bangumi' | 'ketang'
+  threePoint?: ThreePoint
   threePointV2: ThreePointV2[]
 
   badge?: {

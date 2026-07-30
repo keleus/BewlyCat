@@ -2,19 +2,20 @@
 import { onKeyStroke } from '@vueuse/core'
 import { useToast } from 'vue-toastification'
 
+import AppAuthDialog from '~/components/AppAuthDialog.vue'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { FilterType, useFilter } from '~/composables/useFilter'
 import { LanguageType } from '~/enums/appEnums'
 import type { GridLayoutType } from '~/logic'
 import { appAuthTokens, noCookieForYouRecommendationState, settings } from '~/logic'
-import type { AppForYouResult, Item as AppVideoItem } from '~/models/video/appForYou'
-import { Type as ThreePointV2Type } from '~/models/video/appForYou'
+import type { AppForYouResult, Item as AppVideoItem, ThreePoint } from '~/models/video/appForYou'
+import { CardGoto as AppCardGoto, Type as AppThreePointType } from '~/models/video/appForYou'
 import type { forYouResult, Item as VideoItem } from '~/models/video/forYou'
 import type { AppVideoElement, VideoCardDisplayData, VideoElement } from '~/stores/forYouStore'
 import { useForYouStore } from '~/stores/forYouStore'
 import api from '~/utils/api'
-import { TVAppKey } from '~/utils/authProvider'
+import { getHDSign, HDAppKey } from '~/utils/authProvider'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { isVerticalVideo } from '~/utils/uriParse'
 
@@ -55,7 +56,6 @@ const filterFunc = useFilter(
 const appFilterFunc = useFilter(
   ['bottom_rcmd_reason'],
   [
-    FilterType.filterOutVerticalVideos,
     FilterType.duration,
     FilterType.viewCountStr,
     FilterType.title,
@@ -63,12 +63,11 @@ const appFilterFunc = useFilter(
     FilterType.user,
   ],
   [
-    ['uri'],
     ['player_args', 'duration'],
     ['cover_left_text_1'],
     ['title'],
-    ['mask', 'avatar', 'text'],
-    ['mask', 'avatar', 'up_id'],
+    ['args', 'up_name'],
+    ['args', 'up_id'],
   ],
 )
 
@@ -90,6 +89,7 @@ const currentVideoList = computed(() =>
 const isLoading = ref<boolean>(true)
 const requestFailed = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
+const showAppAuthDialog = ref(false)
 const refreshIdx = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
 const activatedAppVideo = ref<AppVideoItem | null>()
@@ -103,6 +103,11 @@ const selectedDislikeReason = ref<number>(1)
 // 修改缓存数据变量，添加前进状态变量
 const cachedVideoList = ref<VideoElement[]>([])
 const cachedRefreshIdx = ref<number>(1)
+
+const appPublishTimeCache = new Map<number, number>()
+const appPublishTimeRequests = new Map<number, Promise<number | undefined>>()
+const APP_PUBLISH_TIME_CONCURRENCY = 4
+let appPublishTimeHydrationQueue = Promise.resolve()
 
 // 添加前进状态变量
 const forwardVideoList = ref<VideoElement[]>([])
@@ -230,7 +235,7 @@ onUnmounted(() => {
 
 onKeyStroke((e: KeyboardEvent) => {
   if (showDislikeDialog.value) {
-    const dislikeReasons = activatedAppVideo.value?.three_point_v2?.find(option => option.type === ThreePointV2Type.Dislike)?.reasons || []
+    const dislikeReasons = activatedAppVideo.value?.three_point?.dislike_reasons || []
 
     if (e.key >= '0' && e.key <= '9') {
       e.preventDefault()
@@ -281,48 +286,162 @@ function transformWebVideo(item: VideoItem): VideoCardDisplayData {
   }
 }
 
-function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
-  // 预先计算 followed 状态，避免多次 trim 和比较
-  const bottomReason = item?.bottom_rcmd_reason?.trim()
-  const followed = bottomReason === '已关注' || bottomReason === '已關注'
+function getAppVideoAid(item: AppVideoItem): number | undefined {
+  const paramAid = Number(item.param)
+  return item.player_args?.aid
+    || item.args?.aid
+    || (Number.isSafeInteger(paramAid) && paramAid > 0 ? paramAid : undefined)
+}
 
-  // 预先计算 capsuleText，提取复杂逻辑
-  const descPart = item?.desc?.split('·')?.[1]?.trim()
-  const capsuleText = descPart || (followed ? bottomReason : undefined)
+function getAppVideoPublishTime(aid: number): Promise<number | undefined> {
+  const cachedPublishTime = appPublishTimeCache.get(aid)
+  if (cachedPublishTime)
+    return Promise.resolve(cachedPublishTime)
+
+  const pendingRequest = appPublishTimeRequests.get(aid)
+  if (pendingRequest)
+    return pendingRequest
+
+  const request = api.video.getVideoInfo({ aid: String(aid) })
+    .then((response) => {
+      const publishTime = response?.code === 0 && Number.isFinite(response.data?.pubdate)
+        ? Number(response.data.pubdate)
+        : undefined
+      if (publishTime)
+        appPublishTimeCache.set(aid, publishTime)
+      return publishTime
+    })
+    .catch(() => undefined)
+    .finally(() => appPublishTimeRequests.delete(aid))
+
+  appPublishTimeRequests.set(aid, request)
+  return request
+}
+
+async function hydrateAppVideoPublishTimes(
+  videos: AppVideoElement[],
+  version: number,
+  recommendationMode: typeof settings.value.recommendationMode,
+) {
+  if (!settings.value.showVideoCardPublishTime)
+    return
+
+  const videosByAid = new Map<number, AppVideoElement[]>()
+  videos.forEach((video) => {
+    if (video.displayData?.publishedTimestamp)
+      return
+    const aid = video.item ? getAppVideoAid(video.item) : undefined
+    if (!aid)
+      return
+    const sameVideoItems = videosByAid.get(aid) || []
+    sameVideoItems.push(video)
+    videosByAid.set(aid, sameVideoItems)
+  })
+
+  const aids = [...videosByAid.keys()]
+  let nextIndex = 0
+  const workers = Array.from({ length: Math.min(APP_PUBLISH_TIME_CONCURRENCY, aids.length) }, async () => {
+    while (nextIndex < aids.length) {
+      const aid = aids[nextIndex++]
+      const publishTime = await getAppVideoPublishTime(aid)
+      if (!publishTime || version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+        continue
+      videosByAid.get(aid)?.forEach((video) => {
+        if (video.displayData)
+          video.displayData.publishedTimestamp = publishTime
+      })
+    }
+  })
+
+  await Promise.all(workers)
+}
+
+function scheduleAppVideoPublishTimeHydration(
+  videos: AppVideoElement[],
+  version: number,
+  recommendationMode: typeof settings.value.recommendationMode,
+) {
+  appPublishTimeHydrationQueue = appPublishTimeHydrationQueue
+    .then(() => hydrateAppVideoPublishTimes(videos, version, recommendationMode))
+    .catch(error => console.error('Failed to hydrate APP video publish times', error))
+}
+
+function isAppVerticalVideo(item: AppVideoItem): boolean {
+  return item.goto === AppCardGoto.VerticalAV
+    || item.card_goto === AppCardGoto.VerticalAV
+    || isVerticalVideo(item.uri)
+}
+
+function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
+  const recommendationReason = (typeof item.rcmd_reason === 'string'
+    ? item.rcmd_reason
+    : item.rcmd_reason?.content)
+    ?.trim()
+  const bottomReason = item.bottom_rcmd_reason?.trim()
+  const followedReason = recommendationReason || bottomReason
+  const followed = ['已关注', '已關注', '新关注', '新關注'].includes(followedReason || '')
+  const likeMatch = recommendationReason?.match(/^(.+?)(?:点赞|點讚)$/)
+  const likeStr = likeMatch?.[1]?.trim()
+
+  // 新版 HD 响应直接在 rcmd_reason 返回推荐标签；保留旧 desc 格式作为回退。
+  const descPart = item.desc?.split('·')?.[1]?.trim()
+  const capsuleText = followed ? undefined : recommendationReason || bottomReason || descPart
 
   // 预先计算 type，避免在模板中调用函数
   let type: 'horizontal' | 'vertical' | 'bangumi' = 'horizontal'
   if (item.card_goto === 'bangumi') {
     type = 'bangumi'
   }
-  else if (item.uri && isVerticalVideo(item.uri)) {
+  else if (isAppVerticalVideo(item)) {
     type = 'vertical'
   }
 
+  const legacyThreePoint = item.three_point
+  let threePoint: ThreePoint | undefined = legacyThreePoint
+  if (!legacyThreePoint?.dislike_reasons?.length && !legacyThreePoint?.feedbacks?.length) {
+    const dislikeReasons = item.three_point_v2
+      ?.find(section => section.type === AppThreePointType.Dislike)
+      ?.reasons
+    const feedbackReasons = item.three_point_v2
+      ?.find(section => section.type === AppThreePointType.Feedback)
+      ?.reasons
+
+    threePoint = dislikeReasons?.length || feedbackReasons?.length
+      ? {
+          dislike_reasons: dislikeReasons,
+          feedbacks: feedbackReasons,
+        }
+      : undefined
+  }
+
+  const aid = getAppVideoAid(item)
+
   return {
-    // 注意：aid 可能为 0 或 undefined，但只要有 bvid 就是有效视频
-    // VideoCardGrid 的骨架屏判断已优化为同时检查 id 和 bvid
-    id: item.args?.aid ?? 0,
+    id: aid ?? 0,
+    aid,
+    duration: item.player_args?.duration,
     durationStr: item.cover_right_text,
     title: decodeHtmlEntities(item.title),
     cover: item.cover || '',
     author: {
-      name: decodeHtmlEntities(item?.mask?.avatar?.text || ''),
+      name: decodeHtmlEntities(item.args?.up_name || item.desc_button?.text || item.mask?.avatar?.text || item.desc || ''),
       authorFace: item?.mask?.avatar?.cover || item?.avatar?.cover || '',
       followed,
-      mid: item?.mask?.avatar?.up_id || 0,
+      mid: item.args?.up_id || item.mask?.avatar?.up_id || 0,
     },
     capsuleText: decodeHtmlEntities(capsuleText),
-    bvid: item.bvid || '',
+    bvid: item.bvid || undefined,
     viewStr: item.cover_left_text_1,
     danmakuStr: item.cover_left_text_2,
+    likeStr,
     cid: item?.player_args?.cid,
     goto: item?.goto,
     param: item?.param,
     trackId: item?.track_id,
     url: item?.goto === 'bangumi' ? item.uri : '',
     type,
-    threePointV2: item?.three_point_v2 || [],
+    threePoint,
+    threePointV2: item.three_point_v2 || [],
   }
 }
 
@@ -878,14 +997,43 @@ async function getAppRecommendVideos(version = requestVersion) {
       // 获取最后一个视频的idx用于请求下一批
       const lastIdx = appVideoList.value.length > 0 && appVideoList.value[appVideoList.value.length - 1].item
         ? appVideoList.value[appVideoList.value.length - 1].item!.idx
-        : 1
+        : 0
 
-      const response: AppForYouResult = await api.video.getAppRecommendVideos({
-        access_key: appAuthTokens.value.accessToken,
-        s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-        c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-        appkey: TVAppKey.appkey,
+      const locale = settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh_TW' : 'zh_CN'
+      const params = {
+        build: 2001100,
+        channel: 'master',
+        column: 4,
+        device: 'pad',
+        device_name: 'android',
+        device_type: 0,
+        disable_rcmd: 0,
+        flush: 5,
+        fnval: 976,
+        fnver: 0,
+        force_host: 2,
+        fourk: 1,
+        guidance: 0,
+        https_url_req: 0,
+        mobi_app: 'android_hd',
+        network: 'wifi',
+        platform: 'android',
+        player_net: 1,
+        pull: lastIdx === 0 ? 'true' : 'false',
+        qn: 32,
+        recsys_mode: 0,
+        c_locale: locale,
+        s_locale: locale,
+        statistics: '{"appId":5,"platform":3,"version":"2.0.1","abtest":""}',
+        voice_balance: 0,
         idx: lastIdx,
+        access_key: appAuthTokens.value.accessToken,
+        appkey: HDAppKey.appkey,
+        ts: Math.floor(Date.now() / 1000).toString(),
+      }
+      const response: AppForYouResult = await api.video.getAppRecommendVideos({
+        ...params,
+        sign: getHDSign(params),
       })
 
       if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
@@ -898,39 +1046,50 @@ async function getAppRecommendVideos(version = requestVersion) {
       }
 
       if (response.code === 0) {
+        const addedVideos: AppVideoElement[] = []
         response.data.items.forEach((item: AppVideoItem) => {
           // Remove banner & ad cards
           if (item.card_type.includes('banner') || item.card_type === 'cm_v1')
+            return
+
+          if (settings.value.filterOutVerticalVideos && isAppVerticalVideo(item))
             return
 
           // 应用过滤函数
           if (appFilterFunc.value && !appFilterFunc.value(item))
             return
 
+          const aid = getAppVideoAid(item)
           // 过滤掉没有有效 ID 的视频（既没有 aid 也没有 bvid）
-          const hasValidId = (item.args?.aid && item.args.aid > 0) || (item.bvid && item.bvid.trim() !== '')
+          const hasValidId = !!aid || !!item.bvid?.trim()
           if (!hasValidId)
             return
 
           // 检查是否已经存在该视频，避免重复
           // 使用 aid/bvid 作为唯一标识符，而不是 idx（idx 只是推荐流中的位置）
-          const videoId = item.args?.aid || item.bvid
+          const videoId = aid || item.bvid
           const isDuplicate = appVideoList.value.some(video =>
-            video.item && (video.item.args?.aid === item.args?.aid || video.item.bvid === item.bvid),
+            video.item && ((!!aid && getAppVideoAid(video.item) === aid) || (!!item.bvid && video.item.bvid === item.bvid)),
           )
           if (isDuplicate)
             return
 
-          appVideoList.value.push({
+          const video = {
             uniqueId: `${videoId || item.idx}`,
             item,
             displayData: transformAppVideo(item),
-          })
+          }
+          appVideoList.value.push(video)
+          addedVideos.push(video)
         })
+        scheduleAppVideoPublishTimeHydration(addedVideos, version, recommendationMode)
       }
       else if (response.code === 62011) {
         needToLoginFirst.value = true
-        break
+        return
+      }
+      else {
+        throw new Error(`APP 推荐接口错误 (${response.code}): ${response.message}`)
       }
     }
     catch (error) {
@@ -938,8 +1097,7 @@ async function getAppRecommendVideos(version = requestVersion) {
         return
 
       console.error('Failed to load batch', batch, error)
-      requestFailed.value = true
-      break
+      throw error
     }
   }
 
@@ -992,8 +1150,18 @@ async function getAppRecommendVideos(version = requestVersion) {
   }
 }
 
-function jumpToLoginPage() {
+function handleLogin() {
+  if (settings.value.recommendationMode === 'app') {
+    showAppAuthDialog.value = true
+    return
+  }
+
   location.href = 'https://passport.bilibili.com/login'
+}
+
+function handleAppAuthorized() {
+  needToLoginFirst.value = false
+  void initData()
 }
 
 // 修改 defineExpose，暴露重置方法和撤销方法
@@ -1035,18 +1203,25 @@ defineExpose({
       :transform-item="(item: VideoElement | AppVideoElement) => item.displayData"
       :get-item-key="(item: VideoElement | AppVideoElement, index?: number) => `${item.uniqueId}-${index ?? 0}`"
       :video-type="isWebRecommendationMode ? 'rcmd' : 'appRcmd'"
+      :hide-author-avatar="!isWebRecommendationMode"
       show-preview
       more-btn
       @refresh="initData"
-      @login="jumpToLoginPage"
+      @login="handleLogin"
       @load-more="handleLoadMore"
     />
 
     <Empty v-if="needToLoginFirst" mt-6 :description="$t('common.please_log_in_first')">
-      <Button type="primary" @click="jumpToLoginPage()">
+      <Button type="primary" @click="handleLogin">
         {{ $t('common.login') }}
       </Button>
     </Empty>
+
+    <AppAuthDialog
+      v-if="showAppAuthDialog"
+      v-model="showAppAuthDialog"
+      @authorized="handleAppAuthorized"
+    />
   </div>
 </template>
 
