@@ -135,6 +135,9 @@ const selectors = {
     '.bpx-player-dm-wrap',
   ],
   playlist: [
+    // Watch Later and Favorites use this inner list. Their `.playlist-container`
+    // is the page-level layout and must stay outside the widescreen sidebar.
+    '.action-list-container',
     '[class*="eplist_ep_list_wrapper"]',
     '#eplist_module',
     '[class*="numberList_wrapper"]',
@@ -146,7 +149,6 @@ const selectors = {
     '.base-video-sections-v1',
     '.video-sections-v1',
     '.video-sections-content-list',
-    '.playlist-container',
   ],
   playlistControls: [
     '.auto-play',
@@ -1532,7 +1534,6 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-panel-playlist .base-video-sections-v1,
     #${ROOT_ID} .bewly-widescreen-panel-playlist .video-sections-v1,
     #${ROOT_ID} .bewly-widescreen-panel-playlist .video-sections-content-list,
-    #${ROOT_ID} .bewly-widescreen-panel-playlist .playlist-container,
     #${ROOT_ID} .bewly-widescreen-panel-playlist #eplist_module,
     #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="eplist_ep_list_wrapper"],
     #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="numberList_wrapper"],
