@@ -844,13 +844,13 @@ else if (shouldInitializeContentScript) {
       () => settings.value.randomPlayMode,
       () => settings.value.minVideosForRandom,
       () => settings.value.defaultCustomPlayOrder,
-      () => settings.value.useBilibiliDefaultAutoPlay,
-      () => settings.value.autoPlayMultipart,
-      () => settings.value.autoPlayCollection,
-      () => settings.value.autoPlayWatchLater,
-      () => settings.value.autoPlayPlaylist,
+      () => settings.value.enableCustomPlayOrderOverrides,
+      () => settings.value.customPlayOrderOverrides.multipart,
+      () => settings.value.customPlayOrderOverrides.collection,
+      () => settings.value.customPlayOrderOverrides.watchLater,
+      () => settings.value.customPlayOrderOverrides.playlist,
     ],
-    ([enabled, activationMode, minVideos, defaultCustomPlayOrder, useBilibiliDefault, multipartMode, collectionMode, watchLaterMode, playlistMode], [previousEnabled, previousActivationMode, previousMinVideos, previousDefaultCustomPlayOrder, previousUseBilibiliDefault, previousMultipartMode, previousCollectionMode, previousWatchLaterMode, previousPlaylistMode]) => {
+    ([enabled, activationMode, minVideos, ...orderSettings], [previousEnabled, previousActivationMode, previousMinVideos, ...previousOrderSettings]) => {
       if (enabled !== previousEnabled && isCustomPlayPage()) {
         if (enabled) {
           setTimeout(() => {
@@ -862,14 +862,7 @@ else if (shouldInitializeContentScript) {
         }
       }
 
-      if (
-        useBilibiliDefault !== previousUseBilibiliDefault
-        || defaultCustomPlayOrder !== previousDefaultCustomPlayOrder
-        || multipartMode !== previousMultipartMode
-        || collectionMode !== previousCollectionMode
-        || watchLaterMode !== previousWatchLaterMode
-        || playlistMode !== previousPlaylistMode
-      ) {
+      if (orderSettings.some((value, index) => value !== previousOrderSettings[index])) {
         syncRandomPlayOrder()
         applyRandomPlayActivationSettings()
       }

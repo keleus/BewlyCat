@@ -1,8 +1,8 @@
 import { settings } from '~/logic'
-import type { RandomPlayOrder } from '~/logic/storage'
+import type { CustomPlayOrderContext, RandomPlayOrder } from '~/logic/storage'
 import { i18n } from '~/utils/i18n'
 
-import { applyAutoPlayByVideoType, disableNativeEndPlaybackBehavior, getAutoPlayModeForVideoType, supportsCustomPlaybackForVideoType } from './player'
+import { applyAutoPlayByVideoType, detectVideoType, disableNativeEndPlaybackBehavior, supportsCustomPlaybackForVideoType, VideoType } from './player'
 
 // 随机播放状态管理
 let isRandomPlayEnabled = false
@@ -56,16 +56,30 @@ function getActivePlayOrder(): RandomPlayOrder {
 }
 
 function getVideoTypeCustomPlayOrder(): RandomPlayOrder | null {
-  switch (getAutoPlayModeForVideoType()) {
-    case 'customSequential':
-      return 'sequential'
-    case 'customReverse':
-      return 'reverse'
-    case 'customRandom':
-      return 'random'
-    default:
-      return null
+  if (!settings.value.enableCustomPlayOrderOverrides)
+    return null
+
+  let context: CustomPlayOrderContext | null = null
+  switch (detectVideoType()) {
+    case VideoType.MULTIPART:
+      context = 'multipart'
+      break
+    case VideoType.COLLECTION:
+      context = 'collection'
+      break
+    case VideoType.WATCH_LATER:
+      context = 'watchLater'
+      break
+    case VideoType.PLAYLIST:
+      context = 'playlist'
+      break
   }
+
+  if (!context)
+    return null
+
+  const order = settings.value.customPlayOrderOverrides[context]
+  return order === 'sequential' || order === 'reverse' || order === 'random' ? order : null
 }
 
 function getDefaultCustomPlayOrder(): RandomPlayOrder | null {
@@ -80,13 +94,7 @@ function getEffectiveCustomPlayOrder(): RandomPlayOrder | null {
   if (!settings.value.enableRandomPlay)
     return null
 
-  if (!settings.value.useBilibiliDefaultAutoPlay) {
-    const videoTypeOrder = getVideoTypeCustomPlayOrder()
-    if (videoTypeOrder)
-      return videoTypeOrder
-  }
-
-  return getDefaultCustomPlayOrder()
+  return getVideoTypeCustomPlayOrder() ?? getDefaultCustomPlayOrder()
 }
 
 // 获取随机播放文本
@@ -909,14 +917,10 @@ export function applyRandomPlayActivationSettings(): void {
     return
   }
 
-  const videoTypeOrder = settings.value.useBilibiliDefaultAutoPlay
-    ? null
-    : getVideoTypeCustomPlayOrder()
-  const defaultOrder = getDefaultCustomPlayOrder()
-  const effectiveOrder = videoTypeOrder ?? defaultOrder
+  const effectiveOrder = getEffectiveCustomPlayOrder()
   if (effectiveOrder) {
     activePlayOrder = effectiveOrder
-    if (videoTypeOrder === 'random') {
+    if (effectiveOrder === 'random') {
       if (settings.value.randomPlayMode === 'auto') {
         const minVideos = Number(settings.value.minVideosForRandom) || 1
         setRandomPlayEnabled(getVideoEpisodes().length >= minVideos)
@@ -926,18 +930,7 @@ export function applyRandomPlayActivationSettings(): void {
       }
     }
     else {
-      const shouldFollowRandomActivation = settings.value.useBilibiliDefaultAutoPlay
-        && defaultOrder === 'random'
-      if (shouldFollowRandomActivation && settings.value.randomPlayMode === 'auto') {
-        const minVideos = Number(settings.value.minVideosForRandom) || 1
-        setRandomPlayEnabled(getVideoEpisodes().length >= minVideos)
-      }
-      else if (shouldFollowRandomActivation) {
-        setRandomPlayEnabled(false)
-      }
-      else {
-        setRandomPlayEnabled(videoTypeOrder !== null)
-      }
+      setRandomPlayEnabled(false)
     }
   }
   else {

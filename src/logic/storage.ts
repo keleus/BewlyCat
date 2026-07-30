@@ -131,9 +131,12 @@ export interface ShortcutsSettings {
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
 export type HomeTabsPosition = 'left' | 'center'
-export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop' | 'customSequential' | 'customReverse' | 'customRandom'
+export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 export type RandomPlayOrder = 'sequential' | 'reverse' | 'random'
 export type DefaultCustomPlayOrder = RandomPlayOrder
+export type CustomPlayOrderContext = 'multipart' | 'collection' | 'watchLater' | 'playlist'
+export type CustomPlayOrderOverride = DefaultCustomPlayOrder | 'inherit'
+export type CustomPlayOrderOverrides = Record<CustomPlayOrderContext, CustomPlayOrderOverride>
 /** 订阅合集「播放全部」起播策略 */
 export type CollectedSeasonPlayAllMode = 'beginning' | 'latest' | 'lastWatched'
 export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen' | 'bewlyWidescreen'
@@ -449,6 +452,8 @@ export interface Settings {
   // 自定义播放设置
   enableRandomPlay: boolean // 启用视频合集自定义播放功能
   defaultCustomPlayOrder: DefaultCustomPlayOrder // 播放器自定义播放控件的默认选中顺序
+  enableCustomPlayOrderOverrides: boolean // 启用按视频类型覆盖自定义播放默认值
+  customPlayOrderOverrides: CustomPlayOrderOverrides // 不同视频类型的自定义播放默认值覆盖
   randomPlayMode: 'manual' | 'auto' // 随机播放模式：手动切换或自动启用
   minVideosForRandom: number // 启用随机播放的最小视频数量
 }
@@ -752,6 +757,13 @@ export const originalSettings: Settings = {
   // 自定义播放设置
   enableRandomPlay: false, // 启用视频合集自定义播放功能
   defaultCustomPlayOrder: 'random', // 默认选中随机播放，但不直接开启自定义播放
+  enableCustomPlayOrderOverrides: false,
+  customPlayOrderOverrides: {
+    multipart: 'inherit',
+    collection: 'inherit',
+    watchLater: 'inherit',
+    playlist: 'inherit',
+  },
   randomPlayMode: 'manual', // 随机播放模式：手动切换或自动启用
   minVideosForRandom: 5, // 启用随机播放的最小视频数量
 }
@@ -828,6 +840,60 @@ watch(
     const validDefaultCustomPlayOrders: DefaultCustomPlayOrder[] = ['sequential', 'reverse', 'random']
     if (!validDefaultCustomPlayOrders.includes(record.defaultCustomPlayOrder))
       record.defaultCustomPlayOrder = 'random'
+
+    const customPlayOrderContexts: CustomPlayOrderContext[] = ['multipart', 'collection', 'watchLater', 'playlist']
+    const validCustomPlayOrderOverrides: CustomPlayOrderOverride[] = ['inherit', ...validDefaultCustomPlayOrders]
+    const storedCustomPlayOrderOverrides = record.customPlayOrderOverrides
+    const needsCustomPlayOrderOverrideNormalization = !storedCustomPlayOrderOverrides
+      || typeof storedCustomPlayOrderOverrides !== 'object'
+      || customPlayOrderContexts.some(context => !validCustomPlayOrderOverrides.includes(storedCustomPlayOrderOverrides[context]))
+
+    if (needsCustomPlayOrderOverrideNormalization) {
+      record.customPlayOrderOverrides = Object.fromEntries(
+        customPlayOrderContexts.map((context) => {
+          const storedValue = storedCustomPlayOrderOverrides?.[context]
+          return [context, validCustomPlayOrderOverrides.includes(storedValue) ? storedValue : 'inherit']
+        }),
+      ) as CustomPlayOrderOverrides
+    }
+
+    if (typeof record.enableCustomPlayOrderOverrides !== 'boolean')
+      record.enableCustomPlayOrderOverrides = false
+
+    const legacyCustomAutoPlayFields: Array<[keyof Pick<Settings, 'autoPlayMultipart' | 'autoPlayCollection' | 'autoPlayWatchLater' | 'autoPlayPlaylist'>, CustomPlayOrderContext]> = [
+      ['autoPlayMultipart', 'multipart'],
+      ['autoPlayCollection', 'collection'],
+      ['autoPlayWatchLater', 'watchLater'],
+      ['autoPlayPlaylist', 'playlist'],
+    ]
+    let migratedLegacyCustomAutoPlay = false
+
+    for (const [field, context] of legacyCustomAutoPlayFields) {
+      const legacyMode = record[field]
+      const migratedOrder = legacyMode === 'customSequential'
+        ? 'sequential'
+        : legacyMode === 'customReverse'
+          ? 'reverse'
+          : legacyMode === 'customRandom'
+            ? 'random'
+            : null
+
+      if (!migratedOrder)
+        continue
+
+      record.customPlayOrderOverrides[context] = migratedOrder
+      record[field] = 'pauseAtEnd'
+      migratedLegacyCustomAutoPlay = true
+    }
+
+    if (migratedLegacyCustomAutoPlay)
+      record.enableCustomPlayOrderOverrides = true
+
+    const validAutoPlayModes: AutoPlayMode[] = ['default', 'autoPlay', 'autoPlayWithRecommend', 'pauseAtEnd', 'loop']
+    for (const field of autoPlayFields) {
+      if (!validAutoPlayModes.includes(record[field]))
+        record[field] = 'pauseAtEnd'
+    }
 
     Reflect.deleteProperty(record, 'customPlayDefaultEnabled')
     Reflect.deleteProperty(record, 'randomPlayOrder')

@@ -176,7 +176,7 @@ settings:
   group_playlist_start_behavior: 播放列表起點
   group_random_play: 自訂播放
   group_random_play_settings: 隨機播放設定
-  group_random_play_settings_desc: 用於依影片類型選擇的「隨機播放（自訂）」；使用 Bilibili 預設行為時，僅在預設自訂播放為隨機播放時生效。
+  group_random_play_settings_desc: 設定自訂播放預設值為「隨機播放」時的啟用方式。
   group_topbar: 頂部列
   group_navigation: Dock與側邊欄
   group_dock: Dock
@@ -608,16 +608,13 @@ settings:
   auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
   auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，在自動連播下播放結束時不會自動退出全螢幕，方便連續觀看
   use_bilibili_default_auto_play: 使用 Bilibili 預設自動播放行為
-  use_bilibili_default_auto_play_desc: 啟用後使用 Bilibili 預設播放行為，進入頁面時自訂播放預設關閉；若預設自訂播放為隨機播放，則仍遵循隨機播放啟用方式
+  use_bilibili_default_auto_play_desc: 啟用後由 Bilibili 決定播放結束行為，不套用下方依影片類型設定。
   auto_play_watch_later: 稍後觀看
   auto_play_mode_default: Bilibili 預設
   auto_play_mode_auto_play: 自動連播
   auto_play_mode_auto_play_with_recommend: 連播推薦
   auto_play_mode_pause_at_end: 播完暫停
   auto_play_mode_loop: 單集循環
-  auto_play_mode_custom_sequential: 順序播放（自訂）
-  auto_play_mode_custom_reverse: 逆序播放（自訂）
-  auto_play_mode_custom_random: 隨機播放（自訂）
   auto_play_multipart: 分P影片
   auto_play_multipart_desc: 選擇分P影片的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
   auto_play_collection: 合集影片
@@ -627,9 +624,14 @@ settings:
   auto_play_playlist: 收藏列表
   auto_play_playlist_desc: 選擇收藏列表的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
   enable_random_play: 啟用影片合集自訂播放
-  enable_random_play_desc: 為多P影片、合集或播放列表加入順序、逆序、隨機播放與列表編輯功能；啟用後播放結束行為中會顯示對應的自訂選項
+  enable_random_play_desc: 為多P影片、合集、稍後觀看或播放列表加入順序、逆序、隨機播放與列表編輯功能。
   default_custom_play_order: 預設自訂播放選項
-  default_custom_play_order_desc: 僅控制播放器中預設選取的順序，不控制開關狀態；類型專屬的自訂行為會覆蓋此選項
+  default_custom_play_order_desc: 僅控制播放器中預設選取的順序，不控制開關狀態；啟用依影片類型設定後，類型專屬預設值會覆蓋此選項。
+  enable_custom_play_order_overrides: 依影片類型設定自訂播放預設值
+  enable_custom_play_order_overrides_desc: 啟用後，可為支援的播放情境分別選擇預設自訂播放選項。
+  custom_play_order_overrides: 依影片類型設定
+  custom_play_order_overrides_desc: 選擇「繼承預設」時會使用上方的預設自訂播放選項。
+  custom_play_order_inherit: 繼承預設
   random_play_mode: 隨機播放啟用方式
   random_play_mode_desc: 隨機播放適用時保持關閉並由使用者手動開啟，或在影片數量達到條件時自動開啟
   random_play_mode_manual: 手動切換

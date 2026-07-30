@@ -176,11 +176,16 @@ settings:
   group_playlist_start_behavior: 播放列表起點
   group_random_play: 自訂播放
   group_random_play_settings: 隨機播放設定
-  group_random_play_settings_desc: 用喺按影片類型揀嘅「隨機播放（自訂）」；用 Bilibili 預設行為嗰陣，淨係喺預設自訂播放係隨機播放時生效。
+  group_random_play_settings_desc: 設定自訂播放預設值係「隨機播放」嗰陣嘅啟用方式。
   enable_random_play: 啟用影片合集自訂播放
-  enable_random_play_desc: 為多P影片、合集或者播放列表加入順序、倒序、隨機播放同清單編輯功能；啟用後播放結束行為會顯示相應嘅自訂選項
+  enable_random_play_desc: 為多P影片、合集、稍後再睇或者播放列表加入順序、倒序、隨機播放同清單編輯功能。
   default_custom_play_order: 預設自訂播放選項
-  default_custom_play_order_desc: 淨係控制播放器預設揀中嘅順序，唔控制開關狀態；類型專屬嘅自訂行為會覆蓋呢個選項
+  default_custom_play_order_desc: 淨係控制播放器預設揀中嘅順序，唔控制開關狀態；啟用按影片類型設定之後，類型專屬預設值會覆蓋呢個選項。
+  enable_custom_play_order_overrides: 按影片類型設定自訂播放預設值
+  enable_custom_play_order_overrides_desc: 啟用之後，可以為支援嘅播放情況分別揀預設自訂播放選項。
+  custom_play_order_overrides: 按影片類型設定
+  custom_play_order_overrides_desc: 揀「繼承預設」嗰陣會用上面嘅預設自訂播放選項。
+  custom_play_order_inherit: 繼承預設
   random_play_mode: 隨機播放啟用方式
   random_play_mode_desc: 隨機播放適用嗰陣保持關閉等用戶手動開啟，或者影片數量達到條件嗰陣自動開啟
   random_play_mode_manual: 手動切換
@@ -620,16 +625,13 @@ settings:
   auto_exit_fullscreen_exclude_auto_play: 自動連播下除外
   auto_exit_fullscreen_exclude_auto_play_desc: 啟用後，自動連播下播完唔會自動退出全螢幕，方便連續睇
   use_bilibili_default_auto_play: 用 Bilibili 預設自動播放行為
-  use_bilibili_default_auto_play_desc: 啟用後用 Bilibili 預設播放行為，入頁面嗰陣自訂播放預設關閉；如果預設自訂播放係隨機播放，仍然會跟隨隨機播放啟用方式
+  use_bilibili_default_auto_play_desc: 啟用之後由 Bilibili 決定播放結束行為，唔會套用下面按影片類型設定。
   auto_play_watch_later: 稍後再睇
   auto_play_mode_default: Bilibili 預設
   auto_play_mode_auto_play: 自動連播
   auto_play_mode_auto_play_with_recommend: 連播推薦
   auto_play_mode_pause_at_end: 播完暫停
   auto_play_mode_loop: 單集循環
-  auto_play_mode_custom_sequential: 順序播放（自訂）
-  auto_play_mode_custom_reverse: 倒序播放（自訂）
-  auto_play_mode_custom_random: 隨機播放（自訂）
   auto_play_multipart: 分P影片
   auto_play_multipart_desc: 揀分P影片嘅自動播放行為。「連播推薦」表示目前影片完咗之後繼續播推薦影片。
   auto_play_collection: 合集影片

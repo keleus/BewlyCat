@@ -176,7 +176,7 @@ settings:
   group_playlist_start_behavior: Playlist Start
   group_random_play: Custom Playback
   group_random_play_settings: Random Playback Settings
-  group_random_play_settings_desc: Applies to video types using Random (Custom). With Bilibili's default behavior enabled, it only applies when the default custom playback is Random.
+  group_random_play_settings_desc: Configure how Random starts when it is the effective custom playback default.
   group_topbar: Top Bar
   group_navigation: Dock & Sidebar
   group_dock: Dock
@@ -686,16 +686,13 @@ settings:
     When enabled, videos in auto-play mode will not auto-exit fullscreen when finished, allowing continuous viewing
   use_bilibili_default_auto_play: Use Bilibili's default auto-play behavior
   use_bilibili_default_auto_play_desc: >
-    Uses Bilibili's default playback behavior and starts custom playback off. If the default custom playback is Random, the random activation setting still applies.
+    Let Bilibili decide what happens when playback ends instead of applying the per-video-type settings below.
   auto_play_watch_later: Watch Later
   auto_play_mode_default: Bilibili Default
   auto_play_mode_auto_play: Auto-play
   auto_play_mode_auto_play_with_recommend: Play recommendations
   auto_play_mode_pause_at_end: Pause at End
   auto_play_mode_loop: Single Loop
-  auto_play_mode_custom_sequential: Sequential (Custom)
-  auto_play_mode_custom_reverse: Reverse (Custom)
-  auto_play_mode_custom_random: Random (Custom)
   auto_play_multipart: Multi-part Videos
   auto_play_multipart_desc: Choose auto-play behavior for multi-part videos. "Play recommendations" continues with recommended videos after the current video ends.
   auto_play_collection: Collection Videos
@@ -705,9 +702,14 @@ settings:
   auto_play_playlist: Playlist Videos
   auto_play_playlist_desc: Choose auto-play behavior for playlist videos. "Play recommendations" continues with recommended videos after the current video ends.
   enable_random_play: Enable custom playback for video collections
-  enable_random_play_desc: Add sequential, reverse, and random playback plus playlist editing to multi-part videos, collections, and playlists. Enabling this also exposes custom end behaviors.
+  enable_random_play_desc: Add sequential, reverse, and random playback plus playlist editing to multi-part videos, collections, Watch Later, and playlists.
   default_custom_play_order: Default custom playback option
-  default_custom_play_order_desc: Only controls the order selected by default in the player, not the switch state. A type-specific custom behavior overrides it.
+  default_custom_play_order_desc: Only controls the order selected by default in the player, not the switch state. Per-video-type defaults override it when enabled.
+  enable_custom_play_order_overrides: Set custom playback defaults by video type
+  enable_custom_play_order_overrides_desc: Choose a separate default custom playback option for each supported playback context.
+  custom_play_order_overrides: Per-video-type defaults
+  custom_play_order_overrides_desc: Inherit Default uses the default custom playback option above.
+  custom_play_order_inherit: Inherit Default
   random_play_mode: Random play activation
   random_play_mode_desc: Keep random playback off until manually enabled, or enable it automatically when the playlist reaches the configured size.
   random_play_mode_manual: Manual toggle

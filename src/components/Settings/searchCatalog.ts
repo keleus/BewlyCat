@@ -143,12 +143,6 @@ const autoPlayModeOptionKeys = [
   'settings.auto_play_mode_pause_at_end',
   'settings.auto_play_mode_loop',
 ]
-const customAutoPlayModeOptionKeys = [
-  'settings.auto_play_mode_custom_sequential',
-  'settings.auto_play_mode_custom_reverse',
-  'settings.auto_play_mode_custom_random',
-]
-
 const topBarGlobalTitleKeys = [
   'settings.group_topbar',
   'settings.auto_hide_top_bar',
@@ -431,6 +425,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.bilibili_features.auto_play',
     'settings.group_random_play',
     'settings.enable_random_play',
+    'settings.enable_custom_play_order_overrides',
+    'settings.custom_play_order_overrides',
     'settings.group_random_play_settings',
     'settings.min_videos_for_random',
     'settings.group_playback_end_behavior',
@@ -443,7 +439,15 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.auto_play_collection',
     'settings.auto_play_watch_later',
     'settings.auto_play_playlist',
-  ], { keywordKeys: [...autoPlayModeOptionKeys, ...customAutoPlayModeOptionKeys] }),
+  ], {
+    keywordKeys: [
+      ...autoPlayModeOptionKeys,
+      'settings.custom_play_order_inherit',
+      'settings.random_play_order_sequential',
+      'settings.random_play_order_reverse',
+      'settings.random_play_order_random',
+    ],
+  }),
   ...createEntries(autoPlayRoute, [
     'settings.auto_play_recommend',
   ], { keywordKeys: autoPlayModeOptionKeys }),

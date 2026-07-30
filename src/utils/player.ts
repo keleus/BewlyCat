@@ -680,10 +680,6 @@ function setPlaylistHandoffMode(enable: boolean) {
   }).start()
 }
 
-export function isCustomAutoPlayMode(mode: AutoPlayMode): boolean {
-  return mode === 'customSequential' || mode === 'customReverse' || mode === 'customRandom'
-}
-
 export function supportsCustomPlaybackForVideoType(videoType = detectVideoType()): boolean {
   return videoType !== VideoType.RECOMMEND
 }
@@ -774,12 +770,6 @@ export function applyAutoPlayByVideoType() {
 
   const videoType = detectVideoType()
   const mode = getAutoPlayModeForVideoType(videoType)
-
-  // 选择自定义播放时必须关闭 B 站原生续播；总开关关闭时同样回退为播完暂停。
-  if (isCustomAutoPlayMode(mode)) {
-    disableNativeEndPlaybackBehavior(videoType)
-    return
-  }
 
   nativeEndPlaybackSnapshot = null
 
