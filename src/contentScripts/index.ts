@@ -59,6 +59,12 @@ const isElectronEnv = isElectron()
 
 const currentUrl = document.URL
 
+if (shouldInitializeContentScript && isHomePage()) {
+  console.log('[BewlyCat][首页加载] 插件开始加载', {
+    version,
+  })
+}
+
 function isFestivalPage(): boolean {
   return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
 }

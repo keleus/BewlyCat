@@ -82,6 +82,77 @@ const isWebRecommendationMode = computed(() => settings.value.recommendationMode
 let requestVersion = 0
 type WebRecommendRequestType = 'refresh' | 'loadMore'
 
+const HOME_LOAD_LOG_PREFIX = '[BewlyCat][首页加载]'
+let recommendRequestLogId = 0
+
+interface RecommendRequestLogContext {
+  id: number
+  mode: string
+  requestType: WebRecommendRequestType
+  startedAt: number
+  beforeLoadCount: number
+}
+
+function startRecommendRequestLog(
+  mode: string,
+  requestType: WebRecommendRequestType,
+  beforeLoadCount: number,
+  details: Record<string, unknown> = {},
+): RecommendRequestLogContext {
+  const context = {
+    id: ++recommendRequestLogId,
+    mode,
+    requestType,
+    startedAt: performance.now(),
+    beforeLoadCount,
+  }
+  console.log(`${HOME_LOAD_LOG_PREFIX} 插件开始请求推荐接口`, {
+    requestId: context.id,
+    mode,
+    requestType,
+    ...details,
+  })
+  return context
+}
+
+function getRequestDuration(context: RecommendRequestLogContext): number {
+  return Math.round((performance.now() - context.startedAt) * 100) / 100
+}
+
+function logRecommendRequestSuccess(
+  context: RecommendRequestLogContext,
+  afterLoadCount: number,
+  details: Record<string, unknown> = {},
+) {
+  const loadedCount = Math.max(0, afterLoadCount - context.beforeLoadCount)
+  console.log(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求成功：载入 ${loadedCount} 条数据`, {
+    requestId: context.id,
+    mode: context.mode,
+    requestType: context.requestType,
+    loadedCount,
+    totalCount: afterLoadCount,
+    durationMs: getRequestDuration(context),
+    ...details,
+  })
+}
+
+function logRecommendRequestFailure(
+  context: RecommendRequestLogContext,
+  afterLoadCount: number,
+  details: Record<string, unknown> = {},
+) {
+  const loadedCount = Math.max(0, afterLoadCount - context.beforeLoadCount)
+  console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败：载入 ${loadedCount} 条数据`, {
+    requestId: context.id,
+    mode: context.mode,
+    requestType: context.requestType,
+    loadedCount,
+    totalCount: afterLoadCount,
+    durationMs: getRequestDuration(context),
+    ...details,
+  })
+}
+
 // 当前使用的视频列表（根据推荐模式）
 const currentVideoList = computed(() =>
   isWebRecommendationMode.value ? videoList.value : appVideoList.value,
@@ -95,6 +166,17 @@ const noMoreContent = ref<boolean>(false)
 const activatedAppVideo = ref<AppVideoItem | null>()
 const showDislikeDialog = ref<boolean>(false)
 const hasInitializedData = ref<boolean>(false)
+
+function logHomeLoadComplete(source: 'api' | 'cache', startedAt: number) {
+  console.log(`${HOME_LOAD_LOG_PREFIX} 加载完成`, {
+    source,
+    mode: settings.value.recommendationMode,
+    loadedCount: currentVideoList.value.length,
+    failed: requestFailed.value,
+    needToLogin: needToLoginFirst.value,
+    durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
+  })
+}
 
 // 页面可见性状态
 const isPageVisible = ref<boolean>(!document.hidden)
@@ -143,6 +225,7 @@ function handleVisibilityChange() {
 
 // 添加页面可见性监听器
 onMounted(() => {
+  const loadStartedAt = performance.now()
   document.addEventListener('visibilitychange', handleVisibilityChange)
 
   // 如果启用状态保留且store中有数据，则恢复状态
@@ -160,6 +243,8 @@ onMounted(() => {
     rebuildShowlistGroupsFromList(videoList.value)
     hasInitializedData.value = true
     isLoading.value = false
+
+    nextTick(() => logHomeLoadComplete('cache', loadStartedAt))
 
     // 确保撤销按钮不显示（因为这是状态恢复，不是刷新操作）
     hasBackState.value = false
@@ -449,7 +534,9 @@ watch(() => settings.value.recommendationMode, () => {
 })
 
 async function initData() {
+  const loadStartedAt = performance.now()
   requestVersion++
+  const version = requestVersion
   hasInitializedData.value = false
   if (isWebRecommendationMode.value)
     webFetchRow.value = 1
@@ -468,6 +555,10 @@ async function initData() {
   }
   finally {
     hasInitializedData.value = true
+    if (version === requestVersion) {
+      await nextTick()
+      logHomeLoadComplete('api', loadStartedAt)
+    }
   }
 }
 
@@ -483,7 +574,7 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
     }
     else {
       try {
-        await getAppRecommendVideos(version)
+        await getAppRecommendVideos(version, webRequestType)
       }
       catch (error) {
         if (version !== requestVersion || settings.value.recommendationMode !== 'app')
@@ -694,26 +785,42 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       ? api.video.getNoCookieRecommendVideos
       : api.video.getRecommendVideos
 
-    const response: forYouResult = await getWebRecommendVideos({
-      fresh_type: isLoadMoreRequest ? 4 : 5,
-      fresh_idx: currentRefreshIdx,
-      fresh_idx_1h: currentRefreshIdx,
-      ps: pageSize,
-      fetch_row: fetchRow,
-      last_showlist: lastShowlist || undefined,
+    const requestLog = startRecommendRequestLog(recommendationMode, requestType, beforeLoadCount, {
+      pageSize,
+      fetchRow,
     })
+    let response: forYouResult
+    try {
+      response = await getWebRecommendVideos({
+        fresh_type: isLoadMoreRequest ? 4 : 5,
+        fresh_idx: currentRefreshIdx,
+        fresh_idx_1h: currentRefreshIdx,
+        ps: pageSize,
+        fetch_row: fetchRow,
+        last_showlist: lastShowlist || undefined,
+      })
+    }
+    catch (error) {
+      logRecommendRequestFailure(requestLog, videoList.value.filter(video => video.item).length, { error })
+      throw error
+    }
 
     if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
       return
 
     if (!response) {
-      console.error('Failed to load web recommendations: Response is undefined')
+      logRecommendRequestFailure(requestLog, beforeLoadCount, { reason: '响应为空' })
       requestFailed.value = true
       noMoreContent.value = true
       return
     }
 
     if (!response.data) {
+      logRecommendRequestFailure(requestLog, beforeLoadCount, {
+        code: response.code,
+        message: response.message,
+        reason: '响应数据为空',
+      })
       requestFailed.value = true
       noMoreContent.value = true
       return
@@ -811,14 +918,24 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         // 没有加载到新内容，增加空加载计数器
         consecutiveEmptyLoads.value++
       }
+      logRecommendRequestSuccess(requestLog, afterLoadCount, {
+        responseCount: response.data.item.length,
+      })
       canFillViewport = true
     }
     else if (response.code === 62011) {
+      logRecommendRequestFailure(requestLog, beforeLoadCount, {
+        code: response.code,
+        message: response.message,
+      })
       needToLoginFirst.value = true
     }
     else {
       // 其他错误码也应该停止加载，避免无限重试
-      console.error('API returned error code:', response.code, response.message)
+      logRecommendRequestFailure(requestLog, beforeLoadCount, {
+        code: response.code,
+        message: response.message,
+      })
       requestFailed.value = true
       noMoreContent.value = true
     }
@@ -852,7 +969,10 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
   }
 }
 
-async function getAppRecommendVideos(version = requestVersion) {
+async function getAppRecommendVideos(
+  version = requestVersion,
+  requestType: WebRecommendRequestType = 'refresh',
+) {
   const recommendationMode = settings.value.recommendationMode
 
   // 检查是否达到最大空加载次数，防止无限递归
@@ -864,7 +984,13 @@ async function getAppRecommendVideos(version = requestVersion) {
 
   // 检查是否有有效的 access token
   if (!appAuthTokens.value.accessToken) {
-    console.warn('APP 推荐模式需要登录，access token 为空')
+    console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败：载入 0 条数据`, {
+      mode: recommendationMode,
+      requestType,
+      loadedCount: 0,
+      totalCount: appVideoList.value.length,
+      reason: '缺少 access token',
+    })
     needToLoginFirst.value = true
     return
   }
@@ -879,20 +1005,35 @@ async function getAppRecommendVideos(version = requestVersion) {
       const lastIdx = appVideoList.value.length > 0 && appVideoList.value[appVideoList.value.length - 1].item
         ? appVideoList.value[appVideoList.value.length - 1].item!.idx
         : 1
-
-      const response: AppForYouResult = await api.video.getAppRecommendVideos({
-        access_key: appAuthTokens.value.accessToken,
-        s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-        c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-        appkey: TVAppKey.appkey,
-        idx: lastIdx,
+      const batchBeforeLoadCount = appVideoList.value.length
+      const requestLog = startRecommendRequestLog(recommendationMode, requestType, batchBeforeLoadCount, {
+        batch: batch + 1,
+        batches: batchesToLoad,
       })
+
+      let response: AppForYouResult
+      try {
+        response = await api.video.getAppRecommendVideos({
+          access_key: appAuthTokens.value.accessToken,
+          s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+          c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+          appkey: TVAppKey.appkey,
+          idx: lastIdx,
+        })
+      }
+      catch (error) {
+        logRecommendRequestFailure(requestLog, appVideoList.value.length, { error })
+        throw error
+      }
 
       if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
         return
 
       if (!response) {
-        console.error('Failed to load batch', batch, 'Response is undefined')
+        logRecommendRequestFailure(requestLog, appVideoList.value.length, {
+          batch: batch + 1,
+          reason: '响应为空',
+        })
         requestFailed.value = true
         break
       }
@@ -927,17 +1068,35 @@ async function getAppRecommendVideos(version = requestVersion) {
             displayData: transformAppVideo(item),
           })
         })
+        logRecommendRequestSuccess(requestLog, appVideoList.value.length, {
+          batch: batch + 1,
+          responseCount: response.data.items.length,
+        })
       }
       else if (response.code === 62011) {
+        logRecommendRequestFailure(requestLog, appVideoList.value.length, {
+          batch: batch + 1,
+          code: response.code,
+          message: response.message,
+        })
         needToLoginFirst.value = true
         break
       }
+      else {
+        logRecommendRequestFailure(requestLog, appVideoList.value.length, {
+          batch: batch + 1,
+          code: response.code,
+          message: response.message,
+        })
+        requestFailed.value = true
+        noMoreContent.value = true
+        break
+      }
     }
-    catch (error) {
+    catch {
       if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
         return
 
-      console.error('Failed to load batch', batch, error)
       requestFailed.value = true
       break
     }
@@ -980,7 +1139,7 @@ async function getAppRecommendVideos(version = requestVersion) {
       // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
       isRecursiveLoading.value = true
       try {
-        await getAppRecommendVideos(version)
+        await getAppRecommendVideos(version, requestType)
       }
       finally {
         isRecursiveLoading.value = false
