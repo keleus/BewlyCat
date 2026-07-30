@@ -124,7 +124,6 @@ export function setOriginalBilibiliTopBarScrolled(doc: Document, scrolled: boole
     cachedOriginalTopBar = header
   header?.classList.toggle('bewly-original-top-bar-scrolled', scrolled)
   header?.querySelector('.bili-header__bar')?.classList.toggle('slide-down', scrolled)
-  getOriginalFixedChannel(header)?.classList.toggle('bewly-original-fixed-channel-visible', scrolled)
   if (header) {
     if (scrolled)
       restoreOriginalTopBarVisibility(header)
@@ -139,10 +138,6 @@ export function setOriginalBilibiliTopBarScrolled(doc: Document, scrolled: boole
     )
     setOriginalTopBarHomeArrowExpanded(header, false)
   }
-}
-
-function getOriginalFixedChannel(header: HTMLElement | null) {
-  return header?.parentElement?.querySelector<HTMLElement>(':scope > .header-channel') ?? null
 }
 
 function keepOriginalTopBarAvailable(doc: Document) {
@@ -382,7 +377,6 @@ export function detachOriginalBilibiliTopBar(doc: Document) {
     'bewly-original-native-channel-closing',
   )
   header.querySelector('.bili-header__bar')?.classList.remove('slide-down')
-  getOriginalFixedChannel(header)?.classList.remove('bewly-original-fixed-channel-visible')
 }
 
 export function ensureOriginalBilibiliTopBarAppended(doc: Document): boolean {
