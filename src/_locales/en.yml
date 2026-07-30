@@ -606,8 +606,6 @@ settings:
   following_filter_dynamic_videos_desc: When enabled, videos marked as dynamic videos will be hidden in the "Following" page
   use_following_new_layout: Use new layout for Following tab
   use_following_new_layout_desc: Display followed UPs list on the left and video feed on the right
-  use_favorites_new_layout: Use the new Favorites page
-  use_favorites_new_layout_desc: Turn this off to use the legacy Favorites page, which does not show collected series.
   collected_season_play_all_mode: Collected series Play All start position
   collected_season_play_all_mode_desc: Controls Play All start position for collected series on Favorites, Top Bar, and the native space page. Defaults to series beginning; falls back to beginning if last watched is not found. Does not change list order or playlist direction.
   collected_season_play_all_mode_beginning: Series beginning
@@ -1095,6 +1093,7 @@ history:
   turn_on_watch_history_confirm: Turn on watch history? Are you sure you want to turn on watch history?
 favorites:
   collected_season_prefix: Season
+  video_section_title: Favorite videos
   folder_section_title: All folders
   season_section_title: Collected seasons
   article_section_title: Favorite articles

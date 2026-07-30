@@ -127,6 +127,7 @@ function onMouseEnter() {
     @mouseenter="onMouseEnter"
   >
     <div
+      class="select-trigger"
       p="x-4 y-2"
       bg="$bew-fill-1"
       rounded="$bew-interactive-radius"
@@ -145,16 +146,18 @@ function onMouseEnter() {
         v-text="label === 'undefined' ? '' : label"
       />
 
-      <!-- arrow -->
-      <div
-        border="~ solid t-0 l-0 r-2 b-2"
-        :border-color="showOptions ? '$bew-theme-color' : '$bew-fill-4'"
-        p="3px"
-        m="l-2"
-        display="inline-block"
-        :transform="`~ ${!showOptions ? 'rotate-45 -translate-y-1/4' : 'rotate-225 translate-y-1/4'} `"
-        transition="background-color duration-200, border-color duration-200, transform duration-200"
-      />
+      <div class="select-arrow-slot" flex="none" grid place-items="center" m="l-2">
+        <!-- arrow -->
+        <div
+          class="select-arrow"
+          border="~ solid t-0 l-0 r-2 b-2"
+          :border-color="showOptions ? '$bew-theme-color' : '$bew-fill-4'"
+          p="3px"
+          display="inline-block"
+          :transform="`~ ${!showOptions ? 'rotate-45 -translate-y-1/4' : 'rotate-225 translate-y-1/4'} `"
+          transition="background-color duration-200, border-color duration-200, transform duration-200"
+        />
+      </div>
     </div>
 
     <Teleport :to="mainAppRef">

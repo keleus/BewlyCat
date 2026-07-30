@@ -422,9 +422,9 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
           <h3 class="bew-page-heading" text="white" style="text-shadow: 0 0 12px rgba(0,0,0,.3)">
             {{ t('watch_later.title') }} ({{ watchLaterCount }})
           </h3>
-          <p v-if="watchLaterCount > 0" flex="~ col" gap-4>
+          <div v-if="watchLaterCount > 0" flex="~ col" gap-2 w-full>
             <Button
-              color="rgba(255,255,255,.35)" block text-color="white" strong flex-1
+              color="rgba(255,255,255,.35)" block text-color="white" strong
               @click="handlePlayAll"
             >
               <template #left>
@@ -433,7 +433,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
               {{ t('common.play_all') }}
             </Button>
             <Button
-              color="rgba(255,255,255,.35)" block text-color="white" strong flex-1
+              color="rgba(255,255,255,.35)" block text-color="white" strong
               @click="handleClearAllWatchLater"
             >
               <template #left>
@@ -442,7 +442,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
               {{ t('watch_later.clear_all') }}
             </Button>
             <Button
-              color="rgba(255,255,255,.35)" block text-color="white" strong flex-1
+              color="rgba(255,255,255,.35)" block text-color="white" strong
               @click="handleRemoveWatchedVideos"
             >
               <template #left>
@@ -450,7 +450,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
               </template>
               {{ t('watch_later.remove_watched_videos') }}
             </Button>
-          </p>
+          </div>
         </main>
       </div>
     </aside>

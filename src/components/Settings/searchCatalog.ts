@@ -59,6 +59,11 @@ const momentsRoute: SearchRoute = {
   secondaryPage: 'moments',
   secondaryTitleKey: 'settings.plugin.moments',
 }
+const favoritesRoute: SearchRoute = {
+  menu: MenuType.Navigation,
+  secondaryPage: 'favorites',
+  secondaryTitleKey: 'settings.plugin.favorites',
+}
 const videoCardRoute: SearchRoute = {
   menu: MenuType.Navigation,
   secondaryPage: 'video-card',
@@ -180,8 +185,11 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enable_clean_share_link',
     'settings.clean_share_link_include_title',
     'settings.clean_share_link_remove_tracking_params',
+  ]),
+
+  ...createEntries(favoritesRoute, [
+    'settings.plugin.favorites',
     'settings.group_favorites',
-    'settings.use_favorites_new_layout',
   ]),
 
   ...createEntries(homeRoute, [

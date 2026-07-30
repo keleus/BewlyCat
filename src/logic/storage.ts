@@ -371,7 +371,6 @@ export interface Settings {
   followingFilterChargingVideos: boolean // 过滤充电专属视频
   followingFilterDynamicVideos: boolean // 过滤动态视频
   useFollowingNewLayout: boolean
-  useFavoritesNewLayout: boolean
   collectedSeasonPlayAllMode: CollectedSeasonPlayAllMode // 订阅合集「播放全部」起播：开头 / 最新 / 上次观看
   enableFollowingInactiveBlacklist: boolean // 启用不活跃名单
   followingInactiveDays: number // UP主超过N天未更新则移至不活跃名单
@@ -649,7 +648,6 @@ export const originalSettings: Settings = {
   followingFilterChargingVideos: false, // 默认不过滤充电视频
   followingFilterDynamicVideos: false, // 默认不过滤动态视频
   useFollowingNewLayout: false, // 默认使用旧布局
-  useFavoritesNewLayout: true, // 默认使用新版收藏页
   collectedSeasonPlayAllMode: 'beginning', // 默认从合集开头播放
   enableFollowingInactiveBlacklist: true, // 默认启用不活跃名单
   followingInactiveDays: 100, // 默认100天

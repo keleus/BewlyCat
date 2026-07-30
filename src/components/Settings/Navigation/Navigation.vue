@@ -21,6 +21,15 @@ const pages = [
     component: defineAsyncComponent(() => import('../PluginComponentsAndPages/Moments/Moments.vue')),
   },
   {
+    value: 'favorites',
+    titleKey: 'settings.plugin.favorites',
+    descriptionKey: 'settings.category_browsing_favorites_desc',
+    icon: 'i-mingcute:bookmark-line',
+    iconActivated: 'i-mingcute:bookmark-fill',
+    groupKey: 'settings.category_group_pages',
+    component: defineAsyncComponent(() => import('../PluginComponentsAndPages/Favorites/Favorites.vue')),
+  },
+  {
     value: 'search',
     titleKey: 'settings.plugin.search',
     descriptionKey: 'settings.category_navigation_search_desc',

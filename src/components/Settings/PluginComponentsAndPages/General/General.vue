@@ -10,7 +10,6 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsSectionHeading from '../../components/SettingsSectionHeading.vue'
 
 const { t, locale } = useI18n()
-const FavoritesSettings = defineAsyncComponent(() => import('../Favorites/Favorites.vue'))
 
 const langOptions = computed(() => {
   return [
@@ -95,8 +94,6 @@ watch(() => settings.value.language, (newValue) => {
         </SettingsItem>
       </template>
     </SettingsItemGroup>
-
-    <FavoritesSettings />
   </div>
 </template>
 
