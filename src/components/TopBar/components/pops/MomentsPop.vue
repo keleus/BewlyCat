@@ -165,6 +165,7 @@ defineExpose({
     <main
       ref="momentsWrap"
       rounded="$bew-radius"
+      overflow-x-hidden
       overflow-y-auto
       p="x-4"
       flex-1
