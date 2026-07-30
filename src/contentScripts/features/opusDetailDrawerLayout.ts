@@ -68,7 +68,6 @@ let disabledSplit = false
 let teardownCount = 0
 let lastMutationAt = 0
 let stableTimer: ReturnType<typeof setTimeout> | null = null
-let galleryKeyHandler: ((e: KeyboardEvent) => void) | null = null
 let galleryViewerMessageHandler: ((e: MessageEvent) => void) | null = null
 let galleryViewerAckTimer: ReturnType<typeof setTimeout> | null = null
 let galleryIconHosts: HTMLElement[] = []
@@ -1221,13 +1220,6 @@ function extractImageUrls(albumNodes: HTMLElement[]): string[] {
   return urls
 }
 
-function unbindGalleryKeyboard() {
-  if (!galleryKeyHandler)
-    return
-  window.removeEventListener('keydown', galleryKeyHandler, true)
-  galleryKeyHandler = null
-}
-
 function unbindGalleryViewerBridge() {
   if (galleryViewerMessageHandler) {
     window.removeEventListener('message', galleryViewerMessageHandler)
@@ -1261,6 +1253,15 @@ function createImageGallery(urls: string[]): HTMLElement {
 
   const stageShell = document.createElement('div')
   stageShell.className = 'bewly-opus-gallery__stage-shell'
+  stageShell.tabIndex = 0
+  stageShell.setAttribute('aria-label', '动态图片画廊，使用左右方向键切换图片')
+  stageShell.addEventListener('mouseenter', () => {
+    stageShell.focus({ preventScroll: true })
+  })
+  stageShell.addEventListener('mouseleave', () => {
+    if (document.activeElement === stageShell)
+      stageShell.blur()
+  })
 
   const slider = document.createElement('div')
   slider.className = 'bewly-opus-gallery__slider'
@@ -1910,7 +1911,6 @@ function createImageGallery(urls: string[]): HTMLElement {
   }, { passive: false })
 
   // 点击舞台空白不切图（仅按钮/缩略图）
-  unbindGalleryKeyboard()
   unbindGalleryViewerBridge()
   galleryViewerMessageHandler = (e: MessageEvent) => {
     if (e.source !== window.parent)
@@ -1934,40 +1934,7 @@ function createImageGallery(urls: string[]): HTMLElement {
     }
   }
   window.addEventListener('message', galleryViewerMessageHandler)
-  galleryKeyHandler = (e: KeyboardEvent) => {
-    if (viewerOpen) {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        e.stopPropagation()
-        closeViewer()
-      }
-      else if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        e.stopPropagation()
-        showViewerImage(viewerIndex - 1)
-      }
-      else if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        e.stopPropagation()
-        showViewerImage(viewerIndex + 1)
-      }
-      else if (e.key === '+' || e.key === '=') {
-        e.preventDefault()
-        e.stopPropagation()
-        setViewerScale(viewerScale + 0.25)
-      }
-      else if (e.key === '-' || e.key === '_') {
-        e.preventDefault()
-        e.stopPropagation()
-        setViewerScale(viewerScale - 0.25)
-      }
-      else if (e.key === '0') {
-        e.preventDefault()
-        e.stopPropagation()
-        resetViewerTransform()
-      }
-      return
-    }
+  stageShell.addEventListener('keydown', (e) => {
     if (urls.length <= 1)
       return
     if (e.key === 'ArrowLeft') {
@@ -1978,8 +1945,42 @@ function createImageGallery(urls: string[]): HTMLElement {
       e.preventDefault()
       go(index + 1, 1)
     }
-  }
-  window.addEventListener('keydown', galleryKeyHandler, true)
+  })
+
+  viewer.addEventListener('keydown', (e) => {
+    if (!viewerOpen)
+      return
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      closeViewer()
+    }
+    else if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      e.stopPropagation()
+      showViewerImage(viewerIndex - 1)
+    }
+    else if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      e.stopPropagation()
+      showViewerImage(viewerIndex + 1)
+    }
+    else if (e.key === '+' || e.key === '=') {
+      e.preventDefault()
+      e.stopPropagation()
+      setViewerScale(viewerScale + 0.25)
+    }
+    else if (e.key === '-' || e.key === '_') {
+      e.preventDefault()
+      e.stopPropagation()
+      setViewerScale(viewerScale - 0.25)
+    }
+    else if (e.key === '0') {
+      e.preventDefault()
+      e.stopPropagation()
+      resetViewerTransform()
+    }
+  })
 
   fillWindow()
   syncChrome()
@@ -1988,7 +1989,6 @@ function createImageGallery(urls: string[]): HTMLElement {
 
 function teardownSplit(root: HTMLElement, permanent = false) {
   const split = root.querySelector<HTMLElement>(':scope > .bewly-opus-split')
-  unbindGalleryKeyboard()
   unbindGalleryViewerBridge()
   unmountGalleryIcons()
   if (!split) {
@@ -2267,7 +2267,6 @@ export function disposeOpusDetailDrawerLayout() {
     stopTimer = null
   }
 
-  unbindGalleryKeyboard()
   unbindGalleryViewerBridge()
   hideIframeLoading()
 

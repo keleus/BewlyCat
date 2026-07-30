@@ -2656,7 +2656,6 @@ onMounted(() => {
     updateVirtualColumns()
   })
   window.addEventListener('message', handleDetailFrameMessage)
-  window.addEventListener('keydown', handleDetailImageViewerKeydown, true)
   refresh()
   handlePageRefresh.value = refresh
   handleReachBottom.value = () => void loadMoments()
@@ -2688,7 +2687,6 @@ onBeforeUnmount(() => {
     virtualRaf = 0
   }
   window.removeEventListener('message', handleDetailFrameMessage)
-  window.removeEventListener('keydown', handleDetailImageViewerKeydown, true)
   handlePageRefresh.value = undefined
   handleReachBottom.value = undefined
 })
@@ -3387,6 +3385,7 @@ watch(
         aria-modal="true"
         aria-label="动态图片查看器"
         tabindex="-1"
+        @keydown="handleDetailImageViewerKeydown"
         @wheel.prevent.stop="handleDetailImageViewerWheel"
       >
         <button
