@@ -287,13 +287,10 @@ else if (shouldInitializeContentScript) {
   }
 
   window.addEventListener(BEWLY_MOUNTED, () => {
-    if (beforeLoadedStyleEl) {
-      removeBeforeLoadedStyleEl()
-      if (isVideoPage()) {
-      // 根据设置应用默认播放器模式
-        applyDefaultPlayerMode()
-      }
-    }
+    removeBeforeLoadedStyleEl()
+    // 根据设置应用默认播放器模式
+    if (isVideoPage())
+      applyDefaultPlayerMode()
   })
 
   // 应用默认播放器模式
