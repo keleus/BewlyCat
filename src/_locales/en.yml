@@ -1181,7 +1181,7 @@ version_reminder:
   bilibili_dynamic: Bilibili posts
   bilibili_dynamic_desc: View update posts from the developer
   acknowledge: Got it, don't show this version again
-  settings_hint: You can turn off “New version reminders” under Settings → BewlyCat Interface → Home.
+  settings_hint: You can turn off “New version reminders” under Settings → General.
 watch_later:
   title: Watch Later
   clear_all: Clear all watch later

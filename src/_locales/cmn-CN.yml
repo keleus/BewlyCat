@@ -1095,7 +1095,7 @@ version_reminder:
   bilibili_dynamic: Bilibili 动态
   bilibili_dynamic_desc: 查看开发者发布的更新动态
   acknowledge: 已知晓，本版本不再提示
-  settings_hint: 可在“设置 → BewlyCat界面 → 首页”中关闭“新版本提醒”。
+  settings_hint: 可在“设置 → 通用”中关闭“新版本提醒”。
 watch_later:
   title: 稍后再看
   clear_all: 清空稍后再看

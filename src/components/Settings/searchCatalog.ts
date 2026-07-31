@@ -186,6 +186,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enable_clean_share_link',
     'settings.clean_share_link_include_title',
     'settings.clean_share_link_remove_tracking_params',
+    'settings.group_version_reminder',
+    'settings.enable_version_reminder',
   ]),
 
   ...createEntries(favoritesRoute, [
@@ -268,11 +270,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(momentsRoute, [
     'settings.moments_hide_charge_exclusive',
   ], { targetTitleKey: 'settings.moments_filter_charge_dynamic' }),
-  ...createEntries(aboutRoute, [
-    'settings.group_version_reminder',
-    'settings.enable_version_reminder',
-  ]),
-
   ...createEntries(videoCardRoute, [
     'settings.plugin.video_card',
     'settings.group_video_card_grid',

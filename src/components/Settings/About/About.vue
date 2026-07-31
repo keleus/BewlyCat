@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import browser from 'webextension-polyfill'
 
-import Radio from '~/components/Radio.vue'
-import { settings } from '~/logic'
-
 import { version } from '../../../../package.json'
-import SettingsItem from '../components/SettingsItem.vue'
-import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 
 const hasNewVersion = ref<boolean>(false)
 const contributorsImageFailed = ref(false)
@@ -45,16 +40,6 @@ function handleContributorImageError() {
 
 <template>
   <div>
-    <SettingsItemGroup :title="$t('settings.group_version_reminder')">
-      <SettingsItem
-        :title="$t('settings.enable_version_reminder')"
-        :desc="$t('settings.enable_version_reminder_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.enableVersionReminder" />
-      </SettingsItem>
-    </SettingsItemGroup>
-
     <div max-w-800px mx-auto>
       <div relative w-200px m-auto>
         <img
