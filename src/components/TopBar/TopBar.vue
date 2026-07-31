@@ -374,8 +374,16 @@ onMounted(() => {
 
     // 添加全局点击事件监听器（用于触屏模式下点击外部关闭弹窗）
     document.addEventListener('click', handleClickOutsidePopup)
+    // 页面重新可见时按本地 Cookie 校正登录态：覆盖「他处登录/登出后
+    // 本标签处于后台」的场景，无需轮询（见 issue #921）
+    document.addEventListener('visibilitychange', handleVisibilityChange)
   })
 })
+
+function handleVisibilityChange() {
+  if (!document.hidden)
+    topBarStore.reconcileLocalLoginState()
+}
 
 onUnmounted(() => {
   if (hideTimer) {
@@ -396,6 +404,7 @@ onUnmounted(() => {
 
   // 移除全局点击事件监听器
   document.removeEventListener('click', handleClickOutsidePopup)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 // 快捷键
