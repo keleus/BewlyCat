@@ -33,7 +33,7 @@ import api from '~/utils/api'
 import { getCSRF, isHomePage } from '~/utils/main'
 import { isExtensionContextInvalidatedError, onMessage, sendMessage } from '~/utils/messaging'
 
-export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 未登录/未初始化时重查登录态的间隔
+export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 已登录但 userInfo 未填充时重查的间隔
 
 export const useTopBarStore = defineStore('topBar', () => {
   const toast = useToast()
@@ -1009,7 +1009,6 @@ export const useTopBarStore = defineStore('topBar', () => {
       }, delay)
     }
 
-    // 未登录时不启动轮询，等待事件唤醒
     if (!isLogin.value)
       return
 
