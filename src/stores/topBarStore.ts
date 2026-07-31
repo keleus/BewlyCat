@@ -215,7 +215,7 @@ export const useTopBarStore = defineStore('topBar', () => {
   // 用本地事实校正登录态：页面重新可见或收到会话 Cookie 变化广播时调用。
   // - 本地无 DedeUserID 且当前已登录：交由 nav 裁决（-101 才翻转，见 getUserInfo）
   // - 本地有 DedeUserID 且当前未登录：立即置已登录并拉取 userInfo 填充
-  // - 已登录但 mid 不一致：他处切换了账号，重新拉取（会重置 B 币领取状态）
+  // - 已登录但 userInfo 未填充，或 mid 不一致：补拉或换号重拉（会重置 B 币领取状态）
   function reconcileLocalLoginState() {
     const localMid = getLocalLoginMid()
 
@@ -232,7 +232,9 @@ export const useTopBarStore = defineStore('topBar', () => {
       return
     }
 
-    if (userInfo.mid && userInfo.mid !== localMid)
+    // 已登录但 userInfo 未填充（初始化时撞风控），或本地 mid 变化
+    // （他处切换账号）：重新拉取（会重置 B 币领取状态）
+    if (!userInfo.mid || userInfo.mid !== localMid)
       void getUserInfo().catch(() => {})
   }
 
