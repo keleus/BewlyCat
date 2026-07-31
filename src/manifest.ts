@@ -39,9 +39,10 @@ export async function getManifest() {
     permissions: [
       'storage',
       'declarativeNetRequest',
+      'cookies',
       ...(!isFirefox && !isSafari ? ['scripting'] : []),
       ...isFirefox
-        ? ['webRequest', 'webRequestBlocking', 'cookies']
+        ? ['webRequest', 'webRequestBlocking']
         : [],
     ],
     host_permissions: [

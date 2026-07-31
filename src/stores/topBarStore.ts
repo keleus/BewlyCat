@@ -814,6 +814,9 @@ export const useTopBarStore = defineStore('topBar', () => {
     },
   )
 
+  // 他处登录/登出/会话过期导致会话 Cookie 变化时，后台广播此消息（见 issue #921）
+  onMessage(TOP_BAR_STATE_MESSAGE.LOGIN_STATE_CHANGED, reconcileLocalLoginState)
+
   async function refreshSharedData() {
     await Promise.all([
       getUnreadMessageCount(),
