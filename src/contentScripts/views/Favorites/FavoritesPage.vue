@@ -496,6 +496,10 @@ async function handleItemMenuSelect(value: string | number) {
   if (!target || isSidebarOperating.value)
     return
 
+  // Capture target then close menu before any await, so a later closeItemMenu
+  // from ContextMenu cannot race with the confirm dialog lifecycle.
+  closeItemMenu()
+
   if (target.type === 'folder') {
     if (value === 'rename') {
       openSingleRenameFolder(target.id)

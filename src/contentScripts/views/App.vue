@@ -3,7 +3,7 @@ import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn, 
 import type { Ref } from 'vue'
 import { provide, ref } from 'vue'
 
-import Dialog from '~/components/Dialog.vue'
+import Button from '~/components/Button.vue'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
 import { confirmDialogKey } from '~/composables/useConfirmDialog'
@@ -46,14 +46,22 @@ const [showSettings, toggleSettings] = useToggle(false)
 const searchFocusOverlayActive = ref(false)
 
 interface ConfirmDialogRequest {
+  id: number
   message: string
   resolve: (confirmed: boolean) => void
   settled: boolean
 }
 
+/**
+ * Lightweight confirm host (no Dialog / Transition / Teleport).
+ * Resolving the promise often mutates large page lists (favorites, history…);
+ * doing that in the same tick as a Transition/Teleport teardown races Vue's
+ * patcher and throws insertBefore NotFoundError under <App>.
+ */
 const activeConfirmDialog = ref<ConfirmDialogRequest>()
 const confirmDialogQueue: ConfirmDialogRequest[] = []
-let confirmDialogClosing = false
+let confirmDialogBusy = false
+let confirmDialogIdSeq = 0
 
 function showNextConfirmDialog() {
   activeConfirmDialog.value = confirmDialogQueue.shift()
@@ -62,39 +70,52 @@ function showNextConfirmDialog() {
 function showConfirmDialog(message: string): Promise<boolean> {
   return new Promise((resolve) => {
     const request: ConfirmDialogRequest = {
+      id: ++confirmDialogIdSeq,
       message,
       resolve,
       settled: false,
     }
 
-    if (activeConfirmDialog.value || confirmDialogClosing)
+    if (activeConfirmDialog.value || confirmDialogBusy)
       confirmDialogQueue.push(request)
     else
       activeConfirmDialog.value = request
   })
 }
 
-function settleConfirmDialog(confirmed: boolean) {
+function finishConfirmDialog(confirmed: boolean) {
   const request = activeConfirmDialog.value
   if (!request || request.settled)
     return
 
   request.settled = true
-  request.resolve(confirmed)
+  confirmDialogBusy = true
+  // Unmount the overlay first; only then resolve so callers' DOM updates
+  // (e.g. splicing favorite cards) never interleave with this node removal.
+  activeConfirmDialog.value = undefined
+
+  nextTick(() => {
+    request.resolve(confirmed)
+    confirmDialogBusy = false
+    showNextConfirmDialog()
+  })
 }
 
-function closeConfirmDialog() {
+onKeyStroke('Escape', (e: KeyboardEvent) => {
   if (!activeConfirmDialog.value)
     return
+  e.preventDefault()
+  e.stopPropagation()
+  finishConfirmDialog(false)
+}, { dedupe: true })
 
-  settleConfirmDialog(false)
-  confirmDialogClosing = true
-  activeConfirmDialog.value = undefined
-  setTimeout(() => {
-    confirmDialogClosing = false
-    showNextConfirmDialog()
-  }, 0)
-}
+onKeyStroke('Enter', (e: KeyboardEvent) => {
+  if (!activeConfirmDialog.value)
+    return
+  e.preventDefault()
+  e.stopPropagation()
+  finishConfirmDialog(true)
+}, { dedupe: true })
 
 provide(confirmDialogKey, {
   confirm: showConfirmDialog,
@@ -1038,23 +1059,143 @@ if (settings.value.cleanUrlArgument) {
       @close="showIframeDrawer = false"
     />
 
-    <Dialog
+    <!-- Static confirm overlay: no Transition/Teleport (see finishConfirmDialog). -->
+    <div
       v-if="activeConfirmDialog"
-      :title="$t('common.operation.confirm')"
-      width="420px"
-      @confirm="settleConfirmDialog(true)"
-      @close="closeConfirmDialog"
+      :key="activeConfirmDialog.id"
+      class="bew-confirm-dialog"
+      role="alertdialog"
+      aria-modal="true"
+      :aria-label="$t('common.operation.confirm')"
     >
-      <p whitespace-pre-line text="$bew-text-1">
-        {{ activeConfirmDialog.message }}
-      </p>
-    </Dialog>
+      <div class="bew-confirm-dialog__backdrop" @click="finishConfirmDialog(false)" />
+      <div class="bew-confirm-dialog__panel">
+        <header class="bew-confirm-dialog__header">
+          <p class="bew-confirm-dialog__title">
+            {{ $t('common.operation.confirm') }}
+          </p>
+          <button
+            type="button"
+            class="bew-confirm-dialog__close"
+            :aria-label="$t('common.operation.cancel')"
+            @click="finishConfirmDialog(false)"
+          >
+            <div i-ic-baseline-clear />
+          </button>
+        </header>
+        <div class="bew-confirm-dialog__body">
+          <p class="bew-confirm-dialog__message">
+            {{ activeConfirmDialog.message }}
+          </p>
+        </div>
+        <footer class="bew-confirm-dialog__footer">
+          <Button type="tertiary" @click="finishConfirmDialog(false)">
+            {{ $t('common.operation.cancel') }}
+          </Button>
+          <Button type="primary" @click="finishConfirmDialog(true)">
+            {{ $t('common.operation.confirm') }}
+          </Button>
+        </footer>
+      </div>
+    </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .top-bar-layer {
   z-index: 1001;
+}
+
+.bew-confirm-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  pointer-events: auto;
+}
+
+.bew-confirm-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 40%);
+}
+
+.bew-confirm-dialog__panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  background: var(--bew-elevated-alt-solid);
+  border: 1px solid var(--bew-border-color);
+  border-radius: var(--bew-modal-radius);
+  box-shadow: var(--bew-shadow-4), var(--bew-shadow-edge-glow-2);
+  transform: translate(-50%, -50%);
+}
+
+.bew-confirm-dialog__header {
+  display: flex;
+  gap: var(--bew-space-4);
+  align-items: center;
+  justify-content: space-between;
+  min-height: 70px;
+  padding: 0 var(--bew-space-8);
+}
+
+.bew-confirm-dialog__title {
+  margin: 0;
+  font-size: var(--bew-font-size-title);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-title);
+}
+
+.bew-confirm-dialog__close {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  appearance: none;
+  color: inherit;
+  cursor: pointer;
+  background: var(--bew-elevated);
+  border: 1px solid var(--bew-border-color);
+  border-radius: var(--bew-interactive-radius);
+  box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
+
+  &:hover {
+    color: var(--bew-theme-color);
+    background: var(--bew-theme-color-30);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color-40);
+    outline-offset: var(--bew-space-0-5);
+  }
+}
+
+.bew-confirm-dialog__body {
+  padding: var(--bew-space-2) var(--bew-space-8) var(--bew-space-2);
+}
+
+.bew-confirm-dialog__message {
+  margin: 0;
+  color: var(--bew-text-1);
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-regular);
+  line-height: var(--bew-line-height-body);
+  white-space: pre-line;
+}
+
+.bew-confirm-dialog__footer {
+  display: flex;
+  gap: var(--bew-space-2);
+  justify-content: flex-end;
+  padding: var(--bew-space-2) var(--bew-space-8) var(--bew-space-6);
 }
 
 .top-bar-host--behind-search-overlay {

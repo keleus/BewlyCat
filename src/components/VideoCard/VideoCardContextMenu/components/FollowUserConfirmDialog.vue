@@ -21,8 +21,9 @@ const authorName = computed(() => {
 })
 
 function handleConfirm() {
+  // Only notify parent — Dialog closes itself and then emits @close.
+  // Setting v-if false here races Teleport/Transition and can throw insertBefore.
   emit('confirm')
-  showDialog.value = false
 }
 
 function handleClose() {

@@ -46,29 +46,28 @@ const emit = defineEmits(['close', 'confirm'])
 const showShortcut = ref<boolean>(false)
 const { mainAppRef } = useBewlyApp()
 const showDialog = ref<boolean>(false)
+/**
+ * Closing protocol:
+ * 1) handleClose only sets showDialog=false (starts leave transition)
+ * 2) @after-leave emits `close` so parents can v-if-unmount after DOM is clean
+ * Never emit close + parent-unmount while Transition/Teleport still patching
+ * (that caused insertBefore NotFoundError and "works only once" ghost overlays).
+ */
+let isClosing = false
+let closeEmitted = false
 
 onKeyStroke('Enter', (e: KeyboardEvent) => {
   e.preventDefault()
-  if (!props.loading)
+  if (!props.loading && showDialog.value && !isClosing)
     handleConfirm()
 })
 onKeyStroke('Escape', (e: KeyboardEvent) => {
-  console.log('[Dialog] ESC key pressed!')
-  console.log('[Dialog] showDialog.value:', showDialog.value)
-
-  // Only handle when dialog is shown
-  if (!showDialog.value) {
-    console.log('[Dialog] Dialog not shown, ignoring ESC')
+  if (!showDialog.value || isClosing)
     return
-  }
 
-  console.log('[Dialog] Processing ESC key')
   e.preventDefault()
-  if (props.loading && props.preventCloseWhenLoading) {
-    console.log('[Dialog] Prevented close due to loading')
+  if (props.loading && props.preventCloseWhenLoading)
     return
-  }
-  console.log('[Dialog] Closing dialog')
   handleClose()
 })
 
@@ -128,32 +127,52 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  handleClose()
+  // Parent forced unmount (e.g. v-if=false while still open) — ensure close is observed once.
+  emitCloseOnce()
 })
 
+function emitCloseOnce() {
+  if (closeEmitted)
+    return
+  closeEmitted = true
+  isClosing = true
+  emit('close')
+}
+
+function onAfterLeave() {
+  // Leave finished (or instant when no CSS transition) — safe for parent to unmount.
+  emitCloseOnce()
+}
+
 function handleClose() {
+  if (isClosing || closeEmitted)
+    return
   if (props.loading && props.preventCloseWhenLoading)
     return
 
+  isClosing = true
+  // Already hidden (e.g. closed before enter finished) — no leave hook will run.
+  if (!showDialog.value) {
+    emitCloseOnce()
+    return
+  }
   showDialog.value = false
-  nextTick(() => {
-    emit('close')
-  })
+  // `close` is emitted in onAfterLeave after the leaving node is removed from DOM.
 }
 
 function handleConfirm() {
+  if (isClosing || closeEmitted)
+    return
+
   emit('confirm')
-  if (!props.loading) {
-    nextTick(() => {
-      handleClose()
-    })
-  }
+  if (!props.loading)
+    handleClose()
 }
 </script>
 
 <template>
   <Teleport :to="mainAppRef" :disabled="!appendToBewlyBody">
-    <Transition :name="transitionName">
+    <Transition :name="transitionName" @after-leave="onAfterLeave">
       <div
         v-if="showDialog"
         class="dialog"
