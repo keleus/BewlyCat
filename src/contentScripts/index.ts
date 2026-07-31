@@ -611,8 +611,9 @@ else if (shouldInitializeContentScript) {
       // 方案 1: 清理脚本 + 删除 DOM（可能更彻底，但有风险）
       // 方案 2: CSS 隐藏（更安全，性能更好，推荐）
 
-      // 推荐使用方案2：CSS隐藏
-      // 使用 CSS 隐藏 B 站原始页面，保留 DOM 结构
+      // 方案2：CSS 完整隐藏原站首页根节点，不再把 #app / .bili-feed4 保活露出。
+      // 原版顶栏需要用时再 portal 到 body（见 ensureOriginalBilibiliTopBarAppended），
+      // 避免「半隐藏的 B 站首页 Vue 树」与自定义首页双开抢资源。
       injectCSS(`
       /* 自定义首页始终以当前可视视口为尺寸基准，避免原站最小宽度撑大文档。 */
       html,
@@ -633,41 +634,9 @@ else if (shouldInitializeContentScript) {
         position: absolute !important;
         left: -9999px !important;
       }
-      /* 保留新版首页中由 Vue 管理的原版顶栏，避免移动节点破坏组件父子关系 */
-      body > #app:has(> .bili-feed4 > .bili-header) {
-        display: block !important;
-        visibility: visible !important;
-        width: 100% !important;
-        height: 0 !important;
-        pointer-events: none !important;
+      /* 顶栏 portal 到 body 后的定位；显隐由 .remove-top-bar 控制 */
+      body > .bili-header {
         position: relative !important;
-        left: 0 !important;
-        overflow: visible !important;
-      }
-      body > #app:has(> .bili-feed4 > .bili-header) > *:not(.bili-feed4),
-      body > #app > .bili-feed4 > *:not(.bili-header):not(.header-channel) {
-        display: none !important;
-      }
-      body > #app > .bili-feed4 {
-        display: block !important;
-        visibility: visible !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        max-width: 100% !important;
-        height: 0 !important;
-        pointer-events: none !important;
-        position: relative !important;
-        left: 0 !important;
-        overflow: visible !important;
-      }
-      /* Ensure the original top bar remains visible and properly positioned */
-      /* The visibility/display will be controlled by .remove-top-bar class in removeTopBar.scss */
-      .bili-header {
-        position: relative !important;
-        left: 0 !important;
-        pointer-events: auto !important;
-      }
-      .header-channel {
         left: 0 !important;
         pointer-events: auto !important;
       }
@@ -676,8 +645,9 @@ else if (shouldInitializeContentScript) {
       // 温和的脚本清理（可选，减少后台资源消耗）
       cleanupBilibiliScripts()
 
-      if (settings.value.useOriginalBilibiliTopBar)
-        ensureOriginalBilibiliTopBarAppended(document)
+      // 始终把原版顶栏移出被隐藏的 #app，避免后续开关原版顶栏时节点仍埋在不可见树里。
+      // 使用 Bewly 顶栏时由 .remove-top-bar 隐藏占位，逻辑对齐 1.6.9。
+      ensureOriginalBilibiliTopBarAppended(document)
 
       // Setup login button click handlers for the original Bilibili top bar
       setupLoginButtonClickHandlers(document)

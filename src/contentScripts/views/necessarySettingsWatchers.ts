@@ -4,7 +4,7 @@ import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { setUselessFeedCardBlockerEnabled, shouldEnableUselessFeedCardBlocker } from '~/contentScripts/features/blockUselessFeedCards'
 import { LanguageType } from '~/enums/appEnums'
 import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
-import { ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, restoreOriginalBilibiliTopBarParent, setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
+import { ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe, isVideoPlaybackPage } from '~/utils/main'
 
 function isFestivalPage(): boolean {
@@ -538,15 +538,15 @@ export function setupNecessarySettingsWatchers() {
       // we should keep the *outer* document's Bilibili top bar hidden to avoid double headers.
       const shouldHideOuterBiliTopBar = hasBiliIframePage()
 
+      // 自定义首页下原版顶栏只挂在 body，不再回填 #app 做保活。
+      // 切回 Bewly 顶栏时用 remove-top-bar 隐藏即可，避免重新点亮原站首页 Vue 树。
       if (settings.value.useOriginalBilibiliTopBar && !shouldHideOuterBiliTopBar)
         ensureOriginalBilibiliTopBarAppended(document)
-      else
-        restoreOriginalBilibiliTopBarParent(document)
 
       const shouldApplyRemoveTopBar = !settings.value.useOriginalBilibiliTopBar || shouldHideOuterBiliTopBar
       document.documentElement.classList.toggle('remove-top-bar', shouldApplyRemoveTopBar)
 
-      const outerHeader = document.querySelector<HTMLElement>('.bili-header')
+      const outerHeader = document.querySelector<HTMLElement>('body > .bili-header, .bili-header')
       if (outerHeader) {
         if (shouldHideOuterBiliTopBar)
           outerHeader.style.display = 'none'

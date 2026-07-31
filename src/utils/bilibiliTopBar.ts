@@ -146,19 +146,21 @@ function keepOriginalTopBarAvailable(doc: Document) {
 
   initializedTopBarDocuments.add(doc)
   const observer = new MutationObserver(() => {
+    // 优先拿仍挂在 #app 树里的新顶栏，再回退到任意 .bili-header
     const header = getNativeDocumentTopBar(doc) || getDocumentTopBar(doc)
     if (!header || header === cachedOriginalTopBar)
       return
 
-    const mountedInBody = cachedOriginalTopBar?.parentElement === doc.body
+    const previousOnBody = cachedOriginalTopBar?.parentElement === doc.body
     const scrolled = cachedOriginalTopBar?.classList.contains('bewly-original-top-bar-scrolled') ?? false
-    if (mountedInBody)
-      cachedOriginalTopBar?.remove()
+    if (previousOnBody && cachedOriginalTopBar && cachedOriginalTopBar !== header)
+      cachedOriginalTopBar.remove()
 
     cachedOriginalTopBar = header
     rememberOriginalTopBarParent(doc, header)
     prepareOriginalTopBar(header)
-    if (mountedInBody)
+    // 自定义首页会隐藏 #app：新生成的原生顶栏一律 portal 到 body
+    if (header.parentElement !== doc.body)
       doc.body.prepend(header)
     setOriginalBilibiliTopBarScrolled(doc, scrolled)
   })
@@ -392,28 +394,23 @@ export function ensureOriginalBilibiliTopBarAppended(doc: Document): boolean {
   rememberOriginalTopBarParent(doc, header)
   prepareOriginalTopBar(header)
 
-  // Portal only the live header. The native channel row stays under Bilibili's Vue root.
+  // 自定义首页会整树隐藏 #app，必须把顶栏 portal 到 body，不能依赖 #app 保活露出。
   if (header.parentElement !== doc.body || header !== doc.body.firstElementChild)
     doc.body.prepend(header)
 
   return true
 }
 
+/**
+ * 将 body 上的原版顶栏尝试放回 B 站原生父节点。
+ * 自定义首页路径不再调用此函数（避免回填保活）；保留给少数需要归还所有权的场景。
+ */
 export function restoreOriginalBilibiliTopBarParent(doc: Document): boolean {
-  const nativeHeader = getNativeDocumentTopBar(doc)
   const mountedHeader = cachedOriginalTopBar?.parentElement === doc.body
     ? cachedOriginalTopBar
     : doc.querySelector<HTMLElement>('body > .bili-header')
 
-  if (nativeHeader && nativeHeader !== mountedHeader) {
-    mountedHeader?.remove()
-    cachedOriginalTopBar = nativeHeader
-    rememberOriginalTopBarParent(doc, nativeHeader)
-    prepareOriginalTopBar(nativeHeader)
-    return true
-  }
-
-  const header = mountedHeader || cachedOriginalTopBar || nativeHeader
+  const header = mountedHeader || cachedOriginalTopBar
   if (!header)
     return false
 
@@ -423,7 +420,6 @@ export function restoreOriginalBilibiliTopBarParent(doc: Document): boolean {
   if (!parent)
     return false
 
-  // Return ownership before the outer header is hidden or replaced by the iframe homepage.
   if (header.parentElement !== parent)
     parent.prepend(header)
 
