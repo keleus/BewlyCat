@@ -77,6 +77,19 @@ const collapsed = ref(props.defaultCollapsed)
   width: 100%;
   color: inherit;
   text-align: left;
+  cursor: pointer;
+
+  .group-title,
+  .collapse-icon {
+    transition: color var(--bew-duration-normal) var(--bew-ease-standard);
+  }
+
+  &:hover {
+    .group-title,
+    .collapse-icon {
+      color: var(--bew-theme-color);
+    }
+  }
 }
 
 .group-title {

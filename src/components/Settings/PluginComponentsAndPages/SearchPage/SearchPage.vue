@@ -24,6 +24,7 @@ function changeSearchBarFocusCharacter(url: string) {
       <SettingsItem :title="$t('settings.logo_color')" right-width="auto">
         <div w="220px" flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
           <div
+            class="search-page-choice-option"
             flex="1 ~" items-center justify-center py-1 cursor-pointer
             text-center rounded="$bew-radius"
             :style="{
@@ -35,6 +36,7 @@ function changeSearchBarFocusCharacter(url: string) {
             {{ $t('settings.logo_color_opt.theme_color') }}
           </div>
           <div
+            class="search-page-choice-option"
             flex="1 ~" items-center justify-center py-1 cursor-pointer
             text-center rounded="$bew-radius"
             :style="{
@@ -82,6 +84,7 @@ function changeSearchBarFocusCharacter(url: string) {
         <template #bottom>
           <div grid="~ xl:cols-8 lg:cols-6 cols-5 gap-4">
             <picture
+              class="bew-settings-option--lift"
               aspect-square bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
               un-border="4 transparent" cursor-pointer
               grid place-items-center
@@ -92,6 +95,7 @@ function changeSearchBarFocusCharacter(url: string) {
             </picture>
             <Tooltip v-for="item in SEARCH_BAR_CHARACTERS" :key="item.url" placement="top" :content="item.name" aspect-square>
               <picture
+                class="bew-settings-option--lift"
                 aspect-square bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
                 un-border="4 transparent" w-full
                 :class="{ 'selected-wallpaper': settings.searchPageSearchBarFocusCharacter === item.url }"
@@ -138,6 +142,7 @@ function changeSearchBarFocusCharacter(url: string) {
         </template>
         <div w="220px" flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
           <div
+            class="search-page-choice-option"
             flex="1 ~" items-center justify-center py-1 cursor-pointer
             text-center rounded="$bew-radius"
             :style="{
@@ -149,6 +154,7 @@ function changeSearchBarFocusCharacter(url: string) {
             {{ $t('settings.search_results_pagination_mode_opt.scroll') }}
           </div>
           <div
+            class="search-page-choice-option"
             flex="1 ~" items-center justify-center py-1 cursor-pointer
             text-center rounded="$bew-radius"
             :style="{
@@ -168,6 +174,17 @@ function changeSearchBarFocusCharacter(url: string) {
 </template>
 
 <style scoped lang="scss">
+.search-page-choice-option {
+  transition:
+    filter var(--bew-duration-normal) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.search-page-choice-option:hover {
+  filter: brightness(1.08);
+  box-shadow: inset 0 0 0 1px var(--bew-border-color);
+}
+
 .selected-wallpaper {
   --uno: "border-$bew-theme-color-60";
 }

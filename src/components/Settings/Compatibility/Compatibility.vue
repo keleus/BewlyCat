@@ -50,6 +50,7 @@ function changeThemeColor(color: string) {
     <SettingsItemGroup title="Bilibili Evolved">
       <SettingsItem :title="$t('settings.follow_bilibili_evolved_color')" :desc="$t('settings.follow_bilibili_evolved_color_desc')" right-width="auto">
         <div
+          class="color-option"
           w-20px h-20px rounded-8 cursor-pointer transition
           duration-300 box-border
           :style="{
@@ -66,5 +67,15 @@ function changeThemeColor(color: string) {
 </template>
 
 <style lang="scss" scoped>
+.color-option {
+  transition:
+    filter var(--bew-duration-normal) var(--bew-ease-standard),
+    outline-color var(--bew-duration-normal) var(--bew-ease-standard);
+}
 
+.color-option:hover {
+  filter: brightness(1.12);
+  outline: 1px solid var(--bew-border-color);
+  outline-offset: 2px;
+}
 </style>

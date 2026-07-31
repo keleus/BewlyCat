@@ -223,10 +223,14 @@ function removeUser(mid: string) {
   font-size: var(--bew-font-size-control);
   font-weight: var(--bew-font-weight-semibold);
   line-height: var(--bew-line-height-control);
+  transition: filter var(--bew-duration-normal) var(--bew-ease-standard);
 }
 .wanted-users-manager__form button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+.wanted-users-manager__form button:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 .wanted-users-manager__error {
   display: flex;

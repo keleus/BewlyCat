@@ -212,6 +212,7 @@ function changeWallpaper(url: string) {
         <div class="theme-color-options" flex="~ gap-2 wrap" justify-end>
           <div
             v-for="color in themeColorOptions" :key="color"
+            class="color-option"
             w-20px h-20px rounded-8 cursor-pointer transition
             duration-300 box-border
             :style="{
@@ -223,6 +224,7 @@ function changeWallpaper(url: string) {
             @click="changeThemeColor(color)"
           />
           <div
+            class="color-option"
             w-20px h-20px rounded-8 overflow-hidden
             cursor-pointer transition duration-300
             flex="~ items-center justify-center"
@@ -251,6 +253,7 @@ function changeWallpaper(url: string) {
         <div class="dark-mode-base-color-options" flex="~ gap-2 wrap" justify-end>
           <div
             v-for="color in darkModeBaseColorOptions" :key="color"
+            class="color-option"
             w-20px h-20px rounded-8 cursor-pointer transition
             duration-300 box-border
             :style="{
@@ -262,6 +265,7 @@ function changeWallpaper(url: string) {
             @click="changeDarkModeBaseColor(color)"
           />
           <div
+            class="color-option"
             w-20px h-20px rounded-8 overflow-hidden
             cursor-pointer transition duration-300
             flex="~ items-center justify-center"
@@ -334,6 +338,18 @@ function changeWallpaper(url: string) {
 </template>
 
 <style lang="scss" scoped>
+.color-option {
+  transition:
+    filter var(--bew-duration-normal) var(--bew-ease-standard),
+    outline-color var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.color-option:hover {
+  filter: brightness(1.12);
+  outline: 1px solid var(--bew-border-color);
+  outline-offset: 2px;
+}
+
 .theme-color-options {
   width: 312px;
 }

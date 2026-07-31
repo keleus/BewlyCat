@@ -453,6 +453,7 @@ function handleToggleHomeTab(tab: any) {
           >
             <template #item="{ element }">
               <div
+                class="bew-settings-option--lift"
                 flex="~ gap-2 items-center" p="x-4 y-2" bg="$bew-fill-1" rounded="$bew-radius" cursor-all-scroll
                 duration-300
                 :style="{

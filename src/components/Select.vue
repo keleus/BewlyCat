@@ -207,6 +207,14 @@ function onMouseEnter() {
 </template>
 
 <style lang="scss" scoped>
+.select-trigger {
+  transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.select-trigger:hover {
+  background-color: var(--bew-fill-2);
+}
+
 // 向上弹出时的过渡：方向与全局 .dropdown（向下开）相反
 // 使用独立的 translate 属性而非 transform，避免覆盖定位用的 inline transform
 // 不要 transition: all，否则二次校正坐标时会带动 top/left 飞入
