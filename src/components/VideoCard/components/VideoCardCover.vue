@@ -64,22 +64,27 @@ const shouldEnableSwipeSeek = computed(() => settings.value.enableVideoPreviewSw
 let hls: Hls | null = null
 let flvPlayer: flvjs.Player | null = null
 let controlsHideTimeout: number | null = null
+/** 仅记录 pointerdown 意图；真正 scrub 需横向拖过阈值后才激活 */
 let activeScrubPointerId: number | null = null
 let scrubStartX = 0
 let scrubStartY = 0
 let scrubStartTime = 0
 let scrubPreviewWidth = 0
+/** 是否已确认为横向拖动手势（越过阈值）。长按/微抖不会置 true */
 let hasDragGesture = false
 let suppressPreviewClick = false
 let suppressPreviewClickTimeout: number | null = null
 let pendingScrubTime: number | null = null
 let scrubAnimationFrame: number | null = null
+let scrubSeekTimeout: number | null = null
 let lastScrubSeekAt = 0
 let lastControlsPointerActivityAt = 0
 
-const SCRUB_START_THRESHOLD_PX = 8
+/** 需要明显的左右拖动才接管，避免长按/点击抖动误触并频繁 seek */
+const SCRUB_START_THRESHOLD_PX = 18
 const NEARBY_SEEK_RANGE_SECONDS = 30
-const SCRUB_SEEK_INTERVAL_MS = 80
+/** 拖动中降低视频 seek 频率；进度条仍即时更新 */
+const SCRUB_SEEK_INTERVAL_MS = 120
 const CONTROLS_POINTER_ACTIVITY_INTERVAL_MS = 100
 
 function clearControlsHideTimeout() {
@@ -130,11 +135,19 @@ function updateScrubProgress(videoEl: HTMLVideoElement) {
     : 0
 }
 
-function resetPreviewScrub() {
+function clearScrubSeekSchedule() {
   if (scrubAnimationFrame !== null) {
     cancelAnimationFrame(scrubAnimationFrame)
     scrubAnimationFrame = null
   }
+  if (scrubSeekTimeout !== null) {
+    clearTimeout(scrubSeekTimeout)
+    scrubSeekTimeout = null
+  }
+}
+
+function resetPreviewScrub() {
+  clearScrubSeekSchedule()
   activeScrubPointerId = null
   hasDragGesture = false
   isScrubbing.value = false
@@ -156,22 +169,44 @@ function getVideoTimeFromPointer(videoEl: HTMLVideoElement, pointerX: number) {
   return Math.min(duration, Math.max(0, scrubStartTime + deltaX / scrubPreviewWidth * seekRange))
 }
 
+function applyPendingScrubSeek(videoEl: HTMLVideoElement, timestamp = performance.now()) {
+  const nextTime = pendingScrubTime
+  if (nextTime === null)
+    return
+
+  lastScrubSeekAt = timestamp
+  videoEl.currentTime = nextTime
+}
+
+/**
+ * 进度条即时刷新；真正改 video.currentTime 做节流。
+ * 节流等待结束后会补一次最新位置，避免拖动时画面卡住。
+ */
 function scheduleVideoTimeUpdate(videoEl: HTMLVideoElement, targetTime: number) {
   pendingScrubTime = targetTime
   scrubProgress.value = Math.min(100, Math.max(0, targetTime / videoEl.duration * 100))
 
-  if (scrubAnimationFrame !== null)
+  const now = performance.now()
+  const elapsed = now - lastScrubSeekAt
+  if (elapsed >= SCRUB_SEEK_INTERVAL_MS) {
+    clearScrubSeekSchedule()
+    applyPendingScrubSeek(videoEl, now)
+    return
+  }
+
+  if (scrubSeekTimeout !== null || scrubAnimationFrame !== null)
     return
 
-  scrubAnimationFrame = requestAnimationFrame((timestamp) => {
-    scrubAnimationFrame = null
-    const nextTime = pendingScrubTime
-    if (nextTime === null || timestamp - lastScrubSeekAt < SCRUB_SEEK_INTERVAL_MS)
-      return
-
-    lastScrubSeekAt = timestamp
-    videoEl.currentTime = nextTime
-  })
+  const waitMs = Math.max(0, SCRUB_SEEK_INTERVAL_MS - elapsed)
+  scrubSeekTimeout = window.setTimeout(() => {
+    scrubSeekTimeout = null
+    scrubAnimationFrame = requestAnimationFrame((timestamp) => {
+      scrubAnimationFrame = null
+      if (pendingScrubTime === null || !hasDragGesture)
+        return
+      applyPendingScrubSeek(videoEl, timestamp)
+    })
+  }, waitMs)
 }
 
 function handlePreviewPointerDown(event: PointerEvent) {
@@ -188,18 +223,21 @@ function handlePreviewPointerDown(event: PointerEvent) {
   if (shouldEnableVideoControls.value && event.clientY >= rect.bottom - 40)
     return
 
+  // 只记录起点。长按/点击不 seek、不 capture；需左右拖过阈值才激活。
   activeScrubPointerId = event.pointerId
   scrubStartX = event.clientX
   scrubStartY = event.clientY
   scrubStartTime = videoEl.currentTime
   scrubPreviewWidth = rect.width
   hasDragGesture = false
-  pendingScrubTime = videoEl.currentTime
-  updateScrubProgress(videoEl)
+  pendingScrubTime = null
+  lastScrubSeekAt = 0
 }
 
 function handlePreviewPointerMove(event: PointerEvent) {
-  handlePreviewMouseMove(event)
+  // 未进入横向 scrub 时才刷新控制条，避免拖动中额外响应式开销
+  if (!hasDragGesture)
+    handlePreviewMouseMove(event)
 
   if (activeScrubPointerId !== event.pointerId)
     return
@@ -211,23 +249,29 @@ function handlePreviewPointerMove(event: PointerEvent) {
 
   const deltaX = event.clientX - scrubStartX
   const deltaY = event.clientY - scrubStartY
+
   if (!hasDragGesture) {
     const horizontalDistance = Math.abs(deltaX)
     const verticalDistance = Math.abs(deltaY)
-    if (horizontalDistance < SCRUB_START_THRESHOLD_PX && verticalDistance < SCRUB_START_THRESHOLD_PX)
+
+    // 位移不足：当作长按/静止，不处理
+    if (horizontalDistance < SCRUB_START_THRESHOLD_PX)
       return
 
-    // 只接管明确的横向手势；纵向移动继续交给页面原生滚动。
+    // 纵向优先：交给页面滚动，放弃本次 scrub 意图
     if (horizontalDistance <= verticalDistance) {
       resetPreviewScrub()
       return
     }
 
+    // 明确横向拖动一段距离后才接管
+    hasDragGesture = true
+    isScrubbing.value = true
+    pendingScrubTime = scrubStartTime
+    updateScrubProgress(videoEl)
     previewEl.setPointerCapture(event.pointerId)
   }
 
-  hasDragGesture = true
-  isScrubbing.value = true
   const targetTime = getVideoTimeFromPointer(videoEl, event.clientX)
   if (targetTime !== null)
     scheduleVideoTimeUpdate(videoEl, targetTime)
@@ -247,6 +291,7 @@ function finishPreviewScrub(event: PointerEvent, cancelled = false) {
   const finalScrubTime = pendingScrubTime
   resetPreviewScrub()
 
+  // 未形成横向拖动（点击/长按）直接结束，不 seek、不拦截点击
   if (!didDrag || cancelled)
     return
 
