@@ -212,6 +212,16 @@ export const useTopBarStore = defineStore('topBar', () => {
     return result.status
   }
 
+  // 登录/登出会先后触发多个 Cookie 事件，reconcile 会被密集调用；
+  // 拉取进行中时复用同一 Promise，避免重复请求 nav
+  let fetchUserInfoPromise: Promise<LoginStatus> | null = null
+  function fetchUserInfoOnce(): Promise<LoginStatus> {
+    fetchUserInfoPromise ??= getUserInfo()
+      .catch(() => LoginStatus.TransientError)
+      .finally(() => { fetchUserInfoPromise = null })
+    return fetchUserInfoPromise
+  }
+
   // 用本地事实校正登录态：页面重新可见或收到会话 Cookie 变化广播时调用。
   // - 本地无 DedeUserID 且当前已登录：交由 nav 裁决（-101 才翻转，见 getUserInfo）
   // - 本地有 DedeUserID 且当前未登录：立即置已登录并拉取 userInfo 填充
@@ -221,21 +231,21 @@ export const useTopBarStore = defineStore('topBar', () => {
 
     if (localMid === undefined) {
       if (isLogin.value)
-        void getUserInfo().catch(() => {})
+        void fetchUserInfoOnce()
       return
     }
 
     if (!isLogin.value) {
       isLogin.value = true
       // 拉取 userInfo 填充，并重启定时器（未登录时定时器处于停止状态）
-      void getUserInfo().catch(() => {}).then(() => startUpdateTimer())
+      void fetchUserInfoOnce().then(() => startUpdateTimer())
       return
     }
 
     // 已登录但 userInfo 未填充（初始化时撞风控），或本地 mid 变化
     // （他处切换账号）：重新拉取（会重置 B 币领取状态）
     if (!userInfo.mid || userInfo.mid !== localMid)
-      void getUserInfo().catch(() => {})
+      void fetchUserInfoOnce()
   }
 
   // Notification Methods
