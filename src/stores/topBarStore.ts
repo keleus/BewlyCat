@@ -223,7 +223,8 @@ export const useTopBarStore = defineStore('topBar', () => {
 
     if (!isLogin.value) {
       isLogin.value = true
-      void getUserInfo().catch(() => {})
+      // 拉取 userInfo 填充，并重启定时器（未登录时定时器处于停止状态）
+      void getUserInfo().catch(() => {}).then(() => startUpdateTimer())
       return
     }
 
@@ -946,17 +947,16 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (updateTimer)
       return
 
-    // 已登录且已拿到用户信息时按 updateInterval 同步角标状态；
-    // 未登录或用户信息尚未初始化（瞬态失败后的空状态）时按较短间隔重查登录态，
-    // 风控/临时故障窗口过后可自动恢复登录显示，无需刷新页面（见 issue #921）。
-    // 只有瞬态失败才指数退避（60s → 120s → 240s → 300s 封顶），避免多个标签页在
-    // 故障窗口内高频请求 nav；真实登出（-101）是一次成功的检查，保持 60s 重查
-    // 节奏，以便用户在他处重新登录后能被及时发现。
-    // 已知限制：本标签 isLogin=true 且 mid 已填充时不会周期性重查，跨标签页登出
-    // 依赖 INVALIDATED 消息刷新（既有行为，改动前一致）。
+    // 登录态由本地事实与事件驱动维护（见 reconcileLocalLoginState），定时器
+    // 不再承担登录态轮询，只负责两件事：
+    // 1. 已登录但 userInfo 尚未填充（初始化时撞风控/限流）：按
+    //    LOGIN_RECHECK_INTERVAL 重查，瞬态失败指数退避（60s → 120s → 240s →
+    //    300s 封顶），填充成功即转 2；
+    // 2. userInfo 已填充：按 updateInterval 同步角标状态。
+    // 未登录时不启动任何轮询，等待事件唤醒（见 issue #921）。
     const maxRecheckInterval = 5 * 60 * 1000
     let recheckInterval = LOGIN_RECHECK_INTERVAL
-    const needsRecheck = () => !isLogin.value || !userInfo.mid
+    const needsRecheck = () => isLogin.value && !userInfo.mid
     const scheduleNext = (delay: number) => {
       updateTimer = setTimeout(() => {
         // 扩展重载后旧 content script 的 runtime 已失效：停止轮询，等待刷新
@@ -969,13 +969,19 @@ export const useTopBarStore = defineStore('topBar', () => {
           getUserInfo()
             .catch(() => LoginStatus.TransientError)
             .then((status) => {
-              // 只有瞬态失败才退避；登录恢复或真实登出都复位到基准间隔
+              // 重查判定真实登出（-101）：停止轮询，等待事件唤醒
+              if (!isLogin.value) {
+                updateTimer = null
+                return
+              }
+
+              // 只有瞬态失败才退避；填充成功即复位到基准间隔
               if (status === LoginStatus.TransientError)
                 recheckInterval = Math.min(recheckInterval * 2, maxRecheckInterval)
               else
                 recheckInterval = LOGIN_RECHECK_INTERVAL
 
-              // 重查成功（登录恢复）后立即同步一次角标状态，不用等下一个 tick
+              // userInfo 填充成功后立即同步一次角标状态，不用等下一个 tick
               if (!needsRecheck()) {
                 void syncSharedData().catch((error) => {
                   console.error('同步顶栏共享状态失败:', error)
@@ -986,6 +992,12 @@ export const useTopBarStore = defineStore('topBar', () => {
           return
         }
 
+        if (!isLogin.value) {
+          // 未登录：停止轮询，等待 Cookie 事件或可见性校正唤醒
+          updateTimer = null
+          return
+        }
+
         recheckInterval = LOGIN_RECHECK_INTERVAL
         syncSharedData().catch((error) => {
           console.error('同步顶栏共享状态失败:', error)
@@ -993,6 +1005,10 @@ export const useTopBarStore = defineStore('topBar', () => {
         scheduleNext(updateInterval)
       }, delay)
     }
+
+    // 未登录时不启动轮询，等待事件唤醒
+    if (!isLogin.value)
+      return
 
     scheduleNext(needsRecheck() ? LOGIN_RECHECK_INTERVAL : updateInterval)
   }

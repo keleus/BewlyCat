@@ -351,7 +351,8 @@ onMounted(() => {
     catch (error) {
       console.error('初始化顶栏数据失败:', error)
     }
-    // 无论登录与否都启动定时器：未登录时用于周期重查登录态
+    // 启动定时器：已登录时同步角标/补填 userInfo；未登录时为空转，
+    // 登录态由本地 Cookie 事实与事件驱动维护（见 issue #921）
     topBarStore.startUpdateTimer()
     setupScrollListeners()
 
