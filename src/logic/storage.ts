@@ -148,6 +148,13 @@ export type VideoPlayerModeOverride = DefaultVideoPlayerMode | 'inherit'
 export type VideoPlayerModeContext = 'multipart' | 'collection' | 'bangumi' | 'watchLater' | 'playlist'
 export type VideoPlayerModeOverrides = Record<VideoPlayerModeContext, VideoPlayerModeOverride>
 export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
+/**
+ * 评论回复树展示模式：
+ * - lineCollapseMain：线条，收起时折叠父节点本体
+ * - lineKeepMain：线条，收起时保留父节点正文，仅隐藏子回复
+ * - indentOnly：仅缩进，无收起
+ */
+export type CommentReplyTreeMode = 'lineCollapseMain' | 'lineKeepMain' | 'indentOnly'
 
 export interface ShadowCurvePoint {
   position: number
@@ -205,7 +212,7 @@ export interface Settings {
   showIPLocation: boolean // 添加显示IP归属地设置项
   showSex: boolean // 添加显示性别设置项
   showCommentHostTag: boolean // 显示评论回复详情页楼主标识
-  enableCommentReplyTree: boolean // 根据回复关系逐层缩进楼中楼
+  commentReplyTreeMode: CommentReplyTreeMode // 评论回复树展示模式
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
   externalWatchLaterButton: boolean // 稍后再看按钮外置
@@ -480,7 +487,7 @@ export const originalSettings: Settings = {
   showIPLocation: true, // 默认启用IP归属地显示
   showSex: true, // 默认启用性别显示
   showCommentHostTag: true, // 默认启用楼主标识显示
-  enableCommentReplyTree: true, // 默认启用评论回复树状缩进
+  commentReplyTreeMode: 'lineKeepMain', // 默认：线条树状，收起时保留父节点正文
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
   externalWatchLaterButton: true, // 默认开启稍后再看按钮外置
@@ -798,6 +805,22 @@ watch(
     const record = value as Record<string, any>
 
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
+
+    // 旧布尔开关 → 评论回复树展示模式
+    const validCommentReplyTreeModes: CommentReplyTreeMode[] = [
+      'lineCollapseMain',
+      'lineKeepMain',
+      'indentOnly',
+    ]
+    if (typeof record.enableCommentReplyTree === 'boolean') {
+      // 旧版开启对应可收起主评论；关闭则回落到新默认（引导线、不收起主评论）
+      record.commentReplyTreeMode = record.enableCommentReplyTree
+        ? 'lineCollapseMain'
+        : 'lineKeepMain'
+      Reflect.deleteProperty(record, 'enableCommentReplyTree')
+    }
+    if (!validCommentReplyTreeModes.includes(record.commentReplyTreeMode))
+      record.commentReplyTreeMode = originalSettings.commentReplyTreeMode
 
     const validTopBarLogoStyles: TopBarLogoStyle[] = ['icon', 'brand']
     if (!validTopBarLogoStyles.includes(record.topBarLogoStyle))

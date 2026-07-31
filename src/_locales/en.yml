@@ -864,8 +864,12 @@ settings:
   show_sex_desc: Display user gender in the video/dynamic comment area
   show_comment_host_tag: Show OP tag
   show_comment_host_tag_desc: Show an OP tag on the root comment in reply detail view
-  enable_comment_reply_tree: Show comment replies as a tree
-  enable_comment_reply_tree_desc: Group replies by parent and posting time, show each level with indentation and guide lines, and click a guide to collapse its branch
+  comment_reply_tree_mode:
+    title: Comment reply tree style
+    desc: Group replies by parent and posting time. Line modes let you collapse any parent’s replies. “Collapse parent” also folds the parent body; “Keep parent” leaves the parent visible and only hides its replies
+    line_collapse_main: Lines · collapse parent
+    line_keep_main: Lines · keep parent visible
+    indent_only: Indent · no collapse
   adjust_comment_image_height: Adjust comment image height
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
   video_player_scroll: Scroll after adjusting the display mode

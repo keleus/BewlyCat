@@ -2,7 +2,9 @@
 import { useI18n } from 'vue-i18n'
 
 import Radio from '~/components/Radio.vue'
+import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
+import type { CommentReplyTreeMode } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -27,6 +29,21 @@ const commentToggleOptions = computed<CommentToggleOption[]>(() => [
   { setting: 'showSex', label: t('settings.show_sex'), description: t('settings.show_sex_desc'), icon: 'i-tabler-gender-bigender' },
   { setting: 'showCommentHostTag', label: t('settings.show_comment_host_tag'), description: t('settings.show_comment_host_tag_desc'), icon: 'i-tabler-user-star' },
 ])
+
+const commentReplyTreeModeOptions = computed<{ label: string, value: CommentReplyTreeMode }[]>(() => [
+  {
+    label: t('settings.comment_reply_tree_mode.line_collapse_main'),
+    value: 'lineCollapseMain',
+  },
+  {
+    label: t('settings.comment_reply_tree_mode.line_keep_main'),
+    value: 'lineKeepMain',
+  },
+  {
+    label: t('settings.comment_reply_tree_mode.indent_only'),
+    value: 'indentOnly',
+  },
+])
 </script>
 
 <template>
@@ -44,11 +61,15 @@ const commentToggleOptions = computed<CommentToggleOption[]>(() => [
     </div>
 
     <SettingsItem
-      :title="$t('settings.enable_comment_reply_tree')"
-      :desc="$t('settings.enable_comment_reply_tree_desc')"
+      :title="$t('settings.comment_reply_tree_mode.title')"
+      :desc="$t('settings.comment_reply_tree_mode.desc')"
       right-width="auto"
     >
-      <Radio v-model="settings.enableCommentReplyTree" />
+      <Select
+        v-model="settings.commentReplyTreeMode"
+        :options="commentReplyTreeModeOptions"
+        w="220px"
+      />
     </SettingsItem>
 
     <SettingsItem
