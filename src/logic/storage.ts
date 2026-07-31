@@ -302,7 +302,7 @@ export interface Settings {
   momentsHideVideoReservation: boolean
   momentsHideLiveReservation: boolean
   momentsHideLiveDynamics: boolean
-  /** 过滤普通视频动态（不含合集视频） */
+  /** 过滤普通视频动态（不含合集视频、番剧） */
   momentsHideVideoDynamics: boolean
   /** 过滤图文动态 */
   momentsHideDrawDynamics: boolean
@@ -310,6 +310,10 @@ export interface Settings {
   momentsHideUgcSeasonDynamics: boolean
   /** 过滤转发动态 */
   momentsHideForwardDynamics: boolean
+  /** 过滤番剧/追番追剧动态 */
+  momentsHidePgcDynamics: boolean
+  /** 过滤专栏动态 */
+  momentsHideArticleDynamics: boolean
   momentsCardOpenMode: 'dialog' | 'newTab' | 'background'
 
   alwaysUseDock: boolean
@@ -595,6 +599,8 @@ export const originalSettings: Settings = {
   momentsHideDrawDynamics: false,
   momentsHideUgcSeasonDynamics: false,
   momentsHideForwardDynamics: false,
+  momentsHidePgcDynamics: false,
+  momentsHideArticleDynamics: false,
   momentsCardOpenMode: 'dialog',
 
   alwaysUseDock: false,

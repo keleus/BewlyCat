@@ -241,6 +241,8 @@ settings:
   moments_filter_draw_dynamic: Image & text dynamics
   moments_filter_ugc_season_dynamic: Collection video dynamics
   moments_filter_forward_dynamic: Repost dynamics
+  moments_filter_pgc_dynamic: Anime / bangumi dynamics
+  moments_filter_article_dynamic: Article dynamics
   moments_filter_charge_dynamic: Charge dynamics
   moments_filter_video_reservation: Video reservation dynamics
   moments_filter_live_reservation: Live reservation dynamics

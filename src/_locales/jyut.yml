@@ -266,6 +266,8 @@ settings:
   moments_filter_draw_dynamic: 圖文動態
   moments_filter_ugc_season_dynamic: 合集影片動態
   moments_filter_forward_dynamic: 轉發動態
+  moments_filter_pgc_dynamic: 番劇動態
+  moments_filter_article_dynamic: 專欄動態
   moments_filter_charge_dynamic: 充電動態
   moments_filter_video_reservation: 影片預約動態
   moments_filter_live_reservation: 直播預約動態

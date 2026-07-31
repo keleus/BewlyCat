@@ -30,6 +30,8 @@ type MomentToggleSetting
     | 'momentsHideDrawDynamics'
     | 'momentsHideUgcSeasonDynamics'
     | 'momentsHideForwardDynamics'
+    | 'momentsHidePgcDynamics'
+    | 'momentsHideArticleDynamics'
 
 interface MomentTagOption {
   setting: MomentToggleSetting
@@ -56,6 +58,8 @@ const pluginFilterOptions = computed<MomentTagOption[]>(() => [
   { setting: 'momentsHideDrawDynamics', label: t('settings.moments_filter_draw_dynamic'), icon: 'i-tabler-photo' },
   { setting: 'momentsHideUgcSeasonDynamics', label: t('settings.moments_filter_ugc_season_dynamic'), icon: 'i-tabler-stack' },
   { setting: 'momentsHideForwardDynamics', label: t('settings.moments_filter_forward_dynamic'), icon: 'i-tabler-repeat' },
+  { setting: 'momentsHidePgcDynamics', label: t('settings.moments_filter_pgc_dynamic'), icon: 'i-tabler-device-tv' },
+  { setting: 'momentsHideArticleDynamics', label: t('settings.moments_filter_article_dynamic'), icon: 'i-tabler-news' },
   { setting: 'momentsFilterUpRecommendation', label: t('settings.moments_filter_up_recommendation_short'), icon: 'i-tabler-sparkles' },
   { setting: 'momentsHideChargeExclusive', label: t('settings.moments_filter_charge_dynamic'), icon: 'i-tabler-battery-charging' },
   { setting: 'momentsHideVideoReservation', label: t('settings.moments_filter_video_reservation'), icon: 'i-tabler-calendar-time' },

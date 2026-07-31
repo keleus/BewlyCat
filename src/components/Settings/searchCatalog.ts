@@ -256,6 +256,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_filter_draw_dynamic',
     'settings.moments_filter_ugc_season_dynamic',
     'settings.moments_filter_forward_dynamic',
+    'settings.moments_filter_pgc_dynamic',
+    'settings.moments_filter_article_dynamic',
     'settings.moments_filter_charge_dynamic',
     'settings.moments_filter_video_reservation',
     'settings.moments_filter_live_reservation',

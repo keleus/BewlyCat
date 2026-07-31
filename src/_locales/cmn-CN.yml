@@ -238,6 +238,8 @@ settings:
   moments_filter_draw_dynamic: 图文动态
   moments_filter_ugc_season_dynamic: 合集视频动态
   moments_filter_forward_dynamic: 转发动态
+  moments_filter_pgc_dynamic: 番剧动态
+  moments_filter_article_dynamic: 专栏动态
   moments_filter_charge_dynamic: 充电动态
   moments_filter_video_reservation: 视频预约动态
   moments_filter_live_reservation: 直播预约动态

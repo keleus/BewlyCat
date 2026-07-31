@@ -1425,6 +1425,8 @@ function hasActiveMomentTypeFilters() {
     || settings.value.momentsHideDrawDynamics
     || settings.value.momentsHideUgcSeasonDynamics
     || settings.value.momentsHideForwardDynamics
+    || settings.value.momentsHidePgcDynamics
+    || settings.value.momentsHideArticleDynamics
 }
 
 function requiresManualMomentPaging() {
@@ -1442,13 +1444,18 @@ function passesMomentSettings(moment: DisplayMoment) {
     return false
   if (settings.value.momentsHideLiveDynamics && moment.isLive)
     return false
-  if (settings.value.momentsHideVideoDynamics && moment.isRegularVideo)
+  // 番剧单独过滤；视频过滤不含 PGC
+  if (settings.value.momentsHideVideoDynamics && moment.isRegularVideo && !moment.isPgc)
     return false
   if (settings.value.momentsHideDrawDynamics && moment.isDraw)
     return false
   if (settings.value.momentsHideUgcSeasonDynamics && moment.isUgcSeason)
     return false
   if (settings.value.momentsHideForwardDynamics && moment.isForward)
+    return false
+  if (settings.value.momentsHidePgcDynamics && moment.isPgc && !moment.isForward)
+    return false
+  if (settings.value.momentsHideArticleDynamics && moment.isArticle && !moment.isForward)
     return false
   return true
 }
@@ -2876,6 +2883,8 @@ watch(
     settings.value.momentsHideDrawDynamics,
     settings.value.momentsHideUgcSeasonDynamics,
     settings.value.momentsHideForwardDynamics,
+    settings.value.momentsHidePgcDynamics,
+    settings.value.momentsHideArticleDynamics,
   ],
   () => {
     if (scrollViewportRef.value)
