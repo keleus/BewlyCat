@@ -29,7 +29,7 @@ const { t } = useI18n()
 const toast = useToast()
 const { confirm: showConfirmDialog } = useConfirmDialog()
 
-const FAVORITE_ARTICLE_PAGE_SIZE = 16
+const FAVORITE_ARTICLE_PAGE_SIZE = 20
 type FavoriteView = 'video' | 'season' | 'article'
 type BatchTransferAction = 'copy' | 'move'
 type SidebarManageSection = 'folder' | 'season'
@@ -54,7 +54,10 @@ const noMoreContent = ref<boolean>(false)
 const loadedSeasonMedias = ref<FavoriteSeasonMedia[]>([])
 const loadedSeasonComplete = ref<boolean>(false)
 const isResolvingSeasonPlayAll = ref<boolean>(false)
+/** 图文收藏总数：官方 polymer 接口无 total，仅在 has_more=false 时等于已加载条数 */
 const articleFavoriteCount = ref<number>()
+/** 图文收藏下一页 offset（上页最后一条 opus_id） */
+const articleFavoriteOffset = ref<string>('')
 const isBatchManaging = ref<boolean>(false)
 const isBatchOperating = ref<boolean>(false)
 const selectedResourceKeys = ref<string[]>([])
@@ -696,6 +699,9 @@ function resetContentState() {
   currentPageNum.value = 1
   favoriteResources.length = 0
   favoriteArticles.length = 0
+  articleFavoriteOffset.value = ''
+  if (favoriteView.value === 'article')
+    articleFavoriteCount.value = undefined
   loadedSeasonMedias.value = []
   loadedSeasonComplete.value = false
   activatedCategoryCover.value = favoriteView.value === 'season' ? selectedSeason.value?.cover || '' : ''
@@ -850,8 +856,11 @@ async function getFavoriteArticles(
 ) {
   try {
     const res: FavoriteArticlesResult = await api.favorite.getFavoriteArticles({
-      pn,
-      ps: FAVORITE_ARTICLE_PAGE_SIZE,
+      page: pn,
+      page_size: FAVORITE_ARTICLE_PAGE_SIZE,
+      offset: pn === 1 ? '' : articleFavoriteOffset.value,
+      timezone_offset: new Date().getTimezoneOffset(),
+      web_location: '333.1387',
     })
 
     if (requestVersion !== contentRequestVersion)
@@ -863,20 +872,25 @@ async function getFavoriteArticles(
       return
     }
 
-    const pageArticles = Array.isArray(res.data?.favorites)
-      ? res.data.favorites.filter((item): item is FavoriteArticle => item != null)
+    const pageArticles = Array.isArray(res.data?.items)
+      ? res.data.items.filter((item): item is FavoriteArticle => item != null && Boolean(item.opus_id))
       : []
     favoriteArticles.push(...pageArticles)
 
-    const total = Number(res.data?.count ?? res.data?.total)
-    if (Number.isFinite(total))
-      articleFavoriteCount.value = total
+    const nextOffset = res.data?.offset
+    articleFavoriteOffset.value = nextOffset != null && nextOffset !== ''
+      ? String(nextOffset)
+      : (pageArticles.at(-1)?.opus_id ?? '')
+
+    const hasMore = Boolean(res.data?.has_more) && pageArticles.length > 0
+    // polymer 接口无 total，仅在没有更多时用已加载条数作为总数
+    if (!hasMore)
+      articleFavoriteCount.value = favoriteArticles.length
 
     if (favoriteArticles[0])
       activatedCategoryCover.value = getFavoriteArticleCover(favoriteArticles[0])
 
-    noMoreContent.value = pageArticles.length < FAVORITE_ARTICLE_PAGE_SIZE
-      || (articleFavoriteCount.value !== undefined && favoriteArticles.length >= articleFavoriteCount.value)
+    noMoreContent.value = !hasMore
   }
   catch {
     if (requestVersion !== contentRequestVersion)
@@ -1055,7 +1069,7 @@ function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteItem {
 }
 
 function getFavoriteArticleCover(item: FavoriteArticle) {
-  return item.image_urls?.[0] || item.cover || item.banner_url || ''
+  return item.cover?.url || ''
 }
 
 function normalizeFavoriteArticleUrl(url: string) {
@@ -1067,42 +1081,23 @@ function normalizeFavoriteArticleUrl(url: string) {
 }
 
 function getFavoriteArticleUrl(item: FavoriteArticle) {
-  const url = item.url || item.jump_url || item.uri || item.link
-  if (url)
-    return normalizeFavoriteArticleUrl(url)
-
-  const opusId = item.opus_id ?? item.dynamic_id
-  if (opusId)
-    return `https://www.bilibili.com/opus/${opusId}`
-
-  const id = String(item.id)
-  return `https://www.bilibili.com/read/${id.startsWith('cv') ? id : `cv${id}`}`
+  if (item.jump_url)
+    return normalizeFavoriteArticleUrl(item.jump_url)
+  return `https://www.bilibili.com/opus/${item.opus_id}`
 }
 
 function transformFavoriteArticle(item: FavoriteArticle) {
-  const tags = item.tags
-    ?.map((tag) => {
-      if (typeof tag === 'string')
-        return { name: tag }
-      const name = tag.name || tag.tag_name
-      return name ? { name } : null
-    })
-    .filter((tag): tag is { name: string } => tag !== null)
-
+  const mid = item.author?.mid
   return {
-    id: item.id,
+    id: item.opus_id,
     url: getFavoriteArticleUrl(item),
-    title: item.title,
-    desc: item.summary || item.desc,
+    title: item.content || '',
     cover: getFavoriteArticleCover(item),
-    author: item.author?.name || item.upper?.name || item.author_name || '',
-    authorMid: item.author?.mid || item.upper?.mid || item.mid,
-    view: item.stats?.view ?? item.view,
-    like: item.stats?.like ?? item.like,
-    reply: item.stats?.reply ?? item.reply,
-    publishTime: item.publish_time || item.pub_time || item.ctime,
-    categoryName: item.category?.name || item.category_name,
-    tags,
+    author: item.author?.name || '',
+    authorMid: mid != null && mid !== '' ? Number(mid) : undefined,
+    view: item.stat?.view || undefined,
+    like: item.stat?.like || undefined,
+    publishTime: item.pub_time || undefined,
   }
 }
 </script>
@@ -1203,7 +1198,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           <div class="article-favorites-grid">
             <ArticleCard
               v-for="article in favoriteArticles"
-              :key="String(article.id)"
+              :key="article.opus_id"
               v-bind="transformFavoriteArticle(article)"
             />
           </div>

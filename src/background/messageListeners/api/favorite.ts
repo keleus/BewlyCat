@@ -58,14 +58,19 @@ const API_FAVORITE = {
     },
     afterHandle: AHS.J_D,
   },
+  // 图文收藏列表（官方收藏页同源）
+  // 参见 polymer 空间图文：docs/opus/space.md，收藏态路径为 opus/feed/fav
   getFavoriteArticles: {
-    url: 'https://api.bilibili.com/x/article/favorites/list/all',
+    url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/feed/fav',
     _fetch: {
       method: 'get',
     },
     params: {
-      pn: 1,
-      ps: 16,
+      page: 1,
+      page_size: 20,
+      offset: '',
+      timezone_offset: -480,
+      web_location: '333.1387',
     },
     afterHandle: AHS.J_D,
   },

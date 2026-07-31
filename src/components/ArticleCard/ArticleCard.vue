@@ -9,10 +9,12 @@ interface ArticleCardProps {
   cover?: string
   author: string
   authorMid?: number
-  view?: number
-  like?: number
-  reply?: number
-  publishTime?: number
+  /** 数字或接口已格式化文案（如 "20.4万"） */
+  view?: number | string
+  like?: number | string
+  reply?: number | string
+  /** Unix 秒级时间戳，或接口直接返回的展示文案 */
+  publishTime?: number | string
   categoryName?: string
   tags?: Array<{ name: string }>
 }
@@ -24,23 +26,28 @@ const articleUrl = computed(() => {
     return props.url
 
   const id = String(props.id)
+  if (/^\d{15,}$/.test(id))
+    return `https://www.bilibili.com/opus/${id}`
   return `https://www.bilibili.com/read/${id.startsWith('cv') ? id : `cv${id}`}`
 })
 
-// 格式化数字
-function formatNumber(num: number | undefined) {
-  if (!num)
+// 格式化数字：已是展示字符串则原样返回
+function formatNumber(num: number | string | undefined) {
+  if (num === undefined || num === null || num === '')
     return '0'
-  if (num >= 10000) {
+  if (typeof num === 'string')
+    return num
+  if (num >= 10000)
     return `${(num / 10000).toFixed(1)}万`
-  }
   return num.toString()
 }
 
-// 格式化日期
-function formatDate(timestamp: number | undefined) {
-  if (!timestamp)
+// 格式化日期：字符串直接展示；数字按 Unix 秒处理
+function formatDate(timestamp: number | string | undefined) {
+  if (timestamp === undefined || timestamp === null || timestamp === '')
     return ''
+  if (typeof timestamp === 'string')
+    return timestamp
 
   const date = new Date(timestamp * 1000)
   const now = new Date()

@@ -1,3 +1,8 @@
+/**
+ * 图文收藏列表
+ * GET /x/polymer/web-dynamic/v1/opus/feed/fav
+ * 结构与空间图文 feed 类似，见 bilibili-api-collect docs/opus/space.md
+ */
 export interface FavoriteArticlesResult {
   code: number
   message: string
@@ -6,51 +11,40 @@ export interface FavoriteArticlesResult {
 }
 
 export interface FavoriteArticlesData {
-  count?: number
-  total?: number
-  pn?: number
-  ps?: number
-  favorites?: FavoriteArticle[]
+  items?: FavoriteArticle[]
+  has_more?: boolean
+  /** 下一页 offset，通常为最后一条 opus_id */
+  offset?: string
+  update_num?: number | string
+  update_baseline?: string
+}
+
+export interface FavoriteArticleAuthor {
+  name?: string
+  face?: string
+  mid?: number | string
+}
+
+export interface FavoriteArticleCover {
+  url?: string
+  width?: number
+  height?: number
+}
+
+export interface FavoriteArticleStat {
+  /** 已格式化展示文案，如 "9144" / "20.4万" */
+  view?: string
+  like?: string
 }
 
 export interface FavoriteArticle {
-  id: number | string
-  opus_id?: number | string
-  dynamic_id?: number | string
-  title: string
-  summary?: string
-  desc?: string
-  image_urls?: string[]
-  cover?: string
-  banner_url?: string
-  author?: {
-    mid?: number
-    name?: string
-  }
-  upper?: {
-    mid?: number
-    name?: string
-  }
-  author_name?: string
-  mid?: number
-  stats?: {
-    view?: number
-    like?: number
-    reply?: number
-  }
-  view?: number
-  like?: number
-  reply?: number
-  publish_time?: number
-  pub_time?: number
-  ctime?: number
-  category?: {
-    name?: string
-  }
-  category_name?: string
-  tags?: Array<string | { name?: string, tag_name?: string }>
-  url?: string
+  opus_id: string
+  content?: string
   jump_url?: string
-  uri?: string
-  link?: string
+  badge?: unknown
+  author?: FavoriteArticleAuthor
+  cover?: FavoriteArticleCover | null
+  stat?: FavoriteArticleStat
+  /** 展示用时间，如 "7-8" / "2023-8-17" */
+  pub_time?: string
 }
