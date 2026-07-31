@@ -82,11 +82,13 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     :class="{
       'bewly-bili-switcher--white': props.forceWhiteIcon,
       'bew-segment-control--solid': !settings.enableFrostedGlass,
+      'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
     }"
     role="group"
     aria-label="Homepage mode"
   >
     <LiquidSegmentIndicator
+      v-if="settings.enableLiquidSegmentIndicator"
       ref="liquidIndicatorRef"
       :active-key="isOriginalBiliPageActive"
       :white="props.forceWhiteIcon && settings.enableFrostedGlass"
@@ -130,6 +132,13 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     --bew-segment-item-hover-current-bg: var(--bew-segment-item-hover-bg-white);
     --bew-segment-item-focus-color: white;
     --bew-segment-item-focus-bg: var(--bew-segment-item-hover-bg-white);
+    --bew-segment-item-current-color: white;
+  }
+
+  // 无液态指示器时，静态选中态也要沿用白色主题底色
+  &--white.bew-segment-control--static {
+    --bew-segment-item-active-bg: var(--bew-segment-item-active-bg-white);
+    --bew-segment-item-active-shadow: var(--bew-segment-item-active-shadow-white);
     --bew-segment-item-current-color: white;
   }
 }

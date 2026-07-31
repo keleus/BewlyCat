@@ -92,7 +92,8 @@
 }
 
 // Static groups have no liquid indicator, so the selected item paints itself.
-.bew-segment-control--static > .bew-segment-control__item[data-active="true"] {
+// Support nested item hosts (e.g. Home tabs scroll wrapper) as well as direct children.
+.bew-segment-control--static .bew-segment-control__item[data-active="true"] {
   background: var(--bew-segment-item-active-bg);
   box-shadow: var(--bew-segment-item-active-shadow);
 }

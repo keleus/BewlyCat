@@ -305,6 +305,11 @@ settings:
     the indent.
   enable_frosted_glass: Enable frosted glass effect
   frosted_glass_blur_intensity: Frosted glass blur intensity
+  enable_liquid_segment_indicator: Enable liquid segment indicator
+  enable_liquid_segment_indicator_desc: >
+    Use a sliding liquid indicator on segmented controls such as home tabs, layout switcher,
+    and top-bar page switcher. When off, the selected item uses a static highlight with no
+    sliding animation. Disabled by default for smoother performance on weaker devices.
   disable_shadow: Disable shadow
   link_opening_behavior_opt:
     current_tab: Current tab

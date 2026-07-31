@@ -274,13 +274,21 @@ function toggleTabContentLoading(loading: boolean) {
         <section
           v-if="shouldShowHomeTabs"
           class="glass-panel home-tabs-panel bew-segment-control bew-segment-control--surface"
+          :class="{
+            'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
+            'bew-segment-control--solid': !settings.enableFrostedGlass,
+          }"
         >
           <div class="home-tabs-scroll" h-full of-x-auto of-y-hidden>
             <div
               class="home-tabs-inside" flex="~ items-center" h-inherit w-max
               box-border
             >
-              <LiquidSegmentIndicator ref="tabsIndicatorRef" :active-key="activatedPage" />
+              <LiquidSegmentIndicator
+                v-if="settings.enableLiquidSegmentIndicator"
+                ref="tabsIndicatorRef"
+                :active-key="activatedPage"
+              />
               <button
                 v-for="tab in currentTabs" :key="tab.page"
                 class="home-tab-button bew-segment-control__item bew-segment-control__item--wide"
@@ -298,10 +306,18 @@ function toggleTabContentLoading(loading: boolean) {
         <div
           v-if="settings.enableGridLayoutSwitcher"
           class="glass-panel home-grid-layout-switcher bew-segment-control bew-segment-control--surface"
+          :class="{
+            'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
+            'bew-segment-control--solid': !settings.enableFrostedGlass,
+          }"
           flex="~ shrink-0 items-center"
           box-border
         >
-          <LiquidSegmentIndicator ref="gridIndicatorRef" :active-key="gridLayout.home" />
+          <LiquidSegmentIndicator
+            v-if="settings.enableLiquidSegmentIndicator"
+            ref="gridIndicatorRef"
+            :active-key="gridLayout.home"
+          />
           <button
             v-for="icon in gridLayoutIcons" :key="icon.value"
             type="button"
@@ -396,11 +412,16 @@ function toggleTabContentLoading(loading: boolean) {
 }
 
 .glass-panel {
+  /* 毛玻璃关闭时 --bew-filter-glass-1 为 none；同时配合 --solid 去掉 surface 上的 filter */
   backdrop-filter: var(--bew-filter-glass-1);
   /* 关键优化：绘制隔离，防止重绘传播 */
   contain: paint layout;
   /* 创建独立堆叠上下文，减少合成压力 */
   isolation: isolate;
+}
+
+.glass-panel.bew-segment-control--solid {
+  backdrop-filter: none;
 }
 
 .home-header {

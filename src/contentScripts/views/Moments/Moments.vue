@@ -2779,10 +2779,19 @@ watch(
       :class="{ 'moments-layout--without-sidebar': !showMomentsSidebar }"
     >
       <header class="moments-filter-header">
-        <section class="moments-filter-panel bew-segment-control bew-segment-control--surface">
+        <section
+          class="moments-filter-panel bew-segment-control bew-segment-control--surface"
+          :class="{
+            'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
+            'bew-segment-control--solid': !settings.enableFrostedGlass,
+          }"
+        >
           <div class="moments-filter-scroll">
             <div class="moments-filter-inside">
-              <LiquidSegmentIndicator :active-key="activeMomentFilter" />
+              <LiquidSegmentIndicator
+                v-if="settings.enableLiquidSegmentIndicator"
+                :active-key="activeMomentFilter"
+              />
               <button
                 v-for="filter in momentFilters"
                 :key="filter.value"

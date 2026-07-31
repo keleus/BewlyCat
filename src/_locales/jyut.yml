@@ -319,6 +319,9 @@ settings:
     Bilibili 預設會專登執吓中文標點符號，令到佢可以左對齊。如果你係用緊自訂字字型，最好係移除縮排。
   enable_frosted_glass: 啓用毛玻璃效果
   frosted_glass_blur_intensity: 毛玻璃模糊強度
+  enable_liquid_segment_indicator: 啓用液態分段指示器
+  enable_liquid_segment_indicator_desc: |
+    喺主頁標籤、版面切換、頂欄頁面切換器等分段控件用滑動液態指示器。閂咗就用靜態選中態，無滑動動畫，預設閂以提升低效能裝置流暢度。
   disable_shadow: 閂咗陰影
   link_opening_behavior_opt:
     current_tab: 目前分頁

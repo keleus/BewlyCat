@@ -500,6 +500,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_visual_effects',
     'settings.enable_frosted_glass',
     'settings.frosted_glass_blur_intensity',
+    'settings.enable_liquid_segment_indicator',
     'settings.disable_shadow',
     'settings.group_color',
     'settings.theme',

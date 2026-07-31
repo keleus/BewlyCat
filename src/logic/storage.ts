@@ -224,6 +224,8 @@ export interface Settings {
 
   enableFrostedGlass: boolean
   frostedGlassBlurIntensity: number
+  /** 分段控件液态滑动指示器；默认关闭以降低切换动画合成成本 */
+  enableLiquidSegmentIndicator: boolean
   disableShadow: boolean
 
   enableVideoPreview: boolean
@@ -497,6 +499,7 @@ export const originalSettings: Settings = {
 
   enableFrostedGlass: false,
   frostedGlassBlurIntensity: 20,
+  enableLiquidSegmentIndicator: false,
   disableShadow: false,
 
   // Link Opening Behavior
