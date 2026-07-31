@@ -508,14 +508,17 @@ function getMomentContent(item: any) {
     .filter((url: string, index: number, list: string[]) => list.indexOf(url) === index)
 
   const live = parseLiveInfo(major.live_rcmd?.content) || major.live || null
+  // ugc_season：合集订阅更新，字段形态接近 archive（bvid/aid/cover/jump_url）
+  const ugcSeason = major.ugc_season || null
   const cover = live?.cover
     || major.archive?.cover
+    || ugcSeason?.cover
     || major.pgc?.cover
     || major.opus?.cover
     || major.common?.cover
     || major.music?.cover
     || major.upower_common?.cover
-  const archive = major.archive || major.pgc || {}
+  const archive = major.archive || ugcSeason || major.pgc || {}
   const opus = major.opus || {}
   const article = major.article || {}
   const common = major.common || major.upower_common || {}
@@ -595,12 +598,16 @@ function getMomentContent(item: any) {
     }
   }
 
+  const isUgcSeason = item.type === 'DYNAMIC_TYPE_UGC_SEASON'
+    || major?.type === 'MAJOR_TYPE_UGC_SEASON'
+    || Boolean(ugcSeason)
+
   return {
     title: pickText(live?.title, opus.title, archive.title, article.title, common.title),
     text,
     richText,
     images: [...images, ...(cover ? [cover] : [])].map(httpsUrl).filter(Boolean).filter((url: string, index: number, list: string[]) => list.indexOf(url) === index),
-    isVideo: item.type === 'DYNAMIC_TYPE_AV' || Boolean(major.archive || major.pgc),
+    isVideo: item.type === 'DYNAMIC_TYPE_AV' || isUgcSeason || Boolean(major.archive || major.pgc),
     isPgc: item.type === 'DYNAMIC_TYPE_PGC_UNION' || Boolean(major.pgc),
     isLive: Boolean(live),
     isChargeExclusive,
@@ -1047,9 +1054,11 @@ function mapMoment(item: DataItem): DisplayMoment {
   const isForward = raw.type === 'DYNAMIC_TYPE_FORWARD' && raw.orig
   const contentRaw = isForward ? raw.orig : raw
   const content = getMomentContent(contentRaw)
-  const forwardedArchive = isForward
-    ? contentRaw.modules?.module_dynamic?.major?.archive
+  // 转发内嵌视频：archive / 合集订阅 ugc_season 均可作为摘要来源
+  const forwardedMajor = isForward
+    ? contentRaw.modules?.module_dynamic?.major
     : undefined
+  const forwardedArchive = forwardedMajor?.archive || forwardedMajor?.ugc_season
   // 转发时作者侧也可能挂充电角标
   const selfContent = isForward ? getMomentContent(raw) : content
   const forwardedAuthor = contentRaw.modules?.module_author || {}

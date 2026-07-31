@@ -223,6 +223,7 @@ export interface Fan {
 export enum ModuleAuthorLabel {
   Empty = '',
   番剧 = '番剧',
+  合集 = '合集',
 }
 
 export interface OfficialVerify {
@@ -253,6 +254,7 @@ export enum PubAction {
 export enum ModuleAuthorType {
   AuthorTypeNormal = 'AUTHOR_TYPE_NORMAL',
   AuthorTypePgc = 'AUTHOR_TYPE_PGC',
+  AuthorTypeUgcSeason = 'AUTHOR_TYPE_UGC_SEASON',
 }
 
 export interface Vip {
@@ -325,6 +327,8 @@ export interface Major {
   archive?: Archive
   type: MajorType
   pgc?: Pgc
+  /** 合集订阅更新动态，字段形态接近 Archive */
+  ugc_season?: UgcSeason
 }
 
 export interface Archive {
@@ -353,6 +357,7 @@ export enum BadgeText {
   番剧 = '番剧',
   充电专属 = '充电专属',
   动态视频 = '动态视频',
+  合集 = '合集',
 }
 
 export interface Stat {
@@ -378,9 +383,28 @@ export interface Pgc {
   type: number
 }
 
+/** 合集订阅（DYNAMIC_TYPE_UGC_SEASON / MAJOR_TYPE_UGC_SEASON） */
+export interface UgcSeason {
+  aid: string
+  badge: Badge
+  bvid: string
+  cover: string
+  desc: string
+  disable_preview?: number
+  duration_text: string
+  enable_vt?: number
+  jump_url: string
+  premiere_online?: string
+  stat: Stat
+  stat_hidden?: number
+  title: string
+  type: number
+}
+
 export enum MajorType {
   MajorTypeArchive = 'MAJOR_TYPE_ARCHIVE',
   MajorTypePgc = 'MAJOR_TYPE_PGC',
+  MajorTypeUgcSeason = 'MAJOR_TYPE_UGC_SEASON',
 }
 
 export interface Topic {
@@ -457,4 +481,5 @@ export interface Like {
 export enum ItemType {
   DynamicTypeAV = 'DYNAMIC_TYPE_AV',
   DynamicTypePgcUnion = 'DYNAMIC_TYPE_PGC_UNION',
+  DynamicTypeUgcSeason = 'DYNAMIC_TYPE_UGC_SEASON',
 }

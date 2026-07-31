@@ -292,9 +292,10 @@ async function getFollowedUsersVideos() {
           })
         }
 
+        const major = item.modules?.module_dynamic?.major
         resData.push({
           uniqueId: `${item.id_str}`,
-          bvid: item.modules?.module_dynamic?.major?.archive?.bvid,
+          bvid: major?.archive?.bvid || major?.ugc_season?.bvid,
           item,
           authorList: authors,
         })
@@ -333,13 +334,15 @@ async function getFollowedUsersVideos() {
 
 // 检查视频是否为充电专属视频
 function isChargingVideo(item: MomentItem): boolean {
-  const badgeText = item.modules?.module_dynamic?.major?.archive?.badge?.text
+  const major = item.modules?.module_dynamic?.major
+  const badgeText = major?.archive?.badge?.text || major?.ugc_season?.badge?.text
   return badgeText === BadgeText.充电专属
 }
 
 // 检查视频是否为动态视频
 function isDynamicVideo(item: MomentItem): boolean {
-  const badgeText = item.modules?.module_dynamic?.major?.archive?.badge?.text
+  const major = item.modules?.module_dynamic?.major
+  const badgeText = major?.archive?.badge?.text || major?.ugc_season?.badge?.text
   return badgeText === BadgeText.动态视频
 }
 
@@ -404,7 +407,8 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
   if (!item)
     return undefined
 
-  const archive = item.modules?.module_dynamic?.major?.archive
+  const major = item.modules?.module_dynamic?.major
+  const archive = major?.archive || major?.ugc_season
   if (!archive)
     return undefined
 

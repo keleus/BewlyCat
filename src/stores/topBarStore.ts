@@ -583,7 +583,8 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (bvMatch?.[1])
       return bvMatch[1]
 
-    const directBvid = item?.bvid || item?.modules?.module_dynamic?.major?.archive?.bvid
+    const major = item?.modules?.module_dynamic?.major
+    const directBvid = item?.bvid || major?.archive?.bvid || major?.ugc_season?.bvid
     return typeof directBvid === 'string' && directBvid ? directBvid : null
   }
 
