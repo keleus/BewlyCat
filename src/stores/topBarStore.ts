@@ -27,10 +27,13 @@ import {
   TOP_BAR_STATE_MESSAGE,
 } from '~/constants/topBarState'
 import { settings } from '~/logic'
+import { checkLoginStatus, LoginStatus } from '~/logic/loginStatus'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { getCSRF, isHomePage } from '~/utils/main'
 import { isExtensionContextInvalidatedError, onMessage, sendMessage } from '~/utils/messaging'
+
+export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 未登录/未初始化时重查登录态的间隔
 
 export const useTopBarStore = defineStore('topBar', () => {
   const toast = useToast()
@@ -156,62 +159,45 @@ export const useTopBarStore = defineStore('topBar', () => {
     return false
   })
 
+  function resetReceiveStates() {
+    bCoinAlreadyReceived.value = false
+    hasBCoinToReceive.value = false
+    vipExpAlreadyReceived.value = false
+  }
+
   // User Methods
-  async function getUserInfo(retryCount = 0) {
+  async function getUserInfo(retryCount = 0): Promise<LoginStatus> {
     const maxRetries = 2 // 最多重试2次
     const retryDelay = (retryCount + 1) * 1000 // 递增延迟: 1s, 2s
 
-    try {
-      const res = await api.user.getUserInfo()
+    const result = await checkLoginStatus<UserInfo>(() => api.user.getUserInfo())
 
-      if (res.code === 0) {
-        const wasLoggedIn = isLogin.value
-        const previousMid = userInfo.mid
+    if (result.status === LoginStatus.LoggedIn) {
+      const wasLoggedIn = isLogin.value
+      const previousMid = userInfo.mid
 
-        isLogin.value = true
-        Object.assign(userInfo, res.data)
+      isLogin.value = true
+      Object.assign(userInfo, result.data)
 
-        // 如果是新登录或者切换了账号，重置B币领取状态
-        if (!wasLoggedIn || previousMid !== userInfo.mid) {
-          bCoinAlreadyReceived.value = false
-          hasBCoinToReceive.value = false
-          vipExpAlreadyReceived.value = false
-        }
-      }
-      else if (res.code === -101) {
-        isLogin.value = false
-        // 登出时重置状态
-        bCoinAlreadyReceived.value = false
-        hasBCoinToReceive.value = false
-        vipExpAlreadyReceived.value = false
-      }
-      else {
-        // 其他错误码
-        // 对于非未登录的错误，如果还有重试机会，则重试
-        if (retryCount < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay))
-          return getUserInfo(retryCount + 1)
-        }
-
-        isLogin.value = false
-        bCoinAlreadyReceived.value = false
-        hasBCoinToReceive.value = false
-        vipExpAlreadyReceived.value = false
-      }
+      // 如果是新登录或者切换了账号，重置B币领取状态
+      if (!wasLoggedIn || previousMid !== userInfo.mid)
+        resetReceiveStates()
+      return result.status
     }
-    catch {
-      // 如果还有重试机会，则重试
-      if (retryCount < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, retryDelay))
-        return getUserInfo(retryCount + 1)
-      }
 
-      // 重试次数用尽，标记为未登录
+    if (result.status === LoginStatus.LoggedOut) {
       isLogin.value = false
-      bCoinAlreadyReceived.value = false
-      hasBCoinToReceive.value = false
-      vipExpAlreadyReceived.value = false
+      // 登出时重置状态
+      resetReceiveStates()
+      return result.status
     }
+
+    // 瞬态失败（风控/限流/网络错误）：不切换登录态，稍后重试
+    if (retryCount < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, retryDelay))
+      return getUserInfo(retryCount + 1)
+    }
+    return result.status
   }
 
   // Notification Methods
@@ -746,7 +732,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     })
   }
 
-  let updateTimer: ReturnType<typeof setInterval> | null = null
+  let updateTimer: ReturnType<typeof setTimeout> | null = null
   let sharedStateMessagingUnavailable = false
 
   function disableSharedStateMessaging() {
@@ -926,22 +912,62 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   function startUpdateTimer() {
-    if (updateTimer) {
-      clearInterval(updateTimer)
-      updateTimer = null
-    }
-    updateTimer = setInterval(() => {
-      if (!isLogin.value)
-        return
+    if (updateTimer)
+      return
 
-      syncSharedData().catch((error) => {
-        console.error('同步顶栏共享状态失败:', error)
-      })
-    }, updateInterval)
+    // 已登录且已拿到用户信息时按 updateInterval 同步角标状态；
+    // 未登录或用户信息尚未初始化（瞬态失败后的空状态）时按较短间隔重查登录态，
+    // 风控/临时故障窗口过后可自动恢复登录显示，无需刷新页面（见 issue #921）。
+    // 只有瞬态失败才指数退避（60s → 120s → 240s → 300s 封顶），避免多个标签页在
+    // 故障窗口内高频请求 nav；真实登出（-101）是一次成功的检查，保持 60s 重查
+    // 节奏，以便用户在他处重新登录后能被及时发现。
+    // 已知限制：本标签 isLogin=true 且 mid 已填充时不会周期性重查，跨标签页登出
+    // 依赖 INVALIDATED 消息刷新（既有行为，改动前一致）。
+    const maxRecheckInterval = 5 * 60 * 1000
+    let recheckInterval = LOGIN_RECHECK_INTERVAL
+    const needsRecheck = () => !isLogin.value || !userInfo.mid
+    const scheduleNext = (delay: number) => {
+      updateTimer = setTimeout(() => {
+        // 扩展重载后旧 content script 的 runtime 已失效：停止轮询，等待刷新
+        if (sharedStateMessagingUnavailable) {
+          updateTimer = null
+          return
+        }
+
+        if (needsRecheck()) {
+          getUserInfo()
+            .catch(() => LoginStatus.TransientError)
+            .then((status) => {
+              // 只有瞬态失败才退避；登录恢复或真实登出都复位到基准间隔
+              if (status === LoginStatus.TransientError)
+                recheckInterval = Math.min(recheckInterval * 2, maxRecheckInterval)
+              else
+                recheckInterval = LOGIN_RECHECK_INTERVAL
+
+              // 重查成功（登录恢复）后立即同步一次角标状态，不用等下一个 tick
+              if (!needsRecheck()) {
+                void syncSharedData().catch((error) => {
+                  console.error('同步顶栏共享状态失败:', error)
+                })
+              }
+              scheduleNext(needsRecheck() ? recheckInterval : updateInterval)
+            })
+          return
+        }
+
+        recheckInterval = LOGIN_RECHECK_INTERVAL
+        syncSharedData().catch((error) => {
+          console.error('同步顶栏共享状态失败:', error)
+        })
+        scheduleNext(updateInterval)
+      }, delay)
+    }
+
+    scheduleNext(needsRecheck() ? LOGIN_RECHECK_INTERVAL : updateInterval)
   }
   function stopUpdateTimer() {
     if (updateTimer) {
-      clearInterval(updateTimer)
+      clearTimeout(updateTimer)
       updateTimer = null
     }
   }
@@ -960,9 +986,7 @@ export const useTopBarStore = defineStore('topBar', () => {
 
     closeAllPopups()
     drawerVisible.notifications = false
-    hasBCoinToReceive.value = false
-    bCoinAlreadyReceived.value = false
-    vipExpAlreadyReceived.value = false
+    resetReceiveStates()
   }
 
   // 添加鼠标状态跟踪
@@ -1046,6 +1070,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     privilegeInfo,
     hasBCoinToReceive,
     bCoinAlreadyReceived,
+    vipExpAlreadyReceived,
 
     topBarVisible,
     searchKeyword,

@@ -351,9 +351,8 @@ onMounted(() => {
     catch (error) {
       console.error('初始化顶栏数据失败:', error)
     }
-    // 只有在登录状态下才启动更新定时器
-    if (topBarStore.isLogin)
-      topBarStore.startUpdateTimer()
+    // 无论登录与否都启动定时器：未登录时用于周期重查登录态
+    topBarStore.startUpdateTimer()
     setupScrollListeners()
 
     updateConflictingHeaderVisibility()
