@@ -1083,8 +1083,6 @@ version_reminder:
   github_releases_desc: 查看完整版本记录与下载信息
   bilibili_dynamic: Bilibili 动态
   bilibili_dynamic_desc: 查看开发者发布的更新动态
-  xiaohongshu_page: 小红书
-  xiaohongshu_page_desc: 在小红书搜索 BewlyCat 最新动态
   acknowledge: 已知晓，本版本不再提示
   settings_hint: 可在“设置 → BewlyCat界面 → 首页”中关闭“新版本提醒”。
 watch_later:
