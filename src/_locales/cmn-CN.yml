@@ -223,8 +223,10 @@ settings:
   moments_show_publish: 显示发布动态组件
   moments_show_live: 显示正在直播组件
   moments_visible_components: 显示组件
+  moments_visible_components_original_desc: 控制 Bilibili 原版动态页侧栏与横幅等组件是否显示。主题色表示显示，灰色表示隐藏。
+  moments_visible_components_plugin_desc: 控制 Bewly 动态页左侧组件是否显示。主题色表示显示，灰色表示隐藏。
   moments_filtered_types: 过滤动态
-  moments_filtered_types_desc: 点击标签切换过滤状态。主题色表示显示，灰色划线眼睛表示屏蔽该类动态。
+  moments_filtered_types_desc: 控制各类动态是否出现在 Bewly 动态流中。选中（主题色）表示不过滤，未选中表示过滤。开启过滤时单次最多扫描 100 条，需手动加载更多。
   moments_enable_live_preview: 直播动态悬停预览
   moments_enable_live_preview_desc: 鼠标悬停直播动态封面时播放直播预览。
   moments_enable_video_preview: 视频动态悬停预览
@@ -232,6 +234,10 @@ settings:
   moments_filter_up_recommendation: 过滤：UP主的推荐
   moments_filter_up_recommendation_desc: 过滤所有带有“UP主的推荐”附加信息的动态。
   moments_filter_up_recommendation_short: UP主的推荐
+  moments_filter_video_dynamic: 视频动态
+  moments_filter_draw_dynamic: 图文动态
+  moments_filter_ugc_season_dynamic: 合集视频动态
+  moments_filter_forward_dynamic: 转发动态
   moments_filter_charge_dynamic: 充电动态
   moments_filter_video_reservation: 视频预约动态
   moments_filter_live_reservation: 直播预约动态
@@ -239,10 +245,11 @@ settings:
   moments_hide_charge_exclusive: 隐藏充电专属动态
   moments_hide_charge_exclusive_desc: 从插件动态流中过滤所有充电专属动态。
   moments_card_open_mode: 动态卡片点击行为
-  moments_card_open_mode_desc: 选择点击动态卡片时使用弹窗或新建标签页。直播动态只能在新建标签页打开。
+  moments_card_open_mode_desc: 选择点击动态卡片时使用弹窗、新建标签页或后台标签。直播动态只能在新建标签页或后台标签打开。
   moments_card_open_mode_opt:
     dialog: 弹窗
     new_tab: 新建标签页
+    background: 后台标签
   group_moments_wanted_users: 想看分组
   group_moments_wanted_users_desc: 管理想看的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
   moments_wanted_users: 想看的 UP 主

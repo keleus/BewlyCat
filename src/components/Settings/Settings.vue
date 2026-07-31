@@ -412,38 +412,6 @@ function handleClose() {
 function changeMenuItem(menuItem: MenuType) {
   activatedMenuItem.value = menuItem
 }
-
-/** 设置窗尽量少用 backdrop-filter：Windows 上多层毛玻璃合成成本很高 */
-const settingsUseFrostedGlass = computed(() => settings.value.enableFrostedGlass)
-const settingsPanelBackground = computed(() =>
-  settingsUseFrostedGlass.value ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
-)
-const settingsNavBackground = computed(() =>
-  settingsUseFrostedGlass.value ? 'var(--bew-elevated)' : 'var(--bew-elevated-solid)',
-)
-/** 仅主内容面板允许一层毛玻璃；侧栏/标题蒙层/关闭钮一律实色，避免多层 blur 叠层 */
-const settingsPanelBackdropFilter = computed(() =>
-  settingsUseFrostedGlass.value ? 'var(--bew-filter-glass-1)' : 'none',
-)
-const settingsHeaderMaskStyle = computed(() => ({
-  maskImage: 'linear-gradient(to bottom, black 0%, black 55%, transparent 100%)',
-  WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 55%, transparent 100%)',
-  // 不用 backdrop-filter：用实色/半透明底色做顶栏遮罩，滚动时仍能压住内容
-  background: settingsUseFrostedGlass.value
-    ? 'linear-gradient(to bottom, color-mix(in srgb, var(--bew-elevated-alt) 92%, transparent) 0%, color-mix(in srgb, var(--bew-elevated-alt) 78%, transparent) 70%, transparent 100%)'
-    : 'linear-gradient(to bottom, var(--bew-elevated-alt-solid) 0%, var(--bew-elevated-alt-solid) 55%, transparent 100%)',
-}))
-const settingsScrollMaskStyle = computed(() => ({
-  // 关闭毛玻璃时去掉滚动区 mask，减少额外合成层
-  maskImage: settingsUseFrostedGlass.value
-    ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)'
-    : 'none',
-  WebkitMaskImage: settingsUseFrostedGlass.value
-    ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)'
-    : 'none',
-  scrollbarGutter: 'stable',
-  overflowAnchor: 'none',
-}))
 </script>
 
 <template>
@@ -469,16 +437,18 @@ const settingsScrollMaskStyle = computed(() => ({
           style="
             box-shadow: var(--bew-shadow-4);
           "
-          :style="{ backgroundColor: settingsNavBackground }"
           relative
+          bg="$bew-content-alt group-hover:$bew-elevated dark:$bew-elevated dark-group-hover:$bew-elevated"
           overflow-hidden antialiased
         >
-          <!-- 侧栏只用实色底 + 描边阴影，避免再叠一层 backdrop-filter -->
+          <!-- frosted glass background -->
           <!-- https://github.com/BewlyBewly/BewlyBewly/issues/1162 -->
           <div
             class="settings-primary-navigation__surface"
             :style="{
               boxShadow: 'var(--bew-shadow-edge-glow-2)',
+              // 对齐 1.6.9：侧栏固定用 dialog 级 glass-2
+              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
             }"
             z--1 pointer-events-none rounded-inherit
           />
@@ -527,15 +497,13 @@ const settingsScrollMaskStyle = computed(() => ({
 
       <div
         class="settings-content"
-        :class="{ 'settings-content--solid': !settingsUseFrostedGlass }"
         :style="{
           '--un-shadow': 'var(--bew-shadow-4), var(--bew-shadow-edge-glow-2)',
-          'backgroundColor': settingsPanelBackground,
-          'backdropFilter': settingsPanelBackdropFilter,
-          'WebkitBackdropFilter': settingsPanelBackdropFilter,
+          'backdropFilter': settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
         }"
         relative overflow-hidden flex-1 min-w-0
         h-full
+        bg="$bew-elevated-alt"
         shadow rounded="$bew-modal-radius" border="1 $bew-border-color"
       >
         <header
@@ -547,10 +515,14 @@ const settingsScrollMaskStyle = computed(() => ({
             text-shadow: 0 0 10px var(--bew-elevated-solid), 0 0 15px var(--bew-elevated-solid)
           "
         >
-          <!-- 顶栏遮罩：纯色/渐变，不用 backdrop-filter -->
+          <!-- Mask -->
           <div
             pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
-            :style="settingsHeaderMaskStyle"
+            :style="{
+              maskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+              backdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'none',
+            }"
             z--1 rounded-inherit
           />
           <nav class="settings-breadcrumb" :aria-label="$t('settings.breadcrumb')">
@@ -565,10 +537,7 @@ const settingsScrollMaskStyle = computed(() => ({
           <div
             ref="settingsSearchRef"
             class="settings-search"
-            :class="{
-              'has-query': Boolean(searchQuery),
-              'settings-search--solid': !settingsUseFrostedGlass,
-            }"
+            :class="{ 'has-query': Boolean(searchQuery) }"
             @click="focusSettingsSearch"
           >
             <i i-mingcute:search-2-line />
@@ -591,13 +560,15 @@ const settingsScrollMaskStyle = computed(() => ({
             >
           </div>
           <div
-            class="settings-close-button"
             style="
               box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
             "
+            :style="{
+              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
+            }"
             text="!16px hover:$bew-theme-color" w="32px" h="32px"
             flex="~ items-center justify-center shrink-0"
-            bg="$bew-elevated-solid dark:$bew-fill-1 hover:$bew-theme-color-30"
+            bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
             rounded-8 cursor="pointer" border="1 $bew-border-color" box-border
             duration-300
             @click="handleClose"
@@ -607,7 +578,12 @@ const settingsScrollMaskStyle = computed(() => ({
         </header>
         <div
           ref="scrollViewportRef"
-          :style="settingsScrollMaskStyle"
+          :style="{
+            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
+            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
+            scrollbarGutter: 'stable',
+            overflowAnchor: 'none',
+          }"
           h-inherit of-y-auto of-x-hidden
           style="padding-top: 92px;"
         >
@@ -638,10 +614,7 @@ const settingsScrollMaskStyle = computed(() => ({
             :style="[
               searchPopoverStyle,
               {
-                backgroundColor: settingsPanelBackground,
-                // 搜索浮层使用实色，避免再开一层 backdrop-filter
-                backdropFilter: 'none',
-                WebkitBackdropFilter: 'none',
+                backgroundColor: settings.enableFrostedGlass ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
                 zIndex: 10010,
               },
             ]"
@@ -782,13 +755,6 @@ const settingsScrollMaskStyle = computed(() => ({
   }
 }
 
-.settings-content--solid {
-  /* 关闭毛玻璃时强制实色面板，避免半透明底叠在首页上产生额外合成 */
-  background-color: var(--bew-elevated-alt-solid) !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
 .settings-search {
   position: relative;
   display: flex;
@@ -810,10 +776,6 @@ const settingsScrollMaskStyle = computed(() => ({
     border-color var(--bew-duration-normal) var(--bew-ease-standard),
     box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
     background-color var(--bew-duration-normal) var(--bew-ease-standard);
-
-  &--solid {
-    background: var(--bew-content-solid);
-  }
 
   &:hover {
     border-color: var(--bew-theme-color-40);

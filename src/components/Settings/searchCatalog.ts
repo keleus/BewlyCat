@@ -195,8 +195,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
 
   ...createEntries(homeRoute, [
     'settings.plugin.home',
-    'settings.group_version_reminder',
-    'settings.enable_version_reminder',
     'settings.group_recommendation_mode',
     'settings.remember_no_cookie_recommendation_state',
     'settings.authorize_app',
@@ -252,6 +250,10 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_show_live',
     'settings.moments_enable_live_preview',
     'settings.moments_enable_video_preview',
+    'settings.moments_filter_video_dynamic',
+    'settings.moments_filter_draw_dynamic',
+    'settings.moments_filter_ugc_season_dynamic',
+    'settings.moments_filter_forward_dynamic',
     'settings.moments_filter_charge_dynamic',
     'settings.moments_filter_video_reservation',
     'settings.moments_filter_live_reservation',
@@ -266,6 +268,10 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(momentsRoute, [
     'settings.moments_hide_charge_exclusive',
   ], { targetTitleKey: 'settings.moments_filter_charge_dynamic' }),
+  ...createEntries(aboutRoute, [
+    'settings.group_version_reminder',
+    'settings.enable_version_reminder',
+  ]),
 
   ...createEntries(videoCardRoute, [
     'settings.plugin.video_card',

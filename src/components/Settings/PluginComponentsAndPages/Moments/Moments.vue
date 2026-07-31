@@ -26,6 +26,10 @@ type MomentToggleSetting
     | 'momentsHideVideoReservation'
     | 'momentsHideLiveReservation'
     | 'momentsHideLiveDynamics'
+    | 'momentsHideVideoDynamics'
+    | 'momentsHideDrawDynamics'
+    | 'momentsHideUgcSeasonDynamics'
+    | 'momentsHideForwardDynamics'
 
 interface MomentTagOption {
   setting: MomentToggleSetting
@@ -48,6 +52,10 @@ const pluginComponentOptions = computed<MomentTagOption[]>(() => [
 ])
 
 const pluginFilterOptions = computed<MomentTagOption[]>(() => [
+  { setting: 'momentsHideVideoDynamics', label: t('settings.moments_filter_video_dynamic'), icon: 'i-tabler-player-play' },
+  { setting: 'momentsHideDrawDynamics', label: t('settings.moments_filter_draw_dynamic'), icon: 'i-tabler-photo' },
+  { setting: 'momentsHideUgcSeasonDynamics', label: t('settings.moments_filter_ugc_season_dynamic'), icon: 'i-tabler-stack' },
+  { setting: 'momentsHideForwardDynamics', label: t('settings.moments_filter_forward_dynamic'), icon: 'i-tabler-repeat' },
   { setting: 'momentsFilterUpRecommendation', label: t('settings.moments_filter_up_recommendation_short'), icon: 'i-tabler-sparkles' },
   { setting: 'momentsHideChargeExclusive', label: t('settings.moments_filter_charge_dynamic'), icon: 'i-tabler-battery-charging' },
   { setting: 'momentsHideVideoReservation', label: t('settings.moments_filter_video_reservation'), icon: 'i-tabler-calendar-time' },
@@ -64,6 +72,10 @@ const openModeOptions = computed(() => [
     label: t('settings.moments_card_open_mode_opt.new_tab'),
     value: 'newTab',
   },
+  {
+    label: t('settings.moments_card_open_mode_opt.background'),
+    value: 'background',
+  },
 ])
 </script>
 
@@ -72,6 +84,7 @@ const openModeOptions = computed(() => [
     <SettingsItemGroup :title="$t('settings.group_original_moments_page')">
       <SettingsItem
         :title="$t('settings.moments_visible_components')"
+        :desc="$t('settings.moments_visible_components_original_desc')"
       >
         <template #bottom>
           <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
@@ -94,6 +107,7 @@ const openModeOptions = computed(() => [
     >
       <SettingsItem
         :title="$t('settings.moments_visible_components')"
+        :desc="$t('settings.moments_visible_components_plugin_desc')"
       >
         <template #bottom>
           <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
@@ -134,6 +148,7 @@ const openModeOptions = computed(() => [
               :label="option.label"
               :icon="option.icon"
               inverted
+              :show-state-icon="false"
             />
           </div>
         </template>
@@ -146,7 +161,7 @@ const openModeOptions = computed(() => [
         <Select
           v-model="settings.momentsCardOpenMode"
           :options="openModeOptions"
-          w="160px"
+          w="180px"
         />
       </SettingsItem>
     </SettingsItemGroup>

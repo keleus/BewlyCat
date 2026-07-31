@@ -13,6 +13,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getCSRF } from '~/utils/main'
 import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
+import { openLinkInBackground } from '~/utils/tabs'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
 const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
@@ -32,6 +33,12 @@ interface DisplayMoment {
   commentCount: number
   url: string
   isVideo: boolean
+  /** 普通视频动态（不含合集订阅） */
+  isRegularVideo: boolean
+  /** 合集视频动态 */
+  isUgcSeason: boolean
+  /** 图文动态 */
+  isDraw: boolean
   /** 追番追剧类 PGC 动态 */
   isPgc: boolean
   isLive: boolean
@@ -260,6 +267,8 @@ const MAX_PREVIEW_CACHE = 12
 const MAX_VIDEO_CID_CACHE = 80
 const MAX_POST_LOAD_AUTOFILL_PAGES = 3
 const WANTED_SCAN_LIMIT = 100
+/** 开启类型过滤时单次最多扫描的原始动态条数，避免自动连刷 */
+const FILTERED_SCAN_LIMIT = 100
 const MOMENTS_CACHE_MAX_ITEMS = 1000
 const MOMENTS_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000
 /** 虚拟瀑布流需要在全局哨兵进入视口前主动预取，避免高度修正后漏掉相交事件 */
@@ -601,14 +610,33 @@ function getMomentContent(item: any) {
   const isUgcSeason = item.type === 'DYNAMIC_TYPE_UGC_SEASON'
     || major?.type === 'MAJOR_TYPE_UGC_SEASON'
     || Boolean(ugcSeason)
+  const isPgc = item.type === 'DYNAMIC_TYPE_PGC_UNION' || Boolean(major.pgc)
+  const isRegularVideo = !isUgcSeason && (
+    item.type === 'DYNAMIC_TYPE_AV'
+    || Boolean(major.archive)
+    || isPgc
+  )
+  // 图文：DRAW / 带图 opus，不含视频、合集、直播与专栏
+  const isArticleMajor = item.type === 'DYNAMIC_TYPE_ARTICLE'
+    || major?.type === 'MAJOR_TYPE_ARTICLE'
+    || Number(basic?.comment_type) === 12
+  const isDraw = !isRegularVideo && !isUgcSeason && !live && !isArticleMajor && (
+    item.type === 'DYNAMIC_TYPE_DRAW'
+    || major?.type === 'MAJOR_TYPE_DRAW'
+    || drawItems.length > 0
+    || opusImages.length > 0
+  )
 
   return {
     title: pickText(live?.title, opus.title, archive.title, article.title, common.title),
     text,
     richText,
     images: [...images, ...(cover ? [cover] : [])].map(httpsUrl).filter(Boolean).filter((url: string, index: number, list: string[]) => list.indexOf(url) === index),
-    isVideo: item.type === 'DYNAMIC_TYPE_AV' || isUgcSeason || Boolean(major.archive || major.pgc),
-    isPgc: item.type === 'DYNAMIC_TYPE_PGC_UNION' || Boolean(major.pgc),
+    isVideo: isRegularVideo || isUgcSeason,
+    isRegularVideo,
+    isUgcSeason,
+    isDraw,
+    isPgc,
     isLive: Boolean(live),
     isChargeExclusive,
     chargeBadge,
@@ -882,13 +910,14 @@ function handleDetailImageViewerKeydown(event: KeyboardEvent) {
   }
 }
 
-function shouldOpenMomentInNewTab(moment: DisplayMoment) {
+function shouldOpenMomentExternally(moment: DisplayMoment) {
   return moment.isLive
     || settings.value.momentsCardOpenMode === 'newTab'
+    || settings.value.momentsCardOpenMode === 'background'
     || window.innerWidth <= DETAIL_DIALOG_MIN_WIDTH
 }
 
-function openMomentInNewTab(moment: DisplayMoment) {
+function openMomentInNewTab(moment: DisplayMoment, background = false) {
   const url = resolveDetailUrl(moment) || moment.url
   if (!url)
     return
@@ -897,16 +926,19 @@ function openMomentInNewTab(moment: DisplayMoment) {
   cleanupLivePreviewPlayer()
   if (previewUrls[moment.id])
     delete previewUrls[moment.id]
-  window.open(url, '_blank', 'noopener,noreferrer')
+  if (background)
+    void openLinkInBackground(url)
+  else
+    window.open(url, '_blank', 'noopener,noreferrer')
 }
 
 function openMomentDetail(moment: DisplayMoment) {
   if (moment.isVideo && !moment.isLive)
     recordVideoVisit(moment)
 
-  // 小屏与直播直接使用新标签页，避免狭窄 Dialog 和跨域直播页占用资源
-  if (shouldOpenMomentInNewTab(moment)) {
-    openMomentInNewTab(moment)
+  // 小屏、直播与「新标签/后台标签」设置：外部打开，避免狭窄 Dialog 与跨域直播占用
+  if (shouldOpenMomentExternally(moment)) {
+    openMomentInNewTab(moment, settings.value.momentsCardOpenMode === 'background')
     return
   }
 
@@ -1097,6 +1129,9 @@ function mapMoment(item: DataItem): DisplayMoment {
     url: `https://www.bilibili.com/opus/${id}`,
     // 转发视频仍然是“转发动态”；原视频由卡片内的独立视频摘要展示。
     isVideo: !isForward && content.isVideo,
+    isRegularVideo: !isForward && content.isRegularVideo,
+    isUgcSeason: !isForward && content.isUgcSeason,
+    isDraw: !isForward && content.isDraw,
     isPgc: content.isPgc,
     isLive: content.isLive,
     isForward,
@@ -1375,6 +1410,27 @@ function loadMoreWantedMoments() {
   void loadMoments(false, 0, true)
 }
 
+function loadMoreFilteredMoments() {
+  void loadMoments(false, 0, true)
+}
+
+/** 任一类型过滤开启时，改为「扫 100 条 + 手动加载」以免自动连刷 */
+function hasActiveMomentTypeFilters() {
+  return settings.value.momentsFilterUpRecommendation
+    || settings.value.momentsHideChargeExclusive
+    || settings.value.momentsHideVideoReservation
+    || settings.value.momentsHideLiveReservation
+    || settings.value.momentsHideLiveDynamics
+    || settings.value.momentsHideVideoDynamics
+    || settings.value.momentsHideDrawDynamics
+    || settings.value.momentsHideUgcSeasonDynamics
+    || settings.value.momentsHideForwardDynamics
+}
+
+function requiresManualMomentPaging() {
+  return activeMomentGroup.value === 'wanted' || hasActiveMomentTypeFilters()
+}
+
 function passesMomentSettings(moment: DisplayMoment) {
   if (settings.value.momentsFilterUpRecommendation && moment.isUpRecommendation)
     return false
@@ -1385,6 +1441,14 @@ function passesMomentSettings(moment: DisplayMoment) {
   if (settings.value.momentsHideLiveReservation && moment.isLiveReservation)
     return false
   if (settings.value.momentsHideLiveDynamics && moment.isLive)
+    return false
+  if (settings.value.momentsHideVideoDynamics && moment.isRegularVideo)
+    return false
+  if (settings.value.momentsHideDrawDynamics && moment.isDraw)
+    return false
+  if (settings.value.momentsHideUgcSeasonDynamics && moment.isUgcSeason)
+    return false
+  if (settings.value.momentsHideForwardDynamics && moment.isForward)
     return false
   return true
 }
@@ -1618,8 +1682,16 @@ function scheduleVirtualUpdate() {
 /** 全局触底哨兵的本地兜底：滚动到最后一屏附近时直接请求下一页。 */
 function maybeLoadMoreNearBottom() {
   const viewport = scrollViewportRef.value
-  if (!viewport || isInitialLoading.value || isLoading.value || noMoreContent.value || !moments.value.length)
+  if (
+    !viewport
+    || isInitialLoading.value
+    || isLoading.value
+    || noMoreContent.value
+    || !moments.value.length
+    || requiresManualMomentPaging()
+  ) {
     return
+  }
 
   const distanceFromBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight
   const threshold = Math.max(LOAD_MORE_AHEAD_PX, viewport.clientHeight * 0.6)
@@ -2281,9 +2353,9 @@ async function toggleMomentWatchLater(target: WatchLaterTarget) {
   }
 }
 
-async function loadMoments(reset = false, autoFillDepth = 0, wantedManual = false) {
-  // “想看”只允许按钮触发后续批次，避免滚动到底自动扫描下一组 100 条。
-  if (!reset && activeMomentGroup.value === 'wanted' && !wantedManual)
+async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = false) {
+  // “想看”或类型过滤开启时只允许按钮触发后续批次，避免滚动自动连刷。
+  if (!reset && requiresManualMomentPaging() && !manualPaging)
     return
   if ((!reset && isLoading.value) || (!reset && noMoreContent.value))
     return
@@ -2472,6 +2544,47 @@ async function loadMoments(reset = false, autoFillDepth = 0, wantedManual = fals
           || (cacheEntry.hasMore && cacheEntry.items.length < MOMENTS_CACHE_MAX_ITEMS)
       }
     }
+    else if (hasActiveMomentTypeFilters()) {
+      // 过滤开启：单次最多扫描 FILTERED_SCAN_LIMIT 条原始动态，再交给本地过滤
+      let scanOffset = offset.value
+      let scanUpdateBaseline = updateBaseline.value
+      let canContinue = true
+      const scanned: DataItem[] = []
+
+      while (canContinue && scanned.length < FILTERED_SCAN_LIMIT) {
+        const response = await api.moment.getMoments({
+          type: requestType,
+          offset: scanOffset || undefined,
+          update_baseline: scanUpdateBaseline || undefined,
+          features: MOMENT_FEED_FEATURES,
+        }) as MomentResult
+        if (
+          requestToken !== feedRequestToken
+          || requestType !== activeMomentFilter.value
+          || requestGroup !== activeMomentGroup.value
+          || response.code !== 0
+        ) {
+          return
+        }
+
+        const pageItems = response.data?.items || []
+        scanned.push(...pageItems)
+        const responseOffset = response.data?.offset || ''
+        scanUpdateBaseline = response.data?.update_baseline || ''
+        canContinue = Boolean(response.data?.has_more)
+          && pageItems.length > 0
+          && responseOffset !== scanOffset
+        scanOffset = responseOffset
+        if (scanned.length >= FILTERED_SCAN_LIMIT)
+          break
+      }
+
+      // 以整页推进 offset，本批原始条数可能略高于 100
+      rawItems = scanned
+      hasMore = canContinue
+      nextOffset = scanOffset
+      nextUpdateBaseline = scanUpdateBaseline
+    }
     else {
       const response = await api.moment.getMoments({
         type: requestType,
@@ -2561,6 +2674,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, wantedManual = fals
   if (
     !pageApplied
     || noMoreContent.value
+    || requiresManualMomentPaging()
     || autoFillDepth >= MAX_POST_LOAD_AUTOFILL_PAGES
     || requestToken !== feedRequestToken
     || requestType !== activeMomentFilter.value
@@ -2667,7 +2781,11 @@ onMounted(() => {
   window.addEventListener('message', handleDetailFrameMessage)
   refresh()
   handlePageRefresh.value = refresh
-  handleReachBottom.value = () => void loadMoments()
+  handleReachBottom.value = () => {
+    if (requiresManualMomentPaging())
+      return
+    void loadMoments()
+  }
 })
 
 onBeforeUnmount(() => {
@@ -2754,6 +2872,10 @@ watch(
     settings.value.momentsHideVideoReservation,
     settings.value.momentsHideLiveReservation,
     settings.value.momentsHideLiveDynamics,
+    settings.value.momentsHideVideoDynamics,
+    settings.value.momentsHideDrawDynamics,
+    settings.value.momentsHideUgcSeasonDynamics,
+    settings.value.momentsHideForwardDynamics,
   ],
   () => {
     if (scrollViewportRef.value)
@@ -2837,7 +2959,7 @@ watch(
             :aria-pressed="activeMomentGroup === 'wanted'"
             @click="handleMomentGroupChange('wanted')"
           >
-            想看 <span v-if="momentsWantedUsers.length">{{ momentsWantedUsers.length }}</span>
+            想看
           </button>
         </div>
       </header>
@@ -3309,16 +3431,16 @@ watch(
           <span i-tabler-windmill text="size-$bew-icon-size-xl" /><p>{{ activeMomentGroup === 'wanted' ? (momentsWantedUsers.length ? '近期无更新' : '请先在设置中添加想看的 UP 主') : '暂时没有可展示的动态' }}</p><button
             v-if="activeMomentGroup !== 'wanted' || momentsWantedUsers.length"
             :disabled="isLoading"
-            @click="activeMomentGroup === 'wanted' && !noMoreContent ? loadMoreWantedMoments() : refresh()"
+            @click="requiresManualMomentPaging() && !noMoreContent ? (activeMomentGroup === 'wanted' ? loadMoreWantedMoments() : loadMoreFilteredMoments()) : refresh()"
           >
-            {{ isLoading ? '正在加载…' : activeMomentGroup === 'wanted' ? (!noMoreContent ? '加载更多' : '重新检查') : '重新加载' }}
+            {{ isLoading ? '正在加载…' : requiresManualMomentPaging() ? (!noMoreContent ? '加载更多' : (activeMomentGroup === 'wanted' ? '重新检查' : '重新加载')) : '重新加载' }}
           </button>
         </div>
         <button
-          v-if="activeMomentGroup === 'wanted' && moments.length && !isLoading && !noMoreContent"
+          v-if="requiresManualMomentPaging() && moments.length && !isLoading && !noMoreContent"
           type="button"
           class="moments-wanted-load-more"
-          @click="loadMoreWantedMoments"
+          @click="activeMomentGroup === 'wanted' ? loadMoreWantedMoments() : loadMoreFilteredMoments()"
         >
           <span i-tabler-arrow-down />
           加载更多

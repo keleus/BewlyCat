@@ -302,7 +302,15 @@ export interface Settings {
   momentsHideVideoReservation: boolean
   momentsHideLiveReservation: boolean
   momentsHideLiveDynamics: boolean
-  momentsCardOpenMode: 'dialog' | 'newTab'
+  /** 过滤普通视频动态（不含合集视频） */
+  momentsHideVideoDynamics: boolean
+  /** 过滤图文动态 */
+  momentsHideDrawDynamics: boolean
+  /** 过滤合集视频动态 */
+  momentsHideUgcSeasonDynamics: boolean
+  /** 过滤转发动态 */
+  momentsHideForwardDynamics: boolean
+  momentsCardOpenMode: 'dialog' | 'newTab' | 'background'
 
   alwaysUseDock: boolean
   autoHideDock: boolean
@@ -481,7 +489,7 @@ export const originalLocalSettings: LocalSettings = {
 export const originalSettings: Settings = {
   touchScreenOptimization: false,
   showHomeButtonInTouchMode: true,
-  openTopBarItemsInBewly: false,
+  openTopBarItemsInBewly: true,
   enableGridLayoutSwitcher: true,
   enableHorizontalScrolling: false,
   showIPLocation: true, // 默认启用IP归属地显示
@@ -583,6 +591,10 @@ export const originalSettings: Settings = {
   momentsHideVideoReservation: false,
   momentsHideLiveReservation: false,
   momentsHideLiveDynamics: false,
+  momentsHideVideoDynamics: false,
+  momentsHideDrawDynamics: false,
+  momentsHideUgcSeasonDynamics: false,
+  momentsHideForwardDynamics: false,
   momentsCardOpenMode: 'dialog',
 
   alwaysUseDock: false,

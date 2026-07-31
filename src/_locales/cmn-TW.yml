@@ -222,8 +222,10 @@ settings:
   moments_show_publish: 顯示發布動態元件
   moments_show_live: 顯示正在直播元件
   moments_visible_components: 顯示元件
+  moments_visible_components_original_desc: 控制 Bilibili 原版動態頁側欄與橫幅等元件是否顯示。主題色表示顯示，灰色表示隱藏。
+  moments_visible_components_plugin_desc: 控制 Bewly 動態頁左側元件是否顯示。主題色表示顯示，灰色表示隱藏。
   moments_filtered_types: 過濾動態
-  moments_filtered_types_desc: 點擊標籤切換過濾狀態。主題色表示顯示，灰色劃線眼睛表示屏蔽該類動態。
+  moments_filtered_types_desc: 控制各類動態是否出現在 Bewly 動態流中。選中（主題色）表示不過濾，未選中表示過濾。開啟過濾時單次最多掃描 100 條，需手動載入更多。
   moments_enable_live_preview: 直播動態懸停預覽
   moments_enable_live_preview_desc: 滑鼠懸停直播動態封面時播放直播預覽。
   moments_enable_video_preview: 影片動態懸停預覽
@@ -231,6 +233,10 @@ settings:
   moments_filter_up_recommendation: 過濾：UP主的推薦
   moments_filter_up_recommendation_desc: 過濾所有帶有「UP主的推薦」附加資訊的動態。
   moments_filter_up_recommendation_short: UP主的推薦
+  moments_filter_video_dynamic: 影片動態
+  moments_filter_draw_dynamic: 圖文動態
+  moments_filter_ugc_season_dynamic: 合集影片動態
+  moments_filter_forward_dynamic: 轉發動態
   moments_filter_charge_dynamic: 充電動態
   moments_filter_video_reservation: 影片預約動態
   moments_filter_live_reservation: 直播預約動態
@@ -238,10 +244,11 @@ settings:
   moments_hide_charge_exclusive: 隱藏充電專屬動態
   moments_hide_charge_exclusive_desc: 從外掛動態流中過濾所有充電專屬動態。
   moments_card_open_mode: 動態卡片點擊行為
-  moments_card_open_mode_desc: 選擇點擊動態卡片時使用彈窗或新分頁。直播動態只能在新分頁開啟。
+  moments_card_open_mode_desc: 選擇點擊動態卡片時使用彈窗、新分頁或背景分頁。直播動態只能在新分頁或背景分頁開啟。
   moments_card_open_mode_opt:
     dialog: 彈窗
     new_tab: 新分頁
+    background: 背景分頁
   group_moments_wanted_users: 想看分組
   group_moments_wanted_users_desc: 管理想看的 UP 主；支援輸入 UID 或暱稱，名單僅儲存在本機。
   moments_wanted_users: 想看的 UP 主
