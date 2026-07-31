@@ -12,6 +12,22 @@ export type LoginCheckResult<T>
 export type NavChecker<T> = () => Promise<{ code: number, data?: T }>
 
 /**
+ * 从 Cookie 字符串解析 DedeUserID（登录用户的 mid）。
+ *
+ * DedeUserID 非 HttpOnly，且「存在且不为 0」是 B 站多个接口的登录鉴权
+ * 依据；登出/会话过期时它随 SESSDATA 一起被清空（见 bilibili-API-collect
+ * docs/login/exit.md），因此可作为登录态的本地事实源，无需网络请求。
+ */
+export function parseDedeUserID(cookieString: string): number | undefined {
+  const match = cookieString.match(/(?:^|;\s*)DedeUserID=(\d+)/)
+  if (!match)
+    return undefined
+
+  const mid = Number(match[1])
+  return mid > 0 ? mid : undefined
+}
+
+/**
  * 将一次登录态检查（nav 接口）分类为状态动作。
  *
  * 只有 code -101 才是真实登出；风控（HTML 页面、-412）、限流（-509）、

@@ -27,7 +27,7 @@ import {
   TOP_BAR_STATE_MESSAGE,
 } from '~/constants/topBarState'
 import { settings } from '~/logic'
-import { checkLoginStatus, LoginStatus } from '~/logic/loginStatus'
+import { checkLoginStatus, LoginStatus, parseDedeUserID } from '~/logic/loginStatus'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { getCSRF, isHomePage } from '~/utils/main'
@@ -37,7 +37,10 @@ export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 未登录/未初始化时重�
 
 export const useTopBarStore = defineStore('topBar', () => {
   const toast = useToast()
-  const isLogin = ref<boolean>(true)
+  // 登录态是本地事实而非网络推导：初始值取 DedeUserID 存在性（同步、零请求），
+  // 之后只有 -101 或本地 Cookie 清除才能翻转为未登录，瞬态失败永不翻转。
+  // 否则刷新时的一次风控窗口会把已登录用户误判为未登录（见 issue #921）。
+  const isLogin = ref<boolean>(getLocalLoginMid() !== undefined)
   const userInfo = reactive<UserInfo>({} as UserInfo)
 
   const unReadMessage = reactive<UnReadMessage>({} as UnReadMessage)
@@ -163,6 +166,11 @@ export const useTopBarStore = defineStore('topBar', () => {
     bCoinAlreadyReceived.value = false
     hasBCoinToReceive.value = false
     vipExpAlreadyReceived.value = false
+  }
+
+  // 登录态的本地事实源：读取 DedeUserID（非 HttpOnly，content script 可读）
+  function getLocalLoginMid(): number | undefined {
+    return parseDedeUserID(document.cookie)
   }
 
   // User Methods
