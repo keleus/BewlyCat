@@ -175,6 +175,10 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   // User Methods
   async function getUserInfo(retryCount = 0): Promise<LoginStatus> {
+    // 本地无会话 Cookie 且已知未登录时，nav 只会返回 -101，跳过无意义的请求
+    if (!isLogin.value && getLocalLoginMid() === undefined)
+      return LoginStatus.LoggedOut
+
     const maxRetries = 2 // 最多重试2次
     const retryDelay = (retryCount + 1) * 1000 // 递增延迟: 1s, 2s
 
