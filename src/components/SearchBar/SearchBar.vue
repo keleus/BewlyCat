@@ -990,7 +990,7 @@ function handleClearKeyword() {
 
           &:hover,
           &:focus-visible {
-            background-color: var(--bew-fill-2);
+            background-color: var(--bew-fill-alt);
             box-shadow:
               inset 0 0 0 1px var(--bew-border-color),
               var(--bew-shadow-2),
