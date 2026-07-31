@@ -3,11 +3,23 @@
 }
 
 .bewly-design {
-  // Implement specific modifications to the page, like tweaking the layout, and place those styles here
+  // 对齐 1.6.8：原版顶栏 slide-down / mini-header 用毛玻璃 elevated，避免 solid 发黑发闷
+  // 自定义首页首屏白底由 removeTopBar.scss 的 #fff / rgb(36 38 40) 覆盖
   .bili-header .slide-down,
   .bili-header .mini-header {
     background-color: var(--bew-elevated) !important;
     backdrop-filter: var(--bew-filter-glass-1);
+  }
+
+  // 自定义首页 portal 顶栏：优先原生白底观感（与 1.6.8 capture 后 slide-down 一致）
+  &.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar.slide-down {
+    background-color: #fff !important;
+    backdrop-filter: none;
+  }
+
+  &.dark.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar.slide-down {
+    background-color: rgb(36 38 40) !important;
+    backdrop-filter: none;
   }
 
   // #region theme color adaption part

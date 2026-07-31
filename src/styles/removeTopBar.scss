@@ -14,23 +14,61 @@
   }
 }
 
+// 对齐 1.6.8 / B 站原生 slide-down：浅色白底、暗色深灰，不套 elevated-solid，不强制图标纯黑。
+// 文字/图标色交给 B 站 .slide-down 默认样式；滚动后频道布局靠 .bewly-original-top-bar-scrolled。
 .homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar,
 .homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
   display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
-  color: var(--bew-text-1) !important;
-  background-color: var(--bew-elevated-solid) !important;
+  background-color: #fff !important;
   backdrop-filter: none;
+}
+
+.dark.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar,
+.dark.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
+  background-color: rgb(36 38 40) !important;
+}
+
+// 自定义首页原版顶栏：首屏与滚动后都显示 B 站自己的宽 Logo（与插件 Logo 设置无关）
+.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header {
+  .bewly-bili-logo-entry {
+    display: flex;
+    align-items: center;
+    margin-right: 16px;
+
+    a {
+      display: flex;
+      align-items: center;
+      height: var(--bew-top-bar-height);
+    }
+
+    img {
+      display: block;
+      // 接近 B 站原生 slide-down 宽标比例
+      width: 88px;
+      max-height: 42px;
+      height: auto;
+      object-fit: contain;
+    }
+  }
+
+  .entry-title {
+    gap: 8px;
+    margin-right: var(--bew-space-4);
+
+    .zhuzhan-icon {
+      display: none;
+    }
+  }
 }
 
 .homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
-}
 
-.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled {
+  // 非自定义首页滚动态：同样显示宽 Logo
   .bewly-bili-logo-entry {
     display: flex;
     align-items: center;
@@ -46,6 +84,7 @@
       display: block;
       width: 88px;
       max-height: 42px;
+      height: auto;
       object-fit: contain;
     }
   }
