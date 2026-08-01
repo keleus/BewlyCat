@@ -943,10 +943,7 @@ function handleClearKeyword() {
         .hot-search-item {
           --uno: "relative cursor-pointer duration-300";
           border-radius: var(--bew-interactive-radius);
-          transition:
-            background-color var(--bew-duration-normal) var(--bew-ease-standard),
-            box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
-            transform var(--bew-duration-normal) var(--bew-ease-standard);
+          transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
 
           .hot-search-icon {
             object-fit: contain;
@@ -990,12 +987,7 @@ function handleClearKeyword() {
 
           &:hover,
           &:focus-visible {
-            background-color: var(--bew-fill-alt);
-            box-shadow:
-              inset 0 0 0 1px var(--bew-border-color),
-              var(--bew-shadow-2),
-              0 0 16px var(--bew-theme-color-20);
-            transform: translateY(-1px);
+            background-color: var(--bew-fill-2);
           }
         }
       }

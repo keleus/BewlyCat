@@ -79,8 +79,7 @@ const collapsed = ref(props.defaultCollapsed)
   text-align: left;
   cursor: pointer;
 
-  .group-title,
-  .collapse-icon {
+  .group-title {
     transition: color var(--bew-duration-normal) var(--bew-ease-standard);
   }
 
@@ -109,7 +108,9 @@ const collapsed = ref(props.defaultCollapsed)
   flex: 0 0 auto;
   color: var(--bew-text-2);
   font-size: var(--bew-icon-size-md);
-  transition: transform 0.2s ease;
+  transition:
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    transform var(--bew-duration-normal) var(--bew-ease-standard);
 
   &.collapsed {
     transform: rotate(-90deg);

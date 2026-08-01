@@ -240,7 +240,7 @@ onMounted(() => {
               </picture>
             </Tooltip>
 
-            <div aspect-video relative>
+            <Tooltip placement="top" :content="localSettings.locallyUploadedWallpaper?.name || ''" aspect-video>
               <!-- Upload wallpaper input -->
               <input
                 ref="uploadWallpaperRef" type="file" accept="image/*"
@@ -297,7 +297,7 @@ onMounted(() => {
                   w-full h-full object-cover
                 >
               </picture>
-            </div>
+            </Tooltip>
           </div>
         </template>
       </SettingsItem>

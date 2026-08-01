@@ -340,8 +340,11 @@ function changeWallpaper(url: string) {
 <style lang="scss" scoped>
 .color-option {
   transition:
+    border-color var(--bew-duration-normal) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
     filter var(--bew-duration-normal) var(--bew-ease-standard),
-    outline-color var(--bew-duration-normal) var(--bew-ease-standard);
+    outline-color var(--bew-duration-normal) var(--bew-ease-standard),
+    transform var(--bew-duration-normal) var(--bew-ease-standard);
 }
 
 .color-option:hover {
