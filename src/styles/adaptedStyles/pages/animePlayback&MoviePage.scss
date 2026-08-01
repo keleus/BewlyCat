@@ -15,6 +15,11 @@
   }
 
   // #region new anime playback & movie page
+  // 网页全屏时播放器层级盖过顶栏（z-index: 999），与普通视频页表现一致
+  .plp-player:has([class*="video_playerFullScreen"]) {
+    z-index: 100000;
+  }
+
   [class*="numberListItem_number_list_item"][class*="numberListItem_select"],
   [class*="follow_btnFollow"],
   .squirtle-controller.squirtle-pgc .squirtle-progress-timeline,
