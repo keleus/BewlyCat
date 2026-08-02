@@ -161,6 +161,7 @@ else if (shouldInitializePageScript) {
     observedTargetsKey?: string
     resizeObserver?: ResizeObserver
     imageLoadAbort?: AbortController
+    imageLoadListeners?: WeakSet<HTMLImageElement>
     layoutUpdateRaf?: number
     /** 锚点未就绪时的重试次数，防止无限 rAF */
     layoutRetryCount?: number
@@ -721,6 +722,23 @@ else if (shouldInitializePageScript) {
     return null
   }
 
+  /** 从主评论内的图片等子组件向上找到同一楼层的回复容器 */
+  function findCommentThreadRepliesRenderer(component: HTMLElement | null | undefined): HTMLElement | null {
+    let node: Node | null = component ?? null
+    for (let depth = 0; depth < 12 && node; depth++) {
+      if (node instanceof ShadowRoot) {
+        if (node.host.localName === 'bili-comment-thread-renderer')
+          return node.querySelector<HTMLElement>('bili-comment-replies-renderer')
+        node = node.host
+        continue
+      }
+      if (node instanceof HTMLElement && node.localName === 'bili-comment-thread-renderer')
+        return node.shadowRoot?.querySelector<HTMLElement>('bili-comment-replies-renderer') ?? null
+      node = node.parentNode
+    }
+    return null
+  }
+
   function getCommentReplyTreeState(component: object): CommentReplyTreeState {
     let state = commentReplyTreeStates.get(component)
     if (!state) {
@@ -901,6 +919,7 @@ else if (shouldInitializePageScript) {
     state.observedTargetsKey = undefined
     state.imageLoadAbort?.abort()
     state.imageLoadAbort = undefined
+    state.imageLoadListeners = undefined
     if (state.layoutUpdateRaf !== undefined) {
       cancelAnimationFrame(state.layoutUpdateRaf)
       state.layoutUpdateRaf = undefined
@@ -933,47 +952,72 @@ else if (shouldInitializePageScript) {
     const threadRoot = getCommentReplyTreeThreadRoot(component)
     const threadHost = threadRoot?.host instanceof HTMLElement ? threadRoot.host : null
     const mainRenderer = getCommentReplyTreeRootRenderer(component)
-    const targets = [replyContainer, threadHost, mainRenderer, component]
-      .filter((el): el is HTMLElement => el instanceof HTMLElement)
-    const targetsKey = targets.map(el => `${el.localName}#${el.id || ''}`).join('|')
+    const targets = new Set<HTMLElement>()
+    const addTarget = (target: Element | null | undefined) => {
+      if (target instanceof HTMLElement)
+        targets.add(target)
+    }
+    addTarget(replyContainer)
+    addTarget(threadHost)
+    addTarget(mainRenderer)
+    addTarget(component)
 
-    if (state.observedTargetsKey === targetsKey && state.resizeObserver)
-      return
+    // 主评论图片和正文可能分别位于多层 shadow root；只观察外层 renderer
+    // 在某些布局下无法捕获内部图片高度变化，导致回复坐标仍停留在旧位置。
+    const layoutTargetSelector = '#body, #main, #header, #content, #pictures, #footer, #user-avatar, bili-comment-pictures-renderer, bili-rich-text, img'
+    const collectNestedLayoutTargets = (root: ParentNode) => {
+      root.querySelectorAll<HTMLElement>(layoutTargetSelector).forEach(addTarget)
+      root.querySelectorAll<HTMLElement>('*').forEach((element) => {
+        if (element.shadowRoot)
+          collectNestedLayoutTargets(element.shadowRoot)
+      })
+    }
+    if (threadRoot)
+      collectNestedLayoutTargets(threadRoot)
+    else if (component instanceof HTMLElement && component.shadowRoot)
+      collectNestedLayoutTargets(component.shadowRoot)
 
-    disconnectCommentReplyTreeResizeObserver(state)
-    state.observedTargetsKey = targetsKey
-    state.resizeObserver = new ResizeObserver(() => {
-      if (!component?.isConnected) {
-        disconnectCommentReplyTreeResizeObserver(state)
-        return
-      }
-      scheduleCommentReplyTreeLayoutUpdate(component)
-    })
-    targets.forEach(target => state.resizeObserver?.observe(target))
+    const targetList = [...targets]
+    const targetsKey = targetList.map(el => `${el.localName}#${el.id || ''}`).join('|')
 
-    // 主评论/回复内图片异步解码完成也会改变高度
+    if (state.observedTargetsKey !== targetsKey || !state.resizeObserver) {
+      disconnectCommentReplyTreeResizeObserver(state)
+      state.observedTargetsKey = targetsKey
+      state.resizeObserver = new ResizeObserver(() => {
+        if (!component?.isConnected) {
+          disconnectCommentReplyTreeResizeObserver(state)
+          return
+        }
+        scheduleCommentReplyTreeLayoutUpdate(component)
+      })
+      targetList.forEach(target => state.resizeObserver?.observe(target))
+    }
+
+    // 每次更新都补一次图片监听，避免图片/嵌套 shadow 在首次更新后才挂载时漏监听。
+    // 主评论/回复内图片异步解码完成也会改变高度。
     const imageRoot = threadHost ?? component
     if (imageRoot instanceof HTMLElement) {
-      const abort = new AbortController()
+      const abort = state.imageLoadAbort ?? new AbortController()
       state.imageLoadAbort = abort
+      const imageLoadListeners = state.imageLoadListeners ?? new WeakSet<HTMLImageElement>()
+      state.imageLoadListeners = imageLoadListeners
       const onImageLayout = () => scheduleCommentReplyTreeLayoutUpdate(component)
       const listenImages = (root: ParentNode) => {
         root.querySelectorAll('img').forEach((img) => {
-          if (img.complete)
+          if (img.complete || imageLoadListeners.has(img))
             return
+          imageLoadListeners.add(img)
           img.addEventListener('load', onImageLayout, { once: true, signal: abort.signal })
           img.addEventListener('error', onImageLayout, { once: true, signal: abort.signal })
+        })
+        root.querySelectorAll<HTMLElement>('*').forEach((element) => {
+          if (element.shadowRoot)
+            listenImages(element.shadowRoot)
         })
       }
       listenImages(imageRoot)
       if (imageRoot.shadowRoot)
         listenImages(imageRoot.shadowRoot)
-      if (mainRenderer?.shadowRoot)
-        listenImages(mainRenderer.shadowRoot)
-      replyContainer.querySelectorAll('bili-comment-reply-renderer, bili-comment-renderer').forEach((reply) => {
-        if (reply instanceof HTMLElement && reply.shadowRoot)
-          listenImages(reply.shadowRoot)
-      })
     }
   }
 
@@ -2858,6 +2902,12 @@ else if (shouldInitializePageScript) {
                   })
                 }
               }
+
+              // 图片组件位于主评论的嵌套 shadow DOM 中，图片尺寸变化不一定能
+              // 通过回复容器的 ResizeObserver 传递出来；样式调整后主动重算树线。
+              const repliesRenderer = findCommentThreadRepliesRenderer(component)
+              if (repliesRenderer)
+                scheduleCommentReplyTreeLayoutUpdate(repliesRenderer)
             })
           }
           catch (error) {
