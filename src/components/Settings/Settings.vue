@@ -602,44 +602,42 @@ function changeMenuItem(menuItem: MenuType) {
       </div>
     </div>
 
-    <ClientOnly>
-      <Teleport :to="mainAppRef" :disabled="!mainAppRef">
-        <Transition name="settings-search-popover">
-          <div
-            v-if="searchQuery && isSearchFocused"
-            id="settings-search-results"
-            ref="searchResultsRef"
-            class="settings-search-results bew-popover-surface"
-            role="listbox"
-            :style="[
-              searchPopoverStyle,
-              {
-                backgroundColor: settings.enableFrostedGlass ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
-                zIndex: 10010,
-              },
-            ]"
+    <Teleport :to="mainAppRef" :disabled="!mainAppRef">
+      <Transition name="settings-search-popover">
+        <div
+          v-if="searchQuery && isSearchFocused"
+          id="settings-search-results"
+          ref="searchResultsRef"
+          class="settings-search-results bew-popover-surface"
+          role="listbox"
+          :style="[
+            searchPopoverStyle,
+            {
+              backgroundColor: settings.enableFrostedGlass ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
+              zIndex: 10010,
+            },
+          ]"
+        >
+          <button
+            v-for="(entry, index) in searchResults"
+            :id="`settings-search-result-${index}`"
+            :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
+            type="button"
+            role="option"
+            :aria-selected="index === activeSearchResultIndex"
+            :class="{ active: index === activeSearchResultIndex }"
+            @mouseenter="activeSearchResultIndex = index"
+            @click="navigateToSearchResult(entry)"
           >
-            <button
-              v-for="(entry, index) in searchResults"
-              :id="`settings-search-result-${index}`"
-              :key="`${entry.menu}-${entry.secondaryTitleKey ?? ''}-${entry.titleKey ?? entry.title}-${index}`"
-              type="button"
-              role="option"
-              :aria-selected="index === activeSearchResultIndex"
-              :class="{ active: index === activeSearchResultIndex }"
-              @mouseenter="activeSearchResultIndex = index"
-              @click="navigateToSearchResult(entry)"
-            >
-              <strong>{{ getSearchEntryTitle(entry) }}</strong>
-              <span>{{ getSearchEntryLocation(entry) }}</span>
-            </button>
-            <p v-if="searchResults.length === 0">
-              {{ $t('settings.search.no_results') }}
-            </p>
-          </div>
-        </Transition>
-      </Teleport>
-    </ClientOnly>
+            <strong>{{ getSearchEntryTitle(entry) }}</strong>
+            <span>{{ getSearchEntryLocation(entry) }}</span>
+          </button>
+          <p v-if="searchResults.length === 0">
+            {{ $t('settings.search.no_results') }}
+          </p>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
