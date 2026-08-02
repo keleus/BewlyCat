@@ -266,7 +266,6 @@ function toggleTabContentLoading(loading: boolean) {
         v-if="shouldShowHomeHeader"
         class="home-header"
         :class="{
-          'home-header--tabs-left': settings.homeTabsPosition === 'left',
           'home-header-fixed': settings.fixedHomeTabsOnHomePage,
         }"
         w-full z-9
@@ -426,36 +425,20 @@ function toggleTabContentLoading(loading: boolean) {
 
 .home-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
   gap: var(--bew-space-4);
-  margin-bottom: var(--bew-space-5);
+  margin-bottom: var(--bew-space-4);
 }
 
 .home-tabs-panel {
-  grid-column: 2;
-  max-width: calc(100vw - 320px);
-  justify-self: center;
-  transform: translateX(calc((var(--bew-page-padding-right) - var(--bew-page-padding-left)) / 2));
-}
-
-.home-header--tabs-left {
-  grid-template-columns: minmax(0, 1fr) auto;
-
-  .home-tabs-panel {
-    grid-column: 1;
-    max-width: 100%;
-    justify-self: start;
-    transform: none;
-  }
-
-  .home-grid-layout-switcher {
-    grid-column: 2;
-  }
+  grid-column: 1;
+  max-width: 100%;
+  justify-self: start;
 }
 
 .home-grid-layout-switcher {
-  grid-column: 3;
+  grid-column: 2;
   justify-self: end;
 }
 
@@ -481,26 +464,6 @@ function toggleTabContentLoading(loading: boolean) {
 
 .home-header-fixed {
   --uno: "sticky top-[calc(var(--bew-top-bar-height)+10px)]";
-}
-
-@media (max-width: 1000px) {
-  .home-header {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .home-tabs-panel {
-    grid-column: 1;
-    max-width: 100%;
-    transform: none;
-  }
-
-  .home-header--tabs-left .home-tabs-panel {
-    justify-self: start;
-  }
-
-  .home-grid-layout-switcher {
-    grid-column: 2;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

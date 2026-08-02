@@ -130,7 +130,6 @@ export interface ShortcutsSettings {
 
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
-export type HomeTabsPosition = 'left' | 'center'
 export type TopBarLogoStyle = 'icon' | 'brand'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 export type RandomPlayOrder = 'sequential' | 'reverse' | 'random'
@@ -400,7 +399,6 @@ export interface Settings {
   followingInactiveDays: number // UP主超过N天未更新则移至不活跃名单
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
-  homeTabsPosition: HomeTabsPosition
   alwaysShowTabsOnHomePage: boolean
   fixedHomeTabsOnHomePage: boolean
   enableVersionReminder: boolean
@@ -687,7 +685,6 @@ export const originalSettings: Settings = {
   followingInactiveDays: 100, // 默认100天
 
   homePageTabVisibilityList: [],
-  homeTabsPosition: 'center',
   alwaysShowTabsOnHomePage: false,
   fixedHomeTabsOnHomePage: false,
   enableVersionReminder: true,
@@ -823,6 +820,7 @@ watch(
     const record = value as Record<string, any>
 
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
+    Reflect.deleteProperty(record, 'homeTabsPosition')
 
     // 旧布尔开关 → 评论回复树展示模式
     const validCommentReplyTreeModes: CommentReplyTreeMode[] = [

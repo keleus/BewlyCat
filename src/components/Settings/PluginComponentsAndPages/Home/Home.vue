@@ -6,10 +6,9 @@ import draggable from 'vuedraggable'
 
 import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
-import Select from '~/components/Select.vue'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
-import type { HomeTabsPosition, RecommendationMode } from '~/logic/storage'
+import type { RecommendationMode } from '~/logic/storage'
 import { useMainStore } from '~/stores/mainStore'
 import { getTVLoginQRCode, hasValidAppAuthTokens, pollTVLoginQRCode, revokeAccessKey, saveAppAuthTokens } from '~/utils/authProvider'
 
@@ -23,17 +22,6 @@ import FilterByUserTable from './components/FilterByUserTable.vue'
 const mainStore = useMainStore()
 const { t } = useI18n()
 const toast = useToast()
-
-const homeTabsPositionOptions = computed(() => [
-  {
-    label: t('common.position.center'),
-    value: 'center' satisfies HomeTabsPosition,
-  },
-  {
-    label: t('common.position.left'),
-    value: 'left' satisfies HomeTabsPosition,
-  },
-])
 
 const recommendationModeOptions = computed<{ label: string, value: RecommendationMode }[]>(() => [
   { label: 'Web', value: 'web' },
@@ -467,9 +455,6 @@ function handleToggleHomeTab(tab: any) {
             </template>
           </draggable>
         </template>
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.home_tabs_position')" right-width="auto">
-        <Select v-model="settings.homeTabsPosition" :options="homeTabsPositionOptions" w="160px" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.fixed_home_tabs_on_home_page')" right-width="auto">
         <Radio v-model="settings.fixedHomeTabsOnHomePage" />
