@@ -11,141 +11,69 @@ import { settings } from '~/logic'
 import { allChannelConfigs } from '../../../TopBar/constants/channels'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
-import { topBarElementStorageKey } from '../../searchCatalog'
 
 const { t } = useI18n()
 
-// 当前选中的顶栏元素
-const selectedElement = ref<string>(sessionStorage.getItem(topBarElementStorageKey) ?? 'switchers')
+type BadgeType = 'number' | 'dot' | 'none'
 
-watch(selectedElement, (element) => {
-  if (element)
-    sessionStorage.setItem(topBarElementStorageKey, element)
-  else
-    sessionStorage.removeItem(topBarElementStorageKey)
-})
-
-// 顶栏元素类型定义
-interface TopBarElement {
-  id: string
-  label: string
-  icon?: string
-  type: 'logo' | 'pinnedChannels' | 'pageSwitcher' | 'search' | 'popIcon' | 'avatar'
-  supportsBadge?: boolean
-  visible?: boolean
+interface TopBarComponent {
+  key: string
+  i18nKey: string
+  icon: string
+  supportsBadge: boolean
 }
 
-// 顶栏元素列表
-const topBarElements = computed<TopBarElement[]>(() => {
-  const elements: TopBarElement[] = [
-    {
-      id: 'logoAndChannels',
-      label: `Logo & ${t('settings.topbar_pinned_channels_title')}`,
-      icon: 'i-tabler:brand-bilibili',
-      type: 'logo',
-    },
-    {
-      id: 'switchers',
-      label: 'Bewly/Bili 切换器',
-      icon: 'i-mingcute:arrows-left-right-line',
-      type: 'pageSwitcher',
-    },
-    {
-      id: 'search',
-      label: t('settings.group_search_bar'),
-      icon: 'i-mingcute:search-line',
-      type: 'search',
-    },
-  ]
+const topBarComponents = computed<TopBarComponent[]>(() => [
+  {
+    key: 'moments',
+    i18nKey: 'topbar.moments',
+    icon: 'i-tabler:windmill',
+    supportsBadge: true,
+  },
+  {
+    key: 'favorites',
+    i18nKey: 'topbar.favorites',
+    icon: 'i-mingcute:star-line',
+    supportsBadge: true,
+  },
+  {
+    key: 'history',
+    i18nKey: 'topbar.history',
+    icon: 'i-mingcute:time-line',
+    supportsBadge: true,
+  },
+  {
+    key: 'watchLater',
+    i18nKey: 'topbar.watch_later',
+    icon: 'i-mingcute:carplay-line',
+    supportsBadge: true,
+  },
+  {
+    key: 'creatorCenter',
+    i18nKey: 'topbar.creative_center',
+    icon: 'i-mingcute:bulb-line',
+    supportsBadge: false,
+  },
+  {
+    key: 'upload',
+    i18nKey: 'topbar.upload',
+    icon: 'i-mingcute:upload-line',
+    supportsBadge: false,
+  },
+  {
+    key: 'notifications',
+    i18nKey: 'topbar.notifications',
+    icon: 'i-tabler:bell',
+    supportsBadge: true,
+  },
+])
 
-  // 添加PopIcons（顶栏组件）
-  const popIcons = [
-    {
-      id: 'moments',
-      label: t('topbar.moments'),
-      icon: 'i-tabler:windmill',
-      supportsBadge: true,
-    },
-    {
-      id: 'favorites',
-      label: t('topbar.favorites'),
-      icon: 'i-mingcute:star-line',
-      supportsBadge: true,
-    },
-    {
-      id: 'history',
-      label: t('topbar.history'),
-      icon: 'i-mingcute:time-line',
-      supportsBadge: true,
-    },
-    {
-      id: 'watchLater',
-      label: t('topbar.watch_later'),
-      icon: 'i-mingcute:carplay-line',
-      supportsBadge: true,
-    },
-    {
-      id: 'creatorCenter',
-      label: t('topbar.creative_center'),
-      icon: 'i-mingcute:bulb-line',
-      supportsBadge: false,
-    },
-    {
-      id: 'upload',
-      label: t('topbar.upload'),
-      icon: 'i-mingcute:upload-line',
-      supportsBadge: false,
-    },
-    {
-      id: 'notifications',
-      label: t('topbar.notifications'),
-      icon: 'i-tabler:bell',
-      supportsBadge: true,
-    },
-  ]
-
-  popIcons.forEach((icon) => {
-    const config = settings.value.topBarComponentsConfig?.find(c => c.key === icon.id)
-    elements.push({
-      ...icon,
-      type: 'popIcon',
-      visible: config?.visible ?? true,
-    })
-  })
-
-  // 添加用户头像
-  elements.push({
-    id: 'avatar',
-    label: t('topbar.user_dropdown.account_settings'),
-    icon: 'i-mingcute:user-4-line',
-    type: 'avatar',
-  })
-
-  return elements
-})
-
-const selectedTopBarElement = computed(() => {
-  return topBarElements.value.find(element => element.id === selectedElement.value)
-})
-
-// 点击顶栏元素
-function selectElement(elementId: string) {
-  selectedElement.value = selectedElement.value === elementId ? '' : elementId
-}
-
-// 获取元素的配置
-function getElementConfig(elementId: string) {
-  return settings.value.topBarComponentsConfig?.find(c => c.key === elementId)
-}
-
-// 角标类型选项
 const badgeOptions = computed(() => [
   { label: t('settings.top_bar_icon_badges_opt.number'), value: 'number' },
   { label: t('settings.top_bar_icon_badges_opt.dot'), value: 'dot' },
   { label: t('settings.top_bar_icon_badges_opt.none'), value: 'none' },
 ])
 
-// 视频页顶栏配置选项
 const videoPageTopBarConfigOptions = computed(() => [
   { label: t('settings.video_page_top_bar_config_opt.alwaysShow'), value: VideoPageTopBarConfig.AlwaysShow },
   { label: t('settings.video_page_top_bar_config_opt.alwaysHide'), value: VideoPageTopBarConfig.AlwaysHide },
@@ -153,41 +81,54 @@ const videoPageTopBarConfigOptions = computed(() => [
   { label: t('settings.video_page_top_bar_config_opt.showOnScroll'), value: VideoPageTopBarConfig.ShowOnScroll },
 ])
 
-// 切换组件可见性
-function toggleComponentVisibility(elementId: string) {
-  const config = settings.value.topBarComponentsConfig?.find(c => c.key === elementId)
-  if (config) {
-    config.visible = !config.visible
+function createDefaultComponentConfig(component: TopBarComponent) {
+  return {
+    key: component.key,
+    visible: true,
+    badgeType: (component.supportsBadge ? 'number' : 'none') as BadgeType,
   }
 }
 
-// 重置顶栏组件配置
-function resetTopBarComponents() {
-  const topBarComponents = [
-    { key: 'moments', supportsBadge: true },
-    { key: 'favorites', supportsBadge: true },
-    { key: 'history', supportsBadge: true },
-    { key: 'watchLater', supportsBadge: true },
-    { key: 'creatorCenter', supportsBadge: false },
-    { key: 'upload', supportsBadge: false },
-    { key: 'notifications', supportsBadge: true },
-  ]
+function getComponentConfig(componentKey: string) {
+  return settings.value.topBarComponentsConfig?.find(component => component.key === componentKey)
+}
 
-  settings.value.topBarComponentsConfig = topBarComponents.map((component) => {
-    return {
-      key: component.key,
-      visible: true,
-      badgeType: component.supportsBadge ? 'number' : 'none',
-    }
+function resetTopBarComponents() {
+  settings.value.topBarComponentsConfig = topBarComponents.value.map(createDefaultComponentConfig)
+}
+
+function ensureTopBarComponentsConfig() {
+  const currentConfig = settings.value.topBarComponentsConfig ?? []
+  const hasExpectedKeys = currentConfig.length === topBarComponents.value.length
+    && topBarComponents.value.every((component, index) => currentConfig[index]?.key === component.key)
+
+  if (hasExpectedKeys)
+    return
+
+  settings.value.topBarComponentsConfig = topBarComponents.value.map((component) => {
+    return currentConfig.find(config => config.key === component.key) ?? createDefaultComponentConfig(component)
   })
 }
 
-// 重置固定分区
+function setComponentVisibility(componentKey: string, visible: boolean) {
+  const config = getComponentConfig(componentKey)
+  if (config)
+    config.visible = visible
+}
+
+function setComponentBadgeType(componentKey: string, badgeType: BadgeType) {
+  const config = getComponentConfig(componentKey)
+  if (config)
+    config.badgeType = badgeType
+}
+
+ensureTopBarComponentsConfig()
+watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
+
 function resetPinnedChannels() {
   settings.value.topBarPinnedChannels = []
 }
 
-// 常驻分区相关
 interface ChannelOption {
   value: string
   label: string
@@ -225,507 +166,317 @@ function toggleChannel(value: string) {
 </script>
 
 <template>
-  <SettingsItemGroup :title="$t('settings.group_topbar')">
-    <div class="topbar-visual-config">
-      <div>
-        <SettingsItem
-          v-if="!settings.touchScreenOptimization"
-          :title="$t('settings.open_top_bar_items_in_bewly')"
-          :desc="$t('settings.open_top_bar_items_in_bewly_desc')"
-          right-width="auto"
-          mb-4
-        >
-          <Radio v-model="settings.openTopBarItemsInBewly" />
-        </SettingsItem>
+  <div class="topbar-settings-groups" :data-settings-title="$t('settings.group_topbar')">
+    <SettingsItemGroup
+      :title="$t('settings.topbar_display_settings')"
+      :desc="$t('settings.topbar_display_settings_desc')"
+    >
+      <SettingsItem
+        v-if="!settings.touchScreenOptimization"
+        :title="$t('settings.open_top_bar_items_in_bewly')"
+        :desc="$t('settings.open_top_bar_items_in_bewly_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.openTopBarItemsInBewly" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.auto_hide_top_bar')" right-width="auto">
+        <Radio v-model="settings.autoHideTopBar" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.video_page_top_bar_config')"
+        :desc="$t('settings.video_page_top_bar_config_desc')"
+        right-width="auto"
+      >
+        <Select v-model="settings.videoPageTopBarConfig" :options="videoPageTopBarConfigOptions" w="160px" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.always_use_transparent_top_bar')" right-width="auto">
+        <Radio v-model="settings.alwaysUseTransparentTopBar" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
+        <Radio v-model="settings.showTopBarThemeColorGradient" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.open_notifications_page_as_drawer')" right-width="auto">
+        <Radio v-model="settings.openNotificationsPageAsDrawer" />
+      </SettingsItem>
+    </SettingsItemGroup>
 
-        <!-- 提示文字 -->
-        <div class="topbar-config-hint" mb-3>
-          <div class="topbar-config-hint__icon" i-mingcute:cursor-click-line />
-          <div class="topbar-config-hint__content">
-            <div class="topbar-config-hint__title">
-              点击顶栏预览中的元素切换设置项
-            </div>
-            <div class="topbar-config-hint__desc">
-              当前正在设置：{{ selectedTopBarElement?.label ?? '未选择' }}
-            </div>
-          </div>
-        </div>
-
-        <!-- 缩略顶栏预览 -->
+    <SettingsItemGroup
+      :title="$t('settings.topbar_logo_and_channels')"
+      :desc="$t('settings.topbar_logo_and_channels_desc')"
+    >
+      <SettingsItem
+        :title="$t('settings.top_bar_logo_style')"
+        :desc="$t('settings.top_bar_logo_style_desc')"
+        right-width="auto"
+      >
         <div
-          class="topbar-preview"
-          bg="$bew-fill-1" rounded="$bew-radius"
-          p="x-6 y-3" mb-4
-          border="1 $bew-border-color"
+          class="logo-style-picker bew-segment-control bew-segment-control--surface bew-segment-control--static"
+          role="radiogroup"
+          :aria-label="$t('settings.top_bar_logo_style')"
         >
-          <div
-            flex="~ items-center justify-between gap-4"
-            w-full
+          <button
+            type="button"
+            class="bew-segment-control__item bew-segment-control__item--icon"
+            :data-active="settings.topBarLogoStyle === 'icon'"
+            role="radio"
+            :aria-checked="settings.topBarLogoStyle === 'icon'"
+            :title="$t('settings.top_bar_logo_style_opt.icon')"
+            @click="settings.topBarLogoStyle = 'icon'"
           >
-            <!-- 左侧：Logo(含固定分区) + 切换器 -->
-            <div flex="~ items-center gap-2">
-              <!-- Logo + 固定分区 -->
-              <div
-                class="topbar-element logo-element"
-                :class="{ active: selectedElement === 'logoAndChannels' }"
-                @click="selectElement('logoAndChannels')"
-              >
-                <div :class="topBarElements.find(e => e.id === 'logoAndChannels')?.icon" text-xl />
-                <div v-if="pinnedChannelKeys.length > 0" class="pinned-count">
-                  {{ pinnedChannelKeys.length }}
-                </div>
-              </div>
+            <span class="bew-segment-control__icon i-tabler:brand-bilibili" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            class="logo-style-picker__brand-option bew-segment-control__item"
+            :data-active="settings.topBarLogoStyle === 'brand'"
+            role="radio"
+            :aria-checked="settings.topBarLogoStyle === 'brand'"
+            :title="$t('settings.top_bar_logo_style_opt.brand')"
+            @click="settings.topBarLogoStyle = 'brand'"
+          >
+            <span
+              class="logo-style-picker__brand"
+              :style="{
+                maskImage: `url(${bilibiliBrandLogoUrl})`,
+                WebkitMaskImage: `url(${bilibiliBrandLogoUrl})`,
+              }"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+      </SettingsItem>
 
-              <!-- Bewly/Bili 切换器 -->
-              <div
-                class="topbar-element switchers-element"
-                :class="{ active: selectedElement === 'switchers' }"
-                @click="selectElement('switchers')"
-              >
-                <div i-mingcute:transfer-3-line text-lg />
-              </div>
-            </div>
+      <SettingsItem
+        v-if="settings.touchScreenOptimization"
+        :title="$t('settings.show_home_button_in_touch_mode')"
+        :desc="$t('settings.show_home_button_in_touch_mode_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showHomeButtonInTouchMode" />
+      </SettingsItem>
+    </SettingsItemGroup>
 
-            <!-- 中间：搜索框 -->
-            <div
-              class="topbar-element search-element"
-              :class="{ active: selectedElement === 'search' }"
-              flex="1"
-              @click="selectElement('search')"
+    <SettingsItemGroup
+      :title="$t('settings.group_topbar_pinned_channels')"
+      :desc="$t('settings.topbar_pinned_channels_desc')"
+      icon="i-tabler:pin-filled"
+      collapsible
+      default-collapsed
+    >
+      <SettingsItem :title="$t('settings.topbar_pinned_channels_title')">
+        <template #title>
+          <div class="topbar-item-title-with-action">
+            <span>{{ $t('settings.topbar_pinned_channels_title') }}</span>
+            <Button
+              size="small"
+              type="secondary"
+              :disabled="!pinnedChannelKeys.length"
+              @click="resetPinnedChannels"
             >
-              <div :class="topBarElements.find(e => e.id === 'search')?.icon" text-base mr-2 />
-              <div text-sm opacity-60>
-                {{ $t('settings.group_search_bar') }}
-              </div>
-            </div>
-
-            <!-- 右侧：PopIcons + 头像 -->
-            <div flex="~ items-center gap-2">
-              <!-- PopIcons -->
-              <template
-                v-for="element in topBarElements.filter(e => e.type === 'popIcon')"
-                :key="element.id"
-              >
-                <div
-                  class="topbar-element"
-                  :class="{
-                    active: selectedElement === element.id,
-                    disabled: !element.visible,
-                  }"
-                  @click="selectElement(element.id)"
-                >
-                  <div :class="element.icon" text-base />
-                  <div v-if="!element.visible" class="disabled-overlay" />
-                </div>
+              <template #left>
+                <div i-mingcute:back-line />
               </template>
+              {{ $t('common.operation.reset') }}
+            </Button>
+          </div>
+        </template>
 
-              <!-- 头像 -->
-              <div
-                class="topbar-element avatar-element"
-                :class="{ active: selectedElement === 'avatar' }"
-                @click="selectElement('avatar')"
-              >
-                <div :class="topBarElements.find(e => e.id === 'avatar')?.icon" text-base />
+        <template #bottom>
+          <div class="channel-grid">
+            <button
+              v-for="option in channelOptions"
+              :key="option.value"
+              type="button"
+              class="channel-grid__item"
+              :class="{ selected: pinnedChannelKeys.includes(option.value) }"
+              @click="toggleChannel(option.value)"
+            >
+              <div v-if="option.icon.startsWith('#')" class="channel-grid__icon">
+                <svg aria-hidden="true">
+                  <use :xlink:href="option.icon" />
+                </svg>
               </div>
-            </div>
+              <div v-else class="channel-grid__icon">
+                <i :class="option.icon" :style="{ color: option.color ?? '' }" />
+              </div>
+              <span class="channel-grid__label">{{ option.label }}</span>
+              <span v-if="pinnedIndexMap.has(option.value)" class="channel-grid__overlay">
+                {{ pinnedIndexMap.get(option.value) }}
+              </span>
+            </button>
+          </div>
+          <div class="channel-grid__tip">
+            {{ pinnedChannelKeys.length ? $t('settings.topbar_pinned_channels_order_tip') : $t('settings.topbar_pinned_channels_empty') }}
+          </div>
+        </template>
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="$t('settings.topbar_switchers')"
+      :desc="$t('settings.topbar_switchers_desc')"
+    >
+      <SettingsItem
+        :title="$t('settings.show_bewly_or_bili_page_switcher')"
+        :desc="$t('settings.show_bewly_or_bili_page_switcher_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showBewlyOrBiliPageSwitcher" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.show_bewly_or_bili_top_bar_switcher')"
+        :desc="$t('settings.show_bewly_or_bili_top_bar_switcher_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showBewlyOrBiliTopBarSwitcher" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup :title="$t('settings.group_search_bar')">
+      <SettingsItem
+        :title="$t('settings.show_hot_search_in_top_bar')"
+        :desc="$t('settings.show_hot_search_in_top_bar_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showHotSearchInTopBar" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.show_search_recommendation')"
+        :desc="$t('settings.show_search_recommendation_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showSearchRecommendation" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="$t('settings.topbar_actions')"
+      :desc="$t('settings.topbar_actions_desc')"
+    >
+      <SettingsItem
+        v-for="component in topBarComponents"
+        :key="component.key"
+        :title="$t(component.i18nKey)"
+        right-width="auto"
+      >
+        <template #title>
+          <span class="topbar-component-title">
+            <span class="topbar-component-icon" :class="component.icon" aria-hidden="true" />
+            <span>{{ $t(component.i18nKey) }}</span>
+          </span>
+        </template>
+        <div class="topbar-component-controls">
+          <div v-if="component.supportsBadge" class="topbar-component-control topbar-component-control--badge">
+            <span class="topbar-component-control__label">{{ $t('settings.badge_type') }}</span>
+            <Select
+              :model-value="getComponentConfig(component.key)?.badgeType ?? 'number'"
+              :options="badgeOptions"
+              :disabled="!getComponentConfig(component.key)?.visible"
+              w="160px"
+              @update:model-value="setComponentBadgeType(component.key, $event as BadgeType)"
+            />
+          </div>
+          <div class="topbar-component-control topbar-component-control--visibility">
+            <Radio
+              :model-value="getComponentConfig(component.key)?.visible ?? true"
+              :label="$t('settings.visibility')"
+              @update:model-value="setComponentVisibility(component.key, $event)"
+            />
           </div>
         </div>
+      </SettingsItem>
 
-        <!-- 元素配置区域 -->
-        <Transition name="fade" mode="out-in">
-          <div v-if="selectedElement" class="element-config" rounded="$bew-radius" p-4>
-            <!-- Logo + 固定分区配置 -->
-            <div v-if="selectedElement === 'logoAndChannels'" flex="~ col gap-4">
-              <div flex="~ items-center justify-between">
-                <div
-                  :data-settings-title="$t('settings.topbar_pinned_channels_title')"
-                  text-lg font-semibold
-                >
-                  Logo & {{ $t('settings.topbar_pinned_channels_title') }}
-                </div>
-                <Button
-                  size="small"
-                  type="secondary"
-                  :disabled="!pinnedChannelKeys.length"
-                  @click="resetPinnedChannels"
-                >
-                  <template #left>
-                    <div i-mingcute:back-line />
-                  </template>
-                  {{ $t('common.operation.reset') }}
-                </Button>
-              </div>
+      <SettingsItem
+        :title="$t('settings.show_like_notification_reminder')"
+        :desc="$t('settings.show_like_notification_reminder_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showLikeNotificationReminder" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.filter_articles_in_moments')"
+        :desc="$t('settings.filter_articles_in_moments_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.filterArticlesInMoments" />
+      </SettingsItem>
 
-              <SettingsItem
-                :title="$t('settings.top_bar_logo_style')"
-                :desc="$t('settings.top_bar_logo_style_desc')"
-                right-width="auto"
-              >
-                <div
-                  class="logo-style-picker bew-segment-control bew-segment-control--surface bew-segment-control--static"
-                  role="radiogroup"
-                  :aria-label="$t('settings.top_bar_logo_style')"
-                >
-                  <button
-                    type="button"
-                    class="bew-segment-control__item bew-segment-control__item--icon"
-                    :data-active="settings.topBarLogoStyle === 'icon'"
-                    role="radio"
-                    :aria-checked="settings.topBarLogoStyle === 'icon'"
-                    :title="$t('settings.top_bar_logo_style_opt.icon')"
-                    @click="settings.topBarLogoStyle = 'icon'"
-                  >
-                    <span class="bew-segment-control__icon i-tabler:brand-bilibili" aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    class="logo-style-picker__brand-option bew-segment-control__item"
-                    :data-active="settings.topBarLogoStyle === 'brand'"
-                    role="radio"
-                    :aria-checked="settings.topBarLogoStyle === 'brand'"
-                    :title="$t('settings.top_bar_logo_style_opt.brand')"
-                    @click="settings.topBarLogoStyle = 'brand'"
-                  >
-                    <span
-                      class="logo-style-picker__brand"
-                      :style="{
-                        maskImage: `url(${bilibiliBrandLogoUrl})`,
-                        WebkitMaskImage: `url(${bilibiliBrandLogoUrl})`,
-                      }"
-                      aria-hidden="true"
-                    />
-                  </button>
-                </div>
-              </SettingsItem>
-
-              <!-- Home 按钮设置（仅在触屏优化开启时显示） -->
-              <div v-if="settings.touchScreenOptimization" bg="$bew-fill-1" rounded="$bew-radius" p-3>
-                <SettingsItem :title="$t('settings.show_home_button_in_touch_mode')" right-width="auto">
-                  <Radio v-model="settings.showHomeButtonInTouchMode" />
-                </SettingsItem>
-                <div text-sm opacity-70 mt-2>
-                  {{ $t('settings.show_home_button_in_touch_mode_desc') }}
-                </div>
-              </div>
-
-              <div text-sm opacity-80 mb-2>
-                Logo 点击可展开频道列表，以下选择的频道将固定显示在顶栏上。{{ $t('settings.topbar_pinned_channels_hint') }}
-              </div>
-
-              <!-- 分区网格 -->
-              <div class="channel-grid">
-                <button
-                  v-for="option in channelOptions"
-                  :key="option.value"
-                  type="button"
-                  class="channel-grid__item"
-                  :class="{ selected: pinnedChannelKeys.includes(option.value) }"
-                  @click="toggleChannel(option.value)"
-                >
-                  <div v-if="option.icon.startsWith('#')" class="channel-grid__icon">
-                    <svg aria-hidden="true">
-                      <use :xlink:href="option.icon" />
-                    </svg>
-                  </div>
-                  <div v-else class="channel-grid__icon">
-                    <i :class="option.icon" :style="{ color: option.color ?? '' }" />
-                  </div>
-                  <span class="channel-grid__label">{{ option.label }}</span>
-                  <div
-                    v-if="pinnedIndexMap.has(option.value)"
-                    class="channel-grid__overlay"
-                  >
-                    {{ pinnedIndexMap.get(option.value) }}
-                  </div>
-                </button>
-              </div>
-              <div class="channel-grid__tip" text="$bew-text-3">
-                {{ pinnedChannelKeys.length ? $t('settings.topbar_pinned_channels_order_tip') : $t('settings.topbar_pinned_channels_empty') }}
-              </div>
-            </div>
-
-            <!-- Bewly/Bili 切换器配置 -->
-            <div v-else-if="selectedElement === 'switchers'" flex="~ col gap-4">
-              <div text-lg font-semibold>
-                Bewly/Bili 切换器
-              </div>
-
-              <div bg="$bew-fill-1" rounded="$bew-radius" p-3>
-                <SettingsItem :title="$t('settings.show_bewly_or_bili_page_switcher')" right-width="auto">
-                  <Radio v-model="settings.showBewlyOrBiliPageSwitcher" />
-                </SettingsItem>
-                <div text-sm opacity-70 mt-2>
-                  在首页顶栏 Logo 旁显示页面切换器，可在 BewlyCat 页面和 Bilibili 原版页面之间切换。
-                </div>
-              </div>
-
-              <div bg="$bew-fill-1" rounded="$bew-radius" p-3>
-                <SettingsItem :title="$t('settings.show_bewly_or_bili_top_bar_switcher')" right-width="auto">
-                  <Radio v-model="settings.showBewlyOrBiliTopBarSwitcher" />
-                </SettingsItem>
-                <div text-sm opacity-70 mt-2>
-                  在页面顶部悬停时显示顶栏切换器，可在 BewlyCat 顶栏和 Bilibili 原版顶栏之间切换。
-                </div>
-              </div>
-            </div>
-
-            <!-- 搜索框配置 -->
-            <div v-else-if="selectedElement === 'search'" flex="~ col">
-              <div
-                :data-settings-title="$t('settings.group_search_bar')"
-                text-lg font-semibold
-              >
-                {{ $t('settings.group_search_bar') }}
-              </div>
-              <SettingsItem :title="$t('settings.show_hot_search_in_top_bar')" :desc="$t('settings.show_hot_search_in_top_bar_desc')" right-width="auto">
-                <Radio v-model="settings.showHotSearchInTopBar" />
-              </SettingsItem>
-              <SettingsItem :title="$t('settings.show_search_recommendation')" :desc="$t('settings.show_search_recommendation_desc')" right-width="auto">
-                <Radio v-model="settings.showSearchRecommendation" />
-              </SettingsItem>
-            </div>
-
-            <!-- PopIcon 配置 -->
-            <div
-              v-else-if="topBarElements.find(e => e.id === selectedElement && e.type === 'popIcon')"
-              flex="~ col"
-            >
-              <div text-lg font-semibold>
-                {{ topBarElements.find(e => e.id === selectedElement)?.label }}
-              </div>
-
-              <SettingsItem :title="$t('settings.visibility')" right-width="auto">
-                <Radio
-                  :model-value="getElementConfig(selectedElement)?.visible ?? true"
-                  @update:model-value="toggleComponentVisibility(selectedElement)"
-                />
-              </SettingsItem>
-
-              <SettingsItem
-                v-if="topBarElements.find(e => e.id === selectedElement)?.supportsBadge"
-                :title="$t('settings.badge_type')"
-                right-width="auto"
-              >
-                <Select
-                  v-model="getElementConfig(selectedElement)!.badgeType"
-                  :options="badgeOptions"
-                  w="160px"
-                  :disabled="!getElementConfig(selectedElement)?.visible"
-                />
-              </SettingsItem>
-
-              <SettingsItem
-                v-if="selectedElement === 'notifications'"
-                :title="$t('settings.show_like_notification_reminder')"
-                :desc="$t('settings.show_like_notification_reminder_desc')"
-                right-width="auto"
-              >
-                <Radio v-model="settings.showLikeNotificationReminder" />
-              </SettingsItem>
-
-              <!-- 动态特殊设置 -->
-              <SettingsItem
-                v-if="selectedElement === 'moments'"
-                :title="$t('settings.filter_articles_in_moments')"
-                :desc="$t('settings.filter_articles_in_moments_desc')"
-                right-width="auto"
-              >
-                <Radio v-model="settings.filterArticlesInMoments" />
-              </SettingsItem>
-            </div>
-
-            <!-- 头像配置 -->
-            <div v-else-if="selectedElement === 'avatar'" flex="~ col">
-              <div text-lg font-semibold>
-                {{ $t('topbar.user_dropdown.account_settings') }}
-              </div>
-
-              <SettingsItem
-                :title="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop')"
-                :desc="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop_desc')"
-                right-width="auto"
-              >
-                <Radio v-model="settings.hideTopBarUserPanelLv6LastLoginLocation" />
-              </SettingsItem>
-            </div>
-          </div>
-        </Transition>
-
-        <!-- 全局设置 -->
-        <div mt-4 border-t="1 $bew-border-color">
-          <div flex="~ col">
-            <SettingsItem :title="$t('settings.auto_hide_top_bar')" right-width="auto">
-              <Radio v-model="settings.autoHideTopBar" />
-            </SettingsItem>
-
-            <SettingsItem
-              :title="$t('settings.video_page_top_bar_config')"
-              :desc="$t('settings.video_page_top_bar_config_desc')"
-              right-width="auto"
-            >
-              <Select v-model="settings.videoPageTopBarConfig" :options="videoPageTopBarConfigOptions" w="160px" />
-            </SettingsItem>
-
-            <SettingsItem :title="$t('settings.always_use_transparent_top_bar')" right-width="auto">
-              <Radio v-model="settings.alwaysUseTransparentTopBar" />
-            </SettingsItem>
-
-            <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
-              <Radio v-model="settings.showTopBarThemeColorGradient" />
-            </SettingsItem>
-
-            <SettingsItem :title="$t('settings.open_notifications_page_as_drawer')" right-width="auto">
-              <Radio v-model="settings.openNotificationsPageAsDrawer" />
-            </SettingsItem>
-
-            <div flex="~ items-center justify-end" mt-4>
-              <Button size="small" type="secondary" @click="resetTopBarComponents">
-                <template #left>
-                  <div i-mingcute:back-line />
-                </template>
-                {{ $t('common.operation.reset') }}
-              </Button>
-            </div>
-          </div>
-        </div>
+      <div class="topbar-section-actions">
+        <Button size="small" type="secondary" @click="resetTopBarComponents">
+          <template #left>
+            <div i-mingcute:back-line />
+          </template>
+          {{ $t('common.operation.reset') }}
+        </Button>
       </div>
-    </div>
-  </SettingsItemGroup>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup :title="$t('settings.topbar_user_menu')">
+      <SettingsItem
+        :title="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop')"
+        :desc="$t('settings.hide_lv6_last_login_location_in_top_bar_user_pop_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.hideTopBarUserPanelLv6LastLoginLocation" />
+      </SettingsItem>
+    </SettingsItemGroup>
+  </div>
 </template>
 
 <style lang="scss" scoped>
-.topbar-visual-config {
-  padding: 16px 0;
+.topbar-settings-groups {
+  min-width: 0;
 }
 
-.topbar-preview {
-  position: relative;
-}
-
-.topbar-config-hint {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--bew-space-3);
-  padding: var(--bew-space-3);
-  border: 1px solid var(--bew-theme-color-30);
-  border-radius: var(--bew-panel-radius);
-  background: color-mix(in oklab, var(--bew-theme-color-20), transparent 25%);
-  color: var(--bew-text-1);
-
-  &__icon {
-    flex: 0 0 auto;
-    margin-top: 2px;
-    color: var(--bew-theme-color);
-    font-size: var(--bew-icon-size-md);
-  }
-
-  &__content {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  &__title {
-    font-size: var(--bew-font-size-body);
-    font-weight: var(--bew-font-weight-semibold);
-    line-height: var(--bew-line-height-body);
-  }
-
-  &__desc {
-    color: var(--bew-text-2);
-    font-size: var(--bew-font-size-control);
-    line-height: var(--bew-line-height-control);
-  }
-}
-
-.topbar-element {
+.topbar-item-title-with-action {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
-  border: 1px solid transparent;
-  border-radius: var(--bew-interactive-radius);
-  cursor: pointer;
-  transition:
-    color var(--bew-duration-normal) var(--bew-ease-standard),
-    background-color var(--bew-duration-normal) var(--bew-ease-standard),
-    border-color var(--bew-duration-normal) var(--bew-ease-standard),
-    box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
-    transform var(--bew-duration-normal) var(--bew-ease-emphasized);
+  flex-wrap: wrap;
+  gap: var(--bew-space-3);
+}
+
+.topbar-component-title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bew-space-2);
+}
+
+.topbar-component-icon {
+  flex: 0 0 auto;
+  color: var(--bew-theme-color);
+  font-size: var(--bew-icon-size-md);
+}
+
+.topbar-component-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--bew-space-4);
+}
+
+.topbar-component-control {
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-2);
+  min-height: var(--bew-control-height);
+}
+
+.topbar-component-control--visibility {
+  margin-left: auto;
+}
+
+.topbar-component-control__label {
   color: var(--bew-text-2);
-  position: relative;
-
-  &:hover {
-    background: var(--bew-fill-2);
-    color: var(--bew-text-1);
-  }
-
-  &.active {
-    background: var(--bew-theme-color-20);
-    border-color: var(--bew-theme-color-30);
-    box-shadow: 0 0 0 2px color-mix(in oklab, var(--bew-theme-color-30), transparent 35%);
-    color: var(--bew-theme-color);
-  }
-
-  &.disabled {
-    opacity: 0.4;
-
-    &:hover {
-      opacity: 0.6;
-    }
-  }
-
-  .disabled-overlay {
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 4px,
-      var(--bew-fill-3) 4px,
-      var(--bew-fill-3) 8px
-    );
-    border-radius: inherit;
-    opacity: 0.3;
-    pointer-events: none;
-  }
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+  white-space: nowrap;
 }
 
-.search-element {
-  max-width: 300px;
-  justify-content: flex-start;
-}
-
-.avatar-element {
-  border-radius: 50%;
-}
-
-.logo-element {
-  position: relative;
-
-  .pinned-count {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    min-width: 16px;
-    height: 16px;
-    padding: 0 4px;
-    border-radius: var(--bew-badge-radius);
-    background: var(--bew-theme-color);
-    color: white;
-    font-size: var(--bew-font-size-caption);
-    font-weight: var(--bew-font-weight-semibold);
-    line-height: var(--bew-line-height-caption);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
-.element-config {
-  background: var(--bew-elevated);
-  animation: fadeIn 0.2s ease;
+.topbar-section-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: var(--bew-space-3);
 }
 
 .logo-style-picker {
@@ -738,9 +489,9 @@ function toggleChannel(value: string) {
   }
 
   &__brand {
+    display: block;
     width: calc(var(--bew-control-icon-size) * 4);
     height: var(--bew-control-icon-size);
-    display: block;
     flex: none;
     background: currentColor;
     mask-position: center;
@@ -750,34 +501,6 @@ function toggleChannel(value: string) {
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-size: contain;
   }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.link {
-  color: var(--bew-theme-color);
-  text-decoration: underline;
-}
-
-.topbar-switcher {
-  min-width: 80px;
-  justify-content: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.5rem;
-}
-
-.switchers-element {
-  min-width: 40px;
-  justify-content: center;
 }
 
 .channel-grid {
@@ -792,88 +515,107 @@ function toggleChannel(value: string) {
   width: 100%;
   grid-auto-flow: row dense;
   font-size: var(--bew-font-size-control);
+}
 
-  &__item {
-    position: relative;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: var(--bew-space-3);
-    border-radius: var(--bew-interactive-radius);
-    background: var(--bew-fill-1);
-    color: var(--bew-text-1);
-    transition:
-      background-color 0.3s ease,
-      transform 0.2s ease;
-    border: 1px solid transparent;
+.channel-grid__item {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-3);
+  min-width: 0;
+  min-height: var(--bew-control-height);
+  padding: var(--bew-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--bew-interactive-radius);
+  background: var(--bew-fill-1);
+  color: var(--bew-text-1);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    border-color var(--bew-duration-normal) var(--bew-ease-standard),
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    transform var(--bew-duration-normal) var(--bew-ease-emphasized);
 
-    &.selected {
-      background: color-mix(in oklab, var(--bew-theme-color-20), transparent 35%);
-      color: var(--bew-theme-color);
-      border-color: var(--bew-theme-color-30);
-      transform: none;
+  &:hover {
+    background: var(--bew-fill-2);
+    transform: translateY(-2px);
+  }
 
-      &:hover {
-        background: color-mix(in oklab, var(--bew-theme-color-20), transparent 20%);
-      }
-    }
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color-60);
+    outline-offset: var(--bew-space-0-5);
+  }
+
+  &.selected {
+    border-color: var(--bew-theme-color-30);
+    background: color-mix(in oklab, var(--bew-theme-color-20), transparent 35%);
+    color: var(--bew-theme-color);
+    transform: none;
 
     &:hover {
-      background: var(--bew-fill-2);
-      transform: translateY(-2px);
+      background: color-mix(in oklab, var(--bew-theme-color-20), transparent 20%);
     }
   }
+}
 
-  &__icon {
-    width: 32px;
-    height: 32px;
-    display: grid;
-    place-items: center;
-    border-radius: var(--bew-interactive-radius);
-    background: color-mix(in oklab, white, transparent 20%);
-    border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 30%);
+.channel-grid__icon {
+  display: grid;
+  width: var(--bew-icon-size-xl);
+  height: var(--bew-icon-size-xl);
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 30%);
+  border-radius: var(--bew-interactive-radius);
+  background: color-mix(in oklab, white, transparent 20%);
 
-    svg {
-      width: 24px;
-      height: 24px;
-    }
-
-    i {
-      font-size: var(--bew-icon-size-lg);
-    }
+  svg {
+    width: var(--bew-icon-size-lg);
+    height: var(--bew-icon-size-lg);
   }
 
-  &__label {
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: var(--bew-font-size-control);
-    font-weight: var(--bew-font-weight-medium);
-    line-height: var(--bew-line-height-control);
+  i {
+    font-size: var(--bew-icon-size-lg);
   }
+}
 
-  &__overlay {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    pointer-events: none;
-    font-size: var(--bew-font-size-control);
-    font-weight: var(--bew-font-weight-semibold);
-    color: white;
-    background: var(--bew-theme-color);
-  }
+.channel-grid__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-control);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-  &__tip {
-    margin-top: 12px;
+.channel-grid__overlay {
+  display: grid;
+  width: var(--bew-icon-size-md);
+  height: var(--bew-icon-size-md);
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: var(--bew-badge-radius);
+  background: var(--bew-theme-color);
+  color: var(--bew-text-auto);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
+  pointer-events: none;
+}
+
+.channel-grid__tip {
+  margin-top: var(--bew-space-3);
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+}
+
+@media (max-width: 640px) {
+  .topbar-component-controls {
+    justify-content: flex-start;
   }
 }
 </style>

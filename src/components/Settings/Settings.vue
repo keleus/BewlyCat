@@ -37,31 +37,59 @@ provide('setSettingsBreadcrumb', (detail?: string) => {
 
 const settingsMenu = {
   [MenuType.General]: defineAsyncComponent(() => import('./PluginComponentsAndPages/General/General.vue')),
-  [MenuType.Navigation]: defineAsyncComponent(() => import('./Navigation/Navigation.vue')),
-  [MenuType.Playback]: defineAsyncComponent(() => import('./Playback/Playback.vue')),
+  [MenuType.BewlyPages]: defineAsyncComponent(() => import('./Navigation/BewlyPages.vue')),
+  [MenuType.BewlyComponents]: defineAsyncComponent(() => import('./Navigation/BewlyComponents.vue')),
+  [MenuType.Bilibili]: defineAsyncComponent(() => import('./BilibiliFeaturesEnhancement/BilibiliFeaturesEnhancement.vue')),
   [MenuType.Appearance]: defineAsyncComponent(() => import('./Appearance/Appearance.vue')),
   [MenuType.Shortcuts]: defineAsyncComponent(() => import('./Shortcuts/Shortcuts.vue')),
-  [MenuType.BilibiliFeaturesEnhancement]: defineAsyncComponent(() => import('./BilibiliFeaturesEnhancement/BilibiliFeaturesEnhancement.vue')),
-  [MenuType.Advanced]: defineAsyncComponent(() => import('./Advanced/Advanced.vue')),
   [MenuType.About]: defineAsyncComponent(() => import('./About/About.vue')),
 }
 const settingsMenuStorageKey = 'bewly-settings-active-menu'
+const navigationPageStorageKey = 'bewly-settings-navigation-page'
+const bewlyPagesStorageKey = 'bewly-settings-bewly-pages-page'
+const bewlyComponentsStorageKey = 'bewly-settings-bewly-components-page'
 const playbackPageStorageKey = 'bewly-settings-playback-page'
+const bilibiliPageStorageKey = 'bewly-settings-bilibili-page'
 const storedMenuItem = sessionStorage.getItem(settingsMenuStorageKey)
+const legacyNavigationPage = sessionStorage.getItem(navigationPageStorageKey)
 const legacyPlaybackPages: Record<string, string> = {
   Player: 'player',
   AutoPlay: 'auto-play',
   VolumeBalance: 'volume-balance',
 }
 if (storedMenuItem && legacyPlaybackPages[storedMenuItem])
-  sessionStorage.setItem(playbackPageStorageKey, legacyPlaybackPages[storedMenuItem])
+  sessionStorage.setItem(bilibiliPageStorageKey, legacyPlaybackPages[storedMenuItem])
+
+if (!sessionStorage.getItem(bilibiliPageStorageKey)) {
+  const legacyPlaybackPage = sessionStorage.getItem(playbackPageStorageKey)
+  if (legacyPlaybackPage)
+    sessionStorage.setItem(bilibiliPageStorageKey, legacyPlaybackPage)
+}
+
+const legacyNavigationComponentPages = new Set(['video-card', 'topbar', 'dock'])
+const legacyNavigationMenu = legacyNavigationPage === 'link-opening'
+  ? MenuType.General
+  : legacyNavigationPage && legacyNavigationComponentPages.has(legacyNavigationPage)
+    ? MenuType.BewlyComponents
+    : MenuType.BewlyPages
 
 const legacyMenuAliases: Record<string, MenuType> = {
-  Browsing: MenuType.Navigation,
-  Player: MenuType.Playback,
-  AutoPlay: MenuType.Playback,
-  VolumeBalance: MenuType.Playback,
+  Browsing: legacyNavigationMenu,
+  Navigation: legacyNavigationMenu,
+  Player: MenuType.Bilibili,
+  AutoPlay: MenuType.Bilibili,
+  VolumeBalance: MenuType.Bilibili,
+  Playback: MenuType.Bilibili,
+  BilibiliFeaturesEnhancement: MenuType.Bilibili,
+  Advanced: MenuType.General,
 }
+
+if (!sessionStorage.getItem(bewlyPagesStorageKey) && legacyNavigationPage && ['home', 'moments', 'favorites', 'search'].includes(legacyNavigationPage))
+  sessionStorage.setItem(bewlyPagesStorageKey, legacyNavigationPage)
+
+if (!sessionStorage.getItem(bewlyComponentsStorageKey) && legacyNavigationPage && legacyNavigationComponentPages.has(legacyNavigationPage))
+  sessionStorage.setItem(bewlyComponentsStorageKey, legacyNavigationPage)
+
 const initialMenuItem = storedMenuItem
   ? legacyMenuAliases[storedMenuItem] ?? storedMenuItem as MenuType
   : null
@@ -162,16 +190,23 @@ const settingsMenuItems: MenuItem[] = [
     titleKey: 'settings.menu_general',
   },
   {
-    value: MenuType.Navigation,
+    value: MenuType.BewlyPages,
     icon: 'i-mingcute:web-line',
     iconActivated: 'i-mingcute:web-fill',
-    titleKey: 'settings.menu_navigation',
+    titleKey: 'settings.menu_bewly_pages',
   },
   {
-    value: MenuType.Playback,
-    icon: 'i-mingcute:play-circle-line',
-    iconActivated: 'i-mingcute:play-circle-fill',
-    titleKey: 'settings.menu_playback',
+    value: MenuType.BewlyComponents,
+    icon: 'i-mingcute:tool-line',
+    iconActivated: 'i-mingcute:tool-fill',
+    titleKey: 'settings.menu_bewly_components',
+  },
+  {
+    value: MenuType.Bilibili,
+    icon: 'i-mingcute:sparkles-2-line',
+    iconActivated: 'i-mingcute:sparkles-2-fill',
+    titleKey: 'settings.menu_bilibili',
+    sectionStart: true,
   },
   {
     value: MenuType.Appearance,
@@ -180,23 +215,10 @@ const settingsMenuItems: MenuItem[] = [
     iconActivated: 'i-mingcute:paint-brush-fill',
   },
   {
-    value: MenuType.BilibiliFeaturesEnhancement,
-    icon: 'i-mingcute:sparkles-2-line',
-    iconActivated: 'i-mingcute:sparkles-2-fill',
-    titleKey: 'settings.menu_bilibili_features_enhancement',
-    sectionStart: true,
-  },
-  {
     value: MenuType.Shortcuts,
     icon: 'i-mingcute:keyboard-line',
     iconActivated: 'i-mingcute:keyboard-fill',
     titleKey: 'settings.shortcuts.title',
-  },
-  {
-    value: MenuType.Advanced,
-    icon: 'i-mingcute:tool-line',
-    iconActivated: 'i-mingcute:tool-fill',
-    titleKey: 'settings.menu_advanced',
     sectionStart: true,
   },
   {
@@ -204,6 +226,7 @@ const settingsMenuItems: MenuItem[] = [
     icon: 'i-mingcute:information-line',
     iconActivated: 'i-mingcute:information-fill',
     titleKey: 'settings.menu_about',
+    sectionStart: true,
   },
 ]
 
@@ -244,9 +267,9 @@ function getSearchEntryText(entry: SettingsSearchEntry) {
   const translatedKeywords = [...inferredKeywordKeys, ...(entry.keywordKeys ?? [])]
     .flatMap(getTranslatedSearchTerms)
 
+  // 菜单路径只用于结果定位，避免输入分类名时命中整组设置。
   return [
     getSearchEntryTitle(entry),
-    getSearchEntryLocation(entry),
     ...translatedKeywords,
     ...(entry.keywords ?? []),
   ].join(' ').toLocaleLowerCase()

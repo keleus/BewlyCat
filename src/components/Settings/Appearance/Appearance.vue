@@ -72,6 +72,10 @@ const isCustomDarkModeBaseColor = computed<boolean>(() => {
   return !darkModeBaseColorOptions.value.includes(settings.value.darkModeBaseColor)
 })
 
+const bilibiliEvolvedThemeColor = computed(() => {
+  return getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim() || '#00a1d6'
+})
+
 const fontPreferenceOptions = computed(() => {
   return [
     {
@@ -185,6 +189,16 @@ function changeWallpaper(url: string) {
       </SettingsItem>
     </SettingsItemGroup>
 
+    <SettingsItemGroup :title="$t('settings.group_page_style')">
+      <SettingsItem
+        :title="$t('settings.adapt_to_other_page_styles')"
+        :desc="$t('settings.adapt_to_other_page_styles_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.adaptToOtherPageStyles" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
     <SettingsItemGroup :title="$t('settings.group_color')">
       <SettingsItem :title="$t('settings.theme')" right-width="auto">
         <Select v-model="settings.theme" w="160px" :options="themeOptions" />
@@ -292,6 +306,24 @@ function changeWallpaper(url: string) {
 
       <SettingsItem :title="$t('settings.gradient_theme_color_background')" right-width="auto">
         <Radio v-model="settings.useLinearGradientThemeColorBackground" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.follow_bilibili_evolved_color')"
+        :desc="$t('settings.follow_bilibili_evolved_color_desc')"
+        right-width="auto"
+      >
+        <div
+          class="color-option"
+          w-20px h-20px rounded-8 cursor-pointer transition
+          duration-300 box-border
+          :style="{
+            background: bilibiliEvolvedThemeColor,
+            transform: bilibiliEvolvedThemeColor === settings.themeColor ? 'scale(1.3)' : 'scale(1)',
+            border: bilibiliEvolvedThemeColor === settings.themeColor ? '2px solid white' : '2px solid transparent',
+            boxShadow: bilibiliEvolvedThemeColor === settings.themeColor ? '0 0 0 1px var(--bew-border-color), var(--bew-shadow-1)' : 'none',
+          }"
+          @click="changeThemeColor(bilibiliEvolvedThemeColor)"
+        />
       </SettingsItem>
     </SettingsItemGroup>
 

@@ -47,7 +47,7 @@ const commentReplyTreeModeOptions = computed<{ label: string, value: CommentRepl
 </script>
 
 <template>
-  <SettingsItemGroup>
+  <SettingsItemGroup :title="$t('settings.group_comments')">
     <div class="comment-setting-tags" role="group" :aria-label="$t('settings.group_comments')">
       <SettingsToggleTag
         v-for="option in commentToggleOptions"

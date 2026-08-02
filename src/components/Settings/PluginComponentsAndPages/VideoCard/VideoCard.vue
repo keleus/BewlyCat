@@ -12,6 +12,7 @@ import { defaultGridColumns, GRID_BREAKPOINTS } from '~/logic/storage'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import ShadowCurveEditor from '../../components/ShadowCurveEditor.vue'
+import LinkOpening from '../../Navigation/LinkOpening.vue'
 import VideoCardContentEditor from './VideoCardContentEditor.vue'
 
 const { t } = useI18n()
@@ -200,6 +201,8 @@ function resetColumns() {
         </Button>
       </SettingsItem>
     </SettingsItemGroup>
+
+    <LinkOpening scope="videoCard" />
   </div>
 </template>
 

@@ -69,6 +69,9 @@ player_screenshot:
 settings:
   title: Settings
   menu_general: General
+  menu_bewly_pages: Bewly Pages
+  menu_bewly_components: Bewly Components
+  menu_bilibili: Bilibili
   menu_navigation: Pages & Components
   menu_playback: Playback & Audio
   menu_advanced: Advanced & Maintenance
@@ -84,8 +87,8 @@ settings:
     placeholder: Search settings
     no_results: No matching settings
     located: Setting located
-  category_general_desc: Configure language, interaction, link behavior, content cleanup, and favorites.
-  category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, and custom styles.
+  category_general_desc: Configure language, interaction, home performance, and drawer behavior.
+  category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, custom styles, and page style adaptation.
   category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
   breadcrumb: Settings location
   group_interaction_layout: Interaction & Layout
@@ -156,6 +159,7 @@ settings:
   changelog_placeholder: Changelog content will be displayed here.
 
   group_common: Common
+  group_drawer_behavior: Drawer Behavior
   group_language: Language
   group_ad_blocking: Ad Blocking
   group_comments: Comments
@@ -188,6 +192,15 @@ settings:
   group_random_play_settings: Random Playback Settings
   group_random_play_settings_desc: Configure how Random starts when it is the effective custom playback default.
   group_topbar: Top Bar
+  topbar_logo_and_channels: Logo settings
+  topbar_logo_and_channels_desc: Choose the top bar Logo style and whether to show the home button in touch mode.
+  topbar_switchers: BewlyCat/Bilibili switchers
+  topbar_switchers_desc: Control the homepage page switcher and the top bar switcher separately.
+  topbar_actions: Top bar actions
+  topbar_actions_desc: Set the visibility, badges, and related reminders for each action icon.
+  topbar_user_menu: Top bar user menu
+  topbar_display_settings: Top bar display & behavior
+  topbar_display_settings_desc: Adjust how the top bar behaves across pages and interaction modes.
   group_navigation: Dock & Sidebar
   group_dock: Dock
   group_sidebar: Sidebar
@@ -195,6 +208,7 @@ settings:
     Located on the right or left side of pages other than the homepage,
     typically includes a light/dark mode toggle button and settings button.
   group_color: Color
+  group_page_style: Page Style
   group_wallpaper: Wallpaper
   group_logo: LOGO
   group_search_bar: Search Bar
@@ -279,6 +293,8 @@ settings:
   show_home_button_in_touch_mode_desc: When touch screen optimization is enabled, show a Home button next to the top bar Logo to navigate directly to the homepage.
   open_top_bar_items_in_bewly: Open Bewly pages from top bar icons
   open_top_bar_items_in_bewly_desc: When touch screen optimization is off, the Logo, Moments, Favorites, History, and Watch Later icons follow the top bar link opening behavior and open the corresponding Dock page using its Bewly/original Bilibili setting. Unsupported icons keep their existing behavior.
+  show_bewly_or_bili_page_switcher_desc: Show a switcher next to the homepage Logo to move between the BewlyCat and original Bilibili pages.
+  show_bewly_or_bili_top_bar_switcher_desc: Show a switcher when hovering at the top of the page to move between the BewlyCat and original Bilibili top bars.
   hide_lv6_last_login_location_in_top_bar_user_pop: Hide LV6 last login info
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: When enabled, the LV6 section in the top bar user popup will no longer show the last login time or location, and no login log request will be made.
   chk_box:
@@ -1192,7 +1208,7 @@ version_reminder:
   bilibili_dynamic: Bilibili posts
   bilibili_dynamic_desc: View update posts from the developer
   acknowledge: Got it, don't show this version again
-  settings_hint: You can turn off “New version reminders” under Settings → General.
+  settings_hint: You can turn off “New version reminders” under Settings → About.
 watch_later:
   title: Watch Later
   clear_all: Clear all watch later

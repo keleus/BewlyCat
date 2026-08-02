@@ -69,6 +69,9 @@ player_screenshot:
 settings:
   title: 设置
   menu_general: 通用
+  menu_bewly_pages: Bewly 页面
+  menu_bewly_components: Bewly 组件
+  menu_bilibili: Bilibili
   menu_navigation: 页面与组件
   menu_playback: 播放与声音
   menu_advanced: 高级与维护
@@ -84,8 +87,8 @@ settings:
     placeholder: 搜索设置
     no_results: 没有找到相关设置
     located: 已定位到此设置
-  category_general_desc: 配置语言、交互布局、链接行为、内容清理与收藏。
-  category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体与自定义样式。
+  category_general_desc: 配置语言、交互布局、首页性能与抽屉行为。
+  category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体、自定义样式和其他页面的适配。
   category_shortcuts_desc: 启用、修改或恢复 BewlyCat 与播放器快捷键。
   breadcrumb: 设置位置
   group_interaction_layout: 交互与布局
@@ -156,6 +159,7 @@ settings:
   changelog_placeholder: 更新日志内容将在这里显示。
 
   group_common: 通用
+  group_drawer_behavior: 抽屉行为
   group_language: 语言
   group_ad_blocking: 广告拦截
   group_comments: 评论
@@ -188,11 +192,21 @@ settings:
   group_random_play_settings: 随机播放设置
   group_random_play_settings_desc: 配置自定义播放默认值为“随机播放”时的启用方式。
   group_topbar: 顶栏
+  topbar_logo_and_channels: Logo 设置
+  topbar_logo_and_channels_desc: 设置顶栏 Logo 样式，以及触屏模式下是否显示首页按钮。
+  topbar_switchers: BewlyCat/Bilibili 切换器
+  topbar_switchers_desc: 分别控制首页页面切换器和顶栏切换器是否显示。
+  topbar_actions: 顶栏功能图标
+  topbar_actions_desc: 分别设置右侧功能图标的显示状态、角标和相关提醒。
+  topbar_user_menu: 顶栏用户菜单
+  topbar_display_settings: 顶栏显示与行为
+  topbar_display_settings_desc: 调整顶栏在不同页面和交互场景下的显示方式。
   group_navigation: Dock和侧边栏
   group_dock: Dock 栏
   group_sidebar: 侧边栏
   group_sidebar_desc: 位于主页以外的页面右侧或左侧，通常有亮/暗模式切换按钮和设置按钮。
   group_color: 颜色
+  group_page_style: 页面样式
   group_wallpaper: 背景图片
   group_logo: LOGO
   group_search_bar: 搜索栏
@@ -272,6 +286,8 @@ settings:
   show_home_button_in_touch_mode_desc: 在触屏优化开启时，在顶栏 Logo 旁边显示一个可以直接跳转到首页的按钮。
   open_top_bar_items_in_bewly: 点击顶栏图标打开 Bewly 页面
   open_top_bar_items_in_bewly_desc: 未启用触屏优化时，点击 Logo、动态、收藏、历史或稍后再看图标，将按照“顶栏链接打开行为”打开 Dock 中对应的页面，并沿用该页面的 Bewly/原版 Bilibili 配置；尚未适配的图标保持原有行为。
+  show_bewly_or_bili_page_switcher_desc: 在首页 Logo 旁显示切换器，用于在 BewlyCat 页面和 Bilibili 原版页面之间切换。
+  show_bewly_or_bili_top_bar_switcher_desc: 在页面顶部悬停时显示切换器，用于在 BewlyCat 顶栏和 Bilibili 原版顶栏之间切换。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隐藏 LV6 等级最后登录信息显示
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: 开启后，顶栏头像弹窗中的 LV6 等级信息区域将不再显示最后登录时间和地点，也不会请求登录记录。
   chk_box:
@@ -1106,7 +1122,7 @@ version_reminder:
   bilibili_dynamic: Bilibili 动态
   bilibili_dynamic_desc: 查看开发者发布的更新动态
   acknowledge: 已知晓，本版本不再提示
-  settings_hint: 可在“设置 → 通用”中关闭“新版本提醒”。
+  settings_hint: 可在“设置 → 关于”中关闭“新版本提醒”。
 watch_later:
   title: 稍后再看
   clear_all: 清空稍后再看
