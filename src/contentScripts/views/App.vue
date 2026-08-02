@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn, useToggle } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { provide, ref } from 'vue'
+import { provide, ref, watch } from 'vue'
 
 import Button from '~/components/Button.vue'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
@@ -44,6 +44,12 @@ else {
 }
 const [showSettings, toggleSettings] = useToggle(false)
 const searchFocusOverlayActive = ref(false)
+
+// The top-bar switcher is teleported to document.body, outside this Shadow DOM.
+// Raise the host while settings are open so the modal can stay above that layer.
+watch(showSettings, (visible) => {
+  document.getElementById('bewly')?.classList.toggle('settings-open', visible)
+}, { immediate: true })
 
 interface ConfirmDialogRequest {
   id: number
