@@ -416,10 +416,10 @@ function handleForwardVideoClick() {
   border-radius: var(--bew-card-radius);
   background-color: transparent;
   cursor: pointer;
-  box-shadow: 0 0 0 0 transparent;
+  box-shadow: none;
   transition:
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard),
+    transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
 }
 
 .moment-card__surface {
@@ -429,20 +429,26 @@ function handleForwardVideoClick() {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .moment-card:hover,
-  .moment-card:focus-visible {
-    background-color: var(--bew-fill-2);
-    box-shadow: 0 0 0 6px var(--bew-fill-2);
-    outline: none;
+  .moment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--bew-shadow-2);
   }
 }
 
+.moment-card:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: 4px;
+}
+
 .moment-card:active {
-  background-color: var(--bew-fill-3);
-  box-shadow: 0 0 0 6px var(--bew-fill-3);
+  transform: translateY(0) scale(0.99);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .moment-card {
+    transition: none;
+  }
+
   .moment-card--entering {
     animation: none;
   }
@@ -916,6 +922,7 @@ function handleForwardVideoClick() {
   height: 100%;
   min-height: 0;
   object-fit: cover;
+  object-position: center top;
   background: var(--bew-fill-1);
 }
 
