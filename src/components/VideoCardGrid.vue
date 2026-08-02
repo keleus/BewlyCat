@@ -72,6 +72,13 @@ interface VideoCardGridProps<T = any> {
   hideAuthor?: boolean
 
   /**
+   * 是否关闭卡片的 content-visibility 估算。
+   * 普通分页页面可以启用它，避免卡片进入视口时由估算高度切换到真实高度。
+   * @default false
+   */
+  disableContentVisibility?: boolean
+
+  /**
    * 数据转换函数：将原始数据转换为 VideoCard 所需的格式
    */
   transformItem: (item: T) => Video | undefined
@@ -173,6 +180,7 @@ const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
   showWatchLater: true,
   moreBtn: true,
   initialSkeletonCount: 30,
+  disableContentVisibility: false,
   isSkeletonItem: undefined,
   enableRowPadding: false,
   showLoadingMoreSkeleton: true,
@@ -206,16 +214,9 @@ const { gridClass, gridCssVars } = useGridLayout(() => props.gridLayout)
 // 获取 shadow 样式变量（避免依赖外部传入）
 const { shadowStyleVars } = useVideoCardShadowStyle()
 
-// 骨架屏数量使用固定值，避免依赖列数计算
+// 首屏骨架数量固定为目标数量，避免 ref 挂载后重新计算列数导致骨架数量变化。
 const dynamicSkeletonCount = computed(() => {
-  // 估算视口高度能容纳的行数 (假设每个卡片平均400px高)
-  const rowsInViewport = Math.ceil(window.innerHeight / 400)
-  // 多加载1.5倍的视口内容作为缓冲，假设最多5列
-  const bufferedRows = Math.ceil(rowsInViewport * 1.5)
-  const estimatedColumns = 5
-  const totalCount = bufferedRows * estimatedColumns
-  // 不超过设定的上限
-  return Math.min(totalCount, props.initialSkeletonCount)
+  return normalizePositiveInt(props.initialSkeletonCount, 30)
 })
 
 // 递归加载保护机制
@@ -1135,6 +1136,7 @@ function getUniqueKey(item: T, index: number): string | number {
             :horizontal="isHorizontal"
             :more-btn="moreBtn"
             :hide-author="hideAuthor"
+            :disable-content-visibility="props.disableContentVisibility"
             :is-following-page="props.isFollowingPage"
             :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
             :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
@@ -1159,6 +1161,7 @@ function getUniqueKey(item: T, index: number): string | number {
           :horizontal="isHorizontal"
           :more-btn="moreBtn"
           :hide-author="hideAuthor"
+          :disable-content-visibility="props.disableContentVisibility"
           :is-following-page="props.isFollowingPage"
           :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
           :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
@@ -1192,7 +1195,6 @@ function getUniqueKey(item: T, index: number): string | number {
 <style lang="scss" scoped>
 .video-card-grid-root {
   container-type: inline-size;
-  overflow-anchor: none;
 }
 
 // Grid 布局 - 根据设置页声明的容器断点和 CSS 变量控制列数

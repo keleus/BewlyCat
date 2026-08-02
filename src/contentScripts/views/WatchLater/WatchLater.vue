@@ -196,7 +196,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 </script>
 
 <template>
-  <div v-if="getCSRF()" flex="~ col md:row lg:row" gap-4>
+  <div v-if="getCSRF()" flex="~ col md:row lg:row items-stretch" gap-4>
     <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" mb-6>
       <h3 class="bew-page-heading" text="$bew-text-1" mb-6>
         {{ t('watch_later.title') }} ({{ watchLaterCount }})

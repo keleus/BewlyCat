@@ -207,6 +207,10 @@ async function initData() {
 
 function initPageAction() {
   handleReachBottom.value = async () => {
+    // 视频/合集列表由 VideoCardGrid 自己监听 sentinel；全局哨兵只负责图文收藏。
+    if (favoriteView.value !== 'article')
+      return
+
     if (isLoading.value || noMoreContent.value)
       return
 
@@ -732,6 +736,9 @@ function loadSelectedContent() {
 }
 
 function loadNextPage() {
+  if (isLoading.value || noMoreContent.value)
+    return
+
   currentPageNum.value += 1
   void loadActiveContent(currentPageNum.value, contentRequestVersion)
 }
@@ -1225,6 +1232,8 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           :transform-item="transformFavoriteItem"
           :get-item-key="item => item.id"
           grid-layout="adaptive"
+          :initial-skeleton-count="favoriteView === 'season' ? FAVORITE_SEASON_PAGE_SIZE : 20"
+          disable-content-visibility
           :loading="isLoading || isFullPageLoading"
           :no-more-content="noMoreContent"
           :empty-description="$t('common.no_more_content')"
@@ -1234,6 +1243,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           :cover-top-left-always-visible="isBatchManaging"
           enable-row-padding
           @refresh="() => handlePageRefresh?.()"
+          @load-more="loadNextPage"
         >
           <template v-if="favoriteView === 'video'" #coverTopLeft="{ item }">
             <button
@@ -1532,7 +1542,9 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   display: flex;
   flex-direction: column;
   gap: var(--bew-space-4);
-  align-items: start;
+  // Keep the page's containing block as tall as the main list; the desktop
+  // sidebar can then stay pinned independently of grid height recalculation.
+  align-items: stretch;
 }
 
 .favorites-old-main {
@@ -1552,11 +1564,11 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   position: relative;
   order: 1;
   width: 100%;
+  align-self: stretch;
 }
 
 .favorites-sidebar-panel {
-  position: sticky;
-  top: 120px;
+  position: relative;
   width: 100%;
   height: 230px;
   margin: var(--bew-space-10) 0;
@@ -2103,8 +2115,11 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   }
 
   .favorites-old-sidebar {
+    position: sticky;
+    top: calc(var(--bew-top-bar-height, 64px) + var(--bew-space-4));
     order: 2;
     width: 40%;
+    align-self: flex-start;
   }
 
   .favorites-sidebar-panel {
