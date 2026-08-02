@@ -282,6 +282,8 @@ settings:
     background: 後台分頁
   group_moments_wanted_users: 想睇分組
   group_moments_wanted_users_desc: 管理想睇嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
+  moments_enable_wanted_filter: 啟用想睇篩選
+  moments_enable_wanted_filter_desc: 喺動態頁顯示愛心按鈕，用嚟淨係睇名單內 UP 主嘅動態；關閉後會隱藏按鈕並退出想睇篩選。
   moments_wanted_users: 想睇嘅 UP 主
   btn:
     authorize: 授權

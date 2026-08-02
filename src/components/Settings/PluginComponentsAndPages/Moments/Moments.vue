@@ -177,6 +177,13 @@ const openModeOptions = computed(() => [
       collapsible
       default-collapsed
     >
+      <SettingsItem
+        :title="$t('settings.moments_enable_wanted_filter')"
+        :desc="$t('settings.moments_enable_wanted_filter_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.momentsEnableWantedFilter" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.moments_wanted_users')">
         <template #bottom>
           <WantedUsersManager />

@@ -1262,8 +1262,15 @@ function handleMomentFilterChange(filter: MomentFilter) {
 }
 
 function handleMomentGroupChange(group: MomentGroup) {
-  if (group === 'wanted' && activeMomentFilter.value !== 'all' && activeMomentFilter.value !== 'video')
+  if (
+    group === 'wanted'
+    && (
+      !settings.value.momentsEnableWantedFilter
+      || (activeMomentFilter.value !== 'all' && activeMomentFilter.value !== 'video')
+    )
+  ) {
     return
+  }
   if (activeMomentGroup.value === group)
     return
 
@@ -2873,6 +2880,20 @@ watch(
 )
 
 watch(
+  () => settings.value.momentsEnableWantedFilter,
+  (enabled) => {
+    if (enabled || activeMomentGroup.value !== 'wanted')
+      return
+
+    activeMomentGroup.value = 'all'
+    wantedCacheCursor.value = 0
+    if (scrollViewportRef.value)
+      scrollViewportRef.value.scrollTop = 0
+    void loadMoments(true)
+  },
+)
+
+watch(
   () => [
     settings.value.momentsFilterUpRecommendation,
     settings.value.momentsHideChargeExclusive,
@@ -2948,27 +2969,27 @@ watch(
           </div>
         </section>
         <div
-          class="moments-group-controls bew-segment-control bew-segment-control--surface bew-segment-control--static"
-          aria-label="动态分组"
+          v-if="settings.momentsEnableWantedFilter"
+          class="moments-wanted-filter bew-segment-control bew-segment-control--static"
+          aria-label="想看筛选"
         >
           <button
             type="button"
-            class="bew-segment-control__item"
-            :data-active="activeMomentGroup === 'all' ? 'true' : undefined"
-            :aria-pressed="activeMomentGroup === 'all'"
-            @click="handleMomentGroupChange('all')"
-          >
-            全部动态
-          </button>
-          <button
-            type="button"
-            class="bew-segment-control__item"
+            class="moments-wanted-filter__button bew-segment-control__item bew-segment-control__item--icon"
             :data-active="activeMomentGroup === 'wanted' ? 'true' : undefined"
             :disabled="activeMomentFilter !== 'all' && activeMomentFilter !== 'video'"
             :aria-pressed="activeMomentGroup === 'wanted'"
-            @click="handleMomentGroupChange('wanted')"
+            :aria-label="activeMomentGroup === 'wanted' ? '取消只看想看的 UP 主' : '只看想看的 UP 主'"
+            :title="activeMomentFilter === 'all' || activeMomentFilter === 'video'
+              ? (activeMomentGroup === 'wanted' ? '取消只看想看的 UP 主' : '只看想看的 UP 主')
+              : '仅适用于全部和视频投稿'"
+            @click="handleMomentGroupChange(activeMomentGroup === 'wanted' ? 'all' : 'wanted')"
           >
-            想看
+            <span
+              class="bew-segment-control__icon"
+              :class="activeMomentGroup === 'wanted' ? 'i-tabler-heart-filled' : 'i-tabler-heart'"
+              aria-hidden="true"
+            />
           </button>
         </div>
       </header>
@@ -3626,9 +3647,13 @@ watch(
   grid-template-columns: auto;
 }
 .moments-content {
+  grid-column: 2;
+  grid-row: 2;
   min-width: 0;
 }
 .moments-sidebar {
+  grid-column: 1;
+  grid-row: 2;
   position: sticky;
   top: calc(var(--bew-top-bar-height, 64px) + var(--bew-space-3));
   display: flex;
@@ -4046,25 +4071,36 @@ watch(
 .moments-filter-header {
   position: relative;
   z-index: 8;
-  grid-column: 1 / -1;
+  grid-column: 2;
+  grid-row: 1;
   display: grid;
   grid-template-columns: minmax(0, max-content) max-content;
-  justify-content: center;
+  justify-content: start;
+  justify-self: start;
   align-items: center;
-  gap: var(--bew-space-3);
+  gap: var(--bew-space-4);
   width: 100%;
-  margin-bottom: 2px;
+  min-width: 0;
 }
-.moments-group-controls {
+.moments-layout--without-sidebar .moments-filter-header {
+  grid-column: 1;
+}
+.moments-layout--without-sidebar .moments-content {
+  grid-column: 1;
+}
+.moments-wanted-filter {
+  --bew-control-padding: 0px;
+  --bew-segment-item-active-bg: var(--bew-theme-color);
+  --bew-segment-item-active-color: white;
+  --bew-segment-item-current-color: white;
+  --bew-segment-item-hover-bg: var(--bew-fill-2);
+  --bew-segment-item-hover-color: var(--bew-text-1);
+
   width: max-content;
 }
-.moments-group-controls button > span:not([class*="i-tabler"]) {
-  min-width: 18px;
-  padding: var(--bew-space-0-5) var(--bew-space-1);
-  border-radius: var(--bew-radius-full);
-  background: var(--bew-fill-1);
-  font-size: var(--bew-font-size-caption);
-  line-height: var(--bew-line-height-caption);
+.moments-wanted-filter__button {
+  background: var(--bew-fill-alt);
+  box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
 }
 .moments-filter-panel {
   max-width: 100%;
@@ -4096,9 +4132,6 @@ watch(
   .moments-filter-header {
     grid-template-columns: minmax(0, 1fr) max-content;
     gap: var(--bew-space-1);
-  }
-  .moments-group-controls {
-    --bew-control-item-padding-x: 8px;
   }
 }
 .moments-page__empty button {

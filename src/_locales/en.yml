@@ -257,6 +257,8 @@ settings:
     background: Background tab
   group_moments_wanted_users: Watchlist
   group_moments_wanted_users_desc: Manage uploaders you want to watch by UID or name. The list is stored only on this device.
+  moments_enable_wanted_filter: Enable watchlist filter
+  moments_enable_wanted_filter_desc: Show a heart button on the Moments page to display only posts from watchlisted uploaders. Turning it off hides the button and exits the filter.
   moments_wanted_users: Watchlisted uploaders
   btn:
     authorize: Authorize

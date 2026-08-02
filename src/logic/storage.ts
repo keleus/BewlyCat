@@ -296,6 +296,7 @@ export interface Settings {
   momentsSidebarShowLive: boolean
   momentsEnableLivePreview: boolean
   momentsEnableVideoPreview: boolean
+  momentsEnableWantedFilter: boolean
   momentsFilterUpRecommendation: boolean
   momentsHideChargeExclusive: boolean
   momentsHideVideoReservation: boolean
@@ -588,6 +589,7 @@ export const originalSettings: Settings = {
   momentsSidebarShowLive: true,
   momentsEnableLivePreview: true,
   momentsEnableVideoPreview: true,
+  momentsEnableWantedFilter: true,
   momentsFilterUpRecommendation: false,
   momentsHideChargeExclusive: false,
   momentsHideVideoReservation: false,

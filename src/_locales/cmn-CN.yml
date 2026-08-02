@@ -254,6 +254,8 @@ settings:
     background: 后台标签
   group_moments_wanted_users: 想看分组
   group_moments_wanted_users_desc: 管理想看的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
+  moments_enable_wanted_filter: 启用想看筛选
+  moments_enable_wanted_filter_desc: 在动态页显示爱心按钮，用于只查看名单内 UP 主的动态；关闭后隐藏按钮并退出想看筛选。
   moments_wanted_users: 想看的 UP 主
   btn:
     authorize: 授权
