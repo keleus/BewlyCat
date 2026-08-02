@@ -415,6 +415,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_video_page_actions',
     'settings.enlarge_favorite_dialog',
     'settings.external_watch_later_button',
+    'settings.show_vertical_video_zoom_button',
     'settings.show_video_screenshot_button',
   ]),
   ...createEntries(playerRoute, [

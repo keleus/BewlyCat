@@ -212,6 +212,14 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         </SettingsItem>
 
         <SettingsItem
+          :title="t('settings.show_vertical_video_zoom_button')"
+          :desc="t('settings.show_vertical_video_zoom_button_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.showVerticalVideoZoomButton" />
+        </SettingsItem>
+
+        <SettingsItem
           :title="t('settings.show_video_screenshot_button')"
           :desc="t('settings.show_video_screenshot_button_desc')"
           right-width="auto"

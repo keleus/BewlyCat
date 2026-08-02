@@ -442,6 +442,7 @@ export interface Settings {
   videoPlayerModeOverrides: VideoPlayerModeOverrides // 不同播放场景的显示模式覆盖
   autoExitFullscreenOnEnd: boolean // 全屏播放完毕后自动退出
   autoExitFullscreenExcludeAutoPlay: boolean // 全屏自动退出时排除自动连播
+  showVerticalVideoZoomButton: boolean // 显示竖屏视频放大按钮
   showVideoScreenshotButton: boolean // 显示播放器截图按钮
 
   // 自动连播总开关
@@ -733,6 +734,7 @@ export const originalSettings: Settings = {
   },
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
   autoExitFullscreenExcludeAutoPlay: false, // 全屏自动退出时排除自动连播，默认关闭
+  showVerticalVideoZoomButton: true, // 默认显示竖屏视频放大按钮
   showVideoScreenshotButton: true, // 默认显示播放器截图按钮
 
   // 自动连播总开关

@@ -355,7 +355,10 @@ else if (shouldInitializeContentScript) {
     setupShortcutHandlers()
     applyDefaultDanmakuState()
     applyDefaultCaptionState()
-    initVerticalVideoZoom()
+    if (settings.value.showVerticalVideoZoomButton)
+      initVerticalVideoZoom()
+    else
+      resetVerticalVideoZoom()
     // 应用自动连播设置，延迟更长时间确保播放器完全初始化
     setTimeout(() => {
       applyAutoPlayByVideoType()
@@ -856,6 +859,16 @@ else if (shouldInitializeContentScript) {
       ) {
         applyRandomPlayActivationSettings()
       }
+    },
+  )
+
+  watch(
+    () => settings.value.showVerticalVideoZoomButton,
+    (enabled) => {
+      if (enabled && isVideoOrBangumiPage())
+        initVerticalVideoZoom()
+      else
+        resetVerticalVideoZoom()
     },
   )
 
