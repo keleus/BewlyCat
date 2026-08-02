@@ -1068,6 +1068,9 @@ else if (shouldInitializePageScript) {
     if (!currentSettings)
       return null
 
+    if (currentSettings.enableCommentReplyTreeDisplay === false)
+      return null
+
     const mode = currentSettings.commentReplyTreeMode
     if (mode === 'lineCollapseMain' || mode === 'lineKeepMain' || mode === 'indentOnly')
       return mode
@@ -2388,6 +2391,12 @@ else if (shouldInitializePageScript) {
       return
 
     commentRepliesRenderers.add(component)
+    const treeMode = getCommentReplyTreeMode()
+    const existingState = commentReplyTreeStates.get(component)
+    if (treeMode === null && !existingState?.enabled) {
+      component.removeAttribute('data-bewly-comment-reply-tree')
+      return
+    }
 
     const replyContainer = root.querySelector<HTMLElement>('#expander-contents')
     if (!replyContainer)
@@ -2395,10 +2404,9 @@ else if (shouldInitializePageScript) {
 
     const replyRenderers = Array.from(replyContainer.children)
       .filter(isCommentReplyRenderer)
-    const state = getCommentReplyTreeState(component)
+    const state = existingState ?? getCommentReplyTreeState(component)
     replyRenderers.forEach(renderer => getCommentReplyOriginalOrder(state, renderer))
 
-    const treeMode = getCommentReplyTreeMode()
     const enabled = treeMode !== null
     const showGuides = treeMode === 'lineCollapseMain' || treeMode === 'lineKeepMain'
     // true：收起时折叠所有父节点本体；false：收起时父节点保持显示，仅隐藏子回复
@@ -2567,7 +2575,7 @@ else if (shouldInitializePageScript) {
   }
 
   function scheduleCommentReplyDeepLinkSettlement(reason: 'immediate' | 'hash' = 'hash') {
-    if (!getCommentReplyDeepLinkId())
+    if (!getCommentReplyDeepLinkId() || getCommentReplyTreeMode() === null)
       return
 
     // 已在结算窗口：只做轻量刷新，避免每条回复 update 重置长定时器
@@ -2598,8 +2606,13 @@ else if (shouldInitializePageScript) {
   }
 
   function onCommentReplyDeepLinkScrollOrResize() {
-    if (Date.now() > commentReplyDeepLinkScrollUntil || !getCommentReplyDeepLinkId())
+    if (
+      Date.now() > commentReplyDeepLinkScrollUntil
+      || !getCommentReplyDeepLinkId()
+      || getCommentReplyTreeMode() === null
+    ) {
       return
+    }
     if (commentReplyDeepLinkScrollScheduled)
       return
     commentReplyDeepLinkScrollScheduled = true
@@ -2870,7 +2883,7 @@ else if (shouldInitializePageScript) {
 
               // 楼中楼 user-info 先于/并行于 replies 树更新时也写入关系缓存，避免跨页丢 parent
               const repliesRenderer = findCommentRepliesRendererHost(component)
-              if (repliesRenderer && component.data)
+              if (repliesRenderer && component.data && getCommentReplyTreeMode() !== null)
                 cacheCommentReplyTreeMeta(getCommentReplyTreeState(repliesRenderer), component.data)
 
               // 显示性别
@@ -2921,6 +2934,8 @@ else if (shouldInitializePageScript) {
         preventMobileRedirectEnabled = data.preventMobileRedirect === true
         settingsReady = true
         refreshCommentReplyTrees()
+        if (getCommentReplyTreeMode() === null)
+          clearCommentReplyDeepLinkSettlement()
         // 设置就绪后 B 站可能才开始 #reply 定位/展开
         if (getCommentReplyDeepLinkId())
           scheduleCommentReplyDeepLinkSettlement(isFirstTime ? 'immediate' : 'hash')

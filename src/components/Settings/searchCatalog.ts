@@ -526,6 +526,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_ip_location',
     'settings.show_sex',
     'settings.show_comment_host_tag',
+    'settings.enable_comment_reply_tree_display',
     'settings.comment_reply_tree_mode.title',
     'settings.comment_reply_tree_mode.line_collapse_main',
     'settings.comment_reply_tree_mode.line_keep_main',

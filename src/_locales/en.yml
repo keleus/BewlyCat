@@ -874,6 +874,8 @@ settings:
   show_sex_desc: Display user gender in the video/dynamic comment area
   show_comment_host_tag: Show OP tag
   show_comment_host_tag_desc: Show an OP tag on the root comment in reply detail view
+  enable_comment_reply_tree_display: Comment tree view
+  enable_comment_reply_tree_display_desc: Organize nested replies by reply relationship. When off, comments are not reordered, indented, or decorated with reply-tree guides
   comment_reply_tree_mode:
     title: Comment reply tree style
     desc: Group replies by parent and posting time. Line modes let you collapse any parent’s replies. “Collapse parent” also folds the parent body; “Keep parent” leaves the parent visible and only hides its replies

@@ -793,6 +793,8 @@ settings:
   show_sex_desc: 喺影片/動向頁留言區顯示用戶性別。
   show_comment_host_tag: 顯示樓主標示
   show_comment_host_tag_desc: 喺留言回覆詳情頁標示樓主。
+  enable_comment_reply_tree_display: 留言區樹狀顯示
+  enable_comment_reply_tree_display_desc: 開啟後會根據回覆關係整理樓中樓；關閉後唔再重排、縮入或者繪製留言回覆樹
   comment_reply_tree_mode:
     title: 留言回覆樹樣式
     desc: 根據回覆關係同發佈時間整理樓中樓。線條模式可以收起任何父級留言嘅回覆；「收起主留言」會收埋父留言本身，「唔收起主留言」會留住父留言正文，淨係收起子回覆

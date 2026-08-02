@@ -211,6 +211,7 @@ export interface Settings {
   showIPLocation: boolean // 添加显示IP归属地设置项
   showSex: boolean // 添加显示性别设置项
   showCommentHostTag: boolean // 显示评论回复详情页楼主标识
+  enableCommentReplyTreeDisplay: boolean // 启用评论回复树展示
   commentReplyTreeMode: CommentReplyTreeMode // 评论回复树展示模式
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
@@ -498,6 +499,7 @@ export const originalSettings: Settings = {
   showIPLocation: true, // 默认启用IP归属地显示
   showSex: true, // 默认启用性别显示
   showCommentHostTag: true, // 默认启用楼主标识显示
+  enableCommentReplyTreeDisplay: true, // 默认启用评论回复树展示
   commentReplyTreeMode: 'lineKeepMain', // 默认：线条树状，收起时保留父节点正文
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式

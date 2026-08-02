@@ -787,6 +787,8 @@ settings:
   show_sex_desc: 在影片/動態評論區顯示使用者性別
   show_comment_host_tag: 顯示樓主標示
   show_comment_host_tag_desc: 在評論回覆詳情頁標示樓主
+  enable_comment_reply_tree_display: 評論區樹狀顯示
+  enable_comment_reply_tree_display_desc: 開啟後依回覆關係整理樓中樓；關閉後不再重排、縮排或繪製評論回覆樹
   comment_reply_tree_mode:
     title: 評論回覆樹樣式
     desc: 根據回覆關係和發佈時間整理樓中樓。線條模式下可收合任意父級評論的回覆；「收起主評論」會收合父評論本體，「不收起主評論」則保留父評論正文僅隱藏子回覆

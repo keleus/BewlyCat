@@ -802,6 +802,8 @@ settings:
   show_sex_desc: 在视频/动态评论区显示用户性别
   show_comment_host_tag: 显示楼主标识
   show_comment_host_tag_desc: 在评论回复详情页中标注楼主
+  enable_comment_reply_tree_display: 评论区树状显示
+  enable_comment_reply_tree_display_desc: 开启后根据回复关系整理楼中楼；关闭后不再重排、缩进或绘制评论回复树
   comment_reply_tree_mode:
     title: 评论回复树样式
     desc: 根据回复关系和发布时间整理楼中楼。线条模式下可折叠任意父级评论的回复；「收起主评论」会折叠父评论本体，「不收起主评论」则保留父评论正文仅隐藏子回复
