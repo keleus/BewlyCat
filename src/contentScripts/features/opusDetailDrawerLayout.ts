@@ -21,6 +21,16 @@ const ALBUM_SELECTORS = [
   '.opus-module-top',
 ].join(',')
 
+/** 优先使用真正的相册容器；cover 通常只是相册里的缩略/占位节点 */
+const PRIMARY_ALBUM_SELECTORS = [
+  '.horizontal-scroll-album',
+  '.bili-album',
+  '.opus-module-top__album__scroll',
+  '.bili-dyn-gallery__window',
+  '.opus-pic-view',
+  '.bili-album__watch',
+].join(',')
+
 const CONTENT_READY_SELECTORS = [
   '.opus-module-author',
   '.opus-module-content',
@@ -273,6 +283,9 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   box-sizing: border-box !important;
   overflow: hidden !important;
   background: #000 !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery.is-viewer-hosted {
+  visibility: hidden !important;
 }
 /* 仅大图 stage 纵向滚动：滚动条覆盖在图片上，不与缩略图同级 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage {
@@ -1095,9 +1108,16 @@ function isExcludedMediaNode(node: Element): boolean {
   return !!node.closest(EXCLUDE_FROM_MEDIA)
 }
 
-function collectAlbumNodes(root: HTMLElement): HTMLElement[] {
+function collectAlbumNodes(root: HTMLElement, includeCoverFallback = false): HTMLElement[] {
   const nodes = Array.from(root.querySelectorAll<HTMLElement>(ALBUM_SELECTORS))
-  return nodes.filter((node, _index, list) => {
+  const primaryNodes = nodes.filter(node => node.matches(PRIMARY_ALBUM_SELECTORS))
+  const coverNodes = nodes.filter(node => node.matches('.opus-module-top__album__cover'))
+  const sourceNodes = includeCoverFallback && coverNodes.length
+    ? coverNodes
+    : primaryNodes.length
+      ? primaryNodes
+      : nodes
+  return sourceNodes.filter((node, _index, list) => {
     if (isExcludedMediaNode(node))
       return false
     return !list.some(other => other !== node && other.contains(node))
@@ -1145,7 +1165,7 @@ function normalizeImageUrl(url = ''): string {
   if (next.startsWith('//'))
     next = `https:${next}`
   next = next.replace(/^http:/, 'https:')
-  next = next.replace(/@[^/]*$/, '')
+  next = next.replace(/@[^/?#]*(?=[?#]|$)/, '')
   // 过滤头像、表情、游戏/推荐小图标等
   if (/\/face\/|\/bfs\/face\/|emoji|emote|static\.hdslb\.com\/images\/|\/garb\/|\/activity-plat\/|\/game\/|icon\.png|icon\.webp|favicon|avatar/i.test(next))
     return ''
@@ -1177,12 +1197,32 @@ function isLikelyContentImage(img: HTMLImageElement): boolean {
   return false
 }
 
+function getImageUrlKey(url: string) {
+  const path = url.split(/[?#]/, 1)[0]
+  const isGif = /\.gif$/i.test(path)
+  return `${path.replace(/\.(?:avif|webp|gif|jpe?g|png)$/i, '').toLowerCase()}|${isGif ? 'gif' : 'static'}`
+}
+
+function isOriginalImageUrl(url: string) {
+  return /\.(?:gif|jpe?g|png)$/i.test(url.split(/[?#]/, 1)[0])
+}
+
 function extractImageUrls(albumNodes: HTMLElement[]): string[] {
   const urls: string[] = []
+  const urlIndexes = new Map<string, number>()
   const push = (raw?: string | null) => {
     const url = normalizeImageUrl(raw || '')
-    if (!url || urls.includes(url))
+    if (!url)
       return
+    const key = getImageUrlKey(url)
+    const existingIndex = urlIndexes.get(key)
+    if (existingIndex !== undefined) {
+      // GIF 原图优先于同一资源的 webp/jpg 缩略图，避免详情查看器出现两页相同动图。
+      if (isOriginalImageUrl(url) && !isOriginalImageUrl(urls[existingIndex]))
+        urls[existingIndex] = url
+      return
+    }
+    urlIndexes.set(key, urls.length)
     urls.push(url)
   }
 
@@ -1917,6 +1957,7 @@ function createImageGallery(urls: string[]): HTMLElement {
       return
     if (e.data?.type === 'BEWLY_OPUS_IMAGE_VIEWER_ACK') {
       viewerHostedByParent = true
+      gallery.classList.add('is-viewer-hosted')
       if (galleryViewerAckTimer) {
         clearTimeout(galleryViewerAckTimer)
         galleryViewerAckTimer = null
@@ -1925,6 +1966,7 @@ function createImageGallery(urls: string[]): HTMLElement {
     }
     if (e.data?.type === 'BEWLY_OPUS_IMAGE_VIEWER_CLOSE') {
       viewerHostedByParent = false
+      gallery.classList.remove('is-viewer-hosted')
       const nextIndex = Number(e.data.index)
       if (Number.isFinite(nextIndex)) {
         viewerIndex = wrapIndex(nextIndex)
@@ -2120,8 +2162,12 @@ function applySplitLayout(root: HTMLElement): boolean {
   if (isColumnArticleOpus(root))
     return applyArticleLayout(root)
 
-  const albumNodes = collectAlbumNodes(root)
-  const imageUrls = extractImageUrls(albumNodes)
+  let albumNodes = collectAlbumNodes(root)
+  let imageUrls = extractImageUrls(albumNodes)
+  if (!imageUrls.length) {
+    albumNodes = collectAlbumNodes(root, true)
+    imageUrls = extractImageUrls(albumNodes)
+  }
 
   // 纯文字：不左右分栏
   if (!imageUrls.length)
