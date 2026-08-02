@@ -160,6 +160,8 @@ else if (shouldInitializePageScript) {
     originalOrderByRenderer: WeakMap<HTMLElement, number>
     observedTargetsKey?: string
     resizeObserver?: ResizeObserver
+    observedReplyContainer?: HTMLElement
+    replyContainerMutationObserver?: MutationObserver
     imageLoadAbort?: AbortController
     imageLoadListeners?: WeakSet<HTMLImageElement>
     layoutUpdateRaf?: number
@@ -917,6 +919,9 @@ else if (shouldInitializePageScript) {
     state.resizeObserver?.disconnect()
     state.resizeObserver = undefined
     state.observedTargetsKey = undefined
+    state.replyContainerMutationObserver?.disconnect()
+    state.replyContainerMutationObserver = undefined
+    state.observedReplyContainer = undefined
     state.imageLoadAbort?.abort()
     state.imageLoadAbort = undefined
     state.imageLoadListeners = undefined
@@ -991,6 +996,39 @@ else if (shouldInitializePageScript) {
         scheduleCommentReplyTreeLayoutUpdate(component)
       })
       targetList.forEach(target => state.resizeObserver?.observe(target))
+    }
+
+    // 删除/屏蔽回复时，B 站有时直接从列表移除 renderer，不触发回复组件自身的
+    // update；仅依赖 ResizeObserver 可能错过这一帧，导致楼层 shadow root 内的线条
+    // 没有按剩余回复重新绘制。
+    if (state.observedReplyContainer !== replyContainer || !state.replyContainerMutationObserver) {
+      state.replyContainerMutationObserver?.disconnect()
+      const observer = new MutationObserver((mutations) => {
+        if (!component?.isConnected) {
+          observer.disconnect()
+          return
+        }
+
+        const isTreeGuideNode = (node: Node) => (
+          node instanceof Element
+          && (node.id === COMMENT_REPLY_TREE_GUIDES_ID
+            || Boolean(node.closest(`#${COMMENT_REPLY_TREE_GUIDES_ID}`)))
+        )
+        const hasExternalChildListMutation = mutations.some(({ target, addedNodes, removedNodes }) => {
+          if (target instanceof Element && (target.id === COMMENT_REPLY_TREE_GUIDES_ID
+            || target.closest(`#${COMMENT_REPLY_TREE_GUIDES_ID}`))) {
+            return false
+          }
+
+          return [...Array.from(addedNodes), ...Array.from(removedNodes)]
+            .some(node => !isTreeGuideNode(node))
+        })
+        if (hasExternalChildListMutation)
+          scheduleCommentReplyTreeLayoutUpdate(component)
+      })
+      observer.observe(replyContainer, { childList: true })
+      state.observedReplyContainer = replyContainer
+      state.replyContainerMutationObserver = observer
     }
 
     // 每次更新都补一次图片监听，避免图片/嵌套 shadow 在首次更新后才挂载时漏监听。
@@ -1663,8 +1701,6 @@ else if (shouldInitializePageScript) {
     rootNodes: CommentReplyTreeNode[],
     collapseParentBody: boolean,
   ) {
-    removeCommentReplyTreeGuides(component, replyContainer)
-
     const threadRoot = getCommentReplyTreeThreadRoot(component)
     const guideContainer: HTMLElement | ShadowRoot = threadRoot ?? replyContainer
     const coordinateRect = threadRoot
@@ -1690,7 +1726,8 @@ else if (shouldInitializePageScript) {
         avatarAnchorByNode.set(node, anchor)
         return
       }
-      // 可见节点却拿不到锚点：多半是尚未完成布局，跳过本轮绘制
+      // 可见节点却拿不到锚点：多半是删除/屏蔽后的过渡节点或尚未完成布局。
+      // 跳过该节点继续绘制其余分支，避免单个异常节点清空整棵树。
       missingVisibleAvatar = true
     })
     const retryLayout = () => {
@@ -1699,12 +1736,6 @@ else if (shouldInitializePageScript) {
         return
       state.layoutRetryCount = retries + 1
       scheduleCommentReplyTreeLayoutUpdate(component)
-    }
-
-    if (missingVisibleAvatar) {
-      // 下一帧再试（展开动画/图片解码后）
-      retryLayout()
-      return
     }
 
     // 主评论锚点同样需要有效，否则根分支线会整体错位
@@ -1716,7 +1747,8 @@ else if (shouldInitializePageScript) {
       }
     }
 
-    state.layoutRetryCount = 0
+    if (!missingVisibleAvatar)
+      state.layoutRetryCount = 0
 
     const componentStyle = getComputedStyle(component)
     const branchRadius = Number.parseFloat(
@@ -1842,8 +1874,16 @@ else if (shouldInitializePageScript) {
         pathData: string
         toggleY: number
       } => Boolean(entry))
-    if (renderedBranches.length === 0 && tails.length === 0)
+    if (renderedBranches.length === 0 && tails.length === 0) {
+      if (missingVisibleAvatar) {
+        // 新布局尚未具备足够锚点时保留上一帧，避免先清空线条再等待重试。
+        retryLayout()
+        return
+      }
+      // 布局有效但已经没有可绘制分支（例如最后一条回复被删除），清理旧线条。
+      removeCommentReplyTreeGuides(component, replyContainer)
       return
+    }
 
     const minimumX = Math.min(
       0,
@@ -1902,7 +1942,11 @@ else if (shouldInitializePageScript) {
         toggleNodeRadius,
       ))
     })
+    // 只有新图层已完整创建后才替换旧图层；中途布局失败时旧线条仍可保留。
+    removeCommentReplyTreeGuides(component, replyContainer)
     guideContainer.appendChild(guideLayer)
+    if (missingVisibleAvatar)
+      retryLayout()
   }
 
   function isCommentReplyRenderer(element: Element): element is HTMLElement {
@@ -1959,6 +2003,49 @@ else if (shouldInitializePageScript) {
     nodes.forEach(node => wrapper.appendChild(node))
   }
 
+  function findFirstReplyAtTextNode(root: Node): Text | null {
+    for (const node of Array.from(root.childNodes)) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if ((node.textContent || '').trim())
+          return node as Text
+        continue
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE)
+        continue
+      const textNode = findFirstReplyAtTextNode(node)
+      if (textNode)
+        return textNode
+    }
+    return null
+  }
+
+  function hideSingleTextReplyAtPrefix(textNode: Text): boolean {
+    const match = textNode.data.match(REPLY_AT_PREFIX_SINGLE)
+    if (!match)
+      return false
+
+    const parent = textNode.parentNode
+    if (!parent)
+      return false
+
+    const prefix = match[0]
+    const rest = textNode.data.slice(prefix.length)
+    const wrapper = document.createElement('span')
+    wrapper.dataset.bewlyHideReplyAt = 'true'
+    wrapper.style.display = 'none'
+    wrapper.textContent = prefix
+
+    if (rest) {
+      const restNode = document.createTextNode(rest)
+      parent.replaceChild(restNode, textNode)
+      parent.insertBefore(wrapper, restNode)
+    }
+    else {
+      parent.replaceChild(wrapper, textNode)
+    }
+    return true
+  }
+
   function isReplyAtMentionElement(node: Node): node is HTMLElement {
     if (!(node instanceof HTMLElement))
       return false
@@ -1982,6 +2069,18 @@ else if (shouldInitializePageScript) {
         return Boolean((node.textContent || '').trim())
       return node.nodeType === Node.ELEMENT_NODE
     })
+    if (nodes.length === 1) {
+      const [onlyNode] = nodes
+      if (onlyNode?.nodeType === Node.TEXT_NODE) {
+        hideSingleTextReplyAtPrefix(onlyNode as Text)
+      }
+      else if (onlyNode instanceof HTMLElement) {
+        const firstTextNode = findFirstReplyAtTextNode(onlyNode)
+        if (firstTextNode)
+          hideSingleTextReplyAtPrefix(firstTextNode)
+      }
+      return
+    }
     if (nodes.length < 2)
       return
 
@@ -2033,23 +2132,7 @@ else if (shouldInitializePageScript) {
 
     // 兼容单文本节点：回复 @name : 内容
     if (first.nodeType === Node.TEXT_NODE) {
-      const text = first.textContent || ''
-      const singleMatch = text.match(REPLY_AT_PREFIX_SINGLE)
-      if (!singleMatch)
-        return
-
-      const hideText = text.slice(0, singleMatch[0].length)
-      const restText = text.slice(singleMatch[0].length)
-      const wrapper = document.createElement('span')
-      wrapper.dataset.bewlyHideReplyAt = 'true'
-      wrapper.style.display = 'none'
-      wrapper.textContent = hideText
-      const restNode = document.createTextNode(restText)
-      const parent = first.parentNode
-      if (!parent)
-        return
-      parent.replaceChild(restNode, first)
-      parent.insertBefore(wrapper, restNode)
+      hideSingleTextReplyAtPrefix(first as Text)
     }
   }
 
@@ -2849,7 +2932,17 @@ else if (shouldInitializePageScript) {
                 return
 
               ensureCommentShadowStyle(root, shadowStylePatch.id, shadowStylePatch.css)
-              if (name === 'bili-comment-replies-renderer') {
+              if (name === 'bili-comment-thread-renderer') {
+                // 删除/屏蔽回复可能让楼层组件整体重绘，之前挂在其 shadow root
+                // 内的 SVG 线条会随渲染结果一并被移除；重绘完成后从当前回复容器恢复。
+                const repliesRenderer = root.querySelector('bili-comment-replies-renderer') as HTMLElement | null
+                if (repliesRenderer) {
+                  updateCommentReplyTree(repliesRenderer)
+                  if (getCommentReplyDeepLinkId())
+                    scheduleCommentReplyDeepLinkSettlement('hash')
+                }
+              }
+              else if (name === 'bili-comment-replies-renderer') {
                 updateCommentReplyTree(component)
                 // 深链目标楼中楼刚挂载/更新时再结算一次
                 if (getCommentReplyDeepLinkId())
