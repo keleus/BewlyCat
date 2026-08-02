@@ -7,7 +7,7 @@ import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import { settings } from '~/logic'
-import { momentsWantedUsers } from '~/logic/storage'
+import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
@@ -142,6 +142,27 @@ interface MomentsPortalLiveUser {
   title: string
 }
 
+interface MomentsPortalUpItem {
+  face: string
+  has_update: boolean
+  is_reserve_recall?: boolean
+  mid: string
+  uname: string
+}
+
+interface MomentsPortalUpListItem {
+  face?: string
+  has_update?: boolean
+  is_reserve_recall?: boolean
+  mid?: string | number
+  uname?: string
+}
+
+interface MomentsPortalUpList {
+  has_more?: boolean
+  items?: MomentsPortalUpListItem[]
+}
+
 interface MomentsPortalResult {
   code: number
   data?: {
@@ -150,6 +171,8 @@ interface MomentsPortalResult {
       count?: number
       items?: MomentsPortalLiveUser[]
     }
+    /** 真实接口为 { has_more, items }；兼容历史数组形态 */
+    up_list?: MomentsPortalUpList | MomentsPortalUpListItem[]
   }
 }
 
@@ -195,7 +218,14 @@ const wantedCacheCursor = ref(0)
 const portalUser = ref<MomentsPortalUser | null>(null)
 const portalLiveUsers = ref<MomentsPortalLiveUser[]>([])
 const portalLiveCount = ref(0)
+const portalUpList = ref<MomentsPortalUpItem[]>([])
+/** 选中的经常访问 UP 主 mid；空字符串表示“全部动态” */
+const selectedHostMid = ref('')
 const isPortalLoading = ref(true)
+const upListScrollerRef = ref<HTMLElement | null>(null)
+const canScrollUpListLeft = ref(false)
+const canScrollUpListRight = ref(false)
+let upListResizeObserver: ResizeObserver | undefined
 const showMomentsSidebar = ref(true)
 const momentColumns = ref<DisplayMoment[][]>([])
 const selectedMoment = ref<DisplayMoment | null>(null)
@@ -261,6 +291,8 @@ const isInitialLoading = ref(true)
 const noMoreContent = ref(false)
 const offset = ref('')
 const updateBaseline = ref('')
+/** 按 UP 主筛选时 feed/all 的 page，从 1 递增 */
+const momentsFeedPage = ref(1)
 const { handlePageRefresh, handleReachBottom, mainAppRef, scrollViewportRef } = useBewlyApp()
 const OVERSCAN_PX = 1200
 const MAX_PREVIEW_CACHE = 12
@@ -292,6 +324,19 @@ let detailImageViewerDragOriginY = 0
 const settledHeights = new Set<string>()
 
 const wantedUserMids = computed(() => new Set(momentsWantedUsers.value.map(user => user.mid)))
+const pinnedUserMids = computed(() => new Set(momentsPinnedUsers.value.map(user => user.mid)))
+const visiblePortalUpList = computed(() =>
+  portalUpList.value.filter(up => !pinnedUserMids.value.has(up.mid)),
+)
+const showMomentsUpList = computed(() =>
+  settings.value.momentsShowUpList
+  && (
+    isPortalLoading.value
+    || portalUpList.value.length > 0
+    || momentsPinnedUsers.value.length > 0
+    || settings.value.momentsEnableWantedFilter
+  ),
+)
 
 function httpsUrl(url = '') {
   return url.replace(/^http:/, 'https:')
@@ -331,6 +376,40 @@ function getSidebarAvatarUrl(url = '', size = 96) {
   if (!normalized || !/hdslb\.com|biliimg\.com|bilibili\.com/.test(normalized))
     return normalized
   return `${normalized}@${size}w_${size}h_1c.webp`
+}
+
+function extractPortalUpListItems(
+  upList: MomentsPortalUpList | MomentsPortalUpListItem[] | undefined,
+): MomentsPortalUpListItem[] {
+  if (!upList)
+    return []
+  if (Array.isArray(upList))
+    return upList
+  if (Array.isArray(upList.items))
+    return upList.items
+  return []
+}
+
+function normalizePortalUpList(list: MomentsPortalResult['data'] | undefined): MomentsPortalUpItem[] {
+  const rawList = extractPortalUpListItems(list?.up_list)
+
+  return rawList.reduce<MomentsPortalUpItem[]>((items, item) => {
+    if (!item || item.mid == null || item.mid === '')
+      return items
+
+    const uname = String(item.uname || '').trim()
+    if (!uname)
+      return items
+
+    items.push({
+      face: String(item.face || ''),
+      has_update: Boolean(item.has_update),
+      is_reserve_recall: Boolean(item.is_reserve_recall),
+      mid: String(item.mid),
+      uname,
+    })
+    return items
+  }, [])
 }
 
 function formatCount(value: number) {
@@ -1271,13 +1350,109 @@ function handleMomentGroupChange(group: MomentGroup) {
   ) {
     return
   }
-  if (activeMomentGroup.value === group)
+  if (activeMomentGroup.value === group && (group !== 'wanted' || !selectedHostMid.value))
     return
 
+  prepareMomentListTransition()
+  if (group === 'wanted')
+    selectedHostMid.value = ''
   activeMomentGroup.value = group
+  wantedCacheCursor.value = 0
+  void loadMoments(true)
+}
+
+function clearUpUpdateDot(mid: string) {
+  if (!mid)
+    return
+  const target = portalUpList.value.find(up => up.mid === mid)
+  if (target && target.has_update)
+    target.has_update = false
+}
+
+function prepareMomentListTransition() {
+  hoveredMediaId.value = ''
+  cleanupLivePreviewPlayer()
+  Object.keys(previewUrls).forEach(key => delete previewUrls[key])
+  visibleMomentIds.clear()
   if (scrollViewportRef.value)
     scrollViewportRef.value.scrollTop = 0
+}
+
+/** 选择“全部动态”或某个经常访问的 UP 主；切换时 reset 列表与分页 */
+function handleUpFilterChange(mid = '') {
+  const nextMid = mid ? String(mid) : ''
+  if (selectedHostMid.value === nextMid && activeMomentGroup.value === 'all')
+    return
+
+  prepareMomentListTransition()
+  selectedHostMid.value = nextMid
+  activeMomentGroup.value = 'all'
+  wantedCacheCursor.value = 0
+  if (nextMid)
+    clearUpUpdateDot(nextMid)
   void loadMoments(true)
+}
+
+function handleUpListWheel(event: WheelEvent) {
+  const scroller = event.currentTarget as HTMLElement | null
+  if (!scroller || scroller.scrollWidth <= scroller.clientWidth)
+    return
+
+  // 将纵向滚轮转为横向滚动，贴近 B 站经常访问列表交互
+  if (Math.abs(event.deltaY) <= Math.abs(event.deltaX))
+    return
+
+  scroller.scrollLeft += event.deltaY
+  event.preventDefault()
+  updateUpListScrollState()
+}
+
+function updateUpListScrollState() {
+  const scroller = upListScrollerRef.value
+  if (!scroller) {
+    canScrollUpListLeft.value = false
+    canScrollUpListRight.value = false
+    return
+  }
+
+  const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth
+  canScrollUpListLeft.value = scroller.scrollLeft > 1
+  canScrollUpListRight.value = maxScrollLeft > 1 && scroller.scrollLeft < maxScrollLeft - 1
+}
+
+function scrollUpListBy(direction: -1 | 1) {
+  const scroller = upListScrollerRef.value
+  if (!scroller)
+    return
+
+  const distance = Math.max(Math.round(scroller.clientWidth * 0.65), 180)
+  scroller.scrollBy({ left: distance * direction, behavior: 'smooth' })
+}
+
+function setupUpListScrollerObserver() {
+  upListResizeObserver?.disconnect()
+  upListResizeObserver = undefined
+  const scroller = upListScrollerRef.value
+  if (!scroller)
+    return
+
+  upListResizeObserver = new ResizeObserver(() => {
+    updateUpListScrollState()
+  })
+  upListResizeObserver.observe(scroller)
+  updateUpListScrollState()
+}
+
+function isFeedRequestCurrent(
+  requestToken: number,
+  requestType: MomentFilter,
+  requestGroup: MomentGroup,
+  requestHostMid: string,
+) {
+  return requestToken === feedRequestToken
+    && requestType === activeMomentFilter.value
+    && requestGroup === activeMomentGroup.value
+    && requestHostMid === selectedHostMid.value
 }
 
 function matchesMomentFilter(moment: DisplayMoment) {
@@ -2399,12 +2574,14 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
   const requestToken = feedRequestToken
   const requestType = activeMomentFilter.value
   const requestGroup = activeMomentGroup.value
+  const requestHostMid = selectedHostMid.value
   let pageApplied = false
   let preservedPaginationScrollTop: number | null = null
   isLoading.value = true
   if (reset) {
     offset.value = ''
     updateBaseline.value = ''
+    momentsFeedPage.value = 1
     noMoreContent.value = false
   }
 
@@ -2415,7 +2592,77 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     let nextOffset = ''
     let nextUpdateBaseline = ''
 
-    if (requestGroup === 'wanted') {
+    if (requestHostMid) {
+      // 按 UP 主筛选：走 feed/all + host_mid，不写入全局全部动态缓存
+      let nextPage = momentsFeedPage.value
+      if (hasActiveMomentTypeFilters()) {
+        let scanOffset = offset.value
+        let scanUpdateBaseline = updateBaseline.value
+        let canContinue = true
+        const scanned: DataItem[] = []
+
+        while (canContinue && scanned.length < FILTERED_SCAN_LIMIT) {
+          const response = await api.moment.getMomentsByUp({
+            host_mid: requestHostMid,
+            type: requestType,
+            offset: scanOffset || undefined,
+            update_baseline: scanUpdateBaseline || undefined,
+            page: nextPage,
+            platform: 'web',
+            features: MOMENT_FEED_FEATURES,
+            web_location: '333.1365',
+          }) as MomentResult
+          if (
+            !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+            || response.code !== 0
+          ) {
+            return
+          }
+
+          const pageItems = response.data?.items || []
+          scanned.push(...pageItems)
+          const responseOffset = response.data?.offset || ''
+          scanUpdateBaseline = response.data?.update_baseline || ''
+          canContinue = Boolean(response.data?.has_more)
+            && pageItems.length > 0
+            && responseOffset !== scanOffset
+          scanOffset = responseOffset
+          nextPage += 1
+          if (scanned.length >= FILTERED_SCAN_LIMIT)
+            break
+        }
+
+        rawItems = scanned
+        hasMore = canContinue
+        nextOffset = scanOffset
+        nextUpdateBaseline = scanUpdateBaseline
+      }
+      else {
+        const response = await api.moment.getMomentsByUp({
+          host_mid: requestHostMid,
+          type: requestType,
+          offset: offset.value || undefined,
+          update_baseline: updateBaseline.value || undefined,
+          page: nextPage,
+          platform: 'web',
+          features: MOMENT_FEED_FEATURES,
+          web_location: '333.1365',
+        }) as MomentResult
+        if (
+          !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
+          || response.code !== 0
+        ) {
+          return
+        }
+        rawItems = response.data?.items || []
+        hasMore = Boolean(response.data?.has_more) && rawItems.length > 0
+        nextOffset = response.data?.offset || ''
+        nextUpdateBaseline = response.data?.update_baseline || ''
+        nextPage += 1
+      }
+      momentsFeedPage.value = nextPage
+    }
+    else if (requestGroup === 'wanted') {
       await momentsFeedCacheReady
       let cacheEntry = getValidMomentsCache(requestType) ?? {
         items: [],
@@ -2449,9 +2696,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
               features: MOMENT_FEED_FEATURES,
             }) as MomentResult
             if (
-              requestToken !== feedRequestToken
-              || requestType !== activeMomentFilter.value
-              || requestGroup !== activeMomentGroup.value
+              !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
               || response.code !== 0
             ) {
               return
@@ -2504,9 +2749,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
             features: MOMENT_FEED_FEATURES,
           }) as MomentResult
           if (
-            requestToken !== feedRequestToken
-            || requestType !== activeMomentFilter.value
-            || requestGroup !== activeMomentGroup.value
+            !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
             || response.code !== 0
           ) {
             return
@@ -2573,9 +2816,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           features: MOMENT_FEED_FEATURES,
         }) as MomentResult
         if (
-          requestToken !== feedRequestToken
-          || requestType !== activeMomentFilter.value
-          || requestGroup !== activeMomentGroup.value
+          !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
           || response.code !== 0
         ) {
           return
@@ -2607,9 +2848,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
         features: MOMENT_FEED_FEATURES,
       }) as MomentResult
       if (
-        requestToken !== feedRequestToken
-        || requestType !== activeMomentFilter.value
-        || requestGroup !== activeMomentGroup.value
+        !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
         || response.code !== 0
       ) {
         return
@@ -2621,7 +2860,8 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     }
 
     const normalizedItems = cachedBatch ?? rawItems.map(mapMoment)
-    if (requestGroup === 'all') {
+    // 按 UP 主请求不写入全局全部动态缓存
+    if (requestGroup === 'all' && !requestHostMid) {
       cacheRegularMomentPage(
         requestType,
         normalizedItems,
@@ -2637,11 +2877,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
       .filter(passesMomentSettings)
       .sort((a, b) => b.publishedAt - a.publishedAt)
     await prepareMomentCovers(items, requestToken)
-    if (
-      requestToken !== feedRequestToken
-      || requestType !== activeMomentFilter.value
-      || requestGroup !== activeMomentGroup.value
-    ) {
+    if (!isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)) {
       return
     }
     if (!reset)
@@ -2660,11 +2896,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     pageApplied = true
   }
   finally {
-    if (
-      requestToken === feedRequestToken
-      && requestType === activeMomentFilter.value
-      && requestGroup === activeMomentGroup.value
-    ) {
+    if (isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)) {
       isLoading.value = false
       isInitialLoading.value = false
     }
@@ -2672,9 +2904,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
   if (
     preservedPaginationScrollTop !== null
-    && requestToken === feedRequestToken
-    && requestType === activeMomentFilter.value
-    && requestGroup === activeMomentGroup.value
+    && isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
   ) {
     // 等卡片、虚拟 spacer 和底部加载提示完成更新后，恢复分页前的滚动位置
     await nextTick()
@@ -2690,9 +2920,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     || noMoreContent.value
     || requiresManualMomentPaging()
     || autoFillDepth >= MAX_POST_LOAD_AUTOFILL_PAGES
-    || requestToken !== feedRequestToken
-    || requestType !== activeMomentFilter.value
-    || requestGroup !== activeMomentGroup.value
+    || !isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)
   ) {
     return
   }
@@ -2709,24 +2937,34 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     void loadMoments(false, autoFillDepth + 1)
 }
 
+function clearMomentsPortalState() {
+  portalUser.value = null
+  portalLiveUsers.value = []
+  portalLiveCount.value = 0
+  portalUpList.value = []
+}
+
 async function loadMomentsPortal() {
   const requestToken = ++portalRequestToken
   isPortalLoading.value = true
   try {
     const response = await api.moment.getMomentsPortal() as MomentsPortalResult
-    if (requestToken !== portalRequestToken || response.code !== 0)
+    if (requestToken !== portalRequestToken)
       return
+
+    if (response.code !== 0) {
+      clearMomentsPortalState()
+      return
+    }
 
     portalUser.value = response.data?.my_info || null
     portalLiveUsers.value = response.data?.live_users?.items || []
     portalLiveCount.value = response.data?.live_users?.count ?? portalLiveUsers.value.length
+    portalUpList.value = normalizePortalUpList(response.data)
   }
   catch {
-    if (requestToken === portalRequestToken) {
-      portalUser.value = null
-      portalLiveUsers.value = []
-      portalLiveCount.value = 0
-    }
+    if (requestToken === portalRequestToken)
+      clearMomentsPortalState()
   }
   finally {
     if (requestToken === portalRequestToken)
@@ -2806,6 +3044,8 @@ onBeforeUnmount(() => {
   gridObserver?.disconnect()
   cardMeasureObserver?.disconnect()
   visibilityObserver?.disconnect()
+  upListResizeObserver?.disconnect()
+  upListResizeObserver = undefined
   detachViewportScroll()
   cleanupLivePreviewPlayer()
   closeMomentDetail()
@@ -2871,11 +3111,36 @@ watch(
   },
 )
 
+watch(upListScrollerRef, async () => {
+  await nextTick()
+  setupUpListScrollerObserver()
+})
+
+watch(
+  () => [
+    visiblePortalUpList.value.map(up => up.mid).join(','),
+    settings.value.momentsEnableWantedFilter,
+    isPortalLoading.value,
+  ],
+  async () => {
+    await nextTick()
+    updateUpListScrollState()
+  },
+)
+
 watch(
   () => momentsWantedUsers.value.map(user => user.mid).join(','),
   () => {
     if (activeMomentGroup.value === 'wanted')
       void loadMoments(true)
+  },
+)
+
+watch(
+  () => momentsPinnedUsers.value.map(user => user.mid).join(','),
+  async () => {
+    await nextTick()
+    updateUpListScrollState()
   },
 )
 
@@ -2968,30 +3233,6 @@ watch(
             </div>
           </div>
         </section>
-        <div
-          v-if="settings.momentsEnableWantedFilter"
-          class="moments-wanted-filter bew-segment-control bew-segment-control--static"
-          aria-label="想看筛选"
-        >
-          <button
-            type="button"
-            class="moments-wanted-filter__button bew-segment-control__item bew-segment-control__item--icon"
-            :data-active="activeMomentGroup === 'wanted' ? 'true' : undefined"
-            :disabled="activeMomentFilter !== 'all' && activeMomentFilter !== 'video'"
-            :aria-pressed="activeMomentGroup === 'wanted'"
-            :aria-label="activeMomentGroup === 'wanted' ? '取消只看想看的 UP 主' : '只看想看的 UP 主'"
-            :title="activeMomentFilter === 'all' || activeMomentFilter === 'video'
-              ? (activeMomentGroup === 'wanted' ? '取消只看想看的 UP 主' : '只看想看的 UP 主')
-              : '仅适用于全部和视频投稿'"
-            @click="handleMomentGroupChange(activeMomentGroup === 'wanted' ? 'all' : 'wanted')"
-          >
-            <span
-              class="bew-segment-control__icon"
-              :class="activeMomentGroup === 'wanted' ? 'i-tabler-heart-filled' : 'i-tabler-heart'"
-              aria-hidden="true"
-            />
-          </button>
-        </div>
       </header>
 
       <aside v-if="showMomentsSidebar" class="moments-sidebar" aria-label="动态用户信息">
@@ -3071,6 +3312,168 @@ watch(
       </aside>
 
       <main class="moments-content" :style="momentsContentStyle">
+        <section
+          v-if="showMomentsUpList"
+          class="moments-up-list"
+          aria-label="动态栏"
+        >
+          <div class="moments-up-list__start" role="list" aria-label="动态分组">
+            <button
+              type="button"
+              class="moments-up-list__item"
+              :class="{ 'moments-up-list__item--active': !selectedHostMid && activeMomentGroup === 'all' }"
+              role="listitem"
+              :aria-pressed="!selectedHostMid && activeMomentGroup === 'all'"
+              title="全部动态"
+              @click="handleUpFilterChange('')"
+            >
+              <span class="moments-up-list__avatar moments-up-list__avatar--all" aria-hidden="true">
+                <span
+                  class="moments-up-list__all-icon"
+                  :class="!selectedHostMid && activeMomentGroup === 'all' ? 'i-tabler-windmill-filled' : 'i-tabler-windmill'"
+                />
+              </span>
+              <span class="moments-up-list__name">全部动态</span>
+            </button>
+            <button
+              v-if="settings.momentsEnableWantedFilter"
+              type="button"
+              class="moments-up-list__item"
+              :class="{ 'moments-up-list__item--active': activeMomentGroup === 'wanted' }"
+              role="listitem"
+              :aria-pressed="activeMomentGroup === 'wanted'"
+              :disabled="activeMomentFilter !== 'all' && activeMomentFilter !== 'video'"
+              :aria-label="activeMomentGroup === 'wanted' ? '取消只看想看的 UP 主' : '只看想看的 UP 主'"
+              :title="activeMomentFilter === 'all' || activeMomentFilter === 'video'
+                ? (activeMomentGroup === 'wanted' ? '取消只看想看的 UP 主' : '只看想看的 UP 主')
+                : '仅适用于全部和视频投稿'"
+              @click="handleMomentGroupChange(activeMomentGroup === 'wanted' ? 'all' : 'wanted')"
+            >
+              <span class="moments-up-list__avatar moments-up-list__avatar--wanted" aria-hidden="true">
+                <span
+                  class="moments-up-list__wanted-icon"
+                  :class="activeMomentGroup === 'wanted' ? 'i-tabler-heart-filled' : 'i-tabler-heart'"
+                />
+              </span>
+              <span class="moments-up-list__name">想看</span>
+            </button>
+          </div>
+
+          <div class="moments-up-list__main">
+            <span
+              class="moments-up-list__fade moments-up-list__fade--prev"
+              :class="{ 'moments-up-list__fade--visible': canScrollUpListLeft }"
+              aria-hidden="true"
+            />
+            <span
+              class="moments-up-list__fade moments-up-list__fade--next"
+              :class="{ 'moments-up-list__fade--visible': canScrollUpListRight }"
+              aria-hidden="true"
+            />
+            <button
+              v-show="canScrollUpListLeft"
+              type="button"
+              class="moments-up-list__arrow moments-up-list__arrow--prev"
+              aria-label="向左滚动经常访问列表"
+              title="向左滚动"
+              @click="scrollUpListBy(-1)"
+            >
+              <span i-tabler-chevron-left aria-hidden="true" />
+            </button>
+            <button
+              v-show="canScrollUpListRight"
+              type="button"
+              class="moments-up-list__arrow moments-up-list__arrow--next"
+              aria-label="向右滚动经常访问列表"
+              title="向右滚动"
+              @click="scrollUpListBy(1)"
+            >
+              <span i-tabler-chevron-right aria-hidden="true" />
+            </button>
+
+            <div
+              v-if="isPortalLoading && !portalUpList.length"
+              ref="upListScrollerRef"
+              class="moments-up-list__scroller"
+              aria-hidden="true"
+            >
+              <div
+                v-for="index in 8"
+                :key="index"
+                class="moments-up-list__item moments-up-list__item--skeleton"
+              >
+                <span class="moments-up-list__avatar moments-skeleton-block" />
+                <span class="moments-up-list__name moments-skeleton-block" />
+              </div>
+            </div>
+            <div
+              v-else
+              ref="upListScrollerRef"
+              class="moments-up-list__scroller"
+              role="list"
+              aria-label="经常访问的 UP 主"
+              @scroll="updateUpListScrollState"
+              @wheel="handleUpListWheel"
+            >
+              <button
+                v-for="up in visiblePortalUpList"
+                :key="up.mid"
+                type="button"
+                class="moments-up-list__item"
+                :class="{ 'moments-up-list__item--active': selectedHostMid === up.mid && activeMomentGroup === 'all' }"
+                role="listitem"
+                :aria-pressed="selectedHostMid === up.mid && activeMomentGroup === 'all'"
+                :title="up.uname"
+                @click="handleUpFilterChange(up.mid)"
+              >
+                <span class="moments-up-list__avatar">
+                  <img
+                    :src="getSidebarAvatarUrl(up.face, 96)"
+                    :alt="up.uname"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                  <span
+                    v-if="up.has_update"
+                    class="moments-up-list__dot"
+                    aria-label="有更新"
+                  />
+                </span>
+                <span class="moments-up-list__name">{{ up.uname }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="momentsPinnedUsers.length"
+            class="moments-up-list__pinned"
+            role="list"
+            aria-label="固定 UP 主"
+          >
+            <span class="moments-up-list__divider" aria-hidden="true" />
+            <button
+              v-for="user in momentsPinnedUsers"
+              :key="user.mid"
+              type="button"
+              class="moments-up-list__item"
+              :class="{ 'moments-up-list__item--active': selectedHostMid === user.mid && activeMomentGroup === 'all' }"
+              role="listitem"
+              :aria-pressed="selectedHostMid === user.mid && activeMomentGroup === 'all'"
+              :title="user.name"
+              @click="handleUpFilterChange(user.mid)"
+            >
+              <span class="moments-up-list__avatar">
+                <img
+                  :src="getSidebarAvatarUrl(user.face, 96)"
+                  :alt="user.name"
+                  loading="lazy"
+                  decoding="async"
+                >
+              </span>
+              <span class="moments-up-list__name">{{ user.name }}</span>
+            </button>
+          </div>
+        </section>
         <div v-if="isInitialLoading" class="moments-page__initial-loading">
           <div class="moments-skeleton__status">
             <span i-svg-spinners:ring-resize />
@@ -3651,6 +4054,232 @@ watch(
   grid-row: 2;
   min-width: 0;
 }
+.moments-up-list {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin-bottom: var(--bew-space-4);
+  padding: var(--bew-space-3) var(--bew-space-2) var(--bew-space-2);
+  border-radius: var(--bew-card-radius);
+  background: var(--bew-elevated);
+  box-shadow: none;
+}
+.moments-up-list__main {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.moments-up-list__start {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--bew-space-1);
+  margin-right: var(--bew-space-2);
+}
+.moments-up-list__scroller {
+  display: flex;
+  gap: var(--bew-space-1);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.moments-up-list__scroller::-webkit-scrollbar {
+  display: none;
+}
+.moments-up-list__fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 32px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--bew-duration-fast) var(--bew-ease-standard);
+}
+.moments-up-list__fade--prev {
+  left: 0;
+  background: linear-gradient(90deg, var(--bew-elevated), transparent);
+}
+.moments-up-list__fade--next {
+  right: 0;
+  background: linear-gradient(270deg, var(--bew-elevated), transparent);
+}
+.moments-up-list__fade--visible {
+  opacity: 1;
+}
+.moments-up-list__arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--bew-text-1);
+  background: color-mix(in oklab, var(--bew-elevated-solid, var(--bew-elevated)) 88%, var(--bew-text-1) 12%);
+  box-shadow: var(--bew-shadow-1, 0 2px 8px rgb(0 0 0 / 12%));
+  opacity: 0;
+  place-items: center;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition:
+    opacity var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
+  cursor: pointer;
+}
+.moments-up-list__arrow--prev {
+  left: 4px;
+}
+.moments-up-list__arrow--next {
+  right: 4px;
+}
+.moments-up-list:hover .moments-up-list__arrow,
+.moments-up-list:focus-within .moments-up-list__arrow {
+  opacity: 1;
+  pointer-events: auto;
+}
+.moments-up-list__arrow:hover {
+  background: color-mix(in oklab, var(--bew-elevated-solid, var(--bew-elevated)) 78%, var(--bew-text-1) 22%);
+}
+.moments-up-list__arrow:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: 2px;
+  opacity: 1;
+  pointer-events: auto;
+}
+.moments-up-list__pinned {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--bew-space-1);
+  min-width: 0;
+  max-width: min(40%, 320px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.moments-up-list__pinned::-webkit-scrollbar {
+  display: none;
+}
+.moments-up-list__divider {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 40px;
+  margin: 0 var(--bew-space-1);
+  background: var(--bew-border-color);
+}
+.moments-up-list__item {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--bew-space-1);
+  width: 64px;
+  min-width: 64px;
+  padding: var(--bew-space-1);
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-decoration: none;
+  transition:
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    transform var(--bew-duration-fast) var(--bew-ease-standard);
+}
+.moments-up-list__item:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: 2px;
+}
+.moments-up-list__item--active .moments-up-list__name {
+  color: var(--bew-theme-color);
+}
+.moments-up-list__item--active .moments-up-list__avatar > img,
+.moments-up-list__item--active .moments-up-list__avatar--all,
+.moments-up-list__item--active .moments-up-list__avatar--wanted {
+  box-shadow:
+    0 0 0 2px var(--bew-elevated),
+    0 0 0 4px var(--bew-theme-color);
+}
+.moments-up-list__item--skeleton {
+  pointer-events: none;
+}
+.moments-up-list__avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+}
+.moments-up-list__avatar > img,
+.moments-up-list__item--skeleton .moments-up-list__avatar {
+  display: block;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--bew-fill-1);
+}
+.moments-up-list__avatar--all,
+.moments-up-list__avatar--wanted {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 50%;
+  color: var(--bew-text-2);
+  background: var(--bew-fill-1);
+}
+.moments-up-list__item--active .moments-up-list__avatar--all,
+.moments-up-list__item--active .moments-up-list__avatar--wanted {
+  border: 2px solid var(--bew-theme-color);
+  color: #fff;
+  background: var(--bew-theme-color);
+}
+.moments-up-list__item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.moments-up-list__all-icon,
+.moments-up-list__wanted-icon {
+  display: block;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+}
+.moments-up-list__dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--bew-elevated);
+  border-radius: 50%;
+  background: var(--bew-bili-pink);
+  box-sizing: border-box;
+}
+.moments-up-list__name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-caption);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.moments-up-list__item--skeleton .moments-up-list__name {
+  width: 40px;
+  height: 12px;
+  border-radius: var(--bew-radius-sm);
+}
 .moments-sidebar {
   grid-column: 1;
   grid-row: 2;
@@ -4074,11 +4703,10 @@ watch(
   grid-column: 2;
   grid-row: 1;
   display: grid;
-  grid-template-columns: minmax(0, max-content) max-content;
+  grid-template-columns: minmax(0, max-content);
   justify-content: start;
   justify-self: start;
   align-items: center;
-  gap: var(--bew-space-4);
   width: 100%;
   min-width: 0;
 }
@@ -4087,20 +4715,6 @@ watch(
 }
 .moments-layout--without-sidebar .moments-content {
   grid-column: 1;
-}
-.moments-wanted-filter {
-  --bew-control-padding: 0px;
-  --bew-segment-item-active-bg: var(--bew-theme-color);
-  --bew-segment-item-active-color: white;
-  --bew-segment-item-current-color: white;
-  --bew-segment-item-hover-bg: var(--bew-fill-2);
-  --bew-segment-item-hover-color: var(--bew-text-1);
-
-  width: max-content;
-}
-.moments-wanted-filter__button {
-  background: var(--bew-fill-alt);
-  box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
 }
 .moments-filter-panel {
   max-width: 100%;
@@ -4130,8 +4744,7 @@ watch(
 }
 @media (max-width: 600px) {
   .moments-filter-header {
-    grid-template-columns: minmax(0, 1fr) max-content;
-    gap: var(--bew-space-1);
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 .moments-page__empty button {

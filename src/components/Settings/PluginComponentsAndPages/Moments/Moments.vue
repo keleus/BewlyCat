@@ -21,6 +21,7 @@ type MomentToggleSetting
     | 'momentsSidebarShowUserCard'
     | 'momentsSidebarShowPublish'
     | 'momentsSidebarShowLive'
+    | 'momentsShowUpList'
     | 'momentsFilterUpRecommendation'
     | 'momentsHideChargeExclusive'
     | 'momentsHideVideoReservation'
@@ -51,6 +52,7 @@ const pluginComponentOptions = computed<MomentTagOption[]>(() => [
   { setting: 'momentsSidebarShowUserCard', label: t('settings.moments_show_user_card'), icon: 'i-tabler-user-square-rounded' },
   { setting: 'momentsSidebarShowPublish', label: t('settings.moments_show_publish'), icon: 'i-tabler-edit' },
   { setting: 'momentsSidebarShowLive', label: t('settings.moments_show_live'), icon: 'i-tabler-live-photo' },
+  { setting: 'momentsShowUpList', label: t('settings.moments_show_up_list'), icon: 'i-tabler-users' },
 ])
 
 const pluginFilterOptions = computed<MomentTagOption[]>(() => [
@@ -186,7 +188,21 @@ const openModeOptions = computed(() => [
       </SettingsItem>
       <SettingsItem :title="$t('settings.moments_wanted_users')">
         <template #bottom>
-          <WantedUsersManager />
+          <WantedUsersManager mode="wanted" />
+        </template>
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="$t('settings.group_moments_pinned_users')"
+      :desc="$t('settings.group_moments_pinned_users_desc')"
+      icon="i-tabler-pin-filled"
+      collapsible
+      default-collapsed
+    >
+      <SettingsItem :title="$t('settings.moments_pinned_users')">
+        <template #bottom>
+          <WantedUsersManager mode="pinned" />
         </template>
       </SettingsItem>
     </SettingsItemGroup>

@@ -54,6 +54,13 @@ export const momentsWantedUsers = useStorageLocal<MomentsWantedUser[]>(
   { writeDefaults: false },
 )
 
+/** Bewly 动态页横向栏右侧“固定 UP”；与想看名单独立存储。 */
+export const momentsPinnedUsers = useStorageLocal<MomentsWantedUser[]>(
+  'momentsPinnedUsers',
+  [],
+  { writeDefaults: false },
+)
+
 const legacyAccessKey = useStorageLocal('accessKey', '')
 
 watch(
@@ -295,6 +302,7 @@ export interface Settings {
   momentsSidebarShowUserCard: boolean
   momentsSidebarShowPublish: boolean
   momentsSidebarShowLive: boolean
+  momentsShowUpList: boolean
   momentsEnableLivePreview: boolean
   momentsEnableVideoPreview: boolean
   momentsEnableWantedFilter: boolean
@@ -590,6 +598,7 @@ export const originalSettings: Settings = {
   momentsSidebarShowUserCard: true,
   momentsSidebarShowPublish: true,
   momentsSidebarShowLive: true,
+  momentsShowUpList: true,
   momentsEnableLivePreview: true,
   momentsEnableVideoPreview: true,
   momentsEnableWantedFilter: true,

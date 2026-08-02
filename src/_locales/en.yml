@@ -225,9 +225,10 @@ settings:
   moments_show_user_card: Show user card
   moments_show_publish: Show publish action
   moments_show_live: Show live users
+  moments_show_up_list: Show frequently visited uploaders
   moments_visible_components: Visible components
   moments_visible_components_original_desc: Control whether sidebar and banner components appear on the original Bilibili moments page. Theme-colored means shown; gray means hidden.
-  moments_visible_components_plugin_desc: Control whether left-side components appear on the Bewly moments page. Theme-colored means shown; gray means hidden.
+  moments_visible_components_plugin_desc: Control whether sidebar and top components appear on the Bewly moments page. Theme-colored means shown; gray means hidden.
   moments_filtered_types: Filter dynamics
   moments_filtered_types_desc: Control which dynamic types appear in the Bewly feed. Selected (theme-colored) means not filtered; unselected means filtered out. When filters are on, each load scans at most 100 items and further loads are manual.
   moments_enable_live_preview: Preview live dynamics on hover
@@ -258,8 +259,11 @@ settings:
   group_moments_wanted_users: Watchlist
   group_moments_wanted_users_desc: Manage uploaders you want to watch by UID or name. The list is stored only on this device.
   moments_enable_wanted_filter: Enable watchlist filter
-  moments_enable_wanted_filter_desc: Show a heart button on the Moments page to display only posts from watchlisted uploaders. Turning it off hides the button and exits the filter.
+  moments_enable_wanted_filter_desc: Show a Watchlist entry in the Moments horizontal bar to display only posts from watchlisted uploaders. Turning it off hides the entry and exits the filter.
   moments_wanted_users: Watchlisted uploaders
+  group_moments_pinned_users: Pinned uploaders
+  group_moments_pinned_users_desc: Manage uploaders pinned to the right side of the Moments bar by UID or name. The list is stored only on this device.
+  moments_pinned_users: Pinned uploaders
   btn:
     authorize: Authorize
     revoke: Revoke

@@ -246,6 +246,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_show_user_card',
     'settings.moments_show_publish',
     'settings.moments_show_live',
+    'settings.moments_show_up_list',
     'settings.moments_enable_live_preview',
     'settings.moments_enable_video_preview',
     'settings.moments_filter_video_dynamic',
@@ -262,6 +263,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_moments_wanted_users',
     'settings.moments_enable_wanted_filter',
     'settings.moments_wanted_users',
+    'settings.group_moments_pinned_users',
+    'settings.moments_pinned_users',
   ]),
   ...createEntries(momentsRoute, [
     'settings.moments_filter_up_recommendation',

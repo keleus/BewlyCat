@@ -6,6 +6,7 @@ BewlyCat：基于 BewlyBewly 的 bilibili 浏览器扩展（Vue 3 + TS + Vite + 
 
 - `pnpm lint` / `pnpm lint:fix`
 - `pnpm typecheck`
+- 验证时不执行任何 `build` 操作；开发阶段使用 `pnpm dev` 持续编译与验证。
 - 构建产物：Chrome/Edge → `extension/`，Firefox → `extension-firefox/`
 
 仅当本次任务实际执行 `git commit` 时，提交前必须通过：

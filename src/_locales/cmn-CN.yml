@@ -222,9 +222,10 @@ settings:
   moments_show_user_card: 显示用户卡片
   moments_show_publish: 显示发布动态组件
   moments_show_live: 显示正在直播组件
+  moments_show_up_list: 显示经常访问的 UP 主
   moments_visible_components: 显示组件
   moments_visible_components_original_desc: 控制 Bilibili 原版动态页侧栏与横幅等组件是否显示。主题色表示显示，灰色表示隐藏。
-  moments_visible_components_plugin_desc: 控制 Bewly 动态页左侧组件是否显示。主题色表示显示，灰色表示隐藏。
+  moments_visible_components_plugin_desc: 控制 Bewly 动态页侧栏与顶部组件是否显示。主题色表示显示，灰色表示隐藏。
   moments_filtered_types: 过滤动态
   moments_filtered_types_desc: 控制各类动态是否出现在 Bewly 动态流中。选中（主题色）表示不过滤，未选中表示过滤。开启过滤时单次最多扫描 100 条，需手动加载更多。
   moments_enable_live_preview: 直播动态悬停预览
@@ -255,8 +256,11 @@ settings:
   group_moments_wanted_users: 想看分组
   group_moments_wanted_users_desc: 管理想看的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
   moments_enable_wanted_filter: 启用想看筛选
-  moments_enable_wanted_filter_desc: 在动态页显示爱心按钮，用于只查看名单内 UP 主的动态；关闭后隐藏按钮并退出想看筛选。
+  moments_enable_wanted_filter_desc: 在动态页横向栏显示“想看”入口，用于只查看名单内 UP 主的动态；关闭后隐藏入口并退出想看筛选。
   moments_wanted_users: 想看的 UP 主
+  group_moments_pinned_users: 固定 UP 主
+  group_moments_pinned_users_desc: 管理固定在动态栏右侧的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
+  moments_pinned_users: 固定的 UP 主
   btn:
     authorize: 授权
     revoke: 取消授权
