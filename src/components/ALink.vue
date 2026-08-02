@@ -63,7 +63,7 @@ function handleClick(event: MouseEvent) {
   }
 
   if (props.customClickEvent) {
-    if (!props.customClickEventIncludesModifiers && (event.ctrlKey || event.metaKey || event.altKey))
+    if (!props.customClickEventIncludesModifiers && (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey))
       return
 
     event.preventDefault()
@@ -71,7 +71,7 @@ function handleClick(event: MouseEvent) {
     return
   }
 
-  if (event.ctrlKey || event.metaKey || event.altKey)
+  if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
     return
 
   // 在触屏模式下，topBar 类型的链接不执行打开操作，只显示弹窗

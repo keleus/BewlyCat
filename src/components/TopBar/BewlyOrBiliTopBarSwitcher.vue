@@ -45,12 +45,11 @@ onUnmounted(() => {
   topBarStore.setSwitcherButtonVisible(false)
 })
 
-// 锚定在顶栏底边外侧，避免与搜索框重叠；位置不随按钮显隐跳动
+// 轻微搭接顶栏底边，形成贴近搜索框下沿的小拉片；位置不随按钮显隐跳动
 const topOffset = computed(() => {
   if (!topBarStore.topBarVisible && !settings.value.useOriginalBilibiliTopBar)
     return '0px'
-  // 从顶栏下沿开始，不再上探进搜索框区域
-  return 'var(--bew-top-bar-height)'
+  return 'calc(var(--bew-top-bar-height) - var(--bew-space-2))'
 })
 
 const isShowingBewlyTopBar = computed(() => !settings.value.useOriginalBilibiliTopBar)
@@ -108,23 +107,25 @@ const isShowingBewlyTopBar = computed(() => !settings.value.useOriginalBilibiliT
 
 .top-bar-switcher__hit {
   pointer-events: auto;
-  // 命中区完全在顶栏下方；overflow 裁掉上移的按钮，避免盖住搜索框
+  // 仅保留按钮自身大小的命中区；overflow 裁掉上移的隐藏状态
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: var(--bew-space-1, 4px) var(--bew-space-3, 12px) var(--bew-space-3, 12px);
+  padding: 0 var(--bew-space-2);
   overflow: hidden;
 }
 
 .top-bar-switcher__btn {
   display: flex;
   align-items: center;
-  gap: var(--bew-space-2, 8px);
-  padding: 4px 8px;
+  gap: var(--bew-space-1);
+  box-sizing: border-box;
+  height: var(--bew-top-bar-switcher-height);
+  padding: 0 var(--bew-space-2);
   color: var(--bew-text-2);
-  font-size: var(--bew-font-size-control, 13px);
+  font-size: var(--bew-font-size-caption);
   font-weight: var(--bew-font-weight-medium, 500);
-  line-height: var(--bew-line-height-control, 18px);
+  line-height: var(--bew-line-height-caption);
   background: var(--bew-elevated);
   border: none;
   border-radius: var(--bew-radius-full);
