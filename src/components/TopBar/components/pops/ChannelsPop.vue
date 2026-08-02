@@ -38,7 +38,7 @@ const otherLinks = computed(() => {
     data-key="channels"
   >
     <div
-      flex="~ gap-2"
+      flex="~ gap-1"
       p="3" w-inherit
     >
       <ul
