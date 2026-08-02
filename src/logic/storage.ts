@@ -568,7 +568,7 @@ export const originalSettings: Settings = {
   videoPageTopBarConfig: VideoPageTopBarConfig.ShowOnScroll,
   alwaysUseTransparentTopBar: false,
   showTopBarThemeColorGradient: true,
-  showBewlyOrBiliTopBarSwitcher: true,
+  showBewlyOrBiliTopBarSwitcher: false,
   showBewlyOrBiliPageSwitcher: true,
   topBarLogoStyle: 'icon',
   topBarIconBadges: 'number',

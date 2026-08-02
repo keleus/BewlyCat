@@ -93,12 +93,10 @@ function resetColumns() {
       </template>
     </SettingsItemGroup>
 
-    <!-- 视频卡片网格详细设置默认折叠 -->
+    <!-- 视频卡片网格：打开设置时直接展示断点配置 -->
     <SettingsItemGroup
       :title="$t('settings.group_video_card_grid')"
       :desc="$t('settings.grid_breakpoints_desc')"
-      collapsible
-      default-collapsed
     >
       <SettingsItem
         :title="$t('settings.auto_switch_list_layout')"
@@ -110,28 +108,28 @@ function resetColumns() {
 
       <SettingsItem :title="$t('settings.grid_breakpoints')" :desc="$t('settings.grid_breakpoints_desc')" right-width="auto">
         <template #bottom>
-          <div flex="~ col gap-3" w-full>
+          <div class="grid-breakpoints">
             <div
               v-for="bp in breakpointLabels"
               :key="bp.key"
-              flex="~ items-center gap-3"
+              class="grid-breakpoints__item"
             >
-              <span text-sm shrink-0 min-w-24>{{ bp.label }}</span>
+              <span class="grid-breakpoints__label">{{ bp.label }}</span>
               <Input
                 :model-value="settings.gridColumns[bp.key]"
                 type="number"
                 :min="1"
                 :max="12"
-                w-20
+                class="grid-breakpoints__input"
                 @update:model-value="(v) => updateColumns(bp.key, Number(v) || 1)"
               />
-              <span text-sm shrink-0>{{ $t('settings.grid_columns_unit') }}</span>
+              <span class="grid-breakpoints__unit">{{ $t('settings.grid_columns_unit') }}</span>
             </div>
-            <div flex="~ gap-2" mt-2>
-              <Button type="tertiary" size="small" @click="resetColumns">
-                {{ $t('common.operation.reset') }}
-              </Button>
-            </div>
+          </div>
+          <div class="grid-breakpoints__actions">
+            <Button type="tertiary" size="small" @click="resetColumns">
+              {{ $t('common.operation.reset') }}
+            </Button>
           </div>
         </template>
       </SettingsItem>
@@ -206,6 +204,49 @@ function resetColumns() {
 </template>
 
 <style lang="scss" scoped>
+.grid-breakpoints {
+  display: grid;
+  width: 100%;
+  gap: var(--bew-space-3);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: var(--bew-space-2);
+    min-width: 0;
+  }
+
+  &__label {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: var(--bew-font-size-control);
+    line-height: var(--bew-line-height-control);
+    color: var(--bew-text-1);
+    white-space: nowrap;
+  }
+
+  &__input {
+    width: 5rem;
+    flex: 0 0 auto;
+    min-width: 4.5rem;
+  }
+
+  &__unit {
+    flex: 0 0 auto;
+    font-size: var(--bew-font-size-control);
+    line-height: var(--bew-line-height-control);
+    color: var(--bew-text-2);
+    white-space: nowrap;
+  }
+
+  &__actions {
+    display: flex;
+    gap: var(--bew-space-2);
+    margin-top: var(--bew-space-3);
+  }
+}
+
 .shadow-height-control {
   width: 220px;
 }
