@@ -128,7 +128,7 @@ function refreshSearchContent() {
     <!-- Top bar mask -->
     <Transition name="fade">
       <div
-        v-if="!reachTop && settings.enableFrostedGlass"
+        v-if="!reachTop"
         style="
           mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
           -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
