@@ -38,7 +38,7 @@ const {
 
 const emit = defineEmits<{
   cardElement: [element: HTMLElement | null]
-  openDetail: [moment: DisplayMoment]
+  openDetail: [moment: DisplayMoment, forceDialog?: boolean]
   mediaEnter: [moment: DisplayMoment]
   mediaLeave: [moment: DisplayMoment]
   coverLoad: [event: Event, momentId: string]
@@ -129,25 +129,14 @@ function handleForwardVideoClick() {
             @canplay="emit('previewCanplay', $event)"
           />
           <span
-            v-if="moment.isVideo && (
-              (settings.showVideoCardViewCount && moment.videoPlay)
-              || (settings.showVideoCardDanmakuCount && moment.videoDanmaku)
-              || (settings.showVideoCardDuration && moment.duration)
-            )"
+            v-if="moment.isVideo && settings.showVideoCardViewCount && moment.videoPlay"
             class="moment-card__video-stats"
           >
             <span class="moment-card__video-stat-group">
-              <span v-if="settings.showVideoCardViewCount && moment.videoPlay">
+              <span>
                 <span i-tabler-player-play aria-hidden="true" />
                 {{ moment.videoPlay }}
               </span>
-              <span v-if="settings.showVideoCardDanmakuCount && moment.videoDanmaku">
-                <span i-tabler-message-circle aria-hidden="true" />
-                {{ moment.videoDanmaku }}
-              </span>
-            </span>
-            <span v-if="settings.showVideoCardDuration && moment.duration">
-              {{ moment.duration }}
             </span>
           </span>
           <span v-if="moment.isLive" class="moment-card__live-mark">
@@ -259,23 +248,14 @@ function handleForwardVideoClick() {
                 decoding="async"
               >
               <span
-                v-if="(settings.showVideoCardViewCount && moment.forward.video.play)
-                  || (settings.showVideoCardDanmakuCount && moment.forward.video.danmaku)
-                  || (settings.showVideoCardDuration && moment.forward.video.duration)"
+                v-if="settings.showVideoCardViewCount && moment.forward.video.play"
                 class="moment-card__video-stats"
               >
                 <span class="moment-card__video-stat-group">
-                  <span v-if="settings.showVideoCardViewCount && moment.forward.video.play">
+                  <span>
                     <span i-tabler-player-play aria-hidden="true" />
                     {{ moment.forward.video.play }}
                   </span>
-                  <span v-if="settings.showVideoCardDanmakuCount && moment.forward.video.danmaku">
-                    <span i-tabler-message-circle aria-hidden="true" />
-                    {{ moment.forward.video.danmaku }}
-                  </span>
-                </span>
-                <span v-if="settings.showVideoCardDuration && moment.forward.video.duration">
-                  {{ moment.forward.video.duration }}
                 </span>
               </span>
               <span
@@ -357,7 +337,24 @@ function handleForwardVideoClick() {
       </a>
 
       <footer class="moment-card__footer">
-        <a :href="moment.url" target="_blank" rel="noopener noreferrer" aria-label="新建标签页打开动态" @click.stop>
+        <button
+          v-if="settings.momentsCardOpenMode !== 'dialog' && !moment.isLive"
+          type="button"
+          aria-label="弹窗打开动态"
+          @click.stop="emit('openDetail', moment, true)"
+          @keydown.enter.stop
+        >
+          <span i-tabler-layout-dashboard />
+          <span class="moment-card__open-label">弹窗打开</span>
+        </button>
+        <a
+          v-else
+          :href="moment.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="新建标签页打开动态"
+          @click.stop
+        >
           <span i-tabler-external-link />
           <span class="moment-card__open-label">新标签页打开</span>
         </a>
@@ -845,7 +842,7 @@ function handleForwardVideoClick() {
 
 .moment-card__main--has-media {
   display: grid;
-  grid-template-columns: minmax(170px, 44%) minmax(0, 1fr);
+  grid-template-columns: minmax(170px, 1fr) minmax(0, 1fr);
   align-items: start;
   gap: var(--bew-space-3);
 }
@@ -878,7 +875,7 @@ function handleForwardVideoClick() {
 }
 
 .moment-card__cover--media {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
 }
 
 .moment-card__gallery {
@@ -943,7 +940,7 @@ function handleForwardVideoClick() {
 
 .moment-card__main--video .moment-card__body {
   display: flex;
-  height: max(95.625px, calc((100cqw - 32px) * 0.2475));
+  height: max(127.5px, calc((100cqw - 44px) * 0.375));
   flex-direction: column;
   overflow: hidden;
 }

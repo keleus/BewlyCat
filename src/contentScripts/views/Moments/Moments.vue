@@ -895,12 +895,12 @@ function openMomentInNewTab(moment: DisplayMoment, background = false) {
     window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-function openMomentDetail(moment: DisplayMoment) {
+function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
   if (moment.isVideo && !moment.isLive)
     recordVideoVisit(moment)
 
   // 小屏、直播与「新标签/后台标签」设置：外部打开，避免狭窄 Dialog 与跨域直播占用
-  if (shouldOpenMomentExternally(moment)) {
+  if (!forceDialog && shouldOpenMomentExternally(moment)) {
     openMomentInNewTab(moment, settings.value.momentsCardOpenMode === 'background')
     return
   }
@@ -1177,14 +1177,17 @@ function estimateCardHeight(moment: DisplayMoment) {
   if (moment.isChargeExclusive && !moment.isVideo)
     return 230
   if (columnWidth < CARD_MIN_WIDTH) {
-    if (moment.isVideo || moment.isLive)
+    if (moment.isLive)
       return Math.round(columnWidth * 9 / 16) + 210
+    if (moment.isVideo)
+      return Math.round((columnWidth - 32) * 3 / 4) + 210
   }
   if (moment.isLive)
     return Math.round((columnWidth - 32) * 9 / 16) + 190
   if (moment.isVideo) {
-    const mediaWidth = Math.max(170, (columnWidth - 32) * 0.44)
-    return Math.round(mediaWidth * 9 / 16) + 120 + (moment.additional ? 68 : 0)
+    // 与卡片的左右 1:1 栏位和 4:3 视频封面保持一致。
+    const mediaWidth = Math.max(170, (columnWidth - 44) / 2)
+    return Math.round(mediaWidth * 3 / 4) + 120 + (moment.additional ? 68 : 0)
   }
   if (moment.images.length && !moment.isVideo && !moment.isLive) {
     const galleryRatio = moment.images.length <= 3
@@ -4172,15 +4175,16 @@ watch(
 }
 .moments-skeleton-card__main {
   display: grid;
-  grid-template-columns: minmax(170px, 44%) minmax(0, 1fr);
-  gap: var(--bew-space-4);
-  min-height: 202px;
+  grid-template-columns: minmax(170px, 1fr) minmax(0, 1fr);
+  gap: var(--bew-space-3);
+  min-height: 180px;
   padding: 0 var(--bew-space-4) var(--bew-space-4);
 }
 .moments-skeleton-card__cover {
   width: 100%;
-  min-height: 202px;
+  min-height: 180px;
   border-radius: var(--bew-media-radius);
+  aspect-ratio: 4 / 3;
   opacity: 0.68;
 }
 .moments-skeleton-card__body {
