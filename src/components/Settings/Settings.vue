@@ -519,9 +519,15 @@ function changeMenuItem(menuItem: MenuType) {
           <div
             pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
             :style="{
-              maskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
-              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)',
+              maskImage: settings.enableFrostedGlass
+                ? 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)'
+                : 'none',
+              WebkitMaskImage: settings.enableFrostedGlass
+                ? 'linear-gradient(to bottom, black 0%, black 60%, transparent 100%)'
+                : 'none',
+              backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-elevated-alt-solid)',
               backdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'none',
+              WebkitBackdropFilter: settings.enableFrostedGlass ? 'blur(3px) saturate(180%)' : 'none',
             }"
             z--1 rounded-inherit
           />
@@ -538,6 +544,9 @@ function changeMenuItem(menuItem: MenuType) {
             ref="settingsSearchRef"
             class="settings-search"
             :class="{ 'has-query': Boolean(searchQuery) }"
+            :style="{
+              backgroundColor: settings.enableFrostedGlass ? 'var(--bew-content)' : 'var(--bew-content-solid)',
+            }"
             @click="focusSettingsSearch"
           >
             <i i-mingcute:search-2-line />
