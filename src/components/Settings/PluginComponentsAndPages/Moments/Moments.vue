@@ -175,7 +175,7 @@ const openModeOptions = computed(() => [
     <SettingsItemGroup
       :title="$t('settings.group_moments_wanted_users')"
       :desc="$t('settings.group_moments_wanted_users_desc')"
-      icon="i-tabler-heart-filled"
+      icon="i-tabler-star-filled"
       collapsible
       default-collapsed
     >

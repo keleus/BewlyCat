@@ -3203,7 +3203,7 @@ watch(
               <span class="moments-up-list__avatar moments-up-list__avatar--wanted" aria-hidden="true">
                 <span
                   class="moments-up-list__wanted-icon"
-                  :class="activeMomentGroup === 'wanted' ? 'i-tabler-heart-filled' : 'i-tabler-heart'"
+                  :class="activeMomentGroup === 'wanted' ? 'i-tabler-star-filled' : 'i-tabler-star'"
                 />
               </span>
               <span class="moments-up-list__name">想看</span>
