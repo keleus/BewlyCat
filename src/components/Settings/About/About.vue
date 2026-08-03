@@ -153,10 +153,7 @@ function handleContributorImageError() {
           </SettingsItem>
         </SettingsItemGroup>
 
-        <SettingsItemGroup
-          class="version-reminder-group"
-          :title="$t('settings.group_version_reminder')"
-        >
+        <SettingsItemGroup :title="$t('settings.group_version_reminder')">
           <SettingsItem
             :title="$t('settings.enable_version_reminder')"
             :desc="$t('settings.enable_version_reminder_desc')"
@@ -167,6 +164,7 @@ function handleContributorImageError() {
         </SettingsItemGroup>
 
         <SettingsSectionHeading
+          class="maintenance-heading"
           :title="$t('settings.maintenance.title')"
           :desc="$t('settings.category_advanced_maintenance_desc')"
           icon="i-mingcute:save-2-fill"
@@ -219,7 +217,7 @@ function handleContributorImageError() {
   margin-top: var(--bew-space-6);
 }
 
-.about-maintenance :deep(.version-reminder-group) {
+.maintenance-heading {
   margin-top: var(--bew-space-8);
 }
 
