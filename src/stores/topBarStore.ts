@@ -27,14 +27,20 @@ import {
   TOP_BAR_STATE_MESSAGE,
 } from '~/constants/topBarState'
 import { settings } from '~/logic'
+import { checkLoginStatus, LoginStatus, parseDedeUserID } from '~/logic/loginStatus'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { getCSRF, isHomePage } from '~/utils/main'
 import { isExtensionContextInvalidatedError, onMessage, sendMessage } from '~/utils/messaging'
 
+export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 已登录但 userInfo 未填充时重查的间隔
+
 export const useTopBarStore = defineStore('topBar', () => {
   const toast = useToast()
-  const isLogin = ref<boolean>(true)
+  // 登录态是本地事实而非网络推导：初始值取 DedeUserID 存在性（同步、零请求），
+  // 之后只有 -101 或本地 Cookie 清除才能翻转为未登录，瞬态失败永不翻转。
+  // 否则刷新时的一次风控窗口会把已登录用户误判为未登录（见 issue #921）。
+  const isLogin = ref<boolean>(getLocalLoginMid() !== undefined)
   const userInfo = reactive<UserInfo>({} as UserInfo)
 
   const unReadMessage = reactive<UnReadMessage>({} as UnReadMessage)
@@ -156,62 +162,90 @@ export const useTopBarStore = defineStore('topBar', () => {
     return false
   })
 
+  function resetReceiveStates() {
+    bCoinAlreadyReceived.value = false
+    hasBCoinToReceive.value = false
+    vipExpAlreadyReceived.value = false
+  }
+
+  // 登录态的本地事实源：读取 DedeUserID（非 HttpOnly，content script 可读）
+  function getLocalLoginMid(): number | undefined {
+    return parseDedeUserID(document.cookie)
+  }
+
   // User Methods
-  async function getUserInfo(retryCount = 0) {
+  async function getUserInfo(retryCount = 0): Promise<LoginStatus> {
+    // 本地无会话 Cookie 且已知未登录时，nav 只会返回 -101，跳过无意义的请求
+    if (!isLogin.value && getLocalLoginMid() === undefined)
+      return LoginStatus.LoggedOut
+
     const maxRetries = 2 // 最多重试2次
     const retryDelay = (retryCount + 1) * 1000 // 递增延迟: 1s, 2s
 
-    try {
-      const res = await api.user.getUserInfo()
+    const result = await checkLoginStatus<UserInfo>(() => api.user.getUserInfo())
 
-      if (res.code === 0) {
-        const wasLoggedIn = isLogin.value
-        const previousMid = userInfo.mid
+    if (result.status === LoginStatus.LoggedIn) {
+      const wasLoggedIn = isLogin.value
+      const previousMid = userInfo.mid
 
-        isLogin.value = true
-        Object.assign(userInfo, res.data)
+      isLogin.value = true
+      Object.assign(userInfo, result.data)
 
-        // 如果是新登录或者切换了账号，重置B币领取状态
-        if (!wasLoggedIn || previousMid !== userInfo.mid) {
-          bCoinAlreadyReceived.value = false
-          hasBCoinToReceive.value = false
-          vipExpAlreadyReceived.value = false
-        }
-      }
-      else if (res.code === -101) {
-        isLogin.value = false
-        // 登出时重置状态
-        bCoinAlreadyReceived.value = false
-        hasBCoinToReceive.value = false
-        vipExpAlreadyReceived.value = false
-      }
-      else {
-        // 其他错误码
-        // 对于非未登录的错误，如果还有重试机会，则重试
-        if (retryCount < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, retryDelay))
-          return getUserInfo(retryCount + 1)
-        }
-
-        isLogin.value = false
-        bCoinAlreadyReceived.value = false
-        hasBCoinToReceive.value = false
-        vipExpAlreadyReceived.value = false
-      }
+      // 如果是新登录或者切换了账号，重置B币领取状态
+      if (!wasLoggedIn || previousMid !== userInfo.mid)
+        resetReceiveStates()
+      return result.status
     }
-    catch {
-      // 如果还有重试机会，则重试
-      if (retryCount < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, retryDelay))
-        return getUserInfo(retryCount + 1)
-      }
 
-      // 重试次数用尽，标记为未登录
+    if (result.status === LoginStatus.LoggedOut) {
       isLogin.value = false
-      bCoinAlreadyReceived.value = false
-      hasBCoinToReceive.value = false
-      vipExpAlreadyReceived.value = false
+      // 登出时重置状态
+      resetReceiveStates()
+      return result.status
     }
+
+    // 瞬态失败（风控/限流/网络错误）：不切换登录态，稍后重试
+    if (retryCount < maxRetries) {
+      await new Promise(resolve => setTimeout(resolve, retryDelay))
+      return getUserInfo(retryCount + 1)
+    }
+    return result.status
+  }
+
+  // 登录/登出会先后触发多个 Cookie 事件，reconcile 会被密集调用；
+  // 拉取进行中时复用同一 Promise，避免重复请求 nav
+  let fetchUserInfoPromise: Promise<LoginStatus> | null = null
+  function fetchUserInfoOnce(): Promise<LoginStatus> {
+    fetchUserInfoPromise ??= getUserInfo()
+      .catch(() => LoginStatus.TransientError)
+      .finally(() => { fetchUserInfoPromise = null })
+    return fetchUserInfoPromise
+  }
+
+  // 用本地事实校正登录态：页面重新可见或收到会话 Cookie 变化广播时调用。
+  // - 本地无 DedeUserID 且当前已登录：交由 nav 裁决（-101 才翻转，见 getUserInfo）
+  // - 本地有 DedeUserID 且当前未登录：立即置已登录并拉取 userInfo 填充
+  // - 已登录但 userInfo 未填充，或 mid 不一致：补拉或换号重拉（会重置 B 币领取状态）
+  function reconcileLocalLoginState() {
+    const localMid = getLocalLoginMid()
+
+    if (localMid === undefined) {
+      if (isLogin.value)
+        void fetchUserInfoOnce()
+      return
+    }
+
+    if (!isLogin.value) {
+      isLogin.value = true
+      // 拉取 userInfo 填充，并重启定时器（未登录时定时器处于停止状态）
+      void fetchUserInfoOnce().then(() => startUpdateTimer())
+      return
+    }
+
+    // 已登录但 userInfo 未填充（初始化时撞风控），或本地 mid 变化
+    // （他处切换账号）：重新拉取（会重置 B 币领取状态）
+    if (!userInfo.mid || userInfo.mid !== localMid)
+      void fetchUserInfoOnce()
   }
 
   // Notification Methods
@@ -746,7 +780,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     })
   }
 
-  let updateTimer: ReturnType<typeof setInterval> | null = null
+  let updateTimer: ReturnType<typeof setTimeout> | null = null
   let sharedStateMessagingUnavailable = false
 
   function disableSharedStateMessaging() {
@@ -795,6 +829,9 @@ export const useTopBarStore = defineStore('topBar', () => {
       })
     },
   )
+
+  // 他处登录/登出/会话过期导致会话 Cookie 变化时，后台广播此消息（见 issue #921）
+  onMessage(TOP_BAR_STATE_MESSAGE.LOGIN_STATE_CHANGED, reconcileLocalLoginState)
 
   async function refreshSharedData() {
     await Promise.all([
@@ -926,22 +963,76 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   function startUpdateTimer() {
-    if (updateTimer) {
-      clearInterval(updateTimer)
-      updateTimer = null
-    }
-    updateTimer = setInterval(() => {
-      if (!isLogin.value)
-        return
+    if (updateTimer)
+      return
 
-      syncSharedData().catch((error) => {
-        console.error('同步顶栏共享状态失败:', error)
-      })
-    }, updateInterval)
+    // 登录态由本地事实与事件驱动维护（见 reconcileLocalLoginState），定时器
+    // 不再承担登录态轮询，只负责两件事：
+    // 1. 已登录但 userInfo 尚未填充（初始化时撞风控/限流）：按
+    //    LOGIN_RECHECK_INTERVAL 重查，瞬态失败指数退避（60s → 120s → 240s →
+    //    300s 封顶），填充成功即转 2；
+    // 2. userInfo 已填充：按 updateInterval 同步角标状态。
+    // 未登录时不启动任何轮询，等待事件唤醒（见 issue #921）。
+    const maxRecheckInterval = 5 * 60 * 1000
+    let recheckInterval = LOGIN_RECHECK_INTERVAL
+    const needsRecheck = () => isLogin.value && !userInfo.mid
+    const scheduleNext = (delay: number) => {
+      updateTimer = setTimeout(() => {
+        // 扩展重载后旧 content script 的 runtime 已失效：停止轮询，等待刷新
+        if (sharedStateMessagingUnavailable) {
+          updateTimer = null
+          return
+        }
+
+        if (needsRecheck()) {
+          getUserInfo()
+            .catch(() => LoginStatus.TransientError)
+            .then((status) => {
+              // 重查判定真实登出（-101）：停止轮询，等待事件唤醒
+              if (!isLogin.value) {
+                updateTimer = null
+                return
+              }
+
+              // 只有瞬态失败才退避；填充成功即复位到基准间隔
+              if (status === LoginStatus.TransientError)
+                recheckInterval = Math.min(recheckInterval * 2, maxRecheckInterval)
+              else
+                recheckInterval = LOGIN_RECHECK_INTERVAL
+
+              // userInfo 填充成功后立即同步一次角标状态，不用等下一个 tick
+              if (!needsRecheck()) {
+                void syncSharedData().catch((error) => {
+                  console.error('同步顶栏共享状态失败:', error)
+                })
+              }
+              scheduleNext(needsRecheck() ? recheckInterval : updateInterval)
+            })
+          return
+        }
+
+        if (!isLogin.value) {
+          // 未登录：停止轮询，等待 Cookie 事件或可见性校正唤醒
+          updateTimer = null
+          return
+        }
+
+        recheckInterval = LOGIN_RECHECK_INTERVAL
+        syncSharedData().catch((error) => {
+          console.error('同步顶栏共享状态失败:', error)
+        })
+        scheduleNext(updateInterval)
+      }, delay)
+    }
+
+    if (!isLogin.value)
+      return
+
+    scheduleNext(needsRecheck() ? LOGIN_RECHECK_INTERVAL : updateInterval)
   }
   function stopUpdateTimer() {
     if (updateTimer) {
-      clearInterval(updateTimer)
+      clearTimeout(updateTimer)
       updateTimer = null
     }
   }
@@ -960,9 +1051,7 @@ export const useTopBarStore = defineStore('topBar', () => {
 
     closeAllPopups()
     drawerVisible.notifications = false
-    hasBCoinToReceive.value = false
-    bCoinAlreadyReceived.value = false
-    vipExpAlreadyReceived.value = false
+    resetReceiveStates()
   }
 
   // 添加鼠标状态跟踪
@@ -1007,6 +1096,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     showTopBar,
 
     getUserInfo,
+    reconcileLocalLoginState,
     getUnreadMessageCount,
     getTopBarNewMomentsCount,
     handleNotificationsItemClick,
@@ -1046,6 +1136,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     privilegeInfo,
     hasBCoinToReceive,
     bCoinAlreadyReceived,
+    vipExpAlreadyReceived,
 
     topBarVisible,
     searchKeyword,

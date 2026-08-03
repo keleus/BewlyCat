@@ -44,4 +44,5 @@ export const TOP_BAR_STATE_MESSAGE = {
   INVALIDATE: 'topBarState:invalidate',
   INVALIDATED: 'topBarState:invalidated',
   UPDATED: 'topBarState:updated',
+  LOGIN_STATE_CHANGED: 'topBarState:loginStateChanged',
 } as const

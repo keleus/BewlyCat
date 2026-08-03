@@ -4,6 +4,7 @@ import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl, isPreventMobileRedirectE
 
 import { setupAppAuthScheduler } from './appAuthScheduler'
 import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
+import { setupLoginStateWatcher } from './loginStateWatcher'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
 import { setupTopBarStateBroker } from './topBarStateBroker'
@@ -145,3 +146,4 @@ setupTabMsgListeners()
 setupTopBarStateBroker()
 setupAppAuthScheduler()
 setupContentScriptRefreshPrompt()
+setupLoginStateWatcher()
