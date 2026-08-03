@@ -153,7 +153,10 @@ function handleContributorImageError() {
           </SettingsItem>
         </SettingsItemGroup>
 
-        <SettingsItemGroup :title="$t('settings.group_version_reminder')">
+        <SettingsItemGroup
+          class="version-reminder-group"
+          :title="$t('settings.group_version_reminder')"
+        >
           <SettingsItem
             :title="$t('settings.enable_version_reminder')"
             :desc="$t('settings.enable_version_reminder_desc')"
@@ -214,6 +217,10 @@ function handleContributorImageError() {
 
 .about-maintenance {
   margin-top: var(--bew-space-6);
+}
+
+.about-maintenance :deep(.version-reminder-group) {
+  margin-top: var(--bew-space-8);
 }
 
 .contributors-error {
