@@ -40,7 +40,11 @@ interface ResetMessage {
   type: 'reset'
 }
 
-type ProcessorMessage = ConfigureMessage | PlaybackMessage | ResetMessage
+interface DisposeMessage {
+  type: 'dispose'
+}
+
+type ProcessorMessage = ConfigureMessage | PlaybackMessage | ResetMessage | DisposeMessage
 
 const PROCESSOR_NAME = 'bewly-volume-normalizer'
 const ANALYSIS_INTERVAL_SECONDS = 0.1
@@ -123,6 +127,7 @@ class VolumeNormalizationProcessor extends AudioWorkletProcessor {
   private analysisFrameCount = 0
   private silenceFrames = 0
   private playbackActive = false
+  private disposed = false
   private currentGain = 1
   private targetGain = 1
   private gainTimeConstant = 0.03
@@ -156,6 +161,14 @@ class VolumeNormalizationProcessor extends AudioWorkletProcessor {
           this.analysisPowerSum = 0
           this.analysisFrameCount = 0
         }
+        return
+      }
+
+      if (message.type === 'dispose') {
+        this.disposed = true
+        this.playbackActive = false
+        this.clearAnalysis()
+        this.port.postMessage({ type: 'disposed' })
         return
       }
 
@@ -319,6 +332,11 @@ class VolumeNormalizationProcessor extends AudioWorkletProcessor {
   }
 
   private reportState(frameCount: number) {
+    if (!this.playbackActive) {
+      this.framesUntilStateReport = Math.max(1, Math.round(sampleRate * STATE_REPORT_INTERVAL_SECONDS))
+      return
+    }
+
     this.framesUntilStateReport -= frameCount
     if (this.framesUntilStateReport > 0)
       return
@@ -339,6 +357,9 @@ class VolumeNormalizationProcessor extends AudioWorkletProcessor {
   }
 
   process(inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
+    if (this.disposed)
+      return false
+
     const originalInput = inputs[0] ?? []
     const analysisInput = inputs[1] ?? []
     const output = outputs[0] ?? []

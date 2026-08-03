@@ -11,7 +11,14 @@ interface NormalizerStateMessage {
   targetDb?: number
 }
 
+interface NormalizerDisposedMessage {
+  type: 'disposed'
+}
+
+type NormalizerMessage = NormalizerStateMessage | NormalizerDisposedMessage
+
 interface AudioNodeBundle {
+  video: HTMLVideoElement
   source: MediaElementAudioSourceNode
   analysisHighpass: BiquadFilterNode
   analysisPresence: BiquadFilterNode
@@ -21,6 +28,7 @@ interface AudioNodeBundle {
   emergencyOutput: GainNode
   connected: boolean
   processorFailed: boolean
+  disposed: boolean
   gainDb: number
   lastState: NormalizerStateMessage | null
 }
@@ -51,12 +59,13 @@ const WORKLET_PROCESSOR_NAME = 'bewly-volume-normalizer'
 const WORKLET_MODULE_PATH = 'dist/audioWorklets/volume-normalization.js'
 const PLAYBACK_END_TOLERANCE_SECONDS = 1
 const ATTACH_SETTLE_MS = 450
-const MIN_ATTACH_READY_STATE = HTMLMediaElement.HAVE_CURRENT_DATA
+const MIN_ATTACH_READY_STATE = HTMLMediaElement.HAVE_FUTURE_DATA
 const WORKLET_RETRY_DELAY_MS = 5000
 const DEBUG_SNAPSHOT_INTERVAL_MS = 1000
 const VIDEO_MISSING_GRACE_MS = 3000
 
 let audioContext: AudioContext | null = null
+let audioContextSuspendPromise: Promise<void> | null = null
 let audioWorkletModulePromise: Promise<void> | null = null
 let audioWorkletRetryAfter = 0
 let hasReportedWorkletLoadFailure = false
@@ -64,9 +73,12 @@ let workletModuleState: WorkletModuleState = 'not-loaded'
 let audioNodes: AudioNodeBundle | null = null
 let audioGraphMode: AudioGraphMode = 'disconnected'
 const audioNodeCache = new WeakMap<HTMLVideoElement, AudioNodeBundle>()
+const mediaElementSourceCache = new WeakMap<HTMLVideoElement, MediaElementAudioSourceNode>()
+const audioNodeBundles = new Set<AudioNodeBundle>()
+const disconnectedVideoSince = new WeakMap<HTMLVideoElement, number>()
 // Videos whose media element is already captured by a MediaElementSource we do
-// not own (or whose source node was lost). createMediaElementSource cannot be
-// retried for the lifetime of the element.
+// not own. createMediaElementSource cannot be retried for the lifetime of the
+// element.
 const mediaSourceBlockedVideos = new WeakSet<HTMLVideoElement>()
 const attachInFlight = new WeakMap<HTMLVideoElement, Promise<void>>()
 let attachQueue: Promise<void> = Promise.resolve()
@@ -80,7 +92,7 @@ let hasAttached = false
 let interceptorTimer: ReturnType<typeof setInterval> | null = null
 let hasSetupSettingsWatcher = false
 let visibilityChangeHandler: (() => void) | null = null
-let hasSetupActivationResume = false
+let activationResumeHandler: (() => void) | null = null
 let lastDebugSnapshotAt = 0
 let managedVideoMissingSince: number | null = null
 
@@ -204,6 +216,9 @@ async function ensureAudioWorklet(context: AudioContext) {
 }
 
 function resumeAudioContext(context: AudioContext) {
+  if (audioContextSuspendPromise)
+    return
+
   if (context.state !== 'suspended')
     return
 
@@ -215,19 +230,48 @@ function resumeAudioContext(context: AudioContext) {
     .catch(cause => error('AudioContext 恢复失败', cause))
 }
 
-function setupActivationResume() {
-  if (hasSetupActivationResume)
+function suspendAudioContextForIdle(reason: string) {
+  const context = audioContext
+  if (!context || context.state !== 'running' || audioContextSuspendPromise)
     return
 
-  hasSetupActivationResume = true
+  const suspendPromise = context.suspend()
+    .then(() => {
+      logEvent('AudioContext 已暂停', { reason, state: context.state })
+    })
+    .catch((cause) => {
+      error('AudioContext 暂停失败', cause)
+    })
+    .finally(() => {
+      audioContextSuspendPromise = null
 
-  const resumeFromUserActivation = () => {
-    if (audioContext && currentVideoElement)
+      if (context === audioContext && isPlaybackActive(currentVideoElement))
+        resumeAudioContext(context)
+    })
+
+  audioContextSuspendPromise = suspendPromise
+}
+
+function setupActivationResume() {
+  if (activationResumeHandler)
+    return
+
+  activationResumeHandler = () => {
+    if (audioContext && isPlaybackActive(currentVideoElement))
       resumeAudioContext(audioContext)
   }
 
-  document.addEventListener('pointerdown', resumeFromUserActivation, true)
-  document.addEventListener('keydown', resumeFromUserActivation, true)
+  document.addEventListener('pointerdown', activationResumeHandler, true)
+  document.addEventListener('keydown', activationResumeHandler, true)
+}
+
+function stopActivationResume() {
+  if (!activationResumeHandler)
+    return
+
+  document.removeEventListener('pointerdown', activationResumeHandler, true)
+  document.removeEventListener('keydown', activationResumeHandler, true)
+  activationResumeHandler = null
 }
 
 function applyProcessingLimiterSettings(nodes: AudioNodeBundle, context: AudioContext) {
@@ -264,6 +308,9 @@ function safelyDisconnect(node: AudioNode | null | undefined) {
 }
 
 function connectBundle(nodes: AudioNodeBundle, context: AudioContext) {
+  if (nodes.disposed)
+    throw new Error('Cannot reconnect a disposed audio graph')
+
   if (nodes.connected)
     return
 
@@ -296,6 +343,62 @@ function disconnectBundle(nodes: AudioNodeBundle) {
   nodes.connected = false
 }
 
+function finalizeDisposedAudioNodes(nodes: AudioNodeBundle) {
+  nodes.normalizer.port.onmessage = null
+  nodes.normalizer.onprocessorerror = null
+  try {
+    nodes.normalizer.port.close()
+  }
+  catch {}
+}
+
+function disposeAudioNodes(nodes: AudioNodeBundle) {
+  if (nodes.disposed)
+    return
+
+  nodes.disposed = true
+  disconnectBundle(nodes)
+  if (audioNodeCache.get(nodes.video) === nodes)
+    audioNodeCache.delete(nodes.video)
+  audioNodeBundles.delete(nodes)
+  disconnectedVideoSince.delete(nodes.video)
+
+  try {
+    nodes.normalizer.port.postMessage({ type: 'dispose' })
+  }
+  catch {
+    finalizeDisposedAudioNodes(nodes)
+  }
+}
+
+function disposeStaleAudioNodes(force = false) {
+  const now = Date.now()
+
+  for (const nodes of audioNodeBundles) {
+    if (nodes === audioNodes || nodes.disposed)
+      continue
+
+    if (nodes.video.isConnected) {
+      disconnectedVideoSince.delete(nodes.video)
+      continue
+    }
+
+    const missingSince = disconnectedVideoSince.get(nodes.video)
+    if (missingSince === undefined) {
+      if (force) {
+        disposeAudioNodes(nodes)
+        continue
+      }
+
+      disconnectedVideoSince.set(nodes.video, now)
+      continue
+    }
+
+    if (force || now - missingSince >= VIDEO_MISSING_GRACE_MS)
+      disposeAudioNodes(nodes)
+  }
+}
+
 function disconnectCurrentGraph() {
   if (audioNodes)
     disconnectBundle(audioNodes)
@@ -315,7 +418,7 @@ function setOutputPath(nodes: AudioNodeBundle, context: AudioContext, emergency:
 }
 
 function postWorkletConfiguration(nodes = audioNodes) {
-  if (!nodes || nodes.processorFailed)
+  if (!nodes || nodes.processorFailed || nodes.disposed)
     return
 
   nodes.normalizer.port.postMessage({
@@ -325,14 +428,14 @@ function postWorkletConfiguration(nodes = audioNodes) {
 }
 
 function postPlaybackState(active: boolean, nodes = audioNodes) {
-  if (!nodes || nodes.processorFailed)
+  if (!nodes || nodes.processorFailed || nodes.disposed)
     return
 
   nodes.normalizer.port.postMessage({ type: 'playback', active })
 }
 
 function resetWorklet(nodes = audioNodes) {
-  if (!nodes || nodes.processorFailed)
+  if (!nodes || nodes.processorFailed || nodes.disposed)
     return
 
   nodes.normalizer.port.postMessage({ type: 'reset' })
@@ -461,7 +564,7 @@ function reportDebugStatus(
 }
 
 function handleWorkletState(nodes: AudioNodeBundle, message: NormalizerStateMessage) {
-  if (message.type !== 'state')
+  if (nodes.disposed)
     return
 
   nodes.gainDb = message.gainDb
@@ -471,6 +574,15 @@ function handleWorkletState(nodes: AudioNodeBundle, message: NormalizerStateMess
   // periodic Worklet reports while playback is inactive.
   if (nodes === audioNodes && isPlaybackActive(currentVideoElement))
     reportDebugStatus('运行中', false, nodes)
+}
+
+function handleWorkletMessage(nodes: AudioNodeBundle, message: NormalizerMessage) {
+  if (message.type === 'disposed') {
+    finalizeDisposedAudioNodes(nodes)
+    return
+  }
+
+  handleWorkletState(nodes, message)
 }
 
 function createProcessingChain(
@@ -502,11 +614,35 @@ function createProcessingChain(
   emergencyOutput.gain.setValueAtTime(0, context.currentTime)
 
   // Create the MediaElement source last. If Worklet/node creation is
-  // unsupported, the video is never captured away from its native output.
-  // A media element can only ever be bound once; cache immediately so a later
-  // failure cannot lose the only MediaElementAudioSourceNode reference.
-  const source = context.createMediaElementSource(video)
+  // unsupported, the video is never captured away from its native output. A
+  // media element can only ever be bound once, so retain its source separately
+  // from the disposable processing graph and reuse it if the element returns.
+  let source = mediaElementSourceCache.get(video)
+  if (!source) {
+    try {
+      source = context.createMediaElementSource(video)
+      mediaElementSourceCache.set(video, source)
+    }
+    catch (cause) {
+      normalizer.port.onmessage = (event: MessageEvent<NormalizerMessage>) => {
+        if (event.data.type !== 'disposed')
+          return
+
+        normalizer.port.onmessage = null
+        normalizer.port.close()
+      }
+      try {
+        normalizer.port.postMessage({ type: 'dispose' })
+      }
+      catch {
+        normalizer.port.onmessage = null
+        normalizer.port.close()
+      }
+      throw cause
+    }
+  }
   const nodes: AudioNodeBundle = {
+    video,
     source,
     analysisHighpass,
     analysisPresence,
@@ -516,15 +652,20 @@ function createProcessingChain(
     emergencyOutput,
     connected: false,
     processorFailed: false,
+    disposed: false,
     gainDb: 0,
     lastState: null,
   }
   audioNodeCache.set(video, nodes)
+  audioNodeBundles.add(nodes)
 
-  normalizer.port.onmessage = (event: MessageEvent<NormalizerStateMessage>) => {
-    handleWorkletState(nodes, event.data)
+  normalizer.port.onmessage = (event: MessageEvent<NormalizerMessage>) => {
+    handleWorkletMessage(nodes, event.data)
   }
   normalizer.onprocessorerror = () => {
+    if (nodes.disposed)
+      return
+
     nodes.processorFailed = true
     error('AudioWorklet 处理器异常，正在切换紧急旁路')
 
@@ -647,6 +788,7 @@ function bindVideoListeners(video: HTMLVideoElement) {
 
     postPlaybackState(false)
     resetWorklet()
+    suspendAudioContextForIdle('视频播放结束')
     reportDebugStatus('视频播放结束，均衡状态已重置', true)
   }
 
@@ -763,10 +905,10 @@ function isVideoSafeToAttach(video: HTMLVideoElement) {
   if (!video.currentSrc && !video.srcObject)
     return false
 
-  if (video.readyState >= MIN_ATTACH_READY_STATE)
-    return true
-
-  return isPlaybackActive(video) && video.readyState >= HTMLMediaElement.HAVE_METADATA
+  // Do not capture the media element while Bilibili is still buffering the
+  // first frame. AudioWorklet is the processing stage, but the source still
+  // takes ownership of the video element and can disturb this transition.
+  return isPlaybackActive(video) && video.readyState >= MIN_ATTACH_READY_STATE
 }
 
 function waitForVideoReady(video: HTMLVideoElement) {
@@ -878,6 +1020,8 @@ async function attachToVideoInternal(video: HTMLVideoElement) {
     // with a captured-but-disconnected MediaElementSource.
     activateAudioNodes(nodes, context, isPlaybackActive(video))
     postPlaybackState(isPlaybackActive(video), nodes)
+    if (previousNodes && previousNodes !== nodes)
+      disposeAudioNodes(previousNodes)
     logEvent('已绑定视频音频')
     reportDebugStatus('绑定完成', true, nodes)
   }
@@ -962,6 +1106,7 @@ export function attachToVideo(video: HTMLVideoElement) {
 // Detach/Reset
 export function detach() {
   attachRequestId += 1
+  const detachedNodes = audioNodes
   disconnectCurrentGraph()
   unbindCurrentVideoListeners()
 
@@ -969,6 +1114,9 @@ export function detach() {
   currentVideoElement = null
   hasAttached = false
   clearManagedVideoMissingState()
+  if (detachedNodes)
+    disposeAudioNodes(detachedNodes)
+  suspendAudioContextForIdle('已解除视频绑定')
   logEvent('已解除视频音频绑定')
   reportDebugStatus('已解绑', true, null)
 }
@@ -992,6 +1140,9 @@ function stopAudioInterceptor() {
     document.removeEventListener('visibilitychange', visibilityChangeHandler)
     visibilityChangeHandler = null
   }
+
+  stopActivationResume()
+  disposeStaleAudioNodes(true)
 }
 
 export function initAudioInterceptor() {
@@ -1030,6 +1181,8 @@ export function initAudioInterceptor() {
   }
 
   interceptorTimer = setInterval(() => {
+    disposeStaleAudioNodes()
+
     const urlChanged = location.href !== lastUrl
     if (urlChanged) {
       lastUrl = location.href

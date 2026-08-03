@@ -19,10 +19,29 @@ const equalizerOffIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8
   <line x1="20" y1="20" x2="68" y2="68" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
 </svg>`
 
+const CONTROL_STYLE_ID = 'bewly-volume-normalization-control-style'
+
 let controlContainer: HTMLElement | null = null
 let volumeSlider: HTMLInputElement | null = null
-let isInjected = false
 let hasInitialized = false
+let controlInjectionTimer: ReturnType<typeof setInterval> | null = null
+
+function ensureControlStyles() {
+  if (document.getElementById(CONTROL_STYLE_ID))
+    return
+
+  const styleEl = document.createElement('style')
+  styleEl.id = CONTROL_STYLE_ID
+  styleEl.textContent = `
+    .bewly-volume-normalization-control:hover .bewly-vn-slider-wrap {
+      display: flex !important;
+    }
+    .bewly-volume-normalization-control .bewly-vn-icon.disabled {
+      opacity: 0.35 !important;
+    }
+  `
+  document.head.appendChild(styleEl)
+}
 
 // 创建控件容器
 function createControlContainer(): HTMLElement {
@@ -172,17 +191,7 @@ function createControlContainer(): HTMLElement {
 
   sliderContainer.appendChild(slider)
 
-  // 滑块样式
-  const styleEl = document.createElement('style')
-  styleEl.textContent = `
-    .bewly-volume-normalization-control:hover .bewly-vn-slider-wrap {
-      display: flex !important;
-    }
-    .bewly-volume-normalization-control .bewly-vn-icon.disabled {
-      opacity: 0.35 !important;
-    }
-  `
-  document.head.appendChild(styleEl)
+  ensureControlStyles()
 
   // 滑块事件 - 同步更新视觉元素
   slider.addEventListener('input', () => {
@@ -246,16 +255,26 @@ function findPlayerControlBar(): HTMLElement | null {
 
 // 注入控件
 function injectControl() {
-  if (isInjected || !settings.value.enableVolumeNormalization)
+  if (!settings.value.enableVolumeNormalization)
     return
 
   const controlBar = findPlayerControlBar()
   if (!controlBar)
     return
 
-  // 检查是否已存在
-  if (controlBar.querySelector('.bewly-volume-normalization-control'))
+  if (controlContainer?.isConnected && controlBar.contains(controlContainer))
     return
+
+  controlContainer = null
+  volumeSlider = null
+
+  // 检查是否已存在
+  const existingControl = controlBar.querySelector<HTMLElement>('.bewly-volume-normalization-control')
+  if (existingControl) {
+    controlContainer = existingControl
+    volumeSlider = existingControl.querySelector<HTMLInputElement>('.bewly-vn-slider')
+    return
+  }
 
   // 等待音量按钮加载完成，确保播放器控制栏已完全初始化
   const volumeBtn = controlBar.querySelector('.bpx-player-ctrl-volume')
@@ -279,7 +298,6 @@ function injectControl() {
     controlBar.appendChild(controlContainer)
   }
 
-  isInjected = true
   console.log('[BewlyAudio] Volume normalization control injected')
 }
 
@@ -290,7 +308,24 @@ function removeControl() {
   }
   controlContainer = null
   volumeSlider = null
-  isInjected = false
+  document.getElementById(CONTROL_STYLE_ID)?.remove()
+}
+
+function startControlInjectionTimer() {
+  if (controlInjectionTimer)
+    return
+
+  controlInjectionTimer = setInterval(() => {
+    injectControl()
+  }, 2000)
+}
+
+function stopControlInjectionTimer() {
+  if (!controlInjectionTimer)
+    return
+
+  clearInterval(controlInjectionTimer)
+  controlInjectionTimer = null
 }
 
 // 初始化
@@ -308,8 +343,10 @@ export function initVolumeNormalizationControl() {
   watch(() => settings.value.enableVolumeNormalization, (enabled) => {
     if (enabled) {
       injectControl()
+      startControlInjectionTimer()
     }
     else {
+      stopControlInjectionTimer()
       removeControl()
     }
   }, { immediate: true })
@@ -332,17 +369,4 @@ export function initVolumeNormalizationControl() {
       }
     }
   })
-
-  // 定期检查并注入（处理 SPA 页面切换）
-  let lastUrl = location.href
-  setInterval(() => {
-    if (location.href !== lastUrl) {
-      lastUrl = location.href
-      isInjected = false
-    }
-
-    if (settings.value.enableVolumeNormalization && !isInjected) {
-      injectControl()
-    }
-  }, 2000)
 }
