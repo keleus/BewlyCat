@@ -424,14 +424,6 @@ export interface Settings {
   shortcuts: ShortcutsSettings
   videoPlayerScroll: boolean // 添加视频播放器滚动设置
 
-  // 自动音量均衡设置
-  enableVolumeNormalization: boolean // 启用自动音量均衡功能
-  targetVolume: number // 目标音量 (0-100)
-  normalizationStrength: number // 均衡强度/压缩比 (1-20)
-  adaptiveGainSpeed: number // 响应速度 (1-10)
-  voiceGateDb: number // 人声检测阈值 (dB)
-  volumeNormalizationDebug: boolean // 输出音量均衡调试信息
-
   // 倍速记忆设置
   rememberPlaybackRate: boolean // 启用倍速记忆功能
   savedPlaybackRate: number // 记住的倍速值 (0.25-5)
@@ -742,14 +734,6 @@ export const originalSettings: Settings = {
     homeRefresh: { key: 'R', enabled: true },
   },
 
-  // 自动音量均衡设置
-  enableVolumeNormalization: false, // 启用自动音量均衡功能
-  targetVolume: 50, // 目标音量 (0-100)，50为中等音量
-  normalizationStrength: 12, // 均衡强度/压缩比 (1-20)，12为推荐值
-  adaptiveGainSpeed: 5, // 响应速度 (1-10)，5为中等速度
-  voiceGateDb: -34, // 人声检测阈值 (dB)，低于此值视为静音
-  volumeNormalizationDebug: false, // 输出音量均衡调试信息，默认关闭
-
   // 倍速记忆设置
   rememberPlaybackRate: false, // 启用倍速记忆功能
   savedPlaybackRate: 1, // 记住的倍速值 (0.25-5)
@@ -791,6 +775,10 @@ watch(
 
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
     Reflect.deleteProperty(record, 'homeTabsPosition')
+
+    // 清理已移除的音量均衡功能设置。
+    for (const field of ['enableVolumeNormalization', 'targetVolume', 'normalizationStrength', 'adaptiveGainSpeed', 'voiceGateDb', 'volumeNormalizationDebug'])
+      Reflect.deleteProperty(record, field)
 
     // 旧布尔开关 → 评论回复树展示模式
     const validCommentReplyTreeModes: CommentReplyTreeMode[] = [

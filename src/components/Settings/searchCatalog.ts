@@ -119,12 +119,6 @@ const autoPlayRoute: SearchRoute = {
   secondaryTitleKey: 'settings.bilibili_features.auto_play',
   storageKey: bilibiliStorageKey,
 }
-const volumeBalanceRoute: SearchRoute = {
-  menu: MenuType.Bilibili,
-  secondaryPage: 'volume-balance',
-  secondaryTitleKey: 'settings.plugin.volume_balance',
-  storageKey: bilibiliStorageKey,
-}
 const appearanceRoute: SearchRoute = { menu: MenuType.Appearance }
 const commentsRoute: SearchRoute = {
   menu: MenuType.Bilibili,
@@ -517,17 +511,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
       'settings.collected_season_play_all_mode_last_watched',
     ],
   }),
-
-  ...createEntries(volumeBalanceRoute, [
-    'settings.plugin.volume_balance',
-    'settings.volume_normalization.enable',
-    'settings.volume_normalization.target_volume',
-    'settings.volume_normalization.strength',
-    'settings.volume_normalization.adaptive_speed',
-    'settings.volume_normalization.voice_gate',
-    'settings.volume_normalization.debug',
-    'settings.volume_normalization.usage_guide.title',
-  ]),
 
   ...createEntries(appearanceRoute, [
     'settings.menu_appearance',

@@ -55,7 +55,6 @@ const legacyNavigationPage = sessionStorage.getItem(navigationPageStorageKey)
 const legacyPlaybackPages: Record<string, string> = {
   Player: 'player',
   AutoPlay: 'auto-play',
-  VolumeBalance: 'volume-balance',
 }
 if (storedMenuItem && legacyPlaybackPages[storedMenuItem])
   sessionStorage.setItem(bilibiliPageStorageKey, legacyPlaybackPages[storedMenuItem])
@@ -78,7 +77,6 @@ const legacyMenuAliases: Record<string, MenuType> = {
   Navigation: legacyNavigationMenu,
   Player: MenuType.Bilibili,
   AutoPlay: MenuType.Bilibili,
-  VolumeBalance: MenuType.Bilibili,
   Playback: MenuType.Bilibili,
   BilibiliFeaturesEnhancement: MenuType.Bilibili,
   Advanced: MenuType.General,

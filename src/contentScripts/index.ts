@@ -29,7 +29,6 @@ import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
 import { version } from '../../package.json'
-import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
@@ -37,7 +36,6 @@ import { initTouchPlayerGestures } from './touchPlayerGestures'
 import { initVideoAspectRatioMemory } from './videoAspectRatioMemory'
 import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
-import { initVolumeNormalizationControl } from './volumeNormalizationControl'
 
 const contentScriptGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__?: boolean
@@ -841,11 +839,6 @@ else if (shouldInitializeContentScript) {
     if (removeOriginalTopBar)
       document.documentElement.removeChild(removeOriginalTopBar)
 
-    // Initialize Audio Interceptor only when volume normalization is enabled.
-    setupSettingsWatcher()
-    if (settings.value.enableVolumeNormalization)
-      initAudioInterceptor()
-    initVolumeNormalizationControl()
     initVideoAspectRatioMemory()
     initVideoScreenshotControl()
     initTouchPlayerGestures()

@@ -3,7 +3,7 @@ import SettingsCategoryLayout from '../components/SettingsCategoryLayout.vue'
 
 const storageKey = 'bewly-settings-bilibili-page'
 const legacyStorageKey = 'bewly-settings-playback-page'
-const bilibiliPageValues = ['player', 'auto-play', 'volume-balance']
+const bilibiliPageValues = ['player', 'auto-play']
 const legacyPage = sessionStorage.getItem(legacyStorageKey)
 
 if (!sessionStorage.getItem(storageKey) && legacyPage && bilibiliPageValues.includes(legacyPage))
@@ -41,15 +41,6 @@ const pages = [
     icon: 'i-mingcute:vip-1-line',
     iconActivated: 'i-mingcute:vip-1-fill',
     component: defineAsyncComponent(() => import('./VipFeatures/VipFeatures.vue')),
-  },
-  {
-    value: 'volume-balance',
-    titleKey: 'settings.plugin.volume_balance',
-    descriptionKey: 'settings.category_playback_volume_desc',
-    icon: 'i-mingcute:volume-line',
-    iconActivated: 'i-mingcute:volume-fill',
-    badgeKey: 'settings.badge_use_with_caution',
-    component: defineAsyncComponent(() => import('../PluginComponentsAndPages/VolumeBalance/VolumeBalance.vue')),
   },
   {
     value: 'compatibility',

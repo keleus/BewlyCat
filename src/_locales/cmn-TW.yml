@@ -102,7 +102,6 @@ settings:
   category_navigation_moments_desc: 設定插件動態頁的左側元件和動態卡片開啟方式。
   category_playback_player_desc: 設定播放器模式、捲動行為、彈幕、字幕和播放狀態。
   category_playback_autoplay_desc: 設定自動連播與自訂播放行為。
-  category_playback_volume_desc: 任何響度平衡處理都可能造成爆音、音質劣化或動態範圍縮小；沒有明顯問題時不應開啟。
   category_bilibili_comments_desc: 增強留言區的使用者資訊與內容顯示。
   category_bilibili_vip_desc: 設定大會員權益相關的提醒功能。
   category_advanced_performance_desc: 調整首頁 Grid 的記憶體與長清單渲染策略；這些選項預設關閉。
@@ -146,7 +145,6 @@ settings:
     moments: 動態頁
     favorites: 收藏
     search: 搜尋頁
-    volume_balance: 音訊均衡
 
   # Bilibili 功能增強 子選單
   bilibili_features:
@@ -828,36 +826,6 @@ settings:
   show_vertical_video_zoom_button_desc: 在直式影片播放器中顯示放大/縮小按鈕與畫面位置調整控制項
   show_video_screenshot_button: 顯示播放器截圖按鈕
   show_video_screenshot_button_desc: 啟用後，在影片播放器控制列中顯示擷取目前影片畫面的按鈕。
-  volume_normalization:
-    title: 音量均衡
-    enable: 啟用音量均衡
-    enable_desc: 即時偵測影片人聲響度，自動調整音量到統一級別
-    target_volume: 目標音量
-    target_volume_desc: 目標響度級別（0-100），50 對應 -20dBFS，值越大音量越響
-    strength: 平滑強度
-    strength_desc: 音量峰值平滑強度（1-20），推薦 8-15，一般無需調整
-    adaptive_speed: 響應速度
-    adaptive_speed_desc: 達到目標音量的速度（1-10），值越大越快，推薦 3-7
-    voice_gate: 人聲檢測閾值
-    voice_gate_desc: 低於此響度的聲音會被忽略（-60 到 -10 dB），推薦 -40 到 -30
-    debug: 調試模式
-    debug_desc: 在控制台輸出音量均衡調試資訊
-    usage_guide:
-      title: 使用說明
-      desc: |-
-        功能說明：
-        • 實時分析影片中的人聲響度（忽略背景音和靜音片段）
-        • 根據檢測到的響度自動調整增益，使所有影片達到統一的音量
-
-        參數說明：
-        • 目標音量（0-100）：0 對應 -30dBFS（很安靜），50 對應 -20dBFS（適中），100 對應 -10dBFS（較響）
-        • 響應速度（1-10）：控制達到目標音量的時間，值越大穩定越快
-
-        注意事項：
-        • 這是實驗性功能，部分情況下可能不生效
-        • 重新整理頁面後功能才會生效
-        • 不改變原音質，僅調整音量大小
-  menu_volume_normalization: 音量均衡
   group_fonts: 字體
   group_visual_effects: 視覺效果
   badge_type: 角標類型

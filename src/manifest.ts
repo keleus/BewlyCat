@@ -74,7 +74,6 @@ export async function getManifest() {
       {
         resources: [
           'dist/contentScripts/style.css',
-          'dist/audioWorklets/volume-normalization.js',
           'assets/*',
         ],
         matches: ['<all_urls>'],

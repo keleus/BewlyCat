@@ -3084,11 +3084,6 @@ else if (shouldInitializePageScript) {
           scheduleCommentReplyDeepLinkSettlement(isFirstTime ? 'immediate' : 'hash')
         resolveSettingsReady?.()
         resolveSettingsReady = null
-
-        // 只在首次启用时输出日志
-        if (isFirstTime && data.enableVolumeNormalization) {
-          console.log('[AudioInterceptor] 音量均衡已启用')
-        }
       }
     }
   })

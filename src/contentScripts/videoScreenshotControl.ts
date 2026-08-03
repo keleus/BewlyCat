@@ -179,8 +179,7 @@ function injectControl() {
     return
   }
 
-  const anchor = controlBar.querySelector('.bewly-volume-normalization-control')
-    || controlBar.querySelector('.bpx-player-ctrl-volume')
+  const anchor = controlBar.querySelector('.bpx-player-ctrl-volume')
   if (!anchor?.querySelector('.bpx-player-ctrl-btn-icon'))
     return
 
