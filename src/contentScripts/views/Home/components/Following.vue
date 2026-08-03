@@ -7,55 +7,12 @@
  * 1. ALL视图：显示所有关注UP主的混合视频流
  * 2. 单UP主视图：显示特定UP主的视频动态
  *
- * ## 数据加载流程
+ * UP主列表优先使用页面已加载到的历史投稿时间排序，来源包括：
+ * 1. ALL视图的关注动态流中实际加载到的视频时间
+ * 2. 用户点击某个UP主后实际加载到的视频时间
+ * 3. 右上角动态Pop和插件动态页已经加载到的视频时间
  *
- * ### 1. 初始化 (initData)
- * - 首次进入或刷新时调用
- * - 如果是首次加载，调用 loadFollowingList 加载关注列表
- * - 加载完成后，默认切换到 ALL 视图
- *
- * ### 2. 加载关注列表 (loadFollowingList)
- * - 通过 getUserFollowings API 分页加载所有关注的UP主（每页50个）
- * - 使用 localStorage 缓存机制：
- *   - VIEWED_UPLOADERS_KEY: 记录用户查看过的UP主及查看时间
- *   - UPLOADER_TIMES_CACHE_KEY: 缓存UP主最新视频时间（有效期1天）
- * - 初始排序：有更新的UP主在前，有缓存时间的UP主优先，按最后更新时间降序，最后按关注时间
- * - 完成后，启动后台加载流程更新UP主时间
- *
- * ### 3. 后台更新UP主时间 (startLoadingUploaderTimesInBackground)
- * - 使用并发控制（最多2个并发请求）逐个更新UP主的最新视频时间
- * - 频率控制：平均每分钟最多5次（每12秒一次），用户主动触发时不受限制
- * - 加载优先级：
- *   1. 当前选中的UP主
- *   2. 无缓存的UP主
- *   3. 有缓存的UP主（按时间降序）
- * - 请求间隔：1.2-2秒随机延迟，避免触发风控
- * - 支持失败重试（最多2次）
- * - 时间更新逻辑：比较前两个视频动态，取最新时间（处理置顶视频情况）
- * - **缓存保护**：API失败时保持现有缓存数据不变，不会清空或覆盖
- *
- * ### 4. 加载视频流
- *
- * #### ALL视图 (loadAllViewVideos)
- * - 调用 getMoments API 获取关注动态流
- * - 默认加载3页，支持滚动加载更多
- * - 使用 offset 和 update_baseline 进行分页
- * - 处理合作视频：提取所有作者信息
- * - **智能缓存更新**：提取每个UP主的最新视频时间，更新到缓存（仅当时间更新时）
- * - 缓存更新后自动触发排序优化
- *
- * #### 单UP主视图 (loadUserMoments)
- * - 调用 getUserMoments API 获取特定UP主的动态
- * - 默认加载3页，支持滚动加载更多
- * - 仅显示包含视频的动态
- * - 同时更新该UP主的最新视频时间并缓存
- *
- * ### 5. 切换UP主 (selectUploader)
- * - 重置视频列表和分页状态
- * - 标记UP主为已查看（更新 hasUpdate 状态）
- * - 用户点击UP主时会缓存该UP主的最新更新时间
- * - 如果切换到非选中状态的UP主，重新排序列表（保持当前选中的UP主位置不变）
- * - 加载对应视图的视频流
+ * 没有历史投稿时间时使用关注接口的关注时间兜底，不发起后台逐人请求。
  *
  * ## 缓存策略
  *
@@ -63,27 +20,13 @@
  * - 记录用户查看每个UP主的时间戳
  * - 用于判断 hasUpdate 状态（红点提示）
  *
- * ### UP主时间缓存 (UPLOADER_TIMES_CACHE_KEY)
- * - 缓存每个UP主的最新视频时间（仅缓存时间，不缓存视频内容）
- * - 有效期：1天
- * - 数据来源：
- *   1. ALL视图加载时提取（优先）
- *   2. 用户点击UP主后更新
- *   3. 后台异步加载更新
- * - **缓存保护机制**：
- *   - API失败时保持缓存不变
- *   - 仅当新时间更新时才覆盖缓存
- *   - 避免用旧数据覆盖新缓存
- * - 减少不必要的API请求，提升加载速度
+ * ### UP主投稿时间缓存
+ * - 通过扩展级共享存储复用上述四类页面已经加载到的最新视频时间
+ * - 旧版后台逐人同步产生的缓存不会参与排序
  *
  * ## 排序策略
  *
- * UP主列表排序优先级（从高到低）：
- * 1. **hasUpdate 状态**：有更新的UP主排在前面
- * 2. **缓存状态**：有真实缓存时间的UP主优先于仅有关注时间的
- * 3. **时间排序**：按 lastUpdateTime 降序（缓存时间或关注时间）
- *
- * 这确保了：ALL视图中加载的UP主和用户主动查看的UP主会优先显示
+ * UP主列表按最新投稿时间降序排列；没有投稿记录时使用关注时间。
  *
  * ## 布局模式
  *
@@ -93,12 +36,8 @@
  * - 参考 Ranking.vue 的布局设计
  *
  * ## 性能优化
- * - 后台异步更新UP主时间，不阻塞主流程
- * - 并发控制和随机延迟，避免请求过快
- * - 频率控制避免触发B站风控（平均5次/分钟）
- * - localStorage 缓存减少重复请求
+ * - 扩展级共享缓存减少重复计算
  * - 分页加载，避免一次性加载过多数据
- * - 智能排序减少列表抖动（每10个更新一次，避免加载时排序）
  */
 import { useI18n } from 'vue-i18n'
 
@@ -107,6 +46,11 @@ import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
+import {
+  recordUploaderLatestVideoTimes,
+  uploaderLatestVideoTimes,
+  uploaderLatestVideoTimesReady,
+} from '~/logic/uploaderLatestVideoTimes'
 import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
 import type { DataItem as MomentItem, MomentResult } from '~/models/moment/moment'
 import { BadgeText } from '~/models/moment/moment'
@@ -124,6 +68,7 @@ interface UploaderInfo {
   name: string
   face: string
   hasUpdate: boolean
+  hasPostTime: boolean
   lastUpdateTime: number
 }
 
@@ -154,8 +99,6 @@ const videoList = ref<VideoElement[]>([])
 const uploaderList = ref<UploaderInfo[]>([])
 const selectedUploader = ref<number | null>(null) // null means "All"
 const previousSelectedUploader = ref<number | null>(null)
-const isLoadingUploaderTimes = ref<boolean>(false) // 是否正在后台加载UP主时间
-const loadedUploaderTimesCount = ref<number>(0) // 已加载时间的UP主数量
 const selectionToken = ref<number>(0) // 用于防止竞态条件的令牌
 const liveListLoaded = ref<boolean>(false) // 标记直播列表是否已加载（防止重复加载）
 
@@ -182,9 +125,6 @@ watch(selectedUploader, syncRefreshAvailability, { immediate: true })
 
 // Track viewed uploaders in localStorage
 const VIEWED_UPLOADERS_KEY = 'bewlycat_moments_viewed_uploaders'
-// Cache uploader latest times in localStorage
-const UPLOADER_TIMES_CACHE_KEY = 'bewlycat_uploader_latest_times'
-const CACHE_EXPIRY_DAYS = 1 // 缓存1天后过期
 // Blacklist for inactive uploaders
 const UPLOADER_BLACKLIST_KEY = 'bewlycat_uploader_blacklist'
 
@@ -224,139 +164,6 @@ function markUploaderAsViewed(mid: number, updateTime?: number) {
   }
 
   console.log(`[Following] Marked UP ${mid} as viewed at ${new Date(timeToMark).toLocaleString()}`)
-}
-
-// UP主缓存数据接口
-interface UploaderCache {
-  time: number // 最后投稿时间
-  cachedAt: number // 缓存时间
-  updateInterval?: number // 平均投稿间隔(ms)
-  predictedNextUpdate?: number // 预计下次投稿时间
-  lastSyncTime?: number // 最后同步时间
-  lastViewedTime?: number // 最后主动查看时间（从ALL或单人页面）
-}
-
-// 获取缓存的UP主时间
-function getCachedUploaderTimes(): Record<number, UploaderCache> {
-  try {
-    const data = localStorage.getItem(UPLOADER_TIMES_CACHE_KEY)
-    if (!data)
-      return {}
-
-    const cache = JSON.parse(data)
-    const now = Date.now()
-    const expiryMs = CACHE_EXPIRY_DAYS * 24 * 60 * 60 * 1000
-
-    // 过滤过期的缓存
-    const validCache: Record<number, UploaderCache> = {}
-    for (const [mid, value] of Object.entries(cache)) {
-      if (now - (value as any).cachedAt < expiryMs) {
-        validCache[Number(mid)] = value as any
-      }
-    }
-
-    return validCache
-  }
-  catch {
-    return {}
-  }
-}
-
-// 保存完整的UP主缓存数据
-function cacheUploaderData(mid: number, data: Partial<UploaderCache>) {
-  try {
-    const cache = getCachedUploaderTimes()
-    cache[mid] = {
-      ...(cache[mid] || {}),
-      ...data,
-      cachedAt: Date.now(),
-      lastSyncTime: Date.now(),
-    }
-    localStorage.setItem(UPLOADER_TIMES_CACHE_KEY, JSON.stringify(cache))
-  }
-  catch (error) {
-    console.error('[Following] Failed to cache uploader data:', error)
-  }
-}
-
-// 计算视频更新间隔（基于视频列表）
-function calculateUpdateInterval(videoTimes: number[]): number | undefined {
-  if (videoTimes.length < 2)
-    return undefined
-
-  // 计算相邻视频间的时间间隔
-  const intervals: number[] = []
-  for (let i = 1; i < Math.min(videoTimes.length, 10); i++) {
-    const interval = videoTimes[i - 1] - videoTimes[i]
-    if (interval > 0) {
-      intervals.push(interval)
-    }
-  }
-
-  if (intervals.length === 0)
-    return undefined
-
-  // 使用中位数来避免异常值的影响
-  intervals.sort((a, b) => a - b)
-  const mid = Math.floor(intervals.length / 2)
-  return intervals.length % 2 === 0
-    ? (intervals[mid - 1] + intervals[mid]) / 2
-    : intervals[mid]
-}
-
-// 根据更新间隔计算同步策略
-function calculateSyncInterval(updateInterval: number): number {
-  const HOUR = 60 * 60 * 1000
-  const DAY = 24 * HOUR
-  const WEEK = 7 * DAY
-  const MONTH = 30 * DAY
-
-  // 日更型（≤1天）：每小时同步
-  if (updateInterval <= DAY)
-    return HOUR
-
-  // 周更型（≤7天）：每天同步
-  if (updateInterval <= WEEK)
-    return DAY
-
-  // 月更型（≤30天）：每周同步
-  if (updateInterval <= MONTH)
-    return WEEK
-
-  // 低频型（>30天）：每2周同步
-  return 2 * WEEK
-}
-
-// 检查是否需要同步（基于智能策略）
-function shouldSync(cache: UploaderCache | undefined, now: number): boolean {
-  if (!cache)
-    return true // 无缓存，需要同步
-
-  // 如果有预测的下次更新时间
-  if (cache.predictedNextUpdate && cache.updateInterval) {
-    const timeUntilPredicted = cache.predictedNextUpdate - now
-    const window = cache.updateInterval * 0.2 // ±20%窗口
-
-    // 在预测时间窗口内，积极同步
-    if (Math.abs(timeUntilPredicted) <= window) {
-      const lastSync = cache.lastSyncTime || cache.cachedAt
-      const timeSinceSync = now - lastSync
-      // 窗口期内每小时同步一次
-      return timeSinceSync > 60 * 60 * 1000
-    }
-  }
-
-  // 根据更新间隔决定同步频率
-  if (cache.updateInterval) {
-    const syncInterval = calculateSyncInterval(cache.updateInterval)
-    const lastSync = cache.lastSyncTime || cache.cachedAt
-    const timeSinceSync = now - lastSync
-    return timeSinceSync > syncInterval
-  }
-
-  // 默认：超过12小时未同步则同步
-  const lastSync = cache.lastSyncTime || cache.cachedAt
-  return (now - lastSync) > 12 * 60 * 60 * 1000
 }
 
 // 获取黑名单
@@ -472,13 +279,34 @@ function updateUploaderStatus() {
     const viewedTime = viewed[uploader.mid] || 0
     return {
       ...uploader,
-      hasUpdate: calculateHasUpdate(uploader.lastUpdateTime, viewedTime),
+      hasUpdate: uploader.hasPostTime
+        ? calculateHasUpdate(uploader.lastUpdateTime, viewedTime)
+        : false,
     }
   })
 
   // 使用统一的排序逻辑
   sortUploaderList(null)
 }
+
+function applyRecordedUploaderTimes() {
+  let changed = false
+
+  uploaderList.value.forEach((uploader) => {
+    const recorded = uploaderLatestVideoTimes.value[String(uploader.mid)]
+    if (!recorded || (uploader.hasPostTime && uploader.lastUpdateTime >= recorded.time))
+      return
+
+    uploader.lastUpdateTime = recorded.time
+    uploader.hasPostTime = true
+    changed = true
+  })
+
+  if (changed)
+    updateUploaderStatus()
+}
+
+watch(uploaderLatestVideoTimes, applyRecordedUploaderTimes, { deep: true })
 
 const unreadUploadersCount = computed(() => {
   return uploaderList.value.filter(uploader => uploader.hasUpdate).length
@@ -530,11 +358,13 @@ async function loadFollowingList() {
   }
 
   try {
+    await uploaderLatestVideoTimesReady
+
     let currentPage = 1
     const pageSize = 50
     let hasMore = true
     const viewed = getViewedUploaders()
-    const cachedTimes = getCachedUploaderTimes()
+    const recordedTimes = uploaderLatestVideoTimes.value
 
     // 持续加载所有关注的UP主，每页加载后立即显示
     while (hasMore) {
@@ -558,15 +388,18 @@ async function loadFollowingList() {
 
         // 立即处理并追加当前页的UP主到列表
         const newUploaders = followings.map((user: any) => {
-          const cachedTime = cachedTimes[user.mid]
-          const lastUpdateTime = cachedTime ? cachedTime.time : user.mtime * 1000
+          const recordedTime = recordedTimes[String(user.mid)]
+          const hasPostTime = Boolean(recordedTime)
+          const followedAt = Number(user.mtime || 0) * 1000
+          const lastUpdateTime = recordedTime?.time ?? followedAt
           const viewedTime = viewed[user.mid] || 0
 
           return {
             mid: user.mid,
             name: user.uname,
             face: user.face,
-            hasUpdate: calculateHasUpdate(lastUpdateTime, viewedTime),
+            hasUpdate: hasPostTime && calculateHasUpdate(lastUpdateTime, viewedTime),
+            hasPostTime,
             lastUpdateTime,
           }
         })
@@ -595,274 +428,11 @@ async function loadFollowingList() {
 
     if (uploaderList.value.length > 0) {
       console.log('[Following] Successfully loaded', uploaderList.value.length, 'followings')
-      console.log('[Following] Loaded from cache:', Object.keys(cachedTimes).length, 'uploader times')
-
-      // 后台逐个加载UP主最新视频时间（使用并发控制和频率限制）
-      startLoadingUploaderTimesInBackground(false) // false = 非用户主动触发
+      console.log('[Following] Loaded recorded uploader times:', Object.keys(recordedTimes).length)
     }
   }
   catch (error) {
     console.error('[Following] Failed to load following list:', error)
-  }
-}
-
-// 并发控制器：后台逐个加载UP主最新视频时间（使用智能同步策略）
-// isUserTriggered: true 表示用户主动点击触发，强制同步所有
-async function startLoadingUploaderTimesInBackground(isUserTriggered: boolean = false) {
-  if (isLoadingUploaderTimes.value) {
-    return
-  }
-
-  isLoadingUploaderTimes.value = true
-  loadedUploaderTimesCount.value = 0
-
-  // 初始延迟：等待页面稳定后再开始（避免页面刚加载就触发风控）
-  const INITIAL_DELAY = 2000 + Math.random() * 1000 // 2-3秒随机延迟
-  console.log(`[Following] Will start smart sync in ${Math.round(INITIAL_DELAY / 1000)}s...`)
-  await new Promise(resolve => setTimeout(resolve, INITIAL_DELAY))
-
-  console.log('[Following] Starting smart background sync...')
-
-  const cachedTimes = getCachedUploaderTimes()
-  const blacklist = getBlacklistedUploaders()
-  const now = Date.now()
-
-  // 构建同步队列，按优先级排序
-  interface SyncItem {
-    mid: number
-    priority: number // 数值越大优先级越高
-    reason: string
-  }
-
-  const syncQueue: SyncItem[] = []
-
-  // 1. 当前选中的UP主（最高优先级）
-  if (selectedUploader.value !== null && !blacklist.has(selectedUploader.value)) {
-    syncQueue.push({
-      mid: selectedUploader.value,
-      priority: 1000,
-      reason: 'selected',
-    })
-  }
-
-  // 2. 分析所有UP主，计算优先级
-  for (const uploader of uploaderList.value) {
-    if (uploader.mid === selectedUploader.value)
-      continue
-    if (blacklist.has(uploader.mid))
-      continue
-
-    const cache = cachedTimes[uploader.mid]
-
-    // 用户触发时强制同步所有
-    if (isUserTriggered) {
-      syncQueue.push({
-        mid: uploader.mid,
-        priority: 500,
-        reason: 'user-triggered',
-      })
-      continue
-    }
-
-    // 使用智能策略判断是否需要同步
-    if (!shouldSync(cache, now)) {
-      continue
-    }
-
-    // 计算优先级
-    let priority = 100
-    let reason = 'need-sync'
-
-    // 无缓存：高优先级
-    if (!cache) {
-      priority = 800
-      reason = 'no-cache'
-    }
-    // 在预测时间窗口内：最高优先级
-    else if (cache.predictedNextUpdate && cache.updateInterval) {
-      const timeUntilPredicted = cache.predictedNextUpdate - now
-      const window = cache.updateInterval * 0.2
-
-      if (Math.abs(timeUntilPredicted) <= window) {
-        priority = 900
-        reason = 'prediction-window'
-      }
-    }
-
-    syncQueue.push({ mid: uploader.mid, priority, reason })
-  }
-
-  // 按优先级降序排序
-  syncQueue.sort((a, b) => b.priority - a.priority)
-
-  console.log(`[Following] Smart sync queue: ${syncQueue.length} uploaders`, {
-    selected: syncQueue.filter(i => i.reason === 'selected').length,
-    predictionWindow: syncQueue.filter(i => i.reason === 'prediction-window').length,
-    noCache: syncQueue.filter(i => i.reason === 'no-cache').length,
-    needSync: syncQueue.filter(i => i.reason === 'need-sync').length,
-    userTriggered: syncQueue.filter(i => i.reason === 'user-triggered').length,
-  })
-
-  // 并发控制参数
-  const MAX_CONCURRENT = 2 // 同时最多2个请求
-  const MIN_DELAY = 1200 // 最小间隔1200ms（增加到1.2秒）
-  const MAX_DELAY = 2000 // 最大间隔2000ms（增加到2秒）
-
-  let activeRequests = 0
-  let queueIndex = 0
-
-  // 随机延迟函数
-  const randomDelay = () => {
-    const delay = MIN_DELAY + Math.random() * (MAX_DELAY - MIN_DELAY)
-    return new Promise(resolve => setTimeout(resolve, delay))
-  }
-
-  // 处理队列
-  const processQueue = async () => {
-    while (queueIndex < syncQueue.length) {
-      // 等待有空闲槽位
-      // eslint-disable-next-line no-unmodified-loop-condition
-      while (activeRequests >= MAX_CONCURRENT) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-
-      const item = syncQueue[queueIndex++]
-      activeRequests++
-
-      // 异步执行请求
-      loadSingleUploaderTime(item.mid).finally(() => {
-        activeRequests--
-      })
-
-      // 随机延迟，避免被检测为机器行为
-      await randomDelay()
-    }
-
-    // 等待所有请求完成
-    // eslint-disable-next-line no-unmodified-loop-condition
-    while (activeRequests > 0) {
-      await new Promise(resolve => setTimeout(resolve, 100))
-    }
-  }
-
-  await processQueue()
-
-  // 后台加载完成后，最后排序一次确保顺序正确（无论是否在加载中）
-  sortUploaderList(selectedUploader.value)
-
-  isLoadingUploaderTimes.value = false
-  console.log('[Following] Finished loading all uploader times')
-}
-
-// 加载单个UP主的最新视频时间（只获取时间，不加载视频列表）
-// 重要：如果API失败，保持现有的缓存数据不变，不会清空或覆盖
-async function loadSingleUploaderTime(mid: number, retryCount: number = 0) {
-  const MAX_RETRIES = 2
-
-  try {
-    const response: MomentResult = await api.moment.getUserMoments({
-      host_mid: mid.toString(),
-      offset: '',
-      features: 'itemOpusStyle',
-    })
-
-    if (response.code === 0 && response.data.items) {
-      // 收集前两个视频动态（考虑置顶的情况）
-      const videoItems: { item: MomentItem, time: number }[] = []
-
-      for (const item of response.data.items) {
-        const major = item.modules?.module_dynamic?.major
-        const hasVideo = Boolean(major?.archive || major?.ugc_season)
-        if (hasVideo && item.modules?.module_author?.pub_ts) {
-          videoItems.push({
-            item,
-            time: item.modules.module_author.pub_ts * 1000,
-          })
-
-          // 收集前10个视频用于计算更新间隔
-          if (videoItems.length >= 10) {
-            break
-          }
-        }
-      }
-
-      // 只有在成功获取到视频数据时才更新缓存
-      if (videoItems.length > 0) {
-        const uploader = uploaderList.value.find(u => u.mid === mid)
-        if (uploader) {
-          // 提取所有视频时间
-          const videoTimes = videoItems.map(v => v.time)
-
-          // 计算最新视频时间（考虑置顶）
-          const latestTime = videoItems.length === 1
-            ? videoItems[0].time
-            : Math.max(videoItems[0].time, videoItems[1].time)
-
-          // 只有当新时间更新时才更新（避免用旧数据覆盖新缓存）
-          const cachedTimes = getCachedUploaderTimes()
-          const cachedTime = cachedTimes[mid]?.time || 0
-
-          if (latestTime >= cachedTime) {
-            uploader.lastUpdateTime = latestTime
-            loadedUploaderTimesCount.value++
-
-            // 计算更新间隔和预测下次更新时间
-            const updateInterval = calculateUpdateInterval(videoTimes)
-            const predictedNextUpdate = updateInterval ? latestTime + updateInterval : undefined
-
-            // 保存完整数据到缓存
-            cacheUploaderData(mid, {
-              time: latestTime,
-              updateInterval,
-              predictedNextUpdate,
-            })
-
-            // 后台同步更新了lastUpdateTime，需要重新计算hasUpdate
-            const viewed = getViewedUploaders()
-            const viewedTime = viewed[mid] || 0
-            uploader.hasUpdate = calculateHasUpdate(uploader.lastUpdateTime, viewedTime)
-
-            console.log(`[Following] Updated time for UP ${mid} (${loadedUploaderTimesCount.value}/${uploaderList.value.length})${updateInterval ? `, interval: ${Math.round(updateInterval / (24 * 60 * 60 * 1000))}d` : ''}`)
-
-            // 检查是否应该加入不活跃名单（超过指定天数未更新）
-            if (settings.value.enableFollowingInactiveBlacklist && shouldBeBlacklisted(uploader)) {
-              addToBlacklist(mid)
-            }
-
-            // 每次更新后重新排序
-            sortUploaderList(selectedUploader.value)
-          }
-          else {
-            console.log(`[Following] Skipped updating UP ${mid}: cached time is newer (cached: ${new Date(cachedTime).toLocaleString()}, fetched: ${new Date(latestTime).toLocaleString()})`)
-          }
-        }
-      }
-      else {
-        // API返回成功但没有视频数据，该UP主完全没有投稿，添加到黑名单
-        const uploader = uploaderList.value.find(u => u.mid === mid)
-        if (uploader && settings.value.enableFollowingInactiveBlacklist) {
-          addToBlacklist(mid)
-          console.log(`[Following] No video data for UP ${mid}, added to blacklist`)
-        }
-      }
-    }
-    else if (response.code !== 0) {
-      // API返回错误码，保持现有缓存不变
-      console.log(`[Following] API error (code ${response.code}) for UP ${mid}, keeping cached data`)
-    }
-  }
-  catch (error) {
-    // 如果是风控错误且未超过重试次数，等待后重试
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    if (errorMessage.includes('风控') && retryCount < MAX_RETRIES) {
-      const retryDelay = (retryCount + 1) * 3000 // 3秒、6秒递增
-      console.warn(`[Following] Rate limited for UP ${mid}, retrying in ${retryDelay / 1000}s... (${retryCount + 1}/${MAX_RETRIES})`)
-      await new Promise(resolve => setTimeout(resolve, retryDelay))
-      return loadSingleUploaderTime(mid, retryCount + 1)
-    }
-
-    // 请求失败，保持现有缓存数据不变（不会清空或覆盖）
-    console.error(`[Following] Failed to load time for UP ${mid}:`, error, '- keeping cached data')
   }
 }
 
@@ -1048,26 +618,25 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
       return
     }
 
-    // 更新缓存：从ALL视图中提取的最新时间
+    // 记录从ALL视图中提取的最新投稿时间
+    void recordUploaderLatestVideoTimes(
+      Array.from(uploaderLatestTimes, ([mid, time]) => ({ mid, time })),
+      'following-all',
+    )
+
     let updatedCount = 0
     let removedFromBlacklistCount = 0
     let markedAsViewedCount = 0
     uploaderLatestTimes.forEach((time, mid) => {
       const uploader = uploaderList.value.find(u => u.mid === mid)
       if (uploader) {
-        const cachedTimes = getCachedUploaderTimes()
-        const cachedTime = cachedTimes[mid]?.time || 0
+        const knownPostTime = uploader.hasPostTime ? uploader.lastUpdateTime : 0
 
-        // 只有当ALL视图中的时间更新时才更新缓存
-        if (time > cachedTime) {
+        if (time > knownPostTime) {
           uploader.lastUpdateTime = time
-          // 在ALL视图中，用户看到了该UP主的视频，更新时间和查看时间
-          cacheUploaderData(mid, {
-            time,
-            lastViewedTime: Date.now(),
-          })
+          uploader.hasPostTime = true
           updatedCount++
-          console.log(`[Following] Updated cache for UP ${mid} from ALL view: ${new Date(time).toLocaleString()}`)
+          console.log(`[Following] Updated time for UP ${mid} from ALL view: ${new Date(time).toLocaleString()}`)
         }
 
         // 用户在ALL视图中看到了该UP主的投稿，标记为已查看
@@ -1104,10 +673,7 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
       console.log(`[Following] Removed ${removedFromBlacklistCount} uploaders from blacklist (found in ALL view)`)
     }
     if (updatedCount > 0 || removedFromBlacklistCount > 0 || markedAsViewedCount > 0) {
-      // 重新排序，但避免在加载中排序
-      if (!isLoadingUploaderTimes.value) {
-        sortUploaderList(selectedUploader.value)
-      }
+      sortUploaderList(selectedUploader.value)
     }
 
     // 如果一条视频都没加载到，设置 noMoreContent
@@ -1136,7 +702,7 @@ async function loadUserMoments(mid: number, maxPages: number = 3, token?: number
   isLoading.value = true
   requestFailed.value = false
 
-  // 收集所有视频时间用于计算更新间隔
+  // 收集本次点击后实际加载到的视频时间
   const allVideoTimes: number[] = []
 
   try {
@@ -1241,7 +807,7 @@ async function loadUserMoments(mid: number, maxPages: number = 3, token?: number
       }
     }
 
-    // 加载完成后，计算更新间隔和预测下次更新时间
+    // 加载完成后，用点击后实际取得的最新投稿时间更新排序
     if (allVideoTimes.length > 0) {
       // 再次检查 token，防止在处理缓存更新期间选择改变
       if (token !== undefined && token !== selectionToken.value) {
@@ -1259,24 +825,26 @@ async function loadUserMoments(mid: number, maxPages: number = 3, token?: number
           ? allVideoTimes[0]
           : Math.max(allVideoTimes[0], allVideoTimes[1])
 
-        uploader.lastUpdateTime = latestTime
-
-        // 计算更新间隔和预测下次更新时间
-        const updateInterval = calculateUpdateInterval(allVideoTimes)
-        const predictedNextUpdate = updateInterval ? latestTime + updateInterval : undefined
-
-        // 保存完整数据到缓存
-        cacheUploaderData(mid, {
-          time: latestTime,
-          updateInterval,
-          predictedNextUpdate,
-          lastViewedTime: Date.now(), // 用户主动查看该UP主
-        })
+        const knownLatestTime = uploader.hasPostTime
+          ? Math.max(uploader.lastUpdateTime, latestTime)
+          : latestTime
+        uploader.lastUpdateTime = knownLatestTime
+        uploader.hasPostTime = true
+        void recordUploaderLatestVideoTimes(
+          [{ mid, time: knownLatestTime }],
+          'following-selected',
+        )
 
         // 用户主动点击TAB查看，标记为已查看
-        markUploaderAsViewed(mid, latestTime)
+        markUploaderAsViewed(mid, knownLatestTime)
 
-        console.log(`[Following] Updated data for UP ${mid}: time=${new Date(latestTime).toLocaleString()}${updateInterval ? `, interval=${Math.round(updateInterval / (24 * 60 * 60 * 1000))}d` : ''}`)
+        if (settings.value.enableFollowingInactiveBlacklist && shouldBeBlacklisted(uploader)) {
+          addToBlacklist(mid)
+        }
+
+        sortUploaderList(selectedUploader.value)
+
+        console.log(`[Following] Updated data for UP ${mid} from selected view: time=${new Date(knownLatestTime).toLocaleString()}`)
       }
     }
 
@@ -1359,13 +927,6 @@ function selectUploader(mid: number | null) {
 
     // 重置用户动态分页
     userMomentsOffset.value = ''
-
-    // 优先加载当前UP主的时间（如果还未加载）
-    const uploader = uploaderList.value.find(u => u.mid === mid)
-    if (uploader && uploader.lastUpdateTime && uploader.lastUpdateTime < Date.now() - 365 * 24 * 60 * 60 * 1000) {
-      // 如果时间看起来是旧的关注时间（超过1年），优先更新
-      loadSingleUploaderTime(mid)
-    }
 
     // 加载UP主动态（初始加载3页，每页加载后立即显示）
     loadUserMoments(mid, 3, currentToken)
