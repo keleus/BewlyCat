@@ -267,6 +267,18 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   })
 
   // Methods
+  function refreshTopBarWatchLaterAfterMutation() {
+    const refresh = () => {
+      void topBarStore.syncWatchLaterState(true).catch((error) => {
+        console.error('刷新顶栏稍后再看状态失败:', error)
+      })
+    }
+
+    // 先立即同步；B 站写入偶尔有短暂延迟，再补一次最终状态。
+    refresh()
+    window.setTimeout(refresh, 1000)
+  }
+
   async function toggleWatchLater() {
     if (!props.value.video)
       return
@@ -298,10 +310,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
         .then((res) => {
           if (res.code === 0) {
             isInWatchLater.value = true
-            // 延时1秒后获取稍后再看列表（add成功后居然不是立即生效的）
-            setTimeout(() => {
-              void topBarStore.syncWatchLaterState(true)
-            }, 1000)
+            refreshTopBarWatchLaterAfterMutation()
           }
           else {
             toast.error(res.message)
@@ -316,10 +325,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
         .then((res) => {
           if (res.code === 0) {
             isInWatchLater.value = false
-            // 延时1秒后获取稍后再看列表（add成功后居然不是立即生效的）
-            setTimeout(() => {
-              void topBarStore.syncWatchLaterState(true)
-            }, 1000)
+            refreshTopBarWatchLaterAfterMutation()
           }
           else {
             toast.error(res.message)

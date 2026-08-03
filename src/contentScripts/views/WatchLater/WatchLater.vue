@@ -6,6 +6,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { settings } from '~/logic'
 import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getCSRF, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
@@ -14,6 +15,7 @@ import { openLinkInBackground } from '~/utils/tabs'
 const { t } = useI18n()
 const { confirm: showConfirmDialog } = useConfirmDialog()
 const { openIframeDrawer } = useBewlyApp()
+const topBarStore = useTopBarStore()
 
 const isLoading = ref<boolean>()
 const noMoreContent = ref<boolean>()
@@ -113,6 +115,7 @@ function deleteWatchLaterItem(index: number, aid: number) {
       if (res.code === 0) {
         currentWatchLaterList.value.splice(index, 1)
         watchLaterCount.value--
+        void topBarStore.syncWatchLaterState(true)
       }
     })
 }
@@ -126,8 +129,10 @@ async function handleClearAllWatchLater() {
     api.watchlater.clearAllWatchLater({
       csrf: getCSRF(),
     }).then((res) => {
-      if (res.code === 0)
+      if (res.code === 0) {
         initData()
+        void topBarStore.syncWatchLaterState(true)
+      }
     }).finally(() => {
       isLoading.value = false
     })
@@ -144,8 +149,10 @@ async function handleRemoveWatchedVideos() {
       csrf: getCSRF(),
     })
       .then((res) => {
-        if (res.code === 0)
+        if (res.code === 0) {
           initData()
+          void topBarStore.syncWatchLaterState(true)
+        }
       })
   }
 }

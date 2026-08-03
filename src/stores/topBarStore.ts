@@ -16,6 +16,7 @@ import {
 import { updateInterval } from '~/components/TopBar/notify'
 import type { PrivilegeInfo, UnReadDm, UnReadMessage, UserInfo } from '~/components/TopBar/types'
 import type {
+  TopBarFavoritesChanged,
   TopBarRefreshClaim,
   TopBarSharedState,
   TopBarStateClaim,
@@ -85,6 +86,7 @@ export const useTopBarStore = defineStore('topBar', () => {
   const watchLaterCount = ref<number>(0)
   // 添加稍后再看列表
   const watchLaterList = reactive<VideoItem[]>([])
+  const favoriteStateVersion = ref(0)
   const isLoadingWatchLater = ref<boolean>(false)
   // 添加 Moments 相关状态
   const moments = reactive<any[]>([])
@@ -824,9 +826,17 @@ export const useTopBarStore = defineStore('topBar', () => {
       if (accountId !== userInfo.mid)
         return
 
-      syncSharedData({ refresh: getUnreadMessageCount }).catch((error) => {
+      syncSharedData({ force: true, refresh: getUnreadMessageCount }).catch((error) => {
         console.error('刷新已失效的未读消息状态失败:', error)
       })
+    },
+  )
+
+  onMessage<TopBarFavoritesChanged>(
+    TOP_BAR_STATE_MESSAGE.FAVORITES_CHANGED,
+    ({ accountId }) => {
+      if (accountId === userInfo.mid)
+        favoriteStateVersion.value++
     },
   )
 
@@ -865,7 +875,9 @@ export const useTopBarStore = defineStore('topBar', () => {
       },
     )
 
-    if (claim.snapshot)
+    // 主动刷新必须使用当前操作的 API 结果，不能先用 broker 中可能过期的
+    // snapshot 覆盖本地状态；普通定时同步仍复用 snapshot。
+    if (claim.snapshot && !options.force && isCurrentAccount(accountId))
       applySharedState(claim.snapshot)
 
     if (!claim.shouldRefresh)
@@ -944,6 +956,22 @@ export const useTopBarStore = defineStore('topBar', () => {
 
     return sendMessage<TopBarStateInvalidate>(
       TOP_BAR_STATE_MESSAGE.INVALIDATE,
+      { accountId },
+    ).catch((error) => {
+      if (!isExtensionContextInvalidatedError(error))
+        throw error
+
+      disableSharedStateMessaging()
+    })
+  }
+
+  function notifyFavoritesChanged() {
+    const accountId = userInfo.mid
+    if (!accountId || sharedStateMessagingUnavailable)
+      return Promise.resolve()
+
+    return sendMessage<TopBarFavoritesChanged>(
+      TOP_BAR_STATE_MESSAGE.FAVORITES_CHANGED,
       { accountId },
     ).catch((error) => {
       if (!isExtensionContextInvalidatedError(error))
@@ -1111,6 +1139,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     syncMomentsState,
     syncWatchLaterState,
     invalidateUnreadMessageState,
+    notifyFavoritesChanged,
     startUpdateTimer,
     stopUpdateTimer,
 

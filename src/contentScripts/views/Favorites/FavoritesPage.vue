@@ -15,6 +15,7 @@ import type { FavoriteArticle, FavoriteArticlesResult } from '~/models/article/f
 import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favorite'
 import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/video/favoriteCategory'
 import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteSeasonMedia } from '~/models/video/favoriteSeason'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import {
   enrichFavoriteSeasonMediaFaces,
@@ -48,6 +49,7 @@ const currentPageNum = ref<number>(1)
 const keyword: Ref<string> = ref<string>('')
 const searchScope = ref<'current' | 'all'>('current')
 const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
+const topBarStore = useTopBarStore()
 const isLoading = ref<boolean>(false)
 const isFullPageLoading = ref<boolean>(true)
 const noMoreContent = ref<boolean>(false)
@@ -74,6 +76,12 @@ const renameFolderTitle = ref<string>('')
 const itemMenuTarget = ref<{ type: SidebarManageSection, id: number } | null>(null)
 const itemMenuStyles = ref<CSSProperties>({})
 let contentRequestVersion = 0
+
+function notifyTopBarFavoritesChanged() {
+  void topBarStore.notifyFavoritesChanged().catch((error) => {
+    console.error('通知顶栏收藏状态变化失败:', error)
+  })
+}
 
 const favoriteViewOptions = computed(() => [
   { label: t('favorites.video_section_title'), value: 'video' as const },
@@ -391,6 +399,7 @@ async function handleRenameFolderConfirm() {
       folder.title = title
     closeRenameFolderDialog()
     exitSidebarManage()
+    notifyTopBarFavoritesChanged()
   }
   finally {
     isSidebarOperating.value = false
@@ -423,6 +432,7 @@ async function deleteFolders(ids: number[]) {
     if (favoriteView.value === 'video')
       loadSelectedContent()
   }
+  notifyTopBarFavoritesChanged()
   return true
 }
 
@@ -456,6 +466,8 @@ async function unfavSeasons(ids: number[]) {
 
   if (failedIds.length > 0)
     toast.error(t('favorites.unfav_seasons_failed', { count: failedIds.length }))
+  if (removedIds.length > 0)
+    notifyTopBarFavoritesChanged()
   return failedIds
 }
 
@@ -634,6 +646,8 @@ async function handleBatchDelete() {
     })
     if (res.code === 0)
       removeSelectedResourcesFromList()
+    if (res.code === 0)
+      notifyTopBarFavoritesChanged()
   }
   finally {
     isBatchOperating.value = false
@@ -658,6 +672,7 @@ async function handleBatchMove() {
       increaseTargetCategoryCount(movedCount)
       removeSelectedResourcesFromList()
       closeBatchManage()
+      notifyTopBarFavoritesChanged()
     }
   }
   finally {
@@ -683,6 +698,7 @@ async function handleBatchCopy() {
       increaseTargetCategoryCount(copiedCount)
       resetBatchSelection()
       closeBatchTransferDialog()
+      notifyTopBarFavoritesChanged()
     }
   }
   finally {
@@ -1011,6 +1027,7 @@ async function handleUnfavorite(favoriteResource: FavoriteResource) {
           favoriteResources.splice(resourceIndex, 1)
         if (selectedCategory.value)
           selectedCategory.value.media_count = Math.max(0, selectedCategory.value.media_count - 1)
+        notifyTopBarFavoritesChanged()
       }
     })
   }

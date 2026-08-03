@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getUserID, removeHttpFromUrl, scrollToTop } from '~/utils/main'
@@ -21,6 +23,10 @@ const isLoading = ref<boolean>(false)
 // when noMoreContent is true, the user can't scroll down to load more content
 const noMoreContent = ref<boolean>(false)
 const favoriteVideosWrap = ref<HTMLElement>() as Ref<HTMLElement>
+const topBarStore = useTopBarStore()
+const { favoriteStateVersion } = storeToRefs(topBarStore)
+let favoriteDataRequestVersion = 0
+let favoriteResourcesRequestVersion = 0
 
 const viewAllUrl = computed((): string => {
   return `//space.bilibili.com/${getUserID()}/favlist?fid=${
@@ -42,7 +48,11 @@ watch(activatedMediaId, (newId, oldId) => {
 
   currentPageNum.value = 1
   noMoreContent.value = false
-  getFavoriteResources()
+  void getFavoriteResources(true)
+})
+
+watch(favoriteStateVersion, () => {
+  void refreshFavoriteData()
 })
 
 onMounted(() => {
@@ -67,16 +77,43 @@ useOptimizedScroll(
 )
 
 async function initData() {
-  await getFavoriteCategories()
-  if (favoriteCategories.length > 0)
-    changeCategory(favoriteCategories[0])
+  await refreshFavoriteData()
 }
 
-async function getFavoriteCategories() {
+async function refreshFavoriteData() {
+  const requestVersion = ++favoriteDataRequestVersion
+  const previousMediaId = activatedMediaId.value
+  await getFavoriteCategories(requestVersion)
+  if (requestVersion !== favoriteDataRequestVersion)
+    return
+
+  const category = favoriteCategories.find(item => item.id === previousMediaId) || favoriteCategories[0]
+  if (!category) {
+    activatedMediaId.value = 0
+    activatedFavoriteTitle.value = undefined
+    favoriteResources.length = 0
+    favoriteResourcesRequestVersion++
+    isLoading.value = false
+    return
+  }
+
+  if (activatedMediaId.value === category.id) {
+    activatedFavoriteTitle.value = category.title
+    refreshFavoriteResources()
+  }
+  else {
+    changeCategory(category)
+  }
+}
+
+async function getFavoriteCategories(requestVersion?: number) {
   await api.favorite.getFavoriteCategories({
     up_mid: getUserID(),
   })
     .then((res) => {
+      if (requestVersion !== undefined && requestVersion !== favoriteDataRequestVersion)
+        return
+
       if (res.code === 0) {
         favoriteCategories.length = 0
         favoriteCategories.push(...res.data.list)
@@ -89,18 +126,24 @@ async function getFavoriteCategories() {
 /**
  * Get favorite video resources
  */
-async function getFavoriteResources() {
-  if (isLoading.value)
+async function getFavoriteResources(force = false) {
+  if (isLoading.value && !force)
     return
 
+  const requestVersion = ++favoriteResourcesRequestVersion
+  const mediaId = activatedMediaId.value
+  const pageNum = currentPageNum.value
   isLoading.value = true
 
   try {
     const res = await api.favorite.getFavoriteResources({
-      media_id: activatedMediaId.value,
-      pn: currentPageNum.value,
+      media_id: mediaId,
+      pn: pageNum,
       keyword: '',
     })
+
+    if (requestVersion !== favoriteResourcesRequestVersion || mediaId !== activatedMediaId.value)
+      return
 
     const { code, data } = res
     if (code === 0) {
@@ -126,14 +169,15 @@ async function getFavoriteResources() {
     console.error('Failed to load favorite resources:', error)
   }
   finally {
-    isLoading.value = false
+    if (requestVersion === favoriteResourcesRequestVersion)
+      isLoading.value = false
   }
 }
 
 function refreshFavoriteResources() {
   favoriteResources.length = 0
   currentPageNum.value = 1
-  getFavoriteResources()
+  void getFavoriteResources(true)
 }
 
 function changeCategory(categoryItem: FavoriteCategory) {
@@ -146,6 +190,7 @@ function isMusic(item: FavoriteResource) {
 }
 
 defineExpose({
+  refreshFavoriteData,
   refreshFavoriteResources,
 })
 </script>
