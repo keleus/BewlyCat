@@ -9,6 +9,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getTvSign, TVAppKey } from '~/utils/authProvider'
 import { calcCurrentTime, numFormatter, parseStatNumber } from '~/utils/dataFormatter'
+import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import { getCSRF, removeHttpFromUrl } from '~/utils/main'
 import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -412,31 +413,19 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     }
   }
 
-  function handleMoreBtnClick(event: MouseEvent) {
+  function handleMoreBtnClick() {
     if (!moreBtnRef.value)
       return
-    const { height } = moreBtnRef.value.getBoundingClientRect()
-
-    /**
-     * 计算菜单位置，确保在视口内可见
-     * 如果底部空间不足，则向上偏移，但不超出顶部
-     */
-    const menuHeight = Math.min(406, window.innerHeight * 0.8) // 菜单最大高度为视口的80%或406px
-    const topSpace = event.y
-    const bottomSpace = window.innerHeight - event.y
-
-    // 如果底部空间足够，则向下展开；否则向上展开
-    const offsetTop = bottomSpace > menuHeight ? 0 : -menuHeight - height
-
-    // 确保不会超出顶部
-    const finalOffsetTop = Math.max(offsetTop, -topSpace + 10)
+    const anchor = moreBtnRef.value.getBoundingClientRect()
+    const position = computeFloatingMenuPosition(anchor, window.innerWidth, window.innerHeight)
 
     showVideoOptions.value = false
     videoOptionsFloatingStyles.value = {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      transform: `translate(${event.x}px, ${event.y + finalOffsetTop}px)`,
+      position: 'fixed',
+      top: `${position.top}px`,
+      left: `${position.left}px`,
+      width: `${position.width}px`,
+      maxHeight: `${position.maxHeight}px`,
     }
     showVideoOptions.value = true
   }

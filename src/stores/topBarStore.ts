@@ -405,24 +405,20 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (!isCurrentAccount(accountId) || userInfo.vip?.status !== 1 || !settings.value.showBCoinReceiveReminder)
       return
 
-    // 如果已经记录为已领取，则不再请求
-    if (bCoinAlreadyReceived.value) {
-      return
-    }
-
     try {
       const res = await api.user.getPrivilegeInfo()
       if (res.code === 0 && isCurrentAccount(accountId)) {
         Object.assign(privilegeInfo, res.data)
         if (privilegeInfo.vip_type < 2) {
+          bCoinAlreadyReceived.value = false
+          hasBCoinToReceive.value = false
           return
         }
         // 检查B币兑换状态 (type: 1)
         const bCoinItem = privilegeInfo.list?.find(item => item.type === 1)
         if (bCoinItem) {
-          if (bCoinItem.state === 1) {
-            // 如果已经领取，记录状态并设置为false
-            bCoinAlreadyReceived.value = true
+          bCoinAlreadyReceived.value = bCoinItem.state === 1
+          if (bCoinAlreadyReceived.value) {
             hasBCoinToReceive.value = false
           }
           else {
@@ -436,6 +432,7 @@ export const useTopBarStore = defineStore('topBar', () => {
           }
         }
         else {
+          bCoinAlreadyReceived.value = false
           hasBCoinToReceive.value = false
         }
       }
@@ -885,6 +882,7 @@ export const useTopBarStore = defineStore('topBar', () => {
               authorFace: item.face,
               cover: item.pic,
               link: item.link,
+              authorJumpUrl: item.link,
             }),
             ),
           )
