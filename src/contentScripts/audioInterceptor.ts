@@ -64,6 +64,12 @@ let workletModuleState: WorkletModuleState = 'not-loaded'
 let audioNodes: AudioNodeBundle | null = null
 let audioGraphMode: AudioGraphMode = 'disconnected'
 const audioNodeCache = new WeakMap<HTMLVideoElement, AudioNodeBundle>()
+// Videos whose media element is already captured by a MediaElementSource we do
+// not own (or whose source node was lost). createMediaElementSource cannot be
+// retried for the lifetime of the element.
+const mediaSourceBlockedVideos = new WeakSet<HTMLVideoElement>()
+const attachInFlight = new WeakMap<HTMLVideoElement, Promise<void>>()
+let attachQueue: Promise<void> = Promise.resolve()
 
 let currentVideoElement: HTMLVideoElement | null = null
 let currentVideoListeners: ManagedVideoListeners | null = null
@@ -94,6 +100,22 @@ function logEvent(message: string, details?: Record<string, unknown>) {
 
 function error(message: string, ...args: unknown[]) {
   console.error(`[BewlyAudio][错误] ${message}`, ...args)
+}
+
+function isAlreadyConnectedError(cause: unknown): boolean {
+  if (!cause || typeof cause !== 'object')
+    return false
+
+  const errorCause = cause as { message?: unknown, name?: unknown }
+  const message = typeof errorCause.message === 'string'
+    ? errorCause.message
+    : ''
+  const name = typeof errorCause.name === 'string' ? errorCause.name : ''
+
+  // Chrome: "HTMLMediaElement already connected previously to a different MediaElementSourceNode."
+  return /already connected/i.test(message)
+    || (message.includes('createMediaElementSource') && message.includes('MediaElement'))
+    || (name === 'InvalidStateError' && !message)
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -481,6 +503,8 @@ function createProcessingChain(
 
   // Create the MediaElement source last. If Worklet/node creation is
   // unsupported, the video is never captured away from its native output.
+  // A media element can only ever be bound once; cache immediately so a later
+  // failure cannot lose the only MediaElementAudioSourceNode reference.
   const source = context.createMediaElementSource(video)
   const nodes: AudioNodeBundle = {
     source,
@@ -495,6 +519,7 @@ function createProcessingChain(
     gainDb: 0,
     lastState: null,
   }
+  audioNodeCache.set(video, nodes)
 
   normalizer.port.onmessage = (event: MessageEvent<NormalizerStateMessage>) => {
     handleWorkletState(nodes, event.data)
@@ -512,6 +537,44 @@ function createProcessingChain(
 
   applyProcessingLimiterSettings(nodes, context)
   return nodes
+}
+
+function getOrCreateAudioNodes(context: AudioContext, video: HTMLVideoElement): AudioNodeBundle {
+  const cached = audioNodeCache.get(video)
+  if (cached)
+    return cached
+
+  return createProcessingChain(context, video)
+}
+
+function activateAudioNodes(
+  nodes: AudioNodeBundle,
+  context: AudioContext,
+  shouldResumeContext = false,
+) {
+  if (shouldResumeContext)
+    resumeAudioContext(context)
+
+  connectBundle(nodes, context)
+
+  if (nodes.processorFailed) {
+    setOutputPath(nodes, context, true)
+    audioGraphMode = 'emergency'
+    return
+  }
+
+  if (isNormalizationEnabled()) {
+    setOutputPath(nodes, context, false)
+    applyProcessingLimiterSettings(nodes, context)
+    audioGraphMode = 'processing'
+  }
+  else {
+    setOutputPath(nodes, context, false)
+    applyNeutralLimiterSettings(nodes, context)
+    audioGraphMode = 'bypass'
+  }
+
+  postWorkletConfiguration(nodes)
 }
 
 function unbindCurrentVideoListeners() {
@@ -739,9 +802,17 @@ async function attachToVideoInternal(video: HTMLVideoElement) {
   if (!settings.value.enableVolumeNormalization || document.hidden || !video.isConnected)
     return
 
-  if (hasAttached && currentVideoElement === video && audioNodes) {
+  if (mediaSourceBlockedVideos.has(video))
+    return
+
+  const cachedNodes = audioNodeCache.get(video)
+  if (currentVideoElement === video && audioNodes && cachedNodes === audioNodes) {
     clearManagedVideoMissingState()
-    updateProcessingState()
+    hasAttached = true
+    if (audioContext && !audioNodes.connected)
+      activateAudioNodes(audioNodes, audioContext, isPlaybackActive(video))
+    else
+      updateProcessingState(isPlaybackActive(video))
     return
   }
 
@@ -770,7 +841,8 @@ async function attachToVideoInternal(video: HTMLVideoElement) {
   if (requestId !== attachRequestId
     || !settings.value.enableVolumeNormalization
     || document.hidden
-    || !video.isConnected) {
+    || !video.isConnected
+    || mediaSourceBlockedVideos.has(video)) {
     return
   }
 
@@ -778,18 +850,23 @@ async function attachToVideoInternal(video: HTMLVideoElement) {
   if (activeVideo && activeVideo !== video)
     return
 
-  disconnectCurrentGraph()
-  unbindCurrentVideoListeners()
+  // Keep the previous graph alive until the target bundle is ready. Disconnecting
+  // first can leave a dangling MediaElementSource and stall Bilibili loading.
+  const previousNodes = audioNodes
+  const previousVideo = currentVideoElement
+  const previousAttached = hasAttached
+    && !!previousNodes
+    && !!previousVideo
+    && previousVideo.isConnected
 
   try {
-    let nodes = audioNodeCache.get(video)
-    if (!nodes) {
-      nodes = createProcessingChain(context, video)
-      audioNodeCache.set(video, nodes)
-    }
-    else {
+    const reused = audioNodeCache.has(video)
+    const nodes = getOrCreateAudioNodes(context, video)
+    if (reused)
       logEvent('复用现有 AudioWorklet 音频图')
-    }
+
+    if (previousNodes && previousNodes !== nodes)
+      disconnectBundle(previousNodes)
 
     audioNodes = nodes
     currentVideoElement = video
@@ -797,29 +874,89 @@ async function attachToVideoInternal(video: HTMLVideoElement) {
     clearManagedVideoMissingState()
     bindVideoListeners(video)
 
-    connectBundle(nodes, context)
-    postWorkletConfiguration(nodes)
+    // Connect in the same turn as create/reuse so the media element never sits
+    // with a captured-but-disconnected MediaElementSource.
+    activateAudioNodes(nodes, context, isPlaybackActive(video))
     postPlaybackState(isPlaybackActive(video), nodes)
-    updateProcessingState(isPlaybackActive(video))
     logEvent('已绑定视频音频')
     reportDebugStatus('绑定完成', true, nodes)
   }
   catch (cause) {
-    hasAttached = false
-    currentVideoElement = null
-    audioNodes = null
     unbindCurrentVideoListeners()
 
-    if (cause instanceof Error && cause.message.includes('already connected'))
-      error('视频元素已被其他 MediaElementAudioSourceNode 绑定', cause)
-    else
+    // Prefer restoring the previous audible graph over leaving any source
+    // disconnected after a failed switch/create.
+    if (previousAttached && previousNodes && previousVideo) {
+      audioNodes = previousNodes
+      currentVideoElement = previousVideo
+      hasAttached = true
+      try {
+        bindVideoListeners(previousVideo)
+        activateAudioNodes(previousNodes, context, isPlaybackActive(previousVideo))
+        postPlaybackState(isPlaybackActive(previousVideo), previousNodes)
+      }
+      catch (restoreCause) {
+        error('恢复先前音频图失败', restoreCause)
+      }
+    }
+    else {
+      const orphanedNodes = audioNodeCache.get(video)
+      if (orphanedNodes) {
+        // Source was created for this video but activation failed; keep the only
+        // reference connected so the player does not stick on loading.
+        audioNodes = orphanedNodes
+        currentVideoElement = video
+        hasAttached = true
+        try {
+          bindVideoListeners(video)
+          activateAudioNodes(orphanedNodes, context, isPlaybackActive(video))
+          postPlaybackState(isPlaybackActive(video), orphanedNodes)
+          logEvent('绑定后激活失败，已紧急恢复音频通路')
+        }
+        catch (recoverCause) {
+          hasAttached = false
+          currentVideoElement = null
+          audioNodes = null
+          error('紧急恢复音频通路失败', recoverCause)
+        }
+      }
+      else {
+        hasAttached = false
+        currentVideoElement = null
+        audioNodes = null
+      }
+    }
+
+    if (isAlreadyConnectedError(cause)) {
+      mediaSourceBlockedVideos.add(video)
+      logEvent('视频已被其他 MediaElementAudioSourceNode 占用，跳过音量均衡')
+    }
+    else {
       error('AudioWorklet 音频图绑定失败', cause)
+    }
   }
 }
 
 // Attach to Video
 export function attachToVideo(video: HTMLVideoElement) {
-  void attachToVideoInternal(video)
+  const existing = attachInFlight.get(video)
+  if (existing) {
+    void existing
+    return
+  }
+
+  const run = attachQueue
+    .catch(() => {})
+    .then(() => attachToVideoInternal(video))
+
+  const tracked = run.finally(() => {
+    if (attachInFlight.get(video) === tracked)
+      attachInFlight.delete(video)
+  })
+
+  attachInFlight.set(video, tracked)
+  attachQueue = tracked.then(() => {}, () => {})
+  void tracked
 }
 
 // Detach/Reset
