@@ -93,6 +93,12 @@ const tintOpacity = computed(() => {
   return props.reachTop ? 0.8 : 1
 })
 
+const overlayHeight = computed(() => {
+  return settings.value.enableTopBarGradient
+    ? OVERLAY_HEIGHT
+    : 'var(--bew-top-bar-height)'
+})
+
 const leftSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
 const searchSection = ref<HTMLElement | null>(null)
@@ -200,7 +206,7 @@ function refreshSearchContent() {
     h="$bew-top-bar-height"
   >
     <!-- 顶栏边缘雾化：渐进模糊 + 雾色 -->
-    <div class="top-bar-header__scroll-edge" :style="{ height: OVERLAY_HEIGHT }">
+    <div class="top-bar-header__scroll-edge" :style="{ height: overlayHeight }">
       <Transition name="fade">
         <div v-if="!reachTop && settings.enableTopBarGradient" class="top-bar-header__blur-stack">
           <div
