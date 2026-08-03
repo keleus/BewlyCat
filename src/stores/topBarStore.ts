@@ -36,6 +36,22 @@ import { isExtensionContextInvalidatedError, onMessage, sendMessage } from '~/ut
 
 export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 已登录但 userInfo 未填充时重查的间隔
 
+const DAY_MILLISECONDS = 24 * 60 * 60 * 1000
+
+function getNextReceiveAt(nextReceiveDays?: number, periodEndUnix?: number): number | null {
+  if (Number.isFinite(periodEndUnix) && periodEndUnix! > 0)
+    return periodEndUnix! * 1000
+
+  if (Number.isFinite(nextReceiveDays) && nextReceiveDays! > 0)
+    return Date.now() + nextReceiveDays! * DAY_MILLISECONDS
+
+  return null
+}
+
+function isBeforeNextReceiveAt(nextReceiveAt: number | null): boolean {
+  return nextReceiveAt !== null && nextReceiveAt > Date.now()
+}
+
 export const useTopBarStore = defineStore('topBar', () => {
   const toast = useToast()
   // 登录态是本地事实而非网络推导：初始值取 DedeUserID 存在性（同步、零请求），
@@ -102,9 +118,11 @@ export const useTopBarStore = defineStore('topBar', () => {
   const privilegeInfo = reactive<PrivilegeInfo>({} as PrivilegeInfo)
   const hasBCoinToReceive = ref<boolean>(false)
   const bCoinAlreadyReceived = ref<boolean>(false) // 记录B币是否已经领取
+  const bCoinNextReceiveAt = ref<number | null>(null)
 
   // 大会员经验领取状态
   const vipExpAlreadyReceived = ref<boolean>(false) // 记录大会员经验是否已经领取
+  const vipExpNextReceiveAt = ref<number | null>(null)
 
   // 登录态请求和定时器都可能跨越账号切换、登出或组件卸载；generation 用于
   // 忽略这些生命周期边界之前启动的异步结果。
@@ -172,7 +190,9 @@ export const useTopBarStore = defineStore('topBar', () => {
   function resetReceiveStates() {
     bCoinAlreadyReceived.value = false
     hasBCoinToReceive.value = false
+    bCoinNextReceiveAt.value = null
     vipExpAlreadyReceived.value = false
+    vipExpNextReceiveAt.value = null
   }
 
   function resetAccountScopedState() {
@@ -399,53 +419,91 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
   }
 
-  // B币领取状态检查
-  async function checkBCoinReceiveStatus() {
+  // B币和大会员经验领取状态检查
+  async function refreshVipRewardStatus() {
     const accountId = userInfo.mid
-    if (!isCurrentAccount(accountId) || userInfo.vip?.status !== 1 || !settings.value.showBCoinReceiveReminder)
+    const shouldCheckBCoin = settings.value.showBCoinReceiveReminder
+    const shouldCheckVipExp = settings.value.autoReceiveVipExp
+    if (!isCurrentAccount(accountId) || userInfo.vip?.status !== 1 || (!shouldCheckBCoin && !shouldCheckVipExp))
+      return
+
+    const shouldFetchBCoin = shouldCheckBCoin
+      && !(bCoinAlreadyReceived.value && isBeforeNextReceiveAt(bCoinNextReceiveAt.value))
+    const shouldFetchVipExp = shouldCheckVipExp
+      && !(vipExpAlreadyReceived.value && isBeforeNextReceiveAt(vipExpNextReceiveAt.value))
+    if (!shouldFetchBCoin && !shouldFetchVipExp)
       return
 
     try {
       const res = await api.user.getPrivilegeInfo()
       if (res.code === 0 && isCurrentAccount(accountId)) {
         Object.assign(privilegeInfo, res.data)
-        if (privilegeInfo.vip_type < 2) {
-          bCoinAlreadyReceived.value = false
-          hasBCoinToReceive.value = false
-          return
-        }
-        // 检查B币兑换状态 (type: 1)
-        const bCoinItem = privilegeInfo.list?.find(item => item.type === 1)
-        if (bCoinItem) {
-          bCoinAlreadyReceived.value = bCoinItem.state === 1
-          if (bCoinAlreadyReceived.value) {
-            hasBCoinToReceive.value = false
-          }
-          else {
-            // 如果有权限领取且未领取
-            hasBCoinToReceive.value = bCoinItem.state === 0 && bCoinItem.next_receive_days > 0
 
-            // 如果开启了自动领取，则自动领取B币
-            if (hasBCoinToReceive.value && settings.value.autoReceiveBCoinCoupon) {
-              await autoReceiveBCoin(accountId)
+        const rewardRequests: Promise<void>[] = []
+
+        if (shouldCheckBCoin) {
+          if (privilegeInfo.vip_type < 2) {
+            bCoinAlreadyReceived.value = false
+            hasBCoinToReceive.value = false
+            bCoinNextReceiveAt.value = null
+          }
+
+          // 检查B币兑换状态 (type: 1)
+          const bCoinItem = privilegeInfo.vip_type >= 2
+            ? privilegeInfo.list?.find(item => item.type === 1)
+            : undefined
+          if (bCoinItem) {
+            const nextReceiveAt = getNextReceiveAt(bCoinItem.next_receive_days, bCoinItem.period_end_unix)
+            bCoinAlreadyReceived.value = bCoinItem.state === 1
+            bCoinNextReceiveAt.value = bCoinAlreadyReceived.value ? nextReceiveAt : null
+            if (bCoinAlreadyReceived.value) {
+              hasBCoinToReceive.value = false
+            }
+            else {
+              // 如果有权限领取且未领取
+              hasBCoinToReceive.value = bCoinItem.state === 0 && bCoinItem.next_receive_days > 0
+
+              // 如果开启了自动领取，则自动领取B币
+              if (hasBCoinToReceive.value && settings.value.autoReceiveBCoinCoupon)
+                rewardRequests.push(autoReceiveBCoin(accountId, nextReceiveAt))
             }
           }
+          else {
+            bCoinAlreadyReceived.value = false
+            hasBCoinToReceive.value = false
+            bCoinNextReceiveAt.value = null
+          }
         }
-        else {
-          bCoinAlreadyReceived.value = false
-          hasBCoinToReceive.value = false
+
+        if (shouldCheckVipExp) {
+          // 每日 10 经验对应 type=9，状态和下一轮领取时间与 B 币一致。
+          const vipExpItem = privilegeInfo.list?.find(item => item.type === 9)
+          if (vipExpItem) {
+            const nextReceiveAt = getNextReceiveAt(vipExpItem.next_receive_days, vipExpItem.period_end_unix)
+            vipExpAlreadyReceived.value = vipExpItem.state === 1
+            vipExpNextReceiveAt.value = vipExpAlreadyReceived.value ? nextReceiveAt : null
+
+            if (vipExpItem.state === 0 && vipExpItem.next_receive_days > 0)
+              rewardRequests.push(autoReceiveVipExp(accountId, nextReceiveAt))
+          }
+          else {
+            vipExpAlreadyReceived.value = false
+            vipExpNextReceiveAt.value = null
+          }
         }
+
+        await Promise.all(rewardRequests)
       }
     }
     catch (error) {
-      console.error('Failed to check B-coin receive status:', error)
+      console.error('Failed to check VIP reward status:', error)
       if (isCurrentAccount(accountId))
         hasBCoinToReceive.value = false
     }
   }
 
   // 自动领取B币
-  async function autoReceiveBCoin(accountId = userInfo.mid) {
+  async function autoReceiveBCoin(accountId = userInfo.mid, nextReceiveAt: number | null = null) {
     if (!isCurrentAccount(accountId) || !hasBCoinToReceive.value) {
       return
     }
@@ -463,6 +521,7 @@ export const useTopBarStore = defineStore('topBar', () => {
         // 领取成功，更新状态
         bCoinAlreadyReceived.value = true
         hasBCoinToReceive.value = false
+        bCoinNextReceiveAt.value = nextReceiveAt
         toast.success('B币券自动领取成功')
       }
       else {
@@ -476,14 +535,13 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   // 自动领取大会员经验
-  async function autoReceiveVipExp() {
-    const accountId = userInfo.mid
+  async function autoReceiveVipExp(accountId = userInfo.mid, nextReceiveAt: number | null = null) {
     if (!isCurrentAccount(accountId) || userInfo.vip?.status !== 1 || !settings.value.autoReceiveVipExp) {
       return
     }
 
     // 如果已经记录为已领取，则不再请求
-    if (vipExpAlreadyReceived.value) {
+    if (vipExpAlreadyReceived.value && isBeforeNextReceiveAt(vipExpNextReceiveAt.value)) {
       return
     }
 
@@ -498,11 +556,13 @@ export const useTopBarStore = defineStore('topBar', () => {
       if (res.code === 0) {
         // 领取成功，更新状态并显示消息
         vipExpAlreadyReceived.value = true
+        vipExpNextReceiveAt.value = nextReceiveAt
         toast.success('大会员经验自动领取成功', { timeout: 1500 })
       }
       else if (res.code === 69198) {
         // 经验已领取，静默更新状态
         vipExpAlreadyReceived.value = true
+        vipExpNextReceiveAt.value = nextReceiveAt
       }
       // 其他错误码不处理，下次继续尝试
     }
@@ -969,6 +1029,8 @@ export const useTopBarStore = defineStore('topBar', () => {
       hasBCoinToReceive: hasBCoinToReceive.value,
       bCoinAlreadyReceived: bCoinAlreadyReceived.value,
       vipExpAlreadyReceived: vipExpAlreadyReceived.value,
+      bCoinNextReceiveAt: bCoinNextReceiveAt.value,
+      vipExpNextReceiveAt: vipExpNextReceiveAt.value,
     }
   }
 
@@ -980,6 +1042,8 @@ export const useTopBarStore = defineStore('topBar', () => {
     hasBCoinToReceive.value = snapshot.hasBCoinToReceive
     bCoinAlreadyReceived.value = snapshot.bCoinAlreadyReceived
     vipExpAlreadyReceived.value = snapshot.vipExpAlreadyReceived
+    bCoinNextReceiveAt.value = snapshot.bCoinNextReceiveAt ?? null
+    vipExpNextReceiveAt.value = snapshot.vipExpNextReceiveAt ?? null
   }
 
   onMessage<TopBarStatePublish>(
@@ -1018,8 +1082,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       getUnreadMessageCount(),
       getTopBarNewMomentsCount(),
       getWatchLaterCount(),
-      checkBCoinReceiveStatus(),
-      autoReceiveVipExp(),
+      refreshVipRewardStatus(),
     ])
   }
 

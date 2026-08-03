@@ -8,6 +8,8 @@ export interface TopBarSharedState {
   hasBCoinToReceive: boolean
   bCoinAlreadyReceived: boolean
   vipExpAlreadyReceived: boolean
+  bCoinNextReceiveAt?: number | null
+  vipExpNextReceiveAt?: number | null
 }
 
 export interface TopBarStateClaim {

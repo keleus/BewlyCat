@@ -66,6 +66,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+function isOptionalTimestamp(value: unknown): value is number | null | undefined {
+  return value === undefined || value === null || (typeof value === 'number' && Number.isFinite(value))
+}
+
 function isTopBarSharedState(value: unknown): value is TopBarSharedState {
   return isRecord(value)
     && isRecord(value.unReadMessage)
@@ -75,6 +79,8 @@ function isTopBarSharedState(value: unknown): value is TopBarSharedState {
     && typeof value.hasBCoinToReceive === 'boolean'
     && typeof value.bCoinAlreadyReceived === 'boolean'
     && typeof value.vipExpAlreadyReceived === 'boolean'
+    && isOptionalTimestamp(value.bCoinNextReceiveAt)
+    && isOptionalTimestamp(value.vipExpNextReceiveAt)
 }
 
 function isTopBarStateEntry(value: unknown): value is TopBarStateEntry {
