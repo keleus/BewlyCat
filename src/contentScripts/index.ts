@@ -178,6 +178,7 @@ else if (shouldInitializeContentScript) {
   }
 
   let beforeLoadedStyleEl: HTMLStyleElement | undefined
+  let beforeLoadedStyleFailsafeTimer: ReturnType<typeof setTimeout> | undefined
   let lastUrl = location.href
   let lastVideoNavigationKey = getVideoNavigationKey(location.href)
   let hasAppliedPlayerMode = false // 添加标志变量
@@ -256,6 +257,13 @@ else if (shouldInitializeContentScript) {
     }
   }
 
+  // 挂载完成与保险丝两条路径共用的清理，重复调用无副作用
+  function removeBeforeLoadedStyleEl() {
+    beforeLoadedStyleEl?.remove()
+    beforeLoadedStyleEl = undefined
+    clearTimeout(beforeLoadedStyleFailsafeTimer)
+  }
+
   if (settings.value.adaptToOtherPageStyles && isHomePage()) {
     beforeLoadedStyleEl = injectCSS(`
     html.bewly-design {
@@ -275,20 +283,14 @@ else if (shouldInitializeContentScript) {
     }
   `)
     // Failsafe: never keep the page hidden for too long.
-    setTimeout(() => {
-      if (beforeLoadedStyleEl?.isConnected)
-        document.documentElement.removeChild(beforeLoadedStyleEl)
-    }, 4000)
+    beforeLoadedStyleFailsafeTimer = setTimeout(removeBeforeLoadedStyleEl, 4000)
   }
 
   window.addEventListener(BEWLY_MOUNTED, () => {
-    if (beforeLoadedStyleEl) {
-      document.documentElement.removeChild(beforeLoadedStyleEl)
-      if (isVideoPage()) {
-      // 根据设置应用默认播放器模式
-        applyDefaultPlayerMode()
-      }
-    }
+    removeBeforeLoadedStyleEl()
+    // 根据设置应用默认播放器模式
+    if (isVideoPage())
+      applyDefaultPlayerMode()
   })
 
   // 应用默认播放器模式
