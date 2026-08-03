@@ -110,6 +110,9 @@
   --bew-top-bar-brand-logo-width: 84px;
   --bew-top-bar-brand-logo-height: 28px;
   --bew-top-bar-brand-logo-compact-size: 24px;
+  --bew-top-bar-solid-background: var(--bew-elevated-solid);
+  --bew-top-bar-solid-background-force-white: hsl(0 0% 0%);
+  --bew-top-bar-solid-shadow: var(--bew-shadow-1);
 
   // Interaction tokens aligned with home tab buttons
   --bew-segment-item-hover-bg: var(--bew-fill-1);

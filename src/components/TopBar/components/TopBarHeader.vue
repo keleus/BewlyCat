@@ -72,10 +72,6 @@ const blurLayers = Array.from({ length: BLUR_LAYER_COUNT }, (_, index) => {
 
 // 雾化层只改清晰度，还需要一层雾色叠上去才有"雾"的质感。
 const tintBackground = computed(() => {
-  // 关闭顶栏渐变时必须使用不透明的实色顶栏，避免页面内容从渐变尾部透出。
-  if (!settings.value.enableTopBarGradient)
-    return forceWhiteIcon.value ? 'rgb(0 0 0)' : 'var(--bew-elevated-solid)'
-
   // 壁纸模式下方是图片，压黑雾才压得住
   if (forceWhiteIcon.value)
     return fogGradient('0 0 0', 42)
@@ -85,18 +81,6 @@ const tintBackground = computed(() => {
   return props.isDark
     ? fogGradient('0 0 0', 75)
     : fogGradient('255 255 255', 80)
-})
-
-const tintOpacity = computed(() => {
-  if (!settings.value.enableTopBarGradient)
-    return 1
-  return props.reachTop ? 0.8 : 1
-})
-
-const overlayHeight = computed(() => {
-  return settings.value.enableTopBarGradient
-    ? OVERLAY_HEIGHT
-    : 'var(--bew-top-bar-height)'
 })
 
 const leftSection = ref<HTMLElement | null>(null)
@@ -200,15 +184,19 @@ function refreshSearchContent() {
 <template>
   <main
     class="top-bar-header"
+    :class="{
+      'top-bar-header--solid': !settings.enableTopBarGradient,
+      'top-bar-header--solid-force-white': !settings.enableTopBarGradient && forceWhiteIcon,
+    }"
     max-w="$bew-page-max-width"
     grid="~ cols-[auto_1fr_auto] items-center gap-4"
     p="x-12" m-auto
     h="$bew-top-bar-height"
   >
     <!-- 顶栏边缘雾化：渐进模糊 + 雾色 -->
-    <div class="top-bar-header__scroll-edge" :style="{ height: overlayHeight }">
+    <div v-if="settings.enableTopBarGradient" class="top-bar-header__scroll-edge" :style="{ height: OVERLAY_HEIGHT }">
       <Transition name="fade">
-        <div v-if="!reachTop && settings.enableTopBarGradient" class="top-bar-header__blur-stack">
+        <div v-if="!reachTop" class="top-bar-header__blur-stack">
           <div
             v-for="(layer, index) in blurLayers"
             :key="index"
@@ -220,14 +208,14 @@ function refreshSearchContent() {
 
       <div
         class="top-bar-header__tint"
-        :style="{ background: tintBackground, opacity: tintOpacity }"
+        :style="{ background: tintBackground, opacity: reachTop ? 0.8 : 1 }"
       />
     </div>
 
     <!-- Top bar theme color gradient -->
     <Transition name="fade">
       <div
-        v-if="settings.showTopBarThemeColorGradient && !forceWhiteIcon && reachTop && isDark"
+        v-if="settings.enableTopBarGradient && settings.showTopBarThemeColorGradient && !forceWhiteIcon && reachTop && isDark"
         pos="absolute top-0 left-0" w-full h="$bew-top-bar-height" pointer-events-none
         :style="{ background: 'linear-gradient(to bottom, var(--bew-theme-color-10), transparent)' }"
       />
@@ -271,6 +259,18 @@ function refreshSearchContent() {
   box-sizing: border-box;
   min-width: 0;
   min-height: var(--bew-top-bar-height);
+}
+
+.top-bar-header--solid {
+  background: var(--bew-top-bar-solid-background);
+  box-shadow: var(--bew-top-bar-solid-shadow);
+  transition:
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard);
+}
+
+.top-bar-header--solid-force-white {
+  background: var(--bew-top-bar-solid-background-force-white);
 }
 
 .top-bar-header__scroll-edge {
