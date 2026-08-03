@@ -32,7 +32,7 @@ const topBarStore = useTopBarStore()
 const { hasBCoinToReceive } = storeToRefs(topBarStore)
 
 const mid = computed(() => {
-  return getUserID()
+  return props.userInfo.mid || getUserID()
 })
 
 const otherLinks = computed((): { name: string, url: string, icon: string, code?: string }[] => {

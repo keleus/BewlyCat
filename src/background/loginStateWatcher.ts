@@ -7,6 +7,11 @@ import { TOP_BAR_STATE_MESSAGE } from '~/constants/topBarState'
 // 登出会清空它们，登录/扫码登录会写入）
 const WATCHED_COOKIE_NAMES = new Set(['DedeUserID', 'SESSDATA'])
 
+// 登录/登出/切号通常会连续触发多个 Cookie 变更；短窗内合并为一次广播
+const BROADCAST_COALESCE_MS = 200
+
+let broadcastTimer: ReturnType<typeof setTimeout> | null = null
+
 /**
  * 监听会话 Cookie 变化并广播给所有内容脚本。
  *
@@ -20,8 +25,20 @@ export function setupLoginStateWatcher() {
     if (!WATCHED_COOKIE_NAMES.has(cookie.name) || !cookie.domain.endsWith('bilibili.com'))
       return
 
-    void broadcastLoginStateChanged()
+    scheduleBroadcastLoginStateChanged()
   })
+}
+
+function scheduleBroadcastLoginStateChanged() {
+  // 延后到最后一次 Cookie 变更后再广播，避免在 DedeUserID/SESSDATA
+  // 尚未同时更新时触发中间态校正。
+  if (broadcastTimer !== null)
+    clearTimeout(broadcastTimer)
+
+  broadcastTimer = setTimeout(() => {
+    broadcastTimer = null
+    void broadcastLoginStateChanged()
+  }, BROADCAST_COALESCE_MS)
 }
 
 async function broadcastLoginStateChanged() {

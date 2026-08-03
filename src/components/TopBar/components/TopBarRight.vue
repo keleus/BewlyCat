@@ -50,7 +50,7 @@ const avatarShadow = ref<HTMLElement | null>(null)
 
 const { handleClickTopBarItem, setupTopBarItemHoverEvent, setupTopBarItemTransformer, forceWhiteIcon } = useTopBarInteraction()
 
-const mid = getUserID() || ''
+const mid = computed(() => userInfo.value.mid || getUserID())
 
 const moments = isComponentVisible('moments') ? setupTopBarItemHoverEvent('moments') : ref()
 const favorites = isComponentVisible('favorites') ? setupTopBarItemHoverEvent('favorites') : ref()

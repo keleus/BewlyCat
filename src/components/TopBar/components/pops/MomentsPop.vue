@@ -80,6 +80,10 @@ function getData() {
 }
 
 function toggleWatchLater(aid: number) {
+  const accountId = topBarStore.userInfo.mid
+  if (!topBarStore.isLogin || !accountId)
+    return
+
   // 修改这里，直接使用 topBarStore.addedWatchLaterList
   const isInWatchLater = topBarStore.addedWatchLaterList.includes(aid)
 
@@ -89,7 +93,7 @@ function toggleWatchLater(aid: number) {
       csrf: getCSRF(),
     })
       .then((res) => {
-        if (res.code === 0) {
+        if (res.code === 0 && topBarStore.isLogin && topBarStore.userInfo.mid === accountId) {
           topBarStore.addedWatchLaterList.push(aid)
           void topBarStore.syncWatchLaterState()
         }
@@ -101,9 +105,10 @@ function toggleWatchLater(aid: number) {
       csrf: getCSRF(),
     })
       .then((res) => {
-        if (res.code === 0) {
-          topBarStore.addedWatchLaterList.length = 0
-          Object.assign(topBarStore.addedWatchLaterList, topBarStore.addedWatchLaterList.filter(item => item !== aid))
+        if (res.code === 0 && topBarStore.isLogin && topBarStore.userInfo.mid === accountId) {
+          const index = topBarStore.addedWatchLaterList.indexOf(aid)
+          if (index !== -1)
+            topBarStore.addedWatchLaterList.splice(index, 1)
           void topBarStore.syncWatchLaterState()
         }
       })
