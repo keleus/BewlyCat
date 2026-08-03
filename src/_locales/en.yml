@@ -230,6 +230,7 @@ settings:
   group_new_moments_page_desc: This page is not final and may change significantly in future updates.
   group_moments_sidebar: Dynamic Feed Sidebar
   group_moments_interaction: Dynamic Card Interaction
+  group_settings_sync: Browser cloud sync
   group_version_reminder: Version reminders
   original_moments_show_user_card: Show user card
   original_moments_show_live_list: Show live list
@@ -708,8 +709,9 @@ settings:
   contributors_image_failed: Contributor image failed to load
   enable_settings_sync: Allow syncing settings
   enable_settings_sync_desc: >-
-    Sync extension settings across different devices (requires signing into the
-    browser account)
+    Save settings locally and to browser cloud storage. Wallpaper/background
+    settings and per-device playback state are not synced (requires signing in
+    to the browser account).
   disable_auto_play_collection: Auto disable collection autoplay
   disable_auto_play_collection_desc: Automatically turn off the autoplay feature for video collections
   keep_collection_video_default_mode: Keep collection videos in default mode

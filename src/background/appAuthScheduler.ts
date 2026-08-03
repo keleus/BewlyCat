@@ -1,4 +1,4 @@
-import { appAuthTokens, resetAppAuthTokens } from '~/logic'
+import { appAuthTokens, resetAppAuthTokens } from '~/logic/appAuthStorage'
 import { refreshAppAccessToken } from '~/utils/authProvider'
 
 const CHECK_INTERVAL = 5 * 60 * 1000 // 5 minutes

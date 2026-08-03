@@ -1,5 +1,5 @@
 // import browser from 'webextension-polyfill'
-import { appAuthTokens, defaultAppAuthTokens, resetAppAuthTokens } from '~/logic/storage'
+import { appAuthTokens, defaultAppAuthTokens, resetAppAuthTokens } from '~/logic/appAuthStorage'
 
 import { appSign } from './appSign'
 

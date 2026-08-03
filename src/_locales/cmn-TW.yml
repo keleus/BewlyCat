@@ -226,6 +226,7 @@ settings:
   group_new_moments_page_desc: 此頁面並非最終成品，相關形式後續可能會有較大調整。
   group_moments_sidebar: 動態頁左側元件
   group_moments_interaction: 動態卡片互動
+  group_settings_sync: 瀏覽器雲端同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 顯示使用者卡片
   original_moments_show_live_list: 顯示直播列表
@@ -637,7 +638,7 @@ settings:
   current_contributors: BewlyCat（含 BewlyBewly）貢獻者
   contributors_image_failed: 貢獻者圖片載入失敗
   enable_settings_sync: 允許同步設定
-  enable_settings_sync_desc: 在不同裝置間同步擴展設定（需要登入瀏覽器帳號）
+  enable_settings_sync_desc: 開啟後同時儲存到本機與瀏覽器雲端；桌布背景與裝置播放狀態不會同步（需要登入瀏覽器帳號）
   keep_collection_video_default_mode: 合集影片保持預設模式
   keep_collection_video_default_mode_desc: 當啟用時，合集影片將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   keep_watch_later_video_default_mode: 稍後觀看保持預設模式

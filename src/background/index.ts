@@ -7,6 +7,8 @@ import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
 import { setupLoginStateWatcher } from './loginStateWatcher'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
+import { setupSettingsCloudSync } from './settingsCloudSync'
+import { setupSettingsStorageCoordinator } from './settingsStorageCoordinator'
 import { setupTopBarStateBroker } from './topBarStateBroker'
 import { initWbiKeys } from './wbiSign'
 
@@ -141,6 +143,8 @@ if (isFirefoxBuild) {
 }
 
 // Setup all message listeners
+setupSettingsStorageCoordinator()
+setupSettingsCloudSync()
 setupApiMsgListeners()
 setupTabMsgListeners()
 setupTopBarStateBroker()

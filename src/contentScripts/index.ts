@@ -746,9 +746,8 @@ else if (shouldInitializeContentScript) {
   `)
 
   async function onDOMLoaded() {
-    // 首页需要先完成设置读取，避免默认值误把原版首页当成自定义首页并吞掉分区行。
-    if (isHomePage())
-      await settingsReady
+    // 所有页面都先完成设置读取，避免启动期 watcher 基于默认值生成陈旧写入。
+    await settingsReady
 
     const changeHomePage = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
     document.documentElement.classList.toggle('bewly-custom-homepage', changeHomePage)

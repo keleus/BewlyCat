@@ -227,6 +227,7 @@ settings:
   group_new_moments_page_desc: 此页面并非最终成品，相关形态后续可能会有较大调整。
   group_moments_sidebar: 动态页左侧组件
   group_moments_interaction: 动态卡片交互
+  group_settings_sync: 浏览器云同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 显示用户卡片
   original_moments_show_live_list: 显示直播列表
@@ -473,7 +474,7 @@ settings:
   filter_articles_in_moments: 过滤专栏
   filter_articles_in_moments_desc: 在动态列表中过滤掉专栏内容，仅显示视频
   enable_settings_sync: 启用设置同步
-  enable_settings_sync_desc: 在不同设备间同步扩展设置（需要登录浏览器账号）
+  enable_settings_sync_desc: 开启后同时保存到本地和浏览器云端；壁纸背景与设备播放状态不会同步（需要登录浏览器账号）
   top_bar_icon_badges: 图标角标
   top_bar_icon_badges_opt:
     number: 数字

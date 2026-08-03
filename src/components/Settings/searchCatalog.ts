@@ -631,6 +631,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
 
   ...createEntries(aboutRoute, [
     'settings.menu_about',
+    'settings.group_settings_sync',
+    'settings.enable_settings_sync',
     'settings.group_version_reminder',
     'settings.enable_version_reminder',
     'settings.maintenance.title',
