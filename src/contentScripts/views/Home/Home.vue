@@ -31,18 +31,31 @@ let pendingTabScrollTop: number | null = null
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
+// KeepAlive 依赖稳定的组件类型，不能在 computed 内重复创建异步组件包装器。
+const forYouPage = defineAsyncComponent(() => import('./components/ForYou.vue'))
+const followingPage = defineAsyncComponent(() => import('./components/Following.vue'))
+const followingOldPage = defineAsyncComponent(() => import('./components/FollowingOld.vue'))
+const subscribedSeriesPage = defineAsyncComponent(() => import('./components/SubscribedSeries.vue'))
+const trendingPage = defineAsyncComponent(() => import('./components/Trending.vue'))
+const rankingPage = defineAsyncComponent(() => import('./components/Ranking.vue'))
+const preciousPage = defineAsyncComponent(() => import('./components/Precious.vue'))
+const weeklyPage = defineAsyncComponent(() => import('./components/Weekly.vue'))
+const livePage = defineAsyncComponent(() => import('./components/Live.vue'))
 const pages = computed(() => ({
-  [HomeSubPage.ForYou]: defineAsyncComponent(() => import('./components/ForYou.vue')),
+  [HomeSubPage.ForYou]: forYouPage,
   [HomeSubPage.Following]: settings.value.useFollowingNewLayout
-    ? defineAsyncComponent(() => import('./components/Following.vue'))
-    : defineAsyncComponent(() => import('./components/FollowingOld.vue')),
-  [HomeSubPage.SubscribedSeries]: defineAsyncComponent(() => import('./components/SubscribedSeries.vue')),
-  [HomeSubPage.Trending]: defineAsyncComponent(() => import('./components/Trending.vue')),
-  [HomeSubPage.Ranking]: defineAsyncComponent(() => import('./components/Ranking.vue')),
-  [HomeSubPage.Precious]: defineAsyncComponent(() => import('./components/Precious.vue')),
-  [HomeSubPage.Weekly]: defineAsyncComponent(() => import('./components/Weekly.vue')),
-  [HomeSubPage.Live]: defineAsyncComponent(() => import('./components/Live.vue')),
+    ? followingPage
+    : followingOldPage,
+  [HomeSubPage.SubscribedSeries]: subscribedSeriesPage,
+  [HomeSubPage.Trending]: trendingPage,
+  [HomeSubPage.Ranking]: rankingPage,
+  [HomeSubPage.Precious]: preciousPage,
+  [HomeSubPage.Weekly]: weeklyPage,
+  [HomeSubPage.Live]: livePage,
 }))
+const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage.Following
+  ? `${activatedPage.value}:${settings.value.useFollowingNewLayout ? 'new' : 'old'}`
+  : activatedPage.value)
 const tabContentLoading = ref<boolean>(false)
 const tabTransitionName = ref<'home-tab-forward' | 'home-tab-backward'>('home-tab-forward')
 const currentTabs = ref<HomeTab[]>([])
@@ -344,7 +357,7 @@ function toggleTabContentLoading(loading: boolean) {
       >
         <KeepAlive :max="3">
           <Component
-            :is="pages[activatedPage]" :key="activatedPage"
+            :is="pages[activatedPage]" :key="activatedPageCacheKey"
             ref="tabPageRef"
             :grid-layout="gridLayout.home"
             :top-bar-visibility="topBarVisibility"
