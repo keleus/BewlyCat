@@ -85,6 +85,36 @@ function handleContributorImageError() {
         </p>
       </section>
 
+      <section class="about-maintenance">
+        <SettingsItemGroup :title="$t('settings.group_settings_sync')">
+          <SettingsItem
+            :title="$t('settings.enable_settings_sync')"
+            :desc="$t('settings.enable_settings_sync_desc')"
+            right-width="auto"
+          >
+            <Radio v-model="settingsCloudSyncPreference" />
+          </SettingsItem>
+        </SettingsItemGroup>
+
+        <SettingsItemGroup :title="$t('settings.group_version_reminder')">
+          <SettingsItem
+            :title="$t('settings.enable_version_reminder')"
+            :desc="$t('settings.enable_version_reminder_desc')"
+            right-width="auto"
+          >
+            <Radio v-model="settings.enableVersionReminder" />
+          </SettingsItem>
+        </SettingsItemGroup>
+
+        <SettingsSectionHeading
+          class="maintenance-heading"
+          :title="$t('settings.maintenance.title')"
+          :desc="$t('settings.category_advanced_maintenance_desc')"
+          icon="i-mingcute:save-2-fill"
+        />
+        <Maintenance />
+      </section>
+
       <section
         class="about-info-card"
       >
@@ -140,36 +170,6 @@ function handleContributorImageError() {
             >
           </a>
         </section>
-      </section>
-
-      <section class="about-maintenance">
-        <SettingsItemGroup :title="$t('settings.group_settings_sync')">
-          <SettingsItem
-            :title="$t('settings.enable_settings_sync')"
-            :desc="$t('settings.enable_settings_sync_desc')"
-            right-width="auto"
-          >
-            <Radio v-model="settingsCloudSyncPreference" />
-          </SettingsItem>
-        </SettingsItemGroup>
-
-        <SettingsItemGroup :title="$t('settings.group_version_reminder')">
-          <SettingsItem
-            :title="$t('settings.enable_version_reminder')"
-            :desc="$t('settings.enable_version_reminder_desc')"
-            right-width="auto"
-          >
-            <Radio v-model="settings.enableVersionReminder" />
-          </SettingsItem>
-        </SettingsItemGroup>
-
-        <SettingsSectionHeading
-          class="maintenance-heading"
-          :title="$t('settings.maintenance.title')"
-          :desc="$t('settings.category_advanced_maintenance_desc')"
-          icon="i-mingcute:save-2-fill"
-        />
-        <Maintenance />
       </section>
     </div>
   </div>
