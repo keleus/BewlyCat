@@ -47,6 +47,9 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
     options: SearchRequestOptions = {},
   ): Promise<boolean> {
     if (!keyword.trim()) {
+      activeRequestToken = null
+      isLoading.value = false
+      error.value = ''
       results.value = null
       return false
     }
@@ -78,6 +81,8 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
       return true
     }
     catch (err) {
+      if (activeRequestToken !== requestToken)
+        return false
       console.error(`Search error for ${category}:`, err)
       error.value = '搜索出错，请稍后重试'
       return false
@@ -92,6 +97,7 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
    * 重置搜索状态
    */
   function reset() {
+    isLoading.value = false
     results.value = null
     totalResults.value = 0
     totalPages.value = 0

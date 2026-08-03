@@ -82,7 +82,7 @@ const legacyMenuAliases: Record<string, MenuType> = {
   Advanced: MenuType.General,
 }
 
-if (!sessionStorage.getItem(bewlyPagesStorageKey) && legacyNavigationPage && ['home', 'moments', 'favorites', 'search'].includes(legacyNavigationPage))
+if (!sessionStorage.getItem(bewlyPagesStorageKey) && legacyNavigationPage && ['home', 'moments', 'search'].includes(legacyNavigationPage))
   sessionStorage.setItem(bewlyPagesStorageKey, legacyNavigationPage)
 
 if (!sessionStorage.getItem(bewlyComponentsStorageKey) && legacyNavigationPage && legacyNavigationComponentPages.has(legacyNavigationPage))
@@ -613,6 +613,7 @@ function changeMenuItem(menuItem: MenuType) {
             WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
             scrollbarGutter: 'stable',
             overflowAnchor: 'none',
+            overscrollBehavior: 'contain',
           }"
           h-inherit of-y-auto of-x-hidden
           style="padding-top: 92px;"

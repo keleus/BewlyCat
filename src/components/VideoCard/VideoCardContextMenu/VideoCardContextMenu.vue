@@ -455,7 +455,6 @@ async function unfollowUser() {
         style="backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);"
         :style="contextMenuStyles"
         p-1 bg="$bew-elevated" rounded="$bew-radius"
-        min-w-200px m="t-4 l-[calc(-200px+1rem)]"
         border="1 $bew-border-color"
         class="context-menu-container"
       >
@@ -600,16 +599,17 @@ async function unfollowUser() {
 }
 
 .context-menu-container {
-  max-height: 80vh;
+  width: min(240px, calc(100vw - var(--bew-space-4)));
+  max-height: min(406px, calc(100vh - var(--bew-space-4)));
   overflow: hidden;
   z-index: 9999;
-  position: relative;
 }
 
 .context-menu-list {
-  max-height: calc(80vh - 40px); // 为指示器留出空间
+  max-height: inherit;
   overflow-y: auto;
-  padding: 4px 0;
+  overscroll-behavior: contain;
+  padding: var(--bew-space-1) 0;
 
   /* 完全隐藏滚动条 */
   -ms-overflow-style: none; /* IE 和 Edge */
