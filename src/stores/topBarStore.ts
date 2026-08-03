@@ -29,6 +29,7 @@ import {
 } from '~/constants/topBarState'
 import { settings } from '~/logic'
 import { checkLoginStatus, LoginStatus, parseDedeUserID } from '~/logic/loginStatus'
+import { parseTopBarPublicationTime, recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { getCSRF, isHomePage } from '~/utils/main'
@@ -771,6 +772,23 @@ export const useTopBarStore = defineStore('topBar', () => {
                 filteredItems = items.filter((item: any) => item.type === 8 || item.type === 64)
               }
             }
+
+            const latestVideoTimes = filteredItems
+              .filter((item: any) => item.type === 8)
+              .flatMap((item: any) => {
+                const time = parseTopBarPublicationTime(item.pub_time)
+                if (!time)
+                  return []
+
+                const authors = Array.isArray(item.authors) && item.authors.length > 0
+                  ? item.authors
+                  : [item.author]
+                return authors.map((author: any) => ({
+                  mid: author?.mid,
+                  time,
+                }))
+              })
+            void recordUploaderLatestVideoTimes(latestVideoTimes, 'topbar-pop')
 
             // 合并联合投稿视频 - 只对视频类型进行合并
             let processedItems = filteredItems

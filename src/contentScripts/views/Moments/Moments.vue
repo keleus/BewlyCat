@@ -15,6 +15,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
+import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
@@ -1040,6 +1041,33 @@ function closeMomentDetail() {
   selectedMoment.value = null
   detailFrameUrl.value = ''
   detailFrameLoaded.value = false
+}
+
+function collectVideoPublicationTimes(items: DataItem[]) {
+  return items.flatMap((item) => {
+    const raw = item as any
+    if (raw.type === 'DYNAMIC_TYPE_FORWARD')
+      return []
+
+    const author = raw.modules?.module_author
+    const major = raw.modules?.module_dynamic?.major
+    const archive = major?.archive || major?.ugc_season
+    const time = Number(author?.pub_ts || 0) * 1000
+    if (!archive || time <= 0)
+      return []
+
+    const mids = new Set<number | string>()
+    if (author?.mid)
+      mids.add(author.mid)
+    if (Array.isArray(archive.coop_info)) {
+      archive.coop_info.forEach((coop: any) => {
+        if (coop?.mid)
+          mids.add(coop.mid)
+      })
+    }
+
+    return Array.from(mids, mid => ({ mid, time }))
+  })
 }
 
 function mapMoment(item: DataItem): DisplayMoment {
@@ -2716,6 +2744,18 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     }
 
     const normalizedItems = cachedBatch ?? rawItems.map(mapMoment)
+    void recordUploaderLatestVideoTimes(
+      [
+        ...collectVideoPublicationTimes(rawItems),
+        ...normalizedItems
+          .filter(moment => moment.isVideo && !moment.isForward)
+          .map(moment => ({
+            mid: moment.author.mid,
+            time: moment.publishedAt * 1000,
+          })),
+      ],
+      'moments-page',
+    )
     // 按 UP 主请求不写入全局全部动态缓存
     if (requestGroup === 'all' && !requestHostMid) {
       cacheRegularMomentPage(
