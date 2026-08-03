@@ -57,7 +57,6 @@ const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage
   ? `${activatedPage.value}:${settings.value.useFollowingNewLayout ? 'new' : 'old'}`
   : activatedPage.value)
 const tabContentLoading = ref<boolean>(false)
-const tabTransitionName = ref<'home-tab-forward' | 'home-tab-backward'>('home-tab-forward')
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
 const topBarVisibility = ref<boolean>(true)
@@ -192,10 +191,6 @@ function handleChangeTab(tab: HomeTab) {
   }
   if (tabContentLoading.value)
     toggleTabContentLoading(false)
-
-  const currentTabIndex = currentTabs.value.findIndex(item => item.page === activatedPage.value)
-  const nextTabIndex = currentTabs.value.findIndex(item => item.page === tab.page)
-  tabTransitionName.value = nextTabIndex < currentTabIndex ? 'home-tab-backward' : 'home-tab-forward'
 
   activatedPage.value = tab.page
   // Update global home activated page state
@@ -350,7 +345,7 @@ function toggleTabContentLoading(loading: boolean) {
       </header>
 
       <Transition
-        :name="tabTransitionName"
+        name="home-tab"
         mode="out-in"
         @enter="restoreTabScrollPosition"
         @after-enter="finishTabSwitch"
@@ -397,30 +392,14 @@ function toggleTabContentLoading(loading: boolean) {
   --uno: "hidden";
 }
 
-.home-tab-forward-enter-active,
-.home-tab-backward-enter-active {
-  transition:
-    opacity var(--bew-duration-normal, 200ms) var(--bew-ease-standard, ease),
-    transform var(--bew-duration-normal, 200ms) var(--bew-ease-standard, ease);
+.home-tab-enter-active,
+.home-tab-leave-active {
+  transition: opacity var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
 }
 
-.home-tab-forward-leave-active,
-.home-tab-backward-leave-active {
-  transition:
-    opacity var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease),
-    transform var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
-}
-
-.home-tab-forward-enter-from,
-.home-tab-backward-leave-to {
+.home-tab-enter-from,
+.home-tab-leave-to {
   opacity: 0;
-  transform: translateX(12px);
-}
-
-.home-tab-forward-leave-to,
-.home-tab-backward-enter-from {
-  opacity: 0;
-  transform: translateX(-12px);
 }
 
 .glass-panel {
@@ -480,18 +459,9 @@ function toggleTabContentLoading(loading: boolean) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-tab-forward-enter-active,
-  .home-tab-forward-leave-active,
-  .home-tab-backward-enter-active,
-  .home-tab-backward-leave-active {
+  .home-tab-enter-active,
+  .home-tab-leave-active {
     transition: opacity 1ms linear;
-  }
-
-  .home-tab-forward-enter-from,
-  .home-tab-forward-leave-to,
-  .home-tab-backward-enter-from,
-  .home-tab-backward-leave-to {
-    transform: none;
   }
 }
 </style>
