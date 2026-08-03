@@ -334,7 +334,6 @@ settings:
     left alignment. If you are using a custom font, it is recommended to remove
     the indent.
   enable_frosted_glass: Enable frosted glass effect
-  enable_frosted_glass_desc: Use a frosted glass gradient by default; disable it to use solid backgrounds.
   frosted_glass_blur_intensity: Frosted glass blur intensity
   enable_liquid_segment_indicator: Enable liquid segment indicator
   enable_liquid_segment_indicator_desc: >
@@ -417,6 +416,8 @@ settings:
     showOnMouse: On hover
     showOnScroll: On scroll
   always_use_transparent_top_bar: Always use transparent (legacy) style for top bar
+  enable_top_bar_gradient: Enable top bar gradient effect
+  enable_top_bar_gradient_desc: Use a frosted glass gradient on the top bar by default; disable it to use a solid background.
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
   show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher

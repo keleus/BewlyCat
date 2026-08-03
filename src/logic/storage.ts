@@ -236,6 +236,7 @@ export interface Settings {
   autoHideTopBar: boolean
   videoPageTopBarConfig: VideoPageTopBarConfig
   alwaysUseTransparentTopBar: boolean
+  enableTopBarGradient: boolean
   showTopBarThemeColorGradient: boolean
   showBewlyOrBiliTopBarSwitcher: boolean
   showBewlyOrBiliPageSwitcher: boolean
@@ -475,8 +476,7 @@ export const originalSettings: Settings = {
   overrideDanmakuFont: true,
   removeTheIndentFromChinesePunctuation: false,
 
-  // 默认使用毛玻璃渐变；关闭后顶栏和其他玻璃表面使用实色背景。
-  enableFrostedGlass: true,
+  enableFrostedGlass: false,
   frostedGlassBlurIntensity: 20,
   enableLiquidSegmentIndicator: false,
   disableShadow: false,
@@ -517,6 +517,7 @@ export const originalSettings: Settings = {
   autoHideTopBar: false,
   videoPageTopBarConfig: VideoPageTopBarConfig.ShowOnScroll,
   alwaysUseTransparentTopBar: false,
+  enableTopBarGradient: true,
   showTopBarThemeColorGradient: true,
   showBewlyOrBiliTopBarSwitcher: false,
   showBewlyOrBiliPageSwitcher: true,

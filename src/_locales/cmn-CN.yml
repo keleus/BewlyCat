@@ -321,7 +321,6 @@ settings:
   remove_the_indent_from_chinese_punctuation_desc: |
     Bilibili 默认会专门处理中文标点符号以实现左对齐。 如果你正在使用自定义字体，建议移除缩进。
   enable_frosted_glass: 启用毛玻璃效果
-  enable_frosted_glass_desc: 开启后使用毛玻璃渐变效果，关闭后改为实色背景。
   frosted_glass_blur_intensity: 毛玻璃模糊强度
   enable_liquid_segment_indicator: 启用液态分段指示器
   enable_liquid_segment_indicator_desc: |
@@ -467,6 +466,8 @@ settings:
     showOnMouse: 鼠标显示
     showOnScroll: 滚动显示
   always_use_transparent_top_bar: 顶栏始终使用透明(旧版)样式
+  enable_top_bar_gradient: 启用顶栏渐变效果
+  enable_top_bar_gradient_desc: 开启后顶栏默认使用磨砂玻璃渐变，关闭后改为实色背景。
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 显示 BewlyCat/Bilibili 顶栏切换器
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器

@@ -428,6 +428,8 @@ settings:
   show_video_watched_badge: 記錄並顯示睇過
   auto_hide_top_bar: 自動收埋頂欄
   always_use_transparent_top_bar: 頂欄始終使用透明(舊版)樣式
+  enable_top_bar_gradient: 啟用頂欄漸變效果
+  enable_top_bar_gradient_desc: 開啟後頂欄預設使用毛玻璃漸變，關閉後改為實色背景。
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂欄切換掣
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換掣

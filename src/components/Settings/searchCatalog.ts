@@ -182,6 +182,7 @@ const topBarGlobalTitleKeys = [
   'settings.auto_hide_top_bar',
   'settings.video_page_top_bar_config',
   'settings.always_use_transparent_top_bar',
+  'settings.enable_top_bar_gradient',
   'settings.show_top_bar_theme_color_gradient',
   'settings.open_top_bar_items_in_bewly',
   'settings.open_notifications_page_as_drawer',

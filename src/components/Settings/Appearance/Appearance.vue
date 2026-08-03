@@ -154,7 +154,6 @@ function changeWallpaper(url: string) {
         right-width="auto"
       >
         <template #desc>
-          <span>{{ $t('settings.enable_frosted_glass_desc') }}</span>
           <span class="bew-warning-text">{{ $t('common.performance_impact_warn') }}</span>
         </template>
 

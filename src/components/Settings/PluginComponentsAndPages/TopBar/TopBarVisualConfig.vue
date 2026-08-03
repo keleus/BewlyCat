@@ -192,6 +192,13 @@ function toggleChannel(value: string) {
       <SettingsItem :title="$t('settings.always_use_transparent_top_bar')" right-width="auto">
         <Radio v-model="settings.alwaysUseTransparentTopBar" />
       </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.enable_top_bar_gradient')"
+        :desc="$t('settings.enable_top_bar_gradient_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.enableTopBarGradient" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
         <Radio v-model="settings.showTopBarThemeColorGradient" />
       </SettingsItem>

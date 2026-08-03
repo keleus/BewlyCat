@@ -31,18 +31,11 @@ const OVERLAY_HEIGHT = 'calc(var(--bew-top-bar-height) * 1.35)'
 const FOG_GAMMA = 0.7
 const FOG_STOP_COUNT = 10
 
-// 末端刻意不归零到 0，而是留一个远低于可见阈值的残量，由元素下边界把它硬切掉。
-// 8bit 色深下渐变必然在某处发生一次 1 色阶的跳变（浅色背景上约在 alpha 0.2% 处），
-// 归零到 0 时这个跳变点会停在下边界上方约 1px，在平坦背景上就是一条可见的细线；
-// 保留 0.05% 的残量能把跳变点推到边界那半个像素内，与边界本身重合从而看不见。
-// 而 0.05% 的硬切自身在 8bit 乃至 10bit 下都不足半个色阶，不会另生边界。
-const FOG_FLOOR = 0.05
-
 function fogStops(peak: number): [number, number][] {
   return Array.from({ length: FOG_STOP_COUNT }, (_, index) => {
     const t = index / (FOG_STOP_COUNT - 1)
     const decay = ((1 + Math.cos(Math.PI * t)) / 2) ** FOG_GAMMA
-    return [+(t * 100).toFixed(1), Math.max(peak * decay, FOG_FLOOR)]
+    return [+(t * 100).toFixed(1), peak * decay]
   })
 }
 
@@ -79,8 +72,8 @@ const blurLayers = Array.from({ length: BLUR_LAYER_COUNT }, (_, index) => {
 
 // 雾化层只改清晰度，还需要一层雾色叠上去才有"雾"的质感。
 const tintBackground = computed(() => {
-  // 关闭毛玻璃时必须使用不透明的实色顶栏，避免页面内容从渐变尾部透出。
-  if (!settings.value.enableFrostedGlass)
+  // 关闭顶栏渐变时必须使用不透明的实色顶栏，避免页面内容从渐变尾部透出。
+  if (!settings.value.enableTopBarGradient)
     return forceWhiteIcon.value ? 'rgb(0 0 0)' : 'var(--bew-elevated-solid)'
 
   // 壁纸模式下方是图片，压黑雾才压得住
@@ -95,7 +88,7 @@ const tintBackground = computed(() => {
 })
 
 const tintOpacity = computed(() => {
-  if (!settings.value.enableFrostedGlass)
+  if (!settings.value.enableTopBarGradient)
     return 1
   return props.reachTop ? 0.8 : 1
 })
@@ -209,7 +202,7 @@ function refreshSearchContent() {
     <!-- 顶栏边缘雾化：渐进模糊 + 雾色 -->
     <div class="top-bar-header__scroll-edge" :style="{ height: OVERLAY_HEIGHT }">
       <Transition name="fade">
-        <div v-if="!reachTop && settings.enableFrostedGlass" class="top-bar-header__blur-stack">
+        <div v-if="!reachTop && settings.enableTopBarGradient" class="top-bar-header__blur-stack">
           <div
             v-for="(layer, index) in blurLayers"
             :key="index"
