@@ -319,6 +319,7 @@ settings:
   remove_the_indent_from_chinese_punctuation_desc: |
     Bilibili 預設會特別處理中文標點符號以達到左對齊。 如果你正在使用自訂字型，建議移除縮排。
   enable_frosted_glass: 啟用毛玻璃效果
+  enable_frosted_glass_desc: 開啟後使用毛玻璃漸變效果，關閉後改為實色背景。
   frosted_glass_blur_intensity: 毛玻璃模糊強度
   enable_liquid_segment_indicator: 啟用液態分段指示器
   enable_liquid_segment_indicator_desc: |

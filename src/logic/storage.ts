@@ -475,7 +475,8 @@ export const originalSettings: Settings = {
   overrideDanmakuFont: true,
   removeTheIndentFromChinesePunctuation: false,
 
-  enableFrostedGlass: false,
+  // 默认使用毛玻璃渐变；关闭后顶栏和其他玻璃表面使用实色背景。
+  enableFrostedGlass: true,
   frostedGlassBlurIntensity: 20,
   enableLiquidSegmentIndicator: false,
   disableShadow: false,

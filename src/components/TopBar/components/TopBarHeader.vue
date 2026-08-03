@@ -9,7 +9,7 @@ import TopBarLogo from './TopBarLogo.vue'
 import TopBarRight from './TopBarRight.vue'
 import TopBarSearch from './TopBarSearch.vue'
 
-defineProps<{
+const props = defineProps<{
   reachTop: boolean
   isDark: boolean
 }>()
@@ -17,7 +17,88 @@ defineProps<{
 const { forceWhiteIcon, handleNotificationsItemClick, showSearchBar } = useTopBarInteraction()
 const isNarrowLayout = useMediaQuery('(max-width: 767px)')
 
-const isArticlePage = /^https?:\/\/(?:www\.)?bilibili\.com\/(?:read|opus)\//.test(location.href)
+const OVERLAY_HEIGHT = 'calc(var(--bew-top-bar-height) * 1.35)'
+
+// 雾色沿高度从 peak 衰减到几乎透明。
+//
+// 曲线必须处处平滑：alpha 的斜率只要在中途跳一次，人眼就会在那个一阶导数断点
+// 上看到一条并不存在的亮带（马赫带）。手挑 stop 数值保证不了这件事 —— 曾经
+// 用「peak → mid@45% → 0」三段，末端斜率突变成 0 长出一条亮带；改成手调的
+// S 形后，为了迁就 mid 又在 45% 处压出 2 倍斜率跳变，亮带只是搬到了中间。
+//
+// 所以改为采样余弦衰减 cos 曲线：它两端斜率天然为 0、中间单调，不存在断点。
+// FOG_GAMMA < 1 让曲线上凸，中段留住足够浓度（0.7 时 45% 处约为 peak 的 69%）。
+const FOG_GAMMA = 0.7
+const FOG_STOP_COUNT = 10
+
+// 末端刻意不归零到 0，而是留一个远低于可见阈值的残量，由元素下边界把它硬切掉。
+// 8bit 色深下渐变必然在某处发生一次 1 色阶的跳变（浅色背景上约在 alpha 0.2% 处），
+// 归零到 0 时这个跳变点会停在下边界上方约 1px，在平坦背景上就是一条可见的细线；
+// 保留 0.05% 的残量能把跳变点推到边界那半个像素内，与边界本身重合从而看不见。
+// 而 0.05% 的硬切自身在 8bit 乃至 10bit 下都不足半个色阶，不会另生边界。
+const FOG_FLOOR = 0.05
+
+function fogStops(peak: number): [number, number][] {
+  return Array.from({ length: FOG_STOP_COUNT }, (_, index) => {
+    const t = index / (FOG_STOP_COUNT - 1)
+    const decay = ((1 + Math.cos(Math.PI * t)) / 2) ** FOG_GAMMA
+    return [+(t * 100).toFixed(1), Math.max(peak * decay, FOG_FLOOR)]
+  })
+}
+
+// 保留两位小数，末端那点残量不能被取整抹平
+const fogAlpha = (alpha: number) => +alpha.toFixed(2)
+
+function fogGradient(color: string, peak: number) {
+  const stops = fogStops(peak).map(([pos, alpha]) => `rgb(${color} / ${fogAlpha(alpha)}%) ${pos}%`)
+  return `linear-gradient(to bottom, ${stops.join(', ')})`
+}
+
+// 仿 iOS 的 scroll edge effect：让模糊半径本身自顶向下衰减，内容像穿过一层雾
+// 那样逐渐变清晰。单层 backdrop-filter 配 mask 做不到这件事 —— 那只是把清晰
+// 图像和固定强度的模糊图像按比例混合，两份内容同时可见，会留下重影和边界感。
+//
+// 真正的渐进模糊要靠堆叠：每层 blur 半径翻倍，mask 窗口逐层向顶部收缩，
+// 后一层的 backdrop 是前一层绘制后的结果，于是模糊沿高度累积衰减。
+// 顶部五层叠满约等于 blur(18px)，到底部只剩不足 1px，自然归零。
+const BLUR_LAYER_COUNT = 5
+
+const blurLayers = Array.from({ length: BLUR_LAYER_COUNT }, (_, index) => {
+  const solid = ((BLUR_LAYER_COUNT - 1 - index) / BLUR_LAYER_COUNT) * 100
+  const fade = ((BLUR_LAYER_COUNT - index) / BLUR_LAYER_COUNT) * 100
+  const mask = `linear-gradient(to bottom, rgb(0 0 0 / 100%) 0, rgb(0 0 0 / 100%) ${solid}%, rgb(0 0 0 / 0%) ${fade}%)`
+  // 饱和度只加在覆盖最广的最底层，避免逐层累积把颜色推过头
+  const filter = index === 0 ? `blur(${2 ** index}px) saturate(180%)` : `blur(${2 ** index}px)`
+  return {
+    backdropFilter: filter,
+    WebkitBackdropFilter: filter,
+    maskImage: mask,
+    WebkitMaskImage: mask,
+  }
+})
+
+// 雾化层只改清晰度，还需要一层雾色叠上去才有"雾"的质感。
+const tintBackground = computed(() => {
+  // 关闭毛玻璃时必须使用不透明的实色顶栏，避免页面内容从渐变尾部透出。
+  if (!settings.value.enableFrostedGlass)
+    return forceWhiteIcon.value ? 'rgb(0 0 0)' : 'var(--bew-elevated-solid)'
+
+  // 壁纸模式下方是图片，压黑雾才压得住
+  if (forceWhiteIcon.value)
+    return fogGradient('0 0 0', 42)
+
+  // 亮色白雾、暗色黑雾。这里不能图省事用 --bew-bg：
+  // 它在暗色下是深灰，跟深色页面几乎同色，压上去看不出任何变化。
+  return props.isDark
+    ? fogGradient('0 0 0', 75)
+    : fogGradient('255 255 255', 80)
+})
+
+const tintOpacity = computed(() => {
+  if (!settings.value.enableFrostedGlass)
+    return 1
+  return props.reachTop ? 0.8 : 1
+})
 
 const leftSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
@@ -125,37 +206,24 @@ function refreshSearchContent() {
     p="x-12" m-auto
     h="$bew-top-bar-height"
   >
-    <!-- Top bar mask -->
-    <Transition name="fade">
-      <div
-        v-if="!reachTop"
-        style="
-          mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
-          -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
-        "
-        pos="absolute top-0 left-0" w-full h="$bew-top-bar-height"
-        pointer-events-none
-        :style="{
-          backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-bg)',
-          opacity: settings.enableFrostedGlass ? 1 : 0.9,
-          backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
-        }"
-      />
-    </Transition>
+    <!-- 顶栏边缘雾化：渐进模糊 + 雾色 -->
+    <div class="top-bar-header__scroll-edge" :style="{ height: OVERLAY_HEIGHT }">
+      <Transition name="fade">
+        <div v-if="!reachTop && settings.enableFrostedGlass" class="top-bar-header__blur-stack">
+          <div
+            v-for="(layer, index) in blurLayers"
+            :key="index"
+            class="top-bar-header__blur-layer"
+            :style="layer"
+          />
+        </div>
+      </Transition>
 
-    <div
-      pos="absolute top-0 left-0" w-full
-      pointer-events-none opacity-100 duration-300
-      :style="{
-        background: `linear-gradient(to bottom, ${
-          forceWhiteIcon
-            ? 'rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4) calc(var(--bew-top-bar-height) / 2)'
-            : 'color-mix(in oklab, var(--bew-bg), transparent 20%), color-mix(in oklab, var(--bew-bg), transparent 40%) calc(var(--bew-top-bar-height) / 2)'
-        }, transparent)`,
-        opacity: reachTop ? 0.8 : 1,
-        height: 'var(--bew-top-bar-height)',
-      }"
-    />
+      <div
+        class="top-bar-header__tint"
+        :style="{ background: tintBackground, opacity: tintOpacity }"
+      />
+    </div>
 
     <!-- Top bar theme color gradient -->
     <Transition name="fade">
@@ -195,14 +263,6 @@ function refreshSearchContent() {
         @notifications-click="handleNotificationsItemClick"
       />
     </div>
-
-    <div
-      class="top-bar-header__divider"
-      :class="{
-        'top-bar-header__divider--visible': !reachTop && !isArticlePage,
-        'top-bar-header__divider--white': forceWhiteIcon,
-      }"
-    />
   </main>
 </template>
 
@@ -214,28 +274,23 @@ function refreshSearchContent() {
   min-height: var(--bew-top-bar-height);
 }
 
-.top-bar-header__divider {
+.top-bar-header__scroll-edge {
   position: absolute;
-  right: 0;
-  bottom: 0;
+  top: 0;
   left: 0;
-  height: 1px;
+  width: 100%;
   pointer-events: none;
-  background: color-mix(in oklab, var(--bew-border-color), transparent 35%);
-  opacity: 0;
-  transform: scaleX(0.96);
-  transition:
-    opacity 0.3s ease,
-    transform 0.3s ease;
+}
 
-  &--visible {
-    opacity: 0.65;
-    transform: scaleX(1);
-  }
+.top-bar-header__blur-stack,
+.top-bar-header__blur-layer,
+.top-bar-header__tint {
+  position: absolute;
+  inset: 0;
+}
 
-  &--white {
-    background: rgba(255, 255, 255, 0.16);
-  }
+.top-bar-header__tint {
+  transition: opacity 0.3s ease;
 }
 
 .top-bar-header__side {

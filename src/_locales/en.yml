@@ -334,6 +334,7 @@ settings:
     left alignment. If you are using a custom font, it is recommended to remove
     the indent.
   enable_frosted_glass: Enable frosted glass effect
+  enable_frosted_glass_desc: Use a frosted glass gradient by default; disable it to use solid backgrounds.
   frosted_glass_blur_intensity: Frosted glass blur intensity
   enable_liquid_segment_indicator: Enable liquid segment indicator
   enable_liquid_segment_indicator_desc: >
