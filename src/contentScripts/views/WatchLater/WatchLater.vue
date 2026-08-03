@@ -25,6 +25,17 @@ const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 const pageNum = ref<number>(1)
 const pageSize = ref<number>(20)
 
+function syncTopBarWatchLaterState() {
+  const sync = () => {
+    void topBarStore.syncWatchLaterState(true).catch((error) => {
+      console.error('刷新顶栏稍后再看状态失败:', error)
+    })
+  }
+
+  sync()
+  window.setTimeout(sync, 1000)
+}
+
 onMounted(() => {
   initPageAction()
   initData()
@@ -115,7 +126,7 @@ function deleteWatchLaterItem(index: number, aid: number) {
       if (res.code === 0) {
         currentWatchLaterList.value.splice(index, 1)
         watchLaterCount.value--
-        void topBarStore.syncWatchLaterState(true)
+        syncTopBarWatchLaterState()
       }
     })
 }
@@ -131,7 +142,7 @@ async function handleClearAllWatchLater() {
     }).then((res) => {
       if (res.code === 0) {
         initData()
-        void topBarStore.syncWatchLaterState(true)
+        syncTopBarWatchLaterState()
       }
     }).finally(() => {
       isLoading.value = false
@@ -151,7 +162,7 @@ async function handleRemoveWatchedVideos() {
       .then((res) => {
         if (res.code === 0) {
           initData()
-          void topBarStore.syncWatchLaterState(true)
+          syncTopBarWatchLaterState()
         }
       })
   }

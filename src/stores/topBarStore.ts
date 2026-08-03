@@ -635,7 +635,14 @@ export const useTopBarStore = defineStore('topBar', () => {
       if (res.code === 0 && isCurrentAccount(accountId)) {
         watchLaterList.splice(index, 1)
         watchLaterCount.value = Math.max(0, watchLaterCount.value - 1)
-        await syncWatchLaterState()
+
+        // 先保留本地乐观更新；B 站删除接口返回后，列表查询偶尔仍会短暂返回旧数量。
+        // 延迟同步可避免把刚删除的项目/计数立即覆盖回来。
+        window.setTimeout(() => {
+          void syncWatchLaterState(true).catch((error) => {
+            console.error('刷新顶栏稍后再看状态失败:', error)
+          })
+        }, 800)
       }
     }
     catch (error) {

@@ -10,7 +10,7 @@ import { localSettings, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
-import { applyBewlyWidescreen, exitBewlyWidescreen } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
@@ -184,6 +184,8 @@ else if (shouldInitializeContentScript) {
   let lastVideoNavigationKey = getVideoNavigationKey(location.href)
   let hasAppliedPlayerMode = false // 添加标志变量
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
+  let pendingWidescreenReloadNavigationKey: string | undefined
+  let pendingWidescreenReloadTimer: ReturnType<typeof setTimeout> | undefined
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
   void settingsReady.then(() => recordVideoVisitFromUrl(lastUrl))
@@ -450,6 +452,56 @@ else if (shouldInitializeContentScript) {
     }
   }
 
+  function getPushStateTargetUrl(event: Event) {
+    if (!(event instanceof CustomEvent) || !Array.isArray(event.detail))
+      return null
+
+    const targetUrl = event.detail[2]
+    if (typeof targetUrl !== 'string' && !(targetUrl instanceof URL))
+      return null
+
+    try {
+      return new URL(String(targetUrl), location.href).href
+    }
+    catch {
+      return null
+    }
+  }
+
+  function clearPendingWidescreenReloadNavigation() {
+    pendingWidescreenReloadNavigationKey = undefined
+    if (pendingWidescreenReloadTimer) {
+      clearTimeout(pendingWidescreenReloadTimer)
+      pendingWidescreenReloadTimer = undefined
+    }
+  }
+
+  function prepareVideoNavigationBeforeRouteChange(event: Event) {
+    const wasBewlyWidescreenActive = isBewlyWidescreenActive()
+    if (!wasBewlyWidescreenActive)
+      return
+
+    const targetUrl = getPushStateTargetUrl(event)
+    if (!targetUrl)
+      return
+
+    const currentNavigationKey = getVideoNavigationKey(location.href)
+    const nextNavigationKey = getVideoNavigationKey(targetUrl)
+    if (!nextNavigationKey || nextNavigationKey === currentNavigationKey)
+      return
+
+    clearPendingWidescreenReloadNavigation()
+    pendingWidescreenReloadNavigationKey = nextNavigationKey
+    pendingWidescreenReloadTimer = setTimeout(() => {
+      pendingWidescreenReloadNavigationKey = undefined
+      pendingWidescreenReloadTimer = undefined
+    }, 5000)
+    clearPlayerModeRetry()
+    hasAppliedPlayerMode = false
+    // 先退出宽屏，再让 B 站执行原本的 SPA 路由切换；真正 URL 变化后会整页刷新。
+    exitBewlyWidescreen()
+  }
+
   function checkForUrlChanges() {
     if (location.href !== lastUrl) {
       const currentVideoNavigationKey = getVideoNavigationKey(location.href)
@@ -460,8 +512,25 @@ else if (shouldInitializeContentScript) {
       recordVideoVisitFromUrl(lastUrl)
       applyBewlyDesignClasses()
 
+      if (!isVideoOrBangumiPage())
+        clearPendingWidescreenReloadNavigation()
+
       if (isVideoOrBangumiPage()) {
         if (!isMeaningfulVideoNavigation) {
+          clearPendingWidescreenReloadNavigation()
+          scheduleUrlChangeCheck()
+          return
+        }
+
+        const shouldReloadWidescreenNavigation = pendingWidescreenReloadNavigationKey === currentVideoNavigationKey
+          || isBewlyWidescreenActive()
+        clearPendingWidescreenReloadNavigation()
+
+        if (shouldReloadWidescreenNavigation) {
+          exitBewlyWidescreen()
+          // B 站评论区在 SPA 切换时可能继续复用旧组件；完整刷新让视频和评论区
+          // 在同一次页面初始化中绑定到新的 aid/bvid，避免评论内容与视频错配。
+          window.location.reload()
           scheduleUrlChangeCheck()
           return
         }
@@ -476,7 +545,6 @@ else if (shouldInitializeContentScript) {
         // 重置随机播放初始化状态，避免重复加载
         resetRandomPlayInitialization()
 
-        // B 站站内切集会立即开始播放，静默重建宽屏布局，避免加载遮罩盖住视频。
         applyDefaultPlayerMode(false)
         // 如果是视频页面内部跳转，延迟执行滚动
         if (isVideoOrBangumiPage()) {
@@ -501,6 +569,10 @@ else if (shouldInitializeContentScript) {
   }
 
   scheduleUrlChangeCheck()
+
+  // inject/index.ts 在调用 history.pushState 前派发此事件，先退出宽屏；URL
+  // 真正变化后由 checkForUrlChanges 触发完整刷新。popstate/replaceState 由轮询兜底。
+  window.addEventListener('pushstate', prepareVideoNavigationBeforeRouteChange, true)
 
   // 处理页面可见性变化
   function handleVisibilityChange() {
@@ -534,20 +606,99 @@ else if (shouldInitializeContentScript) {
   })
 
   // B 站原生视频卡片会在多个页面复用，统一监听稍后再看操作并同步顶栏状态。
+  const nativeWatchLaterListSelector = '.watch-later-list, .watchlater-list, [class*="watch-later-list"], [class*="watchlater-list"], bili-watch-later-list'
+  const nativeWatchLaterItemSelector = '.av-item, [class*="watch-later-item"], [class*="watchlater-item"], [class*="av-item"], bili-watch-later-item'
+  const nativeWatchLaterDeleteControlSelector = '.del, .delete, .d-btn, [class*="delete"], [class*="remove"], [aria-label*="删除"], [aria-label*="移除"], [title*="删除"], [title*="移除"], [data-action*="delete"]'
+  let nativeWatchLaterSyncTimer: ReturnType<typeof setTimeout> | undefined
+  let nativeWatchLaterLastSyncAt = 0
+
+  function scheduleNativeWatchLaterStateSync(force = false) {
+    if (nativeWatchLaterSyncTimer) {
+      if (!force)
+        return
+      clearTimeout(nativeWatchLaterSyncTimer)
+      nativeWatchLaterSyncTimer = undefined
+    }
+
+    if (!force && Date.now() - nativeWatchLaterLastSyncAt < 2500)
+      return
+
+    nativeWatchLaterSyncTimer = setTimeout(() => {
+      nativeWatchLaterSyncTimer = undefined
+      nativeWatchLaterLastSyncAt = Date.now()
+
+      const refresh = () => {
+        void useTopBarStore().syncWatchLaterState(true).catch((error) => {
+          console.error('刷新顶栏稍后再看状态失败:', error)
+        })
+      }
+
+      // 原生列表的删除请求和 DOM 更新不是同一个时序，补一次最终状态。
+      refresh()
+      window.setTimeout(refresh, 1000)
+    }, 800)
+  }
+
+  function isNativeWatchLaterDeleteControl(element: Element, eventPath: EventTarget[]) {
+    const control = element.closest(nativeWatchLaterDeleteControlSelector)
+    const label = `${element.getAttribute('aria-label') ?? ''} ${element.getAttribute('title') ?? ''}`
+    if (!control && !/删除|移除/u.test(label))
+      return false
+
+    if (control?.closest(nativeWatchLaterListSelector) || element.closest(nativeWatchLaterListSelector))
+      return true
+
+    // 自定义元素的删除按钮可能位于 B 站 shadow root 内，无法用 closest() 找到宿主；
+    // 页面本身是稍后再看列表时可放宽判断，但排除 Bewly 自己的 shadow root。
+    return !eventPath.some(target => target instanceof Element && target.id === 'bewly')
+  }
+
+  function isNativeWatchLaterListMutation(mutation: MutationRecord) {
+    const target = mutation.target instanceof Element
+      ? mutation.target
+      : mutation.target.parentElement
+    if (!target?.closest(nativeWatchLaterListSelector))
+      return false
+
+    return [...Array.from(mutation.addedNodes), ...Array.from(mutation.removedNodes)].some((node) => {
+      const element = node instanceof Element ? node : node.parentElement
+      return !!element?.matches(nativeWatchLaterItemSelector)
+        || !!element?.querySelector(nativeWatchLaterItemSelector)
+    })
+  }
+
   function setupNativeWatchLaterStateSync() {
     document.addEventListener('click', (event) => {
-      const watchLaterButton = event.composedPath().find(
+      const eventPath = event.composedPath()
+      const watchLaterButton = eventPath.find(
         (target): target is Element => target instanceof Element
           && target.matches('.bili-watch-later, .bili-watch-later--wrap, .bili-watch-later__icon'),
       )
-      if (!watchLaterButton)
-        return
+      const isWatchLaterDelete = isWatchLaterListPage(location.href)
+        && eventPath.some(target => target instanceof Element
+          && isNativeWatchLaterDeleteControl(target, eventPath))
 
-      // B 站接口写入存在短暂延迟，稍后强制刷新并广播给顶栏所在实例。
-      window.setTimeout(() => {
-        void useTopBarStore().syncWatchLaterState(true)
-      }, 1000)
+      if (watchLaterButton || isWatchLaterDelete)
+        scheduleNativeWatchLaterStateSync(true)
     }, true)
+
+    const observer = new MutationObserver((mutations) => {
+      if (!isWatchLaterListPage(location.href)
+        || !mutations.some(isNativeWatchLaterListMutation)) {
+        return
+      }
+
+      scheduleNativeWatchLaterStateSync()
+    })
+
+    const observeNativeWatchLaterList = () => {
+      if (document.documentElement)
+        observer.observe(document.documentElement, { childList: true, subtree: true })
+    }
+    if (document.documentElement)
+      observeNativeWatchLaterList()
+    else
+      window.addEventListener('DOMContentLoaded', observeNativeWatchLaterList, { once: true })
   }
 
   setupNativeWatchLaterStateSync()
