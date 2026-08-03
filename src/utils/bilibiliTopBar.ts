@@ -578,8 +578,14 @@ export function setupLoginButtonClickHandlers(doc: Document) {
     })
   })
 
-  // Observe the entire document for popup elements
-  observer.observe(doc.body, {
+  // Observe the entire document for popup elements.
+  // 内容脚本在 document_start 注入，iframe 刚创建时 doc.body 仍为 null；
+  // 回落到 documentElement 既能避免抛错，又能靠 subtree 覆盖随后插入的 body。
+  const observeTarget = doc.body ?? doc.documentElement
+  if (!observeTarget)
+    return () => {}
+
+  observer.observe(observeTarget, {
     childList: true,
     subtree: true,
   })

@@ -135,8 +135,10 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     --bew-segment-item-current-color: white;
   }
 
-  // 无液态指示器时，静态选中态也要沿用白色主题底色
-  &--white.bew-segment-control--static {
+  // 无液态指示器时，静态选中态也要沿用白色主题底色。
+  // 关闭磨砂玻璃时 surface 是不透明浅底，白色变体会让选中项彻底消失，
+  // 因此与上面的白色文字规则一样排除 solid。
+  &--white.bew-segment-control--static:not(.bew-segment-control--solid) {
     --bew-segment-item-active-bg: var(--bew-segment-item-active-bg-white);
     --bew-segment-item-active-shadow: var(--bew-segment-item-active-shadow-white);
     --bew-segment-item-current-color: white;
