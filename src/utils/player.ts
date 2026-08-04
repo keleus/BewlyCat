@@ -388,7 +388,9 @@ export function isCollectionVideo(): boolean {
 
 // 检测自动连播是否开启
 export function isAutoPlayEnabled(): boolean {
-  return findAutoPlaySwitchButton()?.isOn === true
+  // 查找自动连播开关按钮（on状态）
+  const autoPlaySwitchOn = document.querySelector(_videoClassTag.autoPlaySwitchOn)
+  return autoPlaySwitchOn !== null
 }
 
 // 检测单集循环是否开启
@@ -401,25 +403,12 @@ function isLoopEnabled(): boolean {
 }
 
 // 收藏列表/稍后再看等场景使用播放设置中的 handoff 单选项控制自动切集
-function getPlaylistHandoffState(): boolean | null {
+function isPlaylistHandoffEnabled(): boolean {
   const autoHandoffRadio = document.querySelector(
     '.bpx-player-ctrl-setting-handoff input[type=radio][value="0"]',
   ) as HTMLInputElement | null
-  const pauseAtEndRadio = document.querySelector(
-    '.bpx-player-ctrl-setting-handoff input[type=radio][value="2"]',
-  ) as HTMLInputElement | null
 
-  if (autoHandoffRadio?.checked)
-    return true
-
-  if (pauseAtEndRadio?.checked)
-    return false
-
-  return null
-}
-
-function isPlaylistHandoffEnabled(): boolean {
-  return getPlaylistHandoffState() === true
+  return autoHandoffRadio?.checked === true
 }
 
 async function hasHigherPriorityEndPlaybackBehavior(): Promise<boolean> {
@@ -756,165 +745,6 @@ export function getAutoPlayModeForVideoType(videoType = detectVideoType()): Auto
     default:
       return 'default'
   }
-}
-
-const AUTO_PLAY_RESTORE_STORAGE_KEY = 'bewlycat:auto-play-restore'
-const AUTO_PLAY_RESTORE_MAX_AGE = 60_000
-
-interface AutoPlayRestoreSnapshot {
-  enabled: boolean
-  targetNavigationKey: string
-  createdAt: number
-  playlistHandoff: boolean
-  native: boolean
-}
-
-function getVideoNavigationKey(url: string): string {
-  try {
-    const urlObj = new URL(url, location.href)
-    const semanticParams = ['avid', 'bvid', 'cid', 'ep_id', 'p', 'page', 'season_id']
-    const params = new URLSearchParams()
-
-    for (const param of semanticParams) {
-      const value = urlObj.searchParams.get(param)
-      if (value !== null)
-        params.set(param, value)
-    }
-
-    const query = params.toString()
-    return `${urlObj.origin}${urlObj.pathname}${query ? `?${query}` : ''}`
-  }
-  catch {
-    return url.split('?')[0].split('#')[0]
-  }
-}
-
-function isNativeAutoPlaySetting(videoType: VideoType): boolean {
-  return settings.value.useBilibiliDefaultAutoPlay
-    || getAutoPlayModeForVideoType(videoType) === 'default'
-}
-
-function getCurrentAutoPlayState(videoType: VideoType): boolean | null {
-  if (usesPlaylistHandoff(videoType))
-    return getPlaylistHandoffState()
-
-  return findAutoPlaySwitchButton()?.isOn ?? null
-}
-
-/**
- * Keep the current auto-play intent across the full reload used by Bewly
- * widescreen navigation. Bilibili may recreate its player with the default
- * switch state before the user's previous choice is available. The small
- * session-scoped snapshot is consumed by restoreAutoPlayStateAfterReload().
- */
-export function rememberAutoPlayStateForReload(targetUrl = location.href): void {
-  const videoType = detectVideoType()
-  const native = isNativeAutoPlaySetting(videoType)
-  const mode = getAutoPlayModeForVideoType(videoType)
-  const enabled = native
-    ? getCurrentAutoPlayState(videoType)
-    : mode === 'autoPlay' || mode === 'autoPlayWithRecommend'
-
-  if (enabled === null)
-    return
-
-  const snapshot: AutoPlayRestoreSnapshot = {
-    enabled,
-    targetNavigationKey: getVideoNavigationKey(targetUrl),
-    createdAt: Date.now(),
-    playlistHandoff: usesPlaylistHandoff(videoType),
-    native,
-  }
-
-  try {
-    sessionStorage.setItem(AUTO_PLAY_RESTORE_STORAGE_KEY, JSON.stringify(snapshot))
-  }
-  catch {
-    // Storage can be unavailable in privacy-restricted contexts; native player
-    // state remains the source of truth in that case.
-  }
-}
-
-/** Restore an auto-play choice captured immediately before a widescreen reload. */
-export function restoreAutoPlayStateAfterReload(): boolean | null {
-  let snapshot: AutoPlayRestoreSnapshot | null = null
-  try {
-    const rawSnapshot = sessionStorage.getItem(AUTO_PLAY_RESTORE_STORAGE_KEY)
-    if (rawSnapshot)
-      snapshot = JSON.parse(rawSnapshot) as AutoPlayRestoreSnapshot
-    sessionStorage.removeItem(AUTO_PLAY_RESTORE_STORAGE_KEY)
-  }
-  catch {
-    return null
-  }
-
-  if (!snapshot
-    || typeof snapshot.enabled !== 'boolean'
-    || typeof snapshot.targetNavigationKey !== 'string'
-    || typeof snapshot.createdAt !== 'number'
-    || typeof snapshot.native !== 'boolean'
-    || Date.now() - snapshot.createdAt > AUTO_PLAY_RESTORE_MAX_AGE
-    || snapshot.targetNavigationKey !== getVideoNavigationKey(location.href)) {
-    return null
-  }
-
-  const videoType = detectVideoType()
-  if (snapshot.playlistHandoff !== usesPlaylistHandoff(videoType))
-    return null
-
-  if (snapshot.playlistHandoff)
-    setPlaylistHandoffMode(snapshot.enabled)
-  else
-    setAutoPlayState(snapshot.enabled)
-
-  return snapshot.enabled
-}
-
-function shouldAutoPlayOnLoad(videoType: VideoType): boolean | null {
-  const mode = getAutoPlayModeForVideoType(videoType)
-  if (!settings.value.useBilibiliDefaultAutoPlay && mode !== 'default') {
-    if (mode !== 'autoPlay' && mode !== 'autoPlayWithRecommend')
-      return false
-  }
-
-  return getCurrentAutoPlayState(videoType)
-}
-
-/**
- * Start the current video when auto-play is enabled after a page/player
- * rebuild. The Bilibili switch and media element are both created lazily, so
- * this intentionally retries for the same window as the state setters.
- */
-export function ensureAutoPlayPlayback(videoType = detectVideoType()): void {
-  new RetryTask(30, 500, () => {
-    const shouldPlay = shouldAutoPlayOnLoad(videoType)
-    if (shouldPlay === null)
-      return false
-    if (!shouldPlay)
-      return true
-
-    const video = getVideoElement()
-    if (!video || (video.readyState < HTMLMediaElement.HAVE_METADATA && !video.currentSrc))
-      return false
-
-    if (video.ended) {
-      try {
-        video.currentTime = 0
-      }
-      catch {
-        // The media source can be replaced while the player is rebuilding.
-      }
-    }
-
-    if (video.paused) {
-      const playButton = document.querySelector(_videoClassTag.playBtn) as HTMLElement | null
-      playButton?.click()
-      if (video.paused)
-        void video.play().catch(() => {})
-    }
-
-    return !video.paused && !video.ended
-  }).start()
 }
 
 /** 关闭 B 站原生的续播行为，让自定义播放独占视频结束后的切集。 */
