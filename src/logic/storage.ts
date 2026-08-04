@@ -209,6 +209,7 @@ export interface Settings {
   enableCommentReplyTreeDisplay: boolean // 启用评论回复树展示
   commentReplyTreeMode: CommentReplyTreeMode // 评论回复树展示模式
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
+  hideCommentImageScrollbar: boolean // 评论区图片预览时隐藏页面滚动条
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
   externalWatchLaterButton: boolean // 稍后再看按钮外置
 
@@ -497,6 +498,7 @@ export const originalSettings: Settings = {
   enableCommentReplyTreeDisplay: true, // 默认启用评论回复树展示
   commentReplyTreeMode: 'lineKeepMain', // 默认：线条树状，收起时保留父节点正文
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
+  hideCommentImageScrollbar: false, // 默认不隐藏评论图片预览时的页面滚动条
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
   externalWatchLaterButton: true, // 默认开启稍后再看按钮外置
 

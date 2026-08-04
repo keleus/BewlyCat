@@ -88,6 +88,14 @@ const commentReplyTreeModeOptions = computed<{ label: string, value: CommentRepl
     >
       <Radio v-model="settings.adjustCommentImageHeight" />
     </SettingsItem>
+
+    <SettingsItem
+      :title="$t('settings.hide_comment_image_scrollbar')"
+      :desc="$t('settings.hide_comment_image_scrollbar_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.hideCommentImageScrollbar" />
+    </SettingsItem>
   </SettingsItemGroup>
 </template>
 

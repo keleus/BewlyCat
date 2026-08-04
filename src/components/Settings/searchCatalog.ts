@@ -567,6 +567,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.comment_reply_tree_mode.line_keep_main',
     'settings.comment_reply_tree_mode.indent_only',
     'settings.adjust_comment_image_height',
+    'settings.hide_comment_image_scrollbar',
   ]),
   ...createEntries(vipFeaturesRoute, [
     'settings.bilibili_features.vip_features',

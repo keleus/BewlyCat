@@ -842,6 +842,8 @@ settings:
     indent_only: 缩进-无收起功能
   adjust_comment_image_height: 调整评论区图片高度
   adjust_comment_image_height_desc: 自动调整评论区图片高度以匹配实际长宽比，避免图片变形
+  hide_comment_image_scrollbar: 评论图片预览时隐藏页面滚动条
+  hide_comment_image_scrollbar_desc: 打开评论区图片预览时隐藏页面右侧滚动条，避免滚动条显示在遮罩右侧
   group_fonts: 字体
   group_visual_effects: 视觉效果
 auth:

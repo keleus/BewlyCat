@@ -913,6 +913,8 @@ settings:
     indent_only: Indent · no collapse
   adjust_comment_image_height: Adjust comment image height
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
+  hide_comment_image_scrollbar: Hide page scrollbar in comment image preview
+  hide_comment_image_scrollbar_desc: Hide the page scrollbar when opening a comment image preview so it does not appear beside the overlay
   video_player_scroll: Scroll after adjusting the display mode
   video_player_scroll_desc: >-
     When enabled, it will automatically scroll to the appropriate position when
