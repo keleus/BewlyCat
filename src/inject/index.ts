@@ -356,10 +356,6 @@ else if (shouldInitializePageScript) {
           --bili-comment-tag-color: var(--bew-comment-tag-color, var(--bili-comment-tag-color-dark)) !important;
           --bili-comment-tag-bg: var(--bew-comment-tag-bg, var(--bili-comment-tag-bg-dark)) !important;
         }
-
-        #body .tag:empty {
-          display: none !important;
-        }
       `,
     },
     'bili-comment-box': {
@@ -2936,6 +2932,19 @@ else if (shouldInitializePageScript) {
                 return
 
               ensureCommentShadowStyle(root, shadowStylePatch.id, shadowStylePatch.css)
+              if (name === 'bili-comment-renderer') {
+                // 清理空 tag 占位元素。B 站评论新组件在 #tags 下为每种标签类型
+                // 预留了 .tag 占位，未激活的标签以空 div 形式残留。这些空 div
+                // 在深色模式下有背景色（#1E1E1E），显示为黑色方块。CSS 方案在
+                // Shadow DOM 中受 Lit 重渲染时序影响不可靠，改用 JS 直接移除。
+                const body = root.querySelector('#body')
+                if (body) {
+                  body.querySelectorAll('.tag').forEach((el) => {
+                    if (!(el as HTMLElement).style.cssText && !el.textContent?.trim())
+                      (el as HTMLElement).style.display = 'none'
+                  })
+                }
+              }
               if (name === 'bili-comment-thread-renderer') {
                 // 删除/屏蔽回复可能让楼层组件整体重绘，之前挂在其 shadow root
                 // 内的 SVG 线条会随渲染结果一并被移除；重绘完成后从当前回复容器恢复。
