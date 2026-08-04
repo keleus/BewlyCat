@@ -11,7 +11,7 @@ import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import api from '~/utils/api'
-import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, prepareBewlyWidescreenLoading } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
@@ -166,6 +166,24 @@ if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 }
 else if (shouldInitializeContentScript) {
+  const playerModeLoadSettleDelay = 500
+  const videoOwnerAvatarReadyTimeout = 8000
+  const videoOwnerAvatarSelector = [
+    '.up-panel-container .up-avatar-wrap img.bili-avatar-img',
+    '.up-panel-container .up-avatar-wrap img',
+    '.up-panel-container .up-avatar img.bili-avatar-img',
+    '.up-panel-container .up-avatar img',
+    '.up-panel-container .bili-avatar-face img',
+    '.up-panel-container img[src*="/face/"]',
+    '.up-info-container .up-avatar-wrap img',
+    '.up-info-container .up-avatar img',
+    '.up-info-container .bili-avatar-face img',
+    '#v_upinfo .u-face img',
+    '.up-info .u-face img',
+    '.up-info .up-face img',
+    '.upinfo .u-face img',
+    '.upinfo .face img',
+  ].join(',')
   setupNotificationStateInvalidation()
   // Fix `OverlayScrollbars` not working in Firefox
   // https://github.com/fingerprintjs/fingerprintjs/issues/683#issuecomment-881210244
@@ -183,12 +201,23 @@ else if (shouldInitializeContentScript) {
   let lastUrl = location.href
   let lastVideoNavigationKey = getVideoNavigationKey(location.href)
   let lastAppliedPlayerModeNavigationKey: string | undefined
+  let playerModeReadyAfter = document.readyState === 'complete'
+    ? Date.now() + playerModeLoadSettleDelay
+    : Number.POSITIVE_INFINITY
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
+  let playerModeSettingsReady = false
+  let videoOwnerAvatarReadyDeadline = document.readyState === 'complete'
+    ? Date.now() + videoOwnerAvatarReadyTimeout
+    : Number.POSITIVE_INFINITY
   let pendingWidescreenReloadNavigationKey: string | undefined
   let pendingWidescreenReloadTimer: ReturnType<typeof setTimeout> | undefined
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
-  void settingsReady.then(() => recordVideoVisitFromUrl(lastUrl))
+  void settingsReady.then(() => {
+    playerModeSettingsReady = true
+    recordVideoVisitFromUrl(lastUrl)
+    applyDefaultPlayerMode()
+  })
 
   function setupPluginSearchLinkNavigation() {
     document.addEventListener('click', (event) => {
@@ -295,8 +324,33 @@ else if (shouldInitializeContentScript) {
   })
 
   // 应用默认播放器模式
-  function applyDefaultPlayerMode(showBewlyWidescreenLoading = true) {
+  function isVideoOwnerAvatarReady() {
+    return Array.from(document.querySelectorAll<HTMLImageElement>(videoOwnerAvatarSelector)).some((image) => {
+      if (!image.isConnected || !image.complete || image.naturalWidth <= 0)
+        return false
+
+      const rect = image.getBoundingClientRect()
+      if (rect.width <= 0 || rect.height <= 0)
+        return false
+
+      const style = getComputedStyle(image)
+      return style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && style.opacity !== '0'
+    })
+  }
+
+  function applyDefaultPlayerMode() {
     if (!isVideoOrBangumiPage()) {
+      clearPlayerModeRetry()
+      exitBewlyWidescreen()
+      return
+    }
+
+    // 后台新标签页中，load / pageshow 可能早于 B 站播放器和评论组件恢复。
+    // 先等设置和可见状态，默认 Bewly 宽屏则立即用遮罩盖住原始布局。
+    if (!playerModeSettingsReady
+      || document.visibilityState !== 'visible') {
       clearPlayerModeRetry()
       return
     }
@@ -305,25 +359,50 @@ else if (shouldInitializeContentScript) {
     if (lastAppliedPlayerModeNavigationKey === currentNavigationKey)
       return
 
-    // 检查是否处于全屏或网页全屏状态（互动视频场景）
+    let targetPlayerMode = resolveDefaultVideoPlayerMode()
+    if (isFestivalPage() && targetPlayerMode === 'bewlyWidescreen')
+      targetPlayerMode = 'widescreen'
+
     const isInFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement)
     const webFullscreenBtn = document.querySelector('.bpx-player-ctrl-web,.bilibili-player-video-web-fullscreen') as HTMLElement
     const isInWebFullscreen = webFullscreenBtn?.classList.contains('bpx-state-entered')
 
+    if (targetPlayerMode === 'bewlyWidescreen' && !isInFullscreen && !isInWebFullscreen)
+      prepareBewlyWidescreenLoading()
+    else if (!isBewlyWidescreenActive())
+      exitBewlyWidescreen()
+
+    if (document.readyState !== 'complete') {
+      clearPlayerModeRetry()
+      return
+    }
+
+    const settleDelay = playerModeReadyAfter - Date.now()
+    if (settleDelay > 0) {
+      schedulePlayerModeRetry(settleDelay)
+      return
+    }
+
+    // 普通视频页以 UP 主头像完成图片加载和布局作为 B 站主体渲染完成信号。
+    // 番剧、活动页等可能没有该头像；普通视频异常时也在超时后继续，避免永久阻塞。
+    if (isVideoPage()
+      && Date.now() < videoOwnerAvatarReadyDeadline
+      && !isVideoOwnerAvatarReady()) {
+      schedulePlayerModeRetry()
+      return
+    }
+
     // 如果播放器已经在全屏状态，跳过应用模式（避免互动视频退出全屏）
     if (isInFullscreen || isInWebFullscreen) {
+      exitBewlyWidescreen()
       applyDefaultDanmakuState()
       applyDefaultCaptionState()
       lastAppliedPlayerModeNavigationKey = currentNavigationKey
       return
     }
 
-    let targetPlayerMode = resolveDefaultVideoPlayerMode()
-    if (isFestivalPage() && targetPlayerMode === 'bewlyWidescreen')
-      targetPlayerMode = 'widescreen'
-
     if (!isPlayerDisplayModeReady(targetPlayerMode)) {
-      schedulePlayerModeRetry(showBewlyWidescreenLoading)
+      schedulePlayerModeRetry()
       return
     }
 
@@ -338,7 +417,8 @@ else if (shouldInitializeContentScript) {
         case 'bewlyWidescreen':
           applyBewlyWidescreen(
             settings.value.bewlyWidescreenSidebarPosition || 'right',
-            showBewlyWidescreenLoading,
+            // 遮罩已在等待阶段挂载，并保持到宽屏布局完成。
+            false,
           )
           break
         case 'webFullscreen':
@@ -377,14 +457,20 @@ else if (shouldInitializeContentScript) {
     }
   }
 
-  function schedulePlayerModeRetry(showBewlyWidescreenLoading = true) {
+  function schedulePlayerModeRetry(delay?: number) {
     if (playerModeRetryTimer)
       return
 
     playerModeRetryTimer = setTimeout(() => {
       playerModeRetryTimer = undefined
-      applyDefaultPlayerMode(showBewlyWidescreenLoading)
-    }, document.visibilityState === 'visible' ? 500 : 1000)
+      applyDefaultPlayerMode()
+    }, delay ?? 500)
+  }
+
+  function waitForPlayerModePageSettle() {
+    clearPlayerModeRetry()
+    playerModeReadyAfter = Date.now() + playerModeLoadSettleDelay
+    videoOwnerAvatarReadyDeadline = Date.now() + videoOwnerAvatarReadyTimeout
   }
 
   // 延迟添加稍后再看按钮
@@ -630,6 +716,7 @@ else if (shouldInitializeContentScript) {
 
       if (!isVideoOrBangumiPage()) {
         clearPendingWidescreenReloadNavigation()
+        exitBewlyWidescreen()
         lastAppliedPlayerModeNavigationKey = undefined
       }
 
@@ -658,6 +745,7 @@ else if (shouldInitializeContentScript) {
 
         exitBewlyWidescreen()
         resetVerticalVideoZoom()
+        waitForPlayerModePageSettle()
         document.querySelector('.bewly-watch-later-btn')?.remove()
         watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
         // 不再重置用户手动修改标志，保持用户的自动播放偏好设置
@@ -665,7 +753,7 @@ else if (shouldInitializeContentScript) {
         // 重置随机播放初始化状态，避免重复加载
         resetRandomPlayInitialization()
 
-        applyDefaultPlayerMode(false)
+        applyDefaultPlayerMode()
         if (videoCommentIdentifier)
           void reloadCommentsForWidescreenNavigation(currentVideoNavigationKey, navigationRequestId, videoCommentIdentifier)
         // 如果是视频页面内部跳转，延迟执行滚动
@@ -699,6 +787,7 @@ else if (shouldInitializeContentScript) {
 
   // 添加页面加载监听
   window.addEventListener('load', () => {
+    waitForPlayerModePageSettle()
     if (isVideoPage()) {
       applyDefaultPlayerMode()
     }
@@ -842,8 +931,16 @@ else if (shouldInitializeContentScript) {
   }
   window.addEventListener('pageshow', () => {
     if (isVideoOrBangumiPage()) {
+      waitForPlayerModePageSettle()
       applyDefaultPlayerMode()
     }
+  })
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !isVideoOrBangumiPage())
+      return
+
+    waitForPlayerModePageSettle()
+    applyDefaultPlayerMode()
   })
 
   // Set the original Bilibili top bar to `display: none` to prevent it from showing before the load

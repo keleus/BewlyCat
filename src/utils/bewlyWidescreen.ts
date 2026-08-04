@@ -51,6 +51,7 @@ const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
 const LOAD_SETTLE_DELAY = 1200
 const LOADING_FADE_DURATION = 240
+const PREPARED_LOADING_TIMEOUT = 30_000
 const READY_RETRY_INTERVAL = 500
 const READY_RETRY_MAX = 30
 const SIDEBAR_REFRESH_DELAY = 800
@@ -66,7 +67,7 @@ let state: BewlyWidescreenState | null = null
 let loadingOverlay: HTMLElement | null = null
 let loadingStyleEl: HTMLStyleElement | null = null
 let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
-let loadingPlaybackCleanup: (() => void) | undefined
+let loadingPreparationFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
 let loadFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined
@@ -304,12 +305,8 @@ function isCommentRootUsable(root: HTMLElement) {
   if (!root.isConnected)
     return false
 
-  // Known comment roots can be relocated immediately. Modern Bilibili comments
-  // hydrate inside shadow DOM / after becoming visible; waiting for light-DOM
-  // children here leaves the sidebar stuck on "评论区加载中".
-  if (root.matches(`${COMMENT_ROOT_ID_SELECTOR}, .commentapp`))
-    return true
-
+  // B 站会先创建空评论壳，再异步挂载 bili-comments / shadow DOM。提前搬走
+  // 空壳会与它的初始化竞争，导致头像、编辑器或评论列表漏渲染。
   if (root.querySelector(COMMENT_CONTENT_MARKER_SELECTOR))
     return true
 
@@ -532,25 +529,13 @@ function showWidescreenLoading() {
   const mountTarget = document.body ?? document.documentElement
   mountTarget.appendChild(overlay)
   loadingOverlay = overlay
-
-  const handlePlaying = (event: Event) => {
-    if (event.target === getVideoElement())
-      removeWidescreenLoading()
-  }
-  document.addEventListener('playing', handlePlaying, true)
-  loadingPlaybackCleanup = () => {
-    document.removeEventListener('playing', handlePlaying, true)
-    loadingPlaybackCleanup = undefined
-  }
-
-  // The player may already be running before the widescreen loading UI mounts.
-  const video = getVideoElement()
-  if (video && !video.paused && !video.ended)
-    removeWidescreenLoading()
 }
 
 function removeWidescreenLoading(immediate = false) {
-  loadingPlaybackCleanup?.()
+  if (loadingPreparationFallbackTimer) {
+    clearTimeout(loadingPreparationFallbackTimer)
+    loadingPreparationFallbackTimer = undefined
+  }
 
   if (loadingFadeTimer) {
     clearTimeout(loadingFadeTimer)
@@ -579,6 +564,19 @@ function removeWidescreenLoading(immediate = false) {
 
   requestAnimationFrame(() => overlay.classList.add('is-leaving'))
   loadingFadeTimer = setTimeout(remove, LOADING_FADE_DURATION)
+}
+
+export function prepareBewlyWidescreenLoading() {
+  if (state)
+    return
+
+  showWidescreenLoading()
+  if (!loadingPreparationFallbackTimer) {
+    loadingPreparationFallbackTimer = setTimeout(() => {
+      loadingPreparationFallbackTimer = undefined
+      removeWidescreenLoading()
+    }, PREPARED_LOADING_TIMEOUT)
+  }
 }
 
 function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
@@ -2114,10 +2112,15 @@ function isReadyForLayout() {
     return false
 
   const video = getVideoElement()
-  if (video && (video.readyState >= HTMLMediaElement.HAVE_METADATA || video.currentSrc))
-    return true
+  if (video instanceof HTMLVideoElement) {
+    return video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+      && video.videoWidth > 0
+      && video.videoHeight > 0
+  }
 
-  return !!player.querySelector('video, bwp-video, .bpx-player-video-area, .bilibili-player-video-wrap')
+  const customVideo = player.querySelector<HTMLElement & { currentSrc?: string, readyState?: number }>('bwp-video')
+  return !!customVideo
+    && ((customVideo.readyState ?? 0) >= HTMLMediaElement.HAVE_CURRENT_DATA || !!customVideo.currentSrc)
 }
 
 function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
