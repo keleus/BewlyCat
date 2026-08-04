@@ -182,7 +182,7 @@ else if (shouldInitializeContentScript) {
   let beforeLoadedStyleFailsafeTimer: ReturnType<typeof setTimeout> | undefined
   let lastUrl = location.href
   let lastVideoNavigationKey = getVideoNavigationKey(location.href)
-  let hasAppliedPlayerMode = false // 添加标志变量
+  let lastAppliedPlayerModeNavigationKey: string | undefined
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
   let pendingWidescreenReloadNavigationKey: string | undefined
   let pendingWidescreenReloadTimer: ReturnType<typeof setTimeout> | undefined
@@ -301,15 +301,9 @@ else if (shouldInitializeContentScript) {
       return
     }
 
-    // 后台新开的标签页中，B 站播放器还没有完成可见状态下的初始化。
-    // 此时切换播放器模式会与它的恢复流程竞争，可能导致媒体重载或重复 video 节点。
-    if (document.hidden) {
-      clearPlayerModeRetry()
+    const currentNavigationKey = getVideoNavigationKey(location.href)
+    if (lastAppliedPlayerModeNavigationKey === currentNavigationKey)
       return
-    }
-
-    if (hasAppliedPlayerMode)
-      return // 如果已经应用过，直接返回
 
     // 检查是否处于全屏或网页全屏状态（互动视频场景）
     const isInFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement)
@@ -320,7 +314,7 @@ else if (shouldInitializeContentScript) {
     if (isInFullscreen || isInWebFullscreen) {
       applyDefaultDanmakuState()
       applyDefaultCaptionState()
-      hasAppliedPlayerMode = true // 标记已应用，避免重复检查
+      lastAppliedPlayerModeNavigationKey = currentNavigationKey
       return
     }
 
@@ -370,7 +364,7 @@ else if (shouldInitializeContentScript) {
     setTimeout(() => {
       startAutoExitFullscreenMonitoring()
     }, 2000)
-    hasAppliedPlayerMode = true // 标记已应用
+    lastAppliedPlayerModeNavigationKey = currentNavigationKey
 
     // 延迟添加稍后再看按钮
     scheduleAddWatchLaterButton()
@@ -618,7 +612,6 @@ else if (shouldInitializeContentScript) {
       pendingWidescreenReloadTimer = undefined
     }, 5000)
     clearPlayerModeRetry()
-    hasAppliedPlayerMode = false
     // 先退出宽屏，再让 B 站执行原本的 SPA 路由切换；真正 URL 变化后由
     // checkForUrlChanges 复用 SPA 路由并按需重载评论区。
     exitBewlyWidescreen()
@@ -635,8 +628,10 @@ else if (shouldInitializeContentScript) {
       recordVideoVisitFromUrl(lastUrl)
       applyBewlyDesignClasses()
 
-      if (!isVideoOrBangumiPage())
+      if (!isVideoOrBangumiPage()) {
         clearPendingWidescreenReloadNavigation()
+        lastAppliedPlayerModeNavigationKey = undefined
+      }
 
       if (isVideoOrBangumiPage()) {
         if (!isMeaningfulVideoNavigation) {
@@ -663,7 +658,6 @@ else if (shouldInitializeContentScript) {
 
         exitBewlyWidescreen()
         resetVerticalVideoZoom()
-        hasAppliedPlayerMode = false // URL变化时重置标志
         document.querySelector('.bewly-watch-later-btn')?.remove()
         watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
         // 不再重置用户手动修改标志，保持用户的自动播放偏好设置
@@ -703,17 +697,7 @@ else if (shouldInitializeContentScript) {
   // popstate/replaceState 由轮询兜底。
   window.addEventListener('pushstate', prepareVideoNavigationBeforeRouteChange, true)
 
-  // 处理页面可见性变化
-  function handleVisibilityChange() {
-  // 当页面变为可见且是视频或番剧页面时，且尚未应用播放器模式
-    if (document.visibilityState === 'visible'
-      && (isVideoOrBangumiPage())
-      && !hasAppliedPlayerMode) {
-      applyDefaultPlayerMode()
-    }
-  }
-
-  // 添加页面加载和可见性变化的监听
+  // 添加页面加载监听
   window.addEventListener('load', () => {
     if (isVideoPage()) {
       applyDefaultPlayerMode()
@@ -857,11 +841,10 @@ else if (shouldInitializeContentScript) {
     }, true)
   }
   window.addEventListener('pageshow', () => {
-    if ((isVideoOrBangumiPage()) && !hasAppliedPlayerMode) {
+    if (isVideoOrBangumiPage()) {
       applyDefaultPlayerMode()
     }
   })
-  document.addEventListener('visibilitychange', handleVisibilityChange)
 
   // Set the original Bilibili top bar to `display: none` to prevent it from showing before the load
   // see: https://github.com/BewlyBewly/BewlyBewly/issues/967
