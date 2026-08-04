@@ -291,7 +291,7 @@ function handleClickChannel() {
       </div>
     </ALink>
 
-    <div grid="~ cols-3 gap-2" px-4>
+    <div grid="~ cols-3 gap-2" px-4 pt-1 mt-1 border-t="1 $bew-border-color">
       <ALink
         class="channel-info-item"
         :href="`https://space.bilibili.com/${mid}/fans/follow`"
@@ -426,18 +426,32 @@ function handleClickChannel() {
 }
 
 .channel-info-item {
-  --uno: "p-2 m-0 rounded-$bew-radius-xl text-sm flex flex-col items-center transition-colors duration-200";
-  --uno: "hover:bg-$bew-fill-1";
+  --uno: "relative py-1 px-2 m-0 text-sm flex flex-col items-center";
 
-  > * {
-    --uno: "transition-colors duration-200";
+  & + .channel-info-item::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: var(--bew-border-color);
+  }
+
+  &:hover {
+    background: transparent;
+
+    .num,
+    > div:last-child {
+      color: var(--bew-theme-color);
+    }
   }
 
   .num {
-    --uno: "font-semibold text-xl";
+    --uno: "font-semibold text-xl transition-colors duration-200";
 
     + div {
-      --uno: "text-$bew-text-2 mt-1 text-xs font-semibold";
+      --uno: "text-$bew-text-2 mt-1 text-xs font-semibold transition-colors duration-200";
     }
   }
 }
