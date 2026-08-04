@@ -187,23 +187,43 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
               border="rounded-$bew-radius-half"
               overflow="hidden"
             >
-              <!-- Open in video page and remove button -->
-              <Tooltip :content="$t('watch_later.play_video')" placement="top">
-                <button
-                  class="group-hover:opacity-100 opacity-0"
-                  type="button"
-                  pos="absolute top-0 left-0" z-1 w-24px h-24px
-                  bg="black opacity-60 hover:$bew-theme-color"
-                  grid="~ place-items-center"
-                  m="1"
-                  text="white xs"
-                  duration-300
-                  border="rounded-full"
-                  @click.stop.prevent="handleOpenVideoPageAndRemove(index, item.aid, item.bvid)"
-                >
-                  <i i-tabler:player-play />
-                </button>
-              </Tooltip>
+              <div
+                class="group-hover:opacity-100 opacity-0"
+                pos="absolute top-0 left-0" z-1
+                flex="~ gap-1"
+                m="1"
+                duration-300
+              >
+                <!-- Open in regular video page button -->
+                <Tooltip :content="$t('watch_later.open_video_page')" placement="top">
+                  <button
+                    type="button"
+                    w-24px h-24px
+                    bg="black opacity-60 hover:$bew-theme-color"
+                    grid="~ place-items-center"
+                    text="white xs"
+                    border="rounded-full"
+                    @click.stop.prevent="openVideoPage(getVideoPageUrl(item.bvid))"
+                  >
+                    <i i-tabler:external-link />
+                  </button>
+                </Tooltip>
+
+                <!-- Open in video page and remove button -->
+                <Tooltip :content="$t('watch_later.play_video')" placement="top">
+                  <button
+                    type="button"
+                    w-24px h-24px
+                    bg="black opacity-60 hover:$bew-theme-color"
+                    grid="~ place-items-center"
+                    text="white xs"
+                    border="rounded-full"
+                    @click.stop.prevent="handleOpenVideoPageAndRemove(index, item.aid, item.bvid)"
+                  >
+                    <i i-tabler:player-play />
+                  </button>
+                </Tooltip>
+              </div>
 
               <!-- Delete button -->
               <div
