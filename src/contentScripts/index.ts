@@ -10,6 +10,7 @@ import { localSettings, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
+import api from '~/utils/api'
 import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
@@ -18,7 +19,7 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
-import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
@@ -185,6 +186,9 @@ else if (shouldInitializeContentScript) {
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
   let pendingWidescreenReloadNavigationKey: string | undefined
   let pendingWidescreenReloadTimer: ReturnType<typeof setTimeout> | undefined
+  let autoVideoNavigationHintUntil = 0
+  let explicitAutoVideoNavigationHintUntil = 0
+  let lastTrustedVideoInteractionAt = 0
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
   void settingsReady.then(() => recordVideoVisitFromUrl(lastUrl))
@@ -476,6 +480,195 @@ else if (shouldInitializeContentScript) {
     }
   }
 
+  const videoNavigationItemSelector = [
+    '.video-pod__item',
+    '.multi-page__item',
+    '.page-item',
+    '.list-item',
+    '.episode-item',
+    '.section-item',
+    '.collect-item',
+    '.video-page-card-small',
+    '.bili-video-card',
+    '[class*="RecommendItem_wrap"]',
+  ].join(', ')
+
+  function isTrustedVideoNavigationClick(event: Event) {
+    if (!event.isTrusted)
+      return false
+
+    const currentNavigationKey = getVideoNavigationKey(location.href)
+    const eventPath = event.composedPath()
+    const videoAnchor = eventPath.find(
+      (target): target is HTMLAnchorElement => target instanceof HTMLAnchorElement && !!target.href,
+    )
+    if (videoAnchor) {
+      const nextNavigationKey = getVideoNavigationKey(videoAnchor.href)
+      if (nextNavigationKey && nextNavigationKey !== currentNavigationKey)
+        return true
+    }
+
+    // Some Bilibili playlist/recommendation entries route on the item itself
+    // and do not expose an anchor in the composed event path.
+    return eventPath.some(target => target instanceof Element && target.matches(videoNavigationItemSelector))
+  }
+
+  function isCurrentVideoPlaybackEvent(event: Event) {
+    const video = getVideoElement()
+    if (!video)
+      return false
+
+    return event.composedPath().includes(video)
+      || event.target === video
+      || (event.target instanceof Node && video.contains(event.target))
+  }
+
+  function markAutomaticVideoNavigationHint(event: Event) {
+    if (!isCurrentVideoPlaybackEvent(event))
+      return
+
+    const video = getVideoElement()
+    if (!video)
+      return
+
+    if (event.type === 'pause') {
+      const isNearEnd = video.ended
+        || (Number.isFinite(video.duration) && video.duration > 0 && video.currentTime >= video.duration - 1)
+      if (!isNearEnd)
+        return
+    }
+
+    // Native Bilibili autoplay and the custom random-play listener both route
+    // immediately after ended/near-ended playback. Keep a short hint so the
+    // route handler can avoid a full page reload for that transition.
+    autoVideoNavigationHintUntil = Date.now() + 2500
+  }
+
+  function isAutomaticVideoNavigation() {
+    const now = Date.now()
+    if (explicitAutoVideoNavigationHintUntil > now)
+      return true
+    if (autoVideoNavigationHintUntil <= now)
+      return false
+
+    const hasRecentTrustedInteraction = lastTrustedVideoInteractionAt > now - 1000
+      || navigator.userActivation?.isActive === true
+    return !hasRecentTrustedInteraction
+  }
+
+  document.addEventListener('click', (event) => {
+    if (isTrustedVideoNavigationClick(event))
+      lastTrustedVideoInteractionAt = Date.now()
+  }, true)
+  document.addEventListener('ended', markAutomaticVideoNavigationHint, true)
+  document.addEventListener('pause', markAutomaticVideoNavigationHint, true)
+  window.addEventListener('bewly-autoplay-navigation', () => {
+    explicitAutoVideoNavigationHintUntil = Date.now() + 2500
+  }, true)
+
+  const commentRootSelector = '#commentapp, #comment-module, #comment-body, .commentapp, .comment-container, .bili-comment-container, .bb-comment'
+  const automaticCommentReloadRetryInterval = 250
+  const automaticCommentReloadRetryTimeout = 10_000
+  let automaticCommentReloadRequestId = 0
+
+  function getVideoBvid(url = location.href): string | null {
+    try {
+      const urlObj = new URL(url)
+      const queryBvid = urlObj.searchParams.get('bvid')
+      if (queryBvid?.startsWith('BV'))
+        return queryBvid
+
+      const pathMatch = urlObj.pathname.match(/^\/video\/(BV[0-9A-Za-z]+)/)
+      return pathMatch?.[1] ?? null
+    }
+    catch {
+      return null
+    }
+  }
+
+  function getCommentParamsWithAid(element: Element, aid: number): string | null {
+    const currentParams = element.getAttribute('data-params')
+    if (!currentParams)
+      return null
+
+    const params = currentParams.split(',')
+    if (params.length < 2 || !/^\d+$/.test(params[1].trim()))
+      return null
+
+    params[1] = String(aid)
+    return params.join(',')
+  }
+
+  function findVideoCommentsElement(): HTMLElement | null {
+    const commentRoot = document.querySelector<HTMLElement>(commentRootSelector)
+    if (!commentRoot)
+      return null
+
+    return commentRoot.querySelector<HTMLElement>(':scope > bili-comments')
+      ?? commentRoot.querySelector<HTMLElement>('bili-comments')
+  }
+
+  function replaceVideoCommentsElement(element: HTMLElement, dataParams: string) {
+    const replacement = document.createElement(element.tagName.toLowerCase())
+    for (const attribute of Array.from(element.attributes))
+      replacement.setAttribute(attribute.name, attribute.value)
+    replacement.setAttribute('data-params', dataParams)
+    element.replaceWith(replacement)
+  }
+
+  async function reloadCommentsForAutomaticNavigation(targetNavigationKey: string) {
+    if (!isVideoPage())
+      return
+
+    const bvid = getVideoBvid()
+    if (!bvid)
+      return
+
+    const requestId = ++automaticCommentReloadRequestId
+    let response: any
+    try {
+      response = await api.video.getVideoInfo({ bvid })
+    }
+    catch {
+      return
+    }
+
+    if (requestId !== automaticCommentReloadRequestId
+      || getVideoNavigationKey(location.href) !== targetNavigationKey
+      || response?.code !== 0) {
+      return
+    }
+
+    const aid = Number(response.data?.aid)
+    if (!Number.isSafeInteger(aid) || aid <= 0)
+      return
+
+    const deadline = Date.now() + automaticCommentReloadRetryTimeout
+    const retryUntilCommentReady = () => {
+      if (requestId !== automaticCommentReloadRequestId
+        || getVideoNavigationKey(location.href) !== targetNavigationKey) {
+        return
+      }
+
+      const comments = findVideoCommentsElement()
+      if (comments) {
+        const nextParams = getCommentParamsWithAid(comments, aid)
+        if (nextParams) {
+          if (nextParams === comments.getAttribute('data-params'))
+            return
+
+          replaceVideoCommentsElement(comments, nextParams)
+          return
+        }
+      }
+
+      if (Date.now() < deadline)
+        window.setTimeout(retryUntilCommentReady, automaticCommentReloadRetryInterval)
+    }
+
+    retryUntilCommentReady()
+  }
+
   function prepareVideoNavigationBeforeRouteChange(event: Event) {
     const wasBewlyWidescreenActive = isBewlyWidescreenActive()
     if (!wasBewlyWidescreenActive)
@@ -524,12 +717,16 @@ else if (shouldInitializeContentScript) {
 
         const shouldReloadWidescreenNavigation = pendingWidescreenReloadNavigationKey === currentVideoNavigationKey
           || isBewlyWidescreenActive()
+        const isAutomaticNavigation = isAutomaticVideoNavigation()
+        const shouldReloadCommentsForAutomaticNavigation = shouldReloadWidescreenNavigation && isAutomaticNavigation
+        autoVideoNavigationHintUntil = 0
+        explicitAutoVideoNavigationHintUntil = 0
         clearPendingWidescreenReloadNavigation()
 
-        if (shouldReloadWidescreenNavigation) {
+        if (shouldReloadWidescreenNavigation && !isAutomaticNavigation) {
           exitBewlyWidescreen()
           // B 站评论区在 SPA 切换时可能继续复用旧组件；完整刷新让视频和评论区
-          // 在同一次页面初始化中绑定到新的 aid/bvid，避免评论内容与视频错配。
+          // 在同一次页面初始化中绑定到新的 aid/bvid，避免手动切集时评论内容与视频错配。
           window.location.reload()
           scheduleUrlChangeCheck()
           return
@@ -546,6 +743,8 @@ else if (shouldInitializeContentScript) {
         resetRandomPlayInitialization()
 
         applyDefaultPlayerMode(false)
+        if (shouldReloadCommentsForAutomaticNavigation)
+          void reloadCommentsForAutomaticNavigation(currentVideoNavigationKey)
         // 如果是视频页面内部跳转，延迟执行滚动
         if (isVideoOrBangumiPage()) {
           handleVideoPageNavigation()
@@ -571,7 +770,8 @@ else if (shouldInitializeContentScript) {
   scheduleUrlChangeCheck()
 
   // inject/index.ts 在调用 history.pushState 前派发此事件，先退出宽屏；URL
-  // 真正变化后由 checkForUrlChanges 触发完整刷新。popstate/replaceState 由轮询兜底。
+  // 真正变化后由 checkForUrlChanges 处理。手动切集仍完整刷新，自动连播则复用 SPA
+  // 路由并重新挂载评论区。popstate/replaceState 由轮询兜底。
   window.addEventListener('pushstate', prepareVideoNavigationBeforeRouteChange, true)
 
   // 处理页面可见性变化
