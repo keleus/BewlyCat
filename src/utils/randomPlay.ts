@@ -415,8 +415,6 @@ export function jumpToEpisode(episodes: HTMLElement[], targetIndex: number): voi
       if (targetKey)
         visitedEpisodes.add(targetKey)
 
-      window.dispatchEvent(new Event('bewly-autoplay-navigation'))
-
       // 如果是链接，尝试点击
       if (clickableElement instanceof HTMLAnchorElement && clickableElement.href) {
         console.log('[BewlyCat Random Play] Clicking anchor element, href:', clickableElement.href)
