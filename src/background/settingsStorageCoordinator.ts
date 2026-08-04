@@ -276,19 +276,36 @@ export function reconcileSettingsCloudSyncSnapshot(
           applyRemoteWinner(settings, meta, field, remote)
       }
 
-      const localFields = new Set([
-        ...Object.keys(settings),
-        ...bootstrapDirtyFields,
-      ])
-      const fieldsToUpload = [...localFields]
-        .filter(field => isSettingsCloudSyncField(field) && !cloudFields.has(field))
-      for (const field of bootstrapDirtyFields) {
-        if (cloudFields.has(field))
-          fieldsToUpload.push(field)
+      // An existing cloud snapshot is authoritative when a device joins for
+      // the first time. Merely opening Settings may materialize local defaults;
+      // those untouched fields must not be uploaded into gaps in that snapshot.
+      // Only fields changed after sync was enabled have versions at this point.
+      // If the cloud is completely empty, seed it from the current local state.
+      const fieldsToUpload = [...new Set(cloudFields.size === 0
+        ? [
+            ...Object.keys(settings),
+            ...bootstrapDirtyFields,
+          ]
+        : [...bootstrapDirtyFields])]
+        .filter(isSettingsCloudSyncField)
+        .sort()
+
+      if (cloudFields.size === 0 && fieldsToUpload.length > 0) {
+        // Use one version for the entire initial snapshot. If several devices
+        // seed an empty cloud concurrently, the version/device tie-breaker then
+        // selects one consistent device for all overlapping fields instead of
+        // producing a field-by-field mixture.
+        const bootstrapVersion = createNextCloudVersion(meta)
+        for (const field of fieldsToUpload) {
+          meta.fieldVersions[field] = bootstrapVersion
+          createUpload(uploads, settings, meta, field)
+        }
       }
-      for (const field of [...new Set(fieldsToUpload)].sort()) {
-        meta.fieldVersions[field] = createNextCloudVersion(meta)
-        createUpload(uploads, settings, meta, field)
+      else {
+        for (const field of fieldsToUpload) {
+          meta.fieldVersions[field] = createNextCloudVersion(meta)
+          createUpload(uploads, settings, meta, field)
+        }
       }
       meta.cloudSyncInitialized = true
     }

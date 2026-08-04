@@ -21,7 +21,6 @@ import {
 } from './settingsStorageCoordinator'
 
 const CLOUD_UPLOAD_DELAY = 1_500
-const CLOUD_RETRY_ALARM = 'settingsCloudSyncRetry:v1'
 const CLOUD_SYNC_ITEM_COUNT_LIMIT = 480
 
 let initialized = false
@@ -62,18 +61,6 @@ function clearFlushTimer() {
   if (flushTimer != null)
     clearTimeout(flushTimer)
   flushTimer = undefined
-}
-
-function scheduleRetry() {
-  if (!enabled)
-    return
-
-  try {
-    browser.alarms.create(CLOUD_RETRY_ALARM, { delayInMinutes: 1 })
-  }
-  catch (error) {
-    logCloudSyncError('Failed to schedule settings cloud sync retry:', error)
-  }
 }
 
 function consumePendingUpload(field: string, entry: SettingsCloudSyncEntry) {
@@ -199,12 +186,10 @@ async function flushUploads() {
         knownCloudItems[key] = entry
       consumePendingUpload(field, entry)
     }
-    await browser.alarms.clear(CLOUD_RETRY_ALARM)
   }
   catch (error) {
     shouldScheduleNextBatch = false
     logCloudSyncError('Failed to upload settings to browser sync storage:', error)
-    scheduleRetry()
   }
   finally {
     flushInProgress = false
@@ -242,7 +227,6 @@ async function startCloudSync() {
     if (!enabled || startGeneration !== generation)
       return
     logCloudSyncError('Failed to initialize settings cloud sync:', error)
-    scheduleRetry()
   }
 }
 
@@ -254,7 +238,6 @@ function stopCloudSync() {
   clearFlushTimer()
   pendingUploads.clear()
   knownCloudItems = {}
-  void browser.alarms.clear(CLOUD_RETRY_ALARM)
 }
 
 function updateCloudSyncPreference(value: unknown) {
@@ -359,10 +342,6 @@ export function setupSettingsCloudSync() {
   initialized = true
   browser.storage.onChanged.addListener(handleLocalChanges)
   browser.storage.onChanged.addListener(handleSyncChanges)
-  browser.alarms.onAlarm.addListener((alarm) => {
-    if (alarm.name === CLOUD_RETRY_ALARM && enabled)
-      void startCloudSync()
-  })
 
   const initialPreferenceGeneration = preferenceGeneration
   void browser.storage.local.get(SETTINGS_CLOUD_SYNC_ENABLED_KEY).then((stored) => {

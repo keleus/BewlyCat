@@ -38,7 +38,6 @@ export async function getManifest() {
     },
     permissions: [
       'storage',
-      'alarms',
       'declarativeNetRequest',
       'cookies',
       ...(!isFirefox && !isSafari ? ['scripting'] : []),
