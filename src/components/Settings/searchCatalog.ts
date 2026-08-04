@@ -362,6 +362,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(topBarRoute, [
     'settings.topbar_switchers',
     'settings.show_bewly_or_bili_page_switcher',
+    'settings.show_bewly_or_bili_page_switcher_on_more_pages',
     'settings.show_bewly_or_bili_top_bar_switcher',
   ]),
   ...createEntries(topBarRoute, [

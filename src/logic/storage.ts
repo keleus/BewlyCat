@@ -268,6 +268,7 @@ export interface Settings {
   showTopBarThemeColorGradient: boolean
   showBewlyOrBiliTopBarSwitcher: boolean
   showBewlyOrBiliPageSwitcher: boolean
+  showBewlyOrBiliPageSwitcherOnMorePages: boolean
   topBarLogoStyle: TopBarLogoStyle
   topBarIconBadges: 'number' | 'dot' | 'none'
   showWatchLaterBadge: boolean
@@ -548,8 +549,9 @@ export const originalSettings: Settings = {
   alwaysUseTransparentTopBar: false,
   enableTopBarGradient: true,
   showTopBarThemeColorGradient: true,
-  showBewlyOrBiliTopBarSwitcher: false,
+  showBewlyOrBiliTopBarSwitcher: true,
   showBewlyOrBiliPageSwitcher: true,
+  showBewlyOrBiliPageSwitcherOnMorePages: false,
   topBarLogoStyle: 'icon',
   topBarIconBadges: 'number',
   showWatchLaterBadge: false,
