@@ -14,6 +14,7 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import ShadowCurveEditor from '../../components/ShadowCurveEditor.vue'
 import LinkOpening from '../../Navigation/LinkOpening.vue'
 import VideoCardContentEditor from './VideoCardContentEditor.vue'
+import VideoCardContextMenuEditor from './VideoCardContextMenuEditor.vue'
 
 const { t } = useI18n()
 
@@ -165,6 +166,14 @@ function resetColumns() {
       >
         <Select v-model="settings.videoCardMetaFontSize" :options="videoCardFontSizeOptions" w="160px" />
       </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="$t('settings.group_video_card_context_menu')"
+      :desc="$t('settings.group_video_card_context_menu_desc')"
+      collapsible
+    >
+      <VideoCardContextMenuEditor />
     </SettingsItemGroup>
 
     <!-- 阴影设置仅适用于现代布局，默认折叠 -->

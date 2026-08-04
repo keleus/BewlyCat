@@ -167,6 +167,13 @@ settings:
   group_video_card_display: Display & Preview
   group_video_card_content: Card Content
   group_video_card_content_desc: Choose which information and actions appear on video cards.
+  group_video_card_context_menu: More Menu
+  group_video_card_context_menu_desc: Choose which options appear after clicking a video card's more button.
+  video_card_context_menu_region_recommendation: Recommend
+  video_card_context_menu_region_opening: Open
+  video_card_context_menu_region_copying: Copy
+  video_card_context_menu_region_user: User
+  video_card_context_menu_follow_user: Follow or Unfollow
   video_card_content_region_stats: Stats
   video_card_content_region_tags: Tags
   video_card_content_region_other: Other
@@ -1036,6 +1043,7 @@ dock:
 video_card:
   operation:
     not_interested: Not Interested
+    not_interested_uploader: Don't Recommend This Uploader
     open_in_new_tab: Open in New Tab
     open_in_background: Open In Background
     open_in_new_window: Open in New Window

@@ -167,6 +167,13 @@ settings:
   group_video_card_display: 顯示與預覽
   group_video_card_content: 卡片內容
   group_video_card_content_desc: 自訂影片卡片上各項資訊與操作的顯示。
+  group_video_card_context_menu: 更多選單
+  group_video_card_context_menu_desc: 選擇點擊影片卡片更多按鈕後顯示的選單選項。
+  video_card_context_menu_region_recommendation: 推薦
+  video_card_context_menu_region_opening: 開啟
+  video_card_context_menu_region_copying: 複製
+  video_card_context_menu_region_user: 使用者
+  video_card_context_menu_follow_user: 追蹤或取消追蹤
   video_card_content_region_stats: 數據
   video_card_content_region_tags: 標籤
   video_card_content_region_other: 其它
@@ -967,6 +974,7 @@ dock:
 video_card:
   operation:
     not_interested: 不感興趣
+    not_interested_uploader: 不想看此 UP 主
     open_in_new_tab: 新標籤頁開啟
     open_in_background: 背景開啟
     open_in_new_window: 新視窗開啟

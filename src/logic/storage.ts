@@ -166,6 +166,33 @@ export const GRID_BREAKPOINTS = {
   xxl: 1536,
 } as const
 
+export const videoCardContextMenuKeys = [
+  'notInterested',
+  'notInterestedUploader',
+  'openInNewTab',
+  'openInBackground',
+  'openInNewWindow',
+  'openInCurrentTab',
+  'openInDrawer',
+  'copyVideoLink',
+  'copyCleanVideoLink',
+  'copyBVNumber',
+  'copyAVNumber',
+  'viewOriginalCover',
+  'followUser',
+  'blockUser',
+] as const
+
+export type VideoCardContextMenuKey = typeof videoCardContextMenuKeys[number]
+
+export interface VideoCardContextMenuConfigItem {
+  key: VideoCardContextMenuKey
+  visible: boolean
+}
+
+export const defaultVideoCardContextMenuConfig: VideoCardContextMenuConfigItem[]
+  = videoCardContextMenuKeys.map(key => ({ key, visible: true }))
+
 export interface Settings {
   touchScreenOptimization: boolean
   showHomeButtonInTouchMode: boolean
@@ -231,6 +258,7 @@ export interface Settings {
   showVideoCardDuration: boolean
   showVideoCardWatchLater: boolean
   showVideoWatchedBadge: boolean
+  videoCardContextMenuConfig: VideoCardContextMenuConfigItem[]
 
   // Desktop & Dock
   autoHideTopBar: boolean
@@ -512,6 +540,7 @@ export const originalSettings: Settings = {
   showVideoCardDuration: true,
   showVideoCardWatchLater: true,
   showVideoWatchedBadge: false,
+  videoCardContextMenuConfig: defaultVideoCardContextMenuConfig.map(item => ({ ...item })),
 
   // Desktop & Dock
   autoHideTopBar: false,
