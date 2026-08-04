@@ -44,6 +44,8 @@ const ROOT_ID = 'bewly-widescreen-root'
 const LOADING_ROOT_ID = 'bewly-widescreen-loading'
 const BODY_CLASS = 'bewly-widescreen-active'
 const EMPTY_CLASS = 'bewly-widescreen-empty'
+const EPISODE_SECTION_CLASS = 'bewly-widescreen-episode-section'
+const EPISODE_ITEM_SELECTOR = '.video-pod__item, .multi-page__item, .page-item, .list-item, .episode-item, .section-item, .collect-item'
 const SIDEBAR_NARROW_MIN_WIDTH = 360
 const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
@@ -1504,6 +1506,19 @@ function injectLayoutStyle() {
       max-width: 100% !important;
     }
 
+    /* Keep only the marked episode section internally scrollable. The panel
+       itself remains the outer scroll fallback for recommendations and other
+       sidebar content; nested playlist containers stay overflow-visible. */
+    #${ROOT_ID} .bewly-widescreen-panel-playlist.${EPISODE_SECTION_CLASS},
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .${EPISODE_SECTION_CLASS} {
+      height: auto !important;
+      max-height: min(52dvh, 560px) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+
     #${ROOT_ID} .bewly-widescreen-panel .video-page-card-small {
       width: 100% !important;
     }
@@ -1960,6 +1975,35 @@ function placeRecommendAfterPlaylist(panel: HTMLElement, movedNodes: MovedNode[]
     playlistNode.after(recommendNode)
 }
 
+function findEpisodeSectionNode(panel: HTMLElement, movedNodes: MovedNode[]) {
+  const playlistNode = findManagedPanelNode(panel, selectors.playlist, movedNodes)
+  if (!playlistNode)
+    return null
+
+  const candidates = [
+    playlistNode,
+    ...Array.from(playlistNode.querySelectorAll<HTMLElement>(selectors.playlist.join(','))),
+  ]
+  const episodeCandidates = candidates.filter(candidate => candidate.querySelector(EPISODE_ITEM_SELECTOR))
+  return episodeCandidates.at(-1) ?? playlistNode
+}
+
+function clearEpisodeSectionMarker(panel: HTMLElement, movedNodes: MovedNode[]) {
+  for (const { node } of movedNodes)
+    node.classList.remove(EPISODE_SECTION_CLASS)
+  panel.querySelectorAll<HTMLElement>(`.${EPISODE_SECTION_CLASS}`).forEach((node) => {
+    node.classList.remove(EPISODE_SECTION_CLASS)
+  })
+}
+
+function syncEpisodeSectionMarker(panel: HTMLElement, movedNodes: MovedNode[]) {
+  clearEpisodeSectionMarker(panel, movedNodes)
+
+  const episodeSection = findEpisodeSectionNode(panel, movedNodes)
+  if (episodeSection)
+    episodeSection.classList.add(EPISODE_SECTION_CLASS)
+}
+
 function fillSidebar(currentState: BewlyWidescreenState) {
   syncActionAnimationTheme(currentState)
   syncSidebarTitle(currentState)
@@ -2000,6 +2044,7 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   const recommend = existingRecommend ? null : findMovable(selectors.recommend)
   const recommendMoved = existingRecommend || moveNode(recommend, currentState.panels.playlist, currentState.movedNodes)
   placeRecommendAfterPlaylist(currentState.panels.playlist, currentState.movedNodes)
+  syncEpisodeSectionMarker(currentState.panels.playlist, currentState.movedNodes)
   const hasPlaylist = !!(existingPlaylist || playlistMoved)
   const hasRecommend = !!(existingRecommend || recommendMoved)
   currentState.tabButtons.playlist.textContent = hasPlaylist ? '选集' : '推荐'
@@ -2056,6 +2101,7 @@ function cleanupState(currentState: BewlyWidescreenState) {
   if (movedCommentRoot && replacementCommentRoot)
     removeMovedNode(movedCommentRoot, currentState.movedNodes)
 
+  clearEpisodeSectionMarker(currentState.panels.playlist, currentState.movedNodes)
   restoreMovedNodes(currentState.movedNodes)
   currentState.root.remove()
   currentState.styleEl.remove()
