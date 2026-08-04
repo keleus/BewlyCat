@@ -18,7 +18,7 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
-import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, ensureAutoPlayPlayback, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, rememberAutoPlayStateForReload, resolveDefaultVideoPlayerMode, restoreAutoPlayStateAfterReload, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
@@ -363,7 +363,10 @@ else if (shouldInitializeContentScript) {
       resetVerticalVideoZoom()
     // 应用自动连播设置，延迟更长时间确保播放器完全初始化
     setTimeout(() => {
+      const restoredAutoPlay = restoreAutoPlayStateAfterReload()
       applyAutoPlayByVideoType()
+      if (targetPlayerMode === 'bewlyWidescreen' && restoredAutoPlay === true)
+        ensureAutoPlayPlayback()
     }, 2000)
     // 启动自动退出全屏监听
     setTimeout(() => {
@@ -491,6 +494,7 @@ else if (shouldInitializeContentScript) {
       return
 
     clearPendingWidescreenReloadNavigation()
+    rememberAutoPlayStateForReload(targetUrl)
     pendingWidescreenReloadNavigationKey = nextNavigationKey
     pendingWidescreenReloadTimer = setTimeout(() => {
       pendingWidescreenReloadNavigationKey = undefined
