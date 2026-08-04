@@ -92,9 +92,11 @@ const leftWidth = ref(0)
 const rightWidth = ref(0)
 const centerWidth = ref(0)
 const searchContentWidth = ref(0)
+const isSearchTransitionEnabled = ref(false)
 
 // 使用单个 ResizeObserver 监听多个元素，减少开销
 let resizeObserver: ResizeObserver | null = null
+let searchTransitionFrame: number | null = null
 
 function setupResizeObserver() {
   if (resizeObserver)
@@ -140,6 +142,8 @@ watch(searchContent, (newEl, oldEl) => {
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   resizeObserver = null
+  if (searchTransitionFrame !== null)
+    cancelAnimationFrame(searchTransitionFrame)
 })
 
 useMutationObserver(searchSection, () => {
@@ -152,6 +156,15 @@ onMounted(() => {
   centerWidth.value = searchSection.value?.offsetWidth ?? 0
   refreshSearchContent()
   setupResizeObserver()
+
+  // 初始宽度从 0 更新为实测值属于布局校正，不应被播放成搜索框入场动画。
+  // 等首轮 ResizeObserver 与浏览器绘制完成后，再为后续响应式变化启用过渡。
+  searchTransitionFrame = requestAnimationFrame(() => {
+    searchTransitionFrame = requestAnimationFrame(() => {
+      isSearchTransitionEnabled.value = true
+      searchTransitionFrame = null
+    })
+  })
 })
 
 const maxOffset = computed(() => {
@@ -229,6 +242,7 @@ function refreshSearchContent() {
     <div
       ref="searchSection"
       class="top-bar-header__search"
+      :class="{ 'top-bar-header__search--transition-enabled': isSearchTransitionEnabled }"
       :style="{ transform: `translateX(${searchOffset}px)` }"
     >
       <div
@@ -312,6 +326,9 @@ function refreshSearchContent() {
   justify-content: center;
   width: 100%;
   min-width: 0;
+}
+
+.top-bar-header__search--transition-enabled {
   transition: transform 0.2s ease;
 }
 
