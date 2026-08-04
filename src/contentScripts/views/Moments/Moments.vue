@@ -156,15 +156,19 @@ const detailImageViewerSource = shallowRef<Window | null>(null)
 let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
 const layoutRef = ref<HTMLElement | null>(null)
 const gridRef = ref<HTMLElement | null>(null)
-/** 宽卡信息流最多三列 */
-const CARD_MAX_WIDTH = 520
+/** 按当前实际列数限制卡片最大宽度 */
+const CARD_MAX_WIDTH_BY_COLUMNS = {
+  1: 720,
+  2: 600,
+  3: 520,
+} as const
 const CARD_MIN_WIDTH = 360
 const CARD_COMPACT_MIN_WIDTH = 260
 const GRID_GAP = 16
 const SIDEBAR_WIDTH = 248
 const SIDEBAR_MIN_LAYOUT_WIDTH = SIDEBAR_WIDTH + GRID_GAP + CARD_MIN_WIDTH
 const gridColumnCount = ref(1)
-const gridCardWidth = ref(CARD_MAX_WIDTH)
+const gridCardWidth = ref<number>(CARD_MAX_WIDTH_BY_COLUMNS[1])
 let rebalanceTimer: ReturnType<typeof setTimeout> | null = null
 const hoveredMediaId = ref('')
 const previewUrls = reactive<Record<string, string>>({})
@@ -1208,7 +1212,12 @@ function mapMoment(item: DataItem): DisplayMoment {
 }
 
 function estimateCardHeight(moment: DisplayMoment) {
-  const columnWidth = Math.max(CARD_COMPACT_MIN_WIDTH, gridCardWidth.value || CARD_MAX_WIDTH)
+  const columnWidth = Math.max(
+    CARD_COMPACT_MIN_WIDTH,
+    gridCardWidth.value || CARD_MAX_WIDTH_BY_COLUMNS[gridColumnCount.value as 1 | 2 | 3],
+  )
+  const contentScale = Math.max(1, columnWidth / CARD_MAX_WIDTH_BY_COLUMNS[3])
+  const scaledTextBodyExtra = Math.round(230 * (contentScale - 1))
   const interactionHeight = moment.hotComment ? 52 : 0
   if (isCompactPlainTextMoment(moment)) {
     const charsPerLine = Math.max(12, Math.floor((columnWidth - 32) / 14))
@@ -1216,7 +1225,7 @@ function estimateCardHeight(moment: DisplayMoment) {
       (total, line) => total + Math.max(1, Math.ceil(Array.from(line).length / charsPerLine)),
       0,
     )))
-    return 118 + lineCount * 21 + interactionHeight
+    return 118 + lineCount * 21 + scaledTextBodyExtra + interactionHeight
   }
   if (moment.forward?.images?.length) {
     const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
@@ -1234,10 +1243,11 @@ function estimateCardHeight(moment: DisplayMoment) {
   }
   if (moment.forward?.video) {
     const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
-    return 238 + introLines * 21 + interactionHeight
+    const forwardMediaWidth = Math.max(150, (columnWidth - 32) * 0.44)
+    return 117 + Math.round(forwardMediaWidth * 9 / 16) + introLines * 21 + interactionHeight
   }
   if (moment.isChargeExclusive && !moment.isVideo)
-    return 230 + interactionHeight
+    return 230 + scaledTextBodyExtra + interactionHeight
   if (columnWidth < CARD_MIN_WIDTH) {
     if (moment.isLive)
       return Math.round(columnWidth * 9 / 16) + 210 + interactionHeight
@@ -1261,7 +1271,7 @@ function estimateCardHeight(moment: DisplayMoment) {
           : 1
     return Math.round((columnWidth - 32) / galleryRatio) + 220 + interactionHeight
   }
-  return 230 + interactionHeight
+  return 230 + scaledTextBodyExtra + interactionHeight
 }
 
 function handleMomentFilterChange(filter: MomentFilter) {
@@ -1685,7 +1695,7 @@ function redistributeColumns() {
 
 /** 按设置的期望列数排布；空间不足时降列，避免卡片窄于最小可读宽度。 */
 function updateGridColumnCount() {
-  const layoutWidth = layoutRef.value?.clientWidth || Math.max(CARD_MAX_WIDTH, window.innerWidth - 220)
+  const layoutWidth = layoutRef.value?.clientWidth || Math.max(CARD_MAX_WIDTH_BY_COLUMNS[1], window.innerWidth - 220)
   const hasSidebarContent = settings.value.momentsSidebarShowUserCard
     || settings.value.momentsSidebarShowPublish
     || settings.value.momentsSidebarShowLive
@@ -1702,7 +1712,8 @@ function updateGridColumnCount() {
     fittingColumns,
   )
   const availableCardWidth = Math.floor((containerWidth - GRID_GAP * (nextCols - 1)) / nextCols)
-  const nextCardWidth = Math.max(CARD_COMPACT_MIN_WIDTH, Math.min(CARD_MAX_WIDTH, availableCardWidth))
+  const cardMaxWidth = CARD_MAX_WIDTH_BY_COLUMNS[nextCols as 1 | 2 | 3]
+  const nextCardWidth = Math.max(CARD_COMPACT_MIN_WIDTH, Math.min(cardMaxWidth, availableCardWidth))
 
   const colsChanged = nextCols !== gridColumnCount.value
   const widthChanged = nextCardWidth !== gridCardWidth.value
@@ -3043,10 +3054,10 @@ watch(isInitialLoading, async (loading) => {
 })
 
 watch(
-  () => [
-    settings.value.momentsSidebarShowUserCard,
-    settings.value.momentsSidebarShowPublish,
-    settings.value.momentsSidebarShowLive,
+  [
+    () => settings.value.momentsSidebarShowUserCard,
+    () => settings.value.momentsSidebarShowPublish,
+    () => settings.value.momentsSidebarShowLive,
   ],
   async () => {
     await nextTick()
@@ -3071,10 +3082,10 @@ watch(upListScrollerRef, async () => {
 })
 
 watch(
-  () => [
-    visiblePortalUpList.value.map(up => up.mid).join(','),
-    settings.value.momentsEnableWantedFilter,
-    isPortalLoading.value,
+  [
+    () => visiblePortalUpList.value.map(up => up.mid).join(','),
+    () => settings.value.momentsEnableWantedFilter,
+    () => isPortalLoading.value,
   ],
   async () => {
     await nextTick()
@@ -3113,18 +3124,18 @@ watch(
 )
 
 watch(
-  () => [
-    settings.value.momentsFilterUpRecommendation,
-    settings.value.momentsHideChargeExclusive,
-    settings.value.momentsHideVideoReservation,
-    settings.value.momentsHideLiveReservation,
-    settings.value.momentsHideLiveDynamics,
-    settings.value.momentsHideVideoDynamics,
-    settings.value.momentsHideDrawDynamics,
-    settings.value.momentsHideUgcSeasonDynamics,
-    settings.value.momentsHideForwardDynamics,
-    settings.value.momentsHidePgcDynamics,
-    settings.value.momentsHideArticleDynamics,
+  [
+    () => settings.value.momentsFilterUpRecommendation,
+    () => settings.value.momentsHideChargeExclusive,
+    () => settings.value.momentsHideVideoReservation,
+    () => settings.value.momentsHideLiveReservation,
+    () => settings.value.momentsHideLiveDynamics,
+    () => settings.value.momentsHideVideoDynamics,
+    () => settings.value.momentsHideDrawDynamics,
+    () => settings.value.momentsHideUgcSeasonDynamics,
+    () => settings.value.momentsHideForwardDynamics,
+    () => settings.value.momentsHidePgcDynamics,
+    () => settings.value.momentsHideArticleDynamics,
   ],
   () => {
     if (scrollViewportRef.value)
@@ -3134,9 +3145,9 @@ watch(
 )
 
 watch(
-  () => [
-    settings.value.momentsEnableLivePreview,
-    settings.value.momentsEnableVideoPreview,
+  [
+    () => settings.value.momentsEnableLivePreview,
+    () => settings.value.momentsEnableVideoPreview,
   ],
   () => {
     const activeMoment = moments.value.find(moment => moment.id === hoveredMediaId.value)
@@ -3476,6 +3487,7 @@ watch(
             <MomentCard
               v-for="moment in column.items" :key="moment.id"
               :moment="moment"
+              :card-width="gridCardWidth"
               :ready="readyCardIds.has(moment.id)"
               :entering="enteringCardIds.has(moment.id)"
               :preview-active="Boolean(hoveredMediaId === moment.id && previewUrls[moment.id])"
@@ -4241,7 +4253,7 @@ watch(
   flex-direction: column;
   gap: var(--bew-space-4);
   width: 100%;
-  max-width: 520px;
+  max-width: 100%;
   min-width: 0;
 }
 .moments-skeleton-card {
@@ -4426,14 +4438,14 @@ watch(
 .moments-grid__column {
   display: flex;
   width: 100%;
-  max-width: 520px;
+  max-width: 100%;
   min-width: 0;
   flex-direction: column;
   gap: var(--bew-space-4);
 }
 .moments-grid :deep(.moment-card) {
   width: 100%;
-  max-width: 520px;
+  max-width: 100%;
 }
 .moments-grid__spacer {
   flex: 0 0 auto;

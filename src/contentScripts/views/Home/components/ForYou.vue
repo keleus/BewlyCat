@@ -191,6 +191,8 @@ const WEB_REFRESH_PAGE_SIZE = 10
 const WEB_LOAD_MORE_PAGE_SIZE = 12
 const NO_COOKIE_RECOMMEND_STATE_MAX_SHOWLIST_GROUPS = 3
 const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
+const FILTERED_FEED_SAMPLE_SIZE = 100
+const FILTERED_FEED_MIN_RETENTION_RATE = 0.6
 const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，初始化时为1
 const scrollLoadStartLength = ref<number>(0) // 滚动加载开始时的列表长度
 const consecutiveEmptyLoads = ref<number>(0) // 连续空加载次数，用于防止无限递归（Web模式）
@@ -205,6 +207,65 @@ const cachedWebShowlistGroups = ref<string[]>([])
 
 const forwardWebFetchRow = ref<number>(1)
 const forwardWebShowlistGroups = ref<string[]>([])
+
+const filteredFeedCandidateCount = ref(0)
+const filteredFeedKeptCount = ref(0)
+const hasActiveWebRecommendationFilter = computed(() => settings.value.enableFilterByDuration
+  || settings.value.enableFilterByViewCount
+  || settings.value.enableFilterByLikeCount
+  || settings.value.enableFilterByTitle
+  || settings.value.enableFilterByUser
+  || settings.value.enableFilterByPublishTime)
+const hasActiveAppRecommendationFilter = computed(() => settings.value.filterOutVerticalVideos
+  || settings.value.enableFilterByDuration
+  || settings.value.enableFilterByViewCount
+  || settings.value.enableFilterByTitle
+  || settings.value.enableFilterByUser)
+const hasActiveRecommendationFilter = computed(() => isWebRecommendationMode.value
+  ? hasActiveWebRecommendationFilter.value
+  : hasActiveAppRecommendationFilter.value)
+const filteredFeedRetentionRate = computed(() => filteredFeedCandidateCount.value > 0
+  ? filteredFeedKeptCount.value / filteredFeedCandidateCount.value
+  : 1)
+const requiresManualFilteredPaging = computed(() => hasActiveRecommendationFilter.value
+  && filteredFeedCandidateCount.value >= FILTERED_FEED_SAMPLE_SIZE
+  && filteredFeedRetentionRate.value < FILTERED_FEED_MIN_RETENTION_RATE)
+
+const recommendationFilterSettingsSignature = computed(() => JSON.stringify([
+  settings.value.disableFilterForFollowedUser,
+  settings.value.filterOutVerticalVideos,
+  settings.value.enableFilterByDuration,
+  settings.value.enableFilterByViewCount,
+  settings.value.enableFilterByLikeCount,
+  settings.value.enableFilterByTitle,
+  settings.value.enableFilterByUser,
+  settings.value.enableFilterByPublishTime,
+  settings.value.filterByDuration,
+  settings.value.filterByViewCount,
+  settings.value.filterByLikeCount,
+  settings.value.filterByPublishTime,
+  settings.value.filterByTitle.map(item => item.keyword),
+  settings.value.filterByUser.map(item => item.keyword),
+]))
+
+function resetFilteredFeedPagingState() {
+  filteredFeedCandidateCount.value = 0
+  filteredFeedKeptCount.value = 0
+}
+
+function recordFilteredFeedBatch(candidateCount: number, keptCount: number) {
+  if (!hasActiveRecommendationFilter.value)
+    return
+
+  filteredFeedCandidateCount.value += candidateCount
+  filteredFeedKeptCount.value += keptCount
+}
+
+watch(recommendationFilterSettingsSignature, () => {
+  resetFilteredFeedPagingState()
+  consecutiveEmptyLoads.value = 0
+  appConsecutiveEmptyLoads.value = 0
+})
 
 // 监听页面可见性变化
 function handleVisibilityChange() {
@@ -406,6 +467,18 @@ function getWebVideoKey(item: VideoItem): string {
   return `${item.id}`
 }
 
+function getAppVideoKeys(item: AppVideoItem): string[] {
+  const keys: string[] = []
+  const bvid = item.bvid?.trim()
+  if (bvid)
+    keys.push(`bvid:${bvid}`)
+
+  const aid = item.args?.aid
+  if (aid && aid > 0)
+    keys.push(`aid:${aid}`)
+  return keys
+}
+
 function getWebShowlistEntry(item: VideoItem): string | undefined {
   const goto = `${item.goto || ''}`.trim()
   if (!goto)
@@ -496,6 +569,7 @@ watch(() => settings.value.recommendationMode, () => {
   requestVersion++
   noMoreContent.value = false
   resetWebRecommendState()
+  resetFilteredFeedPagingState()
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
 
@@ -534,6 +608,7 @@ async function initData() {
   appVideoList.value = []
 
   APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
+  resetFilteredFeedPagingState()
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
   requestFailed.value = false // 重置请求失败状态
@@ -595,11 +670,17 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
   }
 }
 
-// 供 VideoCardGrid 预加载调用的函数
-function handleLoadMore() {
+function loadMore(manual = false) {
   // 如果正在递归加载中，跳过外部触发的加载请求
-  if (!hasInitializedData.value || isLoading.value || noMoreContent.value || isRecursiveLoading.value)
+  if (
+    !hasInitializedData.value
+    || isLoading.value
+    || noMoreContent.value
+    || isRecursiveLoading.value
+    || (!manual && requiresManualFilteredPaging.value)
+  ) {
     return
+  }
 
   // 滚动加载时，APP模式记录开始长度，触发持续加载
   if (settings.value.recommendationMode === 'app') {
@@ -607,7 +688,16 @@ function handleLoadMore() {
     scrollLoadStartLength.value = appVideoList.value.length
   }
 
-  getData('loadMore')
+  void getData('loadMore')
+}
+
+// 供 VideoCardGrid 预加载调用的函数
+function handleLoadMore() {
+  loadMore()
+}
+
+function handleManualLoadMore() {
+  loadMore(true)
 }
 
 function initPageAction() {
@@ -675,6 +765,7 @@ function initPageAction() {
 
         hasBackState.value = false
         undoForwardState.value = UndoForwardState.Hidden
+        resetFilteredFeedPagingState()
         consecutiveEmptyLoads.value = 0 // 重置空加载计数器
       }
       else if (settings.value.recommendationMode === 'app' && cachedAppVideoList.value.length > 0) {
@@ -691,6 +782,7 @@ function initPageAction() {
 
         hasBackState.value = false
         undoForwardState.value = UndoForwardState.Hidden
+        resetFilteredFeedPagingState()
         appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
       }
     }
@@ -720,6 +812,7 @@ function initPageAction() {
         // 标记为已经前进
         hasForwardState.value = false
         undoForwardState.value = UndoForwardState.ShowUndo
+        resetFilteredFeedPagingState()
         consecutiveEmptyLoads.value = 0 // 重置空加载计数器
         return true
       }
@@ -738,6 +831,7 @@ function initPageAction() {
         // 标记为已经前进
         hasForwardState.value = false
         undoForwardState.value = UndoForwardState.ShowUndo
+        resetFilteredFeedPagingState()
         appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
         return true
       }
@@ -752,7 +846,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
 
   try {
     // 检查是否达到最大空加载次数，防止无限递归
-    if (consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+    if (!hasActiveRecommendationFilter.value && consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
       console.warn('达到最大连续空加载次数，停止加载')
       noMoreContent.value = true
       return
@@ -818,6 +912,9 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
 
       const resData = [] as VideoItem[]
       const existingIds = new Set<string>()
+      const activeWebFilter = hasActiveWebRecommendationFilter.value ? filterFunc.value : null
+      let filteredCandidateCount = 0
+      let filteredKeptCount = 0
 
       videoList.value.forEach((video) => {
         if (video.item)
@@ -833,16 +930,23 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         if (!item.owner || !item.stat)
           return
 
-        if (filterFunc.value && !filterFunc.value(item))
-          return
-
         const itemKey = getWebVideoKey(item)
         if (existingIds.has(itemKey))
           return
 
         existingIds.add(itemKey)
+        if (activeWebFilter)
+          filteredCandidateCount++
+
+        if (activeWebFilter && !activeWebFilter(item))
+          return
+
+        if (activeWebFilter)
+          filteredKeptCount++
         resData.push(item)
       })
+
+      recordFilteredFeedBatch(filteredCandidateCount, filteredKeptCount)
 
       const showlistGroup = buildLastShowlistGroup(resData)
       if (showlistGroup)
@@ -933,7 +1037,11 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
 
         const hasScrollbar = await haveScrollbar()
         if (!hasScrollbar || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
-          if (isPageVisible.value && consecutiveEmptyLoads.value < MAX_EMPTY_LOADS) {
+          if (
+            !hasActiveRecommendationFilter.value
+            && isPageVisible.value
+            && consecutiveEmptyLoads.value < MAX_EMPTY_LOADS
+          ) {
             // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
             isRecursiveLoading.value = true
             try {
@@ -943,7 +1051,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
               isRecursiveLoading.value = false
             }
           }
-          else if (consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+          else if (!hasActiveRecommendationFilter.value && consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
             noMoreContent.value = true
           }
         }
@@ -959,7 +1067,7 @@ async function getAppRecommendVideos(
   const recommendationMode = settings.value.recommendationMode
 
   // 检查是否达到最大空加载次数，防止无限递归
-  if (appConsecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+  if (!hasActiveRecommendationFilter.value && appConsecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
     console.warn('APP模式达到最大连续空加载次数，停止加载')
     noMoreContent.value = true
     return
@@ -979,6 +1087,10 @@ async function getAppRecommendVideos(
 
   const batchesToLoad = APP_LOAD_BATCHES.value
   const beforeLoadCount = appVideoList.value.length
+  const seenCandidateIds = new Set(
+    appVideoList.value
+      .flatMap(video => video.item ? getAppVideoKeys(video.item) : []),
+  )
 
   // 加载多个批次
   for (let batch = 0; batch < batchesToLoad; batch++) {
@@ -1016,13 +1128,13 @@ async function getAppRecommendVideos(
       }
 
       if (response.code === 0) {
+        const activeAppFilter = hasActiveAppRecommendationFilter.value ? appFilterFunc.value : null
+        let filteredCandidateCount = 0
+        let filteredKeptCount = 0
+
         response.data.items.forEach((item: AppVideoItem) => {
           // Remove banner & ad cards
           if (item.card_type.includes('banner') || item.card_type === 'cm_v1')
-            return
-
-          // 应用过滤函数
-          if (appFilterFunc.value && !appFilterFunc.value(item))
             return
 
           // 过滤掉没有有效 ID 的视频（既没有 aid 也没有 bvid）
@@ -1030,21 +1142,36 @@ async function getAppRecommendVideos(
           if (!hasValidId)
             return
 
-          // 检查是否已经存在该视频，避免重复
-          // 使用 aid/bvid 作为唯一标识符，而不是 idx（idx 只是推荐流中的位置）
-          const videoId = item.args?.aid || item.bvid
-          const isDuplicate = appVideoList.value.some(video =>
-            video.item && (video.item.args?.aid === item.args?.aid || video.item.bvid === item.bvid),
-          )
-          if (isDuplicate)
-            return
+          if (activeAppFilter) {
+            const videoKeys = getAppVideoKeys(item)
+            if (!videoKeys.length || videoKeys.some(key => seenCandidateIds.has(key)))
+              return
 
+            videoKeys.forEach(key => seenCandidateIds.add(key))
+            filteredCandidateCount++
+
+            if (!activeAppFilter(item))
+              return
+
+            filteredKeptCount++
+          }
+          else {
+            // Keep the unfiltered recommendation path's existing duplicate semantics.
+            const isDuplicate = appVideoList.value.some(video =>
+              video.item && (video.item.args?.aid === item.args?.aid || video.item.bvid === item.bvid),
+            )
+            if (isDuplicate)
+              return
+          }
+
+          const videoId = item.args?.aid || item.bvid
           appVideoList.value.push({
             uniqueId: `${videoId || item.idx}`,
             item,
             displayData: transformAppVideo(item),
           })
         })
+        recordFilteredFeedBatch(filteredCandidateCount, filteredKeptCount)
         logRecommendRequestSuccess(requestLog)
       }
       else if (response.code === 62011) {
@@ -1107,7 +1234,12 @@ async function getAppRecommendVideos(
       }
     }
 
-    if (shouldContinue && isPageVisible.value && appConsecutiveEmptyLoads.value < MAX_EMPTY_LOADS) {
+    if (
+      shouldContinue
+      && !hasActiveRecommendationFilter.value
+      && isPageVisible.value
+      && appConsecutiveEmptyLoads.value < MAX_EMPTY_LOADS
+    ) {
       // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
       isRecursiveLoading.value = true
       try {
@@ -1117,7 +1249,7 @@ async function getAppRecommendVideos(
         isRecursiveLoading.value = false
       }
     }
-    else if (appConsecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
+    else if (!hasActiveRecommendationFilter.value && appConsecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
       noMoreContent.value = true
     }
   }
@@ -1173,6 +1305,18 @@ defineExpose({
       @load-more="handleLoadMore"
     />
 
+    <div
+      v-if="requiresManualFilteredPaging && !isLoading && !noMoreContent"
+      class="filtered-feed-load-more"
+    >
+      <Button type="secondary" @click="handleManualLoadMore">
+        <template #left>
+          <span i-tabler-arrow-down />
+        </template>
+        {{ $t('common.load_more') }}
+      </Button>
+    </div>
+
     <Empty v-if="needToLoginFirst" mt-6 :description="$t('common.please_log_in_first')">
       <Button type="primary" @click="jumpToLoginPage()">
         {{ $t('common.login') }}
@@ -1182,5 +1326,9 @@ defineExpose({
 </template>
 
 <style lang="scss" scoped>
-/* Styles moved to VideoCardGrid component */
+.filtered-feed-load-more {
+  display: flex;
+  justify-content: center;
+  padding: var(--bew-space-6) 0 var(--bew-space-4);
+}
 </style>

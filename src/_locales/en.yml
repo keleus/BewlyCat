@@ -31,6 +31,7 @@ common:
   performance_impact_warn: This feature may cause performance *DECREASE*!
   no_data: No data available
   no_more_content: No more content now, owari da
+  load_more: Load more
   operation:
     add: Add
     edit: Edit
@@ -87,7 +88,7 @@ settings:
     placeholder: Search settings
     no_results: No matching settings
     located: Setting located
-  category_general_desc: Configure language, interaction, home performance, and drawer behavior.
+  category_general_desc: Configure language, interaction, and drawer behavior.
   category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, custom styles, and page style adaptation.
   category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
   breadcrumb: Settings location
@@ -104,18 +105,8 @@ settings:
   category_playback_autoplay_desc: Configure autoplay and custom playback behavior.
   category_bilibili_comments_desc: Enhance user information and content displayed in comments.
   category_bilibili_vip_desc: Configure reminders related to premium membership benefits.
-  category_advanced_performance_desc: Adjust memory and long-list rendering strategies for the home grid. These options are off by default.
   category_advanced_compatibility_desc: Configure compatibility with original pages, third-party extensions, and other pages.
   category_advanced_maintenance_desc: Export a backup, import settings, or restore BewlyCat defaults.
-  advanced_performance:
-    title: Home Performance & Memory
-    home_grid: Home Grid
-    release_offscreen_images: Reclaim offscreen cover memory
-    release_offscreen_images_desc: Unload cover image resources outside the retained range to reduce long-list memory usage.
-    release_offscreen_images_warning: 'Warning: reclaiming offscreen memory may cause stutter when images are rendered again. Images are not reclaimed by default.'
-    virtualize_home_grid: Recycle offscreen video cards
-    virtualize_home_grid_desc: Keep only card components near the viewport and preserve long-list scroll space with placeholders.
-    virtualize_home_grid_warning: 'Warning: virtual recycling may cause brief blanks, jitter, or position drift during fast scrolling or layout changes. It is off by default.'
   maintenance:
     title: Backup & Reset
     backup_title: Settings backup
@@ -256,7 +247,7 @@ settings:
   moments_enable_video_preview: Preview video dynamics on hover
   moments_enable_video_preview_desc: Play a video preview when hovering over a video dynamic cover.
   moments_grid_columns: Dynamic columns
-  moments_grid_columns_desc: Set the preferred column count for the Bewly dynamic feed. Cards are capped at 520px; columns automatically reduce when space is limited, while the sidebar and feed remain centered as a group.
+  moments_grid_columns_desc: Set the preferred column count for the Bewly dynamic feed. Card dimensions adapt to the selected layout; columns automatically reduce when space is limited, while the sidebar and feed remain centered as a group.
   moments_grid_columns_option: '{count} columns'
   moments_filter_up_recommendation: Filter uploader recommendations
   moments_filter_up_recommendation_desc: Filter out every dynamic that contains an uploader recommendation attachment.
@@ -453,7 +444,8 @@ settings:
   # Video Card Grid Settings
   group_video_card_grid: Video Card Grid
   auto_switch_list_layout: Automatically switch list columns based on video grid width
-  auto_switch_list_layout_desc: When enabled, two-column mode switches to one column when the video grid is narrower than 640px.
+  auto_switch_list_layout_desc: When enabled, two-column mode switches to one column when the video grid is narrower than the configured width.
+  auto_switch_list_layout_breakpoint: Switch at
   grid_breakpoints: Grid Breakpoints
   grid_breakpoints_desc: Set the number of columns at different video grid widths. The matching column count is used when the grid reaches each breakpoint.
   grid_min_width: Width ≥
@@ -479,6 +471,9 @@ settings:
   video_card_shadow_reset: Reset shadow settings
   video_card_layout: Video card layout
   video_card_layout_desc: Switch between the redesigned card and the legacy layout.
+  release_offscreen_images: Reclaim offscreen cover memory
+  release_offscreen_images_desc: Unload cover image resources outside the retained range to reduce long-list memory usage.
+  release_offscreen_images_warning: 'Warning: reclaiming offscreen memory may cause stutter when images are rendered again. Images are not reclaimed by default.'
   video_card_layout_option:
     modern: Modern layout
     old: Classic layout

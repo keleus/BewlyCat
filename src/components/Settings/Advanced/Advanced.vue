@@ -3,20 +3,10 @@ import SettingsSectionHeading from '../components/SettingsSectionHeading.vue'
 
 const Compatibility = defineAsyncComponent(() => import('../Compatibility/Compatibility.vue'))
 const Maintenance = defineAsyncComponent(() => import('./Maintenance.vue'))
-const Performance = defineAsyncComponent(() => import('./Performance.vue'))
 </script>
 
 <template>
   <div class="combined-settings-page">
-    <section>
-      <SettingsSectionHeading
-        :title="$t('settings.advanced_performance.title')"
-        :desc="$t('settings.category_advanced_performance_desc')"
-        icon="i-mingcute:lightning-fill"
-      />
-      <Performance />
-    </section>
-
     <section>
       <SettingsSectionHeading
         :title="$t('settings.menu_compatibility')"

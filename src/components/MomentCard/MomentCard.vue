@@ -22,6 +22,7 @@ import {
 
 interface Props {
   moment: DisplayMoment
+  cardWidth?: number
   ready?: boolean
   entering?: boolean
   previewActive?: boolean
@@ -33,6 +34,7 @@ interface Props {
 
 const {
   moment,
+  cardWidth = 520,
   ready = false,
   entering = false,
   previewActive = false,
@@ -57,6 +59,14 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { mainAppRef } = useBewlyApp()
+
+const cardLayoutStyles = computed<CSSProperties>(() => {
+  const scale = Math.max(1, cardWidth / 520)
+  return {
+    '--moment-card-text-body-min-height': `${Math.round(120 + 230 * (scale - 1))}px`,
+    '--moment-card-text-cover-min-height': `${Math.round(176 * scale)}px`,
+  } as CSSProperties
+})
 
 // The shared context menu expects the same video shape as VideoCard. A dynamic
 // video without a stable aid is intentionally left without a menu instead of
@@ -200,6 +210,7 @@ function handleForwardVideoClick() {
     }"
     tabindex="0"
     role="button"
+    :style="cardLayoutStyles"
     @click="handleCardClick"
     @keydown.enter.self="emit('openDetail', moment)"
   >
@@ -1130,7 +1141,7 @@ function handleForwardVideoClick() {
 }
 
 .moment-card__text-cover {
-  min-height: 176px;
+  min-height: var(--moment-card-text-cover-min-height, 176px);
   box-sizing: border-box;
 }
 
@@ -1212,7 +1223,7 @@ function handleForwardVideoClick() {
 }
 
 .moment-card--text .moment-card__body {
-  min-height: 120px;
+  min-height: var(--moment-card-text-body-min-height, 120px);
   padding-top: 0;
 }
 

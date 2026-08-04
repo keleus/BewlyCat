@@ -8,6 +8,11 @@ import Select from '~/components/Select.vue'
 import { originalSettings, settings } from '~/logic'
 import type { GridColumnsConfig, VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
 import { defaultGridColumns, GRID_BREAKPOINTS } from '~/logic/storage'
+import {
+  MAX_LIST_LAYOUT_BREAKPOINT,
+  MIN_LIST_LAYOUT_BREAKPOINT,
+  normalizeListLayoutBreakpoint,
+} from '~/utils/gridLayout'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -55,6 +60,10 @@ function updateColumns(key: keyof GridColumnsConfig, value: number) {
 function resetColumns() {
   settings.value.gridColumns = { ...defaultGridColumns }
 }
+
+function updateListLayoutBreakpoint(value: string | number | undefined) {
+  settings.value.autoSwitchListLayoutBreakpoint = normalizeListLayoutBreakpoint(value)
+}
 </script>
 
 <template>
@@ -66,6 +75,20 @@ function resetColumns() {
         right-width="auto"
       >
         <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="160px" />
+      </SettingsItem>
+
+      <SettingsItem
+        :title="$t('settings.release_offscreen_images')"
+        :badge="$t('settings.badge_use_with_caution')"
+        right-width="auto"
+      >
+        <template #desc>
+          <span>{{ $t('settings.release_offscreen_images_desc') }}</span>
+          <span block class="bew-warning-text">
+            {{ $t('settings.release_offscreen_images_warning') }}
+          </span>
+        </template>
+        <Radio v-model="settings.releaseOffscreenVideoCardImages" />
       </SettingsItem>
 
       <SettingsItem :title="$t('settings.enable_video_preview')" right-width="auto">
@@ -105,7 +128,24 @@ function resetColumns() {
         :desc="$t('settings.auto_switch_list_layout_desc')"
         right-width="auto"
       >
-        <Radio v-model="settings.autoSwitchListLayout" />
+        <div class="list-layout-control">
+          <Input
+            :model-value="settings.autoSwitchListLayoutBreakpoint"
+            type="number"
+            :min="MIN_LIST_LAYOUT_BREAKPOINT"
+            :max="MAX_LIST_LAYOUT_BREAKPOINT"
+            class="list-layout-control__input"
+            @update:model-value="updateListLayoutBreakpoint"
+          >
+            <template #prefix>
+              <span class="list-layout-control__label">{{ $t('settings.auto_switch_list_layout_breakpoint') }}</span>
+            </template>
+            <template #suffix>
+              <span class="list-layout-control__unit">px</span>
+            </template>
+          </Input>
+          <Radio v-model="settings.autoSwitchListLayout" />
+        </div>
       </SettingsItem>
 
       <SettingsItem :title="$t('settings.grid_breakpoints')" :desc="$t('settings.grid_breakpoints_desc')" right-width="auto">
@@ -223,15 +263,15 @@ function resetColumns() {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
 
   &__item {
-    display: flex;
+    display: grid;
     align-items: center;
+    grid-template-columns: 5rem 5rem max-content;
     gap: var(--bew-space-2);
     min-width: 0;
   }
 
   &__label {
-    flex: 0 1 auto;
-    min-width: 0;
+    min-width: 5rem;
     font-size: var(--bew-font-size-control);
     line-height: var(--bew-line-height-control);
     color: var(--bew-text-1);
@@ -239,13 +279,26 @@ function resetColumns() {
   }
 
   &__input {
-    width: 5rem;
-    flex: 0 0 auto;
+    width: 100%;
     min-width: 4.5rem;
+    border: 1px solid color-mix(in oklab, var(--bew-border-color), var(--bew-fill-2) 60%);
+
+    // Keep the native number stepper integrated with the input surface. The
+    // pseudo-elements are Chromium/WebKit-specific; Firefox keeps its native
+    // controls and still receives the same input background below.
+    :deep(input[type="number"]) {
+      background-color: var(--bew-fill-1);
+      color-scheme: inherit;
+
+      &::-webkit-inner-spin-button,
+      &::-webkit-outer-spin-button {
+        background-color: var(--bew-fill-1);
+        opacity: 1;
+      }
+    }
   }
 
   &__unit {
-    flex: 0 0 auto;
     font-size: var(--bew-font-size-control);
     line-height: var(--bew-line-height-control);
     color: var(--bew-text-2);
@@ -257,6 +310,24 @@ function resetColumns() {
     gap: var(--bew-space-2);
     margin-top: var(--bew-space-3);
   }
+}
+
+.list-layout-control {
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-2);
+}
+
+.list-layout-control__input {
+  width: 150px;
+}
+
+.list-layout-control__label,
+.list-layout-control__unit {
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
+  white-space: nowrap;
 }
 
 .shadow-height-control {

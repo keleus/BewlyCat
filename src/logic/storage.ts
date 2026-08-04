@@ -8,6 +8,10 @@ import { DEFAULT_SEARCH_BAR_CHARACTER } from '~/constants/imgs'
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
+import {
+  MOBILE_LIST_LAYOUT_BREAKPOINT,
+  normalizeListLayoutBreakpoint,
+} from '~/utils/gridLayout'
 
 export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
 
@@ -211,8 +215,9 @@ export interface Settings {
   // Grid 相关设置
   gridColumns: GridColumnsConfig
   autoSwitchListLayout: boolean
+  /** Automatic two-column -> one-column switch threshold in CSS pixels. */
+  autoSwitchListLayoutBreakpoint: number
   releaseOffscreenVideoCardImages: boolean
-  enableHomeGridVirtualization: boolean
 
   language: string
   customizeFont: 'default' | 'recommend' | 'custom'
@@ -498,8 +503,8 @@ export const originalSettings: Settings = {
   // Grid 相关默认设置
   gridColumns: { ...defaultGridColumns },
   autoSwitchListLayout: true,
+  autoSwitchListLayoutBreakpoint: MOBILE_LIST_LAYOUT_BREAKPOINT,
   releaseOffscreenVideoCardImages: false,
-  enableHomeGridVirtualization: false,
 
   language: '',
   customizeFont: 'default',
@@ -811,6 +816,7 @@ watch(
 
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
     Reflect.deleteProperty(record, 'homeTabsPosition')
+    Reflect.deleteProperty(record, 'enableHomeGridVirtualization')
 
     // 清理已移除的音量均衡功能设置。
     for (const field of ['enableVolumeNormalization', 'targetVolume', 'normalizationStrength', 'adaptiveGainSpeed', 'voiceGateDb', 'volumeNormalizationDebug'])
@@ -851,6 +857,10 @@ watch(
 
     if (record.frostedGlassBlurIntensity > FROSTED_GLASS_BLUR_MAX_PX)
       record.frostedGlassBlurIntensity = FROSTED_GLASS_BLUR_MAX_PX
+
+    // Normalize the user-configurable two-column list breakpoint. Older
+    // versions used a fixed 640px threshold and do not have this field.
+    record.autoSwitchListLayoutBreakpoint = normalizeListLayoutBreakpoint(record.autoSwitchListLayoutBreakpoint)
 
     // 迁移旧的布尔类型自动播放设置到新的 AutoPlayMode 类型
     const autoPlayFields = ['autoPlayMultipart', 'autoPlayCollection', 'autoPlayRecommend', 'autoPlayWatchLater', 'autoPlayPlaylist'] as const

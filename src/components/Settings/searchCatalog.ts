@@ -37,7 +37,6 @@ const nonSettingTitleKeyPatterns = [
   /^settings\.shortcuts\.group\./,
   /^settings\.maintenance\.(title|backup_title|reset_title)$/,
   /^settings\.topbar_(display_settings|logo_and_channels|switchers|actions|user_menu)$/,
-  /^settings\.advanced_performance\.home_grid$/,
 ]
 
 function isSettingTitleKey(titleKey: string) {
@@ -197,9 +196,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.touch_screen_optimization',
     'settings.enable_grid_layout_switcher',
     'settings.enable_horizontal_scrolling',
-    'settings.advanced_performance.home_grid',
-    'settings.advanced_performance.release_offscreen_images',
-    'settings.advanced_performance.virtualize_home_grid',
     'settings.group_drawer_behavior',
     'settings.close_drawer_without_pressing_esc_again',
   ]),
@@ -296,9 +292,11 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.plugin.video_card',
     'settings.group_video_card_grid',
     'settings.auto_switch_list_layout',
+    'settings.auto_switch_list_layout_breakpoint',
     'settings.grid_breakpoints',
     'settings.group_video_card_display',
     'settings.video_card_layout',
+    'settings.release_offscreen_images',
     'settings.enable_video_preview',
     'settings.enable_video_ctrl_bar_on_video_card',
     'settings.video_preview_swipe_seek',

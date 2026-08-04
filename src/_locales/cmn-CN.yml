@@ -31,6 +31,7 @@ common:
   performance_impact_warn: 这个功能可能会影响性能！
   no_data: 暂无数据
   no_more_content: 没有更多内容了
+  load_more: 加载更多
   operation:
     add: 新增
     edit: 编辑
@@ -87,7 +88,7 @@ settings:
     placeholder: 搜索设置
     no_results: 没有找到相关设置
     located: 已定位到此设置
-  category_general_desc: 配置语言、交互布局、首页性能与抽屉行为。
+  category_general_desc: 配置语言、交互布局与抽屉行为。
   category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体、自定义样式和其他页面的适配。
   category_shortcuts_desc: 启用、修改或恢复 BewlyCat 与播放器快捷键。
   breadcrumb: 设置位置
@@ -104,18 +105,8 @@ settings:
   category_playback_autoplay_desc: 配置自动连播与自定义播放行为。
   category_bilibili_comments_desc: 增强评论区的用户信息与内容显示。
   category_bilibili_vip_desc: 配置大会员权益相关的提醒功能。
-  category_advanced_performance_desc: 调整首页 Grid 的内存与长列表渲染策略；这些选项默认关闭。
   category_advanced_compatibility_desc: 配置原版页面、第三方扩展和其他页面的兼容行为。
   category_advanced_maintenance_desc: 导出备份、导入设置或恢复 BewlyCat 默认配置。
-  advanced_performance:
-    title: 首页性能与内存
-    home_grid: 首页 Grid
-    release_offscreen_images: 回收离屏封面内存
-    release_offscreen_images_desc: 视频封面离开保留范围后卸载图片资源，降低长列表内存占用。
-    release_offscreen_images_warning: 警告：离屏回收内存功能可能会带来图片重新渲染上的性能卡顿，默认不回收。
-    virtualize_home_grid: 回收离屏视频卡片
-    virtualize_home_grid_desc: 仅保留视口附近的卡片组件，并用占位高度维持长列表滚动位置。
-    virtualize_home_grid_warning: 警告：虚拟回收可能在快速滚动或切换布局时造成短暂空白、抖动或位置偏差，默认不开启。
   maintenance:
     title: 备份与重置
     backup_title: 设置备份
@@ -253,7 +244,7 @@ settings:
   moments_enable_video_preview: 视频动态悬停预览
   moments_enable_video_preview_desc: 鼠标悬停视频动态封面时播放视频预览。
   moments_grid_columns: 动态列数
-  moments_grid_columns_desc: 设置 Bewly 动态页的期望列数。卡片最大宽度为 520px；窗口空间不足时会自动减少列数，左侧栏与动态流整体保持居中。
+  moments_grid_columns_desc: 设置 Bewly 动态页的期望列数。卡片尺寸会随列数自适应；窗口空间不足时会自动减少列数，左侧栏与动态流整体保持居中。
   moments_grid_columns_option: '{count} 列'
   moments_filter_up_recommendation: 过滤：UP主的推荐
   moments_filter_up_recommendation_desc: 过滤所有带有“UP主的推荐”附加信息的动态。
@@ -505,7 +496,8 @@ settings:
   # Video Card Grid Settings
   group_video_card_grid: 视频卡片网格
   auto_switch_list_layout: 根据视频卡片区域宽度自动切换单双列
-  auto_switch_list_layout_desc: 开启后，双列模式会在视频卡片区域宽度小于 640px 时自动切换为单列。
+  auto_switch_list_layout_desc: 开启后，双列模式会在视频卡片区域宽度小于设定宽度时自动切换为单列。
+  auto_switch_list_layout_breakpoint: 切换宽度
   grid_breakpoints: 网格断点配置
   grid_breakpoints_desc: 设置不同视频卡片区域宽度下显示的列数。当区域宽度大于等于设定值时，使用对应的列数。
   grid_min_width: 宽度 ≥
@@ -531,6 +523,9 @@ settings:
   video_card_shadow_reset: 重置阴影设置
   video_card_layout: 视频卡片布局
   video_card_layout_desc: 在新版与旧版视频卡片显示样式之间切换。
+  release_offscreen_images: 回收离屏封面内存
+  release_offscreen_images_desc: 视频封面离开保留范围后卸载图片资源，降低长列表内存占用。
+  release_offscreen_images_warning: 警告：离屏回收内存功能可能会带来图片重新渲染上的性能卡顿，默认不回收。
   video_card_layout_option:
     modern: 新版
     old: 经典版
