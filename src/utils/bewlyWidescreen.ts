@@ -67,7 +67,10 @@ let state: BewlyWidescreenState | null = null
 let loadingOverlay: HTMLElement | null = null
 let loadingStyleEl: HTMLStyleElement | null = null
 let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
+let loadingPlaybackCleanup: (() => void) | undefined
 let loadingPreparationFallbackTimer: ReturnType<typeof setTimeout> | undefined
+let loadingMayDismissOnPlaying = false
+let loadingSuppressedUntilExit = false
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
 let loadFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined
@@ -529,9 +532,38 @@ function showWidescreenLoading() {
   const mountTarget = document.body ?? document.documentElement
   mountTarget.appendChild(overlay)
   loadingOverlay = overlay
+
+  const handlePlaying = (event: Event) => {
+    const video = event.target
+    if (video instanceof HTMLVideoElement
+      && video === getVideoElement()
+      && shouldDismissLoadingForPlaying(video)) {
+      dismissWidescreenLoadingForPlaying()
+    }
+  }
+  document.addEventListener('playing', handlePlaying, true)
+  loadingPlaybackCleanup = () => {
+    document.removeEventListener('playing', handlePlaying, true)
+    loadingPlaybackCleanup = undefined
+  }
+}
+
+function shouldDismissLoadingForPlaying(video: HTMLVideoElement) {
+  return loadingMayDismissOnPlaying
+    || video.autoplay
+    || video.hasAttribute('autoplay')
+    || navigator.userActivation?.hasBeenActive !== true
+}
+
+function dismissWidescreenLoadingForPlaying() {
+  loadingSuppressedUntilExit = true
+  removeWidescreenLoading()
 }
 
 function removeWidescreenLoading(immediate = false) {
+  loadingPlaybackCleanup?.()
+  loadingMayDismissOnPlaying = false
+
   if (loadingPreparationFallbackTimer) {
     clearTimeout(loadingPreparationFallbackTimer)
     loadingPreparationFallbackTimer = undefined
@@ -566,14 +598,29 @@ function removeWidescreenLoading(immediate = false) {
   loadingFadeTimer = setTimeout(remove, LOADING_FADE_DURATION)
 }
 
-export function prepareBewlyWidescreenLoading() {
-  if (state)
+export function prepareBewlyWidescreenLoading(allowPlayingDismiss = false) {
+  if (state || loadingSuppressedUntilExit)
     return
 
+  loadingMayDismissOnPlaying ||= allowPlayingDismiss
   showWidescreenLoading()
+  const video = getVideoElement()
+  if (loadingOverlay
+    && video
+    && !video.paused
+    && !video.ended
+    && shouldDismissLoadingForPlaying(video)) {
+    dismissWidescreenLoadingForPlaying()
+    return
+  }
+
+  if (!loadingOverlay)
+    return
+
   if (!loadingPreparationFallbackTimer) {
     loadingPreparationFallbackTimer = setTimeout(() => {
       loadingPreparationFallbackTimer = undefined
+      loadingSuppressedUntilExit = true
       removeWidescreenLoading()
     }, PREPARED_LOADING_TIMEOUT)
   }
@@ -2286,6 +2333,7 @@ export function exitBewlyWidescreen() {
   clearReadyRetryTimer()
   clearLoadFallbackTimer()
   clearPageLoadHandler()
+  loadingSuppressedUntilExit = false
   removeWidescreenLoading(true)
   waitingForLoad = false
 

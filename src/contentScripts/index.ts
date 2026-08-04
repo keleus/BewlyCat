@@ -19,7 +19,7 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
-import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
@@ -211,6 +211,8 @@ else if (shouldInitializeContentScript) {
     : Number.POSITIVE_INFINITY
   let pendingWidescreenReloadNavigationKey: string | undefined
   let pendingWidescreenReloadTimer: ReturnType<typeof setTimeout> | undefined
+  let autoContinuationNavigationKey: string | undefined
+  let lastVideoEndedAt = 0
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
   void settingsReady.then(() => {
@@ -367,10 +369,14 @@ else if (shouldInitializeContentScript) {
     const webFullscreenBtn = document.querySelector('.bpx-player-ctrl-web,.bilibili-player-video-web-fullscreen') as HTMLElement
     const isInWebFullscreen = webFullscreenBtn?.classList.contains('bpx-state-entered')
 
-    if (targetPlayerMode === 'bewlyWidescreen' && !isInFullscreen && !isInWebFullscreen)
-      prepareBewlyWidescreenLoading()
-    else if (!isBewlyWidescreenActive())
+    if (targetPlayerMode === 'bewlyWidescreen' && !isInFullscreen && !isInWebFullscreen) {
+      prepareBewlyWidescreenLoading(
+        autoContinuationNavigationKey === currentNavigationKey,
+      )
+    }
+    else if (!isBewlyWidescreenActive()) {
       exitBewlyWidescreen()
+    }
 
     if (document.readyState !== 'complete') {
       clearPlayerModeRetry()
@@ -395,6 +401,7 @@ else if (shouldInitializeContentScript) {
     // 如果播放器已经在全屏状态，跳过应用模式（避免互动视频退出全屏）
     if (isInFullscreen || isInWebFullscreen) {
       exitBewlyWidescreen()
+      autoContinuationNavigationKey = undefined
       applyDefaultDanmakuState()
       applyDefaultCaptionState()
       lastAppliedPlayerModeNavigationKey = currentNavigationKey
@@ -445,6 +452,8 @@ else if (shouldInitializeContentScript) {
       startAutoExitFullscreenMonitoring()
     }, 2000)
     lastAppliedPlayerModeNavigationKey = currentNavigationKey
+    autoContinuationNavigationKey = undefined
+    lastVideoEndedAt = 0
 
     // 延迟添加稍后再看按钮
     scheduleAddWatchLaterButton()
@@ -693,6 +702,13 @@ else if (shouldInitializeContentScript) {
 
     clearPendingWidescreenReloadNavigation()
     pendingWidescreenReloadNavigationKey = nextNavigationKey
+    const video = getVideoElement()
+    const remainingPlaybackTime = video && Number.isFinite(video.duration)
+      ? video.duration - video.currentTime
+      : Number.POSITIVE_INFINITY
+    autoContinuationNavigationKey = video?.ended || remainingPlaybackTime <= 1
+      ? nextNavigationKey
+      : undefined
     pendingWidescreenReloadTimer = setTimeout(() => {
       pendingWidescreenReloadNavigationKey = undefined
       pendingWidescreenReloadTimer = undefined
@@ -717,15 +733,22 @@ else if (shouldInitializeContentScript) {
       if (!isVideoOrBangumiPage()) {
         clearPendingWidescreenReloadNavigation()
         exitBewlyWidescreen()
+        autoContinuationNavigationKey = undefined
         lastAppliedPlayerModeNavigationKey = undefined
       }
 
       if (isVideoOrBangumiPage()) {
         if (!isMeaningfulVideoNavigation) {
           clearPendingWidescreenReloadNavigation()
+          autoContinuationNavigationKey = undefined
           scheduleUrlChangeCheck()
           return
         }
+
+        if (!autoContinuationNavigationKey && Date.now() - lastVideoEndedAt <= 5000)
+          autoContinuationNavigationKey = currentVideoNavigationKey
+        if (autoContinuationNavigationKey !== currentVideoNavigationKey)
+          autoContinuationNavigationKey = undefined
 
         const shouldReloadWidescreenNavigation = pendingWidescreenReloadNavigationKey === currentVideoNavigationKey
           || isBewlyWidescreenActive()
@@ -784,6 +807,10 @@ else if (shouldInitializeContentScript) {
   // 真正变化后由 checkForUrlChanges 复用 SPA 路由并按需重载评论区。
   // popstate/replaceState 由轮询兜底。
   window.addEventListener('pushstate', prepareVideoNavigationBeforeRouteChange, true)
+  document.addEventListener('ended', (event) => {
+    if (event.target === getVideoElement())
+      lastVideoEndedAt = Date.now()
+  }, true)
 
   // 添加页面加载监听
   window.addEventListener('load', () => {
