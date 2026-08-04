@@ -82,6 +82,8 @@ let galleryViewerMessageHandler: ((e: MessageEvent) => void) | null = null
 let galleryViewerAckTimer: ReturnType<typeof setTimeout> | null = null
 let galleryIconHosts: HTMLElement[] = []
 let layoutReadyNotified = false
+let setupDomReadyListener: (() => void) | null = null
+let setupRootReadyRetryTimer: number | null = null
 
 const BASE_CSS = `
 html.momentsPage.drawer.bewly-opus-layout #bili-header-container,
@@ -852,6 +854,37 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-pic-vie
 function isOpusDetailPage(url: string = location.href): boolean {
   return /https?:\/\/(?:www\.)?bilibili\.com\/opus\/\d+/.test(url)
     || /https?:\/\/t\.bilibili\.com\/\d+/.test(url)
+}
+
+function clearDeferredSetup() {
+  if (setupDomReadyListener) {
+    document.removeEventListener('DOMContentLoaded', setupDomReadyListener)
+    setupDomReadyListener = null
+  }
+
+  if (setupRootReadyRetryTimer !== null) {
+    window.clearTimeout(setupRootReadyRetryTimer)
+    setupRootReadyRetryTimer = null
+  }
+}
+
+function deferSetupUntilDocumentElementReady() {
+  if (setupDomReadyListener || setupRootReadyRetryTimer !== null)
+    return
+
+  if (document.readyState === 'loading') {
+    setupDomReadyListener = () => {
+      setupDomReadyListener = null
+      setupOpusDetailDrawerLayout()
+    }
+    document.addEventListener('DOMContentLoaded', setupDomReadyListener, { once: true })
+    return
+  }
+
+  setupRootReadyRetryTimer = window.setTimeout(() => {
+    setupRootReadyRetryTimer = null
+    setupOpusDetailDrawerLayout()
+  }, 0)
 }
 
 function ensureBaseClasses() {
@@ -2292,6 +2325,8 @@ function scheduleStableApply() {
  * 纯文字保持单栏；图文左侧相册（可切换/滚动），右侧文字评论独立滚动。
  */
 export function disposeOpusDetailDrawerLayout() {
+  clearDeferredSetup()
+
   try {
     observer?.disconnect()
   }
@@ -2362,6 +2397,13 @@ export function setupOpusDetailDrawerLayout() {
   if (!isInIframe() || !isOpusDetailPage())
     return
 
+  const documentElement = document.documentElement
+  if (!documentElement) {
+    deferSetupUntilDocumentElementReady()
+    return
+  }
+  clearDeferredSetup()
+
   layoutReadyNotified = false
   ensureBaseClasses()
   ensureStyles()
@@ -2405,7 +2447,7 @@ export function setupOpusDetailDrawerLayout() {
 
       scheduleStableApply()
     })
-    observer.observe(document.documentElement, {
+    observer.observe(documentElement, {
       childList: true,
       subtree: true,
     })
