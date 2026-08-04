@@ -198,6 +198,8 @@ let liveHlsPlayer: any = null
 const isLoading = ref(false)
 const isInitialLoading = ref(true)
 const noMoreContent = ref(false)
+/** 最近一批过滤动态的保留率；未完成首批加载时保持未知 */
+const filteredMomentRetentionRate = ref<number | null>(null)
 const offset = ref('')
 const updateBaseline = ref('')
 /** 按 UP 主筛选时 feed/all 的 page，从 1 递增 */
@@ -208,8 +210,10 @@ const MAX_PREVIEW_CACHE = 12
 const MAX_VIDEO_CID_CACHE = 80
 const MAX_POST_LOAD_AUTOFILL_PAGES = 3
 const WANTED_SCAN_LIMIT = 100
-/** 开启类型过滤时单次最多扫描的原始动态条数，避免自动连刷 */
+/** 开启类型过滤时单次最多扫描的原始动态条数，低保留率时避免自动连刷 */
 const FILTERED_SCAN_LIMIT = 100
+/** 过滤后保留率达到此阈值时，继续使用滚动自动加载 */
+const FILTERED_AUTO_LOAD_RETENTION_RATE = 0.6
 const MOMENTS_CACHE_MAX_ITEMS = 1000
 const MOMENTS_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000
 /** 虚拟瀑布流需要在全局哨兵进入视口前主动预取，避免高度修正后漏掉相交事件 */
@@ -1094,6 +1098,11 @@ function mapMoment(item: DataItem): DisplayMoment {
     : content.richText
   const additional = content.additional || selfContent.additional
   const isChargeExclusive = content.isChargeExclusive || selfContent.isChargeExclusive
+  const commentInteraction = raw.modules?.module_interaction?.items?.find(
+    (interaction: any) => Number(interaction?.type) === 1,
+  )?.desc
+  const hotCommentText = normalizeDescText(commentInteraction)
+  const hotCommentRichText = extractRichTextSegments(commentInteraction?.rich_text_nodes)
 
   return {
     id,
@@ -1117,6 +1126,12 @@ function mapMoment(item: DataItem): DisplayMoment {
       || raw.modules?.module_stat?.like?.disabled,
     ),
     commentCount: Number(raw.modules?.module_stat?.comment?.count || 0),
+    hotComment: hotCommentText || hotCommentRichText.length
+      ? {
+          text: hotCommentText,
+          richText: hotCommentRichText,
+        }
+      : undefined,
     url: `https://www.bilibili.com/opus/${id}`,
     // 转发视频仍然是“转发动态”；原视频由卡片内的独立视频摘要展示。
     isVideo: !isForward && content.isVideo,
@@ -1166,6 +1181,10 @@ function mapMoment(item: DataItem): DisplayMoment {
                   : content.text
                     ? '纯文字动态'
                     : '原动态',
+          // 转发动态的原图只放在嵌套卡片中，避免被提升成外层动态媒体。
+          images: !content.isVideo && !content.isLive && !content.isChargeExclusive
+            ? content.images
+            : [],
           video: forwardedArchive
             ? {
                 title: pickText(forwardedArchive.title, content.title),
@@ -1190,32 +1209,47 @@ function mapMoment(item: DataItem): DisplayMoment {
 
 function estimateCardHeight(moment: DisplayMoment) {
   const columnWidth = Math.max(CARD_COMPACT_MIN_WIDTH, gridCardWidth.value || CARD_MAX_WIDTH)
+  const interactionHeight = moment.hotComment ? 52 : 0
   if (isCompactPlainTextMoment(moment)) {
     const charsPerLine = Math.max(12, Math.floor((columnWidth - 32) / 14))
     const lineCount = Math.min(7, Math.max(1, (moment.text || '').split('\n').reduce(
       (total, line) => total + Math.max(1, Math.ceil(Array.from(line).length / charsPerLine)),
       0,
     )))
-    return 118 + lineCount * 21
+    return 118 + lineCount * 21 + interactionHeight
+  }
+  if (moment.forward?.images?.length) {
+    const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
+    const galleryRatio = moment.forward.images.length <= 3
+      ? moment.forward.images.length
+      : moment.forward.images.length <= 4
+        ? 1
+        : moment.forward.images.length <= 6
+          ? 3 / 2
+          : 1
+    // Forward galleries sit inside the bordered card with 12px side/bottom
+    // insets; subtract the 16px main inset and the 2px card border as well.
+    const galleryWidth = Math.max(1, columnWidth - 58)
+    return 190 + introLines * 21 + Math.round(galleryWidth / galleryRatio) + interactionHeight
   }
   if (moment.forward?.video) {
     const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
-    return 238 + introLines * 21
+    return 238 + introLines * 21 + interactionHeight
   }
   if (moment.isChargeExclusive && !moment.isVideo)
-    return 230
+    return 230 + interactionHeight
   if (columnWidth < CARD_MIN_WIDTH) {
     if (moment.isLive)
-      return Math.round(columnWidth * 9 / 16) + 210
+      return Math.round(columnWidth * 9 / 16) + 210 + interactionHeight
     if (moment.isVideo)
-      return Math.round((columnWidth - 32) * 3 / 4) + 210
+      return Math.round((columnWidth - 32) * 9 / 16) + 210 + interactionHeight
   }
   if (moment.isLive)
-    return Math.round((columnWidth - 32) * 9 / 16) + 190
+    return Math.round((columnWidth - 32) * 9 / 16) + 190 + interactionHeight
   if (moment.isVideo) {
-    // 与卡片的左右 1:1 栏位和 4:3 视频封面保持一致。
+    // 与卡片的左右 1:1 栏位和 16:9 视频封面保持一致。
     const mediaWidth = Math.max(170, (columnWidth - 44) / 2)
-    return Math.round(mediaWidth * 3 / 4) + 120 + (moment.additional ? 68 : 0)
+    return Math.round(mediaWidth * 9 / 16) + 120 + (moment.additional ? 68 : 0) + interactionHeight
   }
   if (moment.images.length && !moment.isVideo && !moment.isLive) {
     const galleryRatio = moment.images.length <= 3
@@ -1225,9 +1259,9 @@ function estimateCardHeight(moment: DisplayMoment) {
         : moment.images.length <= 6
           ? 3 / 2
           : 1
-    return Math.round((columnWidth - 32) / galleryRatio) + 220
+    return Math.round((columnWidth - 32) / galleryRatio) + 220 + interactionHeight
   }
-  return 230
+  return 230 + interactionHeight
 }
 
 function handleMomentFilterChange(filter: MomentFilter) {
@@ -1502,7 +1536,7 @@ function loadMoreFilteredMoments() {
   void loadMoments(false, 0, true)
 }
 
-/** 任一类型过滤开启时，改为「扫 100 条 + 手动加载」以免自动连刷 */
+/** 任一类型过滤开启时，低保留率改为「扫 100 条 + 手动加载」以免自动连刷 */
 function hasActiveMomentTypeFilters() {
   return settings.value.momentsFilterUpRecommendation
     || settings.value.momentsHideChargeExclusive
@@ -1518,7 +1552,12 @@ function hasActiveMomentTypeFilters() {
 }
 
 function requiresManualMomentPaging() {
-  return activeMomentGroup.value === 'wanted' || hasActiveMomentTypeFilters()
+  if (activeMomentGroup.value === 'wanted')
+    return true
+  if (!hasActiveMomentTypeFilters())
+    return false
+  return filteredMomentRetentionRate.value === null
+    || filteredMomentRetentionRate.value < FILTERED_AUTO_LOAD_RETENTION_RATE
 }
 
 function passesMomentSettings(moment: DisplayMoment) {
@@ -1644,7 +1683,7 @@ function redistributeColumns() {
   updateVirtualColumns()
 }
 
-/** 按宽卡的最小可读宽度计算列数，空间足够时展示三列，最多三列。 */
+/** 按设置的期望列数排布；空间不足时降列，避免卡片窄于最小可读宽度。 */
 function updateGridColumnCount() {
   const layoutWidth = layoutRef.value?.clientWidth || Math.max(CARD_MAX_WIDTH, window.innerWidth - 220)
   const hasSidebarContent = settings.value.momentsSidebarShowUserCard
@@ -1653,10 +1692,14 @@ function updateGridColumnCount() {
   showMomentsSidebar.value = hasSidebarContent && layoutWidth >= SIDEBAR_MIN_LAYOUT_WIDTH
   const sidebarSpace = showMomentsSidebar.value ? SIDEBAR_WIDTH + GRID_GAP : 0
   const containerWidth = Math.max(CARD_COMPACT_MIN_WIDTH, layoutWidth - sidebarSpace)
-  const maxColumns = 3
+  const preferredColumns = Math.min(3, Math.max(1, Number(settings.value.momentsGridColumns) || 3))
+  const fittingColumns = Math.max(
+    1,
+    Math.floor((containerWidth + GRID_GAP) / (CARD_MIN_WIDTH + GRID_GAP)),
+  )
   const nextCols = Math.min(
-    maxColumns,
-    Math.max(1, Math.floor((containerWidth + GRID_GAP) / (CARD_MIN_WIDTH + GRID_GAP))),
+    preferredColumns,
+    fittingColumns,
   )
   const availableCardWidth = Math.floor((containerWidth - GRID_GAP * (nextCols - 1)) / nextCols)
   const nextCardWidth = Math.max(CARD_COMPACT_MIN_WIDTH, Math.min(CARD_MAX_WIDTH, availableCardWidth))
@@ -2428,7 +2471,7 @@ async function toggleMomentWatchLater(target: WatchLaterTarget) {
 }
 
 async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = false) {
-  // “想看”或类型过滤开启时只允许按钮触发后续批次，避免滚动自动连刷。
+  // “想看”或低保留率类型过滤开启时只允许按钮触发后续批次，避免滚动自动连刷。
   if (!reset && requiresManualMomentPaging() && !manualPaging)
     return
   if ((!reset && isLoading.value) || (!reset && noMoreContent.value))
@@ -2454,6 +2497,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     cleanupLivePreviewPlayer()
     hoveredMediaId.value = ''
     isInitialLoading.value = true
+    filteredMomentRetentionRate.value = null
   }
   const requestToken = feedRequestToken
   const requestType = activeMomentFilter.value
@@ -2776,6 +2820,11 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     if (!isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)) {
       return
     }
+    if (hasActiveMomentTypeFilters() && requestGroup !== 'wanted') {
+      filteredMomentRetentionRate.value = normalizedItems.length
+        ? items.length / normalizedItems.length
+        : 0
+    }
     if (!reset)
       preservedPaginationScrollTop = scrollViewportRef.value?.scrollTop ?? null
     if (!reset)
@@ -3002,6 +3051,17 @@ watch(
   async () => {
     await nextTick()
     updateGridColumnCount()
+  },
+)
+
+watch(
+  () => settings.value.momentsGridColumns,
+  async () => {
+    Object.keys(cardHeights).forEach(key => delete cardHeights[key])
+    settledHeights.clear()
+    await nextTick()
+    updateGridColumnCount()
+    updateVirtualColumns()
   },
 )
 
@@ -4217,14 +4277,14 @@ watch(
   display: grid;
   grid-template-columns: minmax(170px, 1fr) minmax(0, 1fr);
   gap: var(--bew-space-3);
-  min-height: 180px;
+  min-height: 0;
   padding: 0 var(--bew-space-4) var(--bew-space-4);
 }
 .moments-skeleton-card__cover {
   width: 100%;
-  min-height: 180px;
+  min-height: 0;
   border-radius: var(--bew-media-radius);
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   opacity: 0.68;
 }
 .moments-skeleton-card__body {
@@ -4387,7 +4447,7 @@ watch(
   }
 
   .moments-skeleton-card__cover {
-    min-height: 240px;
+    min-height: 0;
   }
 
   .moments-skeleton-card__body {

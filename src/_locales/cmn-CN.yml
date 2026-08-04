@@ -247,11 +247,14 @@ settings:
   moments_visible_components_original_desc: 控制 Bilibili 原版动态页侧栏与横幅等组件是否显示。主题色表示显示，灰色表示隐藏。
   moments_visible_components_plugin_desc: 控制 Bewly 动态页侧栏与顶部组件是否显示。主题色表示显示，灰色表示隐藏。
   moments_filtered_types: 过滤动态
-  moments_filtered_types_desc: 控制各类动态是否出现在 Bewly 动态流中。选中（主题色）表示不过滤，未选中表示过滤。开启过滤时单次最多扫描 100 条，需手动加载更多。
+  moments_filtered_types_desc: 控制各类动态是否出现在 Bewly 动态流中。选中（主题色）表示不过滤，未选中表示过滤。开启过滤时单次最多扫描 100 条；留存率低于 60% 时需手动加载更多，达到 60% 及以上时将自动滚动加载。
   moments_enable_live_preview: 直播动态悬停预览
   moments_enable_live_preview_desc: 鼠标悬停直播动态封面时播放直播预览。
   moments_enable_video_preview: 视频动态悬停预览
   moments_enable_video_preview_desc: 鼠标悬停视频动态封面时播放视频预览。
+  moments_grid_columns: 动态列数
+  moments_grid_columns_desc: 设置 Bewly 动态页的期望列数。卡片最大宽度为 520px；窗口空间不足时会自动减少列数，左侧栏与动态流整体保持居中。
+  moments_grid_columns_option: '{count} 列'
   moments_filter_up_recommendation: 过滤：UP主的推荐
   moments_filter_up_recommendation_desc: 过滤所有带有“UP主的推荐”附加信息的动态。
   moments_filter_up_recommendation_short: UP主的推荐
@@ -975,6 +978,7 @@ video_card:
     follow_user: 关注用户
     unfollow_user: 取消关注
     block_user: 拉黑用户
+    more_options: 更多操作
   follow_user_confirm:
     title: 确认关注用户
     message: 确定要关注 {name} 吗？

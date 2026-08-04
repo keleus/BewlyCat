@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import type { ComponentPublicInstance } from 'vue'
+import type { ComponentPublicInstance, CSSProperties } from 'vue'
+import { computed, provide, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
+import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
+import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 
+import type { Author, Video } from '../VideoCard/types'
+import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
 import type { DisplayForwardVideo, DisplayMoment, WatchLaterTarget } from './types'
 import {
   formatCount,
@@ -49,6 +55,118 @@ const emit = defineEmits<{
   toggleLike: [moment: DisplayMoment]
 }>()
 
+const { t } = useI18n()
+const { mainAppRef } = useBewlyApp()
+
+// The shared context menu expects the same video shape as VideoCard. A dynamic
+// video without a stable aid is intentionally left without a menu instead of
+// manufacturing an id that could make copy/dislike actions target the wrong
+// video.
+function getMenuVideo(source: {
+  aid?: number | string
+  bvid?: string
+  title: string
+  cover: string
+  duration?: string
+  play?: string
+  danmaku?: string
+  url?: string
+  author?: Author
+}) {
+  const aid = Number(source.aid || 0)
+  if (!Number.isFinite(aid) || aid <= 0)
+    return null
+
+  const url = source.url
+    || (source.bvid ? `https://www.bilibili.com/video/${source.bvid}` : `https://www.bilibili.com/video/av${aid}`)
+  if (!url)
+    return null
+
+  return {
+    id: aid,
+    aid,
+    bvid: source.bvid,
+    title: source.title,
+    cover: source.cover,
+    durationStr: source.duration,
+    viewStr: source.play,
+    danmakuStr: source.danmaku,
+    url,
+    author: source.author,
+    threePointV2: [],
+  } satisfies Video
+}
+
+const menuVideo = computed<Video | null>(() => {
+  if (!moment.isVideo || moment.isLive)
+    return null
+
+  return getMenuVideo({
+    aid: moment.aid,
+    bvid: moment.bvid,
+    title: moment.title || '视频动态',
+    cover: moment.images[0] || moment.chargeCover || '',
+    duration: moment.duration,
+    play: moment.videoPlay,
+    danmaku: moment.videoDanmaku,
+    url: moment.videoUrl,
+    author: {
+      name: moment.author.name,
+      authorFace: getAvatarThumbnailUrl(moment.author.face),
+      mid: Number(moment.author.mid) || undefined,
+    },
+  })
+})
+
+const menuButtonLabel = computed(() => menuVideo.value
+  ? t('video_card.operation.more_options')
+  : '')
+
+const showVideoOptions = ref(false)
+const videoOptionsFloatingStyles = ref<CSSProperties>({})
+const moreBtnRef = ref<HTMLButtonElement | null>(null)
+
+// VideoCard positions its menu from the trigger and teleports the shared menu
+// into the app root. Keep the same positioning behavior for MomentCard.
+function handleMoreBtnClick(event: Event) {
+  event.stopPropagation()
+  event.preventDefault()
+
+  if (!menuVideo.value || !moreBtnRef.value)
+    return
+
+  const anchor = moreBtnRef.value.getBoundingClientRect()
+  const position = computeFloatingMenuPosition(anchor, window.innerWidth, window.innerHeight)
+  showVideoOptions.value = false
+  videoOptionsFloatingStyles.value = {
+    position: 'fixed',
+    top: `${position.top}px`,
+    left: `${position.left}px`,
+    width: `${position.width}px`,
+    maxHeight: `${position.maxHeight}px`,
+  }
+  showVideoOptions.value = true
+}
+
+function closeVideoOptions() {
+  showVideoOptions.value = false
+}
+
+function handleCardClick(event: MouseEvent) {
+  const target = event.target
+  if (target instanceof Element) {
+    const interactiveTarget = target.closest('button, a, [role="button"]')
+    // 根 article 自身就是 role="button"；只过滤卡片内部的独立交互控件。
+    if (interactiveTarget && interactiveTarget !== event.currentTarget)
+      return
+  }
+
+  emit('openDetail', moment)
+}
+
+// VideoCardContextMenu uses this injection to select its common option set.
+provide('getVideoType', () => 'common')
+
 function handleCardRef(element: Element | ComponentPublicInstance | null) {
   emit('cardElement', element instanceof HTMLElement ? element : null)
 }
@@ -75,14 +193,15 @@ function handleForwardVideoClick() {
       'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video,
       'moment-card--compact-text': isCompactPlainTextMoment(moment),
       'moment-card--forward-video': !!moment.forward?.video,
+      'moment-card--forward-draw': Boolean(moment.forward?.images?.length),
       'moment-card--charge': moment.isChargeExclusive,
       'moment-card--preparing': !ready,
       'moment-card--entering': entering,
     }"
     tabindex="0"
     role="button"
-    @click="emit('openDetail', moment)"
-    @keydown.enter="emit('openDetail', moment)"
+    @click="handleCardClick"
+    @keydown.enter.self="emit('openDetail', moment)"
   >
     <div class="moment-card__surface">
       <header class="moment-card__header">
@@ -91,6 +210,22 @@ function handleForwardVideoClick() {
           <strong>{{ moment.author.name }}</strong>
           <small>{{ moment.time || '刚刚' }}</small>
         </span>
+        <button
+          v-if="menuVideo"
+          ref="moreBtnRef"
+          type="button"
+          class="moment-card__more-btn"
+          :class="{ 'is-open': showVideoOptions }"
+          :aria-label="menuButtonLabel"
+          aria-haspopup="menu"
+          :aria-expanded="showVideoOptions"
+          :title="menuButtonLabel"
+          @click.stop.prevent="handleMoreBtnClick"
+          @keydown.enter.stop.prevent="handleMoreBtnClick"
+          @keydown.space.stop.prevent="handleMoreBtnClick"
+        >
+          <span i-mingcute:more-2-line aria-hidden="true" />
+        </button>
       </header>
 
       <div
@@ -291,9 +426,29 @@ function handleForwardVideoClick() {
               <small><span i-tabler-user aria-hidden="true" />{{ moment.forward.author }}</small>
             </span>
           </a>
-          <div v-else-if="moment.forward" class="moment-card__forward">
-            <strong>@{{ moment.forward.author }}</strong>
-            <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
+          <div
+            v-else-if="moment.forward"
+            class="moment-card__forward"
+            :class="{ 'moment-card__forward--draw': Boolean(moment.forward.images?.length) }"
+          >
+            <div class="moment-card__forward-copy">
+              <strong>@{{ moment.forward.author }}</strong>
+              <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
+            </div>
+            <div
+              v-if="moment.forward.images?.length"
+              class="moment-card__forward-gallery"
+              :class="`moment-card__forward-gallery--${Math.min(moment.forward.images.length, 9)}`"
+            >
+              <img
+                v-for="(image, imageIndex) in moment.forward.images.slice(0, 9)"
+                :key="image"
+                :src="getMomentThumbnailUrl(image, 360)"
+                :alt="`${moment.forward.author} 的动态图片 ${imageIndex + 1}`"
+                loading="lazy"
+                decoding="async"
+              >
+            </div>
           </div>
         </div>
 
@@ -318,6 +473,18 @@ function handleForwardVideoClick() {
         </div>
       </div>
 
+      <Teleport
+        v-if="showVideoOptions && menuVideo"
+        :to="mainAppRef"
+      >
+        <VideoCardContextMenu
+          :video="menuVideo"
+          :context-menu-styles="videoOptionsFloatingStyles"
+          @close="closeVideoOptions"
+          @removed="closeVideoOptions"
+        />
+      </Teleport>
+
       <a
         v-if="moment.additional"
         :href="moment.additional.url || undefined"
@@ -335,6 +502,37 @@ function handleForwardVideoClick() {
         <span><strong>{{ moment.additional.title || '附加内容' }}</strong><small v-if="moment.additional.desc">{{ moment.additional.desc }}</small></span>
         <em>{{ moment.additional.action }}</em>
       </a>
+
+      <button
+        v-if="moment.hotComment"
+        type="button"
+        class="moment-card__hot-comment"
+        aria-label="查看热门评论"
+        @click.stop="emit('openDetail', moment)"
+      >
+        <span class="moment-card__hot-comment-label">
+          <span i-tabler-message-circle-filled aria-hidden="true" />
+          热门评论
+        </span>
+        <span class="moment-card__hot-comment-content">
+          <template v-if="moment.hotComment.richText.length">
+            <template v-for="(segment, segmentIndex) in moment.hotComment.richText" :key="`${moment.id}-hot-comment-${segmentIndex}`">
+              <img
+                v-if="segment.type === 'emoji' && segment.imageUrl"
+                :src="segment.imageUrl"
+                :alt="segment.text"
+                :title="segment.text"
+                class="moment-card__emoji"
+                :class="{ 'moment-card__emoji--large': segment.size === 2 }"
+                loading="lazy"
+                decoding="async"
+              >
+              <template v-else>{{ segment.text }}</template>
+            </template>
+          </template>
+          <template v-else>{{ moment.hotComment.text }}</template>
+        </span>
+      </button>
 
       <footer class="moment-card__footer">
         <button
@@ -428,7 +626,7 @@ function handleForwardVideoClick() {
 @media (hover: hover) and (pointer: fine) {
   .moment-card:hover {
     transform: translateY(-2px);
-    box-shadow: var(--bew-shadow-2);
+    box-shadow: var(--bew-shadow-1);
   }
 }
 
@@ -633,8 +831,6 @@ function handleForwardVideoClick() {
 
 .moment-card__title {
   margin: 0 0 var(--bew-space-2);
-  font-weight: var(--bew-font-weight-bold);
-  line-height: 1.45;
 }
 
 .moment-card__media-meta {
@@ -656,8 +852,6 @@ function handleForwardVideoClick() {
   display: -webkit-box;
   margin: 0;
   overflow: hidden;
-  color: var(--bew-text-1);
-  line-height: 1.55;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 4;
   white-space: pre-wrap;
@@ -674,13 +868,20 @@ function handleForwardVideoClick() {
 }
 
 .moment-card__forward {
+  display: flex;
+  flex-direction: column;
   margin-top: var(--bew-space-3);
-  padding: var(--bew-space-2) var(--bew-space-3);
-  border-radius: var(--bew-radius-md);
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 58%);
+  border-radius: var(--bew-card-radius);
   color: var(--bew-text-2);
   background: var(--bew-fill-1);
   font-size: var(--bew-font-size-control);
-  line-height: 1.45;
+  line-height: var(--bew-line-height-control);
+}
+
+.moment-card__forward-copy {
+  padding: var(--bew-space-3);
 }
 
 .moment-card__forward strong {
@@ -689,7 +890,7 @@ function handleForwardVideoClick() {
 
 .moment-card__forward p {
   display: -webkit-box;
-  margin: 4px 0 0;
+  margin: var(--bew-space-1) 0 0;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -802,7 +1003,7 @@ function handleForwardVideoClick() {
   display: flex;
   align-items: center;
   gap: var(--bew-space-3);
-  padding: var(--bew-space-3);
+  padding: var(--bew-space-3) var(--bew-space-4);
 }
 
 .moment-card__header .moment-card__avatar {
@@ -875,7 +1076,7 @@ function handleForwardVideoClick() {
 }
 
 .moment-card__cover--media {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
 }
 
 .moment-card__gallery {
@@ -933,14 +1134,58 @@ function handleForwardVideoClick() {
   box-sizing: border-box;
 }
 
+.moment-card__text-cover--video {
+  min-height: 0;
+  aspect-ratio: 16 / 9;
+}
+
 .moment-card__body {
   min-width: 0;
   padding: 0;
 }
 
+.moment-card__more-btn {
+  display: grid;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bew-radius-full);
+  place-items: center;
+  color: var(--bew-text-2);
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--bew-icon-size-md);
+  transition:
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.moment-card__more-btn:hover {
+  color: var(--bew-text-1);
+  background: var(--bew-fill-2);
+}
+
+.moment-card__more-btn.is-open {
+  color: var(--bew-text-1);
+  background: var(--bew-fill-2);
+}
+
+.moment-card__more-btn:active {
+  background: var(--bew-fill-3);
+}
+
+.moment-card__more-btn:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: 2px;
+}
+
 .moment-card__main--video .moment-card__body {
   display: flex;
-  height: max(127.5px, calc((100cqw - 44px) * 0.375));
+  height: max(95.625px, calc((100cqw - 44px) * 0.28125));
   flex-direction: column;
   overflow: hidden;
 }
@@ -976,6 +1221,10 @@ function handleForwardVideoClick() {
   -webkit-line-clamp: 7;
 }
 
+.moment-card--forward-draw .moment-card__body {
+  min-height: 0;
+}
+
 .moment-card--compact-text .moment-card__body {
   min-height: 0;
 }
@@ -984,12 +1233,14 @@ function handleForwardVideoClick() {
   margin-bottom: var(--bew-space-2);
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-title);
+  font-weight: var(--bew-font-weight-semibold);
   line-height: var(--bew-line-height-title);
 }
 
 .moment-card__desc {
   color: var(--bew-text-2);
   font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-regular);
   line-height: var(--bew-line-height-body);
   -webkit-line-clamp: 7;
 }
@@ -1019,19 +1270,16 @@ function handleForwardVideoClick() {
   text-decoration: underline;
 }
 
-.moment-card__forward {
-  margin-top: var(--bew-space-3);
-}
-
 .moment-card__forward-video {
   display: grid;
   grid-template-columns: minmax(150px, 44%) minmax(0, 1fr);
-  margin-top: 12px;
+  margin-top: var(--bew-space-3);
   overflow: hidden;
   border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 58%);
-  border-radius: var(--bew-interactive-radius);
+  border-radius: var(--bew-card-radius);
   color: inherit;
   background: var(--bew-fill-1);
+  box-sizing: border-box;
   text-decoration: none;
   transition:
     border-color 0.16s ease,
@@ -1059,6 +1307,50 @@ function handleForwardVideoClick() {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.moment-card__forward-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: var(--bew-space-1);
+  margin: 0 var(--bew-space-3) var(--bew-space-3);
+  overflow: hidden;
+  border-radius: var(--bew-media-radius);
+  aspect-ratio: 1;
+  background: var(--bew-fill-1);
+}
+
+.moment-card__forward-gallery--1 {
+  grid-template-columns: 1fr;
+}
+
+.moment-card__forward-gallery--2,
+.moment-card__forward-gallery--4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.moment-card__forward-gallery--2 {
+  aspect-ratio: 2 / 1;
+}
+
+.moment-card__forward-gallery--3 {
+  aspect-ratio: 3 / 1;
+}
+
+.moment-card__forward-gallery--5,
+.moment-card__forward-gallery--6 {
+  aspect-ratio: 3 / 2;
+}
+
+.moment-card__forward-gallery > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  object-position: center top;
+  background: var(--bew-fill-1);
 }
 
 .moment-card__video-stats {
@@ -1105,11 +1397,13 @@ function handleForwardVideoClick() {
 
 .moment-card__forward-video-info strong {
   display: -webkit-box;
+  min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-body);
   font-weight: var(--bew-font-weight-semibold);
-  line-height: 1.45;
+  line-height: var(--bew-line-height-title);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
@@ -1118,7 +1412,7 @@ function handleForwardVideoClick() {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 4px;
+  gap: var(--bew-space-1);
   overflow: hidden;
   color: var(--bew-text-3);
   font-size: var(--bew-font-size-caption);
@@ -1128,6 +1422,53 @@ function handleForwardVideoClick() {
 
 .moment-card__additional--footer {
   margin: 0 var(--bew-space-4) var(--bew-space-3);
+}
+
+.moment-card__hot-comment {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-height: 40px;
+  align-items: center;
+  gap: var(--bew-space-2);
+  margin: 0 0 var(--bew-space-3);
+  padding: var(--bew-space-2) var(--bew-space-4);
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  color: var(--bew-text-2);
+  background: var(--bew-fill-1);
+  box-sizing: border-box;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+  text-align: left;
+  transition:
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.moment-card__hot-comment:hover {
+  color: var(--bew-text-1);
+  background: var(--bew-fill-2);
+}
+
+.moment-card__hot-comment-label {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--bew-space-1);
+  color: var(--bew-theme-color);
+  font-weight: var(--bew-font-weight-semibold);
+}
+
+.moment-card__hot-comment-content {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .moment-card__footer {

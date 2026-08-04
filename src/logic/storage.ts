@@ -292,6 +292,8 @@ export interface Settings {
   momentsShowUpList: boolean
   momentsEnableLivePreview: boolean
   momentsEnableVideoPreview: boolean
+  /** Bewly 动态页期望列数；窄屏会自动降列 */
+  momentsGridColumns: '1' | '2' | '3'
   momentsEnableWantedFilter: boolean
   momentsFilterUpRecommendation: boolean
   momentsHideChargeExclusive: boolean
@@ -583,6 +585,7 @@ export const originalSettings: Settings = {
   momentsShowUpList: true,
   momentsEnableLivePreview: true,
   momentsEnableVideoPreview: true,
+  momentsGridColumns: '3',
   momentsEnableWantedFilter: true,
   momentsFilterUpRecommendation: false,
   momentsHideChargeExclusive: false,

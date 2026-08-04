@@ -275,11 +275,14 @@ settings:
   moments_visible_components_original_desc: 控制 Bilibili 原版動態頁側欄同橫幅等元件係咪顯示。主題色代表顯示，灰色代表隱藏。
   moments_visible_components_plugin_desc: 控制 Bewly 動態頁側欄同頂部元件係咪顯示。主題色代表顯示，灰色代表隱藏。
   moments_filtered_types: 過濾動態
-  moments_filtered_types_desc: 控制各類動態係咪出現喺 Bewly 動態流。選中（主題色）代表不過濾，未選中代表過濾。開咗過濾嘅話，每次最多掃描 100 條，之後要手動再載入。
+  moments_filtered_types_desc: 控制各類動態係咪出現喺 Bewly 動態流。選中（主題色）代表不過濾，未選中代表過濾。開咗過濾嘅話，每次最多掃描 100 條；留存率低過 60% 要手動再載入，達到 60% 或以上就會自動滾動載入。
   moments_enable_live_preview: 直播動態懸停預覽
   moments_enable_live_preview_desc: 滑鼠懸停直播動態封面嗰陣播放直播預覽。
   moments_enable_video_preview: 影片動態懸停預覽
   moments_enable_video_preview_desc: 滑鼠懸停影片動態封面嗰陣播放影片預覽。
+  moments_grid_columns: 動態欄數
+  moments_grid_columns_desc: 設定 Bewly 動態頁想要嘅欄數。卡片最大闊度係 520px；視窗空間唔夠時會自動減少欄數，左邊欄同動態流會成組保持置中。
+  moments_grid_columns_option: '{count} 欄'
   moments_filter_up_recommendation: 過濾：UP主嘅推薦
   moments_filter_up_recommendation_desc: 過濾所有帶有「UP主嘅推薦」附加資訊嘅動態。
   moments_filter_up_recommendation_short: UP主嘅推薦
@@ -972,6 +975,7 @@ video_card:
     follow_user: 關注用戶
     unfollow_user: 取消關注
     block_user: 拉黑用戶
+    more_options: 更多操作
   follow_user_confirm:
     title: 確認關注用戶
     message: 確定要關注 {name} 嗎？

@@ -250,11 +250,14 @@ settings:
   moments_visible_components_original_desc: Control whether sidebar and banner components appear on the original Bilibili moments page. Theme-colored means shown; gray means hidden.
   moments_visible_components_plugin_desc: Control whether sidebar and top components appear on the Bewly moments page. Theme-colored means shown; gray means hidden.
   moments_filtered_types: Filter dynamics
-  moments_filtered_types_desc: Control which dynamic types appear in the Bewly feed. Selected (theme-colored) means not filtered; unselected means filtered out. When filters are on, each load scans at most 100 items and further loads are manual.
+  moments_filtered_types_desc: Control which dynamic types appear in the Bewly feed. Selected (theme-colored) means not filtered; unselected means filtered out. With filters enabled, each load scans at most 100 items; when the retention rate is below 60%, further loads are manual, while rates of 60% or higher continue loading on scroll.
   moments_enable_live_preview: Preview live dynamics on hover
   moments_enable_live_preview_desc: Play a live preview when hovering over a live dynamic cover.
   moments_enable_video_preview: Preview video dynamics on hover
   moments_enable_video_preview_desc: Play a video preview when hovering over a video dynamic cover.
+  moments_grid_columns: Dynamic columns
+  moments_grid_columns_desc: Set the preferred column count for the Bewly dynamic feed. Cards are capped at 520px; columns automatically reduce when space is limited, while the sidebar and feed remain centered as a group.
+  moments_grid_columns_option: '{count} columns'
   moments_filter_up_recommendation: Filter uploader recommendations
   moments_filter_up_recommendation_desc: Filter out every dynamic that contains an uploader recommendation attachment.
   moments_filter_up_recommendation_short: Uploader recommendations
@@ -1059,6 +1062,7 @@ video_card:
     follow_user: Follow User
     unfollow_user: Unfollow User
     block_user: Block User
+    more_options: More options
   follow_user_confirm:
     title: Confirm Follow User
     message: Are you sure you want to follow {name}?

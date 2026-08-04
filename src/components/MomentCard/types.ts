@@ -47,6 +47,11 @@ export interface DisplayMoment {
   isLiked: boolean
   isLikeDisabled: boolean
   commentCount: number
+  /** 动态列表接口附带的评论互动摘要（type = 1） */
+  hotComment?: {
+    text: string
+    richText: DisplayRichTextSegment[]
+  }
   url: string
   isVideo: boolean
   /** 普通视频动态（不含合集订阅） */
@@ -90,6 +95,8 @@ export interface DisplayMoment {
     title: string
     text: string
     fallback: string
+    /** 转发原动态的图片，用于在嵌套卡片中保持原卡片形态 */
+    images?: string[]
     video?: DisplayForwardVideo
   }
 }

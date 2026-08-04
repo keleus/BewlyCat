@@ -7,6 +7,7 @@ import { settings } from '~/logic'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 import WantedUsersManager from './WantedUsersManager.vue'
 
@@ -83,6 +84,12 @@ const openModeOptions = computed(() => [
     value: 'background',
   },
 ])
+
+const gridColumnOptions = computed(() => [
+  { label: t('settings.moments_grid_columns_option', { count: 3 }), value: '3' as const },
+  { label: t('settings.moments_grid_columns_option', { count: 2 }), value: '2' as const },
+  { label: t('settings.moments_grid_columns_option', { count: 1 }), value: '1' as const },
+])
 </script>
 
 <template>
@@ -126,6 +133,17 @@ const openModeOptions = computed(() => [
             />
           </div>
         </template>
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.moments_grid_columns')"
+        :desc="$t('settings.moments_grid_columns_desc')"
+        right-width="auto"
+      >
+        <SettingsSegmentedControl
+          v-model="settings.momentsGridColumns"
+          :label="$t('settings.moments_grid_columns')"
+          :options="gridColumnOptions"
+        />
       </SettingsItem>
       <SettingsItem
         :title="$t('settings.moments_enable_live_preview')"

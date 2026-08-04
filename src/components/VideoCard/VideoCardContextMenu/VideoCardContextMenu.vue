@@ -108,24 +108,36 @@ function isOptionVisible(key: VideoCardContextMenuKey) {
 const commonOptions = computed((): OptionItem[][] => {
   let result: OptionItem[][] = [
     [
-      { command: VideoOption.OpenInNewTab, key: 'openInNewTab', name: t('video_card.operation.open_in_new_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
-      { command: VideoOption.OpenInBackground, key: 'openInBackground', name: t('video_card.operation.open_in_background'), icon: 'i-solar:square-top-down-bold-duotone' },
-      { command: VideoOption.OpenInNewWindow, key: 'openInNewWindow', name: t('video_card.operation.open_in_new_window'), icon: 'i-solar:maximize-square-3-bold-duotone' },
-      { command: VideoOption.OpenInCurrentTab, key: 'openInCurrentTab', name: t('video_card.operation.open_in_current_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
-      { command: VideoOption.OpenInDrawer, key: 'openInDrawer', name: t('video_card.operation.open_in_drawer'), icon: 'i-solar:archive-up-minimlistic-bold-duotone' },
+      ...(props.video.url
+        ? [
+            { command: VideoOption.OpenInNewTab, key: 'openInNewTab' as const, name: t('video_card.operation.open_in_new_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
+            { command: VideoOption.OpenInBackground, key: 'openInBackground' as const, name: t('video_card.operation.open_in_background'), icon: 'i-solar:square-top-down-bold-duotone' },
+            { command: VideoOption.OpenInNewWindow, key: 'openInNewWindow' as const, name: t('video_card.operation.open_in_new_window'), icon: 'i-solar:maximize-square-3-bold-duotone' },
+            { command: VideoOption.OpenInCurrentTab, key: 'openInCurrentTab' as const, name: t('video_card.operation.open_in_current_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
+            { command: VideoOption.OpenInDrawer, key: 'openInDrawer' as const, name: t('video_card.operation.open_in_drawer'), icon: 'i-solar:archive-up-minimlistic-bold-duotone' },
+          ]
+        : []),
     ],
 
     [
-      { command: VideoOption.CopyVideoLink, key: 'copyVideoLink', name: t('video_card.operation.copy_video_link'), icon: 'i-solar:copy-bold-duotone' },
-      ...(settings.value.enableCleanShareLink
+      ...(props.video.url
+        ? [{ command: VideoOption.CopyVideoLink, key: 'copyVideoLink' as const, name: t('video_card.operation.copy_video_link'), icon: 'i-solar:copy-bold-duotone' }]
+        : []),
+      ...(settings.value.enableCleanShareLink && props.video.url
         ? [{ command: VideoOption.CopyCleanVideoLink, key: 'copyCleanVideoLink' as const, name: t('video_card.operation.copy_clean_video_link'), icon: 'i-solar:link-minimalistic-2-bold-duotone' }]
         : []),
-      { command: VideoOption.CopyBVNumber, key: 'copyBVNumber', name: t('video_card.operation.copy_bv_number'), icon: 'i-solar:copy-bold-duotone' },
-      { command: VideoOption.CopyAVNumber, key: 'copyAVNumber', name: t('video_card.operation.copy_av_number'), icon: 'i-solar:copy-bold-duotone' },
+      ...(props.video.bvid
+        ? [{ command: VideoOption.CopyBVNumber, key: 'copyBVNumber' as const, name: t('video_card.operation.copy_bv_number'), icon: 'i-solar:copy-bold-duotone' }]
+        : []),
+      ...(props.video.id
+        ? [{ command: VideoOption.CopyAVNumber, key: 'copyAVNumber' as const, name: t('video_card.operation.copy_av_number'), icon: 'i-solar:copy-bold-duotone' }]
+        : []),
     ],
 
     [
-      { command: VideoOption.ViewTheOriginalCover, key: 'viewOriginalCover', name: t('video_card.operation.view_the_original_cover'), icon: 'i-solar:gallery-minimalistic-bold-duotone' },
+      ...(props.video.cover
+        ? [{ command: VideoOption.ViewTheOriginalCover, key: 'viewOriginalCover' as const, name: t('video_card.operation.view_the_original_cover'), icon: 'i-solar:gallery-minimalistic-bold-duotone' }]
+        : []),
     ],
   ]
 
@@ -133,11 +145,12 @@ const commonOptions = computed((): OptionItem[][] => {
   // 1. 如果明确传入了 followed 状态，根据状态显示
   // 2. 如果在 Following 页面且未传入 followed，默认显示"取消关注"（因为都是已关注的UP主）
   // 3. 其他情况不显示
+  const authorMid = getAuthorMid()
   const authorFollowed = Array.isArray(props.video.author)
     ? props.video.author[0]?.followed
     : props.video.author?.followed
 
-  if (authorFollowed !== undefined || props.isFollowingPage) {
+  if (authorMid && (authorFollowed !== undefined || props.isFollowingPage)) {
     // 判断是否已关注：明确为 true，或者在 Following 页面且未明确为 false
     const isFollowed = authorFollowed === true || (props.isFollowingPage && authorFollowed !== false)
 
@@ -153,10 +166,12 @@ const commonOptions = computed((): OptionItem[][] => {
     }
   }
 
-  // 添加拉黑用户选项
-  result.push([
-    { command: VideoOption.BlockUser, key: 'blockUser', name: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone', color: 'text-red-500' },
-  ])
+  // 添加拉黑用户选项；缺少作者 mid 时隐藏，避免点击后发出无效请求。
+  if (authorMid) {
+    result.push([
+      { command: VideoOption.BlockUser, key: 'blockUser', name: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone', color: 'text-red-500' },
+    ])
+  }
 
   if (getVideoType() === 'bangumi' || getVideoType() === 'live') {
     result = result.map((group) => {
