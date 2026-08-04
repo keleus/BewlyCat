@@ -103,6 +103,11 @@ export const useTopBarStore = defineStore('topBar', () => {
   const watchLaterCount = ref<number>(0)
   // 添加稍后再看列表
   const watchLaterList = reactive<VideoItem[]>([])
+  // 稍后再看分页游标：服务器列表是偏移分页且会因删除整体前移，
+  // 不能用本地列表长度推算页码，需独立记录已消费的条目数
+  const watchLaterCursor = ref<number>(0)
+  // 变更纪元：删除/全量刷新/重置时递增，用于丢弃在途的过期翻页响应
+  let watchLaterEpoch = 0
   const favoriteStateVersion = ref(0)
   const isLoadingWatchLater = ref<boolean>(false)
   // 添加 Moments 相关状态
@@ -207,6 +212,8 @@ export const useTopBarStore = defineStore('topBar', () => {
     newMomentsCount.value = 0
     watchLaterCount.value = 0
     watchLaterList.splice(0)
+    watchLaterCursor.value = 0
+    watchLaterEpoch++
     addedWatchLaterList.splice(0)
     moments.splice(0)
     livePage.value = 1
@@ -636,6 +643,8 @@ export const useTopBarStore = defineStore('topBar', () => {
         watchLaterCount.value = res.data.count
         watchLaterList.splice(0)
         Object.assign(watchLaterList, res.data.list)
+        watchLaterCursor.value = res.data.list.length
+        watchLaterEpoch++
       }
     }
     catch (error) {
@@ -653,13 +662,16 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (!isCurrentAccount(accountId) || isLoadingWatchLater.value)
       return
 
-    const currentPage = Math.floor(watchLaterList.length / 10) + 1
+    const currentPage = Math.floor(watchLaterCursor.value / 10) + 1
     const totalPages = Math.ceil(watchLaterCount.value / 10)
 
-    if (currentPage > totalPages)
+    // 游标已消费全部内容即到达集合末尾（页数判断在非整页时会漏判末页边界）
+    if (watchLaterCursor.value >= watchLaterCount.value || currentPage > totalPages)
       return
 
     isLoadingWatchLater.value = true
+
+    const epoch = watchLaterEpoch
 
     try {
       const res = await api.watchlater.getWatchLaterListByPage({
@@ -667,7 +679,25 @@ export const useTopBarStore = defineStore('topBar', () => {
         ps: 10,
       })
       if (res.code === 0 && isCurrentAccount(accountId)) {
-        watchLaterList.push(...res.data.list)
+        // 翻页在途期间列表被删除/全量刷新，响应已过期，直接丢弃；
+        // 删除后的延迟同步与后续滚动会用新游标重新拉取
+        if (epoch !== watchLaterEpoch)
+          return
+        // 空页意味着游标之后已没有内容，将计数收敛到游标处，避免过期计数导致重复请求
+        if (res.data.list.length === 0) {
+          watchLaterCount.value = watchLaterCursor.value
+          return
+        }
+        // 游标语义是"已连续消费的服务器前缀长度"：翻页可能与已加载内容重叠，
+        // 返回长度不等于新增消费量，取页末位置与游标的较大值
+        watchLaterCursor.value = Math.max(
+          watchLaterCursor.value,
+          (currentPage - 1) * 10 + res.data.list.length,
+        )
+        // 删除会让服务器列表前移，页边界可能与已加载内容重叠，按 aid 去重兜底
+        const existingIds = new Set(watchLaterList.map(item => item.aid))
+        const newItems = res.data.list.filter(item => !existingIds.has(item.aid))
+        watchLaterList.push(...newItems)
       }
     }
     catch (error) {
@@ -693,6 +723,8 @@ export const useTopBarStore = defineStore('topBar', () => {
       if (res.code === 0 && isCurrentAccount(accountId)) {
         watchLaterList.splice(index, 1)
         watchLaterCount.value = Math.max(0, watchLaterCount.value - 1)
+        watchLaterCursor.value = Math.max(0, watchLaterCursor.value - 1)
+        watchLaterEpoch++
 
         // 先保留本地乐观更新；B 站删除接口返回后，列表查询偶尔仍会短暂返回旧数量。
         // 延迟同步可避免把刚删除的项目/计数立即覆盖回来。
