@@ -3,6 +3,7 @@ import browser from 'webextension-polyfill'
 
 import { CONTENT_SCRIPT_MATCHES } from '~/constants/contentScript'
 import type {
+  TopBarFavoritesChanged,
   TopBarRefreshClaim,
   TopBarSharedState,
   TopBarStateClaim,
@@ -46,6 +47,10 @@ export interface TopBarStateBroker {
     data: TopBarStateInvalidate,
     sender?: Browser.Runtime.MessageSender,
   ) => Promise<void>
+  notifyFavoritesChanged: (
+    data: TopBarFavoritesChanged,
+    sender?: Browser.Runtime.MessageSender,
+  ) => Promise<void>
 }
 
 const REFRESH_LEASE_TIMEOUT = 30_000
@@ -61,6 +66,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
+function isOptionalTimestamp(value: unknown): value is number | null | undefined {
+  return value === undefined || value === null || (typeof value === 'number' && Number.isFinite(value))
+}
+
 function isTopBarSharedState(value: unknown): value is TopBarSharedState {
   return isRecord(value)
     && isRecord(value.unReadMessage)
@@ -70,6 +79,8 @@ function isTopBarSharedState(value: unknown): value is TopBarSharedState {
     && typeof value.hasBCoinToReceive === 'boolean'
     && typeof value.bCoinAlreadyReceived === 'boolean'
     && typeof value.vipExpAlreadyReceived === 'boolean'
+    && isOptionalTimestamp(value.bCoinNextReceiveAt)
+    && isOptionalTimestamp(value.vipExpNextReceiveAt)
 }
 
 function isTopBarStateEntry(value: unknown): value is TopBarStateEntry {
@@ -221,6 +232,28 @@ export function createTopBarStateBroker(
     }
   }
 
+  async function broadcastFavoritesChanged(
+    data: TopBarFavoritesChanged,
+    sender?: Browser.Runtime.MessageSender,
+  ): Promise<void> {
+    const browserContextKey = getBrowserContextKey(sender?.tab)
+
+    try {
+      const tabs = await extensionApi.tabs.query({ url: [...CONTENT_SCRIPT_MATCHES] })
+      await Promise.allSettled(
+        tabs
+          .filter(tab => tab.id !== undefined && getBrowserContextKey(tab) === browserContextKey)
+          .map(tab => extensionApi.tabs.sendMessage(tab.id!, {
+            type: TOP_BAR_STATE_MESSAGE.FAVORITES_CHANGED,
+            data,
+          })),
+      )
+    }
+    catch {
+      // 页面可能已关闭；下次打开收藏 Pop 时仍会重新拉取
+    }
+  }
+
   return {
     claimRefresh({ accountId, maxAge, force = false }, sender) {
       return runExclusive(async () => {
@@ -231,7 +264,9 @@ export function createTopBarStateBroker(
         const snapshotFresh = entry.snapshot !== undefined && now - entry.updatedAt < maxAge
         const refreshInProgress = entry.refreshStartedAt > 0
           && now - entry.refreshStartedAt < REFRESH_LEASE_TIMEOUT
-        const shouldRefresh = !refreshInProgress && (force || !snapshotFresh)
+        // 定时同步必须共享 refresh lease，避免多个标签页重复请求；force
+        // 表示用户主动操作或登录态变化，不能被其它标签页的定时请求阻塞。
+        const shouldRefresh = force || (!snapshotFresh && !refreshInProgress)
 
         if (shouldRefresh) {
           entry.refreshStartedAt = now
@@ -291,6 +326,10 @@ export function createTopBarStateBroker(
 
       await broadcastInvalidation(data, sender)
     },
+
+    notifyFavoritesChanged(data, sender) {
+      return broadcastFavoritesChanged(data, sender)
+    },
   }
 }
 
@@ -315,5 +354,10 @@ export function setupTopBarStateBroker() {
   onMessage<TopBarStateInvalidate>(
     TOP_BAR_STATE_MESSAGE.INVALIDATE,
     (data, sender) => broker.invalidate(data, sender),
+  )
+
+  onMessage<TopBarFavoritesChanged>(
+    TOP_BAR_STATE_MESSAGE.FAVORITES_CHANGED,
+    (data, sender) => broker.notifyFavoritesChanged(data, sender),
   )
 }

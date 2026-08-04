@@ -44,6 +44,8 @@ const ROOT_ID = 'bewly-widescreen-root'
 const LOADING_ROOT_ID = 'bewly-widescreen-loading'
 const BODY_CLASS = 'bewly-widescreen-active'
 const EMPTY_CLASS = 'bewly-widescreen-empty'
+const EPISODE_SECTION_CLASS = 'bewly-widescreen-episode-section'
+const EPISODE_ITEM_SELECTOR = '.video-pod__item, .multi-page__item, .page-item, .list-item, .episode-item, .section-item, .collect-item'
 const SIDEBAR_NARROW_MIN_WIDTH = 360
 const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
@@ -59,9 +61,6 @@ const COMMENT_NESTED_UI_SELECTOR = '.reply-item, .sub-reply-item, bili-comment-r
 // Light-DOM markers only. Modern bili-comments mounts most UI in shadow roots,
 // so readiness must not require these descendants to exist.
 const COMMENT_CONTENT_MARKER_SELECTOR = 'bili-comments, bili-comment-box, bili-comment-renderer, .reply-list, .comment-list, .reply-box, .comment-header'
-const COMMENT_LIST_SELECTOR = 'bili-comment-renderer, .reply-list, .comment-list, .reply-item, .root-reply-container'
-const COMMENT_LOADING_SELECTOR = '.bili-comment-loading, .comment-loading, .loading-start, .bili-dyn-list-loading, .loading-img'
-const COMMENT_AVATAR_SELECTOR = 'bili-avatar, .bili-avatar, .user-face, .reply-face, .bili-user-avatar, img[src*="face"], img[data-src*="face"]'
 
 let state: BewlyWidescreenState | null = null
 let loadingOverlay: HTMLElement | null = null
@@ -294,40 +293,11 @@ function moveOrReplaceNode(selectors: string[], target: HTMLElement, movedNodes:
   return { found: moved, changed: moved }
 }
 
-function isCommentRootLoading(root: HTMLElement) {
-  return !!root.querySelector(COMMENT_LOADING_SELECTOR)
-}
-
 function hasCommentShadowTree(root: HTMLElement) {
   return Array.from(root.querySelectorAll('*')).some((element) => {
     const shadowRoot = (element as HTMLElement & { shadowRoot?: ShadowRoot | null }).shadowRoot
     return !!shadowRoot
   })
-}
-
-function getCommentRootScore(root: HTMLElement) {
-  let score = 0
-
-  if (root.matches(COMMENT_ROOT_ID_SELECTOR) || root.matches('.commentapp'))
-    score += 3
-  if (root.querySelector(COMMENT_CONTENT_MARKER_SELECTOR))
-    score += 2
-  if (hasCommentShadowTree(root))
-    score += 3
-  if (root.querySelector(COMMENT_LIST_SELECTOR))
-    score += 3
-  if (root.querySelector(COMMENT_AVATAR_SELECTOR))
-    score += 4
-  if (root.querySelector('bili-comment-box, .reply-box, .comment-header'))
-    score += 1
-  if (isCommentRootLoading(root))
-    score -= 3
-
-  // Prefer roots that already finished painting something measurable.
-  score += Math.min(root.querySelectorAll(COMMENT_AVATAR_SELECTOR).length, 8)
-  score += Math.min(root.querySelectorAll(COMMENT_LIST_SELECTOR).length, 8)
-
-  return score
 }
 
 function isCommentRootUsable(root: HTMLElement) {
@@ -346,46 +316,14 @@ function isCommentRootUsable(root: HTMLElement) {
   return hasCommentShadowTree(root)
 }
 
-function isCommentRootHydrated(root: HTMLElement) {
-  if (!isCommentRootUsable(root))
-    return false
-
-  if (isCommentRootLoading(root))
-    return false
-
-  if (hasCommentShadowTree(root))
-    return true
-
-  const hasList = !!root.querySelector(COMMENT_LIST_SELECTOR)
-  const hasComposer = !!root.querySelector('bili-comment-box, .reply-box, .comment-header')
-  return hasList || hasComposer
-}
-
 function moveCommentRoot(target: HTMLElement, movedNodes: MovedNode[]) {
-  // Once mounted, keep the same root unless Bilibili recreated a healthier
-  // replacement outside the layout (common when avatar/comment hydration races
-  // with DOM relocation).
+  // Once mounted, keep the same root. Replacing it in response to a body
+  // mutation can race Bilibili's renderer and create another comment editor.
   const existing = findCommentRoot(target)
-  const next = findCommentRoot(document, true)
-
-  if (existing && next && existing !== next) {
-    // Prefer an outside replacement only when it is clearly more complete.
-    // Never block on "fully hydrated" for the first move — that is the main
-    // cause of permanent empty comment panels under the fixed overlay.
-    const shouldReplace = (!isCommentRootHydrated(existing) && isCommentRootUsable(next))
-      || getCommentRootScore(next) >= getCommentRootScore(existing) + 2
-
-    if (!shouldReplace)
-      return { found: true, changed: false }
-
-    removeMovedNode(existing, movedNodes)
-    const moved = moveNode(next, target, movedNodes)
-    return { found: moved || !!findCommentRoot(target), changed: moved }
-  }
-
   if (existing)
     return { found: true, changed: false }
 
+  const next = findCommentRoot(document, true)
   if (!next || !isCommentRootUsable(next))
     return { found: false, changed: false }
 
@@ -1568,6 +1506,19 @@ function injectLayoutStyle() {
       max-width: 100% !important;
     }
 
+    /* Keep only the marked episode section internally scrollable. The panel
+       itself remains the outer scroll fallback for recommendations and other
+       sidebar content; nested playlist containers stay overflow-visible. */
+    #${ROOT_ID} .bewly-widescreen-panel-playlist.${EPISODE_SECTION_CLASS},
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .${EPISODE_SECTION_CLASS} {
+      height: auto !important;
+      max-height: min(52dvh, 560px) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+
     #${ROOT_ID} .bewly-widescreen-panel .video-page-card-small {
       width: 100% !important;
     }
@@ -2001,6 +1952,58 @@ function syncSidebarTitle(currentState: BewlyWidescreenState) {
     titleElement.textContent = nextTitle
 }
 
+function findManagedPanelNode(panel: HTMLElement, selectorsToMatch: string[], movedNodes: MovedNode[]) {
+  const selector = selectorsToMatch.join(',')
+  return movedNodes.find(({ node }) => {
+    if (node.parentElement !== panel)
+      return false
+
+    return node.matches(selector) || !!node.querySelector(selector)
+  })?.node ?? null
+}
+
+function placeRecommendAfterPlaylist(panel: HTMLElement, movedNodes: MovedNode[]) {
+  const playlistNode = findManagedPanelNode(panel, selectors.playlist, movedNodes)
+  const recommendNode = findManagedPanelNode(panel, selectors.recommend, movedNodes)
+  if (!playlistNode || !recommendNode || playlistNode === recommendNode)
+    return
+
+  // Only reorder the top-level nodes that Bewly moved into this panel. This
+  // avoids detaching recommendation/episode elements nested inside a shared
+  // Bilibili wrapper.
+  if (playlistNode.parentElement === panel && recommendNode.parentElement === panel)
+    playlistNode.after(recommendNode)
+}
+
+function findEpisodeSectionNode(panel: HTMLElement, movedNodes: MovedNode[]) {
+  const playlistNode = findManagedPanelNode(panel, selectors.playlist, movedNodes)
+  if (!playlistNode)
+    return null
+
+  const candidates = [
+    playlistNode,
+    ...Array.from(playlistNode.querySelectorAll<HTMLElement>(selectors.playlist.join(','))),
+  ]
+  const episodeCandidates = candidates.filter(candidate => candidate.querySelector(EPISODE_ITEM_SELECTOR))
+  return episodeCandidates.at(-1) ?? playlistNode
+}
+
+function clearEpisodeSectionMarker(panel: HTMLElement, movedNodes: MovedNode[]) {
+  for (const { node } of movedNodes)
+    node.classList.remove(EPISODE_SECTION_CLASS)
+  panel.querySelectorAll<HTMLElement>(`.${EPISODE_SECTION_CLASS}`).forEach((node) => {
+    node.classList.remove(EPISODE_SECTION_CLASS)
+  })
+}
+
+function syncEpisodeSectionMarker(panel: HTMLElement, movedNodes: MovedNode[]) {
+  clearEpisodeSectionMarker(panel, movedNodes)
+
+  const episodeSection = findEpisodeSectionNode(panel, movedNodes)
+  if (episodeSection)
+    episodeSection.classList.add(EPISODE_SECTION_CLASS)
+}
+
 function fillSidebar(currentState: BewlyWidescreenState) {
   syncActionAnimationTheme(currentState)
   syncSidebarTitle(currentState)
@@ -2035,10 +2038,17 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   const existingPlaylist = currentState.panels.playlist.querySelector(selectors.playlist.join(','))
   const existingRecommend = currentState.panels.playlist.querySelector(selectors.recommend.join(','))
   const playlist = existingPlaylist ? null : findMovable(selectors.playlist)
-  const recommend = existingPlaylist || playlist || existingRecommend ? null : findMovable(selectors.recommend)
-  const playlistMoved = existingPlaylist || existingRecommend || moveNode(playlist || recommend, currentState.panels.playlist, currentState.movedNodes)
-  currentState.tabButtons.playlist.textContent = existingPlaylist || playlist ? '选集' : '推荐'
-  if (!playlistMoved)
+  const playlistMoved = existingPlaylist || moveNode(playlist, currentState.panels.playlist, currentState.movedNodes)
+  // 推荐列表与选集是同一侧栏面板中的两个连续区块；即使选集已经存在，
+  // 也要继续搬运推荐列表，保证推荐内容显示在选集下方。
+  const recommend = existingRecommend ? null : findMovable(selectors.recommend)
+  const recommendMoved = existingRecommend || moveNode(recommend, currentState.panels.playlist, currentState.movedNodes)
+  placeRecommendAfterPlaylist(currentState.panels.playlist, currentState.movedNodes)
+  syncEpisodeSectionMarker(currentState.panels.playlist, currentState.movedNodes)
+  const hasPlaylist = !!(existingPlaylist || playlistMoved)
+  const hasRecommend = !!(existingRecommend || recommendMoved)
+  currentState.tabButtons.playlist.textContent = hasPlaylist ? '选集' : '推荐'
+  if (!hasPlaylist && !hasRecommend)
     ensureEmptyPanel(currentState.panels.playlist, '列表加载中')
   else
     clearEmptyPanel(currentState.panels.playlist)
@@ -2091,6 +2101,7 @@ function cleanupState(currentState: BewlyWidescreenState) {
   if (movedCommentRoot && replacementCommentRoot)
     removeMovedNode(movedCommentRoot, currentState.movedNodes)
 
+  clearEpisodeSectionMarker(currentState.panels.playlist, currentState.movedNodes)
   restoreMovedNodes(currentState.movedNodes)
   currentState.root.remove()
   currentState.styleEl.remove()

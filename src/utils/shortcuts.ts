@@ -141,7 +141,7 @@ export function setupShortcutHandlers() {
 
     // 检查是否事件来自插件容器
     const target = e.target as HTMLElement
-    if (target && target.id === 'bewly') {
+    if ((target && target.id === 'bewly') || document.getElementById('bewly')?.classList.contains('settings-open')) {
       return
     }
     // 更新快捷键配置缓存

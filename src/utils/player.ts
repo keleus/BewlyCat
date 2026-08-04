@@ -2,8 +2,6 @@
 import { settings } from '~/logic'
 import type { AutoPlayMode, DefaultVideoPlayerMode, VideoPlayerModeContext, VideoPlayerModeOverride } from '~/logic/storage'
 
-import { applyVolumeNormalization } from './audioNormalization'
-
 const _videoClassTag = {
   danmuBtn:
       '.bilibili-player-video-danmaku-switch > input[type=checkbox],.bpx-player-dm-switch input[type=checkbox]',
@@ -156,9 +154,8 @@ export function showState(text: string) {
   }
 }
 
-// 应用播放器辅助功能（音量均衡、倍速记忆等）
+// 应用播放器辅助功能（倍速记忆等）
 function applyPlayerEnhancements() {
-  applyVolumeNormalization()
   applyRememberedPlaybackRate()
   startPlaybackRateMonitoring()
 }
@@ -167,7 +164,7 @@ export function fullscreen() {
   new RetryTask(20, 500, () => {
     const result = fullscreenClick()
     if (result) {
-      // 在成功进入全屏后应用音量均衡和倍速记忆
+      // 在成功进入全屏后应用倍速记忆
       setTimeout(() => {
         applyPlayerEnhancements()
       }, 1000)
@@ -180,7 +177,7 @@ export function webFullscreen() {
   new RetryTask(20, 500, () => {
     // 检查是否已经处于网页全屏状态
     if (document.querySelector('[data-screen=\'web\']')) {
-      // 即使已经是网页全屏状态，也应用音量均衡和倍速记忆
+      // 即使已经是网页全屏状态，也应用倍速记忆
       setTimeout(() => {
         applyPlayerEnhancements()
       }, 1000)
@@ -189,7 +186,7 @@ export function webFullscreen() {
 
     const result = webFullscreenClick()
     if (result) {
-      // 在成功进入网页全屏后应用音量均衡和倍速记忆
+      // 在成功进入网页全屏后应用倍速记忆
       setTimeout(() => {
         applyPlayerEnhancements()
       }, 1000)
@@ -240,7 +237,7 @@ export function widescreen() {
   new RetryTask(20, 500, () => {
     // 检查是否已经处于宽屏状态
     if (document.querySelector('[data-screen=\'wide\']')) {
-      // 即使已经是宽屏状态，也执行滚动、音量均衡和倍速记忆
+      // 即使已经是宽屏状态，也执行滚动和倍速记忆
       scrollPlayerToOptimalPosition()
       setTimeout(() => {
         applyPlayerEnhancements()
@@ -251,7 +248,7 @@ export function widescreen() {
     const result = widescreenClick()
     if (result) {
       scrollPlayerToOptimalPosition()
-      // 在成功进入宽屏后应用音量均衡和倍速记忆
+      // 在成功进入宽屏后应用倍速记忆
       setTimeout(() => {
         applyPlayerEnhancements()
       }, 1000)
@@ -287,10 +284,10 @@ export function webFullscreenClick() {
   return false
 }
 
-// 默认模式下也执行滚动、音量均衡和倍速记忆
+// 默认模式下也执行滚动和倍速记忆
 export function defaultMode() {
   scrollPlayerToOptimalPosition()
-  // 在默认模式下也应用音量均衡和倍速记忆
+  // 在默认模式下也应用倍速记忆
   setTimeout(() => {
     applyPlayerEnhancements()
   }, 2000) // 默认模式延迟稍长一些，确保页面完全加载

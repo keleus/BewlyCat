@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<Props>(), {
   showWatcherLater: true,
   type: 'common',
   moreBtn: true,
+  disableContentVisibility: false,
 })
 
 interface Props {
@@ -29,6 +30,7 @@ interface Props {
   showPreview?: boolean
   moreBtn?: boolean
   hideAuthor?: boolean
+  disableContentVisibility?: boolean
   isFollowingPage?: boolean
   customClickHandler?: (event: MouseEvent) => void
   coverTopLeftAlwaysVisible?: boolean
@@ -351,7 +353,11 @@ provide('getVideoType', () => props.type!)
     :class="[
       layout !== 'old' ? 'mb-3' : 'mb-4',
       skeleton ? 'video-card-container--skeleton' : 'video-card-container--interactive',
+      disableContentVisibility ? 'video-card-container--layout-stable' : '',
     ]"
+    :style="disableContentVisibility
+      ? { contentVisibility: 'visible', containIntrinsicSize: 'none' }
+      : undefined"
   >
     <div
       class="video-card group"
@@ -480,6 +486,12 @@ provide('getVideoType', () => props.type!)
 /* 骨架屏状态：禁用交互；各内容块自身已经提供骨架反馈。 */
 .video-card-container--skeleton {
   pointer-events: none;
+}
+
+/* 普通分页 grid 不使用 offscreen 估算，避免滚动进入视口时发生高度回流。 */
+.video-card-container--layout-stable {
+  content-visibility: visible;
+  contain-intrinsic-size: none;
 }
 
 /* hover/active 效果全部在最外层容器，background-color + box-shadow 同一元素同步动画，无时序差 */

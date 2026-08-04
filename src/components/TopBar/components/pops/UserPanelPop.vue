@@ -32,7 +32,7 @@ const topBarStore = useTopBarStore()
 const { hasBCoinToReceive } = storeToRefs(topBarStore)
 
 const mid = computed(() => {
-  return getUserID()
+  return props.userInfo.mid || getUserID()
 })
 
 const otherLinks = computed((): { name: string, url: string, icon: string, code?: string }[] => {
@@ -88,7 +88,8 @@ const otherLinks = computed((): { name: string, url: string, icon: string, code?
 })
 
 const levelProgressBarWidth = computed(() => {
-  const { next_exp: nextExp, current_exp: currentExp } = props.userInfo.level_info
+  // 登录态尚未初始化（瞬态故障后自动重查期间）时 userInfo 可能为空，兜底防止解引用崩溃
+  const { next_exp: nextExp = 1, current_exp: currentExp = 0 } = props.userInfo.level_info ?? {}
 
   const percentage = (currentExp / nextExp) * 100
   return `${percentage.toFixed(2)}%`

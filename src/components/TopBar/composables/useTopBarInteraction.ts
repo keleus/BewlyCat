@@ -14,6 +14,7 @@ import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isHomePage } from '~/utils/main'
+import { openLinkInBackground } from '~/utils/tabs'
 import { createTransformer } from '~/utils/transformer'
 
 export function useTopBarInteraction() {
@@ -173,6 +174,29 @@ export function useTopBarInteraction() {
   }
 
   // 处理顶栏项点击
+  function openConfiguredPageFromTopBar(page: AppPage) {
+    const pageUrl = `https://www.bilibili.com/?page=${page}`
+    const openMode = settings.value.topBarLinkOpenMode
+
+    if (openMode === 'background') {
+      void openLinkInBackground(pageUrl)
+      return
+    }
+
+    if (openMode === 'newTab' || (openMode === 'currentTabIfNotHomepage' && isHomePage())) {
+      window.open(pageUrl, '_blank')
+      return
+    }
+
+    if (isHomePage()) {
+      // activatedPage 会读取同一项 Dock 配置，决定显示 Bewly 页面还是原版 Bilibili 页面。
+      activatedPage.value = page
+      return
+    }
+
+    location.href = pageUrl
+  }
+
   function handleClickTopBarItem(event: MouseEvent, key: string) {
     if (handledClickEvents.has(event))
       return
@@ -205,15 +229,17 @@ export function useTopBarInteraction() {
     event.preventDefault()
     event.stopPropagation()
     closeAllPopups()
+    openConfiguredPageFromTopBar(page)
+  }
 
-    const dockItem = settings.value.dockItemsConfig.find(item => item.page === page)
-    if (dockItem)
-      dockItem.useOriginalBiliPage = false
+  function handleClickTopBarLogo(event: MouseEvent) {
+    if (!settings.value.touchScreenOptimization)
+      return
 
-    if (isHomePage())
-      activatedPage.value = page
-    else
-      location.href = `https://www.bilibili.com/?page=${page}`
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
+      return
+
+    handleClickTopBarItem(event, 'channels')
   }
 
   // 处理通知项点击
@@ -229,6 +255,7 @@ export function useTopBarInteraction() {
     setupTopBarItemHoverEvent,
     setupTopBarItemTransformer,
     handleClickTopBarItem,
+    handleClickTopBarLogo,
     handleNotificationsItemClick,
     forceWhiteIcon,
     showSearchBar,

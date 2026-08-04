@@ -7,6 +7,7 @@ import { settings } from '~/logic'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 import WantedUsersManager from './WantedUsersManager.vue'
 
@@ -21,6 +22,7 @@ type MomentToggleSetting
     | 'momentsSidebarShowUserCard'
     | 'momentsSidebarShowPublish'
     | 'momentsSidebarShowLive'
+    | 'momentsShowUpList'
     | 'momentsFilterUpRecommendation'
     | 'momentsHideChargeExclusive'
     | 'momentsHideVideoReservation'
@@ -51,6 +53,7 @@ const pluginComponentOptions = computed<MomentTagOption[]>(() => [
   { setting: 'momentsSidebarShowUserCard', label: t('settings.moments_show_user_card'), icon: 'i-tabler-user-square-rounded' },
   { setting: 'momentsSidebarShowPublish', label: t('settings.moments_show_publish'), icon: 'i-tabler-edit' },
   { setting: 'momentsSidebarShowLive', label: t('settings.moments_show_live'), icon: 'i-tabler-live-photo' },
+  { setting: 'momentsShowUpList', label: t('settings.moments_show_up_list'), icon: 'i-tabler-users' },
 ])
 
 const pluginFilterOptions = computed<MomentTagOption[]>(() => [
@@ -80,6 +83,12 @@ const openModeOptions = computed(() => [
     label: t('settings.moments_card_open_mode_opt.background'),
     value: 'background',
   },
+])
+
+const gridColumnOptions = computed(() => [
+  { label: t('settings.moments_grid_columns_option', { count: 3 }), value: '3' as const },
+  { label: t('settings.moments_grid_columns_option', { count: 2 }), value: '2' as const },
+  { label: t('settings.moments_grid_columns_option', { count: 1 }), value: '1' as const },
 ])
 </script>
 
@@ -124,6 +133,17 @@ const openModeOptions = computed(() => [
             />
           </div>
         </template>
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.moments_grid_columns')"
+        :desc="$t('settings.moments_grid_columns_desc')"
+        right-width="auto"
+      >
+        <SettingsSegmentedControl
+          v-model="settings.momentsGridColumns"
+          :label="$t('settings.moments_grid_columns')"
+          :options="gridColumnOptions"
+        />
       </SettingsItem>
       <SettingsItem
         :title="$t('settings.moments_enable_live_preview')"
@@ -173,13 +193,34 @@ const openModeOptions = computed(() => [
     <SettingsItemGroup
       :title="$t('settings.group_moments_wanted_users')"
       :desc="$t('settings.group_moments_wanted_users_desc')"
-      icon="i-tabler-heart-filled"
+      icon="i-tabler-star-filled"
       collapsible
       default-collapsed
     >
+      <SettingsItem
+        :title="$t('settings.moments_enable_wanted_filter')"
+        :desc="$t('settings.moments_enable_wanted_filter_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.momentsEnableWantedFilter" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.moments_wanted_users')">
         <template #bottom>
-          <WantedUsersManager />
+          <WantedUsersManager mode="wanted" />
+        </template>
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="$t('settings.group_moments_pinned_users')"
+      :desc="$t('settings.group_moments_pinned_users_desc')"
+      icon="i-tabler-pin-filled"
+      collapsible
+      default-collapsed
+    >
+      <SettingsItem :title="$t('settings.moments_pinned_users')">
+        <template #bottom>
+          <WantedUsersManager mode="pinned" />
         </template>
       </SettingsItem>
     </SettingsItemGroup>

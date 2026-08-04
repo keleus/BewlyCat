@@ -10,7 +10,8 @@ import { localSettings, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
-import { applyBewlyWidescreen, exitBewlyWidescreen } from '~/utils/bewlyWidescreen'
+import api from '~/utils/api'
+import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
@@ -29,7 +30,6 @@ import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
 import { version } from '../../package.json'
-import { initAudioInterceptor, setupSettingsWatcher } from './audioInterceptor'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
@@ -37,7 +37,6 @@ import { initTouchPlayerGestures } from './touchPlayerGestures'
 import { initVideoAspectRatioMemory } from './videoAspectRatioMemory'
 import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
-import { initVolumeNormalizationControl } from './volumeNormalizationControl'
 
 const contentScriptGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__?: boolean
@@ -180,10 +179,13 @@ else if (shouldInitializeContentScript) {
   }
 
   let beforeLoadedStyleEl: HTMLStyleElement | undefined
+  let beforeLoadedStyleFailsafeTimer: ReturnType<typeof setTimeout> | undefined
   let lastUrl = location.href
   let lastVideoNavigationKey = getVideoNavigationKey(location.href)
   let hasAppliedPlayerMode = false // 添加标志变量
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
+  let pendingWidescreenReloadNavigationKey: string | undefined
+  let pendingWidescreenReloadTimer: ReturnType<typeof setTimeout> | undefined
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
   void settingsReady.then(() => recordVideoVisitFromUrl(lastUrl))
@@ -256,6 +258,13 @@ else if (shouldInitializeContentScript) {
     }
   }
 
+  // 挂载完成与保险丝两条路径共用的清理，重复调用无副作用
+  function removeBeforeLoadedStyleEl() {
+    beforeLoadedStyleEl?.remove()
+    beforeLoadedStyleEl = undefined
+    clearTimeout(beforeLoadedStyleFailsafeTimer)
+  }
+
   if (settings.value.adaptToOtherPageStyles && isHomePage()) {
     beforeLoadedStyleEl = injectCSS(`
     html.bewly-design {
@@ -275,20 +284,14 @@ else if (shouldInitializeContentScript) {
     }
   `)
     // Failsafe: never keep the page hidden for too long.
-    setTimeout(() => {
-      if (beforeLoadedStyleEl?.isConnected)
-        document.documentElement.removeChild(beforeLoadedStyleEl)
-    }, 4000)
+    beforeLoadedStyleFailsafeTimer = setTimeout(removeBeforeLoadedStyleEl, 4000)
   }
 
   window.addEventListener(BEWLY_MOUNTED, () => {
-    if (beforeLoadedStyleEl) {
-      document.documentElement.removeChild(beforeLoadedStyleEl)
-      if (isVideoPage()) {
-      // 根据设置应用默认播放器模式
-        applyDefaultPlayerMode()
-      }
-    }
+    removeBeforeLoadedStyleEl()
+    // 根据设置应用默认播放器模式
+    if (isVideoPage())
+      applyDefaultPlayerMode()
   })
 
   // 应用默认播放器模式
@@ -355,7 +358,10 @@ else if (shouldInitializeContentScript) {
     setupShortcutHandlers()
     applyDefaultDanmakuState()
     applyDefaultCaptionState()
-    initVerticalVideoZoom()
+    if (settings.value.showVerticalVideoZoomButton)
+      initVerticalVideoZoom()
+    else
+      resetVerticalVideoZoom()
     // 应用自动连播设置，延迟更长时间确保播放器完全初始化
     setTimeout(() => {
       applyAutoPlayByVideoType()
@@ -447,8 +453,180 @@ else if (shouldInitializeContentScript) {
     }
   }
 
+  function getPushStateTargetUrl(event: Event) {
+    if (!(event instanceof CustomEvent) || !Array.isArray(event.detail))
+      return null
+
+    const targetUrl = event.detail[2]
+    if (typeof targetUrl !== 'string' && !(targetUrl instanceof URL))
+      return null
+
+    try {
+      return new URL(String(targetUrl), location.href).href
+    }
+    catch {
+      return null
+    }
+  }
+
+  function clearPendingWidescreenReloadNavigation() {
+    pendingWidescreenReloadNavigationKey = undefined
+    if (pendingWidescreenReloadTimer) {
+      clearTimeout(pendingWidescreenReloadTimer)
+      pendingWidescreenReloadTimer = undefined
+    }
+  }
+
+  const commentRootSelector = '#commentapp, #comment-module, #comment-body, .commentapp, .comment-container, .bili-comment-container, .bb-comment'
+  const widescreenCommentReloadRetryInterval = 250
+  const widescreenCommentReloadRetryTimeout = 10_000
+  let widescreenCommentReloadRequestId = 0
+
+  type VideoCommentIdentifier = { bvid: string } | { aid: string }
+
+  function getVideoCommentIdentifier(url = location.href): VideoCommentIdentifier | null {
+    try {
+      const urlObj = new URL(url)
+
+      const queryBvid = urlObj.searchParams.get('bvid')
+      if (queryBvid && /^BV[0-9A-Za-z]+$/.test(queryBvid))
+        return { bvid: queryBvid }
+
+      const queryAid = urlObj.searchParams.get('avid') ?? urlObj.searchParams.get('aid')
+      if (queryAid && /^\d+$/.test(queryAid)) {
+        const aid = Number(queryAid)
+        if (Number.isSafeInteger(aid) && aid > 0)
+          return { aid: String(aid) }
+      }
+
+      if (!/^\/video\//.test(urlObj.pathname))
+        return null
+
+      const bvidPathMatch = urlObj.pathname.match(/^\/video\/(BV[0-9A-Za-z]+)(?:\/|$)/)
+      if (bvidPathMatch)
+        return { bvid: bvidPathMatch[1] }
+
+      const aidPathMatch = urlObj.pathname.match(/^\/video\/av(\d+)(?:\/|$)/i)
+      if (aidPathMatch) {
+        const aid = Number(aidPathMatch[1])
+        if (Number.isSafeInteger(aid) && aid > 0)
+          return { aid: String(aid) }
+      }
+
+      return null
+    }
+    catch {
+      return null
+    }
+  }
+
+  function getCommentParamsWithAid(element: Element, aid: number): string | null {
+    const currentParams = element.getAttribute('data-params')
+    if (!currentParams)
+      return null
+
+    const params = currentParams.split(',')
+    if (params.length < 2 || !/^\d+$/.test(params[1].trim()))
+      return null
+
+    params[1] = String(aid)
+    return params.join(',')
+  }
+
+  function findVideoCommentsElement(): HTMLElement | null {
+    const commentRoot = document.querySelector<HTMLElement>(commentRootSelector)
+    if (!commentRoot)
+      return null
+
+    return commentRoot.querySelector<HTMLElement>(':scope > bili-comments')
+      ?? commentRoot.querySelector<HTMLElement>('bili-comments')
+  }
+
+  function replaceVideoCommentsElement(element: HTMLElement, dataParams: string) {
+    const replacement = document.createElement(element.tagName.toLowerCase())
+    for (const attribute of Array.from(element.attributes))
+      replacement.setAttribute(attribute.name, attribute.value)
+    replacement.setAttribute('data-params', dataParams)
+    element.replaceWith(replacement)
+  }
+
+  async function reloadCommentsForWidescreenNavigation(targetNavigationKey: string, requestId: number, identifier: VideoCommentIdentifier) {
+    let response: any
+    try {
+      response = await api.video.getVideoInfo(identifier)
+    }
+    catch {
+      return
+    }
+
+    if (requestId !== widescreenCommentReloadRequestId
+      || getVideoNavigationKey(location.href) !== targetNavigationKey
+      || response?.code !== 0) {
+      return
+    }
+
+    const aid = Number(response.data?.aid)
+    if (!Number.isSafeInteger(aid) || aid <= 0)
+      return
+
+    const deadline = Date.now() + widescreenCommentReloadRetryTimeout
+    const retryUntilCommentReady = () => {
+      if (requestId !== widescreenCommentReloadRequestId
+        || getVideoNavigationKey(location.href) !== targetNavigationKey) {
+        return
+      }
+
+      const comments = findVideoCommentsElement()
+      if (comments) {
+        const nextParams = getCommentParamsWithAid(comments, aid)
+        if (nextParams) {
+          const currentParams = comments.getAttribute('data-params')
+          const currentAid = Number(currentParams?.split(',')[1]?.trim())
+          if (Number.isSafeInteger(currentAid) && currentAid === aid)
+            return
+
+          replaceVideoCommentsElement(comments, nextParams)
+          return
+        }
+      }
+
+      if (Date.now() < deadline)
+        window.setTimeout(retryUntilCommentReady, widescreenCommentReloadRetryInterval)
+    }
+
+    retryUntilCommentReady()
+  }
+
+  function prepareVideoNavigationBeforeRouteChange(event: Event) {
+    const wasBewlyWidescreenActive = isBewlyWidescreenActive()
+    if (!wasBewlyWidescreenActive)
+      return
+
+    const targetUrl = getPushStateTargetUrl(event)
+    if (!targetUrl)
+      return
+
+    const currentNavigationKey = getVideoNavigationKey(location.href)
+    const nextNavigationKey = getVideoNavigationKey(targetUrl)
+    if (!nextNavigationKey || nextNavigationKey === currentNavigationKey)
+      return
+
+    clearPendingWidescreenReloadNavigation()
+    pendingWidescreenReloadNavigationKey = nextNavigationKey
+    pendingWidescreenReloadTimer = setTimeout(() => {
+      pendingWidescreenReloadNavigationKey = undefined
+      pendingWidescreenReloadTimer = undefined
+    }, 5000)
+    clearPlayerModeRetry()
+    hasAppliedPlayerMode = false
+    // 先退出宽屏，再让 B 站执行原本的 SPA 路由切换；真正 URL 变化后由
+    // checkForUrlChanges 复用 SPA 路由并按需重载评论区。
+    exitBewlyWidescreen()
+  }
+
   function checkForUrlChanges() {
     if (location.href !== lastUrl) {
+      const navigationRequestId = ++widescreenCommentReloadRequestId
       const currentVideoNavigationKey = getVideoNavigationKey(location.href)
       const isMeaningfulVideoNavigation = currentVideoNavigationKey !== lastVideoNavigationKey
 
@@ -457,8 +635,28 @@ else if (shouldInitializeContentScript) {
       recordVideoVisitFromUrl(lastUrl)
       applyBewlyDesignClasses()
 
+      if (!isVideoOrBangumiPage())
+        clearPendingWidescreenReloadNavigation()
+
       if (isVideoOrBangumiPage()) {
         if (!isMeaningfulVideoNavigation) {
+          clearPendingWidescreenReloadNavigation()
+          scheduleUrlChangeCheck()
+          return
+        }
+
+        const shouldReloadWidescreenNavigation = pendingWidescreenReloadNavigationKey === currentVideoNavigationKey
+          || isBewlyWidescreenActive()
+        const videoCommentIdentifier = shouldReloadWidescreenNavigation
+          ? getVideoCommentIdentifier()
+          : null
+        clearPendingWidescreenReloadNavigation()
+
+        if (shouldReloadWidescreenNavigation && !videoCommentIdentifier) {
+          exitBewlyWidescreen()
+          // 评论区无法可靠映射到视频 ID 时保留完整刷新兜底，避免宽屏 SPA
+          // 切换后继续复用旧评论组件（例如番剧页面或异常 URL）。
+          window.location.reload()
           scheduleUrlChangeCheck()
           return
         }
@@ -473,8 +671,9 @@ else if (shouldInitializeContentScript) {
         // 重置随机播放初始化状态，避免重复加载
         resetRandomPlayInitialization()
 
-        // B 站站内切集会立即开始播放，静默重建宽屏布局，避免加载遮罩盖住视频。
         applyDefaultPlayerMode(false)
+        if (videoCommentIdentifier)
+          void reloadCommentsForWidescreenNavigation(currentVideoNavigationKey, navigationRequestId, videoCommentIdentifier)
         // 如果是视频页面内部跳转，延迟执行滚动
         if (isVideoOrBangumiPage()) {
           handleVideoPageNavigation()
@@ -498,6 +697,11 @@ else if (shouldInitializeContentScript) {
   }
 
   scheduleUrlChangeCheck()
+
+  // inject/index.ts 在调用 history.pushState 前派发此事件，先退出宽屏；URL
+  // 真正变化后由 checkForUrlChanges 复用 SPA 路由并按需重载评论区。
+  // popstate/replaceState 由轮询兜底。
+  window.addEventListener('pushstate', prepareVideoNavigationBeforeRouteChange, true)
 
   // 处理页面可见性变化
   function handleVisibilityChange() {
@@ -531,20 +735,99 @@ else if (shouldInitializeContentScript) {
   })
 
   // B 站原生视频卡片会在多个页面复用，统一监听稍后再看操作并同步顶栏状态。
+  const nativeWatchLaterListSelector = '.watch-later-list, .watchlater-list, [class*="watch-later-list"], [class*="watchlater-list"], bili-watch-later-list'
+  const nativeWatchLaterItemSelector = '.av-item, [class*="watch-later-item"], [class*="watchlater-item"], [class*="av-item"], bili-watch-later-item'
+  const nativeWatchLaterDeleteControlSelector = '.del, .delete, .d-btn, [class*="delete"], [class*="remove"], [aria-label*="删除"], [aria-label*="移除"], [title*="删除"], [title*="移除"], [data-action*="delete"]'
+  let nativeWatchLaterSyncTimer: ReturnType<typeof setTimeout> | undefined
+  let nativeWatchLaterLastSyncAt = 0
+
+  function scheduleNativeWatchLaterStateSync(force = false) {
+    if (nativeWatchLaterSyncTimer) {
+      if (!force)
+        return
+      clearTimeout(nativeWatchLaterSyncTimer)
+      nativeWatchLaterSyncTimer = undefined
+    }
+
+    if (!force && Date.now() - nativeWatchLaterLastSyncAt < 2500)
+      return
+
+    nativeWatchLaterSyncTimer = setTimeout(() => {
+      nativeWatchLaterSyncTimer = undefined
+      nativeWatchLaterLastSyncAt = Date.now()
+
+      const refresh = () => {
+        void useTopBarStore().syncWatchLaterState(true).catch((error) => {
+          console.error('刷新顶栏稍后再看状态失败:', error)
+        })
+      }
+
+      // 原生列表的删除请求和 DOM 更新不是同一个时序，补一次最终状态。
+      refresh()
+      window.setTimeout(refresh, 1000)
+    }, 800)
+  }
+
+  function isNativeWatchLaterDeleteControl(element: Element, eventPath: EventTarget[]) {
+    const control = element.closest(nativeWatchLaterDeleteControlSelector)
+    const label = `${element.getAttribute('aria-label') ?? ''} ${element.getAttribute('title') ?? ''}`
+    if (!control && !/删除|移除/u.test(label))
+      return false
+
+    if (control?.closest(nativeWatchLaterListSelector) || element.closest(nativeWatchLaterListSelector))
+      return true
+
+    // 自定义元素的删除按钮可能位于 B 站 shadow root 内，无法用 closest() 找到宿主；
+    // 页面本身是稍后再看列表时可放宽判断，但排除 Bewly 自己的 shadow root。
+    return !eventPath.some(target => target instanceof Element && target.id === 'bewly')
+  }
+
+  function isNativeWatchLaterListMutation(mutation: MutationRecord) {
+    const target = mutation.target instanceof Element
+      ? mutation.target
+      : mutation.target.parentElement
+    if (!target?.closest(nativeWatchLaterListSelector))
+      return false
+
+    return [...Array.from(mutation.addedNodes), ...Array.from(mutation.removedNodes)].some((node) => {
+      const element = node instanceof Element ? node : node.parentElement
+      return !!element?.matches(nativeWatchLaterItemSelector)
+        || !!element?.querySelector(nativeWatchLaterItemSelector)
+    })
+  }
+
   function setupNativeWatchLaterStateSync() {
     document.addEventListener('click', (event) => {
-      const watchLaterButton = event.composedPath().find(
+      const eventPath = event.composedPath()
+      const watchLaterButton = eventPath.find(
         (target): target is Element => target instanceof Element
           && target.matches('.bili-watch-later, .bili-watch-later--wrap, .bili-watch-later__icon'),
       )
-      if (!watchLaterButton)
-        return
+      const isWatchLaterDelete = isWatchLaterListPage(location.href)
+        && eventPath.some(target => target instanceof Element
+          && isNativeWatchLaterDeleteControl(target, eventPath))
 
-      // B 站接口写入存在短暂延迟，稍后强制刷新并广播给顶栏所在实例。
-      window.setTimeout(() => {
-        void useTopBarStore().syncWatchLaterState(true)
-      }, 1000)
+      if (watchLaterButton || isWatchLaterDelete)
+        scheduleNativeWatchLaterStateSync(true)
     }, true)
+
+    const observer = new MutationObserver((mutations) => {
+      if (!isWatchLaterListPage(location.href)
+        || !mutations.some(isNativeWatchLaterListMutation)) {
+        return
+      }
+
+      scheduleNativeWatchLaterStateSync()
+    })
+
+    const observeNativeWatchLaterList = () => {
+      if (document.documentElement)
+        observer.observe(document.documentElement, { childList: true, subtree: true })
+    }
+    if (document.documentElement)
+      observeNativeWatchLaterList()
+    else
+      window.addEventListener('DOMContentLoaded', observeNativeWatchLaterList, { once: true })
   }
 
   setupNativeWatchLaterStateSync()
@@ -592,9 +875,8 @@ else if (shouldInitializeContentScript) {
   `)
 
   async function onDOMLoaded() {
-    // 首页需要先完成设置读取，避免默认值误把原版首页当成自定义首页并吞掉分区行。
-    if (isHomePage())
-      await settingsReady
+    // 所有页面都先完成设置读取，避免启动期 watcher 基于默认值生成陈旧写入。
+    await settingsReady
 
     const changeHomePage = !isInIframe() && !settings.value.useOriginalBilibiliHomepage && isHomePage()
     document.documentElement.classList.toggle('bewly-custom-homepage', changeHomePage)
@@ -688,11 +970,6 @@ else if (shouldInitializeContentScript) {
     if (removeOriginalTopBar)
       document.documentElement.removeChild(removeOriginalTopBar)
 
-    // Initialize Audio Interceptor only when volume normalization is enabled.
-    setupSettingsWatcher()
-    if (settings.value.enableVolumeNormalization)
-      initAudioInterceptor()
-    initVolumeNormalizationControl()
     initVideoAspectRatioMemory()
     initVideoScreenshotControl()
     initTouchPlayerGestures()
@@ -856,6 +1133,16 @@ else if (shouldInitializeContentScript) {
       ) {
         applyRandomPlayActivationSettings()
       }
+    },
+  )
+
+  watch(
+    () => settings.value.showVerticalVideoZoomButton,
+    (enabled) => {
+      if (enabled && isVideoOrBangumiPage())
+        initVerticalVideoZoom()
+      else
+        resetVerticalVideoZoom()
     },
   )
 

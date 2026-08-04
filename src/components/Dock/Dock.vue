@@ -42,6 +42,8 @@ const showForward = computed(() => undoForwardState.value === UndoForwardState.S
 
 const hideDock = ref<boolean>(false)
 const dockContentHover = ref<boolean>(false)
+const dockReady = ref(false)
+let dockReadyFrame: number | undefined
 const dockContentRef = useDelayedHover({
   enterDelay: 100,
   leaveDelay: 600,
@@ -303,6 +305,18 @@ function isDockItemActivated(dockItem: DockItem): boolean {
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 const { width: dockWidth, height: dockHeight } = useElementSize(dockContentRef)
 
+// The initial 0 -> measured scale must render without a transition; later
+// responsive scale changes can keep the existing smooth behavior.
+watch([dockWidth, dockHeight], ([width, height]) => {
+  if (dockReady.value || dockReadyFrame !== undefined || !width || !height)
+    return
+
+  dockReadyFrame = requestAnimationFrame(() => {
+    dockReady.value = true
+    dockReadyFrame = undefined
+  })
+}, { flush: 'post' })
+
 const dockScale = computed((): number => {
   if (!dockHeight.value || !dockWidth.value)
     return 1
@@ -508,6 +522,8 @@ onUnmounted(() => {
   if (mouseLeaveTimer) {
     clearTimeout(mouseLeaveTimer)
   }
+  if (dockReadyFrame !== undefined)
+    cancelAnimationFrame(dockReadyFrame)
 })
 </script>
 
@@ -537,6 +553,7 @@ onUnmounted(() => {
         'hide': hideDock,
         'half-hide': settings.halfHideDock,
         'hover': dockContentHover,
+        'ready': dockReady,
       }"
       :style="dockTransformStyle"
       @mouseenter="toggleHideDock(false)"
@@ -798,13 +815,12 @@ onUnmounted(() => {
 
   .back-to-top-or-refresh-btn {
     --uno: "transform active:important-scale-90 hover:scale-110";
+    --uno: "lg:w-45px w-35px lg:h-45px h-35px";
     --uno: "grid place-items-center";
     --uno: "filter-$bew-filter-glass-1";
     --uno: "bg-$bew-elevated hover:bg-$bew-content-hover";
     --uno: "rounded-full shadow-$bew-shadow-2 border-1 border-$bew-border-color";
 
-    width: var(--bew-dock-item-size);
-    height: var(--bew-dock-item-size);
     backdrop-filter: var(--bew-filter-glass-1);
     transition:
       transform 300ms var(--bew-ease-emphasized, cubic-bezier(0.34, 1.3, 0.64, 1)),
@@ -817,7 +833,23 @@ onUnmounted(() => {
 }
 
 .dock-content {
-  --uno: "absolute flex justify-center items-center duration-300 scale-$scale";
+  --uno: "absolute flex justify-center items-center scale-$scale";
+
+  transition-duration: 0ms;
+
+  &.ready {
+    transition-duration: var(--bew-duration-moderate, 300ms);
+  }
+
+  // Dock reveal can move an item underneath a stationary pointer. Delay only
+  // Dock tooltips so that movement does not cause a tooltip to flash immediately.
+  :deep(.b-tooltip) {
+    transition-delay: 0ms;
+  }
+
+  :deep(.b-tooltip-wrapper:hover .b-tooltip) {
+    transition-delay: var(--bew-duration-moderate, 300ms);
+  }
 
   &.left {
     --uno: "left-2 after:right--4px";
@@ -872,13 +904,12 @@ onUnmounted(() => {
 
   .back-to-top-or-refresh-btn {
     --uno: "transform active:important-scale-90 hover:scale-110";
+    --uno: "lg:w-45px w-35px lg:h-45px h-35px";
     --uno: "grid place-items-center";
     --uno: "filter-$bew-filter-glass-1";
     --uno: "bg-$bew-elevated hover:bg-$bew-content-hover";
     --uno: "rounded-full shadow-$bew-shadow-2 border-1 border-$bew-border-color";
 
-    width: var(--bew-dock-item-size);
-    height: var(--bew-dock-item-size);
     backdrop-filter: var(--bew-filter-glass-1);
     transition:
       transform 300ms var(--bew-ease-emphasized, cubic-bezier(0.34, 1.3, 0.64, 1)),
@@ -911,6 +942,8 @@ onUnmounted(() => {
   --shadow-active-active: 0 4px 20px var(--bew-theme-color-80);
 
   --uno: "relative transform active:important-scale-90 hover:scale-110";
+  --uno: "lg:w-45px w-35px";
+  --uno: "lg:lh-45px lh-35px";
   --uno: "p-0 flex items-center justify-center";
   --uno: "aspect-square relative";
   --uno: "leading-0";
@@ -918,8 +951,6 @@ onUnmounted(() => {
   --uno: "bg-$bew-fill-alt hover:bg-$bew-fill-2 cursor-pointer";
   --uno: "dark:bg-$bew-fill-1 dark-hover:bg-$bew-fill-4";
 
-  width: var(--bew-dock-item-size);
-  height: var(--bew-dock-item-size);
   box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
   transition:
     transform 300ms var(--bew-ease-emphasized, cubic-bezier(0.34, 1.3, 0.64, 1)),

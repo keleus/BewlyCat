@@ -17,6 +17,7 @@ let cachedOriginalTopBarParent: HTMLElement | null = null
 const initializedHoverHeaders = new WeakSet<HTMLElement>()
 const initializedScrollStateHeaders = new WeakSet<HTMLElement>()
 const initializedTopBarDocuments = new WeakSet<Document>()
+const loginButtonSetupCleanups = new WeakMap<Document, () => void>()
 const channelPanelColumns = [
   [
     ['番剧', '//www.bilibili.com/anime/', '#channel-anime'],
@@ -537,6 +538,10 @@ export function resetBilibiliTopBarInlineStyles(doc: Document) {
  * to redirect users to the login page.
  */
 export function setupLoginButtonClickHandlers(doc: Document) {
+  const existingCleanup = loginButtonSetupCleanups.get(doc)
+  if (existingCleanup)
+    return existingCleanup
+
   const LOGIN_URL = 'https://passport.bilibili.com/login'
 
   // Function to handle login button binding
@@ -557,35 +562,45 @@ export function setupLoginButtonClickHandlers(doc: Document) {
   const existingButtons = doc.querySelectorAll<HTMLElement>('.login-btn')
   existingButtons.forEach(bindLoginButton)
 
-  // Use MutationObserver to handle dynamically added popup elements
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        // Check if the added node is an element
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          const element = node as HTMLElement
+  // Observe the entire document for popup elements.
+  // 内容脚本在 document_start 注入，iframe 刚创建时 doc.body 仍为 null；
+  // 回落到 documentElement 既能避免抛错，又能靠 subtree 覆盖随后插入的 body。
+  const observeTarget = doc.body ?? doc.documentElement
+  let observer: MutationObserver | null = null
+  if (observeTarget) {
+    // Use MutationObserver to handle dynamically added popup elements
+    observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          // Check if the added node is an element
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as HTMLElement
 
-          // Check if the added node itself is a login button
-          if (element.classList.contains('login-btn')) {
-            bindLoginButton(element)
+            // Check if the added node itself is a login button
+            if (element.classList.contains('login-btn')) {
+              bindLoginButton(element)
+            }
+
+            // Check if the added node contains login buttons
+            const loginButtons = element.querySelectorAll<HTMLElement>('.login-btn')
+            loginButtons.forEach(bindLoginButton)
           }
-
-          // Check if the added node contains login buttons
-          const loginButtons = element.querySelectorAll<HTMLElement>('.login-btn')
-          loginButtons.forEach(bindLoginButton)
-        }
+        })
       })
     })
-  })
 
-  // Observe the entire document for popup elements
-  observer.observe(doc.body, {
-    childList: true,
-    subtree: true,
-  })
-
-  // Return cleanup function
-  return () => {
-    observer.disconnect()
+    observer.observe(observeTarget, {
+      childList: true,
+      subtree: true,
+    })
   }
+
+  const cleanup = () => {
+    observer?.disconnect()
+    if (loginButtonSetupCleanups.get(doc) === cleanup)
+      loginButtonSetupCleanups.delete(doc)
+  }
+
+  loginButtonSetupCleanups.set(doc, cleanup)
+  return cleanup
 }

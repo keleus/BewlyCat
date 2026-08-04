@@ -1,8 +1,15 @@
 <script setup lang="ts">
 import { useToast } from 'vue-toastification'
 
-import { momentsWantedUsers } from '~/logic/storage'
+import type { MomentsWantedUser } from '~/logic/storage'
+import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
 import api from '~/utils/api'
+
+const props = withDefaults(defineProps<{
+  mode?: 'wanted' | 'pinned'
+}>(), {
+  mode: 'wanted',
+})
 
 const toast = useToast()
 const query = ref('')
@@ -15,7 +22,44 @@ interface UserSearchCandidate {
   sign: string
 }
 const searchCandidates = ref<UserSearchCandidate[]>([])
-const wantedUserMids = computed(() => new Set(momentsWantedUsers.value.map(user => user.mid)))
+const MAX_PINNED_USERS = 6
+
+const isPinnedMode = computed(() => props.mode === 'pinned')
+
+const managedUsers = computed<MomentsWantedUser[]>({
+  get: () => isPinnedMode.value ? momentsPinnedUsers.value : momentsWantedUsers.value,
+  set: (value) => {
+    if (isPinnedMode.value)
+      momentsPinnedUsers.value = value
+    else
+      momentsWantedUsers.value = value
+  },
+})
+
+const managedUserMids = computed(() => new Set(managedUsers.value.map(user => user.mid)))
+
+const copy = computed(() => {
+  if (isPinnedMode.value) {
+    return {
+      alreadyIn: '该 UP 主已经在“固定 UP”中',
+      needFollow: (name: string) => `必须先关注 ${name}，才能将其加入“固定 UP”`,
+      added: (name: string) => `已将 ${name} 固定到动态栏`,
+      removed: (name: string) => `已取消固定 ${name}`,
+      removeAria: (name: string) => `取消固定 ${name}`,
+      removeTitle: '取消固定',
+      empty: '尚未添加固定 UP 主。添加后会显示在动态栏右侧。',
+    }
+  }
+  return {
+    alreadyIn: '该 UP 主已经在“想看”分组中',
+    needFollow: (name: string) => `必须先关注 ${name}，才能将其加入“想看”分组`,
+    added: (name: string) => `已将 ${name} 加入“想看”`,
+    removed: (name: string) => `已将 ${name} 移出“想看”`,
+    removeAria: (name: string) => `将 ${name} 移出想看`,
+    removeTitle: '移出想看',
+    empty: '尚未添加 UP 主。添加后可在 Bewly 动态页的“想看”中筛选。',
+  }
+})
 
 function httpsUrl(url = '') {
   return url.replace(/^http:/, 'https:')
@@ -87,8 +131,12 @@ async function addUserByMid(mid: string) {
     return
   error.value = ''
 
-  if (wantedUserMids.value.has(mid)) {
-    error.value = '该 UP 主已经在“想看”分组中'
+  if (managedUserMids.value.has(mid)) {
+    error.value = copy.value.alreadyIn
+    return
+  }
+  if (isPinnedMode.value && managedUsers.value.length >= MAX_PINNED_USERS) {
+    error.value = `最多只能固定 ${MAX_PINNED_USERS} 个 UP 主`
     return
   }
 
@@ -107,18 +155,18 @@ async function addUserByMid(mid: string) {
     const relation = relationResponse.code === 0 ? relationResponse.data?.[mid] : null
     const isFollowing = relation?.attribute === 1 || relation?.attribute === 2 || relation?.attribute === 6
     if (!isFollowing) {
-      error.value = `必须先关注 ${card.name}，才能将其加入“想看”分组`
+      error.value = copy.value.needFollow(card.name)
       toast.warning(error.value)
       return
     }
 
-    momentsWantedUsers.value = [
-      ...momentsWantedUsers.value,
+    managedUsers.value = [
+      ...managedUsers.value,
       { mid: String(card.mid), name: card.name, face: httpsUrl(card.face || '') },
     ]
     query.value = ''
     searchCandidates.value = []
-    toast.success(`已将 ${card.name} 加入“想看”`)
+    toast.success(copy.value.added(card.name))
   }
   catch (cause) {
     error.value = cause instanceof Error ? cause.message : '获取 UP 主信息失败，请稍后重试'
@@ -129,10 +177,10 @@ async function addUserByMid(mid: string) {
 }
 
 function removeUser(mid: string) {
-  const user = momentsWantedUsers.value.find(item => item.mid === mid)
-  momentsWantedUsers.value = momentsWantedUsers.value.filter(item => item.mid !== mid)
+  const user = managedUsers.value.find(item => item.mid === mid)
+  managedUsers.value = managedUsers.value.filter(item => item.mid !== mid)
   if (user)
-    toast.info(`已将 ${user.name} 移出“想看”`)
+    toast.info(copy.value.removed(user.name))
 }
 </script>
 
@@ -162,25 +210,36 @@ function removeUser(mid: string) {
         v-for="user in searchCandidates"
         :key="user.mid"
         type="button"
-        :disabled="loading || wantedUserMids.has(user.mid)"
+        :disabled="loading || managedUserMids.has(user.mid) || (isPinnedMode && managedUsers.length >= MAX_PINNED_USERS)"
         @click="addUserByMid(user.mid)"
       >
         <img :src="avatarUrl(user.face)" :alt="user.name">
-        <span><strong>{{ user.name }}</strong><small>{{ user.sign || `UID ${user.mid}` }}</small></span>
-        <em>{{ wantedUserMids.has(user.mid) ? '已添加' : '选择' }}</em>
+        <span>
+          <strong>{{ user.name }}</strong>
+          <small>UID {{ user.mid }}</small>
+          <em v-if="user.sign">{{ user.sign }}</em>
+        </span>
       </button>
     </div>
-    <div v-if="momentsWantedUsers.length" class="wanted-users-manager__list">
-      <article v-for="user in momentsWantedUsers" :key="user.mid">
+    <div v-if="managedUsers.length" class="wanted-users-manager__list">
+      <article v-for="user in managedUsers" :key="user.mid">
         <img :src="avatarUrl(user.face)" :alt="user.name">
-        <span><strong>{{ user.name }}</strong><small>UID {{ user.mid }}</small></span>
-        <button type="button" :aria-label="`将 ${user.name} 移出想看`" title="移出想看" @click="removeUser(user.mid)">
+        <span>
+          <strong>{{ user.name }}</strong>
+          <small>UID {{ user.mid }}</small>
+        </span>
+        <button
+          type="button"
+          :aria-label="copy.removeAria(user.name)"
+          :title="copy.removeTitle"
+          @click="removeUser(user.mid)"
+        >
           <span i-tabler-trash />
         </button>
       </article>
     </div>
     <p v-else class="wanted-users-manager__empty">
-      尚未添加 UP 主。添加后可在 Bewly 动态页的“想看”中筛选。
+      {{ copy.empty }}
     </p>
   </div>
 </template>
@@ -223,10 +282,14 @@ function removeUser(mid: string) {
   font-size: var(--bew-font-size-control);
   font-weight: var(--bew-font-weight-semibold);
   line-height: var(--bew-line-height-control);
+  transition: filter var(--bew-duration-normal) var(--bew-ease-standard);
 }
 .wanted-users-manager__form button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+.wanted-users-manager__form button:hover:not(:disabled) {
+  filter: brightness(1.08);
 }
 .wanted-users-manager__error {
   display: flex;

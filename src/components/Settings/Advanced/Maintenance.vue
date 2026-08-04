@@ -80,8 +80,9 @@ async function handleResetSettings() {
     return
 
   // 重置时保留用户当前使用的语言
-  originalSettings.language = settings.value.language
-  settings.value = originalSettings
+  const resetSettings = structuredClone(originalSettings)
+  resetSettings.language = settings.value.language
+  settings.value = resetSettings
 }
 </script>
 

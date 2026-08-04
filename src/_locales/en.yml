@@ -31,6 +31,7 @@ common:
   performance_impact_warn: This feature may cause performance *DECREASE*!
   no_data: No data available
   no_more_content: No more content now, owari da
+  load_more: Load more
   operation:
     add: Add
     edit: Edit
@@ -69,6 +70,9 @@ player_screenshot:
 settings:
   title: Settings
   menu_general: General
+  menu_bewly_pages: Bewly Pages
+  menu_bewly_components: Bewly Components
+  menu_bilibili: Bilibili
   menu_navigation: Pages & Components
   menu_playback: Playback & Audio
   menu_advanced: Advanced & Maintenance
@@ -84,8 +88,8 @@ settings:
     placeholder: Search settings
     no_results: No matching settings
     located: Setting located
-  category_general_desc: Configure language, interaction, link behavior, content cleanup, and favorites.
-  category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, and custom styles.
+  category_general_desc: Configure language, interaction, and drawer behavior.
+  category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, custom styles, and page style adaptation.
   category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
   breadcrumb: Settings location
   group_interaction_layout: Interaction & Layout
@@ -99,21 +103,10 @@ settings:
   category_navigation_moments_desc: Configure the dynamic feed sidebar and how dynamic cards are opened.
   category_playback_player_desc: Configure player mode, scrolling, danmaku, captions, and playback state.
   category_playback_autoplay_desc: Configure autoplay and custom playback behavior.
-  category_playback_volume_desc: Any normalization can cause clipping, degraded audio quality, or reduced dynamic range; leave it off unless you have a clear problem.
   category_bilibili_comments_desc: Enhance user information and content displayed in comments.
   category_bilibili_vip_desc: Configure reminders related to premium membership benefits.
-  category_advanced_performance_desc: Adjust memory and long-list rendering strategies for the home grid. These options are off by default.
   category_advanced_compatibility_desc: Configure compatibility with original pages, third-party extensions, and other pages.
   category_advanced_maintenance_desc: Export a backup, import settings, or restore BewlyCat defaults.
-  advanced_performance:
-    title: Home Performance & Memory
-    home_grid: Home Grid
-    release_offscreen_images: Reclaim offscreen cover memory
-    release_offscreen_images_desc: Unload cover image resources outside the retained range to reduce long-list memory usage.
-    release_offscreen_images_warning: 'Warning: reclaiming offscreen memory may cause stutter when images are rendered again. Images are not reclaimed by default.'
-    virtualize_home_grid: Recycle offscreen video cards
-    virtualize_home_grid_desc: Keep only card components near the viewport and preserve long-list scroll space with placeholders.
-    virtualize_home_grid_warning: 'Warning: virtual recycling may cause brief blanks, jitter, or position drift during fast scrolling or layout changes. It is off by default.'
   maintenance:
     title: Backup & Reset
     backup_title: Settings backup
@@ -143,7 +136,6 @@ settings:
     moments: Dynamic Feed
     favorites: Favorites
     search: Search
-    volume_balance: Volume Normalization
 
   # Bilibili Features Enhancement submenu
   bilibili_features:
@@ -156,6 +148,7 @@ settings:
   changelog_placeholder: Changelog content will be displayed here.
 
   group_common: Common
+  group_drawer_behavior: Drawer Behavior
   group_language: Language
   group_ad_blocking: Ad Blocking
   group_comments: Comments
@@ -165,6 +158,13 @@ settings:
   group_video_card_display: Display & Preview
   group_video_card_content: Card Content
   group_video_card_content_desc: Choose which information and actions appear on video cards.
+  group_video_card_context_menu: More Menu
+  group_video_card_context_menu_desc: Choose which options appear after clicking a video card's more button.
+  video_card_context_menu_region_recommendation: Recommend
+  video_card_context_menu_region_opening: Open
+  video_card_context_menu_region_copying: Copy
+  video_card_context_menu_region_user: User
+  video_card_context_menu_follow_user: Follow or Unfollow
   video_card_content_region_stats: Stats
   video_card_content_region_tags: Tags
   video_card_content_region_other: Other
@@ -188,6 +188,15 @@ settings:
   group_random_play_settings: Random Playback Settings
   group_random_play_settings_desc: Configure how Random starts when it is the effective custom playback default.
   group_topbar: Top Bar
+  topbar_logo_and_channels: Logo settings
+  topbar_logo_and_channels_desc: Choose the top bar Logo style and whether to show the home button in touch mode.
+  topbar_switchers: BewlyCat/Bilibili switchers
+  topbar_switchers_desc: Control the homepage page switcher and the top bar switcher separately.
+  topbar_actions: Top bar actions
+  topbar_actions_desc: Set the visibility, badges, and related reminders for each action icon.
+  topbar_user_menu: Top bar user menu
+  topbar_display_settings: Top bar display & behavior
+  topbar_display_settings_desc: Adjust how the top bar behaves across pages and interaction modes.
   group_navigation: Dock & Sidebar
   group_dock: Dock
   group_sidebar: Sidebar
@@ -195,6 +204,7 @@ settings:
     Located on the right or left side of pages other than the homepage,
     typically includes a light/dark mode toggle button and settings button.
   group_color: Color
+  group_page_style: Page Style
   group_wallpaper: Wallpaper
   group_logo: LOGO
   group_search_bar: Search Bar
@@ -216,6 +226,7 @@ settings:
   group_new_moments_page_desc: This page is not final and may change significantly in future updates.
   group_moments_sidebar: Dynamic Feed Sidebar
   group_moments_interaction: Dynamic Card Interaction
+  group_settings_sync: Browser cloud sync
   group_version_reminder: Version reminders
   original_moments_show_user_card: Show user card
   original_moments_show_live_list: Show live list
@@ -225,15 +236,19 @@ settings:
   moments_show_user_card: Show user card
   moments_show_publish: Show publish action
   moments_show_live: Show live users
+  moments_show_up_list: Show frequently visited uploaders
   moments_visible_components: Visible components
   moments_visible_components_original_desc: Control whether sidebar and banner components appear on the original Bilibili moments page. Theme-colored means shown; gray means hidden.
-  moments_visible_components_plugin_desc: Control whether left-side components appear on the Bewly moments page. Theme-colored means shown; gray means hidden.
+  moments_visible_components_plugin_desc: Control whether sidebar and top components appear on the Bewly moments page. Theme-colored means shown; gray means hidden.
   moments_filtered_types: Filter dynamics
-  moments_filtered_types_desc: Control which dynamic types appear in the Bewly feed. Selected (theme-colored) means not filtered; unselected means filtered out. When filters are on, each load scans at most 100 items and further loads are manual.
+  moments_filtered_types_desc: Control which dynamic types appear in the Bewly feed. Selected (theme-colored) means not filtered; unselected means filtered out. With filters enabled, each load scans at most 100 items; when the retention rate is below 60%, further loads are manual, while rates of 60% or higher continue loading on scroll.
   moments_enable_live_preview: Preview live dynamics on hover
   moments_enable_live_preview_desc: Play a live preview when hovering over a live dynamic cover.
   moments_enable_video_preview: Preview video dynamics on hover
   moments_enable_video_preview_desc: Play a video preview when hovering over a video dynamic cover.
+  moments_grid_columns: Dynamic columns
+  moments_grid_columns_desc: Set the preferred column count for the Bewly dynamic feed. Card dimensions adapt to the selected layout; columns automatically reduce when space is limited, while the sidebar and feed remain centered as a group.
+  moments_grid_columns_option: '{count} columns'
   moments_filter_up_recommendation: Filter uploader recommendations
   moments_filter_up_recommendation_desc: Filter out every dynamic that contains an uploader recommendation attachment.
   moments_filter_up_recommendation_short: Uploader recommendations
@@ -257,7 +272,12 @@ settings:
     background: Background tab
   group_moments_wanted_users: Watchlist
   group_moments_wanted_users_desc: Manage uploaders you want to watch by UID or name. The list is stored only on this device.
+  moments_enable_wanted_filter: Enable watchlist filter
+  moments_enable_wanted_filter_desc: Show a Watchlist entry in the Moments horizontal bar to display only posts from watchlisted uploaders. Turning it off hides the entry and exits the filter.
   moments_wanted_users: Watchlisted uploaders
+  group_moments_pinned_users: Pinned uploaders
+  group_moments_pinned_users_desc: Manage uploaders pinned to the right side of the Moments bar by UID or name. The list is stored only on this device.
+  moments_pinned_users: Pinned uploaders
   btn:
     authorize: Authorize
     revoke: Revoke
@@ -272,7 +292,10 @@ settings:
   show_home_button_in_touch_mode: Show Home button
   show_home_button_in_touch_mode_desc: When touch screen optimization is enabled, show a Home button next to the top bar Logo to navigate directly to the homepage.
   open_top_bar_items_in_bewly: Open Bewly pages from top bar icons
-  open_top_bar_items_in_bewly_desc: When touch screen optimization is off, clicking the Logo, Moments, Favorites, History, or Watch Later icon switches to its corresponding Bewly page. Unsupported icons keep their existing behavior.
+  open_top_bar_items_in_bewly_desc: When touch screen optimization is off, the Logo, Moments, Favorites, History, and Watch Later icons follow the top bar link opening behavior and open the corresponding Dock page using its Bewly/original Bilibili setting. Unsupported icons keep their existing behavior.
+  show_bewly_or_bili_page_switcher_desc: Show a switcher next to the homepage Logo to move between the BewlyCat and original Bilibili pages.
+  show_bewly_or_bili_page_switcher_on_more_pages_desc: Show the switcher on original Bilibili pages such as Moments, Search, Anime, Favorites, History, and Watch Later. Switching to BewlyCat opens the corresponding plugin page.
+  show_bewly_or_bili_top_bar_switcher_desc: Show a switcher when hovering at the top of the page to move between the BewlyCat and original Bilibili top bars.
   hide_lv6_last_login_location_in_top_bar_user_pop: Hide LV6 last login info
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: When enabled, the LV6 section in the top bar user popup will no longer show the last login time or location, and no login log request will be made.
   chk_box:
@@ -395,9 +418,12 @@ settings:
     showOnMouse: On hover
     showOnScroll: On scroll
   always_use_transparent_top_bar: Always use transparent (legacy) style for top bar
+  enable_top_bar_gradient: Enable top bar gradient effect
+  enable_top_bar_gradient_desc: Use a frosted glass gradient on the top bar by default; disable it to use a solid background.
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
   show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher
+  show_bewly_or_bili_page_switcher_on_more_pages: Show BewlyCat/Bilibili page switcher on more pages
   filter_articles_in_moments: Filter articles
   filter_articles_in_moments_desc: Hide articles from the moments feed and only show videos
   top_bar_icon_badges: Icon badges
@@ -418,7 +444,8 @@ settings:
   # Video Card Grid Settings
   group_video_card_grid: Video Card Grid
   auto_switch_list_layout: Automatically switch list columns based on video grid width
-  auto_switch_list_layout_desc: When enabled, two-column mode switches to one column when the video grid is narrower than 640px.
+  auto_switch_list_layout_desc: When enabled, two-column mode switches to one column when the video grid is narrower than the configured width.
+  auto_switch_list_layout_breakpoint: Switch at
   grid_breakpoints: Grid Breakpoints
   grid_breakpoints_desc: Set the number of columns at different video grid widths. The matching column count is used when the grid reaches each breakpoint.
   grid_min_width: Width ≥
@@ -444,6 +471,9 @@ settings:
   video_card_shadow_reset: Reset shadow settings
   video_card_layout: Video card layout
   video_card_layout_desc: Switch between the redesigned card and the legacy layout.
+  release_offscreen_images: Reclaim offscreen cover memory
+  release_offscreen_images_desc: Unload cover image resources outside the retained range to reduce long-list memory usage.
+  release_offscreen_images_warning: 'Warning: reclaiming offscreen memory may cause stutter when images are rendered again. Images are not reclaimed by default.'
   video_card_layout_option:
     modern: Modern layout
     old: Classic layout
@@ -651,7 +681,6 @@ settings:
   search_page_mode_wallpaper_fixed: Make the wallpaper of the search page mode fixed
   home_tabs_adjustment: Tabs adjustment
   home_tabs_adjustment_desc: The first activated tab is the default page.
-  home_tabs_position: Home tabs position
   always_show_tabs_on_home_page: Hide home tabs while scrolling
   fixed_home_tabs_on_home_page: Fix home tabs to the top
   topbar_visibility: BewlyBewly's top bar visibility
@@ -687,8 +716,9 @@ settings:
   contributors_image_failed: Contributor image failed to load
   enable_settings_sync: Allow syncing settings
   enable_settings_sync_desc: >-
-    Sync extension settings across different devices (requires signing into the
-    browser account)
+    Save settings locally and to browser cloud storage. Wallpaper/background
+    settings and per-device playback state are not synced (requires signing in
+    to the browser account).
   disable_auto_play_collection: Auto disable collection autoplay
   disable_auto_play_collection_desc: Automatically turn off the autoplay feature for video collections
   keep_collection_video_default_mode: Keep collection videos in default mode
@@ -873,6 +903,8 @@ settings:
   show_sex_desc: Display user gender in the video/dynamic comment area
   show_comment_host_tag: Show OP tag
   show_comment_host_tag_desc: Show an OP tag on the root comment in reply detail view
+  enable_comment_reply_tree_display: Comment tree view
+  enable_comment_reply_tree_display_desc: Organize nested replies by reply relationship. When off, comments are not reordered, indented, or decorated with reply-tree guides
   comment_reply_tree_mode:
     title: Comment reply tree style
     desc: Group replies by parent and posting time. Line modes let you collapse any parent’s replies. “Collapse parent” also folds the parent body; “Keep parent” leaves the parent visible and only hides its replies
@@ -889,38 +921,10 @@ settings:
   enlarge_favorite_dialog_desc: When enabled, the favorite dialog on video pages will be displayed in a larger size for easier viewing and management.
   external_watch_later_button: External watch later button
   external_watch_later_button_desc: Show a standalone Watch later button in the video toolbar. It displays the current state and can add or remove the video.
+  show_vertical_video_zoom_button: Vertical video zoom button
+  show_vertical_video_zoom_button_desc: Show zoom controls and the visible-area position control for vertical videos
   show_video_screenshot_button: Show player screenshot button
   show_video_screenshot_button_desc: Show a button in the video player controls for capturing the current video frame.
-  volume_normalization:
-    title: Volume Normalization
-    enable: Enable volume normalization
-    enable_desc: Real-time detection of voice loudness, automatically adjust volume to a consistent level
-    target_volume: Target volume
-    target_volume_desc: Target loudness level (0-100), 50 = -20dBFS, higher = louder
-    strength: Smoothness strength
-    strength_desc: Volume peak smoothing strength (1-20), recommended 8-15, usually no adjustment needed
-    adaptive_speed: Response speed
-    adaptive_speed_desc: Speed to reach target volume (1-10), higher = faster, recommended 3-7
-    voice_gate: Voice detection threshold
-    voice_gate_desc: Sounds below this level are ignored (-60 to -10 dB), recommended -40 to -30
-    debug: Debug mode
-    debug_desc: Output volume normalization debug info to console
-    usage_guide:
-      title: Usage Guide
-      desc: |-
-        How it works:
-        • Real-time analysis of voice loudness in videos (ignoring background and silence)
-        • Automatically adjusts gain based on detected loudness to normalize all videos
-
-        Parameters:
-        • Target Volume (0-100): 0 = -30dBFS (quiet), 50 = -20dBFS (moderate), 100 = -10dBFS (loud)
-        • Response Speed (1-10): Controls time to reach target volume, higher = faster stabilization
-
-        Important notes:
-        • This is an experimental feature and may not work in some situations
-        • Refresh the page for changes to take effect
-        • Preserves original audio quality, only adjusts volume level
-  menu_volume_normalization: Volume Normalization
   group_fonts: Font
   group_visual_effects: Visual Effects
   visibility: show
@@ -1039,6 +1043,7 @@ dock:
 video_card:
   operation:
     not_interested: Not Interested
+    not_interested_uploader: Don't Recommend This Uploader
     open_in_new_tab: Open in New Tab
     open_in_background: Open In Background
     open_in_new_window: Open in New Window
@@ -1052,6 +1057,7 @@ video_card:
     follow_user: Follow User
     unfollow_user: Unfollow User
     block_user: Block User
+    more_options: More options
   follow_user_confirm:
     title: Confirm Follow User
     message: Are you sure you want to follow {name}?
@@ -1183,7 +1189,7 @@ version_reminder:
   bilibili_dynamic: Bilibili posts
   bilibili_dynamic_desc: View update posts from the developer
   acknowledge: Got it, don't show this version again
-  settings_hint: You can turn off “New version reminders” under Settings → General.
+  settings_hint: You can turn off “New version reminders” under Settings → About.
 watch_later:
   title: Watch Later
   clear_all: Clear all watch later

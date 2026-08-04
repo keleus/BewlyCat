@@ -68,12 +68,6 @@
   --bew-space-12: 48px;
   // #endregion
 
-  // Keep fixed Dock controls visually separate from scrollable page content.
-  --bew-dock-item-size: 35px;
-  --bew-dock-content-gap: var(--bew-space-3);
-  // Item size + the Dock's edge offset, shell margin/padding, and content gap.
-  --bew-dock-safe-inset: calc(var(--bew-dock-item-size) + var(--bew-space-10) + var(--bew-dock-content-gap));
-
   // #region Motion
   // Prefer specific transition properties over `transition: all` to avoid layout jumps.
   --bew-duration-fast: 150ms;
@@ -116,6 +110,9 @@
   --bew-top-bar-brand-logo-width: 84px;
   --bew-top-bar-brand-logo-height: 28px;
   --bew-top-bar-brand-logo-compact-size: 24px;
+  --bew-top-bar-solid-background: var(--bew-elevated-solid);
+  --bew-top-bar-solid-background-force-white: hsl(0 0% 0%);
+  --bew-top-bar-solid-shadow: var(--bew-shadow-1);
 
   // Interaction tokens aligned with home tab buttons
   --bew-segment-item-hover-bg: var(--bew-fill-1);
@@ -136,6 +133,7 @@
   --bew-liquid-indicator-paint-duration: var(--bew-duration-normal);
 
   --bew-top-bar-height: 64px;
+  --bew-top-bar-switcher-height: 24px;
 
   // #region Filters
   // Use this in all components (except dialogs) if you want to add a frosted glass effect
@@ -324,7 +322,7 @@
   --bew-border-color: rgb(131 131 145 / 18%);
 
   // Threaded comments use this subtle rail to keep nested reply ancestry visible.
-  --bew-comment-tree-line-color: var(--bew-fill-2);
+  --bew-comment-tree-line-color: rgb(131 131 145 / 30%);
 
   // 开关背景色
   --bew-switch-bg: rgb(227, 229, 231);
@@ -408,6 +406,11 @@
   --bew-fill-alt: var(--bew-fill-1);
 
   --bew-border-color: rgb(131 131 145 / 16%);
+
+  // Blend a white-majority tone with the dark base, then soften it to 35% alpha for reply rails.
+  --bew-comment-tree-line-color: rgb(
+    from color-mix(in oklab, var(--bew-dark-base-color, #2a2d32) 40%, white 60%) r g b / 35%
+  );
 
   // 开关背景色 - 暗色模式
   --bew-switch-bg: oklab(0.419682 -0.00131126 -0.00814272);
@@ -1054,10 +1057,4 @@
   --Lb7_rgb: 88, 177, 212;
 }
 
-@media (min-width: 1024px) {
-  :host,
-  :root {
-    --bew-dock-item-size: 45px;
-  }
-}
 // #endregion

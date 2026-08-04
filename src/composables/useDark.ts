@@ -2,14 +2,14 @@ import { usePreferredDark } from '@vueuse/core'
 
 import { DARK_MODE_BASE_COLOR_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
-import { runWhenIdle } from '~/utils/lazyLoad'
 import { isVideoPlaybackPage, setCookie } from '~/utils/main'
-import { executeTimes } from '~/utils/timer'
 
 const currentUrl = ref(typeof location === 'undefined' ? '' : location.href)
 const currentMinuteOfDay = ref(getCurrentMinuteOfDay())
 let isRouteWatcherStarted = false
 let isScheduleClockStarted = false
+let lastThemeChangeState: boolean | undefined
+let lastDarkModeBaseColor: string | undefined
 
 function getCurrentMinuteOfDay(): number {
   const now = new Date()
@@ -88,6 +88,19 @@ function setDarkModeBaseColor(color: string) {
   }
 }
 
+function syncBilibiliTheme(isDark: boolean) {
+  const theme = isDark ? 'dark' : 'light'
+  setCookie('theme_style', theme, 365 * 10)
+
+  // useDark() is shared by several components. Only notify Bilibili when the
+  // effective theme actually changes; repeated events rebuild native feeds.
+  if (lastThemeChangeState === isDark)
+    return
+
+  lastThemeChangeState = isDark
+  window.dispatchEvent(new CustomEvent('global.themeChange', { detail: theme }))
+}
+
 export function useDark() {
   startRouteWatcher()
   startScheduleClock()
@@ -111,19 +124,16 @@ export function useDark() {
     return settings.value.videoPageDarkMode && isVideoPlaybackPage(currentUrl.value)
   })
   const isDark = computed(() => currentAppColorScheme.value === 'dark' || isVideoPageDark.value)
-  let themeChangeTimer: NodeJS.Timeout | null = null
 
-  // Watch for changes in the 'settings.value.theme' variable and add the 'dark' class to the 'mainApp' element
-  // to prevent some Unocss dark-specific styles from failing to take effect
+  // Apply appearance only when an effective theme input changes. The settings
+  // adapter replaces its object on every write, so a getter returning an array
+  // would otherwise fire for unrelated settings as well.
   watch(
-    () => [
-      settings.value.theme,
-      settings.value.themeScheduleStart,
-      settings.value.themeScheduleEnd,
-      settings.value.videoPageDarkMode,
-      isPreferredDark.value,
-      currentMinuteOfDay.value,
-      currentUrl.value,
+    [
+      isDark,
+      currentAppColorScheme,
+      () => settings.value.adaptToOtherPageStyles,
+      currentUrl,
     ],
     () => {
       setAppAppearance()
@@ -136,40 +146,21 @@ export function useDark() {
     () => settings.value.darkModeBaseColor,
     (newColor) => {
       setDarkModeBaseColor(newColor)
+      if (lastDarkModeBaseColor === newColor)
+        return
+
+      lastDarkModeBaseColor = newColor
       // 触发全局基准颜色变化事件
       window.dispatchEvent(new CustomEvent(DARK_MODE_BASE_COLOR_CHANGE, { detail: newColor }))
     },
     { immediate: true },
   )
 
-  // use watchEffect instead of onMounted because onMounted is only aviailable in setup function
-  watchEffect(() => {
-    // Because some shadow dom may not be loaded when the page has already loaded, we need to wait until the page is idle
-    runWhenIdle(() => {
-      if (isDark.value) {
-        setCookie('theme_style', 'dark', 365 * 10)
-        // TODO: find a better way implement this
-        themeChangeTimer = executeTimes(() => {
-          window.dispatchEvent(new CustomEvent('global.themeChange', { detail: 'dark' }))
-        }, 10, 500)
-      }
-      else {
-        setCookie('theme_style', 'light', 365 * 10)
-        themeChangeTimer = executeTimes(() => {
-          window.dispatchEvent(new CustomEvent('global.themeChange', { detail: 'light' }))
-        }, 10, 500)
-      }
-    })
-  })
-
   /**
    * Watch for changes in the 'settings.value.theme' variable and add the 'dark' class to the 'mainApp' element
    * to prevent some Unocss dark-specific styles from failing to take effect
    */
   function setAppAppearance() {
-    if (themeChangeTimer)
-      clearInterval(themeChangeTimer)
-
     // Check if we should apply selective dark mode (plugin UI only) on festival pages
     const isSelectiveDark = isFestivalPage() && settings.value.adaptToOtherPageStyles
 
@@ -187,9 +178,6 @@ export function useDark() {
 
       // 确保深色模式基准颜色被正确应用
       setDarkModeBaseColor(settings.value.darkModeBaseColor)
-
-      setCookie('theme_style', 'dark', 365 * 10)
-      window.dispatchEvent(new CustomEvent('global.themeChange', { detail: 'dark' }))
     }
     else {
       document.querySelector('#bewly')?.classList?.remove('dark')
@@ -200,10 +188,9 @@ export function useDark() {
         document.body?.classList.remove('dark')
         document.documentElement.classList.remove('bili_dark')
       }
-
-      setCookie('theme_style', 'light', 365 * 10)
-      window.dispatchEvent(new CustomEvent('global.themeChange', { detail: 'light' }))
     }
+
+    syncBilibiliTheme(isDark.value)
 
     // Only used as a temporary solution, which will eventually be removed
     // It seems like Bilibili already supports dark mode when the `bili_dark` class is added to the `html` element

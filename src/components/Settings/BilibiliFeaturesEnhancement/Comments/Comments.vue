@@ -47,7 +47,7 @@ const commentReplyTreeModeOptions = computed<{ label: string, value: CommentRepl
 </script>
 
 <template>
-  <SettingsItemGroup>
+  <SettingsItemGroup :title="$t('settings.group_comments')">
     <div class="comment-setting-tags" role="group" :aria-label="$t('settings.group_comments')">
       <SettingsToggleTag
         v-for="option in commentToggleOptions"
@@ -61,6 +61,15 @@ const commentReplyTreeModeOptions = computed<{ label: string, value: CommentRepl
     </div>
 
     <SettingsItem
+      :title="$t('settings.enable_comment_reply_tree_display')"
+      :desc="$t('settings.enable_comment_reply_tree_display_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.enableCommentReplyTreeDisplay" />
+    </SettingsItem>
+
+    <SettingsItem
+      v-if="settings.enableCommentReplyTreeDisplay"
       :title="$t('settings.comment_reply_tree_mode.title')"
       :desc="$t('settings.comment_reply_tree_mode.desc')"
       right-width="auto"

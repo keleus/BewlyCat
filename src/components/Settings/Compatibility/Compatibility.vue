@@ -10,14 +10,6 @@ watch(() => settings.value.useOriginalBilibiliHomepage, () => {
   if (isHomePage())
     location.reload()
 })
-
-const bilibiliEvolvedThemeColor = computed(() => {
-  return getComputedStyle(document.querySelector('html') as HTMLElement).getPropertyValue('--theme-color').trim() ?? '#00a1d6'
-})
-
-function changeThemeColor(color: string) {
-  settings.value.themeColor = color
-}
 </script>
 
 <template>
@@ -35,9 +27,6 @@ function changeThemeColor(color: string) {
         </template>
         <Radio v-model="settings.useOriginalBilibiliHomepage" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.adapt_to_other_page_styles')" :desc="$t('settings.adapt_to_other_page_styles_desc')" right-width="auto">
-        <Radio v-model="settings.adaptToOtherPageStyles" />
-      </SettingsItem>
       <SettingsItem
         :title="$t('settings.prevent_mobile_redirect')"
         :desc="$t('settings.prevent_mobile_redirect_desc')"
@@ -47,24 +36,30 @@ function changeThemeColor(color: string) {
       </SettingsItem>
     </SettingsItemGroup>
 
-    <SettingsItemGroup title="Bilibili Evolved">
-      <SettingsItem :title="$t('settings.follow_bilibili_evolved_color')" :desc="$t('settings.follow_bilibili_evolved_color_desc')" right-width="auto">
-        <div
-          w-20px h-20px rounded-8 cursor-pointer transition
-          duration-300 box-border
-          :style="{
-            background: bilibiliEvolvedThemeColor,
-            transform: bilibiliEvolvedThemeColor === settings.themeColor ? 'scale(1.3)' : 'scale(1)',
-            border: bilibiliEvolvedThemeColor === settings.themeColor ? '2px solid white' : '2px solid transparent',
-            boxShadow: bilibiliEvolvedThemeColor === settings.themeColor ? '0 0 0 1px var(--bew-border-color), var(--bew-shadow-1)' : 'none',
-          }"
-          @click="changeThemeColor(bilibiliEvolvedThemeColor)"
-        />
+    <SettingsItemGroup :title="$t('settings.group_ad_blocking')">
+      <SettingsItem :title="$t('settings.block_ads')" right-width="auto">
+        <Radio v-model="settings.blockAds" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.block_top_search_page_ads')" :desc="$t('settings.block_top_search_page_ads_desc')" right-width="auto">
+        <Radio v-model="settings.blockTopSearchPageAds" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.clean_url_argument')" :desc="$t('settings.clean_url_argument_desc')" right-width="auto">
+        <Radio v-model="settings.cleanUrlArgument" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup :title="$t('settings.group_clean_share_link')">
+      <SettingsItem :title="$t('settings.enable_clean_share_link')" :desc="$t('settings.enable_clean_share_link_desc')" right-width="auto">
+        <Radio v-model="settings.enableCleanShareLink" />
+      </SettingsItem>
+      <template v-if="settings.enableCleanShareLink">
+        <SettingsItem :title="$t('settings.clean_share_link_include_title')" :desc="$t('settings.clean_share_link_include_title_desc')" right-width="auto">
+          <Radio v-model="settings.cleanShareLinkIncludeTitle" />
+        </SettingsItem>
+        <SettingsItem :title="$t('settings.clean_share_link_remove_tracking_params')" :desc="$t('settings.clean_share_link_remove_tracking_params_desc')" right-width="auto">
+          <Radio v-model="settings.cleanShareLinkRemoveTrackingParams" />
+        </SettingsItem>
+      </template>
     </SettingsItemGroup>
   </div>
 </template>
-
-<style lang="scss" scoped>
-
-</style>

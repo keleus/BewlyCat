@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import { WALLPAPERS } from '~/constants/imgs'
 import { localSettings, settings } from '~/logic'
 import { hasLocalWallpaper, isLocalWallpaperUrl, removeLocalWallpaper, resolveWallpaperUrl, storeLocalWallpaper } from '~/utils/localWallpaper'
@@ -6,18 +8,30 @@ import { compressAndResizeImage } from '~/utils/main'
 
 import SettingsItem from './SettingsItem.vue'
 import SettingsItemGroup from './SettingsItemGroup.vue'
+import SettingsSegmentedControl from './SettingsSegmentedControl.vue'
 
 const props = defineProps<Props>()
 
 interface Props {
   type: 'global' | 'searchPage'
 }
+type WallpaperMode = 'buildIn' | 'byUrl'
+
+const { t } = useI18n()
 const uploadWallpaperRef = ref(null)
 
 const isGlobal = computed(() => props.type === 'global')
 const isBuildInWallpaper = computed(() => {
   return isGlobal.value ? settings.value.wallpaperMode === 'buildIn' : settings.value.searchPageWallpaperMode === 'buildIn'
 })
+const wallpaperMode = computed<WallpaperMode>({
+  get: () => isBuildInWallpaper.value ? 'buildIn' : 'byUrl',
+  set: changeWallpaperType,
+})
+const wallpaperModeOptions = computed<{ label: string, value: WallpaperMode }[]>(() => [
+  { label: t('settings.wallpaper_mode_opt.build_in'), value: 'buildIn' },
+  { label: t('settings.wallpaper_mode_opt.by_url'), value: 'byUrl' },
+])
 
 // 计算本地壁纸的实际显示URL
 const localWallpaperDisplayUrl = computed(() => {
@@ -155,28 +169,11 @@ onMounted(() => {
 
     <template v-if="isGlobal || (settings.individuallySetSearchPageWallpaper && !isGlobal)">
       <SettingsItem :title="$t('settings.wallpaper_mode')" :desc="$t('settings.wallpaper_mode_desc')" right-width="auto">
-        <div w="220px" flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
-          <div
-            flex-1 py-1 cursor-pointer text-center rounded="$bew-radius"
-            :style="{
-              background: isBuildInWallpaper ? 'var(--bew-theme-color)' : '',
-              color: isBuildInWallpaper ? 'white' : '',
-            }"
-            @click="changeWallpaperType('buildIn')"
-          >
-            {{ $t('settings.wallpaper_mode_opt.build_in') }}
-          </div>
-          <div
-            flex-1 py-1 cursor-pointer text-center rounded="$bew-radius"
-            :style="{
-              background: !isBuildInWallpaper ? 'var(--bew-theme-color)' : '',
-              color: !isBuildInWallpaper ? 'white' : '',
-            }"
-            @click="changeWallpaperType('byUrl')"
-          >
-            {{ $t('settings.wallpaper_mode_opt.by_url') }}
-          </div>
-        </div>
+        <SettingsSegmentedControl
+          v-model="wallpaperMode"
+          :label="$t('settings.wallpaper_mode')"
+          :options="wallpaperModeOptions"
+        />
       </SettingsItem>
 
       <!-- 缓存时间设置 - 对所有URL壁纸生效 -->
@@ -216,6 +213,7 @@ onMounted(() => {
         <template #bottom>
           <div grid="~ xl:cols-5 lg:cols-4 cols-3 gap-4">
             <picture
+              class="bew-settings-option--lift"
               aspect-video bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
               un-border="4 transparent" cursor-pointer
               grid place-items-center
@@ -227,6 +225,7 @@ onMounted(() => {
 
             <Tooltip v-for="item in WALLPAPERS" :key="item.url" placement="top" :content="item.name" aspect-video>
               <picture
+                class="bew-settings-option--lift"
                 aspect-video bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
                 un-border="4 transparent" w-full
                 :class="{ 'selected-wallpaper': isGlobal ? settings.wallpaper === item.url : settings.searchPageWallpaper === item.url }"
@@ -250,7 +249,7 @@ onMounted(() => {
               >
 
               <picture
-                class="group"
+                class="group bew-settings-option--lift"
                 :class="{ 'selected-wallpaper': isGlobal
                   ? settings.wallpaper === (localWallpaperDisplayUrl || localSettings.locallyUploadedWallpaper?.url)
                   : settings.searchPageWallpaper === (localWallpaperDisplayUrl || localSettings.locallyUploadedWallpaper?.url) }"

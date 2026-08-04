@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "src/contentScripts/index.ts",
-    "src/audioWorklets/volumeNormalizationProcessor.ts",
     "src/options/main.ts",
     "src/popup/main.ts",
     "src/components/**",

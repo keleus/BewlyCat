@@ -53,16 +53,16 @@ label {
     --b-switch-thumb-scale: 1;
 
     position: absolute;
-    // Absolute offsets start at the padding edge, so subtract the track border
-    // to retain an actual 2px visual inset on every side.
-    top: calc(var(--b-switch-edge-inset) - var(--b-switch-border-width));
+    top: 50%;
+    // Absolute horizontal offsets start at the padding edge, so subtract the
+    // track border to retain the intended outer-edge inset.
     left: calc(var(--b-switch-edge-inset) - var(--b-switch-border-width));
     width: var(--b-switch-thumb-size);
     height: var(--b-switch-thumb-size);
     background: white;
     border-radius: var(--bew-badge-radius);
     content: "";
-    transform: translateX(var(--b-switch-thumb-offset)) scale(var(--b-switch-thumb-scale));
+    transform: translate(var(--b-switch-thumb-offset), -50%) scale(var(--b-switch-thumb-scale));
   }
 }
 

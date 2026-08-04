@@ -351,9 +351,9 @@ onMounted(() => {
     catch (error) {
       console.error('初始化顶栏数据失败:', error)
     }
-    // 只有在登录状态下才启动更新定时器
-    if (topBarStore.isLogin)
-      topBarStore.startUpdateTimer()
+    // 启动定时器：已登录时同步角标/补填 userInfo；未登录时不启动轮询，
+    // 登录态由本地 Cookie 事实与事件驱动维护（见 issue #921）
+    topBarStore.startUpdateTimer()
     setupScrollListeners()
 
     updateConflictingHeaderVisibility()
@@ -375,8 +375,16 @@ onMounted(() => {
 
     // 添加全局点击事件监听器（用于触屏模式下点击外部关闭弹窗）
     document.addEventListener('click', handleClickOutsidePopup)
+    // 页面重新可见时按本地 Cookie 校正登录态：覆盖「他处登录/登出后
+    // 本标签处于后台」的场景，无需轮询（见 issue #921）
+    document.addEventListener('visibilitychange', handleVisibilityChange)
   })
 })
+
+function handleVisibilityChange() {
+  if (!document.hidden)
+    topBarStore.reconcileLocalLoginState()
+}
 
 onUnmounted(() => {
   if (hideTimer) {
@@ -397,6 +405,7 @@ onUnmounted(() => {
 
   // 移除全局点击事件监听器
   document.removeEventListener('click', handleClickOutsidePopup)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 // 快捷键

@@ -671,7 +671,7 @@ function handleClearKeyword() {
               type="searchBar"
               :custom-click-event="true"
               class="hot-search-item cursor-pointer duration-300"
-              flex items-center gap-2 p="x-2 y-1" hover="text-$bew-theme-color"
+              flex items-center gap-2 p="x-2 y-1"
               @click="handleKeywordLinkClick(item.keyword, $event)"
             >
               <span
@@ -942,7 +942,8 @@ function handleClearKeyword() {
       .hot-search-container {
         .hot-search-item {
           --uno: "relative cursor-pointer duration-300";
-          --uno: "hover:text-$bew-theme-color";
+          border-radius: var(--bew-interactive-radius);
+          transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
 
           .hot-search-icon {
             object-fit: contain;
@@ -982,6 +983,11 @@ function handleClearKeyword() {
 
           .keyword {
             --uno: "text-base truncate flex-1";
+          }
+
+          &:hover,
+          &:focus-visible {
+            background-color: var(--bew-fill-2);
           }
         }
       }

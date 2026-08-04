@@ -18,6 +18,7 @@ const tooltipRef = ref(null)
     }"
   >
     <div
+      v-if="content"
       ref="tooltipRef"
       class="b-tooltip"
       :class="[`b-tooltip--placement-${placement ?? 'top'}`, `b-tooltip--type-${type ?? 'default'}`]"

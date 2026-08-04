@@ -38,10 +38,12 @@ export async function getManifest() {
     },
     permissions: [
       'storage',
+      'alarms',
       'declarativeNetRequest',
+      'cookies',
       ...(!isFirefox && !isSafari ? ['scripting'] : []),
       ...isFirefox
-        ? ['webRequest', 'webRequestBlocking', 'cookies']
+        ? ['webRequest', 'webRequestBlocking']
         : [],
     ],
     host_permissions: [
@@ -72,7 +74,6 @@ export async function getManifest() {
       {
         resources: [
           'dist/contentScripts/style.css',
-          'dist/audioWorklets/volume-normalization.js',
           'assets/*',
         ],
         matches: ['<all_urls>'],

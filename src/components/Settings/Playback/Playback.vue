@@ -18,15 +18,6 @@ const pages = [
     iconActivated: 'i-mingcute:list-check-fill',
     component: defineAsyncComponent(() => import('../BilibiliFeaturesEnhancement/AutoPlay/AutoPlay.vue')),
   },
-  {
-    value: 'volume-balance',
-    titleKey: 'settings.plugin.volume_balance',
-    descriptionKey: 'settings.category_playback_volume_desc',
-    icon: 'i-mingcute:volume-line',
-    iconActivated: 'i-mingcute:volume-fill',
-    badgeKey: 'settings.badge_use_with_caution',
-    component: defineAsyncComponent(() => import('../PluginComponentsAndPages/VolumeBalance/VolumeBalance.vue')),
-  },
 ]
 </script>
 

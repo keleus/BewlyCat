@@ -177,6 +177,13 @@ img {
   }
 }
 
+// Keep the settings modal above body-level Teleports (for example, the
+// top-bar switcher) even though the modal itself lives inside this Shadow DOM.
+:host(.settings-open) {
+  position: relative;
+  z-index: 10003;
+}
+
 // Note: View Transition styles for theme toggle are injected dynamically via JS in useDark.ts
 // because this file is loaded in Shadow DOM and cannot affect document-level ::view-transition pseudo-elements
 
@@ -206,4 +213,18 @@ img {
   border-radius: var(--bew-popover-radius);
   box-shadow: var(--bew-shadow-2), var(--bew-shadow-edge-glow-1);
   backdrop-filter: var(--bew-filter-glass-1);
+}
+
+.bew-settings-option--lift {
+  cursor: pointer;
+  transition:
+    transform var(--bew-duration-normal) var(--bew-ease-standard),
+    filter var(--bew-duration-normal) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-normal) var(--bew-ease-standard);
+
+  &:hover {
+    filter: brightness(1.08);
+    box-shadow: var(--bew-shadow-2);
+    transform: translateY(-2px);
+  }
 }

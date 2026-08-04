@@ -1,3 +1,9 @@
+// 网页全屏时播放器层级盖过顶栏（z-index: 999），与普通视频页表现一致。
+// 此规则不依赖页面样式适配开关，确保仅启用 Bewly 顶栏时也能生效。
+html.animePlaybackAndMoviePage .plp-player:has([class*="video_playerFullScreen"]) {
+  z-index: 100000;
+}
+
 .bewly-design.animePlaybackAndMoviePage {
   .bpx-player-contextmenu > li {
     box-sizing: unset;

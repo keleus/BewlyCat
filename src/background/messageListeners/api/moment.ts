@@ -88,6 +88,24 @@ const API_MOMENT = {
     },
     afterHandle: AHS.J_D,
   },
+  getMomentsByUp: {
+    url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/all',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      host_mid: '',
+      type: 'all',
+      offset: '',
+      update_baseline: '',
+      page: 1,
+      platform: 'web',
+      // itemOpusStyle: 图文/纯文字走 opus 结构；listOnlyfans: 充电专属列表字段
+      features: 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,forwardListHidden,ugcDelete,onlyfansQaCard',
+      web_location: '333.1365',
+    },
+    afterHandle: AHS.J_D,
+  },
   getUserMoments: {
     url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space',
     _fetch: {

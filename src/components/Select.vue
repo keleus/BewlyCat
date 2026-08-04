@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { useBewlyApp } from '~/composables/useAppProvider'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   options: readonly OptionType[]
   modelValue: any
-}>()
+  disabled?: boolean
+}>(), {
+  disabled: false,
+})
 
 const emit = defineEmits(['update:modelValue', 'change'])
 
@@ -75,12 +78,18 @@ function calculatePosition(desiredHeight: number) {
 }
 
 function openOptions() {
+  if (props.disabled)
+    return
+
   // 先写好坐标再挂载，避免 enter 动画把 top/left 从 0 过渡到真实位置（左上角飞入）
   calculatePosition(DROPDOWN_MAX_HEIGHT)
   showOptions.value = true
 }
 
 function toggleOptions() {
+  if (props.disabled)
+    return
+
   if (showOptions.value)
     showOptions.value = false
   else
@@ -97,7 +106,17 @@ watch(showOptions, async (visible) => {
     calculatePosition(dropdownRef.value.scrollHeight)
 }, { flush: 'post' })
 
+watch(() => props.disabled, (disabled) => {
+  if (disabled) {
+    showOptions.value = false
+    window.removeEventListener('click', closeOptions)
+  }
+})
+
 function onClickOption(val: OptionType) {
+  if (props.disabled)
+    return
+
   window.removeEventListener('click', closeOptions)
   label.value = val.label
   emit('update:modelValue', val.value)
@@ -111,7 +130,8 @@ function closeOptions() {
 
 /** when you click on it outside, the selection option will be turned off  */
 function onMouseLeave() {
-  window.addEventListener('click', closeOptions)
+  if (!props.disabled)
+    window.addEventListener('click', closeOptions)
 }
 
 function onMouseEnter() {
@@ -128,6 +148,8 @@ function onMouseEnter() {
   >
     <div
       class="select-trigger"
+      :class="{ 'is-disabled': props.disabled }"
+      :aria-disabled="props.disabled"
       p="x-4 y-2"
       bg="$bew-fill-1"
       rounded="$bew-interactive-radius"
@@ -207,6 +229,23 @@ function onMouseEnter() {
 </template>
 
 <style lang="scss" scoped>
+.select-trigger {
+  transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.select-trigger:hover {
+  background-color: var(--bew-fill-2);
+}
+
+.select-trigger.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.select-trigger.is-disabled:hover {
+  background-color: var(--bew-fill-1);
+}
+
 // 向上弹出时的过渡：方向与全局 .dropdown（向下开）相反
 // 使用独立的 translate 属性而非 transform，避免覆盖定位用的 inline transform
 // 不要 transition: all，否则二次校正坐标时会带动 top/left 飞入

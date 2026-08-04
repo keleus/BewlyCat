@@ -1,11 +1,10 @@
 export enum MenuType {
   General = 'General',
-  Navigation = 'Navigation',
-  Playback = 'Playback',
+  BewlyPages = 'BewlyPages',
+  BewlyComponents = 'BewlyComponents',
+  Bilibili = 'Bilibili',
   Appearance = 'Appearance',
   Shortcuts = 'Shortcuts',
-  BilibiliFeaturesEnhancement = 'BilibiliFeaturesEnhancement',
-  Advanced = 'Advanced',
   About = 'About',
 }
 

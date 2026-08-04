@@ -31,6 +31,7 @@ common:
   performance_impact_warn: 呢個功能可能會降低效能！
   no_data: 暫時冇數據
   no_more_content: 唔使睇喇，冇嘢喇
+  load_more: 撈多啲
   operation:
     add: 新增
     edit: 編輯
@@ -69,6 +70,9 @@ player_screenshot:
 settings:
   title: 設定
   menu_general: 一般
+  menu_bewly_pages: Bewly 頁面
+  menu_bewly_components: Bewly 元件
+  menu_bilibili: Bilibili
   menu_navigation: 頁面同元件
   menu_playback: 播放同聲音
   menu_advanced: 進階同維護
@@ -84,8 +88,8 @@ settings:
     placeholder: 搜尋設定
     no_results: 搵唔到相關設定
     located: 已定位到呢個設定
-  category_general_desc: 設定語言、互動版面、連結行為、內容清理同收藏。
-  category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型同自訂樣式。
+  category_general_desc: 設定語言、互動版面同抽屜行為。
+  category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型、自訂樣式同其他頁面嘅適配。
   category_shortcuts_desc: 啟用、修改或者還原 BewlyCat 同播放器快捷鍵。
   breadcrumb: 設定位置
   group_interaction_layout: 互動同版面
@@ -99,21 +103,10 @@ settings:
   category_navigation_moments_desc: 設定插件動態頁左邊嘅元件同動態卡片開啟方式。
   category_playback_player_desc: 設定播放器模式、捲動、彈幕、字幕同播放狀態。
   category_playback_autoplay_desc: 設定自動連播同自訂播放行為。
-  category_playback_volume_desc: 任何響度平衡處理都可能造成爆音、音質劣化或者動態範圍縮細；冇明顯問題時唔應該開啟。
   category_bilibili_comments_desc: 加強留言區嘅用戶資料同內容顯示。
   category_bilibili_vip_desc: 設定大會員權益相關嘅提醒功能。
-  category_advanced_performance_desc: 調整首頁 Grid 嘅記憶體同長清單渲染策略；呢啲選項預設關閉。
   category_advanced_compatibility_desc: 設定原版頁面、第三方擴充功能同其他頁面嘅相容行為。
   category_advanced_maintenance_desc: 匯出備份、匯入設定或者還原 BewlyCat 預設配置。
-  advanced_performance:
-    title: 首頁效能同記憶體
-    home_grid: 首頁 Grid
-    release_offscreen_images: 回收離屏封面記憶體
-    release_offscreen_images_desc: 影片封面離開保留範圍之後卸載圖片資源，減低長清單記憶體用量。
-    release_offscreen_images_warning: 警告：離屏回收記憶體可能會令圖片重新渲染嗰陣窒一窒，預設唔回收。
-    virtualize_home_grid: 回收離屏影片卡片
-    virtualize_home_grid_desc: 只保留畫面附近嘅卡片元件，再用佔位高度維持長清單捲動位置。
-    virtualize_home_grid_warning: 警告：虛擬回收可能會喺快速捲動或者切換版面嗰陣出現短暫空白、抖動或者位置偏差，預設唔開。
   maintenance:
     title: 備份同重設
     backup_title: 設定備份
@@ -143,7 +136,6 @@ settings:
     moments: 動態頁
     favorites: 收藏
     search: 搵嘢頁
-    volume_balance: 音量均衡
 
   # Bilibili 功能增強 子選單
   bilibili_features:
@@ -156,6 +148,7 @@ settings:
   changelog_placeholder: 更新日誌內容將喺呢度顯示。
 
   group_common: 通用
+  group_drawer_behavior: 抽屜行為
   group_language: 語言
   group_ad_blocking: 廣告攔截
   group_comments: 評論
@@ -165,6 +158,13 @@ settings:
   group_video_card_display: 顯示同預覽
   group_video_card_content: 卡片內容
   group_video_card_content_desc: 自訂影片卡片上各項資訊同操作嘅顯示。
+  group_video_card_context_menu: 更多選單
+  group_video_card_context_menu_desc: 選擇撳影片卡片更多掣之後顯示嘅選單選項。
+  video_card_context_menu_region_recommendation: 推薦
+  video_card_context_menu_region_opening: 開啟
+  video_card_context_menu_region_copying: 複製
+  video_card_context_menu_region_user: 用戶
+  video_card_context_menu_follow_user: 關注或取消關注
   video_card_content_region_stats: 數據
   video_card_content_region_tags: 標籤
   video_card_content_region_other: 其它
@@ -217,11 +217,21 @@ settings:
   random_play_not_enabled: 自訂播放功能未啟用
   random_play_min_videos_required: 最少要有{count}條影片先可以啟用隨機播放
   group_topbar: 頂欄
+  topbar_logo_and_channels: Logo 設定
+  topbar_logo_and_channels_desc: 設定頂欄 Logo 樣式，同埋觸控模式下要唔要顯示首頁按鈕。
+  topbar_switchers: BewlyCat/Bilibili 切換掣
+  topbar_switchers_desc: 分別控制首頁頁面切換掣同頂欄切換掣係咪顯示。
+  topbar_actions: 頂欄功能圖示
+  topbar_actions_desc: 分別設定右邊功能圖示嘅顯示狀態、邊位標記同相關提醒。
+  topbar_user_menu: 頂欄用戶選單
+  topbar_display_settings: 頂欄顯示同操作
+  topbar_display_settings_desc: 調整頂欄喺唔同頁面同互動情況之下嘅顯示方式。
   group_navigation: Dock同側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄
   group_sidebar_desc: 喺主頁以外嘅頁面嘅右邊或左邊，通常有淺/深色模式切換掣同設定掣。
   group_color: 顏色
+  group_page_style: 頁面樣式
   group_wallpaper: 背景圖片
   group_logo: LOGO
   group_search_bar: 搜尋欄
@@ -241,6 +251,7 @@ settings:
   group_new_moments_page_desc: 呢個頁面唔係最終成品，相關形態之後可能會有較大改動。
   group_moments_sidebar: 動態頁左邊元件
   group_moments_interaction: 動態卡片互動
+  group_settings_sync: 瀏覽器雲端同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 顯示用戶卡片
   original_moments_show_live_list: 顯示直播列表
@@ -250,15 +261,19 @@ settings:
   moments_show_user_card: 顯示用戶卡片
   moments_show_publish: 顯示發布動態元件
   moments_show_live: 顯示直播中元件
+  moments_show_up_list: 顯示經常去嘅 UP 主
   moments_visible_components: 顯示元件
   moments_visible_components_original_desc: 控制 Bilibili 原版動態頁側欄同橫幅等元件係咪顯示。主題色代表顯示，灰色代表隱藏。
-  moments_visible_components_plugin_desc: 控制 Bewly 動態頁左邊元件係咪顯示。主題色代表顯示，灰色代表隱藏。
+  moments_visible_components_plugin_desc: 控制 Bewly 動態頁側欄同頂部元件係咪顯示。主題色代表顯示，灰色代表隱藏。
   moments_filtered_types: 過濾動態
-  moments_filtered_types_desc: 控制各類動態係咪出現喺 Bewly 動態流。選中（主題色）代表不過濾，未選中代表過濾。開咗過濾嘅話，每次最多掃描 100 條，之後要手動再載入。
+  moments_filtered_types_desc: 控制各類動態係咪出現喺 Bewly 動態流。選中（主題色）代表不過濾，未選中代表過濾。開咗過濾嘅話，每次最多掃描 100 條；留存率低過 60% 要手動再載入，達到 60% 或以上就會自動滾動載入。
   moments_enable_live_preview: 直播動態懸停預覽
   moments_enable_live_preview_desc: 滑鼠懸停直播動態封面嗰陣播放直播預覽。
   moments_enable_video_preview: 影片動態懸停預覽
   moments_enable_video_preview_desc: 滑鼠懸停影片動態封面嗰陣播放影片預覽。
+  moments_grid_columns: 動態欄數
+  moments_grid_columns_desc: 設定 Bewly 動態頁想要嘅欄數。卡片尺寸會跟住欄數自動調整；視窗空間唔夠時會自動減少欄數，左邊欄同動態流會成組保持置中。
+  moments_grid_columns_option: '{count} 欄'
   moments_filter_up_recommendation: 過濾：UP主嘅推薦
   moments_filter_up_recommendation_desc: 過濾所有帶有「UP主嘅推薦」附加資訊嘅動態。
   moments_filter_up_recommendation_short: UP主嘅推薦
@@ -282,7 +297,12 @@ settings:
     background: 後台分頁
   group_moments_wanted_users: 想睇分組
   group_moments_wanted_users_desc: 管理想睇嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
+  moments_enable_wanted_filter: 啟用想睇篩選
+  moments_enable_wanted_filter_desc: 喺動態頁橫向欄顯示「想睇」入口，用嚟淨係睇名單內 UP 主嘅動態；關閉後會隱藏入口並退出想睇篩選。
   moments_wanted_users: 想睇嘅 UP 主
+  group_moments_pinned_users: 固定 UP 主
+  group_moments_pinned_users_desc: 管理固定喺動態欄右側嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
+  moments_pinned_users: 固定嘅 UP 主
   btn:
     authorize: 授權
     revoke: 解除授權
@@ -293,7 +313,10 @@ settings:
   show_home_button_in_touch_mode: 顯示 Home 掣
   show_home_button_in_touch_mode_desc: 喺觸控螢幕優化開咗嗰陣，喺頂欄 Logo 隔籬顯示一個可以直接跳去首頁嘅掣。
   open_top_bar_items_in_bewly: 撳頂欄圖示打開 Bewly 頁面
-  open_top_bar_items_in_bewly_desc: 未開啟觸控螢幕優化嗰陣，撳 Logo、動態、收藏、歷史或者稍後再睇圖示，會切換去對應嘅 Bewly 頁面；未適配嘅圖示會維持原本行為。
+  open_top_bar_items_in_bewly_desc: 未開啟觸控螢幕優化嗰陣，撳 Logo、動態、收藏、歷史或者稍後再睇圖示，會跟「頂欄連結開啟行為」打開 Dock 入面對應嘅頁面，並沿用該頁面嘅 Bewly/原版 Bilibili 設定；未適配嘅圖示會維持原本行為。
+  show_bewly_or_bili_page_switcher_desc: 喺首頁 Logo 隔籬顯示切換掣，用嚟喺 BewlyCat 頁面同 Bilibili 原版頁面之間切換。
+  show_bewly_or_bili_page_switcher_on_more_pages_desc: 喺動態、搜尋、番劇、收藏、歷史同稍後再睇等 Bilibili 原版頁面顯示切換掣；切換到 BewlyCat 時會開啟對應嘅插件頁面。
+  show_bewly_or_bili_top_bar_switcher_desc: 喺頁面頂部懸停嗰陣顯示切換掣，用嚟喺 BewlyCat 頂欄同 Bilibili 原版頂欄之間切換。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開咗之後，頂欄頭像彈窗入面嘅 LV6 等級資訊區域就唔會再顯示最後登入時間同地點，亦都唔會請求登入記錄。
   chk_box:
@@ -350,7 +373,8 @@ settings:
   # Video Card Grid Settings
   group_video_card_grid: 影片卡片網格
   auto_switch_list_layout: 根據影片卡片區域闊度自動切換單雙列
-  auto_switch_list_layout_desc: 開啟之後，雙列模式會喺影片卡片區域闊度細過 640px 時自動切換做單列。
+  auto_switch_list_layout_desc: 開啟之後，雙列模式會喺影片卡片區域闊度細過設定闊度時自動切換做單列。
+  auto_switch_list_layout_breakpoint: 切換闊度
   grid_breakpoints: 網格斷點設定
   grid_breakpoints_desc: 設定唔同影片卡片區域闊度時顯示嘅列數。當區域闊度大過或者等於設定值時，用對應嘅列數。
   grid_min_width: 闊度 ≥
@@ -376,6 +400,9 @@ settings:
   video_card_shadow_reset: 重設陰影設定
   video_card_layout: 影片卡片版面
   video_card_layout_desc: 喺新版同舊版嘅影片卡片樣式之間切換。
+  release_offscreen_images: 回收離屏封面記憶體
+  release_offscreen_images_desc: 影片封面離開保留範圍之後卸載圖片資源，減低長清單記憶體用量。
+  release_offscreen_images_warning: 警告：離屏回收記憶體可能會令圖片重新渲染嗰陣窒一窒，預設唔回收。
   video_card_layout_option:
     modern: 新版
     old: 經典版
@@ -407,9 +434,12 @@ settings:
   show_video_watched_badge: 記錄並顯示睇過
   auto_hide_top_bar: 自動收埋頂欄
   always_use_transparent_top_bar: 頂欄始終使用透明(舊版)樣式
+  enable_top_bar_gradient: 啟用頂欄漸變效果
+  enable_top_bar_gradient_desc: 開啟後頂欄預設使用毛玻璃漸變，關閉後改為實色背景。
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂欄切換掣
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換掣
+  show_bewly_or_bili_page_switcher_on_more_pages: 喺更多頁面顯示 BewlyCat/Bilibili 頁面切換掣
   filter_articles_in_moments: 過濾專欄
   filter_articles_in_moments_desc: 喺動態列表過濾專欄內容，只顯示影片
   top_bar_icon_badges: 圖標邊位標記
@@ -593,7 +623,6 @@ settings:
   search_page_mode_wallpaper_fixed: 定住搵嘢頁模式嘅背景
   home_tabs_adjustment: 分頁欄調整
   home_tabs_adjustment_desc: 第一個啓用嘅分頁項目會係開始頁面。
-  home_tabs_position: 分頁欄位置
   always_show_tabs_on_home_page: 捲動時隱藏主頁分頁欄
   fixed_home_tabs_on_home_page: 固定主頁分頁欄
   topbar_visibility: BewlyBewly 頂欄可視性
@@ -668,7 +697,7 @@ settings:
   auto_play_playlist: 收藏列表
   auto_play_playlist_desc: 揀收藏列表嘅自動播放行為。「連播推薦」表示目前影片完咗之後繼續播推薦影片。
   enable_settings_sync: 允許同步設定
-  enable_settings_sync_desc: 喺唔同設備度同步延伸功能設定 (需要登入瀏覽器帳戶)。
+  enable_settings_sync_desc: 開啟之後會同時儲存喺本機同瀏覽器雲端；牆紙背景同裝置播放狀態唔會同步（需要登入瀏覽器帳戶）。
   enable_undo_refresh_button: 啓用復原更新掣（淨係得 Web 推介模式下有效）
   enable_undo_refresh_button_desc: 更新頁面後顯示復原更新掣，撳低可以回復更新前內容。
   shortcuts:
@@ -792,6 +821,8 @@ settings:
   show_sex_desc: 喺影片/動向頁留言區顯示用戶性別。
   show_comment_host_tag: 顯示樓主標示
   show_comment_host_tag_desc: 喺留言回覆詳情頁標示樓主。
+  enable_comment_reply_tree_display: 留言區樹狀顯示
+  enable_comment_reply_tree_display_desc: 開啟後會根據回覆關係整理樓中樓；關閉後唔再重排、縮入或者繪製留言回覆樹
   comment_reply_tree_mode:
     title: 留言回覆樹樣式
     desc: 根據回覆關係同發佈時間整理樓中樓。線條模式可以收起任何父級留言嘅回覆；「收起主留言」會收埋父留言本身，「唔收起主留言」會留住父留言正文，淨係收起子回覆
@@ -804,6 +835,8 @@ settings:
   enlarge_favorite_dialog_desc: 啓用後，影片頁收藏彈窗會用更大嘅尺寸顯示，方便睇同管理收藏夾。
   external_watch_later_button: 稍後再睇按鈕外置
   external_watch_later_button_desc: 啓用後，影片頁工具欄會顯示獨立嘅陣間至睇按鈕；按鈕會顯示目前影片狀態，可以撳一下加入或者剷走。
+  show_vertical_video_zoom_button: 直屏影片放大按鈕
+  show_vertical_video_zoom_button_desc: 喺直屏影片播放器顯示放大/縮小按鈕同畫面位置調整控制
   show_video_screenshot_button: 顯示播放器截圖按鈕
   show_video_screenshot_button_desc: 啓用後，喺影片播放器控制欄顯示擷取目前影片畫面嘅按鈕。
   group_fonts: ''
@@ -923,6 +956,7 @@ dock:
 video_card:
   operation:
     not_interested: 唔鍾意
+    not_interested_uploader: 唔想睇呢個 UP 主
     open_in_new_tab: 新分頁開啓
     open_in_background: 後台開啓
     open_in_new_window: 新視窗開啓
@@ -936,6 +970,7 @@ video_card:
     follow_user: 關注用戶
     unfollow_user: 取消關注
     block_user: 拉黑用戶
+    more_options: 更多操作
   follow_user_confirm:
     title: 確認關注用戶
     message: 確定要關注 {name} 嗎？
@@ -1059,7 +1094,7 @@ version_reminder:
   bilibili_dynamic: Bilibili 動態
   bilibili_dynamic_desc: 睇開發者發佈嘅更新動態
   acknowledge: 知道喇，呢個版本唔再提示
-  settings_hint: 可以去「設定 → 一般」閂咗「新版本提醒」。
+  settings_hint: 可以去「設定 → 關於」閂咗「新版本提醒」。
 watch_later:
   title: 陣間至睇
   clear_all: 剷曬陣間至睇啲片

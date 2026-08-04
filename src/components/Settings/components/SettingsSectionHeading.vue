@@ -80,6 +80,13 @@ const collapsed = defineModel<boolean>('collapsed', {
   color: inherit;
   text-align: left;
   cursor: pointer;
+
+  &:hover {
+    .settings-section-heading__content h2,
+    .settings-section-heading__chevron {
+      color: var(--bew-theme-color);
+    }
+  }
 }
 
 .settings-section-heading__chevron {
@@ -89,7 +96,9 @@ const collapsed = defineModel<boolean>('collapsed', {
   margin-left: auto;
   color: var(--bew-text-2);
   font-size: var(--bew-icon-size-md);
-  transition: transform 0.2s ease;
+  transition:
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    transform 0.2s ease;
 
   &.collapsed {
     transform: rotate(-90deg);
@@ -101,6 +110,7 @@ h2 {
   font-size: var(--bew-font-size-title);
   font-weight: var(--bew-font-weight-semibold);
   line-height: var(--bew-line-height-title);
+  transition: color var(--bew-duration-normal) var(--bew-ease-standard);
 }
 
 .settings-risk-badge {

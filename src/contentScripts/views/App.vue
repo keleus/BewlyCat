@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn, useToggle } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { provide, ref } from 'vue'
+import { provide, ref, watch } from 'vue'
 
 import Button from '~/components/Button.vue'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
@@ -44,6 +44,12 @@ else {
 }
 const [showSettings, toggleSettings] = useToggle(false)
 const searchFocusOverlayActive = ref(false)
+
+// The top-bar switcher is teleported to document.body, outside this Shadow DOM.
+// Raise the host while settings are open so the modal can stay above that layer.
+watch(showSettings, (visible) => {
+  document.getElementById('bewly')?.classList.toggle('settings-open', visible)
+}, { immediate: true })
 
 interface ConfirmDialogRequest {
   id: number
@@ -1025,13 +1031,8 @@ if (settings.value.cleanUrlArgument) {
           >
             <main m-auto max-w="$bew-page-max-width">
               <div
-                class="bewly-page-content"
-                :class="{
-                  'bewly-page-content--dock-left': activatedPage === AppPage.Home && settings.dockPosition === 'left',
-                  'bewly-page-content--dock-right': activatedPage === AppPage.Home && settings.dockPosition === 'right',
-                  'bewly-page-content--dock-bottom': activatedPage === AppPage.Home && settings.dockPosition === 'bottom',
-                }"
                 p="t-[calc(var(--bew-top-bar-height)+10px)]" m-auto
+                w="lg:[calc(100%-200px)] [calc(100%-150px)]"
                 :style="settings.useOriginalBilibiliTopBar && !reachTop
                   ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
                   : undefined"
@@ -1221,28 +1222,5 @@ if (settings.value.cleanUrlArgument) {
 .bewly-scroll-viewport {
   outline: none;
   scrollbar-gutter: stable;
-}
-
-.bewly-page-content {
-  --bew-page-inline-padding: clamp(16px, 4vw, 80px);
-  --bew-page-padding-left: var(--bew-page-inline-padding);
-  --bew-page-padding-right: var(--bew-page-inline-padding);
-
-  box-sizing: border-box;
-  width: 100%;
-  padding-left: var(--bew-page-padding-left);
-  padding-right: var(--bew-page-padding-right);
-}
-
-.bewly-page-content--dock-left {
-  --bew-page-padding-left: max(var(--bew-page-inline-padding), var(--bew-dock-safe-inset));
-}
-
-.bewly-page-content--dock-right {
-  --bew-page-padding-right: max(var(--bew-page-inline-padding), var(--bew-dock-safe-inset));
-}
-
-.bewly-page-content--dock-bottom {
-  padding-bottom: var(--bew-dock-safe-inset);
 }
 </style>

@@ -31,6 +31,7 @@ common:
   performance_impact_warn: 这个功能可能会影响性能！
   no_data: 暂无数据
   no_more_content: 没有更多内容了
+  load_more: 加载更多
   operation:
     add: 新增
     edit: 编辑
@@ -69,6 +70,9 @@ player_screenshot:
 settings:
   title: 设置
   menu_general: 通用
+  menu_bewly_pages: Bewly 页面
+  menu_bewly_components: Bewly 组件
+  menu_bilibili: Bilibili
   menu_navigation: 页面与组件
   menu_playback: 播放与声音
   menu_advanced: 高级与维护
@@ -84,8 +88,8 @@ settings:
     placeholder: 搜索设置
     no_results: 没有找到相关设置
     located: 已定位到此设置
-  category_general_desc: 配置语言、交互布局、链接行为、内容清理与收藏。
-  category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体与自定义样式。
+  category_general_desc: 配置语言、交互布局与抽屉行为。
+  category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体、自定义样式和其他页面的适配。
   category_shortcuts_desc: 启用、修改或恢复 BewlyCat 与播放器快捷键。
   breadcrumb: 设置位置
   group_interaction_layout: 交互与布局
@@ -99,21 +103,10 @@ settings:
   category_navigation_moments_desc: 配置插件动态页的左侧组件和动态卡片打开方式。
   category_playback_player_desc: 配置播放器模式、滚动行为、弹幕、字幕和播放状态。
   category_playback_autoplay_desc: 配置自动连播与自定义播放行为。
-  category_playback_volume_desc: 任何响度均衡处理都可能造成爆音、音质劣化或动态范围缩小；没有明显问题时不应开启。
   category_bilibili_comments_desc: 增强评论区的用户信息与内容显示。
   category_bilibili_vip_desc: 配置大会员权益相关的提醒功能。
-  category_advanced_performance_desc: 调整首页 Grid 的内存与长列表渲染策略；这些选项默认关闭。
   category_advanced_compatibility_desc: 配置原版页面、第三方扩展和其他页面的兼容行为。
   category_advanced_maintenance_desc: 导出备份、导入设置或恢复 BewlyCat 默认配置。
-  advanced_performance:
-    title: 首页性能与内存
-    home_grid: 首页 Grid
-    release_offscreen_images: 回收离屏封面内存
-    release_offscreen_images_desc: 视频封面离开保留范围后卸载图片资源，降低长列表内存占用。
-    release_offscreen_images_warning: 警告：离屏回收内存功能可能会带来图片重新渲染上的性能卡顿，默认不回收。
-    virtualize_home_grid: 回收离屏视频卡片
-    virtualize_home_grid_desc: 仅保留视口附近的卡片组件，并用占位高度维持长列表滚动位置。
-    virtualize_home_grid_warning: 警告：虚拟回收可能在快速滚动或切换布局时造成短暂空白、抖动或位置偏差，默认不开启。
   maintenance:
     title: 备份与重置
     backup_title: 设置备份
@@ -143,7 +136,6 @@ settings:
     moments: 动态页
     favorites: 收藏
     search: 搜索页
-    volume_balance: 音量均衡
 
   # Bilibili 功能增强 子菜单
   bilibili_features:
@@ -156,6 +148,7 @@ settings:
   changelog_placeholder: 更新日志内容将在这里显示。
 
   group_common: 通用
+  group_drawer_behavior: 抽屉行为
   group_language: 语言
   group_ad_blocking: 广告拦截
   group_comments: 评论
@@ -165,6 +158,13 @@ settings:
   group_video_card_display: 显示与预览
   group_video_card_content: 卡片内容
   group_video_card_content_desc: 自定义视频卡片上各项信息与操作的显示。
+  group_video_card_context_menu: 更多菜单
+  group_video_card_context_menu_desc: 选择点击视频卡片更多按钮后显示的菜单选项。
+  video_card_context_menu_region_recommendation: 推荐
+  video_card_context_menu_region_opening: 打开
+  video_card_context_menu_region_copying: 复制
+  video_card_context_menu_region_user: 用户
+  video_card_context_menu_follow_user: 关注或取消关注
   video_card_content_region_stats: 数据
   video_card_content_region_tags: 标签
   video_card_content_region_other: 其它
@@ -188,11 +188,21 @@ settings:
   group_random_play_settings: 随机播放设置
   group_random_play_settings_desc: 配置自定义播放默认值为“随机播放”时的启用方式。
   group_topbar: 顶栏
+  topbar_logo_and_channels: Logo 设置
+  topbar_logo_and_channels_desc: 设置顶栏 Logo 样式，以及触屏模式下是否显示首页按钮。
+  topbar_switchers: BewlyCat/Bilibili 切换器
+  topbar_switchers_desc: 分别控制首页页面切换器和顶栏切换器是否显示。
+  topbar_actions: 顶栏功能图标
+  topbar_actions_desc: 分别设置右侧功能图标的显示状态、角标和相关提醒。
+  topbar_user_menu: 顶栏用户菜单
+  topbar_display_settings: 顶栏显示与行为
+  topbar_display_settings_desc: 调整顶栏在不同页面和交互场景下的显示方式。
   group_navigation: Dock和侧边栏
   group_dock: Dock 栏
   group_sidebar: 侧边栏
   group_sidebar_desc: 位于主页以外的页面右侧或左侧，通常有亮/暗模式切换按钮和设置按钮。
   group_color: 颜色
+  group_page_style: 页面样式
   group_wallpaper: 背景图片
   group_logo: LOGO
   group_search_bar: 搜索栏
@@ -213,6 +223,7 @@ settings:
   group_new_moments_page_desc: 此页面并非最终成品，相关形态后续可能会有较大调整。
   group_moments_sidebar: 动态页左侧组件
   group_moments_interaction: 动态卡片交互
+  group_settings_sync: 浏览器云同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 显示用户卡片
   original_moments_show_live_list: 显示直播列表
@@ -222,15 +233,19 @@ settings:
   moments_show_user_card: 显示用户卡片
   moments_show_publish: 显示发布动态组件
   moments_show_live: 显示正在直播组件
+  moments_show_up_list: 显示经常访问的 UP 主
   moments_visible_components: 显示组件
   moments_visible_components_original_desc: 控制 Bilibili 原版动态页侧栏与横幅等组件是否显示。主题色表示显示，灰色表示隐藏。
-  moments_visible_components_plugin_desc: 控制 Bewly 动态页左侧组件是否显示。主题色表示显示，灰色表示隐藏。
+  moments_visible_components_plugin_desc: 控制 Bewly 动态页侧栏与顶部组件是否显示。主题色表示显示，灰色表示隐藏。
   moments_filtered_types: 过滤动态
-  moments_filtered_types_desc: 控制各类动态是否出现在 Bewly 动态流中。选中（主题色）表示不过滤，未选中表示过滤。开启过滤时单次最多扫描 100 条，需手动加载更多。
+  moments_filtered_types_desc: 控制各类动态是否出现在 Bewly 动态流中。选中（主题色）表示不过滤，未选中表示过滤。开启过滤时单次最多扫描 100 条；留存率低于 60% 时需手动加载更多，达到 60% 及以上时将自动滚动加载。
   moments_enable_live_preview: 直播动态悬停预览
   moments_enable_live_preview_desc: 鼠标悬停直播动态封面时播放直播预览。
   moments_enable_video_preview: 视频动态悬停预览
   moments_enable_video_preview_desc: 鼠标悬停视频动态封面时播放视频预览。
+  moments_grid_columns: 动态列数
+  moments_grid_columns_desc: 设置 Bewly 动态页的期望列数。卡片尺寸会随列数自适应；窗口空间不足时会自动减少列数，左侧栏与动态流整体保持居中。
+  moments_grid_columns_option: '{count} 列'
   moments_filter_up_recommendation: 过滤：UP主的推荐
   moments_filter_up_recommendation_desc: 过滤所有带有“UP主的推荐”附加信息的动态。
   moments_filter_up_recommendation_short: UP主的推荐
@@ -254,7 +269,12 @@ settings:
     background: 后台标签
   group_moments_wanted_users: 想看分组
   group_moments_wanted_users_desc: 管理想看的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
+  moments_enable_wanted_filter: 启用想看筛选
+  moments_enable_wanted_filter_desc: 在动态页横向栏显示“想看”入口，用于只查看名单内 UP 主的动态；关闭后隐藏入口并退出想看筛选。
   moments_wanted_users: 想看的 UP 主
+  group_moments_pinned_users: 固定 UP 主
+  group_moments_pinned_users_desc: 管理固定在动态栏右侧的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
+  moments_pinned_users: 固定的 UP 主
   btn:
     authorize: 授权
     revoke: 取消授权
@@ -265,7 +285,10 @@ settings:
   show_home_button_in_touch_mode: 显示 Home 按钮
   show_home_button_in_touch_mode_desc: 在触屏优化开启时，在顶栏 Logo 旁边显示一个可以直接跳转到首页的按钮。
   open_top_bar_items_in_bewly: 点击顶栏图标打开 Bewly 页面
-  open_top_bar_items_in_bewly_desc: 未启用触屏优化时，点击 Logo、动态、收藏、历史或稍后再看图标，将切换到对应的 Bewly 页面；尚未适配的图标保持原有行为。
+  open_top_bar_items_in_bewly_desc: 未启用触屏优化时，点击 Logo、动态、收藏、历史或稍后再看图标，将按照“顶栏链接打开行为”打开 Dock 中对应的页面，并沿用该页面的 Bewly/原版 Bilibili 配置；尚未适配的图标保持原有行为。
+  show_bewly_or_bili_page_switcher_desc: 在首页 Logo 旁显示切换器，用于在 BewlyCat 页面和 Bilibili 原版页面之间切换。
+  show_bewly_or_bili_page_switcher_on_more_pages_desc: 在动态、搜索、番剧、收藏、历史和稍后再看等 Bilibili 原版页面显示切换器；切换到 BewlyCat 时会打开对应的插件页面。
+  show_bewly_or_bili_top_bar_switcher_desc: 在页面顶部悬停时显示切换器，用于在 BewlyCat 顶栏和 Bilibili 原版顶栏之间切换。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隐藏 LV6 等级最后登录信息显示
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: 开启后，顶栏头像弹窗中的 LV6 等级信息区域将不再显示最后登录时间和地点，也不会请求登录记录。
   chk_box:
@@ -356,6 +379,8 @@ settings:
   enlarge_favorite_dialog_desc: 启用后，视频页收藏弹窗将以更大的尺寸显示，方便查看和管理收藏夹。
   external_watch_later_button: 稍后再看按钮外置
   external_watch_later_button_desc: 启用后，视频页工具栏会显示独立的稍后再看按钮；按钮会显示当前视频状态，可点击添加或移除。
+  show_vertical_video_zoom_button: 竖屏放大按钮
+  show_vertical_video_zoom_button_desc: 在竖屏视频播放器中显示放大/缩小按钮和画面位置调节控件
   show_video_screenshot_button: 显示播放器截图按钮
   show_video_screenshot_button_desc: 启用后，在视频播放器控制栏中显示截取当前视频画面的按钮。
   keep_collection_video_default_mode: 合集视频保持默认模式
@@ -443,13 +468,16 @@ settings:
     showOnMouse: 鼠标显示
     showOnScroll: 滚动显示
   always_use_transparent_top_bar: 顶栏始终使用透明(旧版)样式
+  enable_top_bar_gradient: 启用顶栏渐变效果
+  enable_top_bar_gradient_desc: 开启后顶栏默认使用磨砂玻璃渐变，关闭后改为实色背景。
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 显示 BewlyCat/Bilibili 顶栏切换器
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
+  show_bewly_or_bili_page_switcher_on_more_pages: 在更多页面显示 BewlyCat/Bilibili 页面切换器
   filter_articles_in_moments: 过滤专栏
   filter_articles_in_moments_desc: 在动态列表中过滤掉专栏内容，仅显示视频
   enable_settings_sync: 启用设置同步
-  enable_settings_sync_desc: 在不同设备间同步扩展设置（需要登录浏览器账号）
+  enable_settings_sync_desc: 开启后同时保存到本地和浏览器云端；壁纸背景与设备播放状态不会同步（需要登录浏览器账号）
   top_bar_icon_badges: 图标角标
   top_bar_icon_badges_opt:
     number: 数字
@@ -468,7 +496,8 @@ settings:
   # Video Card Grid Settings
   group_video_card_grid: 视频卡片网格
   auto_switch_list_layout: 根据视频卡片区域宽度自动切换单双列
-  auto_switch_list_layout_desc: 开启后，双列模式会在视频卡片区域宽度小于 640px 时自动切换为单列。
+  auto_switch_list_layout_desc: 开启后，双列模式会在视频卡片区域宽度小于设定宽度时自动切换为单列。
+  auto_switch_list_layout_breakpoint: 切换宽度
   grid_breakpoints: 网格断点配置
   grid_breakpoints_desc: 设置不同视频卡片区域宽度下显示的列数。当区域宽度大于等于设定值时，使用对应的列数。
   grid_min_width: 宽度 ≥
@@ -494,6 +523,9 @@ settings:
   video_card_shadow_reset: 重置阴影设置
   video_card_layout: 视频卡片布局
   video_card_layout_desc: 在新版与旧版视频卡片显示样式之间切换。
+  release_offscreen_images: 回收离屏封面内存
+  release_offscreen_images_desc: 视频封面离开保留范围后卸载图片资源，降低长列表内存占用。
+  release_offscreen_images_warning: 警告：离屏回收内存功能可能会带来图片重新渲染上的性能卡顿，默认不回收。
   video_card_layout_option:
     modern: 新版
     old: 经典版
@@ -665,7 +697,6 @@ settings:
   search_page_mode_wallpaper_fixed: 将搜索页模式的壁纸固定
   home_tabs_adjustment: 标签栏调整
   home_tabs_adjustment_desc: 第一个激活的标签项是默认界面
-  home_tabs_position: 标签栏位置
   always_show_tabs_on_home_page: 滚动隐藏首页标签栏
   fixed_home_tabs_on_home_page: 固定首页标签栏
   topbar_visibility: 顶栏可见性
@@ -801,6 +832,8 @@ settings:
   show_sex_desc: 在视频/动态评论区显示用户性别
   show_comment_host_tag: 显示楼主标识
   show_comment_host_tag_desc: 在评论回复详情页中标注楼主
+  enable_comment_reply_tree_display: 评论区树状显示
+  enable_comment_reply_tree_display_desc: 开启后根据回复关系整理楼中楼；关闭后不再重排、缩进或绘制评论回复树
   comment_reply_tree_mode:
     title: 评论回复树样式
     desc: 根据回复关系和发布时间整理楼中楼。线条模式下可折叠任意父级评论的回复；「收起主评论」会折叠父评论本体，「不收起主评论」则保留父评论正文仅隐藏子回复
@@ -809,36 +842,6 @@ settings:
     indent_only: 缩进-无收起功能
   adjust_comment_image_height: 调整评论区图片高度
   adjust_comment_image_height_desc: 自动调整评论区图片高度以匹配实际长宽比，避免图片变形
-  volume_normalization:
-    title: 音量均衡
-    enable: 启用音量均衡
-    enable_desc: 实时检测视频人声响度，自动调整音量到统一级别
-    target_volume: 目标音量
-    target_volume_desc: 目标响度级别（0-100），50 对应 -20dBFS，值越大音量越响
-    strength: 平滑强度
-    strength_desc: 音量峰值平滑强度（1-20），推荐 8-15，一般无需调整
-    adaptive_speed: 响应速度
-    adaptive_speed_desc: 达到目标音量的速度（1-10），值越大越快，推荐 3-7
-    voice_gate: 人声检测阈值
-    voice_gate_desc: 低于此响度的声音会被忽略（-60 到 -10 dB），推荐 -40 到 -30
-    debug: 调试模式
-    debug_desc: 在控制台输出音量均衡调试信息
-    usage_guide:
-      title: 使用说明
-      desc: |-
-        功能说明：
-        • 实时分析视频中的人声响度（忽略背景音和静音片段）
-        • 根据检测到的响度自动调整增益，使所有视频达到统一的音量
-
-        参数说明：
-        • 目标音量（0-100）：0 对应 -30dBFS（很安静），50 对应 -20dBFS（适中），100 对应 -10dBFS（较响）
-        • 响应速度（1-10）：控制达到目标音量的时间，值越大稳定越快
-
-        注意事项：
-        • 这是实验性功能，部分情况下可能不生效
-        • 刷新页面后功能才会生效
-        • 不改变原音质，仅调整音量大小
-  menu_volume_normalization: 音量均衡
   group_fonts: 字体
   group_visual_effects: 视觉效果
 auth:
@@ -956,6 +959,7 @@ dock:
 video_card:
   operation:
     not_interested: 不感兴趣
+    not_interested_uploader: 不想看此 UP 主
     open_in_new_tab: 新标签页打开
     open_in_background: 后台打开
     open_in_new_window: 新窗口打开
@@ -969,6 +973,7 @@ video_card:
     follow_user: 关注用户
     unfollow_user: 取消关注
     block_user: 拉黑用户
+    more_options: 更多操作
   follow_user_confirm:
     title: 确认关注用户
     message: 确定要关注 {name} 吗？
@@ -1097,7 +1102,7 @@ version_reminder:
   bilibili_dynamic: Bilibili 动态
   bilibili_dynamic_desc: 查看开发者发布的更新动态
   acknowledge: 已知晓，本版本不再提示
-  settings_hint: 可在“设置 → 通用”中关闭“新版本提醒”。
+  settings_hint: 可在“设置 → 关于”中关闭“新版本提醒”。
 watch_later:
   title: 稍后再看
   clear_all: 清空稍后再看
