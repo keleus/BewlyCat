@@ -152,15 +152,15 @@
       filter: drop-shadow(0 0 4px var(--bew-bg));
     }
 
-    &.active a,
-    & a:hover,
+    &.active > a,
+    & > a:hover,
     & .notifications:hover,
     & .notifications:active {
       --uno: "bg-$bew-fill-2";
     }
 
-    &.active a.white-icon,
-    & a:hover.white-icon,
+    &.active > a.white-icon,
+    & > a:hover.white-icon,
     & .notifications:hover.white-icon,
     & .notifications:active.white-icon {
       --uno: "bg-white bg-opacity-20";
