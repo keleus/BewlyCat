@@ -1937,6 +1937,29 @@ function syncSidebarTitle(currentState: BewlyWidescreenState) {
     titleElement.textContent = nextTitle
 }
 
+function findManagedPanelNode(panel: HTMLElement, selectorsToMatch: string[], movedNodes: MovedNode[]) {
+  const selector = selectorsToMatch.join(',')
+  return movedNodes.find(({ node }) => {
+    if (node.parentElement !== panel)
+      return false
+
+    return node.matches(selector) || !!node.querySelector(selector)
+  })?.node ?? null
+}
+
+function placeRecommendAfterPlaylist(panel: HTMLElement, movedNodes: MovedNode[]) {
+  const playlistNode = findManagedPanelNode(panel, selectors.playlist, movedNodes)
+  const recommendNode = findManagedPanelNode(panel, selectors.recommend, movedNodes)
+  if (!playlistNode || !recommendNode || playlistNode === recommendNode)
+    return
+
+  // Only reorder the top-level nodes that Bewly moved into this panel. This
+  // avoids detaching recommendation/episode elements nested inside a shared
+  // Bilibili wrapper.
+  if (playlistNode.parentElement === panel && recommendNode.parentElement === panel)
+    playlistNode.after(recommendNode)
+}
+
 function fillSidebar(currentState: BewlyWidescreenState) {
   syncActionAnimationTheme(currentState)
   syncSidebarTitle(currentState)
@@ -1971,10 +1994,16 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   const existingPlaylist = currentState.panels.playlist.querySelector(selectors.playlist.join(','))
   const existingRecommend = currentState.panels.playlist.querySelector(selectors.recommend.join(','))
   const playlist = existingPlaylist ? null : findMovable(selectors.playlist)
-  const recommend = existingPlaylist || playlist || existingRecommend ? null : findMovable(selectors.recommend)
-  const playlistMoved = existingPlaylist || existingRecommend || moveNode(playlist || recommend, currentState.panels.playlist, currentState.movedNodes)
-  currentState.tabButtons.playlist.textContent = existingPlaylist || playlist ? '选集' : '推荐'
-  if (!playlistMoved)
+  const playlistMoved = existingPlaylist || moveNode(playlist, currentState.panels.playlist, currentState.movedNodes)
+  // 推荐列表与选集是同一侧栏面板中的两个连续区块；即使选集已经存在，
+  // 也要继续搬运推荐列表，保证推荐内容显示在选集下方。
+  const recommend = existingRecommend ? null : findMovable(selectors.recommend)
+  const recommendMoved = existingRecommend || moveNode(recommend, currentState.panels.playlist, currentState.movedNodes)
+  placeRecommendAfterPlaylist(currentState.panels.playlist, currentState.movedNodes)
+  const hasPlaylist = !!(existingPlaylist || playlistMoved)
+  const hasRecommend = !!(existingRecommend || recommendMoved)
+  currentState.tabButtons.playlist.textContent = hasPlaylist ? '选集' : '推荐'
+  if (!hasPlaylist && !hasRecommend)
     ensureEmptyPanel(currentState.panels.playlist, '列表加载中')
   else
     clearEmptyPanel(currentState.panels.playlist)
