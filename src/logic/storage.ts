@@ -8,6 +8,7 @@ import { DEFAULT_SEARCH_BAR_CHARACTER } from '~/constants/imgs'
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
+import type { PageMode } from '~/utils/pageMode'
 
 export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
 
@@ -268,7 +269,6 @@ export interface Settings {
   showTopBarThemeColorGradient: boolean
   showBewlyOrBiliTopBarSwitcher: boolean
   showBewlyOrBiliPageSwitcher: boolean
-  showBewlyOrBiliPageSwitcherOnMorePages: boolean
   topBarLogoStyle: TopBarLogoStyle
   topBarIconBadges: 'number' | 'dot' | 'none'
   showWatchLaterBadge: boolean
@@ -319,6 +319,7 @@ export interface Settings {
   halfHideDock: boolean
   dockPosition: 'left' | 'right' | 'bottom'
   dockItemsConfig: { page: AppPage, visible: boolean, openInNewTab: boolean, useOriginalBiliPage: boolean }[]
+  pageMode: PageMode
   disableDockGlowingEffect: boolean
   disableLightDarkModeSwitcherOnDock: boolean
   backToTopAndRefreshButtonsAreSeparated: boolean
@@ -553,7 +554,6 @@ export const originalSettings: Settings = {
   showTopBarThemeColorGradient: true,
   showBewlyOrBiliTopBarSwitcher: true,
   showBewlyOrBiliPageSwitcher: true,
-  showBewlyOrBiliPageSwitcherOnMorePages: false,
   topBarLogoStyle: 'icon',
   topBarIconBadges: 'number',
   showWatchLaterBadge: false,
@@ -605,6 +605,7 @@ export const originalSettings: Settings = {
   halfHideDock: false,
   dockPosition: 'right',
   dockItemsConfig: [],
+  pageMode: 'custom',
   disableDockGlowingEffect: false,
   disableLightDarkModeSwitcherOnDock: false,
   backToTopAndRefreshButtonsAreSeparated: true,

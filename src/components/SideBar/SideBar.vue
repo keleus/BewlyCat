@@ -3,13 +3,22 @@ import { Icon } from '@iconify/vue'
 
 import { useDark } from '~/composables/useDark'
 import { useDelayedHover } from '~/composables/useDelayedHover'
+import type { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 
+import PageModeSwitcherButton from '../PageModeSwitcherButton.vue'
 import Tooltip from '../Tooltip.vue'
 import type { HoveringDockItem } from './types'
 
+const props = defineProps<{
+  activatedPage: AppPage
+}>()
 const emit = defineEmits(['settingsVisibilityChange'])
 const { isDark, toggleDark } = useDark()
+
+const tooltipPlacement = computed<'left' | 'right'>(() => {
+  return settings.value.sidebarPosition === 'left' ? 'right' : 'left'
+})
 
 const hideSidebar = ref<boolean>(false)
 const sideBarContentHover = ref<boolean>(false)
@@ -78,7 +87,13 @@ function toggleHideSidebar(hide: boolean) {
       pointer-events-auto
       duration-300
     >
-      <Tooltip :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" placement="left">
+      <PageModeSwitcherButton
+        v-if="settings.showBewlyOrBiliPageSwitcher"
+        :activated-page="props.activatedPage"
+        :placement="tooltipPlacement"
+        variant="sidebar"
+      />
+      <Tooltip :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" :placement="tooltipPlacement">
         <Button
           class="ctrl-btn"
           style="backdrop-filter: var(--bew-filter-glass-1);"
@@ -101,7 +116,7 @@ function toggleHideSidebar(hide: boolean) {
           </Transition>
         </Button>
       </Tooltip>
-      <Tooltip :content="$t('dock.settings')" placement="left">
+      <Tooltip :content="$t('dock.settings')" :placement="tooltipPlacement">
         <Button
           class="ctrl-btn group"
           style="backdrop-filter: var(--bew-filter-glass-1);"
@@ -122,8 +137,8 @@ function toggleHideSidebar(hide: boolean) {
 
 <style lang="scss" scoped>
 .ctrl-btn {
-  --b-button-width: 40px;
-  --b-button-height: 40px;
+  --b-button-width: var(--bew-floating-control-size);
+  --b-button-height: var(--bew-floating-control-size);
   --b-button-border-width: 1px;
   --b-button-color: var(--bew-elevated);
   --b-button-color-hover: var(--bew-elevated-hover);
@@ -132,12 +147,32 @@ function toggleHideSidebar(hide: boolean) {
   --b-button-shadow-active: var(--bew-shadow-1);
 
   svg {
-    --uno: "w-20px h-20px shrink-0";
+    width: var(--bew-floating-control-icon-size);
+    height: var(--bew-floating-control-icon-size);
+    flex-shrink: 0;
   }
 
   &::after {
     // safety area
     --uno: "content-empty absolute w-[calc(100%+12px)] h-[calc(100%+12px)] left--6px right--6px z--1";
+  }
+}
+
+.ctrl-btn.ctrl-btn {
+  transition:
+    color var(--bew-duration-moderate) var(--bew-ease-standard),
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    border-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard),
+    opacity var(--bew-duration-moderate) var(--bew-ease-standard),
+    transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.9);
   }
 }
 

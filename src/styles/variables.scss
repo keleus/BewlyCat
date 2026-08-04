@@ -102,6 +102,17 @@
   --bew-control-background: var(--bew-elevated);
   --bew-control-background-white: color-mix(in oklab, var(--bew-elevated-solid), transparent 80%);
   --bew-control-border-color: transparent;
+  --bew-floating-control-size: 40px;
+  --bew-dock-control-size: 35px;
+  --bew-dock-control-size-lg: 45px;
+  --bew-floating-control-icon-size: var(--bew-icon-size-md);
+  --bew-dock-control-icon-size: 18px;
+  --bew-dock-control-icon-size-lg: 22px;
+  --bew-dock-navigation-active-bg: hsl(0 0% 100%);
+  --bew-dock-navigation-active-color: hsl(0 0% 0%);
+  --bew-dock-navigation-active-shadow: 0 4px 30px 4px rgb(255 255 255 / 60%);
+  --bew-dock-navigation-hover-icon-glow: drop-shadow(0 0 2px rgb(255 255 255 / 90%))
+    drop-shadow(0 0 8px rgb(255 255 255 / 70%));
   // #endregion
 
   // Search and logo stay one step larger (still full capsule/circle)

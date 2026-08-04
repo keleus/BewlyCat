@@ -7,7 +7,6 @@ import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
-import BewlyOrBiliPageSwitcher from './BewlyOrBiliPageSwitcher.vue'
 import ChannelsPop from './pops/ChannelsPop.vue'
 import TopBarPinnedChannels from './TopBarPinnedChannels.vue'
 
@@ -118,8 +117,6 @@ const channels = setupTopBarItemHoverEvent('channels')
         />
       </a>
     </div>
-
-    <BewlyOrBiliPageSwitcher :force-white-icon="forceWhiteIcon" z-1 />
 
     <TopBarPinnedChannels :force-white-icon="forceWhiteIcon" />
   </div>

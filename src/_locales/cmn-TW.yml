@@ -294,8 +294,7 @@ settings:
   show_home_button_in_touch_mode_desc: 在觸控螢幕優化開啟時，在頂部列 Logo 旁邊顯示一個可以直接跳轉到首頁的按鈕。
   open_top_bar_items_in_bewly: 點選頂部列圖示開啟 Bewly 頁面
   open_top_bar_items_in_bewly_desc: 未啟用觸控螢幕優化時，點選 Logo、動態、收藏、歷史或稍後再看圖示，將依照「頂部列連結開啟行為」開啟 Dock 中對應的頁面，並沿用該頁面的 Bewly/原版 Bilibili 設定；尚未適配的圖示維持原有行為。
-  show_bewly_or_bili_page_switcher_desc: 在首頁 Logo 旁顯示切換器，用於在 BewlyCat 頁面與 Bilibili 原版頁面之間切換。
-  show_bewly_or_bili_page_switcher_on_more_pages_desc: 在動態、搜尋、番劇、收藏、歷史和稍後再看等 Bilibili 原版頁面顯示切換器；切換到 BewlyCat 時會開啟對應的插件頁面。
+  show_bewly_or_bili_page_switcher_desc: 在浮動 Dock 或側邊欄中顯示「全原版」、「全 Bewly」與「自訂」頁面模式切換按鈕。
   show_bewly_or_bili_top_bar_switcher_desc: 在頁面頂部懸停時顯示切換器，用於在 BewlyCat 頂部列與 Bilibili 原版頂部列之間切換。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開啟後，頂部列頭像彈窗中的 LV6 等級資訊區域將不再顯示最後登入時間和地點，也不會請求登入記錄。
@@ -450,8 +449,7 @@ settings:
   enable_top_bar_gradient_desc: 開啟後頂部列預設使用毛玻璃漸變，關閉後改為實色背景。
   show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）
   show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂部列切換器
-  show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器
-  show_bewly_or_bili_page_switcher_on_more_pages: 在更多頁面顯示 BewlyCat/Bilibili 頁面切換器
+  show_bewly_or_bili_page_switcher: 顯示頁面模式切換按鈕
   filter_articles_in_moments: 過濾專欄
   filter_articles_in_moments_desc: 在動態列表中過濾專欄內容，僅顯示影片
   top_bar_icon_badges: 圖示標記樣式
@@ -973,6 +971,11 @@ dock:
   watch_later: 稍後觀看
   favorites: 收藏
   moments: 動態
+  page_mode_original: 全原版
+  page_mode_bewly: 全 Bewly
+  page_mode_custom: 自訂
+  page_mode_switch_tooltip: 目前：{current}；點選切換至{next}
+  bewly_page_unavailable: 目前頁面暫無 BewlyCat 版本
   dark_mode: 深色模式
   light_mode: 淺色模式
   settings: 設定

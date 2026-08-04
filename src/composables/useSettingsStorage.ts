@@ -24,6 +24,15 @@ interface UseSettingsStorageOptions<T> {
   onReady?: (value: T) => void
 }
 
+export interface SettingsStorageRef<T extends object> extends StorageRef<T> {
+  flush: () => Promise<void>
+}
+
+interface SettingsStorageFlushWaiter {
+  reject: (error: unknown) => void
+  resolve: () => void
+}
+
 const MAX_MESSAGE_ATTEMPTS = 5
 
 class StaleStorageGenerationError extends Error {}
@@ -83,7 +92,7 @@ function createClientId() {
 export function useSettingsStorage<T extends object>(
   initialValue: MaybeRef<T>,
   options: UseSettingsStorageOptions<T> = {},
-): StorageRef<T> {
+): SettingsStorageRef<T> {
   const defaults = cloneValue(toValue(initialValue))
   const data = ref(cloneValue(defaults)) as StorageRef<T>
   const onError = options.onError ?? ((error: unknown) => console.error(error))
@@ -103,6 +112,25 @@ export function useSettingsStorage<T extends object>(
   let disposed = false
   let storageGeneration = 0
   let readInFlightGeneration: number | null = null
+  const flushWaiters = new Set<SettingsStorageFlushWaiter>()
+
+  const storageIsIdle = () => ready
+    && persistenceReady
+    && !inFlightPatch
+    && isSettingsStoragePatchEmpty(queuedPatch)
+
+  const resolveFlushWaitersIfIdle = () => {
+    if (!storageIsIdle())
+      return
+
+    flushWaiters.forEach(waiter => waiter.resolve())
+    flushWaiters.clear()
+  }
+
+  const rejectFlushWaiters = (error: unknown) => {
+    flushWaiters.forEach(waiter => waiter.reject(error))
+    flushWaiters.clear()
+  }
 
   const renderCanonicalValue = () => {
     let nextValue = canonicalValue
@@ -179,8 +207,15 @@ export function useSettingsStorage<T extends object>(
   }
 
   const flushQueuedPatch = async () => {
-    if (disposed || !ready || !persistenceReady || inFlightPatch || isSettingsStoragePatchEmpty(queuedPatch))
+    if (disposed) {
+      rejectFlushWaiters(new Error('Settings storage was disposed before pending writes were flushed'))
       return
+    }
+
+    if (!ready || !persistenceReady || inFlightPatch || isSettingsStoragePatchEmpty(queuedPatch)) {
+      resolveFlushWaitersIfIdle()
+      return
+    }
 
     const patch = queuedPatch
     const generation = storageGeneration
@@ -200,10 +235,16 @@ export function useSettingsStorage<T extends object>(
       if (generation !== storageGeneration)
         return
       if (!response.accepted || response.epoch !== currentEpoch) {
+        // Preserve edits queued while this request was in flight. Applying the
+        // in-flight patch first keeps the later queued values authoritative.
+        const pendingPatch = mergeSettingsStoragePatches(patch, queuedPatch)
         resetStorageGeneration(response.epoch)
         persistenceReady = true
         applyCanonicalValue(response.storedValue, response.revision, true)
+        queuedPatch = pendingPatch
+        renderCanonicalValue()
         void flushQueuedPatch()
+        resolveFlushWaitersIfIdle()
         return
       }
 
@@ -211,6 +252,7 @@ export function useSettingsStorage<T extends object>(
       inFlightPatch = null
       renderCanonicalValue()
       void flushQueuedPatch()
+      resolveFlushWaitersIfIdle()
     }
     catch (error) {
       if (error instanceof StaleStorageGenerationError || generation !== storageGeneration)
@@ -220,7 +262,21 @@ export function useSettingsStorage<T extends object>(
       inFlightPatch = null
       renderCanonicalValue()
       onError(error)
+      rejectFlushWaiters(error)
     }
+  }
+
+  const flushPendingWrites = (): Promise<void> => {
+    if (disposed)
+      return Promise.reject(new Error('Settings storage was disposed before pending writes were flushed'))
+
+    void flushQueuedPatch()
+    if (storageIsIdle())
+      return Promise.resolve()
+
+    return new Promise<void>((resolve, reject) => {
+      flushWaiters.add({ resolve, reject })
+    })
   }
 
   watch(
@@ -274,8 +330,10 @@ export function useSettingsStorage<T extends object>(
       void flushQueuedPatch()
     }
     catch (error) {
-      if (!(error instanceof StaleStorageGenerationError))
+      if (!(error instanceof StaleStorageGenerationError)) {
         onError(error)
+        rejectFlushWaiters(error)
+      }
     }
     finally {
       if (readInFlightGeneration === generation)
@@ -324,10 +382,15 @@ export function useSettingsStorage<T extends object>(
     onScopeDispose(() => {
       disposed = true
       browser.storage.onChanged.removeListener(onStorageChanged)
+      rejectFlushWaiters(new Error('Settings storage was disposed before pending writes were flushed'))
     })
   }
 
   void refreshCanonicalValue(true)
 
-  return data
+  Object.defineProperty(data, 'flush', {
+    value: flushPendingWrites,
+  })
+
+  return data as SettingsStorageRef<T>
 }

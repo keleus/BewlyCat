@@ -467,7 +467,6 @@ function changeMenuItem(menuItem: MenuType) {
           <div
             class="settings-primary-navigation__surface"
             :style="{
-              boxShadow: 'var(--bew-shadow-edge-glow-2)',
               // 对齐 1.6.9：侧栏固定用 dialog 级 glass-2
               backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
             }"
@@ -712,6 +711,8 @@ function changeMenuItem(menuItem: MenuType) {
   inset: 0;
   box-sizing: border-box;
   border: 1px solid var(--bew-border-color);
+  box-shadow: none;
+  transition: box-shadow var(--bew-duration-moderate) var(--bew-ease-standard);
 }
 
 .settings-primary-navigation__item {
@@ -725,8 +726,8 @@ function changeMenuItem(menuItem: MenuType) {
   border-radius: var(--bew-space-5); // Half of the collapsed 40px item.
   transition:
     border-radius var(--bew-duration-moderate) var(--bew-ease-standard),
-    color var(--bew-duration-normal) var(--bew-ease-standard),
-    background-color var(--bew-duration-normal) var(--bew-ease-standard);
+    color var(--bew-duration-moderate) var(--bew-ease-standard),
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard);
 
   &:hover:not(.menu-item-activated) {
     background: var(--bew-fill-2);
@@ -746,6 +747,10 @@ function changeMenuItem(menuItem: MenuType) {
     );
     border-radius: var(--bew-radius-2xl);
     transform: scale(1.05);
+  }
+
+  .settings-primary-navigation__surface {
+    box-shadow: var(--bew-shadow-edge-glow-2);
   }
 }
 

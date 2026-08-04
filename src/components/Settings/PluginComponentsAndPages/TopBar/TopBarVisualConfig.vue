@@ -324,20 +324,6 @@ function toggleChannel(value: string) {
       :desc="$t('settings.topbar_switchers_desc')"
     >
       <SettingsItem
-        :title="$t('settings.show_bewly_or_bili_page_switcher')"
-        :desc="$t('settings.show_bewly_or_bili_page_switcher_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.showBewlyOrBiliPageSwitcher" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.show_bewly_or_bili_page_switcher_on_more_pages')"
-        :desc="$t('settings.show_bewly_or_bili_page_switcher_on_more_pages_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.showBewlyOrBiliPageSwitcherOnMorePages" />
-      </SettingsItem>
-      <SettingsItem
         :title="$t('settings.show_bewly_or_bili_top_bar_switcher')"
         :desc="$t('settings.show_bewly_or_bili_top_bar_switcher_desc')"
         right-width="auto"

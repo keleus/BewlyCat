@@ -9,6 +9,49 @@ export interface LiquidSegmentRect {
   height: number
 }
 
+interface LiquidSegmentMeasurementBox {
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+/**
+ * Converts viewport measurements back into the untransformed coordinate space
+ * of the segmented-control container.
+ */
+function calculateLiquidSegmentRect({
+  containerBox,
+  containerLayoutWidth,
+  containerLayoutHeight,
+  itemBox,
+  clientLeft,
+  clientTop,
+  scrollLeft,
+  scrollTop,
+}: {
+  containerBox: LiquidSegmentMeasurementBox
+  containerLayoutWidth: number
+  containerLayoutHeight: number
+  itemBox: LiquidSegmentMeasurementBox
+  clientLeft: number
+  clientTop: number
+  scrollLeft: number
+  scrollTop: number
+}): LiquidSegmentRect {
+  const scaleX = containerLayoutWidth > 0 ? containerBox.width / containerLayoutWidth : 1
+  const scaleY = containerLayoutHeight > 0 ? containerBox.height / containerLayoutHeight : 1
+  const normalizedScaleX = Number.isFinite(scaleX) && scaleX > 0 ? scaleX : 1
+  const normalizedScaleY = Number.isFinite(scaleY) && scaleY > 0 ? scaleY : 1
+
+  return {
+    x: (itemBox.left - containerBox.left) / normalizedScaleX - clientLeft + scrollLeft,
+    y: (itemBox.top - containerBox.top) / normalizedScaleY - clientTop + scrollTop,
+    width: itemBox.width / normalizedScaleX,
+    height: itemBox.height / normalizedScaleY,
+  }
+}
+
 /** Keep in sync with CSS move duration for wheel threshold / cooldown */
 export const LIQUID_MOVE_DURATION_MS = 300
 
@@ -158,12 +201,16 @@ export function useLiquidSegmentIndicator(options: {
   function readItemRect(container: HTMLElement, el: HTMLElement): LiquidSegmentRect {
     const containerBox = container.getBoundingClientRect()
     const itemBox = el.getBoundingClientRect()
-    return {
-      x: itemBox.left - containerBox.left - container.clientLeft + container.scrollLeft,
-      y: itemBox.top - containerBox.top - container.clientTop + container.scrollTop,
-      width: itemBox.width,
-      height: itemBox.height,
-    }
+    return calculateLiquidSegmentRect({
+      containerBox,
+      containerLayoutWidth: container.offsetWidth,
+      containerLayoutHeight: container.offsetHeight,
+      itemBox,
+      clientLeft: container.clientLeft,
+      clientTop: container.clientTop,
+      scrollLeft: container.scrollLeft,
+      scrollTop: container.scrollTop,
+    })
   }
 
   function animateMorph(from: LiquidSegmentRect, to: LiquidSegmentRect) {
