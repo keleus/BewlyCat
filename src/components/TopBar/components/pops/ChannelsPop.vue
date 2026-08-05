@@ -107,7 +107,7 @@ const otherLinks = computed(() => {
 
   a {
     --uno: "flex items-center text-nowrap min-w-160px h-38px py-2 pl-4 pr-3 rounded-$bew-radius duration-300";
-    --uno: "hover:bg-$bew-fill-alt hover:shadow-[var(--bew-shadow-1),var(--bew-shadow-edge-glow-1)]";
+    --uno: "hover:bg-$bew-fill-2";
   }
 }
 
