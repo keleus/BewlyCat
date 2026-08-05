@@ -212,17 +212,20 @@ function refreshSearchContent() {
         磨砂层跟随「启用毛玻璃效果」开关，默认不渲染。
         堆叠 backdrop-filter 的合成开销是真实的，默认给所有人开会让低端设备掉帧；
         雾色层本身已经提供了可读性所需的遮挡，模糊只是质感加成，所以让它可选。
+
+        开启后模糊层常驻，不跟随 reachTop 挂载／卸载：reachTop 是 scrollTop === 0，
+        滚 1px 就翻转，从前那层 <Transition name="fade"> 会让整叠磨砂在 300ms 里凭空
+        淡入，用户看得见"材质生效"的过程；壁纸模式下同时还叠着雾色 0.8 → 1，两个变化
+        撞在一起更刺眼。iOS 的做法是导航栏材质常在、滚动只加强，这里对齐。
       -->
-      <Transition name="fade">
-        <div v-if="!reachTop && settings.enableFrostedGlass" class="top-bar-header__blur-stack">
-          <div
-            v-for="(layer, index) in blurLayers"
-            :key="index"
-            class="top-bar-header__blur-layer"
-            :style="layer"
-          />
-        </div>
-      </Transition>
+      <div v-if="settings.enableFrostedGlass" class="top-bar-header__blur-stack">
+        <div
+          v-for="(layer, index) in blurLayers"
+          :key="index"
+          class="top-bar-header__blur-layer"
+          :style="layer"
+        />
+      </div>
 
       <div
         class="top-bar-header__tint"
