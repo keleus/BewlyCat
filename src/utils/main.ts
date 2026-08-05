@@ -513,7 +513,12 @@ export function cleanBilibiliUrl(url: string): string {
     const urlObj = new URL(url)
 
     // Only clean bilibili.com URLs
-    if (!urlObj.hostname.includes('bilibili.com') && !urlObj.hostname.includes('b23.tv'))
+    const hostname = urlObj.hostname.toLowerCase()
+    const isBilibiliHost = hostname === 'bilibili.com'
+      || hostname === 'b23.tv'
+      || hostname.endsWith('.bilibili.com')
+      || hostname.endsWith('.b23.tv')
+    if (!isBilibiliHost)
       return url
 
     // Remove tracking parameters

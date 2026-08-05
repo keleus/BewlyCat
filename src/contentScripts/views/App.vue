@@ -851,7 +851,8 @@ if (settings.value.cleanUrlArgument) {
           hasChanged = true
         }
       }
-      if (currentUrl.hostname.endsWith('bilibili.com') && currentUrl.pathname.startsWith('/video/')) {
+      const hostname = currentUrl.hostname
+      if ((hostname === 'bilibili.com' || hostname.endsWith('.bilibili.com')) && currentUrl.pathname.startsWith('/video/')) {
         for (const param of VIDEO_ONLY_PARAMS_TO_REMOVE) {
           if (currentUrl.searchParams.has(param)) {
             currentUrl.searchParams.delete(param)

@@ -22,7 +22,10 @@ let broadcastTimer: ReturnType<typeof setTimeout> | null = null
  */
 export function setupLoginStateWatcher() {
   browser.cookies.onChanged.addListener(({ cookie }) => {
-    if (!WATCHED_COOKIE_NAMES.has(cookie.name) || !cookie.domain.endsWith('bilibili.com'))
+    const normalizedDomain = cookie.domain.trim().toLowerCase().replace(/^\.+/, '')
+    const isBilibiliDomain = normalizedDomain === 'bilibili.com' || normalizedDomain.endsWith('.bilibili.com')
+
+    if (!WATCHED_COOKIE_NAMES.has(cookie.name) || !isBilibiliDomain)
       return
 
     scheduleBroadcastLoginStateChanged()

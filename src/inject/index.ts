@@ -3239,7 +3239,12 @@ else if (shouldInitializePageScript) {
   function cleanUrl(url: string): string {
     try {
       const urlObj = new URL(url)
-      if (!urlObj.hostname.includes('bilibili.com') && !urlObj.hostname.includes('b23.tv'))
+      const hostname = urlObj.hostname.toLowerCase()
+      const isBilibiliHost = hostname === 'bilibili.com'
+        || hostname === 'b23.tv'
+        || hostname.endsWith('.bilibili.com')
+        || hostname.endsWith('.b23.tv')
+      if (!isBilibiliHost)
         return url
       for (const param of BILIBILI_TRACKING_PARAMS)
         urlObj.searchParams.delete(param)

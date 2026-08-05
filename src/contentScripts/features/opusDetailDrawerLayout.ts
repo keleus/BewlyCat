@@ -1192,13 +1192,34 @@ function markArticleMode(enabled: boolean) {
 }
 
 function normalizeImageUrl(url = ''): string {
-  if (!url || url.startsWith('data:'))
+  const raw = url.trim()
+  if (!raw)
     return ''
-  let next = url.trim()
-  if (next.startsWith('//'))
-    next = `https:${next}`
-  next = next.replace(/^http:/, 'https:')
-  next = next.replace(/@[^/?#]*(?=[?#]|$)/, '')
+
+  let candidate = raw
+  if (candidate.startsWith('//'))
+    candidate = `https:${candidate}`
+
+  let parsed: URL
+  try {
+    parsed = new URL(candidate, location.href)
+  }
+  catch {
+    return ''
+  }
+
+  if (parsed.username || parsed.password)
+    return ''
+  if (parsed.protocol === 'http:')
+    parsed.protocol = 'https:'
+  if (parsed.protocol !== 'https:')
+    return ''
+
+  parsed.pathname = parsed.pathname.replace(/@[^/?#]*(?=[?#]|$)/, '')
+  // URL.href already canonicalizes URL components. encodeURI additionally keeps
+  // any remaining HTML/URL metacharacters from flowing into an image src while
+  // the replacement preserves existing percent-encoded octets.
+  const next = encodeURI(parsed.href).replace(/%25([0-9a-f]{2})/gi, '%$1')
   // 过滤头像、表情、游戏/推荐小图标等
   if (/\/face\/|\/bfs\/face\/|emoji|emote|static\.hdslb\.com\/images\/|\/garb\/|\/activity-plat\/|\/game\/|icon\.png|icon\.webp|favicon|avatar/i.test(next))
     return ''
@@ -1318,7 +1339,10 @@ function unmountGalleryIcons() {
   galleryIconHosts = []
 }
 
-function createImageGallery(urls: string[]): HTMLElement {
+function createImageGallery(rawUrls: string[]): HTMLElement {
+  const urls = rawUrls
+    .map(url => normalizeImageUrl(url))
+    .filter((url): url is string => Boolean(url))
   unmountGalleryIcons()
   const gallery = document.createElement('div')
   gallery.className = 'bewly-opus-gallery'

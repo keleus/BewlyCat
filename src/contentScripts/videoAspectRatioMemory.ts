@@ -59,7 +59,7 @@ function syncVideoAspectRatio() {
 }
 
 export function initVideoAspectRatioMemory() {
-  if (hasInitialized || location.hostname.includes('live.bilibili.com'))
+  if (hasInitialized || location.hostname === 'live.bilibili.com')
     return
 
   hasInitialized = true

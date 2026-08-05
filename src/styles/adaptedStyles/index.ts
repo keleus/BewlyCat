@@ -102,19 +102,19 @@ async function setupStyles() {
   }
 
   // user note page 笔记页
-  else if (/https?:\/\/space.bilibili\.com\.*\/v\/note-list/.test(currentUrl)) {
+  else if (/^https?:\/\/space\.bilibili\.com\/v\/note-list/.test(currentUrl)) {
     await import('./pages/notePage.scss')
     document.documentElement.classList.add('notePage')
   }
 
   // user space page 空间页
-  else if (/https?:\/\/space.bilibili\.com\.*/.test(currentUrl)) {
+  else if (/^https?:\/\/space\.bilibili\.com(?:\/|$).*/.test(currentUrl)) {
     await import('./pages/userSpacePage.scss')
     document.documentElement.classList.add('userSpacePage')
   }
 
   // search page 搜索结果页
-  else if (/https?:\/\/search.bilibili\.com\.*/.test(currentUrl)) {
+  else if (/^https?:\/\/search\.bilibili\.com(?:\/|$).*/.test(currentUrl)) {
     await import('./pages/searchPage.scss')
     document.documentElement.classList.add('searchPage')
   }

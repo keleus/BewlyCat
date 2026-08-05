@@ -14,6 +14,31 @@ interface WbiKeyOptions {
   noCookie?: boolean
 }
 
+const BILIBILI_API_ORIGIN = 'https://api.bilibili.com'
+const NAV_PATH = '/x/web-interface/nav'
+const BILI_TICKET_PATH = '/x/web-interface/bili_ticket'
+const FEEDBACK_DISLIKE_PATH = '/x/web-interface/feedback/dislike'
+
+/**
+ * Parse an API URL only when it points at the exact Bilibili API origin.
+ */
+export function parseBilibiliApiUrl(url: string): URL | null {
+  try {
+    const parsedUrl = new URL(url)
+    return parsedUrl.origin === BILIBILI_API_ORIGIN ? parsedUrl : null
+  }
+  catch {
+    return null
+  }
+}
+
+/**
+ * Check whether a URL targets the nav endpoint (query parameters are allowed).
+ */
+export function isBilibiliNavUrl(url: string): boolean {
+  return parseBilibiliApiUrl(url)?.pathname === NAV_PATH
+}
+
 // 登录态和匿名态的 nav 请求可能返回不同密钥，必须分别缓存。
 let authenticatedWbiKeysCache: WbiKeys | null = null
 let anonymousWbiKeysCache: WbiKeys | null = null
@@ -258,23 +283,29 @@ export async function initWbiKeys(options: WbiKeyOptions = {}): Promise<boolean>
  * 检查是否需要WBI签名的URL
  */
 export function needsWbiSign(url: string): boolean {
+  const parsedUrl = parseBilibiliApiUrl(url)
+  if (!parsedUrl)
+    return false
+
+  const { pathname } = parsedUrl
+
   // 排除nav接口
-  if (url.includes('https://api.bilibili.com/x/web-interface/nav'))
+  if (pathname === NAV_PATH)
     return false
   // 排除bili_ticket接口
-  if (url.includes('https://api.bilibili.com/x/web-interface/bili_ticket'))
+  if (pathname === BILI_TICKET_PATH)
     return false
   // 首页推荐的 web dislike 接口也要求附带 w_rid/wts
-  if (url.includes('https://api.bilibili.com/x/web-interface/feedback/dislike'))
+  if (pathname === FEEDBACK_DISLIKE_PATH)
     return true
 
   // WBI签名判断规则：
   // 1. URL中明确包含 /wbi/
   // 2. 匹配 /x/.../v1/、/x/.../v2/、/x/.../v3/ 模式（/.../可以是直接连着的，如/x/v2/）
-  if (url.includes('/wbi/'))
+  if (pathname.includes('/wbi/'))
     return true
 
   // 匹配版本号路径：/x/任意内容/v1/ 或 /x/任意内容/v2/ 或 /x/任意内容/v3/
   const versionPattern = /\/x\/.*\/v[123]\//
-  return versionPattern.test(url)
+  return versionPattern.test(pathname)
 }
