@@ -7,6 +7,7 @@ import MomentCard from '~/components/MomentCard/MomentCard.vue'
 import type { DisplayForwardVideo, DisplayMoment, DisplayRichTextSegment, WatchLaterTarget } from '~/components/MomentCard/types'
 import {
   formatCount,
+  getCardPreviewText,
   getMomentThumbnailUrl,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
@@ -193,9 +194,13 @@ interface VirtualColumn {
   items: DisplayMoment[]
 }
 const virtualColumns = ref<VirtualColumn[]>([])
-/** 单图宽高比（宽/高），仅用于详情视频的封面比例兜底和虚拟列表测量 */
+/** 单图宽高比（宽/高），用于图文卡片比例和详情视频的封面比例兜底 */
 const coverRatios = reactive<Record<string, number>>({})
-const MIN_SINGLE_IMAGE_RATIO = 1 / 2
+
+function getSafeImageRatio(width: number, height: number) {
+  const ratio = width / height
+  return Number.isFinite(ratio) && ratio > 0 ? ratio : undefined
+}
 let gridObserver: ResizeObserver | undefined
 let liveFlvPlayer: any = null
 let liveHlsPlayer: any = null
@@ -1251,24 +1256,59 @@ function estimateCardHeight(moment: DisplayMoment) {
   if (columnWidth < CARD_MIN_WIDTH) {
     if (moment.isLive)
       return Math.round(columnWidth * 9 / 16) + 210 + interactionHeight
-    if (moment.isVideo)
-      return Math.round((columnWidth - 32) * 9 / 16) + 210 + interactionHeight
+    if (moment.isVideo) {
+      const mediaWidth = Math.max(1, columnWidth - 32)
+      const charsPerLine = Math.max(12, Math.floor(mediaWidth / 14))
+      const titleLines = moment.title
+        ? Math.min(2, Math.max(1, Math.ceil(Array.from(moment.title).length / charsPerLine)))
+        : 0
+      const previewText = getCardPreviewText(moment)
+      const descLines = previewText
+        ? Math.min(3, Math.max(1, Math.ceil(Array.from(previewText).length / charsPerLine)))
+        : 0
+      const bodyHeight = titleLines * 22
+        + (titleLines && descLines ? 8 : 0)
+        + descLines * 24
+      return Math.round(mediaWidth * 9 / 16)
+        + 126
+        + bodyHeight
+        + (moment.additional ? 68 : 0)
+        + interactionHeight
+    }
   }
   if (moment.isLive)
     return Math.round((columnWidth - 32) * 9 / 16) + 190 + interactionHeight
   if (moment.isVideo) {
-    // 与卡片的左右 1:1 栏位和 16:9 视频封面保持一致。
-    const mediaWidth = Math.max(170, (columnWidth - 44) / 2)
-    return Math.round(mediaWidth * 9 / 16) + 120 + (moment.additional ? 68 : 0) + interactionHeight
+    // Regular video cards are stacked vertically: full-width cover followed
+    // by the clamped title/description block and footer.
+    const mediaWidth = Math.max(1, columnWidth - 32)
+    const charsPerLine = Math.max(12, Math.floor(mediaWidth / 14))
+    const titleLines = moment.title
+      ? Math.min(2, Math.max(1, Math.ceil(Array.from(moment.title).length / charsPerLine)))
+      : 0
+    const previewText = getCardPreviewText(moment)
+    const descLines = previewText
+      ? Math.min(3, Math.max(1, Math.ceil(Array.from(previewText).length / charsPerLine)))
+      : 0
+    const bodyHeight = titleLines * 22
+      + (titleLines && descLines ? 8 : 0)
+      + descLines * 24
+    return Math.round(mediaWidth * 9 / 16)
+      + 126
+      + bodyHeight
+      + (moment.additional ? 68 : 0)
+      + interactionHeight
   }
   if (moment.images.length && !moment.isVideo && !moment.isLive) {
-    const galleryRatio = moment.images.length <= 3
-      ? moment.images.length
-      : moment.images.length <= 4
-        ? 1
-        : moment.images.length <= 6
-          ? 3 / 2
-          : 1
+    const galleryRatio = moment.images.length === 1
+      ? coverRatios[moment.id] || 1
+      : moment.images.length <= 3
+        ? moment.images.length
+        : moment.images.length <= 4
+          ? 1
+          : moment.images.length <= 6
+            ? 3 / 2
+            : 1
     return Math.round((columnWidth - 32) / galleryRatio) + 220 + interactionHeight
   }
   return 230 + scaledTextBodyExtra + interactionHeight
@@ -2095,14 +2135,15 @@ function handleCoverLoad(event: Event, momentId: string) {
     return
 
   readyCoverIds.add(momentId)
-  const ratio = img.naturalWidth / img.naturalHeight
+  const ratio = getSafeImageRatio(img.naturalWidth, img.naturalHeight)
+  if (!ratio)
+    return
   const moment = moments.value.find(item => item.id === momentId)
-  const nextRatio = Math.max(ratio, MIN_SINGLE_IMAGE_RATIO)
   const prevRatio = coverRatios[momentId]
-  coverRatios[momentId] = nextRatio
+  coverRatios[momentId] = ratio
 
   // 封面比例变化会改估算高度；若尚未实测稳定，用估算高度更新并补偿滚动
-  if (!settledHeights.has(momentId) && (!prevRatio || Math.abs(prevRatio - nextRatio) > 0.01)) {
+  if (!settledHeights.has(momentId) && (!prevRatio || Math.abs(prevRatio - ratio) > 0.01)) {
     if (moment && !cardHeights[momentId]) {
       commitCardHeight(momentId, estimateCardHeight(moment), { force: true })
       scheduleVirtualUpdate()
@@ -2129,8 +2170,9 @@ async function prepareMomentCovers(items: DisplayMoment[], requestToken: number)
     image.decoding = 'async'
     image.onload = async () => {
       if (requestToken === feedRequestToken && image.naturalWidth && image.naturalHeight) {
-        const ratio = image.naturalWidth / image.naturalHeight
-        coverRatios[item.id] = Math.max(ratio, MIN_SINGLE_IMAGE_RATIO)
+        const ratio = getSafeImageRatio(image.naturalWidth, image.naturalHeight)
+        if (ratio)
+          coverRatios[item.id] = ratio
       }
       try {
         await image.decode()
@@ -3488,6 +3530,7 @@ watch(
               v-for="moment in column.items" :key="moment.id"
               :moment="moment"
               :card-width="gridCardWidth"
+              :image-ratio="coverRatios[moment.id]"
               :ready="readyCardIds.has(moment.id)"
               :entering="enteringCardIds.has(moment.id)"
               :preview-active="Boolean(hoveredMediaId === moment.id && previewUrls[moment.id])"

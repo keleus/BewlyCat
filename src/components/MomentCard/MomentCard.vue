@@ -23,6 +23,7 @@ import {
 interface Props {
   moment: DisplayMoment
   cardWidth?: number
+  imageRatio?: number
   ready?: boolean
   entering?: boolean
   previewActive?: boolean
@@ -35,6 +36,7 @@ interface Props {
 const {
   moment,
   cardWidth = 520,
+  imageRatio,
   ready = false,
   entering = false,
   previewActive = false,
@@ -66,6 +68,26 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
     '--moment-card-text-body-min-height': `${Math.round(120 + 230 * (scale - 1))}px`,
     '--moment-card-text-cover-min-height': `${Math.round(176 * scale)}px`,
   } as CSSProperties
+})
+
+const singleImageGalleryStyle = computed<CSSProperties | undefined>(() => {
+  if (
+    moment.images.length !== 1
+    || moment.isVideo
+    || moment.isLive
+    || imageRatio === undefined
+    || !Number.isFinite(imageRatio)
+    || imageRatio <= 0
+  ) {
+    return undefined
+  }
+
+  // Keep a single image's intrinsic geometry.  The list falls back to a
+  // square until the image dimensions are known, then this style updates to
+  // the exact natural ratio for both portrait and landscape images.
+  return {
+    aspectRatio: String(imageRatio),
+  }
 })
 
 // The shared context menu expects the same video shape as VideoCard. A dynamic
@@ -467,6 +489,7 @@ function handleForwardVideoClick() {
           v-if="moment.images.length && !moment.isVideo && !moment.isLive"
           class="moment-card__gallery"
           :class="`moment-card__gallery--${Math.min(moment.images.length, 9)}`"
+          :style="singleImageGalleryStyle"
         >
           <img
             v-for="(image, imageIndex) in moment.images.slice(0, 9)"
@@ -1059,6 +1082,18 @@ function handleForwardVideoClick() {
   gap: var(--bew-space-3);
 }
 
+/* Regular video dynamics use a readable vertical card: cover first, then
+ * title/description. Live cards keep their existing copy-first layout. */
+.moment-card__main--video:not(.moment-card__main--live) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bew-space-3);
+}
+
+.moment-card__main--video:not(.moment-card__main--live) .moment-card__media {
+  width: 100%;
+}
+
 .moment-card__main--live {
   display: flex;
   flex-direction: column;
@@ -1135,6 +1170,12 @@ function handleForwardVideoClick() {
   background: var(--bew-fill-1);
 }
 
+.moment-card__gallery--1 > img {
+  /* The parent receives the natural ratio once loaded. Contain is also a
+   * safe pre-load fallback, so an unknown ratio never crops the source. */
+  object-fit: contain;
+}
+
 .moment-card__gallery .moment-card__image-count {
   right: 8px;
   bottom: 8px;
@@ -1201,6 +1242,11 @@ function handleForwardVideoClick() {
   overflow: hidden;
 }
 
+.moment-card__main--video:not(.moment-card__main--live) .moment-card__body {
+  height: auto;
+  max-height: none;
+}
+
 .moment-card__main--video.moment-card__main--live .moment-card__body {
   height: auto;
   max-height: none;
@@ -1211,6 +1257,11 @@ function handleForwardVideoClick() {
   flex: 1 1 auto;
   -webkit-line-clamp: var(--moment-card-description-lines, unset);
   text-overflow: ellipsis;
+}
+
+.moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
+  flex: 0 0 auto;
+  -webkit-line-clamp: 3;
 }
 
 .moment-card__main--video:not(.moment-card__main--live) .moment-card__title {
