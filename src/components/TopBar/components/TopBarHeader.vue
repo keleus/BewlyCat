@@ -208,8 +208,13 @@ function refreshSearchContent() {
   >
     <!-- 顶栏边缘雾化：渐进模糊 + 雾色 -->
     <div v-if="settings.enableTopBarGradient" class="top-bar-header__scroll-edge" :style="{ height: OVERLAY_HEIGHT }">
+      <!--
+        磨砂层跟随「启用毛玻璃效果」开关，默认不渲染。
+        堆叠 backdrop-filter 的合成开销是真实的，默认给所有人开会让低端设备掉帧；
+        雾色层本身已经提供了可读性所需的遮挡，模糊只是质感加成，所以让它可选。
+      -->
       <Transition name="fade">
-        <div v-if="!reachTop" class="top-bar-header__blur-stack">
+        <div v-if="!reachTop && settings.enableFrostedGlass" class="top-bar-header__blur-stack">
           <div
             v-for="(layer, index) in blurLayers"
             :key="index"
