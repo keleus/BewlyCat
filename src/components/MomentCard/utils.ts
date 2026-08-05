@@ -11,6 +11,21 @@ export function getMomentThumbnailUrl(url = '', width = 560) {
   return `${normalized}@${width}w.webp`
 }
 
+/** Keep the dynamic image's original URL while removing only Bilibili resize suffixes. */
+export function getMomentOriginalImageUrl(url = '') {
+  const normalized = httpsUrl(url)
+  const queryStart = normalized.search(/[?#]/)
+  const path = queryStart === -1 ? normalized : normalized.slice(0, queryStart)
+  if (!path || !/hdslb\.com|biliimg\.com|bilivideo\.com|bilibili\.com/.test(path))
+    return normalized
+
+  const suffix = path.match(/@\d+w(?:_\d+h)?(?:_\d+c)?(?:\.(?:avif|webp|jpe?g|png))?$/i)?.[0]
+  if (!suffix)
+    return normalized
+
+  return `${path.slice(0, -suffix.length)}${queryStart === -1 ? '' : normalized.slice(queryStart)}`
+}
+
 export function getAvatarThumbnailUrl(url = '') {
   const normalized = httpsUrl(url).replace(/@[^/]*$/, '')
   if (!normalized || !/hdslb\.com|biliimg\.com|bilibili\.com/.test(normalized))

@@ -15,6 +15,7 @@ import {
   formatCount,
   getAvatarThumbnailUrl,
   getCardPreviewText,
+  getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
@@ -49,6 +50,7 @@ const {
 const emit = defineEmits<{
   cardElement: [element: HTMLElement | null]
   openDetail: [moment: DisplayMoment, forceDialog?: boolean]
+  openImagePreview: [urls: string[], index: number, trigger: HTMLElement | null]
   mediaEnter: [moment: DisplayMoment]
   mediaLeave: [moment: DisplayMoment]
   coverLoad: [event: Event, momentId: string]
@@ -82,11 +84,10 @@ const singleImageGalleryStyle = computed<CSSProperties | undefined>(() => {
     return undefined
   }
 
-  // Keep a single image's intrinsic geometry.  The list falls back to a
-  // square until the image dimensions are known, then this style updates to
-  // the exact natural ratio for both portrait and landscape images.
+  // Keep landscape/square originals at their natural ratio while portrait
+  // originals use the existing square card treatment.
   return {
-    aspectRatio: String(imageRatio),
+    aspectRatio: String(Math.max(1, imageRatio)),
   }
 })
 
@@ -205,6 +206,23 @@ function handleCardRef(element: Element | ComponentPublicInstance | null) {
 
 function handleCoverLoad(event: Event) {
   emit('coverLoad', event, moment.id)
+}
+
+function handleImagePreviewClick(event: MouseEvent, urls: string[], index: number) {
+  event.preventDefault()
+  event.stopPropagation()
+  const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  emit('openImagePreview', urls, index, trigger)
+}
+
+function handleImagePreviewKeydown(event: KeyboardEvent, urls: string[], index: number) {
+  if (event.key !== 'Enter' && event.key !== ' ')
+    return
+
+  event.preventDefault()
+  event.stopPropagation()
+  const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  emit('openImagePreview', urls, index, trigger)
 }
 
 function handlePreviewVideo(element: Element | ComponentPublicInstance | null) {
@@ -478,8 +496,13 @@ function handleForwardVideoClick() {
                 :key="image"
                 :src="getMomentThumbnailUrl(image, 360)"
                 :alt="`${moment.forward.author} 的动态图片 ${imageIndex + 1}`"
+                :aria-label="`查看 ${moment.forward.author} 的动态图片 ${imageIndex + 1}`"
+                tabindex="0"
+                role="button"
                 loading="lazy"
                 decoding="async"
+                @click="handleImagePreviewClick($event, moment.forward.images || [], imageIndex)"
+                @keydown="handleImagePreviewKeydown($event, moment.forward.images || [], imageIndex)"
               >
             </div>
           </div>
@@ -494,11 +517,16 @@ function handleForwardVideoClick() {
           <img
             v-for="(image, imageIndex) in moment.images.slice(0, 9)"
             :key="image"
-            :src="getMomentThumbnailUrl(image, 360)"
+            :src="moment.images.length === 1 ? getMomentOriginalImageUrl(image) : getMomentThumbnailUrl(image, 360)"
             :alt="`${moment.author.name} 的动态图片 ${imageIndex + 1}`"
+            :aria-label="`查看 ${moment.author.name} 的动态图片 ${imageIndex + 1}`"
+            tabindex="0"
+            role="button"
             loading="lazy"
             decoding="async"
             @load="handleCoverLoad"
+            @click="handleImagePreviewClick($event, moment.images.length === 1 ? [getMomentOriginalImageUrl(image)] : moment.images, imageIndex)"
+            @keydown="handleImagePreviewKeydown($event, moment.images.length === 1 ? [getMomentOriginalImageUrl(image)] : moment.images, imageIndex)"
           >
           <span v-if="moment.images.length > 9" class="moment-card__image-count">+{{ moment.images.length - 9 }}</span>
           <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
@@ -788,6 +816,7 @@ function handleForwardVideoClick() {
 
 .moment-card__image-count {
   right: var(--bew-space-2);
+  pointer-events: none;
 }
 
 .moment-card__video-mark {
@@ -1171,9 +1200,15 @@ function handleForwardVideoClick() {
 }
 
 .moment-card__gallery--1 > img {
-  /* The parent receives the natural ratio once loaded. Contain is also a
-   * safe pre-load fallback, so an unknown ratio never crops the source. */
-  object-fit: contain;
+  /* Portrait originals are shown in a square container and cropped; landscape
+   * originals use their natural ratio and therefore remain uncropped. */
+  object-fit: cover;
+}
+
+.moment-card__gallery > img:focus-visible,
+.moment-card__forward-gallery > img:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: -2px;
 }
 
 .moment-card__gallery .moment-card__image-count {
