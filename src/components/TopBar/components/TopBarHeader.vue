@@ -90,9 +90,14 @@ const tintBackground = computed(() => {
 
   // 亮色白雾、暗色黑雾。这里不能图省事用 --bew-bg：
   // 它在暗色下是深灰，跟深色页面几乎同色，压上去看不出任何变化。
+  //
+  // 亮色要压到满，暗色 75 就够 —— 这个不对称是实测出来的：亮色页面下方是深色文字，
+  // 白雾没压满时透出来的残影在浅底上格外扎眼；暗色页面透出的是浅色文字压在深底上，
+  // 同样残留量看着轻得多。顶部未滚动时这一层还有 opacity: 0.8，所以满值不会一上来
+  // 就糊成一块白。
   return props.isDark
     ? fogGradient('0 0 0', 75)
-    : fogGradient('255 255 255', 80)
+    : fogGradient('255 255 255', 100)
 })
 
 const leftSection = ref<HTMLElement | null>(null)
