@@ -78,6 +78,10 @@ const blurLayers = Array.from({ length: BLUR_LAYER_COUNT }, (_, index) => {
   }
 })
 
+// 实色模式只占顶栏本身的高度，渐变模式才向下延伸出淡出区间
+const backdropHeight = computed(() =>
+  settings.value.enableTopBarGradient ? OVERLAY_HEIGHT : 'var(--bew-top-bar-height)')
+
 // 雾化层只改清晰度，还需要一层雾色叠上去才有"雾"的质感。
 const tintBackground = computed(() => {
   // 壁纸模式下方是图片，压黑雾才压得住
@@ -205,39 +209,48 @@ function refreshSearchContent() {
 <template>
   <main
     class="top-bar-header"
-    :class="{
-      'top-bar-header--solid': !settings.enableTopBarGradient,
-      'top-bar-header--solid-force-white': !settings.enableTopBarGradient && forceWhiteIcon,
-    }"
     max-w="$bew-page-max-width"
     grid="~ cols-[auto_1fr_auto] items-center gap-4"
     p="x-12" m-auto
     h="$bew-top-bar-height"
   >
-    <!-- 顶栏边缘雾化：渐进模糊 + 雾色 -->
-    <div v-if="settings.enableTopBarGradient" class="top-bar-header__scroll-edge" :style="{ height: OVERLAY_HEIGHT }">
-      <!--
-        磨砂层跟随「启用毛玻璃效果」开关，默认不渲染。
-        堆叠 backdrop-filter 的合成开销是真实的，默认给所有人开会让低端设备掉帧；
-        雾色层本身已经提供了可读性所需的遮挡，模糊只是质感加成，所以让它可选。
+    <!--
+      顶栏背景层。这里必须是绝对定位的独立元素，不能把背景直接画在 .top-bar-header 上：
+      .top-bar-header 受 max-width: var(--bew-page-max-width) 约束并居中，而它自身
+      position 是 static，所以这一层的包含块是全宽的 .top-bar —— 宽屏下背景才能铺到
+      视口两端，不会像画在 .top-bar-header 上那样两侧露出间距。
+    -->
+    <div class="top-bar-header__backdrop" :style="{ height: backdropHeight }">
+      <template v-if="settings.enableTopBarGradient">
+        <!--
+          磨砂层跟随「启用毛玻璃效果」开关，默认不渲染。
+          堆叠 backdrop-filter 的合成开销是真实的，默认给所有人开会让低端设备掉帧；
+          雾色层本身已经提供了可读性所需的遮挡，模糊只是质感加成，所以让它可选。
 
-        开启后模糊层常驻，不跟随 reachTop 挂载／卸载：reachTop 是 scrollTop === 0，
-        滚 1px 就翻转，从前那层 <Transition name="fade"> 会让整叠磨砂在 300ms 里凭空
-        淡入，用户看得见"材质生效"的过程；壁纸模式下同时还叠着雾色 0.8 → 1，两个变化
-        撞在一起更刺眼。iOS 的做法是导航栏材质常在、滚动只加强，这里对齐。
-      -->
-      <div v-if="settings.enableFrostedGlass" class="top-bar-header__blur-stack">
+          开启后模糊层常驻，不跟随 reachTop 挂载／卸载：reachTop 是 scrollTop === 0，
+          滚 1px 就翻转，从前那层 <Transition name="fade"> 会让整叠磨砂在 300ms 里凭空
+          淡入，用户看得见"材质生效"的过程；壁纸模式下同时还叠着雾色 0.8 → 1，两个变化
+          撞在一起更刺眼。iOS 的做法是导航栏材质常在、滚动只加强，这里对齐。
+        -->
+        <div v-if="settings.enableFrostedGlass" class="top-bar-header__blur-stack">
+          <div
+            v-for="(layer, index) in blurLayers"
+            :key="index"
+            class="top-bar-header__blur-layer"
+            :style="layer"
+          />
+        </div>
+
         <div
-          v-for="(layer, index) in blurLayers"
-          :key="index"
-          class="top-bar-header__blur-layer"
-          :style="layer"
+          class="top-bar-header__tint"
+          :style="{ background: tintBackground, opacity: reachTop ? 0.8 : 1 }"
         />
-      </div>
+      </template>
 
       <div
-        class="top-bar-header__tint"
-        :style="{ background: tintBackground, opacity: reachTop ? 0.8 : 1 }"
+        v-else
+        class="top-bar-header__solid"
+        :class="{ 'top-bar-header__solid--force-white': forceWhiteIcon }"
       />
     </div>
 
@@ -291,19 +304,7 @@ function refreshSearchContent() {
   min-height: var(--bew-top-bar-height);
 }
 
-.top-bar-header--solid {
-  background: var(--bew-top-bar-solid-background);
-  box-shadow: var(--bew-top-bar-solid-shadow);
-  transition:
-    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
-    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard);
-}
-
-.top-bar-header--solid-force-white {
-  background: var(--bew-top-bar-solid-background-force-white);
-}
-
-.top-bar-header__scroll-edge {
+.top-bar-header__backdrop {
   position: absolute;
   top: 0;
   left: 0;
@@ -313,13 +314,26 @@ function refreshSearchContent() {
 
 .top-bar-header__blur-stack,
 .top-bar-header__blur-layer,
-.top-bar-header__tint {
+.top-bar-header__tint,
+.top-bar-header__solid {
   position: absolute;
   inset: 0;
 }
 
 .top-bar-header__tint {
   transition: opacity 0.3s ease;
+}
+
+.top-bar-header__solid {
+  background: var(--bew-top-bar-solid-background);
+  box-shadow: var(--bew-top-bar-solid-shadow);
+  transition:
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard);
+}
+
+.top-bar-header__solid--force-white {
+  background: var(--bew-top-bar-solid-background-force-white);
 }
 
 .top-bar-header__side {
