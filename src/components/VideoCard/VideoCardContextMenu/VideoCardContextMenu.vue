@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
+import type { VideoCardContextMenuKey } from '~/logic/storage'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
 import api from '~/utils/api'
 import { cleanBilibiliUrl, getCSRF, openLinkToNewTab } from '~/utils/main'
@@ -64,12 +65,11 @@ function scrollToBottom() {
 
 const getVideoType = inject<() => string>('getVideoType')!
 
-const videoOptions = reactive<{ id: number, name: string }[]>([
-  { id: 1, name: '不感兴趣' },
-  { id: 2, name: '不想看此UP主' },
-])
-
 const { t } = useI18n()
+const videoOptions = computed(() => [
+  { id: 1, key: 'notInterested' as const, name: t('video_card.operation.not_interested') },
+  { id: 2, key: 'notInterestedUploader' as const, name: t('video_card.operation.not_interested_uploader') },
+].filter(option => isOptionVisible(option.key)))
 const showContextMenu = ref<boolean>(false)
 const showDislikeDialog = ref<boolean>(false)
 const showBlockUserDialog = ref<boolean>(false)
@@ -99,29 +99,45 @@ enum VideoOption {
   BlockUser,
 }
 
-interface OptionItem { command: VideoOption, name: string, icon: string, color?: string }
+interface OptionItem { command: VideoOption, key: VideoCardContextMenuKey, name: string, icon: string, color?: string }
+
+function isOptionVisible(key: VideoCardContextMenuKey) {
+  return settings.value.videoCardContextMenuConfig.find(item => item.key === key)?.visible ?? true
+}
 
 const commonOptions = computed((): OptionItem[][] => {
   let result: OptionItem[][] = [
     [
-      { command: VideoOption.OpenInNewTab, name: t('video_card.operation.open_in_new_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
-      { command: VideoOption.OpenInBackground, name: t('video_card.operation.open_in_background'), icon: 'i-solar:square-top-down-bold-duotone' },
-      { command: VideoOption.OpenInNewWindow, name: t('video_card.operation.open_in_new_window'), icon: 'i-solar:maximize-square-3-bold-duotone' },
-      { command: VideoOption.OpenInCurrentTab, name: t('video_card.operation.open_in_current_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
-      { command: VideoOption.OpenInDrawer, name: t('video_card.operation.open_in_drawer'), icon: 'i-solar:archive-up-minimlistic-bold-duotone' },
-    ],
-
-    [
-      { command: VideoOption.CopyVideoLink, name: t('video_card.operation.copy_video_link'), icon: 'i-solar:copy-bold-duotone' },
-      ...(settings.value.enableCleanShareLink
-        ? [{ command: VideoOption.CopyCleanVideoLink, name: t('video_card.operation.copy_clean_video_link'), icon: 'i-solar:link-minimalistic-2-bold-duotone' }]
+      ...(props.video.url
+        ? [
+            { command: VideoOption.OpenInNewTab, key: 'openInNewTab' as const, name: t('video_card.operation.open_in_new_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
+            { command: VideoOption.OpenInBackground, key: 'openInBackground' as const, name: t('video_card.operation.open_in_background'), icon: 'i-solar:square-top-down-bold-duotone' },
+            { command: VideoOption.OpenInNewWindow, key: 'openInNewWindow' as const, name: t('video_card.operation.open_in_new_window'), icon: 'i-solar:maximize-square-3-bold-duotone' },
+            { command: VideoOption.OpenInCurrentTab, key: 'openInCurrentTab' as const, name: t('video_card.operation.open_in_current_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
+            { command: VideoOption.OpenInDrawer, key: 'openInDrawer' as const, name: t('video_card.operation.open_in_drawer'), icon: 'i-solar:archive-up-minimlistic-bold-duotone' },
+          ]
         : []),
-      { command: VideoOption.CopyBVNumber, name: t('video_card.operation.copy_bv_number'), icon: 'i-solar:copy-bold-duotone' },
-      { command: VideoOption.CopyAVNumber, name: t('video_card.operation.copy_av_number'), icon: 'i-solar:copy-bold-duotone' },
     ],
 
     [
-      { command: VideoOption.ViewTheOriginalCover, name: t('video_card.operation.view_the_original_cover'), icon: 'i-solar:gallery-minimalistic-bold-duotone' },
+      ...(props.video.url
+        ? [{ command: VideoOption.CopyVideoLink, key: 'copyVideoLink' as const, name: t('video_card.operation.copy_video_link'), icon: 'i-solar:copy-bold-duotone' }]
+        : []),
+      ...(settings.value.enableCleanShareLink && props.video.url
+        ? [{ command: VideoOption.CopyCleanVideoLink, key: 'copyCleanVideoLink' as const, name: t('video_card.operation.copy_clean_video_link'), icon: 'i-solar:link-minimalistic-2-bold-duotone' }]
+        : []),
+      ...(props.video.bvid
+        ? [{ command: VideoOption.CopyBVNumber, key: 'copyBVNumber' as const, name: t('video_card.operation.copy_bv_number'), icon: 'i-solar:copy-bold-duotone' }]
+        : []),
+      ...(props.video.id
+        ? [{ command: VideoOption.CopyAVNumber, key: 'copyAVNumber' as const, name: t('video_card.operation.copy_av_number'), icon: 'i-solar:copy-bold-duotone' }]
+        : []),
+    ],
+
+    [
+      ...(props.video.cover
+        ? [{ command: VideoOption.ViewTheOriginalCover, key: 'viewOriginalCover' as const, name: t('video_card.operation.view_the_original_cover'), icon: 'i-solar:gallery-minimalistic-bold-duotone' }]
+        : []),
     ],
   ]
 
@@ -129,30 +145,33 @@ const commonOptions = computed((): OptionItem[][] => {
   // 1. 如果明确传入了 followed 状态，根据状态显示
   // 2. 如果在 Following 页面且未传入 followed，默认显示"取消关注"（因为都是已关注的UP主）
   // 3. 其他情况不显示
+  const authorMid = getAuthorMid()
   const authorFollowed = Array.isArray(props.video.author)
     ? props.video.author[0]?.followed
     : props.video.author?.followed
 
-  if (authorFollowed !== undefined || props.isFollowingPage) {
+  if (authorMid && (authorFollowed !== undefined || props.isFollowingPage)) {
     // 判断是否已关注：明确为 true，或者在 Following 页面且未明确为 false
     const isFollowed = authorFollowed === true || (props.isFollowingPage && authorFollowed !== false)
 
     if (isFollowed) {
       result.push([
-        { command: VideoOption.UnfollowUser, name: t('video_card.operation.unfollow_user'), icon: 'i-solar:user-minus-bold-duotone', color: 'text-orange-500' },
+        { command: VideoOption.UnfollowUser, key: 'followUser', name: t('video_card.operation.unfollow_user'), icon: 'i-solar:user-minus-bold-duotone', color: 'text-orange-500' },
       ])
     }
     else {
       result.push([
-        { command: VideoOption.FollowUser, name: t('video_card.operation.follow_user'), icon: 'i-solar:user-plus-bold-duotone', color: 'text-blue-500' },
+        { command: VideoOption.FollowUser, key: 'followUser', name: t('video_card.operation.follow_user'), icon: 'i-solar:user-plus-bold-duotone', color: 'text-blue-500' },
       ])
     }
   }
 
-  // 添加拉黑用户选项
-  result.push([
-    { command: VideoOption.BlockUser, name: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone', color: 'text-red-500' },
-  ])
+  // 添加拉黑用户选项；缺少作者 mid 时隐藏，避免点击后发出无效请求。
+  if (authorMid) {
+    result.push([
+      { command: VideoOption.BlockUser, key: 'blockUser', name: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone', color: 'text-red-500' },
+    ])
+  }
 
   if (getVideoType() === 'bangumi' || getVideoType() === 'live') {
     result = result.map((group) => {
@@ -161,7 +180,7 @@ const commonOptions = computed((): OptionItem[][] => {
       })
     })
   }
-  return result
+  return result.map(group => group.filter(option => isOptionVisible(option.key))).filter(group => group.length > 0)
 })
 
 // 在菜单显示后检查是否需要显示滚动指示器
@@ -455,7 +474,6 @@ async function unfollowUser() {
         style="backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);"
         :style="contextMenuStyles"
         p-1 bg="$bew-elevated" rounded="$bew-radius"
-        min-w-200px m="t-4 l-[calc(-200px+1rem)]"
         border="1 $bew-border-color"
         class="context-menu-container"
       >
@@ -478,7 +496,9 @@ async function unfollowUser() {
           <template v-if="getVideoType() === 'appRcmd'">
             <template v-for="option in video.threePointV2" :key="option.type">
               <li
-                v-if="option.type !== ThreePointV2Type.WatchLater && option.type !== ThreePointV2Type.Feedback"
+                v-if="option.type !== ThreePointV2Type.WatchLater
+                  && option.type !== ThreePointV2Type.Feedback
+                  && (option.type !== ThreePointV2Type.Dislike || isOptionVisible('notInterested'))"
                 class="context-menu-item"
                 @click="handleAppMoreCommand(option.type)"
               >
@@ -499,7 +519,7 @@ async function unfollowUser() {
             </li>
           </template>
 
-          <div v-if="getVideoType() === 'rcmd'" class="divider" />
+          <div v-if="getVideoType() === 'rcmd' && videoOptions.length > 0 && commonOptions.length > 0" class="divider" />
 
           <template v-for="(optionGroup, index) in commonOptions" :key="index">
             <li
@@ -600,16 +620,17 @@ async function unfollowUser() {
 }
 
 .context-menu-container {
-  max-height: 80vh;
+  width: min(240px, calc(100vw - var(--bew-space-4)));
+  max-height: min(406px, calc(100vh - var(--bew-space-4)));
   overflow: hidden;
   z-index: 9999;
-  position: relative;
 }
 
 .context-menu-list {
-  max-height: calc(80vh - 40px); // 为指示器留出空间
+  max-height: inherit;
   overflow-y: auto;
-  padding: 4px 0;
+  overscroll-behavior: contain;
+  padding: var(--bew-space-1) 0;
 
   /* 完全隐藏滚动条 */
   -ms-overflow-style: none; /* IE 和 Edge */

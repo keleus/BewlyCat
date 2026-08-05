@@ -126,6 +126,37 @@ export function getVideoEpisodes(): HTMLElement[] {
   return []
 }
 
+const recommendationRootSelector = [
+  '[class*="recommend_wrap"]',
+  '.recommend-list-v1',
+  '.recommend-list',
+  '.rec-list',
+  '.next-play',
+].join(', ')
+
+function findPlaylistAutoPlayContainer(): HTMLElement | null {
+  // A single-video page can still expose an auto-play control for the
+  // recommendation list. Custom order controls belong only to a real episode
+  // playlist, never to that recommendation block.
+  if (detectVideoType() === VideoType.RECOMMEND)
+    return null
+
+  const episodes = getVideoEpisodes()
+  if (episodes.length === 0)
+    return null
+
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>('.auto-play, .continuous-btn'))
+    .filter(candidate => !candidate.closest(recommendationRootSelector))
+  if (candidates.length === 0)
+    return null
+
+  const episodeCandidate = candidates.find((candidate) => {
+    const root = candidate.closest(episodeRootSelector)
+    return !!root && episodes.some(episode => root.contains(episode))
+  })
+  return episodeCandidate ?? candidates[0]
+}
+
 function normalizeEpisodeText(value: string | null | undefined): string {
   return value?.replace(/\s+/g, ' ').trim() ?? ''
 }
@@ -592,13 +623,18 @@ function toggleNativePlaylistEditing(button: HTMLButtonElement): void {
 // 创建随机播放UI
 export function createRandomPlayUI(): HTMLElement | null {
   // 查找自动连播按钮的容器
-  const autoPlayContainer = document.querySelector('.auto-play, .continuous-btn')
+  const autoPlayContainer = findPlaylistAutoPlayContainer()
   if (!autoPlayContainer)
     return null
 
   // 检查是否已存在随机播放按钮
-  if (document.querySelector('.random-play-btn'))
-    return null
+  const existingRandomPlay = document.querySelector<HTMLElement>('.random-play')
+  if (existingRandomPlay) {
+    if (existingRandomPlay.closest(recommendationRootSelector))
+      existingRandomPlay.remove()
+    else
+      return null
+  }
 
   // 创建播放顺序控件容器
   const randomPlayContainer = document.createElement('div')
@@ -1004,7 +1040,7 @@ export function initRandomPlayOnVideoPage(): void {
 
   // 等待页面元素加载
   const checkAndInit = () => {
-    const autoPlayContainer = document.querySelector('.auto-play, .continuous-btn')
+    const autoPlayContainer = findPlaylistAutoPlayContainer()
     if (autoPlayContainer) {
       // 只要启用了随机播放功能就创建UI（基于扩展设置）
       if (settings.value.enableRandomPlay) {
@@ -1106,10 +1142,12 @@ export function observeRandomPlayPageChanges(): void {
 
       // 检查随机播放按钮是否还存在
       const existingBtn = document.querySelector('.random-play-btn')
-      const autoPlayContainer = document.querySelector('.auto-play, .continuous-btn')
+      const autoPlayContainer = findPlaylistAutoPlayContainer()
+      const existingRandomPlay = document.querySelector<HTMLElement>('.random-play')
+      const isMisplacedRandomPlay = !!existingRandomPlay?.closest(recommendationRootSelector)
 
       // 如果按钮不存在但应该存在（有自动播放容器且启用了功能），则重新创建
-      if (!existingBtn && autoPlayContainer && settings.value.enableRandomPlay) {
+      if ((!existingBtn || isMisplacedRandomPlay) && autoPlayContainer && settings.value.enableRandomPlay) {
         // 检查是否是因为DOM重新渲染导致的
         let shouldRecreate = false
 

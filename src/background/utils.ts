@@ -5,7 +5,7 @@
 import type Browser from 'webextension-polyfill'
 import browser from 'webextension-polyfill'
 
-import { addWbiSign, clearWbiKeys, getWbiKeys, initWbiKeys, needsWbiSign, storeWbiKeys } from './wbiSign'
+import { addWbiSign, clearWbiKeys, getWbiKeys, initWbiKeys, isBilibiliNavUrl, needsWbiSign, storeWbiKeys } from './wbiSign'
 
 export class ApiRiskControlError extends Error {
   constructor(message: string = '检测到风控页面，API返回了HTML而不是JSON') {
@@ -229,7 +229,7 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
       let response = await performRequest(useWbi)
 
       // 如果是获取用户信息的API，在响应后存储WBI密钥
-      if (baseUrl.includes('https://api.bilibili.com/x/web-interface/nav')) {
+      if (isBilibiliNavUrl(baseUrl)) {
         const clonedResponse = response.clone()
 
         try {

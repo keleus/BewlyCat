@@ -457,6 +457,14 @@ export function setupNecessarySettingsWatchers() {
     { immediate: true },
   )
 
+  watch(
+    () => settings.value.hideCommentImageScrollbar,
+    (enabled) => {
+      document.documentElement.classList.toggle('bewly-hide-comment-image-scrollbar', enabled)
+    },
+    { immediate: true },
+  )
+
   const refreshBewlyDesignOnRouteChange = () => {
     if (lastBewlyDesignHref === location.href)
       return

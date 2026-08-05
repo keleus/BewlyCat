@@ -47,7 +47,7 @@ const commentReplyTreeModeOptions = computed<{ label: string, value: CommentRepl
 </script>
 
 <template>
-  <SettingsItemGroup>
+  <SettingsItemGroup :title="$t('settings.group_comments')">
     <div class="comment-setting-tags" role="group" :aria-label="$t('settings.group_comments')">
       <SettingsToggleTag
         v-for="option in commentToggleOptions"
@@ -87,6 +87,14 @@ const commentReplyTreeModeOptions = computed<{ label: string, value: CommentRepl
       right-width="auto"
     >
       <Radio v-model="settings.adjustCommentImageHeight" />
+    </SettingsItem>
+
+    <SettingsItem
+      :title="$t('settings.hide_comment_image_scrollbar')"
+      :desc="$t('settings.hide_comment_image_scrollbar_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.hideCommentImageScrollbar" />
     </SettingsItem>
   </SettingsItemGroup>
 </template>

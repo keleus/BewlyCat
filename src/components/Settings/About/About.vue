@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import browser from 'webextension-polyfill'
 
+import Radio from '~/components/Radio.vue'
+import { useSettingsCloudSyncPreference } from '~/composables/useSettingsCloudSyncPreference'
+import { settings } from '~/logic'
+
 import { version } from '../../../../package.json'
+import Maintenance from '../Advanced/Maintenance.vue'
+import SettingsItem from '../components/SettingsItem.vue'
+import SettingsItemGroup from '../components/SettingsItemGroup.vue'
+import SettingsSectionHeading from '../components/SettingsSectionHeading.vue'
 
 const hasNewVersion = ref<boolean>(false)
 const contributorsImageFailed = ref(false)
+const settingsCloudSyncPreference = useSettingsCloudSyncPreference()
 
 const isDev = computed((): boolean => import.meta.env.DEV)
 
@@ -39,8 +48,8 @@ function handleContributorImageError() {
 </script>
 
 <template>
-  <div>
-    <div max-w-800px mx-auto>
+  <div :data-settings-title="$t('settings.menu_about')">
+    <div class="about-content">
       <div relative w-200px m-auto>
         <img
           :src="`${browser.runtime.getURL('/assets/icon-512.png')}`" alt="" width="200"
@@ -76,10 +85,38 @@ function handleContributorImageError() {
         </p>
       </section>
 
+      <section class="about-maintenance">
+        <SettingsItemGroup :title="$t('settings.group_settings_sync')">
+          <SettingsItem
+            :title="$t('settings.enable_settings_sync')"
+            :desc="$t('settings.enable_settings_sync_desc')"
+            right-width="auto"
+          >
+            <Radio v-model="settingsCloudSyncPreference" />
+          </SettingsItem>
+        </SettingsItemGroup>
+
+        <SettingsItemGroup :title="$t('settings.group_version_reminder')">
+          <SettingsItem
+            :title="$t('settings.enable_version_reminder')"
+            :desc="$t('settings.enable_version_reminder_desc')"
+            right-width="auto"
+          >
+            <Radio v-model="settings.enableVersionReminder" />
+          </SettingsItem>
+        </SettingsItemGroup>
+
+        <SettingsSectionHeading
+          class="maintenance-heading"
+          :title="$t('settings.maintenance.title')"
+          :desc="$t('settings.category_advanced_maintenance_desc')"
+          icon="i-mingcute:save-2-fill"
+        />
+        <Maintenance />
+      </section>
+
       <section
-        style="box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);"
-        mt-6 p-4 bg="$bew-fill-alt" rounded="$bew-radius"
-        flex="~ col items-center gap-6"
+        class="about-info-card"
       >
         <section w-full>
           <h3 class="title">
@@ -149,9 +186,21 @@ function handleContributorImageError() {
 }
 
 .about-brand {
+  margin-top: var(--bew-space-2);
   font-size: var(--bew-font-size-display);
   font-weight: var(--bew-font-weight-bold);
   line-height: var(--bew-line-height-data);
+}
+
+.about-info-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bew-space-6);
+  margin: var(--bew-space-6) calc(var(--bew-space-4) * -1) 0;
+  padding: var(--bew-space-4);
+  background: var(--bew-fill-alt);
+  border-radius: var(--bew-panel-radius);
+  box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
 }
 
 .contributors-image-link {
@@ -162,6 +211,14 @@ function handleContributorImageError() {
     max-width: 100%;
     height: auto;
   }
+}
+
+.about-maintenance {
+  margin-top: var(--bew-space-6);
+}
+
+.maintenance-heading {
+  margin-top: var(--bew-space-8);
 }
 
 .contributors-error {

@@ -31,20 +31,32 @@ let pendingTabScrollTop: number | null = null
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
+// KeepAlive 依赖稳定的组件类型，不能在 computed 内重复创建异步组件包装器。
+const forYouPage = defineAsyncComponent(() => import('./components/ForYou.vue'))
+const followingPage = defineAsyncComponent(() => import('./components/Following.vue'))
+const followingOldPage = defineAsyncComponent(() => import('./components/FollowingOld.vue'))
+const subscribedSeriesPage = defineAsyncComponent(() => import('./components/SubscribedSeries.vue'))
+const trendingPage = defineAsyncComponent(() => import('./components/Trending.vue'))
+const rankingPage = defineAsyncComponent(() => import('./components/Ranking.vue'))
+const preciousPage = defineAsyncComponent(() => import('./components/Precious.vue'))
+const weeklyPage = defineAsyncComponent(() => import('./components/Weekly.vue'))
+const livePage = defineAsyncComponent(() => import('./components/Live.vue'))
 const pages = computed(() => ({
-  [HomeSubPage.ForYou]: defineAsyncComponent(() => import('./components/ForYou.vue')),
+  [HomeSubPage.ForYou]: forYouPage,
   [HomeSubPage.Following]: settings.value.useFollowingNewLayout
-    ? defineAsyncComponent(() => import('./components/Following.vue'))
-    : defineAsyncComponent(() => import('./components/FollowingOld.vue')),
-  [HomeSubPage.SubscribedSeries]: defineAsyncComponent(() => import('./components/SubscribedSeries.vue')),
-  [HomeSubPage.Trending]: defineAsyncComponent(() => import('./components/Trending.vue')),
-  [HomeSubPage.Ranking]: defineAsyncComponent(() => import('./components/Ranking.vue')),
-  [HomeSubPage.Precious]: defineAsyncComponent(() => import('./components/Precious.vue')),
-  [HomeSubPage.Weekly]: defineAsyncComponent(() => import('./components/Weekly.vue')),
-  [HomeSubPage.Live]: defineAsyncComponent(() => import('./components/Live.vue')),
+    ? followingPage
+    : followingOldPage,
+  [HomeSubPage.SubscribedSeries]: subscribedSeriesPage,
+  [HomeSubPage.Trending]: trendingPage,
+  [HomeSubPage.Ranking]: rankingPage,
+  [HomeSubPage.Precious]: preciousPage,
+  [HomeSubPage.Weekly]: weeklyPage,
+  [HomeSubPage.Live]: livePage,
 }))
+const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage.Following
+  ? `${activatedPage.value}:${settings.value.useFollowingNewLayout ? 'new' : 'old'}`
+  : activatedPage.value)
 const tabContentLoading = ref<boolean>(false)
-const tabTransitionName = ref<'home-tab-forward' | 'home-tab-backward'>('home-tab-forward')
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
 const topBarVisibility = ref<boolean>(true)
@@ -179,10 +191,6 @@ function handleChangeTab(tab: HomeTab) {
   }
   if (tabContentLoading.value)
     toggleTabContentLoading(false)
-
-  const currentTabIndex = currentTabs.value.findIndex(item => item.page === activatedPage.value)
-  const nextTabIndex = currentTabs.value.findIndex(item => item.page === tab.page)
-  tabTransitionName.value = nextTabIndex < currentTabIndex ? 'home-tab-backward' : 'home-tab-forward'
 
   activatedPage.value = tab.page
   // Update global home activated page state
@@ -337,14 +345,14 @@ function toggleTabContentLoading(loading: boolean) {
       </header>
 
       <Transition
-        :name="tabTransitionName"
+        name="home-tab"
         mode="out-in"
         @enter="restoreTabScrollPosition"
         @after-enter="finishTabSwitch"
       >
         <KeepAlive :max="3">
           <Component
-            :is="pages[activatedPage]" :key="activatedPage"
+            :is="pages[activatedPage]" :key="activatedPageCacheKey"
             ref="tabPageRef"
             :grid-layout="gridLayout.home"
             :top-bar-visibility="topBarVisibility"
@@ -384,30 +392,14 @@ function toggleTabContentLoading(loading: boolean) {
   --uno: "hidden";
 }
 
-.home-tab-forward-enter-active,
-.home-tab-backward-enter-active {
-  transition:
-    opacity var(--bew-duration-normal, 200ms) var(--bew-ease-standard, ease),
-    transform var(--bew-duration-normal, 200ms) var(--bew-ease-standard, ease);
+.home-tab-enter-active,
+.home-tab-leave-active {
+  transition: opacity var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
 }
 
-.home-tab-forward-leave-active,
-.home-tab-backward-leave-active {
-  transition:
-    opacity var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease),
-    transform var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
-}
-
-.home-tab-forward-enter-from,
-.home-tab-backward-leave-to {
+.home-tab-enter-from,
+.home-tab-leave-to {
   opacity: 0;
-  transform: translateX(12px);
-}
-
-.home-tab-forward-leave-to,
-.home-tab-backward-enter-from {
-  opacity: 0;
-  transform: translateX(-12px);
 }
 
 .glass-panel {
@@ -467,18 +459,9 @@ function toggleTabContentLoading(loading: boolean) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-tab-forward-enter-active,
-  .home-tab-forward-leave-active,
-  .home-tab-backward-enter-active,
-  .home-tab-backward-leave-active {
+  .home-tab-enter-active,
+  .home-tab-leave-active {
     transition: opacity 1ms linear;
-  }
-
-  .home-tab-forward-enter-from,
-  .home-tab-forward-leave-to,
-  .home-tab-backward-enter-from,
-  .home-tab-backward-leave-to {
-    transform: none;
   }
 }
 </style>

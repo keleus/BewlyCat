@@ -71,7 +71,10 @@ function avatarUrl(url = '') {
 }
 
 function stripSearchHighlight(value: unknown) {
-  return String(value || '').replace(/<[^>]+>/g, '').trim()
+  return String(value || '')
+    .replace(/<em class="keyword">|<\/em>/gi, '')
+    .replace(/[<>]/g, '')
+    .trim()
 }
 
 async function addUser() {

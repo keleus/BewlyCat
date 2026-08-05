@@ -232,6 +232,16 @@ export function useTopBarInteraction() {
     openConfiguredPageFromTopBar(page)
   }
 
+  function handleClickTopBarLogo(event: MouseEvent) {
+    if (!settings.value.touchScreenOptimization)
+      return
+
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
+      return
+
+    handleClickTopBarItem(event, 'channels')
+  }
+
   // 处理通知项点击
   function handleNotificationsItemClick(item: { name: string, url: string, unreadCount: number, icon: string }) {
     if (settings.value.openNotificationsPageAsDrawer) {
@@ -245,6 +255,7 @@ export function useTopBarInteraction() {
     setupTopBarItemHoverEvent,
     setupTopBarItemTransformer,
     handleClickTopBarItem,
+    handleClickTopBarLogo,
     handleNotificationsItemClick,
     forceWhiteIcon,
     showSearchBar,

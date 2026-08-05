@@ -117,14 +117,18 @@ function animateButton(button: HTMLButtonElement) {
 }
 
 function scheduleTopBarRefresh() {
-  window.setTimeout(() => {
+  const refresh = () => {
     try {
       void useTopBarStore().syncWatchLaterState(true)
     }
     catch (error) {
       console.error('刷新稍后再看列表失败:', error)
     }
-  }, 1000)
+  }
+
+  // 用户操作成功后立即同步；考虑到接口偶发的最终一致性，再补一次。
+  refresh()
+  window.setTimeout(refresh, 1000)
 }
 
 async function resolveAid(ids: VideoIds, state: WatchLaterButtonState): Promise<number | undefined> {

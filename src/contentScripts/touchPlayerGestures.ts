@@ -2,6 +2,7 @@ import { watch } from 'vue'
 
 import { settings } from '~/logic'
 import { isVideoPlaybackPage } from '~/utils/main'
+import { calculateRelativeSeekTime } from '~/utils/touchGesture'
 
 const ROOT_CLASS = 'bewly-touch-player-gestures'
 const STYLE_ID = 'bewly-touch-player-gestures-style'
@@ -41,6 +42,7 @@ interface GestureSession extends PlayerContext {
   startX: number
   startY: number
   startTime: number
+  startPlaybackTime: number
   startVolume: number
   volumeGesture: boolean
   mode: GestureMode
@@ -248,6 +250,7 @@ function handlePointerDown(event: PointerEvent) {
     startX: event.clientX,
     startY: event.clientY,
     startTime: performance.now(),
+    startPlaybackTime: context.video.currentTime,
     startVolume: context.video.volume,
     volumeGesture,
     mode: null,
@@ -276,8 +279,12 @@ function handlePointerMove(event: PointerEvent) {
 
   if (gesture.mode === 'seek') {
     if (Number.isFinite(gesture.video.duration) && gesture.video.duration > 0) {
-      const progress = clamp((event.clientX - gesture.rect.left) / gesture.rect.width, 0, 1)
-      gesture.video.currentTime = progress * gesture.video.duration
+      gesture.video.currentTime = calculateRelativeSeekTime(
+        gesture.startPlaybackTime,
+        deltaX,
+        gesture.rect.width,
+        gesture.video.duration,
+      )
       showHud(
         gesture.area,
         `${formatTime(gesture.video.currentTime)} / ${formatTime(gesture.video.duration)}`,

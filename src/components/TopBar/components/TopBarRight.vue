@@ -50,7 +50,7 @@ const avatarShadow = ref<HTMLElement | null>(null)
 
 const { handleClickTopBarItem, setupTopBarItemHoverEvent, setupTopBarItemTransformer, forceWhiteIcon } = useTopBarInteraction()
 
-const mid = getUserID() || ''
+const mid = computed(() => userInfo.value.mid || getUserID())
 
 const moments = isComponentVisible('moments') ? setupTopBarItemHoverEvent('moments') : ref()
 const favorites = isComponentVisible('favorites') ? setupTopBarItemHoverEvent('favorites') : ref()
@@ -138,6 +138,10 @@ watch(() => focused.value, (newVal, _) => {
   syncSharedData().catch((error) => {
     console.error('同步顶栏共享状态失败:', error)
   })
+
+  nextTick(() => {
+    favoritesPopRef.value?.refreshFavoriteData?.()
+  })
 })
 
 watch(
@@ -176,7 +180,7 @@ watch(
     if (newVal) {
       nextTick(() => {
         if (favoritesPopRef.value)
-          favoritesPopRef.value.refreshFavoriteResources?.()
+          favoritesPopRef.value.refreshFavoriteData?.()
       })
     }
   },

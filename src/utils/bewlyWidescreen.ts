@@ -44,11 +44,14 @@ const ROOT_ID = 'bewly-widescreen-root'
 const LOADING_ROOT_ID = 'bewly-widescreen-loading'
 const BODY_CLASS = 'bewly-widescreen-active'
 const EMPTY_CLASS = 'bewly-widescreen-empty'
+const EPISODE_SECTION_CLASS = 'bewly-widescreen-episode-section'
+const EPISODE_ITEM_SELECTOR = '.video-pod__item, .multi-page__item, .page-item, .list-item, .episode-item, .section-item, .collect-item'
 const SIDEBAR_NARROW_MIN_WIDTH = 360
 const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
 const LOAD_SETTLE_DELAY = 1200
 const LOADING_FADE_DURATION = 240
+const PREPARED_LOADING_TIMEOUT = 30_000
 const READY_RETRY_INTERVAL = 500
 const READY_RETRY_MAX = 30
 const SIDEBAR_REFRESH_DELAY = 800
@@ -59,15 +62,15 @@ const COMMENT_NESTED_UI_SELECTOR = '.reply-item, .sub-reply-item, bili-comment-r
 // Light-DOM markers only. Modern bili-comments mounts most UI in shadow roots,
 // so readiness must not require these descendants to exist.
 const COMMENT_CONTENT_MARKER_SELECTOR = 'bili-comments, bili-comment-box, bili-comment-renderer, .reply-list, .comment-list, .reply-box, .comment-header'
-const COMMENT_LIST_SELECTOR = 'bili-comment-renderer, .reply-list, .comment-list, .reply-item, .root-reply-container'
-const COMMENT_LOADING_SELECTOR = '.bili-comment-loading, .comment-loading, .loading-start, .bili-dyn-list-loading, .loading-img'
-const COMMENT_AVATAR_SELECTOR = 'bili-avatar, .bili-avatar, .user-face, .reply-face, .bili-user-avatar, img[src*="face"], img[data-src*="face"]'
 
 let state: BewlyWidescreenState | null = null
 let loadingOverlay: HTMLElement | null = null
 let loadingStyleEl: HTMLStyleElement | null = null
 let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
 let loadingPlaybackCleanup: (() => void) | undefined
+let loadingPreparationFallbackTimer: ReturnType<typeof setTimeout> | undefined
+let loadingMayDismissOnPlaying = false
+let loadingSuppressedUntilExit = false
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
 let loadFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined
@@ -294,10 +297,6 @@ function moveOrReplaceNode(selectors: string[], target: HTMLElement, movedNodes:
   return { found: moved, changed: moved }
 }
 
-function isCommentRootLoading(root: HTMLElement) {
-  return !!root.querySelector(COMMENT_LOADING_SELECTOR)
-}
-
 function hasCommentShadowTree(root: HTMLElement) {
   return Array.from(root.querySelectorAll('*')).some((element) => {
     const shadowRoot = (element as HTMLElement & { shadowRoot?: ShadowRoot | null }).shadowRoot
@@ -305,87 +304,26 @@ function hasCommentShadowTree(root: HTMLElement) {
   })
 }
 
-function getCommentRootScore(root: HTMLElement) {
-  let score = 0
-
-  if (root.matches(COMMENT_ROOT_ID_SELECTOR) || root.matches('.commentapp'))
-    score += 3
-  if (root.querySelector(COMMENT_CONTENT_MARKER_SELECTOR))
-    score += 2
-  if (hasCommentShadowTree(root))
-    score += 3
-  if (root.querySelector(COMMENT_LIST_SELECTOR))
-    score += 3
-  if (root.querySelector(COMMENT_AVATAR_SELECTOR))
-    score += 4
-  if (root.querySelector('bili-comment-box, .reply-box, .comment-header'))
-    score += 1
-  if (isCommentRootLoading(root))
-    score -= 3
-
-  // Prefer roots that already finished painting something measurable.
-  score += Math.min(root.querySelectorAll(COMMENT_AVATAR_SELECTOR).length, 8)
-  score += Math.min(root.querySelectorAll(COMMENT_LIST_SELECTOR).length, 8)
-
-  return score
-}
-
 function isCommentRootUsable(root: HTMLElement) {
   if (!root.isConnected)
     return false
 
-  // Known comment roots can be relocated immediately. Modern Bilibili comments
-  // hydrate inside shadow DOM / after becoming visible; waiting for light-DOM
-  // children here leaves the sidebar stuck on "评论区加载中".
-  if (root.matches(`${COMMENT_ROOT_ID_SELECTOR}, .commentapp`))
-    return true
-
+  // B 站会先创建空评论壳，再异步挂载 bili-comments / shadow DOM。提前搬走
+  // 空壳会与它的初始化竞争，导致头像、编辑器或评论列表漏渲染。
   if (root.querySelector(COMMENT_CONTENT_MARKER_SELECTOR))
     return true
 
   return hasCommentShadowTree(root)
 }
 
-function isCommentRootHydrated(root: HTMLElement) {
-  if (!isCommentRootUsable(root))
-    return false
-
-  if (isCommentRootLoading(root))
-    return false
-
-  if (hasCommentShadowTree(root))
-    return true
-
-  const hasList = !!root.querySelector(COMMENT_LIST_SELECTOR)
-  const hasComposer = !!root.querySelector('bili-comment-box, .reply-box, .comment-header')
-  return hasList || hasComposer
-}
-
 function moveCommentRoot(target: HTMLElement, movedNodes: MovedNode[]) {
-  // Once mounted, keep the same root unless Bilibili recreated a healthier
-  // replacement outside the layout (common when avatar/comment hydration races
-  // with DOM relocation).
+  // Once mounted, keep the same root. Replacing it in response to a body
+  // mutation can race Bilibili's renderer and create another comment editor.
   const existing = findCommentRoot(target)
-  const next = findCommentRoot(document, true)
-
-  if (existing && next && existing !== next) {
-    // Prefer an outside replacement only when it is clearly more complete.
-    // Never block on "fully hydrated" for the first move — that is the main
-    // cause of permanent empty comment panels under the fixed overlay.
-    const shouldReplace = (!isCommentRootHydrated(existing) && isCommentRootUsable(next))
-      || getCommentRootScore(next) >= getCommentRootScore(existing) + 2
-
-    if (!shouldReplace)
-      return { found: true, changed: false }
-
-    removeMovedNode(existing, movedNodes)
-    const moved = moveNode(next, target, movedNodes)
-    return { found: moved || !!findCommentRoot(target), changed: moved }
-  }
-
   if (existing)
     return { found: true, changed: false }
 
+  const next = findCommentRoot(document, true)
   if (!next || !isCommentRootUsable(next))
     return { found: false, changed: false }
 
@@ -596,23 +534,40 @@ function showWidescreenLoading() {
   loadingOverlay = overlay
 
   const handlePlaying = (event: Event) => {
-    if (event.target === getVideoElement())
-      removeWidescreenLoading()
+    const video = event.target
+    if (video instanceof HTMLVideoElement
+      && video === getVideoElement()
+      && shouldDismissLoadingForPlaying(video)) {
+      dismissWidescreenLoadingForPlaying()
+    }
   }
   document.addEventListener('playing', handlePlaying, true)
   loadingPlaybackCleanup = () => {
     document.removeEventListener('playing', handlePlaying, true)
     loadingPlaybackCleanup = undefined
   }
+}
 
-  // The player may already be running before the widescreen loading UI mounts.
-  const video = getVideoElement()
-  if (video && !video.paused && !video.ended)
-    removeWidescreenLoading()
+function shouldDismissLoadingForPlaying(video: HTMLVideoElement) {
+  return loadingMayDismissOnPlaying
+    || video.autoplay
+    || video.hasAttribute('autoplay')
+    || navigator.userActivation?.hasBeenActive !== true
+}
+
+function dismissWidescreenLoadingForPlaying() {
+  loadingSuppressedUntilExit = true
+  removeWidescreenLoading()
 }
 
 function removeWidescreenLoading(immediate = false) {
   loadingPlaybackCleanup?.()
+  loadingMayDismissOnPlaying = false
+
+  if (loadingPreparationFallbackTimer) {
+    clearTimeout(loadingPreparationFallbackTimer)
+    loadingPreparationFallbackTimer = undefined
+  }
 
   if (loadingFadeTimer) {
     clearTimeout(loadingFadeTimer)
@@ -641,6 +596,34 @@ function removeWidescreenLoading(immediate = false) {
 
   requestAnimationFrame(() => overlay.classList.add('is-leaving'))
   loadingFadeTimer = setTimeout(remove, LOADING_FADE_DURATION)
+}
+
+export function prepareBewlyWidescreenLoading(allowPlayingDismiss = false) {
+  if (state || loadingSuppressedUntilExit)
+    return
+
+  loadingMayDismissOnPlaying ||= allowPlayingDismiss
+  showWidescreenLoading()
+  const video = getVideoElement()
+  if (loadingOverlay
+    && video
+    && !video.paused
+    && !video.ended
+    && shouldDismissLoadingForPlaying(video)) {
+    dismissWidescreenLoadingForPlaying()
+    return
+  }
+
+  if (!loadingOverlay)
+    return
+
+  if (!loadingPreparationFallbackTimer) {
+    loadingPreparationFallbackTimer = setTimeout(() => {
+      loadingPreparationFallbackTimer = undefined
+      loadingSuppressedUntilExit = true
+      removeWidescreenLoading()
+    }, PREPARED_LOADING_TIMEOUT)
+  }
 }
 
 function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
@@ -1568,6 +1551,19 @@ function injectLayoutStyle() {
       max-width: 100% !important;
     }
 
+    /* Keep only the marked episode section internally scrollable. The panel
+       itself remains the outer scroll fallback for recommendations and other
+       sidebar content; nested playlist containers stay overflow-visible. */
+    #${ROOT_ID} .bewly-widescreen-panel-playlist.${EPISODE_SECTION_CLASS},
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .${EPISODE_SECTION_CLASS} {
+      height: auto !important;
+      max-height: min(52dvh, 560px) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+
     #${ROOT_ID} .bewly-widescreen-panel .video-page-card-small {
       width: 100% !important;
     }
@@ -2001,6 +1997,58 @@ function syncSidebarTitle(currentState: BewlyWidescreenState) {
     titleElement.textContent = nextTitle
 }
 
+function findManagedPanelNode(panel: HTMLElement, selectorsToMatch: string[], movedNodes: MovedNode[]) {
+  const selector = selectorsToMatch.join(',')
+  return movedNodes.find(({ node }) => {
+    if (node.parentElement !== panel)
+      return false
+
+    return node.matches(selector) || !!node.querySelector(selector)
+  })?.node ?? null
+}
+
+function placeRecommendAfterPlaylist(panel: HTMLElement, movedNodes: MovedNode[]) {
+  const playlistNode = findManagedPanelNode(panel, selectors.playlist, movedNodes)
+  const recommendNode = findManagedPanelNode(panel, selectors.recommend, movedNodes)
+  if (!playlistNode || !recommendNode || playlistNode === recommendNode)
+    return
+
+  // Only reorder the top-level nodes that Bewly moved into this panel. This
+  // avoids detaching recommendation/episode elements nested inside a shared
+  // Bilibili wrapper.
+  if (playlistNode.parentElement === panel && recommendNode.parentElement === panel)
+    playlistNode.after(recommendNode)
+}
+
+function findEpisodeSectionNode(panel: HTMLElement, movedNodes: MovedNode[]) {
+  const playlistNode = findManagedPanelNode(panel, selectors.playlist, movedNodes)
+  if (!playlistNode)
+    return null
+
+  const candidates = [
+    playlistNode,
+    ...Array.from(playlistNode.querySelectorAll<HTMLElement>(selectors.playlist.join(','))),
+  ]
+  const episodeCandidates = candidates.filter(candidate => candidate.querySelector(EPISODE_ITEM_SELECTOR))
+  return episodeCandidates.at(-1) ?? playlistNode
+}
+
+function clearEpisodeSectionMarker(panel: HTMLElement, movedNodes: MovedNode[]) {
+  for (const { node } of movedNodes)
+    node.classList.remove(EPISODE_SECTION_CLASS)
+  panel.querySelectorAll<HTMLElement>(`.${EPISODE_SECTION_CLASS}`).forEach((node) => {
+    node.classList.remove(EPISODE_SECTION_CLASS)
+  })
+}
+
+function syncEpisodeSectionMarker(panel: HTMLElement, movedNodes: MovedNode[]) {
+  clearEpisodeSectionMarker(panel, movedNodes)
+
+  const episodeSection = findEpisodeSectionNode(panel, movedNodes)
+  if (episodeSection)
+    episodeSection.classList.add(EPISODE_SECTION_CLASS)
+}
+
 function fillSidebar(currentState: BewlyWidescreenState) {
   syncActionAnimationTheme(currentState)
   syncSidebarTitle(currentState)
@@ -2035,10 +2083,17 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   const existingPlaylist = currentState.panels.playlist.querySelector(selectors.playlist.join(','))
   const existingRecommend = currentState.panels.playlist.querySelector(selectors.recommend.join(','))
   const playlist = existingPlaylist ? null : findMovable(selectors.playlist)
-  const recommend = existingPlaylist || playlist || existingRecommend ? null : findMovable(selectors.recommend)
-  const playlistMoved = existingPlaylist || existingRecommend || moveNode(playlist || recommend, currentState.panels.playlist, currentState.movedNodes)
-  currentState.tabButtons.playlist.textContent = existingPlaylist || playlist ? '选集' : '推荐'
-  if (!playlistMoved)
+  const playlistMoved = existingPlaylist || moveNode(playlist, currentState.panels.playlist, currentState.movedNodes)
+  // 推荐列表与选集是同一侧栏面板中的两个连续区块；即使选集已经存在，
+  // 也要继续搬运推荐列表，保证推荐内容显示在选集下方。
+  const recommend = existingRecommend ? null : findMovable(selectors.recommend)
+  const recommendMoved = existingRecommend || moveNode(recommend, currentState.panels.playlist, currentState.movedNodes)
+  placeRecommendAfterPlaylist(currentState.panels.playlist, currentState.movedNodes)
+  syncEpisodeSectionMarker(currentState.panels.playlist, currentState.movedNodes)
+  const hasPlaylist = !!(existingPlaylist || playlistMoved)
+  const hasRecommend = !!(existingRecommend || recommendMoved)
+  currentState.tabButtons.playlist.textContent = hasPlaylist ? '选集' : '推荐'
+  if (!hasPlaylist && !hasRecommend)
     ensureEmptyPanel(currentState.panels.playlist, '列表加载中')
   else
     clearEmptyPanel(currentState.panels.playlist)
@@ -2091,6 +2146,7 @@ function cleanupState(currentState: BewlyWidescreenState) {
   if (movedCommentRoot && replacementCommentRoot)
     removeMovedNode(movedCommentRoot, currentState.movedNodes)
 
+  clearEpisodeSectionMarker(currentState.panels.playlist, currentState.movedNodes)
   restoreMovedNodes(currentState.movedNodes)
   currentState.root.remove()
   currentState.styleEl.remove()
@@ -2103,10 +2159,15 @@ function isReadyForLayout() {
     return false
 
   const video = getVideoElement()
-  if (video && (video.readyState >= HTMLMediaElement.HAVE_METADATA || video.currentSrc))
-    return true
+  if (video instanceof HTMLVideoElement) {
+    return video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+      && video.videoWidth > 0
+      && video.videoHeight > 0
+  }
 
-  return !!player.querySelector('video, bwp-video, .bpx-player-video-area, .bilibili-player-video-wrap')
+  const customVideo = player.querySelector<HTMLElement & { currentSrc?: string, readyState?: number }>('bwp-video')
+  return !!customVideo
+    && ((customVideo.readyState ?? 0) >= HTMLMediaElement.HAVE_CURRENT_DATA || !!customVideo.currentSrc)
 }
 
 function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
@@ -2272,6 +2333,7 @@ export function exitBewlyWidescreen() {
   clearReadyRetryTimer()
   clearLoadFallbackTimer()
   clearPageLoadHandler()
+  loadingSuppressedUntilExit = false
   removeWidescreenLoading(true)
   waitingForLoad = false
 

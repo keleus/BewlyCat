@@ -161,11 +161,11 @@ async function handleMessage(payload: HMRPayload) {
       // but they may have left behind side effects that need to be cleaned up
       // (.e.g style injections)
       // TODO Trigger their dispose callbacks.
-      payload.paths.forEach((path) => {
+      for (const path of payload.paths) {
         const fn = pruneMap.get(path)
-        if (fn)
+        if (typeof fn === 'function')
           fn(dataMap.get(path))
-      })
+      }
       break
     case 'error': {
       notifyListeners('vite:error', payload)

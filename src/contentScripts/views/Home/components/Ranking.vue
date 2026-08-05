@@ -9,6 +9,7 @@ import { settings } from '~/logic'
 import type { List as RankingVideoItem, RankingResult } from '~/models/video/ranking'
 import type { List as RankingPgcItem, RankingPgcResult } from '~/models/video/rankingPgc'
 import api from '~/utils/api'
+import { getListGridColumnCount } from '~/utils/gridLayout'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 
 import type { RankingType } from '../types'
@@ -65,6 +66,46 @@ const videoList = reactive<RankingVideoElement[]>([])
 const PgcList = reactive<RankingPgcItem[]>([])
 const shouldMoveAsideUp = ref<boolean>(false)
 const noMoreContent = ref<boolean>(true) // 排行榜没有分页
+const rankingGridRef = ref<HTMLElement | null>(null)
+const rankingGridWidth = ref(0)
+let rankingGridResizeObserver: ResizeObserver | null = null
+
+const isRankingAutoSwitchSingleColumn = computed(() => {
+  if (props.gridLayout !== 'twoColumns' || !settings.value.autoSwitchListLayout || !rankingGridWidth.value)
+    return false
+
+  return getListGridColumnCount(
+    props.gridLayout,
+    rankingGridWidth.value,
+    true,
+    settings.value.autoSwitchListLayoutBreakpoint,
+  ) === 1
+})
+
+function updateRankingGridWidth() {
+  rankingGridWidth.value = rankingGridRef.value?.clientWidth || 0
+}
+
+function cleanupRankingGridResizeObserver() {
+  rankingGridResizeObserver?.disconnect()
+  rankingGridResizeObserver = null
+}
+
+function setupRankingGridResizeObserver() {
+  cleanupRankingGridResizeObserver()
+  updateRankingGridWidth()
+
+  const element = rankingGridRef.value
+  if (!element || typeof ResizeObserver === 'undefined')
+    return
+
+  rankingGridResizeObserver = new ResizeObserver((entries) => {
+    const width = entries[0]?.contentRect.width
+    if (width && Math.abs(width - rankingGridWidth.value) > 0.5)
+      rankingGridWidth.value = width
+  })
+  rankingGridResizeObserver.observe(element)
+}
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
 function transformRankingVideo(item: RankingVideoItem, rank: number): Video {
@@ -115,6 +156,15 @@ watch(() => props.topBarVisibility, () => {
 onMounted(() => {
   initData()
   initPageAction()
+  window.addEventListener('resize', updateRankingGridWidth, { passive: true })
+  nextTick(setupRankingGridResizeObserver)
+})
+
+watch(rankingGridRef, setupRankingGridResizeObserver, { flush: 'post' })
+
+onBeforeUnmount(() => {
+  cleanupRankingGridResizeObserver()
+  window.removeEventListener('resize', updateRankingGridWidth)
 })
 
 onActivated(() => {
@@ -217,11 +267,13 @@ defineExpose({ initData })
       </template>
       <template v-else>
         <div
+          ref="rankingGridRef"
           :class="{
             'grid-adaptive-bangumi': gridLayout === 'adaptive',
             'grid-two-columns': gridLayout === 'twoColumns',
             'grid-one-column': gridLayout === 'oneColumn',
             'grid-list-auto-switch': gridLayout === 'twoColumns' && settings.autoSwitchListLayout,
+            'grid-list-auto-switch-single': isRankingAutoSwitchSingleColumn,
           }"
         >
           <BangumiCard
@@ -285,9 +337,7 @@ defineExpose({ initData })
   gap: 20px;
 }
 
-@media (max-width: 639.98px) {
-  .grid-two-columns.grid-list-auto-switch {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
+.grid-two-columns.grid-list-auto-switch-single {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 </style>

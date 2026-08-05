@@ -1,4 +1,4 @@
-.bewly-design {
+.bewly-design.bewly-hide-comment-image-scrollbar {
   // 评论图片预览打开时隐藏页面滚动条，避免其显示在遮罩右侧。
   &:has(.pswp.pswp--open),
   &:has(.pswp.pswp--open) body {

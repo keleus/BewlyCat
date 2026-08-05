@@ -6,6 +6,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { settings } from '~/logic'
 import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getCSRF, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
@@ -14,6 +15,7 @@ import { openLinkInBackground } from '~/utils/tabs'
 const { t } = useI18n()
 const { confirm: showConfirmDialog } = useConfirmDialog()
 const { openIframeDrawer } = useBewlyApp()
+const topBarStore = useTopBarStore()
 
 const isLoading = ref<boolean>()
 const noMoreContent = ref<boolean>()
@@ -22,6 +24,17 @@ const watchLaterCount = ref<number>(0)
 const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 const pageNum = ref<number>(1)
 const pageSize = ref<number>(20)
+
+function syncTopBarWatchLaterState() {
+  const sync = () => {
+    void topBarStore.syncWatchLaterState(true).catch((error) => {
+      console.error('刷新顶栏稍后再看状态失败:', error)
+    })
+  }
+
+  sync()
+  window.setTimeout(sync, 1000)
+}
 
 onMounted(() => {
   initPageAction()
@@ -113,6 +126,7 @@ function deleteWatchLaterItem(index: number, aid: number) {
       if (res.code === 0) {
         currentWatchLaterList.value.splice(index, 1)
         watchLaterCount.value--
+        syncTopBarWatchLaterState()
       }
     })
 }
@@ -126,8 +140,10 @@ async function handleClearAllWatchLater() {
     api.watchlater.clearAllWatchLater({
       csrf: getCSRF(),
     }).then((res) => {
-      if (res.code === 0)
+      if (res.code === 0) {
         initData()
+        syncTopBarWatchLaterState()
+      }
     }).finally(() => {
       isLoading.value = false
     })
@@ -144,8 +160,10 @@ async function handleRemoveWatchedVideos() {
       csrf: getCSRF(),
     })
       .then((res) => {
-        if (res.code === 0)
+        if (res.code === 0) {
           initData()
+          syncTopBarWatchLaterState()
+        }
       })
   }
 }
@@ -196,7 +214,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 </script>
 
 <template>
-  <div v-if="getCSRF()" flex="~ col md:row lg:row" gap-4>
+  <div v-if="getCSRF()" flex="~ col md:row lg:row items-stretch" gap-4>
     <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" mb-6>
       <h3 class="bew-page-heading" text="$bew-text-1" mb-6>
         {{ t('watch_later.title') }} ({{ watchLaterCount }})

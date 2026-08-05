@@ -27,6 +27,8 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +50,8 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4

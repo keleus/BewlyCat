@@ -160,7 +160,10 @@ else if (shouldInitializePageScript) {
     originalOrderByRenderer: WeakMap<HTMLElement, number>
     observedTargetsKey?: string
     resizeObserver?: ResizeObserver
+    observedReplyContainer?: HTMLElement
+    replyContainerMutationObserver?: MutationObserver
     imageLoadAbort?: AbortController
+    imageLoadListeners?: WeakSet<HTMLImageElement>
     layoutUpdateRaf?: number
     /** 锚点未就绪时的重试次数，防止无限 rAF */
     layoutRetryCount?: number
@@ -353,6 +356,10 @@ else if (shouldInitializePageScript) {
           --bili-comment-tag-color: var(--bew-comment-tag-color, var(--bili-comment-tag-color-dark)) !important;
           --bili-comment-tag-bg: var(--bew-comment-tag-bg, var(--bili-comment-tag-bg-dark)) !important;
         }
+
+        #body .tag:empty {
+          display: none !important;
+        }
       `,
     },
     'bili-comment-box': {
@@ -425,15 +432,28 @@ else if (shouldInitializePageScript) {
       if (pendingCommentEnhancements.has(instance))
         return
       pendingCommentEnhancements.add(instance)
-      queueMicrotask(() => {
-        pendingCommentEnhancements.delete(instance)
-        try {
-          enhance(instance)
-        }
-        catch (error) {
-          console.warn(`[BewlyCat] Failed to enhance ${name}.`, error)
-        }
-      })
+      const runAfterBilibiliRender = () => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            pendingCommentEnhancements.delete(instance)
+            if (instance instanceof Node && !instance.isConnected)
+              return
+
+            try {
+              enhance(instance)
+            }
+            catch (error) {
+              console.warn(`[BewlyCat] Failed to enhance ${name}.`, error)
+            }
+          })
+        })
+      }
+
+      // 设置读取和两个渲染帧都完成后再增强，避免与 B 站首次水合争抢 DOM。
+      if (settingsReady)
+        runAfterBilibiliRender()
+      else
+        void settingsReadyPromise.then(runAfterBilibiliRender)
     }
 
     const lifecycleMethods = ['update', 'updated', 'connectedCallback'] as const
@@ -721,6 +741,23 @@ else if (shouldInitializePageScript) {
     return null
   }
 
+  /** 从主评论内的图片等子组件向上找到同一楼层的回复容器 */
+  function findCommentThreadRepliesRenderer(component: HTMLElement | null | undefined): HTMLElement | null {
+    let node: Node | null = component ?? null
+    for (let depth = 0; depth < 12 && node; depth++) {
+      if (node instanceof ShadowRoot) {
+        if (node.host.localName === 'bili-comment-thread-renderer')
+          return node.querySelector<HTMLElement>('bili-comment-replies-renderer')
+        node = node.host
+        continue
+      }
+      if (node instanceof HTMLElement && node.localName === 'bili-comment-thread-renderer')
+        return node.shadowRoot?.querySelector<HTMLElement>('bili-comment-replies-renderer') ?? null
+      node = node.parentNode
+    }
+    return null
+  }
+
   function getCommentReplyTreeState(component: object): CommentReplyTreeState {
     let state = commentReplyTreeStates.get(component)
     if (!state) {
@@ -899,8 +936,12 @@ else if (shouldInitializePageScript) {
     state.resizeObserver?.disconnect()
     state.resizeObserver = undefined
     state.observedTargetsKey = undefined
+    state.replyContainerMutationObserver?.disconnect()
+    state.replyContainerMutationObserver = undefined
+    state.observedReplyContainer = undefined
     state.imageLoadAbort?.abort()
     state.imageLoadAbort = undefined
+    state.imageLoadListeners = undefined
     if (state.layoutUpdateRaf !== undefined) {
       cancelAnimationFrame(state.layoutUpdateRaf)
       state.layoutUpdateRaf = undefined
@@ -933,47 +974,105 @@ else if (shouldInitializePageScript) {
     const threadRoot = getCommentReplyTreeThreadRoot(component)
     const threadHost = threadRoot?.host instanceof HTMLElement ? threadRoot.host : null
     const mainRenderer = getCommentReplyTreeRootRenderer(component)
-    const targets = [replyContainer, threadHost, mainRenderer, component]
-      .filter((el): el is HTMLElement => el instanceof HTMLElement)
-    const targetsKey = targets.map(el => `${el.localName}#${el.id || ''}`).join('|')
+    const targets = new Set<HTMLElement>()
+    const addTarget = (target: Element | null | undefined) => {
+      if (target instanceof HTMLElement)
+        targets.add(target)
+    }
+    addTarget(replyContainer)
+    addTarget(threadHost)
+    addTarget(mainRenderer)
+    addTarget(component)
 
-    if (state.observedTargetsKey === targetsKey && state.resizeObserver)
-      return
+    // 主评论图片和正文可能分别位于多层 shadow root；只观察外层 renderer
+    // 在某些布局下无法捕获内部图片高度变化，导致回复坐标仍停留在旧位置。
+    const layoutTargetSelector = '#body, #main, #header, #content, #pictures, #footer, #user-avatar, bili-comment-pictures-renderer, bili-rich-text, img'
+    const collectNestedLayoutTargets = (root: ParentNode) => {
+      root.querySelectorAll<HTMLElement>(layoutTargetSelector).forEach(addTarget)
+      root.querySelectorAll<HTMLElement>('*').forEach((element) => {
+        if (element.shadowRoot)
+          collectNestedLayoutTargets(element.shadowRoot)
+      })
+    }
+    if (threadRoot)
+      collectNestedLayoutTargets(threadRoot)
+    else if (component instanceof HTMLElement && component.shadowRoot)
+      collectNestedLayoutTargets(component.shadowRoot)
 
-    disconnectCommentReplyTreeResizeObserver(state)
-    state.observedTargetsKey = targetsKey
-    state.resizeObserver = new ResizeObserver(() => {
-      if (!component?.isConnected) {
-        disconnectCommentReplyTreeResizeObserver(state)
-        return
-      }
-      scheduleCommentReplyTreeLayoutUpdate(component)
-    })
-    targets.forEach(target => state.resizeObserver?.observe(target))
+    const targetList = [...targets]
+    const targetsKey = targetList.map(el => `${el.localName}#${el.id || ''}`).join('|')
 
-    // 主评论/回复内图片异步解码完成也会改变高度
+    if (state.observedTargetsKey !== targetsKey || !state.resizeObserver) {
+      disconnectCommentReplyTreeResizeObserver(state)
+      state.observedTargetsKey = targetsKey
+      state.resizeObserver = new ResizeObserver(() => {
+        if (!component?.isConnected) {
+          disconnectCommentReplyTreeResizeObserver(state)
+          return
+        }
+        scheduleCommentReplyTreeLayoutUpdate(component)
+      })
+      targetList.forEach(target => state.resizeObserver?.observe(target))
+    }
+
+    // 删除/屏蔽回复时，B 站有时直接从列表移除 renderer，不触发回复组件自身的
+    // update；仅依赖 ResizeObserver 可能错过这一帧，导致楼层 shadow root 内的线条
+    // 没有按剩余回复重新绘制。
+    if (state.observedReplyContainer !== replyContainer || !state.replyContainerMutationObserver) {
+      state.replyContainerMutationObserver?.disconnect()
+      const observer = new MutationObserver((mutations) => {
+        if (!component?.isConnected) {
+          observer.disconnect()
+          return
+        }
+
+        const isTreeGuideNode = (node: Node) => (
+          node instanceof Element
+          && (node.id === COMMENT_REPLY_TREE_GUIDES_ID
+            || Boolean(node.closest(`#${COMMENT_REPLY_TREE_GUIDES_ID}`)))
+        )
+        const hasExternalChildListMutation = mutations.some(({ target, addedNodes, removedNodes }) => {
+          if (target instanceof Element && (target.id === COMMENT_REPLY_TREE_GUIDES_ID
+            || target.closest(`#${COMMENT_REPLY_TREE_GUIDES_ID}`))) {
+            return false
+          }
+
+          return [...Array.from(addedNodes), ...Array.from(removedNodes)]
+            .some(node => !isTreeGuideNode(node))
+        })
+        if (hasExternalChildListMutation)
+          scheduleCommentReplyTreeLayoutUpdate(component)
+      })
+      observer.observe(replyContainer, { childList: true })
+      state.observedReplyContainer = replyContainer
+      state.replyContainerMutationObserver = observer
+    }
+
+    // 每次更新都补一次图片监听，避免图片/嵌套 shadow 在首次更新后才挂载时漏监听。
+    // 主评论/回复内图片异步解码完成也会改变高度。
     const imageRoot = threadHost ?? component
     if (imageRoot instanceof HTMLElement) {
-      const abort = new AbortController()
+      const abort = state.imageLoadAbort ?? new AbortController()
       state.imageLoadAbort = abort
+      const imageLoadListeners = state.imageLoadListeners ?? new WeakSet<HTMLImageElement>()
+      state.imageLoadListeners = imageLoadListeners
       const onImageLayout = () => scheduleCommentReplyTreeLayoutUpdate(component)
       const listenImages = (root: ParentNode) => {
         root.querySelectorAll('img').forEach((img) => {
-          if (img.complete)
+          if (img.complete || imageLoadListeners.has(img))
             return
+          imageLoadListeners.add(img)
           img.addEventListener('load', onImageLayout, { once: true, signal: abort.signal })
           img.addEventListener('error', onImageLayout, { once: true, signal: abort.signal })
+        })
+        root.querySelectorAll<HTMLElement>('*').forEach((element) => {
+          if (element.shadowRoot)
+            listenImages(element.shadowRoot)
         })
       }
       listenImages(imageRoot)
       if (imageRoot.shadowRoot)
         listenImages(imageRoot.shadowRoot)
-      if (mainRenderer?.shadowRoot)
-        listenImages(mainRenderer.shadowRoot)
-      replyContainer.querySelectorAll('bili-comment-reply-renderer, bili-comment-renderer').forEach((reply) => {
-        if (reply instanceof HTMLElement && reply.shadowRoot)
-          listenImages(reply.shadowRoot)
-      })
     }
   }
 
@@ -1619,8 +1718,6 @@ else if (shouldInitializePageScript) {
     rootNodes: CommentReplyTreeNode[],
     collapseParentBody: boolean,
   ) {
-    removeCommentReplyTreeGuides(component, replyContainer)
-
     const threadRoot = getCommentReplyTreeThreadRoot(component)
     const guideContainer: HTMLElement | ShadowRoot = threadRoot ?? replyContainer
     const coordinateRect = threadRoot
@@ -1646,7 +1743,8 @@ else if (shouldInitializePageScript) {
         avatarAnchorByNode.set(node, anchor)
         return
       }
-      // 可见节点却拿不到锚点：多半是尚未完成布局，跳过本轮绘制
+      // 可见节点却拿不到锚点：多半是删除/屏蔽后的过渡节点或尚未完成布局。
+      // 跳过该节点继续绘制其余分支，避免单个异常节点清空整棵树。
       missingVisibleAvatar = true
     })
     const retryLayout = () => {
@@ -1655,12 +1753,6 @@ else if (shouldInitializePageScript) {
         return
       state.layoutRetryCount = retries + 1
       scheduleCommentReplyTreeLayoutUpdate(component)
-    }
-
-    if (missingVisibleAvatar) {
-      // 下一帧再试（展开动画/图片解码后）
-      retryLayout()
-      return
     }
 
     // 主评论锚点同样需要有效，否则根分支线会整体错位
@@ -1672,7 +1764,8 @@ else if (shouldInitializePageScript) {
       }
     }
 
-    state.layoutRetryCount = 0
+    if (!missingVisibleAvatar)
+      state.layoutRetryCount = 0
 
     const componentStyle = getComputedStyle(component)
     const branchRadius = Number.parseFloat(
@@ -1798,8 +1891,16 @@ else if (shouldInitializePageScript) {
         pathData: string
         toggleY: number
       } => Boolean(entry))
-    if (renderedBranches.length === 0 && tails.length === 0)
+    if (renderedBranches.length === 0 && tails.length === 0) {
+      if (missingVisibleAvatar) {
+        // 新布局尚未具备足够锚点时保留上一帧，避免先清空线条再等待重试。
+        retryLayout()
+        return
+      }
+      // 布局有效但已经没有可绘制分支（例如最后一条回复被删除），清理旧线条。
+      removeCommentReplyTreeGuides(component, replyContainer)
       return
+    }
 
     const minimumX = Math.min(
       0,
@@ -1858,7 +1959,11 @@ else if (shouldInitializePageScript) {
         toggleNodeRadius,
       ))
     })
+    // 只有新图层已完整创建后才替换旧图层；中途布局失败时旧线条仍可保留。
+    removeCommentReplyTreeGuides(component, replyContainer)
     guideContainer.appendChild(guideLayer)
+    if (missingVisibleAvatar)
+      retryLayout()
   }
 
   function isCommentReplyRenderer(element: Element): element is HTMLElement {
@@ -1915,6 +2020,49 @@ else if (shouldInitializePageScript) {
     nodes.forEach(node => wrapper.appendChild(node))
   }
 
+  function findFirstReplyAtTextNode(root: Node): Text | null {
+    for (const node of Array.from(root.childNodes)) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if ((node.textContent || '').trim())
+          return node as Text
+        continue
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE)
+        continue
+      const textNode = findFirstReplyAtTextNode(node)
+      if (textNode)
+        return textNode
+    }
+    return null
+  }
+
+  function hideSingleTextReplyAtPrefix(textNode: Text): boolean {
+    const match = textNode.data.match(REPLY_AT_PREFIX_SINGLE)
+    if (!match)
+      return false
+
+    const parent = textNode.parentNode
+    if (!parent)
+      return false
+
+    const prefix = match[0]
+    const rest = textNode.data.slice(prefix.length)
+    const wrapper = document.createElement('span')
+    wrapper.dataset.bewlyHideReplyAt = 'true'
+    wrapper.style.display = 'none'
+    wrapper.textContent = prefix
+
+    if (rest) {
+      const restNode = document.createTextNode(rest)
+      parent.replaceChild(restNode, textNode)
+      parent.insertBefore(wrapper, restNode)
+    }
+    else {
+      parent.replaceChild(wrapper, textNode)
+    }
+    return true
+  }
+
   function isReplyAtMentionElement(node: Node): node is HTMLElement {
     if (!(node instanceof HTMLElement))
       return false
@@ -1938,6 +2086,18 @@ else if (shouldInitializePageScript) {
         return Boolean((node.textContent || '').trim())
       return node.nodeType === Node.ELEMENT_NODE
     })
+    if (nodes.length === 1) {
+      const [onlyNode] = nodes
+      if (onlyNode?.nodeType === Node.TEXT_NODE) {
+        hideSingleTextReplyAtPrefix(onlyNode as Text)
+      }
+      else if (onlyNode instanceof HTMLElement) {
+        const firstTextNode = findFirstReplyAtTextNode(onlyNode)
+        if (firstTextNode)
+          hideSingleTextReplyAtPrefix(firstTextNode)
+      }
+      return
+    }
     if (nodes.length < 2)
       return
 
@@ -1989,23 +2149,7 @@ else if (shouldInitializePageScript) {
 
     // 兼容单文本节点：回复 @name : 内容
     if (first.nodeType === Node.TEXT_NODE) {
-      const text = first.textContent || ''
-      const singleMatch = text.match(REPLY_AT_PREFIX_SINGLE)
-      if (!singleMatch)
-        return
-
-      const hideText = text.slice(0, singleMatch[0].length)
-      const restText = text.slice(singleMatch[0].length)
-      const wrapper = document.createElement('span')
-      wrapper.dataset.bewlyHideReplyAt = 'true'
-      wrapper.style.display = 'none'
-      wrapper.textContent = hideText
-      const restNode = document.createTextNode(restText)
-      const parent = first.parentNode
-      if (!parent)
-        return
-      parent.replaceChild(restNode, first)
-      parent.insertBefore(wrapper, restNode)
+      hideSingleTextReplyAtPrefix(first as Text)
     }
   }
 
@@ -2750,171 +2894,162 @@ else if (shouldInitializePageScript) {
     return element
   }
 
-  // 判断当前页面URL是否支持IP显示
-  function isSupportedPage(): boolean {
-    const currentUrl = window.location.href
-    return (
-    // 视频页面
-      /https?:\/\/(?:www\.|m\.)?bilibili\.com\/video\/.*/.test(currentUrl)
-      // 视频分享页短链路径
-      || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/s\/video\/.*/.test(currentUrl)
-      // 番剧页面
-      || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/bangumi\/play\/.*/.test(currentUrl)
-      // 动态页面
-      || /https?:\/\/t\.bilibili\.com(?!\/vote|\/share).*/.test(currentUrl)
-      // 动态详情页
-      || /https?:\/\/(?:www\.)?bilibili\.com\/opus\/.*/.test(currentUrl)
-      // 用户空间页面
-      || /https?:\/\/space\.bilibili\.com\/.*/.test(currentUrl)
-      // 专栏页面
-      || /https?:\/\/(?:www\.)?bilibili\.com\/read\/.*/.test(currentUrl)
-      // 话题页面
-      || /https?:\/\/(?:www\.)?bilibili\.com\/v\/topic\/detail.*/.test(currentUrl)
-      // 课程页面
-      || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/cheese\/play\/.*/.test(currentUrl)
-      // 稍后再看列表页（两种路径）
-      || /https?:\/\/(?:www\.)?bilibili\.com\/watchlater\/(?:#\/)?list.*/.test(currentUrl)
-      || /https?:\/\/(?:www\.)?bilibili\.com\/list\/watchlater(?:\?.*|\/.*)?$/.test(currentUrl)
-      // 收藏夹与媒体列表
-      || /https?:\/\/(?:www\.)?bilibili\.com\/list\/ml.*/.test(currentUrl)
-      || /https?:\/\/(?:www\.)?bilibili\.com\/medialist\/(?:play|detail)\/.*/.test(currentUrl)
-      // 活动页面
-      || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/blackboard\/.*/.test(currentUrl)
-      // 拜年祭页面
-      || /https?:\/\/(?:www\.|m\.)?bilibili\.com\/festival\/.*/.test(currentUrl)
-      // 漫画页面
-      || /https?:\/\/manga\.bilibili\.com\/detail\/.*/.test(currentUrl)
-    )
-  }
+  if (window.customElements) {
+    const patchCommentCustomElement = (name: string, classConstructor: unknown) => {
+      if (typeof classConstructor !== 'function')
+        return
 
-  if (window.customElements && isSupportedPage()) {
-    const { define: originalDefine } = window.customElements
-    window.customElements.define = new Proxy(originalDefine, {
-      apply: (target, thisArg, args) => {
-        const [name, classConstructor] = args
-        if (typeof classConstructor !== 'function') {
-          return Reflect.apply(target, thisArg, args)
-        }
+      const shadowStylePatch = COMMENT_SHADOW_STYLE_PATCHES[name]
+      if (shadowStylePatch) {
+        try {
+          patchCommentComponentUpdate(name, classConstructor, (component) => {
+            const root = component.shadowRoot
+            if (!root)
+              return
 
-        const shadowStylePatch = COMMENT_SHADOW_STYLE_PATCHES[name]
-        if (shadowStylePatch) {
-          try {
-            patchCommentComponentUpdate(name, classConstructor, (component) => {
-              const root = component.shadowRoot
-              if (!root)
-                return
-
-              ensureCommentShadowStyle(root, shadowStylePatch.id, shadowStylePatch.css)
-              if (name === 'bili-comment-replies-renderer') {
-                updateCommentReplyTree(component)
-                // 深链目标楼中楼刚挂载/更新时再结算一次
-                if (getCommentReplyDeepLinkId())
-                  scheduleCommentReplyDeepLinkSettlement('hash')
-              }
-            })
-          }
-          catch (error) {
-            console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
-          }
-          return Reflect.apply(target, thisArg, args)
-        }
-
-        if (name === 'bili-comment-reply-renderer') {
-          try {
-            patchCommentComponentUpdate(name, classConstructor, (component) => {
-              const rootNode = component.getRootNode?.()
-              const repliesRenderer = rootNode instanceof ShadowRoot ? rootNode.host : null
-              if (repliesRenderer?.localName === 'bili-comment-replies-renderer') {
+            ensureCommentShadowStyle(root, shadowStylePatch.id, shadowStylePatch.css)
+            if (name === 'bili-comment-thread-renderer') {
+              // 删除/屏蔽回复可能让楼层组件整体重绘，之前挂在其 shadow root
+              // 内的 SVG 线条会随渲染结果一并被移除；重绘完成后从当前回复容器恢复。
+              const repliesRenderer = root.querySelector('bili-comment-replies-renderer') as HTMLElement | null
+              if (repliesRenderer) {
                 updateCommentReplyTree(repliesRenderer)
                 if (getCommentReplyDeepLinkId())
                   scheduleCommentReplyDeepLinkSettlement('hash')
               }
-            })
-          }
-          catch (error) {
-            console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
-          }
-          return Reflect.apply(target, thisArg, args)
+            }
+            else if (name === 'bili-comment-replies-renderer') {
+              updateCommentReplyTree(component)
+              // 深链目标楼中楼刚挂载/更新时再结算一次
+              if (getCommentReplyDeepLinkId())
+                scheduleCommentReplyDeepLinkSettlement('hash')
+            }
+          })
         }
+        catch (error) {
+          console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
+        }
+        return
+      }
 
-        // 处理评论区图片组件
-        if (name === 'bili-comment-pictures-renderer') {
-          try {
-            patchCommentComponentUpdate(name, classConstructor, (component) => {
-              const root = component.shadowRoot
-              if (!root)
-                return
+      if (name === 'bili-comment-reply-renderer') {
+        try {
+          patchCommentComponentUpdate(name, classConstructor, (component) => {
+            const rootNode = component.getRootNode?.()
+            const repliesRenderer = rootNode instanceof ShadowRoot ? rootNode.host : null
+            if (repliesRenderer?.localName === 'bili-comment-replies-renderer') {
+              updateCommentReplyTree(repliesRenderer)
+              if (getCommentReplyDeepLinkId())
+                scheduleCommentReplyDeepLinkSettlement('hash')
+            }
+          })
+        }
+        catch (error) {
+          console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
+        }
+        return
+      }
 
-              // 根据设置决定是否修复图片长宽比问题
-              if (currentSettings?.adjustCommentImageHeight) {
+      // 处理评论区图片组件
+      if (name === 'bili-comment-pictures-renderer') {
+        try {
+          patchCommentComponentUpdate(name, classConstructor, (component) => {
+            const root = component.shadowRoot
+            if (!root)
+              return
+
+            // 根据设置决定是否修复图片长宽比问题
+            if (currentSettings?.adjustCommentImageHeight) {
               // 非1:1图片（非flex布局）保持宽度，高度按实际比例自适应
-                const content = root.querySelector('#content')
-                if (content && !content.classList.contains('flex')) {
-                  const images = content.querySelectorAll('img')
-                  images.forEach((img: HTMLImageElement) => {
+              const content = root.querySelector('#content')
+              if (content && !content.classList.contains('flex')) {
+                const images = content.querySelectorAll('img')
+                images.forEach((img: HTMLImageElement) => {
                   // 移除固定的 height 属性，让图片按实际比例显示
-                    img.removeAttribute('height')
-                    img.style.height = 'auto'
-                  })
-                }
+                  img.removeAttribute('height')
+                  img.style.height = 'auto'
+                })
               }
-            })
-          }
-          catch (error) {
-            console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
-          }
-          return Reflect.apply(target, thisArg, args)
+            }
+
+            // 图片组件位于主评论的嵌套 shadow DOM 中，图片尺寸变化不一定能
+            // 通过回复容器的 ResizeObserver 传递出来；样式调整后主动重算树线。
+            const repliesRenderer = findCommentThreadRepliesRenderer(component)
+            if (repliesRenderer)
+              scheduleCommentReplyTreeLayoutUpdate(repliesRenderer)
+          })
         }
-
-        // 处理评论用户信息组件
-        if (name === 'bili-comment-user-info') {
-          try {
-            patchCommentComponentUpdate(name, classConstructor, (component) => {
-              const root = component.shadowRoot
-              if (!root)
-                return
-
-              // 找到用户名元素
-              const userNameEl = root.querySelector('#user-name')
-              if (!userNameEl)
-                return
-
-              cacheRootReplyAuthor(component.data)
-
-              // 楼中楼 user-info 先于/并行于 replies 树更新时也写入关系缓存，避免跨页丢 parent
-              const repliesRenderer = findCommentRepliesRendererHost(component)
-              if (repliesRenderer && component.data && getCommentReplyTreeMode() !== null)
-                cacheCommentReplyTreeMeta(getCommentReplyTreeState(repliesRenderer), component.data)
-
-              // 显示性别
-              const sexString = getSexString(component.data)
-              const shouldShowSex = Boolean(currentSettings?.showSex && sexString)
-              const sexEl = updateInfoElement(root, 'sex', shouldShowSex, sexString, userNameEl)
-
-              // 在楼中楼里给最外层楼主的回复添加标识
-              const shouldShowHostTag = Boolean(
-                currentSettings?.showCommentHostTag
-                && isSubReplyByRootAuthor(component.data),
-              )
-              const hostAnchor = sexEl ?? userNameEl
-              const hostEl = updateInfoElement(root, 'host-tag', shouldShowHostTag, getHostTagText(), hostAnchor)
-
-              // 显示IP地理位置
-              const locationString = getLocationString(component.data)
-              const shouldShowLocation = Boolean(currentSettings?.showIPLocation && locationString)
-              const locationAnchor = hostEl ?? sexEl ?? userNameEl
-              updateInfoElement(root, 'location', shouldShowLocation, locationString, locationAnchor)
-            })
-          }
-          catch (error) {
-            console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
-          }
-          return Reflect.apply(target, thisArg, args)
+        catch (error) {
+          console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
         }
+        return
+      }
 
+      // 处理评论用户信息组件
+      if (name === 'bili-comment-user-info') {
+        try {
+          patchCommentComponentUpdate(name, classConstructor, (component) => {
+            const root = component.shadowRoot
+            if (!root)
+              return
+
+            // 找到用户名元素
+            const userNameEl = root.querySelector('#user-name')
+            if (!userNameEl)
+              return
+
+            cacheRootReplyAuthor(component.data)
+
+            // 楼中楼 user-info 先于/并行于 replies 树更新时也写入关系缓存，避免跨页丢 parent
+            const repliesRenderer = findCommentRepliesRendererHost(component)
+            if (repliesRenderer && component.data && getCommentReplyTreeMode() !== null)
+              cacheCommentReplyTreeMeta(getCommentReplyTreeState(repliesRenderer), component.data)
+
+            // 显示性别
+            const sexString = getSexString(component.data)
+            const shouldShowSex = Boolean(currentSettings?.showSex && sexString)
+            const sexEl = updateInfoElement(root, 'sex', shouldShowSex, sexString, userNameEl)
+
+            // 在楼中楼里给最外层楼主的回复添加标识
+            const shouldShowHostTag = Boolean(
+              currentSettings?.showCommentHostTag
+              && isSubReplyByRootAuthor(component.data),
+            )
+            const hostAnchor = sexEl ?? userNameEl
+            const hostEl = updateInfoElement(root, 'host-tag', shouldShowHostTag, getHostTagText(), hostAnchor)
+
+            // 显示IP地理位置
+            const locationString = getLocationString(component.data)
+            const shouldShowLocation = Boolean(currentSettings?.showIPLocation && locationString)
+            const locationAnchor = hostEl ?? sexEl ?? userNameEl
+            updateInfoElement(root, 'location', shouldShowLocation, locationString, locationAnchor)
+          })
+        }
+        catch (error) {
+          console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
+        }
+      }
+    }
+
+    const { define: originalDefine } = window.customElements
+    window.customElements.define = new Proxy(originalDefine, {
+      apply: (target, thisArg, args) => {
+        const [name, classConstructor] = args
+        if (typeof name === 'string')
+          patchCommentCustomElement(name, classConstructor)
         return Reflect.apply(target, thisArg, args)
       },
     })
+
+    // document_start 仍可能晚于页面内联脚本；回补已经注册的评论组件。
+    const commentElementNames = new Set([
+      ...Object.keys(COMMENT_SHADOW_STYLE_PATCHES),
+      'bili-comment-reply-renderer',
+      'bili-comment-pictures-renderer',
+      'bili-comment-user-info',
+    ])
+    for (const name of commentElementNames)
+      patchCommentCustomElement(name, window.customElements.get(name))
   }
 
   // 添加消息监听器
@@ -2941,11 +3076,6 @@ else if (shouldInitializePageScript) {
           scheduleCommentReplyDeepLinkSettlement(isFirstTime ? 'immediate' : 'hash')
         resolveSettingsReady?.()
         resolveSettingsReady = null
-
-        // 只在首次启用时输出日志
-        if (isFirstTime && data.enableVolumeNormalization) {
-          console.log('[AudioInterceptor] 音量均衡已启用')
-        }
       }
     }
   })
@@ -3109,7 +3239,12 @@ else if (shouldInitializePageScript) {
   function cleanUrl(url: string): string {
     try {
       const urlObj = new URL(url)
-      if (!urlObj.hostname.includes('bilibili.com') && !urlObj.hostname.includes('b23.tv'))
+      const hostname = urlObj.hostname.toLowerCase()
+      const isBilibiliHost = hostname === 'bilibili.com'
+        || hostname === 'b23.tv'
+        || hostname.endsWith('.bilibili.com')
+        || hostname.endsWith('.b23.tv')
+      if (!isBilibiliHost)
         return url
       for (const param of BILIBILI_TRACKING_PARAMS)
         urlObj.searchParams.delete(param)

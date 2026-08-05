@@ -2,10 +2,11 @@
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
+import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
-import { isHomePage, isInIframe } from '~/utils/main'
+import { isHomePage, isInIframe, isWatchLaterListPage } from '~/utils/main'
 
 const props = defineProps<{
   forceWhiteIcon: boolean
@@ -14,6 +15,33 @@ const props = defineProps<{
 const { activatedPage } = useBewlyApp()
 const { getDockItemByPage } = useMainStore()
 const { getDockItemConfigByPage } = useSettingsStore()
+
+function getOriginalBiliAppPage(url: string): AppPage | undefined {
+  const urlObj = new URL(url)
+  const { hostname, pathname } = urlObj
+
+  if (hostname === 'search.bilibili.com')
+    return AppPage.Search
+  if (hostname === 't.bilibili.com')
+    return AppPage.Moments
+  if (hostname === 'space.bilibili.com' && /^\/\d+\/favlist\/?$/.test(pathname))
+    return AppPage.Favorites
+  if (hostname !== 'www.bilibili.com' && hostname !== 'bilibili.com')
+    return undefined
+
+  if (/^\/(?:anime|guochuang)(?:\/|$)/.test(pathname))
+    return AppPage.Anime
+  if (/^\/(?:account\/)?history(?:\/|$)/.test(pathname))
+    return AppPage.History
+  if (pathname.startsWith('/opus/'))
+    return AppPage.Moments
+  if (isWatchLaterListPage(url))
+    return AppPage.WatchLater
+
+  return undefined
+}
+
+const originalBiliAppPage = getOriginalBiliAppPage(window.location.href)
 const options = readonly([
   {
     name: 'BewlyCat',
@@ -28,15 +56,18 @@ const options = readonly([
 ])
 
 const showBewlyOrBiliPageSwitcher = computed(() => {
-  if (settings.value.useOriginalBilibiliHomepage)
+  if (settings.value.useOriginalBilibiliHomepage || isInIframe())
     return false
-  // 顶栏始终位于 iframe 外部，因此只需排除 iframe 内部环境
-  if (!isInIframe() && getDockItemByPage(activatedPage.value) && isHomePage())
-    return true
-  return false
+
+  if (isHomePage())
+    return settings.value.showBewlyOrBiliPageSwitcher && Boolean(getDockItemByPage(activatedPage.value))
+
+  return settings.value.showBewlyOrBiliPageSwitcherOnMorePages && originalBiliAppPage !== undefined
 })
 
 const isOriginalBiliPageActive = computed(() => {
+  if (originalBiliAppPage !== undefined && !isHomePage())
+    return true
   return getDockItemConfigByPage(activatedPage.value)?.useOriginalBiliPage ?? false
 })
 
@@ -51,9 +82,27 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   if (nextUseOriginalBiliPage === isOriginalBiliPageActive.value)
     return
 
-  const dockItem = settings.value.dockItemsConfig.find(dockItem => dockItem.page === activatedPage.value)
+  const page = originalBiliAppPage ?? activatedPage.value
+  let dockItem = settings.value.dockItemsConfig.find(dockItem => dockItem.page === page)
+  if (!dockItem) {
+    const defaultDockItem = getDockItemByPage(page)
+    if (defaultDockItem) {
+      dockItem = {
+        page,
+        visible: true,
+        openInNewTab: false,
+        useOriginalBiliPage: defaultDockItem.useOriginalBiliPage,
+      }
+      settings.value.dockItemsConfig.push(dockItem)
+    }
+  }
   if (dockItem) {
     dockItem.useOriginalBiliPage = nextUseOriginalBiliPage
+  }
+
+  if (originalBiliAppPage !== undefined && !isHomePage()) {
+    window.location.assign(`https://www.bilibili.com/?page=${originalBiliAppPage}`)
+    return
   }
 
   // iframe 位于 Shadow DOM 内，切回 Bewly 页面时同步通知尚未卸载的 iframe
@@ -135,8 +184,10 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     --bew-segment-item-current-color: white;
   }
 
-  // 无液态指示器时，静态选中态也要沿用白色主题底色
-  &--white.bew-segment-control--static {
+  // 无液态指示器时，静态选中态也要沿用白色主题底色。
+  // 关闭磨砂玻璃时 surface 是不透明浅底，白色变体会让选中项彻底消失，
+  // 因此与上面的白色文字规则一样排除 solid。
+  &--white.bew-segment-control--static:not(.bew-segment-control--solid) {
     --bew-segment-item-active-bg: var(--bew-segment-item-active-bg-white);
     --bew-segment-item-active-shadow: var(--bew-segment-item-active-shadow-white);
     --bew-segment-item-current-color: white;
