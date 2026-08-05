@@ -56,12 +56,20 @@ function fogGradient(color: string, peak: number) {
 // 顶部五层叠满约等于 blur(18px)，到底部只剩不足 1px，自然归零。
 const BLUR_LAYER_COUNT = 5
 
+// 模糊本身会让颜色趋灰（邻域求平均），saturate 是对此的补偿。
+// 但 --bew-filter-glass-1 的 180% 是照纯色页面背景定的，压在壁纸照片上会把原图
+// 的彩度直接放大 1.8 倍 —— 表现为顶栏明显泛色（青蓝壁纸上尤其刺眼）。
+// 降到刚够抵消模糊导致的褪色即可，不再额外加彩。
+const BLUR_SATURATE = 120
+
 const blurLayers = Array.from({ length: BLUR_LAYER_COUNT }, (_, index) => {
   const solid = ((BLUR_LAYER_COUNT - 1 - index) / BLUR_LAYER_COUNT) * 100
   const fade = ((BLUR_LAYER_COUNT - index) / BLUR_LAYER_COUNT) * 100
   const mask = `linear-gradient(to bottom, rgb(0 0 0 / 100%) 0, rgb(0 0 0 / 100%) ${solid}%, rgb(0 0 0 / 0%) ${fade}%)`
   // 饱和度只加在覆盖最广的最底层，避免逐层累积把颜色推过头
-  const filter = index === 0 ? `blur(${2 ** index}px) saturate(180%)` : `blur(${2 ** index}px)`
+  const filter = index === 0
+    ? `blur(${2 ** index}px) saturate(${BLUR_SATURATE}%)`
+    : `blur(${2 ** index}px)`
   return {
     backdropFilter: filter,
     WebkitBackdropFilter: filter,
