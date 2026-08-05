@@ -119,9 +119,12 @@ else if (shouldInitializePageScript) {
   }
 
   const COMMENT_COMPONENT_PATCHED = Symbol('bewly-comment-component-patched')
+  const COMMENT_REPLY_PAGINATION_PATCHED = Symbol('bewly-comment-reply-pagination-patched')
   const pendingCommentEnhancements = new WeakSet<object>()
   const commentRepliesRenderers = new Set<any>()
   const commentReplyTreeStates = new WeakMap<object, CommentReplyTreeState>()
+  const commentReplyPaginationStates = new WeakMap<object, CommentReplyPaginationState>()
+  const commentReplyPaginationModeStates = new WeakMap<object, boolean>()
   const MAX_COMMENT_REPLY_TREE_DEPTH = 10
   const MIN_COMMENT_REPLY_TREE_CONTENT_WIDTH = 150
   const COMPACT_COMMENT_REPLY_TREE_CONTAINER_WIDTH = 640
@@ -189,6 +192,19 @@ else if (shouldInitializePageScript) {
     directParentAuthorName: string | null
     /** 直接父回复正文摘要（跨页缓存） */
     directParentMessageText: string | null
+  }
+
+  interface CommentReplyPaginationState {
+    identity: string
+    pages: Map<number, any[]>
+    currentPage: number
+    mergedList?: any[]
+    pendingAnchorRpids?: string[]
+    pending?: {
+      page: number
+      beforeList: any[]
+    }
+    loading?: Promise<any>
   }
 
   const COMMENT_REPLY_TREE_GUIDES_CSS = `
@@ -724,6 +740,280 @@ else if (shouldInitializePageScript) {
       ?.data
     const candidates = [component?.data, component?.reply, component?.replyItem, userInfoData]
     return candidates.find(candidate => candidate && typeof candidate === 'object') ?? null
+  }
+
+  function findCommentPropertyDescriptor(
+    prototype: object,
+    property: string,
+  ): PropertyDescriptor | null {
+    let current: object | null = prototype
+    while (current && current !== Object.prototype) {
+      const descriptor = Object.getOwnPropertyDescriptor(current, property)
+      if (descriptor)
+        return descriptor
+      current = Object.getPrototypeOf(current)
+    }
+    return null
+  }
+
+  function getCommentReplyPaginationIdentity(renderer: any): string {
+    const data = getCommentReplyData(renderer) ?? {}
+    const oid = toIdString(renderer.oid) ?? getReplyOid(data)
+    const type = toIdString(renderer.type) ?? toIdString(data.type ?? data.business)
+    const root = toIdString(renderer.root) ?? getReplyRpid(data) ?? getReplyRootRpid(data)
+    return [oid ?? '', type ?? '', root ?? ''].join('|')
+  }
+
+  function isCommentReplyLoadMoreEnabled(): boolean {
+    return getCommentReplyTreeMode() !== null
+      && currentSettings?.commentReplyPaginationMode !== 'pagination'
+  }
+
+  function clearCommentReplyPaginationState(renderer: any, restoreCurrentPage: boolean) {
+    const state = commentReplyPaginationStates.get(renderer)
+    if (!state)
+      return
+    const original = state.pages.get(state.currentPage)
+    if (restoreCurrentPage && state.mergedList && renderer.list === state.mergedList && original) {
+      renderer.list = original.slice()
+      renderer.requestUpdate?.()
+    }
+    state.pending = undefined
+    state.loading = undefined
+    state.pendingAnchorRpids = undefined
+    state.pages.clear()
+    commentReplyPaginationStates.delete(renderer)
+  }
+
+  function getCommentReplyPaginationState(renderer: any): CommentReplyPaginationState {
+    const identity = getCommentReplyPaginationIdentity(renderer)
+    const existing = commentReplyPaginationStates.get(renderer)
+    if (existing && existing.identity === identity)
+      return existing
+    if (existing)
+      clearCommentReplyPaginationState(renderer, false)
+    const state: CommentReplyPaginationState = {
+      identity,
+      pages: new Map(),
+      currentPage: Number(renderer.currentPage) || 1,
+    }
+    commentReplyPaginationStates.set(renderer, state)
+    return state
+  }
+
+  function mergeCommentReplyPaginationPages(state: CommentReplyPaginationState): any[] {
+    const merged: any[] = []
+    const seen = new Set<string>()
+    ;[...state.pages.entries()]
+      .sort(([a], [b]) => a - b)
+      .forEach(([, page]) => page.forEach((reply) => {
+        const rpid = getReplyRpid(reply)
+        if (rpid) {
+          if (seen.has(rpid))
+            return
+          seen.add(rpid)
+        }
+        merged.push(reply)
+      }))
+    return merged
+  }
+
+  function scheduleCommentReplyPaginationTreeUpdate(renderer: any) {
+    renderer.requestUpdate?.()
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (renderer.isConnected && getCommentReplyTreeMode() !== null)
+        updateCommentReplyTree(renderer)
+    }))
+  }
+
+  function patchCommentReplyPaginationPrototype(classConstructor: any) {
+    const prototype = classConstructor?.prototype as object | undefined
+    if (!prototype || (prototype as any)[COMMENT_REPLY_PAGINATION_PATCHED])
+      return
+    const getListDescriptor = findCommentPropertyDescriptor(prototype, 'getList')
+    const originalGetList = getListDescriptor?.value
+    if (typeof originalGetList === 'function') {
+      Object.defineProperty(prototype, 'getList', {
+        configurable: true,
+        writable: true,
+        value(this: any, ...args: any[]) {
+          if (!isCommentReplyLoadMoreEnabled()) {
+            clearCommentReplyPaginationState(this, true)
+            return Reflect.apply(originalGetList, this, args)
+          }
+          const state = getCommentReplyPaginationState(this)
+          if (state.loading)
+            return state.loading
+          const invisibleIds = this.invisibleID && typeof this.invisibleID === 'object'
+            ? new Set(Object.keys(this.invisibleID).filter(rpid => this.invisibleID[rpid]))
+            : new Set<string>()
+          if (invisibleIds.size) {
+            state.pages.forEach((page, pageNumber) => {
+              state.pages.set(pageNumber, page.filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? '')))
+            })
+          }
+          const pending = {
+            page: Number(this.currentPage) || 1,
+            beforeList: this.list,
+          }
+          state.pending = pending
+          let result: any
+          try {
+            result = Reflect.apply(originalGetList, this, args)
+          }
+          catch (error) {
+            if (state.pending === pending) {
+              state.pending = undefined
+              state.loading = undefined
+            }
+            throw error
+          }
+          const promise = Promise.resolve(result).then((value) => {
+            if (state.pending === pending) {
+              state.pending = undefined
+              state.loading = undefined
+              if (isCommentReplyLoadMoreEnabled()
+                && state.identity === getCommentReplyPaginationIdentity(this)
+                && Array.isArray(this.list)
+                && this.list !== pending.beforeList) {
+                const page = this.list.slice()
+                const existingRpids = new Set(
+                  [...state.pages.entries()]
+                    .filter(([pageNumber]) => pageNumber !== pending.page)
+                    .flatMap(([, replies]) => replies.map(getReplyRpid).filter(Boolean) as string[]),
+                )
+                state.pendingAnchorRpids = page
+                  .map(getReplyRpid)
+                  .filter((rpid): rpid is string => Boolean(rpid && !existingRpids.has(rpid)))
+                state.pages.set(pending.page, page)
+                state.currentPage = pending.page
+                const merged = mergeCommentReplyPaginationPages(state)
+                state.mergedList = merged
+                this.list = merged
+                scheduleCommentReplyPaginationTreeUpdate(this)
+              }
+            }
+            return value
+          }, (error) => {
+            if (state.pending === pending) {
+              state.pending = undefined
+              state.loading = undefined
+            }
+            throw error
+          })
+          state.loading = promise
+          return promise
+        },
+      })
+    }
+
+    const changePageDescriptor = findCommentPropertyDescriptor(prototype, 'handleChangePage')
+    const originalChangePage = changePageDescriptor?.value
+    if (typeof originalChangePage === 'function') {
+      Object.defineProperty(prototype, 'handleChangePage', {
+        configurable: true,
+        writable: true,
+        value(this: any, ...args: any[]) {
+          if (!isCommentReplyLoadMoreEnabled())
+            return Reflect.apply(originalChangePage, this, args)
+          const state = getCommentReplyPaginationState(this)
+          if (state.loading)
+            return state.loading
+          const currentPage = Number(this.currentPage) || 1
+          if (!state.pages.has(currentPage)
+            && Array.isArray(this.list)
+            && this.list !== state.mergedList) {
+            state.pages.set(currentPage, this.list.slice())
+            state.currentPage = currentPage
+          }
+          return Reflect.apply(originalChangePage, this, args)
+        },
+      })
+    }
+
+    const paginationDescriptor = findCommentPropertyDescriptor(prototype, 'paginationItems')
+    const originalPaginationItems = paginationDescriptor?.get
+    if (typeof originalPaginationItems === 'function') {
+      Object.defineProperty(prototype, 'paginationItems', {
+        configurable: true,
+        get(this: any) {
+          const items = Reflect.apply(originalPaginationItems, this, [])
+          if (!isCommentReplyLoadMoreEnabled() || this.showPagination !== true || !Array.isArray(items))
+            return items
+          const state = getCommentReplyPaginationState(this)
+          const currentPage = Number(this.currentPage) || 1
+          if (state.loading) {
+            return [{ text: '加载中…', idx: currentPage, clickable: false }]
+          }
+          const hasNext = items.some(item => Number(item?.idx) === currentPage && item?.clickable !== false)
+          return [{
+            text: hasNext ? '加载更多' : '没有更多回复',
+            idx: currentPage,
+            clickable: hasNext,
+          }]
+        },
+      })
+    }
+
+    const revertDescriptor = findCommentPropertyDescriptor(prototype, 'handleRevert')
+    const originalRevert = revertDescriptor?.value
+    if (typeof originalRevert === 'function') {
+      Object.defineProperty(prototype, 'handleRevert', {
+        configurable: true,
+        writable: true,
+        value(this: any, ...args: any[]) {
+          clearCommentReplyPaginationState(this, false)
+          try {
+            return Reflect.apply(originalRevert, this, args)
+          }
+          finally {
+            clearCommentReplyPaginationState(this, false)
+          }
+        },
+      })
+    }
+    Object.defineProperty(prototype, COMMENT_REPLY_PAGINATION_PATCHED, {
+      configurable: true,
+      value: true,
+    })
+  }
+
+  function scrollToFirstNewCommentReplyParent(
+    component: any,
+    orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }>,
+  ) {
+    const paginationState = commentReplyPaginationStates.get(component)
+    const pendingRpids = paginationState?.pendingAnchorRpids
+    if (!paginationState || !pendingRpids?.length || !isCommentReplyLoadMoreEnabled())
+      return
+
+    const pendingRpidSet = new Set(pendingRpids)
+    const isVisible = ({ node }: { node: CommentReplyTreeNode }) => (
+      !node.renderer.hasAttribute('data-bewly-comment-reply-hidden')
+    )
+    const anchor = orderedNodes.find(entry => (
+      isVisible(entry)
+      && Boolean(entry.node.rpid && pendingRpidSet.has(entry.node.rpid))
+      && entry.node.parentRpid === null
+    ))
+    paginationState.pendingAnchorRpids = undefined
+    if (!anchor)
+      return
+
+    requestAnimationFrame(() => {
+      const renderer = anchor.node.renderer
+      if (!renderer.isConnected || !isVisible(anchor))
+        return
+      const rect = renderer.getBoundingClientRect()
+      if (rect.top <= 0)
+        return
+      const scrollingElement = document.scrollingElement
+      if (!scrollingElement)
+        return
+      const scrollLeft = scrollingElement.scrollLeft
+      scrollingElement.scrollTop += rect.top
+      scrollingElement.scrollLeft = scrollLeft
+    })
   }
 
   /** 从评论子组件向上找到所属的 bili-comment-replies-renderer */
@@ -2536,6 +2826,13 @@ else if (shouldInitializePageScript) {
 
     commentRepliesRenderers.add(component)
     const treeMode = getCommentReplyTreeMode()
+    const paginationEnabled = isCommentReplyLoadMoreEnabled()
+    if (commentReplyPaginationModeStates.get(component) !== paginationEnabled) {
+      commentReplyPaginationModeStates.set(component, paginationEnabled)
+      component.requestUpdate?.()
+    }
+    if (!paginationEnabled)
+      clearCommentReplyPaginationState(component, true)
     const existingState = commentReplyTreeStates.get(component)
     if (treeMode === null && !existingState?.enabled) {
       component.removeAttribute('data-bewly-comment-reply-tree')
@@ -2678,12 +2975,14 @@ else if (shouldInitializePageScript) {
     else {
       removeCommentReplyTreeGuides(component, replyContainer)
     }
+    scrollToFirstNewCommentReplyParent(component, orderedNodes)
     state.enabled = true
   }
 
   function refreshCommentReplyTrees() {
     commentRepliesRenderers.forEach((component) => {
       if (!component?.isConnected) {
+        clearCommentReplyPaginationState(component, false)
         const state = commentReplyTreeStates.get(component)
         if (state)
           disconnectCommentReplyTreeResizeObserver(state)
@@ -2898,6 +3197,9 @@ else if (shouldInitializePageScript) {
     const patchCommentCustomElement = (name: string, classConstructor: unknown) => {
       if (typeof classConstructor !== 'function')
         return
+
+      if (name === 'bili-comment-replies-renderer')
+        patchCommentReplyPaginationPrototype(classConstructor)
 
       const shadowStylePatch = COMMENT_SHADOW_STYLE_PATCHES[name]
       if (shadowStylePatch) {

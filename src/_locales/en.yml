@@ -911,6 +911,11 @@ settings:
     line_collapse_main: Lines · collapse parent
     line_keep_main: Lines · keep parent visible
     indent_only: Indent · no collapse
+  comment_reply_pagination_mode:
+    title: Comment tree mode
+    desc: Choose how replies appear in the comment tree. “Load more” accumulates replies and continues reading from newly added parent nodes; “Pagination” keeps Bilibili’s native pagination and shows only the current page
+    load_more: Load more
+    pagination: Pagination
   adjust_comment_image_height: Adjust comment image height
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
   hide_comment_image_scrollbar: Hide page scrollbar in comment image preview

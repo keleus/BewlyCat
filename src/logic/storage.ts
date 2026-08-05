@@ -122,6 +122,7 @@ export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
  * - indentOnly：仅缩进，无收起
  */
 export type CommentReplyTreeMode = 'lineCollapseMain' | 'lineKeepMain' | 'indentOnly'
+export type CommentReplyPaginationMode = 'loadMore' | 'pagination'
 
 export interface ShadowCurvePoint {
   position: number
@@ -208,6 +209,7 @@ export interface Settings {
   showCommentHostTag: boolean // 显示评论回复详情页楼主标识
   enableCommentReplyTreeDisplay: boolean // 启用评论回复树展示
   commentReplyTreeMode: CommentReplyTreeMode // 评论回复树展示模式
+  commentReplyPaginationMode: CommentReplyPaginationMode // 评论回复树分页展示模式
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   hideCommentImageScrollbar: boolean // 评论区图片预览时隐藏页面滚动条
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
@@ -497,6 +499,7 @@ export const originalSettings: Settings = {
   showCommentHostTag: true, // 默认启用楼主标识显示
   enableCommentReplyTreeDisplay: true, // 默认启用评论回复树展示
   commentReplyTreeMode: 'lineKeepMain', // 默认：线条树状，收起时保留父节点正文
+  commentReplyPaginationMode: 'loadMore', // 默认累计加载评论回复
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   hideCommentImageScrollbar: false, // 默认不隐藏评论图片预览时的页面滚动条
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
@@ -839,6 +842,10 @@ watch(
     }
     if (!validCommentReplyTreeModes.includes(record.commentReplyTreeMode))
       record.commentReplyTreeMode = originalSettings.commentReplyTreeMode
+
+    const validCommentReplyPaginationModes: CommentReplyPaginationMode[] = ['loadMore', 'pagination']
+    if (!validCommentReplyPaginationModes.includes(record.commentReplyPaginationMode))
+      record.commentReplyPaginationMode = originalSettings.commentReplyPaginationMode
 
     const validTopBarLogoStyles: TopBarLogoStyle[] = ['icon', 'brand']
     if (!validTopBarLogoStyles.includes(record.topBarLogoStyle))
