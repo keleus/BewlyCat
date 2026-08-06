@@ -24,9 +24,3 @@
     filter: var(--bew-filter-icon-glow);
   }
 }
-
-:host(bili-comment-box) {
-  #pub button:not(:hover, :active, .active) {
-    background-color: var(--bew-theme-color-60);
-  }
-}

@@ -134,6 +134,7 @@ else if (shouldInitializePageScript) {
   const COMMENT_REPLY_TREE_INDENT_STEP = 'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
   const COMMENT_REPLY_TREE_GUIDES_ID = 'bewly-comment-reply-tree-guides'
   const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
+  const WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE = 'data-bewly-comment-emoji-open'
   const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 
   /** 楼中楼已见过的回复关系（跨分页保留，用于父节点不在当前页时回溯挂载） */
@@ -387,6 +388,10 @@ else if (shouldInitializePageScript) {
         #editor:not(:hover):not(.active) {
           border-color: var(--bew-comment-editor-border, var(--Ga1)) !important;
         }
+
+        :is(#pub button, button[data-v-risk="fingerprint"]):not(:hover, :active, .active) {
+          background-color: var(--bew-theme-color-60) !important;
+        }
       `,
     },
     'bili-comments-vote-card': {
@@ -407,6 +412,29 @@ else if (shouldInitializePageScript) {
     style.id = id
     style.textContent = css
     root.appendChild(style)
+  }
+
+  function updateWidescreenCommentEmojiOverflow(component: HTMLElement, root: ShadowRoot) {
+    const emojiPopover = root.querySelector<HTMLElement>('#emoji-popover')
+    const emojiPickerOpen = (component as HTMLElement & { showEmojiPicker?: boolean }).showEmojiPicker === true
+      || emojiPopover?.style.display === 'block'
+    const componentRoot = component.getRootNode()
+    const shadowHost = componentRoot instanceof ShadowRoot ? componentRoot.host : null
+    const panel = component.closest('.bewly-widescreen-panel')
+      ?? shadowHost?.closest('.bewly-widescreen-panel')
+
+    if (!(panel instanceof HTMLElement))
+      return
+
+    panel.toggleAttribute(WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE, emojiPickerOpen)
+
+    const panels = panel.parentElement
+    if (panels?.classList.contains('bewly-widescreen-panels')) {
+      panels.toggleAttribute(
+        WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE,
+        Boolean(panels.querySelector(`.bewly-widescreen-panel[${WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE}]`)),
+      )
+    }
   }
 
   function findCommentComponentLifecycleMethod(
@@ -3443,6 +3471,9 @@ else if (shouldInitializePageScript) {
               // 深链目标楼中楼刚挂载/更新时再结算一次
               if (getCommentReplyDeepLinkId())
                 scheduleCommentReplyDeepLinkSettlement('hash')
+            }
+            else if (name === 'bili-comment-box') {
+              updateWidescreenCommentEmojiOverflow(component, root)
             }
           })
         }

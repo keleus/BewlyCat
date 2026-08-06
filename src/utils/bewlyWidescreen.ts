@@ -1558,6 +1558,13 @@ function injectLayoutStyle() {
       padding: 8px 8px 16px;
     }
 
+    /* B 站的表情面板会在视口底部空间不足时向上展开。打开期间允许它
+       越过评论面板顶边覆盖简介，关闭后恢复由评论面板负责滚动。 */
+    #${ROOT_ID} .bewly-widescreen-panels[data-bewly-comment-emoji-open],
+    #${ROOT_ID} .bewly-widescreen-panel[data-bewly-comment-emoji-open] {
+      overflow: visible;
+    }
+
     #${ROOT_ID} .bewly-widescreen-panel[hidden] {
       display: none !important;
     }
