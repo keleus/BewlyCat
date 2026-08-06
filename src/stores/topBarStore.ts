@@ -103,6 +103,17 @@ export const useTopBarStore = defineStore('topBar', () => {
   const watchLaterCount = ref<number>(0)
   // 添加稍后再看列表
   const watchLaterList = reactive<VideoItem[]>([])
+  // 稍后再看分页游标：服务器列表是偏移分页且会因删除整体前移，
+  // 不能用本地列表长度推算页码，需独立记录已消费的条目数
+  const watchLaterCursor = ref<number>(0)
+  // 变更纪元：删除/全量刷新/重置时递增，用于丢弃在途的过期翻页响应
+  let watchLaterEpoch = 0
+  // 全量刷新序号：并发请求仅允许最新的响应提交状态
+  let watchLaterRefreshGeneration = 0
+  // 加载序号：过期请求的 finally 不能关闭新请求的加载状态
+  let watchLaterLoadingGeneration = 0
+  // 列表曾被请求后，数量同步需要在失败时继续触发重试
+  let watchLaterListRequested = false
   const favoriteStateVersion = ref(0)
   const isLoadingWatchLater = ref<boolean>(false)
   // 添加 Moments 相关状态
@@ -207,6 +218,11 @@ export const useTopBarStore = defineStore('topBar', () => {
     newMomentsCount.value = 0
     watchLaterCount.value = 0
     watchLaterList.splice(0)
+    watchLaterCursor.value = 0
+    watchLaterEpoch++
+    watchLaterRefreshGeneration++
+    watchLaterLoadingGeneration++
+    watchLaterListRequested = false
     addedWatchLaterList.splice(0)
     moments.splice(0)
     livePage.value = 1
@@ -599,6 +615,28 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
   }
 
+  function invalidateWatchLaterList() {
+    watchLaterList.splice(0)
+    watchLaterCursor.value = 0
+    watchLaterEpoch++
+    watchLaterRefreshGeneration++
+    watchLaterLoadingGeneration++
+    isLoadingWatchLater.value = false
+  }
+
+  function shouldRefreshWatchLaterList(countChanged: boolean, count: number) {
+    if (countChanged) {
+      return watchLaterListRequested
+        || watchLaterList.length > 0
+        || watchLaterCursor.value > 0
+    }
+
+    return watchLaterListRequested
+      && !isLoadingWatchLater.value
+      && watchLaterList.length === 0
+      && count > 0
+  }
+
   // 获取稍后再看列表数量
   async function getWatchLaterCount() {
     const accountId = userInfo.mid
@@ -611,7 +649,14 @@ export const useTopBarStore = defineStore('topBar', () => {
         ps: 10,
       })
       if (res.code === 0 && isCurrentAccount(accountId)) {
+        const countChanged = watchLaterCount.value !== res.data.count
         watchLaterCount.value = res.data.count
+
+        // 数量变化意味着服务器列表已换代，旧列表与游标不能继续混用。
+        if (shouldRefreshWatchLaterList(countChanged, res.data.count)) {
+          invalidateWatchLaterList()
+          void getAllWatchLaterList()
+        }
       }
     }
     catch (error) {
@@ -625,6 +670,10 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (!isCurrentAccount(accountId))
       return
 
+    const refreshGeneration = ++watchLaterRefreshGeneration
+    const loadingGeneration = ++watchLaterLoadingGeneration
+    watchLaterListRequested = true
+    watchLaterEpoch++
     isLoadingWatchLater.value = true
 
     try {
@@ -632,18 +681,28 @@ export const useTopBarStore = defineStore('topBar', () => {
         pn: 1,
         ps: 10,
       })
-      if (res.code === 0 && isCurrentAccount(accountId)) {
+      if (
+        res.code === 0
+        && isCurrentAccount(accountId)
+        && refreshGeneration === watchLaterRefreshGeneration
+      ) {
         watchLaterCount.value = res.data.count
         watchLaterList.splice(0)
         Object.assign(watchLaterList, res.data.list)
+        watchLaterCursor.value = res.data.list.length
+        watchLaterEpoch++
       }
     }
     catch (error) {
       console.error(error)
     }
     finally {
-      if (isCurrentAccount(accountId))
+      if (
+        isCurrentAccount(accountId)
+        && loadingGeneration === watchLaterLoadingGeneration
+      ) {
         isLoadingWatchLater.value = false
+      }
     }
   }
 
@@ -653,13 +712,17 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (!isCurrentAccount(accountId) || isLoadingWatchLater.value)
       return
 
-    const currentPage = Math.floor(watchLaterList.length / 10) + 1
+    const currentPage = Math.floor(watchLaterCursor.value / 10) + 1
     const totalPages = Math.ceil(watchLaterCount.value / 10)
 
-    if (currentPage > totalPages)
+    // 游标已消费全部内容即到达集合末尾（页数判断在非整页时会漏判末页边界）
+    if (watchLaterCursor.value >= watchLaterCount.value || currentPage > totalPages)
       return
 
+    const loadingGeneration = ++watchLaterLoadingGeneration
     isLoadingWatchLater.value = true
+
+    const epoch = watchLaterEpoch
 
     try {
       const res = await api.watchlater.getWatchLaterListByPage({
@@ -667,20 +730,42 @@ export const useTopBarStore = defineStore('topBar', () => {
         ps: 10,
       })
       if (res.code === 0 && isCurrentAccount(accountId)) {
-        watchLaterList.push(...res.data.list)
+        // 翻页在途期间列表被删除/全量刷新，响应已过期，直接丢弃；
+        // 删除后的延迟同步与后续滚动会用新游标重新拉取
+        if (epoch !== watchLaterEpoch)
+          return
+        // 空页意味着游标之后已没有内容，将计数收敛到游标处，避免过期计数导致重复请求
+        if (res.data.list.length === 0) {
+          watchLaterCount.value = watchLaterCursor.value
+          return
+        }
+        // 游标语义是"已连续消费的服务器前缀长度"：翻页可能与已加载内容重叠，
+        // 返回长度不等于新增消费量，取页末位置与游标的较大值
+        watchLaterCursor.value = Math.max(
+          watchLaterCursor.value,
+          (currentPage - 1) * 10 + res.data.list.length,
+        )
+        // 删除会让服务器列表前移，页边界可能与已加载内容重叠，按 aid 去重兜底
+        const existingIds = new Set(watchLaterList.map(item => item.aid))
+        const newItems = res.data.list.filter(item => !existingIds.has(item.aid))
+        watchLaterList.push(...newItems)
       }
     }
     catch (error) {
       console.error(error)
     }
     finally {
-      if (isCurrentAccount(accountId))
+      if (
+        isCurrentAccount(accountId)
+        && loadingGeneration === watchLaterLoadingGeneration
+      ) {
         isLoadingWatchLater.value = false
+      }
     }
   }
 
   // 删除稍后再看项目
-  async function deleteWatchLaterItem(index: number, aid: number) {
+  async function deleteWatchLaterItem(_index: number, aid: number) {
     const accountId = userInfo.mid
     if (!isCurrentAccount(accountId))
       return
@@ -691,8 +776,16 @@ export const useTopBarStore = defineStore('topBar', () => {
         csrf: getCSRF(),
       })
       if (res.code === 0 && isCurrentAccount(accountId)) {
-        watchLaterList.splice(index, 1)
-        watchLaterCount.value = Math.max(0, watchLaterCount.value - 1)
+        const currentIndex = watchLaterList.findIndex(item => item.aid === aid)
+        if (currentIndex !== -1) {
+          watchLaterList.splice(currentIndex, 1)
+          watchLaterCount.value = Math.max(0, watchLaterCount.value - 1)
+          watchLaterCursor.value = Math.max(0, watchLaterCursor.value - 1)
+          watchLaterEpoch++
+          watchLaterRefreshGeneration++
+          watchLaterLoadingGeneration++
+          isLoadingWatchLater.value = false
+        }
 
         // 先保留本地乐观更新；B 站删除接口返回后，列表查询偶尔仍会短暂返回旧数量。
         // 延迟同步可避免把刚删除的项目/计数立即覆盖回来。
@@ -1053,10 +1146,15 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   function applySharedState(snapshot: TopBarSharedState) {
+    const watchLaterCountChanged = watchLaterCount.value !== snapshot.watchLaterCount
     Object.assign(unReadMessage, snapshot.unReadMessage)
     Object.assign(unReadDm, snapshot.unReadDm)
     newMomentsCount.value = snapshot.newMomentsCount
     watchLaterCount.value = snapshot.watchLaterCount
+    if (shouldRefreshWatchLaterList(watchLaterCountChanged, snapshot.watchLaterCount)) {
+      invalidateWatchLaterList()
+      void getAllWatchLaterList()
+    }
     hasBCoinToReceive.value = snapshot.hasBCoinToReceive
     bCoinAlreadyReceived.value = snapshot.bCoinAlreadyReceived
     vipExpAlreadyReceived.value = snapshot.vipExpAlreadyReceived
