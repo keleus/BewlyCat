@@ -22,10 +22,10 @@ const list = computed((): { name: string, url: string, icon: string, bewlyKey?: 
 <template>
   <div
     style="backdrop-filter: var(--bew-filter-glass-1);"
-    h="[calc(100vh-100px)]" max-h-264px important-overflow-y-auto
+    max-h-264px important-overflow-y-auto
     w="180px"
     bg="$bew-elevated"
-    p="4"
+    p="3"
     rounded="$bew-radius"
     flex="~ col"
     shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
@@ -40,16 +40,16 @@ const list = computed((): { name: string, url: string, icon: string, bewlyKey?: 
       type="topBar"
       :custom-click-event="!!item.bewlyKey && !settings.touchScreenOptimization && settings.openTopBarItemsInBewly"
       pos="relative"
-      p="x-4 y-2"
-      bg="hover:$bew-fill-2"
+      p="x-5 y-2"
+      hover:bg="$bew-fill-2"
       rounded="$bew-radius"
-      transition="background-color duration-200, color duration-200, opacity duration-200"
+      transition="colors"
+      duration="200"
       m="b-1 last:b-0"
-      flex="~"
-      items="center"
+      flex="~ items-center gap-3"
       @click="item.bewlyKey && emit('bewlyPageClick', $event, item.bewlyKey)"
     >
-      <i :class="item.icon" class="mr-4" />
+      <i :class="item.icon" />
       <span class="flex-1">{{ item.name }}</span>
     </ALink>
   </div>
