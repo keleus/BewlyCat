@@ -7,6 +7,8 @@ import MomentCard from '~/components/MomentCard/MomentCard.vue'
 import type { DisplayForwardVideo, DisplayMoment, DisplayRichTextSegment, WatchLaterTarget } from '~/components/MomentCard/types'
 import {
   formatCount,
+  getCardPreviewText,
+  getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
@@ -153,6 +155,7 @@ const detailImageViewerRotation = ref(0)
 const detailImageViewerPanX = ref(0)
 const detailImageViewerPanY = ref(0)
 const detailImageViewerSource = shallowRef<Window | null>(null)
+let detailImageViewerTrigger: HTMLElement | null = null
 let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
 const layoutRef = ref<HTMLElement | null>(null)
 const gridRef = ref<HTMLElement | null>(null)
@@ -193,9 +196,13 @@ interface VirtualColumn {
   items: DisplayMoment[]
 }
 const virtualColumns = ref<VirtualColumn[]>([])
-/** 单图宽高比（宽/高），仅用于详情视频的封面比例兜底和虚拟列表测量 */
+/** 单图宽高比（宽/高），用于图文卡片比例和详情视频的封面比例兜底 */
 const coverRatios = reactive<Record<string, number>>({})
-const MIN_SINGLE_IMAGE_RATIO = 1 / 2
+
+function getSafeImageRatio(width: number, height: number) {
+  const ratio = width / height
+  return Number.isFinite(ratio) && ratio > 0 ? ratio : undefined
+}
 let gridObserver: ResizeObserver | undefined
 let liveFlvPlayer: any = null
 let liveHlsPlayer: any = null
@@ -700,11 +707,16 @@ function getDimensionAspectRatio(dimension: any) {
   return width > 0 && height > 0 ? width / height : undefined
 }
 
-/** 图文：小红书 note 风格固定宽高；视频/直播：按视口比例缩放 */
+/** 图文保留自己的布局；播放器内容可在 iframe 内滚动。弹窗尺寸只参考 16:9 视口预算，不固定 Dialog 比例。 */
 const isOpusDetailMoment = computed(() => Boolean(selectedMoment.value && !isPlayerMoment(selectedMoment.value)))
 
-/** 播放器弹窗保持现有高度；横屏按 17:9 收窄，竖屏额外预留右侧页面布局宽度。 */
-const PLAYER_DIALOG_SCALE = 0.92
+/** 详情弹窗预留视口四边 32px 安全边距；极矮视口由外层 min() 保证不溢出。 */
+const PLAYER_DIALOG_WIDTH_SCALE = 0.92
+const DETAIL_VIEWPORT_GUTTER = 64
+const DETAIL_SAFE_WIDTH = `calc(100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
+const DETAIL_REFERENCE_HEIGHT = 'min(88dvh, 49.5vw)'
+const DETAIL_SAFE_HEIGHT = `min(calc(100dvh - ${DETAIL_VIEWPORT_GUTTER}px), max(280px, ${DETAIL_REFERENCE_HEIGHT}))`
+const DETAIL_PLAYER_MAX_WIDTH = `min(92vw, calc(${PLAYER_DIALOG_WIDTH_SCALE * 100}dvh * 16 / 9), ${DETAIL_SAFE_WIDTH})`
 const selectedVideoAspectRatio = computed(() => {
   const moment = selectedMoment.value
   if (!moment?.isVideo || moment.isLive || moment.isPgc)
@@ -719,37 +731,24 @@ const isSelectedVerticalVideo = computed(() => {
 
 const detailDialogWidth = computed(() => {
   if (selectedMoment.value?.isLive)
-    return `${PLAYER_DIALOG_SCALE * 100}vw`
+    return DETAIL_PLAYER_MAX_WIDTH
   if (selectedMoment.value?.isVideo) {
     if (isSelectedVerticalVideo.value && settings.value.defaultVideoPlayerMode === 'bewlyWidescreen') {
       const ratio = Math.max(0.4, selectedVideoAspectRatio.value || 9 / 16)
-      return `min(max(960px, calc(${PLAYER_DIALOG_SCALE * 100}dvh * ${ratio} + 420px)), calc(100vw - 32px))`
+      return `min(max(960px, calc(${PLAYER_DIALOG_WIDTH_SCALE * 100}dvh * ${ratio} + 420px)), ${DETAIL_PLAYER_MAX_WIDTH})`
     }
-    return `min(calc(${PLAYER_DIALOG_SCALE * 100}dvh * 17 / 9), calc(100vw - 32px))`
+    return DETAIL_PLAYER_MAX_WIDTH
   }
   // 参考小红书 note-container: 1088px
-  return 'min(1088px, calc(100vw - 64px))'
+  return `min(1088px, ${DETAIL_SAFE_WIDTH})`
 })
 
 const detailDialogHeight = computed(() => {
-  if (isPlayerMoment(selectedMoment.value))
-    // 与宽度使用同一缩放比例，整体接近原网页可视区域比例
-    return `${PLAYER_DIALOG_SCALE * 100}dvh`
-  // 上下各 32px：height: calc(100% - 2 * 32px)
-  return 'calc(100dvh - 64px)'
-})
-
-const detailDialogTopOffset = computed(() => {
-  if (isPlayerMoment(selectedMoment.value))
-    return undefined
-  return 32
+  return DETAIL_SAFE_HEIGHT
 })
 
 const detailContentHeight = computed(() => {
-  if (isPlayerMoment(selectedMoment.value)) {
-    return `${PLAYER_DIALOG_SCALE * 100}dvh`
-  }
-  return 'calc(100dvh - 64px)'
+  return detailDialogHeight.value
 })
 
 const detailImageViewerUrl = computed(() => detailImageViewerUrls.value[detailImageViewerIndex.value] || '')
@@ -780,12 +779,34 @@ function showDetailImageViewerImage(index: number) {
   resetDetailImageViewerTransform()
 }
 
+function openDetailImageViewer(
+  value: unknown,
+  requestedIndex: unknown,
+  source: Window | null = null,
+  trigger: HTMLElement | null = null,
+) {
+  const { index, urls } = normalizeDetailImageViewerPayload(value, requestedIndex)
+  if (!urls.length)
+    return false
+
+  detailImageViewerUrls.value = urls
+  detailImageViewerIndex.value = index
+  detailImageViewerSource.value = source
+  detailImageViewerTrigger = trigger?.isConnected ? trigger : null
+  detailImageViewerOpen.value = true
+  resetDetailImageViewerTransform()
+  nextTick(() => detailImageViewerRef.value?.focus({ preventScroll: true }))
+  return true
+}
+
 function closeDetailImageViewer() {
   if (!detailImageViewerOpen.value)
     return
 
+  const source = detailImageViewerSource.value
+  const trigger = detailImageViewerTrigger
   try {
-    detailImageViewerSource.value?.postMessage({
+    source?.postMessage({
       type: 'BEWLY_OPUS_IMAGE_VIEWER_CLOSE',
       index: detailImageViewerIndex.value,
     }, '*')
@@ -796,9 +817,17 @@ function closeDetailImageViewer() {
   detailImageViewerOpen.value = false
   detailImageViewerUrls.value = []
   detailImageViewerSource.value = null
+  detailImageViewerTrigger = null
   detailImageViewerDragging.value = false
   resetDetailImageViewerTransform()
-  nextTick(() => detailIframeRef.value?.focus())
+  nextTick(() => {
+    if (source) {
+      detailIframeRef.value?.focus({ preventScroll: true })
+      return
+    }
+    if (trigger?.isConnected)
+      trigger.focus({ preventScroll: true })
+  })
 }
 
 function handleDetailImageViewerWheel(event: WheelEvent) {
@@ -889,6 +918,10 @@ function shouldOpenMomentExternally(moment: DisplayMoment) {
     || window.innerWidth <= DETAIL_DIALOG_MIN_WIDTH
 }
 
+function openMomentImagePreview(urls: string[], index: number, trigger: HTMLElement | null) {
+  openDetailImageViewer(urls, index, null, trigger)
+}
+
 function openMomentInNewTab(moment: DisplayMoment, background = false) {
   const url = resolveDetailUrl(moment) || moment.url
   if (!url)
@@ -902,6 +935,30 @@ function openMomentInNewTab(moment: DisplayMoment, background = false) {
     void openLinkInBackground(url)
   else
     window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+function openDetailFrameInNewTab() {
+  const url = detailFrameUrl.value
+  if (!url)
+    return
+
+  const popup = window.open('about:blank', '_blank')
+  if (!popup)
+    return
+
+  try {
+    popup.opener = null
+    popup.location.replace(url)
+    closeMomentDetail()
+  }
+  catch {
+    try {
+      popup.close()
+    }
+    catch {
+      // Ignore failures while closing a blocked or already navigated popup.
+    }
+  }
 }
 
 function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
@@ -1251,24 +1308,59 @@ function estimateCardHeight(moment: DisplayMoment) {
   if (columnWidth < CARD_MIN_WIDTH) {
     if (moment.isLive)
       return Math.round(columnWidth * 9 / 16) + 210 + interactionHeight
-    if (moment.isVideo)
-      return Math.round((columnWidth - 32) * 9 / 16) + 210 + interactionHeight
+    if (moment.isVideo) {
+      const mediaWidth = Math.max(1, columnWidth - 32)
+      const charsPerLine = Math.max(12, Math.floor(mediaWidth / 14))
+      const titleLines = moment.title
+        ? Math.min(2, Math.max(1, Math.ceil(Array.from(moment.title).length / charsPerLine)))
+        : 0
+      const previewText = getCardPreviewText(moment)
+      const descLines = previewText
+        ? Math.min(3, Math.max(1, Math.ceil(Array.from(previewText).length / charsPerLine)))
+        : 0
+      const bodyHeight = titleLines * 22
+        + (titleLines && descLines ? 8 : 0)
+        + descLines * 24
+      return Math.round(mediaWidth * 9 / 16)
+        + 126
+        + bodyHeight
+        + (moment.additional ? 68 : 0)
+        + interactionHeight
+    }
   }
   if (moment.isLive)
     return Math.round((columnWidth - 32) * 9 / 16) + 190 + interactionHeight
   if (moment.isVideo) {
-    // 与卡片的左右 1:1 栏位和 16:9 视频封面保持一致。
-    const mediaWidth = Math.max(170, (columnWidth - 44) / 2)
-    return Math.round(mediaWidth * 9 / 16) + 120 + (moment.additional ? 68 : 0) + interactionHeight
+    // Regular video cards are stacked vertically: full-width cover followed
+    // by the clamped title/description block and footer.
+    const mediaWidth = Math.max(1, columnWidth - 32)
+    const charsPerLine = Math.max(12, Math.floor(mediaWidth / 14))
+    const titleLines = moment.title
+      ? Math.min(2, Math.max(1, Math.ceil(Array.from(moment.title).length / charsPerLine)))
+      : 0
+    const previewText = getCardPreviewText(moment)
+    const descLines = previewText
+      ? Math.min(3, Math.max(1, Math.ceil(Array.from(previewText).length / charsPerLine)))
+      : 0
+    const bodyHeight = titleLines * 22
+      + (titleLines && descLines ? 8 : 0)
+      + descLines * 24
+    return Math.round(mediaWidth * 9 / 16)
+      + 126
+      + bodyHeight
+      + (moment.additional ? 68 : 0)
+      + interactionHeight
   }
   if (moment.images.length && !moment.isVideo && !moment.isLive) {
-    const galleryRatio = moment.images.length <= 3
-      ? moment.images.length
-      : moment.images.length <= 4
-        ? 1
-        : moment.images.length <= 6
-          ? 3 / 2
-          : 1
+    const galleryRatio = moment.images.length === 1
+      ? Math.max(1, coverRatios[moment.id] || 1)
+      : moment.images.length <= 3
+        ? moment.images.length
+        : moment.images.length <= 4
+          ? 1
+          : moment.images.length <= 6
+            ? 3 / 2
+            : 1
     return Math.round((columnWidth - 32) / galleryRatio) + 220 + interactionHeight
   }
   return 230 + scaledTextBodyExtra + interactionHeight
@@ -2095,14 +2187,15 @@ function handleCoverLoad(event: Event, momentId: string) {
     return
 
   readyCoverIds.add(momentId)
-  const ratio = img.naturalWidth / img.naturalHeight
+  const ratio = getSafeImageRatio(img.naturalWidth, img.naturalHeight)
+  if (!ratio)
+    return
   const moment = moments.value.find(item => item.id === momentId)
-  const nextRatio = Math.max(ratio, MIN_SINGLE_IMAGE_RATIO)
   const prevRatio = coverRatios[momentId]
-  coverRatios[momentId] = nextRatio
+  coverRatios[momentId] = ratio
 
   // 封面比例变化会改估算高度；若尚未实测稳定，用估算高度更新并补偿滚动
-  if (!settledHeights.has(momentId) && (!prevRatio || Math.abs(prevRatio - nextRatio) > 0.01)) {
+  if (!settledHeights.has(momentId) && (!prevRatio || Math.abs(prevRatio - ratio) > 0.01)) {
     if (moment && !cardHeights[momentId]) {
       commitCardHeight(momentId, estimateCardHeight(moment), { force: true })
       scheduleVirtualUpdate()
@@ -2129,8 +2222,9 @@ async function prepareMomentCovers(items: DisplayMoment[], requestToken: number)
     image.decoding = 'async'
     image.onload = async () => {
       if (requestToken === feedRequestToken && image.naturalWidth && image.naturalHeight) {
-        const ratio = image.naturalWidth / image.naturalHeight
-        coverRatios[item.id] = Math.max(ratio, MIN_SINGLE_IMAGE_RATIO)
+        const ratio = getSafeImageRatio(image.naturalWidth, image.naturalHeight)
+        if (ratio)
+          coverRatios[item.id] = ratio
       }
       try {
         await image.decode()
@@ -2143,7 +2237,9 @@ async function prepareMomentCovers(items: DisplayMoment[], requestToken: number)
       finish()
     }
     image.onerror = finish
-    image.src = getMomentThumbnailUrl(item.images[0])
+    image.src = item.images.length === 1 && !item.isVideo && !item.isLive
+      ? getMomentOriginalImageUrl(item.images[0])
+      : getMomentThumbnailUrl(item.images[0])
   })))
 }
 
@@ -2939,18 +3035,11 @@ function handleDetailFrameMessage(event: MessageEvent) {
   if (type === 'BEWLY_OPUS_IMAGE_VIEWER_OPEN') {
     if (event.source !== detailIframeRef.value?.contentWindow)
       return
-    const { index, urls } = normalizeDetailImageViewerPayload(event.data.urls, event.data.index)
-    if (!urls.length)
+    const source = event.source as Window
+    if (!openDetailImageViewer(event.data.urls, event.data.index, source))
       return
-
-    detailImageViewerUrls.value = urls
-    detailImageViewerIndex.value = index
-    detailImageViewerSource.value = event.source as Window
-    detailImageViewerOpen.value = true
-    resetDetailImageViewerTransform()
-    nextTick(() => detailImageViewerRef.value?.focus({ preventScroll: true }))
     try {
-      detailImageViewerSource.value.postMessage({ type: 'BEWLY_OPUS_IMAGE_VIEWER_ACK' }, '*')
+      source.postMessage({ type: 'BEWLY_OPUS_IMAGE_VIEWER_ACK' }, '*')
     }
     catch {
       // iframe 已销毁时忽略
@@ -3488,6 +3577,7 @@ watch(
               v-for="moment in column.items" :key="moment.id"
               :moment="moment"
               :card-width="gridCardWidth"
+              :image-ratio="coverRatios[moment.id]"
               :ready="readyCardIds.has(moment.id)"
               :entering="enteringCardIds.has(moment.id)"
               :preview-active="Boolean(hoveredMediaId === moment.id && previewUrls[moment.id])"
@@ -3497,6 +3587,7 @@ watch(
               :is-watch-later-loading="isWatchLaterLoading"
               @card-element="element => bindCardEl(element, moment)"
               @open-detail="openMomentDetail"
+              @open-image-preview="openMomentImagePreview"
               @media-enter="handleMediaEnter"
               @media-leave="handleMediaLeave"
               @cover-load="(event, momentId) => handleCoverLoad(event, momentId)"
@@ -3558,7 +3649,6 @@ watch(
       :desc="selectedMoment.isLive || selectedMoment.isVideo ? selectedMoment.title || selectedMoment.author.name : (selectedMoment.time || '动态详情')"
       :width="detailDialogWidth"
       :height="detailDialogHeight"
-      :top-offset="detailDialogTopOffset"
       :content-height="detailContentHeight"
       :content-max-height="detailContentHeight"
       @close="closeMomentDetail"
@@ -3591,7 +3681,7 @@ watch(
           :href="detailFrameUrl"
           target="_blank"
           rel="noopener noreferrer"
-          @click.stop
+          @click.prevent.stop="openDetailFrameInNewTab"
         >
           新建标签页打开
           <span i-tabler-external-link />
@@ -4543,10 +4633,11 @@ watch(
   background: var(--bew-bg);
 }
 .moment-detail-frame--player {
-  // 视频/直播：按视口/16:9 区域展示，内部页面可滚动
+  // 响应式 Dialog 约束高度，视频/直播详情在 iframe 内部滚动
   overflow: hidden;
   background: #000;
-  min-height: 280px;
+  min-height: 0;
+  max-height: 100%;
 }
 .moment-detail-frame--opus {
   // 图文：小红书 note 高容器，利于竖图展示

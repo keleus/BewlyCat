@@ -3529,7 +3529,6 @@ else if (shouldInitializePageScript) {
     'buvid',
     'is_story_h5',
     'mid',
-    'p',
     'plat_id',
     'share_from',
     'timestamp',
