@@ -76,7 +76,7 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
   <div
     style="backdrop-filter: var(--bew-filter-glass-1);"
     bg="$bew-elevated"
-    p="4"
+    p="3"
     rounded="$bew-radius"
     shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
     border="1 $bew-border-color"
@@ -90,11 +90,12 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
       :href="item.url"
       type="topBar"
       pos="relative"
-      flex="~ items-center justify-between gap-2"
-      p="x-4 y-2"
-      bg="hover:$bew-fill-2"
+      flex="~ items-center justify-between gap-3"
+      p="l-5 r-8 y-2"
+      hover:bg="$bew-fill-2"
       rounded="$bew-radius"
-      transition="background-color duration-200, color duration-200, opacity duration-200"
+      transition="colors"
+      duration="200"
       m="b-1 last:b-0"
       :custom-click-event="settings.openNotificationsPageAsDrawer"
       @click="(event: MouseEvent) => handleClick(event, item)"
@@ -103,11 +104,11 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
         <i :class="item.icon" text="$bew-text-2" />
         <span flex="1 shrink-0" text-nowrap>{{ item.name }}</span>
       </div>
-      <!-- Use visibility to control the number of notifications to prevent width changes as soon as there is a number -->
+      <!-- Use v-if to control the number of notifications to prevent width changes as soon as there is a number -->
       <div
-        :style="{ visibility: item.unreadCount > 0 ? 'visible' : 'hidden' }"
+        v-if="item.unreadCount > 0"
         bg="$bew-theme-color"
-        rounded="$bew-radius"
+        rounded="$bew-radius-md"
         text="white xs leading-none center"
         grid="~ place-items-center"
         px-1
