@@ -2,6 +2,7 @@
 import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { provide, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '~/components/Button.vue'
 import Icon from '~/components/Icon.vue'
@@ -34,6 +35,7 @@ const settingsStore = useSettingsStore()
 const topBarStore = useTopBarStore()
 // Layout edit mode is UI-only; persistent choices continue to use `settings`.
 const { isLayoutEditing, exitLayoutEditMode } = useLayoutEditMode()
+const { t } = useI18n()
 
 // Conditionally use dark mode. `useDark()` handles the video-page-only route gate.
 let isDark: Ref<boolean>
@@ -1086,6 +1088,28 @@ const showBewlyPage = computed((): boolean => {
 
   return isHomePage() && !settings.value.useOriginalBilibiliHomepage
 })
+
+// Keep the browser tab title in sync with the page selected from the Dock.
+// Search results manages its own keyword-aware title in SearchResults.vue.
+const dockPageTitle = computed<string | undefined>(() => {
+  if (activatedPage.value === AppPage.SearchResults)
+    return undefined
+
+  const titleKey = activatedPage.value === AppPage.Home
+    ? mainStore.homeTabs.find(tab => tab.page === homeActivatedPage.value)?.i18nKey
+    : mainStore.getDockItemByPage(activatedPage.value)?.i18nKey
+
+  if (!titleKey)
+    return undefined
+
+  return `${t(titleKey)} - 哔哩哔哩`
+})
+
+watch(dockPageTitle, (title) => {
+  if (title && isHomePage())
+    document.title = title
+}, { immediate: true })
+
 const showTopBar = computed((): boolean => {
   // When using the open in drawer feature, the iframe inside the page will hide the top bar
   if (isVideoOrBangumiPage() && isInIframe())
