@@ -8,11 +8,7 @@ import Select from '~/components/Select.vue'
 import { originalSettings, settings } from '~/logic'
 import type { GridColumnsConfig, VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
 import { defaultGridColumns, GRID_BREAKPOINTS } from '~/logic/storage'
-import {
-  MAX_LIST_LAYOUT_BREAKPOINT,
-  MIN_LIST_LAYOUT_BREAKPOINT,
-  normalizeListLayoutBreakpoint,
-} from '~/utils/gridLayout'
+import { normalizeListLayoutBreakpoint } from '~/utils/gridLayout'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -61,8 +57,16 @@ function resetColumns() {
   settings.value.gridColumns = { ...defaultGridColumns }
 }
 
-function updateListLayoutBreakpoint(value: string | number | undefined) {
-  settings.value.autoSwitchListLayoutBreakpoint = normalizeListLayoutBreakpoint(value)
+const listLayoutBreakpointInput = ref<string | number>(settings.value.autoSwitchListLayoutBreakpoint)
+
+watch(() => settings.value.autoSwitchListLayoutBreakpoint, (value) => {
+  listLayoutBreakpointInput.value = value
+})
+
+function confirmListLayoutBreakpoint() {
+  const normalizedValue = normalizeListLayoutBreakpoint(listLayoutBreakpointInput.value)
+  settings.value.autoSwitchListLayoutBreakpoint = normalizedValue
+  listLayoutBreakpointInput.value = normalizedValue
 }
 </script>
 
@@ -130,12 +134,10 @@ function updateListLayoutBreakpoint(value: string | number | undefined) {
       >
         <div class="list-layout-control">
           <Input
-            :model-value="settings.autoSwitchListLayoutBreakpoint"
+            v-model="listLayoutBreakpointInput"
             type="number"
-            :min="MIN_LIST_LAYOUT_BREAKPOINT"
-            :max="MAX_LIST_LAYOUT_BREAKPOINT"
             class="list-layout-control__input"
-            @update:model-value="updateListLayoutBreakpoint"
+            @blur="confirmListLayoutBreakpoint"
           >
             <template #prefix>
               <span class="list-layout-control__label">{{ $t('settings.auto_switch_list_layout_breakpoint') }}</span>
