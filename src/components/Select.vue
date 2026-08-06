@@ -207,8 +207,9 @@ function onMouseEnter() {
             p="x-2 y-2"
             rounded="$bew-interactive-radius"
             w="full"
-            bg="hover:$bew-fill-2"
-            transition="background-color duration-200, border-color duration-200, transform duration-200"
+            hover:bg="$bew-fill-2"
+            transition="colors"
+            duration-200
             cursor="pointer"
             @click="onClickOption(option)"
           >
@@ -230,7 +231,9 @@ function onMouseEnter() {
 
 <style lang="scss" scoped>
 .select-trigger {
-  transition: background-color var(--bew-duration-normal) var(--bew-ease-standard);
+  transition:
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-normal) var(--bew-ease-standard);
 }
 
 .select-trigger:hover {
