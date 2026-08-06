@@ -209,8 +209,6 @@ let liveHlsPlayer: any = null
 const isLoading = ref(false)
 const isInitialLoading = ref(true)
 const noMoreContent = ref(false)
-/** 最近一批过滤动态的保留率；未完成首批加载时保持未知 */
-const filteredMomentRetentionRate = ref<number | null>(null)
 const offset = ref('')
 const updateBaseline = ref('')
 /** 按 UP 主筛选时 feed/all 的 page，从 1 递增 */
@@ -221,10 +219,8 @@ const MAX_PREVIEW_CACHE = 12
 const MAX_VIDEO_CID_CACHE = 80
 const MAX_POST_LOAD_AUTOFILL_PAGES = 3
 const WANTED_SCAN_LIMIT = 100
-/** 开启类型过滤时单次最多扫描的原始动态条数，低保留率时避免自动连刷 */
-const FILTERED_SCAN_LIMIT = 100
-/** 过滤后保留率达到此阈值时，继续使用滚动自动加载 */
-const FILTERED_AUTO_LOAD_RETENTION_RATE = 0.6
+/** 开启类型过滤时单次最多请求的原始动态页数 */
+const FILTERED_MAX_REQUEST_PAGES = 2
 const MOMENTS_CACHE_MAX_ITEMS = 1000
 const MOMENTS_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000
 /** 虚拟瀑布流需要在全局哨兵进入视口前主动预取，避免高度修正后漏掉相交事件 */
@@ -1638,7 +1634,7 @@ function loadMoreFilteredMoments() {
   void loadMoments(false, 0, true)
 }
 
-/** 任一类型过滤开启时，低保留率改为「扫 100 条 + 手动加载」以免自动连刷 */
+/** 想看分组和任一类型过滤都只允许通过按钮继续分页。 */
 function hasActiveMomentTypeFilters() {
   return settings.value.momentsFilterUpRecommendation
     || settings.value.momentsHideChargeExclusive
@@ -1654,12 +1650,7 @@ function hasActiveMomentTypeFilters() {
 }
 
 function requiresManualMomentPaging() {
-  if (activeMomentGroup.value === 'wanted')
-    return true
-  if (!hasActiveMomentTypeFilters())
-    return false
-  return filteredMomentRetentionRate.value === null
-    || filteredMomentRetentionRate.value < FILTERED_AUTO_LOAD_RETENTION_RATE
+  return activeMomentGroup.value === 'wanted' || hasActiveMomentTypeFilters()
 }
 
 function passesMomentSettings(moment: DisplayMoment) {
@@ -2604,7 +2595,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     cleanupLivePreviewPlayer()
     hoveredMediaId.value = ''
     isInitialLoading.value = true
-    filteredMomentRetentionRate.value = null
   }
   const requestToken = feedRequestToken
   const requestType = activeMomentFilter.value
@@ -2636,7 +2626,8 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
         let canContinue = true
         const scanned: DataItem[] = []
 
-        while (canContinue && scanned.length < FILTERED_SCAN_LIMIT) {
+        let requestPages = 0
+        while (canContinue && requestPages < FILTERED_MAX_REQUEST_PAGES) {
           const response = await api.moment.getMomentsByUp({
             host_mid: requestHostMid,
             type: requestType,
@@ -2656,6 +2647,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
           const pageItems = response.data?.items || []
           scanned.push(...pageItems)
+          requestPages += 1
           const responseOffset = response.data?.offset || ''
           scanUpdateBaseline = response.data?.update_baseline || ''
           canContinue = Boolean(response.data?.has_more)
@@ -2663,8 +2655,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
             && responseOffset !== scanOffset
           scanOffset = responseOffset
           nextPage += 1
-          if (scanned.length >= FILTERED_SCAN_LIMIT)
-            break
         }
 
         rawItems = scanned
@@ -2699,6 +2689,9 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     }
     else if (requestGroup === 'wanted') {
       await momentsFeedCacheReady
+      // 类型过滤开启时，首批缓存刷新与后续填充共用两页请求预算。
+      const maxRequestPages = hasActiveMomentTypeFilters() ? FILTERED_MAX_REQUEST_PAGES : Infinity
+      let requestPages = 0
       let cacheEntry = getValidMomentsCache(requestType) ?? {
         items: [],
         offset: '',
@@ -2723,7 +2716,12 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           let canContinue = true
           let reachedCache = false
 
-          while (canContinue && freshItems.length < WANTED_SCAN_LIMIT && !reachedCache) {
+          while (
+            canContinue
+            && freshItems.length < WANTED_SCAN_LIMIT
+            && !reachedCache
+            && requestPages < maxRequestPages
+          ) {
             const response = await api.moment.getMoments({
               type: requestType,
               offset: scanOffset || undefined,
@@ -2738,6 +2736,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
             }
 
             const pageItems = (response.data?.items || []).map(mapMoment)
+            requestPages += 1
             reachedCache = pageItems.some(moment => existingIds.has(moment.id))
             freshItems.push(...pageItems)
             const responseOffset = response.data?.offset || ''
@@ -2776,6 +2775,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           cacheEntry.items.length < batchEnd
           && cacheEntry.items.length < MOMENTS_CACHE_MAX_ITEMS
           && cacheEntry.hasMore
+          && requestPages < maxRequestPages
         ) {
           const response = await api.moment.getMoments({
             type: requestType,
@@ -2791,6 +2791,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           }
 
           const pageItems = (response.data?.items || []).map(mapMoment)
+          requestPages += 1
           const responseOffset = response.data?.offset || ''
           const continuationIds = new Set(cacheEntry.continuation?.items.map(moment => moment.id) || [])
           const reachesContinuation = pageItems.some(moment => continuationIds.has(moment.id))
@@ -2837,13 +2838,14 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
       }
     }
     else if (hasActiveMomentTypeFilters()) {
-      // 过滤开启：单次最多扫描 FILTERED_SCAN_LIMIT 条原始动态，再交给本地过滤
+      // 过滤开启：单次最多请求两页原始动态，再交给本地过滤
       let scanOffset = offset.value
       let scanUpdateBaseline = updateBaseline.value
       let canContinue = true
       const scanned: DataItem[] = []
+      let requestPages = 0
 
-      while (canContinue && scanned.length < FILTERED_SCAN_LIMIT) {
+      while (canContinue && requestPages < FILTERED_MAX_REQUEST_PAGES) {
         const response = await api.moment.getMoments({
           type: requestType,
           offset: scanOffset || undefined,
@@ -2859,17 +2861,16 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
         const pageItems = response.data?.items || []
         scanned.push(...pageItems)
+        requestPages += 1
         const responseOffset = response.data?.offset || ''
         scanUpdateBaseline = response.data?.update_baseline || ''
         canContinue = Boolean(response.data?.has_more)
           && pageItems.length > 0
           && responseOffset !== scanOffset
         scanOffset = responseOffset
-        if (scanned.length >= FILTERED_SCAN_LIMIT)
-          break
       }
 
-      // 以整页推进 offset，本批原始条数可能略高于 100
+      // 以整页推进 offset，本批原始条数取决于服务端单页大小
       rawItems = scanned
       hasMore = canContinue
       nextOffset = scanOffset
@@ -2926,11 +2927,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     await prepareMomentCovers(items, requestToken)
     if (!isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)) {
       return
-    }
-    if (hasActiveMomentTypeFilters() && requestGroup !== 'wanted') {
-      filteredMomentRetentionRate.value = normalizedItems.length
-        ? items.length / normalizedItems.length
-        : 0
     }
     if (!reset)
       preservedPaginationScrollTop = scrollViewportRef.value?.scrollTop ?? null
@@ -4589,7 +4585,7 @@ watch(
   gap: var(--bew-space-2);
   min-width: 124px;
   height: var(--bew-control-height);
-  margin: var(--bew-space-5) auto 0;
+  margin: var(--bew-space-5) auto var(--bew-space-12);
   padding: 0 var(--bew-space-4);
   border: 1px solid var(--bew-border-color);
   border-radius: var(--bew-radius-full);
