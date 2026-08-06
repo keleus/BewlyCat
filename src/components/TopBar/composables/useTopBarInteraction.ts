@@ -14,6 +14,7 @@ import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isHomePage } from '~/utils/main'
+import { shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { openLinkInBackground } from '~/utils/tabs'
 import { createTransformer } from '~/utils/transformer'
 
@@ -121,7 +122,7 @@ export function useTopBarInteraction() {
       // SearchResults 页面的显示逻辑：
       if (activatedPage.value === AppPage.SearchResults) {
         // 启用了插件搜索结果页才显示搜索框
-        if (!settings.value.usePluginSearchResultsPage)
+        if (!shouldUsePluginSearchResultsPage())
           return false
         // 其他情况显示搜索框
       }

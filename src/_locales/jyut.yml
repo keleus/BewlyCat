@@ -573,6 +573,7 @@ settings:
   enable_search_history_desc: 啓用後，搜尋欄會記同顯示你嘅搜尋歷史。關咗之後會剷晒所有歷史
   use_plugin_search_results_page: 使用插件搜尋結果頁
   use_plugin_search_results_page_desc: 開啟後，搜尋會使用插件內置嘅搜尋結果頁，支援分類篩選等功能
+  use_plugin_search_results_page_disabled_by_original_homepage: 使用原版 bilibili 首頁嗰陣，搜尋會使用 bilibili 原版結果頁
   depersonalize_search_results: 去個人化搜尋
   depersonalize_search_results_desc: 開啟後，搜尋結果請求唔會帶登入 Cookie。
   search_results_pagination_mode: 搜尋結果分頁模式

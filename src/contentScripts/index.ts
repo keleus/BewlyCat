@@ -21,7 +21,7 @@ import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIfra
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
-import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
+import { getPluginSearchResultsUrl, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -223,7 +223,7 @@ else if (shouldInitializeContentScript) {
 
   function setupPluginSearchLinkNavigation() {
     document.addEventListener('click', (event) => {
-      if (!settings.value.usePluginSearchResultsPage || !getCookie('DedeUserID'))
+      if (!shouldUsePluginSearchResultsPage() || !getCookie('DedeUserID'))
         return
 
       // 评论区等 B 站 Web Component 会把点击目标重新指向 Shadow Host，

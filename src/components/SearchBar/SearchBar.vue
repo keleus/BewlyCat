@@ -11,7 +11,7 @@ import { settings } from '~/logic'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage } from '~/utils/main'
-import { buildKeywordSearchUrl } from '~/utils/searchNavigation'
+import { buildKeywordSearchUrl, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { HistoryItem, SuggestionItem, SuggestionResponse } from './searchHistoryProvider'
@@ -146,7 +146,7 @@ const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
 
 // 判断是否在搜索结果页且启用了插件搜索
 const shouldHandleInCurrentPage = computed(() => {
-  if (!settings.value.usePluginSearchResultsPage)
+  if (!shouldUsePluginSearchResultsPage())
     return false
   // 如果能获取到 bewlyApp，使用 activatedPage 来判断
   if (bewlyApp?.activatedPage) {

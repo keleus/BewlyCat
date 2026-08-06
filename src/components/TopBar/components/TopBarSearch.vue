@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isHomePage } from '~/utils/main'
+import { shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 
@@ -94,7 +95,7 @@ function handleSearch(keyword: string) {
 
   // 只有在搜索结果页且启用了插件搜索时才使用 pushState 方式
   // 其他情况由 SearchBar 组件的 navigateToSearchResultPage 处理
-  if (!settings.value.usePluginSearchResultsPage)
+  if (!shouldUsePluginSearchResultsPage())
     return
 
   // 检查是否在搜索结果页（通过 URL 参数判断，因为在 TopBar 中无法 inject BEWLY_APP）

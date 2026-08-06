@@ -124,9 +124,16 @@ function changeSearchBarFocusCharacter(url: string) {
     <SettingsItemGroup :title="$t('settings.group_search_results')">
       <SettingsItem :title="$t('settings.use_plugin_search_results_page')" right-width="auto">
         <template #desc>
-          <span>{{ $t('settings.use_plugin_search_results_page_desc') }}</span>
+          <span>
+            {{ settings.useOriginalBilibiliHomepage
+              ? $t('settings.use_plugin_search_results_page_disabled_by_original_homepage')
+              : $t('settings.use_plugin_search_results_page_desc') }}
+          </span>
         </template>
-        <Radio v-model="settings.usePluginSearchResultsPage" />
+        <Radio
+          v-model="settings.usePluginSearchResultsPage"
+          :disabled="settings.useOriginalBilibiliHomepage"
+        />
       </SettingsItem>
 
       <SettingsItem :title="$t('settings.depersonalize_search_results')" right-width="auto">

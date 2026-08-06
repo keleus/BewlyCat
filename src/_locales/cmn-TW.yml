@@ -904,6 +904,7 @@ settings:
   group_search_results: 搜尋結果
   use_plugin_search_results_page: 使用插件搜尋結果頁
   use_plugin_search_results_page_desc: 啟用後，搜尋時將使用插件內置的搜尋結果頁面，支持分類篩選等功能
+  use_plugin_search_results_page_disabled_by_original_homepage: 使用原版 bilibili 首頁時，搜尋將使用 bilibili 原版結果頁
   search_results_pagination_mode: 搜尋結果分頁模式
   search_results_pagination_mode_desc: 選擇搜尋結果的展示方式：滾動自動加載或翻頁
 auth:

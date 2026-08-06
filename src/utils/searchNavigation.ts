@@ -12,6 +12,11 @@ const NATIVE_SEARCH_CATEGORY_BY_PATH: Record<string, string> = {
   video: 'video',
 }
 
+export function shouldUsePluginSearchResultsPage(): boolean {
+  return settings.value.usePluginSearchResultsPage
+    && !settings.value.useOriginalBilibiliHomepage
+}
+
 /**
  * Build a native Bilibili search URL from a keyword.
  *
@@ -35,7 +40,7 @@ export function buildNativeSearchUrl(keyword: string): string {
 export function buildKeywordSearchUrl(keyword: string): string {
   const encoded = encodeURIComponent(keyword)
 
-  if (settings.value.usePluginSearchResultsPage)
+  if (shouldUsePluginSearchResultsPage())
     return `https://www.bilibili.com/?page=SearchResults&keyword=${encoded}`
 
   return buildNativeSearchUrl(keyword)

@@ -2,15 +2,19 @@
 defineProps<{
   modelValue: boolean
   label?: string
+  disabled?: boolean
 }>()
 
 const model = defineModel()
 </script>
 
 <template>
-  <label cursor="pointer" pointer="auto" flex items-center gap-3>
+  <label
+    :class="{ disabled }" cursor="pointer" pointer="auto" flex items-center
+    gap-3
+  >
     <span>{{ label }}</span>
-    <input v-model="model" type="checkbox" class="radio-input">
+    <input v-model="model" type="checkbox" class="radio-input" :disabled="disabled">
     <span class="radio-switch" aria-hidden="true" />
   </label>
 </template>
@@ -24,6 +28,11 @@ label {
   --b-switch-thumb-size: 20px;
 
   position: relative;
+
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 }
 
 .radio-input {
@@ -74,6 +83,10 @@ input[type="checkbox"] {
 
   &:hover + .radio-switch {
     background: var(--bew-fill-2);
+  }
+
+  &:disabled + .radio-switch {
+    background: var(--bew-fill-1);
   }
 
   &:active + .radio-switch::after {
