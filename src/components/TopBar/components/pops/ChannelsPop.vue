@@ -26,7 +26,7 @@ const otherLinks = computed(() => {
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1); border-radius: var(--bew-radius-2xl);"
+    style="backdrop-filter: var(--bew-filter-glass-1);"
     mt-2
     h="fit" max-h="[calc(100vh-120px)]"
     w="fit"
