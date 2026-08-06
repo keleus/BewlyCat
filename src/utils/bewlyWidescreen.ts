@@ -1094,10 +1094,15 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-sidebar-top {
       position: relative;
       z-index: 0;
-      flex: 0 0 auto;
+      flex: 0 1 auto;
+      min-height: 0;
       padding: 8px 10px 8px;
       border-bottom: 1px solid var(--bewly-widescreen-divider);
       background: var(--bewly-widescreen-surface-bg);
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
     }
 
     #${ROOT_ID} .bewly-widescreen-toolbar {
@@ -1209,6 +1214,22 @@ function injectLayoutStyle() {
       height: 40px !important;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-description-slot.is-expanded .video-desc-container,
+    #${ROOT_ID} .bewly-widescreen-description-slot.is-expanded #v_desc {
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-description-slot.is-expanded .basic-desc-info {
+      display: block !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+      -webkit-line-clamp: unset !important;
+      -webkit-box-orient: initial !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-description-slot .video-desc-container > .toggle-btn {
