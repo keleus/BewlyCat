@@ -444,7 +444,12 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
         ref="headerTarget"
         class="top-bar"
         w="full" transition="opacity duration-300, transform duration-300, background-color duration-300"
-        :class="{ 'hide': hideTopBar, 'force-white-icon': forceWhiteIcon }"
+        :class="{
+          'hide': hideTopBar,
+          'force-white-icon': forceWhiteIcon,
+          'top-bar--solid': !settings.enableTopBarGradient,
+          'top-bar--solid-force-white': !settings.enableTopBarGradient && forceWhiteIcon,
+        }"
       >
         <TopBarHeader
           :force-white-icon="forceWhiteIcon"
@@ -478,6 +483,18 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
   right: 0;
   z-index: 999;
   position: fixed;
+}
+
+.top-bar--solid {
+  background: var(--bew-top-bar-solid-background);
+  box-shadow: var(--bew-top-bar-solid-shadow);
+  transition:
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard);
+}
+
+.top-bar--solid-force-white {
+  background: var(--bew-top-bar-solid-background-force-white);
 }
 
 .top-area-listener {
