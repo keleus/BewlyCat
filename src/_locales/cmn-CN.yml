@@ -840,6 +840,11 @@ settings:
     line_collapse_main: 线条-收起主评论
     line_keep_main: 线条-不收起主评论
     indent_only: 缩进-无收起功能
+  comment_reply_pagination_mode:
+    title: 树状评论模式
+    desc: 选择树状评论的回复展示方式。「更多」会累计回复，并从本次新增的父节点继续阅读；「分页」保留 B 站原生分页，只显示当前页
+    load_more: 更多
+    pagination: 分页
   adjust_comment_image_height: 调整评论区图片高度
   adjust_comment_image_height_desc: 自动调整评论区图片高度以匹配实际长宽比，避免图片变形
   hide_comment_image_scrollbar: 评论图片预览时隐藏页面滚动条

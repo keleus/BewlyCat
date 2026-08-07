@@ -829,6 +829,11 @@ settings:
     line_collapse_main: 線條-收起主留言
     line_keep_main: 線條-唔收起主留言
     indent_only: 縮入-無收起功能
+  comment_reply_pagination_mode:
+    title: 樹狀留言模式
+    desc: 揀樹狀留言嘅回覆顯示方式。「撈多啲」會累積回覆，並由今次新增嘅父級留言繼續睇；「翻頁」保留 Bilibili 原生分頁，只顯示目前頁面
+    load_more: 撈多啲
+    pagination: 翻頁
   hide_comment_image_scrollbar: 留言圖片預覽時隱藏頁面滾動條
   hide_comment_image_scrollbar_desc: 開啟留言區圖片預覽時隱藏頁面右側滾動條，避免滾動條顯示喺遮罩右側
   video_player_scroll: 校好顯示模式後自動轆到合適嘅位置

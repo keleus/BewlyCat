@@ -50,8 +50,8 @@ function calculatePosition() {
 
   const rect = containerRef.value.getBoundingClientRect()
   dropdownPosition.value = {
-    top: rect.bottom + window.scrollY,
-    left: rect.left + window.scrollX,
+    top: rect.bottom,
+    left: rect.left,
     width: rect.width,
   }
 }
@@ -136,7 +136,7 @@ watchEffect(() => {
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
           }"
-          pos="absolute"
+          pos="fixed"
           p="2"
           m="t-2"
           z="10004"

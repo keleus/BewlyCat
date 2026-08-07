@@ -494,7 +494,6 @@ const BILIBILI_TRACKING_PARAMS = [
   'buvid',
   'is_story_h5',
   'mid',
-  'p',
   'plat_id',
   'share_from',
   'timestamp',
