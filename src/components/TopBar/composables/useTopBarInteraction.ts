@@ -17,6 +17,18 @@ import { isHomePage } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 import { createTransformer } from '~/utils/transformer'
 
+const bewlyPageByTopBarItem: Partial<Record<string, AppPage>> = {
+  channels: AppPage.Home,
+  moments: AppPage.Moments,
+  favorites: AppPage.Favorites,
+  history: AppPage.History,
+  watchLater: AppPage.WatchLater,
+}
+
+function getConfiguredPageUrl(page: AppPage): string {
+  return `https://www.bilibili.com/?page=${page}`
+}
+
 export function useTopBarInteraction() {
   const topBarStore = useTopBarStore()
   const { closeAllPopups } = topBarStore
@@ -175,7 +187,7 @@ export function useTopBarInteraction() {
 
   // 处理顶栏项点击
   function openConfiguredPageFromTopBar(page: AppPage) {
-    const pageUrl = `https://www.bilibili.com/?page=${page}`
+    const pageUrl = getConfiguredPageUrl(page)
     const openMode = settings.value.topBarLinkOpenMode
 
     if (openMode === 'background') {
@@ -197,6 +209,14 @@ export function useTopBarInteraction() {
     location.href = pageUrl
   }
 
+  function getTopBarItemHref(key: string, originalHref: string): string {
+    if (settings.value.touchScreenOptimization || !settings.value.openTopBarItemsInBewly)
+      return originalHref
+
+    const page = bewlyPageByTopBarItem[key]
+    return page ? getConfiguredPageUrl(page) : originalHref
+  }
+
   function handleClickTopBarItem(event: MouseEvent, key: string) {
     if (handledClickEvents.has(event))
       return
@@ -214,13 +234,6 @@ export function useTopBarInteraction() {
     if (!settings.value.openTopBarItemsInBewly || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
       return
 
-    const bewlyPageByTopBarItem: Partial<Record<string, AppPage>> = {
-      channels: AppPage.Home,
-      moments: AppPage.Moments,
-      favorites: AppPage.Favorites,
-      history: AppPage.History,
-      watchLater: AppPage.WatchLater,
-    }
     const page = bewlyPageByTopBarItem[key]
     if (!page)
       return
@@ -257,6 +270,7 @@ export function useTopBarInteraction() {
     handleClickTopBarItem,
     handleClickTopBarLogo,
     handleNotificationsItemClick,
+    getTopBarItemHref,
     forceWhiteIcon,
     showSearchBar,
   }
