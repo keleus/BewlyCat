@@ -63,7 +63,6 @@ const shouldEnableVideoControls = computed(() => settings.value.enableVideoCtrlB
 const shouldEnableSwipeSeek = computed(() => settings.value.enableVideoPreviewSwipeSeek && !props.video?.roomid)
 let hls: Hls | null = null
 let flvPlayer: flvjs.Player | null = null
-let controlsHideTimeout: number | null = null
 /** 仅记录 pointerdown 意图；真正 scrub 需横向拖过阈值后才激活 */
 let activeScrubPointerId: number | null = null
 let scrubStartX = 0
@@ -78,55 +77,28 @@ let pendingScrubTime: number | null = null
 let scrubAnimationFrame: number | null = null
 let scrubSeekTimeout: number | null = null
 let lastScrubSeekAt = 0
-let lastControlsPointerActivityAt = 0
 
 /** 需要明显的左右拖动才接管，避免长按/点击抖动误触并频繁 seek */
 const SCRUB_START_THRESHOLD_PX = 18
 const NEARBY_SEEK_RANGE_SECONDS = 30
 /** 拖动中降低视频 seek 频率；进度条仍即时更新 */
 const SCRUB_SEEK_INTERVAL_MS = 120
-const CONTROLS_POINTER_ACTIVITY_INTERVAL_MS = 100
 
-function clearControlsHideTimeout() {
-  if (controlsHideTimeout !== null) {
-    clearTimeout(controlsHideTimeout)
-    controlsHideTimeout = null
-  }
-}
-
-function scheduleControlsHide() {
-  clearControlsHideTimeout()
-  controlsHideTimeout = window.setTimeout(() => {
-    showVideoControls.value = false
-  }, 3000)
-}
-
-function showControlsTemporarily() {
+function showControls() {
   if (!shouldEnableVideoControls.value)
     return
 
   showVideoControls.value = true
-  if (isPreviewFullscreen.value) {
-    clearControlsHideTimeout()
-    return
-  }
-
-  scheduleControlsHide()
 }
 
-function handlePreviewMouseMove(event?: PointerEvent) {
+function handlePreviewMouseMove() {
   if (!shouldEnableVideoControls.value || !props.previewVideoUrl)
     return
 
   if (!props.isHover && !isPreviewFullscreen.value)
     return
 
-  const eventTimestamp = event?.timeStamp ?? performance.now()
-  if (eventTimestamp - lastControlsPointerActivityAt < CONTROLS_POINTER_ACTIVITY_INTERVAL_MS)
-    return
-  lastControlsPointerActivityAt = eventTimestamp
-
-  showControlsTemporarily()
+  showControls()
 }
 
 function updateScrubProgress(videoEl: HTMLVideoElement) {
@@ -237,7 +209,7 @@ function handlePreviewPointerDown(event: PointerEvent) {
 function handlePreviewPointerMove(event: PointerEvent) {
   // 未进入横向 scrub 时才刷新控制条，避免拖动中额外响应式开销
   if (!hasDragGesture)
-    handlePreviewMouseMove(event)
+    handlePreviewMouseMove()
 
   if (activeScrubPointerId !== event.pointerId)
     return
@@ -349,7 +321,6 @@ function resetVideoElement(videoEl: HTMLVideoElement) {
 
 function stopPreview(videoEl: HTMLVideoElement) {
   cleanupPlayers()
-  clearControlsHideTimeout()
   resetPreviewScrub()
   showVideoControls.value = false
   resetVideoElement(videoEl)
@@ -373,7 +344,6 @@ function syncPreviewFullscreenState() {
   emit('previewFullscreenChange', isFullscreen)
 
   if (isFullscreen) {
-    clearControlsHideTimeout()
     showVideoControls.value = true
     return
   }
@@ -386,7 +356,7 @@ function syncPreviewFullscreenState() {
     return
   }
 
-  showControlsTemporarily()
+  showControls()
 }
 
 function cleanupPlayers() {
@@ -541,7 +511,7 @@ async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
   else {
     cleanupPlayers()
     resetVideoElement(videoEl)
-    showControlsTemporarily()
+    showControls()
     videoEl.src = url
     videoEl.load()
     videoEl.play().catch(() => {
@@ -574,13 +544,12 @@ watch([shouldEnableVideoControls, () => props.previewVideoUrl, () => props.isHov
   }
 
   if (!controlsEnabled || !url || !isHover) {
-    clearControlsHideTimeout()
     showVideoControls.value = false
     return
   }
 
-  showControlsTemporarily()
-})
+  showControls()
+}, { immediate: true })
 
 // Cleanup on unmount
 onMounted(() => {
@@ -591,7 +560,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', syncPreviewFullscreenState)
   document.removeEventListener('webkitfullscreenchange', syncPreviewFullscreenState as EventListener)
-  clearControlsHideTimeout()
   resetPreviewScrub()
   if (suppressPreviewClickTimeout !== null)
     clearTimeout(suppressPreviewClickTimeout)
