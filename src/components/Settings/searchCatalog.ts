@@ -236,6 +236,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.following_filter_dynamic_videos',
     'settings.group_home_tabs',
     'settings.home_tabs_adjustment',
+    'settings.home_tabs_position',
     'settings.fixed_home_tabs_on_home_page',
     'settings.group_search_page_mode',
     'settings.use_search_page_mode',
@@ -263,6 +264,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_show_publish',
     'settings.moments_show_live',
     'settings.moments_show_up_list',
+    'settings.moments_tabs_position',
     'settings.moments_enable_live_preview',
     'settings.moments_enable_video_preview',
     'settings.moments_filter_video_dynamic',
@@ -362,7 +364,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.topbar_switchers',
     'settings.show_bewly_or_bili_page_switcher',
     'settings.show_bewly_or_bili_page_switcher_on_more_pages',
-    'settings.show_bewly_or_bili_top_bar_switcher',
   ]),
   ...createEntries(topBarRoute, [
     'settings.group_search_bar',

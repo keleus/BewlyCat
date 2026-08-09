@@ -274,6 +274,7 @@ function toggleTabContentLoading(loading: boolean) {
         v-if="shouldShowHomeHeader"
         class="home-header"
         :class="{
+          'home-header--tabs-center': settings.homeTabsPosition === 'center',
           'home-header-fixed': settings.fixedHomeTabsOnHomePage,
         }"
         w-full z-9
@@ -434,6 +435,20 @@ function toggleTabContentLoading(loading: boolean) {
   justify-self: end;
 }
 
+.home-header--tabs-center {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+
+  .home-tabs-panel {
+    grid-column: 2;
+    max-width: calc(100vw - 320px);
+    justify-self: center;
+  }
+
+  .home-grid-layout-switcher {
+    grid-column: 3;
+  }
+}
+
 .home-grid-layout-item {
   &__icon {
     pointer-events: none;
@@ -456,6 +471,21 @@ function toggleTabContentLoading(loading: boolean) {
 
 .home-header-fixed {
   --uno: "sticky top-[calc(var(--bew-top-bar-height)+10px)]";
+}
+
+@media (max-width: 1000px) {
+  .home-header--tabs-center {
+    grid-template-columns: minmax(0, 1fr) auto;
+
+    .home-tabs-panel {
+      grid-column: 1;
+      max-width: 100%;
+    }
+
+    .home-grid-layout-switcher {
+      grid-column: 2;
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

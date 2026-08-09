@@ -337,13 +337,6 @@ function toggleChannel(value: string) {
       >
         <Radio v-model="settings.showBewlyOrBiliPageSwitcherOnMorePages" />
       </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.show_bewly_or_bili_top_bar_switcher')"
-        :desc="$t('settings.show_bewly_or_bili_top_bar_switcher_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.showBewlyOrBiliTopBarSwitcher" />
-      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_search_bar')">

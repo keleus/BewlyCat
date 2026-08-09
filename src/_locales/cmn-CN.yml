@@ -190,8 +190,8 @@ settings:
   group_topbar: 顶栏
   topbar_logo_and_channels: Logo 设置
   topbar_logo_and_channels_desc: 设置顶栏 Logo 样式，以及触屏模式下是否显示首页按钮。
-  topbar_switchers: BewlyCat/Bilibili 切换器
-  topbar_switchers_desc: 分别控制首页页面切换器和顶栏切换器是否显示。
+  topbar_switchers: BewlyCat/Bilibili 页面切换器
+  topbar_switchers_desc: 控制 BewlyCat 与 Bilibili 原版页面切换器是否显示。
   topbar_actions: 顶栏功能图标
   topbar_actions_desc: 分别设置右侧功能图标的显示状态、角标和相关提醒。
   topbar_user_menu: 顶栏用户菜单
@@ -244,6 +244,7 @@ settings:
   moments_enable_video_preview: 视频动态悬停预览
   moments_enable_video_preview_desc: 鼠标悬停视频动态封面时播放视频预览。
   moments_grid_columns: 动态列数
+  moments_tabs_position: 动态标签栏位置
   moments_grid_columns_desc: 设置 Bewly 动态页的期望列数。卡片尺寸会随列数自适应；窗口空间不足时会自动减少列数，左侧栏与动态流整体保持居中。
   moments_grid_columns_option: '{count} 列'
   moments_filter_up_recommendation: 过滤：UP主的推荐
@@ -291,7 +292,6 @@ settings:
   open_top_bar_items_in_bewly_desc: 未启用触屏优化时，点击 Logo、动态、收藏、历史或稍后再看图标，将按照“顶栏链接打开行为”打开 Dock 中对应的页面，并沿用该页面的 Bewly/原版 Bilibili 配置；尚未适配的图标保持原有行为。
   show_bewly_or_bili_page_switcher_desc: 在首页 Logo 旁显示切换器，用于在 BewlyCat 页面和 Bilibili 原版页面之间切换。
   show_bewly_or_bili_page_switcher_on_more_pages_desc: 在动态、搜索、番剧、收藏、历史和稍后再看等 Bilibili 原版页面显示切换器；切换到 BewlyCat 时会打开对应的插件页面。
-  show_bewly_or_bili_top_bar_switcher_desc: 在页面顶部悬停时显示切换器，用于在 BewlyCat 顶栏和 Bilibili 原版顶栏之间切换。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隐藏 LV6 等级最后登录信息显示
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: 开启后，顶栏头像弹窗中的 LV6 等级信息区域将不再显示最后登录时间和地点，也不会请求登录记录。
   chk_box:
@@ -474,7 +474,6 @@ settings:
   enable_top_bar_gradient: 启用顶栏渐变效果
   enable_top_bar_gradient_desc: 开启后顶栏默认使用磨砂玻璃渐变，关闭后改为实色背景。
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
-  show_bewly_or_bili_top_bar_switcher: 显示 BewlyCat/Bilibili 顶栏切换器
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多页面显示 BewlyCat/Bilibili 页面切换器
   filter_articles_in_moments: 过滤专栏
@@ -700,6 +699,7 @@ settings:
   search_page_mode_wallpaper_fixed: 将搜索页模式的壁纸固定
   home_tabs_adjustment: 标签栏调整
   home_tabs_adjustment_desc: 第一个激活的标签项是默认界面
+  home_tabs_position: 首页标签栏位置
   always_show_tabs_on_home_page: 滚动隐藏首页标签栏
   fixed_home_tabs_on_home_page: 固定首页标签栏
   topbar_visibility: 顶栏可见性
@@ -857,8 +857,6 @@ settings:
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key
 topbar:
-  switch_to_bewly_top_bar: 切换到 BewlyCat 顶栏
-  switch_to_bili_top_bar: 切换到 Bilibili/Bilibili-Evolved 顶栏
   sign_in: 登录
   notifications: 通知
   moments: 动态

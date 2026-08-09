@@ -190,8 +190,8 @@ settings:
   group_topbar: Top Bar
   topbar_logo_and_channels: Logo settings
   topbar_logo_and_channels_desc: Choose the top bar Logo style and whether to show the home button in touch mode.
-  topbar_switchers: BewlyCat/Bilibili switchers
-  topbar_switchers_desc: Control the homepage page switcher and the top bar switcher separately.
+  topbar_switchers: BewlyCat/Bilibili page switcher
+  topbar_switchers_desc: Control the switcher between BewlyCat and original Bilibili pages.
   topbar_actions: Top bar actions
   topbar_actions_desc: Set the visibility, badges, and related reminders for each action icon.
   topbar_user_menu: Top bar user menu
@@ -247,6 +247,7 @@ settings:
   moments_enable_video_preview: Preview video dynamics on hover
   moments_enable_video_preview_desc: Play a video preview when hovering over a video dynamic cover.
   moments_grid_columns: Dynamic columns
+  moments_tabs_position: Dynamic tabs position
   moments_grid_columns_desc: Set the preferred column count for the Bewly dynamic feed. Card dimensions adapt to the selected layout; columns automatically reduce when space is limited, while the sidebar and feed remain centered as a group.
   moments_grid_columns_option: '{count} columns'
   moments_filter_up_recommendation: Filter uploader recommendations
@@ -298,7 +299,6 @@ settings:
   open_top_bar_items_in_bewly_desc: When touch screen optimization is off, the Logo, Moments, Favorites, History, and Watch Later icons follow the top bar link opening behavior and open the corresponding Dock page using its Bewly/original Bilibili setting. Unsupported icons keep their existing behavior.
   show_bewly_or_bili_page_switcher_desc: Show a switcher next to the homepage Logo to move between the BewlyCat and original Bilibili pages.
   show_bewly_or_bili_page_switcher_on_more_pages_desc: Show the switcher on original Bilibili pages such as Moments, Search, Anime, Favorites, History, and Watch Later. Switching to BewlyCat opens the corresponding plugin page.
-  show_bewly_or_bili_top_bar_switcher_desc: Show a switcher when hovering at the top of the page to move between the BewlyCat and original Bilibili top bars.
   hide_lv6_last_login_location_in_top_bar_user_pop: Hide LV6 last login info
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: When enabled, the LV6 section in the top bar user popup will no longer show the last login time or location, and no login log request will be made.
   chk_box:
@@ -424,7 +424,6 @@ settings:
   enable_top_bar_gradient: Enable top bar gradient effect
   enable_top_bar_gradient_desc: Use a frosted glass gradient on the top bar by default; disable it to use a solid background.
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
-  show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher
   show_bewly_or_bili_page_switcher_on_more_pages: Show BewlyCat/Bilibili page switcher on more pages
   filter_articles_in_moments: Filter articles
@@ -684,6 +683,7 @@ settings:
   search_page_mode_wallpaper_fixed: Make the wallpaper of the search page mode fixed
   home_tabs_adjustment: Tabs adjustment
   home_tabs_adjustment_desc: The first activated tab is the default page.
+  home_tabs_position: Home tabs position
   always_show_tabs_on_home_page: Hide home tabs while scrolling
   fixed_home_tabs_on_home_page: Fix home tabs to the top
   topbar_visibility: BewlyBewly's top bar visibility
@@ -941,8 +941,6 @@ settings:
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
-  switch_to_bewly_top_bar: Switch to BewlyBewly top bar
-  switch_to_bili_top_bar: Switch to BiliBili/Bilibili-Evolved top bar
   sign_in: Sign in
   notifications: Notifications
   moments: Moments

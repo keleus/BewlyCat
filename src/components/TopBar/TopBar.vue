@@ -62,7 +62,6 @@ function applyTopBarVisibility() {
     && (
       !forceHideTopBar.value
       || hasActivePopup.value
-      || topBarStore.isSwitcherButtonVisible
     )
 
   hideTopBar.value = !shouldShow
@@ -82,8 +81,8 @@ function handleTopBarVisibility() {
       hideTimer = null
     }
 
-    // 如果鼠标在顶栏区域或顶部监听区域，或者有任何弹窗激活，或者切换器按钮可见，则显示顶栏
-    if (!isOutsideTopBar.value || !isOutsideTopArea.value || hasActivePopup.value || topBarStore.isSwitcherButtonVisible) {
+    // 如果鼠标在顶栏区域或顶部监听区域，或者有任何弹窗激活，则显示顶栏
+    if (!isOutsideTopBar.value || !isOutsideTopArea.value || hasActivePopup.value) {
       toggleTopBarVisible(true)
     }
     else {
@@ -91,10 +90,8 @@ function handleTopBarVisibility() {
       hideTimer = window.setTimeout(() => {
         // 再次检查是否有弹窗激活，防止在延迟期间有弹窗打开
         const hasActivePopupNow = hasActivePopup.value
-        const isSwitcherButtonVisibleNow = topBarStore.isSwitcherButtonVisible
-
         // 在鼠标显示模式下，如果所有弹窗都关闭且鼠标不在检测区域，则隐藏顶栏
-        if (!hasActivePopupNow && !isSwitcherButtonVisibleNow) {
+        if (!hasActivePopupNow) {
           toggleTopBarVisible(false)
         }
       }, 500) // 500ms 延迟
@@ -103,7 +100,7 @@ function handleTopBarVisibility() {
 }
 
 // 监听鼠标位置变化和相关状态
-watch([isOutsideTopBar, isOutsideTopArea, () => topBarStore.isSwitcherButtonVisible], handleTopBarVisibility)
+watch([isOutsideTopBar, isOutsideTopArea], handleTopBarVisibility)
 
 // 监听弹窗状态变化
 watch(hasActivePopup, () => {
@@ -113,10 +110,6 @@ watch(hasActivePopup, () => {
 })
 
 watch(forceHideTopBar, () => {
-  applyTopBarVisibility()
-})
-
-watch(() => topBarStore.isSwitcherButtonVisible, () => {
   applyTopBarVisibility()
 })
 

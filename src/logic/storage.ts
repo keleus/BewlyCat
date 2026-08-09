@@ -98,6 +98,7 @@ export interface ShortcutsSettings {
 
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
+export type TabsPosition = 'left' | 'center'
 export type TopBarLogoStyle = 'icon' | 'brand'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 export type RandomPlayOrder = 'sequential' | 'reverse' | 'random'
@@ -274,7 +275,6 @@ export interface Settings {
   alwaysUseTransparentTopBar: boolean
   enableTopBarGradient: boolean
   showTopBarThemeColorGradient: boolean
-  showBewlyOrBiliTopBarSwitcher: boolean
   showBewlyOrBiliPageSwitcher: boolean
   showBewlyOrBiliPageSwitcherOnMorePages: boolean
   topBarLogoStyle: TopBarLogoStyle
@@ -298,6 +298,7 @@ export interface Settings {
   momentsSidebarShowPublish: boolean
   momentsSidebarShowLive: boolean
   momentsShowUpList: boolean
+  momentsTabsPosition: TabsPosition
   momentsEnableLivePreview: boolean
   momentsEnableVideoPreview: boolean
   /** Bewly 动态页期望列数；窄屏会自动降列 */
@@ -410,6 +411,7 @@ export interface Settings {
   followingInactiveDays: number // UP主超过N天未更新则移至不活跃名单
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
+  homeTabsPosition: TabsPosition
   alwaysShowTabsOnHomePage: boolean
   fixedHomeTabsOnHomePage: boolean
   enableVersionReminder: boolean
@@ -565,7 +567,6 @@ export const originalSettings: Settings = {
   alwaysUseTransparentTopBar: false,
   enableTopBarGradient: true,
   showTopBarThemeColorGradient: true,
-  showBewlyOrBiliTopBarSwitcher: true,
   showBewlyOrBiliPageSwitcher: true,
   showBewlyOrBiliPageSwitcherOnMorePages: false,
   topBarLogoStyle: 'icon',
@@ -597,6 +598,7 @@ export const originalSettings: Settings = {
   momentsSidebarShowPublish: true,
   momentsSidebarShowLive: true,
   momentsShowUpList: true,
+  momentsTabsPosition: 'left',
   momentsEnableLivePreview: true,
   momentsEnableVideoPreview: true,
   momentsGridColumns: '3',
@@ -700,6 +702,7 @@ export const originalSettings: Settings = {
   followingInactiveDays: 100, // 默认100天
 
   homePageTabVisibilityList: [],
+  homeTabsPosition: 'left',
   alwaysShowTabsOnHomePage: false,
   fixedHomeTabsOnHomePage: false,
   enableVersionReminder: true,
@@ -826,8 +829,14 @@ watch(
     const record = value as Record<string, any>
 
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
-    Reflect.deleteProperty(record, 'homeTabsPosition')
+    Reflect.deleteProperty(record, 'showBewlyOrBiliTopBarSwitcher')
     Reflect.deleteProperty(record, 'enableHomeGridVirtualization')
+
+    const validTabsPositions: TabsPosition[] = ['left', 'center']
+    if (!validTabsPositions.includes(record.homeTabsPosition))
+      record.homeTabsPosition = originalSettings.homeTabsPosition
+    if (!validTabsPositions.includes(record.momentsTabsPosition))
+      record.momentsTabsPosition = originalSettings.momentsTabsPosition
 
     // 清理已移除的音量均衡功能设置。
     for (const field of ['enableVolumeNormalization', 'targetVolume', 'normalizationStrength', 'adaptiveGainSpeed', 'voiceGateDb', 'volumeNormalizationDebug'])

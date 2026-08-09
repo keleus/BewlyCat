@@ -3288,7 +3288,10 @@ watch(
       class="moments-layout"
       :class="{ 'moments-layout--without-sidebar': !showMomentsSidebar }"
     >
-      <header class="moments-filter-header">
+      <header
+        class="moments-filter-header"
+        :class="{ 'moments-filter-header--center': settings.momentsTabsPosition === 'center' }"
+      >
         <section
           class="moments-filter-panel bew-segment-control bew-segment-control--surface"
           :class="{
@@ -4479,6 +4482,9 @@ watch(
   align-items: center;
   width: 100%;
   min-width: 0;
+}
+.moments-filter-header--center {
+  justify-content: center;
 }
 .moments-layout--without-sidebar .moments-filter-header {
   grid-column: 1;

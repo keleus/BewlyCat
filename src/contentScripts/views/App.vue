@@ -1005,8 +1005,6 @@ if (settings.value.cleanUrlArgument) {
         transition: 'opacity 0.2s ease',
       }"
     >
-      <BewlyOrBiliTopBarSwitcher v-if="settings.showBewlyOrBiliTopBarSwitcher" />
-
       <TopBar
         class="top-bar-layer"
         pos="top-0 left-0" w-full

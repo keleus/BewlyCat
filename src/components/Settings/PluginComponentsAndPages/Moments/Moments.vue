@@ -5,6 +5,7 @@ import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
+import type { TabsPosition } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -91,6 +92,11 @@ const gridColumnOptions = computed(() => [
   { label: t('settings.moments_grid_columns_option', { count: 2 }), value: '2' as const },
   { label: t('settings.moments_grid_columns_option', { count: 1 }), value: '1' as const },
 ])
+
+const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition }[]>(() => [
+  { label: t('common.position.left'), value: 'left' },
+  { label: t('common.position.center'), value: 'center' },
+])
 </script>
 
 <template>
@@ -144,6 +150,13 @@ const gridColumnOptions = computed(() => [
           v-model="settings.momentsGridColumns"
           :label="$t('settings.moments_grid_columns')"
           :options="gridColumnOptions"
+        />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.moments_tabs_position')" right-width="auto">
+        <SettingsSegmentedControl
+          v-model="settings.momentsTabsPosition"
+          :label="$t('settings.moments_tabs_position')"
+          :options="momentsTabsPositionOptions"
         />
       </SettingsItem>
       <SettingsItem

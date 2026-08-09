@@ -21,10 +21,12 @@ const searchBarStyles = computed(() => ({
   // Keep the initial radius calculation valid before the global tokens finish loading.
   '--b-search-bar-height': 'var(--bew-top-bar-primary-control-height, 46px)',
   '--b-search-bar-normal-color': settings.value.enableFrostedGlass ? 'color-mix(in oklab, var(--bew-elevated-solid), transparent 60%)' : 'var(--bew-elevated)',
+  '--b-search-bar-hover-color': 'var(--bew-elevated)',
   '--b-search-bar-focus-color': 'var(--bew-elevated)',
   '--b-search-bar-normal-icon-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
   '--b-search-bar-normal-text-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
-  '--b-search-bar-hover-text-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
+  '--b-search-bar-hover-text-color': 'var(--bew-text-1)',
+  '--b-search-bar-focus-text-color': 'var(--bew-text-1)',
   '--b-search-bar-placeholder-opacity': useLightText.value ? '0.9' : '0.65',
 }))
 

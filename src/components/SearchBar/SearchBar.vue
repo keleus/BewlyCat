@@ -615,7 +615,6 @@ function handleClearKeyword() {
         p="l-6 r-18 y-3"
         h-inherit
         spellcheck="false"
-        text="$b-search-bar-normal-text-color group-focus-within:$b-search-bar-focus-text-color group-hover:$b-search-bar-hover-text-color"
         un-border="1 solid $bew-border-color"
         @focus="isFocus = true"
         @input="handleNativeInput"
@@ -814,6 +813,7 @@ function handleClearKeyword() {
   height: var(--b-search-bar-height, var(--bew-top-bar-primary-control-height, 46px));
 
   --b-search-bar-normal-color: var(--bew-content);
+  --b-search-bar-hover-color: var(--bew-content-hover);
   --b-search-bar-focus-color: var(--bew-content-hover);
 
   --b-search-bar-normal-icon-color: var(--bew-text-1);
@@ -843,6 +843,7 @@ function handleClearKeyword() {
     input {
       @include card-content;
       appearance: none;
+      color: var(--b-search-bar-normal-text-color);
       min-width: 0;
       position: relative;
       z-index: 1;
@@ -865,6 +866,15 @@ function handleClearKeyword() {
       &:focus {
         --uno: "bg-$b-search-bar-focus-color";
       }
+    }
+
+    &:hover:not(:focus-within) input {
+      color: var(--b-search-bar-hover-text-color);
+      background: var(--b-search-bar-hover-color);
+    }
+
+    &:focus-within input {
+      color: var(--b-search-bar-focus-text-color);
     }
 
     &.focus input {
