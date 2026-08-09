@@ -7,6 +7,7 @@ import { settings } from '~/logic'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
 import { isHomePage, isInIframe, isWatchLaterListPage } from '~/utils/main'
+import { buildNativeSearchUrl } from '~/utils/searchNavigation'
 
 const props = defineProps<{
   forceWhiteIcon: boolean
@@ -42,6 +43,21 @@ function getOriginalBiliAppPage(url: string): AppPage | undefined {
 }
 
 const originalBiliAppPage = getOriginalBiliAppPage(window.location.href)
+
+function getSearchKeyword(url: string): string {
+  try {
+    return new URL(url).searchParams.get('keyword')?.trim() || ''
+  }
+  catch {
+    return ''
+  }
+}
+
+const isPluginSearchResultsPage = computed(() => {
+  return isHomePage()
+    && activatedPage.value === AppPage.SearchResults
+})
+
 const options = readonly([
   {
     name: 'BewlyCat',
@@ -59,8 +75,10 @@ const showBewlyOrBiliPageSwitcher = computed(() => {
   if (settings.value.useOriginalBilibiliHomepage || isInIframe())
     return false
 
-  if (isHomePage())
-    return settings.value.showBewlyOrBiliPageSwitcher && Boolean(getDockItemByPage(activatedPage.value))
+  if (isHomePage()) {
+    return settings.value.showBewlyOrBiliPageSwitcher
+      && Boolean(getDockItemByPage(isPluginSearchResultsPage.value ? AppPage.Search : activatedPage.value))
+  }
 
   return settings.value.showBewlyOrBiliPageSwitcherOnMorePages && originalBiliAppPage !== undefined
 })
@@ -82,7 +100,8 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   if (nextUseOriginalBiliPage === isOriginalBiliPageActive.value)
     return
 
-  const page = originalBiliAppPage ?? activatedPage.value
+  const page = originalBiliAppPage
+    ?? (isPluginSearchResultsPage.value ? AppPage.Search : activatedPage.value)
   let dockItem = settings.value.dockItemsConfig.find(dockItem => dockItem.page === page)
   if (!dockItem) {
     const defaultDockItem = getDockItemByPage(page)
@@ -98,6 +117,14 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   }
   if (dockItem) {
     dockItem.useOriginalBiliPage = nextUseOriginalBiliPage
+  }
+
+  // SearchResults is a virtual BewlyCat page and has no iframe-backed dock
+  // item. Navigate directly to the native search page while forwarding only
+  // the active keyword, never the current route's tracking parameters.
+  if (nextUseOriginalBiliPage && isPluginSearchResultsPage.value) {
+    window.location.assign(buildNativeSearchUrl(getSearchKeyword(window.location.href)))
+    return
   }
 
   if (originalBiliAppPage !== undefined && !isHomePage()) {
