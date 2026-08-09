@@ -159,15 +159,15 @@ let detailImageViewerTrigger: HTMLElement | null = null
 let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
 const layoutRef = ref<HTMLElement | null>(null)
 const gridRef = ref<HTMLElement | null>(null)
-/** 按当前实际列数限制卡片最大宽度 */
+/** 按当前实际列数限制单张动态卡片的最大宽度。 */
+const GRID_GAP = 16
 const CARD_MAX_WIDTH_BY_COLUMNS = {
-  1: 720,
-  2: 600,
+  1: 730,
+  2: 610,
   3: 520,
 } as const
 const CARD_MIN_WIDTH = 360
 const CARD_COMPACT_MIN_WIDTH = 260
-const GRID_GAP = 16
 const SIDEBAR_WIDTH = 248
 const SIDEBAR_MIN_LAYOUT_WIDTH = SIDEBAR_WIDTH + GRID_GAP + CARD_MIN_WIDTH
 const gridColumnCount = ref(1)
@@ -3586,6 +3586,7 @@ watch(
             class="moments-up-list__pinned"
             role="list"
             aria-label="固定 UP 主"
+            @wheel="handleUpListWheel"
           >
             <span class="moments-up-list__divider" aria-hidden="true" />
             <button
@@ -3890,8 +3891,8 @@ watch(
 }
 .moments-up-list__main {
   position: relative;
-  min-width: 0;
-  flex: 1 1 auto;
+  min-width: 64px;
+  flex: 1 1 0;
 }
 .moments-up-list__start {
   display: flex;
@@ -3975,11 +3976,10 @@ watch(
 }
 .moments-up-list__pinned {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 1 max-content;
   align-items: center;
   gap: var(--bew-space-1);
   min-width: 0;
-  max-width: min(40%, 320px);
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
