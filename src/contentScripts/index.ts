@@ -19,8 +19,8 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
-import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
-import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder } from '~/utils/randomPlay'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
@@ -771,7 +771,8 @@ else if (shouldInitializeContentScript) {
         waitForPlayerModePageSettle()
         document.querySelector('.bewly-watch-later-btn')?.remove()
         watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
-        // 不再重置用户手动修改标志，保持用户的自动播放偏好设置
+        // 手动修改只覆盖当前视频；切集后重新应用扩展配置，避免播放器重建时开关复位。
+        resetAutoPlayUserChangeFlag()
 
         // 重置随机播放初始化状态，避免重复加载
         resetRandomPlayInitialization()
@@ -1251,6 +1252,11 @@ else if (shouldInitializeContentScript) {
       else
         resetVerticalVideoZoom()
     },
+  )
+
+  watch(
+    () => settings.value.language,
+    () => syncRandomPlayUI(),
   )
 
   // 监听设置变化

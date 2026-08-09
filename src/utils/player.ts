@@ -16,7 +16,7 @@ const _videoClassTag = {
   title:
       '.video-title,.bilibili-player-video-top-title,#player-title,.season-info .title',
   subtitle:
-      '.video-pod__item.active>.title,.multip-list-item.multip-list-item-active',
+      '.video-pod__item.active>.title,.simple-base-item.active .title-txt,.multip-list-item.multip-list-item-active',
   widescreen:
       '.bpx-player-ctrl-wide,.bilibili-player-video-btn-widescreen,.squirtle-video-widescreen',
   pagefullscreen:
@@ -375,7 +375,7 @@ export function saveCaptionState(enabled: boolean) {
 // 检测是否为合集视频
 export function isCollectionVideo(): boolean {
   // 检测多P视频选集
-  if (document.querySelector('.video-pod__item, .multi-page__item, .page-item')) {
+  if (document.querySelector('.video-pod__item, .video-pod__list .simple-base-item, .multi-page__item, .page-item')) {
     return true
   }
 
@@ -402,7 +402,7 @@ function isLoopEnabled(): boolean {
   return loopCheckbox?.checked === true
 }
 
-// 收藏列表/稍后再看等场景使用播放设置中的 handoff 单选项控制自动切集
+// 播放列表场景使用“更多播放设置”中的 handoff 单选项控制自动切集
 function isPlaylistHandoffEnabled(): boolean {
   const autoHandoffRadio = document.querySelector(
     '.bpx-player-ctrl-setting-handoff input[type=radio][value="0"]',
@@ -446,7 +446,9 @@ export function detectVideoType(): VideoType {
   // 检测多P视频和合集视频的关键区别：
   // 分P视频有 .view-mode 切换视图组件，合集视频没有
   const hasViewMode = !!document.querySelector('.view-mode')
-  const hasVideoPod = !!document.querySelector('.video-pod__item, .multi-page__item, .page-item')
+  const hasVideoPod = !!document.querySelector(
+    '.video-pod__item, .video-pod__list .simple-base-item, .multi-page__item, .page-item',
+  )
 
   if (hasVideoPod) {
     // 有视频列表项
@@ -538,21 +540,17 @@ function findAutoPlaySwitchButton(): { button: HTMLElement, isOn: boolean } | nu
     { container: '.auto-play', switchOn: '.switch-btn.on', switchOff: '.switch-btn:not(.on)' },
     // 旧版 B站
     { container: '.continuous-btn', switchOn: '.switch-btn.on', switchOff: '.switch-btn:not(.on)' },
-    // 备用：直接查找开关
-    { container: null, switchOn: '.switch-btn.on', switchOff: '.switch-btn:not(.on)' },
   ]
 
   for (const selector of selectors) {
     let searchRoot: Element | Document = document
 
     // 如果指定了容器，先查找容器
-    if (selector.container) {
-      const container = document.querySelector(selector.container)
-      if (!container) {
-        continue
-      }
-      searchRoot = container
+    const container = document.querySelector(selector.container)
+    if (!container) {
+      continue
     }
+    searchRoot = container
 
     // 在容器内查找开关按钮
     const switchOnBtn = searchRoot.querySelector(selector.switchOn) as HTMLElement
@@ -643,13 +641,16 @@ function setAutoPlayState(enable: boolean) {
           isProgrammaticChange = false
         }, 0)
       }
+
+      // B 站会异步重绘开关，确认实际状态后再结束重试。
+      return findAutoPlaySwitchButton()?.isOn === enable
     }
 
     return true
   }).start()
 }
 
-// 设置收藏列表的播放方式（自动切集或播完暂停）
+// 设置播放器官方 handoff 模式（自动切集或播完暂停）
 function setPlaylistHandoffMode(enable: boolean) {
   // 如果启用自动切集，需要先关闭单集循环（单集循环优先级更高）
   if (enable) {
@@ -667,10 +668,21 @@ function setPlaylistHandoffMode(enable: boolean) {
       return false
     }
 
-    // 如果目标按钮未选中，则设置为选中
+    // 优先走原生 click，让 B 站播放器自己的事件处理器更新配置与 UI。
+    // 直接改 checked 在 React/Vue 控制的 input 上可能只改到 DOM，切集后就会丢失。
     if (!targetRadio.checked) {
-      targetRadio.checked = true
-      targetRadio.dispatchEvent(new Event('change', { bubbles: true }))
+      targetRadio.click()
+
+      // 个别播放器版本会阻止隐藏 radio 的 click，保留原生 setter 兜底。
+      if (!targetRadio.checked) {
+        const checkedSetter = Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          'checked',
+        )?.set
+        checkedSetter?.call(targetRadio, true)
+        targetRadio.dispatchEvent(new Event('input', { bubbles: true }))
+        targetRadio.dispatchEvent(new Event('change', { bubbles: true }))
+      }
     }
 
     return targetRadio.checked
@@ -682,7 +694,12 @@ export function supportsCustomPlaybackForVideoType(videoType = detectVideoType()
 }
 
 function usesPlaylistHandoff(videoType: VideoType): boolean {
-  return videoType === VideoType.WATCH_LATER || videoType === VideoType.PLAYLIST
+  // 分 P 与合集也有播放器“更多播放设置 → 自动切集”。相比侧栏的旧
+  // .auto-play 开关，这个原生 handoff 配置会随播放器切集稳定保留。
+  return videoType === VideoType.MULTIPART
+    || videoType === VideoType.COLLECTION
+    || videoType === VideoType.WATCH_LATER
+    || videoType === VideoType.PLAYLIST
 }
 
 interface NativeEndPlaybackSnapshot {
@@ -693,6 +710,11 @@ interface NativeEndPlaybackSnapshot {
 }
 
 let nativeEndPlaybackSnapshot: NativeEndPlaybackSnapshot | null = null
+let customEndPlaybackHandlerActive = false
+
+export function setCustomEndPlaybackHandlerActive(active: boolean): void {
+  customEndPlaybackHandlerActive = active
+}
 
 function captureNativeEndPlaybackBehavior(videoType: VideoType): void {
   if (nativeEndPlaybackSnapshot?.videoType === videoType)
@@ -721,13 +743,11 @@ function restoreNativeEndPlaybackBehavior(): void {
   if (snapshot.loop !== null)
     setLoopState(snapshot.loop)
 
-  if (usesPlaylistHandoff(snapshot.videoType)) {
-    if (snapshot.playlistHandoff !== null)
-      setPlaylistHandoffMode(snapshot.playlistHandoff)
-  }
-  else if (snapshot.autoPlay !== null) {
+  if (usesPlaylistHandoff(snapshot.videoType) && snapshot.playlistHandoff !== null)
+    setPlaylistHandoffMode(snapshot.playlistHandoff)
+
+  if (snapshot.autoPlay !== null)
     setAutoPlayState(snapshot.autoPlay)
-  }
 }
 
 export function getAutoPlayModeForVideoType(videoType = detectVideoType()): AutoPlayMode {
@@ -753,19 +773,26 @@ export function disableNativeEndPlaybackBehavior(videoType = detectVideoType()):
   setLoopState(false)
   if (usesPlaylistHandoff(videoType))
     setPlaylistHandoffMode(false)
-  else
-    setAutoPlayState(false)
+  setAutoPlayState(false)
 }
 
 // 根据视频类型和设置应用自动连播状态
 export function applyAutoPlayByVideoType() {
+  const videoType = detectVideoType()
+
+  // 自定义顺序/逆序/随机播放独占 ended 事件；播放器重建后继续关闭原生续播，
+  // 避免官方逻辑与扩展同时抢着切下一集。
+  if (customEndPlaybackHandlerActive) {
+    disableNativeEndPlaybackBehavior(videoType)
+    return
+  }
+
   // 使用 B 站默认行为时，撤销自定义播放对原生开关的临时接管。
   if (settings.value.useBilibiliDefaultAutoPlay) {
     restoreNativeEndPlaybackBehavior()
     return
   }
 
-  const videoType = detectVideoType()
   const mode = getAutoPlayModeForVideoType(videoType)
 
   nativeEndPlaybackSnapshot = null
@@ -775,21 +802,29 @@ export function applyAutoPlayByVideoType() {
     return
   }
 
-  // 收藏列表和稍后再看使用特殊的播放方式控制（自动切集/播完暂停）
+  // 分 P、合集、收藏列表和稍后再看优先使用播放器官方“自动切集”。
   if (usesPlaylistHandoff(videoType)) {
     switch (mode) {
       case 'autoPlay':
-      case 'autoPlayWithRecommend':
         // 开启自动切集
         setPlaylistHandoffMode(true)
+        break
+      case 'autoPlayWithRecommend':
+        // 官方自动切集负责列表内续播，侧栏自动连播负责列表结束后的推荐。
+        setPlaylistHandoffMode(true)
+        setAutoPlayState(true)
         break
       case 'pauseAtEnd':
         // 开启播完暂停
         setPlaylistHandoffMode(false)
+        setAutoPlayState(false)
         break
       case 'loop':
-        // 收藏列表不支持单集循环，使用播完暂停代替
         setPlaylistHandoffMode(false)
+        setAutoPlayState(false)
+        // 收藏列表/稍后再看沿用原行为；普通分 P 与合集使用播放器单集循环。
+        if (videoType === VideoType.MULTIPART || videoType === VideoType.COLLECTION)
+          setLoopState(true)
         break
     }
     return

@@ -2,7 +2,7 @@ import { settings } from '~/logic'
 import type { CustomPlayOrderContext, RandomPlayOrder } from '~/logic/storage'
 import { i18n } from '~/utils/i18n'
 
-import { applyAutoPlayByVideoType, detectVideoType, disableNativeEndPlaybackBehavior, supportsCustomPlaybackForVideoType, VideoType } from './player'
+import { applyAutoPlayByVideoType, detectVideoType, disableNativeEndPlaybackBehavior, setCustomEndPlaybackHandlerActive, supportsCustomPlaybackForVideoType, VideoType } from './player'
 
 // 随机播放状态管理
 let isRandomPlayEnabled = false
@@ -19,6 +19,8 @@ let activePlayOrder: RandomPlayOrder | null = null
 let playlistEditorController: AbortController | null = null
 let playlistEditorButton: HTMLButtonElement | null = null
 let playlistEditorStyle: HTMLStyleElement | null = null
+const manualPlayStateStorageKey = 'bewly-custom-play-state'
+let manualPlayContextKey: string | null = null
 const originalEpisodeOrders = new Map<HTMLElement, { priority: string, value: string }>()
 const originalEpisodeDraggable = new Map<HTMLElement, boolean>()
 const visuallyOrderedParents = new Set<HTMLElement>()
@@ -31,6 +33,7 @@ interface EpisodeEntry {
 
 const episodeRootSelector = [
   '.video-pod',
+  '.video-pod__list',
   '.multi-page',
   '.video-sections-content-list',
   '.base-video-sections-v1',
@@ -48,7 +51,8 @@ function queryEpisodeItems(selector: string): HTMLElement[] {
 }
 
 function t(key: string): string {
-  return String(i18n.global.t(key, settings.value.language))
+  const locale = settings.value.language || i18n.global.locale.value
+  return String(i18n.global.t(key, {}, { locale }))
 }
 
 function getActivePlayOrder(): RandomPlayOrder {
@@ -110,6 +114,11 @@ export function getVideoEpisodes(): HTMLElement[] {
   if (episodes.length > 0) {
     return episodes
   }
+
+  // 新版合集会直接以 simple-base-item 作为选集项。
+  const simpleBaseEpisodes = queryEpisodeItems('.simple-base-item')
+  if (simpleBaseEpisodes.length > 0)
+    return simpleBaseEpisodes
 
   // 合集视频选集（稍后再看、收藏夹等），只在明确的选集容器内查找，避免扫描评论区
   const collectionEpisodes = Array.from(document.querySelectorAll(episodeRootSelector))
@@ -193,7 +202,7 @@ function getEpisodeBaseKey(episode: HTMLElement, index: number): string {
   const title = normalizeEpisodeText(
     episode.getAttribute('title')
     ?? episode.getAttribute('aria-label')
-    ?? episode.querySelector<HTMLElement>('[title], .title, .name, .video-name')?.textContent
+    ?? episode.querySelector<HTMLElement>('[title], .title, .title-txt, .name, .video-name')?.textContent
     ?? episode.textContent,
   )
   return `text:${title || index}`
@@ -201,7 +210,7 @@ function getEpisodeBaseKey(episode: HTMLElement, index: number): string {
 
 function getEpisodeTitle(episode: HTMLElement, index: number): string {
   const titleElement = episode.querySelector<HTMLElement>(
-    '.title, .name, .video-name, .video-pod__item-text, .page-part',
+    '.title, .title-txt, .name, .video-name, .video-pod__item-text, .page-part',
   )
   return normalizeEpisodeText(
     episode.getAttribute('aria-label')
@@ -224,6 +233,73 @@ function getEpisodeEntries(episodes = getVideoEpisodes()): EpisodeEntry[] {
       title: getEpisodeTitle(element, index),
     }
   })
+}
+
+interface ManualPlayState {
+  contextKey: string
+  enabled: boolean
+  order: RandomPlayOrder
+}
+
+function getCurrentPlayContextKey(): string | null {
+  const entries = getEpisodeEntries()
+  if (entries.length <= 1)
+    return null
+  return entries.map(entry => entry.key).sort().join('|')
+}
+
+function readManualPlayState(): ManualPlayState | null {
+  const contextKey = getCurrentPlayContextKey()
+  if (!contextKey)
+    return null
+
+  try {
+    const value = sessionStorage.getItem(manualPlayStateStorageKey)
+    if (!value)
+      return null
+    const state = JSON.parse(value) as Partial<ManualPlayState>
+    if (
+      state.contextKey !== contextKey
+      || typeof state.enabled !== 'boolean'
+      || (state.order !== 'sequential' && state.order !== 'reverse' && state.order !== 'random')
+    ) {
+      return null
+    }
+    return state as ManualPlayState
+  }
+  catch {
+    return null
+  }
+}
+
+function saveManualPlayState(): void {
+  const contextKey = getCurrentPlayContextKey()
+  if (!contextKey)
+    return
+  manualPlayContextKey = contextKey
+
+  try {
+    sessionStorage.setItem(manualPlayStateStorageKey, JSON.stringify({
+      contextKey,
+      enabled: isRandomPlayEnabled,
+      order: getActivePlayOrder(),
+    } satisfies ManualPlayState))
+  }
+  catch {
+    // 隐私模式或站点存储被禁用时仍保留当前页面内的行为。
+  }
+}
+
+function restoreManualPlayState(): boolean {
+  const state = readManualPlayState()
+  if (!state)
+    return false
+
+  activePlayOrder = state.order
+  isRandomPlayEnabled = state.enabled
+  manualPlayContextKey = state.contextKey
+  userManuallySetRandomPlay = true
+  return true
 }
 
 function orderEpisodeEntries(entries: EpisodeEntry[]): EpisodeEntry[] {
@@ -769,6 +845,7 @@ export function createRandomPlayUI(): HTMLElement | null {
     // 播放器内的主动选择立即生效；自动启用规则只用于按视频类型配置的随机播放。
     setRandomPlayEnabled(true)
     userManuallySetRandomPlay = true
+    saveManualPlayState()
     syncRandomPlayUI()
   })
 
@@ -778,6 +855,7 @@ export function createRandomPlayUI(): HTMLElement | null {
     updateSwitchState(newEnabled)
     // 标记为用户手动设置
     userManuallySetRandomPlay = true
+    saveManualPlayState()
   })
   editButton.addEventListener('click', () => toggleNativePlaylistEditing(editButton))
 
@@ -926,6 +1004,7 @@ export function disableRandomPlay(): void {
 // 设置随机播放状态
 export function setRandomPlayEnabled(enabled: boolean): void {
   isRandomPlayEnabled = enabled
+  setCustomEndPlaybackHandlerActive(enabled)
   if (enabled) {
     disableNativeEndPlaybackBehavior()
     enableRandomPlay()
@@ -993,6 +1072,7 @@ export function destroyRandomPlay(): void {
   visitedEpisodes.clear()
   customEpisodeOrder = []
   activePlayOrder = null
+  manualPlayContextKey = null
   clearCustomEpisodeVisualOrder()
   playlistEditorButton = null
   playlistEditorStyle?.remove()
@@ -1015,6 +1095,27 @@ export function syncRandomPlayUI(): void {
   const existingSelect = document.querySelector<HTMLSelectElement>('.random-play-order-select')
   if (existingSelect)
     existingSelect.value = getActivePlayOrder()
+
+  if (existingSelect) {
+    existingSelect.setAttribute('aria-label', getRandomPlayText())
+    existingSelect.title = getRandomPlayText()
+    const optionLabels: Record<RandomPlayOrder, string> = {
+      sequential: t('settings.random_play_order_sequential'),
+      reverse: t('settings.random_play_order_reverse'),
+      random: t('settings.random_play_order_random'),
+    }
+    for (const option of Array.from(existingSelect.options)) {
+      if (option.value === 'sequential' || option.value === 'reverse' || option.value === 'random')
+        option.textContent = optionLabels[option.value]
+    }
+  }
+
+  const editButton = document.querySelector<HTMLElement>('.random-play-edit-btn')
+  if (editButton) {
+    const label = t('settings.random_play_edit_playlist')
+    editButton.title = label
+    editButton.setAttribute('aria-label', label)
+  }
 
   if (existingBtn && existingBlock) {
     existingBtn.setAttribute('aria-checked', String(isRandomPlayEnabled))
@@ -1044,11 +1145,17 @@ export function initRandomPlayOnVideoPage(): void {
     if (autoPlayContainer) {
       // 只要启用了随机播放功能就创建UI（基于扩展设置）
       if (settings.value.enableRandomPlay) {
+        const currentContextKey = getCurrentPlayContextKey()
+        const hasMatchingMemoryState = userManuallySetRandomPlay
+          && manualPlayContextKey === currentContextKey
+        const restoredManualState = restoreManualPlayState()
+        if (!hasMatchingMemoryState && !restoredManualState)
+          userManuallySetRandomPlay = false
         createRandomPlayUI()
 
         // 如果用户手动设置过随机播放状态，直接应用该状态
         if (userManuallySetRandomPlay) {
-          // 保持用户手动设置的状态，无需重新设置
+          setRandomPlayEnabled(isRandomPlayEnabled)
           syncRandomPlayUI()
         }
         else {
@@ -1121,7 +1228,7 @@ export function observeRandomPlayPageChanges(): void {
 
   // 使用MutationObserver监听DOM变化
   let domChangeTimeout: number | null = null
-  const observer = new MutationObserver((mutations) => {
+  const observer = new MutationObserver(() => {
     if (!isCustomPlayPage())
       return
 
@@ -1146,47 +1253,14 @@ export function observeRandomPlayPageChanges(): void {
       const existingRandomPlay = document.querySelector<HTMLElement>('.random-play')
       const isMisplacedRandomPlay = !!existingRandomPlay?.closest(recommendationRootSelector)
 
-      // 如果按钮不存在但应该存在（有自动播放容器且启用了功能），则重新创建
+      // 如果按钮不存在但应该存在（有自动播放容器且启用了功能），则重新创建。
+      // 不要求 mutation 本身包含 auto-play；B 站常只替换其共同父容器。
       if ((!existingBtn || isMisplacedRandomPlay) && autoPlayContainer && settings.value.enableRandomPlay) {
-        // 检查是否是因为DOM重新渲染导致的
-        let shouldRecreate = false
-
-        for (const mutation of mutations) {
-          if (mutation.type === 'childList') {
-            // 只检查特定的DOM变化，减少误判
-            const removedNodes = Array.from(mutation.removedNodes)
-            const addedNodes = Array.from(mutation.addedNodes)
-
-            // 更精确的检查：只关注直接相关的DOM变化
-            const hasAutoPlayRemoved = removedNodes.some(node =>
-              node.nodeType === Node.ELEMENT_NODE
-              && ((node as Element).classList?.contains('auto-play')
-                || (node as Element).classList?.contains('continuous-btn')
-                || (node as Element).classList?.contains('random-play-btn')
-                || (node as Element).querySelector?.('.auto-play, .continuous-btn') !== null),
-            )
-
-            const hasAutoPlayAdded = addedNodes.some(node =>
-              node.nodeType === Node.ELEMENT_NODE
-              && ((node as Element).classList?.contains('auto-play')
-                || (node as Element).classList?.contains('continuous-btn')),
-            )
-
-            if (hasAutoPlayRemoved || hasAutoPlayAdded) {
-              shouldRecreate = true
-              break
-            }
-          }
-        }
-
-        if (shouldRecreate) {
-          // 增加延迟，避免与Bilibili的DOM更新冲突
-          setTimeout(() => {
-            createRandomPlayUI()
-
-            // UI创建函数内部会自动同步状态，这里不需要额外处理
-          }, 500) // 增加延迟到500ms
-        }
+        setTimeout(() => {
+          restoreManualPlayState()
+          createRandomPlayUI()
+          syncRandomPlayUI()
+        }, 500)
       }
     }, 300) // 300ms防抖延迟
   })
