@@ -865,7 +865,7 @@ settings:
     indent_only: 縮進-無收起功能
   comment_reply_pagination_mode:
     title: 樹狀評論模式
-    desc: 選擇樹狀評論的回覆顯示方式。「載入更多」會累積回覆，並從這次新增的父節點繼續閱讀；「分頁」保留 Bilibili 原生分頁，只顯示目前頁面
+    desc: 選擇樹狀評論的回覆顯示方式。「載入更多」會在保持目前閱讀位置的同時向下累積回覆；「分頁」保留 Bilibili 原生分頁，只顯示目前頁面
     load_more: 載入更多
     pagination: 分頁
   adjust_comment_image_height: 調整評論區圖片高度

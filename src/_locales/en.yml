@@ -953,7 +953,7 @@ settings:
     indent_only: Indent · no collapse
   comment_reply_pagination_mode:
     title: Comment tree mode
-    desc: Choose how replies appear in the comment tree. “Load more” accumulates replies and continues reading from newly added parent nodes; “Pagination” keeps Bilibili’s native pagination and shows only the current page
+    desc: Choose how replies appear in the comment tree. “Load more” appends replies downward while keeping your current reading position; “Pagination” keeps Bilibili’s native pagination and shows only the current page
     load_more: Load more
     pagination: Pagination
   adjust_comment_image_height: Adjust comment image height

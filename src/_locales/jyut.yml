@@ -871,7 +871,7 @@ settings:
     indent_only: 縮入-無收起功能
   comment_reply_pagination_mode:
     title: 樹狀留言模式
-    desc: 揀樹狀留言嘅回覆顯示方式。「撈多啲」會累積回覆，並由今次新增嘅父級留言繼續睇；「翻頁」保留 Bilibili 原生分頁，只顯示目前頁面
+    desc: 揀樹狀留言嘅回覆顯示方式。「撈多啲」會保持而家閱讀位置，同時向下累積回覆；「翻頁」保留 Bilibili 原生分頁，只顯示目前頁面
     load_more: 撈多啲
     pagination: 翻頁
   hide_comment_image_scrollbar: 留言圖片預覽時隱藏頁面滾動條

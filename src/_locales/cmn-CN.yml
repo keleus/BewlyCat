@@ -882,7 +882,7 @@ settings:
     indent_only: 缩进-无收起功能
   comment_reply_pagination_mode:
     title: 树状评论模式
-    desc: 选择树状评论的回复展示方式。「更多」会累计回复，并从本次新增的父节点继续阅读；「分页」保留 B 站原生分页，只显示当前页
+    desc: 选择树状评论的回复展示方式。「更多」会在保持当前阅读位置的同时向下累计回复；「分页」保留 B 站原生分页，只显示当前页
     load_more: 更多
     pagination: 分页
   adjust_comment_image_height: 调整评论区图片高度
