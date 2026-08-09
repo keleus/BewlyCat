@@ -15,6 +15,7 @@ import type { AppVideoElement, VideoCardDisplayData, VideoElement } from '~/stor
 import { useForYouStore } from '~/stores/forYouStore'
 import api from '~/utils/api'
 import { TVAppKey } from '~/utils/authProvider'
+import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { isVerticalVideo } from '~/utils/uriParse'
 
@@ -189,6 +190,7 @@ const hasForwardState = ref<boolean>(false)
 const PAGE_SIZE = 30
 const WEB_REFRESH_PAGE_SIZE = 10
 const WEB_LOAD_MORE_PAGE_SIZE = 12
+const WEB_RISK_COOLDOWN_MS = 60_000
 const NO_COOKIE_RECOMMEND_STATE_MAX_SHOWLIST_GROUPS = 3
 const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
 const FILTERED_FEED_SAMPLE_SIZE = 100
@@ -199,6 +201,8 @@ const consecutiveEmptyLoads = ref<number>(0) // 连续空加载次数，用于�
 const appConsecutiveEmptyLoads = ref<number>(0) // APP模式连续空加载次数
 // 递归加载锁，防止双重触发
 const isRecursiveLoading = ref<boolean>(false)
+const webRiskCooldownUntil = ref<number>(0)
+let webRiskCooldownToastKey = 0
 const webFetchRow = ref<number>(1)
 const webShowlistGroups = ref<string[]>([])
 
@@ -565,6 +569,53 @@ function resetWebRecommendState() {
   webShowlistGroups.value = []
 }
 
+function getWebRiskCooldownRemainingMs(): number {
+  return Math.max(0, webRiskCooldownUntil.value - Date.now())
+}
+
+function isWebRiskCooldownActive(): boolean {
+  if (getWebRiskCooldownRemainingMs() > 0)
+    return true
+
+  webRiskCooldownUntil.value = 0
+  webRiskCooldownToastKey = 0
+  return false
+}
+
+function getWebRiskCooldownRemainingSeconds(): number {
+  return Math.max(1, Math.ceil(getWebRiskCooldownRemainingMs() / 1000))
+}
+
+function startWebRiskCooldown() {
+  if (!isWebRiskCooldownActive())
+    webRiskCooldownUntil.value = Date.now() + WEB_RISK_COOLDOWN_MS
+
+  noMoreContent.value = true
+}
+
+function notifyWebRiskCooldown(message?: string) {
+  if (!isWebRiskCooldownActive())
+    return
+
+  if (webRiskCooldownToastKey === webRiskCooldownUntil.value)
+    return
+
+  webRiskCooldownToastKey = webRiskCooldownUntil.value
+  const remainingSeconds = getWebRiskCooldownRemainingSeconds()
+  toast.error(message || `首页推荐触发风控，已暂停推荐请求 ${remainingSeconds} 秒，请稍后刷新`)
+}
+
+function stopWebRecommendationForRisk(message?: string) {
+  startWebRiskCooldown()
+  requestFailed.value = true
+  noMoreContent.value = true
+  const cooldownSeconds = Math.ceil(WEB_RISK_COOLDOWN_MS / 1000)
+  const remainingSeconds = getWebRiskCooldownRemainingSeconds()
+  notifyWebRiskCooldown(
+    `${message || '首页推荐触发风控'}，已暂停推荐请求 ${cooldownSeconds} 秒，剩余约 ${remainingSeconds} 秒，请稍后刷新`,
+  )
+}
+
 watch(() => settings.value.recommendationMode, () => {
   requestVersion++
   noMoreContent.value = false
@@ -606,6 +657,7 @@ async function initData() {
   // 直接清空列表，骨架屏由 VideoCardGrid 自动处理
   videoList.value = []
   appVideoList.value = []
+  noMoreContent.value = false
 
   APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
   resetFilteredFeedPagingState()
@@ -627,6 +679,12 @@ async function initData() {
 
 async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
   const version = requestVersion
+  if (isWebRecommendationMode.value && isWebRiskCooldownActive()) {
+    noMoreContent.value = true
+    notifyWebRiskCooldown()
+    return
+  }
+
   emit('beforeLoading')
   isLoading.value = true
   requestFailed.value = false
@@ -671,6 +729,12 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
 }
 
 function loadMore(manual = false) {
+  if (isWebRecommendationMode.value && isWebRiskCooldownActive()) {
+    noMoreContent.value = true
+    notifyWebRiskCooldown()
+    return
+  }
+
   // 如果正在递归加载中，跳过外部触发的加载请求
   if (
     !hasInitializedData.value
@@ -845,6 +909,12 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
   let canFillViewport = false
 
   try {
+    if (recommendationMode !== 'app' && isWebRiskCooldownActive()) {
+      noMoreContent.value = true
+      notifyWebRiskCooldown()
+      return
+    }
+
     // 检查是否达到最大空加载次数，防止无限递归
     if (!hasActiveRecommendationFilter.value && consecutiveEmptyLoads.value >= MAX_EMPTY_LOADS) {
       console.warn('达到最大连续空加载次数，停止加载')
@@ -867,25 +937,105 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       ? api.video.getNoCookieRecommendVideos
       : api.video.getRecommendVideos
 
-    const requestLog = startRecommendRequestLog(recommendationMode, requestType)
-    let response: forYouResult
+    const requestOptions = {
+      fresh_type: isLoadMoreRequest ? 4 : 5,
+      fresh_idx: currentRefreshIdx,
+      fresh_idx_1h: currentRefreshIdx,
+      ps: pageSize,
+      fetch_row: fetchRow,
+      last_showlist: lastShowlist || undefined,
+    }
+
+    let requestLog = startRecommendRequestLog(recommendationMode, requestType)
+    let response: forYouResult | undefined
+
+    const tryNoCookieFallback = async (): Promise<boolean> => {
+      startWebRiskCooldown()
+      requestLog = startRecommendRequestLog('webNoCookie(fallback)', requestType)
+
+      try {
+        response = await api.video.getNoCookieRecommendVideos(requestOptions)
+      }
+      catch (error) {
+        logRecommendRequestFailure(requestLog, {
+          error,
+          phase: 'fallback',
+        })
+        stopWebRecommendationForRisk('首页推荐触发风控，备用无 Cookie 请求失败')
+        return false
+      }
+
+      if (
+        !response
+        || isBilibiliRiskControl(response)
+        || response.code !== 0
+        || !response.data
+        || !Array.isArray(response.data.item)
+      ) {
+        logRecommendRequestFailure(requestLog, {
+          code: response?.code,
+          message: response?.message,
+          phase: 'fallback',
+          reason: !response
+            ? '响应为空'
+            : isBilibiliRiskControl(response)
+              ? '仍为风控响应'
+              : response.code !== 0
+                ? '备用请求返回非零响应'
+                : '响应数据为空',
+        })
+        stopWebRecommendationForRisk('首页推荐触发风控，备用无 Cookie 请求未成功')
+        return false
+      }
+
+      return true
+    }
+
     try {
-      response = await getWebRecommendVideos({
-        fresh_type: isLoadMoreRequest ? 4 : 5,
-        fresh_idx: currentRefreshIdx,
-        fresh_idx_1h: currentRefreshIdx,
-        ps: pageSize,
-        fetch_row: fetchRow,
-        last_showlist: lastShowlist || undefined,
-      })
+      response = await getWebRecommendVideos(requestOptions)
     }
     catch (error) {
-      logRecommendRequestFailure(requestLog, { error })
-      throw error
+      logRecommendRequestFailure(requestLog, {
+        error,
+        phase: 'primary',
+      })
+
+      if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+        return
+
+      if (recommendationMode === 'web' && isBilibiliRiskControl(error)) {
+        if (!await tryNoCookieFallback())
+          return
+      }
+      else if (recommendationMode === 'webNoCookie' && isBilibiliRiskControl(error)) {
+        stopWebRecommendationForRisk()
+        return
+      }
+      else {
+        throw error
+      }
     }
 
     if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
       return
+
+    if (isBilibiliRiskControl(response)) {
+      logRecommendRequestFailure(requestLog, {
+        code: response?.code,
+        message: response?.message,
+        phase: 'primary',
+        reason: '风控响应',
+      })
+
+      if (recommendationMode === 'web') {
+        if (!await tryNoCookieFallback())
+          return
+      }
+      else {
+        stopWebRecommendationForRisk()
+        return
+      }
+    }
 
     if (!response) {
       logRecommendRequestFailure(requestLog, { reason: '响应为空' })
