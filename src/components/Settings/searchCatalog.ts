@@ -199,6 +199,14 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_drawer_behavior',
     'settings.close_drawer_without_pressing_esc_again',
   ]),
+  ...createEntries(generalRoute, [
+    'settings.group_link_opening_behavior',
+    'settings.top_bar_link_opening_behavior',
+    'settings.search_bar_link_opening_behavior',
+  ], { keywordKeys: linkOpeningOptionKeys }),
+  ...createEntries(generalRoute, [
+    'settings.video_card_link_opening_behavior',
+  ], { keywordKeys: videoCardLinkOpeningOptionKeys }),
   ...createEntries(homeRoute, [
     'settings.menu_bewly_pages',
   ], { targetTitleKey: 'settings.plugin.home' }),
@@ -342,11 +350,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.video_card_meta_font_size',
   ], { keywordKeys: ['settings.font_size_option'] }),
 
-  ...createEntries(videoCardRoute, [
-    'settings.group_link_opening_behavior',
-    'settings.video_card_link_opening_behavior',
-  ], { keywordKeys: videoCardLinkOpeningOptionKeys }),
-
   ...createEntries(topBarRoute, [
     'settings.plugin.topbar',
     ...topBarGlobalTitleKeys,
@@ -381,11 +384,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.topbar_user_menu',
     'settings.hide_lv6_last_login_location_in_top_bar_user_pop',
   ]),
-  ...createEntries(topBarRoute, [
-    'settings.group_link_opening_behavior',
-    'settings.top_bar_link_opening_behavior',
-    'settings.search_bar_link_opening_behavior',
-  ], { keywordKeys: linkOpeningOptionKeys }),
   ...[
     ['moments', 'topbar.moments'],
     ['favorites', 'topbar.favorites'],
@@ -401,6 +399,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(dockRoute, [
     'settings.plugin.dock_and_sidebar',
     'settings.group_dock',
+    'settings.show_layout_edit_button',
     'settings.always_use_dock',
     'settings.auto_hide_dock',
     'settings.half_hide_dock',

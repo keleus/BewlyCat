@@ -271,6 +271,7 @@ export interface Settings {
 
   // Desktop & Dock
   autoHideTopBar: boolean
+  showLayoutEditButton: boolean
   videoPageTopBarConfig: VideoPageTopBarConfig
   alwaysUseTransparentTopBar: boolean
   enableTopBarGradient: boolean
@@ -563,6 +564,7 @@ export const originalSettings: Settings = {
 
   // Desktop & Dock
   autoHideTopBar: false,
+  showLayoutEditButton: true,
   videoPageTopBarConfig: VideoPageTopBarConfig.ShowOnScroll,
   alwaysUseTransparentTopBar: false,
   enableTopBarGradient: true,
@@ -580,6 +582,8 @@ export const originalSettings: Settings = {
     { key: 'creatorCenter', visible: true, badgeType: 'none' },
     { key: 'upload', visible: true, badgeType: 'none' },
     { key: 'notifications', visible: true, badgeType: 'number' },
+    { key: 'pinnedChannels', visible: true, badgeType: 'none' },
+    { key: 'avatar', visible: true, badgeType: 'none' },
   ],
   topBarPinnedChannels: [],
   openNotificationsPageAsDrawer: true,
@@ -839,7 +843,16 @@ watch(
       record.momentsTabsPosition = originalSettings.momentsTabsPosition
 
     // 清理已移除的音量均衡功能设置。
-    for (const field of ['enableVolumeNormalization', 'targetVolume', 'normalizationStrength', 'adaptiveGainSpeed', 'voiceGateDb', 'volumeNormalizationDebug'])
+    for (const field of [
+      'enableVolumeNormalization',
+      'targetVolume',
+      'normalizationStrength',
+      'adaptiveGainSpeed',
+      'voiceGateDb',
+      'volumeNormalizationDebug',
+      'showDockRefreshButton',
+      'showDockBackToTopButton',
+    ])
       Reflect.deleteProperty(record, field)
 
     // 旧布尔开关 → 评论回复树展示模式
@@ -865,6 +878,9 @@ watch(
     const validTopBarLogoStyles: TopBarLogoStyle[] = ['icon', 'brand']
     if (!validTopBarLogoStyles.includes(record.topBarLogoStyle))
       record.topBarLogoStyle = originalSettings.topBarLogoStyle
+
+    if (typeof record.showLayoutEditButton !== 'boolean')
+      record.showLayoutEditButton = originalSettings.showLayoutEditButton
 
     if (!Number.isFinite(record.frostedGlassBlurIntensity))
       record.frostedGlassBlurIntensity = originalSettings.frostedGlassBlurIntensity

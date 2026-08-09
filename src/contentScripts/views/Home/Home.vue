@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { useThrottleFn } from '@vueuse/core'
 
+import Icon from '~/components/Icon.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { gridLayout, settings } from '~/logic'
 import type { HomeTab } from '~/stores/mainStore'
@@ -15,6 +16,7 @@ import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
 
 const mainStore = useMainStore()
+const { isLayoutEditing } = useLayoutEditMode()
 const {
   handleBackToTop,
   homeActivatedPage,
@@ -282,6 +284,10 @@ function toggleTabContentLoading(loading: boolean) {
         <section
           v-if="shouldShowHomeTabs"
           class="glass-panel home-tabs-panel bew-segment-control bew-segment-control--surface"
+          data-layout-edit-target="home-tabs"
+          data-layout-settings-menu="BewlyPages"
+          data-layout-settings-page="home"
+          data-layout-settings-title-key="settings.group_home_tabs"
           :class="{
             'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
             'bew-segment-control--solid': !settings.enableFrostedGlass,
@@ -312,8 +318,11 @@ function toggleTabContentLoading(loading: boolean) {
         </section>
 
         <div
-          v-if="settings.enableGridLayoutSwitcher"
+          v-if="isLayoutEditing || settings.enableGridLayoutSwitcher"
           class="glass-panel home-grid-layout-switcher bew-segment-control bew-segment-control--surface"
+          data-layout-edit-target="home-grid-layout-switcher"
+          data-layout-settings-menu="General"
+          data-layout-settings-title-key="settings.enable_grid_layout_switcher"
           :class="{
             'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
             'bew-segment-control--solid': !settings.enableFrostedGlass,

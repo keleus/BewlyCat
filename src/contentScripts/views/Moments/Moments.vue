@@ -14,6 +14,7 @@ import {
   isCompactPlainTextMoment,
 } from '~/components/MomentCard/utils'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
@@ -27,6 +28,7 @@ import { openLinkInBackground } from '~/utils/tabs'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
 const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
+const { isLayoutEditing } = useLayoutEditMode()
 
 interface MomentsPortalUser {
   mid: string
@@ -3336,7 +3338,7 @@ watch(
     <div
       ref="layoutRef"
       class="moments-layout"
-      :class="{ 'moments-layout--without-sidebar': !showMomentsSidebar }"
+      :class="{ 'moments-layout--without-sidebar': !showMomentsSidebar && !isLayoutEditing }"
     >
       <header
         class="moments-filter-header"
@@ -3344,6 +3346,10 @@ watch(
       >
         <section
           class="moments-filter-panel bew-segment-control bew-segment-control--surface"
+          data-layout-edit-target="moments-filter"
+          data-layout-settings-menu="BewlyPages"
+          data-layout-settings-page="moments"
+          data-layout-settings-title-key="settings.moments_tabs_position"
           :class="{
             'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
             'bew-segment-control--solid': !settings.enableFrostedGlass,
@@ -3372,8 +3378,12 @@ watch(
         </section>
       </header>
 
-      <aside v-if="showMomentsSidebar" class="moments-sidebar" aria-label="动态用户信息">
-        <div v-if="isPortalLoading" class="moments-sidebar-skeleton" aria-hidden="true">
+      <aside
+        v-if="showMomentsSidebar || isLayoutEditing"
+        class="moments-sidebar"
+        aria-label="动态用户信息"
+      >
+        <div v-if="isPortalLoading && !isLayoutEditing" class="moments-sidebar-skeleton" aria-hidden="true">
           <div v-if="settings.momentsSidebarShowUserCard" class="moments-sidebar-skeleton__profile">
             <span class="moments-sidebar-skeleton__avatar moments-skeleton-block" />
             <span class="moments-sidebar-skeleton__name moments-skeleton-block" />
@@ -3387,8 +3397,16 @@ watch(
           </div>
         </div>
         <template v-else>
-          <article v-if="settings.momentsSidebarShowUserCard && portalUser" class="moments-user-card">
+          <article
+            v-if="isLayoutEditing || (settings.momentsSidebarShowUserCard && portalUser)"
+            class="moments-user-card"
+            data-layout-edit-target="moments-sidebar-user-card"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="moments"
+            data-layout-settings-title-key="settings.moments_show_user_card"
+          >
             <a
+              v-if="portalUser"
               class="moments-user-card__profile"
               :href="`https://space.bilibili.com/${portalUser.mid}`"
               target="_blank"
@@ -3403,32 +3421,46 @@ watch(
                 </span>
               </span>
             </a>
-            <div class="moments-user-card__stats">
+            <div v-if="portalUser" class="moments-user-card__stats">
               <span><strong>{{ portalUser.following }}</strong><small>关注</small></span>
               <span><strong>{{ portalUser.follower }}</strong><small>粉丝</small></span>
               <span><strong>{{ portalUser.dyns }}</strong><small>动态</small></span>
             </div>
+            <div v-else class="moments-sidebar-editor-placeholder">
+              {{ $t('settings.moments_show_user_card') }}
+            </div>
           </article>
 
           <a
-            v-if="settings.momentsSidebarShowPublish"
+            v-if="isLayoutEditing || settings.momentsSidebarShowPublish"
             class="moments-publish-link"
             href="https://t.bilibili.com"
             target="_blank"
             rel="noopener noreferrer"
+            data-layout-edit-target="moments-sidebar-publish"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="moments"
+            data-layout-settings-title-key="settings.moments_show_publish"
           >
             <span i-tabler-edit />
             <span>发布动态</span>
             <span i-tabler-external-link />
           </a>
 
-          <section v-if="settings.momentsSidebarShowLive && portalLiveUsers.length" class="moments-live-card">
+          <section
+            v-if="isLayoutEditing || (settings.momentsSidebarShowLive && portalLiveUsers.length)"
+            class="moments-live-card"
+            data-layout-edit-target="moments-sidebar-live"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="moments"
+            data-layout-settings-title-key="settings.moments_show_live"
+          >
             <header>
               <strong>正在直播 <span>{{ portalLiveCount }}</span></strong>
             </header>
-            <div class="moments-live-card__list">
+            <div v-if="portalLiveUsers.length" class="moments-live-card__list">
               <a
-                v-for="liveUser in portalLiveUsers"
+                v-for="liveUser in isLayoutEditing ? portalLiveUsers.slice(0, 1) : portalLiveUsers"
                 :key="liveUser.room_id"
                 :href="liveUser.jump_url || `https://live.bilibili.com/${liveUser.room_id}`"
                 target="_blank"
@@ -3450,9 +3482,13 @@ watch(
 
       <main class="moments-content" :style="momentsContentStyle">
         <section
-          v-if="showMomentsUpList"
+          v-if="isLayoutEditing || showMomentsUpList"
           class="moments-up-list"
           aria-label="动态栏"
+          data-layout-edit-target="moments-up-list"
+          data-layout-settings-menu="BewlyPages"
+          data-layout-settings-page="moments"
+          data-layout-settings-title-key="settings.moments_show_up_list"
         >
           <div class="moments-up-list__start" role="list" aria-label="动态分组">
             <button
@@ -3473,9 +3509,13 @@ watch(
               <span class="moments-up-list__name">全部动态</span>
             </button>
             <button
-              v-if="settings.momentsEnableWantedFilter"
+              v-if="isLayoutEditing || settings.momentsEnableWantedFilter"
               type="button"
               class="moments-up-list__item"
+              data-layout-edit-target="moments-wanted-users"
+              data-layout-settings-menu="BewlyPages"
+              data-layout-settings-page="moments"
+              data-layout-settings-title-key="settings.group_moments_wanted_users"
               :class="{ 'moments-up-list__item--active': activeMomentGroup === 'wanted' }"
               role="listitem"
               :aria-pressed="activeMomentGroup === 'wanted'"
@@ -3582,13 +3622,23 @@ watch(
           </div>
 
           <div
-            v-if="momentsPinnedUsers.length"
+            v-if="isLayoutEditing || momentsPinnedUsers.length"
             class="moments-up-list__pinned"
             role="list"
             aria-label="固定 UP 主"
+            data-layout-edit-target="moments-pinned-users"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="moments"
+            data-layout-settings-title-key="settings.group_moments_pinned_users"
             @wheel="handleUpListWheel"
           >
             <span class="moments-up-list__divider" aria-hidden="true" />
+            <span
+              v-if="isLayoutEditing && !momentsPinnedUsers.length"
+              class="moments-up-list__editor-placeholder"
+            >
+              {{ $t('settings.group_moments_pinned_users') }}
+            </span>
             <button
               v-for="user in momentsPinnedUsers"
               :key="user.mid"
@@ -3988,6 +4038,19 @@ watch(
 .moments-up-list__pinned::-webkit-scrollbar {
   display: none;
 }
+.moments-up-list__editor-placeholder {
+  display: inline-flex;
+  min-width: 80px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--bew-space-2);
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-caption);
+  white-space: nowrap;
+}
 .moments-up-list__divider {
   flex: 0 0 auto;
   width: 1px;
@@ -4126,6 +4189,17 @@ watch(
 }
 .moments-user-card {
   padding: var(--bew-space-4);
+}
+.moments-sidebar-editor-placeholder {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
+  text-align: center;
 }
 .moments-user-card__profile {
   display: flex;

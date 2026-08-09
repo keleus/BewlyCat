@@ -58,6 +58,41 @@ common:
     right: 右邊
     top: 上頭
     bottom: 下低
+layout_editor:
+  finish: 完成
+  edit_dock: 編輯 Dock
+  edit_sidebar: 編輯模式
+  back_to_top: 返到最頂
+  click_to_adjust: 撳你想調整嘅元素
+  switch_to_bilibili_page: 點樣轉到 Bilibili 原頁面
+  switch_to_plugin_page: 點樣轉到插件頁面
+  adjust_video_grid_columns: 調整影片卡片欄數
+  adjust_moments_grid_columns: 調整動態頁欄數
+  adjust_dock_position: 點樣調整 Dock 欄位置
+  video_default_player_mode: 點樣設定預設播放器樣式
+  video_auto_play: 點樣預設開啟自動連播
+  video_external_watch_later: 點樣外置稍後再睇按鈕
+  video_sidebar_position: 點樣調整側邊欄位置
+  video_topbar_auto_hide: 點樣令頂欄自動收埋
+  home_filter_recommendations: 點樣過濾唔想睇嘅推介
+  home_recommendation_mode: 點樣調整個人化推介來源
+  following_show_live: 點樣顯示直播緊嘅內容
+  following_hide_live: 點樣收埋直播緊嘅內容
+  following_hide_uploader_list: 點樣顯示或者收埋左邊 UP 主名單
+  following_filter_videos: 點樣過濾充電同動態影片
+  moments_filter_content: 點樣過濾唔想睇嘅動態
+  moments_preview: 點樣設定動態影片預覽
+  search_suggestions_history: 點樣設定搜尋建議同歷史
+  search_wallpaper: 點樣獨立設定搜尋頁背景
+  search_results_personalization: 點樣減少個人化搜尋結果
+  search_results_pagination: 點樣切換滾動或者分頁載入
+  original_moments_show_user_card: 點樣顯示原版動態頁用戶卡片
+  original_moments_show_live_list: 點樣顯示原版動態頁直播列表
+  original_moments_show_community_center: 點樣顯示原版動態頁社群中心
+  original_moments_show_hot_search: 點樣顯示原版動態頁熱搜
+  original_moments_show_up_list: 點樣顯示原版動態頁 UP 橫幅
+  switch_to_bewly_topbar: 點樣轉用 BewlyCat 頂欄
+  switch_to_original_topbar: 點樣轉用 Bilibili 頂欄
 iframe_drawer:
   open_in_new_tab: 喺新嘅分頁度打開連結
   close: 關閉
@@ -88,7 +123,7 @@ settings:
     placeholder: 搜尋設定
     no_results: 搵唔到相關設定
     located: 已定位到呢個設定
-  category_general_desc: 設定語言、互動版面同抽屜行為。
+  category_general_desc: 設定語言、互動版面、連結打開方式同抽屜行為。
   category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型、自訂樣式同其他頁面嘅適配。
   category_shortcuts_desc: 啟用、修改或者還原 BewlyCat 同播放器快捷鍵。
   breadcrumb: 設定位置
@@ -464,6 +499,8 @@ settings:
   open_notifications_page_as_drawer: 用櫃桶打開通知頁面
   show_like_notification_reminder: 顯示點讚提醒
   show_like_notification_reminder_desc: 開咗之後，頂欄通知角標會將點讚提醒計埋入總數。
+  show_layout_edit_button: 顯示版面編輯掣
+  show_layout_edit_button_desc: 喺 Dock 或側邊欄顯示版面編輯入口；閂咗之後可以喺呢度重新開返。
   always_use_dock: 點都要用 Dock
   always_use_dock_desc: 啓用後，Dock 點都要用佢而唔係用側邊欄。我哋推介你同時啓用自動收埋 Dock 去。
   auto_hide_dock: 自動收埋 Dock

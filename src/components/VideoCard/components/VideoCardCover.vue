@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import type flvjs from 'flv.js'
 import type { ErrorData, Events } from 'hls.js'
 import Hls from 'hls.js'
 
 import Button from '~/components/Button.vue'
+import Icon from '~/components/Icon.vue'
 import LazyPicture from '~/components/LazyPicture.vue'
 import Tooltip from '~/components/Tooltip.vue'
 import { settings } from '~/logic'
@@ -573,6 +573,10 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="group/cover"
+    :data-layout-edit-target="skeleton ? undefined : 'video-card-cover'"
+    :data-layout-settings-menu="skeleton ? undefined : 'BewlyComponents'"
+    :data-layout-settings-page="skeleton ? undefined : 'video-card'"
+    :data-layout-settings-title-key="skeleton ? undefined : 'settings.enable_video_preview'"
     shrink-0
     relative bg="$bew-skeleton" rounded="$bew-media-radius"
     overflow-hidden

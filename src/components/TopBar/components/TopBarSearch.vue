@@ -9,6 +9,14 @@ import { isHomePage } from '~/utils/main'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 
+const props = withDefaults(defineProps<{
+  forceVisible?: boolean
+  editMode?: boolean
+}>(), {
+  forceVisible: false,
+  editMode: false,
+})
+
 const { showSearchBar, forceWhiteIcon } = useTopBarInteraction()
 const topBarStore = useTopBarStore()
 const { searchKeyword } = storeToRefs(topBarStore)
@@ -78,6 +86,9 @@ function pushKeywordToSearchResultsPage(keyword: string) {
 }
 
 function handleSearch(keyword: string) {
+  if (props.editMode)
+    return
+
   // 先更新 searchKeyword，确保顶栏搜索框显示正确的值
   searchKeyword.value = keyword
 
@@ -101,12 +112,12 @@ function handleSearch(keyword: string) {
   <div flex="inline 1 md:justify-center items-center" w="full" data-top-bar-search>
     <Transition name="slide-out">
       <SearchBar
-        v-if="showSearchBar"
+        v-if="showSearchBar || props.forceVisible"
         v-model="searchKeyword"
         class="search-bar"
         :style="searchBarStyles"
         :show-hot-search="settings.showHotSearchInTopBar"
-        :search-behavior="searchBehavior"
+        :search-behavior="props.editMode ? 'stay' : searchBehavior"
         :top-bar-mode="true"
         @search="handleSearch"
       />

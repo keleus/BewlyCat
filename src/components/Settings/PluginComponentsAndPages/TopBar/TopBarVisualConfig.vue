@@ -98,16 +98,18 @@ function resetTopBarComponents() {
 }
 
 function ensureTopBarComponentsConfig() {
-  const currentConfig = settings.value.topBarComponentsConfig ?? []
-  const hasExpectedKeys = currentConfig.length === topBarComponents.value.length
-    && topBarComponents.value.every((component, index) => currentConfig[index]?.key === component.key)
-
-  if (hasExpectedKeys)
+  const currentConfig = settings.value.topBarComponentsConfig
+  if (!Array.isArray(currentConfig)) {
+    resetTopBarComponents()
     return
+  }
 
-  settings.value.topBarComponentsConfig = topBarComponents.value.map((component) => {
-    return currentConfig.find(config => config.key === component.key) ?? createDefaultComponentConfig(component)
-  })
+  const missingConfig = topBarComponents.value
+    .filter(component => !currentConfig.some(config => config.key === component.key))
+    .map(createDefaultComponentConfig)
+
+  if (missingConfig.length)
+    settings.value.topBarComponentsConfig = [...currentConfig, ...missingConfig]
 }
 
 function setComponentVisibility(componentKey: string, visible: boolean) {

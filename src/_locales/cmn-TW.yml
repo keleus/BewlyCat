@@ -58,6 +58,41 @@ common:
     right: 右側
     top: 頂部
     bottom: 底部
+layout_editor:
+  finish: 完成
+  edit_dock: 編輯 Dock
+  edit_sidebar: 編輯模式
+  back_to_top: 回到頂部
+  click_to_adjust: 點擊你想要調整的元素
+  switch_to_bilibili_page: 如何切換到 Bilibili 原頁面
+  switch_to_plugin_page: 如何切換到擴充功能頁面
+  adjust_video_grid_columns: 調整影片卡片欄數
+  adjust_moments_grid_columns: 調整動態頁欄數
+  adjust_dock_position: 如何調整 Dock 欄位置
+  video_default_player_mode: 如何設定預設播放器樣式
+  video_auto_play: 如何預設開啟自動連播
+  video_external_watch_later: 如何外置稍後再看按鈕
+  video_sidebar_position: 如何調整側邊欄位置
+  video_topbar_auto_hide: 如何讓頂欄自動隱藏
+  home_filter_recommendations: 如何過濾不想看的推薦
+  home_recommendation_mode: 如何調整個人化推薦來源
+  following_show_live: 如何顯示正在直播
+  following_hide_live: 如何隱藏正在直播
+  following_hide_uploader_list: 如何顯示或隱藏左側 UP 列表
+  following_filter_videos: 如何過濾充電和動態影片
+  moments_filter_content: 如何過濾不想看的動態
+  moments_preview: 如何設定動態影片預覽
+  search_suggestions_history: 如何設定搜尋建議與歷史
+  search_wallpaper: 如何單獨設定搜尋頁背景
+  search_results_personalization: 如何減少個人化搜尋結果
+  search_results_pagination: 如何切換捲動或分頁載入
+  original_moments_show_user_card: 如何顯示原版動態頁使用者卡片
+  original_moments_show_live_list: 如何顯示原版動態頁直播列表
+  original_moments_show_community_center: 如何顯示原版動態頁社群中心
+  original_moments_show_hot_search: 如何顯示原版動態頁熱門搜尋
+  original_moments_show_up_list: 如何顯示原版動態頁 UP 橫幅
+  switch_to_bewly_topbar: 如何切換到 BewlyCat 頂欄
+  switch_to_original_topbar: 如何切換到 Bilibili 頂欄
 iframe_drawer:
   open_in_new_tab: 在新索引標籤開啟連結
   close: 關閉
@@ -88,7 +123,7 @@ settings:
     placeholder: 搜尋設定
     no_results: 找不到相關設定
     located: 已定位到此設定
-  category_general_desc: 設定語言、互動版面與抽屜行為。
+  category_general_desc: 設定語言、互動版面、連結開啟方式與抽屜行為。
   category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型、自訂樣式與其他頁面的適配。
   category_shortcuts_desc: 啟用、修改或還原 BewlyCat 與播放器快速鍵。
   breadcrumb: 設定位置
@@ -465,6 +500,8 @@ settings:
   open_notifications_page_as_drawer: 以抽屜形式打開通知頁面
   show_like_notification_reminder: 顯示按讚提醒
   show_like_notification_reminder_desc: 啟用後，頂欄通知角標會將按讚提醒計入總數。
+  show_layout_edit_button: 顯示版面編輯按鈕
+  show_layout_edit_button_desc: 在 Dock 或側邊欄顯示版面編輯入口；關閉後可在這裡重新開啟。
   always_use_dock: 總是使用 Dock
   always_use_dock_desc: 啟用後，Dock 將始終顯示，側邊欄將隱藏。我們推薦你同時啟用自動隱藏 Dock。
   auto_hide_dock: 自動隱藏 Dock

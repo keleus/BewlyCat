@@ -256,6 +256,10 @@ function handleForwardVideoClick() {
   <article
     :ref="handleCardRef"
     class="moment-card"
+    data-layout-edit-target="moment-card"
+    data-layout-settings-menu="BewlyPages"
+    data-layout-settings-page="moments"
+    data-layout-settings-title-key="settings.moments_card_open_mode"
     :class="{
       'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video,
       'moment-card--compact-text': isCompactPlainTextMoment(moment),
@@ -283,6 +287,10 @@ function handleForwardVideoClick() {
           ref="moreBtnRef"
           type="button"
           class="moment-card__more-btn"
+          data-layout-edit-target="moment-card-more"
+          data-layout-settings-menu="BewlyComponents"
+          data-layout-settings-page="video-card"
+          data-layout-settings-title-key="settings.group_video_card_context_menu"
           :class="{ 'is-open': showVideoOptions }"
           :aria-label="menuButtonLabel"
           aria-haspopup="menu"

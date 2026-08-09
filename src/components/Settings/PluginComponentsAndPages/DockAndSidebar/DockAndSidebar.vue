@@ -92,6 +92,9 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_dock')">
+      <SettingsItem :title="$t('settings.show_layout_edit_button')" :desc="$t('settings.show_layout_edit_button_desc')" right-width="auto">
+        <Radio v-model="settings.showLayoutEditButton" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.always_use_dock')" :desc="$t('settings.always_use_dock_desc')" right-width="auto">
         <Radio v-model="settings.alwaysUseDock" />
       </SettingsItem>
@@ -133,6 +136,7 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
             <template #item="{ element }">
               <div
                 class="bew-settings-option--lift"
+                :data-settings-title="pageOptions.find(option => option.value === element.page)?.label"
                 flex="~ gap-2 justify-between items-center wrap" p="x-4 y-2" bg="$bew-fill-1" rounded="$bew-radius" cursor-all-scroll
                 duration-300
                 :style="{

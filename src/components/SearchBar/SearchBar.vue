@@ -5,6 +5,7 @@ import type { CSSProperties } from 'vue'
 import { computed, inject, reactive, ref, shallowRef, watch } from 'vue'
 
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
+import { resolveSearchBarCharacterUrl } from '~/constants/imgs'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import api from '~/utils/api'
@@ -72,6 +73,8 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
   search: [value: string]
 }>()
+
+const resolvedFocusedCharacter = computed(() => resolveSearchBarCharacterUrl(props.focusedCharacter ?? ''))
 
 const searchWrapRef = ref<HTMLElement>()
 const { left: searchWrapLeft, top: searchWrapTop } = useElementBounding(searchWrapRef)
@@ -596,7 +599,7 @@ function handleClearKeyword() {
     >
       <Transition name="focus-character">
         <img
-          v-show="focusedCharacter && isFocus" :src="focusedCharacter"
+          v-show="resolvedFocusedCharacter && isFocus" :src="resolvedFocusedCharacter"
           class="focus-character-image"
           width="100" object-contain pos="absolute right-0 bottom-40px"
         >

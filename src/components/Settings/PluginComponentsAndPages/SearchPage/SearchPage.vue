@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { SEARCH_BAR_CHARACTERS } from '~/constants/imgs'
+import { resolveSearchBarCharacterUrl, SEARCH_BAR_CHARACTERS } from '~/constants/imgs'
 import { settings } from '~/logic'
 
 import ChangeWallpaper from '../../components/ChangeWallpaper.vue'
@@ -98,7 +98,7 @@ function changeSearchBarFocusCharacter(url: string) {
                 class="bew-settings-option--lift"
                 aspect-square bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
                 un-border="4 transparent" w-full
-                :class="{ 'selected-wallpaper': settings.searchPageSearchBarFocusCharacter === item.url }"
+                :class="{ 'selected-wallpaper': resolveSearchBarCharacterUrl(settings.searchPageSearchBarFocusCharacter) === item.url }"
                 @click="changeSearchBarFocusCharacter(item.url)"
               >
                 <img

@@ -4,6 +4,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
+import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
@@ -24,6 +25,7 @@ const { forceWhiteIcon } = useTopBarInteraction()
 const conflictingHeaderSelectors = ['.fixed-author-header', '.fixed-top-header']
 
 const { isDark } = useDark()
+const { isLayoutEditing } = useLayoutEditMode()
 
 // 顶栏显示控制
 const hideTopBar = ref<boolean>(false)
@@ -433,18 +435,19 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
     />
     <Transition name="top-bar">
       <header
-        v-if="topBarStore.showTopBar"
+        v-if="topBarStore.showTopBar || isLayoutEditing"
         ref="headerTarget"
         class="top-bar"
         w="full" transition="opacity duration-300, transform duration-300, background-color duration-300"
         :class="{
-          'hide': hideTopBar,
+          'hide': hideTopBar && !isLayoutEditing,
           'force-white-icon': forceWhiteIcon,
           'top-bar--solid': !settings.enableTopBarGradient,
           'top-bar--solid-force-white': !settings.enableTopBarGradient && forceWhiteIcon,
         }"
       >
         <TopBarHeader
+          v-if="!isLayoutEditing || !settings.useOriginalBilibiliTopBar"
           :force-white-icon="forceWhiteIcon"
           :reach-top="reachTop"
           :is-dark="isDark"

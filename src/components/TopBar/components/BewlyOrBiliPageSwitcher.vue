@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
@@ -9,11 +10,14 @@ import { useSettingsStore } from '~/stores/settingsStore'
 import { isHomePage, isInIframe, isWatchLaterListPage } from '~/utils/main'
 import { buildNativeSearchUrl } from '~/utils/searchNavigation'
 
+import TopBarItemEditor from './TopBarItemEditor.vue'
+
 const props = defineProps<{
   forceWhiteIcon: boolean
 }>()
 
 const { activatedPage } = useBewlyApp()
+const { isLayoutEditing } = useLayoutEditMode()
 const { getDockItemByPage } = useMainStore()
 const { getDockItemConfigByPage } = useSettingsStore()
 
@@ -83,6 +87,8 @@ const showBewlyOrBiliPageSwitcher = computed(() => {
   return settings.value.showBewlyOrBiliPageSwitcherOnMorePages && originalBiliAppPage !== undefined
 })
 
+const showSwitcherInLayoutEditor = computed(() => showBewlyOrBiliPageSwitcher.value)
+
 const isOriginalBiliPageActive = computed(() => {
   if (originalBiliAppPage !== undefined && !isHomePage())
     return true
@@ -91,12 +97,15 @@ const isOriginalBiliPageActive = computed(() => {
 
 const liquidIndicatorRef = ref<InstanceType<typeof LiquidSegmentIndicator> | null>(null)
 
-watch(showBewlyOrBiliPageSwitcher, (visible) => {
+watch(showSwitcherInLayoutEditor, (visible) => {
   if (visible)
     void liquidIndicatorRef.value?.updateIndicator(true)
 })
 
 function switchPage(nextUseOriginalBiliPage: boolean) {
+  if (isLayoutEditing.value)
+    return
+
   if (nextUseOriginalBiliPage === isOriginalBiliPageActive.value)
     return
 
@@ -152,44 +161,55 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 </script>
 
 <template>
-  <div
-    v-if="showBewlyOrBiliPageSwitcher"
-    class="bewly-bili-switcher bew-segment-control bew-segment-control--surface"
-    :class="{
-      'bewly-bili-switcher--white': props.forceWhiteIcon,
-      'bew-segment-control--solid': !settings.enableFrostedGlass,
-      'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
-    }"
-    role="group"
-    aria-label="Homepage mode"
+  <TopBarItemEditor
+    component-key="switcher"
+    :title="$t('settings.show_bewly_or_bili_page_switcher')"
   >
-    <LiquidSegmentIndicator
-      v-if="settings.enableLiquidSegmentIndicator"
-      ref="liquidIndicatorRef"
-      :active-key="isOriginalBiliPageActive"
-      :white="props.forceWhiteIcon && settings.enableFrostedGlass"
-    />
-
-    <button
-      v-for="option in options" :key="option.name"
-      class="bewly-bili-switcher-button bew-segment-control__item"
-      data-segment-item
-      :data-active="option.useOriginalBiliPage === isOriginalBiliPageActive ? 'true' : undefined"
-      :class="{
-        active: option.useOriginalBiliPage === isOriginalBiliPageActive,
-      }"
-      :aria-pressed="option.useOriginalBiliPage === isOriginalBiliPageActive"
-      :title="option.name"
-      @click="switchPage(option.useOriginalBiliPage)"
+    <div
+      v-if="showSwitcherInLayoutEditor"
+      class="top-bar-switcher-editor-anchor"
+      :class="{ 'top-bar-switcher-editor-anchor--editing': isLayoutEditing }"
+      data-top-bar-editor-anchor
     >
-      <span class="bewly-bili-switcher-button__full">
-        {{ option.name }}
-      </span>
-      <span class="bewly-bili-switcher-button__short">
-        {{ option.shortName }}
-      </span>
-    </button>
-  </div>
+      <div
+        class="bewly-bili-switcher bew-segment-control bew-segment-control--surface"
+        :class="{
+          'bewly-bili-switcher--white': props.forceWhiteIcon,
+          'bew-segment-control--solid': !settings.enableFrostedGlass,
+          'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
+        }"
+        role="group"
+        aria-label="Homepage mode"
+      >
+        <LiquidSegmentIndicator
+          v-if="settings.enableLiquidSegmentIndicator"
+          ref="liquidIndicatorRef"
+          :active-key="isOriginalBiliPageActive"
+          :white="props.forceWhiteIcon && settings.enableFrostedGlass"
+        />
+
+        <button
+          v-for="option in options" :key="option.name"
+          class="bewly-bili-switcher-button bew-segment-control__item"
+          data-segment-item
+          :data-active="option.useOriginalBiliPage === isOriginalBiliPageActive ? 'true' : undefined"
+          :class="{
+            active: option.useOriginalBiliPage === isOriginalBiliPageActive,
+          }"
+          :aria-pressed="option.useOriginalBiliPage === isOriginalBiliPageActive"
+          :title="option.name"
+          @click="switchPage(option.useOriginalBiliPage)"
+        >
+          <span class="bewly-bili-switcher-button__full">
+            {{ option.name }}
+          </span>
+          <span class="bewly-bili-switcher-button__short">
+            {{ option.shortName }}
+          </span>
+        </button>
+      </div>
+    </div>
+  </TopBarItemEditor>
 </template>
 
 <style lang="scss" scoped>
@@ -219,6 +239,14 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     --bew-segment-item-active-shadow: var(--bew-segment-item-active-shadow-white);
     --bew-segment-item-current-color: white;
   }
+}
+
+.top-bar-switcher-editor-anchor {
+  position: relative;
+  display: inline-flex;
+  min-width: 24px;
+  min-height: var(--bew-control-height);
+  align-items: center;
 }
 
 .bewly-bili-switcher-button {
@@ -251,6 +279,10 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 @media (max-width: 640px) {
   .bewly-bili-switcher {
     display: none;
+  }
+
+  .top-bar-switcher-editor-anchor--editing .bewly-bili-switcher {
+    display: flex;
   }
 }
 </style>

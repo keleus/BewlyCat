@@ -65,6 +65,10 @@ function handleSearch(keyword: string) {
     />
     <SearchBar
       v-model="searchInput"
+      data-layout-edit-target="search-page-search-bar"
+      data-layout-settings-menu="BewlyPages"
+      data-layout-settings-page="search"
+      data-layout-settings-title-key="settings.group_search_bar"
       :darken-on-focus="settings.searchPageDarkenOnSearchFocus"
       :blurred-on-focus="settings.searchPageBlurredOnSearchFocus"
       :focused-character="settings.searchPageSearchBarFocusCharacter"

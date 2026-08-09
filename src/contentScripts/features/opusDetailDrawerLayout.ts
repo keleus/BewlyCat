@@ -1,7 +1,7 @@
-import { Icon } from '@iconify/vue'
 import { createVNode, render } from 'vue'
 import browser from 'webextension-polyfill'
 
+import Icon from '~/components/Icon.vue'
 import { isInIframe } from '~/utils/main'
 
 const SPLIT_FLAG = 'bewlyOpusSplit'
@@ -522,8 +522,8 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav:hover {
   background: rgba(0, 0, 0, 0.72) !important;
 }
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav > svg,
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > svg {
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav > .bew-local-icon,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > .bew-local-icon {
   display: block !important;
   width: 18px !important;
   height: 18px !important;
@@ -735,7 +735,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav {
   transform: translateY(-50%) !important;
   font-size: 32px !important;
 }
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > svg {
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > .bew-local-icon {
   width: 24px !important;
   height: 24px !important;
 }
@@ -1328,7 +1328,7 @@ function unbindGalleryViewerBridge() {
   }
 }
 
-/** iframe 内复用项目现有 Iconify 图标组件，不依赖字体基线或页面图标样式 */
+/** iframe 内复用项目本地图标组件，不依赖字体基线或页面图标样式 */
 function mountGalleryIcon(host: HTMLElement, icon: string) {
   render(createVNode(Icon, {
     icon,

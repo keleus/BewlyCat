@@ -28,7 +28,13 @@ function formatCount(count: number): string {
 
 <template>
   <div class="search-categories" mb-4>
-    <div class="search-category-control bew-segment-control bew-segment-control--surface bew-segment-control--static">
+    <div
+      class="search-category-control bew-segment-control bew-segment-control--surface bew-segment-control--static"
+      data-layout-edit-target="search-category-tabs"
+      data-layout-settings-menu="BewlyPages"
+      data-layout-settings-page="search"
+      data-layout-settings-title-key="settings.group_search_results"
+    >
       <button
         v-for="category in props.categories"
         :key="category.value"

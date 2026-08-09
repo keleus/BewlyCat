@@ -58,6 +58,41 @@ common:
     right: Right
     top: Top
     bottom: Bottom
+layout_editor:
+  finish: Done
+  edit_dock: Edit Dock
+  edit_sidebar: Edit mode
+  back_to_top: Back to top
+  click_to_adjust: Click the element you want to adjust
+  switch_to_bilibili_page: How to switch to the original Bilibili page
+  switch_to_plugin_page: How to switch to the extension page
+  adjust_video_grid_columns: Adjust video card columns
+  adjust_moments_grid_columns: Adjust Moments page columns
+  adjust_dock_position: How to adjust the Dock position
+  video_default_player_mode: How to set the default player style
+  video_auto_play: How to enable autoplay by default
+  video_external_watch_later: How to show an external Watch later button
+  video_sidebar_position: How to adjust the sidebar position
+  video_topbar_auto_hide: How to auto-hide the top bar
+  home_filter_recommendations: How to filter unwanted recommendations
+  home_recommendation_mode: How to adjust the recommendation source
+  following_show_live: How to show live streams
+  following_hide_live: How to hide live streams
+  following_hide_uploader_list: How to show or hide the uploader list
+  following_filter_videos: How to filter charging and dynamic videos
+  moments_filter_content: How to filter unwanted Moments
+  moments_preview: How to configure Moments video previews
+  search_suggestions_history: How to configure search suggestions and history
+  search_wallpaper: How to set a separate Search page background
+  search_results_personalization: How to reduce personalized search results
+  search_results_pagination: How to switch between scrolling and pagination
+  original_moments_show_user_card: How to show the original Moments user card
+  original_moments_show_live_list: How to show the original Moments live list
+  original_moments_show_community_center: How to show the original Moments community center
+  original_moments_show_hot_search: How to show the original Moments hot searches
+  original_moments_show_up_list: How to show the original Moments uploader banner
+  switch_to_bewly_topbar: How to switch to the BewlyCat top bar
+  switch_to_original_topbar: How to switch to the Bilibili top bar
 iframe_drawer:
   open_in_new_tab: Open in new tab
   close: Close
@@ -88,7 +123,7 @@ settings:
     placeholder: Search settings
     no_results: No matching settings
     located: Setting located
-  category_general_desc: Configure language, interaction, and drawer behavior.
+  category_general_desc: Configure language, interaction, link opening, and drawer behavior.
   category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, custom styles, and page style adaptation.
   category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
   breadcrumb: Settings location
@@ -500,6 +535,8 @@ settings:
     icon: Circular icon
     brand: Brand mark
   badge_type: Badge Type
+  show_layout_edit_button: Show layout edit button
+  show_layout_edit_button_desc: Show the layout editor entry in the Dock or sidebar; reopen it here after hiding it.
   always_use_dock: Always use the dock
   always_use_dock_desc: >-
     The dock will always be visible and the sidebar will be hidden. We also

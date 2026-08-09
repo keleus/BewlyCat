@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn, useToggle } from '@vueuse/core'
+import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { provide, ref, watch } from 'vue'
 
 import Button from '~/components/Button.vue'
-import type { BewlyAppProvider } from '~/composables/useAppProvider'
+import Icon from '~/components/Icon.vue'
+import type { BewlyAppProvider, SettingsNavigationTarget } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
 import { confirmDialogKey } from '~/composables/useConfirmDialog'
 import { useDark } from '~/composables/useDark'
+import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
@@ -30,6 +32,8 @@ function isFestivalPage(): boolean {
 const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
 const topBarStore = useTopBarStore()
+// Layout edit mode is UI-only; persistent choices continue to use `settings`.
+const { isLayoutEditing, exitLayoutEditMode } = useLayoutEditMode()
 
 // Conditionally use dark mode. `useDark()` handles the video-page-only route gate.
 let isDark: Ref<boolean>
@@ -42,8 +46,14 @@ if (shouldUseDark) {
 else {
   isDark = ref(false)
 }
-const [showSettings, toggleSettings] = useToggle(false)
+const showSettings = ref(false)
+const pendingSettingsNavigation = ref<SettingsNavigationTarget>()
 const searchFocusOverlayActive = ref(false)
+
+function openSettings(target?: SettingsNavigationTarget) {
+  pendingSettingsNavigation.value = target
+  showSettings.value = true
+}
 
 // The top-bar switcher is teleported to document.body, outside this Shadow DOM.
 // Raise the host while settings are open so the modal can stay above that layer.
@@ -108,11 +118,15 @@ function finishConfirmDialog(confirmed: boolean) {
 }
 
 onKeyStroke('Escape', (e: KeyboardEvent) => {
-  if (!activeConfirmDialog.value)
+  if (!activeConfirmDialog.value && !isLayoutEditing.value)
     return
   e.preventDefault()
   e.stopPropagation()
-  finishConfirmDialog(false)
+  e.stopImmediatePropagation()
+  if (activeConfirmDialog.value)
+    finishConfirmDialog(false)
+  else
+    exitLayoutEditMode()
 }, { dedupe: true })
 
 onKeyStroke('Enter', (e: KeyboardEvent) => {
@@ -229,6 +243,660 @@ const pages = {
   [AppPage.Moments]: defineAsyncComponent(() => import('./Moments/Moments.vue')),
 }
 const mainAppRef = ref<HTMLElement>() as Ref<HTMLElement>
+
+interface LayoutEditTargetProxy extends SettingsNavigationTarget {
+  key: string
+  direct: boolean
+  left: number
+  top: number
+  width: number
+  height: number
+}
+
+interface LayoutEditTargetDescriptor extends SettingsNavigationTarget {
+  key: string
+  direct?: boolean
+}
+
+interface LayoutEditQuickSettingsAction extends SettingsNavigationTarget {
+  key: string
+  labelKey: string
+  icon: string
+}
+
+const layoutEditTargets = ref<LayoutEditTargetProxy[]>([])
+const layoutEditGridKind = ref<'video-card' | 'moments'>()
+const layoutEditDockVisible = ref(false)
+let layoutEditTargetObserver: MutationObserver | undefined
+let layoutEditTargetFrame: number | undefined
+let exposedLayoutEditElements: HTMLElement[] = []
+
+function clearExposedLayoutEditElements() {
+  exposedLayoutEditElements.forEach((element) => {
+    element.classList.remove('layout-edit-target--active')
+    element.removeAttribute('data-layout-edit-active')
+  })
+  exposedLayoutEditElements = []
+}
+
+function isLayoutEditCandidateVisible(element: HTMLElement) {
+  if (!element.isConnected || !element.getClientRects().length)
+    return false
+
+  const rect = element.getBoundingClientRect()
+  if (rect.width < 4 || rect.height < 4 || rect.bottom <= 0 || rect.right <= 0 || rect.top >= window.innerHeight || rect.left >= window.innerWidth)
+    return false
+
+  const style = window.getComputedStyle(element)
+  return style.display !== 'none' && style.visibility !== 'hidden' && Number.parseFloat(style.opacity || '1') > 0
+}
+
+function isOriginalMomentsFeedPage() {
+  return window.location.hostname === 't.bilibili.com' && /^\/?$/.test(window.location.pathname)
+}
+
+function refreshLayoutEditTargets() {
+  layoutEditTargetFrame = undefined
+  clearExposedLayoutEditElements()
+
+  if (!isLayoutEditing.value || !mainAppRef.value) {
+    layoutEditTargets.value = []
+    layoutEditGridKind.value = undefined
+    layoutEditDockVisible.value = false
+    return
+  }
+
+  const seenKeys = new Set<string>()
+  const nextTargets: LayoutEditTargetProxy[] = []
+  const appendTarget = (element: HTMLElement, descriptor?: LayoutEditTargetDescriptor) => {
+    const key = descriptor?.key ?? element.dataset.layoutEditTarget
+    const menu = descriptor?.menu
+      ?? element.dataset.layoutSettingsMenu as SettingsNavigationTarget['menu'] | undefined
+    if (!key || !menu || seenKeys.has(key) || !isLayoutEditCandidateVisible(element))
+      return
+
+    const rect = element.getBoundingClientRect()
+    const left = Math.max(0, rect.left)
+    const top = Math.max(0, rect.top)
+    const right = Math.min(window.innerWidth, rect.right)
+    const bottom = Math.min(window.innerHeight, rect.bottom)
+    if (right <= left || bottom <= top)
+      return
+
+    seenKeys.add(key)
+    element.classList.add('layout-edit-target--active')
+    element.dataset.layoutEditActive = 'true'
+    exposedLayoutEditElements.push(element)
+    nextTargets.push({
+      key,
+      menu,
+      direct: descriptor?.direct ?? element.hasAttribute('data-layout-edit-direct'),
+      secondaryPage: descriptor?.secondaryPage ?? element.dataset.layoutSettingsPage,
+      targetTitleKey: descriptor?.targetTitleKey ?? element.dataset.layoutSettingsTitleKey,
+      left,
+      top,
+      width: right - left,
+      height: bottom - top,
+    })
+  }
+
+  mainAppRef.value
+    .querySelectorAll<HTMLElement>('[data-layout-edit-target]')
+    .forEach(element => appendTarget(element))
+
+  const momentsGrid = mainAppRef.value.querySelector<HTMLElement>('.moments-grid')
+  const videoCardGrid = mainAppRef.value.querySelector<HTMLElement>('.video-card-grid-container')
+  layoutEditGridKind.value = momentsGrid && isLayoutEditCandidateVisible(momentsGrid)
+    ? 'moments'
+    : videoCardGrid && isLayoutEditCandidateVisible(videoCardGrid)
+      ? 'video-card'
+      : undefined
+
+  if (isVideoOrBangumiPage()) {
+    const player = document.querySelector<HTMLElement>('.bpx-player-container, #bilibili-player, .bilibili-player, .squirtle-video-wrap')
+    if (player) {
+      appendTarget(player, {
+        key: 'video-page-player',
+        menu: 'Bilibili',
+        secondaryPage: 'player',
+        targetTitleKey: 'settings.group_player_display_mode',
+      })
+    }
+
+    const watchLaterButton = document.querySelector<HTMLElement>('.bewly-watch-later-btn')
+    if (watchLaterButton) {
+      appendTarget(watchLaterButton, {
+        key: 'video-page-watch-later',
+        menu: 'Bilibili',
+        secondaryPage: 'player',
+        targetTitleKey: 'settings.external_watch_later_button',
+      })
+    }
+  }
+
+  if (isOriginalMomentsFeedPage()) {
+    const originalMomentTargets = [
+      {
+        key: 'original-moments-user-card',
+        enabled: settings.value.originalMomentsShowUserCard,
+        targetTitleKey: 'settings.original_moments_show_user_card',
+        selectors: [
+          '.bili-dyn-home--member > aside.left > section:has(.bili-dyn-my-info)',
+          '.bili-dyn-home--member > aside.left > section:has(.bili-dyn-my-info--skeleton)',
+          '.bili-dyn-my-info',
+          '.bili-dyn-my-info--skeleton',
+        ],
+      },
+      {
+        key: 'original-moments-live-list',
+        enabled: settings.value.originalMomentsShowLiveList,
+        targetTitleKey: 'settings.original_moments_show_live_list',
+        selectors: [
+          '.bili-dyn-home--member > aside.left > section:has(.bili-dyn-live-users)',
+          '.bili-dyn-live-users',
+        ],
+      },
+      {
+        key: 'original-moments-community-center',
+        enabled: settings.value.originalMomentsShowCommunityCenter,
+        targetTitleKey: 'settings.original_moments_show_community_center',
+        selectors: [
+          '.bili-dyn-home--member > aside.right > section:has(.bili-dyn-banner)',
+          '.bili-dyn-banner',
+        ],
+      },
+      {
+        key: 'original-moments-hot-search',
+        enabled: settings.value.originalMomentsShowHotSearch,
+        targetTitleKey: 'settings.original_moments_show_hot_search',
+        selectors: [
+          '.bili-dyn-home--member > aside.right > section:has(.bili-dyn-topic-box)',
+          '.bili-dyn-home--member > aside.right > section:has(.bili-dyn-search-trendings)',
+          '.bili-dyn-home--member > aside.right > section:has(.topic-panel)',
+          '.bili-dyn-topic-box',
+          '.bili-dyn-search-trendings',
+          '.topic-panel',
+        ],
+      },
+      {
+        key: 'original-moments-up-list',
+        enabled: settings.value.originalMomentsShowUpList,
+        targetTitleKey: 'settings.original_moments_show_up_list',
+        selectors: [
+          '.bili-dyn-home--member > main > section:has(.bili-dyn-up-list)',
+          '.bili-dyn-up-list',
+        ],
+      },
+    ]
+
+    originalMomentTargets.forEach((target) => {
+      if (!target.enabled)
+        return
+
+      const element = target.selectors
+        .map(selector => document.querySelector<HTMLElement>(selector))
+        .find(candidate => candidate && isLayoutEditCandidateVisible(candidate))
+      if (!element)
+        return
+
+      appendTarget(element, {
+        key: target.key,
+        menu: 'BewlyPages',
+        secondaryPage: 'moments',
+        targetTitleKey: target.targetTitleKey,
+      })
+    })
+  }
+
+  layoutEditTargets.value = nextTargets
+  layoutEditDockVisible.value = nextTargets.some(target => target.key === 'dock-component')
+}
+
+function scheduleLayoutEditTargetsRefresh() {
+  if (layoutEditTargetFrame !== undefined)
+    return
+  layoutEditTargetFrame = window.requestAnimationFrame(refreshLayoutEditTargets)
+}
+
+function stopLayoutEditTargetObserver() {
+  layoutEditTargetObserver?.disconnect()
+  layoutEditTargetObserver = undefined
+  if (layoutEditTargetFrame !== undefined)
+    window.cancelAnimationFrame(layoutEditTargetFrame)
+  layoutEditTargetFrame = undefined
+  clearExposedLayoutEditElements()
+  layoutEditTargets.value = []
+  layoutEditGridKind.value = undefined
+  layoutEditDockVisible.value = false
+}
+
+function startLayoutEditTargetObserver() {
+  stopLayoutEditTargetObserver()
+  nextTick(() => {
+    if (!isLayoutEditing.value || !mainAppRef.value)
+      return
+
+    refreshLayoutEditTargets()
+    layoutEditTargetObserver = new MutationObserver(scheduleLayoutEditTargetsRefresh)
+    layoutEditTargetObserver.observe(mainAppRef.value, { childList: true, subtree: true })
+    layoutEditTargetObserver.observe(document.body, { childList: true, subtree: true })
+  })
+}
+
+function isLayoutEditControlEvent(event: Event) {
+  return event.composedPath().some((target) => {
+    return target instanceof HTMLElement
+      && (target.hasAttribute('data-layout-edit-control') || target.classList.contains('bew-confirm-dialog'))
+  })
+}
+
+function getDirectLayoutEditTarget(event: Event) {
+  return event.composedPath().find((target): target is HTMLElement => {
+    return target instanceof HTMLElement
+      && target.hasAttribute('data-layout-edit-target')
+      && target.hasAttribute('data-layout-edit-direct')
+  })
+}
+
+function blockOriginalLayoutInteraction(event: Event) {
+  if (!isLayoutEditing.value || isLayoutEditControlEvent(event))
+    return
+
+  const directTarget = getDirectLayoutEditTarget(event)
+  if (event.type === 'click' && directTarget) {
+    const menu = directTarget.dataset.layoutSettingsMenu as SettingsNavigationTarget['menu'] | undefined
+    if (menu) {
+      openSettings({
+        menu,
+        secondaryPage: directTarget.dataset.layoutSettingsPage,
+        targetTitleKey: directTarget.dataset.layoutSettingsTitleKey,
+      })
+    }
+  }
+
+  if (event.cancelable)
+    event.preventDefault()
+  event.stopPropagation()
+  event.stopImmediatePropagation()
+}
+
+function openLayoutTargetSettings(target: LayoutEditTargetProxy) {
+  openSettings({
+    menu: target.menu,
+    secondaryPage: target.secondaryPage,
+    targetTitleKey: target.targetTitleKey,
+  })
+}
+
+const layoutEditDockPage = computed(() => {
+  if (!isHomePage() || activatedPage.value === AppPage.SearchResults)
+    return undefined
+  return mainStore.getDockItemByPage(activatedPage.value)
+})
+
+const layoutEditDockPageConfig = computed(() => {
+  return settings.value.dockItemsConfig.find(item => item.page === layoutEditDockPage.value?.page)
+})
+
+const showLayoutEditPageModeAction = computed(() => {
+  return Boolean(
+    isLayoutEditing.value
+    && !settings.value.useOriginalBilibiliHomepage
+    && layoutEditDockPage.value?.hasBewlyPage,
+  )
+})
+
+const showLayoutEditSearchResultsAction = computed(() => {
+  return isLayoutEditing.value && activatedPage.value === AppPage.SearchResults
+})
+
+const layoutEditGridActionKind = computed<'video-card' | 'moments' | undefined>(() => {
+  if (!isLayoutEditing.value || settings.value.useOriginalBilibiliHomepage)
+    return undefined
+
+  if (activatedPage.value === AppPage.SearchResults)
+    return 'video-card'
+
+  const showingPluginDockPage = !layoutEditDockPageConfig.value?.useOriginalBiliPage
+  if (showingPluginDockPage && activatedPage.value === AppPage.Home)
+    return 'video-card'
+  if (showingPluginDockPage && activatedPage.value === AppPage.Moments)
+    return 'moments'
+
+  return layoutEditGridKind.value
+})
+
+const layoutEditContextActions = computed<LayoutEditQuickSettingsAction[]>(() => {
+  if (!isLayoutEditing.value)
+    return []
+
+  if (isVideoOrBangumiPage()) {
+    return [
+      {
+        key: 'video-default-player-mode',
+        labelKey: 'layout_editor.video_default_player_mode',
+        icon: 'mingcute:play-circle-line',
+        menu: 'Bilibili',
+        secondaryPage: 'player',
+        targetTitleKey: 'settings.video_default_player_mode',
+      },
+      {
+        key: 'video-auto-play',
+        labelKey: 'layout_editor.video_auto_play',
+        icon: 'mingcute:list-check-3-line',
+        menu: 'Bilibili',
+        secondaryPage: 'auto-play',
+        targetTitleKey: 'settings.group_playback_end_behavior',
+      },
+      {
+        key: 'video-external-watch-later',
+        labelKey: 'layout_editor.video_external_watch_later',
+        icon: 'mingcute:carplay-line',
+        menu: 'Bilibili',
+        secondaryPage: 'player',
+        targetTitleKey: 'settings.external_watch_later_button',
+      },
+      {
+        key: 'video-sidebar-position',
+        labelKey: 'layout_editor.video_sidebar_position',
+        icon: 'mingcute:navigation-line',
+        menu: 'BewlyComponents',
+        secondaryPage: 'dock',
+        targetTitleKey: 'settings.sidebar_position',
+      },
+      {
+        key: 'video-topbar-auto-hide',
+        labelKey: 'layout_editor.video_topbar_auto_hide',
+        icon: 'mingcute:settings-3-line',
+        menu: 'BewlyComponents',
+        secondaryPage: 'topbar',
+        targetTitleKey: 'settings.auto_hide_top_bar',
+      },
+    ]
+  }
+
+  if (isOriginalMomentsFeedPage()) {
+    const actions: LayoutEditQuickSettingsAction[] = []
+    const appendHiddenOriginalMomentAction = (
+      visible: boolean,
+      key: string,
+      labelKey: string,
+      icon: string,
+      targetTitleKey: string,
+    ) => {
+      if (visible)
+        return
+      actions.push({
+        key,
+        labelKey,
+        icon,
+        menu: 'BewlyPages',
+        secondaryPage: 'moments',
+        targetTitleKey,
+      })
+    }
+
+    appendHiddenOriginalMomentAction(
+      settings.value.originalMomentsShowUserCard,
+      'original-moments-show-user-card',
+      'layout_editor.original_moments_show_user_card',
+      'mingcute:settings-3-line',
+      'settings.original_moments_show_user_card',
+    )
+    appendHiddenOriginalMomentAction(
+      settings.value.originalMomentsShowLiveList,
+      'original-moments-show-live-list',
+      'layout_editor.original_moments_show_live_list',
+      'mingcute:play-circle-line',
+      'settings.original_moments_show_live_list',
+    )
+    appendHiddenOriginalMomentAction(
+      settings.value.originalMomentsShowCommunityCenter,
+      'original-moments-show-community-center',
+      'layout_editor.original_moments_show_community_center',
+      'mingcute:layout-grid-line',
+      'settings.original_moments_show_community_center',
+    )
+    appendHiddenOriginalMomentAction(
+      settings.value.originalMomentsShowHotSearch,
+      'original-moments-show-hot-search',
+      'layout_editor.original_moments_show_hot_search',
+      'mingcute:search-2-line',
+      'settings.original_moments_show_hot_search',
+    )
+    appendHiddenOriginalMomentAction(
+      settings.value.originalMomentsShowUpList,
+      'original-moments-show-up-list',
+      'layout_editor.original_moments_show_up_list',
+      'mingcute:list-check-3-line',
+      'settings.original_moments_show_up_list',
+    )
+    return actions
+  }
+
+  if (activatedPage.value === AppPage.Moments && !layoutEditDockPageConfig.value?.useOriginalBiliPage) {
+    return [
+      {
+        key: 'moments-content-filters',
+        labelKey: 'layout_editor.moments_filter_content',
+        icon: 'mingcute:list-check-3-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'moments',
+        targetTitleKey: 'settings.moments_filtered_types',
+      },
+      {
+        key: 'moments-preview',
+        labelKey: 'layout_editor.moments_preview',
+        icon: 'mingcute:play-circle-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'moments',
+        targetTitleKey: 'settings.moments_enable_video_preview',
+      },
+    ]
+  }
+
+  if (activatedPage.value === AppPage.Search) {
+    return [
+      {
+        key: 'search-suggestions-history',
+        labelKey: 'layout_editor.search_suggestions_history',
+        icon: 'mingcute:search-2-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'search',
+        targetTitleKey: 'settings.group_search_bar',
+      },
+      {
+        key: 'search-wallpaper',
+        labelKey: 'layout_editor.search_wallpaper',
+        icon: 'mingcute:settings-3-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'search',
+        targetTitleKey: 'settings.group_wallpaper',
+      },
+    ]
+  }
+
+  if (activatedPage.value === AppPage.SearchResults) {
+    return [
+      {
+        key: 'search-results-personalization',
+        labelKey: 'layout_editor.search_results_personalization',
+        icon: 'mingcute:search-2-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'search',
+        targetTitleKey: 'settings.depersonalize_search_results',
+      },
+      {
+        key: 'search-results-pagination',
+        labelKey: 'layout_editor.search_results_pagination',
+        icon: 'mingcute:list-check-3-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'search',
+        targetTitleKey: 'settings.search_results_pagination_mode',
+      },
+    ]
+  }
+
+  if (activatedPage.value !== AppPage.Home || layoutEditDockPageConfig.value?.useOriginalBiliPage)
+    return []
+
+  if (homeActivatedPage.value === HomeSubPage.ForYou) {
+    return [
+      {
+        key: 'home-recommendation-filters',
+        labelKey: 'layout_editor.home_filter_recommendations',
+        icon: 'mingcute:list-check-3-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'home',
+        targetTitleKey: 'settings.group_recommendation_filters',
+      },
+      {
+        key: 'home-recommendation-mode',
+        labelKey: 'layout_editor.home_recommendation_mode',
+        icon: 'mingcute:settings-3-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'home',
+        targetTitleKey: 'settings.group_recommendation_mode',
+      },
+    ]
+  }
+
+  if (homeActivatedPage.value === HomeSubPage.Following) {
+    return [
+      {
+        key: 'following-live-videos',
+        labelKey: settings.value.followingTabShowLivestreamingVideos
+          ? 'layout_editor.following_hide_live'
+          : 'layout_editor.following_show_live',
+        icon: 'mingcute:play-circle-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'home',
+        targetTitleKey: 'settings.following_tab_show_livestreaming_videos',
+      },
+      {
+        key: 'following-uploader-list',
+        labelKey: 'layout_editor.following_hide_uploader_list',
+        icon: 'mingcute:settings-3-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'home',
+        targetTitleKey: 'settings.use_following_new_layout',
+      },
+      {
+        key: 'following-content-filters',
+        labelKey: 'layout_editor.following_filter_videos',
+        icon: 'mingcute:list-check-3-line',
+        menu: 'BewlyPages',
+        secondaryPage: 'home',
+        targetTitleKey: 'settings.following_filter_charging_videos',
+      },
+    ]
+  }
+
+  return []
+})
+
+function openLayoutEditPageModeSettings() {
+  const dockPage = layoutEditDockPage.value
+  if (!dockPage)
+    return
+
+  openSettings({
+    menu: 'BewlyComponents',
+    secondaryPage: 'dock',
+    targetTitleKey: dockPage.i18nKey,
+  })
+}
+
+function openLayoutEditGridSettings() {
+  if (layoutEditGridActionKind.value === 'moments') {
+    openSettings({
+      menu: 'BewlyPages',
+      secondaryPage: 'moments',
+      targetTitleKey: 'settings.moments_grid_columns',
+    })
+    return
+  }
+
+  if (layoutEditGridActionKind.value === 'video-card') {
+    openSettings({
+      menu: 'BewlyComponents',
+      secondaryPage: 'video-card',
+      targetTitleKey: 'settings.grid_breakpoints',
+    })
+  }
+}
+
+function openLayoutEditDockPositionSettings() {
+  openSettings({
+    menu: 'BewlyComponents',
+    secondaryPage: 'dock',
+    targetTitleKey: 'settings.dock_position',
+  })
+}
+
+function openLayoutEditTopBarModeSettings() {
+  openSettings({
+    menu: 'Bilibili',
+    secondaryPage: 'compatibility',
+    targetTitleKey: 'settings.use_original_bilibili_topbar',
+  })
+}
+
+function openLayoutEditSearchResultsSettings() {
+  openSettings({
+    menu: 'BewlyPages',
+    secondaryPage: 'search',
+    targetTitleKey: 'settings.group_search_results',
+  })
+}
+
+function openLayoutEditContextSettings(action: LayoutEditQuickSettingsAction) {
+  openSettings({
+    menu: action.menu,
+    secondaryPage: action.secondaryPage,
+    targetTitleKey: action.targetTitleKey,
+  })
+}
+
+watch(isLayoutEditing, (editing) => {
+  if (editing) {
+    mainAppRef.value?.querySelector<HTMLElement>(':focus')?.blur()
+    startLayoutEditTargetObserver()
+    window.setTimeout(scheduleLayoutEditTargetsRefresh, 350)
+    window.setTimeout(scheduleLayoutEditTargetsRefresh, 1200)
+    window.setTimeout(scheduleLayoutEditTargetsRefresh, 2500)
+  }
+  else {
+    stopLayoutEditTargetObserver()
+  }
+}, { immediate: true })
+
+watch(() => settings.value.showLayoutEditButton, (visible) => {
+  if (!visible && isLayoutEditing.value)
+    exitLayoutEditMode()
+})
+
+watch(() => settings.value.dockPosition, () => {
+  nextTick(scheduleLayoutEditTargetsRefresh)
+  window.setTimeout(scheduleLayoutEditTargetsRefresh, 350)
+})
+
+watch(activatedPage, scheduleLayoutEditTargetsRefresh)
+
+watch(
+  [
+    () => settings.value.originalMomentsShowUserCard,
+    () => settings.value.originalMomentsShowLiveList,
+    () => settings.value.originalMomentsShowCommunityCenter,
+    () => settings.value.originalMomentsShowHotSearch,
+    () => settings.value.originalMomentsShowUpList,
+  ],
+  scheduleLayoutEditTargetsRefresh,
+)
+
+useEventListener(window, 'resize', scheduleLayoutEditTargetsRefresh)
+useEventListener(window, 'scroll', scheduleLayoutEditTargetsRefresh, { passive: true })
+onUnmounted(stopLayoutEditTargetObserver)
 const scrollViewportRef = ref<HTMLElement | null>(null)
 const loadMoreSentinelRef = ref<HTMLElement>() // ✅ IntersectionObserver 哨兵元素
 const handlePageRefresh = ref<() => void>()
@@ -790,6 +1458,8 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   haveScrollbar,
   activeDrawer,
   setActiveDrawer,
+  pendingSettingsNavigation,
+  openSettings,
 })
 
 if (settings.value.cleanUrlArgument) {
@@ -954,6 +1624,12 @@ if (settings.value.cleanUrlArgument) {
       'bewly-wrapper--viewport': isHomePage() && !settings.useOriginalBilibiliHomepage,
     }"
     text="$bew-text-1 size-$bew-base-font-size"
+    @pointerdown.capture="blockOriginalLayoutInteraction"
+    @click.capture="blockOriginalLayoutInteraction"
+    @auxclick.capture="blockOriginalLayoutInteraction"
+    @contextmenu.capture="blockOriginalLayoutInteraction"
+    @keydown.capture="blockOriginalLayoutInteraction"
+    @scroll.capture.passive="scheduleLayoutEditTargetsRefresh"
   >
     <!-- Background -->
     <template v-if="showBewlyPage">
@@ -962,12 +1638,147 @@ if (settings.value.cleanUrlArgument) {
 
     <!-- Settings -->
     <KeepAlive>
-      <Settings v-if="showSettings" z-10002 @close="showSettings = false" />
+      <Settings v-if="showSettings" z-10004 @close="showSettings = false" />
     </KeepAlive>
+
+    <Transition name="fade">
+      <svg
+        v-if="isLayoutEditing"
+        class="layout-edit-backdrop"
+        aria-hidden="true"
+        @wheel.prevent
+        @touchmove.prevent
+      >
+        <defs>
+          <mask id="layout-edit-cutout-mask">
+            <rect width="100%" height="100%" fill="white" />
+            <rect
+              v-for="target in layoutEditTargets"
+              :key="target.key"
+              :x="target.left - 3"
+              :y="target.top - 3"
+              :width="target.width + 6"
+              :height="target.height + 6"
+              rx="10"
+              fill="black"
+            />
+          </mask>
+        </defs>
+        <rect
+          width="100%"
+          height="100%"
+          fill="var(--bew-bg)"
+          fill-opacity="0.9"
+          mask="url(#layout-edit-cutout-mask)"
+        />
+      </svg>
+    </Transition>
+
+    <div
+      v-if="isLayoutEditing"
+      class="layout-edit-target-layer"
+      data-layout-edit-control
+    >
+      <button
+        v-for="target in layoutEditTargets"
+        v-show="!target.direct"
+        :key="target.key"
+        type="button"
+        class="layout-edit-target-proxy"
+        :style="{
+          left: `${target.left - 3}px`,
+          top: `${target.top - 3}px`,
+          width: `${target.width + 6}px`,
+          height: `${target.height + 6}px`,
+        }"
+        :aria-label="$t('layout_editor.click_to_adjust')"
+        :title="$t('layout_editor.click_to_adjust')"
+        @click="openLayoutTargetSettings(target)"
+      />
+    </div>
+
+    <div
+      v-if="isLayoutEditing"
+      class="layout-edit-helper"
+      data-layout-edit-control
+    >
+      <div
+        v-if="isLayoutEditing || showLayoutEditPageModeAction || showLayoutEditSearchResultsAction || layoutEditGridActionKind || layoutEditDockVisible || layoutEditContextActions.length"
+        class="layout-edit-quick-actions"
+      >
+        <button
+          type="button"
+          class="layout-edit-quick-action"
+          @click="openLayoutEditTopBarModeSettings"
+        >
+          <Icon icon="mingcute:transfer-3-line" aria-hidden="true" />
+          <span>{{ $t(settings.useOriginalBilibiliTopBar
+            ? 'layout_editor.switch_to_bewly_topbar'
+            : 'layout_editor.switch_to_original_topbar') }}</span>
+        </button>
+        <button
+          v-if="showLayoutEditPageModeAction"
+          type="button"
+          class="layout-edit-quick-action"
+          @click="openLayoutEditPageModeSettings"
+        >
+          <Icon icon="mingcute:transfer-3-line" aria-hidden="true" />
+          <span>{{ $t(layoutEditDockPageConfig?.useOriginalBiliPage
+            ? 'layout_editor.switch_to_plugin_page'
+            : 'layout_editor.switch_to_bilibili_page') }}</span>
+        </button>
+        <button
+          v-for="action in layoutEditContextActions"
+          :key="action.key"
+          type="button"
+          class="layout-edit-quick-action"
+          @click="openLayoutEditContextSettings(action)"
+        >
+          <Icon :icon="action.icon" aria-hidden="true" />
+          <span>{{ $t(action.labelKey) }}</span>
+        </button>
+        <button
+          v-if="showLayoutEditSearchResultsAction"
+          type="button"
+          class="layout-edit-quick-action"
+          @click="openLayoutEditSearchResultsSettings"
+        >
+          <Icon icon="mingcute:search-2-line" aria-hidden="true" />
+          <span>{{ $t('settings.group_search_results') }}</span>
+        </button>
+        <button
+          v-if="layoutEditDockVisible"
+          type="button"
+          class="layout-edit-quick-action"
+          @click="openLayoutEditDockPositionSettings"
+        >
+          <Icon icon="mingcute:navigation-line" aria-hidden="true" />
+          <span>{{ $t('layout_editor.adjust_dock_position') }}</span>
+        </button>
+        <button
+          v-if="layoutEditGridActionKind"
+          type="button"
+          class="layout-edit-quick-action"
+          @click="openLayoutEditGridSettings"
+        >
+          <Icon icon="mingcute:layout-grid-line" aria-hidden="true" />
+          <span>{{ $t(layoutEditGridActionKind === 'moments'
+            ? 'layout_editor.adjust_moments_grid_columns'
+            : 'layout_editor.adjust_video_grid_columns') }}</span>
+        </button>
+      </div>
+
+      <div class="layout-edit-hint" role="status">
+        <Icon icon="mingcute:cursor-3-line" aria-hidden="true" />
+        <span>{{ $t('layout_editor.click_to_adjust') }}</span>
+      </div>
+    </div>
 
     <!-- Dock & RightSideButtons -->
     <div
       v-if="!isInIframe()"
+      class="dock-sidebar-host"
+      :class="{ 'dock-sidebar-host--editing': isLayoutEditing }"
       pos="absolute top-0 left-0" w-full h-full overflow-hidden
       pointer-events-none
       :style="{
@@ -979,7 +1790,6 @@ if (settings.value.cleanUrlArgument) {
         v-if="!settings.useOriginalBilibiliHomepage && (settings.alwaysUseDock || (showBewlyPage || iframePageURL))"
         pointer-events-auto
         :activated-page="activatedPage"
-        @settings-visibility-change="toggleSettings"
         @refresh="handleThrottledPageRefresh"
         @undo-refresh="handleThrottledPageUnRefresh"
         @forward-refresh="handleThrottledPageForwardRefresh"
@@ -989,7 +1799,6 @@ if (settings.value.cleanUrlArgument) {
       <SideBar
         v-else
         pointer-events-auto
-        @settings-visibility-change="toggleSettings"
       />
     </div>
 
@@ -997,7 +1806,10 @@ if (settings.value.cleanUrlArgument) {
     <div
       v-if="showTopBar"
       class="top-bar-host"
-      :class="{ 'top-bar-host--behind-search-overlay': searchFocusOverlayActive }"
+      :class="{
+        'top-bar-host--behind-search-overlay': searchFocusOverlayActive,
+        'top-bar-host--editing': isLayoutEditing,
+      }"
       m-auto max-w="$bew-page-max-width"
       :style="{
         opacity: hideUIForIframePhotoViewer ? 0 : 1,
@@ -1104,6 +1916,146 @@ if (settings.value.cleanUrlArgument) {
 <style lang="scss" scoped>
 .top-bar-layer {
   z-index: 1001;
+}
+
+.layout-edit-backdrop {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: default;
+  pointer-events: auto;
+}
+
+.layout-edit-target-layer {
+  position: fixed;
+  z-index: 10002;
+  inset: 0;
+  pointer-events: none;
+}
+
+.layout-edit-target-proxy {
+  position: fixed;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid var(--bew-theme-color);
+  border-radius: var(--bew-interactive-radius);
+  background: transparent;
+  box-shadow: 0 0 0 1px var(--bew-theme-color-20);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.layout-edit-target-proxy:hover,
+.layout-edit-target-proxy:focus-visible {
+  border-color: var(--bew-theme-color);
+  background: var(--bew-theme-color-10);
+  box-shadow: 0 0 0 2px var(--bew-theme-color-30);
+  outline: none;
+}
+
+.layout-edit-helper {
+  position: fixed;
+  z-index: 10005;
+  bottom: max(var(--bew-space-4), env(safe-area-inset-bottom));
+  left: max(var(--bew-space-4), env(safe-area-inset-left));
+  display: flex;
+  max-height: calc(100vh - var(--bew-space-8));
+  max-width: min(360px, calc(100vw - var(--bew-space-8)));
+  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--bew-space-2);
+  pointer-events: auto;
+}
+
+.layout-edit-quick-actions {
+  display: flex;
+  max-height: calc(100vh - var(--bew-control-height) - var(--bew-space-8));
+  max-width: 100%;
+  overflow-y: auto;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: var(--bew-space-1);
+  overscroll-behavior: contain;
+}
+
+.layout-edit-quick-action,
+.layout-edit-hint {
+  display: inline-flex;
+  min-height: var(--bew-control-height);
+  align-items: center;
+  gap: var(--bew-space-2);
+  padding: 0 var(--bew-space-3);
+  color: var(--bew-text-1);
+  background: var(--bew-elevated-alt-solid);
+  border: 1px solid var(--bew-border-color);
+  border-radius: var(--bew-interactive-radius);
+  box-shadow: var(--bew-shadow-3), var(--bew-shadow-edge-glow-1);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
+}
+
+.layout-edit-quick-action {
+  max-width: 100%;
+  border-color: var(--bew-theme-color-30);
+  color: var(--bew-text-1);
+  cursor: pointer;
+  text-align: left;
+}
+
+.layout-edit-quick-action:hover {
+  border-color: var(--bew-theme-color-60);
+  background: color-mix(in oklab, var(--bew-elevated-alt-solid) 88%, var(--bew-theme-color) 12%);
+  color: var(--bew-theme-color);
+}
+
+.layout-edit-quick-action:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: var(--bew-space-0-5);
+}
+
+.layout-edit-hint {
+  pointer-events: none;
+}
+
+.layout-edit-quick-action :deep(.bew-local-icon),
+.layout-edit-hint :deep(.bew-local-icon) {
+  width: var(--bew-icon-size-sm);
+  height: var(--bew-icon-size-sm);
+  flex: none;
+}
+
+.dock-sidebar-host--editing,
+.top-bar-host--editing {
+  pointer-events: none !important;
+}
+
+.dock-sidebar-host--editing :deep([data-layout-edit-control]),
+.top-bar-host--editing :deep([data-layout-edit-control]),
+.dock-sidebar-host--editing :deep([data-layout-edit-direct]),
+.top-bar-host--editing :deep([data-layout-edit-direct]) {
+  pointer-events: auto !important;
+}
+
+.dock-sidebar-host--editing :deep([data-layout-edit-target="dock-component"][data-layout-edit-active="true"]) {
+  outline: 1px solid var(--bew-theme-color);
+  outline-offset: 3px;
+  border-radius: var(--bew-interactive-radius);
+}
+
+.dock-sidebar-host--editing :deep([data-layout-edit-target]:not([data-layout-edit-active="true"])),
+.top-bar-host--editing :deep([data-layout-edit-target]:not([data-layout-edit-active="true"])) {
+  opacity: 0.12 !important;
+}
+
+.dock-sidebar-host--editing {
+  z-index: 10001;
+}
+
+.top-bar-host--editing .top-bar-layer {
+  z-index: 10001;
 }
 
 .bew-confirm-dialog {

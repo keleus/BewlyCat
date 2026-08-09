@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { useMediaQuery, useMutationObserver } from '@vueuse/core'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { useBewlyApp } from '~/composables/useAppProvider'
+import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
+import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
+import TopBarItemEditor from './TopBarItemEditor.vue'
 import TopBarLogo from './TopBarLogo.vue'
 import TopBarRight from './TopBarRight.vue'
 import TopBarSearch from './TopBarSearch.vue'
@@ -15,7 +19,11 @@ defineProps<{
 }>()
 
 const { forceWhiteIcon, handleNotificationsItemClick, showSearchBar } = useTopBarInteraction()
+const { isLayoutEditing } = useLayoutEditMode()
+const { activatedPage } = useBewlyApp()
 const isNarrowLayout = useMediaQuery('(max-width: 767px)')
+const showTopBarSearchEditor = computed(() => showSearchBar.value
+  || (isLayoutEditing.value && activatedPage.value !== AppPage.Search))
 
 const leftSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
@@ -131,6 +139,7 @@ function refreshSearchContent() {
 <template>
   <main
     class="top-bar-header"
+    :class="{ 'top-bar-header--editing': isLayoutEditing }"
     max-w="$bew-page-max-width"
     grid="~ cols-[auto_1fr_auto] items-center gap-4"
     p="x-12" m-auto
@@ -194,10 +203,18 @@ function refreshSearchContent() {
         data-top-bar-search-content
       >
         <div
-          v-if="showSearchBar"
+          v-if="showTopBarSearchEditor"
           class="top-bar-header__search-control"
         >
-          <TopBarSearch />
+          <TopBarItemEditor
+            component-key="search"
+            :title="$t('settings.show_hot_search_in_top_bar')"
+          >
+            <TopBarSearch
+              :force-visible="isLayoutEditing && activatedPage !== AppPage.Search"
+              :edit-mode="isLayoutEditing"
+            />
+          </TopBarItemEditor>
         </div>
       </div>
     </div>
@@ -217,6 +234,10 @@ function refreshSearchContent() {
   box-sizing: border-box;
   min-width: 0;
   min-height: var(--bew-top-bar-height);
+}
+
+.top-bar-header--editing {
+  background: transparent;
 }
 
 .top-bar-header__side {
@@ -255,9 +276,14 @@ function refreshSearchContent() {
 }
 
 .top-bar-header__search-control {
+  position: relative;
   width: 100%;
   min-width: 0;
   flex: 1 1 auto;
+}
+
+.top-bar-header--editing .top-bar-header__search-control :deep(.search-bar) {
+  pointer-events: none;
 }
 
 // 窄屏响应式 padding（避免窄屏下 x-48px 过于挤压）

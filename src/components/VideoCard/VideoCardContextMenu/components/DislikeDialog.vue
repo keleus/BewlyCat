@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { Icon } from '@iconify/vue'
 import { onKeyStroke } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
+import Icon from '~/components/Icon.vue'
 import type { Video } from '~/components/VideoCard/types'
 import { appAuthTokens } from '~/logic'
 import type { DislikeReason } from '~/models/video/appForYou'

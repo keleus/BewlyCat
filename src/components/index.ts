@@ -1,6 +1,9 @@
 import type { App, Plugin } from 'vue'
 
-const componentModules: Record<string, { default: Component }> = import.meta.glob(['./*/*.vue', './*.vue'], { eager: true })
+const componentModules: Record<string, { default: Component }> = import.meta.glob(
+  ['./*.vue', './*/*.vue'],
+  { eager: true },
+)
 
 export default {
   install: (app: App) => {

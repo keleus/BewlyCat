@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
-
+import Icon from '~/components/Icon.vue'
+import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useDelayedHover } from '~/composables/useDelayedHover'
+import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { settings } from '~/logic'
 
 import Tooltip from '../Tooltip.vue'
 import type { HoveringDockItem } from './types'
 
-const emit = defineEmits(['settingsVisibilityChange'])
 const { isDark, toggleDark } = useDark()
+const { openSettings } = useBewlyApp()
+const { isLayoutEditing, toggleLayoutEditMode } = useLayoutEditMode()
 
 const hideSidebar = ref<boolean>(false)
 const sideBarContentHover = ref<boolean>(false)
@@ -41,6 +43,10 @@ watch(() => settings.value.autoHideSidebar, (newValue) => {
 })
 
 function toggleHideSidebar(hide: boolean) {
+  if (isLayoutEditing.value) {
+    hideSidebar.value = false
+    return
+  }
   if (settings.value.autoHideSidebar)
     hideSidebar.value = hide
   else
@@ -53,14 +59,14 @@ function toggleHideSidebar(hide: boolean) {
     :class="{
       'left-side': settings.sidebarPosition === 'left',
       'right-side': settings.sidebarPosition === 'right',
-      'hide': hideSidebar,
+      'hide': hideSidebar && !isLayoutEditing,
     }"
     pos="fixed top-0" h-full flex items-center px-6px
     z-10 pointer-events-none
   >
     <!-- Edge Div -->
     <div
-      v-if="settings.autoHideSidebar && hideSidebar"
+      v-if="settings.autoHideSidebar && hideSidebar && !isLayoutEditing"
       class="sidebar-edge"
       :class="`sidebar-edge-${settings.sidebarPosition}`"
       pointer-events-auto
@@ -71,8 +77,13 @@ function toggleHideSidebar(hide: boolean) {
     <div
       ref="sideBarContentRef"
       class="sidebar-content"
+      data-layout-edit-target="sidebar"
+      data-layout-settings-menu="BewlyComponents"
+      data-layout-settings-page="dock"
+      data-layout-settings-title-key="settings.group_sidebar"
       :class="{
         hover: sideBarContentHover,
+        editing: isLayoutEditing,
       }"
       flex="~ gap-2 col justify-center items-center"
       pointer-events-auto
@@ -81,6 +92,10 @@ function toggleHideSidebar(hide: boolean) {
       <Tooltip :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" placement="left">
         <Button
           class="ctrl-btn"
+          data-layout-edit-target="sidebar-theme"
+          data-layout-settings-menu="BewlyComponents"
+          data-layout-settings-page="dock"
+          data-layout-settings-title-key="settings.group_sidebar"
           style="backdrop-filter: var(--bew-filter-glass-1);"
           center size="small" round
           @click="toggleDark"
@@ -104,9 +119,13 @@ function toggleHideSidebar(hide: boolean) {
       <Tooltip :content="$t('dock.settings')" placement="left">
         <Button
           class="ctrl-btn group"
+          data-layout-edit-target="sidebar-settings"
+          data-layout-settings-menu="BewlyComponents"
+          data-layout-settings-page="dock"
+          data-layout-settings-title-key="settings.group_sidebar"
           style="backdrop-filter: var(--bew-filter-glass-1);"
           center size="small" round
-          @click="emit('settingsVisibilityChange')"
+          @click="openSettings()"
         >
           <div mt--2px>
             <i
@@ -114,6 +133,20 @@ function toggleHideSidebar(hide: boolean) {
               transition="transform duration-400 ease-out"
             />
           </div>
+        </Button>
+      </Tooltip>
+      <Tooltip
+        v-if="settings.showLayoutEditButton && !isLayoutEditing"
+        :content="$t('layout_editor.edit_sidebar')"
+        placement="left"
+      >
+        <Button
+          class="ctrl-btn sidebar-edit-button"
+          style="backdrop-filter: var(--bew-filter-glass-1);"
+          center size="small" round
+          @click="toggleLayoutEditMode('sidebar')"
+        >
+          <Icon icon="mingcute:edit-3-line" />
         </Button>
       </Tooltip>
     </div>
@@ -131,7 +164,7 @@ function toggleHideSidebar(hide: boolean) {
   --b-button-shadow-hover: var(--bew-shadow-2);
   --b-button-shadow-active: var(--bew-shadow-1);
 
-  svg {
+  :deep(.bew-local-icon) {
     --uno: "w-20px h-20px shrink-0";
   }
 
@@ -178,6 +211,11 @@ function toggleHideSidebar(hide: boolean) {
 }
 
 .right-side .sidebar-content.hover {
+  --uno: "translate-x-0 opacity-100";
+}
+
+.left-side .sidebar-content.editing,
+.right-side .sidebar-content.editing {
   --uno: "translate-x-0 opacity-100";
 }
 
