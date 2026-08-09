@@ -262,6 +262,9 @@ settings:
   moments_filter_video_reservation: Video reservation dynamics
   moments_filter_live_reservation: Live reservation dynamics
   moments_filter_live_dynamic: Live dynamics
+  moments_keyword_filter: Block dynamics by keyword
+  moments_keyword_filter_desc: When enabled, dynamics are filtered if any keyword appears in the author name, title, body, attachment, or original repost. Separate multiple keywords with commas. Matching is case-insensitive.
+  moments_keyword_filter_placeholder: Enter comma-separated keywords
   moments_hide_charge_exclusive: Hide charge-exclusive dynamics
   moments_hide_charge_exclusive_desc: Filter all charge-exclusive dynamics out of the extension feed.
   moments_card_open_mode: Dynamic card click behavior

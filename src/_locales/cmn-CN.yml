@@ -259,6 +259,9 @@ settings:
   moments_filter_video_reservation: 视频预约动态
   moments_filter_live_reservation: 直播预约动态
   moments_filter_live_dynamic: 直播动态
+  moments_keyword_filter: 按关键词屏蔽动态
+  moments_keyword_filter_desc: 开启后，作者昵称、标题、正文、附加卡片或转发原动态中包含任一关键词的动态将被过滤。多个关键词用逗号分隔，不区分大小写。
+  moments_keyword_filter_placeholder: 输入关键词，用逗号分隔
   moments_hide_charge_exclusive: 隐藏充电专属动态
   moments_hide_charge_exclusive_desc: 从插件动态流中过滤所有充电专属动态。
   moments_card_open_mode: 动态卡片点击行为

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
@@ -178,6 +179,24 @@ const gridColumnOptions = computed(() => [
         </template>
       </SettingsItem>
       <SettingsItem
+        :title="$t('settings.moments_keyword_filter')"
+        :desc="$t('settings.moments_keyword_filter_desc')"
+        right-width="auto"
+      >
+        <div
+          class="moment-keyword-filter"
+          :class="{ 'moment-keyword-filter--enabled': settings.momentsEnableKeywordFilter }"
+        >
+          <Input
+            v-if="settings.momentsEnableKeywordFilter"
+            v-model="settings.momentsBlockedKeywords"
+            :placeholder="$t('settings.moments_keyword_filter_placeholder')"
+            class="moment-keyword-filter__input"
+          />
+          <Radio v-model="settings.momentsEnableKeywordFilter" />
+        </div>
+      </SettingsItem>
+      <SettingsItem
         :title="$t('settings.moments_card_open_mode')"
         :desc="$t('settings.moments_card_open_mode_desc')"
         right-width="auto"
@@ -232,5 +251,27 @@ const gridColumnOptions = computed(() => [
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.moment-keyword-filter {
+  display: flex;
+  gap: var(--bew-space-2);
+  align-items: center;
+  justify-content: flex-end;
+
+  &--enabled {
+    width: min(360px, 40vw);
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .moment-keyword-filter--enabled {
+    width: min(280px, 48vw);
+  }
 }
 </style>

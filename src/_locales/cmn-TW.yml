@@ -258,6 +258,9 @@ settings:
   moments_filter_video_reservation: 影片預約動態
   moments_filter_live_reservation: 直播預約動態
   moments_filter_live_dynamic: 直播動態
+  moments_keyword_filter: 按關鍵詞封鎖動態
+  moments_keyword_filter_desc: 啟用後，作者暱稱、標題、正文、附加卡片或轉發原動態中包含任一關鍵詞的動態將被過濾。多個關鍵詞請用逗號分隔，不區分大小寫。
+  moments_keyword_filter_placeholder: 輸入關鍵詞，以逗號分隔
   moments_hide_charge_exclusive: 隱藏充電專屬動態
   moments_hide_charge_exclusive_desc: 從外掛動態流中過濾所有充電專屬動態。
   moments_card_open_mode: 動態卡片點擊行為

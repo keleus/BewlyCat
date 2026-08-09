@@ -320,6 +320,10 @@ export interface Settings {
   momentsHidePgcDynamics: boolean
   /** 过滤专栏动态 */
   momentsHideArticleDynamics: boolean
+  /** 根据标题、正文、作者与附加卡片中的关键词过滤动态 */
+  momentsEnableKeywordFilter: boolean
+  /** 逗号分隔的动态屏蔽关键词 */
+  momentsBlockedKeywords: string
   momentsCardOpenMode: 'dialog' | 'newTab' | 'background'
 
   alwaysUseDock: boolean
@@ -608,6 +612,8 @@ export const originalSettings: Settings = {
   momentsHideForwardDynamics: false,
   momentsHidePgcDynamics: false,
   momentsHideArticleDynamics: false,
+  momentsEnableKeywordFilter: false,
+  momentsBlockedKeywords: '',
   momentsCardOpenMode: 'dialog',
 
   alwaysUseDock: false,

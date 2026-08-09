@@ -1634,8 +1634,37 @@ function loadMoreFilteredMoments() {
   void loadMoments(false, 0, true)
 }
 
-/** 想看分组和任一类型过滤都只允许通过按钮继续分页。 */
-function hasActiveMomentTypeFilters() {
+const blockedMomentKeywords = computed(() => Array.from(new Set(
+  settings.value.momentsBlockedKeywords
+    .split(/[\n,，;；]+/)
+    .map(keyword => keyword.trim().toLowerCase())
+    .filter(Boolean),
+)))
+
+function matchesBlockedMomentKeyword(moment: DisplayMoment) {
+  if (!settings.value.momentsEnableKeywordFilter || !blockedMomentKeywords.value.length)
+    return false
+
+  const searchableText = [
+    moment.author.name,
+    moment.title,
+    moment.text,
+    ...moment.richText.map(segment => segment.text),
+    moment.additional?.title,
+    moment.additional?.desc,
+    moment.forward?.author,
+    moment.forward?.title,
+    moment.forward?.text,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join('\n')
+    .toLowerCase()
+
+  return blockedMomentKeywords.value.some(keyword => searchableText.includes(keyword))
+}
+
+/** 想看分组和任一动态过滤都只允许通过按钮继续分页。 */
+function hasActiveMomentFilters() {
   return settings.value.momentsFilterUpRecommendation
     || settings.value.momentsHideChargeExclusive
     || settings.value.momentsHideVideoReservation
@@ -1647,13 +1676,16 @@ function hasActiveMomentTypeFilters() {
     || settings.value.momentsHideForwardDynamics
     || settings.value.momentsHidePgcDynamics
     || settings.value.momentsHideArticleDynamics
+    || (settings.value.momentsEnableKeywordFilter && blockedMomentKeywords.value.length > 0)
 }
 
 function requiresManualMomentPaging() {
-  return activeMomentGroup.value === 'wanted' || hasActiveMomentTypeFilters()
+  return activeMomentGroup.value === 'wanted' || hasActiveMomentFilters()
 }
 
 function passesMomentSettings(moment: DisplayMoment) {
+  if (matchesBlockedMomentKeyword(moment))
+    return false
   if (settings.value.momentsFilterUpRecommendation && moment.isUpRecommendation)
     return false
   if (settings.value.momentsHideChargeExclusive && moment.isChargeExclusive)
@@ -2620,7 +2652,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     if (requestHostMid) {
       // 按 UP 主筛选：走 feed/all + host_mid，不写入全局全部动态缓存
       let nextPage = momentsFeedPage.value
-      if (hasActiveMomentTypeFilters()) {
+      if (hasActiveMomentFilters()) {
         let scanOffset = offset.value
         let scanUpdateBaseline = updateBaseline.value
         let canContinue = true
@@ -2690,7 +2722,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     else if (requestGroup === 'wanted') {
       await momentsFeedCacheReady
       // 类型过滤开启时，首批缓存刷新与后续填充共用两页请求预算。
-      const maxRequestPages = hasActiveMomentTypeFilters() ? FILTERED_MAX_REQUEST_PAGES : Infinity
+      const maxRequestPages = hasActiveMomentFilters() ? FILTERED_MAX_REQUEST_PAGES : Infinity
       let requestPages = 0
       let cacheEntry = getValidMomentsCache(requestType) ?? {
         items: [],
@@ -2837,7 +2869,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           || (cacheEntry.hasMore && cacheEntry.items.length < MOMENTS_CACHE_MAX_ITEMS)
       }
     }
-    else if (hasActiveMomentTypeFilters()) {
+    else if (hasActiveMomentFilters()) {
       // 过滤开启：单次最多请求两页原始动态，再交给本地过滤
       let scanOffset = offset.value
       let scanUpdateBaseline = updateBaseline.value
@@ -3221,6 +3253,8 @@ watch(
     () => settings.value.momentsHideForwardDynamics,
     () => settings.value.momentsHidePgcDynamics,
     () => settings.value.momentsHideArticleDynamics,
+    () => settings.value.momentsEnableKeywordFilter,
+    () => settings.value.momentsBlockedKeywords,
   ],
   () => {
     if (scrollViewportRef.value)
