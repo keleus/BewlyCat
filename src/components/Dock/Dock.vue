@@ -774,11 +774,13 @@ onUnmounted(() => {
                 <Icon
                   v-if="key === 1"
                   icon="line-md:rotate-270"
+                  class="dock-action-icon"
                   shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
                 />
                 <Icon
                   v-else
                   icon="line-md:arrow-small-up"
+                  class="dock-action-icon"
                   shrink-0 absolute text="size-$bew-icon-size-lg"
                 />
               </button>
@@ -797,11 +799,13 @@ onUnmounted(() => {
               <Icon
                 v-if="reachTop && canRefreshCurrentPage"
                 icon="line-md:rotate-270"
+                class="dock-action-icon"
                 shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
               />
               <Icon
                 v-else
                 icon="line-md:arrow-small-up"
+                class="dock-action-icon"
                 shrink-0 absolute text="size-$bew-icon-size-lg"
               />
             </Transition>
@@ -848,6 +852,7 @@ onUnmounted(() => {
         >
           <Icon
             icon="line-md:rotate-270"
+            class="dock-action-icon"
             shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
           />
         </button>
@@ -860,6 +865,7 @@ onUnmounted(() => {
         >
           <Icon
             icon="line-md:arrow-small-up"
+            class="dock-action-icon"
             shrink-0 absolute text="size-$bew-icon-size-lg"
           />
         </button>
@@ -933,6 +939,11 @@ onUnmounted(() => {
       opacity 300ms ease;
     box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
   }
+}
+
+.back-to-top-or-refresh-btn :deep(.dock-action-icon) {
+  width: var(--bew-icon-size-lg);
+  height: var(--bew-icon-size-lg);
 }
 
 .dock-content {
