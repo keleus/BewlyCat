@@ -163,7 +163,7 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .bili-opus-vie
   box-sizing: border-box !important;
   overflow-x: hidden !important;
 }
-html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode img,
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode img:not(.pswp__img),
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode video,
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode iframe,
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode table {
@@ -827,9 +827,12 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .bili-comment
   padding-right: 0 !important;
   box-sizing: border-box !important;
 }
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel img,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel img:not(.pswp__img),
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel video {
   max-width: 100% !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .pswp__img {
+  max-width: none !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .horizontal-scroll-album,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .bili-album,
