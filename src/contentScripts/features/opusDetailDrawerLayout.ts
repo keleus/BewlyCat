@@ -215,6 +215,24 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-toc {
   left: max(10px, calc((100vw - 980px) / 2 + 20px)) !important;
   right: auto !important;
 }
+/* 专栏 Dialog 内不保留悬浮目录，避免展开/收起时正文横向位移。 */
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-detail:has(.opus-toc) {
+  width: min(860px, calc(100% - 20px)) !important;
+  padding: 12px 12px 40px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .bili-opus-view-wrap:has(> .opus-toc) {
+  width: min(860px, calc(100% - 20px)) !important;
+  margin: 0 auto !important;
+  padding: 12px 12px 40px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .bili-opus-view-wrap:has(> .opus-toc) > .bili-opus-view {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 12px 12px 40px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-toc {
+  display: none !important;
+}
 .bewly-opus-iframe-loading {
   position: fixed !important;
   inset: 0 !important;
@@ -1124,7 +1142,7 @@ function isColumnArticleOpus(root?: HTMLElement | null): boolean {
   if (!(articleChrome instanceof HTMLElement))
     return false
 
-  // 有专栏壳 + 目录，才按专栏收窄（保留目录）
+  // 有专栏壳 + 目录，才按专栏收窄
   try {
     const catalog = document.querySelector(CATALOG_SELECTORS)
     if (catalog instanceof HTMLElement
@@ -2218,7 +2236,7 @@ function applySplitLayout(root: HTMLElement): boolean {
   if (Date.now() - lastMutationAt < 280)
     return false
 
-  // 仅专栏：整页收窄并保留目录；普通图文不走此分支
+  // 仅专栏：整页收窄并隐藏原站目录；普通图文不走此分支
   if (isColumnArticleOpus(root))
     return applyArticleLayout(root)
 
@@ -2353,6 +2371,7 @@ function scheduleStableApply() {
  */
 export function disposeOpusDetailDrawerLayout() {
   clearDeferredSetup()
+  markArticleMode(false)
 
   try {
     observer?.disconnect()
