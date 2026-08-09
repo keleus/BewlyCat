@@ -51,6 +51,7 @@ const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
 const LOAD_SETTLE_DELAY = 1200
 const LOADING_FADE_DURATION = 240
+const LOADING_EXIT_BUTTON_DELAY = 5000
 const PREPARED_LOADING_TIMEOUT = 30_000
 const READY_RETRY_INTERVAL = 500
 const READY_RETRY_MAX = 30
@@ -67,6 +68,7 @@ let state: BewlyWidescreenState | null = null
 let loadingOverlay: HTMLElement | null = null
 let loadingStyleEl: HTMLStyleElement | null = null
 let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
+let loadingExitButtonTimer: ReturnType<typeof setTimeout> | undefined
 let loadingPlaybackCleanup: (() => void) | undefined
 let loadingPreparationFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let loadingMayDismissOnPlaying = false
@@ -471,6 +473,8 @@ function showWidescreenLoading() {
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-direction: column;
+      gap: var(--bew-space-3, 12px);
       overflow: hidden;
       color: var(--bew-text-2, #61666d);
       background: var(--bew-bg, #f6f7f8);
@@ -496,6 +500,32 @@ function showWidescreenLoading() {
       gap: 10px;
       font-size: 13px;
       line-height: 20px;
+    }
+
+    #${LOADING_ROOT_ID} .bewly-widescreen-loading-exit {
+      min-height: var(--bew-control-height, 36px);
+      padding: var(--bew-space-2, 8px) var(--bew-space-4, 16px);
+      border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+      border-radius: var(--bew-interactive-radius, 8px);
+      color: inherit;
+      background: color-mix(in srgb, currentColor 8%, transparent);
+      cursor: pointer;
+      font: inherit;
+      font-size: var(--bew-font-size-control, 13px);
+      font-weight: var(--bew-font-weight-medium, 500);
+      line-height: var(--bew-line-height-control, 18px);
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    #${LOADING_ROOT_ID} .bewly-widescreen-loading-exit:hover {
+      border-color: var(--bew-theme-color, #00aeec);
+      color: var(--bew-theme-color, #00aeec);
+      background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 12%, transparent);
+    }
+
+    #${LOADING_ROOT_ID} .bewly-widescreen-loading-exit:focus-visible {
+      outline: 2px solid var(--bew-theme-color-40, rgba(0, 174, 236, 0.4));
+      outline-offset: var(--bew-space-0-5, 2px);
     }
 
     #${LOADING_ROOT_ID} .bewly-widescreen-loading-icon {
@@ -528,10 +558,23 @@ function showWidescreenLoading() {
   label.textContent = '正在加载宽屏模式…'
   content.appendChild(label)
 
-  overlay.appendChild(content)
+  const exitButton = document.createElement('button')
+  exitButton.type = 'button'
+  exitButton.className = 'bewly-widescreen-loading-exit'
+  exitButton.textContent = '退出遮罩'
+  exitButton.hidden = true
+  exitButton.addEventListener('click', () => exitBewlyWidescreen())
+
+  overlay.append(content, exitButton)
   const mountTarget = document.body ?? document.documentElement
   mountTarget.appendChild(overlay)
   loadingOverlay = overlay
+
+  loadingExitButtonTimer = setTimeout(() => {
+    loadingExitButtonTimer = undefined
+    if (loadingOverlay === overlay && overlay.isConnected)
+      exitButton.hidden = false
+  }, LOADING_EXIT_BUTTON_DELAY)
 
   const handlePlaying = (event: Event) => {
     const video = event.target
@@ -563,6 +606,11 @@ function dismissWidescreenLoadingForPlaying() {
 function removeWidescreenLoading(immediate = false) {
   loadingPlaybackCleanup?.()
   loadingMayDismissOnPlaying = false
+
+  if (loadingExitButtonTimer) {
+    clearTimeout(loadingExitButtonTimer)
+    loadingExitButtonTimer = undefined
+  }
 
   if (loadingPreparationFallbackTimer) {
     clearTimeout(loadingPreparationFallbackTimer)
