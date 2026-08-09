@@ -88,6 +88,34 @@ const API_MOMENT = {
     },
     afterHandle: AHS.J_D,
   },
+  reserveMoment: {
+    url: 'https://api.bilibili.com/x/space/reserve',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      body: {
+        sid: '',
+        csrf: '',
+      },
+    },
+    afterHandle: AHS.J_D,
+  },
+  cancelMomentReservation: {
+    url: 'https://api.bilibili.com/x/space/reserve/cancel',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      body: {
+        sid: '',
+        csrf: '',
+      },
+    },
+    afterHandle: AHS.J_D,
+  },
   getMomentsByUp: {
     url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/all',
     _fetch: {

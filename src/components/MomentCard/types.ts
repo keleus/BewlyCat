@@ -32,6 +32,12 @@ export interface DisplayAdditional {
   isUpRecommendation: boolean
   isVideoReservation: boolean
   isLiveReservation: boolean
+  /** 预约卡片的业务 id（接口字段 rid） */
+  reservationId?: string
+  /** 接口返回的当前预约人数 */
+  reservationTotal?: number
+  /** 当前账号是否已经预约 */
+  isReserved?: boolean
 }
 
 export interface DisplayMoment {

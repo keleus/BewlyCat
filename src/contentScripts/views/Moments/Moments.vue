@@ -176,6 +176,7 @@ let rebalanceTimer: ReturnType<typeof setTimeout> | null = null
 const hoveredMediaId = ref('')
 const previewUrls = reactive<Record<string, string>>({})
 const likingMomentIds = reactive(new Set<string>())
+const reservationLoadingMomentIds = reactive(new Set<string>())
 const watchLaterMomentIds = reactive(new Set<string>())
 const watchLaterLoadingMomentIds = reactive(new Set<string>())
 const videoCidCache = new Map<string, number>()
@@ -459,8 +460,8 @@ function getAdditionalActionText(button: any) {
   if (!button || typeof button !== 'object')
     return '查看'
 
-  // 直播预约：1 为未预约，2 为已预约，必须按状态选择对应文案
-  if (Number(button.type) === 2) {
+  // 预约按钮：status 1 为未预约，2 为已预约。
+  if (Number(button.type) === 1 || Number(button.type) === 2) {
     return Number(button.status) === 2
       ? pickText(button.check?.text, '已预约')
       : pickText(button.uncheck?.text, '预约')
@@ -564,6 +565,12 @@ function getMomentContent(item: any) {
           && Number(additionalCard.button?.type) === 1,
         isLiveReservation: additional.type === 'ADDITIONAL_TYPE_RESERVE'
           && Number(additionalCard.button?.type) === 2,
+        reservationId: additional.type === 'ADDITIONAL_TYPE_RESERVE'
+          ? String(additionalCard.rid || '')
+          : '',
+        reservationTotal: Number(additionalCard.reserve_total || 0),
+        isReserved: additional.type === 'ADDITIONAL_TYPE_RESERVE'
+          && Number(additionalCard.button?.status) === 2,
       }
     : undefined
 
@@ -579,6 +586,9 @@ function getMomentContent(item: any) {
       isUpRecommendation: false,
       isVideoReservation: false,
       isLiveReservation: false,
+      reservationId: '',
+      reservationTotal: 0,
+      isReserved: false,
     }
   }
 
@@ -1278,7 +1288,8 @@ function estimateCardHeight(moment: DisplayMoment) {
       (total, line) => total + Math.max(1, Math.ceil(Array.from(line).length / charsPerLine)),
       0,
     )))
-    return 118 + lineCount * 21 + scaledTextBodyExtra + interactionHeight
+    const additionalHeight = moment.additional ? 68 : 0
+    return 118 + lineCount * 21 + additionalHeight + interactionHeight
   }
   if (moment.forward?.images?.length) {
     const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
@@ -2539,6 +2550,45 @@ async function toggleMomentLike(moment: DisplayMoment) {
   }
 }
 
+async function toggleMomentReservation(moment: DisplayMoment) {
+  const additional = moment.additional
+  const reservationId = additional?.reservationId
+  if (!additional || !reservationId || reservationLoadingMomentIds.has(moment.id))
+    return
+
+  const csrf = getCSRF()
+  if (!csrf) {
+    toast.warning('登录后才能预约')
+    return
+  }
+
+  const wasReserved = Boolean(additional.isReserved)
+  reservationLoadingMomentIds.add(moment.id)
+
+  try {
+    const response = wasReserved
+      ? await api.moment.cancelMomentReservation({ sid: reservationId, csrf })
+      : await api.moment.reserveMoment({ sid: reservationId, csrf })
+    if (response.code !== 0)
+      throw new Error(response.message || (wasReserved ? '取消预约失败' : '预约失败'))
+
+    additional.isReserved = !wasReserved
+    if (typeof additional.reservationTotal === 'number') {
+      additional.reservationTotal = Math.max(
+        0,
+        additional.reservationTotal + (additional.isReserved ? 1 : -1),
+      )
+    }
+    toast.success(additional.isReserved ? '预约成功' : '已取消预约')
+  }
+  catch (error) {
+    toast.error(error instanceof Error ? error.message : '预约操作失败，请稍后重试')
+  }
+  finally {
+    reservationLoadingMomentIds.delete(moment.id)
+  }
+}
+
 function isWatchLaterAdded(target: WatchLaterTarget) {
   const stateKey = getWatchLaterStateKey(target)
   return Boolean(stateKey && watchLaterMomentIds.has(stateKey))
@@ -3616,6 +3666,7 @@ watch(
               :preview-active="Boolean(hoveredMediaId === moment.id && previewUrls[moment.id])"
               :preview-url="previewUrls[moment.id]"
               :is-like-loading="likingMomentIds.has(moment.id)"
+              :is-reservation-loading="reservationLoadingMomentIds.has(moment.id)"
               :is-watch-later-added="isWatchLaterAdded"
               :is-watch-later-loading="isWatchLaterLoading"
               @card-element="element => bindCardEl(element, moment)"
@@ -3629,6 +3680,7 @@ watch(
               @forward-video-click="handleForwardVideoClick"
               @toggle-watch-later="toggleMomentWatchLater"
               @toggle-like="toggleMomentLike"
+              @toggle-reservation="toggleMomentReservation"
             />
             <div v-if="column.bottomPad" class="moments-grid__spacer" :style="{ height: `${column.bottomPad}px` }" />
           </div>
