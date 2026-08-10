@@ -24,6 +24,7 @@ const { forceWhiteIcon } = useTopBarInteraction()
 
 const conflictingHeaderSelectors = ['.fixed-author-header', '.fixed-top-header']
 const conflictingHeaderSelector = conflictingHeaderSelectors.join(',')
+const spaceNavbarSelector = '.nav-bar.space-navbar'
 
 const { isDark } = useDark()
 const { isLayoutEditing } = useLayoutEditMode()
@@ -156,6 +157,9 @@ function handleScroll(arg?: number | Event): void {
       return
     }
   }
+
+  if (isUserSpacePage())
+    scheduleConflictingHeaderVisibilityUpdate()
 
   // 计算滚动距离，只有超过阈值才处理
   const scrollDelta = scrollTop.value - oldScrollTop.value
@@ -303,23 +307,40 @@ function cleanupScrollListeners() {
   }
 }
 
+function isVisibleElement(el: HTMLElement) {
+  const style = window.getComputedStyle(el)
+  return style.display !== 'none'
+    && style.visibility !== 'hidden'
+    && Number.parseFloat(style.opacity) !== 0
+    && el.offsetWidth > 0
+    && el.offsetHeight > 0
+}
+
+function isStickySpaceNavbarVisible() {
+  if (!isUserSpacePage())
+    return false
+
+  const navbar = document.querySelector<HTMLElement>(spaceNavbarSelector)
+  if (!navbar || !isVisibleElement(navbar))
+    return false
+
+  const style = window.getComputedStyle(navbar)
+  if (style.position !== 'sticky')
+    return false
+
+  const rect = navbar.getBoundingClientRect()
+  return rect.top <= 1 && rect.bottom > 0
+}
+
 function updateConflictingHeaderVisibility() {
   bewlyWidescreenActive.value = isBewlyWidescreenActive()
 
-  const hasVisibleHeader = conflictingHeaderSelectors.some((selector) => {
+  const hasVisibleHeader = !isUserSpacePage() && conflictingHeaderSelectors.some((selector) => {
     const el = document.querySelector(selector) as HTMLElement | null
-    if (!el)
-      return false
-
-    const style = window.getComputedStyle(el)
-    return style.display !== 'none'
-      && style.visibility !== 'hidden'
-      && Number.parseFloat(style.opacity) !== 0
-      && el.offsetWidth > 0
-      && el.offsetHeight > 0
+    return el ? isVisibleElement(el) : false
   })
 
-  forceHideTopBar.value = hasVisibleHeader
+  forceHideTopBar.value = hasVisibleHeader || isStickySpaceNavbarVisible()
   applyTopBarVisibility()
 }
 
@@ -341,12 +362,16 @@ let conflictingHeaderDiscoveryDeadline = 0
 const CONFLICTING_HEADER_DISCOVERY_TIMEOUT = 15_000
 
 function isConflictingHeaderPage() {
-  return (location.hostname === 't.bilibili.com' && /^\/\d+/.test(location.pathname))
+  return isUserSpacePage()
+    || (location.hostname === 't.bilibili.com' && /^\/\d+/.test(location.pathname))
     || (location.hostname === 'www.bilibili.com'
       && (/^\/read\/cv\d+/.test(location.pathname) || /^\/opus\/\d+/.test(location.pathname)))
 }
 
 function getConflictingHeaderPageRootSelector() {
+  if (isUserSpacePage())
+    return '#app'
+
   if (location.hostname === 't.bilibili.com' || location.pathname.startsWith('/opus/'))
     return '#opus-detail-app, #app'
 
@@ -355,9 +380,13 @@ function getConflictingHeaderPageRootSelector() {
 
 function findConflictingHeaderPageRoot() {
   const rootSelector = getConflictingHeaderPageRootSelector()
-  const header = document.querySelector<HTMLElement>(conflictingHeaderSelector)
+  const header = document.querySelector<HTMLElement>(getConflictingHeaderSelector())
   return header?.closest<HTMLElement>(rootSelector)
     ?? document.querySelector<HTMLElement>(rootSelector)
+}
+
+function getConflictingHeaderSelector() {
+  return isUserSpacePage() ? spaceNavbarSelector : conflictingHeaderSelector
 }
 
 function scheduleConflictingHeaderVisibilityUpdate() {
@@ -372,7 +401,7 @@ function scheduleConflictingHeaderVisibilityUpdate() {
 
 function containsConflictingHeader(node: Node) {
   return node instanceof Element
-    && (node.matches(conflictingHeaderSelector) || !!node.querySelector(conflictingHeaderSelector))
+    && (node.matches(getConflictingHeaderSelector()) || !!node.querySelector(getConflictingHeaderSelector()))
 }
 
 function scheduleConflictingHeaderObserverRefresh() {
@@ -411,7 +440,7 @@ function scheduleConflictingHeaderDiscovery() {
       return
     }
 
-    if (document.querySelector(conflictingHeaderSelector))
+    if (document.querySelector(getConflictingHeaderSelector()))
       setupConflictingHeaderObserver()
     else
       scheduleConflictingHeaderDiscovery()
@@ -455,7 +484,7 @@ function setupConflictingHeaderObserver() {
     return
   }
 
-  const headers = Array.from(document.querySelectorAll<HTMLElement>(conflictingHeaderSelector))
+  const headers = Array.from(document.querySelectorAll<HTMLElement>(getConflictingHeaderSelector()))
   if (!headers.length) {
     // 目标头部是懒挂载节点；发现阶段限制在当前页面应用根内。
     conflictingHeaderObserver.observe(pageRoot, { childList: true, subtree: true })
