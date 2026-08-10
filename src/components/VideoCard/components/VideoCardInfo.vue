@@ -128,7 +128,7 @@ const content = computed(() => {
           <!-- 使用与真实标题完全相同的样式和高度 -->
           <div
             class="keep-two-lines" :class="[
-              content.isModernLayout ? 'w-[calc(100%-40px)]' : 'w-full',
+              content.isModernLayout && moreBtn ? 'w-[calc(100%-40px)]' : 'w-full',
               content.isModernLayout ? 'video-card-title' : '',
             ]"
             :style="titleStyle"
@@ -139,7 +139,7 @@ const content = computed(() => {
             <div w="3/4" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em;" />
           </div>
           <div
-            v-if="content.isModernLayout" shrink-0 w-8 h-8 rounded="1/2"
+            v-if="content.isModernLayout && moreBtn" shrink-0 w-8 h-8 rounded="1/2"
             bg="$bew-skeleton"
           />
         </div>

@@ -446,6 +446,7 @@ settings:
   show_video_card_like_count: Show like count
   show_video_card_duration: Show video duration
   show_video_card_watch_later: Show Watch Later button
+  show_video_card_more_button: Show more menu button
   show_video_watched_badge: Track and show watched
   auto_hide_top_bar: Auto-hide top bar
   video_page_top_bar_config: Video page top bar configuration

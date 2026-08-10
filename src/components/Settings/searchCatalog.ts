@@ -326,6 +326,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_video_card_duration',
     'settings.show_video_watched_badge',
     'settings.show_video_card_watch_later',
+    'settings.show_video_card_more_button',
     'settings.group_video_card_context_menu',
     'settings.video_card_context_menu_follow_user',
     'video_card.operation.not_interested',

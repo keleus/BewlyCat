@@ -266,6 +266,7 @@ export interface Settings {
   showVideoCardLikeCount: boolean
   showVideoCardDuration: boolean
   showVideoCardWatchLater: boolean
+  showVideoCardMoreButton: boolean
   showVideoWatchedBadge: boolean
   videoCardContextMenuConfig: VideoCardContextMenuConfigItem[]
 
@@ -559,6 +560,7 @@ export const originalSettings: Settings = {
   showVideoCardLikeCount: true,
   showVideoCardDuration: true,
   showVideoCardWatchLater: true,
+  showVideoCardMoreButton: true,
   showVideoWatchedBadge: false,
   videoCardContextMenuConfig: defaultVideoCardContextMenuConfig.map(item => ({ ...item })),
 
