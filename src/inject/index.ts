@@ -548,6 +548,13 @@ else if (shouldInitializePageScript) {
       window.dispatchEvent(new CustomEvent('pushstate', { detail: args }))
     },
   )
+  injectFunction(
+    window.history,
+    ['replaceState'],
+    (...args: any[]) => {
+      window.dispatchEvent(new CustomEvent('replacestate', { detail: args }))
+    },
+  )
 
   // 获取IP地理位置字符串
   function getLocationString(replyItem: any) {

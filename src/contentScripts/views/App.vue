@@ -1527,6 +1527,8 @@ if (settings.value.cleanUrlArgument) {
 
   let isCleaningUrl = false // 防止重复执行
   let cleanupTimer: ReturnType<typeof setTimeout> | null = null
+  let lastCleanedUrl = window.location.href
+  let urlChangeSyncQueued = false
 
   function cleanUrlParams() {
     // 防止在页面加载过程中执行URL清理
@@ -1565,12 +1567,14 @@ if (settings.value.cleanUrlArgument) {
         if (window.requestIdleCallback) {
           window.requestIdleCallback(() => {
             history.replaceState(null, '', newUrl)
+            lastCleanedUrl = window.location.href
             isCleaningUrl = false
           })
         }
         else {
           setTimeout(() => {
             history.replaceState(null, '', newUrl)
+            lastCleanedUrl = window.location.href
             isCleaningUrl = false
           }, 0)
         }
@@ -1605,36 +1609,37 @@ if (settings.value.cleanUrlArgument) {
     window.addEventListener('load', () => scheduleCleanup(1000), { once: true })
   }
 
-  // 监听URL变化，但增加防抖和延迟
-  if (typeof window !== 'undefined') {
-    let lastUrl = window.location.href
-    let urlCheckTimer: ReturnType<typeof setTimeout> | null = null
+  function syncUrlCleanupAfterNavigation() {
+    if (urlChangeSyncQueued)
+      return
 
-    const checkUrlChange = () => {
-      if (window.location.href !== lastUrl) {
-        lastUrl = window.location.href
-        scheduleCleanup(2000) // 页面跳转后延迟更长时间
-      }
-      urlCheckTimer = setTimeout(checkUrlChange, 1000) // 降低检查频率
-    }
+    urlChangeSyncQueued = true
+    // pushState/replaceState 通知在原生 history 方法执行前派发，等微任务
+    // 再读取最终 URL，并合并同一轮中的重复路由事件。
+    queueMicrotask(() => {
+      urlChangeSyncQueued = false
+      if (window.location.href === lastCleanedUrl)
+        return
 
-    // 页面可见性变化时停止/恢复检查
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        if (urlCheckTimer) {
-          clearTimeout(urlCheckTimer)
-          urlCheckTimer = null
-        }
-      }
-      else {
-        if (!urlCheckTimer) {
-          checkUrlChange()
-        }
-      }
+      lastCleanedUrl = window.location.href
+      scheduleCleanup(2000)
     })
-
-    checkUrlChange()
   }
+
+  useEventListener(window, 'pushstate', syncUrlCleanupAfterNavigation)
+  useEventListener(window, 'replacestate', syncUrlCleanupAfterNavigation)
+  useEventListener(window, 'popstate', syncUrlCleanupAfterNavigation)
+  useEventListener(window, 'hashchange', syncUrlCleanupAfterNavigation)
+  useEventListener(window, 'pageshow', syncUrlCleanupAfterNavigation)
+  useEventListener(document, 'visibilitychange', () => {
+    if (!document.hidden)
+      syncUrlCleanupAfterNavigation()
+  })
+
+  onUnmounted(() => {
+    if (cleanupTimer)
+      clearTimeout(cleanupTimer)
+  })
 }
 </script>
 
