@@ -1008,7 +1008,10 @@ function injectLayoutStyle() {
       color: var(--bewly-widescreen-text-primary);
       border-left: 1px solid var(--bewly-widescreen-sidebar-border);
       box-shadow: -12px 0 28px rgba(0, 0, 0, 0.28);
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
       transform: translateX(var(--bewly-widescreen-sidebar-offset));
       transition: transform 180ms ease;
       will-change: transform;
@@ -1094,15 +1097,11 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-sidebar-top {
       position: relative;
       z-index: 0;
-      flex: 0 1 auto;
-      min-height: 0;
+      flex: 0 0 auto;
       padding: 8px 10px 8px;
       border-bottom: 1px solid var(--bewly-widescreen-divider);
       background: var(--bewly-widescreen-surface-bg);
-      overflow-x: hidden;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      scrollbar-gutter: stable;
+      overflow: visible;
     }
 
     #${ROOT_ID} .bewly-widescreen-toolbar {
@@ -1544,22 +1543,27 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-panels {
       position: relative;
       z-index: 1;
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow: hidden;
+      width: 100%;
+      flex: 0 0 auto;
+      min-height: auto;
+      overflow: visible;
       background: var(--bewly-widescreen-sidebar-bg);
     }
 
     #${ROOT_ID} .bewly-widescreen-panel {
       width: 100%;
-      height: 100%;
-      overflow: auto;
-      overscroll-behavior: contain;
+      height: auto;
+      overflow: visible;
       padding: 8px 8px 16px;
     }
 
+    #${ROOT_ID} .bewly-widescreen-panel:not([hidden]) {
+      height: auto;
+      overflow: visible;
+    }
+
     /* B 站的表情面板会在视口底部空间不足时向上展开。打开期间允许它
-       越过评论面板顶边覆盖简介，关闭后恢复由评论面板负责滚动。 */
+       越过评论面板顶边覆盖简介，关闭后恢复由侧栏外层负责滚动。 */
     #${ROOT_ID} .bewly-widescreen-panels[data-bewly-comment-emoji-open],
     #${ROOT_ID} .bewly-widescreen-panel[data-bewly-comment-emoji-open] {
       overflow: visible;
@@ -1576,11 +1580,9 @@ function injectLayoutStyle() {
       margin-right: 0 !important;
     }
 
-    /* B 站的选集组件会继承普通视频页的固定高度。宽屏模式下由整个
-       选集面板负责滚动，列表便可以使用直到视口底部的全部剩余空间。 */
+    /* Keep the playlist panel in the sidebar's outer scroll flow. */
     #${ROOT_ID} .bewly-widescreen-panel-playlist {
-      overflow-y: auto;
-      scrollbar-gutter: stable;
+      overflow: visible;
     }
 
     #${ROOT_ID} .bewly-widescreen-panel-playlist .video-pod,
@@ -2007,7 +2009,7 @@ function expandDanmakuTab(currentState: BewlyWidescreenState) {
   if (!focusable)
     return
 
-  currentState.panels.danmaku.scrollTo({ top: 0, behavior: 'smooth' })
+  currentState.sidebarEl.scrollTo({ top: 0, behavior: 'smooth' })
   setTimeout(() => {
     focusable.click()
     focusable.focus?.({ preventScroll: true })
