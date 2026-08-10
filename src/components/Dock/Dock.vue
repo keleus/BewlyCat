@@ -824,11 +824,13 @@ onUnmounted(() => {
             <Icon
               v-if="showUndo"
               icon="mdi:undo-variant"
+              class="dock-action-icon"
               shrink-0 absolute text="size-$bew-icon-size-lg"
             />
             <Icon
               v-else-if="showForward"
               icon="mdi:redo-variant"
+              class="dock-action-icon"
               shrink-0 absolute text="size-$bew-icon-size-lg"
             />
           </button>
@@ -879,11 +881,13 @@ onUnmounted(() => {
           <Icon
             v-if="showUndo"
             icon="mdi:undo-variant"
+            class="dock-action-icon"
             shrink-0 absolute text="size-$bew-icon-size-lg"
           />
           <Icon
             v-else-if="showForward"
             icon="mdi:redo-variant"
+            class="dock-action-icon"
             shrink-0 absolute text="size-$bew-icon-size-lg"
           />
         </button>
