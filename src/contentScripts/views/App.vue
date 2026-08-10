@@ -1102,6 +1102,9 @@ const dockPageTitle = computed<string | undefined>(() => {
   if (!titleKey)
     return undefined
 
+  if (activatedPage.value === AppPage.Home)
+    return `首页-${t(titleKey)}-哔哩哔哩`
+
   return `${t(titleKey)} - 哔哩哔哩`
 })
 
