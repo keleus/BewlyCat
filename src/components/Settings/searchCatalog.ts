@@ -178,9 +178,11 @@ const autoPlayModeOptionKeys = [
 const topBarGlobalTitleKeys = [
   'settings.group_topbar',
   'settings.topbar_display_settings',
+  'settings.topbar_style_settings',
   'settings.auto_hide_top_bar',
   'settings.video_page_top_bar_config',
   'settings.always_use_transparent_top_bar',
+  'settings.always_use_frosted_glass_top_bar',
   'settings.enable_top_bar_gradient',
   'settings.show_top_bar_theme_color_gradient',
   'settings.open_top_bar_items_in_bewly',

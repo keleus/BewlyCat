@@ -275,6 +275,7 @@ export interface Settings {
   showLayoutEditButton: boolean
   videoPageTopBarConfig: VideoPageTopBarConfig
   alwaysUseTransparentTopBar: boolean
+  alwaysUseFrostedGlassTopBar: boolean
   enableTopBarGradient: boolean
   showTopBarThemeColorGradient: boolean
   showBewlyOrBiliPageSwitcher: boolean
@@ -569,6 +570,7 @@ export const originalSettings: Settings = {
   showLayoutEditButton: true,
   videoPageTopBarConfig: VideoPageTopBarConfig.ShowOnScroll,
   alwaysUseTransparentTopBar: false,
+  alwaysUseFrostedGlassTopBar: false,
   enableTopBarGradient: true,
   showTopBarThemeColorGradient: true,
   showBewlyOrBiliPageSwitcher: true,

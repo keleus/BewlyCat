@@ -261,6 +261,8 @@ settings:
   topbar_user_menu: 頂欄用戶選單
   topbar_display_settings: 頂欄顯示同操作
   topbar_display_settings_desc: 調整頂欄喺唔同頁面同互動情況之下嘅顯示方式。
+  topbar_style_settings: 頂欄樣式
+  topbar_style_settings_desc: 調整頂欄背景、漸變同頁面背景適配方式。
   group_navigation: Dock同側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄
@@ -473,6 +475,8 @@ settings:
   show_video_watched_badge: 記錄並顯示睇過
   auto_hide_top_bar: 自動收埋頂欄
   always_use_transparent_top_bar: 頂欄始終使用透明(舊版)樣式
+  always_use_frosted_glass_top_bar: 頂欄始終使用毛玻璃樣式
+  always_use_frosted_glass_top_bar_desc: 就算頁面有背景圖，都始終使用同首頁冇背景圖嗰陣一樣嘅頂欄樣式。
   enable_top_bar_gradient: 啟用頂欄漸變效果
   enable_top_bar_gradient_desc: 開啟後頂欄預設使用毛玻璃漸變，關閉後改為實色背景。
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）

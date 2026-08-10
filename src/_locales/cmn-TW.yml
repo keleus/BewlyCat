@@ -232,6 +232,8 @@ settings:
   topbar_user_menu: 頂部列使用者選單
   topbar_display_settings: 頂部列顯示與行為
   topbar_display_settings_desc: 調整頂部列在不同頁面與互動情境下的顯示方式。
+  topbar_style_settings: 頂部列樣式
+  topbar_style_settings_desc: 調整頂部列背景、漸變和頁面背景適配方式。
   group_navigation: Dock與側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄
@@ -480,6 +482,8 @@ settings:
     showOnMouse: 滑鼠顯示
     showOnScroll: 滾動顯示
   always_use_transparent_top_bar: 頂部列始終使用透明(舊版)樣式
+  always_use_frosted_glass_top_bar: 頂部列始終使用毛玻璃樣式
+  always_use_frosted_glass_top_bar_desc: 即使頁面有背景圖，也始終使用與首頁無背景圖時相同的頂部列樣式。
   enable_top_bar_gradient: 啟用頂部列漸變效果
   enable_top_bar_gradient_desc: 開啟後頂部列預設使用毛玻璃漸變，關閉後改為實色背景。
   show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）

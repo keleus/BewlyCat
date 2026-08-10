@@ -64,6 +64,10 @@ export function useTopBarInteraction() {
     if (settings.value.alwaysUseTransparentTopBar)
       return true
 
+    // 强制使用无背景图首页的标准顶栏样式，不再根据页面壁纸切换为白色图标与阴影背景
+    if (settings.value.alwaysUseFrostedGlassTopBar)
+      return false
+
     if (
       (isHomePage() && settings.value.useOriginalBilibiliHomepage)
       || (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))
