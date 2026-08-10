@@ -227,7 +227,10 @@ function toggleChannel(value: string) {
             :title="$t('settings.top_bar_logo_style_opt.icon')"
             @click="settings.topBarLogoStyle = 'icon'"
           >
-            <span class="bew-segment-control__icon i-tabler:brand-bilibili" aria-hidden="true" />
+            <span
+              class="logo-style-picker__icon bew-segment-control__icon i-tabler:brand-bilibili"
+              aria-hidden="true"
+            />
           </button>
           <button
             type="button"
@@ -516,6 +519,12 @@ function toggleChannel(value: string) {
 
   &__brand-option {
     padding-inline: var(--bew-space-3);
+  }
+
+  &__icon {
+    width: var(--bew-icon-size-md);
+    height: var(--bew-icon-size-md);
+    font-size: var(--bew-icon-size-md);
   }
 
   &__brand {
