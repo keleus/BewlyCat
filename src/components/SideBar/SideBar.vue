@@ -78,6 +78,7 @@ function toggleHideSidebar(hide: boolean) {
       ref="sideBarContentRef"
       class="sidebar-content"
       data-layout-edit-target="sidebar"
+      data-layout-edit-direct
       data-layout-settings-menu="BewlyComponents"
       data-layout-settings-page="dock"
       data-layout-settings-title-key="settings.group_sidebar"
@@ -136,17 +137,20 @@ function toggleHideSidebar(hide: boolean) {
         </Button>
       </Tooltip>
       <Tooltip
-        v-if="settings.showLayoutEditButton && !isLayoutEditing"
-        :content="$t('layout_editor.edit_sidebar')"
+        v-if="settings.showLayoutEditButton || isLayoutEditing"
+        :content="$t(isLayoutEditing ? 'layout_editor.finish' : 'layout_editor.edit_sidebar')"
         placement="left"
       >
         <Button
           class="ctrl-btn sidebar-edit-button"
+          data-layout-edit-control
+          :class="{ active: isLayoutEditing }"
+          :aria-pressed="isLayoutEditing"
           style="backdrop-filter: var(--bew-filter-glass-1);"
           center size="small" round
           @click="toggleLayoutEditMode('sidebar')"
         >
-          <Icon icon="mingcute:edit-3-line" />
+          <Icon :icon="isLayoutEditing ? 'mingcute:check-line' : 'mingcute:edit-3-line'" />
         </Button>
       </Tooltip>
     </div>
