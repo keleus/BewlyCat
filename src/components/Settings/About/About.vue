@@ -216,7 +216,7 @@ async function handleCopyEnvironmentInfo() {
             class="contributors-image-link"
           >
             <img
-              src="https://contrib.rocks/image?repo=keleus/BewlyCat"
+              :src="browser.runtime.getURL('/assets/contributors.svg')"
               :alt="$t('settings.current_contributors')"
               loading="lazy"
               @error="handleContributorImageError"
