@@ -39,6 +39,8 @@ const activatedTab = ref<number>(0)
 const isLoading = ref<boolean>(false)
 // when noMoreContent is true, the user can't scroll down to load more content
 const noMoreContent = ref<boolean>(false)
+// API 报错时为 true
+const loadFailed = ref<boolean>(false)
 const livePage = ref<number>(1)
 const historysWrap = ref<HTMLElement>() as Ref<HTMLElement>
 
@@ -142,6 +144,7 @@ async function getHistoryList(type: Business, view_at = 0 as number) {
     return
 
   isLoading.value = true
+  loadFailed.value = false
 
   try {
     const res: HistoryResult = await api.history.getHistoryList({
@@ -151,7 +154,7 @@ async function getHistoryList(type: Business, view_at = 0 as number) {
 
     if (res.code === 0) {
       // 如果返回的数据为空，说明没有更多内容了
-      if (!res.data.list || res.data.list.length === 0) {
+      if (!res.data?.list || res.data.list.length === 0) {
         noMoreContent.value = true
         return
       }
@@ -161,9 +164,15 @@ async function getHistoryList(type: Business, view_at = 0 as number) {
         historys.push(...res.data.list)
       }
     }
+    else {
+      // API 报错避免误显示空状态
+      noMoreContent.value = true
+    }
   }
   catch (error) {
     console.error('Failed to load history list:', error)
+    loadFailed.value = true
+    noMoreContent.value = true
   }
   finally {
     isLoading.value = false
@@ -221,10 +230,9 @@ defineExpose({
     <!-- top bar -->
     <header
       flex="~ items-center justify-between"
-      p="x-6"
+      p="x-6 y-5"
       pos="sticky top-0 left-0"
       w="full"
-      h-50px
       z="2"
     >
       <div flex="~">
@@ -256,7 +264,7 @@ defineExpose({
       overflow-y-auto
       rounded="$bew-radius"
       flex="~ col gap-2"
-      p="x-4"
+      p="x-3"
       flex-1
       min-h-0
       pos="relative"
@@ -270,11 +278,20 @@ defineExpose({
 
       <!-- empty -->
       <Empty
-        v-if="!isLoading && historys.length === 0"
+        v-if="!isLoading && !loadFailed && historys.length === 0"
         pos="absolute top-0 left-0"
-        bg="$bew-content"
         z="0" w="full" h="full"
         flex="~ items-center"
+        rounded="$bew-radius"
+      />
+
+      <!-- load failed -->
+      <Empty
+        v-if="!isLoading && loadFailed && historys.length === 0"
+        :description="$t('common.load_failed')"
+        pos="absolute top-0 left-0"
+        z="0" w="full" h="full"
+        flex="~ col items-center justify-center"
         rounded="$bew-radius"
       />
 
