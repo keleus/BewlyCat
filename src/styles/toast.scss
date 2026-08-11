@@ -35,18 +35,6 @@
   font-family: inherit;
   overflow: hidden;
 
-  &::before {
-    position: absolute;
-    top: 8px;
-    bottom: 8px;
-    left: 0;
-    width: 2px;
-    border-radius: 0 var(--bew-radius-full) var(--bew-radius-full) 0;
-    background: var(--bew-toast-accent);
-    box-shadow: 0 0 12px var(--bew-toast-accent-soft);
-    content: "";
-  }
-
   &.Vue-Toastification__toast--info {
     --bew-toast-accent: var(--bew-info-color);
     --bew-toast-accent-soft: var(--bew-info-color-20);
