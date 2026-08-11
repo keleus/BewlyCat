@@ -259,6 +259,12 @@ settings:
   group_new_moments_page_desc: 此頁面並非最終成品，相關形式後續可能會有較大調整。
   group_moments_sidebar: 動態頁左側元件
   group_moments_interaction: 動態卡片互動
+  group_environment_info: 環境資訊
+  copy_environment_info: 複製環境資訊
+  copy_environment_info_desc: 一次複製瀏覽器、瀏覽器版本和 BewlyCat 版本，方便提交問題。
+  environment_info_copied: 已複製環境資訊
+  environment_info_copy_failed: 複製環境資訊失敗
+  environment_info_unknown: 未知
   group_settings_sync: 瀏覽器雲端同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 顯示使用者卡片

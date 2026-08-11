@@ -260,6 +260,12 @@ settings:
   group_new_moments_page_desc: 此页面并非最终成品，相关形态后续可能会有较大调整。
   group_moments_sidebar: 动态页左侧组件
   group_moments_interaction: 动态卡片交互
+  group_environment_info: 环境信息
+  copy_environment_info: 复制环境信息
+  copy_environment_info_desc: 一次复制浏览器、浏览器版本和 BewlyCat 版本，方便提交问题。
+  environment_info_copied: 环境信息已复制
+  environment_info_copy_failed: 复制环境信息失败
+  environment_info_unknown: 未知
   group_settings_sync: 浏览器云同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 显示用户卡片

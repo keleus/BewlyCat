@@ -263,6 +263,12 @@ settings:
   group_new_moments_page_desc: This page is not final and may change significantly in future updates.
   group_moments_sidebar: Dynamic Feed Sidebar
   group_moments_interaction: Dynamic Card Interaction
+  group_environment_info: Environment information
+  copy_environment_info: Copy environment information
+  copy_environment_info_desc: Copy your browser, browser version, and BewlyCat version for bug reports.
+  environment_info_copied: Environment information copied
+  environment_info_copy_failed: Failed to copy environment information
+  environment_info_unknown: Unknown
   group_settings_sync: Browser cloud sync
   group_version_reminder: Version reminders
   original_moments_show_user_card: Show user card

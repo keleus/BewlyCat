@@ -1,9 +1,13 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 import browser from 'webextension-polyfill'
 
+import Button from '~/components/Button.vue'
 import Radio from '~/components/Radio.vue'
 import { useSettingsCloudSyncPreference } from '~/composables/useSettingsCloudSyncPreference'
 import { settings } from '~/logic'
+import { getBrowserInfo, parseBrowserInfo } from '~/utils/browserInfo'
 
 import { version } from '../../../../package.json'
 import Maintenance from '../Advanced/Maintenance.vue'
@@ -14,11 +18,16 @@ import SettingsSectionHeading from '../components/SettingsSectionHeading.vue'
 const hasNewVersion = ref<boolean>(false)
 const contributorsImageFailed = ref(false)
 const settingsCloudSyncPreference = useSettingsCloudSyncPreference()
+const browserInfo = ref(parseBrowserInfo())
+const isCopyingEnvironmentInfo = ref(false)
+const { t } = useI18n()
+const toast = useToast()
 
 const isDev = computed((): boolean => import.meta.env.DEV)
 
-onMounted(() => {
+onMounted(async () => {
   checkGitHubRelease()
+  browserInfo.value = await getBrowserInfo()
 })
 
 async function checkGitHubRelease() {
@@ -44,6 +53,30 @@ async function checkGitHubRelease() {
 
 function handleContributorImageError() {
   contributorsImageFailed.value = true
+}
+
+async function handleCopyEnvironmentInfo() {
+  if (isCopyingEnvironmentInfo.value)
+    return
+
+  const unknownValue = t('settings.environment_info_unknown')
+  const text = [
+    `- 浏览器：${browserInfo.value.name ?? unknownValue}`,
+    `- 浏览器版本：${browserInfo.value.version ?? unknownValue}`,
+    `- BewlyCat 版本：${version}`,
+  ].join('\n')
+
+  isCopyingEnvironmentInfo.value = true
+  try {
+    await navigator.clipboard.writeText(text)
+    toast.success(t('settings.environment_info_copied'))
+  }
+  catch {
+    toast.error(t('settings.environment_info_copy_failed'))
+  }
+  finally {
+    isCopyingEnvironmentInfo.value = false
+  }
 }
 </script>
 
@@ -86,6 +119,26 @@ function handleContributorImageError() {
       </section>
 
       <section class="about-maintenance">
+        <SettingsItemGroup :title="$t('settings.group_environment_info')">
+          <SettingsItem
+            :title="$t('settings.copy_environment_info')"
+            :desc="$t('settings.copy_environment_info_desc')"
+            right-width="auto"
+          >
+            <Button
+              type="secondary"
+              size="small"
+              :disabled="isCopyingEnvironmentInfo"
+              @click="handleCopyEnvironmentInfo"
+            >
+              <template #left>
+                <div i-tabler:copy />
+              </template>
+              {{ $t('settings.copy_environment_info') }}
+            </Button>
+          </SettingsItem>
+        </SettingsItemGroup>
+
         <SettingsItemGroup :title="$t('settings.group_settings_sync')">
           <SettingsItem
             :title="$t('settings.enable_settings_sync')"
@@ -176,11 +229,6 @@ function handleContributorImageError() {
 </template>
 
 <style lang="scss" scoped>
-.btn {
-  --b-button-color: var(--bew-fill-1);
-  --b-button-color-hover: var(--bew-fill-2);
-}
-
 .title {
   --uno: "fw-bold mb-2";
 }
