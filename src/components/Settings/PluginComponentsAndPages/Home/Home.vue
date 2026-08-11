@@ -43,13 +43,15 @@ const qrcodeMsg = ref<string>('')
 
 const appAccessToken = computed(() => appAuthTokens.value.accessToken)
 
-onDeactivated(() => {
+function cleanupQRCodeDialog() {
   clearInterval(pollLoginQRCodeInterval.value)
-})
+  pollLoginQRCodeInterval.value = null
+  showQRCodeDialog.value = false
+}
 
-onBeforeUnmount(() => {
-  clearInterval(pollLoginQRCodeInterval.value)
-})
+onDeactivated(cleanupQRCodeDialog)
+
+onBeforeUnmount(cleanupQRCodeDialog)
 
 function handleRecommendationModeChange(mode: RecommendationMode) {
   if (mode === 'app' && !hasValidAppAuthTokens())
@@ -60,7 +62,8 @@ async function handleAuthorize() {
   showQRCodeDialog.value = true
   try {
     await setLoginQRCode()
-    pollLoginQRCode()
+    if (showQRCodeDialog.value)
+      pollLoginQRCode()
   }
   catch (error) {
     console.error(error)
@@ -95,9 +98,8 @@ function pollLoginQRCode() {
     if (pollRes.code !== 0)
       qrcodeMsg.value = pollRes.message
     if (pollRes.code === 0) {
-      showQRCodeDialog.value = false
+      cleanupQRCodeDialog()
       saveAppAuthTokens(pollRes.data)
-      clearInterval(pollLoginQRCodeInterval.value)
       toast.success('授权成功')
     }
     else if (pollRes.code === 86038) {
@@ -110,8 +112,7 @@ function pollLoginQRCode() {
 }
 
 function handleCloseQRCodeDialog() {
-  clearInterval(pollLoginQRCodeInterval.value)
-  showQRCodeDialog.value = false
+  cleanupQRCodeDialog()
 }
 
 function handleExport(filterType: 'title' | 'user') {
