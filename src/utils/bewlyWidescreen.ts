@@ -51,6 +51,7 @@ const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
 const LOAD_SETTLE_DELAY = 1200
 const LOADING_FADE_DURATION = 240
+const LOADING_EXIT_BUTTON_DELAY = 5000
 const PREPARED_LOADING_TIMEOUT = 30_000
 const READY_RETRY_INTERVAL = 500
 const READY_RETRY_MAX = 30
@@ -67,9 +68,9 @@ let state: BewlyWidescreenState | null = null
 let loadingOverlay: HTMLElement | null = null
 let loadingStyleEl: HTMLStyleElement | null = null
 let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
+let loadingExitButtonTimer: ReturnType<typeof setTimeout> | undefined
 let loadingPlaybackCleanup: (() => void) | undefined
 let loadingPreparationFallbackTimer: ReturnType<typeof setTimeout> | undefined
-let loadingMayDismissOnPlaying = false
 let loadingSuppressedUntilExit = false
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
 let loadFallbackTimer: ReturnType<typeof setTimeout> | undefined
@@ -471,6 +472,8 @@ function showWidescreenLoading() {
       display: flex;
       align-items: center;
       justify-content: center;
+      flex-direction: column;
+      gap: var(--bew-space-3, 12px);
       overflow: hidden;
       color: var(--bew-text-2, #61666d);
       background: var(--bew-bg, #f6f7f8);
@@ -496,6 +499,32 @@ function showWidescreenLoading() {
       gap: 10px;
       font-size: 13px;
       line-height: 20px;
+    }
+
+    #${LOADING_ROOT_ID} .bewly-widescreen-loading-exit {
+      min-height: var(--bew-control-height, 36px);
+      padding: var(--bew-space-2, 8px) var(--bew-space-4, 16px);
+      border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+      border-radius: var(--bew-interactive-radius, 8px);
+      color: inherit;
+      background: color-mix(in srgb, currentColor 8%, transparent);
+      cursor: pointer;
+      font: inherit;
+      font-size: var(--bew-font-size-control, 13px);
+      font-weight: var(--bew-font-weight-medium, 500);
+      line-height: var(--bew-line-height-control, 18px);
+      transition: background-color 150ms ease, border-color 150ms ease;
+    }
+
+    #${LOADING_ROOT_ID} .bewly-widescreen-loading-exit:hover {
+      border-color: var(--bew-theme-color, #00aeec);
+      color: var(--bew-theme-color, #00aeec);
+      background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 12%, transparent);
+    }
+
+    #${LOADING_ROOT_ID} .bewly-widescreen-loading-exit:focus-visible {
+      outline: 2px solid var(--bew-theme-color-40, rgba(0, 174, 236, 0.4));
+      outline-offset: var(--bew-space-0-5, 2px);
     }
 
     #${LOADING_ROOT_ID} .bewly-widescreen-loading-icon {
@@ -528,16 +557,28 @@ function showWidescreenLoading() {
   label.textContent = '正在加载宽屏模式…'
   content.appendChild(label)
 
-  overlay.appendChild(content)
+  const exitButton = document.createElement('button')
+  exitButton.type = 'button'
+  exitButton.className = 'bewly-widescreen-loading-exit'
+  exitButton.textContent = '退出遮罩'
+  exitButton.hidden = true
+  exitButton.addEventListener('click', () => exitBewlyWidescreen())
+
+  overlay.append(content, exitButton)
   const mountTarget = document.body ?? document.documentElement
   mountTarget.appendChild(overlay)
   loadingOverlay = overlay
 
+  loadingExitButtonTimer = setTimeout(() => {
+    loadingExitButtonTimer = undefined
+    if (loadingOverlay === overlay && overlay.isConnected)
+      exitButton.hidden = false
+  }, LOADING_EXIT_BUTTON_DELAY)
+
   const handlePlaying = (event: Event) => {
     const video = event.target
     if (video instanceof HTMLVideoElement
-      && video === getVideoElement()
-      && shouldDismissLoadingForPlaying(video)) {
+      && video === getVideoElement()) {
       dismissWidescreenLoadingForPlaying()
     }
   }
@@ -548,13 +589,6 @@ function showWidescreenLoading() {
   }
 }
 
-function shouldDismissLoadingForPlaying(video: HTMLVideoElement) {
-  return loadingMayDismissOnPlaying
-    || video.autoplay
-    || video.hasAttribute('autoplay')
-    || navigator.userActivation?.hasBeenActive !== true
-}
-
 function dismissWidescreenLoadingForPlaying() {
   loadingSuppressedUntilExit = true
   removeWidescreenLoading()
@@ -562,7 +596,11 @@ function dismissWidescreenLoadingForPlaying() {
 
 function removeWidescreenLoading(immediate = false) {
   loadingPlaybackCleanup?.()
-  loadingMayDismissOnPlaying = false
+
+  if (loadingExitButtonTimer) {
+    clearTimeout(loadingExitButtonTimer)
+    loadingExitButtonTimer = undefined
+  }
 
   if (loadingPreparationFallbackTimer) {
     clearTimeout(loadingPreparationFallbackTimer)
@@ -598,18 +636,16 @@ function removeWidescreenLoading(immediate = false) {
   loadingFadeTimer = setTimeout(remove, LOADING_FADE_DURATION)
 }
 
-export function prepareBewlyWidescreenLoading(allowPlayingDismiss = false) {
+export function prepareBewlyWidescreenLoading() {
   if (state || loadingSuppressedUntilExit)
     return
 
-  loadingMayDismissOnPlaying ||= allowPlayingDismiss
   showWidescreenLoading()
   const video = getVideoElement()
   if (loadingOverlay
     && video
     && !video.paused
-    && !video.ended
-    && shouldDismissLoadingForPlaying(video)) {
+    && !video.ended) {
     dismissWidescreenLoadingForPlaying()
     return
   }
@@ -960,7 +996,10 @@ function injectLayoutStyle() {
       color: var(--bewly-widescreen-text-primary);
       border-left: 1px solid var(--bewly-widescreen-sidebar-border);
       box-shadow: -12px 0 28px rgba(0, 0, 0, 0.28);
-      overflow: hidden;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
       transform: translateX(var(--bewly-widescreen-sidebar-offset));
       transition: transform 180ms ease;
       will-change: transform;
@@ -1050,6 +1089,7 @@ function injectLayoutStyle() {
       padding: 8px 10px 8px;
       border-bottom: 1px solid var(--bewly-widescreen-divider);
       background: var(--bewly-widescreen-surface-bg);
+      overflow: visible;
     }
 
     #${ROOT_ID} .bewly-widescreen-toolbar {
@@ -1161,6 +1201,22 @@ function injectLayoutStyle() {
       height: 40px !important;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-description-slot.is-expanded .video-desc-container,
+    #${ROOT_ID} .bewly-widescreen-description-slot.is-expanded #v_desc {
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-description-slot.is-expanded .basic-desc-info {
+      display: block !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+      -webkit-line-clamp: unset !important;
+      -webkit-box-orient: initial !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-description-slot .video-desc-container > .toggle-btn {
@@ -1475,18 +1531,30 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-panels {
       position: relative;
       z-index: 1;
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow: hidden;
+      width: 100%;
+      flex: 0 0 auto;
+      min-height: auto;
+      overflow: visible;
       background: var(--bewly-widescreen-sidebar-bg);
     }
 
     #${ROOT_ID} .bewly-widescreen-panel {
       width: 100%;
-      height: 100%;
-      overflow: auto;
-      overscroll-behavior: contain;
+      height: auto;
+      overflow: visible;
       padding: 8px 8px 16px;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel:not([hidden]) {
+      height: auto;
+      overflow: visible;
+    }
+
+    /* B 站的表情面板会在视口底部空间不足时向上展开。打开期间允许它
+       越过评论面板顶边覆盖简介，关闭后恢复由侧栏外层负责滚动。 */
+    #${ROOT_ID} .bewly-widescreen-panels[data-bewly-comment-emoji-open],
+    #${ROOT_ID} .bewly-widescreen-panel[data-bewly-comment-emoji-open] {
+      overflow: visible;
     }
 
     #${ROOT_ID} .bewly-widescreen-panel[hidden] {
@@ -1500,11 +1568,9 @@ function injectLayoutStyle() {
       margin-right: 0 !important;
     }
 
-    /* B 站的选集组件会继承普通视频页的固定高度。宽屏模式下由整个
-       选集面板负责滚动，列表便可以使用直到视口底部的全部剩余空间。 */
+    /* Keep the playlist panel in the sidebar's outer scroll flow. */
     #${ROOT_ID} .bewly-widescreen-panel-playlist {
-      overflow-y: auto;
-      scrollbar-gutter: stable;
+      overflow: visible;
     }
 
     #${ROOT_ID} .bewly-widescreen-panel-playlist .video-pod,
@@ -1931,7 +1997,7 @@ function expandDanmakuTab(currentState: BewlyWidescreenState) {
   if (!focusable)
     return
 
-  currentState.panels.danmaku.scrollTo({ top: 0, behavior: 'smooth' })
+  currentState.sidebarEl.scrollTo({ top: 0, behavior: 'smooth' })
   setTimeout(() => {
     focusable.click()
     focusable.focus?.({ preventScroll: true })

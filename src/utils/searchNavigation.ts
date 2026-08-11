@@ -12,6 +12,27 @@ const NATIVE_SEARCH_CATEGORY_BY_PATH: Record<string, string> = {
   video: 'video',
 }
 
+export function shouldUsePluginSearchResultsPage(): boolean {
+  return settings.value.usePluginSearchResultsPage
+    && !settings.value.useOriginalBilibiliHomepage
+}
+
+/**
+ * Build a native Bilibili search URL from a keyword.
+ *
+ * This intentionally starts from a fresh URL so page/tracking parameters from
+ * the current BewlyCat route (for example `from_source`) are never forwarded.
+ */
+export function buildNativeSearchUrl(keyword: string): string {
+  const normalized = keyword.trim()
+  const targetUrl = new URL('https://search.bilibili.com/all')
+
+  if (normalized)
+    targetUrl.searchParams.set('keyword', normalized)
+
+  return targetUrl.toString()
+}
+
 /**
  * 构建关键词搜索链接的唯一入口：
  * 开启插件搜索页时跳扩展内搜索页，否则跳 B 站原生搜索页
@@ -19,10 +40,10 @@ const NATIVE_SEARCH_CATEGORY_BY_PATH: Record<string, string> = {
 export function buildKeywordSearchUrl(keyword: string): string {
   const encoded = encodeURIComponent(keyword)
 
-  if (settings.value.usePluginSearchResultsPage)
+  if (shouldUsePluginSearchResultsPage())
     return `https://www.bilibili.com/?page=SearchResults&keyword=${encoded}`
 
-  return `https://search.bilibili.com/all?keyword=${encoded}`
+  return buildNativeSearchUrl(keyword)
 }
 
 /**

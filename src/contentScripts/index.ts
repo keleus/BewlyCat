@@ -19,9 +19,9 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
-import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
-import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder } from '~/utils/randomPlay'
-import { getPluginSearchResultsUrl } from '~/utils/searchNavigation'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
+import { getPluginSearchResultsUrl, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -213,6 +213,8 @@ else if (shouldInitializeContentScript) {
   let pendingWidescreenReloadTimer: ReturnType<typeof setTimeout> | undefined
   let autoContinuationNavigationKey: string | undefined
   let lastVideoEndedAt = 0
+  let urlChangeCheckQueued = false
+  let playerModeResumeQueued = false
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
   void settingsReady.then(() => {
@@ -223,7 +225,7 @@ else if (shouldInitializeContentScript) {
 
   function setupPluginSearchLinkNavigation() {
     document.addEventListener('click', (event) => {
-      if (!settings.value.usePluginSearchResultsPage || !getCookie('DedeUserID'))
+      if (!shouldUsePluginSearchResultsPage() || !getCookie('DedeUserID'))
         return
 
       // 评论区等 B 站 Web Component 会把点击目标重新指向 Shadow Host，
@@ -370,9 +372,7 @@ else if (shouldInitializeContentScript) {
     const isInWebFullscreen = webFullscreenBtn?.classList.contains('bpx-state-entered')
 
     if (targetPlayerMode === 'bewlyWidescreen' && !isInFullscreen && !isInWebFullscreen) {
-      prepareBewlyWidescreenLoading(
-        autoContinuationNavigationKey === currentNavigationKey,
-      )
+      prepareBewlyWidescreenLoading()
     }
     else if (!isBewlyWidescreenActive()) {
       exitBewlyWidescreen()
@@ -720,6 +720,7 @@ else if (shouldInitializeContentScript) {
   }
 
   function checkForUrlChanges() {
+    urlChangeCheckQueued = false
     if (location.href !== lastUrl) {
       const navigationRequestId = ++widescreenCommentReloadRequestId
       const currentVideoNavigationKey = getVideoNavigationKey(location.href)
@@ -741,7 +742,6 @@ else if (shouldInitializeContentScript) {
         if (!isMeaningfulVideoNavigation) {
           clearPendingWidescreenReloadNavigation()
           autoContinuationNavigationKey = undefined
-          scheduleUrlChangeCheck()
           return
         }
 
@@ -762,7 +762,6 @@ else if (shouldInitializeContentScript) {
           // 评论区无法可靠映射到视频 ID 时保留完整刷新兜底，避免宽屏 SPA
           // 切换后继续复用旧评论组件（例如番剧页面或异常 URL）。
           window.location.reload()
-          scheduleUrlChangeCheck()
           return
         }
 
@@ -771,7 +770,8 @@ else if (shouldInitializeContentScript) {
         waitForPlayerModePageSettle()
         document.querySelector('.bewly-watch-later-btn')?.remove()
         watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
-        // 不再重置用户手动修改标志，保持用户的自动播放偏好设置
+        // 手动修改只覆盖当前视频；切集后重新应用扩展配置，避免播放器重建时开关复位。
+        resetAutoPlayUserChangeFlag()
 
         // 重置随机播放初始化状态，避免重复加载
         resetRandomPlayInitialization()
@@ -791,22 +791,30 @@ else if (shouldInitializeContentScript) {
         }
       }
     }
-    scheduleUrlChangeCheck()
   }
 
   function scheduleUrlChangeCheck() {
-    if (document.visibilityState === 'visible')
-      requestAnimationFrame(checkForUrlChanges)
-    else
-      setTimeout(checkForUrlChanges, 1000)
+    if (urlChangeCheckQueued)
+      return
+
+    urlChangeCheckQueued = true
+    // inject/index.ts 在原生 history 方法执行前派发事件；微任务会在 URL
+    // 真正更新后执行，同时合并同一轮中的连续 history 操作。
+    queueMicrotask(checkForUrlChanges)
   }
 
-  scheduleUrlChangeCheck()
+  function handlePushState(event: Event) {
+    prepareVideoNavigationBeforeRouteChange(event)
+    scheduleUrlChangeCheck()
+  }
 
   // inject/index.ts 在调用 history.pushState 前派发此事件，先退出宽屏；URL
-  // 真正变化后由 checkForUrlChanges 复用 SPA 路由并按需重载评论区。
-  // popstate/replaceState 由轮询兜底。
-  window.addEventListener('pushstate', prepareVideoNavigationBeforeRouteChange, true)
+  // 真正变化后由事件队列复用 SPA 路由并按需重载评论区。
+  window.addEventListener('pushstate', handlePushState, true)
+  window.addEventListener('replacestate', scheduleUrlChangeCheck, true)
+  window.addEventListener('popstate', scheduleUrlChangeCheck, true)
+  window.addEventListener('hashchange', scheduleUrlChangeCheck, true)
+  window.addEventListener('pageshow', scheduleUrlChangeCheck, true)
   document.addEventListener('ended', (event) => {
     if (event.target === getVideoElement())
       lastVideoEndedAt = Date.now()
@@ -956,18 +964,45 @@ else if (shouldInitializeContentScript) {
       }
     }, true)
   }
-  window.addEventListener('pageshow', () => {
-    if (isVideoOrBangumiPage()) {
+  function restoreDefaultPlayerModeAfterPageResume() {
+    if (document.visibilityState !== 'visible'
+      || !isVideoOrBangumiPage()
+      || playerModeResumeQueued) {
+      return
+    }
+
+    scheduleUrlChangeCheck()
+    playerModeResumeQueued = true
+    // URL 同步的微任务会先执行。无论后台期间发生的是完整视频导航还是
+    // 仅 query 变化，恢复检查都会在同步完成后继续，不会漏掉后台新标签页。
+    queueMicrotask(() => {
+      playerModeResumeQueued = false
+      if (document.visibilityState !== 'visible'
+        || !isVideoOrBangumiPage()
+        || lastUrl !== location.href) {
+        return
+      }
+
+      const currentNavigationKey = getVideoNavigationKey(location.href)
+      if (lastAppliedPlayerModeNavigationKey === currentNavigationKey
+        || playerModeRetryTimer) {
+        return
+      }
+
+      // 已结束视频的结尾推荐面板属于播放器自身状态。切回标签页时不要再次
+      // 触发模式就绪流程，避免 B 站把结尾面板还原成最后一帧。
+      if (getVideoElement()?.ended)
+        return
+
       waitForPlayerModePageSettle()
       applyDefaultPlayerMode()
-    }
-  })
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState !== 'visible' || !isVideoOrBangumiPage())
-      return
+    })
+  }
 
-    waitForPlayerModePageSettle()
-    applyDefaultPlayerMode()
+  window.addEventListener('pageshow', restoreDefaultPlayerModeAfterPageResume)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible')
+      restoreDefaultPlayerModeAfterPageResume()
   })
 
   // Set the original Bilibili top bar to `display: none` to prevent it from showing before the load
@@ -1251,6 +1286,11 @@ else if (shouldInitializeContentScript) {
       else
         resetVerticalVideoZoom()
     },
+  )
+
+  watch(
+    () => settings.value.language,
+    () => syncRandomPlayUI(),
   )
 
   // 监听设置变化

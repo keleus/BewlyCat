@@ -1,10 +1,42 @@
-export const DEFAULT_SEARCH_BAR_CHARACTER = 'https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/searchBarCharacters/33chan-1.png'
+import browser from 'webextension-polyfill'
+
+const SEARCH_BAR_CHARACTER_ASSET_PATH = '/assets/search-bar-characters'
+const SEARCH_BAR_CHARACTER_FILENAMES = [
+  '22chan-1.png',
+  '33chan-1.png',
+  '22chan-2.png',
+  '33chan-2.png',
+] as const
+
+const searchBarCharacterAssetUrls = Object.fromEntries(
+  SEARCH_BAR_CHARACTER_FILENAMES.map(filename => [
+    filename,
+    browser.runtime.getURL(`${SEARCH_BAR_CHARACTER_ASSET_PATH}/${filename}`),
+  ]),
+) as Record<typeof SEARCH_BAR_CHARACTER_FILENAMES[number], string>
+
+/**
+ * Resolve a bundled search-bar character and migrate URLs from older versions.
+ *
+ * The path check also handles settings restored from another extension ID.
+ */
+export function resolveSearchBarCharacterUrl(url: string): string {
+  const filename = /^(?:https?:)?\/\/cdn\.jsdelivr\.net\/gh\/BewlyBewly\/Imgs\/searchBarCharacters\/([^/?#]+)$/.exec(url)?.[1]
+    || /\/assets\/search-bar-characters\/([^/?#]+)$/.exec(url)?.[1]
+
+  if (filename && filename in searchBarCharacterAssetUrls)
+    return searchBarCharacterAssetUrls[filename as typeof SEARCH_BAR_CHARACTER_FILENAMES[number]]
+
+  return url
+}
+
+export const DEFAULT_SEARCH_BAR_CHARACTER = searchBarCharacterAssetUrls['33chan-1.png']
 
 export const SEARCH_BAR_CHARACTERS: { name: string, url: string }[] = [
-  { name: '22 娘', url: 'https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/searchBarCharacters/22chan-1.png' },
+  { name: '22 娘', url: searchBarCharacterAssetUrls['22chan-1.png'] },
   { name: '33 娘', url: DEFAULT_SEARCH_BAR_CHARACTER },
-  { name: '22 娘', url: 'https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/searchBarCharacters/22chan-2.png' },
-  { name: '33 娘', url: 'https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/searchBarCharacters/33chan-2.png' },
+  { name: '22 娘', url: searchBarCharacterAssetUrls['22chan-2.png'] },
+  { name: '33 娘', url: searchBarCharacterAssetUrls['33chan-2.png'] },
 ]
 
 export interface wallpaperItem {

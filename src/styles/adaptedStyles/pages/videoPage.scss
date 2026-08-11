@@ -43,8 +43,7 @@
       .bar-left
       > label
       #check-timestamp:checked::after {
-      background: var(--bew-theme-color) url(//s1.hdslb.com/bfs/static/jinkela/note-list/assets/ic_check.svg) no-repeat
-        50% / 9px;
+      background: var(--bew-theme-color) url("/assets/ic_check.svg") no-repeat 50% / 9px;
     }
 
     .content .group-list li input[type="checkbox"] + i,

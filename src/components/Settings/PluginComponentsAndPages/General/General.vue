@@ -8,6 +8,7 @@ import { settings } from '~/logic'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsSectionHeading from '../../components/SettingsSectionHeading.vue'
+import LinkOpening from '../../Navigation/LinkOpening.vue'
 
 const { t, locale } = useI18n()
 
@@ -68,6 +69,8 @@ watch(() => settings.value.language, (newValue) => {
         <Radio v-model="settings.enableHorizontalScrolling" />
       </SettingsItem>
     </SettingsItemGroup>
+
+    <LinkOpening />
 
     <SettingsItemGroup :title="$t('settings.group_drawer_behavior')">
       <SettingsItem :title="$t('settings.close_drawer_without_pressing_esc_again')" right-width="auto">

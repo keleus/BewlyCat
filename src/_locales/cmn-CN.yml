@@ -59,6 +59,41 @@ common:
     right: 右侧
     top: 顶部
     bottom: 底部
+layout_editor:
+  finish: 完成
+  edit_dock: 编辑 Dock
+  edit_sidebar: 编辑模式
+  back_to_top: 回到顶部
+  click_to_adjust: 点击你想要调整的元素
+  switch_to_bilibili_page: 如何切换到 Bilibili 原页面
+  switch_to_plugin_page: 如何切换到插件页面
+  adjust_video_grid_columns: 调整视频卡片列数
+  adjust_moments_grid_columns: 调整动态页列数
+  adjust_dock_position: 如何调整 Dock 栏位置
+  video_default_player_mode: 如何设置默认播放器样式
+  video_auto_play: 如何默认开启自动连播
+  video_external_watch_later: 如何外置稍后再看按钮
+  video_sidebar_position: 如何调整侧边栏位置
+  video_topbar_auto_hide: 如何让顶栏自动隐藏
+  home_filter_recommendations: 如何过滤不想看的推荐
+  home_recommendation_mode: 如何调整个性推荐来源
+  following_show_live: 如何显示正在直播
+  following_hide_live: 如何隐藏正在直播
+  following_hide_uploader_list: 如何显示或隐藏左侧 UP 列表
+  following_filter_videos: 如何过滤充电和动态视频
+  moments_filter_content: 如何过滤不想看的动态
+  moments_preview: 如何设置动态视频预览
+  search_suggestions_history: 如何设置搜索建议与历史
+  search_wallpaper: 如何单独设置搜索页背景
+  search_results_personalization: 如何减少个性化搜索结果
+  search_results_pagination: 如何切换滚动或分页加载
+  original_moments_show_user_card: 如何显示原版动态页用户卡片
+  original_moments_show_live_list: 如何显示原版动态页直播列表
+  original_moments_show_community_center: 如何显示原版动态页社区中心
+  original_moments_show_hot_search: 如何显示原版动态页热搜
+  original_moments_show_up_list: 如何显示原版动态页 UP 横幅
+  switch_to_bewly_topbar: 如何切换到 BewlyCat 顶栏
+  switch_to_original_topbar: 如何切换到 Bilibili 顶栏
 iframe_drawer:
   open_in_new_tab: 在新标签页打开
   close: 关闭
@@ -89,7 +124,7 @@ settings:
     placeholder: 搜索设置
     no_results: 没有找到相关设置
     located: 已定位到此设置
-  category_general_desc: 配置语言、交互布局与抽屉行为。
+  category_general_desc: 配置语言、交互布局、链接打开方式与抽屉行为。
   category_appearance_desc: 配置毛玻璃、主题颜色、壁纸、字体、自定义样式和其他页面的适配。
   category_shortcuts_desc: 启用、修改或恢复 BewlyCat 与播放器快捷键。
   breadcrumb: 设置位置
@@ -191,13 +226,15 @@ settings:
   group_topbar: 顶栏
   topbar_logo_and_channels: Logo 设置
   topbar_logo_and_channels_desc: 设置顶栏 Logo 样式，以及触屏模式下是否显示首页按钮。
-  topbar_switchers: BewlyCat/Bilibili 切换器
-  topbar_switchers_desc: 分别控制首页页面切换器和顶栏切换器是否显示。
+  topbar_switchers: BewlyCat/Bilibili 页面切换器
+  topbar_switchers_desc: 控制 BewlyCat 与 Bilibili 原版页面切换器是否显示。
   topbar_actions: 顶栏功能图标
   topbar_actions_desc: 分别设置右侧功能图标的显示状态、角标和相关提醒。
   topbar_user_menu: 顶栏用户菜单
   topbar_display_settings: 顶栏显示与行为
   topbar_display_settings_desc: 调整顶栏在不同页面和交互场景下的显示方式。
+  topbar_style_settings: 顶栏样式
+  topbar_style_settings_desc: 调整顶栏背景、渐变和页面背景适配方式。
   group_navigation: Dock和侧边栏
   group_dock: Dock 栏
   group_sidebar: 侧边栏
@@ -224,6 +261,12 @@ settings:
   group_new_moments_page_desc: 此页面并非最终成品，相关形态后续可能会有较大调整。
   group_moments_sidebar: 动态页左侧组件
   group_moments_interaction: 动态卡片交互
+  group_environment_info: 环境信息
+  copy_environment_info: 复制环境信息
+  copy_environment_info_desc: 一次复制浏览器、浏览器版本和 BewlyCat 版本，方便提交问题。
+  environment_info_copied: 环境信息已复制
+  environment_info_copy_failed: 复制环境信息失败
+  environment_info_unknown: 未知
   group_settings_sync: 浏览器云同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 显示用户卡片
@@ -245,6 +288,7 @@ settings:
   moments_enable_video_preview: 视频动态悬停预览
   moments_enable_video_preview_desc: 鼠标悬停视频动态封面时播放视频预览。
   moments_grid_columns: 动态列数
+  moments_tabs_position: 动态标签栏位置
   moments_grid_columns_desc: 设置 Bewly 动态页的期望列数。卡片尺寸会随列数自适应；窗口空间不足时会自动减少列数，左侧栏与动态流整体保持居中。
   moments_grid_columns_option: '{count} 列'
   moments_filter_up_recommendation: 过滤：UP主的推荐
@@ -260,6 +304,9 @@ settings:
   moments_filter_video_reservation: 视频预约动态
   moments_filter_live_reservation: 直播预约动态
   moments_filter_live_dynamic: 直播动态
+  moments_keyword_filter: 按关键词屏蔽动态
+  moments_keyword_filter_desc: 开启后，作者昵称、标题、正文、附加卡片或转发原动态中包含任一关键词的动态将被过滤。多个关键词用逗号分隔，不区分大小写。
+  moments_keyword_filter_placeholder: 输入关键词，用逗号分隔
   moments_hide_charge_exclusive: 隐藏充电专属动态
   moments_hide_charge_exclusive_desc: 从插件动态流中过滤所有充电专属动态。
   moments_card_open_mode: 动态卡片点击行为
@@ -289,7 +336,6 @@ settings:
   open_top_bar_items_in_bewly_desc: 未启用触屏优化时，点击 Logo、动态、收藏、历史或稍后再看图标，将按照“顶栏链接打开行为”打开 Dock 中对应的页面，并沿用该页面的 Bewly/原版 Bilibili 配置；尚未适配的图标保持原有行为。
   show_bewly_or_bili_page_switcher_desc: 在首页 Logo 旁显示切换器，用于在 BewlyCat 页面和 Bilibili 原版页面之间切换。
   show_bewly_or_bili_page_switcher_on_more_pages_desc: 在动态、搜索、番剧、收藏、历史和稍后再看等 Bilibili 原版页面显示切换器；切换到 BewlyCat 时会打开对应的插件页面。
-  show_bewly_or_bili_top_bar_switcher_desc: 在页面顶部悬停时显示切换器，用于在 BewlyCat 顶栏和 Bilibili 原版顶栏之间切换。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隐藏 LV6 等级最后登录信息显示
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: 开启后，顶栏头像弹窗中的 LV6 等级信息区域将不再显示最后登录时间和地点，也不会请求登录记录。
   chk_box:
@@ -459,6 +505,7 @@ settings:
   show_video_card_like_count: 显示点赞数
   show_video_card_duration: 显示视频时长
   show_video_card_watch_later: 显示稍后再看按钮
+  show_video_card_more_button: 显示更多菜单按钮
   show_video_watched_badge: 记录并显示已观看
   auto_hide_top_bar: 自动隐藏顶栏
   video_page_top_bar_config: 视频页顶栏配置
@@ -469,10 +516,11 @@ settings:
     showOnMouse: 鼠标显示
     showOnScroll: 滚动显示
   always_use_transparent_top_bar: 顶栏始终使用透明(旧版)样式
+  always_use_frosted_glass_top_bar: 顶栏始终使用毛玻璃样式
+  always_use_frosted_glass_top_bar_desc: 即使页面有背景图，也始终使用与首页无背景图时相同的顶栏样式。
   enable_top_bar_gradient: 启用顶栏渐变效果
   enable_top_bar_gradient_desc: 开启后顶栏默认使用磨砂玻璃渐变，关闭后改为实色背景。
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
-  show_bewly_or_bili_top_bar_switcher: 显示 BewlyCat/Bilibili 顶栏切换器
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多页面显示 BewlyCat/Bilibili 页面切换器
   filter_articles_in_moments: 过滤专栏
@@ -551,6 +599,8 @@ settings:
     icon: 圆形图标
     brand: 品牌标识
   badge_type: 角标类型
+  show_layout_edit_button: 显示布局编辑按钮
+  show_layout_edit_button_desc: 在 Dock 或侧边栏显示布局编辑入口；关闭后可在这里重新开启。
   always_use_dock: 总是使用 Dock 栏
   always_use_dock_desc: 启用后，Dock 栏将始终显示，侧边栏将隐藏。我们推荐你同时启用自动隐藏 Dock 栏。
   auto_hide_dock: 自动隐藏 Dock 栏
@@ -624,6 +674,7 @@ settings:
   enable_search_history_desc: 启用后，搜索栏将记录和显示您的搜索历史记录。关闭后将清除所有历史记录
   use_plugin_search_results_page: 使用插件搜索结果页
   use_plugin_search_results_page_desc: 启用后，搜索时将使用插件内置的搜索结果页面，支持分类筛选等功能
+  use_plugin_search_results_page_disabled_by_original_homepage: 使用原版 bilibili 首页时，搜索将使用 bilibili 原版结果页
   depersonalize_search_results: 去个性化搜索
   depersonalize_search_results_desc: 启用后，搜索结果请求不携带登录 Cookie。
   search_results_pagination_mode: 搜索结果分页模式
@@ -698,6 +749,7 @@ settings:
   search_page_mode_wallpaper_fixed: 将搜索页模式的壁纸固定
   home_tabs_adjustment: 标签栏调整
   home_tabs_adjustment_desc: 第一个激活的标签项是默认界面
+  home_tabs_position: 首页标签栏位置
   always_show_tabs_on_home_page: 滚动隐藏首页标签栏
   fixed_home_tabs_on_home_page: 固定首页标签栏
   topbar_visibility: 顶栏可见性
@@ -843,7 +895,7 @@ settings:
     indent_only: 缩进-无收起功能
   comment_reply_pagination_mode:
     title: 树状评论模式
-    desc: 选择树状评论的回复展示方式。「更多」会累计回复，并从本次新增的父节点继续阅读；「分页」保留 B 站原生分页，只显示当前页
+    desc: 选择树状评论的回复展示方式。「更多」会在保持当前阅读位置的同时向下累计回复；「分页」保留 B 站原生分页，只显示当前页
     load_more: 更多
     pagination: 分页
   adjust_comment_image_height: 调整评论区图片高度
@@ -855,8 +907,6 @@ settings:
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key
 topbar:
-  switch_to_bewly_top_bar: 切换到 BewlyCat 顶栏
-  switch_to_bili_top_bar: 切换到 Bilibili/Bilibili-Evolved 顶栏
   sign_in: 登录
   notifications: 通知
   moments: 动态

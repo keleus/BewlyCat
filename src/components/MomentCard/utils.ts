@@ -60,13 +60,18 @@ export function getCardPreviewText(moment: DisplayMoment) {
 }
 
 export function isCompactPlainTextMoment(moment: DisplayMoment) {
+  const isReservation = Boolean(
+    moment.additional?.isVideoReservation
+    || moment.additional?.isLiveReservation,
+  )
+
   return !moment.images.length
     && !moment.isVideo
     && !moment.isLive
     && !moment.isChargeExclusive
     && !moment.title
     && !moment.forward
-    && !moment.additional
+    && (!moment.additional || isReservation)
 }
 
 export function getWatchLaterStateKey(target: WatchLaterTarget) {

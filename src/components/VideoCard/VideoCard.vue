@@ -41,6 +41,12 @@ const layout = computed((): VideoCardLayoutSetting => {
   return layoutSetting === 'old' ? 'old' : 'modern'
 })
 
+const showMoreButton = computed(() =>
+  props.moreBtn
+  && settings.value.showVideoCardMoreButton
+  && settings.value.videoCardContextMenuConfig.some(item => item.visible),
+)
+
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
 const logic = useVideoCardLogic(props)
 const { mainAppRef } = useBewlyApp()
@@ -349,6 +355,10 @@ provide('getVideoType', () => props.type!)
   <div
     :ref="(el) => logic.cardRootRef.value = el as HTMLElement"
     class="video-card-container"
+    :data-layout-edit-target="skeleton ? undefined : 'video-card'"
+    :data-layout-settings-menu="skeleton ? undefined : 'BewlyComponents'"
+    :data-layout-settings-page="skeleton ? undefined : 'video-card'"
+    :data-layout-settings-title-key="skeleton ? undefined : 'settings.group_video_card_display'"
     rounded="$bew-card-radius"
     :class="[
       layout !== 'old' ? 'mb-3' : 'mb-4',
@@ -422,7 +432,7 @@ provide('getVideoType', () => props.type!)
           :layout="layout"
           :horizontal="horizontal || false"
           :video-url="logic.videoUrl.value"
-          :more-btn="moreBtn"
+          :more-btn="showMoreButton"
           :show-video-options="logic.showVideoOptions.value"
           :title-font-size-class="titleFontSizeClass"
           :title-style="titleStyle"
@@ -437,7 +447,7 @@ provide('getVideoType', () => props.type!)
 
     <!-- context menu -->
     <Teleport
-      v-if="logic.showVideoOptions.value && props.video"
+      v-if="logic.showVideoOptions.value && props.video && showMoreButton"
       :to="mainAppRef"
     >
       <VideoCardContextMenu

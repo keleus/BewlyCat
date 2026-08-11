@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { SEARCH_BAR_CHARACTERS } from '~/constants/imgs'
+import { resolveSearchBarCharacterUrl, SEARCH_BAR_CHARACTERS } from '~/constants/imgs'
 import { settings } from '~/logic'
 
 import ChangeWallpaper from '../../components/ChangeWallpaper.vue'
@@ -98,7 +98,7 @@ function changeSearchBarFocusCharacter(url: string) {
                 class="bew-settings-option--lift"
                 aspect-square bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
                 un-border="4 transparent" w-full
-                :class="{ 'selected-wallpaper': settings.searchPageSearchBarFocusCharacter === item.url }"
+                :class="{ 'selected-wallpaper': resolveSearchBarCharacterUrl(settings.searchPageSearchBarFocusCharacter) === item.url }"
                 @click="changeSearchBarFocusCharacter(item.url)"
               >
                 <img
@@ -124,9 +124,16 @@ function changeSearchBarFocusCharacter(url: string) {
     <SettingsItemGroup :title="$t('settings.group_search_results')">
       <SettingsItem :title="$t('settings.use_plugin_search_results_page')" right-width="auto">
         <template #desc>
-          <span>{{ $t('settings.use_plugin_search_results_page_desc') }}</span>
+          <span>
+            {{ settings.useOriginalBilibiliHomepage
+              ? $t('settings.use_plugin_search_results_page_disabled_by_original_homepage')
+              : $t('settings.use_plugin_search_results_page_desc') }}
+          </span>
         </template>
-        <Radio v-model="settings.usePluginSearchResultsPage" />
+        <Radio
+          v-model="settings.usePluginSearchResultsPage"
+          :disabled="settings.useOriginalBilibiliHomepage"
+        />
       </SettingsItem>
 
       <SettingsItem :title="$t('settings.depersonalize_search_results')" right-width="auto">

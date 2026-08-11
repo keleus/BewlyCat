@@ -98,16 +98,18 @@ function resetTopBarComponents() {
 }
 
 function ensureTopBarComponentsConfig() {
-  const currentConfig = settings.value.topBarComponentsConfig ?? []
-  const hasExpectedKeys = currentConfig.length === topBarComponents.value.length
-    && topBarComponents.value.every((component, index) => currentConfig[index]?.key === component.key)
-
-  if (hasExpectedKeys)
+  const currentConfig = settings.value.topBarComponentsConfig
+  if (!Array.isArray(currentConfig)) {
+    resetTopBarComponents()
     return
+  }
 
-  settings.value.topBarComponentsConfig = topBarComponents.value.map((component) => {
-    return currentConfig.find(config => config.key === component.key) ?? createDefaultComponentConfig(component)
-  })
+  const missingConfig = topBarComponents.value
+    .filter(component => !currentConfig.some(config => config.key === component.key))
+    .map(createDefaultComponentConfig)
+
+  if (missingConfig.length)
+    settings.value.topBarComponentsConfig = [...currentConfig, ...missingConfig]
 }
 
 function setComponentVisibility(componentKey: string, visible: boolean) {
@@ -124,6 +126,14 @@ function setComponentBadgeType(componentKey: string, badgeType: BadgeType) {
 
 ensureTopBarComponentsConfig()
 watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
+watch(() => settings.value.alwaysUseTransparentTopBar, (enabled) => {
+  if (enabled)
+    settings.value.alwaysUseFrostedGlassTopBar = false
+})
+watch(() => settings.value.alwaysUseFrostedGlassTopBar, (enabled) => {
+  if (enabled)
+    settings.value.alwaysUseTransparentTopBar = false
+})
 
 function resetPinnedChannels() {
   settings.value.topBarPinnedChannels = []
@@ -189,19 +199,6 @@ function toggleChannel(value: string) {
       >
         <Select v-model="settings.videoPageTopBarConfig" :options="videoPageTopBarConfigOptions" w="160px" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.always_use_transparent_top_bar')" right-width="auto">
-        <Radio v-model="settings.alwaysUseTransparentTopBar" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.enable_top_bar_gradient')"
-        :desc="$t('settings.enable_top_bar_gradient_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.enableTopBarGradient" />
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
-        <Radio v-model="settings.showTopBarThemeColorGradient" />
-      </SettingsItem>
       <SettingsItem :title="$t('settings.open_notifications_page_as_drawer')" right-width="auto">
         <Radio v-model="settings.openNotificationsPageAsDrawer" />
       </SettingsItem>
@@ -230,7 +227,10 @@ function toggleChannel(value: string) {
             :title="$t('settings.top_bar_logo_style_opt.icon')"
             @click="settings.topBarLogoStyle = 'icon'"
           >
-            <span class="bew-segment-control__icon i-tabler:brand-bilibili" aria-hidden="true" />
+            <span
+              class="logo-style-picker__icon bew-segment-control__icon i-tabler:brand-bilibili"
+              aria-hidden="true"
+            />
           </button>
           <button
             type="button"
@@ -264,62 +264,6 @@ function toggleChannel(value: string) {
     </SettingsItemGroup>
 
     <SettingsItemGroup
-      :title="$t('settings.group_topbar_pinned_channels')"
-      :desc="$t('settings.topbar_pinned_channels_desc')"
-      icon="i-tabler:pin-filled"
-      collapsible
-      default-collapsed
-    >
-      <SettingsItem :title="$t('settings.topbar_pinned_channels_title')">
-        <template #title>
-          <div class="topbar-item-title-with-action">
-            <span>{{ $t('settings.topbar_pinned_channels_title') }}</span>
-            <Button
-              size="small"
-              type="secondary"
-              :disabled="!pinnedChannelKeys.length"
-              @click="resetPinnedChannels"
-            >
-              <template #left>
-                <div i-mingcute:back-line />
-              </template>
-              {{ $t('common.operation.reset') }}
-            </Button>
-          </div>
-        </template>
-
-        <template #bottom>
-          <div class="channel-grid">
-            <button
-              v-for="option in channelOptions"
-              :key="option.value"
-              type="button"
-              class="channel-grid__item"
-              :class="{ selected: pinnedChannelKeys.includes(option.value) }"
-              @click="toggleChannel(option.value)"
-            >
-              <div v-if="option.icon.startsWith('#')" class="channel-grid__icon">
-                <svg aria-hidden="true">
-                  <use :xlink:href="option.icon" />
-                </svg>
-              </div>
-              <div v-else class="channel-grid__icon">
-                <i :class="option.icon" :style="{ color: option.color ?? '' }" />
-              </div>
-              <span class="channel-grid__label">{{ option.label }}</span>
-              <span v-if="pinnedIndexMap.has(option.value)" class="channel-grid__overlay">
-                {{ pinnedIndexMap.get(option.value) }}
-              </span>
-            </button>
-          </div>
-          <div class="channel-grid__tip">
-            {{ pinnedChannelKeys.length ? $t('settings.topbar_pinned_channels_order_tip') : $t('settings.topbar_pinned_channels_empty') }}
-          </div>
-        </template>
-      </SettingsItem>
-    </SettingsItemGroup>
-
-    <SettingsItemGroup
       :title="$t('settings.topbar_switchers')"
       :desc="$t('settings.topbar_switchers_desc')"
     >
@@ -336,13 +280,6 @@ function toggleChannel(value: string) {
         right-width="auto"
       >
         <Radio v-model="settings.showBewlyOrBiliPageSwitcherOnMorePages" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.show_bewly_or_bili_top_bar_switcher')"
-        :desc="$t('settings.show_bewly_or_bili_top_bar_switcher_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.showBewlyOrBiliTopBarSwitcher" />
       </SettingsItem>
     </SettingsItemGroup>
 
@@ -434,6 +371,88 @@ function toggleChannel(value: string) {
         <Radio v-model="settings.hideTopBarUserPanelLv6LastLoginLocation" />
       </SettingsItem>
     </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="$t('settings.topbar_style_settings')"
+      :desc="$t('settings.topbar_style_settings_desc')"
+    >
+      <SettingsItem :title="$t('settings.always_use_transparent_top_bar')" right-width="auto">
+        <Radio v-model="settings.alwaysUseTransparentTopBar" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.always_use_frosted_glass_top_bar')"
+        :desc="$t('settings.always_use_frosted_glass_top_bar_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.alwaysUseFrostedGlassTopBar" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.enable_top_bar_gradient')"
+        :desc="$t('settings.enable_top_bar_gradient_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.enableTopBarGradient" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
+        <Radio v-model="settings.showTopBarThemeColorGradient" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="$t('settings.group_topbar_pinned_channels')"
+      :desc="$t('settings.topbar_pinned_channels_desc')"
+      icon="i-tabler:pin-filled"
+      collapsible
+      default-collapsed
+    >
+      <SettingsItem :title="$t('settings.topbar_pinned_channels_title')">
+        <template #title>
+          <div class="topbar-item-title-with-action">
+            <span>{{ $t('settings.topbar_pinned_channels_title') }}</span>
+            <Button
+              size="small"
+              type="secondary"
+              :disabled="!pinnedChannelKeys.length"
+              @click="resetPinnedChannels"
+            >
+              <template #left>
+                <div i-mingcute:back-line />
+              </template>
+              {{ $t('common.operation.reset') }}
+            </Button>
+          </div>
+        </template>
+
+        <template #bottom>
+          <div class="channel-grid">
+            <button
+              v-for="option in channelOptions"
+              :key="option.value"
+              type="button"
+              class="channel-grid__item"
+              :class="{ selected: pinnedChannelKeys.includes(option.value) }"
+              @click="toggleChannel(option.value)"
+            >
+              <div v-if="option.icon.startsWith('#')" class="channel-grid__icon">
+                <svg aria-hidden="true">
+                  <use :xlink:href="option.icon" />
+                </svg>
+              </div>
+              <div v-else class="channel-grid__icon">
+                <i :class="option.icon" :style="{ color: option.color ?? '' }" />
+              </div>
+              <span class="channel-grid__label">{{ option.label }}</span>
+              <span v-if="pinnedIndexMap.has(option.value)" class="channel-grid__overlay">
+                {{ pinnedIndexMap.get(option.value) }}
+              </span>
+            </button>
+          </div>
+          <div class="channel-grid__tip">
+            {{ pinnedChannelKeys.length ? $t('settings.topbar_pinned_channels_order_tip') : $t('settings.topbar_pinned_channels_empty') }}
+          </div>
+        </template>
+      </SettingsItem>
+    </SettingsItemGroup>
   </div>
 </template>
 
@@ -500,6 +519,12 @@ function toggleChannel(value: string) {
 
   &__brand-option {
     padding-inline: var(--bew-space-3);
+  }
+
+  &__icon {
+    width: var(--bew-icon-size-md);
+    height: var(--bew-icon-size-md);
+    font-size: var(--bew-icon-size-md);
   }
 
   &__brand {

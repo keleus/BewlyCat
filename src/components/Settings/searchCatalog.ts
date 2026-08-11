@@ -178,9 +178,11 @@ const autoPlayModeOptionKeys = [
 const topBarGlobalTitleKeys = [
   'settings.group_topbar',
   'settings.topbar_display_settings',
+  'settings.topbar_style_settings',
   'settings.auto_hide_top_bar',
   'settings.video_page_top_bar_config',
   'settings.always_use_transparent_top_bar',
+  'settings.always_use_frosted_glass_top_bar',
   'settings.enable_top_bar_gradient',
   'settings.show_top_bar_theme_color_gradient',
   'settings.open_top_bar_items_in_bewly',
@@ -199,6 +201,14 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_drawer_behavior',
     'settings.close_drawer_without_pressing_esc_again',
   ]),
+  ...createEntries(generalRoute, [
+    'settings.group_link_opening_behavior',
+    'settings.top_bar_link_opening_behavior',
+    'settings.search_bar_link_opening_behavior',
+  ], { keywordKeys: linkOpeningOptionKeys }),
+  ...createEntries(generalRoute, [
+    'settings.video_card_link_opening_behavior',
+  ], { keywordKeys: videoCardLinkOpeningOptionKeys }),
   ...createEntries(homeRoute, [
     'settings.menu_bewly_pages',
   ], { targetTitleKey: 'settings.plugin.home' }),
@@ -236,6 +246,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.following_filter_dynamic_videos',
     'settings.group_home_tabs',
     'settings.home_tabs_adjustment',
+    'settings.home_tabs_position',
     'settings.fixed_home_tabs_on_home_page',
     'settings.group_search_page_mode',
     'settings.use_search_page_mode',
@@ -263,6 +274,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_show_publish',
     'settings.moments_show_live',
     'settings.moments_show_up_list',
+    'settings.moments_tabs_position',
     'settings.moments_enable_live_preview',
     'settings.moments_enable_video_preview',
     'settings.moments_filter_video_dynamic',
@@ -275,6 +287,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_filter_video_reservation',
     'settings.moments_filter_live_reservation',
     'settings.moments_filter_live_dynamic',
+    'settings.moments_keyword_filter',
     'settings.moments_card_open_mode',
     'settings.group_moments_wanted_users',
     'settings.moments_enable_wanted_filter',
@@ -315,6 +328,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_video_card_duration',
     'settings.show_video_watched_badge',
     'settings.show_video_card_watch_later',
+    'settings.show_video_card_more_button',
     'settings.group_video_card_context_menu',
     'settings.video_card_context_menu_follow_user',
     'video_card.operation.not_interested',
@@ -339,11 +353,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.video_card_meta_font_size',
   ], { keywordKeys: ['settings.font_size_option'] }),
 
-  ...createEntries(videoCardRoute, [
-    'settings.group_link_opening_behavior',
-    'settings.video_card_link_opening_behavior',
-  ], { keywordKeys: videoCardLinkOpeningOptionKeys }),
-
   ...createEntries(topBarRoute, [
     'settings.plugin.topbar',
     ...topBarGlobalTitleKeys,
@@ -361,7 +370,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.topbar_switchers',
     'settings.show_bewly_or_bili_page_switcher',
     'settings.show_bewly_or_bili_page_switcher_on_more_pages',
-    'settings.show_bewly_or_bili_top_bar_switcher',
   ]),
   ...createEntries(topBarRoute, [
     'settings.group_search_bar',
@@ -379,11 +387,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.topbar_user_menu',
     'settings.hide_lv6_last_login_location_in_top_bar_user_pop',
   ]),
-  ...createEntries(topBarRoute, [
-    'settings.group_link_opening_behavior',
-    'settings.top_bar_link_opening_behavior',
-    'settings.search_bar_link_opening_behavior',
-  ], { keywordKeys: linkOpeningOptionKeys }),
   ...[
     ['moments', 'topbar.moments'],
     ['favorites', 'topbar.favorites'],
@@ -399,6 +402,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(dockRoute, [
     'settings.plugin.dock_and_sidebar',
     'settings.group_dock',
+    'settings.show_layout_edit_button',
     'settings.always_use_dock',
     'settings.auto_hide_dock',
     'settings.half_hide_dock',

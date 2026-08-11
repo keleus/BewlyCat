@@ -102,6 +102,11 @@ const content = computed(() => {
 
 <template>
   <div
+    class="video-card-info"
+    :data-layout-edit-target="skeleton ? undefined : 'video-card-info'"
+    :data-layout-settings-menu="skeleton ? undefined : 'BewlyComponents'"
+    :data-layout-settings-page="skeleton ? undefined : 'video-card'"
+    :data-layout-settings-title-key="skeleton ? undefined : 'settings.group_video_card_content'"
     :style="{
       width: horizontal ? '100%' : 'unset',
       marginTop: horizontal ? '0' : content.isModernLayout ? '0.5rem' : '1rem',
@@ -123,7 +128,7 @@ const content = computed(() => {
           <!-- 使用与真实标题完全相同的样式和高度 -->
           <div
             class="keep-two-lines" :class="[
-              content.isModernLayout ? 'w-[calc(100%-40px)]' : 'w-full',
+              content.isModernLayout && moreBtn ? 'w-[calc(100%-40px)]' : 'w-full',
               content.isModernLayout ? 'video-card-title' : '',
             ]"
             :style="titleStyle"
@@ -134,7 +139,7 @@ const content = computed(() => {
             <div w="3/4" bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em;" />
           </div>
           <div
-            v-if="content.isModernLayout" shrink-0 w-8 h-8 rounded="1/2"
+            v-if="content.isModernLayout && moreBtn" shrink-0 w-8 h-8 rounded="1/2"
             bg="$bew-skeleton"
           />
         </div>
@@ -281,6 +286,10 @@ const content = computed(() => {
             v-if="moreBtn"
             ref="moreBtnRef"
             class="video-card__more-btn"
+            data-layout-edit-target="video-card-more"
+            data-layout-settings-menu="BewlyComponents"
+            data-layout-settings-page="video-card"
+            data-layout-settings-title-key="settings.group_video_card_context_menu"
             :class="[
               { 'more-active': showVideoOptions },
               content.isModernLayout ? 'overflow-hidden rounded-full' : '',

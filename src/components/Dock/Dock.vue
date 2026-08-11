@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import Icon from '~/components/Icon.vue'
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useDelayedHover } from '~/composables/useDelayedHover'
+import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
@@ -24,7 +26,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'dockItemClick', dockItem: DockItem): void
   (e: 'dockItemMiddleClick', dockItem: DockItem): void
-  (e: 'settingsVisibilityChange'): void
   (e: 'refresh'): void
   (e: 'backToTop'): void
   (e: 'undoRefresh'): void
@@ -32,8 +33,10 @@ const emit = defineEmits<{
 }>()
 
 const mainStore = useMainStore()
+const { t } = useI18n()
 const { isDark, toggleDark } = useDark()
-const { reachTop, homeActivatedPage, undoForwardState, canRefreshHomeSubPage } = useBewlyApp()
+const { reachTop, homeActivatedPage, undoForwardState, canRefreshHomeSubPage, openSettings } = useBewlyApp()
+const { isLayoutEditing, toggleLayoutEditMode } = useLayoutEditMode()
 
 // 计算属性：是否显示撤销按钮
 const showUndo = computed(() => undoForwardState.value === UndoForwardState.ShowUndo)
@@ -112,6 +115,19 @@ const hoveringDockItem = reactive<HoveringDockItem>({
 })
 const currentDockItems = ref<DockItem[]>([])
 const activatedDockItem = ref<DockItem>()
+
+const dockEditActions = computed(() => [
+  {
+    key: 'refresh' as const,
+    label: t('common.operation.refresh'),
+    icon: 'line-md:rotate-270',
+  },
+  {
+    key: 'backToTop' as const,
+    label: t('layout_editor.back_to_top'),
+    icon: 'line-md:arrow-small-up',
+  },
+])
 
 const tooltipPlacement = computed(() => {
   if (settings.value.dockPosition === 'left')
@@ -232,7 +248,16 @@ function computeDockItem(): DockItem[] {
   return targetDockItems
 }
 
+function handleDockThemeClick(event: MouseEvent) {
+  if (!isLayoutEditing.value)
+    toggleDark(event)
+}
+
 function toggleHideDock(hide: boolean) {
+  if (isLayoutEditing.value) {
+    hideDock.value = false
+    return
+  }
   if (settings.value.autoHideDock)
     hideDock.value = hide
   else
@@ -240,6 +265,9 @@ function toggleHideDock(hide: boolean) {
 }
 
 function handleDockItemClick($event: MouseEvent, dockItem: DockItem) {
+  if (isLayoutEditing.value)
+    return
+
   if ($event.ctrlKey || $event.metaKey) {
     openDockItemInNewTab(dockItem)
     return
@@ -250,6 +278,9 @@ function handleDockItemClick($event: MouseEvent, dockItem: DockItem) {
 }
 
 function openDockItemInNewTab(dockItem: DockItem) {
+  if (isLayoutEditing.value)
+    return
+
   activatedDockItem.value = dockItem
   openLinkToNewTab(`https://www.bilibili.com/?page=${dockItem.page}`)
 }
@@ -355,17 +386,21 @@ const dockScale = computed((): number => {
   let additionalHeight = 0
   let additionalWidth = 0
 
-  if (detachDockActionButtons.value) {
+  if (detachDockActionButtons.value && !isLayoutEditing.value) {
     additionalHeight = 0
     additionalWidth = 0
   }
   else if (settings.value.dockPosition === 'bottom') {
-    const maxButtonCount = settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1
+    const maxButtonCount = isLayoutEditing.value
+      ? 2
+      : (settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1)
     const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
     additionalWidth = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
   }
   else {
-    const maxButtonCount = settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1
+    const maxButtonCount = isLayoutEditing.value
+      ? 2
+      : (settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1)
     const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
     additionalHeight = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
   }
@@ -535,7 +570,7 @@ onUnmounted(() => {
   >
     <!-- Edge Div -->
     <div
-      v-if="settings.autoHideDock && hideDock"
+      v-if="settings.autoHideDock && hideDock && !isLayoutEditing"
       class="dock-edge"
       :class="`dock-edge-${settings.dockPosition}`"
       @mouseenter="toggleHideDock(false)"
@@ -546,12 +581,17 @@ onUnmounted(() => {
     <div
       ref="dockContentRef"
       class="dock-content"
+      data-layout-edit-target="dock-component"
+      data-layout-edit-direct
+      data-layout-settings-menu="BewlyComponents"
+      data-layout-settings-page="dock"
+      data-layout-settings-title-key="settings.group_dock"
       :class="{
         'left': settings.dockPosition === 'left',
         'right': settings.dockPosition === 'right',
         'bottom': settings.dockPosition === 'bottom',
-        'hide': hideDock,
-        'half-hide': settings.halfHideDock,
+        'hide': hideDock && !isLayoutEditing,
+        'half-hide': settings.halfHideDock && !isLayoutEditing,
         'hover': dockContentHover,
         'ready': dockReady,
       }"
@@ -566,6 +606,10 @@ onUnmounted(() => {
           <Tooltip :content="$t(dockItem.i18nKey)" :placement="tooltipPlacement">
             <button
               class="dock-item group"
+              :data-layout-edit-target="`dock-navigation-${dockItem.page}`"
+              data-layout-settings-menu="BewlyComponents"
+              data-layout-settings-page="dock"
+              data-layout-settings-title-key="settings.dock_content_adjustment"
               :class="{
                 'active': isDockItemActivated(dockItem),
                 'inactive': hoveringDockItem.themeMode && isDark,
@@ -591,66 +635,125 @@ onUnmounted(() => {
         <!-- dividing line -->
         <div class="divider" />
 
-        <Tooltip
-          v-if="!settings.disableLightDarkModeSwitcherOnDock"
-          :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" :placement="tooltipPlacement"
-          class="group"
-          pointer-events-none
+        <div
+          v-if="isLayoutEditing || !settings.disableLightDarkModeSwitcherOnDock"
+          class="dock-edit-utility-item"
+          data-layout-edit-target="dock-theme"
+          data-layout-settings-menu="BewlyComponents"
+          data-layout-settings-page="dock"
+          data-layout-settings-title-key="settings.disable_light_dark_mode_switcher"
+          :class="{ 'dock-edit-utility-item--hidden': settings.disableLightDarkModeSwitcherOnDock }"
         >
-          <!-- moon -->
-          <div
-            v-if="isDark"
-            pos="absolute top-0 left-0 group-hover:top-2px group-hover:left--4px"
-            w-full h-full bg-white rounded="1/2"
-            z--2 pointer-events-none
-            :shadow="
-              settings.disableDockGlowingEffect
-                ? 'none'
-                : 'group-hover:[-8px_4px_160px_20px_hsla(226deg,85%,77%,1),-8px_4px_100px_12px_hsla(226deg,85%,77%,0.8),-8px_4px_60px_10px_hsla(226deg,85%,77%,0.6),-8px_4px_20px_4px_hsla(226deg,85%,77%,0.4),-4px_2px_8px_0_hsla(226deg,85%,77%,0.8)]'"
-            opacity-0 group-hover:opacity-100
-            duration-300
-          />
-
-          <button
-            class="dock-item"
-            bg="!dark-hover:$bew-bg" transform="!dark-hover:scale-100"
-            :shadow="settings.disableDockGlowingEffect ? 'none' : '!dark-hover:[inset_4px_-2px_8px_hsla(226deg,85%,77%,1)]'"
-            pointer-events-auto
-            @click="toggleDark"
-            @mouseenter="hoveringDockItem.themeMode = true"
-            @mouseleave="hoveringDockItem.themeMode = false"
+          <Tooltip
+            :content="isDark ? $t('dock.dark_mode') : $t('dock.light_mode')" :placement="tooltipPlacement"
+            class="group"
+            pointer-events-none
           >
-            <Transition name="fade">
-              <div v-show="hoveringDockItem.themeMode" absolute>
-                <Icon v-if="isDark" icon="line-md:sunny-outline-to-moon-loop-transition" />
-                <Icon v-else icon="line-md:moon-alt-to-sunny-outline-loop-transition" />
-              </div>
-            </Transition>
-            <Transition name="fade">
-              <div v-show="!hoveringDockItem.themeMode" absolute>
-                <Icon v-if="isDark" icon="line-md:sunny-outline-to-moon-transition" />
-                <Icon v-else icon="line-md:moon-to-sunny-outline-transition" />
-              </div>
-            </Transition>
-          </button>
-        </Tooltip>
+            <!-- moon -->
+            <div
+              v-if="isDark"
+              pos="absolute top-0 left-0 group-hover:top-2px group-hover:left--4px"
+              w-full h-full bg-white rounded="1/2"
+              z--2 pointer-events-none
+              :shadow="
+                settings.disableDockGlowingEffect
+                  ? 'none'
+                  : 'group-hover:[-8px_4px_160px_20px_hsla(226deg,85%,77%,1),-8px_4px_100px_12px_hsla(226deg,85%,77%,0.8),-8px_4px_60px_10px_hsla(226deg,85%,77%,0.6),-8px_4px_20px_4px_hsla(226deg,85%,77%,0.4),-4px_2px_8px_0_hsla(226deg,85%,77%,0.8)]'"
+              opacity-0 group-hover:opacity-100
+              duration-300
+            />
+
+            <button
+              class="dock-item"
+              bg="!dark-hover:$bew-bg" transform="!dark-hover:scale-100"
+              :shadow="settings.disableDockGlowingEffect ? 'none' : '!dark-hover:[inset_4px_-2px_8px_hsla(226deg,85%,77%,1)]'"
+              pointer-events-auto
+              @click="handleDockThemeClick"
+              @mouseenter="hoveringDockItem.themeMode = true"
+              @mouseleave="hoveringDockItem.themeMode = false"
+            >
+              <Transition name="fade">
+                <div v-show="hoveringDockItem.themeMode" absolute>
+                  <Icon v-if="isDark" icon="line-md:sunny-outline-to-moon-loop-transition" />
+                  <Icon v-else icon="line-md:moon-alt-to-sunny-outline-loop-transition" />
+                </div>
+              </Transition>
+              <Transition name="fade">
+                <div v-show="!hoveringDockItem.themeMode" absolute>
+                  <Icon v-if="isDark" icon="line-md:sunny-outline-to-moon-transition" />
+                  <Icon v-else icon="line-md:moon-to-sunny-outline-transition" />
+                </div>
+              </Transition>
+            </button>
+          </Tooltip>
+        </div>
 
         <Tooltip :content="$t('dock.settings')" :placement="tooltipPlacement">
           <button
             class="dock-item group"
+            data-layout-edit-target="dock-settings"
+            data-layout-settings-menu="BewlyComponents"
+            data-layout-settings-page="dock"
+            data-layout-settings-title-key="settings.group_dock"
             :class="{
               inactive: hoveringDockItem.themeMode && isDark,
             }"
-            @click="emit('settingsVisibilityChange')"
+            @click="openSettings()"
           >
             <div i-mingcute:settings-3-line text-xl group-hover:rotate-180 transition="transform duration-400 ease-out" />
           </button>
         </Tooltip>
+
+        <Tooltip
+          v-if="settings.showLayoutEditButton || isLayoutEditing"
+          :content="$t(isLayoutEditing ? 'layout_editor.finish' : 'layout_editor.edit_dock')"
+          :placement="tooltipPlacement"
+        >
+          <button
+            class="dock-item dock-edit-button"
+            data-layout-edit-control
+            :class="{ active: isLayoutEditing }"
+            :aria-pressed="isLayoutEditing"
+            @click="toggleLayoutEditMode('dock')"
+          >
+            <Icon :icon="isLayoutEditing ? 'mingcute:check-line' : 'mingcute:edit-3-line'" />
+          </button>
+        </Tooltip>
+      </div>
+
+      <div
+        v-if="isLayoutEditing"
+        class="dock-edit-action-items"
+        :style="dockActionButtonsStyle"
+      >
+        <div
+          v-for="action in dockEditActions"
+          :key="action.key"
+          class="dock-edit-action-item"
+        >
+          <button
+            type="button"
+            class="back-to-top-or-refresh-btn"
+            :data-layout-edit-target="`dock-action-${action.key}`"
+            data-layout-settings-menu="BewlyComponents"
+            data-layout-settings-page="dock"
+            data-layout-settings-title-key="settings.back_to_top_and_refresh_buttons_are_separated"
+            :aria-label="action.label"
+            :title="action.label"
+          >
+            <Icon
+              :icon="action.icon"
+              class="dock-edit-action-item__icon"
+              :class="{ 'dock-edit-action-item__icon--refresh': action.key === 'refresh' }"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
       </div>
 
       <!-- Back to top & refresh buttons -->
       <div
-        v-if="showInlineDockActionButtons"
+        v-if="!isLayoutEditing && showInlineDockActionButtons"
         :style="dockActionButtonsStyle"
         pos="absolute"
         flex="~ gap-2"
@@ -671,11 +774,13 @@ onUnmounted(() => {
                 <Icon
                   v-if="key === 1"
                   icon="line-md:rotate-270"
+                  class="dock-action-icon"
                   shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
                 />
                 <Icon
                   v-else
                   icon="line-md:arrow-small-up"
+                  class="dock-action-icon"
                   shrink-0 absolute text="size-$bew-icon-size-lg"
                 />
               </button>
@@ -694,11 +799,13 @@ onUnmounted(() => {
               <Icon
                 v-if="reachTop && canRefreshCurrentPage"
                 icon="line-md:rotate-270"
+                class="dock-action-icon"
                 shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
               />
               <Icon
                 v-else
                 icon="line-md:arrow-small-up"
+                class="dock-action-icon"
                 shrink-0 absolute text="size-$bew-icon-size-lg"
               />
             </Transition>
@@ -717,11 +824,13 @@ onUnmounted(() => {
             <Icon
               v-if="showUndo"
               icon="mdi:undo-variant"
+              class="dock-action-icon"
               shrink-0 absolute text="size-$bew-icon-size-lg"
             />
             <Icon
               v-else-if="showForward"
               icon="mdi:redo-variant"
+              class="dock-action-icon"
               shrink-0 absolute text="size-$bew-icon-size-lg"
             />
           </button>
@@ -731,7 +840,7 @@ onUnmounted(() => {
 
     <!-- Detached action buttons stay visible when the dock itself is auto-hidden. -->
     <div
-      v-if="showDetachedDockActionButtons"
+      v-if="!isLayoutEditing && showDetachedDockActionButtons"
       class="detached-dock-actions"
       :style="detachedDockActionButtonsStyle"
       pos="absolute"
@@ -745,6 +854,7 @@ onUnmounted(() => {
         >
           <Icon
             icon="line-md:rotate-270"
+            class="dock-action-icon"
             shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
           />
         </button>
@@ -757,6 +867,7 @@ onUnmounted(() => {
         >
           <Icon
             icon="line-md:arrow-small-up"
+            class="dock-action-icon"
             shrink-0 absolute text="size-$bew-icon-size-lg"
           />
         </button>
@@ -770,11 +881,13 @@ onUnmounted(() => {
           <Icon
             v-if="showUndo"
             icon="mdi:undo-variant"
+            class="dock-action-icon"
             shrink-0 absolute text="size-$bew-icon-size-lg"
           />
           <Icon
             v-else-if="showForward"
             icon="mdi:redo-variant"
+            class="dock-action-icon"
             shrink-0 absolute text="size-$bew-icon-size-lg"
           />
         </button>
@@ -830,6 +943,11 @@ onUnmounted(() => {
       opacity 300ms ease;
     box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
   }
+}
+
+.back-to-top-or-refresh-btn :deep(.dock-action-icon) {
+  width: var(--bew-icon-size-lg);
+  height: var(--bew-icon-size-lg);
 }
 
 .dock-content {
@@ -935,6 +1053,38 @@ onUnmounted(() => {
   }
 }
 
+.dock-edit-utility-item {
+  position: relative;
+  flex: none;
+}
+
+.dock-edit-utility-item--hidden :deep(.dock-item) {
+  opacity: 0.45;
+}
+
+.dock-edit-action-items {
+  position: absolute;
+  z-index: 10002;
+  display: flex;
+  gap: var(--bew-space-2);
+}
+
+.dock-edit-action-item {
+  position: relative;
+  flex: none;
+}
+
+.dock-edit-action-item__icon {
+  position: absolute;
+  width: var(--bew-icon-size-lg);
+  height: var(--bew-icon-size-lg);
+  flex: none;
+}
+
+.dock-edit-action-item__icon--refresh {
+  transform: rotate(90deg);
+}
+
 .dock-item {
   --shadow-dark: 0 4px 30px 4px rgba(255, 255, 255, 0.6);
   --shadow-active: 0 4px 30px var(--bew-theme-color-60);
@@ -980,7 +1130,7 @@ onUnmounted(() => {
     --uno: "opacity-80 !shadow-none";
   }
 
-  svg {
+  :deep(.bew-local-icon) {
     --uno: "lg:w-22px w-18px lg:h-22px h-18px block align-middle";
   }
 }

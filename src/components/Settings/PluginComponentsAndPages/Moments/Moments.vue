@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
+import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
+import type { TabsPosition } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -90,6 +92,11 @@ const gridColumnOptions = computed(() => [
   { label: t('settings.moments_grid_columns_option', { count: 2 }), value: '2' as const },
   { label: t('settings.moments_grid_columns_option', { count: 1 }), value: '1' as const },
 ])
+
+const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition }[]>(() => [
+  { label: t('common.position.left'), value: 'left' },
+  { label: t('common.position.center'), value: 'center' },
+])
 </script>
 
 <template>
@@ -145,6 +152,13 @@ const gridColumnOptions = computed(() => [
           :options="gridColumnOptions"
         />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.moments_tabs_position')" right-width="auto">
+        <SettingsSegmentedControl
+          v-model="settings.momentsTabsPosition"
+          :label="$t('settings.moments_tabs_position')"
+          :options="momentsTabsPositionOptions"
+        />
+      </SettingsItem>
       <SettingsItem
         :title="$t('settings.moments_enable_live_preview')"
         :desc="$t('settings.moments_enable_live_preview_desc')"
@@ -176,6 +190,24 @@ const gridColumnOptions = computed(() => [
             />
           </div>
         </template>
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.moments_keyword_filter')"
+        :desc="$t('settings.moments_keyword_filter_desc')"
+        right-width="auto"
+      >
+        <div
+          class="moment-keyword-filter"
+          :class="{ 'moment-keyword-filter--enabled': settings.momentsEnableKeywordFilter }"
+        >
+          <Input
+            v-if="settings.momentsEnableKeywordFilter"
+            v-model="settings.momentsBlockedKeywords"
+            :placeholder="$t('settings.moments_keyword_filter_placeholder')"
+            class="moment-keyword-filter__input"
+          />
+          <Radio v-model="settings.momentsEnableKeywordFilter" />
+        </div>
       </SettingsItem>
       <SettingsItem
         :title="$t('settings.moments_card_open_mode')"
@@ -232,5 +264,27 @@ const gridColumnOptions = computed(() => [
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.moment-keyword-filter {
+  display: flex;
+  gap: var(--bew-space-2);
+  align-items: center;
+  justify-content: flex-end;
+
+  &--enabled {
+    width: min(360px, 40vw);
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .moment-keyword-filter--enabled {
+    width: min(280px, 48vw);
+  }
 }
 </style>

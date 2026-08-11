@@ -1,7 +1,7 @@
-import { Icon } from '@iconify/vue'
 import { createVNode, render } from 'vue'
 import browser from 'webextension-polyfill'
 
+import Icon from '~/components/Icon.vue'
 import { isInIframe } from '~/utils/main'
 
 const SPLIT_FLAG = 'bewlyOpusSplit'
@@ -163,7 +163,7 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .bili-opus-vie
   box-sizing: border-box !important;
   overflow-x: hidden !important;
 }
-html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode img,
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode img:not(.pswp__img),
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode video,
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode iframe,
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode table {
@@ -214,6 +214,24 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .bili-opus-vie
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-toc {
   left: max(10px, calc((100vw - 980px) / 2 + 20px)) !important;
   right: auto !important;
+}
+/* 专栏 Dialog 内不保留悬浮目录，避免展开/收起时正文横向位移。 */
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-detail:has(.opus-toc) {
+  width: min(860px, calc(100% - 20px)) !important;
+  padding: 12px 12px 40px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .bili-opus-view-wrap:has(> .opus-toc) {
+  width: min(860px, calc(100% - 20px)) !important;
+  margin: 0 auto !important;
+  padding: 12px 12px 40px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .bili-opus-view-wrap:has(> .opus-toc) > .bili-opus-view {
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 12px 12px 40px !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-toc {
+  display: none !important;
 }
 .bewly-opus-iframe-loading {
   position: fixed !important;
@@ -522,8 +540,8 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav:hover {
   background: rgba(0, 0, 0, 0.72) !important;
 }
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav > svg,
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > svg {
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__nav > .bew-local-icon,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > .bew-local-icon {
   display: block !important;
   width: 18px !important;
   height: 18px !important;
@@ -735,7 +753,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav {
   transform: translateY(-50%) !important;
   font-size: 32px !important;
 }
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > svg {
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__nav > .bew-local-icon {
   width: 24px !important;
   height: 24px !important;
 }
@@ -827,9 +845,12 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .bili-comment
   padding-right: 0 !important;
   box-sizing: border-box !important;
 }
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel img,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel img:not(.pswp__img),
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel video {
   max-width: 100% !important;
+}
+html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .pswp__img {
+  max-width: none !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .horizontal-scroll-album,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .bili-album,
@@ -1121,7 +1142,7 @@ function isColumnArticleOpus(root?: HTMLElement | null): boolean {
   if (!(articleChrome instanceof HTMLElement))
     return false
 
-  // 有专栏壳 + 目录，才按专栏收窄（保留目录）
+  // 有专栏壳 + 目录，才按专栏收窄
   try {
     const catalog = document.querySelector(CATALOG_SELECTORS)
     if (catalog instanceof HTMLElement
@@ -1325,7 +1346,7 @@ function unbindGalleryViewerBridge() {
   }
 }
 
-/** iframe 内复用项目现有 Iconify 图标组件，不依赖字体基线或页面图标样式 */
+/** iframe 内复用项目本地图标组件，不依赖字体基线或页面图标样式 */
 function mountGalleryIcon(host: HTMLElement, icon: string) {
   render(createVNode(Icon, {
     icon,
@@ -2215,7 +2236,7 @@ function applySplitLayout(root: HTMLElement): boolean {
   if (Date.now() - lastMutationAt < 280)
     return false
 
-  // 仅专栏：整页收窄并保留目录；普通图文不走此分支
+  // 仅专栏：整页收窄并隐藏原站目录；普通图文不走此分支
   if (isColumnArticleOpus(root))
     return applyArticleLayout(root)
 
@@ -2350,6 +2371,7 @@ function scheduleStableApply() {
  */
 export function disposeOpusDetailDrawerLayout() {
   clearDeferredSetup()
+  markArticleMode(false)
 
   try {
     observer?.disconnect()

@@ -6,8 +6,17 @@ import { computed, ref } from 'vue'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isHomePage } from '~/utils/main'
+import { shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
+
+const props = withDefaults(defineProps<{
+  forceVisible?: boolean
+  editMode?: boolean
+}>(), {
+  forceVisible: false,
+  editMode: false,
+})
 
 const { showSearchBar, forceWhiteIcon } = useTopBarInteraction()
 const topBarStore = useTopBarStore()
@@ -21,10 +30,12 @@ const searchBarStyles = computed(() => ({
   // Keep the initial radius calculation valid before the global tokens finish loading.
   '--b-search-bar-height': 'var(--bew-top-bar-primary-control-height, 46px)',
   '--b-search-bar-normal-color': settings.value.enableFrostedGlass ? 'color-mix(in oklab, var(--bew-elevated-solid), transparent 60%)' : 'var(--bew-elevated)',
+  '--b-search-bar-hover-color': 'var(--bew-elevated)',
   '--b-search-bar-focus-color': 'var(--bew-elevated)',
   '--b-search-bar-normal-icon-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
   '--b-search-bar-normal-text-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
-  '--b-search-bar-hover-text-color': useLightText.value ? 'white' : 'var(--bew-text-1)',
+  '--b-search-bar-hover-text-color': 'var(--bew-text-1)',
+  '--b-search-bar-focus-text-color': 'var(--bew-text-1)',
   '--b-search-bar-placeholder-opacity': useLightText.value ? '0.9' : '0.65',
 }))
 
@@ -76,12 +87,15 @@ function pushKeywordToSearchResultsPage(keyword: string) {
 }
 
 function handleSearch(keyword: string) {
+  if (props.editMode)
+    return
+
   // 先更新 searchKeyword，确保顶栏搜索框显示正确的值
   searchKeyword.value = keyword
 
   // 只有在搜索结果页且启用了插件搜索时才使用 pushState 方式
   // 其他情况由 SearchBar 组件的 navigateToSearchResultPage 处理
-  if (!settings.value.usePluginSearchResultsPage)
+  if (!shouldUsePluginSearchResultsPage())
     return
 
   // 检查是否在搜索结果页（通过 URL 参数判断，因为在 TopBar 中无法 inject BEWLY_APP）
@@ -99,12 +113,12 @@ function handleSearch(keyword: string) {
   <div flex="inline 1 md:justify-center items-center" w="full" data-top-bar-search>
     <Transition name="slide-out">
       <SearchBar
-        v-if="showSearchBar"
+        v-if="showSearchBar || props.forceVisible"
         v-model="searchKeyword"
         class="search-bar"
         :style="searchBarStyles"
         :show-hot-search="settings.showHotSearchInTopBar"
-        :search-behavior="searchBehavior"
+        :search-behavior="props.editMode ? 'stay' : searchBehavior"
         :top-bar-mode="true"
         @search="handleSearch"
       />

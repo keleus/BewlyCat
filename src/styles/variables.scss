@@ -108,8 +108,8 @@
   // Search and logo stay one step larger (still full capsule/circle)
   --bew-top-bar-primary-control-height: 46px;
   --bew-top-bar-primary-control-radius: var(--bew-radius-full);
-  --bew-top-bar-brand-logo-width: 84px;
-  --bew-top-bar-brand-logo-height: 28px;
+  --bew-top-bar-brand-logo-width: 66px;
+  --bew-top-bar-brand-logo-height: 22px;
   --bew-top-bar-brand-logo-compact-size: 24px;
   --bew-top-bar-solid-background: var(--bew-elevated-solid);
   --bew-top-bar-solid-background-force-white: hsl(0 0% 0%);
@@ -134,7 +134,6 @@
   --bew-liquid-indicator-paint-duration: var(--bew-duration-normal);
 
   --bew-top-bar-height: 64px;
-  --bew-top-bar-switcher-height: 24px;
 
   // #region Filters
   // Use this in all components (except dialogs) if you want to add a frosted glass effect

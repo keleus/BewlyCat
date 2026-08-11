@@ -7,9 +7,11 @@ import { settings } from '~/logic'
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 
-const props = defineProps<{
-  scope: 'topBar' | 'videoCard'
-}>()
+const props = withDefaults(defineProps<{
+  scope?: 'all' | 'topBar' | 'videoCard'
+}>(), {
+  scope: 'all',
+})
 
 const { t } = useI18n()
 
@@ -59,7 +61,7 @@ const videoCardOpenModeOptions = computed(() => {
 <template>
   <SettingsItemGroup :title="$t('settings.group_link_opening_behavior')">
     <SettingsItem
-      v-if="props.scope === 'topBar'"
+      v-if="props.scope === 'all' || props.scope === 'topBar'"
       :title="$t('settings.top_bar_link_opening_behavior')"
       :desc="$t('settings.link_opening_behavior_desc')"
       right-width="auto"
@@ -67,7 +69,7 @@ const videoCardOpenModeOptions = computed(() => {
       <Select v-model="settings.topBarLinkOpenMode" :options="openModeOptions" w="160px" />
     </SettingsItem>
     <SettingsItem
-      v-if="props.scope === 'videoCard'"
+      v-if="props.scope === 'all' || props.scope === 'videoCard'"
       :title="$t('settings.video_card_link_opening_behavior')"
       :desc="$t('settings.video_card_link_opening_behavior_desc')"
       right-width="auto"
@@ -79,7 +81,7 @@ const videoCardOpenModeOptions = computed(() => {
       />
     </SettingsItem>
     <SettingsItem
-      v-if="props.scope === 'topBar'"
+      v-if="props.scope === 'all' || props.scope === 'topBar'"
       :title="$t('settings.search_bar_link_opening_behavior')"
       :desc="$t('settings.link_opening_behavior_desc')"
       right-width="auto"

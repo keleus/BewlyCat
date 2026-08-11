@@ -14,8 +14,21 @@ import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isHomePage } from '~/utils/main'
+import { shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { openLinkInBackground } from '~/utils/tabs'
 import { createTransformer } from '~/utils/transformer'
+
+const bewlyPageByTopBarItem: Partial<Record<string, AppPage>> = {
+  channels: AppPage.Home,
+  moments: AppPage.Moments,
+  favorites: AppPage.Favorites,
+  history: AppPage.History,
+  watchLater: AppPage.WatchLater,
+}
+
+function getConfiguredPageUrl(page: AppPage): string {
+  return `https://www.bilibili.com/?page=${page}`
+}
 
 export function useTopBarInteraction() {
   const topBarStore = useTopBarStore()
@@ -50,6 +63,10 @@ export function useTopBarInteraction() {
     // 如果启用了"始终使用透明样式"，直接返回 true
     if (settings.value.alwaysUseTransparentTopBar)
       return true
+
+    // 强制使用无背景图首页的标准顶栏样式，不再根据页面壁纸切换为白色图标与阴影背景
+    if (settings.value.alwaysUseFrostedGlassTopBar)
+      return false
 
     if (
       (isHomePage() && settings.value.useOriginalBilibiliHomepage)
@@ -109,7 +126,7 @@ export function useTopBarInteraction() {
       // SearchResults 页面的显示逻辑：
       if (activatedPage.value === AppPage.SearchResults) {
         // 启用了插件搜索结果页才显示搜索框
-        if (!settings.value.usePluginSearchResultsPage)
+        if (!shouldUsePluginSearchResultsPage())
           return false
         // 其他情况显示搜索框
       }
@@ -175,7 +192,7 @@ export function useTopBarInteraction() {
 
   // 处理顶栏项点击
   function openConfiguredPageFromTopBar(page: AppPage) {
-    const pageUrl = `https://www.bilibili.com/?page=${page}`
+    const pageUrl = getConfiguredPageUrl(page)
     const openMode = settings.value.topBarLinkOpenMode
 
     if (openMode === 'background') {
@@ -197,6 +214,14 @@ export function useTopBarInteraction() {
     location.href = pageUrl
   }
 
+  function getTopBarItemHref(key: string, originalHref: string): string {
+    if (settings.value.touchScreenOptimization || !settings.value.openTopBarItemsInBewly)
+      return originalHref
+
+    const page = bewlyPageByTopBarItem[key]
+    return page ? getConfiguredPageUrl(page) : originalHref
+  }
+
   function handleClickTopBarItem(event: MouseEvent, key: string) {
     if (handledClickEvents.has(event))
       return
@@ -214,13 +239,6 @@ export function useTopBarInteraction() {
     if (!settings.value.openTopBarItemsInBewly || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
       return
 
-    const bewlyPageByTopBarItem: Partial<Record<string, AppPage>> = {
-      channels: AppPage.Home,
-      moments: AppPage.Moments,
-      favorites: AppPage.Favorites,
-      history: AppPage.History,
-      watchLater: AppPage.WatchLater,
-    }
     const page = bewlyPageByTopBarItem[key]
     if (!page)
       return
@@ -257,6 +275,7 @@ export function useTopBarInteraction() {
     handleClickTopBarItem,
     handleClickTopBarLogo,
     handleNotificationsItemClick,
+    getTopBarItemHref,
     forceWhiteIcon,
     showSearchBar,
   }

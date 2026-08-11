@@ -18,6 +18,14 @@ export enum DrawerType {
   NotificationsDrawer = 'notifications',
 }
 
+export type SettingsMenu = 'General' | 'BewlyPages' | 'BewlyComponents' | 'Bilibili' | 'Appearance' | 'Shortcuts' | 'About'
+
+export interface SettingsNavigationTarget {
+  menu: SettingsMenu
+  secondaryPage?: string
+  targetTitleKey?: string
+}
+
 export interface BewlyAppProvider {
   activatedPage: Ref<AppPage>
   // 添加Home页面的子页面状态
@@ -42,6 +50,8 @@ export interface BewlyAppProvider {
   // 添加活跃抽屉状态
   activeDrawer: Ref<DrawerType>
   setActiveDrawer: (drawer: DrawerType) => void
+  pendingSettingsNavigation: Ref<SettingsNavigationTarget | undefined>
+  openSettings: (target?: SettingsNavigationTarget) => void
 }
 
 export function useBewlyApp(): BewlyAppProvider {

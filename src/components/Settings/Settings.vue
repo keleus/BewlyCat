@@ -101,7 +101,7 @@ const settingsSearchRef = ref<HTMLElement>()
 const searchInputRef = ref<HTMLInputElement>()
 const searchPopoverStyle = ref<CSSProperties>({})
 const isSearchFocused = ref(false)
-const { mainAppRef } = useBewlyApp()
+const { mainAppRef, pendingSettingsNavigation } = useBewlyApp()
 
 function handleSearchBlur() {
   isSearchFocused.value = false
@@ -419,6 +419,27 @@ function navigateToSearchResult(entry: SettingsSearchEntry) {
   nextTick(() => scrollToSearchTarget(targetTitle, navigationId))
 }
 
+const secondaryPageStorageKeys: Partial<Record<MenuType, string>> = {
+  [MenuType.BewlyPages]: bewlyPagesStorageKey,
+  [MenuType.BewlyComponents]: bewlyComponentsStorageKey,
+  [MenuType.Bilibili]: bilibiliPageStorageKey,
+}
+
+watch(pendingSettingsNavigation, (request) => {
+  if (!request)
+    return
+
+  const secondaryStorageKey = secondaryPageStorageKeys[request.menu as MenuType]
+  navigateToSearchResult({
+    menu: request.menu as MenuType,
+    targetTitleKey: request.targetTitleKey,
+    storageValues: request.secondaryPage && secondaryStorageKey
+      ? [{ key: secondaryStorageKey, value: request.secondaryPage }]
+      : undefined,
+  })
+  pendingSettingsNavigation.value = undefined
+}, { immediate: true })
+
 onBeforeUnmount(() => {
   if (settingsContentFrame !== undefined)
     cancelAnimationFrame(settingsContentFrame)
@@ -436,7 +457,7 @@ function changeMenuItem(menuItem: MenuType) {
 </script>
 
 <template>
-  <div class="fixed w-full h-full top-0 left-0">
+  <div class="fixed w-full h-full top-0 left-0" data-layout-edit-control>
     <div
       class="fixed w-full h-full top-0 left-0"
       @click="handleClose"

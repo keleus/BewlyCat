@@ -59,6 +59,41 @@ common:
     right: 右邊
     top: 上頭
     bottom: 下低
+layout_editor:
+  finish: 完成
+  edit_dock: 編輯 Dock
+  edit_sidebar: 編輯模式
+  back_to_top: 返到最頂
+  click_to_adjust: 撳你想調整嘅元素
+  switch_to_bilibili_page: 點樣轉到 Bilibili 原頁面
+  switch_to_plugin_page: 點樣轉到插件頁面
+  adjust_video_grid_columns: 調整影片卡片欄數
+  adjust_moments_grid_columns: 調整動態頁欄數
+  adjust_dock_position: 點樣調整 Dock 欄位置
+  video_default_player_mode: 點樣設定預設播放器樣式
+  video_auto_play: 點樣預設開啟自動連播
+  video_external_watch_later: 點樣外置稍後再睇按鈕
+  video_sidebar_position: 點樣調整側邊欄位置
+  video_topbar_auto_hide: 點樣令頂欄自動收埋
+  home_filter_recommendations: 點樣過濾唔想睇嘅推介
+  home_recommendation_mode: 點樣調整個人化推介來源
+  following_show_live: 點樣顯示直播緊嘅內容
+  following_hide_live: 點樣收埋直播緊嘅內容
+  following_hide_uploader_list: 點樣顯示或者收埋左邊 UP 主名單
+  following_filter_videos: 點樣過濾充電同動態影片
+  moments_filter_content: 點樣過濾唔想睇嘅動態
+  moments_preview: 點樣設定動態影片預覽
+  search_suggestions_history: 點樣設定搜尋建議同歷史
+  search_wallpaper: 點樣獨立設定搜尋頁背景
+  search_results_personalization: 點樣減少個人化搜尋結果
+  search_results_pagination: 點樣切換滾動或者分頁載入
+  original_moments_show_user_card: 點樣顯示原版動態頁用戶卡片
+  original_moments_show_live_list: 點樣顯示原版動態頁直播列表
+  original_moments_show_community_center: 點樣顯示原版動態頁社群中心
+  original_moments_show_hot_search: 點樣顯示原版動態頁熱搜
+  original_moments_show_up_list: 點樣顯示原版動態頁 UP 橫幅
+  switch_to_bewly_topbar: 點樣轉用 BewlyCat 頂欄
+  switch_to_original_topbar: 點樣轉用 Bilibili 頂欄
 iframe_drawer:
   open_in_new_tab: 喺新嘅分頁度打開連結
   close: 關閉
@@ -89,7 +124,7 @@ settings:
     placeholder: 搜尋設定
     no_results: 搵唔到相關設定
     located: 已定位到呢個設定
-  category_general_desc: 設定語言、互動版面同抽屜行為。
+  category_general_desc: 設定語言、互動版面、連結打開方式同抽屜行為。
   category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型、自訂樣式同其他頁面嘅適配。
   category_shortcuts_desc: 啟用、修改或者還原 BewlyCat 同播放器快捷鍵。
   breadcrumb: 設定位置
@@ -220,13 +255,15 @@ settings:
   group_topbar: 頂欄
   topbar_logo_and_channels: Logo 設定
   topbar_logo_and_channels_desc: 設定頂欄 Logo 樣式，同埋觸控模式下要唔要顯示首頁按鈕。
-  topbar_switchers: BewlyCat/Bilibili 切換掣
-  topbar_switchers_desc: 分別控制首頁頁面切換掣同頂欄切換掣係咪顯示。
+  topbar_switchers: BewlyCat/Bilibili 頁面切換掣
+  topbar_switchers_desc: 控制 BewlyCat 同 Bilibili 原版頁面切換掣係咪顯示。
   topbar_actions: 頂欄功能圖示
   topbar_actions_desc: 分別設定右邊功能圖示嘅顯示狀態、邊位標記同相關提醒。
   topbar_user_menu: 頂欄用戶選單
   topbar_display_settings: 頂欄顯示同操作
   topbar_display_settings_desc: 調整頂欄喺唔同頁面同互動情況之下嘅顯示方式。
+  topbar_style_settings: 頂欄樣式
+  topbar_style_settings_desc: 調整頂欄背景、漸變同頁面背景適配方式。
   group_navigation: Dock同側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄
@@ -252,6 +289,12 @@ settings:
   group_new_moments_page_desc: 呢個頁面唔係最終成品，相關形態之後可能會有較大改動。
   group_moments_sidebar: 動態頁左邊元件
   group_moments_interaction: 動態卡片互動
+  group_environment_info: 環境資訊
+  copy_environment_info: 複製環境資訊
+  copy_environment_info_desc: 一次過複製瀏覽器、瀏覽器版本同 BewlyCat 版本，方便提交問題。
+  environment_info_copied: 已複製環境資訊
+  environment_info_copy_failed: 複製環境資訊失敗
+  environment_info_unknown: 未知
   group_settings_sync: 瀏覽器雲端同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 顯示用戶卡片
@@ -273,6 +316,7 @@ settings:
   moments_enable_video_preview: 影片動態懸停預覽
   moments_enable_video_preview_desc: 滑鼠懸停影片動態封面嗰陣播放影片預覽。
   moments_grid_columns: 動態欄數
+  moments_tabs_position: 動態分頁欄位置
   moments_grid_columns_desc: 設定 Bewly 動態頁想要嘅欄數。卡片尺寸會跟住欄數自動調整；視窗空間唔夠時會自動減少欄數，左邊欄同動態流會成組保持置中。
   moments_grid_columns_option: '{count} 欄'
   moments_filter_up_recommendation: 過濾：UP主嘅推薦
@@ -288,6 +332,9 @@ settings:
   moments_filter_video_reservation: 影片預約動態
   moments_filter_live_reservation: 直播預約動態
   moments_filter_live_dynamic: 直播動態
+  moments_keyword_filter: 按關鍵詞屏蔽動態
+  moments_keyword_filter_desc: 開啟之後，作者暱稱、標題、正文、附加卡片或者轉發原動態包含任何一個關鍵詞時，就會過濾嗰條動態。多個關鍵詞請用逗號分隔，唔區分大小寫。
+  moments_keyword_filter_placeholder: 輸入關鍵詞，用逗號分隔
   moments_hide_charge_exclusive: 隱藏充電專屬動態
   moments_hide_charge_exclusive_desc: 喺插件動態流入面過濾所有充電專屬動態。
   moments_card_open_mode: 動態卡片點擊行為
@@ -317,7 +364,6 @@ settings:
   open_top_bar_items_in_bewly_desc: 未開啟觸控螢幕優化嗰陣，撳 Logo、動態、收藏、歷史或者稍後再睇圖示，會跟「頂欄連結開啟行為」打開 Dock 入面對應嘅頁面，並沿用該頁面嘅 Bewly/原版 Bilibili 設定；未適配嘅圖示會維持原本行為。
   show_bewly_or_bili_page_switcher_desc: 喺首頁 Logo 隔籬顯示切換掣，用嚟喺 BewlyCat 頁面同 Bilibili 原版頁面之間切換。
   show_bewly_or_bili_page_switcher_on_more_pages_desc: 喺動態、搜尋、番劇、收藏、歷史同稍後再睇等 Bilibili 原版頁面顯示切換掣；切換到 BewlyCat 時會開啟對應嘅插件頁面。
-  show_bewly_or_bili_top_bar_switcher_desc: 喺頁面頂部懸停嗰陣顯示切換掣，用嚟喺 BewlyCat 頂欄同 Bilibili 原版頂欄之間切換。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開咗之後，頂欄頭像彈窗入面嘅 LV6 等級資訊區域就唔會再顯示最後登入時間同地點，亦都唔會請求登入記錄。
   chk_box:
@@ -432,13 +478,15 @@ settings:
   show_video_card_like_count: 顯示讚好數
   show_video_card_duration: 顯示影片時長
   show_video_card_watch_later: 顯示稍後再睇按鈕
+  show_video_card_more_button: 顯示更多選單掣
   show_video_watched_badge: 記錄並顯示睇過
   auto_hide_top_bar: 自動收埋頂欄
   always_use_transparent_top_bar: 頂欄始終使用透明(舊版)樣式
+  always_use_frosted_glass_top_bar: 頂欄始終使用毛玻璃樣式
+  always_use_frosted_glass_top_bar_desc: 就算頁面有背景圖，都始終使用同首頁冇背景圖嗰陣一樣嘅頂欄樣式。
   enable_top_bar_gradient: 啟用頂欄漸變效果
   enable_top_bar_gradient_desc: 開啟後頂欄預設使用毛玻璃漸變，關閉後改為實色背景。
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）
-  show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂欄切換掣
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換掣
   show_bewly_or_bili_page_switcher_on_more_pages: 喺更多頁面顯示 BewlyCat/Bilibili 頁面切換掣
   filter_articles_in_moments: 過濾專欄
@@ -463,6 +511,8 @@ settings:
   open_notifications_page_as_drawer: 用櫃桶打開通知頁面
   show_like_notification_reminder: 顯示點讚提醒
   show_like_notification_reminder_desc: 開咗之後，頂欄通知角標會將點讚提醒計埋入總數。
+  show_layout_edit_button: 顯示版面編輯掣
+  show_layout_edit_button_desc: 喺 Dock 或側邊欄顯示版面編輯入口；閂咗之後可以喺呢度重新開返。
   always_use_dock: 點都要用 Dock
   always_use_dock_desc: 啓用後，Dock 點都要用佢而唔係用側邊欄。我哋推介你同時啓用自動收埋 Dock 去。
   auto_hide_dock: 自動收埋 Dock
@@ -535,6 +585,7 @@ settings:
   enable_search_history_desc: 啓用後，搜尋欄會記同顯示你嘅搜尋歷史。關咗之後會剷晒所有歷史
   use_plugin_search_results_page: 使用插件搜尋結果頁
   use_plugin_search_results_page_desc: 開啟後，搜尋會使用插件內置嘅搜尋結果頁，支援分類篩選等功能
+  use_plugin_search_results_page_disabled_by_original_homepage: 使用原版 bilibili 首頁嗰陣，搜尋會使用 bilibili 原版結果頁
   depersonalize_search_results: 去個人化搜尋
   depersonalize_search_results_desc: 開啟後，搜尋結果請求唔會帶登入 Cookie。
   search_results_pagination_mode: 搜尋結果分頁模式
@@ -624,6 +675,7 @@ settings:
   search_page_mode_wallpaper_fixed: 定住搵嘢頁模式嘅背景
   home_tabs_adjustment: 分頁欄調整
   home_tabs_adjustment_desc: 第一個啓用嘅分頁項目會係開始頁面。
+  home_tabs_position: 主頁分頁欄位置
   always_show_tabs_on_home_page: 捲動時隱藏主頁分頁欄
   fixed_home_tabs_on_home_page: 固定主頁分頁欄
   topbar_visibility: BewlyBewly 頂欄可視性
@@ -832,7 +884,7 @@ settings:
     indent_only: 縮入-無收起功能
   comment_reply_pagination_mode:
     title: 樹狀留言模式
-    desc: 揀樹狀留言嘅回覆顯示方式。「撈多啲」會累積回覆，並由今次新增嘅父級留言繼續睇；「翻頁」保留 Bilibili 原生分頁，只顯示目前頁面
+    desc: 揀樹狀留言嘅回覆顯示方式。「撈多啲」會保持而家閱讀位置，同時向下累積回覆；「翻頁」保留 Bilibili 原生分頁，只顯示目前頁面
     load_more: 撈多啲
     pagination: 翻頁
   hide_comment_image_scrollbar: 留言圖片預覽時隱藏頁面滾動條
@@ -852,8 +904,6 @@ settings:
 auth:
   auth_access_key_first: 整之前記得先授權 BewlyBewly 去用 access key
 topbar:
-  switch_to_bewly_top_bar: 切換到 BewlyBewly 頂欄
-  switch_to_bili_top_bar: 切換到 Bilibili/Bilibili-Evolved 頂欄
   sign_in: 登入
   notifications: 通知
   moments: 動向

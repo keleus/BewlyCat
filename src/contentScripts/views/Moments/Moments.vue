@@ -14,6 +14,7 @@ import {
   isCompactPlainTextMoment,
 } from '~/components/MomentCard/utils'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
@@ -27,6 +28,7 @@ import { openLinkInBackground } from '~/utils/tabs'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
 const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
+const { isLayoutEditing } = useLayoutEditMode()
 
 interface MomentsPortalUser {
   mid: string
@@ -159,15 +161,15 @@ let detailImageViewerTrigger: HTMLElement | null = null
 let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
 const layoutRef = ref<HTMLElement | null>(null)
 const gridRef = ref<HTMLElement | null>(null)
-/** 按当前实际列数限制卡片最大宽度 */
+/** 按当前实际列数限制单张动态卡片的最大宽度。 */
+const GRID_GAP = 16
 const CARD_MAX_WIDTH_BY_COLUMNS = {
-  1: 720,
-  2: 600,
+  1: 730,
+  2: 610,
   3: 520,
 } as const
 const CARD_MIN_WIDTH = 360
 const CARD_COMPACT_MIN_WIDTH = 260
-const GRID_GAP = 16
 const SIDEBAR_WIDTH = 248
 const SIDEBAR_MIN_LAYOUT_WIDTH = SIDEBAR_WIDTH + GRID_GAP + CARD_MIN_WIDTH
 const gridColumnCount = ref(1)
@@ -176,6 +178,7 @@ let rebalanceTimer: ReturnType<typeof setTimeout> | null = null
 const hoveredMediaId = ref('')
 const previewUrls = reactive<Record<string, string>>({})
 const likingMomentIds = reactive(new Set<string>())
+const reservationLoadingMomentIds = reactive(new Set<string>())
 const watchLaterMomentIds = reactive(new Set<string>())
 const watchLaterLoadingMomentIds = reactive(new Set<string>())
 const videoCidCache = new Map<string, number>()
@@ -459,8 +462,8 @@ function getAdditionalActionText(button: any) {
   if (!button || typeof button !== 'object')
     return '查看'
 
-  // 直播预约：1 为未预约，2 为已预约，必须按状态选择对应文案
-  if (Number(button.type) === 2) {
+  // 预约按钮：status 1 为未预约，2 为已预约。
+  if (Number(button.type) === 1 || Number(button.type) === 2) {
     return Number(button.status) === 2
       ? pickText(button.check?.text, '已预约')
       : pickText(button.uncheck?.text, '预约')
@@ -564,6 +567,12 @@ function getMomentContent(item: any) {
           && Number(additionalCard.button?.type) === 1,
         isLiveReservation: additional.type === 'ADDITIONAL_TYPE_RESERVE'
           && Number(additionalCard.button?.type) === 2,
+        reservationId: additional.type === 'ADDITIONAL_TYPE_RESERVE'
+          ? String(additionalCard.rid || '')
+          : '',
+        reservationTotal: Number(additionalCard.reserve_total || 0),
+        isReserved: additional.type === 'ADDITIONAL_TYPE_RESERVE'
+          && Number(additionalCard.button?.status) === 2,
       }
     : undefined
 
@@ -579,6 +588,9 @@ function getMomentContent(item: any) {
       isUpRecommendation: false,
       isVideoReservation: false,
       isLiveReservation: false,
+      reservationId: '',
+      reservationTotal: 0,
+      isReserved: false,
     }
   }
 
@@ -1278,7 +1290,8 @@ function estimateCardHeight(moment: DisplayMoment) {
       (total, line) => total + Math.max(1, Math.ceil(Array.from(line).length / charsPerLine)),
       0,
     )))
-    return 118 + lineCount * 21 + scaledTextBodyExtra + interactionHeight
+    const additionalHeight = moment.additional ? 68 : 0
+    return 118 + lineCount * 21 + additionalHeight + interactionHeight
   }
   if (moment.forward?.images?.length) {
     const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
@@ -1634,8 +1647,37 @@ function loadMoreFilteredMoments() {
   void loadMoments(false, 0, true)
 }
 
-/** 想看分组和任一类型过滤都只允许通过按钮继续分页。 */
-function hasActiveMomentTypeFilters() {
+const blockedMomentKeywords = computed(() => Array.from(new Set(
+  settings.value.momentsBlockedKeywords
+    .split(/[\n,，;；]+/)
+    .map(keyword => keyword.trim().toLowerCase())
+    .filter(Boolean),
+)))
+
+function matchesBlockedMomentKeyword(moment: DisplayMoment) {
+  if (!settings.value.momentsEnableKeywordFilter || !blockedMomentKeywords.value.length)
+    return false
+
+  const searchableText = [
+    moment.author.name,
+    moment.title,
+    moment.text,
+    ...moment.richText.map(segment => segment.text),
+    moment.additional?.title,
+    moment.additional?.desc,
+    moment.forward?.author,
+    moment.forward?.title,
+    moment.forward?.text,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join('\n')
+    .toLowerCase()
+
+  return blockedMomentKeywords.value.some(keyword => searchableText.includes(keyword))
+}
+
+/** 想看分组和任一动态过滤都只允许通过按钮继续分页。 */
+function hasActiveMomentFilters() {
   return settings.value.momentsFilterUpRecommendation
     || settings.value.momentsHideChargeExclusive
     || settings.value.momentsHideVideoReservation
@@ -1647,13 +1689,16 @@ function hasActiveMomentTypeFilters() {
     || settings.value.momentsHideForwardDynamics
     || settings.value.momentsHidePgcDynamics
     || settings.value.momentsHideArticleDynamics
+    || (settings.value.momentsEnableKeywordFilter && blockedMomentKeywords.value.length > 0)
 }
 
 function requiresManualMomentPaging() {
-  return activeMomentGroup.value === 'wanted' || hasActiveMomentTypeFilters()
+  return activeMomentGroup.value === 'wanted' || hasActiveMomentFilters()
 }
 
 function passesMomentSettings(moment: DisplayMoment) {
+  if (matchesBlockedMomentKeyword(moment))
+    return false
   if (settings.value.momentsFilterUpRecommendation && moment.isUpRecommendation)
     return false
   if (settings.value.momentsHideChargeExclusive && moment.isChargeExclusive)
@@ -2507,6 +2552,45 @@ async function toggleMomentLike(moment: DisplayMoment) {
   }
 }
 
+async function toggleMomentReservation(moment: DisplayMoment) {
+  const additional = moment.additional
+  const reservationId = additional?.reservationId
+  if (!additional || !reservationId || reservationLoadingMomentIds.has(moment.id))
+    return
+
+  const csrf = getCSRF()
+  if (!csrf) {
+    toast.warning('登录后才能预约')
+    return
+  }
+
+  const wasReserved = Boolean(additional.isReserved)
+  reservationLoadingMomentIds.add(moment.id)
+
+  try {
+    const response = wasReserved
+      ? await api.moment.cancelMomentReservation({ sid: reservationId, csrf })
+      : await api.moment.reserveMoment({ sid: reservationId, csrf })
+    if (response.code !== 0)
+      throw new Error(response.message || (wasReserved ? '取消预约失败' : '预约失败'))
+
+    additional.isReserved = !wasReserved
+    if (typeof additional.reservationTotal === 'number') {
+      additional.reservationTotal = Math.max(
+        0,
+        additional.reservationTotal + (additional.isReserved ? 1 : -1),
+      )
+    }
+    toast.success(additional.isReserved ? '预约成功' : '已取消预约')
+  }
+  catch (error) {
+    toast.error(error instanceof Error ? error.message : '预约操作失败，请稍后重试')
+  }
+  finally {
+    reservationLoadingMomentIds.delete(moment.id)
+  }
+}
+
 function isWatchLaterAdded(target: WatchLaterTarget) {
   const stateKey = getWatchLaterStateKey(target)
   return Boolean(stateKey && watchLaterMomentIds.has(stateKey))
@@ -2620,7 +2704,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     if (requestHostMid) {
       // 按 UP 主筛选：走 feed/all + host_mid，不写入全局全部动态缓存
       let nextPage = momentsFeedPage.value
-      if (hasActiveMomentTypeFilters()) {
+      if (hasActiveMomentFilters()) {
         let scanOffset = offset.value
         let scanUpdateBaseline = updateBaseline.value
         let canContinue = true
@@ -2690,7 +2774,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     else if (requestGroup === 'wanted') {
       await momentsFeedCacheReady
       // 类型过滤开启时，首批缓存刷新与后续填充共用两页请求预算。
-      const maxRequestPages = hasActiveMomentTypeFilters() ? FILTERED_MAX_REQUEST_PAGES : Infinity
+      const maxRequestPages = hasActiveMomentFilters() ? FILTERED_MAX_REQUEST_PAGES : Infinity
       let requestPages = 0
       let cacheEntry = getValidMomentsCache(requestType) ?? {
         items: [],
@@ -2837,7 +2921,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           || (cacheEntry.hasMore && cacheEntry.items.length < MOMENTS_CACHE_MAX_ITEMS)
       }
     }
-    else if (hasActiveMomentTypeFilters()) {
+    else if (hasActiveMomentFilters()) {
       // 过滤开启：单次最多请求两页原始动态，再交给本地过滤
       let scanOffset = offset.value
       let scanUpdateBaseline = updateBaseline.value
@@ -3221,6 +3305,8 @@ watch(
     () => settings.value.momentsHideForwardDynamics,
     () => settings.value.momentsHidePgcDynamics,
     () => settings.value.momentsHideArticleDynamics,
+    () => settings.value.momentsEnableKeywordFilter,
+    () => settings.value.momentsBlockedKeywords,
   ],
   () => {
     if (scrollViewportRef.value)
@@ -3252,11 +3338,18 @@ watch(
     <div
       ref="layoutRef"
       class="moments-layout"
-      :class="{ 'moments-layout--without-sidebar': !showMomentsSidebar }"
+      :class="{ 'moments-layout--without-sidebar': !showMomentsSidebar && !isLayoutEditing }"
     >
-      <header class="moments-filter-header">
+      <header
+        class="moments-filter-header"
+        :class="{ 'moments-filter-header--center': settings.momentsTabsPosition === 'center' }"
+      >
         <section
           class="moments-filter-panel bew-segment-control bew-segment-control--surface"
+          data-layout-edit-target="moments-filter"
+          data-layout-settings-menu="BewlyPages"
+          data-layout-settings-page="moments"
+          data-layout-settings-title-key="settings.moments_tabs_position"
           :class="{
             'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
             'bew-segment-control--solid': !settings.enableFrostedGlass,
@@ -3285,8 +3378,12 @@ watch(
         </section>
       </header>
 
-      <aside v-if="showMomentsSidebar" class="moments-sidebar" aria-label="动态用户信息">
-        <div v-if="isPortalLoading" class="moments-sidebar-skeleton" aria-hidden="true">
+      <aside
+        v-if="showMomentsSidebar || isLayoutEditing"
+        class="moments-sidebar"
+        aria-label="动态用户信息"
+      >
+        <div v-if="isPortalLoading && !isLayoutEditing" class="moments-sidebar-skeleton" aria-hidden="true">
           <div v-if="settings.momentsSidebarShowUserCard" class="moments-sidebar-skeleton__profile">
             <span class="moments-sidebar-skeleton__avatar moments-skeleton-block" />
             <span class="moments-sidebar-skeleton__name moments-skeleton-block" />
@@ -3300,8 +3397,16 @@ watch(
           </div>
         </div>
         <template v-else>
-          <article v-if="settings.momentsSidebarShowUserCard && portalUser" class="moments-user-card">
+          <article
+            v-if="isLayoutEditing || (settings.momentsSidebarShowUserCard && portalUser)"
+            class="moments-user-card"
+            data-layout-edit-target="moments-sidebar-user-card"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="moments"
+            data-layout-settings-title-key="settings.moments_show_user_card"
+          >
             <a
+              v-if="portalUser"
               class="moments-user-card__profile"
               :href="`https://space.bilibili.com/${portalUser.mid}`"
               target="_blank"
@@ -3316,32 +3421,46 @@ watch(
                 </span>
               </span>
             </a>
-            <div class="moments-user-card__stats">
+            <div v-if="portalUser" class="moments-user-card__stats">
               <span><strong>{{ portalUser.following }}</strong><small>关注</small></span>
               <span><strong>{{ portalUser.follower }}</strong><small>粉丝</small></span>
               <span><strong>{{ portalUser.dyns }}</strong><small>动态</small></span>
             </div>
+            <div v-else class="moments-sidebar-editor-placeholder">
+              {{ $t('settings.moments_show_user_card') }}
+            </div>
           </article>
 
           <a
-            v-if="settings.momentsSidebarShowPublish"
+            v-if="isLayoutEditing || settings.momentsSidebarShowPublish"
             class="moments-publish-link"
             href="https://t.bilibili.com"
             target="_blank"
             rel="noopener noreferrer"
+            data-layout-edit-target="moments-sidebar-publish"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="moments"
+            data-layout-settings-title-key="settings.moments_show_publish"
           >
             <span i-tabler-edit />
             <span>发布动态</span>
             <span i-tabler-external-link />
           </a>
 
-          <section v-if="settings.momentsSidebarShowLive && portalLiveUsers.length" class="moments-live-card">
+          <section
+            v-if="isLayoutEditing || (settings.momentsSidebarShowLive && portalLiveUsers.length)"
+            class="moments-live-card"
+            data-layout-edit-target="moments-sidebar-live"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="moments"
+            data-layout-settings-title-key="settings.moments_show_live"
+          >
             <header>
               <strong>正在直播 <span>{{ portalLiveCount }}</span></strong>
             </header>
-            <div class="moments-live-card__list">
+            <div v-if="portalLiveUsers.length" class="moments-live-card__list">
               <a
-                v-for="liveUser in portalLiveUsers"
+                v-for="liveUser in isLayoutEditing ? portalLiveUsers.slice(0, 1) : portalLiveUsers"
                 :key="liveUser.room_id"
                 :href="liveUser.jump_url || `https://live.bilibili.com/${liveUser.room_id}`"
                 target="_blank"
@@ -3363,9 +3482,13 @@ watch(
 
       <main class="moments-content" :style="momentsContentStyle">
         <section
-          v-if="showMomentsUpList"
+          v-if="isLayoutEditing || showMomentsUpList"
           class="moments-up-list"
           aria-label="动态栏"
+          data-layout-edit-target="moments-up-list"
+          data-layout-settings-menu="BewlyPages"
+          data-layout-settings-page="moments"
+          data-layout-settings-title-key="settings.moments_show_up_list"
         >
           <div class="moments-up-list__start" role="list" aria-label="动态分组">
             <button
@@ -3386,9 +3509,13 @@ watch(
               <span class="moments-up-list__name">全部动态</span>
             </button>
             <button
-              v-if="settings.momentsEnableWantedFilter"
+              v-if="isLayoutEditing || settings.momentsEnableWantedFilter"
               type="button"
               class="moments-up-list__item"
+              data-layout-edit-target="moments-wanted-users"
+              data-layout-settings-menu="BewlyPages"
+              data-layout-settings-page="moments"
+              data-layout-settings-title-key="settings.group_moments_wanted_users"
               :class="{ 'moments-up-list__item--active': activeMomentGroup === 'wanted' }"
               role="listitem"
               :aria-pressed="activeMomentGroup === 'wanted'"
@@ -3495,12 +3622,23 @@ watch(
           </div>
 
           <div
-            v-if="momentsPinnedUsers.length"
+            v-if="isLayoutEditing || momentsPinnedUsers.length"
             class="moments-up-list__pinned"
             role="list"
             aria-label="固定 UP 主"
+            data-layout-edit-target="moments-pinned-users"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="moments"
+            data-layout-settings-title-key="settings.group_moments_pinned_users"
+            @wheel="handleUpListWheel"
           >
             <span class="moments-up-list__divider" aria-hidden="true" />
+            <span
+              v-if="isLayoutEditing && !momentsPinnedUsers.length"
+              class="moments-up-list__editor-placeholder"
+            >
+              {{ $t('settings.group_moments_pinned_users') }}
+            </span>
             <button
               v-for="user in momentsPinnedUsers"
               :key="user.mid"
@@ -3579,6 +3717,7 @@ watch(
               :preview-active="Boolean(hoveredMediaId === moment.id && previewUrls[moment.id])"
               :preview-url="previewUrls[moment.id]"
               :is-like-loading="likingMomentIds.has(moment.id)"
+              :is-reservation-loading="reservationLoadingMomentIds.has(moment.id)"
               :is-watch-later-added="isWatchLaterAdded"
               :is-watch-later-loading="isWatchLaterLoading"
               @card-element="element => bindCardEl(element, moment)"
@@ -3592,6 +3731,7 @@ watch(
               @forward-video-click="handleForwardVideoClick"
               @toggle-watch-later="toggleMomentWatchLater"
               @toggle-like="toggleMomentLike"
+              @toggle-reservation="toggleMomentReservation"
             />
             <div v-if="column.bottomPad" class="moments-grid__spacer" :style="{ height: `${column.bottomPad}px` }" />
           </div>
@@ -3801,8 +3941,8 @@ watch(
 }
 .moments-up-list__main {
   position: relative;
-  min-width: 0;
-  flex: 1 1 auto;
+  min-width: 64px;
+  flex: 1 1 0;
 }
 .moments-up-list__start {
   display: flex;
@@ -3886,11 +4026,10 @@ watch(
 }
 .moments-up-list__pinned {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 1 max-content;
   align-items: center;
   gap: var(--bew-space-1);
   min-width: 0;
-  max-width: min(40%, 320px);
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -3898,6 +4037,19 @@ watch(
 }
 .moments-up-list__pinned::-webkit-scrollbar {
   display: none;
+}
+.moments-up-list__editor-placeholder {
+  display: inline-flex;
+  min-width: 80px;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--bew-space-2);
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-caption);
+  white-space: nowrap;
 }
 .moments-up-list__divider {
   flex: 0 0 auto;
@@ -4037,6 +4189,17 @@ watch(
 }
 .moments-user-card {
   padding: var(--bew-space-4);
+}
+.moments-sidebar-editor-placeholder {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
+  text-align: center;
 }
 .moments-user-card__profile {
   display: flex;
@@ -4445,6 +4608,9 @@ watch(
   align-items: center;
   width: 100%;
   min-width: 0;
+}
+.moments-filter-header--center {
+  justify-content: center;
 }
 .moments-layout--without-sidebar .moments-filter-header {
   grid-column: 1;

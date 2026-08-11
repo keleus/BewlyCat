@@ -5,12 +5,13 @@ import type { CSSProperties } from 'vue'
 import { computed, inject, reactive, ref, shallowRef, watch } from 'vue'
 
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
+import { resolveSearchBarCharacterUrl } from '~/constants/imgs'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage } from '~/utils/main'
-import { buildKeywordSearchUrl } from '~/utils/searchNavigation'
+import { buildKeywordSearchUrl, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { HistoryItem, SuggestionItem, SuggestionResponse } from './searchHistoryProvider'
@@ -72,6 +73,8 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
   search: [value: string]
 }>()
+
+const resolvedFocusedCharacter = computed(() => resolveSearchBarCharacterUrl(props.focusedCharacter ?? ''))
 
 const searchWrapRef = ref<HTMLElement>()
 const { left: searchWrapLeft, top: searchWrapTop } = useElementBounding(searchWrapRef)
@@ -143,7 +146,7 @@ const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
 
 // 判断是否在搜索结果页且启用了插件搜索
 const shouldHandleInCurrentPage = computed(() => {
-  if (!settings.value.usePluginSearchResultsPage)
+  if (!shouldUsePluginSearchResultsPage())
     return false
   // 如果能获取到 bewlyApp，使用 activatedPage 来判断
   if (bewlyApp?.activatedPage) {
@@ -596,7 +599,7 @@ function handleClearKeyword() {
     >
       <Transition name="focus-character">
         <img
-          v-show="focusedCharacter && isFocus" :src="focusedCharacter"
+          v-show="resolvedFocusedCharacter && isFocus" :src="resolvedFocusedCharacter"
           class="focus-character-image"
           width="100" object-contain pos="absolute right-0 bottom-40px"
         >
@@ -615,7 +618,6 @@ function handleClearKeyword() {
         p="l-6 r-18 y-3"
         h-inherit
         spellcheck="false"
-        text="$b-search-bar-normal-text-color group-focus-within:$b-search-bar-focus-text-color group-hover:$b-search-bar-hover-text-color"
         un-border="1 solid $bew-border-color"
         @focus="isFocus = true"
         @input="handleNativeInput"
@@ -814,6 +816,7 @@ function handleClearKeyword() {
   height: var(--b-search-bar-height, var(--bew-top-bar-primary-control-height, 46px));
 
   --b-search-bar-normal-color: var(--bew-content);
+  --b-search-bar-hover-color: var(--bew-content-hover);
   --b-search-bar-focus-color: var(--bew-content-hover);
 
   --b-search-bar-normal-icon-color: var(--bew-text-1);
@@ -843,6 +846,7 @@ function handleClearKeyword() {
     input {
       @include card-content;
       appearance: none;
+      color: var(--b-search-bar-normal-text-color);
       min-width: 0;
       position: relative;
       z-index: 1;
@@ -865,6 +869,15 @@ function handleClearKeyword() {
       &:focus {
         --uno: "bg-$b-search-bar-focus-color";
       }
+    }
+
+    &:hover:not(:focus-within) input {
+      color: var(--b-search-bar-hover-text-color);
+      background: var(--b-search-bar-hover-color);
+    }
+
+    &:focus-within input {
+      color: var(--b-search-bar-focus-text-color);
     }
 
     &.focus input {

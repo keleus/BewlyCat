@@ -30,6 +30,7 @@ interface Props {
   previewActive?: boolean
   previewUrl?: string
   isLikeLoading?: boolean
+  isReservationLoading?: boolean
   isWatchLaterAdded: (target: WatchLaterTarget) => boolean
   isWatchLaterLoading: (target: WatchLaterTarget) => boolean
 }
@@ -43,6 +44,7 @@ const {
   previewActive = false,
   previewUrl = '',
   isLikeLoading = false,
+  isReservationLoading = false,
   isWatchLaterAdded,
   isWatchLaterLoading,
 } = defineProps<Props>()
@@ -59,6 +61,7 @@ const emit = defineEmits<{
   forwardVideoClick: [video: DisplayForwardVideo]
   toggleWatchLater: [target: WatchLaterTarget]
   toggleLike: [moment: DisplayMoment]
+  toggleReservation: [moment: DisplayMoment]
 }>()
 
 const { t } = useI18n()
@@ -159,6 +162,20 @@ const showVideoOptions = ref(false)
 const videoOptionsFloatingStyles = ref<CSSProperties>({})
 const moreBtnRef = ref<HTMLButtonElement | null>(null)
 
+const isReservationAdditional = computed(() => Boolean(
+  moment.additional?.reservationId
+  && (
+    moment.additional.isVideoReservation
+    || moment.additional.isLiveReservation
+  ),
+))
+
+const reservationActionLabel = computed(() =>
+  moment.additional?.isReserved
+    ? '取消预约'
+    : (moment.additional?.action || '预约'),
+)
+
 // VideoCard positions its menu from the trigger and teleports the shared menu
 // into the app root. Keep the same positioning behavior for MomentCard.
 function handleMoreBtnClick(event: Event) {
@@ -239,6 +256,10 @@ function handleForwardVideoClick() {
   <article
     :ref="handleCardRef"
     class="moment-card"
+    data-layout-edit-target="moment-card"
+    data-layout-settings-menu="BewlyPages"
+    data-layout-settings-page="moments"
+    data-layout-settings-title-key="settings.moments_card_open_mode"
     :class="{
       'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video,
       'moment-card--compact-text': isCompactPlainTextMoment(moment),
@@ -266,6 +287,10 @@ function handleForwardVideoClick() {
           ref="moreBtnRef"
           type="button"
           class="moment-card__more-btn"
+          data-layout-edit-target="moment-card-more"
+          data-layout-settings-menu="BewlyComponents"
+          data-layout-settings-page="video-card"
+          data-layout-settings-title-key="settings.group_video_card_context_menu"
           :class="{ 'is-open': showVideoOptions }"
           :aria-label="menuButtonLabel"
           aria-haspopup="menu"
@@ -547,23 +572,47 @@ function handleForwardVideoClick() {
         />
       </Teleport>
 
-      <a
+      <div
         v-if="moment.additional"
-        :href="moment.additional.url || undefined"
         class="moment-card__additional moment-card__additional--footer"
         :class="{ 'moment-card__additional--no-cover': moment.isChargeExclusive || !moment.additional.cover }"
-        @click.stop
       >
-        <img
-          v-if="moment.additional.cover && !moment.isChargeExclusive"
-          :src="getMomentThumbnailUrl(moment.additional.cover, 80)"
-          alt=""
-          loading="lazy"
-          decoding="async"
+        <a
+          :href="moment.additional.url || undefined"
+          class="moment-card__additional-main"
+          @click.stop
         >
-        <span><strong>{{ moment.additional.title || '附加内容' }}</strong><small v-if="moment.additional.desc">{{ moment.additional.desc }}</small></span>
-        <em>{{ moment.additional.action }}</em>
-      </a>
+          <img
+            v-if="moment.additional.cover && !moment.isChargeExclusive"
+            :src="getMomentThumbnailUrl(moment.additional.cover, 80)"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          >
+          <span><strong>{{ moment.additional.title || '附加内容' }}</strong><small v-if="moment.additional.desc">{{ moment.additional.desc }}</small></span>
+        </a>
+        <button
+          v-if="isReservationAdditional"
+          type="button"
+          class="moment-card__additional-action"
+          :class="{ 'is-reserved': moment.additional.isReserved }"
+          :disabled="isReservationLoading"
+          :aria-label="reservationActionLabel"
+          :aria-pressed="Boolean(moment.additional.isReserved)"
+          @click.stop="emit('toggleReservation', moment)"
+        >
+          <span v-if="isReservationLoading" i-svg-spinners:ring-resize aria-hidden="true" />
+          <span v-else>{{ reservationActionLabel }}</span>
+        </button>
+        <a
+          v-else
+          :href="moment.additional.url || undefined"
+          class="moment-card__additional-action"
+          @click.stop
+        >
+          {{ moment.additional.action }}
+        </a>
+      </div>
 
       <button
         v-if="moment.hotComment"
@@ -872,7 +921,7 @@ function handleForwardVideoClick() {
   font-size: var(--bew-icon-size-xl);
 }
 
-.moment-card--charge .moment-card__additional em {
+.moment-card--charge .moment-card__additional-action {
   color: #fb7299;
 }
 
@@ -961,7 +1010,7 @@ function handleForwardVideoClick() {
 
 .moment-card__additional {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   margin-top: var(--bew-space-3);
@@ -972,18 +1021,28 @@ function handleForwardVideoClick() {
   text-decoration: none;
 }
 
-.moment-card__additional--no-cover {
-  grid-template-columns: minmax(0, 1fr) auto;
+.moment-card__additional-main {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
 }
 
-.moment-card__additional img {
+.moment-card__additional--no-cover .moment-card__additional-main {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.moment-card__additional-main img {
   width: 40px;
   height: 40px;
   border-radius: var(--bew-radius-md);
   object-fit: cover;
 }
 
-.moment-card__additional span {
+.moment-card__additional-main > span {
   display: flex;
   min-width: 0;
   min-height: 40px;
@@ -991,26 +1050,61 @@ function handleForwardVideoClick() {
   justify-content: center;
 }
 
-.moment-card__additional strong,
-.moment-card__additional small {
+.moment-card__additional-main strong,
+.moment-card__additional-main small {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.moment-card__additional small {
+.moment-card__additional-main small {
   margin-top: var(--bew-space-1);
   color: var(--bew-text-2);
   font-size: var(--bew-font-size-caption);
 }
 
-.moment-card__additional em {
-  margin-left: 12px;
-  padding-right: 4px;
+.moment-card__additional-action {
+  display: inline-flex;
+  min-width: 48px;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  padding: var(--bew-space-1) var(--bew-space-3);
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
   color: var(--bew-theme-color);
+  background: transparent;
+  box-sizing: border-box;
+  cursor: pointer;
+  font: inherit;
   font-size: var(--bew-font-size-control);
-  font-style: normal;
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color var(--bew-duration-normal) var(--bew-ease-standard),
+    background-color var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.moment-card__additional-action:hover {
+  background: var(--bew-theme-color-10);
+}
+
+.moment-card__additional-action.is-reserved {
+  color: var(--bew-text-2);
+  background: var(--bew-fill-2);
+}
+
+.moment-card__additional-action:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: 2px;
+}
+
+.moment-card__additional-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 .moment-card__avatar {

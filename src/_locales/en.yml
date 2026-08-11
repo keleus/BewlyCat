@@ -59,6 +59,41 @@ common:
     right: Right
     top: Top
     bottom: Bottom
+layout_editor:
+  finish: Done
+  edit_dock: Edit Dock
+  edit_sidebar: Edit mode
+  back_to_top: Back to top
+  click_to_adjust: Click the element you want to adjust
+  switch_to_bilibili_page: How to switch to the original Bilibili page
+  switch_to_plugin_page: How to switch to the extension page
+  adjust_video_grid_columns: Adjust video card columns
+  adjust_moments_grid_columns: Adjust Moments page columns
+  adjust_dock_position: How to adjust the Dock position
+  video_default_player_mode: How to set the default player style
+  video_auto_play: How to enable autoplay by default
+  video_external_watch_later: How to show an external Watch later button
+  video_sidebar_position: How to adjust the sidebar position
+  video_topbar_auto_hide: How to auto-hide the top bar
+  home_filter_recommendations: How to filter unwanted recommendations
+  home_recommendation_mode: How to adjust the recommendation source
+  following_show_live: How to show live streams
+  following_hide_live: How to hide live streams
+  following_hide_uploader_list: How to show or hide the uploader list
+  following_filter_videos: How to filter charging and dynamic videos
+  moments_filter_content: How to filter unwanted Moments
+  moments_preview: How to configure Moments video previews
+  search_suggestions_history: How to configure search suggestions and history
+  search_wallpaper: How to set a separate Search page background
+  search_results_personalization: How to reduce personalized search results
+  search_results_pagination: How to switch between scrolling and pagination
+  original_moments_show_user_card: How to show the original Moments user card
+  original_moments_show_live_list: How to show the original Moments live list
+  original_moments_show_community_center: How to show the original Moments community center
+  original_moments_show_hot_search: How to show the original Moments hot searches
+  original_moments_show_up_list: How to show the original Moments uploader banner
+  switch_to_bewly_topbar: How to switch to the BewlyCat top bar
+  switch_to_original_topbar: How to switch to the Bilibili top bar
 iframe_drawer:
   open_in_new_tab: Open in new tab
   close: Close
@@ -89,7 +124,7 @@ settings:
     placeholder: Search settings
     no_results: No matching settings
     located: Setting located
-  category_general_desc: Configure language, interaction, and drawer behavior.
+  category_general_desc: Configure language, interaction, link opening, and drawer behavior.
   category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, custom styles, and page style adaptation.
   category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
   breadcrumb: Settings location
@@ -191,13 +226,15 @@ settings:
   group_topbar: Top Bar
   topbar_logo_and_channels: Logo settings
   topbar_logo_and_channels_desc: Choose the top bar Logo style and whether to show the home button in touch mode.
-  topbar_switchers: BewlyCat/Bilibili switchers
-  topbar_switchers_desc: Control the homepage page switcher and the top bar switcher separately.
+  topbar_switchers: BewlyCat/Bilibili page switcher
+  topbar_switchers_desc: Control the switcher between BewlyCat and original Bilibili pages.
   topbar_actions: Top bar actions
   topbar_actions_desc: Set the visibility, badges, and related reminders for each action icon.
   topbar_user_menu: Top bar user menu
   topbar_display_settings: Top bar display & behavior
   topbar_display_settings_desc: Adjust how the top bar behaves across pages and interaction modes.
+  topbar_style_settings: Top bar style
+  topbar_style_settings_desc: Adjust the top bar background, gradients, and how it adapts to page backgrounds.
   group_navigation: Dock & Sidebar
   group_dock: Dock
   group_sidebar: Sidebar
@@ -227,6 +264,12 @@ settings:
   group_new_moments_page_desc: This page is not final and may change significantly in future updates.
   group_moments_sidebar: Dynamic Feed Sidebar
   group_moments_interaction: Dynamic Card Interaction
+  group_environment_info: Environment information
+  copy_environment_info: Copy environment information
+  copy_environment_info_desc: Copy your browser, browser version, and BewlyCat version for bug reports.
+  environment_info_copied: Environment information copied
+  environment_info_copy_failed: Failed to copy environment information
+  environment_info_unknown: Unknown
   group_settings_sync: Browser cloud sync
   group_version_reminder: Version reminders
   original_moments_show_user_card: Show user card
@@ -248,6 +291,7 @@ settings:
   moments_enable_video_preview: Preview video dynamics on hover
   moments_enable_video_preview_desc: Play a video preview when hovering over a video dynamic cover.
   moments_grid_columns: Dynamic columns
+  moments_tabs_position: Dynamic tabs position
   moments_grid_columns_desc: Set the preferred column count for the Bewly dynamic feed. Card dimensions adapt to the selected layout; columns automatically reduce when space is limited, while the sidebar and feed remain centered as a group.
   moments_grid_columns_option: '{count} columns'
   moments_filter_up_recommendation: Filter uploader recommendations
@@ -263,6 +307,9 @@ settings:
   moments_filter_video_reservation: Video reservation dynamics
   moments_filter_live_reservation: Live reservation dynamics
   moments_filter_live_dynamic: Live dynamics
+  moments_keyword_filter: Block dynamics by keyword
+  moments_keyword_filter_desc: When enabled, dynamics are filtered if any keyword appears in the author name, title, body, attachment, or original repost. Separate multiple keywords with commas. Matching is case-insensitive.
+  moments_keyword_filter_placeholder: Enter comma-separated keywords
   moments_hide_charge_exclusive: Hide charge-exclusive dynamics
   moments_hide_charge_exclusive_desc: Filter all charge-exclusive dynamics out of the extension feed.
   moments_card_open_mode: Dynamic card click behavior
@@ -296,7 +343,6 @@ settings:
   open_top_bar_items_in_bewly_desc: When touch screen optimization is off, the Logo, Moments, Favorites, History, and Watch Later icons follow the top bar link opening behavior and open the corresponding Dock page using its Bewly/original Bilibili setting. Unsupported icons keep their existing behavior.
   show_bewly_or_bili_page_switcher_desc: Show a switcher next to the homepage Logo to move between the BewlyCat and original Bilibili pages.
   show_bewly_or_bili_page_switcher_on_more_pages_desc: Show the switcher on original Bilibili pages such as Moments, Search, Anime, Favorites, History, and Watch Later. Switching to BewlyCat opens the corresponding plugin page.
-  show_bewly_or_bili_top_bar_switcher_desc: Show a switcher when hovering at the top of the page to move between the BewlyCat and original Bilibili top bars.
   hide_lv6_last_login_location_in_top_bar_user_pop: Hide LV6 last login info
   hide_lv6_last_login_location_in_top_bar_user_pop_desc: When enabled, the LV6 section in the top bar user popup will no longer show the last login time or location, and no login log request will be made.
   chk_box:
@@ -409,6 +455,7 @@ settings:
   show_video_card_like_count: Show like count
   show_video_card_duration: Show video duration
   show_video_card_watch_later: Show Watch Later button
+  show_video_card_more_button: Show more menu button
   show_video_watched_badge: Track and show watched
   auto_hide_top_bar: Auto-hide top bar
   video_page_top_bar_config: Video page top bar configuration
@@ -419,10 +466,11 @@ settings:
     showOnMouse: On hover
     showOnScroll: On scroll
   always_use_transparent_top_bar: Always use transparent (legacy) style for top bar
+  always_use_frosted_glass_top_bar: Always use frosted glass for the top bar
+  always_use_frosted_glass_top_bar_desc: Keep the same top bar style used on the homepage without a background image, even when the current page has one.
   enable_top_bar_gradient: Enable top bar gradient effect
   enable_top_bar_gradient_desc: Use a frosted glass gradient on the top bar by default; disable it to use a solid background.
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
-  show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher
   show_bewly_or_bili_page_switcher_on_more_pages: Show BewlyCat/Bilibili page switcher on more pages
   filter_articles_in_moments: Filter articles
@@ -499,6 +547,8 @@ settings:
     icon: Circular icon
     brand: Brand mark
   badge_type: Badge Type
+  show_layout_edit_button: Show layout edit button
+  show_layout_edit_button_desc: Show the layout editor entry in the Dock or sidebar; reopen it here after hiding it.
   always_use_dock: Always use the dock
   always_use_dock_desc: >-
     The dock will always be visible and the sidebar will be hidden. We also
@@ -579,6 +629,7 @@ settings:
   enable_search_history_desc: When enabled, the search bar will record and display your search history. Disabling this will clear all history
   use_plugin_search_results_page: Use plugin search results page
   use_plugin_search_results_page_desc: When enabled, searches will use the plugin's built-in search results page with category filtering and more features
+  use_plugin_search_results_page_disabled_by_original_homepage: Searches use bilibili's original results page while the original bilibili homepage is enabled
   depersonalize_search_results: Depersonalized search
   depersonalize_search_results_desc: When enabled, search result requests are sent without login cookies.
   search_results_pagination_mode: Search results pagination mode
@@ -682,6 +733,7 @@ settings:
   search_page_mode_wallpaper_fixed: Make the wallpaper of the search page mode fixed
   home_tabs_adjustment: Tabs adjustment
   home_tabs_adjustment_desc: The first activated tab is the default page.
+  home_tabs_position: Home tabs position
   always_show_tabs_on_home_page: Hide home tabs while scrolling
   fixed_home_tabs_on_home_page: Fix home tabs to the top
   topbar_visibility: BewlyBewly's top bar visibility
@@ -914,7 +966,7 @@ settings:
     indent_only: Indent · no collapse
   comment_reply_pagination_mode:
     title: Comment tree mode
-    desc: Choose how replies appear in the comment tree. “Load more” accumulates replies and continues reading from newly added parent nodes; “Pagination” keeps Bilibili’s native pagination and shows only the current page
+    desc: Choose how replies appear in the comment tree. “Load more” appends replies downward while keeping your current reading position; “Pagination” keeps Bilibili’s native pagination and shows only the current page
     load_more: Load more
     pagination: Pagination
   adjust_comment_image_height: Adjust comment image height
@@ -939,8 +991,6 @@ settings:
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
-  switch_to_bewly_top_bar: Switch to BewlyBewly top bar
-  switch_to_bili_top_bar: Switch to BiliBili/Bilibili-Evolved top bar
   sign_in: Sign in
   notifications: Notifications
   moments: Moments
