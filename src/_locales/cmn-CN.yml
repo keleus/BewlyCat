@@ -30,6 +30,7 @@ common:
   added: 已添加
   performance_impact_warn: 这个功能可能会影响性能！
   no_data: 暂无数据
+  load_failed: 加载失败
   no_more_content: 没有更多内容了
   load_more: 加载更多
   operation:
