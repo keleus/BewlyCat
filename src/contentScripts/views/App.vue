@@ -1732,6 +1732,7 @@ if (settings.value.cleanUrlArgument) {
     <div
       v-if="isLayoutEditing"
       class="layout-edit-helper"
+      :class="{ 'layout-edit-helper--dock-left': settings.dockPosition === 'left' }"
       data-layout-edit-control
     >
       <div
@@ -1999,6 +2000,12 @@ if (settings.value.cleanUrlArgument) {
   flex-direction: column;
   gap: var(--bew-space-2);
   pointer-events: auto;
+}
+
+.layout-edit-helper--dock-left {
+  right: max(var(--bew-space-4), env(safe-area-inset-right));
+  left: auto;
+  align-items: flex-end;
 }
 
 .layout-edit-quick-actions {
