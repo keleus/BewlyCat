@@ -198,7 +198,7 @@ defineExpose({
 <template>
   <div
     style="backdrop-filter: var(--bew-filter-glass-1);"
-    h="[calc(100vh-100px)]" max-h-500px important-overflow-y-overlay
+    h="[calc(100vh-100px)]" max-h-500px overflow="hidden"
     bg="$bew-elevated"
     w="450px"
     rounded="$bew-radius"
@@ -206,14 +206,14 @@ defineExpose({
     shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
     border="1 $bew-border-color"
     class="favorites-pop"
+    flex="~ col"
   >
     <!-- top bar -->
     <header
       flex="~" items-center justify-between
-      p="x-6"
+      p="x-6 y-5"
       pos="sticky top-0 left-0"
       w="full"
-      h-50px
       z="2"
     >
       <h3 cursor="pointer" font-600 @click="scrollToTop(favoriteVideosWrap)">
@@ -238,9 +238,9 @@ defineExpose({
       </div>
     </header>
 
-    <main flex="~" h="[calc(100%-50px)]" rounded="$bew-radius">
+    <main flex="~" flex-1 min-h-0 rounded="$bew-radius">
       <aside
-        pos="sticky top-50px left-0"
+        pos="sticky top-0 left-0"
         w="140px" h-full overflow="y-auto"
         flex="shrink-0" bg="$bew-fill-1"
       >
@@ -264,7 +264,7 @@ defineExpose({
         ref="favoriteVideosWrap"
         flex="~ col gap-2 1"
         overflow="y-auto"
-        p="x-4"
+        p="x-6"
         pos="relative"
         h-full
       >
@@ -299,7 +299,8 @@ defineExpose({
             rounded="$bew-radius"
             m="last:b-4" p="2"
             class="group"
-            transition="background-color duration-200, color duration-200, opacity duration-200"
+            transition="colors"
+            duration-200
           >
             <section flex="~ gap-4" items-start>
               <div
