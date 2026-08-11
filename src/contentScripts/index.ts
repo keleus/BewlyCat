@@ -30,6 +30,7 @@ import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
 import { version } from '../../package.json'
+import { initBewlyWidescreenControl } from './bewlyWidescreenControl'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
@@ -1114,6 +1115,7 @@ else if (shouldInitializeContentScript) {
 
     initVideoAspectRatioMemory()
     initVideoScreenshotControl()
+    initBewlyWidescreenControl()
     initTouchPlayerGestures()
 
     // Initialize Favorite Dialog Enhancement (for video pages)
