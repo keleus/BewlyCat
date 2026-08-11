@@ -372,9 +372,7 @@ else if (shouldInitializeContentScript) {
     const isInWebFullscreen = webFullscreenBtn?.classList.contains('bpx-state-entered')
 
     if (targetPlayerMode === 'bewlyWidescreen' && !isInFullscreen && !isInWebFullscreen) {
-      prepareBewlyWidescreenLoading(
-        autoContinuationNavigationKey === currentNavigationKey,
-      )
+      prepareBewlyWidescreenLoading()
     }
     else if (!isBewlyWidescreenActive()) {
       exitBewlyWidescreen()

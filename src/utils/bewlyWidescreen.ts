@@ -71,7 +71,6 @@ let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
 let loadingExitButtonTimer: ReturnType<typeof setTimeout> | undefined
 let loadingPlaybackCleanup: (() => void) | undefined
 let loadingPreparationFallbackTimer: ReturnType<typeof setTimeout> | undefined
-let loadingMayDismissOnPlaying = false
 let loadingSuppressedUntilExit = false
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
 let loadFallbackTimer: ReturnType<typeof setTimeout> | undefined
@@ -579,8 +578,7 @@ function showWidescreenLoading() {
   const handlePlaying = (event: Event) => {
     const video = event.target
     if (video instanceof HTMLVideoElement
-      && video === getVideoElement()
-      && shouldDismissLoadingForPlaying(video)) {
+      && video === getVideoElement()) {
       dismissWidescreenLoadingForPlaying()
     }
   }
@@ -591,13 +589,6 @@ function showWidescreenLoading() {
   }
 }
 
-function shouldDismissLoadingForPlaying(video: HTMLVideoElement) {
-  return loadingMayDismissOnPlaying
-    || video.autoplay
-    || video.hasAttribute('autoplay')
-    || navigator.userActivation?.hasBeenActive !== true
-}
-
 function dismissWidescreenLoadingForPlaying() {
   loadingSuppressedUntilExit = true
   removeWidescreenLoading()
@@ -605,7 +596,6 @@ function dismissWidescreenLoadingForPlaying() {
 
 function removeWidescreenLoading(immediate = false) {
   loadingPlaybackCleanup?.()
-  loadingMayDismissOnPlaying = false
 
   if (loadingExitButtonTimer) {
     clearTimeout(loadingExitButtonTimer)
@@ -646,18 +636,16 @@ function removeWidescreenLoading(immediate = false) {
   loadingFadeTimer = setTimeout(remove, LOADING_FADE_DURATION)
 }
 
-export function prepareBewlyWidescreenLoading(allowPlayingDismiss = false) {
+export function prepareBewlyWidescreenLoading() {
   if (state || loadingSuppressedUntilExit)
     return
 
-  loadingMayDismissOnPlaying ||= allowPlayingDismiss
   showWidescreenLoading()
   const video = getVideoElement()
   if (loadingOverlay
     && video
     && !video.paused
-    && !video.ended
-    && shouldDismissLoadingForPlaying(video)) {
+    && !video.ended) {
     dismissWidescreenLoadingForPlaying()
     return
   }
