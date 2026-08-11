@@ -137,10 +137,9 @@ defineExpose({
     <!-- top bar -->
     <header
       flex="~ items-center justify-between"
-      p="x-6"
+      p="x-6 y-5"
       pos="sticky top-0 left-0"
       w="full"
-      h-50px
       z="2"
     >
       <div flex="~">
@@ -188,7 +187,6 @@ defineExpose({
       <Empty
         v-else-if="!topBarStore.isLoadingMoments && topBarStore.moments.length === 0"
         pos="absolute top-0 left-0"
-        bg="$bew-content"
         z="0" w="full" h="full"
         flex="~ items-center"
         rounded="$bew-radius-half"
@@ -251,7 +249,7 @@ defineExpose({
                   >
                     {{ author.name }}
                   </ALink>
-                  <span v-if="idx < moment.authors.length - 1" text="$bew-text-2">/</span>
+                  <span v-if="Number(idx) < moment.authors.length - 1" text="$bew-text-2">/</span>
                 </template>
               </div>
               <!-- 单个作者 -->
