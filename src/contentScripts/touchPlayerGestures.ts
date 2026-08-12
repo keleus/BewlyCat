@@ -9,6 +9,7 @@ const STYLE_ID = 'bewly-touch-player-gestures-style'
 const HUD_CLASS = 'bewly-touch-player-gesture-hud'
 const PLAYER_SELECTOR = '.bpx-player-container, #bilibili-player, .bilibili-player, .squirtle-video-wrap'
 const VIDEO_AREA_SELECTOR = '.bpx-player-video-area, .bilibili-player-video-wrap, .squirtle-video-wrap'
+const MINI_PLAYER_SELECTOR = '.bpx-player-container[data-screen="mini"], #bilibili-player.mini-player, .bilibili-player.mini-player'
 const INTERACTIVE_SELECTOR = [
   '.bpx-player-control-wrap',
   '.bpx-player-control-bottom',
@@ -104,6 +105,9 @@ function getPlayerContext(target: EventTarget | null, clientY?: number): PlayerC
     return null
 
   const player = area.closest<HTMLElement>(PLAYER_SELECTOR) ?? area
+  if (player.matches(MINI_PLAYER_SELECTOR) || player.closest(MINI_PLAYER_SELECTOR))
+    return null
+
   const rect = area.getBoundingClientRect()
   if (rect.width <= 0 || rect.height <= 0)
     return null
@@ -158,6 +162,10 @@ function ensureStyles() {
     }
   `
   document.documentElement.appendChild(style)
+}
+
+function removeStyles() {
+  document.getElementById(STYLE_ID)?.remove()
 }
 
 function showHud(area: HTMLElement, text: string, persist = false) {
@@ -388,9 +396,12 @@ function handleDoubleClick(event: MouseEvent) {
 
 function updateEnabledState(enabled: boolean) {
   document.documentElement.classList.toggle(ROOT_CLASS, enabled)
-  if (enabled)
+  if (enabled) {
+    ensureStyles()
     return
+  }
 
+  removeStyles()
   gesture = null
   lastTap = null
   hideHud()
@@ -401,7 +412,6 @@ export function initTouchPlayerGestures() {
     return
   initialized = true
 
-  ensureStyles()
   watch(() => settings.value.touchScreenOptimization, updateEnabledState, { immediate: true })
   document.addEventListener('pointerdown', handlePointerDown, { capture: true })
   document.addEventListener('pointermove', handlePointerMove, { capture: true, passive: false })
