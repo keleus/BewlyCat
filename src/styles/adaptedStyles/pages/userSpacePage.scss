@@ -331,7 +331,9 @@
 
     .content .group-list li input[type="checkbox"]:checked + i,
     .content .group-list li input[type="checkbox"]:checked:hover + i {
-      background: var(--bew-theme-color) url("/assets/ic_check.svg") no-repeat 50% / 9px;
+      background: var(--bew-theme-color)
+        url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOSIgaGVpZ2h0PSI5IiB2aWV3Qm94PSIwIDAgOSA5IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNy41IDIuNUwzLjc1IDYuMjVMMS41IDQiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz4KPC9zdmc+)
+        no-repeat 50% / 9px;
     }
 
     // 處理性別圖標背景顔色
