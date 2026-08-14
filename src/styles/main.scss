@@ -297,11 +297,6 @@ img:not(.pswp__img) {
   border-radius: var(--bew-popover-surface-radius);
   box-shadow: var(--bew-shadow-2);
   backdrop-filter: var(--bew-filter-glass-1);
-
-  @supports (corner-shape: superellipse(1.5)) {
-    border-radius: var(--bew-popover-surface-continuous-radius);
-    corner-shape: var(--bew-popover-surface-corner-shape);
-  }
 }
 
 .bew-settings-option--lift {

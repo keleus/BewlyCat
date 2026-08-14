@@ -599,7 +599,7 @@ async function unfollowUser() {
 
 <style lang="scss" scoped>
 .context-menu-item {
-  --uno: "hover:bg-$bew-fill-2 rounded-$bew-interactive-radius cursor-pointer";
+  --uno: "hover:bg-$bew-fill-2 rounded-$bew-menu-item-radius cursor-pointer";
   --uno: "flex items-center";
 
   min-height: 32px;

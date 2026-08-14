@@ -65,13 +65,6 @@
   --uno: "after:absolute after:top--30px after:left-1/2 after:-z-1";
   --uno: "after:transform after:-translate-x-1/2";
   border-radius: var(--bew-popover-radius);
-
-  // A squircle retains more of the corner than a circular radius, so it needs
-  // a larger geometric radius to preserve the same perceived corner size.
-  @supports (corner-shape: superellipse(1.4)) {
-    border-radius: var(--bew-popover-continuous-radius);
-    corner-shape: var(--bew-popover-corner-shape);
-  }
 }
 
 .logo.activated {

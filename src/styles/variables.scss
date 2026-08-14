@@ -54,15 +54,12 @@
   --bew-panel-radius: var(--bew-radius-lg);
   --bew-modal-radius: var(--bew-radius-2xl);
   --bew-popover-radius: var(--bew-radius-xl);
-  --bew-popover-continuous-radius: var(--bew-radius-3xl);
-  --bew-popover-corner-shape: superellipse(1.4);
   --bew-popover-surface-radius: var(--bew-radius-lg);
-  --bew-popover-surface-continuous-radius: var(--bew-radius-xl);
-  --bew-popover-surface-corner-shape: superellipse(1.5);
   --bew-popover-padding: var(--bew-space-2);
   --bew-context-menu-padding: var(--bew-space-1);
   --bew-interactive-radius: var(--bew-radius-md);
-  --bew-menu-item-radius: var(--bew-radius-full);
+  // Keep nested menu items concentric with their 16px Pop container.
+  --bew-menu-item-radius: max(0px, calc(var(--bew-popover-radius) - var(--bew-popover-padding)));
   --bew-badge-radius: var(--bew-radius-full);
   // #endregion
 

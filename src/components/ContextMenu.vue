@@ -158,11 +158,6 @@ onBeforeUnmount(() => {
 .context-menu-container {
   padding: var(--bew-context-menu-padding);
   border-radius: var(--bew-popover-radius);
-
-  @supports (corner-shape: superellipse(1.4)) {
-    border-radius: var(--bew-popover-continuous-radius);
-    corner-shape: var(--bew-popover-corner-shape);
-  }
 }
 
 .context-menu-list,
