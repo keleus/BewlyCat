@@ -171,7 +171,7 @@ function handleClickChannel() {
   <div
     style="backdrop-filter: var(--bew-filter-glass-1); overflow-y: auto;"
     w-300px max-h="[calc(100vh-120px)]" min-h-0
-    p-4 rounded="$bew-radius" z--1 bg="$bew-elevated-alt"
+    p-3 rounded="$bew-popover-radius" z--1 bg="$bew-elevated"
     border="1 $bew-border-color"
     shadow="[var(--bew-shadow-3),var(--bew-shadow-edge-glow-1)]"
     class="userPanel-pop bew-popover"
@@ -179,6 +179,7 @@ function handleClickChannel() {
   >
     <div
       text="xl" font-medium flex="~ items-center gap-2"
+      pt-4 pl-4
     >
       <Button
         v-if="settings.touchScreenOptimization"
@@ -192,12 +193,17 @@ function handleClickChannel() {
     </div>
     <div
       text="xs $bew-text-2"
-      m="t-1 b-2"
+      m="t-3"
+      flex="~ gap-1"
     >
       <ALink
-        class="group mr-4"
+        class="group"
         href="https://account.bilibili.com/account/coin"
         type="topBar"
+        p="x-4 y-1"
+        rounded="$bew-radius-md"
+        duration-200
+        hover:bg="$bew-fill-1"
       >
         {{ $t('topbar.user_dropdown.money') + (userInfo.money ?? '-') }}
       </ALink>
@@ -205,6 +211,10 @@ function handleClickChannel() {
         class="group"
         href="https://pay.bilibili.com/pay-v2-web/bcoin_index"
         type="topBar"
+        p="x-4 y-1"
+        rounded="$bew-radius-md"
+        duration-200
+        hover:bg="$bew-fill-1"
       >
         {{
           $t('topbar.user_dropdown.b_coins') + (userInfo.wallet?.bcoin_balance ?? '-')
@@ -216,7 +226,10 @@ function handleClickChannel() {
       v-if="userInfo?.level_info?.current_level < 6"
       href="//account.bilibili.com/account/record?type=exp"
       type="topBar"
-      block mt-2 mb-2 w-full
+      block w-full p-2
+      rounded="$bew-radius-lg"
+      duration-200
+      hover:bg="$bew-fill-1"
       flex="~ col justify-center items-start"
     >
       <div
@@ -258,8 +271,7 @@ function handleClickChannel() {
       v-else
       href="//account.bilibili.com/account/record?type=exp"
       type="topBar"
-      mt-2 mb-2
-      duration-300
+      duration-200
       flex="~ items-center gap-2"
       class="lv6-entry"
       :class="showLv6LastLoginInfo ? 'lv6-entry--card' : 'lv6-entry--compact'"
@@ -280,7 +292,7 @@ function handleClickChannel() {
       </div>
     </ALink>
 
-    <div grid="~ cols-3 gap-2" mb-2>
+    <div grid="~ cols-3 gap-2" px-4 pt-1 mt-1 border-t="1 $bew-border-color">
       <ALink
         class="channel-info-item"
         :href="`https://space.bilibili.com/${mid}/fans/follow`"
@@ -318,20 +330,18 @@ function handleClickChannel() {
       </ALink>
     </div>
 
-    <div
-      flex="~ justify-between col gap-1"
-      mb-2 p-2 bg="$bew-fill-alt" rounded="$bew-radius"
-      shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-1)]"
-    >
+    <div border-t="1 $bew-border-color" my-2 />
+
+    <div flex="~ col gap-1">
       <ALink
         v-for="item in otherLinks.filter((_, index) => index <= 1)"
         :key="item.url"
         :href="item.url"
         type="topBar"
         p="x-4 y-2" flex="~ items-center justify-between"
-        rounded="$bew-radius"
+        rounded="$bew-radius-lg"
         duration-300
-        hover:bg="$bew-fill-2"
+        hover:bg="$bew-fill-1"
         relative
       >
         <!-- B币领取提醒dot -->
@@ -341,7 +351,7 @@ function handleClickChannel() {
           pos="absolute top-1 right-1"
         />
 
-        <div flex="~ items-center gap-2">
+        <div flex="~ items-center gap-3">
           <div :class="item.icon" text="$bew-text-2" />
           {{ item.name }}
         </div>
@@ -349,20 +359,18 @@ function handleClickChannel() {
       </ALink>
     </div>
 
-    <div
-      flex="~ justify-between col gap-1"
-      p-2 bg="$bew-fill-alt" rounded="$bew-radius"
-      shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-1)]"
-    >
+    <div border-t="1 $bew-border-color" my-2 />
+
+    <div flex="~ col gap-1">
       <ALink
         v-for="item in otherLinks.filter((_, index) => index > 1)"
         :key="item.url"
         :href="item.url"
         type="topBar"
         p="x-4 y-2" flex="~ items-center justify-between"
-        rounded="$bew-radius"
+        rounded="$bew-radius-lg"
         duration-300
-        hover:bg="$bew-fill-2"
+        hover:bg="$bew-fill-1"
         relative
       >
         <!-- B币领取提醒dot -->
@@ -373,7 +381,7 @@ function handleClickChannel() {
           style="z-index: 999 !important;"
         />
 
-        <div flex="~ items-center gap-2">
+        <div flex="~ items-center gap-3">
           <div :class="item.icon" text="$bew-text-2" />
           {{ item.name }}
         </div>
@@ -382,12 +390,12 @@ function handleClickChannel() {
       <div
         text="$bew-error-color"
         p="x-4 y-2" flex="~ items-center"
-        rounded="$bew-radius"
+        rounded="$bew-radius-lg"
         duration-300 cursor-pointer
-        hover:bg="$bew-fill-2"
+        hover:bg="$bew-fill-1"
         @click="logout()"
       >
-        <div i-solar:logout-2-bold-duotone text="$bew-error-60" mr-2 />
+        <div i-solar:logout-2-bold-duotone text="$bew-error-60" mr-3 />
         {{ $t('topbar.user_dropdown.log_out') }}
       </div>
     </div>
@@ -406,8 +414,7 @@ function handleClickChannel() {
 }
 
 .lv6-entry--card {
-  --uno: "w-full p-2 bg-$bew-fill-alt rounded-$bew-radius hover:bg-$bew-fill-2";
-  box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);
+  --uno: "w-full p-2 rounded-$bew-radius-lg hover:bg-$bew-fill-1";
 }
 
 .lv6-entry--compact {
@@ -420,19 +427,32 @@ function handleClickChannel() {
 }
 
 .channel-info-item {
-  --uno: "p-2 m-0 rounded-$bew-radius text-sm flex flex-col items-center transition-colors duration-200";
-  --uno: "bg-$bew-fill-alt hover:bg-$bew-fill-2";
-  --uno: "shadow-[var(--bew-shadow-edge-glow-1),var(--bew-shadow-1)]";
+  --uno: "relative py-1 px-2 m-0 text-sm flex flex-col items-center";
 
-  > * {
-    --uno: "transition-colors duration-200";
+  & + .channel-info-item::before {
+    content: "";
+    position: absolute;
+    left: -4px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: var(--bew-border-color);
+  }
+
+  &:hover {
+    background: transparent;
+
+    .num,
+    > div:last-child {
+      color: var(--bew-theme-color);
+    }
   }
 
   .num {
-    --uno: "font-semibold text-xl";
+    --uno: "font-semibold text-xl transition-colors duration-200";
 
     + div {
-      --uno: "text-$bew-text-2 mt-1 text-xs font-semibold";
+      --uno: "text-$bew-text-2 mt-1 text-xs font-semibold transition-colors duration-200";
     }
   }
 }

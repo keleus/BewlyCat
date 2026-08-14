@@ -30,6 +30,7 @@ common:
   added: Added
   performance_impact_warn: This feature may cause performance *DECREASE*!
   no_data: No data available
+  load_failed: Failed to load
   no_more_content: No more content now, owari da
   load_more: Load more
   operation:

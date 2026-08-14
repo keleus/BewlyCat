@@ -3,7 +3,6 @@ import { storeToRefs } from 'pinia'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
-import Picture from '~/components/Picture.vue'
 import Progress from '~/components/Progress.vue'
 import Tooltip from '~/components/Tooltip.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
@@ -108,10 +107,9 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
     <!-- top bar -->
     <header
       flex="~ items-center justify-between"
-      p="x-6"
+      p="x-6 y-5"
       pos="sticky top-0 left-0"
       w="full"
-      h-50px
       z="2"
     >
       <div flex="~">
@@ -143,7 +141,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
       ref="scrollContainer"
       overflow-y-auto rounded="$bew-radius"
       flex="~ col gap-2"
-      p="x-4"
+      p="x-3"
       flex-1
       min-h-0
     >
@@ -158,7 +156,6 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
       <Empty
         v-if="!isLoadingWatchLater && watchLaterList.length === 0"
         pos="absolute top-0 left-0"
-        bg="$bew-content"
         z="0" w="full" h="full"
         flex="~ items-center"
         rounded="$bew-radius"
@@ -242,15 +239,16 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
 
               <!-- Video -->
               <div pos="relative">
-                <Picture
+                <img
                   w="150px" h-full
                   class="aspect-video"
                   :src="`${removeHttpFromUrl(
                     item.pic,
                   )}@256w_144h_1c`"
                   :alt="item.title"
+                  object-cover
                   loading="lazy"
-                />
+                >
                 <div
                   pos="absolute bottom-0 right-0"
                   bg="black opacity-60"
