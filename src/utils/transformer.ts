@@ -65,11 +65,10 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
     if (target.value && transformer.centerTarget) {
       const el = unrefElement(target.value)
       const triggerEl = unrefElement(trigger)
-      if (el && triggerEl) {
+      if (el instanceof HTMLElement && triggerEl) {
         // offsetWidth/Height 是布局盒（CSSOM View），不含 transform。
-        // getBoundingClientRect 含 transform，enter/leave 动画中会得到错误宽高。
-        const targetWidth = el instanceof HTMLElement ? el.offsetWidth : el.getBoundingClientRect().width
-        const targetHeight = el instanceof HTMLElement ? el.offsetHeight : el.getBoundingClientRect().height
+        const targetWidth = el.offsetWidth
+        const targetHeight = el.offsetHeight
         const triggerRect = triggerEl.getBoundingClientRect()
 
         if (transformer.centerTarget.x) {
