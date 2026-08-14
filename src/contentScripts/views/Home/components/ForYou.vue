@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onKeyStroke } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
@@ -29,6 +30,7 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
+const { t } = useI18n()
 const forYouStore = useForYouStore()
 
 const filterFunc = useFilter(
@@ -82,6 +84,7 @@ const appVideoList = ref<AppVideoElement[]>([])
 const isWebRecommendationMode = computed(() => settings.value.recommendationMode !== 'app')
 let requestVersion = 0
 type WebRecommendRequestType = 'refresh' | 'loadMore'
+type WebRecommendationIdentity = 'web' | 'webNoCookie'
 
 const HOME_LOAD_LOG_PREFIX = '[BewlyCat][首页加载]'
 let recommendRequestLogId = 0
@@ -190,11 +193,18 @@ const hasForwardState = ref<boolean>(false)
 const PAGE_SIZE = 30
 const WEB_REFRESH_PAGE_SIZE = 10
 const WEB_LOAD_MORE_PAGE_SIZE = 12
-const WEB_RISK_COOLDOWN_MS = 60_000
+const WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY = 3
+const WEB_REQUEST_RETRY_WINDOW_MS = 5_000
+const WEB_REQUEST_RETRY_BASE_DELAY_MS = 250
+const WEB_RISK_COOLDOWN_STEPS_MS = [5_000, 15_000, 30_000, 60_000] as const
+const APP_REQUEST_MAX_ATTEMPTS = 3
+const APP_REQUEST_RETRY_WINDOW_MS = 5_000
+const APP_REQUEST_RETRY_BASE_DELAY_MS = 250
 const NO_COOKIE_RECOMMEND_STATE_MAX_SHOWLIST_GROUPS = 3
 const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
 const FILTERED_FEED_SAMPLE_SIZE = 100
 const FILTERED_FEED_MIN_RETENTION_RATE = 0.6
+const FILTERED_FEED_RISK_WARNING_MIN_KEPT = 50
 const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，初始化时为1
 const scrollLoadStartLength = ref<number>(0) // 滚动加载开始时的列表长度
 const consecutiveEmptyLoads = ref<number>(0) // 连续空加载次数，用于防止无限递归（Web模式）
@@ -203,6 +213,7 @@ const appConsecutiveEmptyLoads = ref<number>(0) // APP模式连续空加载次�
 const isRecursiveLoading = ref<boolean>(false)
 const webRiskCooldownUntil = ref<number>(0)
 let webRiskCooldownToastKey = 0
+let webRiskCooldownLevel = 0
 const webFetchRow = ref<number>(1)
 const webShowlistGroups = ref<string[]>([])
 
@@ -214,6 +225,7 @@ const forwardWebShowlistGroups = ref<string[]>([])
 
 const filteredFeedCandidateCount = ref(0)
 const filteredFeedKeptCount = ref(0)
+const hasShownFilteredFeedRiskWarning = ref(false)
 const hasActiveWebRecommendationFilter = computed(() => settings.value.enableFilterByDuration
   || settings.value.enableFilterByViewCount
   || settings.value.enableFilterByLikeCount
@@ -255,14 +267,28 @@ const recommendationFilterSettingsSignature = computed(() => JSON.stringify([
 function resetFilteredFeedPagingState() {
   filteredFeedCandidateCount.value = 0
   filteredFeedKeptCount.value = 0
+  hasShownFilteredFeedRiskWarning.value = false
 }
 
-function recordFilteredFeedBatch(candidateCount: number, keptCount: number) {
+function recordFilteredFeedCandidate(kept: boolean) {
   if (!hasActiveRecommendationFilter.value)
     return
 
-  filteredFeedCandidateCount.value += candidateCount
-  filteredFeedKeptCount.value += keptCount
+  filteredFeedCandidateCount.value++
+  if (kept)
+    filteredFeedKeptCount.value++
+
+  if (
+    settings.value.showRecommendationFilterRiskWarning
+    && !hasShownFilteredFeedRiskWarning.value
+    && filteredFeedCandidateCount.value === FILTERED_FEED_SAMPLE_SIZE
+    && filteredFeedKeptCount.value < FILTERED_FEED_RISK_WARNING_MIN_KEPT
+  ) {
+    hasShownFilteredFeedRiskWarning.value = true
+    toast.warning(t('home.recommendation_filter_risk_warning', {
+      count: filteredFeedKeptCount.value,
+    }))
+  }
 }
 
 watch(recommendationFilterSettingsSignature, () => {
@@ -280,12 +306,16 @@ function handleVisibilityChange() {
 onMounted(() => {
   const loadStartedAt = performance.now()
   document.addEventListener('visibilitychange', handleVisibilityChange)
+  const preservedModeHasItems = settings.value.recommendationMode === 'app'
+    ? forYouStore.state.appVideoList.length > 0
+    : forYouStore.state.videoList.length > 0
 
   // 如果启用状态保留且store中有数据，则恢复状态
   if (
     settings.value.preserveForYouState
     && forYouStore.state.isInitialized
     && forYouStore.state.recommendationMode === settings.value.recommendationMode
+    && preservedModeHasItems
   ) {
     // 恢复关键状态
     const savedState = forYouStore.getCompleteState()
@@ -569,6 +599,14 @@ function resetWebRecommendState() {
   webShowlistGroups.value = []
 }
 
+function waitForRecommendRetry(delayMs: number): Promise<void> {
+  return new Promise(resolve => window.setTimeout(resolve, delayMs))
+}
+
+function getRecommendRetryDelay(attempt: number, baseDelayMs: number, remainingWindowMs: number): number {
+  return Math.max(0, Math.min(baseDelayMs * 2 ** Math.max(0, attempt - 1), remainingWindowMs))
+}
+
 function getWebRiskCooldownRemainingMs(): number {
   return Math.max(0, webRiskCooldownUntil.value - Date.now())
 }
@@ -582,18 +620,27 @@ function isWebRiskCooldownActive(): boolean {
   return false
 }
 
-function getWebRiskCooldownRemainingSeconds(): number {
-  return Math.max(1, Math.ceil(getWebRiskCooldownRemainingMs() / 1000))
-}
-
 function startWebRiskCooldown() {
-  if (!isWebRiskCooldownActive())
-    webRiskCooldownUntil.value = Date.now() + WEB_RISK_COOLDOWN_MS
+  const cooldownIndex = Math.min(webRiskCooldownLevel, WEB_RISK_COOLDOWN_STEPS_MS.length - 1)
+  const cooldownMs = WEB_RISK_COOLDOWN_STEPS_MS[cooldownIndex]
+  webRiskCooldownLevel = Math.min(webRiskCooldownLevel + 1, WEB_RISK_COOLDOWN_STEPS_MS.length - 1)
+  webRiskCooldownUntil.value = Date.now() + cooldownMs
+  webRiskCooldownToastKey = 0
 
   noMoreContent.value = true
 }
 
-function notifyWebRiskCooldown(message?: string) {
+function clearActiveWebRiskCooldown() {
+  webRiskCooldownUntil.value = 0
+  webRiskCooldownToastKey = 0
+}
+
+function resetWebRiskRecoveryState() {
+  clearActiveWebRiskCooldown()
+  webRiskCooldownLevel = 0
+}
+
+function notifyWebRiskCooldown() {
   if (!isWebRiskCooldownActive())
     return
 
@@ -601,24 +648,21 @@ function notifyWebRiskCooldown(message?: string) {
     return
 
   webRiskCooldownToastKey = webRiskCooldownUntil.value
-  const remainingSeconds = getWebRiskCooldownRemainingSeconds()
-  toast.error(message || `首页推荐触发风控，已暂停推荐请求 ${remainingSeconds} 秒，请稍后刷新`)
+  const remainingSeconds = Math.max(1, Math.ceil(getWebRiskCooldownRemainingMs() / 1000))
+  toast.error(`请求过于频繁导致首页推荐接口风控，已暂停自动请求约 ${remainingSeconds} 秒，请稍后刷新重试`)
 }
 
-function stopWebRecommendationForRisk(message?: string) {
+function stopWebRecommendationForRisk() {
   startWebRiskCooldown()
   requestFailed.value = true
   noMoreContent.value = true
-  const cooldownSeconds = Math.ceil(WEB_RISK_COOLDOWN_MS / 1000)
-  const remainingSeconds = getWebRiskCooldownRemainingSeconds()
-  notifyWebRiskCooldown(
-    `${message || '首页推荐触发风控'}，已暂停推荐请求 ${cooldownSeconds} 秒，剩余约 ${remainingSeconds} 秒，请稍后刷新`,
-  )
+  notifyWebRiskCooldown()
 }
 
 watch(() => settings.value.recommendationMode, () => {
   requestVersion++
   noMoreContent.value = false
+  resetWebRiskRecoveryState()
   resetWebRecommendState()
   resetFilteredFeedPagingState()
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
@@ -650,6 +694,8 @@ async function initData() {
   const loadStartedAt = performance.now()
   requestVersion++
   const version = requestVersion
+  // 用户主动刷新必须重新获得一次完整请求机会；成功后才重置递增冷却等级。
+  clearActiveWebRiskCooldown()
   hasInitializedData.value = false
   if (isWebRecommendationMode.value)
     webFetchRow.value = 1
@@ -711,14 +757,18 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
         }
         else {
           requestFailed.value = true
+          noMoreContent.value = true
           toast.error('App 推荐数据加载失败，请手动切换至 Web 模式或稍后重试')
         }
       }
     }
   }
-  catch {
-    if (version === requestVersion)
+  catch (error) {
+    if (version === requestVersion) {
+      console.error(`${HOME_LOAD_LOG_PREFIX} 推荐加载流程异常`, error)
       requestFailed.value = true
+      noMoreContent.value = true
+    }
   }
   finally {
     if (version === requestVersion) {
@@ -933,10 +983,6 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
     const currentLastShowlist = getLastShowlistFromGroups()
     const lastShowlist = currentLastShowlist || (!isLoadMoreRequest && recommendationMode === 'webNoCookie' ? getNoCookieStoredLastShowlist() : '')
 
-    const getWebRecommendVideos = recommendationMode === 'webNoCookie'
-      ? api.video.getNoCookieRecommendVideos
-      : api.video.getRecommendVideos
-
     const requestOptions = {
       fresh_type: isLoadMoreRequest ? 4 : 5,
       fresh_idx: currentRefreshIdx,
@@ -946,114 +992,109 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       last_showlist: lastShowlist || undefined,
     }
 
-    let requestLog = startRecommendRequestLog(recommendationMode, requestType)
+    const primaryIdentity: WebRecommendationIdentity = recommendationMode === 'webNoCookie' ? 'webNoCookie' : 'web'
+    const fallbackIdentity: WebRecommendationIdentity = primaryIdentity === 'web' ? 'webNoCookie' : 'web'
+    const requestIdentities = [primaryIdentity, fallbackIdentity] as const
+    let requestLog: RecommendRequestLogContext | undefined
     let response: forYouResult | undefined
+    let successfulIdentity: WebRecommendationIdentity | undefined
+    let hadRiskControlFailure = false
 
-    const tryNoCookieFallback = async (): Promise<boolean> => {
-      startWebRiskCooldown()
-      requestLog = startRecommendRequestLog('webNoCookie(fallback)', requestType)
+    for (const [identityIndex, identity] of requestIdentities.entries()) {
+      const phase = identityIndex === 0 ? 'primary' : 'fallback'
+      const retryDeadline = Date.now() + WEB_REQUEST_RETRY_WINDOW_MS
+      const requestRecommendVideos = identity === 'webNoCookie'
+        ? api.video.getNoCookieRecommendVideos
+        : api.video.getRecommendVideos
 
-      try {
-        response = await api.video.getNoCookieRecommendVideos(requestOptions)
-      }
-      catch (error) {
-        logRecommendRequestFailure(requestLog, {
-          error,
-          phase: 'fallback',
-        })
-        stopWebRecommendationForRisk('首页推荐触发风控，备用无 Cookie 请求失败')
-        return false
-      }
+      for (let attempt = 1; attempt <= WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY; attempt++) {
+        requestLog = startRecommendRequestLog(
+          `${identity}${phase === 'fallback' ? '(fallback)' : ''}`,
+          requestType,
+        )
 
-      if (
-        !response
-        || isBilibiliRiskControl(response)
-        || response.code !== 0
-        || !response.data
-        || !Array.isArray(response.data.item)
-      ) {
-        logRecommendRequestFailure(requestLog, {
-          code: response?.code,
-          message: response?.message,
-          phase: 'fallback',
-          reason: !response
-            ? '响应为空'
-            : isBilibiliRiskControl(response)
-              ? '仍为风控响应'
-              : response.code !== 0
-                ? '备用请求返回非零响应'
-                : '响应数据为空',
-        })
-        stopWebRecommendationForRisk('首页推荐触发风控，备用无 Cookie 请求未成功')
-        return false
-      }
+        try {
+          response = await requestRecommendVideos(requestOptions)
+        }
+        catch (error) {
+          hadRiskControlFailure ||= isBilibiliRiskControl(error)
+          logRecommendRequestFailure(requestLog, {
+            error,
+            phase,
+            attempt,
+          })
+          response = undefined
+        }
 
-      return true
-    }
-
-    try {
-      response = await getWebRecommendVideos(requestOptions)
-    }
-    catch (error) {
-      logRecommendRequestFailure(requestLog, {
-        error,
-        phase: 'primary',
-      })
-
-      if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
-        return
-
-      if (recommendationMode === 'web' && isBilibiliRiskControl(error)) {
-        if (!await tryNoCookieFallback())
+        if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
           return
+
+        const hasItems = response?.code === 0
+          && response.data
+          && Array.isArray(response.data.item)
+          && response.data.item.length > 0
+
+        if (hasItems) {
+          successfulIdentity = identity
+          break
+        }
+
+        if (response) {
+          const isRiskResponse = isBilibiliRiskControl(response)
+          // 部分风控会伪装成 code=0 的空列表，同样按风控失败计数。
+          const isSuspiciousEmptyResponse = response.code === 0
+            && (!response.data || !Array.isArray(response.data.item) || response.data.item.length === 0)
+          hadRiskControlFailure ||= isRiskResponse || isSuspiciousEmptyResponse
+          logRecommendRequestFailure(requestLog, {
+            code: response.code,
+            message: response.message,
+            phase,
+            attempt,
+            reason: isRiskResponse
+              ? '风控响应'
+              : isSuspiciousEmptyResponse
+                ? '推荐数据为空'
+                : '接口返回非零响应',
+          })
+        }
+
+        if (attempt >= WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY || response?.code === 62011)
+          break
+
+        const remainingWindowMs = retryDeadline - Date.now()
+        const retryDelayMs = getRecommendRetryDelay(attempt, WEB_REQUEST_RETRY_BASE_DELAY_MS, remainingWindowMs)
+        if (retryDelayMs <= 0)
+          break
+        await waitForRecommendRetry(retryDelayMs)
       }
-      else if (recommendationMode === 'webNoCookie' && isBilibiliRiskControl(error)) {
-        stopWebRecommendationForRisk()
-        return
-      }
-      else {
-        throw error
-      }
+
+      if (successfulIdentity)
+        break
     }
 
     if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
       return
 
-    if (isBilibiliRiskControl(response)) {
-      logRecommendRequestFailure(requestLog, {
-        code: response?.code,
-        message: response?.message,
-        phase: 'primary',
-        reason: '风控响应',
-      })
-
-      if (recommendationMode === 'web') {
-        if (!await tryNoCookieFallback())
-          return
-      }
-      else {
-        stopWebRecommendationForRisk()
+    if (!response || !requestLog || !successfulIdentity) {
+      if (response?.code === 62011) {
+        needToLoginFirst.value = true
         return
       }
-    }
 
-    if (!response) {
-      logRecommendRequestFailure(requestLog, { reason: '响应为空' })
       requestFailed.value = true
       noMoreContent.value = true
+      if (hadRiskControlFailure) {
+        stopWebRecommendationForRisk()
+      }
+      else {
+        toast.error('首页推荐接口连续请求失败，请刷新后重试')
+      }
       return
     }
 
-    if (!response.data) {
-      logRecommendRequestFailure(requestLog, {
-        code: response.code,
-        message: response.message,
-        reason: '响应数据为空',
-      })
-      requestFailed.value = true
-      noMoreContent.value = true
-      return
-    }
+    resetWebRiskRecoveryState()
+    requestFailed.value = false
+    noMoreContent.value = false
 
     if (response.code === 0) {
       // 只在成功时递增 refreshIdx
@@ -1063,8 +1104,6 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       const resData = [] as VideoItem[]
       const existingIds = new Set<string>()
       const activeWebFilter = hasActiveWebRecommendationFilter.value ? filterFunc.value : null
-      let filteredCandidateCount = 0
-      let filteredKeptCount = 0
 
       videoList.value.forEach((video) => {
         if (video.item)
@@ -1080,23 +1119,20 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         if (!item.owner || !item.stat)
           return
 
+        const passesSettingsFilter = !activeWebFilter || activeWebFilter(item)
+        if (activeWebFilter)
+          recordFilteredFeedCandidate(passesSettingsFilter)
+
         const itemKey = getWebVideoKey(item)
         if (existingIds.has(itemKey))
           return
 
         existingIds.add(itemKey)
-        if (activeWebFilter)
-          filteredCandidateCount++
-
-        if (activeWebFilter && !activeWebFilter(item))
+        if (!passesSettingsFilter)
           return
 
-        if (activeWebFilter)
-          filteredKeptCount++
         resData.push(item)
       })
-
-      recordFilteredFeedBatch(filteredCandidateCount, filteredKeptCount)
 
       const showlistGroup = buildLastShowlistGroup(resData)
       if (showlistGroup)
@@ -1143,7 +1179,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
 
       saveNoCookieRecommendationState(
         showlistGroup,
-        recommendationMode,
+        successfulIdentity,
         shouldUseNoCookieStoredFreshIdx ? currentRefreshIdx + 1 : undefined,
       )
 
@@ -1249,38 +1285,67 @@ async function getAppRecommendVideos(
       const lastIdx = appVideoList.value.length > 0 && appVideoList.value[appVideoList.value.length - 1].item
         ? appVideoList.value[appVideoList.value.length - 1].item!.idx
         : 1
-      const requestLog = startRecommendRequestLog(recommendationMode, requestType)
+      const retryDeadline = Date.now() + APP_REQUEST_RETRY_WINDOW_MS
+      let requestLog: RecommendRequestLogContext | undefined
+      let response: AppForYouResult | undefined
 
-      let response: AppForYouResult
-      try {
-        response = await api.video.getAppRecommendVideos({
-          access_key: appAuthTokens.value.accessToken,
-          s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-          c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-          appkey: TVAppKey.appkey,
-          idx: lastIdx,
-        })
-      }
-      catch (error) {
-        logRecommendRequestFailure(requestLog, { error })
-        throw error
+      for (let attempt = 1; attempt <= APP_REQUEST_MAX_ATTEMPTS; attempt++) {
+        requestLog = startRecommendRequestLog(recommendationMode, requestType)
+        try {
+          response = await api.video.getAppRecommendVideos({
+            access_key: appAuthTokens.value.accessToken,
+            s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+            c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+            appkey: TVAppKey.appkey,
+            idx: lastIdx,
+          })
+        }
+        catch (error) {
+          logRecommendRequestFailure(requestLog, { error, attempt })
+          response = undefined
+        }
+
+        if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+          return
+
+        const hasItems = response?.code === 0
+          && response.data
+          && Array.isArray(response.data.items)
+          && response.data.items.length > 0
+
+        if (hasItems || response?.code === 62011)
+          break
+
+        if (response) {
+          logRecommendRequestFailure(requestLog, {
+            code: response.code,
+            message: response.message,
+            attempt,
+            reason: response.code === 0 ? '推荐数据为空' : '接口返回非零响应',
+          })
+        }
+
+        if (attempt >= APP_REQUEST_MAX_ATTEMPTS)
+          break
+
+        const remainingWindowMs = retryDeadline - Date.now()
+        const retryDelayMs = getRecommendRetryDelay(attempt, APP_REQUEST_RETRY_BASE_DELAY_MS, remainingWindowMs)
+        if (retryDelayMs <= 0)
+          break
+        await waitForRecommendRetry(retryDelayMs)
       }
 
       if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
         return
 
-      if (!response) {
-        logRecommendRequestFailure(requestLog, {
-          reason: '响应为空',
-        })
-        requestFailed.value = true
-        break
-      }
+      if (!response || !requestLog)
+        throw new Error('App 推荐接口连续请求失败')
+
+      if (response.code === 0 && (!response.data || !Array.isArray(response.data.items) || response.data.items.length === 0))
+        throw new Error('App 推荐接口连续返回空数据')
 
       if (response.code === 0) {
         const activeAppFilter = hasActiveAppRecommendationFilter.value ? appFilterFunc.value : null
-        let filteredCandidateCount = 0
-        let filteredKeptCount = 0
 
         response.data.items.forEach((item: AppVideoItem) => {
           // Remove banner & ad cards
@@ -1292,18 +1357,18 @@ async function getAppRecommendVideos(
           if (!hasValidId)
             return
 
+          const passesSettingsFilter = !activeAppFilter || activeAppFilter(item)
+          if (activeAppFilter)
+            recordFilteredFeedCandidate(passesSettingsFilter)
+
           if (activeAppFilter) {
             const videoKeys = getAppVideoKeys(item)
             if (!videoKeys.length || videoKeys.some(key => seenCandidateIds.has(key)))
               return
 
             videoKeys.forEach(key => seenCandidateIds.add(key))
-            filteredCandidateCount++
-
-            if (!activeAppFilter(item))
+            if (!passesSettingsFilter)
               return
-
-            filteredKeptCount++
           }
           else {
             // Keep the unfiltered recommendation path's existing duplicate semantics.
@@ -1321,7 +1386,6 @@ async function getAppRecommendVideos(
             displayData: transformAppVideo(item),
           })
         })
-        recordFilteredFeedBatch(filteredCandidateCount, filteredKeptCount)
         logRecommendRequestSuccess(requestLog)
       }
       else if (response.code === 62011) {
@@ -1337,17 +1401,15 @@ async function getAppRecommendVideos(
           code: response.code,
           message: response.message,
         })
-        requestFailed.value = true
-        noMoreContent.value = true
-        break
+        throw new Error(`App 推荐接口返回错误：${response.code} ${response.message || ''}`.trim())
       }
     }
-    catch {
+    catch (error) {
       if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
         return
 
       requestFailed.value = true
-      break
+      throw error
     }
   }
 

@@ -390,6 +390,7 @@ export interface Settings {
   autoSwitchRecommendationMode: boolean
 
   // filter setting
+  showRecommendationFilterRiskWarning: boolean
   disableFilterForFollowedUser: boolean
   filterOutVerticalVideos: boolean
   enableFilterByViewCount: boolean
@@ -686,6 +687,7 @@ export const originalSettings: Settings = {
   autoSwitchRecommendationMode: true,
 
   // filter setting
+  showRecommendationFilterRiskWarning: true,
   disableFilterForFollowedUser: false,
   filterOutVerticalVideos: false,
   enableFilterByViewCount: false,

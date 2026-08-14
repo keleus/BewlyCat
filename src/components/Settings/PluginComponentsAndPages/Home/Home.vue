@@ -296,6 +296,13 @@ function handleToggleHomeTab(tab: any) {
       collapsible
       default-collapsed
     >
+      <SettingsItem
+        :title="$t('settings.show_recommendation_filter_risk_warning')"
+        :desc="$t('settings.show_recommendation_filter_risk_warning_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showRecommendationFilterRiskWarning" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.disable_filters_for_followed_users')" :desc="$t('settings.disable_filters_for_followed_users_desc')" right-width="auto">
         <Radio v-model="settings.disableFilterForFollowedUser" />
       </SettingsItem>

@@ -88,6 +88,8 @@ function handleAppDislike() {
   }
 
   loadingDislikeDialog.value = true
+  // App feed 的 reason_id / feedback_id 来自 three_point_v2，含义与 Web
+  // dislike 的固定 reason_id 不一致，必须继续走 access key 签名的 App 接口。
   const params = {
     access_key: appAuthTokens.value.accessToken,
     goto: props.video?.goto,
