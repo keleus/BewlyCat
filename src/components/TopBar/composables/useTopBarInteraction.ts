@@ -182,9 +182,8 @@ export function useTopBarInteraction() {
         ([el, visible]) => {
           if (!visible || !el)
             return
-          // v-show 再次显示时引用不变，先清空才能触发定位。
-          transformer.value = undefined
           transformer.value = el
+          transformer.applyPosition()
         },
         { immediate: true, flush: 'post' },
       )

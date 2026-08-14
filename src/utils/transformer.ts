@@ -14,12 +14,16 @@ export interface Transformer {
   notrigger?: boolean
 }
 
+export type TransformerHandle = Ref<MaybeElement> & {
+  applyPosition: () => void
+}
+
 /**
  * Covert transform to top and left style, if no chromium, use transform
  * @param trigger
  * @param transformer
  */
-export function createTransformer(trigger: Ref<MaybeElement>, transformer: Transformer) {
+export function createTransformer(trigger: Ref<MaybeElement>, transformer: Transformer): TransformerHandle {
   const target = ref<MaybeElement>()
   const style = ref<CSSProperties>({})
 
@@ -157,16 +161,13 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
     }
   }
 
-  // v-if：target 在 DOM flush 后赋值，sync 立刻写入 left/top，赶在浏览器绘制首帧之前。
-  watch(target, () => {
-    applyPosition()
-  }, { flush: 'sync' })
-
-  // v-show：仅在真正显示时计算。IntersectionObserver 本身是异步的，不能再额外推迟。
+  // IntersectionObserver 在绘制之后通知，只作 getClientRects 仍为空时的补写。
   const targetVisibility = useElementVisibility(target)
   whenever(targetVisibility, () => {
     applyPosition()
   }, { flush: 'post' })
 
-  return target
+  const handle = target as TransformerHandle
+  handle.applyPosition = applyPosition
+  return handle
 }
