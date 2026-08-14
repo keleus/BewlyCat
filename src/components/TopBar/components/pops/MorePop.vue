@@ -25,12 +25,10 @@ const list = computed((): { name: string, url: string, icon: string, bewlyKey?: 
     max-h-264px important-overflow-y-auto
     w="180px"
     bg="$bew-elevated"
-    p="3"
-    rounded="$bew-radius"
     flex="~ col"
-    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
-    border="1 $bew-border-color"
-    class="more-pop bew-popover"
+    shadow="$bew-shadow-3"
+    border="1 $bew-popover-border-color"
+    class="more-pop bew-popover bew-popover-inset"
     data-key="more"
   >
     <ALink
@@ -42,7 +40,7 @@ const list = computed((): { name: string, url: string, icon: string, bewlyKey?: 
       pos="relative"
       p="x-5 y-2"
       hover:bg="$bew-fill-2"
-      rounded="$bew-radius"
+      rounded="$bew-menu-item-radius"
       transition="colors"
       duration="200"
       m="b-1 last:b-0"

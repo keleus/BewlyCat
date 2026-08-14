@@ -235,10 +235,9 @@ defineExpose({
     h="[calc(100vh-100px)]" max-h-500px important-overflow-y-overlay
     bg="$bew-elevated"
     w="380px"
-    rounded="$bew-radius"
     pos="relative"
-    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
-    border="1 $bew-border-color"
+    shadow="$bew-shadow-3"
+    border="1 $bew-popover-border-color"
     class="history-pop bew-popover"
     data-key="history"
     flex="~ col"
@@ -278,7 +277,6 @@ defineExpose({
     <main
       ref="historysWrap"
       overflow-y-auto
-      rounded="$bew-radius"
       flex="~ col gap-2"
       p="x-3"
       flex-1
@@ -298,7 +296,6 @@ defineExpose({
         pos="absolute top-0 left-0"
         z="0" w="full" h="full"
         flex="~ items-center"
-        rounded="$bew-radius"
       />
 
       <!-- load failed -->
@@ -308,7 +305,6 @@ defineExpose({
         pos="absolute top-0 left-0"
         z="0" w="full" h="full"
         flex="~ col items-center justify-center"
-        rounded="$bew-radius"
       >
         <Button type="secondary" size="small" @click="retryHistoryList">
           {{ $t('common.operation.refresh') }}
@@ -322,21 +318,17 @@ defineExpose({
           :key="historyItem.kid"
           :href="getHistoryUrl(historyItem)"
           type="topBar"
-          class="group"
+          class="group bew-content-card"
           m="last:b-4" p="2"
-          rounded="$bew-radius"
           hover:bg="$bew-fill-2"
           duration-300
         >
-          <section flex="~ gap-4 item-start">
+          <section flex="~ gap-4 items-start">
             <!-- Video cover, live cover, ariticle cover -->
             <div
+              class="bew-top-bar-media-column"
               bg="$bew-skeleton"
               pos="relative"
-              w="150px"
-              flex="shrink-0"
-              border="rounded-$bew-radius-half"
-              overflow="hidden"
             >
               <!-- Delete button -->
               <div
@@ -355,13 +347,12 @@ defineExpose({
 
               <!-- Video -->
               <template v-if="activatedTab === 0">
-                <div pos="relative">
+                <div class="bew-top-bar-media-frame">
                   <img
-                    w="150px" h-full
-                    class="aspect-video"
+                    w-full h-full
                     :src="`${removeHttpFromUrl(
                       historyItem.cover,
-                    )}@256w_144h_1c`"
+                    )}@320w_180h_1c`"
                     :alt="historyItem.title"
                     object-cover
                   >
@@ -393,15 +384,14 @@ defineExpose({
 
               <!-- Live -->
               <template v-else-if="activatedTab === 1">
-                <div pos="relative">
+                <div class="bew-top-bar-media-frame">
                   <img
-                    w="150px"
-                    class="aspect-video"
+                    w-full h-full
                     :src="`${removeHttpFromUrl(
                       historyItem.cover,
-                    )}@256w_144h_1c`"
+                    )}@320w_180h_1c`"
                     :alt="historyItem.title"
-                    bg="contain"
+                    object-cover
                   >
                   <div
                     v-if="historyItem.live_status === 1"
@@ -431,15 +421,14 @@ defineExpose({
               </template>
 
               <!-- Article -->
-              <div v-else-if="activatedTab === 2">
+              <div v-else-if="activatedTab === 2" class="bew-top-bar-media-frame">
                 <img
-                  w="150px"
-                  class="aspect-video"
+                  w-full h-full
                   :src="`${
                     Array.isArray(historyItem.covers)
                       ? historyItem.covers[0]
                       : ''
-                  }@256w_144h_1c`"
+                  }@320w_180h_1c`"
                   object-cover
                   :alt="historyItem.title"
                   bg="contain"
@@ -448,20 +437,19 @@ defineExpose({
             </div>
 
             <!-- Description -->
-            <div>
+            <div class="bew-top-bar-media-copy">
               <h3
-                class="keep-two-lines"
-                overflow="hidden"
-                text="ellipsis"
-                break-anywhere
+                :title="historyItem.title"
+                class="bew-top-bar-media-title"
               >
                 {{ historyItem.title }}
               </h3>
-              <div text="$bew-text-2 sm" m="t-4" flex="~" align="items-center">
+              <div text="$bew-text-2" m="t-2" flex="~ items-center">
                 <ALink
                   :href="`https://space.bilibili.com/${historyItem.author_mid}`"
                   type="topBar"
                   :stop-propagation="true"
+                  class="bew-top-bar-media-author"
                 >
                   {{ historyItem.author_name }}
                 </ALink>
@@ -477,7 +465,7 @@ defineExpose({
                   <i i-svg-spinners:pulse-3 align-middle mt--0.2em />
                 </span>
               </div>
-              <p text="$bew-text-2 sm">
+              <p class="bew-top-bar-media-meta" text="$bew-text-2">
                 {{
                   useDateFormat(
                     historyItem.view_at * 1000,

@@ -38,13 +38,11 @@ const list = computed(() => {
   <div
     style="backdrop-filter: var(--bew-filter-glass-1);"
     bg="$bew-elevated"
-    rounded="$bew-radius"
-    p="3"
     min-w="120px"
-    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
-    border="1 $bew-border-color"
+    shadow="$bew-shadow-3"
+    border="1 $bew-popover-border-color"
     flex="~ col"
-    class="upload-pop bew-popover"
+    class="upload-pop bew-popover bew-popover-inset"
     data-key="upload"
   >
     <a
@@ -56,7 +54,7 @@ const list = computed(() => {
       flex="~ items-center gap-3"
       p="l-5 r-8 y-2"
       hover:bg="$bew-fill-2"
-      rounded="$bew-radius"
+      rounded="$bew-menu-item-radius"
       transition="colors"
       duration="200"
       m="b-1 last:b-0"

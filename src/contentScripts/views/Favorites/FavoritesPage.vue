@@ -1476,6 +1476,8 @@ function transformFavoriteArticle(item: FavoriteArticle) {
                   class="item-more-btn"
                   :disabled="isFullPageLoading"
                   :aria-label="t('favorites.sidebar_manage')"
+                  aria-haspopup="menu"
+                  :aria-expanded="itemMenuTarget?.type === 'folder' && itemMenuTarget.id === item.id"
                   @click.prevent.stop="openItemMenu('folder', item.id, $event)"
                 >
                   <span i-mingcute:more-2-line />
@@ -1522,6 +1524,8 @@ function transformFavoriteArticle(item: FavoriteArticle) {
                   class="item-more-btn"
                   :disabled="isFullPageLoading"
                   :aria-label="t('favorites.sidebar_manage')"
+                  aria-haspopup="menu"
+                  :aria-expanded="itemMenuTarget?.type === 'season' && itemMenuTarget.id === item.id"
                   @click.prevent.stop="openItemMenu('season', item.id, $event)"
                 >
                   <span i-mingcute:more-2-line />

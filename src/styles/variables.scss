@@ -42,15 +42,27 @@
   --bew-radius-lg: 12px;
   --bew-radius-xl: 16px;
   --bew-radius-2xl: 24px;
+  --bew-radius-3xl: 32px;
   --bew-radius-full: 9999px;
   --bew-radius: var(--bew-radius-lg);
   --bew-card-radius: var(--bew-radius-lg);
+  --bew-card-continuous-radius: var(--bew-radius-xl);
+  --bew-card-corner-shape: superellipse(1.5);
   --bew-media-radius: var(--bew-radius-lg);
+  --bew-media-continuous-radius: var(--bew-radius-xl);
+  --bew-media-corner-shape: superellipse(1.5);
   --bew-panel-radius: var(--bew-radius-lg);
   --bew-modal-radius: var(--bew-radius-2xl);
-  --bew-popover-radius: var(--bew-radius-2xl);
+  --bew-popover-radius: var(--bew-radius-xl);
+  --bew-popover-continuous-radius: var(--bew-radius-3xl);
+  --bew-popover-corner-shape: superellipse(1.4);
   --bew-popover-surface-radius: var(--bew-radius-lg);
+  --bew-popover-surface-continuous-radius: var(--bew-radius-xl);
+  --bew-popover-surface-corner-shape: superellipse(1.5);
+  --bew-popover-padding: var(--bew-space-2);
+  --bew-context-menu-padding: var(--bew-space-1);
   --bew-interactive-radius: var(--bew-radius-md);
+  --bew-menu-item-radius: var(--bew-radius-full);
   --bew-badge-radius: var(--bew-radius-full);
   // #endregion
 
@@ -105,9 +117,22 @@
   --bew-control-border-color: transparent;
   // #endregion
 
-  // Search and logo stay one step larger (still full capsule/circle)
+  // Search and logo stay one step larger (still full capsule/circle).
+  // Compact TopBar thumbnails use a tighter radius than full-size media cards.
   --bew-top-bar-primary-control-height: 46px;
   --bew-top-bar-primary-control-radius: var(--bew-radius-full);
+  --bew-top-bar-media-width: 160px;
+  --bew-top-bar-media-width-narrow: 120px;
+  --bew-top-bar-media-width-compact: 96px;
+  --bew-top-bar-media-aspect-ratio: 16 / 9;
+  --bew-top-bar-media-radius: var(--bew-radius-half);
+  --bew-top-bar-media-continuous-radius: var(--bew-radius-md);
+  --bew-top-bar-media-title-size: var(--bew-font-size-control);
+  --bew-top-bar-media-title-line-height: var(--bew-line-height-control);
+  --bew-top-bar-media-title-weight: var(--bew-font-weight-regular);
+  --bew-top-bar-media-author-weight: var(--bew-font-weight-semibold);
+  --bew-top-bar-media-meta-size: var(--bew-font-size-caption);
+  --bew-top-bar-media-meta-line-height: var(--bew-line-height-caption);
   --bew-top-bar-brand-logo-width: 66px;
   --bew-top-bar-brand-logo-height: 22px;
   --bew-top-bar-brand-logo-compact-size: 24px;
@@ -320,6 +345,7 @@
   // #endregion
 
   --bew-border-color: rgb(131 131 145 / 18%);
+  --bew-popover-border-color: rgb(255 255 255 / 40%);
 
   // Threaded comments use this subtle rail to keep nested reply ancestry visible.
   --bew-comment-tree-line-color: rgb(131 131 145 / 30%);
@@ -406,6 +432,7 @@
   --bew-fill-alt: var(--bew-fill-1);
 
   --bew-border-color: rgb(131 131 145 / 16%);
+  --bew-popover-border-color: rgb(255 255 255 / 12%);
 
   // Blend a white-majority tone with the dark base, then soften it to 35% alpha for reply rails.
   --bew-comment-tree-line-color: rgb(

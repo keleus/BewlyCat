@@ -76,12 +76,10 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
   <div
     style="backdrop-filter: var(--bew-filter-glass-1);"
     bg="$bew-elevated"
-    p="3"
-    rounded="$bew-radius"
-    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
-    border="1 $bew-border-color"
+    shadow="$bew-shadow-3"
+    border="1 $bew-popover-border-color"
     flex="~ col"
-    class="notifications-pop bew-popover"
+    class="notifications-pop bew-popover bew-popover-inset"
     data-key="notifications"
   >
     <ALink
@@ -93,7 +91,7 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
       flex="~ items-center justify-between"
       p="l-5 r-8 y-2"
       hover:bg="$bew-fill-2"
-      rounded="$bew-radius"
+      rounded="$bew-menu-item-radius"
       transition="colors"
       duration="200"
       m="b-1 last:b-0"
@@ -109,7 +107,7 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
           v-if="item.unreadCount > 0"
           class="notification-badge"
           bg="$bew-theme-color"
-          rounded="$bew-radius-md"
+          rounded="$bew-badge-radius"
           text="white xs leading-none center"
           grid="~ place-items-center"
           px-1

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import type { Ref } from 'vue'
+import type { ComponentPublicInstance, Ref } from 'vue'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
@@ -25,8 +25,11 @@ const noMoreContent = ref<boolean>(false)
 const favoriteVideosWrap = ref<HTMLElement>() as Ref<HTMLElement>
 const topBarStore = useTopBarStore()
 const { favoriteStateVersion } = storeToRefs(topBarStore)
+const categoryLabelElements = new Map<number, HTMLElement>()
+const categoryMarqueeStyles = reactive<Record<number, Record<string, string>>>({})
 let favoriteDataRequestVersion = 0
 let favoriteResourcesRequestVersion = 0
+let categoryLabelResizeObserver: ResizeObserver | undefined
 
 const viewAllUrl = computed((): string => {
   return `//space.bilibili.com/${getUserID()}/favlist?fid=${
@@ -56,8 +59,51 @@ watch(favoriteStateVersion, () => {
 })
 
 onMounted(() => {
+  categoryLabelResizeObserver = new ResizeObserver((entries) => {
+    for (const entry of entries) {
+      const element = entry.target as HTMLElement
+      const categoryId = Number(element.dataset.categoryId)
+      updateCategoryMarquee(categoryId, element)
+    }
+  })
+  categoryLabelElements.forEach(element => categoryLabelResizeObserver?.observe(element))
   initData()
 })
+
+onBeforeUnmount(() => categoryLabelResizeObserver?.disconnect())
+
+function updateCategoryMarquee(categoryId: number, element: HTMLElement) {
+  const textElement = element.querySelector<HTMLElement>('.favorite-category-label__text')
+  if (!textElement)
+    return
+
+  const overflowDistance = Math.ceil(textElement.scrollWidth - element.clientWidth)
+  if (overflowDistance <= 1) {
+    delete categoryMarqueeStyles[categoryId]
+    return
+  }
+
+  const duration = Math.min(12, Math.max(4, overflowDistance / 24 + 3))
+  categoryMarqueeStyles[categoryId] = {
+    '--favorite-category-marquee-distance': `-${overflowDistance}px`,
+    '--favorite-category-marquee-duration': `${duration}s`,
+  }
+}
+
+function setCategoryLabelRef(element: Element | ComponentPublicInstance | null, categoryId: number) {
+  const previousElement = categoryLabelElements.get(categoryId)
+  if (previousElement && previousElement !== element)
+    categoryLabelResizeObserver?.unobserve(previousElement)
+
+  if (!(element instanceof HTMLElement)) {
+    categoryLabelElements.delete(categoryId)
+    delete categoryMarqueeStyles[categoryId]
+    return
+  }
+
+  categoryLabelElements.set(categoryId, element)
+  categoryLabelResizeObserver?.observe(element)
+}
 
 // 使用 useOptimizedScroll 处理滚动加载
 function handleReachBottom() {
@@ -201,20 +247,17 @@ defineExpose({
     h="[calc(100vh-100px)]" max-h-500px overflow="hidden"
     bg="$bew-elevated"
     w="450px"
-    rounded="$bew-radius"
     pos="relative"
-    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
-    border="1 $bew-border-color"
-    class="favorites-pop"
+    shadow="$bew-shadow-3"
+    border="1 $bew-popover-border-color"
+    class="favorites-pop bew-popover"
     flex="~ col"
   >
     <!-- top bar -->
     <header
       flex="~" items-center justify-between
       p="x-6 y-5"
-      pos="sticky top-0 left-0"
       w="full"
-      z="2"
     >
       <h3 cursor="pointer" font-600 @click="scrollToTop(favoriteVideosWrap)">
         {{ activatedFavoriteTitle }}
@@ -238,23 +281,41 @@ defineExpose({
       </div>
     </header>
 
-    <main flex="~" flex-1 min-h-0 rounded="$bew-radius">
+    <main flex="~" flex-1 min-h-0>
       <aside
-        pos="sticky top-0 left-0"
         w="140px" h-full overflow="y-auto"
-        flex="shrink-0" bg="$bew-fill-1"
+        flex="shrink-0"
+        p="2"
       >
         <ul grid="~ cols-1">
           <li
             v-for="item in favoriteCategories"
             :key="item.id"
             :class="activatedMediaId === item.id ? 'activated-category' : ''"
-            p="y-2 x-6"
+            p="y-2 x-4"
+            m="b-1 last:b-0"
+            rounded="$bew-menu-item-radius"
             cursor="pointer"
+            hover:bg="$bew-fill-2"
             transition="background-color duration-200, color duration-200, opacity duration-200"
             @click="changeCategory(item)"
           >
-            {{ item.title }}
+            <span
+              :ref="element => setCategoryLabelRef(element, item.id)"
+              class="favorite-category-label"
+              :data-category-id="item.id"
+              :title="item.title"
+            >
+              <span
+                class="favorite-category-label__text"
+                :class="{
+                  'is-marquee': activatedMediaId === item.id && !!categoryMarqueeStyles[item.id],
+                }"
+                :style="categoryMarqueeStyles[item.id]"
+              >
+                {{ item.title }}
+              </span>
+            </span>
           </li>
         </ul>
       </aside>
@@ -264,7 +325,7 @@ defineExpose({
         ref="favoriteVideosWrap"
         flex="~ col gap-2 1"
         overflow="y-auto"
-        p="x-6"
+        p="r-3"
         pos="relative"
         h-full
       >
@@ -278,14 +339,13 @@ defineExpose({
           h="full"
           flex="~"
           items="center"
-          rounded="$bew-radius"
+          rounded="$bew-panel-radius"
         />
 
         <!-- empty -->
         <Empty
           v-if="!isLoading && favoriteResources.length === 0"
           w="full" h="full"
-          rounded="$bew-radius-half"
         />
 
         <!-- favorites -->
@@ -296,20 +356,15 @@ defineExpose({
             :href="isMusic(item) ? `https://www.bilibili.com/audio/au${item.id}` : `//www.bilibili.com/video/${item.bvid}`"
             type="topBar"
             hover:bg="$bew-fill-2"
-            rounded="$bew-radius"
             m="last:b-4" p="2"
-            class="group"
+            class="group bew-content-card"
             transition="colors"
             duration-200
           >
             <section flex="~ gap-4" items-start>
               <div
+                class="bew-top-bar-media-frame bew-top-bar-media-frame--narrow"
                 bg="$bew-skeleton"
-                w="120px"
-                flex="shrink-0"
-                rounded="$bew-radius-half"
-                overflow="hidden"
-                class="aspect-video"
               >
                 <div pos="relative" w-full h-full>
                   <img
@@ -332,14 +387,15 @@ defineExpose({
               </div>
 
               <!-- Description -->
-              <div>
+              <div class="bew-top-bar-media-copy">
                 <h3
-                  class="keep-two-lines"
+                  :title="item.title"
+                  class="bew-top-bar-media-title"
                 >
                   {{ item.title }}
                 </h3>
                 <div
-                  text="$bew-text-2 sm"
+                  text="$bew-text-2"
                   m="t-2"
                   flex="~"
                   items-center
@@ -348,6 +404,7 @@ defineExpose({
                     :href="`https://space.bilibili.com/${item.upper.mid}`"
                     type="topBar"
                     :stop-propagation="true"
+                    class="bew-top-bar-media-author"
                   >
                     {{ item.upper.name }}
                   </ALink>
@@ -369,5 +426,50 @@ defineExpose({
 <style lang="scss" scoped>
 .activated-category {
   --uno: "bg-$bew-theme-color text-white";
+}
+
+.favorite-category-label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.favorite-category-label__text {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.is-marquee {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    animation: favorite-category-marquee var(--favorite-category-marquee-duration) linear infinite alternate;
+    will-change: transform;
+  }
+}
+
+@keyframes favorite-category-marquee {
+  0%,
+  15% {
+    transform: translateX(0);
+  }
+
+  85%,
+  100% {
+    transform: translateX(var(--favorite-category-marquee-distance));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .favorite-category-label__text.is-marquee {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    animation: none;
+  }
 }
 </style>

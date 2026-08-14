@@ -95,11 +95,10 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
     h="[calc(100vh-100px)]" max-h-500px important-overflow-y-overlay
     bg="$bew-elevated"
     w="380px"
-    rounded="$bew-radius"
     pos="relative"
     of="hidden"
-    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
-    border="1 $bew-border-color"
+    shadow="$bew-shadow-3"
+    border="1 $bew-popover-border-color"
     class="watchLater-pop bew-popover"
     data-key="watchLater"
     flex="~ col"
@@ -139,7 +138,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
     <!-- watchLater wrapper -->
     <main
       ref="scrollContainer"
-      overflow-y-auto rounded="$bew-radius"
+      overflow-y-auto
       flex="~ col gap-2"
       p="x-3"
       flex-1
@@ -158,7 +157,6 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
         pos="absolute top-0 left-0"
         z="0" w="full" h="full"
         flex="~ items-center"
-        rounded="$bew-radius"
       />
 
       <!-- watchlater -->
@@ -167,22 +165,18 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
           v-for="(item, index) in watchLaterList"
           :key="item.aid"
           :href="getWatchLaterVideoUrl(item.bvid)"
-          class="group"
+          class="group bew-content-card"
           type="topBar"
           m="last:b-4" p="2"
-          rounded="$bew-radius"
           hover:bg="$bew-fill-2"
           duration-300
         >
-          <section flex="~ gap-4 item-start">
+          <section flex="~ gap-4 items-start">
             <!-- Video cover, live cover, ariticle cover -->
             <div
+              class="bew-top-bar-media-column"
               bg="$bew-skeleton"
               pos="relative"
-              w="150px"
-              flex="shrink-0"
-              border="rounded-$bew-radius-half"
-              overflow="hidden"
             >
               <div
                 class="group-hover:opacity-100 opacity-0"
@@ -238,13 +232,12 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
               </div>
 
               <!-- Video -->
-              <div pos="relative">
+              <div class="bew-top-bar-media-frame">
                 <img
-                  w="150px" h-full
-                  class="aspect-video"
+                  w-full h-full
                   :src="`${removeHttpFromUrl(
                     item.pic,
-                  )}@256w_144h_1c`"
+                  )}@320w_180h_1c`"
                   :alt="item.title"
                   object-cover
                   loading="lazy"
@@ -276,20 +269,19 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
             </div>
 
             <!-- Description -->
-            <div>
+            <div class="bew-top-bar-media-copy">
               <h3
-                class="keep-two-lines"
-                overflow="hidden"
-                text="ellipsis"
-                break-anywhere
+                :title="item.title"
+                class="bew-top-bar-media-title"
               >
                 {{ item.title }}
               </h3>
-              <div text="$bew-text-2 sm" m="t-4" flex="~" align="items-center">
+              <div text="$bew-text-2" m="t-2" flex="~ items-center">
                 <ALink
                   :href="`https://space.bilibili.com/${item.owner.mid}`"
                   type="topBar"
                   :stop-propagation="true"
+                  class="bew-top-bar-media-author"
                 >
                   {{ item.owner.name }}
                 </ALink>

@@ -171,10 +171,10 @@ function handleClickChannel() {
   <div
     style="backdrop-filter: var(--bew-filter-glass-1); overflow-y: auto;"
     w-300px max-h="[calc(100vh-120px)]" min-h-0
-    p-3 rounded="$bew-popover-radius" z--1 bg="$bew-elevated"
-    border="1 $bew-border-color"
-    shadow="[var(--bew-shadow-3),var(--bew-shadow-edge-glow-1)]"
-    class="userPanel-pop bew-popover"
+    z--1 bg="$bew-elevated"
+    border="1 $bew-popover-border-color"
+    shadow="$bew-shadow-3"
+    class="userPanel-pop bew-popover bew-popover-inset"
     data-key="userPanel"
   >
     <div
@@ -201,7 +201,7 @@ function handleClickChannel() {
         href="https://account.bilibili.com/account/coin"
         type="topBar"
         p="x-4 y-1"
-        rounded="$bew-radius-md"
+        rounded="$bew-menu-item-radius"
         duration-200
         hover:bg="$bew-fill-1"
       >
@@ -212,7 +212,7 @@ function handleClickChannel() {
         href="https://pay.bilibili.com/pay-v2-web/bcoin_index"
         type="topBar"
         p="x-4 y-1"
-        rounded="$bew-radius-md"
+        rounded="$bew-menu-item-radius"
         duration-200
         hover:bg="$bew-fill-1"
       >
@@ -226,8 +226,8 @@ function handleClickChannel() {
       v-if="userInfo?.level_info?.current_level < 6"
       href="//account.bilibili.com/account/record?type=exp"
       type="topBar"
+      class="bew-content-card"
       block w-full p-2
-      rounded="$bew-radius-lg"
       duration-200
       hover:bg="$bew-fill-1"
       flex="~ col justify-center items-start"
@@ -274,7 +274,7 @@ function handleClickChannel() {
       duration-200
       flex="~ items-center gap-2"
       class="lv6-entry"
-      :class="showLv6LastLoginInfo ? 'lv6-entry--card' : 'lv6-entry--compact'"
+      :class="showLv6LastLoginInfo ? 'lv6-entry--card bew-content-card' : 'lv6-entry--compact'"
     >
       <div
         :style="{ width: userInfo?.is_senior_member ? '36px' : '28px' }"
@@ -339,7 +339,7 @@ function handleClickChannel() {
         :href="item.url"
         type="topBar"
         p="x-4 y-2" flex="~ items-center justify-between"
-        rounded="$bew-radius-lg"
+        rounded="$bew-menu-item-radius"
         duration-300
         hover:bg="$bew-fill-1"
         relative
@@ -368,7 +368,7 @@ function handleClickChannel() {
         :href="item.url"
         type="topBar"
         p="x-4 y-2" flex="~ items-center justify-between"
-        rounded="$bew-radius-lg"
+        rounded="$bew-menu-item-radius"
         duration-300
         hover:bg="$bew-fill-1"
         relative
@@ -390,7 +390,7 @@ function handleClickChannel() {
       <div
         text="$bew-error-color"
         p="x-4 y-2" flex="~ items-center"
-        rounded="$bew-radius-lg"
+        rounded="$bew-menu-item-radius"
         duration-300 cursor-pointer
         hover:bg="$bew-fill-1"
         @click="logout()"
@@ -414,7 +414,7 @@ function handleClickChannel() {
 }
 
 .lv6-entry--card {
-  --uno: "w-full p-2 rounded-$bew-radius-lg hover:bg-$bew-fill-1";
+  --uno: "w-full p-2 hover:bg-$bew-fill-1";
 }
 
 .lv6-entry--compact {

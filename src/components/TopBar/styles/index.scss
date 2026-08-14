@@ -65,6 +65,13 @@
   --uno: "after:absolute after:top--30px after:left-1/2 after:-z-1";
   --uno: "after:transform after:-translate-x-1/2";
   border-radius: var(--bew-popover-radius);
+
+  // A squircle retains more of the corner than a circular radius, so it needs
+  // a larger geometric radius to preserve the same perceived corner size.
+  @supports (corner-shape: superellipse(1.4)) {
+    border-radius: var(--bew-popover-continuous-radius);
+    corner-shape: var(--bew-popover-corner-shape);
+  }
 }
 
 .logo.activated {
@@ -129,14 +136,14 @@
   .unread-num-dot {
     // The controls grew from 34px to 36px; keep the badge on the same visual edge.
     --uno: "absolute top--2px right--2px";
-    --uno: "important:px-1 rounded-full";
+    --uno: "important:px-1 rounded-$bew-badge-radius";
     --uno: "text-xs leading-none z-6 min-w-14px h-14px";
     --uno: "grid place-items-center";
     --uno: "bg-$bew-theme-color text-white shadow-$bew-shadow-1";
   }
 
   .unread-dot {
-    --uno: "w-8px h-8px bg-$bew-theme-color rounded-8px absolute right-2px top-2px";
+    --uno: "w-8px h-8px bg-$bew-theme-color rounded-$bew-badge-radius absolute right-2px top-2px";
   }
 
   .right-side-item {
