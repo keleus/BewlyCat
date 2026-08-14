@@ -14,12 +14,16 @@ export interface Transformer {
   notrigger?: boolean
 }
 
+export type TransformerHandle = Ref<MaybeElement> & {
+  applyPosition: () => void
+}
+
 /**
  * Covert transform to top and left style, if no chromium, use transform
  * @param trigger
  * @param transformer
  */
-export function createTransformer(trigger: Ref<MaybeElement>, transformer: Transformer) {
+export function createTransformer(trigger: Ref<MaybeElement>, transformer: Transformer): TransformerHandle {
   const target = ref<MaybeElement>()
   const style = ref<CSSProperties>({})
 
@@ -62,15 +66,18 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
       const el = unrefElement(target.value)
       const triggerEl = unrefElement(trigger)
       if (el && triggerEl) {
-        const targetRect = el.getBoundingClientRect()
+        // offsetWidth/Height 是布局盒（CSSOM View），不含 transform。
+        // getBoundingClientRect 含 transform，enter/leave 动画中会得到错误宽高。
+        const targetWidth = el instanceof HTMLElement ? el.offsetWidth : el.getBoundingClientRect().width
+        const targetHeight = el instanceof HTMLElement ? el.offsetHeight : el.getBoundingClientRect().height
         const triggerRect = triggerEl.getBoundingClientRect()
 
         if (transformer.centerTarget.x) {
           // 计算 popup 的预期中心点位置
           const popupCenterX = triggerRect.left + triggerRect.width / 2
           // 计算 popup 居中后的左右边界
-          const popupLeft = popupCenterX - targetRect.width / 2
-          const popupRight = popupCenterX + targetRect.width / 2
+          const popupLeft = popupCenterX - targetWidth / 2
+          const popupRight = popupCenterX + targetWidth / 2
 
           const viewportWidth = window.innerWidth
           const edgeMargin = 16 // 与边缘保持的最小距离
@@ -89,15 +96,15 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
 
           // 应用偏移
           if (offset !== 0) {
-            x = `calc(${transformer.x} - ${targetRect.width / 2}px + ${offset}px)`
+            x = `calc(${transformer.x} - ${targetWidth / 2}px + ${offset}px)`
           }
           else {
-            x = `calc(${transformer.x} - ${targetRect.width / 2}px)`
+            x = `calc(${transformer.x} - ${targetWidth / 2}px)`
           }
         }
 
         if (transformer.centerTarget.y) {
-          y = `calc(${transformer.y} - ${targetRect.height / 2}px)`
+          y = `calc(${transformer.y} - ${targetHeight / 2}px)`
         }
       }
     }
@@ -137,33 +144,30 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
     return Object.keys(s).map(key => `${key}:${s[key]}`).join(';')
   }
 
-  // v-show
-  const targetVisibility = useElementVisibility(target)
-
-  // fix keleus#135
-  // 还原为 whenever，仅在显示时计算位置
-  whenever(targetVisibility, () => {
+  function applyPosition() {
     try {
-      const targetElement = unrefElement(target)
-      if (targetElement) {
-        // 使用 requestAnimationFrame 和 setTimeout 确保 DOM 完全稳定后再计算位置
-        // 这样可以避免在动画过程中计算位置导致的错误
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            const element = unrefElement(target)
-            if (element) {
-              update()
-              const style = element.getAttribute('style')
-              element.setAttribute('style', generateStyle(style))
-            }
-          }, 0)
-        })
-      }
+      const element = unrefElement(target)
+      if (!(element instanceof HTMLElement))
+        return
+      // 未生成 CSS 布局盒时跳过（display:none 或不在文档中，CSSOM View getClientRects）。
+      if (element.getClientRects().length === 0)
+        return
+
+      update()
+      element.setAttribute('style', generateStyle(element.getAttribute('style')))
     }
     catch (e) {
-      console.warn('Failed to update style on visibility change:', e)
+      console.warn('Failed to apply transformer position:', e)
     }
-  }, { flush: 'pre' })
+  }
 
-  return target
+  // IntersectionObserver 在绘制之后通知，只作 getClientRects 仍为空时的补写。
+  const targetVisibility = useElementVisibility(target)
+  whenever(targetVisibility, () => {
+    applyPosition()
+  }, { flush: 'post' })
+
+  const handle = target as TransformerHandle
+  handle.applyPosition = applyPosition
+  return handle
 }
