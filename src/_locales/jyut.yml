@@ -1166,6 +1166,8 @@ watch_later:
   play_video: 剷走兼入去影片頁
   play_in_watch_later: 清單播
   remove_from_watch_later: 剷走
+  layout_list: 清單檢視
+  layout_grid: 格網檢視
 search_bar:
   history_title: 搜尋記錄
   hot_search_title: 熱搜

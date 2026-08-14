@@ -25,6 +25,7 @@ interface Props {
   isInWatchLater: boolean
   showWatcherLater: boolean
   coverTopLeftAlwaysVisible?: boolean
+  coverTopRightAlwaysVisible?: boolean
   coverImageUrl: string
   // Modern layout specific
   coverStatValues?: {
@@ -721,6 +722,16 @@ onBeforeUnmount(() => {
           @click.stop=""
         >
           <slot name="coverTopLeft" />
+        </div>
+
+        <div
+          class="video-card-overlay-transform-transition"
+          :class="coverTopRightAlwaysVisible ? 'opacity-100' : 'opacity-0 group-hover/cover:opacity-100'"
+          :transform="coverTopRightAlwaysVisible ? 'scale-100' : 'scale-70 group-hover/cover:scale-100'"
+          pos="absolute top-0 right-0" z-2
+          @click.stop=""
+        >
+          <slot name="coverTopRight" />
         </div>
 
         <div

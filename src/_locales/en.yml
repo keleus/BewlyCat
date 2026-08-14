@@ -1265,6 +1265,8 @@ watch_later:
   play_video: Remove and open video page
   play_in_watch_later: Playlist
   remove_from_watch_later: Remove
+  layout_list: List view
+  layout_grid: Grid view
 search_bar:
   history_title: Search History
   hot_search_title: Hot Search

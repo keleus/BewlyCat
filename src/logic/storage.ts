@@ -1116,6 +1116,14 @@ export const gridLayout = useStorageLocal<GridLayout>('gridLayout', {
   home: 'adaptive',
 }, { mergeDefaults: true, writeDefaults: false })
 
+export type WatchLaterLayout = 'list' | 'grid'
+
+export const watchLaterLayout = useStorageLocal<WatchLaterLayout>(
+  'watchLaterLayout',
+  'list',
+  { mergeDefaults: true, writeDefaults: false },
+)
+
 export const gridColumns = useStorageLocal<GridColumnsConfig>(
   'gridColumns',
   { ...defaultGridColumns },

@@ -34,6 +34,7 @@ interface Props {
   isFollowingPage?: boolean
   customClickHandler?: (event: MouseEvent) => void
   coverTopLeftAlwaysVisible?: boolean
+  coverTopRightAlwaysVisible?: boolean
 }
 
 const layout = computed((): VideoCardLayoutSetting => {
@@ -405,6 +406,7 @@ provide('getVideoType', () => props.type!)
             :is-in-watch-later="logic.isInWatchLater.value"
             :show-watcher-later="showWatcherLater && settings.showVideoCardWatchLater"
             :cover-top-left-always-visible="coverTopLeftAlwaysVisible"
+            :cover-top-right-always-visible="coverTopRightAlwaysVisible"
             :cover-image-url="coverImageUrl"
             :cover-stat-values="coverStatValues"
             :cover-stats-visibility="coverStatsVisibility"
@@ -418,6 +420,9 @@ provide('getVideoType', () => props.type!)
           >
             <template #coverTopLeft>
               <slot name="coverTopLeft" />
+            </template>
+            <template #coverTopRight>
+              <slot name="coverTopRight" />
             </template>
           </VideoCardCover>
         </div>

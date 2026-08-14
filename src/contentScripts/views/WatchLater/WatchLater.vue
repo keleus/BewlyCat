@@ -2,9 +2,14 @@
 import { useDateFormat } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
+import Icon from '~/components/Icon.vue'
+import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
+import type { Video } from '~/components/VideoCard/types'
+import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
-import { settings } from '~/logic'
+import type { WatchLaterLayout } from '~/logic'
+import { settings, watchLaterLayout } from '~/logic'
 import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
@@ -24,6 +29,11 @@ const watchLaterCount = ref<number>(0)
 const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 const pageNum = ref<number>(1)
 const pageSize = ref<number>(20)
+
+const layoutIcons = computed<Array<{ icon: string, iconActivated: string, value: WatchLaterLayout }>>(() => [
+  { icon: 'mingcute:list-check-3-line', iconActivated: 'mingcute:list-check-3-fill', value: 'list' },
+  { icon: 'mingcute:table-3-line', iconActivated: 'mingcute:table-3-fill', value: 'grid' },
+])
 
 function syncTopBarWatchLaterState() {
   const sync = () => {
@@ -60,20 +70,24 @@ function initPageAction() {
 
     initData()
   }
-
-  handleReachBottom.value = async () => {
-    if (isLoading.value || noMoreContent.value) {
-      return
-    }
-
-    // 优化：添加延迟执行提高触发成功率
-    setTimeout(() => {
-      if (!isLoading.value && !noMoreContent.value) {
-        getData()
-      }
-    }, 50)
-  }
 }
+
+function handleListReachBottom() {
+  if (isLoading.value || noMoreContent.value)
+    return
+
+  // 优化：添加延迟执行提高触发成功率
+  setTimeout(() => {
+    if (!isLoading.value && !noMoreContent.value) {
+      getData()
+    }
+  }, 50)
+}
+
+// 列表模式使用全局滚动触底加载；grid 模式由 VideoCardGrid 内部哨兵触发
+watch(watchLaterLayout, (layout) => {
+  handleReachBottom.value = layout === 'list' ? handleListReachBottom : undefined
+}, { immediate: true })
 
 /**
  * Get watch later list by page
@@ -129,6 +143,43 @@ function deleteWatchLaterItem(index: number, aid: number) {
         syncTopBarWatchLaterState()
       }
     })
+}
+
+function handleRemoveWatchLater(item: VideoItem) {
+  const index = currentWatchLaterList.value.findIndex(video => video.aid === item.aid)
+  if (index !== -1)
+    deleteWatchLaterItem(index, item.aid)
+}
+
+function handlePlayWatchLater(item: VideoItem) {
+  const index = currentWatchLaterList.value.findIndex(video => video.aid === item.aid)
+  if (index !== -1)
+    handleOpenVideoPageAndRemove(index, item.bvid, item.aid)
+}
+
+function handleWatchLaterCardClick(item: VideoItem, event: MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+  handleLinkClick(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`)
+}
+
+function transformWatchLaterItem(item: VideoItem): Video {
+  return {
+    id: item.aid,
+    duration: item.duration,
+    title: item.title,
+    desc: item.desc,
+    cover: item.pic,
+    author: {
+      name: item.owner.name,
+      authorFace: item.owner.face,
+      mid: item.owner.mid,
+    },
+    publishedTimestamp: item.pubdate * 1000,
+    bvid: item.bvid,
+    aid: item.aid,
+    threePointV2: [],
+  }
 }
 
 async function handleClearAllWatchLater() {
@@ -216,49 +267,122 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 <template>
   <div v-if="getCSRF()" flex="~ col md:row lg:row items-stretch" gap-4>
     <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" mb-6>
-      <h3 class="bew-page-heading" text="$bew-text-1" mb-6>
-        {{ t('watch_later.title') }} ({{ watchLaterCount }})
-      </h3>
+      <div flex="~ items-center justify-between gap-4" mb-6>
+        <h3 class="bew-page-heading" text="$bew-text-1">
+          {{ t('watch_later.title') }} ({{ watchLaterCount }})
+        </h3>
+        <div
+          class="watch-later-layout-switcher bew-segment-control bew-segment-control--surface"
+          :class="{
+            'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
+            'bew-segment-control--solid': !settings.enableFrostedGlass,
+          }"
+          flex="~ shrink-0 items-center"
+          box-border
+        >
+          <LiquidSegmentIndicator
+            v-if="settings.enableLiquidSegmentIndicator"
+            :active-key="watchLaterLayout"
+          />
+          <button
+            v-for="icon in layoutIcons" :key="icon.value"
+            type="button"
+            class="watch-later-layout-item bew-segment-control__item bew-segment-control__item--icon"
+            data-segment-item
+            :data-active="watchLaterLayout === icon.value ? 'true' : undefined"
+            :aria-pressed="watchLaterLayout === icon.value"
+            :title="icon.value === 'list' ? t('watch_later.layout_list') : t('watch_later.layout_grid')"
+            @click="watchLaterLayout = icon.value"
+          >
+            <Icon
+              class="watch-later-layout-item__icon bew-segment-control__icon"
+              :icon="watchLaterLayout === icon.value ? icon.iconActivated : icon.icon"
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+      </div>
       <Empty v-if="watchLaterCount === 0 && !isLoading" />
       <template v-else>
-        <!-- watcher later list -->
-        <TransitionGroup name="list">
-          <ALink
-            v-for="(item, index) in currentWatchLaterList"
-            :key="item.aid"
-            :href="`https://www.bilibili.com/video/${item.bvid}/`"
-            type="videoCard"
-            class="group"
-            flex cursor-pointer
-          >
-            <section
-              rounded="$bew-radius"
-              flex="~ gap-6 col md:col lg:row items-start"
-              relative
-              group-hover:bg="$bew-fill-2"
-              duration-300 w-full
-              p-2 m-1
-              content-visibility-auto
+        <!-- grid layout -->
+        <VideoCardGrid
+          v-if="watchLaterLayout === 'grid'"
+          :items="currentWatchLaterList"
+          :transform-item="transformWatchLaterItem"
+          :get-item-key="(item: VideoItem) => item.aid"
+          grid-layout="adaptive"
+          :loading="isLoading"
+          :no-more-content="noMoreContent"
+          :show-watcher-later="false"
+          :card-click-handler="handleWatchLaterCardClick"
+          @refresh="initData"
+          @load-more="getWatchLaterListByPage"
+        >
+          <template #coverTopLeft="{ item }">
+            <button
+              class="watch-later-remove-action"
+              :aria-label="t('watch_later.remove_from_watch_later')"
+              @click.prevent.stop="handleRemoveWatchLater(item)"
             >
-              <!-- Cover -->
-              <div
-                pos="relative"
-                bg="$bew-skeleton"
-                w="full md:full lg:250px"
-                flex="shrink-0"
-                rounded="$bew-radius"
-                overflow-hidden
-                aspect-video
-              >
-                <img
-                  w="full"
-                  aspect-video
-                  :src="removeHttpFromUrl(`${item.pic}@480w_270h_1c`)"
-                  :alt="item.title"
-                  object-cover
-                >
+              <Tooltip :content="t('watch_later.remove_from_watch_later')" placement="bottom-left" type="dark">
+                <div i-tabler:trash />
+              </Tooltip>
+            </button>
+          </template>
+          <template #coverTopRight="{ item }">
+            <button
+              type="button"
+              class="watch-later-play-action"
+              :aria-label="t('watch_later.play_video')"
+              @click.prevent.stop="handlePlayWatchLater(item)"
+            >
+              <Tooltip :content="t('watch_later.play_video')" placement="bottom-right" type="dark">
+                <div i-tabler:player-play />
+              </Tooltip>
+            </button>
+          </template>
+        </VideoCardGrid>
 
-                <!-- <div
+        <!-- list layout -->
+        <template v-else>
+          <!-- watcher later list -->
+          <TransitionGroup name="list">
+            <ALink
+              v-for="(item, index) in currentWatchLaterList"
+              :key="item.aid"
+              :href="`https://www.bilibili.com/video/${item.bvid}/`"
+              type="videoCard"
+              class="group"
+              flex cursor-pointer
+            >
+              <section
+                rounded="$bew-radius"
+                flex="~ gap-6 col md:col lg:row items-start"
+                relative
+                group-hover:bg="$bew-fill-2"
+                duration-300 w-full
+                p-2 m-1
+                content-visibility-auto
+              >
+                <!-- Cover -->
+                <div
+                  pos="relative"
+                  bg="$bew-skeleton"
+                  w="full md:full lg:250px"
+                  flex="shrink-0"
+                  rounded="$bew-radius"
+                  overflow-hidden
+                  aspect-video
+                >
+                  <img
+                    w="full"
+                    aspect-video
+                    :src="removeHttpFromUrl(`${item.pic}@480w_270h_1c`)"
+                    :alt="item.title"
+                    object-cover
+                  >
+
+                  <!-- <div
                   pos="absolute bottom-0 right-0"
                   bg="black opacity-60"
                   m="2"
@@ -268,128 +392,129 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                 >
                   {{ calcCurrentTime(item.duration) }}
                 </div> -->
-                <div
+                  <div
 
-                  pos="absolute bottom-0 right-0"
-                  bg="black opacity-60"
-                  m="2"
-                  p="x-2 y-1"
-                  text="white xs"
-                  rounded="$bew-radius-half"
-                >
-                  <!--  When progress = -1 means that the user watched the full video -->
-                  {{
-                    `${
-                      item.progress === -1
-                        ? calcCurrentTime(item.duration)
-                        : calcCurrentTime(item.progress)
-                    } /
-                      ${calcCurrentTime(item.duration)}`
-                  }}
-                </div>
-                <div w-full pos="absolute bottom-0" bg="white opacity-60">
-                  <Progress
-                    :percentage="
-                      (item.progress / item.duration) * 100
-                    "
-                  />
-                </div>
-              </div>
-
-              <!-- Description -->
-              <div flex justify-between w-full h-full>
-                <div flex="~ col">
-                  <a
-                    class="keep-two-lines"
-                    overflow="hidden"
-                    un-text="lg overflow-ellipsis"
-                    @click.stop.prevent="handleVideoLinkClick(item.bvid)"
+                    pos="absolute bottom-0 right-0"
+                    bg="black opacity-60"
+                    m="2"
+                    p="x-2 y-1"
+                    text="white xs"
+                    rounded="$bew-radius-half"
                   >
-                    {{ item.title }}
-                  </a>
-                  <a
-                    un-text="$bew-text-2 sm"
-                    m="t-4 b-2"
-                    flex="~"
-                    items-center
-                    cursor-pointer
-                    w-fit
-                    rounded="$bew-radius"
-                    hover:color="$bew-theme-color"
-                    hover:bg="$bew-theme-color-10"
-                    duration-300
-                    pr-2
-                    :href="`//space.bilibili.com/${item.owner.mid}`" target="_blank"
-                    @click.stop
-                  >
-                    <img
-                      :src="removeHttpFromUrl(`${item.owner.face}@40w_40h_1c`)"
-                      w-30px
-                      aspect-square
-                      object-cover
-                      alt=""
-                      rounded="1/2"
-                      mr-2
-                    >
-                    {{ item.owner.name }}
-                  </a>
-                  <p display="block xl:none" text="$bew-text-3 sm" mt-auto mb-2>
+                    <!--  When progress = -1 means that the user watched the full video -->
                     {{
-                      useDateFormat(item.pubdate * 1000, 'YYYY-MM-DD HH:mm:ss')
-                        .value
+                      `${
+                        item.progress === -1
+                          ? calcCurrentTime(item.duration)
+                          : calcCurrentTime(item.progress)
+                      } /
+                      ${calcCurrentTime(item.duration)}`
                     }}
-                  </p>
+                  </div>
+                  <div w-full pos="absolute bottom-0" bg="white opacity-60">
+                    <Progress
+                      :percentage="
+                        (item.progress / item.duration) * 100
+                      "
+                    />
+                  </div>
                 </div>
 
-                <div flex items-center gap-1>
-                  <Tooltip :content="t('watch_later.play_video')" placement="top">
-                    <button
-                      text="size-$bew-icon-size-lg $bew-text-3"
-                      hover:color="$bew-theme-color"
-                      opacity-0 group-hover:opacity-100
-                      p-2
-                      duration-300
-                      @click.prevent.stop="handleOpenVideoPageAndRemove(index, item.bvid, item.aid)"
+                <!-- Description -->
+                <div flex justify-between w-full h-full>
+                  <div flex="~ col">
+                    <a
+                      class="keep-two-lines"
+                      overflow="hidden"
+                      un-text="lg overflow-ellipsis"
+                      @click.stop.prevent="handleVideoLinkClick(item.bvid)"
                     >
-                      <div i-tabler:player-play />
-                    </button>
-                  </Tooltip>
-                  <Tooltip :content="t('watch_later.play_in_watch_later')" placement="top">
-                    <button
-                      text="size-$bew-icon-size-lg $bew-text-3"
+                      {{ item.title }}
+                    </a>
+                    <a
+                      un-text="$bew-text-2 sm"
+                      m="t-4 b-2"
+                      flex="~"
+                      items-center
+                      cursor-pointer
+                      w-fit
+                      rounded="$bew-radius"
                       hover:color="$bew-theme-color"
-                      opacity-0 group-hover:opacity-100
-                      p-2
+                      hover:bg="$bew-theme-color-10"
                       duration-300
-                      @click.prevent.stop="handleLinkClick(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`)"
+                      pr-2
+                      :href="`//space.bilibili.com/${item.owner.mid}`" target="_blank"
+                      @click.stop
                     >
-                      <div i-tabler:list-check />
-                    </button>
-                  </Tooltip>
-                  <Tooltip :content="t('watch_later.remove_from_watch_later')" placement="top">
-                    <button
-                      text="size-$bew-icon-size-lg $bew-text-3"
-                      hover:color="$bew-theme-color"
-                      opacity-0 group-hover:opacity-100
-                      p-2
-                      duration-300
-                      @click.prevent.stop="deleteWatchLaterItem(index, item.aid)"
-                    >
-                      <div i-tabler:trash />
-                    </button>
-                  </Tooltip>
+                      <img
+                        :src="removeHttpFromUrl(`${item.owner.face}@40w_40h_1c`)"
+                        w-30px
+                        aspect-square
+                        object-cover
+                        alt=""
+                        rounded="1/2"
+                        mr-2
+                      >
+                      {{ item.owner.name }}
+                    </a>
+                    <p display="block xl:none" text="$bew-text-3 sm" mt-auto mb-2>
+                      {{
+                        useDateFormat(item.pubdate * 1000, 'YYYY-MM-DD HH:mm:ss')
+                          .value
+                      }}
+                    </p>
+                  </div>
+
+                  <div flex items-center gap-1>
+                    <Tooltip :content="t('watch_later.play_video')" placement="top">
+                      <button
+                        text="size-$bew-icon-size-lg $bew-text-3"
+                        hover:color="$bew-theme-color"
+                        opacity-0 group-hover:opacity-100
+                        p-2
+                        duration-300
+                        @click.prevent.stop="handleOpenVideoPageAndRemove(index, item.bvid, item.aid)"
+                      >
+                        <div i-tabler:player-play />
+                      </button>
+                    </Tooltip>
+                    <Tooltip :content="t('watch_later.play_in_watch_later')" placement="top">
+                      <button
+                        text="size-$bew-icon-size-lg $bew-text-3"
+                        hover:color="$bew-theme-color"
+                        opacity-0 group-hover:opacity-100
+                        p-2
+                        duration-300
+                        @click.prevent.stop="handleLinkClick(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`)"
+                      >
+                        <div i-tabler:list-check />
+                      </button>
+                    </Tooltip>
+                    <Tooltip :content="t('watch_later.remove_from_watch_later')" placement="top">
+                      <button
+                        text="size-$bew-icon-size-lg $bew-text-3"
+                        hover:color="$bew-theme-color"
+                        opacity-0 group-hover:opacity-100
+                        p-2
+                        duration-300
+                        @click.prevent.stop="deleteWatchLaterItem(index, item.aid)"
+                      >
+                        <div i-tabler:trash />
+                      </button>
+                    </Tooltip>
+                  </div>
                 </div>
-              </div>
-            </section>
-          </ALink>
-        </TransitionGroup>
-        <!-- loading -->
-        <Transition name="fade">
-          <loading
-            v-if="isLoading && currentWatchLaterList.length !== 0 && !noMoreContent"
-            m="-t-4"
-          />
-        </Transition>
+              </section>
+            </ALink>
+          </TransitionGroup>
+          <!-- loading -->
+          <Transition name="fade">
+            <loading
+              v-if="isLoading && currentWatchLaterList.length !== 0 && !noMoreContent"
+              m="-t-4"
+            />
+          </Transition>
+        </template>
       </template>
     </main>
 
@@ -481,4 +606,47 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 </template>
 
 <style lang="scss" scoped>
+.watch-later-layout-item {
+  &__icon {
+    pointer-events: none;
+  }
+}
+
+.watch-later-remove-action {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 30px;
+  margin: var(--bew-space-1);
+  padding: 0 var(--bew-space-2);
+  color: #fff;
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  background: rgba(0, 0, 0, 0.62);
+  cursor: pointer;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    background: var(--bew-error-color);
+  }
+}
+
+.watch-later-play-action {
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 30px;
+  margin: var(--bew-space-1);
+  padding: 0 var(--bew-space-2);
+  color: #fff;
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  background: rgba(0, 0, 0, 0.62);
+  cursor: pointer;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    background: var(--bew-theme-color);
+  }
+}
 </style>
