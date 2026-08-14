@@ -169,9 +169,9 @@ function handleClickChannel() {
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1); overflow-y: auto; border-radius: 24px;"
+    style="backdrop-filter: var(--bew-filter-glass-1); overflow-y: auto;"
     w-300px max-h="[calc(100vh-120px)]" min-h-0
-    p-3 rounded="$bew-radius-2xl" z--1 bg="$bew-elevated"
+    p-3 rounded="$bew-popover-radius" z--1 bg="$bew-elevated"
     border="1 $bew-border-color"
     shadow="[var(--bew-shadow-3),var(--bew-shadow-edge-glow-1)]"
     class="userPanel-pop bew-popover"

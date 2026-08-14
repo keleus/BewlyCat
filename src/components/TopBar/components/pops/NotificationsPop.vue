@@ -90,7 +90,7 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
       :href="item.url"
       type="topBar"
       pos="relative"
-      flex="~ items-center justify-between gap-3"
+      flex="~ items-center justify-between"
       p="l-5 r-8 y-2"
       hover:bg="$bew-fill-2"
       rounded="$bew-radius"
@@ -104,19 +104,46 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
         <i :class="item.icon" text="$bew-text-2" />
         <span flex="1 shrink-0" text-nowrap>{{ item.name }}</span>
       </div>
-      <!-- Use v-if to control the number of notifications to prevent width changes as soon as there is a number -->
-      <div
-        v-if="item.unreadCount > 0"
-        bg="$bew-theme-color"
-        rounded="$bew-radius-md"
-        text="white xs leading-none center"
-        grid="~ place-items-center"
-        px-1
-        min-w="16px"
-        h="16px"
-      >
-        {{ item.unreadCount > 99 ? '99+' : item.unreadCount }}
-      </div>
+      <Transition name="notification-badge">
+        <div
+          v-if="item.unreadCount > 0"
+          class="notification-badge"
+          bg="$bew-theme-color"
+          rounded="$bew-radius-md"
+          text="white xs leading-none center"
+          grid="~ place-items-center"
+          px-1
+          h="16px"
+        >
+          {{ item.unreadCount > 99 ? '99+' : item.unreadCount }}
+        </div>
+      </Transition>
     </ALink>
   </div>
 </template>
+
+<style scoped lang="scss">
+.notification-badge {
+  min-width: var(--bew-space-4);
+  max-width: var(--bew-space-8);
+  margin-left: var(--bew-space-3);
+  overflow: hidden;
+  transition:
+    min-width var(--bew-duration-normal) var(--bew-ease-standard),
+    max-width var(--bew-duration-normal) var(--bew-ease-standard),
+    margin-left var(--bew-duration-normal) var(--bew-ease-standard),
+    padding-inline var(--bew-duration-normal) var(--bew-ease-standard),
+    opacity var(--bew-duration-fast) var(--bew-ease-standard),
+    transform var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.notification-badge-enter-from,
+.notification-badge-leave-to {
+  min-width: 0;
+  max-width: 0;
+  margin-left: 0;
+  padding-inline: 0;
+  opacity: 0;
+  transform: scale(0.8);
+}
+</style>

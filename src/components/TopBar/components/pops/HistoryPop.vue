@@ -84,6 +84,21 @@ function handleReachBottom() {
   }
 }
 
+function retryHistoryList() {
+  noMoreContent.value = false
+  const lastViewAt = historys[historys.length - 1]?.view_at ?? 0
+
+  if (activatedTab.value === 0) {
+    getHistoryList(Business.ARCHIVE, lastViewAt)
+  }
+  else if (activatedTab.value === 1) {
+    getHistoryList(Business.LIVE, lastViewAt)
+  }
+  else if (activatedTab.value === 2) {
+    getHistoryList(Business.ARTICLE, lastViewAt)
+  }
+}
+
 useOptimizedScroll(
   historysWrap,
   { onReachBottom: handleReachBottom },
@@ -165,14 +180,15 @@ async function getHistoryList(type: Business, view_at = 0 as number) {
       }
     }
     else {
-      // API 报错避免误显示空状态
-      noMoreContent.value = true
+      console.error('Failed to load history list:', res)
+      loadFailed.value = true
+      noMoreContent.value = false
     }
   }
   catch (error) {
     console.error('Failed to load history list:', error)
     loadFailed.value = true
-    noMoreContent.value = true
+    noMoreContent.value = false
   }
   finally {
     isLoading.value = false
@@ -293,7 +309,11 @@ defineExpose({
         z="0" w="full" h="full"
         flex="~ col items-center justify-center"
         rounded="$bew-radius"
-      />
+      >
+        <Button type="secondary" size="small" @click="retryHistoryList">
+          {{ $t('common.operation.refresh') }}
+        </Button>
+      </Empty>
 
       <!-- historys -->
       <TransitionGroup name="list">
@@ -469,6 +489,17 @@ defineExpose({
           </section>
         </ALink>
       </TransitionGroup>
+      <div
+        v-if="!isLoading && loadFailed && historys.length > 0"
+        flex="~ items-center justify-center gap-2"
+        m="b-4"
+        text="$bew-text-2 sm"
+      >
+        <span>{{ $t('common.load_failed') }}</span>
+        <Button type="tertiary" size="small" @click="retryHistoryList">
+          {{ $t('common.operation.refresh') }}
+        </Button>
+      </div>
       <!-- loading -->
       <Transition name="fade">
         <Loading v-if="isLoading && historys.length !== 0" m="b-4" />

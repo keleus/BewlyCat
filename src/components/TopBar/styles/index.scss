@@ -153,14 +153,18 @@
     }
 
     &.active > a,
+    &.active > .top-bar-item-editor > a,
     & > a:hover,
+    & > .top-bar-item-editor > a:hover,
     & .notifications:hover,
     & .notifications:active {
       --uno: "bg-$bew-fill-2";
     }
 
     &.active > a.white-icon,
+    &.active > .top-bar-item-editor > a.white-icon,
     & > a:hover.white-icon,
+    & > .top-bar-item-editor > a:hover.white-icon,
     & .notifications:hover.white-icon,
     & .notifications:active.white-icon {
       --uno: "bg-white bg-opacity-20";
