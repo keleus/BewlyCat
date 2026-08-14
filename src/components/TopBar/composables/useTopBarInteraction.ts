@@ -33,7 +33,7 @@ function getConfiguredPageUrl(page: AppPage): string {
 export function useTopBarInteraction() {
   const topBarStore = useTopBarStore()
   const { closeAllPopups } = topBarStore
-  const topBarItemElements = reactive({})
+  const topBarItemElements: Record<string, Ref<HTMLElement | undefined>> = {}
   const topBarTransformers = reactive({})
 
   const isMouseOverPopup = reactive<Record<string, boolean>>({})
@@ -166,7 +166,11 @@ export function useTopBarInteraction() {
 
   // 设置顶栏项变换器
   function setupTopBarItemTransformer(key: string, targetRef?: any) {
-    const transformer = createTransformer(topBarItemElements[key], {
+    const trigger = topBarItemElements[key]
+    if (!trigger)
+      return
+
+    const transformer = createTransformer(trigger, {
       x: '0px',
       y: '50px',
       centerTarget: {

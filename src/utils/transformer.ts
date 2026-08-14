@@ -65,46 +65,48 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
     if (target.value && transformer.centerTarget) {
       const el = unrefElement(target.value)
       const triggerEl = unrefElement(trigger)
-      if (el instanceof HTMLElement && triggerEl) {
-        // offsetWidth/Height 是布局盒（CSSOM View），不含 transform。
-        const targetWidth = el.offsetWidth
-        const targetHeight = el.offsetHeight
-        const triggerRect = triggerEl.getBoundingClientRect()
+      // 触发器还不是 DOM 节点时不要写 left:0，否则弹层会贴按钮左缘往右伸。
+      if (!(el instanceof HTMLElement) || !triggerEl)
+        return
 
-        if (transformer.centerTarget.x) {
-          // 计算 popup 的预期中心点位置
-          const popupCenterX = triggerRect.left + triggerRect.width / 2
-          // 计算 popup 居中后的左右边界
-          const popupLeft = popupCenterX - targetWidth / 2
-          const popupRight = popupCenterX + targetWidth / 2
+      // offsetWidth/Height 是布局盒（CSSOM View），不含 transform。
+      const targetWidth = el.offsetWidth
+      const targetHeight = el.offsetHeight
+      const triggerRect = triggerEl.getBoundingClientRect()
 
-          const viewportWidth = window.innerWidth
-          const edgeMargin = 16 // 与边缘保持的最小距离
+      if (transformer.centerTarget.x) {
+        // 计算 popup 的预期中心点位置
+        const popupCenterX = triggerRect.left + triggerRect.width / 2
+        // 计算 popup 居中后的左右边界
+        const popupLeft = popupCenterX - targetWidth / 2
+        const popupRight = popupCenterX + targetWidth / 2
 
-          // 检查是否会超出边界
-          let offset = 0
+        const viewportWidth = window.innerWidth
+        const edgeMargin = 16 // 与边缘保持的最小距离
 
-          // 超出右边缘
-          if (popupRight > viewportWidth - edgeMargin) {
-            offset = -(popupRight - (viewportWidth - edgeMargin))
-          }
-          // 超出左边缘（优先级更高，因为通常更重要）
-          else if (popupLeft < edgeMargin) {
-            offset = edgeMargin - popupLeft
-          }
+        // 检查是否会超出边界
+        let offset = 0
 
-          // 应用偏移
-          if (offset !== 0) {
-            x = `calc(${transformer.x} - ${targetWidth / 2}px + ${offset}px)`
-          }
-          else {
-            x = `calc(${transformer.x} - ${targetWidth / 2}px)`
-          }
+        // 超出右边缘
+        if (popupRight > viewportWidth - edgeMargin) {
+          offset = -(popupRight - (viewportWidth - edgeMargin))
+        }
+        // 超出左边缘（优先级更高，因为通常更重要）
+        else if (popupLeft < edgeMargin) {
+          offset = edgeMargin - popupLeft
         }
 
-        if (transformer.centerTarget.y) {
-          y = `calc(${transformer.y} - ${targetHeight / 2}px)`
+        // 应用偏移
+        if (offset !== 0) {
+          x = `calc(${transformer.x} - ${targetWidth / 2}px + ${offset}px)`
         }
+        else {
+          x = `calc(${transformer.x} - ${targetWidth / 2}px)`
+        }
+      }
+
+      if (transformer.centerTarget.y) {
+        y = `calc(${transformer.y} - ${targetHeight / 2}px)`
       }
     }
 
