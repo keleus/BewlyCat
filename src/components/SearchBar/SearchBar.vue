@@ -601,7 +601,7 @@ function handleClearKeyword() {
         <img
           v-show="resolvedFocusedCharacter && isFocus" :src="resolvedFocusedCharacter"
           class="focus-character-image"
-          width="100" object-contain pos="absolute right-0 bottom-40px"
+          width="100" object-contain
         >
       </Transition>
 
@@ -835,6 +835,9 @@ function handleClearKeyword() {
 
   .search-bar {
     .focus-character-image {
+      position: absolute;
+      right: 0;
+      bottom: var(--bew-space-10);
       pointer-events: none;
       z-index: 0;
     }
