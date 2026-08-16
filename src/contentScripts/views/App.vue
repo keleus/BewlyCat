@@ -1214,19 +1214,39 @@ watch([() => showTopBar.value, () => activatedPage.value], () => {
 // Setup necessary settings watchers
 setupNecessarySettingsWatchers()
 let scrollingEmitted = false
+let isAppMounted = false
+let stopHomeKeyStroke: (() => void) | null = null
+let stopLoadMoreIntersectionObserver: (() => void) | null = null
+
+function handleMetaHomeKeydown(e: KeyboardEvent) {
+  if (e.key === 'ArrowUp' && e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
+    handleThrottledBackToTop()
+    focusScrollViewport({ force: true })
+    e.preventDefault()
+  }
+}
+
+function handleDocumentScroll() {
+  reachTop.value = window.scrollY <= 0
+}
 
 onMounted(() => {
+  isAppMounted = true
   window.dispatchEvent(new CustomEvent(BEWLY_MOUNTED))
 
   // ✅ 设置 IntersectionObserver 用于无限滚动底部检测（仅在首页且使用Bewly页面时）
   // 避免在每次滚动时读取 scrollHeight/clientHeight
   if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
     nextTick(() => {
+      if (!isAppMounted)
+        return
+
       const viewport = scrollViewportRef.value
       if (!viewport)
         return
 
-      useIntersectionObserver(
+      stopLoadMoreIntersectionObserver?.()
+      const { stop } = useIntersectionObserver(
         loadMoreSentinelRef,
         ([{ isIntersecting }]) => {
           if (isIntersecting && !isHomeTabSwitching.value) {
@@ -1239,6 +1259,7 @@ onMounted(() => {
           threshold: 0,
         },
       )
+      stopLoadMoreIntersectionObserver = stop
     })
   }
 
@@ -1249,29 +1270,17 @@ onMounted(() => {
     focusScrollViewport()
 
     // Windows/Linux: 监听 Home 键
-    onKeyStroke('Home', (e) => {
+    stopHomeKeyStroke = onKeyStroke('Home', (e) => {
       handleThrottledBackToTop()
       focusScrollViewport({ force: true })
       e.preventDefault()
     })
 
     // macOS: 使用原生事件监听 Command+↑ 组合键
-    document.addEventListener('keydown', (e) => {
-      // 确保只有同时按下 Command 和 ArrowUp 键时才触发
-      if (e.key === 'ArrowUp' && e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey) {
-        handleThrottledBackToTop()
-        focusScrollViewport({ force: true })
-        e.preventDefault()
-      }
-    })
+    document.addEventListener('keydown', handleMetaHomeKeydown)
   }
 
-  document.addEventListener('scroll', () => {
-    if (window.scrollY > 0)
-      reachTop.value = false
-    else
-      reachTop.value = true
-  })
+  document.addEventListener('scroll', handleDocumentScroll, { passive: true })
 })
 
 function handleDockItemClick(dockItem: DockItem) {
@@ -1408,6 +1417,33 @@ function handleOsScroll(_instance: any, event: Event) {
 function handleNativeScroll(event: Event) {
   handleOsScroll(null, event)
 }
+
+onUnmounted(() => {
+  isAppMounted = false
+  stopHomeKeyStroke?.()
+  stopHomeKeyStroke = null
+  stopLoadMoreIntersectionObserver?.()
+  stopLoadMoreIntersectionObserver = null
+  document.removeEventListener('keydown', handleMetaHomeKeydown)
+  document.removeEventListener('scroll', handleDocumentScroll)
+
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  if (scrollStateTimer) {
+    clearTimeout(scrollStateTimer)
+    scrollStateTimer = null
+  }
+  if (scrollEndTimer) {
+    clearTimeout(scrollEndTimer)
+    scrollEndTimer = null
+  }
+  if (scrollingEmitted) {
+    emitter.emit(OVERLAY_SCROLL_STATE_CHANGE, false)
+    scrollingEmitted = false
+  }
+})
 
 function openIframeDrawer(url: string) {
   const isSameOrigin = (origin: URL, destination: URL) =>

@@ -29,18 +29,20 @@ const currentUrl = ref<string>(props.url)
 const showIframe = ref<boolean>(false)
 const renderIframe = ref<boolean>(true)
 const iframeKey = ref(0)
-const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
+const delayCloseTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const removeTopBarClassInjected = ref<boolean>(false)
 const originUrl = ref<string>()
 const isPageFullscreen = ref<boolean>(false)
 const isPageScrollLocked = ref(false)
 const isEscPressed = ref<boolean>(false)
-const escPressedTimer = ref<NodeJS.Timeout | null>(null)
+const escPressedTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const disableEscPress = ref<boolean>(false)
+const isClosing = ref(false)
 let stopIframePushStateListener: (() => void) | null = null
 let stopIframePopStateListener: (() => void) | null = null
 let stopIframeDOMContentLoadedListener: (() => void) | null = null
 let focusRetryTimer: ReturnType<typeof setTimeout> | null = null
+let initialDarkModeTimer: ReturnType<typeof setTimeout> | null = null
 
 // 计算iframe容器的样式
 const iframeContainerClasses = computed(() => {
@@ -102,8 +104,14 @@ watch(() => settings.value.darkModeBaseColor, (newColor) => {
 
 // 监听iframe加载状态，加载完成后发送初始的黑暗模式状态
 watch(() => showIframe.value, (newValue) => {
+  if (initialDarkModeTimer) {
+    clearTimeout(initialDarkModeTimer)
+    initialDarkModeTimer = null
+  }
+
   if (newValue && iframeRef.value?.contentWindow) {
-    setTimeout(() => {
+    initialDarkModeTimer = setTimeout(() => {
+      initialDarkModeTimer = null
       try {
         iframeRef.value?.contentWindow?.postMessage({
           type: IFRAME_DARK_MODE_CHANGE,
@@ -139,6 +147,18 @@ function clearFocusRetryTimer() {
   if (focusRetryTimer) {
     clearTimeout(focusRetryTimer)
     focusRetryTimer = null
+  }
+}
+
+function clearDrawerTimers() {
+  clearFocusRetryTimer()
+  if (initialDarkModeTimer) {
+    clearTimeout(initialDarkModeTimer)
+    initialDarkModeTimer = null
+  }
+  if (escPressedTimer.value) {
+    clearTimeout(escPressedTimer.value)
+    escPressedTimer.value = null
   }
 }
 
@@ -181,6 +201,9 @@ function injectStyleClass() {
 }
 
 function handleIframeLoad() {
+  if (isClosing.value || !renderIframe.value)
+    return
+
   const iframeWindow = iframeRef.value?.contentWindow
   if (!iframeWindow) {
     console.error('Iframe or contentWindow is not available')
@@ -220,20 +243,21 @@ onMounted(() => {
   }
 })
 
-onBeforeUnmount(async () => {
+onBeforeUnmount(() => {
+  isClosing.value = true
   cleanupIframeWindowListeners()
+  if (activeDrawer.value === DrawerType.IframeDrawer)
+    setActiveDrawer(DrawerType.None)
   if (isPageScrollLocked.value) {
     unlockPageScroll()
     isPageScrollLocked.value = false
   }
   if (delayCloseTimer.value) {
     clearTimeout(delayCloseTimer.value)
+    delayCloseTimer.value = null
   }
-  if (escPressedTimer.value) {
-    clearTimeout(escPressedTimer.value)
-  }
-  clearFocusRetryTimer()
-  await releaseIframeResources()
+  clearDrawerTimers()
+  void releaseIframeResources()
 })
 
 onUnmounted(() => {
@@ -268,6 +292,10 @@ async function updateIframeUrl() {
 }
 
 async function handleClose() {
+  if (isClosing.value)
+    return
+
+  isClosing.value = true
   console.log('[IframeDrawer] handleClose called')
   if (delayCloseTimer.value) {
     clearTimeout(delayCloseTimer.value)
@@ -276,21 +304,43 @@ async function handleClose() {
     unlockPageScroll()
     isPageScrollLocked.value = false
   }
-  await releaseIframeResources()
   show.value = false
   headerShow.value = false
   setActiveDrawer(DrawerType.None) // 清除活跃抽屉状态
   console.log('[IframeDrawer] show.value:', show.value, 'activeDrawer:', activeDrawer.value)
+  await releaseIframeResources()
   delayCloseTimer.value = setTimeout(() => {
+    delayCloseTimer.value = null
     emit('close')
   }, 300)
 }
 
 async function releaseIframeResources() {
-  clearFocusRetryTimer()
+  clearDrawerTimers()
   cleanupIframeWindowListeners()
   showIframe.value = false
   removeTopBarClassInjected.value = false
+
+  const iframe = iframeRef.value
+  if (!iframe) {
+    renderIframe.value = false
+    return
+  }
+
+  // 同源抽屉在销毁 browsing context 前主动停掉媒体管线，避免视频解码器、
+  // MediaSource 和音频节点继续占用资源直到浏览器下一次 GC。
+  try {
+    iframe.contentDocument?.querySelectorAll<HTMLMediaElement>('video, audio').forEach((media) => {
+      media.pause()
+      media.srcObject = null
+      media.removeAttribute('src')
+      media.querySelectorAll('source').forEach(source => source.removeAttribute('src'))
+      media.load()
+    })
+  }
+  catch {
+    // sandbox/cross-origin 场景交给 about:blank 导航释放。
+  }
 
   // Navigate to about:blank and close browsing context BEFORE removing from DOM.
   // Previously, renderIframe was set to false first, which removed the iframe via v-if
@@ -298,12 +348,10 @@ async function releaseIframeResources() {
   // This is especially important for Firefox which doesn't always release media
   // resources (video decoders, buffers) when an iframe is simply removed from DOM.
   currentUrl.value = 'about:blank'
-  if (iframeRef.value) {
-    iframeRef.value.src = 'about:blank'
-  }
+  iframe.src = 'about:blank'
 
   try {
-    iframeRef.value?.contentWindow?.close()
+    iframe.contentWindow?.close()
   }
   catch {
     // Cross-origin may block this
@@ -312,7 +360,8 @@ async function releaseIframeResources() {
   // Now safe to remove from DOM
   renderIframe.value = false
   await nextTick()
-  iframeRef.value = null
+  if (iframeRef.value === iframe)
+    iframeRef.value = null
 }
 
 function handleOpenInNewTab() {
@@ -348,7 +397,10 @@ function handleKeydown(e: KeyboardEvent) {
 
   if (settings.value.closeDrawerWithoutPressingEscAgain) {
     console.log('[IframeDrawer] closeDrawerWithoutPressingEscAgain = true, closing immediately')
-    clearTimeout(escPressedTimer.value!)
+    if (escPressedTimer.value) {
+      clearTimeout(escPressedTimer.value)
+      escPressedTimer.value = null
+    }
     handleClose()
     return
   }
@@ -367,6 +419,7 @@ function handleKeydown(e: KeyboardEvent) {
       clearTimeout(escPressedTimer.value)
     }
     escPressedTimer.value = setTimeout(() => {
+      escPressedTimer.value = null
       isEscPressed.value = false
     }, 1300)
   }
@@ -382,61 +435,51 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeydown, true)
 })
 
-watchEffect(() => {
-  if (isInIframe())
-    return null
+function handleWindowMessage({ data, source }: MessageEvent) {
+  if (source !== iframeRef.value?.contentWindow)
+    return
 
-  useEventListener(window, 'message', ({ data }) => {
-    switch (data.type) {
-      case DRAWER_VIDEO_ENTER_PAGE_FULL:
-        headerShow.value = false
-        disableEscPress.value = true
-        isPageFullscreen.value = true
-        break
-      case DRAWER_VIDEO_EXIT_PAGE_FULL:
-        headerShow.value = true
-        disableEscPress.value = false
-        isPageFullscreen.value = false
-        break
-      case 'BEWLY_DRAWER_CLOSE_REQUEST':
-        // 来自 iframe 的关闭请求
-        if (data.source === 'iframe' && activeDrawer.value === DrawerType.IframeDrawer) {
-          console.log('[IframeDrawer] Received close request from iframe')
-          if (settings.value.closeDrawerWithoutPressingEscAgain) {
-            handleClose()
-          }
-          else {
-            if (isEscPressed.value) {
-              console.log('[IframeDrawer] Second ESC from iframe, closing')
-              handleClose()
-            }
-            else {
-              console.log('[IframeDrawer] First ESC from iframe, waiting for second press')
-              isEscPressed.value = true
-              if (escPressedTimer.value) {
-                clearTimeout(escPressedTimer.value)
-              }
-              escPressedTimer.value = setTimeout(() => {
-                isEscPressed.value = false
-              }, 1300)
-            }
-          }
-        }
-        break
-    }
-    // 兼容旧的消息格式（没有 type 字段）
-    if (data === DRAWER_VIDEO_ENTER_PAGE_FULL) {
+  const messageType = data && typeof data === 'object' ? data.type : data
+  switch (messageType) {
+    case DRAWER_VIDEO_ENTER_PAGE_FULL:
       headerShow.value = false
       disableEscPress.value = true
       isPageFullscreen.value = true
-    }
-    else if (data === DRAWER_VIDEO_EXIT_PAGE_FULL) {
+      break
+    case DRAWER_VIDEO_EXIT_PAGE_FULL:
       headerShow.value = true
       disableEscPress.value = false
       isPageFullscreen.value = false
-    }
-  })
-})
+      break
+    case 'BEWLY_DRAWER_CLOSE_REQUEST':
+      // 来自 iframe 的关闭请求
+      if (data.source === 'iframe' && activeDrawer.value === DrawerType.IframeDrawer) {
+        console.log('[IframeDrawer] Received close request from iframe')
+        if (settings.value.closeDrawerWithoutPressingEscAgain) {
+          handleClose()
+        }
+        else if (isEscPressed.value) {
+          console.log('[IframeDrawer] Second ESC from iframe, closing')
+          handleClose()
+        }
+        else {
+          console.log('[IframeDrawer] First ESC from iframe, waiting for second press')
+          isEscPressed.value = true
+          if (escPressedTimer.value)
+            clearTimeout(escPressedTimer.value)
+          escPressedTimer.value = setTimeout(() => {
+            escPressedTimer.value = null
+            isEscPressed.value = false
+          }, 1300)
+        }
+      }
+      break
+  }
+}
+
+if (!isInIframe()) {
+  useEventListener(window, 'message', handleWindowMessage)
+}
 </script>
 
 <template>

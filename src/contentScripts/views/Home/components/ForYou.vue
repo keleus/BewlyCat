@@ -327,6 +327,10 @@ onMounted(() => {
     hasInitializedData.value = true
     isLoading.value = false
 
+    // Store 只负责跨卸载恢复。数据已交还给当前组件后立即释放快照，
+    // 避免 KeepAlive 中的活动列表与 Pinia 同时各持有一整份推荐数据。
+    forYouStore.resetState()
+
     nextTick(() => logHomeLoadComplete('cache', loadStartedAt))
 
     // 确保撤销按钮不显示（因为这是状态恢复，不是刷新操作）
@@ -354,7 +358,7 @@ onMounted(() => {
       initPageAction()
       // 在初始化页面交互功能后，再次确保按钮状态正确
       setTimeout(() => {
-        if (settings.value.preserveForYouState && forYouStore.state.isInitialized) {
+        if (settings.value.preserveForYouState) {
           undoForwardState.value = UndoForwardState.Hidden
         }
       }, 100)
@@ -694,6 +698,8 @@ async function initData() {
   const loadStartedAt = performance.now()
   requestVersion++
   const version = requestVersion
+  // 当前组件即将持有最新列表，旧的跨卸载快照不再有保留价值。
+  forYouStore.resetState()
   // 用户主动刷新必须重新获得一次完整请求机会；成功后才重置递增冷却等级。
   clearActiveWebRiskCooldown()
   hasInitializedData.value = false

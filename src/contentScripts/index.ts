@@ -39,6 +39,16 @@ import { initVideoAspectRatioMemory } from './videoAspectRatioMemory'
 import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
 
+type BewlyHostElement = HTMLElement & {
+  __bewlyCatDisposeApp__?: () => void
+}
+
+function disposeBewlyHost(element: Element) {
+  const host = element as BewlyHostElement
+  host.__bewlyCatDisposeApp__?.()
+  host.remove()
+}
+
 const contentScriptGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__?: boolean
 }
@@ -1155,15 +1165,15 @@ else if (shouldInitializeContentScript) {
 
         // Remove bewly element if the version is less than the current version
         if (compareVersions(elVersion, version) < 0)
-          el.remove()
+          disposeBewlyHost(el)
         // Only the development mode element remains
         else if (!elIsDev)
-          el.remove()
+          disposeBewlyHost(el)
       })
     }
 
     // mount component to context window
-    const container = document.createElement('div')
+    const container = document.createElement('div') as BewlyHostElement
     container.id = 'bewly'
     container.setAttribute('data-version', version)
     container.setAttribute('data-dev', import.meta.env.DEV ? 'true' : 'false')
@@ -1226,6 +1236,15 @@ else if (shouldInitializeContentScript) {
     const app = createApp(App)
     setupApp(app)
     app.mount(root)
+
+    let appDisposed = false
+    container.__bewlyCatDisposeApp__ = () => {
+      if (appDisposed)
+        return
+      appDisposed = true
+      app.unmount()
+      delete container.__bewlyCatDisposeApp__
+    }
   }
 
   // 发送设置更新到网页环境
