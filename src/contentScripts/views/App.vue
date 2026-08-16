@@ -1679,7 +1679,11 @@ if (settings.value.cleanUrlArgument) {
 
     <!-- Settings -->
     <KeepAlive>
-      <Settings v-if="showSettings" z-10004 @close="showSettings = false" />
+      <Settings
+        v-if="showSettings"
+        style="z-index: var(--bew-z-settings);"
+        @close="showSettings = false"
+      />
     </KeepAlive>
 
     <Transition name="fade">
@@ -2109,7 +2113,7 @@ if (settings.value.cleanUrlArgument) {
 .bew-confirm-dialog {
   position: fixed;
   inset: 0;
-  z-index: 10006;
+  z-index: var(--bew-z-confirm-dialog);
   pointer-events: auto;
 }
 

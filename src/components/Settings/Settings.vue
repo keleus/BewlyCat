@@ -670,7 +670,7 @@ function changeMenuItem(menuItem: MenuType) {
             searchPopoverStyle,
             {
               backgroundColor: settings.enableFrostedGlass ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
-              zIndex: 10010,
+              zIndex: 'var(--bew-z-settings-popover)',
             },
           ]"
         >

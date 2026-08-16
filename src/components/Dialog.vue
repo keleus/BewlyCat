@@ -176,7 +176,8 @@ function handleConfirm() {
       <div
         v-if="showDialog"
         class="dialog"
-        pos="fixed top-0 left-0" w-full h-full z-10005
+        style="z-index: var(--bew-z-dialog);"
+        pos="fixed top-0 left-0" w-full h-full
         pointer-events-auto
       >
         <div

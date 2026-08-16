@@ -4871,7 +4871,7 @@ watch(
 .moment-image-viewer {
   position: fixed;
   inset: 0;
-  z-index: 10010;
+  z-index: var(--bew-z-image-viewer);
   overflow: hidden;
   color: #fff;
   background: rgb(18 18 18 / 76%);

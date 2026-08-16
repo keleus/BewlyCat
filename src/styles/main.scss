@@ -282,7 +282,7 @@ img:not(.pswp__img) {
 // top-bar switcher) even though the modal itself lives inside this Shadow DOM.
 :host(.settings-open) {
   position: relative;
-  z-index: 10003;
+  z-index: var(--bew-z-settings-host);
 }
 
 // Note: View Transition styles for theme toggle are injected dynamically via JS in useDark.ts

@@ -1,5 +1,5 @@
 .Vue-Toastification__container.bewly-toast-container {
-  z-index: 10020;
+  z-index: var(--bew-z-toast);
   width: min(360px, calc(100vw - 24px));
   min-height: 0;
   padding: 0;
