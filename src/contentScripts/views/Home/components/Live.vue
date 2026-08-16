@@ -56,6 +56,7 @@ function initPageAction() {
 }
 
 async function initData() {
+  needToLoginFirst.value = false
   page.value = 1
   videoList.value = []
   noMoreContent.value = false

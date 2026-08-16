@@ -41,6 +41,7 @@ onActivated(() => {
 })
 
 async function initData() {
+  needToLoginFirst.value = false
   offset.value = ''
   updateBaseline.value = ''
   videoList.value = []

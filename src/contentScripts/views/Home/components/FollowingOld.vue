@@ -137,6 +137,7 @@ function initPageAction() {
 
 async function initData() {
   isInitialized.value = false
+  needToLoginFirst.value = false
   offset.value = ''
   updateBaseline.value = ''
   liveVideoList.value = []

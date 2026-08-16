@@ -694,6 +694,13 @@ watch(() => settings.value.recommendationMode, () => {
   initData()
 })
 
+// APP 扫码授权只会更新本地 access token，不会改变网页 Cookie 登录态。
+// 仅监听「有无 token」的变化，避免后台例行轮换 token 时打断当前推荐流。
+watch(() => Boolean(appAuthTokens.value.accessToken), () => {
+  if (settings.value.recommendationMode === 'app')
+    void initData()
+})
+
 async function initData() {
   const loadStartedAt = performance.now()
   requestVersion++

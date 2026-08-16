@@ -9,6 +9,7 @@ import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constant
 import { gridLayout, settings } from '~/logic'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
+import { useTopBarStore } from '~/stores/topBarStore'
 import emitter from '~/utils/mitt'
 
 import VersionReminder from './components/VersionReminder.vue'
@@ -16,6 +17,7 @@ import type { GridLayoutIcon } from './types'
 import { HomeSubPage } from './types'
 
 const mainStore = useMainStore()
+const topBarStore = useTopBarStore()
 const { isLayoutEditing } = useLayoutEditMode()
 const {
   handleBackToTop,
@@ -82,6 +84,14 @@ watch(currentTabs, () => {
 watch(() => settings.value.enableGridLayoutSwitcher, (enabled) => {
   if (enabled)
     void gridIndicatorRef.value?.updateIndicator(true)
+})
+
+// Cookie changes are reconciled by the top bar store. Refresh the active home
+// tab when that reconciliation changes the session so data that previously
+// failed with -101 (for example after QR-code login) is fetched immediately.
+watch(() => topBarStore.isLogin, async () => {
+  await nextTick()
+  tabPageRef.value?.initData?.()
 })
 
 function getInitialTabScrollTop(): number {
