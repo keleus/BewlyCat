@@ -34,6 +34,7 @@ const _videoClassTag = {
 
 const monitoredDanmakuSwitches = new WeakSet<HTMLInputElement>()
 const monitoredCaptionControls = new WeakSet<HTMLElement>()
+const monitoredPlaybackRateVideos = new WeakSet<HTMLVideoElement>()
 
 function monitorDanmakuState(danmakuSwitch: HTMLInputElement) {
   if (monitoredDanmakuSwitches.has(danmakuSwitch))
@@ -1101,6 +1102,9 @@ export function applyRememberedPlaybackRate() {
   // 确保倍速值在有效范围内
   const savedRate = settings.value.savedPlaybackRate
   if (savedRate >= 0.25 && savedRate <= 5) {
+    // B 站站内切换推荐视频时会复用 video 元素并重新加载媒体资源。
+    // 媒体加载会将 playbackRate 恢复为 defaultPlaybackRate，因此两者都要同步。
+    video.defaultPlaybackRate = savedRate
     video.playbackRate = savedRate
     // 只在倍速不是1时显示状态
     if (savedRate !== 1) {
@@ -1122,11 +1126,12 @@ export function startPlaybackRateMonitoring() {
     return
   }
 
-  // 避免重复添加监听器
-  if (video.hasAttribute('bewly-rate-listener')) {
+  // DOM 属性可能在 B 站重建播放器时被复制到新节点，但事件监听器不会被复制。
+  // 使用 WeakSet 按真实节点去重，确保新 video 仍会安装监听器。
+  if (monitoredPlaybackRateVideos.has(video)) {
     return
   }
-  video.setAttribute('bewly-rate-listener', 'true')
+  monitoredPlaybackRateVideos.add(video)
 
   // 监听倍速变化事件，这会捕获所有倍速变化（包括UI操作）
   video.addEventListener('ratechange', () => {
@@ -1135,8 +1140,25 @@ export function startPlaybackRateMonitoring() {
       // 确保倍速值在有效范围内
       if (currentRate >= 0.25 && currentRate <= 5) {
         settings.value.savedPlaybackRate = currentRate
+        // 让同一个 video 加载下一条推荐视频时沿用当前倍速，而不是回落到 1。
+        if (video.defaultPlaybackRate !== currentRate)
+          video.defaultPlaybackRate = currentRate
       }
     }
+  })
+
+  // 部分播放器更新会替换媒体资源但保留 video 节点；元数据就绪后再同步一次，
+  // 覆盖播放器初始化期间对 playbackRate 的重设。
+  video.addEventListener('loadedmetadata', () => {
+    if (!settings.value.rememberPlaybackRate)
+      return
+
+    const savedRate = settings.value.savedPlaybackRate
+    if (savedRate < 0.25 || savedRate > 5)
+      return
+
+    video.defaultPlaybackRate = savedRate
+    video.playbackRate = savedRate
   })
 }
 
