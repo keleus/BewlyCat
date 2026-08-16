@@ -635,6 +635,10 @@ function changeMenuItem(menuItem: MenuType) {
             scrollbarGutter: 'stable',
             overflowAnchor: 'none',
             overscrollBehavior: 'contain',
+            // 隔离内容控件的层叠上下文（如 .bew-segment-control__item 的 z-1），
+            // 避免毛玻璃关闭时与同 z-index 的 .settings-header 落入同一上下文、
+            // 因 DOM 顺序靠后而绘制到头部之上。
+            isolation: 'isolate',
           }"
           h-inherit of-y-auto of-x-hidden
           style="padding-top: 92px;"
