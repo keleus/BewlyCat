@@ -73,6 +73,7 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
       { id: 'danmuStatus', name: t('settings.shortcuts.danmu_status'), description: t('settings.shortcuts.danmu_status_desc'), defaultKey: 'Shift+D' },
       { id: 'webFullscreen', name: t('settings.shortcuts.web_fullscreen'), description: t('settings.shortcuts.web_fullscreen_desc'), defaultKey: 'Shift+W' },
       { id: 'widescreen', name: t('settings.shortcuts.widescreen'), description: t('settings.shortcuts.widescreen_desc'), defaultKey: 'T' },
+      { id: 'bewlyWidescreen', name: t('settings.shortcuts.bewly_widescreen'), description: t('settings.shortcuts.bewly_widescreen_desc'), defaultKey: 'Shift+T' },
       { id: 'shortStepBackward', name: t('settings.shortcuts.short_step_backward'), description: t('settings.shortcuts.short_step_backward_desc'), defaultKey: 'J' },
       { id: 'longStepBackward', name: t('settings.shortcuts.long_step_backward'), description: t('settings.shortcuts.long_step_backward_desc'), defaultKey: 'Shift+J' },
       { id: 'playPause', name: t('settings.shortcuts.play_pause_ext'), description: t('settings.shortcuts.play_pause_ext_desc'), defaultKey: 'K' }, // Renamed to avoid conflict if 'playPause' is used for official

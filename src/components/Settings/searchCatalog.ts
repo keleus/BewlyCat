@@ -606,6 +606,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.shortcuts.danmu_status',
     'settings.shortcuts.web_fullscreen',
     'settings.shortcuts.widescreen',
+    'settings.shortcuts.bewly_widescreen',
     'settings.shortcuts.short_step_backward',
     'settings.shortcuts.long_step_backward',
     'settings.shortcuts.play_pause_ext',

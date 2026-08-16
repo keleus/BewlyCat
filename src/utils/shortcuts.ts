@@ -1,4 +1,6 @@
 import { settings } from '~/logic'
+import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
+import { isVideoOrBangumiPage } from '~/utils/main'
 // 导入需要的函数
 import {
   adjustVideoSize,
@@ -237,6 +239,25 @@ export function registerDefaultHandlers(): void {
   // 宽屏
   registerShortcutHandler('widescreen', () => {
     widescreenClick()
+  })
+
+  // Bewly 宽屏
+  registerShortcutHandler('bewlyWidescreen', () => {
+    if (isBewlyWidescreenActive()) {
+      exitBewlyWidescreen()
+      return
+    }
+
+    const isBrowserFullscreen = !!(document.fullscreenElement
+      || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
+    const webFullscreenButton = document.querySelector<HTMLElement>('.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen')
+    if (!isVideoOrBangumiPage()
+      || isBrowserFullscreen
+      || webFullscreenButton?.classList.contains('bpx-state-entered')) {
+      return
+    }
+
+    applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right')
   })
 
   // 短步后退

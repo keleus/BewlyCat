@@ -70,6 +70,7 @@ let loadingStyleEl: HTMLStyleElement | null = null
 let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
 let loadingExitButtonTimer: ReturnType<typeof setTimeout> | undefined
 let loadingPlaybackCleanup: (() => void) | undefined
+let loadingEscapeCleanup: (() => void) | undefined
 let loadingPreparationFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let loadingSuppressedUntilExit = false
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
@@ -580,6 +581,20 @@ function showWidescreenLoading() {
     document.removeEventListener('playing', handlePlaying, true)
     loadingPlaybackCleanup = undefined
   }
+
+  const handleEscapeKey = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape')
+      return
+
+    event.preventDefault()
+    event.stopPropagation()
+    exitBewlyWidescreen()
+  }
+  document.addEventListener('keydown', handleEscapeKey, true)
+  loadingEscapeCleanup = () => {
+    document.removeEventListener('keydown', handleEscapeKey, true)
+    loadingEscapeCleanup = undefined
+  }
 }
 
 function dismissWidescreenLoadingForPlaying() {
@@ -589,6 +604,7 @@ function dismissWidescreenLoadingForPlaying() {
 
 function removeWidescreenLoading(immediate = false) {
   loadingPlaybackCleanup?.()
+  loadingEscapeCleanup?.()
 
   if (loadingExitButtonTimer) {
     clearTimeout(loadingExitButtonTimer)

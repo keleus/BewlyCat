@@ -802,6 +802,8 @@ settings:
     web_fullscreen_desc: 切換網頁全螢幕模式
     widescreen: 寬螢幕模式
     widescreen_desc: 切換寬螢幕模式
+    bewly_widescreen: Bewly 寬螢幕
+    bewly_widescreen_desc: 切換 Bewly 寬螢幕模式
     short_step_backward: 快退
     short_step_backward_desc: 快退5秒
     long_step_backward: 長退

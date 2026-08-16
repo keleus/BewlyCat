@@ -820,6 +820,8 @@ settings:
     web_fullscreen_desc: 切换网页全屏模式
     widescreen: 宽屏模式
     widescreen_desc: 切换宽屏模式
+    bewly_widescreen: Bewly 宽屏
+    bewly_widescreen_desc: 切换 Bewly 宽屏模式
     short_step_backward: 快退
     short_step_backward_desc: 快退5秒
     long_step_backward: 长退

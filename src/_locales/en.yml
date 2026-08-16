@@ -891,6 +891,8 @@ settings:
     web_fullscreen_desc: Toggle web fullscreen mode
     widescreen: Widescreen
     widescreen_desc: Toggle widescreen mode
+    bewly_widescreen: Bewly Widescreen
+    bewly_widescreen_desc: Toggle Bewly Widescreen mode
     short_step_backward: Quick Rewind
     short_step_backward_desc: Rewind 5 seconds
     long_step_backward: Long Rewind

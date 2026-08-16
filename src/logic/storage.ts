@@ -65,6 +65,7 @@ export interface ShortcutsSettings {
   danmuStatus?: BaseShortcutSetting
   webFullscreen?: BaseShortcutSetting
   widescreen?: BaseShortcutSetting
+  bewlyWidescreen?: BaseShortcutSetting
   shortStepBackward?: BaseShortcutSetting // J
   longStepBackward?: BaseShortcutSetting // Shift+J
   playPause?: BaseShortcutSetting // K
@@ -776,6 +777,7 @@ export const originalSettings: Settings = {
     danmuStatus: { key: 'Shift+D', enabled: true },
     webFullscreen: { key: 'Shift+W', enabled: true },
     widescreen: { key: 'T', enabled: true },
+    bewlyWidescreen: { key: 'Shift+T', enabled: true },
     shortStepBackward: { key: 'J', enabled: true },
     longStepBackward: { key: 'Shift+J', enabled: true },
     playPause: { key: 'K', enabled: true }, // 官方有 Space/⏯️，K 作为可选项
@@ -1003,6 +1005,13 @@ watch(
 
     if (record.shortcuts?.webFullscreen?.key === 'W')
       record.shortcuts.webFullscreen.key = originalSettings.shortcuts.webFullscreen?.key
+
+    if (!record.shortcuts?.bewlyWidescreen) {
+      record.shortcuts = {
+        ...record.shortcuts,
+        bewlyWidescreen: { ...originalSettings.shortcuts.bewlyWidescreen },
+      }
+    }
 
     // 紧凑布局已由卡片元素显示设置替代
     if (record.videoCardLayout === 'compact')
