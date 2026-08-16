@@ -151,8 +151,6 @@ watch(popupVisible, () => {
     topBarStore.closeAllPopups()
 }, { deep: true })
 
-// 将transformer初始化移到onMounted中
-// 声明组件ref
 const avatarPopRef = ref()
 const notificationsPopRef = ref()
 const momentsPopRef = ref()
@@ -162,19 +160,15 @@ const watchLaterPopRef = ref()
 const uploadPopRef = ref()
 const morePopRef = ref()
 
-// 在组件挂载后初始化transformer，传入ref对象
-onMounted(() => {
-  nextTick(() => {
-    setupTopBarItemTransformer('userPanel', avatarPopRef)
-    setupTopBarItemTransformer('notifications', notificationsPopRef)
-    setupTopBarItemTransformer('moments', momentsPopRef)
-    setupTopBarItemTransformer('favorites', favoritesPopRef)
-    setupTopBarItemTransformer('history', historyPopRef)
-    setupTopBarItemTransformer('watchLater', watchLaterPopRef)
-    setupTopBarItemTransformer('upload', uploadPopRef)
-    setupTopBarItemTransformer('more', morePopRef)
-  })
-})
+// 在 setup 同步初始化，使内部 watch 随组件卸载自动停止。
+setupTopBarItemTransformer('userPanel', avatarPopRef)
+setupTopBarItemTransformer('notifications', notificationsPopRef)
+setupTopBarItemTransformer('moments', momentsPopRef)
+setupTopBarItemTransformer('favorites', favoritesPopRef)
+setupTopBarItemTransformer('history', historyPopRef)
+setupTopBarItemTransformer('watchLater', watchLaterPopRef)
+setupTopBarItemTransformer('upload', uploadPopRef)
+setupTopBarItemTransformer('more', morePopRef)
 
 // Keep notification state in sync even when the item starts hidden and is
 // enabled later from the layout editor.

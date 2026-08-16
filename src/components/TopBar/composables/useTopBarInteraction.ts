@@ -33,7 +33,7 @@ function getConfiguredPageUrl(page: AppPage): string {
 export function useTopBarInteraction() {
   const topBarStore = useTopBarStore()
   const { closeAllPopups } = topBarStore
-  const topBarItemElements = reactive({})
+  const topBarItemElements: Record<string, Ref<HTMLElement | undefined>> = {}
   const topBarTransformers = reactive({})
 
   const isMouseOverPopup = reactive<Record<string, boolean>>({})
@@ -166,7 +166,11 @@ export function useTopBarInteraction() {
 
   // 设置顶栏项变换器
   function setupTopBarItemTransformer(key: string, targetRef?: any) {
-    const transformer = createTransformer(topBarItemElements[key], {
+    const trigger = topBarItemElements[key]
+    if (!trigger)
+      return
+
+    const transformer = createTransformer(trigger, {
       x: '0px',
       y: '50px',
       centerTarget: {
@@ -177,12 +181,16 @@ export function useTopBarInteraction() {
     // 如果提供了targetRef，将其存储但不修改transformer的内部逻辑
     if (targetRef) {
       topBarTransformers[key] = targetRef
-      // 监听targetRef的变化，当targetRef有值时，将其设置为transformer的target
-      watch(targetRef, (newVal) => {
-        if (newVal) {
-          transformer.value = newVal
-        }
-      }, { immediate: true })
+      watch(
+        [targetRef, () => topBarStore.popupVisible[key]],
+        ([el, visible]) => {
+          if (!visible || !el)
+            return
+          transformer.value = el
+          transformer.applyPosition()
+        },
+        { immediate: true, flush: 'post' },
+      )
       return targetRef
     }
 
