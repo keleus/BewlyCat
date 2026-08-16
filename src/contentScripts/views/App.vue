@@ -85,6 +85,15 @@ function showNextConfirmDialog() {
   activeConfirmDialog.value = confirmDialogQueue.shift()
 }
 
+const confirmDialogPanelStyle = computed(() => {
+  const frostedGlass = settings.value.enableFrostedGlass
+  return {
+    backdropFilter: frostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
+    WebkitBackdropFilter: frostedGlass ? 'var(--bew-filter-glass-2)' : 'none',
+    backgroundColor: frostedGlass ? 'var(--bew-elevated-alt)' : 'var(--bew-elevated-alt-solid)',
+  }
+})
+
 function showConfirmDialog(message: string): Promise<boolean> {
   return new Promise((resolve) => {
     const request: ConfirmDialogRequest = {
@@ -1914,7 +1923,7 @@ if (settings.value.cleanUrlArgument) {
       :aria-label="$t('common.operation.confirm')"
     >
       <div class="bew-confirm-dialog__backdrop" @click="finishConfirmDialog(false)" />
-      <div class="bew-confirm-dialog__panel">
+      <div class="bew-confirm-dialog__panel" :style="confirmDialogPanelStyle">
         <header class="bew-confirm-dialog__header">
           <p class="bew-confirm-dialog__title">
             {{ $t('common.operation.confirm') }}
@@ -1934,11 +1943,11 @@ if (settings.value.cleanUrlArgument) {
           </p>
         </div>
         <footer class="bew-confirm-dialog__footer">
-          <Button type="tertiary" @click="finishConfirmDialog(false)">
-            {{ $t('common.operation.cancel') }}
-          </Button>
-          <Button type="primary" @click="finishConfirmDialog(true)">
+          <Button type="tertiary" @click="finishConfirmDialog(true)">
             {{ $t('common.operation.confirm') }}
+          </Button>
+          <Button type="primary" @click="finishConfirmDialog(false)">
+            {{ $t('common.operation.cancel') }}
           </Button>
         </footer>
       </div>
@@ -2100,7 +2109,7 @@ if (settings.value.cleanUrlArgument) {
 .bew-confirm-dialog {
   position: fixed;
   inset: 0;
-  z-index: 10002;
+  z-index: 10006;
   pointer-events: auto;
 }
 
@@ -2119,7 +2128,6 @@ if (settings.value.cleanUrlArgument) {
   width: 420px;
   max-width: calc(100vw - 32px);
   overflow: hidden;
-  background: var(--bew-elevated-alt-solid);
   border: 1px solid var(--bew-border-color);
   border-radius: var(--bew-modal-radius);
   box-shadow: var(--bew-shadow-4), var(--bew-shadow-edge-glow-2);
