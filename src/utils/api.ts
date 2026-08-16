@@ -1,4 +1,5 @@
 import type { API_COLLECTION } from '~/background/messageListeners/api'
+import { isSearchResultApiMethod } from '~/constants/searchApi'
 import { settings } from '~/logic'
 import { sendMessage } from '~/utils/messaging'
 
@@ -58,8 +59,10 @@ export class APIClient {
           const api = new Proxy({}, {
             get(_, p) {
               return (options?: object) => {
-                const isSearchRequest = namespace === 'search' && typeof p === 'string'
-                const requestOptions = isSearchRequest
+                const isSearchResultRequest = namespace === 'search'
+                  && typeof p === 'string'
+                  && isSearchResultApiMethod(p)
+                const requestOptions = isSearchResultRequest
                   ? { qv_id: getSearchQueryId(p, options), ...options }
                   : options
 
@@ -69,7 +72,7 @@ export class APIClient {
                 }
 
                 // 去个性化搜索仍经后台获取匿名 WBI key 并签名，只省略 Cookie。
-                if (isSearchRequest && settings.value.depersonalizeSearchResults)
+                if (isSearchResultRequest && settings.value.depersonalizeSearchResults)
                   message.bewlyNoCookie = true
 
                 return sendMessage(p as string, message)

@@ -1,5 +1,5 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
-import { PAGE_NO_COOKIE_SEARCH_REQUEST, PAGE_NO_COOKIE_SEARCH_RESPONSE } from '~/constants/api'
+import { isSearchResultApiPath } from '~/constants/searchApi'
 import type { Settings } from '~/logic/storage'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isElectron } from '~/utils/main'
@@ -3643,12 +3643,6 @@ else if (shouldInitializePageScript) {
     type: 'BEWLY_REQUEST_SETTINGS',
   }, '*')
 
-  const SEARCH_RESULT_API_PATHS = [
-    '/x/web-interface/wbi/search/all',
-    '/x/web-interface/wbi/search/type',
-    '/x/web-interface/search/type',
-  ]
-
   function getFetchInputUrl(input: RequestInfo | URL): string {
     if (typeof input === 'string')
       return input
@@ -3664,7 +3658,7 @@ else if (shouldInitializePageScript) {
     try {
       const requestUrl = new URL(getFetchInputUrl(input), window.location.href)
       return requestUrl.hostname === 'api.bilibili.com'
-        && SEARCH_RESULT_API_PATHS.some(path => requestUrl.pathname.startsWith(path))
+        && isSearchResultApiPath(requestUrl.pathname)
     }
     catch {
       return false
@@ -3672,71 +3666,6 @@ else if (shouldInitializePageScript) {
   }
 
   const originalFetch = window.fetch
-
-  function isAllowedPageNoCookieSearchUrl(url: string): boolean {
-    try {
-      const requestUrl = new URL(url, window.location.href)
-      return requestUrl.hostname === 'api.bilibili.com'
-        && SEARCH_RESULT_API_PATHS.some(path => requestUrl.pathname.startsWith(path))
-    }
-    catch {
-      return false
-    }
-  }
-
-  async function handlePageNoCookieSearchRequest(data: any) {
-    const id = data?.id
-    const url = data?.url
-    if (typeof id !== 'string' || typeof url !== 'string')
-      return
-
-    try {
-      if (!isAllowedPageNoCookieSearchUrl(url))
-        throw new Error('Unsupported no-cookie search request')
-
-      const response = await originalFetch.call(window, url, {
-        method: 'GET',
-        credentials: 'omit',
-      })
-      const text = await response.text()
-      let parsedResponse: unknown
-
-      try {
-        parsedResponse = text ? JSON.parse(text) : null
-      }
-      catch {
-        throw new Error('Invalid no-cookie search response')
-      }
-
-      window.postMessage({
-        type: PAGE_NO_COOKIE_SEARCH_RESPONSE,
-        data: {
-          id,
-          ok: response.ok,
-          status: response.status,
-          response: parsedResponse,
-        },
-      }, '*')
-    }
-    catch (error) {
-      window.postMessage({
-        type: PAGE_NO_COOKIE_SEARCH_RESPONSE,
-        data: {
-          id,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      }, '*')
-    }
-  }
-
-  window.addEventListener('message', (event) => {
-    if (event.source !== window)
-      return
-
-    const { type, data } = event.data || {}
-    if (type === PAGE_NO_COOKIE_SEARCH_REQUEST)
-      void handlePageNoCookieSearchRequest(data)
-  })
 
   function fetchWithSearchSettings(thisArg: unknown, input: RequestInfo | URL, init?: RequestInit) {
     if (!currentSettings?.depersonalizeSearchResults)

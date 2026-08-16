@@ -164,3 +164,20 @@ export const SEARCH_API_DEFINITIONS = {
 } satisfies Record<string, SearchApiDefinition>
 
 export type SearchApiMethod = keyof typeof SEARCH_API_DEFINITIONS
+
+export function isSearchResultApiMethod(method: string): method is SearchApiMethod {
+  return Object.prototype.hasOwnProperty.call(SEARCH_API_DEFINITIONS, method)
+}
+
+const SEARCH_RESULT_API_PATH_PREFIXES = [
+  '/x/web-interface/wbi/search/all',
+  '/x/web-interface/wbi/search/type',
+  // Bilibili 页面仍可能请求旧版分类接口，需要继续识别。
+  '/x/web-interface/search/type',
+] as const
+
+export function isSearchResultApiPath(pathname: string): boolean {
+  return SEARCH_RESULT_API_PATH_PREFIXES.some(prefix => (
+    pathname === prefix || pathname.startsWith(`${prefix}/`)
+  ))
+}
