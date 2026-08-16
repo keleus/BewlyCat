@@ -62,6 +62,7 @@ const AHS: {
 
 interface Message {
   contentScriptQuery: string
+  bewlyNoCookie?: boolean
   [key: string]: any
 }
 
@@ -103,7 +104,7 @@ function apiListenerFactory(API_MAP: APIMAP) {
 
     // eslint-disable-next-line node/prefer-global/process
     if (process.env.FIREFOX && sender && sender.tab?.id) {
-      if (api._fetch.credentials === 'omit')
+      if (api._fetch.credentials === 'omit' || typedMessage.bewlyNoCookie === true)
         return await doRequest(typedMessage, api)
 
       // 获取tab信息以获取正确的cookieStoreId
@@ -119,12 +120,13 @@ function apiListenerFactory(API_MAP: APIMAP) {
 
 async function doRequest(message: Message, api: API, sendResponse?: (response?: any) => void, cookies?: Browser.Cookies.Cookie[]) {
   try {
-    let { contentScriptQuery, ...rest } = message
+    let { contentScriptQuery, bewlyNoCookie = false, ...rest } = message
     // rest above two part body or params
     rest = rest || {}
 
     let { _fetch, url, params = {}, afterHandle } = api
-    const { method, headers = {}, body, credentials = 'include' } = _fetch as _FETCH
+    const { method, headers = {}, body, credentials: configuredCredentials = 'include' } = _fetch as _FETCH
+    const credentials: RequestCredentials = bewlyNoCookie ? 'omit' : configuredCredentials
     const isGET = method.toLocaleLowerCase() === 'get'
     // merge params and body
     const targetParams = Object.assign({}, params)

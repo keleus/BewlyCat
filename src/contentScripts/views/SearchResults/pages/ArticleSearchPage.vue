@@ -6,6 +6,7 @@ import ArticleCard from '~/components/ArticleCard/ArticleCard.vue'
 import Empty from '~/components/Empty.vue'
 import SmoothLoading from '~/components/SmoothLoading.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { SEARCH_PAGE_SIZES } from '~/constants/searchApi'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 
@@ -123,7 +124,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     params => api.search.searchArticle(params),
     {
       page: targetPage,
-      pagesize: 30,
+      page_size: SEARCH_PAGE_SIZES.article,
     },
   )
 
@@ -185,7 +186,7 @@ async function handlePageChange(page: number) {
     params => api.search.searchArticle(params),
     {
       page,
-      pagesize: 30,
+      page_size: SEARCH_PAGE_SIZES.article,
     },
   )
 

@@ -7,6 +7,7 @@ import SmoothLoading from '~/components/SmoothLoading.vue'
 import UserCard from '~/components/UserCard/UserCard.vue'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { SEARCH_PAGE_SIZES } from '~/constants/searchApi'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import api from '~/utils/api'
@@ -224,8 +225,8 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
       params => api.search.searchLiveRoom(params),
       {
         page: targetPage,
-        pagesize: 30,
-        order: props.filters.roomOrder,
+        page_size: SEARCH_PAGE_SIZES.live,
+        order: props.filters.roomOrder || 'online',
       },
     )
   }
@@ -236,8 +237,8 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
       params => api.search.searchLiveUser(params),
       {
         page: targetPage,
-        page_size: 30,
-        order: props.filters.userOrder,
+        page_size: SEARCH_PAGE_SIZES.live,
+        order: props.filters.userOrder || 'online',
       },
     )
   }
@@ -248,8 +249,8 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
       params => api.search.searchLive(params),
       {
         page: targetPage,
-        pagesize: 30,
-        order: props.filters.roomOrder,
+        page_size: SEARCH_PAGE_SIZES.live,
+        order: props.filters.roomOrder || 'online',
       },
     )
   }
@@ -355,7 +356,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     extractPagination({
       total: liveRoomTotal,
       numResults: liveRoomTotal,
-      pagesize: rawData?.pagesize || 30,
+      pagesize: rawData?.pagesize || SEARCH_PAGE_SIZES.live,
       pageinfo: rawData?.pageinfo?.live_room,
     }, incomingRooms.length)
   }
@@ -412,8 +413,8 @@ async function handlePageChange(page: number) {
       params => api.search.searchLiveRoom(params),
       {
         page,
-        pagesize: 30,
-        order: props.filters.roomOrder,
+        page_size: SEARCH_PAGE_SIZES.live,
+        order: props.filters.roomOrder || 'online',
       },
     )
   }
@@ -424,8 +425,8 @@ async function handlePageChange(page: number) {
       params => api.search.searchLiveUser(params),
       {
         page,
-        page_size: 30,
-        order: props.filters.userOrder,
+        page_size: SEARCH_PAGE_SIZES.live,
+        order: props.filters.userOrder || 'online',
       },
     )
   }
@@ -436,8 +437,8 @@ async function handlePageChange(page: number) {
       params => api.search.searchLive(params),
       {
         page,
-        pagesize: 30,
-        order: props.filters.roomOrder,
+        page_size: SEARCH_PAGE_SIZES.live,
+        order: props.filters.roomOrder || 'online',
       },
     )
   }
@@ -522,7 +523,7 @@ async function handlePageChange(page: number) {
     extractPagination({
       total: liveRoomTotal,
       numResults: liveRoomTotal,
-      pagesize: rawData?.pagesize || 30,
+      pagesize: rawData?.pagesize || SEARCH_PAGE_SIZES.live,
       pageinfo: rawData?.pageinfo?.live_room,
     }, incomingRooms.length)
   }
@@ -548,8 +549,8 @@ async function refreshLiveRoomsOnly() {
     const response = await api.search.searchLive({
       keyword,
       page: 1,
-      pagesize: 30,
-      order: props.filters.roomOrder,
+      page_size: SEARCH_PAGE_SIZES.live,
+      order: props.filters.roomOrder || 'online',
     })
 
     if (!response || response.code !== 0)

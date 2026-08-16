@@ -95,7 +95,7 @@ async function addUser() {
       const response = await api.search.searchUser({
         keyword: input,
         page: 1,
-        pagesize: 10,
+        page_size: 10,
         order: '',
         order_sort: 0,
         user_type: 0,

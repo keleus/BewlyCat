@@ -6,6 +6,7 @@ import Empty from '~/components/Empty.vue'
 import MediaEpisodeSelect from '~/components/MediaEpisodeSelect/MediaEpisodeSelect.vue'
 import SmoothLoading from '~/components/SmoothLoading.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { SEARCH_PAGE_SIZES } from '~/constants/searchApi'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 
@@ -123,7 +124,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     params => api.search.searchMediaFt(params),
     {
       page: targetPage,
-      pagesize: 30,
+      page_size: SEARCH_PAGE_SIZES.pgc,
     },
   )
 
@@ -186,7 +187,7 @@ async function handlePageChange(page: number) {
     params => api.search.searchMediaFt(params),
     {
       page,
-      pagesize: 30,
+      page_size: SEARCH_PAGE_SIZES.pgc,
     },
   )
 

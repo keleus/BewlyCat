@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { SEARCH_PAGE_SIZES } from '~/constants/searchApi'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import api from '~/utils/api'
@@ -138,7 +139,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     params => api.search.searchVideo(params),
     {
       page: targetPage,
-      page_size: 30,
+      page_size: SEARCH_PAGE_SIZES.video,
       ...buildVideoSearchParams({
         loadMore: isLoadMore,
         context: context.value,
@@ -222,7 +223,7 @@ async function handlePageChange(page: number) {
     params => api.search.searchVideo(params),
     {
       page,
-      page_size: 30,
+      page_size: SEARCH_PAGE_SIZES.video,
       ...buildVideoSearchParams({
         loadMore: false,
         context: context.value,

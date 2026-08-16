@@ -11,6 +11,7 @@ import MediaEpisodeSelect from '~/components/MediaEpisodeSelect/MediaEpisodeSele
 import VideoCard from '~/components/VideoCard/VideoCard.vue'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { SEARCH_PAGE_SIZES } from '~/constants/searchApi'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON } from '~/utils/lvIcons'
@@ -343,7 +344,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
       params => api.search.searchVideo(params),
       {
         page: targetPage,
-        page_size: 30,
+        page_size: SEARCH_PAGE_SIZES.video,
         ...buildVideoSearchParams({
           loadMore: isLoadMore,
           context: context.value,
@@ -358,7 +359,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
       params => api.search.searchAll(params),
       {
         page: targetPage,
-        page_size: 30,
+        page_size: SEARCH_PAGE_SIZES.all,
         context: targetPage > 1 ? context.value : '',
         web_roll_page: targetPage,
       },
@@ -527,7 +528,7 @@ async function handlePageChange(page: number) {
       params => api.search.searchVideo(params),
       {
         page,
-        page_size: 30,
+        page_size: SEARCH_PAGE_SIZES.video,
         ...buildVideoSearchParams({
           loadMore: false,
           context: context.value,
@@ -542,7 +543,7 @@ async function handlePageChange(page: number) {
       params => api.search.searchAll(params),
       {
         page,
-        page_size: 30,
+        page_size: SEARCH_PAGE_SIZES.all,
         context: page > 1 ? context.value : '',
         web_roll_page: page,
       },
