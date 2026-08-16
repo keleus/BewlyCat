@@ -857,6 +857,7 @@ settings:
     web_fullscreen: 網頁全螢幕
     widescreen: 闊螢幕
     bewly_widescreen: Bewly闊螢幕
+    exit_bewly_widescreen: 離開 Bewly 闊螢幕
     enable_overrides: 啟用按情況覆寫
     enable_overrides_desc: 開啟之後，下面各播放情況嘅顯示模式設定先會生效。
     overrides: 情況顯示模式

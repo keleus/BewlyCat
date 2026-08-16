@@ -1,5 +1,5 @@
 import { settings } from '~/logic'
-import { applyBewlyWidescreen, isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { i18n } from '~/utils/i18n'
 import { isVideoOrBangumiPage } from '~/utils/main'
 
@@ -7,6 +7,7 @@ const PLAYER_CONTROL_BAR_SELECTOR = '.bpx-player-control-bottom-right'
 const PLAYER_ROOT_SELECTOR = '#playerWrap, #bilibili-player, #bilibiliPlayer, .bpx-player-container, .bilibili-player'
 const PLAYER_MODE_BUTTON_SELECTOR = '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen'
 const BUTTON_CLASS = 'bewly-widescreen-control'
+const TOOLTIP_CLASS = 'bewly-widescreen-tooltip'
 const CONTROL_DISCOVERY_TIMEOUT = 15_000
 const CONTROL_DISCOVERY_RETRY_INTERVAL = 500
 const APPLY_TIMEOUT = 30_000
@@ -32,8 +33,10 @@ function translate(key: string): string {
   return String(i18n.global.t(key, settings.value.language))
 }
 
-function getButtonLabel() {
-  return translate('settings.video_player_mode.bewly_widescreen')
+function getButtonLabel(active = isBewlyWidescreenActive()) {
+  return translate(active
+    ? 'settings.video_player_mode.exit_bewly_widescreen'
+    : 'settings.video_player_mode.bewly_widescreen')
 }
 
 function findPlayerControlBar(): HTMLElement | null {
@@ -56,7 +59,7 @@ function isWebFullscreen() {
 }
 
 function isControlUnavailable() {
-  return isBewlyWidescreenActive() || isBrowserFullscreen() || isWebFullscreen()
+  return isBrowserFullscreen() || isWebFullscreen()
 }
 
 function shouldManageControl() {
@@ -69,16 +72,19 @@ function updateControlState(button = controlContainer) {
 
   const active = isBewlyWidescreenActive()
   const unavailable = isControlUnavailable()
-  const hidden = active || isBrowserFullscreen() || isWebFullscreen()
-  const label = getButtonLabel()
+  const hidden = isBrowserFullscreen() || isWebFullscreen()
+  const label = getButtonLabel(active)
 
   button.hidden = hidden
   button.setAttribute('aria-label', label)
-  button.title = label
+  const tooltip = button.querySelector<HTMLElement>(`.${TOOLTIP_CLASS}`)
+  if (tooltip)
+    tooltip.textContent = label
   button.setAttribute('aria-disabled', String(unavailable || isApplying))
   button.setAttribute('aria-busy', String(isApplying))
   button.setAttribute('tabindex', hidden || unavailable || isApplying ? '-1' : '0')
   button.classList.toggle('is-disabled', unavailable || isApplying)
+  button.classList.toggle('bpx-state-entered', active)
 }
 
 function clearApplyFallbackTimer() {
@@ -101,7 +107,11 @@ function createControlContainer(): HTMLElement {
   container.setAttribute('role', 'button')
   container.setAttribute('aria-label', label)
   container.setAttribute('tabindex', '0')
-  container.title = label
+
+  const tooltip = document.createElement('span')
+  tooltip.className = TOOLTIP_CLASS
+  tooltip.setAttribute('role', 'tooltip')
+  tooltip.textContent = label
 
   const icon = document.createElement('div')
   icon.className = 'bpx-player-ctrl-btn-icon bewly-widescreen-icon'
@@ -110,7 +120,7 @@ function createControlContainer(): HTMLElement {
   iconWrapper.className = 'bpx-common-svg-icon'
   iconWrapper.innerHTML = widescreenIcon
   icon.appendChild(iconWrapper)
-  container.appendChild(icon)
+  container.append(icon, tooltip)
 
   container.addEventListener('click', (event) => {
     event.preventDefault()
@@ -130,7 +140,16 @@ function createControlContainer(): HTMLElement {
 }
 
 async function handleControlClick(button: HTMLElement) {
-  if (isApplying || isControlUnavailable() || !shouldManageControl())
+  if (isApplying || !shouldManageControl())
+    return
+
+  if (isBewlyWidescreenActive()) {
+    exitBewlyWidescreen()
+    updateControlState(button)
+    return
+  }
+
+  if (isControlUnavailable())
     return
 
   isApplying = true
@@ -322,8 +341,8 @@ function setupPageObserver() {
     return
 
   pageObserver = new MutationObserver(() => {
-    if (isApplying && !isBewlyWidescreenActive()
-      && !document.getElementById('bewly-widescreen-loading')) {
+    if (isApplying && (isBewlyWidescreenActive()
+      || !document.getElementById('bewly-widescreen-loading'))) {
       finishApplying()
     }
 

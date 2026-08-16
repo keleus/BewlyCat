@@ -420,14 +420,7 @@ function createSidebarTitle() {
 function createSidebarToolbar() {
   const toolbar = document.createElement('div')
   toolbar.className = 'bewly-widescreen-toolbar'
-
-  const closeButton = document.createElement('button')
-  closeButton.type = 'button'
-  closeButton.className = 'bewly-widescreen-close'
-  closeButton.textContent = '退出'
-  closeButton.addEventListener('click', () => exitBewlyWidescreen())
-
-  toolbar.append(createSidebarTitle(), closeButton)
+  toolbar.append(createSidebarTitle())
   return toolbar
 }
 
@@ -640,15 +633,16 @@ export function prepareBewlyWidescreenLoading() {
   if (state || loadingSuppressedUntilExit)
     return
 
-  showWidescreenLoading()
   const video = getVideoElement()
-  if (loadingOverlay
-    && video
+  if (video
     && !video.paused
     && !video.ended) {
-    dismissWidescreenLoadingForPlaying()
+    loadingSuppressedUntilExit = true
+    removeWidescreenLoading(true)
     return
   }
+
+  showWidescreenLoading()
 
   if (!loadingOverlay)
     return
@@ -1098,44 +1092,6 @@ function injectLayoutStyle() {
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 6px;
-    }
-
-    #${ROOT_ID} .bewly-widescreen-close {
-      position: relative;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: 0;
-      border-radius: 50%;
-      width: 28px;
-      height: 28px;
-      padding: 0;
-      color: var(--bewly-widescreen-text-secondary);
-      background: var(--bewly-widescreen-control-bg);
-      cursor: pointer;
-      font-size: 0;
-      line-height: 1;
-      flex: 0 0 auto;
-    }
-
-    #${ROOT_ID} .bewly-widescreen-close::before,
-    #${ROOT_ID} .bewly-widescreen-close::after {
-      content: "";
-      position: absolute;
-      width: 13px;
-      height: 2px;
-      border-radius: 2px;
-      background: currentColor;
-      transform: rotate(45deg);
-    }
-
-    #${ROOT_ID} .bewly-widescreen-close::after {
-      transform: rotate(-45deg);
-    }
-
-    #${ROOT_ID} .bewly-widescreen-close:hover {
-      color: var(--bewly-widescreen-text-primary);
-      background: var(--bewly-widescreen-control-hover-bg);
     }
 
     #${ROOT_ID} .bewly-widescreen-title {
@@ -2376,8 +2332,11 @@ export function applyBewlyWidescreen(
     return
 
   pendingSidebarPosition = sidebarPosition
-  if (showLoading)
-    showWidescreenLoading()
+  if (showLoading) {
+    const video = getVideoElement()
+    if (!video || video.paused || video.ended)
+      showWidescreenLoading()
+  }
 
   if (document.readyState === 'complete') {
     startAfterPageLoad(sidebarPosition)

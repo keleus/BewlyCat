@@ -1,3 +1,39 @@
+.bewly-widescreen-control {
+  position: relative;
+  overflow: visible;
+
+  .bewly-widescreen-tooltip {
+    position: absolute;
+    bottom: calc(100% + var(--bew-space-2, 8px));
+    left: 50%;
+    z-index: 2;
+    padding: var(--bew-space-1, 4px) var(--bew-space-2, 8px);
+    border-radius: var(--bew-radius-sm, 4px);
+    color: #fff;
+    background: rgb(0 0 0 / 80%);
+    box-shadow: var(--bew-shadow-1, 0 2px 8px rgb(0 0 0 / 20%));
+    font-size: var(--bew-font-size-caption, 12px);
+    font-weight: var(--bew-font-weight-medium, 500);
+    line-height: var(--bew-line-height-caption, 16px);
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, var(--bew-space-1, 4px));
+    transition:
+      opacity var(--bew-duration-fast, 150ms) var(--bew-ease-out, ease-out),
+      visibility var(--bew-duration-fast, 150ms) var(--bew-ease-out, ease-out),
+      transform var(--bew-duration-fast, 150ms) var(--bew-ease-out, ease-out);
+  }
+
+  &:hover .bewly-widescreen-tooltip,
+  &:focus-visible .bewly-widescreen-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+  }
+}
+
 .bewly-design {
   .bpx-player-toast-row .bpx-player-toast-item {
     --bpx-toast-fn-color: var(--bew-theme-color);
