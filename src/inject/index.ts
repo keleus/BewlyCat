@@ -338,6 +338,10 @@ else if (shouldInitializePageScript) {
           background: var(--bew-comment-replies-mask-bg, rgba(var(--bg1_rgb), 0.85)) !important;
         }
 
+        #pagination {
+          color: var(--bew-text-3) !important;
+        }
+
         :host([data-bewly-comment-reply-tree]) {
           --bew-comment-reply-branch-radius: var(--bew-radius-lg, 12px);
           --bew-comment-reply-indent-step: var(--bew-space-8, 32px);
@@ -807,6 +811,25 @@ else if (shouldInitializePageScript) {
       && currentSettings?.commentReplyPaginationMode !== 'pagination'
   }
 
+  function updateCommentReplyPaginationHead(component: any, currentPage: number) {
+    const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
+    if (!head)
+      return
+    const prefix = `第${currentPage}页，共`
+    const first = head.firstChild
+    if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== prefix)
+      first.textContent = prefix
+  }
+
+  function restoreCommentReplyPaginationHead(component: any) {
+    const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
+    if (!head)
+      return
+    const first = head.firstChild
+    if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== '共')
+      first.textContent = '共'
+  }
+
   function getCommentReplyInvisibleIds(renderer: any): Set<string> {
     if (!renderer.invisibleID || typeof renderer.invisibleID !== 'object')
       return new Set()
@@ -1172,12 +1195,12 @@ else if (shouldInitializePageScript) {
           if (state.loading) {
             return [{ text: '加载中…', idx: currentPage, clickable: false }]
           }
-          const hasNext = items.some(item => Number(item?.idx) === currentPage && item?.clickable !== false)
-          return [{
-            text: hasNext ? '加载更多' : '没有更多回复',
-            idx: currentPage,
-            clickable: hasNext,
-          }]
+          const totalPage = Number(this.totalPage) || 0
+          const hasNext = currentPage < totalPage
+          queueMicrotask(() => updateCommentReplyPaginationHead(this, currentPage))
+          return hasNext
+            ? [{ text: '加载更多', idx: currentPage, clickable: true }]
+            : []
         },
       })
     }
@@ -3087,8 +3110,10 @@ else if (shouldInitializePageScript) {
       commentReplyPaginationModeStates.set(component, paginationEnabled)
       component.requestUpdate?.()
     }
-    if (!paginationEnabled)
+    if (!paginationEnabled) {
       clearCommentReplyPaginationState(component, true)
+      restoreCommentReplyPaginationHead(component)
+    }
     const existingState = commentReplyTreeStates.get(component)
     if (treeMode === null && !existingState?.enabled) {
       component.removeAttribute('data-bewly-comment-reply-tree')
