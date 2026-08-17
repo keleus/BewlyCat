@@ -919,10 +919,19 @@ function handleDetailImageViewerKeydown(event: KeyboardEvent) {
   }
 }
 
-function shouldOpenMomentExternally(moment: DisplayMoment) {
+type ResolvedMomentOpenMode = 'dialog' | 'currentTab' | 'newTab' | 'background'
+
+function resolveMomentOpenMode(moment: DisplayMoment): ResolvedMomentOpenMode {
+  const videoCardOpenMode = settings.value.momentsVideoCardOpenMode
+  if (moment.isVideo && !moment.isPgc && videoCardOpenMode !== 'inherit')
+    return videoCardOpenMode
+
+  return settings.value.momentsCardOpenMode
+}
+
+function shouldOpenMomentExternally(moment: DisplayMoment, openMode: ResolvedMomentOpenMode) {
   return moment.isLive
-    || settings.value.momentsCardOpenMode === 'newTab'
-    || settings.value.momentsCardOpenMode === 'background'
+    || openMode !== 'dialog'
     || window.innerWidth <= DETAIL_DIALOG_MIN_WIDTH
 }
 
@@ -930,7 +939,7 @@ function openMomentImagePreview(urls: string[], index: number, trigger: HTMLElem
   openDetailImageViewer(urls, index, null, trigger)
 }
 
-function openMomentInNewTab(moment: DisplayMoment, background = false) {
+function openMomentExternally(moment: DisplayMoment, openMode: Exclude<ResolvedMomentOpenMode, 'dialog'>) {
   const url = resolveDetailUrl(moment) || moment.url
   if (!url)
     return
@@ -939,8 +948,10 @@ function openMomentInNewTab(moment: DisplayMoment, background = false) {
   cleanupLivePreviewPlayer()
   if (previewUrls[moment.id])
     delete previewUrls[moment.id]
-  if (background)
+  if (openMode === 'background')
     void openLinkInBackground(url)
+  else if (openMode === 'currentTab')
+    window.open(url, '_top')
   else
     window.open(url, '_blank', 'noopener,noreferrer')
 }
@@ -973,9 +984,12 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
   if (moment.isVideo && !moment.isLive)
     recordVideoVisit(moment)
 
-  // 小屏、直播与「新标签/后台标签」设置：外部打开，避免狭窄 Dialog 与跨域直播占用
-  if (!forceDialog && shouldOpenMomentExternally(moment)) {
-    openMomentInNewTab(moment, settings.value.momentsCardOpenMode === 'background')
+  const openMode = forceDialog ? 'dialog' : resolveMomentOpenMode(moment)
+
+  // 小屏、直播与外部打开设置：离开详情 Dialog，避免狭窄 Dialog 与跨域直播占用。
+  // 弹窗模式在小屏和直播动态上回退为新标签页。
+  if (!forceDialog && shouldOpenMomentExternally(moment, openMode)) {
+    openMomentExternally(moment, openMode === 'dialog' ? 'newTab' : openMode)
     return
   }
 

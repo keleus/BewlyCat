@@ -318,6 +318,10 @@ settings:
     dialog: Dialog
     new_tab: New tab
     background: Background tab
+  moments_video_card_open_mode: Video post dynamic card click behavior
+  moments_video_card_open_mode_desc: Controls where video post dynamic cards open independently. Choose "Follow dynamic cards" to use the setting above.
+  moments_video_card_open_mode_opt:
+    inherit: Follow dynamic cards
   group_moments_wanted_users: Watchlist
   group_moments_wanted_users_desc: Manage uploaders you want to watch by UID or name. The list is stored only on this device.
   moments_enable_wanted_filter: Enable watchlist filter

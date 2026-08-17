@@ -158,6 +158,14 @@ const menuButtonLabel = computed(() => menuVideo.value
   ? t('video_card.operation.more_options')
   : '')
 
+const cardOpenMode = computed(() => {
+  const videoCardOpenMode = settings.value.momentsVideoCardOpenMode
+  if (moment.isVideo && !moment.isPgc && videoCardOpenMode !== 'inherit')
+    return videoCardOpenMode
+
+  return settings.value.momentsCardOpenMode
+})
+
 const showVideoOptions = ref(false)
 const videoOptionsFloatingStyles = ref<CSSProperties>({})
 const moreBtnRef = ref<HTMLButtonElement | null>(null)
@@ -647,7 +655,7 @@ function handleForwardVideoClick() {
 
       <footer class="moment-card__footer">
         <button
-          v-if="settings.momentsCardOpenMode !== 'dialog' && !moment.isLive"
+          v-if="cardOpenMode !== 'dialog' && !moment.isLive"
           type="button"
           aria-label="弹窗打开动态"
           @click.stop="emit('openDetail', moment, true)"

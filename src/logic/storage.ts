@@ -125,6 +125,8 @@ export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
  */
 export type CommentReplyTreeMode = 'lineCollapseMain' | 'lineKeepMain' | 'indentOnly'
 export type CommentReplyPaginationMode = 'loadMore' | 'pagination'
+export type MomentsCardOpenMode = 'dialog' | 'newTab' | 'background'
+export type MomentsVideoCardOpenMode = MomentsCardOpenMode | 'inherit' | 'currentTab'
 
 export interface ShadowCurvePoint {
   position: number
@@ -329,7 +331,9 @@ export interface Settings {
   momentsEnableKeywordFilter: boolean
   /** 逗号分隔的动态屏蔽关键词 */
   momentsBlockedKeywords: string
-  momentsCardOpenMode: 'dialog' | 'newTab' | 'background'
+  momentsCardOpenMode: MomentsCardOpenMode
+  /** 视频投稿动态卡片的独立点击行为；inherit 跟随通用动态卡片设置 */
+  momentsVideoCardOpenMode: MomentsVideoCardOpenMode
 
   alwaysUseDock: boolean
   autoHideDock: boolean
@@ -627,6 +631,7 @@ export const originalSettings: Settings = {
   momentsEnableKeywordFilter: false,
   momentsBlockedKeywords: '',
   momentsCardOpenMode: 'dialog',
+  momentsVideoCardOpenMode: 'inherit',
 
   alwaysUseDock: false,
   autoHideDock: false,

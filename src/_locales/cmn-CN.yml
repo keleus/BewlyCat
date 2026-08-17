@@ -315,6 +315,10 @@ settings:
     dialog: 弹窗
     new_tab: 新建标签页
     background: 后台标签
+  moments_video_card_open_mode: 视频投稿动态卡片点击行为
+  moments_video_card_open_mode_desc: 单独控制视频投稿动态卡片的打开位置；选择“跟随动态卡片”时使用上方设置。
+  moments_video_card_open_mode_opt:
+    inherit: 跟随动态卡片
   group_moments_wanted_users: 想看分组
   group_moments_wanted_users_desc: 管理想看的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
   moments_enable_wanted_filter: 启用想看筛选

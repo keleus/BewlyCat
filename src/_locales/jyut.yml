@@ -343,6 +343,10 @@ settings:
     dialog: 彈窗
     new_tab: 新分頁
     background: 後台分頁
+  moments_video_card_open_mode: 影片投稿動態卡片點擊行為
+  moments_video_card_open_mode_desc: 獨立控制影片投稿動態卡片嘅打開位置；揀「跟隨動態卡片」時使用上面嘅設定。
+  moments_video_card_open_mode_opt:
+    inherit: 跟隨動態卡片
   group_moments_wanted_users: 想睇分組
   group_moments_wanted_users_desc: 管理想睇嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
   moments_enable_wanted_filter: 啟用想睇篩選

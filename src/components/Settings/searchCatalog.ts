@@ -290,6 +290,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_filter_live_dynamic',
     'settings.moments_keyword_filter',
     'settings.moments_card_open_mode',
+    'settings.moments_video_card_open_mode',
     'settings.group_moments_wanted_users',
     'settings.moments_enable_wanted_filter',
     'settings.moments_wanted_users',

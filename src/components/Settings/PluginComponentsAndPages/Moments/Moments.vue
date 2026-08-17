@@ -87,6 +87,29 @@ const openModeOptions = computed(() => [
   },
 ])
 
+const videoCardOpenModeOptions = computed(() => [
+  {
+    label: t('settings.moments_video_card_open_mode_opt.inherit'),
+    value: 'inherit',
+  },
+  {
+    label: t('settings.link_opening_behavior_opt.current_tab'),
+    value: 'currentTab',
+  },
+  {
+    label: t('settings.moments_card_open_mode_opt.dialog'),
+    value: 'dialog',
+  },
+  {
+    label: t('settings.link_opening_behavior_opt.background'),
+    value: 'background',
+  },
+  {
+    label: t('settings.link_opening_behavior_opt.new_tab'),
+    value: 'newTab',
+  },
+])
+
 const gridColumnOptions = computed(() => [
   { label: t('settings.moments_grid_columns_option', { count: 3 }), value: '3' as const },
   { label: t('settings.moments_grid_columns_option', { count: 2 }), value: '2' as const },
@@ -217,6 +240,17 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         <Select
           v-model="settings.momentsCardOpenMode"
           :options="openModeOptions"
+          w="180px"
+        />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.moments_video_card_open_mode')"
+        :desc="$t('settings.moments_video_card_open_mode_desc')"
+        right-width="auto"
+      >
+        <Select
+          v-model="settings.momentsVideoCardOpenMode"
+          :options="videoCardOpenModeOptions"
           w="180px"
         />
       </SettingsItem>
