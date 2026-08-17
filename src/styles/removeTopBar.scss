@@ -7,12 +7,6 @@
   display: none !important;
 }
 
-// 自定义首页的顶栏由 BewlyCat 统一管理。即使切换到 B 站原生顶栏，
-// 也要隐藏 Bilibili Evolved 注入的顶栏，避免它与原生顶栏同时出现。
-.homePage.bewly-custom-homepage .custom-navbar {
-  display: none !important;
-}
-
 .homePage .bili-header {
   .bewly-bili-logo-entry,
   .bewly-home-entry-arrow {
