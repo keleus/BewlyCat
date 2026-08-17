@@ -46,7 +46,7 @@ const LOADING_ROOT_ID = 'bewly-widescreen-loading'
 const BODY_CLASS = 'bewly-widescreen-active'
 const EMPTY_CLASS = 'bewly-widescreen-empty'
 const EPISODE_SECTION_CLASS = 'bewly-widescreen-episode-section'
-const EPISODE_ITEM_SELECTOR = '.video-pod__item, .multi-page__item, .page-item, .list-item, .episode-item, .section-item, .collect-item'
+const EPISODE_ITEM_SELECTOR = '.video-pod__item, .multi-page__item, .page-item, .list-item, .episode-item, .section-item, .collect-item, [class*="PlayerEpisodePanel_episodeRow"]'
 const SIDEBAR_NARROW_MIN_WIDTH = 360
 const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
@@ -159,6 +159,10 @@ const selectors = {
     '.base-video-sections-v1',
     '.video-sections-v1',
     '.video-sections-content-list',
+    // The current bangumi page renders its episode list inside the player's
+    // native episode popover instead of a page-level eplist module. Keep this
+    // fallback last so existing page-level playlists remain preferred.
+    '[class*="PlayerEpisodePanel_panel"]',
   ],
   playlistControls: [
     '.auto-play',
@@ -1652,6 +1656,53 @@ function injectLayoutStyle() {
       overflow-y: auto !important;
       overscroll-behavior: contain;
       scrollbar-gutter: stable;
+    }
+
+    /* New bangumi pages keep the episode list in a hidden player popover.
+       Once moved into the sidebar, give the original virtualized list a
+       stable flex height and let its own scroll container remain in charge. */
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_panel"] {
+      display: flex !important;
+      flex-direction: column !important;
+      position: relative !important;
+      width: 100% !important;
+      height: min(52dvh, 560px) !important;
+      min-height: 0 !important;
+      max-height: min(52dvh, 560px) !important;
+      margin: 0 0 var(--bew-space-3, 12px) !important;
+      overflow: hidden !important;
+      color: var(--bewly-widescreen-text-primary) !important;
+      background: transparent !important;
+      visibility: visible !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeScrollFrame"] {
+      flex: 1 1 auto !important;
+      width: 100% !important;
+      height: auto !important;
+      min-height: 0 !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class^="PlayerEpisodePanel_episodeScroll__"] {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_header"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_pageTab"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRow"] {
+      color: var(--bewly-widescreen-text-primary) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_pageTabActive"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRowActive"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_rowPlaying"] {
+      color: var(--bew-theme-color, #00aeec) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRow"]:hover {
+      background: var(--bewly-widescreen-control-bg) !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-panel .video-page-card-small {
