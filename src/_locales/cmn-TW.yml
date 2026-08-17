@@ -493,11 +493,14 @@ settings:
     alwaysHide: 總是隱藏
     showOnMouse: 滑鼠顯示
     showOnScroll: 滾動顯示
-  always_use_transparent_top_bar: 頂部列始終使用透明(舊版)樣式
-  always_use_frosted_glass_top_bar: 頂部列始終使用毛玻璃樣式
-  always_use_frosted_glass_top_bar_desc: 即使頁面有背景圖，也始終使用與首頁無背景圖時相同的頂部列樣式。
-  enable_top_bar_gradient: 啟用頂部列漸變效果
-  enable_top_bar_gradient_desc: 開啟後頂部列預設使用毛玻璃漸變，關閉後改為實色背景。
+  top_bar_style: 頂部列樣式
+  top_bar_style_desc: 選擇頂部列的背景效果。漸進霧化會啟用 1.7.4 的五層模糊，並同時套用到設定視窗頂部，可能明顯增加 GPU 負擔。
+  top_bar_style_opt:
+    default: 預設
+    transparent: 透明（舊版）
+    frosted_glass: 毛玻璃
+    solid: 實色
+    progressive_fog: 漸進霧化
   show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多頁面顯示 BewlyCat/Bilibili 頁面切換器

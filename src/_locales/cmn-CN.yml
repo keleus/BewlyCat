@@ -520,11 +520,14 @@ settings:
     alwaysHide: 总是隐藏
     showOnMouse: 鼠标显示
     showOnScroll: 滚动显示
-  always_use_transparent_top_bar: 顶栏始终使用透明(旧版)样式
-  always_use_frosted_glass_top_bar: 顶栏始终使用毛玻璃样式
-  always_use_frosted_glass_top_bar_desc: 即使页面有背景图，也始终使用与首页无背景图时相同的顶栏样式。
-  enable_top_bar_gradient: 启用顶栏渐变效果
-  enable_top_bar_gradient_desc: 开启后顶栏默认使用磨砂玻璃渐变，关闭后改为实色背景。
+  top_bar_style: 顶栏样式
+  top_bar_style_desc: 选择顶栏的背景效果。渐进雾化会启用 1.7.4 的五层模糊，并同时应用到设置窗口顶部，可能显著增加 GPU 开销。
+  top_bar_style_opt:
+    default: 默认
+    transparent: 透明（旧版）
+    frosted_glass: 毛玻璃
+    solid: 实色
+    progressive_fog: 渐进雾化
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多页面显示 BewlyCat/Bilibili 页面切换器

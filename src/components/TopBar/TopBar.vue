@@ -653,8 +653,8 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
         :class="{
           'hide': hideTopBar && !isLayoutEditing,
           'force-white-icon': forceWhiteIcon,
-          'top-bar--solid': !settings.enableTopBarGradient,
-          'top-bar--solid-force-white': !settings.enableTopBarGradient && forceWhiteIcon,
+          'top-bar--solid': settings.topBarStyle === 'solid',
+          'top-bar--solid-force-white': settings.topBarStyle === 'solid' && forceWhiteIcon,
         }"
       >
         <TopBarHeader

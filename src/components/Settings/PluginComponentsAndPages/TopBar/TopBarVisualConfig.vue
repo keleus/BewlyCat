@@ -7,6 +7,7 @@ import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
+import type { TopBarStyle } from '~/logic/storage'
 
 import { allChannelConfigs } from '../../../TopBar/constants/channels'
 import SettingsItem from '../../components/SettingsItem.vue'
@@ -81,6 +82,14 @@ const videoPageTopBarConfigOptions = computed(() => [
   { label: t('settings.video_page_top_bar_config_opt.showOnScroll'), value: VideoPageTopBarConfig.ShowOnScroll },
 ])
 
+const topBarStyleOptions = computed<{ label: string, value: TopBarStyle }[]>(() => [
+  { label: t('settings.top_bar_style_opt.default'), value: 'default' },
+  { label: t('settings.top_bar_style_opt.transparent'), value: 'transparent' },
+  { label: t('settings.top_bar_style_opt.frosted_glass'), value: 'frostedGlass' },
+  { label: t('settings.top_bar_style_opt.solid'), value: 'solid' },
+  { label: t('settings.top_bar_style_opt.progressive_fog'), value: 'progressiveFog' },
+])
+
 function createDefaultComponentConfig(component: TopBarComponent) {
   return {
     key: component.key,
@@ -126,14 +135,6 @@ function setComponentBadgeType(componentKey: string, badgeType: BadgeType) {
 
 ensureTopBarComponentsConfig()
 watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
-watch(() => settings.value.alwaysUseTransparentTopBar, (enabled) => {
-  if (enabled)
-    settings.value.alwaysUseFrostedGlassTopBar = false
-})
-watch(() => settings.value.alwaysUseFrostedGlassTopBar, (enabled) => {
-  if (enabled)
-    settings.value.alwaysUseTransparentTopBar = false
-})
 
 function resetPinnedChannels() {
   settings.value.topBarPinnedChannels = []
@@ -376,22 +377,12 @@ function toggleChannel(value: string) {
       :title="$t('settings.topbar_style_settings')"
       :desc="$t('settings.topbar_style_settings_desc')"
     >
-      <SettingsItem :title="$t('settings.always_use_transparent_top_bar')" right-width="auto">
-        <Radio v-model="settings.alwaysUseTransparentTopBar" />
-      </SettingsItem>
       <SettingsItem
-        :title="$t('settings.always_use_frosted_glass_top_bar')"
-        :desc="$t('settings.always_use_frosted_glass_top_bar_desc')"
+        :title="$t('settings.top_bar_style')"
+        :desc="$t('settings.top_bar_style_desc')"
         right-width="auto"
       >
-        <Radio v-model="settings.alwaysUseFrostedGlassTopBar" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.enable_top_bar_gradient')"
-        :desc="$t('settings.enable_top_bar_gradient_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.enableTopBarGradient" />
+        <Select v-model="settings.topBarStyle" :options="topBarStyleOptions" w="220px" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
         <Radio v-model="settings.showTopBarThemeColorGradient" />

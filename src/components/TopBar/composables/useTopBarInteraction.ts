@@ -60,12 +60,11 @@ export function useTopBarInteraction() {
     if (!settings.value)
       return false
 
-    // 如果启用了"始终使用透明样式"，直接返回 true
-    if (settings.value.alwaysUseTransparentTopBar)
+    if (settings.value.topBarStyle === 'transparent')
       return true
 
-    // 强制使用无背景图首页的标准顶栏样式，不再根据页面壁纸切换为白色图标与阴影背景
-    if (settings.value.alwaysUseFrostedGlassTopBar)
+    // 固定使用无背景图首页的标准毛玻璃样式，不再根据页面壁纸切换图标颜色。
+    if (settings.value.topBarStyle === 'frostedGlass')
       return false
 
     if (
