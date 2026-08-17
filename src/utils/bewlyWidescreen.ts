@@ -18,6 +18,7 @@ interface BewlyWidescreenState {
   danmakuDock: HTMLElement
   sidebarEl: HTMLElement
   sidebarTop: HTMLElement
+  infoSlot: HTMLElement
   upSlot: HTMLElement
   toolbarSlot: HTMLElement
   descriptionSlot: HTMLElement
@@ -97,6 +98,10 @@ const selectors = {
     '[class*="mediainfo_mediaTitle"]',
     '#viewbox_report .title',
     'h1[title]',
+  ],
+  info: [
+    '.video-info-detail-list',
+    '.video-info-detail-content',
   ],
   upPanel: [
     '.up-panel-container',
@@ -694,13 +699,15 @@ function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
 
   const sidebarTop = document.createElement('div')
   sidebarTop.className = 'bewly-widescreen-sidebar-top'
+  const infoSlot = document.createElement('div')
+  infoSlot.className = 'bewly-widescreen-info-slot'
   const upSlot = document.createElement('div')
   upSlot.className = 'bewly-widescreen-up-slot'
   const toolbarSlot = document.createElement('div')
   toolbarSlot.className = 'bewly-widescreen-action-slot'
   const descriptionSlot = document.createElement('div')
   descriptionSlot.className = 'bewly-widescreen-description-slot'
-  sidebarTop.append(createSidebarToolbar(), upSlot, toolbarSlot, descriptionSlot)
+  sidebarTop.append(createSidebarToolbar(), infoSlot, upSlot, toolbarSlot, descriptionSlot)
 
   const tablist = document.createElement('div')
   tablist.className = 'bewly-widescreen-tabs'
@@ -736,7 +743,7 @@ function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
   root.appendChild(stage)
   document.body.appendChild(root)
 
-  return { root, playerSlot, playerFrame, danmakuDock, sidebarEl: sidebar, sidebarTop, upSlot, toolbarSlot, descriptionSlot, panels, tabButtons, sidebarToggleButton }
+  return { root, playerSlot, playerFrame, danmakuDock, sidebarEl: sidebar, sidebarTop, infoSlot, upSlot, toolbarSlot, descriptionSlot, panels, tabButtons, sidebarToggleButton }
 }
 
 function injectLayoutStyle() {
@@ -1107,7 +1114,7 @@ function injectLayoutStyle() {
       align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     #${ROOT_ID} .bewly-widescreen-title {
@@ -1121,6 +1128,51 @@ function injectLayoutStyle() {
       font-size: 18px;
       font-weight: 600;
       line-height: 24px;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-info-slot {
+      width: 100%;
+      min-width: 0;
+      min-height: 0;
+      margin-bottom: 8px;
+      overflow: hidden;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-info-slot:empty {
+      display: none;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-info-slot .video-info-meta,
+    #${ROOT_ID} .bewly-widescreen-info-slot .video-info-detail-list {
+      width: 100% !important;
+      min-width: 0 !important;
+      height: auto !important;
+      margin: 0 !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-info-slot .video-info-detail-list {
+      display: flex !important;
+      align-items: center !important;
+      flex-wrap: wrap !important;
+      gap: 4px 12px !important;
+      color: var(--bewly-widescreen-text-muted) !important;
+      font-size: var(--bew-font-size-caption, 12px) !important;
+      line-height: var(--bew-line-height-caption, 16px) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-info-slot .video-info-detail-list > .item {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      min-width: 0 !important;
+      margin: 0 !important;
+      white-space: nowrap !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-info-slot .video-info-detail-list > .item svg {
+      width: var(--bew-icon-size-sm, 16px) !important;
+      height: var(--bew-icon-size-sm, 16px) !important;
+      flex: 0 0 auto !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-action-slot {
@@ -2091,6 +2143,8 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   syncActionAnimationTheme(currentState)
   syncSidebarTitle(currentState)
 
+  moveOrReplaceNode(selectors.info, currentState.infoSlot, currentState.movedNodes)
+
   moveOrReplaceNode(selectors.toolbar, currentState.toolbarSlot, currentState.movedNodes)
 
   moveOrReplaceNode(selectors.upPanel, currentState.upSlot, currentState.movedNodes)
@@ -2213,7 +2267,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
   if (!player)
     return false
 
-  const { root, playerSlot, playerFrame, danmakuDock, sidebarEl, sidebarTop, upSlot, toolbarSlot, descriptionSlot, panels, tabButtons, sidebarToggleButton } = createRoot(sidebarPosition)
+  const { root, playerSlot, playerFrame, danmakuDock, sidebarEl, sidebarTop, infoSlot, upSlot, toolbarSlot, descriptionSlot, panels, tabButtons, sidebarToggleButton } = createRoot(sidebarPosition)
   const styleEl = injectLayoutStyle()
   const movedNodes: MovedNode[] = []
 
@@ -2224,6 +2278,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
     danmakuDock,
     sidebarEl,
     sidebarTop,
+    infoSlot,
     upSlot,
     toolbarSlot,
     descriptionSlot,
