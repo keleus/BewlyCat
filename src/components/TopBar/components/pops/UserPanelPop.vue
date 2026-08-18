@@ -87,20 +87,39 @@ const otherLinks = computed((): { name: string, url: string, icon: string, code?
   ]
 })
 
+const isMaxLevel = computed(() => (props.userInfo.level_info?.current_level ?? 0) >= 6)
+
+const showLv6LastLoginInfo = computed(() => {
+  return isMaxLevel.value && !settings.value.hideTopBarUserPanelLv6LastLoginLocation
+})
+
+function toFiniteNumber(value: number | string | undefined, fallback: number): number {
+  const numeric = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numeric) ? numeric : fallback
+}
+
+const remainingExp = computed(() => {
+  const { next_exp: nextExp = 0, current_exp: currentExp = 0 } = props.userInfo.level_info ?? {}
+  const nextExpNum = toFiniteNumber(nextExp, 0)
+  return Math.max(nextExpNum - currentExp, 0)
+})
+
 const levelProgressBarWidth = computed(() => {
+  if (isMaxLevel.value)
+    return '100%'
+
   // 登录态尚未初始化（瞬态故障后自动重查期间）时 userInfo 可能为空，兜底防止解引用崩溃
   const { next_exp: nextExp = 1, current_exp: currentExp = 0 } = props.userInfo.level_info ?? {}
+  const nextExpNum = toFiniteNumber(nextExp, 0)
+  if (nextExpNum <= 0)
+    return '100%'
 
-  const percentage = (currentExp / nextExp) * 100
+  const percentage = Math.min(Math.max((currentExp / nextExpNum) * 100, 0), 100)
   return `${percentage.toFixed(2)}%`
 })
 
 const userStat = reactive<UserStat>({} as UserStat)
 const loginLog = reactive<Partial<LoginLogItem>>({})
-
-const showLv6LastLoginInfo = computed(() => {
-  return !(props.userInfo?.level_info?.current_level >= 6 && settings.value.hideTopBarUserPanelLv6LastLoginLocation)
-})
 
 onMounted(() => {
   api.user.getUserStat()
@@ -223,7 +242,7 @@ function handleClickChannel() {
     </div>
 
     <ALink
-      v-if="userInfo?.level_info?.current_level < 6"
+      v-if="!showLv6LastLoginInfo"
       href="//account.bilibili.com/account/record?type=exp"
       type="topBar"
       class="bew-content-card"
@@ -239,11 +258,12 @@ function handleClickChannel() {
         <div
           flex="~ items-center"
           class="level"
-          v-html="DOMPurify.sanitize(getLvIcon(userInfo.level_info.current_level))"
+          :class="{ 'level--senior': isMaxLevel && userInfo.is_senior_member }"
+          v-html="DOMPurify.sanitize(getLvIcon(userInfo.level_info?.current_level ?? 0, userInfo.is_senior_member))"
         />
         <div relative w="full" h="2px" bg="$bew-fill-3">
           <div
-            pos="absolute top-0 left-0" h-2px
+            pos="absolute top-0 left-0"
             h="2px"
             rounded="$bew-radius-full"
             bg="$bew-warning-color"
@@ -251,19 +271,29 @@ function handleClickChannel() {
           />
         </div>
         <div
+          v-if="!isMaxLevel"
           class="level level-next"
           flex="~ items-center"
-          v-html="DOMPurify.sanitize(getLvIcon(userInfo.level_info.current_level + 1))"
+          v-html="DOMPurify.sanitize(getLvIcon((userInfo.level_info?.current_level ?? 0) + 1))"
         />
       </div>
       <div w-full text="xs $bew-text-3">
-        {{
-          $t('topbar.user_dropdown.exp_desc', {
-            current_exp: userInfo.level_info.current_exp,
-            level: userInfo.level_info.current_level + 1,
-            need_exp: userInfo.level_info.next_exp - userInfo.level_info.current_exp || 0,
-          })
-        }}
+        <template v-if="isMaxLevel">
+          {{
+            $t('topbar.user_dropdown.exp_desc_max', {
+              current_exp: userInfo.level_info?.current_exp ?? 0,
+            })
+          }}
+        </template>
+        <template v-else>
+          {{
+            $t('topbar.user_dropdown.exp_desc', {
+              current_exp: userInfo.level_info?.current_exp,
+              level: (userInfo.level_info?.current_level ?? 0) + 1,
+              need_exp: remainingExp,
+            })
+          }}
+        </template>
       </div>
     </ALink>
 
@@ -273,16 +303,15 @@ function handleClickChannel() {
       type="topBar"
       duration-200
       flex="~ items-center gap-2"
-      class="lv6-entry"
-      :class="showLv6LastLoginInfo ? 'lv6-entry--card bew-content-card' : 'lv6-entry--compact'"
+      class="lv6-entry lv6-entry--card bew-content-card"
     >
       <div
-        :style="{ width: userInfo?.is_senior_member ? '36px' : '28px' }"
+        :style="{ width: userInfo.is_senior_member ? '36px' : '28px' }"
         class="level"
         h-20px
-        v-html="DOMPurify.sanitize(getLvIcon(userInfo?.level_info?.current_level, userInfo?.is_senior_member))"
+        v-html="DOMPurify.sanitize(getLvIcon(userInfo.level_info?.current_level ?? 6, userInfo.is_senior_member))"
       />
-      <div v-if="showLv6LastLoginInfo" flex="~ col 1" text="xs $bew-text-3">
+      <div flex="~ col 1" text="xs $bew-text-3">
         <div v-if="loginLog.time_at">
           {{ $t('topbar.user_dropdown.last_login_time') }}: {{ loginLog.time_at }}
         </div>
@@ -409,21 +438,16 @@ function handleClickChannel() {
   --uno: "w-25px h-16px";
 }
 
+.level--senior :deep(svg) {
+  --uno: "w-35px h-16px";
+}
+
 .level-next :deep(svg .level-bg) {
   --uno: "fill-#c9ccd0";
 }
 
 .lv6-entry--card {
   --uno: "w-full p-2 hover:bg-$bew-fill-1";
-}
-
-.lv6-entry--compact {
-  display: inline-flex;
-  width: fit-content;
-  padding: 0;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
 }
 
 .channel-info-item {

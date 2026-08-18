@@ -340,7 +340,7 @@ settings:
   show_bewly_or_bili_page_switcher_desc: 在首頁 Logo 旁顯示切換器，用於在 BewlyCat 頁面與 Bilibili 原版頁面之間切換。
   show_bewly_or_bili_page_switcher_on_more_pages_desc: 在動態、搜尋、番劇、收藏、歷史和稍後再看等 Bilibili 原版頁面顯示切換器；切換到 BewlyCat 時會開啟對應的插件頁面。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
-  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開啟後，頂部列頭像彈窗中的 LV6 等級資訊區域將不再顯示最後登入時間和地點，也不會請求登入記錄。
+  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開啟後，頂部列頭像彈窗中的 LV6 等級資訊區域將不再顯示最後登入時間和地點，也不會請求登入記錄，改為顯示滿級經驗進度。
   chk_box:
     show: 顯示
     hidden: 隱藏
@@ -995,6 +995,7 @@ topbar:
     money: 硬幣：
     b_coins: B幣：
     exp_desc: 目前經驗 {current_exp}，升級到 LV {level} 還需要 {need_exp}
+    exp_desc_max: 目前經驗 {current_exp}，已滿級
     following: 追蹤中
     followers: 粉絲
     posts: 動態

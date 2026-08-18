@@ -348,7 +348,7 @@ settings:
   show_bewly_or_bili_page_switcher_desc: Show a switcher next to the homepage Logo to move between the BewlyCat and original Bilibili pages.
   show_bewly_or_bili_page_switcher_on_more_pages_desc: Show the switcher on original Bilibili pages such as Moments, Search, Anime, Favorites, History, and Watch Later. Switching to BewlyCat opens the corresponding plugin page.
   hide_lv6_last_login_location_in_top_bar_user_pop: Hide LV6 last login info
-  hide_lv6_last_login_location_in_top_bar_user_pop_desc: When enabled, the LV6 section in the top bar user popup will no longer show the last login time or location, and no login log request will be made.
+  hide_lv6_last_login_location_in_top_bar_user_pop_desc: When enabled, the LV6 section in the top bar user popup will no longer show the last login time or location, and no login log request will be made. A full-level XP progress bar is shown instead.
   chk_box:
     show: Show
     hidden: Hidden
@@ -1064,6 +1064,7 @@ topbar:
     money: 'Money: '
     b_coins: 'B-coins: '
     exp_desc: 'Current XP: {current_exp}; need {need_exp} more for LV {level}'
+    exp_desc_max: 'Current XP: {current_exp} (max level)'
     following: FOLLOWING
     followers: FOLLOWERS
     posts: POSTS

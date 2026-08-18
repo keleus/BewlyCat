@@ -5,7 +5,8 @@ export interface UserInfo {
     current_level: number
     current_min: number
     current_exp: number
-    next_exp: number
+    // 未满级时为数字；LV6 接口返回 "--"
+    next_exp: number | string
   }
   mid: number
   money: number // 硬幣

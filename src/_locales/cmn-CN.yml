@@ -341,7 +341,7 @@ settings:
   show_bewly_or_bili_page_switcher_desc: 在首页 Logo 旁显示切换器，用于在 BewlyCat 页面和 Bilibili 原版页面之间切换。
   show_bewly_or_bili_page_switcher_on_more_pages_desc: 在动态、搜索、番剧、收藏、历史和稍后再看等 Bilibili 原版页面显示切换器；切换到 BewlyCat 时会打开对应的插件页面。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隐藏 LV6 等级最后登录信息显示
-  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 开启后，顶栏头像弹窗中的 LV6 等级信息区域将不再显示最后登录时间和地点，也不会请求登录记录。
+  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 开启后，顶栏头像弹窗中的 LV6 等级信息区域将不再显示最后登录时间和地点，也不会请求登录记录，改为显示满级经验进度。
   chk_box:
     show: 显示
     hidden: 隐藏
@@ -980,6 +980,7 @@ topbar:
     money: 硬币：
     b_coins: B币：
     exp_desc: 当前成长 {current_exp}，升级到 LV {level} 还需要 {need_exp}
+    exp_desc_max: 当前成长 {current_exp}，已满级
     following: 关注
     followers: 粉丝
     posts: 动态
