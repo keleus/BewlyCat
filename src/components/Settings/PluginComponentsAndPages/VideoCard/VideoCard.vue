@@ -226,18 +226,15 @@ function confirmListLayoutBreakpoint() {
     <SettingsItemGroup
       :title="$t('settings.group_video_card_context_menu')"
       :desc="$t('settings.group_video_card_context_menu_desc')"
-      collapsible
     >
       <VideoCardContextMenuEditor />
     </SettingsItemGroup>
 
-    <!-- 阴影设置仅适用于现代布局，默认折叠 -->
+    <!-- 阴影设置仅适用于现代布局 -->
     <SettingsItemGroup
       v-if="isModernLayout"
       :title="$t('settings.video_card_shadow_curve')"
       :desc="$t('settings.video_card_shadow_curve_desc')"
-      collapsible
-      default-collapsed
     >
       <SettingsItem :title="$t('settings.video_card_shadow_curve')" :desc="$t('settings.video_card_shadow_curve_desc')" right-width="auto">
         <ShadowCurveEditor v-model="settings.videoCardShadowCurve" />

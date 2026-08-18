@@ -179,6 +179,22 @@ function toggleChannel(value: string) {
 <template>
   <div class="topbar-settings-groups" :data-settings-title="$t('settings.group_topbar')">
     <SettingsItemGroup
+      :title="$t('settings.topbar_style_settings')"
+      :desc="$t('settings.topbar_style_settings_desc')"
+    >
+      <SettingsItem
+        :title="$t('settings.top_bar_style')"
+        :desc="$t('settings.top_bar_style_desc')"
+        right-width="auto"
+      >
+        <Select v-model="settings.topBarStyle" :options="topBarStyleOptions" w="220px" />
+      </SettingsItem>
+      <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
+        <Radio v-model="settings.showTopBarThemeColorGradient" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
       :title="$t('settings.topbar_display_settings')"
       :desc="$t('settings.topbar_display_settings_desc')"
     >
@@ -374,27 +390,9 @@ function toggleChannel(value: string) {
     </SettingsItemGroup>
 
     <SettingsItemGroup
-      :title="$t('settings.topbar_style_settings')"
-      :desc="$t('settings.topbar_style_settings_desc')"
-    >
-      <SettingsItem
-        :title="$t('settings.top_bar_style')"
-        :desc="$t('settings.top_bar_style_desc')"
-        right-width="auto"
-      >
-        <Select v-model="settings.topBarStyle" :options="topBarStyleOptions" w="220px" />
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
-        <Radio v-model="settings.showTopBarThemeColorGradient" />
-      </SettingsItem>
-    </SettingsItemGroup>
-
-    <SettingsItemGroup
       :title="$t('settings.group_topbar_pinned_channels')"
       :desc="$t('settings.topbar_pinned_channels_desc')"
       icon="i-tabler:pin-filled"
-      collapsible
-      default-collapsed
     >
       <SettingsItem :title="$t('settings.topbar_pinned_channels_title')">
         <template #title>
@@ -500,7 +498,7 @@ function toggleChannel(value: string) {
 .topbar-section-actions {
   display: flex;
   justify-content: flex-end;
-  padding-top: var(--bew-space-3);
+  padding: var(--bew-space-3) 0 var(--bew-space-4);
 }
 
 .logo-style-picker {

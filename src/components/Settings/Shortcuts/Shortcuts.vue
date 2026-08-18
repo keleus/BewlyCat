@@ -357,7 +357,7 @@ function resetAllShortcuts() {
 
     <!-- Configurable Extension Shortcuts -->
     <template v-for="group in configurableShortcutsGroups" :key="group.title">
-      <SettingsItemGroup :title="group.title" collapsible>
+      <SettingsItemGroup :title="group.title">
         <template v-for="shortcutDef in group.shortcuts" :key="shortcutDef.id">
           <SettingsItem :title="shortcutDef.name" :desc="shortcutDef.description" right-width="auto">
             <div class="shortcut-item-config">
@@ -432,11 +432,7 @@ function resetAllShortcuts() {
     </SettingsItemGroup>
 
     <!-- Official Bilibili Shortcuts (Read-only) -->
-    <SettingsItemGroup
-      :title="t('settings.shortcuts.group.official_bilibili')"
-      collapsible
-      default-collapsed
-    >
+    <SettingsItemGroup :title="t('settings.shortcuts.group.official_bilibili')">
       <SettingsItem
         v-for="shortcut in officialShortcuts"
         :key="shortcut.key"

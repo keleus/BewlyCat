@@ -260,8 +260,6 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
       :title="$t('settings.group_moments_wanted_users')"
       :desc="$t('settings.group_moments_wanted_users_desc')"
       icon="i-tabler-star-filled"
-      collapsible
-      default-collapsed
     >
       <SettingsItem
         :title="$t('settings.moments_enable_wanted_filter')"
@@ -281,8 +279,6 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
       :title="$t('settings.group_moments_pinned_users')"
       :desc="$t('settings.group_moments_pinned_users_desc')"
       icon="i-tabler-pin-filled"
-      collapsible
-      default-collapsed
     >
       <SettingsItem :title="$t('settings.moments_pinned_users')">
         <template #bottom>
