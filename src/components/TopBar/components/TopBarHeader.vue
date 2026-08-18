@@ -55,6 +55,24 @@ const progressiveFogTint = computed(() => {
     : fogGradient('255 255 255', 80)
 })
 
+// Chromium 在 opacity 动画期间会丢弃 backdrop-filter（crbug.com/40877283），
+// 因此玻璃遮罩常驻挂载，毛玻璃开启时改用 backdrop-filter 在玻璃与恒等滤镜间插值，
+// 避免滚到顶部/离开顶部时出现饱和度跳变；毛玻璃关闭时本就无滤镜，仍走 opacity 过渡。
+const IDENTITY_BACKDROP_FILTER = 'blur(0px) saturate(100%)'
+const glassOverlayStyle = computed(() => {
+  if (settings.value.enableFrostedGlass) {
+    return {
+      backgroundColor: 'transparent',
+      backdropFilter: props.reachTop ? IDENTITY_BACKDROP_FILTER : 'var(--bew-filter-glass-1)',
+    }
+  }
+  return {
+    backgroundColor: 'var(--bew-bg)',
+    opacity: props.reachTop ? 0 : 0.9,
+    backdropFilter: 'none',
+  }
+})
+
 const leftSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
 const searchSection = ref<HTMLElement | null>(null)
@@ -181,9 +199,8 @@ function refreshSearchContent() {
       class="top-bar-header__progressive-fog"
       :style="{ height: OVERLAY_HEIGHT }"
     >
-      <Transition name="fade">
-        <ProgressiveBlurSurface v-if="!reachTop" />
-      </Transition>
+      <!-- 常驻挂载并在 reachTop 时过渡到恒等滤镜，避免 fade 卸载时饱和度跳变 -->
+      <ProgressiveBlurSurface :inactive="reachTop" />
       <div
         class="top-bar-header__progressive-fog-tint"
         :style="{
@@ -194,23 +211,8 @@ function refreshSearchContent() {
     </div>
 
     <template v-else-if="usesGradientTopBar">
-      <!-- 默认的低开销顶栏遮罩 -->
-      <Transition name="fade">
-        <div
-          v-if="!reachTop"
-          style="
-            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
-            -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
-          "
-          pos="absolute top-0 left-0" w-full h="$bew-top-bar-height"
-          pointer-events-none
-          :style="{
-            backgroundColor: settings.enableFrostedGlass ? 'transparent' : 'var(--bew-bg)',
-            opacity: settings.enableFrostedGlass ? 1 : 0.9,
-            backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
-          }"
-        />
-      </Transition>
+      <!-- 默认的低开销顶栏遮罩：常驻挂载，玻璃与恒等滤镜间插值（见 glassOverlayStyle） -->
+      <div class="top-bar-header__glass-overlay" :style="glassOverlayStyle" />
 
       <div
         pos="absolute top-0 left-0" w-full
@@ -301,6 +303,26 @@ function refreshSearchContent() {
   position: absolute;
   inset: 0;
   transition: opacity var(--bew-duration-moderate) var(--bew-ease-standard);
+}
+
+.top-bar-header__glass-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--bew-top-bar-height);
+  pointer-events: none;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 1),
+    rgba(0, 0, 0, 1) 24px,
+    rgba(0, 0, 0, 0.9) 44px,
+    transparent
+  );
+  transition:
+    opacity var(--bew-duration-moderate) var(--bew-ease-standard),
+    backdrop-filter var(--bew-duration-moderate) var(--bew-ease-standard);
 }
 
 .top-bar-header__side {
