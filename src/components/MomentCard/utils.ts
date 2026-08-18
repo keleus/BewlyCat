@@ -140,16 +140,31 @@ export function getPortraitThumbnailRatio(ratio?: number) {
   return Math.max(PORTRAIT_THUMBNAIL_MIN_RATIO, ratio)
 }
 
-export function getPortraitThumbnailImages(moment: DisplayMoment) {
+export function getOwnPortraitThumbnailImages(moment: DisplayMoment) {
   if (moment.isVideo || moment.isLive || (moment.isChargeExclusive && !moment.images.length))
     return []
-  if (moment.images.length === 1)
-    return moment.images
-  if (!moment.images.length && moment.forward?.images?.length === 1)
-    return moment.forward.images
-  return []
+  return moment.images.length === 1 ? moment.images : []
+}
+
+export function getForwardPortraitThumbnailImages(moment: DisplayMoment) {
+  if (moment.isVideo || moment.isLive)
+    return []
+  return moment.forward?.images?.length === 1 ? moment.forward.images : []
+}
+
+export function getPortraitThumbnailImages(moment: DisplayMoment) {
+  const ownImages = getOwnPortraitThumbnailImages(moment)
+  return ownImages.length ? ownImages : getForwardPortraitThumbnailImages(moment)
+}
+
+export function isOwnPortraitMomentLayout(moment: DisplayMoment, ratio?: number) {
+  return getOwnPortraitThumbnailImages(moment).length > 0 && isPortraitImageRatio(ratio)
+}
+
+export function isForwardPortraitMomentLayout(moment: DisplayMoment, ratio?: number) {
+  return getForwardPortraitThumbnailImages(moment).length > 0 && isPortraitImageRatio(ratio)
 }
 
 export function isPortraitMomentLayout(moment: DisplayMoment, ratio?: number) {
-  return getPortraitThumbnailImages(moment).length > 0 && isPortraitImageRatio(ratio)
+  return isOwnPortraitMomentLayout(moment, ratio) || isForwardPortraitMomentLayout(moment, ratio)
 }

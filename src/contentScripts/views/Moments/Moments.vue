@@ -15,7 +15,8 @@ import {
   getPortraitThumbnailRatio,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
-  isPortraitMomentLayout,
+  isForwardPortraitMomentLayout,
+  isOwnPortraitMomentLayout,
 } from '~/components/MomentCard/utils'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
@@ -386,11 +387,54 @@ function parseLiveInfo(content?: string) {
 }
 
 function extractImageUrl(image: any) {
+  return extractImageMeta(image).url
+}
+
+function normalizeImageIdentity(url = '') {
+  return httpsUrl(url).replace(/@[^/?#]*/, '').replace(/[?#].*$/, '')
+}
+
+function extractImageMeta(image: any): { url: string, width?: number, height?: number } {
   if (!image)
-    return ''
+    return { url: '' }
   if (typeof image === 'string')
-    return image
-  return image.src || image.url || image.img_src || image.live_cover || ''
+    return { url: image }
+
+  const width = Number(image.width || image.img_width)
+  const height = Number(image.height || image.img_height)
+  return {
+    url: image.src || image.url || image.img_src || image.live_cover || '',
+    width: Number.isFinite(width) && width > 0 ? width : undefined,
+    height: Number.isFinite(height) && height > 0 ? height : undefined,
+  }
+}
+
+function collectContentImages(
+  drawItems: any[],
+  opus: any,
+  articleCovers: any[],
+  cover = '',
+) {
+  const sources = [
+    ...drawItems,
+    ...(opus?.pics || opus?.images || []),
+    ...articleCovers,
+  ].map(extractImageMeta).filter(item => item.url)
+
+  const seen = new Set<string>()
+  const unique: { url: string, width?: number, height?: number }[] = []
+  for (const item of sources) {
+    const key = normalizeImageIdentity(item.url)
+    if (!key || seen.has(key))
+      continue
+    seen.add(key)
+    unique.push(item)
+  }
+
+  if (!unique.length && cover)
+    unique.push({ url: cover })
+
+  return unique
 }
 
 function pickText(...values: any[]) {
@@ -499,10 +543,7 @@ function getMomentContent(item: any) {
   const drawItems = major.draw?.items || []
   const opusImages = extractOpusImages(major.opus)
   const articleCovers = major.article?.covers || []
-  const images = [...drawItems, ...opusImages, ...articleCovers]
-    .map(extractImageUrl)
-    .filter(Boolean)
-    .filter((url: string, index: number, list: string[]) => list.indexOf(url) === index)
+  const imageMetas = collectContentImages(drawItems, major.opus, articleCovers)
 
   const live = parseLiveInfo(major.live_rcmd?.content) || major.live || null
   // ugc_season：合集订阅更新，字段形态接近 archive（bvid/aid/cover/jump_url）
@@ -623,12 +664,24 @@ function getMomentContent(item: any) {
     || drawItems.length > 0
     || opusImages.length > 0
   )
+  const resolvedImageMetas = imageMetas.length
+    ? imageMetas
+    : (cover ? [{ url: cover }] : [])
+  const images = resolvedImageMetas
+    .map(item => httpsUrl(item.url))
+    .filter(Boolean)
+    .filter((url: string, index: number, list: string[]) => list.indexOf(url) === index)
+  const firstImage = resolvedImageMetas[0]
+  const firstImageRatio = firstImage
+    ? getSafeImageRatio(Number(firstImage.width || 0), Number(firstImage.height || 0))
+    : undefined
 
   return {
     title: pickText(live?.title, opus.title, archive.title, article.title, common.title),
     text,
     richText,
-    images: [...images, ...(cover ? [cover] : [])].map(httpsUrl).filter(Boolean).filter((url: string, index: number, list: string[]) => list.indexOf(url) === index),
+    images,
+    firstImageRatio,
     isVideo: isRegularVideo || isUgcSeason,
     isRegularVideo,
     isUgcSeason,
@@ -1412,6 +1465,9 @@ function mapMoment(item: DataItem): DisplayMoment {
   const hotCommentText = normalizeDescText(commentInteraction)
   const hotCommentRichText = extractRichTextSegments(commentInteraction?.rich_text_nodes)
 
+  if (content.firstImageRatio && !coverRatios[id])
+    coverRatios[id] = content.firstImageRatio
+
   return {
     id,
     author: {
@@ -1533,7 +1589,7 @@ function estimateCardHeight(moment: DisplayMoment) {
     const additionalHeight = moment.additional ? 68 : 0
     return 118 + lineCount * 21 + additionalHeight + interactionHeight
   }
-  if (isPortraitMomentLayout(moment, coverRatios[moment.id])) {
+  if (isOwnPortraitMomentLayout(moment, coverRatios[moment.id])) {
     const mediaWidth = Math.min(180, Math.max(96, (columnWidth - 32) * 0.38))
     const mediaHeight = Math.round(mediaWidth / getPortraitThumbnailRatio(coverRatios[moment.id]))
     const textWidth = Math.max(1, columnWidth - 32 - 12 - mediaWidth)
@@ -1543,6 +1599,12 @@ function estimateCardHeight(moment: DisplayMoment) {
       ? Math.min(7, Math.max(1, Math.ceil(Array.from(previewText).length / charsPerLine)))
       : 0
     return 72 + Math.max(mediaHeight, descLines * 24 + 24) + 52 + (moment.additional ? 68 : 0) + interactionHeight
+  }
+  if (isForwardPortraitMomentLayout(moment, coverRatios[moment.id])) {
+    const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
+    const mediaWidth = Math.min(180, Math.max(96, (columnWidth - 58) * 0.38))
+    const mediaHeight = Math.round(mediaWidth / getPortraitThumbnailRatio(coverRatios[moment.id]))
+    return 117 + introLines * 21 + Math.max(mediaHeight, 80) + 24 + interactionHeight
   }
   if (moment.forward?.images?.length) {
     const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
@@ -2525,7 +2587,15 @@ async function prepareMomentCovers(items: DisplayMoment[], requestToken: number)
     }
     image.onerror = finish
     const coverUrl = item.images[0] || item.forward?.images?.[0] || ''
-    image.src = item.images.length === 1 && !item.isVideo && !item.isLive
+    const isSingleStillImage = (
+      item.images.length === 1
+      && !item.isVideo
+      && !item.isLive
+    ) || (
+      !item.images.length
+      && item.forward?.images?.length === 1
+    )
+    image.src = isSingleStillImage
       ? getMomentOriginalImageUrl(coverUrl)
       : getMomentThumbnailUrl(coverUrl)
   })))

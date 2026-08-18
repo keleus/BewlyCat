@@ -18,13 +18,15 @@ import {
   getAuthorSpaceUrl,
   getAvatarThumbnailUrl,
   getCardPreviewText,
+  getForwardPortraitThumbnailImages,
   getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
-  getPortraitThumbnailImages,
+  getOwnPortraitThumbnailImages,
   getPortraitThumbnailRatio,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
-  isPortraitMomentLayout,
+  isForwardPortraitMomentLayout,
+  isOwnPortraitMomentLayout,
   shouldUseNativeLinkOpen,
 } from './utils'
 
@@ -84,10 +86,12 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
 
 const authorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.author.mid))
 const forwardAuthorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.forward?.authorMid))
-const portraitImages = computed(() => getPortraitThumbnailImages(moment))
-const isPortraitLayout = computed(() => isPortraitMomentLayout(moment, imageRatio))
+const ownPortraitImages = computed(() => getOwnPortraitThumbnailImages(moment))
+const forwardPortraitImages = computed(() => getForwardPortraitThumbnailImages(moment))
+const isOwnPortraitLayout = computed(() => isOwnPortraitMomentLayout(moment, imageRatio))
+const isForwardPortraitLayout = computed(() => isForwardPortraitMomentLayout(moment, imageRatio))
 const portraitThumbnailStyle = computed<CSSProperties | undefined>(() => {
-  if (!isPortraitLayout.value)
+  if (!isOwnPortraitLayout.value && !isForwardPortraitLayout.value)
     return undefined
   return {
     aspectRatio: String(getPortraitThumbnailRatio(imageRatio)),
@@ -96,7 +100,7 @@ const portraitThumbnailStyle = computed<CSSProperties | undefined>(() => {
 
 const singleImageGalleryStyle = computed<CSSProperties | undefined>(() => {
   if (
-    isPortraitLayout.value
+    isOwnPortraitLayout.value
     || moment.images.length !== 1
     || moment.isVideo
     || moment.isLive
@@ -318,19 +322,33 @@ function handleAdditionalClick(event: MouseEvent) {
   handleOpenLink(event, url, url ? classifyMomentLink(url) : 'other')
 }
 
-function getPortraitPreviewUrls() {
-  return portraitImages.value.map(url => getMomentOriginalImageUrl(url))
+function getPortraitPreviewUrls(images: string[]) {
+  return images.map(url => getMomentOriginalImageUrl(url))
 }
 
-function handlePortraitImageClick(event: MouseEvent) {
-  const urls = getPortraitPreviewUrls()
+function handleOwnPortraitImageClick(event: MouseEvent) {
+  const urls = getPortraitPreviewUrls(ownPortraitImages.value)
   if (!urls.length)
     return
   handleImagePreviewClick(event, urls, 0)
 }
 
-function handlePortraitImageKeydown(event: KeyboardEvent) {
-  const urls = getPortraitPreviewUrls()
+function handleOwnPortraitImageKeydown(event: KeyboardEvent) {
+  const urls = getPortraitPreviewUrls(ownPortraitImages.value)
+  if (!urls.length)
+    return
+  handleImagePreviewKeydown(event, urls, 0)
+}
+
+function handleForwardPortraitImageClick(event: MouseEvent) {
+  const urls = getPortraitPreviewUrls(forwardPortraitImages.value)
+  if (!urls.length)
+    return
+  handleImagePreviewClick(event, urls, 0)
+}
+
+function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
+  const urls = getPortraitPreviewUrls(forwardPortraitImages.value)
   if (!urls.length)
     return
   handleImagePreviewKeydown(event, urls, 0)
@@ -346,11 +364,11 @@ function handlePortraitImageKeydown(event: KeyboardEvent) {
     data-layout-settings-page="moments"
     data-layout-settings-title-key="settings.moments_card_open_mode"
     :class="{
-      'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video && !isPortraitLayout,
+      'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video && !isOwnPortraitLayout,
       'moment-card--compact-text': isCompactPlainTextMoment(moment),
       'moment-card--forward-video': !!moment.forward?.video,
-      'moment-card--forward-draw': Boolean(moment.forward?.images?.length) && !isPortraitLayout,
-      'moment-card--portrait': isPortraitLayout,
+      'moment-card--forward-draw': Boolean(moment.forward?.images?.length) && !isForwardPortraitLayout,
+      'moment-card--portrait': isOwnPortraitLayout,
       'moment-card--charge': moment.isChargeExclusive,
       'moment-card--preparing': !ready,
       'moment-card--entering': entering,
@@ -418,13 +436,13 @@ function handlePortraitImageKeydown(event: KeyboardEvent) {
       <div
         class="moment-card__main"
         :class="{
-          'moment-card__main--has-media': isPortraitLayout || ((!moment.isChargeExclusive || moment.isVideo) && (
+          'moment-card__main--has-media': isOwnPortraitLayout || ((!moment.isChargeExclusive || moment.isVideo) && (
             (moment.images.length > 0 && (moment.isVideo || moment.isLive))
             || (!moment.images.length && (moment.isVideo || moment.isLive))
           )),
           'moment-card__main--video': moment.isVideo || (!moment.isChargeExclusive && moment.isLive),
           'moment-card__main--live': !moment.isChargeExclusive && moment.isLive,
-          'moment-card__main--portrait': isPortraitLayout,
+          'moment-card__main--portrait': isOwnPortraitLayout,
         }"
       >
         <div
@@ -507,12 +525,12 @@ function handlePortraitImageKeydown(event: KeyboardEvent) {
           </button>
         </div>
         <div
-          v-else-if="isPortraitLayout"
+          v-else-if="isOwnPortraitLayout"
           class="moment-card__media moment-card__portrait"
           :style="portraitThumbnailStyle"
         >
           <img
-            :src="getMomentThumbnailUrl(portraitImages[0], 360)"
+            :src="getMomentThumbnailUrl(ownPortraitImages[0], 360)"
             :alt="`${moment.author.name} 的动态图片`"
             :aria-label="`查看 ${moment.author.name} 的动态图片`"
             tabindex="0"
@@ -520,8 +538,8 @@ function handlePortraitImageKeydown(event: KeyboardEvent) {
             loading="lazy"
             decoding="async"
             @load="handleCoverLoad"
-            @click="handlePortraitImageClick"
-            @keydown="handlePortraitImageKeydown"
+            @click="handleOwnPortraitImageClick"
+            @keydown="handleOwnPortraitImageKeydown"
           >
         </div>
 
@@ -647,8 +665,29 @@ function handlePortraitImageKeydown(event: KeyboardEvent) {
           <div
             v-else-if="moment.forward"
             class="moment-card__forward"
-            :class="{ 'moment-card__forward--draw': Boolean(moment.forward.images?.length) }"
+            :class="{
+              'moment-card__forward--draw': Boolean(moment.forward.images?.length) && !isForwardPortraitLayout,
+              'moment-card__forward--portrait': isForwardPortraitLayout,
+            }"
           >
+            <div
+              v-if="isForwardPortraitLayout"
+              class="moment-card__media moment-card__portrait"
+              :style="portraitThumbnailStyle"
+            >
+              <img
+                :src="getMomentThumbnailUrl(forwardPortraitImages[0], 360)"
+                :alt="`${moment.forward.author} 的动态图片`"
+                :aria-label="`查看 ${moment.forward.author} 的动态图片`"
+                tabindex="0"
+                role="button"
+                loading="lazy"
+                decoding="async"
+                @load="handleCoverLoad"
+                @click="handleForwardPortraitImageClick"
+                @keydown="handleForwardPortraitImageKeydown"
+              >
+            </div>
             <div class="moment-card__forward-copy">
               <a
                 v-if="forwardAuthorSpaceUrl"
@@ -661,7 +700,7 @@ function handlePortraitImageKeydown(event: KeyboardEvent) {
               <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
             </div>
             <div
-              v-if="moment.forward.images?.length && !isPortraitLayout"
+              v-if="moment.forward.images?.length && !isForwardPortraitLayout"
               class="moment-card__forward-gallery"
               :class="`moment-card__forward-gallery--${Math.min(moment.forward.images.length, 9)}`"
             >
@@ -675,6 +714,7 @@ function handlePortraitImageKeydown(event: KeyboardEvent) {
                 role="button"
                 loading="lazy"
                 decoding="async"
+                @load="imageIndex === 0 ? handleCoverLoad($event) : undefined"
                 @click="handleImagePreviewClick($event, moment.forward.images || [], imageIndex)"
                 @keydown="handleImagePreviewKeydown($event, moment.forward.images || [], imageIndex)"
               >
@@ -683,7 +723,7 @@ function handlePortraitImageKeydown(event: KeyboardEvent) {
         </div>
 
         <div
-          v-if="moment.images.length && !moment.isVideo && !moment.isLive && !isPortraitLayout"
+          v-if="moment.images.length && !moment.isVideo && !moment.isLive && !isOwnPortraitLayout"
           class="moment-card__gallery"
           :class="`moment-card__gallery--${Math.min(moment.images.length, 9)}`"
           :style="singleImageGalleryStyle"
@@ -1143,6 +1183,19 @@ function handlePortraitImageKeydown(event: KeyboardEvent) {
 
 .moment-card__forward-copy {
   padding: var(--bew-space-3);
+}
+
+.moment-card__forward--portrait {
+  display: grid;
+  grid-template-columns: minmax(96px, 180px) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--bew-space-3);
+  padding: var(--bew-space-3);
+}
+
+.moment-card__forward--portrait .moment-card__forward-copy {
+  min-width: 0;
+  padding: 0;
 }
 
 .moment-card__forward strong {
