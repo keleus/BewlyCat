@@ -99,7 +99,8 @@
     "wxt": "^0.20.8"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm lint-staged"
+    "pre-commit": "pnpm lint-staged",
+    "pre-push": "pnpm lint && pnpm typecheck"
   },
   "lint-staged": {
     "*": "eslint --fix"
