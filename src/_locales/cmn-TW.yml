@@ -495,13 +495,13 @@ settings:
     showOnMouse: 滑鼠顯示
     showOnScroll: 滾動顯示
   top_bar_style: 頂部列樣式
-  top_bar_style_desc: 選擇頂部列的背景效果。漸進霧化會啟用 1.7.4 的五層模糊，並同時套用到設定視窗頂部，可能明顯增加 GPU 負擔。
+  top_bar_style_desc: 選擇頂部列的背景效果。漸變會啟用 1.7.4 的五層模糊，並同時套用到設定視窗頂部，可能明顯增加 GPU 負擔。
   top_bar_style_opt:
-    default: 預設
-    transparent: 透明（舊版）
-    frosted_glass: 毛玻璃
+    default: 預設（白霧/陰影）
+    progressive_fog: 漸變（消耗效能）
     solid: 實色
-    progressive_fog: 漸進霧化
+    transparent: 陰影
+    frosted_glass: 白霧
   show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多頁面顯示 BewlyCat/Bilibili 頁面切換器

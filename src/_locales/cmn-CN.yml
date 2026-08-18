@@ -522,13 +522,13 @@ settings:
     showOnMouse: 鼠标显示
     showOnScroll: 滚动显示
   top_bar_style: 顶栏样式
-  top_bar_style_desc: 选择顶栏的背景效果。渐进雾化会启用 1.7.4 的五层模糊，并同时应用到设置窗口顶部，可能显著增加 GPU 开销。
+  top_bar_style_desc: 选择顶栏的背景效果。渐变会启用 1.7.4 的五层模糊，并同时应用到设置窗口顶部，可能显著增加 GPU 开销。
   top_bar_style_opt:
-    default: 默认
-    transparent: 透明（旧版）
-    frosted_glass: 毛玻璃
+    default: 默认（白雾/阴影）
+    progressive_fog: 渐变（消耗性能）
     solid: 实色
-    progressive_fog: 渐进雾化
+    transparent: 阴影
+    frosted_glass: 白雾
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多页面显示 BewlyCat/Bilibili 页面切换器

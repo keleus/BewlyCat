@@ -84,10 +84,10 @@ const videoPageTopBarConfigOptions = computed(() => [
 
 const topBarStyleOptions = computed<{ label: string, value: TopBarStyle }[]>(() => [
   { label: t('settings.top_bar_style_opt.default'), value: 'default' },
+  { label: t('settings.top_bar_style_opt.progressive_fog'), value: 'progressiveFog' },
+  { label: t('settings.top_bar_style_opt.solid'), value: 'solid' },
   { label: t('settings.top_bar_style_opt.transparent'), value: 'transparent' },
   { label: t('settings.top_bar_style_opt.frosted_glass'), value: 'frostedGlass' },
-  { label: t('settings.top_bar_style_opt.solid'), value: 'solid' },
-  { label: t('settings.top_bar_style_opt.progressive_fog'), value: 'progressiveFog' },
 ])
 
 function createDefaultComponentConfig(component: TopBarComponent) {

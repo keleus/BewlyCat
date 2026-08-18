@@ -472,13 +472,13 @@ settings:
     showOnMouse: On hover
     showOnScroll: On scroll
   top_bar_style: Top bar style
-  top_bar_style_desc: Choose the top bar background. Progressive fog restores the five blur layers from 1.7.4 and also applies them to the top of Settings, which can significantly increase GPU usage.
+  top_bar_style_desc: Choose the top bar background. Gradient restores the five blur layers from 1.7.4 and also applies them to the top of Settings, which can significantly increase GPU usage.
   top_bar_style_opt:
-    default: Default
-    transparent: Transparent (legacy)
-    frosted_glass: Frosted glass
+    default: Default (white fog/shadow)
+    progressive_fog: Gradient (performance intensive)
     solid: Solid
-    progressive_fog: Progressive fog
+    transparent: Shadow
+    frosted_glass: White fog
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher
   show_bewly_or_bili_page_switcher_on_more_pages: Show BewlyCat/Bilibili page switcher on more pages
