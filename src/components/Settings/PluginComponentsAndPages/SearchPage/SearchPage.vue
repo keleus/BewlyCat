@@ -1,10 +1,25 @@
 <script lang="ts" setup>
+import { useI18n } from 'vue-i18n'
+
 import { resolveSearchBarCharacterUrl, SEARCH_BAR_CHARACTERS } from '~/constants/imgs'
 import { settings } from '~/logic'
 
 import ChangeWallpaper from '../../components/ChangeWallpaper.vue'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import SettingsSegmentedControl from '../../components/SettingsSegmentedControl.vue'
+
+const { t } = useI18n()
+
+const logoColorOptions = computed(() => [
+  { label: t('settings.logo_color_opt.theme_color'), value: 'themeColor' as const },
+  { label: t('settings.logo_color_opt.white'), value: 'white' as const },
+])
+
+const paginationModeOptions = computed(() => [
+  { label: t('settings.search_results_pagination_mode_opt.scroll'), value: 'scroll' as const },
+  { label: t('settings.search_results_pagination_mode_opt.pagination'), value: 'pagination' as const },
+])
 
 watch(() => settings.value.individuallySetSearchPageWallpaper, (newValue) => {
   if (newValue)
@@ -22,32 +37,11 @@ function changeSearchBarFocusCharacter(url: string) {
   <div>
     <SettingsItemGroup :title="$t('settings.group_logo')">
       <SettingsItem :title="$t('settings.logo_color')" right-width="auto">
-        <div w="220px" flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
-          <div
-            class="search-page-choice-option"
-            flex="1 ~" items-center justify-center py-1 cursor-pointer
-            text-center rounded="$bew-radius"
-            :style="{
-              background: settings.searchPageLogoColor === 'themeColor' || !settings.searchPageLogoColor ? 'var(--bew-theme-color)' : '',
-              color: settings.searchPageLogoColor === 'themeColor' || !settings.searchPageLogoColor ? 'white' : '',
-            }"
-            @click="settings.searchPageLogoColor = 'themeColor'"
-          >
-            {{ $t('settings.logo_color_opt.theme_color') }}
-          </div>
-          <div
-            class="search-page-choice-option"
-            flex="1 ~" items-center justify-center py-1 cursor-pointer
-            text-center rounded="$bew-radius"
-            :style="{
-              background: settings.searchPageLogoColor === 'white' ? 'var(--bew-theme-color)' : '',
-              color: settings.searchPageLogoColor === 'white' ? 'white' : '',
-            }"
-            @click="settings.searchPageLogoColor = 'white'"
-          >
-            {{ $t('settings.logo_color_opt.white') }}
-          </div>
-        </div>
+        <SettingsSegmentedControl
+          v-model="settings.searchPageLogoColor"
+          :label="$t('settings.logo_color')"
+          :options="logoColorOptions"
+        />
       </SettingsItem>
 
       <SettingsItem :title="$t('settings.enable_logo_glowing_effect')" right-width="auto">
@@ -147,32 +141,11 @@ function changeSearchBarFocusCharacter(url: string) {
         <template #desc>
           <span>{{ $t('settings.search_results_pagination_mode_desc') }}</span>
         </template>
-        <div w="220px" flex rounded="$bew-radius" bg="$bew-fill-1" p-1>
-          <div
-            class="search-page-choice-option"
-            flex="1 ~" items-center justify-center py-1 cursor-pointer
-            text-center rounded="$bew-radius"
-            :style="{
-              background: settings.searchResultsPaginationMode === 'scroll' ? 'var(--bew-theme-color)' : '',
-              color: settings.searchResultsPaginationMode === 'scroll' ? 'white' : '',
-            }"
-            @click="settings.searchResultsPaginationMode = 'scroll'"
-          >
-            {{ $t('settings.search_results_pagination_mode_opt.scroll') }}
-          </div>
-          <div
-            class="search-page-choice-option"
-            flex="1 ~" items-center justify-center py-1 cursor-pointer
-            text-center rounded="$bew-radius"
-            :style="{
-              background: settings.searchResultsPaginationMode === 'pagination' ? 'var(--bew-theme-color)' : '',
-              color: settings.searchResultsPaginationMode === 'pagination' ? 'white' : '',
-            }"
-            @click="settings.searchResultsPaginationMode = 'pagination'"
-          >
-            {{ $t('settings.search_results_pagination_mode_opt.pagination') }}
-          </div>
-        </div>
+        <SettingsSegmentedControl
+          v-model="settings.searchResultsPaginationMode"
+          :label="$t('settings.search_results_pagination_mode')"
+          :options="paginationModeOptions"
+        />
       </SettingsItem>
     </SettingsItemGroup>
 
@@ -181,17 +154,6 @@ function changeSearchBarFocusCharacter(url: string) {
 </template>
 
 <style scoped lang="scss">
-.search-page-choice-option {
-  transition:
-    filter var(--bew-duration-normal) var(--bew-ease-standard),
-    box-shadow var(--bew-duration-normal) var(--bew-ease-standard);
-}
-
-.search-page-choice-option:hover {
-  filter: brightness(1.08);
-  box-shadow: inset 0 0 0 1px var(--bew-border-color);
-}
-
 .selected-wallpaper {
   --uno: "border-$bew-theme-color-60";
 }
