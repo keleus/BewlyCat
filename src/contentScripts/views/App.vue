@@ -1700,7 +1700,7 @@ if (settings.value.cleanUrlArgument) {
       'dark': isDark,
       'bewly-wrapper--viewport': isHomePage() && !settings.useOriginalBilibiliHomepage,
     }"
-    text="$bew-text-1 size-$bew-base-font-size"
+    text="$bew-text-1"
     @pointerdown.capture="blockOriginalLayoutInteraction"
     @click.capture="blockOriginalLayoutInteraction"
     @auxclick.capture="blockOriginalLayoutInteraction"
