@@ -664,7 +664,7 @@ function getMomentContent(item: any) {
     || drawItems.length > 0
     || opusImages.length > 0
   )
-  const resolvedImageMetas = imageMetas.length
+  const resolvedImageMetas: { url: string, width?: number, height?: number }[] = imageMetas.length
     ? imageMetas
     : (cover ? [{ url: cover }] : [])
   const images = resolvedImageMetas

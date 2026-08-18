@@ -130,7 +130,7 @@ export function shouldUseNativeLinkOpen(event: MouseEvent) {
 /** 竖图缩略图最高按 2:1（高:宽）裁切，对应宽高比 0.5 */
 export const PORTRAIT_THUMBNAIL_MIN_RATIO = 0.5
 
-export function isPortraitImageRatio(ratio?: number) {
+export function isPortraitImageRatio(ratio?: number): ratio is number {
   return typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0 && ratio < 1
 }
 
