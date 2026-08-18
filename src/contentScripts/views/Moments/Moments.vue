@@ -16,6 +16,7 @@ import {
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { useStorageLocal } from '~/composables/useStorageLocal'
+import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
 import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
@@ -148,6 +149,7 @@ const selectedMoment = ref<DisplayMoment | null>(null)
 const detailFrameUrl = ref('')
 const detailFrameLoaded = ref(false)
 const detailIframeRef = ref<HTMLIFrameElement | null>(null)
+const detailPlayerImmersive = ref(false)
 const detailImageViewerRef = ref<HTMLElement | null>(null)
 const detailImageViewerOpen = ref(false)
 const detailImageViewerUrls = ref<string[]>([])
@@ -706,6 +708,161 @@ function isPlayerMoment(moment: DisplayMoment | null | undefined) {
   return Boolean(moment?.isVideo || moment?.isLive)
 }
 
+const DETAIL_WEB_FULLSCREEN_BTN_SELECTOR = '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen, .squirtle-video-pagefullscreen'
+const DETAIL_FULLSCREEN_BTN_SELECTOR = '.bpx-player-ctrl-full, .bilibili-player-video-btn-fullscreen, .squirtle-video-fullscreen'
+let stopDetailPlayerModeWatch: (() => void) | null = null
+
+function getDocumentFullscreenElement(doc: Document) {
+  return doc.fullscreenElement
+    || (doc as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
+    || null
+}
+
+function isEnteredControl(el: Element | null) {
+  return !!el?.classList.contains('bpx-state-entered')
+}
+
+function isIframePlayerImmersive(doc: Document) {
+  if (getDocumentFullscreenElement(doc))
+    return true
+  if (doc.querySelector('[data-screen="web"], [data-screen="full"]'))
+    return true
+  return isEnteredControl(doc.querySelector(DETAIL_WEB_FULLSCREEN_BTN_SELECTOR))
+    || isEnteredControl(doc.querySelector(DETAIL_FULLSCREEN_BTN_SELECTOR))
+}
+
+function setDetailPlayerImmersive(value: boolean) {
+  detailPlayerImmersive.value = value
+}
+
+function syncDetailPlayerImmersiveFromIframe() {
+  const iframe = detailIframeRef.value
+  if (!iframe || !isPlayerMoment(selectedMoment.value)) {
+    setDetailPlayerImmersive(false)
+    return
+  }
+
+  if (getDocumentFullscreenElement(document) === iframe) {
+    setDetailPlayerImmersive(true)
+    return
+  }
+
+  try {
+    const doc = iframe.contentDocument
+    if (!doc) {
+      setDetailPlayerImmersive(false)
+      return
+    }
+    setDetailPlayerImmersive(isIframePlayerImmersive(doc))
+  }
+  catch {
+    // 跨域直播页无法读取播放器状态，保持现有按钮可见性
+  }
+}
+
+function clearDetailPlayerModeWatch() {
+  stopDetailPlayerModeWatch?.()
+  stopDetailPlayerModeWatch = null
+}
+
+function startDetailPlayerModeWatch(iframe: HTMLIFrameElement) {
+  clearDetailPlayerModeWatch()
+  if (!isPlayerMoment(selectedMoment.value)) {
+    setDetailPlayerImmersive(false)
+    return
+  }
+
+  let disposed = false
+  let listenersAttached = false
+  let retryTimer: ReturnType<typeof setInterval> | null = null
+  const observedTargets = new WeakSet<Element>()
+  const observer = new MutationObserver(() => {
+    if (!disposed)
+      syncDetailPlayerImmersiveFromIframe()
+  })
+
+  const onFullscreenChange = () => {
+    if (!disposed)
+      syncDetailPlayerImmersiveFromIframe()
+  }
+
+  const observeTarget = (el: Element | null) => {
+    if (!el || observedTargets.has(el))
+      return
+    observedTargets.add(el)
+    observer.observe(el, {
+      attributes: true,
+      attributeFilter: ['class', 'data-screen'],
+    })
+  }
+
+  const attach = () => {
+    if (disposed)
+      return true
+
+    try {
+      const win = iframe.contentWindow
+      const doc = iframe.contentDocument
+      if (!win || !doc)
+        return false
+
+      if (!listenersAttached) {
+        win.addEventListener('fullscreenchange', onFullscreenChange)
+        doc.addEventListener('fullscreenchange', onFullscreenChange)
+        win.addEventListener('webkitfullscreenchange', onFullscreenChange)
+        listenersAttached = true
+      }
+
+      observeTarget(doc.querySelector(DETAIL_WEB_FULLSCREEN_BTN_SELECTOR))
+      observeTarget(doc.querySelector(DETAIL_FULLSCREEN_BTN_SELECTOR))
+      observeTarget(doc.querySelector('.bpx-player-container, #bilibili-player, .bilibili-player, [data-screen]'))
+      syncDetailPlayerImmersiveFromIframe()
+      return Boolean(
+        doc.querySelector(DETAIL_WEB_FULLSCREEN_BTN_SELECTOR)
+        || doc.querySelector('.bpx-player-container, #bilibili-player, .bilibili-player'),
+      )
+    }
+    catch {
+      return true
+    }
+  }
+
+  document.addEventListener('fullscreenchange', onFullscreenChange)
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange)
+
+  if (!attach()) {
+    let retries = 0
+    retryTimer = setInterval(() => {
+      retries++
+      if ((attach() || retries >= 40) && retryTimer) {
+        clearInterval(retryTimer)
+        retryTimer = null
+      }
+    }, 250)
+  }
+
+  stopDetailPlayerModeWatch = () => {
+    disposed = true
+    if (retryTimer) {
+      clearInterval(retryTimer)
+      retryTimer = null
+    }
+    observer.disconnect()
+    document.removeEventListener('fullscreenchange', onFullscreenChange)
+    document.removeEventListener('webkitfullscreenchange', onFullscreenChange)
+    try {
+      const win = iframe.contentWindow
+      const doc = iframe.contentDocument
+      win?.removeEventListener('fullscreenchange', onFullscreenChange)
+      doc?.removeEventListener('fullscreenchange', onFullscreenChange)
+      win?.removeEventListener('webkitfullscreenchange', onFullscreenChange)
+    }
+    catch {
+      // iframe 已卸载或跨域时忽略
+    }
+  }
+}
+
 function getDimensionAspectRatio(dimension: any) {
   let width = Number(dimension?.width || 0)
   let height = Number(dimension?.height || 0)
@@ -1003,6 +1160,7 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
   selectedMoment.value = moment
   detailFrameUrl.value = resolveDetailUrl(moment)
   detailFrameLoaded.value = false
+  setDetailPlayerImmersive(false)
   // 打开详情时释放悬停预览资源
   hoveredMediaId.value = ''
   cleanupLivePreviewPlayer()
@@ -1045,6 +1203,9 @@ function handleDetailIframeLoad(event: Event) {
     }
   }
 
+  if (iframe)
+    startDetailPlayerModeWatch(iframe)
+
   // 视频/直播、转发：load 后立即显示，不做「整理动态」等待
   if (isPlayerMoment(selectedMoment.value) || selectedMoment.value?.isForward) {
     detailFrameLoaded.value = true
@@ -1059,6 +1220,9 @@ function handleDetailIframeLoad(event: Event) {
 
 /** 关闭详情时销毁 iframe 文档与媒体，避免内存堆积 */
 function destroyDetailIframe() {
+  clearDetailPlayerModeWatch()
+  setDetailPlayerImmersive(false)
+
   const iframe = detailIframeRef.value
   if (!iframe)
     return
@@ -3125,6 +3289,18 @@ function refresh() {
 }
 
 function handleDetailFrameMessage(event: MessageEvent) {
+  const messageType = event.data && typeof event.data === 'object' ? event.data.type : event.data
+  if (
+    (messageType === DRAWER_VIDEO_ENTER_PAGE_FULL || messageType === DRAWER_VIDEO_EXIT_PAGE_FULL)
+    && event.source === detailIframeRef.value?.contentWindow
+  ) {
+    if (messageType === DRAWER_VIDEO_ENTER_PAGE_FULL)
+      setDetailPlayerImmersive(true)
+    else
+      syncDetailPlayerImmersiveFromIframe()
+    return
+  }
+
   const type = event.data?.type
   if (type === 'BEWLY_OPUS_IMAGE_VIEWER_OPEN') {
     if (event.source !== detailIframeRef.value?.contentWindow)
@@ -3828,7 +4004,10 @@ watch(
         />
         <a
           class="moment-detail-frame__open"
+          :class="{ 'is-hidden': detailPlayerImmersive }"
           :href="detailFrameUrl"
+          :aria-hidden="detailPlayerImmersive ? 'true' : undefined"
+          :tabindex="detailPlayerImmersive ? -1 : 0"
           target="_blank"
           rel="noopener noreferrer"
           @click.prevent.stop="openDetailFrameInNewTab"
@@ -4881,6 +5060,11 @@ watch(
 .moment-detail-frame__open:hover {
   opacity: 1;
   transform: translateY(-1px);
+}
+.moment-detail-frame__open.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
 }
 .moment-image-viewer {
   position: fixed;

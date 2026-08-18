@@ -1481,27 +1481,31 @@ async function haveScrollbar() {
   return viewport.scrollHeight > viewport.clientHeight
 }
 
-// In drawer video, watch btn className changed and post message to parent
+// In drawer/dialog video, watch btn className changed and post message to parent
 watchEffect(async (onCleanUp) => {
   if (!isInIframe())
     return null
 
+  const webFullscreenBtnSelector = '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen, .squirtle-video-pagefullscreen'
+
+  function notifyDrawerPageFullscreen(el: HTMLElement) {
+    const entered = el.classList.contains('bpx-state-entered')
+      || !!document.querySelector('[data-screen="web"]')
+    parent.postMessage(entered ? DRAWER_VIDEO_ENTER_PAGE_FULL : DRAWER_VIDEO_EXIT_PAGE_FULL)
+  }
+
   const observer = new MutationObserver(([{ target: el }]) => {
     if (!(el instanceof HTMLElement))
-      return null
-    if (el.classList.contains('bpx-state-entered')) {
-      parent.postMessage(DRAWER_VIDEO_ENTER_PAGE_FULL)
-    }
-    else {
-      parent.postMessage(DRAWER_VIDEO_EXIT_PAGE_FULL)
-    }
+      return
+    notifyDrawerPageFullscreen(el)
   })
 
   const abort = new AbortController()
-  queryDomUntilFound('.bpx-player-ctrl-btn.bpx-player-ctrl-web', 500, abort).then((openVideo2WebFullBtn) => {
+  queryDomUntilFound(webFullscreenBtnSelector, 500, abort).then((openVideo2WebFullBtn) => {
     if (!openVideo2WebFullBtn)
       return
-    observer.observe(openVideo2WebFullBtn, { attributes: true })
+    notifyDrawerPageFullscreen(openVideo2WebFullBtn)
+    observer.observe(openVideo2WebFullBtn, { attributes: true, attributeFilter: ['class'] })
   })
 
   onCleanUp(() => {
