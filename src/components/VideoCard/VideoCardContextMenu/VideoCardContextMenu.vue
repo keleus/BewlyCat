@@ -477,14 +477,15 @@ async function unfollowUser() {
         border="1 $bew-border-color"
         class="context-menu-container"
       >
-        <!-- 顶部滚动指示器 -->
-        <div
+        <button
           v-show="canScrollUp"
+          type="button"
           class="scroll-indicator scroll-indicator-top"
+          aria-label="滚动到顶部"
           @click="scrollToTop"
         >
-          <i class="i-mingcute:up-line" />
-        </div>
+          <i class="i-mingcute:up-line" aria-hidden="true" />
+        </button>
 
         <ul
           ref="menuListRef"
@@ -537,14 +538,15 @@ async function unfollowUser() {
           </template>
         </ul>
 
-        <!-- 底部滚动指示器 -->
-        <div
+        <button
           v-show="canScrollDown"
+          type="button"
           class="scroll-indicator scroll-indicator-bottom"
+          aria-label="滚动到底部"
           @click="scrollToBottom"
         >
-          <i class="i-mingcute:down-line" />
-        </div>
+          <i class="i-mingcute:down-line" aria-hidden="true" />
+        </button>
       </div>
     </div>
 
@@ -620,6 +622,9 @@ async function unfollowUser() {
 }
 
 .context-menu-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(240px, calc(100vw - var(--bew-space-4)));
   max-height: min(406px, calc(100vh - var(--bew-space-4)));
   overflow: hidden;
@@ -627,7 +632,8 @@ async function unfollowUser() {
 }
 
 .context-menu-list {
-  max-height: inherit;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--bew-space-1) 0;
@@ -643,35 +649,41 @@ async function unfollowUser() {
 }
 
 .scroll-indicator {
-  height: 20px;
+  position: absolute;
+  left: 50%;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: var(--bew-space-6);
+  height: var(--bew-space-4);
+  padding: 0;
+  border: none;
   color: var(--bew-text-color-2);
+  background: transparent;
+  transform: translateX(-50%);
   cursor: pointer;
-  background: var(--bew-elevated);
-  position: absolute;
-  left: 0;
-  right: 0;
-  z-index: 1;
+
+  i {
+    width: var(--bew-icon-size-sm);
+    height: var(--bew-icon-size-sm);
+  }
 
   &:hover {
     color: var(--bew-text-color-1);
-    background: var(--bew-fill-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color);
+    outline-offset: -2px;
   }
 
   &-top {
     top: 0;
-    border-top-left-radius: var(--bew-radius);
-    border-top-right-radius: var(--bew-radius);
-    box-shadow: 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
   &-bottom {
     bottom: 0;
-    border-bottom-left-radius: var(--bew-radius);
-    border-bottom-right-radius: var(--bew-radius);
-    box-shadow: 0 -4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 }
 </style>
