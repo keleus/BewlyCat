@@ -653,8 +653,6 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
         :class="{
           'hide': hideTopBar && !isLayoutEditing,
           'force-white-icon': forceWhiteIcon,
-          'top-bar--solid': settings.topBarStyle === 'solid',
-          'top-bar--solid-force-white': settings.topBarStyle === 'solid' && forceWhiteIcon,
         }"
       >
         <TopBarHeader
@@ -693,20 +691,6 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
   transition:
     opacity var(--bew-duration-moderate) var(--bew-ease-standard),
     transform var(--bew-duration-moderate) var(--bew-ease-standard);
-}
-
-.top-bar--solid {
-  background: var(--bew-top-bar-solid-background);
-  box-shadow: var(--bew-top-bar-solid-shadow);
-  transition:
-    opacity var(--bew-duration-moderate) var(--bew-ease-standard),
-    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
-    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard),
-    transform var(--bew-duration-moderate) var(--bew-ease-standard);
-}
-
-.top-bar--solid-force-white {
-  background: var(--bew-top-bar-solid-background-force-white);
 }
 
 .top-area-listener {

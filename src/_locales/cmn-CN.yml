@@ -526,7 +526,6 @@ settings:
   top_bar_style_opt:
     default: 默认（白雾/阴影）
     progressive_fog: 渐变（消耗性能）
-    solid: 实色
     transparent: 阴影
     frosted_glass: 白雾
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）

@@ -221,6 +221,10 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
 
   flex: none;
 
+  &.bew-segment-control--solid {
+    --bew-segment-surface-background: var(--bew-elevated-solid);
+  }
+
   &--white:not(.bew-segment-control--solid) {
     --bew-segment-surface-background: var(--bew-control-background-white);
     --bew-segment-surface-shadow: none;

@@ -28,7 +28,6 @@ const isNarrowLayout = useMediaQuery('(max-width: 767px)')
 // 仅布局编辑模式需要整体隐藏（搜索页本身有搜索框，不展示编辑目标）。
 const showTopBarSearchEditor = computed(() =>
   !isLayoutEditing.value || activatedPage.value !== AppPage.Search)
-const usesGradientTopBar = computed(() => settings.value.topBarStyle !== 'solid')
 const usesProgressiveFog = computed(() => settings.value.topBarStyle === 'progressiveFog')
 
 const OVERLAY_HEIGHT = 'calc(var(--bew-top-bar-height) * 1.35)'
@@ -50,27 +49,23 @@ function fogGradient(color: string, peak: number) {
 }
 
 const progressiveFogTint = computed(() => {
-  if (forceWhiteIcon.value)
-    return fogGradient('0 0 0', 42)
-
   return props.isDark
     ? fogGradient('0 0 0', 75)
     : fogGradient('255 255 255', 80)
 })
 
-// Chromium 在 opacity 动画期间会丢弃 backdrop-filter（crbug.com/40877283），
-// 因此玻璃遮罩常驻挂载，毛玻璃开启时改用 backdrop-filter 在玻璃与恒等滤镜间插值，
-// 避免滚到顶部/离开顶部时出现饱和度跳变；毛玻璃关闭时本就无滤镜，仍走 opacity 过渡。
-const IDENTITY_BACKDROP_FILTER = 'blur(0px) saturate(100%)'
+// 毛玻璃开启时顶栏遮罩始终使用玻璃滤镜；关闭时本就无滤镜，仍走 opacity 过渡。
 const glassOverlayStyle = computed(() => {
   if (settings.value.enableFrostedGlass) {
     return {
-      backgroundColor: 'transparent',
-      backdropFilter: props.reachTop ? IDENTITY_BACKDROP_FILTER : 'var(--bew-filter-glass-1)',
+      backgroundColor: forceWhiteIcon.value && !props.reachTop
+        ? 'rgb(0 0 0 / 35%)'
+        : 'transparent',
+      backdropFilter: 'var(--bew-filter-glass-1)',
     }
   }
   return {
-    backgroundColor: 'var(--bew-bg)',
+    backgroundColor: forceWhiteIcon.value ? 'rgb(0 0 0)' : 'var(--bew-bg)',
     opacity: props.reachTop ? 0 : 0.9,
     backdropFilter: 'none',
   }
@@ -202,18 +197,15 @@ function refreshSearchContent() {
       class="top-bar-header__progressive-fog"
       :style="{ height: OVERLAY_HEIGHT }"
     >
-      <!-- 常驻挂载并在 reachTop 时过渡到恒等滤镜，避免 fade 卸载时饱和度跳变 -->
-      <ProgressiveBlurSurface :inactive="reachTop" />
+      <!-- 渐变样式保持固定雾化，不随滚动再叠一层遮罩 -->
+      <ProgressiveBlurSurface />
       <div
         class="top-bar-header__progressive-fog-tint"
-        :style="{
-          background: progressiveFogTint,
-          opacity: reachTop ? 0.8 : 1,
-        }"
+        :style="{ background: progressiveFogTint }"
       />
     </div>
 
-    <template v-else-if="usesGradientTopBar">
+    <template v-else>
       <!-- 默认的低开销顶栏遮罩：常驻挂载，玻璃与恒等滤镜间插值（见 glassOverlayStyle） -->
       <div class="top-bar-header__glass-overlay" :style="glassOverlayStyle" />
 
@@ -235,7 +227,7 @@ function refreshSearchContent() {
     <!-- Top bar theme color gradient -->
     <Transition name="fade">
       <div
-        v-if="usesGradientTopBar && settings.showTopBarThemeColorGradient && !forceWhiteIcon && reachTop && isDark"
+        v-if="!usesProgressiveFog && settings.showTopBarThemeColorGradient && !forceWhiteIcon && reachTop && isDark"
         pos="absolute top-0 left-0" w-full h="$bew-top-bar-height" pointer-events-none
         :style="{ background: 'linear-gradient(to bottom, var(--bew-theme-color-10), transparent)' }"
       />
@@ -325,6 +317,7 @@ function refreshSearchContent() {
   );
   transition:
     opacity var(--bew-duration-moderate) var(--bew-ease-standard),
+    background-color var(--bew-duration-moderate) var(--bew-ease-standard),
     backdrop-filter var(--bew-duration-moderate) var(--bew-ease-standard);
 }
 

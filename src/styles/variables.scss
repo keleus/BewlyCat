@@ -104,8 +104,8 @@
 
   // #region Compact controls
   // Shared geometry and typography for top-bar controls, segmented tabs and
-  // icon switchers. 36px outer - 2 * 4px padding = a 28px item target.
-  --bew-control-height: 36px;
+  // icon switchers. 34px outer - 2 * 4px padding = a 26px item target.
+  --bew-control-height: 34px;
   --bew-control-padding: var(--bew-space-1);
   --bew-control-gap: var(--bew-space-1);
   --bew-control-border-width: 0px;
@@ -147,9 +147,6 @@
   --bew-top-bar-brand-logo-width: 66px;
   --bew-top-bar-brand-logo-height: 22px;
   --bew-top-bar-brand-logo-compact-size: 24px;
-  --bew-top-bar-solid-background: var(--bew-elevated-solid);
-  --bew-top-bar-solid-background-force-white: hsl(0 0% 0%);
-  --bew-top-bar-solid-shadow: var(--bew-shadow-1);
 
   // Interaction tokens aligned with home tab buttons
   --bew-segment-item-hover-bg: var(--bew-fill-1);

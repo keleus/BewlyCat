@@ -476,7 +476,6 @@ settings:
   top_bar_style_opt:
     default: Default (white fog/shadow)
     progressive_fog: Gradient (performance intensive)
-    solid: Solid
     transparent: Shadow
     frosted_glass: White fog
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)

@@ -55,18 +55,19 @@ export function useTopBarInteraction() {
   useEventListener(window, 'pushstate', updateCurrentLocationHref)
   useEventListener(window, 'popstate', updateCurrentLocationHref)
 
-  // TopBar 相关计算属性
   const forceWhiteIcon = computed((): boolean => {
     if (!settings.value)
       return false
 
+    // 阴影：始终白图标，压住页面背景。
     if (settings.value.topBarStyle === 'transparent')
       return true
 
-    // 固定使用无背景图首页的标准毛玻璃样式，不再根据页面壁纸切换图标颜色。
-    if (settings.value.topBarStyle === 'frostedGlass')
+    // 渐变 / 白雾全页同一套外观，不按页面切阴影。
+    if (settings.value.topBarStyle !== 'default')
       return false
 
+    // 默认：按页面在白雾和阴影之间切换。
     if (
       (isHomePage() && settings.value.useOriginalBilibiliHomepage)
       || (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))
@@ -79,33 +80,28 @@ export function useTopBarInteraction() {
     if (!isHomePage())
       return false
 
-    // 确保 activatedPage.value 存在
     if (!activatedPage?.value)
       return false
 
     if (activatedPage.value === AppPage.Search) {
-      if (settings.value.individuallySetSearchPageWallpaper) {
-        if (settings.value.searchPageWallpaper)
-          return true
-        return false
-      }
+      if (settings.value.individuallySetSearchPageWallpaper)
+        return !!settings.value.searchPageWallpaper
       return !!settings.value.wallpaper
     }
-    else if (activatedPage.value === AppPage.SearchResults) {
-      // 搜索结果页使用全局壁纸设置
+
+    if (activatedPage.value === AppPage.SearchResults)
       return !!settings.value.wallpaper
-    }
-    else {
+
+    if (settings.value.wallpaper)
+      return true
+
+    if (settings.value.useSearchPageModeOnHomePage) {
+      if (settings.value.individuallySetSearchPageWallpaper && !!settings.value.searchPageWallpaper)
+        return true
       if (settings.value.wallpaper)
         return true
-
-      if (settings.value.useSearchPageModeOnHomePage) {
-        if (settings.value.individuallySetSearchPageWallpaper && !!settings.value.searchPageWallpaper)
-          return true
-        else if (settings.value.wallpaper)
-          return true
-      }
     }
+
     return false
   })
 

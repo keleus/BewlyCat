@@ -101,7 +101,7 @@ export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
 export type TabsPosition = 'left' | 'center'
 export type TopBarLogoStyle = 'icon' | 'brand'
-export type TopBarStyle = 'default' | 'transparent' | 'frostedGlass' | 'solid' | 'progressiveFog'
+export type TopBarStyle = 'default' | 'transparent' | 'frostedGlass' | 'progressiveFog'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 export type RandomPlayOrder = 'sequential' | 'reverse' | 'random'
 export type DefaultCustomPlayOrder = RandomPlayOrder
@@ -889,23 +889,19 @@ watch(
     if (!validTopBarLogoStyles.includes(record.topBarLogoStyle))
       record.topBarLogoStyle = originalSettings.topBarLogoStyle
 
-    const validTopBarStyles: TopBarStyle[] = ['default', 'transparent', 'frostedGlass', 'solid', 'progressiveFog']
+    const validTopBarStyles: TopBarStyle[] = ['default', 'transparent', 'frostedGlass', 'progressiveFog']
     const hasLegacyTopBarStyle = 'alwaysUseTransparentTopBar' in record
       || 'alwaysUseFrostedGlassTopBar' in record
       || 'enableTopBarGradient' in record
     if (hasLegacyTopBarStyle) {
-      // 实色开关直接决定旧版最终背景，其次再迁移两个互斥的固定样式。
-      record.topBarStyle = record.enableTopBarGradient === false
-        ? 'solid'
-        : record.alwaysUseTransparentTopBar === true
-          ? 'transparent'
-          : record.alwaysUseFrostedGlassTopBar === true
-            ? 'frostedGlass'
-            : originalSettings.topBarStyle
+      record.topBarStyle = record.alwaysUseTransparentTopBar === true
+        ? 'transparent'
+        : record.alwaysUseFrostedGlassTopBar === true
+          ? 'frostedGlass'
+          : originalSettings.topBarStyle
     }
-    else if (!validTopBarStyles.includes(record.topBarStyle)) {
+    if (!validTopBarStyles.includes(record.topBarStyle))
       record.topBarStyle = originalSettings.topBarStyle
-    }
     Reflect.deleteProperty(record, 'alwaysUseTransparentTopBar')
     Reflect.deleteProperty(record, 'alwaysUseFrostedGlassTopBar')
     Reflect.deleteProperty(record, 'enableTopBarGradient')

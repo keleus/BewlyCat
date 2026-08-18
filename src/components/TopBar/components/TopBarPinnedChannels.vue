@@ -250,6 +250,10 @@ function handleChannelClick(event: MouseEvent) {
   min-width: 0;
   flex: 0 1 auto;
 
+  &.bew-segment-control--solid {
+    --bew-segment-surface-background: var(--bew-elevated-solid);
+  }
+
   &__list {
     display: flex;
     align-items: center;

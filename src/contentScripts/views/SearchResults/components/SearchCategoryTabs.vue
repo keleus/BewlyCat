@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { settings } from '~/logic'
+
 import type { SearchCategory, SearchCategoryOption } from '../types'
 
 const props = defineProps<{
@@ -30,6 +32,7 @@ function formatCount(count: number): string {
   <div class="search-categories" mb-4>
     <div
       class="search-category-control bew-segment-control bew-segment-control--surface bew-segment-control--static"
+      :class="{ 'bew-segment-control--solid': !settings.enableFrostedGlass }"
       data-layout-edit-target="search-category-tabs"
       data-layout-settings-menu="BewlyPages"
       data-layout-settings-page="search"

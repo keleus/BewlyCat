@@ -626,6 +626,7 @@ function changeMenuItem(menuItem: MenuType) {
             }"
             text="!16px hover:$bew-theme-color" w="32px" h="32px"
             flex="~ items-center justify-center shrink-0"
+            relative z-1
             bg="$bew-elevated dark:$bew-fill-1 hover:$bew-theme-color-30"
             rounded-8 cursor="pointer" border="1 $bew-border-color" box-border
             duration-300
@@ -712,6 +713,7 @@ function changeMenuItem(menuItem: MenuType) {
 .settings-header__progressive-fog {
   position: absolute;
   inset: 0;
+  z-index: -1;
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;
@@ -722,8 +724,8 @@ function changeMenuItem(menuItem: MenuType) {
   inset: 0;
   background: linear-gradient(
     to bottom,
-    color-mix(in oklab, var(--bew-elevated-alt-solid), transparent 8%),
-    color-mix(in oklab, var(--bew-elevated-alt-solid), transparent 45%) 60%,
+    var(--bew-elevated-alt-solid),
+    color-mix(in oklab, var(--bew-elevated-alt-solid), transparent 22%) 55%,
     transparent
   );
 }
@@ -801,6 +803,8 @@ function changeMenuItem(menuItem: MenuType) {
 }
 
 .settings-breadcrumb {
+  position: relative;
+  z-index: 1;
   display: flex;
   overflow: hidden;
   gap: var(--bew-space-2);
