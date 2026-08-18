@@ -415,8 +415,6 @@ export interface Settings {
   followingFilterDynamicVideos: boolean // 过滤动态视频
   useFollowingNewLayout: boolean
   collectedSeasonPlayAllMode: CollectedSeasonPlayAllMode // 订阅合集「播放全部」起播：开头 / 最新 / 上次观看
-  enableFollowingInactiveBlacklist: boolean // 启用不活跃名单
-  followingInactiveDays: number // UP主超过N天未更新则移至不活跃名单
 
   homePageTabVisibilityList: { page: HomeSubPage, visible: boolean }[]
   homeTabsPosition: TabsPosition
@@ -711,8 +709,6 @@ export const originalSettings: Settings = {
   followingFilterDynamicVideos: false, // 默认不过滤动态视频
   useFollowingNewLayout: false, // 默认使用旧布局
   collectedSeasonPlayAllMode: 'beginning', // 默认从合集开头播放
-  enableFollowingInactiveBlacklist: true, // 默认启用不活跃名单
-  followingInactiveDays: 100, // 默认100天
 
   homePageTabVisibilityList: [],
   homeTabsPosition: 'left',

@@ -125,8 +125,6 @@ watch(selectedUploader, syncRefreshAvailability, { immediate: true })
 
 // Track viewed uploaders in localStorage
 const VIEWED_UPLOADERS_KEY = 'bewlycat_moments_viewed_uploaders'
-// Blacklist for inactive uploaders
-const UPLOADER_BLACKLIST_KEY = 'bewlycat_uploader_blacklist'
 
 // 获取已查看的UP主记录（存储用户实际看到的最新投稿时间）
 function getViewedUploaders(): Record<number, number> {
@@ -164,55 +162,6 @@ function markUploaderAsViewed(mid: number, updateTime?: number) {
   }
 
   console.log(`[Following] Marked UP ${mid} as viewed at ${new Date(timeToMark).toLocaleString()}`)
-}
-
-// 获取黑名单
-function getBlacklistedUploaders(): Set<number> {
-  try {
-    const data = localStorage.getItem(UPLOADER_BLACKLIST_KEY)
-    return data ? new Set(JSON.parse(data)) : new Set()
-  }
-  catch {
-    return new Set()
-  }
-}
-
-// 添加到黑名单
-function addToBlacklist(mid: number) {
-  try {
-    const blacklist = getBlacklistedUploaders()
-    blacklist.add(mid)
-    localStorage.setItem(UPLOADER_BLACKLIST_KEY, JSON.stringify([...blacklist]))
-    console.log(`[Following] Added UP ${mid} to blacklist`)
-  }
-  catch (error) {
-    console.error('[Following] Failed to add to blacklist:', error)
-  }
-}
-
-// 从黑名单移除
-function removeFromBlacklist(mid: number) {
-  try {
-    const blacklist = getBlacklistedUploaders()
-    if (blacklist.has(mid)) {
-      blacklist.delete(mid)
-      localStorage.setItem(UPLOADER_BLACKLIST_KEY, JSON.stringify([...blacklist]))
-      console.log(`[Following] Removed UP ${mid} from blacklist`)
-    }
-  }
-  catch (error) {
-    console.error('[Following] Failed to remove from blacklist:', error)
-  }
-}
-
-// 检查UP主是否应该在黑名单（超过指定天数未更新）
-function shouldBeBlacklisted(uploader: UploaderInfo): boolean {
-  // 如果没有缓存时间，使用 lastUpdateTime（可能是关注时间）
-  const inactiveDays = settings.value.followingInactiveDays
-  const inactiveThresholdMs = inactiveDays * 24 * 60 * 60 * 1000
-  const now = Date.now()
-
-  return (now - uploader.lastUpdateTime) > inactiveThresholdMs
 }
 
 // 检查视频是否为充电专属视频
@@ -254,17 +203,8 @@ function sortUploaderList(excludeMid: number | null = null) {
     }
   }
 
-  const blacklist = getBlacklistedUploaders()
-
   uploaderList.value.sort((a, b) => {
-    const aIsBlacklisted = blacklist.has(a.mid)
-    const bIsBlacklisted = blacklist.has(b.mid)
-
-    // 1. 黑名单的UP主排在最后
-    if (aIsBlacklisted !== bIsBlacklisted)
-      return aIsBlacklisted ? 1 : -1
-
-    // 2. 按 lastUpdateTime 降序排序（最新的在前）
+    // 按 lastUpdateTime 降序排序（最新的在前）
     return b.lastUpdateTime - a.lastUpdateTime
   })
 
@@ -315,7 +255,7 @@ const unreadUploadersCount = computed(() => {
 // 搜索关键词
 const searchKeyword = ref<string>('')
 
-// 显示的UP主列表（包含黑名单，但黑名单排在最后，并支持搜索过滤）
+// 显示的UP主列表（支持搜索过滤）
 const displayedUploaderList = computed(() => {
   let list = uploaderList.value
 
@@ -625,7 +565,6 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
     )
 
     let updatedCount = 0
-    let removedFromBlacklistCount = 0
     let markedAsViewedCount = 0
     uploaderLatestTimes.forEach((time, mid) => {
       const uploader = uploaderList.value.find(u => u.mid === mid)
@@ -653,13 +592,6 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
           // 即使不标记为已查看，也需要重新计算hasUpdate
           uploader.hasUpdate = calculateHasUpdate(uploader.lastUpdateTime, lastViewedTime)
         }
-
-        // 如果该UP主在黑名单中，说明他们有新活动，从黑名单移除
-        const blacklist = getBlacklistedUploaders()
-        if (blacklist.has(mid)) {
-          removeFromBlacklist(mid)
-          removedFromBlacklistCount++
-        }
       }
     })
 
@@ -669,10 +601,7 @@ async function loadAllViewVideos(maxPages: number = 3, token?: number) {
     if (markedAsViewedCount > 0) {
       console.log(`[Following] Marked ${markedAsViewedCount} uploaders as viewed from ALL view`)
     }
-    if (removedFromBlacklistCount > 0) {
-      console.log(`[Following] Removed ${removedFromBlacklistCount} uploaders from blacklist (found in ALL view)`)
-    }
-    if (updatedCount > 0 || removedFromBlacklistCount > 0 || markedAsViewedCount > 0) {
+    if (updatedCount > 0 || markedAsViewedCount > 0) {
       sortUploaderList(selectedUploader.value)
     }
 
@@ -838,10 +767,6 @@ async function loadUserMoments(mid: number, maxPages: number = 3, token?: number
         // 用户主动点击TAB查看，标记为已查看
         markUploaderAsViewed(mid, knownLatestTime)
 
-        if (settings.value.enableFollowingInactiveBlacklist && shouldBeBlacklisted(uploader)) {
-          addToBlacklist(mid)
-        }
-
         sortUploaderList(selectedUploader.value)
 
         console.log(`[Following] Updated data for UP ${mid} from selected view: time=${new Date(knownLatestTime).toLocaleString()}`)
@@ -911,12 +836,6 @@ function selectUploader(mid: number | null) {
     console.log('[Following] Selecting uploader:', mid)
 
     markUploaderAsViewed(mid)
-
-    // 用户点击了UP主，如果在黑名单中则移除
-    const blacklist = getBlacklistedUploaders()
-    if (blacklist.has(mid)) {
-      removeFromBlacklist(mid)
-    }
 
     if (previousSelectedUploader.value !== null && previousSelectedUploader.value !== mid) {
       sortUploaderList(mid)

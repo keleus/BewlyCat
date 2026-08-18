@@ -243,8 +243,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.filter_by_user',
     'settings.group_following',
     'settings.use_following_new_layout',
-    'settings.enable_following_inactive_blacklist',
-    'settings.following_inactive_days',
     'settings.following_tab_show_livestreaming_videos',
     'settings.following_filter_charging_videos',
     'settings.following_filter_dynamic_videos',

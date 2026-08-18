@@ -523,21 +523,6 @@ function handleToggleHomeTab(tab: any) {
       <SettingsItem :title="$t('settings.use_following_new_layout')" :desc="$t('settings.use_following_new_layout_desc')" right-width="auto">
         <Radio v-model="settings.useFollowingNewLayout" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.enable_following_inactive_blacklist')" :desc="$t('settings.enable_following_inactive_blacklist_desc')" right-width="auto">
-        <Radio v-model="settings.enableFollowingInactiveBlacklist" />
-      </SettingsItem>
-      <template v-if="settings.enableFollowingInactiveBlacklist">
-        <SettingsItem :title="$t('settings.following_inactive_days')" :desc="$t('settings.following_inactive_days_desc')" right-width="auto">
-          <Input
-            v-model="settings.followingInactiveDays" type="number" :min="1" :max="365"
-            w-120px
-          >
-            <template #suffix>
-              <span text="sm $bew-text-2" whitespace-nowrap>{{ $t('common.days') }}</span>
-            </template>
-          </Input>
-        </SettingsItem>
-      </template>
       <SettingsItem :title="$t('settings.following_tab_show_livestreaming_videos')" right-width="auto">
         <Radio v-model="settings.followingTabShowLivestreamingVideos" />
       </SettingsItem>

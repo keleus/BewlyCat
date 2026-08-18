@@ -279,7 +279,7 @@ settings:
   group_recommendation_filters_desc: |
     限制嘅數值唔好設太大，唔係嘅話會影響載入時間！頻繁請求可能會導致 Bilibili 對 IP 嘅封禁!
   group_following: 跟緊啲人
-  group_following_desc: 設定「跟緊啲人」頁面嘅版面、唔活躍 UP 主名單、直播內容同影片過濾規則。
+  group_following_desc: 設定「跟緊啲人」頁面嘅版面、直播內容同影片過濾規則。
   group_favorites: 收藏
   group_search_page_mode: 搵嘢頁模式
   group_home_tabs: 主頁分頁欄
@@ -671,10 +671,6 @@ settings:
   collected_season_play_all_mode_last_watched: 上次觀看
   enable_version_reminder: 新版本提醒
   enable_version_reminder_desc: 喺外掛主頁提醒未確認嘅新版本；每個版本只會提醒一次。
-  enable_following_inactive_blacklist: 啟用唔活躍名單
-  enable_following_inactive_blacklist_desc: 閂咗之後唔會因為超過唔活躍日數或者冇投稿就自動入唔活躍名單；已經有嘅唔活躍名單同 ALL 視圖／撳 UP 移出規則唔變。
-  following_inactive_days: UP主唔活躍天數
-  following_inactive_days_desc: 套用『用跟緊啲人新版面』之後個功能就會生效。同你自己加嘅用戶黑名單冇關，只係改咗『跟緊啲人』頁面嘅推薦內容。
   preserve_for_you_state: 留存估你心水切換前狀態
   preserve_for_you_state_desc: 喺dock欄切換到其它頁面嗰陣，留存估你心水頁面嘅瀏覽狀態，返嚟嗰陣保持切換前嘅內容
   use_search_page_mode: 主頁使用搵嘢頁模式

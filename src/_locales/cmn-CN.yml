@@ -251,7 +251,7 @@ settings:
   group_recommendation_filters_desc: |
     请勿将限制值设置得太大，不然可能会增加加载时间！频繁请求可能会导致 Bilibili 对 IP 的封禁!
   group_following: 正在关注
-  group_following_desc: 配置“正在关注”页面的布局、不活跃 UP 主名单、直播内容与视频过滤规则。
+  group_following_desc: 配置“正在关注”页面的布局、直播内容与视频过滤规则。
   group_favorites: 收藏
   group_search_page_mode: 搜索页模式
   group_home_tabs: 首页标签栏
@@ -747,10 +747,6 @@ settings:
   collected_season_play_all_mode_last_watched: 上次观看
   enable_version_reminder: 新版本提醒
   enable_version_reminder_desc: 在插件首页提醒尚未确认的新版本；每个版本只提醒一次。
-  enable_following_inactive_blacklist: 启用不活跃名单
-  enable_following_inactive_blacklist_desc: 当UP主超过指定天数未更新或无投稿时，将自动移至不活跃名单。在ALL视图中出现更新或点击该UP主时会自动移出不活跃名单
-  following_inactive_days: UP主不活跃天数
-  following_inactive_days_desc: 许用“使用正在关注新布局”后该功能生效。与自主添加的用户黑名单无关，仅更改“正在关注”页面推荐
   preserve_for_you_state: 留存个性推荐切换前状态
   preserve_for_you_state_desc: 当从dock栏切换到其他页面时，留存个性推荐页面的浏览状态，返回时保持切换前的内容
   use_search_page_mode: 首页使用搜索页模式

@@ -250,7 +250,7 @@ settings:
   group_recommendation_filters_desc: |
     限制的數值不要設太大，不然載入時間可能會增加！頻繁請求可能會導致 Bilibili 對 IP 的封禁!
   group_following: 正在跟隨
-  group_following_desc: 設定「正在跟隨」頁面的版面、不活躍 UP 主名單、直播內容與影片過濾規則。
+  group_following_desc: 設定「正在跟隨」頁面的版面、直播內容與影片過濾規則。
   group_favorites: 收藏
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄
@@ -670,10 +670,6 @@ settings:
   collected_season_play_all_mode_last_watched: 上次觀看
   enable_version_reminder: 新版本提醒
   enable_version_reminder_desc: 在外掛首頁提醒尚未確認的新版本；每個版本只提醒一次。
-  enable_following_inactive_blacklist: 啟用不活躍名單
-  enable_following_inactive_blacklist_desc: 當UP主超過指定天數未更新或無投稿時，將自動移至不活躍名單。在ALL視圖中出現更新或點擊該UP主時會自動移出不活躍名單。
-  following_inactive_days: UP 主不活躍天數
-  following_inactive_days_desc: 套用『使用正在關注新佈局』後該功能生效。與自主新增的使用者黑名單無關，僅更改『正在關注』頁面推薦。
   preserve_for_you_state: 留存為你推薦切換前狀態
   preserve_for_you_state_desc: 當從 Dock 列切換到其他頁面時，留存為你推薦頁面的瀏覽狀態，返回時保持切換前的內容
   use_search_page_mode: 首頁使用搜尋頁模式

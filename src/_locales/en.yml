@@ -254,7 +254,7 @@ settings:
     Do not set the restricted value too large, as this may increase loading
     time! Frequent requests may result in IP blocking by Bilibili!
   group_following: Following
-  group_following_desc: Configure the Following page layout, inactive uploader list, live content, and video filters.
+  group_following_desc: Configure the Following page layout, live content, and video filters.
   group_favorites: Favorites
   group_search_page_mode: Search Page Mode
   group_home_tabs: Home Tabs
@@ -731,10 +731,6 @@ settings:
   collected_season_play_all_mode_last_watched: Last watched
   enable_version_reminder: New version reminders
   enable_version_reminder_desc: Show unacknowledged version updates on the extension home page; each version is shown only once.
-  enable_following_inactive_blacklist: Enable Inactive List
-  enable_following_inactive_blacklist_desc: When a UP has not posted for the specified number of days or has no videos, they will be automatically moved to the Inactive List. They will be removed from the Inactive List when appearing in ALL view or when clicked
-  following_inactive_days: UP inactive days
-  following_inactive_days_desc: The feature takes effect after applying 'Use new layout for Following tab' It is unrelated to the custom user blacklist and only modifies recommendations within the 'new layout for Following tab' module.
   preserve_for_you_state: Preserve "For You" pre-switch state
   preserve_for_you_state_desc: When switching from dock to other pages, preserve the browsing state of the "For You" page and maintain content before switching when returning
   use_search_page_mode: Use search page mode on homepage
