@@ -49,7 +49,7 @@ BewlyCat：基于 BewlyBewly 的 bilibili 浏览器扩展（Vue 3 + TS + Vite + 
 
 ### 紧凑控件
 
-- 默认规格：外层高 `36px`、padding `4px`、gap `4px`、内部项高 `28px`、文字 `13/18px 600`、图标 `16px`。
+- 默认规格：外层高 `34px`、padding `4px`、gap `4px`、内部项高 `26px`、文字 `13/18px 600`、图标 `16px`。
 - 普通文字项水平 padding 为 `12px`；页面主标签使用 `.bew-segment-control__item--wide` 的 `16px`；纯图标项使用 `.bew-segment-control__item--icon`。
 - 必须覆盖 default、hover、focus-visible、active、disabled 状态；不要移除键盘焦点反馈。
 - `src/styles/main.scss` 提供全局 `focus-visible` 兜底；组件可以细化焦点环，但只有在提供等价反馈时才能覆盖或移除。
