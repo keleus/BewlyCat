@@ -133,9 +133,6 @@ else if (shouldInitializePageScript) {
   const COMPACT_COMMENT_REPLY_TREE_INDENT_STEP = 24
   const COMMENT_REPLY_TREE_MIN_GUIDE_GAP = 4
   const COMMENT_REPLY_TREE_FALLBACK_AVATAR_RADIUS = 12
-  const COMMENT_REPLY_TREE_VIEWPORT_TOP_GAP = 24
-  const COMMENT_REPLY_TREE_VIEWPORT_RESTORE_GAP = 64
-  const COMMENT_REPLY_TREE_VIEWPORT_BOTTOM_GAP = 24
   const COMMENT_REPLY_TREE_INDENT_STEP = 'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
   const COMMENT_REPLY_TREE_GUIDES_ID = 'bewly-comment-reply-tree-guides'
   const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
@@ -177,9 +174,6 @@ else if (shouldInitializePageScript) {
     layoutUpdateRaf?: number
     /** 锚点未就绪时的重试次数，防止无限 rAF */
     layoutRetryCount?: number
-    /** 当前视口内使用的临时根层级；不改变真实父子关系 */
-    visualDepthOffset: number
-    viewportDepthEntries: CommentReplyTreeViewportDepthEntry[]
   }
 
   const pendingCommentReplyTreeLayoutUpdates = new WeakSet<object>()
@@ -202,16 +196,6 @@ else if (shouldInitializePageScript) {
     directParentAuthorName: string | null
     /** 直接父回复正文摘要（跨页缓存） */
     directParentMessageText: string | null
-  }
-
-  interface CommentReplyTreeViewportDepthEntry {
-    depth: number
-    renderer: HTMLElement
-  }
-
-  interface CommentReplyTreeViewportBounds {
-    bottom: number
-    top: number
   }
 
   interface CommentReplyPaginationState {
@@ -1300,8 +1284,6 @@ else if (shouldInitializePageScript) {
         enabled: false,
         nextOriginalOrder: 0,
         originalOrderByRenderer: new WeakMap(),
-        visualDepthOffset: 0,
-        viewportDepthEntries: [],
       }
       commentReplyTreeStates.set(component, state)
     }
@@ -1314,10 +1296,6 @@ else if (shouldInitializePageScript) {
         state.tailToggleOffsetByKey = new Map()
       if (!state.replyMetaByRpid)
         state.replyMetaByRpid = new Map()
-      if (!Number.isFinite(state.visualDepthOffset))
-        state.visualDepthOffset = 0
-      if (!state.viewportDepthEntries)
-        state.viewportDepthEntries = []
     }
     return state
   }
@@ -1692,97 +1670,14 @@ else if (shouldInitializePageScript) {
     return `calc(${Array.from({ length: depth }, () => COMMENT_REPLY_TREE_INDENT_STEP).join(' + ')})`
   }
 
-  function getCommentReplyTreeComposedParent(element: HTMLElement): HTMLElement | null {
-    if (element.parentElement)
-      return element.parentElement
-
-    const root = element.getRootNode()
-    return root instanceof ShadowRoot && root.host instanceof HTMLElement
-      ? root.host
-      : null
-  }
-
-  function getCommentReplyTreeViewportBounds(
-    component: HTMLElement,
-    entries: CommentReplyTreeViewportDepthEntry[],
-  ): CommentReplyTreeViewportBounds {
-    const visualViewport = window.visualViewport
-    let top = visualViewport?.offsetTop ?? 0
-    let bottom = top + (
-      visualViewport?.height
-      ?? document.documentElement.clientHeight
-      ?? window.innerHeight
-    )
-
-    const visited = new Set<HTMLElement>()
-    let ancestor = getCommentReplyTreeComposedParent(entries[0]?.renderer ?? component)
-    while (ancestor && !visited.has(ancestor)) {
-      visited.add(ancestor)
-      const overflowY = getComputedStyle(ancestor).overflowY
-      if (/^(?:auto|clip|hidden|scroll)$/u.test(overflowY)) {
-        const rect = ancestor.getBoundingClientRect()
-        if (rect.height > 0) {
-          top = Math.max(top, rect.top)
-          bottom = Math.min(bottom, rect.bottom)
-        }
-      }
-      ancestor = getCommentReplyTreeComposedParent(ancestor)
-    }
-
-    return { bottom, top }
-  }
-
-  function getCommentReplyTreeViewportDepthOffset(
-    entries: CommentReplyTreeViewportDepthEntry[],
-    currentOffset: number,
-    viewportBounds: CommentReplyTreeViewportBounds,
-  ): number {
-    if (entries.length === 0)
-      return 0
-
-    const maxDepth = entries.reduce((maximum, { depth }) => Math.max(maximum, depth), 0)
-    const boundedCurrentOffset = Math.min(Math.max(0, currentOffset), maxDepth)
-    if (viewportBounds.bottom <= viewportBounds.top)
-      return boundedCurrentOffset
-
-    let visibleMinimumDepth = Number.POSITIVE_INFINITY
-    entries.forEach(({ depth, renderer }) => {
-      if (
-        renderer.hasAttribute('data-bewly-comment-reply-hidden')
-        || !renderer.isConnected
-      ) {
-        return
-      }
-
-      const rect = renderer.getBoundingClientRect()
-      // 恢复较浅层级使用更大的阈值，避免父评论在视口顶端附近反复进出时左右抖动。
-      const topGap = viewportBounds.top + (depth < boundedCurrentOffset
-        ? COMMENT_REPLY_TREE_VIEWPORT_RESTORE_GAP
-        : COMMENT_REPLY_TREE_VIEWPORT_TOP_GAP)
-      const verticallyVisible = rect.height > 0
-        && rect.bottom > topGap
-        && rect.top < viewportBounds.bottom - COMMENT_REPLY_TREE_VIEWPORT_BOTTOM_GAP
-      if (verticallyVisible)
-        visibleMinimumDepth = Math.min(visibleMinimumDepth, depth)
-    })
-
-    return Number.isFinite(visibleMinimumDepth)
-      ? visibleMinimumDepth
-      : boundedCurrentOffset
-  }
-
   function getCommentReplyTreeIndentStep(
     replyContainer: HTMLElement,
     orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }>,
-    visualDepthOffset: number,
   ): number {
     const preferredIndentStep = replyContainer.clientWidth <= COMPACT_COMMENT_REPLY_TREE_CONTAINER_WIDTH
       ? COMPACT_COMMENT_REPLY_TREE_INDENT_STEP
       : DEFAULT_COMMENT_REPLY_TREE_INDENT_STEP
-    const maxDepth = orderedNodes.reduce(
-      (maximum, { depth }) => Math.max(maximum, Math.max(0, depth - visualDepthOffset)),
-      0,
-    )
+    const maxDepth = orderedNodes.reduce((maximum, { depth }) => Math.max(maximum, depth), 0)
     if (maxDepth <= 0)
       return preferredIndentStep
 
@@ -3266,8 +3161,6 @@ else if (shouldInitializePageScript) {
       state.collapsedTailKeys.clear()
       state.branchToggleOffsetByKey.clear()
       state.tailToggleOffsetByKey.clear()
-      state.visualDepthOffset = 0
-      state.viewportDepthEntries = []
       if (state.enabled) {
         const originalOrder = [...replyRenderers].sort((a, b) => (
           getCommentReplyOriginalOrder(state, a) - getCommentReplyOriginalOrder(state, b)
@@ -3326,23 +3219,11 @@ else if (shouldInitializePageScript) {
     const rootNodes = orderedNodes
       .filter(({ depth }) => depth === 0)
       .map(({ node }) => node)
-    state.viewportDepthEntries = orderedNodes.map(({ depth, node }) => ({
-      depth,
-      renderer: node.renderer,
-    }))
-    const viewportBounds = getCommentReplyTreeViewportBounds(component, state.viewportDepthEntries)
-    state.visualDepthOffset = getCommentReplyTreeViewportDepthOffset(
-      state.viewportDepthEntries,
-      state.visualDepthOffset,
-      viewportBounds,
-    )
-    const visualDepthOffset = state.visualDepthOffset
-    const indentStep = getCommentReplyTreeIndentStep(replyContainer, orderedNodes, visualDepthOffset)
+    const indentStep = getCommentReplyTreeIndentStep(replyContainer, orderedNodes)
     component.style.setProperty('--bew-comment-reply-indent-step', `${indentStep}px`)
     orderedNodes.forEach(({ depth, node }) => {
-      const visualDepth = Math.max(0, depth - visualDepthOffset)
-      node.renderer.dataset.bewlyCommentReplyDepth = String(visualDepth)
-      node.renderer.style.setProperty('--bew-comment-reply-indent', getCommentReplyIndent(visualDepth))
+      node.renderer.dataset.bewlyCommentReplyDepth = String(depth)
+      node.renderer.style.setProperty('--bew-comment-reply-indent', getCommentReplyIndent(depth))
     })
     updateCommentReplyTreeVisibility(component, state, orderedNodes, rootNodes, collapseParentBody)
     reorderCommentReplyRenderers(
@@ -3354,7 +3235,7 @@ else if (shouldInitializePageScript) {
     // - 直接父在本页：引导线/缩进表达层级；线条模式隐藏正文「回复 @xxx」
     // - 直接父不在本页且有正文缓存：引用卡展示原正文
     // - 直接父不在本页无正文但有 parent rpid：紧凑「回复 @… + 不在本页」
-    orderedNodes.forEach(({ depth, node }) => {
+    orderedNodes.forEach(({ node }) => {
       const parentOffpage = Boolean(node.parentRpid && !node.directParentVisible)
       const hasCachedBody = Boolean(node.directParentMessageText?.trim())
       // 有正文缓存 或 仅有离页父 ID 都展示我们的标注
@@ -3362,7 +3243,7 @@ else if (shouldInitializePageScript) {
       // 展示自有标注时隐藏原生前缀，避免「回复 @」重复
       const hideNativePrefix = showOffpageLabel
         ? true
-        : (showGuides && !parentOffpage && depth > visualDepthOffset)
+        : (showGuides && !parentOffpage)
       setCommentReplyAtPrefixHidden(node.renderer, hideNativePrefix)
       updateCommentReplyOffpageParentLabel(node.renderer, {
         authorName: node.directParentAuthorName,
@@ -3406,52 +3287,6 @@ else if (shouldInitializePageScript) {
       updateCommentReplyTree(component)
     })
   }
-
-  let commentReplyViewportRebaseScheduled = false
-
-  function scheduleCommentReplyTreeViewportRebase() {
-    if (commentReplyViewportRebaseScheduled || getCommentReplyTreeMode() === null)
-      return
-
-    commentReplyViewportRebaseScheduled = true
-    requestAnimationFrame(() => {
-      commentReplyViewportRebaseScheduled = false
-
-      commentRepliesRenderers.forEach((component) => {
-        if (!(component instanceof HTMLElement) || !component.isConnected)
-          return
-
-        const state = commentReplyTreeStates.get(component)
-        if (!state?.enabled || state.viewportDepthEntries.length === 0)
-          return
-
-        const viewportBounds = getCommentReplyTreeViewportBounds(component, state.viewportDepthEntries)
-        const componentRect = component.getBoundingClientRect()
-        if (
-          componentRect.height <= 0
-          || componentRect.bottom <= viewportBounds.top
-          || componentRect.top >= viewportBounds.bottom
-        ) {
-          return
-        }
-
-        const nextOffset = getCommentReplyTreeViewportDepthOffset(
-          state.viewportDepthEntries,
-          state.visualDepthOffset,
-          viewportBounds,
-        )
-        if (nextOffset === state.visualDepthOffset)
-          return
-
-        state.visualDepthOffset = nextOffset
-        scheduleCommentReplyTreeLayoutUpdate(component)
-      })
-    })
-  }
-
-  window.addEventListener('scroll', scheduleCommentReplyTreeViewportRebase, { passive: true, capture: true })
-  window.addEventListener('resize', scheduleCommentReplyTreeViewportRebase, { passive: true })
-  window.addEventListener('scrollend', scheduleCommentReplyTreeViewportRebase, { passive: true, capture: true } as AddEventListenerOptions)
 
   /**
    * 带 #reply{rpid} 的深链会触发 B 站：滚动定位、展开楼中楼、高亮目标评论。
