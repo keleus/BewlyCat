@@ -13,6 +13,7 @@ import {
   mergeSettingsStoragePatches,
   normalizeSettingsStorageWriteMeta,
   parseStoredSettings,
+  SETTINGS_STORAGE_IMPORT_MESSAGE,
   SETTINGS_STORAGE_KEY,
   SETTINGS_STORAGE_META_KEY,
   SETTINGS_STORAGE_PATCH_MESSAGE,
@@ -63,6 +64,14 @@ function isPatchResponse(value: unknown): value is SettingsStoragePatchResponse 
     && Number.isSafeInteger(response.revision)
     && response.revision! >= 0
     && (response.storedValue === undefined || typeof response.storedValue === 'string')
+}
+
+export async function importSettingsStorage(settings: Record<string, unknown>) {
+  const response = await sendMessage(SETTINGS_STORAGE_IMPORT_MESSAGE, { settings })
+  if (!isPatchResponse(response) || !response.accepted)
+    throw new TypeError('Invalid settings import response')
+
+  return response
 }
 
 function waitForRetry(delay: number) {

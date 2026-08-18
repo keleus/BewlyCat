@@ -5,6 +5,7 @@ export const SETTINGS_STORAGE_KEY = 'settings'
 export const SETTINGS_STORAGE_META_KEY = 'settingsWriteMeta:v1'
 export const SETTINGS_STORAGE_READ_MESSAGE = 'readSettingsStorage'
 export const SETTINGS_STORAGE_PATCH_MESSAGE = 'patchSettingsStorage'
+export const SETTINGS_STORAGE_IMPORT_MESSAGE = 'importSettingsStorage'
 export const SETTINGS_STORAGE_RECENT_OPERATION_LIMIT = 256
 
 export interface SettingsStoragePatchRequest {
@@ -24,6 +25,10 @@ export interface SettingsStoragePatchResponse {
   epoch: string
   revision: number
   storedValue?: string
+}
+
+export interface SettingsStorageImportRequest {
+  settings: Record<string, unknown>
 }
 
 export interface SettingsStorageWriteMeta {
@@ -169,6 +174,23 @@ export function normalizeSettingsStoragePatch(value: unknown): SettingsStoragePa
   }
 
   return patch
+}
+
+export function normalizeSettingsStorageImportRequest(value: unknown): SettingsStorageImportRequest | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    return null
+
+  const candidate = value as Partial<SettingsStorageImportRequest>
+  if (!candidate.settings || typeof candidate.settings !== 'object' || Array.isArray(candidate.settings))
+    return null
+
+  const settings: Record<string, unknown> = {}
+  for (const [key, next] of Object.entries(candidate.settings)) {
+    if (!BLOCKED_KEYS.has(key))
+      settings[key] = next
+  }
+
+  return Object.keys(settings).length > 0 ? { settings } : null
 }
 
 export function normalizeSettingsStoragePatchRequest(value: unknown): SettingsStoragePatchRequest | null {

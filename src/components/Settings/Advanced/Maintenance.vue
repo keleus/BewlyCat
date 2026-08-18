@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
+import { importSettingsStorage } from '~/composables/useSettingsStorage'
 import { originalSettings, settings } from '~/logic'
 
 import SettingsItem from '../components/SettingsItem.vue'
@@ -26,18 +27,19 @@ function handleImportFile(event: Event) {
     return
 
   const reader = new FileReader()
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const importedSettings = JSON.parse(String(reader.result)) as Record<string, unknown>
       if (!importedSettings || Array.isArray(importedSettings) || typeof importedSettings !== 'object')
         throw new TypeError('Invalid settings backup')
 
       const currentSettings = settings.value as unknown as Record<string, unknown>
+      const recognizedSettings: Record<string, unknown> = {}
       let importedCount = 0
       let ignoredCount = 0
-      Object.keys(importedSettings).forEach((key) => {
-        if (key in settings.value) {
-          currentSettings[key] = importedSettings[key]
+      Object.entries(importedSettings).forEach(([key, value]) => {
+        if (Object.prototype.hasOwnProperty.call(currentSettings, key)) {
+          recognizedSettings[key] = value
           importedCount++
         }
         else {
@@ -49,6 +51,8 @@ function handleImportFile(event: Event) {
         toast.warning(t('settings.maintenance.import_no_matches'))
         return
       }
+
+      await importSettingsStorage(recognizedSettings)
 
       toast.success(t('settings.maintenance.import_success', {
         imported: importedCount,
