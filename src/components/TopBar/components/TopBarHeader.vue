@@ -19,12 +19,15 @@ const props = defineProps<{
   isDark: boolean
 }>()
 
-const { forceWhiteIcon, handleNotificationsItemClick, showSearchBar } = useTopBarInteraction()
+const { forceWhiteIcon, handleNotificationsItemClick } = useTopBarInteraction()
 const { isLayoutEditing } = useLayoutEditMode()
 const { activatedPage } = useBewlyApp()
 const isNarrowLayout = useMediaQuery('(max-width: 767px)')
-const showTopBarSearchEditor = computed(() => showSearchBar.value
-  || (isLayoutEditing.value && activatedPage.value !== AppPage.Search))
+// 搜索控件常驻挂载，显隐交给 TopBarSearch 内部的 Transition 播放动画；
+// 若在此处跟随 showSearchBar 卸载整棵子树，内部的 slide-out 过渡会被同步卸载吞掉。
+// 仅布局编辑模式需要整体隐藏（搜索页本身有搜索框，不展示编辑目标）。
+const showTopBarSearchEditor = computed(() =>
+  !isLayoutEditing.value || activatedPage.value !== AppPage.Search)
 const usesGradientTopBar = computed(() => settings.value.topBarStyle !== 'solid')
 const usesProgressiveFog = computed(() => settings.value.topBarStyle === 'progressiveFog')
 

@@ -35,6 +35,9 @@
 .slide-out-leave-to,
 .slide-out-enter-from {
   --uno: "transform important:-translate-y-4 opacity-0";
+  // 搜索框自带玻璃滤镜，出场/入场时把滤镜过渡到恒等值，
+  // 与 opacity 动画同步，避免 Chromium 丢弃 backdrop-filter 造成饱和度跳变（crbug.com/40877283）
+  --b-search-bar-glass: blur(0px) saturate(100%);
 }
 
 .fade-enter-active,

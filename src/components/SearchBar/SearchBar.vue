@@ -900,7 +900,9 @@ function handleClearKeyword() {
   @mixin card-content {
     --uno: "text-base outline-none w-full bg-$b-search-bar-normal-color border-1 border-$bew-border-color";
     --uno: "shadow-[var(--bew-shadow-2),var(--bew-shadow-edge-glow-1)]";
-    backdrop-filter: var(--bew-filter-glass-1);
+    // --b-search-bar-glass 由外部（如顶栏的 slide-out 过渡）覆盖为恒等滤镜，
+    // 让玻璃与透明度动画同步渐变，避免 Chromium 丢弃 backdrop-filter 造成饱和度跳变
+    backdrop-filter: var(--b-search-bar-glass, var(--bew-filter-glass-1));
   }
 
   .search-bar {
@@ -932,6 +934,7 @@ function handleClearKeyword() {
         color var(--bew-duration-normal) var(--bew-ease-standard),
         opacity var(--bew-duration-normal) var(--bew-ease-standard),
         box-shadow var(--bew-duration-normal) var(--bew-ease-standard),
+        backdrop-filter var(--bew-duration-moderate) var(--bew-ease-standard),
         border-radius var(--bew-duration-moderate) var(--bew-ease-standard);
 
       &::placeholder {
