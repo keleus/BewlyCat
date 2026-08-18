@@ -429,6 +429,7 @@ settings:
     widescreen: Widescreen
     bewly_widescreen: Bewly Widescreen
     exit_bewly_widescreen: Exit Bewly Widescreen
+    switching_to_bewly_widescreen: Switching to Bewly Widescreen. Please wait…
     enable_overrides: Enable Context Overrides
     enable_overrides_desc: Display mode settings for individual playback contexts only apply when enabled.
     overrides: Context Display Modes
