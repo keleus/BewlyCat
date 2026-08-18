@@ -412,6 +412,7 @@ settings:
     widescreen: 宽屏
     bewly_widescreen: Bewly宽屏
     exit_bewly_widescreen: 退出 Bewly 宽屏
+    switching_to_bewly_widescreen: 正在切换至 Bewly 宽屏，请稍候…
     enable_overrides: 启用按场景覆盖
     enable_overrides_desc: 开启后，下方各播放场景的显示模式设置才会生效。
     overrides: 场景显示模式

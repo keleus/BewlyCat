@@ -36,6 +36,17 @@ function handleLogoClick(event: MouseEvent) {
   handleClickTopBarLogo(event)
 }
 
+function handleHomeClick(event: MouseEvent) {
+  if (isLayoutEditing.value) {
+    event.preventDefault()
+    event.stopPropagation()
+    topBarStore.closeAllPopups()
+    return
+  }
+
+  topBarStore.closeAllPopups()
+}
+
 watch(isLayoutEditing, (editing) => {
   if (editing)
     topBarStore.closeAllPopups()
@@ -130,7 +141,7 @@ watch(isLayoutEditing, (editing) => {
         duration-300
         bg="hover:$bew-theme-color"
         shrink-0
-        @click="handleLogoClick"
+        @click="handleHomeClick"
       >
         <div
           class="i-mingcute:home-3-fill home-icon"

@@ -42,7 +42,7 @@ async function stubIndexHtml() {
 }
 
 function writeManifest() {
-  execSync('npx esno ./scripts/manifest.ts', { stdio: 'inherit' })
+  execSync('esno ./scripts/manifest.ts', { stdio: 'inherit' })
 }
 
 async function downloadContributorsImage() {

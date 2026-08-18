@@ -452,6 +452,7 @@ settings:
     widescreen: 寬螢幕
     bewly_widescreen: Bewly寬螢幕
     exit_bewly_widescreen: 結束 Bewly 寬螢幕
+    switching_to_bewly_widescreen: 正在切換至 Bewly 寬螢幕，請稍候…
     enable_overrides: 啟用依情境覆寫
     enable_overrides_desc: 開啟後，下方各播放情境的顯示模式設定才會生效。
     overrides: 情境顯示模式

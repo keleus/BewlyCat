@@ -9,14 +9,12 @@ BewlyCat：基于 BewlyBewly 的 bilibili 浏览器扩展（Vue 3 + TS + Vite + 
 - 验证时不执行任何 `build` 操作；开发阶段使用 `pnpm dev` 持续编译与验证。
 - 构建产物：Chrome/Edge → `extension/`，Firefox → `extension-firefox/`
 
-仅当本次任务实际执行 `git commit` 时，提交前必须通过：
+提交或推送前无需由 Agent 额外手动运行检查；Git hooks 会自动执行：
 
-```sh
-pnpm lint
-pnpm typecheck
-```
+- `pre-commit`：运行 `pnpm lint-staged`，只检查并自动修复暂存文件。
+- `pre-push`：运行 `pnpm lint` 和 `pnpm typecheck`，执行全项目 lint 和类型检查。
 
-未执行 `git commit` 时，不要求运行上述检查。
+提交和推送时保留并遵循 hooks 的检查结果，不要使用 `--no-verify` 或 `SKIP_SIMPLE_GIT_HOOKS=1` 绕过；仅当用户明确要求跳过 hooks 时例外。
 
 ## 结构（速查）
 

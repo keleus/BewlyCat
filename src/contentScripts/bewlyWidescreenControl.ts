@@ -1,5 +1,5 @@
 import { settings } from '~/logic'
-import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, showBewlyWidescreenSwitchHint } from '~/utils/bewlyWidescreen'
 import { i18n } from '~/utils/i18n'
 import { isVideoOrBangumiPage } from '~/utils/main'
 
@@ -154,6 +154,7 @@ async function handleControlClick(button: HTMLElement) {
 
   isApplying = true
   updateControlState(button)
+  showBewlyWidescreenSwitchHint(translate('settings.video_player_mode.switching_to_bewly_widescreen'))
   clearApplyFallbackTimer()
   applyFallbackTimer = setTimeout(() => {
     if (!isBewlyWidescreenActive())
@@ -161,7 +162,7 @@ async function handleControlClick(button: HTMLElement) {
   }, APPLY_TIMEOUT)
 
   try {
-    applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right')
+    applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right', false)
   }
   catch (error) {
     console.error('[BewlyCat] 切换 Bewly 宽屏失败', error)

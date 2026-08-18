@@ -43,6 +43,7 @@ interface BewlyWidescreenState {
 
 const ROOT_ID = 'bewly-widescreen-root'
 const LOADING_ROOT_ID = 'bewly-widescreen-loading'
+const SWITCH_HINT_ID = 'bewly-widescreen-switch-hint'
 const BODY_CLASS = 'bewly-widescreen-active'
 const EMPTY_CLASS = 'bewly-widescreen-empty'
 const EPISODE_SECTION_CLASS = 'bewly-widescreen-episode-section'
@@ -52,6 +53,8 @@ const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
 const LOAD_SETTLE_DELAY = 1200
 const LOADING_FADE_DURATION = 240
+const SWITCH_HINT_FADE_DURATION = 180
+const SWITCH_HINT_TIMEOUT = 6000
 const LOADING_EXIT_BUTTON_DELAY = 5000
 const PREPARED_LOADING_TIMEOUT = 30_000
 const READY_RETRY_INTERVAL = 500
@@ -74,6 +77,10 @@ let loadingPlaybackCleanup: (() => void) | undefined
 let loadingEscapeCleanup: (() => void) | undefined
 let loadingPreparationFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let loadingSuppressedUntilExit = false
+let switchHint: HTMLElement | null = null
+let switchHintStyleEl: HTMLStyleElement | null = null
+let switchHintTimer: ReturnType<typeof setTimeout> | undefined
+let switchHintPositionCleanup: (() => void) | undefined
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
 let loadFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined
@@ -430,7 +437,16 @@ function createSidebarTitle() {
 function createSidebarToolbar() {
   const toolbar = document.createElement('div')
   toolbar.className = 'bewly-widescreen-toolbar'
-  toolbar.append(createSidebarTitle())
+
+  const closeButton = document.createElement('button')
+  closeButton.type = 'button'
+  closeButton.className = 'bewly-widescreen-close'
+  closeButton.textContent = '退出'
+  closeButton.title = '退出 Bewly 宽屏'
+  closeButton.setAttribute('aria-label', closeButton.title)
+  closeButton.addEventListener('click', () => exitBewlyWidescreen())
+
+  toolbar.append(createSidebarTitle(), closeButton)
   return toolbar
 }
 
@@ -461,6 +477,145 @@ function getLoadingGifUrl() {
   catch {
     return ''
   }
+}
+
+function positionSwitchHint(hint: HTMLElement) {
+  const player = findMovable(selectors.player) ?? getVideoElement()?.parentElement
+  const rect = player?.getBoundingClientRect()
+  const hasPlayerRect = !!rect && rect.width > 0 && rect.height > 0
+  const left = hasPlayerRect ? rect.left + rect.width / 2 : window.innerWidth / 2
+  const top = hasPlayerRect ? rect.top + rect.height / 2 : window.innerHeight / 2
+
+  hint.style.left = `${left}px`
+  hint.style.top = `${top}px`
+}
+
+function removeSwitchHint(immediate = false) {
+  if (switchHintTimer) {
+    clearTimeout(switchHintTimer)
+    switchHintTimer = undefined
+  }
+  switchHintPositionCleanup?.()
+  switchHintPositionCleanup = undefined
+
+  const hint = switchHint
+  const styleEl = switchHintStyleEl
+  switchHint = null
+  switchHintStyleEl = null
+  if (!hint && !styleEl)
+    return
+
+  const remove = () => {
+    hint?.remove()
+    styleEl?.remove()
+  }
+  if (immediate || !hint) {
+    remove()
+    return
+  }
+
+  hint.classList.add('is-leaving')
+  setTimeout(remove, SWITCH_HINT_FADE_DURATION)
+}
+
+export function showBewlyWidescreenSwitchHint(label: string) {
+  removeWidescreenLoading(true)
+
+  if (switchHint?.isConnected) {
+    const labelElement = switchHint.querySelector<HTMLElement>('.bewly-widescreen-switch-hint-label')
+    if (labelElement)
+      labelElement.textContent = label
+    switchHint.classList.remove('is-leaving')
+    switchHint.classList.add('is-visible')
+    positionSwitchHint(switchHint)
+    if (switchHintTimer)
+      clearTimeout(switchHintTimer)
+    switchHintTimer = setTimeout(() => removeSwitchHint(), SWITCH_HINT_TIMEOUT)
+    return
+  }
+
+  removeSwitchHint(true)
+  document.querySelectorAll(`#${SWITCH_HINT_ID}`).forEach(element => element.remove())
+  switchHintStyleEl = injectCSS(`
+    #${SWITCH_HINT_ID} {
+      position: fixed;
+      z-index: 2147482999;
+      display: flex;
+      max-width: calc(100vw - 24px);
+      align-items: center;
+      gap: var(--bew-space-2, 8px);
+      padding: var(--bew-space-2, 8px);
+      color: #fff;
+      background: transparent;
+      border: 0;
+      font-family: var(--bew-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, calc(-50% + 4px));
+      transition: opacity ${SWITCH_HINT_FADE_DURATION}ms ease, transform ${SWITCH_HINT_FADE_DURATION}ms ease;
+    }
+
+    #${SWITCH_HINT_ID}.is-visible {
+      opacity: 1;
+      transform: translate(-50%, -50%);
+    }
+
+    #${SWITCH_HINT_ID}.is-leaving {
+      opacity: 0;
+      transform: translate(-50%, calc(-50% - 4px));
+    }
+
+    #${SWITCH_HINT_ID} .bewly-widescreen-switch-hint-icon {
+      width: 36px;
+      height: 36px;
+      flex: 0 0 auto;
+      object-fit: contain;
+    }
+
+    #${SWITCH_HINT_ID} .bewly-widescreen-switch-hint-label {
+      min-width: 0;
+      font-size: var(--bew-font-size-control, 13px);
+      font-weight: var(--bew-font-weight-medium, 500);
+      line-height: var(--bew-line-height-control, 18px);
+      overflow-wrap: anywhere;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.72);
+    }
+  `)
+
+  const hint = document.createElement('div')
+  hint.id = SWITCH_HINT_ID
+  hint.setAttribute('role', 'status')
+  hint.setAttribute('aria-live', 'polite')
+
+  const loadingGifUrl = getLoadingGifUrl()
+  if (loadingGifUrl) {
+    const icon = document.createElement('img')
+    icon.className = 'bewly-widescreen-switch-hint-icon'
+    icon.src = loadingGifUrl
+    icon.alt = ''
+    icon.setAttribute('aria-hidden', 'true')
+    hint.appendChild(icon)
+  }
+
+  const labelElement = document.createElement('span')
+  labelElement.className = 'bewly-widescreen-switch-hint-label'
+  labelElement.textContent = label
+  hint.appendChild(labelElement)
+
+  const updatePosition = () => positionSwitchHint(hint)
+  updatePosition()
+  window.addEventListener('resize', updatePosition)
+  window.addEventListener('scroll', updatePosition, true)
+  switchHintPositionCleanup = () => {
+    window.removeEventListener('resize', updatePosition)
+    window.removeEventListener('scroll', updatePosition, true)
+  }
+
+  const mountTarget = document.body ?? document.documentElement
+  mountTarget.appendChild(hint)
+  switchHint = hint
+  requestAnimationFrame(() => hint.classList.add('is-visible'))
+  switchHintTimer = setTimeout(() => removeSwitchHint(), SWITCH_HINT_TIMEOUT)
 }
 
 function showWidescreenLoading() {
@@ -1119,6 +1274,50 @@ function injectLayoutStyle() {
       justify-content: space-between;
       gap: 12px;
       margin-bottom: 4px;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-close {
+      position: relative;
+      display: inline-flex;
+      width: 28px;
+      height: 28px;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      color: var(--bewly-widescreen-text-secondary);
+      background: var(--bewly-widescreen-control-bg);
+      border: 0;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 0;
+      line-height: 1;
+      transition: color 150ms ease, background-color 150ms ease;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-close::before,
+    #${ROOT_ID} .bewly-widescreen-close::after {
+      position: absolute;
+      width: 13px;
+      height: 2px;
+      border-radius: 2px;
+      background: currentColor;
+      content: "";
+      transform: rotate(45deg);
+    }
+
+    #${ROOT_ID} .bewly-widescreen-close::after {
+      transform: rotate(-45deg);
+    }
+
+    #${ROOT_ID} .bewly-widescreen-close:hover {
+      color: var(--bewly-widescreen-text-primary);
+      background: var(--bewly-widescreen-control-hover-bg);
+    }
+
+    #${ROOT_ID} .bewly-widescreen-close:focus-visible {
+      outline: 2px solid var(--bew-theme-color-40, rgba(0, 174, 236, 0.4));
+      outline-offset: 2px;
     }
 
     #${ROOT_ID} .bewly-widescreen-title {
@@ -2368,6 +2567,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
   setupSidebarInteractionTracking(nextState)
   setupSidebarToggleAutoHide(nextState)
   setTimeout(() => window.dispatchEvent(new Event('resize')), 0)
+  removeSwitchHint()
   removeWidescreenLoading()
 
   return true
@@ -2481,6 +2681,7 @@ export function exitBewlyWidescreen() {
   clearLoadFallbackTimer()
   clearPageLoadHandler()
   loadingSuppressedUntilExit = false
+  removeSwitchHint(true)
   removeWidescreenLoading(true)
   waitingForLoad = false
 
