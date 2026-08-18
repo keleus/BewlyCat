@@ -233,11 +233,15 @@ export function registerDefaultHandlers(): void {
 
   // 网页全屏
   registerShortcutHandler('webFullscreen', () => {
+    if (isBewlyWidescreenActive())
+      exitBewlyWidescreen()
     webFullscreenClick()
   })
 
   // 宽屏
   registerShortcutHandler('widescreen', () => {
+    if (isBewlyWidescreenActive())
+      exitBewlyWidescreen()
     widescreenClick()
   })
 

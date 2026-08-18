@@ -1,5 +1,5 @@
 import { settings } from '~/logic'
-import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, showBewlyWidescreenSwitchHint } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, ensureNativePlayerModeGuard, exitBewlyWidescreen, isBewlyWidescreenActive, showBewlyWidescreenSwitchHint } from '~/utils/bewlyWidescreen'
 import { i18n } from '~/utils/i18n'
 import { isVideoOrBangumiPage } from '~/utils/main'
 
@@ -364,6 +364,7 @@ export function initBewlyWidescreenControl() {
     return
 
   hasInitialized = true
+  ensureNativePlayerModeGuard()
   setupPageObserver()
 
   const handlePageLifecycleChange = () => restartControlDiscovery()

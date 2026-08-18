@@ -67,6 +67,17 @@ const COMMENT_NESTED_UI_SELECTOR = '.reply-item, .sub-reply-item, bili-comment-r
 // Light-DOM markers only. Modern bili-comments mounts most UI in shadow roots,
 // so readiness must not require these descendants to exist.
 const COMMENT_CONTENT_MARKER_SELECTOR = 'bili-comments, bili-comment-box, bili-comment-renderer, .reply-list, .comment-list, .reply-box, .comment-header'
+const NATIVE_PLAYER_MODE_BUTTON_SELECTOR = [
+  '.bpx-player-ctrl-wide',
+  '.bilibili-player-video-btn-widescreen',
+  '.squirtle-video-widescreen',
+  '.bpx-player-ctrl-web',
+  '.bilibili-player-video-web-fullscreen',
+  '.squirtle-video-pagefullscreen',
+  '.bpx-player-ctrl-full',
+  '.bilibili-player-video-btn-fullscreen',
+  '.squirtle-video-fullscreen',
+].join(', ')
 
 let state: BewlyWidescreenState | null = null
 let loadingOverlay: HTMLElement | null = null
@@ -80,7 +91,6 @@ let loadingSuppressedUntilExit = false
 let switchHint: HTMLElement | null = null
 let switchHintStyleEl: HTMLStyleElement | null = null
 let switchHintTimer: ReturnType<typeof setTimeout> | undefined
-let switchHintPositionCleanup: (() => void) | undefined
 let readyRetryTimer: ReturnType<typeof setTimeout> | undefined
 let loadFallbackTimer: ReturnType<typeof setTimeout> | undefined
 let sidebarRefreshTimer: ReturnType<typeof setTimeout> | undefined
@@ -88,6 +98,7 @@ let pageLoadHandler: (() => void) | undefined
 let readyRetryCount = 0
 let waitingForLoad = false
 let pendingSidebarPosition: 'left' | 'right' = 'right'
+let nativePlayerModeGuardInstalled = false
 
 const selectors = {
   player: [
@@ -479,24 +490,11 @@ function getLoadingGifUrl() {
   }
 }
 
-function positionSwitchHint(hint: HTMLElement) {
-  const player = findMovable(selectors.player) ?? getVideoElement()?.parentElement
-  const rect = player?.getBoundingClientRect()
-  const hasPlayerRect = !!rect && rect.width > 0 && rect.height > 0
-  const left = hasPlayerRect ? rect.left + rect.width / 2 : window.innerWidth / 2
-  const top = hasPlayerRect ? rect.top + rect.height / 2 : window.innerHeight / 2
-
-  hint.style.left = `${left}px`
-  hint.style.top = `${top}px`
-}
-
 function removeSwitchHint(immediate = false) {
   if (switchHintTimer) {
     clearTimeout(switchHintTimer)
     switchHintTimer = undefined
   }
-  switchHintPositionCleanup?.()
-  switchHintPositionCleanup = undefined
 
   const hint = switchHint
   const styleEl = switchHintStyleEl
@@ -527,7 +525,6 @@ export function showBewlyWidescreenSwitchHint(label: string) {
       labelElement.textContent = label
     switchHint.classList.remove('is-leaving')
     switchHint.classList.add('is-visible')
-    positionSwitchHint(switchHint)
     if (switchHintTimer)
       clearTimeout(switchHintTimer)
     switchHintTimer = setTimeout(() => removeSwitchHint(), SWITCH_HINT_TIMEOUT)
@@ -539,6 +536,8 @@ export function showBewlyWidescreenSwitchHint(label: string) {
   switchHintStyleEl = injectCSS(`
     #${SWITCH_HINT_ID} {
       position: fixed;
+      left: 50%;
+      top: 50%;
       z-index: 2147482999;
       display: flex;
       max-width: calc(100vw - 24px);
@@ -601,15 +600,6 @@ export function showBewlyWidescreenSwitchHint(label: string) {
   labelElement.className = 'bewly-widescreen-switch-hint-label'
   labelElement.textContent = label
   hint.appendChild(labelElement)
-
-  const updatePosition = () => positionSwitchHint(hint)
-  updatePosition()
-  window.addEventListener('resize', updatePosition)
-  window.addEventListener('scroll', updatePosition, true)
-  switchHintPositionCleanup = () => {
-    window.removeEventListener('resize', updatePosition)
-    window.removeEventListener('scroll', updatePosition, true)
-  }
 
   const mountTarget = document.body ?? document.documentElement
   mountTarget.appendChild(hint)
@@ -809,7 +799,66 @@ function removeWidescreenLoading(immediate = false) {
   loadingFadeTimer = setTimeout(remove, LOADING_FADE_DURATION)
 }
 
+function isBewlyWidescreenEngaged() {
+  return !!state || waitingForLoad || !!readyRetryTimer || !!loadingOverlay
+}
+
+function findNativePlayerModeButton(event: Event) {
+  const path = typeof event.composedPath === 'function' ? event.composedPath() : []
+  for (const node of path) {
+    if (node instanceof HTMLElement && node.matches(NATIVE_PLAYER_MODE_BUTTON_SELECTOR))
+      return node
+  }
+
+  return event.target instanceof Element
+    ? event.target.closest<HTMLElement>(NATIVE_PLAYER_MODE_BUTTON_SELECTOR)
+    : null
+}
+
+function isNativePlayerModeButtonEntered(button: HTMLElement) {
+  return button.classList.contains('bpx-state-entered')
+    || !!button.closest('[data-screen="web"], [data-screen="wide"]')
+    || !!document.fullscreenElement
+    || !!(document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
+}
+
+function handleNativePlayerModeInteraction(event: Event) {
+  if (!isBewlyWidescreenEngaged())
+    return
+  if (event instanceof MouseEvent && event.button !== 0)
+    return
+
+  const button = findNativePlayerModeButton(event)
+  if (!button)
+    return
+
+  const alreadyEntered = isNativePlayerModeButtonEntered(button)
+  const isBrowserFullscreenButton = button.matches('.bpx-player-ctrl-full, .bilibili-player-video-btn-fullscreen, .squirtle-video-fullscreen')
+
+  // Native web/wide/full modes cannot apply while Bewly widescreen owns the
+  // player layout. Exit first so the same gesture takes effect immediately.
+  exitBewlyWidescreen()
+
+  if (alreadyEntered || isBrowserFullscreenButton)
+    return
+
+  setTimeout(() => {
+    if (!button.isConnected || isNativePlayerModeButtonEntered(button))
+      return
+    button.click()
+  }, 0)
+}
+
+export function ensureNativePlayerModeGuard() {
+  if (nativePlayerModeGuardInstalled)
+    return
+
+  nativePlayerModeGuardInstalled = true
+  document.addEventListener('click', handleNativePlayerModeInteraction, true)
+}
+
 export function prepareBewlyWidescreenLoading() {
+  ensureNativePlayerModeGuard()
   if (state || loadingSuppressedUntilExit)
     return
 
@@ -2493,6 +2542,10 @@ function cleanupState(currentState: BewlyWidescreenState) {
   currentState.root.remove()
   currentState.styleEl.remove()
   document.body.classList.remove(BODY_CLASS)
+  // Force a layout pass so the same click can apply Bilibili's native mode
+  // against the restored player instead of the widescreen frame.
+  void document.body.offsetHeight
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 0)
 }
 
 function isReadyForLayout() {
@@ -2650,6 +2703,7 @@ export function applyBewlyWidescreen(
   sidebarPosition: 'left' | 'right' = 'right',
   showLoading = true,
 ) {
+  ensureNativePlayerModeGuard()
   if (state || waitingForLoad || readyRetryTimer)
     return
 
