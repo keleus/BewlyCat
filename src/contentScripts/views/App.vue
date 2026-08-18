@@ -1375,7 +1375,7 @@ function handleOsScroll(_instance: any, event: Event) {
     const scrollTop = latestScrollTop
 
     emitter.emit(OVERLAY_SCROLL_BAR_SCROLL, scrollTop)
-    if (settings.value.useOriginalBilibiliTopBar)
+    if (settings.value.showTopBar && settings.value.useOriginalBilibiliTopBar)
       setOriginalBilibiliTopBarScrolled(document, scrollTop > 0)
 
     // 只在滚动距离超过阈值时更新状态
@@ -1926,7 +1926,7 @@ if (settings.value.cleanUrlArgument) {
               <div
                 p="t-[calc(var(--bew-top-bar-height)+10px)]" m-auto
                 w="lg:[calc(100%-200px)] [calc(100%-150px)]"
-                :style="settings.useOriginalBilibiliTopBar && !reachTop
+                :style="settings.showTopBar && settings.useOriginalBilibiliTopBar && !reachTop
                   ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
                   : undefined"
               >

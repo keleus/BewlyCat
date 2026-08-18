@@ -253,15 +253,17 @@
     padding: 0 !important;
   }
 
-  // Remove the Bilibili Evolved's top bar
-  .custom-navbar {
-    display: none;
-  }
-
   // some pages have a white bar at the top; changing the top margin fixes this problem
   .banner-wrapper,
   .home-banner-wrapper {
     margin-top: calc(-1 * var(--bew-top-bar-height)) !important;
+  }
+}
+
+// Bewly / 原版顶栏开启时隐藏第三方顶栏；两者都关时不套这个 class，留给 Evolved 等扩展。
+.remove-custom-navbar {
+  .custom-navbar {
+    display: none !important;
   }
 }
 
@@ -275,7 +277,8 @@
   #internationalHeader,
   .link-navbar,
   #home_nav,
-  #bili-header-container {
+  #bili-header-container,
+  .custom-navbar {
     display: none !important;
   }
 

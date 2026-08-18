@@ -32,6 +32,7 @@ import { checkLoginStatus, LoginStatus, parseDedeUserID } from '~/logic/loginSta
 import { parseTopBarPublicationTime, recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
+import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 import { getCSRF, isHomePage } from '~/utils/main'
 import { isExtensionContextInvalidatedError, onMessage, sendMessage } from '~/utils/messaging'
 
@@ -191,7 +192,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       return false
     }
 
-    if (settings.value.showTopBar)
+    if (shouldShowBewlyTopBar(settings.value.showTopBar, settings.value.useOriginalBilibiliTopBar))
       return true
     return false
   })

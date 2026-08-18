@@ -13,7 +13,7 @@ import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import api from '~/utils/api'
 import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, prepareBewlyWidescreenLoading } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
-import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers } from '~/utils/bilibiliTopBar'
+import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
@@ -1080,12 +1080,11 @@ else if (shouldInitializeContentScript) {
       // 温和的脚本清理（可选，减少后台资源消耗）
       cleanupBilibiliScripts()
 
-      // 始终把原版顶栏移出被隐藏的 #app，避免后续开关原版顶栏时节点仍埋在不可见树里。
-      // 使用 Bewly 顶栏时由 .remove-top-bar 隐藏占位，逻辑对齐 1.6.9。
-      ensureOriginalBilibiliTopBarAppended(document)
-
-      // Setup login button click handlers for the original Bilibili top bar
-      setupLoginButtonClickHandlers(document)
+      // 只有「顶栏可见性 + 原版顶栏」同时开启时才 portal 原生顶栏。
+      if (shouldShowOriginalBilibiliTopBar(settings.value.showTopBar, settings.value.useOriginalBilibiliTopBar)) {
+        ensureOriginalBilibiliTopBarAppended(document)
+        setupLoginButtonClickHandlers(document)
+      }
 
       // 如果要使用方案1（删除DOM），取消注释以下代码并注释掉上面的 CSS 方案：
     /*
@@ -1379,7 +1378,7 @@ else if (shouldInitializeContentScript) {
     if (event.source !== window.parent)
       return
 
-    const { type, isDark, darkModeBaseColor, useOriginalBilibiliTopBar } = event.data
+    const { type, isDark, darkModeBaseColor, useOriginalBilibiliTopBar, showTopBar } = event.data
 
     if (type === IFRAME_DARK_MODE_CHANGE) {
     // Check if we should apply selective dark mode (plugin UI only) on festival pages
@@ -1420,8 +1419,17 @@ else if (shouldInitializeContentScript) {
       if (typeof useOriginalBilibiliTopBar !== 'boolean')
         return
 
-      document.documentElement.classList.toggle('remove-top-bar', !useOriginalBilibiliTopBar)
-      if (useOriginalBilibiliTopBar) {
+      const showOriginal = typeof showTopBar === 'boolean'
+        ? shouldShowOriginalBilibiliTopBar(showTopBar, useOriginalBilibiliTopBar)
+        : useOriginalBilibiliTopBar
+      document.documentElement.classList.toggle('remove-top-bar', !showOriginal)
+
+      const hideCustomNavbar = typeof showTopBar === 'boolean'
+        ? showTopBar
+        : !useOriginalBilibiliTopBar
+      document.documentElement.classList.toggle('remove-custom-navbar', hideCustomNavbar)
+
+      if (showOriginal) {
         resetBilibiliTopBarInlineStyles(document)
         // Setup login button click handlers when switching to original top bar
         setupLoginButtonClickHandlers(document)

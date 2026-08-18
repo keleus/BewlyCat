@@ -688,10 +688,11 @@ settings:
   always_show_tabs_on_home_page: 捲動時隱藏主頁分頁欄
   fixed_home_tabs_on_home_page: 固定主頁分頁欄
   topbar_visibility: BewlyBewly 頂欄可視性
-  topbar_visibility_desc: 若然你係用緊 Bilibili Evolved 嘅頂欄，你可以喺度閂咗 BewlyBewly 嘅頂欄去。
+  topbar_visibility_desc: 開咗之後顯示 BewlyCat 或 B 站原本頂欄；閂咗就兩個都收埋，交俾 Bilibili Evolved 等第三方頂欄。
   use_original_bilibili_homepage: 用返原本嘅 Bilibili 主頁
   use_original_bilibili_homepage_desc: 改咗之後，如果你喺主頁，個頁面就會自動重新整理！
   use_original_bilibili_topbar: 用返原本嘅 Bilibili 頂欄
+  use_original_bilibili_topbar_desc: 淨係喺「頂欄可視性」開咗先會生效。開咗就用 B 站原本頂欄，閂咗就用 BewlyCat 頂欄。
   adapt_to_other_page_styles: 適應其他版面風格
   adapt_to_other_page_styles_desc: 執執啲常用嘅版面，襯返 BewlyBewly 主題風格。
   prevent_mobile_redirect: 防止跳轉去流動版

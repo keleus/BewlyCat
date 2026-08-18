@@ -4,7 +4,7 @@ import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { setUselessFeedCardBlockerEnabled, shouldEnableUselessFeedCardBlocker } from '~/contentScripts/features/blockUselessFeedCards'
 import { LanguageType } from '~/enums/appEnums'
 import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
-import { ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
+import { ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe, isVideoPlaybackPage } from '~/utils/main'
 
 function isFestivalPage(): boolean {
@@ -13,7 +13,6 @@ function isFestivalPage(): boolean {
 
 export function setupNecessarySettingsWatchers() {
   const { locale } = useI18n()
-  let syncingTopBarSettings = false
   let lastBewlyDesignHref = location.href
 
   const DEFAULT_FROSTED_GLASS_BLUR_PX = originalSettings.frostedGlassBlurIntensity
@@ -343,7 +342,7 @@ export function setupNecessarySettingsWatchers() {
       const useBewlyHomepage = !isInIframe() && isHomePage() && !useOriginalBilibiliHomepage
       document.documentElement.classList.toggle('bewly-custom-homepage', useBewlyHomepage)
 
-      if (useBewlyHomepage && settings.value.useOriginalBilibiliTopBar) {
+      if (useBewlyHomepage && shouldShowOriginalBilibiliTopBar(settings.value.showTopBar, settings.value.useOriginalBilibiliTopBar)) {
         const scrollTop = document.getElementById('bewly')
           ?.shadowRoot
           ?.querySelector<HTMLElement>('.bewly-scroll-viewport')
@@ -354,71 +353,64 @@ export function setupNecessarySettingsWatchers() {
     { immediate: true },
   )
 
-  watch(
-    () => settings.value.showTopBar,
-    (newVal) => {
-      // `showTopBar` is the Bewly top bar toggle. Keep `useOriginalBilibiliTopBar` in sync,
-      // but avoid ping-pong writes that can race in async storage.
-      if (syncingTopBarSettings)
-        return
+  function isOriginalTopBarEnabled(): boolean {
+    return shouldShowOriginalBilibiliTopBar(settings.value.showTopBar, settings.value.useOriginalBilibiliTopBar)
+  }
 
-      const desiredUseOriginal = !newVal
-      if (settings.value.useOriginalBilibiliTopBar === desiredUseOriginal)
-        return
+  function applyDocumentTopBarClasses(doc: Document, shouldApplyRemoveTopBar: boolean) {
+    doc.documentElement.classList.toggle('remove-top-bar', shouldApplyRemoveTopBar)
+    // 顶栏可见性关闭时留给 Evolved 等第三方顶栏
+    doc.documentElement.classList.toggle('remove-custom-navbar', settings.value.showTopBar)
+  }
 
-      syncingTopBarSettings = true
-      settings.value.useOriginalBilibiliTopBar = desiredUseOriginal
-      syncingTopBarSettings = false
-    },
-    { immediate: true },
-  )
+  function buildIframeTopBarMessage() {
+    return {
+      type: IFRAME_TOP_BAR_CHANGE,
+      useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
+      showTopBar: settings.value.showTopBar,
+    }
+  }
 
-  watch(
-    () => settings.value.useOriginalBilibiliTopBar,
-    (newVal) => {
-      // `useOriginalBilibiliTopBar` is the source-of-truth for "which top bar to use".
-      // Sync `showTopBar` (Bewly top bar visible) with minimal writes.
-      const desiredShowTopBar = !newVal
-      if (!syncingTopBarSettings && settings.value.showTopBar !== desiredShowTopBar) {
-        syncingTopBarSettings = true
-        settings.value.showTopBar = desiredShowTopBar
-        syncingTopBarSettings = false
+  function applyIframeDocumentTopBarClasses(iframeDoc: Document) {
+    applyDocumentTopBarClasses(iframeDoc, !isOriginalTopBarEnabled())
+    if (isOriginalTopBarEnabled())
+      resetBilibiliTopBarInlineStyles(iframeDoc)
+  }
+
+  function syncTopBarPreferenceToIframes() {
+    if (isInIframe())
+      return
+
+    const message = buildIframeTopBarMessage()
+    const iframeCandidates = new Set<HTMLIFrameElement>()
+    document.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => iframeCandidates.add(iframe))
+    document.getElementById('bewly')?.shadowRoot?.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => iframeCandidates.add(iframe))
+
+    iframeCandidates.forEach((iframe) => {
+      try {
+        // Prefer direct DOM access when same-origin, so it works even if the iframe didn't inject our content script.
+        const iframeDoc = iframe.contentWindow?.document
+        if (iframeDoc)
+          applyIframeDocumentTopBarClasses(iframeDoc)
       }
+      catch {
+        // Ignore cross-origin / sandbox restrictions.
+      }
+
+      try {
+        iframe.contentWindow?.postMessage(message, '*')
+      }
+      catch {
+        // Ignore cross-origin / sandbox restrictions.
+      }
+    })
+  }
+
+  watch(
+    [() => settings.value.showTopBar, () => settings.value.useOriginalBilibiliTopBar],
+    () => {
       applyOuterTopBarPolicy()
-
-      // Sync top bar visibility preference to embedded Bilibili iframes.
-      // WebExtension storage doesn't automatically sync reactive state across frames,
-      // so the iframe may not update until reload without this message.
-      if (!isInIframe()) {
-        const message = {
-          type: IFRAME_TOP_BAR_CHANGE,
-          useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
-        }
-
-        const iframeCandidates = new Set<HTMLIFrameElement>()
-        document.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => iframeCandidates.add(iframe))
-        document.getElementById('bewly')?.shadowRoot?.querySelectorAll<HTMLIFrameElement>('iframe').forEach(iframe => iframeCandidates.add(iframe))
-
-        iframeCandidates.forEach((iframe) => {
-          try {
-            // Prefer direct DOM access when same-origin, so it works even if the iframe didn't inject our content script.
-            const iframeDoc = iframe.contentWindow?.document
-            iframeDoc?.documentElement?.classList.toggle('remove-top-bar', !settings.value.useOriginalBilibiliTopBar)
-            if (settings.value.useOriginalBilibiliTopBar && iframeDoc)
-              resetBilibiliTopBarInlineStyles(iframeDoc)
-          }
-          catch {
-            // Ignore cross-origin / sandbox restrictions.
-          }
-
-          try {
-            iframe.contentWindow?.postMessage(message, '*')
-          }
-          catch {
-            // Ignore cross-origin / sandbox restrictions.
-          }
-        })
-      }
+      syncTopBarPreferenceToIframes()
     },
     { immediate: true },
   )
@@ -537,22 +529,27 @@ export function setupNecessarySettingsWatchers() {
   }
 
   function applyOuterTopBarPolicy() {
-    if (isInIframe())
+    if (isInIframe()) {
+      applyDocumentTopBarClasses(document, !isOriginalTopBarEnabled())
+      if (isOriginalTopBarEnabled())
+        resetBilibiliTopBarInlineStyles(document)
       return
+    }
 
     // Handle homepage-specific logic
     if (isHomePage()) {
       // When the homepage is showing an original Bilibili page inside our iframe (dock item "useOriginalBiliPage"),
       // we should keep the *outer* document's Bilibili top bar hidden to avoid double headers.
       const shouldHideOuterBiliTopBar = hasBiliIframePage()
+      const shouldShowOriginal = isOriginalTopBarEnabled()
 
       // 自定义首页下原版顶栏只挂在 body，不再回填 #app 做保活。
       // 切回 Bewly 顶栏时用 remove-top-bar 隐藏即可，避免重新点亮原站首页 Vue 树。
-      if (settings.value.useOriginalBilibiliTopBar && !shouldHideOuterBiliTopBar)
+      if (shouldShowOriginal && !shouldHideOuterBiliTopBar)
         ensureOriginalBilibiliTopBarAppended(document)
 
-      const shouldApplyRemoveTopBar = !settings.value.useOriginalBilibiliTopBar || shouldHideOuterBiliTopBar
-      document.documentElement.classList.toggle('remove-top-bar', shouldApplyRemoveTopBar)
+      const shouldApplyRemoveTopBar = !shouldShowOriginal || shouldHideOuterBiliTopBar
+      applyDocumentTopBarClasses(document, shouldApplyRemoveTopBar)
 
       const outerHeader = document.querySelector<HTMLElement>('body > .bili-header, .bili-header')
       if (outerHeader) {
@@ -562,10 +559,10 @@ export function setupNecessarySettingsWatchers() {
           outerHeader.style.removeProperty('display')
       }
 
-      if (settings.value.useOriginalBilibiliTopBar && !shouldHideOuterBiliTopBar)
+      if (shouldShowOriginal && !shouldHideOuterBiliTopBar)
         resetBilibiliTopBarInlineStyles(document)
 
-      if (settings.value.useOriginalBilibiliTopBar && !shouldHideOuterBiliTopBar) {
+      if (shouldShowOriginal && !shouldHideOuterBiliTopBar) {
         const scrollTop = document.getElementById('bewly')
           ?.shadowRoot
           ?.querySelector<HTMLElement>('.bewly-scroll-viewport')
@@ -575,14 +572,8 @@ export function setupNecessarySettingsWatchers() {
     }
     else {
       // Handle non-homepage pages
-      document.documentElement.classList.toggle('remove-top-bar', !settings.value.useOriginalBilibiliTopBar)
-
-      // When switching to Bewly top bar, reset any inline styles that Bilibili might have added
-      if (!settings.value.useOriginalBilibiliTopBar)
-        resetBilibiliTopBarInlineStyles(document)
-      // When switching to original Bilibili top bar, also reset inline styles to ensure it's visible
-      else
-        resetBilibiliTopBarInlineStyles(document)
+      applyDocumentTopBarClasses(document, !isOriginalTopBarEnabled())
+      resetBilibiliTopBarInlineStyles(document)
     }
   }
 }

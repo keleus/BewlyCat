@@ -3,6 +3,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
+import { shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 
 const props = defineProps<{
   url: string
@@ -86,14 +87,19 @@ function canAccessIframeDocument(iframeWindow: Window): boolean {
   }
 }
 
-function syncIframeTopBarVisibility(useOriginalBilibiliTopBar: boolean) {
+function syncIframeTopBarVisibility() {
   const iframeWindow = iframeRef.value?.contentWindow
   if (!iframeWindow)
     return
 
+  const useOriginalBilibiliTopBar = settings.value.useOriginalBilibiliTopBar
+  const showTopBar = settings.value.showTopBar
+  const showOriginal = shouldShowOriginalBilibiliTopBar(showTopBar, useOriginalBilibiliTopBar)
+
   // 同源时直接同步类名，避免 iframe 消息监听器尚未就绪时短暂显示原版顶栏
   try {
-    iframeWindow.document.documentElement.classList.toggle('remove-top-bar', !useOriginalBilibiliTopBar)
+    iframeWindow.document.documentElement.classList.toggle('remove-top-bar', !showOriginal)
+    iframeWindow.document.documentElement.classList.toggle('remove-custom-navbar', showTopBar)
   }
   catch {
     // 跨域页面继续使用 postMessage 同步
@@ -103,6 +109,7 @@ function syncIframeTopBarVisibility(useOriginalBilibiliTopBar: boolean) {
     iframeWindow.postMessage({
       type: IFRAME_TOP_BAR_CHANGE,
       useOriginalBilibiliTopBar,
+      showTopBar,
     }, '*')
   }
   catch (error) {
@@ -124,9 +131,13 @@ watch(() => isDark.value, (newValue) => {
   }
 })
 
-watch(() => settings.value.useOriginalBilibiliTopBar, (newValue) => {
-  syncIframeTopBarVisibility(newValue)
-}, { immediate: true })
+watch(
+  [() => settings.value.useOriginalBilibiliTopBar, () => settings.value.showTopBar],
+  () => {
+    syncIframeTopBarVisibility()
+  },
+  { immediate: true },
+)
 
 // 监听深色模式基准颜色变化
 watch(() => settings.value.darkModeBaseColor, (newColor) => {
@@ -158,7 +169,7 @@ function handleIframeLoad() {
   showLoading.value = false
 
   setupIframeScrollSync()
-  syncIframeTopBarVisibility(settings.value.useOriginalBilibiliTopBar)
+  syncIframeTopBarVisibility()
 
   // 当iframe加载完成后，发送当前的黑暗模式状态（仅在跨域时需要）
   if (iframeRef.value?.contentWindow) {
@@ -169,7 +180,7 @@ function handleIframeLoad() {
           isDark: isDark.value,
           darkModeBaseColor: settings.value.darkModeBaseColor,
         }, '*')
-        syncIframeTopBarVisibility(settings.value.useOriginalBilibiliTopBar)
+        syncIframeTopBarVisibility()
       }
       catch (error) {
         console.warn('Failed to send initial dark mode state to iframe:', error)

@@ -1,5 +1,15 @@
 import { SVG_ICONS } from '~/utils/svgIcons'
 
+/** 顶栏可见性开 + 原版顶栏开：使用 B 站原生顶栏 */
+export function shouldShowOriginalBilibiliTopBar(showTopBar: boolean, useOriginalBilibiliTopBar: boolean): boolean {
+  return showTopBar && useOriginalBilibiliTopBar
+}
+
+/** 顶栏可见性开 + 原版顶栏关：使用 Bewly 顶栏 */
+export function shouldShowBewlyTopBar(showTopBar: boolean, useOriginalBilibiliTopBar: boolean): boolean {
+  return showTopBar && !useOriginalBilibiliTopBar
+}
+
 const BILIBILI_TOP_BAR_SELECTORS = [
   '.bili-header',
   '.bili-header .bili-header__bar',
