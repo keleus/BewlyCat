@@ -5,13 +5,17 @@ import Dialog from '~/components/Dialog.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import MomentCard from '~/components/MomentCard/MomentCard.vue'
 import type { DisplayForwardVideo, DisplayMoment, DisplayRichTextSegment, WatchLaterTarget } from '~/components/MomentCard/types'
+import type { MomentLinkKind } from '~/components/MomentCard/utils'
 import {
+  classifyMomentLink,
   formatCount,
   getCardPreviewText,
   getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
+  getPortraitThumbnailRatio,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
+  isPortraitMomentLayout,
 } from '~/components/MomentCard/utils'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
@@ -432,9 +436,13 @@ function extractRichTextSegments(...nodeLists: any[]): DisplayRichTextSegment[] 
       }]
     }
 
+    const isAtMention = node?.type === 'RICH_TEXT_NODE_TYPE_AT'
     const isSupportedLink = node?.type === 'RICH_TEXT_NODE_TYPE_TOPIC'
       || node?.type === 'RICH_TEXT_NODE_TYPE_WEB'
-    const url = isSupportedLink ? normalizeRichTextJumpUrl(node?.jump_url) : ''
+      || isAtMention
+    const rawJumpUrl = node?.jump_url
+      || (isAtMention && node?.rid ? `https://space.bilibili.com/${node.rid}` : '')
+    const url = isSupportedLink ? normalizeRichTextJumpUrl(rawJumpUrl) : ''
     if (text && url)
       return [{ type: 'link' as const, text, url }]
 
@@ -1086,6 +1094,59 @@ function resolveMomentOpenMode(moment: DisplayMoment): ResolvedMomentOpenMode {
   return settings.value.momentsCardOpenMode
 }
 
+function resolveLinkOpenMode(kind: MomentLinkKind): ResolvedMomentOpenMode {
+  if (kind === 'video') {
+    const videoMode = settings.value.momentsVideoCardOpenMode
+    return videoMode === 'inherit' ? settings.value.momentsCardOpenMode : videoMode
+  }
+  if (kind === 'moment')
+    return settings.value.momentsCardOpenMode
+
+  const mode = settings.value.momentsCardOpenMode
+  return mode === 'dialog' ? 'newTab' : mode
+}
+
+function createLinkMoment(url: string, kind: Extract<MomentLinkKind, 'video' | 'moment'>, video?: DisplayForwardVideo): DisplayMoment {
+  const bvid = video?.bvid || url.match(/\/video\/(BV\w+)/i)?.[1]
+  const aid = video?.aid || url.match(/\/video\/av(\d+)/i)?.[1]
+  return {
+    id: `link-${kind}-${bvid || aid || url}`,
+    author: { mid: '', name: '', face: '' },
+    publishedAt: 0,
+    title: video?.title || '',
+    text: '',
+    richText: [],
+    images: video?.cover ? [video.cover] : [],
+    time: '',
+    likeCount: 0,
+    isLiked: false,
+    isLikeDisabled: true,
+    commentCount: 0,
+    url,
+    isVideo: kind === 'video',
+    isRegularVideo: kind === 'video',
+    isUgcSeason: false,
+    isDraw: false,
+    isPgc: false,
+    isLive: false,
+    isChargeExclusive: false,
+    isForward: false,
+    isArticle: false,
+    isUpRecommendation: false,
+    isVideoReservation: false,
+    isLiveReservation: false,
+    mediaMeta: video?.duration || '',
+    liveArea: '',
+    livePopularity: '',
+    duration: video?.duration || '',
+    videoPlay: video?.play || '',
+    videoDanmaku: video?.danmaku || '',
+    aid,
+    bvid,
+    videoUrl: kind === 'video' ? (video?.url || url) : undefined,
+  }
+}
+
 function shouldOpenMomentExternally(moment: DisplayMoment, openMode: ResolvedMomentOpenMode) {
   return moment.isLive
     || openMode !== 'dialog'
@@ -1415,6 +1476,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     forward: isForward
       ? {
           author: forwardedAuthor.name || '原作者',
+          authorMid: String(forwardedAuthor.mid || ''),
           title: content.title,
           text: content.text,
           fallback: content.isChargeExclusive
@@ -1470,6 +1532,17 @@ function estimateCardHeight(moment: DisplayMoment) {
     )))
     const additionalHeight = moment.additional ? 68 : 0
     return 118 + lineCount * 21 + additionalHeight + interactionHeight
+  }
+  if (isPortraitMomentLayout(moment, coverRatios[moment.id])) {
+    const mediaWidth = Math.min(180, Math.max(96, (columnWidth - 32) * 0.38))
+    const mediaHeight = Math.round(mediaWidth / getPortraitThumbnailRatio(coverRatios[moment.id]))
+    const textWidth = Math.max(1, columnWidth - 32 - 12 - mediaWidth)
+    const charsPerLine = Math.max(8, Math.floor(textWidth / 14))
+    const previewText = getCardPreviewText(moment)
+    const descLines = previewText
+      ? Math.min(7, Math.max(1, Math.ceil(Array.from(previewText).length / charsPerLine)))
+      : 0
+    return 72 + Math.max(mediaHeight, descLines * 24 + 24) + 52 + (moment.additional ? 68 : 0) + interactionHeight
   }
   if (moment.forward?.images?.length) {
     const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
@@ -2418,7 +2491,7 @@ function handleCoverLoad(event: Event, momentId: string) {
 }
 
 async function prepareMomentCovers(items: DisplayMoment[], requestToken: number) {
-  const imageItems = items.filter(item => item.images[0])
+  const imageItems = items.filter(item => item.images[0] || item.forward?.images?.[0])
   await Promise.all(imageItems.map(item => new Promise<void>((resolve) => {
     const image = new Image()
     let finished = false
@@ -2451,9 +2524,10 @@ async function prepareMomentCovers(items: DisplayMoment[], requestToken: number)
       finish()
     }
     image.onerror = finish
+    const coverUrl = item.images[0] || item.forward?.images?.[0] || ''
     image.src = item.images.length === 1 && !item.isVideo && !item.isLive
-      ? getMomentOriginalImageUrl(item.images[0])
-      : getMomentThumbnailUrl(item.images[0])
+      ? getMomentOriginalImageUrl(coverUrl)
+      : getMomentThumbnailUrl(coverUrl)
   })))
 }
 
@@ -2670,8 +2744,31 @@ function handleMediaLeave(moment: DisplayMoment) {
     delete previewUrls[moment.id]
 }
 
-function handleForwardVideoClick(video: DisplayForwardVideo) {
-  recordVideoVisit(video)
+function openClassifiedLink(url: string, kind: MomentLinkKind, video?: DisplayForwardVideo) {
+  if (!url)
+    return
+
+  if (kind === 'video' && video)
+    recordVideoVisit(video)
+
+  const mode = resolveLinkOpenMode(kind)
+  if (mode === 'dialog' && kind !== 'other') {
+    openMomentDetail(createLinkMoment(url, kind, video))
+    return
+  }
+
+  hoveredMediaId.value = ''
+  cleanupLivePreviewPlayer()
+  if (mode === 'background')
+    void openLinkInBackground(url)
+  else if (mode === 'currentTab')
+    window.open(url, '_top')
+  else
+    window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+function handleOpenLink(payload: { url: string, kind: MomentLinkKind, video?: DisplayForwardVideo }) {
+  openClassifiedLink(payload.url, payload.kind || classifyMomentLink(payload.url), payload.video)
 }
 
 function bindPreviewVideo(el: Element | null, moment: DisplayMoment) {
@@ -3918,7 +4015,7 @@ watch(
               @cover-load="(event, momentId) => handleCoverLoad(event, momentId)"
               @preview-video="bindPreviewVideo"
               @preview-canplay="playPreview"
-              @forward-video-click="handleForwardVideoClick"
+              @open-link="handleOpenLink"
               @toggle-watch-later="toggleMomentWatchLater"
               @toggle-like="toggleMomentLike"
               @toggle-reservation="toggleMomentReservation"

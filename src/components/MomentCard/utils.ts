@@ -82,3 +82,74 @@ export function getWatchLaterStateKey(target: WatchLaterTarget) {
     return `bvid:${target.bvid}`
   return target.epid ? `epid:${target.epid}` : ''
 }
+
+export type MomentLinkKind = 'video' | 'moment' | 'other'
+
+export function getAuthorSpaceUrl(mid?: string | number) {
+  const value = String(mid || '').trim()
+  return value ? `https://space.bilibili.com/${value}` : ''
+}
+
+export function classifyMomentLink(url = ''): MomentLinkKind {
+  if (!url)
+    return 'other'
+
+  try {
+    const parsed = new URL(url.startsWith('//') ? `https:${url}` : url, 'https://www.bilibili.com')
+    const host = parsed.hostname.replace(/^www\./, '')
+    const path = parsed.pathname
+
+    if (
+      /\/video\//.test(path)
+      || /\/bangumi\/play\//.test(path)
+      || /\/cheese\/play\//.test(path)
+      || /\/festival\//.test(path)
+    ) {
+      return 'video'
+    }
+
+    if (
+      host === 't.bilibili.com'
+      || /\/opus\//.test(path)
+      || /\/dynamic\//.test(path)
+    ) {
+      return 'moment'
+    }
+  }
+  catch {
+    return 'other'
+  }
+
+  return 'other'
+}
+
+export function shouldUseNativeLinkOpen(event: MouseEvent) {
+  return event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey
+}
+
+/** 竖图缩略图最高按 2:1（高:宽）裁切，对应宽高比 0.5 */
+export const PORTRAIT_THUMBNAIL_MIN_RATIO = 0.5
+
+export function isPortraitImageRatio(ratio?: number) {
+  return typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0 && ratio < 1
+}
+
+export function getPortraitThumbnailRatio(ratio?: number) {
+  if (!isPortraitImageRatio(ratio))
+    return PORTRAIT_THUMBNAIL_MIN_RATIO
+  return Math.max(PORTRAIT_THUMBNAIL_MIN_RATIO, ratio)
+}
+
+export function getPortraitThumbnailImages(moment: DisplayMoment) {
+  if (moment.isVideo || moment.isLive || (moment.isChargeExclusive && !moment.images.length))
+    return []
+  if (moment.images.length === 1)
+    return moment.images
+  if (!moment.images.length && moment.forward?.images?.length === 1)
+    return moment.forward.images
+  return []
+}
+
+export function isPortraitMomentLayout(moment: DisplayMoment, ratio?: number) {
+  return getPortraitThumbnailImages(moment).length > 0 && isPortraitImageRatio(ratio)
+}

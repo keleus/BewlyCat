@@ -11,14 +11,21 @@ import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import type { Author, Video } from '../VideoCard/types'
 import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
 import type { DisplayForwardVideo, DisplayMoment, WatchLaterTarget } from './types'
+import type { MomentLinkKind } from './utils'
 import {
+  classifyMomentLink,
   formatCount,
+  getAuthorSpaceUrl,
   getAvatarThumbnailUrl,
   getCardPreviewText,
   getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
+  getPortraitThumbnailImages,
+  getPortraitThumbnailRatio,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
+  isPortraitMomentLayout,
+  shouldUseNativeLinkOpen,
 } from './utils'
 
 interface Props {
@@ -58,7 +65,7 @@ const emit = defineEmits<{
   coverLoad: [event: Event, momentId: string]
   previewVideo: [element: Element | null, moment: DisplayMoment]
   previewCanplay: [event: Event]
-  forwardVideoClick: [video: DisplayForwardVideo]
+  openLink: [payload: { url: string, kind: MomentLinkKind, video?: DisplayForwardVideo }]
   toggleWatchLater: [target: WatchLaterTarget]
   toggleLike: [moment: DisplayMoment]
   toggleReservation: [moment: DisplayMoment]
@@ -75,9 +82,22 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
   } as CSSProperties
 })
 
+const authorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.author.mid))
+const forwardAuthorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.forward?.authorMid))
+const portraitImages = computed(() => getPortraitThumbnailImages(moment))
+const isPortraitLayout = computed(() => isPortraitMomentLayout(moment, imageRatio))
+const portraitThumbnailStyle = computed<CSSProperties | undefined>(() => {
+  if (!isPortraitLayout.value)
+    return undefined
+  return {
+    aspectRatio: String(getPortraitThumbnailRatio(imageRatio)),
+  }
+})
+
 const singleImageGalleryStyle = computed<CSSProperties | undefined>(() => {
   if (
-    moment.images.length !== 1
+    isPortraitLayout.value
+    || moment.images.length !== 1
     || moment.isVideo
     || moment.isLive
     || imageRatio === undefined
@@ -87,12 +107,23 @@ const singleImageGalleryStyle = computed<CSSProperties | undefined>(() => {
     return undefined
   }
 
-  // Keep landscape/square originals at their natural ratio while portrait
-  // originals use the existing square card treatment.
   return {
     aspectRatio: String(Math.max(1, imageRatio)),
   }
 })
+
+const showVideoDuration = computed(() => settings.value.showVideoCardDuration && Boolean(moment.duration))
+const showForwardVideoDuration = computed(() =>
+  settings.value.showVideoCardDuration && Boolean(moment.forward?.video?.duration),
+)
+const showVideoCoverStats = computed(() =>
+  (settings.value.showVideoCardViewCount && Boolean(moment.videoPlay))
+  || showVideoDuration.value,
+)
+const showForwardVideoCoverStats = computed(() =>
+  (settings.value.showVideoCardViewCount && Boolean(moment.forward?.video?.play))
+  || showForwardVideoDuration.value,
+)
 
 // The shared context menu expects the same video shape as VideoCard. A dynamic
 // video without a stable aid is intentionally left without a menu instead of
@@ -254,9 +285,55 @@ function handlePreviewVideo(element: Element | ComponentPublicInstance | null) {
   emit('previewVideo', element instanceof Element ? element : null, moment)
 }
 
-function handleForwardVideoClick() {
-  if (moment.forward?.video)
-    emit('forwardVideoClick', moment.forward.video)
+function handleOpenLink(event: MouseEvent, url?: string, kind?: MomentLinkKind, video?: DisplayForwardVideo) {
+  if (!url || shouldUseNativeLinkOpen(event))
+    return
+
+  event.preventDefault()
+  event.stopPropagation()
+  emit('openLink', { url, kind: kind || classifyMomentLink(url), video })
+}
+
+function handleAuthorClick(event: MouseEvent) {
+  handleOpenLink(event, authorSpaceUrl.value, 'other')
+}
+
+function handleForwardAuthorClick(event: MouseEvent) {
+  handleOpenLink(event, forwardAuthorSpaceUrl.value, 'other')
+}
+
+function handleForwardVideoClick(event: MouseEvent) {
+  const video = moment.forward?.video
+  if (!video?.url)
+    return
+  handleOpenLink(event, video.url, 'video', video)
+}
+
+function handleRichLinkClick(event: MouseEvent, url?: string) {
+  handleOpenLink(event, url, url ? classifyMomentLink(url) : 'other')
+}
+
+function handleAdditionalClick(event: MouseEvent) {
+  const url = moment.additional?.url
+  handleOpenLink(event, url, url ? classifyMomentLink(url) : 'other')
+}
+
+function getPortraitPreviewUrls() {
+  return portraitImages.value.map(url => getMomentOriginalImageUrl(url))
+}
+
+function handlePortraitImageClick(event: MouseEvent) {
+  const urls = getPortraitPreviewUrls()
+  if (!urls.length)
+    return
+  handleImagePreviewClick(event, urls, 0)
+}
+
+function handlePortraitImageKeydown(event: KeyboardEvent) {
+  const urls = getPortraitPreviewUrls()
+  if (!urls.length)
+    return
+  handleImagePreviewKeydown(event, urls, 0)
 }
 </script>
 
@@ -269,10 +346,11 @@ function handleForwardVideoClick() {
     data-layout-settings-page="moments"
     data-layout-settings-title-key="settings.moments_card_open_mode"
     :class="{
-      'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video,
+      'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video && !isPortraitLayout,
       'moment-card--compact-text': isCompactPlainTextMoment(moment),
       'moment-card--forward-video': !!moment.forward?.video,
-      'moment-card--forward-draw': Boolean(moment.forward?.images?.length),
+      'moment-card--forward-draw': Boolean(moment.forward?.images?.length) && !isPortraitLayout,
+      'moment-card--portrait': isPortraitLayout,
       'moment-card--charge': moment.isChargeExclusive,
       'moment-card--preparing': !ready,
       'moment-card--entering': entering,
@@ -285,9 +363,34 @@ function handleForwardVideoClick() {
   >
     <div class="moment-card__surface">
       <header class="moment-card__header">
-        <img :src="getAvatarThumbnailUrl(moment.author.face)" :alt="moment.author.name" class="moment-card__avatar" loading="lazy" decoding="async">
+        <a
+          v-if="authorSpaceUrl"
+          :href="authorSpaceUrl"
+          class="moment-card__author-link"
+          :aria-label="`打开 ${moment.author.name} 的空间`"
+          rel="noopener noreferrer"
+          @click="handleAuthorClick"
+        >
+          <img :src="getAvatarThumbnailUrl(moment.author.face)" :alt="moment.author.name" class="moment-card__avatar" loading="lazy" decoding="async">
+        </a>
+        <img
+          v-else
+          :src="getAvatarThumbnailUrl(moment.author.face)"
+          :alt="moment.author.name"
+          class="moment-card__avatar"
+          loading="lazy"
+          decoding="async"
+        >
         <span class="moment-card__identity">
-          <strong>{{ moment.author.name }}</strong>
+          <a
+            v-if="authorSpaceUrl"
+            :href="authorSpaceUrl"
+            class="moment-card__author-name"
+            :aria-label="`打开 ${moment.author.name} 的空间`"
+            rel="noopener noreferrer"
+            @click="handleAuthorClick"
+          >{{ moment.author.name }}</a>
+          <strong v-else>{{ moment.author.name }}</strong>
           <small>{{ moment.time || '刚刚' }}</small>
         </span>
         <button
@@ -315,12 +418,13 @@ function handleForwardVideoClick() {
       <div
         class="moment-card__main"
         :class="{
-          'moment-card__main--has-media': (!moment.isChargeExclusive || moment.isVideo) && (
+          'moment-card__main--has-media': isPortraitLayout || ((!moment.isChargeExclusive || moment.isVideo) && (
             (moment.images.length > 0 && (moment.isVideo || moment.isLive))
             || (!moment.images.length && (moment.isVideo || moment.isLive))
-          ),
+          )),
           'moment-card__main--video': moment.isVideo || (!moment.isChargeExclusive && moment.isLive),
           'moment-card__main--live': !moment.isChargeExclusive && moment.isLive,
+          'moment-card__main--portrait': isPortraitLayout,
         }"
       >
         <div
@@ -348,15 +452,16 @@ function handleForwardVideoClick() {
             @canplay="emit('previewCanplay', $event)"
           />
           <span
-            v-if="moment.isVideo && settings.showVideoCardViewCount && moment.videoPlay"
+            v-if="moment.isVideo && showVideoCoverStats"
             class="moment-card__video-stats"
           >
             <span class="moment-card__video-stat-group">
-              <span>
+              <span v-if="settings.showVideoCardViewCount && moment.videoPlay">
                 <span i-tabler-player-play aria-hidden="true" />
                 {{ moment.videoPlay }}
               </span>
             </span>
+            <span v-if="showVideoDuration" class="moment-card__video-duration">{{ moment.duration }}</span>
           </span>
           <span v-if="moment.isLive" class="moment-card__live-mark">
             LIVE
@@ -401,6 +506,24 @@ function handleForwardVideoClick() {
             <span v-else i-mingcute:carplay-line aria-hidden="true" />
           </button>
         </div>
+        <div
+          v-else-if="isPortraitLayout"
+          class="moment-card__media moment-card__portrait"
+          :style="portraitThumbnailStyle"
+        >
+          <img
+            :src="getMomentThumbnailUrl(portraitImages[0], 360)"
+            :alt="`${moment.author.name} 的动态图片`"
+            :aria-label="`查看 ${moment.author.name} 的动态图片`"
+            tabindex="0"
+            role="button"
+            loading="lazy"
+            decoding="async"
+            @load="handleCoverLoad"
+            @click="handlePortraitImageClick"
+            @keydown="handlePortraitImageKeydown"
+          >
+        </div>
 
         <div class="moment-card__body">
           <p v-if="moment.title && !moment.forward?.video" class="moment-card__title">
@@ -437,7 +560,7 @@ function handleForwardVideoClick() {
                   target="_blank"
                   rel="noopener noreferrer"
                   class="moment-card__rich-link"
-                  @click.stop
+                  @click="handleRichLinkClick($event, segment.url)"
                 >
                   {{ segment.text }}
                 </a>
@@ -457,7 +580,7 @@ function handleForwardVideoClick() {
             rel="noopener noreferrer"
             class="moment-card__forward-video"
             :aria-label="`打开原视频：${moment.forward.video.title}`"
-            @click.stop="handleForwardVideoClick"
+            @click="handleForwardVideoClick"
           >
             <span class="moment-card__forward-video-cover">
               <img
@@ -467,15 +590,16 @@ function handleForwardVideoClick() {
                 decoding="async"
               >
               <span
-                v-if="settings.showVideoCardViewCount && moment.forward.video.play"
+                v-if="showForwardVideoCoverStats"
                 class="moment-card__video-stats"
               >
                 <span class="moment-card__video-stat-group">
-                  <span>
+                  <span v-if="settings.showVideoCardViewCount && moment.forward.video.play">
                     <span i-tabler-player-play aria-hidden="true" />
                     {{ moment.forward.video.play }}
                   </span>
                 </span>
+                <span v-if="showForwardVideoDuration" class="moment-card__video-duration">{{ moment.forward.video.duration }}</span>
               </span>
               <span
                 v-if="settings.showVideoCardWatchLater && getWatchLaterStateKey(moment.forward.video)"
@@ -507,7 +631,17 @@ function handleForwardVideoClick() {
                 />
                 {{ moment.forward.video.title || moment.forward.fallback }}
               </strong>
-              <small><span i-tabler-user aria-hidden="true" />{{ moment.forward.author }}</small>
+              <small>
+                <span i-tabler-user aria-hidden="true" />
+                <a
+                  v-if="forwardAuthorSpaceUrl"
+                  :href="forwardAuthorSpaceUrl"
+                  class="moment-card__forward-author"
+                  rel="noopener noreferrer"
+                  @click="handleForwardAuthorClick"
+                >{{ moment.forward.author }}</a>
+                <template v-else>{{ moment.forward.author }}</template>
+              </small>
             </span>
           </a>
           <div
@@ -516,11 +650,18 @@ function handleForwardVideoClick() {
             :class="{ 'moment-card__forward--draw': Boolean(moment.forward.images?.length) }"
           >
             <div class="moment-card__forward-copy">
-              <strong>@{{ moment.forward.author }}</strong>
+              <a
+                v-if="forwardAuthorSpaceUrl"
+                :href="forwardAuthorSpaceUrl"
+                class="moment-card__forward-author"
+                rel="noopener noreferrer"
+                @click="handleForwardAuthorClick"
+              >@{{ moment.forward.author }}</a>
+              <strong v-else>@{{ moment.forward.author }}</strong>
               <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
             </div>
             <div
-              v-if="moment.forward.images?.length"
+              v-if="moment.forward.images?.length && !isPortraitLayout"
               class="moment-card__forward-gallery"
               :class="`moment-card__forward-gallery--${Math.min(moment.forward.images.length, 9)}`"
             >
@@ -542,7 +683,7 @@ function handleForwardVideoClick() {
         </div>
 
         <div
-          v-if="moment.images.length && !moment.isVideo && !moment.isLive"
+          v-if="moment.images.length && !moment.isVideo && !moment.isLive && !isPortraitLayout"
           class="moment-card__gallery"
           :class="`moment-card__gallery--${Math.min(moment.images.length, 9)}`"
           :style="singleImageGalleryStyle"
@@ -588,7 +729,7 @@ function handleForwardVideoClick() {
         <a
           :href="moment.additional.url || undefined"
           class="moment-card__additional-main"
-          @click.stop
+          @click="handleAdditionalClick"
         >
           <img
             v-if="moment.additional.cover && !moment.isChargeExclusive"
@@ -616,7 +757,7 @@ function handleForwardVideoClick() {
           v-else
           :href="moment.additional.url || undefined"
           class="moment-card__additional-action"
-          @click.stop
+          @click="handleAdditionalClick"
         >
           {{ moment.additional.action }}
         </a>
@@ -1185,13 +1326,48 @@ function handleForwardVideoClick() {
 }
 
 .moment-card__identity strong,
-.moment-card__identity small {
+.moment-card__identity small,
+.moment-card__identity .moment-card__author-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.moment-card__identity strong {
+.moment-card__author-link {
+  display: block;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  line-height: 0;
+  text-decoration: none;
+}
+
+.moment-card__author-link:focus-visible,
+.moment-card__author-name:focus-visible,
+.moment-card__forward-author:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: 2px;
+}
+
+.moment-card__author-name {
+  display: block;
+  overflow: hidden;
+  color: var(--bew-theme-color);
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: inherit;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moment-card__author-name:hover,
+.moment-card__forward-author:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.moment-card__identity strong,
+.moment-card__identity .moment-card__author-name {
   color: var(--bew-theme-color);
   font-size: var(--bew-font-size-body);
   font-weight: var(--bew-font-weight-semibold);
@@ -1211,6 +1387,10 @@ function handleForwardVideoClick() {
   grid-template-columns: minmax(170px, 1fr) minmax(0, 1fr);
   align-items: start;
   gap: var(--bew-space-3);
+}
+
+.moment-card__main--portrait {
+  grid-template-columns: minmax(96px, 180px) minmax(0, 1fr);
 }
 
 /* Regular video dynamics use a readable vertical card: cover first, then
@@ -1585,6 +1765,12 @@ function handleForwardVideoClick() {
   gap: var(--bew-space-1);
 }
 
+.moment-card__video-duration {
+  flex: 0 0 auto;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
 .moment-card__forward-video-info {
   display: flex;
   min-width: 0;
@@ -1617,6 +1803,46 @@ function handleForwardVideoClick() {
   font-size: var(--bew-font-size-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.moment-card__forward-author {
+  overflow: hidden;
+  color: inherit;
+  font-weight: var(--bew-font-weight-semibold);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.moment-card__forward-copy .moment-card__forward-author {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.moment-card__portrait {
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--bew-media-radius);
+  aspect-ratio: 1 / 2;
+  background: var(--bew-fill-1);
+}
+
+.moment-card__portrait > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  cursor: zoom-in;
+}
+
+.moment-card__portrait > img:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: -2px;
+}
+
+.moment-card--portrait .moment-card__body {
+  min-height: 0;
 }
 
 .moment-card__additional--footer {

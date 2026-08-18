@@ -98,6 +98,7 @@ export interface DisplayMoment {
   additional?: DisplayAdditional
   forward?: {
     author: string
+    authorMid?: string
     title: string
     text: string
     fallback: string
