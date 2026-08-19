@@ -155,7 +155,7 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
     iframe.contentWindow.postMessage({
       type: IFRAME_TOP_BAR_CHANGE,
       useOriginalBilibiliTopBar: settings.value.useOriginalBilibiliTopBar,
-      showTopBar: settings.value.showTopBar,
+      enableTopBar: settings.value.enableTopBar,
     }, '*')
   }
 }

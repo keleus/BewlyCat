@@ -197,6 +197,16 @@ function toggleChannel(value: string) {
       :title="$t('settings.topbar_display_settings')"
       :desc="$t('settings.topbar_display_settings_desc')"
     >
+      <SettingsItem :title="$t('settings.topbar_visibility')" :desc="$t('settings.topbar_visibility_desc')" right-width="auto">
+        <Radio v-model="settings.enableTopBar" :label="settings.enableTopBar ? $t('settings.chk_box.show') : $t('settings.chk_box.hidden')" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.use_original_bilibili_topbar')"
+        :desc="$t('settings.use_original_bilibili_topbar_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.useOriginalBilibiliTopBar" :disabled="!settings.enableTopBar" />
+      </SettingsItem>
       <SettingsItem
         v-if="!settings.touchScreenOptimization"
         :title="$t('settings.open_top_bar_items_in_bewly')"

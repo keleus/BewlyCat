@@ -192,7 +192,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       return false
     }
 
-    if (shouldShowBewlyTopBar(settings.value.showTopBar, settings.value.useOriginalBilibiliTopBar))
+    if (shouldShowBewlyTopBar(settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar))
       return true
     return false
   })

@@ -1,8 +1,13 @@
 import type { InjectionKey } from 'vue'
 import { inject } from 'vue'
 
+export interface ConfirmDialogOptions {
+  title?: string
+  confirmLabel?: string
+}
+
 export interface ConfirmDialogService {
-  confirm: (message: string) => Promise<boolean>
+  confirm: (message: string, options?: ConfirmDialogOptions) => Promise<boolean>
 }
 
 export const confirmDialogKey: InjectionKey<ConfirmDialogService> = Symbol('CONFIRM_DIALOG')

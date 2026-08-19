@@ -93,13 +93,13 @@ function syncIframeTopBarVisibility() {
     return
 
   const useOriginalBilibiliTopBar = settings.value.useOriginalBilibiliTopBar
-  const showTopBar = settings.value.showTopBar
-  const showOriginal = shouldShowOriginalBilibiliTopBar(showTopBar, useOriginalBilibiliTopBar)
+  const enableTopBar = settings.value.enableTopBar
+  const showOriginal = shouldShowOriginalBilibiliTopBar(enableTopBar, useOriginalBilibiliTopBar)
 
   // 同源时直接同步类名，避免 iframe 消息监听器尚未就绪时短暂显示原版顶栏
   try {
     iframeWindow.document.documentElement.classList.toggle('remove-top-bar', !showOriginal)
-    iframeWindow.document.documentElement.classList.toggle('remove-custom-navbar', showTopBar)
+    iframeWindow.document.documentElement.classList.toggle('remove-custom-navbar', enableTopBar)
   }
   catch {
     // 跨域页面继续使用 postMessage 同步
@@ -109,7 +109,7 @@ function syncIframeTopBarVisibility() {
     iframeWindow.postMessage({
       type: IFRAME_TOP_BAR_CHANGE,
       useOriginalBilibiliTopBar,
-      showTopBar,
+      enableTopBar,
     }, '*')
   }
   catch (error) {
@@ -132,7 +132,7 @@ watch(() => isDark.value, (newValue) => {
 })
 
 watch(
-  [() => settings.value.useOriginalBilibiliTopBar, () => settings.value.showTopBar],
+  [() => settings.value.useOriginalBilibiliTopBar, () => settings.value.enableTopBar],
   () => {
     syncIframeTopBarVisibility()
   },

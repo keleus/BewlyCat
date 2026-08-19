@@ -90,7 +90,6 @@ layout_editor:
   original_moments_show_user_card: How to show the original Moments user card
   original_moments_show_live_list: How to show the original Moments live list
   original_moments_show_community_center: How to show the original Moments community center
-  original_moments_show_hot_search: How to show the original Moments hot searches
   original_moments_show_up_list: How to show the original Moments uploader banner
   switch_to_bewly_topbar: How to switch to the BewlyCat top bar
   switch_to_original_topbar: How to switch to the Bilibili top bar
@@ -151,6 +150,15 @@ settings:
     import_failed: The settings file could not be read. Make sure it is a valid JSON backup.
     import_no_matches: No recognized settings were found in this backup.
     import_success: 'Import complete: applied {imported} settings and ignored {ignored} unknown settings.'
+    migrate_legacy_title: Migrate settings
+    migrate_legacy_action: Migrate all
+    migrate_legacy_item: '· {name}'
+    migrate_legacy_settings_confirm: |-
+      These older settings were found. Confirm to convert them all at once:
+      {items}
+    migrate_legacy_import_confirm: |-
+      This backup contains older settings. Confirm to convert them all during import:
+      {items}
     reset_title: Restore default settings
     reset_desc: Actions in this section affect all BewlyCat settings.
     reset_warning: This cannot be undone. Your current language will be preserved.
@@ -275,7 +283,6 @@ settings:
   original_moments_show_user_card: Show user card
   original_moments_show_live_list: Show live list
   original_moments_show_community_center: Show community center
-  original_moments_show_hot_search: Show hot search
   original_moments_show_up_list: Show dynamic uploader banner
   moments_show_user_card: Show user card
   moments_show_publish: Show publish action

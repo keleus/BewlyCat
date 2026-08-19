@@ -5,6 +5,7 @@ import { useToast } from 'vue-toastification'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { importSettingsStorage } from '~/composables/useSettingsStorage'
 import { originalSettings, settings } from '~/logic'
+import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
 
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
@@ -33,7 +34,21 @@ function handleImportFile(event: Event) {
       if (!importedSettings || Array.isArray(importedSettings) || typeof importedSettings !== 'object')
         throw new TypeError('Invalid settings backup')
 
-      const currentSettings = settings.value as unknown as Record<string, unknown>
+      if (hasPendingSettingsMigrations(importedSettings)) {
+        const message = formatSettingsMigrationConfirmMessage(
+          importedSettings,
+          t,
+          'settings.maintenance.migrate_legacy_import_confirm',
+        )
+        const shouldMigrate = await showConfirmDialog(message ?? t('settings.maintenance.migrate_legacy_import_confirm'), {
+          title: t('settings.maintenance.migrate_legacy_title'),
+          confirmLabel: t('settings.maintenance.migrate_legacy_action'),
+        })
+        if (shouldMigrate)
+          applyPendingSettingsMigrations(importedSettings)
+      }
+
+      const currentSettings = originalSettings as unknown as Record<string, unknown>
       const recognizedSettings: Record<string, unknown> = {}
       let importedCount = 0
       let ignoredCount = 0

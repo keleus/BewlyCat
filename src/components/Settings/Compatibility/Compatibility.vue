@@ -15,16 +15,6 @@ watch(() => settings.value.useOriginalBilibiliHomepage, () => {
 <template>
   <div>
     <SettingsItemGroup :title="$t('settings.group_common')">
-      <SettingsItem :title="$t('settings.topbar_visibility')" :desc="$t('settings.topbar_visibility_desc')" right-width="auto">
-        <Radio v-model="settings.showTopBar" :label="settings.showTopBar ? $t('settings.chk_box.show') : $t('settings.chk_box.hidden')" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.use_original_bilibili_topbar')"
-        :desc="$t('settings.use_original_bilibili_topbar_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.useOriginalBilibiliTopBar" />
-      </SettingsItem>
       <SettingsItem :title="$t('settings.use_original_bilibili_homepage')" right-width="auto">
         <template #desc>
           <span color="$bew-error-color" v-text="$t('settings.use_original_bilibili_homepage_desc')" />

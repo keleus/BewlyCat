@@ -8,13 +8,14 @@ import Button from '~/components/Button.vue'
 import Icon from '~/components/Icon.vue'
 import type { BewlyAppProvider, SettingsNavigationTarget } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
+import type { ConfirmDialogOptions } from '~/composables/useConfirmDialog'
 import { confirmDialogKey } from '~/composables/useConfirmDialog'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
-import { settings } from '~/logic'
+import { settings, settingsReady } from '~/logic'
 import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
@@ -22,6 +23,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
+import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
@@ -66,6 +68,8 @@ watch(showSettings, (visible) => {
 interface ConfirmDialogRequest {
   id: number
   message: string
+  title?: string
+  confirmLabel?: string
   resolve: (confirmed: boolean) => void
   settled: boolean
 }
@@ -94,11 +98,13 @@ const confirmDialogPanelStyle = computed(() => {
   }
 })
 
-function showConfirmDialog(message: string): Promise<boolean> {
+function showConfirmDialog(message: string, options: ConfirmDialogOptions = {}): Promise<boolean> {
   return new Promise((resolve) => {
     const request: ConfirmDialogRequest = {
       id: ++confirmDialogIdSeq,
       message,
+      title: options.title,
+      confirmLabel: options.confirmLabel,
       resolve,
       settled: false,
     }
@@ -151,6 +157,39 @@ onKeyStroke('Enter', (e: KeyboardEvent) => {
 provide(confirmDialogKey, {
   confirm: showConfirmDialog,
 })
+
+const SETTINGS_MIGRATION_PROMPT_DISMISSED_KEY = 'bewlycat-settings-migration-prompt-dismissed'
+
+async function promptSettingsMigrationIfNeeded() {
+  if (isInIframe())
+    return
+  if (sessionStorage.getItem(SETTINGS_MIGRATION_PROMPT_DISMISSED_KEY))
+    return
+
+  await settingsReady
+  const record = settings.value as unknown as Record<string, unknown>
+  if (!hasPendingSettingsMigrations(record))
+    return
+
+  const message = formatSettingsMigrationConfirmMessage(
+    record,
+    t,
+    'settings.maintenance.migrate_legacy_settings_confirm',
+  )
+  if (!message)
+    return
+
+  const confirmed = await showConfirmDialog(message, {
+    title: t('settings.maintenance.migrate_legacy_title'),
+    confirmLabel: t('settings.maintenance.migrate_legacy_action'),
+  })
+  if (!confirmed) {
+    sessionStorage.setItem(SETTINGS_MIGRATION_PROMPT_DISMISSED_KEY, '1')
+    return
+  }
+
+  applyPendingSettingsMigrations(record)
+}
 
 // Get the 'page' query parameter from the URL
 function getPageParam(): AppPage | null {
@@ -847,8 +886,8 @@ function openLayoutEditDockPositionSettings() {
 
 function openLayoutEditTopBarModeSettings() {
   openSettings({
-    menu: 'Bilibili',
-    secondaryPage: 'compatibility',
+    menu: 'BewlyComponents',
+    secondaryPage: 'topbar',
     targetTitleKey: 'settings.use_original_bilibili_topbar',
   })
 }
@@ -1281,6 +1320,7 @@ onMounted(() => {
   }
 
   document.addEventListener('scroll', handleDocumentScroll, { passive: true })
+  void promptSettingsMigrationIfNeeded()
 })
 
 function handleDockItemClick(dockItem: DockItem) {
@@ -1375,7 +1415,7 @@ function handleOsScroll(_instance: any, event: Event) {
     const scrollTop = latestScrollTop
 
     emitter.emit(OVERLAY_SCROLL_BAR_SCROLL, scrollTop)
-    if (settings.value.showTopBar && settings.value.useOriginalBilibiliTopBar)
+    if (settings.value.enableTopBar && settings.value.useOriginalBilibiliTopBar)
       setOriginalBilibiliTopBarScrolled(document, scrollTop > 0)
 
     // 只在滚动距离超过阈值时更新状态
@@ -1930,7 +1970,7 @@ if (settings.value.cleanUrlArgument) {
               <div
                 p="t-[calc(var(--bew-top-bar-height)+10px)]" m-auto
                 w="lg:[calc(100%-200px)] [calc(100%-150px)]"
-                :style="settings.showTopBar && settings.useOriginalBilibiliTopBar && !reachTop
+                :style="settings.enableTopBar && settings.useOriginalBilibiliTopBar && !reachTop
                   ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
                   : undefined"
               >
@@ -1970,7 +2010,7 @@ if (settings.value.cleanUrlArgument) {
       <div class="bew-confirm-dialog__panel" :style="confirmDialogPanelStyle">
         <header class="bew-confirm-dialog__header">
           <p class="bew-confirm-dialog__title">
-            {{ $t('common.operation.confirm') }}
+            {{ activeConfirmDialog.title || $t('common.operation.confirm') }}
           </p>
           <button
             type="button"
@@ -1988,7 +2028,7 @@ if (settings.value.cleanUrlArgument) {
         </div>
         <footer class="bew-confirm-dialog__footer">
           <Button type="tertiary" @click="finishConfirmDialog(true)">
-            {{ $t('common.operation.confirm') }}
+            {{ activeConfirmDialog.confirmLabel || $t('common.operation.confirm') }}
           </Button>
           <Button type="primary" @click="finishConfirmDialog(false)">
             {{ $t('common.operation.cancel') }}

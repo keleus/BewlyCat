@@ -1106,7 +1106,7 @@ else if (shouldInitializeContentScript) {
       cleanupBilibiliScripts()
 
       // 只有「顶栏可见性 + 原版顶栏」同时开启时才 portal 原生顶栏。
-      if (shouldShowOriginalBilibiliTopBar(settings.value.showTopBar, settings.value.useOriginalBilibiliTopBar)) {
+      if (shouldShowOriginalBilibiliTopBar(settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)) {
         ensureOriginalBilibiliTopBarAppended(document)
         setupLoginButtonClickHandlers(document)
       }
@@ -1395,7 +1395,7 @@ else if (shouldInitializeContentScript) {
     if (event.source !== window.parent)
       return
 
-    const { type, isDark, darkModeBaseColor, useOriginalBilibiliTopBar, showTopBar } = event.data
+    const { type, isDark, darkModeBaseColor, useOriginalBilibiliTopBar, enableTopBar } = event.data
 
     if (type === IFRAME_DARK_MODE_CHANGE) {
     // Check if we should apply selective dark mode (plugin UI only) on festival pages
@@ -1436,13 +1436,13 @@ else if (shouldInitializeContentScript) {
       if (typeof useOriginalBilibiliTopBar !== 'boolean')
         return
 
-      const showOriginal = typeof showTopBar === 'boolean'
-        ? shouldShowOriginalBilibiliTopBar(showTopBar, useOriginalBilibiliTopBar)
+      const showOriginal = typeof enableTopBar === 'boolean'
+        ? shouldShowOriginalBilibiliTopBar(enableTopBar, useOriginalBilibiliTopBar)
         : useOriginalBilibiliTopBar
       document.documentElement.classList.toggle('remove-top-bar', !showOriginal)
 
-      const hideCustomNavbar = typeof showTopBar === 'boolean'
-        ? showTopBar
+      const hideCustomNavbar = typeof enableTopBar === 'boolean'
+        ? enableTopBar
         : !useOriginalBilibiliTopBar
       document.documentElement.classList.toggle('remove-custom-navbar', hideCustomNavbar)
 

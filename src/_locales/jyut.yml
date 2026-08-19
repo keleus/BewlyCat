@@ -90,7 +90,6 @@ layout_editor:
   original_moments_show_user_card: 點樣顯示原版動態頁用戶卡片
   original_moments_show_live_list: 點樣顯示原版動態頁直播列表
   original_moments_show_community_center: 點樣顯示原版動態頁社群中心
-  original_moments_show_hot_search: 點樣顯示原版動態頁熱搜
   original_moments_show_up_list: 點樣顯示原版動態頁 UP 橫幅
   switch_to_bewly_topbar: 點樣轉用 BewlyCat 頂欄
   switch_to_original_topbar: 點樣轉用 Bilibili 頂欄
@@ -151,6 +150,15 @@ settings:
     import_failed: 讀唔到設定檔，請確認係有效嘅 JSON 備份。
     import_no_matches: 備份入面冇可以匯入嘅設定。
     import_success: 匯入成功：已套用 {imported} 項，忽略 {ignored} 項未知設定。
+    migrate_legacy_title: 設定遷移
+    migrate_legacy_action: 一鍵遷移
+    migrate_legacy_item: '· {name}'
+    migrate_legacy_settings_confirm: |-
+      偵測到以下舊版設定，確認之後會一鍵轉成而家呢版：
+      {items}
+    migrate_legacy_import_confirm: |-
+      匯入嘅備份包含以下舊版設定，確認之後會喺匯入嗰陣一鍵轉換：
+      {items}
     reset_title: 還原預設設定
     reset_desc: 呢區嘅操作會影響全部 BewlyCat 設定。
     reset_warning: 還原之後無法復原，而家嘅語言設定會保留。
@@ -300,7 +308,6 @@ settings:
   original_moments_show_user_card: 顯示用戶卡片
   original_moments_show_live_list: 顯示直播列表
   original_moments_show_community_center: 顯示社羣中心
-  original_moments_show_hot_search: 顯示熱搜
   original_moments_show_up_list: 顯示動態 UP 橫幅
   moments_show_user_card: 顯示用戶卡片
   moments_show_publish: 顯示發布動態元件

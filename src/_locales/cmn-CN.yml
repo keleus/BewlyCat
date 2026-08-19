@@ -90,7 +90,6 @@ layout_editor:
   original_moments_show_user_card: 如何显示原版动态页用户卡片
   original_moments_show_live_list: 如何显示原版动态页直播列表
   original_moments_show_community_center: 如何显示原版动态页社区中心
-  original_moments_show_hot_search: 如何显示原版动态页热搜
   original_moments_show_up_list: 如何显示原版动态页 UP 横幅
   switch_to_bewly_topbar: 如何切换到 BewlyCat 顶栏
   switch_to_original_topbar: 如何切换到 Bilibili 顶栏
@@ -151,6 +150,15 @@ settings:
     import_failed: 设置文件无法读取，请确认它是有效的 JSON 备份。
     import_no_matches: 备份中没有可导入的设置项。
     import_success: 导入成功：已应用 {imported} 项，忽略 {ignored} 项未知设置。
+    migrate_legacy_title: 设置迁移
+    migrate_legacy_action: 一键迁移
+    migrate_legacy_item: '· {name}'
+    migrate_legacy_settings_confirm: |-
+      检测到以下旧版设置，确认后将一键转换成当前版本：
+      {items}
+    migrate_legacy_import_confirm: |-
+      导入的备份包含以下旧版设置，确认后将一键转换并导入：
+      {items}
     reset_title: 恢复默认设置
     reset_desc: 此区域的操作会影响全部 BewlyCat 设置。
     reset_warning: 恢复后无法撤销，当前语言设置会保留。
@@ -272,7 +280,6 @@ settings:
   original_moments_show_user_card: 显示用户卡片
   original_moments_show_live_list: 显示直播列表
   original_moments_show_community_center: 显示社区中心
-  original_moments_show_hot_search: 显示热搜
   original_moments_show_up_list: 显示动态 UP 横幅
   moments_show_user_card: 显示用户卡片
   moments_show_publish: 显示发布动态组件

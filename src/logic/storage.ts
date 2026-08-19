@@ -443,7 +443,7 @@ export interface Settings {
   rememberNoCookieRecommendationState: boolean
 
   adaptToOtherPageStyles: boolean
-  showTopBar: boolean
+  enableTopBar: boolean
   useOriginalBilibiliTopBar: boolean
   useOriginalBilibiliHomepage: boolean
   preventMobileRedirect: boolean
@@ -734,7 +734,7 @@ export const originalSettings: Settings = {
   rememberNoCookieRecommendationState: true,
 
   adaptToOtherPageStyles: true,
-  showTopBar: true,
+  enableTopBar: true,
   useOriginalBilibiliTopBar: false,
   useOriginalBilibiliHomepage: false,
   preventMobileRedirect: false,
@@ -901,6 +901,9 @@ watch(
     Reflect.deleteProperty(record, 'alwaysUseTransparentTopBar')
     Reflect.deleteProperty(record, 'alwaysUseFrostedGlassTopBar')
     Reflect.deleteProperty(record, 'enableTopBarGradient')
+    Reflect.deleteProperty(record, 'independentTopBarVisibility')
+    if (typeof record.enableTopBar !== 'boolean')
+      record.enableTopBar = originalSettings.enableTopBar
 
     if (typeof record.showLayoutEditButton !== 'boolean')
       record.showLayoutEditButton = originalSettings.showLayoutEditButton
