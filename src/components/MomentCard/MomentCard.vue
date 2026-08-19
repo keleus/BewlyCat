@@ -10,6 +10,7 @@ import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 
 import type { Author, Video } from '../VideoCard/types'
 import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
+import MomentImageGallery from './MomentImageGallery.vue'
 import type { DisplayForwardVideo, DisplayMoment, WatchLaterTarget } from './types'
 import type { MomentLinkKind } from './utils'
 import {
@@ -18,15 +19,13 @@ import {
   getAuthorSpaceUrl,
   getAvatarThumbnailUrl,
   getCardPreviewText,
-  getForwardPortraitThumbnailImages,
   getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
-  getOwnPortraitThumbnailImages,
-  getPortraitThumbnailRatio,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
-  isForwardPortraitMomentLayout,
-  isOwnPortraitMomentLayout,
+  isPortraitImageRatio,
+  LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH,
+  shouldUseMomentImageGallery,
   shouldUseNativeLinkOpen,
 } from './utils'
 
@@ -86,35 +85,41 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
 
 const authorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.author.mid))
 const forwardAuthorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.forward?.authorMid))
-const ownPortraitImages = computed(() => getOwnPortraitThumbnailImages(moment))
-const forwardPortraitImages = computed(() => getForwardPortraitThumbnailImages(moment))
-const isOwnPortraitLayout = computed(() => isOwnPortraitMomentLayout(moment, imageRatio))
-const isForwardPortraitLayout = computed(() => isForwardPortraitMomentLayout(moment, imageRatio))
-const portraitThumbnailStyle = computed<CSSProperties | undefined>(() => {
-  if (!isOwnPortraitLayout.value && !isForwardPortraitLayout.value)
-    return undefined
-  return {
-    aspectRatio: String(getPortraitThumbnailRatio(imageRatio)),
-  }
-})
-
 const singleImageGalleryStyle = computed<CSSProperties | undefined>(() => {
   if (
-    isOwnPortraitLayout.value
-    || moment.images.length !== 1
+    moment.images.length !== 1
     || moment.isVideo
     || moment.isLive
     || imageRatio === undefined
     || !Number.isFinite(imageRatio)
     || imageRatio <= 0
+    || isPortraitImageRatio(imageRatio)
   ) {
     return undefined
   }
 
   return {
     aspectRatio: String(Math.max(1, imageRatio)),
+    maxWidth: `${LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH}px`,
   }
 })
+
+const showOwnScrollGallery = computed(() =>
+  shouldUseMomentImageGallery(moment.images, {
+    isVideo: moment.isVideo,
+    isLive: moment.isLive,
+    imageRatio,
+    imageRatios: moment.imageRatios,
+  }),
+)
+const showForwardScrollGallery = computed(() =>
+  shouldUseMomentImageGallery(moment.forward?.images, {
+    imageRatio: moment.forward?.images?.length === 1 ? imageRatio : undefined,
+    imageRatios: moment.forward?.imageRatios,
+  }),
+)
+const ownScrollGalleryWidth = computed(() => Math.max(0, cardWidth - 32))
+const forwardScrollGalleryWidth = computed(() => Math.max(0, cardWidth - 58))
 
 const showVideoDuration = computed(() => settings.value.showVideoCardDuration && Boolean(moment.duration))
 const showForwardVideoDuration = computed(() =>
@@ -200,7 +205,6 @@ const cardOpenMode = computed(() => {
 
   return settings.value.momentsCardOpenMode
 })
-
 const showVideoOptions = ref(false)
 const videoOptionsFloatingStyles = ref<CSSProperties>({})
 const moreBtnRef = ref<HTMLButtonElement | null>(null)
@@ -256,7 +260,6 @@ function handleCardClick(event: MouseEvent) {
 
   emit('openDetail', moment)
 }
-
 // VideoCardContextMenu uses this injection to select its common option set.
 provide('getVideoType', () => 'common')
 
@@ -283,6 +286,14 @@ function handleImagePreviewKeydown(event: KeyboardEvent, urls: string[], index: 
   event.stopPropagation()
   const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   emit('openImagePreview', urls, index, trigger)
+}
+
+function handleGalleryPreview(urls: string[], index: number, trigger: HTMLElement | null) {
+  emit('openImagePreview', urls, index, trigger)
+}
+
+function handleGalleryCoverLoad(event: Event) {
+  handleCoverLoad(event)
 }
 
 function handlePreviewVideo(element: Element | ComponentPublicInstance | null) {
@@ -321,38 +332,6 @@ function handleAdditionalClick(event: MouseEvent) {
   const url = moment.additional?.url
   handleOpenLink(event, url, url ? classifyMomentLink(url) : 'other')
 }
-
-function getPortraitPreviewUrls(images: string[]) {
-  return images.map(url => getMomentOriginalImageUrl(url))
-}
-
-function handleOwnPortraitImageClick(event: MouseEvent) {
-  const urls = getPortraitPreviewUrls(ownPortraitImages.value)
-  if (!urls.length)
-    return
-  handleImagePreviewClick(event, urls, 0)
-}
-
-function handleOwnPortraitImageKeydown(event: KeyboardEvent) {
-  const urls = getPortraitPreviewUrls(ownPortraitImages.value)
-  if (!urls.length)
-    return
-  handleImagePreviewKeydown(event, urls, 0)
-}
-
-function handleForwardPortraitImageClick(event: MouseEvent) {
-  const urls = getPortraitPreviewUrls(forwardPortraitImages.value)
-  if (!urls.length)
-    return
-  handleImagePreviewClick(event, urls, 0)
-}
-
-function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
-  const urls = getPortraitPreviewUrls(forwardPortraitImages.value)
-  if (!urls.length)
-    return
-  handleImagePreviewKeydown(event, urls, 0)
-}
 </script>
 
 <template>
@@ -364,11 +343,10 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
     data-layout-settings-page="moments"
     data-layout-settings-title-key="settings.moments_card_open_mode"
     :class="{
-      'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video && !isOwnPortraitLayout,
+      'moment-card--text': !moment.images.length && !moment.isVideo && !moment.isLive && !moment.isChargeExclusive && !moment.forward?.video,
       'moment-card--compact-text': isCompactPlainTextMoment(moment),
       'moment-card--forward-video': !!moment.forward?.video,
-      'moment-card--forward-draw': Boolean(moment.forward?.images?.length) && !isForwardPortraitLayout,
-      'moment-card--portrait': isOwnPortraitLayout,
+      'moment-card--forward-draw': Boolean(moment.forward?.images?.length),
       'moment-card--charge': moment.isChargeExclusive,
       'moment-card--preparing': !ready,
       'moment-card--entering': entering,
@@ -436,13 +414,12 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
       <div
         class="moment-card__main"
         :class="{
-          'moment-card__main--has-media': isOwnPortraitLayout || ((!moment.isChargeExclusive || moment.isVideo) && (
+          'moment-card__main--has-media': (!moment.isChargeExclusive || moment.isVideo) && (
             (moment.images.length > 0 && (moment.isVideo || moment.isLive))
             || (!moment.images.length && (moment.isVideo || moment.isLive))
-          )),
+          ),
           'moment-card__main--video': moment.isVideo || (!moment.isChargeExclusive && moment.isLive),
           'moment-card__main--live': !moment.isChargeExclusive && moment.isLive,
-          'moment-card__main--portrait': isOwnPortraitLayout,
         }"
       >
         <div
@@ -451,13 +428,13 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
           @mouseenter="emit('mediaEnter', moment)"
           @mouseleave="emit('mediaLeave', moment)"
         >
-          <img
-            :src="getMomentThumbnailUrl(moment.images[0])"
-            :alt="moment.title"
-            :class="{ 'is-ready': ready }"
-            loading="lazy"
-            decoding="async"
-            @load="handleCoverLoad"
+          <img>
+          :src="getMomentThumbnailUrl(moment.images[0])"
+          :alt="moment.title"
+          :class="{ 'is-ready': ready }"
+          loading="lazy"
+          decoding="async"
+          @load="handleCoverLoad"
           >
           <video
             v-if="previewActive && previewUrl"
@@ -475,7 +452,7 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
           >
             <span class="moment-card__video-stat-group">
               <span v-if="settings.showVideoCardViewCount && moment.videoPlay">
-                <span i-tabler-player-play aria-hidden="true" />
+                <span i-mingcute:play-circle-line aria-hidden="true" />
                 {{ moment.videoPlay }}
               </span>
             </span>
@@ -524,25 +501,6 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
             <span v-else i-mingcute:carplay-line aria-hidden="true" />
           </button>
         </div>
-        <div
-          v-else-if="isOwnPortraitLayout"
-          class="moment-card__media moment-card__portrait"
-          :style="portraitThumbnailStyle"
-        >
-          <img
-            :src="getMomentThumbnailUrl(ownPortraitImages[0], 360)"
-            :alt="`${moment.author.name} 的动态图片`"
-            :aria-label="`查看 ${moment.author.name} 的动态图片`"
-            tabindex="0"
-            role="button"
-            loading="lazy"
-            decoding="async"
-            @load="handleCoverLoad"
-            @click="handleOwnPortraitImageClick"
-            @keydown="handleOwnPortraitImageKeydown"
-          >
-        </div>
-
         <div class="moment-card__body">
           <p v-if="moment.title && !moment.forward?.video" class="moment-card__title">
             <VideoWatchedTag
@@ -613,7 +571,7 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
               >
                 <span class="moment-card__video-stat-group">
                   <span v-if="settings.showVideoCardViewCount && moment.forward.video.play">
-                    <span i-tabler-player-play aria-hidden="true" />
+                    <span i-mingcute:play-circle-line aria-hidden="true" />
                     {{ moment.forward.video.play }}
                   </span>
                 </span>
@@ -666,28 +624,9 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
             v-else-if="moment.forward"
             class="moment-card__forward"
             :class="{
-              'moment-card__forward--draw': Boolean(moment.forward.images?.length) && !isForwardPortraitLayout,
-              'moment-card__forward--portrait': isForwardPortraitLayout,
+              'moment-card__forward--draw': Boolean(moment.forward.images?.length),
             }"
           >
-            <div
-              v-if="isForwardPortraitLayout"
-              class="moment-card__media moment-card__portrait"
-              :style="portraitThumbnailStyle"
-            >
-              <img
-                :src="getMomentThumbnailUrl(forwardPortraitImages[0], 360)"
-                :alt="`${moment.forward.author} 的动态图片`"
-                :aria-label="`查看 ${moment.forward.author} 的动态图片`"
-                tabindex="0"
-                role="button"
-                loading="lazy"
-                decoding="async"
-                @load="handleCoverLoad"
-                @click="handleForwardPortraitImageClick"
-                @keydown="handleForwardPortraitImageKeydown"
-              >
-            </div>
             <div class="moment-card__forward-copy">
               <a
                 v-if="forwardAuthorSpaceUrl"
@@ -700,49 +639,72 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
               <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
             </div>
             <div
-              v-if="moment.forward.images?.length && !isForwardPortraitLayout"
-              class="moment-card__forward-gallery"
-              :class="`moment-card__forward-gallery--${Math.min(moment.forward.images.length, 9)}`"
+              v-if="showForwardScrollGallery"
+              class="moment-card__forward-gallery-host"
+            >
+              <MomentImageGallery
+                :images="moment.forward.images || []"
+                :image-ratios="moment.forward.imageRatios"
+                :alt-prefix="`${moment.forward.author} 的动态图片`"
+                :container-width="forwardScrollGalleryWidth"
+                @cover-load="handleGalleryCoverLoad"
+                @preview="handleGalleryPreview"
+              />
+            </div>
+            <div
+              v-else-if="moment.forward.images?.length"
+              class="moment-card__forward-gallery moment-card__forward-gallery--1"
             >
               <img
-                v-for="(image, imageIndex) in moment.forward.images.slice(0, 9)"
-                :key="image"
-                :src="getMomentThumbnailUrl(image, 360)"
-                :alt="`${moment.forward.author} 的动态图片 ${imageIndex + 1}`"
-                :aria-label="`查看 ${moment.forward.author} 的动态图片 ${imageIndex + 1}`"
+                :src="getMomentThumbnailUrl(moment.forward.images[0], 360)"
+                :alt="`${moment.forward.author} 的动态图片`"
+                :aria-label="`查看 ${moment.forward.author} 的动态图片`"
                 tabindex="0"
                 role="button"
                 loading="lazy"
                 decoding="async"
-                @load="imageIndex === 0 ? handleCoverLoad($event) : undefined"
-                @click="handleImagePreviewClick($event, moment.forward.images || [], imageIndex)"
-                @keydown="handleImagePreviewKeydown($event, moment.forward.images || [], imageIndex)"
+                @load="handleCoverLoad"
+                @click="handleImagePreviewClick($event, moment.forward.images || [], 0)"
+                @keydown="handleImagePreviewKeydown($event, moment.forward.images || [], 0)"
               >
             </div>
           </div>
         </div>
 
         <div
-          v-if="moment.images.length && !moment.isVideo && !moment.isLive && !isOwnPortraitLayout"
-          class="moment-card__gallery"
-          :class="`moment-card__gallery--${Math.min(moment.images.length, 9)}`"
+          v-if="showOwnScrollGallery"
+          class="moment-card__gallery-host"
+        >
+          <MomentImageGallery
+            :images="moment.images"
+            :image-ratios="moment.imageRatios"
+            :alt-prefix="`${moment.author.name} 的动态图片`"
+            :container-width="ownScrollGalleryWidth"
+            @cover-load="handleGalleryCoverLoad"
+            @preview="handleGalleryPreview"
+          >
+            <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
+              {{ moment.chargeBadge || '充电专属' }}
+            </span>
+          </MomentImageGallery>
+        </div>
+        <div
+          v-else-if="moment.images.length && !moment.isVideo && !moment.isLive"
+          class="moment-card__gallery moment-card__gallery--1"
           :style="singleImageGalleryStyle"
         >
           <img
-            v-for="(image, imageIndex) in moment.images.slice(0, 9)"
-            :key="image"
-            :src="moment.images.length === 1 ? getMomentOriginalImageUrl(image) : getMomentThumbnailUrl(image, 360)"
-            :alt="`${moment.author.name} 的动态图片 ${imageIndex + 1}`"
-            :aria-label="`查看 ${moment.author.name} 的动态图片 ${imageIndex + 1}`"
+            :src="getMomentThumbnailUrl(moment.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
+            :alt="`${moment.author.name} 的动态图片`"
+            :aria-label="`查看 ${moment.author.name} 的动态图片`"
             tabindex="0"
             role="button"
             loading="lazy"
             decoding="async"
             @load="handleCoverLoad"
-            @click="handleImagePreviewClick($event, moment.images.length === 1 ? [getMomentOriginalImageUrl(image)] : moment.images, imageIndex)"
-            @keydown="handleImagePreviewKeydown($event, moment.images.length === 1 ? [getMomentOriginalImageUrl(image)] : moment.images, imageIndex)"
+            @click="handleImagePreviewClick($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
+            @keydown="handleImagePreviewKeydown($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
           >
-          <span v-if="moment.images.length > 9" class="moment-card__image-count">+{{ moment.images.length - 9 }}</span>
           <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
             {{ moment.chargeBadge || '充电专属' }}
           </span>
@@ -912,9 +874,6 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
   background-color: transparent;
   cursor: pointer;
   box-shadow: none;
-  transition:
-    box-shadow var(--bew-duration-moderate) var(--bew-ease-standard),
-    transform var(--bew-duration-moderate) var(--bew-ease-emphasized);
 }
 
 .moment-card__surface {
@@ -923,20 +882,9 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
   background: var(--bew-elevated);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .moment-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--bew-shadow-1);
-  }
-}
-
 .moment-card:focus-visible {
   outline: 2px solid var(--bew-theme-color);
   outline-offset: 4px;
-}
-
-.moment-card:active {
-  transform: translateY(0) scale(0.99);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1446,16 +1394,27 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
   grid-template-columns: minmax(96px, 180px) minmax(0, 1fr);
 }
 
-/* Regular video dynamics use a readable vertical card: cover first, then
- * title/description. Live cards keep their existing copy-first layout. */
+/* 视频动态：左封面、右简介、底部标题。直播仍走文案在上的纵向布局。 */
 .moment-card__main--video:not(.moment-card__main--live) {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "cover desc"
+    "title title";
+  align-items: stretch;
   gap: var(--bew-space-3);
 }
 
 .moment-card__main--video:not(.moment-card__main--live) .moment-card__media {
+  grid-area: cover;
   width: 100%;
+  min-width: 0;
+}
+
+.moment-card__main--video:not(.moment-card__main--live) .moment-card__body {
+  display: contents;
+  height: auto;
+  max-height: none;
 }
 
 .moment-card__main--live {
@@ -1489,39 +1448,19 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
   aspect-ratio: 16 / 9;
 }
 
+.moment-card__gallery-host {
+  margin-top: var(--bew-space-3);
+}
+
 .moment-card__gallery {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  gap: var(--bew-space-1);
+  grid-template-columns: 1fr;
   margin-top: var(--bew-space-3);
   overflow: hidden;
   border-radius: var(--bew-media-radius);
   aspect-ratio: 1;
   background: var(--bew-fill-1);
-}
-
-.moment-card__gallery--1 {
-  grid-template-columns: 1fr;
-}
-
-.moment-card__gallery--2,
-.moment-card__gallery--4 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.moment-card__gallery--2 {
-  aspect-ratio: 2 / 1;
-}
-
-.moment-card__gallery--3 {
-  aspect-ratio: 3 / 1;
-}
-
-.moment-card__gallery--5,
-.moment-card__gallery--6 {
-  aspect-ratio: 3 / 2;
 }
 
 .moment-card__gallery > img {
@@ -1532,6 +1471,11 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
   object-fit: cover;
   object-position: center top;
   background: var(--bew-fill-1);
+}
+
+.moment-card__gallery--1 {
+  width: 100%;
+  max-width: 560px;
 }
 
 .moment-card__gallery--1 > img {
@@ -1605,21 +1549,12 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
   outline-offset: 2px;
 }
 
-.moment-card__main--video .moment-card__body {
+.moment-card__main--video.moment-card__main--live .moment-card__body {
   display: flex;
-  height: max(95.625px, calc((100cqw - 44px) * 0.28125));
+  height: auto;
+  max-height: none;
   flex-direction: column;
   overflow: hidden;
-}
-
-.moment-card__main--video:not(.moment-card__main--live) .moment-card__body {
-  height: auto;
-  max-height: none;
-}
-
-.moment-card__main--video.moment-card__main--live .moment-card__body {
-  height: auto;
-  max-height: none;
 }
 
 .moment-card__main--video .moment-card__desc {
@@ -1630,13 +1565,18 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
 }
 
 .moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
-  flex: 0 0 auto;
-  -webkit-line-clamp: 3;
+  grid-area: desc;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  -webkit-line-clamp: 8;
 }
 
 .moment-card__main--video:not(.moment-card__main--live) .moment-card__title {
   display: -webkit-box;
+  grid-area: title;
   flex: 0 0 auto;
+  margin-bottom: 0;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -1741,38 +1681,18 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
   object-fit: cover;
 }
 
+.moment-card__forward-gallery-host {
+  margin: 0 var(--bew-space-3) var(--bew-space-3);
+}
+
 .moment-card__forward-gallery {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  gap: var(--bew-space-1);
+  grid-template-columns: 1fr;
   margin: 0 var(--bew-space-3) var(--bew-space-3);
   overflow: hidden;
   border-radius: var(--bew-media-radius);
   aspect-ratio: 1;
   background: var(--bew-fill-1);
-}
-
-.moment-card__forward-gallery--1 {
-  grid-template-columns: 1fr;
-}
-
-.moment-card__forward-gallery--2,
-.moment-card__forward-gallery--4 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.moment-card__forward-gallery--2 {
-  aspect-ratio: 2 / 1;
-}
-
-.moment-card__forward-gallery--3 {
-  aspect-ratio: 3 / 1;
-}
-
-.moment-card__forward-gallery--5,
-.moment-card__forward-gallery--6 {
-  aspect-ratio: 3 / 2;
 }
 
 .moment-card__forward-gallery > img {
@@ -2018,9 +1938,27 @@ function handleForwardPortraitImageKeydown(event: KeyboardEvent) {
     width: 100%;
   }
 
+  .moment-card__main--video:not(.moment-card__main--live) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "cover"
+      "desc"
+      "title";
+  }
+
+  .moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
+    -webkit-line-clamp: 4;
+  }
+
   .moment-card__main--video .moment-card__body {
     height: auto;
     max-height: 220px;
+  }
+
+  .moment-card__main--video:not(.moment-card__main--live) .moment-card__body {
+    display: contents;
+    max-height: none;
   }
 
   .moment-card--text .moment-card__body {

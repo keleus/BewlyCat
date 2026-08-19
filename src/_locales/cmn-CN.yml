@@ -90,6 +90,7 @@ layout_editor:
   original_moments_show_user_card: 如何显示原版动态页用户卡片
   original_moments_show_live_list: 如何显示原版动态页直播列表
   original_moments_show_community_center: 如何显示原版动态页社区中心
+  original_moments_show_hot_search: 如何显示原版动态页热搜
   original_moments_show_up_list: 如何显示原版动态页 UP 横幅
   switch_to_bewly_topbar: 如何切换到 BewlyCat 顶栏
   switch_to_original_topbar: 如何切换到 Bilibili 顶栏
@@ -280,10 +281,12 @@ settings:
   original_moments_show_user_card: 显示用户卡片
   original_moments_show_live_list: 显示直播列表
   original_moments_show_community_center: 显示社区中心
+  original_moments_show_hot_search: 显示热搜
   original_moments_show_up_list: 显示动态 UP 横幅
   moments_show_user_card: 显示用户卡片
   moments_show_publish: 显示发布动态组件
   moments_show_live: 显示正在直播组件
+  moments_show_hot_search: 显示热搜
   moments_show_up_list: 显示经常访问的 UP 主
   moments_visible_components: 显示组件
   moments_visible_components_original_desc: 控制 Bilibili 原版动态页侧栏与横幅等组件是否显示。主题色表示显示，灰色表示隐藏。

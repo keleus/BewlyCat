@@ -302,12 +302,13 @@ export interface Settings {
   momentsSidebarShowUserCard: boolean
   momentsSidebarShowPublish: boolean
   momentsSidebarShowLive: boolean
+  momentsSidebarShowHotSearch: boolean
   momentsShowUpList: boolean
   momentsTabsPosition: TabsPosition
   momentsEnableLivePreview: boolean
   momentsEnableVideoPreview: boolean
   /** Bewly 动态页期望列数；窄屏会自动降列 */
-  momentsGridColumns: '1' | '2' | '3'
+  momentsGridColumns: '1' | '2'
   momentsEnableWantedFilter: boolean
   momentsFilterUpRecommendation: boolean
   momentsHideChargeExclusive: boolean
@@ -606,11 +607,12 @@ export const originalSettings: Settings = {
   momentsSidebarShowUserCard: true,
   momentsSidebarShowPublish: true,
   momentsSidebarShowLive: true,
+  momentsSidebarShowHotSearch: true,
   momentsShowUpList: true,
   momentsTabsPosition: 'left',
   momentsEnableLivePreview: true,
   momentsEnableVideoPreview: true,
-  momentsGridColumns: '3',
+  momentsGridColumns: '2',
   momentsEnableWantedFilter: true,
   momentsFilterUpRecommendation: false,
   momentsHideChargeExclusive: false,
@@ -1067,6 +1069,10 @@ watch(
         }),
       ) as VideoPlayerModeOverrides
     }
+
+    // 动态页不再提供 3 列
+    if (record.momentsGridColumns !== '1' && record.momentsGridColumns !== '2')
+      record.momentsGridColumns = '2'
 
     // 清理已移除的 NVIDIA RTX 视频增强兼容设置
     Reflect.deleteProperty(record, 'nvidiaRtxVideoEnhancementCompatibility')

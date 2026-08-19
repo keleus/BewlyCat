@@ -90,6 +90,7 @@ layout_editor:
   original_moments_show_user_card: How to show the original Moments user card
   original_moments_show_live_list: How to show the original Moments live list
   original_moments_show_community_center: How to show the original Moments community center
+  original_moments_show_hot_search: How to show the original Moments hot searches
   original_moments_show_up_list: How to show the original Moments uploader banner
   switch_to_bewly_topbar: How to switch to the BewlyCat top bar
   switch_to_original_topbar: How to switch to the Bilibili top bar
@@ -283,10 +284,12 @@ settings:
   original_moments_show_user_card: Show user card
   original_moments_show_live_list: Show live list
   original_moments_show_community_center: Show community center
+  original_moments_show_hot_search: Show hot search
   original_moments_show_up_list: Show dynamic uploader banner
   moments_show_user_card: Show user card
   moments_show_publish: Show publish action
   moments_show_live: Show live users
+  moments_show_hot_search: Show hot search
   moments_show_up_list: Show frequently visited uploaders
   moments_visible_components: Visible components
   moments_visible_components_original_desc: Control whether sidebar and banner components appear on the original Bilibili moments page. Theme-colored means shown; gray means hidden.

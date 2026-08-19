@@ -48,6 +48,8 @@ export interface DisplayMoment {
   text: string
   richText: DisplayRichTextSegment[]
   images: string[]
+  /** 与 images 对齐的宽高比（宽/高），用于多图横向画廊计算共用高度 */
+  imageRatios?: Array<number | undefined>
   time: string
   likeCount: number
   isLiked: boolean
@@ -104,6 +106,7 @@ export interface DisplayMoment {
     fallback: string
     /** 转发原动态的图片，用于在嵌套卡片中保持原卡片形态 */
     images?: string[]
+    imageRatios?: Array<number | undefined>
     video?: DisplayForwardVideo
   }
 }

@@ -90,6 +90,7 @@ layout_editor:
   original_moments_show_user_card: 如何顯示原版動態頁使用者卡片
   original_moments_show_live_list: 如何顯示原版動態頁直播列表
   original_moments_show_community_center: 如何顯示原版動態頁社群中心
+  original_moments_show_hot_search: 如何顯示原版動態頁熱門搜尋
   original_moments_show_up_list: 如何顯示原版動態頁 UP 橫幅
   switch_to_bewly_topbar: 如何切換到 BewlyCat 頂欄
   switch_to_original_topbar: 如何切換到 Bilibili 頂欄
@@ -279,10 +280,12 @@ settings:
   original_moments_show_user_card: 顯示使用者卡片
   original_moments_show_live_list: 顯示直播列表
   original_moments_show_community_center: 顯示社群中心
+  original_moments_show_hot_search: 顯示熱門搜尋
   original_moments_show_up_list: 顯示動態 UP 橫幅
   moments_show_user_card: 顯示使用者卡片
   moments_show_publish: 顯示發布動態元件
   moments_show_live: 顯示正在直播元件
+  moments_show_hot_search: 顯示熱門搜尋
   moments_show_up_list: 顯示經常造訪的 UP 主
   moments_visible_components: 顯示元件
   moments_visible_components_original_desc: 控制 Bilibili 原版動態頁側欄與橫幅等元件是否顯示。主題色表示顯示，灰色表示隱藏。

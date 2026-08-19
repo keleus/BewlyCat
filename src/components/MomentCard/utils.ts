@@ -127,6 +127,71 @@ export function shouldUseNativeLinkOpen(event: MouseEvent) {
   return event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey
 }
 
+/** 图文单张横图的最大显示宽度 */
+export const LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH = 560
+/** 多图横向画廊：同组图片等高，高度上限 350px */
+export const MULTI_IMAGE_GALLERY_MAX_HEIGHT = 350
+/** 与 `.moment-image-gallery__track` 的 gap（`--bew-space-2`）保持一致 */
+export const MULTI_IMAGE_GALLERY_GAP = 8
+/** 露出下一张的最小宽度，保证至少能看到「1 张多一点」 */
+const MULTI_IMAGE_GALLERY_PEEK_MIN = 48
+const MULTI_IMAGE_GALLERY_PEEK_RATIO = 0.18
+
+export function isUsableImageRatio(ratio?: number): ratio is number {
+  return typeof ratio === 'number' && Number.isFinite(ratio) && ratio > 0
+}
+
+function getMultiImageGalleryPeekWidth(containerWidth: number) {
+  return Math.min(
+    Math.max(MULTI_IMAGE_GALLERY_PEEK_MIN, Math.round(containerWidth * MULTI_IMAGE_GALLERY_PEEK_RATIO)),
+    Math.round(containerWidth * 0.32),
+  )
+}
+
+/**
+ * 多图共用同一高度：按第 1 张完整可见、并露出一点第 2 张来取高度，封顶 350px。
+ * 单张（含竖图）按容器宽度适配，不预留下一张，同样封顶 350px。
+ */
+export function computeMultiImageGalleryHeight(
+  containerWidth: number,
+  ratios?: Array<number | undefined>,
+) {
+  const maxHeight = MULTI_IMAGE_GALLERY_MAX_HEIGHT
+  if (!(containerWidth > 0))
+    return maxHeight
+
+  const firstRatio = isUsableImageRatio(ratios?.[0]) ? ratios[0] : 1
+  const usableCount = Math.max(1, ratios?.length || 1)
+  if (usableCount < 2) {
+    return Math.min(maxHeight, Math.max(1, Math.round(containerWidth / firstRatio)))
+  }
+
+  const peek = getMultiImageGalleryPeekWidth(containerWidth)
+  const height = Math.round((containerWidth - MULTI_IMAGE_GALLERY_GAP - peek) / firstRatio)
+  return Math.min(maxHeight, Math.max(1, height))
+}
+
+export function shouldUseMomentImageGallery(
+  images: string[] | undefined,
+  options?: {
+    isVideo?: boolean
+    isLive?: boolean
+    imageRatio?: number
+    imageRatios?: Array<number | undefined>
+  },
+) {
+  if (options?.isVideo || options?.isLive || !images?.length)
+    return false
+  if (images.length > 1)
+    return true
+  return isPortraitImageRatio(options?.imageRatios?.[0] ?? options?.imageRatio)
+}
+
+export function getMultiImageThumbnailWidth(ratio: number | undefined, height: number) {
+  const safeRatio = isUsableImageRatio(ratio) ? ratio : 1
+  return Math.min(1600, Math.max(360, Math.round(height * safeRatio * 2)))
+}
+
 /** 竖图缩略图最高按 2:1（高:宽）裁切，对应宽高比 0.5 */
 export const PORTRAIT_THUMBNAIL_MIN_RATIO = 0.5
 

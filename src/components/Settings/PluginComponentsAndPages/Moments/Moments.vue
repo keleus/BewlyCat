@@ -24,6 +24,7 @@ type MomentToggleSetting
     | 'momentsSidebarShowUserCard'
     | 'momentsSidebarShowPublish'
     | 'momentsSidebarShowLive'
+    | 'momentsSidebarShowHotSearch'
     | 'momentsShowUpList'
     | 'momentsFilterUpRecommendation'
     | 'momentsHideChargeExclusive'
@@ -55,6 +56,7 @@ const pluginComponentOptions = computed<MomentTagOption[]>(() => [
   { setting: 'momentsSidebarShowUserCard', label: t('settings.moments_show_user_card'), icon: 'i-tabler-user-square-rounded' },
   { setting: 'momentsSidebarShowPublish', label: t('settings.moments_show_publish'), icon: 'i-tabler-edit' },
   { setting: 'momentsSidebarShowLive', label: t('settings.moments_show_live'), icon: 'i-tabler-live-photo' },
+  { setting: 'momentsSidebarShowHotSearch', label: t('settings.moments_show_hot_search'), icon: 'i-tabler-flame' },
   { setting: 'momentsShowUpList', label: t('settings.moments_show_up_list'), icon: 'i-tabler-users' },
 ])
 
@@ -111,7 +113,6 @@ const videoCardOpenModeOptions = computed(() => [
 ])
 
 const gridColumnOptions = computed(() => [
-  { label: t('settings.moments_grid_columns_option', { count: 3 }), value: '3' as const },
   { label: t('settings.moments_grid_columns_option', { count: 2 }), value: '2' as const },
   { label: t('settings.moments_grid_columns_option', { count: 1 }), value: '1' as const },
 ])
