@@ -175,7 +175,7 @@ function transformWatchLaterItem(item: VideoItem): Video {
       authorFace: item.owner.face,
       mid: item.owner.mid,
     },
-    publishedTimestamp: item.pubdate * 1000,
+    publishedTimestamp: item.pubdate,
     bvid: item.bvid,
     aid: item.aid,
     threePointV2: [],
