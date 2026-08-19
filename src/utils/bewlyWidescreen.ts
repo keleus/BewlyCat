@@ -47,7 +47,12 @@ const SWITCH_HINT_ID = 'bewly-widescreen-switch-hint'
 const BODY_CLASS = 'bewly-widescreen-active'
 const EMPTY_CLASS = 'bewly-widescreen-empty'
 const EPISODE_SECTION_CLASS = 'bewly-widescreen-episode-section'
-const EPISODE_ITEM_SELECTOR = '.video-pod__item, .multi-page__item, .page-item, .list-item, .episode-item, .section-item, .collect-item, [class*="PlayerEpisodePanel_episodeRow"]'
+const EPISODE_ITEM_SELECTOR = '.video-pod__item, .multi-page__item, .page-item, .list-item, .episode-item, .section-item, .collect-item, [class*="PlayerEpisodePanel_episodeRow"], [class*="EpisodeVirtualList_numberItem"], [class*="EpisodeVirtualList_listItem"]'
+const BANGUMI_EPISODE_LIST_ROOT_SELECTOR = '[class*="PaginatedEpList_root"]'
+const BANGUMI_PLAYLIST_ROOT_SELECTOR = `${BANGUMI_EPISODE_LIST_ROOT_SELECTOR}, [class*="SectionPanel_panel"]`
+const BANGUMI_PLAYLIST_SKELETON_SELECTOR = '[class*="SectionSkeleton_panel"], [aria-label="选集加载中"]'
+const BANGUMI_PLAYLIST_READY_SELECTOR = '[class*="SectionPanel_panel"], [class*="SectionHeader_header"], [class*="EpisodeVirtualList_scroll"], [class*="PlayerEpisodePanel_episodeRow"]'
+const REACT_EVENT_BRIDGE_ATTRIBUTE = 'data-bewly-react-bridge'
 const SIDEBAR_NARROW_MIN_WIDTH = 360
 const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
@@ -170,6 +175,9 @@ const selectors = {
     '#eplist_module',
     '[class*="numberList_wrapper"]',
     '[class*="imageList_wrap"]',
+    // Current bangumi pages hydrate a page-level episode module in the right
+    // column. Prefer that over the player's lazily created episode popover.
+    '[class*="PaginatedEpList_root"]',
     '.video-pod',
     '.video-pod__body',
     '.multi-page',
@@ -177,9 +185,6 @@ const selectors = {
     '.base-video-sections-v1',
     '.video-sections-v1',
     '.video-sections-content-list',
-    // The current bangumi page renders its episode list inside the player's
-    // native episode popover instead of a page-level eplist module. Keep this
-    // fallback last so existing page-level playlists remain preferred.
     '[class*="PlayerEpisodePanel_panel"]',
   ],
   playlistControls: [
@@ -215,6 +220,57 @@ function findMovable(selectors: string[]): HTMLElement | null {
 
     if (element)
       return element
+  }
+  return null
+}
+
+function isBangumiPlaylistSkeleton(node: HTMLElement) {
+  if (!node.matches(BANGUMI_PLAYLIST_ROOT_SELECTOR) && !node.querySelector(BANGUMI_PLAYLIST_ROOT_SELECTOR))
+    return false
+
+  return !!node.querySelector(BANGUMI_PLAYLIST_SKELETON_SELECTOR)
+    && !node.querySelector(BANGUMI_PLAYLIST_READY_SELECTOR)
+}
+
+function closestBangumiEpisodeListRoot(node: HTMLElement) {
+  return node.closest<HTMLElement>(BANGUMI_EPISODE_LIST_ROOT_SELECTOR)
+}
+
+function isDetachedBangumiSection(node: HTMLElement) {
+  return node.matches('[class*="SectionPanel_panel"]') && !closestBangumiEpisodeListRoot(node)
+}
+
+function resolvePlaylistMoveTarget(node: HTMLElement) {
+  const root = closestBangumiEpisodeListRoot(node)
+  if (root && !root.closest(`#${ROOT_ID}`))
+    return root
+  return node
+}
+
+function bindReactEventBridge(node: HTMLElement) {
+  node.setAttribute(REACT_EVENT_BRIDGE_ATTRIBUTE, 'true')
+}
+
+function unbindReactEventBridge(node: HTMLElement) {
+  node.removeAttribute(REACT_EVENT_BRIDGE_ATTRIBUTE)
+}
+
+function findMovablePlaylist() {
+  for (const selector of selectors.playlist) {
+    const candidates = Array.from(document.querySelectorAll<HTMLElement>(selector))
+    const element = candidates.find(candidate =>
+      !candidate.closest(`#${ROOT_ID}`)
+      && candidate.parentNode
+      && candidate.offsetParent !== null
+      && !isBangumiPlaylistSkeleton(candidate),
+    ) || candidates.find(candidate =>
+      !candidate.closest(`#${ROOT_ID}`)
+      && candidate.parentNode
+      && !isBangumiPlaylistSkeleton(candidate),
+    )
+
+    if (element)
+      return resolvePlaylistMoveTarget(element)
   }
   return null
 }
@@ -286,8 +342,23 @@ function moveMatchingNodes(selectors: string[], target: HTMLElement, movedNodes:
   return moved
 }
 
+function restoreMovedNode(node: HTMLElement, movedNodes: MovedNode[]) {
+  const index = movedNodes.findIndex(movedNode => movedNode.node === node)
+  if (index < 0)
+    return false
+
+  const [movedNode] = movedNodes.splice(index, 1)
+  unbindReactEventBridge(movedNode.node)
+  const parent = movedNode.placeholder.parentNode
+  if (parent)
+    parent.insertBefore(movedNode.node, movedNode.placeholder)
+  movedNode.placeholder.remove()
+  return true
+}
+
 function restoreMovedNodes(movedNodes: MovedNode[]) {
   for (const { node, placeholder } of [...movedNodes].reverse()) {
+    unbindReactEventBridge(node)
     const parent = placeholder.parentNode
     if (parent) {
       parent.insertBefore(node, placeholder)
@@ -1862,7 +1933,9 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-panel-playlist #eplist_module,
     #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="eplist_ep_list_wrapper"],
     #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="numberList_wrapper"],
-    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="imageList_wrap"] {
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="imageList_wrap"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PaginatedEpList_root"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionPanel_panel"] {
       height: auto !important;
       min-height: 0 !important;
       max-height: none !important;
@@ -1870,6 +1943,8 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID} .bewly-widescreen-panel [class*="eplist_ep_list_wrapper"],
+    #${ROOT_ID} .bewly-widescreen-panel [class*="PaginatedEpList_root"],
+    #${ROOT_ID} .bewly-widescreen-panel [class*="SectionPanel_panel"],
     #${ROOT_ID} .bewly-widescreen-panel [class*="recommend_wrap"],
     #${ROOT_ID} .bewly-widescreen-panel #danmukuBox,
     #${ROOT_ID} .bewly-widescreen-panel [class*="DanmukuBox_wrap"],
@@ -1904,6 +1979,14 @@ function injectLayoutStyle() {
       overflow-y: auto !important;
       overscroll-behavior: contain;
       scrollbar-gutter: stable;
+    }
+
+    /* New bangumi lists already scroll inside EpisodeVirtualList. Keep the
+       outer module in the panel flow so header/tabs stay visible. */
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PaginatedEpList_root"].${EPISODE_SECTION_CLASS},
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionPanel_panel"].${EPISODE_SECTION_CLASS} {
+      max-height: none !important;
+      overflow: visible !important;
     }
 
     /* New bangumi pages keep the episode list in a hidden player popover.
@@ -1951,6 +2034,58 @@ function injectLayoutStyle() {
 
     #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PlayerEpisodePanel_episodeRow"]:hover {
       background: var(--bewly-widescreen-control-bg) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PaginatedEpList_root"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionPanel_panel"] {
+      display: flex !important;
+      flex-direction: column !important;
+      position: relative !important;
+      width: 100% !important;
+      margin: 0 0 var(--bew-space-3, 12px) !important;
+      color: var(--bewly-widescreen-text-primary) !important;
+      background: transparent !important;
+      visibility: visible !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_scroll"] {
+      width: 100% !important;
+      max-height: min(40dvh, 420px) !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionHeader_header"] h3,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionHeader_titleWrap"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PageTabs_tab"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionTabs_tab"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_numberItem"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_listItem"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_copy"] {
+      color: var(--bewly-widescreen-text-primary) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_numberItem"] {
+      background: var(--bewly-widescreen-control-bg) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="PageTabs_active"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionTabs_active"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeNumber"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeItem"] {
+      color: var(--bew-theme-color, #00aeec) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_numberItem"]:hover:not([class*="EpisodeVirtualList_activeNumber"]) {
+      background: var(--bewly-widescreen-control-hover-bg) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeNumber"],
+    #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="EpisodeVirtualList_activeNumber"]:hover {
+      color: #fff !important;
+      background: var(--bew-theme-color, #00aeec) !important;
+      border-color: var(--bew-theme-color, #00aeec) !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-panel .video-page-card-small {
@@ -2471,17 +2606,32 @@ function fillSidebar(currentState: BewlyWidescreenState) {
 
   movePlaylistControls(currentState.panels.playlist, currentState.movedNodes)
   moveMatchingNodes(['[class*="eplist_ep_list_wrapper"]'], currentState.panels.playlist, currentState.movedNodes)
-  const existingPlaylist = currentState.panels.playlist.querySelector(selectors.playlist.join(','))
-  const existingRecommend = currentState.panels.playlist.querySelector(selectors.recommend.join(','))
-  const playlist = existingPlaylist ? null : findMovable(selectors.playlist)
-  const playlistMoved = existingPlaylist || moveNode(playlist, currentState.panels.playlist, currentState.movedNodes)
+  let existingPlaylist = currentState.panels.playlist.querySelector<HTMLElement>(selectors.playlist.join(','))
+    ?? currentState.panels.playlist.querySelector<HTMLElement>(BANGUMI_EPISODE_LIST_ROOT_SELECTOR)
+    ?? currentState.panels.playlist.querySelector<HTMLElement>('[class*="SectionPanel_panel"]')
+  const existingRecommend = currentState.panels.playlist.querySelector<HTMLElement>(selectors.recommend.join(','))
+  if (existingPlaylist && isDetachedBangumiSection(existingPlaylist)) {
+    restoreMovedNode(existingPlaylist, currentState.movedNodes)
+    existingPlaylist = currentState.panels.playlist.querySelector<HTMLElement>(BANGUMI_EPISODE_LIST_ROOT_SELECTOR)
+  }
+  const shouldReplacePlaylist = !!existingPlaylist && isBangumiPlaylistSkeleton(existingPlaylist)
+  const playlist = (existingPlaylist && !shouldReplacePlaylist) ? null : findMovablePlaylist()
+  if (shouldReplacePlaylist && existingPlaylist && playlist && playlist !== existingPlaylist)
+    removeMovedNode(existingPlaylist, currentState.movedNodes)
+  const playlistMoved = (existingPlaylist && !shouldReplacePlaylist)
+    || moveNode(playlist, currentState.panels.playlist, currentState.movedNodes)
+  if (playlistMoved && (!existingPlaylist || shouldReplacePlaylist))
+    schedulePlayerResizeSync(currentState)
+  const liveBangumiPlaylist = currentState.panels.playlist.querySelector<HTMLElement>(BANGUMI_EPISODE_LIST_ROOT_SELECTOR)
+  if (liveBangumiPlaylist)
+    bindReactEventBridge(liveBangumiPlaylist)
   // 推荐列表与选集是同一侧栏面板中的两个连续区块；即使选集已经存在，
   // 也要继续搬运推荐列表，保证推荐内容显示在选集下方。
   const recommend = existingRecommend ? null : findMovable(selectors.recommend)
   const recommendMoved = existingRecommend || moveNode(recommend, currentState.panels.playlist, currentState.movedNodes)
   placeRecommendAfterPlaylist(currentState.panels.playlist, currentState.movedNodes)
   syncEpisodeSectionMarker(currentState.panels.playlist, currentState.movedNodes)
-  const hasPlaylist = !!(existingPlaylist || playlistMoved)
+  const hasPlaylist = !!(playlistMoved || (existingPlaylist && !shouldReplacePlaylist))
   const hasRecommend = !!(existingRecommend || recommendMoved)
   currentState.tabButtons.playlist.textContent = hasPlaylist ? '选集' : '推荐'
   if (!hasPlaylist && !hasRecommend)

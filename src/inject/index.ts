@@ -3818,6 +3818,41 @@ else if (shouldInitializePageScript) {
     return text
   }
 
+  // 番剧选集被搬出 #__next 后，React 17+ 的根节点事件委托收不到点击。
+  // 在页面世界里把 onClick 接回季节切换、排序和分集按钮。
+  const WIDESCREEN_REACT_EVENT_BRIDGE_ATTRIBUTE = 'data-bewly-react-bridge'
+
+  function getPageReactProps(element: Element) {
+    const key = Object.keys(element).find(name => name.startsWith('__reactProps$') || name.startsWith('__reactEventHandlers$'))
+    if (!key)
+      return null
+
+    const props = (element as unknown as Record<string, unknown>)[key]
+    return props && typeof props === 'object' ? props as Record<string, unknown> : null
+  }
+
+  function invokeMovedReactClick(event: Event) {
+    const target = event.target
+    if (!(target instanceof Element))
+      return
+
+    const boundary = target.closest<HTMLElement>(`[${WIDESCREEN_REACT_EVENT_BRIDGE_ATTRIBUTE}="true"]`)
+    if (!boundary)
+      return
+
+    let node: Element | null = target
+    while (node && node !== boundary && boundary.contains(node)) {
+      const onClick = getPageReactProps(node)?.onClick
+      if (typeof onClick === 'function') {
+        ;(onClick as (event: Event) => void)(event)
+        return
+      }
+      node = node.parentElement
+    }
+  }
+
+  document.addEventListener('click', invokeMovedReactClick, true)
+
   // 拦截 navigator.clipboard.writeText，启用净化分享链接功能
   const originalWriteText = navigator.clipboard.writeText.bind(navigator.clipboard)
   navigator.clipboard.writeText = function (text: string) {
