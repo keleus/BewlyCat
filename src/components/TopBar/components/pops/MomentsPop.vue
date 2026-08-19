@@ -303,8 +303,9 @@ defineExpose({
             </div>
 
             <div
-              class="bew-top-bar-media-column bew-top-bar-media-column--narrow"
+              class="bew-top-bar-media-column bew-top-bar-media-column--narrow moments-pop__cover"
               bg="$bew-skeleton"
+              pos="relative"
             >
               <div
                 class="bew-top-bar-media-frame"
@@ -314,25 +315,38 @@ defineExpose({
                   :src="`${moment.cover}@240w_135h_1c`"
                   :alt="moment.title"
                 >
-                <div
-                  v-if="isVideoMoment(moment)"
-                  opacity-0 group-hover:opacity-100
-                  pos="absolute top-0 right-0"
-                  m="1"
-                  w="24px" h="24px"
-                  grid="~ place-items-center"
-                  duration-300 bg="black opacity-60"
-                  rounded="$bew-radius-half"
-                  z-1 color-white
-                  @click.stop.prevent="toggleWatchLater(moment.rid || 0)"
+              </div>
+              <div
+                v-if="isVideoMoment(moment)"
+                class="moments-pop__watch-later"
+                opacity-0 group-hover:opacity-100
+                pos="absolute top-0 right-0"
+                m="1"
+                z-2
+                duration-300
+              >
+                <Tooltip
+                  :content="topBarStore.addedWatchLaterList.includes(moment.rid || 0)
+                    ? $t('common.added')
+                    : $t('common.save_to_watch_later')"
+                  placement="left"
+                  type="dark"
                 >
-                  <Tooltip v-if="!topBarStore.addedWatchLaterList.includes(moment.rid || 0)" :content="$t('common.save_to_watch_later')" placement="bottom" type="dark">
-                    <div i-mingcute:carplay-line />
-                  </Tooltip>
-                  <Tooltip v-else :content="$t('common.added')" placement="bottom" type="dark">
-                    <Icon icon="line-md:confirm" />
-                  </Tooltip>
-                </div>
+                  <div
+                    w="24px" h="24px"
+                    grid="~ place-items-center"
+                    bg="black opacity-60"
+                    rounded="$bew-radius-half"
+                    color-white
+                    @click.stop.prevent="toggleWatchLater(moment.rid || 0)"
+                  >
+                    <Icon
+                      v-if="topBarStore.addedWatchLaterList.includes(moment.rid || 0)"
+                      icon="line-md:confirm"
+                    />
+                    <div v-else i-mingcute:carplay-line />
+                  </div>
+                </Tooltip>
               </div>
             </div>
           </section>
@@ -364,5 +378,14 @@ defineExpose({
   &::after {
     --uno: "scale-x-80 opacity-40";
   }
+}
+
+.moments-pop__cover {
+  overflow: visible;
+}
+
+.moments-pop__watch-later :deep(.b-tooltip--placement-left) {
+  top: 50%;
+  transform: translateY(-50%);
 }
 </style>
