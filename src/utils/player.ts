@@ -768,6 +768,35 @@ export function getAutoPlayModeForVideoType(videoType = detectVideoType()): Auto
   }
 }
 
+/** 当前结束行为是否允许自定义播放接管切集。播完暂停/单集循环仍走默认播放模式。 */
+export function doesEndBehaviorAllowCustomAdvance(videoType = detectVideoType()): boolean {
+  if (settings.value.useBilibiliDefaultAutoPlay)
+    return true
+
+  const mode = getAutoPlayModeForVideoType(videoType)
+  return mode === 'autoPlay' || mode === 'autoPlayWithRecommend' || mode === 'default'
+}
+
+/** 播放器是否正在展示贴片广告。广告屏蔽插件跳过广告时不应被当成正片结束。 */
+export function isPlayerShowingAdvertisement(): boolean {
+  const player = document.querySelector(_videoClassTag.player)
+  if (player instanceof HTMLElement) {
+    if (player.classList.contains('bpx-state-ad') || player.getAttribute('data-ad') === 'true')
+      return true
+  }
+
+  return !!document.querySelector([
+    '.bpx-player-ads',
+    '.bilibili-player-ads',
+    '.bpx-player-ad-wrap',
+    '.bpx-player-adwrap',
+    '.bpx-player-pic-ad',
+    '.bpx-player-ads-wrap',
+    '.bpx-player-ads-skip',
+    '.bpx-player-btn-skip',
+  ].join(','))
+}
+
 /** 关闭 B 站原生的续播行为，让自定义播放独占视频结束后的切集。 */
 export function disableNativeEndPlaybackBehavior(videoType = detectVideoType()): void {
   captureNativeEndPlaybackBehavior(videoType)
@@ -782,8 +811,8 @@ export function applyAutoPlayByVideoType() {
   const videoType = detectVideoType()
 
   // 自定义顺序/逆序/随机播放独占 ended 事件；播放器重建后继续关闭原生续播，
-  // 避免官方逻辑与扩展同时抢着切下一集。
-  if (customEndPlaybackHandlerActive) {
+  // 避免官方逻辑与扩展同时抢着切下一集。播完暂停/单集循环仍交给默认播放模式。
+  if (customEndPlaybackHandlerActive && doesEndBehaviorAllowCustomAdvance(videoType)) {
     disableNativeEndPlaybackBehavior(videoType)
     return
   }

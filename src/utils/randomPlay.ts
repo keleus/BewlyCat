@@ -2,17 +2,19 @@ import { settings } from '~/logic'
 import type { CustomPlayOrderContext, RandomPlayOrder } from '~/logic/storage'
 import { i18n } from '~/utils/i18n'
 
-import { applyAutoPlayByVideoType, detectVideoType, disableNativeEndPlaybackBehavior, setCustomEndPlaybackHandlerActive, supportsCustomPlaybackForVideoType, VideoType } from './player'
+import { applyAutoPlayByVideoType, detectVideoType, disableNativeEndPlaybackBehavior, doesEndBehaviorAllowCustomAdvance, getVideoElement, isPlayerShowingAdvertisement, setCustomEndPlaybackHandlerActive, supportsCustomPlaybackForVideoType, VideoType } from './player'
 
 // 随机播放状态管理
 let isRandomPlayEnabled = false
 let isRandomPlayInitialized = false
 const visitedEpisodes = new Set<string>()
-let originalEndedListener: (() => void) | null = null
-let originalPauseListener: (() => void) | null = null
+let originalEndedListener: ((event: Event) => void) | null = null
+let originalDurationListener: (() => void) | null = null
+let originalTimeUpdateListener: (() => void) | null = null
 let listenerVideo: HTMLVideoElement | null = null
 let videoObserver: MutationObserver | null = null
 let isPageObserverInitialized = false
+let randomPlayInitGeneration = 0
 let userManuallySetRandomPlay = false // 用户手动设置的随机播放状态标志
 let customEpisodeOrder: string[] = []
 let activePlayOrder: RandomPlayOrder | null = null
@@ -99,6 +101,59 @@ function getEffectiveCustomPlayOrder(): RandomPlayOrder | null {
     return null
 
   return getVideoTypeCustomPlayOrder() ?? getDefaultCustomPlayOrder()
+}
+
+function shouldCustomPlayHandleEnd(): boolean {
+  return isRandomPlayEnabled && doesEndBehaviorAllowCustomAdvance()
+}
+
+function isPlayerEndingPanelVisible(): boolean {
+  const panel = document.querySelector<HTMLElement>('.bpx-player-ending-wrap, .bilibili-player-ending-panel')
+  if (!panel)
+    return false
+  if (panel.classList.contains('bpx-state-hidden'))
+    return false
+  return panel.offsetParent !== null || getComputedStyle(panel).display !== 'none'
+}
+
+function isGenuineCustomPlayEnd(
+  video: HTMLVideoElement,
+  event: Event,
+  state: { durationChangedAt: number, hasPlayedContent: boolean },
+): boolean {
+  if (event.target !== video || getVideoElement() !== video)
+    return false
+
+  // 结束面板已出现时，可以确认是正片播完，而不是广告被插件打断。
+  if (isPlayerEndingPanelVisible())
+    return true
+
+  if (isPlayerShowingAdvertisement())
+    return false
+
+  // 广告屏蔽插件常在 durationchange 后立刻把广告 seek 到结尾，从而触发 ended/pause。
+  if (Date.now() - state.durationChangedAt < 4000)
+    return false
+
+  if (!state.hasPlayedContent)
+    return false
+
+  return video.ended || event.type === 'ended'
+}
+
+function detachCustomPlayVideoListeners(): void {
+  if (listenerVideo && originalEndedListener)
+    listenerVideo.removeEventListener('ended', originalEndedListener, true)
+  if (listenerVideo && originalDurationListener)
+    listenerVideo.removeEventListener('durationchange', originalDurationListener)
+  if (listenerVideo && originalTimeUpdateListener)
+    listenerVideo.removeEventListener('timeupdate', originalTimeUpdateListener)
+
+  originalEndedListener = null
+  originalDurationListener = null
+  originalTimeUpdateListener = null
+  listenerVideo?.removeAttribute('data-bewly-random-play-listener')
+  listenerVideo = null
 }
 
 // 获取随机播放文本
@@ -875,26 +930,17 @@ export function createRandomPlayUI(): HTMLElement | null {
 export function enableRandomPlay(): void {
   // 使用更可靠的方式监听视频结束
   const setupVideoListener = () => {
-    if (!isRandomPlayEnabled)
+    if (!shouldCustomPlayHandleEnd())
       return
 
-    const video = document.querySelector<HTMLVideoElement>('video')
+    const video = getVideoElement()
     if (!video) {
       // 如果找不到视频，稍后重试
       setTimeout(setupVideoListener, 1000)
       return
     }
 
-    // 移除之前的监听器
-    if (listenerVideo && originalEndedListener) {
-      listenerVideo.removeEventListener('ended', originalEndedListener, true)
-      originalEndedListener = null
-    }
-    if (listenerVideo && originalPauseListener) {
-      listenerVideo.removeEventListener('pause', originalPauseListener)
-      originalPauseListener = null
-    }
-    listenerVideo?.removeAttribute('data-bewly-random-play-listener')
+    detachCustomPlayVideoListeners()
     listenerVideo = video
 
     // 标记视频元素，防止重复添加监听器
@@ -902,75 +948,68 @@ export function enableRandomPlay(): void {
 
     // 用于防止重复触发
     let isProcessing = false
+    const looksLikeContent = !isPlayerShowingAdvertisement()
+      && (video.currentTime >= 2 || (video.duration > 0 && video.duration <= 3 && video.currentTime > 0))
+    let durationChangedAt = looksLikeContent ? 0 : Date.now()
+    let hasPlayedContent = looksLikeContent
 
-    // 创建新的随机播放监听器
-    const randomPlayListener = () => {
-      console.log('[BewlyCat Random Play] Video ended, random play listener triggered')
+    const markDurationChange = () => {
+      durationChangedAt = Date.now()
+      hasPlayedContent = false
+    }
 
-      // 防止重复触发（ended 和 pause 事件可能都会触发）
-      if (isProcessing) {
-        console.log('[BewlyCat Random Play] Already processing, skipping')
+    const markContentProgress = () => {
+      if (video.currentTime >= 2 || (video.duration > 0 && video.duration <= 3 && video.currentTime > 0))
+        hasPlayedContent = true
+    }
+
+    // 只在正片 ended 时切集。不要再用 pause 近似结束：广告屏蔽插件跳广告时
+    // 常会 seek 到结尾并暂停，和默认播放模式、自定义播放同时监听就会抢切集。
+    const randomPlayListener = (event: Event) => {
+      if (isProcessing || !shouldCustomPlayHandleEnd())
         return
-      }
 
-      // 关键：检查随机播放是否仍然启用
-      if (!isRandomPlayEnabled) {
-        console.log('[BewlyCat Random Play] Random play disabled, skipping')
+      if (!isGenuineCustomPlayEnd(video, event, { durationChangedAt, hasPlayedContent }))
         return
-      }
 
+      // 确认是正片结束后再拦截，避免挡住广告插件处理贴片广告。
+      event.stopImmediatePropagation()
       isProcessing = true
 
-      // 在捕获阶段立即接管切集，避免被 B 站原生连播按 DOM 顺序抢先跳转。
       const episodes = getPlaybackEpisodeEntries().map(entry => entry.element)
-      console.log('[BewlyCat Random Play] Found episodes:', episodes.length)
-
       if (episodes.length <= 1) {
-        console.log('[BewlyCat Random Play] Not enough episodes')
         isProcessing = false
         return
       }
 
       const currentIndex = getCurrentEpisodeIndex(episodes)
-      console.log('[BewlyCat Random Play] Current episode index:', currentIndex)
-
       const playOrder = getActivePlayOrder()
       const nextIndex = getNextEpisodeIndex(episodes, currentIndex, playOrder)
-      console.log('[BewlyCat Random Play] Next episode index:', nextIndex, 'order:', playOrder)
 
-      if (nextIndex !== currentIndex) {
+      if (nextIndex !== currentIndex)
         jumpToEpisode(episodes, nextIndex)
-      }
-      else {
-        console.log('[BewlyCat Random Play] Next index same as current, not jumping')
-      }
+
       setTimeout(() => {
         isProcessing = false
       }, 1500)
     }
 
-    // 监听多个事件以确保兼容性
     video.addEventListener('ended', randomPlayListener, true)
-    // 有些情况下pause事件可能更可靠
-    const randomPlayPauseListener = () => {
-      // 检查是否是播放结束（当前时间和总时间相近）
-      if (video.currentTime > 0 && video.duration > 0 && (video.duration - video.currentTime) < 1) {
-        randomPlayListener()
-      }
-    }
-    video.addEventListener('pause', randomPlayPauseListener)
+    video.addEventListener('durationchange', markDurationChange)
+    video.addEventListener('timeupdate', markContentProgress)
 
     originalEndedListener = randomPlayListener
-    originalPauseListener = randomPlayPauseListener
+    originalDurationListener = markDurationChange
+    originalTimeUpdateListener = markContentProgress
   }
 
   // 立即尝试设置监听器
   setupVideoListener()
 
-  // 监听DOM变化，如果视频元素被替换，重新设置监听器
+  // 监听DOM变化，如果主播放器视频被替换，重新设置监听器
   videoObserver?.disconnect()
   videoObserver = new MutationObserver(() => {
-    const video = document.querySelector('video')
+    const video = getVideoElement()
     if (video && !video.hasAttribute('data-bewly-random-play-listener')) {
       setupVideoListener()
     }
@@ -984,16 +1023,7 @@ export function enableRandomPlay(): void {
 
 // 禁用随机播放
 export function disableRandomPlay(): void {
-  if (listenerVideo && originalEndedListener)
-    listenerVideo.removeEventListener('ended', originalEndedListener, true)
-  if (listenerVideo && originalPauseListener)
-    listenerVideo.removeEventListener('pause', originalPauseListener)
-  originalEndedListener = null
-  originalPauseListener = null
-
-  // 移除标记，以便下次可以重新添加
-  listenerVideo?.removeAttribute('data-bewly-random-play-listener')
-  listenerVideo = null
+  detachCustomPlayVideoListeners()
   videoObserver?.disconnect()
   videoObserver = null
 
@@ -1004,8 +1034,9 @@ export function disableRandomPlay(): void {
 // 设置随机播放状态
 export function setRandomPlayEnabled(enabled: boolean): void {
   isRandomPlayEnabled = enabled
-  setCustomEndPlaybackHandlerActive(enabled)
-  if (enabled) {
+  const shouldHandle = shouldCustomPlayHandleEnd()
+  setCustomEndPlaybackHandlerActive(shouldHandle)
+  if (shouldHandle) {
     disableNativeEndPlaybackBehavior()
     enableRandomPlay()
   }
@@ -1013,6 +1044,40 @@ export function setRandomPlayEnabled(enabled: boolean): void {
     disableRandomPlay()
     applyAutoPlayByVideoType()
   }
+}
+
+function shouldKeepManualPlayState(currentContextKey: string | null): boolean {
+  if (restoreManualPlayState())
+    return true
+  if (!userManuallySetRandomPlay)
+    return false
+  // 切集后选集 DOM 可能还没齐，缺 key 时不要当成换了合集。
+  if (!manualPlayContextKey || !currentContextKey)
+    return true
+  return manualPlayContextKey === currentContextKey
+}
+
+/** 切集后优先沿用用户刚调过的开关和顺序，只有确认换了合集才回到默认设置。 */
+export function applyPreservedOrDefaultCustomPlay(): void {
+  if (!isCustomPlayPage())
+    return
+
+  if (!settings.value.enableRandomPlay) {
+    setRandomPlayEnabled(false)
+    syncRandomPlayUI()
+    return
+  }
+
+  if (!shouldKeepManualPlayState(getCurrentPlayContextKey()))
+    userManuallySetRandomPlay = false
+
+  if (userManuallySetRandomPlay) {
+    setRandomPlayEnabled(isRandomPlayEnabled)
+    syncRandomPlayUI()
+    return
+  }
+
+  applyRandomPlayActivationSettings()
 }
 
 // 获取随机播放状态
@@ -1059,6 +1124,7 @@ export function applyRandomPlayActivationSettings(): void {
 export function resetRandomPlayInitialization(): void {
   stopNativePlaylistEditing()
   isRandomPlayInitialized = false
+  randomPlayInitGeneration++
   // 注意：这里不清除isRandomPlayEnabled，保持用户的选择
   // 也不清除userManuallySetRandomPlay标志，保持用户手动设置的状态
   visitedEpisodes.clear()
@@ -1066,6 +1132,7 @@ export function resetRandomPlayInitialization(): void {
 
 export function destroyRandomPlay(): void {
   stopNativePlaylistEditing()
+  randomPlayInitGeneration++
   setRandomPlayEnabled(false)
   isRandomPlayInitialized = false
   userManuallySetRandomPlay = false
@@ -1139,30 +1206,19 @@ export function initRandomPlayOnVideoPage(): void {
   if (!isCustomPlayPage() || isRandomPlayInitialized)
     return
 
+  const generation = randomPlayInitGeneration
+
   // 等待页面元素加载
   const checkAndInit = () => {
+    if (generation !== randomPlayInitGeneration || isRandomPlayInitialized)
+      return
+
     const autoPlayContainer = findPlaylistAutoPlayContainer()
     if (autoPlayContainer) {
       // 只要启用了随机播放功能就创建UI（基于扩展设置）
       if (settings.value.enableRandomPlay) {
-        const currentContextKey = getCurrentPlayContextKey()
-        const hasMatchingMemoryState = userManuallySetRandomPlay
-          && manualPlayContextKey === currentContextKey
-        const restoredManualState = restoreManualPlayState()
-        if (!hasMatchingMemoryState && !restoredManualState)
-          userManuallySetRandomPlay = false
         createRandomPlayUI()
-
-        // 如果用户手动设置过随机播放状态，直接应用该状态
-        if (userManuallySetRandomPlay) {
-          setRandomPlayEnabled(isRandomPlayEnabled)
-          syncRandomPlayUI()
-        }
-        else {
-          // 随机播放选择自动启用时由数量阈值决定；其余情况使用默认开关。
-          applyRandomPlayActivationSettings()
-        }
-
+        applyPreservedOrDefaultCustomPlay()
         isRandomPlayInitialized = true
       }
     }
@@ -1176,55 +1232,11 @@ export function initRandomPlayOnVideoPage(): void {
   setTimeout(checkAndInit, 500)
 }
 
-// 监听页面变化
+// 只补播放列表 DOM；切集与默认播放器模式共用 content script 的判定链路。
 export function observeRandomPlayPageChanges(): void {
   if (isPageObserverInitialized)
     return
   isPageObserverInitialized = true
-
-  let lastUrl = window.location.href
-  let urlChangeTimeout: number | null = null
-
-  // 监听URL变化 - 使用防抖和延迟处理
-  const checkUrlChange = () => {
-    // 清除之前的定时器
-    if (urlChangeTimeout) {
-      clearTimeout(urlChangeTimeout)
-    }
-
-    // 延迟处理，让B站的路由系统先完成处理
-    urlChangeTimeout = window.setTimeout(() => {
-      const currentUrl = window.location.href
-      if (currentUrl !== lastUrl) {
-        // 检查是否只是hash变化或查询参数变化
-        const currentPath = currentUrl.split('?')[0].split('#')[0]
-        const lastPath = lastUrl.split('?')[0].split('#')[0]
-
-        // 只有路径真正变化时才重新初始化
-        if (currentPath !== lastPath) {
-          lastUrl = currentUrl
-          resetRandomPlayInitialization()
-
-          // 进一步延迟初始化，确保B站页面完全加载
-          setTimeout(() => {
-            if (isCustomPlayPage()) {
-              initRandomPlayOnVideoPage()
-            }
-          }, 1500) // 增加到1.5秒
-        }
-        else {
-          // 只是参数或hash变化，更新URL记录但不重新初始化
-          lastUrl = currentUrl
-        }
-      }
-    }, 500) // 500ms防抖延迟
-  }
-
-  // 监听pushstate事件 - 使用捕获阶段避免冲突
-  window.addEventListener('pushstate', checkUrlChange, true)
-
-  // 监听popstate事件 - 使用捕获阶段避免冲突
-  window.addEventListener('popstate', checkUrlChange, true)
 
   // 使用MutationObserver监听DOM变化
   let domChangeTimeout: number | null = null
@@ -1241,11 +1253,8 @@ export function observeRandomPlayPageChanges(): void {
       if (customEpisodeOrder.length > 0)
         applyCustomEpisodeVisualOrder()
 
-      // 检查是否需要重新初始化
-      if (!isRandomPlayInitialized) {
-        initRandomPlayOnVideoPage()
+      if (!isRandomPlayInitialized)
         return
-      }
 
       // 检查随机播放按钮是否还存在
       const existingBtn = document.querySelector('.random-play-btn')
@@ -1257,9 +1266,8 @@ export function observeRandomPlayPageChanges(): void {
       // 不要求 mutation 本身包含 auto-play；B 站常只替换其共同父容器。
       if ((!existingBtn || isMisplacedRandomPlay) && autoPlayContainer && settings.value.enableRandomPlay) {
         setTimeout(() => {
-          restoreManualPlayState()
           createRandomPlayUI()
-          syncRandomPlayUI()
+          applyPreservedOrDefaultCustomPlay()
         }, 500)
       }
     }, 300) // 300ms防抖延迟

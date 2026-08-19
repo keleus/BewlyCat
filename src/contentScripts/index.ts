@@ -19,8 +19,8 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
-import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, webFullscreen, widescreen } from '~/utils/player'
-import { applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, applyRememberedPlaybackRate, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, startPlaybackRateMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyPreservedOrDefaultCustomPlay, applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
@@ -216,6 +216,8 @@ else if (shouldInitializeContentScript) {
     ? Date.now() + playerModeLoadSettleDelay
     : Number.POSITIVE_INFINITY
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
+  let playbackBehaviorTimer: ReturnType<typeof setTimeout> | undefined
+  let playbackBehaviorScheduledForKey: string | undefined
   let playerModeSettingsReady = false
   let videoOwnerAvatarReadyDeadline = document.readyState === 'complete'
     ? Date.now() + videoOwnerAvatarReadyTimeout
@@ -355,9 +357,59 @@ else if (shouldInitializeContentScript) {
     })
   }
 
+  function clearPlaybackBehaviorTimer() {
+    if (playbackBehaviorTimer) {
+      clearTimeout(playbackBehaviorTimer)
+      playbackBehaviorTimer = undefined
+    }
+    playbackBehaviorScheduledForKey = undefined
+  }
+
+  // 默认播放器模式之后的唯一结束行为入口：先恢复上一集调过的自定义播放，再套自动连播。
+  function applyEndPlaybackBehavior() {
+    if (isCustomPlayPage() && settings.value.enableRandomPlay) {
+      initRandomPlayFeature()
+      applyPreservedOrDefaultCustomPlay()
+      return
+    }
+
+    applyAutoPlayByVideoType()
+  }
+
+  function schedulePlaybackBehaviorApply() {
+    const navigationKey = getVideoNavigationKey(location.href)
+    if (playbackBehaviorScheduledForKey === navigationKey)
+      return
+
+    playbackBehaviorScheduledForKey = navigationKey
+    if (playbackBehaviorTimer)
+      clearTimeout(playbackBehaviorTimer)
+    playbackBehaviorTimer = setTimeout(() => {
+      playbackBehaviorTimer = undefined
+      applyEndPlaybackBehavior()
+      startAutoExitFullscreenMonitoring()
+    }, 2000)
+  }
+
+  function applyPlayerModeCompanionSettings() {
+    setupShortcutHandlers()
+    applyDefaultDanmakuState()
+    applyDefaultCaptionState()
+    applyRememberedPlaybackRate()
+    startPlaybackRateMonitoring()
+    if (settings.value.showVerticalVideoZoomButton)
+      initVerticalVideoZoom()
+    else
+      resetVerticalVideoZoom()
+
+    schedulePlaybackBehaviorApply()
+    scheduleAddWatchLaterButton()
+  }
+
   function applyDefaultPlayerMode() {
     if (!isVideoOrBangumiPage()) {
       clearPlayerModeRetry()
+      clearPlaybackBehaviorTimer()
       exitBewlyWidescreen()
       return
     }
@@ -396,6 +448,7 @@ else if (shouldInitializeContentScript) {
 
     const settleDelay = playerModeReadyAfter - Date.now()
     if (settleDelay > 0) {
+      schedulePlaybackBehaviorApply()
       schedulePlayerModeRetry(settleDelay)
       return
     }
@@ -405,6 +458,7 @@ else if (shouldInitializeContentScript) {
     if (isVideoPage()
       && Date.now() < videoOwnerAvatarReadyDeadline
       && !isVideoOwnerAvatarReady()) {
+      schedulePlaybackBehaviorApply()
       schedulePlayerModeRetry()
       return
     }
@@ -413,13 +467,13 @@ else if (shouldInitializeContentScript) {
     if (isInFullscreen || isInWebFullscreen) {
       exitBewlyWidescreen()
       autoContinuationNavigationKey = undefined
-      applyDefaultDanmakuState()
-      applyDefaultCaptionState()
+      applyPlayerModeCompanionSettings()
       lastAppliedPlayerModeNavigationKey = currentNavigationKey
       return
     }
 
     if (!isPlayerDisplayModeReady(targetPlayerMode)) {
+      schedulePlaybackBehaviorApply()
       schedulePlayerModeRetry()
       return
     }
@@ -447,27 +501,10 @@ else if (shouldInitializeContentScript) {
           break
       }
     }
-    setupShortcutHandlers()
-    applyDefaultDanmakuState()
-    applyDefaultCaptionState()
-    if (settings.value.showVerticalVideoZoomButton)
-      initVerticalVideoZoom()
-    else
-      resetVerticalVideoZoom()
-    // 应用自动连播设置，延迟更长时间确保播放器完全初始化
-    setTimeout(() => {
-      applyAutoPlayByVideoType()
-    }, 2000)
-    // 启动自动退出全屏监听
-    setTimeout(() => {
-      startAutoExitFullscreenMonitoring()
-    }, 2000)
+    applyPlayerModeCompanionSettings()
     lastAppliedPlayerModeNavigationKey = currentNavigationKey
     autoContinuationNavigationKey = undefined
     lastVideoEndedAt = 0
-
-    // 延迟添加稍后再看按钮
-    scheduleAddWatchLaterButton()
   }
 
   function clearPlayerModeRetry() {
@@ -489,6 +526,7 @@ else if (shouldInitializeContentScript) {
 
   function waitForPlayerModePageSettle() {
     clearPlayerModeRetry()
+    clearPlaybackBehaviorTimer()
     playerModeReadyAfter = Date.now() + playerModeLoadSettleDelay
     videoOwnerAvatarReadyDeadline = Date.now() + videoOwnerAvatarReadyTimeout
   }
@@ -794,12 +832,6 @@ else if (shouldInitializeContentScript) {
         if (isVideoOrBangumiPage()) {
           handleVideoPageNavigation()
         }
-        // 重新初始化随机播放功能
-        if (isCustomPlayPage() && settings.value.enableRandomPlay) {
-          setTimeout(() => {
-            initRandomPlayFeature()
-          }, 2000) // 延迟2秒初始化，确保页面完全加载
-        }
       }
     }
   }
@@ -839,13 +871,6 @@ else if (shouldInitializeContentScript) {
     }
     else if (isVideoOrBangumiPage()) {
       applyDefaultPlayerMode()
-    }
-
-    // 初始化自定义播放功能
-    if (isCustomPlayPage() && settings.value.enableRandomPlay) {
-      setTimeout(() => {
-        initRandomPlayFeature()
-      }, 3000) // 延迟3秒初始化，确保页面完全加载
     }
 
     // 添加搜索页面视频卡片链接点击事件处理
@@ -1274,14 +1299,10 @@ else if (shouldInitializeContentScript) {
     ],
     ([enabled, activationMode, minVideos, ...orderSettings], [previousEnabled, previousActivationMode, previousMinVideos, ...previousOrderSettings]) => {
       if (enabled !== previousEnabled && isCustomPlayPage()) {
-        if (enabled) {
-          setTimeout(() => {
-            initRandomPlayFeature()
-          }, 1000)
-        }
-        else {
+        if (enabled)
+          applyEndPlaybackBehavior()
+        else
           destroyRandomPlay()
-        }
       }
 
       if (orderSettings.some((value, index) => value !== previousOrderSettings[index])) {
@@ -1322,7 +1343,6 @@ else if (shouldInitializeContentScript) {
     // 检查自动播放相关设置是否发生变化
       const autoPlaySettingsChanged = oldSettings && (
         newSettings.useBilibiliDefaultAutoPlay !== oldSettings.useBilibiliDefaultAutoPlay
-        || newSettings.enableRandomPlay !== oldSettings.enableRandomPlay
         || newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
         || newSettings.autoPlayCollection !== oldSettings.autoPlayCollection
         || newSettings.autoPlayRecommend !== oldSettings.autoPlayRecommend
@@ -1331,11 +1351,8 @@ else if (shouldInitializeContentScript) {
       )
 
       if (autoPlaySettingsChanged) {
-      // 自动播放设置发生变化，同步更新页面上的自动播放开关
-      // 延迟时间增加，确保页面元素已经渲染
         setTimeout(() => {
-          applyAutoPlayByVideoType()
-          applyRandomPlayActivationSettings()
+          applyEndPlaybackBehavior()
         }, 1000)
       }
     }
