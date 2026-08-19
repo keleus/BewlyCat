@@ -205,6 +205,21 @@ const cardOpenMode = computed(() => {
 
   return settings.value.momentsCardOpenMode
 })
+
+const cardHref = computed(() => {
+  if (moment.isLive && moment.roomId)
+    return `https://live.bilibili.com/${moment.roomId}`
+  if (moment.isVideo) {
+    if (moment.videoUrl)
+      return moment.videoUrl
+    if (moment.bvid)
+      return `https://www.bilibili.com/video/${moment.bvid}`
+    if (moment.aid)
+      return `https://www.bilibili.com/video/av${moment.aid}`
+  }
+  return moment.url
+})
+
 const showVideoOptions = ref(false)
 const videoOptionsFloatingStyles = ref<CSSProperties>({})
 const moreBtnRef = ref<HTMLButtonElement | null>(null)
@@ -260,6 +275,15 @@ function handleCardClick(event: MouseEvent) {
 
   emit('openDetail', moment)
 }
+
+function handlePermalinkClick(event: MouseEvent) {
+  if (shouldUseNativeLinkOpen(event))
+    return
+
+  event.preventDefault()
+  emit('openDetail', moment)
+}
+
 // VideoCardContextMenu uses this injection to select its common option set.
 provide('getVideoType', () => 'common')
 
@@ -358,6 +382,16 @@ function handleAdditionalClick(event: MouseEvent) {
     @keydown.enter.self="emit('openDetail', moment)"
   >
     <div class="moment-card__surface">
+      <a
+        v-if="cardHref"
+        class="moment-card__permalink"
+        :href="cardHref"
+        tabindex="-1"
+        aria-hidden="true"
+        draggable="false"
+        rel="noopener noreferrer"
+        @click="handlePermalinkClick"
+      />
       <header class="moment-card__header">
         <a
           v-if="authorSpaceUrl"
@@ -428,6 +462,16 @@ function handleAdditionalClick(event: MouseEvent) {
           @mouseenter="emit('mediaEnter', moment)"
           @mouseleave="emit('mediaLeave', moment)"
         >
+          <a
+            v-if="cardHref"
+            class="moment-card__permalink"
+            :href="cardHref"
+            tabindex="-1"
+            aria-hidden="true"
+            draggable="false"
+            rel="noopener noreferrer"
+            @click="handlePermalinkClick"
+          />
           <img>
           :src="getMomentThumbnailUrl(moment.images[0])"
           :alt="moment.title"
@@ -482,6 +526,16 @@ function handleAdditionalClick(event: MouseEvent) {
           </button>
         </div>
         <div v-else-if="(moment.isVideo || moment.isLive) && (!moment.isChargeExclusive || moment.isVideo)" class="moment-card__media moment-card__cover moment-card__text-cover moment-card__text-cover--video">
+          <a
+            v-if="cardHref"
+            class="moment-card__permalink"
+            :href="cardHref"
+            tabindex="-1"
+            aria-hidden="true"
+            draggable="false"
+            rel="noopener noreferrer"
+            @click="handlePermalinkClick"
+          />
           <span v-if="moment.isLive" i-tabler-live-photo class="moment-card__text-cover-icon" />
           <span v-else i-tabler-player-play-filled class="moment-card__text-cover-icon" />
           <span>{{ moment.isLive ? '直播动态' : '视频动态' }}</span>
@@ -638,9 +692,14 @@ function handleAdditionalClick(event: MouseEvent) {
               <strong v-else>@{{ moment.forward.author }}</strong>
               <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
             </div>
-            <div
+            <a
               v-if="showForwardScrollGallery"
-              class="moment-card__forward-gallery-host"
+              class="moment-card__forward-gallery-host moment-card__permalink-wrap"
+              :href="cardHref || undefined"
+              tabindex="-1"
+              draggable="false"
+              rel="noopener noreferrer"
+              @click="handlePermalinkClick"
             >
               <MomentImageGallery
                 :images="moment.forward.images || []"
@@ -650,10 +709,15 @@ function handleAdditionalClick(event: MouseEvent) {
                 @cover-load="handleGalleryCoverLoad"
                 @preview="handleGalleryPreview"
               />
-            </div>
-            <div
+            </a>
+            <a
               v-else-if="moment.forward.images?.length"
-              class="moment-card__forward-gallery moment-card__forward-gallery--1"
+              class="moment-card__forward-gallery moment-card__forward-gallery--1 moment-card__permalink-wrap"
+              :href="cardHref || undefined"
+              tabindex="-1"
+              draggable="false"
+              rel="noopener noreferrer"
+              @click="handlePermalinkClick"
             >
               <img
                 :src="getMomentThumbnailUrl(moment.forward.images[0], 360)"
@@ -667,13 +731,18 @@ function handleAdditionalClick(event: MouseEvent) {
                 @click="handleImagePreviewClick($event, moment.forward.images || [], 0)"
                 @keydown="handleImagePreviewKeydown($event, moment.forward.images || [], 0)"
               >
-            </div>
+            </a>
           </div>
         </div>
 
-        <div
+        <a
           v-if="showOwnScrollGallery"
-          class="moment-card__gallery-host"
+          class="moment-card__gallery-host moment-card__permalink-wrap"
+          :href="cardHref || undefined"
+          tabindex="-1"
+          draggable="false"
+          rel="noopener noreferrer"
+          @click="handlePermalinkClick"
         >
           <MomentImageGallery
             :images="moment.images"
@@ -687,11 +756,16 @@ function handleAdditionalClick(event: MouseEvent) {
               {{ moment.chargeBadge || '充电专属' }}
             </span>
           </MomentImageGallery>
-        </div>
-        <div
+        </a>
+        <a
           v-else-if="moment.images.length && !moment.isVideo && !moment.isLive"
-          class="moment-card__gallery moment-card__gallery--1"
+          class="moment-card__gallery moment-card__gallery--1 moment-card__permalink-wrap"
+          :href="cardHref || undefined"
           :style="singleImageGalleryStyle"
+          tabindex="-1"
+          draggable="false"
+          rel="noopener noreferrer"
+          @click="handlePermalinkClick"
         >
           <img
             :src="getMomentThumbnailUrl(moment.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
@@ -708,7 +782,7 @@ function handleAdditionalClick(event: MouseEvent) {
           <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
             {{ moment.chargeBadge || '充电专属' }}
           </span>
-        </div>
+        </a>
       </div>
 
       <Teleport
@@ -877,9 +951,39 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__surface {
+  position: relative;
   overflow: hidden;
   border-radius: inherit;
   background: var(--bew-elevated);
+}
+
+.moment-card__permalink {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  color: inherit;
+  text-decoration: none;
+  cursor: inherit;
+}
+
+.moment-card__media > .moment-card__permalink {
+  z-index: 2;
+}
+
+.moment-card__permalink-wrap {
+  display: block;
+  position: relative;
+  z-index: 2;
+  color: inherit;
+  text-decoration: none;
+  cursor: inherit;
+}
+
+.moment-card__surface :is(a, button, [role="button"]):not(.moment-card__permalink):not(.moment-card__permalink-wrap),
+.moment-card__media {
+  position: relative;
+  z-index: 2;
 }
 
 .moment-card:focus-visible {
