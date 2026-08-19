@@ -565,7 +565,6 @@ const shouldShowDivider = computed(() => {
               <a
                 class="upload"
                 :class="{ 'white-icon': forceWhiteIcon }"
-                style="backdrop-filter: var(--bew-filter-glass-1);"
                 href="https://member.bilibili.com/platform/upload/video/frame"
                 target="_blank"
                 :title="$t('topbar.upload')"
