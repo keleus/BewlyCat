@@ -1,4 +1,5 @@
 import { settings } from '~/logic'
+import { isHomePage, isInIframe } from '~/utils/main'
 
 const NATIVE_SEARCH_CATEGORY_BY_PATH: Record<string, string> = {
   article: 'article',
@@ -44,6 +45,49 @@ export function buildKeywordSearchUrl(keyword: string): string {
     return `https://www.bilibili.com/?page=SearchResults&keyword=${encoded}`
 
   return buildNativeSearchUrl(keyword)
+}
+
+const PLUGIN_SEARCH_RESET_PARAMS = [
+  'category',
+  'pn',
+  'user_order',
+  'user_type',
+  'search_type',
+  'live_room_order',
+  'live_user_order',
+] as const
+
+/**
+ * 开启插件搜索结果页时，在当前插件首页就地切到搜索结果，
+ * 或从其他 B 站页面跳到插件搜索结果。返回 true 表示已接管导航。
+ */
+export function navigateToPluginSearchResults(keyword: string): boolean {
+  if (!shouldUsePluginSearchResultsPage())
+    return false
+
+  const normalized = keyword.trim()
+  if (!normalized)
+    return false
+
+  const targetUrl = `https://www.bilibili.com/?page=SearchResults&keyword=${encodeURIComponent(normalized)}`
+
+  if (!isHomePage()) {
+    if (isInIframe())
+      window.top?.location.assign(targetUrl)
+    else
+      window.location.assign(targetUrl)
+    return true
+  }
+
+  const params = new URLSearchParams(window.location.search)
+  params.set('page', 'SearchResults')
+  params.set('keyword', normalized)
+  for (const key of PLUGIN_SEARCH_RESET_PARAMS)
+    params.delete(key)
+
+  window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`)
+  window.dispatchEvent(new Event('pushstate'))
+  return true
 }
 
 /**

@@ -1,7 +1,13 @@
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
+
 import ALink from '~/components/ALink.vue'
+import { settings } from '~/logic'
+import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
-import { buildKeywordSearchUrl } from '~/utils/searchNavigation'
+import { isHomePage } from '~/utils/main'
+import { buildKeywordSearchUrl, navigateToPluginSearchResults } from '~/utils/searchNavigation'
+import { openLinkInBackground } from '~/utils/tabs'
 
 interface HotSearchItem {
   keyword: string
@@ -11,6 +17,32 @@ interface HotSearchItem {
 
 const list = ref<HotSearchItem[]>([])
 const isLoading = ref(false)
+const topBarStore = useTopBarStore()
+const { searchKeyword } = storeToRefs(topBarStore)
+
+function handleHotSearchClick(keyword: string) {
+  const normalized = keyword.trim()
+  if (!normalized)
+    return
+
+  searchKeyword.value = normalized
+  if (navigateToPluginSearchResults(normalized))
+    return
+
+  const searchUrl = buildKeywordSearchUrl(normalized)
+  if (settings.value.searchBarLinkOpenMode === 'background') {
+    void openLinkInBackground(searchUrl)
+    return
+  }
+
+  let target = '_blank'
+  if (settings.value.searchBarLinkOpenMode === 'currentTabIfNotHomepage')
+    target = isHomePage() ? '_blank' : '_self'
+  else if (settings.value.searchBarLinkOpenMode === 'currentTab' || settings.value.searchBarLinkOpenMode === 'drawer')
+    target = '_self'
+
+  window.open(searchUrl, target)
+}
 
 async function loadHotSearch() {
   if (isLoading.value)
@@ -53,7 +85,9 @@ onMounted(loadHotSearch)
         :key="item.keyword"
         :href="buildKeywordSearchUrl(item.keyword)"
         type="searchBar"
+        :custom-click-event="true"
         class="moments-hot-search__item"
+        @click="handleHotSearchClick(item.keyword)"
       >
         <span
           class="moments-hot-search__rank"

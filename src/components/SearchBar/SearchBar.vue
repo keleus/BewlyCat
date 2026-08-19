@@ -6,12 +6,11 @@ import { computed, inject, reactive, ref, shallowRef, watch } from 'vue'
 
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { resolveSearchBarCharacterUrl } from '~/constants/imgs'
-import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage } from '~/utils/main'
-import { buildKeywordSearchUrl, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
+import { buildKeywordSearchUrl, navigateToPluginSearchResults } from '~/utils/searchNavigation'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { HistoryItem, SuggestionItem, SuggestionResponse } from './searchHistoryProvider'
@@ -143,19 +142,6 @@ const placeholderText = computed(() => {
 
 // 尝试获取 BEWLY_APP（在首页时可用）
 const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
-
-// 判断是否在搜索结果页且启用了插件搜索
-const shouldHandleInCurrentPage = computed(() => {
-  if (!shouldUsePluginSearchResultsPage())
-    return false
-  // 如果能获取到 bewlyApp，使用 activatedPage 来判断
-  if (bewlyApp?.activatedPage) {
-    return bewlyApp.activatedPage.value === AppPage.SearchResults
-  }
-  // 降级方案：检查 URL 参数（在非首页或无法获取 bewlyApp 时使用）
-  const urlParams = new URLSearchParams(window.location.search)
-  return urlParams.get('page') === 'SearchResults' && !!urlParams.get('keyword')
-})
 
 watch(() => props.modelValue, (value) => {
   const next = value ?? ''
@@ -476,8 +462,8 @@ async function navigateToSearchResultPage(rawKeyword: string) {
     return
   }
 
-  // 如果在搜索页且启用了插件搜索，则在当前页加载
-  if (shouldHandleInCurrentPage.value) {
+  // 开启插件搜索结果页时，优先切到扩展内搜索结果，避免落到 B 站原站搜索页
+  if (navigateToPluginSearchResults(normalized)) {
     emit('search', normalized)
     isFocus.value = false
     resetKeyboardSelection()

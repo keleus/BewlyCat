@@ -21,7 +21,7 @@ import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIfra
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, applyRememberedPlaybackRate, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, startPlaybackRateMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyPreservedOrDefaultCustomPlay, applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
-import { getPluginSearchResultsUrl, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
+import { getPluginSearchResultsUrl, navigateToPluginSearchResults, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -253,8 +253,21 @@ else if (shouldInitializeContentScript) {
         return
 
       const pluginSearchResultsUrl = getPluginSearchResultsUrl(anchor.href)
-      if (pluginSearchResultsUrl)
+      if (!pluginSearchResultsUrl)
+        return
+
+      if (event.button !== 0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
         anchor.href = pluginSearchResultsUrl
+        return
+      }
+
+      const keyword = new URL(pluginSearchResultsUrl).searchParams.get('keyword')
+      if (!keyword)
+        return
+
+      event.preventDefault()
+      event.stopPropagation()
+      navigateToPluginSearchResults(keyword)
     }, true)
   }
 
