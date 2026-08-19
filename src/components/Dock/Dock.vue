@@ -47,10 +47,15 @@ const hideDock = ref<boolean>(false)
 const dockContentHover = ref<boolean>(false)
 const dockReady = ref(false)
 let dockReadyFrame: number | undefined
+const keepDockActionsVisible = computed((): boolean => {
+  return settings.value.autoHideDock && settings.value.alwaysShowDockActionsWhenAutoHide
+})
 const dockContentRef = useDelayedHover({
   enterDelay: 100,
   leaveDelay: 600,
   enter: () => {
+    if (shouldIgnorePinnedActionHover())
+      return
     dockContentHover.value = true
     toggleHideDock(false)
   },
@@ -67,6 +72,14 @@ let mouseLeaveTimer: any | undefined
 
 function handleGlobalMouseMove(event: MouseEvent) {
   if (!settings.value.autoHideDock) {
+    return
+  }
+
+  if (keepDockActionsVisible.value && isPinnedActionsTarget(event.target)) {
+    if (mouseEnterTimer) {
+      clearTimeout(mouseEnterTimer)
+      mouseEnterTimer = undefined
+    }
     return
   }
 
@@ -179,18 +192,6 @@ const showDockActionButtons = computed((): boolean => {
   return showBackToTopOrRefreshActions.value || showUndoForwardActions.value
 })
 
-const detachDockActionButtons = computed((): boolean => {
-  return settings.value.autoHideDock && settings.value.alwaysShowDockActionsWhenAutoHide
-})
-
-const showInlineDockActionButtons = computed((): boolean => {
-  return showDockActionButtons.value && !detachDockActionButtons.value
-})
-
-const showDetachedDockActionButtons = computed((): boolean => {
-  return showDockActionButtons.value && detachDockActionButtons.value
-})
-
 watch(() => settings.value.autoHideDock, (newValue) => {
   hideDock.value = newValue
 }, { immediate: true })
@@ -262,6 +263,24 @@ function toggleHideDock(hide: boolean) {
     hideDock.value = hide
   else
     hideDock.value = false
+}
+
+function isPinnedActionsTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && !!target.closest('.dock-action-buttons')
+}
+
+function shouldIgnorePinnedActionHover(event?: Event): boolean {
+  if (!keepDockActionsVisible.value || !hideDock.value)
+    return false
+  if (event)
+    return isPinnedActionsTarget(event.target)
+  return !!dockContentRef.value?.querySelector('.dock-action-buttons:hover')
+}
+
+function handleDockAreaEnter(event: MouseEvent) {
+  if (shouldIgnorePinnedActionHover(event))
+    return
+  toggleHideDock(false)
 }
 
 function handleDockItemClick($event: MouseEvent, dockItem: DockItem) {
@@ -386,11 +405,7 @@ const dockScale = computed((): number => {
   let additionalHeight = 0
   let additionalWidth = 0
 
-  if (detachDockActionButtons.value && !isLayoutEditing.value) {
-    additionalHeight = 0
-    additionalWidth = 0
-  }
-  else if (settings.value.dockPosition === 'bottom') {
+  if (settings.value.dockPosition === 'bottom') {
     const maxButtonCount = isLayoutEditing.value
       ? 2
       : (settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1)
@@ -427,32 +442,6 @@ const dockActionButtonsStyle = computed<CSSProperties>(() => {
     right: settings.value.dockPosition === 'bottom' ? 0 : 'unset',
     transform: settings.value.dockPosition === 'bottom' ? 'translate(100%, 0)' : 'translateY(100%)',
     flexDirection: settings.value.dockPosition === 'bottom' ? 'row' : 'column',
-  }
-})
-
-const detachedDockActionButtonsStyle = computed<CSSProperties>(() => {
-  const scale = dockScale.value
-  const gap = 8
-  const actionButtonSize = windowWidth.value >= 1024 ? 45 : 35
-  const sideActionInset = `${gap + Math.max(0, ((dockWidth.value - actionButtonSize) * scale) / 2)}px`
-
-  if (settings.value.dockPosition === 'bottom') {
-    return {
-      left: `calc(50% + ${(dockWidth.value * scale) / 2 + gap}px)`,
-      bottom: '8px',
-      transform: `scale(${scale})`,
-      transformOrigin: 'left bottom',
-      flexDirection: 'row',
-    }
-  }
-
-  return {
-    top: `calc(50% + ${(dockHeight.value * scale) / 2 + gap}px)`,
-    left: settings.value.dockPosition === 'left' ? sideActionInset : 'unset',
-    right: settings.value.dockPosition === 'right' ? sideActionInset : 'unset',
-    transform: `scale(${scale})`,
-    transformOrigin: settings.value.dockPosition === 'left' ? 'left top' : 'right top',
-    flexDirection: 'column',
   }
 })
 
@@ -590,13 +579,14 @@ onUnmounted(() => {
         'left': settings.dockPosition === 'left',
         'right': settings.dockPosition === 'right',
         'bottom': settings.dockPosition === 'bottom',
-        'hide': hideDock && !isLayoutEditing,
+        'hide': hideDock && !isLayoutEditing && !keepDockActionsVisible,
+        'hide-inner': hideDock && !isLayoutEditing && keepDockActionsVisible,
         'half-hide': settings.halfHideDock && !isLayoutEditing,
         'hover': dockContentHover,
         'ready': dockReady,
       }"
       :style="dockTransformStyle"
-      @mouseenter="toggleHideDock(false)"
+      @mouseenter="handleDockAreaEnter"
       @mouseleave="toggleHideDock(true)"
     >
       <div
@@ -753,7 +743,8 @@ onUnmounted(() => {
 
       <!-- Back to top & refresh buttons -->
       <div
-        v-if="!isLayoutEditing && showInlineDockActionButtons"
+        v-if="!isLayoutEditing && showDockActionButtons"
+        class="dock-action-buttons"
         :style="dockActionButtonsStyle"
         pos="absolute"
         flex="~ gap-2"
@@ -837,62 +828,6 @@ onUnmounted(() => {
         </Transition>
       </div>
     </div>
-
-    <!-- Detached action buttons stay visible when the dock itself is auto-hidden. -->
-    <div
-      v-if="!isLayoutEditing && showDetachedDockActionButtons"
-      class="detached-dock-actions"
-      :style="detachedDockActionButtonsStyle"
-      pos="absolute"
-      flex="~ gap-2"
-    >
-      <Transition name="fade">
-        <button
-          v-if="showBackToTopOrRefreshButton && canRefreshCurrentPage"
-          class="back-to-top-or-refresh-btn"
-          @click="handleBackToTopOrRefresh('refresh')"
-        >
-          <Icon
-            icon="line-md:rotate-270"
-            class="dock-action-icon"
-            shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
-          />
-        </button>
-      </Transition>
-      <Transition name="fade">
-        <button
-          v-if="showBackToTopOrRefreshButton && !reachTop"
-          class="back-to-top-or-refresh-btn"
-          @click="handleBackToTopOrRefresh('backToTop')"
-        >
-          <Icon
-            icon="line-md:arrow-small-up"
-            class="dock-action-icon"
-            shrink-0 absolute text="size-$bew-icon-size-lg"
-          />
-        </button>
-      </Transition>
-      <Transition name="fade">
-        <button
-          v-if="showUndoForwardActions"
-          class="back-to-top-or-refresh-btn"
-          @click="handleHistoryNavigation"
-        >
-          <Icon
-            v-if="showUndo"
-            icon="mdi:undo-variant"
-            class="dock-action-icon"
-            shrink-0 absolute text="size-$bew-icon-size-lg"
-          />
-          <Icon
-            v-else-if="showForward"
-            icon="mdi:redo-variant"
-            class="dock-action-icon"
-            shrink-0 absolute text="size-$bew-icon-size-lg"
-          />
-        </button>
-      </Transition>
-    </div>
   </aside>
 </template>
 
@@ -920,28 +855,6 @@ onUnmounted(() => {
 
   &-bottom {
     --uno: "left-0 bottom-0 w-full h-14px hover-h-60px";
-  }
-}
-
-.detached-dock-actions {
-  --uno: "pointer-events-auto z-1";
-
-  .back-to-top-or-refresh-btn {
-    --uno: "transform active:important-scale-90 hover:scale-110";
-    --uno: "lg:w-45px w-35px lg:h-45px h-35px";
-    --uno: "grid place-items-center";
-    --uno: "filter-$bew-filter-glass-1";
-    --uno: "bg-$bew-elevated hover:bg-$bew-content-hover";
-    --uno: "rounded-full shadow-$bew-shadow-2 border-1 border-$bew-border-color";
-
-    backdrop-filter: var(--bew-filter-glass-1);
-    transition:
-      transform 300ms var(--bew-ease-emphasized, cubic-bezier(0.34, 1.3, 0.64, 1)),
-      background 300ms ease,
-      color 300ms ease,
-      box-shadow 300ms ease,
-      opacity 300ms ease;
-    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
   }
 }
 
@@ -975,6 +888,9 @@ onUnmounted(() => {
   &.left.hide:not(.hover) {
     --uno: "opacity-0 !translate-x--100%";
   }
+  &.left.hide-inner:not(.hover) .dock-content-inner {
+    --uno: "opacity-0 !translate-x--100%";
+  }
   &.left.half-hide:not(.hover) {
     --uno: "!opacity-60 !translate-x--50%";
   }
@@ -983,6 +899,9 @@ onUnmounted(() => {
     --uno: "right-2 after:left--4px";
   }
   &.right.hide:not(.hover) {
+    --uno: "opacity-0 !translate-x-100%";
+  }
+  &.right.hide-inner:not(.hover) .dock-content-inner {
     --uno: "opacity-0 !translate-x-100%";
   }
   &.right.half-hide:not(.hover) {
@@ -995,8 +914,19 @@ onUnmounted(() => {
   &.bottom.hide:not(.hover) {
     --uno: "opacity-0 !translate-y-100%";
   }
+  &.bottom.hide-inner:not(.hover) .dock-content-inner {
+    --uno: "opacity-0 !translate-y-100%";
+  }
   &.bottom.half-hide:not(.hover) {
     --uno: "!opacity-60 !translate-y-50%";
+  }
+
+  &.hide-inner:not(.hover) {
+    pointer-events: none;
+  }
+
+  &.hide-inner:not(.hover) .dock-action-buttons {
+    pointer-events: auto;
   }
 
   .divider {
@@ -1014,6 +944,13 @@ onUnmounted(() => {
     --uno: "rounded-full border-1 border-$bew-border-color";
     box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
     backdrop-filter: var(--bew-filter-glass-1);
+    transition:
+      transform var(--bew-duration-moderate, 300ms) ease-in-out,
+      opacity var(--bew-duration-moderate, 300ms) ease-in-out;
+  }
+
+  .dock-action-buttons {
+    z-index: 1;
   }
 
   &.bottom .dock-content-inner {

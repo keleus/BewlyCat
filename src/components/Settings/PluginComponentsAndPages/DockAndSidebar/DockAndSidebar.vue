@@ -101,6 +101,13 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
       <SettingsItem :title="$t('settings.auto_hide_dock')" right-width="auto">
         <Radio v-model="settings.autoHideDock" />
       </SettingsItem>
+      <SettingsItem
+        v-if="settings.autoHideDock"
+        :title="$t('settings.always_show_dock_actions_when_auto_hide')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.alwaysShowDockActionsWhenAutoHide" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.half_hide_dock')" right-width="auto">
         <Radio v-model="settings.halfHideDock" />
       </SettingsItem>
@@ -179,9 +186,6 @@ function updateDockItemPageMode(dockItem: DockItem, useOriginalBiliPage: boolean
       </SettingsItem>
       <SettingsItem :title="$t('settings.back_to_top_and_refresh_buttons_are_separated')" right-width="auto">
         <Radio v-model="settings.backToTopAndRefreshButtonsAreSeparated" />
-      </SettingsItem>
-      <SettingsItem :title="$t('settings.always_show_dock_actions_when_auto_hide')" right-width="auto">
-        <Radio v-model="settings.alwaysShowDockActionsWhenAutoHide" />
       </SettingsItem>
       <SettingsItem :title="$t('settings.enable_undo_refresh_button')" :desc="$t('settings.enable_undo_refresh_button_desc')" right-width="auto">
         <Radio v-model="settings.enableUndoRefreshButton" />
