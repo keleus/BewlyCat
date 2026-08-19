@@ -906,6 +906,7 @@ export const useTopBarStore = defineStore('topBar', () => {
             processedItems.forEach((item: any) => {
               const momentItem = {
                 type: selectedType,
+                itemType: item.type,
                 title: item.title,
                 author: item.authors ? item.authors.map((a: any) => a.name).join(' / ') : item.author.name,
                 authorFace: item.author.face,

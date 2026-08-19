@@ -79,6 +79,13 @@ function getData() {
   topBarStore.getMomentsData(selectedMomentTab.value.type)
 }
 
+// 顶栏动态 API：8 为视频，64 为专栏
+const VIDEO_MOMENT_TYPE = 8
+
+function isVideoMoment(moment: { itemType?: number }) {
+  return moment.itemType === VIDEO_MOMENT_TYPE
+}
+
 function toggleWatchLater(aid: number) {
   const accountId = topBarStore.userInfo.mid
   if (!topBarStore.isLogin || !accountId)
@@ -307,8 +314,8 @@ defineExpose({
                   :src="`${moment.cover}@240w_135h_1c`"
                   :alt="moment.title"
                 >
-                <!-- 修改这里，使用 topBarStore.addedWatchLaterList -->
                 <div
+                  v-if="isVideoMoment(moment)"
                   opacity-0 group-hover:opacity-100
                   pos="absolute top-0 right-0"
                   m="1"
