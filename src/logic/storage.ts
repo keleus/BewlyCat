@@ -898,7 +898,6 @@ watch(
           ? 'frostedGlass'
           : originalSettings.topBarStyle
     }
-    // 已移除的五层渐进雾化，回落到默认白雾/阴影。
     if (record.topBarStyle === 'progressiveFog')
       record.topBarStyle = 'default'
     if (!validTopBarStyles.includes(record.topBarStyle))
