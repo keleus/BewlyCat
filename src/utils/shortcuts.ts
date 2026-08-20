@@ -106,7 +106,7 @@ export function setupShortcutHandlers() {
   // 如果快捷键总开关关闭，移除现有监听器并返回
   if (settings.value.keyboard === false) {
     if (keydownListener) {
-      document.removeEventListener('keydown', keydownListener, true)
+      window.removeEventListener('keydown', keydownListener, true)
       keydownListener = null
     }
     cachedShortcuts = null
@@ -115,7 +115,7 @@ export function setupShortcutHandlers() {
 
   // 如果已存在监听器，先移除
   if (keydownListener) {
-    document.removeEventListener('keydown', keydownListener, true)
+    window.removeEventListener('keydown', keydownListener, true)
     keydownListener = null
   }
 
@@ -194,7 +194,7 @@ export function setupShortcutHandlers() {
             const handler = shortcutHandlers[id]
             if (handler) {
               e.preventDefault()
-              e.stopPropagation()
+              e.stopImmediatePropagation()
 
               try {
                 handler(e, player || undefined)
@@ -217,7 +217,8 @@ export function setupShortcutHandlers() {
   }
 
   // 添加事件监听器
-  document.addEventListener('keydown', keydownListener, true)
+  // 在 window 捕获阶段监听，确保覆盖时先于 Bilibili 的 document/播放器处理器拦截事件。
+  window.addEventListener('keydown', keydownListener, true)
 }
 
 /**
