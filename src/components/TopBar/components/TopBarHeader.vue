@@ -44,14 +44,21 @@ function smoothFade(color: (alphaPercent: number) => string, peak: number) {
   return `linear-gradient(to bottom, ${stops.join(', ')})`
 }
 
-const OVERLAY_MASK = `linear-gradient(to bottom, rgb(0 0 0 / 100%) 0%, ${
-  fadeStops(100)
-    .map(([position, alpha]) => {
-      const t = +(position / 100).toFixed(4)
-      return `rgb(0 0 0 / ${+alpha.toFixed(2)}%) calc(var(--overlay-mask-plateau) + ${t} * (100% - var(--overlay-mask-plateau)))`
-    })
-    .join(', ')
-})`
+function overlayMask(plateauVar: string) {
+  return `linear-gradient(to bottom, rgb(0 0 0 / 100%) 0%, ${
+    fadeStops(100)
+      .map(([position, alpha]) => {
+        const t = +(position / 100).toFixed(4)
+        return `rgb(0 0 0 / ${+alpha.toFixed(2)}%) calc(var(${plateauVar}) + ${t} * (100% - var(${plateauVar})))`
+      })
+      .join(', ')
+  })`
+}
+
+// 毛玻璃：前 24px 满强度，收尾落在 64px 顶栏内。24 / 64 = 37.5%。
+const FROSTED_OVERLAY_MASK = overlayMask('--overlay-mask-plateau-frosted')
+// 非毛玻璃：平台 48px、收尾 32px；超出顶栏 16px，收尾从下沿往里 16px 起。
+const SOLID_OVERLAY_MASK = overlayMask('--overlay-mask-plateau-solid')
 
 // 顶栏底下压着底图时滚动后的压深量，两种毛玻璃开关共用同一档。
 // 底图能透出来本身就是想要的效果，遮罩再叠上下方渐变层就已接近不透明，
@@ -87,8 +94,8 @@ const glassOverlayStyle = computed(() => {
         ? scrolledShadeColor.value
         : glassTintColor.value,
       backdropFilter: 'var(--bew-filter-glass-1)',
-      maskImage: OVERLAY_MASK,
-      WebkitMaskImage: OVERLAY_MASK,
+      maskImage: FROSTED_OVERLAY_MASK,
+      WebkitMaskImage: FROSTED_OVERLAY_MASK,
     }
   }
   return {
@@ -97,10 +104,18 @@ const glassOverlayStyle = computed(() => {
       ? 0
       : (hasTopBarBackdrop.value ? SCROLLED_SHADE_ALPHA : SCROLLED_SOLID_OPACITY),
     backdropFilter: 'none',
-    maskImage: OVERLAY_MASK,
-    WebkitMaskImage: OVERLAY_MASK,
+    maskImage: SOLID_OVERLAY_MASK,
+    WebkitMaskImage: SOLID_OVERLAY_MASK,
   }
 })
+
+const fadeGradientStyle = computed(() => ({
+  background: fadeGradient.value,
+  opacity: props.reachTop ? 0.8 : 1,
+  height: settings.value.enableFrostedGlass
+    ? 'var(--bew-top-bar-height)'
+    : 'calc(var(--bew-top-bar-height) + var(--bew-space-4))',
+}))
 
 const leftSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
@@ -223,16 +238,16 @@ function refreshSearchContent() {
     h="$bew-top-bar-height"
   >
     <!-- 低开销顶栏遮罩：常驻挂载，玻璃与恒等滤镜间插值（见 glassOverlayStyle） -->
-    <div class="top-bar-header__glass-overlay" :style="glassOverlayStyle" />
+    <div
+      class="top-bar-header__glass-overlay"
+      :class="{ 'top-bar-header__glass-overlay--solid': !settings.enableFrostedGlass }"
+      :style="glassOverlayStyle"
+    />
 
     <div
       pos="absolute top-0 left-0" w-full
       pointer-events-none opacity-100 duration-300
-      :style="{
-        background: fadeGradient,
-        opacity: reachTop ? 0.8 : 1,
-        height: 'var(--bew-top-bar-height)',
-      }"
+      :style="fadeGradientStyle"
     />
 
     <!-- Top bar theme color gradient -->
@@ -298,8 +313,8 @@ function refreshSearchContent() {
 }
 
 .top-bar-header__glass-overlay {
-  // 垂直居中的主控件下沿，满强度托住搜索框后再余弦收尾。
-  --overlay-mask-plateau: calc((var(--bew-top-bar-height) + var(--bew-top-bar-primary-control-height)) / 2);
+  --overlay-mask-plateau-frosted: 37.5%;
+  --overlay-mask-plateau-solid: calc(var(--bew-top-bar-height) - var(--bew-space-4));
   position: absolute;
   top: 0;
   left: 0;
@@ -310,6 +325,10 @@ function refreshSearchContent() {
     opacity var(--bew-duration-moderate) var(--bew-ease-standard),
     background-color var(--bew-duration-moderate) var(--bew-ease-standard),
     backdrop-filter var(--bew-duration-moderate) var(--bew-ease-standard);
+}
+
+.top-bar-header__glass-overlay--solid {
+  height: calc(var(--bew-top-bar-height) + var(--bew-space-4));
 }
 
 .top-bar-header__side {
