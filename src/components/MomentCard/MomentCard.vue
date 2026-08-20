@@ -1022,7 +1022,7 @@ function handleAdditionalClick(event: MouseEvent) {
 .moment-card__surface
   :is(a, button, [role="button"]):not(.moment-card__permalink):not(.moment-card__permalink-wrap):not(
     .moment-image-gallery__nav
-  ),
+  ):not(.moment-card__watch-later),
 .moment-card__media {
   position: relative;
   z-index: 2;
