@@ -170,8 +170,6 @@ function logHomeLoadComplete(source: 'api' | 'cache', startedAt: number) {
   })
 }
 
-// 页面可见性状态
-const isPageVisible = ref<boolean>(!document.hidden)
 const selectedDislikeReason = ref<number>(1)
 
 // 修改缓存数据变量，添加前进状态变量
@@ -297,15 +295,12 @@ watch(recommendationFilterSettingsSignature, () => {
   appConsecutiveEmptyLoads.value = 0
 })
 
-// 监听页面可见性变化
-function handleVisibilityChange() {
-  isPageVisible.value = !document.hidden
+function isDocumentVisible(): boolean {
+  return document.visibilityState === 'visible'
 }
 
-// 添加页面可见性监听器
 onMounted(() => {
   const loadStartedAt = performance.now()
-  document.addEventListener('visibilitychange', handleVisibilityChange)
   const preservedModeHasItems = settings.value.recommendationMode === 'app'
     ? forYouStore.state.appVideoList.length > 0
     : forYouStore.state.videoList.length > 0
@@ -394,10 +389,6 @@ onBeforeUnmount(() => {
     }
     forYouStore.saveCompleteState(currentState)
   }
-})
-
-onUnmounted(() => {
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
 onKeyStroke((e: KeyboardEvent) => {
@@ -805,6 +796,7 @@ function loadMore(manual = false) {
     || noMoreContent.value
     || isRecursiveLoading.value
     || (!manual && requiresManualFilteredPaging.value)
+    || (!manual && !isDocumentVisible())
   ) {
     return
   }
@@ -1238,7 +1230,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         if (!hasScrollbar || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
           if (
             !hasActiveRecommendationFilter.value
-            && isPageVisible.value
+            && isDocumentVisible()
             && consecutiveEmptyLoads.value < MAX_EMPTY_LOADS
           ) {
             // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore
@@ -1462,7 +1454,7 @@ async function getAppRecommendVideos(
     if (
       shouldContinue
       && !hasActiveRecommendationFilter.value
-      && isPageVisible.value
+      && isDocumentVisible()
       && appConsecutiveEmptyLoads.value < MAX_EMPTY_LOADS
     ) {
       // 设置递归加载锁，防止 VideoCardGrid 触发额外的 loadMore

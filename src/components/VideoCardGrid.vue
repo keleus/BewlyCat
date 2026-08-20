@@ -276,8 +276,16 @@ const displayItems = computed(() => {
   return props.items
 })
 
+function isDocumentVisible(): boolean {
+  return typeof document === 'undefined' || document.visibilityState === 'visible'
+}
+
 // 检查是否可以加载更多
 function canLoadMore(): boolean {
+  // 后台标签页里 IntersectionObserver 可能一直保持相交，不能继续预加载。
+  if (!isDocumentVisible())
+    return false
+
   // 连续请求失败次数超过限制时停止
   if (consecutiveFailures.value >= MAX_CONSECUTIVE_FAILURES) {
     return false
@@ -346,7 +354,7 @@ function setupIntersectionObserver() {
 
   intersectionObserver = new IntersectionObserver(
     (entries) => {
-      if (!isGridActive)
+      if (!isGridActive || !isDocumentVisible())
         return
 
       const entry = entries[0]
@@ -379,7 +387,7 @@ let checkPreloadRAF: number | null = null
 
 // 检查是否需要预加载
 function checkShouldPreload() {
-  if (!isGridActive)
+  if (!isGridActive || !isDocumentVisible())
     return
 
   if (props.loading) {
@@ -403,6 +411,9 @@ function checkShouldPreload() {
 
   checkPreloadRAF = requestAnimationFrame(() => {
     checkPreloadRAF = null
+
+    if (!isGridActive || !isDocumentVisible())
+      return
 
     if (isWithinPreloadDistance())
       triggerLoadMore()
@@ -580,6 +591,7 @@ function activateGrid() {
   isGridActive = true
   setupScrollListeners()
   setupGridResizeObserver()
+  document.addEventListener('visibilitychange', handleDocumentVisibilityChange)
 
   nextTick(() => {
     if (!isGridActive)
@@ -595,6 +607,7 @@ function deactivateGrid() {
     return
 
   isGridActive = false
+  document.removeEventListener('visibilitychange', handleDocumentVisibilityChange)
   cleanupScrollListeners()
   cleanupIntersectionObserver()
   cleanupGridResizeObserver()
@@ -709,9 +722,13 @@ function getRemainingScroll(scrollElement: HTMLElement): number {
   return scrollElement.scrollHeight - scrollElement.clientHeight - scrollElement.scrollTop
 }
 
+function isUsableScrollElement(scrollElement: HTMLElement | null): scrollElement is HTMLElement {
+  return !!scrollElement && scrollElement.clientHeight > 0 && scrollElement.scrollHeight > 0
+}
+
 function isWithinPreloadDistance(): boolean {
   const scrollElement = findScrollElement()
-  if (!scrollElement)
+  if (!isUsableScrollElement(scrollElement))
     return false
 
   return getRemainingScroll(scrollElement) <= getPreloadDistance(scrollElement)
@@ -719,10 +736,28 @@ function isWithinPreloadDistance(): boolean {
 
 function isScrollAtBottom(): boolean {
   const scrollElement = findScrollElement()
-  if (!scrollElement)
+  if (!isUsableScrollElement(scrollElement))
     return false
 
   return getRemainingScroll(scrollElement) <= 2
+}
+
+function handleDocumentVisibilityChange() {
+  if (!isDocumentVisible()) {
+    isLoadMoreSentinelIntersecting.value = false
+    reachedLoadMoreDuringLoading.value = false
+    return
+  }
+
+  if (!isGridActive)
+    return
+
+  nextTick(() => {
+    if (!isGridActive || !isDocumentVisible())
+      return
+    setupIntersectionObserver()
+    checkShouldPreload()
+  })
 }
 
 let gridResizeObserver: ResizeObserver | null = null
