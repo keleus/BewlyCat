@@ -19,6 +19,7 @@ import {
   getAuthorSpaceUrl,
   getAvatarThumbnailUrl,
   getCardPreviewText,
+  getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
@@ -226,8 +227,6 @@ const cardHref = computed(() => {
   }
   return moment.url
 })
-const forwardHref = computed(() => moment.forward?.url || '')
-
 const showVideoOptions = ref(false)
 const videoOptionsFloatingStyles = ref<CSSProperties>({})
 const moreBtnRef = ref<HTMLButtonElement | null>(null)
@@ -349,16 +348,8 @@ function handleForwardOriginClick(event: MouseEvent) {
   emit('openDetail', getForwardOriginMoment() || moment)
 }
 
-function handleForwardGalleryPreview() {
-  emit('openDetail', getForwardOriginMoment() || moment)
-}
-
-function handleForwardOriginKeydown(event: KeyboardEvent) {
-  if (event.key !== 'Enter' && event.key !== ' ')
-    return
-  event.preventDefault()
-  event.stopPropagation()
-  emit('openDetail', getForwardOriginMoment() || moment)
+function handleForwardGalleryPreview(urls: string[], index: number, trigger: HTMLElement | null) {
+  emit('openImagePreview', urls, index, trigger)
 }
 
 // VideoCardContextMenu uses this injection to select its common option set.
@@ -372,23 +363,25 @@ function handleCoverLoad(event: Event) {
   emit('coverLoad', event, moment.id)
 }
 
-function handleImagePreviewClick(event: MouseEvent) {
+function handleImagePreviewClick(event: MouseEvent, urls: string[], index: number) {
   event.preventDefault()
   event.stopPropagation()
-  emit('openDetail', moment)
+  const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  emit('openImagePreview', urls, index, trigger)
 }
 
-function handleImagePreviewKeydown(event: KeyboardEvent) {
+function handleImagePreviewKeydown(event: KeyboardEvent, urls: string[], index: number) {
   if (event.key !== 'Enter' && event.key !== ' ')
     return
 
   event.preventDefault()
   event.stopPropagation()
-  emit('openDetail', moment)
+  const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
+  emit('openImagePreview', urls, index, trigger)
 }
 
-function handleGalleryPreview() {
-  emit('openDetail', moment)
+function handleGalleryPreview(urls: string[], index: number, trigger: HTMLElement | null) {
+  emit('openImagePreview', urls, index, trigger)
 }
 
 function handleGalleryCoverLoad(event: Event) {
@@ -457,16 +450,6 @@ function handleAdditionalClick(event: MouseEvent) {
     @keydown.enter.self="emit('openDetail', moment)"
   >
     <div class="moment-card__surface">
-      <a
-        v-if="cardHref"
-        class="moment-card__permalink"
-        :href="cardHref"
-        tabindex="-1"
-        aria-hidden="true"
-        draggable="false"
-        rel="noopener noreferrer"
-        @click.capture="handlePermalinkClick"
-      />
       <header class="moment-card__header">
         <a
           v-if="authorSpaceUrl"
@@ -756,17 +739,7 @@ function handleAdditionalClick(event: MouseEvent) {
               'moment-card__forward--draw': Boolean(moment.forward.images?.length),
             }"
           >
-            <a
-              v-if="forwardHref"
-              class="moment-card__permalink"
-              :href="forwardHref"
-              tabindex="-1"
-              aria-hidden="true"
-              draggable="false"
-              rel="noopener noreferrer"
-              @click.capture="handleForwardOriginClick"
-            />
-            <div class="moment-card__forward-copy">
+            <div class="moment-card__forward-copy" @click="handleForwardOriginClick">
               <a
                 v-if="forwardAuthorSpaceUrl"
                 :href="forwardAuthorSpaceUrl"
@@ -777,14 +750,9 @@ function handleAdditionalClick(event: MouseEvent) {
               <strong v-else>@{{ moment.forward.author }}</strong>
               <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
             </div>
-            <a
+            <div
               v-if="showForwardScrollGallery"
-              class="moment-card__forward-gallery-host moment-card__permalink-wrap"
-              :href="forwardHref || undefined"
-              tabindex="-1"
-              draggable="false"
-              rel="noopener noreferrer"
-              @click.capture="handleForwardOriginClick"
+              class="moment-card__forward-gallery-host"
             >
               <MomentImageGallery
                 :images="moment.forward.images || []"
@@ -794,41 +762,31 @@ function handleAdditionalClick(event: MouseEvent) {
                 @cover-load="handleGalleryCoverLoad"
                 @preview="handleForwardGalleryPreview"
               />
-            </a>
-            <a
+            </div>
+            <div
               v-else-if="moment.forward.images?.length"
-              class="moment-card__forward-gallery moment-card__forward-gallery--1 moment-card__permalink-wrap"
-              :href="forwardHref || undefined"
+              class="moment-card__forward-gallery moment-card__forward-gallery--1"
               :style="forwardSingleImageGalleryStyle"
-              tabindex="-1"
-              draggable="false"
-              rel="noopener noreferrer"
-              @click.capture="handleForwardOriginClick"
+              tabindex="0"
+              role="button"
+              @click="handleImagePreviewClick($event, moment.forward.images || [], 0)"
+              @keydown="handleImagePreviewKeydown($event, moment.forward.images || [], 0)"
             >
               <img
                 :src="getMomentThumbnailUrl(moment.forward.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
                 :alt="`${moment.forward.author} 的动态图片`"
                 :aria-label="`查看 ${moment.forward.author} 的动态图片`"
-                tabindex="0"
-                role="button"
                 loading="lazy"
                 decoding="async"
                 @load="handleCoverLoad"
-                @click="handleForwardOriginClick"
-                @keydown="handleForwardOriginKeydown"
               >
-            </a>
+            </div>
           </div>
         </div>
 
-        <a
+        <div
           v-if="showOwnScrollGallery"
-          class="moment-card__gallery-host moment-card__permalink-wrap"
-          :href="cardHref || undefined"
-          tabindex="-1"
-          draggable="false"
-          rel="noopener noreferrer"
-          @click.capture="handlePermalinkClick"
+          class="moment-card__gallery-host"
         >
           <MomentImageGallery
             :images="moment.images"
@@ -842,33 +800,28 @@ function handleAdditionalClick(event: MouseEvent) {
               {{ moment.chargeBadge || '充电专属' }}
             </span>
           </MomentImageGallery>
-        </a>
-        <a
+        </div>
+        <div
           v-else-if="moment.images.length && !moment.isVideo && !moment.isLive"
-          class="moment-card__gallery moment-card__gallery--1 moment-card__permalink-wrap"
-          :href="cardHref || undefined"
+          class="moment-card__gallery moment-card__gallery--1"
           :style="singleImageGalleryStyle"
-          tabindex="-1"
-          draggable="false"
-          rel="noopener noreferrer"
-          @click.capture="handlePermalinkClick"
+          tabindex="0"
+          role="button"
+          @click="handleImagePreviewClick($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
+          @keydown="handleImagePreviewKeydown($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
         >
           <img
             :src="getMomentThumbnailUrl(moment.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
             :alt="`${moment.author.name} 的动态图片`"
             :aria-label="`查看 ${moment.author.name} 的动态图片`"
-            tabindex="0"
-            role="button"
             loading="lazy"
             decoding="async"
             @load="handleCoverLoad"
-            @click="handleImagePreviewClick"
-            @keydown="handleImagePreviewKeydown"
           >
           <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
             {{ moment.chargeBadge || '充电专属' }}
           </span>
-        </a>
+        </div>
       </div>
 
       <Teleport
@@ -1066,7 +1019,10 @@ function handleAdditionalClick(event: MouseEvent) {
   cursor: inherit;
 }
 
-.moment-card__surface :is(a, button, [role="button"]):not(.moment-card__permalink):not(.moment-card__permalink-wrap),
+.moment-card__surface
+  :is(a, button, [role="button"]):not(.moment-card__permalink):not(.moment-card__permalink-wrap):not(
+    .moment-image-gallery__nav
+  ),
 .moment-card__media {
   position: relative;
   z-index: 2;

@@ -170,12 +170,6 @@ function handleImageClick(event: MouseEvent, index: number) {
   handlePreview(event, index)
 }
 
-function handleImageKeydown(event: KeyboardEvent, index: number) {
-  if (event.key !== 'Enter' && event.key !== ' ')
-    return
-  handlePreview(event, index)
-}
-
 function handleCoverLoad(event: Event, index: number) {
   const img = event.target instanceof HTMLImageElement ? event.target : null
   if (img?.naturalWidth && img.naturalHeight) {
@@ -295,30 +289,34 @@ onBeforeUnmount(() => {
       class="moment-image-gallery__track"
       role="region"
       :aria-label="`${altPrefix}，可横向滑动查看`"
-      @click.prevent.stop
+      @click.stop
     >
-      <img
+      <button
         v-for="(image, imageIndex) in images"
         :key="`${image}-${imageIndex}`"
+        type="button"
         data-gallery-item
-        class="moment-image-gallery__image"
+        class="moment-image-gallery__item"
         :class="{
-          'moment-image-gallery__image--unknown-ratio': !getImageRatio(imageIndex),
-          'moment-image-gallery__image--long': isLongThumbnail(imageIndex),
+          'moment-image-gallery__item--unknown-ratio': !getImageRatio(imageIndex),
         }"
-        :src="getImageSrc(image, imageIndex)"
-        :alt="`${altPrefix} ${imageIndex + 1}`"
         :aria-label="`查看 ${altPrefix} ${imageIndex + 1}`"
         :style="getImageStyle(imageIndex)"
-        tabindex="0"
-        role="button"
         draggable="false"
-        :loading="imageIndex < 3 ? 'eager' : 'lazy'"
-        decoding="async"
-        @load="handleCoverLoad($event, imageIndex)"
         @click="handleImageClick($event, imageIndex)"
-        @keydown="handleImageKeydown($event, imageIndex)"
       >
+        <img
+          class="moment-image-gallery__image"
+          :class="{ 'moment-image-gallery__image--long': isLongThumbnail(imageIndex) }"
+          :src="getImageSrc(image, imageIndex)"
+          :alt="`${altPrefix} ${imageIndex + 1}`"
+          draggable="false"
+          loading="eager"
+          :fetchpriority="imageIndex < 3 ? 'auto' : 'low'"
+          decoding="async"
+          @load="handleCoverLoad($event, imageIndex)"
+        >
+      </button>
     </div>
 
     <button
@@ -363,6 +361,7 @@ onBeforeUnmount(() => {
 }
 
 .moment-image-gallery--dragging,
+.moment-image-gallery--dragging .moment-image-gallery__item,
 .moment-image-gallery--dragging .moment-image-gallery__image {
   cursor: grabbing;
 }
@@ -386,18 +385,31 @@ onBeforeUnmount(() => {
   }
 }
 
-.moment-image-gallery__image {
+.moment-image-gallery__item {
   display: block;
   flex: 0 0 auto;
   height: var(--moment-gallery-height, 350px);
   width: auto;
   max-width: none;
+  margin: 0;
+  padding: 0;
   overflow: hidden;
+  border: 0;
   border-radius: var(--bew-media-radius);
+  background: var(--bew-fill-1);
+  color: inherit;
+  cursor: zoom-in;
+  text-decoration: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.moment-image-gallery__image {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: center;
-  background: var(--bew-fill-1);
-  cursor: zoom-in;
   user-select: none;
   -webkit-user-drag: none;
 }
@@ -406,11 +418,11 @@ onBeforeUnmount(() => {
   object-position: center top;
 }
 
-.moment-image-gallery__image--unknown-ratio {
+.moment-image-gallery__item--unknown-ratio {
   min-width: calc(var(--moment-gallery-height, 350px) * 0.5);
 }
 
-.moment-image-gallery__image:focus-visible {
+.moment-image-gallery__item:focus-visible {
   outline: 2px solid var(--bew-theme-color);
   outline-offset: -2px;
 }
