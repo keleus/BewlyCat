@@ -4,11 +4,13 @@ import type { CSSProperties } from 'vue'
 
 import {
   computeMultiImageGalleryHeight,
+  getClampedThumbnailRatio,
   getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
   getMultiImageThumbnailWidth,
   isUsableImageRatio,
   MULTI_IMAGE_GALLERY_MAX_HEIGHT,
+  PORTRAIT_THUMBNAIL_MIN_RATIO,
 } from './utils'
 
 interface Props {
@@ -76,11 +78,19 @@ function getImageRatio(index: number) {
   return resolvedRatios.value[index]
 }
 
-function getImageStyle(index: number): CSSProperties | undefined {
+function isLongThumbnail(index: number) {
   const ratio = getImageRatio(index)
-  if (!ratio)
+  return isUsableImageRatio(ratio) && ratio < PORTRAIT_THUMBNAIL_MIN_RATIO
+}
+
+function getImageStyle(index: number): CSSProperties | undefined {
+  const displayRatio = getClampedThumbnailRatio(getImageRatio(index))
+  if (!displayRatio)
     return undefined
-  return { aspectRatio: String(ratio) }
+  return {
+    aspectRatio: String(displayRatio),
+    width: `calc(var(--moment-gallery-height, ${MULTI_IMAGE_GALLERY_MAX_HEIGHT}px) * ${displayRatio})`,
+  }
 }
 
 function getImageSrc(url: string, index: number) {
@@ -285,14 +295,17 @@ onBeforeUnmount(() => {
       class="moment-image-gallery__track"
       role="region"
       :aria-label="`${altPrefix}，可横向滑动查看`"
-      @click.stop
+      @click.prevent.stop
     >
       <img
         v-for="(image, imageIndex) in images"
         :key="`${image}-${imageIndex}`"
         data-gallery-item
         class="moment-image-gallery__image"
-        :class="{ 'moment-image-gallery__image--unknown-ratio': !getImageRatio(imageIndex) }"
+        :class="{
+          'moment-image-gallery__image--unknown-ratio': !getImageRatio(imageIndex),
+          'moment-image-gallery__image--long': isLongThumbnail(imageIndex),
+        }"
         :src="getImageSrc(image, imageIndex)"
         :alt="`${altPrefix} ${imageIndex + 1}`"
         :aria-label="`查看 ${altPrefix} ${imageIndex + 1}`"
@@ -387,6 +400,10 @@ onBeforeUnmount(() => {
   cursor: zoom-in;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+.moment-image-gallery__image--long {
+  object-position: center top;
 }
 
 .moment-image-gallery__image--unknown-ratio {

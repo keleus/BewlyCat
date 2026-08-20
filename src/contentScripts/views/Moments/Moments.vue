@@ -15,6 +15,7 @@ import {
   getMomentThumbnailUrl,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
+  isUsableImageRatio,
   LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH,
   shouldUseMomentImageGallery,
 } from '~/components/MomentCard/utils'
@@ -794,11 +795,13 @@ function resolveDetailUrl(moment: DisplayMoment) {
     if (videoUrl)
       return videoUrl
   }
-  // 转发 / 专栏：通过 query 告知 iframe 布局策略
+  // 转发纯文字/视频、专栏：通过 query 告知 iframe 布局策略。
+  // 转发图文走和普通图文一样的左右分栏，不打 plain。
   if (moment.isForward || moment.isArticle) {
+    const usePlainForward = moment.isForward && !moment.forward?.images?.length
     try {
       const url = new URL(moment.url)
-      if (moment.isForward)
+      if (usePlainForward)
         url.searchParams.set('bewly_opus_plain', '1')
       if (moment.isArticle)
         url.searchParams.set('bewly_opus_article', '1')
@@ -807,7 +810,7 @@ function resolveDetailUrl(moment: DisplayMoment) {
     catch {
       const join = moment.url.includes('?') ? '&' : '?'
       const params = [
-        moment.isForward ? 'bewly_opus_plain=1' : '',
+        usePlainForward ? 'bewly_opus_plain=1' : '',
         moment.isArticle ? 'bewly_opus_article=1' : '',
       ].filter(Boolean).join('&')
       return params ? `${moment.url}${join}${params}` : moment.url
@@ -1001,6 +1004,14 @@ const DETAIL_SAFE_WIDTH = `calc(100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
 const DETAIL_REFERENCE_HEIGHT = 'min(88dvh, 49.5vw)'
 const DETAIL_SAFE_HEIGHT = `min(calc(100dvh - ${DETAIL_VIEWPORT_GUTTER}px), max(280px, ${DETAIL_REFERENCE_HEIGHT}))`
 const DETAIL_PLAYER_MAX_WIDTH = `min(92vw, calc(${PLAYER_DIALOG_WIDTH_SCALE * 100}dvh * 16 / 9), ${DETAIL_SAFE_WIDTH})`
+/** 图文弹窗评论区固定占页宽（小红书 note 详情） */
+const OPUS_DETAIL_COMMENT_PAGE_RATIO = 0.29
+/** 长图阈值：宽/高 ≤ 1/2 时按 1:2 定弹窗，图宽占满后纵向滚动 */
+const OPUS_DETAIL_LONG_IMAGE_RATIO = 0.5
+/** 图文弹窗最大宽：与视频共用 92vw / 视口 gutter，不含 16:9 约束 */
+const OPUS_DETAIL_MAX_WIDTH = `min(${PLAYER_DIALOG_WIDTH_SCALE * 100}vw, 100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
+/** 图文弹窗最大高：可用视口高度，竖图优先占满 */
+const OPUS_DETAIL_MAX_HEIGHT = `min(100dvh - ${DETAIL_VIEWPORT_GUTTER}px, max(280px, 88dvh))`
 const selectedVideoAspectRatio = computed(() => {
   const moment = selectedMoment.value
   if (!moment?.isVideo || moment.isLive || moment.isPgc)
@@ -1013,6 +1024,27 @@ const isSelectedVerticalVideo = computed(() => {
   return Boolean(ratio && ratio < 0.9)
 })
 
+/** 图文分栏详情（含转发图文；专栏/纯文字除外）：弹窗尺寸以首图为基准 */
+function isOpusSplitDetailMoment(moment: DisplayMoment | null | undefined) {
+  if (!moment || isPlayerMoment(moment) || moment.isArticle)
+    return false
+  if (moment.isForward)
+    return Boolean(moment.forward?.images?.length)
+  return moment.images.length > 0
+}
+
+function getOpusDetailFirstImageRatio(moment: DisplayMoment | null | undefined) {
+  if (!moment)
+    return undefined
+  const fromMeta = moment.isForward
+    ? moment.forward?.imageRatios?.[0]
+    : moment.imageRatios?.[0]
+  if (isUsableImageRatio(fromMeta))
+    return fromMeta
+  const fromCover = coverRatios[moment.id]
+  return isUsableImageRatio(fromCover) ? fromCover : undefined
+}
+
 const detailDialogWidth = computed(() => {
   if (selectedMoment.value?.isLive)
     return DETAIL_PLAYER_MAX_WIDTH
@@ -1023,11 +1055,26 @@ const detailDialogWidth = computed(() => {
     }
     return DETAIL_PLAYER_MAX_WIDTH
   }
-  // 参考小红书 note-container: 1088px
+  const moment = selectedMoment.value
+  if (isOpusSplitDetailMoment(moment)) {
+    const rawRatio = getOpusDetailFirstImageRatio(moment)
+    // 未知比例先按 1:1；长图按 1:2 定宽。宽度随首图占满高度变化，超出只受 vw 上限，不改高度。
+    // 图片区不得窄于评论区，因此弹窗至少为 2 倍评论宽。
+    const layoutRatio = Math.max(
+      isUsableImageRatio(rawRatio) ? rawRatio : 1,
+      OPUS_DETAIL_LONG_IMAGE_RATIO,
+    )
+    const commentWidth = `${OPUS_DETAIL_COMMENT_PAGE_RATIO * 100}vw`
+    return `min(${OPUS_DETAIL_MAX_WIDTH}, max(calc(${layoutRatio} * ${OPUS_DETAIL_MAX_HEIGHT} + ${commentWidth}), calc(2 * ${commentWidth})))`
+  }
+  // 纯文字 / 专栏 / 转发：参考小红书 note-container 1088px
   return `min(1088px, ${DETAIL_SAFE_WIDTH})`
 })
 
 const detailDialogHeight = computed(() => {
+  // 图文弹窗高度始终用原视口预算，不因横图完整显示而压扁
+  if (isOpusSplitDetailMoment(selectedMoment.value))
+    return OPUS_DETAIL_MAX_HEIGHT
   return DETAIL_SAFE_HEIGHT
 })
 
@@ -1338,11 +1385,11 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
   cleanupLivePreviewPlayer()
   clearDetailLoadTimer()
   destroyDetailIframe()
-  // 视频/直播、转发：load 后即可；图文等待布局 ready
+  // 视频/直播、非图文转发：load 后即可；图文（含转发图文）等待布局 ready
   // 兜底避免遮罩卡住
   const fallbackMs = isPlayerMoment(moment)
     ? 1800
-    : moment.isForward
+    : moment.isForward && !isOpusSplitDetailMoment(moment)
       ? 1200
       : 4500
   detailLoadTimer = setTimeout(() => {
@@ -1378,8 +1425,8 @@ function handleDetailIframeLoad(event: Event) {
   if (iframe)
     startDetailPlayerModeWatch(iframe)
 
-  // 视频/直播、转发：load 后立即显示，不做「整理动态」等待
-  if (isPlayerMoment(selectedMoment.value) || selectedMoment.value?.isForward) {
+  // 视频/直播、非图文转发：load 后立即显示，不做「整理动态」等待
+  if (isPlayerMoment(selectedMoment.value) || (selectedMoment.value?.isForward && !isOpusSplitDetailMoment(selectedMoment.value))) {
     detailFrameLoaded.value = true
     return
   }
@@ -1509,6 +1556,7 @@ function mapMoment(item: DataItem): DisplayMoment {
   const selfContent = isForward ? getMomentContent(raw) : content
   const forwardedAuthor = contentRaw.modules?.module_author || {}
   const id = raw.id_str || raw.id || `${author.mid}-${author.pub_ts}`
+  const origId = String(contentRaw.id_str || contentRaw.id || '')
   const text = isForward
     ? (normalizeDescText(dynamic.desc) || '转发了动态')
     : content.text
@@ -1605,6 +1653,11 @@ function mapMoment(item: DataItem): DisplayMoment {
                   : content.text
                     ? '纯文字动态'
                     : '原动态',
+          id: origId,
+          url: origId ? `https://www.bilibili.com/opus/${origId}` : '',
+          isArticle: contentRaw.type === 'DYNAMIC_TYPE_ARTICLE'
+            || Number(contentRaw.basic?.comment_type) === 12
+            || contentRaw.modules?.module_dynamic?.major?.type === 'MAJOR_TYPE_ARTICLE',
           // 转发动态的原图只放在嵌套卡片中，避免被提升成外层动态媒体。
           images: !content.isVideo && !content.isLive && !content.isChargeExclusive
             ? content.images
@@ -1658,15 +1711,18 @@ function estimateCardHeight(moment: DisplayMoment) {
     // insets; subtract the 16px main inset and the 2px card border as well.
     const galleryWidth = Math.max(1, columnWidth - 58)
     const useForwardGallery = shouldUseMomentImageGallery(moment.forward.images, {
-      imageRatio: coverRatios[moment.id],
+      imageRatio: moment.forward.imageRatios?.[0] ?? coverRatios[moment.id],
       imageRatios: moment.forward.imageRatios,
     })
+    const forwardGalleryWidth = useForwardGallery
+      ? galleryWidth
+      : Math.min(galleryWidth, LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH)
     const galleryHeight = useForwardGallery
       ? computeMultiImageGalleryHeight(
-          galleryWidth,
+          forwardGalleryWidth,
           moment.forward.imageRatios?.[0] ? moment.forward.imageRatios : [coverRatios[moment.id]],
         )
-      : galleryWidth
+      : Math.round(forwardGalleryWidth / Math.max(1, moment.forward.imageRatios?.[0] || coverRatios[moment.id] || 1))
     return 190 + introLines * 21 + galleryHeight + interactionHeight
   }
   if (moment.forward?.video) {
@@ -4252,6 +4308,39 @@ watch(
       :content-max-height="detailContentHeight"
       @close="closeMomentDetail"
     >
+      <template #floating-actions>
+        <div
+          class="moment-detail-actions"
+          :style="{
+            width: detailDialogWidth,
+            height: detailDialogHeight,
+          }"
+        >
+          <div class="moment-detail-actions__bar">
+            <a
+              class="moment-detail-actions__open"
+              :class="{ 'is-hidden': detailPlayerImmersive }"
+              :href="detailFrameUrl"
+              :aria-hidden="detailPlayerImmersive ? 'true' : undefined"
+              :tabindex="detailPlayerImmersive ? -1 : 0"
+              target="_blank"
+              rel="noopener noreferrer"
+              @click.prevent.stop="openDetailFrameInNewTab"
+            >
+              新建标签页打开
+              <span i-tabler-external-link />
+            </a>
+            <button
+              type="button"
+              class="moment-detail-actions__close"
+              aria-label="关闭"
+              @click="closeMomentDetail"
+            >
+              <span i-tabler-x />
+            </button>
+          </div>
+        </div>
+      </template>
       <div
         class="moment-detail-frame"
         :class="{
@@ -4275,19 +4364,6 @@ watch(
           scrolling="yes"
           @load="handleDetailIframeLoad"
         />
-        <a
-          class="moment-detail-frame__open"
-          :class="{ 'is-hidden': detailPlayerImmersive }"
-          :href="detailFrameUrl"
-          :aria-hidden="detailPlayerImmersive ? 'true' : undefined"
-          :tabindex="detailPlayerImmersive ? -1 : 0"
-          target="_blank"
-          rel="noopener noreferrer"
-          @click.prevent.stop="openDetailFrameInNewTab"
-        >
-          新建标签页打开
-          <span i-tabler-external-link />
-        </a>
       </div>
     </Dialog>
 
@@ -5294,8 +5370,9 @@ watch(
   max-height: 100%;
 }
 .moment-detail-frame--opus {
-  // 图文：小红书 note 高容器，利于竖图展示
+  // 与 Dialog 共用圆角裁切，避免内层再套一层圆角挤出白边
   min-height: 0;
+  border-radius: inherit;
   background: var(--bew-bg);
 }
 .moment-detail-frame__loading {
@@ -5332,11 +5409,47 @@ watch(
   // 允许 iframe 文档内部滚动（视频评论区、直播简介等）
   overflow: auto;
 }
-.moment-detail-frame__open {
+.moment-detail-actions {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
-  z-index: 4;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.moment-detail-actions__bar {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-2);
+  pointer-events: auto;
+  transform: translateY(calc(100% + var(--bew-space-3)));
+}
+.moment-detail-actions__close {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bew-radius-full);
+  place-items: center;
+  color: var(--bew-text-1);
+  background: var(--bew-elevated-solid);
+  box-shadow: var(--bew-shadow-2);
+  cursor: pointer;
+  font-size: var(--bew-icon-size-md);
+}
+.moment-detail-actions__close:hover {
+  background: var(--bew-elevated-solid-hover);
+}
+.moment-detail-actions__close:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: 2px;
+}
+.moment-detail-actions__open {
   display: inline-flex;
   align-items: center;
   gap: var(--bew-space-1);
@@ -5352,18 +5465,13 @@ watch(
   font-weight: var(--bew-font-weight-semibold);
   line-height: var(--bew-line-height-control);
   opacity: 0.92;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
+  transition: opacity 0.2s ease;
 }
-.moment-detail-frame__open:hover {
+.moment-detail-actions__open:hover {
   opacity: 1;
-  transform: translateY(-1px);
 }
-.moment-detail-frame__open.is-hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(4px);
+.moment-detail-actions__open.is-hidden {
+  display: none;
 }
 .moment-image-viewer {
   position: fixed;

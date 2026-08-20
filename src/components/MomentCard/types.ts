@@ -104,6 +104,11 @@ export interface DisplayMoment {
     title: string
     text: string
     fallback: string
+    /** 被转发原动态 id，用于直接打开原图文 */
+    id?: string
+    /** 被转发原动态详情地址 */
+    url?: string
+    isArticle?: boolean
     /** 转发原动态的图片，用于在嵌套卡片中保持原卡片形态 */
     images?: string[]
     imageRatios?: Array<number | undefined>

@@ -19,7 +19,6 @@ import {
   getAuthorSpaceUrl,
   getAvatarThumbnailUrl,
   getCardPreviewText,
-  getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
@@ -85,23 +84,31 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
 
 const authorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.author.mid))
 const forwardAuthorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.forward?.authorMid))
-const singleImageGalleryStyle = computed<CSSProperties | undefined>(() => {
+function getLandscapeSingleImageStyle(ratio?: number): CSSProperties | undefined {
   if (
-    moment.images.length !== 1
-    || moment.isVideo
-    || moment.isLive
-    || imageRatio === undefined
-    || !Number.isFinite(imageRatio)
-    || imageRatio <= 0
-    || isPortraitImageRatio(imageRatio)
+    ratio === undefined
+    || !Number.isFinite(ratio)
+    || ratio <= 0
+    || isPortraitImageRatio(ratio)
   ) {
     return undefined
   }
 
   return {
-    aspectRatio: String(Math.max(1, imageRatio)),
+    aspectRatio: String(Math.max(1, ratio)),
     maxWidth: `${LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH}px`,
   }
+}
+
+const singleImageGalleryStyle = computed<CSSProperties | undefined>(() => {
+  if (moment.images.length !== 1 || moment.isVideo || moment.isLive)
+    return undefined
+  return getLandscapeSingleImageStyle(imageRatio)
+})
+const forwardSingleImageGalleryStyle = computed<CSSProperties | undefined>(() => {
+  if (moment.forward?.images?.length !== 1)
+    return undefined
+  return getLandscapeSingleImageStyle(moment.forward.imageRatios?.[0] ?? imageRatio)
 })
 
 const showOwnScrollGallery = computed(() =>
@@ -219,6 +226,7 @@ const cardHref = computed(() => {
   }
   return moment.url
 })
+const forwardHref = computed(() => moment.forward?.url || '')
 
 const showVideoOptions = ref(false)
 const videoOptionsFloatingStyles = ref<CSSProperties>({})
@@ -277,11 +285,80 @@ function handleCardClick(event: MouseEvent) {
 }
 
 function handlePermalinkClick(event: MouseEvent) {
+  // 左键走卡片弹窗；a 只留给中键 / ctrl / meta 等原生打开。
   if (shouldUseNativeLinkOpen(event))
     return
 
   event.preventDefault()
+  event.stopPropagation()
   emit('openDetail', moment)
+}
+
+function getForwardOriginMoment(): DisplayMoment | null {
+  const forward = moment.forward
+  if (!forward?.url)
+    return null
+
+  const images = forward.images || []
+  return {
+    id: forward.id || forward.url,
+    author: {
+      mid: forward.authorMid || '',
+      name: forward.author,
+      face: '',
+    },
+    publishedAt: moment.publishedAt,
+    title: forward.title,
+    text: forward.text,
+    richText: [],
+    images,
+    imageRatios: forward.imageRatios,
+    time: '',
+    likeCount: 0,
+    isLiked: false,
+    isLikeDisabled: true,
+    commentCount: 0,
+    url: forward.url,
+    isVideo: false,
+    isRegularVideo: false,
+    isUgcSeason: false,
+    isDraw: images.length > 0,
+    isPgc: false,
+    isLive: false,
+    isChargeExclusive: false,
+    isForward: false,
+    isArticle: Boolean(forward.isArticle),
+    isUpRecommendation: false,
+    isVideoReservation: false,
+    isLiveReservation: false,
+    mediaMeta: '',
+    liveArea: '',
+    livePopularity: '',
+    duration: '',
+    videoPlay: '',
+    videoDanmaku: '',
+  }
+}
+
+function handleForwardOriginClick(event: MouseEvent) {
+  if (shouldUseNativeLinkOpen(event))
+    return
+
+  event.preventDefault()
+  event.stopPropagation()
+  emit('openDetail', getForwardOriginMoment() || moment)
+}
+
+function handleForwardGalleryPreview() {
+  emit('openDetail', getForwardOriginMoment() || moment)
+}
+
+function handleForwardOriginKeydown(event: KeyboardEvent) {
+  if (event.key !== 'Enter' && event.key !== ' ')
+    return
+  event.preventDefault()
+  event.stopPropagation()
+  emit('openDetail', getForwardOriginMoment() || moment)
 }
 
 // VideoCardContextMenu uses this injection to select its common option set.
@@ -295,25 +372,23 @@ function handleCoverLoad(event: Event) {
   emit('coverLoad', event, moment.id)
 }
 
-function handleImagePreviewClick(event: MouseEvent, urls: string[], index: number) {
+function handleImagePreviewClick(event: MouseEvent) {
   event.preventDefault()
   event.stopPropagation()
-  const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
-  emit('openImagePreview', urls, index, trigger)
+  emit('openDetail', moment)
 }
 
-function handleImagePreviewKeydown(event: KeyboardEvent, urls: string[], index: number) {
+function handleImagePreviewKeydown(event: KeyboardEvent) {
   if (event.key !== 'Enter' && event.key !== ' ')
     return
 
   event.preventDefault()
   event.stopPropagation()
-  const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null
-  emit('openImagePreview', urls, index, trigger)
+  emit('openDetail', moment)
 }
 
-function handleGalleryPreview(urls: string[], index: number, trigger: HTMLElement | null) {
-  emit('openImagePreview', urls, index, trigger)
+function handleGalleryPreview() {
+  emit('openDetail', moment)
 }
 
 function handleGalleryCoverLoad(event: Event) {
@@ -390,7 +465,7 @@ function handleAdditionalClick(event: MouseEvent) {
         aria-hidden="true"
         draggable="false"
         rel="noopener noreferrer"
-        @click="handlePermalinkClick"
+        @click.capture="handlePermalinkClick"
       />
       <header class="moment-card__header">
         <a
@@ -470,15 +545,15 @@ function handleAdditionalClick(event: MouseEvent) {
             aria-hidden="true"
             draggable="false"
             rel="noopener noreferrer"
-            @click="handlePermalinkClick"
+            @click.capture="handlePermalinkClick"
           />
-          <img>
-          :src="getMomentThumbnailUrl(moment.images[0])"
-          :alt="moment.title"
-          :class="{ 'is-ready': ready }"
-          loading="lazy"
-          decoding="async"
-          @load="handleCoverLoad"
+          <img
+            :src="getMomentThumbnailUrl(moment.images[0])"
+            :alt="moment.title"
+            :class="{ 'is-ready': ready }"
+            loading="lazy"
+            decoding="async"
+            @load="handleCoverLoad"
           >
           <video
             v-if="previewActive && previewUrl"
@@ -534,7 +609,7 @@ function handleAdditionalClick(event: MouseEvent) {
             aria-hidden="true"
             draggable="false"
             rel="noopener noreferrer"
-            @click="handlePermalinkClick"
+            @click.capture="handlePermalinkClick"
           />
           <span v-if="moment.isLive" i-tabler-live-photo class="moment-card__text-cover-icon" />
           <span v-else i-tabler-player-play-filled class="moment-card__text-cover-icon" />
@@ -681,6 +756,16 @@ function handleAdditionalClick(event: MouseEvent) {
               'moment-card__forward--draw': Boolean(moment.forward.images?.length),
             }"
           >
+            <a
+              v-if="forwardHref"
+              class="moment-card__permalink"
+              :href="forwardHref"
+              tabindex="-1"
+              aria-hidden="true"
+              draggable="false"
+              rel="noopener noreferrer"
+              @click.capture="handleForwardOriginClick"
+            />
             <div class="moment-card__forward-copy">
               <a
                 v-if="forwardAuthorSpaceUrl"
@@ -695,11 +780,11 @@ function handleAdditionalClick(event: MouseEvent) {
             <a
               v-if="showForwardScrollGallery"
               class="moment-card__forward-gallery-host moment-card__permalink-wrap"
-              :href="cardHref || undefined"
+              :href="forwardHref || undefined"
               tabindex="-1"
               draggable="false"
               rel="noopener noreferrer"
-              @click="handlePermalinkClick"
+              @click.capture="handleForwardOriginClick"
             >
               <MomentImageGallery
                 :images="moment.forward.images || []"
@@ -707,20 +792,21 @@ function handleAdditionalClick(event: MouseEvent) {
                 :alt-prefix="`${moment.forward.author} 的动态图片`"
                 :container-width="forwardScrollGalleryWidth"
                 @cover-load="handleGalleryCoverLoad"
-                @preview="handleGalleryPreview"
+                @preview="handleForwardGalleryPreview"
               />
             </a>
             <a
               v-else-if="moment.forward.images?.length"
               class="moment-card__forward-gallery moment-card__forward-gallery--1 moment-card__permalink-wrap"
-              :href="cardHref || undefined"
+              :href="forwardHref || undefined"
+              :style="forwardSingleImageGalleryStyle"
               tabindex="-1"
               draggable="false"
               rel="noopener noreferrer"
-              @click="handlePermalinkClick"
+              @click.capture="handleForwardOriginClick"
             >
               <img
-                :src="getMomentThumbnailUrl(moment.forward.images[0], 360)"
+                :src="getMomentThumbnailUrl(moment.forward.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
                 :alt="`${moment.forward.author} 的动态图片`"
                 :aria-label="`查看 ${moment.forward.author} 的动态图片`"
                 tabindex="0"
@@ -728,8 +814,8 @@ function handleAdditionalClick(event: MouseEvent) {
                 loading="lazy"
                 decoding="async"
                 @load="handleCoverLoad"
-                @click="handleImagePreviewClick($event, moment.forward.images || [], 0)"
-                @keydown="handleImagePreviewKeydown($event, moment.forward.images || [], 0)"
+                @click="handleForwardOriginClick"
+                @keydown="handleForwardOriginKeydown"
               >
             </a>
           </div>
@@ -742,7 +828,7 @@ function handleAdditionalClick(event: MouseEvent) {
           tabindex="-1"
           draggable="false"
           rel="noopener noreferrer"
-          @click="handlePermalinkClick"
+          @click.capture="handlePermalinkClick"
         >
           <MomentImageGallery
             :images="moment.images"
@@ -765,7 +851,7 @@ function handleAdditionalClick(event: MouseEvent) {
           tabindex="-1"
           draggable="false"
           rel="noopener noreferrer"
-          @click="handlePermalinkClick"
+          @click.capture="handlePermalinkClick"
         >
           <img
             :src="getMomentThumbnailUrl(moment.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
@@ -776,8 +862,8 @@ function handleAdditionalClick(event: MouseEvent) {
             loading="lazy"
             decoding="async"
             @load="handleCoverLoad"
-            @click="handleImagePreviewClick($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
-            @keydown="handleImagePreviewKeydown($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
+            @click="handleImagePreviewClick"
+            @keydown="handleImagePreviewKeydown"
           >
           <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
             {{ moment.chargeBadge || '充电专属' }}
@@ -1221,6 +1307,7 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__forward {
+  position: relative;
   display: flex;
   flex-direction: column;
   margin-top: var(--bew-space-3);
@@ -1455,6 +1542,8 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__author-name {
   display: block;
+  width: fit-content;
+  max-width: 100%;
   overflow: hidden;
   color: var(--bew-theme-color);
   font-size: var(--bew-font-size-body);
@@ -1807,6 +1896,15 @@ function handleAdditionalClick(event: MouseEvent) {
   object-fit: cover;
   object-position: center top;
   background: var(--bew-fill-1);
+}
+
+.moment-card__forward-gallery--1 {
+  width: 100%;
+  max-width: 560px;
+}
+
+.moment-card__forward-gallery--1 > img {
+  object-fit: cover;
 }
 
 .moment-card__video-stats {

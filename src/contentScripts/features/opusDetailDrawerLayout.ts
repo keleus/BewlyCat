@@ -81,6 +81,7 @@ let stableTimer: ReturnType<typeof setTimeout> | null = null
 let galleryViewerMessageHandler: ((e: MessageEvent) => void) | null = null
 let galleryViewerAckTimer: ReturnType<typeof setTimeout> | null = null
 let galleryIconHosts: HTMLElement[] = []
+let galleryFitObservers: ResizeObserver[] = []
 let layoutReadyNotified = false
 let setupDomReadyListener: (() => void) | null = null
 let setupRootReadyRetryTimer: number | null = null
@@ -259,8 +260,18 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-toc {
 }
 `
 
-/** 左右 4:3；长图宽占满可纵向滚动 */
+/** 评论区固定页宽 29%；媒体列吃剩余宽度。长图（≤1:2）宽占满可纵向滚动 */
+const OPUS_DETAIL_COMMENT_PAGE_RATIO = 0.29
+const OPUS_DETAIL_LONG_IMAGE_RATIO = 0.5
+/** 高度占满后左右留白不足时，至少留出的单侧间距 */
+const OPUS_IMAGE_MIN_SIDE_GUTTER = 10
+/** 左侧舞台留白与卡片/评论区同色，避免黑边 */
+const OPUS_MEDIA_SURFACE = 'var(--bew-elevated-solid, var(--bew-bg, var(--bg1, #fff)))'
+
 const SPLIT_CSS = `
+html.momentsPage.drawer.bewly-opus-layout {
+  --bewly-opus-media-surface: ${OPUS_MEDIA_SURFACE};
+}
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-split-ready,
 html.momentsPage.drawer.bewly-opus-layout.bewly-opus-split-ready body {
   overflow: hidden !important;
@@ -272,7 +283,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split {
   inset: 0 !important;
   z-index: 20 !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 4fr) minmax(0, 3fr) !important;
+  grid-template-columns: minmax(var(--bewly-opus-comment-width, 29%), 1fr) var(--bewly-opus-comment-width, 29%) !important;
   column-gap: 0 !important;
   width: 100% !important;
   height: 100% !important;
@@ -289,9 +300,9 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media {
   min-width: 0 !important;
   min-height: 0 !important;
   height: 100% !important;
-  /* 外层不滚动；媒体区统一使用黑色舞台 */
+  /* 外层不滚动；舞台底色与卡片一致，完整显示时上下留白 */
   overflow: hidden !important;
-  background: #000 !important;
+  background: var(--bewly-opus-media-surface) !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery {
   position: relative !important;
@@ -302,30 +313,30 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   min-height: 0 !important;
   box-sizing: border-box !important;
   overflow: hidden !important;
-  background: #000 !important;
+  background: var(--bewly-opus-media-surface) !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery.is-viewer-hosted {
   visibility: hidden !important;
 }
-/* 仅大图 stage 纵向滚动：滚动条覆盖在图片上，不与缩略图同级 */
+/* 大图 stage：默认高度占满；长图滚动条覆盖在图片上，不与缩略图同级 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage {
   position: absolute !important;
   inset: 0 !important;
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: 100% !important;
   height: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
   box-sizing: border-box !important;
   overflow-x: hidden !important;
-  overflow-y: auto !important;
-  /* 尽量 overlay，减少挤占图片宽度 */
-  overflow-y: overlay !important;
+  overflow-y: hidden !important;
   overscroll-behavior: contain !important;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none !important;
   scrollbar-color: transparent transparent !important;
-  background: #000 !important;
+  background: var(--bewly-opus-media-surface) !important;
   /* 永不预留 gutter：图片始终全宽 */
   scrollbar-gutter: auto !important;
   z-index: 1 !important;
@@ -391,20 +402,20 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   width: 7px !important;
   min-height: 36px !important;
   border-radius: 999px !important;
-  /* 黑色舞台上的原生感浅色滑块 */
-  background: rgba(255, 255, 255, 0.34) !important;
+  /* 卡片底色上的半透明滑块，亮暗主题都能看见 */
+  background: color-mix(in srgb, var(--text1, var(--bew-text-1, #18191c)) 36%, transparent) !important;
   border: 0 !important;
   box-shadow: none !important;
   cursor: default !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__scroll-rail:hover .bewly-opus-gallery__scroll-thumb {
-  background: rgba(255, 255, 255, 0.48) !important;
+  background: color-mix(in srgb, var(--text1, var(--bew-text-1, #18191c)) 48%, transparent) !important;
   width: 9px !important;
   left: 1px !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__scroll-thumb:active {
   cursor: default !important;
-  background: rgba(255, 255, 255, 0.58) !important;
+  background: color-mix(in srgb, var(--text1, var(--bew-text-1, #18191c)) 58%, transparent) !important;
 }
 /* 横向平移滑轨：三页窗口（左/中/右），切换时整页平移 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__slider {
@@ -415,7 +426,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   width: 100% !important;
   height: 100% !important;
   overflow: hidden !important;
-  background: #000 !important;
+  background: var(--bewly-opus-media-surface) !important;
   z-index: 1 !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__track {
@@ -444,36 +455,40 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   min-width: 0 !important;
   position: relative !important;
   overflow: hidden !important;
-  background: #000 !important;
+  background: var(--bewly-opus-media-surface) !important;
 }
-/* 每页舞台：长图可纵向滚动 */
+/* 每页舞台：完整显示；横图宽度不够时宽度优先、上下留白；长图宽占满可纵向滚动 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage {
   position: absolute !important;
   inset: 0 !important;
-  display: block !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   width: 100% !important;
   height: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
   box-sizing: border-box !important;
   overflow-x: hidden !important;
-  overflow-y: auto !important;
-  overflow-y: overlay !important;
+  overflow-y: hidden !important;
   overscroll-behavior: contain !important;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none !important;
   scrollbar-color: transparent transparent !important;
-  background: #000 !important;
+  background: var(--bewly-opus-media-surface) !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__image {
   display: block !important;
-  width: 100% !important;
+  flex: 0 1 auto !important;
+  width: auto !important;
   max-width: 100% !important;
-  height: auto !important;
-  max-height: none !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
   margin: 0 auto !important;
   object-fit: contain !important;
-  object-position: center top !important;
+  object-position: center center !important;
   border-radius: 0 !important;
   user-select: none !important;
   -webkit-user-drag: none !important;
@@ -481,16 +496,39 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   cursor: zoom-in !important;
   vertical-align: top !important;
 }
-/* 横图不需要纵向滚动，在左侧舞台内垂直居中展示 */
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage.is-landscape {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow-y: hidden !important;
-}
-html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage.is-landscape .bewly-opus-gallery__image {
-  margin: 0 auto !important;
+/* 横向空间不够：宽度占满，上下留白完整显示 */
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage.is-fit-width .bewly-opus-gallery__image {
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
   object-position: center center !important;
+}
+/* 左右留白不足 10px：铺满舞台，圆角由外层 Dialog 裁切，不再内缩出白边 */
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage.is-cover-fill .bewly-opus-gallery__image {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+/* 超过 1:2 的长图：宽度占满，超出部分纵向滚动 */
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage.is-long {
+  display: block !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  overflow-y: auto !important;
+  overflow-y: overlay !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage.is-long .bewly-opus-gallery__image {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center top !important;
 }
 /* 舞台壳：承载滑轨 + 固定悬浮切换按钮 */
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-gallery__stage-shell {
@@ -500,7 +538,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__media .bewly-opus-g
   width: 100% !important;
   height: 100% !important;
   overflow: hidden !important;
-  background: #000 !important;
+  background: var(--bewly-opus-media-surface) !important;
   display: block !important;
 }
 /* 左右切换：固定在图片可视区两侧，不随长图滚动；默认隐藏，悬停显示 */
@@ -860,7 +898,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .bili-dyn-gal
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-pic-view {
   display: none !important;
 }
-@media (max-width: 860px) {
+@media (max-width: 560px) {
   html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split {
     grid-template-columns: minmax(0, 1fr) !important;
     grid-template-rows: minmax(220px, 48%) minmax(0, 1fr) !important;
@@ -875,6 +913,80 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-pic-vie
 function isOpusDetailPage(url: string = location.href): boolean {
   return /https?:\/\/(?:www\.)?bilibili\.com\/opus\/\d+/.test(url)
     || /https?:\/\/t\.bilibili\.com\/\d+/.test(url)
+}
+
+function getOpusPageWidth() {
+  for (const win of [window.top, window.parent, window]) {
+    try {
+      const width = win?.innerWidth
+      if (typeof width === 'number' && Number.isFinite(width) && width > 0)
+        return width
+    }
+    catch {
+      // 跨域时忽略
+    }
+  }
+  return document.documentElement.clientWidth || 1080
+}
+
+function getOpusCommentColumnWidth() {
+  return Math.round(getOpusPageWidth() * OPUS_DETAIL_COMMENT_PAGE_RATIO)
+}
+
+function syncOpusCommentColumnWidth() {
+  const width = getOpusCommentColumnWidth()
+  document.documentElement.style.setProperty('--bewly-opus-comment-width', `${width}px`)
+  return width
+}
+
+function bindOpusViewportResize() {
+  window.removeEventListener('resize', syncOpusCommentColumnWidth)
+  window.addEventListener('resize', syncOpusCommentColumnWidth)
+  try {
+    window.parent?.removeEventListener('resize', syncOpusCommentColumnWidth)
+    window.parent?.addEventListener('resize', syncOpusCommentColumnWidth)
+  }
+  catch {
+    // 跨域时只监听 iframe 自身
+  }
+}
+
+function unbindOpusViewportResize() {
+  window.removeEventListener('resize', syncOpusCommentColumnWidth)
+  try {
+    window.parent?.removeEventListener('resize', syncOpusCommentColumnWidth)
+  }
+  catch {
+    // ignore
+  }
+}
+
+function isLongOpusImage(image: HTMLImageElement) {
+  const width = image.naturalWidth
+  const height = image.naturalHeight
+  return width > 0 && height > 0 && width / height <= OPUS_DETAIL_LONG_IMAGE_RATIO
+}
+
+function syncOpusImageFit(stage: HTMLElement, image: HTMLImageElement) {
+  const long = isLongOpusImage(image)
+  stage.classList.toggle('is-long', long)
+  if (long || !image.naturalWidth || !image.naturalHeight) {
+    stage.classList.remove('is-fit-width', 'is-cover-fill')
+    return
+  }
+  const stageW = stage.clientWidth
+  const stageH = stage.clientHeight
+  if (!(stageW > 0 && stageH > 0)) {
+    stage.classList.remove('is-fit-width', 'is-cover-fill')
+    return
+  }
+  const fitHeightWidth = stageH * (image.naturalWidth / image.naturalHeight)
+  const fitWidth = fitHeightWidth > stageW + 1
+  const sideGutter = (stageW - fitHeightWidth) / 2
+  // 左右留白不足 10px：铺满舞台并由弹窗圆角裁切，避免细缝被圆角衬成一圈白边
+  const coverFill = !fitWidth && sideGutter >= 0 && sideGutter < OPUS_IMAGE_MIN_SIDE_GUTTER
+  stage.classList.toggle('is-fit-width', fitWidth)
+  stage.classList.toggle('is-cover-fill', coverFill)
 }
 
 function clearDeferredSetup() {
@@ -1012,7 +1124,7 @@ const CATALOG_SELECTORS = [
   '[class*="目录"]',
 ].join(',')
 
-/** 转发动态：不做图片左置分栏（由 Moments 列表通过 query 标记） */
+/** 转发纯文字/视频：不做图片左置分栏（由 Moments 列表通过 query 标记） */
 function isPlainOpusRequested(): boolean {
   try {
     const params = new URLSearchParams(window.location.search)
@@ -1027,48 +1139,10 @@ function isPlainOpusRequested(): boolean {
   return false
 }
 
-/**
- * 页面内兜底识别转发结构（无 query 时也跳过左置）
- */
-function isForwardOpusPage(root?: HTMLElement | null): boolean {
-  const scope = root || document
-  const selectors = [
-    '.bili-dyn-content__orig',
-    '.bili-dyn-item__original',
-    '.dyn-card-forward',
-    '.opus-module-forward',
-    '.bili-dyn-forward',
-    '.forward-content',
-    '[class*="forward"] [class*="orig"]',
-  ]
-  for (const sel of selectors) {
-    try {
-      if (scope.querySelector(sel))
-        return true
-    }
-    catch {
-      // ignore invalid selector
-    }
-  }
-  // SSR / hydrate 初始态
-  try {
-    const state = (window as any).__INITIAL_STATE__
-    const detail = state?.detail
-    const type = detail?.type ?? detail?.basic?.comment_type
-    // polymer detail type 1 常见为转发；字符串类型更稳
-    if (detail?.type === 'DYNAMIC_TYPE_FORWARD' || detail?.item?.type === 'DYNAMIC_TYPE_FORWARD')
-      return true
-    if (type === 1 && detail?.orig)
-      return true
-  }
-  catch {
-    // ignore
-  }
-  return false
-}
-
-function shouldSkipSplitForForward(root?: HTMLElement | null): boolean {
-  return isPlainOpusRequested() || isForwardOpusPage(root)
+function shouldSkipSplitForForward(_root?: HTMLElement | null): boolean {
+  // 仅当列表明确标记 plain（转发纯文字/视频）时跳过分栏。
+  // 转发图文与普通图文一样抽取原动态相册做左右分栏。
+  return isPlainOpusRequested()
 }
 
 /**
@@ -1358,6 +1432,8 @@ function mountGalleryIcon(host: HTMLElement, icon: string) {
 function unmountGalleryIcons() {
   galleryIconHosts.forEach(host => render(null, host))
   galleryIconHosts = []
+  galleryFitObservers.forEach(observer => observer.disconnect())
+  galleryFitObservers = []
 }
 
 function createImageGallery(rawUrls: string[]): HTMLElement {
@@ -1579,7 +1655,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
         markStageScrolling(stage)
     }, { passive: true })
     image.addEventListener('load', () => {
-      stage.classList.toggle('is-landscape', image.naturalWidth > image.naturalHeight)
+      syncOpusImageFit(stage, image)
       if (stage === getCenterStage())
         syncOverlayScrollbar()
     })
@@ -1670,10 +1746,12 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     const { image, stage } = slides[slot]
     const url = urls[wrapIndex(urlIndex)]
     if (image.src !== url) {
-      stage.classList.remove('is-landscape')
+      stage.classList.remove('is-long', 'is-fit-width', 'is-cover-fill')
       image.src = url
       preloadUrl(url)
     }
+    if (image.complete && image.naturalWidth)
+      syncOpusImageFit(stage, image)
     stage.scrollTop = 0
   }
 
@@ -2104,6 +2182,17 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
 
   fillWindow()
   syncChrome()
+
+  const fitObserver = new ResizeObserver(() => {
+    slides.forEach(({ stage, image }) => {
+      if (image.complete && image.naturalWidth)
+        syncOpusImageFit(stage, image)
+    })
+    syncOverlayScrollbar()
+  })
+  fitObserver.observe(stageShell)
+  galleryFitObservers.push(fitObserver)
+
   return gallery
 }
 
@@ -2218,6 +2307,7 @@ function applySplitLayout(root: HTMLElement): boolean {
     const panel = existing.querySelector<HTMLElement>(':scope > .bewly-opus-split__panel')
     const media = existing.querySelector<HTMLElement>(':scope > .bewly-opus-split__media')
     if (panel && media && (hasMeaningfulContent(panel) || hasMeaningfulContent(media)) && isLayoutVisible(existing)) {
+      syncOpusCommentColumnWidth()
       markSplitReady(true)
       markTextOnly(false)
       appliedSuccessfully = true
@@ -2297,7 +2387,7 @@ function applySplitLayout(root: HTMLElement): boolean {
   split.style.inset = '0'
   split.style.zIndex = '20'
   split.style.display = 'grid'
-  split.style.gridTemplateColumns = 'minmax(0, 4fr) minmax(0, 3fr)'
+  syncOpusCommentColumnWidth()
   split.style.columnGap = '0'
   split.style.width = '100%'
   split.style.height = '100%'
@@ -2395,6 +2485,7 @@ export function disposeOpusDetailDrawerLayout() {
   }
 
   unbindGalleryViewerBridge()
+  unbindOpusViewportResize()
   hideIframeLoading()
 
   try {
@@ -2453,6 +2544,8 @@ export function setupOpusDetailDrawerLayout() {
   layoutReadyNotified = false
   ensureBaseClasses()
   ensureStyles()
+  syncOpusCommentColumnWidth()
+  bindOpusViewportResize()
 
   // 父页关闭 iframe 时销毁内部观察器与媒体
   window.removeEventListener('message', handleOpusDisposeMessage)
