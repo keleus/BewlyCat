@@ -19,7 +19,7 @@ const props = defineProps<{
   isDark: boolean
 }>()
 
-const { forceWhiteIcon, handleNotificationsItemClick } = useTopBarInteraction()
+const { forceWhiteIcon, hasTopBarBackdrop, handleNotificationsItemClick } = useTopBarInteraction()
 const { isLayoutEditing } = useLayoutEditMode()
 const { activatedPage } = useBewlyApp()
 const isNarrowLayout = useMediaQuery('(max-width: 767px)')
@@ -34,12 +34,21 @@ const OVERLAY_HEIGHT = 'calc(var(--bew-top-bar-height) * 1.35)'
 const FOG_GAMMA = 0.7
 const FOG_STOP_COUNT = 10
 
-function fogStops(peak: number): [number, number][] {
-  return Array.from({ length: FOG_STOP_COUNT }, (_, index) => {
-    const t = index / (FOG_STOP_COUNT - 1)
-    const decay = ((1 + Math.cos(Math.PI * t)) / 2) ** FOG_GAMMA
+// 遮罩收尾改用纯余弦并加密取样：gamma < 1 会把曲线末端拉尖，
+// stop 之间的线性插值追不上，交界处仍会留下可见的 Mach band。
+const FADE_GAMMA = 1
+const FADE_STOP_COUNT = 16
+
+function fogStops(peak: number, gamma = FOG_GAMMA, count = FOG_STOP_COUNT): [number, number][] {
+  return Array.from({ length: count }, (_, index) => {
+    const t = index / (count - 1)
+    const decay = ((1 + Math.cos(Math.PI * t)) / 2) ** gamma
     return [+(t * 100).toFixed(1), peak * decay]
   })
+}
+
+function fadeStops(peak: number): [number, number][] {
+  return fogStops(peak, FADE_GAMMA, FADE_STOP_COUNT)
 }
 
 function fogGradient(color: string, peak: number) {
@@ -54,20 +63,70 @@ const progressiveFogTint = computed(() => {
     : fogGradient('255 255 255', 80)
 })
 
+// 分段线性的渐变在拐点处斜率突变，人眼会在交界处脑补出一条亮暗带（Mach band），
+// 底图越平越明显。这里复用雾化那套余弦衰减，让收尾的斜率渐近于 0，把那道"杠"磨掉。
+function smoothFade(color: (alphaPercent: number) => string, peak: number) {
+  const stops = fadeStops(peak).map(([position, alpha]) => `${color(+alpha.toFixed(2))} ${position}%`)
+  return `linear-gradient(to bottom, ${stops.join(', ')})`
+}
+
+// 遮罩前 24px 保持满强度托住图标，其余部分同样用余弦收尾。24 / 64 = 37.5%。
+const OVERLAY_MASK_PLATEAU = 37.5
+const OVERLAY_MASK = `linear-gradient(to bottom, rgb(0 0 0 / 100%) 0%, ${
+  fadeStops(100)
+    .map(([position, alpha]) =>
+      `rgb(0 0 0 / ${+alpha.toFixed(2)}%) ${+(OVERLAY_MASK_PLATEAU + position * (100 - OVERLAY_MASK_PLATEAU) / 100).toFixed(2)}%`)
+    .join(', ')
+})`
+
+// 顶栏底下压着底图时滚动后的压深量，两种毛玻璃开关共用同一档。
+// 底图能透出来本身就是想要的效果，遮罩再叠上下方渐变层就已接近不透明，
+// 只需补这一档保证顶栏可读，拉满会把整条顶栏压成纯黑或纯白。
+const SCROLLED_SHADE_ALPHA = 0.5
+
+// 没有底图时遮罩色与页面底色一致，深浅变化不可见，保留实心遮挡压住滚过的内容。
+const SCROLLED_SOLID_OPACITY = 0.9
+
+// 顶栏下缘的渐隐层。黑雾沿用 issue 里认可的 60% 起点，白雾与无底图时同档 80%。
+const fadeGradient = computed(() => forceWhiteIcon.value
+  ? smoothFade(alpha => `rgb(0 0 0 / ${alpha}%)`, 60)
+  : smoothFade(alpha => `color-mix(in oklab, var(--bew-bg), transparent ${+(100 - alpha).toFixed(2)}%)`, 80))
+
+// 玻璃本身带的一层薄色。顶栏内的控件不再各自开玻璃后，前景与背景的分离全靠这一层，
+// 纯透明玻璃压在花底图上会不够看。
+const GLASS_TINT_ALPHA = 0.1
+
+// 暗色用黑玻璃、亮色用白玻璃；页面自带底图时 forceWhiteIcon 恒为真，
+// 因此不管亮暗都落在黑玻璃上，与作者要求的"带顶部图片的页面用阴影"一致。
+const useDarkGlass = computed(() => forceWhiteIcon.value || props.isDark)
+
+function glassColor(alpha: number) {
+  return useDarkGlass.value ? `rgb(0 0 0 / ${alpha})` : `rgb(255 255 255 / ${alpha})`
+}
+
+const scrolledShadeColor = computed(() => glassColor(SCROLLED_SHADE_ALPHA))
+const glassTintColor = computed(() => glassColor(GLASS_TINT_ALPHA))
+
 // 毛玻璃开启时顶栏遮罩始终使用玻璃滤镜；关闭时本就无滤镜，仍走 opacity 过渡。
 const glassOverlayStyle = computed(() => {
   if (settings.value.enableFrostedGlass) {
     return {
-      backgroundColor: forceWhiteIcon.value && !props.reachTop
-        ? 'rgb(0 0 0 / 35%)'
-        : 'transparent',
+      backgroundColor: hasTopBarBackdrop.value && !props.reachTop
+        ? scrolledShadeColor.value
+        : glassTintColor.value,
       backdropFilter: 'var(--bew-filter-glass-1)',
+      maskImage: OVERLAY_MASK,
+      WebkitMaskImage: OVERLAY_MASK,
     }
   }
   return {
     backgroundColor: forceWhiteIcon.value ? 'rgb(0 0 0)' : 'var(--bew-bg)',
-    opacity: props.reachTop ? 0 : 0.9,
+    opacity: props.reachTop
+      ? 0
+      : (hasTopBarBackdrop.value ? SCROLLED_SHADE_ALPHA : SCROLLED_SOLID_OPACITY),
     backdropFilter: 'none',
+    maskImage: OVERLAY_MASK,
+    WebkitMaskImage: OVERLAY_MASK,
   }
 })
 
@@ -213,11 +272,7 @@ function refreshSearchContent() {
         pos="absolute top-0 left-0" w-full
         pointer-events-none opacity-100 duration-300
         :style="{
-          background: `linear-gradient(to bottom, ${
-            forceWhiteIcon
-              ? 'rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4) calc(var(--bew-top-bar-height) / 2)'
-              : 'color-mix(in oklab, var(--bew-bg), transparent 20%), color-mix(in oklab, var(--bew-bg), transparent 40%) calc(var(--bew-top-bar-height) / 2)'
-          }, transparent)`,
+          background: fadeGradient,
           opacity: reachTop ? 0.8 : 1,
           height: 'var(--bew-top-bar-height)',
         }"
@@ -307,14 +362,6 @@ function refreshSearchContent() {
   width: 100%;
   height: var(--bew-top-bar-height);
   pointer-events: none;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1), rgba(0, 0, 0, 1) 24px, rgba(0, 0, 0, 0.9) 44px, transparent);
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 1),
-    rgba(0, 0, 0, 1) 24px,
-    rgba(0, 0, 0, 0.9) 44px,
-    transparent
-  );
   transition:
     opacity var(--bew-duration-moderate) var(--bew-ease-standard),
     background-color var(--bew-duration-moderate) var(--bew-ease-standard),

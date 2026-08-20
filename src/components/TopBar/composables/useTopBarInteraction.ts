@@ -9,6 +9,7 @@ import {
   VIDEO_PAGE_URL,
 } from '~/components/TopBar/constants/urls'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useDark } from '~/composables/useDark'
 import { useDelayedHover } from '~/composables/useDelayedHover'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
@@ -44,6 +45,7 @@ export function useTopBarInteraction() {
 
   // 获取 App Provider
   const { activatedPage, reachTop } = useBewlyApp()
+  const { isDark } = useDark()
 
   // 监听 URL 变化，使其响应式
   const currentLocationHref = ref(window.location.href)
@@ -55,7 +57,9 @@ export function useTopBarInteraction() {
   useEventListener(window, 'pushstate', updateCurrentLocationHref)
   useEventListener(window, 'popstate', updateCurrentLocationHref)
 
-  const forceWhiteIcon = computed((): boolean => {
+  // 页面自己在顶栏底下铺了大图（原生首页、频道页、空间页、账号页），或用户选了阴影样式。
+  // 这类底图的亮暗不受主题控制，只能恒用深色阴影压住，白图标才读得出来，不跟随亮/暗模式。
+  const hasPageBackdrop = computed((): boolean => {
     if (!settings.value)
       return false
 
@@ -67,20 +71,19 @@ export function useTopBarInteraction() {
     if (settings.value.topBarStyle !== 'default')
       return false
 
-    // 默认：按页面在白雾和阴影之间切换。
-    if (
-      (isHomePage() && settings.value.useOriginalBilibiliHomepage)
+    return (isHomePage() && settings.value.useOriginalBilibiliHomepage)
       || (CHANNEL_PAGE_URL.test(location.href) && !VIDEO_PAGE_URL.test(location.href))
       || SPACE_URL.test(location.href)
       || ACCOUNT_URL.test(location.href)
-    ) {
-      return true
-    }
+  })
 
-    if (!isHomePage())
+  // Bewly 自己的壁纸铺在顶栏底下。壁纸由用户连同主题一起挑选，亮暗可预期，
+  // 因此雾色跟随亮/暗模式走，而不是一律压黑。
+  const hasWallpaperBackdrop = computed((): boolean => {
+    if (!settings.value || settings.value.topBarStyle !== 'default')
       return false
 
-    if (!activatedPage?.value)
+    if (!isHomePage() || !activatedPage?.value)
       return false
 
     if (activatedPage.value === AppPage.Search) {
@@ -95,15 +98,17 @@ export function useTopBarInteraction() {
     if (settings.value.wallpaper)
       return true
 
-    if (settings.value.useSearchPageModeOnHomePage) {
-      if (settings.value.individuallySetSearchPageWallpaper && !!settings.value.searchPageWallpaper)
-        return true
-      if (settings.value.wallpaper)
-        return true
-    }
-
-    return false
+    return settings.value.useSearchPageModeOnHomePage
+      && settings.value.individuallySetSearchPageWallpaper
+      && !!settings.value.searchPageWallpaper
   })
+
+  // 顶栏底下压着底图时遮罩要留通透让图透出来；没有底图时遮罩色与页面底色一致，可以铺实。
+  const hasTopBarBackdrop = computed((): boolean => hasPageBackdrop.value || hasWallpaperBackdrop.value)
+
+  // 遮罩是深色时图标才需要强制转白：页面底图恒用阴影，壁纸则只在暗色模式下才是黑雾。
+  const forceWhiteIcon = computed((): boolean =>
+    hasPageBackdrop.value || (hasWallpaperBackdrop.value && isDark.value))
 
   const showSearchBar = computed((): boolean => {
     const currentUrl = currentLocationHref.value
@@ -280,6 +285,7 @@ export function useTopBarInteraction() {
     handleNotificationsItemClick,
     getTopBarItemHref,
     forceWhiteIcon,
+    hasTopBarBackdrop,
     showSearchBar,
   }
 }
