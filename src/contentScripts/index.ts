@@ -58,7 +58,7 @@ if (shouldInitializeContentScript) {
   contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__ = true
   browser.runtime.onMessage.addListener((message: unknown) => {
     if (typeof message === 'object' && message !== null && 'type' in message && message.type === CONTENT_SCRIPT_PING)
-      return Promise.resolve(CONTENT_SCRIPT_PONG)
+      return Promise.resolve({ type: CONTENT_SCRIPT_PONG, version })
 
     return false
   })

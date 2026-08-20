@@ -1,5 +1,7 @@
 import browser from 'webextension-polyfill'
 
+import { promptPageRefreshFromContentScript } from '~/utils/refreshPrompt'
+
 export interface Message<T = any> {
   type: string
   data: T
@@ -10,9 +12,28 @@ export type MessageHandler<T = any, R = any> = (
   sender?: browser.Runtime.MessageSender,
 ) => R | Promise<R>
 
+const TRANSIENT_BACKGROUND_MESSAGE_ATTEMPTS = 3
+
+function getErrorMessage(error: unknown): string {
+  return (error instanceof Error ? error.message : String(error)).toLowerCase()
+}
+
 export function isExtensionContextInvalidatedError(error: unknown): boolean {
-  const message = error instanceof Error ? error.message : String(error)
-  return message.toLowerCase().includes('extension context invalidated')
+  return getErrorMessage(error).includes('extension context invalidated')
+}
+
+export function isBackgroundDisconnectedError(error: unknown): boolean {
+  const message = getErrorMessage(error)
+  return message.includes('could not establish connection')
+    || message.includes('receiving end does not exist')
+}
+
+export function isBackgroundUnavailableError(error: unknown): boolean {
+  return isExtensionContextInvalidatedError(error) || isBackgroundDisconnectedError(error)
+}
+
+function waitForRetry(delay: number) {
+  return new Promise<void>(resolve => setTimeout(resolve, delay))
 }
 
 /**
@@ -20,7 +41,28 @@ export function isExtensionContextInvalidatedError(error: unknown): boolean {
  */
 export async function sendMessage<T = any, R = any>(type: string, data?: T): Promise<R> {
   const message: Message<T> = { type, data: data as T }
-  return browser.runtime.sendMessage(message)
+  let lastError: unknown
+
+  for (let attempt = 0; attempt < TRANSIENT_BACKGROUND_MESSAGE_ATTEMPTS; attempt++) {
+    try {
+      return await browser.runtime.sendMessage(message)
+    }
+    catch (error) {
+      lastError = error
+      if (isExtensionContextInvalidatedError(error)) {
+        promptPageRefreshFromContentScript()
+        throw error
+      }
+      if (!isBackgroundDisconnectedError(error) || attempt === TRANSIENT_BACKGROUND_MESSAGE_ATTEMPTS - 1)
+        break
+      await waitForRetry(100 * 2 ** attempt)
+    }
+  }
+
+  if (isBackgroundDisconnectedError(lastError))
+    promptPageRefreshFromContentScript()
+
+  throw lastError
 }
 
 /**

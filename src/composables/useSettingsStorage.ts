@@ -3,7 +3,7 @@ import { getCurrentScope, isProxy, onScopeDispose, ref, toRaw, toValue, watch } 
 import browser from 'webextension-polyfill'
 
 import type { StorageRef } from '~/composables/useStorageLocal'
-import { isExtensionContextInvalidatedError, sendMessage } from '~/utils/messaging'
+import { isBackgroundUnavailableError, sendMessage } from '~/utils/messaging'
 import type { SettingsStoragePatch, SettingsStoragePatchResponse } from '~/utils/settingsStorageProtocol'
 import {
   applySettingsStoragePatch,
@@ -178,7 +178,7 @@ export function useSettingsStorage<T extends object>(
           throw error
 
         lastError = error
-        if (isExtensionContextInvalidatedError(error) || attempt === MAX_MESSAGE_ATTEMPTS - 1)
+        if (isBackgroundUnavailableError(error) || attempt === MAX_MESSAGE_ATTEMPTS - 1)
           break
         await waitForRetry(100 * 2 ** attempt)
       }

@@ -34,7 +34,7 @@ import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 import { getCSRF, isHomePage } from '~/utils/main'
-import { isExtensionContextInvalidatedError, onMessage, sendMessage } from '~/utils/messaging'
+import { isBackgroundUnavailableError, onMessage, sendMessage } from '~/utils/messaging'
 
 export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 已登录但 userInfo 未填充时重查的间隔
 
@@ -1289,11 +1289,11 @@ export const useTopBarStore = defineStore('topBar', () => {
       await syncSharedDataFromBroker(options)
     }
     catch (error) {
-      if (!isExtensionContextInvalidatedError(error))
+      if (!isBackgroundUnavailableError(error))
         throw error
 
-      // 扩展重新加载后，旧 content script 的 runtime 无法恢复。
-      // 停止轮询并让后续同步短路，等待后台刷新提示引导页面加载新脚本。
+      // 扩展重新加载或后台不可达后，旧 content script 的 runtime 无法恢复。
+      // 停止轮询并让后续同步短路，等待刷新提示引导页面加载新脚本。
       disableSharedStateMessaging()
     }
   }
@@ -1328,7 +1328,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       TOP_BAR_STATE_MESSAGE.INVALIDATE,
       { accountId },
     ).catch((error) => {
-      if (!isExtensionContextInvalidatedError(error))
+      if (!isBackgroundUnavailableError(error))
         throw error
 
       disableSharedStateMessaging()
@@ -1344,7 +1344,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       TOP_BAR_STATE_MESSAGE.FAVORITES_CHANGED,
       { accountId },
     ).catch((error) => {
-      if (!isExtensionContextInvalidatedError(error))
+      if (!isBackgroundUnavailableError(error))
         throw error
 
       disableSharedStateMessaging()

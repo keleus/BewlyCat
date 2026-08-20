@@ -21,6 +21,21 @@ export const CONTENT_SCRIPT_EXCLUDE_MATCHES = [
 export const CONTENT_SCRIPT_PING = 'bewly-cat:content-script:ping'
 export const CONTENT_SCRIPT_PONG = 'bewly-cat:content-script:ready'
 
+export interface ContentScriptPong {
+  type: typeof CONTENT_SCRIPT_PONG
+  version: string
+}
+
+export function isContentScriptPong(value: unknown): value is ContentScriptPong {
+  if (typeof value !== 'object' || value === null)
+    return false
+
+  const pong = value as Record<string, unknown>
+  return pong.type === CONTENT_SCRIPT_PONG
+    && typeof pong.version === 'string'
+    && pong.version.length > 0
+}
+
 const CONTENT_SCRIPT_HOST_SET = new Set<string>(CONTENT_SCRIPT_HOSTS)
 
 export function isContentScriptTargetUrl(value?: string): boolean {
