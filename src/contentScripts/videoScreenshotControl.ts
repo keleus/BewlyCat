@@ -167,6 +167,10 @@ function createControlContainer(): HTMLElement {
   icon.appendChild(iconWrapper)
   container.appendChild(icon)
 
+  // 鼠标点击不聚焦按钮：否则焦点残留，之后按空格/回车会再次触发截图
+  container.addEventListener('mousedown', (event) => {
+    event.preventDefault()
+  })
   container.addEventListener('click', () => {
     void captureCurrentFrame(container)
   })
