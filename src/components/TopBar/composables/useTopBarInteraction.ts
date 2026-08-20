@@ -103,9 +103,6 @@ export function useTopBarInteraction() {
       && !!settings.value.searchPageWallpaper
   })
 
-  // 顶栏底下压着底图时遮罩要留通透让图透出来；没有底图时遮罩色与页面底色一致，可以铺实。
-  const hasTopBarBackdrop = computed((): boolean => hasPageBackdrop.value || hasWallpaperBackdrop.value)
-
   // 遮罩是深色时图标才需要强制转白：页面底图恒用阴影，壁纸则只在暗色模式下才是黑雾。
   const forceWhiteIcon = computed((): boolean =>
     hasPageBackdrop.value || (hasWallpaperBackdrop.value && isDark.value))
@@ -285,7 +282,7 @@ export function useTopBarInteraction() {
     handleNotificationsItemClick,
     getTopBarItemHref,
     forceWhiteIcon,
-    hasTopBarBackdrop,
+    hasPageBackdrop,
     showSearchBar,
   }
 }
