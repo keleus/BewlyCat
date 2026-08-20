@@ -122,6 +122,10 @@ function createControlContainer(): HTMLElement {
   icon.appendChild(iconWrapper)
   container.append(icon, tooltip)
 
+  // 鼠标点击不聚焦按钮：否则焦点残留，之后按空格/回车会再次触发切换
+  container.addEventListener('mousedown', (event) => {
+    event.preventDefault()
+  })
   container.addEventListener('click', (event) => {
     event.preventDefault()
     event.stopPropagation()
