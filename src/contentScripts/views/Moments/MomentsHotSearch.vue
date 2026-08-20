@@ -38,7 +38,7 @@ function handleHotSearchClick(keyword: string) {
   let target = '_blank'
   if (settings.value.searchBarLinkOpenMode === 'currentTabIfNotHomepage')
     target = isHomePage() ? '_blank' : '_self'
-  else if (settings.value.searchBarLinkOpenMode === 'currentTab' || settings.value.searchBarLinkOpenMode === 'drawer')
+  else if (settings.value.searchBarLinkOpenMode === 'currentTab')
     target = '_self'
 
   window.open(searchUrl, target)
