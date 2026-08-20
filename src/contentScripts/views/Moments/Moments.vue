@@ -240,7 +240,8 @@ function resetMomentsScroll() {
 const OVERSCAN_PX = 1200
 const MAX_PREVIEW_CACHE = 12
 const MAX_VIDEO_CID_CACHE = 80
-const MAX_POST_LOAD_AUTOFILL_PAGES = 3
+/** 首屏最多再补 1 页把视口填满；之后只随滚动请求 */
+const MAX_POST_LOAD_AUTOFILL_PAGES = 1
 const WANTED_SCAN_LIMIT = 100
 /** 开启类型过滤时单次最多请求的原始动态页数 */
 const FILTERED_MAX_REQUEST_PAGES = 2
@@ -254,6 +255,8 @@ let cardMeasureObserver: ResizeObserver | undefined
 let visibilityObserver: IntersectionObserver | undefined
 /** 最近滚动时间，用于避免滚动中重排导致抖动 */
 let lastScrollAt = 0
+/** 重置后尚未滚动时不自动连刷，避免首屏连打多页才出内容 */
+let hasFeedScrollSinceReset = false
 let virtualRaf = 0
 let feedRequestToken = 0
 let portalRequestToken = 0
@@ -2106,8 +2109,16 @@ function hasActiveMomentFilters() {
     || (settings.value.momentsEnableKeywordFilter && blockedMomentKeywords.value.length > 0)
 }
 
+/** 过滤后保留率不超过该值、且累计扫描达到该条数时，才改为按钮分页 */
+const FILTER_MANUAL_PAGING_KEEP_RATIO = 0.5
+const FILTER_MANUAL_PAGING_MIN_RAW = 100
+const filterScanRawCount = ref(0)
+const filterScanKeptCount = ref(0)
+
 function requiresManualMomentPaging() {
-  return activeMomentGroup.value === 'wanted' || hasActiveMomentFilters()
+  if (filterScanRawCount.value < FILTER_MANUAL_PAGING_MIN_RAW)
+    return false
+  return filterScanKeptCount.value / filterScanRawCount.value <= FILTER_MANUAL_PAGING_KEEP_RATIO
 }
 
 function passesMomentSettings(moment: DisplayMoment) {
@@ -2402,6 +2413,7 @@ function maybeLoadMoreNearBottom() {
   const viewport = scrollViewportRef.value
   if (
     !viewport
+    || !hasFeedScrollSinceReset
     || isInitialLoading.value
     || isLoading.value
     || noMoreContent.value
@@ -2639,6 +2651,7 @@ function setupVirtualObservers() {
 }
 
 function handleViewportScroll() {
+  hasFeedScrollSinceReset = true
   lastScrollAt = Date.now()
   scheduleVirtualUpdate()
 }
@@ -3152,6 +3165,9 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     cleanupLivePreviewPlayer()
     hoveredMediaId.value = ''
     isInitialLoading.value = true
+    hasFeedScrollSinceReset = false
+    filterScanRawCount.value = 0
+    filterScanKeptCount.value = 0
   }
   const requestToken = feedRequestToken
   const requestType = activeMomentFilter.value
@@ -3481,10 +3497,13 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
       .filter(moment => requestGroup !== 'wanted' || matchesMomentFilter(moment))
       .filter(passesMomentSettings)
       .sort((a, b) => b.publishedAt - a.publishedAt)
-    await prepareMomentCovers(items, requestToken)
     if (!isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid)) {
       return
     }
+    filterScanRawCount.value += normalizedItems.length
+    filterScanKeptCount.value += items.length
+    // 封面预加载不阻塞首屏：卡片先按估算高度渲染，比例随后续 onload 修正
+    void prepareMomentCovers(items, requestToken)
     if (!reset)
       preservedPaginationScrollTop = scrollViewportRef.value?.scrollTop ?? null
     if (!reset)
@@ -3520,8 +3539,10 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
       viewport.scrollTop = preservedPaginationScrollTop
   }
 
+  // 仅首屏在内容未填满视口时再补 1 页；滚动加载不再连环请求
   if (
     !pageApplied
+    || !reset
     || noMoreContent.value
     || requiresManualMomentPaging()
     || autoFillDepth >= MAX_POST_LOAD_AUTOFILL_PAGES
@@ -3530,7 +3551,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     return
   }
 
-  // 哨兵分页后可能始终停留在视口内，不会再次触发进入事件；布局稳定后主动补载
   await nextTick()
   updateVirtualColumns()
   await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
@@ -3642,7 +3662,7 @@ onMounted(() => {
   refresh()
   handlePageRefresh.value = refresh
   handleReachBottom.value = () => {
-    if (requiresManualMomentPaging())
+    if (requiresManualMomentPaging() || !hasFeedScrollSinceReset)
       return
     void loadMoments()
   }
@@ -4157,10 +4177,6 @@ watch(
         </section>
         <div class="moments-feed">
           <div v-if="isInitialLoading" class="moments-page__initial-loading">
-            <div class="moments-skeleton__status">
-              <span i-svg-spinners:ring-resize />
-              正在准备动态和图片…
-            </div>
             <div class="moments-skeleton-grid" :style="momentsGridStyle">
               <div
                 v-for="columnIndex in Math.max(1, gridColumnCount)"
@@ -5052,18 +5068,6 @@ watch(
 .moments-page__initial-loading {
   position: relative;
   min-height: calc(100dvh - var(--bew-top-bar-height) - 90px);
-}
-.moments-skeleton__status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--bew-space-2);
-  height: 32px;
-  margin-bottom: var(--bew-space-3);
-  color: var(--bew-text-3);
-  font-size: var(--bew-font-size-control);
-  line-height: var(--bew-line-height-control);
-  pointer-events: none;
 }
 .moments-skeleton-grid {
   display: grid;
