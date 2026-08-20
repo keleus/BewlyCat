@@ -101,7 +101,7 @@ export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
 export type TabsPosition = 'left' | 'center'
 export type TopBarLogoStyle = 'icon' | 'brand'
-export type TopBarStyle = 'default' | 'transparent' | 'frostedGlass' | 'progressiveFog'
+export type TopBarStyle = 'default' | 'transparent' | 'frostedGlass'
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 export type RandomPlayOrder = 'sequential' | 'reverse' | 'random'
 export type DefaultCustomPlayOrder = RandomPlayOrder
@@ -887,7 +887,7 @@ watch(
     if (!validTopBarLogoStyles.includes(record.topBarLogoStyle))
       record.topBarLogoStyle = originalSettings.topBarLogoStyle
 
-    const validTopBarStyles: TopBarStyle[] = ['default', 'transparent', 'frostedGlass', 'progressiveFog']
+    const validTopBarStyles: TopBarStyle[] = ['default', 'transparent', 'frostedGlass']
     const hasLegacyTopBarStyle = 'alwaysUseTransparentTopBar' in record
       || 'alwaysUseFrostedGlassTopBar' in record
       || 'enableTopBarGradient' in record
@@ -898,6 +898,9 @@ watch(
           ? 'frostedGlass'
           : originalSettings.topBarStyle
     }
+    // 已移除的五层渐进雾化，回落到默认白雾/阴影。
+    if (record.topBarStyle === 'progressiveFog')
+      record.topBarStyle = 'default'
     if (!validTopBarStyles.includes(record.topBarStyle))
       record.topBarStyle = originalSettings.topBarStyle
     Reflect.deleteProperty(record, 'alwaysUseTransparentTopBar')

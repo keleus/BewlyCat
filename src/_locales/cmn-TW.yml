@@ -505,10 +505,9 @@ settings:
     showOnMouse: 滑鼠顯示
     showOnScroll: 滾動顯示
   top_bar_style: 頂部列樣式
-  top_bar_style_desc: 選擇頂部列的背景效果。漸變會啟用 1.7.4 的五層模糊，並同時套用到設定視窗頂部，可能明顯增加 GPU 負擔。
+  top_bar_style_desc: 選擇頂部列的背景效果。
   top_bar_style_opt:
     default: 預設（白霧/陰影）
-    progressive_fog: 漸變（消耗效能）
     transparent: 陰影
     frosted_glass: 白霧
   show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）

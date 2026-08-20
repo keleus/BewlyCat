@@ -188,7 +188,6 @@ const topBarGlobalTitleKeys = [
   'settings.top_bar_style',
   'settings.top_bar_style_desc',
   'settings.top_bar_style_opt.default',
-  'settings.top_bar_style_opt.progressive_fog',
   'settings.top_bar_style_opt.transparent',
   'settings.top_bar_style_opt.frosted_glass',
   'settings.show_top_bar_theme_color_gradient',

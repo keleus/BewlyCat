@@ -482,10 +482,9 @@ settings:
     showOnMouse: On hover
     showOnScroll: On scroll
   top_bar_style: Top bar style
-  top_bar_style_desc: Choose the top bar background. Gradient restores the five blur layers from 1.7.4 and also applies them to the top of Settings, which can significantly increase GPU usage.
+  top_bar_style_desc: Choose the top bar background.
   top_bar_style_opt:
     default: Default (white fog/shadow)
-    progressive_fog: Gradient (performance intensive)
     transparent: Shadow
     frosted_glass: White fog
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)

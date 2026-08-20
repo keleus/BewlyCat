@@ -3,7 +3,6 @@ import { useEventListener } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ProgressiveBlurSurface from '~/components/ProgressiveBlurSurface.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import { createTransformer } from '~/utils/transformer'
@@ -103,7 +102,6 @@ const searchInputRef = ref<HTMLInputElement>()
 const searchPopoverStyle = ref<CSSProperties>({})
 const isSearchFocused = ref(false)
 const { mainAppRef, pendingSettingsNavigation } = useBewlyApp()
-const useProgressiveFog = computed(() => settings.value.topBarStyle === 'progressiveFog')
 
 function handleSearchBlur() {
   isSearchFocused.value = false
@@ -559,13 +557,8 @@ function changeMenuItem(menuItem: MenuType) {
             text-shadow: 0 0 10px var(--bew-elevated-solid), 0 0 15px var(--bew-elevated-solid)
           "
         >
-          <div v-if="useProgressiveFog" class="settings-header__progressive-fog" aria-hidden="true">
-            <ProgressiveBlurSurface />
-            <div class="settings-header__progressive-fog-tint" />
-          </div>
           <!-- Mask -->
           <div
-            v-else
             pos="absolute top-0 left-0" w-inherit h-inherit pointer-events-none
             :style="{
               maskImage: settings.enableFrostedGlass
@@ -638,8 +631,8 @@ function changeMenuItem(menuItem: MenuType) {
         <div
           ref="scrollViewportRef"
           :style="{
-            maskImage: settings.enableFrostedGlass || useProgressiveFog ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
-            WebkitMaskImage: settings.enableFrostedGlass || useProgressiveFog ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
+            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
+            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
             scrollbarGutter: 'stable',
             overflowAnchor: 'none',
             overscrollBehavior: 'contain',
@@ -708,26 +701,6 @@ function changeMenuItem(menuItem: MenuType) {
 <style lang="scss" scoped>
 .menu-item-activated {
   --uno: "text-$bew-text-auto bg-$bew-theme-color-auto";
-}
-
-.settings-header__progressive-fog {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  border-radius: inherit;
-  pointer-events: none;
-}
-
-.settings-header__progressive-fog-tint {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to bottom,
-    var(--bew-elevated-alt-solid),
-    color-mix(in oklab, var(--bew-elevated-alt-solid), transparent 22%) 55%,
-    transparent
-  );
 }
 
 // Animate from the capsule's real geometric radius instead of `radius-full`.

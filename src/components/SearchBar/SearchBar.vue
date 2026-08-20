@@ -1110,9 +1110,7 @@ function handleClearKeyword() {
   }
 
   &.search-wrap--top-bar {
-    // 顶栏本身已铺了一层大面积玻璃，输入框再叠一层 backdrop-filter 只是把同一片背景
-    // 重复采样一次：它取到的本就是顶栏玻璃模糊后的结果，视觉几乎无增益，却多占一个合成层。
-    // 背景色仍是半透明，磨砂质感由顶栏那层统一提供。
+    // 顶栏已承担背景模糊，控件再叠 backdrop-filter 会多占合成层。
     --b-search-bar-glass: none;
 
     @media (max-width: 767px) {

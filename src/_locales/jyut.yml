@@ -496,10 +496,9 @@ settings:
   show_video_watched_badge: 記錄並顯示睇過
   auto_hide_top_bar: 自動收埋頂欄
   top_bar_style: 頂欄樣式
-  top_bar_style_desc: 揀頂欄背景效果。漸變會開啟 1.7.4 嘅五層模糊，亦會套用到設定視窗頂部，可能會明顯增加 GPU 負擔。
+  top_bar_style_desc: 揀頂欄背景效果。
   top_bar_style_opt:
     default: 預設（白霧/陰影）
-    progressive_fog: 漸變（消耗效能）
     transparent: 陰影
     frosted_glass: 白霧
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）

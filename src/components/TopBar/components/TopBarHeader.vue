@@ -2,7 +2,6 @@
 import { useMediaQuery, useMutationObserver } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import ProgressiveBlurSurface from '~/components/ProgressiveBlurSurface.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { AppPage } from '~/enums/appEnums'
@@ -28,54 +27,29 @@ const isNarrowLayout = useMediaQuery('(max-width: 767px)')
 // 仅布局编辑模式需要整体隐藏（搜索页本身有搜索框，不展示编辑目标）。
 const showTopBarSearchEditor = computed(() =>
   !isLayoutEditing.value || activatedPage.value !== AppPage.Search)
-const usesProgressiveFog = computed(() => settings.value.topBarStyle === 'progressiveFog')
 
-const OVERLAY_HEIGHT = 'calc(var(--bew-top-bar-height) * 1.35)'
-const FOG_GAMMA = 0.7
-const FOG_STOP_COUNT = 10
-
-// 遮罩收尾改用纯余弦并加密取样：gamma < 1 会把曲线末端拉尖，
-// stop 之间的线性插值追不上，交界处仍会留下可见的 Mach band。
-const FADE_GAMMA = 1
 const FADE_STOP_COUNT = 16
 
-function fogStops(peak: number, gamma = FOG_GAMMA, count = FOG_STOP_COUNT): [number, number][] {
-  return Array.from({ length: count }, (_, index) => {
-    const t = index / (count - 1)
-    const decay = ((1 + Math.cos(Math.PI * t)) / 2) ** gamma
+function fadeStops(peak: number): [number, number][] {
+  return Array.from({ length: FADE_STOP_COUNT }, (_, index) => {
+    const t = index / (FADE_STOP_COUNT - 1)
+    const decay = (1 + Math.cos(Math.PI * t)) / 2
     return [+(t * 100).toFixed(1), peak * decay]
   })
 }
 
-function fadeStops(peak: number): [number, number][] {
-  return fogStops(peak, FADE_GAMMA, FADE_STOP_COUNT)
-}
-
-function fogGradient(color: string, peak: number) {
-  const stops = fogStops(peak).map(([position, alpha]) =>
-    `rgb(${color} / ${+alpha.toFixed(2)}%) ${position}%`)
-  return `linear-gradient(to bottom, ${stops.join(', ')})`
-}
-
-const progressiveFogTint = computed(() => {
-  return props.isDark
-    ? fogGradient('0 0 0', 75)
-    : fogGradient('255 255 255', 80)
-})
-
-// 分段线性的渐变在拐点处斜率突变，人眼会在交界处脑补出一条亮暗带（Mach band），
-// 底图越平越明显。这里复用雾化那套余弦衰减，让收尾的斜率渐近于 0，把那道"杠"磨掉。
+// 分段线性拐点会被读成一条亮暗带（Mach band）；余弦让收尾斜率渐近于 0。
 function smoothFade(color: (alphaPercent: number) => string, peak: number) {
   const stops = fadeStops(peak).map(([position, alpha]) => `${color(+alpha.toFixed(2))} ${position}%`)
   return `linear-gradient(to bottom, ${stops.join(', ')})`
 }
 
-// 遮罩前 24px 保持满强度托住图标，其余部分同样用余弦收尾。24 / 64 = 37.5%。
-const OVERLAY_MASK_PLATEAU = 37.5
 const OVERLAY_MASK = `linear-gradient(to bottom, rgb(0 0 0 / 100%) 0%, ${
   fadeStops(100)
-    .map(([position, alpha]) =>
-      `rgb(0 0 0 / ${+alpha.toFixed(2)}%) ${+(OVERLAY_MASK_PLATEAU + position * (100 - OVERLAY_MASK_PLATEAU) / 100).toFixed(2)}%`)
+    .map(([position, alpha]) => {
+      const t = +(position / 100).toFixed(4)
+      return `rgb(0 0 0 / ${+alpha.toFixed(2)}%) calc(var(--overlay-mask-plateau) + ${t} * (100% - var(--overlay-mask-plateau)))`
+    })
     .join(', ')
 })`
 
@@ -87,17 +61,15 @@ const SCROLLED_SHADE_ALPHA = 0.5
 // 没有底图时遮罩色与页面底色一致，深浅变化不可见，保留实心遮挡压住滚过的内容。
 const SCROLLED_SOLID_OPACITY = 0.9
 
-// 顶栏下缘的渐隐层。黑雾沿用 issue 里认可的 60% 起点，白雾与无底图时同档 80%。
+// 黑雾 60%、白雾与无底图同档 80%，保证可读。
 const fadeGradient = computed(() => forceWhiteIcon.value
   ? smoothFade(alpha => `rgb(0 0 0 / ${alpha}%)`, 60)
   : smoothFade(alpha => `color-mix(in oklab, var(--bew-bg), transparent ${+(100 - alpha).toFixed(2)}%)`, 80))
 
-// 玻璃本身带的一层薄色。顶栏内的控件不再各自开玻璃后，前景与背景的分离全靠这一层，
-// 纯透明玻璃压在花底图上会不够看。
+// 纯透明玻璃压在花底图上不够看，补一层薄色把前景托出来。
 const GLASS_TINT_ALPHA = 0.1
 
-// 暗色用黑玻璃、亮色用白玻璃；页面自带底图时 forceWhiteIcon 恒为真，
-// 因此不管亮暗都落在黑玻璃上，与作者要求的"带顶部图片的页面用阴影"一致。
+// 页面横幅不受主题控制，恒用暗玻璃；其余跟随亮暗。
 const useDarkGlass = computed(() => forceWhiteIcon.value || props.isDark)
 
 function glassColor(alpha: number) {
@@ -250,39 +222,23 @@ function refreshSearchContent() {
     p="x-12" m-auto
     h="$bew-top-bar-height"
   >
-    <!-- 1.7.4 的五层渐进雾化仅在用户明确选择时挂载，避免默认产生额外合成开销。 -->
+    <!-- 低开销顶栏遮罩：常驻挂载，玻璃与恒等滤镜间插值（见 glassOverlayStyle） -->
+    <div class="top-bar-header__glass-overlay" :style="glassOverlayStyle" />
+
     <div
-      v-if="usesProgressiveFog"
-      class="top-bar-header__progressive-fog"
-      :style="{ height: OVERLAY_HEIGHT }"
-    >
-      <!-- 渐变样式保持固定雾化，不随滚动再叠一层遮罩 -->
-      <ProgressiveBlurSurface />
-      <div
-        class="top-bar-header__progressive-fog-tint"
-        :style="{ background: progressiveFogTint }"
-      />
-    </div>
-
-    <template v-else>
-      <!-- 默认的低开销顶栏遮罩：常驻挂载，玻璃与恒等滤镜间插值（见 glassOverlayStyle） -->
-      <div class="top-bar-header__glass-overlay" :style="glassOverlayStyle" />
-
-      <div
-        pos="absolute top-0 left-0" w-full
-        pointer-events-none opacity-100 duration-300
-        :style="{
-          background: fadeGradient,
-          opacity: reachTop ? 0.8 : 1,
-          height: 'var(--bew-top-bar-height)',
-        }"
-      />
-    </template>
+      pos="absolute top-0 left-0" w-full
+      pointer-events-none opacity-100 duration-300
+      :style="{
+        background: fadeGradient,
+        opacity: reachTop ? 0.8 : 1,
+        height: 'var(--bew-top-bar-height)',
+      }"
+    />
 
     <!-- Top bar theme color gradient -->
     <Transition name="fade">
       <div
-        v-if="!usesProgressiveFog && settings.showTopBarThemeColorGradient && !forceWhiteIcon && reachTop && isDark"
+        v-if="settings.showTopBarThemeColorGradient && !forceWhiteIcon && reachTop && isDark"
         pos="absolute top-0 left-0" w-full h="$bew-top-bar-height" pointer-events-none
         :style="{ background: 'linear-gradient(to bottom, var(--bew-theme-color-10), transparent)' }"
       />
@@ -341,21 +297,9 @@ function refreshSearchContent() {
   background: transparent;
 }
 
-.top-bar-header__progressive-fog {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  pointer-events: none;
-}
-
-.top-bar-header__progressive-fog-tint {
-  position: absolute;
-  inset: 0;
-  transition: opacity var(--bew-duration-moderate) var(--bew-ease-standard);
-}
-
 .top-bar-header__glass-overlay {
+  // 垂直居中的主控件下沿，满强度托住搜索框后再余弦收尾。
+  --overlay-mask-plateau: calc((var(--bew-top-bar-height) + var(--bew-top-bar-primary-control-height)) / 2);
   position: absolute;
   top: 0;
   left: 0;

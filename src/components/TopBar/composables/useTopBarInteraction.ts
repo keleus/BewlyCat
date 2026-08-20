@@ -67,7 +67,7 @@ export function useTopBarInteraction() {
     if (settings.value.topBarStyle === 'transparent')
       return true
 
-    // 渐变 / 白雾全页同一套外观，不按页面切阴影。
+    // 白雾全页同一套外观，不按页面切阴影。
     if (settings.value.topBarStyle !== 'default')
       return false
 
