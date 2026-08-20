@@ -18,7 +18,7 @@ const props = defineProps<{
   isDark: boolean
 }>()
 
-const { forceWhiteIcon, hasTopBarBackdrop, handleNotificationsItemClick } = useTopBarInteraction()
+const { forceWhiteIcon, hasPageBackdrop, handleNotificationsItemClick } = useTopBarInteraction()
 const { isLayoutEditing } = useLayoutEditMode()
 const { activatedPage } = useBewlyApp()
 const isNarrowLayout = useMediaQuery('(max-width: 767px)')
@@ -63,7 +63,9 @@ const SOLID_OVERLAY_MASK = overlayMask('--overlay-mask-plateau-solid')
 const SCROLLED_SHADE_ALPHA = 0.5
 const GLASS_TINT_ALPHA = 0.1
 
-const fadeGradient = computed(() => forceWhiteIcon.value
+// 雾配方只认「页面自带横幅」：那种底图的亮暗不受主题控制，只能恒用黑雾托住白图标。
+// 不能改认 forceWhiteIcon —— 它在「暗色 + 壁纸」也为真，会让暗色下有无壁纸变成两种配方（#1095）。
+const fadeGradient = computed(() => hasPageBackdrop.value
   ? smoothFade(alpha => `rgb(0 0 0 / ${alpha}%)`, 60)
   : smoothFade(alpha => `color-mix(in oklab, var(--bew-bg), transparent ${+(100 - alpha).toFixed(2)}%)`, 80))
 
@@ -74,13 +76,12 @@ function glassColor(alpha: number) {
   return useDarkGlass.value ? `rgb(0 0 0 / ${alpha})` : `rgb(255 255 255 / ${alpha})`
 }
 
-const scrolledShadeColor = computed(() => glassColor(SCROLLED_SHADE_ALPHA))
 const glassTintColor = computed(() => glassColor(GLASS_TINT_ALPHA))
 
+// 毛玻璃档恒用薄色，不按有无底图分档：分离前景靠的是模糊本身，
+// 再按底图加深会让「有壁纸」和「无壁纸」变成两个浓度（#1095）。
 const frostedOverlayStyle = computed(() => ({
-  backgroundColor: hasTopBarBackdrop.value && !props.reachTop
-    ? scrolledShadeColor.value
-    : glassTintColor.value,
+  backgroundColor: glassTintColor.value,
   backdropFilter: 'var(--bew-filter-glass-1)',
   WebkitBackdropFilter: 'var(--bew-filter-glass-1)',
   maskImage: FROSTED_OVERLAY_MASK,
@@ -88,7 +89,7 @@ const frostedOverlayStyle = computed(() => ({
 }))
 
 const solidOverlayStyle = computed(() => ({
-  backgroundColor: forceWhiteIcon.value ? 'rgb(0 0 0)' : 'var(--bew-bg)',
+  backgroundColor: hasPageBackdrop.value ? 'rgb(0 0 0)' : 'var(--bew-bg)',
   opacity: props.reachTop ? 0 : SCROLLED_SHADE_ALPHA,
   maskImage: SOLID_OVERLAY_MASK,
   WebkitMaskImage: SOLID_OVERLAY_MASK,
