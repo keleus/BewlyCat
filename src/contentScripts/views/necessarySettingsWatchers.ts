@@ -465,9 +465,23 @@ export function setupNecessarySettingsWatchers() {
     applyBewlyDesignClasses()
   }
 
-  window.addEventListener('popstate', refreshBewlyDesignOnRouteChange)
-  window.addEventListener('hashchange', refreshBewlyDesignOnRouteChange)
-  window.setInterval(refreshBewlyDesignOnRouteChange, 800)
+  let bewlyDesignRefreshQueued = false
+  const scheduleBewlyDesignRefresh = () => {
+    if (bewlyDesignRefreshQueued)
+      return
+
+    bewlyDesignRefreshQueued = true
+    // MAIN-world history hooks emit before the native method updates the URL.
+    queueMicrotask(() => {
+      bewlyDesignRefreshQueued = false
+      refreshBewlyDesignOnRouteChange()
+    })
+  }
+
+  window.addEventListener('pushstate', scheduleBewlyDesignRefresh)
+  window.addEventListener('replacestate', scheduleBewlyDesignRefresh)
+  window.addEventListener('popstate', scheduleBewlyDesignRefresh)
+  window.addEventListener('hashchange', scheduleBewlyDesignRefresh)
 
   // Clean Share Link - intercept clipboard copy events
   let cleanShareLinkCopyHandler: ((e: ClipboardEvent) => void) | null = null
