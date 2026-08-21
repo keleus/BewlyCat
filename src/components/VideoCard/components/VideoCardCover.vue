@@ -64,6 +64,7 @@ const shouldEnableVideoControls = computed(() => settings.value.enableVideoCtrlB
 const shouldEnableSwipeSeek = computed(() => settings.value.enableVideoPreviewSwipeSeek && !props.video?.roomid)
 let hls: Hls | null = null
 let flvPlayer: flvjs.Player | null = null
+let previewGeneration = 0
 /** 仅记录 pointerdown 意图；真正 scrub 需横向拖过阈值后才激活 */
 let activeScrubPointerId: number | null = null
 let scrubStartX = 0
@@ -361,6 +362,7 @@ function syncPreviewFullscreenState() {
 }
 
 function cleanupPlayers() {
+  previewGeneration++
   if (hls) {
     hls.destroy()
     hls = null
@@ -378,10 +380,14 @@ function cleanupPlayers() {
 async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
   // Check if URL is FLV stream
   if (url.includes('.flv')) {
+    const generation = ++previewGeneration
     try {
       // 动态导入 flv.js 以避免构建时依赖问题
       const flvjsModule = await import('flv.js')
       const flvjs = flvjsModule.default
+
+      if (generation !== previewGeneration || !videoEl.isConnected)
+        return
 
       if (flvjs.isSupported()) {
         // Cleanup previous players and clear video src

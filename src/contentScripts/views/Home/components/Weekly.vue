@@ -101,6 +101,11 @@ onActivated(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', calculatePosition)
+  window.removeEventListener('click', closeDropdown)
+})
+
+onDeactivated(() => {
+  window.removeEventListener('click', closeDropdown)
 })
 
 function initPageAction() {

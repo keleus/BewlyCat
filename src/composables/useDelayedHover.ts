@@ -8,6 +8,17 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
   let enterTimer: any | undefined
   let leaveTimer: any | undefined
 
+  function clearHoverTimers() {
+    if (enterTimer) {
+      clearTimeout(enterTimer)
+      enterTimer = undefined
+    }
+    if (leaveTimer) {
+      clearTimeout(leaveTimer)
+      leaveTimer = undefined
+    }
+  }
+
   function handleMouseEnter() {
     if (beforeEnter)
       beforeEnter()
@@ -59,6 +70,7 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
 
   watch(() => settings.value.touchScreenOptimization, (newValue) => {
     if (newValue) {
+      clearHoverTimers()
       el.value?.removeEventListener('mouseenter', handleMouseEnter)
       el.value?.removeEventListener('mouseleave', handleMouseLeave)
     }
@@ -67,6 +79,8 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
       el.value?.addEventListener('mouseleave', handleMouseLeave)
     }
   }, { immediate: true })
+
+  onScopeDispose(clearHoverTimers)
 
   return el
 }

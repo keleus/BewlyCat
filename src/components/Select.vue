@@ -44,6 +44,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleWindowResize)
+  window.removeEventListener('click', closeOptions)
 })
 
 function handleWindowResize() {
