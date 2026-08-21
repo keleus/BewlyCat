@@ -350,9 +350,16 @@ function deletePoint(index: number) {
 }
 
 function handleKeyDown(e: KeyboardEvent) {
-  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedPointIndex.value !== null) {
-    deletePoint(selectedPointIndex.value)
-  }
+  if (selectedPointIndex.value === null)
+    return
+  if (e.key !== 'Delete' && e.key !== 'Backspace')
+    return
+
+  const target = e.target as HTMLElement | null
+  if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)))
+    return
+
+  deletePoint(selectedPointIndex.value)
 }
 
 // Lifecycle
