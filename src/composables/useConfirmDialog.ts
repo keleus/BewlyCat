@@ -1,9 +1,18 @@
 import type { InjectionKey } from 'vue'
 import { inject } from 'vue'
 
+export interface ConfirmDialogToggleField {
+  id: string
+  label: string
+  value: boolean
+  enabledLabel?: string
+  disabledLabel?: string
+}
+
 export interface ConfirmDialogOptions {
   title?: string
   confirmLabel?: string
+  toggleFields?: ConfirmDialogToggleField[]
 }
 
 export interface ConfirmDialogService {

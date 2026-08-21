@@ -7,7 +7,7 @@ import { importSettingsStorage } from '~/composables/useSettingsStorage'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { originalSettings, settings, videoCardContextMenuKeys } from '~/logic'
-import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
+import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
 
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
@@ -202,12 +202,23 @@ function handleImportFile(event: Event) {
           t,
           'settings.maintenance.migrate_legacy_import_confirm',
         )
+        const toggleFields = getPendingSettingsMigrationChoices(importedSettings).map(choice => ({
+          id: choice.id,
+          label: String(t(choice.titleKey)),
+          value: choice.value,
+          enabledLabel: String(t('settings.chk_box.show')),
+          disabledLabel: String(t('settings.chk_box.hidden')),
+        }))
         const shouldMigrate = await showConfirmDialog(message ?? t('settings.maintenance.migrate_legacy_import_confirm'), {
           title: t('settings.maintenance.migrate_legacy_title'),
           confirmLabel: t('settings.maintenance.migrate_legacy_action'),
+          toggleFields,
         })
-        if (shouldMigrate)
-          applyPendingSettingsMigrations(importedSettings)
+        if (shouldMigrate) {
+          applyPendingSettingsMigrations(importedSettings, Object.fromEntries(
+            toggleFields.map(field => [field.id, field.value]),
+          ))
+        }
       }
 
       const currentSettings = originalSettings as unknown as Record<string, unknown>
