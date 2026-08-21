@@ -915,8 +915,18 @@ watch(
     if (typeof record.showLayoutEditButton !== 'boolean')
       record.showLayoutEditButton = originalSettings.showLayoutEditButton
 
-    if (!Number.isFinite(record.frostedGlassBlurIntensity))
+    // Native range inputs and older cloud snapshots may contain a numeric
+    // string. Canonicalize it instead of treating values such as "10" as
+    // invalid and snapping the control back to the default intensity of 20.
+    if (typeof record.frostedGlassBlurIntensity === 'string') {
+      const parsedBlurIntensity = Number(record.frostedGlassBlurIntensity)
+      record.frostedGlassBlurIntensity = Number.isFinite(parsedBlurIntensity)
+        ? parsedBlurIntensity
+        : originalSettings.frostedGlassBlurIntensity
+    }
+    else if (!Number.isFinite(record.frostedGlassBlurIntensity)) {
       record.frostedGlassBlurIntensity = originalSettings.frostedGlassBlurIntensity
+    }
 
     if ('reduceFrostedGlassBlur' in record) {
       if (record.reduceFrostedGlassBlur === true && record.frostedGlassBlurIntensity === originalSettings.frostedGlassBlurIntensity)

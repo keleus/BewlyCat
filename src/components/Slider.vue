@@ -12,6 +12,12 @@ const props = withDefaults(defineProps<Props>(), {
 const modelValue = defineModel<number>({ required: true })
 const rangeRef = ref<HTMLInputElement | null>(null)
 
+function handleInput(event: Event) {
+  const value = (event.target as HTMLInputElement).valueAsNumber
+  if (Number.isFinite(value))
+    modelValue.value = value
+}
+
 function updateBackground() {
   const range = rangeRef.value
   if (!range)
@@ -30,9 +36,10 @@ onMounted(updateBackground)
   <label cursor-pointer flex items-center gap-3 w="$b-slider-width">
     <input
       ref="rangeRef"
-      v-model="modelValue" type="range" :min="min" :max="max" class="slider"
+      type="range" :value="modelValue" :min="min" :max="max" class="slider"
       appearance-none outline-none bg="$bew-fill-1" rounded="$b-slider-height"
       border="size-$b-border-width color-$bew-border-color" w="$b-slider-width" h="$b-slider-height"
+      @input="handleInput"
     >
     <span>{{ label }}</span>
   </label>
