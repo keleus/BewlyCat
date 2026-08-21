@@ -920,6 +920,8 @@ settings:
   external_watch_later_button_desc: 啓用後，影片頁工具欄會顯示獨立嘅陣間至睇按鈕；按鈕會顯示目前影片狀態，可以撳一下加入或者剷走。
   show_vertical_video_zoom_button: 直屏影片放大按鈕
   show_vertical_video_zoom_button_desc: 喺直屏影片播放器顯示放大/縮小按鈕同畫面位置調整控制
+  show_bewly_widescreen_button: Bewly 闊螢幕
+  show_bewly_widescreen_button_desc: 啓用後，喺影片播放器控制欄顯示 Bewly 闊螢幕按鈕。
   show_video_screenshot_button: 顯示播放器截圖按鈕
   show_video_screenshot_button_desc: 啓用後，喺影片播放器控制欄顯示擷取目前影片畫面嘅按鈕。
   group_fonts: ''

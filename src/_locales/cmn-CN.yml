@@ -444,6 +444,8 @@ settings:
   external_watch_later_button_desc: 启用后，视频页工具栏会显示独立的稍后再看按钮；按钮会显示当前视频状态，可点击添加或移除。
   show_vertical_video_zoom_button: 竖屏放大按钮
   show_vertical_video_zoom_button_desc: 在竖屏视频播放器中显示放大/缩小按钮和画面位置调节控件
+  show_bewly_widescreen_button: Bewly 宽屏
+  show_bewly_widescreen_button_desc: 启用后，在视频播放器控制栏中显示 Bewly 宽屏按钮。
   show_video_screenshot_button: 显示播放器截图按钮
   show_video_screenshot_button_desc: 启用后，在视频播放器控制栏中显示截取当前视频画面的按钮。
   keep_collection_video_default_mode: 合集视频保持默认模式

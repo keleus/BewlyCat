@@ -220,6 +220,14 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         </SettingsItem>
 
         <SettingsItem
+          :title="t('settings.show_bewly_widescreen_button')"
+          :desc="t('settings.show_bewly_widescreen_button_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.showBewlyWidescreenButton" />
+        </SettingsItem>
+
+        <SettingsItem
           :title="t('settings.show_video_screenshot_button')"
           :desc="t('settings.show_video_screenshot_button_desc')"
           right-width="auto"

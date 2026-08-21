@@ -1,3 +1,5 @@
+import { watch } from 'vue'
+
 import { settings } from '~/logic'
 import { applyBewlyWidescreen, ensureNativePlayerModeGuard, exitBewlyWidescreen, isBewlyWidescreenActive, showBewlyWidescreenSwitchHint } from '~/utils/bewlyWidescreen'
 import { i18n } from '~/utils/i18n'
@@ -63,7 +65,7 @@ function isControlUnavailable() {
 }
 
 function shouldManageControl() {
-  return isVideoOrBangumiPage()
+  return settings.value.showBewlyWidescreenButton && isVideoOrBangumiPage()
 }
 
 function updateControlState(button = controlContainer) {
@@ -370,6 +372,16 @@ export function initBewlyWidescreenControl() {
   hasInitialized = true
   ensureNativePlayerModeGuard()
   setupPageObserver()
+  watch(
+    () => settings.value.showBewlyWidescreenButton,
+    (enabled) => {
+      if (enabled)
+        restartControlDiscovery()
+      else
+        stopManagingControl()
+    },
+    { immediate: true },
+  )
 
   const handlePageLifecycleChange = () => restartControlDiscovery()
   window.addEventListener('pushstate', handlePageLifecycleChange)
@@ -380,9 +392,7 @@ export function initBewlyWidescreenControl() {
   window.addEventListener('fullscreenchange', () => updateControlState())
   window.addEventListener('webkitfullscreenchange', () => updateControlState())
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible')
+    if (document.visibilityState === 'visible' && settings.value.showBewlyWidescreenButton)
       restartControlDiscovery()
   })
-
-  restartControlDiscovery()
 }
