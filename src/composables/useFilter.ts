@@ -67,10 +67,15 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
 
   settings.value.filterByTitle.forEach((item) => {
     if (item.keyword.startsWith('/') && item.keyword.endsWith('/')) {
-      filterByTitleRegExpValues.push(new RegExp(item.keyword.slice(1, -1), 'i'))
+      try {
+        filterByTitleRegExpValues.push(new RegExp(item.keyword.slice(1, -1), 'i'))
+      }
+      catch {
+        filterByTitleStringValues.push(item.keyword.toUpperCase())
+      }
     }
     else {
-      filterByTitleStringValues.push(`${item.keyword}`.toUpperCase())
+      filterByTitleStringValues.push(item.keyword.toUpperCase())
     }
   })
 
@@ -94,10 +99,15 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
 
   settings.value.filterByUser.forEach((item) => {
     if (item.keyword.startsWith('/') && item.keyword.endsWith('/')) {
-      filterByUserRegExpValues.push(new RegExp(item.keyword.slice(1, -1), 'i'))
+      try {
+        filterByUserRegExpValues.push(new RegExp(item.keyword.slice(1, -1), 'i'))
+      }
+      catch {
+        filterByUserStringValues.push(item.keyword.toUpperCase())
+      }
     }
     else {
-      filterByUserStringValues.push(`${item.keyword}`.toUpperCase())
+      filterByUserStringValues.push(item.keyword.toUpperCase())
     }
   })
 

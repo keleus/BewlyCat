@@ -41,6 +41,10 @@ const pollLoginQRCodeInterval = ref<any>(null)
 const authCode = ref<string>('')
 const qrcodeMsg = ref<string>('')
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 const appAccessToken = computed(() => appAuthTokens.value.accessToken)
 
 function cleanupQRCodeDialog() {
@@ -138,17 +142,26 @@ function handleImport(filterType: 'title' | 'user') {
 
     try {
       const fileContent = await file.text()
-      const importedFilters = JSON.parse(fileContent) as { keyword: string, remark: string }[]
+      const importedFilters: unknown = JSON.parse(fileContent)
 
-      if (!Array.isArray(importedFilters) || !importedFilters.every(filter => 'keyword' in filter && 'remark' in filter)) {
+      if (!Array.isArray(importedFilters)
+        || !importedFilters.every(filter => isRecord(filter)
+          && typeof filter.keyword === 'string'
+          && typeof filter.remark === 'string'
+          && filter.keyword.trim() !== '')) {
         throw new Error('Invalid file format')
       }
 
+      const normalized = importedFilters.map(filter => ({
+        keyword: filter.keyword.trim(),
+        remark: filter.remark.trim(),
+      }))
+
       if (filterType === 'title') {
-        settings.value.filterByTitle = importedFilters
+        settings.value.filterByTitle = normalized
       }
       else {
-        settings.value.filterByUser = importedFilters
+        settings.value.filterByUser = normalized
       }
       // toast.success(`${filterType} filters imported successfully`)
     }
