@@ -48,6 +48,7 @@ const isPageVisible = ref<boolean>(true) // 页面可见性状态
 const offset = ref<string>('')
 const updateBaseline = ref<string>('')
 const noMoreContent = ref<boolean>(false)
+const liveNoMoreContent = ref<boolean>(false)
 const isInitialized = ref<boolean>(false)
 const { handlePageRefresh, handleReachBottom, canRefreshHomeSubPage } = useBewlyApp()
 
@@ -144,6 +145,7 @@ async function initData() {
   livePage.value = 1
   videoList.value = []
   noMoreContent.value = false
+  liveNoMoreContent.value = false
   recursionDepth.value = 0
 
   if (settings.value.followingTabShowLivestreamingVideos)
@@ -166,6 +168,9 @@ async function getData() {
 }
 
 async function getLiveVideoList() {
+  if (liveNoMoreContent.value)
+    return
+
   // 检查页面是否可见，如果不可见则不进行请求
   if (!isPageVisible.value)
     return
@@ -178,7 +183,7 @@ async function getLiveVideoList() {
     })
 
     if (response.code === -101) {
-      noMoreContent.value = true
+      liveNoMoreContent.value = true
       needToLoginFirst.value = true
       return
     }
@@ -186,7 +191,7 @@ async function getLiveVideoList() {
     if (response.code === 0) {
       // 如果返回的数据少于9条，说明没有更多数据了
       if (response.data.list.length < 9)
-        noMoreContent.value = true
+        liveNoMoreContent.value = true
 
       livePage.value++
 
