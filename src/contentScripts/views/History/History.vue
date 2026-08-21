@@ -103,17 +103,11 @@ function searchHistoryList() {
   })
     .then((res: HistorySearchResult) => {
       if (res.code === 0) {
-        if (historyList.length !== 0 && res.data.list.length < 20) {
-          isLoading.value = false
-          noMoreContent.value = true
-          return
-        }
-
         res.data.list.forEach((item: HistorySearchItem) => {
           historyList.push(item as unknown as HistoryItem)
         })
 
-        noMoreContent.value = false
+        noMoreContent.value = res.data.list.length < 20
       }
     })
     .finally(() => {
