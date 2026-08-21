@@ -10,6 +10,9 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 
 const { t } = useI18n()
 
+type BadgeType = 'number' | 'dot' | 'none'
+type BadgeSelectValue = BadgeType | 'numberWithLikes'
+
 // 顶栏图标角标选项
 const badgeOptions = computed(() => {
   return [
@@ -27,6 +30,25 @@ const badgeOptions = computed(() => {
     },
   ]
 })
+
+const notificationBadgeOptions = computed(() => [
+  {
+    label: t('settings.top_bar_icon_badges_opt.number'),
+    value: 'number',
+  },
+  {
+    label: t('settings.top_bar_icon_badges_opt.number_with_likes'),
+    value: 'numberWithLikes',
+  },
+  {
+    label: t('settings.top_bar_icon_badges_opt.dot'),
+    value: 'dot',
+  },
+  {
+    label: t('settings.top_bar_icon_badges_opt.none'),
+    value: 'none',
+  },
+])
 
 // 顶栏组件配置
 const topBarComponents = computed(() => {
@@ -73,6 +95,12 @@ const topBarComponents = computed(() => {
       icon: 'i-mingcute:notification-line',
       supportsBadge: true,
     },
+    {
+      key: 'topBarSwitcher',
+      i18nKey: 'topbar.top_bar_switcher',
+      icon: 'i-mingcute:refresh-2-line',
+      supportsBadge: false,
+    },
   ]
 })
 
@@ -85,6 +113,7 @@ function resetTopBarComponents() {
       badgeType: component.supportsBadge ? 'number' : 'none',
     }
   })
+  settings.value.showLikeNotificationReminder = false
 }
 
 // 切换组件可见性
@@ -98,10 +127,29 @@ function handleToggleComponent(componentKey: string) {
     config.visible = !config.visible
 }
 
-function setComponentBadgeType(componentKey: string, badgeType: 'number' | 'dot' | 'none') {
+function getComponentBadgeValue(componentKey: string): BadgeSelectValue {
+  const badgeType = getComponentConfig(componentKey)?.badgeType ?? 'number'
+  if (componentKey === 'notifications' && badgeType === 'number' && settings.value.showLikeNotificationReminder)
+    return 'numberWithLikes'
+  return badgeType
+}
+
+function getBadgeOptions(componentKey: string) {
+  return componentKey === 'notifications' ? notificationBadgeOptions.value : badgeOptions.value
+}
+
+function setComponentBadgeType(componentKey: string, badgeValue: BadgeSelectValue) {
   const config = getComponentConfig(componentKey)
-  if (config)
-    config.badgeType = badgeType
+  if (!config)
+    return
+
+  if (componentKey === 'notifications') {
+    settings.value.showLikeNotificationReminder = badgeValue === 'numberWithLikes'
+    config.badgeType = badgeValue === 'numberWithLikes' ? 'number' : badgeValue
+    return
+  }
+
+  config.badgeType = badgeValue as BadgeType
 }
 
 // 补全旧版本缺失的配置，但保留用户现有数组顺序。
@@ -169,10 +217,10 @@ watchEffect(() => {
               <div v-if="component.supportsBadge && getComponentConfig(component.key)?.visible" flex="~ items-center gap-2">
                 {{ $t('settings.badge_type') }}
                 <Select
-                  :model-value="getComponentConfig(component.key)?.badgeType ?? 'number'"
-                  :options="badgeOptions"
+                  :model-value="getComponentBadgeValue(component.key)"
+                  :options="getBadgeOptions(component.key)"
                   w="160px"
-                  @update:model-value="setComponentBadgeType(component.key, $event as 'number' | 'dot' | 'none')"
+                  @update:model-value="setComponentBadgeType(component.key, $event as BadgeSelectValue)"
                 />
               </div>
               <div v-else h="32px" />

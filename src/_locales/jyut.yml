@@ -509,6 +509,7 @@ settings:
   top_bar_icon_badges: 圖標邊位標記
   top_bar_icon_badges_opt:
     number: 數字
+    number_with_likes: 數字（包含點讚）
     dot: 圓點
     none: 唔顯示
   group_topbar_pinned_channels: 頂欄固定分區
@@ -922,6 +923,9 @@ settings:
 auth:
   auth_access_key_first: 整之前記得先授權 BewlyBewly 去用 access key
 topbar:
+  top_bar_switcher: Bilibili/BewlyCat 頂欄切換掣
+  switch_to_bilibili_top_bar: 轉用 Bilibili 頂欄
+  switch_to_bewly_top_bar: 轉用 BewlyCat 頂欄
   sign_in: 登入
   notifications: 通知
   moments: 動向

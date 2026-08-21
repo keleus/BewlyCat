@@ -495,6 +495,7 @@ settings:
   top_bar_icon_badges: Icon badges
   top_bar_icon_badges_opt:
     number: Number
+    number_with_likes: Number (including likes)
     dot: Dot
     none: Do not show
   show_watch_later_badge: Show watch later badge
@@ -1012,6 +1013,9 @@ settings:
 auth:
   auth_access_key_first: Before doing this, authorize BewlyBewly to use the access key.
 topbar:
+  top_bar_switcher: Bilibili/BewlyCat top bar switcher
+  switch_to_bilibili_top_bar: Switch to the Bilibili top bar
+  switch_to_bewly_top_bar: Switch to the BewlyCat top bar
   sign_in: Sign in
   notifications: Notifications
   moments: Moments

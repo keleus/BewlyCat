@@ -547,6 +547,7 @@ settings:
   top_bar_icon_badges: 图标角标
   top_bar_icon_badges_opt:
     number: 数字
+    number_with_likes: 数字（包含点赞）
     dot: 圆点
     none: 不显示
   show_watch_later_badge: 显示稍后再看角标
@@ -925,6 +926,9 @@ settings:
 auth:
   auth_access_key_first: 在这之前请先授权 BewlyCat 使用 access key
 topbar:
+  top_bar_switcher: Bilibili/BewlyCat 顶栏切换器
+  switch_to_bilibili_top_bar: 切换到 Bilibili 顶栏
+  switch_to_bewly_top_bar: 切换到 BewlyCat 顶栏
   sign_in: 登录
   notifications: 通知
   moments: 动态

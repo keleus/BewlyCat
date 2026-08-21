@@ -12,9 +12,11 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { isHomePage, isUserSpacePage, isVideoOrBangumiPage } from '~/utils/main'
 import emitter from '~/utils/mitt'
+import { isComponentVisible } from '~/utils/topBarBadge'
 
 import NotificationsDrawer from './components/NotificationsDrawer.vue'
 import TopBarHeader from './components/TopBarHeader.vue'
+import TopBarModeSwitcher from './components/TopBarModeSwitcher.vue'
 import { useTopBarInteraction } from './composables/useTopBarInteraction'
 
 const { reachTop } = useBewlyApp()
@@ -671,6 +673,13 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
         </KeepAlive>
       </header>
     </Transition>
+
+    <TopBarModeSwitcher
+      v-if="settings.enableTopBar
+        && settings.useOriginalBilibiliTopBar
+        && isComponentVisible('topBarSwitcher')"
+      native
+    />
   </div>
 </template>
 

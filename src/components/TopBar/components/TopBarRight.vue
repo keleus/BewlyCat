@@ -21,6 +21,7 @@ import UploadPop from './pops/UploadPop.vue'
 import UserPanelPop from './pops/UserPanelPop.vue'
 import WatchLaterPop from './pops/WatchLaterPop.vue'
 import TopBarItemEditor from './TopBarItemEditor.vue'
+import TopBarModeSwitcher from './TopBarModeSwitcher.vue'
 
 const emit = defineEmits(['notificationsClick'])
 
@@ -77,6 +78,7 @@ const editableTopBarComponents: EditableTopBarComponent[] = [
   { key: 'notifications', supportsBadge: true },
   { key: 'pinnedChannels', supportsBadge: false },
   { key: 'avatar', supportsBadge: false },
+  { key: 'topBarSwitcher', supportsBadge: false },
 ]
 
 function ensureTopBarComponentsConfig() {
@@ -706,12 +708,22 @@ const shouldShowDivider = computed(() => {
           </div>
         </TopBarItemEditor>
       </div>
+
+      <!-- Bewly / Bilibili top bar switcher: keep it as the final action. -->
+      <TopBarModeSwitcher
+        v-if="isLayoutEditing || isComponentVisible('topBarSwitcher')"
+        :force-white-icon="forceWhiteIcon"
+      />
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 @use "../styles/index.scss";
+
+.others {
+  position: relative;
+}
 
 .top-bar-editing-group {
   display: flex !important;

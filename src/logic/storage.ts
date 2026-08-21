@@ -590,6 +590,7 @@ export const originalSettings: Settings = {
     { key: 'notifications', visible: true, badgeType: 'number' },
     { key: 'pinnedChannels', visible: true, badgeType: 'none' },
     { key: 'avatar', visible: true, badgeType: 'none' },
+    { key: 'topBarSwitcher', visible: true, badgeType: 'none' },
   ],
   topBarPinnedChannels: [],
   openNotificationsPageAsDrawer: true,

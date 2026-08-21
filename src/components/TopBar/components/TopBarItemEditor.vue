@@ -29,6 +29,7 @@ const topBarSettingsTargets: Record<string, string> = {
   upload: 'topbar.upload',
   notifications: 'topbar.notifications',
   avatar: 'settings.topbar_user_menu',
+  topBarSwitcher: 'topbar.top_bar_switcher',
 }
 
 const settingsTargetTitleKey = computed(() => props.settingsTargetTitleKey
