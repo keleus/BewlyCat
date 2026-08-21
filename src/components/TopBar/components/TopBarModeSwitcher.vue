@@ -148,7 +148,7 @@ useMutationObserver(
 }
 
 .top-bar-mode-switcher--native .top-bar-mode-switcher__button {
-  color: #18191c;
+  color: var(--bew-text-1);
   filter: none;
 }
 
