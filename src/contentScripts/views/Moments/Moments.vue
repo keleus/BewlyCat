@@ -4049,11 +4049,6 @@ watch(
               :class="{ 'moments-up-list__fade--visible': canScrollUpListLeft }"
               aria-hidden="true"
             />
-            <span
-              class="moments-up-list__fade moments-up-list__fade--next"
-              :class="{ 'moments-up-list__fade--visible': canScrollUpListRight && !momentsPinnedUsers.length && !isLayoutEditing }"
-              aria-hidden="true"
-            />
             <button
               v-show="canScrollUpListLeft"
               type="button"
@@ -4554,10 +4549,6 @@ watch(
 .moments-up-list__fade--prev {
   left: 0;
   background: linear-gradient(90deg, var(--bew-elevated), transparent);
-}
-.moments-up-list__fade--next {
-  right: 0;
-  background: linear-gradient(270deg, var(--bew-elevated), transparent);
 }
 .moments-up-list__fade--visible {
   opacity: 1;
