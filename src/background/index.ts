@@ -123,16 +123,24 @@ if (isFirefoxBuild) {
         const url = new URL(details.documentUrl)
         const extensionUri = isExtensionUri(details.documentUrl)
         details.requestHeaders = details.requestHeaders || []
-        for (let i = 0; i < details.requestHeaders.length; i++) {
-          if (details.requestHeaders[i].name.toLowerCase() === 'origin' || details.requestHeaders[i].name.toLowerCase() === 'referer')
-            requestHeaders.push({ name: details.requestHeaders[i].name, value: extensionUri ? 'https://www.bilibili.com' : url.origin })
-          else
-            requestHeaders.push(details.requestHeaders[i])
+        const multiAccountCookieHeader = details.requestHeaders.find(
+          (header: browser.WebRequest.HttpHeaders[number]) => header.name.toLowerCase() === 'firefox-multi-account-cookie',
+        )
 
-          if (details.requestHeaders[i].name === 'firefox-multi-account-cookie') {
-            requestHeaders.push({ name: 'cookie', value: details.requestHeaders[i].value })
-          }
+        for (const header of details.requestHeaders) {
+          const headerName = header.name.toLowerCase()
+          if (headerName === 'firefox-multi-account-cookie')
+            continue
+          if (multiAccountCookieHeader && headerName === 'cookie')
+            continue
+          if (headerName === 'origin' || headerName === 'referer')
+            requestHeaders.push({ name: header.name, value: extensionUri ? 'https://www.bilibili.com' : url.origin })
+          else
+            requestHeaders.push(header)
         }
+
+        if (multiAccountCookieHeader)
+          requestHeaders.push({ name: 'cookie', value: multiAccountCookieHeader.value ?? '' })
 
         return { ...details, requestHeaders }
       }

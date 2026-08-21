@@ -114,7 +114,9 @@ function apiListenerFactory(API_MAP: APIMAP) {
       // 获取tab信息以获取正确的cookieStoreId
       const tab = await browser.tabs.get(sender.tab.id)
       const storeId = tab.cookieStoreId || 'default'
-      const cookies = await browser.cookies.getAll({ storeId })
+      // Only copy cookies that the API target would receive naturally. Filtering
+      // by store alone can mix cookies from unrelated permitted Bilibili hosts.
+      const cookies = await browser.cookies.getAll({ url: api.url, storeId })
       return await doRequest(typedMessage, api, undefined, cookies)
     }
 
