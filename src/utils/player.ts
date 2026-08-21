@@ -35,6 +35,13 @@ const _videoClassTag = {
 const monitoredDanmakuSwitches = new WeakSet<HTMLInputElement>()
 const monitoredCaptionControls = new WeakSet<HTMLElement>()
 const monitoredPlaybackRateVideos = new WeakSet<HTMLVideoElement>()
+const VIDEO_RETRY_MAX_ATTEMPTS = 30
+let applyRateRetryCount = 0
+let applyRateRetryTimer: number | undefined
+let rateMonitorRetryCount = 0
+let rateMonitorRetryTimer: number | undefined
+let autoExitRetryCount = 0
+let autoExitRetryTimer: number | undefined
 
 function monitorDanmakuState(danmakuSwitch: HTMLInputElement) {
   if (monitoredDanmakuSwitches.has(danmakuSwitch))
@@ -1117,16 +1124,31 @@ export function resetPlaybackRate() {
 
 // 应用记住的倍速
 export function applyRememberedPlaybackRate() {
+  if (applyRateRetryTimer !== undefined)
+    window.clearTimeout(applyRateRetryTimer)
+  applyRateRetryTimer = undefined
+  applyRateRetryCount = 0
+  tryApplyRememberedPlaybackRate()
+}
+
+function tryApplyRememberedPlaybackRate() {
   if (!settings.value.rememberPlaybackRate) {
+    applyRateRetryCount = 0
     return
   }
 
   const video = getVideoElement()
   if (!video) {
-    // 如果视频元素还没有加载，延迟重试
-    setTimeout(() => applyRememberedPlaybackRate(), 1000)
+    if (applyRateRetryCount >= VIDEO_RETRY_MAX_ATTEMPTS)
+      return
+    applyRateRetryCount++
+    applyRateRetryTimer = window.setTimeout(() => {
+      applyRateRetryTimer = undefined
+      tryApplyRememberedPlaybackRate()
+    }, 1000)
     return
   }
+  applyRateRetryCount = 0
 
   // 确保倍速值在有效范围内
   const savedRate = settings.value.savedPlaybackRate
@@ -1144,16 +1166,31 @@ export function applyRememberedPlaybackRate() {
 
 // 监听播放器倍速变化并记录（监听所有倍速变化，包括播放器UI操作）
 export function startPlaybackRateMonitoring() {
+  if (rateMonitorRetryTimer !== undefined)
+    window.clearTimeout(rateMonitorRetryTimer)
+  rateMonitorRetryTimer = undefined
+  rateMonitorRetryCount = 0
+  tryStartPlaybackRateMonitoring()
+}
+
+function tryStartPlaybackRateMonitoring() {
   if (!settings.value.rememberPlaybackRate) {
+    rateMonitorRetryCount = 0
     return
   }
 
   const video = getVideoElement()
   if (!video) {
-    // 如果视频元素还没有加载，延迟重试
-    setTimeout(() => startPlaybackRateMonitoring(), 1000)
+    if (rateMonitorRetryCount >= VIDEO_RETRY_MAX_ATTEMPTS)
+      return
+    rateMonitorRetryCount++
+    rateMonitorRetryTimer = window.setTimeout(() => {
+      rateMonitorRetryTimer = undefined
+      tryStartPlaybackRateMonitoring()
+    }, 1000)
     return
   }
+  rateMonitorRetryCount = 0
 
   // DOM 属性可能在 B 站重建播放器时被复制到新节点，但事件监听器不会被复制。
   // 使用 WeakSet 按真实节点去重，确保新 video 仍会安装监听器。
@@ -1621,12 +1658,26 @@ function checkAndCancelAutoPlayForRecommendation() {
 
 // 监听视频结束事件并自动退出全屏
 export function startAutoExitFullscreenMonitoring() {
+  if (autoExitRetryTimer !== undefined)
+    window.clearTimeout(autoExitRetryTimer)
+  autoExitRetryTimer = undefined
+  autoExitRetryCount = 0
+  tryStartAutoExitFullscreenMonitoring()
+}
+
+function tryStartAutoExitFullscreenMonitoring() {
   const video = getVideoElement()
   if (!video) {
-    // 如果视频元素还没有加载，延迟重试
-    setTimeout(() => startAutoExitFullscreenMonitoring(), 1000)
+    if (autoExitRetryCount >= VIDEO_RETRY_MAX_ATTEMPTS)
+      return
+    autoExitRetryCount++
+    autoExitRetryTimer = window.setTimeout(() => {
+      autoExitRetryTimer = undefined
+      tryStartAutoExitFullscreenMonitoring()
+    }, 1000)
     return
   }
+  autoExitRetryCount = 0
 
   // 避免重复添加监听器
   if (video.hasAttribute('bewly-auto-exit-listener')) {

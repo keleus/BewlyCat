@@ -26,6 +26,7 @@ let manualPlayContextKey: string | null = null
 const originalEpisodeOrders = new Map<HTMLElement, { priority: string, value: string }>()
 const originalEpisodeDraggable = new Map<HTMLElement, boolean>()
 const visuallyOrderedParents = new Set<HTMLElement>()
+const RANDOM_PLAY_INIT_MAX_ATTEMPTS = 100
 
 interface EpisodeEntry {
   element: HTMLElement
@@ -1207,6 +1208,7 @@ export function initRandomPlayOnVideoPage(): void {
     return
 
   const generation = randomPlayInitGeneration
+  let attempts = 0
 
   // 等待页面元素加载
   const checkAndInit = () => {
@@ -1222,7 +1224,7 @@ export function initRandomPlayOnVideoPage(): void {
         isRandomPlayInitialized = true
       }
     }
-    else {
+    else if (++attempts < RANDOM_PLAY_INIT_MAX_ATTEMPTS) {
       // 如果元素还没有加载，继续等待
       setTimeout(checkAndInit, 100)
     }
