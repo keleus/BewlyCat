@@ -46,6 +46,8 @@ const APP_TOKEN_REFRESH_ENDPOINTS = [
   'https://passport.bilibili.com/api/v3/oauth2/refresh_token',
   'https://passport.bilibili.com/api/v2/oauth2/refresh_token',
 ]
+const APP_TOKEN_REFRESH_BUFFER = 10 * 60 * 1000
+let appTokenRefreshPromise: Promise<boolean> | null = null
 
 export function saveAppAuthTokens(payload: PollLoginTokenPayload) {
   const tokenInfo = payload.token_info || {}
@@ -144,6 +146,43 @@ export async function refreshAppAccessToken(): Promise<boolean> {
   }
 
   return false
+}
+
+export async function ensureFreshAppAccessToken(bufferMs = APP_TOKEN_REFRESH_BUFFER): Promise<boolean> {
+  const tokens = appAuthTokens.value
+  if (!tokens.accessToken)
+    return false
+
+  const now = Date.now()
+  if (!tokens.refreshToken) {
+    return !tokens.accessTokenExpiresAt || tokens.accessTokenExpiresAt > now
+  }
+
+  if (tokens.refreshTokenExpiresAt && tokens.refreshTokenExpiresAt <= now) {
+    resetAppAuthTokens()
+    return false
+  }
+
+  // Legacy tokens may not have expiry metadata. Preserve their previous
+  // behavior and let the actual APP request determine whether they still work.
+  if (!tokens.accessTokenExpiresAt || tokens.accessTokenExpiresAt > now + bufferMs)
+    return true
+
+  if (!appTokenRefreshPromise) {
+    appTokenRefreshPromise = refreshAppAccessToken()
+      .finally(() => {
+        appTokenRefreshPromise = null
+      })
+  }
+
+  const refreshed = await appTokenRefreshPromise
+  if (refreshed)
+    return true
+
+  // A transient refresh failure should not block a token that has not actually
+  // expired yet; the user request can still proceed with the remaining lifetime.
+  return appAuthTokens.value.accessTokenExpiresAt == null
+    || appAuthTokens.value.accessTokenExpiresAt > Date.now()
 }
 
 export function hasValidAppAuthTokens(bufferMs = 5 * 60 * 1000) {

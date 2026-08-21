@@ -15,7 +15,7 @@ import type { forYouResult, Item as VideoItem } from '~/models/video/forYou'
 import type { AppVideoElement, VideoCardDisplayData, VideoElement } from '~/stores/forYouStore'
 import { useForYouStore } from '~/stores/forYouStore'
 import api from '~/utils/api'
-import { TVAppKey } from '~/utils/authProvider'
+import { ensureFreshAppAccessToken, TVAppKey } from '~/utils/authProvider'
 import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { getCookie } from '~/utils/main'
@@ -97,39 +97,20 @@ interface RecommendRequestLogContext {
   startedAt: number
 }
 
-function startRecommendRequestLog(
+function createRecommendRequestLogContext(
   mode: string,
   requestType: WebRecommendRequestType,
 ): RecommendRequestLogContext {
-  const context = {
+  return {
     id: ++recommendRequestLogId,
     mode,
     requestType,
     startedAt: performance.now(),
   }
-  console.log(`${HOME_LOAD_LOG_PREFIX} 插件开始请求推荐接口`, {
-    time: new Date().toLocaleString(),
-    requestId: context.id,
-    mode,
-    requestType,
-  })
-  return context
 }
 
 function getRequestDuration(context: RecommendRequestLogContext): number {
   return Math.round((performance.now() - context.startedAt) * 100) / 100
-}
-
-function logRecommendRequestSuccess(
-  context: RecommendRequestLogContext,
-) {
-  console.log(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求成功`, {
-    time: new Date().toLocaleString(),
-    requestId: context.id,
-    mode: context.mode,
-    requestType: context.requestType,
-    durationMs: getRequestDuration(context),
-  })
 }
 
 function logRecommendRequestFailure(
@@ -174,17 +155,6 @@ const noMoreContent = ref<boolean>(false)
 const activatedAppVideo = ref<AppVideoItem | null>()
 const showDislikeDialog = ref<boolean>(false)
 const hasInitializedData = ref<boolean>(false)
-
-function logHomeLoadComplete(source: 'api' | 'cache', startedAt: number) {
-  console.log(`${HOME_LOAD_LOG_PREFIX} 加载完成`, {
-    time: new Date().toLocaleString(),
-    source,
-    mode: settings.value.recommendationMode,
-    failed: requestFailed.value,
-    needToLogin: needToLoginFirst.value,
-    durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
-  })
-}
 
 const selectedDislikeReason = ref<number>(1)
 
@@ -336,8 +306,23 @@ function isDocumentVisible(): boolean {
   return document.visibilityState === 'visible'
 }
 
+const initTimers = new Set<number>()
+let initialDataStarted = false
+
+function scheduleInitTask(task: () => void, delay: number) {
+  const timer = window.setTimeout(() => {
+    initTimers.delete(timer)
+    task()
+  }, delay)
+  initTimers.add(timer)
+}
+
+function clearInitTimers() {
+  initTimers.forEach(timer => window.clearTimeout(timer))
+  initTimers.clear()
+}
+
 onMounted(() => {
-  const loadStartedAt = performance.now()
   const preservedModeHasItems = settings.value.recommendationMode === 'app'
     ? forYouStore.state.appVideoList.length > 0
     : forYouStore.state.videoList.length > 0
@@ -373,8 +358,6 @@ onMounted(() => {
     // 避免 KeepAlive 中的活动列表与 Pinia 同时各持有一整份推荐数据。
     forYouStore.resetState()
 
-    nextTick(() => logHomeLoadComplete('cache', loadStartedAt))
-
     // 确保撤销按钮不显示（因为这是状态恢复，不是刷新操作）
     hasBackState.value = false
     hasForwardState.value = false
@@ -404,10 +387,10 @@ onMounted(() => {
     }
 
     // 延迟初始化页面交互功能，避免立即触发数据加载
-    setTimeout(() => {
+    scheduleInitTask(() => {
       initPageAction()
       // 在初始化页面交互功能后，再次确保按钮状态正确
-      setTimeout(() => {
+      scheduleInitTask(() => {
         if (settings.value.preserveForYouState) {
           undoForwardState.value = UndoForwardState.Hidden
         }
@@ -416,7 +399,8 @@ onMounted(() => {
   }
   else {
     // 首次加载或未启用状态保留时，初始化数据
-    setTimeout(() => {
+    scheduleInitTask(() => {
+      initialDataStarted = true
       initData()
     }, 200)
     initPageAction()
@@ -425,9 +409,18 @@ onMounted(() => {
 
 onActivated(() => {
   initPageAction()
+  if (!hasInitializedData.value && !initialDataStarted && initTimers.size === 0) {
+    scheduleInitTask(() => {
+      initialDataStarted = true
+      initData()
+    }, 200)
+  }
 })
 
+onDeactivated(clearInitTimers)
+
 onBeforeUnmount(() => {
+  clearInitTimers()
   // 如果启用状态保留，保存当前状态到store
   if (settings.value.preserveForYouState) {
     // 获取当前滚动位置
@@ -824,9 +817,7 @@ watch(() => Boolean(appAuthTokens.value.accessToken), () => {
 })
 
 async function initData() {
-  const loadStartedAt = performance.now()
   requestVersion++
-  const version = requestVersion
   // 当前组件即将持有最新列表，旧的跨卸载快照不再有保留价值。
   forYouStore.resetState()
   // 用户主动刷新必须重新获得一次完整请求机会；成功后才重置递增冷却等级。
@@ -848,10 +839,6 @@ async function initData() {
   }
   finally {
     hasInitializedData.value = true
-    if (version === requestVersion) {
-      await nextTick()
-      logHomeLoadComplete('api', loadStartedAt)
-    }
   }
 }
 
@@ -897,7 +884,13 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
   }
   catch (error) {
     if (version === requestVersion) {
-      console.error(`${HOME_LOAD_LOG_PREFIX} 推荐加载流程异常`, error)
+      console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败`, {
+        time: new Date().toLocaleString(),
+        mode: settings.value.recommendationMode,
+        requestType: webRequestType,
+        phase: 'load-flow',
+        ...getRecommendErrorLogDetails(error),
+      })
       requestFailed.value = true
       noMoreContent.value = true
     }
@@ -1171,7 +1164,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         : api.video.getRecommendVideos
 
       for (let attempt = 1; attempt <= WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY; attempt++) {
-        requestLog = startRecommendRequestLog(
+        requestLog = createRecommendRequestLogContext(
           `${identity}${phase === 'fallback' ? '(fallback)' : ''}`,
           requestType,
         )
@@ -1364,7 +1357,6 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         // 没有加载到新内容，增加空加载计数器
         consecutiveEmptyLoads.value++
       }
-      logRecommendRequestSuccess(requestLog)
       canFillViewport = true
     }
     else if (response.code === 62011) {
@@ -1442,6 +1434,20 @@ async function getAppRecommendVideos(
     return
   }
 
+  if (!await ensureFreshAppAccessToken()) {
+    console.error(`${HOME_LOAD_LOG_PREFIX} 推荐接口请求失败`, {
+      time: new Date().toLocaleString(),
+      mode: recommendationMode,
+      requestType,
+      reason: 'access token 已过期且刷新失败',
+    })
+    needToLoginFirst.value = true
+    return
+  }
+
+  if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
+    return
+
   const batchesToLoad = APP_LOAD_BATCHES.value
   const beforeLoadCount = appVideoList.value.length
   const seenCandidateIds = new Set(
@@ -1461,7 +1467,7 @@ async function getAppRecommendVideos(
       let response: AppForYouResult | undefined
 
       for (let attempt = 1; attempt <= APP_REQUEST_MAX_ATTEMPTS; attempt++) {
-        requestLog = startRecommendRequestLog(recommendationMode, requestType)
+        requestLog = createRecommendRequestLogContext(recommendationMode, requestType)
         try {
           response = await api.video.getAppRecommendVideos({
             access_key: appAuthTokens.value.accessToken,
@@ -1557,7 +1563,6 @@ async function getAppRecommendVideos(
             displayData: transformAppVideo(item),
           })
         })
-        logRecommendRequestSuccess(requestLog)
       }
       else if (response.code === 62011) {
         logRecommendRequestFailure(requestLog, {

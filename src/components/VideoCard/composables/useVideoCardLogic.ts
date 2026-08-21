@@ -7,7 +7,7 @@ import type { VideoInfo } from '~/models/video/videoInfo'
 import type { VideoPreviewResult } from '~/models/video/videoPreview'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
-import { getTvSign, TVAppKey } from '~/utils/authProvider'
+import { ensureFreshAppAccessToken, getTvSign, TVAppKey } from '~/utils/authProvider'
 import { calcCurrentTime, numFormatter, parseStatNumber } from '~/utils/dataFormatter'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import { getCSRF, removeHttpFromUrl } from '~/utils/main'
@@ -431,10 +431,13 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     showVideoOptions.value = true
   }
 
-  function handleUndo() {
+  async function handleUndo() {
     const video = props.value.video
 
     if (props.value.type === 'appRcmd' && video) {
+      if (!await ensureFreshAppAccessToken())
+        return
+
       const params = createAppFeedFeedbackParams(video, selectedDislikeOpt.value)
 
       api.video.undoDislikeVideo({
