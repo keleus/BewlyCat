@@ -557,8 +557,10 @@ async function handlePageChange(page: number) {
     )
   }
 
-  if (!success || !lastResponse.value?.data)
+  if (!success || !lastResponse.value?.data) {
+    isPageChanging.value = false
     return
+  }
 
   const rawData = lastResponse.value.data
 
