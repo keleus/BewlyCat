@@ -74,6 +74,7 @@ $top-bar-retract: calc(-1 * (var(--bew-top-bar-height) + var(--bew-space-4)));
   --uno: "after:absolute after:top--30px after:left-1/2 after:-z-1";
   --uno: "after:transform after:-translate-x-1/2";
   border-radius: var(--bew-popover-radius);
+  backdrop-filter: var(--bew-filter-glass-1);
 }
 
 .logo.activated {

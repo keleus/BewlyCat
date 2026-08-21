@@ -243,7 +243,6 @@ defineExpose({
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);"
     h="[calc(100vh-100px)]" max-h-500px overflow="hidden"
     bg="$bew-elevated"
     w="450px"

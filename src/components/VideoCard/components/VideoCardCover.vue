@@ -689,7 +689,7 @@ onBeforeUnmount(() => {
           text-white rounded="1/2" shadow="$bew-shadow-1"
           border="1 $bew-theme-color"
           grid="~ place-content-center"
-          text="xl" fw-bold
+          class="video-card-rank-badge" text="xl"
         >
           {{ video?.rank }}
         </div>
@@ -707,7 +707,7 @@ onBeforeUnmount(() => {
         <!-- Old layout: Video Duration (right bottom) -->
         <div
           v-if="layout === 'old' && settings.showVideoCardDuration && (video?.duration || video?.durationStr)"
-          class="video-card-overlay-transition"
+          class="video-card-overlay-transition video-card-live-badge"
           pos="absolute bottom-0 right-0"
           z="2"
           p="x-2 y-1"
@@ -744,7 +744,7 @@ onBeforeUnmount(() => {
           v-if="video?.liveStatus === 1"
           class="video-card-overlay-transition"
           :class="layout !== 'old' ? 'group-hover:opacity-0' : { 'opacity-0': shouldHideOverlayElements }"
-          pos="absolute left-0 top-0" bg="$bew-theme-color" text="xs white" fw-bold
+          pos="absolute left-0 top-0" bg="$bew-theme-color" text="xs white"
           p="x-2 y-1" m-1 inline-block rounded="$bew-radius"
         >
           LIVE
@@ -838,6 +838,11 @@ onBeforeUnmount(() => {
 </template>
 
 <style lang="scss" scoped>
+.video-card-rank-badge,
+.video-card-live-badge {
+  font-weight: var(--bew-font-weight-bold);
+}
+
 .video-card-overlay-transition {
   transition: opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }

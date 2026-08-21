@@ -14,8 +14,7 @@ withDefaults(defineProps<{
 <template>
   <div class="b-settings-item" :data-settings-title="title" py-4>
     <div
-      class="b-settings-item-row" :class="`right-width-${rightWidth}`" flex="~ gap-4" justify-between items-center
-      text-base
+      class="b-settings-item-row settings-item-content" :class="`right-width-${rightWidth}`" flex="~ gap-4" justify-between items-center
     >
       <div class="left-content" flex-1 min-w-0>
         <div>
@@ -28,7 +27,8 @@ withDefaults(defineProps<{
         </div>
 
         <div
-          text="sm $bew-text-2"
+          class="settings-item-desc"
+          text="$bew-text-2"
           break-words
           :style="{ marginTop: $slots.desc || desc ? '0.25rem' : '0' }"
         >
@@ -50,6 +50,16 @@ withDefaults(defineProps<{
 </template>
 
 <style lang="scss" scoped>
+.settings-item-content {
+  font-size: var(--bew-font-size-body);
+  line-height: var(--bew-line-height-body);
+}
+
+.settings-item-desc {
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+}
+
 .right-width-auto {
   .left-content {
     --uno: "w-auto flex-1 min-w-0";

@@ -846,15 +846,30 @@ onUnmounted(() => {
   }
 
   &-left {
-    --uno: "left-0 top-0 w-14px h-full hover:w-60px";
+    --uno: "left-0 top-0 h-full";
+    width: var(--bew-edge-hit-area);
+
+    &:hover {
+      width: var(--bew-edge-hover-area);
+    }
   }
 
   &-right {
-    --uno: "right-0 top-0 w-14px h-full hover:w-60px";
+    --uno: "right-0 top-0 h-full";
+    width: var(--bew-edge-hit-area);
+
+    &:hover {
+      width: var(--bew-edge-hover-area);
+    }
   }
 
   &-bottom {
-    --uno: "left-0 bottom-0 w-full h-14px hover-h-60px";
+    --uno: "left-0 bottom-0 w-full";
+    height: var(--bew-edge-hit-area);
+
+    &:hover {
+      height: var(--bew-edge-hover-area);
+    }
   }
 }
 
@@ -930,11 +945,11 @@ onUnmounted(() => {
   }
 
   .divider {
-    --uno: "my-1 mx-3 h-3px bg-$bew-border-color rounded-full";
+    --uno: "my-1 mx-3 h-2px bg-$bew-border-color rounded-full";
   }
 
   &.bottom .divider {
-    --uno: "w-3px h-auto my-3 mx-1";
+    --uno: "w-2px h-auto my-3 mx-1";
   }
 
   .dock-content-inner {

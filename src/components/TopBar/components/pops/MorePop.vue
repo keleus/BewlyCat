@@ -21,7 +21,6 @@ const list = computed((): { name: string, url: string, icon: string, bewlyKey?: 
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);"
     max-h-264px important-overflow-y-auto
     w="180px"
     bg="$bew-elevated"

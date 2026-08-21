@@ -98,6 +98,22 @@ img:not(.pswp__img) {
     line-height: var(--bew-line-height-heading);
   }
 
+  .bew-section-heading {
+    font-size: var(--bew-font-size-heading);
+    font-weight: var(--bew-font-weight-medium);
+    line-height: var(--bew-line-height-heading);
+  }
+
+  .bew-card-title-text {
+    font-size: var(--bew-font-size-title);
+    line-height: var(--bew-line-height-title);
+  }
+
+  .bew-body-text {
+    font-size: var(--bew-font-size-body);
+    line-height: var(--bew-line-height-body);
+  }
+
   // Baseline keyboard feedback for legacy/raw controls. Component-specific
   // focus styles may refine this ring but must not remove it without replacement.
   :where(

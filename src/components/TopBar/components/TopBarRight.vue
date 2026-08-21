@@ -299,7 +299,7 @@ const shouldShowDivider = computed(() => {
   >
     <div
       class="others"
-      flex="~ items-center gap-1" px-5px
+      flex="~ items-center gap-1" px-1
       text="$bew-text-1"
       :style="{ height: 'var(--bew-control-height)' }"
     >
@@ -688,7 +688,7 @@ const shouldShowDivider = computed(() => {
                 background: `url(${browser.runtime.getURL('/assets/big-vip.svg')}) center / contain no-repeat`,
               }"
               w="28%" h="28%" z-1
-              pos="absolute bottom-18px right-11px" duration-300
+              pos="absolute bottom-16px right-12px" duration-300
             />
 
             <Transition name="slide-in">

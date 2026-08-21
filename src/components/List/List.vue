@@ -19,7 +19,8 @@ withDefaults(defineProps<{
 <style lang="scss" scoped>
 .b-list {
   &.highlight-first :deep(.b-list-item:first-child) {
-    --uno: "!bg-$bew-fill-2 !font-bold";
+    --uno: "!bg-$bew-fill-2";
+    font-weight: var(--bew-font-weight-bold);
   }
 
   &.pin-top :deep(.b-list-item:first-child) {

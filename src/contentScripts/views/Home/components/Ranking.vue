@@ -339,7 +339,7 @@ defineExpose({ initData })
 }
 
 .hide {
-  --uno: "h-[calc(100vh-70)] translate-y--70px";
+  --uno: "h-[calc(100vh-70px)] translate-y--70px";
 }
 
 /* Bangumi Grid 布局 */

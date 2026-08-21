@@ -273,7 +273,8 @@ onMounted(() => {
                 <div
                   v-if="localSettings.locallyUploadedWallpaper"
                   class="opacity-0 group-hover:opacity-100" duration-300
-                  pos="absolute top-4px right-4px" z-1 text="14px" flex="~ gap-1"
+                  pos="absolute top-1 right-1" z-1 flex="~ gap-1"
+                  :style="{ fontSize: 'var(--bew-font-size-control)', lineHeight: 'var(--bew-line-height-control)' }"
                 >
                   <button
                     style="backdrop-filter: var(--bew-filter-glass-1);"

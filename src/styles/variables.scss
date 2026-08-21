@@ -124,6 +124,9 @@
   --bew-control-background: var(--bew-elevated);
   --bew-control-background-white: color-mix(in oklab, var(--bew-elevated-solid), transparent 80%);
   --bew-control-border-color: transparent;
+  // Pointer-entry zones intentionally extend beyond the visible Dock/side bar.
+  --bew-edge-hit-area: 14px;
+  --bew-edge-hover-area: 60px;
   // #endregion
 
   // Search and logo stay one step larger (still full capsule/circle).

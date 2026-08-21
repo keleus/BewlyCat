@@ -110,7 +110,7 @@ const { isDark } = useDark()
             w-full
             pos="absolute bottom-0" z-1
             text="white shadow"
-            p-2 fw-bold h-150px flex items-end
+            p-2 h-150px flex items-end
             bg="gradient-to-b gradient-from-transparent gradient-to-[rgba(0,0,0,.6)]"
             rounded-b="$bew-media-radius"
             :style="{
@@ -247,6 +247,10 @@ const { isDark } = useDark()
 </style>
 
 <style lang="scss" scoped>
+.bangumi-rank {
+  font-weight: var(--bew-font-weight-bold);
+}
+
 .bew-title-auto {
   font-size: clamp(var(--bew-font-size-control), 5cqw, var(--bew-font-size-heading));
   line-height: var(--bew-line-height-heading);
