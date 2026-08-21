@@ -90,6 +90,11 @@ function isNearLine(x: number, y: number, threshold = 8): boolean {
   return false
 }
 
+function getCssColor(variable: string, fallback: string): string {
+  const target = canvasRef.value ?? document.documentElement
+  return getComputedStyle(target).getPropertyValue(variable).trim() || fallback
+}
+
 // Draw the curve editor
 function draw() {
   const canvas = canvasRef.value
@@ -112,7 +117,7 @@ function draw() {
   const drawHeight = props.height - padding * 2
 
   // Draw background grid
-  ctx.strokeStyle = 'var(--bew-border-color, rgba(128, 128, 128, 0.2))'
+  ctx.strokeStyle = getCssColor('--bew-border-color', 'rgba(128, 128, 128, 0.2)')
   ctx.lineWidth = 1
 
   // Vertical grid lines (position)
@@ -134,7 +139,7 @@ function draw() {
   }
 
   // Draw border
-  ctx.strokeStyle = 'var(--bew-border-color, rgba(128, 128, 128, 0.5))'
+  ctx.strokeStyle = getCssColor('--bew-border-color', 'rgba(128, 128, 128, 0.5)')
   ctx.lineWidth = 1.5
   ctx.strokeRect(padding, padding, drawWidth, drawHeight)
 
@@ -160,7 +165,7 @@ function draw() {
 
   // Draw curve line (thicker for easier dragging)
   ctx.beginPath()
-  ctx.strokeStyle = 'var(--bew-theme-color, #00a1d6)'
+  ctx.strokeStyle = getCssColor('--bew-theme-color', '#00a1d6')
   ctx.lineWidth = 3
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
@@ -190,7 +195,7 @@ function draw() {
     ctx.arc(pos.x, pos.y, isSelected ? 7 : 5, 0, Math.PI * 2)
 
     if (isSelected) {
-      ctx.fillStyle = 'var(--bew-theme-color, #00a1d6)'
+      ctx.fillStyle = getCssColor('--bew-theme-color', '#00a1d6')
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
       ctx.fill()
@@ -205,7 +210,7 @@ function draw() {
     }
     else {
       ctx.fillStyle = '#fff'
-      ctx.strokeStyle = 'var(--bew-theme-color, #00a1d6)'
+      ctx.strokeStyle = getCssColor('--bew-theme-color', '#00a1d6')
       ctx.lineWidth = 2
       ctx.fill()
       ctx.stroke()
@@ -213,7 +218,7 @@ function draw() {
   })
 
   // Draw labels
-  ctx.fillStyle = 'var(--bew-text-2, rgba(128, 128, 128, 0.8))'
+  ctx.fillStyle = getCssColor('--bew-text-2', 'rgba(128, 128, 128, 0.8)')
   ctx.font = '10px sans-serif'
   ctx.textAlign = 'center'
   ctx.fillText('0%', padding, props.height - 2)
