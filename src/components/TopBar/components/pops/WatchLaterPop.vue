@@ -91,7 +91,6 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);"
     h="[calc(100vh-100px)]" max-h-500px important-overflow-y-overlay
     bg="$bew-elevated"
     w="380px"
@@ -307,23 +306,3 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
     </main>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.tab {
-  --uno: "relative text-$bew-text-2";
-
-  &::after {
-    --uno: "absolute bottom-0 left-0 w-full h-12px bg-$bew-theme-color opacity-0 transform scale-x-0 -z-1";
-    --uno: "transition-colors duration-200";
-    content: "";
-  }
-}
-
-.tab-selected {
-  --uno: "font-bold text-$bew-text-1";
-
-  &::after {
-    --uno: "scale-x-80 opacity-40";
-  }
-}
-</style>

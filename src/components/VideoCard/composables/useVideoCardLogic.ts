@@ -10,6 +10,7 @@ import api from '~/utils/api'
 import { ensureFreshAppAccessToken, getTvSign, TVAppKey } from '~/utils/authProvider'
 import { calcCurrentTime, numFormatter, parseStatNumber } from '~/utils/dataFormatter'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
+import { i18n } from '~/utils/i18n'
 import { getCSRF, removeHttpFromUrl } from '~/utils/main'
 import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -63,7 +64,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const showVideoOptions = ref<boolean>(false)
   const videoOptionsFloatingStyles = ref<CSSProperties>({})
   const removed = ref<boolean>(false)
-  const moreBtnRef = ref<HTMLDivElement | null>(null)
+  const moreBtnRef = ref<HTMLButtonElement | null>(null)
   const contextMenuRef = ref<HTMLDivElement | null>(null)
   const selectedDislikeOpt = ref<AppFeedFeedbackSelection>()
   const videoCurrentTime = ref<number | null>(null)
@@ -74,7 +75,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const mouseEnterTimeOut = ref<number | null>(null)
   const mouseLeaveTimeOut = ref<number | null>(null)
   const previewVideoUrl = ref<string>('')
-  const contentVisibility = ref<'auto' | 'visible'>('auto')
   const videoElement = ref<HTMLVideoElement | null>(null)
   const cardRootRef = ref<HTMLElement | null>(null)
   const isDisposed = ref<boolean>(false) // 跟踪组件是否已卸载
@@ -288,7 +288,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     if (video.epid && !video.aid && !video.bvid) {
       const ids = await resolvePgcEpisodeVideoIds(video.epid)
       if (!ids) {
-        toast.error('无法获取该剧集的稍后再看信息')
+        toast.error(i18n.global.t('video_card.episode_watch_later_info_failed'))
         return
       }
       resolvedWatchLaterAid.value = ids.aid
@@ -342,8 +342,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       mouseLeaveTimeOut.value = null
     }
 
-    // fix #789
-    contentVisibility.value = 'visible'
     if (mouseEnterTimeOut.value)
       clearTimeout(mouseEnterTimeOut.value)
     const previewEnabled = props.value.showPreview && settings.value.enableVideoPreview
@@ -375,7 +373,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       if (isPreviewFullscreen.value)
         return
 
-      contentVisibility.value = 'auto'
       isHover.value = false
     }, 100) // Short delay to debounce boundary hover
   }
@@ -388,7 +385,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
         clearTimeout(mouseLeaveTimeOut.value)
         mouseLeaveTimeOut.value = null
       }
-      contentVisibility.value = 'visible'
       isHover.value = true
       return
     }
@@ -396,7 +392,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     // A suppressed mouseleave is not fired again after fullscreen exits. Reconcile
     // the actual pointer position so an off-card preview can release its resources.
     if (!cardRootRef.value?.matches(':hover')) {
-      contentVisibility.value = 'auto'
       isHover.value = false
     }
   }
@@ -474,7 +469,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     isHover,
     isPreviewFullscreen,
     previewVideoUrl,
-    contentVisibility,
     videoElement,
     cardRootRef,
 

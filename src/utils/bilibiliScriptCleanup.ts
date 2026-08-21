@@ -25,8 +25,6 @@ function cleanupGlobalObjects() {
         }
       }
     })
-
-    console.log('[BewlyBewly] Cleaned up Bilibili global objects')
   }
   catch (e) {
     console.warn('[BewlyBewly] Failed to cleanup global objects:', e)
@@ -38,13 +36,9 @@ function cleanupGlobalObjects() {
  * 在清空 DOM 之前调用，减少 B 站脚本的性能影响
  */
 export function cleanupBilibiliScripts() {
-  console.log('[BewlyBewly] Starting gentle Bilibili script cleanup...')
-
   try {
     // 清理全局对象
     cleanupGlobalObjects()
-
-    console.log('[BewlyBewly] Gentle cleanup completed')
   }
   catch (e) {
     console.error('[BewlyBewly] Error during script cleanup:', e)

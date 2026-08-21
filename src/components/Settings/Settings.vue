@@ -358,29 +358,6 @@ function highlightSearchTarget(target: HTMLElement) {
   searchTargetHighlightTimer = window.setTimeout(clearSearchTargetHighlight, 2400)
 }
 
-function expandSearchTarget(target: HTMLElement) {
-  const collapsedControls: HTMLElement[] = []
-
-  if (target.matches('[aria-expanded="false"]'))
-    collapsedControls.push(target)
-
-  let ancestor: HTMLElement | null = target
-  while (ancestor && ancestor !== settingsWindow.value) {
-    const control = ancestor.matches('.b-settings-item-group')
-      ? ancestor.querySelector<HTMLElement>(':scope > .group-heading[aria-expanded="false"]')
-      : ancestor.matches('section')
-        ? ancestor.querySelector<HTMLElement>(':scope > .settings-section-heading[aria-expanded="false"]')
-        : undefined
-
-    if (control)
-      collapsedControls.push(control)
-
-    ancestor = ancestor.parentElement
-  }
-
-  Array.from(new Set(collapsedControls)).reverse().forEach(control => control.click())
-}
-
 function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: number, attempts = 0) {
   if (!expectedTitle || navigationId !== searchNavigationId || attempts > 30)
     return
@@ -392,7 +369,6 @@ function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: n
     )
 
   if (target) {
-    expandSearchTarget(target)
     nextTick(() => {
       window.requestAnimationFrame(() => {
         target.scrollIntoView({ behavior: 'smooth', block: 'center' })

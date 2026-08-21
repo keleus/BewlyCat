@@ -1519,15 +1519,10 @@ else if (shouldInitializeContentScript) {
   const isMomentDetailPage = /https?:\/\/t\.bilibili\.com\/\d+/.test(currentUrl)
     || /https?:\/\/(?:www\.)?bilibili\.com\/opus\/\d+/.test(currentUrl)
   if (isInIframe() && (isNotificationPage() || isVideoOrBangumiPage() || isMomentDetailPage)) {
-    const pageType = isNotificationPage() ? 'message' : isVideoOrBangumiPage() ? 'video' : 'moment-detail'
-    console.log(`[Bewly IFrame] ESC listener initialized for ${pageType} page`)
-
     window.addEventListener('keydown', (e: KeyboardEvent) => {
     // 只处理ESC键
       if (e.key !== 'Escape' && e.code !== 'Escape')
         return
-
-      console.log('[Bewly IFrame] ESC key pressed in iframe')
 
       // 检查当前焦点元素
       const activeElement = document.activeElement
@@ -1539,13 +1534,9 @@ else if (shouldInitializeContentScript) {
         || tagName === 'textarea'
         || activeElement?.hasAttribute('contenteditable')
 
-      console.log('[Bewly IFrame] Active element:', tagName, 'isInput:', isInputElement)
-
       // 如果焦点在输入框内，不处理ESC键，让用户正常使用
-      if (isInputElement) {
-        console.log('[Bewly IFrame] Focus in input element, ignoring ESC')
+      if (isInputElement)
         return
-      }
 
       // 视频页面：检查视频播放器是否处于网页全屏或宽屏状态
       if (isVideoOrBangumiPage()) {
@@ -1554,17 +1545,12 @@ else if (shouldInitializeContentScript) {
         const isWebFull = webFullBtn?.classList.contains('bpx-state-entered')
         const isWide = wideBtn?.classList.contains('bpx-state-entered')
 
-        console.log('[Bewly IFrame] Video state - webFull:', isWebFull, 'wide:', isWide)
-
         // 如果视频处于网页全屏或宽屏状态，让播放器自己处理ESC
-        if (isWebFull || isWide) {
-          console.log('[Bewly IFrame] Video in fullscreen/wide mode, letting player handle ESC')
+        if (isWebFull || isWide)
           return
-        }
       }
 
       // 焦点不在输入框，通知父窗口关闭抽屉
-      console.log('[Bewly IFrame] Sending close request to parent')
       e.preventDefault()
       e.stopPropagation()
 

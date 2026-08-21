@@ -26,7 +26,6 @@ const otherLinks = computed(() => {
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);"
     mt-2
     h="fit" max-h="[calc(100vh-120px)]"
     w="fit"
@@ -43,8 +42,8 @@ const otherLinks = computed(() => {
       w-inherit
     >
       <ul
-        v-for="(item, index) in [0, 10, 20, 30]"
-        :key="index"
+        v-for="item in [0, 10, 20, 30]"
+        :key="item"
         class="link-list"
       >
         <li
@@ -63,13 +62,9 @@ const otherLinks = computed(() => {
           </ALink>
         </li>
       </ul>
-      <ul
-        v-for="(item, index) in [0]"
-        :key="index"
-        class="link-list"
-      >
+      <ul class="link-list">
         <li
-          v-for="otherLink in otherLinks.slice(item, item + 10)"
+          v-for="otherLink in otherLinks.slice(0, 10)"
           :key="otherLink.name"
           class="link-item group"
         >

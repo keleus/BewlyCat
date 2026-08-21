@@ -126,28 +126,6 @@ export function clearAllLocalWallpapers(): void {
 }
 
 /**
- * 检查并清理过期的本地壁纸（可选功能）
- * @param maxAge 最大保存时间（毫秒），默认30天
- */
-export function cleanupExpiredWallpapers(maxAge: number = 30 * 24 * 60 * 60 * 1000): void {
-  const currentWallpapers = localWallpapers.value || {}
-  const now = Date.now()
-  let cleaned = 0
-
-  Object.keys(currentWallpapers).forEach((id) => {
-    const wallpaper = currentWallpapers[id]
-    if (now - wallpaper.timestamp > maxAge) {
-      delete currentWallpapers[id]
-      cleaned++
-    }
-  })
-
-  if (cleaned > 0) {
-    localWallpapers.value = currentWallpapers
-  }
-}
-
-/**
  * 解析本地壁纸URL，获取实际的base64数据
  * @param url 壁纸URL（可能是local-wallpaper:id格式或普通URL）
  * @returns 实际的显示URL

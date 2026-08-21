@@ -38,11 +38,6 @@ export function registerShortcutHandler(id: string, handler: ShortcutHandler): b
       return false
     }
 
-    // 如果已存在处理器，先注销
-    if (shortcutHandlers[id]) {
-      // 覆盖现有处理器
-    }
-
     shortcutHandlers[id] = handler
     return true
   }
@@ -491,14 +486,14 @@ function generateKeyCombo(e: KeyboardEvent): string {
 
   // 处理主按键
   let mainKey = e.key
+  if (mainKey === ' ') {
+    mainKey = 'Space'
+  }
   // 对于单字符按键转为大写
-  if (mainKey.length === 1) {
+  else if (mainKey.length === 1) {
     mainKey = mainKey.toUpperCase()
   }
   // 特殊按键处理
-  else if (mainKey === ' ') {
-    mainKey = 'Space'
-  }
   else if (mainKey === 'ArrowUp') {
     mainKey = '↑'
   }

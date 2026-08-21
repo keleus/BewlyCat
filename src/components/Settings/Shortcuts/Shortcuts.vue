@@ -154,8 +154,6 @@ function startEditShortcut(id: ConfigurableShortcutId) {
 }
 
 function saveShortcutKey(id: ConfigurableShortcutId, newKey: string) {
-  console.log('Saving shortcut key:', id, newKey)
-
   // 确保settings.value.shortcuts存在
   if (!settings.value.shortcuts) {
     settings.value.shortcuts = {}
@@ -163,19 +161,7 @@ function saveShortcutKey(id: ConfigurableShortcutId, newKey: string) {
 
   // 如果快捷键设置不存在，创建一个新的
   if (!settings.value.shortcuts[id]) {
-    // 查找默认配置
-    const shortcutDef = configurableShortcutsGroups
-      .flatMap(group => group.shortcuts)
-      .find(def => def.id === id)
-
-    if (shortcutDef) {
-      // 创建基本设置
-      settings.value.shortcuts[id] = { key: newKey, enabled: true }
-    }
-    else {
-      // 如果找不到定义，创建基本设置
-      settings.value.shortcuts[id] = { key: newKey, enabled: true }
-    }
+    settings.value.shortcuts[id] = { key: newKey, enabled: true }
   }
   else {
     // 更新现有设置
@@ -224,14 +210,14 @@ function handleKeyDown(event: KeyboardEvent, id: ConfigurableShortcutId) {
 
   // 处理主按键
   let mainKey = event.key
+  if (mainKey === ' ') {
+    mainKey = 'Space'
+  }
   // 对于单字符按键转为大写
-  if (mainKey.length === 1) {
+  else if (mainKey.length === 1) {
     mainKey = mainKey.toUpperCase()
   }
   // 特殊按键处理
-  else if (mainKey === ' ') {
-    mainKey = 'Space'
-  }
   else if (mainKey === 'ArrowUp') {
     mainKey = '↑'
   }
@@ -382,7 +368,7 @@ function resetAllShortcuts() {
                 <div class="shortcut-actions flex gap-1">
                   <button
                     v-if="editingShortcutId !== shortcutDef.id"
-                    class="edit-btn p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                    class="edit-btn p-1 rounded hover:bg-$bew-fill-2"
                     :title="t('settings.shortcuts.item.edit_key')"
                     @click="startEditShortcut(shortcutDef.id)"
                   >
@@ -390,14 +376,14 @@ function resetAllShortcuts() {
                   </button>
                   <button
                     v-if="editingShortcutId === shortcutDef.id"
-                    class="cancel-btn p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                    class="cancel-btn p-1 rounded hover:bg-$bew-fill-2"
                     :title="t('settings.shortcuts.item.cancel_edit')"
                     @click="cancelEdit"
                   >
                     <i i-mingcute:close-line />
                   </button>
                   <button
-                    class="reset-btn p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                    class="reset-btn p-1 rounded hover:bg-$bew-fill-2"
                     :title="t('settings.shortcuts.item.reset_default')"
                     @click="resetToDefault(shortcutDef)"
                   >
@@ -480,20 +466,11 @@ function resetAllShortcuts() {
   user-select: none;
   outline: none;
   &:focus {
-    outline: 2px solid var(--bew-primary);
+    outline: 2px solid var(--bew-theme-color);
   }
   &:focus-visible {
-    outline: 2px solid var(--bew-primary);
+    outline: 2px solid var(--bew-theme-color);
   }
-}
-
-.specific-config select,
-.specific-config input[type="radio"] {
-  color: var(--bew-text-1); // Ensure text color matches theme
-}
-.specific-config option {
-  background-color: var(--bew-bg); // Ensure dropdown options have background
-  color: var(--bew-text-1);
 }
 
 // Ensure buttons in shortcut actions are vertically aligned

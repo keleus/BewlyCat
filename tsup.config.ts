@@ -10,7 +10,6 @@ const outDir = isFirefox ? 'extension-firefox/dist' : isSafari ? 'extension-safa
 export default defineConfig(() => ({
   entry: {
     'background/index': './src/background/index.ts',
-    ...(isDev ? { mv3client: './scripts/client.ts' } : {}),
   },
   async onSuccess() {
     // fs.copySync(path.resolve(__dirname, './src/inject/index.js'), path.resolve(__dirname, `./${outDir}/inject/index.js`))

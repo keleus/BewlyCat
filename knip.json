@@ -2,13 +2,13 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "src/contentScripts/index.ts",
+    "src/inject/index.ts",
     "src/options/main.ts",
     "src/popup/main.ts",
     "src/components/**",
     "scripts/*.ts",
     "*.config.*"
   ],
-  "ignore": ["src/components/Settings/**", "src/inject/**"],
   "ignoreDependencies": [
     "@iconify/json",
     "uno.css"

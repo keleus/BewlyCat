@@ -228,7 +228,6 @@ async function remountIframe(url: string) {
 }
 
 onMounted(() => {
-  console.log('[IframeDrawer] onMounted called')
   originUrl.value = window.location.href
   history.pushState(null, '', props.url)
   show.value = true
@@ -236,7 +235,6 @@ onMounted(() => {
   currentUrl.value = props.url
   renderIframe.value = true
   setActiveDrawer(DrawerType.IframeDrawer) // 设置为当前活跃抽屉
-  console.log('[IframeDrawer] show.value:', show.value, 'activeDrawer:', activeDrawer.value)
   if (!isPageScrollLocked.value) {
     lockPageScroll()
     isPageScrollLocked.value = true
@@ -296,7 +294,6 @@ async function handleClose() {
     return
 
   isClosing.value = true
-  console.log('[IframeDrawer] handleClose called')
   if (delayCloseTimer.value) {
     clearTimeout(delayCloseTimer.value)
   }
@@ -307,7 +304,6 @@ async function handleClose() {
   show.value = false
   headerShow.value = false
   setActiveDrawer(DrawerType.None) // 清除活跃抽屉状态
-  console.log('[IframeDrawer] show.value:', show.value, 'activeDrawer:', activeDrawer.value)
   await releaseIframeResources()
   delayCloseTimer.value = setTimeout(() => {
     delayCloseTimer.value = null
@@ -379,24 +375,13 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.key !== 'Escape' && e.code !== 'Escape')
     return
 
-  console.log('[IframeDrawer] ESC key pressed!')
-  console.log('[IframeDrawer] show.value:', show.value)
-  console.log('[IframeDrawer] activeDrawer.value:', activeDrawer.value)
-  console.log('[IframeDrawer] DrawerType.IframeDrawer:', DrawerType.IframeDrawer)
-  console.log('[IframeDrawer] Match:', activeDrawer.value === DrawerType.IframeDrawer)
-
   // Only handle when this drawer is the active drawer
-  if (activeDrawer.value !== DrawerType.IframeDrawer) {
-    console.log('[IframeDrawer] Not active drawer, ignoring ESC')
+  if (activeDrawer.value !== DrawerType.IframeDrawer)
     return
-  }
-
-  console.log('[IframeDrawer] Processing ESC key')
   e.preventDefault()
   e.stopPropagation()
 
   if (settings.value.closeDrawerWithoutPressingEscAgain) {
-    console.log('[IframeDrawer] closeDrawerWithoutPressingEscAgain = true, closing immediately')
     if (escPressedTimer.value) {
       clearTimeout(escPressedTimer.value)
       escPressedTimer.value = null
@@ -404,16 +389,12 @@ function handleKeydown(e: KeyboardEvent) {
     handleClose()
     return
   }
-  console.log('[IframeDrawer] disableEscPress:', disableEscPress.value)
-  console.log('[IframeDrawer] isEscPressed:', isEscPressed.value)
   if (disableEscPress.value)
     return
   if (isEscPressed.value) {
-    console.log('[IframeDrawer] ESC pressed twice, closing')
     handleClose()
   }
   else {
-    console.log('[IframeDrawer] First ESC press, waiting for second press')
     isEscPressed.value = true
     if (escPressedTimer.value) {
       clearTimeout(escPressedTimer.value)
@@ -454,16 +435,13 @@ function handleWindowMessage({ data, source }: MessageEvent) {
     case 'BEWLY_DRAWER_CLOSE_REQUEST':
       // 来自 iframe 的关闭请求
       if (data.source === 'iframe' && activeDrawer.value === DrawerType.IframeDrawer) {
-        console.log('[IframeDrawer] Received close request from iframe')
         if (settings.value.closeDrawerWithoutPressingEscAgain) {
           handleClose()
         }
         else if (isEscPressed.value) {
-          console.log('[IframeDrawer] Second ESC from iframe, closing')
           handleClose()
         }
         else {
-          console.log('[IframeDrawer] First ESC from iframe, waiting for second press')
           isEscPressed.value = true
           if (escPressedTimer.value)
             clearTimeout(escPressedTimer.value)

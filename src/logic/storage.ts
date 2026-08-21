@@ -1164,12 +1164,6 @@ export const watchLaterLayout = useStorageLocal<WatchLaterLayout>(
   { mergeDefaults: true, writeDefaults: false },
 )
 
-export const gridColumns = useStorageLocal<GridColumnsConfig>(
-  'gridColumns',
-  { ...defaultGridColumns },
-  { mergeDefaults: true, writeDefaults: false },
-)
-
 export const sidePanel = useStorageLocal<{
   home: boolean
 }>('sidePanel', {

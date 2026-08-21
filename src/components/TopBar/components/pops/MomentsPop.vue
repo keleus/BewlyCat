@@ -129,7 +129,7 @@ defineExpose({
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);" h="[calc(100vh-100px)]" max-h-500px
+    h="[calc(100vh-100px)]" max-h-500px
     important-overflow-y-overlay
     bg="$bew-elevated"
     w="380px"
@@ -201,7 +201,7 @@ defineExpose({
       <TransitionGroup name="list">
         <ALink
           v-for="(moment, index) in topBarStore.moments"
-          :key="index"
+          :key="moment.id_str"
           :href="moment.link"
           type="topBar"
           class="group bew-content-card"
@@ -364,6 +364,7 @@ defineExpose({
 <style lang="scss" scoped>
 .tab {
   --uno: "relative text-$bew-text-2";
+  font-weight: var(--bew-font-weight-semibold);
 
   &::after {
     --uno: "absolute bottom-0 left-0 w-full h-12px bg-$bew-theme-color opacity-0 transform scale-x-0 -z-1";
@@ -373,7 +374,7 @@ defineExpose({
 }
 
 .tab-selected {
-  --uno: "font-bold text-$bew-text-1";
+  --uno: "text-$bew-text-1";
 
   &::after {
     --uno: "scale-x-80 opacity-40";

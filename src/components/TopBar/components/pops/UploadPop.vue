@@ -36,7 +36,6 @@ const list = computed(() => {
 
 <template>
   <div
-    style="backdrop-filter: var(--bew-filter-glass-1);"
     bg="$bew-elevated"
     min-w="120px"
     shadow="$bew-shadow-3"
@@ -46,8 +45,8 @@ const list = computed(() => {
     data-key="upload"
   >
     <a
-      v-for="(item, index) in list"
-      :key="index"
+      v-for="item in list"
+      :key="item.url"
       class="upload-item"
       :href="item.url"
       target="_blank"

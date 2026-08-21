@@ -161,7 +161,6 @@ export function cleanupExpiredCache(currentCacheTimeHours?: number): void {
 
   if (cleaned > 0) {
     wallpaperCache.value = cache
-    console.log(`Cleaned up ${cleaned} expired wallpaper cache entries`)
   }
 }
 

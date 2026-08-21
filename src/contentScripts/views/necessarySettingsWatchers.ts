@@ -293,8 +293,6 @@ export function setupNecessarySettingsWatchers() {
     { immediate: true },
   )
 
-  let styleEL: HTMLStyleElement | null = null
-  let bewlyStyleEL: HTMLStyleElement | null = null
   watch(
     [() => localSettings.value.customizeCSS, () => localSettings.value.customizeCSSContent],
     () => {
@@ -310,11 +308,11 @@ export function setupNecessarySettingsWatchers() {
       })
 
       if (localSettings.value.customizeCSS) {
-        styleEL = injectCSS(localSettings.value.customizeCSSContent)
+        const styleEL = injectCSS(localSettings.value.customizeCSSContent)
         styleEL.setAttribute('data-bewly-customizeCSS', '')
 
         if (bewlyShadow) {
-          bewlyStyleEL = injectCSS(localSettings.value.customizeCSSContent, bewlyShadow)
+          const bewlyStyleEL = injectCSS(localSettings.value.customizeCSSContent, bewlyShadow)
           bewlyStyleEL.setAttribute('data-bewly-customizeCSS', '')
         }
       }

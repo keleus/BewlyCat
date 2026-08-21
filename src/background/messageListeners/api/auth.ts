@@ -20,39 +20,6 @@ const API_AUTH = {
     },
     afterHandle: AHS.J_D,
   },
-  getLoginQRCode: {
-    url: 'https://passport.bilibili.com/x/passport-tv-login/qrcode/auth_code',
-    _fetch: {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-      },
-    },
-    params: {
-      appkey: '4409e2ce8ffd12b8',
-      local_id: '0',
-      ts: '0',
-      sign: 'e134154ed6add881d28fbdf68653cd9c',
-    },
-    afterHandle: AHS.J_D,
-  },
-  qrCodeLogin: {
-    url: 'https://passport.bilibili.com/x/passport-tv-login/qrcode/auth_code',
-    _fetch: {
-      method: 'post',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-      },
-    },
-    params: {
-      appkey: '4409e2ce8ffd12b8',
-      auth_code: '',
-      local_id: '0',
-      ts: '0',
-      sign: 'e134154ed6add881d28fbdf68653cd9c',
-    },
-    afterHandle: AHS.J_D,
-  },
 } satisfies APIMAP
 
 export default API_AUTH
