@@ -1,3 +1,4 @@
+import { watch } from 'vue'
 import browser from 'webextension-polyfill'
 
 import { i18n } from '~/utils/i18n'
@@ -94,6 +95,7 @@ const NATIVE_PLAYER_MODE_BUTTON_SELECTOR = [
 let state: BewlyWidescreenState | null = null
 let loadingOverlay: HTMLElement | null = null
 let loadingStyleEl: HTMLStyleElement | null = null
+let loadingLocaleWatchStop: (() => void) | undefined
 let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
 let loadingExitButtonTimer: ReturnType<typeof setTimeout> | undefined
 let loadingPlaybackCleanup: (() => void) | undefined
@@ -780,15 +782,22 @@ function showWidescreenLoading() {
   }
 
   const label = document.createElement('span')
-  label.textContent = t('widescreen.loading')
   content.appendChild(label)
 
   const exitButton = document.createElement('button')
   exitButton.type = 'button'
   exitButton.className = 'bewly-widescreen-loading-exit'
-  exitButton.textContent = t('widescreen.exit_overlay')
   exitButton.hidden = true
   exitButton.addEventListener('click', () => exitBewlyWidescreen())
+
+  // 遮罩可能在设置水合、App 挂载之前创建，文案需跟随 locale 变化刷新。
+  const syncLoadingTexts = () => {
+    label.textContent = t('widescreen.loading')
+    exitButton.textContent = t('widescreen.exit_overlay')
+  }
+  syncLoadingTexts()
+  loadingLocaleWatchStop?.()
+  loadingLocaleWatchStop = watch(i18n.global.locale, syncLoadingTexts)
 
   overlay.append(content, exitButton)
   const mountTarget = document.body ?? document.documentElement
@@ -837,6 +846,8 @@ function dismissWidescreenLoadingForPlaying() {
 function removeWidescreenLoading(immediate = false) {
   loadingPlaybackCleanup?.()
   loadingEscapeCleanup?.()
+  loadingLocaleWatchStop?.()
+  loadingLocaleWatchStop = undefined
 
   if (loadingExitButtonTimer) {
     clearTimeout(loadingExitButtonTimer)

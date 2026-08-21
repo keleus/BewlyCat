@@ -15,6 +15,7 @@ import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, pre
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
+import { i18n } from '~/utils/i18n'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
@@ -230,6 +231,15 @@ else if (shouldInitializeContentScript) {
   let urlChangeCheckQueued = false
   let playerModeResumeQueued = false
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
+
+  // 设置水合后立即同步 i18n 语言。宽屏遮罩等轻 DOM 元素在 App 挂载前就会
+  // 用 t() 渲染一次性文案，若等到 App.vue 里的语言 watcher 才切换 locale，
+  // 这些元素会以默认英文显示。Promise 回调按注册顺序执行，需先于下方
+  // applyDefaultPlayerMode 的回调注册。
+  void settingsReady.then(() => {
+    if (settings.value.language)
+      i18n.global.locale.value = settings.value.language
+  })
 
   void settingsReady.then(() => {
     playerModeSettingsReady = true
