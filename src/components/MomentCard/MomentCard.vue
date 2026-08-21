@@ -572,8 +572,9 @@ function handleAdditionalClick(event: MouseEvent) {
             v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
             type="button"
             class="moment-card__watch-later"
-            :class="{ 'is-added': isWatchLaterAdded(moment) }"
-            :disabled="isWatchLaterLoading(moment)"
+            :class="{ 'is-added': isWatchLaterAdded(moment), 'is-loading': isWatchLaterLoading(moment) }"
+            :aria-busy="isWatchLaterLoading(moment) || undefined"
+            :aria-disabled="isWatchLaterLoading(moment) || undefined"
             :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
             :aria-pressed="isWatchLaterAdded(moment)"
             :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
@@ -602,8 +603,9 @@ function handleAdditionalClick(event: MouseEvent) {
             v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
             type="button"
             class="moment-card__watch-later"
-            :class="{ 'is-added': isWatchLaterAdded(moment) }"
-            :disabled="isWatchLaterLoading(moment)"
+            :class="{ 'is-added': isWatchLaterAdded(moment), 'is-loading': isWatchLaterLoading(moment) }"
+            :aria-busy="isWatchLaterLoading(moment) || undefined"
+            :aria-disabled="isWatchLaterLoading(moment) || undefined"
             :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
             :aria-pressed="isWatchLaterAdded(moment)"
             :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
@@ -860,8 +862,9 @@ function handleAdditionalClick(event: MouseEvent) {
           v-if="isReservationAdditional"
           type="button"
           class="moment-card__additional-action"
-          :class="{ 'is-reserved': moment.additional.isReserved }"
-          :disabled="isReservationLoading"
+          :class="{ 'is-reserved': moment.additional.isReserved, 'is-loading': isReservationLoading }"
+          :aria-busy="isReservationLoading || undefined"
+          :aria-disabled="isReservationLoading || undefined"
           :aria-label="reservationActionLabel"
           :aria-pressed="Boolean(moment.additional.isReserved)"
           @click.stop="emit('toggleReservation', moment)"
@@ -940,19 +943,23 @@ function handleAdditionalClick(event: MouseEvent) {
           <span i-tabler-users />
           {{ moment.livePopularity || t('moment_card.live_now') }}
         </span>
+        <!-- 请求期间不设 disabled：Firefox 会把 disabled 控件变成事件黑洞，光标停在按钮上时页面无法滚动 #1101 -->
         <button
           type="button"
           class="moment-card__likes"
-          :class="{ 'is-liked': moment.isLiked, 'is-unavailable': moment.isLikeDisabled }"
-          :disabled="isLikeLoading || moment.isLikeDisabled"
+          :class="{ 'is-liked': moment.isLiked, 'is-unavailable': moment.isLikeDisabled, 'is-loading': isLikeLoading }"
+          :disabled="moment.isLikeDisabled"
+          :aria-busy="isLikeLoading || undefined"
+          :aria-disabled="isLikeLoading || moment.isLikeDisabled || undefined"
           :aria-label="moment.isLikeDisabled ? t('moment_card.like_unsupported') : moment.isLiked ? t('moment_card.unlike') : t('moment_card.like')"
           :aria-pressed="moment.isLiked"
           :title="moment.isLikeDisabled ? t('moment_card.like_unsupported') : moment.isLiked ? t('moment_card.unlike') : t('moment_card.like')"
           @click.stop="emit('toggleLike', moment)"
           @keydown.enter.stop
         >
-          <span v-if="moment.isLiked" i-tabler-heart-filled />
-          <span v-else i-tabler-heart />
+          <span v-if="isLikeLoading" i-svg-spinners:ring-resize aria-hidden="true" />
+          <span v-else-if="moment.isLiked" i-tabler-heart-filled aria-hidden="true" />
+          <span v-else i-tabler-heart aria-hidden="true" />
           {{ formatCount(moment.likeCount) }}
         </button>
       </footer>
@@ -1126,8 +1133,8 @@ function handleAdditionalClick(event: MouseEvent) {
   outline-offset: 2px;
 }
 
-.moment-card__watch-later:disabled,
-.moment-card__watch-later.is-disabled {
+.moment-card__watch-later.is-disabled,
+.moment-card__watch-later.is-loading {
   cursor: wait;
   opacity: 0.72;
 }
@@ -1400,7 +1407,7 @@ function handleAdditionalClick(event: MouseEvent) {
   outline-offset: 2px;
 }
 
-.moment-card__additional-action:disabled {
+.moment-card__additional-action.is-loading {
   cursor: wait;
   opacity: 0.65;
 }
@@ -1445,7 +1452,7 @@ function handleAdditionalClick(event: MouseEvent) {
   color: var(--bew-theme-color);
 }
 
-.moment-card__likes:disabled {
+.moment-card__likes.is-loading {
   cursor: wait;
   opacity: 0.65;
 }
@@ -2080,11 +2087,6 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__footer .moment-card__likes:active {
   transform: none;
-}
-
-.moment-card__footer .moment-card__likes:disabled {
-  cursor: wait;
-  opacity: 0.65;
 }
 
 @container (max-width: 359px) {
