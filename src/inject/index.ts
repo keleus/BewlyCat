@@ -1,11 +1,12 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
 import { isSearchResultApiPath } from '~/constants/searchApi'
-import type { Settings } from '~/logic/storage'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isElectron } from '~/utils/main'
+import type { PageSettingsPayload } from '~/utils/pageSettingsProtocol'
+import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
 
 // 存储当前设置状态
-let currentSettings: Settings | null = null
+let currentSettings: PageSettingsPayload | null = null
 let settingsReady = false
 let preventMobileRedirectEnabled = false
 let resolveSettingsReady: (() => void) | null = null
@@ -3657,32 +3658,36 @@ else if (shouldInitializePageScript) {
     if (event.source !== window)
       return
 
+    if (!event.data || typeof event.data !== 'object' || Array.isArray(event.data))
+      return
+
     const { type, data } = event.data
 
     // 处理来自插件环境的消息
     if (type === 'BEWLY_SETTINGS_UPDATE') {
-    // 更新设置
-      if (data) {
-        const isFirstTime = !settingsReady
-        currentSettings = data
-        preventMobileRedirectEnabled = data.preventMobileRedirect === true
-        settingsReady = true
-        refreshCommentReplyTrees()
-        if (getCommentReplyTreeMode() === null)
-          clearCommentReplyDeepLinkSettlement()
-        // 设置就绪后 B 站可能才开始 #reply 定位/展开
-        if (getCommentReplyDeepLinkId())
-          scheduleCommentReplyDeepLinkSettlement(isFirstTime ? 'immediate' : 'hash')
-        resolveSettingsReady?.()
-        resolveSettingsReady = null
-      }
+      const pageSettings = createPageSettingsPayload(data)
+      if (!pageSettings)
+        return
+
+      const isFirstTime = !settingsReady
+      currentSettings = pageSettings
+      preventMobileRedirectEnabled = pageSettings.preventMobileRedirect
+      settingsReady = true
+      refreshCommentReplyTrees()
+      if (getCommentReplyTreeMode() === null)
+        clearCommentReplyDeepLinkSettlement()
+      // 设置就绪后 B 站可能才开始 #reply 定位/展开
+      if (getCommentReplyDeepLinkId())
+        scheduleCommentReplyDeepLinkSettlement(isFirstTime ? 'immediate' : 'hash')
+      resolveSettingsReady?.()
+      resolveSettingsReady = null
     }
   })
 
   // 请求初始设置
   window.postMessage({
     type: 'BEWLY_REQUEST_SETTINGS',
-  }, '*')
+  }, window.location.origin)
 
   function getFetchInputUrl(input: RequestInfo | URL): string {
     if (typeof input === 'string')

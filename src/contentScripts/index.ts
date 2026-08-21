@@ -19,6 +19,7 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
+import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, applyRememberedPlaybackRate, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, startPlaybackRateMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyPreservedOrDefaultCustomPlay, applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
 import { getPluginSearchResultsUrl, navigateToPluginSearchResults, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
@@ -1285,13 +1286,15 @@ else if (shouldInitializeContentScript) {
   }
 
   // 发送设置更新到网页环境
-  function sendSettingsToPage(settings: any) {
-  // 将响应式对象转换为普通对象
-    const serializedSettings = JSON.parse(JSON.stringify(settings))
+  function sendSettingsToPage(value: unknown) {
+    const pageSettings = createPageSettingsPayload(value)
+    if (!pageSettings)
+      return
+
     window.postMessage({
       type: 'BEWLY_SETTINGS_UPDATE',
-      data: serializedSettings,
-    }, '*')
+      data: pageSettings,
+    }, window.location.origin)
   }
 
   void settingsReady.then(() => {
@@ -1393,6 +1396,9 @@ else if (shouldInitializeContentScript) {
     if (event.source !== window)
       return
 
+    if (!event.data || typeof event.data !== 'object' || Array.isArray(event.data))
+      return
+
     const { type } = event.data
 
     if (type === 'BEWLY_REQUEST_SETTINGS') {
@@ -1406,6 +1412,9 @@ else if (shouldInitializeContentScript) {
   // 监听来自父页面的黑暗模式切换消息（用于iframe跨域场景）
   window.addEventListener('message', (event) => {
     if (event.source !== window.parent)
+      return
+
+    if (!event.data || typeof event.data !== 'object' || Array.isArray(event.data))
       return
 
     const { type, isDark, darkModeBaseColor, useOriginalBilibiliTopBar, enableTopBar } = event.data

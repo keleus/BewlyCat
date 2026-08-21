@@ -28,6 +28,8 @@ const isIframeDisplayReady = ref(false)
 const delayCloseTimer = ref<NodeJS.Timeout | null>(null)
 const revealIframeTimer = ref<NodeJS.Timeout | null>(null)
 const isPageScrollLocked = ref(false)
+const isEscPressed = ref<boolean>(false)
+const escPressedTimer = ref<NodeJS.Timeout | null>(null)
 
 // 计算属性：只有在显示iframe时才设置src，避免隐藏时提前加载
 const src = computed(() => showIframe.value ? currentUrl.value : undefined)
@@ -73,6 +75,48 @@ function handleIframeLoad() {
     return
 
   isIframeLoaded.value = true
+}
+
+function handleDrawerCloseRequestMessage(event: MessageEvent) {
+  const iframe = iframeRef.value
+  if (!show.value || !iframe?.contentWindow || event.source !== iframe.contentWindow)
+    return
+
+  const iframeSrc = iframe.getAttribute('src')
+  if (!iframeSrc || iframeSrc === 'about:blank')
+    return
+
+  try {
+    if (event.origin !== new URL(iframeSrc, window.location.href).origin)
+      return
+  }
+  catch {
+    return
+  }
+
+  if (event.data?.type !== 'BEWLY_DRAWER_CLOSE_REQUEST' || event.data?.source !== 'iframe')
+    return
+
+  console.log('[NotificationsDrawer] Received close request from iframe')
+
+  // 根据设置决定是立即关闭还是需要二次确认
+  if (settings.value.closeDrawerWithoutPressingEscAgain) {
+    console.log('[NotificationsDrawer] Closing drawer immediately (from iframe)')
+    handleClose()
+  }
+  else if (isEscPressed.value) {
+    console.log('[NotificationsDrawer] Second ESC from iframe, closing')
+    handleClose()
+  }
+  else {
+    console.log('[NotificationsDrawer] First ESC from iframe, waiting for second press')
+    isEscPressed.value = true
+    if (escPressedTimer.value)
+      clearTimeout(escPressedTimer.value)
+    escPressedTimer.value = setTimeout(() => {
+      isEscPressed.value = false
+    }, 1300)
+  }
 }
 
 // 监听黑暗模式变化
@@ -202,8 +246,6 @@ function handleOpenInNewTab() {
   }
 }
 
-const isEscPressed = ref<boolean>(false)
-const escPressedTimer = ref<NodeJS.Timeout | null>(null)
 const disableEscPress = ref<boolean>(false)
 const showEscHint = ref<boolean>(false)
 
@@ -264,34 +306,7 @@ onMounted(() => {
   document.addEventListener('keydown', handleKeydown, true) // also listen on document
 
   // 监听来自iframe的关闭请求
-  window.addEventListener('message', (event) => {
-    if (event.data?.type === 'BEWLY_DRAWER_CLOSE_REQUEST' && event.data?.source === 'iframe') {
-      console.log('[NotificationsDrawer] Received close request from iframe')
-
-      // 根据设置决定是立即关闭还是需要二次确认
-      if (settings.value.closeDrawerWithoutPressingEscAgain) {
-        console.log('[NotificationsDrawer] Closing drawer immediately (from iframe)')
-        handleClose()
-      }
-      else {
-        // 模拟ESC按下逻辑
-        if (isEscPressed.value) {
-          console.log('[NotificationsDrawer] Second ESC from iframe, closing')
-          handleClose()
-        }
-        else {
-          console.log('[NotificationsDrawer] First ESC from iframe, waiting for second press')
-          isEscPressed.value = true
-          if (escPressedTimer.value) {
-            clearTimeout(escPressedTimer.value)
-          }
-          escPressedTimer.value = setTimeout(() => {
-            isEscPressed.value = false
-          }, 1300)
-        }
-      }
-    }
-  })
+  window.addEventListener('message', handleDrawerCloseRequestMessage)
 
   // Monitor focus changes - if iframe gets focus, show hint
   document.addEventListener('focusin', (e) => {
@@ -345,6 +360,7 @@ onActivated(() => {
   document.removeEventListener('keydown', handleKeydown, true)
   window.addEventListener('keydown', handleKeydown, true)
   document.addEventListener('keydown', handleKeydown, true)
+  window.addEventListener('message', handleDrawerCloseRequestMessage)
   handleOpen()
 })
 
@@ -352,6 +368,7 @@ onBeforeUnmount(() => {
   console.log('[NotificationsDrawer] onBeforeUnmount - removing keydown listener')
   window.removeEventListener('keydown', handleKeydown, true)
   document.removeEventListener('keydown', handleKeydown, true)
+  window.removeEventListener('message', handleDrawerCloseRequestMessage)
   clearRevealIframeTimer()
   if (isPageScrollLocked.value) {
     unlockPageScroll()
@@ -364,6 +381,7 @@ onDeactivated(() => {
   console.log('[NotificationsDrawer] onDeactivated - removing keydown listener')
   window.removeEventListener('keydown', handleKeydown, true)
   document.removeEventListener('keydown', handleKeydown, true)
+  window.removeEventListener('message', handleDrawerCloseRequestMessage)
   clearRevealIframeTimer()
   if (isPageScrollLocked.value) {
     unlockPageScroll()

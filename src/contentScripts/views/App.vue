@@ -1024,7 +1024,14 @@ function setActiveDrawer(drawer: DrawerType) {
 const hideUIForIframePhotoViewer = ref<boolean>(false)
 
 const iframePageRef = ref()
-useEventListener(window, 'message', ({ data }) => {
+useEventListener(window, 'message', ({ data, source }) => {
+  if (typeof data !== 'string')
+    return
+
+  const iframe = iframePageRef.value?.$el?.querySelector('iframe')
+  if (!iframe || source !== iframe.contentWindow)
+    return
+
   switch (data) {
     case IFRAME_PAGE_SWITCH_BEWLY:
       {
@@ -1060,6 +1067,9 @@ useEventListener(window, 'message', ({ data, source }) => {
 useEventListener(window, 'message', ({ data, source }) => {
   // 只处理来自父窗口的消息
   if (source !== window.parent)
+    return
+
+  if (!data || typeof data !== 'object' || Array.isArray(data))
     return
 
   const { type, isDark, darkModeBaseColor } = data

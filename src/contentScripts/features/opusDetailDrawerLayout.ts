@@ -2526,6 +2526,9 @@ export function disposeOpusDetailDrawerLayout() {
 }
 
 function handleOpusDisposeMessage(event: MessageEvent) {
+  if (event.source !== window.parent)
+    return
+
   if (event.data?.type === 'BEWLY_OPUS_DISPOSE')
     disposeOpusDetailDrawerLayout()
 }
