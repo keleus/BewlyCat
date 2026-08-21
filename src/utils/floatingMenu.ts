@@ -12,14 +12,21 @@ export function computeFloatingMenuPosition(
   const availableWidth = Math.max(0, viewportWidth - inset * 2)
   const availableHeight = Math.max(0, viewportHeight - inset * 2)
   const width = Math.min(240, availableWidth)
-  const maxHeight = Math.min(406, availableHeight)
+  const preferredMaxHeight = Math.min(406, availableHeight)
   const left = clamp(anchor.right - width, inset, Math.max(inset, viewportWidth - width - inset))
 
-  const belowTop = anchor.bottom + gap
-  const hasEnoughSpaceBelow = viewportHeight - inset - belowTop >= maxHeight
-  const top = hasEnoughSpaceBelow
-    ? belowTop
-    : Math.max(inset, anchor.top - gap - maxHeight)
+  const spaceBelow = Math.max(0, viewportHeight - inset - anchor.bottom - gap)
+  const spaceAbove = Math.max(0, anchor.top - gap - inset)
+  const openBelow = spaceBelow >= preferredMaxHeight || spaceBelow >= spaceAbove
+  const maxHeight = Math.min(preferredMaxHeight, openBelow ? spaceBelow : spaceAbove)
 
-  return { left, top, width, maxHeight }
+  // Anchor upward-opening menus by their bottom edge. Their actual height varies
+  // with the visible option count, so subtracting the maximum height here would
+  // leave an increasingly large gap as options are hidden.
+  const top = openBelow
+    ? anchor.bottom + gap
+    : anchor.top - gap
+  const transform = openBelow ? undefined : 'translateY(-100%)'
+
+  return { left, top, width, maxHeight, transform }
 }

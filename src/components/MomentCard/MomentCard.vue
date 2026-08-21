@@ -263,6 +263,7 @@ function handleMoreBtnClick(event: Event) {
     left: `${position.left}px`,
     width: `${position.width}px`,
     maxHeight: `${position.maxHeight}px`,
+    transform: position.transform,
   }
   showVideoOptions.value = true
 }
