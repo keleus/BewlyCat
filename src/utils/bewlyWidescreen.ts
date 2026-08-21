@@ -68,6 +68,7 @@ const SIDEBAR_REFRESH_DELAY = 800
 const SIDEBAR_TOGGLE_IDLE_DELAY = 1000
 const BILIBILI_ACTION_ANIMATION_HUE = 196
 const COMMENT_ROOT_ID_SELECTOR = '#comment-module, #comment-body, #commentapp'
+const COMMENT_TIME_SELECTOR = '.reply-time, .sub-reply-time, .reply-time-location'
 const COMMENT_NESTED_UI_SELECTOR = '.reply-item, .sub-reply-item, bili-comment-renderer'
 // Light-DOM markers only. Modern bili-comments mounts most UI in shadow roots,
 // so readiness must not require these descendants to exist.
@@ -2258,18 +2259,21 @@ function rgbToHsl({ r, g, b }: { r: number, g: number, b: number }) {
   return { hue: hue * 60, saturation, lightness }
 }
 
+let cssColorProbe: HTMLSpanElement | null = null
+
 function resolveCssColor(value: string) {
   if (!value)
     return null
 
-  const probe = document.createElement('span')
-  probe.style.position = 'fixed'
-  probe.style.pointerEvents = 'none'
-  probe.style.opacity = '0'
-  probe.style.color = value
-  document.body.appendChild(probe)
-  const resolved = getComputedStyle(probe).color
-  probe.remove()
+  if (!cssColorProbe) {
+    cssColorProbe = document.createElement('span')
+    cssColorProbe.style.position = 'fixed'
+    cssColorProbe.style.pointerEvents = 'none'
+    cssColorProbe.style.opacity = '0'
+    document.body.appendChild(cssColorProbe)
+  }
+  cssColorProbe.style.color = value
+  const resolved = getComputedStyle(cssColorProbe).color
 
   return parseRgbColor(resolved)
 }
@@ -2428,8 +2432,11 @@ function setupSidebarToggleAutoHide(currentState: BewlyWidescreenState) {
 }
 
 function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
-  currentState.mutationObserver = new MutationObserver(() => {
+  currentState.mutationObserver = new MutationObserver((mutations) => {
     if (!state || state !== currentState)
+      return
+
+    if (mutations.every(mutation => currentState.root.contains(mutation.target)))
       return
 
     scheduleSidebarRefresh()
@@ -2508,7 +2515,9 @@ function syncDescription(currentState: BewlyWidescreenState) {
 
   descriptionSlot.classList.toggle('is-empty', !hasContent)
   toggleButton.hidden = !hasContent || !canExpand
-  toggleButton.textContent = currentState.descriptionExpanded ? '收起' : '展开更多'
+  const toggleLabel = currentState.descriptionExpanded ? '收起' : '展开更多'
+  if (toggleButton.textContent !== toggleLabel)
+    toggleButton.textContent = toggleLabel
   toggleButton.setAttribute('aria-expanded', String(canExpand && currentState.descriptionExpanded))
   descriptionSlot.classList.toggle('is-collapsed', canExpand && !currentState.descriptionExpanded)
   descriptionSlot.classList.toggle('is-expanded', canExpand && currentState.descriptionExpanded)
@@ -2633,7 +2642,9 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   syncEpisodeSectionMarker(currentState.panels.playlist, currentState.movedNodes)
   const hasPlaylist = !!(playlistMoved || (existingPlaylist && !shouldReplacePlaylist))
   const hasRecommend = !!(existingRecommend || recommendMoved)
-  currentState.tabButtons.playlist.textContent = hasPlaylist ? '选集' : '推荐'
+  const playlistLabel = hasPlaylist ? '选集' : '推荐'
+  if (currentState.tabButtons.playlist.textContent !== playlistLabel)
+    currentState.tabButtons.playlist.textContent = playlistLabel
   if (!hasPlaylist && !hasRecommend)
     ensureEmptyPanel(currentState.panels.playlist, '列表加载中')
   else
@@ -2652,20 +2663,19 @@ function ensureEmptyPanel(panel: HTMLElement, label: string) {
 }
 
 function shortenCommentTimes(panel: HTMLElement) {
-  const walker = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT)
-  const textNodes: Text[] = []
+  for (const timeElement of Array.from(panel.querySelectorAll<HTMLElement>(COMMENT_TIME_SELECTOR))) {
+    const walker = document.createTreeWalker(timeElement, NodeFilter.SHOW_TEXT)
+    while (walker.nextNode()) {
+      const textNode = walker.currentNode
+      if (!(textNode instanceof Text))
+        continue
 
-  while (walker.nextNode()) {
-    if (walker.currentNode instanceof Text)
-      textNodes.push(walker.currentNode)
-  }
+      const value = textNode.nodeValue
+      if (!value || !/\d{4}-\d{2}-\d{2}/.test(value))
+        continue
 
-  for (const textNode of textNodes) {
-    const value = textNode.nodeValue
-    if (!value || !/\d{4}-\d{2}-\d{2}/.test(value))
-      continue
-
-    textNode.nodeValue = value.replace(/\b\d{4}-(\d{2})-(\d{2})\b/g, '$1-$2')
+      textNode.nodeValue = value.replace(/\b\d{4}-(\d{2})-(\d{2})\b/g, '$1-$2')
+    }
   }
 }
 
