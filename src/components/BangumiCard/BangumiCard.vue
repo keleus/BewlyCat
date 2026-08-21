@@ -242,13 +242,8 @@ const { isDark } = useDark()
 // rather than introducing another arbitrary text size.
 .bangumi-rank {
   font-size: calc(var(--bew-font-size-data-emphasis) * 2.5);
-  line-height: 1;
-}
-</style>
-
-<style lang="scss" scoped>
-.bangumi-rank {
   font-weight: var(--bew-font-weight-bold);
+  line-height: 1;
 }
 
 .bew-title-auto {
