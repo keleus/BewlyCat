@@ -10,6 +10,7 @@ import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
+import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage, isUserSpacePage, isVideoOrBangumiPage } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { isComponentVisible } from '~/utils/topBarBadge'
@@ -617,12 +618,21 @@ onUnmounted(() => {
 })
 
 // 快捷键
-onKeyStroke('/', () => {
+onKeyStroke('/', (event: KeyboardEvent) => {
+  const target = event.target as HTMLElement | null
+  if (target && (['INPUT', 'TEXTAREA'].includes(target.tagName) || target.isContentEditable))
+    return
+
+  const activeElement = findLeafActiveElement(document) as HTMLElement | undefined
+  if (activeElement && (['INPUT', 'TEXTAREA'].includes(activeElement.tagName) || activeElement.isContentEditable))
+    return
+
+  event.preventDefault()
   toggleTopBarVisible(true)
 })
 
 onKeyStroke('Escape', (event: KeyboardEvent) => {
-  if (!settings.value.touchScreenOptimization || !hasActivePopup.value)
+  if (!hasActivePopup.value)
     return
 
   event.preventDefault()

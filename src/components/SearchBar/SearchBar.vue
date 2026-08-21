@@ -321,14 +321,10 @@ onKeyStroke('/', (e: KeyboardEvent) => {
   keywordRef.value?.focus()
 })
 onKeyStroke('Escape', (e: KeyboardEvent) => {
-  console.log('[SearchBar] ESC key pressed!')
-  console.log('[SearchBar] isFocus.value:', isFocus.value)
-
   e.preventDefault()
   keywordRef.value?.blur()
   isFocus.value = false
   resetKeyboardSelection()
-  console.log('[SearchBar] Blurred search input')
 }, { target: keywordRef })
 
 let suggestionRequestGeneration = 0
@@ -659,6 +655,12 @@ function handleClearKeyword() {
 
       <input
         ref="keywordRef"
+        :aria-label="$t('common.search')"
+        :aria-activedescendant="keyboardSelectionMode === 'suggestions' && selectedIndex >= 0 ? `search-suggestion-${selectedIndex}` : undefined"
+        :aria-controls="suggestions.length > 0 ? 'search-suggestion' : undefined"
+        :aria-expanded="isFocus && suggestions.length > 0"
+        aria-autocomplete="list"
+        role="combobox"
         :value="keyword"
         :placeholder="placeholderText"
         autocomplete="off"
@@ -716,7 +718,7 @@ function handleClearKeyword() {
           class="hot-search-section"
         >
           <div class="title p-2 pb-0">
-            <span>{{ $t('search_bar.hot_search_title') || '热搜' }}</span>
+            <span>{{ $t('search_bar.hot_search_title') }}</span>
           </div>
 
           <div class="hot-search-container p-2 grid grid-cols-2 gap-x-4 gap-y-1">
@@ -802,12 +804,16 @@ function handleClearKeyword() {
       <div
         v-if="isFocus && suggestions.length !== 0 && keyword.length > 0"
         id="search-suggestion"
+        role="listbox"
         class="bew-popover-surface"
         :style="narrowTopBarPopupStyle"
       >
         <div
           v-for="(item, index) in suggestions"
-          :key="index"
+          :id="`search-suggestion-${index}`"
+          :key="item.value"
+          role="option"
+          :aria-selected="keyboardSelectionMode === 'suggestions' && selectedIndex === index"
           class="suggestion-item"
           :class="{ active: keyboardSelectionMode === 'suggestions' && selectedIndex === index }"
           @click="navigateToSearchResultPage(item.value)"
@@ -1046,7 +1052,8 @@ function handleClearKeyword() {
           }
 
           .index {
-            --uno: "text-xs min-w-4 text-center font-bold";
+            --uno: "text-xs min-w-4 text-center";
+            font-weight: var(--bew-font-weight-bold);
 
             &.top-1 {
               --uno: "text-red-500";

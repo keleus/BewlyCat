@@ -32,7 +32,7 @@ const emit = defineEmits<{
   moreBtnClick: [event: MouseEvent]
 }>()
 
-const moreBtnRef = ref<HTMLDivElement | null>(null)
+const moreBtnRef = ref<HTMLButtonElement | null>(null)
 
 defineExpose({
   moreBtnRef,
@@ -282,9 +282,11 @@ const content = computed(() => {
             </a>
           </h3>
 
-          <div
+          <button
             v-if="moreBtn"
             ref="moreBtnRef"
+            type="button"
+            :aria-label="$t('video_card.operation.more_options')"
             class="video-card__more-btn"
             data-layout-edit-target="video-card-more"
             data-layout-settings-menu="BewlyComponents"
@@ -296,11 +298,11 @@ const content = computed(() => {
             ]"
             bg="hover:$bew-fill-2 active:$bew-fill-3"
             shrink-0 w-32px h-32px m="t--3px"
-            grid place-items-center cursor-pointer rounded="50%"
+            grid place-items-center cursor-pointer rounded="50%" border-none
             @click.stop.prevent="emit('moreBtnClick', $event)"
           >
             <div i-mingcute:more-2-line text="lg" />
-          </div>
+          </button>
         </div>
 
         <!-- Modern layout with hideAuthor: Tags directly under title -->
@@ -531,7 +533,7 @@ const content = computed(() => {
                   {{ video.view ? $t('common.view', { count: numFormatter(video.view) }, video.view) : `${numFormatter(video.viewStr || '0')}${$t('common.viewWithoutNum')}` }}
                 </span>
                 <template v-if="content.showLegacyDanmakuCount">
-                  <span v-if="content.showLegacyViewCount" text-xs font-light mx-4px>•</span>
+                  <span v-if="content.showLegacyViewCount" class="video-card-stat-separator" text-xs mx-1>•</span>
                   <span>{{ video.danmaku ? $t('common.danmaku', { count: numFormatter(video.danmaku) }, video.danmaku) : `${numFormatter(video.danmakuStr || '0')}${$t('common.danmakuWithoutNum')}` }}</span>
                 </template>
                 <br>
@@ -588,6 +590,10 @@ const content = computed(() => {
 </template>
 
 <style lang="scss" scoped>
+.video-card-stat-separator {
+  font-weight: var(--bew-font-weight-regular);
+}
+
 .video-card-title {
   &.keep-two-lines {
     min-height: calc(var(--bew-title-line-height, 1.35) * 2em);

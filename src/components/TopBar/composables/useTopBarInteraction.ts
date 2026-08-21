@@ -27,6 +27,12 @@ const bewlyPageByTopBarItem: Partial<Record<string, AppPage>> = {
   watchLater: AppPage.WatchLater,
 }
 
+type TopBarPopupKey = keyof ReturnType<typeof useTopBarStore>['popupVisible']
+
+function isTopBarPopupKey(key: string, popupVisible: ReturnType<typeof useTopBarStore>['popupVisible']): key is TopBarPopupKey {
+  return key in popupVisible
+}
+
 function getConfiguredPageUrl(page: AppPage): string {
   return `https://www.bilibili.com/?page=${page}`
 }
@@ -34,8 +40,8 @@ function getConfiguredPageUrl(page: AppPage): string {
 export function useTopBarInteraction() {
   const topBarStore = useTopBarStore()
   const { closeAllPopups } = topBarStore
-  const topBarItemElements: Record<string, Ref<HTMLElement | undefined>> = {}
-  const topBarTransformers = reactive({})
+  const topBarItemElements: Partial<Record<TopBarPopupKey, Ref<HTMLElement | undefined>>> = {}
+  const topBarTransformers = reactive<Partial<Record<TopBarPopupKey, Ref<any>>>>({})
 
   const isMouseOverPopup = reactive<Record<string, boolean>>({})
 
@@ -139,7 +145,7 @@ export function useTopBarInteraction() {
   })
 
   // 设置顶栏项悬停事件
-  function setupTopBarItemHoverEvent(key: string) {
+  function setupTopBarItemHoverEvent(key: TopBarPopupKey) {
     const element = useDelayedHover({
       enterDelay: 320,
       leaveDelay: 320,
@@ -162,7 +168,7 @@ export function useTopBarInteraction() {
   }
 
   // 设置顶栏项变换器
-  function setupTopBarItemTransformer(key: string, targetRef?: any) {
+  function setupTopBarItemTransformer(key: TopBarPopupKey, targetRef?: Ref<any>) {
     const trigger = topBarItemElements[key]
     if (!trigger)
       return
@@ -229,6 +235,9 @@ export function useTopBarInteraction() {
 
   function handleClickTopBarItem(event: MouseEvent, key: string) {
     if (handledClickEvents.has(event))
+      return
+
+    if (!isTopBarPopupKey(key, topBarStore.popupVisible))
       return
 
     if (settings.value.touchScreenOptimization) {

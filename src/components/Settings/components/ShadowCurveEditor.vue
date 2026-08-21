@@ -339,6 +339,8 @@ function handleContextMenu(e: MouseEvent) {
 
 function deletePoint(index: number) {
   const point = props.modelValue[index]
+  if (!point)
+    return
 
   // Cannot delete endpoints
   if (point.position === 0 || point.position === 100)
@@ -350,16 +352,77 @@ function deletePoint(index: number) {
 }
 
 function handleKeyDown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && selectedPointIndex.value === null) {
+    e.preventDefault()
+    const position = 50
+    if (props.modelValue.some(point => point.position === position))
+      return
+
+    const sorted = sortedPoints.value
+    if (!sorted.length) {
+      const point = { position, opacity: 50 }
+      emit('update:modelValue', [point])
+      nextTick(() => {
+        selectedPointIndex.value = props.modelValue.findIndex(item => item.position === point.position)
+        if (selectedPointIndex.value < 0)
+          selectedPointIndex.value = null
+      })
+      return
+    }
+
+    const rightIndex = sorted.findIndex(point => point.position > position)
+    const left = sorted[Math.max(0, rightIndex - 1)]
+    const right = rightIndex >= 0 ? sorted[rightIndex] : sorted[sorted.length - 1]
+    const range = right.position - left.position
+    const opacity = range > 0
+      ? left.opacity + ((position - left.position) / range) * (right.opacity - left.opacity)
+      : left.opacity
+    const point = { position, opacity: Math.round(opacity) }
+    emit('update:modelValue', [...props.modelValue, point])
+    nextTick(() => {
+      selectedPointIndex.value = props.modelValue.findIndex(item => item.position === point.position)
+      if (selectedPointIndex.value < 0)
+        selectedPointIndex.value = null
+    })
+    return
+  }
+
   if (selectedPointIndex.value === null)
     return
-  if (e.key !== 'Delete' && e.key !== 'Backspace')
+
+  if (selectedPointIndex.value < 0 || selectedPointIndex.value >= props.modelValue.length) {
+    selectedPointIndex.value = null
+    return
+  }
+
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    e.preventDefault()
+    deletePoint(selectedPointIndex.value)
+    return
+  }
+
+  if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key))
     return
 
-  const target = e.target as HTMLElement | null
-  if (target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)))
-    return
+  e.preventDefault()
+  const current = props.modelValue[selectedPointIndex.value]
+  const next = { ...current }
+  if (e.key === 'ArrowUp') {
+    next.opacity = Math.min(100, next.opacity + 1)
+  }
+  else if (e.key === 'ArrowDown') {
+    next.opacity = Math.max(0, next.opacity - 1)
+  }
+  else if (current.position !== 0 && current.position !== 100) {
+    const delta = e.key === 'ArrowLeft' ? -1 : 1
+    const candidate = Math.max(1, Math.min(99, current.position + delta))
+    if (!props.modelValue.some((point, index) => index !== selectedPointIndex.value && point.position === candidate))
+      next.position = candidate
+  }
 
-  deletePoint(selectedPointIndex.value)
+  const points = [...props.modelValue]
+  points[selectedPointIndex.value] = next
+  emit('update:modelValue', points)
 }
 
 // Lifecycle
@@ -367,13 +430,11 @@ onMounted(() => {
   draw()
   document.addEventListener('mousemove', handleMouseMove)
   document.addEventListener('mouseup', handleMouseUp)
-  document.addEventListener('keydown', handleKeyDown)
 })
 
 onUnmounted(() => {
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
-  document.removeEventListener('keydown', handleKeyDown)
 })
 
 watch(() => props.modelValue, draw, { deep: true })
@@ -388,6 +449,10 @@ watch(() => [props.width, props.height], draw)
       :height="height"
       :style="{ width: `${width}px`, height: `${height}px` }"
       class="curve-canvas"
+      tabindex="0"
+      role="application"
+      :aria-label="$t('settings.video_card_shadow_curve')"
+      @keydown="handleKeyDown"
       @mousedown="handleMouseDown"
       @contextmenu="handleContextMenu"
     />

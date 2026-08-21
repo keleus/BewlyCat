@@ -20,6 +20,7 @@ const props = withDefaults(defineProps<{
   video: Video
   contextMenuStyles: CSSProperties
   isFollowingPage?: boolean
+  triggerElement?: HTMLElement | null
 }>(), {
   isFollowingPage: false,
 })
@@ -32,6 +33,58 @@ const emit = defineEmits<{
 const menuListRef = ref<HTMLElement | null>(null)
 const canScrollUp = ref(false)
 const canScrollDown = ref(false)
+const activeMenuIndex = ref(0)
+let shouldRestoreFocus = true
+
+function getMenuItems() {
+  return Array.from(menuListRef.value?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? [])
+}
+
+function focusMenuItem(index: number) {
+  const items = getMenuItems()
+  if (!items.length)
+    return
+
+  activeMenuIndex.value = (index + items.length) % items.length
+  items.forEach((item, itemIndex) => item.tabIndex = itemIndex === activeMenuIndex.value ? 0 : -1)
+  items[activeMenuIndex.value].focus({ preventScroll: true })
+}
+
+function setActiveMenuItem(event: FocusEvent) {
+  const index = getMenuItems().indexOf(event.currentTarget as HTMLButtonElement)
+  if (index >= 0)
+    activeMenuIndex.value = index
+}
+
+function handleMenuKeydown(event: KeyboardEvent) {
+  switch (event.key) {
+    case 'ArrowDown':
+      event.preventDefault()
+      focusMenuItem(activeMenuIndex.value + 1)
+      break
+    case 'ArrowUp':
+      event.preventDefault()
+      focusMenuItem(activeMenuIndex.value - 1)
+      break
+    case 'Home':
+      event.preventDefault()
+      focusMenuItem(0)
+      break
+    case 'End':
+      event.preventDefault()
+      focusMenuItem(getMenuItems().length - 1)
+      break
+    case 'Escape':
+      event.preventDefault()
+      event.stopPropagation()
+      handleClose()
+      break
+    case 'Tab':
+      shouldRestoreFocus = false
+      handleClose()
+      break
+  }
+}
 
 // 处理滚动事件，更新箭头显示状态
 function handleScroll() {
@@ -188,6 +241,7 @@ watch(() => showContextMenu.value, (newVal) => {
   if (newVal) {
     nextTick(() => {
       handleScroll()
+      focusMenuItem(0)
     })
   }
 })
@@ -215,6 +269,8 @@ onUnmounted(() => {
     resizeObserver.disconnect()
     resizeObserver = null
   }
+  if (shouldRestoreFocus && props.triggerElement?.isConnected)
+    props.triggerElement.focus({ preventScroll: true })
 })
 
 function getAuthorMid() {
@@ -473,7 +529,7 @@ async function unfollowUser() {
       <div
         style="backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);"
         :style="contextMenuStyles"
-        p-1 bg="$bew-elevated" rounded="$bew-radius"
+        p-1 bg="$bew-elevated"
         border="1 $bew-border-color"
         class="context-menu-container"
       >
@@ -481,7 +537,7 @@ async function unfollowUser() {
           v-show="canScrollUp"
           type="button"
           class="scroll-indicator scroll-indicator-top"
-          aria-label="滚动到顶部"
+          :aria-label="t('video_card.operation.scroll_top')"
           @click="scrollToTop"
         >
           <i class="i-mingcute:up-line" aria-hidden="true" />
@@ -491,7 +547,10 @@ async function unfollowUser() {
           ref="menuListRef"
           flex="~ col gap-1"
           class="context-menu-list"
+          role="menu"
+          aria-orientation="vertical"
           @scroll="handleScroll"
+          @keydown="handleMenuKeydown"
         >
           <!-- 现有内容不变 -->
           <template v-if="getVideoType() === 'appRcmd'">
@@ -500,23 +559,35 @@ async function unfollowUser() {
                 v-if="option.type !== ThreePointV2Type.WatchLater
                   && option.type !== ThreePointV2Type.Feedback
                   && (option.type !== ThreePointV2Type.Dislike || isOptionVisible('notInterested'))"
-                class="context-menu-item"
-                @click="handleAppMoreCommand(option.type)"
+                role="none"
               >
-                <i class="item-icon" i-solar:confounded-circle-bold-duotone />
-                <span v-if="option.type === ThreePointV2Type.Dislike">{{ $t('video_card.operation.not_interested') }}</span>
-                <span v-else>{{ option.title }}</span>
+                <button
+                  type="button"
+                  role="menuitem"
+                  tabindex="-1"
+                  class="context-menu-item"
+                  @focus="setActiveMenuItem"
+                  @click="handleAppMoreCommand(option.type)"
+                >
+                  <i class="item-icon" i-solar:confounded-circle-bold-duotone />
+                  <span v-if="option.type === ThreePointV2Type.Dislike">{{ $t('video_card.operation.not_interested') }}</span>
+                  <span v-else>{{ option.title }}</span>
+                </button>
               </li>
             </template>
           </template>
           <template v-else-if="getVideoType() === 'rcmd'">
             <li
               v-for="option in videoOptions" :key="option.id"
-              class="context-menu-item"
-              @click="handleMoreCommand(option.id)"
+              role="none"
             >
-              <i class="item-icon" i-solar:confounded-circle-bold-duotone />
-              {{ option.name }}
+              <button
+                type="button" role="menuitem" tabindex="-1" class="context-menu-item" @focus="setActiveMenuItem"
+                @click="handleMoreCommand(option.id)"
+              >
+                <i class="item-icon" i-solar:confounded-circle-bold-duotone />
+                {{ option.name }}
+              </button>
             </li>
           </template>
 
@@ -526,12 +597,15 @@ async function unfollowUser() {
             <li
               v-for="option in optionGroup"
               :key="option.command"
-              class="context-menu-item"
-              :class="option.color"
-              @click="handleCommonCommand(option.command)"
+              role="none"
             >
-              <i class="item-icon" :class="[option.icon, option.color]" />
-              {{ option.name }}
+              <button
+                type="button" role="menuitem" tabindex="-1" class="context-menu-item" :class="option.color"
+                @focus="setActiveMenuItem" @click="handleCommonCommand(option.command)"
+              >
+                <i class="item-icon" :class="[option.icon, option.color]" />
+                {{ option.name }}
+              </button>
             </li>
 
             <div v-if="index !== commonOptions.length - 1" class="divider" />
@@ -542,7 +616,7 @@ async function unfollowUser() {
           v-show="canScrollDown"
           type="button"
           class="scroll-indicator scroll-indicator-bottom"
-          aria-label="滚动到底部"
+          :aria-label="t('video_card.operation.scroll_bottom')"
           @click="scrollToBottom"
         >
           <i class="i-mingcute:down-line" aria-hidden="true" />
@@ -604,8 +678,13 @@ async function unfollowUser() {
   --uno: "hover:bg-$bew-fill-2 rounded-$bew-menu-item-radius cursor-pointer";
   --uno: "flex items-center";
 
+  width: 100%;
   min-height: 32px;
   padding: var(--bew-space-2);
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
   font-size: var(--bew-font-size-control);
   font-weight: var(--bew-font-weight-medium);
   line-height: var(--bew-line-height-control);
@@ -629,6 +708,7 @@ async function unfollowUser() {
   max-height: min(406px, calc(100vh - var(--bew-space-4)));
   overflow: hidden;
   z-index: 9999;
+  border-radius: var(--bew-popover-radius);
 }
 
 .context-menu-list {
@@ -637,6 +717,14 @@ async function unfollowUser() {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: var(--bew-space-1) 0;
+  margin: 0;
+  list-style: none;
+
+  > li {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
 
   /* 完全隐藏滚动条 */
   -ms-overflow-style: none; /* IE 和 Edge */

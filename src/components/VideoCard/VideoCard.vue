@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, watch, watchEffect } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
@@ -326,28 +326,12 @@ const coverImageUrl = computed(() =>
 
 const infoComponentRef = ref()
 
-// 图片加载状态：用于等待图片加载完成后才显示真实内容
-const imageLoaded = ref(false)
-
 // Cover 骨架屏状态：只依赖数据骨架屏，让图片能立即开始加载
 const coverSkeleton = computed(() => props.skeleton)
 
 // Info 骨架屏状态：只依赖数据骨架屏，不等待图片加载
 // 这避免了滚动时图片加载触发的大量 DOM 重构
 const infoSkeleton = computed(() => props.skeleton)
-
-// 监听skeleton prop变化，重置imageLoaded状态
-watch(() => props.skeleton, (newVal) => {
-  if (newVal) {
-    // 变成骨架屏时，重置图片加载状态
-    imageLoaded.value = false
-  }
-})
-
-// 处理图片加载完成
-function handleImageLoaded() {
-  imageLoaded.value = true
-}
 
 // Expose moreBtnRef from child component
 watchEffect(() => {
@@ -422,7 +406,6 @@ provide('getVideoType', () => props.type!)
             :cover-stats-style="coverStatsStyle as Record<string, string>"
             @toggle-watch-later="logic.toggleWatchLater"
             @undo="logic.handleUndo"
-            @image-loaded="handleImageLoaded"
             @preview-fullscreen-change="logic.handlePreviewFullscreenChange"
           >
             <template #coverTopLeft>
@@ -469,6 +452,7 @@ provide('getVideoType', () => props.type!)
         }"
         :context-menu-styles="logic.videoOptionsFloatingStyles.value"
         :is-following-page="props.isFollowingPage"
+        :trigger-element="logic.moreBtnRef.value"
         @close="logic.showVideoOptions.value = false"
         @removed="logic.handleRemoved"
       />
