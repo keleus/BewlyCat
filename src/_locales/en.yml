@@ -824,6 +824,17 @@ settings:
     Save settings locally and to browser cloud storage. Wallpaper/background
     settings and per-device playback state are not synced (requires signing in
     to the browser account).
+  sync_cloud_conflict_title: Cloud settings backup found
+  sync_cloud_conflict_desc: >-
+    A settings backup already exists in cloud storage. Settings present on both
+    sides will follow the side you choose.
+  sync_cloud_use_cloud: 'Download: cloud settings take precedence'
+  sync_cloud_use_local: 'Upload: local settings take precedence'
+  sync_cloud_status_failed: Failed to read cloud sync status
+  sync_cloud_enable_failed: Failed to enable settings cloud sync
+  sync_cloud_incompatible: >-
+    The cloud data was written by a newer version of the extension. Update the
+    extension before enabling sync.
   disable_auto_play_collection: Auto disable collection autoplay
   disable_auto_play_collection_desc: Automatically turn off the autoplay feature for video collections
   keep_collection_video_default_mode: Keep collection videos in default mode

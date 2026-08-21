@@ -550,6 +550,13 @@ settings:
   filter_articles_in_moments_desc: 在动态列表中过滤掉专栏内容，仅显示视频
   enable_settings_sync: 启用设置同步
   enable_settings_sync_desc: 开启后同时保存到本地和浏览器云端；壁纸背景与设备播放状态不会同步（需要登录浏览器账号）
+  sync_cloud_conflict_title: 检测到云端设置备份
+  sync_cloud_conflict_desc: 云端已有一份设置备份。两侧都存在的设置将以你所选的一侧为准。
+  sync_cloud_use_cloud: 下载：以云端设置为准
+  sync_cloud_use_local: 上传：以本地设置为准
+  sync_cloud_status_failed: 无法读取云端同步状态
+  sync_cloud_enable_failed: 开启云同步失败
+  sync_cloud_incompatible: 云端数据由更新版本的扩展写入，请先升级扩展再开启同步
   top_bar_icon_badges: 图标角标
   top_bar_icon_badges_opt:
     number: 数字

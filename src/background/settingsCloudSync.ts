@@ -1,15 +1,23 @@
 import browser from 'webextension-polyfill'
 
-import type { SettingsCloudSyncEntry } from '~/utils/settingsCloudSyncProtocol'
+import { onMessage } from '~/utils/messaging'
+import type { SettingsCloudSyncEnableResponse, SettingsCloudSyncEntry, SettingsCloudSyncMode, SettingsCloudSyncStatus } from '~/utils/settingsCloudSyncProtocol'
 import {
   compareSettingsCloudSyncVersions,
   createSettingsCloudSyncKey,
   estimateSettingsCloudSyncItemBytes,
+  isBlockedSettingsCloudSyncField,
+  isCorruptCurrentSchemaSettingsCloudSyncEntry,
+  isKnownLocalOnlySettingsCloudSyncField,
   isSettingsCloudSyncEnabled,
   normalizeSettingsCloudSyncEntry,
+  normalizeSettingsCloudSyncMode,
   parseSettingsCloudSyncKey,
+  SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE,
   SETTINGS_CLOUD_SYNC_ENABLED_KEY,
   SETTINGS_CLOUD_SYNC_ITEM_BYTES_LIMIT,
+  SETTINGS_CLOUD_SYNC_KEY_PREFIX,
+  SETTINGS_CLOUD_SYNC_STATUS_MESSAGE,
   SETTINGS_CLOUD_SYNC_TOTAL_BYTES_LIMIT,
 } from '~/utils/settingsCloudSyncProtocol'
 import { normalizeSettingsStorageWriteMeta, SETTINGS_STORAGE_META_KEY } from '~/utils/settingsStorageProtocol'
@@ -32,8 +40,15 @@ let restartAfterInitialization = false
 let flushInProgress = false
 let flushTimer: ReturnType<typeof setTimeout> | undefined
 let knownCloudItems: Record<string, unknown> = {}
+/**
+ * Set while a message-driven enable runs its bootstrap inline; the storage
+ * event for the same preference write must not start a competing start.
+ */
+let messageEnableInProgress = false
 const pendingUploads = new Map<string, SettingsCloudSyncEntry>()
 let remoteChangeQueue = Promise.resolve()
+
+type SettingsCloudSyncStartResult = 'ready' | 'incompatible' | 'failed'
 
 function logCloudSyncError(message: string, error?: unknown) {
   if (error == null)
@@ -53,8 +68,54 @@ function parseCloudEntries(items: Record<string, unknown>) {
   return entries
 }
 
+/**
+ * Classifies the complete settings snapshot using the same rules for status
+ * checks and the actual bootstrap. Known leftovers are cleanable and therefore
+ * behave like an empty snapshot; unknown formats block older clients from
+ * starting a partial sync.
+ */
+function classifyCloudItems(items: Record<string, unknown>): SettingsCloudSyncStatus {
+  let hasCompatibleEntries = false
+
+  for (const [key, value] of Object.entries(items)) {
+    if (!key.startsWith(SETTINGS_CLOUD_SYNC_KEY_PREFIX))
+      continue
+
+    const field = decodeSettingsCloudSyncKeyField(key)
+    if (field == null)
+      continue
+    if (isBlockedSettingsCloudSyncField(field) || isKnownLocalOnlySettingsCloudSyncField(field))
+      continue
+
+    if (parseSettingsCloudSyncKey(key) != null && normalizeSettingsCloudSyncEntry(value) != null) {
+      hasCompatibleEntries = true
+      continue
+    }
+
+    if (isCorruptCurrentSchemaSettingsCloudSyncEntry(value))
+      continue
+
+    return { state: 'incompatible' }
+  }
+
+  return { state: hasCompatibleEntries ? 'compatible' : 'empty' }
+}
+
 function getKnownCloudEntry(field: string) {
   return normalizeSettingsCloudSyncEntry(knownCloudItems[createSettingsCloudSyncKey(field)]) ?? undefined
+}
+
+/**
+ * True when a cloud item exists for the field but this version cannot read
+ * it (for example an entry written by a newer schema version). Uploading the
+ * same key would destroy that data, so such fields are treated as read-only
+ * conflicts until the extension is updated.
+ */
+function isKnownCloudEntryUnreadable(field: string) {
+  const key = createSettingsCloudSyncKey(field)
+  if (!Object.prototype.hasOwnProperty.call(knownCloudItems, key))
+    return false
+  return normalizeSettingsCloudSyncEntry(knownCloudItems[key]) == null
 }
 
 function clearFlushTimer() {
@@ -74,6 +135,11 @@ function queueUploads(uploads: Record<string, SettingsCloudSyncEntry>) {
     return
 
   for (const [field, entry] of Object.entries(uploads)) {
+    if (isKnownCloudEntryUnreadable(field)) {
+      logCloudSyncError(`Skipped cloud setting "${field}" because its cloud copy uses an incompatible format.`)
+      continue
+    }
+
     const cloudEntry = getKnownCloudEntry(field)
     if (cloudEntry && compareSettingsCloudSyncVersions(entry.version, cloudEntry.version) <= 0)
       continue
@@ -115,6 +181,11 @@ function prepareUploadBatch(entries: Array<[string, SettingsCloudSyncEntry]>) {
 
   for (const [field, entry] of entries.sort(([left], [right]) => left.localeCompare(right))) {
     const key = createSettingsCloudSyncKey(field)
+    if (isKnownCloudEntryUnreadable(field)) {
+      consumePendingUpload(field, entry)
+      continue
+    }
+
     const cloudEntry = getKnownCloudEntry(field)
     if (cloudEntry && compareSettingsCloudSyncVersions(entry.version, cloudEntry.version) <= 0) {
       consumePendingUpload(field, entry)
@@ -198,7 +269,8 @@ async function flushUploads() {
   }
 }
 
-async function startCloudSync() {
+/** Reports whether coordination became ready, failed, or found newer data. */
+async function startCloudSync(mode: SettingsCloudSyncMode = 'auto'): Promise<SettingsCloudSyncStartResult> {
   const startGeneration = ++generation
   enabled = true
   ready = false
@@ -207,26 +279,93 @@ async function startCloudSync() {
   pendingUploads.clear()
 
   try {
-    const cloudItems = await browser.storage.sync.get(null)
-    if (!enabled || startGeneration !== generation)
-      return
-
-    knownCloudItems = cloudItems
-    const result = await reconcileSettingsCloudSyncSnapshot(parseCloudEntries(cloudItems))
-    if (!enabled || startGeneration !== generation)
-      return
-
-    ready = true
-    queueUploads(result.uploads)
-    if (restartAfterInitialization) {
+    // Re-read and re-coordinate when remote events landed mid-initialization,
+    // so success is only reported for the final coordinated state instead of
+    // spawning an unawaited second run.
+    while (true) {
       restartAfterInitialization = false
-      void startCloudSync()
+      const cloudItems = await browser.storage.sync.get(null)
+      if (!enabled || startGeneration !== generation)
+        return 'failed'
+
+      if (classifyCloudItems(cloudItems).state === 'incompatible') {
+        logCloudSyncError('Cloud settings use an incompatible format; update the extension before enabling sync.')
+        return 'incompatible'
+      }
+
+      knownCloudItems = cloudItems
+      const result = await reconcileSettingsCloudSyncSnapshot(parseCloudEntries(cloudItems), mode)
+      if (!enabled || startGeneration !== generation)
+        return 'failed'
+
+      ready = true
+      queueUploads(result.uploads)
+      void removeInvalidCloudItems(startGeneration)
+
+      if (!restartAfterInitialization)
+        break
+
+      // Remote events arrived during coordination: rerun against the newer
+      // snapshot. Pending uploads survive because they are only cleared above
+      // the loop, and re-coordination keeps whichever versions are newest.
+      ready = false
     }
+
+    return enabled && ready ? 'ready' : 'failed'
   }
   catch (error) {
     if (!enabled || startGeneration !== generation)
-      return
+      return 'failed'
     logCloudSyncError('Failed to initialize settings cloud sync:', error)
+    return 'failed'
+  }
+}
+
+function decodeSettingsCloudSyncKeyField(key: string) {
+  const encodedField = key.slice(SETTINGS_CLOUD_SYNC_KEY_PREFIX.length)
+  try {
+    const field = decodeURIComponent(encodedField)
+    return createSettingsCloudSyncKey(field) === key ? field : null
+  }
+  catch {
+    return null
+  }
+}
+
+/**
+ * Drops only leftovers this version can positively identify: undecodable
+ * keys, blocked field names, known local-only fields, and entries claiming
+ * the current schema that fail validation. Data written by newer extension
+ * versions (unknown fields or future schemas) is preserved.
+ */
+async function removeInvalidCloudItems(startGeneration: number) {
+  try {
+    const invalidKeys = Object.keys(knownCloudItems).filter((key) => {
+      if (!key.startsWith(SETTINGS_CLOUD_SYNC_KEY_PREFIX))
+        return false
+
+      const field = decodeSettingsCloudSyncKeyField(key)
+      if (field == null)
+        return true
+      if (isBlockedSettingsCloudSyncField(field) || isKnownLocalOnlySettingsCloudSyncField(field))
+        return true
+
+      const value = knownCloudItems[key]
+      return normalizeSettingsCloudSyncEntry(value) == null
+        && isCorruptCurrentSchemaSettingsCloudSyncEntry(value)
+    })
+    if (invalidKeys.length === 0 || !enabled || startGeneration !== generation)
+      return
+
+    await browser.storage.sync.remove(invalidKeys)
+    if (!enabled || startGeneration !== generation)
+      return
+
+    for (const key of invalidKeys)
+      Reflect.deleteProperty(knownCloudItems, key)
+  }
+  catch (error) {
+    logCloudSyncError('Failed to clean up invalid cloud sync items:', error)
   }
 }
 
@@ -242,7 +381,7 @@ function stopCloudSync() {
 
 function updateCloudSyncPreference(value: unknown) {
   if (isSettingsCloudSyncEnabled(value)) {
-    if (!enabled)
+    if (!enabled && !messageEnableInProgress)
       void startCloudSync()
   }
   else if (enabled) {
@@ -335,6 +474,46 @@ function handleSyncChanges(
   }).catch(error => logCloudSyncError('Failed to apply remote settings changes:', error))
 }
 
+async function readSettingsCloudSyncStatus(): Promise<SettingsCloudSyncStatus> {
+  // Let read failures propagate so the caller can surface them instead of
+  // silently treating the cloud as empty and skipping the direction choice.
+  const cloudItems = await browser.storage.sync.get(null)
+  return classifyCloudItems(cloudItems)
+}
+
+async function handleEnableSettingsCloudSync(value: unknown): Promise<SettingsCloudSyncEnableResponse> {
+  const mode = normalizeSettingsCloudSyncMode(
+    (value as { mode?: unknown } | undefined)?.mode,
+  )
+  messageEnableInProgress = true
+  try {
+    try {
+      await browser.storage.local.set({ [SETTINGS_CLOUD_SYNC_ENABLED_KEY]: true })
+    }
+    catch (error) {
+      logCloudSyncError('Failed to enable settings cloud sync:', error)
+      return { ok: false, reason: 'initialization-failed' }
+    }
+
+    // Run the first coordination inline so failures are reported and the
+    // preference rolled back instead of leaving an enabled-but-broken state.
+    const result = await startCloudSync(mode)
+    if (result !== 'ready') {
+      await browser.storage.local.set({ [SETTINGS_CLOUD_SYNC_ENABLED_KEY]: false }).catch((error) => {
+        logCloudSyncError('Failed to roll back settings cloud sync preference:', error)
+      })
+      return {
+        ok: false,
+        reason: result === 'incompatible' ? 'incompatible' : 'initialization-failed',
+      }
+    }
+    return { ok: true }
+  }
+  finally {
+    messageEnableInProgress = false
+  }
+}
+
 export function setupSettingsCloudSync() {
   if (initialized)
     return
@@ -342,6 +521,8 @@ export function setupSettingsCloudSync() {
   initialized = true
   browser.storage.onChanged.addListener(handleLocalChanges)
   browser.storage.onChanged.addListener(handleSyncChanges)
+  onMessage(SETTINGS_CLOUD_SYNC_STATUS_MESSAGE, () => readSettingsCloudSyncStatus())
+  onMessage(SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE, value => handleEnableSettingsCloudSync(value))
 
   const initialPreferenceGeneration = preferenceGeneration
   void browser.storage.local.get(SETTINGS_CLOUD_SYNC_ENABLED_KEY).then((stored) => {

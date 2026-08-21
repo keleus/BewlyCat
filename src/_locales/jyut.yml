@@ -812,6 +812,13 @@ settings:
   auto_play_playlist_desc: 揀收藏列表嘅自動播放行為。「連播推薦」表示目前影片完咗之後繼續播推薦影片。
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 開啟之後會同時儲存喺本機同瀏覽器雲端；牆紙背景同裝置播放狀態唔會同步（需要登入瀏覽器帳戶）。
+  sync_cloud_conflict_title: 偵測到雲端設定備份
+  sync_cloud_conflict_desc: 雲端已經有一份設定備份。兩邊都存在嘅設定會跟你揀嘅一邊做準。
+  sync_cloud_use_cloud: 下載：以雲端設定做準
+  sync_cloud_use_local: 上載：以本機設定做準
+  sync_cloud_status_failed: 讀取唔到雲端同步狀態
+  sync_cloud_enable_failed: 開啟雲端同步失敗
+  sync_cloud_incompatible: 雲端資料係由較新版本嘅擴充功能寫入，請先升級擴充功能再開啟同步
   enable_undo_refresh_button: 啓用復原更新掣（淨係得 Web 推介模式下有效）
   enable_undo_refresh_button_desc: 更新頁面後顯示復原更新掣，撳低可以回復更新前內容。
   shortcuts:

@@ -747,6 +747,13 @@ settings:
   contributors_image_failed: 貢獻者圖片載入失敗
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 開啟後同時儲存到本機與瀏覽器雲端；桌布背景與裝置播放狀態不會同步（需要登入瀏覽器帳號）
+  sync_cloud_conflict_title: 偵測到雲端設定備份
+  sync_cloud_conflict_desc: 雲端已有一份設定備份。兩側都存在的設定將以你所選的一側為準。
+  sync_cloud_use_cloud: 下載：以雲端設定為準
+  sync_cloud_use_local: 上傳：以本機設定為準
+  sync_cloud_status_failed: 無法讀取雲端同步狀態
+  sync_cloud_enable_failed: 開啟雲端同步失敗
+  sync_cloud_incompatible: 雲端資料由較新版本的擴充功能寫入，請先升級擴充功能再開啟同步
   disable_auto_play_collection: 自動關閉合集自動播放
   disable_auto_play_collection_desc: 自動關閉影片合集的自動播放功能
   keep_collection_video_default_mode: 合集影片保持預設模式

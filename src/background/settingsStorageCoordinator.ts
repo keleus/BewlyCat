@@ -1,7 +1,7 @@
 import browser from 'webextension-polyfill'
 
 import { onMessage } from '~/utils/messaging'
-import type { SettingsCloudSyncEntry, SettingsCloudSyncVersion } from '~/utils/settingsCloudSyncProtocol'
+import type { SettingsCloudSyncEntry, SettingsCloudSyncMode, SettingsCloudSyncVersion } from '~/utils/settingsCloudSyncProtocol'
 import {
   compareSettingsCloudSyncVersions,
   createSettingsCloudSyncEntry,
@@ -147,7 +147,10 @@ async function importSettings(value: unknown): Promise<SettingsStoragePatchRespo
   if (settingsChanged)
     incrementRevision(meta)
 
-  if ((meta.cloudSyncInitialized || syncEnabled) && syncFields.length > 0) {
+  // Same as applyPatch: imported values keep versions even while sync is
+  // disabled, so a later bootstrap uploads them instead of losing them to
+  // older cloud values.
+  if (syncFields.length > 0) {
     const version = createNextCloudVersion(meta)
     for (const field of syncFields)
       meta.fieldVersions[field] = version
@@ -209,15 +212,13 @@ async function applyPatch(value: unknown): Promise<SettingsStoragePatchResponse>
 
   if (settingsChanged) {
     incrementRevision(currentMeta)
-    if (
-      currentMeta.cloudSyncInitialized
-      || isSettingsCloudSyncEnabled(stored[SETTINGS_CLOUD_SYNC_ENABLED_KEY])
-    ) {
-      const version = createNextCloudVersion(currentMeta)
-      for (const field of [...Object.keys(actualPatch.set), ...actualPatch.remove]) {
-        if (isSettingsCloudSyncField(field))
-          currentMeta.fieldVersions[field] = version
-      }
+    // Version every real change even while sync is disabled. Removals made
+    // before sync initializes must survive the bootstrap snapshot as
+    // tombstones instead of being resurrected by older cloud values.
+    const version = createNextCloudVersion(currentMeta)
+    for (const field of [...Object.keys(actualPatch.set), ...actualPatch.remove]) {
+      if (isSettingsCloudSyncField(field))
+        currentMeta.fieldVersions[field] = version
     }
   }
 
@@ -307,11 +308,16 @@ async function writeCloudMergeResult(
 }
 
 /**
- * Reconciles a complete sync-area snapshot. The cloud wins fields the first
- * time a device joins; later reconciliations use per-field Lamport versions.
+ * Reconciles a complete sync-area snapshot. `mode` decides how the bootstrap
+ * snapshot is merged when a device enables sync: `auto` keeps the historical
+ * behavior (cloud wins untouched fields, dirty fields win back), `pull` lets
+ * the cloud snapshot overwrite local settings, and `push` uploads the local
+ * snapshot over the cloud. Later reconciliations always use per-field Lamport
+ * versions.
  */
 export function reconcileSettingsCloudSyncSnapshot(
   entries: Record<string, SettingsCloudSyncEntry>,
+  mode: SettingsCloudSyncMode = 'auto',
 ): Promise<SettingsCloudSyncReconcileResult> {
   return enqueueSettingsWrite(async () => {
     const stored = await browser.storage.local.get([
@@ -339,7 +345,9 @@ export function reconcileSettingsCloudSyncSnapshot(
         meta.cloudClock = Math.max(meta.cloudClock, remote.version.counter)
 
       for (const [field, remote] of Object.entries(cloudEntries)) {
-        if (!bootstrapDirtyFields.has(field))
+        if (mode === 'push')
+          continue
+        if (mode === 'pull' || !bootstrapDirtyFields.has(field))
           applyRemoteWinner(settings, meta, field, remote)
       }
 
@@ -348,20 +356,28 @@ export function reconcileSettingsCloudSyncSnapshot(
       // those untouched fields must not be uploaded into gaps in that snapshot.
       // Only fields changed after sync was enabled have versions at this point.
       // If the cloud is completely empty, seed it from the current local state.
-      const fieldsToUpload = [...new Set(cloudFields.size === 0
-        ? [
+      // `pull` skips re-uploading fields the snapshot just delivered (they are
+      // identical now) while still uploading local-only fields so offline edits
+      // and removal tombstones reach the cloud; `push` uploads every known
+      // local field with one shared version.
+      const localFieldCandidates = mode === 'push' || cloudFields.size === 0
+        ? [...new Set([
             ...Object.keys(settings),
             ...bootstrapDirtyFields,
-          ]
-        : [...bootstrapDirtyFields])]
+          ])]
+        : mode === 'pull'
+          ? [...bootstrapDirtyFields].filter(field => !cloudFields.has(field))
+          : [...bootstrapDirtyFields]
+      const fieldsToUpload = localFieldCandidates
         .filter(isSettingsCloudSyncField)
         .sort()
 
-      if (cloudFields.size === 0 && fieldsToUpload.length > 0) {
-        // Use one version for the entire initial snapshot. If several devices
-        // seed an empty cloud concurrently, the version/device tie-breaker then
-        // selects one consistent device for all overlapping fields instead of
-        // producing a field-by-field mixture.
+      if ((cloudFields.size === 0 || mode === 'push') && fieldsToUpload.length > 0) {
+        // Use one version for the entire initial snapshot (seeding an empty
+        // cloud or an explicit local push). If several devices seed or push
+        // concurrently, the version/device tie-breaker then selects one
+        // consistent device for all overlapping fields instead of producing a
+        // field-by-field mixture.
         const bootstrapVersion = createNextCloudVersion(meta)
         for (const field of fieldsToUpload) {
           meta.fieldVersions[field] = bootstrapVersion
@@ -377,9 +393,18 @@ export function reconcileSettingsCloudSyncSnapshot(
       meta.cloudSyncInitialized = true
     }
     else {
+      // Align the local clock with the snapshot before creating any version.
+      // `push` skips applying remote entries entirely, so without this scan a
+      // stale local clock would produce versions below current cloud entries
+      // and every pushed upload would be dropped as outdated.
+      for (const remote of Object.values(cloudEntries))
+        meta.cloudClock = Math.max(meta.cloudClock, remote.version.counter)
+
       for (const [field, remote] of Object.entries(cloudEntries)) {
+        if (mode === 'push')
+          continue
         const comparison = compareSettingsCloudSyncVersions(meta.fieldVersions[field], remote.version)
-        if (comparison <= 0)
+        if (mode === 'pull' || comparison <= 0)
           applyRemoteWinner(settings, meta, field, remote)
         else
           createUpload(uploads, settings, meta, field)
@@ -389,12 +414,21 @@ export function reconcileSettingsCloudSyncSnapshot(
         ...Object.keys(settings),
         ...Object.keys(meta.fieldVersions),
       ])
+      // A push stamps the whole local snapshot with one shared version so a
+      // concurrent push resolves to a single consistent device.
+      const pushVersion = mode === 'push' ? createNextCloudVersion(meta) : undefined
       for (const field of [...localFields].sort()) {
-        if (!isSettingsCloudSyncField(field) || cloudFields.has(field))
+        if (!isSettingsCloudSyncField(field))
+          continue
+        if (mode !== 'push' && cloudFields.has(field))
           continue
 
-        if (!meta.fieldVersions[field])
+        if (pushVersion) {
+          meta.fieldVersions[field] = pushVersion
+        }
+        else if (!meta.fieldVersions[field]) {
           meta.fieldVersions[field] = createNextCloudVersion(meta)
+        }
         createUpload(uploads, settings, meta, field)
       }
     }

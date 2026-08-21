@@ -1,6 +1,21 @@
 export const SETTINGS_CLOUD_SYNC_ENABLED_KEY = 'settingsCloudSyncEnabled:v1'
 export const SETTINGS_CLOUD_SYNC_KEY_PREFIX = 'bewlycat:settings:v1:'
 export const SETTINGS_CLOUD_SYNC_SCHEMA_VERSION = 1
+export const SETTINGS_CLOUD_SYNC_STATUS_MESSAGE = 'getSettingsCloudSyncStatus'
+export const SETTINGS_CLOUD_SYNC_ENABLE_MESSAGE = 'enableSettingsCloudSync'
+
+export interface SettingsCloudSyncStatus {
+  /**
+   * `empty`: no settings keys in the sync area; `compatible`: at least one
+   * entry readable by this version; `incompatible`: at least one preserved
+   * entry uses an unknown format (for example, a newer schema version).
+   */
+  state: 'empty' | 'compatible' | 'incompatible'
+}
+
+export type SettingsCloudSyncEnableResponse
+  = | { ok: true }
+    | { ok: false, reason: 'incompatible' | 'initialization-failed' }
 
 // Leave headroom below the browser storage.sync quotas (8 KiB per item and
 // about 100 KiB in total) for differences in quota accounting across browsers.
@@ -11,6 +26,14 @@ export interface SettingsCloudSyncVersion {
   counter: number
   deviceId: string
 }
+
+/**
+ * Bootstrap direction chosen when enabling sync:
+ * - `pull`: the cloud snapshot overwrites local settings.
+ * - `push`: local settings overwrite the cloud snapshot.
+ * - `auto`: per-field last-writer-wins with dirty-field protection.
+ */
+export type SettingsCloudSyncMode = 'pull' | 'push' | 'auto'
 
 export interface SettingsCloudSyncEntry {
   deleted: boolean
@@ -63,6 +86,31 @@ function hasOwn(record: Record<string, unknown>, key: string) {
 
 export function isSettingsCloudSyncEnabled(value: unknown) {
   return value === true || value === 'true'
+}
+
+export function normalizeSettingsCloudSyncMode(value: unknown): SettingsCloudSyncMode {
+  return value === 'pull' || value === 'push' ? value : 'auto'
+}
+
+export function isBlockedSettingsCloudSyncField(field: string) {
+  return BLOCKED_FIELDS.has(field)
+}
+
+/** Fields this version deliberately keeps out of sync; leftovers are safe to drop. */
+export function isKnownLocalOnlySettingsCloudSyncField(field: string) {
+  return LOCAL_ONLY_WALLPAPER_FIELDS.has(field) || LOCAL_ONLY_RUNTIME_FIELDS.has(field)
+}
+
+/**
+ * True when a value claims the current schema but fails validation, i.e. it is
+ * confirmed corruption instead of data written by a newer extension version.
+ * Unknown shapes or future schema versions must be preserved.
+ */
+export function isCorruptCurrentSchemaSettingsCloudSyncEntry(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value))
+    return false
+  return (value as { schemaVersion?: unknown }).schemaVersion === SETTINGS_CLOUD_SYNC_SCHEMA_VERSION
+    && normalizeSettingsCloudSyncEntry(value) == null
 }
 
 export function isSettingsCloudSyncField(field: string) {
