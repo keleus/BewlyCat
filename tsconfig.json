@@ -14,7 +14,7 @@
       "vite/client"
     ],
     "strict": true,
-    "noImplicitAny": false,
+    "noImplicitAny": true,
     "noUnusedLocals": true,
     "noEmit": true,
     "esModuleInterop": true,

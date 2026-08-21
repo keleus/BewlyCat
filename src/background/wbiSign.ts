@@ -147,7 +147,7 @@ export function addWbiSign(params: Record<string, any>, options: WbiKeyOptions =
 
   // 添加时间戳
   const wts = Math.round(Date.now() / 1000)
-  const signParams = { ...params, wts }
+  const signParams: Record<string, any> = { ...params, wts }
 
   // 按键名升序排序
   const sortedKeys = Object.keys(signParams).sort()

@@ -69,7 +69,7 @@ export const useTopBarStore = defineStore('topBar', () => {
 
   function getLikeUnreadCount(): number {
     const likeCount = typeof unReadMessage.like === 'number' ? unReadMessage.like : 0
-    const recvLike = (unReadMessage as UnReadMessage & { recv_like?: number }).recv_like
+    const recvLike = unReadMessage.recv_like
     const recvLikeCount = typeof recvLike === 'number' ? recvLike : 0
 
     return Math.max(likeCount, recvLikeCount)
@@ -745,7 +745,7 @@ export const useTopBarStore = defineStore('topBar', () => {
         )
         // 删除会让服务器列表前移，页边界可能与已加载内容重叠，按 aid 去重兜底
         const existingIds = new Set(watchLaterList.map(item => item.aid))
-        const newItems = res.data.list.filter(item => !existingIds.has(item.aid))
+        const newItems = res.data.list.filter((item: VideoItem) => !existingIds.has(item.aid))
         watchLaterList.push(...newItems)
       }
     }

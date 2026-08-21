@@ -1062,7 +1062,7 @@ function getUniqueKey(item: T, index: number): string | number {
       <VideoCard
         v-for="renderItem in renderItems"
         :key="renderItem.key"
-        :ref="component => setVideoCardElement(renderItem.key, renderItem.item, component)"
+        :ref="(component: unknown) => setVideoCardElement(renderItem.key, renderItem.item, component)"
         :data-index="renderItem.index"
         :skeleton="renderItem.skeleton"
         :type="renderItem.type"

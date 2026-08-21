@@ -137,7 +137,7 @@ export interface FirstEpInfo {
   cover: string
   title: string
   long_title?: string
-  pub_time: Date
+  pub_time: number
   duration: number
   index_show?: string
 }
@@ -149,9 +149,9 @@ export interface Producer {
 }
 
 export interface Publish {
-  pub_time: Date
+  pub_time: number
   pub_time_show: string
-  release_date: Date
+  release_date: number
   release_date_show: string
   pub_time_show_db?: string
 }

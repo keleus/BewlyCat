@@ -131,15 +131,16 @@ export function createTransformer(trigger: Ref<MaybeElement>, transformer: Trans
           [key]: value,
         }
       })
-      .reduce((acc, item) => {
+      .reduce<Record<string, string>>((acc, item) => {
         return {
           ...acc,
           ...item,
         }
       }, {})
 
-    for (const key in style.value) {
-      s[key] = style.value[key]
+    for (const [key, value] of Object.entries(style.value)) {
+      if (value !== undefined)
+        s[key] = String(value)
     }
 
     return Object.keys(s).map(key => `${key}:${s[key]}`).join(';')

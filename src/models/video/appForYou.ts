@@ -43,7 +43,7 @@ export interface Item {
   card_goto: CardGoto
   args: Args
   idx: number
-  track_id: TrackID
+  track_id: string
   hash?: string
   banner_item?: BannerItem[]
   goto?: CardGoto
@@ -126,7 +126,7 @@ export interface Extra {
   enable_store_direct_launch: number
   external_link_warning: string
   feedback_panel_style: number
-  from_track_id: TrackID
+  from_track_id: string
   h5_pre_load_url: string
   hot_activity_id: number
   landingpage_download_style: number
@@ -281,10 +281,6 @@ export interface QualityInfo {
   text_color: string
   text_color_night: string
   user_faces: string[]
-}
-
-export enum TrackID {
-  All49RouterPegasus13486736F5B8C7B6W6Blj1701596425847856 = 'all_49.router-pegasus-1348673-6f5b8c7b6-w6blj.1701596425847.856',
 }
 
 export interface Args {

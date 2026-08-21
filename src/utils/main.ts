@@ -18,11 +18,11 @@ export function getCookie(name: string): string {
  * @param name cookie name
  * @param value cookie value
  */
-export function setCookie(name: string, value: any, expDays: number) {
+export function setCookie(name: string, value: string, expDays: number) {
   const date = new Date()
   date.setTime(date.getTime() + expDays * 24 * 60 * 60 * 1000)
   const expires = `expires=${date.toUTCString()}`
-  document.cookie = `${name}=${value}; ${expires}; domain=.bilibili.com; path=/`
+  document.cookie = `${name}=${encodeURIComponent(value)}; ${expires}; domain=.bilibili.com; path=/`
 }
 
 /**

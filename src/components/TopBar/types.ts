@@ -42,6 +42,7 @@ export interface UnReadMessage {
   chat: number
   like: number
   reply: number
+  recv_like?: number
   sys_msg: number
   up: number
 }

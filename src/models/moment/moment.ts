@@ -17,8 +17,10 @@ export interface Data {
 
 export interface DataItem {
   basic: Basic
+  id?: string
   id_str: string
   modules: Modules
+  orig?: DataItem
   type: ItemType
   visible: boolean
 }
@@ -237,13 +239,8 @@ export interface Pendant {
   image_enhance: string
   image_enhance_frame: string
   n_pid: number
-  name: Name
+  name: string
   pid: number
-}
-
-export enum Name {
-  Empty = '',
-  EveOneCat2 = 'EveOneCat2',
 }
 
 export enum PubAction {
@@ -306,10 +303,43 @@ export enum TextColorEnum {
 }
 
 export interface ModuleDynamic {
-  additional: null
+  additional: MomentAdditional | null
   desc: ModuleDynamicDesc | null
   major: Major
   topic: Topic | null
+}
+
+export interface MomentAdditional {
+  type?: string
+  common?: MomentAdditionalCard
+  vote?: MomentAdditionalCard
+  reserve?: MomentAdditionalCard
+  ugc?: MomentAdditionalCard
+  goods?: MomentAdditionalCard
+  match?: MomentAdditionalCard
+  upower_lottery?: MomentAdditionalCard
+}
+
+export interface MomentAdditionalCard {
+  button?: {
+    check?: { text?: string }
+    jump_style?: { text?: string }
+    jump_url?: string
+    status?: number
+    text?: string
+    type?: number
+    uncheck?: { text?: string }
+  }
+  cover?: string
+  desc?: string | { text?: string }
+  desc1?: string | { text?: string }
+  desc2?: string | { text?: string }
+  head_text?: string
+  icon?: string
+  jump_url?: string
+  reserve_total?: number
+  rid?: string | number
+  title?: string
 }
 
 export interface ModuleDynamicDesc {
@@ -325,10 +355,34 @@ export interface PurpleRichTextNode {
 
 export interface Major {
   archive?: Archive
+  article?: MomentMajorContent
+  common?: MomentMajorContent
+  draw?: { items?: MomentImage[] }
+  live_rcmd?: { content?: string }
+  opus?: MomentMajorContent & {
+    pics?: MomentImage[]
+    summary?: string | { rich_text_nodes?: PurpleRichTextNode[], text?: string }
+  }
   type: MajorType
   pgc?: Pgc
   /** 合集订阅更新动态，字段形态接近 Archive */
   ugc_season?: UgcSeason
+}
+
+export interface MomentImage {
+  height?: number
+  size?: { height?: number, width?: number }
+  src?: string
+  url?: string
+  width?: number
+}
+
+export interface MomentMajorContent {
+  cover?: string
+  covers?: string[]
+  desc?: string
+  jump_url?: string
+  title?: string
 }
 
 export interface Archive {
@@ -336,6 +390,7 @@ export interface Archive {
   badge: Badge
   bvid: string
   cover: string
+  coop_info?: Array<{ mid?: number | string }>
   desc: string
   disable_preview: number
   duration_text: string
@@ -389,6 +444,7 @@ export interface UgcSeason {
   badge: Badge
   bvid: string
   cover: string
+  coop_info?: Array<{ mid?: number | string }>
   desc: string
   disable_preview?: number
   duration_text: string
@@ -402,7 +458,9 @@ export interface UgcSeason {
 }
 
 export enum MajorType {
+  MajorTypeArticle = 'MAJOR_TYPE_ARTICLE',
   MajorTypeArchive = 'MAJOR_TYPE_ARCHIVE',
+  MajorTypeDraw = 'MAJOR_TYPE_DRAW',
   MajorTypePgc = 'MAJOR_TYPE_PGC',
   MajorTypeUgcSeason = 'MAJOR_TYPE_UGC_SEASON',
 }
@@ -474,12 +532,16 @@ export interface Comment {
 
 export interface Like {
   count: number
+  disabled?: boolean
   forbidden: boolean
   status: boolean
 }
 
 export enum ItemType {
+  DynamicTypeArticle = 'DYNAMIC_TYPE_ARTICLE',
   DynamicTypeAV = 'DYNAMIC_TYPE_AV',
+  DynamicTypeDraw = 'DYNAMIC_TYPE_DRAW',
+  DynamicTypeForward = 'DYNAMIC_TYPE_FORWARD',
   DynamicTypePgcUnion = 'DYNAMIC_TYPE_PGC_UNION',
   DynamicTypeUgcSeason = 'DYNAMIC_TYPE_UGC_SEASON',
 }

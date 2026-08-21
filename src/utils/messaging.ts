@@ -72,7 +72,7 @@ export function onMessage<T = any, R = any>(
   type: string,
   handler: MessageHandler<T, R>,
 ): void {
-  browser.runtime.onMessage.addListener((message: any, sender) => {
+  browser.runtime.onMessage.addListener((message: any, sender: browser.Runtime.MessageSender) => {
     if (message?.type === type) {
       const result = handler(message.data, sender)
       // 如果返回 Promise，需要返回 true 表示异步响应
