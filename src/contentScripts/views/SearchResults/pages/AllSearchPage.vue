@@ -49,6 +49,13 @@ const emit = defineEmits<{
   updatePage: [page: number]
 }>()
 
+function sanitizeHighlightTitle(title: string) {
+  return DOMPurify.sanitize(title, {
+    ALLOWED_TAGS: ['em'],
+    ALLOWED_ATTR: ['class'],
+  })
+}
+
 const { t } = useI18n()
 
 const { haveScrollbar, handleBackToTop } = useBewlyApp()
@@ -692,7 +699,7 @@ defineExpose({
                 </div>
               </a>
               <div class="media-ft-highlight-info">
-                <div class="media-ft-highlight-title" text="lg $bew-text-1" font-medium v-html="item.title" />
+                <div class="media-ft-highlight-title" text="lg $bew-text-1" font-medium v-html="sanitizeHighlightTitle(item.title)" />
                 <div class="media-ft-highlight-meta" text="sm $bew-text-3" flex items-center gap-2>
                   <span v-if="item.media_score?.score" text="$bew-theme-color" font-bold>
                     {{ item.media_score.score.toFixed(1) }} 分
