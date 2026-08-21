@@ -18,6 +18,7 @@ import api from '~/utils/api'
 import { TVAppKey } from '~/utils/authProvider'
 import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
+import { getCookie } from '~/utils/main'
 import { isVerticalVideo } from '~/utils/uriParse'
 
 const { gridLayout } = defineProps<{
@@ -145,6 +146,21 @@ function logRecommendRequestFailure(
   })
 }
 
+function getRecommendErrorLogDetails(error: unknown): Record<string, unknown> {
+  const errorRecord = error && typeof error === 'object'
+    ? error as Record<string, unknown>
+    : undefined
+
+  return {
+    error,
+    name: error instanceof Error ? error.name : errorRecord?.name,
+    message: error instanceof Error ? error.message : errorRecord?.message ?? String(error),
+    code: errorRecord?.code,
+    isRiskControl: errorRecord?.isRiskControl,
+    originalError: errorRecord?.originalError,
+  }
+}
+
 // 当前使用的视频列表（根据推荐模式）
 const currentVideoList = computed(() =>
   isWebRecommendationMode.value ? videoList.value : appVideoList.value,
@@ -191,6 +207,14 @@ const hasForwardState = ref<boolean>(false)
 const PAGE_SIZE = 30
 const WEB_REFRESH_PAGE_SIZE = 10
 const WEB_LOAD_MORE_PAGE_SIZE = 12
+const WEB_REFRESH_FRESH_TYPE = 3
+const WEB_LOAD_MORE_FRESH_TYPE = 4
+const WEB_LOAD_MORE_Y_NUM = 3
+const WEB_LAST_Y_NUM = 4
+const WEB_FIVE_COLUMN_MIN_WIDTH = 1400
+const WEB_FETCH_ROW_STEP = 3
+const WEB_FRESH_IDX_1H_WINDOW_MS = 60 * 60 * 1000
+const WEB_LOCATION = 1430650
 const WEB_REQUEST_MAX_ATTEMPTS_PER_IDENTITY = 3
 const WEB_REQUEST_RETRY_WINDOW_MS = 5_000
 const WEB_REQUEST_RETRY_BASE_DELAY_MS = 250
@@ -199,6 +223,7 @@ const APP_REQUEST_MAX_ATTEMPTS = 3
 const APP_REQUEST_RETRY_WINDOW_MS = 5_000
 const APP_REQUEST_RETRY_BASE_DELAY_MS = 250
 const NO_COOKIE_RECOMMEND_STATE_MAX_SHOWLIST_GROUPS = 3
+const WEB_LAST_CLICKLIST_MAX_ITEMS = 50
 const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
 const FILTERED_FEED_SAMPLE_SIZE = 100
 const FILTERED_FEED_MIN_RETENTION_RATE = 0.6
@@ -213,12 +238,24 @@ const webRiskCooldownUntil = ref<number>(0)
 let webRiskCooldownToastKey = 0
 let webRiskCooldownLevel = 0
 const webFetchRow = ref<number>(1)
+const webFreshIdx1h = ref<number>(1)
+let webFreshIdx1hTimestamp = Date.now()
+const webRefreshBrush = ref<number>(0)
+const webLoadMoreBrush = ref<number>(1)
+let webRecommendationUniqId = createWebRecommendationUniqId()
 const webShowlistGroups = ref<string[]>([])
+const webLastClicklist = ref<string[]>([])
 
 const cachedWebFetchRow = ref<number>(1)
+const cachedWebFreshIdx1h = ref<number>(1)
+const cachedWebRefreshBrush = ref<number>(0)
+const cachedWebLoadMoreBrush = ref<number>(1)
 const cachedWebShowlistGroups = ref<string[]>([])
 
 const forwardWebFetchRow = ref<number>(1)
+const forwardWebFreshIdx1h = ref<number>(1)
+const forwardWebRefreshBrush = ref<number>(0)
+const forwardWebLoadMoreBrush = ref<number>(1)
 const forwardWebShowlistGroups = ref<string[]>([])
 
 const filteredFeedCandidateCount = ref(0)
@@ -317,8 +354,18 @@ onMounted(() => {
     videoList.value = [...savedState.videoList]
     appVideoList.value = [...savedState.appVideoList]
     refreshIdx.value = savedState.refreshIdx
+    webFreshIdx1h.value = savedState.webFreshIdx1h ?? 1
+    webFreshIdx1hTimestamp = savedState.webFreshIdx1hTimestamp ?? Date.now()
+    webFetchRow.value = savedState.webFetchRow ?? 1
+    webRefreshBrush.value = savedState.webRefreshBrush ?? 0
+    webLoadMoreBrush.value = savedState.webLoadMoreBrush ?? 1
+    webRecommendationUniqId = savedState.webUniqId || createWebRecommendationUniqId()
+    webLastClicklist.value = savedState.webLastClicklist?.slice(-WEB_LAST_CLICKLIST_MAX_ITEMS) || []
     noMoreContent.value = savedState.noMoreContent
-    rebuildShowlistGroupsFromList(videoList.value)
+    if (savedState.webShowlistGroups?.length)
+      webShowlistGroups.value = savedState.webShowlistGroups.filter(Boolean).slice(-1)
+    else
+      rebuildShowlistGroupsFromList(videoList.value)
     hasInitializedData.value = true
     isLoading.value = false
 
@@ -336,8 +383,16 @@ onMounted(() => {
     // 清空所有缓存状态，确保没有历史数据影响
     cachedVideoList.value = []
     cachedRefreshIdx.value = 1
+    cachedWebFetchRow.value = 1
+    cachedWebFreshIdx1h.value = 1
+    cachedWebRefreshBrush.value = 0
+    cachedWebLoadMoreBrush.value = 1
     forwardVideoList.value = []
     forwardRefreshIdx.value = 1
+    forwardWebFetchRow.value = 1
+    forwardWebFreshIdx1h.value = 1
+    forwardWebRefreshBrush.value = 0
+    forwardWebLoadMoreBrush.value = 1
 
     // 恢复滚动位置
     if (savedState.scrollTop) {
@@ -382,6 +437,14 @@ onBeforeUnmount(() => {
       videoList: [...videoList.value],
       appVideoList: [...appVideoList.value],
       refreshIdx: refreshIdx.value,
+      webFreshIdx1h: webFreshIdx1h.value,
+      webFreshIdx1hTimestamp,
+      webFetchRow: webFetchRow.value,
+      webRefreshBrush: webRefreshBrush.value,
+      webLoadMoreBrush: webLoadMoreBrush.value,
+      webUniqId: webRecommendationUniqId,
+      webShowlistGroups: [...webShowlistGroups.value],
+      webLastClicklist: [...webLastClicklist.value],
       noMoreContent: noMoreContent.value,
       isInitialized: true,
       recommendationMode: settings.value.recommendationMode,
@@ -508,36 +571,22 @@ function getAppVideoKeys(item: AppVideoItem): string[] {
   return keys
 }
 
-function getWebShowlistEntry(item: VideoItem): string | undefined {
+function getWebShowlistEntry(item: VideoItem, exposed = false): string | undefined {
   const goto = `${item.goto || ''}`.trim()
   if (!goto)
     return undefined
 
-  const id = item.id || 'undefined'
-  if (goto === 'av')
-    return `av_n_${id}`
-  if (goto === 'live')
-    return `live_n_${id}`
-  if (goto === 'ad')
-    return `ad_${id}`
-
-  return `${goto}_${id}`
+  const sourceId = item.id || item.business_info?.src_id || 'undefined'
+  const archiveAid = goto === 'ad' ? item.business_info?.archive?.aid : undefined
+  const exposureMarker = exposed ? '' : 'n_'
+  return `${goto}_${exposureMarker}${sourceId}${archiveAid ? `_${archiveAid}` : ''}`
 }
 
 function buildLastShowlistGroup(items: VideoItem[]): string {
-  const parts: string[] = []
-  const seen = new Set<string>()
-
-  items.forEach((item) => {
-    const entry = getWebShowlistEntry(item)
-    if (!entry || seen.has(entry))
-      return
-
-    seen.add(entry)
-    parts.push(entry)
-  })
-
-  return parts.join(',')
+  return items
+    .map(item => getWebShowlistEntry(item))
+    .filter((entry): entry is string => !!entry)
+    .join(',')
 }
 
 function getLastShowlistFromGroups(): string {
@@ -582,16 +631,92 @@ function saveNoCookieRecommendationState(group: string, recommendationMode: stri
 
 function rebuildShowlistGroupsFromList(list: VideoElement[]) {
   const items = list
+    .slice(-WEB_LOAD_MORE_PAGE_SIZE)
     .map(video => video.item)
     .filter((item): item is VideoItem => !!item)
   const group = buildLastShowlistGroup(items)
   webShowlistGroups.value = group ? [group] : []
 }
 
+function createWebRecommendationUniqId(): string {
+  return `${Math.floor(10_000_000_000 + Math.random() * 90_000_000_000)}`
+}
+
+function getWebRecommendationDevice(): 'win' | 'mac' | 'linux' | 'unknown' {
+  const userAgent = navigator.userAgent
+  if (/windows|win32|win64|wow32|wow64/i.test(userAgent))
+    return 'win'
+  if (/macintosh|macintel|macppc|mac68k|macos/i.test(userAgent))
+    return 'mac'
+  if ((/linux/i.test(userAgent) && !/android/i.test(userAgent)) || /x11/i.test(userAgent))
+    return 'linux'
+  return 'unknown'
+}
+
+function getWebRecommendationScreen(): string {
+  return getCookie('browser_resolution') || `${window.innerWidth}-${window.innerHeight}`
+}
+
+function getWebRecommendationRefreshYNum(): number {
+  return window.innerWidth < WEB_FIVE_COLUMN_MIN_WIDTH ? 4 : 5
+}
+
+function getWebRecommendationLastYNum(): number {
+  const storedColumnCount = Number(getCookie('home_feed_column'))
+  return Number.isFinite(storedColumnCount) && storedColumnCount > 0
+    ? storedColumnCount
+    : WEB_LAST_Y_NUM
+}
+
+function getCurrentWebFreshIdx1h(): number {
+  const now = Date.now()
+  if (now - webFreshIdx1hTimestamp > WEB_FRESH_IDX_1H_WINDOW_MS) {
+    webFreshIdx1h.value = 1
+    webFreshIdx1hTimestamp = now
+  }
+  return webFreshIdx1h.value
+}
+
 function resetWebRecommendState() {
   refreshIdx.value = 1
+  webFreshIdx1h.value = 1
+  webFreshIdx1hTimestamp = Date.now()
   webFetchRow.value = 1
+  webRefreshBrush.value = 0
+  webLoadMoreBrush.value = 1
+  webRecommendationUniqId = createWebRecommendationUniqId()
   webShowlistGroups.value = []
+  webLastClicklist.value = []
+}
+
+function markWebRecommendationExposed(element: VideoElement | AppVideoElement) {
+  if (!isWebRecommendationMode.value || !element.item)
+    return
+
+  const item = element.item as VideoItem
+  const pendingEntry = getWebShowlistEntry(item)
+  const exposedEntry = getWebShowlistEntry(item, true)
+  if (!pendingEntry || !exposedEntry)
+    return
+
+  webShowlistGroups.value = webShowlistGroups.value.map(group => group
+    .split(',')
+    .map(entry => entry === pendingEntry ? exposedEntry : entry)
+    .join(','))
+}
+
+function recordWebRecommendationClick(element: VideoElement | AppVideoElement) {
+  if (!isWebRecommendationMode.value || !element.item)
+    return
+
+  const item = element.item as VideoItem
+  const goto = `${item.goto || ''}`.trim()
+  if (!goto || !item.id)
+    return
+
+  webLastClicklist.value.push(`${goto}_${item.id}`)
+  if (webLastClicklist.value.length > WEB_LAST_CLICKLIST_MAX_ITEMS)
+    webLastClicklist.value = webLastClicklist.value.slice(-WEB_LAST_CLICKLIST_MAX_ITEMS)
 }
 
 function waitForRecommendRetry(delayMs: number): Promise<void> {
@@ -670,8 +795,14 @@ watch(() => settings.value.recommendationMode, () => {
   forwardAppVideoList.value = []
   cachedAppVideoList.value = []
   cachedWebFetchRow.value = 1
+  cachedWebFreshIdx1h.value = 1
+  cachedWebRefreshBrush.value = 0
+  cachedWebLoadMoreBrush.value = 1
   cachedWebShowlistGroups.value = []
   forwardWebFetchRow.value = 1
+  forwardWebFreshIdx1h.value = 1
+  forwardWebRefreshBrush.value = 0
+  forwardWebLoadMoreBrush.value = 1
   forwardWebShowlistGroups.value = []
 
   // 重置前进后退状态
@@ -701,9 +832,6 @@ async function initData() {
   // 用户主动刷新必须重新获得一次完整请求机会；成功后才重置递增冷却等级。
   clearActiveWebRiskCooldown()
   hasInitializedData.value = false
-  if (isWebRecommendationMode.value)
-    webFetchRow.value = 1
-
   // 直接清空列表，骨架屏由 VideoCardGrid 自动处理
   videoList.value = []
   appVideoList.value = []
@@ -833,12 +961,18 @@ function initPageAction() {
       cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
       cachedRefreshIdx.value = refreshIdx.value
       cachedWebFetchRow.value = webFetchRow.value
+      cachedWebFreshIdx1h.value = webFreshIdx1h.value
+      cachedWebRefreshBrush.value = webRefreshBrush.value
+      cachedWebLoadMoreBrush.value = webLoadMoreBrush.value
       cachedWebShowlistGroups.value = [...webShowlistGroups.value]
       hasBackState.value = true
 
       // 清空前进状态（因为刷新会产生新的分支）
       forwardVideoList.value = []
       forwardWebFetchRow.value = 1
+      forwardWebFreshIdx1h.value = 1
+      forwardWebRefreshBrush.value = 0
+      forwardWebLoadMoreBrush.value = 1
       forwardWebShowlistGroups.value = []
       hasForwardState.value = false
 
@@ -873,6 +1007,9 @@ function initPageAction() {
         forwardVideoList.value = JSON.parse(JSON.stringify(videoList.value))
         forwardRefreshIdx.value = refreshIdx.value
         forwardWebFetchRow.value = webFetchRow.value
+        forwardWebFreshIdx1h.value = webFreshIdx1h.value
+        forwardWebRefreshBrush.value = webRefreshBrush.value
+        forwardWebLoadMoreBrush.value = webLoadMoreBrush.value
         forwardWebShowlistGroups.value = [...webShowlistGroups.value]
         hasForwardState.value = true
 
@@ -880,6 +1017,9 @@ function initPageAction() {
         videoList.value = JSON.parse(JSON.stringify(cachedVideoList.value))
         refreshIdx.value = cachedRefreshIdx.value
         webFetchRow.value = cachedWebFetchRow.value
+        webFreshIdx1h.value = cachedWebFreshIdx1h.value
+        webRefreshBrush.value = cachedWebRefreshBrush.value
+        webLoadMoreBrush.value = cachedWebLoadMoreBrush.value
         webShowlistGroups.value = [...cachedWebShowlistGroups.value]
 
         hasBackState.value = false
@@ -919,6 +1059,9 @@ function initPageAction() {
         cachedVideoList.value = JSON.parse(JSON.stringify(videoList.value))
         cachedRefreshIdx.value = refreshIdx.value
         cachedWebFetchRow.value = webFetchRow.value
+        cachedWebFreshIdx1h.value = webFreshIdx1h.value
+        cachedWebRefreshBrush.value = webRefreshBrush.value
+        cachedWebLoadMoreBrush.value = webLoadMoreBrush.value
         cachedWebShowlistGroups.value = [...webShowlistGroups.value]
         hasBackState.value = true
 
@@ -926,6 +1069,9 @@ function initPageAction() {
         videoList.value = JSON.parse(JSON.stringify(forwardVideoList.value))
         refreshIdx.value = forwardRefreshIdx.value
         webFetchRow.value = forwardWebFetchRow.value
+        webFreshIdx1h.value = forwardWebFreshIdx1h.value
+        webRefreshBrush.value = forwardWebRefreshBrush.value
+        webLoadMoreBrush.value = forwardWebLoadMoreBrush.value
         webShowlistGroups.value = [...forwardWebShowlistGroups.value]
 
         // 标记为已经前进
@@ -983,23 +1129,35 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
     const isLoadMoreRequest = requestType === 'loadMore'
     const shouldUseNoCookieStoredFreshIdx = !isLoadMoreRequest && recommendationMode === 'webNoCookie' && settings.value.rememberNoCookieRecommendationState
     const currentRefreshIdx = shouldUseNoCookieStoredFreshIdx ? getNoCookieNextFreshIdx() : refreshIdx.value
+    const currentFreshIdx1h = getCurrentWebFreshIdx1h()
     const pageSize = isLoadMoreRequest ? WEB_LOAD_MORE_PAGE_SIZE : WEB_REFRESH_PAGE_SIZE
-    const fetchRow = isLoadMoreRequest ? webFetchRow.value + 3 : 1
+    const fetchRow = isLoadMoreRequest ? webFetchRow.value + WEB_FETCH_ROW_STEP : 1
     const currentLastShowlist = getLastShowlistFromGroups()
     const lastShowlist = currentLastShowlist || (!isLoadMoreRequest && recommendationMode === 'webNoCookie' ? getNoCookieStoredLastShowlist() : '')
 
     const requestOptions = {
-      fresh_type: isLoadMoreRequest ? 4 : 5,
+      web_location: WEB_LOCATION,
+      y_num: isLoadMoreRequest ? WEB_LOAD_MORE_Y_NUM : getWebRecommendationRefreshYNum(),
+      fresh_type: isLoadMoreRequest ? WEB_LOAD_MORE_FRESH_TYPE : WEB_REFRESH_FRESH_TYPE,
       fresh_idx: currentRefreshIdx,
-      fresh_idx_1h: currentRefreshIdx,
+      fresh_idx_1h: currentFreshIdx1h,
       ps: pageSize,
       fetch_row: fetchRow,
+      brush: isLoadMoreRequest ? webLoadMoreBrush.value : webRefreshBrush.value,
+      device: getWebRecommendationDevice(),
+      last_y_num: getWebRecommendationLastYNum(),
+      screen: getWebRecommendationScreen(),
+      uniq_id: webRecommendationUniqId,
       last_showlist: lastShowlist || undefined,
+      last_clicklist: webLastClicklist.value.join(',') || undefined,
     }
 
     const primaryIdentity: WebRecommendationIdentity = recommendationMode === 'webNoCookie' ? 'webNoCookie' : 'web'
-    const fallbackIdentity: WebRecommendationIdentity = primaryIdentity === 'web' ? 'webNoCookie' : 'web'
-    const requestIdentities = [primaryIdentity, fallbackIdentity] as const
+    // Web 模式可以在带 Cookie 请求失败后降级为匿名推荐；无 Cookie 模式
+    // 必须保持用户选择，不能反向携带登录 Cookie。
+    const requestIdentities: readonly WebRecommendationIdentity[] = primaryIdentity === 'web'
+      ? ['web', 'webNoCookie']
+      : ['webNoCookie']
     let requestLog: RecommendRequestLogContext | undefined
     let response: forYouResult | undefined
     let successfulIdentity: WebRecommendationIdentity | undefined
@@ -1024,7 +1182,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         catch (error) {
           hadRiskControlFailure ||= isBilibiliRiskControl(error)
           logRecommendRequestFailure(requestLog, {
-            error,
+            ...getRecommendErrorLogDetails(error),
             phase,
             attempt,
           })
@@ -1102,9 +1260,16 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
     noMoreContent.value = false
 
     if (response.code === 0) {
-      // 只在成功时递增 refreshIdx
+      // 原生首页的 fresh_idx / fresh_idx_1h / brush 只向后推进。
       refreshIdx.value = currentRefreshIdx + 1
-      webFetchRow.value = fetchRow
+      webFreshIdx1h.value = currentFreshIdx1h + 1
+      if (isLoadMoreRequest) {
+        webFetchRow.value = fetchRow
+        webLoadMoreBrush.value++
+      }
+      else {
+        webRefreshBrush.value++
+      }
 
       const resData = [] as VideoItem[]
       const existingIds = new Set<string>()
@@ -1139,9 +1304,10 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         resData.push(item)
       })
 
-      const showlistGroup = buildLastShowlistGroup(resData)
-      if (showlistGroup)
-        webShowlistGroups.value.push(showlistGroup)
+      // 原生首页从接口的完整下发结果生成 showlist，包含广告和未展示卡片；
+      // 下一批到达后只保留最近一批，避免签名 URL 随滚动无限增长。
+      const showlistGroup = buildLastShowlistGroup(response.data.item)
+      webShowlistGroups.value = showlistGroup ? [showlistGroup] : []
 
       // when videoList has length property, it means it is the first time to load
       if (!beforeLoadCount) {
@@ -1515,6 +1681,8 @@ defineExpose({
       :transform-item="(item: VideoElement | AppVideoElement) => item.displayData"
       :get-item-key="(item: VideoElement | AppVideoElement, index?: number) => `${item.uniqueId}-${index ?? 0}`"
       :video-type="isWebRecommendationMode ? 'rcmd' : 'appRcmd'"
+      :card-exposure-handler="markWebRecommendationExposed"
+      :card-click-observer="recordWebRecommendationClick"
       show-preview
       more-btn
       @refresh="initData"

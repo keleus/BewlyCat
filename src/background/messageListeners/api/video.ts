@@ -4,14 +4,22 @@ import { AHS } from '../../utils'
 const WEB_RECOMMEND_URL = 'https://api.bilibili.com/x/web-interface/wbi/index/top/feed/rcmd'
 
 const WEB_RECOMMEND_PARAMS = {
-  fresh_type: 4, // 相关性控制
+  web_location: 1430650,
+  y_num: 4,
+  fresh_type: 3, // 原生首页「换一换」
   feed_version: 'V8', // Feed版本
   homepage_ver: 1, // 首页版本
-  ps: 12, // 单页记录数，默认12，最大30（调用时可覆盖）
+  ps: 10, // 原生首页「换一换」单页记录数（加载更多时覆盖为12）
   fresh_idx: 1, // 翻页号，从1开始（调用时会动态传入）
   fresh_idx_1h: 1, // 翻页号(一小时前?)，默认与 fresh_idx 相同
-  fetch_row: undefined as number | undefined, // 本次抓取的最后一行行号（可选）
+  fetch_row: 1,
+  brush: 0,
+  device: 'unknown',
+  last_y_num: 4,
+  screen: '',
+  uniq_id: '',
   last_showlist: '', // 上次抓取的视频av号列表（可选）
+  last_clicklist: '', // 当前推荐会话内点击过的卡片，最多50条（可选）
 }
 
 const API_VIDEO = {

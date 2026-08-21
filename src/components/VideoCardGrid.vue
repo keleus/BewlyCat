@@ -88,6 +88,16 @@ interface VideoCardGridProps<T = any> {
   cardClickHandler?: (item: T, event: MouseEvent) => void
 
   /**
+   * 观察卡片主链接点击，不接管 VideoCard 原有打开行为。
+   */
+  cardClickObserver?: (item: T, event: MouseEvent) => void
+
+  /**
+   * 卡片首次进入滚动视口时触发。
+   */
+  cardExposureHandler?: (item: T) => void
+
+  /**
    * 是否让封面左上角插槽常驻显示。
    * @default false
    */
@@ -328,8 +338,13 @@ function triggerLoadMore() {
 const supportsIntersectionObserver = typeof window !== 'undefined' && 'IntersectionObserver' in window
 const isFirefox = typeof navigator !== 'undefined' && /\bFirefox\//.test(navigator.userAgent)
 let intersectionObserver: IntersectionObserver | null = null
+let cardExposureObserver: IntersectionObserver | null = null
 let isGridActive = false
 let scrollListenersActive = false
+const cardExposureElements = new Map<string | number, HTMLElement>()
+const cardExposureItems = new WeakMap<HTMLElement, T>()
+const cardExposureKeys = new WeakMap<HTMLElement, string | number>()
+const exposedCardKeys = new Set<string | number>()
 
 function cleanupIntersectionObserver() {
   if (intersectionObserver) {
@@ -337,6 +352,71 @@ function cleanupIntersectionObserver() {
     intersectionObserver = null
   }
   isLoadMoreSentinelIntersecting.value = false
+}
+
+function cleanupCardExposureObserver() {
+  cardExposureObserver?.disconnect()
+  cardExposureObserver = null
+}
+
+function setupCardExposureObserver() {
+  cleanupCardExposureObserver()
+  if (!supportsIntersectionObserver || !isGridActive || !props.cardExposureHandler)
+    return
+
+  cardExposureObserver = new IntersectionObserver(
+    (entries) => {
+      if (!isGridActive || !isDocumentVisible())
+        return
+
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting)
+          return
+
+        const element = entry.target as HTMLElement
+        const item = cardExposureItems.get(element)
+        const key = cardExposureKeys.get(element)
+        if (item === undefined || key === undefined || exposedCardKeys.has(key))
+          return
+
+        exposedCardKeys.add(key)
+        cardExposureObserver?.unobserve(element)
+        props.cardExposureHandler?.(item)
+      })
+    },
+    {
+      root: findScrollElement(),
+      threshold: 0,
+    },
+  )
+
+  cardExposureElements.forEach((element, key) => {
+    if (!exposedCardKeys.has(key))
+      cardExposureObserver?.observe(element)
+  })
+}
+
+function setVideoCardElement(key: string | number, item: T, component: unknown) {
+  const previousElement = cardExposureElements.get(key)
+  if (previousElement) {
+    cardExposureObserver?.unobserve(previousElement)
+    cardExposureElements.delete(key)
+  }
+
+  if (!props.cardExposureHandler)
+    return
+
+  const element = component instanceof Element
+    ? component
+    : (component as { $el?: unknown } | null)?.$el
+  if (!(element instanceof HTMLElement))
+    return
+
+  cardExposureElements.set(key, element)
+  cardExposureItems.set(element, item)
+  cardExposureKeys.set(element, key)
+  if (!exposedCardKeys.has(key))
+    cardExposureObserver?.observe(element)
 }
 
 function setupIntersectionObserver() {
@@ -543,6 +623,7 @@ watch(() => props.items.length, (newCount, oldCount) => {
     consecutiveFailures.value = 0
     lastItemsCount.value = 0
     reachedLoadMoreDuringLoading.value = false
+    exposedCardKeys.clear()
     return
   }
 
@@ -598,6 +679,7 @@ function activateGrid() {
       return
 
     setupIntersectionObserver()
+    setupCardExposureObserver()
     checkShouldPreload()
   })
 }
@@ -610,6 +692,7 @@ function deactivateGrid() {
   document.removeEventListener('visibilitychange', handleDocumentVisibilityChange)
   cleanupScrollListeners()
   cleanupIntersectionObserver()
+  cleanupCardExposureObserver()
   cleanupGridResizeObserver()
 
   if (checkPreloadRAF !== null) {
@@ -636,6 +719,8 @@ onUnmounted(() => {
     checkPreloadRAF = null
   }
   cleanupGridResizeObserver()
+  cardExposureElements.clear()
+  exposedCardKeys.clear()
   resetTransformCaches()
 })
 
@@ -977,6 +1062,7 @@ function getUniqueKey(item: T, index: number): string | number {
       <VideoCard
         v-for="renderItem in renderItems"
         :key="renderItem.key"
+        :ref="component => setVideoCardElement(renderItem.key, renderItem.item, component)"
         :data-index="renderItem.index"
         :skeleton="renderItem.skeleton"
         :type="renderItem.type"
@@ -989,6 +1075,7 @@ function getUniqueKey(item: T, index: number): string | number {
         :disable-content-visibility="props.disableContentVisibility"
         :is-following-page="props.isFollowingPage"
         :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.item, event) : undefined"
+        :primary-click-observer="props.cardClickObserver ? (event: MouseEvent) => props.cardClickObserver?.(renderItem.item, event) : undefined"
         :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
       >
         <template v-for="(_, name) in $slots" #[name]>

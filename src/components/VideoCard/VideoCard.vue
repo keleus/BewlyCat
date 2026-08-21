@@ -33,6 +33,7 @@ interface Props {
   disableContentVisibility?: boolean
   isFollowingPage?: boolean
   customClickHandler?: (event: MouseEvent) => void
+  primaryClickObserver?: (event: MouseEvent) => void
   coverTopLeftAlwaysVisible?: boolean
   coverTopRightAlwaysVisible?: boolean
 }
@@ -157,6 +158,12 @@ function handleLinkClick(event: MouseEvent) {
   if (props.video)
     recordVideoVisit(props.video)
 
+  try {
+    props.primaryClickObserver?.(event)
+  }
+  catch (error) {
+    console.error('Video card click observer failed:', error)
+  }
   const clickHandler = props.customClickHandler || logic.handleClick
   clickHandler(event)
 }

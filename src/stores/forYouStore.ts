@@ -54,6 +54,14 @@ export interface ForYouState {
 
   // 基础页面状态
   refreshIdx: number
+  webFreshIdx1h?: number
+  webFreshIdx1hTimestamp?: number
+  webFetchRow?: number
+  webRefreshBrush?: number
+  webLoadMoreBrush?: number
+  webUniqId?: string
+  webShowlistGroups?: string[]
+  webLastClicklist?: string[]
   noMoreContent: boolean
 
   // 滚动位置
@@ -74,6 +82,13 @@ export const useForYouStore = defineStore('forYou', () => {
 
     // 基础页面状态
     refreshIdx: 1,
+    webFreshIdx1h: 1,
+    webFreshIdx1hTimestamp: Date.now(),
+    webFetchRow: 1,
+    webRefreshBrush: 0,
+    webLoadMoreBrush: 1,
+    webShowlistGroups: [],
+    webLastClicklist: [],
     noMoreContent: false,
 
     // 是否已初始化
@@ -96,6 +111,13 @@ export const useForYouStore = defineStore('forYou', () => {
       videoList: [],
       appVideoList: [],
       refreshIdx: 1,
+      webFreshIdx1h: 1,
+      webFreshIdx1hTimestamp: Date.now(),
+      webFetchRow: 1,
+      webRefreshBrush: 0,
+      webLoadMoreBrush: 1,
+      webShowlistGroups: [],
+      webLastClicklist: [],
       noMoreContent: false,
       isInitialized: false,
       recommendationMode: undefined,

@@ -24,12 +24,16 @@ async function toJsonHandler(data: Response): Promise<any> {
     throw new ApiRiskControlError()
   }
 
+  // Response body can only be consumed once. Keep a clone before json() so
+  // malformed/incorrectly typed HTML responses can still be inspected.
+  const fallbackResponse = data.clone()
+
   try {
     return await data.json()
   }
   catch (error) {
     // 如果JSON解析失败，可能也是风控页面
-    const text = await data.clone().text()
+    const text = await fallbackResponse.text()
     if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
       throw new ApiRiskControlError()
     }
@@ -272,10 +276,30 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
         // 避免把签名失效误判成业务侧的访问权限不足。
         if (needsWbi && !hasRefreshedWbiKeys && isWbiSignatureRejected(response)) {
           hasRefreshedWbiKeys = true
+          console.warn('[BewlyCat][WBI] 签名被接口拒绝，刷新密钥后重试', {
+            url: baseUrl,
+            noCookie: wbiKeyOptions.noCookie,
+            code: -403,
+          })
           clearWbiKeys(wbiKeyOptions)
           const refreshed = await initWbiKeys(wbiKeyOptions)
-          if (refreshed)
+          if (refreshed) {
             response = await executeFullRequest(true)
+            if (isWbiSignatureRejected(response)) {
+              console.error('[BewlyCat][WBI] 刷新密钥后签名仍被接口拒绝', {
+                url: baseUrl,
+                noCookie: wbiKeyOptions.noCookie,
+                code: -403,
+              })
+            }
+          }
+          else {
+            console.error('[BewlyCat][WBI] 签名被接口拒绝且密钥刷新失败', {
+              url: baseUrl,
+              noCookie: wbiKeyOptions.noCookie,
+              code: -403,
+            })
+          }
         }
 
         return response
@@ -284,6 +308,16 @@ async function doRequest(message: Message, api: API, sendResponse?: (response?: 
         // 如果使用了 WBI 签名且失败，尝试不带 WBI 签名重试
         if (needsWbi && !hasTriedWithoutWbi) {
           hasTriedWithoutWbi = true
+          const errorRecord = error && typeof error === 'object'
+            ? error as Record<string, unknown>
+            : undefined
+          console.warn('[BewlyCat][WBI] 带签名请求异常，降级为无签名请求', {
+            url: baseUrl,
+            noCookie: wbiKeyOptions.noCookie,
+            code: errorRecord?.code,
+            message: error instanceof Error ? error.message : String(error),
+            error,
+          })
           return await executeFullRequest(false)
         }
         throw error
