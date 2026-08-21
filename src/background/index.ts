@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill'
 
+import { isContentScriptTargetUrl } from '~/constants/contentScript'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl, isPreventMobileRedirectEnabled } from '~/utils/bilibiliDesktopNavigation'
 
 import { setupAppAuthScheduler } from './appAuthScheduler'
@@ -119,7 +120,7 @@ if (isFirefoxBuild) {
         return { ...details, requestHeaders }
       }
 
-      if (details.documentUrl) {
+      if (details.documentUrl && (isExtensionUri(details.documentUrl) || isContentScriptTargetUrl(details.documentUrl))) {
         const url = new URL(details.documentUrl)
         const extensionUri = isExtensionUri(details.documentUrl)
         details.requestHeaders = details.requestHeaders || []
