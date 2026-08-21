@@ -11,6 +11,7 @@ const extensionDirectory = isFirefox
   ? 'extension-firefox'
   : isSafari ? 'extension-safari' : 'extension'
 const contributorsImageUrl = 'https://contrib.rocks/image?repo=keleus/BewlyCat'
+const contributorsImageCachePath = r('.cache/bewlycat/contributors.svg')
 const contributorsImagePath = r(extensionDirectory, 'assets/contributors.svg')
 
 /**
@@ -46,7 +47,7 @@ function writeManifest() {
 }
 
 async function downloadContributorsImage() {
-  const temporaryPath = `${contributorsImagePath}.tmp`
+  const temporaryPath = `${contributorsImageCachePath}.${process.pid}.tmp`
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 30_000)
 
@@ -67,13 +68,23 @@ async function downloadContributorsImage() {
     if (image.length === 0)
       throw new Error('Downloaded contributor image is empty')
 
+    await fs.ensureDir(r('.cache/bewlycat'))
     await fs.writeFile(temporaryPath, image)
-    await fs.move(temporaryPath, contributorsImagePath, { overwrite: true })
+    await fs.move(temporaryPath, contributorsImageCachePath, { overwrite: true })
+    await fs.copy(contributorsImageCachePath, contributorsImagePath, { overwrite: true })
     log('PRE', 'download contributors image')
   }
   catch (error) {
     await fs.remove(temporaryPath)
-    throw error
+
+    if (await fs.pathExists(contributorsImageCachePath)) {
+      await fs.copy(contributorsImageCachePath, contributorsImagePath, { overwrite: true })
+      log('PRE', 'use cached contributors image')
+      return
+    }
+
+    const message = error instanceof Error ? error.message : String(error)
+    console.warn(`[PRE] no cached contributors image available; use the cloud image at runtime: ${message}`)
   }
   finally {
     clearTimeout(timeout)

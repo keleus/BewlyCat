@@ -1,4 +1,5 @@
 .DS_Store
+.cache/
 .idea/
 .vite-ssg-dist
 .vite-ssg-temp

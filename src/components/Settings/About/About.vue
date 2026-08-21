@@ -17,6 +17,8 @@ import SettingsSectionHeading from '../components/SettingsSectionHeading.vue'
 
 const hasNewVersion = ref<boolean>(false)
 const contributorsImageFailed = ref(false)
+const contributorsImageUsingCloud = ref(false)
+const contributorsImageSrc = ref(browser.runtime.getURL('/assets/contributors.svg'))
 const settingsCloudSyncPreference = useSettingsCloudSyncPreference()
 const browserInfo = ref(parseBrowserInfo())
 const isCopyingEnvironmentInfo = ref(false)
@@ -52,6 +54,12 @@ async function checkGitHubRelease() {
 }
 
 function handleContributorImageError() {
+  if (!contributorsImageUsingCloud.value) {
+    contributorsImageUsingCloud.value = true
+    contributorsImageSrc.value = 'https://contrib.rocks/image?repo=keleus/BewlyCat'
+    return
+  }
+
   contributorsImageFailed.value = true
 }
 
@@ -216,7 +224,7 @@ async function handleCopyEnvironmentInfo() {
             class="contributors-image-link"
           >
             <img
-              :src="browser.runtime.getURL('/assets/contributors.svg')"
+              :src="contributorsImageSrc"
               :alt="$t('settings.current_contributors')"
               loading="lazy"
               @error="handleContributorImageError"
