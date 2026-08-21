@@ -21,6 +21,7 @@ import {
 } from '~/components/MomentCard/utils'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
+import type { StorageEventFilter } from '~/composables/useStorageLocal'
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL } from '~/constants/globalEvents'
 import { settings } from '~/logic'
@@ -133,7 +134,33 @@ let resolveMomentsFeedCacheReady: (() => void) | undefined
 const momentsFeedCacheReady = new Promise<void>((resolve) => {
   resolveMomentsFeedCacheReady = resolve
 })
+let momentsCacheWriteTimer: number | undefined
+let pendingMomentsCacheWrite: (() => void | Promise<void>) | undefined
+const debounceMomentsCacheWrite: StorageEventFilter = (invoke) => {
+  pendingMomentsCacheWrite = invoke
+  if (momentsCacheWriteTimer !== undefined)
+    window.clearTimeout(momentsCacheWriteTimer)
+  momentsCacheWriteTimer = window.setTimeout(() => {
+    momentsCacheWriteTimer = undefined
+    const pendingWrite = pendingMomentsCacheWrite
+    pendingMomentsCacheWrite = undefined
+    void pendingWrite?.()
+  }, 500)
+}
+
+function flushMomentsCacheWrite() {
+  if (momentsCacheWriteTimer !== undefined)
+    window.clearTimeout(momentsCacheWriteTimer)
+  momentsCacheWriteTimer = undefined
+  const pendingWrite = pendingMomentsCacheWrite
+  pendingMomentsCacheWrite = undefined
+  void pendingWrite?.()
+}
+
 const momentsFeedCache = useStorageLocal<MomentsFeedCache>('momentsFeedCache', {}, {
+  deep: false,
+  eventFilter: debounceMomentsCacheWrite,
+  shallow: true,
   writeDefaults: false,
   onReady: () => resolveMomentsFeedCacheReady?.(),
 })
@@ -326,6 +353,7 @@ function handlePinnedListFocusOut(event: FocusEvent) {
 onBeforeUnmount(() => {
   if (pinnedListCollapseTimer)
     clearTimeout(pinnedListCollapseTimer)
+  flushMomentsCacheWrite()
 })
 
 function httpsUrl(url = '') {

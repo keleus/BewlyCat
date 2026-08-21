@@ -94,11 +94,6 @@ function guessSerializerType(value: unknown): SerializerType {
   return 'any'
 }
 
-function tryOnScopeDispose(fn: () => void) {
-  if (getCurrentScope())
-    onScopeDispose(fn)
-}
-
 function cloneValue<T>(value: T): T {
   if (typeof value !== 'object' || value == null)
     return value
@@ -164,6 +159,7 @@ function runWithFilter(eventFilter: StorageEventFilter | undefined, invoke: () =
 }
 
 export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, options?: UseStorageLocalOptions<T>): StorageRef<T> {
+  const ownerScope = getCurrentScope()
   const {
     flush = 'pre',
     deep = true,
@@ -247,57 +243,72 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
 
     syncStarted = true
 
-    watch(
-      data,
-      () => {
-        if (!ready)
-          return
+    const registerSync = () => {
+      watch(
+        data,
+        () => {
+          if (!ready)
+            return
 
-        if (suppressedWriteCount > 0) {
-          suppressedWriteCount--
-          return
-        }
+          if (suppressedWriteCount > 0) {
+            suppressedWriteCount = 0
+            return
+          }
 
-        runWithFilter(eventFilter, async () => {
+          runWithFilter(eventFilter, async () => {
+            try {
+              await persistValue()
+            }
+            catch (error) {
+              onError(error)
+            }
+          })
+        },
+        { flush, deep },
+      )
+
+      if (listenToStorageChanges) {
+        const onChanged = async (changes: Record<string, browser.Storage.StorageChange>, areaName: string) => {
+          if (areaName !== 'local' || !(key in changes))
+            return
+
+          const change = changes[key]
+
           try {
-            await persistValue()
+            if (consumePendingOwnStorageChange(change.newValue))
+              return
+
+            const nextValue = change.newValue == null
+              ? createInitialValue(initialValue) as T
+              : cloneValue(mergeStoredValue(
+                  await deserializeStoredValue(change.newValue, serializer),
+                  createInitialValue(initialValue),
+                  mergeDefaults,
+                ))
+            if (Object.is(data.value, nextValue))
+              return
+
+            // Deserialize first so malformed external data cannot leave a stale
+            // suppression marker. Increment before assignment to also support
+            // callers that explicitly request a synchronous watcher flush.
+            suppressedWriteCount++
+            data.value = nextValue
           }
           catch (error) {
             onError(error)
           }
-        })
-      },
-      { flush, deep },
-    )
-
-    if (listenToStorageChanges) {
-      const onChanged = async (changes: Record<string, browser.Storage.StorageChange>, areaName: string) => {
-        if (areaName !== 'local' || !(key in changes))
-          return
-
-        const change = changes[key]
-
-        try {
-          if (consumePendingOwnStorageChange(change.newValue))
-            return
-
-          suppressedWriteCount++
-          if (change.newValue == null) {
-            data.value = createInitialValue(initialValue) as T
-          }
-          else {
-            const storedValue = await deserializeStoredValue(change.newValue, serializer)
-            data.value = cloneValue(mergeStoredValue(storedValue, createInitialValue(initialValue), mergeDefaults))
-          }
         }
-        catch (error) {
-          onError(error)
-        }
+
+        browser.storage.onChanged.addListener(onChanged)
+        if (ownerScope)
+          onScopeDispose(() => browser.storage.onChanged.removeListener(onChanged))
       }
-
-      browser.storage.onChanged.addListener(onChanged)
-      tryOnScopeDispose(() => browser.storage.onChanged.removeListener(onChanged))
     }
+
+    if (!ownerScope)
+      registerSync()
+    else if (ownerScope.active)
+      ownerScope.run(registerSync)
   }
 
   void (async () => {
@@ -331,8 +342,10 @@ export function useStorageLocal<T>(key: string, initialValue: MaybeRef<T>, optio
       onError(error)
     }
 
-    onReady?.(data.value)
-    startSync()
+    if (!ownerScope || ownerScope.active) {
+      onReady?.(data.value)
+      startSync()
+    }
   })()
 
   return data
