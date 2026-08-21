@@ -1,6 +1,11 @@
 // 更完善的播放器元素选择器
 import { settings } from '~/logic'
 import type { AutoPlayMode, DefaultVideoPlayerMode, VideoPlayerModeContext, VideoPlayerModeOverride } from '~/logic/storage'
+import { i18n } from '~/utils/i18n'
+
+function t(key: string, params: Record<string, unknown> = {}) {
+  return String(i18n.global.t(key, params))
+}
 
 const _videoClassTag = {
   danmuBtn:
@@ -987,7 +992,7 @@ export function toggleMute(player: Element) {
     if (video) {
       const volumeNumber = document.querySelector('.bpx-player-ctrl-volume-number')
       const isMuted = volumeNumber ? volumeNumber.textContent === '0' : video.muted
-      showState(isMuted ? '已静音' : '已取消静音')
+      showState(isMuted ? t('player_state.muted') : t('player_state.unmuted'))
     }
   }
 }
@@ -1087,7 +1092,7 @@ export function toggleCaption() {
   }
 
   // 如果没有找到任何字幕相关元素，显示提示
-  showState('当前视频无字幕')
+  showState(t('player_state.no_captions'))
 }
 
 // 改变播放速度
@@ -1110,7 +1115,7 @@ export function changePlaybackRate(increase: boolean) {
     }
   }
 
-  showState(`倍速 ${video.playbackRate}`)
+  showState(t('player_state.speed', { rate: video.playbackRate }))
 }
 
 // 重置播放速度
@@ -1118,7 +1123,7 @@ export function resetPlaybackRate() {
   const video = getVideoElement()
   if (video) {
     video.playbackRate = 1
-    showState('倍速 1')
+    showState(t('player_state.speed', { rate: 1 }))
   }
 }
 
@@ -1159,7 +1164,7 @@ function tryApplyRememberedPlaybackRate() {
     video.playbackRate = savedRate
     // 只在倍速不是1时显示状态
     if (savedRate !== 1) {
-      showState(`倍速 ${savedRate}`)
+      showState(t('player_state.speed', { rate: savedRate }))
     }
   }
 }
@@ -1269,7 +1274,7 @@ export function adjustVideoSize(direction: number) {
 export function showDanmuState() {
   const danmuBtn = document.querySelector(_videoClassTag.danmuBtn)
   if (danmuBtn) {
-    showState(`弹幕 ${(danmuBtn as HTMLInputElement).checked ? 'On' : 'Off'}`)
+    showState(t('player_state.danmaku', { state: (danmuBtn as HTMLInputElement).checked ? t('player_state.on') : t('player_state.off') }))
   }
 }
 
@@ -1551,7 +1556,7 @@ export function setVolume(volume: number, showStatus = false): boolean {
 
   // 根据参数决定是否显示音量状态
   if (showStatus) {
-    showState(`音量 ${clampedVolume}%`)
+    showState(t('player_state.volume', { volume: clampedVolume }))
   }
 
   return true

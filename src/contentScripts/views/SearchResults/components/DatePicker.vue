@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   modelValue?: string
@@ -11,6 +12,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
+const { t } = useI18n()
 
 const showPicker = ref(false)
 const pickerRef = ref<HTMLElement>()
@@ -36,7 +38,7 @@ const maxDate = computed(() => {
 // 格式化显示的日期
 const displayValue = computed(() => {
   if (!props.modelValue)
-    return props.placeholder || '开始日期'
+    return props.placeholder || t('search.start_date')
   return props.modelValue.replace(/-/g, '/')
 })
 
@@ -304,8 +306,8 @@ onClickOutside(pickerRef, () => {
 })
 
 // 月份名称
-const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
-const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+const monthNames = computed(() => Array.from({ length: 12 }, (_, index) => t('search.month', { month: index + 1 })))
+const weekDays = computed(() => t('search.weekdays').split(','))
 </script>
 
 <template>
@@ -317,7 +319,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         type="text"
         class="date-picker-input"
         :class="{ 'has-value': modelValue }"
-        :placeholder="placeholder || '开始日期'"
+        :placeholder="placeholder || t('search.start_date')"
         @click="handleInputClick"
         @focus="handleInputFocus"
         @blur="handleInputBlur"
@@ -341,7 +343,7 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
             <button type="button" class="header-btn" @click="prevYear">
               <div class="i-tabler:chevron-left" w-4 h-4 />
             </button>
-            <span class="year-text">{{ currentYear }}年</span>
+            <span class="year-text">{{ t('search.year', { year: currentYear }) }}</span>
             <button type="button" class="header-btn" @click="nextYear">
               <div class="i-tabler:chevron-right" w-4 h-4 />
             </button>
@@ -388,10 +390,10 @@ const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         <!-- 底部按钮 -->
         <div class="picker-footer">
           <button type="button" class="footer-btn clear" @click="clearDate">
-            清除
+            {{ t('search.clear') }}
           </button>
           <button type="button" class="footer-btn today" @click="selectToday">
-            今天
+            {{ t('search.today') }}
           </button>
         </div>
       </div>

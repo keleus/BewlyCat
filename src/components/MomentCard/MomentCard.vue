@@ -188,7 +188,7 @@ const menuVideo = computed<Video | null>(() => {
   return getMenuVideo({
     aid: moment.aid,
     bvid: moment.bvid,
-    title: moment.title || '视频动态',
+    title: moment.title || t('moment_card.video_post'),
     cover: moment.images[0] || moment.chargeCover || '',
     duration: moment.duration,
     play: moment.videoPlay,
@@ -241,8 +241,8 @@ const isReservationAdditional = computed(() => Boolean(
 
 const reservationActionLabel = computed(() =>
   moment.additional?.isReserved
-    ? '取消预约'
-    : (moment.additional?.action || '预约'),
+    ? t('moment_card.cancel_reservation')
+    : (moment.additional?.action || t('moment_card.reserve')),
 )
 
 // VideoCard positions its menu from the trigger and teleports the shared menu
@@ -456,7 +456,7 @@ function handleAdditionalClick(event: MouseEvent) {
           v-if="authorSpaceUrl"
           :href="authorSpaceUrl"
           class="moment-card__author-link"
-          :aria-label="`打开 ${moment.author.name} 的空间`"
+          :aria-label="t('moment_card.open_space', { name: moment.author.name })"
           rel="noopener noreferrer"
           @click="handleAuthorClick"
         >
@@ -475,12 +475,12 @@ function handleAdditionalClick(event: MouseEvent) {
             v-if="authorSpaceUrl"
             :href="authorSpaceUrl"
             class="moment-card__author-name"
-            :aria-label="`打开 ${moment.author.name} 的空间`"
+            :aria-label="t('moment_card.open_space', { name: moment.author.name })"
             rel="noopener noreferrer"
             @click="handleAuthorClick"
           >{{ moment.author.name }}</a>
           <strong v-else>{{ moment.author.name }}</strong>
-          <small>{{ moment.time || '刚刚' }}</small>
+          <small>{{ moment.time || t('moment_card.just_now') }}</small>
         </span>
         <button
           v-if="menuVideo"
@@ -566,7 +566,7 @@ function handleAdditionalClick(event: MouseEvent) {
             <span i-svg-spinners:pulse-3 aria-hidden="true" />
           </span>
           <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
-            {{ moment.chargeBadge || '充电专属' }}
+            {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
           </span>
           <button
             v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
@@ -574,9 +574,9 @@ function handleAdditionalClick(event: MouseEvent) {
             class="moment-card__watch-later"
             :class="{ 'is-added': isWatchLaterAdded(moment) }"
             :disabled="isWatchLaterLoading(moment)"
-            :aria-label="isWatchLaterAdded(moment) ? '已添加稍后再看' : '添加至稍后再看'"
+            :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
             :aria-pressed="isWatchLaterAdded(moment)"
-            :title="isWatchLaterAdded(moment) ? '已添加' : '稍后再看'"
+            :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
             @click.stop="emit('toggleWatchLater', moment)"
           >
             <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
@@ -597,16 +597,16 @@ function handleAdditionalClick(event: MouseEvent) {
           />
           <span v-if="moment.isLive" i-tabler-live-photo class="moment-card__text-cover-icon" />
           <span v-else i-tabler-player-play-filled class="moment-card__text-cover-icon" />
-          <span>{{ moment.isLive ? '直播动态' : '视频动态' }}</span>
+          <span>{{ moment.isLive ? t('moment_card.live_post') : t('moment_card.video_post') }}</span>
           <button
             v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
             type="button"
             class="moment-card__watch-later"
             :class="{ 'is-added': isWatchLaterAdded(moment) }"
             :disabled="isWatchLaterLoading(moment)"
-            :aria-label="isWatchLaterAdded(moment) ? '已添加稍后再看' : '添加至稍后再看'"
+            :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
             :aria-pressed="isWatchLaterAdded(moment)"
-            :title="isWatchLaterAdded(moment) ? '已添加' : '稍后再看'"
+            :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
             @click.stop="emit('toggleWatchLater', moment)"
           >
             <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
@@ -668,7 +668,7 @@ function handleAdditionalClick(event: MouseEvent) {
             target="_blank"
             rel="noopener noreferrer"
             class="moment-card__forward-video"
-            :aria-label="`打开原视频：${moment.forward.video.title}`"
+            :aria-label="t('moment_card.open_original_video', { title: moment.forward.video.title })"
             @click="handleForwardVideoClick"
           >
             <span class="moment-card__forward-video-cover">
@@ -700,9 +700,9 @@ function handleAdditionalClick(event: MouseEvent) {
                   'is-disabled': isWatchLaterLoading(moment.forward.video),
                 }"
                 :aria-disabled="isWatchLaterLoading(moment.forward.video)"
-                :aria-label="isWatchLaterAdded(moment.forward.video) ? '已添加稍后再看' : '添加至稍后再看'"
+                :aria-label="isWatchLaterAdded(moment.forward.video) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
                 :aria-pressed="isWatchLaterAdded(moment.forward.video)"
-                :title="isWatchLaterAdded(moment.forward.video) ? '已添加' : '稍后再看'"
+                :title="isWatchLaterAdded(moment.forward.video) ? t('moment_card.added') : t('moment_card.watch_later')"
                 @click.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
                 @keydown.enter.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
                 @keydown.space.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
@@ -758,7 +758,7 @@ function handleAdditionalClick(event: MouseEvent) {
               <MomentImageGallery
                 :images="moment.forward.images || []"
                 :image-ratios="moment.forward.imageRatios"
-                :alt-prefix="`${moment.forward.author} 的动态图片`"
+                :alt-prefix="t('moment_card.author_images', { name: moment.forward.author })"
                 :container-width="forwardScrollGalleryWidth"
                 @cover-load="handleGalleryCoverLoad"
                 @preview="handleForwardGalleryPreview"
@@ -775,8 +775,8 @@ function handleAdditionalClick(event: MouseEvent) {
             >
               <img
                 :src="getMomentThumbnailUrl(moment.forward.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
-                :alt="`${moment.forward.author} 的动态图片`"
-                :aria-label="`查看 ${moment.forward.author} 的动态图片`"
+                :alt="t('moment_card.author_images', { name: moment.forward.author })"
+                :aria-label="t('moment_card.view_author_images', { name: moment.forward.author })"
                 loading="lazy"
                 decoding="async"
                 @load="handleCoverLoad"
@@ -792,13 +792,13 @@ function handleAdditionalClick(event: MouseEvent) {
           <MomentImageGallery
             :images="moment.images"
             :image-ratios="moment.imageRatios"
-            :alt-prefix="`${moment.author.name} 的动态图片`"
+            :alt-prefix="t('moment_card.author_images', { name: moment.author.name })"
             :container-width="ownScrollGalleryWidth"
             @cover-load="handleGalleryCoverLoad"
             @preview="handleGalleryPreview"
           >
             <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
-              {{ moment.chargeBadge || '充电专属' }}
+              {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
             </span>
           </MomentImageGallery>
         </div>
@@ -813,14 +813,14 @@ function handleAdditionalClick(event: MouseEvent) {
         >
           <img
             :src="getMomentThumbnailUrl(moment.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
-            :alt="`${moment.author.name} 的动态图片`"
-            :aria-label="`查看 ${moment.author.name} 的动态图片`"
+            :alt="t('moment_card.author_images', { name: moment.author.name })"
+            :aria-label="t('moment_card.view_author_images', { name: moment.author.name })"
             loading="lazy"
             decoding="async"
             @load="handleCoverLoad"
           >
           <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
-            {{ moment.chargeBadge || '充电专属' }}
+            {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
           </span>
         </div>
       </div>
@@ -854,7 +854,7 @@ function handleAdditionalClick(event: MouseEvent) {
             loading="lazy"
             decoding="async"
           >
-          <span><strong>{{ moment.additional.title || '附加内容' }}</strong><small v-if="moment.additional.desc">{{ moment.additional.desc }}</small></span>
+          <span><strong>{{ moment.additional.title || t('moment_card.additional') }}</strong><small v-if="moment.additional.desc">{{ moment.additional.desc }}</small></span>
         </a>
         <button
           v-if="isReservationAdditional"
@@ -883,12 +883,12 @@ function handleAdditionalClick(event: MouseEvent) {
         v-if="moment.hotComment"
         type="button"
         class="moment-card__hot-comment"
-        aria-label="查看热门评论"
+        :aria-label="t('moment_card.view_hot_comment')"
         @click.stop="emit('openDetail', moment)"
       >
         <span class="moment-card__hot-comment-label">
           <span i-tabler-message-circle-filled aria-hidden="true" />
-          热门评论
+          {{ t('moment_card.hot_comment') }}
         </span>
         <span class="moment-card__hot-comment-content">
           <template v-if="moment.hotComment.richText.length">
@@ -914,40 +914,40 @@ function handleAdditionalClick(event: MouseEvent) {
         <button
           v-if="cardOpenMode !== 'dialog' && !moment.isLive"
           type="button"
-          aria-label="弹窗打开动态"
+          :aria-label="t('moment_card.open_dialog')"
           @click.stop="emit('openDetail', moment, true)"
           @keydown.enter.stop
         >
           <span i-tabler-layout-dashboard />
-          <span class="moment-card__open-label">弹窗打开</span>
+          <span class="moment-card__open-label">{{ t('moment_card.open_dialog_short') }}</span>
         </button>
         <a
           v-else
           :href="moment.url"
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="新建标签页打开动态"
+          :aria-label="t('moment_card.open_new_tab')"
           @click.stop
         >
           <span i-tabler-external-link />
-          <span class="moment-card__open-label">新标签页打开</span>
+          <span class="moment-card__open-label">{{ t('moment_card.open_new_tab_short') }}</span>
         </a>
-        <button v-if="!moment.isLive" type="button" aria-label="查看评论" @click.stop="emit('openDetail', moment)">
+        <button v-if="!moment.isLive" type="button" :aria-label="t('moment_card.view_comments')" @click.stop="emit('openDetail', moment)">
           <span i-tabler-message-circle />
           {{ formatCount(moment.commentCount) }}
         </button>
-        <span v-else class="moment-card__footer-stat" :aria-label="`直播人气 ${moment.livePopularity || '暂无数据'}`">
+        <span v-else class="moment-card__footer-stat" :aria-label="t('moment_card.live_popularity', { value: moment.livePopularity || t('moment_card.no_data') })">
           <span i-tabler-users />
-          {{ moment.livePopularity || '直播中' }}
+          {{ moment.livePopularity || t('moment_card.live_now') }}
         </span>
         <button
           type="button"
           class="moment-card__likes"
           :class="{ 'is-liked': moment.isLiked, 'is-unavailable': moment.isLikeDisabled }"
           :disabled="isLikeLoading || moment.isLikeDisabled"
-          :aria-label="moment.isLikeDisabled ? '该动态暂不支持点赞' : moment.isLiked ? '取消点赞' : '点赞'"
+          :aria-label="moment.isLikeDisabled ? t('moment_card.like_unsupported') : moment.isLiked ? t('moment_card.unlike') : t('moment_card.like')"
           :aria-pressed="moment.isLiked"
-          :title="moment.isLikeDisabled ? '该动态暂不支持点赞' : moment.isLiked ? '取消点赞' : '点赞'"
+          :title="moment.isLikeDisabled ? t('moment_card.like_unsupported') : moment.isLiked ? t('moment_card.unlike') : t('moment_card.like')"
           @click.stop="emit('toggleLike', moment)"
           @keydown.enter.stop
         >

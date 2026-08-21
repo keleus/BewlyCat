@@ -276,6 +276,10 @@ settings:
   environment_info_copied: 环境信息已复制
   environment_info_copy_failed: 复制环境信息失败
   environment_info_unknown: 未知
+  environment_browser: 浏览器
+  environment_browser_version: 浏览器版本
+  environment_bewlycat_version: BewlyCat 版本
+  xiaohongshu: 小红书
   group_settings_sync: 浏览器云同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 显示用户卡片
@@ -733,6 +737,30 @@ settings:
   filter_by_publish_time_desc: 筛选掉发布时间超过设定天数的视频（仅在 Web 推荐模式下有效，最少 7 天）。
   filter_by_publish_time_unit: 天
   filter_item_already_exist: 这个筛选项目已经存在！
+  wanted_users:
+    enter_query: 请输入 UP 主 UID 或昵称
+    no_results: 没有找到相关 UP 主，请尝试其他昵称
+    search_failed: 搜索 UP 主失败，请稍后重试
+    invalid_uid: 请输入有效的 UP 主 UID
+    pinned_limit: 最多只能固定 {count} 个 UP 主
+    not_found: 未找到该 UP 主
+    info_failed: 获取 UP 主信息失败，请稍后重试
+    placeholder: 输入 UP 主 UID 或昵称
+    pinned_already: 该 UP 主已经在“固定 UP”中
+    wanted_already: 该 UP 主已经在“想看”分组中
+    pinned_need_follow: 必须先关注 {name}，才能将其加入“固定 UP”
+    wanted_need_follow: 必须先关注 {name}，才能将其加入“想看”分组
+    pinned_added: 已将 {name} 固定到动态栏
+    wanted_added: 已将 {name} 加入“想看”
+    pinned_removed: 已取消固定 {name}
+    wanted_removed: 已将 {name} 移出“想看”
+    remove_pinned: 取消固定 {name}
+    remove_wanted: 将 {name} 移出想看
+    remove_pinned_title: 取消固定
+    remove_wanted_title: 移出想看
+    pinned_empty: 尚未添加固定 UP 主。添加后会显示在动态栏右侧。
+    wanted_empty: 尚未添加 UP 主。添加后可在 Bewly 动态页的“想看”中筛选。
+  authorization_success: 授权成功
   filter_by_title: 按标题筛选
   filter_by_title_desc: >
     按标题筛选掉包含您设置关键字的视频（不区分大小写），也可以使用正则表达式，如 <code>/abc&#124;\d+/</code>，用
@@ -796,6 +824,8 @@ settings:
     该操作无法撤销。你确定要重置你的设置吗？
   current_contributors: BewlyCat（含 BewlyBewly）贡献者
   contributors_image_failed: 贡献者图片加载失败
+  disable_auto_play_collection: 自动关闭合集自动播放
+  disable_auto_play_collection_desc: 自动关闭视频合集的自动播放功能
   enable_undo_refresh_button: 启用撤销刷新按钮（仅在Web推荐模式下有效）
   enable_undo_refresh_button_desc: 刷新页面后显示撤销按钮，点击可恢复刷新前的内容
   shortcuts:
@@ -1044,6 +1074,8 @@ dock:
   light_mode: 亮色模式
   settings: 设置
 video_card:
+  episode_watch_later_info_failed: 无法获取该剧集的稍后再看信息
+  feedback_options_unavailable: 未能获取反馈选项
   operation:
     not_interested: 不感兴趣
     not_interested_uploader: 不想看此 UP 主
@@ -1061,6 +1093,8 @@ video_card:
     unfollow_user: 取消关注
     block_user: 拉黑用户
     more_options: 更多操作
+    scroll_top: 滚动到顶部
+    scroll_bottom: 滚动到底部
   follow_user_confirm:
     title: 确认关注用户
     message: 确定要关注 {name} 吗？
@@ -1093,6 +1127,15 @@ home:
   live: 直播
   moments: 动态
   uploaders_with_updates: '{count}个UP主有更新'
+  risk_control_paused: 请求过于频繁导致首页推荐接口风控，已暂停自动请求约 {seconds} 秒，请稍后刷新重试
+  app_fallback_web: App 推荐数据加载失败，已自动切换至 Web 模式
+  app_retry_web: App 推荐数据加载失败，请手动切换至 Web 模式或稍后重试
+  recommendations_retry: 首页推荐接口连续请求失败，请刷新后重试
+  weekly_issue: 第{number}期
+  select_issue: 选择期号
+  search_issue: 搜索期号…
+  issue_not_found: 未找到匹配的期号
+  collaboration: 联合投稿
 ranking:
   all: 全部
   original_content: 原创内容
@@ -1116,6 +1159,9 @@ anime:
       sat: 周六
       sun: 周日
 history:
+  livestreaming: 直播
+  pgc: 番剧影视
+  live: 直播中
   clear_all_watch_history: 清除所有观看历史
   clear_all_watch_history_confirm: |-
     要清除所有观看历史吗？
@@ -1216,3 +1262,221 @@ search_page:
   loading: 加载中...
   no_hot_search_data: 暂无热搜数据
   view_all_esports: 查看全部赛事
+search:
+  page_title: 搜索 - 哔哩哔哩
+  results_title: '{keyword} - 搜索结果 - 哔哩哔哩'
+  comprehensive: 综合排序
+  most_viewed: 最多播放
+  latest: 最新发布
+  most_danmaku: 最多弹幕
+  most_favorited: 最多收藏
+  default_sort: 默认排序
+  fans_desc: 粉丝数由高到低
+  fans_asc: 粉丝数由低到高
+  level_desc: Lv等级由高到低
+  level_asc: Lv等级由低到高
+  any_duration: 全部时长
+  under_10: 10分钟以下
+  from_10_to_30: 10-30分钟
+  from_30_to_60: 30-60分钟
+  over_60: 60分钟以上
+  any_date: 全部日期
+  past_day: 最近一天
+  past_week: 最近一周
+  past_half_year: 最近半年
+  all_users: 全部用户
+  uploaders: UP主用户
+  regular_users: 普通用户
+  verified_users: 认证用户
+  all: 综合
+  videos: 视频
+  bangumi: 番剧
+  film_tv: 影视
+  users: 用户
+  live: 直播
+  articles: 专栏
+  activity: 活动
+  esports_schedule: 赛程日历
+  watch_now: 立即观看
+  score: '{score} 分'
+  episode_count: 共 {count} 话
+  first_aired: '首播：{date}'
+  fans_count: '粉丝：{count}'
+  video_count: '视频：{count}'
+  streamers: 主播
+  live_rooms: 直播间
+  results_count: 共找到 {count} 个结果
+  view_more_streamers: 查看更多主播（{count}+）
+  other: 其它
+  start_date: 开始日期
+  end_date: 结束日期
+  to: 至
+  sort: 排序
+  more_filters: 更多筛选
+  duration: 时长
+  date: 日期
+  user_type: 用户类型
+  search_failed: 搜索失败，请稍后重试
+  search_error: 搜索出错，请稍后重试
+  work: '稿件 {index}'
+  month: '{month}月'
+  year: '{year}年'
+  clear: 清除
+  today: 今天
+  weekdays: 日,一,二,三,四,五,六
+  followed: 已关注
+  follow: 关注
+  match_finished: 已结束
+  match_upcoming: 未开始
+  match_live: 进行中
+moments:
+  filter_all: 全部
+  filter_video: 视频投稿
+  filter_pgc: 追番追剧
+  filter_article: 专栏
+  emoji: 表情
+  view: 查看
+  charged_unlock: 充电解锁
+  reserved: 已预约
+  reserve: 预约
+  popularity: '{count} 人气'
+  charging_exclusive: 充电专属
+  charging_unlock_hint: 加入当前 UP 主的充电即可解锁观看
+  charging_exclusive_post: 充电专属动态
+  go_charge: 去充电
+  forwarded_post: 转发了动态
+  bilibili_user: B站用户
+  original_author: 原作者
+  live_post: 直播动态
+  video_post: 视频动态
+  image_post: 图文动态
+  text_post: 纯文字动态
+  original_post: 原动态
+  login_to_like: 登录后才能点赞动态
+  like_failed: 动态点赞失败
+  like_failed_retry: 动态点赞失败，请稍后重试
+  login_to_reserve: 登录后才能预约
+  cancel_reserve_failed: 取消预约失败
+  reserve_failed: 预约失败
+  reserve_succeeded: 预约成功
+  reserve_cancelled: 已取消预约
+  reserve_operation_failed: 预约操作失败，请稍后重试
+  login_to_watch_later: 登录后才能添加稍后再看
+  watch_later_info_failed: 无法获取该视频的稍后再看信息
+  watch_later_operation_failed: 稍后再看操作失败，请稍后重试
+  user_info: 动态用户信息
+  following: 关注
+  followers: 粉丝
+  posts: 动态
+  publish: 发布动态
+  live_now: 正在直播
+  group_label: 动态分组
+  all_posts: 全部动态
+  wanted_only: 只看想看的 UP 主
+  cancel_wanted_only: 取消只看想看的 UP 主
+  wanted_scope_hint: 仅适用于全部和视频投稿
+  wanted: 想看
+  scroll_left: 向左滚动经常访问列表
+  scroll_right: 向右滚动经常访问列表
+  frequent_uploaders: 经常访问的 UP 主
+  has_updates: 有更新
+  pin_uploader: 固定 UP 主
+  no_recent_updates: 近期无更新
+  add_wanted_first: 请先在设置中添加想看的 UP 主
+  empty: 暂时没有可展示的动态
+  recheck: 重新检查
+  reload: 重新加载
+  loading_more: 正在加载并准备更多动态…
+  new_tab: 新建标签页打开
+  close: 关闭
+  live_room: 直播间
+  video_playback: 视频播放
+  detail: 动态详情
+  opening_live: 正在打开直播间…
+  opening_video: 正在打开视频…
+  opening_forward: 正在打开转发动态…
+  loading_detail: 正在加载动态详情…
+  author_detail: '{name} 的详情'
+  image_viewer: 动态图片查看器
+  close_image_viewer: 关闭图片查看器
+  enlarged_image: 动态图片大图
+  previous_image: 上一张
+  next_image: 下一张
+  zoom_out: 缩小
+  zoom_in: 放大
+  fit_window: 适应窗口
+  rotate_clockwise: 顺时针旋转
+moment_card:
+  video_post: 视频动态
+  cancel_reservation: 取消预约
+  reserve: 预约
+  open_space: 打开 {name} 的空间
+  just_now: 刚刚
+  charging_exclusive: 充电专属
+  added_watch_later: 已添加稍后再看
+  add_watch_later: 添加至稍后再看
+  added: 已添加
+  watch_later: 稍后再看
+  live_post: 直播动态
+  open_original_video: '打开原视频：{title}'
+  author_images: '{name} 的动态图片'
+  view_author_images: 查看 {name} 的动态图片
+  additional: 附加内容
+  view_hot_comment: 查看热门评论
+  hot_comment: 热门评论
+  open_dialog: 弹窗打开动态
+  open_dialog_short: 弹窗打开
+  open_new_tab: 新建标签页打开动态
+  open_new_tab_short: 新标签页打开
+  view_comments: 查看评论
+  live_popularity: '直播人气 {value}'
+  no_data: 暂无数据
+  live_now: 直播中
+  like_unsupported: 该动态暂不支持点赞
+  unlike: 取消点赞
+  like: 点赞
+user_card:
+  followed: 已关注
+  follow: 关注
+  empty_bio: 这个人很懒，什么都没有写~
+  live_now: 直播中
+  submissions: '{count}个投稿'
+  followers: '{count}粉丝'
+widescreen:
+  show_narrow_right: 显示窄右栏
+  show_narrow_left: 显示窄左栏
+  collapse_right: 收起右栏
+  collapse_left: 收起左栏
+  exit: 退出
+  exit_title: 退出 Bewly 宽屏
+  loading: 正在加载宽屏模式…
+  exit_overlay: 退出遮罩
+  comments: 评论
+  danmaku: 弹幕
+  episodes: 选集
+  collapse: 收起
+  expand_more: 展开更多
+  comments_loading: 评论区加载中
+  danmaku_loading: 弹幕列表加载中
+  recommendations: 推荐
+  list_loading: 列表加载中
+player_state:
+  muted: 已静音
+  unmuted: 已取消静音
+  no_captions: 当前视频无字幕
+  speed: '倍速 {rate}'
+  danmaku: '弹幕 {state}'
+  volume: '音量 {volume}%'
+  on: 开
+  off: 关
+vertical_video:
+  zoom_in: 放大
+  zoom_out: 缩小
+  adjust_area: 调整竖屏放大区域
+favorite_dialog:
+  clear_selected: 清空已选
+inject:
+  page_prefix: 第{current}页，共
+  of: 共
+  loading: 加载中…
+  load_more: 加载更多

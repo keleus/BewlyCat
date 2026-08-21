@@ -1,5 +1,6 @@
 import type { Video } from '~/components/VideoCard/types'
 import { parseStatNumber } from '~/utils/dataFormatter'
+import { i18n } from '~/utils/i18n'
 
 /**
  * 解码 HTML 实体
@@ -37,7 +38,7 @@ export function formatNumber(num?: number): string {
   if (!num)
     return '0'
   if (num >= 10000)
-    return `${(num / 10000).toFixed(1)}万`
+    return new Intl.NumberFormat(i18n.global.locale.value, { notation: 'compact', maximumFractionDigits: 1 }).format(num)
   return num.toString()
 }
 
@@ -243,7 +244,7 @@ export function convertBangumiHighlight(item: any) {
     publishDateFormatted,
     episodeCount,
     tags: bizTips.filter(Boolean).slice(0, 4),
-    buttonText: removeHighlight(item.button_text || '立即观看'),
+    buttonText: removeHighlight(item.button_text || i18n.global.t('search.watch_now')),
     desc: sanitizeBangumiDescription(description || base.desc || ''),
     episodes,
   }
@@ -596,7 +597,7 @@ function convertUserSamples(source: any, limit = 6): any[] {
     if (!item)
       continue
     const id = String(item.bvid || item.aid || item.id || item.arcurl || index)
-    const title = removeHighlight(item.title || item.long_title || `稿件 ${index + 1}`)
+    const title = removeHighlight(item.title || item.long_title || i18n.global.t('search.work', { index: index + 1 }))
     const cover = normalizeMediaCover(item.pic || item.cover)
     const url = resolveUserSampleUrl(item)
     const play = parseCountNumber(item.play)

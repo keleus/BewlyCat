@@ -279,6 +279,10 @@ settings:
   environment_info_copied: Environment information copied
   environment_info_copy_failed: Failed to copy environment information
   environment_info_unknown: Unknown
+  environment_browser: Browser
+  environment_browser_version: Browser version
+  environment_bewlycat_version: BewlyCat version
+  xiaohongshu: REDnote
   group_settings_sync: Browser cloud sync
   group_version_reminder: Version reminders
   original_moments_show_user_card: Show user card
@@ -694,6 +698,30 @@ settings:
   filter_by_publish_time_desc: Filter out videos published more than the specified number of days ago (only works in Web recommendation mode, minimum 7 days).
   filter_by_publish_time_unit: days
   filter_item_already_exist: This filter item already exists!
+  wanted_users:
+    enter_query: Enter an uploader UID or name
+    no_results: No uploader found. Try another name.
+    search_failed: Failed to search uploaders. Please try again later.
+    invalid_uid: Enter a valid uploader UID
+    pinned_limit: You can pin at most {count} uploaders
+    not_found: Uploader not found
+    info_failed: Failed to get uploader information. Please try again later.
+    placeholder: Uploader UID or name
+    pinned_already: This uploader is already pinned
+    wanted_already: This uploader is already in Wanted
+    pinned_need_follow: Follow {name} before pinning them
+    wanted_need_follow: Follow {name} before adding them to Wanted
+    pinned_added: Pinned {name} to the dynamic feed
+    wanted_added: Added {name} to Wanted
+    pinned_removed: Unpinned {name}
+    wanted_removed: Removed {name} from Wanted
+    remove_pinned: Unpin {name}
+    remove_wanted: Remove {name} from Wanted
+    remove_pinned_title: Unpin
+    remove_wanted_title: Remove from Wanted
+    pinned_empty: No uploaders pinned. Pinned uploaders appear on the right of the dynamic feed.
+    wanted_empty: No uploaders added. Add one to filter by Wanted on the Bewly dynamic feed.
+  authorization_success: Authorization successful
   filter_by_title: Filter by title
   filter_by_title_desc: >-
     Filtered out the videos that contain the titles you set (case-insensitive).
@@ -1131,6 +1159,8 @@ dock:
   light_mode: Light Mode
   settings: Settings
 video_card:
+  episode_watch_later_info_failed: Unable to get Watch later information for this episode
+  feedback_options_unavailable: Feedback options are unavailable
   operation:
     not_interested: Not Interested
     not_interested_uploader: Don't Recommend This Uploader
@@ -1148,6 +1178,8 @@ video_card:
     unfollow_user: Unfollow User
     block_user: Block User
     more_options: More options
+    scroll_top: Scroll to top
+    scroll_bottom: Scroll to bottom
   follow_user_confirm:
     title: Confirm Follow User
     message: Are you sure you want to follow {name}?
@@ -1181,6 +1213,15 @@ home:
   live: Live
   moments: Moments
   uploaders_with_updates: no uploader with updates | {count} uploader with updates | {count} uploaders with updates
+  risk_control_paused: Requests were too frequent, so home recommendations have paused for about {seconds} seconds. Refresh and try again later.
+  app_fallback_web: App recommendations failed to load. Switched to Web mode automatically.
+  app_retry_web: App recommendations failed to load. Switch to Web mode manually or try again later.
+  recommendations_retry: Home recommendations repeatedly failed. Refresh and try again.
+  weekly_issue: 'Issue {number}'
+  select_issue: Select issue
+  search_issue: Search issues…
+  issue_not_found: No matching issue found
+  collaboration: Collaboration
 ranking:
   all: All
   original_content: Original Content
@@ -1204,6 +1245,9 @@ anime:
       sat: SAT
       sun: SUN
 history:
+  livestreaming: Livestreaming
+  pgc: Shows
+  live: Live
   title: Watch History
   search_watch_history: Search watch history
   clear_all_watch_history: Clear all watch history
@@ -1310,3 +1354,221 @@ search_page:
   loading: Loading...
   no_hot_search_data: No hot search data available
   view_all_esports: View All Esports
+search:
+  page_title: Search - Bilibili
+  results_title: '{keyword} - Search results - Bilibili'
+  comprehensive: Comprehensive
+  most_viewed: Most viewed
+  latest: Latest
+  most_danmaku: Most danmaku
+  most_favorited: Most favorited
+  default_sort: Default
+  fans_desc: Most fans
+  fans_asc: Fewest fans
+  level_desc: Highest level
+  level_asc: Lowest level
+  any_duration: Any duration
+  under_10: Under 10 minutes
+  from_10_to_30: 10–30 minutes
+  from_30_to_60: 30–60 minutes
+  over_60: Over 60 minutes
+  any_date: Any date
+  past_day: Past day
+  past_week: Past week
+  past_half_year: Past six months
+  all_users: All users
+  uploaders: Uploaders
+  regular_users: Regular users
+  verified_users: Verified users
+  all: All
+  videos: Videos
+  bangumi: Anime
+  film_tv: Film & TV
+  users: Users
+  live: Live
+  articles: Articles
+  activity: Events
+  esports_schedule: Esports schedule
+  watch_now: Watch now
+  score: '{score} points'
+  episode_count: '{count} episodes'
+  first_aired: 'First aired: {date}'
+  fans_count: 'Fans: {count}'
+  video_count: 'Videos: {count}'
+  streamers: Streamers
+  live_rooms: Live rooms
+  results_count: '{count} results found'
+  view_more_streamers: 'View more streamers ({count}+)'
+  other: Other
+  start_date: Start date
+  end_date: End date
+  to: to
+  sort: Sort
+  more_filters: More filters
+  duration: Duration
+  date: Date
+  user_type: User type
+  search_failed: Search failed. Please try again later.
+  search_error: An error occurred while searching. Please try again later.
+  work: 'Work {index}'
+  month: 'Month {month}'
+  year: '{year}'
+  clear: Clear
+  today: Today
+  weekdays: Sun,Mon,Tue,Wed,Thu,Fri,Sat
+  followed: Followed
+  follow: Follow
+  match_finished: Finished
+  match_upcoming: Upcoming
+  match_live: Live
+moments:
+  filter_all: All
+  filter_video: Videos
+  filter_pgc: Anime & shows
+  filter_article: Articles
+  emoji: Emoji
+  view: View
+  charged_unlock: Unlock with charging
+  reserved: Reserved
+  reserve: Reserve
+  popularity: '{count} popularity'
+  charging_exclusive: Charging exclusive
+  charging_unlock_hint: Charge this uploader to unlock viewing
+  charging_exclusive_post: Charging-exclusive post
+  go_charge: Charge now
+  forwarded_post: Forwarded a post
+  bilibili_user: Bilibili user
+  original_author: Original author
+  live_post: Live post
+  video_post: Video post
+  image_post: Image post
+  text_post: Text post
+  original_post: Original post
+  login_to_like: Log in to like posts
+  like_failed: Failed to like post
+  like_failed_retry: Failed to like post. Please try again later.
+  login_to_reserve: Log in to make a reservation
+  cancel_reserve_failed: Failed to cancel reservation
+  reserve_failed: Failed to reserve
+  reserve_succeeded: Reservation successful
+  reserve_cancelled: Reservation cancelled
+  reserve_operation_failed: Reservation failed. Please try again later.
+  login_to_watch_later: Log in to add to Watch later
+  watch_later_info_failed: Unable to get Watch later information for this video
+  watch_later_operation_failed: Watch later operation failed. Please try again later.
+  user_info: Post author information
+  following: Following
+  followers: Followers
+  posts: Posts
+  publish: Publish post
+  live_now: Live now
+  group_label: Post groups
+  all_posts: All posts
+  wanted_only: Wanted uploaders only
+  cancel_wanted_only: Stop showing wanted uploaders only
+  wanted_scope_hint: Available only for All and Videos
+  wanted: Wanted
+  scroll_left: Scroll frequently visited list left
+  scroll_right: Scroll frequently visited list right
+  frequent_uploaders: Frequently visited uploaders
+  has_updates: Has updates
+  pin_uploader: Pin uploader
+  no_recent_updates: No recent updates
+  add_wanted_first: Add wanted uploaders in Settings first
+  empty: No posts to display
+  recheck: Check again
+  reload: Reload
+  loading_more: Loading and preparing more posts…
+  new_tab: Open in new tab
+  close: Close
+  live_room: Live room
+  video_playback: Video playback
+  detail: Post details
+  opening_live: Opening live room…
+  opening_video: Opening video…
+  opening_forward: Opening forwarded post…
+  loading_detail: Loading post details…
+  author_detail: '{name} details'
+  image_viewer: Post image viewer
+  close_image_viewer: Close image viewer
+  enlarged_image: Enlarged post image
+  previous_image: Previous image
+  next_image: Next image
+  zoom_out: Zoom out
+  zoom_in: Zoom in
+  fit_window: Fit to window
+  rotate_clockwise: Rotate clockwise
+moment_card:
+  video_post: Video post
+  cancel_reservation: Cancel reservation
+  reserve: Reserve
+  open_space: Open {name}'s profile
+  just_now: Just now
+  charging_exclusive: Charging exclusive
+  added_watch_later: Added to Watch later
+  add_watch_later: Add to Watch later
+  added: Added
+  watch_later: Watch later
+  live_post: Live post
+  open_original_video: 'Open original video: {title}'
+  author_images: '{name} post images'
+  view_author_images: View {name}'s post images
+  additional: Additional content
+  view_hot_comment: View popular comment
+  hot_comment: Popular comment
+  open_dialog: Open post in dialog
+  open_dialog_short: Open in dialog
+  open_new_tab: Open post in new tab
+  open_new_tab_short: Open in new tab
+  view_comments: View comments
+  live_popularity: 'Live popularity: {value}'
+  no_data: No data
+  live_now: Live now
+  like_unsupported: Likes are unavailable for this post
+  unlike: Unlike
+  like: Like
+user_card:
+  followed: Followed
+  follow: Follow
+  empty_bio: This user has not written a bio yet.
+  live_now: Live now
+  submissions: '{count} submissions'
+  followers: '{count} followers'
+widescreen:
+  show_narrow_right: Show narrow right sidebar
+  show_narrow_left: Show narrow left sidebar
+  collapse_right: Collapse right sidebar
+  collapse_left: Collapse left sidebar
+  exit: Exit
+  exit_title: Exit Bewly widescreen
+  loading: Loading widescreen mode…
+  exit_overlay: Exit overlay
+  comments: Comments
+  danmaku: Danmaku
+  episodes: Episodes
+  collapse: Collapse
+  expand_more: Expand more
+  comments_loading: Loading comments
+  danmaku_loading: Loading danmaku
+  recommendations: Recommendations
+  list_loading: Loading list
+player_state:
+  muted: Muted
+  unmuted: Unmuted
+  no_captions: This video has no captions
+  speed: 'Speed {rate}'
+  danmaku: 'Danmaku {state}'
+  volume: 'Volume {volume}%'
+  on: On
+  off: Off
+vertical_video:
+  zoom_in: Zoom in
+  zoom_out: Zoom out
+  adjust_area: Adjust vertical-video zoom area
+favorite_dialog:
+  clear_selected: Clear selected
+inject:
+  page_prefix: 'Page {current}, of'
+  of: of
+  loading: Loading…
+  load_more: Load more

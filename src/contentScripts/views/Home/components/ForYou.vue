@@ -762,7 +762,7 @@ function notifyWebRiskCooldown() {
 
   webRiskCooldownToastKey = webRiskCooldownUntil.value
   const remainingSeconds = Math.max(1, Math.ceil(getWebRiskCooldownRemainingMs() / 1000))
-  toast.error(`请求过于频繁导致首页推荐接口风控，已暂停自动请求约 ${remainingSeconds} 秒，请稍后刷新重试`)
+  toast.error(t('home.risk_control_paused', { seconds: remainingSeconds }))
 }
 
 function stopWebRecommendationForRisk() {
@@ -872,12 +872,12 @@ async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
         if (settings.value.autoSwitchRecommendationMode) {
           // 切换到 web 模式并提示用户
           settings.value.recommendationMode = 'web'
-          toast.warning('App 推荐数据加载失败，已自动切换至 Web 模式')
+          toast.warning(t('home.app_fallback_web'))
         }
         else {
           requestFailed.value = true
           noMoreContent.value = true
-          toast.error('App 推荐数据加载失败，请手动切换至 Web 模式或稍后重试')
+          toast.error(t('home.app_retry_web'))
         }
       }
     }
@@ -1243,7 +1243,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         stopWebRecommendationForRisk()
       }
       else {
-        toast.error('首页推荐接口连续请求失败，请刷新后重试')
+        toast.error(t('home.recommendations_retry'))
       }
       return
     }

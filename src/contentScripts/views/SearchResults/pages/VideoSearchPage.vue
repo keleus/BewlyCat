@@ -155,7 +155,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     return false
 
   const rawData = lastResponse.value.data
-  const incomingList = Array.isArray(rawData?.result) ? rawData.result : []
+  const incomingList: any[] = Array.isArray(rawData?.result) ? rawData.result : []
 
   // 过滤广告和应用时间过滤
   const filteredList = applyVideoTimeFilter(incomingList.filter(item => !isAdVideo(item)))
@@ -238,7 +238,7 @@ async function handlePageChange(page: number) {
   }
 
   const rawData = lastResponse.value.data
-  const incomingList = Array.isArray(rawData?.result) ? rawData.result : []
+  const incomingList: any[] = Array.isArray(rawData?.result) ? rawData.result : []
 
   // 过滤广告和应用时间过滤
   const filteredList = applyVideoTimeFilter(incomingList.filter(item => !isAdVideo(item)))

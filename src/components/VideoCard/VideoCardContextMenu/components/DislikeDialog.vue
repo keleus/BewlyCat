@@ -83,7 +83,7 @@ async function handleAppDislike() {
 
   const selectedPayload = getSelectedPayload()
   if (!selectedPayload) {
-    toast.warning('未能获取dislikeReasons或feedbacks')
+    toast.warning(t('video_card.feedback_options_unavailable'))
     return
   }
 

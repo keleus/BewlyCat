@@ -37,7 +37,7 @@ function handleUserTypeSelect(value: number) {
   <div class="filter-bar" mb-4 flex="~ col" gap-3>
     <!-- 排序 + 更多筛选按钮 -->
     <div flex items-center gap-2>
-      <span text="sm $bew-text-2" min-w-12>排序</span>
+      <span text="sm $bew-text-2" min-w-12>{{ $t('search.sort') }}</span>
       <div flex items-center gap-2 flex-wrap flex-1>
         <button
           v-for="option in props.orderOptions"
@@ -56,7 +56,7 @@ function handleUserTypeSelect(value: number) {
         type="button"
         @click="isMoreFiltersExpanded = !isMoreFiltersExpanded"
       >
-        <span text="sm $bew-text-2">更多筛选</span>
+        <span text="sm $bew-text-2">{{ $t('search.more_filters') }}</span>
         <div class="toggle-icon" :class="{ expanded: isMoreFiltersExpanded }">
           <div class="i-tabler:chevron-down" text="sm $bew-text-3" />
         </div>
@@ -67,7 +67,7 @@ function handleUserTypeSelect(value: number) {
     <div v-show="isMoreFiltersExpanded" flex="~ col" gap-3>
       <!-- 用户类型 -->
       <div flex items-center gap-2>
-        <span text="sm $bew-text-2" min-w-12>用户类型</span>
+        <span text="sm $bew-text-2" min-w-12>{{ $t('search.user_type') }}</span>
         <div flex items-center gap-2 flex-wrap>
           <button
             v-for="option in props.userTypeOptions"

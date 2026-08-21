@@ -1,7 +1,13 @@
 import browser from 'webextension-polyfill'
 
+import { i18n } from '~/utils/i18n'
+
 import { injectCSS } from './main'
 import { getVideoElement } from './player'
+
+function t(key: string, params: Record<string, unknown> = {}) {
+  return String(i18n.global.t(key, params))
+}
 
 type BewlyWidescreenTab = 'comment' | 'danmaku' | 'playlist'
 type BewlyWidescreenSidebarMode = 'fit' | 'narrow'
@@ -493,8 +499,8 @@ function setSidebarMode(nextMode: BewlyWidescreenSidebarMode) {
     ? (isFit ? '‹' : '›')
     : (isFit ? '›' : '‹')
   state.sidebarToggleButton.title = isFit
-    ? (isRight ? '显示窄右栏' : '显示窄左栏')
-    : (isRight ? '收起右栏' : '收起左栏')
+    ? (isRight ? t('widescreen.show_narrow_right') : t('widescreen.show_narrow_left'))
+    : (isRight ? t('widescreen.collapse_right') : t('widescreen.collapse_left'))
   state.sidebarToggleButton.setAttribute('aria-label', state.sidebarToggleButton.title)
   updateSidebarToggleState()
   schedulePlayerResizeSync(state)
@@ -524,8 +530,8 @@ function createSidebarToolbar() {
   const closeButton = document.createElement('button')
   closeButton.type = 'button'
   closeButton.className = 'bewly-widescreen-close'
-  closeButton.textContent = '退出'
-  closeButton.title = '退出 Bewly 宽屏'
+  closeButton.textContent = t('widescreen.exit')
+  closeButton.title = t('widescreen.exit_title')
   closeButton.setAttribute('aria-label', closeButton.title)
   closeButton.addEventListener('click', () => exitBewlyWidescreen())
 
@@ -774,13 +780,13 @@ function showWidescreenLoading() {
   }
 
   const label = document.createElement('span')
-  label.textContent = '正在加载宽屏模式…'
+  label.textContent = t('widescreen.loading')
   content.appendChild(label)
 
   const exitButton = document.createElement('button')
   exitButton.type = 'button'
   exitButton.className = 'bewly-widescreen-loading-exit'
-  exitButton.textContent = '退出遮罩'
+  exitButton.textContent = t('widescreen.exit_overlay')
   exitButton.hidden = true
   exitButton.addEventListener('click', () => exitBewlyWidescreen())
 
@@ -994,9 +1000,9 @@ function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
   tablist.setAttribute('role', 'tablist')
 
   const tabButtons = {
-    comment: createTabButton('comment', '评论'),
-    danmaku: createTabButton('danmaku', '弹幕'),
-    playlist: createTabButton('playlist', '选集'),
+    comment: createTabButton('comment', t('widescreen.comments')),
+    danmaku: createTabButton('danmaku', t('widescreen.danmaku')),
+    playlist: createTabButton('playlist', t('widescreen.episodes')),
   }
   tablist.append(tabButtons.comment, tabButtons.danmaku, tabButtons.playlist)
 
@@ -2515,7 +2521,7 @@ function syncDescription(currentState: BewlyWidescreenState) {
 
   descriptionSlot.classList.toggle('is-empty', !hasContent)
   toggleButton.hidden = !hasContent || !canExpand
-  const toggleLabel = currentState.descriptionExpanded ? '收起' : '展开更多'
+  const toggleLabel = currentState.descriptionExpanded ? t('widescreen.collapse') : t('widescreen.expand_more')
   if (toggleButton.textContent !== toggleLabel)
     toggleButton.textContent = toggleLabel
   toggleButton.setAttribute('aria-expanded', String(canExpand && currentState.descriptionExpanded))
@@ -2600,7 +2606,7 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   moveDanmakuInput(currentState)
   const commentResult = moveCommentRoot(currentState.panels.comment, currentState.movedNodes)
   if (!commentResult.found) {
-    ensureEmptyPanel(currentState.panels.comment, '评论区加载中')
+    ensureEmptyPanel(currentState.panels.comment, t('widescreen.comments_loading'))
   }
   else {
     clearEmptyPanel(currentState.panels.comment)
@@ -2609,7 +2615,7 @@ function fillSidebar(currentState: BewlyWidescreenState) {
 
   const danmakuResult = moveOrReplaceNode(selectors.danmaku, currentState.panels.danmaku, currentState.movedNodes)
   if (!danmakuResult.found)
-    ensureEmptyPanel(currentState.panels.danmaku, '弹幕列表加载中')
+    ensureEmptyPanel(currentState.panels.danmaku, t('widescreen.danmaku_loading'))
   else
     clearEmptyPanel(currentState.panels.danmaku)
 
@@ -2642,11 +2648,11 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   syncEpisodeSectionMarker(currentState.panels.playlist, currentState.movedNodes)
   const hasPlaylist = !!(playlistMoved || (existingPlaylist && !shouldReplacePlaylist))
   const hasRecommend = !!(existingRecommend || recommendMoved)
-  const playlistLabel = hasPlaylist ? '选集' : '推荐'
+  const playlistLabel = hasPlaylist ? t('widescreen.episodes') : t('widescreen.recommendations')
   if (currentState.tabButtons.playlist.textContent !== playlistLabel)
     currentState.tabButtons.playlist.textContent = playlistLabel
   if (!hasPlaylist && !hasRecommend)
-    ensureEmptyPanel(currentState.panels.playlist, '列表加载中')
+    ensureEmptyPanel(currentState.panels.playlist, t('widescreen.list_loading'))
   else
     clearEmptyPanel(currentState.panels.playlist)
 }

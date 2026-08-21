@@ -104,7 +104,7 @@ function pollLoginQRCode() {
     if (pollRes.code === 0) {
       cleanupQRCodeDialog()
       saveAppAuthTokens(pollRes.data)
-      toast.success('授权成功')
+      toast.success(t('settings.authorization_success'))
     }
     else if (pollRes.code === 86038) {
       await setLoginQRCode()

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+
 import { settings } from '~/logic'
 
 import type { SearchCategory, SearchCategoryOption } from '../types'
@@ -13,6 +15,8 @@ const emit = defineEmits<{
   (event: 'select', category: SearchCategory): void
 }>()
 
+const { locale } = useI18n()
+
 function handleSelect(category: SearchCategory) {
   emit('select', category)
 }
@@ -23,7 +27,7 @@ function formatCount(count: number): string {
   if (count > 99)
     return '99+'
   if (count >= 10000)
-    return `${(count / 10000).toFixed(1)}万`
+    return new Intl.NumberFormat(locale.value, { notation: 'compact', maximumFractionDigits: 1 }).format(count)
   return `${count}`
 }
 </script>

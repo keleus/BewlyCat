@@ -96,14 +96,14 @@ const awayScore = computed(() => {
     <div class="card-content">
       <!-- 赛事标题和状态 -->
       <div class="header-container">
-        <div text="base" font-bold class="season-title keep-one-line">
+        <div class="season-title keep-one-line bew-body-text" :style="{ fontWeight: 'var(--bew-font-weight-bold)' }">
           {{ contest.season.title }}
         </div>
         <!-- 状态标签 -->
         <div text="sm" class="status-badge" :class="{ finished: isFinished, live: !isNotStarted && !isFinished, upcoming: isNotStarted }">
-          <template v-if="isFinished">已结束</template>
-          <template v-else-if="isNotStarted">未开始</template>
-          <template v-else>进行中</template>
+          <template v-if="isFinished">{{ $t('search.match_finished') }}</template>
+          <template v-else-if="isNotStarted">{{ $t('search.match_upcoming') }}</template>
+          <template v-else>{{ $t('search.match_live') }}</template>
         </div>
       </div>
 

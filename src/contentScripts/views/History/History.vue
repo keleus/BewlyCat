@@ -327,12 +327,12 @@ function jumpToLoginPage() {
                 <template
                   v-if="historyItem.history.business === HistoryBusiness.LIVE"
                 >
-                  Livestreaming
+                  {{ t('history.livestreaming') }}
                 </template>
                 <template
                   v-else-if="historyItem.history.business === HistoryBusiness.PGC"
                 >
-                  PGC
+                  {{ t('history.pgc') }}
                 </template>
               </span>
 
@@ -425,7 +425,7 @@ function jumpToLoginPage() {
                     gap-1
                     m="l-2"
                   ><div i-tabler:live-photo />
-                    Live
+                    {{ t('history.live') }}
                   </span>
                 </a>
                 <div
@@ -487,7 +487,8 @@ function jumpToLoginPage() {
           v-model.lazy.trim="keyword"
           type="text"
           :placeholder="t('history.search_watch_history')"
-          class="p-x-14px lh-35px h-35px"
+          class="px-3"
+          :style="{ height: 'var(--bew-control-height)', lineHeight: 'var(--bew-control-height)' }"
           rounded="$bew-radius"
           bg="$bew-content-solid"
           shadow="$bew-shadow-1"

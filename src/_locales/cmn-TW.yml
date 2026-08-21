@@ -275,6 +275,10 @@ settings:
   environment_info_copied: 已複製環境資訊
   environment_info_copy_failed: 複製環境資訊失敗
   environment_info_unknown: 未知
+  environment_browser: 瀏覽器
+  environment_browser_version: 瀏覽器版本
+  environment_bewlycat_version: BewlyCat 版本
+  xiaohongshu: 小紅書
   group_settings_sync: 瀏覽器雲端同步
   group_version_reminder: 版本提醒
   original_moments_show_user_card: 顯示使用者卡片
@@ -640,6 +644,30 @@ settings:
   filter_by_publish_time_desc: 篩選掉發布時間超過設定天數的影片（僅在 Web 推薦模式下有效，最少 7 天）。
   filter_by_publish_time_unit: 天
   filter_item_already_exist: 這個篩選項目已經存在！
+  wanted_users:
+    enter_query: 請輸入 UP 主 UID 或暱稱
+    no_results: 找不到相關 UP 主，請嘗試其他暱稱
+    search_failed: 搜尋 UP 主失敗，請稍後再試
+    invalid_uid: 請輸入有效的 UP 主 UID
+    pinned_limit: 最多只能固定 {count} 個 UP 主
+    not_found: 找不到此 UP 主
+    info_failed: 取得 UP 主資訊失敗，請稍後再試
+    placeholder: 輸入 UP 主 UID 或暱稱
+    pinned_already: 此 UP 主已在「固定 UP」中
+    wanted_already: 此 UP 主已在「想看」分組中
+    pinned_need_follow: 必須先關注 {name}，才能將其加入「固定 UP」
+    wanted_need_follow: 必須先關注 {name}，才能將其加入「想看」分組
+    pinned_added: 已將 {name} 固定到動態欄
+    wanted_added: 已將 {name} 加入「想看」
+    pinned_removed: 已取消固定 {name}
+    wanted_removed: 已將 {name} 移出「想看」
+    remove_pinned: 取消固定 {name}
+    remove_wanted: 將 {name} 移出想看
+    remove_pinned_title: 取消固定
+    remove_wanted_title: 移出想看
+    pinned_empty: 尚未加入固定 UP 主。加入後會顯示在動態欄右側。
+    wanted_empty: 尚未加入 UP 主。加入後可在 Bewly 動態頁的「想看」中篩選。
+  authorization_success: 授權成功
   filter_by_title: 依標題篩選
   filter_by_title_desc: >
     依標題篩選掉包含你設定的字串的影片（不區分大小寫），或使用正規表示式，如 <code>/abc&#124;\d+/</code>，用
@@ -719,6 +747,8 @@ settings:
   contributors_image_failed: 貢獻者圖片載入失敗
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 開啟後同時儲存到本機與瀏覽器雲端；桌布背景與裝置播放狀態不會同步（需要登入瀏覽器帳號）
+  disable_auto_play_collection: 自動關閉合集自動播放
+  disable_auto_play_collection_desc: 自動關閉影片合集的自動播放功能
   keep_collection_video_default_mode: 合集影片保持預設模式
   keep_collection_video_default_mode_desc: 當啟用時，合集影片將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   keep_watch_later_video_default_mode: 稍後觀看保持預設模式
@@ -1059,6 +1089,8 @@ dock:
   light_mode: 淺色模式
   settings: 設定
 video_card:
+  episode_watch_later_info_failed: 無法取得該劇集的稍後再看資訊
+  feedback_options_unavailable: 無法取得回饋選項
   operation:
     not_interested: 不感興趣
     not_interested_uploader: 不想看此 UP 主
@@ -1076,6 +1108,8 @@ video_card:
     unfollow_user: 取消關注
     block_user: 拉黑用戶
     more_options: 更多操作
+    scroll_top: 捲動到頂部
+    scroll_bottom: 捲動到底部
   follow_user_confirm:
     title: 確認關注用戶
     message: 確定要關注 {name} 嗎？
@@ -1108,6 +1142,15 @@ home:
   live: 直播
   moments: 動態
   uploaders_with_updates: '{count}個 UP 主有更新'
+  risk_control_paused: 請求過於頻繁導致首頁推薦介面風控，已暫停自動請求約 {seconds} 秒，請稍後重新整理再試
+  app_fallback_web: App 推薦資料載入失敗，已自動切換至 Web 模式
+  app_retry_web: App 推薦資料載入失敗，請手動切換至 Web 模式或稍後再試
+  recommendations_retry: 首頁推薦介面連續請求失敗，請重新整理後再試
+  weekly_issue: 第{number}期
+  select_issue: 選擇期號
+  search_issue: 搜尋期號…
+  issue_not_found: 找不到符合的期號
+  collaboration: 聯合投稿
 ranking:
   all: 全部
   original_content: 原創內容
@@ -1131,6 +1174,9 @@ anime:
       sat: 週六
       sun: 週日
 history:
+  livestreaming: 直播
+  pgc: 番劇影視
+  live: 直播中
   title: 觀看記錄
   turn_on_watch_history: 啟用觀看記錄
   pause_watch_history: 暫停追蹤觀看記錄
@@ -1231,3 +1277,221 @@ search_page:
   loading: 載入中...
   no_hot_search_data: 暫無熱門搜尋資料
   view_all_esports: 檢視全部賽事
+search:
+  page_title: 搜尋 - 嗶哩嗶哩
+  results_title: '{keyword} - 搜尋結果 - 嗶哩嗶哩'
+  comprehensive: 綜合排序
+  most_viewed: 最多播放
+  latest: 最新發布
+  most_danmaku: 最多彈幕
+  most_favorited: 最多收藏
+  default_sort: 預設排序
+  fans_desc: 粉絲數由高到低
+  fans_asc: 粉絲數由低到高
+  level_desc: Lv等級由高到低
+  level_asc: Lv等級由低到高
+  any_duration: 全部時長
+  under_10: 10分鐘以下
+  from_10_to_30: 10-30分鐘
+  from_30_to_60: 30-60分鐘
+  over_60: 60分鐘以上
+  any_date: 全部日期
+  past_day: 最近一天
+  past_week: 最近一週
+  past_half_year: 最近半年
+  all_users: 全部使用者
+  uploaders: UP主使用者
+  regular_users: 一般使用者
+  verified_users: 認證使用者
+  all: 綜合
+  videos: 影片
+  bangumi: 番劇
+  film_tv: 影視
+  users: 使用者
+  live: 直播
+  articles: 專欄
+  activity: 活動
+  esports_schedule: 賽程日曆
+  watch_now: 立即觀看
+  score: '{score} 分'
+  episode_count: 共 {count} 話
+  first_aired: '首播：{date}'
+  fans_count: '粉絲：{count}'
+  video_count: '影片：{count}'
+  streamers: 主播
+  live_rooms: 直播間
+  results_count: 共找到 {count} 個結果
+  view_more_streamers: 查看更多主播（{count}+）
+  other: 其他
+  start_date: 開始日期
+  end_date: 結束日期
+  to: 至
+  sort: 排序
+  more_filters: 更多篩選
+  duration: 時長
+  date: 日期
+  user_type: 使用者類型
+  search_failed: 搜尋失敗，請稍後再試
+  search_error: 搜尋發生錯誤，請稍後再試
+  work: '稿件 {index}'
+  month: '{month}月'
+  year: '{year}年'
+  clear: 清除
+  today: 今天
+  weekdays: 日,一,二,三,四,五,六
+  followed: 已關注
+  follow: 關注
+  match_finished: 已結束
+  match_upcoming: 未開始
+  match_live: 進行中
+moments:
+  filter_all: 全部
+  filter_video: 影片投稿
+  filter_pgc: 追番追劇
+  filter_article: 專欄
+  emoji: 表情
+  view: 查看
+  charged_unlock: 充電解鎖
+  reserved: 已預約
+  reserve: 預約
+  popularity: '{count} 人氣'
+  charging_exclusive: 充電專屬
+  charging_unlock_hint: 加入目前 UP 主的充電即可解鎖觀看
+  charging_exclusive_post: 充電專屬動態
+  go_charge: 去充電
+  forwarded_post: 轉發了動態
+  bilibili_user: B站使用者
+  original_author: 原作者
+  live_post: 直播動態
+  video_post: 影片動態
+  image_post: 圖文動態
+  text_post: 純文字動態
+  original_post: 原動態
+  login_to_like: 登入後才能按讚動態
+  like_failed: 動態按讚失敗
+  like_failed_retry: 動態按讚失敗，請稍後再試
+  login_to_reserve: 登入後才能預約
+  cancel_reserve_failed: 取消預約失敗
+  reserve_failed: 預約失敗
+  reserve_succeeded: 預約成功
+  reserve_cancelled: 已取消預約
+  reserve_operation_failed: 預約操作失敗，請稍後再試
+  login_to_watch_later: 登入後才能加入稍後再看
+  watch_later_info_failed: 無法取得此影片的稍後再看資訊
+  watch_later_operation_failed: 稍後再看操作失敗，請稍後再試
+  user_info: 動態使用者資訊
+  following: 關注
+  followers: 粉絲
+  posts: 動態
+  publish: 發布動態
+  live_now: 正在直播
+  group_label: 動態分組
+  all_posts: 全部動態
+  wanted_only: 只看想看的 UP 主
+  cancel_wanted_only: 取消只看想看的 UP 主
+  wanted_scope_hint: 僅適用於全部和影片投稿
+  wanted: 想看
+  scroll_left: 向左捲動經常造訪列表
+  scroll_right: 向右捲動經常造訪列表
+  frequent_uploaders: 經常造訪的 UP 主
+  has_updates: 有更新
+  pin_uploader: 固定 UP 主
+  no_recent_updates: 近期無更新
+  add_wanted_first: 請先在設定中加入想看的 UP 主
+  empty: 暫時沒有可顯示的動態
+  recheck: 重新檢查
+  reload: 重新載入
+  loading_more: 正在載入並準備更多動態…
+  new_tab: 在新分頁開啟
+  close: 關閉
+  live_room: 直播間
+  video_playback: 影片播放
+  detail: 動態詳情
+  opening_live: 正在開啟直播間…
+  opening_video: 正在開啟影片…
+  opening_forward: 正在開啟轉發動態…
+  loading_detail: 正在載入動態詳情…
+  author_detail: '{name} 的詳情'
+  image_viewer: 動態圖片檢視器
+  close_image_viewer: 關閉圖片檢視器
+  enlarged_image: 動態圖片大圖
+  previous_image: 上一張
+  next_image: 下一張
+  zoom_out: 縮小
+  zoom_in: 放大
+  fit_window: 適應視窗
+  rotate_clockwise: 順時針旋轉
+moment_card:
+  video_post: 影片動態
+  cancel_reservation: 取消預約
+  reserve: 預約
+  open_space: 開啟 {name} 的空間
+  just_now: 剛剛
+  charging_exclusive: 充電專屬
+  added_watch_later: 已加入稍後再看
+  add_watch_later: 加入稍後再看
+  added: 已加入
+  watch_later: 稍後再看
+  live_post: 直播動態
+  open_original_video: '開啟原影片：{title}'
+  author_images: '{name} 的動態圖片'
+  view_author_images: 檢視 {name} 的動態圖片
+  additional: 附加內容
+  view_hot_comment: 檢視熱門留言
+  hot_comment: 熱門留言
+  open_dialog: 在彈窗開啟動態
+  open_dialog_short: 彈窗開啟
+  open_new_tab: 在新分頁開啟動態
+  open_new_tab_short: 新分頁開啟
+  view_comments: 檢視留言
+  live_popularity: '直播人氣 {value}'
+  no_data: 暫無資料
+  live_now: 直播中
+  like_unsupported: 此動態暫不支援按讚
+  unlike: 取消按讚
+  like: 按讚
+user_card:
+  followed: 已關注
+  follow: 關注
+  empty_bio: 這個人很懶，什麼都沒有寫～
+  live_now: 直播中
+  submissions: '{count}個投稿'
+  followers: '{count}粉絲'
+widescreen:
+  show_narrow_right: 顯示窄右欄
+  show_narrow_left: 顯示窄左欄
+  collapse_right: 收合右欄
+  collapse_left: 收合左欄
+  exit: 離開
+  exit_title: 離開 Bewly 寬螢幕
+  loading: 正在載入寬螢幕模式…
+  exit_overlay: 離開遮罩
+  comments: 留言
+  danmaku: 彈幕
+  episodes: 選集
+  collapse: 收合
+  expand_more: 展開更多
+  comments_loading: 留言區載入中
+  danmaku_loading: 彈幕列表載入中
+  recommendations: 推薦
+  list_loading: 列表載入中
+player_state:
+  muted: 已靜音
+  unmuted: 已取消靜音
+  no_captions: 目前影片沒有字幕
+  speed: '倍速 {rate}'
+  danmaku: '彈幕 {state}'
+  volume: '音量 {volume}%'
+  on: 開
+  off: 關
+vertical_video:
+  zoom_in: 放大
+  zoom_out: 縮小
+  adjust_area: 調整直向影片放大區域
+favorite_dialog:
+  clear_selected: 清除已選
+inject:
+  page_prefix: 第{current}頁，共
+  of: 共
+  loading: 載入中…
+  load_more: 載入更多

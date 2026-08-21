@@ -22,7 +22,7 @@ function handleAddFilter() {
     (item, itemIndex) => item.keyword === addingFilter.value.keyword.trim() && itemIndex !== editingIndex.value,
   )
   if (hasDuplicate) {
-    toast.warning('This title filter already exist!!!')
+    toast.warning(t('settings.filter_item_already_exist'))
     return
   }
   settings.value.filterByTitle.unshift({ ...addingFilter.value })

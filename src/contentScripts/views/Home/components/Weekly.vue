@@ -217,9 +217,9 @@ defineExpose({ initData })
         @click="showDropdown = !showDropdown"
       >
         <span v-if="activatedSeries" truncate mr-2>
-          {{ activatedSeries.name || `第${activatedSeries.number}期` }}
+          {{ activatedSeries.name || $t('home.weekly_issue', { number: activatedSeries.number }) }}
         </span>
-        <span v-else text="$bew-text-3" truncate mr-2>选择期号</span>
+        <span v-else text="$bew-text-3" truncate mr-2>{{ $t('home.select_issue') }}</span>
         <!-- arrow -->
         <div
           border="~ solid t-0 l-0 r-2 b-2"
@@ -253,7 +253,7 @@ defineExpose({ initData })
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="搜索期号..."
+                :placeholder="$t('home.search_issue')"
                 w-full px-3 py-2 rounded="$bew-radius"
                 bg="$bew-fill-2" border="1px solid transparent"
                 text="$bew-text-1" outline-none
@@ -276,13 +276,13 @@ defineExpose({ initData })
                 bg="hover:$bew-fill-2"
                 @click="selectSeries(item)"
               >
-                {{ item.name || `第${item.number}期` }}
+                {{ item.name || $t('home.weekly_issue', { number: item.number }) }}
               </div>
               <div
                 v-if="filteredSeriesList.length === 0"
                 p="x-2 y-4" text="center $bew-text-3"
               >
-                未找到匹配的期号
+                {{ $t('home.issue_not_found') }}
               </div>
             </div>
           </div>

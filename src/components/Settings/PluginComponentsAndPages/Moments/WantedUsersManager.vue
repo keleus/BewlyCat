@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
 import type { MomentsWantedUser } from '~/logic/storage'
@@ -12,6 +13,7 @@ const props = withDefaults(defineProps<{
 })
 
 const toast = useToast()
+const { t } = useI18n()
 const query = ref('')
 const error = ref('')
 const loading = ref(false)
@@ -41,23 +43,23 @@ const managedUserMids = computed(() => new Set(managedUsers.value.map(user => us
 const copy = computed(() => {
   if (isPinnedMode.value) {
     return {
-      alreadyIn: '该 UP 主已经在“固定 UP”中',
-      needFollow: (name: string) => `必须先关注 ${name}，才能将其加入“固定 UP”`,
-      added: (name: string) => `已将 ${name} 固定到动态栏`,
-      removed: (name: string) => `已取消固定 ${name}`,
-      removeAria: (name: string) => `取消固定 ${name}`,
-      removeTitle: '取消固定',
-      empty: '尚未添加固定 UP 主。添加后会显示在动态栏右侧。',
+      alreadyIn: t('settings.wanted_users.pinned_already'),
+      needFollow: (name: string) => t('settings.wanted_users.pinned_need_follow', { name }),
+      added: (name: string) => t('settings.wanted_users.pinned_added', { name }),
+      removed: (name: string) => t('settings.wanted_users.pinned_removed', { name }),
+      removeAria: (name: string) => t('settings.wanted_users.remove_pinned', { name }),
+      removeTitle: t('settings.wanted_users.remove_pinned_title'),
+      empty: t('settings.wanted_users.pinned_empty'),
     }
   }
   return {
-    alreadyIn: '该 UP 主已经在“想看”分组中',
-    needFollow: (name: string) => `必须先关注 ${name}，才能将其加入“想看”分组`,
-    added: (name: string) => `已将 ${name} 加入“想看”`,
-    removed: (name: string) => `已将 ${name} 移出“想看”`,
-    removeAria: (name: string) => `将 ${name} 移出想看`,
-    removeTitle: '移出想看',
-    empty: '尚未添加 UP 主。添加后可在 Bewly 动态页的“想看”中筛选。',
+    alreadyIn: t('settings.wanted_users.wanted_already'),
+    needFollow: (name: string) => t('settings.wanted_users.wanted_need_follow', { name }),
+    added: (name: string) => t('settings.wanted_users.wanted_added', { name }),
+    removed: (name: string) => t('settings.wanted_users.wanted_removed', { name }),
+    removeAria: (name: string) => t('settings.wanted_users.remove_wanted', { name }),
+    removeTitle: t('settings.wanted_users.remove_wanted_title'),
+    empty: t('settings.wanted_users.wanted_empty'),
   }
 })
 
@@ -84,7 +86,7 @@ async function addUser() {
   const input = query.value.trim()
   error.value = ''
   if (!input) {
-    error.value = '请输入 UP 主 UID 或昵称'
+    error.value = t('settings.wanted_users.enter_query')
     return
   }
 
@@ -108,12 +110,12 @@ async function addUser() {
         name: stripSearchHighlight(user.uname),
         face: httpsUrl(user.upic || user.face || ''),
         sign: stripSearchHighlight(user.usign || user.sign),
-      })).filter(user => user.mid && user.name)
+      })).filter((user: UserSearchCandidate) => user.mid && user.name)
       if (!searchCandidates.value.length)
-        error.value = '没有找到相关 UP 主，请尝试其他昵称'
+        error.value = t('settings.wanted_users.no_results')
     }
     catch (cause) {
-      error.value = cause instanceof Error ? cause.message : '搜索 UP 主失败，请稍后重试'
+      error.value = cause instanceof Error ? cause.message : t('settings.wanted_users.search_failed')
     }
     finally {
       loading.value = false
@@ -123,7 +125,7 @@ async function addUser() {
 
   const mid = input.replace(/^0+/, '')
   if (!mid) {
-    error.value = '请输入有效的 UP 主 UID'
+    error.value = t('settings.wanted_users.invalid_uid')
     return
   }
   await addUserByMid(mid)
@@ -139,7 +141,7 @@ async function addUserByMid(mid: string) {
     return
   }
   if (isPinnedMode.value && managedUsers.value.length >= MAX_PINNED_USERS) {
-    error.value = `最多只能固定 ${MAX_PINNED_USERS} 个 UP 主`
+    error.value = t('settings.wanted_users.pinned_limit', { count: MAX_PINNED_USERS })
     return
   }
 
@@ -151,7 +153,7 @@ async function addUserByMid(mid: string) {
     ])
     const card = cardResponse.code === 0 ? cardResponse.data?.card : null
     if (!card?.mid || !card?.name) {
-      error.value = cardResponse.message || '未找到该 UP 主'
+      error.value = cardResponse.message || t('settings.wanted_users.not_found')
       return
     }
 
@@ -172,7 +174,7 @@ async function addUserByMid(mid: string) {
     toast.success(copy.value.added(card.name))
   }
   catch (cause) {
-    error.value = cause instanceof Error ? cause.message : '获取 UP 主信息失败，请稍后重试'
+    error.value = cause instanceof Error ? cause.message : t('settings.wanted_users.info_failed')
   }
   finally {
     loading.value = false
@@ -194,7 +196,7 @@ function removeUser(mid: string) {
         v-model="query"
         type="text"
         autocomplete="off"
-        placeholder="输入 UP 主 UID 或昵称"
+        :placeholder="t('settings.wanted_users.placeholder')"
         :disabled="loading"
         @input="error = ''; searchCandidates = []"
       >
@@ -202,7 +204,7 @@ function removeUser(mid: string) {
         <span v-if="loading" i-svg-spinners:ring-resize />
         <span v-else-if="/^\d+$/.test(query.trim())" i-tabler-user-plus />
         <span v-else i-tabler-search />
-        {{ /^\d+$/.test(query.trim()) ? '添加' : '搜索' }}
+        {{ /^\d+$/.test(query.trim()) ? t('common.operation.add') : t('common.search') }}
       </button>
     </form>
     <p v-if="error" class="wanted-users-manager__error">
@@ -298,7 +300,7 @@ function removeUser(mid: string) {
   display: flex;
   gap: var(--bew-space-2);
   margin: var(--bew-space-3) 0 0;
-  color: #d9485f;
+  color: var(--bew-error-color);
   font-size: var(--bew-font-size-control);
 }
 .wanted-users-manager__candidates {
@@ -419,8 +421,8 @@ function removeUser(mid: string) {
   cursor: pointer;
 }
 .wanted-users-manager__list button:hover {
-  color: #d9485f;
-  background: color-mix(in oklab, #d9485f 10%, transparent);
+  color: var(--bew-error-color);
+  background: var(--bew-error-color-10);
 }
 .wanted-users-manager__empty {
   margin: 12px 0 0;

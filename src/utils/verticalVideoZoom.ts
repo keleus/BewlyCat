@@ -1,5 +1,10 @@
+import { i18n } from './i18n'
 import { injectCSS } from './main'
 import { getVideoElement } from './player'
+
+function t(key: string) {
+  return String(i18n.global.t(key))
+}
 
 const PLAYER_HOST_SELECTOR = [
   '#playerWrap',
@@ -270,7 +275,7 @@ function syncButtonLabel() {
   if (!button || !currentHost)
     return
 
-  button.textContent = currentHost.classList.contains(ZOOMED_CLASS) ? '缩小' : '放大'
+  button.textContent = currentHost.classList.contains(ZOOMED_CLASS) ? t('vertical_video.zoom_out') : t('vertical_video.zoom_in')
 }
 
 function syncZoomPosition() {
@@ -328,7 +333,7 @@ function ensureControl(host: HTMLElement) {
     mapElement.className = MAP_CLASS
     mapElement.tabIndex = 0
     mapElement.setAttribute('role', 'slider')
-    mapElement.setAttribute('aria-label', '调整竖屏放大区域')
+    mapElement.setAttribute('aria-label', t('vertical_video.adjust_area'))
     mapElement.setAttribute('aria-valuemin', '0')
     mapElement.setAttribute('aria-valuemax', '100')
 

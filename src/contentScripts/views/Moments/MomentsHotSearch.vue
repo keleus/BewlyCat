@@ -66,10 +66,10 @@ onMounted(loadHotSearch)
 </script>
 
 <template>
-  <section class="moments-hot-search" aria-label="热搜">
+  <section class="moments-hot-search" :aria-label="$t('search_bar.hot_search_title')">
     <header class="moments-hot-search__header">
       <span i-tabler-flame aria-hidden="true" />
-      <strong>{{ $t('search_bar.hot_search_title') || '热搜' }}</strong>
+      <strong>{{ $t('search_bar.hot_search_title') }}</strong>
     </header>
 
     <div v-if="isLoading && !list.length" class="moments-hot-search__list" aria-hidden="true">
@@ -209,7 +209,7 @@ onMounted(loadHotSearch)
 .moments-hot-search__skeleton {
   display: block;
   height: 18px;
-  margin: 7px var(--bew-space-2);
+  margin: var(--bew-space-2);
   border-radius: var(--bew-radius-sm);
   background: var(--bew-skeleton-color, var(--bew-fill-2));
 }

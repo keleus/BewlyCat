@@ -92,7 +92,7 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-useI18n()
+const { t } = useI18n()
 
 const { scrollViewportRef, handlePageRefresh, handleReachBottom, canRefreshHomeSubPage } = useBewlyApp()
 const videoList = ref<VideoElement[]>([])
@@ -923,7 +923,7 @@ function mapMomentItemToVideo(item?: MomentItem, authors?: Author[]): Video | un
     publishedTimestamp: item.modules?.module_author?.pub_ts,
     bvid: archive.bvid,
     badge,
-    tag: isCollaboration ? '联合投稿' : undefined,
+    tag: isCollaboration ? t('home.collaboration') : undefined,
     threePointV2: [],
   }
 }

@@ -59,7 +59,7 @@ function handleConfirmFilter(index: number) {
     (item, itemIndex) => item.keyword === editingFilter.value.keyword.trim() && itemIndex !== index,
   )
   if (hasDuplicate) {
-    toast.warning('This title filter already exist!!!')
+    toast.warning(t('settings.filter_item_already_exist'))
     return
   }
   settings.value.filterByUser[index] = { ...editingFilter.value }

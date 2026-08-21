@@ -2,6 +2,7 @@
 import { useEventListener, useTitle } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
@@ -21,15 +22,16 @@ function getKeywordFromUrl(): string {
 }
 
 const keyword = ref<string>(getKeywordFromUrl())
+const { t } = useI18n()
 const normalizedKeyword = computed(() => (keyword.value || '').trim())
 const CATEGORY_KEYS: SearchCategory[] = ['all', 'video', 'bangumi', 'media_ft', 'user', 'live', 'article']
 
 // 设置页面标题
 const pageTitle = computed(() => {
   if (!normalizedKeyword.value) {
-    return '搜索 - 哔哩哔哩'
+    return t('search.page_title')
   }
-  return `${normalizedKeyword.value} - 搜索结果 - 哔哩哔哩`
+  return t('search.results_title', { keyword: normalizedKeyword.value })
 })
 useTitle(pageTitle)
 
@@ -128,53 +130,53 @@ const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 const topBarStore = useTopBarStore()
 const { searchKeyword: topBarSearchKeyword } = storeToRefs(topBarStore)
 
-const videoOrderOptions = [
-  { value: '', label: '综合排序' },
-  { value: 'click', label: '最多播放' },
-  { value: 'pubdate', label: '最新发布' },
-  { value: 'dm', label: '最多弹幕' },
-  { value: 'stow', label: '最多收藏' },
-]
+const videoOrderOptions = computed(() => [
+  { value: '', label: t('search.comprehensive') },
+  { value: 'click', label: t('search.most_viewed') },
+  { value: 'pubdate', label: t('search.latest') },
+  { value: 'dm', label: t('search.most_danmaku') },
+  { value: 'stow', label: t('search.most_favorited') },
+])
 
-const durationOptions = [
-  { value: 0, label: '全部时长' },
-  { value: 1, label: '10分钟以下' },
-  { value: 2, label: '10-30分钟' },
-  { value: 3, label: '30-60分钟' },
-  { value: 4, label: '60分钟以上' },
-]
+const durationOptions = computed(() => [
+  { value: 0, label: t('search.any_duration') },
+  { value: 1, label: t('search.under_10') },
+  { value: 2, label: t('search.from_10_to_30') },
+  { value: 3, label: t('search.from_30_to_60') },
+  { value: 4, label: t('search.over_60') },
+])
 
-const timeRangeOptions = [
-  { value: 'all', label: '全部日期' },
-  { value: 'day', label: '最近一天' },
-  { value: 'week', label: '最近一周' },
-  { value: 'halfyear', label: '最近半年' },
-]
+const timeRangeOptions = computed(() => [
+  { value: 'all', label: t('search.any_date') },
+  { value: 'day', label: t('search.past_day') },
+  { value: 'week', label: t('search.past_week') },
+  { value: 'halfyear', label: t('search.past_half_year') },
+])
 
-const userOrderOptions = [
-  { value: '', label: '默认排序' },
-  { value: 'fans', label: '粉丝数由高到低' },
-  { value: 'fans_desc', label: '粉丝数由低到高' },
-  { value: 'level', label: 'Lv等级由高到低' },
-  { value: 'level_desc', label: 'Lv等级由低到高' },
-]
+const userOrderOptions = computed(() => [
+  { value: '', label: t('search.default_sort') },
+  { value: 'fans', label: t('search.fans_desc') },
+  { value: 'fans_desc', label: t('search.fans_asc') },
+  { value: 'level', label: t('search.level_desc') },
+  { value: 'level_desc', label: t('search.level_asc') },
+])
 
-const userTypeOptions = [
-  { value: 0, label: '全部用户' },
-  { value: 1, label: 'UP主用户' },
-  { value: 2, label: '普通用户' },
-  { value: 3, label: '认证用户' },
-]
+const userTypeOptions = computed(() => [
+  { value: 0, label: t('search.all_users') },
+  { value: 1, label: t('search.uploaders') },
+  { value: 2, label: t('search.regular_users') },
+  { value: 3, label: t('search.verified_users') },
+])
 
-const categories: ReadonlyArray<SearchCategoryOption> = [
-  { value: 'all', label: '综合', icon: 'i-tabler:search' },
-  { value: 'video', label: '视频', icon: 'i-tabler:video' },
-  { value: 'bangumi', label: '番剧', icon: 'i-tabler:movie' },
-  { value: 'media_ft', label: '影视', icon: 'i-tabler:movie-off' },
-  { value: 'user', label: '用户', icon: 'i-tabler:user' },
-  { value: 'live', label: '直播', icon: 'i-tabler:broadcast' },
-  { value: 'article', label: '专栏', icon: 'i-tabler:article' },
-]
+const categories = computed<ReadonlyArray<SearchCategoryOption>>(() => [
+  { value: 'all', label: t('search.all'), icon: 'i-tabler:search' },
+  { value: 'video', label: t('search.videos'), icon: 'i-tabler:video' },
+  { value: 'bangumi', label: t('search.bangumi'), icon: 'i-tabler:movie' },
+  { value: 'media_ft', label: t('search.film_tv'), icon: 'i-tabler:movie-off' },
+  { value: 'user', label: t('search.users'), icon: 'i-tabler:user' },
+  { value: 'live', label: t('search.live'), icon: 'i-tabler:broadcast' },
+  { value: 'article', label: t('search.articles'), icon: 'i-tabler:article' },
+])
 
 // TODO: 需要从各个 Page 组件获取实际的 counts
 // 暂时使用空对象

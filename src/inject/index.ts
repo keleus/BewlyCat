@@ -1,12 +1,18 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
 import { isSearchResultApiPath } from '~/constants/searchApi'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
+import { i18n } from '~/utils/i18n'
 import { isElectron } from '~/utils/main'
 import type { PageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
 
 // 存储当前设置状态
 let currentSettings: PageSettingsPayload | null = null
+
+function pageT(key: string, params: Record<string, unknown> = {}) {
+  const locale = currentSettings?.language || i18n.global.locale.value
+  return String(i18n.global.t(key, params, { locale }))
+}
 let settingsReady = false
 let preventMobileRedirectEnabled = false
 let resolveSettingsReady: (() => void) | null = null
@@ -97,8 +103,6 @@ else if (shouldInitializePageScript) {
       obj[key] = origin[key]
       return obj
     }, {})
-
-    keysArray.map((k: string) => origin[k])
 
     keysArray.forEach((key: string) => {
       const fn = (...args: any[]) => {
@@ -818,7 +822,7 @@ else if (shouldInitializePageScript) {
     const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
     if (!head)
       return
-    const prefix = `第${currentPage}页，共`
+    const prefix = pageT('inject.page_prefix', { current: currentPage })
     const first = head.firstChild
     if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== prefix)
       first.textContent = prefix
@@ -829,8 +833,9 @@ else if (shouldInitializePageScript) {
     if (!head)
       return
     const first = head.firstChild
-    if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== '共')
-      first.textContent = '共'
+    const ofLabel = pageT('inject.of')
+    if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== ofLabel)
+      first.textContent = ofLabel
   }
 
   function getCommentReplyInvisibleIds(renderer: any): Set<string> {
@@ -1063,17 +1068,17 @@ else if (shouldInitializePageScript) {
           const invisibleIds = getCommentReplyInvisibleIds(this)
           if (invisibleIds.size) {
             state.pages.forEach((page, pageNumber) => {
-              state.pages.set(pageNumber, page.filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? '')))
+              state.pages.set(pageNumber, page.filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? '')))
             })
             if (state.mergedList) {
               state.mergedList = state.mergedList
-                .filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? ''))
+                .filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
             }
           }
           // 原生组件可能替换 list，也可能原地改写。请求前先保存独立的
           // 累计列表快照，后续始终以它为基础追加新页。
           const currentList = Array.isArray(this.list)
-            ? this.list.filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? ''))
+            ? this.list.filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
             : []
           const beforeList = mergeCommentReplyLists(state.mergedList ?? [], currentList)
           state.mergedList = beforeList
@@ -1104,14 +1109,14 @@ else if (shouldInitializePageScript) {
                 && Array.isArray(this.list)) {
                 const latestInvisibleIds = getCommentReplyInvisibleIds(this)
                 const retainedBeforeList = pending.beforeList
-                  .filter(reply => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
+                  .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
                 const loadedList = this.list
-                  .filter(reply => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
+                  .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
                 const page = getNewCommentReplyPage(retainedBeforeList, loadedList)
                 state.pages.forEach((cachedPage, pageNumber) => {
                   state.pages.set(
                     pageNumber,
-                    cachedPage.filter(reply => !latestInvisibleIds.has(getReplyRpid(reply) ?? '')),
+                    cachedPage.filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? '')),
                   )
                 })
                 // pages 始终保存原生完整单页，供切回「分页」模式时恢复。
@@ -1196,13 +1201,13 @@ else if (shouldInitializePageScript) {
           const state = getCommentReplyPaginationState(this)
           const currentPage = Number(this.currentPage) || 1
           if (state.loading) {
-            return [{ text: '加载中…', idx: currentPage, clickable: false }]
+            return [{ text: pageT('inject.loading'), idx: currentPage, clickable: false }]
           }
           const totalPage = Number(this.totalPage) || 0
           const hasNext = currentPage < totalPage
           queueMicrotask(() => updateCommentReplyPaginationHead(this, currentPage))
           return hasNext
-            ? [{ text: '加载更多', idx: currentPage, clickable: true }]
+            ? [{ text: pageT('inject.load_more'), idx: currentPage, clickable: true }]
             : []
         },
       })

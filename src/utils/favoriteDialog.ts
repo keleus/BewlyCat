@@ -4,6 +4,7 @@
  */
 
 import { settings } from '~/logic'
+import { i18n } from '~/utils/i18n'
 
 let observer: MutationObserver | null = null
 
@@ -13,7 +14,7 @@ let observer: MutationObserver | null = null
 function createClearButton(container: Element): HTMLElement {
   const clearBtn = document.createElement('button')
   clearBtn.className = 'bewly-clear-selection-btn btn'
-  clearBtn.textContent = '清空已选'
+  clearBtn.textContent = String(i18n.global.t('favorite_dialog.clear_selected'))
 
   // 添加点击事件
   clearBtn.addEventListener('click', (e) => {

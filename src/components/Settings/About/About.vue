@@ -69,9 +69,9 @@ async function handleCopyEnvironmentInfo() {
 
   const unknownValue = t('settings.environment_info_unknown')
   const text = [
-    `- 浏览器：${browserInfo.value.name ?? unknownValue}`,
-    `- 浏览器版本：${browserInfo.value.version ?? unknownValue}`,
-    `- BewlyCat 版本：${version}`,
+    `- ${t('settings.environment_browser')}: ${browserInfo.value.name ?? unknownValue}`,
+    `- ${t('settings.environment_browser_version')}: ${browserInfo.value.version ?? unknownValue}`,
+    `- ${t('settings.environment_bewlycat_version')}: ${version}`,
   ].join('\n')
 
   isCopyingEnvironmentInfo.value = true
@@ -206,7 +206,7 @@ async function handleCopyEnvironmentInfo() {
               bg="#FF2442 dark:#D7223A !opacity-10 !hover:opacity-20"
               un-text="#FF2442 dark:#D7223A"
             >
-              <div i-tabler:book-2 /> 小红书
+              <div i-tabler:book-2 /> {{ t('settings.xiaohongshu') }}
             </a>
           </div>
         </section>
@@ -238,7 +238,8 @@ async function handleCopyEnvironmentInfo() {
 
 <style lang="scss" scoped>
 .title {
-  --uno: "fw-bold mb-2";
+  --uno: "mb-2";
+  font-weight: var(--bew-font-weight-bold);
 }
 
 .about-brand {

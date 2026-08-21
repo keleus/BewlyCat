@@ -637,8 +637,8 @@ defineExpose({
     <div v-else class="all-results" space-y-6>
       <!-- 活动和游戏 -->
       <div v-if="!isInPaginationNonFirstPage && activityAndGameItems.length > 0">
-        <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
-          活动
+        <h3 class="bew-section-heading" text="$bew-text-1" mb-3 mt-6>
+          {{ t('search.activity') }}
         </h3>
         <div class="activity-results" grid="~ cols-1 md:cols-2 lg:cols-3 gap-4">
           <a
@@ -680,8 +680,8 @@ defineExpose({
           v-else-if="!isInPaginationNonFirstPage && (section?.result_type === 'media_bangumi' || section?.result_type === 'media_ft')
             && Array.isArray(section.data) && section.data.length"
         >
-          <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
-            {{ section.result_type === 'media_ft' ? '影视' : '番剧' }}
+          <h3 class="bew-section-heading" text="$bew-text-1" mb-3 mt-6>
+            {{ section.result_type === 'media_ft' ? t('search.film_tv') : t('search.bangumi') }}
           </h3>
           <!-- 影视 -->
           <div v-if="section.result_type === 'media_ft'" class="media-ft-highlight-grid">
@@ -701,10 +701,10 @@ defineExpose({
                 </div>
               </a>
               <div class="media-ft-highlight-info">
-                <div class="media-ft-highlight-title" text="lg $bew-text-1" font-medium v-html="sanitizeHighlightTitle(item.title)" />
+                <div class="media-ft-highlight-title bew-card-title-text" text="$bew-text-1" font-medium v-html="sanitizeHighlightTitle(item.title)" />
                 <div class="media-ft-highlight-meta" text="sm $bew-text-3" flex items-center gap-2>
                   <span v-if="item.media_score?.score" text="$bew-theme-color" font-bold>
-                    {{ item.media_score.score.toFixed(1) }} 分
+                    {{ t('search.score', { score: item.media_score.score.toFixed(1) }) }}
                   </span>
                   <span v-if="item.areas">{{ item.areas }}</span>
                   <span v-if="item.styles">{{ item.styles }}</span>
@@ -730,7 +730,7 @@ defineExpose({
                     :href="item.goto_url || item.url || `https://www.bilibili.com/bangumi/media/md${item.media_id}`"
                     target="_blank"
                   >
-                    立即观看
+                    {{ t('search.watch_now') }}
                   </a>
                 </div>
               </div>
@@ -750,16 +750,16 @@ defineExpose({
                 </div>
               </a>
               <div class="bangumi-highlight-info">
-                <div class="bangumi-highlight-title" text="lg $bew-text-1" font-medium>
+                <div class="bangumi-highlight-title bew-card-title-text" text="$bew-text-1" font-medium>
                   {{ bangumi.title }}
                 </div>
                 <div class="bangumi-highlight-meta" text="sm $bew-text-3" flex items-center gap-2>
                   <span v-if="bangumi.score" text="$bew-theme-color" font-bold>
-                    {{ bangumi.score?.toFixed(1) }} 分
+                    {{ t('search.score', { score: bangumi.score?.toFixed(1) }) }}
                   </span>
                   <span v-if="bangumi.areas">{{ bangumi.areas }}</span>
-                  <span v-if="bangumi.episodeCount">共 {{ bangumi.episodeCount }} 话</span>
-                  <span v-if="bangumi.publishDateFormatted">首播：{{ bangumi.publishDateFormatted }}</span>
+                  <span v-if="bangumi.episodeCount">{{ t('search.episode_count', { count: bangumi.episodeCount }) }}</span>
+                  <span v-if="bangumi.publishDateFormatted">{{ t('search.first_aired', { date: bangumi.publishDateFormatted }) }}</span>
                 </div>
                 <div v-if="bangumi.desc" class="bangumi-highlight-desc">
                   {{ bangumi.desc }}
@@ -775,7 +775,7 @@ defineExpose({
                 />
                 <div class="bangumi-highlight-actions" flex items-center gap-3>
                   <a class="bangumi-highlight-button" :href="bangumi.url" target="_blank">
-                    {{ bangumi.buttonText || '立即观看' }}
+                    {{ bangumi.buttonText || t('search.watch_now') }}
                   </a>
                 </div>
               </div>
@@ -788,8 +788,8 @@ defineExpose({
 
         <!-- 赛事 -->
         <div v-else-if="!isInPaginationNonFirstPage && section?.result_type === 'esports' && Array.isArray(section.data) && section.data.length">
-          <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
-            赛程日历
+          <h3 class="bew-section-heading" text="$bew-text-1" mb-3 mt-6>
+            {{ t('search.esports_schedule') }}
           </h3>
           <div class="esports-grid" flex="~ wrap gap-4" mb-4>
             <template v-for="contestData in section.data" :key="`esports-data-${contestData.contest?.[0]?.ID}`">
@@ -812,8 +812,8 @@ defineExpose({
 
         <!-- 用户 -->
         <div v-else-if="!isInPaginationNonFirstPage && section?.result_type === 'bili_user' && Array.isArray(section.data) && section.data.length">
-          <h3 text="lg $bew-text-1" font-medium mb-3 mt-6>
-            用户
+          <h3 class="bew-section-heading" text="$bew-text-1" mb-3 mt-6>
+            {{ t('search.users') }}
           </h3>
           <div class="user-highlight-grid">
             <div
@@ -830,7 +830,7 @@ defineExpose({
                 >
                 <div class="user-highlight-info" flex="~ col" gap-1 flex-1>
                   <div
-                    class="user-highlight-name" text="base $bew-text-1" font-medium flex items-center
+                    class="user-highlight-name bew-body-text" text="$bew-text-1" font-medium flex items-center
                     gap-2
                   >
                     <a :href="user.url" target="_blank">{{ user.name }}</a>
@@ -850,8 +850,8 @@ defineExpose({
                     </span>
                   </div>
                   <div text="xs $bew-text-3" flex items-center gap-3>
-                    <span>粉丝：{{ formatNumber(user.fans || 0) }}</span>
-                    <span>视频：{{ user.videos || 0 }}</span>
+                    <span>{{ t('search.fans_count', { count: formatNumber(user.fans || 0) }) }}</span>
+                    <span>{{ t('search.video_count', { count: user.videos || 0 }) }}</span>
                   </div>
                   <div v-if="user.desc" class="user-highlight-desc" mt-1>
                     {{ user.desc }}
@@ -863,7 +863,7 @@ defineExpose({
                   :disabled="userRelations[user.mid]?.isLoading"
                   @click.stop="handleUserFollow(user.mid)"
                 >
-                  {{ userRelations[user.mid]?.isLoading ? '...' : userRelations[user.mid]?.isFollowing ? '已关注' : '+ 关注' }}
+                  {{ userRelations[user.mid]?.isLoading ? '...' : userRelations[user.mid]?.isFollowing ? t('search.followed') : `+ ${t('search.follow')}` }}
                 </button>
               </div>
               <div
@@ -918,8 +918,8 @@ defineExpose({
 
       <!-- 视频（放在最后，因为有滚动加载） -->
       <div>
-        <h3 v-if="videoList.length > 0" text="lg $bew-text-1" font-medium mb-3 mt-6>
-          视频
+        <h3 v-if="videoList.length > 0" class="bew-section-heading" text="$bew-text-1" mb-3 mt-6>
+          {{ t('search.videos') }}
         </h3>
         <VideoCardGrid
           :items="videoList"

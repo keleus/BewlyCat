@@ -274,21 +274,21 @@ defineExpose({
             </div>
           </a>
           <div class="bangumi-highlight-info">
-            <div class="bangumi-highlight-title" text="lg $bew-text-1" font-medium>
+            <div class="bangumi-highlight-title bew-card-title-text" text="$bew-text-1" font-medium>
               {{ bangumi.title }}
             </div>
             <div class="bangumi-highlight-meta" text="sm $bew-text-3" flex items-center gap-2>
               <span v-if="bangumi.score" text="$bew-theme-color" font-bold>
-                {{ bangumi.score?.toFixed(1) }} 分
+                {{ t('search.score', { score: bangumi.score?.toFixed(1) }) }}
               </span>
               <span v-if="bangumi.areas">
                 {{ bangumi.areas }}
               </span>
               <span v-if="bangumi.episodeCount">
-                共 {{ bangumi.episodeCount }} 话
+                {{ t('search.episode_count', { count: bangumi.episodeCount }) }}
               </span>
               <span v-if="bangumi.publishDateFormatted">
-                首播：{{ bangumi.publishDateFormatted }}
+                {{ t('search.first_aired', { date: bangumi.publishDateFormatted }) }}
               </span>
             </div>
             <div v-if="bangumi.desc" class="bangumi-highlight-desc">
@@ -312,15 +312,15 @@ defineExpose({
                 target="_blank"
                 @click.stop
               >
-                {{ bangumi.buttonText || '立即观看' }}
+                {{ bangumi.buttonText || t('search.watch_now') }}
               </a>
             </div>
           </div>
         </div>
       </div>
       <div v-if="bangumiGroups.movie.length" space-y-3>
-        <h3 text="lg $bew-text-1" font-medium>
-          其它
+        <h3 class="bew-section-heading" text="$bew-text-1">
+          {{ t('search.other') }}
         </h3>
         <div class="bangumi-highlight-grid">
           <div
@@ -343,12 +343,12 @@ defineExpose({
               </div>
             </a>
             <div class="bangumi-highlight-info">
-              <div class="bangumi-highlight-title" text="lg $bew-text-1" font-medium>
+              <div class="bangumi-highlight-title bew-card-title-text" text="$bew-text-1" font-medium>
                 {{ item.title }}
               </div>
               <div class="bangumi-highlight-meta" text="sm $bew-text-3" flex items-center gap-2>
                 <span v-if="item.score" text="$bew-theme-color" font-bold>
-                  {{ item.score?.toFixed(1) }} 分
+                  {{ t('search.score', { score: item.score?.toFixed(1) }) }}
                 </span>
                 <span v-if="item.areas">
                   {{ item.areas }}
@@ -375,7 +375,7 @@ defineExpose({
                   target="_blank"
                   @click.stop
                 >
-                  立即观看
+                  {{ t('search.watch_now') }}
                 </a>
               </div>
             </div>

@@ -1,5 +1,7 @@
 import { ref } from 'vue'
 
+import { i18n } from '~/utils/i18n'
+
 import type { SearchCategory } from '../types'
 
 export interface SearchRequestOptions {
@@ -71,7 +73,7 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
         return false
 
       if (!response || response.code !== 0) {
-        error.value = '搜索失败，请稍后重试'
+        error.value = i18n.global.t('search.search_failed')
         return false
       }
 
@@ -84,7 +86,7 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
       if (activeRequestToken !== requestToken)
         return false
       console.error(`Search error for ${category}:`, err)
-      error.value = '搜索出错，请稍后重试'
+      error.value = i18n.global.t('search.search_error')
       return false
     }
     finally {
