@@ -774,6 +774,10 @@ settings:
   use_original_bilibili_homepage_desc: 在您更改此设置后，如果在首页上，页面将自动刷新！
   use_original_bilibili_topbar: 使用原版 Bilibili 顶栏
   use_original_bilibili_topbar_desc: 仅在「顶栏可见性」开启时生效。开启后使用 B 站原版顶栏，关闭后使用 BewlyCat 顶栏。
+  top_bar_mode: 顶栏类型
+  top_bar_mode_opt:
+    original: 原版顶栏
+    bewly: BewlyCat 顶栏
   adapt_to_other_page_styles: 适应其他页面样式
   adapt_to_other_page_styles_desc: 适应一些常见页面，以与 BewlyCat 主题相匹配。
   prevent_mobile_redirect: 防止跳转移动端

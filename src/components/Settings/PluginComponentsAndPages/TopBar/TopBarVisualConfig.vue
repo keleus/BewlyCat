@@ -102,6 +102,11 @@ const topBarStyleOptions = computed<{ label: string, value: TopBarStyle }[]>(() 
   { label: t('settings.top_bar_style_opt.frosted_glass'), value: 'frostedGlass' },
 ])
 
+const topBarModeOptions = computed(() => [
+  { label: t('settings.top_bar_mode_opt.original'), value: true },
+  { label: t('settings.top_bar_mode_opt.bewly'), value: false },
+])
+
 function createDefaultComponentConfig(component: TopBarComponent) {
   return {
     key: component.key,
@@ -232,13 +237,6 @@ function toggleChannel(value: string) {
     >
       <SettingsItem :title="$t('settings.topbar_visibility')" :desc="$t('settings.topbar_visibility_desc')" right-width="auto">
         <Radio v-model="settings.enableTopBar" :label="settings.enableTopBar ? $t('settings.chk_box.show') : $t('settings.chk_box.hidden')" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.use_original_bilibili_topbar')"
-        :desc="$t('settings.use_original_bilibili_topbar_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.useOriginalBilibiliTopBar" :disabled="!settings.enableTopBar" />
       </SettingsItem>
       <SettingsItem
         v-if="!settings.touchScreenOptimization"
@@ -383,7 +381,16 @@ function toggleChannel(value: string) {
           </span>
         </template>
         <div class="topbar-component-controls">
-          <div v-if="component.supportsBadge" class="topbar-component-control topbar-component-control--badge">
+          <div v-if="component.key === 'topBarSwitcher'" class="topbar-component-control topbar-component-control--mode">
+            <span class="topbar-component-control__label">{{ $t('settings.top_bar_mode') }}</span>
+            <Select
+              v-model="settings.useOriginalBilibiliTopBar"
+              :options="topBarModeOptions"
+              :disabled="!settings.enableTopBar"
+              w="160px"
+            />
+          </div>
+          <div v-else-if="component.supportsBadge" class="topbar-component-control topbar-component-control--badge">
             <span class="topbar-component-control__label">{{ $t('settings.badge_type') }}</span>
             <Select
               :model-value="getComponentBadgeValue(component.key)"

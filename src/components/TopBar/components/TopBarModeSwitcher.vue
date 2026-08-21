@@ -77,7 +77,6 @@ useMutationObserver(
   >
     <TopBarItemEditor
       component-key="topBarSwitcher"
-      settings-target-title-key="settings.use_original_bilibili_topbar"
     >
       <Tooltip :content="actionLabel" placement="bottom-right">
         <button

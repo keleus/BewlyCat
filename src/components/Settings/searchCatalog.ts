@@ -181,8 +181,6 @@ const topBarGlobalTitleKeys = [
   'settings.topbar_style_settings',
   'settings.topbar_visibility',
   'settings.topbar_visibility_desc',
-  'settings.use_original_bilibili_topbar',
-  'settings.use_original_bilibili_topbar_desc',
   'settings.auto_hide_top_bar',
   'settings.video_page_top_bar_config',
   'settings.top_bar_style',
@@ -193,6 +191,7 @@ const topBarGlobalTitleKeys = [
   'settings.show_top_bar_theme_color_gradient',
   'settings.open_top_bar_items_in_bewly',
   'settings.open_notifications_page_as_drawer',
+  'settings.filter_articles_in_moments',
 ]
 
 export const settingsSearchEntries: SettingsSearchEntry[] = [
@@ -385,8 +384,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ]),
   ...createEntries(topBarRoute, [
     'settings.topbar_actions',
-    'settings.show_like_notification_reminder',
-    'settings.filter_articles_in_moments',
   ], {
     keywordKeys: ['settings.visibility', 'settings.badge_type', 'settings.top_bar_icon_badges_opt'],
   }),
@@ -405,6 +402,17 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ].flatMap(([, titleKey]) => createEntries(topBarRoute, [titleKey!], {
     keywordKeys: ['settings.visibility', 'settings.badge_type', 'settings.top_bar_icon_badges_opt'],
   })),
+  ...createEntries(topBarRoute, [
+    'topbar.top_bar_switcher',
+  ], {
+    keywordKeys: [
+      'settings.visibility',
+      'settings.top_bar_mode',
+      'settings.top_bar_mode_opt',
+      'settings.use_original_bilibili_topbar',
+      'settings.use_original_bilibili_topbar_desc',
+    ],
+  }),
 
   ...createEntries(dockRoute, [
     'settings.plugin.dock_and_sidebar',

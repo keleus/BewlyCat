@@ -651,6 +651,11 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
         v-if="topBarStore.showTopBar || isLayoutEditing"
         ref="headerTarget"
         class="top-bar"
+        data-layout-edit-target="topbar-component"
+        data-layout-edit-direct
+        data-layout-settings-menu="BewlyComponents"
+        data-layout-settings-page="topbar"
+        data-layout-settings-title-key="settings.topbar_visibility"
         w="full"
         :class="{
           'hide': hideTopBar && !isLayoutEditing,
@@ -697,6 +702,7 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
   right: 0;
   z-index: 999;
   position: fixed;
+  min-height: var(--bew-top-bar-height);
   transition:
     opacity var(--bew-duration-moderate) var(--bew-ease-standard),
     transform var(--bew-duration-moderate) var(--bew-ease-standard);

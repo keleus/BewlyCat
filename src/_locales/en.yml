@@ -765,6 +765,10 @@ settings:
   use_original_bilibili_topbar_desc: >-
     Only applies when top bar visibility is on. Enable it to use the original
     Bilibili top bar; disable it to use the BewlyCat top bar.
+  top_bar_mode: Top bar type
+  top_bar_mode_opt:
+    original: Original top bar
+    bewly: BewlyCat top bar
   adapt_to_other_page_styles: Adapt to other page styles
   adapt_to_other_page_styles_desc: Adapt to some common pages to match with the BewlyBewly theme.
   prevent_mobile_redirect: Prevent mobile redirect

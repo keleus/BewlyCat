@@ -50,6 +50,17 @@ const notificationBadgeOptions = computed(() => [
   },
 ])
 
+const topBarModeOptions = computed(() => [
+  {
+    label: t('settings.top_bar_mode_opt.original'),
+    value: true,
+  },
+  {
+    label: t('settings.top_bar_mode_opt.bewly'),
+    value: false,
+  },
+])
+
 // 顶栏组件配置
 const topBarComponents = computed(() => {
   return [
@@ -214,7 +225,16 @@ watchEffect(() => {
               </div>
             </div>
             <div flex="~ gap-4 items-center justify-between wrap" @click.stop>
-              <div v-if="component.supportsBadge && getComponentConfig(component.key)?.visible" flex="~ items-center gap-2">
+              <div v-if="component.key === 'topBarSwitcher' && getComponentConfig(component.key)?.visible" flex="~ items-center gap-2">
+                {{ $t('settings.top_bar_mode') }}
+                <Select
+                  v-model="settings.useOriginalBilibiliTopBar"
+                  :options="topBarModeOptions"
+                  :disabled="!settings.enableTopBar"
+                  w="160px"
+                />
+              </div>
+              <div v-else-if="component.supportsBadge && getComponentConfig(component.key)?.visible" flex="~ items-center gap-2">
                 {{ $t('settings.badge_type') }}
                 <Select
                   :model-value="getComponentBadgeValue(component.key)"

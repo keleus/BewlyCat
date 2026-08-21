@@ -888,7 +888,7 @@ function openLayoutEditTopBarModeSettings() {
   openSettings({
     menu: 'BewlyComponents',
     secondaryPage: 'topbar',
-    targetTitleKey: 'settings.use_original_bilibili_topbar',
+    targetTitleKey: 'topbar.top_bar_switcher',
   })
 }
 
@@ -2175,6 +2175,12 @@ if (settings.value.cleanUrlArgument) {
   outline: 1px solid var(--bew-theme-color);
   outline-offset: 3px;
   border-radius: var(--bew-interactive-radius);
+}
+
+.top-bar-host--editing :deep([data-layout-edit-target="topbar-component"][data-layout-edit-active="true"]) {
+  outline: 1px solid var(--bew-theme-color);
+  outline-offset: -1px;
+  box-shadow: inset 0 0 0 1px var(--bew-theme-color-20);
 }
 
 .dock-sidebar-host--editing :deep([data-layout-edit-target]:not([data-layout-edit-active="true"])),

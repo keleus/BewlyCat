@@ -698,6 +698,10 @@ settings:
   use_original_bilibili_homepage_desc: 改咗之後，如果你喺主頁，個頁面就會自動重新整理！
   use_original_bilibili_topbar: 用返原本嘅 Bilibili 頂欄
   use_original_bilibili_topbar_desc: 淨係喺「頂欄可視性」開咗先會生效。開咗就用 B 站原本頂欄，閂咗就用 BewlyCat 頂欄。
+  top_bar_mode: 頂欄類型
+  top_bar_mode_opt:
+    original: 原版頂欄
+    bewly: BewlyCat 頂欄
   adapt_to_other_page_styles: 適應其他版面風格
   adapt_to_other_page_styles_desc: 執執啲常用嘅版面，襯返 BewlyBewly 主題風格。
   prevent_mobile_redirect: 防止跳轉去流動版
