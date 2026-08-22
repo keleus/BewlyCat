@@ -1205,6 +1205,7 @@ else if (shouldInitializeContentScript) {
   }
 
   function injectApp() {
+    const isDev = import.meta.env.DEV
     const bewlyElArr: NodeListOf<Element> = document.querySelectorAll('#bewly')
     if (bewlyElArr.length > 0) {
       bewlyElArr.forEach((el: Element) => {
@@ -1214,8 +1215,10 @@ else if (shouldInitializeContentScript) {
         // Remove bewly element if the version is less than the current version
         if (compareVersions(elVersion, version) < 0)
           disposeBewlyHost(el)
-        // Only the development mode element remains
-        else if (!elIsDev)
+        // 同模式重复注入的旧宿主已过期：dev 不清除会越堆越多，
+        // watcher 的 querySelector('#bewly') 命中陈旧的第一个宿主，
+        // 内联 CSS 变量（如 --bew-filter-glass-1 毛玻璃强度）到不了实际渲染的宿主。
+        else if (!elIsDev || isDev)
           disposeBewlyHost(el)
       })
     }

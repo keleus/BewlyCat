@@ -12,6 +12,8 @@ const props = withDefaults(defineProps<Props>(), {
 const modelValue = defineModel<number>({ required: true })
 const rangeRef = ref<HTMLInputElement | null>(null)
 
+// 原生 input 的 v-model 写入的是字符串，存储层的 Number.isFinite 校验
+// 会把它当非法值重置回默认（毛玻璃强度即因此失效）。这里统一转成数字。
 function handleInput(event: Event) {
   const value = (event.target as HTMLInputElement).valueAsNumber
   if (Number.isFinite(value))
