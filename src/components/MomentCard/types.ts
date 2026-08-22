@@ -32,6 +32,10 @@ export interface DisplayAdditional {
   isUpRecommendation: boolean
   isVideoReservation: boolean
   isLiveReservation: boolean
+  /** 投票附加卡（ADDITIONAL_TYPE_VOTE），点击跳转官方投票页 */
+  isVote?: boolean
+  /** 投票截止时间戳（秒）；0 表示未知 */
+  voteEndTime?: number
   /** 预约卡片的业务 id（接口字段 rid） */
   reservationId?: string
   /** 接口返回的当前预约人数 */

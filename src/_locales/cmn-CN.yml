@@ -1351,6 +1351,8 @@ moments:
   charging_unlock_hint: 加入当前 UP 主的充电即可解锁观看
   charging_exclusive_post: 充电专属动态
   go_charge: 去充电
+  vote_ongoing: 进行中
+  vote_ended: 已结束
   forwarded_post: 转发了动态
   bilibili_user: B站用户
   original_author: 原作者
@@ -1428,6 +1430,7 @@ moment_card:
   open_original_video: '打开原视频：{title}'
   author_images: '{name} 的动态图片'
   view_author_images: 查看 {name} 的动态图片
+  open_origin_moment: 查看 {name} 的原动态
   additional: 附加内容
   view_hot_comment: 查看热门评论
   hot_comment: 热门评论

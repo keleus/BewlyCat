@@ -1366,6 +1366,8 @@ moments:
   charging_unlock_hint: 加入目前 UP 主的充電即可解鎖觀看
   charging_exclusive_post: 充電專屬動態
   go_charge: 去充電
+  vote_ongoing: 進行中
+  vote_ended: 已結束
   forwarded_post: 轉發了動態
   bilibili_user: B站使用者
   original_author: 原作者
@@ -1443,6 +1445,7 @@ moment_card:
   open_original_video: '開啟原影片：{title}'
   author_images: '{name} 的動態圖片'
   view_author_images: 檢視 {name} 的動態圖片
+  open_origin_moment: 查看 {name} 的原動態
   additional: 附加內容
   view_hot_comment: 檢視熱門留言
   hot_comment: 熱門留言

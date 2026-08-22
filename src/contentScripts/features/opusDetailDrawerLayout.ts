@@ -85,6 +85,8 @@ let galleryFitObservers: ResizeObserver[] = []
 let layoutReadyNotified = false
 let setupDomReadyListener: (() => void) | null = null
 let setupRootReadyRetryTimer: number | null = null
+/** 父页面（动态 Dialog）显式同步的视口宽；跨源时 window.top 不可读，以此为准 */
+let parentViewportWidth = 0
 
 const BASE_CSS = `
 html.momentsPage.drawer.bewly-opus-layout #bili-header-container,
@@ -916,6 +918,9 @@ function isOpusDetailPage(url: string = location.href): boolean {
 }
 
 function getOpusPageWidth() {
+  // Dialog 场景以父页面同步的视口宽为准，保证评论列恒为视口宽的 29%
+  if (parentViewportWidth > 0)
+    return parentViewportWidth
   for (const win of [window.top, window.parent, window]) {
     try {
       const width = win?.innerWidth
@@ -1124,7 +1129,7 @@ const CATALOG_SELECTORS = [
   '[class*="目录"]',
 ].join(',')
 
-/** 转发纯文字/视频：不做图片左置分栏（由 Moments 列表通过 query 标记） */
+/** 转发动态：保持原站单栏，不做图片左置分栏（由 Moments 列表通过 query 标记） */
 function isPlainOpusRequested(): boolean {
   try {
     const params = new URLSearchParams(window.location.search)
@@ -1140,8 +1145,8 @@ function isPlainOpusRequested(): boolean {
 }
 
 function shouldSkipSplitForForward(_root?: HTMLElement | null): boolean {
-  // 仅当列表明确标记 plain（转发纯文字/视频）时跳过分栏。
-  // 转发图文与普通图文一样抽取原动态相册做左右分栏。
+  // 列表对所有转发（含转发图文）都标记 plain：原页已完整展示被转发内容，
+  // 分栏需等待嵌套相册就绪，会拖慢打开速度。
   return isPlainOpusRequested()
 }
 
@@ -2521,16 +2526,28 @@ export function disposeOpusDetailDrawerLayout() {
   teardownCount = 0
   layoutReadyNotified = false
   lastMutationAt = 0
+  parentViewportWidth = 0
   styleEl = null
   loadingEl = null
 }
 
-function handleOpusDisposeMessage(event: MessageEvent) {
+function handleParentMessage(event: MessageEvent) {
   if (event.source !== window.parent)
     return
 
-  if (event.data?.type === 'BEWLY_OPUS_DISPOSE')
+  if (event.data?.type === 'BEWLY_OPUS_DISPOSE') {
     disposeOpusDetailDrawerLayout()
+    return
+  }
+
+  // 父页面同步真实视口宽：评论列固定为视口宽的 29%，与 Dialog 尺寸公式一致
+  if (event.data?.type === 'BEWLY_OPUS_VIEWPORT') {
+    const width = Number(event.data.width)
+    if (Number.isFinite(width) && width > 0) {
+      parentViewportWidth = Math.round(width)
+      syncOpusCommentColumnWidth()
+    }
+  }
 }
 
 export function setupOpusDetailDrawerLayout() {
@@ -2550,9 +2567,9 @@ export function setupOpusDetailDrawerLayout() {
   syncOpusCommentColumnWidth()
   bindOpusViewportResize()
 
-  // 父页关闭 iframe 时销毁内部观察器与媒体
-  window.removeEventListener('message', handleOpusDisposeMessage)
-  window.addEventListener('message', handleOpusDisposeMessage)
+  // 父页关闭 iframe 时销毁内部观察器与媒体；同时接收视口宽同步
+  window.removeEventListener('message', handleParentMessage)
+  window.addEventListener('message', handleParentMessage)
   window.removeEventListener('pagehide', disposeOpusDetailDrawerLayout)
   window.addEventListener('pagehide', disposeOpusDetailDrawerLayout, { once: true })
 

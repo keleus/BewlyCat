@@ -78,7 +78,6 @@ const { mainAppRef } = useBewlyApp()
 const cardLayoutStyles = computed<CSSProperties>(() => {
   const scale = Math.max(1, cardWidth / 520)
   return {
-    '--moment-card-text-body-min-height': `${Math.round(120 + 230 * (scale - 1))}px`,
     '--moment-card-text-cover-min-height': `${Math.round(176 * scale)}px`,
   } as CSSProperties
 })
@@ -342,6 +341,18 @@ function getForwardOriginMoment(): DisplayMoment | null {
 
 function handleForwardOriginClick(event: MouseEvent) {
   if (shouldUseNativeLinkOpen(event))
+    return
+
+  event.preventDefault()
+  event.stopPropagation()
+  emit('openDetail', getForwardOriginMoment() || moment)
+}
+
+function handleForwardOriginKeydown(event: KeyboardEvent) {
+  // 仅响应容器自身焦点的按键，不拦截内部链接 / 图片按钮的键盘操作
+  if (event.target !== event.currentTarget)
+    return
+  if (event.key !== 'Enter' && event.key !== ' ')
     return
 
   event.preventDefault()
@@ -741,8 +752,13 @@ function handleAdditionalClick(event: MouseEvent) {
             :class="{
               'moment-card__forward--draw': Boolean(moment.forward.images?.length),
             }"
+            role="button"
+            tabindex="0"
+            :aria-label="t('moment_card.open_origin_moment', { name: moment.forward.author })"
+            @click="handleForwardOriginClick"
+            @keydown="handleForwardOriginKeydown"
           >
-            <div class="moment-card__forward-copy" @click="handleForwardOriginClick">
+            <div class="moment-card__forward-copy">
               <a
                 v-if="forwardAuthorSpaceUrl"
                 :href="forwardAuthorSpaceUrl"
@@ -856,7 +872,13 @@ function handleAdditionalClick(event: MouseEvent) {
             loading="lazy"
             decoding="async"
           >
-          <span><strong>{{ moment.additional.title || t('moment_card.additional') }}</strong><small v-if="moment.additional.desc">{{ moment.additional.desc }}</small></span>
+          <span>
+            <strong>
+              <span v-if="moment.additional.isVote" i-tabler-chart-bar aria-hidden="true" class="moment-card__additional-vote-icon" />
+              {{ moment.additional.title || t('moment_card.additional') }}
+            </strong>
+            <small v-if="moment.additional.desc">{{ moment.additional.desc }}</small>
+          </span>
         </a>
         <button
           v-if="isReservationAdditional"
@@ -1221,14 +1243,10 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card--text .moment-card__body {
-  min-height: 240px;
-  display: flex;
-  flex-direction: column;
   padding-top: var(--bew-space-4);
 }
 
 .moment-card--text .moment-card__desc {
-  flex: 1 1 auto;
   -webkit-line-clamp: 10;
 }
 
@@ -1276,10 +1294,11 @@ function handleAdditionalClick(event: MouseEvent) {
   flex-direction: column;
   margin-top: var(--bew-space-3);
   overflow: hidden;
+  /* 推特引用推文式：与卡片同底色，仅用描边框出被转发内容 */
   border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 58%);
   border-radius: var(--bew-card-radius);
   color: var(--bew-text-2);
-  background: var(--bew-fill-1);
+  background: transparent;
   font-size: var(--bew-font-size-control);
   line-height: var(--bew-line-height-control);
 }
@@ -1345,6 +1364,12 @@ function handleAdditionalClick(event: MouseEvent) {
   height: 40px;
   border-radius: var(--bew-radius-md);
   object-fit: cover;
+}
+
+.moment-card__additional-vote-icon {
+  margin-right: var(--bew-space-1);
+  font-size: var(--bew-icon-size-sm);
+  vertical-align: -0.125em;
 }
 
 .moment-card__additional-main > span {
@@ -1740,10 +1765,7 @@ function handleAdditionalClick(event: MouseEvent) {
   text-overflow: ellipsis;
 }
 
-.moment-card--text .moment-card__body {
-  min-height: var(--moment-card-text-body-min-height, 120px);
-  padding-top: 0;
-}
+/* 纯文字卡高度随内容自适应，不设最小高度，避免短动态下方留出大块空白 */
 
 .moment-card--text .moment-card__desc,
 .moment-card--forward-video .moment-card__desc {

@@ -289,7 +289,6 @@ onBeforeUnmount(() => {
       class="moment-image-gallery__track"
       role="region"
       :aria-label="`${altPrefix}，可横向滑动查看`"
-      @click.stop
     >
       <button
         v-for="(image, imageIndex) in images"

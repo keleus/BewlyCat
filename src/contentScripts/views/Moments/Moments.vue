@@ -571,8 +571,10 @@ function extractRichTextSegments(...nodeLists: any[]): DisplayRichTextSegment[] 
     }
 
     const isAtMention = node?.type === 'RICH_TEXT_NODE_TYPE_AT'
+    // VOTE：投票节点，jump_url 指向官方投票页
     const isSupportedLink = node?.type === 'RICH_TEXT_NODE_TYPE_TOPIC'
       || node?.type === 'RICH_TEXT_NODE_TYPE_WEB'
+      || node?.type === 'RICH_TEXT_NODE_TYPE_VOTE'
       || isAtMention
     const rawJumpUrl = node?.jump_url
       || (isAtMention && node?.rid ? `https://space.bilibili.com/${node.rid}` : '')
@@ -602,12 +604,13 @@ function extractBlockedInfo(blocked: any) {
   }
 }
 
-function getAdditionalActionText(button: any) {
+function getAdditionalActionText(button: any, isReservation = false) {
   if (!button || typeof button !== 'object')
     return t('moments.view')
 
-  // 预约按钮：status 1 为未预约，2 为已预约。
-  if (Number(button.type) === 1 || Number(button.type) === 2) {
+  // 预约按钮：status 1 为未预约，2 为已预约。仅预约附加卡按此解读 type，
+  // 否则投票等 type=1 的普通跳转按钮会被误判成「预约」。
+  if (isReservation && (Number(button.type) === 1 || Number(button.type) === 2)) {
     return Number(button.status) === 2
       ? pickText(button.check?.text, t('moments.reserved'))
       : pickText(button.uncheck?.text, t('moments.reserve'))
@@ -691,6 +694,7 @@ function getMomentContent(item: any) {
   if (!text && isChargeExclusive)
     text = chargeHint || t('moments.charging_exclusive_post')
 
+  const isVoteAdditional = additional.type === 'ADDITIONAL_TYPE_VOTE'
   let additionalView = additional.type
     ? {
         title: pickText(additionalCard.head_text, additionalCard.title, additionalCard.desc?.text),
@@ -700,14 +704,19 @@ function getMomentContent(item: any) {
           additionalCard.desc,
         ),
         cover: httpsUrl(additionalCard.cover || additionalCard.icon || ''),
-        action: getAdditionalActionText(additionalCard.button),
-        url: additionalCard.jump_url || additionalCard.button?.jump_url || '',
+        action: getAdditionalActionText(
+          additionalCard.button,
+          additional.type === 'ADDITIONAL_TYPE_RESERVE',
+        ),
+        url: httpsUrl(additionalCard.jump_url || additionalCard.button?.jump_url || ''),
         isUpRecommendation: additional.type === 'ADDITIONAL_TYPE_UP_RCMD'
           || pickText(additionalCard.head_text, additionalCard.title) === 'UP主的推荐',
         isVideoReservation: additional.type === 'ADDITIONAL_TYPE_RESERVE'
           && Number(additionalCard.button?.type) === 1,
         isLiveReservation: additional.type === 'ADDITIONAL_TYPE_RESERVE'
           && Number(additionalCard.button?.type) === 2,
+        isVote: isVoteAdditional,
+        voteEndTime: isVoteAdditional ? Number(additionalCard.end_time) || 0 : 0,
         reservationId: additional.type === 'ADDITIONAL_TYPE_RESERVE'
           ? String(additionalCard.rid || '')
           : '',
@@ -716,6 +725,15 @@ function getMomentContent(item: any) {
           && Number(additionalCard.button?.status) === 2,
       }
     : undefined
+
+  // 投票：desc 补充参与状态（接口 desc 通常为「N人参与」）
+  if (isVoteAdditional && additionalView) {
+    const voteEnded = additionalView.voteEndTime! > 0
+      && Date.now() / 1000 > additionalView.voteEndTime!
+    additionalView.desc = [additionalView.desc, voteEnded ? t('moments.vote_ended') : t('moments.vote_ongoing')]
+      .filter(Boolean)
+      .join(' · ')
+  }
 
   // 未解锁充电：构造充电卡片附加区（列表没有 additional 时）
   if (!additionalView && isChargeExclusive && (blocked?.buttonUrl || chargeBadge)) {
@@ -729,6 +747,8 @@ function getMomentContent(item: any) {
       isUpRecommendation: false,
       isVideoReservation: false,
       isLiveReservation: false,
+      isVote: false,
+      voteEndTime: 0,
       reservationId: '',
       reservationTotal: 0,
       isReserved: false,
@@ -828,10 +848,11 @@ function resolveDetailUrl(moment: DisplayMoment) {
     if (videoUrl)
       return videoUrl
   }
-  // 转发纯文字/视频、专栏：通过 query 告知 iframe 布局策略。
-  // 转发图文走和普通图文一样的左右分栏，不打 plain。
+  // 转发、专栏：通过 query 告知 iframe 布局策略。
+  // 转发（含转发图文）一律保持原站单栏并立即打开：
+  // 分栏需等待抽取嵌套相册，慢且不稳定，原页本身已完整展示被转发内容。
   if (moment.isForward || moment.isArticle) {
-    const usePlainForward = moment.isForward && !moment.forward?.images?.length
+    const usePlainForward = moment.isForward
     try {
       const url = new URL(moment.url)
       if (usePlainForward)
@@ -1043,8 +1064,8 @@ const OPUS_DETAIL_COMMENT_PAGE_RATIO = 0.29
 const OPUS_DETAIL_LONG_IMAGE_RATIO = 0.5
 /** 图文弹窗最大宽：与视频共用 92vw / 视口 gutter，不含 16:9 约束 */
 const OPUS_DETAIL_MAX_WIDTH = `min(${PLAYER_DIALOG_WIDTH_SCALE * 100}vw, 100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
-/** 图文弹窗最大高：可用视口高度，竖图优先占满 */
-const OPUS_DETAIL_MAX_HEIGHT = `min(100dvh - ${DETAIL_VIEWPORT_GUTTER}px, max(280px, 88dvh))`
+/** 图文弹窗最大高：可用视口高度内取值，且高不大于宽（宽上限同 OPUS_DETAIL_MAX_WIDTH），避免竖屏下过度拉长 */
+const OPUS_DETAIL_MAX_HEIGHT = `min(100dvh - ${DETAIL_VIEWPORT_GUTTER}px, max(280px, 88dvh), ${OPUS_DETAIL_MAX_WIDTH})`
 const selectedVideoAspectRatio = computed(() => {
   const moment = selectedMoment.value
   if (!moment?.isVideo || moment.isLive || moment.isPgc)
@@ -1057,26 +1078,41 @@ const isSelectedVerticalVideo = computed(() => {
   return Boolean(ratio && ratio < 0.9)
 })
 
-/** 图文分栏详情（含转发图文；专栏/纯文字除外）：弹窗尺寸以首图为基准 */
+/** 图文分栏详情（转发/专栏/纯文字除外）：弹窗尺寸以首图为基准 */
 function isOpusSplitDetailMoment(moment: DisplayMoment | null | undefined) {
-  if (!moment || isPlayerMoment(moment) || moment.isArticle)
+  if (!moment || isPlayerMoment(moment) || moment.isArticle || moment.isForward)
     return false
-  if (moment.isForward)
-    return Boolean(moment.forward?.images?.length)
   return moment.images.length > 0
 }
 
 function getOpusDetailFirstImageRatio(moment: DisplayMoment | null | undefined) {
   if (!moment)
     return undefined
-  const fromMeta = moment.isForward
-    ? moment.forward?.imageRatios?.[0]
-    : moment.imageRatios?.[0]
+  const fromMeta = moment.imageRatios?.[0]
   if (isUsableImageRatio(fromMeta))
     return fromMeta
   const fromCover = coverRatios[moment.id]
   return isUsableImageRatio(fromCover) ? fromCover : undefined
 }
+
+/** 分栏图文首图的布局比例：未知比例按 1:1，长图钳到 1:2 */
+function getOpusSplitLayoutRatio(moment: DisplayMoment | null | undefined) {
+  const rawRatio = getOpusDetailFirstImageRatio(moment)
+  return Math.max(
+    isUsableImageRatio(rawRatio) ? rawRatio : 1,
+    OPUS_DETAIL_LONG_IMAGE_RATIO,
+  )
+}
+
+const detailDialogHeight = computed(() => {
+  const moment = selectedMoment.value
+  if (!isOpusSplitDetailMoment(moment))
+    return DETAIL_SAFE_HEIGHT
+  // 横图在「最大宽 − 评论列」内放不下时按宽反推高度（不低于 280px），
+  // 让图片恰好铺满左侧媒体区贴边显示，而不是保持满高预算、在媒体区内上下留白。
+  const commentWidth = `${OPUS_DETAIL_COMMENT_PAGE_RATIO * 100}vw`
+  return `min(${OPUS_DETAIL_MAX_HEIGHT}, max(280px, calc((${OPUS_DETAIL_MAX_WIDTH} - ${commentWidth}) / ${getOpusSplitLayoutRatio(moment)})))`
+})
 
 const detailDialogWidth = computed(() => {
   if (selectedMoment.value?.isLive)
@@ -1090,25 +1126,13 @@ const detailDialogWidth = computed(() => {
   }
   const moment = selectedMoment.value
   if (isOpusSplitDetailMoment(moment)) {
-    const rawRatio = getOpusDetailFirstImageRatio(moment)
-    // 未知比例先按 1:1；长图按 1:2 定宽。宽度随首图占满高度变化，超出只受 vw 上限，不改高度。
-    // 图片区不得窄于评论区，因此弹窗至少为 2 倍评论宽。
-    const layoutRatio = Math.max(
-      isUsableImageRatio(rawRatio) ? rawRatio : 1,
-      OPUS_DETAIL_LONG_IMAGE_RATIO,
-    )
+    // 宽度随首图占满高度变化；评论列由 iframe 固定为视口宽的 29%（经 BEWLY_OPUS_VIEWPORT 同步），
+    // 不随弹窗伸缩，因此媒体区恰好等于首图宽度，弹窗完全贴合图片、无左右留白。
     const commentWidth = `${OPUS_DETAIL_COMMENT_PAGE_RATIO * 100}vw`
-    return `min(${OPUS_DETAIL_MAX_WIDTH}, max(calc(${layoutRatio} * ${OPUS_DETAIL_MAX_HEIGHT} + ${commentWidth}), calc(2 * ${commentWidth})))`
+    return `min(${OPUS_DETAIL_MAX_WIDTH}, calc(${getOpusSplitLayoutRatio(moment)} * ${detailDialogHeight.value} + ${commentWidth}))`
   }
   // 纯文字 / 专栏 / 转发：参考小红书 note-container 1088px
   return `min(1088px, ${DETAIL_SAFE_WIDTH})`
-})
-
-const detailDialogHeight = computed(() => {
-  // 图文弹窗高度始终用原视口预算，不因横图完整显示而压扁
-  if (isOpusSplitDetailMoment(selectedMoment.value))
-    return OPUS_DETAIL_MAX_HEIGHT
-  return DETAIL_SAFE_HEIGHT
 })
 
 const detailContentHeight = computed(() => {
@@ -1418,11 +1442,10 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
   cleanupLivePreviewPlayer()
   clearDetailLoadTimer()
   destroyDetailIframe()
-  // 视频/直播、非图文转发：load 后即可；图文（含转发图文）等待布局 ready
-  // 兜底避免遮罩卡住
+  // 视频/直播、转发（原页直接展示）：load 后即可；图文等待布局 ready 兜底避免遮罩卡住
   const fallbackMs = isPlayerMoment(moment)
     ? 1800
-    : moment.isForward && !isOpusSplitDetailMoment(moment)
+    : moment.isForward
       ? 1200
       : 4500
   detailLoadTimer = setTimeout(() => {
@@ -1430,8 +1453,22 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
   }, fallbackMs)
 }
 
+/** 告知 opus iframe 真实视口宽：跨源时它读不到 window.top，评论列（视口宽 29%）需要以此为准 */
+function syncDetailFrameViewport() {
+  const win = detailIframeRef.value?.contentWindow
+  if (!win || !detailFrameUrl.value)
+    return
+  try {
+    win.postMessage({ type: 'BEWLY_OPUS_VIEWPORT', width: window.innerWidth }, '*')
+  }
+  catch {
+    // iframe 已销毁时忽略
+  }
+}
+
 function handleDetailIframeLoad(event: Event) {
   clearDetailLoadTimer()
+  syncDetailFrameViewport()
 
   // 与抽屉一致：同域时去掉顶栏占位，并保证视频/直播页可滚动
   const iframe = event.target as HTMLIFrameElement | null
@@ -1458,8 +1495,8 @@ function handleDetailIframeLoad(event: Event) {
   if (iframe)
     startDetailPlayerModeWatch(iframe)
 
-  // 视频/直播、非图文转发：load 后立即显示，不做「整理动态」等待
-  if (isPlayerMoment(selectedMoment.value) || (selectedMoment.value?.isForward && !isOpusSplitDetailMoment(selectedMoment.value))) {
+  // 视频/直播、转发（原页直接展示）：load 后立即显示，不做「整理动态」等待
+  if (isPlayerMoment(selectedMoment.value) || selectedMoment.value?.isForward) {
     detailFrameLoaded.value = true
     return
   }
@@ -3664,6 +3701,8 @@ function handleDetailFrameMessage(event: MessageEvent) {
   if (type === 'BEWLY_OPUS_LAYOUT_READY') {
     detailFrameLoaded.value = true
     clearDetailLoadTimer()
+    // 布局就绪后补发一次视口宽，覆盖 iframe 监听器晚于 load 的时序
+    syncDetailFrameViewport()
     return
   }
   // iframe 内 ESC 会 post 该消息；Dialog 场景下同步关闭详情
@@ -3688,6 +3727,7 @@ onMounted(() => {
     updateVirtualColumns()
   })
   window.addEventListener('message', handleDetailFrameMessage)
+  window.addEventListener('resize', syncDetailFrameViewport)
   refresh()
   handlePageRefresh.value = refresh
   handleReachBottom.value = () => {
@@ -3725,6 +3765,7 @@ onBeforeUnmount(() => {
     virtualRaf = 0
   }
   window.removeEventListener('message', handleDetailFrameMessage)
+  window.removeEventListener('resize', syncDetailFrameViewport)
   handlePageRefresh.value = undefined
   handleReachBottom.value = undefined
 })

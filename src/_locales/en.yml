@@ -1447,6 +1447,8 @@ moments:
   charging_unlock_hint: Charge this uploader to unlock viewing
   charging_exclusive_post: Charging-exclusive post
   go_charge: Charge now
+  vote_ongoing: Ongoing
+  vote_ended: Ended
   forwarded_post: Forwarded a post
   bilibili_user: Bilibili user
   original_author: Original author
@@ -1524,6 +1526,7 @@ moment_card:
   open_original_video: 'Open original video: {title}'
   author_images: '{name} post images'
   view_author_images: View {name}'s post images
+  open_origin_moment: View {name}'s original post
   additional: Additional content
   view_hot_comment: View popular comment
   hot_comment: Popular comment
