@@ -440,6 +440,12 @@ settings:
     bewly_widescreen_sidebar_position_desc: 选择 Bewly 宽屏模式下侧边栏的显示位置
     bewly_widescreen_sidebar_position_left: 左侧
     bewly_widescreen_sidebar_position_right: 右侧
+    bewly_widescreen_sidebar_expand_method: Bewly宽屏侧栏展开方式
+    bewly_widescreen_sidebar_expand_method_desc: 自动：鼠标进入侧栏时临时展开；展开按钮：显示按钮，仅点击时临时展开
+    bewly_widescreen_sidebar_expand_method_auto: 自动
+    bewly_widescreen_sidebar_expand_method_button: 展开按钮
+    bewly_widescreen_center_vertical_video: Bewly宽屏画面居中
+    bewly_widescreen_center_vertical_video_desc: 开启后，宽屏模式下若画面两侧留有足够容纳侧栏的黑边空间，视频将在整个画面水平居中，侧栏完整占据一侧黑边；空间不足时保持现有布局。
   video_player_scroll: 调整显示模式后滚动
   video_player_scroll_desc: 启用后，在默认模式为宽屏和默认时，会自动滚动到合适位置。
   enlarge_favorite_dialog: 放大收藏弹窗
@@ -1453,10 +1459,8 @@ user_card:
   submissions: '{count}个投稿'
   followers: '{count}粉丝'
 widescreen:
-  show_narrow_right: 显示窄右栏
-  show_narrow_left: 显示窄左栏
-  collapse_right: 收起右栏
-  collapse_left: 收起左栏
+  expand_sidebar: 展开侧栏
+  collapse_sidebar: 收起侧栏
   exit: 退出
   exit_title: 退出 Bewly 宽屏
   loading: 正在加载宽屏模式…

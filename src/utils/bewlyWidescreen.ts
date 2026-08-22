@@ -1,6 +1,8 @@
 import { watch } from 'vue'
 import browser from 'webextension-polyfill'
 
+import { settings } from '~/logic'
+import type { BewlyWidescreenSidebarExpandMethod } from '~/logic/storage'
 import { i18n } from '~/utils/i18n'
 
 import { injectCSS } from './main'
@@ -11,7 +13,6 @@ function t(key: string, params: Record<string, unknown> = {}) {
 }
 
 type BewlyWidescreenTab = 'comment' | 'danmaku' | 'playlist'
-type BewlyWidescreenSidebarMode = 'fit' | 'narrow'
 
 interface MovedNode {
   node: HTMLElement
@@ -35,7 +36,7 @@ interface BewlyWidescreenState {
   movedNodes: MovedNode[]
   styleEl: HTMLStyleElement
   activeTab: BewlyWidescreenTab
-  sidebarMode: BewlyWidescreenSidebarMode
+  sidebarExpandMethod: BewlyWidescreenSidebarExpandMethod
   sidebarPosition: 'left' | 'right'
   resizeObserver?: ResizeObserver
   mutationObserver?: MutationObserver
@@ -489,23 +490,17 @@ function setActiveTab(nextTab: BewlyWidescreenTab) {
     expandDanmakuTab(state)
 }
 
-function setSidebarMode(nextMode: BewlyWidescreenSidebarMode) {
-  if (!state)
-    return
+function setSidebarExpanded(currentState: BewlyWidescreenState, expanded: boolean) {
+  currentState.root.dataset.sidebarExpanded = String(expanded)
+  syncSidebarToggleButton(currentState)
+}
 
-  state.sidebarMode = nextMode
-  state.root.dataset.sidebarMode = nextMode
-  const isFit = nextMode === 'fit'
-  const isRight = state.sidebarPosition === 'right'
-  state.sidebarToggleButton.textContent = isRight
-    ? (isFit ? '‹' : '›')
-    : (isFit ? '›' : '‹')
-  state.sidebarToggleButton.title = isFit
-    ? (isRight ? t('widescreen.show_narrow_right') : t('widescreen.show_narrow_left'))
-    : (isRight ? t('widescreen.collapse_right') : t('widescreen.collapse_left'))
-  state.sidebarToggleButton.setAttribute('aria-label', state.sidebarToggleButton.title)
-  updateSidebarToggleState()
-  schedulePlayerResizeSync(state)
+function syncSidebarToggleButton(currentState: BewlyWidescreenState) {
+  const expanded = currentState.root.dataset.sidebarExpanded === 'true'
+  currentState.sidebarToggleButton.title = expanded
+    ? t('widescreen.collapse_sidebar')
+    : t('widescreen.expand_sidebar')
+  currentState.sidebarToggleButton.setAttribute('aria-label', currentState.sidebarToggleButton.title)
 }
 
 function getTitleText() {
@@ -551,12 +546,16 @@ function createTabButton(tab: BewlyWidescreenTab, label: string) {
   return button
 }
 
-function createSidebarToggleButton() {
+function createSidebarToggleButton(sidebarPosition: 'left' | 'right') {
   const button = document.createElement('button')
   button.type = 'button'
   button.className = 'bewly-widescreen-sidebar-toggle'
+  // 箭头指向侧栏所在方向；点击仅在「临时展开」状态间切换，不改变视频区域大小。
+  button.textContent = sidebarPosition === 'right' ? '‹' : '›'
   button.addEventListener('click', () => {
-    setSidebarMode(state?.sidebarMode === 'fit' ? 'narrow' : 'fit')
+    if (!state)
+      return
+    setSidebarExpanded(state, state.root.dataset.sidebarExpanded !== 'true')
   })
   return button
 }
@@ -946,6 +945,28 @@ export function ensureNativePlayerModeGuard() {
   document.addEventListener('click', handleNativePlayerModeInteraction, true)
 }
 
+// 宽屏激活期间监听相关设置，改动即时生效（与侧栏位置不同：后者需重新进入宽屏）。
+let settingsWatchersInstalled = false
+function installSettingsWatchers() {
+  if (settingsWatchersInstalled)
+    return
+
+  settingsWatchersInstalled = true
+  watch(() => settings.value.bewlyWidescreenCenterVerticalVideo, () => {
+    if (state)
+      updateSidebarLayoutState()
+  })
+  watch(() => settings.value.bewlyWidescreenSidebarExpandMethod, (method) => {
+    if (!state)
+      return
+
+    state.sidebarExpandMethod = method || 'auto'
+    state.root.dataset.sidebarToggleMethod = state.sidebarExpandMethod
+    applySidebarInteractionTracking(state)
+    syncSidebarToggleButton(state)
+  })
+}
+
 export function prepareBewlyWidescreenLoading() {
   ensureNativePlayerModeGuard()
   if (state || loadingSuppressedUntilExit)
@@ -988,7 +1009,7 @@ function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
   playerFrame.className = 'bewly-widescreen-player-frame'
   const danmakuDock = document.createElement('div')
   danmakuDock.className = 'bewly-widescreen-danmaku-dock'
-  const sidebarToggleButton = createSidebarToggleButton()
+  const sidebarToggleButton = createSidebarToggleButton(sidebarPosition)
   playerSlot.append(playerFrame, danmakuDock, sidebarToggleButton)
 
   const sidebar = document.createElement('aside')
@@ -1090,9 +1111,14 @@ function injectLayoutStyle() {
         calc(100vw - var(--bewly-widescreen-player-target-width)),
         var(--bewly-widescreen-sidebar-max)
       );
-      --bewly-widescreen-sidebar-column-width: min(var(--bewly-widescreen-sidebar-narrow-width), var(--bewly-widescreen-sidebar-max));
-      --bewly-widescreen-sidebar-panel-width: var(--bewly-widescreen-sidebar-column-width);
-      --bewly-widescreen-sidebar-offset: 0px;
+      --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-fit-width);
+      --bewly-widescreen-sidebar-panel-width: max(
+        var(--bewly-widescreen-sidebar-fit-width),
+        var(--bewly-widescreen-sidebar-expanded-width)
+      );
+      --bewly-widescreen-sidebar-offset: calc(
+        var(--bewly-widescreen-sidebar-panel-width) - var(--bewly-widescreen-sidebar-column-width)
+      );
     }
 
     html.dark #${ROOT_ID} {
@@ -1105,21 +1131,6 @@ function injectLayoutStyle() {
       --bewly-widescreen-divider: var(--bew-border-color, rgba(255, 255, 255, 0.08));
       --bewly-widescreen-control-bg: var(--bew-fill-1, rgba(255, 255, 255, 0.08));
       --bewly-widescreen-control-hover-bg: var(--bew-fill-2, rgba(255, 255, 255, 0.16));
-    }
-
-    #${ROOT_ID}[data-sidebar-mode="narrow"] {
-      --bewly-widescreen-player-target-width: calc(100vw - var(--bewly-widescreen-sidebar-column-width));
-    }
-
-    #${ROOT_ID}[data-sidebar-mode="fit"] {
-      --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-fit-width);
-      --bewly-widescreen-sidebar-panel-width: max(
-        var(--bewly-widescreen-sidebar-fit-width),
-        var(--bewly-widescreen-sidebar-expanded-width)
-      );
-      --bewly-widescreen-sidebar-offset: calc(
-        var(--bewly-widescreen-sidebar-panel-width) - var(--bewly-widescreen-sidebar-column-width)
-      );
     }
 
     #${ROOT_ID} * {
@@ -1320,11 +1331,7 @@ function injectLayoutStyle() {
       z-index: 2002;
     }
 
-    #${ROOT_ID}[data-sidebar-mode="narrow"] .bewly-widescreen-sidebar {
-      box-shadow: none;
-    }
-
-    #${ROOT_ID}[data-sidebar-mode="fit"][data-sidebar-expanded="true"] .bewly-widescreen-sidebar {
+    #${ROOT_ID}[data-sidebar-expanded="true"] .bewly-widescreen-sidebar {
       transform: translateX(0);
     }
 
@@ -1341,14 +1348,98 @@ function injectLayoutStyle() {
       box-shadow: 12px 0 28px rgba(0, 0, 0, 0.28);
     }
 
-    #${ROOT_ID}[data-sidebar-position="left"][data-sidebar-mode="narrow"] .bewly-widescreen-sidebar {
-      box-shadow: none;
-    }
-
-    #${ROOT_ID}[data-sidebar-position="left"][data-sidebar-mode="fit"] {
+    #${ROOT_ID}[data-sidebar-position="left"] {
       --bewly-widescreen-sidebar-offset: calc(
         var(--bewly-widescreen-sidebar-column-width) - var(--bewly-widescreen-sidebar-panel-width)
       );
+    }
+
+    @media (min-width: ${MOBILE_BREAKPOINT + 1}px) {
+      /* 画面居中（需开启「画面居中」设置，且单侧黑边容得下最小可用侧栏，
+         由 data-center-layout 在 JS 中按几何判定）：播放器列占满整行使画面在视口居中，
+         侧栏完整占据画面一侧的黑边，无需悬停展开；黑边不足时不启用，避免压瘪侧栏。 */
+      #${ROOT_ID}[data-center-layout="true"] {
+        --bewly-widescreen-sidebar-panel-width: clamp(
+          ${SIDEBAR_NARROW_MIN_WIDTH}px,
+          calc((100vw - var(--bewly-widescreen-player-target-width)) / 2),
+          var(--bewly-widescreen-sidebar-max)
+        );
+        --bewly-widescreen-sidebar-column-width: min(
+          var(--bewly-widescreen-sidebar-panel-width),
+          calc((100vw - var(--bewly-widescreen-player-target-width)) / 2)
+        );
+      }
+
+      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-stage {
+        grid-template-columns: minmax(0, 100vw) 0px;
+      }
+
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-widescreen-stage {
+        grid-template-columns: 0px minmax(0, 100vw);
+      }
+
+      /* 播放器容器延伸到侧栏边缘：控件贴齐侧栏不被遮挡，同时保住整块区域给
+         进度条、点击暂停与「竖屏放大」的方形画面使用。子代 id 选择器用于压过
+         下方「width: 100%」的双 id 特异性规则（移动根节点可能没有 #playerWrap）。 */
+      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame {
+        justify-content: flex-start;
+      }
+
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-widescreen-player-frame {
+        justify-content: flex-end;
+      }
+
+      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > *,
+      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #playerWrap,
+      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #bilibili-player,
+      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #bilibiliPlayer,
+      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > .bpx-player-container,
+      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > .player-wrap {
+        width: min(calc(100vw - var(--bewly-widescreen-sidebar-panel-width)), 100%) !important;
+      }
+
+      /* 未放大时把视频层与弹幕层平移半个侧栏宽，使画面在视口居中；
+         「竖屏放大」的方形裁切激活时改为受限位移——在不越出播放器容器
+         （不被侧栏遮挡、不额外裁切）的前提下尽量靠拢视口中心。 */
+      #${ROOT_ID}[data-center-layout="true"] .bpx-player-video-wrap,
+      #${ROOT_ID}[data-center-layout="true"] .bilibili-player-video-wrap,
+      #${ROOT_ID}[data-center-layout="true"] .bpx-player-dm-wrap {
+        transform: translateX(calc(var(--bewly-widescreen-sidebar-panel-width) / 2)) !important;
+      }
+
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bpx-player-video-wrap,
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bilibili-player-video-wrap,
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bpx-player-dm-wrap {
+        transform: translateX(calc(-1 * var(--bewly-widescreen-sidebar-panel-width) / 2)) !important;
+      }
+
+      #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bpx-player-video-wrap,
+      #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bilibili-player-video-wrap,
+      #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bpx-player-dm-wrap {
+        transform: translateX(max(0px, min(
+          calc(var(--bewly-widescreen-sidebar-panel-width) / 2),
+          calc((100vw - var(--bewly-widescreen-sidebar-panel-width) - var(--bewly-widescreen-player-available-height)) / 2)
+        ))) !important;
+      }
+
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bpx-player-video-wrap,
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bilibili-player-video-wrap,
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bpx-player-dm-wrap {
+        transform: translateX(calc(-1 * max(0px, min(
+          calc(var(--bewly-widescreen-sidebar-panel-width) / 2),
+          calc((100vw - var(--bewly-widescreen-sidebar-panel-width) - var(--bewly-widescreen-player-available-height)) / 2)
+        )))) !important;
+      }
+
+      /* 弹幕发送栏与控制条同逻辑：横跨整个播放器容器，右缘贴齐侧栏 */
+      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-danmaku-dock {
+        width: min(calc(100vw - var(--bewly-widescreen-sidebar-panel-width)), 100%) !important;
+        align-self: flex-start;
+      }
+
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-widescreen-danmaku-dock {
+        margin-left: auto;
+      }
     }
 
     #${ROOT_ID} .bewly-widescreen-sidebar-toggle {
@@ -1376,6 +1467,11 @@ function injectLayoutStyle() {
       pointer-events: none;
       transform: translateY(-50%);
       transition: opacity 160ms ease, background-color 160ms ease, border-color 160ms ease;
+    }
+
+    /* 「自动」展开方式下不显示按钮，仅保留鼠标进入侧栏的临时展开 */
+    #${ROOT_ID}[data-sidebar-toggle-method="auto"] .bewly-widescreen-sidebar-toggle {
+      display: none !important;
     }
 
     #${ROOT_ID}[data-sidebar-position="left"] .bewly-widescreen-sidebar-toggle {
@@ -2198,27 +2294,37 @@ function updateAspectRatio() {
 
   state?.root.style.setProperty('--bewly-widescreen-aspect', String(aspect))
   state?.root.style.setProperty('--bewly-widescreen-layout-aspect', String(layoutAspect))
-  updateSidebarToggleState()
+  updateSidebarLayoutState()
   if (state)
     schedulePlayerResizeSync(state)
 }
 
-function updateSidebarToggleState() {
+function updateSidebarLayoutState() {
   if (!state)
     return
 
   const availableHeight = state.playerFrame.getBoundingClientRect().height
   const layoutAspect = Number.parseFloat(state.root.style.getPropertyValue('--bewly-widescreen-layout-aspect')) || 16 / 9
+  const targetWidth = availableHeight * layoutAspect
   const fitWidth = Math.min(
-    Math.max(window.innerWidth - availableHeight * layoutAspect, 0),
+    Math.max(window.innerWidth - targetWidth, 0),
     window.innerWidth * 0.4,
   )
-  const narrowWidth = Math.min(
-    Math.max(SIDEBAR_NARROW_MIN_WIDTH, window.innerWidth * 0.26),
-    SIDEBAR_NARROW_MAX_WIDTH,
-    window.innerWidth * 0.4,
-  )
-  const needsHover = narrowWidth - fitWidth > 1
+  const gapWidth = Math.max((window.innerWidth - targetWidth) / 2, 0)
+  // 居中布局与设置和几何都有关：单侧黑边容得下最小可用侧栏时才启用，
+  // 否则维持 fit 布局，避免为居中而压瘪侧栏。需与 CSS 保持一致。
+  const centerLayout = !!settings.value.bewlyWidescreenCenterVerticalVideo
+    && gapWidth >= SIDEBAR_NARROW_MIN_WIDTH
+  state.root.dataset.centerLayout = String(centerLayout)
+
+  // 与 CSS 保持一致：展开面板宽于默认可见的侧栏窄条时才需要展开入口。
+  const panelWidth = centerLayout
+    ? Math.min(gapWidth, window.innerWidth * 0.4)
+    : Math.max(fitWidth, Math.min(Math.max(480, window.innerWidth * 0.32), 600))
+  const columnWidth = centerLayout
+    ? Math.min(panelWidth, gapWidth)
+    : fitWidth
+  const needsHover = panelWidth - columnWidth > 1
   state.root.dataset.sidebarToggleVisible = String(needsHover)
 }
 
@@ -2231,7 +2337,7 @@ function updateDanmakuDockHeight() {
     : 0
 
   state.root.style.setProperty('--bewly-widescreen-danmaku-height', `${height}px`)
-  updateSidebarToggleState()
+  updateSidebarLayoutState()
   schedulePlayerResizeSync(state)
 }
 
@@ -2358,6 +2464,14 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   const sidebar = currentState.sidebarEl
   const playerFrame = currentState.playerFrame
 
+  currentState.sidebarInteractionCleanup = () => {
+    delete currentState.root.dataset.sidebarExpanded
+  }
+
+  // 「展开按钮」模式下完全由按钮切换临时展开，不绑定悬停监听。
+  if (currentState.sidebarExpandMethod !== 'auto')
+    return
+
   function isPointInRect({ clientX, clientY }: PointerEvent, rect: DOMRect) {
     return clientX >= rect.left
       && clientX <= rect.right
@@ -2373,12 +2487,12 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   }
 
   function expandSidebar() {
-    currentState.root.dataset.sidebarExpanded = 'true'
+    setSidebarExpanded(currentState, true)
   }
 
   function collapseSidebar(e: PointerEvent) {
     if (isPointInVisibleVideoArea(e))
-      currentState.root.dataset.sidebarExpanded = 'false'
+      setSidebarExpanded(currentState, false)
   }
 
   sidebar.addEventListener('pointerenter', expandSidebar)
@@ -2391,6 +2505,11 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
     playerFrame.removeEventListener('pointermove', collapseSidebar)
     delete currentState.root.dataset.sidebarExpanded
   }
+}
+
+function applySidebarInteractionTracking(currentState: BewlyWidescreenState) {
+  currentState.sidebarInteractionCleanup?.()
+  setupSidebarInteractionTracking(currentState)
 }
 
 function setupSidebarToggleAutoHide(currentState: BewlyWidescreenState) {
@@ -2768,7 +2887,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
     movedNodes,
     styleEl,
     activeTab: 'comment',
-    sidebarMode: 'fit',
+    sidebarExpandMethod: 'auto',
     sidebarPosition,
     descriptionExpanded: false,
   }
@@ -2787,7 +2906,9 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
   document.addEventListener('keydown', handleEscapeKey, true)
   nextState.escapeKeyCleanup = () => document.removeEventListener('keydown', handleEscapeKey, true)
 
-  setSidebarMode('fit')
+  nextState.sidebarExpandMethod = settings.value.bewlyWidescreenSidebarExpandMethod || 'auto'
+  root.dataset.sidebarToggleMethod = nextState.sidebarExpandMethod
+  syncSidebarToggleButton(nextState)
 
   moveNode(player, playerFrame, movedNodes)
   fillSidebar(nextState)
@@ -2881,6 +3002,7 @@ export function applyBewlyWidescreen(
   showLoading = true,
 ) {
   ensureNativePlayerModeGuard()
+  installSettingsWatchers()
   if (state || waitingForLoad || readyRetryTimer)
     return
 

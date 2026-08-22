@@ -112,6 +112,7 @@ export type CustomPlayOrderOverrides = Record<CustomPlayOrderContext, CustomPlay
 export type CollectedSeasonPlayAllMode = 'beginning' | 'latest' | 'lastWatched'
 export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen' | 'bewlyWidescreen'
 export type BewlyWidescreenSidebarPosition = 'left' | 'right'
+export type BewlyWidescreenSidebarExpandMethod = 'auto' | 'button'
 export type PlayerDefaultState = 'system' | 'remember' | 'on' | 'off'
 export type VideoAspectRatio = '0:0' | '4:3' | '16:9'
 export type VideoPlayerModeOverride = DefaultVideoPlayerMode | 'inherit'
@@ -452,6 +453,8 @@ export interface Settings {
   // Video Player
   defaultVideoPlayerMode: DefaultVideoPlayerMode
   bewlyWidescreenSidebarPosition: BewlyWidescreenSidebarPosition
+  bewlyWidescreenSidebarExpandMethod: BewlyWidescreenSidebarExpandMethod // Bewly宽屏侧栏展开方式
+  bewlyWidescreenCenterVerticalVideo: boolean // Bewly宽屏竖屏视频画面居中
   defaultDanmakuState: PlayerDefaultState
   defaultCaptionState: PlayerDefaultState
   lastDanmakuState: boolean
@@ -746,6 +749,8 @@ export const originalSettings: Settings = {
   // Video Player
   defaultVideoPlayerMode: 'default',
   bewlyWidescreenSidebarPosition: 'right',
+  bewlyWidescreenSidebarExpandMethod: 'auto',
+  bewlyWidescreenCenterVerticalVideo: false, // 默认关闭，保持现有布局
   defaultDanmakuState: 'system',
   defaultCaptionState: 'system',
   lastDanmakuState: true,

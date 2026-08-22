@@ -26,6 +26,19 @@ const bewlyWidescreenSidebarPositionOptions = computed(() => {
   ]
 })
 
+const bewlyWidescreenSidebarExpandMethodOptions = computed(() => {
+  return [
+    {
+      label: t('settings.video_player_mode.bewly_widescreen_sidebar_expand_method_auto'),
+      value: 'auto',
+    },
+    {
+      label: t('settings.video_player_mode.bewly_widescreen_sidebar_expand_method_button'),
+      value: 'button',
+    },
+  ]
+})
+
 // 视频播放器模式选项
 const videoPlayerModeOptions = computed(() => {
   return [
@@ -107,6 +120,24 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         right-width="auto"
       >
         <Select v-model="settings.bewlyWidescreenSidebarPosition" :options="bewlyWidescreenSidebarPositionOptions" w="160px" />
+      </SettingsItem>
+
+      <SettingsItem
+        v-if="usesBewlyWidescreen"
+        :title="t('settings.video_player_mode.bewly_widescreen_sidebar_expand_method')"
+        :desc="t('settings.video_player_mode.bewly_widescreen_sidebar_expand_method_desc')"
+        right-width="auto"
+      >
+        <Select v-model="settings.bewlyWidescreenSidebarExpandMethod" :options="bewlyWidescreenSidebarExpandMethodOptions" w="160px" />
+      </SettingsItem>
+
+      <SettingsItem
+        v-if="usesBewlyWidescreen"
+        :title="t('settings.video_player_mode.bewly_widescreen_center_vertical_video')"
+        :desc="t('settings.video_player_mode.bewly_widescreen_center_vertical_video_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.bewlyWidescreenCenterVerticalVideo" />
       </SettingsItem>
 
       <SettingsItem

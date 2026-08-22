@@ -942,6 +942,12 @@ settings:
     bewly_widescreen_sidebar_position_desc: 選擇 Bewly 闊螢幕模式下側邊欄嘅顯示位置
     bewly_widescreen_sidebar_position_left: 左側
     bewly_widescreen_sidebar_position_right: 右側
+    bewly_widescreen_sidebar_expand_method: Bewly闊螢幕側欄展開方式
+    bewly_widescreen_sidebar_expand_method_desc: 自動：滑鼠入到側欄時臨時展開；展開按鈕：顯示按鈕，淨係撳先會臨時展開
+    bewly_widescreen_sidebar_expand_method_auto: 自動
+    bewly_widescreen_sidebar_expand_method_button: 展開按鈕
+    bewly_widescreen_center_vertical_video: Bewly闊螢幕畫面置中
+    bewly_widescreen_center_vertical_video_desc: 開咗之後，闊螢幕模式下若畫面兩側留有足夠容納側欄嘅黑邊空間，影片就會喺成個畫面水平置中，側欄完整佔據一邊黑邊；空間唔夠就保持現有版面。
   show_ip_location: 顯示 IP 歸屬地
   show_ip_location_desc: 喺影片/動向頁留言區顯示 IP 歸屬地。
   show_sex: 顯示用戶性別
@@ -1468,10 +1474,8 @@ user_card:
   submissions: '{count}個投稿'
   followers: '{count}粉絲'
 widescreen:
-  show_narrow_right: 顯示窄右欄
-  show_narrow_left: 顯示窄左欄
-  collapse_right: 收起右欄
-  collapse_left: 收起左欄
+  expand_sidebar: 展開側欄
+  collapse_sidebar: 收起側欄
   exit: 退出
   exit_title: 退出 Bewly 寬屏
   loading: 載入緊寬屏模式…
