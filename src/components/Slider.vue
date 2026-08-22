@@ -12,6 +12,12 @@ const props = withDefaults(defineProps<Props>(), {
 const modelValue = defineModel<number>({ required: true })
 const rangeRef = ref<HTMLInputElement | null>(null)
 
+// 原生 input 的 v-model 写入的是字符串，存储层的 Number.isFinite 校验
+// 会把它当非法值重置回默认（毛玻璃强度即因此失效）。这里统一转成数字。
+function onInput(event: Event) {
+  modelValue.value = Number((event.currentTarget as HTMLInputElement).value)
+}
+
 function updateBackground() {
   const range = rangeRef.value
   if (!range)
@@ -30,9 +36,10 @@ onMounted(updateBackground)
   <label cursor-pointer flex items-center gap-3 w="$b-slider-width">
     <input
       ref="rangeRef"
-      v-model="modelValue" type="range" :min="min" :max="max" class="slider"
+      :value="modelValue" type="range" :min="min" :max="max" class="slider"
       appearance-none outline-none bg="$bew-fill-1" rounded="$b-slider-height"
       border="size-$b-border-width color-$bew-border-color" w="$b-slider-width" h="$b-slider-height"
+      @input="onInput"
     >
     <span>{{ label }}</span>
   </label>
