@@ -607,8 +607,8 @@ function changeMenuItem(menuItem: MenuType) {
         <div
           ref="scrollViewportRef"
           :style="{
-            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
-            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'none',
+            maskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'linear-gradient(to bottom, transparent 0%, black 55px, black 100%)',
+            WebkitMaskImage: settings.enableFrostedGlass ? 'linear-gradient(to bottom, transparent 0%, black 92px 30%)' : 'linear-gradient(to bottom, transparent 0%, black 55px, black 100%)',
             scrollbarGutter: 'stable',
             overflowAnchor: 'none',
             overscrollBehavior: 'contain',
