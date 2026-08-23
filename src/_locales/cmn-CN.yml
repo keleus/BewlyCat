@@ -546,9 +546,12 @@ settings:
   top_bar_style: 顶栏样式
   top_bar_style_desc: 选择顶栏的背景效果。
   top_bar_style_opt:
-    default: 默认（白雾/阴影）
-    transparent: 阴影
+    default: 自动
     frosted_glass: 白雾
+    transparent: 阴影
+    exp_default: 自动（实验）
+    exp_frosted_glass: 白雾（实验）
+    exp_transparent: 阴影（实验）
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多页面显示 BewlyCat/Bilibili 页面切换器

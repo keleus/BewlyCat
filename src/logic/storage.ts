@@ -101,7 +101,18 @@ export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
 export type TabsPosition = 'left' | 'center'
 export type TopBarLogoStyle = 'icon' | 'brand'
-export type TopBarStyle = 'default' | 'transparent' | 'frostedGlass'
+// 旧版三档（default/transparent/frostedGlass）沿用 v1.5.x 的遮罩结构与色调判定；
+// 实验三档（exp 前缀）走余弦渐变遮罩管线。
+export type TopBarStyle
+  = | 'default'
+    | 'transparent'
+    | 'frostedGlass'
+    | 'expDefault'
+    | 'expTransparent'
+    | 'expFrostedGlass'
+
+/** 实验性顶栏样式集合：渲染走余弦渐变管线 */
+export const experimentalTopBarStyles: TopBarStyle[] = ['expDefault', 'expTransparent', 'expFrostedGlass']
 export type AutoPlayMode = 'default' | 'autoPlay' | 'autoPlayWithRecommend' | 'pauseAtEnd' | 'loop'
 export type RandomPlayOrder = 'sequential' | 'reverse' | 'random'
 export type DefaultCustomPlayOrder = RandomPlayOrder
@@ -895,7 +906,7 @@ watch(
     if (!validTopBarLogoStyles.includes(record.topBarLogoStyle))
       record.topBarLogoStyle = originalSettings.topBarLogoStyle
 
-    const validTopBarStyles: TopBarStyle[] = ['default', 'transparent', 'frostedGlass']
+    const validTopBarStyles: TopBarStyle[] = ['default', 'transparent', 'frostedGlass', ...experimentalTopBarStyles]
     const hasLegacyTopBarStyle = 'alwaysUseTransparentTopBar' in record
       || 'alwaysUseFrostedGlassTopBar' in record
       || 'enableTopBarGradient' in record
@@ -906,8 +917,6 @@ watch(
           ? 'frostedGlass'
           : originalSettings.topBarStyle
     }
-    if (record.topBarStyle === 'progressiveFog')
-      record.topBarStyle = 'default'
     if (!validTopBarStyles.includes(record.topBarStyle))
       record.topBarStyle = originalSettings.topBarStyle
     Reflect.deleteProperty(record, 'alwaysUseTransparentTopBar')

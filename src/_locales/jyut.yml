@@ -502,9 +502,12 @@ settings:
   top_bar_style: 頂欄樣式
   top_bar_style_desc: 揀頂欄背景效果。
   top_bar_style_opt:
-    default: 預設（白霧/陰影）
-    transparent: 陰影
+    default: 自動
     frosted_glass: 白霧
+    transparent: 陰影
+    exp_default: 自動（實驗）
+    exp_frosted_glass: 白霧（實驗）
+    exp_transparent: 陰影（實驗）
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換掣
   show_bewly_or_bili_page_switcher_on_more_pages: 喺更多頁面顯示 BewlyCat/Bilibili 頁面切換掣

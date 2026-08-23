@@ -98,8 +98,11 @@ const videoPageTopBarConfigOptions = computed(() => [
 
 const topBarStyleOptions = computed<{ label: string, value: TopBarStyle }[]>(() => [
   { label: t('settings.top_bar_style_opt.default'), value: 'default' },
-  { label: t('settings.top_bar_style_opt.transparent'), value: 'transparent' },
   { label: t('settings.top_bar_style_opt.frosted_glass'), value: 'frostedGlass' },
+  { label: t('settings.top_bar_style_opt.transparent'), value: 'transparent' },
+  { label: t('settings.top_bar_style_opt.exp_default'), value: 'expDefault' },
+  { label: t('settings.top_bar_style_opt.exp_frosted_glass'), value: 'expFrostedGlass' },
+  { label: t('settings.top_bar_style_opt.exp_transparent'), value: 'expTransparent' },
 ])
 
 const topBarModeOptions = computed(() => [

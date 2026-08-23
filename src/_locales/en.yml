@@ -502,9 +502,12 @@ settings:
   top_bar_style: Top bar style
   top_bar_style_desc: Choose the top bar background.
   top_bar_style_opt:
-    default: Default (white fog/shadow)
-    transparent: Shadow
+    default: Auto
     frosted_glass: White fog
+    transparent: Shadow
+    exp_default: Auto (experimental)
+    exp_frosted_glass: White fog (experimental)
+    exp_transparent: Shadow (experimental)
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher
   show_bewly_or_bili_page_switcher_on_more_pages: Show BewlyCat/Bilibili page switcher on more pages

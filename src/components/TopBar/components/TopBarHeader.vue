@@ -6,6 +6,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
+import { experimentalTopBarStyles, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX } from '~/logic/storage'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import TopBarItemEditor from './TopBarItemEditor.vue'
@@ -102,6 +103,37 @@ const fadeGradientStyle = computed(() => ({
     ? 'var(--bew-top-bar-height)'
     : 'calc(var(--bew-top-bar-height) + var(--bew-space-4))',
 }))
+
+// 实验三档走余弦渐变管线；其余档位沿用 v1.5.x 的遮罩表现。
+const useLegacyRendering = computed(() => !experimentalTopBarStyles.includes(settings.value.topBarStyle))
+
+// v1.5.x 的三停轻雾：顶部八成、中部六成（黑雾六/四成），随滚动由 0.8 收紧到 1。
+const legacyFadeGradientStyle = computed(() => ({
+  background: `linear-gradient(to bottom, ${
+    forceWhiteIcon.value
+      ? 'rgb(0 0 0 / 60%), rgb(0 0 0 / 40%) calc(var(--bew-top-bar-height) / 2)'
+      : 'color-mix(in oklab, var(--bew-bg), transparent 20%), color-mix(in oklab, var(--bew-bg), transparent 40%) calc(var(--bew-top-bar-height) / 2)'
+  }, transparent)`,
+  opacity: props.reachTop ? 0.8 : 1,
+  height: 'var(--bew-top-bar-height)',
+}))
+
+// 旧版白雾保持 v1.5.x 的纯 blur 配方，半径跟随全局毛玻璃浓度滑块。
+const legacyGlassFilter = computed(() => {
+  const intensity = Math.min(FROSTED_GLASS_BLUR_MAX_PX, Math.max(FROSTED_GLASS_BLUR_MIN_PX, settings.value.frostedGlassBlurIntensity))
+  return `blur(${intensity}px)`
+})
+
+const legacyMaskStyle = computed(() =>
+  settings.value.enableFrostedGlass
+    ? { backdropFilter: legacyGlassFilter.value }
+    : undefined)
+
+const themeGradientColor = computed(() =>
+  // 实验档在毛玻璃下用加深的主题色；旧版三档保持 v1.5.x 的强度。
+  !useLegacyRendering.value && settings.value.enableFrostedGlass
+    ? 'var(--bew-theme-color-20)'
+    : 'var(--bew-theme-color-10)')
 
 const leftSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
@@ -223,28 +255,45 @@ function refreshSearchContent() {
     p="x-12" m-auto
     h="$bew-top-bar-height"
   >
-    <div
-      class="top-bar-header__glass-overlay"
-      :class="{ 'top-bar-header__glass-overlay--frosted': settings.enableFrostedGlass }"
-      :style="settings.enableFrostedGlass ? frostedOverlayStyle : solidOverlayStyle"
-    />
+    <!-- 旧版三档：v1.5.x 结构，滚动后必挂遮罩——毛玻璃出白雾，非毛玻璃压实色阴影 -->
+    <template v-if="useLegacyRendering">
+      <Transition name="fade">
+        <div
+          v-if="!reachTop"
+          class="top-bar-header__legacy-mask"
+          :class="{ 'top-bar-header__legacy-mask--glass': settings.enableFrostedGlass }"
+          :style="legacyMaskStyle"
+        />
+      </Transition>
 
-    <div
-      pos="absolute top-0 left-0" w-full
-      pointer-events-none opacity-100 duration-300
-      :style="fadeGradientStyle"
-    />
+      <div
+        pos="absolute top-0 left-0" w-full
+        pointer-events-none opacity-100 duration-300
+        :style="legacyFadeGradientStyle"
+      />
+    </template>
+
+    <!-- 渐变：余弦渐变遮罩管线 -->
+    <template v-else>
+      <div
+        class="top-bar-header__glass-overlay"
+        :class="{ 'top-bar-header__glass-overlay--frosted': settings.enableFrostedGlass }"
+        :style="settings.enableFrostedGlass ? frostedOverlayStyle : solidOverlayStyle"
+      />
+
+      <div
+        pos="absolute top-0 left-0" w-full
+        pointer-events-none opacity-100 duration-300
+        :style="fadeGradientStyle"
+      />
+    </template>
 
     <!-- Top bar theme color gradient -->
     <Transition name="fade">
       <div
         v-if="settings.showTopBarThemeColorGradient && !forceWhiteIcon && reachTop && isDark"
         pos="absolute top-0 left-0" w-full h="$bew-top-bar-height" pointer-events-none
-        :style="{
-          background: `linear-gradient(to bottom, ${
-            settings.enableFrostedGlass ? 'var(--bew-theme-color-20)' : 'var(--bew-theme-color-10)'
-          }, transparent)`,
-        }"
+        :style="{ background: `linear-gradient(to bottom, ${themeGradientColor}, transparent)` }"
       />
     </Transition>
 
@@ -318,6 +367,32 @@ function refreshSearchContent() {
 
 .top-bar-header__glass-overlay--frosted {
   height: var(--bew-top-bar-height);
+}
+
+// 复刻 v1.5.x 的滚动遮罩：非毛玻璃压九成底色当阴影，毛玻璃换成白雾
+// （模糊半径由 legacyMaskStyle 按全局浓度滑块注入，不用现在的 --bew-filter-glass-1）。
+.top-bar-header__legacy-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--bew-top-bar-height);
+  pointer-events: none;
+  background-color: var(--bew-bg);
+  opacity: 0.9;
+  mask-image: linear-gradient(to bottom, rgb(0 0 0 / 100%), rgb(0 0 0 / 100%) 24px, rgb(0 0 0 / 90%) 44px, transparent);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 100%),
+    rgb(0 0 0 / 100%) 24px,
+    rgb(0 0 0 / 90%) 44px,
+    transparent
+  );
+}
+
+.top-bar-header__legacy-mask--glass {
+  background-color: transparent;
+  opacity: 1;
 }
 
 .top-bar-header__side {
