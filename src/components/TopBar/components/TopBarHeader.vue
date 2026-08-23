@@ -291,10 +291,12 @@ function refreshSearchContent() {
       <div class="top-bar-header__fog" :style="fadeGradientStyle" />
     </template>
 
-    <!-- Top bar theme color gradient -->
+    <!-- Top bar theme color gradient：只在暗色渲染，黑雾与底色雾同为深色，
+         叠淡主题渐变不影响白图标对比度，故不再按 forceWhiteIcon 关闭——
+         否则阴影与「自动＋壁纸」恒为白图标，开关会失效 -->
     <Transition name="fade">
       <div
-        v-if="settings.showTopBarThemeColorGradient && !forceWhiteIcon && reachTop && isDark"
+        v-if="settings.showTopBarThemeColorGradient && reachTop && isDark"
         pos="absolute top-0 left-0" w-full h="$bew-top-bar-height" pointer-events-none
         :style="{ background: `linear-gradient(to bottom, ${themeGradientColor}, transparent)` }"
       />
