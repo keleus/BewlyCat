@@ -168,16 +168,16 @@ function handlePageMouseDown(event: MouseEvent) {
   line-height: var(--bew-line-height-body);
   overflow-anchor: none;
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+    background-color var(--bew-duration-normal) var(--bew-ease-standard),
+    color var(--bew-duration-normal) var(--bew-ease-standard);
 
-  &:hover {
+  &:hover:not(.active) {
     background: var(--bew-fill-2);
   }
 
   &.active {
-    color: var(--bew-theme-color);
-    background: var(--bew-fill-3);
+    color: var(--bew-text-auto);
+    background: var(--bew-theme-color-auto);
   }
 
   > span:last-child {
