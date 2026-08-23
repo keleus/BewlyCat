@@ -7,6 +7,7 @@ import { showState } from '~/utils/player'
 
 const PLAYER_CONTROL_BAR_SELECTOR = '.bpx-player-control-bottom-right'
 const PLAYER_ROOT_SELECTOR = '#playerWrap, #bilibili-player, #bilibiliPlayer, .bpx-player-container, .bilibili-player'
+const TOOLTIP_CLASS = 'bewly-player-tooltip'
 const CONTROL_DISCOVERY_TIMEOUT = 15_000
 const CONTROL_DISCOVERY_RETRY_INTERVAL = 500
 
@@ -156,7 +157,11 @@ function createControlContainer(): HTMLElement {
   container.setAttribute('role', 'button')
   container.setAttribute('aria-label', label)
   container.setAttribute('tabindex', '0')
-  container.title = label
+
+  const tooltip = document.createElement('span')
+  tooltip.className = TOOLTIP_CLASS
+  tooltip.setAttribute('role', 'tooltip')
+  tooltip.textContent = label
 
   const icon = document.createElement('div')
   icon.className = 'bpx-player-ctrl-btn-icon bewly-video-screenshot-icon'
@@ -165,7 +170,7 @@ function createControlContainer(): HTMLElement {
   iconWrapper.className = 'bpx-common-svg-icon'
   iconWrapper.innerHTML = screenshotIcon
   icon.appendChild(iconWrapper)
-  container.appendChild(icon)
+  container.append(icon, tooltip)
 
   // 鼠标点击不聚焦按钮：否则焦点残留，之后按空格/回车会再次触发截图
   container.addEventListener('mousedown', (event) => {

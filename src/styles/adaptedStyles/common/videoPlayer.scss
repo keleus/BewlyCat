@@ -1,8 +1,9 @@
-.bewly-widescreen-control {
+.bewly-widescreen-control,
+.bewly-video-screenshot-control {
   position: relative;
   overflow: visible;
 
-  .bewly-widescreen-tooltip {
+  .bewly-player-tooltip {
     position: absolute;
     bottom: calc(100% + var(--bew-space-2, 8px));
     left: 50%;
@@ -26,8 +27,8 @@
       transform var(--bew-duration-fast, 150ms) var(--bew-ease-out, ease-out);
   }
 
-  &:hover .bewly-widescreen-tooltip,
-  &:focus-visible .bewly-widescreen-tooltip {
+  &:hover .bewly-player-tooltip,
+  &:focus-visible .bewly-player-tooltip {
     opacity: 1;
     visibility: visible;
     transform: translate(-50%, 0);
