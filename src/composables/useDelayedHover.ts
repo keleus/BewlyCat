@@ -9,6 +9,10 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
   let leaveTimer: any | undefined
   let focusWithin = false
   let mouseWithin = false
+  // 区分焦点来源：鼠标点击弹窗内容也会把焦点落进去（focusin 冒泡到容器），
+  // 若算作焦点驻留，移出后关闭逻辑会被 focusWithin 卡住，需要再点一下才能收起。
+  // 只有非指针触发的焦点（键盘 Tab 等）才维持弹窗打开。
+  let lastPointerDownAt = 0
 
   function clearHoverTimers() {
     if (enterTimer) {
@@ -67,7 +71,18 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
     scheduleLeave()
   }
 
+  function handlePointerDown() {
+    lastPointerDownAt = Date.now()
+    // 指针交互接管驻留状态：清掉键盘留下的 focusWithin，避免焦点在弹窗内
+    // 移动（不触发 focusout）导致鼠标移出后仍被旧状态卡住
+    focusWithin = false
+  }
+
   function handleFocusIn() {
+    // pointerdown 后紧随的 focusin 是点击顺带产生的，不算键盘驻留
+    if (Date.now() - lastPointerDownAt < 200)
+      return
+
     focusWithin = true
     scheduleEnter()
   }
@@ -82,6 +97,7 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
   }
 
   function addInteractionListeners(element: HTMLElement) {
+    element.addEventListener('pointerdown', handlePointerDown)
     element.addEventListener('focusin', handleFocusIn)
     element.addEventListener('focusout', handleFocusOut)
     element.addEventListener('mouseenter', handleMouseEnter)
@@ -89,6 +105,7 @@ export function useDelayedHover({ enterDelay = 300, leaveDelay = 300, beforeEnte
   }
 
   function removeInteractionListeners(element: HTMLElement) {
+    element.removeEventListener('pointerdown', handlePointerDown)
     element.removeEventListener('focusin', handleFocusIn)
     element.removeEventListener('focusout', handleFocusOut)
     element.removeEventListener('mouseenter', handleMouseEnter)
