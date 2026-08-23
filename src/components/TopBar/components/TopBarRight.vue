@@ -70,8 +70,8 @@ interface EditableTopBarComponent {
 
 const editableTopBarComponents: EditableTopBarComponent[] = [
   { key: 'moments', supportsBadge: true },
-  { key: 'favorites', supportsBadge: true },
-  { key: 'history', supportsBadge: true },
+  { key: 'favorites', supportsBadge: false },
+  { key: 'history', supportsBadge: false },
   { key: 'watchLater', supportsBadge: true },
   { key: 'creatorCenter', supportsBadge: false },
   { key: 'upload', supportsBadge: false },

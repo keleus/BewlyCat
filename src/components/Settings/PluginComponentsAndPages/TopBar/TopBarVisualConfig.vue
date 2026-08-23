@@ -36,13 +36,13 @@ const topBarComponents = computed<TopBarComponent[]>(() => [
     key: 'favorites',
     i18nKey: 'topbar.favorites',
     icon: 'i-mingcute:star-line',
-    supportsBadge: true,
+    supportsBadge: false,
   },
   {
     key: 'history',
     i18nKey: 'topbar.history',
     icon: 'i-mingcute:time-line',
-    supportsBadge: true,
+    supportsBadge: false,
   },
   {
     key: 'watchLater',

@@ -597,8 +597,8 @@ export const originalSettings: Settings = {
   showWatchLaterBadge: false,
   topBarComponentsConfig: [
     { key: 'moments', visible: true, badgeType: 'number' },
-    { key: 'favorites', visible: true, badgeType: 'number' },
-    { key: 'history', visible: true, badgeType: 'number' },
+    { key: 'favorites', visible: true, badgeType: 'none' },
+    { key: 'history', visible: true, badgeType: 'none' },
     { key: 'watchLater', visible: true, badgeType: 'number' },
     { key: 'creatorCenter', visible: true, badgeType: 'none' },
     { key: 'upload', visible: true, badgeType: 'none' },

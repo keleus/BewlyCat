@@ -396,14 +396,18 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ]),
   ...[
     ['moments', 'topbar.moments'],
-    ['favorites', 'topbar.favorites'],
-    ['history', 'topbar.history'],
     ['watchLater', 'topbar.watch_later'],
-    ['creatorCenter', 'topbar.creative_center'],
-    ['upload', 'topbar.upload'],
     ['notifications', 'topbar.notifications'],
   ].flatMap(([, titleKey]) => createEntries(topBarRoute, [titleKey!], {
     keywordKeys: ['settings.visibility', 'settings.badge_type', 'settings.top_bar_icon_badges_opt'],
+  })),
+  ...[
+    ['favorites', 'topbar.favorites'],
+    ['history', 'topbar.history'],
+    ['creatorCenter', 'topbar.creative_center'],
+    ['upload', 'topbar.upload'],
+  ].flatMap(([, titleKey]) => createEntries(topBarRoute, [titleKey!], {
+    keywordKeys: ['settings.visibility'],
   })),
   ...createEntries(topBarRoute, [
     'topbar.top_bar_switcher',
