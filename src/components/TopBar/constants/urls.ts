@@ -6,8 +6,8 @@ export const VIDEO_PAGE_URL = /^https?:\/\/(?:www\.)?bilibili\.com\/video.*/
 export const VIDEO_LIST_URL = /^https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/
 export const BANGUMI_PLAY_URL = /^https?:\/\/(?:www\.)?bilibili\.com\/bangumi\/play\/.*/
 
-// 频道页面
-export const CHANNEL_PAGE_URL = /^https?:\/\/(?:www\.)?bilibili\.com\/(?:c|v|anime|guochuang|tv|movie|variety|mooc).*/
+// 频道页面（/v/topic 话题详情页没有铺在顶栏底下的大图，不算横幅页）
+export const CHANNEL_PAGE_URL = /^https?:\/\/(?:www\.)?bilibili\.com\/(?:c|v(?!\/topic)|anime|guochuang|tv|movie|variety|mooc).*/
 
 // 用户相关页面
 export const SPACE_URL = /^https?:\/\/space\.bilibili\.com(?:\/|$).*/

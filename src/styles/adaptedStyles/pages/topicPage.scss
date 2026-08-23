@@ -1,3 +1,16 @@
+// 话题页原版顶栏（#bili-header-container > .bili-header）是一行实色白底，
+// 从布局中移除；同时给话题横幅补回等高 padding-top：
+// 内容位置与原布局一致（不与 Bewly 顶栏重叠），顶部 64px 改由横幅渐变
+// 延伸填充，Bewly 顶栏的白雾下面是主题色渐变而非实色白。
+// 不挂在 .bewly-design 下：只要顶栏由插件接管（topicPage 类按 URL 恒定添加）就生效。
+.topicPage #bili-header-container {
+  display: none !important;
+}
+
+.topicPage .topic-detail__header {
+  padding-top: var(--bew-top-bar-height) !important;
+}
+
 .bewly-design.topicPage {
   // #region theme color adaption part
   // Increase the priority of the style inside by writing a non-existent selector in `:not()`

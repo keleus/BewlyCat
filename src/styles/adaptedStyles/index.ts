@@ -163,8 +163,8 @@ async function setupStyles() {
     document.documentElement.classList.add('articlesPage')
   }
 
-  // topic page 话题页
-  else if (/https?:\/\/(?:www\.)?bilibili\.com\/v\/topic\/detail\/.*/.test(currentUrl)) {
+  // topic page 话题页（真实链接为 /v/topic/detail?topic_id=…，detail 后是查询串而非路径段）
+  else if (/https?:\/\/(?:www\.)?bilibili\.com\/v\/topic\/detail.*/.test(currentUrl)) {
     await import('./pages/topicPage.scss')
     document.documentElement.classList.add('topicPage')
   }
