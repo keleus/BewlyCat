@@ -457,12 +457,14 @@ settings:
     bewly_widescreen_sidebar_position_desc: Choose the sidebar position in Bewly Widescreen mode
     bewly_widescreen_sidebar_position_left: Left
     bewly_widescreen_sidebar_position_right: Right
-    bewly_widescreen_sidebar_expand_method: Bewly Widescreen Sidebar Expand Method
-    bewly_widescreen_sidebar_expand_method_desc: >-
-      Auto: temporarily expands when the pointer enters the sidebar. Expand
-      button: shows a button that only expands temporarily on click.
-    bewly_widescreen_sidebar_expand_method_auto: Auto
-    bewly_widescreen_sidebar_expand_method_button: Expand Button
+    bewly_widescreen_sidebar_priority: Bewly Widescreen Layout Priority
+    bewly_widescreen_sidebar_priority_desc: >-
+      Video-first: the sidebar starts as a narrow strip, temporarily expands on
+      hover, and can be fully expanded via the button (which takes space from
+      the video). Sidebar-first: the sidebar is fully expanded by default and
+      takes space from the video.
+    bewly_widescreen_sidebar_priority_video: Video-first
+    bewly_widescreen_sidebar_priority_sidebar: Sidebar-first
     bewly_widescreen_center_vertical_video: Center Video in Bewly Widescreen
     bewly_widescreen_center_vertical_video_desc: >-
       When enabled, videos are centered horizontally across the whole viewport
@@ -1561,8 +1563,10 @@ user_card:
   submissions: '{count} submissions'
   followers: '{count} followers'
 widescreen:
-  expand_sidebar: Expand sidebar
-  collapse_sidebar: Collapse sidebar
+  show_narrow_right: Show narrow right sidebar
+  show_narrow_left: Show narrow left sidebar
+  collapse_right: Collapse right sidebar
+  collapse_left: Collapse left sidebar
   exit: Exit
   exit_title: Exit Bewly widescreen
   loading: Loading widescreen mode…

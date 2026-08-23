@@ -480,10 +480,10 @@ settings:
     bewly_widescreen_sidebar_position_desc: 選擇 Bewly 寬螢幕模式下側邊欄的顯示位置
     bewly_widescreen_sidebar_position_left: 左側
     bewly_widescreen_sidebar_position_right: 右側
-    bewly_widescreen_sidebar_expand_method: Bewly寬螢幕側欄展開方式
-    bewly_widescreen_sidebar_expand_method_desc: 自動：滑鼠進入側欄時臨時展開；展開按鈕：顯示按鈕，僅點擊時臨時展開
-    bewly_widescreen_sidebar_expand_method_auto: 自動
-    bewly_widescreen_sidebar_expand_method_button: 展開按鈕
+    bewly_widescreen_sidebar_priority: Bewly寬螢幕版面優先級
+    bewly_widescreen_sidebar_priority_desc: 影片優先：側欄預設收合為窄條，滑鼠懸停時臨時展開，也可用按鈕切換為完整側欄（會壓縮影片區域）；側欄優先：側欄預設完整顯示並壓縮影片區域。
+    bewly_widescreen_sidebar_priority_video: 影片優先
+    bewly_widescreen_sidebar_priority_sidebar: 側欄優先
     bewly_widescreen_center_vertical_video: Bewly寬螢幕畫面置中
     bewly_widescreen_center_vertical_video_desc: 開啟後，寬螢幕模式下若畫面兩側留有足夠容納側欄的黑邊空間，影片將於整個畫面水平置中，側欄完整佔據一側黑邊；空間不足時保持現有版面。
   enable_video_preview: 啟用影片預覽功能（如果可以的話）
@@ -1474,8 +1474,10 @@ user_card:
   submissions: '{count}個投稿'
   followers: '{count}粉絲'
 widescreen:
-  expand_sidebar: 展開側欄
-  collapse_sidebar: 收合側欄
+  show_narrow_right: 顯示窄右欄
+  show_narrow_left: 顯示窄左欄
+  collapse_right: 收合右欄
+  collapse_left: 收合左欄
   exit: 離開
   exit_title: 離開 Bewly 寬螢幕
   loading: 正在載入寬螢幕模式…

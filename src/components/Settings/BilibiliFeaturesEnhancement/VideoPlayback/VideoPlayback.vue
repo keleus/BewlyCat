@@ -26,15 +26,15 @@ const bewlyWidescreenSidebarPositionOptions = computed(() => {
   ]
 })
 
-const bewlyWidescreenSidebarExpandMethodOptions = computed(() => {
+const bewlyWidescreenSidebarPriorityOptions = computed(() => {
   return [
     {
-      label: t('settings.video_player_mode.bewly_widescreen_sidebar_expand_method_auto'),
-      value: 'auto',
+      label: t('settings.video_player_mode.bewly_widescreen_sidebar_priority_video'),
+      value: 'video',
     },
     {
-      label: t('settings.video_player_mode.bewly_widescreen_sidebar_expand_method_button'),
-      value: 'button',
+      label: t('settings.video_player_mode.bewly_widescreen_sidebar_priority_sidebar'),
+      value: 'sidebar',
     },
   ]
 })
@@ -124,11 +124,11 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
 
       <SettingsItem
         v-if="usesBewlyWidescreen"
-        :title="t('settings.video_player_mode.bewly_widescreen_sidebar_expand_method')"
-        :desc="t('settings.video_player_mode.bewly_widescreen_sidebar_expand_method_desc')"
+        :title="t('settings.video_player_mode.bewly_widescreen_sidebar_priority')"
+        :desc="t('settings.video_player_mode.bewly_widescreen_sidebar_priority_desc')"
         right-width="auto"
       >
-        <Select v-model="settings.bewlyWidescreenSidebarExpandMethod" :options="bewlyWidescreenSidebarExpandMethodOptions" w="160px" />
+        <Select v-model="settings.bewlyWidescreenSidebarPriority" :options="bewlyWidescreenSidebarPriorityOptions" w="160px" />
       </SettingsItem>
 
       <SettingsItem
