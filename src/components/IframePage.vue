@@ -8,7 +8,7 @@ import { shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 const props = defineProps<{
   url: string
 }>()
-const { reachTop } = useBewlyApp()
+const { reachTop, scrollTop } = useBewlyApp()
 const { isDark } = useDark()
 const headerShow = ref(false)
 const iframeRef = ref<HTMLIFrameElement | null>(null)
@@ -35,8 +35,9 @@ function updateReachTopFromIframe() {
   try {
     const doc = iframeWindow.document
     const scrollElement = doc?.scrollingElement ?? doc?.documentElement ?? doc?.body
-    const scrollTop = scrollElement?.scrollTop ?? iframeWindow.scrollY ?? 0
-    reachTop.value = scrollTop <= 0
+    const iframeScrollTop = scrollElement?.scrollTop ?? iframeWindow.scrollY ?? 0
+    scrollTop.value = iframeScrollTop
+    reachTop.value = iframeScrollTop <= 0
   }
   catch (error) {
     if (!iframeScrollSyncFailed.value) {
@@ -214,6 +215,7 @@ onBeforeUnmount(() => {
 
 async function releaseIframeResources() {
   cleanupIframeScrollSync()
+  scrollTop.value = 0
   reachTop.value = true
 
   // Clear iframe content

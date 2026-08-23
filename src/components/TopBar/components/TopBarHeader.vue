@@ -21,7 +21,7 @@ const props = defineProps<{
 
 const { forceWhiteIcon, hasPageBackdrop, handleNotificationsItemClick } = useTopBarInteraction()
 const { isLayoutEditing } = useLayoutEditMode()
-const { activatedPage } = useBewlyApp()
+const { activatedPage, scrollTop } = useBewlyApp()
 const isNarrowLayout = useMediaQuery('(max-width: 767px)')
 // 搜索控件常驻挂载，显隐交给 TopBarSearch 内部的 Transition 播放动画；
 // 若在此处跟随 showSearchBar 卸载整棵子树，内部的 slide-out 过渡会被同步卸载吞掉。
@@ -64,6 +64,18 @@ const SOLID_OVERLAY_MASK = overlayMask('--overlay-mask-plateau-solid')
 const SCROLLED_SHADE_ALPHA = 0.5
 const GLASS_TINT_ALPHA = 0.1
 
+// 遮罩随滚动渐进加深的距离：约两个顶栏高度（64px），在整条顶栏滚出视口前完成渐入
+const MASK_RAMP_SCROLL_PX = 120
+
+// 平滑步进：两端斜率为 0，和余弦渐变一样避免拐点被读成一条亮暗带
+function smoothstep(t: number) {
+  const clamped = Math.min(1, Math.max(0, t))
+  return clamped * clamped * (3 - 2 * clamped)
+}
+
+// 用连续滚动进度替代 scrollTop===0 的布尔翻转：靠近顶部时遮罩逐级减淡
+const maskProgress = computed(() => smoothstep(scrollTop.value / MASK_RAMP_SCROLL_PX))
+
 // 雾配方只认「页面自带横幅」：那种底图的亮暗不受主题控制，只能恒用黑雾托住白图标。
 // 不能改认 forceWhiteIcon —— 它在「暗色 + 壁纸」也为真，会让暗色下有无壁纸变成两种配方（#1095）。
 const fadeGradient = computed(() => hasPageBackdrop.value
@@ -91,14 +103,15 @@ const frostedOverlayStyle = computed(() => ({
 
 const solidOverlayStyle = computed(() => ({
   backgroundColor: hasPageBackdrop.value ? 'rgb(0 0 0)' : 'var(--bew-bg)',
-  opacity: props.reachTop ? 0 : SCROLLED_SHADE_ALPHA,
+  opacity: SCROLLED_SHADE_ALPHA * maskProgress.value,
   maskImage: SOLID_OVERLAY_MASK,
   WebkitMaskImage: SOLID_OVERLAY_MASK,
 }))
 
+// 常驻雾层：顶部保持八成，随滚动收紧到全强度
 const fadeGradientStyle = computed(() => ({
   background: fadeGradient.value,
-  opacity: props.reachTop ? 0.8 : 1,
+  opacity: 0.8 + 0.2 * maskProgress.value,
   height: settings.value.enableFrostedGlass
     ? 'var(--bew-top-bar-height)'
     : 'calc(var(--bew-top-bar-height) + var(--bew-space-4))',
@@ -114,7 +127,7 @@ const legacyFadeGradientStyle = computed(() => ({
       ? 'rgb(0 0 0 / 60%), rgb(0 0 0 / 40%) calc(var(--bew-top-bar-height) / 2)'
       : 'color-mix(in oklab, var(--bew-bg), transparent 20%), color-mix(in oklab, var(--bew-bg), transparent 40%) calc(var(--bew-top-bar-height) / 2)'
   }, transparent)`,
-  opacity: props.reachTop ? 0.8 : 1,
+  opacity: 0.8 + 0.2 * maskProgress.value,
   height: 'var(--bew-top-bar-height)',
 }))
 
@@ -124,10 +137,11 @@ const legacyGlassFilter = computed(() => {
   return `blur(${intensity}px)`
 })
 
-const legacyMaskStyle = computed(() =>
-  settings.value.enableFrostedGlass
-    ? { backdropFilter: legacyGlassFilter.value }
-    : undefined)
+// 旧版遮罩改为常挂渲染：毛玻璃档满强度、非毛玻璃压九成底色，透明度跟随滚动进度渐入
+const legacyMaskStyle = computed(() => ({
+  ...(settings.value.enableFrostedGlass ? { backdropFilter: legacyGlassFilter.value } : {}),
+  opacity: (settings.value.enableFrostedGlass ? 1 : 0.9) * maskProgress.value,
+}))
 
 const themeGradientColor = computed(() =>
   // 实验档在毛玻璃下用加深的主题色；旧版三档保持 v1.5.x 的强度。
@@ -255,22 +269,15 @@ function refreshSearchContent() {
     p="x-12" m-auto
     h="$bew-top-bar-height"
   >
-    <!-- 旧版三档：v1.5.x 结构，滚动后必挂遮罩——毛玻璃出白雾，非毛玻璃压实色阴影 -->
+    <!-- 旧版三档：v1.5.x 结构，遮罩常挂、透明度跟随滚动进度渐入——毛玻璃出白雾，非毛玻璃压实色阴影 -->
     <template v-if="useLegacyRendering">
-      <Transition name="fade">
-        <div
-          v-if="!reachTop"
-          class="top-bar-header__legacy-mask"
-          :class="{ 'top-bar-header__legacy-mask--glass': settings.enableFrostedGlass }"
-          :style="legacyMaskStyle"
-        />
-      </Transition>
-
       <div
-        pos="absolute top-0 left-0" w-full
-        pointer-events-none opacity-100 duration-300
-        :style="legacyFadeGradientStyle"
+        class="top-bar-header__legacy-mask"
+        :class="{ 'top-bar-header__legacy-mask--glass': settings.enableFrostedGlass }"
+        :style="legacyMaskStyle"
       />
+
+      <div class="top-bar-header__fog" :style="legacyFadeGradientStyle" />
     </template>
 
     <!-- 渐变：余弦渐变遮罩管线 -->
@@ -281,11 +288,7 @@ function refreshSearchContent() {
         :style="settings.enableFrostedGlass ? frostedOverlayStyle : solidOverlayStyle"
       />
 
-      <div
-        pos="absolute top-0 left-0" w-full
-        pointer-events-none opacity-100 duration-300
-        :style="fadeGradientStyle"
-      />
+      <div class="top-bar-header__fog" :style="fadeGradientStyle" />
     </template>
 
     <!-- Top bar theme color gradient -->
@@ -359,18 +362,29 @@ function refreshSearchContent() {
   width: 100%;
   height: calc(var(--bew-top-bar-height) + var(--bew-space-4));
   pointer-events: none;
+  // 遮罩透明度已随滚动逐帧连续，短线性过渡只抹平离散步进；颜色与滤镜仍走常规时长
   transition:
-    opacity var(--bew-duration-moderate) var(--bew-ease-standard),
+    opacity var(--bew-duration-fast) linear,
     background-color var(--bew-duration-moderate) var(--bew-ease-standard),
     backdrop-filter var(--bew-duration-moderate) var(--bew-ease-standard);
+}
+
+// 常驻雾层：位置固定，只有透明度跟随滚动进度逐帧更新
+.top-bar-header__fog {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  transition: opacity var(--bew-duration-fast) linear;
 }
 
 .top-bar-header__glass-overlay--frosted {
   height: var(--bew-top-bar-height);
 }
 
-// 复刻 v1.5.x 的滚动遮罩：非毛玻璃压九成底色当阴影，毛玻璃换成白雾
-// （模糊半径由 legacyMaskStyle 按全局浓度滑块注入，不用现在的 --bew-filter-glass-1）。
+// 复刻 v1.5.x 的滚动遮罩：非毛玻璃压九成底色当阴影（基础透明度由 legacyMaskStyle 按进度注入），
+// 毛玻璃换成白雾（模糊半径按全局浓度滑块注入，不用现在的 --bew-filter-glass-1）。
 .top-bar-header__legacy-mask {
   position: absolute;
   top: 0;
@@ -379,7 +393,7 @@ function refreshSearchContent() {
   height: var(--bew-top-bar-height);
   pointer-events: none;
   background-color: var(--bew-bg);
-  opacity: 0.9;
+  transition: opacity var(--bew-duration-fast) linear;
   mask-image: linear-gradient(to bottom, rgb(0 0 0 / 100%), rgb(0 0 0 / 100%) 24px, rgb(0 0 0 / 90%) 44px, transparent);
   -webkit-mask-image: linear-gradient(
     to bottom,
@@ -392,7 +406,6 @@ function refreshSearchContent() {
 
 .top-bar-header__legacy-mask--glass {
   background-color: transparent;
-  opacity: 1;
 }
 
 .top-bar-header__side {

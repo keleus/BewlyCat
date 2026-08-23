@@ -34,6 +34,8 @@ export interface BewlyAppProvider {
   isHomeTabSwitching: Ref<boolean>
   scrollViewportRef: Ref<HTMLElement | null>
   reachTop: Ref<boolean>
+  // 当前页面滚动位置（文档滚动或 Bewly 视口滚动，单位 px）；供顶栏遮罩等需要连续强度的场景使用
+  scrollTop: Ref<number>
   searchFocusOverlayActive: Ref<boolean>
   mainAppRef: Ref<HTMLElement>
   handleReachBottom: Ref<(() => void) | undefined>

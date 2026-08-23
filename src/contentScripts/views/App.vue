@@ -1006,6 +1006,7 @@ const handleThrottledPageUnRefresh = useThrottleFn(() => handleUndoRefresh.value
 const handleThrottledPageForwardRefresh = useThrottleFn(() => handleForwardRefresh.value?.(), 500)
 const topBarRef = ref()
 const reachTop = ref<boolean>(true)
+const scrollTop = ref<number>(0)
 
 watch(isHomeTabSwitching, (switching) => {
   if (switching)
@@ -1292,6 +1293,7 @@ function handleMetaHomeKeydown(e: KeyboardEvent) {
 }
 
 function handleDocumentScroll() {
+  scrollTop.value = window.scrollY
   reachTop.value = window.scrollY <= 0
 }
 
@@ -1346,6 +1348,8 @@ onMounted(() => {
   }
 
   document.addEventListener('scroll', handleDocumentScroll, { passive: true })
+  // 刷新后停在半页时，首帧就要有正确的滚动状态（reachTop 与遮罩强度）
+  handleDocumentScroll()
   void promptSettingsMigrationIfNeeded()
 })
 
@@ -1438,19 +1442,20 @@ function handleOsScroll(_instance: any, event: Event) {
 
   // 使用 RAF 将所有 DOM 读取合并到下一帧
   rafId = requestAnimationFrame(() => {
-    const scrollTop = latestScrollTop
+    const frameScrollTop = latestScrollTop
 
-    emitter.emit(OVERLAY_SCROLL_BAR_SCROLL, scrollTop)
+    emitter.emit(OVERLAY_SCROLL_BAR_SCROLL, frameScrollTop)
     if (settings.value.enableTopBar && settings.value.useOriginalBilibiliTopBar)
-      setOriginalBilibiliTopBarScrolled(document, scrollTop > 0)
+      setOriginalBilibiliTopBarScrolled(document, frameScrollTop > 0)
 
     // 只在滚动距离超过阈值时更新状态
-    const scrollDelta = Math.abs(scrollTop - lastScrollTop)
+    const scrollDelta = Math.abs(frameScrollTop - lastScrollTop)
     if (scrollDelta > 50) {
-      lastScrollTop = scrollTop
+      lastScrollTop = frameScrollTop
     }
 
-    reachTop.value = scrollTop === 0
+    scrollTop.value = frameScrollTop
+    reachTop.value = frameScrollTop === 0
 
     // IntersectionObserver 只在相交状态变化时回调，dock 切页等时机可能丢失边缘事件
     // （如切走时哨兵处于相交中，切回后状态未发生跳变），滚动时按几何位置兜底触发
@@ -1596,6 +1601,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
   mainAppRef,
   scrollViewportRef,
   reachTop,
+  scrollTop,
   searchFocusOverlayActive,
   handleBackToTop,
   handlePageRefresh,
