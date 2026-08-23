@@ -1,6 +1,5 @@
-// 顶栏遮罩会越过栏体继续向下渐隐（TopBarHeader 的 SOLID_OVERLAY_MASK 高 64 + 16px）。
-// 遮罩是绝对定位的，不撑高 .top-bar，所以 .top-bar 的高度仍是 var(--bew-top-bar-height)，
-// translateY(-100%) 只退 64px，屏幕顶端会留下遮罩最后 16px（该处强度约 50%）。
+// 关闭毛玻璃时，常驻雾层会越过栏体再向下延伸 16px完成渐隐。
+// 雾层是绝对定位的，不撑高 .top-bar，因此退场位移需要额外包含这 16px。
 $top-bar-retract: calc(-1 * (var(--bew-top-bar-height) + var(--bew-space-4)));
 
 .top-bar-enter-active,

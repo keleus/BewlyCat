@@ -1,6 +1,9 @@
 // 搜索页面
 export const SEARCH_PAGE_URL = /^https?:\/\/search\.bilibili\.com(?:\/|$).*/
 
+// 话题详情页
+export const TOPIC_DETAIL_URL = /^https?:\/\/(?:www\.)?bilibili\.com\/v\/topic\/detail(?:[/?#]|$).*/
+
 // 视频相关页面
 export const VIDEO_PAGE_URL = /^https?:\/\/(?:www\.)?bilibili\.com\/video.*/
 export const VIDEO_LIST_URL = /^https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/

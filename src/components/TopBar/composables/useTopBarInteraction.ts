@@ -6,6 +6,7 @@ import {
   CHANNEL_PAGE_URL,
   SEARCH_PAGE_URL,
   SPACE_URL,
+  TOPIC_DETAIL_URL,
   VIDEO_PAGE_URL,
 } from '~/components/TopBar/constants/urls'
 import { useBewlyApp } from '~/composables/useAppProvider'
@@ -64,6 +65,12 @@ export function useTopBarInteraction() {
   useEventListener(window, 'pushstate', updateCurrentLocationHref)
   useEventListener(window, 'popstate', updateCurrentLocationHref)
 
+  // 原生搜索页与话题详情页的顶部都不用黑色阴影托底；
+  // 自动档在这两类页面固定选择白雾分支。
+  const preferWhiteFogInAuto = computed(() =>
+    SEARCH_PAGE_URL.test(currentLocationHref.value)
+    || TOPIC_DETAIL_URL.test(currentLocationHref.value))
+
   // 页面自己在顶栏底下铺了大图（原生首页、频道页、空间页、账号页）。
   // 这类底图的亮暗不受主题控制，只能恒用深色阴影压住，白图标才读得出来。
   const hasPageBanner = computed((): boolean => {
@@ -121,7 +128,7 @@ export function useTopBarInteraction() {
     if (settings.value.topBarStyle === 'expFrostedGlass')
       return false
 
-    return hasPageBanner.value
+    return preferWhiteFogInAuto.value ? false : hasPageBanner.value
   })
 
   const hasWallpaperBackdrop = computed((): boolean =>
@@ -141,16 +148,13 @@ export function useTopBarInteraction() {
     if (style === 'frostedGlass')
       return false
     if (style === 'default')
-      return hasPageBanner.value || hasWallpaper.value
+      return !preferWhiteFogInAuto.value && (hasPageBanner.value || hasWallpaper.value)
 
     // 实验三档：底图恒用阴影，壁纸只在暗色模式下才是黑雾。
     return hasPageBackdrop.value || (hasWallpaperBackdrop.value && isDark.value)
   })
 
   const showSearchBar = computed((): boolean => {
-    const currentUrl = currentLocationHref.value
-    const isSearchPage = SEARCH_PAGE_URL.test(currentUrl)
-
     if (isHomePage()) {
       if (settings.value.useOriginalBilibiliHomepage)
         return true
@@ -170,11 +174,6 @@ export function useTopBarInteraction() {
       if (settings.value.useSearchPageModeOnHomePage && activatedPage.value === AppPage.Home && reachTop?.value)
         return false
     }
-    else if (isSearchPage) {
-      // 原生搜索页面本身已有搜索框，隐藏顶栏搜索框避免重复
-      return false
-    }
-
     return true
   })
 

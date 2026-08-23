@@ -1,3 +1,8 @@
+.searchPage.remove-top-bar.remove-custom-navbar .search-fixed-header.search-sticky-header {
+  // BewlyCat 顶栏已提供搜索、建议与清空操作，不再保留 B 站滚动后的重复吸顶搜索栏。
+  display: none !important;
+}
+
 .bewly-design.searchPage {
   body {
     background-color: var(--bew-bg) !important;
