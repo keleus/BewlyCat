@@ -204,6 +204,7 @@ const detailImageViewerPanY = ref(0)
 const detailImageViewerSource = shallowRef<Window | null>(null)
 let detailImageViewerTrigger: HTMLElement | null = null
 let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
+let detailFocusRetryTimer: ReturnType<typeof setTimeout> | null = null
 const layoutRef = ref<HTMLElement | null>(null)
 const gridRef = ref<HTMLElement | null>(null)
 /** 按当前实际列数限制单张动态卡片的最大宽度。 */
@@ -880,6 +881,39 @@ function clearDetailLoadTimer() {
   }
 }
 
+function clearDetailFocusRetryTimer() {
+  if (detailFocusRetryTimer) {
+    clearTimeout(detailFocusRetryTimer)
+    detailFocusRetryTimer = null
+  }
+}
+
+function focusDetailIframe(retryCount = 3) {
+  clearDetailFocusRetryTimer()
+
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const iframe = detailIframeRef.value
+      if (!iframe || !selectedMoment.value || !detailFrameUrl.value)
+        return
+
+      iframe.focus({ preventScroll: true })
+      try {
+        iframe.contentWindow?.focus()
+      }
+      catch {
+        // 跨域 iframe 可能拒绝直接聚焦 window；此时保留 iframe 元素焦点。
+      }
+
+      if (retryCount > 0) {
+        detailFocusRetryTimer = setTimeout(() => {
+          focusDetailIframe(retryCount - 1)
+        }, 120)
+      }
+    })
+  })
+}
+
 function isPlayerMoment(moment: DisplayMoment | null | undefined) {
   return Boolean(moment?.isVideo || moment?.isLive)
 }
@@ -1492,6 +1526,9 @@ function handleDetailIframeLoad(event: Event) {
     }
   }
 
+  // 弹窗打开后把焦点移入 iframe，确保播放器、图集与 ESC 快捷键立即生效。
+  focusDetailIframe()
+
   if (iframe)
     startDetailPlayerModeWatch(iframe)
 
@@ -1509,6 +1546,7 @@ function handleDetailIframeLoad(event: Event) {
 
 /** 关闭详情时销毁 iframe 文档与媒体，避免内存堆积 */
 function destroyDetailIframe() {
+  clearDetailFocusRetryTimer()
   clearDetailPlayerModeWatch()
   setDetailPlayerImmersive(false)
 
