@@ -917,6 +917,8 @@ export const useTopBarStore = defineStore('topBar', () => {
                 rid: item.rid,
                 isCollaborative: !!item.authors,
                 authors: item.authors,
+                // TransitionGroup 子元素需要唯一 key
+                id_str: item.rid != null ? `${item.type}-${item.rid}` : item.jump_url,
               }
 
               moments.push(momentItem)
@@ -1060,6 +1062,8 @@ export const useTopBarStore = defineStore('topBar', () => {
               cover: item.pic,
               link: item.link,
               authorJumpUrl: item.link,
+              // TransitionGroup 子元素需要唯一 key
+              id_str: item.roomid ? `live-${item.roomid}` : item.link,
             }),
             ),
           )
