@@ -23,7 +23,7 @@ import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavorite
 import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, applyRememberedPlaybackRate, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, startPlaybackRateMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyPreservedOrDefaultCustomPlay, applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
-import { getPluginSearchResultsUrl, navigateToPluginSearchResults, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
+import { getPluginSearchResultsUrl, navigateToPluginSearchResultsInPlace, openSearchResults, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -278,7 +278,9 @@ else if (shouldInitializeContentScript) {
 
       event.preventDefault()
       event.stopPropagation()
-      navigateToPluginSearchResults(keyword)
+      // 就地打开模式仍原地切到插件搜索结果页；新标签页 / 后台标签页模式按「搜索栏链接打开行为」打开
+      if (!navigateToPluginSearchResultsInPlace(keyword))
+        openSearchResults(keyword)
     }, true)
   }
 

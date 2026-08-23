@@ -2,12 +2,9 @@
 import { storeToRefs } from 'pinia'
 
 import ALink from '~/components/ALink.vue'
-import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
-import { isHomePage } from '~/utils/main'
-import { buildKeywordSearchUrl, navigateToPluginSearchResults } from '~/utils/searchNavigation'
-import { openLinkInBackground } from '~/utils/tabs'
+import { buildKeywordSearchUrl, navigateToPluginSearchResultsInPlace, openSearchResults } from '~/utils/searchNavigation'
 
 interface HotSearchItem {
   keyword: string
@@ -26,22 +23,10 @@ function handleHotSearchClick(keyword: string) {
     return
 
   searchKeyword.value = normalized
-  if (navigateToPluginSearchResults(normalized))
+  if (navigateToPluginSearchResultsInPlace(normalized))
     return
 
-  const searchUrl = buildKeywordSearchUrl(normalized)
-  if (settings.value.searchBarLinkOpenMode === 'background') {
-    void openLinkInBackground(searchUrl)
-    return
-  }
-
-  let target = '_blank'
-  if (settings.value.searchBarLinkOpenMode === 'currentTabIfNotHomepage')
-    target = isHomePage() ? '_blank' : '_self'
-  else if (settings.value.searchBarLinkOpenMode === 'currentTab')
-    target = '_self'
-
-  window.open(searchUrl, target)
+  openSearchResults(normalized)
 }
 
 async function loadHotSearch() {

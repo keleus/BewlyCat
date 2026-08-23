@@ -9,9 +9,7 @@ import { resolveSearchBarCharacterUrl } from '~/constants/imgs'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
-import { isHomePage } from '~/utils/main'
-import { buildKeywordSearchUrl, navigateToPluginSearchResults } from '~/utils/searchNavigation'
-import { openLinkInBackground } from '~/utils/tabs'
+import { buildKeywordSearchUrl, navigateToPluginSearchResultsInPlace, openSearchResults } from '~/utils/searchNavigation'
 
 import type { HistoryItem, SuggestionItem, SuggestionResponse } from './searchHistoryProvider'
 import {
@@ -458,34 +456,16 @@ async function navigateToSearchResultPage(rawKeyword: string) {
     return
   }
 
-  // 开启插件搜索结果页时，优先切到扩展内搜索结果，避免落到 B 站原站搜索页
-  if (navigateToPluginSearchResults(normalized)) {
+  // 开启插件搜索结果页且为就地打开模式时，优先切到扩展内搜索结果，避免落到 B 站原站搜索页；
+  // 其余情况按「搜索栏链接打开行为」统一打开，开启插件搜索页时链接同样指向插件搜索结果页
+  if (navigateToPluginSearchResultsInPlace(normalized)) {
     emit('search', normalized)
     isFocus.value = false
     resetKeyboardSelection()
     return
   }
 
-  // 不在搜索页时，遵循顶栏链接行为设置
-  const searchUrl = buildKeywordHref(normalized)
-
-  if (settings.value.searchBarLinkOpenMode === 'background') {
-    // 使用后台标签页打开
-    void openLinkInBackground(searchUrl)
-  }
-  else {
-    // 使用 window.open 打开
-    let target = '_blank'
-    if (settings.value.searchBarLinkOpenMode === 'currentTabIfNotHomepage')
-      target = isHomePage() ? '_blank' : '_self'
-    else if (settings.value.searchBarLinkOpenMode === 'currentTab')
-      target = '_self'
-    else if (settings.value.searchBarLinkOpenMode === 'newTab')
-      target = '_blank'
-
-    window.open(searchUrl, target)
-  }
-
+  openSearchResults(normalized)
   resetKeyboardSelection()
 }
 
