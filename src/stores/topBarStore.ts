@@ -881,16 +881,13 @@ export const useTopBarStore = defineStore('topBar', () => {
               })
             void recordUploaderLatestVideoTimes(latestVideoTimes, 'topbar-pop')
 
-            // 合并联合投稿视频 - 只对视频类型进行合并
+            // 合并联合投稿视频：按接口返回的时间顺序遍历处理，
+            // 专栏（type 64）无 bvid 会原样保留在原位，仅对视频（type 8）
+            // 做联合投稿合并去重；不能把视频和专栏分开后再拼接，
+            // 否则专栏会被整体排到列表尾部，打乱时间序
             let processedItems = filteredItems
-            if (selectedType === 'video') {
-              // 只合并视频，不合并专栏
-              const videos = filteredItems.filter((item: any) => item.type === 8)
-              const articles = filteredItems.filter((item: any) => item.type === 64)
-              const mergedVideos = mergeCollaborativeVideos(videos)
-              // 将合并后的视频和专栏合并到一起
-              processedItems = [...mergedVideos, ...articles]
-            }
+            if (selectedType === 'video')
+              processedItems = mergeCollaborativeVideos(filteredItems)
 
             // 如果是第一次加载（offset为空），需要根据过滤和合并后的实际数量调整 newMomentsCount
             // 因为过滤专栏和合并联合投稿会导致显示的条目数量少于原始的 update_num

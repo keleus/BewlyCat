@@ -132,7 +132,7 @@ defineExpose({
     h="[calc(100vh-100px)]" max-h-500px
     important-overflow-y-overlay
     bg="$bew-elevated"
-    w="380px"
+    w="430px"
     pos="relative"
     shadow="$bew-shadow-3"
     border="1 $bew-popover-border-color"
@@ -225,7 +225,7 @@ defineExpose({
             <div class="bew-top-bar-media-copy">
               <h3
                 :title="moment.title"
-                class="bew-top-bar-media-title bew-top-bar-media-title--emphasis"
+                class="bew-top-bar-media-title moments-pop__title"
               >
                 {{ moment.title }}
               </h3>
@@ -383,6 +383,19 @@ defineExpose({
 
 .moments-pop__cover {
   overflow: visible;
+}
+
+// 标题不截断行数、完整展示；字号/行高对齐 B 站原网页弹层标题实测值
+// （14/20，token 见 variables.scss 的 --bew-top-bar-moments-*，
+// 字重与发布时间均沿用全局样式不做调整），此处仅覆盖两行截断。
+.moments-pop .moments-pop__title {
+  display: block;
+  overflow: visible;
+  text-overflow: unset;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  font-size: var(--bew-top-bar-moments-title-size);
+  line-height: var(--bew-top-bar-moments-title-line-height);
 }
 
 .moments-pop__watch-later :deep(.b-tooltip--placement-left) {
