@@ -557,25 +557,21 @@ else if (shouldInitializeContentScript) {
     videoOwnerAvatarReadyDeadline = Date.now() + videoOwnerAvatarReadyTimeout
   }
 
-  // 延迟添加稍后再看按钮
+  // 添加稍后再看按钮
   function scheduleAddWatchLaterButton() {
   // 如果已经添加过或者设置未启用，直接返回
     if (watchLaterButtonAdded || !settings.value.externalWatchLaterButton) {
       return
     }
 
-    // 等待播放器模式调整和滚动完成
-    // RetryTask最多20次*500ms=10s，滚动最多3s，再加1s保险 = 14s
-    // 实际上大部分情况会更快完成，这里取一个保守值
-    setTimeout(() => {
-      if (!watchLaterButtonAdded && settings.value.externalWatchLaterButton) {
-        import('~/utils/watchLaterButton').then(({ addWatchLaterButton }) => {
-          if (!settings.value.externalWatchLaterButton)
-            return
-          watchLaterButtonAdded = addWatchLaterButton()
-        }).catch(err => console.error('添加稍后再看按钮失败:', err))
-      }
-    }, 5000) // 5秒后添加，确保页面已完全稳定
+    // 与其他播放器伴随设置在同一时间线触发；实际挂载时机由工具栏 DOM 就绪决定
+    // （见 mountWatchLaterButtonWhenToolbarReady），不再盲等固定延迟
+    import('~/utils/watchLaterButton')
+      .then(({ mountWatchLaterButtonWhenToolbarReady }) => mountWatchLaterButtonWhenToolbarReady())
+      .then((added) => {
+        watchLaterButtonAdded = added
+      })
+      .catch(err => console.error('添加稍后再看按钮失败:', err))
   }
 
   // 初始化随机播放功能
@@ -1397,9 +1393,10 @@ else if (shouldInitializeContentScript) {
           scheduleAddWatchLaterButton()
         }
         else {
-        // 移除稍后再看按钮
-          const existingButton = document.querySelector('.bewly-watch-later-btn')
-          existingButton?.remove()
+        // 移除稍后再看按钮，并取消尚未完成的挂载等待
+          import('~/utils/watchLaterButton')
+            .then(({ removeWatchLaterButton }) => removeWatchLaterButton())
+            .catch(err => console.error('移除稍后再看按钮失败:', err))
           watchLaterButtonAdded = false
         }
       }

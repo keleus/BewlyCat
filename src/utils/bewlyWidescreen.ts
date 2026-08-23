@@ -30,6 +30,7 @@ interface BewlyWidescreenState {
   upSlot: HTMLElement
   toolbarSlot: HTMLElement
   descriptionSlot: HTMLElement
+  tagsSlot: HTMLElement
   panels: Record<BewlyWidescreenTab, HTMLElement>
   tabButtons: Record<BewlyWidescreenTab, HTMLButtonElement>
   sidebarToggleButton: HTMLButtonElement
@@ -149,6 +150,10 @@ const selectors = {
   description: [
     '#v_desc',
     '.video-desc-container',
+  ],
+  tags: [
+    '.video-tag-container',
+    '#v_tag',
   ],
   danmakuInput: [
     '.bpx-player-sending-bar',
@@ -1018,7 +1023,9 @@ function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
   toolbarSlot.className = 'bewly-widescreen-action-slot'
   const descriptionSlot = document.createElement('div')
   descriptionSlot.className = 'bewly-widescreen-description-slot'
-  sidebarTop.append(createSidebarToolbar(), infoSlot, upSlot, toolbarSlot, descriptionSlot)
+  const tagsSlot = document.createElement('div')
+  tagsSlot.className = 'bewly-widescreen-tags-slot'
+  sidebarTop.append(createSidebarToolbar(), infoSlot, upSlot, toolbarSlot, descriptionSlot, tagsSlot)
 
   const tablist = document.createElement('div')
   tablist.className = 'bewly-widescreen-tabs'
@@ -1054,7 +1061,7 @@ function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
   root.appendChild(stage)
   document.body.appendChild(root)
 
-  return { root, playerSlot, playerFrame, danmakuDock, sidebarEl: sidebar, sidebarTop, infoSlot, upSlot, toolbarSlot, descriptionSlot, panels, tabButtons, sidebarToggleButton }
+  return { root, playerSlot, playerFrame, danmakuDock, sidebarEl: sidebar, sidebarTop, infoSlot, upSlot, toolbarSlot, descriptionSlot, tagsSlot, panels, tabButtons, sidebarToggleButton }
 }
 
 function injectLayoutStyle() {
@@ -1068,8 +1075,7 @@ function injectLayoutStyle() {
     body.${BODY_CLASS} #biliMainHeader,
     body.${BODY_CLASS} #bili-header-container,
     body.${BODY_CLASS} .fixed-sidenav-storage,
-    body.${BODY_CLASS} .mini-player-window,
-    body.${BODY_CLASS} .bewly-watch-later-btn {
+    body.${BODY_CLASS} .mini-player-window {
       display: none !important;
     }
 
@@ -1644,6 +1650,37 @@ function injectLayoutStyle() {
       display: none;
     }
 
+    #${ROOT_ID} .bewly-widescreen-tags-slot {
+      margin-top: 8px;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-tags-slot:empty {
+      display: none;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-tags-slot .video-tag-container {
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    /* 原生 .tag 靠 float + overflow hidden 换行，窄侧栏改用 flex 换行，避免高度塌陷 */
+    #${ROOT_ID} .bewly-widescreen-tags-slot .tag-panel {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 8px !important;
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-tags-slot .tag-panel .tag {
+      float: none !important;
+      margin: 0 !important;
+    }
+
     #${ROOT_ID} .bewly-widescreen-description-slot.is-empty {
       display: none;
     }
@@ -1751,20 +1788,20 @@ function injectLayoutStyle() {
       gap: 0;
     }
 
+    /* 左侧四组内容自适应宽度，不再撑满整行，让稍后再看按钮得以紧随分享之后 */
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left {
       display: block !important;
-      width: 100% !important;
       min-width: 0 !important;
-      flex: 1 1 auto !important;
+      flex: 0 1 auto !important;
       overflow: visible !important;
     }
 
+    /* 四组操作按 B 站原生排布在左侧聚拢（不再用等分 grid 拉开），项宽内容自适应、
+       图标缩至 22px（对中补偿见下方图标块注释）。B 站三连动画锚定在 wrap 左上角、
+       依赖「图标位于 wrap 左缘 + 已知图标尺寸」，不要改回等分居中 */
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-main {
-      display: grid !important;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      display: flex !important;
       align-items: center !important;
-      justify-items: center !important;
-      gap: 0;
       width: 100% !important;
       min-width: 0 !important;
       overflow: visible !important;
@@ -1772,10 +1809,8 @@ function injectLayoutStyle() {
 
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap {
       display: flex !important;
-      justify-content: center !important;
       position: relative !important;
       min-width: 0 !important;
-      width: 100% !important;
       overflow: visible !important;
     }
 
@@ -1784,11 +1819,12 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-action-slot .bewly-watch-later-btn {
       display: inline-flex !important;
       align-items: center !important;
-      justify-content: center !important;
-      gap: 4px !important;
+      justify-content: flex-start !important;
       position: relative !important;
       flex: 0 1 auto !important;
+      width: auto !important;
       min-width: 0 !important;
+      height: auto !important;
       margin: 0 !important;
       padding: 0 !important;
       border: 0 !important;
@@ -1885,6 +1921,16 @@ function injectLayoutStyle() {
       color: var(--bew-theme-color, #00aeec) !important;
     }
 
+    /* 稍后再看按钮 hover 用中性色加深，避免与「已添加」的主题色语义混淆；
+       已添加状态下 hover 保持主题色 */
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-right-item.bewly-watch-later-btn:hover {
+      color: var(--bewly-widescreen-text-primary) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-right-item.bewly-watch-later-btn.is-active:hover {
+      color: var(--bew-theme-color, #00aeec) !important;
+    }
+
     #${ROOT_ID} .bewly-widescreen-action-slot .on,
     #${ROOT_ID} .bewly-widescreen-action-slot .active,
     #${ROOT_ID} .bewly-widescreen-action-slot .liked,
@@ -1904,16 +1950,31 @@ function injectLayoutStyle() {
       fill: var(--bew-theme-color, #00aeec) !important;
     }
 
+    /* 图标整体缩至 22px（原生 28px），组间距沿用 B 站原生 wrap margin。
+       B 站三连动画的固定负偏移按 28px 图标设计，缩小后以图标中心重新对中：
+       项内容自适应宽高，图标中心恒为 (11px, 14px)（28px 行高内垂直居中），
+       进度环 34/42px、连击特效 92px 等尺寸差异由 translate 抵消 */
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-item-icon {
-      width: 18px !important;
-      height: 18px !important;
-      margin-right: 0 !important;
-      flex: 0 0 auto !important;
+      width: 22px !important;
+      height: 22px !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-action-slot .video-like-icon {
-      width: 19px !important;
-      height: 19px !important;
+    #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > canvas,
+    #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > .svga-center {
+      position: absolute !important;
+      left: 11px !important;
+      top: 14px !important;
+      translate: -50% -50% !important;
+      pointer-events: none !important;
+    }
+
+    /* 仅水平对中：UP 三连立绘与点赞特效的垂直偏移沿用 B 站自身取值 */
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item .svga-top,
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left > .selfdef-triple-anime {
+      position: absolute !important;
+      left: 11px !important;
+      translate: -50% 0 !important;
+      pointer-events: none !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-item-text,
@@ -1924,18 +1985,44 @@ function injectLayoutStyle() {
       display: inline-flex !important;
       align-items: center !important;
       margin-left: 0 !important;
-      max-width: 52px !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      white-space: nowrap !important;
     }
 
+    /* 宽屏下右侧只保留插件的稍后再看按钮（随 .video-toolbar-right 一起被搬入 slot），
+       用 order 置于四组操作之前（行首），间距镜像 B 站原生组间距（1681px 以上 18px）；
+       原生「更多」等其余入口维持隐藏 */
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-right {
+      display: flex !important;
+      align-items: center !important;
+      flex: 0 0 auto !important;
+      order: -1 !important;
+      margin: 0 8px 0 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border: 0 !important;
+      box-shadow: none !important;
+    }
+
+    @media (min-width: 1681px) {
+      #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-right {
+        margin-right: 18px !important;
+      }
+    }
+
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-right > :not(.bewly-watch-later-btn) {
       display: none !important;
     }
 
+    /* 稍后再看按钮与四组操作项统一：内容自适应尺寸 + 22px 图标，
+       颜色 / hover / 激活态复用上方共享项规则（含 .is-active 主题色） */
     #${ROOT_ID} .bewly-widescreen-action-slot .bewly-watch-later-btn {
-      display: none !important;
+      justify-content: center !important;
+      min-width: 24px !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-action-slot .bewly-watch-later-btn .bewly-watch-later-btn__icon {
+      width: 22px !important;
+      height: 22px !important;
+      font-size: 22px !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-sidebar-top .up-panel-container,
@@ -2728,6 +2815,8 @@ function fillSidebar(currentState: BewlyWidescreenState) {
     currentState.descriptionExpanded = false
   syncDescription(currentState)
 
+  moveOrReplaceNode(selectors.tags, currentState.tagsSlot, currentState.movedNodes)
+
   moveDanmakuInput(currentState)
   const commentResult = moveCommentRoot(currentState.panels.comment, currentState.movedNodes)
   if (!commentResult.found) {
@@ -2861,7 +2950,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
   if (!player)
     return false
 
-  const { root, playerSlot, playerFrame, danmakuDock, sidebarEl, sidebarTop, infoSlot, upSlot, toolbarSlot, descriptionSlot, panels, tabButtons, sidebarToggleButton } = createRoot(sidebarPosition)
+  const { root, playerSlot, playerFrame, danmakuDock, sidebarEl, sidebarTop, infoSlot, upSlot, toolbarSlot, descriptionSlot, tagsSlot, panels, tabButtons, sidebarToggleButton } = createRoot(sidebarPosition)
   const styleEl = injectLayoutStyle()
   const movedNodes: MovedNode[] = []
 
@@ -2876,6 +2965,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
     upSlot,
     toolbarSlot,
     descriptionSlot,
+    tagsSlot,
     panels,
     tabButtons,
     sidebarToggleButton,

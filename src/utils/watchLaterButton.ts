@@ -8,6 +8,14 @@ import { getCSRF } from '~/utils/main'
 const BUTTON_CLASS = 'bewly-watch-later-btn'
 const WATCH_LATER_ICON_CLASS = 'i-mingcute:carplay-line'
 
+// B 站工具栏由前端水合渲染，出现时间不定；超过该时长仍未出现则放弃本次挂载
+const TOOLBAR_READY_TIMEOUT = 15000
+
+let pendingToolbarObserver: MutationObserver | undefined
+let pendingToolbarTimer: ReturnType<typeof setTimeout> | undefined
+let pendingToolbarResolve: ((mounted: boolean) => void) | undefined
+let hoverStyleInjected = false
+
 export interface VideoIds {
   bvid?: string
   aid?: number
@@ -225,6 +233,7 @@ async function toggleWatchLater(button: HTMLButtonElement, ids: VideoIds, state:
 }
 
 function createButton(ids: VideoIds): HTMLButtonElement {
+  ensureHoverStyle()
   const button = document.createElement('button')
   button.type = 'button'
   button.className = `video-toolbar-right-item ${BUTTON_CLASS}`
@@ -314,6 +323,31 @@ async function handleButtonClick(mounted: MountedWatchLaterButton) {
 }
 
 /**
+ * 注入按钮的 hover 语义样式（一次即可）：
+ * B 站原生的 .video-toolbar-right-item:hover 会把 hover 染成主题色，
+ * 与「已添加稍后再看」的主题色语义重复，这里改为中性色加深；
+ * 已添加状态下 hover 保持主题色。宽屏模式有更高优先级的专属规则。
+ */
+function ensureHoverStyle() {
+  if (hoverStyleInjected)
+    return
+  hoverStyleInjected = true
+
+  const style = document.createElement('style')
+  style.dataset.bewlyWatchLaterHover = ''
+  style.textContent = `
+    .bewly-watch-later-btn:hover {
+      color: var(--text1, #18191c) !important;
+    }
+
+    .bewly-watch-later-btn.is-active:hover {
+      color: var(--bew-theme-color, var(--brand_blue, #00aeec)) !important;
+    }
+  `
+  document.head.appendChild(style)
+}
+
+/**
  * 添加稍后再看按钮到视频页面。
  * @returns 是否已找到工具栏并成功插入（或复用）按钮
  */
@@ -329,4 +363,61 @@ export function addWatchLaterButton(): boolean {
   existingButton?.remove()
 
   return Boolean(mountWatchLaterButton(ids))
+}
+
+/**
+ * 结束当前的挂载等待，并以其结果 settle 对应的 Promise。
+ * 重复 settle 无害（Promise 忽略后续 resolve）。
+ */
+function stopWaitingForToolbar(mounted = false) {
+  pendingToolbarObserver?.disconnect()
+  pendingToolbarObserver = undefined
+  if (pendingToolbarTimer) {
+    clearTimeout(pendingToolbarTimer)
+    pendingToolbarTimer = undefined
+  }
+  const resolve = pendingToolbarResolve
+  pendingToolbarResolve = undefined
+  resolve?.(mounted)
+}
+
+/**
+ * 在工具栏 DOM 就绪后立即挂载按钮，替代旧的固定延迟一次性尝试：
+ * 工具栏已渲染则同步挂载；否则监听其出现，期间每次调用会替换旧等待，超时放弃。
+ * 与播放器伴随设置在同一时间线触发，实际挂载时机由 DOM 就绪决定。
+ * @returns 是否已成功挂载（false 表示设置关闭或超时放弃）
+ */
+export function mountWatchLaterButtonWhenToolbarReady(): Promise<boolean> {
+  if (!settings.value.externalWatchLaterButton)
+    return Promise.resolve(false)
+
+  const mounted = addWatchLaterButton()
+  stopWaitingForToolbar(mounted)
+  if (mounted)
+    return Promise.resolve(true)
+
+  return new Promise((resolve) => {
+    pendingToolbarResolve = resolve
+    pendingToolbarObserver = new MutationObserver((mutations) => {
+      // 工具栏由 B 站 Vue 水合插入，仅在存在新增节点时尝试，避免空回调开销
+      if (!mutations.some(mutation => mutation.addedNodes.length > 0))
+        return
+      stopWaitingForToolbar(
+        settings.value.externalWatchLaterButton && addWatchLaterButton(),
+      )
+    })
+    pendingToolbarObserver.observe(document.body, { childList: true, subtree: true })
+
+    pendingToolbarTimer = setTimeout(() => {
+      stopWaitingForToolbar(false)
+    }, TOOLBAR_READY_TIMEOUT)
+  })
+}
+
+/**
+ * 移除按钮并取消未完成的挂载等待（设置关闭时调用）。
+ */
+export function removeWatchLaterButton() {
+  stopWaitingForToolbar(false)
+  document.querySelector(`.${BUTTON_CLASS}`)?.remove()
 }
