@@ -202,7 +202,7 @@ settings:
   group_video_card: 影片卡片
   group_video_card_display: 顯示與預覽
   group_video_card_content: 卡片內容
-  group_video_card_content_desc: 自訂影片卡片上各項資訊與操作的顯示。
+  group_video_card_content_desc: 自訂影片卡片上各項資訊與操作的顯示，實際顯示元素以介面下發資料為準。
   group_video_card_context_menu: 更多選單
   group_video_card_context_menu_desc: 選擇點擊影片卡片更多按鈕後顯示的選單選項。
   video_card_context_menu_region_recommendation: 推薦
@@ -494,7 +494,7 @@ settings:
   only_cover_video_preview: 僅封面影片預覽
   show_video_card_author_avatar: 顯示使用者頭像
   show_video_card_author_name: 顯示使用者暱稱
-  show_video_card_video_tag: 顯示影片標籤
+  show_video_card_video_tag: 顯示影片標籤（搜尋結果頁）
   show_video_card_video_tag_desc: 顯示搜尋頁等情境提供的影片分類標籤。
   show_video_card_recommend_tag: 顯示插件計算的推薦標籤
   show_video_card_recommend_tag_desc: 顯示插件計算的標籤，如「高讚」、「高互動」、「百萬播放」等

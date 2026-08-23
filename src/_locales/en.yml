@@ -202,7 +202,7 @@ settings:
   group_video_card: Video Card
   group_video_card_display: Display & Preview
   group_video_card_content: Card Content
-  group_video_card_content_desc: Choose which information and actions appear on video cards.
+  group_video_card_content_desc: Choose which information and actions appear on video cards. The elements actually shown depend on the data returned by the API.
   group_video_card_context_menu: More Menu
   group_video_card_context_menu_desc: Choose which options appear after clicking a video card's more button.
   video_card_context_menu_region_recommendation: Recommend
@@ -479,7 +479,7 @@ settings:
   only_cover_video_preview: Preview videos only when hovering the cover
   show_video_card_author_avatar: Show uploader avatar
   show_video_card_author_name: Show uploader name
-  show_video_card_video_tag: Show video tags
+  show_video_card_video_tag: Show video tags (search results page)
   show_video_card_video_tag_desc: Show video category tags provided on search and other pages.
   show_video_card_recommend_tag: Show plugin-calculated recommendation tags
   show_video_card_recommend_tag_desc: Display tags calculated by the plugin, such as "High Engagement", "Popular", etc.

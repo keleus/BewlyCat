@@ -202,7 +202,7 @@ settings:
   group_video_card: 视频卡片
   group_video_card_display: 显示与预览
   group_video_card_content: 卡片内容
-  group_video_card_content_desc: 自定义视频卡片上各项信息与操作的显示。
+  group_video_card_content_desc: 自定义视频卡片上各项信息与操作的显示，实际显示元素以接口下发数据为准。
   group_video_card_context_menu: 更多菜单
   group_video_card_context_menu_desc: 选择点击视频卡片更多按钮后显示的菜单选项。
   video_card_context_menu_region_recommendation: 推荐
@@ -523,7 +523,7 @@ settings:
   only_cover_video_preview: 仅封面视频预览
   show_video_card_author_avatar: 显示用户头像
   show_video_card_author_name: 显示用户昵称
-  show_video_card_video_tag: 显示视频标签
+  show_video_card_video_tag: 显示视频标签（搜索结果页）
   show_video_card_video_tag_desc: 显示搜索页等场景提供的视频分类标签。
   show_video_card_recommend_tag: 显示插件计算的推荐标签
   show_video_card_recommend_tag_desc: 显示插件计算的标签，如"高赞"、"高互动"、"百万播放"等
