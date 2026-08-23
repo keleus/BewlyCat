@@ -1452,8 +1452,16 @@ function handleOsScroll(_instance: any, event: Event) {
 
     reachTop.value = scrollTop === 0
 
-    // ✅ 移除手动的"到达底部"检测，改用 IntersectionObserver（见 loadMoreSentinelRef）
-    // 这避免了在每次滚动时计算 threshold 和读取 scrollHeight/clientHeight
+    // IntersectionObserver 只在相交状态变化时回调，dock 切页等时机可能丢失边缘事件
+    // （如切走时哨兵处于相交中，切回后状态未发生跳变），滚动时按几何位置兜底触发
+    const viewportEl = scrollViewportRef.value
+    const sentinelEl = loadMoreSentinelRef.value
+    if (viewportEl && sentinelEl && !isHomeTabSwitching.value) {
+      const viewportRect = viewportEl.getBoundingClientRect()
+      const sentinelRect = sentinelEl.getBoundingClientRect()
+      if (sentinelRect.top <= viewportRect.bottom + 200 && sentinelRect.bottom >= viewportRect.top)
+        handleThrottledReachBottom()
+    }
 
     // 清除之前的滚动结束定时器
     if (scrollEndTimer) {
