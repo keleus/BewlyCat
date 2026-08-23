@@ -994,7 +994,8 @@ export function enableRandomPlay(): void {
     }
   })
 
-  videoObserver.observe(document.body, {
+  // 同 observeRandomPlayPageChanges：调用可能早于 <body> 解析，回落 documentElement。
+  videoObserver.observe(document.body ?? document.documentElement, {
     childList: true,
     subtree: true,
   })
@@ -1253,7 +1254,9 @@ export function observeRandomPlayPageChanges(): void {
     }, 300) // 300ms防抖延迟
   })
 
-  observer.observe(document.body, {
+  // 内容脚本在 document_start 注入，设置水合触发的初始化可能早于 <body> 解析；
+  // 回落到 documentElement 并靠 subtree 覆盖随后插入的 body。
+  observer.observe(document.body ?? document.documentElement, {
     childList: true,
     subtree: true,
   })
