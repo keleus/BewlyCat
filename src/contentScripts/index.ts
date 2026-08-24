@@ -181,6 +181,8 @@ if (isElectronEnv) {
 else if (shouldInitializeContentScript) {
   const playerModeLoadSettleDelay = 500
   const videoOwnerAvatarReadyTimeout = 8000
+  const nativeVideoHeaderStableDelay = 2000
+  const replacedNativeVideoHeaderStableDelay = 400
   const videoOwnerAvatarSelector = [
     '.up-panel-container .up-avatar-wrap img.bili-avatar-img',
     '.up-panel-container .up-avatar-wrap img',
@@ -222,6 +224,13 @@ else if (shouldInitializeContentScript) {
   let playbackBehaviorScheduledForKey: string | undefined
   let playerModeSettingsReady = false
   let videoOwnerAvatarReadyDeadline = document.readyState === 'complete'
+    ? Date.now() + videoOwnerAvatarReadyTimeout
+    : Number.POSITIVE_INFINITY
+  let nativeVideoHeaderCandidate: HTMLElement | null = null
+  let nativeVideoHeaderStableSince = 0
+  let nativeVideoHeaderObserved = false
+  let nativeVideoHeaderReplacementObserved = false
+  let nativeVideoHeaderReadyDeadline = document.readyState === 'complete'
     ? Date.now() + videoOwnerAvatarReadyTimeout
     : Number.POSITIVE_INFINITY
   let pendingWidescreenReloadNavigationKey: string | undefined
@@ -383,6 +392,62 @@ else if (shouldInitializeContentScript) {
     })
   }
 
+  function resetNativeVideoHeaderStability() {
+    nativeVideoHeaderCandidate = null
+    nativeVideoHeaderStableSince = 0
+    nativeVideoHeaderObserved = false
+    nativeVideoHeaderReplacementObserved = false
+    nativeVideoHeaderReadyDeadline = Date.now() + videoOwnerAvatarReadyTimeout
+  }
+
+  // B 站视频页启动时会替换一次原生顶栏。自定义播放器若在替换期间搬动
+  // 播放器和侧栏 DOM，会让第二次挂载留下空的 #biliMainHeader。
+  function isNativeVideoHeaderStable() {
+    if (Date.now() >= nativeVideoHeaderReadyDeadline)
+      return true
+
+    const header = document.querySelector<HTMLElement>('.bili-header, #internationalHeader')
+    if (!header) {
+      if (nativeVideoHeaderObserved)
+        nativeVideoHeaderReplacementObserved = true
+      nativeVideoHeaderCandidate = null
+      nativeVideoHeaderStableSince = 0
+      return false
+    }
+
+    if (header !== nativeVideoHeaderCandidate) {
+      if (nativeVideoHeaderObserved)
+        nativeVideoHeaderReplacementObserved = true
+      nativeVideoHeaderObserved = true
+      nativeVideoHeaderCandidate = header
+      nativeVideoHeaderStableSince = Date.now()
+      return false
+    }
+
+    const stableDelay = nativeVideoHeaderReplacementObserved
+      ? replacedNativeVideoHeaderStableDelay
+      : nativeVideoHeaderStableDelay
+    return Date.now() - nativeVideoHeaderStableSince >= stableDelay
+  }
+
+  function initBewlyWidescreenControlWhenPageStable() {
+    if (isVideoOrBangumiPage() && !isNativeVideoHeaderStable()) {
+      window.setTimeout(initBewlyWidescreenControlWhenPageStable, 500)
+      return
+    }
+
+    initBewlyWidescreenControl()
+  }
+
+  function applyEndPlaybackBehaviorWhenPageStable() {
+    if (isVideoOrBangumiPage() && !isNativeVideoHeaderStable()) {
+      window.setTimeout(applyEndPlaybackBehaviorWhenPageStable, 500)
+      return
+    }
+
+    applyEndPlaybackBehavior()
+  }
+
   function clearPlaybackBehaviorTimer() {
     if (playbackBehaviorTimer) {
       clearTimeout(playbackBehaviorTimer)
@@ -461,6 +526,7 @@ else if (shouldInitializeContentScript) {
     const isInWebFullscreen = webFullscreenBtn?.classList.contains('bpx-state-entered')
 
     if (targetPlayerMode === 'bewlyWidescreen' && !isInFullscreen && !isInWebFullscreen) {
+      // 遮罩仅覆盖视觉，不搬动 B 站 DOM；自定义播放器仍在下方等待最终顶栏稳定。
       prepareBewlyWidescreenLoading()
     }
     else if (!isBewlyWidescreenActive()) {
@@ -474,7 +540,6 @@ else if (shouldInitializeContentScript) {
 
     const settleDelay = playerModeReadyAfter - Date.now()
     if (settleDelay > 0) {
-      schedulePlaybackBehaviorApply()
       schedulePlayerModeRetry(settleDelay)
       return
     }
@@ -484,7 +549,6 @@ else if (shouldInitializeContentScript) {
     if (isVideoPage()
       && Date.now() < videoOwnerAvatarReadyDeadline
       && !isVideoOwnerAvatarReady()) {
-      schedulePlaybackBehaviorApply()
       schedulePlayerModeRetry()
       return
     }
@@ -498,8 +562,14 @@ else if (shouldInitializeContentScript) {
       return
     }
 
+    // 只延后会重排原站 DOM 的 Bewly 宽屏；主题色、普通播放器模式和 App
+    // 挂载继续沿用原有时序。
+    if (targetPlayerMode === 'bewlyWidescreen' && !isNativeVideoHeaderStable()) {
+      schedulePlayerModeRetry()
+      return
+    }
+
     if (!isPlayerDisplayModeReady(targetPlayerMode)) {
-      schedulePlaybackBehaviorApply()
       schedulePlayerModeRetry()
       return
     }
@@ -555,6 +625,7 @@ else if (shouldInitializeContentScript) {
     clearPlaybackBehaviorTimer()
     playerModeReadyAfter = Date.now() + playerModeLoadSettleDelay
     videoOwnerAvatarReadyDeadline = Date.now() + videoOwnerAvatarReadyTimeout
+    resetNativeVideoHeaderStability()
   }
 
   // 添加稍后再看按钮
@@ -1171,7 +1242,7 @@ else if (shouldInitializeContentScript) {
 
     initVideoAspectRatioMemory()
     initVideoScreenshotControl()
-    initBewlyWidescreenControl()
+    initBewlyWidescreenControlWhenPageStable()
     initTouchPlayerGestures()
 
     // Initialize Favorite Dialog Enhancement (for video pages)
@@ -1312,39 +1383,52 @@ else if (shouldInitializeContentScript) {
     sendSettingsToPage(settings.value)
   })
 
-  watch(
-    [
-      () => settings.value.enableRandomPlay,
-      () => settings.value.randomPlayMode,
-      () => settings.value.minVideosForRandom,
-      () => settings.value.defaultCustomPlayOrder,
-      () => settings.value.enableCustomPlayOrderOverrides,
-      () => settings.value.customPlayOrderOverrides.multipart,
-      () => settings.value.customPlayOrderOverrides.collection,
-      () => settings.value.customPlayOrderOverrides.watchLater,
-      () => settings.value.customPlayOrderOverrides.playlist,
-    ],
-    ([enabled, activationMode, minVideos, ...orderSettings], [previousEnabled, previousActivationMode, previousMinVideos, ...previousOrderSettings]) => {
-      if (enabled !== previousEnabled && isCustomPlayPage()) {
-        if (enabled)
-          applyEndPlaybackBehavior()
-        else
-          destroyRandomPlay()
+  // 设置水合后的迁移会连续写入自定义播放字段；等视频页原生顶栏稳定后再
+  // 注册这一组 watcher，避免迁移回调介入 B 站的第二次页面挂载。
+  void settingsReady.then(() => {
+    const registerCustomPlaybackSettingsWatcher = () => {
+      if (isVideoOrBangumiPage() && !isNativeVideoHeaderStable()) {
+        window.setTimeout(registerCustomPlaybackSettingsWatcher, 500)
+        return
       }
 
-      if (orderSettings.some((value, index) => value !== previousOrderSettings[index])) {
-        syncRandomPlayOrder()
-        applyRandomPlayActivationSettings()
-      }
+      watch(
+        [
+          () => settings.value.enableRandomPlay,
+          () => settings.value.randomPlayMode,
+          () => settings.value.minVideosForRandom,
+          () => settings.value.defaultCustomPlayOrder,
+          () => settings.value.enableCustomPlayOrderOverrides,
+          () => settings.value.customPlayOrderOverrides.multipart,
+          () => settings.value.customPlayOrderOverrides.collection,
+          () => settings.value.customPlayOrderOverrides.watchLater,
+          () => settings.value.customPlayOrderOverrides.playlist,
+        ],
+        ([enabled, activationMode, minVideos, ...orderSettings], [previousEnabled, previousActivationMode, previousMinVideos, ...previousOrderSettings]) => {
+          if (enabled !== previousEnabled && isCustomPlayPage()) {
+            if (enabled)
+              applyEndPlaybackBehavior()
+            else
+              destroyRandomPlay()
+          }
 
-      if (
-        activationMode !== previousActivationMode
-        || minVideos !== previousMinVideos
-      ) {
-        applyRandomPlayActivationSettings()
-      }
-    },
-  )
+          if (orderSettings.some((value, index) => value !== previousOrderSettings[index])) {
+            syncRandomPlayOrder()
+            applyRandomPlayActivationSettings()
+          }
+
+          if (
+            activationMode !== previousActivationMode
+            || minVideos !== previousMinVideos
+          ) {
+            applyRandomPlayActivationSettings()
+          }
+        },
+      )
+    }
+
+    registerCustomPlaybackSettingsWatcher()
+  })
 
   watch(
     () => settings.value.showVerticalVideoZoomButton,
@@ -1379,7 +1463,7 @@ else if (shouldInitializeContentScript) {
 
       if (autoPlaySettingsChanged) {
         setTimeout(() => {
-          applyEndPlaybackBehavior()
+          applyEndPlaybackBehaviorWhenPageStable()
         }, 1000)
       }
     }

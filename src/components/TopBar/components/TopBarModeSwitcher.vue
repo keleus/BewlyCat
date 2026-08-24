@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import Tooltip from '~/components/Tooltip.vue'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { settings } from '~/logic'
+import { isVideoOrBangumiPage } from '~/utils/main'
 
 import TopBarItemEditor from './TopBarItemEditor.vue'
 
@@ -18,8 +19,15 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 const { isLayoutEditing } = useLayoutEditMode()
+const nativeTargetStableDelay = 2000
+const replacedNativeTargetStableDelay = 400
 const nativeTarget = shallowRef<Element | null>(null)
 const nativeObserverTarget = computed(() => props.native ? document.body : null)
+let nativeTargetCandidate: Element | null = null
+let nativeTargetCandidateSince = 0
+let nativeTargetObserved = false
+let nativeTargetReplacementObserved = false
+let nativeTargetRetryTimer: number | undefined
 
 const actionLabel = computed(() => settings.value.useOriginalBilibiliTopBar
   ? t('topbar.switch_to_bewly_top_bar')
@@ -27,6 +35,12 @@ const actionLabel = computed(() => settings.value.useOriginalBilibiliTopBar
 
 function updateNativeTarget() {
   if (!props.native) {
+    clearTimeout(nativeTargetRetryTimer)
+    nativeTargetRetryTimer = undefined
+    nativeTargetCandidate = null
+    nativeTargetCandidateSince = 0
+    nativeTargetObserved = false
+    nativeTargetReplacementObserved = false
     nativeTarget.value = null
     return
   }
@@ -34,9 +48,39 @@ function updateNativeTarget() {
   if (nativeTarget.value?.isConnected)
     return
 
-  nativeTarget.value = document.querySelector(
+  const nextTarget = document.querySelector(
     '.bili-header .bili-header__bar .right-entry, .bili-header__bar .right-entry',
   )
+  if (nextTarget !== nativeTargetCandidate) {
+    if (nativeTargetObserved)
+      nativeTargetReplacementObserved = true
+    if (nextTarget)
+      nativeTargetObserved = true
+    nativeTargetCandidate = nextTarget
+    nativeTargetCandidateSince = Date.now()
+  }
+
+  clearTimeout(nativeTargetRetryTimer)
+  nativeTargetRetryTimer = undefined
+
+  if (!nextTarget)
+    return
+
+  if (!isVideoOrBangumiPage()) {
+    nativeTarget.value = nextTarget
+    return
+  }
+
+  const stableDelay = nativeTargetReplacementObserved
+    ? replacedNativeTargetStableDelay
+    : nativeTargetStableDelay
+  const stableFor = Date.now() - nativeTargetCandidateSince
+  if (stableFor < stableDelay) {
+    nativeTargetRetryTimer = window.setTimeout(updateNativeTarget, stableDelay - stableFor)
+    return
+  }
+
+  nativeTarget.value = nextTarget
 }
 
 function toggleTopBar() {
@@ -47,6 +91,8 @@ function toggleTopBar() {
 }
 
 watch(() => props.native, updateNativeTarget, { immediate: true })
+
+onBeforeUnmount(() => clearTimeout(nativeTargetRetryTimer))
 
 useMutationObserver(
   nativeObserverTarget,

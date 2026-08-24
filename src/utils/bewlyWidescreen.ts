@@ -1072,8 +1072,6 @@ function injectLayoutStyle() {
     }
 
     body.${BODY_CLASS} .bili-header,
-    body.${BODY_CLASS} #biliMainHeader,
-    body.${BODY_CLASS} #bili-header-container,
     body.${BODY_CLASS} .fixed-sidenav-storage,
     body.${BODY_CLASS} .mini-player-window {
       display: none !important;
