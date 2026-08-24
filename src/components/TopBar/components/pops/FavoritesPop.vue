@@ -172,7 +172,7 @@ async function getFavoriteCategories(requestVersion?: number) {
 /**
  * Get favorite video resources
  */
-async function getFavoriteResources(force = false) {
+async function getFavoriteResources(force = false, replace = false) {
   if (isLoading.value && !force)
     return
 
@@ -201,11 +201,19 @@ async function getFavoriteResources(force = false) {
         noMoreContent.value = false
       }
 
-      // 添加数据到列表
-      if (data && 'medias' in data && Array.isArray(data.medias) && data.medias.length > 0) {
-        favoriteResources.push(...data.medias.filter((m: any) => m != null))
+      const medias = data && 'medias' in data && Array.isArray(data.medias)
+        ? data.medias.filter((m: any) => m != null)
+        : []
+
+      // 刷新时保留旧卡片，等新数据到达后再原子替换，避免 Pop 闪烁。
+      if (replace) {
+        favoriteResources.splice(0, favoriteResources.length, ...medias)
       }
-      else if (!data || !data.medias || data.medias.length === 0) {
+      else if (medias.length > 0) {
+        favoriteResources.push(...medias)
+      }
+
+      if (medias.length === 0) {
         // 如果没有数据返回，也标记为没有更多内容
         noMoreContent.value = true
       }
@@ -221,9 +229,8 @@ async function getFavoriteResources(force = false) {
 }
 
 function refreshFavoriteResources() {
-  favoriteResources.length = 0
   currentPageNum.value = 1
-  void getFavoriteResources(true)
+  void getFavoriteResources(true, true)
 }
 
 function changeCategory(categoryItem: FavoriteCategory) {
@@ -415,7 +422,7 @@ defineExpose({
 
         <!-- loading -->
         <Transition name="fade">
-          <Loading v-if="isLoading && favoriteResources.length !== 0" m="b-4" />
+          <Loading v-if="isLoading && favoriteResources.length !== 0 && currentPageNum > 1" m="b-4" />
         </Transition>
       </div>
     </main>

@@ -247,25 +247,6 @@ watch(
   },
 )
 
-watch(
-  () => popupVisible.value?.favorites ?? false,
-  (newVal, oldVal) => {
-    if (newVal === undefined || oldVal === undefined)
-      return
-
-    if (newVal === oldVal)
-      return
-
-    if (newVal) {
-      nextTick(() => {
-        if (favoritesPopRef.value)
-          favoritesPopRef.value.refreshFavoriteData?.()
-      })
-    }
-  },
-  { immediate: true },
-)
-
 // 修改通知点击处理
 function handleNotificationsClick(item: { name: string, url: string, unreadCount: number, icon: string }) {
   invalidateUnreadMessageState().catch((error) => {
