@@ -5,6 +5,7 @@ import { useToast } from 'vue-toastification'
 
 import ArticleCard from '~/components/ArticleCard/ArticleCard.vue'
 import type { ContextMenuOption } from '~/components/ContextMenu.vue'
+import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import type { FavoriteResource } from '~/components/TopBar/types'
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
@@ -84,9 +85,9 @@ function notifyTopBarFavoritesChanged() {
 }
 
 const favoriteViewOptions = computed(() => [
-  { label: t('favorites.video_section_title'), value: 'video' as const },
-  { label: t('favorites.season_section_title'), value: 'season' as const },
-  { label: t('favorites.article_section_title'), value: 'article' as const },
+  { label: t('favorites.view_video'), value: 'video' as const },
+  { label: t('favorites.view_season'), value: 'season' as const },
+  { label: t('favorites.view_article'), value: 'article' as const },
 ])
 
 const selectedContentTitle = computed(() => {
@@ -924,6 +925,9 @@ async function getFavoriteArticles(
 }
 
 function handleFavoriteViewChange(view: FavoriteView) {
+  if (view === favoriteView.value)
+    return
+
   closeBatchManage()
   exitSidebarManage()
   closeItemMenu()
@@ -1359,16 +1363,38 @@ function transformFavoriteArticle(item: FavoriteArticle) {
           </div>
 
           <div class="sidebar-mode-row">
-            <Select
-              v-model="favoriteView"
-              class="favorite-view-select"
-              :options="favoriteViewOptions"
-              @change="handleFavoriteViewChange"
-            />
-            <Tooltip v-if="favoriteView !== 'article'" :content="t('favorites.sidebar_manage')" placement="left" type="dark">
+            <div
+              class="favorite-view-control bew-segment-control bew-segment-control--surface"
+              :class="{
+                'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
+                'bew-segment-control--solid': !settings.enableFrostedGlass,
+              }"
+              role="group"
+              :aria-label="t('favorites.view_type')"
+            >
+              <LiquidSegmentIndicator
+                v-if="settings.enableLiquidSegmentIndicator"
+                :active-key="favoriteView"
+                white
+              />
+              <button
+                v-for="option in favoriteViewOptions"
+                :key="option.value"
+                type="button"
+                class="favorite-view-option bew-segment-control__item"
+                data-segment-item
+                :data-active="favoriteView === option.value ? 'true' : undefined"
+                :aria-pressed="favoriteView === option.value"
+                @click="handleFavoriteViewChange(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+            <Tooltip :content="t('favorites.sidebar_manage')" placement="left" type="dark">
               <button
                 class="sidebar-manage-toggle"
                 :class="{ active: sidebarManageSection !== null }"
+                :disabled="favoriteView === 'article'"
                 :aria-label="t('favorites.sidebar_manage')"
                 @click="toggleCurrentSidebarManage"
               >
@@ -1670,38 +1696,40 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   opacity: 0.76;
 }
 
-.favorite-view-select {
+.favorite-view-control {
+  --bew-segment-surface-background: rgba(255, 255, 255, 0.28);
+  --bew-segment-surface-shadow: none;
+  --bew-control-border-color: rgba(255, 255, 255, 0.32);
+  --bew-control-radius: var(--bew-interactive-radius);
+  --bew-control-item-radius: var(--bew-radius-sm);
+  --bew-segment-item-color: rgba(255, 255, 255, 0.82);
+  --bew-segment-item-hover-current-color: #fff;
+  --bew-segment-item-hover-current-bg: var(--bew-segment-item-hover-bg-white);
+  --bew-segment-item-focus-color: #fff;
+  --bew-segment-item-focus-bg: var(--bew-segment-item-hover-bg-white);
+  --bew-segment-item-current-color: #fff;
+  --bew-segment-item-active-bg-white: rgba(255, 255, 255, 0.24);
+  --bew-segment-item-active-shadow-white: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --bew-segment-item-active-bg: var(--bew-segment-item-active-bg-white);
+  --bew-segment-item-active-shadow: var(--bew-segment-item-active-shadow-white);
+  --bew-liquid-indicator-radius: var(--bew-radius-sm);
+  --bew-liquid-indicator-bg-white: var(--bew-segment-item-active-bg-white);
+  --bew-liquid-indicator-shadow-white: var(--bew-segment-item-active-shadow-white);
+  --bew-segment-item-focus-ring-color: rgba(255, 255, 255, 0.72);
+
   flex: 1 1 auto;
   min-width: 0;
-}
-
-.favorite-view-select :deep(.select-trigger) {
-  box-sizing: border-box;
-  height: var(--bew-control-height);
-  padding: 0 0 0 var(--bew-space-3);
-  overflow: hidden;
-  color: #fff;
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: var(--bew-line-height-control);
-  background: rgba(255, 255, 255, 0.28);
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  backdrop-filter: var(--bew-filter-glass-1);
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.24);
 }
 
-.favorite-view-select :deep(.select-trigger:hover) {
-  background: rgba(255, 255, 255, 0.36);
+.favorite-view-control.bew-segment-control--solid {
+  --bew-segment-surface-background: rgba(255, 255, 255, 0.28);
 }
 
-.favorite-view-select :deep(.select-arrow-slot) {
-  align-self: stretch;
-  width: var(--bew-control-height);
-  margin-left: var(--bew-space-2);
-}
-
-.favorite-view-select :deep(.select-arrow) {
-  border-color: #fff;
+.favorite-view-option {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: var(--bew-space-2);
 }
 
 .sidebar-mode-row {
@@ -1732,15 +1760,23 @@ function transformFavoriteArticle(item: FavoriteArticle) {
 }
 
 .sidebar-manage-toggle {
+  box-sizing: border-box;
   width: var(--bew-control-height);
   height: var(--bew-control-height);
+  background: rgba(255, 255, 255, 0.28);
+  border: var(--bew-control-border-width) solid rgba(255, 255, 255, 0.32);
 }
 
-.sidebar-manage-toggle:hover,
-.sidebar-manage-toggle.active,
+.sidebar-manage-toggle:hover:not(:disabled),
+.sidebar-manage-toggle.active:not(:disabled),
 .sidebar-manage-action:hover:not(:disabled) {
   color: #fff;
-  background: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.36);
+}
+
+.sidebar-manage-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
 }
 
 .sidebar-manage-action.danger:hover:not(:disabled) {

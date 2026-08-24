@@ -1200,6 +1200,10 @@ history:
     你确定要开启观看历史吗？
 favorites:
   collected_season_prefix: 合集
+  view_type: 收藏类型
+  view_video: 视频
+  view_season: 合集
+  view_article: 图文
   video_section_title: 收藏的视频
   folder_section_title: 所有收藏夹
   season_section_title: 收藏的合集
