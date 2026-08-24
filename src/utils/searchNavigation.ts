@@ -48,6 +48,20 @@ export function buildKeywordSearchUrl(keyword: string): string {
   return buildNativeSearchUrl(keyword)
 }
 
+/**
+ * 判断当前是否为实际首页。
+ *
+ * BewlyCat 的内置页面复用 B 站首页路径，并通过 `page` 查询参数区分路由，
+ * 因此仅使用 isHomePage() 会把搜索、历史等内置页面也误判为首页。
+ */
+function isActualHomepage(url: string = location.href): boolean {
+  if (!isHomePage(url))
+    return false
+
+  const page = new URL(url).searchParams.get('page')
+  return page === null || page === 'Home'
+}
+
 const PLUGIN_SEARCH_RESET_PARAMS = [
   'category',
   'pn',
@@ -107,7 +121,7 @@ export function openSearchResults(keyword: string): void {
 
   let target = '_blank'
   if (mode === 'currentTabIfNotHomepage')
-    target = isHomePage() ? '_blank' : '_self'
+    target = isActualHomepage() ? '_blank' : '_self'
   else if (mode === 'currentTab')
     target = '_self'
 
@@ -121,8 +135,13 @@ export function openSearchResults(keyword: string): void {
  */
 export function navigateToPluginSearchResultsInPlace(keyword: string): boolean {
   const mode = settings.value.searchBarLinkOpenMode
-  if (mode === 'newTab' || mode === 'background')
+  if (
+    mode === 'newTab'
+    || mode === 'background'
+    || (mode === 'currentTabIfNotHomepage' && isActualHomepage())
+  ) {
     return false
+  }
 
   return navigateToPluginSearchResults(keyword)
 }
