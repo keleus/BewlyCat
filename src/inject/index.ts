@@ -396,8 +396,10 @@ else if (shouldInitializePageScript) {
     'bili-comment-box': {
       id: 'bewly-comment-box-style',
       css: `
-        #editor:not(:hover):not(.active) {
-          border-color: var(--bew-comment-editor-border, var(--Ga1)) !important;
+        /* 表情/@/图片等工具按钮与编辑框共用同一条适配边框（B 站原生为 var(--Ga1)） */
+        #editor:not(:hover):not(.active),
+        .tool-btn {
+          border-color: var(--bew-comment-box-border, var(--Ga1)) !important;
         }
 
         :is(#pub button, button[data-v-risk="fingerprint"]):not(:hover, :active, .active) {

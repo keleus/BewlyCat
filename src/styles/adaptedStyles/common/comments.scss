@@ -1,13 +1,16 @@
-.bewly-design.bewly-hide-comment-image-scrollbar {
+.bewly-design {
   // 评论图片预览打开时隐藏页面滚动条，避免其显示在遮罩右侧。
-  &:has(.pswp.pswp--open),
-  &:has(.pswp.pswp--open) body {
-    scrollbar-width: none !important;
-  }
+  // 仅滚动条规则受该设置控制，其余评论适配需始终生效。
+  &.bewly-hide-comment-image-scrollbar {
+    &:has(.pswp.pswp--open),
+    &:has(.pswp.pswp--open) body {
+      scrollbar-width: none !important;
+    }
 
-  &:has(.pswp.pswp--open)::-webkit-scrollbar,
-  &:has(.pswp.pswp--open) body::-webkit-scrollbar {
-    display: none;
+    &:has(.pswp.pswp--open)::-webkit-scrollbar,
+    &:has(.pswp.pswp--open) body::-webkit-scrollbar {
+      display: none;
+    }
   }
 
   // #region new comments components
@@ -72,7 +75,7 @@
     --bew-comment-replies-mask-bg: color-mix(in oklab, var(--bew-bg), transparent 15%);
     --bew-comment-tag-color: var(--bew-text-2);
     --bew-comment-tag-bg: var(--bew-fill-1);
-    --bew-comment-editor-border: var(--bew-border-color);
+    --bew-comment-box-border: var(--bew-border-color);
 
     // 評論人用戶名
     .reply-item .root-reply-container .content-warp .user-info .user-name,
