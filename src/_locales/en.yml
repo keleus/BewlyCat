@@ -534,6 +534,10 @@ settings:
   auto_switch_list_layout: Automatically switch list columns based on video grid width
   auto_switch_list_layout_desc: When enabled, two-column mode switches to one column when the video grid is narrower than the configured width.
   auto_switch_list_layout_breakpoint: Switch at
+  video_card_cover_ratio: Cover width
+  video_card_cover_ratio_desc: Set the cover width separately for horizontal video cards in one- and two-column layouts.
+  video_card_cover_ratio_one_column: One column
+  video_card_cover_ratio_two_columns: Two columns
   grid_breakpoints: Grid Breakpoints
   grid_breakpoints_desc: Set the number of columns at different video grid widths. The matching column count is used when the grid reaches each breakpoint.
   grid_min_width: Width ≥

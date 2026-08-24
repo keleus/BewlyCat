@@ -99,6 +99,20 @@ export interface ShortcutsSettings {
 
 export type VideoCardFontSizeSetting = 'xs' | 'sm' | 'base' | 'lg'
 export type VideoCardLayoutSetting = 'modern' | 'old'
+export const VIDEO_CARD_COVER_RATIO_MIN = 30
+export const VIDEO_CARD_COVER_RATIO_MAX = 70
+export const VIDEO_CARD_COVER_RATIO_STEP = 5
+
+export function normalizeVideoCardCoverRatio(value: unknown, fallback: number): number {
+  const ratio = Number(value)
+  if (!Number.isFinite(ratio))
+    return fallback
+
+  const clampedRatio = Math.min(VIDEO_CARD_COVER_RATIO_MAX, Math.max(VIDEO_CARD_COVER_RATIO_MIN, ratio))
+  return VIDEO_CARD_COVER_RATIO_MIN
+    + Math.round((clampedRatio - VIDEO_CARD_COVER_RATIO_MIN) / VIDEO_CARD_COVER_RATIO_STEP) * VIDEO_CARD_COVER_RATIO_STEP
+}
+
 export type TabsPosition = 'left' | 'center'
 export type TopBarLogoStyle = 'icon' | 'brand'
 // 旧版三档（default/transparent/frostedGlass）沿用 v1.5.x 的遮罩结构与色调判定；
@@ -237,6 +251,10 @@ export interface Settings {
   autoSwitchListLayout: boolean
   /** Automatic two-column -> one-column switch threshold in CSS pixels. */
   autoSwitchListLayoutBreakpoint: number
+  /** Cover width percentage in horizontal single-column video cards. */
+  videoCardCoverRatioOneColumn: number
+  /** Cover width percentage in horizontal two-column video cards. */
+  videoCardCoverRatioTwoColumns: number
   releaseOffscreenVideoCardImages: boolean
 
   language: string
@@ -537,6 +555,8 @@ export const originalSettings: Settings = {
   gridColumns: { ...defaultGridColumns },
   autoSwitchListLayout: true,
   autoSwitchListLayoutBreakpoint: MOBILE_LIST_LAYOUT_BREAKPOINT,
+  videoCardCoverRatioOneColumn: 40,
+  videoCardCoverRatioTwoColumns: 50,
   releaseOffscreenVideoCardImages: false,
 
   language: '',
@@ -958,6 +978,14 @@ watch(
     // Normalize the user-configurable two-column list breakpoint. Older
     // versions used a fixed 640px threshold and do not have this field.
     record.autoSwitchListLayoutBreakpoint = normalizeListLayoutBreakpoint(record.autoSwitchListLayoutBreakpoint)
+    record.videoCardCoverRatioOneColumn = normalizeVideoCardCoverRatio(
+      record.videoCardCoverRatioOneColumn,
+      originalSettings.videoCardCoverRatioOneColumn,
+    )
+    record.videoCardCoverRatioTwoColumns = normalizeVideoCardCoverRatio(
+      record.videoCardCoverRatioTwoColumns,
+      originalSettings.videoCardCoverRatioTwoColumns,
+    )
 
     // 迁移旧的布尔类型自动播放设置到新的 AutoPlayMode 类型
     const autoPlayFields = ['autoPlayMultipart', 'autoPlayCollection', 'autoPlayRecommend', 'autoPlayWatchLater', 'autoPlayPlaylist'] as const

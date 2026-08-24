@@ -7,7 +7,13 @@ import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { originalSettings, settings } from '~/logic'
 import type { GridColumnsConfig, VideoCardFontSizeSetting, VideoCardLayoutSetting } from '~/logic/storage'
-import { defaultGridColumns, GRID_BREAKPOINTS } from '~/logic/storage'
+import {
+  defaultGridColumns,
+  GRID_BREAKPOINTS,
+  VIDEO_CARD_COVER_RATIO_MAX,
+  VIDEO_CARD_COVER_RATIO_MIN,
+  VIDEO_CARD_COVER_RATIO_STEP,
+} from '~/logic/storage'
 import { normalizeListLayoutBreakpoint } from '~/utils/gridLayout'
 
 import SettingsItem from '../../components/SettingsItem.vue'
@@ -80,6 +86,10 @@ function confirmListLayoutBreakpoint() {
   const normalizedValue = normalizeListLayoutBreakpoint(listLayoutBreakpointInput.value)
   settings.value.autoSwitchListLayoutBreakpoint = normalizedValue
   listLayoutBreakpointInput.value = normalizedValue
+}
+
+function getCoverRatioProgress(value: number) {
+  return `${(value - VIDEO_CARD_COVER_RATIO_MIN) / (VIDEO_CARD_COVER_RATIO_MAX - VIDEO_CARD_COVER_RATIO_MIN) * 100}%`
 }
 </script>
 
@@ -160,6 +170,41 @@ function confirmListLayoutBreakpoint() {
             </template>
           </Input>
           <Radio v-model="settings.autoSwitchListLayout" />
+        </div>
+      </SettingsItem>
+
+      <SettingsItem
+        :title="$t('settings.video_card_cover_ratio')"
+        :desc="$t('settings.video_card_cover_ratio_desc')"
+        right-width="auto"
+      >
+        <div class="cover-ratio-controls">
+          <label class="cover-ratio-control">
+            <span class="cover-ratio-control__label">{{ $t('settings.video_card_cover_ratio_one_column') }}</span>
+            <input
+              v-model.number="settings.videoCardCoverRatioOneColumn"
+              type="range"
+              :min="VIDEO_CARD_COVER_RATIO_MIN"
+              :max="VIDEO_CARD_COVER_RATIO_MAX"
+              :step="VIDEO_CARD_COVER_RATIO_STEP"
+              class="cover-ratio-control__slider"
+              :style="{ '--cover-ratio-progress': getCoverRatioProgress(settings.videoCardCoverRatioOneColumn) }"
+            >
+            <span class="cover-ratio-control__value">{{ settings.videoCardCoverRatioOneColumn }}%</span>
+          </label>
+          <label class="cover-ratio-control">
+            <span class="cover-ratio-control__label">{{ $t('settings.video_card_cover_ratio_two_columns') }}</span>
+            <input
+              v-model.number="settings.videoCardCoverRatioTwoColumns"
+              type="range"
+              :min="VIDEO_CARD_COVER_RATIO_MIN"
+              :max="VIDEO_CARD_COVER_RATIO_MAX"
+              :step="VIDEO_CARD_COVER_RATIO_STEP"
+              class="cover-ratio-control__slider"
+              :style="{ '--cover-ratio-progress': getCoverRatioProgress(settings.videoCardCoverRatioTwoColumns) }"
+            >
+            <span class="cover-ratio-control__value">{{ settings.videoCardCoverRatioTwoColumns }}%</span>
+          </label>
         </div>
       </SettingsItem>
 
@@ -337,6 +382,74 @@ function confirmListLayoutBreakpoint() {
   font-size: var(--bew-font-size-caption);
   line-height: var(--bew-line-height-caption);
   white-space: nowrap;
+}
+
+.cover-ratio-controls {
+  display: grid;
+  width: min(320px, 100%);
+  gap: var(--bew-space-3);
+}
+
+.cover-ratio-control {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 64px minmax(120px, 1fr) 40px;
+  gap: var(--bew-space-2);
+}
+
+.cover-ratio-control__label,
+.cover-ratio-control__value {
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+  white-space: nowrap;
+}
+
+.cover-ratio-control__value {
+  color: var(--bew-text-1);
+  text-align: right;
+}
+
+.cover-ratio-control__slider {
+  height: 4px;
+  appearance: none;
+  background: linear-gradient(
+    to right,
+    var(--bew-theme-color) 0,
+    var(--bew-theme-color) var(--cover-ratio-progress),
+    var(--bew-fill-2) var(--cover-ratio-progress),
+    var(--bew-fill-2) 100%
+  );
+  border-radius: var(--bew-radius-full);
+  cursor: pointer;
+  accent-color: var(--bew-theme-color);
+
+  &::-webkit-slider-thumb {
+    width: 16px;
+    height: 16px;
+    appearance: none;
+    background: var(--bew-theme-color);
+    border: 2px solid var(--bew-elevated-solid);
+    border-radius: 50%;
+    box-shadow: var(--bew-shadow-1);
+  }
+
+  &::-moz-range-track {
+    height: 4px;
+    background: var(--bew-fill-2);
+    border-radius: var(--bew-radius-full);
+  }
+
+  &::-moz-range-progress {
+    height: 4px;
+    background: var(--bew-theme-color);
+    border-radius: var(--bew-radius-full);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color);
+    outline-offset: 4px;
+  }
 }
 
 .shadow-height-control {

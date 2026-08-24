@@ -7,7 +7,8 @@ import { useGridLayout } from '~/composables/useGridLayout'
 import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
-import { settings } from '~/logic'
+import { originalSettings, settings } from '~/logic'
+import { normalizeVideoCardCoverRatio } from '~/logic/storage'
 import { getAdaptiveGridColumnCount, getListGridColumnCount } from '~/utils/gridLayout'
 import emitter from '~/utils/mitt'
 
@@ -731,12 +732,6 @@ const isHorizontal = computed(() => {
   return props.gridLayout !== 'adaptive'
 })
 
-// 合并 shadow 样式变量和 grid 列数变量
-const gridContainerStyle = computed(() => ({
-  ...shadowStyleVars.value,
-  ...gridCssVars.value,
-}))
-
 // A configurable breakpoint cannot be expressed with a CSS container query
 // value, so the measured container width toggles the single-column class.
 const isAutoSwitchSingleColumn = computed(() => {
@@ -754,6 +749,26 @@ const isAutoSwitchSingleColumn = computed(() => {
     settings.value.autoSwitchListLayoutBreakpoint,
   ) === 1
 })
+
+const horizontalCoverRatio = computed(() => {
+  const useOneColumnRatio = props.gridLayout === 'oneColumn' || isAutoSwitchSingleColumn.value
+  const fallback = useOneColumnRatio
+    ? originalSettings.videoCardCoverRatioOneColumn
+    : originalSettings.videoCardCoverRatioTwoColumns
+  const value = useOneColumnRatio
+    ? settings.value.videoCardCoverRatioOneColumn
+    : settings.value.videoCardCoverRatioTwoColumns
+
+  return normalizeVideoCardCoverRatio(value, fallback)
+})
+
+// 合并 shadow、grid 列数和横向卡片宽度分配变量。
+const gridContainerStyle = computed(() => ({
+  ...shadowStyleVars.value,
+  ...gridCssVars.value,
+  '--video-card-cover-flex': horizontalCoverRatio.value,
+  '--video-card-info-flex': 100 - horizontalCoverRatio.value,
+}))
 
 const renderedGridClass = computed(() => [
   ...gridClass.value,

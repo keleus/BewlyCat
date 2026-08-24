@@ -514,13 +514,13 @@ provide('getVideoType', () => props.type!)
 }
 
 .horizontal-card-cover {
-  --uno: "w-full max-w-400px aspect-video";
-  flex: 1 1 0;
+  --uno: "w-full aspect-video";
+  flex: var(--video-card-cover-flex, 50) 1 0;
   min-width: 0;
 }
 
 .horizontal-card-info {
-  flex: 1 1 0;
+  flex: var(--video-card-info-flex, 50) 1 0;
   min-width: 0;
 }
 

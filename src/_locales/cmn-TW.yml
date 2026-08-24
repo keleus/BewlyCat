@@ -411,6 +411,10 @@ settings:
   auto_switch_list_layout: 根據影片卡片區域寬度自動切換單雙列
   auto_switch_list_layout_desc: 開啟後，雙列模式會在影片卡片區域寬度小於設定寬度時自動切換為單列。
   auto_switch_list_layout_breakpoint: 切換寬度
+  video_card_cover_ratio: 封面占比
+  video_card_cover_ratio_desc: 分別設定單列與雙列橫向影片卡片中封面所占的寬度。
+  video_card_cover_ratio_one_column: 單列版型
+  video_card_cover_ratio_two_columns: 雙列版型
   grid_breakpoints: 網格斷點配置
   grid_breakpoints_desc: 設定不同影片卡片區域寬度下顯示的列數。當區域寬度大於等於設定值時，使用對應的列數。
   grid_min_width: 寬度 ≥
