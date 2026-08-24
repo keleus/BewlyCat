@@ -497,7 +497,7 @@ settings:
   video_page_top_bar_config_opt:
     alwaysShow: Always show
     alwaysHide: Always hide
-    showOnMouse: On hover
+    showOnMouse: On hover (Bewly only)
     showOnScroll: On scroll
   top_bar_style: Top bar style
   top_bar_style_desc: Choose the top bar background.

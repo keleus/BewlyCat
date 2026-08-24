@@ -541,7 +541,7 @@ settings:
   video_page_top_bar_config_opt:
     alwaysShow: 总是显示
     alwaysHide: 总是隐藏
-    showOnMouse: 鼠标显示
+    showOnMouse: 鼠标显示（仅插件）
     showOnScroll: 滚动显示
   top_bar_style: 顶栏样式
   top_bar_style_desc: 选择顶栏的背景效果。

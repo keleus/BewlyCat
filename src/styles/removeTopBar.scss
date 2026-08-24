@@ -228,6 +228,33 @@
   }
 }
 
+// 原版 B 站顶栏复用 BewlyCat 的视频页显示策略。只移动实际固定栏体，保留
+// #biliMainHeader 的页面占位，避免显示/隐藏时正文发生纵向跳动。
+.bewly-original-video-top-bar-controlled {
+  .bili-header > .bili-header__bar,
+  #internationalHeader,
+  .link-navbar,
+  #home_nav {
+    transition:
+      opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+      transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+      visibility 0s linear 0s !important;
+  }
+}
+
+.bewly-original-video-top-bar-controlled.bewly-original-video-top-bar-hidden {
+  .bili-header > .bili-header__bar,
+  #internationalHeader,
+  .link-navbar,
+  #home_nav {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(calc(-1 * var(--bew-top-bar-height))) !important;
+    transition-delay: 0s, 0s, var(--bew-duration-moderate, 300ms) !important;
+  }
+}
+
 .remove-top-bar {
   // 隐藏原版第一行顶栏，并保留与 BewlyCat 顶栏一致的页面占位
   .bili-header .bili-header__bar,

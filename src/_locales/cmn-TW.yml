@@ -512,7 +512,7 @@ settings:
   video_page_top_bar_config_opt:
     alwaysShow: 總是顯示
     alwaysHide: 總是隱藏
-    showOnMouse: 滑鼠顯示
+    showOnMouse: 滑鼠顯示（僅插件）
     showOnScroll: 滾動顯示
   top_bar_style: 頂部列樣式
   top_bar_style_desc: 選擇頂部列的背景效果。

@@ -765,7 +765,7 @@ settings:
   video_page_top_bar_config_opt:
     alwaysShow: 一直顯示
     alwaysHide: 一直隱藏
-    showOnMouse: 滑鼠顯示
+    showOnMouse: 滑鼠顯示（只限插件）
     showOnScroll: 捲動顯示
   clean_url_argument: 清理 URL 追蹤參數
   clean_url_argument_desc: 自動清理 URL 嘅最終參數，令到連結更加企理。
