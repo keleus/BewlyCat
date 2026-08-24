@@ -1147,6 +1147,8 @@ video_card:
   watched: 已觀看
   visited_recently: 近一個月內瀏覽過
 home:
+  app_authorization_required: App 模式的 access token 已遺失或過期，請重新授權後繼續使用個人化推薦
+  reauthorize_app: 重新授權
   recommendation_filter_risk_warning: 目前過濾條件在 100 條有效推薦中只保留了 {count} 條，容易頻繁請求並觸發介面風控，建議適度放寬過濾條件。
   tell_us_why: 為什麼這樣做...
   not_interested_desc: >

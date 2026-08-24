@@ -1147,6 +1147,8 @@ video_card:
   watched: 睇過
   visited_recently: 近一個月內睇過
 home:
+  app_authorization_required: App 模式嘅 access token 已經遺失或者過期，請重新授權之後再繼續使用個人化推介
+  reauthorize_app: 重新授權
   recommendation_filter_risk_warning: 而家嘅過濾條件喺 100 條有效推介入面淨係留低 {count} 條，容易造成頻繁請求並觸發接口風控，建議放寬過濾條件。
   tell_us_why: 點解噉做...
   not_interested_desc: >

@@ -3,6 +3,7 @@ import { onKeyStroke } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
+import AppAuthorizationDialog from '~/components/AppAuthorizationDialog.vue'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { FilterType, useFilter } from '~/composables/useFilter'
@@ -154,6 +155,7 @@ const refreshIdx = ref<number>(1)
 const noMoreContent = ref<boolean>(false)
 const activatedAppVideo = ref<AppVideoItem | null>()
 const showDislikeDialog = ref<boolean>(false)
+const showAppAuthorizationDialog = ref<boolean>(false)
 const hasInitializedData = ref<boolean>(false)
 
 const selectedDislikeReason = ref<number>(1)
@@ -1707,11 +1709,23 @@ defineExpose({
       </Button>
     </div>
 
-    <Empty v-if="needToLoginFirst" mt-6 :description="$t('common.please_log_in_first')">
-      <Button type="primary" @click="jumpToLoginPage()">
-        {{ $t('common.login') }}
+    <Empty
+      v-if="needToLoginFirst"
+      mt-6
+      :description="$t(isWebRecommendationMode ? 'common.please_log_in_first' : 'home.app_authorization_required')"
+    >
+      <Button
+        type="primary"
+        @click="isWebRecommendationMode ? jumpToLoginPage() : showAppAuthorizationDialog = true"
+      >
+        {{ $t(isWebRecommendationMode ? 'common.login' : 'home.reauthorize_app') }}
       </Button>
     </Empty>
+
+    <AppAuthorizationDialog
+      v-if="showAppAuthorizationDialog"
+      @close="showAppAuthorizationDialog = false"
+    />
   </div>
 </template>
 
