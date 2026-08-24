@@ -1988,13 +1988,28 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   align-items: center;
   flex-wrap: wrap;
   justify-content: space-between;
+  box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   margin: var(--bew-space-3) 0;
-  padding: 0;
-  background: transparent;
-  border-radius: 0;
-  box-shadow: none;
+  padding: var(--bew-space-2);
+  background: var(--bew-elevated);
+  border: 1px solid var(--bew-popover-border-color);
+  border-radius: var(--bew-panel-radius);
+  box-shadow: var(--bew-shadow-1), var(--bew-shadow-edge-glow-1);
+  backdrop-filter: var(--bew-filter-glass-1);
+  isolation: isolate;
+}
+
+.favorites-toolbar :deep(.b-input),
+.favorites-toolbar :deep(.select-trigger) {
+  background: var(--bew-fill-2);
+}
+
+.favorites-toolbar :deep(.b-button--type-secondary),
+.favorites-toolbar :deep(.b-button--type-tertiary) {
+  --b-button-color: var(--bew-fill-2);
+  --b-button-color-hover: var(--bew-fill-3);
 }
 
 .toolbar-search-group,
