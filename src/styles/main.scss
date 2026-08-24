@@ -202,24 +202,22 @@ img:not(.pswp__img) {
   .bew-top-bar-media-copy {
     min-width: 0;
     flex: 1 1 auto;
-    font-size: var(--bew-top-bar-media-title-size);
-    line-height: var(--bew-top-bar-media-title-line-height);
+    // 作者等次级文字继承的基准字号；标题自身使用 media-title 的独立字号
+    font-size: var(--bew-font-size-control);
+    line-height: var(--bew-line-height-control);
   }
 
   .bew-top-bar-media-title {
     overflow: hidden;
     display: -webkit-box;
     line-break: anywhere;
+    font-size: var(--bew-top-bar-media-title-size);
+    line-height: var(--bew-top-bar-media-title-line-height);
     font-weight: var(--bew-top-bar-media-title-weight);
     text-overflow: ellipsis;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     line-clamp: 2;
-  }
-
-  .bew-top-bar-media-title--emphasis {
-    font-size: var(--bew-top-bar-media-title-emphasis-size);
-    line-height: var(--bew-top-bar-media-title-emphasis-line-height);
   }
 
   .bew-top-bar-media-author {

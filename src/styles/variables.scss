@@ -139,17 +139,14 @@
   --bew-top-bar-media-aspect-ratio: 16 / 9;
   --bew-top-bar-media-radius: var(--bew-radius-half);
   --bew-top-bar-media-continuous-radius: var(--bew-radius-md);
-  --bew-top-bar-media-title-size: var(--bew-font-size-control);
-  --bew-top-bar-media-title-line-height: var(--bew-line-height-control);
+  // Pop 媒体标题（收藏 / 历史 / 稍后再看 / 动态共用）对齐 B 站原网页弹层实测
+  // 字号（14/20），不在全局排版层级内，字重沿用全局 regular
+  --bew-top-bar-media-title-size: 14px;
+  --bew-top-bar-media-title-line-height: 20px;
   --bew-top-bar-media-title-weight: var(--bew-font-weight-regular);
-  --bew-top-bar-media-title-emphasis-size: var(--bew-font-size-title);
-  --bew-top-bar-media-title-emphasis-line-height: var(--bew-line-height-title);
   --bew-top-bar-media-author-weight: var(--bew-font-weight-semibold);
   --bew-top-bar-media-meta-size: var(--bew-font-size-caption);
   --bew-top-bar-media-meta-line-height: var(--bew-line-height-caption);
-  // 动态 Pop 标题对齐 B 站原网页弹层实测字号（14/20），字重沿用全局 regular
-  --bew-top-bar-moments-title-size: 14px;
-  --bew-top-bar-moments-title-line-height: 20px;
   --bew-top-bar-brand-logo-width: 66px;
   --bew-top-bar-brand-logo-height: 22px;
   --bew-top-bar-brand-logo-compact-size: 24px;
