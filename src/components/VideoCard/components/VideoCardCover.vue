@@ -42,7 +42,6 @@ interface Props {
   }
   hasCoverStats?: boolean
   shouldHideCoverStats?: boolean
-  coverStatsStyle?: Record<string, string>
 }
 
 const props = defineProps<Props>()
@@ -797,7 +796,6 @@ onBeforeUnmount(() => {
           :class="{
             'video-card-cover-stats--hidden': shouldHideCoverStats,
           }"
-          :style="coverStatsStyle"
         >
           <div class="video-card-cover-stats__items">
             <span
@@ -932,15 +930,16 @@ onBeforeUnmount(() => {
 }
 
 .video-card-cover-stats__items {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 0;
   align-items: center;
+  align-content: flex-start;
   gap: 0.4rem;
-  white-space: nowrap;
-  flex-wrap: nowrap;
-  /* 不允许收缩，避免数字被截断 */
-  flex-shrink: 0;
-  /* 允许内容溢出，由容器查询控制显示 */
+  height: var(--video-card-stats-icon-size, calc(var(--video-card-stats-font-size, 0.75rem) * 1.1));
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  flex-wrap: wrap;
 }
 
 .video-card-cover-stats__item {
@@ -964,12 +963,9 @@ onBeforeUnmount(() => {
 .video-card-cover-stats__item--duration {
   margin-left: auto;
   font-size: var(--video-card-stats-font-size, 0.75rem);
-  /* 时长固定在最右侧，不收缩 */
+  /* 时长始终保留在右侧；左侧统计空间不足时会整项换行并被隐藏。 */
   flex-shrink: 0;
 }
-
-/* 响应式显示控制已移至 VideoCard.vue 的 coverStatsVisibility 计算属性 */
-/* 避免 CSS Container Query 在特定系统缩放（如 Windows 125%）下的性能问题 */
 
 .video-card-cover-stats--hidden {
   opacity: 0;
@@ -988,32 +984,6 @@ onBeforeUnmount(() => {
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-/* ✅ 性能优化：从父组件 :deep() 移至本地 scoped，减少跨组件选择器匹配 */
-/* 播放量和时长始终显示，弹幕和点赞在较宽屏幕显示 */
-.cover-stat-view {
-  display: inline-flex; /* 播放量始终显示 */
-}
-
-.cover-stat-danmaku,
-.cover-stat-like {
-  display: none; /* 默认隐藏弹幕和点赞 */
-}
-
-/* 使用媒体查询代替容器查询（性能更好） */
-/* 屏幕宽度 > 768px 时显示弹幕 */
-@media (min-width: 768px) {
-  .cover-stat-danmaku {
-    display: inline-flex;
-  }
-}
-
-/* 屏幕宽度 > 1024px 时显示点赞 */
-@media (min-width: 1024px) {
-  .cover-stat-like {
-    display: inline-flex;
   }
 }
 </style>

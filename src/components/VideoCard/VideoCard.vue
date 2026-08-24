@@ -108,8 +108,7 @@ const coverStatsVisibility = computed(() => {
     }
   }
 
-  // 所有统计项默认显示，由 CSS Container Query 控制响应式隐藏
-  // 这避免了 JS 监听宽度变化带来的性能问题
+  // 所有已启用的统计项都交给封面统计栏布局；空间不足时从右侧末项开始隐藏。
   return {
     view: settings.value.showVideoCardViewCount && Boolean(view),
     danmaku: settings.value.showVideoCardDanmakuCount && Boolean(danmaku),
@@ -197,15 +196,6 @@ const primaryTags = computed(() => {
   if (Array.isArray(tag))
     return tag.filter(Boolean)
   return [tag]
-})
-
-// 使用 CSS 变量定义，让浏览器通过 CSS 容器查询自动响应
-const coverStatsStyle = computed(() => {
-  if (layout.value === 'old')
-    return {}
-
-  // 所有响应式样式都通过 CSS 容器查询处理，这里只设置基础值
-  return {}
 })
 
 // Highlight tags calculation - 使用查找表优化性能
@@ -403,7 +393,6 @@ provide('getVideoType', () => props.type!)
             :cover-stats-visibility="coverStatsVisibility"
             :has-cover-stats="Boolean(hasCoverStats)"
             :should-hide-cover-stats="Boolean(shouldHideCoverStats)"
-            :cover-stats-style="coverStatsStyle as Record<string, string>"
             @toggle-watch-later="logic.toggleWatchLater"
             @undo="logic.handleUndo"
             @preview-fullscreen-change="logic.handlePreviewFullscreenChange"
