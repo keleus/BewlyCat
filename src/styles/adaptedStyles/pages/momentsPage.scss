@@ -165,7 +165,13 @@
 
   &.dark {
     #app div.bg {
+      background-image: url("//i0.hdslb.com/bfs/static/jinkela/long/images/dynamic/bg_dark.png") !important;
       opacity: 0.15;
+    }
+
+    // 原站将文集激活项背景硬编码为 #e8f5fc，暗色变量无法覆盖。
+    .opus-collection__item.active {
+      background-color: var(--bew-theme-color-10) !important;
     }
 
     .bili-dyn-home--member,
