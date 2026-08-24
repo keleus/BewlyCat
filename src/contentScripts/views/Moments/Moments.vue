@@ -1100,6 +1100,8 @@ const OPUS_DETAIL_LONG_IMAGE_RATIO = 0.5
 const OPUS_DETAIL_MAX_WIDTH = `min(${PLAYER_DIALOG_WIDTH_SCALE * 100}vw, 100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
 /** 图文弹窗最大高：可用视口高度内取值，且高不大于宽（宽上限同 OPUS_DETAIL_MAX_WIDTH），避免竖屏下过度拉长 */
 const OPUS_DETAIL_MAX_HEIGHT = `min(100dvh - ${DETAIL_VIEWPORT_GUTTER}px, max(280px, 88dvh), ${OPUS_DETAIL_MAX_WIDTH})`
+/** 与 Bewly 宽屏模式的完整评论面板宽度一致，避免方形/竖屏视频收窄时挤压评论区。 */
+const VIDEO_DETAIL_COMMENT_WIDTH = 'clamp(480px, 32vw, 600px)'
 const selectedVideoAspectRatio = computed(() => {
   const moment = selectedMoment.value
   if (!moment?.isVideo || moment.isLive || moment.isPgc)
@@ -1107,9 +1109,9 @@ const selectedVideoAspectRatio = computed(() => {
   return (moment.bvid ? videoAspectRatios[moment.bvid] : undefined)
     || coverRatios[moment.id]
 })
-const isSelectedVerticalVideo = computed(() => {
+const isSelectedSquareOrVerticalVideo = computed(() => {
   const ratio = selectedVideoAspectRatio.value
-  return Boolean(ratio && ratio < 0.9)
+  return Boolean(ratio && ratio <= 1)
 })
 
 /** 图文分栏详情（转发/专栏/纯文字除外）：弹窗尺寸以首图为基准 */
@@ -1142,26 +1144,25 @@ const detailDialogHeight = computed(() => {
   const moment = selectedMoment.value
   if (!isOpusSplitDetailMoment(moment))
     return DETAIL_SAFE_HEIGHT
-  // 横图在「最大宽 − 评论列」内放不下时按宽反推高度（不低于 280px），
-  // 让图片恰好铺满左侧媒体区贴边显示，而不是保持满高预算、在媒体区内上下留白。
-  const commentWidth = `${OPUS_DETAIL_COMMENT_PAGE_RATIO * 100}vw`
-  return `min(${OPUS_DETAIL_MAX_HEIGHT}, max(280px, calc((${OPUS_DETAIL_MAX_WIDTH} - ${commentWidth}) / ${getOpusSplitLayoutRatio(moment)})))`
+  // 图文弹窗始终使用正常的视口高度预算。横图若无法同时铺满媒体区宽高，
+  // 由 iframe 内的 contain 布局居中完整显示，并在上下保留媒体底色。
+  return OPUS_DETAIL_MAX_HEIGHT
 })
 
 const detailDialogWidth = computed(() => {
   if (selectedMoment.value?.isLive)
     return DETAIL_PLAYER_MAX_WIDTH
   if (selectedMoment.value?.isVideo) {
-    if (isSelectedVerticalVideo.value && settings.value.defaultVideoPlayerMode === 'bewlyWidescreen') {
+    if (isSelectedSquareOrVerticalVideo.value && settings.value.defaultVideoPlayerMode === 'bewlyWidescreen') {
       const ratio = Math.max(0.4, selectedVideoAspectRatio.value || 9 / 16)
-      return `min(max(960px, calc(${PLAYER_DIALOG_WIDTH_SCALE * 100}dvh * ${ratio} + 420px)), ${DETAIL_PLAYER_MAX_WIDTH})`
+      return `min(max(960px, calc(${detailDialogHeight.value} * ${ratio} + ${VIDEO_DETAIL_COMMENT_WIDTH})), ${DETAIL_PLAYER_MAX_WIDTH})`
     }
     return DETAIL_PLAYER_MAX_WIDTH
   }
   const moment = selectedMoment.value
   if (isOpusSplitDetailMoment(moment)) {
-    // 宽度随首图占满高度变化；评论列由 iframe 固定为视口宽的 29%（经 BEWLY_OPUS_VIEWPORT 同步），
-    // 不随弹窗伸缩，因此媒体区恰好等于首图宽度，弹窗完全贴合图片、无左右留白。
+    // 宽度按正常高度预算与首图比例计算；评论列由 iframe 固定为视口宽的 29%
+    // （经 BEWLY_OPUS_VIEWPORT 同步）。达到最大宽度后，横图由媒体区 contain 居中显示。
     const commentWidth = `${OPUS_DETAIL_COMMENT_PAGE_RATIO * 100}vw`
     return `min(${OPUS_DETAIL_MAX_WIDTH}, calc(${getOpusSplitLayoutRatio(moment)} * ${detailDialogHeight.value} + ${commentWidth}))`
   }
