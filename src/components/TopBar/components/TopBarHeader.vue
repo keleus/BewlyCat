@@ -58,8 +58,12 @@ function overlayMask(plateauVar: string) {
 
 // 毛玻璃：满强度到主控件下沿（约 55px），收尾落在 64px 顶栏内。
 const FROSTED_OVERLAY_MASK = overlayMask('--overlay-mask-plateau-frosted')
+// 滚动遮罩：平台覆盖顶栏主体，收尾向下延伸 16px，让加深效果平滑融入页面。
+const SCROLLED_OVERLAY_MASK = overlayMask('--overlay-mask-plateau-scrolled')
 
 const GLASS_TINT_ALPHA = 0.1
+const SCROLLED_SHADE_ALPHA_GLASS = 0.2
+const SCROLLED_SHADE_ALPHA_SOLID = 0.24
 
 // 遮罩随滚动渐进加深的距离：约两个顶栏高度（64px），在整条顶栏滚出视口前完成渐入
 const MASK_RAMP_SCROLL_PX = 120
@@ -109,6 +113,15 @@ const fadeGradientStyle = computed(() => ({
   height: settings.value.enableFrostedGlass
     ? 'var(--bew-top-bar-height)'
     : 'calc(var(--bew-top-bar-height) + var(--bew-space-4))',
+}))
+
+// 暗色下用独立黑色层表达滚动加深，避免提高与页面同色的 --bew-bg 雾层时缺少可见变化。
+const scrolledShadeStyle = computed(() => ({
+  opacity: (settings.value.enableFrostedGlass
+    ? SCROLLED_SHADE_ALPHA_GLASS
+    : SCROLLED_SHADE_ALPHA_SOLID) * maskProgress.value,
+  maskImage: SCROLLED_OVERLAY_MASK,
+  WebkitMaskImage: SCROLLED_OVERLAY_MASK,
 }))
 
 // 实验三档走余弦渐变管线；其余档位沿用 v1.5.x 的遮罩表现。
@@ -287,6 +300,12 @@ function refreshSearchContent() {
       <div class="top-bar-header__fog" :style="fadeGradientStyle" />
     </template>
 
+    <div
+      v-if="isDark"
+      class="top-bar-header__scrolled-shade"
+      :style="scrolledShadeStyle"
+    />
+
     <!-- Top bar theme color gradient：只在暗色渲染，黑雾与底色雾同为深色，
          叠淡主题渐变不影响白图标对比度，故不再按 forceWhiteIcon 关闭——
          否则阴影与「自动＋壁纸」恒为白图标，开关会失效 -->
@@ -373,6 +392,18 @@ function refreshSearchContent() {
   left: 0;
   width: 100%;
   pointer-events: none;
+  transition: opacity var(--bew-duration-fast) linear;
+}
+
+.top-bar-header__scrolled-shade {
+  --overlay-mask-plateau-scrolled: calc(var(--bew-top-bar-height) - var(--bew-space-4));
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(var(--bew-top-bar-height) + var(--bew-space-4));
+  pointer-events: none;
+  background-color: rgb(0 0 0);
   transition: opacity var(--bew-duration-fast) linear;
 }
 
