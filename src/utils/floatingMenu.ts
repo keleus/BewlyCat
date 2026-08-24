@@ -12,7 +12,8 @@ export function computeFloatingMenuPosition(
   const availableWidth = Math.max(0, viewportWidth - inset * 2)
   const availableHeight = Math.max(0, viewportHeight - inset * 2)
   const width = Math.min(240, availableWidth)
-  const preferredMaxHeight = Math.min(406, availableHeight)
+  // 默认选项集完整展开约 470px；需与 VideoCardContextMenu 的 max-height 同步
+  const preferredMaxHeight = Math.min(480, availableHeight)
   const left = clamp(anchor.right - width, inset, Math.max(inset, viewportWidth - width - inset))
 
   const spaceBelow = Math.max(0, viewportHeight - inset - anchor.bottom - gap)
@@ -23,10 +24,8 @@ export function computeFloatingMenuPosition(
   // Anchor upward-opening menus by their bottom edge. Their actual height varies
   // with the visible option count, so subtracting the maximum height here would
   // leave an increasingly large gap as options are hidden.
-  const top = openBelow
-    ? anchor.bottom + gap
-    : anchor.top - gap
-  const transform = openBelow ? undefined : 'translateY(-100%)'
+  const top = openBelow ? `${anchor.bottom + gap}px` : undefined
+  const bottom = openBelow ? undefined : `${viewportHeight - anchor.top + gap}px`
 
-  return { left, top, width, maxHeight, transform }
+  return { left, top, bottom, width, maxHeight }
 }
