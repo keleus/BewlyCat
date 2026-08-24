@@ -22,14 +22,18 @@ const visible = computed(() =>
   align-items: center;
   margin-right: var(--bew-space-1);
   padding: 0 var(--bew-space-1);
+  border: 1px solid var(--bew-text-3);
   border-radius: var(--bew-radius-sm);
   color: var(--bew-text-2);
   background: var(--bew-fill-2);
   font-size: var(--bew-font-size-caption);
   font-weight: var(--bew-font-weight-medium);
   line-height: var(--bew-line-height-caption);
-  opacity: 0.75;
   vertical-align: 0.08em;
   white-space: nowrap;
+}
+
+:global(.dark) .video-watched-tag {
+  color: var(--bew-text-1);
 }
 </style>
