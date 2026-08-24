@@ -897,6 +897,7 @@ onBeforeUnmount(() => {
     calc(var(--video-card-stats-font-size, 0.75rem) * 0.6) calc(var(--video-card-stats-font-size, 0.75rem) * 0.45);
   color: #fff;
   font-size: var(--video-card-stats-font-size, 0.75rem);
+  line-height: var(--video-card-stats-line-height, 1rem);
   opacity: 1;
   transition: opacity 0.2s ease;
   pointer-events: none;
@@ -935,7 +936,7 @@ onBeforeUnmount(() => {
   align-items: center;
   align-content: flex-start;
   gap: 0.4rem;
-  height: var(--video-card-stats-icon-size, calc(var(--video-card-stats-font-size, 0.75rem) * 1.1));
+  height: var(--video-card-stats-line-height, 1rem);
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -957,7 +958,7 @@ onBeforeUnmount(() => {
 
 .video-card-cover-stats__value {
   font-size: var(--video-card-stats-font-size, 0.75rem);
-  line-height: 1;
+  line-height: var(--video-card-stats-line-height, 1rem);
 }
 
 .video-card-cover-stats__item--duration {
