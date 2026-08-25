@@ -241,9 +241,9 @@ settings:
   topbar_actions_desc: 分別設定右側功能圖示的顯示狀態、角標與相關提醒。
   topbar_user_menu: 頂部列使用者選單
   topbar_display_settings: 頂部列顯示與行為
-  topbar_display_settings_desc: 調整頂部列及其切換入口在不同頁面與互動情境下的顯示方式。
+  topbar_display_settings_desc: 調整頂部列在不同頁面與互動情境下的顯示方式。
   topbar_style_settings: 頂部列樣式
-  topbar_style_settings_desc: 調整頂部列背景、漸變、類型和頁面背景適配方式。
+  topbar_style_settings_desc: 調整頂部列背景、漸變和頁面背景適配方式。
   group_navigation: Dock與側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄
@@ -528,8 +528,8 @@ settings:
     exp_frosted_glass: 白霧（實驗）
     exp_transparent: 陰影（實驗）
   show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）
-  show_bewly_or_bili_top_bar_switcher: 顯示 Bilibili/BewlyCat 頂欄切換器
-  show_bewly_or_bili_top_bar_switcher_desc: 同時控制原版 Bilibili 頂欄與 BewlyCat 頂欄中的雙向切換按鈕。
+  show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂部列切換器
+  show_bewly_or_bili_top_bar_switcher_desc: 在頁面頂部懸停時顯示切換器，用於在 BewlyCat 頂部列與 Bilibili 原版頂部列之間切換。
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多頁面顯示 BewlyCat/Bilibili 頁面切換器
   filter_articles_in_moments: 過濾專欄

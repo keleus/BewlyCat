@@ -241,9 +241,9 @@ settings:
   topbar_actions_desc: Set the visibility, badges, and related reminders for each action icon.
   topbar_user_menu: Top bar user menu
   topbar_display_settings: Top bar display & behavior
-  topbar_display_settings_desc: Adjust how the top bar and its switcher behave across pages and interaction modes.
+  topbar_display_settings_desc: Adjust how the top bar behaves across pages and interaction modes.
   topbar_style_settings: Top bar style
-  topbar_style_settings_desc: Adjust the top bar background, gradients, type, and how it adapts to page backgrounds.
+  topbar_style_settings_desc: Adjust the top bar background, gradients, and how it adapts to page backgrounds.
   group_navigation: Dock & Sidebar
   group_dock: Dock
   group_sidebar: Sidebar
@@ -509,8 +509,8 @@ settings:
     exp_frosted_glass: White fog (experimental)
     exp_transparent: Shadow (experimental)
   show_top_bar_theme_color_gradient: Show theme color gradient in top bar (only works in dark mode)
-  show_bewly_or_bili_top_bar_switcher: Show Bilibili/BewlyCat top bar switcher
-  show_bewly_or_bili_top_bar_switcher_desc: Controls the switch button in both the original Bilibili and BewlyCat top bars.
+  show_bewly_or_bili_top_bar_switcher: Show BewlyBewly/Bilibili top bar switcher
+  show_bewly_or_bili_top_bar_switcher_desc: Show a switcher when hovering at the top of the page to move between the BewlyCat and original Bilibili top bars.
   show_bewly_or_bili_page_switcher: Show BewlyBewly/Bilibili page switcher
   show_bewly_or_bili_page_switcher_on_more_pages: Show BewlyCat/Bilibili page switcher on more pages
   filter_articles_in_moments: Filter articles
