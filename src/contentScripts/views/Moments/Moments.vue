@@ -4757,15 +4757,31 @@ watch(
   outline: 2px solid var(--bew-theme-color);
   outline-offset: 2px;
 }
-.moments-up-list__item--active .moments-up-list__name {
-  color: var(--bew-theme-color);
+// hover 即选中态：光环与名称变色复用 active 样式，移开时平滑过渡
+@mixin up-item-selected {
+  .moments-up-list__name {
+    color: var(--bew-theme-color);
+  }
+
+  .moments-up-list__avatar > img,
+  .moments-up-list__avatar--all,
+  .moments-up-list__avatar--wanted {
+    box-shadow:
+      0 0 0 2px var(--bew-elevated),
+      0 0 0 4px var(--bew-theme-color);
+  }
+
+  .moments-up-list__avatar--all,
+  .moments-up-list__avatar--wanted {
+    border-color: var(--bew-theme-color);
+    color: #fff;
+    background: var(--bew-theme-color);
+  }
 }
-.moments-up-list__item--active .moments-up-list__avatar > img,
-.moments-up-list__item--active .moments-up-list__avatar--all,
-.moments-up-list__item--active .moments-up-list__avatar--wanted {
-  box-shadow:
-    0 0 0 2px var(--bew-elevated),
-    0 0 0 4px var(--bew-theme-color);
+
+.moments-up-list__item--active,
+.moments-up-list__item:hover:not(:disabled) {
+  @include up-item-selected;
 }
 .moments-up-list__item--skeleton {
   pointer-events: none;
@@ -4784,6 +4800,7 @@ watch(
   border-radius: 50%;
   object-fit: cover;
   background: var(--bew-fill-1);
+  transition: box-shadow var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moments-up-list__avatar--all,
 .moments-up-list__avatar--wanted {
@@ -4792,16 +4809,15 @@ watch(
   width: 48px;
   height: 48px;
   box-sizing: border-box;
-  border: 0;
+  border: 2px solid transparent;
   border-radius: 50%;
   color: var(--bew-theme-color);
   background: var(--bew-theme-color-20);
-}
-.moments-up-list__item--active .moments-up-list__avatar--all,
-.moments-up-list__item--active .moments-up-list__avatar--wanted {
-  border: 2px solid var(--bew-theme-color);
-  color: #fff;
-  background: var(--bew-theme-color);
+  transition:
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard),
+    border-color var(--bew-duration-fast) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moments-up-list__item:disabled {
   opacity: 0.45;
@@ -4836,6 +4852,7 @@ watch(
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moments-up-list__item--skeleton .moments-up-list__name {
   width: 40px;
