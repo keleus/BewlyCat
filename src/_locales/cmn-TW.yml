@@ -241,9 +241,9 @@ settings:
   topbar_actions_desc: 分別設定右側功能圖示的顯示狀態、角標與相關提醒。
   topbar_user_menu: 頂部列使用者選單
   topbar_display_settings: 頂部列顯示與行為
-  topbar_display_settings_desc: 調整頂部列在不同頁面與互動情境下的顯示方式。
+  topbar_display_settings_desc: 調整頂部列及其切換入口在不同頁面與互動情境下的顯示方式。
   topbar_style_settings: 頂部列樣式
-  topbar_style_settings_desc: 調整頂部列背景、漸變、類型、切換入口和頁面背景適配方式。
+  topbar_style_settings_desc: 調整頂部列背景、漸變、類型和頁面背景適配方式。
   group_navigation: Dock與側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄

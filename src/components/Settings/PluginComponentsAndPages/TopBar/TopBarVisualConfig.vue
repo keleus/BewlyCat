@@ -238,13 +238,6 @@ function toggleChannel(value: string) {
           w="160px"
         />
       </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.show_bewly_or_bili_top_bar_switcher')"
-        :desc="$t('settings.show_bewly_or_bili_top_bar_switcher_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.showBewlyOrBiliTopBarSwitcher" />
-      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup
@@ -253,6 +246,13 @@ function toggleChannel(value: string) {
     >
       <SettingsItem :title="$t('settings.topbar_visibility')" :desc="$t('settings.topbar_visibility_desc')" right-width="auto">
         <Radio v-model="settings.enableTopBar" :label="settings.enableTopBar ? $t('settings.chk_box.show') : $t('settings.chk_box.hidden')" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.show_bewly_or_bili_top_bar_switcher')"
+        :desc="$t('settings.show_bewly_or_bili_top_bar_switcher_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showBewlyOrBiliTopBarSwitcher" />
       </SettingsItem>
       <SettingsItem
         v-if="!settings.touchScreenOptimization"

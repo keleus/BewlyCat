@@ -270,9 +270,9 @@ settings:
   topbar_actions_desc: 分別設定右邊功能圖示嘅顯示狀態、邊位標記同相關提醒。
   topbar_user_menu: 頂欄用戶選單
   topbar_display_settings: 頂欄顯示同操作
-  topbar_display_settings_desc: 調整頂欄喺唔同頁面同互動情況之下嘅顯示方式。
+  topbar_display_settings_desc: 調整頂欄同切換入口喺唔同頁面同互動情況之下嘅顯示方式。
   topbar_style_settings: 頂欄樣式
-  topbar_style_settings_desc: 調整頂欄背景、漸變、類型、切換入口同頁面背景適配方式。
+  topbar_style_settings_desc: 調整頂欄背景、漸變、類型同頁面背景適配方式。
   group_navigation: Dock同側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄

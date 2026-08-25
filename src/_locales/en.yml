@@ -241,9 +241,9 @@ settings:
   topbar_actions_desc: Set the visibility, badges, and related reminders for each action icon.
   topbar_user_menu: Top bar user menu
   topbar_display_settings: Top bar display & behavior
-  topbar_display_settings_desc: Adjust how the top bar behaves across pages and interaction modes.
+  topbar_display_settings_desc: Adjust how the top bar and its switcher behave across pages and interaction modes.
   topbar_style_settings: Top bar style
-  topbar_style_settings_desc: Adjust the top bar background, gradients, type, switcher, and how it adapts to page backgrounds.
+  topbar_style_settings_desc: Adjust the top bar background, gradients, type, and how it adapts to page backgrounds.
   group_navigation: Dock & Sidebar
   group_dock: Dock
   group_sidebar: Sidebar

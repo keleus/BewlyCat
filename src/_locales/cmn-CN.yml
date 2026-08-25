@@ -241,9 +241,9 @@ settings:
   topbar_actions_desc: 分别设置右侧功能图标的显示状态、角标和相关提醒。
   topbar_user_menu: 顶栏用户菜单
   topbar_display_settings: 顶栏显示与行为
-  topbar_display_settings_desc: 调整顶栏在不同页面和交互场景下的显示方式。
+  topbar_display_settings_desc: 调整顶栏及其切换入口在不同页面和交互场景下的显示方式。
   topbar_style_settings: 顶栏样式
-  topbar_style_settings_desc: 调整顶栏背景、渐变、类型、切换入口和页面背景适配方式。
+  topbar_style_settings_desc: 调整顶栏背景、渐变、类型和页面背景适配方式。
   group_navigation: Dock和侧边栏
   group_dock: Dock 栏
   group_sidebar: 侧边栏
