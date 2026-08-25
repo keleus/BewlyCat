@@ -272,7 +272,7 @@ settings:
   topbar_display_settings: 頂欄顯示同操作
   topbar_display_settings_desc: 調整頂欄喺唔同頁面同互動情況之下嘅顯示方式。
   topbar_style_settings: 頂欄樣式
-  topbar_style_settings_desc: 調整頂欄背景、漸變同頁面背景適配方式。
+  topbar_style_settings_desc: 調整頂欄背景、漸變、類型、切換入口同頁面背景適配方式。
   group_navigation: Dock同側邊欄
   group_dock: Dock
   group_sidebar: 側邊欄
@@ -513,6 +513,8 @@ settings:
     exp_frosted_glass: 白霧（實驗）
     exp_transparent: 陰影（實驗）
   show_top_bar_theme_color_gradient: 喺頂欄顯示主題色漸變（淨係喺深色模式下有效）
+  show_bewly_or_bili_top_bar_switcher: 顯示 Bilibili/BewlyCat 頂欄切換掣
+  show_bewly_or_bili_top_bar_switcher_desc: 同時控制原版 Bilibili 頂欄同 BewlyCat 頂欄入面嘅雙向切換掣。
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換掣
   show_bewly_or_bili_page_switcher_on_more_pages: 喺更多頁面顯示 BewlyCat/Bilibili 頁面切換掣
   filter_articles_in_moments: 過濾專欄

@@ -13,7 +13,6 @@ import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { findLeafActiveElement } from '~/utils/element'
 import { isHomePage, isUserSpacePage, isVideoOrBangumiPage } from '~/utils/main'
 import emitter from '~/utils/mitt'
-import { isComponentVisible } from '~/utils/topBarBadge'
 
 import NotificationsDrawer from './components/NotificationsDrawer.vue'
 import TopBarHeader from './components/TopBarHeader.vue'
@@ -725,7 +724,7 @@ const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
     <TopBarModeSwitcher
       v-if="settings.enableTopBar
         && settings.useOriginalBilibiliTopBar
-        && isComponentVisible('topBarSwitcher')"
+        && settings.showBewlyOrBiliTopBarSwitcher"
       native
     />
   </div>

@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '~/components/Button.vue'
 import Icon from '~/components/Icon.vue'
 import Radio from '~/components/Radio.vue'
+import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
 import type { BewlyAppProvider, SettingsNavigationTarget } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
 import type { ConfirmDialogOptions, ConfirmDialogToggleField } from '~/composables/useConfirmDialog'
@@ -904,7 +905,7 @@ function openLayoutEditTopBarModeSettings() {
   openSettings({
     menu: 'BewlyComponents',
     secondaryPage: 'topbar',
-    targetTitleKey: 'topbar.top_bar_switcher',
+    targetTitleKey: 'settings.top_bar_mode',
   })
 }
 
@@ -1988,6 +1989,14 @@ if (settings.value.cleanUrlArgument) {
         pos="top-0 left-0" w-full
       />
     </div>
+
+    <TopBarModeSwitcher
+      v-if="isInIframe()
+        && settings.enableTopBar
+        && settings.useOriginalBilibiliTopBar
+        && settings.showBewlyOrBiliTopBarSwitcher"
+      native
+    />
 
     <div
       v-if="!settings.useOriginalBilibiliHomepage"

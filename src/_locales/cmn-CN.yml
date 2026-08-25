@@ -243,7 +243,7 @@ settings:
   topbar_display_settings: 顶栏显示与行为
   topbar_display_settings_desc: 调整顶栏在不同页面和交互场景下的显示方式。
   topbar_style_settings: 顶栏样式
-  topbar_style_settings_desc: 调整顶栏背景、渐变和页面背景适配方式。
+  topbar_style_settings_desc: 调整顶栏背景、渐变、类型、切换入口和页面背景适配方式。
   group_navigation: Dock和侧边栏
   group_dock: Dock 栏
   group_sidebar: 侧边栏
@@ -553,6 +553,8 @@ settings:
     exp_frosted_glass: 白雾（实验）
     exp_transparent: 阴影（实验）
   show_top_bar_theme_color_gradient: 在顶栏显示主题色渐变（仅在暗色模式下有效）
+  show_bewly_or_bili_top_bar_switcher: 显示 Bilibili/BewlyCat 顶栏切换器
+  show_bewly_or_bili_top_bar_switcher_desc: 同时控制原版 Bilibili 顶栏和 BewlyCat 顶栏中的双向切换按钮。
   show_bewly_or_bili_page_switcher: 显示 BewlyCat/Bilibili 页面切换器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多页面显示 BewlyCat/Bilibili 页面切换器
   filter_articles_in_moments: 过滤专栏

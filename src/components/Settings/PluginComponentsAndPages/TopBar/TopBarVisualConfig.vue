@@ -68,12 +68,6 @@ const topBarComponents = computed<TopBarComponent[]>(() => [
     icon: 'i-tabler:bell',
     supportsBadge: true,
   },
-  {
-    key: 'topBarSwitcher',
-    i18nKey: 'topbar.top_bar_switcher',
-    icon: 'i-mingcute:refresh-2-line',
-    supportsBadge: false,
-  },
 ])
 
 const badgeOptions = computed(() => [
@@ -232,6 +226,25 @@ function toggleChannel(value: string) {
       <SettingsItem :title="$t('settings.show_top_bar_theme_color_gradient')" right-width="auto">
         <Radio v-model="settings.showTopBarThemeColorGradient" />
       </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.top_bar_mode')"
+        :desc="$t('settings.use_original_bilibili_topbar_desc')"
+        right-width="auto"
+      >
+        <Select
+          v-model="settings.useOriginalBilibiliTopBar"
+          :options="topBarModeOptions"
+          :disabled="!settings.enableTopBar"
+          w="160px"
+        />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.show_bewly_or_bili_top_bar_switcher')"
+        :desc="$t('settings.show_bewly_or_bili_top_bar_switcher_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showBewlyOrBiliTopBarSwitcher" />
+      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup
@@ -384,16 +397,7 @@ function toggleChannel(value: string) {
           </span>
         </template>
         <div class="topbar-component-controls">
-          <div v-if="component.key === 'topBarSwitcher'" class="topbar-component-control topbar-component-control--mode">
-            <span class="topbar-component-control__label">{{ $t('settings.top_bar_mode') }}</span>
-            <Select
-              v-model="settings.useOriginalBilibiliTopBar"
-              :options="topBarModeOptions"
-              :disabled="!settings.enableTopBar"
-              w="160px"
-            />
-          </div>
-          <div v-else-if="component.supportsBadge" class="topbar-component-control topbar-component-control--badge">
+          <div v-if="component.supportsBadge" class="topbar-component-control topbar-component-control--badge">
             <span class="topbar-component-control__label">{{ $t('settings.badge_type') }}</span>
             <Select
               :model-value="getComponentBadgeValue(component.key)"
