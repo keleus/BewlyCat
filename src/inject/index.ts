@@ -1124,8 +1124,11 @@ else if (shouldInitializePageScript) {
       state.expandAllLayoutKey = undefined
       renderer.requestUpdate?.()
       requestAnimationFrame(() => {
-        if (renderer.isConnected && getCommentReplyTreeMode() !== null)
+        if (renderer.isConnected && getCommentReplyTreeMode() !== null) {
+          if (state.allRepliesExpanded)
+            restoreCommentReplyPaginationHead(renderer)
           updateCommentReplyTree(renderer)
+        }
       })
     }).catch(() => {
       // 调用方会在控制台记录错误；finally 中的状态清理仍需执行。
@@ -1447,8 +1450,12 @@ else if (shouldInitializePageScript) {
           if (state.loading || state.expandAllLoading) {
             return [{ text: pageT('inject.loading'), idx: currentPage, clickable: false }]
           }
-          if (state.allRepliesExpanded)
+          if (state.allRepliesExpanded) {
+            // 批量展开完成后恢复 B 站原生的「共 x 页」，不要继续显示
+            // 我们在逐页阅读模式下使用的「第 1 页，共 x 页」。
+            queueMicrotask(() => restoreCommentReplyPaginationHead(this))
             return []
+          }
           const totalPage = Number(this.totalPage) || 0
           const hasNext = currentPage < totalPage
           queueMicrotask(() => updateCommentReplyPaginationHead(this, currentPage))
