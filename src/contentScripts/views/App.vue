@@ -26,6 +26,7 @@ import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
+import { isComponentVisible } from '~/utils/topBarBadge'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
@@ -905,7 +906,7 @@ function openLayoutEditTopBarModeSettings() {
   openSettings({
     menu: 'BewlyComponents',
     secondaryPage: 'topbar',
-    targetTitleKey: 'settings.top_bar_mode',
+    targetTitleKey: 'topbar.top_bar_switcher',
   })
 }
 
@@ -1994,7 +1995,7 @@ if (settings.value.cleanUrlArgument) {
       v-if="isInIframe()
         && settings.enableTopBar
         && settings.useOriginalBilibiliTopBar
-        && settings.showBewlyOrBiliTopBarSwitcher"
+        && isComponentVisible('topBarSwitcher')"
       native
     />
 

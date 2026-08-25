@@ -78,6 +78,7 @@ const editableTopBarComponents: EditableTopBarComponent[] = [
   { key: 'notifications', supportsBadge: true },
   { key: 'pinnedChannels', supportsBadge: false },
   { key: 'avatar', supportsBadge: false },
+  { key: 'topBarSwitcher', supportsBadge: false },
 ]
 
 function ensureTopBarComponentsConfig() {
@@ -691,7 +692,7 @@ const shouldShowDivider = computed(() => {
 
       <!-- Bewly / Bilibili top bar switcher: keep it as the final action. -->
       <TopBarModeSwitcher
-        v-if="isLayoutEditing || settings.showBewlyOrBiliTopBarSwitcher"
+        v-if="isLayoutEditing || isComponentVisible('topBarSwitcher')"
         :force-white-icon="forceWhiteIcon"
       />
     </div>

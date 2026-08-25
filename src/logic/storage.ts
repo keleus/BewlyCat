@@ -310,7 +310,6 @@ export interface Settings {
   videoPageTopBarConfig: VideoPageTopBarConfig
   topBarStyle: TopBarStyle
   showTopBarThemeColorGradient: boolean
-  showBewlyOrBiliTopBarSwitcher: boolean
   showBewlyOrBiliPageSwitcher: boolean
   showBewlyOrBiliPageSwitcherOnMorePages: boolean
   topBarLogoStyle: TopBarLogoStyle
@@ -611,7 +610,6 @@ export const originalSettings: Settings = {
   videoPageTopBarConfig: VideoPageTopBarConfig.ShowOnScroll,
   topBarStyle: 'default',
   showTopBarThemeColorGradient: true,
-  showBewlyOrBiliTopBarSwitcher: true,
   showBewlyOrBiliPageSwitcher: true,
   showBewlyOrBiliPageSwitcherOnMorePages: false,
   topBarLogoStyle: 'icon',
@@ -627,6 +625,7 @@ export const originalSettings: Settings = {
     { key: 'notifications', visible: true, badgeType: 'number' },
     { key: 'pinnedChannels', visible: true, badgeType: 'none' },
     { key: 'avatar', visible: true, badgeType: 'none' },
+    { key: 'topBarSwitcher', visible: true, badgeType: 'none' },
   ],
   topBarPinnedChannels: [],
   openNotificationsPageAsDrawer: true,
@@ -881,19 +880,8 @@ watch(
     const record = value as Record<string, any>
 
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
+    Reflect.deleteProperty(record, 'showBewlyOrBiliTopBarSwitcher')
     Reflect.deleteProperty(record, 'enableHomeGridVirtualization')
-
-    const legacyTopBarSwitcherConfig = Array.isArray(record.topBarComponentsConfig)
-      ? record.topBarComponentsConfig.find((component: any) => component?.key === 'topBarSwitcher')
-      : undefined
-    if (legacyTopBarSwitcherConfig) {
-      if (typeof legacyTopBarSwitcherConfig.visible === 'boolean')
-        record.showBewlyOrBiliTopBarSwitcher = legacyTopBarSwitcherConfig.visible
-      record.topBarComponentsConfig = record.topBarComponentsConfig
-        .filter((component: any) => component?.key !== 'topBarSwitcher')
-    }
-    if (typeof record.showBewlyOrBiliTopBarSwitcher !== 'boolean')
-      record.showBewlyOrBiliTopBarSwitcher = originalSettings.showBewlyOrBiliTopBarSwitcher
 
     const validTabsPositions: TabsPosition[] = ['left', 'center']
     if (!validTabsPositions.includes(record.homeTabsPosition))

@@ -192,12 +192,6 @@ const topBarGlobalTitleKeys = [
   'settings.top_bar_style_opt.exp_frosted_glass',
   'settings.top_bar_style_opt.exp_transparent',
   'settings.show_top_bar_theme_color_gradient',
-  'settings.top_bar_mode',
-  'settings.top_bar_mode_opt.original',
-  'settings.top_bar_mode_opt.bewly',
-  'settings.use_original_bilibili_topbar_desc',
-  'settings.show_bewly_or_bili_top_bar_switcher',
-  'settings.show_bewly_or_bili_top_bar_switcher_desc',
   'settings.open_top_bar_items_in_bewly',
   'settings.open_notifications_page_as_drawer',
   'settings.filter_articles_in_moments',
@@ -418,6 +412,18 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ].flatMap(([, titleKey]) => createEntries(topBarRoute, [titleKey!], {
     keywordKeys: ['settings.visibility'],
   })),
+  ...createEntries(topBarRoute, [
+    'topbar.top_bar_switcher',
+  ], {
+    keywordKeys: [
+      'settings.visibility',
+      'settings.top_bar_mode',
+      'settings.top_bar_mode_opt',
+      'settings.use_original_bilibili_topbar',
+      'settings.use_original_bilibili_topbar_desc',
+    ],
+  }),
+
   ...createEntries(dockRoute, [
     'settings.plugin.dock_and_sidebar',
     'settings.group_dock',

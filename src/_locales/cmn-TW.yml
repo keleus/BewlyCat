@@ -528,8 +528,6 @@ settings:
     exp_frosted_glass: 白霧（實驗）
     exp_transparent: 陰影（實驗）
   show_top_bar_theme_color_gradient: 在頂部列顯示主題色漸變（僅在深色模式下有效）
-  show_bewly_or_bili_top_bar_switcher: 顯示 BewlyBewly/Bilibili 頂部列切換器
-  show_bewly_or_bili_top_bar_switcher_desc: 在頁面頂部懸停時顯示切換器，用於在 BewlyCat 頂部列與 Bilibili 原版頂部列之間切換。
   show_bewly_or_bili_page_switcher: 顯示 BewlyBewly/Bilibili 頁面切換器
   show_bewly_or_bili_page_switcher_on_more_pages: 在更多頁面顯示 BewlyCat/Bilibili 頁面切換器
   filter_articles_in_moments: 過濾專欄
