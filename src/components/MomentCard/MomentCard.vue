@@ -1322,6 +1322,7 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__forward strong {
   color: var(--bew-text-1);
+  font-weight: var(--bew-font-weight-semibold);
 }
 
 .moment-card__forward p {
@@ -1342,6 +1343,8 @@ function handleAdditionalClick(event: MouseEvent) {
   border-radius: var(--bew-interactive-radius);
   color: inherit;
   background: var(--bew-fill-1);
+  font-size: var(--bew-font-size-body);
+  line-height: var(--bew-line-height-body);
   text-decoration: none;
 }
 
@@ -1386,6 +1389,11 @@ function handleAdditionalClick(event: MouseEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.moment-card__additional-main strong {
+  color: var(--bew-text-1);
+  font-weight: var(--bew-font-weight-semibold);
 }
 
 .moment-card__additional-main small {
