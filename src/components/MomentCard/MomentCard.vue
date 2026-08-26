@@ -1914,8 +1914,8 @@ function handleAdditionalClick(event: MouseEvent) {
   color: #fff;
   background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 72%));
   box-sizing: border-box;
-  font-size: var(--bew-font-size-caption);
-  line-height: var(--bew-line-height-caption);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
   text-shadow: 0 1px 2px rgb(0 0 0 / 65%);
 }
 
