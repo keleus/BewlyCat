@@ -31,6 +31,7 @@ import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes
 import type { DataItem, MomentResult } from '~/models/moment/moment'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
+import { numFormatter } from '~/utils/dataFormatter'
 import { getCSRF } from '~/utils/main'
 import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -4000,9 +4001,36 @@ watch(
               </span>
             </a>
             <div v-if="portalUser" class="moments-user-card__stats">
-              <span><strong>{{ portalUser.following }}</strong><small>{{ t('moments.following') }}</small></span>
-              <span><strong>{{ portalUser.follower }}</strong><small>{{ t('moments.followers') }}</small></span>
-              <span><strong>{{ portalUser.dyns }}</strong><small>{{ t('moments.posts') }}</small></span>
+              <a
+                class="moments-user-card__stat"
+                :href="`https://space.bilibili.com/${portalUser.mid}/fans/follow`"
+                :title="`${portalUser.following}`"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <strong>{{ numFormatter(portalUser.following) }}</strong>
+                <small>{{ t('moments.following') }}</small>
+              </a>
+              <a
+                class="moments-user-card__stat"
+                :href="`https://space.bilibili.com/${portalUser.mid}/fans/fans`"
+                :title="`${portalUser.follower}`"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <strong>{{ numFormatter(portalUser.follower) }}</strong>
+                <small>{{ t('moments.followers') }}</small>
+              </a>
+              <a
+                class="moments-user-card__stat"
+                :href="`https://space.bilibili.com/${portalUser.mid}/dynamic`"
+                :title="`${portalUser.dyns}`"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <strong>{{ numFormatter(portalUser.dyns) }}</strong>
+                <small>{{ t('moments.posts') }}</small>
+              </a>
             </div>
             <div v-else class="moments-sidebar-editor-placeholder">
               {{ $t('settings.moments_show_user_card') }}
@@ -4934,7 +4962,7 @@ watch(
   overflow: hidden;
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-heading);
-  font-weight: var(--bew-font-weight-semibold);
+  font-weight: var(--bew-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -4963,30 +4991,53 @@ watch(
   color: #fb7299;
   border: 1px solid currentcolor;
 }
+// 统计区对齐 UserPanelPop 的 channel-info-item：竖线分隔、hover 变主题色、可跳转
 .moments-user-card__stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  margin-top: var(--bew-space-5);
+  gap: var(--bew-space-2);
+  margin-top: var(--bew-space-4);
+  padding-top: var(--bew-space-2);
+  border-top: 1px solid var(--bew-border-color);
 }
-.moments-user-card__stats > span {
+.moments-user-card__stat {
+  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
   align-items: center;
   gap: var(--bew-space-1);
+  color: inherit;
+  text-decoration: none;
 }
-.moments-user-card__stats strong {
+.moments-user-card__stat + .moments-user-card__stat::before {
+  position: absolute;
+  left: calc(var(--bew-space-2) / -2);
+  top: var(--bew-space-2);
+  bottom: var(--bew-space-2);
+  width: 1px;
+  background: var(--bew-border-color);
+  content: "";
+}
+.moments-user-card__stat:hover strong,
+.moments-user-card__stat:hover small {
+  color: var(--bew-theme-color);
+}
+.moments-user-card__stat strong {
   overflow: hidden;
   max-width: 100%;
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-heading);
   font-weight: var(--bew-font-weight-semibold);
   text-overflow: ellipsis;
+  transition: color var(--bew-duration-normal) var(--bew-ease-standard);
 }
-.moments-user-card__stats small {
-  color: var(--bew-text-3);
-  font-size: var(--bew-font-size-control);
-  line-height: var(--bew-line-height-control);
+.moments-user-card__stat small {
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-caption);
+  transition: color var(--bew-duration-normal) var(--bew-ease-standard);
 }
 .moments-publish-link {
   display: flex;
@@ -5029,6 +5080,7 @@ watch(
 .moments-live-card > header strong {
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-title);
+  font-weight: var(--bew-font-weight-semibold);
   line-height: var(--bew-line-height-title);
 }
 .moments-live-card > header span {
