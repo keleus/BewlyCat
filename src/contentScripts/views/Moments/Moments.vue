@@ -5015,7 +5015,8 @@ watch(
   overflow: hidden;
   max-width: 100%;
   color: var(--bew-text-1);
-  font-size: var(--bew-font-size-heading);
+  // 与 UserPanelPop .num text-xl (18px) 对齐
+  font-size: 18px;
   font-weight: var(--bew-font-weight-semibold);
   text-overflow: ellipsis;
   transition: color var(--bew-duration-normal) var(--bew-ease-standard);
