@@ -4767,8 +4767,9 @@ watch(
   flex-direction: column;
   align-items: center;
   gap: var(--bew-space-1);
-  width: 64px;
-  min-width: 64px;
+  // 72px：48px 头像 + 上下留白后内容区 64px
+  width: 72px;
+  min-width: 72px;
   padding: var(--bew-space-1);
   border: 0;
   border-radius: var(--bew-interactive-radius);
