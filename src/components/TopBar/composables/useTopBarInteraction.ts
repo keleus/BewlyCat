@@ -42,7 +42,7 @@ function getConfiguredPageUrl(page: AppPage): string {
 export function useTopBarInteraction() {
   const topBarStore = useTopBarStore()
   const { closeAllPopups } = topBarStore
-  const topBarItemElements: Partial<Record<TopBarPopupKey, Ref<HTMLElement | undefined>>> = {}
+  const topBarItemElements: Partial<Record<TopBarPopupKey, Ref<HTMLElement | undefined> & { reset?: () => void }>> = {}
   const topBarTransformers = reactive<Partial<Record<TopBarPopupKey, Ref<any>>>>({})
 
   const isMouseOverPopup = reactive<Record<string, boolean>>({})
@@ -293,6 +293,9 @@ export function useTopBarInteraction() {
     handledClickEvents.add(event)
     event.preventDefault()
     event.stopPropagation()
+    // 点击将打开新标签页：先复位该 hover 实例（清 pending enter timer 并关闭
+    // 已打开弹窗），避免新标签聚焦、原标签失焦后定时器在后台触发把弹窗重新打开。
+    topBarItemElements[key]?.reset?.()
     closeAllPopups()
     openConfiguredPageFromTopBar(page)
   }
