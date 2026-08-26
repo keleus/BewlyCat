@@ -4997,11 +4997,8 @@ watch(
   grid-template-columns: repeat(3, 1fr);
   gap: var(--bew-space-2);
   margin-top: var(--bew-space-4);
-  padding-top: var(--bew-space-2);
-  border-top: 1px solid var(--bew-border-color);
 }
 .moments-user-card__stat {
-  position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -5009,15 +5006,6 @@ watch(
   gap: var(--bew-space-1);
   color: inherit;
   text-decoration: none;
-}
-.moments-user-card__stat + .moments-user-card__stat::before {
-  position: absolute;
-  left: calc(var(--bew-space-2) / -2);
-  top: var(--bew-space-2);
-  bottom: var(--bew-space-2);
-  width: 1px;
-  background: var(--bew-border-color);
-  content: "";
 }
 .moments-user-card__stat:hover strong,
 .moments-user-card__stat:hover small {
