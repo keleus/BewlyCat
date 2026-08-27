@@ -1274,7 +1274,7 @@ function handleAdditionalClick(event: MouseEvent) {
   position: relative;
   display: flex;
   flex-direction: column;
-  margin-top: var(--bew-space-3);
+  margin-top: var(--bew-space-4);
   overflow: hidden;
   /* 推特引用推文式：与卡片同底色，仅用描边框出被转发内容 */
   border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 58%);
@@ -1320,7 +1320,7 @@ function handleAdditionalClick(event: MouseEvent) {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--bew-space-3);
-  margin-top: var(--bew-space-3);
+  margin-top: var(--bew-space-4);
   padding: var(--bew-space-3) var(--bew-space-4);
   border-radius: var(--bew-interactive-radius);
   color: inherit;
@@ -1480,7 +1480,7 @@ function handleAdditionalClick(event: MouseEvent) {
   display: flex;
   align-items: center;
   gap: var(--bew-space-3);
-  padding: var(--bew-space-3) var(--bew-space-4);
+  padding: var(--bew-space-4);
 }
 
 .moment-card__identity {
@@ -1547,7 +1547,7 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__main {
-  padding: 0 var(--bew-space-4) var(--bew-space-3);
+  padding: 0 var(--bew-space-4) var(--bew-space-4);
 }
 
 .moment-card__main--has-media {
@@ -1587,7 +1587,7 @@ function handleAdditionalClick(event: MouseEvent) {
 .moment-card__main--live {
   display: flex;
   flex-direction: column;
-  gap: var(--bew-space-3);
+  gap: var(--bew-space-4);
 }
 
 .moment-card__main--live .moment-card__body {
@@ -1608,14 +1608,14 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__gallery-host {
-  margin-top: var(--bew-space-3);
+  margin-top: var(--bew-space-4);
 }
 
 .moment-card__gallery {
   position: relative;
   display: grid;
   grid-template-columns: 1fr;
-  margin-top: var(--bew-space-3);
+  margin-top: var(--bew-space-4);
   overflow: hidden;
   border-radius: var(--bew-media-radius);
   aspect-ratio: 1;
