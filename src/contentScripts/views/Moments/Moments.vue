@@ -208,8 +208,10 @@ let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
 let detailFocusRetryTimer: ReturnType<typeof setTimeout> | null = null
 const layoutRef = ref<HTMLElement | null>(null)
 const gridRef = ref<HTMLElement | null>(null)
-/** 按当前实际列数限制单张动态卡片的最大宽度。 */
-const GRID_GAP = 16
+/** 与 .moments-grid__column 的 gap 及 CSS 变量联动，虚拟滚动测量按此计算。 */
+const GRID_GAP = 20
+/** 与 .moments-layout 的 column-gap(--bew-space-6) 一致。 */
+const LAYOUT_GAP = 24
 const CARD_MAX_WIDTH_BY_COLUMNS = {
   1: 720,
   2: 610,
@@ -2362,7 +2364,7 @@ function updateGridColumnCount() {
   const wantRight = settings.value.momentsSidebarShowHotSearch
 
   function tryLayout(cols: number, left: boolean, right: boolean) {
-    const reserve = (left ? SIDEBAR_WIDTH + GRID_GAP : 0) + (right ? SIDEBAR_WIDTH + GRID_GAP : 0)
+    const reserve = (left ? SIDEBAR_WIDTH + LAYOUT_GAP : 0) + (right ? SIDEBAR_WIDTH + LAYOUT_GAP : 0)
     const budget = layoutWidth - reserve
     if (budget < CARD_COMPACT_MIN_WIDTH)
       return null
@@ -4601,14 +4603,14 @@ watch(
 
 <style scoped lang="scss">
 .moments-page {
-  padding: var(--bew-space-2) var(--bew-space-3) var(--bew-space-12);
+  padding: var(--bew-space-2) var(--bew-space-5) var(--bew-space-12);
 }
 .moments-layout {
   display: grid;
   justify-content: center;
   align-items: start;
-  column-gap: var(--bew-space-4);
-  row-gap: var(--bew-space-4);
+  column-gap: var(--bew-space-6);
+  row-gap: var(--bew-space-6);
   width: 100%;
   grid-template-columns: auto;
   grid-template-areas:
@@ -4645,7 +4647,7 @@ watch(
   align-items: stretch;
   gap: 0;
   margin-bottom: var(--bew-space-4);
-  padding: var(--bew-space-3) var(--bew-space-2) var(--bew-space-2);
+  padding: var(--bew-space-4);
   border-radius: var(--bew-card-radius);
   background: var(--bew-elevated);
   box-shadow: none;
@@ -4898,7 +4900,7 @@ watch(
   max-width: 100%;
   max-height: calc(100dvh - var(--bew-top-bar-height, 64px) - var(--bew-space-6));
   flex-direction: column;
-  gap: var(--bew-space-3);
+  gap: var(--bew-space-5);
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -5096,7 +5098,7 @@ watch(
   height: 72px;
   min-width: 0;
   flex: 0 0 72px;
-  padding: var(--bew-space-2) var(--bew-space-1);
+  padding: var(--bew-space-2);
   border-radius: var(--bew-interactive-radius);
   color: inherit;
   text-decoration: none;
@@ -5232,13 +5234,12 @@ watch(
   display: grid;
   align-items: start;
   justify-content: center;
-  gap: var(--bew-space-4);
   width: 100%;
 }
 .moments-skeleton-column {
   display: flex;
   flex-direction: column;
-  gap: var(--bew-space-4);
+  gap: var(--bew-space-5);
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -5411,7 +5412,6 @@ watch(
 }
 .moments-grid {
   display: grid;
-  gap: var(--bew-space-4);
   width: 100%;
   justify-content: center;
   justify-items: stretch;
@@ -5424,7 +5424,8 @@ watch(
   max-width: 100%;
   min-width: 0;
   flex-direction: column;
-  gap: var(--bew-space-4);
+  /* 与 JS 的 GRID_GAP 一致 */
+  gap: var(--bew-space-5);
 }
 .moments-grid :deep(.moment-card) {
   width: 100%;

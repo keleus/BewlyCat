@@ -96,7 +96,7 @@ onMounted(loadHotSearch)
 .moments-hot-search {
   overflow: auto;
   overscroll-behavior: contain;
-  padding: var(--bew-space-3);
+  padding: var(--bew-space-4);
   border-radius: var(--bew-panel-radius);
   background: var(--bew-elevated);
   scrollbar-width: thin;
