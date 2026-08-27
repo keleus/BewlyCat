@@ -11,7 +11,7 @@ import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import api from '~/utils/api'
-import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, prepareBewlyWidescreenLoading } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, BEWLY_WIDESCREEN_USER_EXIT, exitBewlyWidescreen, isBewlyWidescreenActive, prepareBewlyWidescreenLoading } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
@@ -619,6 +619,21 @@ else if (shouldInitializeContentScript) {
       applyDefaultPlayerMode()
     }, delay ?? 500)
   }
+
+  window.addEventListener(BEWLY_WIDESCREEN_USER_EXIT, () => {
+    const currentNavigationKey = getVideoNavigationKey(location.href)
+    if (!currentNavigationKey)
+      return
+
+    // 用户主动退出会终止当前视频的默认宽屏初始化。否则头部/播放器就绪
+    // 检查留下的重试会再次挂载遮罩，并重新进入 Bewly 宽屏。
+    clearPlayerModeRetry()
+    lastAppliedPlayerModeNavigationKey = currentNavigationKey
+    queueMicrotask(() => {
+      if (getVideoNavigationKey(location.href) === currentNavigationKey)
+        applyPlayerModeCompanionSettings()
+    })
+  })
 
   function waitForPlayerModePageSettle() {
     clearPlayerModeRetry()

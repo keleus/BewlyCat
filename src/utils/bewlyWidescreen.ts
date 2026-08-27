@@ -53,6 +53,7 @@ interface BewlyWidescreenState {
 const ROOT_ID = 'bewly-widescreen-root'
 const LOADING_ROOT_ID = 'bewly-widescreen-loading'
 const SWITCH_HINT_ID = 'bewly-widescreen-switch-hint'
+export const BEWLY_WIDESCREEN_USER_EXIT = 'bewly-widescreen-user-exit'
 const BODY_CLASS = 'bewly-widescreen-active'
 const EMPTY_CLASS = 'bewly-widescreen-empty'
 const EPISODE_SECTION_CLASS = 'bewly-widescreen-episode-section'
@@ -541,7 +542,7 @@ function createSidebarToolbar() {
   closeButton.textContent = t('widescreen.exit')
   closeButton.title = t('widescreen.exit_title')
   closeButton.setAttribute('aria-label', closeButton.title)
-  closeButton.addEventListener('click', () => exitBewlyWidescreen())
+  closeButton.addEventListener('click', () => exitBewlyWidescreen({ userInitiated: true }))
 
   toolbar.append(createSidebarTitle(), closeButton)
   return toolbar
@@ -794,7 +795,7 @@ function showWidescreenLoading() {
   exitButton.type = 'button'
   exitButton.className = 'bewly-widescreen-loading-exit'
   exitButton.hidden = true
-  exitButton.addEventListener('click', () => exitBewlyWidescreen())
+  exitButton.addEventListener('click', () => exitBewlyWidescreen({ userInitiated: true }))
 
   // 遮罩可能在设置水合、App 挂载之前创建，文案需跟随 locale 变化刷新。
   const syncLoadingTexts = () => {
@@ -835,7 +836,7 @@ function showWidescreenLoading() {
 
     event.preventDefault()
     event.stopPropagation()
-    exitBewlyWidescreen()
+    exitBewlyWidescreen({ userInitiated: true })
   }
   document.addEventListener('keydown', handleEscapeKey, true)
   loadingEscapeCleanup = () => {
@@ -894,7 +895,7 @@ function removeWidescreenLoading(immediate = false) {
   loadingFadeTimer = setTimeout(remove, LOADING_FADE_DURATION)
 }
 
-function isBewlyWidescreenEngaged() {
+export function isBewlyWidescreenEngaged() {
   return !!state || waitingForLoad || !!readyRetryTimer || !!loadingOverlay
 }
 
@@ -932,7 +933,7 @@ function handleNativePlayerModeInteraction(event: Event) {
 
   // Native web/wide/full modes cannot apply while Bewly widescreen owns the
   // player layout. Exit first so the same gesture takes effect immediately.
-  exitBewlyWidescreen()
+  exitBewlyWidescreen({ userInitiated: true })
 
   if (alreadyEntered || isBrowserFullscreenButton)
     return
@@ -2984,7 +2985,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
 
     event.preventDefault()
     event.stopPropagation()
-    exitBewlyWidescreen()
+    exitBewlyWidescreen({ userInitiated: true })
   }
   document.addEventListener('keydown', handleEscapeKey, true)
   nextState.escapeKeyCleanup = () => document.removeEventListener('keydown', handleEscapeKey, true)
@@ -3110,7 +3111,9 @@ export function applyBewlyWidescreen(
   }, 6000)
 }
 
-export function exitBewlyWidescreen() {
+export function exitBewlyWidescreen(
+  options: { userInitiated?: boolean } = {},
+) {
   clearReadyRetryTimer()
   clearLoadFallbackTimer()
   clearPageLoadHandler()
@@ -3118,6 +3121,9 @@ export function exitBewlyWidescreen() {
   removeSwitchHint(true)
   removeWidescreenLoading(true)
   waitingForLoad = false
+
+  if (options.userInitiated)
+    window.dispatchEvent(new Event(BEWLY_WIDESCREEN_USER_EXIT))
 
   if (!state)
     return
