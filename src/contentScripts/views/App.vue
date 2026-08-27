@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '~/components/Button.vue'
 import Icon from '~/components/Icon.vue'
 import Radio from '~/components/Radio.vue'
+import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
 import type { BewlyAppProvider, SettingsNavigationTarget } from '~/composables/useAppProvider'
 import { DrawerType, UndoForwardState } from '~/composables/useAppProvider'
 import type { ConfirmDialogOptions, ConfirmDialogToggleField } from '~/composables/useConfirmDialog'
@@ -25,6 +26,7 @@ import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
+import { isComponentVisible } from '~/utils/topBarBadge'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
@@ -1988,6 +1990,14 @@ if (settings.value.cleanUrlArgument) {
         pos="top-0 left-0" w-full
       />
     </div>
+
+    <TopBarModeSwitcher
+      v-if="isInIframe()
+        && settings.enableTopBar
+        && settings.useOriginalBilibiliTopBar
+        && isComponentVisible('topBarSwitcher')"
+      native
+    />
 
     <div
       v-if="!settings.useOriginalBilibiliHomepage"
