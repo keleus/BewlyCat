@@ -255,6 +255,8 @@ let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   showContextMenu.value = true
+  window.addEventListener('resize', handleViewportResize)
+  window.visualViewport?.addEventListener('resize', handleViewportResize)
   nextTick(() => {
     handleScroll()
 
@@ -269,6 +271,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', handleViewportResize)
+  window.visualViewport?.removeEventListener('resize', handleViewportResize)
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null
@@ -276,6 +280,12 @@ onUnmounted(() => {
   if (shouldRestoreFocus && props.triggerElement?.isConnected)
     props.triggerElement.focus({ preventScroll: true })
 })
+
+// Fixed menu coordinates are calculated from the viewport at open time. Close
+// when its dimensions change so an upward menu cannot drift from its trigger.
+function handleViewportResize() {
+  emit('close')
+}
 
 function getAuthorMid() {
   if (!props.video.author)
@@ -536,7 +546,7 @@ async function unfollowUser() {
         :style="contextMenuStyles"
         class="context-menu-container"
         :class="opensUpward && 'context-menu-container--up'"
-        p-2 bg="$bew-elevated"
+        bg="$bew-elevated"
         border="1 $bew-popover-border-color"
       >
         <button
@@ -733,6 +743,7 @@ async function unfollowUser() {
   display: flex;
   flex-direction: column;
   width: min(240px, calc(100vw - var(--bew-space-4)));
+  padding: var(--bew-popover-padding);
   transform-origin: top right; // 菜单右缘对齐按钮右缘，右上角即按钮位置
   max-height: min(480px, calc(100vh - var(--bew-space-4))); // 与 floatingMenu.ts 的 preferredMaxHeight 同步
   overflow: hidden;
