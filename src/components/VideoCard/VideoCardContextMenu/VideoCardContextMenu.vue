@@ -542,12 +542,10 @@ async function unfollowUser() {
     <Transition name="context-menu" appear>
       <div
         v-if="showContextMenu"
-        style="backdrop-filter: var(--b-context-menu-glass, var(--bew-filter-glass-1)); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);"
+        style="backdrop-filter: var(--b-context-menu-glass, var(--bew-filter-glass-1));"
         :style="contextMenuStyles"
-        class="context-menu-container"
+        class="context-menu-container bew-popover-surface"
         :class="opensUpward && 'context-menu-container--up'"
-        bg="$bew-elevated"
-        border="1 $bew-popover-border-color"
       >
         <button
           v-show="canScrollUp"
@@ -748,7 +746,6 @@ async function unfollowUser() {
   max-height: min(480px, calc(100vh - var(--bew-space-4))); // 与 floatingMenu.ts 的 preferredMaxHeight 同步
   overflow: hidden;
   z-index: 9999;
-  border-radius: var(--bew-popover-radius);
 }
 
 .context-menu-container--up {
