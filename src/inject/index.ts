@@ -364,15 +364,11 @@ else if (shouldInitializePageScript) {
           padding: 0;
           border: 0;
           background: transparent;
-          color: var(--brand_blue, var(--bew-theme-color, #00aeec));
+          color: var(--bew-text-3, var(--text3, #9499a0));
           font: inherit;
           line-height: inherit;
           cursor: pointer;
           white-space: nowrap;
-        }
-
-        #${COMMENT_REPLY_EXPAND_ALL_ID}:hover {
-          color: var(--bew-theme-color, var(--brand_blue, #00aeec));
         }
 
         #${COMMENT_REPLY_EXPAND_ALL_ID}:active:not(:disabled) {
