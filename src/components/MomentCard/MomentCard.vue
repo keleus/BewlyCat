@@ -1186,8 +1186,8 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__live-mark {
-  top: 8px;
-  left: 8px;
+  top: var(--bew-space-2);
+  left: var(--bew-space-2);
   bottom: auto;
   z-index: 2;
   border-radius: var(--bew-badge-radius);
@@ -1215,7 +1215,6 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__text-cover {
-  min-height: 152px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1238,20 +1237,12 @@ function handleAdditionalClick(event: MouseEvent) {
   color: #fb7299;
 }
 
-.moment-card__body {
-  padding: var(--bew-space-3);
-}
-
 .moment-card--text .moment-card__body {
   padding-top: var(--bew-space-4);
 }
 
 .moment-card--text .moment-card__desc {
   -webkit-line-clamp: 10;
-}
-
-.moment-card__title {
-  margin: 0 0 var(--bew-space-2);
 }
 
 .moment-card__media-meta {
@@ -1262,11 +1253,11 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__media-meta--live {
   align-self: flex-start;
-  padding: 4px 8px;
+  padding: var(--bew-space-1) var(--bew-space-2);
   border-radius: var(--bew-interactive-radius);
   color: var(--bew-theme-color);
   background: var(--bew-theme-color-10);
-  line-height: 1.35;
+  line-height: var(--bew-line-height-control);
 }
 
 .moment-card__desc {
@@ -1277,15 +1268,6 @@ function handleAdditionalClick(event: MouseEvent) {
   -webkit-line-clamp: 4;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.moment-card__footer {
-  display: flex;
-  align-items: center;
-  gap: var(--bew-space-2);
-  margin-top: var(--bew-space-3);
-  color: var(--bew-text-2);
-  font-size: var(--bew-font-size-control);
 }
 
 .moment-card__forward {
@@ -1337,9 +1319,9 @@ function handleAdditionalClick(event: MouseEvent) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: var(--bew-space-3);
   margin-top: var(--bew-space-3);
-  padding: 12px 16px;
+  padding: var(--bew-space-3) var(--bew-space-4);
   border-radius: var(--bew-interactive-radius);
   color: inherit;
   background: var(--bew-fill-1);
@@ -1353,7 +1335,7 @@ function handleAdditionalClick(event: MouseEvent) {
   min-width: 0;
   grid-template-columns: 40px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: var(--bew-space-3);
   color: inherit;
   text-decoration: none;
 }
@@ -1446,8 +1428,8 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__avatar {
-  width: 21px;
-  height: 21px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: cover;
   background: var(--bew-fill-1);
@@ -1499,11 +1481,6 @@ function handleAdditionalClick(event: MouseEvent) {
   align-items: center;
   gap: var(--bew-space-3);
   padding: var(--bew-space-3) var(--bew-space-4);
-}
-
-.moment-card__header .moment-card__avatar {
-  width: 36px;
-  height: 36px;
 }
 
 .moment-card__identity {
@@ -1624,18 +1601,10 @@ function handleAdditionalClick(event: MouseEvent) {
   width: 100%;
 }
 
-.moment-card__main--live .moment-card__cover--media {
-  aspect-ratio: 16 / 9;
-}
-
 .moment-card__media {
   min-width: 0;
   overflow: hidden;
   border-radius: var(--bew-media-radius);
-}
-
-.moment-card__cover--media {
-  aspect-ratio: 16 / 9;
 }
 
 .moment-card__gallery-host {
@@ -1681,8 +1650,8 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__gallery .moment-card__image-count {
-  right: 8px;
-  bottom: 8px;
+  right: var(--bew-space-2);
+  bottom: var(--bew-space-2);
 }
 
 .moment-card__text-cover {
@@ -1789,7 +1758,7 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__title {
-  margin-bottom: var(--bew-space-2);
+  margin: 0 0 var(--bew-space-2);
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-title);
   font-weight: var(--bew-font-weight-semibold);
@@ -1910,7 +1879,7 @@ function handleAdditionalClick(event: MouseEvent) {
   justify-content: space-between;
   gap: var(--bew-space-2);
   min-height: 28px;
-  padding: 12px 8px 4px;
+  padding: var(--bew-space-3) var(--bew-space-2) var(--bew-space-1);
   color: #fff;
   background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 72%));
   box-sizing: border-box;
@@ -2087,7 +2056,7 @@ function handleAdditionalClick(event: MouseEvent) {
   min-width: 0;
   height: 100%;
   margin: 0;
-  padding: 0 8px;
+  padding: 0 var(--bew-space-2);
   border: 0;
   border-radius: 0;
   color: inherit;
