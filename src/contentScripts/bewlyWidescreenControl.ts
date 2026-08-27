@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 
 import { settings } from '~/logic'
-import { applyBewlyWidescreen, ensureNativePlayerModeGuard, exitBewlyWidescreen, isBewlyWidescreenActive, showBewlyWidescreenSwitchHint } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, ensureNativePlayerModeGuard, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, showBewlyWidescreenSwitchHint } from '~/utils/bewlyWidescreen'
 import { i18n } from '~/utils/i18n'
 import { isVideoOrBangumiPage } from '~/utils/main'
 
@@ -139,6 +139,8 @@ function createControlContainer(): HTMLElement {
 
     event.preventDefault()
     event.stopPropagation()
+    if (event.repeat)
+      return
     void handleControlClick(container)
   })
 
@@ -150,7 +152,7 @@ async function handleControlClick(button: HTMLElement) {
     return
 
   if (isBewlyWidescreenActive()) {
-    exitBewlyWidescreen()
+    exitBewlyWidescreen({ userInitiated: true })
     updateControlState(button)
     return
   }
@@ -349,7 +351,7 @@ function setupPageObserver() {
 
   pageObserver = new MutationObserver(() => {
     if (isApplying && (isBewlyWidescreenActive()
-      || !document.getElementById('bewly-widescreen-loading'))) {
+      || !isBewlyWidescreenEngaged())) {
       finishApplying()
     }
 

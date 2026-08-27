@@ -417,11 +417,11 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     showVideoOptions.value = false
     videoOptionsFloatingStyles.value = {
       position: 'fixed',
-      top: `${position.top}px`,
+      top: position.top,
+      bottom: position.bottom,
       left: `${position.left}px`,
       width: `${position.width}px`,
       maxHeight: `${position.maxHeight}px`,
-      transform: position.transform,
     }
     showVideoOptions.value = true
   }

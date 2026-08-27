@@ -258,11 +258,11 @@ function handleMoreBtnClick(event: Event) {
   showVideoOptions.value = false
   videoOptionsFloatingStyles.value = {
     position: 'fixed',
-    top: `${position.top}px`,
+    top: position.top,
+    bottom: position.bottom,
     left: `${position.left}px`,
     width: `${position.width}px`,
     maxHeight: `${position.maxHeight}px`,
-    transform: position.transform,
   }
   showVideoOptions.value = true
 }
@@ -1696,7 +1696,6 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__more-btn.is-open {
   color: var(--bew-text-1);
-  background: var(--bew-fill-2);
 }
 
 .moment-card__more-btn:active {

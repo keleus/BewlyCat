@@ -29,6 +29,10 @@ const emit = defineEmits<{
   (event: 'close'): void
   (event: 'reopen'): void
 }>()
+
+// styles 带 bottom（无 top）即向上展开，缩放原点随之翻转到锚点下缘
+const opensUpward = computed(() => props.contextMenuStyles.bottom !== undefined && props.contextMenuStyles.top === undefined)
+
 // 添加滚动相关的变量和方法
 const menuListRef = ref<HTMLElement | null>(null)
 const canScrollUp = ref(false)
@@ -251,6 +255,8 @@ let resizeObserver: ResizeObserver | null = null
 
 onMounted(() => {
   showContextMenu.value = true
+  window.addEventListener('resize', handleViewportResize)
+  window.visualViewport?.addEventListener('resize', handleViewportResize)
   nextTick(() => {
     handleScroll()
 
@@ -265,6 +271,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', handleViewportResize)
+  window.visualViewport?.removeEventListener('resize', handleViewportResize)
   if (resizeObserver) {
     resizeObserver.disconnect()
     resizeObserver = null
@@ -272,6 +280,12 @@ onUnmounted(() => {
   if (shouldRestoreFocus && props.triggerElement?.isConnected)
     props.triggerElement.focus({ preventScroll: true })
 })
+
+// Fixed menu coordinates are calculated from the viewport at open time. Close
+// when its dimensions change so an upward menu cannot drift from its trigger.
+function handleViewportResize() {
+  emit('close')
+}
 
 function getAuthorMid() {
   if (!props.video.author)
@@ -525,13 +539,13 @@ async function unfollowUser() {
 <template>
   <div>
     <!-- more popup -->
-    <div v-if="showContextMenu">
+    <Transition name="context-menu" appear>
       <div
-        style="backdrop-filter: var(--bew-filter-glass-1); box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-1);"
+        v-if="showContextMenu"
+        style="backdrop-filter: var(--b-context-menu-glass, var(--bew-filter-glass-1));"
         :style="contextMenuStyles"
-        p-1 bg="$bew-elevated"
-        border="1 $bew-border-color"
-        class="context-menu-container"
+        class="context-menu-container bew-popover-surface"
+        :class="opensUpward && 'context-menu-container--up'"
       >
         <button
           v-show="canScrollUp"
@@ -622,16 +636,18 @@ async function unfollowUser() {
           <i class="i-mingcute:down-line" aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </Transition>
 
     <!-- mask -->
-    <div
-      v-if="showContextMenu"
-      pos="fixed top-0 left-0" w-full h-full
-      style="z-index: 9998;"
-      @click="handleClose"
-      @click.right.prevent.stop="handleReopen"
-    />
+    <Transition name="fade">
+      <div
+        v-if="showContextMenu"
+        pos="fixed top-0 left-0" w-full h-full
+        style="z-index: 9998;"
+        @click="handleClose"
+        @click.right.prevent.stop="handleReopen"
+      />
+    </Transition>
 
     <DislikeDialog
       v-if="showDislikeDialog"
@@ -674,13 +690,31 @@ async function unfollowUser() {
 </template>
 
 <style lang="scss" scoped>
+// Chromium 在 opacity/transform 动画期间会丢弃 backdrop-filter（crbug.com/40877283），
+// 故玻璃与缩放同步插值到恒等滤镜，避免动画结束才出现毛玻璃
+.context-menu-enter-active,
+.context-menu-leave-active {
+  transition:
+    opacity var(--bew-duration-fast) var(--bew-ease-standard),
+    transform var(--bew-duration-fast) var(--bew-ease-standard),
+    backdrop-filter var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
+.context-menu-enter-from,
+.context-menu-leave-to {
+  --b-context-menu-glass: blur(0px) saturate(100%);
+
+  opacity: 0;
+  transform: scale(0.9);
+}
+
 .context-menu-item {
   --uno: "hover:bg-$bew-fill-2 rounded-$bew-menu-item-radius cursor-pointer";
-  --uno: "flex items-center";
+  --uno: "flex items-center transition-colors duration-200 ease-$bew-ease-standard";
 
   width: 100%;
   min-height: 32px;
-  padding: var(--bew-space-2);
+  padding: var(--bew-space-2) var(--bew-space-3) var(--bew-space-2) var(--bew-space-2);
   border: 0;
   color: inherit;
   background: transparent;
@@ -693,11 +727,13 @@ async function unfollowUser() {
 .item-icon {
   --uno: "inline-block color-$bew-text-color-2";
 
-  margin-right: var(--bew-space-2);
+  margin-right: var(--bew-space-3);
 }
 
 .divider {
-  --uno: "w-full h-1px px-2px bg-$bew-border-color";
+  --uno: "w-full h-1px bg-$bew-border-color";
+
+  margin: var(--bew-space-1) 0;
 }
 
 .context-menu-container {
@@ -705,10 +741,15 @@ async function unfollowUser() {
   display: flex;
   flex-direction: column;
   width: min(240px, calc(100vw - var(--bew-space-4)));
-  max-height: min(406px, calc(100vh - var(--bew-space-4)));
+  padding: var(--bew-popover-padding);
+  transform-origin: top right; // 菜单右缘对齐按钮右缘，右上角即按钮位置
+  max-height: min(480px, calc(100vh - var(--bew-space-4))); // 与 floatingMenu.ts 的 preferredMaxHeight 同步
   overflow: hidden;
   z-index: 9999;
-  border-radius: var(--bew-popover-radius);
+}
+
+.context-menu-container--up {
+  transform-origin: bottom right;
 }
 
 .context-menu-list {
@@ -716,7 +757,6 @@ async function unfollowUser() {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--bew-space-1) 0;
   margin: 0;
   list-style: none;
 

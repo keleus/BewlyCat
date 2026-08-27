@@ -1,5 +1,5 @@
 import { settings } from '~/logic'
-import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged } from '~/utils/bewlyWidescreen'
 import { isVideoOrBangumiPage } from '~/utils/main'
 // 导入需要的函数
 import {
@@ -230,21 +230,24 @@ export function registerDefaultHandlers(): void {
   // 网页全屏
   registerShortcutHandler('webFullscreen', () => {
     if (isBewlyWidescreenActive())
-      exitBewlyWidescreen()
+      exitBewlyWidescreen({ userInitiated: true })
     webFullscreenClick()
   })
 
   // 宽屏
   registerShortcutHandler('widescreen', () => {
     if (isBewlyWidescreenActive())
-      exitBewlyWidescreen()
+      exitBewlyWidescreen({ userInitiated: true })
     widescreenClick()
   })
 
   // Bewly 宽屏
-  registerShortcutHandler('bewlyWidescreen', () => {
-    if (isBewlyWidescreenActive()) {
-      exitBewlyWidescreen()
+  registerShortcutHandler('bewlyWidescreen', (event) => {
+    if (event.repeat)
+      return
+
+    if (isBewlyWidescreenEngaged()) {
+      exitBewlyWidescreen({ userInitiated: true })
       return
     }
 

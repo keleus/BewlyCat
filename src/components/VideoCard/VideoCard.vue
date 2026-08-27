@@ -429,7 +429,7 @@ provide('getVideoType', () => props.type!)
       </component>
     </div>
 
-    <!-- context menu -->
+    <!-- More menu -->
     <Teleport
       v-if="logic.showVideoOptions.value && props.video && showMoreButton"
       :to="mainAppRef"
