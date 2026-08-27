@@ -375,6 +375,10 @@ else if (shouldInitializePageScript) {
           color: var(--bew-theme-color, var(--brand_blue, #00aeec));
         }
 
+        #${COMMENT_REPLY_EXPAND_ALL_ID}:active:not(:disabled) {
+          transform: scale(0.98);
+        }
+
         #${COMMENT_REPLY_EXPAND_ALL_ID}:focus-visible {
           outline: 2px solid var(--bew-theme-color, #00aeec);
           outline-offset: 2px;
