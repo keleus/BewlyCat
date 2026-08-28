@@ -253,6 +253,13 @@ const filteredFeedRetentionRate = computed(() => filteredFeedCandidateCount.valu
 const requiresManualFilteredPaging = computed(() => hasActiveRecommendationFilter.value
   && filteredFeedCandidateCount.value >= FILTERED_FEED_SAMPLE_SIZE
   && filteredFeedRetentionRate.value < FILTERED_FEED_MIN_RETENTION_RATE)
+const showFilteredEmptyState = computed(() => hasActiveRecommendationFilter.value
+  && filteredFeedCandidateCount.value > 0
+  && currentVideoList.value.length === 0
+  && !isLoading.value
+  && !requestFailed.value
+  && !needToLoginFirst.value
+  && !noMoreContent.value)
 
 const recommendationFilterSettingsSignature = computed(() => JSON.stringify([
   settings.value.disableFilterForFollowedUser,
@@ -836,12 +843,9 @@ async function initData() {
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
   requestFailed.value = false // 重置请求失败状态
   needToLoginFirst.value = false
-  try {
-    await getData('refresh')
-  }
-  finally {
-    hasInitializedData.value = true
-  }
+  // 先允许 Grid 接管后续预加载，避免首批稀疏结果在 loading 结束时触发的 loadMore 被初始化守卫丢弃。
+  hasInitializedData.value = true
+  await getData('refresh')
 }
 
 async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
@@ -1678,7 +1682,7 @@ defineExpose({
 <template>
   <div>
     <VideoCardGrid
-      v-if="!needToLoginFirst"
+      v-if="!needToLoginFirst && !showFilteredEmptyState"
       :items="currentVideoList"
       :grid-layout="gridLayout"
       :loading="isLoading"
@@ -1697,8 +1701,21 @@ defineExpose({
       @load-more="handleLoadMore"
     />
 
+    <Empty
+      v-if="showFilteredEmptyState"
+      mt-6
+      :description="$t('home.recommendation_filters_empty')"
+    >
+      <Button type="primary" @click="handleManualLoadMore">
+        <template #left>
+          <span i-tabler-arrow-down />
+        </template>
+        {{ $t('common.load_more') }}
+      </Button>
+    </Empty>
+
     <div
-      v-if="requiresManualFilteredPaging && !isLoading && !noMoreContent"
+      v-if="requiresManualFilteredPaging && !showFilteredEmptyState && !isLoading && !noMoreContent"
       class="filtered-feed-load-more"
     >
       <Button type="secondary" @click="handleManualLoadMore">

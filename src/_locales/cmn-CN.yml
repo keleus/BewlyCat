@@ -1135,6 +1135,7 @@ home:
   app_authorization_required: App 模式的 access token 已缺失或过期，请重新授权后继续使用个性推荐
   reauthorize_app: 重新授权
   recommendation_filter_risk_warning: 当前过滤条件在 100 条有效推荐中仅保留了 {count} 条，容易频繁请求并触发接口风控，建议适当放宽过滤条件。
+  recommendation_filters_empty: 当前过滤条件下暂时没有可显示的视频。
   tell_us_why: 为什么这么做...
   not_interested_desc: >
     你可以使用 <kbd>↑</kbd> 和 <kbd>↓</kbd> 来选择原因，或者直接使用数字键选择原因，按 <kbd>Enter</kbd>

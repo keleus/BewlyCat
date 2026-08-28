@@ -1232,6 +1232,7 @@ home:
   app_authorization_required: The App mode access token is missing or expired. Re-authorize to continue using personalized recommendations.
   reauthorize_app: Re-authorize
   recommendation_filter_risk_warning: The current filters retained only {count} of 100 valid recommendations. This may cause frequent requests and trigger API risk control. Consider relaxing the filters.
+  recommendation_filters_empty: No videos are currently available with the active recommendation filters.
   tell_us_why: Choose a reason why
   not_interested_desc: >-
     You can use <kbd>↑</kbd> and <kbd>↓</kbd> to choose the reason, or using
