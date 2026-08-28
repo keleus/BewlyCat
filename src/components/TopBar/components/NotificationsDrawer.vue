@@ -235,33 +235,44 @@ function handleOpenInNewTab() {
 function handleKeydown(e: KeyboardEvent) {
   if (e.key !== 'Escape' && e.code !== 'Escape')
     return
+  if (e.repeat || e.isComposing)
+    return
 
   // Only handle when this drawer is the active drawer
   if (activeDrawer.value !== DrawerType.NotificationsDrawer)
     return
 
-  e.preventDefault()
-  e.stopPropagation()
+  const hadEscapePriorityState = disableEscPress.value
+    || !!(document.fullscreenElement
+      || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
 
-  if (settings.value.closeDrawerWithoutPressingEscAgain) {
-    clearTimeout(escPressedTimer.value!)
-    handleClose()
-    return
-  }
-  if (disableEscPress.value)
-    return
-  if (isEscPressed.value) {
-    handleClose()
-  }
-  else {
-    isEscPressed.value = true
-    if (escPressedTimer.value) {
-      clearTimeout(escPressedTimer.value)
+  window.setTimeout(() => {
+    if (hadEscapePriorityState
+      || disableEscPress.value
+      || e.defaultPrevented
+      || e.cancelBubble
+      || activeDrawer.value !== DrawerType.NotificationsDrawer) {
+      return
     }
-    escPressedTimer.value = setTimeout(() => {
-      isEscPressed.value = false
-    }, 1300)
-  }
+
+    if (settings.value.closeDrawerWithoutPressingEscAgain) {
+      if (escPressedTimer.value)
+        clearTimeout(escPressedTimer.value)
+      handleClose()
+      return
+    }
+    if (isEscPressed.value) {
+      handleClose()
+    }
+    else {
+      isEscPressed.value = true
+      if (escPressedTimer.value)
+        clearTimeout(escPressedTimer.value)
+      escPressedTimer.value = setTimeout(() => {
+        isEscPressed.value = false
+      }, 1300)
+    }
+  }, 0)
 }
 
 function showEscHintTemporarily() {
@@ -306,7 +317,6 @@ function registerGlobalListeners() {
     return
   globalListenersRegistered = true
   window.addEventListener('keydown', handleKeydown, true) // use capture phase
-  document.addEventListener('keydown', handleKeydown, true) // also listen on document
   window.addEventListener('message', handleDrawerCloseRequestMessage)
   document.addEventListener('focusin', handleIframeFocusin, true)
   document.addEventListener('click', handleDocumentClick, true)
@@ -318,7 +328,6 @@ function removeGlobalListeners() {
     return
   globalListenersRegistered = false
   window.removeEventListener('keydown', handleKeydown, true)
-  document.removeEventListener('keydown', handleKeydown, true)
   window.removeEventListener('message', handleDrawerCloseRequestMessage)
   document.removeEventListener('focusin', handleIframeFocusin, true)
   document.removeEventListener('click', handleDocumentClick, true)

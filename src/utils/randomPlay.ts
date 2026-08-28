@@ -717,8 +717,11 @@ function startNativePlaylistEditing(button: HTMLButtonElement): void {
   }
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape')
-      stopNativePlaylistEditing()
+    if (event.key !== 'Escape')
+      return
+    event.preventDefault()
+    event.stopPropagation()
+    stopNativePlaylistEditing()
   }, { signal })
   updatePlaylistEditorButton(true)
 }
