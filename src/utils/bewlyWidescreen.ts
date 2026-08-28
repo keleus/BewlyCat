@@ -5,6 +5,7 @@ import { settings } from '~/logic'
 import { i18n } from '~/utils/i18n'
 
 import { injectCSS } from './main'
+import { isPhotoViewerOpen } from './photoViewer'
 import { getVideoElement } from './player'
 
 function t(key: string, params: Record<string, unknown> = {}) {
@@ -832,6 +833,8 @@ function showWidescreenLoading() {
 
   const handleEscapeKey = (event: KeyboardEvent) => {
     if (event.key !== 'Escape')
+      return
+    if (isPhotoViewerOpen())
       return
 
     event.preventDefault()
@@ -2981,6 +2984,8 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
 
   const handleEscapeKey = (event: KeyboardEvent) => {
     if (event.key !== 'Escape')
+      return
+    if (isPhotoViewerOpen())
       return
 
     event.preventDefault()

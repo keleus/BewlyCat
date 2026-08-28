@@ -367,6 +367,14 @@ function handleOpenInNewTab() {
   }
 }
 
+function resetEscPressedState() {
+  if (escPressedTimer.value) {
+    clearTimeout(escPressedTimer.value)
+    escPressedTimer.value = null
+  }
+  isEscPressed.value = false
+}
+
 /**
  * Listen to Escape key on the main window using capture phase
  * Only active when this drawer is the active drawer
@@ -374,46 +382,58 @@ function handleOpenInNewTab() {
 function handleKeydown(e: KeyboardEvent) {
   if (e.key !== 'Escape' && e.code !== 'Escape')
     return
+  if (e.repeat || e.isComposing)
+    return
 
   // Only handle when this drawer is the active drawer
   if (activeDrawer.value !== DrawerType.IframeDrawer)
     return
-  e.preventDefault()
-  e.stopPropagation()
 
-  if (settings.value.closeDrawerWithoutPressingEscAgain) {
-    if (escPressedTimer.value) {
-      clearTimeout(escPressedTimer.value)
-      escPressedTimer.value = null
+  // 捕获阶段不抢占 ESC；Dialog、Pop、全屏等内部功能处理完仍未消费时，才兜底关闭抽屉。
+  const hadEscapePriorityState = disableEscPress.value
+    || isPageFullscreen.value
+    || !!(document.fullscreenElement
+      || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
+
+  window.setTimeout(() => {
+    if (hadEscapePriorityState
+      || disableEscPress.value
+      || isPageFullscreen.value
+      || e.defaultPrevented
+      || e.cancelBubble
+      || activeDrawer.value !== DrawerType.IframeDrawer) {
+      return
     }
-    handleClose()
-    return
-  }
-  if (disableEscPress.value)
-    return
-  if (isEscPressed.value) {
-    handleClose()
-  }
-  else {
-    isEscPressed.value = true
-    if (escPressedTimer.value) {
-      clearTimeout(escPressedTimer.value)
+
+    if (settings.value.closeDrawerWithoutPressingEscAgain) {
+      if (escPressedTimer.value) {
+        clearTimeout(escPressedTimer.value)
+        escPressedTimer.value = null
+      }
+      handleClose()
+      return
     }
-    escPressedTimer.value = setTimeout(() => {
-      escPressedTimer.value = null
-      isEscPressed.value = false
-    }, 1300)
-  }
+    if (isEscPressed.value) {
+      handleClose()
+    }
+    else {
+      isEscPressed.value = true
+      if (escPressedTimer.value)
+        clearTimeout(escPressedTimer.value)
+      escPressedTimer.value = setTimeout(() => {
+        escPressedTimer.value = null
+        isEscPressed.value = false
+      }, 1300)
+    }
+  }, 0)
 }
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown, true)
-  document.addEventListener('keydown', handleKeydown, true)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown, true)
-  document.removeEventListener('keydown', handleKeydown, true)
 })
 
 function handleWindowMessage({ data, source }: MessageEvent) {
@@ -431,6 +451,9 @@ function handleWindowMessage({ data, source }: MessageEvent) {
       headerShow.value = true
       disableEscPress.value = false
       isPageFullscreen.value = false
+      break
+    case 'BEWLY_DRAWER_ESCAPE_HANDLED':
+      resetEscPressedState()
       break
     case 'BEWLY_DRAWER_CLOSE_REQUEST':
       // 来自 iframe 的关闭请求
