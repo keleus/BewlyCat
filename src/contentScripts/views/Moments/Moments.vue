@@ -9,6 +9,7 @@ import type { DisplayForwardVideo, DisplayMoment, DisplayRichTextSegment, WatchL
 import type { MomentLinkKind } from '~/components/MomentCard/utils'
 import {
   classifyMomentLink,
+  computeMomentImageGridHeight,
   computeMultiImageGalleryHeight,
   formatCount,
   getCardPreviewText,
@@ -19,6 +20,7 @@ import {
   isUsableImageRatio,
   LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH,
   shouldUseMomentImageGallery,
+  shouldUseMomentImageGrid,
 } from '~/components/MomentCard/utils'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
@@ -787,6 +789,7 @@ function getMomentContent(item: any) {
     return getSafeImageRatio(Number(meta?.width || 0), Number(meta?.height || 0))
   })
   const firstImageRatio = imageRatios[0]
+  const isNineGrid = shouldUseMomentImageGrid(images, major?.type === 'MAJOR_TYPE_DRAW')
 
   return {
     title: pickText(live?.title, opus.title, archive.title, article.title, common.title),
@@ -794,6 +797,7 @@ function getMomentContent(item: any) {
     richText,
     images,
     imageRatios,
+    isNineGrid,
     firstImageRatio,
     isVideo: isRegularVideo || isUgcSeason,
     isRegularVideo,
@@ -1696,6 +1700,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     // 转发卡片只展示原动态摘要，不能把原动态图片提升为外层卡片媒体。
     images: isForward || (isChargeExclusive && !content.isVideo) ? [] : content.images,
     imageRatios: isForward || (isChargeExclusive && !content.isVideo) ? [] : content.imageRatios,
+    isNineGrid: !isForward && !isChargeExclusive && content.isNineGrid,
     time: author.pub_time || '',
     likeCount: Number(raw.modules?.module_stat?.like?.count || 0),
     isLiked: raw.modules?.module_stat?.like?.status === true
@@ -1773,6 +1778,9 @@ function mapMoment(item: DataItem): DisplayMoment {
           imageRatios: !content.isVideo && !content.isLive && !content.isChargeExclusive
             ? content.imageRatios
             : [],
+          isNineGrid: !content.isVideo && !content.isLive && !content.isChargeExclusive
+            ? content.isNineGrid
+            : false,
           video: forwardedArchive
             ? {
                 title: pickText(forwardedArchive.title, content.title),
@@ -1818,19 +1826,22 @@ function estimateCardHeight(moment: DisplayMoment) {
     // Forward galleries sit inside the bordered card with 12px side/bottom
     // insets; subtract the 16px main inset and the 2px card border as well.
     const galleryWidth = Math.max(1, columnWidth - 58)
-    const useForwardGallery = shouldUseMomentImageGallery(moment.forward.images, {
+    const useForwardGrid = shouldUseMomentImageGrid(moment.forward.images, moment.forward.isNineGrid)
+    const useForwardGallery = !useForwardGrid && shouldUseMomentImageGallery(moment.forward.images, {
       imageRatio: moment.forward.imageRatios?.[0] ?? coverRatios[moment.id],
       imageRatios: moment.forward.imageRatios,
     })
     const forwardGalleryWidth = useForwardGallery
       ? galleryWidth
       : Math.min(galleryWidth, LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH)
-    const galleryHeight = useForwardGallery
-      ? computeMultiImageGalleryHeight(
-          forwardGalleryWidth,
-          moment.forward.imageRatios?.[0] ? moment.forward.imageRatios : [coverRatios[moment.id]],
-        )
-      : Math.round(forwardGalleryWidth / Math.max(1, moment.forward.imageRatios?.[0] || coverRatios[moment.id] || 1))
+    const galleryHeight = useForwardGrid
+      ? computeMomentImageGridHeight(galleryWidth, moment.forward.images.length)
+      : useForwardGallery
+        ? computeMultiImageGalleryHeight(
+            forwardGalleryWidth,
+            moment.forward.imageRatios?.[0] ? moment.forward.imageRatios : [coverRatios[moment.id]],
+          )
+        : Math.round(forwardGalleryWidth / Math.max(1, moment.forward.imageRatios?.[0] || coverRatios[moment.id] || 1))
     return 190 + introLines * 21 + galleryHeight + interactionHeight
   }
   if (moment.forward?.video) {
@@ -1881,19 +1892,22 @@ function estimateCardHeight(moment: DisplayMoment) {
       + interactionHeight
   }
   if (moment.images.length && !moment.isVideo && !moment.isLive) {
-    const useGallery = shouldUseMomentImageGallery(moment.images, {
+    const useGrid = shouldUseMomentImageGrid(moment.images, moment.isNineGrid)
+    const useGallery = !useGrid && shouldUseMomentImageGallery(moment.images, {
       imageRatio: coverRatios[moment.id],
       imageRatios: moment.imageRatios,
     })
     const galleryWidth = useGallery
       ? contentWidth
       : Math.min(contentWidth, LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH)
-    const galleryHeight = useGallery
-      ? computeMultiImageGalleryHeight(
-          galleryWidth,
-          moment.imageRatios?.[0] ? moment.imageRatios : [coverRatios[moment.id]],
-        )
-      : Math.round(galleryWidth / Math.max(1, coverRatios[moment.id] || 1))
+    const galleryHeight = useGrid
+      ? computeMomentImageGridHeight(contentWidth, moment.images.length)
+      : useGallery
+        ? computeMultiImageGalleryHeight(
+            galleryWidth,
+            moment.imageRatios?.[0] ? moment.imageRatios : [coverRatios[moment.id]],
+          )
+        : Math.round(galleryWidth / Math.max(1, coverRatios[moment.id] || 1))
     return galleryHeight + 220 + interactionHeight
   }
   return 230 + scaledTextBodyExtra + interactionHeight

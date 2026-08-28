@@ -11,6 +11,7 @@ import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import type { Author, Video } from '../VideoCard/types'
 import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
 import MomentImageGallery from './MomentImageGallery.vue'
+import MomentImageGrid from './MomentImageGrid.vue'
 import type { DisplayForwardVideo, DisplayMoment, WatchLaterTarget } from './types'
 import type { MomentLinkKind } from './utils'
 import {
@@ -26,6 +27,7 @@ import {
   isPortraitImageRatio,
   LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH,
   shouldUseMomentImageGallery,
+  shouldUseMomentImageGrid,
   shouldUseNativeLinkOpen,
 } from './utils'
 
@@ -111,8 +113,14 @@ const forwardSingleImageGalleryStyle = computed<CSSProperties | undefined>(() =>
   return getLandscapeSingleImageStyle(moment.forward.imageRatios?.[0] ?? imageRatio)
 })
 
+const showOwnImageGrid = computed(() =>
+  shouldUseMomentImageGrid(moment.images, moment.isNineGrid),
+)
+const showForwardImageGrid = computed(() =>
+  shouldUseMomentImageGrid(moment.forward?.images, moment.forward?.isNineGrid),
+)
 const showOwnScrollGallery = computed(() =>
-  shouldUseMomentImageGallery(moment.images, {
+  !showOwnImageGrid.value && shouldUseMomentImageGallery(moment.images, {
     isVideo: moment.isVideo,
     isLive: moment.isLive,
     imageRatio,
@@ -120,7 +128,7 @@ const showOwnScrollGallery = computed(() =>
   }),
 )
 const showForwardScrollGallery = computed(() =>
-  shouldUseMomentImageGallery(moment.forward?.images, {
+  !showForwardImageGrid.value && shouldUseMomentImageGallery(moment.forward?.images, {
     imageRatio: moment.forward?.images?.length === 1 ? imageRatio : undefined,
     imageRatios: moment.forward?.imageRatios,
   }),
@@ -312,6 +320,7 @@ function getForwardOriginMoment(): DisplayMoment | null {
     richText: [],
     images,
     imageRatios: forward.imageRatios,
+    isNineGrid: forward.isNineGrid,
     time: '',
     likeCount: 0,
     isLiked: false,
@@ -770,7 +779,18 @@ function handleAdditionalClick(event: MouseEvent) {
               <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
             </div>
             <div
-              v-if="showForwardScrollGallery"
+              v-if="showForwardImageGrid"
+              class="moment-card__forward-grid-host"
+            >
+              <MomentImageGrid
+                :images="moment.forward.images || []"
+                :alt-prefix="t('moment_card.author_images', { name: moment.forward.author })"
+                @cover-load="handleGalleryCoverLoad"
+                @preview="handleForwardGalleryPreview"
+              />
+            </div>
+            <div
+              v-else-if="showForwardScrollGallery"
               class="moment-card__forward-gallery-host"
             >
               <MomentImageGallery
@@ -804,7 +824,22 @@ function handleAdditionalClick(event: MouseEvent) {
         </div>
 
         <div
-          v-if="showOwnScrollGallery"
+          v-if="showOwnImageGrid"
+          class="moment-card__grid-host"
+        >
+          <MomentImageGrid
+            :images="moment.images"
+            :alt-prefix="t('moment_card.author_images', { name: moment.author.name })"
+            @cover-load="handleGalleryCoverLoad"
+            @preview="handleGalleryPreview"
+          >
+            <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
+              {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
+            </span>
+          </MomentImageGrid>
+        </div>
+        <div
+          v-else-if="showOwnScrollGallery"
           class="moment-card__gallery-host"
         >
           <MomentImageGallery
@@ -1630,7 +1665,8 @@ function handleAdditionalClick(event: MouseEvent) {
   aspect-ratio: 16 / 9;
 }
 
-.moment-card__gallery-host {
+.moment-card__gallery-host,
+.moment-card__grid-host {
   margin-top: var(--bew-space-3);
 }
 
@@ -1859,7 +1895,8 @@ function handleAdditionalClick(event: MouseEvent) {
   object-fit: cover;
 }
 
-.moment-card__forward-gallery-host {
+.moment-card__forward-gallery-host,
+.moment-card__forward-grid-host {
   margin: 0 var(--bew-space-3) var(--bew-space-3);
 }
 

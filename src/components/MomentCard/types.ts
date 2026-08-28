@@ -54,6 +54,8 @@ export interface DisplayMoment {
   images: string[]
   /** 与 images 对齐的宽高比（宽/高），用于多图横向画廊计算共用高度 */
   imageRatios?: Array<number | undefined>
+  /** 接口将图片主体标记为九宫格；仅 3/6/9 图时按完整行网格展示 */
+  isNineGrid?: boolean
   time: string
   likeCount: number
   isLiked: boolean
@@ -116,6 +118,8 @@ export interface DisplayMoment {
     /** 转发原动态的图片，用于在嵌套卡片中保持原卡片形态 */
     images?: string[]
     imageRatios?: Array<number | undefined>
+    /** 被转发原动态是否使用完整行九宫格布局 */
+    isNineGrid?: boolean
     video?: DisplayForwardVideo
   }
 }

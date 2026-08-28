@@ -133,6 +133,9 @@ export const LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH = 560
 export const MULTI_IMAGE_GALLERY_MAX_HEIGHT = 350
 /** 与 `.moment-image-gallery__track` 的 gap（`--bew-space-2`）保持一致 */
 export const MULTI_IMAGE_GALLERY_GAP = 8
+/** 与 `.moment-image-grid` 的 gap（`--bew-space-2`）保持一致 */
+export const NINE_GRID_GAP = 8
+export const NINE_GRID_COLUMNS = 3
 /** 露出下一张的最小宽度，保证至少能看到「1 张多一点」 */
 const MULTI_IMAGE_GALLERY_PEEK_MIN = 48
 const MULTI_IMAGE_GALLERY_PEEK_RATIO = 0.18
@@ -181,6 +184,31 @@ export function computeMultiImageGalleryHeight(
   const peek = getMultiImageGalleryPeekWidth(containerWidth)
   const height = Math.round((containerWidth - MULTI_IMAGE_GALLERY_GAP - peek) / firstRatio)
   return Math.min(maxHeight, Math.max(1, height))
+}
+
+/**
+ * 九宫格只展示完整的三列行；非完整行（1/2/4/5/7/8 图）继续使用横向画廊。
+ */
+export function shouldUseMomentImageGrid(images: string[] | undefined, isNineGrid?: boolean) {
+  const count = images?.length || 0
+  return Boolean(
+    isNineGrid
+    && count >= NINE_GRID_COLUMNS
+    && count <= NINE_GRID_COLUMNS ** 2
+    && count % NINE_GRID_COLUMNS === 0,
+  )
+}
+
+export function computeMomentImageGridHeight(containerWidth: number, imageCount: number) {
+  if (!(containerWidth > 0) || imageCount <= 0)
+    return 0
+
+  const rows = Math.ceil(imageCount / NINE_GRID_COLUMNS)
+  const cellSize = Math.max(
+    1,
+    (containerWidth - NINE_GRID_GAP * (NINE_GRID_COLUMNS - 1)) / NINE_GRID_COLUMNS,
+  )
+  return Math.round(cellSize * rows + NINE_GRID_GAP * (rows - 1))
 }
 
 export function shouldUseMomentImageGallery(
