@@ -843,12 +843,9 @@ async function initData() {
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
   requestFailed.value = false // 重置请求失败状态
   needToLoginFirst.value = false
-  try {
-    await getData('refresh')
-  }
-  finally {
-    hasInitializedData.value = true
-  }
+  // 先允许 Grid 接管后续预加载，避免首批稀疏结果在 loading 结束时触发的 loadMore 被初始化守卫丢弃。
+  hasInitializedData.value = true
+  await getData('refresh')
 }
 
 async function getData(webRequestType: WebRecommendRequestType = 'refresh') {
