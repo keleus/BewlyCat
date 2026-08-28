@@ -253,6 +253,13 @@ const filteredFeedRetentionRate = computed(() => filteredFeedCandidateCount.valu
 const requiresManualFilteredPaging = computed(() => hasActiveRecommendationFilter.value
   && filteredFeedCandidateCount.value >= FILTERED_FEED_SAMPLE_SIZE
   && filteredFeedRetentionRate.value < FILTERED_FEED_MIN_RETENTION_RATE)
+const showFilteredEmptyState = computed(() => hasActiveRecommendationFilter.value
+  && filteredFeedCandidateCount.value > 0
+  && currentVideoList.value.length === 0
+  && !isLoading.value
+  && !requestFailed.value
+  && !needToLoginFirst.value
+  && !noMoreContent.value)
 
 const recommendationFilterSettingsSignature = computed(() => JSON.stringify([
   settings.value.disableFilterForFollowedUser,
@@ -1678,7 +1685,7 @@ defineExpose({
 <template>
   <div>
     <VideoCardGrid
-      v-if="!needToLoginFirst"
+      v-if="!needToLoginFirst && !showFilteredEmptyState"
       :items="currentVideoList"
       :grid-layout="gridLayout"
       :loading="isLoading"
@@ -1697,8 +1704,21 @@ defineExpose({
       @load-more="handleLoadMore"
     />
 
+    <Empty
+      v-if="showFilteredEmptyState"
+      mt-6
+      :description="$t('home.recommendation_filters_empty')"
+    >
+      <Button type="primary" @click="handleManualLoadMore">
+        <template #left>
+          <span i-tabler-arrow-down />
+        </template>
+        {{ $t('common.load_more') }}
+      </Button>
+    </Empty>
+
     <div
-      v-if="requiresManualFilteredPaging && !isLoading && !noMoreContent"
+      v-if="requiresManualFilteredPaging && !showFilteredEmptyState && !isLoading && !noMoreContent"
       class="filtered-feed-load-more"
     >
       <Button type="secondary" @click="handleManualLoadMore">

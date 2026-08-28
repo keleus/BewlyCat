@@ -1150,6 +1150,7 @@ home:
   app_authorization_required: App 模式嘅 access token 已經遺失或者過期，請重新授權之後再繼續使用個人化推介
   reauthorize_app: 重新授權
   recommendation_filter_risk_warning: 而家嘅過濾條件喺 100 條有效推介入面淨係留低 {count} 條，容易造成頻繁請求並觸發接口風控，建議放寬過濾條件。
+  recommendation_filters_empty: 而家嘅過濾條件下暫時冇影片可以顯示。
   tell_us_why: 點解噉做...
   not_interested_desc: >
     你可以用 <kbd>↑</kbd> 同 <kbd>↓</kbd> 嚟揀個理由，抑或用數字鍵嚟直接揀理由，撳 <kbd>Enter</kbd>
