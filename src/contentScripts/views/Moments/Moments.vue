@@ -681,14 +681,16 @@ function getMomentContent(item: any) {
 
   // 图文/纯文字（itemOpusStyle）正文：major.opus.summary.text
   // 旧结构可能在 module_dynamic.desc.text；视频/专栏等再回落到各自 desc
-  let text = pickText(
+  const selfText = pickText(
     opus.summary?.text,
     typeof opus.summary === 'string' ? opus.summary : '',
     normalizeDescText(dynamic.desc),
-    archive.desc,
-    article.desc,
     common.desc,
   )
+  const inheritedText = pickText(archive.desc, article.desc)
+  let text = pickText(selfText, inheritedText)
+  /** 简介继承自视频/专栏元数据时标记，卡片内做弱化展示 */
+  const descInherited = !selfText && Boolean(inheritedText)
   const richText = extractRichTextSegments(
     opus.summary?.rich_text_nodes,
     dynamic.desc?.rich_text_nodes,
@@ -794,6 +796,7 @@ function getMomentContent(item: any) {
   return {
     title: pickText(live?.title, opus.title, archive.title, article.title, common.title),
     text,
+    descInherited,
     richText,
     images,
     imageRatios,
@@ -1798,6 +1801,14 @@ function mapMoment(item: DataItem): DisplayMoment {
   }
 }
 
+/** 横条视频卡高度：封面 44% 宽 16:9，与信息区（标题两行 + 简介两行）取较大者。 */
+function estimateVideoCardStripHeight(contentWidth: number) {
+  const coverWidth = Math.max(150, contentWidth * 0.44)
+  const coverHeight = Math.round(coverWidth * 9 / 16)
+  const infoHeight = 106
+  return Math.max(coverHeight, infoHeight) + 2 /* 描边 */
+}
+
 function estimateCardHeight(moment: DisplayMoment) {
   const columnWidth = Math.max(
     CARD_COMPACT_MIN_WIDTH,
@@ -1838,48 +1849,27 @@ function estimateCardHeight(moment: DisplayMoment) {
   }
   if (moment.forward?.video) {
     const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
-    const forwardMediaWidth = Math.max(150, contentWidth * 0.44)
-    return 117 + Math.round(forwardMediaWidth * 9 / 16) + introLines * 21 + interactionHeight
+    return 126 + 12 + estimateVideoCardStripHeight(contentWidth) + introLines * 24 + (moment.additional ? 68 : 0) + interactionHeight
   }
   if (moment.isChargeExclusive && !moment.isVideo)
     return 230 + scaledTextBodyExtra + interactionHeight
   if (columnWidth < CARD_MIN_WIDTH) {
     if (moment.isLive)
       return Math.round(columnWidth * 9 / 16) + 210 + interactionHeight
-    if (moment.isVideo) {
-      const mediaWidth = Math.max(1, contentWidth)
-      const charsPerLine = Math.max(12, Math.floor(mediaWidth / 14))
-      const titleLines = moment.title
-        ? Math.min(2, Math.max(1, Math.ceil(Array.from(moment.title).length / charsPerLine)))
-        : 0
-      const previewText = getCardPreviewText(moment)
-      const descLines = previewText
-        ? Math.min(8, Math.max(1, Math.ceil(Array.from(previewText).length / charsPerLine)))
-        : 0
-      const bodyHeight = titleLines * 22
-        + (titleLines && descLines ? 8 : 0)
-        + descLines * 24
-      return Math.round(mediaWidth * 9 / 16)
-        + 126
-        + bodyHeight
-        + (moment.additional ? 68 : 0)
-        + interactionHeight
-    }
   }
   if (moment.isLive)
     return Math.round(contentWidth * 9 / 16) + 190 + interactionHeight
   if (moment.isVideo) {
-    // 左封面右简介：高度由半宽 16:9 封面决定，标题单独落在底部。
-    const innerWidth = contentWidth
-    const coverWidth = Math.max(1, Math.floor((innerWidth - 12) / 2))
-    const titleCharsPerLine = Math.max(12, Math.floor(innerWidth / 14))
-    const titleLines = moment.title
-      ? Math.min(2, Math.max(1, Math.ceil(Array.from(moment.title).length / titleCharsPerLine)))
+    // 官方式横条视频卡：左封面右信息，附言在条上方，继承简介固定两行
+    const noteText = moment.descInherited ? '' : getCardPreviewText(moment)
+    const noteCharsPerLine = Math.max(12, Math.floor(contentWidth / 15))
+    const noteLines = noteText
+      ? Math.min(7, Math.max(1, Math.ceil(Array.from(noteText).length / noteCharsPerLine)))
       : 0
-    const titleHeight = titleLines ? 12 + titleLines * 22 : 0
-    return Math.round(coverWidth * 9 / 16)
-      + titleHeight
-      + 126
+    return 126
+      + 12 /* 条与上方内容的间距 */
+      + estimateVideoCardStripHeight(contentWidth)
+      + noteLines * 24
       + (moment.additional ? 68 : 0)
       + interactionHeight
   }

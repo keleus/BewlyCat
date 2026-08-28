@@ -518,329 +518,449 @@ function handleAdditionalClick(event: MouseEvent) {
       <div
         class="moment-card__main"
         :class="{
-          'moment-card__main--has-media': (!moment.isChargeExclusive || moment.isVideo) && (
-            (moment.images.length > 0 && (moment.isVideo || moment.isLive))
-            || (!moment.images.length && (moment.isVideo || moment.isLive))
-          ),
           'moment-card__main--video': moment.isVideo || (!moment.isChargeExclusive && moment.isLive),
           'moment-card__main--live': !moment.isChargeExclusive && moment.isLive,
         }"
       >
-        <div
-          v-if="moment.images.length && (moment.isVideo || moment.isLive)"
-          class="moment-card__media moment-card__cover moment-card__cover--media"
-          @mouseenter="emit('mediaEnter', moment)"
-          @mouseleave="emit('mediaLeave', moment)"
-        >
-          <a
-            v-if="cardHref"
-            class="moment-card__permalink"
-            :href="cardHref"
-            tabindex="-1"
-            aria-hidden="true"
-            draggable="false"
-            rel="noopener noreferrer"
-            @click.capture="handlePermalinkClick"
-          />
-          <img
-            :src="getMomentThumbnailUrl(moment.images[0])"
-            :alt="moment.title"
-            :class="{ 'is-ready': ready }"
-            loading="lazy"
-            decoding="async"
-            @load="handleCoverLoad"
+        <!-- 官方式横条视频卡：左封面、右标题与简介；转发视频复用同一结构 -->
+        <template v-if="moment.isVideo && !moment.isLive">
+          <div
+            v-if="moment.richText.length || (getCardPreviewText(moment) && !moment.descInherited)"
+            class="moment-card__body"
           >
-          <video
-            v-if="previewActive && previewUrl"
-            :ref="handlePreviewVideo"
-            :src="moment.isLive ? undefined : previewUrl"
-            autoplay
-            muted
-            :loop="!moment.isLive"
-            playsinline
-            @canplay="emit('previewCanplay', $event)"
-          />
-          <span
-            v-if="moment.isVideo && showVideoCoverStats"
-            class="moment-card__video-stats"
-          >
-            <span class="moment-card__video-stat-group">
-              <span v-if="settings.showVideoCardViewCount && moment.videoPlay">
-                <span i-mingcute:play-circle-line aria-hidden="true" />
-                {{ moment.videoPlay }}
-              </span>
-            </span>
-            <span v-if="showVideoDuration" class="moment-card__video-duration">{{ moment.duration }}</span>
-          </span>
-          <span v-if="moment.isLive" class="moment-card__live-mark">
-            LIVE
-            <span i-svg-spinners:pulse-3 aria-hidden="true" />
-          </span>
-          <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
-            {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
-          </span>
-          <button
-            v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
-            type="button"
-            class="moment-card__watch-later"
-            :class="{ 'is-added': isWatchLaterAdded(moment), 'is-loading': isWatchLaterLoading(moment) }"
-            :aria-busy="isWatchLaterLoading(moment) || undefined"
-            :aria-disabled="isWatchLaterLoading(moment) || undefined"
-            :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
-            :aria-pressed="isWatchLaterAdded(moment)"
-            :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
-            @click.stop="emit('toggleWatchLater', moment)"
-          >
-            <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
-            <span v-else-if="isWatchLaterAdded(moment)" i-line-md:confirm aria-hidden="true" />
-            <span v-else i-mingcute:carplay-line aria-hidden="true" />
-          </button>
-        </div>
-        <div v-else-if="(moment.isVideo || moment.isLive) && (!moment.isChargeExclusive || moment.isVideo)" class="moment-card__media moment-card__cover moment-card__text-cover moment-card__text-cover--video">
-          <a
-            v-if="cardHref"
-            class="moment-card__permalink"
-            :href="cardHref"
-            tabindex="-1"
-            aria-hidden="true"
-            draggable="false"
-            rel="noopener noreferrer"
-            @click.capture="handlePermalinkClick"
-          />
-          <span v-if="moment.isLive" i-tabler-live-photo class="moment-card__text-cover-icon" />
-          <span v-else i-tabler-player-play-filled class="moment-card__text-cover-icon" />
-          <span>{{ moment.isLive ? t('moment_card.live_post') : t('moment_card.video_post') }}</span>
-          <button
-            v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
-            type="button"
-            class="moment-card__watch-later"
-            :class="{ 'is-added': isWatchLaterAdded(moment), 'is-loading': isWatchLaterLoading(moment) }"
-            :aria-busy="isWatchLaterLoading(moment) || undefined"
-            :aria-disabled="isWatchLaterLoading(moment) || undefined"
-            :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
-            :aria-pressed="isWatchLaterAdded(moment)"
-            :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
-            @click.stop="emit('toggleWatchLater', moment)"
-          >
-            <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
-            <span v-else-if="isWatchLaterAdded(moment)" i-line-md:confirm aria-hidden="true" />
-            <span v-else i-mingcute:carplay-line aria-hidden="true" />
-          </button>
-        </div>
-        <div class="moment-card__body">
-          <p v-if="moment.title && !moment.forward?.video" class="moment-card__title">
-            <VideoWatchedTag
-              v-if="moment.isVideo"
-              :aid="moment.aid"
-              :bvid="moment.bvid"
-            />
-            {{ moment.title }}
-          </p>
-          <p
-            v-if="moment.mediaMeta && !moment.isChargeExclusive && (!moment.isVideo || moment.isLive)"
-            class="moment-card__media-meta"
-            :class="{ 'moment-card__media-meta--live': moment.isLive }"
-          >
-            {{ moment.mediaMeta }}
-          </p>
-          <p v-if="!moment.isLive && (moment.richText.length || getCardPreviewText(moment))" class="moment-card__desc">
-            <template v-if="moment.richText.length">
-              <template v-for="(segment, segmentIndex) in moment.richText" :key="`${moment.id}-${segmentIndex}`">
-                <img
-                  v-if="segment.type === 'emoji' && segment.imageUrl"
-                  :src="segment.imageUrl"
-                  :alt="segment.text"
-                  :title="segment.text"
-                  class="moment-card__emoji"
-                  :class="{ 'moment-card__emoji--large': segment.size === 2 }"
-                  loading="lazy"
-                  decoding="async"
-                >
-                <a
-                  v-else-if="segment.type === 'link' && segment.url"
-                  :href="segment.url"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="moment-card__rich-link"
-                  @click="handleRichLinkClick($event, segment.url)"
-                >
-                  {{ segment.text }}
-                </a>
-                <template v-else>
-                  {{ segment.text }}
+            <p class="moment-card__desc">
+              <template v-if="moment.richText.length">
+                <template v-for="(segment, segmentIndex) in moment.richText" :key="`${moment.id}-${segmentIndex}`">
+                  <img
+                    v-if="segment.type === 'emoji' && segment.imageUrl"
+                    :src="segment.imageUrl"
+                    :alt="segment.text"
+                    :title="segment.text"
+                    class="moment-card__emoji"
+                    :class="{ 'moment-card__emoji--large': segment.size === 2 }"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                  <a
+                    v-else-if="segment.type === 'link' && segment.url"
+                    :href="segment.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="moment-card__rich-link"
+                    @click="handleRichLinkClick($event, segment.url)"
+                  >
+                    {{ segment.text }}
+                  </a>
+                  <template v-else>
+                    {{ segment.text }}
+                  </template>
                 </template>
               </template>
-            </template>
-            <template v-else>
-              {{ getCardPreviewText(moment) }}
-            </template>
-          </p>
+              <template v-else>
+                {{ getCardPreviewText(moment) }}
+              </template>
+            </p>
+          </div>
           <a
-            v-if="moment.forward?.video"
-            :href="moment.forward.video.url || undefined"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="moment-card__forward-video"
-            :aria-label="t('moment_card.open_original_video', { title: moment.forward.video.title })"
-            @click="handleForwardVideoClick"
+            :href="cardHref || undefined"
+            class="moment-card__video-card"
+            :aria-label="t('moment_card.open_original_video', { title: moment.title })"
+            @click.capture="handlePermalinkClick"
           >
-            <span class="moment-card__forward-video-cover">
+            <span
+              class="moment-card__video-card-cover"
+              @mouseenter="emit('mediaEnter', moment)"
+              @mouseleave="emit('mediaLeave', moment)"
+            >
               <img
-                :src="getMomentThumbnailUrl(moment.forward.video.cover)"
-                :alt="moment.forward.video.title"
+                v-if="moment.images.length"
+                :src="getMomentThumbnailUrl(moment.images[0])"
+                :alt="moment.title"
                 loading="lazy"
                 decoding="async"
+                @load="handleCoverLoad"
               >
+              <span v-else class="moment-card__text-cover moment-card__text-cover--video">
+                <span i-tabler-player-play-filled class="moment-card__text-cover-icon" aria-hidden="true" />
+                <span>{{ t('moment_card.video_post') }}</span>
+              </span>
+              <video
+                v-if="previewActive && previewUrl"
+                :ref="handlePreviewVideo"
+                :src="previewUrl"
+                autoplay
+                muted
+                loop
+                playsinline
+                @canplay="emit('previewCanplay', $event)"
+              />
               <span
-                v-if="showForwardVideoCoverStats"
+                v-if="showVideoCoverStats"
                 class="moment-card__video-stats"
               >
                 <span class="moment-card__video-stat-group">
-                  <span v-if="settings.showVideoCardViewCount && moment.forward.video.play">
+                  <span v-if="settings.showVideoCardViewCount && moment.videoPlay">
                     <span i-mingcute:play-circle-line aria-hidden="true" />
-                    {{ moment.forward.video.play }}
+                    {{ moment.videoPlay }}
                   </span>
                 </span>
-                <span v-if="showForwardVideoDuration" class="moment-card__video-duration">{{ moment.forward.video.duration }}</span>
+                <span v-if="showVideoDuration" class="moment-card__video-duration">{{ moment.duration }}</span>
               </span>
-              <span
-                v-if="settings.showVideoCardWatchLater && getWatchLaterStateKey(moment.forward.video)"
-                role="button"
-                :tabindex="isWatchLaterLoading(moment.forward.video) ? -1 : 0"
+              <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
+                {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
+              </span>
+              <button
+                v-if="settings.showVideoCardWatchLater"
+                type="button"
                 class="moment-card__watch-later"
-                :class="{
-                  'is-added': isWatchLaterAdded(moment.forward.video),
-                  'is-disabled': isWatchLaterLoading(moment.forward.video),
-                }"
-                :aria-disabled="isWatchLaterLoading(moment.forward.video)"
-                :aria-label="isWatchLaterAdded(moment.forward.video) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
-                :aria-pressed="isWatchLaterAdded(moment.forward.video)"
-                :title="isWatchLaterAdded(moment.forward.video) ? t('moment_card.added') : t('moment_card.watch_later')"
-                @click.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
-                @keydown.enter.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
-                @keydown.space.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
+                :class="{ 'is-added': isWatchLaterAdded(moment), 'is-loading': isWatchLaterLoading(moment) }"
+                :aria-busy="isWatchLaterLoading(moment) || undefined"
+                :aria-disabled="isWatchLaterLoading(moment) || undefined"
+                :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
+                :aria-pressed="isWatchLaterAdded(moment)"
+                :title="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
+                @click.stop="emit('toggleWatchLater', moment)"
               >
-                <span v-if="isWatchLaterLoading(moment.forward.video)" i-svg-spinners:ring-resize aria-hidden="true" />
-                <span v-else-if="isWatchLaterAdded(moment.forward.video)" i-line-md:confirm aria-hidden="true" />
+                <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
+                <span v-else-if="isWatchLaterAdded(moment)" i-line-md:confirm aria-hidden="true" />
                 <span v-else i-mingcute:carplay-line aria-hidden="true" />
-              </span>
+              </button>
             </span>
-            <span class="moment-card__forward-video-info">
+            <span class="moment-card__video-card-info">
               <strong>
                 <VideoWatchedTag
-                  :aid="moment.forward.video.aid"
-                  :bvid="moment.forward.video.bvid"
+                  v-if="moment.isVideo"
+                  :aid="moment.aid"
+                  :bvid="moment.bvid"
                 />
-                {{ moment.forward.video.title || moment.forward.fallback }}
+                {{ moment.title || t('moment_card.video_post') }}
               </strong>
-              <small>
-                <span i-tabler-user aria-hidden="true" />
+              <p
+                v-if="moment.descInherited && getCardPreviewText(moment)"
+                class="moment-card__video-card-desc"
+              >
+                {{ getCardPreviewText(moment) }}
+              </p>
+            </span>
+          </a>
+        </template>
+        <template v-else>
+          <div
+            v-if="moment.images.length && (moment.isVideo || moment.isLive)"
+            class="moment-card__media moment-card__cover moment-card__cover--media"
+            @mouseenter="emit('mediaEnter', moment)"
+            @mouseleave="emit('mediaLeave', moment)"
+          >
+            <a
+              v-if="cardHref"
+              class="moment-card__permalink"
+              :href="cardHref"
+              tabindex="-1"
+              aria-hidden="true"
+              draggable="false"
+              rel="noopener noreferrer"
+              @click.capture="handlePermalinkClick"
+            />
+            <img
+              :src="getMomentThumbnailUrl(moment.images[0])"
+              :alt="moment.title"
+              :class="{ 'is-ready': ready }"
+              loading="lazy"
+              decoding="async"
+              @load="handleCoverLoad"
+            >
+            <video
+              v-if="previewActive && previewUrl"
+              :ref="handlePreviewVideo"
+              :src="moment.isLive ? undefined : previewUrl"
+              autoplay
+              muted
+              :loop="!moment.isLive"
+              playsinline
+              @canplay="emit('previewCanplay', $event)"
+            />
+            <span
+              v-if="moment.isVideo && showVideoCoverStats"
+              class="moment-card__video-stats"
+            >
+              <span class="moment-card__video-stat-group">
+                <span v-if="settings.showVideoCardViewCount && moment.videoPlay">
+                  <span i-mingcute:play-circle-line aria-hidden="true" />
+                  {{ moment.videoPlay }}
+                </span>
+              </span>
+              <span v-if="showVideoDuration" class="moment-card__video-duration">{{ moment.duration }}</span>
+            </span>
+            <span v-if="moment.isLive" class="moment-card__live-mark">
+              LIVE
+              <span i-svg-spinners:pulse-3 aria-hidden="true" />
+            </span>
+            <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
+              {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
+            </span>
+            <button
+              v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
+              type="button"
+              class="moment-card__watch-later"
+              :class="{ 'is-added': isWatchLaterAdded(moment), 'is-loading': isWatchLaterLoading(moment) }"
+              :aria-busy="isWatchLaterLoading(moment) || undefined"
+              :aria-disabled="isWatchLaterLoading(moment) || undefined"
+              :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
+              :aria-pressed="isWatchLaterAdded(moment)"
+              :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
+              @click.stop="emit('toggleWatchLater', moment)"
+            >
+              <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
+              <span v-else-if="isWatchLaterAdded(moment)" i-line-md:confirm aria-hidden="true" />
+              <span v-else i-mingcute:carplay-line aria-hidden="true" />
+            </button>
+          </div>
+          <div v-else-if="(moment.isVideo || moment.isLive) && (!moment.isChargeExclusive || moment.isVideo)" class="moment-card__media moment-card__cover moment-card__text-cover moment-card__text-cover--video">
+            <a
+              v-if="cardHref"
+              class="moment-card__permalink"
+              :href="cardHref"
+              tabindex="-1"
+              aria-hidden="true"
+              draggable="false"
+              rel="noopener noreferrer"
+              @click.capture="handlePermalinkClick"
+            />
+            <span v-if="moment.isLive" i-tabler-live-photo class="moment-card__text-cover-icon" />
+            <span v-else i-tabler-player-play-filled class="moment-card__text-cover-icon" />
+            <span>{{ moment.isLive ? t('moment_card.live_post') : t('moment_card.video_post') }}</span>
+            <button
+              v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
+              type="button"
+              class="moment-card__watch-later"
+              :class="{ 'is-added': isWatchLaterAdded(moment), 'is-loading': isWatchLaterLoading(moment) }"
+              :aria-busy="isWatchLaterLoading(moment) || undefined"
+              :aria-disabled="isWatchLaterLoading(moment) || undefined"
+              :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
+              :aria-pressed="isWatchLaterAdded(moment)"
+              :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
+              @click.stop="emit('toggleWatchLater', moment)"
+            >
+              <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
+              <span v-else-if="isWatchLaterAdded(moment)" i-line-md:confirm aria-hidden="true" />
+              <span v-else i-mingcute:carplay-line aria-hidden="true" />
+            </button>
+          </div>
+          <div class="moment-card__body">
+            <p v-if="moment.title && !moment.forward?.video" class="moment-card__title">
+              <VideoWatchedTag
+                v-if="moment.isVideo"
+                :aid="moment.aid"
+                :bvid="moment.bvid"
+              />
+              {{ moment.title }}
+            </p>
+            <p
+              v-if="moment.mediaMeta && !moment.isChargeExclusive && (!moment.isVideo || moment.isLive)"
+              class="moment-card__media-meta"
+              :class="{ 'moment-card__media-meta--live': moment.isLive }"
+            >
+              {{ moment.mediaMeta }}
+            </p>
+            <p v-if="!moment.isLive && (moment.richText.length || getCardPreviewText(moment))" class="moment-card__desc">
+              <template v-if="moment.richText.length">
+                <template v-for="(segment, segmentIndex) in moment.richText" :key="`${moment.id}-${segmentIndex}`">
+                  <img
+                    v-if="segment.type === 'emoji' && segment.imageUrl"
+                    :src="segment.imageUrl"
+                    :alt="segment.text"
+                    :title="segment.text"
+                    class="moment-card__emoji"
+                    :class="{ 'moment-card__emoji--large': segment.size === 2 }"
+                    loading="lazy"
+                    decoding="async"
+                  >
+                  <a
+                    v-else-if="segment.type === 'link' && segment.url"
+                    :href="segment.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="moment-card__rich-link"
+                    @click="handleRichLinkClick($event, segment.url)"
+                  >
+                    {{ segment.text }}
+                  </a>
+                  <template v-else>
+                    {{ segment.text }}
+                  </template>
+                </template>
+              </template>
+              <template v-else>
+                {{ getCardPreviewText(moment) }}
+              </template>
+            </p>
+            <a
+              v-if="moment.forward?.video"
+              :href="moment.forward.video.url || undefined"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="moment-card__video-card"
+              :aria-label="t('moment_card.open_original_video', { title: moment.forward.video.title })"
+              @click="handleForwardVideoClick"
+            >
+              <span class="moment-card__video-card-cover">
+                <img
+                  :src="getMomentThumbnailUrl(moment.forward.video.cover)"
+                  :alt="moment.forward.video.title"
+                  loading="lazy"
+                  decoding="async"
+                >
+                <span
+                  v-if="showForwardVideoCoverStats"
+                  class="moment-card__video-stats"
+                >
+                  <span class="moment-card__video-stat-group">
+                    <span v-if="settings.showVideoCardViewCount && moment.forward.video.play">
+                      <span i-mingcute:play-circle-line aria-hidden="true" />
+                      {{ moment.forward.video.play }}
+                    </span>
+                  </span>
+                  <span v-if="showForwardVideoDuration" class="moment-card__video-duration">{{ moment.forward.video.duration }}</span>
+                </span>
+                <span
+                  v-if="settings.showVideoCardWatchLater && getWatchLaterStateKey(moment.forward.video)"
+                  role="button"
+                  :tabindex="isWatchLaterLoading(moment.forward.video) ? -1 : 0"
+                  class="moment-card__watch-later"
+                  :class="{
+                    'is-added': isWatchLaterAdded(moment.forward.video),
+                    'is-disabled': isWatchLaterLoading(moment.forward.video),
+                  }"
+                  :aria-disabled="isWatchLaterLoading(moment.forward.video)"
+                  :aria-label="isWatchLaterAdded(moment.forward.video) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
+                  :aria-pressed="isWatchLaterAdded(moment.forward.video)"
+                  :title="isWatchLaterAdded(moment.forward.video) ? t('moment_card.added') : t('moment_card.watch_later')"
+                  @click.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
+                  @keydown.enter.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
+                  @keydown.space.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
+                >
+                  <span v-if="isWatchLaterLoading(moment.forward.video)" i-svg-spinners:ring-resize aria-hidden="true" />
+                  <span v-else-if="isWatchLaterAdded(moment.forward.video)" i-line-md:confirm aria-hidden="true" />
+                  <span v-else i-mingcute:carplay-line aria-hidden="true" />
+                </span>
+              </span>
+              <span class="moment-card__video-card-info">
+                <strong>
+                  <VideoWatchedTag
+                    :aid="moment.forward.video.aid"
+                    :bvid="moment.forward.video.bvid"
+                  />
+                  {{ moment.forward.video.title || moment.forward.fallback }}
+                </strong>
+                <small>
+                  <span i-tabler-user aria-hidden="true" />
+                  <a
+                    v-if="forwardAuthorSpaceUrl"
+                    :href="forwardAuthorSpaceUrl"
+                    class="moment-card__forward-author"
+                    rel="noopener noreferrer"
+                    @click="handleForwardAuthorClick"
+                  >{{ moment.forward.author }}</a>
+                  <template v-else>{{ moment.forward.author }}</template>
+                </small>
+              </span>
+            </a>
+            <div
+              v-else-if="moment.forward"
+              class="moment-card__forward"
+              :class="{
+                'moment-card__forward--draw': Boolean(moment.forward.images?.length),
+              }"
+              role="button"
+              tabindex="0"
+              :aria-label="t('moment_card.open_origin_moment', { name: moment.forward.author })"
+              @click="handleForwardOriginClick"
+              @keydown="handleForwardOriginKeydown"
+            >
+              <div class="moment-card__forward-copy">
                 <a
                   v-if="forwardAuthorSpaceUrl"
                   :href="forwardAuthorSpaceUrl"
                   class="moment-card__forward-author"
                   rel="noopener noreferrer"
                   @click="handleForwardAuthorClick"
-                >{{ moment.forward.author }}</a>
-                <template v-else>{{ moment.forward.author }}</template>
-              </small>
-            </span>
-          </a>
-          <div
-            v-else-if="moment.forward"
-            class="moment-card__forward"
-            :class="{
-              'moment-card__forward--draw': Boolean(moment.forward.images?.length),
-            }"
-            role="button"
-            tabindex="0"
-            :aria-label="t('moment_card.open_origin_moment', { name: moment.forward.author })"
-            @click="handleForwardOriginClick"
-            @keydown="handleForwardOriginKeydown"
-          >
-            <div class="moment-card__forward-copy">
-              <a
-                v-if="forwardAuthorSpaceUrl"
-                :href="forwardAuthorSpaceUrl"
-                class="moment-card__forward-author"
-                rel="noopener noreferrer"
-                @click="handleForwardAuthorClick"
-              >@{{ moment.forward.author }}</a>
-              <strong v-else>@{{ moment.forward.author }}</strong>
-              <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
-            </div>
-            <div
-              v-if="showForwardScrollGallery"
-              class="moment-card__forward-gallery-host"
-            >
-              <MomentImageGallery
-                :images="moment.forward.images || []"
-                :image-ratios="moment.forward.imageRatios"
-                :alt-prefix="t('moment_card.author_images', { name: moment.forward.author })"
-                :container-width="forwardScrollGalleryWidth"
-                @cover-load="handleGalleryCoverLoad"
-                @preview="handleForwardGalleryPreview"
-              />
-            </div>
-            <div
-              v-else-if="moment.forward.images?.length"
-              class="moment-card__forward-gallery moment-card__forward-gallery--1"
-              :style="forwardSingleImageGalleryStyle"
-              tabindex="0"
-              role="button"
-              @click="handleImagePreviewClick($event, moment.forward.images || [], 0)"
-              @keydown="handleImagePreviewKeydown($event, moment.forward.images || [], 0)"
-            >
-              <img
-                :src="getMomentThumbnailUrl(moment.forward.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
-                :alt="t('moment_card.author_images', { name: moment.forward.author })"
-                :aria-label="t('moment_card.view_author_images', { name: moment.forward.author })"
-                loading="lazy"
-                decoding="async"
-                @load="handleCoverLoad"
+                >@{{ moment.forward.author }}</a>
+                <strong v-else>@{{ moment.forward.author }}</strong>
+                <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
+              </div>
+              <div
+                v-if="showForwardScrollGallery"
+                class="moment-card__forward-gallery-host"
               >
+                <MomentImageGallery
+                  :images="moment.forward.images || []"
+                  :image-ratios="moment.forward.imageRatios"
+                  :alt-prefix="t('moment_card.author_images', { name: moment.forward.author })"
+                  :container-width="forwardScrollGalleryWidth"
+                  @cover-load="handleGalleryCoverLoad"
+                  @preview="handleForwardGalleryPreview"
+                />
+              </div>
+              <div
+                v-else-if="moment.forward.images?.length"
+                class="moment-card__forward-gallery moment-card__forward-gallery--1"
+                :style="forwardSingleImageGalleryStyle"
+                tabindex="0"
+                role="button"
+                @click="handleImagePreviewClick($event, moment.forward.images || [], 0)"
+                @keydown="handleImagePreviewKeydown($event, moment.forward.images || [], 0)"
+              >
+                <img
+                  :src="getMomentThumbnailUrl(moment.forward.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
+                  :alt="t('moment_card.author_images', { name: moment.forward.author })"
+                  :aria-label="t('moment_card.view_author_images', { name: moment.forward.author })"
+                  loading="lazy"
+                  decoding="async"
+                  @load="handleCoverLoad"
+                >
+              </div>
             </div>
           </div>
-        </div>
 
-        <div
-          v-if="showOwnScrollGallery"
-          class="moment-card__gallery-host"
-        >
-          <MomentImageGallery
-            :images="moment.images"
-            :image-ratios="moment.imageRatios"
-            :alt-prefix="t('moment_card.author_images', { name: moment.author.name })"
-            :container-width="ownScrollGalleryWidth"
-            @cover-load="handleGalleryCoverLoad"
-            @preview="handleGalleryPreview"
+          <div
+            v-if="showOwnScrollGallery"
+            class="moment-card__gallery-host"
           >
+            <MomentImageGallery
+              :images="moment.images"
+              :image-ratios="moment.imageRatios"
+              :alt-prefix="t('moment_card.author_images', { name: moment.author.name })"
+              :container-width="ownScrollGalleryWidth"
+              @cover-load="handleGalleryCoverLoad"
+              @preview="handleGalleryPreview"
+            >
+              <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
+                {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
+              </span>
+            </MomentImageGallery>
+          </div>
+          <div
+            v-else-if="moment.images.length && !moment.isVideo && !moment.isLive"
+            class="moment-card__gallery moment-card__gallery--1"
+            :style="singleImageGalleryStyle"
+            tabindex="0"
+            role="button"
+            @click="handleImagePreviewClick($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
+            @keydown="handleImagePreviewKeydown($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
+          >
+            <img
+              :src="getMomentThumbnailUrl(moment.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
+              :alt="t('moment_card.author_images', { name: moment.author.name })"
+              :aria-label="t('moment_card.view_author_images', { name: moment.author.name })"
+              loading="lazy"
+              decoding="async"
+              @load="handleCoverLoad"
+            >
             <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
               {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
             </span>
-          </MomentImageGallery>
-        </div>
-        <div
-          v-else-if="moment.images.length && !moment.isVideo && !moment.isLive"
-          class="moment-card__gallery moment-card__gallery--1"
-          :style="singleImageGalleryStyle"
-          tabindex="0"
-          role="button"
-          @click="handleImagePreviewClick($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
-          @keydown="handleImagePreviewKeydown($event, [getMomentOriginalImageUrl(moment.images[0])], 0)"
-        >
-          <img
-            :src="getMomentThumbnailUrl(moment.images[0], LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH * 2)"
-            :alt="t('moment_card.author_images', { name: moment.author.name })"
-            :aria-label="t('moment_card.view_author_images', { name: moment.author.name })"
-            loading="lazy"
-            decoding="async"
-            @load="handleCoverLoad"
-          >
-          <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
-            {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
-          </span>
-        </div>
+          </div>
+        </template>
       </div>
 
       <Teleport
@@ -1138,8 +1258,8 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 .moment-card__cover:hover .moment-card__watch-later,
-.moment-card__forward-video-cover:hover .moment-card__watch-later,
-.moment-card__forward-video-cover:focus-within .moment-card__watch-later,
+.moment-card__video-card-cover:hover .moment-card__watch-later,
+.moment-card__video-card-cover:focus-within .moment-card__watch-later,
 .moment-card__watch-later:focus-visible,
 .moment-card__watch-later.is-added {
   opacity: 1;
@@ -1287,19 +1407,6 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__forward-copy {
   padding: var(--bew-space-3);
-}
-
-.moment-card__forward--portrait {
-  display: grid;
-  grid-template-columns: minmax(96px, 180px) minmax(0, 1fr);
-  align-items: start;
-  gap: var(--bew-space-3);
-  padding: var(--bew-space-3);
-}
-
-.moment-card__forward--portrait .moment-card__forward-copy {
-  min-width: 0;
-  padding: 0;
 }
 
 .moment-card__forward strong {
@@ -1550,38 +1657,93 @@ function handleAdditionalClick(event: MouseEvent) {
   padding: 0 var(--bew-space-4) var(--bew-space-4);
 }
 
-.moment-card__main--has-media {
+/* 官方式横条视频卡：左封面、右标题与简介，投稿视频与转发视频共用 */
+.moment-card__video-card {
   display: grid;
-  grid-template-columns: minmax(170px, 1fr) minmax(0, 1fr);
-  align-items: start;
-  gap: var(--bew-space-3);
+  grid-template-columns: minmax(150px, 44%) minmax(0, 1fr);
+  margin-top: var(--bew-space-3);
+  overflow: hidden;
+  border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 58%);
+  border-radius: var(--bew-card-radius);
+  color: inherit;
+  background: var(--bew-fill-1);
+  box-sizing: border-box;
+  text-decoration: none;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease;
 }
 
-.moment-card__main--portrait {
-  grid-template-columns: minmax(96px, 180px) minmax(0, 1fr);
+.moment-card__video-card:hover,
+.moment-card__video-card:focus-visible {
+  border-color: color-mix(in oklab, var(--bew-theme-color), transparent 48%);
+  background: color-mix(in oklab, var(--bew-theme-color) 7%, var(--bew-fill-1));
+  outline: none;
 }
 
-/* 视频动态：左封面、右简介、底部标题。直播仍走文案在上的纵向布局。 */
-.moment-card__main--video:not(.moment-card__main--live) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas:
-    "cover desc"
-    "title title";
-  align-items: stretch;
-  gap: var(--bew-space-3);
-}
-
-.moment-card__main--video:not(.moment-card__main--live) .moment-card__media {
-  grid-area: cover;
-  width: 100%;
+.moment-card__video-card-cover {
+  position: relative;
+  display: block;
   min-width: 0;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: #111;
 }
 
-.moment-card__main--video:not(.moment-card__main--live) .moment-card__body {
-  display: contents;
-  height: auto;
-  max-height: none;
+.moment-card__video-card-cover > img,
+.moment-card__video-card-cover > video,
+.moment-card__video-card-cover > .moment-card__text-cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.moment-card__video-card-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--bew-space-2);
+  padding: var(--bew-space-2) var(--bew-space-3);
+}
+
+.moment-card__video-card-info strong {
+  display: -webkit-box;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  color: var(--bew-text-1);
+  font-size: var(--bew-font-size-body);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-title);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* 继承的视频简介：弱化层级，与发布者本人文字区分 */
+.moment-card__video-card-desc {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.moment-card__video-card-info small {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--bew-space-1);
+  overflow: hidden;
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .moment-card__main--live {
@@ -1715,32 +1877,6 @@ function handleAdditionalClick(event: MouseEvent) {
   overflow: hidden;
 }
 
-.moment-card__main--video .moment-card__desc {
-  min-height: 0;
-  flex: 1 1 auto;
-  -webkit-line-clamp: var(--moment-card-description-lines, unset);
-  text-overflow: ellipsis;
-}
-
-.moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
-  grid-area: desc;
-  min-width: 0;
-  flex: 0 1 auto;
-  overflow: hidden;
-  -webkit-line-clamp: 8;
-}
-
-.moment-card__main--video:not(.moment-card__main--live) .moment-card__title {
-  display: -webkit-box;
-  grid-area: title;
-  flex: 0 0 auto;
-  margin-bottom: 0;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  text-overflow: ellipsis;
-}
-
 /* 纯文字卡高度随内容自适应，不设最小高度，避免短动态下方留出大块空白 */
 
 .moment-card--text .moment-card__desc,
@@ -1772,6 +1908,14 @@ function handleAdditionalClick(event: MouseEvent) {
   -webkit-line-clamp: 7;
 }
 
+/* 继承自视频/专栏元数据的简介：弱化层级，与发布者本人文字区分 */
+.moment-card__desc--inherited {
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
+  -webkit-line-clamp: 2;
+}
+
 .moment-card__emoji {
   display: inline-block;
   width: 1.35em;
@@ -1795,45 +1939,6 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__rich-link:hover {
   text-decoration: underline;
-}
-
-.moment-card__forward-video {
-  display: grid;
-  grid-template-columns: minmax(150px, 44%) minmax(0, 1fr);
-  margin-top: var(--bew-space-3);
-  overflow: hidden;
-  border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 58%);
-  border-radius: var(--bew-card-radius);
-  color: inherit;
-  background: var(--bew-fill-1);
-  box-sizing: border-box;
-  text-decoration: none;
-  transition:
-    border-color 0.16s ease,
-    background-color 0.16s ease;
-}
-
-.moment-card__forward-video:hover,
-.moment-card__forward-video:focus-visible {
-  border-color: color-mix(in oklab, var(--bew-theme-color), transparent 48%);
-  background: color-mix(in oklab, var(--bew-theme-color) 7%, var(--bew-fill-1));
-  outline: none;
-}
-
-.moment-card__forward-video-cover {
-  position: relative;
-  display: block;
-  min-width: 0;
-  overflow: hidden;
-  aspect-ratio: 16 / 9;
-  background: #111;
-}
-
-.moment-card__forward-video-cover > img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 .moment-card__forward-gallery-host {
@@ -1908,40 +2013,6 @@ function handleAdditionalClick(event: MouseEvent) {
   font-variant-numeric: tabular-nums;
 }
 
-.moment-card__forward-video-info {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--bew-space-2);
-  padding: var(--bew-space-2) var(--bew-space-3);
-}
-
-.moment-card__forward-video-info strong {
-  display: -webkit-box;
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow: hidden;
-  color: var(--bew-text-1);
-  font-size: var(--bew-font-size-body);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: var(--bew-line-height-title);
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.moment-card__forward-video-info small {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: var(--bew-space-1);
-  overflow: hidden;
-  color: var(--bew-text-3);
-  font-size: var(--bew-font-size-caption);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .moment-card__forward-author {
   overflow: hidden;
   color: inherit;
@@ -1954,32 +2025,6 @@ function handleAdditionalClick(event: MouseEvent) {
 .moment-card__forward-copy .moment-card__forward-author {
   display: inline-block;
   max-width: 100%;
-}
-
-.moment-card__portrait {
-  width: 100%;
-  overflow: hidden;
-  border-radius: var(--bew-media-radius);
-  aspect-ratio: 1 / 2;
-  background: var(--bew-fill-1);
-}
-
-.moment-card__portrait > img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center top;
-  cursor: zoom-in;
-}
-
-.moment-card__portrait > img:focus-visible {
-  outline: 2px solid var(--bew-theme-color);
-  outline-offset: -2px;
-}
-
-.moment-card--portrait .moment-card__body {
-  min-height: 0;
 }
 
 .moment-card__additional--footer {
@@ -2088,36 +2133,8 @@ function handleAdditionalClick(event: MouseEvent) {
 }
 
 @container (max-width: 359px) {
-  .moment-card__main--has-media {
-    display: flex;
-    flex-direction: column;
-  }
-
   .moment-card__media {
     width: 100%;
-  }
-
-  .moment-card__main--video:not(.moment-card__main--live) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "cover"
-      "desc"
-      "title";
-  }
-
-  .moment-card__main--video:not(.moment-card__main--live) .moment-card__desc {
-    -webkit-line-clamp: 4;
-  }
-
-  .moment-card__main--video .moment-card__body {
-    height: auto;
-    max-height: 220px;
-  }
-
-  .moment-card__main--video:not(.moment-card__main--live) .moment-card__body {
-    display: contents;
-    max-height: none;
   }
 
   .moment-card--text .moment-card__body {
