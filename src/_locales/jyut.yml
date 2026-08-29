@@ -1391,7 +1391,7 @@ moments:
   bilibili_user: B站用戶
   original_author: 原作者
   live_post: 直播動態
-  video_post: 影片動態
+  video_post: 投稿咗影片
   image_post: 圖文動態
   text_post: 純文字動態
   original_post: 原動態
@@ -1450,7 +1450,7 @@ moments:
   fit_window: 適應視窗
   rotate_clockwise: 順時針旋轉
 moment_card:
-  video_post: 影片動態
+  video_post: 投稿咗影片
   cancel_reservation: 取消預約
   reserve: 預約
   open_space: 打開 {name} 嘅空間

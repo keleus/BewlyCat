@@ -1480,7 +1480,7 @@ moments:
   bilibili_user: Bilibili user
   original_author: Original author
   live_post: Live post
-  video_post: Video post
+  video_post: Uploaded a video
   image_post: Image post
   text_post: Text post
   original_post: Original post
@@ -1539,7 +1539,7 @@ moments:
   fit_window: Fit to window
   rotate_clockwise: Rotate clockwise
 moment_card:
-  video_post: Video post
+  video_post: Uploaded a video
   cancel_reservation: Cancel reservation
   reserve: Reserve
   open_space: Open {name}'s profile

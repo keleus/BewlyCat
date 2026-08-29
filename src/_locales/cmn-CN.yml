@@ -1376,7 +1376,7 @@ moments:
   bilibili_user: B站用户
   original_author: 原作者
   live_post: 直播动态
-  video_post: 视频动态
+  video_post: 投稿了视频
   image_post: 图文动态
   text_post: 纯文字动态
   original_post: 原动态
@@ -1435,7 +1435,7 @@ moments:
   fit_window: 适应窗口
   rotate_clockwise: 顺时针旋转
 moment_card:
-  video_post: 视频动态
+  video_post: 投稿了视频
   cancel_reservation: 取消预约
   reserve: 预约
   open_space: 打开 {name} 的空间

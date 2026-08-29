@@ -491,7 +491,9 @@ function handleAdditionalClick(event: MouseEvent) {
             @click="handleAuthorClick"
           >{{ moment.author.name }}</a>
           <strong v-else>{{ moment.author.name }}</strong>
-          <small>{{ moment.time || t('moment_card.just_now') }}</small>
+          <small>
+            {{ moment.time || t('moment_card.just_now') }}<template v-if="moment.isVideo && !moment.isLive"> · {{ t('moment_card.video_post') }}</template>
+          </small>
         </span>
         <button
           v-if="menuVideo"
