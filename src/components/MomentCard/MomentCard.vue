@@ -1634,24 +1634,23 @@ function handleAdditionalClick(event: MouseEvent) {
   width: fit-content;
   max-width: 100%;
   overflow: hidden;
-  color: var(--bew-theme-color);
+  color: var(--bew-text-1);
   font-size: var(--bew-font-size-body);
   font-weight: var(--bew-font-weight-semibold);
   line-height: inherit;
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.16s ease;
 }
 
 .moment-card__author-name:hover,
 .moment-card__forward-author:hover {
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
+  color: var(--bew-theme-color);
 }
 
-.moment-card__identity strong,
-.moment-card__identity .moment-card__author-name {
-  color: var(--bew-theme-color);
+.moment-card__identity strong {
+  color: var(--bew-text-1);
   font-size: var(--bew-font-size-body);
   font-weight: var(--bew-font-weight-semibold);
 }
@@ -2023,6 +2022,7 @@ function handleAdditionalClick(event: MouseEvent) {
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color 0.16s ease;
 }
 
 .moment-card__forward-copy .moment-card__forward-author {
