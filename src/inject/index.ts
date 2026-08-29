@@ -131,8 +131,8 @@ else if (shouldInitializePageScript) {
   const commentReplyTreeEpochs = new WeakMap<object, number>()
   const commentReplyPaginationStates = new WeakMap<object, CommentReplyPaginationState>()
   const commentReplyPaginationModeStates = new WeakMap<object, boolean>()
-  /** 楼中楼点赞的本地快照：展开/翻页重拉 list 时避免被接口旧数据盖掉 */
-  const commentReplyLikeStates = new WeakMap<object, Map<string, CommentReplyLikeSnapshot>>()
+  /** 用户点赞/点踩操作的全局状态（rpid -> action），用于在展开/翻页接口返回旧缓存时保留最新交互 */
+  const userReplyActions = new Map<string, number>()
   const MAX_COMMENT_REPLY_TREE_DEPTH = 10
   const MIN_COMMENT_REPLY_TREE_CONTENT_WIDTH = 150
   const COMPACT_COMMENT_REPLY_TREE_CONTAINER_WIDTH = 640
@@ -209,11 +209,6 @@ else if (shouldInitializePageScript) {
     directParentMessageText: string | null
   }
 
-  interface CommentReplyLikeSnapshot {
-    action?: number
-    like?: number
-  }
-
   interface CommentReplyPaginationState {
     identity: string
     pages: Map<number, any[]>
@@ -223,7 +218,7 @@ else if (shouldInitializePageScript) {
     suppressInvalidatedResultRestore?: boolean
     pending?: {
       page: number
-      beforeList: any[]
+      beforeList?: any[]
       layoutReservation?: CommentReplyLayoutReservation
     }
     loading?: Promise<any>
@@ -912,7 +907,7 @@ else if (shouldInitializePageScript) {
       return
     const original = state.pages.get(state.currentPage)
     if (restoreCurrentPage && state.mergedList && renderer.list === state.mergedList && original) {
-      setCommentReplyRendererList(renderer, original.slice())
+      renderer.list = original.slice()
       renderer.requestUpdate?.()
     }
     releaseCommentReplyLayoutReservation(state.pending?.layoutReservation)
@@ -940,7 +935,7 @@ else if (shouldInitializePageScript) {
     if (!state.mergedList && state.pages.size > 0)
       state.mergedList = mergeCommentReplyPaginationPages(state)
     if (state.mergedList)
-      setCommentReplyRendererList(renderer, state.mergedList)
+      renderer.list = state.mergedList
     state.pending = undefined
     state.loading = undefined
     renderer.requestUpdate?.()
@@ -1022,15 +1017,6 @@ else if (shouldInitializePageScript) {
     })
   }
 
-  function getCommentReplyLikeStateMap(renderer: any): Map<string, CommentReplyLikeSnapshot> {
-    let snapshots = commentReplyLikeStates.get(renderer)
-    if (!snapshots) {
-      snapshots = new Map()
-      commentReplyLikeStates.set(renderer, snapshots)
-    }
-    return snapshots
-  }
-
   function normalizeCommentReplyAction(value: unknown): number | undefined {
     if (value === true || value === 1 || value === '1')
       return 1
@@ -1041,62 +1027,46 @@ else if (shouldInitializePageScript) {
     return undefined
   }
 
-  function normalizeCommentReplyLikeCount(value: unknown): number | undefined {
-    return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-  }
-
-  function getCommentReplyLikeSnapshotFromValue(value: any): CommentReplyLikeSnapshot | null {
-    if (!value || typeof value !== 'object')
-      return null
-    // 按钮组件的 liked 是当前 UI；list 上的 action 可能仍是请求前的旧值。
-    const action = typeof value.liked === 'boolean'
-      ? (value.liked ? 1 : 0)
-      : normalizeCommentReplyAction(value.action ?? value.reply_control?.action)
-    const like = normalizeCommentReplyLikeCount(value.like ?? value.like_count ?? value.likeNum ?? value.likeCount)
-    if (action === undefined && like === undefined)
-      return null
-    return { action, like }
-  }
-
-  function mergeCommentReplyLikeSnapshot(
-    previous: CommentReplyLikeSnapshot | undefined,
-    next: CommentReplyLikeSnapshot | null,
-  ): CommentReplyLikeSnapshot | undefined {
-    if (!next)
-      return previous
-    if (!previous)
-      return next
-    return {
-      action: next.action ?? previous.action,
-      like: next.like ?? previous.like,
-    }
-  }
-
-  function applyCommentReplyLikeSnapshot(target: any, snapshot: CommentReplyLikeSnapshot | undefined) {
-    if (!target || typeof target !== 'object' || !snapshot)
+  function recordUserReplyAction(rpid: string | null | undefined, action: number | undefined) {
+    if (!rpid || action === undefined || Number.isNaN(action))
       return
-    if (snapshot.action !== undefined) {
-      target.action = snapshot.action
-      if (target.reply_control && typeof target.reply_control === 'object')
-        target.reply_control.action = snapshot.action
-      if ('liked' in target)
-        target.liked = snapshot.action === 1
-    }
-    if (snapshot.like !== undefined)
-      target.like = snapshot.like
+    userReplyActions.set(rpid, action)
   }
 
-  function applyCommentReplyLikeSnapshotsToList(
-    list: any[] | undefined,
-    snapshots: Map<string, CommentReplyLikeSnapshot>,
-  ) {
-    if (!Array.isArray(list) || snapshots.size === 0)
+  function applyUserActionsToReplies(replies: any[] | undefined) {
+    if (!Array.isArray(replies) || userReplyActions.size === 0)
       return
-    list.forEach((reply) => {
+
+    for (const reply of replies) {
       const rpid = getReplyRpid(reply)
-      if (rpid)
-        applyCommentReplyLikeSnapshot(reply, snapshots.get(rpid))
-    })
+      if (!rpid)
+        continue
+      const userAction = userReplyActions.get(rpid)
+      if (userAction === undefined)
+        continue
+
+      const serverAction = normalizeCommentReplyAction(
+        reply.action ?? reply.reply_control?.action,
+      ) ?? 0
+
+      if (serverAction === userAction) {
+        userReplyActions.delete(rpid)
+        continue
+      }
+
+      reply.action = userAction
+      if (reply.reply_control && typeof reply.reply_control === 'object')
+        reply.reply_control.action = userAction
+      if ('liked' in reply)
+        reply.liked = userAction === 1
+
+      if (typeof reply.like === 'number') {
+        if (userAction === 1 && serverAction === 0)
+          reply.like += 1
+        else if (userAction === 0 && serverAction === 1 && reply.like > 0)
+          reply.like -= 1
+      }
+    }
   }
 
   function getCommentReplyRendererHosts(renderer: any): HTMLElement[] {
@@ -1108,129 +1078,49 @@ else if (shouldInitializePageScript) {
     ))
   }
 
-  function findCommentReplyInLists(rpid: string, lists: Array<any[] | undefined>): any | undefined {
-    for (const list of lists) {
-      if (!Array.isArray(list))
-        continue
-      const found = list.find(reply => getReplyRpid(reply) === rpid)
+  function findCommentReplyActionButtons(host: HTMLElement): any {
+    const root = host.shadowRoot
+    if (!root)
+      return null
+    const direct = root.querySelector('bili-comment-action-buttons-renderer')
+    if (direct)
+      return direct
+    const nested = root.querySelectorAll('*')
+    for (let i = 0; i < nested.length; i += 1) {
+      const found = (nested[i] as HTMLElement).shadowRoot?.querySelector('bili-comment-action-buttons-renderer')
       if (found)
         return found
     }
-    return undefined
+    return null
   }
 
-  function reconcileCommentReplyLikeSnapshots(
-    serverList: any[] | undefined,
-    snapshots: Map<string, CommentReplyLikeSnapshot>,
-    retainedLists: Array<any[] | undefined> = [],
-  ) {
-    if (!Array.isArray(serverList) || snapshots.size === 0)
-      return
-    serverList.forEach((serverReply) => {
-      const rpid = getReplyRpid(serverReply)
-      if (!rpid)
-        return
-      const snapshot = snapshots.get(rpid)
-      if (!snapshot || snapshot.action === undefined)
-        return
-      const serverState = getCommentReplyLikeSnapshotFromValue(serverReply)
-      if (serverState?.action !== snapshot.action)
-        return
-      snapshots.delete(rpid)
-      if (serverState.like === undefined)
-        return
-      retainedLists.forEach((list) => {
-        if (!Array.isArray(list))
-          return
-        list.forEach((reply) => {
-          if (getReplyRpid(reply) === rpid)
-            reply.like = serverState.like
-        })
-      })
-    })
-  }
-
-  function rememberCommentReplyLikeStates(renderer: any) {
+  function rememberCommentReplyUserActionsFromComponent(renderer: any) {
     if (!renderer)
       return
-    const snapshots = getCommentReplyLikeStateMap(renderer)
-    const pagination = commentReplyPaginationStates.get(renderer)
-    const listSources = [
-      Array.isArray(renderer.list) ? renderer.list : undefined,
-      pagination?.mergedList,
-      pagination?.collapsedList,
-    ]
+    if (Array.isArray(renderer.list)) {
+      renderer.list.forEach((reply: any) => {
+        const rpid = getReplyRpid(reply)
+        const action = normalizeCommentReplyAction(reply?.action ?? reply?.reply_control?.action)
+        if (rpid && (action === 1 || action === 2))
+          recordUserReplyAction(rpid, action)
+      })
+    }
     getCommentReplyRendererHosts(renderer).forEach((host) => {
       const data = getCommentReplyData(host) ?? (host as any).__data
       const rpid = getReplyRpid(data)
       if (!rpid)
         return
-      let live: CommentReplyLikeSnapshot | undefined = getCommentReplyLikeSnapshotFromValue(data) ?? undefined
-      const buttons = host.shadowRoot?.querySelector('bili-comment-action-buttons-renderer') as any
+      let action = normalizeCommentReplyAction(data?.action ?? data?.reply_control?.action)
+      const buttons = findCommentReplyActionButtons(host)
       if (buttons) {
-        live = mergeCommentReplyLikeSnapshot(live, getCommentReplyLikeSnapshotFromValue(buttons.data))
-        live = mergeCommentReplyLikeSnapshot(live, getCommentReplyLikeSnapshotFromValue(buttons))
+        if (buttons.liked === true || buttons.data?.liked === true)
+          action = 1
+        else if (buttons.action !== undefined)
+          action = normalizeCommentReplyAction(buttons.action) ?? action
       }
-      if (!live || live.action === undefined)
-        return
-
-      const existing = snapshots.get(rpid)
-      const listAction = getCommentReplyLikeSnapshotFromValue(
-        findCommentReplyInLists(rpid, listSources),
-      )?.action
-
-      // list 与 UI 一致且 list 仍在：用户已把新值写回 list（含取消赞）。
-      // list 被清空时不能当取消赞，否则会丢掉展开前记下的赞。
-      if (listAction === live.action) {
-        if (existing && listAction !== undefined && existing.action !== live.action)
-          snapshots.delete(rpid)
-        return
-      }
-
-      if (existing) {
-        // 接口旧数据重绘会把按钮打回未赞；已有快照时忽略这次回退。
-        if (live.action === 0)
-          return
-        const merged = mergeCommentReplyLikeSnapshot(existing, live)
-        if (merged)
-          snapshots.set(rpid, merged)
-        return
-      }
-
-      if (live.action === 0)
-        return
-      snapshots.set(rpid, live)
+      if (action === 1 || action === 2)
+        recordUserReplyAction(rpid, action)
     })
-  }
-
-  function applyCommentReplyLikeStatesToRenderer(renderer: any) {
-    const snapshots = commentReplyLikeStates.get(renderer)
-    if (!snapshots || snapshots.size === 0)
-      return
-    applyCommentReplyLikeSnapshotsToList(renderer.list, snapshots)
-    getCommentReplyRendererHosts(renderer).forEach((host) => {
-      const data = getCommentReplyData(host) ?? (host as any).__data
-      const rpid = getReplyRpid(data)
-      if (!rpid)
-        return
-      const snapshot = snapshots.get(rpid)
-      if (!snapshot)
-        return
-      applyCommentReplyLikeSnapshot(data, snapshot)
-      const buttons = host.shadowRoot?.querySelector('bili-comment-action-buttons-renderer') as any
-      if (buttons) {
-        applyCommentReplyLikeSnapshot(buttons, snapshot)
-        applyCommentReplyLikeSnapshot(buttons.data, snapshot)
-        buttons.requestUpdate?.()
-      }
-      ;(host as any).requestUpdate?.()
-    })
-  }
-
-  function setCommentReplyRendererList(renderer: any, list: any[]) {
-    applyCommentReplyLikeSnapshotsToList(list, getCommentReplyLikeStateMap(renderer))
-    renderer.list = list
-    applyCommentReplyLikeStatesToRenderer(renderer)
   }
 
   function getCommentReplyTotalPage(renderer: any): number {
@@ -1508,16 +1398,12 @@ else if (shouldInitializePageScript) {
         configurable: true,
         writable: true,
         value(this: any, ...args: any[]) {
-          rememberCommentReplyLikeStates(this)
+          rememberCommentReplyUserActionsFromComponent(this)
           if (!isCommentReplyLoadMoreEnabled()) {
             clearCommentReplyPaginationState(this, true)
             const result: any = Reflect.apply(originalGetList, this, args)
             const finish = (value: any) => {
-              reconcileCommentReplyLikeSnapshots(
-                this.list,
-                getCommentReplyLikeStateMap(this),
-              )
-              applyCommentReplyLikeStatesToRenderer(this)
+              applyUserActionsToReplies(this.list)
               this.requestUpdate?.()
               return value
             }
@@ -1546,16 +1432,10 @@ else if (shouldInitializePageScript) {
                 .filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
             }
           }
-          // 原生组件可能替换 list，也可能原地改写。请求前先保存独立的
-          // 累计列表快照，后续始终以它为基础追加新页。
-          const currentList = Array.isArray(this.list)
-            ? this.list.filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
-            : []
-          const beforeList = mergeCommentReplyLists(state.mergedList ?? [], currentList)
-          state.mergedList = beforeList
+          const currentPage = Number(this.currentPage) || 1
           const pending = {
-            page: Number(this.currentPage) || 1,
-            beforeList,
+            page: currentPage,
+            beforeList: currentPage > 1 && Array.isArray(state.mergedList) ? state.mergedList.slice() : undefined,
             layoutReservation: reserveCommentReplyLayoutHeight(this),
           }
           state.pending = pending
@@ -1579,11 +1459,9 @@ else if (shouldInitializePageScript) {
                 && state.identity === getCommentReplyPaginationIdentity(this)
                 && Array.isArray(this.list)) {
                 const latestInvisibleIds = getCommentReplyInvisibleIds(this)
-                const retainedBeforeList = pending.beforeList
-                  .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
                 const loadedList = this.list
                   .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
-                const page = getNewCommentReplyPage(retainedBeforeList, loadedList)
+                applyUserActionsToReplies(loadedList)
                 state.pages.forEach((cachedPage, pageNumber) => {
                   state.pages.set(
                     pageNumber,
@@ -1594,14 +1472,16 @@ else if (shouldInitializePageScript) {
                 state.pages.set(pending.page, loadedList)
                 state.currentPage = pending.page
                 state.allRepliesExpanded = isCommentReplyPaginationComplete(this)
-                const merged = mergeCommentReplyLists(retainedBeforeList, page)
-                state.mergedList = merged
-                reconcileCommentReplyLikeSnapshots(
-                  loadedList,
-                  getCommentReplyLikeStateMap(this),
-                  [retainedBeforeList, merged],
-                )
-                setCommentReplyRendererList(this, merged)
+                if (pending.page === 1 || !pending.beforeList) {
+                  state.mergedList = loadedList
+                }
+                else {
+                  const retainedBeforeList = pending.beforeList
+                    .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
+                  const page = getNewCommentReplyPage(retainedBeforeList, loadedList)
+                  state.mergedList = mergeCommentReplyLists(retainedBeforeList, page)
+                }
+                this.list = state.mergedList
                 scheduleCommentReplyPaginationTreeUpdate(this, pending.layoutReservation)
               }
               else {
@@ -1614,7 +1494,7 @@ else if (shouldInitializePageScript) {
             ) {
               if (state.suppressInvalidatedResultRestore && state.collapsedList) {
                 // 原生收起后迟到的请求会先将 list 改成单页，立即恢复收起态缓存。
-                setCommentReplyRendererList(this, state.collapsedList)
+                this.list = state.collapsedList
                 this.requestUpdate?.()
               }
               else if (
@@ -1623,7 +1503,7 @@ else if (shouldInitializePageScript) {
                 && state.mergedList
               ) {
                 // 树分支折叠后的迟到请求恢复折叠前累计列表。
-                setCommentReplyRendererList(this, state.mergedList)
+                this.list = state.mergedList
                 scheduleCommentReplyPaginationTreeUpdate(this)
               }
             }
@@ -1717,8 +1597,7 @@ else if (shouldInitializePageScript) {
         configurable: true,
         writable: true,
         value(this: any, ...args: any[]) {
-          // 原生「点击查看」可能先清空预览 list，必须在清空前记下点赞。
-          rememberCommentReplyLikeStates(this)
+          rememberCommentReplyUserActionsFromComponent(this)
           return Reflect.apply(originalViewMore, this, args)
         },
       })
@@ -1731,7 +1610,7 @@ else if (shouldInitializePageScript) {
         configurable: true,
         writable: true,
         value(this: any, ...args: any[]) {
-          rememberCommentReplyLikeStates(this)
+          rememberCommentReplyUserActionsFromComponent(this)
           const cleanup = (captureCollapsedList: boolean) => {
             // 原生收起只结束未完成请求；已加载页必须留给下次展开继续追加。
             suspendCommentReplyPaginationForNativeCollapse(this, captureCollapsedList)
@@ -4282,6 +4161,75 @@ else if (shouldInitializePageScript) {
 
   const originalFetch = window.fetch
 
+  function inspectReplyActionRequest(url: string, body?: any) {
+    try {
+      if (!url || !url.includes('/x/v2/reply/action'))
+        return
+
+      let rpid: string | null = null
+      let action: number | undefined
+
+      try {
+        const parsedUrl = new URL(url, window.location.href)
+        const rpidParam = parsedUrl.searchParams.get('rpid')
+        const actionParam = parsedUrl.searchParams.get('action')
+        if (rpidParam)
+          rpid = rpidParam
+        if (actionParam !== null && actionParam !== undefined)
+          action = Number(actionParam)
+      }
+      catch {}
+
+      if (body) {
+        if (typeof body === 'string') {
+          if (body.trim().startsWith('{')) {
+            try {
+              const parsed = JSON.parse(body)
+              if (parsed.rpid)
+                rpid = String(parsed.rpid)
+              if (parsed.action !== undefined)
+                action = Number(parsed.action)
+            }
+            catch {}
+          }
+          else {
+            try {
+              const params = new URLSearchParams(body)
+              const rpidParam = params.get('rpid')
+              const actionParam = params.get('action')
+              if (rpidParam)
+                rpid = rpidParam
+              if (actionParam !== null && actionParam !== undefined)
+                action = Number(actionParam)
+            }
+            catch {}
+          }
+        }
+        else if (body instanceof FormData || body instanceof URLSearchParams) {
+          const rpidParam = body.get('rpid')?.toString()
+          const actionParam = body.get('action')?.toString()
+          if (rpidParam)
+            rpid = rpidParam
+          if (actionParam !== null && actionParam !== undefined)
+            action = Number(actionParam)
+        }
+      }
+
+      if (rpid && action !== undefined && !Number.isNaN(action))
+        recordUserReplyAction(rpid, action)
+    }
+    catch {}
+  }
+
+  function inspectReplyActionFetch(input: RequestInfo | URL, init?: RequestInit) {
+    try {
+      const urlString = getFetchInputUrl(input)
+      const body = init?.body ?? (input instanceof Request ? (input as any)._bodyInit ?? (input as any).body : undefined)
+      inspectReplyActionRequest(urlString, body)
+    }
+    catch {}
+  }
+
   function fetchWithSearchSettings(thisArg: unknown, input: RequestInfo | URL, init?: RequestInit) {
     if (!currentSettings?.depersonalizeSearchResults)
       return originalFetch.call(thisArg, input, init)
@@ -4298,6 +4246,7 @@ else if (shouldInitializePageScript) {
   }
 
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    inspectReplyActionFetch(input, init)
     if (isSearchResultFetch(input) && !settingsReady) {
       return settingsReadyPromise.then(() => {
         return fetchWithSearchSettings(this, input, init)
@@ -4306,6 +4255,33 @@ else if (shouldInitializePageScript) {
     if (isSearchResultFetch(input))
       return fetchWithSearchSettings(this, input, init)
     return originalFetch.call(this, input, init)
+  }
+
+  if (typeof window !== 'undefined' && window.XMLHttpRequest) {
+    try {
+      const originalXhrOpen = XMLHttpRequest.prototype.open
+      const originalXhrSend = XMLHttpRequest.prototype.send
+      const xhrUrlMap = new WeakMap<XMLHttpRequest, string>()
+
+      XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, method: string, url: string | URL, ...rest: any[]) {
+        try {
+          xhrUrlMap.set(this, typeof url === 'string' ? url : url?.toString?.() ?? '')
+        }
+        catch {}
+        return originalXhrOpen.apply(this, [method, url, ...rest] as any)
+      }
+
+      XMLHttpRequest.prototype.send = function (this: XMLHttpRequest, body?: any) {
+        try {
+          const url = xhrUrlMap.get(this)
+          if (url)
+            inspectReplyActionRequest(url, body)
+        }
+        catch {}
+        return originalXhrSend.call(this, body)
+      }
+    }
+    catch {}
   }
 
   // 页面加载完成后初始化随机播放（功能已迁移到contentScripts）
