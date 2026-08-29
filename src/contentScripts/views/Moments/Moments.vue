@@ -5035,7 +5035,7 @@ watch(
   min-height: 44px;
   padding: 0 var(--bew-space-4);
   border: 0;
-  border-radius: var(--bew-interactive-radius);
+  border-radius: var(--bew-panel-radius);
   color: var(--bew-text-1);
   background: var(--bew-elevated);
   box-shadow: none;
