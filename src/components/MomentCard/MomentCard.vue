@@ -1396,13 +1396,19 @@ function handleAdditionalClick(event: MouseEvent) {
   flex-direction: column;
   margin-top: var(--bew-space-4);
   overflow: hidden;
-  /* 推特引用推文式：与卡片同底色，仅用描边框出被转发内容 */
+  /* 与横条视频卡同层级的内容块：fill 底 + 描边，点击跳原动态 */
   border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 58%);
   border-radius: var(--bew-card-radius);
   color: var(--bew-text-2);
-  background: transparent;
+  background: var(--bew-fill-1);
   font-size: var(--bew-font-size-control);
   line-height: var(--bew-line-height-control);
+  transition: background-color 0.16s ease;
+}
+
+.moment-card__forward:hover,
+.moment-card__forward:focus-visible {
+  background: var(--bew-fill-2);
 }
 
 .moment-card__forward-copy {
@@ -1669,16 +1675,12 @@ function handleAdditionalClick(event: MouseEvent) {
   background: var(--bew-fill-1);
   box-sizing: border-box;
   text-decoration: none;
-  transition:
-    border-color 0.16s ease,
-    background-color 0.16s ease;
+  transition: background-color 0.16s ease;
 }
 
 .moment-card__video-card:hover,
 .moment-card__video-card:focus-visible {
-  border-color: color-mix(in oklab, var(--bew-theme-color), transparent 48%);
-  background: color-mix(in oklab, var(--bew-theme-color) 7%, var(--bew-fill-1));
-  outline: none;
+  background: var(--bew-fill-2);
 }
 
 .moment-card__video-card-cover {
