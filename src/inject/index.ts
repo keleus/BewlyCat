@@ -1108,45 +1108,98 @@ else if (shouldInitializePageScript) {
     ))
   }
 
+  function findCommentReplyInLists(rpid: string, lists: Array<any[] | undefined>): any | undefined {
+    for (const list of lists) {
+      if (!Array.isArray(list))
+        continue
+      const found = list.find(reply => getReplyRpid(reply) === rpid)
+      if (found)
+        return found
+    }
+    return undefined
+  }
+
+  function reconcileCommentReplyLikeSnapshots(
+    serverList: any[] | undefined,
+    snapshots: Map<string, CommentReplyLikeSnapshot>,
+    retainedLists: Array<any[] | undefined> = [],
+  ) {
+    if (!Array.isArray(serverList) || snapshots.size === 0)
+      return
+    serverList.forEach((serverReply) => {
+      const rpid = getReplyRpid(serverReply)
+      if (!rpid)
+        return
+      const snapshot = snapshots.get(rpid)
+      if (!snapshot || snapshot.action === undefined)
+        return
+      const serverState = getCommentReplyLikeSnapshotFromValue(serverReply)
+      if (serverState?.action !== snapshot.action)
+        return
+      snapshots.delete(rpid)
+      if (serverState.like === undefined)
+        return
+      retainedLists.forEach((list) => {
+        if (!Array.isArray(list))
+          return
+        list.forEach((reply) => {
+          if (getReplyRpid(reply) === rpid)
+            reply.like = serverState.like
+        })
+      })
+    })
+  }
+
   function rememberCommentReplyLikeStates(renderer: any) {
     if (!renderer)
       return
     const snapshots = getCommentReplyLikeStateMap(renderer)
     const pagination = commentReplyPaginationStates.get(renderer)
-    // list/mergedList 可能已被接口旧数据原地改写，只能给尚未记录的 rpid 补底。
-    // 已有快照只允许被当前 DOM（用户刚点过的按钮）覆盖，避免二次 remember 把赞冲掉。
-    const recordListIfAbsent = (list: any[] | undefined) => {
-      if (!Array.isArray(list))
-        return
-      list.forEach((reply) => {
-        const rpid = getReplyRpid(reply)
-        if (!rpid || snapshots.has(rpid))
-          return
-        const snapshot = getCommentReplyLikeSnapshotFromValue(reply)
-        if (snapshot)
-          snapshots.set(rpid, snapshot)
-      })
-    }
-    recordListIfAbsent(pagination?.mergedList)
-    recordListIfAbsent(pagination?.collapsedList)
-    recordListIfAbsent(Array.isArray(renderer.list) ? renderer.list : undefined)
+    const listSources = [
+      Array.isArray(renderer.list) ? renderer.list : undefined,
+      pagination?.mergedList,
+      pagination?.collapsedList,
+    ]
     getCommentReplyRendererHosts(renderer).forEach((host) => {
       const data = getCommentReplyData(host) ?? (host as any).__data
       const rpid = getReplyRpid(data)
       if (!rpid)
         return
-      // 可见回复以当前 UI 为准：先 data，按钮组件最后写入，避免 data.action 旧值盖掉刚点的赞。
-      let snapshot = mergeCommentReplyLikeSnapshot(
-        snapshots.get(rpid),
-        getCommentReplyLikeSnapshotFromValue(data),
-      )
+      let live: CommentReplyLikeSnapshot | undefined = getCommentReplyLikeSnapshotFromValue(data) ?? undefined
       const buttons = host.shadowRoot?.querySelector('bili-comment-action-buttons-renderer') as any
       if (buttons) {
-        snapshot = mergeCommentReplyLikeSnapshot(snapshot, getCommentReplyLikeSnapshotFromValue(buttons.data))
-        snapshot = mergeCommentReplyLikeSnapshot(snapshot, getCommentReplyLikeSnapshotFromValue(buttons))
+        live = mergeCommentReplyLikeSnapshot(live, getCommentReplyLikeSnapshotFromValue(buttons.data))
+        live = mergeCommentReplyLikeSnapshot(live, getCommentReplyLikeSnapshotFromValue(buttons))
       }
-      if (snapshot)
-        snapshots.set(rpid, snapshot)
+      if (!live || live.action === undefined)
+        return
+
+      const existing = snapshots.get(rpid)
+      const listAction = getCommentReplyLikeSnapshotFromValue(
+        findCommentReplyInLists(rpid, listSources),
+      )?.action
+
+      // list 与 UI 一致且 list 仍在：用户已把新值写回 list（含取消赞）。
+      // list 被清空时不能当取消赞，否则会丢掉展开前记下的赞。
+      if (listAction === live.action) {
+        if (existing && listAction !== undefined && existing.action !== live.action)
+          snapshots.delete(rpid)
+        return
+      }
+
+      if (existing) {
+        // 接口旧数据重绘会把按钮打回未赞；已有快照时忽略这次回退。
+        if (live.action === 0)
+          return
+        const merged = mergeCommentReplyLikeSnapshot(existing, live)
+        if (merged)
+          snapshots.set(rpid, merged)
+        return
+      }
+
+      if (live.action === 0)
+        return
+      snapshots.set(rpid, live)
     })
   }
 
@@ -1460,7 +1513,12 @@ else if (shouldInitializePageScript) {
             clearCommentReplyPaginationState(this, true)
             const result: any = Reflect.apply(originalGetList, this, args)
             const finish = (value: any) => {
+              reconcileCommentReplyLikeSnapshots(
+                this.list,
+                getCommentReplyLikeStateMap(this),
+              )
               applyCommentReplyLikeStatesToRenderer(this)
+              this.requestUpdate?.()
               return value
             }
             if (result && typeof result.then === 'function')
@@ -1538,6 +1596,11 @@ else if (shouldInitializePageScript) {
                 state.allRepliesExpanded = isCommentReplyPaginationComplete(this)
                 const merged = mergeCommentReplyLists(retainedBeforeList, page)
                 state.mergedList = merged
+                reconcileCommentReplyLikeSnapshots(
+                  loadedList,
+                  getCommentReplyLikeStateMap(this),
+                  [retainedBeforeList, merged],
+                )
                 setCommentReplyRendererList(this, merged)
                 scheduleCommentReplyPaginationTreeUpdate(this, pending.layoutReservation)
               }
