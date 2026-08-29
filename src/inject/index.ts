@@ -218,7 +218,7 @@ else if (shouldInitializePageScript) {
     suppressInvalidatedResultRestore?: boolean
     pending?: {
       page: number
-      beforeList?: any[]
+      beforeList: any[]
       layoutReservation?: CommentReplyLayoutReservation
     }
     loading?: Promise<any>
@@ -1432,10 +1432,16 @@ else if (shouldInitializePageScript) {
                 .filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
             }
           }
-          const currentPage = Number(this.currentPage) || 1
+          // 原生组件可能替换 list，也可能原地改写甚至把新页追加到预览后面。
+          // 请求前先保存独立的累计列表快照，结算时只追加尚未出现过的 rpid。
+          const currentList = Array.isArray(this.list)
+            ? this.list.filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
+            : []
+          const beforeList = mergeCommentReplyLists(state.mergedList ?? [], currentList)
+          state.mergedList = beforeList
           const pending = {
-            page: currentPage,
-            beforeList: currentPage > 1 && Array.isArray(state.mergedList) ? state.mergedList.slice() : undefined,
+            page: Number(this.currentPage) || 1,
+            beforeList,
             layoutReservation: reserveCommentReplyLayoutHeight(this),
           }
           state.pending = pending
@@ -1459,9 +1465,12 @@ else if (shouldInitializePageScript) {
                 && state.identity === getCommentReplyPaginationIdentity(this)
                 && Array.isArray(this.list)) {
                 const latestInvisibleIds = getCommentReplyInvisibleIds(this)
+                const retainedBeforeList = pending.beforeList
+                  .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
                 const loadedList = this.list
                   .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
                 applyUserActionsToReplies(loadedList)
+                const page = getNewCommentReplyPage(retainedBeforeList, loadedList)
                 state.pages.forEach((cachedPage, pageNumber) => {
                   state.pages.set(
                     pageNumber,
@@ -1472,16 +1481,10 @@ else if (shouldInitializePageScript) {
                 state.pages.set(pending.page, loadedList)
                 state.currentPage = pending.page
                 state.allRepliesExpanded = isCommentReplyPaginationComplete(this)
-                if (pending.page === 1 || !pending.beforeList) {
-                  state.mergedList = loadedList
-                }
-                else {
-                  const retainedBeforeList = pending.beforeList
-                    .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
-                  const page = getNewCommentReplyPage(retainedBeforeList, loadedList)
-                  state.mergedList = mergeCommentReplyLists(retainedBeforeList, page)
-                }
-                this.list = state.mergedList
+                const merged = mergeCommentReplyLists(retainedBeforeList, page)
+                applyUserActionsToReplies(merged)
+                state.mergedList = merged
+                this.list = merged
                 scheduleCommentReplyPaginationTreeUpdate(this, pending.layoutReservation)
               }
               else {
