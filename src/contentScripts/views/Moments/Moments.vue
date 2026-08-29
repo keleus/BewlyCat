@@ -681,13 +681,19 @@ function getMomentContent(item: any) {
 
   // 图文/纯文字（itemOpusStyle）正文：major.opus.summary.text
   // 旧结构可能在 module_dynamic.desc.text；视频/专栏等再回落到各自 desc
+  // 视频动态的 module_dynamic.desc 是简介副本，归入继承来源，避免被当成本人正文
+  const isVideoMajor = Boolean(major.archive || major.ugc_season || major.pgc)
   const selfText = pickText(
     opus.summary?.text,
     typeof opus.summary === 'string' ? opus.summary : '',
-    normalizeDescText(dynamic.desc),
+    isVideoMajor ? '' : normalizeDescText(dynamic.desc),
     common.desc,
   )
-  const inheritedText = pickText(archive.desc, article.desc)
+  const inheritedText = pickText(
+    isVideoMajor ? normalizeDescText(dynamic.desc) : '',
+    archive.desc,
+    article.desc,
+  )
   let text = pickText(selfText, inheritedText)
   /** 简介继承自视频/专栏元数据时标记，卡片内做弱化展示 */
   const descInherited = !selfText && Boolean(inheritedText)
@@ -1698,6 +1704,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     publishedAt: Number(author.pub_ts || 0),
     title: content.title,
     text,
+    descInherited: !isForward && Boolean(content.descInherited),
     richText,
     // 转发卡片只展示原动态摘要，不能把原动态图片提升为外层卡片媒体。
     images: isForward || (isChargeExclusive && !content.isVideo) ? [] : content.images,
@@ -1805,7 +1812,7 @@ function mapMoment(item: DataItem): DisplayMoment {
 function estimateVideoCardStripHeight(contentWidth: number) {
   const coverWidth = Math.max(150, contentWidth * 0.44)
   const coverHeight = Math.round(coverWidth * 9 / 16)
-  const infoHeight = 106
+  const infoHeight = 112
   return Math.max(coverHeight, infoHeight) + 2 /* 描边 */
 }
 

@@ -1700,19 +1700,18 @@ function handleAdditionalClick(event: MouseEvent) {
   object-fit: cover;
 }
 
+/* 信息区从条顶开始排：标题在上、简介/作者紧随，不随封面高度做垂直居中 */
 .moment-card__video-card-info {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  justify-content: center;
   gap: var(--bew-space-2);
-  padding: var(--bew-space-2) var(--bew-space-3);
+  padding: var(--bew-space-3) var(--bew-space-4);
 }
 
 .moment-card__video-card-info strong {
   display: -webkit-box;
   min-width: 0;
-  flex: 1 1 auto;
   overflow: hidden;
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-body);
@@ -1728,8 +1727,8 @@ function handleAdditionalClick(event: MouseEvent) {
   margin: 0;
   overflow: hidden;
   color: var(--bew-text-3);
-  font-size: var(--bew-font-size-caption);
-  line-height: var(--bew-line-height-caption);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
