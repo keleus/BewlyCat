@@ -1746,7 +1746,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     chargeBadge: content.chargeBadge || selfContent.chargeBadge,
     chargeHint: content.chargeHint || selfContent.chargeHint,
     chargeCover: content.chargeCover || selfContent.chargeCover,
-    mediaMeta: content.mediaMeta,
+    mediaMeta: isForward ? '' : content.mediaMeta,
     liveArea: content.liveArea,
     livePopularity: content.livePopularity,
     roomId: content.roomId,
