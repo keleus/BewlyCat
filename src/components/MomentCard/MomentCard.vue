@@ -284,6 +284,13 @@ function handleCardClick(event: MouseEvent) {
 }
 
 function handlePermalinkClick(event: MouseEvent) {
+  // 整卡 a 内嵌的交互件（稍后再看等）自行处理点击，这里只拦掉默认跳转
+  const nested = (event.target as HTMLElement | null)?.closest('button, a')
+  if (nested && nested !== event.currentTarget) {
+    event.preventDefault()
+    return
+  }
+
   // 左键走卡片弹窗；a 只留给中键 / ctrl / meta 等原生打开。
   if (shouldUseNativeLinkOpen(event))
     return
@@ -578,6 +585,7 @@ function handleAdditionalClick(event: MouseEvent) {
                 v-if="moment.images.length"
                 :src="getMomentThumbnailUrl(moment.images[0])"
                 :alt="moment.title"
+                :class="{ 'is-ready': ready }"
                 loading="lazy"
                 decoding="async"
                 @load="handleCoverLoad"
@@ -1261,9 +1269,7 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__cover:hover .moment-card__watch-later,
 .moment-card__video-card-cover:hover .moment-card__watch-later,
-.moment-card__video-card-cover:focus-within .moment-card__watch-later,
-.moment-card__watch-later:focus-visible,
-.moment-card__watch-later.is-added {
+.moment-card__watch-later:focus-visible {
   opacity: 1;
   transform: scale(1);
 }
@@ -1701,6 +1707,15 @@ function handleAdditionalClick(event: MouseEvent) {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.moment-card__video-card-cover > img {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.moment-card__video-card-cover > img.is-ready {
+  opacity: 1;
 }
 
 /* 信息区从条顶开始排：标题在上、简介/作者紧随，不随封面高度做垂直居中 */
