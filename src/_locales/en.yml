@@ -1501,7 +1501,7 @@ moments:
   followers: Followers
   posts: Posts
   publish: Publish post
-  live_now: Live now
+  live_now: Live
   group_label: Post groups
   all_posts: All posts
   wanted_only: Wanted uploaders only

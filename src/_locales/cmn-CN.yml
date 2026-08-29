@@ -1397,7 +1397,7 @@ moments:
   followers: 粉丝
   posts: 动态
   publish: 发布动态
-  live_now: 正在直播
+  live_now: 直播中
   group_label: 动态分组
   all_posts: 全部动态
   wanted_only: 只看想看的 UP 主

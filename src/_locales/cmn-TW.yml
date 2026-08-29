@@ -1412,7 +1412,7 @@ moments:
   followers: 粉絲
   posts: 動態
   publish: 發布動態
-  live_now: 正在直播
+  live_now: 直播中
   group_label: 動態分組
   all_posts: 全部動態
   wanted_only: 只看想看的 UP 主

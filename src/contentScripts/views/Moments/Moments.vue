@@ -4073,7 +4073,7 @@ watch(
               >
                 <span class="moments-live-card__avatar">
                   <img :src="getSidebarAvatarUrl(liveUser.face, 64)" :alt="liveUser.uname" loading="lazy" decoding="async">
-                  <em><span i-tabler-chart-bar />{{ t('moments.live_now') }}</em>
+                  <em>{{ t('moments.live_now') }}</em>
                 </span>
                 <span class="moments-live-card__info">
                   <strong>{{ liveUser.uname }}</strong>
@@ -5124,13 +5124,13 @@ watch(
   bottom: 0;
   display: inline-flex;
   align-items: center;
-  gap: var(--bew-space-0-5);
-  height: 17px;
-  padding: 0 var(--bew-space-1);
+  height: 16px;
+  /* 徽章光学微调：10px 低于 caption 最小档 */
+  padding: 0 var(--bew-space-2);
   border-radius: var(--bew-radius-full);
   color: #fff;
-  background: #fb7299;
-  font-size: var(--bew-font-size-caption);
+  background: var(--bew-theme-color);
+  font-size: 10px;
   font-style: normal;
   line-height: var(--bew-line-height-caption);
   transform: translateX(-50%);
@@ -5139,7 +5139,7 @@ watch(
 .moments-live-card__avatar em::after {
   position: absolute;
   inset: -3px;
-  border: 1px solid #fb7299;
+  border: 1px solid var(--bew-theme-color);
   border-radius: inherit;
   content: "";
   pointer-events: none;
