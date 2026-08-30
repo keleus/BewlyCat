@@ -1458,8 +1458,6 @@ moment_card:
   charging_exclusive: 充電專屬
   added_watch_later: 已加到稍後再睇
   add_watch_later: 加到稍後再睇
-  added: 已加
-  watch_later: 稍後再睇
   live_post: 直播動態
   open_original_video: '打開原影片：{title}'
   author_images: '{name} 嘅動態圖片'

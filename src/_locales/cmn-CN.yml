@@ -1443,8 +1443,6 @@ moment_card:
   charging_exclusive: 充电专属
   added_watch_later: 已添加稍后再看
   add_watch_later: 添加至稍后再看
-  added: 已添加
-  watch_later: 稍后再看
   live_post: 直播动态
   open_original_video: '打开原视频：{title}'
   author_images: '{name} 的动态图片'

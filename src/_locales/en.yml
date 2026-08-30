@@ -1547,8 +1547,6 @@ moment_card:
   charging_exclusive: Charging exclusive
   added_watch_later: Added to Watch later
   add_watch_later: Add to Watch later
-  added: Added
-  watch_later: Watch later
   live_post: Live post
   open_original_video: 'Open original video: {title}'
   author_images: '{name} post images'

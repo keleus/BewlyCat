@@ -585,7 +585,6 @@ function handleAdditionalClick(event: MouseEvent) {
                 v-if="moment.images.length"
                 :src="getMomentThumbnailUrl(moment.images[0])"
                 :alt="moment.title"
-                :class="{ 'is-ready': ready }"
                 loading="lazy"
                 decoding="async"
                 @load="handleCoverLoad"
@@ -708,22 +707,6 @@ function handleAdditionalClick(event: MouseEvent) {
             <span v-if="moment.isChargeExclusive" class="moment-card__charge-badge">
               {{ moment.chargeBadge || t('moment_card.charging_exclusive') }}
             </span>
-            <button
-              v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
-              type="button"
-              class="moment-card__watch-later"
-              :class="{ 'is-added': isWatchLaterAdded(moment), 'is-loading': isWatchLaterLoading(moment) }"
-              :aria-busy="isWatchLaterLoading(moment) || undefined"
-              :aria-disabled="isWatchLaterLoading(moment) || undefined"
-              :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
-              :aria-pressed="isWatchLaterAdded(moment)"
-              :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
-              @click.stop="emit('toggleWatchLater', moment)"
-            >
-              <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
-              <span v-else-if="isWatchLaterAdded(moment)" i-line-md:confirm aria-hidden="true" />
-              <span v-else i-mingcute:carplay-line aria-hidden="true" />
-            </button>
           </div>
           <div v-else-if="(moment.isVideo || moment.isLive) && (!moment.isChargeExclusive || moment.isVideo)" class="moment-card__media moment-card__cover moment-card__text-cover moment-card__text-cover--video">
             <a
@@ -739,22 +722,6 @@ function handleAdditionalClick(event: MouseEvent) {
             <span v-if="moment.isLive" i-tabler-live-photo class="moment-card__text-cover-icon" />
             <span v-else i-tabler-player-play-filled class="moment-card__text-cover-icon" />
             <span>{{ moment.isLive ? t('moment_card.live_post') : t('moment_card.video_post') }}</span>
-            <button
-              v-if="settings.showVideoCardWatchLater && moment.isVideo && !moment.isLive"
-              type="button"
-              class="moment-card__watch-later"
-              :class="{ 'is-added': isWatchLaterAdded(moment), 'is-loading': isWatchLaterLoading(moment) }"
-              :aria-busy="isWatchLaterLoading(moment) || undefined"
-              :aria-disabled="isWatchLaterLoading(moment) || undefined"
-              :aria-label="isWatchLaterAdded(moment) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
-              :aria-pressed="isWatchLaterAdded(moment)"
-              :title="isWatchLaterAdded(moment) ? t('moment_card.added') : t('moment_card.watch_later')"
-              @click.stop="emit('toggleWatchLater', moment)"
-            >
-              <span v-if="isWatchLaterLoading(moment)" i-svg-spinners:ring-resize aria-hidden="true" />
-              <span v-else-if="isWatchLaterAdded(moment)" i-line-md:confirm aria-hidden="true" />
-              <span v-else i-mingcute:carplay-line aria-hidden="true" />
-            </button>
           </div>
           <div class="moment-card__body">
             <p v-if="moment.title && !moment.forward?.video" class="moment-card__title">
@@ -844,7 +811,7 @@ function handleAdditionalClick(event: MouseEvent) {
                   :aria-disabled="isWatchLaterLoading(moment.forward.video)"
                   :aria-label="isWatchLaterAdded(moment.forward.video) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
                   :aria-pressed="isWatchLaterAdded(moment.forward.video)"
-                  :title="isWatchLaterAdded(moment.forward.video) ? t('moment_card.added') : t('moment_card.watch_later')"
+                  :title="isWatchLaterAdded(moment.forward.video) ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
                   @click.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
                   @keydown.enter.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
                   @keydown.space.stop.prevent="emit('toggleWatchLater', moment.forward.video)"
@@ -1267,7 +1234,6 @@ function handleAdditionalClick(event: MouseEvent) {
     background-color var(--bew-duration-normal) var(--bew-ease-standard);
 }
 
-.moment-card__cover:hover .moment-card__watch-later,
 .moment-card__video-card-cover:hover .moment-card__watch-later,
 .moment-card__watch-later:focus-visible {
   opacity: 1;
@@ -1707,15 +1673,6 @@ function handleAdditionalClick(event: MouseEvent) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.moment-card__video-card-cover > img {
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-
-.moment-card__video-card-cover > img.is-ready {
-  opacity: 1;
 }
 
 /* 信息区从条顶开始排：标题在上、简介/作者紧随，不随封面高度做垂直居中 */
