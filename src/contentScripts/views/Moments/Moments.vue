@@ -1808,11 +1808,11 @@ function mapMoment(item: DataItem): DisplayMoment {
   }
 }
 
-/** 横条视频卡高度：封面 44% 宽 16:9，与信息区（标题两行 + 简介两行）取较大者。 */
+/** 横条视频卡高度：封面 44% 宽 16:9，与信息区（标题两行 + 简介两行 + 作者一行）取较大者。 */
 function estimateVideoCardStripHeight(contentWidth: number) {
   const coverWidth = Math.max(150, contentWidth * 0.44)
   const coverHeight = Math.round(coverWidth * 9 / 16)
-  const infoHeight = 112
+  const infoHeight = 136
   return Math.max(coverHeight, infoHeight) + 2 /* 描边 */
 }
 
