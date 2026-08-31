@@ -22,7 +22,7 @@ interface Props {
   titleStyle: Record<string, string | number>
   authorFontSizeClass: string
   metaFontSizeClass: string
-  highlightTags: string[]
+  pluginComputedTags: string[]
   hideAuthor?: boolean
 }
 
@@ -40,22 +40,33 @@ defineExpose({
 
 const MAX_LEADING_TAG_COUNT = 2
 
+interface VideoCardTag {
+  searchable: boolean
+  text: string
+}
+
 // 将卡片内容开关集中到单个响应式计算，避免每张卡片为同一组设置创建大量 computed。
 const content = computed(() => {
   const video = props.video
   const currentSettings = settings.value
   const rawTag = video?.tag
-  const primaryTags = !rawTag
+  const displayTags = !rawTag
     ? []
     : Array.isArray(rawTag)
       ? rawTag.filter(Boolean)
       : [rawTag]
-  const visiblePrimaryTags = currentSettings.showVideoCardVideoTag
-    ? primaryTags.slice(0, MAX_LEADING_TAG_COUNT)
+  const cardTags: VideoCardTag[] = [
+    ...displayTags.map(text => ({ searchable: false, text })),
+    ...(video?.searchableTags ?? [])
+      .filter(Boolean)
+      .map(text => ({ searchable: true, text })),
+  ]
+  const visibleVideoTags = currentSettings.showVideoCardVideoTag
+    ? cardTags.slice(0, MAX_LEADING_TAG_COUNT)
     : []
-  const remainingHighlightCount = MAX_LEADING_TAG_COUNT - visiblePrimaryTags.length
-  const visibleHighlightTags = currentSettings.showVideoCardRecommendTag && remainingHighlightCount > 0
-    ? props.highlightTags.slice(0, remainingHighlightCount)
+  const remainingPluginTagCount = MAX_LEADING_TAG_COUNT - visibleVideoTags.length
+  const visiblePluginComputedTags = currentSettings.showVideoCardRecommendTag && remainingPluginTagCount > 0
+    ? props.pluginComputedTags.slice(0, remainingPluginTagCount)
     : []
   const authorAvatarEnabled = !props.hideAuthor && currentSettings.showVideoCardAuthorAvatar
   const authorNameEnabled = !props.hideAuthor && currentSettings.showVideoCardAuthorName
@@ -74,8 +85,8 @@ const content = computed(() => {
     || Boolean(video?.type)
   const statsPlaceholderEnabled = currentSettings.showVideoCardViewCount
     || currentSettings.showVideoCardDanmakuCount
-  const hasVisibleMeta = visiblePrimaryTags.length > 0
-    || visibleHighlightTags.length > 0
+  const hasVisibleMeta = visibleVideoTags.length > 0
+    || visiblePluginComputedTags.length > 0
     || showPublishTime
     || showVideoType
 
@@ -94,8 +105,8 @@ const content = computed(() => {
     showVideoType,
     showWatchedBadge: currentSettings.showVideoWatchedBadge && !video?.roomid,
     statsPlaceholderEnabled,
-    visibleHighlightTags,
-    visiblePrimaryTags,
+    visiblePluginComputedTags,
+    visibleVideoTags,
   }
 })
 </script>
@@ -312,25 +323,27 @@ const content = computed(() => {
           flex="~ items-center gap-2 wrap"
           :class="metaFontSizeClass"
         >
-          <a
-            v-for="primaryTag in content.visiblePrimaryTags"
-            :key="`primary-${primaryTag}`"
+          <component
+            :is="videoTag.searchable ? 'a' : 'span'"
+            v-for="videoTag in content.visibleVideoTags"
+            :key="`video-${videoTag.searchable}-${videoTag.text}`"
             class="video-card-meta__chip"
+            :class="{ 'video-card-tag--searchable': videoTag.searchable }"
             un-text="$bew-theme-color"
             p="x-2"
             lh-6
             rounded="$bew-radius"
-            bg="$bew-theme-color-20 hover:$bew-theme-color-30"
-            :href="getTagSearchUrl(primaryTag)"
-            target="_blank"
-            @click.stop=""
+            bg="$bew-theme-color-20"
+            :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
+            :target="videoTag.searchable ? '_blank' : undefined"
+            @click="videoTag.searchable ? $event.stopPropagation() : undefined"
           >
-            {{ primaryTag }}
-          </a>
+            {{ videoTag.text }}
+          </component>
 
           <span
-            v-for="extraTag in content.visibleHighlightTags"
-            :key="`highlight-${extraTag}`"
+            v-for="pluginTag in content.visiblePluginComputedTags"
+            :key="`plugin-${pluginTag}`"
             class="video-card-meta__chip"
             text="$bew-theme-color"
             p="x-2"
@@ -338,7 +351,7 @@ const content = computed(() => {
             rounded="$bew-radius"
             bg="$bew-theme-color-20"
           >
-            {{ extraTag }}
+            {{ pluginTag }}
           </span>
 
           <span
@@ -393,25 +406,27 @@ const content = computed(() => {
               flex="~ items-center gap-2 wrap"
               :class="metaFontSizeClass"
             >
-              <a
-                v-for="primaryTag in content.visiblePrimaryTags"
-                :key="`primary-${primaryTag}`"
+              <component
+                :is="videoTag.searchable ? 'a' : 'span'"
+                v-for="videoTag in content.visibleVideoTags"
+                :key="`video-${videoTag.searchable}-${videoTag.text}`"
                 class="video-card-meta__chip"
+                :class="{ 'video-card-tag--searchable': videoTag.searchable }"
                 un-text="$bew-theme-color"
                 p="x-2"
                 lh-6
                 rounded="$bew-radius"
-                bg="$bew-theme-color-20 hover:$bew-theme-color-30"
-                :href="getTagSearchUrl(primaryTag)"
-                target="_blank"
-                @click.stop=""
+                bg="$bew-theme-color-20"
+                :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
+                :target="videoTag.searchable ? '_blank' : undefined"
+                @click="videoTag.searchable ? $event.stopPropagation() : undefined"
               >
-                {{ primaryTag }}
-              </a>
+                {{ videoTag.text }}
+              </component>
 
               <span
-                v-for="extraTag in content.visibleHighlightTags"
-                :key="`highlight-${extraTag}`"
+                v-for="pluginTag in content.visiblePluginComputedTags"
+                :key="`plugin-${pluginTag}`"
                 class="video-card-meta__chip"
                 text="$bew-theme-color"
                 p="x-2"
@@ -419,7 +434,7 @@ const content = computed(() => {
                 rounded="$bew-radius"
                 bg="$bew-theme-color-20"
               >
-                {{ extraTag }}
+                {{ pluginTag }}
               </span>
 
               <span
@@ -457,26 +472,28 @@ const content = computed(() => {
             :class="metaFontSizeClass"
           >
             <!-- Tag -->
-            <a
-              v-for="primaryTag in content.visiblePrimaryTags"
-              :key="`legacy-primary-${primaryTag}`"
-              un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
-              :href="getTagSearchUrl(primaryTag)"
-              target="_blank"
-              @click.stop=""
+            <component
+              :is="videoTag.searchable ? 'a' : 'span'"
+              v-for="videoTag in content.visibleVideoTags"
+              :key="`legacy-video-${videoTag.searchable}-${videoTag.text}`"
+              :class="{ 'video-card-tag--searchable': videoTag.searchable }"
+              un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
+              :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
+              :target="videoTag.searchable ? '_blank' : undefined"
+              @click="videoTag.searchable ? $event.stopPropagation() : undefined"
             >
-              {{ primaryTag }}
-            </a>
+              {{ videoTag.text }}
+            </component>
             <span
-              v-for="extraTag in content.visibleHighlightTags"
-              :key="`highlight-${extraTag}`"
+              v-for="pluginTag in content.visiblePluginComputedTags"
+              :key="`plugin-${pluginTag}`"
               text="$bew-theme-color"
               lh-6
               p="x-2"
               rounded="$bew-radius"
               bg="$bew-theme-color-20"
             >
-              {{ extraTag }}
+              {{ pluginTag }}
             </span>
             <span
               v-if="content.showPublishTime"
@@ -548,26 +565,28 @@ const content = computed(() => {
               :class="metaFontSizeClass"
             >
               <!-- Tag -->
-              <a
-                v-for="primaryTag in content.visiblePrimaryTags"
-                :key="`legacy-primary-${primaryTag}`"
-                un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20 hover:$bew-theme-color-30"
-                :href="getTagSearchUrl(primaryTag)"
-                target="_blank"
-                @click.stop=""
+              <component
+                :is="videoTag.searchable ? 'a' : 'span'"
+                v-for="videoTag in content.visibleVideoTags"
+                :key="`legacy-video-${videoTag.searchable}-${videoTag.text}`"
+                :class="{ 'video-card-tag--searchable': videoTag.searchable }"
+                un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
+                :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
+                :target="videoTag.searchable ? '_blank' : undefined"
+                @click="videoTag.searchable ? $event.stopPropagation() : undefined"
               >
-                {{ primaryTag }}
-              </a>
+                {{ videoTag.text }}
+              </component>
               <span
-                v-for="extraTag in content.visibleHighlightTags"
-                :key="`highlight-${extraTag}`"
+                v-for="pluginTag in content.visiblePluginComputedTags"
+                :key="`plugin-${pluginTag}`"
                 text="$bew-theme-color"
                 lh-6
                 p="x-2"
                 rounded="$bew-radius"
                 bg="$bew-theme-color-20"
               >
-                {{ extraTag }}
+                {{ pluginTag }}
               </span>
               <span
                 v-if="content.showPublishTime"
@@ -657,5 +676,9 @@ const content = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.video-card-tag--searchable:hover {
+  background: var(--bew-theme-color-30);
 }
 </style>

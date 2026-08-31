@@ -186,19 +186,20 @@ const coverEvents = computed(() =>
     : {},
 )
 
-const primaryTags = computed(() => {
+const videoTags = computed(() => {
   const video = props.video
   if (!video)
     return []
   const { tag } = video
-  if (!tag)
-    return []
-  if (Array.isArray(tag))
-    return tag.filter(Boolean)
-  return [tag]
+  const displayTags = !tag
+    ? []
+    : Array.isArray(tag)
+      ? tag.filter(Boolean)
+      : [tag]
+  return [...displayTags, ...(video.searchableTags ?? []).filter(Boolean)]
 })
 
-// Highlight tags calculation - 使用查找表优化性能
+// 插件计算标签 - 使用查找表优化性能
 const LIKE_RATIO_THRESHOLDS = [
   { view: 1_000_000, ratio: 0.01 },
   { view: 200_000, ratio: 0.025 },
@@ -213,11 +214,11 @@ const DANMAKU_RATIO_THRESHOLDS = [
   { view: 0, ratio: 0.005 },
 ] as const
 
-const highlightTags = computed(() => {
+const pluginComputedTags = computed(() => {
   if (!props.video)
     return [] as string[]
 
-  // 如果设置为不显示推荐标签，则不显示插件计算的标签
+  // 如果关闭插件计算标签，则不再生成这些标签。
   if (!settings.value.showVideoCardRecommendTag)
     return [] as string[]
 
@@ -255,21 +256,21 @@ const highlightTags = computed(() => {
 
   // 百万播放标签 - 只有在外部tag没有播放字眼时显示，且优先级最后
   if (viewCount >= 1_000_000) {
-    const hasPlayKeyword = primaryTags.value.some(tag => /播放|观看|views?|play/i.test(tag))
+    const hasPlayKeyword = videoTags.value.some(tag => /播放|观看|views?|play/i.test(tag))
     if (!hasPlayKeyword)
       tags.push('百万播放')
   }
 
-  // 如果传入了2个或更多Tag，则不显示推荐tag
-  if (primaryTags.value.length >= 2) {
+  // 视频标签和插件计算标签合计最多显示两个。
+  if (videoTags.value.length >= 2) {
     return []
   }
-  else if (primaryTags.value.length > 0) {
-    // tags只返回一个
+  else if (videoTags.value.length > 0) {
+    // 已有一个视频标签时，只补充一个插件计算标签。
     return tags.slice(0, 1)
   }
   else {
-    // 最多返回2个，避免越界
+    // 没有视频标签时，最多显示两个插件计算标签。
     return tags.slice(0, 2)
   }
 })
@@ -422,7 +423,7 @@ provide('getVideoType', () => props.type!)
           :title-style="titleStyle"
           :author-font-size-class="authorFontSizeClass"
           :meta-font-size-class="metaFontSizeClass"
-          :highlight-tags="highlightTags"
+          :plugin-computed-tags="pluginComputedTags"
           :hide-author="hideAuthor"
           @more-btn-click="logic.handleMoreBtnClick"
         />

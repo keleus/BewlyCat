@@ -523,9 +523,9 @@ settings:
   only_cover_video_preview: 仅封面视频预览
   show_video_card_author_avatar: 显示用户头像
   show_video_card_author_name: 显示用户昵称
-  show_video_card_video_tag: 显示视频标签（搜索结果页）
-  show_video_card_video_tag_desc: 显示搜索页等场景提供的视频分类标签。
-  show_video_card_recommend_tag: 显示插件计算的推荐标签
+  show_video_card_video_tag: 显示接口与搜索标签
+  show_video_card_video_tag_desc: 显示接口提供的推荐理由、状态标签，以及搜索页的视频内容标签。
+  show_video_card_recommend_tag: 显示插件计算标签
   show_video_card_recommend_tag_desc: 显示插件计算的标签，如"高赞"、"高互动"、"百万播放"等
   show_video_card_publish_time: 显示发布时间
   show_video_card_view_count: 显示播放量

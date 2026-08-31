@@ -37,7 +37,10 @@ export interface Video {
   liveStatus?: number
   trackId?: string
 
+  /** API-provided display labels, such as recommendation reasons or “1万点赞”. */
   tag?: string | string[]
+  /** Real content tags exposed on search-result pages; clicking these starts a search. */
+  searchableTags?: string[]
   rank?: number
   type?: 'horizontal' | 'vertical' | 'bangumi' | 'ketang'
   threePointV2: ThreePointV2[]

@@ -61,7 +61,7 @@ export function isAdVideo(video: any): boolean {
 }
 
 function splitTagValue(value: string): string[] {
-  return value.split(/[\s,，、/|#；;]+/g).filter(Boolean)
+  return value.split(/[,，、/|#；;]+/g).filter(Boolean)
 }
 
 function formatDuration(totalSeconds: number): string {
@@ -92,13 +92,14 @@ export function convertVideoData(video: any): Video {
       ? video.durationStr
       : durationSeconds ? formatDuration(durationSeconds) : undefined
 
-  // 处理课堂类型：将 episode_count_text 作为 tag
-  let tags: string[]
+  // 课堂的集数是展示标签；普通搜索结果返回的是真实内容标签，可点击搜索。
+  let displayTags: string[] = []
+  let searchableTags: string[] = []
   if (video.type === 'ketang' && video.episode_count_text) {
-    tags = [video.episode_count_text]
+    displayTags = [video.episode_count_text]
   }
   else {
-    tags = extractVideoTags(video)
+    searchableTags = extractVideoTags(video)
   }
 
   // 处理课堂类型的 capsuleText（课堂不需要 capsuleText）
@@ -165,7 +166,8 @@ export function convertVideoData(video: any): Video {
     aid: video.aid,
     cid: video.cid,
     threePointV2: [],
-    tag: tags.length ? tags : undefined,
+    tag: displayTags.length ? displayTags : undefined,
+    searchableTags: searchableTags.length ? searchableTags : undefined,
     capsuleText: capsuleText || undefined,
     type: video.type === 'ketang' ? 'ketang' : undefined,
     url,
@@ -468,7 +470,7 @@ export function convertLiveRoomData(live: any): Video {
     },
     view: parseStatNumber(live.online),
     viewStr: String(live.online || ''),
-    tag,
+    searchableTags: tag ? [tag] : undefined,
     roomid: live.roomid,
     liveStatus: live.live_status,
     threePointV2: [],
@@ -679,34 +681,35 @@ function extractVideoTags(video: any): string[] {
   const pushValue = (value: any) => {
     if (typeof value === 'string')
       rawValues.push(value)
+    else if (typeof value?.tag_name === 'string')
+      rawValues.push(value.tag_name)
+    else if (typeof value?.name === 'string')
+      rawValues.push(value.name)
   }
 
-  if (Array.isArray(video.tag))
-    rawValues.push(...video.tag)
-  else
+  if (Array.isArray(video.tag)) {
+    for (const tag of video.tag)
+      pushValue(tag)
+  }
+  else {
     pushValue(video.tag)
+  }
 
   if (Array.isArray(video.tags)) {
-    for (const tag of video.tags) {
-      if (typeof tag === 'string')
-        rawValues.push(tag)
-      else if (typeof tag?.tag_name === 'string')
-        rawValues.push(tag.tag_name)
-      else if (typeof tag?.name === 'string')
-        rawValues.push(tag.name)
-    }
+    for (const tag of video.tags)
+      pushValue(tag)
   }
 
   const candidates = rawValues
     .flatMap(value => splitTagValue(value))
-    .map(item => removeHighlight(item).replace(/\s+/g, ''))
+    .map(item => removeHighlight(item).trim().replace(/\s+/g, ' '))
     .filter(Boolean)
 
   const result: string[] = []
   const seen = new Set<string>()
 
   for (const tag of candidates) {
-    if (Array.from(tag).length >= 4)
+    if (Array.from(tag.replace(/\s/g, '')).length >= 4)
       continue
     if (seen.has(tag))
       continue

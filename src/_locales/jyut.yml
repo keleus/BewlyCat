@@ -490,9 +490,9 @@ settings:
   only_cover_video_preview: 淨係喺封面做影片預覽
   show_video_card_author_avatar: 顯示用戶頭像
   show_video_card_author_name: 顯示用戶暱稱
-  show_video_card_video_tag: 顯示影片標籤（搵嘢結果頁）
-  show_video_card_video_tag_desc: 顯示搵嘢頁等情況提供嘅影片分類標籤。
-  show_video_card_recommend_tag: 顯示插件計算嘅推薦標籤
+  show_video_card_video_tag: 顯示 API 同搜尋標籤
+  show_video_card_video_tag_desc: 顯示 API 提供嘅推薦原因、狀態標籤，同埋搜尋頁嘅影片內容標籤。
+  show_video_card_recommend_tag: 顯示插件計算標籤
   show_video_card_recommend_tag_desc: 顯示插件計算嘅標籤，好似「高讚」、「高互動」、「百萬播放」咁
   show_video_card_publish_time: 顯示發佈時間
   show_video_card_view_count: 顯示播放量
