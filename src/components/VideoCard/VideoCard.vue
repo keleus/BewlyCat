@@ -426,6 +426,12 @@ provide('getVideoType', () => props.type!)
           :hide-author="hideAuthor"
           @more-btn-click="logic.handleMoreBtnClick"
         />
+        <!-- Keep the configured cover/info ratio after horizontal cards are removed. -->
+        <div
+          v-else-if="horizontal"
+          class="horizontal-card-info"
+          aria-hidden="true"
+        />
       </component>
     </div>
 
