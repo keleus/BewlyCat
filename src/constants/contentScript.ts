@@ -22,6 +22,8 @@ export const CONTENT_SCRIPT_PING = 'bewly-cat:content-script:ping'
 export const CONTENT_SCRIPT_PONG = 'bewly-cat:content-script:ready'
 
 export interface ContentScriptPong {
+  name: string
+  runtimeUrl: string
   type: typeof CONTENT_SCRIPT_PONG
   version: string
 }
@@ -32,6 +34,10 @@ export function isContentScriptPong(value: unknown): value is ContentScriptPong 
 
   const pong = value as Record<string, unknown>
   return pong.type === CONTENT_SCRIPT_PONG
+    && typeof pong.name === 'string'
+    && pong.name.length > 0
+    && typeof pong.runtimeUrl === 'string'
+    && pong.runtimeUrl.length > 0
     && typeof pong.version === 'string'
     && pong.version.length > 0
 }

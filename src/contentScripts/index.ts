@@ -19,7 +19,7 @@ import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { i18n } from '~/utils/i18n'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
-import { compareVersions, getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
+import { getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { isPhotoViewerOpen } from '~/utils/photoViewer'
@@ -54,15 +54,25 @@ function disposeBewlyHost(element: Element) {
 }
 
 const contentScriptGlobal = globalThis as typeof globalThis & {
+  __BEWLYCAT_BUNDLED_STYLE_TEXT__: string
   __BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__?: boolean
 }
 const shouldInitializeContentScript = !contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__
+const bundledShadowStyleText = contentScriptGlobal.__BEWLYCAT_BUNDLED_STYLE_TEXT__
+const contentScriptManifest = browser.runtime.getManifest()
+const contentScriptRuntimeUrl = browser.runtime.getURL('')
 
 if (shouldInitializeContentScript) {
   contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__ = true
   browser.runtime.onMessage.addListener((message: unknown) => {
-    if (typeof message === 'object' && message !== null && 'type' in message && message.type === CONTENT_SCRIPT_PING)
-      return Promise.resolve({ type: CONTENT_SCRIPT_PONG, version })
+    if (typeof message === 'object' && message !== null && 'type' in message && message.type === CONTENT_SCRIPT_PING) {
+      return Promise.resolve({
+        name: contentScriptManifest.name,
+        runtimeUrl: contentScriptRuntimeUrl,
+        type: CONTENT_SCRIPT_PONG,
+        version,
+      })
+    }
 
     return false
   })
@@ -1291,29 +1301,17 @@ else if (shouldInitializeContentScript) {
   }
 
   function injectApp() {
-    const isDev = import.meta.env.DEV
     const bewlyElArr: NodeListOf<Element> = document.querySelectorAll('#bewly')
-    if (bewlyElArr.length > 0) {
-      bewlyElArr.forEach((el: Element) => {
-        const elVersion = el.getAttribute('data-version') || '0.0.0'
-        const elIsDev = el.getAttribute('data-dev') === 'true'
-
-        // Remove bewly element if the version is less than the current version
-        if (compareVersions(elVersion, version) < 0)
-          disposeBewlyHost(el)
-        // 同模式重复注入的旧宿主已过期：dev 不清除会越堆越多，
-        // watcher 的 querySelector('#bewly') 命中陈旧的第一个宿主，
-        // 内联 CSS 变量（如 --bew-filter-glass-1 毛玻璃强度）到不了实际渲染的宿主。
-        else if (!elIsDev || isDev)
-          disposeBewlyHost(el)
-      })
-    }
+    // The page can retain a host from a previous add-on version or from a Dev ↔
+    // production switch. Keeping either one creates duplicate #bewly elements,
+    // after which shared watchers target the stale host and the new UI loses its
+    // layout variables. The content script that mounts last owns the single host.
+    bewlyElArr.forEach(disposeBewlyHost)
 
     // mount component to context window
     const container = document.createElement('div') as BewlyHostElement
     container.id = 'bewly'
     container.setAttribute('data-version', version)
-    container.setAttribute('data-dev', import.meta.env.DEV ? 'true' : 'false')
 
     // 立即设置Shadow DOM容器的基准颜色，确保Vue组件能够访问到正确的CSS变量
     if (settings.value.darkModeBaseColor) {
@@ -1340,26 +1338,17 @@ else if (shouldInitializeContentScript) {
       })
     }
 
-    const styleEl = document.createElement('link')
     // Fix #69 https://github.com/hakadao/BewlyBewly/issues/69
     // https://medium.com/@emilio_martinez/shadow-dom-open-vs-closed-1a8cf286088a - open shadow dom
     const shadowDOM = container.attachShadow?.({ mode: 'open' }) || container
     const resetStyleEl = document.createElement('style')
     resetStyleEl.textContent = `${RESET_BEWLY_CSS}`
-    styleEl.setAttribute('rel', 'stylesheet')
-    styleEl.setAttribute('href', browser.runtime.getURL('dist/contentScripts/style.css'))
+    const styleEl = document.createElement('style')
+    styleEl.setAttribute('data-bewly-bundled-styles', '')
+    styleEl.textContent = bundledShadowStyleText
     shadowDOM.appendChild(resetStyleEl)
     shadowDOM.appendChild(styleEl)
     shadowDOM.appendChild(root)
-
-    // 样式就绪前隐藏整个 Shadow DOM，避免未应用样式的内容闪现。
-    // 就绪后一次性展示，避免容器淡入与壁纸遮罩透明度叠加，造成遮罩延迟出现。
-    container.style.visibility = 'hidden'
-    const revealContainer = () => {
-      container.style.visibility = 'visible'
-    }
-    styleEl.addEventListener('load', revealContainer, { once: true })
-    styleEl.addEventListener('error', revealContainer, { once: true })
 
     // startShadowDOMStyleInjection()
 

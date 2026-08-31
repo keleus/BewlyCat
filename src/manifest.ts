@@ -40,7 +40,7 @@ export async function getManifest() {
       'storage',
       'declarativeNetRequest',
       'cookies',
-      ...(!isFirefox && !isSafari ? ['scripting'] : []),
+      ...(!isSafari ? ['scripting'] : []),
       ...isFirefox
         ? ['webRequest', 'webRequestBlocking']
         : [],
@@ -73,7 +73,6 @@ export async function getManifest() {
     web_accessible_resources: [
       {
         resources: [
-          'dist/contentScripts/style.css',
           'assets/*',
         ],
         matches: [...CONTENT_SCRIPT_MATCHES],

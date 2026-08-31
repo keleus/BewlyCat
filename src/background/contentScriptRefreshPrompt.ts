@@ -16,6 +16,12 @@ export type ContentScriptRefreshResult = 'ineligible' | 'already-injected' | 're
 
 type ContentScriptPingResult = 'current' | 'outdated' | 'missing'
 
+interface ContentScriptIdentity {
+  name: string
+  runtimeUrl: string
+  version: string
+}
+
 async function isEligibleActiveTab(tabId: number, extensionApi: ContentScriptRefreshBrowser): Promise<boolean> {
   try {
     const tab = await extensionApi.tabs.get(tabId)
@@ -31,7 +37,7 @@ async function isEligibleActiveTab(tabId: number, extensionApi: ContentScriptRef
 
 async function pingContentScript(
   tabId: number,
-  currentVersion: string,
+  currentIdentity: ContentScriptIdentity,
   extensionApi: ContentScriptRefreshBrowser,
 ): Promise<ContentScriptPingResult> {
   try {
@@ -42,8 +48,13 @@ async function pingContentScript(
     )
     if (response === CONTENT_SCRIPT_PONG)
       return 'outdated'
-    if (isContentScriptPong(response))
-      return response.version === currentVersion ? 'current' : 'outdated'
+    if (isContentScriptPong(response)) {
+      return response.version === currentIdentity.version
+        && response.name === currentIdentity.name
+        && response.runtimeUrl === currentIdentity.runtimeUrl
+        ? 'current'
+        : 'outdated'
+    }
     return 'missing'
   }
   catch {
@@ -70,8 +81,13 @@ export async function promptContentScriptRefresh(
   if (!await isEligibleActiveTab(tabId, extensionApi))
     return 'ineligible'
 
-  const currentVersion = browser.runtime.getManifest().version
-  const firstPing = await pingContentScript(tabId, currentVersion, extensionApi)
+  const manifest = browser.runtime.getManifest()
+  const currentIdentity: ContentScriptIdentity = {
+    name: manifest.name,
+    runtimeUrl: browser.runtime.getURL(''),
+    version: manifest.version,
+  }
+  const firstPing = await pingContentScript(tabId, currentIdentity, extensionApi)
   if (firstPing === 'current')
     return 'already-injected'
 
@@ -83,12 +99,12 @@ export async function promptContentScriptRefresh(
     if (!await isEligibleActiveTab(tabId, extensionApi))
       return 'ineligible'
 
-    const secondPing = await pingContentScript(tabId, currentVersion, extensionApi)
+    const secondPing = await pingContentScript(tabId, currentIdentity, extensionApi)
     if (secondPing === 'current')
       return 'already-injected'
   }
 
-  await injectRefreshPrompt(tabId, currentVersion, extensionApi)
+  await injectRefreshPrompt(tabId, currentIdentity.version, extensionApi)
   return 'refresh-prompted'
 }
 
@@ -138,7 +154,7 @@ let refreshPromptListenersInitialized = false
 
 export function setupContentScriptRefreshPrompt(): void {
   // eslint-disable-next-line node/prefer-global/process
-  if (refreshPromptListenersInitialized || process.env.FIREFOX || process.env.SAFARI)
+  if (refreshPromptListenersInitialized || process.env.SAFARI)
     return
 
   refreshPromptListenersInitialized = true
