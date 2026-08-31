@@ -5,7 +5,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
+import { BEWLY_IFRAME_DRAWER_HOST_CLASS, OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_SCROLL_VISIBILITY_CHANGE, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -78,6 +78,10 @@ const hasActivePopup = computed(() => {
 const ORIGINAL_VIDEO_TOP_BAR_CONTROLLED_CLASS = 'bewly-original-video-top-bar-controlled'
 const ORIGINAL_VIDEO_TOP_BAR_HIDDEN_CLASS = 'bewly-original-video-top-bar-hidden'
 
+function isIframeDrawerHost() {
+  return document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)
+}
+
 function applyTopBarVisibility() {
   const shouldShow = !bewlyWidescreenActive.value
     && desiredTopBarVisible.value
@@ -93,7 +97,8 @@ function applyTopBarVisibility() {
 }
 
 function syncOriginalVideoTopBarVisibility(visible: boolean) {
-  const shouldControl = isVideoOrBangumiPage()
+  const shouldControl = !isIframeDrawerHost()
+    && isVideoOrBangumiPage()
     && settings.value.enableTopBar
     && settings.value.useOriginalBilibiliTopBar
     && settings.value.videoPageTopBarConfig !== VideoPageTopBarConfig.ShowOnMouse
@@ -287,6 +292,14 @@ function emitTopBarScrollVisibilityChange(visible: boolean, scrollDelta: number)
 }
 
 function setupScrollListeners() {
+  // iframe 抽屉会用视频 URL 临时替换父页面地址栏。父页面顶栏仍属于原页面，
+  // 不应套用视频页的自动隐藏配置；关闭抽屉后 URL 事件会恢复常规监听。
+  if (isIframeDrawerHost()) {
+    applyTopBarVisibility()
+    cleanupScrollListeners()
+    return
+  }
+
   // 根据视频页面配置设置初始显示状态
   if (isVideoOrBangumiPage()) {
     const config = settings.value.videoPageTopBarConfig
