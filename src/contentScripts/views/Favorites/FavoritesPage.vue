@@ -6,6 +6,7 @@ import { useToast } from 'vue-toastification'
 import ArticleCard from '~/components/ArticleCard/ArticleCard.vue'
 import type { ContextMenuOption } from '~/components/ContextMenu.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
+import Radio from '~/components/Radio.vue'
 import type { FavoriteResource } from '~/components/TopBar/types'
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
@@ -71,9 +72,10 @@ const sidebarManageSection = ref<SidebarManageSection | null>(null)
 const selectedFolderIds = ref<number[]>([])
 const selectedSeasonIds = ref<number[]>([])
 const isSidebarOperating = ref<boolean>(false)
-const renameDialogVisible = ref<boolean>(false)
-const renameFolderId = ref<number>()
-const renameFolderTitle = ref<string>('')
+const editFolderDialogVisible = ref<boolean>(false)
+const editFolderId = ref<number>()
+const editFolderTitle = ref<string>('')
+const editFolderPublic = ref<boolean>(true)
 const itemMenuTarget = ref<{ type: SidebarManageSection, id: number } | null>(null)
 const itemMenuStyles = ref<CSSProperties>({})
 let contentRequestVersion = 0
@@ -158,7 +160,7 @@ const selectedFolderCount = computed(() => selectedFolderIds.value.length)
 const selectedSeasonCount = computed(() => selectedSeasonIds.value.length)
 const isManagingFolder = computed(() => sidebarManageSection.value === 'folder')
 const isManagingSeason = computed(() => sidebarManageSection.value === 'season')
-const canRenameSelectedFolder = computed(() => selectedFolderIds.value.length === 1)
+const canEditSelectedFolder = computed(() => selectedFolderIds.value.length === 1)
 const isAllFoldersSelected = computed(() => {
   return editableFolderIds.value.length > 0
     && editableFolderIds.value.every(id => selectedFolderIds.value.includes(id))
@@ -173,7 +175,7 @@ const itemMenuOptions = computed((): ContextMenuOption[] => {
 
   if (itemMenuTarget.value.type === 'folder') {
     return [
-      { value: 'rename', label: t('favorites.rename_folder'), icon: 'i-tabler:edit' },
+      { value: 'edit', label: t('favorites.edit_folder'), icon: 'i-tabler:edit' },
       { value: 'delete', label: t('common.operation.delete'), icon: 'i-tabler:trash', danger: true },
     ]
   }
@@ -333,21 +335,26 @@ function toggleSelectAllSeasons() {
   selectedSeasonIds.value = isAllSeasonsSelected.value ? [] : collectedFavoriteSeasons.map(item => item.id)
 }
 
-function openRenameFolderDialog() {
-  if (!canRenameSelectedFolder.value || isSidebarOperating.value)
-    return
-
-  openSingleRenameFolder(selectedFolderIds.value[0])
+function isFavoriteFolderPrivate(folder: CategoryItem) {
+  return (folder.attr & 1) === 1
 }
 
-function openSingleRenameFolder(folderId: number) {
+function openEditFolderDialog() {
+  if (!canEditSelectedFolder.value || isSidebarOperating.value)
+    return
+
+  openSingleEditFolder(selectedFolderIds.value[0])
+}
+
+function openSingleEditFolder(folderId: number) {
   const folder = favoriteCategories.find(item => item.id === folderId)
   if (!folder)
     return
 
-  renameFolderId.value = folder.id
-  renameFolderTitle.value = folder.title
-  renameDialogVisible.value = true
+  editFolderId.value = folder.id
+  editFolderTitle.value = folder.title
+  editFolderPublic.value = !isFavoriteFolderPrivate(folder)
+  editFolderDialogVisible.value = true
 }
 
 function openItemMenu(type: SidebarManageSection, id: number, event: MouseEvent) {
@@ -368,18 +375,18 @@ function closeItemMenu() {
   itemMenuTarget.value = null
 }
 
-function closeRenameFolderDialog() {
-  renameDialogVisible.value = false
+function closeEditFolderDialog() {
+  editFolderDialogVisible.value = false
 }
 
-async function handleRenameFolderConfirm() {
-  const title = renameFolderTitle.value.trim()
+async function handleEditFolderConfirm() {
+  const title = editFolderTitle.value.trim()
   if (!title) {
-    toast.warning(t('favorites.rename_folder_empty'))
+    toast.warning(t('favorites.edit_folder_empty'))
     return
   }
 
-  const folderId = renameFolderId.value
+  const folderId = editFolderId.value
   if (!folderId)
     return
 
@@ -388,6 +395,7 @@ async function handleRenameFolderConfirm() {
     const res = await api.favorite.editFavoriteFolder({
       media_id: folderId,
       title,
+      privacy: editFolderPublic.value ? 0 : 1,
       csrf: getCSRF(),
     })
     if (res.code !== 0) {
@@ -396,9 +404,11 @@ async function handleRenameFolderConfirm() {
     }
 
     const folder = favoriteCategories.find(item => item.id === folderId)
-    if (folder)
+    if (folder) {
       folder.title = title
-    closeRenameFolderDialog()
+      folder.attr = editFolderPublic.value ? folder.attr & ~1 : folder.attr | 1
+    }
+    closeEditFolderDialog()
     exitSidebarManage()
     notifyTopBarFavoritesChanged()
   }
@@ -521,8 +531,8 @@ async function handleItemMenuSelect(value: string | number) {
   closeItemMenu()
 
   if (target.type === 'folder') {
-    if (value === 'rename') {
-      openSingleRenameFolder(target.id)
+    if (value === 'edit') {
+      openSingleEditFolder(target.id)
       return
     }
 
@@ -1287,19 +1297,31 @@ function transformFavoriteArticle(item: FavoriteArticle) {
       </template>
 
       <Dialog
-        v-if="renameDialogVisible"
-        :title="t('favorites.rename_folder_dialog_title')"
+        v-if="editFolderDialogVisible"
+        :title="t('favorites.edit_folder_dialog_title')"
         width="420px"
         append-to-bewly-body
         :loading="isSidebarOperating"
-        @close="closeRenameFolderDialog"
-        @confirm="handleRenameFolderConfirm"
+        @close="closeEditFolderDialog"
+        @confirm="handleEditFolderConfirm"
       >
-        <Input
-          v-model="renameFolderTitle"
-          :placeholder="t('favorites.rename_folder_placeholder')"
-          @enter="handleRenameFolderConfirm"
-        />
+        <div class="folder-edit-dialog">
+          <Input
+            v-model="editFolderTitle"
+            :placeholder="t('favorites.edit_folder_placeholder')"
+            @enter="handleEditFolderConfirm"
+          />
+          <div class="folder-visibility-field">
+            <div class="folder-visibility-copy">
+              <strong>{{ t('favorites.folder_visibility') }}</strong>
+              <span>{{ t('favorites.folder_visibility_desc') }}</span>
+            </div>
+            <Radio
+              v-model="editFolderPublic"
+              :label="editFolderPublic ? t('favorites.folder_public') : t('favorites.folder_private')"
+            />
+          </div>
+        </div>
       </Dialog>
 
       <Dialog
@@ -1409,12 +1431,12 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               {{ isAllFoldersSelected ? t('favorites.unselect_all') : t('favorites.select_all') }}
             </button>
             <span class="sidebar-selected-count">{{ selectedFolderCount }}</span>
-            <Tooltip :content="t('favorites.rename_folder')" placement="left" type="dark">
+            <Tooltip :content="t('favorites.edit_folder')" placement="left" type="dark">
               <button
                 class="sidebar-manage-action"
-                :disabled="!canRenameSelectedFolder || isSidebarOperating"
-                :aria-label="t('favorites.rename_folder')"
-                @click="openRenameFolderDialog"
+                :disabled="!canEditSelectedFolder || isSidebarOperating"
+                :aria-label="t('favorites.edit_folder')"
+                @click="openEditFolderDialog"
               >
                 <span i-tabler:edit />
               </button>
@@ -1477,7 +1499,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
                 }"
               >
                 <button
-                  class="category-nav-item"
+                  class="category-nav-item category-nav-item--folder"
                   :class="{
                     active: !isManagingFolder && selectedCategory?.id === item.id,
                     selected: isManagingFolder && selectedFolderIds.includes(item.id),
@@ -1495,6 +1517,17 @@ function transformFavoriteArticle(item: FavoriteArticle) {
                   />
                   <span v-else class="category-icon" i-tabler:folder />
                   <span class="category-title">{{ item.title }}</span>
+                  <Tooltip
+                    :content="isFavoriteFolderPrivate(item) ? t('favorites.folder_private') : t('favorites.folder_public')"
+                    placement="left"
+                    type="dark"
+                  >
+                    <span
+                      class="category-visibility"
+                      :class="isFavoriteFolderPrivate(item) ? 'i-tabler:lock' : 'i-tabler:world'"
+                      :aria-label="isFavoriteFolderPrivate(item) ? t('favorites.folder_private') : t('favorites.folder_public')"
+                    />
+                  </Tooltip>
                   <span class="category-count">{{ item.media_count }}</span>
                 </button>
                 <button
@@ -1935,6 +1968,10 @@ function transformFavoriteArticle(item: FavoriteArticle) {
     background-color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 
+.category-nav-item--folder {
+  grid-template-columns: 20px minmax(0, 1fr) auto auto;
+}
+
 .category-item:hover .category-nav-item:not(:disabled):not(.active) {
   color: #fff;
   background: transparent;
@@ -1970,6 +2007,12 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   height: var(--bew-control-icon-size);
 }
 
+.category-visibility {
+  width: var(--bew-icon-size-sm);
+  height: var(--bew-icon-size-sm);
+  opacity: 0.72;
+}
+
 .category-title {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1980,6 +2023,43 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   font-size: var(--bew-font-size-caption);
   line-height: var(--bew-line-height-caption);
   opacity: 0.72;
+}
+
+.folder-edit-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bew-space-4);
+}
+
+.folder-visibility-field {
+  display: flex;
+  gap: var(--bew-space-4);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--bew-space-3) var(--bew-space-4);
+  border: 1px solid var(--bew-border-color);
+  border-radius: var(--bew-interactive-radius);
+  background: var(--bew-fill-1);
+}
+
+.folder-visibility-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bew-space-1);
+  min-width: 0;
+}
+
+.folder-visibility-copy strong {
+  color: var(--bew-text-1);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
+}
+
+.folder-visibility-copy span {
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
 }
 
 .favorites-toolbar {

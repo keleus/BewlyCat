@@ -1241,11 +1241,15 @@ favorites:
   sidebar_manage_exit: 退出管理
   select_all: 全选
   unselect_all: 取消全选
-  rename_folder: 重命名
-  rename_folder_dialog_title: 重命名收藏夹
-  rename_folder_placeholder: 请输入收藏夹名称
-  rename_folder_empty: 收藏夹名称不能为空
-  default_folder_locked: 默认收藏夹不可重命名或删除
+  edit_folder: 编辑收藏夹
+  edit_folder_dialog_title: 编辑收藏夹
+  edit_folder_placeholder: 请输入收藏夹名称
+  edit_folder_empty: 收藏夹名称不能为空
+  folder_visibility: 收藏夹可见性
+  folder_visibility_desc: 公开收藏夹可被其他用户查看
+  folder_public: 公开
+  folder_private: 私密
+  default_folder_locked: 默认收藏夹不可编辑或删除
   delete_folders_confirm: |-
     要删除已选的 {count} 个收藏夹吗？
     夹内视频的收藏关系将一并移除，该操作无法撤销。

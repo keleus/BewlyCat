@@ -141,6 +141,7 @@ const API_FAVORITE = {
       body: {
         media_id: 0,
         title: '',
+        privacy: 0,
         platform: 'web',
         csrf: '',
       },

@@ -1253,11 +1253,15 @@ favorites:
   sidebar_manage_exit: 退出管理
   select_all: 全選
   unselect_all: 取消全選
-  rename_folder: 重新命名
-  rename_folder_dialog_title: 重新命名收藏夾
-  rename_folder_placeholder: 請輸入收藏夾名稱
-  rename_folder_empty: 收藏夾名稱不能為空
-  default_folder_locked: 預設收藏夾不可重新命名或刪除
+  edit_folder: 編輯收藏夾
+  edit_folder_dialog_title: 編輯收藏夾
+  edit_folder_placeholder: 請輸入收藏夾名稱
+  edit_folder_empty: 收藏夾名稱不能為空
+  folder_visibility: 收藏夾可見性
+  folder_visibility_desc: 公開收藏夾可供其他使用者查看
+  folder_public: 公開
+  folder_private: 私密
+  default_folder_locked: 預設收藏夾不可編輯或刪除
   delete_folders_confirm: |-
     要刪除已選的 {count} 個收藏夾嗎？
     夾內影片的收藏關係將一併移除，該操作無法撤銷。
