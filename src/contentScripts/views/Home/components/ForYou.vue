@@ -200,6 +200,7 @@ const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
 const FILTERED_FEED_SAMPLE_SIZE = 100
 const FILTERED_FEED_MIN_RETENTION_RATE = 0.6
 const FILTERED_FEED_RISK_WARNING_MIN_KEPT = 50
+const FULLY_FILTERED_LOAD_WARNING_THRESHOLD = 2
 const APP_LOAD_BATCHES = ref<number>(1) // APP模式每次加载的批次数，初始化时为1
 const scrollLoadStartLength = ref<number>(0) // 滚动加载开始时的列表长度
 const consecutiveEmptyLoads = ref<number>(0) // 连续空加载次数，用于防止无限递归（Web模式）
@@ -233,6 +234,10 @@ const forwardWebShowlistGroups = ref<string[]>([])
 const filteredFeedCandidateCount = ref(0)
 const filteredFeedKeptCount = ref(0)
 const hasShownFilteredFeedRiskWarning = ref(false)
+const hasFilledRecommendationViewport = ref(false)
+let consecutiveFullyFilteredLoadCount = 0
+let consecutiveFullyFilteredCandidateCount = 0
+let pendingFilteredFeedSampleWarning: { count: number, total: number } | undefined
 const hasActiveWebRecommendationFilter = computed(() => settings.value.enableFilterByDuration
   || settings.value.enableFilterByViewCount
   || settings.value.enableFilterByLikeCount
@@ -275,6 +280,54 @@ function resetFilteredFeedPagingState() {
   filteredFeedCandidateCount.value = 0
   filteredFeedKeptCount.value = 0
   hasShownFilteredFeedRiskWarning.value = false
+  consecutiveFullyFilteredLoadCount = 0
+  consecutiveFullyFilteredCandidateCount = 0
+  pendingFilteredFeedSampleWarning = undefined
+}
+
+function showFilteredFeedRiskWarning(count: number, total: number) {
+  if (
+    !settings.value.showRecommendationFilterRiskWarning
+    || hasShownFilteredFeedRiskWarning.value
+    || !hasFilledRecommendationViewport.value
+    || total < 1
+  ) {
+    return
+  }
+
+  hasShownFilteredFeedRiskWarning.value = true
+  toast.warning(t('home.recommendation_filter_risk_warning', { count, total }))
+}
+
+function markRecommendationViewportFilled(hasScrollbar: boolean) {
+  if (!hasScrollbar || hasFilledRecommendationViewport.value)
+    return
+
+  hasFilledRecommendationViewport.value = true
+  if (pendingFilteredFeedSampleWarning) {
+    showFilteredFeedRiskWarning(
+      pendingFilteredFeedSampleWarning.count,
+      pendingFilteredFeedSampleWarning.total,
+    )
+  }
+}
+
+function recordFilteredFeedBatch(candidateCount: number, keptCount: number) {
+  const fullyFiltered = candidateCount > 0 && keptCount === 0
+  if (
+    !hasActiveRecommendationFilter.value
+    || !hasFilledRecommendationViewport.value
+    || !fullyFiltered
+  ) {
+    consecutiveFullyFilteredLoadCount = 0
+    consecutiveFullyFilteredCandidateCount = 0
+    return
+  }
+
+  consecutiveFullyFilteredLoadCount++
+  consecutiveFullyFilteredCandidateCount += candidateCount
+  if (consecutiveFullyFilteredLoadCount >= FULLY_FILTERED_LOAD_WARNING_THRESHOLD)
+    showFilteredFeedRiskWarning(0, consecutiveFullyFilteredCandidateCount)
 }
 
 function recordFilteredFeedCandidate(kept: boolean) {
@@ -286,15 +339,14 @@ function recordFilteredFeedCandidate(kept: boolean) {
     filteredFeedKeptCount.value++
 
   if (
-    settings.value.showRecommendationFilterRiskWarning
-    && !hasShownFilteredFeedRiskWarning.value
-    && filteredFeedCandidateCount.value === FILTERED_FEED_SAMPLE_SIZE
+    filteredFeedCandidateCount.value === FILTERED_FEED_SAMPLE_SIZE
     && filteredFeedKeptCount.value < FILTERED_FEED_RISK_WARNING_MIN_KEPT
   ) {
-    hasShownFilteredFeedRiskWarning.value = true
-    toast.warning(t('home.recommendation_filter_risk_warning', {
+    pendingFilteredFeedSampleWarning = {
       count: filteredFeedKeptCount.value,
-    }))
+      total: FILTERED_FEED_SAMPLE_SIZE,
+    }
+    showFilteredFeedRiskWarning(filteredFeedKeptCount.value, FILTERED_FEED_SAMPLE_SIZE)
   }
 }
 
@@ -355,6 +407,9 @@ onMounted(() => {
       rebuildShowlistGroupsFromList(videoList.value)
     hasInitializedData.value = true
     isLoading.value = false
+    void nextTick(async () => {
+      markRecommendationViewportFilled(await haveScrollbar())
+    })
 
     // Store 只负责跨卸载恢复。数据已交还给当前组件后立即释放快照，
     // 避免 KeepAlive 中的活动列表与 Pinia 同时各持有一整份推荐数据。
@@ -554,6 +609,10 @@ function getWebVideoKey(item: VideoItem): string {
   return `${item.id}`
 }
 
+function isValidWebRecommendationVideo(item: VideoItem): boolean {
+  return item.goto === 'av' && (!!item.bvid?.trim() || item.id > 0)
+}
+
 function getAppVideoKeys(item: AppVideoItem): string[] {
   const keys: string[] = []
   const bvid = item.bvid?.trim()
@@ -564,6 +623,11 @@ function getAppVideoKeys(item: AppVideoItem): string[] {
   if (aid && aid > 0)
     keys.push(`aid:${aid}`)
   return keys
+}
+
+function isValidAppRecommendationVideo(item: AppVideoItem): boolean {
+  return (item.card_goto === 'av' || item.card_goto === 'bangumi')
+    && getAppVideoKeys(item).length > 0
 }
 
 function getWebShowlistEntry(item: VideoItem, exposed = false): string | undefined {
@@ -780,6 +844,7 @@ watch(() => settings.value.recommendationMode, () => {
   resetWebRiskRecoveryState()
   resetWebRecommendState()
   resetFilteredFeedPagingState()
+  hasFilledRecommendationViewport.value = false
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
 
@@ -832,6 +897,7 @@ async function initData() {
 
   APP_LOAD_BATCHES.value = 1 // 初始化时只加载1批
   resetFilteredFeedPagingState()
+  hasFilledRecommendationViewport.value = false
   consecutiveEmptyLoads.value = 0 // 重置空加载计数器
   appConsecutiveEmptyLoads.value = 0 // 重置APP模式空加载计数器
   requestFailed.value = false // 重置请求失败状态
@@ -1269,6 +1335,8 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
       const resData = [] as VideoItem[]
       const existingIds = new Set<string>()
       const activeWebFilter = hasActiveWebRecommendationFilter.value ? filterFunc.value : null
+      let filteredBatchCandidateCount = 0
+      let filteredBatchKeptCount = 0
 
       videoList.value.forEach((video) => {
         if (video.item)
@@ -1285,8 +1353,12 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
           return
 
         const passesSettingsFilter = !activeWebFilter || activeWebFilter(item)
-        if (activeWebFilter)
+        if (activeWebFilter && isValidWebRecommendationVideo(item)) {
+          filteredBatchCandidateCount++
+          if (passesSettingsFilter)
+            filteredBatchKeptCount++
           recordFilteredFeedCandidate(passesSettingsFilter)
+        }
 
         const itemKey = getWebVideoKey(item)
         if (existingIds.has(itemKey))
@@ -1298,6 +1370,8 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
 
         resData.push(item)
       })
+
+      recordFilteredFeedBatch(filteredBatchCandidateCount, filteredBatchKeptCount)
 
       // 原生首页从接口的完整下发结果生成 showlist，包含广告和未展示卡片；
       // 下一批到达后只保留最近一批，避免签名 URL 随滚动无限增长。
@@ -1387,6 +1461,7 @@ async function getRecommendVideos(version = requestVersion, requestType: WebReco
         await nextTick()
 
         const hasScrollbar = await haveScrollbar()
+        markRecommendationViewportFilled(hasScrollbar)
         if (!hasScrollbar || filledItems.length < PAGE_SIZE || filledItems.length < 1) {
           if (
             !hasActiveRecommendationFilter.value
@@ -1452,6 +1527,8 @@ async function getAppRecommendVideos(
 
   const batchesToLoad = APP_LOAD_BATCHES.value
   const beforeLoadCount = appVideoList.value.length
+  let filteredBatchCandidateCount = 0
+  let filteredBatchKeptCount = 0
   const seenCandidateIds = new Set(
     appVideoList.value
       .flatMap(video => video.item ? getAppVideoKeys(video.item) : []),
@@ -1537,8 +1614,12 @@ async function getAppRecommendVideos(
             return
 
           const passesSettingsFilter = !activeAppFilter || activeAppFilter(item)
-          if (activeAppFilter)
+          if (activeAppFilter && isValidAppRecommendationVideo(item)) {
+            filteredBatchCandidateCount++
+            if (passesSettingsFilter)
+              filteredBatchKeptCount++
             recordFilteredFeedCandidate(passesSettingsFilter)
+          }
 
           if (activeAppFilter) {
             const videoKeys = getAppVideoKeys(item)
@@ -1595,6 +1676,8 @@ async function getAppRecommendVideos(
   if (version !== requestVersion || recommendationMode !== settings.value.recommendationMode)
     return
 
+  recordFilteredFeedBatch(filteredBatchCandidateCount, filteredBatchKeptCount)
+
   const afterLoadCount = appVideoList.value.length
   if (afterLoadCount > beforeLoadCount) {
     // 成功加载了新内容，重置空加载计数器
@@ -1610,6 +1693,7 @@ async function getAppRecommendVideos(
 
     let shouldContinue = false
     const hasScrollbar = await haveScrollbar()
+    markRecommendationViewportFilled(hasScrollbar)
 
     if (!hasScrollbar || appVideoList.value.length < PAGE_SIZE) {
       shouldContinue = true

@@ -645,7 +645,7 @@ settings:
   authorize_app_more_info_access_key: 關於 access key
   scan_qrcode_desc: 用 Bilibili 流動應用程式去 scan 呢個 QR code 愛嚟授權取得 access key。
   show_recommendation_filter_risk_warning: 顯示過濾風控警告
-  show_recommendation_filter_risk_warning_desc: 累計檢查 100 條有效推介之後，如果設定入面嘅過濾條件留低少過 50 條，就提示頻繁請求嘅風控風險。
+  show_recommendation_filter_risk_warning_desc: 推介列表已經有足夠有效影片填滿視口之後，加載更多時連續兩批全部被過濾，或累計檢查 100 條有效推介之後留低少過 50 條時，就提示頻繁請求嘅風控風險。
   disable_filters_for_followed_users: Follow 緊嘅人唔受啲過濾條件限制
   disable_filters_for_followed_users_desc: |
     開咗呢個功能嘅話，你 Follow 緊嘅人唔會俾啲過濾條件限制。
@@ -1149,7 +1149,7 @@ video_card:
 home:
   app_authorization_required: App 模式嘅 access token 已經遺失或者過期，請重新授權之後再繼續使用個人化推介
   reauthorize_app: 重新授權
-  recommendation_filter_risk_warning: 而家嘅過濾條件喺 100 條有效推介入面淨係留低 {count} 條，容易造成頻繁請求並觸發接口風控，建議放寬過濾條件。
+  recommendation_filter_risk_warning: 而家嘅過濾條件喺 {total} 條有效推介入面淨係留低 {count} 條，容易造成頻繁請求並觸發接口風控，建議放寬過濾條件。
   tell_us_why: 點解噉做...
   not_interested_desc: >
     你可以用 <kbd>↑</kbd> 同 <kbd>↓</kbd> 嚟揀個理由，抑或用數字鍵嚟直接揀理由，撳 <kbd>Enter</kbd>

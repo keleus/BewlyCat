@@ -700,7 +700,7 @@ settings:
     Use the Bilibili mobile app to scan this QR code in order to authorize the
     access key.
   show_recommendation_filter_risk_warning: Show filter risk warnings
-  show_recommendation_filter_risk_warning_desc: After checking 100 valid recommendations, warn when the configured filters retain fewer than 50 because repeated requests may trigger risk control.
+  show_recommendation_filter_risk_warning_desc: After enough valid videos have filled the recommendation viewport, warn when two consecutive load-more batches are fully filtered out or fewer than 50 of 100 valid recommendations are retained, because repeated requests may trigger risk control.
   disable_filters_for_followed_users: Disable filters for followed users
   disable_filters_for_followed_users_desc: >
     If you enable this option, all filters you set will be disabled for the
@@ -1231,7 +1231,7 @@ video_card:
 home:
   app_authorization_required: The App mode access token is missing or expired. Re-authorize to continue using personalized recommendations.
   reauthorize_app: Re-authorize
-  recommendation_filter_risk_warning: The current filters retained only {count} of 100 valid recommendations. This may cause frequent requests and trigger API risk control. Consider relaxing the filters.
+  recommendation_filter_risk_warning: The current filters retained only {count} of {total} valid recommendations. This may cause frequent requests and trigger API risk control. Consider relaxing the filters.
   tell_us_why: Choose a reason why
   not_interested_desc: >-
     You can use <kbd>↑</kbd> and <kbd>↓</kbd> to choose the reason, or using
