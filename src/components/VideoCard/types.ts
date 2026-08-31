@@ -41,6 +41,8 @@ export interface Video {
   tag?: string | string[]
   /** Real content tags exposed on search-result pages; clicking these starts a search. */
   searchableTags?: string[]
+  /** Searchable video partition name from APIs, such as `typename` in search results. */
+  category?: string
   rank?: number
   type?: 'horizontal' | 'vertical' | 'bangumi' | 'ketang'
   threePointV2: ThreePointV2[]

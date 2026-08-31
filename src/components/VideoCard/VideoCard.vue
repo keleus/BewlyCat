@@ -196,7 +196,7 @@ const videoTags = computed(() => {
     : Array.isArray(tag)
       ? tag.filter(Boolean)
       : [tag]
-  return [...displayTags, ...(video.searchableTags ?? []).filter(Boolean)]
+  return [video.category, ...displayTags, ...(video.searchableTags ?? [])].filter(Boolean) as string[]
 })
 
 // 插件计算标签 - 使用查找表优化性能
@@ -261,18 +261,8 @@ const pluginComputedTags = computed(() => {
       tags.push('百万播放')
   }
 
-  // 视频标签和插件计算标签合计最多显示两个。
-  if (videoTags.value.length >= 2) {
-    return []
-  }
-  else if (videoTags.value.length > 0) {
-    // 已有一个视频标签时，只补充一个插件计算标签。
-    return tags.slice(0, 1)
-  }
-  else {
-    // 没有视频标签时，最多显示两个插件计算标签。
-    return tags.slice(0, 2)
-  }
+  // 接口标签的显示优先级由信息组件统一处理，这里只提供候选项。
+  return tags.slice(0, 2)
 })
 
 function getDurationHighlight(video: Video) {

@@ -64,6 +64,8 @@ function splitTagValue(value: string): string[] {
   return value.split(/[,，、/|#；;]+/g).filter(Boolean)
 }
 
+const MAX_SEARCH_RESULT_TAG_COUNT = 4
+
 function formatDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.round(totalSeconds))
   const minutes = Math.floor(seconds / 60)
@@ -102,8 +104,9 @@ export function convertVideoData(video: any): Video {
     searchableTags = extractVideoTags(video)
   }
 
-  // 处理课堂类型的 capsuleText（课堂不需要 capsuleText）
-  const capsuleText = video.type === 'ketang' ? undefined : removeHighlight(video.typename || '').trim()
+  const category = video.type === 'ketang'
+    ? undefined
+    : removeHighlight(video.typename || '').trim() || undefined
 
   // 处理 author 字段：确保始终返回正确的对象格式
   let author: any
@@ -168,7 +171,7 @@ export function convertVideoData(video: any): Video {
     threePointV2: [],
     tag: displayTags.length ? displayTags : undefined,
     searchableTags: searchableTags.length ? searchableTags : undefined,
-    capsuleText: capsuleText || undefined,
+    category,
     type: video.type === 'ketang' ? 'ketang' : undefined,
     url,
   }
@@ -709,13 +712,11 @@ function extractVideoTags(video: any): string[] {
   const seen = new Set<string>()
 
   for (const tag of candidates) {
-    if (Array.from(tag.replace(/\s/g, '')).length >= 4)
-      continue
     if (seen.has(tag))
       continue
     seen.add(tag)
     result.push(tag)
-    if (result.length >= 3)
+    if (result.length >= MAX_SEARCH_RESULT_TAG_COUNT)
       break
   }
 

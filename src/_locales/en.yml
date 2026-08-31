@@ -480,7 +480,7 @@ settings:
   show_video_card_author_avatar: Show uploader avatar
   show_video_card_author_name: Show uploader name
   show_video_card_video_tag: Show API and search tags
-  show_video_card_video_tag_desc: Show recommendation or status labels from APIs and content tags from search pages.
+  show_video_card_video_tag_desc: Show recommendation, status, or category labels from APIs and content tags from search pages.
   show_video_card_recommend_tag: Show plugin-calculated tags
   show_video_card_recommend_tag_desc: Display tags calculated by the plugin, such as "High Engagement", "Popular", etc.
   show_video_card_publish_time: Show publish time

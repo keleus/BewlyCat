@@ -38,7 +38,8 @@ defineExpose({
   moreBtnRef,
 })
 
-const MAX_LEADING_TAG_COUNT = 2
+const MAX_INTERFACE_TAG_COUNT = 4
+const MIN_TAG_COUNT_BEFORE_PLUGIN = 2
 
 interface VideoCardTag {
   searchable: boolean
@@ -56,15 +57,18 @@ const content = computed(() => {
       ? rawTag.filter(Boolean)
       : [rawTag]
   const cardTags: VideoCardTag[] = [
+    ...(video?.category
+      ? [{ searchable: true, text: video.category }]
+      : []),
     ...displayTags.map(text => ({ searchable: false, text })),
     ...(video?.searchableTags ?? [])
       .filter(Boolean)
       .map(text => ({ searchable: true, text })),
   ]
   const visibleVideoTags = currentSettings.showVideoCardVideoTag
-    ? cardTags.slice(0, MAX_LEADING_TAG_COUNT)
+    ? cardTags.slice(0, MAX_INTERFACE_TAG_COUNT)
     : []
-  const remainingPluginTagCount = MAX_LEADING_TAG_COUNT - visibleVideoTags.length
+  const remainingPluginTagCount = Math.max(0, MIN_TAG_COUNT_BEFORE_PLUGIN - visibleVideoTags.length)
   const visiblePluginComputedTags = currentSettings.showVideoCardRecommendTag && remainingPluginTagCount > 0
     ? props.pluginComputedTags.slice(0, remainingPluginTagCount)
     : []
@@ -334,6 +338,7 @@ const content = computed(() => {
             lh-6
             rounded="$bew-radius"
             bg="$bew-theme-color-20"
+            :title="videoTag.text"
             :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
             :target="videoTag.searchable ? '_blank' : undefined"
             @click="videoTag.searchable ? $event.stopPropagation() : undefined"
@@ -417,6 +422,7 @@ const content = computed(() => {
                 lh-6
                 rounded="$bew-radius"
                 bg="$bew-theme-color-20"
+                :title="videoTag.text"
                 :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
                 :target="videoTag.searchable ? '_blank' : undefined"
                 @click="videoTag.searchable ? $event.stopPropagation() : undefined"
@@ -476,8 +482,10 @@ const content = computed(() => {
               :is="videoTag.searchable ? 'a' : 'span'"
               v-for="videoTag in content.visibleVideoTags"
               :key="`legacy-video-${videoTag.searchable}-${videoTag.text}`"
+              class="video-card-meta__chip"
               :class="{ 'video-card-tag--searchable': videoTag.searchable }"
               un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
+              :title="videoTag.text"
               :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
               :target="videoTag.searchable ? '_blank' : undefined"
               @click="videoTag.searchable ? $event.stopPropagation() : undefined"
@@ -487,6 +495,7 @@ const content = computed(() => {
             <span
               v-for="pluginTag in content.visiblePluginComputedTags"
               :key="`plugin-${pluginTag}`"
+              class="video-card-meta__chip"
               text="$bew-theme-color"
               lh-6
               p="x-2"
@@ -569,8 +578,10 @@ const content = computed(() => {
                 :is="videoTag.searchable ? 'a' : 'span'"
                 v-for="videoTag in content.visibleVideoTags"
                 :key="`legacy-video-${videoTag.searchable}-${videoTag.text}`"
+                class="video-card-meta__chip"
                 :class="{ 'video-card-tag--searchable': videoTag.searchable }"
                 un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
+                :title="videoTag.text"
                 :href="videoTag.searchable ? getTagSearchUrl(videoTag.text) : undefined"
                 :target="videoTag.searchable ? '_blank' : undefined"
                 @click="videoTag.searchable ? $event.stopPropagation() : undefined"
@@ -580,6 +591,7 @@ const content = computed(() => {
               <span
                 v-for="pluginTag in content.visiblePluginComputedTags"
                 :key="`plugin-${pluginTag}`"
+                class="video-card-meta__chip"
                 text="$bew-theme-color"
                 lh-6
                 p="x-2"
@@ -670,7 +682,8 @@ const content = computed(() => {
   font-size: inherit;
   line-height: inherit;
   padding-block: calc(var(--bew-base-font-size) * 0.12);
-  flex: 0 0 auto;
+  /* 最多四个标签共享单行空间；不足时在标签内部省略，避免整枚标签被父容器截掉。 */
+  flex: 0 1 auto;
   max-width: 100%;
   min-width: 0;
   overflow: hidden;
