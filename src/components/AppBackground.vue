@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { CSSProperties } from 'vue'
+
 import { useDark } from '~/composables/useDark'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
@@ -18,42 +20,108 @@ onMounted(() => {
 // 计算解析后的壁纸URL(支持本地壁纸和缓存控制)
 const resolvedWallpaper = ref('')
 const resolvedSearchPageWallpaper = ref('')
+let globalWallpaperRequestId = 0
+let searchWallpaperRequestId = 0
+
+function waitForWallpaperDecode(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    let settled = false
+
+    const cleanup = () => {
+      image.onload = null
+      image.onerror = null
+    }
+    const handleLoad = async () => {
+      if (settled)
+        return
+
+      settled = true
+      cleanup()
+      try {
+        await image.decode()
+      }
+      catch {
+        // load 已成功时仍允许展示；部分浏览器会对已解码图片拒绝重复 decode。
+      }
+      resolve()
+    }
+    const handleError = () => {
+      if (settled)
+        return
+
+      settled = true
+      cleanup()
+      reject(new Error('Failed to load wallpaper'))
+    }
+
+    image.decoding = 'async'
+    image.onload = () => void handleLoad()
+    image.onerror = handleError
+    image.src = url
+
+    // data URL 或内存缓存可能在监听器注册后已经完成加载。
+    if (image.complete) {
+      if (image.naturalWidth > 0)
+        void handleLoad()
+      else
+        handleError()
+    }
+  })
+}
+
+async function resolveWallpaperSource(originalUrl: string, cacheTime: number): Promise<string> {
+  if (isLocalWallpaperUrl(originalUrl))
+    return resolveWallpaperUrl(originalUrl) || ''
+
+  return originalUrl ? await getOrCacheWallpaper(originalUrl, cacheTime) : ''
+}
 
 // 解析全局壁纸
 async function resolveGlobalWallpaper() {
+  const requestId = ++globalWallpaperRequestId
   const originalUrl = settings.value.wallpaper
+  const resolvedUrl = await resolveWallpaperSource(originalUrl, settings.value.wallpaperCacheTime)
+  if (requestId !== globalWallpaperRequestId)
+    return
 
-  // 如果是本地壁纸,直接解析,不使用URL缓存
-  if (isLocalWallpaperUrl(originalUrl)) {
-    resolvedWallpaper.value = resolveWallpaperUrl(originalUrl) || ''
+  if (!resolvedUrl) {
+    resolvedWallpaper.value = ''
     return
   }
 
-  // 如果是普通URL,使用缓存控制
-  if (originalUrl) {
-    resolvedWallpaper.value = await getOrCacheWallpaper(originalUrl, settings.value.wallpaperCacheTime)
+  try {
+    await waitForWallpaperDecode(resolvedUrl)
+    if (requestId === globalWallpaperRequestId)
+      resolvedWallpaper.value = resolvedUrl
   }
-  else {
-    resolvedWallpaper.value = ''
+  catch {
+    if (requestId === globalWallpaperRequestId)
+      resolvedWallpaper.value = ''
   }
 }
 
 // 解析搜索页壁纸
 async function resolveSearchWallpaper() {
+  const requestId = ++searchWallpaperRequestId
   const originalUrl = settings.value.searchPageWallpaper
+  const resolvedUrl = await resolveWallpaperSource(originalUrl, settings.value.searchPageWallpaperCacheTime)
+  if (requestId !== searchWallpaperRequestId)
+    return
 
-  // 如果是本地壁纸,直接解析,不使用URL缓存
-  if (isLocalWallpaperUrl(originalUrl)) {
-    resolvedSearchPageWallpaper.value = resolveWallpaperUrl(originalUrl) || ''
+  if (!resolvedUrl) {
+    resolvedSearchPageWallpaper.value = ''
     return
   }
 
-  // 如果是普通URL,使用缓存控制
-  if (originalUrl) {
-    resolvedSearchPageWallpaper.value = await getOrCacheWallpaper(originalUrl, settings.value.searchPageWallpaperCacheTime)
+  try {
+    await waitForWallpaperDecode(resolvedUrl)
+    if (requestId === searchWallpaperRequestId)
+      resolvedSearchPageWallpaper.value = resolvedUrl
   }
-  else {
-    resolvedSearchPageWallpaper.value = ''
+  catch {
+    if (requestId === searchWallpaperRequestId)
+      resolvedSearchPageWallpaper.value = ''
   }
 }
 
@@ -63,7 +131,7 @@ watch(() => [settings.value.wallpaper, settings.value.wallpaperCacheTime], ([, n
   if (oldValue && newCacheTime !== oldValue[1]) {
     cleanupExpiredCache(newCacheTime as number)
   }
-  resolveGlobalWallpaper()
+  void resolveGlobalWallpaper()
 }, { immediate: true })
 
 watch(() => [settings.value.searchPageWallpaper, settings.value.searchPageWallpaperCacheTime], ([, newCacheTime], oldValue) => {
@@ -71,7 +139,7 @@ watch(() => [settings.value.searchPageWallpaper, settings.value.searchPageWallpa
   if (oldValue && newCacheTime !== oldValue[1]) {
     cleanupExpiredCache(newCacheTime as number)
   }
-  resolveSearchWallpaper()
+  void resolveSearchWallpaper()
 }, { immediate: true })
 
 // 计算当前页面使用的壁纸URL
@@ -80,6 +148,25 @@ const currentWallpaperUrl = computed(() => {
     return resolvedSearchPageWallpaper.value
   }
   return resolvedWallpaper.value
+})
+
+const currentWallpaperBlurIntensity = computed(() => {
+  if (props.activatedPage === AppPage.Search && settings.value.individuallySetSearchPageWallpaper)
+    return settings.value.searchPageWallpaperBlurIntensity
+
+  return settings.value.wallpaperBlurIntensity
+})
+
+const wallpaperMaskStyle = computed((): CSSProperties => {
+  const wallpaperReady = Boolean(currentWallpaperUrl.value)
+  const blurIntensity = currentWallpaperBlurIntensity.value
+  const backdropFilter = wallpaperReady && blurIntensity > 0 ? `blur(${blurIntensity}px)` : 'none'
+
+  return {
+    visibility: wallpaperReady ? 'visible' : 'hidden',
+    backdropFilter,
+    WebkitBackdropFilter: backdropFilter,
+  }
 })
 
 const themeColorHsl = computed(() => {
@@ -162,9 +249,7 @@ setAppWallpaperMaskingOpacity()
             v-if="(!settings.individuallySetSearchPageWallpaper && settings.enableWallpaperMasking) || (settings.searchPageEnableWallpaperMasking)"
             pos="absolute top-0 left-0" w-full h-full pointer-events-none bg="$bew-homepage-bg-mask"
             z--1
-            :style="{
-              backdropFilter: `blur(${settings.individuallySetSearchPageWallpaper ? settings.searchPageWallpaperBlurIntensity : settings.wallpaperBlurIntensity}px)`,
-            }"
+            :style="wallpaperMaskStyle"
           />
         </Transition>
       </div>
@@ -182,9 +267,7 @@ setAppWallpaperMaskingOpacity()
             v-if="settings.enableWallpaperMasking"
             pos="absolute top-0 left-0" w-full h-full pointer-events-none bg="$bew-homepage-bg-mask"
             z--1
-            :style="{
-              backdropFilter: `blur(${settings.wallpaperBlurIntensity}px)`,
-            }"
+            :style="wallpaperMaskStyle"
           />
         </Transition>
       </div>
