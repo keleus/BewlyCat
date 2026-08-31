@@ -3,7 +3,7 @@ import { useEventListener } from '@vueuse/core'
 
 import { DrawerType, useBewlyApp } from '~/composables/useAppProvider'
 import { useDark } from '~/composables/useDark'
-import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
+import { BEWLY_IFRAME_DRAWER_HOST_CLASS, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { isHomePage, isInIframe } from '~/utils/main'
 import { lockPageScroll, unlockPageScroll } from '~/utils/pageScrollLock'
@@ -229,6 +229,9 @@ async function remountIframe(url: string) {
 
 onMounted(() => {
   originUrl.value = window.location.href
+  // 抽屉会用 iframe URL 替换地址栏，但父文档仍是 Bewly 页面外壳。
+  // 显式标记宿主，避免父文档把临时视频 URL 当成自身播放器导航。
+  document.documentElement.classList.add(BEWLY_IFRAME_DRAWER_HOST_CLASS)
   history.pushState(null, '', props.url)
   show.value = true
   headerShow.value = true
@@ -260,6 +263,7 @@ onBeforeUnmount(() => {
 
 onUnmounted(() => {
   history.replaceState(null, '', originUrl.value)
+  document.documentElement.classList.remove(BEWLY_IFRAME_DRAWER_HOST_CLASS)
 })
 
 function updateCurrentUrl(e: any) {

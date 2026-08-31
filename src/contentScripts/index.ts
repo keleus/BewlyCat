@@ -5,7 +5,7 @@ import { createApp } from 'vue'
 
 import { useDark } from '~/composables/useDark'
 import { CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG } from '~/constants/contentScript'
-import { BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
+import { BEWLY_IFRAME_DRAWER_HOST_CLASS, BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { localSettings, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -510,6 +510,15 @@ else if (shouldInitializeContentScript) {
   }
 
   function applyDefaultPlayerMode() {
+    // iframe 抽屉会把父页面地址栏临时替换成视频 URL。父文档没有播放器，
+    // 不能在这里准备宽屏遮罩；真正的播放器模式由 iframe 自己负责。
+    if (document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)) {
+      clearPlayerModeRetry()
+      clearPlaybackBehaviorTimer()
+      exitBewlyWidescreen()
+      return
+    }
+
     if (!isVideoOrBangumiPage()) {
       clearPlayerModeRetry()
       clearPlaybackBehaviorTimer()
@@ -528,6 +537,16 @@ else if (shouldInitializeContentScript) {
     const currentNavigationKey = getVideoNavigationKey(location.href)
     if (lastAppliedPlayerModeNavigationKey === currentNavigationKey)
       return
+
+    // 当前视频已经进入 Bewly 宽屏时，将它视为已完成的播放器模式选择。
+    // 尤其是抽屉 iframe 在标签页恢复可见后，不应再用默认模式覆盖用户当前
+    // 的宽屏布局，否则原生网页全屏会先退出 Bewly 宽屏并重新触发遮罩。
+    if (isBewlyWidescreenActive()) {
+      clearPlayerModeRetry()
+      applyPlayerModeCompanionSettings()
+      lastAppliedPlayerModeNavigationKey = currentNavigationKey
+      return
+    }
 
     let targetPlayerMode = resolveDefaultVideoPlayerMode()
     if (isFestivalPage() && targetPlayerMode === 'bewlyWidescreen')
