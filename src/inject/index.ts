@@ -228,10 +228,15 @@ else if (shouldInitializePageScript) {
      * 从已渲染回复组件捕获的用户交互状态。楼中楼接口可能返回点赞前的
      * 缓存数据，后续分页合并时需要以本地刚完成的操作为准。
      */
-    interactionByRpid?: Map<string, { action?: number, like?: number }>
+    interactionByRpid?: Map<string, CommentReplyInteractionState>
     /** 批量加载期间固定树缩进，避免每个用户信息更新都横向重排。 */
     frozenTreeIndentStep?: number
     expandAllLayoutKey?: string
+  }
+
+  interface CommentReplyInteractionState {
+    action?: number
+    like?: number
   }
 
   const COMMENT_REPLY_TREE_GUIDES_CSS = `
@@ -1073,6 +1078,107 @@ else if (shouldInitializePageScript) {
     return merged
   }
 
+  function getCommentReplyInteractionState(component: any): CommentReplyInteractionState | null {
+    const reply = getCommentReplyData(component)
+    const actionRenderer = component?.localName === 'bili-comment-action-buttons-renderer'
+      ? component
+      : component?.shadowRoot?.querySelector('bili-comment-action-buttons-renderer')
+    if (!actionRenderer) {
+      if (!reply)
+        return null
+      const interaction: CommentReplyInteractionState = {}
+      const action = Number(reply.action)
+      const like = Number(reply.like)
+      if (Number.isFinite(action))
+        interaction.action = action
+      if (Number.isFinite(like))
+        interaction.like = like
+      return interaction.action !== undefined || interaction.like !== undefined
+        ? interaction
+        : null
+    }
+
+    const interaction: CommentReplyInteractionState = {}
+    if (typeof actionRenderer.isLike === 'boolean' && typeof actionRenderer.isDislike === 'boolean')
+      interaction.action = actionRenderer.isLike ? 1 : actionRenderer.isDislike ? 2 : 0
+
+    const likeCount = Number(actionRenderer.likeCount)
+    if (Number.isFinite(likeCount))
+      interaction.like = likeCount
+
+    return interaction.action !== undefined || interaction.like !== undefined
+      ? interaction
+      : null
+  }
+
+  function applyCommentReplyInteraction(
+    reply: any,
+    rpid: string,
+    interaction: CommentReplyInteractionState,
+  ): any {
+    if (getReplyRpid(reply) !== rpid)
+      return reply
+    const actionMatches = interaction.action === undefined || Number(reply?.action) === interaction.action
+    const likeMatches = interaction.like === undefined || Number(reply?.like) === interaction.like
+    if (actionMatches && likeMatches)
+      return reply
+    return {
+      ...reply,
+      ...(interaction.action === undefined ? {} : { action: interaction.action }),
+      ...(interaction.like === undefined ? {} : { like: interaction.like }),
+    }
+  }
+
+  function applyCommentReplyInteractionToList(
+    list: any[] | undefined,
+    rpid: string,
+    interaction: CommentReplyInteractionState,
+  ): any[] | undefined {
+    if (!Array.isArray(list))
+      return list
+    let changed = false
+    const nextList = list.map((reply) => {
+      const nextReply = applyCommentReplyInteraction(reply, rpid, interaction)
+      changed ||= nextReply !== reply
+      return nextReply
+    })
+    return changed ? nextList : list
+  }
+
+  function syncRenderedCommentReplyInteraction(actionRenderer: any) {
+    const reply = getCommentReplyData(actionRenderer)
+    const rpid = getReplyRpid(reply)
+    const interaction = getCommentReplyInteractionState(actionRenderer)
+    const repliesRenderer = findCommentRepliesRendererHost(actionRenderer) as any
+    if (!rpid || !interaction || !repliesRenderer)
+      return
+
+    const nextList = applyCommentReplyInteractionToList(repliesRenderer.list, rpid, interaction)
+    if (nextList !== repliesRenderer.list)
+      repliesRenderer.list = nextList
+
+    const state = commentReplyPaginationStates.get(repliesRenderer)
+    if (!state)
+      return
+    const interactionByRpid = state.interactionByRpid ?? new Map()
+    interactionByRpid.set(rpid, interaction)
+    state.interactionByRpid = interactionByRpid
+    state.mergedList = applyCommentReplyInteractionToList(state.mergedList, rpid, interaction)
+    state.collapsedList = applyCommentReplyInteractionToList(state.collapsedList, rpid, interaction)
+    if (state.pending) {
+      state.pending.beforeList = applyCommentReplyInteractionToList(
+        state.pending.beforeList,
+        rpid,
+        interaction,
+      ) ?? state.pending.beforeList
+    }
+    state.pages.forEach((page, pageNumber) => {
+      const nextPage = applyCommentReplyInteractionToList(page, rpid, interaction)
+      if (nextPage && nextPage !== page)
+        state.pages.set(pageNumber, nextPage)
+    })
+  }
+
   function getRenderedCommentReplyData(renderer: any): any[] {
     const root = renderer?.shadowRoot as ShadowRoot | null | undefined
     const container = root?.querySelector<HTMLElement>('#expander-contents')
@@ -1080,7 +1186,14 @@ else if (shouldInitializePageScript) {
       return []
     return Array.from(container.children)
       .filter(isCommentReplyRenderer)
-      .map(getCommentReplyData)
+      .map((component) => {
+        const reply = getCommentReplyData(component)
+        const rpid = getReplyRpid(reply)
+        const interaction = getCommentReplyInteractionState(component)
+        return reply && rpid && interaction
+          ? applyCommentReplyInteraction(reply, rpid, interaction)
+          : reply
+      })
       .filter((reply): reply is object => Boolean(reply))
   }
 
@@ -1093,7 +1206,7 @@ else if (shouldInitializePageScript) {
       const rpid = getReplyRpid(reply)
       if (!rpid)
         return
-      const interaction: { action?: number, like?: number } = {}
+      const interaction: CommentReplyInteractionState = {}
       if (Number.isFinite(Number(reply?.action)))
         interaction.action = Number(reply.action)
       if (Number.isFinite(Number(reply?.like)))
@@ -4007,6 +4120,18 @@ else if (shouldInitializePageScript) {
         patchCommentRepliesRendererDisconnect(classConstructor)
       }
 
+      if (name === 'bili-comment-action-buttons-renderer') {
+        try {
+          patchCommentComponentUpdate(name, classConstructor, (component) => {
+            syncRenderedCommentReplyInteraction(component)
+          })
+        }
+        catch (error) {
+          console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
+        }
+        return
+      }
+
       const shadowStylePatch = COMMENT_SHADOW_STYLE_PATCHES[name]
       if (shadowStylePatch) {
         try {
@@ -4155,6 +4280,7 @@ else if (shouldInitializePageScript) {
     // document_start 仍可能晚于页面内联脚本；回补已经注册的评论组件。
     const commentElementNames = new Set([
       ...Object.keys(COMMENT_SHADOW_STYLE_PATCHES),
+      'bili-comment-action-buttons-renderer',
       'bili-comment-reply-renderer',
       'bili-comment-pictures-renderer',
       'bili-comment-user-info',
