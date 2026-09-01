@@ -557,7 +557,7 @@ export const originalSettings: Settings = {
   autoSwitchListLayoutBreakpoint: MOBILE_LIST_LAYOUT_BREAKPOINT,
   videoCardCoverRatioOneColumn: 40,
   videoCardCoverRatioTwoColumns: 50,
-  releaseOffscreenVideoCardImages: false,
+  releaseOffscreenVideoCardImages: true,
 
   language: '',
   customizeFont: 'default',

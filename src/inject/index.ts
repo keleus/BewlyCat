@@ -125,6 +125,7 @@ else if (shouldInitializePageScript) {
 
   const COMMENT_COMPONENT_PATCHED = Symbol('bewly-comment-component-patched')
   const COMMENT_REPLY_PAGINATION_PATCHED = Symbol('bewly-comment-reply-pagination-patched')
+  const COMMENT_REPLIES_DISCONNECT_PATCHED = Symbol('bewly-comment-replies-disconnect-patched')
   const pendingCommentEnhancements = new WeakSet<object>()
   const commentRepliesRenderers = new Set<any>()
   const commentReplyTreeStates = new WeakMap<object, CommentReplyTreeState>()
@@ -141,6 +142,7 @@ else if (shouldInitializePageScript) {
   const COMMENT_REPLY_TREE_INDENT_STEP = 'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
   const COMMENT_REPLY_TREE_GUIDES_ID = 'bewly-comment-reply-tree-guides'
   const COMMENT_REPLY_EXPAND_ALL_ID = 'bewly-comment-expand-all-replies'
+  const COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE = 'data-bewly-comment-expand-all-loading'
   // B 站分页项使用从 0 开始的 idx；-1 已被原生用于省略号，-2 留给我们的
   // 「展开全部」动作，避免把它误当成真实页码。
   const COMMENT_REPLY_EXPAND_ALL_IDX = -2
@@ -222,6 +224,11 @@ else if (shouldInitializePageScript) {
     loading?: Promise<any>
     expandAllLoading?: Promise<void>
     allRepliesExpanded?: boolean
+    /**
+     * 从已渲染回复组件捕获的用户交互状态。楼中楼接口可能返回点赞前的
+     * 缓存数据，后续分页合并时需要以本地刚完成的操作为准。
+     */
+    interactionByRpid?: Map<string, { action?: number, like?: number }>
     /** 批量加载期间固定树缩进，避免每个用户信息更新都横向重排。 */
     frozenTreeIndentStep?: number
     expandAllLayoutKey?: string
@@ -384,6 +391,47 @@ else if (shouldInitializePageScript) {
         #${COMMENT_REPLY_EXPAND_ALL_ID}:disabled {
           color: var(--bew-text-3, var(--text3, #9499a0));
           cursor: wait;
+        }
+
+        :host([${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) {
+          cursor: wait;
+        }
+
+        :host([${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) #spinner {
+          display: flex !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+
+        :host([${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) #expander-contents::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          z-index: 2147483646;
+          background: var(--bew-comment-replies-mask-bg, rgba(var(--bg1_rgb), 0.85));
+          pointer-events: auto;
+        }
+
+        :host([${COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE}]) #expander-contents::after {
+          content: '';
+          position: sticky;
+          bottom: var(--bew-space-4, 16px);
+          z-index: 2147483647;
+          align-self: center;
+          width: var(--bew-space-6, 24px);
+          height: var(--bew-space-6, 24px);
+          box-sizing: border-box;
+          border: 2px solid var(--bew-text-3, var(--text3, #9499a0));
+          border-top-color: var(--bew-theme-color, #00aeec);
+          border-radius: 50%;
+          animation: bewly-comment-expand-all-spin 0.8s linear infinite;
+          pointer-events: none;
+        }
+
+        @keyframes bewly-comment-expand-all-spin {
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         :host([data-bewly-comment-reply-tree]) {
@@ -914,6 +962,8 @@ else if (shouldInitializePageScript) {
     state.expandAllLoading = undefined
     state.frozenTreeIndentStep = undefined
     state.expandAllLayoutKey = undefined
+    renderer.removeAttribute?.(COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE)
+    renderer.removeAttribute?.('aria-busy')
     state.pages.clear()
     commentReplyPaginationStates.delete(renderer)
     // 切换分页模式或评论身份时立即刷新，不再等旧 Promise 结算。
@@ -997,6 +1047,87 @@ else if (shouldInitializePageScript) {
     return merged
   }
 
+  /** 保留第一次出现的位置，但用最后一次出现的数据覆盖同一条回复。 */
+  function mergeCommentReplyListsPreferringLatest(...lists: any[][]): any[] {
+    const merged: any[] = []
+    const indexByRpid = new Map<string, number>()
+    const indexByReply = new Map<any, number>()
+    lists.forEach((list) => {
+      list.forEach((reply) => {
+        const rpid = getReplyRpid(reply)
+        const existingIndex = rpid
+          ? indexByRpid.get(rpid)
+          : indexByReply.get(reply)
+        if (existingIndex !== undefined) {
+          merged[existingIndex] = reply
+          return
+        }
+        const index = merged.length
+        merged.push(reply)
+        if (rpid)
+          indexByRpid.set(rpid, index)
+        else
+          indexByReply.set(reply, index)
+      })
+    })
+    return merged
+  }
+
+  function getRenderedCommentReplyData(renderer: any): any[] {
+    const root = renderer?.shadowRoot as ShadowRoot | null | undefined
+    const container = root?.querySelector<HTMLElement>('#expander-contents')
+    if (!container)
+      return []
+    return Array.from(container.children)
+      .filter(isCommentReplyRenderer)
+      .map(getCommentReplyData)
+      .filter((reply): reply is object => Boolean(reply))
+  }
+
+  function captureCommentReplyInteractionState(
+    state: CommentReplyPaginationState,
+    replies: any[],
+  ) {
+    const interactionByRpid = state.interactionByRpid ?? new Map()
+    replies.forEach((reply) => {
+      const rpid = getReplyRpid(reply)
+      if (!rpid)
+        return
+      const interaction: { action?: number, like?: number } = {}
+      if (Number.isFinite(Number(reply?.action)))
+        interaction.action = Number(reply.action)
+      if (Number.isFinite(Number(reply?.like)))
+        interaction.like = Number(reply.like)
+      if (interaction.action !== undefined || interaction.like !== undefined)
+        interactionByRpid.set(rpid, interaction)
+    })
+    state.interactionByRpid = interactionByRpid
+  }
+
+  function restoreCommentReplyInteractionState(
+    state: CommentReplyPaginationState,
+    replies: any[],
+  ): any[] {
+    const interactionByRpid = state.interactionByRpid
+    if (!interactionByRpid?.size)
+      return replies
+    return replies.map((reply) => {
+      const rpid = getReplyRpid(reply)
+      const interaction = rpid ? interactionByRpid.get(rpid) : undefined
+      if (!interaction)
+        return reply
+      const actionMatches = interaction.action === undefined || Number(reply?.action) === interaction.action
+      const likeMatches = interaction.like === undefined || Number(reply?.like) === interaction.like
+      if (actionMatches && likeMatches)
+        return reply
+      return {
+        ...reply,
+        ...(interaction.action === undefined ? {} : { action: interaction.action }),
+        ...(interaction.like === undefined ? {} : { like: interaction.like }),
+      }
+    })
+  }
+
   function getNewCommentReplyPage(beforeList: any[], loadedList: any[]): any[] {
     const existingRpids = new Set(
       beforeList.map(getReplyRpid).filter((rpid): rpid is string => Boolean(rpid)),
@@ -1068,6 +1199,8 @@ else if (shouldInitializePageScript) {
     state.allRepliesExpanded = false
     state.frozenTreeIndentStep = undefined
     state.expandAllLayoutKey = undefined
+    renderer.setAttribute?.(COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE, '')
+    renderer.setAttribute?.('aria-busy', 'true')
 
     const operation = (async () => {
       if (!isCommentReplyLoadMoreEnabled() || !renderer?.user)
@@ -1122,6 +1255,8 @@ else if (shouldInitializePageScript) {
       state.expandAllLoading = undefined
       state.frozenTreeIndentStep = undefined
       state.expandAllLayoutKey = undefined
+      renderer.removeAttribute?.(COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE)
+      renderer.removeAttribute?.('aria-busy')
       renderer.requestUpdate?.()
       requestAnimationFrame(() => {
         if (renderer.isConnected && getCommentReplyTreeMode() !== null) {
@@ -1320,7 +1455,20 @@ else if (shouldInitializePageScript) {
           const currentList = Array.isArray(this.list)
             ? this.list.filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
             : []
-          const beforeList = mergeCommentReplyLists(state.mergedList ?? [], currentList)
+          const renderedList = getRenderedCommentReplyData(this)
+            .filter((reply: any) => !invisibleIds.has(getReplyRpid(reply) ?? ''))
+          // 回复组件会先更新本地点赞/发表评论结果，但 renderer.list 与分页
+          // 缓存不一定同步。保留原顺序，同时让当前 list 和实际 DOM 数据
+          // 覆盖旧缓存，避免下一页返回的旧数据把交互状态回滚。
+          captureCommentReplyInteractionState(state, renderedList)
+          const beforeList = restoreCommentReplyInteractionState(
+            state,
+            mergeCommentReplyListsPreferringLatest(
+              state.mergedList ?? [],
+              currentList,
+              renderedList,
+            ),
+          )
           state.mergedList = beforeList
           const pending = {
             page: Number(this.currentPage) || 1,
@@ -1350,8 +1498,10 @@ else if (shouldInitializePageScript) {
                 const latestInvisibleIds = getCommentReplyInvisibleIds(this)
                 const retainedBeforeList = pending.beforeList
                   .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
-                const loadedList = this.list
-                  .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
+                const loadedList = restoreCommentReplyInteractionState(
+                  state,
+                  this.list.filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? '')),
+                )
                 const page = getNewCommentReplyPage(retainedBeforeList, loadedList)
                 state.pages.forEach((cachedPage, pageNumber) => {
                   state.pages.set(
@@ -1361,6 +1511,12 @@ else if (shouldInitializePageScript) {
                 })
                 // pages 始终保存原生完整单页，供切回「分页」模式时恢复。
                 state.pages.set(pending.page, loadedList)
+                state.pages.forEach((cachedPage, pageNumber) => {
+                  state.pages.set(
+                    pageNumber,
+                    restoreCommentReplyInteractionState(state, cachedPage),
+                  )
+                })
                 state.currentPage = pending.page
                 state.allRepliesExpanded = isCommentReplyPaginationComplete(this)
                 const merged = mergeCommentReplyLists(retainedBeforeList, page)
@@ -1766,6 +1922,41 @@ else if (shouldInitializePageScript) {
     pendingCommentReplyTreeLayoutUpdates.delete(component)
     commentReplyTreeStates.delete(component)
     commentRepliesRenderers.delete(component)
+  }
+
+  /**
+   * B 站 SPA 会直接移除整层回复组件，不一定触发 handleRevert。普通 Set
+   * 若不在 disconnectedCallback 清理，会把旧组件、Shadow DOM 与分页数据
+   * 永久保留到下一次设置刷新。
+   */
+  function patchCommentRepliesRendererDisconnect(classConstructor: any) {
+    const prototype = classConstructor?.prototype as object | undefined
+    if (!prototype || (prototype as any)[COMMENT_REPLIES_DISCONNECT_PATCHED])
+      return
+
+    const originalDisconnected = findCommentComponentLifecycleMethod(prototype, 'disconnectedCallback')
+    Object.defineProperty(prototype, 'disconnectedCallback', {
+      configurable: true,
+      writable: true,
+      value(this: any, ...args: any[]) {
+        let result: any
+        try {
+          if (originalDisconnected)
+            result = Reflect.apply(originalDisconnected, this, args)
+          return result
+        }
+        finally {
+          // 分页状态保存在 WeakMap 中；临时折叠后若复用同一实例仍可恢复，
+          // 这里只释放会形成强引用的树布局与全局可迭代集合。
+          suspendCommentReplyPaginationForNativeCollapse(this, true)
+          clearCommentReplyTreeState(this)
+        }
+      },
+    })
+    Object.defineProperty(prototype, COMMENT_REPLIES_DISCONNECT_PATCHED, {
+      configurable: true,
+      value: true,
+    })
   }
 
   /**
@@ -3811,8 +4002,10 @@ else if (shouldInitializePageScript) {
       if (typeof classConstructor !== 'function')
         return
 
-      if (name === 'bili-comment-replies-renderer')
+      if (name === 'bili-comment-replies-renderer') {
         patchCommentReplyPaginationPrototype(classConstructor)
+        patchCommentRepliesRendererDisconnect(classConstructor)
+      }
 
       const shadowStylePatch = COMMENT_SHADOW_STYLE_PATCHES[name]
       if (shadowStylePatch) {

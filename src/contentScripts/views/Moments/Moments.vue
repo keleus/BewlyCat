@@ -13,8 +13,6 @@ import {
   computeMultiImageGalleryHeight,
   formatCount,
   getCardPreviewText,
-  getMomentOriginalImageUrl,
-  getMomentThumbnailUrl,
   getWatchLaterStateKey,
   isCompactPlainTextMoment,
   isUsableImageRatio,
@@ -233,7 +231,6 @@ const videoAspectRatios = reactive<Record<string, number>>({})
 const videoAspectRatioRequests = new Map<string, Promise<number | undefined>>()
 const cardHeights = reactive<Record<string, number>>({})
 const visibleMomentIds = reactive(new Set<string>())
-const readyCoverIds = reactive(new Set<string>())
 const readyCardIds = reactive(new Set<string>())
 const enteringCardIds = reactive(new Set<string>())
 const revealedCardIds = new Set<string>()
@@ -255,6 +252,8 @@ function getSafeImageRatio(width: number, height: number) {
 let gridObserver: ResizeObserver | undefined
 let liveFlvPlayer: any = null
 let liveHlsPlayer: any = null
+let activePreviewVideo: { id: string, element: HTMLVideoElement } | null = null
+let previewPlaybackGeneration = 0
 const isLoading = ref(false)
 const isInitialLoading = ref(true)
 const noMoreContent = ref(false)
@@ -278,11 +277,13 @@ const WANTED_SCAN_LIMIT = 100
 /** 开启类型过滤时单次最多请求的原始动态页数 */
 const FILTERED_MAX_REQUEST_PAGES = 2
 const MOMENTS_CACHE_MAX_ITEMS = 1000
+/** 页面内存与持久化缓存使用同一上限，避免无限滚动永久累积响应对象。 */
+const MOMENTS_MEMORY_MAX_ITEMS = MOMENTS_CACHE_MAX_ITEMS
 const MOMENTS_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000
 /** 虚拟瀑布流需要在全局哨兵进入视口前主动预取，避免高度修正后漏掉相交事件 */
 const LOAD_MORE_AHEAD_PX = 640
 const DETAIL_DIALOG_MIN_WIDTH = 860
-let scrollListenerAttached = false
+let attachedScrollViewport: HTMLElement | null = null
 let cardMeasureObserver: ResizeObserver | undefined
 let visibilityObserver: IntersectionObserver | undefined
 /** 最近滚动时间，用于避免滚动中重排导致抖动 */
@@ -424,6 +425,13 @@ function normalizeRichTextJumpUrl(url = '') {
   catch {
     return ''
   }
+}
+
+function getVoteUrl(voteId: unknown) {
+  const id = String(voteId ?? '').trim()
+  return /^\d+$/.test(id)
+    ? `https://t.bilibili.com/vote/h5/index/#/result?vote_id=${encodeURIComponent(id)}`
+    : ''
 }
 
 function getSidebarAvatarUrl(url = '', size = 96) {
@@ -574,12 +582,13 @@ function extractRichTextSegments(...nodeLists: any[]): DisplayRichTextSegment[] 
     }
 
     const isAtMention = node?.type === 'RICH_TEXT_NODE_TYPE_AT'
-    // VOTE：投票节点，jump_url 指向官方投票页
+    // VOTE 通常只返回 rid（投票 id），需自行拼出官方投票页。
     const isSupportedLink = node?.type === 'RICH_TEXT_NODE_TYPE_TOPIC'
       || node?.type === 'RICH_TEXT_NODE_TYPE_WEB'
       || node?.type === 'RICH_TEXT_NODE_TYPE_VOTE'
       || isAtMention
     const rawJumpUrl = node?.jump_url
+      || (node?.type === 'RICH_TEXT_NODE_TYPE_VOTE' ? getVoteUrl(node?.rid) : '')
       || (isAtMention && node?.rid ? `https://space.bilibili.com/${node.rid}` : '')
     const url = isSupportedLink ? normalizeRichTextJumpUrl(rawJumpUrl) : ''
     if (text && url)
@@ -711,7 +720,8 @@ function getMomentContent(item: any) {
           additionalCard.button,
           additional.type === 'ADDITIONAL_TYPE_RESERVE',
         ),
-        url: httpsUrl(additionalCard.jump_url || additionalCard.button?.jump_url || ''),
+        url: httpsUrl(additionalCard.jump_url || additionalCard.button?.jump_url || '')
+          || (isVoteAdditional ? getVoteUrl(additionalCard.vote_id) : ''),
         isUpRecommendation: additional.type === 'ADDITIONAL_TYPE_UP_RCMD'
           || pickText(additionalCard.head_text, additionalCard.title) === 'UP主的推荐',
         isVideoReservation: additional.type === 'ADDITIONAL_TYPE_RESERVE'
@@ -1506,11 +1516,20 @@ function syncDetailFrameViewport() {
 }
 
 function handleDetailIframeLoad(event: Event) {
+  // 与抽屉一致：同域时去掉顶栏占位，并保证视频/直播页可滚动
+  const iframe = event.target as HTMLIFrameElement | null
+  if (
+    !iframe
+    || iframe !== detailIframeRef.value
+    || !selectedMoment.value
+    || !detailFrameUrl.value
+  ) {
+    return
+  }
+
   clearDetailLoadTimer()
   syncDetailFrameViewport()
 
-  // 与抽屉一致：同域时去掉顶栏占位，并保证视频/直播页可滚动
-  const iframe = event.target as HTMLIFrameElement | null
   const win = iframe?.contentWindow
   if (win) {
     try {
@@ -1558,6 +1577,8 @@ function destroyDetailIframe() {
   const iframe = detailIframeRef.value
   if (!iframe)
     return
+  // 先断开组件侧引用，about:blank 的迟到 load 事件不得重新注册观察器。
+  detailIframeRef.value = null
 
   // 通知同域 iframe 内部主动释放观察器/媒体
   try {
@@ -1576,9 +1597,12 @@ function destroyDetailIframe() {
         const media = el as HTMLMediaElement
         try {
           media.pause()
+          media.srcObject = null
           media.removeAttribute('src')
-          while (media.firstChild)
-            media.removeChild(media.firstChild)
+          media.querySelectorAll('source').forEach((source) => {
+            source.removeAttribute('src')
+            source.removeAttribute('srcset')
+          })
           media.load()
         }
         catch {
@@ -1613,17 +1637,15 @@ function destroyDetailIframe() {
   catch {
     // ignore
   }
-
-  detailIframeRef.value = null
 }
 
 function closeMomentDetail() {
   closeDetailImageViewer()
   clearDetailLoadTimer()
-  destroyDetailIframe()
   selectedMoment.value = null
   detailFrameUrl.value = ''
   detailFrameLoaded.value = false
+  destroyDetailIframe()
 }
 
 function collectVideoPublicationTimes(items: DataItem[]) {
@@ -2429,6 +2451,7 @@ function updateGridColumnCount() {
 
 function appendMoments(items: DisplayMoment[]) {
   const wasEmpty = moments.value.length === 0
+  const appended: DisplayMoment[] = []
   if (!momentColumns.value.length)
     momentColumns.value = Array.from({ length: Math.max(1, gridColumnCount.value) }, () => [])
 
@@ -2436,11 +2459,12 @@ function appendMoments(items: DisplayMoment[]) {
   const columnHeights = momentColumns.value.map(column => getColumnStackHeight(column))
 
   items.forEach((item) => {
-    if (existingIds.has(item.id))
+    if (existingIds.has(item.id) || moments.value.length >= MOMENTS_MEMORY_MAX_ITEMS)
       return
 
     const columnIndex = findShortestColumnIndex(momentColumns.value, columnHeights)
     moments.value.push(item)
+    appended.push(item)
     momentColumns.value[columnIndex].push(item)
     columnHeights[columnIndex] += (columnHeights[columnIndex] > 0 ? GRID_GAP : 0) + getCardHeight(item)
     existingIds.add(item.id)
@@ -2450,6 +2474,7 @@ function appendMoments(items: DisplayMoment[]) {
     momentColumns.value = balanceColumnBottoms(momentColumns.value).columns
   updateVirtualColumns()
   scheduleBottomRebalance()
+  return appended
 }
 
 const momentsGridStyle = computed(() => ({
@@ -2777,17 +2802,16 @@ function handleViewportScroll() {
 
 function attachViewportScroll() {
   const viewport = scrollViewportRef.value
-  if (!viewport || scrollListenerAttached)
+  if (!viewport || attachedScrollViewport === viewport)
     return
+  detachViewportScroll()
   viewport.addEventListener('scroll', handleViewportScroll, { passive: true })
-  scrollListenerAttached = true
+  attachedScrollViewport = viewport
 }
 
 function detachViewportScroll() {
-  const viewport = scrollViewportRef.value
-  if (viewport && scrollListenerAttached)
-    viewport.removeEventListener('scroll', handleViewportScroll)
-  scrollListenerAttached = false
+  attachedScrollViewport?.removeEventListener('scroll', handleViewportScroll)
+  attachedScrollViewport = null
 }
 
 function handleCoverLoad(event: Event, momentId: string) {
@@ -2795,7 +2819,6 @@ function handleCoverLoad(event: Event, momentId: string) {
   if (!img.naturalWidth || !img.naturalHeight)
     return
 
-  readyCoverIds.add(momentId)
   const ratio = getSafeImageRatio(img.naturalWidth, img.naturalHeight)
   if (!ratio)
     return
@@ -2812,58 +2835,33 @@ function handleCoverLoad(event: Event, momentId: string) {
   }
 }
 
-async function prepareMomentCovers(items: DisplayMoment[], requestToken: number) {
-  const imageItems = items.filter(item => item.images[0] || item.forward?.images?.[0])
-  await Promise.all(imageItems.map(item => new Promise<void>((resolve) => {
-    const image = new Image()
-    let finished = false
-    let timeout = 0
-    const finish = () => {
-      if (finished)
-        return
-      finished = true
-      clearTimeout(timeout)
-      image.onload = null
-      image.onerror = null
-      resolve()
-    }
-    timeout = window.setTimeout(finish, 5000)
-    image.decoding = 'async'
-    image.onload = async () => {
-      if (requestToken === feedRequestToken && image.naturalWidth && image.naturalHeight) {
-        const ratio = getSafeImageRatio(image.naturalWidth, image.naturalHeight)
-        if (ratio)
-          coverRatios[item.id] = ratio
-      }
-      try {
-        await image.decode()
-      }
-      catch {
-        // 浏览器已完成加载但不支持显式解码时继续
-      }
-      if (requestToken === feedRequestToken)
-        readyCoverIds.add(item.id)
-      finish()
-    }
-    image.onerror = finish
-    const coverUrl = item.images[0] || item.forward?.images?.[0] || ''
-    const isSingleStillImage = (
-      item.images.length === 1
-      && !item.isVideo
-      && !item.isLive
-    ) || (
-      !item.images.length
-      && item.forward?.images?.length === 1
-    )
-    image.src = isSingleStillImage
-      ? getMomentOriginalImageUrl(coverUrl)
-      : getMomentThumbnailUrl(coverUrl)
-  })))
+function releasePreviewVideoElement(video: HTMLVideoElement | null | undefined) {
+  if (!video)
+    return
+  try {
+    video.pause()
+    video.srcObject = null
+    video.removeAttribute('src')
+    video.querySelectorAll('source').forEach((source) => {
+      source.removeAttribute('src')
+      source.removeAttribute('srcset')
+    })
+    video.load()
+  }
+  catch {
+    // 已卸载的媒体元素可能拒绝 load；其引用仍会在下方释放。
+  }
 }
 
 function cleanupLivePreviewPlayer() {
+  previewPlaybackGeneration += 1
   if (liveHlsPlayer) {
-    liveHlsPlayer.destroy()
+    try {
+      liveHlsPlayer.destroy()
+    }
+    catch {
+      // 即使播放器库销毁失败，也必须继续释放媒体元素引用。
+    }
     liveHlsPlayer = null
   }
   if (liveFlvPlayer) {
@@ -2878,18 +2876,28 @@ function cleanupLivePreviewPlayer() {
     }
     liveFlvPlayer = null
   }
+  releasePreviewVideoElement(activePreviewVideo?.element)
+  activePreviewVideo = null
 }
 
-async function setupStreamPreview(url: string, videoEl: HTMLVideoElement) {
+async function setupStreamPreview(url: string, videoEl: HTMLVideoElement, momentId: string) {
   cleanupLivePreviewPlayer()
-  videoEl.removeAttribute('src')
-  videoEl.load()
+  const generation = previewPlaybackGeneration
+  activePreviewVideo = { id: momentId, element: videoEl }
+
+  const isCurrentPreview = () => (
+    generation === previewPlaybackGeneration
+    && activePreviewVideo?.element === videoEl
+    && activePreviewVideo.id === momentId
+    && hoveredMediaId.value === momentId
+    && videoEl.isConnected
+  )
 
   if (url.includes('.flv')) {
     try {
       const flvjsModule = await import('flv.js')
       const flvjs = flvjsModule.default
-      if (!flvjs.isSupported() || hoveredMediaId.value === '')
+      if (!flvjs.isSupported() || !isCurrentPreview())
         return
 
       liveFlvPlayer = flvjs.createPlayer({
@@ -2915,6 +2923,8 @@ async function setupStreamPreview(url: string, videoEl: HTMLVideoElement) {
   if (url.includes('m3u8')) {
     try {
       const Hls = (await import('hls.js')).default
+      if (!isCurrentPreview())
+        return
       if (Hls.isSupported()) {
         liveHlsPlayer = new Hls({
           enableWorker: true,
@@ -2924,7 +2934,8 @@ async function setupStreamPreview(url: string, videoEl: HTMLVideoElement) {
         liveHlsPlayer.loadSource(url)
         liveHlsPlayer.attachMedia(videoEl)
         liveHlsPlayer.on(Hls.Events.MANIFEST_PARSED, () => {
-          void videoEl.play().catch(() => {})
+          if (isCurrentPreview())
+            void videoEl.play().catch(() => {})
         })
         return
       }
@@ -3102,16 +3113,25 @@ function handleOpenLink(payload: { url: string, kind: MomentLinkKind, video?: Di
 }
 
 function bindPreviewVideo(el: Element | null, moment: DisplayMoment) {
-  if (!(el instanceof HTMLVideoElement))
+  if (!(el instanceof HTMLVideoElement)) {
+    if (activePreviewVideo?.id === moment.id)
+      cleanupLivePreviewPlayer()
     return
+  }
   const url = previewUrls[moment.id]
   if (!url || hoveredMediaId.value !== moment.id)
     return
 
-  if (moment.isLive || url.includes('.flv') || url.includes('m3u8'))
-    void setupStreamPreview(url, el)
-  else
+  if (moment.isLive || url.includes('.flv') || url.includes('m3u8')) {
+    void setupStreamPreview(url, el, moment.id)
+  }
+  else {
+    if (activePreviewVideo?.element !== el) {
+      cleanupLivePreviewPlayer()
+    }
+    activePreviewVideo = { id: moment.id, element: el }
     void el.play().catch(() => {})
+  }
 }
 
 function playPreview(event: Event) {
@@ -3272,7 +3292,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     Object.keys(cardHeights).forEach(key => delete cardHeights[key])
     Object.keys(previewUrls).forEach(key => delete previewUrls[key])
     Object.keys(coverRatios).forEach(key => delete coverRatios[key])
-    readyCoverIds.clear()
     readyCardIds.clear()
     enteringCardIds.clear()
     revealedCardIds.clear()
@@ -3621,8 +3640,6 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     }
     filterScanRawCount.value += normalizedItems.length
     filterScanKeptCount.value += items.length
-    // 封面预加载不阻塞首屏：卡片先按估算高度渲染，比例随后续 onload 修正
-    void prepareMomentCovers(items, requestToken)
     if (!reset)
       preservedPaginationScrollTop = scrollViewportRef.value?.scrollTop ?? null
     if (!reset)
@@ -3635,7 +3652,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
     offset.value = nextOffset
     updateBaseline.value = nextUpdateBaseline
-    noMoreContent.value = !hasMore
+    noMoreContent.value = !hasMore || moments.value.length >= MOMENTS_MEMORY_MAX_ITEMS
     pageApplied = true
   }
   finally {

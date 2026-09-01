@@ -39,6 +39,7 @@ import { isBackgroundUnavailableError, onMessage, sendMessage } from '~/utils/me
 export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 已登录但 userInfo 未填充时重查的间隔
 
 const DAY_MILLISECONDS = 24 * 60 * 60 * 1000
+const MAX_TOP_BAR_MOMENTS = 200
 
 function getNextReceiveAt(nextReceiveDays?: number, periodEndUnix?: number): number | null {
   if (Number.isFinite(periodEndUnix) && periodEndUnix! > 0)
@@ -825,6 +826,10 @@ export const useTopBarStore = defineStore('topBar', () => {
     const accountId = userInfo.mid
     if (!isCurrentAccount(accountId) || isLoadingMoments.value || noMoreMomentsContent.value)
       return
+    if (moments.length >= MAX_TOP_BAR_MOMENTS) {
+      noMoreMomentsContent.value = true
+      return
+    }
 
     isLoadingMoments.value = true
     api.moment.getTopBarMoments({
@@ -901,6 +906,8 @@ export const useTopBarStore = defineStore('topBar', () => {
             }
 
             processedItems.forEach((item: any) => {
+              if (moments.length >= MAX_TOP_BAR_MOMENTS)
+                return
               const momentItem = {
                 type: selectedType,
                 itemType: item.type,
@@ -931,6 +938,8 @@ export const useTopBarStore = defineStore('topBar', () => {
                 updateMomentCollaborative(momentItem, entry.item)
               }
             })
+            if (moments.length >= MAX_TOP_BAR_MOMENTS)
+              noMoreMomentsContent.value = true
           }
         }
       })
@@ -1030,6 +1039,10 @@ export const useTopBarStore = defineStore('topBar', () => {
       return
     if (noMoreMomentsContent.value)
       return
+    if (moments.length >= MAX_TOP_BAR_MOMENTS) {
+      noMoreMomentsContent.value = true
+      return
+    }
 
     isLoadingMoments.value = true
     const pageSize = 10
@@ -1050,8 +1063,9 @@ export const useTopBarStore = defineStore('topBar', () => {
           if (list.length === pageSize)
             livePage.value++
 
+          const remaining = Math.max(0, MAX_TOP_BAR_MOMENTS - moments.length)
           moments.push(
-            ...list.map((item: any) => ({
+            ...list.slice(0, remaining).map((item: any) => ({
               type: 'live',
               title: item.title,
               author: item.uname,
@@ -1064,6 +1078,8 @@ export const useTopBarStore = defineStore('topBar', () => {
             }),
             ),
           )
+          if (moments.length >= MAX_TOP_BAR_MOMENTS)
+            noMoreMomentsContent.value = true
         }
       })
       .finally(() => {

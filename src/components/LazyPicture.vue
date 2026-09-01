@@ -172,6 +172,13 @@ const emit = defineEmits<{
 }>()
 
 const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
+const forceReleaseOffscreenImages = inject<Readonly<{ value: boolean }> | undefined>(
+  'BEWLY_FORCE_RELEASE_OFFSCREEN_VIDEO_CARD_IMAGES',
+  undefined,
+)
+const shouldReleaseOffscreen = computed(() => (
+  props.releaseOffscreen || forceReleaseOffscreenImages?.value === true
+))
 const imgRef = ref<HTMLElement>()
 const imageElRef = ref<HTMLImageElement | null>(null)
 // 不再因为“曾经加载过”就立刻挂 src，避免离屏卡片重新吃内存。
@@ -240,7 +247,7 @@ function detachImageElement() {
 }
 
 function releaseImage() {
-  if (!props.releaseOffscreen || props.loading === 'eager')
+  if (!shouldReleaseOffscreen.value || props.loading === 'eager')
     return
 
   detachImageElement()
@@ -256,7 +263,7 @@ function cancelScheduledRelease() {
 
 function scheduleRelease() {
   const element = imgRef.value
-  if (!element || !isVisible.value || !props.releaseOffscreen || props.loading === 'eager')
+  if (!element || !isVisible.value || !shouldReleaseOffscreen.value || props.loading === 'eager')
     return
 
   scheduleImageRelease(element, props.releaseDelay, () => {
@@ -348,7 +355,7 @@ watch(
 )
 
 watch(
-  () => [props.releaseOffscreen, props.retainScreens, props.rootMargin] as const,
+  () => [shouldReleaseOffscreen.value, props.retainScreens, props.rootMargin] as const,
   () => createObserver(),
 )
 </script>
