@@ -1484,7 +1484,7 @@ moments:
   bilibili_user: Bilibili user
   original_author: Original author
   live_post: Live post
-  video_post: Video post
+  video_post: Uploaded a video
   image_post: Image post
   text_post: Text post
   original_post: Original post
@@ -1505,7 +1505,7 @@ moments:
   followers: Followers
   posts: Posts
   publish: Publish post
-  live_now: Live now
+  live_now: Live
   group_label: Post groups
   all_posts: All posts
   wanted_only: Wanted uploaders only
@@ -1543,7 +1543,7 @@ moments:
   fit_window: Fit to window
   rotate_clockwise: Rotate clockwise
 moment_card:
-  video_post: Video post
+  video_post: Uploaded a video
   cancel_reservation: Cancel reservation
   reserve: Reserve
   open_space: Open {name}'s profile
@@ -1551,8 +1551,6 @@ moment_card:
   charging_exclusive: Charging exclusive
   added_watch_later: Added to Watch later
   add_watch_later: Add to Watch later
-  added: Added
-  watch_later: Watch later
   live_post: Live post
   open_original_video: 'Open original video: {title}'
   author_images: '{name} post images'

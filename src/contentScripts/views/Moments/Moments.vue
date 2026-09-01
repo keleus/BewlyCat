@@ -31,6 +31,7 @@ import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes
 import type { DataItem, MomentResult } from '~/models/moment/moment'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
+import { numFormatter } from '~/utils/dataFormatter'
 import { getCSRF } from '~/utils/main'
 import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -207,8 +208,10 @@ let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
 let detailFocusRetryTimer: ReturnType<typeof setTimeout> | null = null
 const layoutRef = ref<HTMLElement | null>(null)
 const gridRef = ref<HTMLElement | null>(null)
-/** 按当前实际列数限制单张动态卡片的最大宽度。 */
-const GRID_GAP = 16
+/** 与 .moments-grid__column 的 gap 及 CSS 变量联动，虚拟滚动测量按此计算。 */
+const GRID_GAP = 20
+/** 与 .moments-layout 的 column-gap(--bew-space-6) 一致。 */
+const LAYOUT_GAP = 24
 const CARD_MAX_WIDTH_BY_COLUMNS = {
   1: 720,
   2: 610,
@@ -689,14 +692,22 @@ function getMomentContent(item: any) {
 
   // 图文/纯文字（itemOpusStyle）正文：major.opus.summary.text
   // 旧结构可能在 module_dynamic.desc.text；视频/专栏等再回落到各自 desc
-  let text = pickText(
+  // 视频动态的 module_dynamic.desc 是简介副本，归入继承来源，避免被当成本人正文
+  const isVideoMajor = Boolean(major.archive || major.ugc_season || major.pgc)
+  const selfText = pickText(
     opus.summary?.text,
     typeof opus.summary === 'string' ? opus.summary : '',
-    normalizeDescText(dynamic.desc),
-    archive.desc,
-    article.desc,
+    isVideoMajor ? '' : normalizeDescText(dynamic.desc),
     common.desc,
   )
+  const inheritedText = pickText(
+    isVideoMajor ? normalizeDescText(dynamic.desc) : '',
+    archive.desc,
+    article.desc,
+  )
+  let text = pickText(selfText, inheritedText)
+  /** 简介继承自视频/专栏元数据时标记，卡片内做弱化展示 */
+  const descInherited = !selfText && Boolean(inheritedText)
   const richText = extractRichTextSegments(
     opus.summary?.rich_text_nodes,
     dynamic.desc?.rich_text_nodes,
@@ -804,6 +815,7 @@ function getMomentContent(item: any) {
   return {
     title: pickText(live?.title, opus.title, archive.title, article.title, common.title),
     text,
+    descInherited,
     richText,
     images,
     imageRatios,
@@ -1718,6 +1730,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     publishedAt: Number(author.pub_ts || 0),
     title: content.title,
     text,
+    descInherited: !isForward && Boolean(content.descInherited),
     richText,
     // 转发卡片只展示原动态摘要，不能把原动态图片提升为外层卡片媒体。
     images: isForward || (isChargeExclusive && !content.isVideo) ? [] : content.images,
@@ -1760,7 +1773,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     chargeBadge: content.chargeBadge || selfContent.chargeBadge,
     chargeHint: content.chargeHint || selfContent.chargeHint,
     chargeCover: content.chargeCover || selfContent.chargeCover,
-    mediaMeta: content.mediaMeta,
+    mediaMeta: isForward ? '' : content.mediaMeta,
     liveArea: content.liveArea,
     livePopularity: content.livePopularity,
     roomId: content.roomId,
@@ -1825,6 +1838,14 @@ function mapMoment(item: DataItem): DisplayMoment {
   }
 }
 
+/** 横条视频卡高度：封面 44% 宽 16:9，与信息区（标题两行 + 简介两行 + 作者一行）取较大者。 */
+function estimateVideoCardStripHeight(contentWidth: number) {
+  const coverWidth = Math.max(150, contentWidth * 0.44)
+  const coverHeight = Math.round(coverWidth * 9 / 16)
+  const infoHeight = 136
+  return Math.max(coverHeight, infoHeight) + 2 /* 描边 */
+}
+
 function estimateCardHeight(moment: DisplayMoment) {
   const columnWidth = Math.max(
     CARD_COMPACT_MIN_WIDTH,
@@ -1868,48 +1889,27 @@ function estimateCardHeight(moment: DisplayMoment) {
   }
   if (moment.forward?.video) {
     const introLines = Math.min(7, Math.max(1, Math.ceil((moment.text || '').length / 28)))
-    const forwardMediaWidth = Math.max(150, contentWidth * 0.44)
-    return 117 + Math.round(forwardMediaWidth * 9 / 16) + introLines * 21 + interactionHeight
+    return 126 + 12 + estimateVideoCardStripHeight(contentWidth) + introLines * 24 + (moment.additional ? 68 : 0) + interactionHeight
   }
   if (moment.isChargeExclusive && !moment.isVideo)
     return 230 + scaledTextBodyExtra + interactionHeight
   if (columnWidth < CARD_MIN_WIDTH) {
     if (moment.isLive)
       return Math.round(columnWidth * 9 / 16) + 210 + interactionHeight
-    if (moment.isVideo) {
-      const mediaWidth = Math.max(1, contentWidth)
-      const charsPerLine = Math.max(12, Math.floor(mediaWidth / 14))
-      const titleLines = moment.title
-        ? Math.min(2, Math.max(1, Math.ceil(Array.from(moment.title).length / charsPerLine)))
-        : 0
-      const previewText = getCardPreviewText(moment)
-      const descLines = previewText
-        ? Math.min(8, Math.max(1, Math.ceil(Array.from(previewText).length / charsPerLine)))
-        : 0
-      const bodyHeight = titleLines * 22
-        + (titleLines && descLines ? 8 : 0)
-        + descLines * 24
-      return Math.round(mediaWidth * 9 / 16)
-        + 126
-        + bodyHeight
-        + (moment.additional ? 68 : 0)
-        + interactionHeight
-    }
   }
   if (moment.isLive)
     return Math.round(contentWidth * 9 / 16) + 190 + interactionHeight
   if (moment.isVideo) {
-    // 左封面右简介：高度由半宽 16:9 封面决定，标题单独落在底部。
-    const innerWidth = contentWidth
-    const coverWidth = Math.max(1, Math.floor((innerWidth - 12) / 2))
-    const titleCharsPerLine = Math.max(12, Math.floor(innerWidth / 14))
-    const titleLines = moment.title
-      ? Math.min(2, Math.max(1, Math.ceil(Array.from(moment.title).length / titleCharsPerLine)))
+    // 官方式横条视频卡：左封面右信息，附言在条上方，继承简介固定两行
+    const noteText = moment.descInherited ? '' : getCardPreviewText(moment)
+    const noteCharsPerLine = Math.max(12, Math.floor(contentWidth / 15))
+    const noteLines = noteText
+      ? Math.min(7, Math.max(1, Math.ceil(Array.from(noteText).length / noteCharsPerLine)))
       : 0
-    const titleHeight = titleLines ? 12 + titleLines * 22 : 0
-    return Math.round(coverWidth * 9 / 16)
-      + titleHeight
-      + 126
+    return 126
+      + 12 /* 条与上方内容的间距 */
+      + estimateVideoCardStripHeight(contentWidth)
+      + noteLines * 24
       + (moment.additional ? 68 : 0)
       + interactionHeight
   }
@@ -2397,7 +2397,7 @@ function updateGridColumnCount() {
   const wantRight = settings.value.momentsSidebarShowHotSearch
 
   function tryLayout(cols: number, left: boolean, right: boolean) {
-    const reserve = (left ? SIDEBAR_WIDTH + GRID_GAP : 0) + (right ? SIDEBAR_WIDTH + GRID_GAP : 0)
+    const reserve = (left ? SIDEBAR_WIDTH + LAYOUT_GAP : 0) + (right ? SIDEBAR_WIDTH + LAYOUT_GAP : 0)
     const budget = layoutWidth - reserve
     if (budget < CARD_COMPACT_MIN_WIDTH)
       return null
@@ -4031,9 +4031,36 @@ watch(
               </span>
             </a>
             <div v-if="portalUser" class="moments-user-card__stats">
-              <span><strong>{{ portalUser.following }}</strong><small>{{ t('moments.following') }}</small></span>
-              <span><strong>{{ portalUser.follower }}</strong><small>{{ t('moments.followers') }}</small></span>
-              <span><strong>{{ portalUser.dyns }}</strong><small>{{ t('moments.posts') }}</small></span>
+              <a
+                class="moments-user-card__stat"
+                :href="`https://space.bilibili.com/${portalUser.mid}/fans/follow`"
+                :title="`${portalUser.following}`"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <strong>{{ numFormatter(portalUser.following) }}</strong>
+                <small>{{ t('moments.following') }}</small>
+              </a>
+              <a
+                class="moments-user-card__stat"
+                :href="`https://space.bilibili.com/${portalUser.mid}/fans/fans`"
+                :title="`${portalUser.follower}`"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <strong>{{ numFormatter(portalUser.follower) }}</strong>
+                <small>{{ t('moments.followers') }}</small>
+              </a>
+              <a
+                class="moments-user-card__stat"
+                :href="`https://space.bilibili.com/${portalUser.mid}/dynamic`"
+                :title="`${portalUser.dyns}`"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <strong>{{ numFormatter(portalUser.dyns) }}</strong>
+                <small>{{ t('moments.posts') }}</small>
+              </a>
             </div>
             <div v-else class="moments-sidebar-editor-placeholder">
               {{ $t('settings.moments_show_user_card') }}
@@ -4077,7 +4104,7 @@ watch(
               >
                 <span class="moments-live-card__avatar">
                   <img :src="getSidebarAvatarUrl(liveUser.face, 64)" :alt="liveUser.uname" loading="lazy" decoding="async">
-                  <em><span i-tabler-chart-bar />{{ t('moments.live_now') }}</em>
+                  <em>{{ t('moments.live_now') }}</em>
                 </span>
                 <span class="moments-live-card__info">
                   <strong>{{ liveUser.uname }}</strong>
@@ -4604,14 +4631,14 @@ watch(
 
 <style scoped lang="scss">
 .moments-page {
-  padding: var(--bew-space-2) var(--bew-space-3) var(--bew-space-12);
+  padding: var(--bew-space-2) var(--bew-space-5) var(--bew-space-12);
 }
 .moments-layout {
   display: grid;
   justify-content: center;
   align-items: start;
-  column-gap: var(--bew-space-4);
-  row-gap: var(--bew-space-4);
+  column-gap: var(--bew-space-6);
+  row-gap: var(--bew-space-6);
   width: 100%;
   grid-template-columns: auto;
   grid-template-areas:
@@ -4648,7 +4675,7 @@ watch(
   align-items: stretch;
   gap: 0;
   margin-bottom: var(--bew-space-4);
-  padding: var(--bew-space-3) var(--bew-space-2) var(--bew-space-2);
+  padding: var(--bew-space-4);
   border-radius: var(--bew-card-radius);
   background: var(--bew-elevated);
   box-shadow: none;
@@ -4770,8 +4797,9 @@ watch(
   flex-direction: column;
   align-items: center;
   gap: var(--bew-space-1);
-  width: 64px;
-  min-width: 64px;
+  // 72px：48px 头像 + 上下留白后内容区 64px
+  width: 72px;
+  min-width: 72px;
   padding: var(--bew-space-1);
   border: 0;
   border-radius: var(--bew-interactive-radius);
@@ -4788,15 +4816,31 @@ watch(
   outline: 2px solid var(--bew-theme-color);
   outline-offset: 2px;
 }
-.moments-up-list__item--active .moments-up-list__name {
-  color: var(--bew-theme-color);
+// hover 即选中态：光环与名称变色复用 active 样式，移开时平滑过渡
+@mixin up-item-selected {
+  .moments-up-list__name {
+    color: var(--bew-theme-color);
+  }
+
+  .moments-up-list__avatar > img,
+  .moments-up-list__avatar--all,
+  .moments-up-list__avatar--wanted {
+    box-shadow:
+      0 0 0 2px var(--bew-elevated),
+      0 0 0 4px var(--bew-theme-color);
+  }
+
+  .moments-up-list__avatar--all,
+  .moments-up-list__avatar--wanted {
+    border-color: var(--bew-theme-color);
+    color: #fff;
+    background: var(--bew-theme-color);
+  }
 }
-.moments-up-list__item--active .moments-up-list__avatar > img,
-.moments-up-list__item--active .moments-up-list__avatar--all,
-.moments-up-list__item--active .moments-up-list__avatar--wanted {
-  box-shadow:
-    0 0 0 2px var(--bew-elevated),
-    0 0 0 4px var(--bew-theme-color);
+
+.moments-up-list__item--active,
+.moments-up-list__item:hover:not(:disabled) {
+  @include up-item-selected;
 }
 .moments-up-list__item--skeleton {
   pointer-events: none;
@@ -4815,6 +4859,7 @@ watch(
   border-radius: 50%;
   object-fit: cover;
   background: var(--bew-fill-1);
+  transition: box-shadow var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moments-up-list__avatar--all,
 .moments-up-list__avatar--wanted {
@@ -4823,16 +4868,15 @@ watch(
   width: 48px;
   height: 48px;
   box-sizing: border-box;
-  border: 0;
+  border: 2px solid transparent;
   border-radius: 50%;
   color: var(--bew-theme-color);
   background: var(--bew-theme-color-20);
-}
-.moments-up-list__item--active .moments-up-list__avatar--all,
-.moments-up-list__item--active .moments-up-list__avatar--wanted {
-  border: 2px solid var(--bew-theme-color);
-  color: #fff;
-  background: var(--bew-theme-color);
+  transition:
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard),
+    border-color var(--bew-duration-fast) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moments-up-list__item:disabled {
   opacity: 0.45;
@@ -4867,6 +4911,7 @@ watch(
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moments-up-list__item--skeleton .moments-up-list__name {
   width: 40px;
@@ -4883,7 +4928,7 @@ watch(
   max-width: 100%;
   max-height: calc(100dvh - var(--bew-top-bar-height, 64px) - var(--bew-space-6));
   flex-direction: column;
-  gap: var(--bew-space-3);
+  gap: var(--bew-space-5);
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -4948,7 +4993,7 @@ watch(
   overflow: hidden;
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-heading);
-  font-weight: var(--bew-font-weight-semibold);
+  font-weight: var(--bew-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -4977,30 +5022,41 @@ watch(
   color: #fb7299;
   border: 1px solid currentcolor;
 }
+// 统计区对齐 UserPanelPop 的 channel-info-item：竖线分隔、hover 变主题色、可跳转
 .moments-user-card__stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  margin-top: var(--bew-space-5);
+  gap: var(--bew-space-2);
+  margin-top: var(--bew-space-4);
 }
-.moments-user-card__stats > span {
+.moments-user-card__stat {
   display: flex;
   min-width: 0;
   flex-direction: column;
   align-items: center;
   gap: var(--bew-space-1);
+  color: inherit;
+  text-decoration: none;
 }
-.moments-user-card__stats strong {
+.moments-user-card__stat:hover strong,
+.moments-user-card__stat:hover small {
+  color: var(--bew-theme-color);
+}
+.moments-user-card__stat strong {
   overflow: hidden;
   max-width: 100%;
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-heading);
   font-weight: var(--bew-font-weight-semibold);
   text-overflow: ellipsis;
+  transition: color var(--bew-duration-normal) var(--bew-ease-standard);
 }
-.moments-user-card__stats small {
-  color: var(--bew-text-3);
-  font-size: var(--bew-font-size-control);
-  line-height: var(--bew-line-height-control);
+.moments-user-card__stat small {
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-caption);
+  transition: color var(--bew-duration-normal) var(--bew-ease-standard);
 }
 .moments-publish-link {
   display: flex;
@@ -5009,7 +5065,7 @@ watch(
   min-height: 44px;
   padding: 0 var(--bew-space-4);
   border: 0;
-  border-radius: var(--bew-interactive-radius);
+  border-radius: var(--bew-panel-radius);
   color: var(--bew-text-1);
   background: var(--bew-elevated);
   box-shadow: none;
@@ -5043,6 +5099,7 @@ watch(
 .moments-live-card > header strong {
   color: var(--bew-text-1);
   font-size: var(--bew-font-size-title);
+  font-weight: var(--bew-font-weight-semibold);
   line-height: var(--bew-line-height-title);
 }
 .moments-live-card > header span {
@@ -5068,7 +5125,7 @@ watch(
   height: 72px;
   min-width: 0;
   flex: 0 0 72px;
-  padding: var(--bew-space-2) var(--bew-space-1);
+  padding: var(--bew-space-2);
   border-radius: var(--bew-interactive-radius);
   color: inherit;
   text-decoration: none;
@@ -5097,12 +5154,11 @@ watch(
   bottom: 0;
   display: inline-flex;
   align-items: center;
-  gap: var(--bew-space-0-5);
-  height: 17px;
-  padding: 0 var(--bew-space-1);
+  height: 16px;
+  padding: 0 var(--bew-space-2);
   border-radius: var(--bew-radius-full);
   color: #fff;
-  background: #fb7299;
+  background: var(--bew-theme-color);
   font-size: var(--bew-font-size-caption);
   font-style: normal;
   line-height: var(--bew-line-height-caption);
@@ -5112,7 +5168,7 @@ watch(
 .moments-live-card__avatar em::after {
   position: absolute;
   inset: -3px;
-  border: 1px solid #fb7299;
+  border: 1px solid var(--bew-theme-color);
   border-radius: inherit;
   content: "";
   pointer-events: none;
@@ -5204,13 +5260,12 @@ watch(
   display: grid;
   align-items: start;
   justify-content: center;
-  gap: var(--bew-space-4);
   width: 100%;
 }
 .moments-skeleton-column {
   display: flex;
   flex-direction: column;
-  gap: var(--bew-space-4);
+  gap: var(--bew-space-5);
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -5383,7 +5438,6 @@ watch(
 }
 .moments-grid {
   display: grid;
-  gap: var(--bew-space-4);
   width: 100%;
   justify-content: center;
   justify-items: stretch;
@@ -5396,7 +5450,8 @@ watch(
   max-width: 100%;
   min-width: 0;
   flex-direction: column;
-  gap: var(--bew-space-4);
+  /* 与 JS 的 GRID_GAP 一致 */
+  gap: var(--bew-space-5);
 }
 .moments-grid :deep(.moment-card) {
   width: 100%;

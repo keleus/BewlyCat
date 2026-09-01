@@ -1395,7 +1395,7 @@ moments:
   bilibili_user: B站用戶
   original_author: 原作者
   live_post: 直播動態
-  video_post: 影片動態
+  video_post: 投稿咗影片
   image_post: 圖文動態
   text_post: 純文字動態
   original_post: 原動態
@@ -1454,7 +1454,7 @@ moments:
   fit_window: 適應視窗
   rotate_clockwise: 順時針旋轉
 moment_card:
-  video_post: 影片動態
+  video_post: 投稿咗影片
   cancel_reservation: 取消預約
   reserve: 預約
   open_space: 打開 {name} 嘅空間
@@ -1462,8 +1462,6 @@ moment_card:
   charging_exclusive: 充電專屬
   added_watch_later: 已加到稍後再睇
   add_watch_later: 加到稍後再睇
-  added: 已加
-  watch_later: 稍後再睇
   live_post: 直播動態
   open_original_video: '打開原影片：{title}'
   author_images: '{name} 嘅動態圖片'

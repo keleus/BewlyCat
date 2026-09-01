@@ -1380,7 +1380,7 @@ moments:
   bilibili_user: B站用户
   original_author: 原作者
   live_post: 直播动态
-  video_post: 视频动态
+  video_post: 投稿了视频
   image_post: 图文动态
   text_post: 纯文字动态
   original_post: 原动态
@@ -1401,7 +1401,7 @@ moments:
   followers: 粉丝
   posts: 动态
   publish: 发布动态
-  live_now: 正在直播
+  live_now: 直播中
   group_label: 动态分组
   all_posts: 全部动态
   wanted_only: 只看想看的 UP 主
@@ -1439,7 +1439,7 @@ moments:
   fit_window: 适应窗口
   rotate_clockwise: 顺时针旋转
 moment_card:
-  video_post: 视频动态
+  video_post: 投稿了视频
   cancel_reservation: 取消预约
   reserve: 预约
   open_space: 打开 {name} 的空间
@@ -1447,8 +1447,6 @@ moment_card:
   charging_exclusive: 充电专属
   added_watch_later: 已添加稍后再看
   add_watch_later: 添加至稍后再看
-  added: 已添加
-  watch_later: 稍后再看
   live_post: 直播动态
   open_original_video: '打开原视频：{title}'
   author_images: '{name} 的动态图片'

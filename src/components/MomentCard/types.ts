@@ -50,6 +50,8 @@ export interface DisplayMoment {
   publishedAt: number
   title: string
   text: string
+  /** desc 继承自视频/专栏元数据（简介）而非发布者本人文字，卡片内做弱化展示 */
+  descInherited?: boolean
   richText: DisplayRichTextSegment[]
   images: string[]
   /** 与 images 对齐的宽高比（宽/高），用于多图横向画廊计算共用高度 */
