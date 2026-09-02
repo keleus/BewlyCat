@@ -1567,6 +1567,8 @@ moment_card:
   live_popularity: 'Live popularity: {value}'
   no_data: No data
   live_now: Live now
+  expand_text: Show full text
+  collapse_text: Collapse text
   like_unsupported: Likes are unavailable for this post
   unlike: Unlike
   like: Like

@@ -1478,6 +1478,8 @@ moment_card:
   live_popularity: '直播人氣 {value}'
   no_data: 暫時冇資料
   live_now: 直播緊
+  expand_text: 展開正文
+  collapse_text: 收起正文
   like_unsupported: 呢條動態暫時唔支援讚好
   unlike: 取消讚好
   like: 讚好

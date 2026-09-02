@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { useResizeObserver } from '@vueuse/core'
 import type { ComponentPublicInstance, CSSProperties } from 'vue'
-import { computed, provide, ref } from 'vue'
+import { computed, nextTick, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
@@ -87,6 +88,36 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
 
 const authorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.author.mid))
 const forwardAuthorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.forward?.authorMid))
+const descriptionRef = ref<HTMLElement | null>(null)
+const descriptionExpanded = ref(false)
+const descriptionCanToggle = ref(false)
+const descriptionId = computed(() => `moment-card-desc-${moment.id.replace(/[^\w-]/g, '-')}`)
+
+function updateDescriptionOverflow() {
+  const description = descriptionRef.value
+  if (!description) {
+    descriptionCanToggle.value = false
+    return
+  }
+
+  // 展开后 clientHeight 等于完整高度，保留既有可收起状态；折叠时再按
+  // 实际滚动高度判断，避免短正文也出现展开按钮。
+  descriptionCanToggle.value = descriptionExpanded.value
+    || description.scrollHeight > description.clientHeight + 1
+}
+
+function toggleDescription() {
+  descriptionExpanded.value = !descriptionExpanded.value
+  void nextTick(updateDescriptionOverflow)
+}
+
+useResizeObserver(descriptionRef, updateDescriptionOverflow)
+onMounted(() => void nextTick(updateDescriptionOverflow))
+watch(() => moment.id, () => {
+  descriptionExpanded.value = false
+  void nextTick(updateDescriptionOverflow)
+})
+
 function getLandscapeSingleImageStyle(ratio?: number): CSSProperties | undefined {
   if (
     ratio === undefined
@@ -547,7 +578,12 @@ function handleAdditionalClick(event: MouseEvent) {
             v-if="!moment.descInherited && (moment.richText.length || getCardPreviewText(moment))"
             class="moment-card__body"
           >
-            <p class="moment-card__desc">
+            <p
+              :id="descriptionId"
+              ref="descriptionRef"
+              class="moment-card__desc"
+              :class="{ 'moment-card__desc--expanded': descriptionExpanded }"
+            >
               <template v-if="moment.richText.length">
                 <template v-for="(segment, segmentIndex) in moment.richText" :key="`${moment.id}-${segmentIndex}`">
                   <img
@@ -579,10 +615,24 @@ function handleAdditionalClick(event: MouseEvent) {
                 {{ getCardPreviewText(moment) }}
               </template>
             </p>
+            <button
+              v-if="descriptionCanToggle"
+              type="button"
+              class="moment-card__desc-toggle"
+              :aria-controls="descriptionId"
+              :aria-expanded="descriptionExpanded"
+              @click.stop="toggleDescription"
+            >
+              {{ t(descriptionExpanded ? 'moment_card.collapse_text' : 'moment_card.expand_text') }}
+              <span
+                :class="descriptionExpanded ? 'i-mingcute:up-line' : 'i-mingcute:down-line'"
+                aria-hidden="true"
+              />
+            </button>
           </div>
           <a
             :href="cardHref || undefined"
-            class="moment-card__video-card"
+            class="moment-card__video-card moment-card__video-card--original"
             :aria-label="t('moment_card.open_original_video', { title: moment.title })"
             @click.capture="handlePermalinkClick"
           >
@@ -701,7 +751,13 @@ function handleAdditionalClick(event: MouseEvent) {
             >
               {{ moment.mediaMeta }}
             </p>
-            <p v-if="!moment.isLive && (moment.richText.length || getCardPreviewText(moment))" class="moment-card__desc">
+            <p
+              v-if="!moment.isLive && (moment.richText.length || getCardPreviewText(moment))"
+              :id="descriptionId"
+              ref="descriptionRef"
+              class="moment-card__desc"
+              :class="{ 'moment-card__desc--expanded': descriptionExpanded }"
+            >
               <template v-if="moment.richText.length">
                 <template v-for="(segment, segmentIndex) in moment.richText" :key="`${moment.id}-${segmentIndex}`">
                   <img
@@ -733,6 +789,20 @@ function handleAdditionalClick(event: MouseEvent) {
                 {{ getCardPreviewText(moment) }}
               </template>
             </p>
+            <button
+              v-if="descriptionCanToggle"
+              type="button"
+              class="moment-card__desc-toggle"
+              :aria-controls="descriptionId"
+              :aria-expanded="descriptionExpanded"
+              @click.stop="toggleDescription"
+            >
+              {{ t(descriptionExpanded ? 'moment_card.collapse_text' : 'moment_card.expand_text') }}
+              <span
+                :class="descriptionExpanded ? 'i-mingcute:up-line' : 'i-mingcute:down-line'"
+                aria-hidden="true"
+              />
+            </button>
             <a
               v-if="moment.forward?.video"
               :href="moment.forward.video.url || undefined"
@@ -1519,6 +1589,13 @@ function handleAdditionalClick(event: MouseEvent) {
   background: var(--bew-fill-2);
 }
 
+/* 投稿视频属于当前动态正文，保持与卡片同底；灰底只用于转发引用层级。 */
+.moment-card__video-card--original,
+.moment-card__video-card--original:hover,
+.moment-card__video-card--original:focus-visible {
+  background: transparent;
+}
+
 /* ---- 横条视频卡内容：DOM 在 MomentVideoStrip 子组件内，经 :deep 穿透 ---- */
 .moment-card__video-card :deep(.moment-card__video-card-cover) {
   position: relative;
@@ -1903,6 +1980,40 @@ function handleAdditionalClick(event: MouseEvent) {
   font-weight: var(--bew-font-weight-regular);
   line-height: var(--bew-line-height-body);
   -webkit-line-clamp: 7;
+}
+
+.moment-card__desc.moment-card__desc--expanded {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+
+.moment-card__desc-toggle {
+  display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bew-space-1);
+  margin-top: var(--bew-space-1);
+  padding: 0 var(--bew-space-1);
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  color: var(--bew-theme-color);
+  background: transparent;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-control);
+  cursor: pointer;
+}
+
+.moment-card__desc-toggle:hover {
+  background: var(--bew-theme-color-10);
+}
+
+.moment-card__desc-toggle:focus-visible {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: 2px;
 }
 
 /* 继承自视频/专栏元数据的简介：弱化层级，与发布者本人文字区分 */

@@ -1463,6 +1463,8 @@ moment_card:
   live_popularity: '直播人气 {value}'
   no_data: 暂无数据
   live_now: 直播中
+  expand_text: 展开正文
+  collapse_text: 收起正文
   like_unsupported: 该动态暂不支持点赞
   unlike: 取消点赞
   like: 点赞
