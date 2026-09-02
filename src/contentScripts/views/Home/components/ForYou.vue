@@ -361,7 +361,7 @@ function isDocumentVisible(): boolean {
 }
 
 const initTimers = new Set<number>()
-let initialDataStarted = false
+let initialDataPromise: Promise<void> | undefined
 
 function scheduleInitTask(task: () => void, delay: number) {
   const timer = window.setTimeout(() => {
@@ -374,6 +374,17 @@ function scheduleInitTask(task: () => void, delay: number) {
 function clearInitTimers() {
   initTimers.forEach(timer => window.clearTimeout(timer))
   initTimers.clear()
+}
+
+function ensureInitialData() {
+  if (hasInitializedData.value || initialDataPromise)
+    return
+
+  // 首次请求不能依赖可被 KeepAlive 失活清理的延迟定时器，否则快速的
+  // 页面切换可能留下永久骨架屏，且不会真正发起推荐接口请求。
+  initialDataPromise = initData().finally(() => {
+    initialDataPromise = undefined
+  })
 }
 
 onMounted(() => {
@@ -456,22 +467,14 @@ onMounted(() => {
   }
   else {
     // 首次加载或未启用状态保留时，初始化数据
-    scheduleInitTask(() => {
-      initialDataStarted = true
-      initData()
-    }, 200)
     initPageAction()
+    ensureInitialData()
   }
 })
 
 onActivated(() => {
   initPageAction()
-  if (!hasInitializedData.value && !initialDataStarted && initTimers.size === 0) {
-    scheduleInitTask(() => {
-      initialDataStarted = true
-      initData()
-    }, 200)
-  }
+  ensureInitialData()
 })
 
 onDeactivated(clearInitTimers)
