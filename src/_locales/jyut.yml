@@ -1525,3 +1525,42 @@ inject:
   loading: 載入緊…
   load_more: 載入更多
   expand_all_replies: 展開全部回覆
+bilibili_share:
+  title: 分享影片
+  description: 複製連結、文案，或者整張可以保存嘅分享海報。
+  close: 關閉分享對話框
+  dialog_label: Bilibili 影片分享
+  owner: UP 主
+  owner_missing: 未知 UP 主
+  current_time: 而家時間
+  include_timestamp: 分享而家播放時間
+  qr_label: 分享 QR Code
+  qr_hint: 掃描 QR Code 打開條片
+  view_modes: 分享方式
+  quick_tab: 快速分享
+  poster_tab: 分享海報
+  final_link: 分享連結
+  copy_text: 複製文案
+  copy_link: 複製連結
+  web_share: 系統分享
+  web_share_unavailable: 你而家用嘅瀏覽器唔支援系統分享
+  native_share: 用 B 站原生分享
+  native_unavailable: 原生分享入口用唔到
+  text_copied: 分享文案已複製
+  link_copied: 分享連結已複製
+  web_share_success: 已經打開系統分享
+  web_share_cancelled: 已取消系統分享
+  operation_failed: 操作失敗，請遲啲再試
+  poster_label: Bilibili 影片分享海報
+  poster_loading: 產生緊海報…
+  poster_error: 產生海報失敗
+  poster_copied: 海報已複製
+  copy_poster: 複製海報
+  download_poster: 下載海報
+  poster_download_started: 海報下載已開始
+  poster_brand: 嗶哩嗶哩
+  poster_info_title: 掃描睇片
+  poster_scan_hint: 掃描 QR Code 打開條片
+  poster_tag_fallback: 影片分享
+  poster_fallback_cover: 封面用唔到
+  poster_from_time: 由 {time} 開始播放
