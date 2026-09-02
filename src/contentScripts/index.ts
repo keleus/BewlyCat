@@ -35,6 +35,7 @@ import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
 import { version } from '../../package.json'
 import { initBewlyWidescreenControl } from './bewlyWidescreenControl'
+import { initBilibiliShareControl } from './bilibiliShareControl'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
@@ -242,6 +243,7 @@ else if (shouldInitializeContentScript) {
   let urlChangeCheckQueued = false
   let playerModeResumeQueued = false
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
+  let stopBilibiliShareControl: (() => void) | undefined
 
   // 设置水合后立即同步 i18n 语言。宽屏遮罩等轻 DOM 元素在 App 挂载前就会
   // 用 t() 渲染一次性文案，若等到 App.vue 里的语言 watcher 才切换 locale，
@@ -1253,6 +1255,12 @@ else if (shouldInitializeContentScript) {
       }
     }
 
+    // 分享控制器需要在 Shadow DOM 应用挂载后启动，确保打开事件有接收方。
+    if (!isInIframe()) {
+      stopBilibiliShareControl?.()
+      stopBilibiliShareControl = initBilibiliShareControl()
+    }
+
     // Reset the original Bilibili top bar display style
     if (removeOriginalTopBar)
       document.documentElement.removeChild(removeOriginalTopBar)
@@ -1379,6 +1387,8 @@ else if (shouldInitializeContentScript) {
       if (appDisposed)
         return
       appDisposed = true
+      stopBilibiliShareControl?.()
+      stopBilibiliShareControl = undefined
       app.unmount()
       delete container.__bewlyCatDisposeApp__
     }

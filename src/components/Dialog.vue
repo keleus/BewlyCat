@@ -23,6 +23,8 @@ const props = withDefaults(defineProps<{
   contentFlush?: boolean
   /** 是否显示对话框顶栏 */
   showHeader?: boolean
+  /** 关闭按钮的无障碍名称 */
+  closeLabel?: string
   /** Vue Transition 名称；可为需要避免缩放的详情弹窗指定独立过渡 */
   transitionName?: string
   /** 是否显示边框和边缘光 */
@@ -35,17 +37,19 @@ const props = withDefaults(defineProps<{
   preventCloseWhenLoading: true,
   frostedGlass: true,
   showHeader: true,
+  closeLabel: 'Close',
   showBorder: true,
   showFooter: true,
   contentFlush: false,
   transitionName: 'modal',
 })
 
-const emit = defineEmits(['close', 'confirm'])
+const emit = defineEmits(['close', 'confirm', 'closeRequest'])
 
 const showShortcut = ref<boolean>(false)
 const { mainAppRef } = useBewlyApp()
 const showDialog = ref<boolean>(false)
+const dialogPanelRef = ref<HTMLElement | null>(null)
 /**
  * Closing protocol:
  * 1) handleClose only sets showDialog=false (starts leave transition)
@@ -55,8 +59,18 @@ const showDialog = ref<boolean>(false)
  */
 let isClosing = false
 let closeEmitted = false
+let closeRequested = false
+
+function emitCloseRequestOnce() {
+  if (closeRequested)
+    return
+  closeRequested = true
+  emit('closeRequest')
+}
 
 onKeyStroke('Enter', (e: KeyboardEvent) => {
+  if (!props.showFooter)
+    return
   e.preventDefault()
   if (!props.loading && showDialog.value && !isClosing)
     handleConfirm()
@@ -128,12 +142,14 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   // Parent forced unmount (e.g. v-if=false while still open) — ensure close is observed once.
+  emitCloseRequestOnce()
   emitCloseOnce()
 })
 
 function emitCloseOnce() {
   if (closeEmitted)
     return
+  emitCloseRequestOnce()
   closeEmitted = true
   isClosing = true
   emit('close')
@@ -151,6 +167,7 @@ function handleClose() {
     return
 
   isClosing = true
+  emitCloseRequestOnce()
   // Already hidden (e.g. closed before enter finished) — no leave hook will run.
   if (!showDialog.value) {
     emitCloseOnce()
@@ -168,6 +185,12 @@ function handleConfirm() {
   if (!props.loading)
     handleClose()
 }
+
+function getDialogPanel(): HTMLElement | null {
+  return dialogPanelRef.value
+}
+
+defineExpose({ close: handleClose, getDialogPanel })
 </script>
 
 <template>
@@ -187,6 +210,7 @@ function handleConfirm() {
         />
         <slot name="floating-actions" />
         <div
+          ref="dialogPanelRef"
           :style="dialogPanelStyle"
           pos="absolute" rounded="$bew-modal-radius" border="1 $bew-border-color"
           z-2
@@ -242,7 +266,7 @@ function handleConfirm() {
 
             <button
               type="button"
-              aria-label="Close"
+              :aria-label="closeLabel"
               class="dialog__close"
               style="
                 backdrop-filter: var(--bew-filter-glass-1);

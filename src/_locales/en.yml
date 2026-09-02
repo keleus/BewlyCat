@@ -1614,3 +1614,42 @@ inject:
   loading: Loading…
   load_more: Load more
   expand_all_replies: Expand all replies
+bilibili_share:
+  title: Share video
+  description: Copy the link or text, or create a poster to save.
+  close: Close share dialog
+  dialog_label: Bilibili video sharing
+  owner: Creator
+  owner_missing: Unknown creator
+  current_time: Current time
+  include_timestamp: Include current playback time
+  qr_label: Share QR code
+  qr_hint: Scan to open the video
+  view_modes: Share modes
+  quick_tab: Quick share
+  poster_tab: Share poster
+  final_link: Share link
+  copy_text: Copy text
+  copy_link: Copy link
+  web_share: System share
+  web_share_unavailable: System sharing is not supported in this browser
+  native_share: Use Bilibili share
+  native_unavailable: Native sharing is unavailable
+  text_copied: Share text copied
+  link_copied: Share link copied
+  web_share_success: System share opened
+  web_share_cancelled: System share cancelled
+  operation_failed: Operation failed. Try again later.
+  poster_label: Bilibili video share poster
+  poster_loading: Generating poster…
+  poster_error: Could not generate poster
+  poster_copied: Poster copied
+  copy_poster: Copy poster
+  download_poster: Download poster
+  poster_download_started: Poster download started
+  poster_brand: Bilibili
+  poster_info_title: Scan to watch
+  poster_scan_hint: Scan the QR code to open the video
+  poster_tag_fallback: Video share
+  poster_fallback_cover: Cover unavailable
+  poster_from_time: Starts at {time}

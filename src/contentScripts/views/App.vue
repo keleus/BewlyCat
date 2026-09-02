@@ -14,7 +14,18 @@ import type { ConfirmDialogOptions, ConfirmDialogToggleField } from '~/composabl
 import { confirmDialogKey } from '~/composables/useConfirmDialog'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
+import {
+  BEWLY_MOUNTED,
+  BILIBILI_SHARE_DIALOG_CLOSE,
+  BILIBILI_SHARE_DIALOG_OPEN,
+  DRAWER_VIDEO_ENTER_PAGE_FULL,
+  DRAWER_VIDEO_EXIT_PAGE_FULL,
+  IFRAME_PAGE_SWITCH_BEWLY,
+  IFRAME_PAGE_SWITCH_BILI,
+  OVERLAY_SCROLL_BAR_SCROLL,
+  OVERLAY_SCROLL_STATE_CHANGE,
+} from '~/constants/globalEvents'
+import type { BilibiliShareDialogCloseDetail, BilibiliShareDialogOpenEvent, BilibiliShareDialogRequest } from '~/contentScripts/bilibiliShareControl'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { settings, settingsReady } from '~/logic'
@@ -56,6 +67,55 @@ else {
 const showSettings = ref(false)
 const pendingSettingsNavigation = ref<SettingsNavigationTarget>()
 const searchFocusOverlayActive = ref(false)
+const activeBilibiliShareRequest = ref<BilibiliShareDialogRequest>()
+const bilibiliShareDialogRef = ref<{ close: () => void } | null>(null)
+
+function isBilibiliShareDialogRequest(value: unknown): value is BilibiliShareDialogRequest {
+  if (!value || typeof value !== 'object')
+    return false
+
+  const request = value as Partial<BilibiliShareDialogRequest>
+  return Number.isInteger(request.id)
+    && Boolean(request.session)
+    && request.trigger instanceof HTMLElement
+    && typeof request.nativeFallback === 'function'
+    && typeof request.onClosed === 'function'
+}
+
+function handleBilibiliShareDialogOpen(event: BilibiliShareDialogOpenEvent): void {
+  const request = event?.request
+  if (!request || !isBilibiliShareDialogRequest(request))
+    return
+  if (activeBilibiliShareRequest.value && activeBilibiliShareRequest.value.id !== request.id)
+    return
+
+  event.handled = true
+  activeBilibiliShareRequest.value = request
+}
+
+function handleBilibiliShareDialogClose(detail: BilibiliShareDialogCloseDetail): void {
+  if (activeBilibiliShareRequest.value?.id !== detail?.id)
+    return
+
+  if (bilibiliShareDialogRef.value) {
+    bilibiliShareDialogRef.value.close()
+  }
+  else {
+    activeBilibiliShareRequest.value.onClosed()
+    activeBilibiliShareRequest.value = undefined
+  }
+}
+
+function handleBilibiliShareDialogFinished(): void {
+  activeBilibiliShareRequest.value = undefined
+}
+
+emitter.on(BILIBILI_SHARE_DIALOG_OPEN, handleBilibiliShareDialogOpen)
+emitter.on(BILIBILI_SHARE_DIALOG_CLOSE, handleBilibiliShareDialogClose)
+onUnmounted(() => {
+  emitter.off(BILIBILI_SHARE_DIALOG_OPEN, handleBilibiliShareDialogOpen)
+  emitter.off(BILIBILI_SHARE_DIALOG_CLOSE, handleBilibiliShareDialogClose)
+})
 
 function openSettings(target?: SettingsNavigationTarget) {
   pendingSettingsNavigation.value = target
@@ -2045,6 +2105,13 @@ if (settings.value.cleanUrlArgument) {
       v-if="showIframeDrawer"
       :url="iframeDrawerURL"
       @close="showIframeDrawer = false"
+    />
+
+    <BilibiliShareDialog
+      v-if="activeBilibiliShareRequest"
+      ref="bilibiliShareDialogRef"
+      :request="activeBilibiliShareRequest"
+      @close="handleBilibiliShareDialogFinished"
     />
 
     <!-- Static confirm overlay: no Transition/Teleport (see finishConfirmDialog). -->

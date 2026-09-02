@@ -1510,3 +1510,42 @@ inject:
   loading: 加载中…
   load_more: 加载更多
   expand_all_replies: 展开全部回复
+bilibili_share:
+  title: 分享视频
+  description: 复制链接、文案，或生成可保存的分享海报。
+  close: 关闭分享对话框
+  dialog_label: Bilibili 视频分享
+  owner: UP 主
+  owner_missing: 未知 UP 主
+  current_time: 当前时间
+  include_timestamp: 分享当前播放时间
+  qr_label: 分享二维码
+  qr_hint: 扫码打开视频
+  view_modes: 分享方式
+  quick_tab: 快速分享
+  poster_tab: 分享海报
+  final_link: 分享链接
+  copy_text: 复制文案
+  copy_link: 复制链接
+  web_share: 系统分享
+  web_share_unavailable: 当前浏览器不支持系统分享
+  native_share: 使用 B 站原生分享
+  native_unavailable: 原生分享入口不可用
+  text_copied: 分享文案已复制
+  link_copied: 分享链接已复制
+  web_share_success: 已调用系统分享
+  web_share_cancelled: 已取消系统分享
+  operation_failed: 操作失败，请稍后重试
+  poster_label: Bilibili 视频分享海报
+  poster_loading: 正在生成海报…
+  poster_error: 海报生成失败
+  poster_copied: 海报已复制
+  copy_poster: 复制海报
+  download_poster: 下载海报
+  poster_download_started: 已开始下载海报
+  poster_brand: 哔哩哔哩
+  poster_info_title: 扫码观看
+  poster_scan_hint: 扫描二维码打开视频
+  poster_tag_fallback: 视频分享
+  poster_fallback_cover: 封面不可用
+  poster_from_time: 从 {time} 开始播放
