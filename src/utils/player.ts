@@ -456,26 +456,8 @@ export function detectVideoType(): VideoType {
     return VideoType.PLAYLIST
   }
 
-  // 检测多P视频和合集视频的关键区别：
-  // 分P视频有 .view-mode 切换视图组件，合集视频没有
-  const hasViewMode = !!document.querySelector('.view-mode')
-  const hasVideoPod = !!document.querySelector(
-    '.video-pod__item, .video-pod__list .simple-base-item, .multi-page__item, .page-item',
-  )
-
-  if (hasVideoPod) {
-    // 有视频列表项
-    if (hasViewMode) {
-      // 有切换视图组件 = 分P视频
-      return VideoType.MULTIPART
-    }
-    else {
-      // 没有切换视图组件 = 合集视频
-      return VideoType.COLLECTION
-    }
-  }
-
-  // 尝试从页面中获取视频数据（备用方案）
+  // 优先根据当前稿件的分 P 数判断。合集可以包含多 P 稿件，
+  // 如果先根据右侧合集列表判断，这类稿件会错用合集的播放设置。
   const app = document.querySelector('#app') as any
   if (app?.__vue__) {
     const videoData = app.__vue__.videoData
@@ -492,6 +474,23 @@ export function detectVideoType(): VideoType {
         return VideoType.COLLECTION
       }
     }
+  }
+
+  // DOM 兜底：普通分 P 视频有 .view-mode 切换视图组件，
+  // 只有合集列表的视频没有。合集中的多 P 稿件会同时渲染
+  // 分 P 列表和新版合集列表，即使 .view-mode 被合集面板隐去也要视为分 P。
+  const hasViewMode = !!document.querySelector('.view-mode')
+  const hasMultipartItems = !!document.querySelector(
+    '.video-pod__item, .multi-page__item, .page-item',
+  )
+  const hasCollectionItems = !!document.querySelector('.video-pod__list .simple-base-item')
+  const hasVideoPod = hasMultipartItems || hasCollectionItems
+
+  if (hasVideoPod) {
+    if (hasViewMode || (hasMultipartItems && hasCollectionItems))
+      return VideoType.MULTIPART
+
+    return VideoType.COLLECTION
   }
 
   // 如果以上都不是，检测是否为合集视频（通过DOM）
