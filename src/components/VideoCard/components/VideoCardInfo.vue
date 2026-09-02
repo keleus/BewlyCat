@@ -663,13 +663,14 @@ const content = computed(() => {
 }
 
 .video-card-meta > div:last-child > div:last-child {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   overflow: hidden;
   max-width: 100%;
 }
 
 .video-card-meta-row {
-  flex-wrap: nowrap;
+  align-content: flex-start;
+  flex-wrap: wrap;
   overflow: hidden;
   max-width: 100%;
   min-height: 24px;
@@ -682,12 +683,8 @@ const content = computed(() => {
   font-size: inherit;
   line-height: inherit;
   padding-block: calc(var(--bew-base-font-size) * 0.12);
-  /* 最多四个标签共享单行空间；不足时在标签内部省略，避免整枚标签被父容器截掉。 */
-  flex: 0 1 auto;
-  max-width: 100%;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* 标签保持完整；单行放不下的标签会整体换到被裁切的下一行。 */
+  flex: 0 0 auto;
   white-space: nowrap;
 }
 
