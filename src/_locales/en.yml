@@ -338,8 +338,8 @@ settings:
     inherit: Follow dynamic cards
   group_moments_wanted_users: Watchlist
   group_moments_wanted_users_desc: Manage uploaders you want to watch by UID or name. The list is stored only on this device.
-  moments_enable_wanted_filter: Enable watchlist filter
-  moments_enable_wanted_filter_desc: Show a Watchlist entry in the Moments horizontal bar to display only posts from watchlisted uploaders. Turning it off hides the entry and exits the filter.
+  moments_enable_wanted_filter: Show Watchlist button
+  moments_enable_wanted_filter_desc: Show the Watchlist button in the Moments horizontal bar to display only posts from watchlisted uploaders. Turning it off removes the button and exits the filter.
   moments_wanted_users: Watchlisted uploaders
   group_moments_pinned_users: Pinned uploaders
   group_moments_pinned_users_desc: Manage uploaders pinned to the right side of the Moments bar by UID or name. The list is stored only on this device.
@@ -1480,6 +1480,21 @@ moments:
   go_charge: Charge now
   vote_ongoing: Ongoing
   vote_ended: Ended
+  vote_loading: Loading poll
+  vote_load_failed: Failed to load poll
+  vote_retry: Retry
+  vote_participants: '{count} participants'
+  vote_select_up_to: 'Select up to {count} options'
+  vote_submit: Vote
+  vote_submitted: Voted
+  vote_selected: You selected this option
+  vote_time_day: '{count}d '
+  vote_time_hour: '{count}h '
+  vote_time_minute: '{count}m'
+  vote_ends_in: 'Ends in {time}'
+  login_to_vote: Log in to vote
+  vote_submit_failed: Failed to vote. Please try again later.
+  vote_submit_succeeded: Vote submitted
   forwarded_post: Forwarded a post
   bilibili_user: Bilibili user
   original_author: Original author

@@ -185,7 +185,7 @@ const showMomentsSidebar = ref(true)
 const showMomentsRightbar = ref(true)
 const pinnedListExpanded = ref(false)
 let pinnedListCollapseTimer = 0
-const UP_LIST_ITEM_WIDTH = 64
+const UP_LIST_ITEM_WIDTH = 72
 const UP_LIST_ITEM_GAP = 4
 const PINNED_DIVIDER_SPACE = 10
 const momentColumns = ref<DisplayMoment[][]>([])
@@ -430,13 +430,6 @@ function normalizeRichTextJumpUrl(url = '') {
   }
 }
 
-function getVoteUrl(voteId: unknown) {
-  const id = String(voteId ?? '').trim()
-  return /^\d+$/.test(id)
-    ? `https://t.bilibili.com/vote/h5/index/#/result?vote_id=${encodeURIComponent(id)}`
-    : ''
-}
-
 function getSidebarAvatarUrl(url = '', size = 96) {
   const normalized = httpsUrl(url).replace(/@[^/]*$/, '')
   if (!normalized || !/hdslb\.com|biliimg\.com|bilibili\.com/.test(normalized))
@@ -585,13 +578,10 @@ function extractRichTextSegments(...nodeLists: any[]): DisplayRichTextSegment[] 
     }
 
     const isAtMention = node?.type === 'RICH_TEXT_NODE_TYPE_AT'
-    // VOTE 通常只返回 rid（投票 id），需自行拼出官方投票页。
     const isSupportedLink = node?.type === 'RICH_TEXT_NODE_TYPE_TOPIC'
       || node?.type === 'RICH_TEXT_NODE_TYPE_WEB'
-      || node?.type === 'RICH_TEXT_NODE_TYPE_VOTE'
       || isAtMention
     const rawJumpUrl = node?.jump_url
-      || (node?.type === 'RICH_TEXT_NODE_TYPE_VOTE' ? getVoteUrl(node?.rid) : '')
       || (isAtMention && node?.rid ? `https://space.bilibili.com/${node.rid}` : '')
     const url = isSupportedLink ? normalizeRichTextJumpUrl(rawJumpUrl) : ''
     if (text && url)
@@ -731,8 +721,9 @@ function getMomentContent(item: any) {
           additionalCard.button,
           additional.type === 'ADDITIONAL_TYPE_RESERVE',
         ),
-        url: httpsUrl(additionalCard.jump_url || additionalCard.button?.jump_url || '')
-          || (isVoteAdditional ? getVoteUrl(additionalCard.vote_id) : ''),
+        url: isVoteAdditional
+          ? ''
+          : httpsUrl(additionalCard.jump_url || additionalCard.button?.jump_url || ''),
         isUpRecommendation: additional.type === 'ADDITIONAL_TYPE_UP_RCMD'
           || pickText(additionalCard.head_text, additionalCard.title) === 'UP主的推荐',
         isVideoReservation: additional.type === 'ADDITIONAL_TYPE_RESERVE'
@@ -740,6 +731,7 @@ function getMomentContent(item: any) {
         isLiveReservation: additional.type === 'ADDITIONAL_TYPE_RESERVE'
           && Number(additionalCard.button?.type) === 2,
         isVote: isVoteAdditional,
+        voteId: isVoteAdditional ? String(additionalCard.vote_id || '') : '',
         voteEndTime: isVoteAdditional ? Number(additionalCard.end_time) || 0 : 0,
         reservationId: additional.type === 'ADDITIONAL_TYPE_RESERVE'
           ? String(additionalCard.rid || '')
@@ -772,6 +764,7 @@ function getMomentContent(item: any) {
       isVideoReservation: false,
       isLiveReservation: false,
       isVote: false,
+      voteId: '',
       voteEndTime: 0,
       reservationId: '',
       reservationTotal: 0,
@@ -1118,12 +1111,14 @@ const DETAIL_SAFE_WIDTH = `calc(100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
 const DETAIL_REFERENCE_HEIGHT = 'min(88dvh, 49.5vw)'
 const DETAIL_SAFE_HEIGHT = `min(calc(100dvh - ${DETAIL_VIEWPORT_GUTTER}px), max(280px, ${DETAIL_REFERENCE_HEIGHT}))`
 const DETAIL_PLAYER_MAX_WIDTH = `min(92vw, calc(${PLAYER_DIALOG_WIDTH_SCALE * 100}dvh * 16 / 9), ${DETAIL_SAFE_WIDTH})`
-/** 图文弹窗评论区固定占页宽（小红书 note 详情） */
+/** 图文弹窗信息区固定占页宽（小红书 note 详情）。 */
 const OPUS_DETAIL_COMMENT_PAGE_RATIO = 0.29
 /** 长图阈值：宽/高 ≤ 1/2 时按 1:2 定弹窗，图宽占满后纵向滚动 */
 const OPUS_DETAIL_LONG_IMAGE_RATIO = 0.5
-/** 图文弹窗最大宽：与视频共用 92vw / 视口 gutter，不含 16:9 约束 */
-const OPUS_DETAIL_MAX_WIDTH = `min(${PLAYER_DIALOG_WIDTH_SCALE * 100}vw, 100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
+/** 图文弹窗最大宽 90vw；与视频宽度规则分离。 */
+const OPUS_DETAIL_MAX_WIDTH = `min(90vw, 100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
+/** 分栏图文基础宽度为两个 29vw 等宽列：左侧媒体、右侧信息。 */
+const OPUS_SPLIT_DETAIL_BASE_WIDTH = `${OPUS_DETAIL_COMMENT_PAGE_RATIO * 200}vw`
 /** 图文弹窗最大高：可用视口高度内取值，且高不大于宽（宽上限同 OPUS_DETAIL_MAX_WIDTH），避免竖屏下过度拉长 */
 const OPUS_DETAIL_MAX_HEIGHT = `min(100dvh - ${DETAIL_VIEWPORT_GUTTER}px, max(280px, 88dvh), ${OPUS_DETAIL_MAX_WIDTH})`
 /** 与 Bewly 宽屏模式的完整评论面板宽度一致，避免方形/竖屏视频收窄时挤压评论区。 */
@@ -1140,7 +1135,7 @@ const isSelectedSquareOrVerticalVideo = computed(() => {
   return Boolean(ratio && ratio <= 1)
 })
 
-/** 图文分栏详情（转发/专栏/纯文字除外）：弹窗尺寸以首图为基准 */
+/** 图文分栏详情（转发/专栏/纯文字除外） */
 function isOpusSplitDetailMoment(moment: DisplayMoment | null | undefined) {
   if (!moment || isPlayerMoment(moment) || moment.isArticle || moment.isForward)
     return false
@@ -1187,10 +1182,10 @@ const detailDialogWidth = computed(() => {
   }
   const moment = selectedMoment.value
   if (isOpusSplitDetailMoment(moment)) {
-    // 宽度按正常高度预算与首图比例计算；评论列由 iframe 固定为视口宽的 29%
-    // （经 BEWLY_OPUS_VIEWPORT 同步）。达到最大宽度后，横图由媒体区 contain 居中显示。
+    // 以 58vw 等宽双栏为基础；宽图按首图比例扩展媒体列，但不超过 90vw。
     const commentWidth = `${OPUS_DETAIL_COMMENT_PAGE_RATIO * 100}vw`
-    return `min(${OPUS_DETAIL_MAX_WIDTH}, calc(${getOpusSplitLayoutRatio(moment)} * ${detailDialogHeight.value} + ${commentWidth}))`
+    const contentWidth = `calc(${getOpusSplitLayoutRatio(moment)} * ${detailDialogHeight.value} + ${commentWidth})`
+    return `min(${OPUS_DETAIL_MAX_WIDTH}, max(${OPUS_SPLIT_DETAIL_BASE_WIDTH}, ${contentWidth}))`
   }
   // 纯文字 / 专栏 / 转发：参考小红书 note-container 1088px
   return `min(1088px, ${DETAIL_SAFE_WIDTH})`
@@ -1514,7 +1509,7 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
   }, fallbackMs)
 }
 
-/** 告知 opus iframe 真实视口宽：跨源时它读不到 window.top，评论列（视口宽 29%）需要以此为准 */
+/** 告知 opus iframe 真实视口宽：跨源时它读不到 window.top，信息列（视口宽 29%）需要以此为准 */
 function syncDetailFrameViewport() {
   const win = detailIframeRef.value?.contentWindow
   if (!win || !detailFrameUrl.value)
@@ -2083,8 +2078,17 @@ function getValidMomentsCache(filter: MomentFilter) {
     && typeof moment.videoDanmaku === 'string'
     && !(moment.isForward && moment.isVideo)
   ))
-  if (usesCurrentVideoShape && Date.now() - entry.updatedAt < MOMENTS_CACHE_TTL_MS)
+  const usesCurrentVoteShape = entry.items.every(moment => (
+    !moment.additional?.isVote
+    || (Boolean(moment.additional.voteId) && !moment.additional.url)
+  ))
+  if (
+    usesCurrentVideoShape
+    && usesCurrentVoteShape
+    && Date.now() - entry.updatedAt < MOMENTS_CACHE_TTL_MS
+  ) {
     return entry
+  }
 
   const { [filter]: _expired, ...validEntries } = momentsFeedCache.value
   momentsFeedCache.value = validEntries
@@ -4183,7 +4187,7 @@ watch(
               <span class="moments-up-list__name">{{ t('moments.all_posts') }}</span>
             </button>
             <button
-              v-if="isLayoutEditing || settings.momentsEnableWantedFilter"
+              v-if="settings.momentsEnableWantedFilter"
               type="button"
               class="moments-up-list__item"
               data-layout-edit-target="moments-wanted-users"

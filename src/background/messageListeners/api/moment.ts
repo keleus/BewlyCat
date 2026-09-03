@@ -1,6 +1,15 @@
 import type { APIMAP } from '../../utils'
 import { AHS } from '../../utils'
 
+function serializeMomentVoteBody(body: Record<string, any>) {
+  // 动态 id 已超过 JS 安全整数范围，必须以未丢失精度的 JSON 整数发送。
+  const dynamicId = String(body.dynamic_id ?? '')
+  const serializedDynamicId = /^\d+$/.test(dynamicId) ? dynamicId : '0'
+  const { dynamic_id: _dynamicId, ...rest } = body
+  const serializedRest = JSON.stringify(rest)
+  return `${serializedRest.slice(0, -1)},"dynamic_id":${serializedDynamicId}}`
+}
+
 const API_MOMENT = {
   getTopBarNewMomentsCount: {
     url: 'https://api.bilibili.com/x/web-interface/dynamic/entrance',
@@ -82,6 +91,40 @@ const API_MOMENT = {
         spmid: '333.1369.0.0',
         from_spmid: '333.999.0.0',
       },
+    },
+    params: {
+      csrf: '',
+    },
+    afterHandle: AHS.J_D,
+  },
+  getMomentVote: {
+    url: 'https://api.bilibili.com/x/vote/vote_info',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      vote_id: '',
+    },
+    afterHandle: AHS.J_D,
+  },
+  submitMomentVote: {
+    url: 'https://api.bilibili.com/x/vote/do_vote',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: {
+        vote_id: 0,
+        votes: [] as number[],
+        voter_uid: 0,
+        status: 0,
+        op_bit: 0,
+        dynamic_id: '',
+        csrf: '',
+        csrf_token: '',
+      },
+      bodySerializer: serializeMomentVoteBody,
     },
     params: {
       csrf: '',

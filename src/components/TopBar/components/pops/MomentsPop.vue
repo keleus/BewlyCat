@@ -221,8 +221,8 @@ defineExpose({
             pos="absolute -top-12px -left-12px"
             style="box-shadow: 0 0 4px var(--bew-theme-color)"
           />
-          <section flex="~ row-reverse gap-4 items-start">
-            <div class="bew-top-bar-media-copy">
+          <section flex="~ row-reverse gap-4 items-stretch">
+            <div class="bew-top-bar-media-copy moments-pop__copy">
               <h3
                 :title="moment.title"
                 class="bew-top-bar-media-title moments-pop__title"
@@ -230,7 +230,7 @@ defineExpose({
                 {{ moment.title }}
               </h3>
 
-              <div flex="~ items-center gap-2" min-w-0 m="t-2">
+              <div class="moments-pop__byline" flex="~ items-center gap-1" min-w-0>
                 <ALink
                   :href="moment.authorJumpUrl"
                   type="topBar"
@@ -238,17 +238,18 @@ defineExpose({
                   rounded="1/2"
                   w="24px" h="24px"
                   bg="$bew-skeleton"
+                  flex="~ items-center justify-center"
                   shrink-0
                 >
                   <img
                     :src="`${moment.authorFace}@48w_48h_1c`"
                     rounded="1/2"
-                    w="24px" h="24px"
+                    w="20px" h="20px"
                   >
                 </ALink>
 
                 <div
-                  class="bew-top-bar-media-author--compact"
+                  class="bew-top-bar-media-author--compact moments-pop__author"
                   min-w-0
                   flex-1
                 >
@@ -385,12 +386,32 @@ defineExpose({
   overflow: visible;
 }
 
+.moments-pop__copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.moments-pop__byline {
+  margin-top: auto;
+  padding-top: var(--bew-space-1);
+}
+
 // 标题字号/行高沿用全局 --bew-top-bar-media-title-*（14/20，与收藏、历史、
 // 稍后再看 Pop 共用），此处仅解除两行截断以完整展示。
 .moments-pop .moments-pop__title {
   display: block;
   overflow: visible;
   text-overflow: unset;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+}
+
+.moments-pop__author {
+  display: block;
+  overflow: hidden;
+  font-weight: var(--bew-font-weight-regular);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   -webkit-line-clamp: unset;
   line-clamp: unset;
 }

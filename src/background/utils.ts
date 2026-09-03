@@ -63,6 +63,7 @@ interface _FETCH {
     [key: string]: any
   }
   body?: any
+  bodySerializer?: (body: Record<string, any>) => BodyInit
   credentials?: RequestCredentials
 }
 
@@ -118,7 +119,7 @@ async function doRequest(message: Message, api: API, cookies?: Browser.Cookies.C
     rest = rest || {}
 
     const { _fetch, url, params = {}, afterHandle } = api
-    const { method, headers = {}, body, credentials: configuredCredentials = 'include' } = _fetch as _FETCH
+    const { method, headers = {}, body, bodySerializer, credentials: configuredCredentials = 'include' } = _fetch as _FETCH
     const credentials: RequestCredentials = bewlyNoCookie ? 'omit' : configuredCredentials
     const isGET = method.toLocaleLowerCase() === 'get'
     // merge params and body
@@ -127,7 +128,9 @@ async function doRequest(message: Message, api: API, cookies?: Browser.Cookies.C
     Object.keys(rest).forEach((key) => {
       if (body && body[key] !== undefined)
         targetBody[key] = rest[key]
-      else
+      if (params[key] !== undefined)
+        targetParams[key] = rest[key]
+      else if (!body || body[key] === undefined)
         targetParams[key] = rest[key]
     })
 
@@ -172,9 +175,11 @@ async function doRequest(message: Message, api: API, cookies?: Browser.Cookies.C
       // generate body
       let requestBody = targetBody
       if (!isGET) {
-        requestBody = (headers && headers['Content-Type'] && headers['Content-Type'].includes('application/x-www-form-urlencoded'))
-          ? new URLSearchParams(targetBody)
-          : JSON.stringify(targetBody)
+        requestBody = bodySerializer
+          ? bodySerializer(targetBody)
+          : (headers && headers['Content-Type'] && headers['Content-Type'].includes('application/x-www-form-urlencoded'))
+              ? new URLSearchParams(targetBody)
+              : JSON.stringify(targetBody)
       }
 
       // generate cookies

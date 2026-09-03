@@ -335,8 +335,8 @@ settings:
     inherit: 跟随动态卡片
   group_moments_wanted_users: 想看分组
   group_moments_wanted_users_desc: 管理想看的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
-  moments_enable_wanted_filter: 启用想看筛选
-  moments_enable_wanted_filter_desc: 在动态页横向栏显示“想看”入口，用于只查看名单内 UP 主的动态；关闭后隐藏入口并退出想看筛选。
+  moments_enable_wanted_filter: 显示“想看”按钮
+  moments_enable_wanted_filter_desc: 在动态页横向栏显示“想看”按钮，用于只查看名单内 UP 主的动态；关闭后直接移除按钮并退出想看筛选。
   moments_wanted_users: 想看的 UP 主
   group_moments_pinned_users: 固定 UP 主
   group_moments_pinned_users_desc: 管理固定在动态栏右侧的 UP 主；支持输入 UID 或昵称，名单仅保存在本地。
@@ -1376,6 +1376,21 @@ moments:
   go_charge: 去充电
   vote_ongoing: 进行中
   vote_ended: 已结束
+  vote_loading: 正在加载投票
+  vote_load_failed: 投票加载失败
+  vote_retry: 重试
+  vote_participants: '{count} 人参与'
+  vote_select_up_to: '最多选择 {count} 项'
+  vote_submit: 投票
+  vote_submitted: 已投票
+  vote_selected: 你选择了此项
+  vote_time_day: '{count}天'
+  vote_time_hour: '{count}小时'
+  vote_time_minute: '{count}分钟'
+  vote_ends_in: '{time}后截止'
+  login_to_vote: 登录后才能参与投票
+  vote_submit_failed: 投票失败，请稍后重试
+  vote_submit_succeeded: 投票成功
   forwarded_post: 转发了动态
   bilibili_user: B站用户
   original_author: 原作者

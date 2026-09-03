@@ -363,8 +363,8 @@ settings:
     inherit: 跟隨動態卡片
   group_moments_wanted_users: 想睇分組
   group_moments_wanted_users_desc: 管理想睇嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
-  moments_enable_wanted_filter: 啟用想睇篩選
-  moments_enable_wanted_filter_desc: 喺動態頁橫向欄顯示「想睇」入口，用嚟淨係睇名單內 UP 主嘅動態；關閉後會隱藏入口並退出想睇篩選。
+  moments_enable_wanted_filter: 顯示「想睇」按鈕
+  moments_enable_wanted_filter_desc: 喺動態頁橫向欄顯示「想睇」按鈕，用嚟淨係睇名單內 UP 主嘅動態；關閉後會直接移除按鈕並退出想睇篩選。
   moments_wanted_users: 想睇嘅 UP 主
   group_moments_pinned_users: 固定 UP 主
   group_moments_pinned_users_desc: 管理固定喺動態欄右側嘅 UP 主；支援輸入 UID 或暱稱，名單只會儲存喺本機。
@@ -1391,6 +1391,21 @@ moments:
   go_charge: 去充電
   vote_ongoing: 進行緊
   vote_ended: 已結束
+  vote_loading: 正在載入投票
+  vote_load_failed: 投票載入失敗
+  vote_retry: 重試
+  vote_participants: '{count} 人參與'
+  vote_select_up_to: '最多選擇 {count} 項'
+  vote_submit: 投票
+  vote_submitted: 已投票
+  vote_selected: 你揀咗呢一項
+  vote_time_day: '{count}日'
+  vote_time_hour: '{count}個鐘'
+  vote_time_minute: '{count}分鐘'
+  vote_ends_in: '{time}後截止'
+  login_to_vote: 登入先可以參與投票
+  vote_submit_failed: 投票失敗，請遲啲再試
+  vote_submit_succeeded: 投票成功
   forwarded_post: 轉發咗動態
   bilibili_user: B站用戶
   original_author: 原作者

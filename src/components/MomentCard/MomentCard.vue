@@ -14,6 +14,7 @@ import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardCon
 import MomentImageGallery from './MomentImageGallery.vue'
 import MomentImageGrid from './MomentImageGrid.vue'
 import MomentVideoStrip from './MomentVideoStrip.vue'
+import MomentVote from './MomentVote.vue'
 import type { DisplayForwardVideo, DisplayMoment, WatchLaterTarget } from './types'
 import type { MomentLinkKind } from './utils'
 import {
@@ -969,8 +970,16 @@ function handleAdditionalClick(event: MouseEvent) {
         />
       </Teleport>
 
+      <MomentVote
+        v-if="moment.additional?.isVote && moment.additional.voteId"
+        :vote-id="moment.additional.voteId"
+        :moment-id="moment.id"
+        :fallback-title="moment.additional.title"
+        :fallback-desc="moment.additional.desc"
+        :fallback-end-time="moment.additional.voteEndTime"
+      />
       <div
-        v-if="moment.additional"
+        v-else-if="moment.additional"
         class="moment-card__additional moment-card__additional--footer"
         :class="{ 'moment-card__additional--no-cover': moment.isChargeExclusive || !moment.additional.cover }"
       >
@@ -988,7 +997,6 @@ function handleAdditionalClick(event: MouseEvent) {
           >
           <span>
             <strong>
-              <span v-if="moment.additional.isVote" i-tabler-chart-bar aria-hidden="true" class="moment-card__additional-vote-icon" />
               {{ moment.additional.title || t('moment_card.additional') }}
             </strong>
             <small v-if="moment.additional.desc">{{ moment.additional.desc }}</small>
@@ -1371,12 +1379,6 @@ function handleAdditionalClick(event: MouseEvent) {
   height: 40px;
   border-radius: var(--bew-radius-md);
   object-fit: cover;
-}
-
-.moment-card__additional-vote-icon {
-  margin-right: var(--bew-space-1);
-  font-size: var(--bew-icon-size-sm);
-  vertical-align: -0.125em;
 }
 
 .moment-card__additional-main > span {

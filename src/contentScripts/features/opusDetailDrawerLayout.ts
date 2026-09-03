@@ -262,7 +262,7 @@ html.momentsPage.drawer.bewly-opus-layout.bewly-opus-article-mode .opus-toc {
 }
 `
 
-/** 评论区固定页宽 29%；媒体列吃剩余宽度。长图（≤1:2）宽占满可纵向滚动 */
+/** 信息区固定占页宽 29%；媒体列吃剩余宽度。长图（≤1:2）宽占满可纵向滚动 */
 const OPUS_DETAIL_COMMENT_PAGE_RATIO = 0.29
 const OPUS_DETAIL_LONG_IMAGE_RATIO = 0.5
 /** 高度占满后左右留白不足时，至少留出的单侧间距 */
@@ -285,7 +285,8 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split {
   inset: 0 !important;
   z-index: 20 !important;
   display: grid !important;
-  grid-template-columns: minmax(var(--bewly-opus-comment-width, 29%), 1fr) var(--bewly-opus-comment-width, 29%) !important;
+  /* 弹窗达到宽度上限时只压缩媒体列，信息列保留完整阅读宽度。 */
+  grid-template-columns: minmax(0, 1fr) var(--bewly-opus-comment-width, 29%) !important;
   column-gap: 0 !important;
   width: 100% !important;
   height: 100% !important;
@@ -872,6 +873,7 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .bili-opus-vi
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-modules,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-module,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-module-content,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-paragraph,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-paragraph-children,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-module-title,
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-module-author,
@@ -884,6 +886,15 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .bili-comment
   padding-left: 0 !important;
   padding-right: 0 !important;
   box-sizing: border-box !important;
+}
+/* 原站段落可能保留详情页固定宽度；在窄评论列内强制按可用宽度重新换行。 */
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-module-content,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-paragraph,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-paragraph-children,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel .opus-module-title {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
 }
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel img:not(.pswp__img),
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-split__panel video {
@@ -918,7 +929,7 @@ function isOpusDetailPage(url: string = location.href): boolean {
 }
 
 function getOpusPageWidth() {
-  // Dialog 场景以父页面同步的视口宽为准，保证评论列恒为视口宽的 29%
+  // Dialog 场景以父页面同步的视口宽为准，保证信息列恒为视口宽的 29%
   if (parentViewportWidth > 0)
     return parentViewportWidth
   for (const win of [window.top, window.parent, window]) {
@@ -2540,7 +2551,7 @@ function handleParentMessage(event: MessageEvent) {
     return
   }
 
-  // 父页面同步真实视口宽：评论列固定为视口宽的 29%，与 Dialog 尺寸公式一致
+  // 父页面同步真实视口宽：信息列固定为视口宽的 29%，与 Dialog 尺寸公式一致
   if (event.data?.type === 'BEWLY_OPUS_VIEWPORT') {
     const width = Number(event.data.width)
     if (Number.isFinite(width) && width > 0) {
