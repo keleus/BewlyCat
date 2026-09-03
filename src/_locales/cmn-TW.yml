@@ -1469,6 +1469,22 @@ moments:
   fit_window: 適應視窗
   rotate_clockwise: 順時針旋轉
 moment_card:
+  comment_sex_male: 男
+  comment_sex_female: 女
+  expand_comment_replies: 共 {count} 則回覆，點擊展開
+  collapse_comment_replies: 收起回覆
+  collapse_comments: 收起留言
+  comments_preview: 留言預覽
+  comments_unavailable: 暫時無法取得此動態的留言區
+  comments_load_failed: 留言載入失敗
+  comment_like_failed: 留言按讚失敗，請稍後重試
+  comment_host: 樓主
+  expand_comment_thread: 展開此留言及回覆
+  collapse_comment_thread: 收起此留言及回覆
+  comment_image: 檢視留言圖片 {index}
+  comments_retry: 重試
+  load_comment_replies: 載入更多回覆
+  comments_empty: 暫無留言
   video_post: 投稿了影片
   cancel_reservation: 取消預約
   reserve: 預約

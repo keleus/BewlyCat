@@ -1,6 +1,10 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
 import { isSearchResultApiPath } from '~/constants/searchApi'
+import COMMENT_REPLY_TREE_GUIDES_CSS from '~/styles/commentReplyTree.scss?inline'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
+import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/commentReplyTree'
+import { formatCommentReplyGuideCoordinate, getCommentReplyBranchExpandedToggleY, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
+import { getCommentSexIcon, normalizeCommentLocation } from '~/utils/commentUserInfo'
 import { i18n } from '~/utils/i18n'
 import { isElectron } from '~/utils/main'
 import type { PageSettingsPayload } from '~/utils/pageSettingsProtocol'
@@ -238,107 +242,6 @@ else if (shouldInitializePageScript) {
     action?: number
     like?: number
   }
-
-  const COMMENT_REPLY_TREE_GUIDES_CSS = `
-    #${COMMENT_REPLY_TREE_GUIDES_ID} {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-      pointer-events: none;
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail {
-      cursor: pointer;
-      pointer-events: auto;
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__line {
-      fill: none;
-      stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
-      stroke-width: var(--bew-space-0-5, 2px);
-      /* butt 避免圆角线帽在竖线外侧鼓出一截 */
-      stroke-linecap: butt;
-      stroke-linejoin: round;
-      vector-effect: non-scaling-stroke;
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__symbol,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail__symbol {
-      fill: none;
-      stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
-      stroke-width: var(--bew-space-0-5, 2px);
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      vector-effect: non-scaling-stroke;
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__line,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__symbol,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__node,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail__symbol,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail__node {
-      pointer-events: none;
-      transition: stroke var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__hit {
-      fill: none;
-      stroke: transparent;
-      stroke-width: var(--bew-space-6, 24px);
-      pointer-events: stroke;
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__node-hit,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail__node-hit {
-      fill: transparent;
-      stroke: none;
-      pointer-events: all;
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__node,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail__node {
-      fill: var(--bg1, var(--bew-bg, #fff));
-      stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
-      stroke-width: var(--bew-space-0-5, 2px);
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__focus,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail__focus {
-      fill: none;
-      stroke: transparent;
-      stroke-width: var(--bew-space-0-5, 2px);
-      pointer-events: none;
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch__author,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail__label {
-      fill: var(--bew-text-2, var(--text2, #61666d));
-      font-size: var(--bew-font-size-caption, 12px);
-      font-weight: var(--bew-font-weight-medium, 500);
-      pointer-events: none;
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch:hover :is(.bewly-comment-reply-branch__line, .bewly-comment-reply-branch__node, .bewly-comment-reply-branch__symbol),
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail:hover :is(.bewly-comment-reply-tail__node, .bewly-comment-reply-tail__symbol) {
-      stroke: var(--bew-theme-color, #00aeec);
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch:focus,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch:focus-visible,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail:focus,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail:focus-visible {
-      outline: none !important;
-      box-shadow: none !important;
-    }
-
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-branch:focus-visible .bewly-comment-reply-branch__focus,
-    #${COMMENT_REPLY_TREE_GUIDES_ID} .bewly-comment-reply-tail:focus-visible .bewly-comment-reply-tail__focus {
-      stroke: var(--bew-theme-color, #00aeec);
-    }
-  `
 
   const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: string }> = {
     'bili-comment-thread-renderer': {
@@ -675,11 +578,7 @@ else if (shouldInitializePageScript) {
 
   // 获取IP地理位置字符串
   function getLocationString(replyItem: any) {
-    const location = replyItem?.reply_control?.location
-    if (typeof location !== 'string')
-      return location
-
-    return location.replace(/^IP属地[：: ]*/u, '')
+    return normalizeCommentLocation(replyItem?.reply_control?.location)
   }
 
   function getSexString(replyItem: any) {
@@ -2276,29 +2175,6 @@ else if (shouldInitializePageScript) {
     return Math.max(minimumGuideIndentStep, Math.min(preferredIndentStep, fittedIndentStep))
   }
 
-  interface CommentReplyAvatarAnchor {
-    bottom: number
-    centerX: number
-    centerY: number
-    left: number
-    toggleY: number
-  }
-
-  interface CommentReplyTreeBranch {
-    childAnchors: CommentReplyAvatarAnchor[]
-    collapsed: boolean
-    /**
-     * true（线条-收起主评论）：收起时折叠父节点本体，显示 + 与昵称
-     * false（线条-不收起主评论）：收起时父节点保持完整显示，仅隐藏子回复
-     */
-    collapseParentBody: boolean
-    key: string
-    parentAnchor: CommentReplyAvatarAnchor
-    parentAuthorName: string | null
-    /** 平级收起后的 + 纵坐标；主干延伸至此，避免与上方连线断开 */
-    trunkExtendY?: number
-  }
-
   /** 平级评论之间的「收起后续」控件 */
   interface CommentReplyTreeTailCollapse {
     collapsed: boolean
@@ -2409,10 +2285,6 @@ else if (shouldInitializePageScript) {
     return `tail:${parentKey}:after:${afterSiblingKey}`
   }
 
-  function formatCommentReplyGuideCoordinate(value: number): string {
-    return String(Math.round(value * 100) / 100)
-  }
-
   function removeCommentReplyTreeGuides(
     component: HTMLElement,
     replyContainer: HTMLElement,
@@ -2482,133 +2354,6 @@ else if (shouldInitializePageScript) {
       hideDescendantsAtDepth[depth] = hidden || branchCollapsed
       hideDescendantsAtDepth.length = depth + 1
     })
-  }
-
-  function getCommentReplyBranchExpandedToggleY(
-    parentAnchor: CommentReplyAvatarAnchor,
-    childAnchors: CommentReplyAvatarAnchor[],
-    toggleHitRadius: number,
-  ): number {
-    if (childAnchors.length === 0)
-      return Math.max(parentAnchor.bottom + toggleHitRadius, parentAnchor.toggleY)
-
-    const branchEndY = childAnchors[childAnchors.length - 1].centerY
-    const minimumY = parentAnchor.bottom + toggleHitRadius
-    const maximumY = branchEndY - toggleHitRadius
-    if (maximumY <= minimumY)
-      return parentAnchor.bottom + (branchEndY - parentAnchor.bottom) / 2
-
-    return Math.min(Math.max(parentAnchor.toggleY, minimumY), maximumY)
-  }
-
-  function getCommentReplyBranchPath(
-    branch: CommentReplyTreeBranch,
-    branchRadius: number,
-    toggleHitRadius: number,
-    cachedToggleY?: number,
-  ): string | null {
-    const coordinate = formatCommentReplyGuideCoordinate
-    const { childAnchors, collapsed, collapseParentBody, parentAnchor, trunkExtendY } = branch
-    const x = parentAnchor.centerX
-
-    if (collapsed) {
-      if (collapseParentBody)
-        return `M ${coordinate(x)} ${coordinate(parentAnchor.centerY)}`
-
-      // 保留父节点正文：引导线与 + 留在收起前的位置，不缩短到父评论脚部
-      const toggleY = cachedToggleY !== undefined
-        ? Math.max(parentAnchor.bottom + toggleHitRadius, cachedToggleY)
-        : Math.max(parentAnchor.bottom + toggleHitRadius, parentAnchor.toggleY)
-      const startY = parentAnchor.bottom
-      const endY = Math.max(toggleY + toggleHitRadius, parentAnchor.bottom + toggleHitRadius * 2)
-      return [
-        `M ${coordinate(x)} ${coordinate(startY)}`,
-        `V ${coordinate(endY)}`,
-      ].join(' ')
-    }
-
-    if (childAnchors.length === 0 && typeof trunkExtendY !== 'number')
-      return null
-
-    const pathCommands: string[] = []
-    const childRadii = childAnchors.map((childAnchor) => {
-      const horizontalGap = childAnchor.left - x
-      if (horizontalGap <= 0)
-        return 0
-      const verticalRoom = Math.max(0, childAnchor.centerY - parentAnchor.bottom)
-      if (verticalRoom <= 0)
-        return 0
-      return Math.min(branchRadius, horizontalGap, verticalRoom)
-    })
-
-    // 主干止于最后一条分支圆弧起点，避免竖线在拐角处多出一截；
-    // 若有平级 +，再延伸到其位置
-    let trunkEndY = parentAnchor.bottom
-    if (childAnchors.length > 0) {
-      const lastIndex = childAnchors.length - 1
-      const lastChild = childAnchors[lastIndex]
-      const lastRadius = childRadii[lastIndex]
-      trunkEndY = lastChild.centerY - lastRadius
-    }
-    if (typeof trunkExtendY === 'number' && Number.isFinite(trunkExtendY))
-      trunkEndY = Math.max(trunkEndY, trunkExtendY)
-
-    if (trunkEndY > parentAnchor.bottom + 0.5) {
-      pathCommands.push(
-        `M ${coordinate(x)} ${coordinate(parentAnchor.bottom)}`,
-        `V ${coordinate(trunkEndY)}`,
-      )
-    }
-
-    // 从主干向每个可见子评论画水平分支（正圆弧，不超出竖线）
-    childAnchors.forEach((childAnchor, index) => {
-      const horizontalGap = childAnchor.left - x
-      if (horizontalGap <= 0)
-        return
-
-      const radius = childRadii[index]
-      if (radius <= 0) {
-        pathCommands.push(
-          `M ${coordinate(x)} ${coordinate(childAnchor.centerY)}`,
-          `H ${coordinate(childAnchor.left)}`,
-        )
-        return
-      }
-
-      // 1/4 圆：从竖线 (x, cy-r) 转到水平 (x+r, cy)
-      // SVG y 向下时，从左侧点到下侧点的短弧为 sweep=0（逆时针）
-      pathCommands.push(
-        `M ${coordinate(x)} ${coordinate(childAnchor.centerY - radius)}`,
-        `A ${coordinate(radius)} ${coordinate(radius)} 0 0 0 ${coordinate(x + radius)} ${coordinate(childAnchor.centerY)}`,
-        `H ${coordinate(childAnchor.left)}`,
-      )
-    })
-
-    return pathCommands.length > 0 ? pathCommands.join(' ') : null
-  }
-
-  function getCommentReplyBranchToggleY(
-    branch: CommentReplyTreeBranch,
-    toggleHitRadius: number,
-    cachedToggleY?: number,
-  ): number {
-    const { childAnchors, collapsed, collapseParentBody, parentAnchor, trunkExtendY } = branch
-    if (collapsed) {
-      if (collapseParentBody)
-        return parentAnchor.centerY
-
-      // 「不收起主评论」：使用展开时缓存的位置，避免 + 缩到父评论下方
-      if (cachedToggleY !== undefined)
-        return Math.max(parentAnchor.bottom + toggleHitRadius, cachedToggleY)
-
-      return Math.max(parentAnchor.bottom + toggleHitRadius, parentAnchor.toggleY)
-    }
-
-    // 平级收起后子锚点变少，父级 − 仍用展开时缓存，避免一起上缩
-    if (trunkExtendY !== undefined && cachedToggleY !== undefined)
-      return Math.max(parentAnchor.bottom + toggleHitRadius, cachedToggleY)
-
-    return getCommentReplyBranchExpandedToggleY(parentAnchor, childAnchors, toggleHitRadius)
   }
 
   function toggleCommentReplyTreeBranch(
@@ -3091,6 +2836,7 @@ else if (shouldInitializePageScript) {
     const layerHeight = Math.max(1, maximumY - minimumY)
     const guideLayer = document.createElementNS(SVG_NAMESPACE, 'svg')
     guideLayer.id = COMMENT_REPLY_TREE_GUIDES_ID
+    guideLayer.classList.add('bewly-comment-reply-tree-guides')
     guideLayer.setAttribute('focusable', 'false')
     guideLayer.setAttribute('viewBox', `${minimumX} ${minimumY} ${layerWidth} ${layerHeight}`)
     guideLayer.setAttribute('preserveAspectRatio', 'none')
@@ -4068,23 +3814,15 @@ else if (shouldInitializePageScript) {
       anchor.insertAdjacentElement('afterend', element)
     }
 
-    // 如果是性别元素，使用纯色图标显示
+    // 原生评论和动态预览共用性别图标；保密或未知性别不显示。
     if (id === 'sex') {
-      element.style.cssText = 'display: inline-flex; align-items: center; margin-left: 4px; vertical-align: middle;'
-      element.innerHTML = ''
-
-      // 根据性别显示不同的图标
-      if (text === '男') {
-        element.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="#00a1d6" style="display: block;"><path d="M20 4v6h-2V7.425l-3.975 3.95q.475.7.725 1.488T15 14.5q0 2.3-1.6 3.9T9.5 20q-2.3 0-3.9-1.6T4 14.5q0-2.3 1.6-3.9T9.5 9q.825 0 1.625.237t1.475.738L16.575 6H14V4zM9.5 11q-1.45 0-2.475 1.025T6 14.5q0 1.45 1.025 2.475T9.5 18q1.45 0 2.475-1.025T13 14.5q0-1.45-1.025-2.475T9.5 11"/></svg>'
-      }
-      else if (text === '女') {
-        element.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="#fb7299" style="display: block;"><path d="M11 21v-2H9v-2h2v-2.1q-1.975-.35-3.238-1.888T6.5 9.45q0-2.275 1.613-3.862T12 4t3.888 1.588T17.5 9.45q0 2.025-1.263 3.563T13 14.9V17h2v2h-2v2zm1-8q1.45 0 2.475-1.025T15.5 9.5q0-1.45-1.025-2.475T12 6q-1.45 0-2.475 1.025T8.5 9.5q0 1.45 1.025 2.475T12 13"/></svg>'
-      }
-      else {
-      // 保密不显示
+      const icon = getCommentSexIcon(String(text))
+      if (!icon) {
         element.remove()
         return null
       }
+      element.style.cssText = 'display: inline-flex; align-items: center; margin-left: 4px; vertical-align: middle;'
+      element.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" fill="${icon.color}" style="display: block;"><path d="${icon.path}"/></svg>`
     }
     // 如果是IP地理位置元素，使用Tag样式显示
     else if (id === 'location') {

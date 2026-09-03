@@ -11,6 +11,27 @@ function serializeMomentVoteBody(body: Record<string, any>) {
 }
 
 const API_MOMENT = {
+  getMomentComments: {
+    url: 'https://api.bilibili.com/x/v2/reply',
+    _fetch: { method: 'get' },
+    params: { type: 17, oid: '', sort: 0, nohot: 1, pn: 1, ps: 20 },
+    afterHandle: AHS.J_D,
+  },
+  getMomentCommentReplies: {
+    url: 'https://api.bilibili.com/x/v2/reply/reply',
+    _fetch: { method: 'get' },
+    params: { type: 17, oid: '', root: '', pn: 1, ps: 20 },
+    afterHandle: AHS.J_D,
+  },
+  setMomentCommentLike: {
+    url: 'https://api.bilibili.com/x/v2/reply/action',
+    _fetch: {
+      method: 'post',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: { type: 17, oid: '', rpid: '', action: 1, csrf: '' },
+    },
+    afterHandle: AHS.J_D,
+  },
   getTopBarNewMomentsCount: {
     url: 'https://api.bilibili.com/x/web-interface/dynamic/entrance',
     _fetch: {

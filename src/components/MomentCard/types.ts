@@ -65,6 +65,8 @@ export interface DisplayMoment {
   isLiked: boolean
   isLikeDisabled: boolean
   commentCount: number
+  /** 使用当前动态的 basic 字段定位评论区，转发不能继承原动态的评论区。 */
+  commentTarget?: { oid: string, type: number }
   /** 动态列表接口附带的评论互动摘要（type = 1） */
   hotComment?: {
     text: string

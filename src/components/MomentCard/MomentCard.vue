@@ -11,6 +11,9 @@ import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 
 import type { Author, Video } from '../VideoCard/types'
 import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
+import type { CommentPreviewState } from './commentPreview'
+import { toggleCommentPreview } from './commentPreview'
+import MomentComments from './MomentComments.vue'
 import MomentImageGallery from './MomentImageGallery.vue'
 import MomentImageGrid from './MomentImageGrid.vue'
 import MomentVideoStrip from './MomentVideoStrip.vue'
@@ -36,6 +39,7 @@ import {
 
 interface Props {
   moment: DisplayMoment
+  commentPreview: CommentPreviewState
   cardWidth?: number
   imageRatio?: number
   ready?: boolean
@@ -50,6 +54,7 @@ interface Props {
 
 const {
   moment,
+  commentPreview,
   cardWidth = 520,
   imageRatio,
   ready = false,
@@ -93,6 +98,20 @@ const descriptionRef = ref<HTMLElement | null>(null)
 const descriptionExpanded = ref(false)
 const descriptionCanToggle = ref(false)
 const descriptionId = computed(() => `moment-card-desc-${moment.id.replace(/[^\w-]/g, '-')}`)
+const commentsId = computed(() => `moment-card-comments-${moment.id.replace(/[^\w-]/g, '-')}`)
+const commentsToggleRef = ref<HTMLButtonElement | null>(null)
+
+function toggleComments() {
+  toggleCommentPreview(commentPreview)
+}
+
+async function collapseComments() {
+  if (!commentPreview.expanded)
+    return
+  toggleComments()
+  await nextTick()
+  commentsToggleRef.value?.focus({ preventScroll: true })
+}
 
 function updateDescriptionOverflow() {
   const description = descriptionRef.value
@@ -1031,7 +1050,9 @@ function handleAdditionalClick(event: MouseEvent) {
         type="button"
         class="moment-card__hot-comment"
         :aria-label="t('moment_card.view_hot_comment')"
-        @click.stop="emit('openDetail', moment)"
+        :aria-expanded="commentPreview.expanded"
+        :aria-controls="commentsId"
+        @click.stop="toggleComments"
       >
         <span class="moment-card__hot-comment-label">
           <span i-tabler-message-circle-filled aria-hidden="true" />
@@ -1079,9 +1100,20 @@ function handleAdditionalClick(event: MouseEvent) {
           <span i-tabler-external-link />
           <span class="moment-card__open-label">{{ t('moment_card.open_new_tab_short') }}</span>
         </a>
-        <button v-if="!moment.isLive" type="button" :aria-label="t('moment_card.view_comments')" @click.stop="emit('openDetail', moment)">
-          <span i-tabler-message-circle />
-          {{ formatCount(moment.commentCount) }}
+        <button
+          v-if="!moment.isLive"
+          ref="commentsToggleRef"
+          type="button"
+          :class="{ 'is-expanded': commentPreview.expanded }"
+          :aria-label="t(commentPreview.expanded ? 'moment_card.collapse_comments' : 'moment_card.view_comments')"
+          :aria-expanded="commentPreview.expanded"
+          :aria-controls="commentsId"
+          :title="t(commentPreview.expanded ? 'moment_card.collapse_comments' : 'moment_card.view_comments')"
+          @click.stop="toggleComments"
+        >
+          <span v-if="commentPreview.expanded" i-tabler-chevron-up aria-hidden="true" />
+          <span v-else i-tabler-message-circle aria-hidden="true" />
+          {{ commentPreview.expanded ? t('moment_card.collapse_comments') : formatCount(moment.commentCount) }}
         </button>
         <span v-else class="moment-card__footer-stat" :aria-label="t('moment_card.live_popularity', { value: moment.livePopularity || t('moment_card.no_data') })">
           <span i-tabler-users />
@@ -1107,6 +1139,15 @@ function handleAdditionalClick(event: MouseEvent) {
           {{ formatCount(moment.likeCount) }}
         </button>
       </footer>
+      <MomentComments
+        v-if="commentPreview.opened"
+        v-show="commentPreview.expanded"
+        :id="commentsId"
+        :moment="moment"
+        :state="commentPreview"
+        @collapse="collapseComments"
+        @open-image-preview="(urls, index, trigger) => emit('openImagePreview', urls, index, trigger)"
+      />
     </div>
   </article>
 </template>
@@ -2185,6 +2226,11 @@ function handleAdditionalClick(event: MouseEvent) {
 .moment-card__footer > button:hover {
   color: var(--bew-theme-color);
   background: color-mix(in srgb, var(--bew-theme-color) 8%, transparent);
+}
+
+.moment-card__footer > button.is-expanded {
+  color: var(--bew-theme-color);
+  background: var(--bew-theme-color-10);
 }
 
 .moment-card__footer > :not(:first-child) {

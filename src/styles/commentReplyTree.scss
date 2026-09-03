@@ -1,0 +1,103 @@
+// 视频原生评论与动态预览共用树状线条和折叠控件样式。
+.bewly-comment-reply-tree-guides {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__line {
+  fill: none;
+  stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
+  stroke-width: var(--bew-space-0-5, 2px);
+  /* butt 避免圆角线帽在竖线外侧鼓出一截 */
+  stroke-linecap: butt;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__symbol,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail__symbol {
+  fill: none;
+  stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
+  stroke-width: var(--bew-space-0-5, 2px);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__line,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__symbol,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__node,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail__symbol,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail__node {
+  pointer-events: none;
+  transition: stroke var(--bew-duration-fast, 150ms) var(--bew-ease-standard, ease);
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: var(--bew-space-6, 24px);
+  pointer-events: stroke;
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__node-hit,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail__node-hit {
+  fill: transparent;
+  stroke: none;
+  pointer-events: all;
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__node,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail__node {
+  fill: var(--bg1, var(--bew-bg, #fff));
+  stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
+  stroke-width: var(--bew-space-0-5, 2px);
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__focus,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail__focus {
+  fill: none;
+  stroke: transparent;
+  stroke-width: var(--bew-space-0-5, 2px);
+  pointer-events: none;
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch__author,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail__label {
+  fill: var(--bew-text-2, var(--text2, #61666d));
+  font-size: var(--bew-font-size-caption, 12px);
+  font-weight: var(--bew-font-weight-medium, 500);
+  pointer-events: none;
+}
+
+.bewly-comment-reply-tree-guides
+  .bewly-comment-reply-branch:hover
+  :is(.bewly-comment-reply-branch__line, .bewly-comment-reply-branch__node, .bewly-comment-reply-branch__symbol),
+.bewly-comment-reply-tree-guides
+  .bewly-comment-reply-tail:hover
+  :is(.bewly-comment-reply-tail__node, .bewly-comment-reply-tail__symbol) {
+  stroke: var(--bew-theme-color, #00aeec);
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch:focus,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch:focus-visible,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail:focus,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.bewly-comment-reply-tree-guides .bewly-comment-reply-branch:focus-visible .bewly-comment-reply-branch__focus,
+.bewly-comment-reply-tree-guides .bewly-comment-reply-tail:focus-visible .bewly-comment-reply-tail__focus {
+  stroke: var(--bew-theme-color, #00aeec);
+}

@@ -1454,6 +1454,22 @@ moments:
   fit_window: 适应窗口
   rotate_clockwise: 顺时针旋转
 moment_card:
+  comment_sex_male: 男
+  comment_sex_female: 女
+  expand_comment_replies: 共 {count} 条回复，点击展开
+  collapse_comment_replies: 收起回复
+  collapse_comments: 收起评论
+  comments_preview: 评论预览
+  comments_unavailable: 暂时无法获取此动态的评论区
+  comments_load_failed: 评论加载失败
+  comment_like_failed: 评论点赞失败，请稍后重试
+  comment_host: 楼主
+  expand_comment_thread: 展开此评论及回复
+  collapse_comment_thread: 收起此评论及回复
+  comment_image: 查看评论图片 {index}
+  comments_retry: 重试
+  load_comment_replies: 加载更多回复
+  comments_empty: 暂无评论
   video_post: 投稿了视频
   cancel_reservation: 取消预约
   reserve: 预约

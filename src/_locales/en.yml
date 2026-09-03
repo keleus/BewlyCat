@@ -1558,6 +1558,22 @@ moments:
   fit_window: Fit to window
   rotate_clockwise: Rotate clockwise
 moment_card:
+  comment_sex_male: Male
+  comment_sex_female: Female
+  expand_comment_replies: View all {count} replies
+  collapse_comment_replies: Collapse replies
+  collapse_comments: Collapse comments
+  comments_preview: Comment preview
+  comments_unavailable: Comments are currently unavailable for this post
+  comments_load_failed: Failed to load comments
+  comment_like_failed: Failed to like comment. Please try again.
+  comment_host: Thread author
+  expand_comment_thread: Expand this comment and replies
+  collapse_comment_thread: Collapse this comment and replies
+  comment_image: View comment image {index}
+  comments_retry: Retry
+  load_comment_replies: Load more replies
+  comments_empty: No comments yet
   video_post: Uploaded a video
   cancel_reservation: Cancel reservation
   reserve: Reserve
