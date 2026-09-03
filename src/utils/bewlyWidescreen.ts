@@ -67,14 +67,13 @@ const REACT_EVENT_BRIDGE_ATTRIBUTE = 'data-bewly-react-bridge'
 const SIDEBAR_NARROW_MIN_WIDTH = 360
 const SIDEBAR_NARROW_MAX_WIDTH = 460
 const MOBILE_BREAKPOINT = 900
-const LOAD_SETTLE_DELAY = 1200
 const LOADING_FADE_DURATION = 240
 const SWITCH_HINT_FADE_DURATION = 180
 const SWITCH_HINT_TIMEOUT = 6000
-const LOADING_EXIT_BUTTON_DELAY = 5000
-const PREPARED_LOADING_TIMEOUT = 30_000
-const READY_RETRY_INTERVAL = 500
-const READY_RETRY_MAX = 30
+const PREPARED_LOADING_TIMEOUT = 15_000
+const READY_RETRY_INTERVAL = 200
+const READY_RETRY_MAX = 50
+const PAGE_LOAD_FALLBACK_TIMEOUT = 3000
 const SIDEBAR_REFRESH_DELAY = 800
 const SIDEBAR_TOGGLE_IDLE_DELAY = 1000
 const BILIBILI_ACTION_ANIMATION_HUE = 196
@@ -97,11 +96,10 @@ const NATIVE_PLAYER_MODE_BUTTON_SELECTOR = [
 ].join(', ')
 
 let state: BewlyWidescreenState | null = null
-let loadingOverlay: HTMLElement | null = null
+let loadingIndicator: HTMLElement | null = null
 let loadingStyleEl: HTMLStyleElement | null = null
 let loadingLocaleWatchStop: (() => void) | undefined
 let loadingFadeTimer: ReturnType<typeof setTimeout> | undefined
-let loadingExitButtonTimer: ReturnType<typeof setTimeout> | undefined
 let loadingPlaybackCleanup: (() => void) | undefined
 let loadingEscapeCleanup: (() => void) | undefined
 let loadingPreparationFallbackTimer: ReturnType<typeof setTimeout> | undefined
@@ -697,7 +695,7 @@ export function showBewlyWidescreenSwitchHint(label: string) {
 }
 
 function showWidescreenLoading() {
-  if (loadingOverlay)
+  if (loadingIndicator)
     return
 
   loadingStyleEl = injectCSS(`
@@ -708,19 +706,13 @@ function showWidescreenLoading() {
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-direction: column;
-      gap: var(--bew-space-3, 12px);
+      gap: var(--bew-space-2, 8px);
       overflow: hidden;
-      color: var(--bew-text-2, #61666d);
-      background: var(--bew-bg, #f6f7f8);
+      color: #18191c;
+      background: #fff;
       font-family: var(--bew-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
       opacity: 1;
       transition: opacity ${LOADING_FADE_DURATION}ms ease;
-    }
-
-    html.dark #${LOADING_ROOT_ID} {
-      color: var(--bew-text-2, #c9ccd0);
-      background: var(--bew-bg, #17181a);
     }
 
     #${LOADING_ROOT_ID}.is-leaving {
@@ -728,95 +720,56 @@ function showWidescreenLoading() {
       pointer-events: none;
     }
 
-    #${LOADING_ROOT_ID} .bewly-widescreen-loading-content {
-      position: relative;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      line-height: 20px;
-    }
-
-    #${LOADING_ROOT_ID} .bewly-widescreen-loading-exit {
-      min-height: var(--bew-control-height, 36px);
-      padding: var(--bew-space-2, 8px) var(--bew-space-4, 16px);
-      border: 1px solid color-mix(in srgb, currentColor 24%, transparent);
-      border-radius: var(--bew-interactive-radius, 8px);
-      color: inherit;
-      background: color-mix(in srgb, currentColor 8%, transparent);
-      cursor: pointer;
-      font: inherit;
-      font-size: var(--bew-font-size-control, 13px);
-      font-weight: var(--bew-font-weight-medium, 500);
-      line-height: var(--bew-line-height-control, 18px);
-      transition: background-color 150ms ease, border-color 150ms ease;
-    }
-
-    #${LOADING_ROOT_ID} .bewly-widescreen-loading-exit:hover {
-      border-color: var(--bew-theme-color, #00aeec);
-      color: var(--bew-theme-color, #00aeec);
-      background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 12%, transparent);
-    }
-
-    #${LOADING_ROOT_ID} .bewly-widescreen-loading-exit:focus-visible {
-      outline: 2px solid var(--bew-theme-color-40, rgba(0, 174, 236, 0.4));
-      outline-offset: var(--bew-space-0-5, 2px);
+    html.dark #${LOADING_ROOT_ID} {
+      color: #f1f2f3;
+      background: #17181a;
     }
 
     #${LOADING_ROOT_ID} .bewly-widescreen-loading-icon {
       width: 36px;
       height: 36px;
+      flex: 0 0 auto;
       object-fit: contain;
-      flex-shrink: 0;
+    }
+
+    #${LOADING_ROOT_ID} .bewly-widescreen-loading-label {
+      min-width: 0;
+      font-size: var(--bew-font-size-control, 13px);
+      font-weight: var(--bew-font-weight-medium, 500);
+      line-height: var(--bew-line-height-control, 18px);
+      overflow-wrap: anywhere;
     }
   `)
 
-  const overlay = document.createElement('div')
-  overlay.id = LOADING_ROOT_ID
-  overlay.setAttribute('role', 'status')
-  overlay.setAttribute('aria-live', 'polite')
-
-  const content = document.createElement('div')
-  content.className = 'bewly-widescreen-loading-content'
-
   const loadingGifUrl = getLoadingGifUrl()
-  if (loadingGifUrl) {
-    const icon = document.createElement('img')
-    icon.className = 'bewly-widescreen-loading-icon'
-    icon.src = loadingGifUrl
-    icon.alt = ''
-    icon.setAttribute('aria-hidden', 'true')
-    content.appendChild(icon)
-  }
+  if (!loadingGifUrl)
+    return
+
+  const indicator = document.createElement('div')
+  indicator.id = LOADING_ROOT_ID
+  indicator.setAttribute('role', 'status')
+  indicator.setAttribute('aria-live', 'polite')
+
+  const icon = document.createElement('img')
+  icon.className = 'bewly-widescreen-loading-icon'
+  icon.src = loadingGifUrl
+  icon.alt = ''
+  icon.setAttribute('aria-hidden', 'true')
 
   const label = document.createElement('span')
-  content.appendChild(label)
-
-  const exitButton = document.createElement('button')
-  exitButton.type = 'button'
-  exitButton.className = 'bewly-widescreen-loading-exit'
-  exitButton.hidden = true
-  exitButton.addEventListener('click', () => exitBewlyWidescreen({ userInitiated: true }))
-
-  // 遮罩可能在设置水合、App 挂载之前创建，文案需跟随 locale 变化刷新。
-  const syncLoadingTexts = () => {
+  label.className = 'bewly-widescreen-loading-label'
+  const syncLoadingText = () => {
     label.textContent = t('widescreen.loading')
-    exitButton.textContent = t('widescreen.exit_overlay')
   }
-  syncLoadingTexts()
+  syncLoadingText()
   loadingLocaleWatchStop?.()
-  loadingLocaleWatchStop = watch(i18n.global.locale, syncLoadingTexts)
+  loadingLocaleWatchStop = watch(i18n.global.locale, syncLoadingText)
 
-  overlay.append(content, exitButton)
+  indicator.append(icon, label)
+
   const mountTarget = document.body ?? document.documentElement
-  mountTarget.appendChild(overlay)
-  loadingOverlay = overlay
-
-  loadingExitButtonTimer = setTimeout(() => {
-    loadingExitButtonTimer = undefined
-    if (loadingOverlay === overlay && overlay.isConnected)
-      exitButton.hidden = false
-  }, LOADING_EXIT_BUTTON_DELAY)
+  mountTarget.appendChild(indicator)
+  loadingIndicator = indicator
 
   const handlePlaying = (event: Event) => {
     const video = event.target
@@ -859,11 +812,6 @@ function removeWidescreenLoading(immediate = false) {
   loadingLocaleWatchStop?.()
   loadingLocaleWatchStop = undefined
 
-  if (loadingExitButtonTimer) {
-    clearTimeout(loadingExitButtonTimer)
-    loadingExitButtonTimer = undefined
-  }
-
   if (loadingPreparationFallbackTimer) {
     clearTimeout(loadingPreparationFallbackTimer)
     loadingPreparationFallbackTimer = undefined
@@ -874,32 +822,32 @@ function removeWidescreenLoading(immediate = false) {
     loadingFadeTimer = undefined
   }
 
-  const overlay = loadingOverlay
+  const indicator = loadingIndicator
   const styleEl = loadingStyleEl
-  if (!overlay && !styleEl)
+  if (!indicator && !styleEl)
     return
 
   const remove = () => {
-    overlay?.remove()
+    indicator?.remove()
     styleEl?.remove()
-    if (loadingOverlay === overlay)
-      loadingOverlay = null
+    if (loadingIndicator === indicator)
+      loadingIndicator = null
     if (loadingStyleEl === styleEl)
       loadingStyleEl = null
     loadingFadeTimer = undefined
   }
 
-  if (immediate || !overlay) {
+  if (immediate || !indicator) {
     remove()
     return
   }
 
-  requestAnimationFrame(() => overlay.classList.add('is-leaving'))
+  requestAnimationFrame(() => indicator.classList.add('is-leaving'))
   loadingFadeTimer = setTimeout(remove, LOADING_FADE_DURATION)
 }
 
 export function isBewlyWidescreenEngaged() {
-  return !!state || waitingForLoad || !!readyRetryTimer || !!loadingOverlay
+  return !!state || waitingForLoad || !!readyRetryTimer || !!loadingIndicator
 }
 
 function findNativePlayerModeButton(event: Event) {
@@ -985,7 +933,7 @@ export function prepareBewlyWidescreenLoading() {
 
   showWidescreenLoading()
 
-  if (!loadingOverlay)
+  if (!loadingIndicator)
     return
 
   if (!loadingPreparationFallbackTimer) {
@@ -3068,7 +3016,10 @@ function startAfterPageLoad(sidebarPosition: 'left' | 'right' = 'right') {
   clearLoadFallbackTimer()
   readyRetryCount = 0
   pendingSidebarPosition = sidebarPosition
-  scheduleReadyRetry(LOAD_SETTLE_DELAY)
+  if (isReadyForLayout() && applyNow(sidebarPosition))
+    return
+
+  scheduleReadyRetry()
 }
 
 function scheduleSidebarRefresh() {
@@ -3100,7 +3051,8 @@ export function applyBewlyWidescreen(
       showWidescreenLoading()
   }
 
-  if (document.readyState === 'complete') {
+  // 慢图片等非关键资源不应阻塞宽屏；播放器数据就绪即可开始布局。
+  if (document.readyState === 'complete' || isReadyForLayout()) {
     startAfterPageLoad(sidebarPosition)
     return
   }
@@ -3113,7 +3065,7 @@ export function applyBewlyWidescreen(
   loadFallbackTimer = setTimeout(() => {
     if (waitingForLoad)
       startAfterPageLoad(pendingSidebarPosition)
-  }, 6000)
+  }, PAGE_LOAD_FALLBACK_TIMEOUT)
 }
 
 export function exitBewlyWidescreen(

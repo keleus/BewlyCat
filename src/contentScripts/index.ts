@@ -191,8 +191,9 @@ if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 }
 else if (shouldInitializeContentScript) {
-  const playerModeLoadSettleDelay = 500
-  const videoOwnerAvatarReadyTimeout = 8000
+  const playerModeLoadSettleDelay = 200
+  const playerModeReadinessRetryInterval = 200
+  const videoOwnerAvatarReadyTimeout = 4000
   const nativeVideoHeaderStableDelay = 2000
   const replacedNativeVideoHeaderStableDelay = 400
   const videoOwnerAvatarSelector = [
@@ -253,7 +254,7 @@ else if (shouldInitializeContentScript) {
   let playerModeResumeQueued = false
   let watchLaterButtonAdded = false // 标记稍后再看按钮是否已添加
 
-  // 设置水合后立即同步 i18n 语言。宽屏遮罩等轻 DOM 元素在 App 挂载前就会
+  // 设置水合后立即同步 i18n 语言。宽屏切换提示等轻 DOM 元素在 App 挂载前就会
   // 用 t() 渲染一次性文案，若等到 App.vue 里的语言 watcher 才切换 locale，
   // 这些元素会以默认英文显示。Promise 回调按注册顺序执行，需先于下方
   // applyDefaultPlayerMode 的回调注册。
@@ -404,11 +405,13 @@ else if (shouldInitializeContentScript) {
     })
   }
 
-  function resetNativeVideoHeaderStability() {
-    nativeVideoHeaderCandidate = null
-    nativeVideoHeaderStableSince = 0
-    nativeVideoHeaderObserved = false
-    nativeVideoHeaderReplacementObserved = false
+  function resetNativeVideoHeaderStability(resetObservation = true) {
+    if (resetObservation) {
+      nativeVideoHeaderCandidate = null
+      nativeVideoHeaderStableSince = 0
+      nativeVideoHeaderObserved = false
+      nativeVideoHeaderReplacementObserved = false
+    }
     nativeVideoHeaderReadyDeadline = Date.now() + videoOwnerAvatarReadyTimeout
   }
 
@@ -444,7 +447,7 @@ else if (shouldInitializeContentScript) {
 
   function initBewlyWidescreenControlWhenPageStable() {
     if (isVideoOrBangumiPage() && !isNativeVideoHeaderStable()) {
-      window.setTimeout(initBewlyWidescreenControlWhenPageStable, 500)
+      window.setTimeout(initBewlyWidescreenControlWhenPageStable, playerModeReadinessRetryInterval)
       return
     }
 
@@ -453,7 +456,7 @@ else if (shouldInitializeContentScript) {
 
   function applyEndPlaybackBehaviorWhenPageStable() {
     if (isVideoOrBangumiPage() && !isNativeVideoHeaderStable()) {
-      window.setTimeout(applyEndPlaybackBehaviorWhenPageStable, 500)
+      window.setTimeout(applyEndPlaybackBehaviorWhenPageStable, playerModeReadinessRetryInterval)
       return
     }
 
@@ -511,7 +514,7 @@ else if (shouldInitializeContentScript) {
 
   function applyDefaultPlayerMode() {
     // iframe 抽屉会把父页面地址栏临时替换成视频 URL。父文档没有播放器，
-    // 不能在这里准备宽屏遮罩；真正的播放器模式由 iframe 自己负责。
+    // 不能在这里准备宽屏 loading；真正的播放器模式由 iframe 自己负责。
     if (document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)) {
       clearPlayerModeRetry()
       clearPlaybackBehaviorTimer()
@@ -527,7 +530,7 @@ else if (shouldInitializeContentScript) {
     }
 
     // 后台新标签页中，load / pageshow 可能早于 B 站播放器和评论组件恢复。
-    // 先等设置和可见状态，默认 Bewly 宽屏则立即用遮罩盖住原始布局。
+    // 先等设置和可见状态，默认 Bewly 宽屏则立即显示居中的 loading。
     if (!playerModeSettingsReady
       || document.visibilityState !== 'visible') {
       clearPlayerModeRetry()
@@ -540,7 +543,7 @@ else if (shouldInitializeContentScript) {
 
     // 当前视频已经进入 Bewly 宽屏时，将它视为已完成的播放器模式选择。
     // 尤其是抽屉 iframe 在标签页恢复可见后，不应再用默认模式覆盖用户当前
-    // 的宽屏布局，否则原生网页全屏会先退出 Bewly 宽屏并重新触发遮罩。
+    // 的宽屏布局，否则原生网页全屏会先退出 Bewly 宽屏并重新触发 loading。
     if (isBewlyWidescreenActive()) {
       clearPlayerModeRetry()
       applyPlayerModeCompanionSettings()
@@ -557,7 +560,7 @@ else if (shouldInitializeContentScript) {
     const isInWebFullscreen = webFullscreenBtn?.classList.contains('bpx-state-entered')
 
     if (targetPlayerMode === 'bewlyWidescreen' && !isInFullscreen && !isInWebFullscreen) {
-      // 遮罩仅覆盖视觉，不搬动 B 站 DOM；自定义播放器仍在下方等待最终顶栏稳定。
+      // loading 不搬动 B 站 DOM；自定义播放器仍在等待最终顶栏稳定。
       prepareBewlyWidescreenLoading()
     }
     else if (!isBewlyWidescreenActive()) {
@@ -616,7 +619,7 @@ else if (shouldInitializeContentScript) {
         case 'bewlyWidescreen':
           applyBewlyWidescreen(
             settings.value.bewlyWidescreenSidebarPosition || 'right',
-            // 遮罩已在等待阶段挂载，并保持到宽屏布局完成。
+            // loading 已在等待阶段挂载，并保持到宽屏布局完成。
             false,
           )
           break
@@ -648,7 +651,7 @@ else if (shouldInitializeContentScript) {
     playerModeRetryTimer = setTimeout(() => {
       playerModeRetryTimer = undefined
       applyDefaultPlayerMode()
-    }, delay ?? 500)
+    }, delay ?? playerModeReadinessRetryInterval)
   }
 
   window.addEventListener(BEWLY_WIDESCREEN_USER_EXIT, () => {
@@ -657,7 +660,7 @@ else if (shouldInitializeContentScript) {
       return
 
     // 用户主动退出会终止当前视频的默认宽屏初始化。否则头部/播放器就绪
-    // 检查留下的重试会再次挂载遮罩，并重新进入 Bewly 宽屏。
+    // 检查留下的重试会再次挂载 loading，并重新进入 Bewly 宽屏。
     clearPlayerModeRetry()
     lastAppliedPlayerModeNavigationKey = currentNavigationKey
     queueMicrotask(() => {
@@ -666,12 +669,12 @@ else if (shouldInitializeContentScript) {
     })
   })
 
-  function waitForPlayerModePageSettle() {
+  function waitForPlayerModePageSettle(resetHeaderObservation = true) {
     clearPlayerModeRetry()
     clearPlaybackBehaviorTimer()
     playerModeReadyAfter = Date.now() + playerModeLoadSettleDelay
     videoOwnerAvatarReadyDeadline = Date.now() + videoOwnerAvatarReadyTimeout
-    resetNativeVideoHeaderStability()
+    resetNativeVideoHeaderStability(resetHeaderObservation)
   }
 
   // 添加稍后再看按钮
@@ -1004,7 +1007,9 @@ else if (shouldInitializeContentScript) {
 
   // 添加页面加载监听
   window.addEventListener('load', () => {
-    waitForPlayerModePageSettle()
+    // DOMContentLoaded 后已经开始观察原生顶栏；完整加载时沿用这段观察时间，
+    // 避免把安全稳定期清零后再无条件多等一轮。
+    waitForPlayerModePageSettle(false)
     if (isVideoPage()) {
       applyDefaultPlayerMode()
     }
@@ -1413,7 +1418,7 @@ else if (shouldInitializeContentScript) {
   void settingsReady.then(() => {
     const registerCustomPlaybackSettingsWatcher = () => {
       if (isVideoOrBangumiPage() && !isNativeVideoHeaderStable()) {
-        window.setTimeout(registerCustomPlaybackSettingsWatcher, 500)
+        window.setTimeout(registerCustomPlaybackSettingsWatcher, playerModeReadinessRetryInterval)
         return
       }
 
