@@ -2,6 +2,7 @@
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
 import type { PreciousItem, PreciousResult } from '~/models/video/precious'
 import api from '~/utils/api'
@@ -22,41 +23,60 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-const videoList = ref<VideoElement[]>([])
+const tabState = useHomeTabState()
 const isLoading = ref<boolean>(false)
-const noMoreContent = ref<boolean>(true) // 入站必刷没有分页
-const { handlePageRefresh } = useBewlyApp()
+const videoList = tabState.ref<VideoElement[]>('videoList', [])
+const noMoreContent = tabState.ref<boolean>('noMoreContent', true) // 入站必刷没有分页
+const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
+const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 onMounted(() => {
-  initData()
   initPageAction()
-})
-
-onActivated(() => {
-  initPageAction()
+  if (!tabState.restored)
+    void initData()
+  else if (!hasLoaded.value)
+    void getData()
 })
 
 async function initData() {
+  if (!tabState.isCurrent())
+    return
+
   videoList.value = []
+  hasLoaded.value = false
   await getData()
 }
 
 async function getData() {
+  if (!tabState.isCurrent())
+    return
+
   emit('beforeLoading')
   isLoading.value = true
+  let loaded = false
   try {
-    await getPreciousVideos()
+    loaded = await getPreciousVideos()
+    if (tabState.isCurrent() && loaded)
+      hasLoaded.value = true
   }
   finally {
-    isLoading.value = false
-    emit('afterLoading')
+    if (tabState.isCurrent()) {
+      isLoading.value = false
+      emit('afterLoading')
+    }
   }
 }
 
 function initPageAction() {
-  handlePageRefresh.value = async () => {
-    initData()
-  }
+  handleReachBottom.value = undefined
+  handlePageRefresh.value = refreshHandler
+}
+
+async function refreshHandler() {
+  if (!tabState.isCurrent() || isLoading.value)
+    return
+
+  await initData()
 }
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
@@ -85,23 +105,34 @@ function transformPreciousVideo(item: PreciousItem): Video {
   }
 }
 
-async function getPreciousVideos() {
+async function getPreciousVideos(): Promise<boolean> {
   try {
     const response: PreciousResult = await api.ranking.getPreciousVideos()
 
-    if (response.code === 0) {
-      const list = Array.isArray((response.data as any)?.list) ? (response.data as any).list as PreciousItem[] : []
-      videoList.value = list.map(item => ({
-        uniqueId: `${item.aid}`,
-        item,
-        displayData: transformPreciousVideo(item),
-      }))
-    }
+    if (!tabState.isCurrent() || response.code !== 0)
+      return false
+
+    const list = Array.isArray((response.data as any)?.list) ? (response.data as any).list as PreciousItem[] : []
+    videoList.value = list.map(item => ({
+      uniqueId: `${item.aid}`,
+      item,
+      displayData: transformPreciousVideo(item),
+    }))
+    return true
+  }
+  catch {
+    return false
   }
   finally {
-    videoList.value = videoList.value.filter(video => video.item)
+    if (tabState.isCurrent())
+      videoList.value = videoList.value.filter(video => video.item)
   }
 }
+
+onBeforeUnmount(() => {
+  if (handlePageRefresh.value === refreshHandler)
+    handlePageRefresh.value = undefined
+})
 
 defineExpose({ initData })
 </script>

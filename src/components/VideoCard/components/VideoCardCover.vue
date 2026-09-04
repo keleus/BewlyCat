@@ -53,6 +53,7 @@ const emit = defineEmits<{
 }>()
 
 const videoRef = ref<HTMLVideoElement | null>(null)
+const isActive = ref(true)
 const isCoverHovered = ref(false)
 const isLoadingStream = ref<boolean>(false)
 const isPreviewFullscreen = ref<boolean>(false)
@@ -64,6 +65,7 @@ const shouldEnableSwipeSeek = computed(() => settings.value.enableVideoPreviewSw
 let hls: Hls | null = null
 let flvPlayer: flvjs.Player | null = null
 let previewGeneration = 0
+let previewEvents: AbortController | null = null
 /** 仅记录 pointerdown 意图；真正 scrub 需横向拖过阈值后才激活 */
 let activeScrubPointerId: number | null = null
 let scrubStartX = 0
@@ -316,15 +318,17 @@ const previewInteractionEvents = computed(() => ({
 
 function resetVideoElement(videoEl: HTMLVideoElement) {
   videoEl.pause()
+  videoEl.srcObject = null
   videoEl.removeAttribute('src')
   videoEl.load()
 }
 
-function stopPreview(videoEl: HTMLVideoElement) {
+function stopPreview(videoEl: HTMLVideoElement | null = videoRef.value) {
   cleanupPlayers()
   resetPreviewScrub()
   showVideoControls.value = false
-  resetVideoElement(videoEl)
+  if (videoEl)
+    resetVideoElement(videoEl)
 }
 
 function getFullscreenElement() {
@@ -362,6 +366,8 @@ function syncPreviewFullscreenState() {
 
 function cleanupPlayers() {
   previewGeneration++
+  previewEvents?.abort()
+  previewEvents = null
   if (hls) {
     hls.destroy()
     hls = null
@@ -422,18 +428,19 @@ async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
         })
 
         // 当有数据可以播放时立即播放
+        previewEvents = new AbortController()
         videoEl.addEventListener('loadeddata', () => {
           isLoadingStream.value = false
           videoEl.play().catch(() => {
             // Ignore autoplay errors
           })
-        }, { once: true })
+        }, { once: true, signal: previewEvents.signal })
 
         videoEl.addEventListener('canplay', () => {
           if (isLoadingStream.value) {
             isLoadingStream.value = false
           }
-        }, { once: true })
+        }, { once: true, signal: previewEvents.signal })
       }
     }
     catch (error) {
@@ -507,7 +514,8 @@ async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
         videoEl.removeEventListener('canplay', handleCanPlay)
       }
 
-      videoEl.addEventListener('canplay', handleCanPlay)
+      previewEvents = new AbortController()
+      videoEl.addEventListener('canplay', handleCanPlay, { once: true, signal: previewEvents.signal })
       videoEl.play().catch(() => {
         isLoadingStream.value = false
         // Ignore autoplay errors
@@ -527,7 +535,12 @@ async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
 }
 
 // Watch for preview URL and videoRef changes
-watch([() => props.previewVideoUrl, () => props.isHover, videoRef], ([url, isHover, videoEl]) => {
+watch([() => props.previewVideoUrl, () => props.isHover, videoRef, isActive], ([url, isHover, videoEl, active]) => {
+  if (!active) {
+    stopPreview(videoEl)
+    return
+  }
+
   if (!videoEl)
     return
 
@@ -563,13 +576,28 @@ onMounted(() => {
   document.addEventListener('webkitfullscreenchange', syncPreviewFullscreenState as EventListener)
 })
 
+function deactivatePreview() {
+  isActive.value = false
+  stopPreview()
+  if (suppressPreviewClickTimeout !== null) {
+    clearTimeout(suppressPreviewClickTimeout)
+    suppressPreviewClickTimeout = null
+  }
+  if (isPreviewFullscreen.value) {
+    isPreviewFullscreen.value = false
+    emit('previewFullscreenChange', false)
+  }
+}
+
+onActivated(() => {
+  isActive.value = true
+})
+onDeactivated(deactivatePreview)
+
 onBeforeUnmount(() => {
   document.removeEventListener('fullscreenchange', syncPreviewFullscreenState)
   document.removeEventListener('webkitfullscreenchange', syncPreviewFullscreenState as EventListener)
-  resetPreviewScrub()
-  if (suppressPreviewClickTimeout !== null)
-    clearTimeout(suppressPreviewClickTimeout)
-  cleanupPlayers()
+  deactivatePreview()
 })
 
 // Shadow styles are now injected globally via CSS variables from App.vue
@@ -605,7 +633,6 @@ onBeforeUnmount(() => {
       <LazyPicture
         :src="coverImageUrl"
         loading="lazy"
-        :release-offscreen="settings.releaseOffscreenVideoCardImages"
         :retain-screens="3"
         :show-skeleton="true"
         @loaded="emit('imageLoaded')"
@@ -633,7 +660,7 @@ onBeforeUnmount(() => {
       <!-- Video preview -->
       <Transition v-if="!removed && settings.enableVideoPreview" name="fade">
         <div
-          v-if="previewVideoUrl && (isHover || isPreviewFullscreen)"
+          v-if="isActive && previewVideoUrl && (isHover || isPreviewFullscreen)"
           class="video-card-preview"
           :class="{ 'video-card-preview--scrubbable': shouldEnableSwipeSeek }"
           pos="absolute top-0 left-0" w-full aspect-video rounded="$bew-media-radius" bg-black

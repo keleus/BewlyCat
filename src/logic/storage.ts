@@ -255,7 +255,6 @@ export interface Settings {
   videoCardCoverRatioOneColumn: number
   /** Cover width percentage in horizontal two-column video cards. */
   videoCardCoverRatioTwoColumns: number
-  releaseOffscreenVideoCardImages: boolean
 
   language: string
   customizeFont: 'default' | 'recommend' | 'custom'
@@ -557,7 +556,6 @@ export const originalSettings: Settings = {
   autoSwitchListLayoutBreakpoint: MOBILE_LIST_LAYOUT_BREAKPOINT,
   videoCardCoverRatioOneColumn: 40,
   videoCardCoverRatioTwoColumns: 50,
-  releaseOffscreenVideoCardImages: true,
 
   language: '',
   customizeFont: 'default',
@@ -882,6 +880,7 @@ watch(
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
     Reflect.deleteProperty(record, 'showBewlyOrBiliTopBarSwitcher')
     Reflect.deleteProperty(record, 'enableHomeGridVirtualization')
+    Reflect.deleteProperty(record, 'releaseOffscreenVideoCardImages')
 
     const validTabsPositions: TabsPosition[] = ['left', 'center']
     if (!validTabsPositions.includes(record.homeTabsPosition))

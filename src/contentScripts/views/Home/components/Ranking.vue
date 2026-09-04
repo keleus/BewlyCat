@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { List as RankingVideoItem, RankingResult } from '~/models/video/ranking'
@@ -30,7 +31,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { handleBackToTop, handlePageRefresh } = useBewlyApp()
+const { handleBackToTop, handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 const rankingTypes = computed((): RankingType[] => {
   return [
@@ -60,12 +61,20 @@ const rankingTypes = computed((): RankingType[] => {
   ]
 })
 
+const tabState = useHomeTabState()
 const isLoading = ref<boolean>(false)
-const activatedRankingType = ref<RankingType>({ ...rankingTypes.value[0] })
-const videoList = reactive<RankingVideoElement[]>([])
-const PgcList = reactive<RankingPgcItem[]>([])
+const activatedRankingTypeId = tabState.ref<number>('activatedRankingTypeId', rankingTypes.value[0].id)
+const activatedRankingType = computed<RankingType>({
+  get: () => rankingTypes.value.find(type => type.id === activatedRankingTypeId.value) || rankingTypes.value[0],
+  set: (type) => {
+    activatedRankingTypeId.value = type.id
+  },
+})
+const videoList = tabState.ref<RankingVideoElement[]>('videoList', [])
+const PgcList = tabState.ref<RankingPgcItem[]>('pgcList', [])
 const shouldMoveAsideUp = ref<boolean>(false)
-const noMoreContent = ref<boolean>(true) // 排行榜没有分页
+const noMoreContent = tabState.ref<boolean>('noMoreContent', true) // 排行榜没有分页
+const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const rankingGridRef = ref<HTMLElement | null>(null)
 const rankingGridWidth = ref(0)
 let rankingGridResizeObserver: ResizeObserver | null = null
@@ -134,6 +143,9 @@ function transformRankingVideo(item: RankingVideoItem, rank: number): Video {
 }
 
 watch(() => activatedRankingType.value.id, () => {
+  if (!tabState.isCurrent())
+    return
+
   handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
 
   initData()
@@ -155,97 +167,122 @@ watch(() => props.topBarVisibility, () => {
 })
 
 onMounted(() => {
-  initData()
   initPageAction()
   window.addEventListener('resize', updateRankingGridWidth, { passive: true })
   nextTick(setupRankingGridResizeObserver)
+
+  if (!tabState.restored)
+    initData()
+  else if (!hasLoaded.value)
+    initData()
 })
 
 watch(rankingGridRef, setupRankingGridResizeObserver, { flush: 'post' })
 
 onBeforeUnmount(() => {
+  requestVersion++
   cleanupRankingGridResizeObserver()
   window.removeEventListener('resize', updateRankingGridWidth)
-})
-
-onActivated(() => {
-  initPageAction()
+  if (handlePageRefresh.value === refreshHandler)
+    handlePageRefresh.value = undefined
 })
 
 function initPageAction() {
-  handlePageRefresh.value = async () => {
-    if (isLoading.value)
-      return
-    initData()
-  }
+  handleReachBottom.value = undefined
+  handlePageRefresh.value = refreshHandler
+}
+
+async function refreshHandler() {
+  if (!tabState.isCurrent() || isLoading.value)
+    return
+
+  initData()
 }
 
 function initData() {
+  if (!tabState.isCurrent())
+    return
+
   const version = ++requestVersion
-  videoList.length = 0
-  PgcList.length = 0
+  const selectionId = activatedRankingType.value.id
+  videoList.value.length = 0
+  PgcList.value.length = 0
+  hasLoaded.value = false
   isLoading.value = true
   emit('beforeLoading')
-  getData(version)
+  getData(version, selectionId)
 }
 
-function getData(version: number) {
-  if ('seasonType' in activatedRankingType.value)
-    getRankingPgc(version)
+function isRequestCurrent(version: number, selectionId: number) {
+  return tabState.isCurrent()
+    && version === requestVersion
+    && activatedRankingType.value.id === selectionId
+}
+
+function getData(version: number, selectionId: number) {
+  if (!isRequestCurrent(version, selectionId))
+    return
+
+  const rankingType = rankingTypes.value.find(type => type.id === selectionId)
+  if (!rankingType)
+    return
+
+  if (rankingType.seasonType !== undefined)
+    void getRankingPgc(version, selectionId, rankingType.seasonType)
   else
-    getRankingVideos(version)
+    void getRankingVideos(version, selectionId, rankingType.rid ?? 0, rankingType.type ?? 'all')
 }
 
-function finishRequest(version: number) {
-  if (version !== requestVersion)
+function finishRequest(version: number, selectionId: number) {
+  if (!isRequestCurrent(version, selectionId))
     return
 
   isLoading.value = false
   emit('afterLoading')
 }
 
-async function getRankingVideos(version: number) {
+async function getRankingVideos(version: number, selectionId: number, rid: number, type: RankingType['type'] = 'all') {
   try {
     const response: RankingResult = await api.ranking.getRankingVideos({
-      rid: activatedRankingType.value.rid,
-      type: 'type' in activatedRankingType.value ? activatedRankingType.value.type : 'all',
+      rid,
+      type,
     })
-    if (version !== requestVersion || response.code !== 0)
+    if (!isRequestCurrent(version, selectionId) || response.code !== 0)
       return
 
     const processedList = response.data.list.map((item, index) => ({
       ...item,
       displayData: transformRankingVideo(item, index + 1),
     }))
-    videoList.length = 0
-    videoList.push(...processedList)
+    videoList.value = processedList
+    hasLoaded.value = true
   }
   catch (error) {
-    if (version === requestVersion)
+    if (isRequestCurrent(version, selectionId))
       console.error('[Ranking] Failed to load video ranking:', error)
   }
   finally {
-    finishRequest(version)
+    finishRequest(version, selectionId)
   }
 }
 
-async function getRankingPgc(version: number) {
+async function getRankingPgc(version: number, selectionId: number, seasonType: number) {
   try {
     const response: RankingPgcResult = await api.ranking.getRankingPgc({
-      season_type: activatedRankingType.value.seasonType,
+      season_type: seasonType,
     })
-    if (version !== requestVersion || response.code !== 0)
+    if (!isRequestCurrent(version, selectionId) || response.code !== 0)
       return
 
-    PgcList.length = 0
-    PgcList.push(...response.data.list)
+    PgcList.value = response.data.list
+    hasLoaded.value = true
   }
   catch (error) {
-    if (version === requestVersion)
+    if (isRequestCurrent(version, selectionId))
       console.error('[Ranking] Failed to load PGC ranking:', error)
   }
   finally {
-    finishRequest(version)
+    finishRequest(version, selectionId)
   }
 }
 

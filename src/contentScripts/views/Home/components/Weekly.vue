@@ -2,6 +2,7 @@
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { PopularSeriesItem, PopularSeriesListResult, PopularSeriesOneResult, PopularSeriesVideoItem } from '~/models/video/popularSeries'
@@ -22,20 +23,22 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-const { handleBackToTop, handlePageRefresh, mainAppRef } = useBewlyApp()
+const { handleBackToTop, handleReachBottom, handlePageRefresh, mainAppRef } = useBewlyApp()
+const tabState = useHomeTabState()
 
-const isLoading = ref<boolean>(true)
-
-const seriesList = ref<PopularSeriesItem[]>([])
-const activatedSeries = ref<PopularSeriesItem | null>(null)
-const videoList = ref<VideoElement[]>([])
-const noMoreContent = ref<boolean>(true) // 每周必看没有分页
+const seriesList = tabState.ref<PopularSeriesItem[]>('seriesList', [])
+const activatedSeries = tabState.ref<PopularSeriesItem | null>('activatedSeries', null)
+const videoList = tabState.ref<VideoElement[]>('videoList', [])
+const noMoreContent = tabState.ref<boolean>('noMoreContent', true) // 每周必看没有分页
+const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
+const isLoading = ref<boolean>(!tabState.restored || !hasLoaded.value)
 
 // 下拉选择器相关
-const searchQuery = ref<string>('')
+const searchQuery = tabState.ref<string>('searchQuery', '')
 const showDropdown = ref<boolean>(false)
 const containerRef = ref<HTMLElement | null>(null)
 const dropdownPosition = ref({ top: 0, left: 0, width: 0 })
+let requestVersion = 0
 
 const filteredSeriesList = computed(() => {
   if (!searchQuery.value.trim()) {
@@ -90,13 +93,13 @@ function transformWeeklyVideo(item: PopularSeriesVideoItem, rank: number): Video
 }
 
 onMounted(() => {
-  void initData()
   initPageAction()
   window.addEventListener('resize', calculatePosition)
-})
 
-onActivated(() => {
-  initPageAction()
+  if (!tabState.restored)
+    void initData()
+  else if (!hasLoaded.value)
+    void resumeData()
 })
 
 onUnmounted(() => {
@@ -104,73 +107,142 @@ onUnmounted(() => {
   window.removeEventListener('click', closeDropdown)
 })
 
-onDeactivated(() => {
-  window.removeEventListener('click', closeDropdown)
+onBeforeUnmount(() => {
+  requestVersion++
+  if (handlePageRefresh.value === refreshHandler)
+    handlePageRefresh.value = undefined
 })
 
 function initPageAction() {
-  handlePageRefresh.value = async () => {
-    if (isLoading.value)
-      return
-    initData()
-  }
+  handleReachBottom.value = undefined
+  handlePageRefresh.value = refreshHandler
+}
+
+async function refreshHandler() {
+  if (!tabState.isCurrent() || isLoading.value)
+    return
+
+  await initData()
 }
 
 async function initData() {
+  if (!tabState.isCurrent())
+    return
+
   emit('beforeLoading')
   isLoading.value = true
+  const version = ++requestVersion
   videoList.value.length = 0
   seriesList.value.length = 0
   activatedSeries.value = null
+  hasLoaded.value = false
 
+  await loadInitialData(version)
+}
+
+async function loadInitialData(version: number) {
   try {
     const res: PopularSeriesListResult = await api.ranking.getPopularSeriesList()
-    if (res && res.code === 0 && res.data && Array.isArray(res.data.list)) {
-      // sort by number desc (latest first) if available
-      seriesList.value = [...res.data.list].sort((a, b) => (b.number || 0) - (a.number || 0))
-      if (seriesList.value.length) {
-        // 默认选择第一期（通常为最新期）
-        activatedSeries.value = seriesList.value[0]
-        handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
-        await fetchSeriesOne()
-      }
+    if (!isRequestCurrent(version) || res.code !== 0 || !res.data || !Array.isArray(res.data.list))
+      return
+
+    // sort by number desc (latest first) if available
+    seriesList.value = [...res.data.list].sort((a, b) => (b.number || 0) - (a.number || 0))
+    if (!seriesList.value.length) {
+      hasLoaded.value = true
+      return
     }
+
+    // 默认选择第一期（通常为最新期）
+    activatedSeries.value = seriesList.value[0]
+    handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
+    if (!isRequestCurrent(version) || !activatedSeries.value)
+      return
+
+    const selectedNumber = activatedSeries.value.number
+    const loaded = await fetchSeriesOne(version, selectedNumber)
+    if (isRequestCurrent(version, selectedNumber) && loaded)
+      hasLoaded.value = true
+  }
+  catch {
+    // 忽略错误
   }
   finally {
-    isLoading.value = false
-    emit('afterLoading')
+    if (isRequestCurrent(version)) {
+      isLoading.value = false
+      emit('afterLoading')
+    }
   }
 }
 
-async function fetchSeriesOne() {
-  if (!activatedSeries.value)
+async function resumeData() {
+  if (!tabState.isCurrent())
     return
 
-  const res: PopularSeriesOneResult = await api.ranking.getPopularSeriesOne({
-    number: (activatedSeries.value as PopularSeriesItem).number,
-  })
-  if (res && res.code === 0 && res.data && Array.isArray(res.data.list)) {
+  if (seriesList.value.length && activatedSeries.value) {
+    await getSeriesOne()
+    return
+  }
+
+  await initData()
+}
+
+function isRequestCurrent(version: number, selectedNumber?: number) {
+  return tabState.isCurrent()
+    && version === requestVersion
+    && (selectedNumber === undefined || activatedSeries.value?.number === selectedNumber)
+}
+
+async function fetchSeriesOne(version: number, selectedNumber: number): Promise<boolean> {
+  if (!isRequestCurrent(version, selectedNumber))
+    return false
+
+  try {
+    const res: PopularSeriesOneResult = await api.ranking.getPopularSeriesOne({
+      number: selectedNumber,
+    })
+
+    if (!isRequestCurrent(version, selectedNumber) || res.code !== 0 || !res.data || !Array.isArray(res.data.list))
+      return false
+
     videoList.value = res.data.list.map((item, index) => ({
       ...item,
       displayData: transformWeeklyVideo(item, index + 1),
     }))
+    return true
+  }
+  catch {
+    return false
   }
 }
 
 async function getSeriesOne() {
+  if (!tabState.isCurrent() || !activatedSeries.value)
+    return
+
+  const version = ++requestVersion
+  const selectedNumber = activatedSeries.value.number
   emit('beforeLoading')
   isLoading.value = true
+  hasLoaded.value = false
   videoList.value.length = 0
   try {
-    await fetchSeriesOne()
+    const loaded = await fetchSeriesOne(version, selectedNumber)
+    if (isRequestCurrent(version, selectedNumber) && loaded)
+      hasLoaded.value = true
   }
   finally {
-    isLoading.value = false
-    emit('afterLoading')
+    if (isRequestCurrent(version, selectedNumber)) {
+      isLoading.value = false
+      emit('afterLoading')
+    }
   }
 }
 
 function selectSeries(item: PopularSeriesItem) {
+  if (!tabState.isCurrent())
+    return
+
   activatedSeries.value = item
   showDropdown.value = false
   searchQuery.value = ''

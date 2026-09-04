@@ -80,16 +80,16 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const videoElement = ref<HTMLVideoElement | null>(null)
   const cardRootRef = ref<HTMLElement | null>(null)
   const isDisposed = ref<boolean>(false) // 跟踪组件是否已卸载
+  const isActive = ref(true)
   const previewCacheKey = Symbol('video-preview-cache')
 
   function clearPreviewVideoUrl() {
     previewVideoUrl.value = ''
   }
 
-  // 清理函数 - 在组件卸载时调用
-  onScopeDispose(() => {
-    isDisposed.value = true
+  function resetPreviewState() {
     releaseVideoPreviewCacheEntry(previewCacheKey)
+    clearPreviewVideoUrl()
 
     // 清除所有待处理的超时
     if (mouseEnterTimeOut.value) {
@@ -103,6 +103,19 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
 
     // 重置hover状态
     isHover.value = false
+    isPreviewFullscreen.value = false
+  }
+
+  onDeactivated(() => {
+    isActive.value = false
+    resetPreviewState()
+  })
+  onActivated(() => {
+    isActive.value = true
+  })
+  onScopeDispose(() => {
+    isDisposed.value = true
+    resetPreviewState()
   })
 
   // Computed
@@ -172,13 +185,27 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       .filter((mid): mid is number => typeof mid === 'number')
   }
 
+  const previewIdentity = computed(() => {
+    const video = props.value.video
+    return [video?.bvid, video?.aid, video?.cid, video?.roomid, video?.epid].join(':')
+  })
+
   // Watch
-  watch(() => isHover.value, async (newValue) => {
+  watch([isHover, previewIdentity], async ([newValue, identity], [, previousIdentity], onCleanup) => {
+    let cancelled = false
+    onCleanup(() => {
+      cancelled = true
+    })
+    const isStale = () => cancelled || isDisposed.value || !isActive.value || !isHover.value
+
+    if (identity !== previousIdentity)
+      clearPreviewVideoUrl()
+
     if (!props.value.video || !newValue)
       return
 
     // 如果组件已卸载，不执行任何操作
-    if (isDisposed.value)
+    if (isStale())
       return
 
     // Moments feed preview control: Only load preview if video belongs to selected uploader
@@ -207,7 +234,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
             qn: 80, // 流畅画质，适合预览
           })
           // 再次检查是否已卸载
-          if (isDisposed.value || !isHover.value)
+          if (isStale())
             return
           if (res.code === 0 && res.data.durl && res.data.durl.length > 0) {
             previewVideoUrl.value = res.data.durl[0].url
@@ -226,7 +253,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
               bvid: props.value.video.bvid,
             })
             // 检查是否已卸载
-            if (isDisposed.value || !isHover.value)
+            if (isStale())
               return
             if (res.code === 0)
               cid = res.data.cid
@@ -236,18 +263,22 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
           }
         }
         // 如果组件已卸载，不发起请求
-        if (isDisposed.value)
+        if (isStale())
           return
-        api.video.getVideoPreview({
-          bvid: props.value.video.bvid,
-          cid,
-        }).then((res: VideoPreviewResult) => {
+        try {
+          const res: VideoPreviewResult = await api.video.getVideoPreview({
+            bvid: props.value.video.bvid,
+            cid,
+          })
           // 检查是否已卸载，已卸载则不更新状态
-          if (isDisposed.value || !isHover.value)
+          if (isStale())
             return
           if (res.code === 0 && res.data.durl && res.data.durl.length > 0)
             previewVideoUrl.value = res.data.durl[0].url
-        })
+        }
+        catch {
+          // Preview requests can fail after leaving the card or closing the page.
+        }
       }
     }
   })

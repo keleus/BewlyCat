@@ -104,20 +104,6 @@ function getCoverRatioProgress(value: number) {
         <Select v-model="settings.videoCardLayout" :options="videoCardLayoutOptions" w="160px" />
       </SettingsItem>
 
-      <SettingsItem
-        :title="$t('settings.release_offscreen_images')"
-        :badge="$t('settings.badge_use_with_caution')"
-        right-width="auto"
-      >
-        <template #desc>
-          <span>{{ $t('settings.release_offscreen_images_desc') }}</span>
-          <span block class="bew-warning-text">
-            {{ $t('settings.release_offscreen_images_warning') }}
-          </span>
-        </template>
-        <Radio v-model="settings.releaseOffscreenVideoCardImages" />
-      </SettingsItem>
-
       <SettingsItem :title="$t('settings.enable_video_preview')" right-width="auto">
         <Radio v-model="settings.enableVideoPreview" />
       </SettingsItem>

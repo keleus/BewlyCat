@@ -303,10 +303,6 @@ const displayItems = computed(() => {
   return props.items
 })
 
-// 小列表尊重用户设置；无限滚动达到阈值后启用硬保护，释放离屏解码资源。
-const forceReleaseOffscreenImages = computed(() => props.items.length > 80)
-provide('BEWLY_FORCE_RELEASE_OFFSCREEN_VIDEO_CARD_IMAGES', forceReleaseOffscreenImages)
-
 function isDocumentVisible(): boolean {
   return typeof document === 'undefined' || document.visibilityState === 'visible'
 }

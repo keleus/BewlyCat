@@ -563,9 +563,6 @@ settings:
   video_card_shadow_reset: Reset shadow settings
   video_card_layout: Video card layout
   video_card_layout_desc: Switch between the redesigned card and the legacy layout.
-  release_offscreen_images: Reclaim offscreen cover memory
-  release_offscreen_images_desc: Unload cover image resources outside the retained range to reduce long-list memory usage.
-  release_offscreen_images_warning: 'Warning: reclaiming offscreen memory may cause stutter when images are rendered again. Images are not reclaimed by default.'
   video_card_layout_option:
     modern: Modern layout
     old: Classic layout

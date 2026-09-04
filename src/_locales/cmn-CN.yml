@@ -616,9 +616,6 @@ settings:
   video_card_shadow_reset: 重置阴影设置
   video_card_layout: 视频卡片布局
   video_card_layout_desc: 在新版与旧版视频卡片显示样式之间切换。
-  release_offscreen_images: 回收离屏封面内存
-  release_offscreen_images_desc: 视频封面离开保留范围后卸载图片资源，降低长列表内存占用。
-  release_offscreen_images_warning: 警告：离屏回收内存功能可能会带来图片重新渲染上的性能卡顿，默认不回收。
   video_card_layout_option:
     modern: 新版
     old: 经典版

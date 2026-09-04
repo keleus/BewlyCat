@@ -977,7 +977,17 @@ const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
 const canRefreshCurrentPage = computed((): boolean => {
   return activatedPage.value !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou || canRefreshHomeSubPage.value
 })
+let refreshScrollTimer: ReturnType<typeof setTimeout> | undefined
+
+function cancelPendingPageRefresh() {
+  clearTimeout(refreshScrollTimer)
+  refreshScrollTimer = undefined
+}
+
+onBeforeUnmount(cancelPendingPageRefresh)
+
 const handleThrottledPageRefresh = useThrottleFn(() => {
+  cancelPendingPageRefresh()
   if (!canRefreshCurrentPage.value)
     return
 
@@ -991,15 +1001,21 @@ const handleThrottledPageRefresh = useThrottleFn(() => {
   }
   else {
     handleBackToTop()
+    const refresh = handlePageRefresh.value
+    const deadline = performance.now() + 3000
     const checkScrollComplete = () => {
-      if (viewport.scrollTop === 0) {
-        handlePageRefresh.value?.()
+      refreshScrollTimer = undefined
+      if (!viewport.isConnected || viewport !== scrollViewportRef.value || refresh !== handlePageRefresh.value)
+        return
+
+      if (viewport.scrollTop <= 1) {
+        refresh?.()
       }
-      else {
-        setTimeout(checkScrollComplete, 50)
+      else if (performance.now() < deadline) {
+        refreshScrollTimer = setTimeout(checkScrollComplete, 50)
       }
     }
-    setTimeout(checkScrollComplete, 100)
+    refreshScrollTimer = setTimeout(checkScrollComplete, 100)
   }
 }, 500)
 const handleThrottledReachBottom = useThrottleFn(() => handleReachBottom.value?.(), 200)
@@ -1165,6 +1181,18 @@ const showBewlyPage = computed((): boolean => {
 
   return isHomePage() && !settings.value.useOriginalBilibiliHomepage
 })
+
+// App outlives page components. Drop outgoing closures before the next page
+// registers its actions so evicted KeepAlive pages and their lists can be collected.
+watch([activatedPage, () => activatedPage.value === AppPage.Home ? homeActivatedPage.value : undefined, showBewlyPage], () => {
+  cancelPendingPageRefresh()
+  handlePageRefresh.value = undefined
+  handleReachBottom.value = undefined
+  handleUndoRefresh.value = undefined
+  handleForwardRefresh.value = undefined
+  undoForwardState.value = UndoForwardState.Hidden
+  canRefreshHomeSubPage.value = false
+}, { flush: 'sync' })
 
 // Keep the browser tab title in sync with the page selected from the Dock.
 // Search results manages its own keyword-aware title in SearchResults.vue.

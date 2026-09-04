@@ -2,6 +2,7 @@
 import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useHomeTabState } from '~/composables/useHomeTabState'
 import type { GridLayoutType } from '~/logic'
 import type { List as VideoItem, TrendingResult } from '~/models/video/trending'
 import api from '~/utils/api'
@@ -22,25 +23,30 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-const videoList = ref<VideoElement[]>([])
+const tabState = useHomeTabState()
 const isLoading = ref<boolean>(false)
-const pn = ref<number>(1)
-const noMoreContent = ref<boolean>(false)
+const videoList = tabState.ref<VideoElement[]>('videoList', [])
+const pn = tabState.ref<number>('pn', 1)
+const noMoreContent = tabState.ref<boolean>('noMoreContent', false)
+const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 onMounted(() => {
-  initData()
   initPageAction()
-})
-
-onActivated(() => {
-  initPageAction()
+  if (!tabState.restored)
+    void initData()
+  else if (!hasLoaded.value)
+    void getData()
 })
 
 async function initData() {
+  if (!tabState.isCurrent())
+    return
+
   noMoreContent.value = false
   videoList.value = []
   pn.value = 1
+  hasLoaded.value = false
   await getData()
 }
 
@@ -74,73 +80,106 @@ function transformTrendingVideo(item: VideoElement): Video | undefined {
 }
 
 async function getData() {
+  if (!tabState.isCurrent())
+    return
+
   emit('beforeLoading')
   isLoading.value = true
+  let loaded = noMoreContent.value
   try {
-    await getTrendingVideos()
+    loaded = await getTrendingVideos()
+    if (tabState.isCurrent() && loaded)
+      hasLoaded.value = true
   }
   finally {
-    isLoading.value = false
-    emit('afterLoading')
+    if (tabState.isCurrent()) {
+      isLoading.value = false
+      emit('afterLoading')
+    }
   }
+}
+
+async function reachBottomHandler() {
+  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value)
+    return
+
+  await handleLoadMore()
+}
+
+async function refreshHandler() {
+  await initData()
 }
 
 function initPageAction() {
-  handleReachBottom.value = async () => {
-    if (!isLoading.value && !noMoreContent.value)
-      handleLoadMore()
-  }
-
-  handlePageRefresh.value = async () => {
-    initData()
-  }
+  handleReachBottom.value = reachBottomHandler
+  handlePageRefresh.value = refreshHandler
 }
 
-async function getTrendingVideos() {
+async function getTrendingVideos(): Promise<boolean> {
   if (noMoreContent.value)
-    return
+    return true
+
+  const requestPage = pn.value
 
   try {
     const response: TrendingResult = await api.video.getPopularVideos({
-      pn: pn.value++,
+      pn: requestPage,
       ps: 30,
     })
 
-    if (response.code === 0) {
-      noMoreContent.value = response.data.no_more
+    if (!tabState.isCurrent() || response.code !== 0)
+      return false
 
-      const newItems = response.data.list.map((item: VideoItem) => ({
-        uniqueId: `${item.aid}`,
-        item,
-        displayData: transformTrendingVideo({ uniqueId: `${item.aid}`, item }),
-      }))
+    noMoreContent.value = response.data.no_more
+    pn.value = requestPage + 1
 
-      videoList.value = [...videoList.value, ...newItems]
+    const newItems = response.data.list.map((item: VideoItem) => ({
+      uniqueId: `${item.aid}`,
+      item,
+      displayData: transformTrendingVideo({ uniqueId: `${item.aid}`, item }),
+    }))
 
-      // 初次加载且数据不足时继续加载
-      if (videoList.value.length < 30 && !noMoreContent.value) {
-        await getTrendingVideos()
-      }
+    videoList.value = [...videoList.value, ...newItems]
+
+    // 初次加载且数据不足时继续加载
+    if (videoList.value.length < 30 && !noMoreContent.value) {
+      if (!tabState.isCurrent())
+        return true
+
+      return await getTrendingVideos()
     }
+
+    return true
   }
   catch {
     // 忽略错误
+    return false
   }
 }
 
 // 供 VideoCardGrid 预加载调用的函数
 async function handleLoadMore() {
-  if (isLoading.value || noMoreContent.value)
+  if (!tabState.isCurrent() || isLoading.value || noMoreContent.value)
     return
 
   isLoading.value = true
   try {
-    await getTrendingVideos()
+    const loaded = await getTrendingVideos()
+    if (tabState.isCurrent() && loaded)
+      hasLoaded.value = true
   }
   finally {
-    isLoading.value = false
+    if (tabState.isCurrent())
+      isLoading.value = false
   }
 }
+
+onBeforeUnmount(() => {
+  if (handleReachBottom.value === reachBottomHandler)
+    handleReachBottom.value = undefined
+  if (handlePageRefresh.value === refreshHandler)
+    handlePageRefresh.value = undefined
+})
 
 defineExpose({ initData })
 </script>

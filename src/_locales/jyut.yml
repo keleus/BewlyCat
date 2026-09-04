@@ -469,9 +469,6 @@ settings:
   video_card_shadow_reset: 重設陰影設定
   video_card_layout: 影片卡片版面
   video_card_layout_desc: 喺新版同舊版嘅影片卡片樣式之間切換。
-  release_offscreen_images: 回收離屏封面記憶體
-  release_offscreen_images_desc: 影片封面離開保留範圍之後卸載圖片資源，減低長清單記憶體用量。
-  release_offscreen_images_warning: 警告：離屏回收記憶體可能會令圖片重新渲染嗰陣窒一窒，預設唔回收。
   video_card_layout_option:
     modern: 新版
     old: 經典版

@@ -4,9 +4,12 @@ import { useThrottleFn } from '@vueuse/core'
 import Icon from '~/components/Icon.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { provideHomeTabCache } from '~/composables/useHomeTabState'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { gridLayout, settings } from '~/logic'
+import type { ForYouState } from '~/stores/forYouStore'
+import { useForYouStore } from '~/stores/forYouStore'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -18,6 +21,7 @@ import { HomeSubPage } from './types'
 
 const mainStore = useMainStore()
 const topBarStore = useTopBarStore()
+const forYouStore = useForYouStore()
 const { isLayoutEditing } = useLayoutEditMode()
 const {
   handleBackToTop,
@@ -30,12 +34,12 @@ const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => 
 
 // ✅ 性能优化：缓存 scrollTop 值，避免重复 DOM 读取
 const cachedScrollTop = ref(0)
-const tabScrollPositions = new Map<HomeSubPage, number>()
+const tabScrollPositions = new Map<string, number>()
 let pendingTabScrollTop: number | null = null
 
 // 使用全局的homeActivatedPage状态
 const activatedPage = homeActivatedPage
-// KeepAlive 依赖稳定的组件类型，不能在 computed 内重复创建异步组件包装器。
+// Stable async component types let returning tabs reuse the loaded module.
 const forYouPage = defineAsyncComponent(() => import('./components/ForYou.vue'))
 const followingPage = defineAsyncComponent(() => import('./components/Following.vue'))
 const followingOldPage = defineAsyncComponent(() => import('./components/FollowingOld.vue'))
@@ -59,7 +63,11 @@ const pages = computed(() => ({
 }))
 const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage.Following
   ? `${activatedPage.value}:${settings.value.useFollowingNewLayout ? 'new' : 'old'}`
-  : activatedPage.value)
+  : activatedPage.value === HomeSubPage.ForYou
+    ? `${activatedPage.value}:${settings.value.recommendationMode}`
+    : activatedPage.value)
+const cacheRevision = ref(0)
+const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition)
 const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
@@ -89,9 +97,13 @@ watch(() => settings.value.enableGridLayoutSwitcher, (enabled) => {
 // Cookie changes are reconciled by the top bar store. Refresh the active home
 // tab when that reconciliation changes the session so data that previously
 // failed with -101 (for example after QR-code login) is fetched immediately.
-watch(() => topBarStore.isLogin, async () => {
-  await nextTick()
-  tabPageRef.value?.initData?.()
+watch(() => [topBarStore.isLogin, topBarStore.userInfo.mid], () => {
+  // A new account must never restore a previous account's feed or filters.
+  tabCache.clear()
+  forYouStore.resetState()
+  tabScrollPositions.clear()
+  pendingTabScrollTop = getInitialTabScrollTop()
+  cacheRevision.value++
 })
 
 function getInitialTabScrollTop(): number {
@@ -117,12 +129,14 @@ function finishTabSwitch() {
   })
 }
 
-watch(activatedPage, (newPage, oldPage) => {
+watch(activatedPageCacheKey, (newPage, oldPage) => {
   const viewport = scrollViewportRef.value
   if (!viewport)
     return
 
-  tabScrollPositions.set(oldPage, viewport.scrollTop)
+  // During a rapid switch the viewport may still belong to the outgoing tab.
+  if (pendingTabScrollTop === null)
+    tabScrollPositions.set(oldPage, viewport.scrollTop)
   pendingTabScrollTop = tabScrollPositions.get(newPage) ?? getInitialTabScrollTop()
   isHomeTabSwitching.value = true
 }, { flush: 'sync' })
@@ -179,10 +193,44 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  preserveInactiveForYouState()
+  tabCache.clear()
   emitter.off(TOP_BAR_VISIBILITY_CHANGE, handleTopBarVisibilityChange)
   emitter.off(OVERLAY_SCROLL_BAR_SCROLL, handleOverlayScroll)
   isHomeTabSwitching.value = false
 })
+
+// The existing Dock retention setting also applies when Home is left from
+// another tab. Transfer its data snapshot to the store before clearing Home.
+function preserveInactiveForYouState() {
+  if (!settings.value.preserveForYouState || activatedPage.value === HomeSubPage.ForYou)
+    return
+  const mode = settings.value.recommendationMode
+  const key = `${HomeSubPage.ForYou}:${mode}`
+  const snapshot = tabCache.take(key) as (Partial<ForYouState> & {
+    hasInitializedData?: boolean
+    webRecommendationUniqId?: string
+  }) | undefined
+  if (!snapshot)
+    return
+  forYouStore.saveCompleteState({
+    videoList: snapshot.videoList ?? [],
+    appVideoList: snapshot.appVideoList ?? [],
+    refreshIdx: snapshot.refreshIdx ?? 1,
+    webFreshIdx1h: snapshot.webFreshIdx1h,
+    webFreshIdx1hTimestamp: snapshot.webFreshIdx1hTimestamp,
+    webFetchRow: snapshot.webFetchRow,
+    webRefreshBrush: snapshot.webRefreshBrush,
+    webLoadMoreBrush: snapshot.webLoadMoreBrush,
+    webUniqId: snapshot.webRecommendationUniqId,
+    webShowlistGroups: snapshot.webShowlistGroups,
+    webLastClicklist: snapshot.webLastClicklist,
+    noMoreContent: snapshot.noMoreContent ?? false,
+    isInitialized: !!snapshot.hasInitializedData || !!snapshot.videoList?.length || !!snapshot.appVideoList?.length,
+    recommendationMode: mode,
+    scrollTop: tabScrollPositions.get(key) ?? getInitialTabScrollTop(),
+  })
+}
 
 function handleChangeTab(tab: HomeTab) {
   homeActivatedPageTouched.value = true
@@ -370,16 +418,14 @@ function toggleTabContentLoading(loading: boolean) {
         @enter="restoreTabScrollPosition"
         @after-enter="finishTabSwitch"
       >
-        <KeepAlive :max="3">
-          <Component
-            :is="pages[activatedPage]" :key="activatedPageCacheKey"
-            ref="tabPageRef"
-            :grid-layout="gridLayout.home"
-            :top-bar-visibility="topBarVisibility"
-            @before-loading="toggleTabContentLoading(true)"
-            @after-loading="toggleTabContentLoading(false)"
-          />
-        </KeepAlive>
+        <Component
+          :is="pages[activatedPage]" :key="`${activatedPageCacheKey}:${cacheRevision}`"
+          ref="tabPageRef"
+          :grid-layout="gridLayout.home"
+          :top-bar-visibility="topBarVisibility"
+          @before-loading="toggleTabContentLoading(true)"
+          @after-loading="toggleTabContentLoading(false)"
+        />
       </Transition>
     </main>
 
