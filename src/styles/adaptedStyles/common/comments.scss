@@ -1,4 +1,7 @@
 .bewly-design {
+  // 普通加载与「展开全部」共用评论区背景，浅色和深色主题均需传入 Shadow DOM。
+  --bew-comment-replies-mask-bg: color-mix(in oklab, var(--bew-bg), transparent 15%);
+
   // 评论图片预览打开时隐藏页面滚动条，避免其显示在遮罩右侧。
   // 仅滚动条规则受该设置控制，其余评论适配需始终生效。
   &.bewly-hide-comment-image-scrollbar {
@@ -72,7 +75,6 @@
   // #region dark mode adaption part
   &.dark {
     // 将个性化配色变量传入 Bilibili 评论组件的 Shadow DOM。
-    --bew-comment-replies-mask-bg: color-mix(in oklab, var(--bew-bg), transparent 15%);
     --bew-comment-tag-color: var(--bew-text-2);
     --bew-comment-tag-bg: var(--bew-fill-1);
     --bew-comment-box-border: var(--bew-border-color);

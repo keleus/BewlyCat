@@ -2049,6 +2049,11 @@ function injectLayoutStyle() {
       padding: 8px 8px 16px;
     }
 
+    #${ROOT_ID} .bewly-widescreen-panel-comment {
+      /* 评论移入侧栏后，加载遮罩需跟随侧栏背景。 */
+      --bew-comment-replies-mask-bg: color-mix(in oklab, var(--bewly-widescreen-sidebar-bg), transparent 15%);
+    }
+
     #${ROOT_ID} .bewly-widescreen-panel:not([hidden]) {
       height: auto;
       overflow: visible;
