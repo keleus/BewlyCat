@@ -478,6 +478,7 @@ export function isInIframe(): boolean {
  */
 const BILIBILI_TRACKING_PARAMS = [
   'spm_id_from',
+  'hcfrom',
   'vd_source',
   'share_source',
   'share_medium',

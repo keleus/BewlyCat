@@ -4119,6 +4119,7 @@ else if (shouldInitializePageScript) {
   // Bilibili tracking parameters to be removed from URLs
   const BILIBILI_TRACKING_PARAMS = [
     'spm_id_from',
+    'hcfrom',
     'vd_source',
     'share_source',
     'share_medium',

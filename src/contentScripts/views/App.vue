@@ -1620,6 +1620,7 @@ provide<BewlyAppProvider>('BEWLY_APP', {
 if (settings.value.cleanUrlArgument) {
   const BASE_PARAMS_TO_REMOVE = new Set([
     'spm_id_from',
+    'hcfrom',
     'from_source',
     'msource',
     'bsource',
