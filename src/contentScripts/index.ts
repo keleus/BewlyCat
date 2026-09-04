@@ -328,7 +328,11 @@ else if (shouldInitializeContentScript) {
     return shouldApply
   }
 
-  if (isSupportedPages() || isSupportedIframePages()) {
+  // 原生页面的适配也要等真实设置，避免启动时短暂套用默认开启的样式。
+  void settingsReady.then(() => {
+    if (!isSupportedPages() && !isSupportedIframePages())
+      return
+
     if (settings.value.adaptToOtherPageStyles || settings.value.videoPageDarkMode)
       useDark()
 
@@ -350,35 +354,13 @@ else if (shouldInitializeContentScript) {
           document.head.removeChild(darkModeStyle)
       })
     }
-  }
+  })
 
   // 挂载完成与保险丝两条路径共用的清理，重复调用无副作用
   function removeBeforeLoadedStyleEl() {
     beforeLoadedStyleEl?.remove()
     beforeLoadedStyleEl = undefined
     clearTimeout(beforeLoadedStyleFailsafeTimer)
-  }
-
-  if (settings.value.adaptToOtherPageStyles && isHomePage()) {
-    beforeLoadedStyleEl = injectCSS(`
-    html.bewly-design {
-      background-color: var(--bew-bg);
-      transition: background-color 0.2s ease-in;
-    }
-
-    body {
-      display: none;
-    }
-  `)
-
-    // Add opacity transition effect for page loaded
-    injectCSS(`
-    body {
-      transition: opacity 0.5s;
-    }
-  `)
-    // Failsafe: never keep the page hidden for too long.
-    beforeLoadedStyleFailsafeTimer = setTimeout(removeBeforeLoadedStyleEl, 4000)
   }
 
   window.addEventListener(BEWLY_MOUNTED, () => {
@@ -1205,6 +1187,21 @@ else if (shouldInitializeContentScript) {
 
     // 启用自定义首页时隐藏 B 站原始首页。
     if (changeHomePage) {
+      // 等真实设置就绪后，仅在外层自定义首页防闪烁。原生首页（含 iframe）
+      // 必须保留布局，否则 B 站初始化时会把悬浮工具栏算到视口外（#1178）。
+      if (settings.value.adaptToOtherPageStyles) {
+        beforeLoadedStyleEl = injectCSS(`
+          html.bewly-custom-homepage.bewly-design {
+            background-color: var(--bew-bg);
+          }
+          html.bewly-custom-homepage > body {
+            opacity: 0;
+            pointer-events: none;
+          }
+        `)
+        beforeLoadedStyleFailsafeTimer = setTimeout(removeBeforeLoadedStyleEl, 4000)
+      }
+
       // 移动端缺少 viewport 声明时会按 980px 排版后整体缩放，导致响应式断点失效。
       ensureResponsiveViewport(document)
 
@@ -1220,18 +1217,18 @@ else if (shouldInitializeContentScript) {
       // 避免「半隐藏的 B 站首页 Vue 树」与自定义首页双开抢资源。
       injectCSS(`
       /* 自定义首页始终以当前可视视口为尺寸基准，避免原站最小宽度撑大文档。 */
-      html,
-      body {
+      html.bewly-custom-homepage,
+      html.bewly-custom-homepage > body {
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
         overflow-x: hidden !important;
       }
       /* Hide Bilibili's own page elements, preserving third-party extensions (e.g., Bili-Evolved) */
-      body > #app,
-      body > #i_cecream,
-      .home-redesign-base,
-      .bilibili-gate-root {
+      html.bewly-custom-homepage > body > #app,
+      html.bewly-custom-homepage > body > #i_cecream,
+      html.bewly-custom-homepage .home-redesign-base,
+      html.bewly-custom-homepage .bilibili-gate-root {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
@@ -1239,7 +1236,7 @@ else if (shouldInitializeContentScript) {
         left: -9999px !important;
       }
       /* 顶栏 portal 到 body 后的定位；显隐由 .remove-top-bar 控制 */
-      body > .bili-header {
+      html.bewly-custom-homepage > body > .bili-header {
         position: relative !important;
         left: 0 !important;
         pointer-events: auto !important;
