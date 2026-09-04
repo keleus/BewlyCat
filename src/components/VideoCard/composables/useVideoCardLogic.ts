@@ -15,7 +15,8 @@ import { getCSRF, removeHttpFromUrl } from '~/utils/main'
 import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
 import { openLinkInBackground } from '~/utils/tabs'
 
-import type { Video } from '../types'
+import type { Video, VideoCardState } from '../types'
+import { createVideoCardState } from '../types'
 import { getCurrentTime, getCurrentVideoUrl } from '../utils'
 import { releaseVideoPreviewCacheEntry, retainVideoPreviewCacheEntry } from './videoPreviewCache'
 
@@ -48,7 +49,7 @@ function createAppFeedFeedbackParams(video: Video, selection?: AppFeedFeedbackSe
   }
 }
 
-export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps>) {
+export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps>, savedState?: VideoCardState) {
   const toast = useToast()
   const { openIframeDrawer } = useBewlyApp()
   const topBarStore = useTopBarStore()
@@ -63,13 +64,14 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   // Refs
   const showVideoOptions = ref<boolean>(false)
   const videoOptionsFloatingStyles = ref<CSSProperties>({})
-  const removed = ref<boolean>(false)
+  const interactionState = savedState ?? reactive(createVideoCardState())
+  const removed = toRef(interactionState, 'removed')
   const moreBtnRef = ref<HTMLButtonElement | null>(null)
   const contextMenuRef = ref<HTMLDivElement | null>(null)
-  const selectedDislikeOpt = ref<AppFeedFeedbackSelection>()
-  const videoCurrentTime = ref<number | null>(null)
-  const isInWatchLater = ref<boolean>(false)
-  const resolvedWatchLaterAid = ref<number>()
+  const selectedDislikeOpt = toRef(interactionState, 'selectedDislikeOpt')
+  const videoCurrentTime = toRef(interactionState, 'videoCurrentTime')
+  const isInWatchLater = toRef(interactionState, 'isInWatchLater')
+  const resolvedWatchLaterAid = toRef(interactionState, 'resolvedWatchLaterAid')
   const isHover = ref<boolean>(false)
   const isPreviewFullscreen = ref<boolean>(false)
   const mouseEnterTimeOut = ref<number | null>(null)

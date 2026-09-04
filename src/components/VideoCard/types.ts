@@ -1,5 +1,18 @@
 import type { ThreePointV2 } from '~/models/video/appForYou'
 
+/** Data-only interaction state survives offscreen card recycling. */
+export interface VideoCardState {
+  removed: boolean
+  selectedDislikeOpt?: { reasonId?: number, feedbackId?: number }
+  videoCurrentTime: number | null
+  isInWatchLater: boolean
+  resolvedWatchLaterAid?: number
+}
+
+export function createVideoCardState(): VideoCardState {
+  return { removed: false, videoCurrentTime: null, isInWatchLater: false }
+}
+
 export interface Video {
   id: number
   duration?: number

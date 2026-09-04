@@ -11,7 +11,7 @@ import { recordVideoVisit } from '~/utils/videoVisitHistory'
 import VideoCardCover from './components/VideoCardCover.vue'
 import VideoCardInfo from './components/VideoCardInfo.vue'
 import { useVideoCardLogic } from './composables/useVideoCardLogic'
-import type { Video } from './types'
+import type { Video, VideoCardState } from './types'
 import VideoCardContextMenu from './VideoCardContextMenu/VideoCardContextMenu.vue'
 
 const props = withDefaults(defineProps<Props>(), {
@@ -36,6 +36,7 @@ interface Props {
   primaryClickObserver?: (event: MouseEvent) => void
   coverTopLeftAlwaysVisible?: boolean
   coverTopRightAlwaysVisible?: boolean
+  persistentState?: VideoCardState
 }
 
 const layout = computed((): VideoCardLayoutSetting => {
@@ -50,7 +51,9 @@ const showMoreButton = computed(() =>
 )
 
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
-const logic = useVideoCardLogic(props)
+const logic = useVideoCardLogic(props, props.persistentState)
+// Keep menus, keyboard focus (handled by the grid), and fullscreen previews alive.
+defineExpose({ canRecycle: computed(() => !logic.showVideoOptions.value && !logic.isPreviewFullscreen.value && !logic.isHover.value) })
 const { mainAppRef } = useBewlyApp()
 
 // 使用共享样式（避免每个卡片重复计算）
