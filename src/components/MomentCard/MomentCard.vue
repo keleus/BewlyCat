@@ -765,7 +765,7 @@ function handleAdditionalClick(event: MouseEvent) {
               {{ moment.title }}
             </p>
             <p
-              v-if="moment.mediaMeta && !moment.isChargeExclusive && (!moment.isVideo || moment.isLive)"
+              v-if="moment.mediaMeta && !moment.isForward && !moment.isChargeExclusive && (!moment.isVideo || moment.isLive)"
               class="moment-card__media-meta"
               :class="{ 'moment-card__media-meta--live': moment.isLive }"
             >
