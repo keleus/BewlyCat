@@ -170,7 +170,8 @@ const momentsFeedCache = useStorageLocal<MomentsFeedCache>('momentsFeedCache', {
 })
 type MomentGroup = 'all' | 'wanted'
 const activeMomentGroup = ref<MomentGroup>('all')
-const wantedCacheCursor = ref(0)
+/** 只保留“想看”尚未扫描的缓存段；已展示数据交给虚拟列表管理。 */
+let wantedFeedBuffer: MomentsFeedCacheEntry | undefined
 const portalUser = ref<MomentsPortalUser | null>(null)
 const portalLiveUsers = ref<MomentsPortalLiveUser[]>([])
 const portalLiveCount = ref(0)
@@ -290,9 +291,8 @@ const MAX_POST_LOAD_AUTOFILL_PAGES = 1
 const WANTED_SCAN_LIMIT = 100
 /** 开启类型过滤时单次最多请求的原始动态页数 */
 const FILTERED_MAX_REQUEST_PAGES = 2
+/** 仅限制持久化缓存，不能作为动态浏览或“想看”扫描的上限。 */
 const MOMENTS_CACHE_MAX_ITEMS = 1000
-/** 页面内存与持久化缓存使用同一上限，避免无限滚动永久累积响应对象。 */
-const MOMENTS_MEMORY_MAX_ITEMS = MOMENTS_CACHE_MAX_ITEMS
 const MOMENTS_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000
 /** 虚拟瀑布流需要在全局哨兵进入视口前主动预取，避免高度修正后漏掉相交事件 */
 const LOAD_MORE_AHEAD_PX = 640
@@ -1976,7 +1976,6 @@ function handleMomentGroupChange(group: MomentGroup) {
   if (group === 'wanted')
     selectedHostMid.value = ''
   activeMomentGroup.value = group
-  wantedCacheCursor.value = 0
   void loadMoments(true)
 }
 
@@ -2005,7 +2004,6 @@ function handleUpFilterChange(mid = '') {
   prepareMomentListTransition()
   selectedHostMid.value = nextMid
   activeMomentGroup.value = 'all'
-  wantedCacheCursor.value = 0
   if (nextMid)
     clearUpUpdateDot(nextMid)
   void loadMoments(true)
@@ -2117,17 +2115,16 @@ function mergeCachedMoments(primary: DisplayMoment[], secondary: DisplayMoment[]
       continue
     ids.add(moment.id)
     result.push(moment)
-    if (result.length >= MOMENTS_CACHE_MAX_ITEMS)
-      break
   }
   return result
 }
 
 function saveMomentsCache(filter: MomentFilter, entry: MomentsFeedCacheEntry) {
-  const items = entry.items.slice(0, MOMENTS_CACHE_MAX_ITEMS)
+  // offset 对应当前段的末尾。裁掉头部才能保证恢复缓存后继续分页时不跳过动态。
+  const items = entry.items.slice(-MOMENTS_CACHE_MAX_ITEMS)
   const continuationLimit = Math.max(0, MOMENTS_CACHE_MAX_ITEMS - items.length)
   const continuation = entry.continuation && continuationLimit > 0
-    ? { ...entry.continuation, items: entry.continuation.items.slice(0, continuationLimit) }
+    ? { ...entry.continuation, items: entry.continuation.items.slice(-continuationLimit) }
     : undefined
   momentsFeedCache.value = {
     ...momentsFeedCache.value,
@@ -2477,7 +2474,7 @@ function appendMoments(items: DisplayMoment[]) {
   const columnHeights = momentColumns.value.map(column => getColumnStackHeight(column))
 
   items.forEach((item) => {
-    if (existingIds.has(item.id) || moments.value.length >= MOMENTS_MEMORY_MAX_ITEMS)
+    if (existingIds.has(item.id))
       return
 
     const columnIndex = findShortestColumnIndex(momentColumns.value, columnHeights)
@@ -2638,8 +2635,8 @@ function updateVirtualColumns() {
       y += height + gap
     })
 
-    // 最后一项不需要 gap，修正 padding 里多加的 gap 边界误差可忽略
-    return { topPad, bottomPad, items }
+    // spacer 与相邻卡片之间已有 CSS gap，只保留隐藏段内部的间距。
+    return { topPad: Math.max(0, topPad - gap), bottomPad: Math.max(0, bottomPad - gap), items }
   })
 
   prunePreviewCache()
@@ -2723,6 +2720,12 @@ function bindCardEl(el: Element | null, moment: DisplayMoment) {
       cardElements.delete(moment.id)
     }
     visibleMomentIds.delete(moment.id)
+    readyCardIds.delete(moment.id)
+    enteringCardIds.delete(moment.id)
+    const enterTimer = cardEnterTimers.get(moment.id)
+    if (enterTimer)
+      clearTimeout(enterTimer)
+    cardEnterTimers.delete(moment.id)
     if (hoveredMediaId.value === moment.id) {
       hoveredMediaId.value = ''
       cleanupLivePreviewPlayer()
@@ -3304,6 +3307,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
   if (reset) {
     feedRequestToken += 1
+    wantedFeedBuffer = undefined
     moments.value = []
     momentColumns.value = []
     virtualColumns.value = []
@@ -3409,8 +3413,8 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           return
         }
         rawItems = response.data?.items || []
-        hasMore = Boolean(response.data?.has_more) && rawItems.length > 0
         nextOffset = response.data?.offset || ''
+        hasMore = Boolean(response.data?.has_more) && rawItems.length > 0 && nextOffset !== offset.value
         nextUpdateBaseline = response.data?.update_baseline || ''
         nextPage += 1
       }
@@ -3418,10 +3422,12 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
     }
     else if (requestGroup === 'wanted') {
       await momentsFeedCacheReady
+      if (!isFeedRequestCurrent(requestToken, requestType, requestGroup, requestHostMid))
+        return
       // 类型过滤开启时，首批缓存刷新与后续填充共用两页请求预算。
       const maxRequestPages = hasActiveMomentFilters() ? FILTERED_MAX_REQUEST_PAGES : Infinity
       let requestPages = 0
-      let cacheEntry = getValidMomentsCache(requestType) ?? {
+      let cacheEntry = wantedFeedBuffer ?? getValidMomentsCache(requestType) ?? {
         items: [],
         offset: '',
         updateBaseline: '',
@@ -3430,13 +3436,12 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
       }
 
       if (!momentsWantedUsers.value.length) {
-        wantedCacheCursor.value = 0
+        wantedFeedBuffer = undefined
         cachedBatch = []
       }
       else {
         let cacheChanged = false
         if (reset) {
-          wantedCacheCursor.value = 0
           const existingCache = cacheEntry
           const existingIds = new Set(existingCache.items.map(moment => moment.id))
           const freshItems: DisplayMoment[] = []
@@ -3487,7 +3492,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
                 updateBaseline: scanUpdateBaseline,
                 hasMore: canContinue,
                 updatedAt: Date.now(),
-                continuation: existingCache.items.length
+                continuation: canContinue && existingCache.items.length
                   ? {
                       items: existingCache.items,
                       offset: existingCache.offset,
@@ -3499,10 +3504,9 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           cacheChanged = true
         }
 
-        const batchEnd = Math.min(wantedCacheCursor.value + WANTED_SCAN_LIMIT, MOMENTS_CACHE_MAX_ITEMS)
+        const batchEnd = WANTED_SCAN_LIMIT
         while (
           cacheEntry.items.length < batchEnd
-          && cacheEntry.items.length < MOMENTS_CACHE_MAX_ITEMS
           && cacheEntry.hasMore
           && requestPages < maxRequestPages
         ) {
@@ -3545,7 +3549,9 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
                 && pageItems.length > 0
                 && responseOffset !== cacheEntry.offset,
               updatedAt: Date.now(),
-              continuation: cacheEntry.continuation,
+              continuation: response.data?.has_more && pageItems.length > 0 && responseOffset !== cacheEntry.offset
+                ? cacheEntry.continuation
+                : undefined,
             }
           }
           cacheChanged = true
@@ -3557,13 +3563,14 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
           saveMomentsCache(requestType, cacheEntry)
         // 连续缓存可一次全部展示；存在缺口时仍按 API 原始条数每批推进 100 条。
         const displayEnd = cacheEntry.continuation ? batchEnd : cacheEntry.items.length
-        cachedBatch = cacheEntry.items.slice(wantedCacheCursor.value, displayEnd)
-        wantedCacheCursor.value += cachedBatch.length
+        cachedBatch = cacheEntry.items.slice(0, displayEnd)
+        wantedFeedBuffer = {
+          ...cacheEntry,
+          items: cacheEntry.items.slice(cachedBatch.length),
+        }
         nextOffset = cacheEntry.offset
         nextUpdateBaseline = cacheEntry.updateBaseline
-        hasMore = wantedCacheCursor.value < cacheEntry.items.length
-          || Boolean(cacheEntry.continuation)
-          || (cacheEntry.hasMore && cacheEntry.items.length < MOMENTS_CACHE_MAX_ITEMS)
+        hasMore = wantedFeedBuffer.items.length > 0 || cacheEntry.hasMore
       }
     }
     else if (hasActiveMomentFilters()) {
@@ -3619,8 +3626,8 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
         return
       }
       rawItems = response.data?.items || []
-      hasMore = Boolean(response.data?.has_more) && rawItems.length > 0
       nextOffset = response.data?.offset || ''
+      hasMore = Boolean(response.data?.has_more) && rawItems.length > 0 && nextOffset !== offset.value
       nextUpdateBaseline = response.data?.update_baseline || ''
     }
 
@@ -3670,7 +3677,7 @@ async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = fals
 
     offset.value = nextOffset
     updateBaseline.value = nextUpdateBaseline
-    noMoreContent.value = !hasMore || moments.value.length >= MOMENTS_MEMORY_MAX_ITEMS
+    noMoreContent.value = !hasMore
     pageApplied = true
   }
   finally {
@@ -3826,6 +3833,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  feedRequestToken += 1
+  wantedFeedBuffer = undefined
   gridObserver?.disconnect()
   cardMeasureObserver?.disconnect()
   visibilityObserver?.disconnect()
@@ -3949,7 +3958,6 @@ watch(
       return
 
     activeMomentGroup.value = 'all'
-    wantedCacheCursor.value = 0
     resetMomentsScroll()
     void loadMoments(true)
   },

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
 import type { ComponentPublicInstance, CSSProperties } from 'vue'
-import { computed, nextTick, onMounted, provide, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
@@ -435,9 +435,23 @@ function handleForwardGalleryPreview(urls: string[], index: number, trigger: HTM
 // VideoCardContextMenu uses this injection to select its common option set.
 provide('getVideoType', () => 'common')
 
+let cardElement: HTMLElement | null = null
+
 function handleCardRef(element: Element | ComponentPublicInstance | null) {
-  emit('cardElement', element instanceof HTMLElement ? element : null)
+  cardElement = element instanceof HTMLElement ? element : null
+  emit('cardElement', cardElement)
 }
+
+onBeforeUnmount(() => {
+  // 离开虚拟窗口后主动解除图片资源引用，包含头像、转发、图集和评论图片。
+  // 卡片高度由父级保留，回滚重新挂载时再按原 URL 加载。
+  cardElement?.querySelectorAll('source').forEach(source => source.removeAttribute('srcset'))
+  cardElement?.querySelectorAll('img').forEach((image) => {
+    image.removeAttribute('srcset')
+    image.removeAttribute('src')
+  })
+  cardElement = null
+})
 
 function handleCoverLoad(event: Event) {
   emit('coverLoad', event, moment.id)
