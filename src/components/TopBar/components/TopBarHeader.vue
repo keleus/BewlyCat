@@ -2,6 +2,7 @@
 import { useMediaQuery, useMutationObserver } from '@vueuse/core'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import ProgressiveBlurSurface from '~/components/ProgressiveBlurSurface.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { AppPage } from '~/enums/appEnums'
@@ -126,6 +127,39 @@ const scrolledShadeStyle = computed(() => ({
 
 // 实验三档走余弦渐变管线；其余档位沿用 v1.5.x 的遮罩表现。
 const useLegacyRendering = computed(() => !experimentalTopBarStyles.includes(settings.value.topBarStyle))
+
+// 渐进雾化（v1.7.6 移植）：五层 blur 半径自下而上递增，仅在用户显式选择时挂载。
+const useProgressiveFog = computed(() => settings.value.topBarStyle === 'progressiveFog')
+
+// 渐进雾化覆盖高度略大于顶栏本体，让模糊渐变在顶栏下缘外自然收尾。
+const PROGRESSIVE_OVERLAY_HEIGHT = 'calc(var(--bew-top-bar-height) * 1.35)'
+const PROGRESSIVE_FOG_GAMMA = 0.7
+const PROGRESSIVE_FOG_STOP_COUNT = 10
+
+function progressiveFogStops(peak: number): [number, number][] {
+  return Array.from({ length: PROGRESSIVE_FOG_STOP_COUNT }, (_, index) => {
+    const t = index / (PROGRESSIVE_FOG_STOP_COUNT - 1)
+    const decay = ((1 + Math.cos(Math.PI * t)) / 2) ** PROGRESSIVE_FOG_GAMMA
+    return [+(t * 100).toFixed(1), peak * decay]
+  })
+}
+
+function progressiveFogGradient(color: string, peak: number) {
+  const stops = progressiveFogStops(peak).map(([position, alpha]) =>
+    `rgb(${color} / ${+alpha.toFixed(2)}%) ${position}%`)
+  return `linear-gradient(to bottom, ${stops.join(', ')})`
+}
+
+// 渐进雾化雾色配方与 v1.7.6 一致：底图/壁纸下压黑雾托白图标；
+// 其余情况暗色压黑雾、亮色铺白雾。
+const progressiveFogTint = computed(() => {
+  if (forceWhiteIcon.value)
+    return progressiveFogGradient('0 0 0', 42)
+
+  return props.isDark
+    ? progressiveFogGradient('0 0 0', 75)
+    : progressiveFogGradient('255 255 255', 80)
+})
 
 // v1.5.x 的三停轻雾：顶部八成、中部六成（黑雾六/四成），随滚动由 0.8 收紧到 1。
 const legacyFadeGradientStyle = computed(() => ({
@@ -278,8 +312,27 @@ function refreshSearchContent() {
     p="x-12" m-auto
     h="$bew-top-bar-height"
   >
+    <!-- 渐进雾化：五层递增模糊 + 余弦雾色，仅在显式选择时挂载（性能敏感） -->
+    <template v-if="useProgressiveFog">
+      <div
+        class="top-bar-header__progressive-fog"
+        :style="{ height: PROGRESSIVE_OVERLAY_HEIGHT }"
+      >
+        <Transition name="fade">
+          <ProgressiveBlurSurface v-if="!reachTop" />
+        </Transition>
+        <div
+          class="top-bar-header__progressive-fog-tint"
+          :style="{
+            background: progressiveFogTint,
+            opacity: reachTop ? 0.8 : 1,
+          }"
+        />
+      </div>
+    </template>
+
     <!-- 旧版三档：常驻雾层沿用 v1.5.x 结构，滚动层只在毛玻璃开启时生效 -->
-    <template v-if="useLegacyRendering">
+    <template v-else-if="useLegacyRendering">
       <div
         class="top-bar-header__legacy-mask"
         :class="{ 'top-bar-header__legacy-mask--glass': settings.enableFrostedGlass }"
@@ -301,7 +354,7 @@ function refreshSearchContent() {
     </template>
 
     <div
-      v-if="isDark"
+      v-if="isDark && !useProgressiveFog"
       class="top-bar-header__scrolled-shade"
       :style="scrolledShadeStyle"
     />
@@ -393,6 +446,21 @@ function refreshSearchContent() {
   width: 100%;
   pointer-events: none;
   transition: opacity var(--bew-duration-fast) linear;
+}
+
+// 渐进雾化容器：绝对定位盖住顶栏，模糊层与雾色层在容器内裁剪
+.top-bar-header__progressive-fog {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.top-bar-header__progressive-fog-tint {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--bew-duration-moderate) var(--bew-ease-standard);
 }
 
 .top-bar-header__scrolled-shade {
