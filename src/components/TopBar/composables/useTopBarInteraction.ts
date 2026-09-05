@@ -150,6 +150,10 @@ export function useTopBarInteraction() {
     if (style === 'default')
       return !preferWhiteFogInAuto.value && (hasPageBanner.value || hasWallpaper.value)
 
+    // 渐进雾化沿用 v1.5.x 的横幅判定：页面有横幅/壁纸时压黑雾并强制白图标。
+    if (style === 'progressiveFog')
+      return hasPageBanner.value || hasWallpaper.value
+
     // 实验三档：底图恒用阴影，壁纸只在暗色模式下才是黑雾。
     return hasPageBackdrop.value || (hasWallpaperBackdrop.value && isDark.value)
   })

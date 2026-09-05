@@ -505,6 +505,7 @@ settings:
     default: Auto
     frosted_glass: White fog
     transparent: Shadow
+    progressive_fog: Progressive fog
     exp_default: Auto (experimental)
     exp_frosted_glass: White fog (experimental)
     exp_transparent: Shadow (experimental)

@@ -506,6 +506,7 @@ settings:
     default: 自動
     frosted_glass: 白霧
     transparent: 陰影
+    progressive_fog: 漸進霧化
     exp_default: 自動（實驗）
     exp_frosted_glass: 白霧（實驗）
     exp_transparent: 陰影（實驗）
