@@ -479,6 +479,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(playerRoute, [
     'settings.bilibili_features.video_playback',
     'settings.group_player_display_mode',
+    'settings.always_use_widescreen',
     'settings.video_player_mode.bewly_widescreen_sidebar_position',
     'settings.video_player_mode.enable_overrides',
     'settings.video_player_mode.overrides',

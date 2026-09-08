@@ -229,6 +229,7 @@ else if (shouldInitializeContentScript) {
   let lastUrl = location.href
   let lastVideoNavigationKey = getVideoNavigationKey(location.href)
   let lastAppliedPlayerModeNavigationKey: string | undefined
+  let playerModeApplicationVersion = 0
   let playerModeReadyAfter = document.readyState === 'complete'
     ? Date.now() + playerModeLoadSettleDelay
     : Number.POSITIVE_INFINITY
@@ -595,15 +596,19 @@ else if (shouldInitializeContentScript) {
 
     clearPlayerModeRetry()
 
+    const applicationVersion = playerModeApplicationVersion
     const application = {
-      shouldApply: () => getVideoNavigationKey(location.href) === currentNavigationKey
+      shouldApply: () => playerModeApplicationVersion === applicationVersion
+        && getVideoNavigationKey(location.href) === currentNavigationKey
         && lastAppliedPlayerModeNavigationKey !== currentNavigationKey
         && document.visibilityState === 'visible'
         && !document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)
         && !isPlayerShowingEndingRecommendation(),
       onApplied: () => {
-        if (getVideoNavigationKey(location.href) !== currentNavigationKey)
+        if (playerModeApplicationVersion !== applicationVersion
+          || getVideoNavigationKey(location.href) !== currentNavigationKey) {
           return
+        }
         applyPlayerModeCompanionSettings()
         lastAppliedPlayerModeNavigationKey = currentNavigationKey
         autoContinuationNavigationKey = undefined
@@ -1465,6 +1470,32 @@ else if (shouldInitializeContentScript) {
   watch(
     () => settings.value.language,
     () => syncRandomPlayUI(),
+  )
+
+  watch(
+    () => settings.value.alwaysUseWidescreen,
+    (enabled, previousEnabled) => {
+      if (enabled === previousEnabled || !playerModeSettingsReady)
+        return
+
+      playerModeApplicationVersion++
+      clearPlayerModeRetry()
+
+      const currentNavigationKey = getVideoNavigationKey(location.href)
+      if (!enabled) {
+        lastAppliedPlayerModeNavigationKey = currentNavigationKey
+        return
+      }
+
+      if (!isVideoOrBangumiPage()
+        || document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)) {
+        return
+      }
+
+      lastAppliedPlayerModeNavigationKey = undefined
+      exitBewlyWidescreen()
+      applyDefaultPlayerMode()
+    },
   )
 
   // 监听设置变化

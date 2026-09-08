@@ -429,6 +429,8 @@ settings:
     Sometimes, the ads above search results are actually year-end summaries or
     annual reports. If you don't want these to be accidentally removed, please
     disable this option.
+  always_use_widescreen: Widescreen by default
+  always_use_widescreen_desc: Enter widescreen mode by default when playing videos.
   video_default_player_mode: Default video display mode
   video_danmaku_default_state: Default danmaku state
   video_danmaku_default_state_desc: Automatically toggle danmaku when a video loads, or leave it unchanged.

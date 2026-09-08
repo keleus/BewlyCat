@@ -110,6 +110,14 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
       :title="t('settings.group_player_display_mode')"
       :desc="t('settings.group_player_display_mode_desc')"
     >
+      <SettingsItem
+        :title="t('settings.always_use_widescreen')"
+        :desc="t('settings.always_use_widescreen_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.alwaysUseWidescreen" />
+      </SettingsItem>
+
       <SettingsItem :title="$t('settings.video_default_player_mode')" right-width="auto">
         <Select v-model="settings.defaultVideoPlayerMode" :options="videoPlayerModeOptions" w="160px" />
       </SettingsItem>

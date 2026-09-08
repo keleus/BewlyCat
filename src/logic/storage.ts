@@ -485,6 +485,7 @@ export interface Settings {
   preventMobileRedirect: boolean
 
   // Video Player
+  alwaysUseWidescreen: boolean
   defaultVideoPlayerMode: DefaultVideoPlayerMode
   bewlyWidescreenSidebarPosition: BewlyWidescreenSidebarPosition
   bewlyWidescreenSidebarPriority: BewlyWidescreenSidebarPriority // Bewly宽屏布局优先级
@@ -788,6 +789,7 @@ export const originalSettings: Settings = {
   preventMobileRedirect: false,
 
   // Video Player
+  alwaysUseWidescreen: false,
   defaultVideoPlayerMode: 'default',
   bewlyWidescreenSidebarPosition: 'right',
   bewlyWidescreenSidebarPriority: 'video', // 默认视频优先，侧栏收起为窄条

@@ -453,6 +453,8 @@ settings:
     lg: 大
   block_top_search_page_ads_desc: |
     有時候，搜尋結果上方的廣告實際上是年末總結、年度報告這些。 如果你不想這些內容被誤刪，請停用此選項。
+  always_use_widescreen: 預設寬螢幕播放
+  always_use_widescreen_desc: 啟用後，播放影片時會預設進入寬螢幕模式。
   video_default_player_mode: 影片預設顯示模式
   video_danmaku_default_state: 彈幕預設狀態
   video_danmaku_default_state_desc: 開啟影片時自動調整彈幕開關，也可以保持原樣。

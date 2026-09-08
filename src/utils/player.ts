@@ -545,6 +545,9 @@ function isVideoPlayerModeOverride(value: unknown): value is VideoPlayerModeOver
 }
 
 export function resolveDefaultVideoPlayerMode(): DefaultVideoPlayerMode {
+  if (settings.value.alwaysUseWidescreen)
+    return 'widescreen'
+
   if (!settings.value.enableVideoPlayerModeOverrides)
     return settings.value.defaultVideoPlayerMode
 
