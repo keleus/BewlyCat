@@ -983,7 +983,11 @@ settings:
   hide_comment_image_scrollbar: 留言圖片預覽時隱藏頁面滾動條
   hide_comment_image_scrollbar_desc: 開啟留言區圖片預覽時隱藏頁面右側滾動條，避免滾動條顯示喺遮罩右側
   video_player_scroll: 校好顯示模式後自動轆到合適嘅位置
-  video_player_scroll_desc: 啓用後，若果顯示模式係闊螢幕或預設嗰陣，會自動轆到合適嘅位置。
+  video_player_scroll_desc: 啓用後，調整顯示模式時會自動轆到揀選嘅位置。
+  video_player_scroll_mode:
+    title: 捲動位置
+    sending_bar: 保持彈幕欄可見
+    player_center: 播放器置中
   enlarge_favorite_dialog: 放大收藏彈窗
   enlarge_favorite_dialog_desc: 啓用後，影片頁收藏彈窗會用更大嘅尺寸顯示，方便睇同管理收藏夾。
   external_watch_later_button: 稍後再睇按鈕外置

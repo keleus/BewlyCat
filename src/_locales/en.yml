@@ -1064,9 +1064,11 @@ settings:
   hide_comment_image_scrollbar: Hide page scrollbar in comment image preview
   hide_comment_image_scrollbar_desc: Hide the page scrollbar when opening a comment image preview so it does not appear beside the overlay
   video_player_scroll: Scroll after adjusting the display mode
-  video_player_scroll_desc: >-
-    When enabled, it will automatically scroll to the appropriate position when
-    the default mode is widescreen and default.
+  video_player_scroll_desc: Automatically scroll to the selected position after adjusting the display mode.
+  video_player_scroll_mode:
+    title: Scroll position
+    sending_bar: Keep danmaku bar visible
+    player_center: Center player
   enlarge_favorite_dialog: Enlarge favorite dialog
   enlarge_favorite_dialog_desc: When enabled, the favorite dialog on video pages will be displayed in a larger size for easier viewing and management.
   external_watch_later_button: External watch later button

@@ -485,6 +485,14 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_video_screenshot_button',
   ]),
   ...createEntries(playerRoute, [
+    'settings.video_player_scroll_mode.title',
+  ], {
+    keywordKeys: [
+      'settings.video_player_scroll_mode.sending_bar',
+      'settings.video_player_scroll_mode.player_center',
+    ],
+  }),
+  ...createEntries(playerRoute, [
     'settings.video_default_player_mode',
   ], { keywordKeys: playerModeOptionKeys }),
   ...createEntries(playerRoute, [

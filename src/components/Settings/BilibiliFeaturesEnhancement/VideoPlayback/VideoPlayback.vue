@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
-import type { PlayerDefaultState, VideoPlayerModeContext } from '~/logic/storage'
+import type { PlayerDefaultState, VideoPlayerModeContext, VideoPlayerScrollMode } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -77,6 +77,11 @@ const videoPlayerModeContextOptions = computed<{ label: string, value: VideoPlay
   { label: t('settings.video_player_mode.context_playlist'), value: 'playlist' },
 ])
 
+const videoPlayerScrollModeOptions = computed<{ label: string, value: VideoPlayerScrollMode }[]>(() => [
+  { label: t('settings.video_player_scroll_mode.sending_bar'), value: 'sendingBar' },
+  { label: t('settings.video_player_scroll_mode.player_center'), value: 'playerCenter' },
+])
+
 const usesBewlyWidescreen = computed(() => settings.value.defaultVideoPlayerMode === 'bewlyWidescreen'
   || (settings.value.enableVideoPlayerModeOverrides
     && Object.values(settings.value.videoPlayerModeOverrides).includes('bewlyWidescreen')))
@@ -142,9 +147,18 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
 
       <SettingsItem
         :title="t('settings.video_player_scroll')"
+        :desc="t('settings.video_player_scroll_desc')"
         right-width="auto"
       >
         <Radio v-model="settings.videoPlayerScroll" />
+      </SettingsItem>
+
+      <SettingsItem
+        v-if="settings.videoPlayerScroll"
+        :title="t('settings.video_player_scroll_mode.title')"
+        right-width="auto"
+      >
+        <Select v-model="settings.videoPlayerScrollMode" :options="videoPlayerScrollModeOptions" w="160px" />
       </SettingsItem>
 
       <SettingsItem

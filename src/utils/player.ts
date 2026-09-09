@@ -218,7 +218,7 @@ export function webFullscreen(application?: PlayerModeApplication) {
   }).start()
 }
 
-// 将播放器滚动到合适位置，优先保证弹幕栏可见
+// 将播放器滚动到设置的位置
 function scrollPlayerToOptimalPosition(delay = 1000) {
   // 如果设置了不滚动，直接返回
   if (!settings.value.videoPlayerScroll)
@@ -228,6 +228,15 @@ function scrollPlayerToOptimalPosition(delay = 1000) {
     const playerElement = document.querySelector(_videoClassTag.player)
     if (!playerElement)
       return
+
+    if (settings.value.videoPlayerScrollMode === 'playerCenter') {
+      const rect = playerElement.getBoundingClientRect()
+      window.scrollBy({
+        top: rect.top + rect.height / 2 - window.innerHeight / 2,
+        behavior: 'smooth',
+      })
+      return
+    }
 
     // 查找弹幕发送栏
     const sendingBar = document.querySelector('.bpx-player-sending-bar')

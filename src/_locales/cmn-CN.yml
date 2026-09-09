@@ -452,7 +452,11 @@ settings:
     bewly_widescreen_center_vertical_video: Bewly宽屏画面居中
     bewly_widescreen_center_vertical_video_desc: 开启后，宽屏模式下若画面两侧留有足够容纳侧栏的黑边空间，视频将在整个画面水平居中，侧栏完整占据一侧黑边；空间不足时保持现有布局。
   video_player_scroll: 调整显示模式后滚动
-  video_player_scroll_desc: 启用后，在默认模式为宽屏和默认时，会自动滚动到合适位置。
+  video_player_scroll_desc: 启用后，调整显示模式时会自动滚动到所选位置。
+  video_player_scroll_mode:
+    title: 滚动位置
+    sending_bar: 保持弹幕栏可见
+    player_center: 播放器居中
   enlarge_favorite_dialog: 放大收藏弹窗
   enlarge_favorite_dialog_desc: 启用后，视频页收藏弹窗将以更大的尺寸显示，方便查看和管理收藏夹。
   external_watch_later_button: 稍后再看按钮外置
