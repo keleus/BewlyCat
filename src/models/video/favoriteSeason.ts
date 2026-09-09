@@ -77,6 +77,12 @@ export interface FavoriteSeasonInfo {
 }
 
 export interface FavoriteSeasonMedia {
+  /** 公开收藏夹资源保留原始类型及失效状态 */
+  type?: number
+  attr?: number
+  intro?: string
+  page?: number
+  fav_time?: number
   id: number
   title: string
   cover: string

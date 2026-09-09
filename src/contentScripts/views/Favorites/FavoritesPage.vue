@@ -855,7 +855,7 @@ async function getFavoriteSeasonResources(
   pn: number,
   requestVersion = contentRequestVersion,
 ) {
-  const page = await fetchFavoriteSeasonPage(seasonId, pn, FAVORITE_SEASON_PAGE_SIZE)
+  const page = await fetchFavoriteSeasonPage(seasonId, pn, FAVORITE_SEASON_PAGE_SIZE, selectedSeason.value?.type)
   if (requestVersion !== contentRequestVersion)
     return
 
@@ -869,6 +869,7 @@ async function getFavoriteSeasonResources(
     pn,
     pageMedias: page.pageMedias,
     mediaCount: page.mediaCount,
+    hasMore: page.hasMore,
     previousMedias: loadedSeasonMedias.value,
     pageSize: FAVORITE_SEASON_PAGE_SIZE,
   })
@@ -998,6 +999,7 @@ async function handlePlayAll() {
     try {
       const result = await resolveFavoriteSeasonPlayAllUrl({
         seasonId: selectedSeason.value.id,
+        type: selectedSeason.value.type,
         link: selectedSeason.value.link,
         bvid: selectedSeason.value.bvid,
         mode: settings.value.collectedSeasonPlayAllMode,
@@ -1074,18 +1076,18 @@ function transformFavoriteItem(item: FavoriteItem): Video {
 function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteItem {
   return {
     id: item.id,
-    type: 2,
+    type: item.type ?? 2,
     title: item.title,
     cover: item.cover,
-    intro: '',
-    page: 1,
+    intro: item.intro || '',
+    page: item.page ?? 1,
     duration: item.duration,
     upper: {
       mid: item.upper.mid,
       name: item.upper.name,
       face: item.upper.face || '',
     },
-    attr: 0,
+    attr: item.attr ?? 0,
     cnt_info: {
       ...item.cnt_info,
       play_switch: 0,
@@ -1095,7 +1097,7 @@ function normalizeSeasonMedia(item: FavoriteSeasonMedia): FavoriteItem {
     link: item.bvid ? `https://www.bilibili.com/video/${item.bvid}` : '',
     ctime: item.pubtime,
     pubtime: item.pubtime,
-    fav_time: item.pubtime,
+    fav_time: item.fav_time ?? item.pubtime,
     bv_id: item.bvid,
     bvid: item.bvid,
     season: null,
