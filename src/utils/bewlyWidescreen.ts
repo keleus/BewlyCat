@@ -1435,6 +1435,21 @@ function injectLayoutStyle() {
         )))) !important;
       }
 
+      /* 竖屏放大后画面可能贴近侧栏，将按钮与预览图放在另一侧的黑边。 */
+      #${ROOT_ID}[data-center-layout="true"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-button,
+      #${ROOT_ID}[data-center-layout="true"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-control {
+        --bewly-vertical-video-controls-side: left;
+        left: var(--bew-space-3, 12px) !important;
+        right: auto !important;
+      }
+
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-button,
+      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-control {
+        --bewly-vertical-video-controls-side: right;
+        left: auto !important;
+        right: var(--bew-space-3, 12px) !important;
+      }
+
       /* 弹幕发送栏与控制条同逻辑：横跨整个播放器容器，右缘贴齐侧栏 */
       #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-danmaku-dock {
         width: min(calc(100vw - var(--bewly-widescreen-sidebar-panel-width)), 100%) !important;

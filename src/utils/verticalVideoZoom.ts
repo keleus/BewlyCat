@@ -54,7 +54,7 @@ function injectStyle() {
   styleEl = injectCSS(`
     .${HOST_CLASS} {
       position: relative !important;
-      --bewly-vertical-video-controls-top: max(var(--bew-space-12, 48px), calc(var(--bewly-vertical-video-issue-bottom, 0px) + var(--bew-space-3, 12px)));
+      --bewly-vertical-video-controls-top: max(var(--bew-space-12, 48px), calc(var(--bewly-vertical-video-toolbar-bottom, 0px) + var(--bew-space-3, 12px)));
     }
 
     .${BUTTON_CLASS} {
@@ -260,10 +260,16 @@ function bindHostActivity(host: HTMLElement) {
 
     positionFrame = requestAnimationFrame(() => {
       positionFrame = null
-      const issue = host.querySelector<HTMLElement>('.bpx-player-top-issue')
-      const issueRect = issue?.getBoundingClientRect()
+      const controlsOnLeft = button?.parentElement === host
+        && getComputedStyle(button).getPropertyValue('--bewly-vertical-video-controls-side').trim() === 'left'
+      const toolbarSelector = controlsOnLeft
+        ? '.bpx-player-top-left, .bpx-player-top-left > *'
+        : '.bpx-player-top-issue'
+      const toolbarRects = Array.from(host.querySelectorAll<HTMLElement>(toolbarSelector))
+        .map(element => element.getBoundingClientRect())
+        .filter(rect => rect.width > 0 && rect.height > 0)
       // Keep the reserved space when the player's toolbar temporarily hides.
-      if (!issueRect?.height)
+      if (!toolbarRects.length)
         return
 
       const hostRect = host.getBoundingClientRect()
@@ -271,10 +277,11 @@ function bindHostActivity(host: HTMLElement) {
       if (!scaleY)
         return
 
-      const bottom = Math.max(0, (issueRect.bottom - hostRect.top) / scaleY - host.clientTop)
+      const toolbarBottom = Math.max(...toolbarRects.map(rect => rect.bottom))
+      const bottom = Math.max(0, (toolbarBottom - hostRect.top) / scaleY - host.clientTop)
       const value = `${Math.ceil(bottom)}px`
-      if (host.style.getPropertyValue('--bewly-vertical-video-issue-bottom') !== value)
-        host.style.setProperty('--bewly-vertical-video-issue-bottom', value)
+      if (host.style.getPropertyValue('--bewly-vertical-video-toolbar-bottom') !== value)
+        host.style.setProperty('--bewly-vertical-video-toolbar-bottom', value)
     })
   }
   const resizeObserver = new ResizeObserver(schedulePositionUpdate)
@@ -299,7 +306,7 @@ function bindHostActivity(host: HTMLElement) {
     document.removeEventListener('fullscreenchange', schedulePositionUpdate)
     if (positionFrame !== null)
       cancelAnimationFrame(positionFrame)
-    host.style.removeProperty('--bewly-vertical-video-issue-bottom')
+    host.style.removeProperty('--bewly-vertical-video-toolbar-bottom')
     host.removeEventListener('pointerenter', onPointerActivity)
     host.removeEventListener('pointermove', onPointerActivity)
     host.removeEventListener('pointerdown', onPointerActivity)
