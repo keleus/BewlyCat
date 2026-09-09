@@ -136,6 +136,7 @@ export type CustomPlayOrderOverrides = Record<CustomPlayOrderContext, CustomPlay
 /** 订阅合集「播放全部」起播策略 */
 export type CollectedSeasonPlayAllMode = 'beginning' | 'latest' | 'lastWatched'
 export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen' | 'bewlyWidescreen'
+export type VideoPlayerScrollMode = 'sendingBar' | 'playerCenter'
 export type BewlyWidescreenSidebarPosition = 'left' | 'right'
 export type BewlyWidescreenSidebarPriority = 'video' | 'sidebar'
 export type PlayerDefaultState = 'system' | 'remember' | 'on' | 'off'
@@ -515,6 +516,7 @@ export interface Settings {
   keyboard: boolean
   shortcuts: ShortcutsSettings
   videoPlayerScroll: boolean // 添加视频播放器滚动设置
+  videoPlayerScrollMode: VideoPlayerScrollMode
 
   // 倍速记忆设置
   rememberPlaybackRate: boolean // 启用倍速记忆功能
@@ -824,6 +826,7 @@ export const originalSettings: Settings = {
 
   keyboard: true, // 总快捷键开关，默认为 true
   videoPlayerScroll: true, // 默认开启视频播放器滚动
+  videoPlayerScrollMode: 'sendingBar',
   shortcuts: {
     danmuStatus: { key: 'Shift+D', enabled: true },
     webFullscreen: { key: 'Shift+W', enabled: true },
@@ -1118,6 +1121,10 @@ watch(
       record.defaultCaptionState = 'remember'
     Reflect.deleteProperty(record, 'rememberDanmakuState')
     Reflect.deleteProperty(record, 'rememberCaptionState')
+
+    const validVideoPlayerScrollModes: VideoPlayerScrollMode[] = ['sendingBar', 'playerCenter']
+    if (!validVideoPlayerScrollModes.includes(record.videoPlayerScrollMode))
+      record.videoPlayerScrollMode = originalSettings.videoPlayerScrollMode
 
     const validPlayerDefaultStates: PlayerDefaultState[] = ['system', 'remember', 'on', 'off']
     if (!validPlayerDefaultStates.includes(record.defaultDanmakuState))
