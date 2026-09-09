@@ -368,7 +368,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     }
   }
 
-  function handleMouseEnter() {
+  function handleMouseEnter(event?: MouseEvent) {
     // Cancel any pending leave timeout
     if (mouseLeaveTimeOut.value) {
       clearTimeout(mouseLeaveTimeOut.value)
@@ -377,6 +377,12 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
 
     if (mouseEnterTimeOut.value)
       clearTimeout(mouseEnterTimeOut.value)
+    mouseEnterTimeOut.value = null
+
+    // Dragging a text selection or a link across cards is not a preview intent.
+    if (event?.buttons)
+      return
+
     const previewEnabled = props.value.showPreview && settings.value.enableVideoPreview
     const delay = previewEnabled
       ? (settings.value.hoverVideoCardDelayed ? 1200 : 500)

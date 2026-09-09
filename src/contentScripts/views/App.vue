@@ -979,6 +979,13 @@ useEventListener(window, 'resize', scheduleLayoutEditTargetsRefresh)
 useEventListener(window, 'scroll', scheduleLayoutEditTargetsRefresh, { passive: true })
 onUnmounted(stopLayoutEditTargetObserver)
 const scrollViewportRef = ref<HTMLElement | null>(null)
+
+function handlePageBackgroundMouseDown(event: MouseEvent) {
+  // Only background elements bind this with .self. Avoid starting a native
+  // selection across the feed from its gutters, while keeping card text selectable.
+  if (activatedPage.value === AppPage.Home && event.button === 0)
+    event.preventDefault()
+}
 const loadMoreSentinelRef = ref<HTMLElement>() // ✅ IntersectionObserver 哨兵元素
 const handlePageRefresh = ref<() => void>()
 const handleReachBottom = ref<() => void>()
@@ -2074,14 +2081,16 @@ if (settings.value.cleanUrlArgument) {
             tabindex="-1"
             style="overscroll-behavior: contain;"
             @scroll.passive="handleNativeScroll"
+            @mousedown.self="handlePageBackgroundMouseDown"
           >
-            <main m-auto max-w="$bew-page-max-width">
+            <main m-auto max-w="$bew-page-max-width" @mousedown.self="handlePageBackgroundMouseDown">
               <div
                 p="t-[calc(var(--bew-top-bar-height)+10px)]" m-auto
                 w="lg:[calc(100%-200px)] [calc(100%-150px)]"
                 :style="settings.enableTopBar && settings.useOriginalBilibiliTopBar && !reachTop
                   ? { paddingTop: 'calc(var(--bew-top-bar-height) + 120px)' }
                   : undefined"
+                @mousedown.self="handlePageBackgroundMouseDown"
               >
                 <Transition name="page-fade">
                   <Component :is="pages[activatedPage]" :key="activatedPage" />
