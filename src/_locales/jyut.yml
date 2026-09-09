@@ -1494,6 +1494,9 @@ moment_card:
   expand_comment_replies: 共 {count} 個回覆，撳嚟展開
   collapse_comment_replies: 收起回覆
   collapse_comments: 收起留言
+  comments_sort: 留言排序
+  comments_sort_hot: 最熱
+  comments_sort_latest: 最新
   comments_preview: 留言預覽
   comments_unavailable: 暫時攞唔到呢條動態嘅留言區
   comments_load_failed: 留言載入失敗

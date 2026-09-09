@@ -1583,6 +1583,9 @@ moment_card:
   expand_comment_replies: View all {count} replies
   collapse_comment_replies: Collapse replies
   collapse_comments: Collapse comments
+  comments_sort: Comment sort order
+  comments_sort_hot: Top
+  comments_sort_latest: Newest
   comments_preview: Comment preview
   comments_unavailable: Comments are currently unavailable for this post
   comments_load_failed: Failed to load comments

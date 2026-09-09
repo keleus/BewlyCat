@@ -1479,6 +1479,9 @@ moment_card:
   expand_comment_replies: 共 {count} 条回复，点击展开
   collapse_comment_replies: 收起回复
   collapse_comments: 收起评论
+  comments_sort: 评论排序
+  comments_sort_hot: 最热
+  comments_sort_latest: 最新
   comments_preview: 评论预览
   comments_unavailable: 暂时无法获取此动态的评论区
   comments_load_failed: 评论加载失败

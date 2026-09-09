@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { settings } from '~/logic'
 import { getCommentSexIcon } from '~/utils/commentUserInfo'
 
-import type { CommentPreviewState } from './commentPreview'
+import type { CommentPreviewState, CommentSort } from './commentPreview'
 import { getCommentRows } from './commentPreview'
 import MomentCommentTree from './MomentCommentTree.vue'
 import type { DisplayMoment } from './types'
@@ -18,8 +18,21 @@ const emit = defineEmits<{
   openImagePreview: [urls: string[], index: number, trigger: HTMLElement | null]
 }>()
 const { t } = useI18n()
-const { loadComments, loadReplies, toggleReplies, toggleLike, saveScrollPosition } = useMomentComments(moment, state)
+const { loadComments, changeSort, loadReplies, toggleReplies, toggleLike, saveScrollPosition } = useMomentComments(moment, state)
 const scroller = ref<HTMLElement>()
+const sortOptions = [
+  { value: 1, label: 'moment_card.comments_sort_hot' },
+  { value: 0, label: 'moment_card.comments_sort_latest' },
+] as const
+
+function selectSort(sort: CommentSort) {
+  if (state.loading || state.sort === sort)
+    return
+  void changeSort(sort)
+  if (scroller.value)
+    scroller.value.scrollTop = 0
+}
+
 const treeEnabled = computed(() => settings.value.enableCommentReplyTreeDisplay)
 const treeMode = computed(() => settings.value.commentReplyTreeMode)
 const groups = computed(() => state.comments.map(root => ({
@@ -53,6 +66,22 @@ onMounted(() => {
 
 <template>
   <section class="moment-comments" :aria-label="t('moment_card.view_comments')" @click.stop @keydown.stop>
+    <header class="moment-comments__toolbar">
+      <div class="bew-segment-control bew-segment-control--static" role="group" :aria-label="t('moment_card.comments_sort')">
+        <button
+          v-for="option in sortOptions"
+          :key="option.value"
+          type="button"
+          class="bew-segment-control__item"
+          :data-active="state.sort === option.value"
+          :aria-pressed="state.sort === option.value"
+          :disabled="state.loading"
+          @click="selectSort(option.value)"
+        >
+          {{ t(option.label) }}
+        </button>
+      </div>
+    </header>
     <div
       ref="scroller"
       class="moment-comments__scroller"
@@ -209,6 +238,12 @@ onMounted(() => {
   text-align: start;
 }
 
+.moment-comments__toolbar {
+  display: flex;
+  flex: none;
+  padding: var(--bew-space-2) var(--bew-space-3);
+}
+
 .moment-comments__scroller {
   min-height: 0;
   box-sizing: border-box;
@@ -345,7 +380,7 @@ onMounted(() => {
   padding-block: var(--bew-space-2);
 }
 
-.moment-comments button {
+.moment-comments button:not(.bew-segment-control__item) {
   display: inline-flex;
   min-width: 28px;
   min-height: 28px;
@@ -364,8 +399,8 @@ onMounted(() => {
   line-height: var(--bew-line-height-control);
 }
 
-.moment-comments button:hover,
-.moment-comments button:active {
+.moment-comments button:not(.bew-segment-control__item):hover,
+.moment-comments button:not(.bew-segment-control__item):active {
   color: var(--bew-theme-color);
   background: var(--bew-theme-color-10);
 }

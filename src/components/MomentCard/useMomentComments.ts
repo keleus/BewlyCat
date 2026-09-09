@@ -4,7 +4,7 @@ import { useToast } from 'vue-toastification'
 import api from '~/utils/api'
 import { getCSRF, getUserID } from '~/utils/main'
 
-import type { CommentPageData, CommentPreviewState, CommentTarget, PreviewComment } from './commentPreview'
+import type { CommentPageData, CommentPreviewState, CommentSort, CommentTarget, PreviewComment } from './commentPreview'
 import { isCommentPageDone, mergeComments, normalizeComments } from './commentPreview'
 import type { DisplayMoment } from './types'
 
@@ -35,7 +35,7 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
     try {
       const target = await resolveTarget()
       const page = state.page + 1
-      const response = await api.moment.getMomentComments({ ...target, pn: page })
+      const response = await api.moment.getMomentComments({ ...target, pn: page, sort: state.sort })
       if (response?.code !== 0 || !response.data)
         throw new Error(response?.message || t('moment_card.comments_load_failed'))
       const data = response.data as CommentPageData
@@ -49,6 +49,18 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
     finally {
       state.loading = false
     }
+  }
+
+  async function changeSort(sort: CommentSort) {
+    if (state.loading || state.sort === sort)
+      return
+    state.sort = sort
+    state.comments = []
+    state.page = 0
+    state.done = false
+    state.error = ''
+    state.scrollTop = 0
+    await loadComments()
   }
 
   async function loadReplies(root: PreviewComment) {
@@ -122,5 +134,5 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
       state.scrollTop = scrollTop
   }
 
-  return { loadComments, loadReplies, toggleReplies, toggleLike, saveScrollPosition }
+  return { loadComments, changeSort, loadReplies, toggleReplies, toggleLike, saveScrollPosition }
 }

@@ -58,7 +58,10 @@ export interface PreviewComment {
   repliesDone: boolean
 }
 
+export type CommentSort = 0 | 1
+
 export interface CommentPreviewState {
+  sort: CommentSort
   expanded: boolean
   opened: boolean
   target?: CommentTarget
@@ -72,6 +75,7 @@ export interface CommentPreviewState {
 
 export function createCommentPreview(): CommentPreviewState {
   return reactive({
+    sort: 0,
     expanded: false,
     opened: false,
     comments: [],
