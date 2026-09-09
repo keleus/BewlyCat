@@ -1578,6 +1578,9 @@ moments:
   fit_window: Fit to window
   rotate_clockwise: Rotate clockwise
 moment_card:
+  repost_load_failed: Unable to load the repost editor. Open Bilibili to continue.
+  lottery_details: Giveaway details
+  repost: Repost
   comment_sex_male: Male
   comment_sex_female: Female
   expand_comment_replies: View all {count} replies

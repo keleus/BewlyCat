@@ -1474,6 +1474,9 @@ moments:
   fit_window: 适应窗口
   rotate_clockwise: 顺时针旋转
 moment_card:
+  repost_load_failed: 转发编辑器加载失败，请在原站打开
+  lottery_details: 抽奖详情
+  repost: 转发
   comment_sex_male: 男
   comment_sex_female: 女
   expand_comment_replies: 共 {count} 条回复，点击展开
