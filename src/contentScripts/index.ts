@@ -25,6 +25,7 @@ import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { isPhotoViewerOpen } from '~/utils/photoViewer'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, applyRememberedPlaybackRate, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isPlayerShowingEndingRecommendation, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, startPlaybackRateMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyPreservedOrDefaultCustomPlay, applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
+import { markContentScriptHealthy } from '~/utils/refreshPrompt'
 import { getPluginSearchResultsUrl, navigateToPluginSearchResultsInPlace, openSearchResults, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
@@ -68,6 +69,13 @@ if (shouldInitializeContentScript) {
   contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__ = true
   browser.runtime.onMessage.addListener((message: unknown) => {
     if (typeof message === 'object' && message !== null && 'type' in message && message.type === CONTENT_SCRIPT_PING) {
+      const expected = 'expectedIdentity' in message ? message.expectedIdentity : undefined
+      if (typeof expected === 'object' && expected !== null
+        && 'name' in expected && expected.name === contentScriptManifest.name
+        && 'version' in expected && expected.version === version
+        && 'runtimeUrl' in expected && expected.runtimeUrl === contentScriptRuntimeUrl) {
+        markContentScriptHealthy({ name: contentScriptManifest.name, version, runtimeUrl: contentScriptRuntimeUrl })
+      }
       return Promise.resolve({
         name: contentScriptManifest.name,
         runtimeUrl: contentScriptRuntimeUrl,

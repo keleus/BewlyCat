@@ -21,11 +21,14 @@ export const CONTENT_SCRIPT_EXCLUDE_MATCHES = [
 export const CONTENT_SCRIPT_PING = 'bewly-cat:content-script:ping'
 export const CONTENT_SCRIPT_PONG = 'bewly-cat:content-script:ready'
 
-export interface ContentScriptPong {
+export interface ContentScriptIdentity {
   name: string
   runtimeUrl: string
-  type: typeof CONTENT_SCRIPT_PONG
   version: string
+}
+
+export interface ContentScriptPong extends ContentScriptIdentity {
+  type: typeof CONTENT_SCRIPT_PONG
 }
 
 export function isContentScriptPong(value: unknown): value is ContentScriptPong {
