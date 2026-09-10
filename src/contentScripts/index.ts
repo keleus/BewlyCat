@@ -234,6 +234,7 @@ else if (shouldInitializeContentScript) {
     : Number.POSITIVE_INFINITY
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
   let playbackBehaviorTimer: ReturnType<typeof setTimeout> | undefined
+  let playbackSettingsTimer: ReturnType<typeof setTimeout> | undefined
   let playbackBehaviorScheduledForKey: string | undefined
   let playerModeSettingsReady = false
   let videoOwnerAvatarReadyDeadline = document.readyState === 'complete'
@@ -243,9 +244,10 @@ else if (shouldInitializeContentScript) {
   let nativeVideoHeaderStableSince = 0
   let nativeVideoHeaderObserved = false
   let nativeVideoHeaderReplacementObserved = false
-  let nativeVideoHeaderReadyDeadline = document.readyState === 'complete'
-    ? Date.now() + videoOwnerAvatarReadyTimeout
-    : Number.POSITIVE_INFINITY
+  let nativeVideoHeaderReadyDeadline: number | undefined
+  const pendingNativeVideoHeaderTasks = new Map<() => void, number>()
+  let nativeVideoHeaderTaskTimer: ReturnType<typeof setTimeout> | undefined
+  let nativeVideoHeaderTasksPaused = false
   let pendingWidescreenReloadNavigationKey: string | undefined
   let pendingWidescreenReloadTimer: ReturnType<typeof setTimeout> | undefined
   let autoContinuationNavigationKey: string | undefined
@@ -392,8 +394,12 @@ else if (shouldInitializeContentScript) {
   // B 站视频页启动时会替换一次原生顶栏。自定义播放器若在替换期间搬动
   // 播放器和侧栏 DOM，会让第二次挂载留下空的 #biliMainHeader。
   function isNativeVideoHeaderStable() {
-    if (Date.now() >= nativeVideoHeaderReadyDeadline)
+    // 从首次检查计时，不依赖 load 事件；加载一直未完成也必须有退出条件。
+    nativeVideoHeaderReadyDeadline ??= Date.now() + videoOwnerAvatarReadyTimeout
+    if (Date.now() >= nativeVideoHeaderReadyDeadline) {
+      nativeVideoHeaderCandidate = null
       return true
+    }
 
     const header = document.querySelector<HTMLElement>('.bili-header, #internationalHeader')
     if (!header) {
@@ -419,25 +425,60 @@ else if (shouldInitializeContentScript) {
     return Date.now() - nativeVideoHeaderStableSince >= stableDelay
   }
 
-  function initBewlyWidescreenControlWhenPageStable() {
-    if (isVideoOrBangumiPage() && !isNativeVideoHeaderStable()) {
-      window.setTimeout(initBewlyWidescreenControlWhenPageStable, playerModeReadinessRetryInterval)
+  function flushNativeVideoHeaderTasks() {
+    clearTimeout(nativeVideoHeaderTaskTimer)
+    nativeVideoHeaderTaskTimer = undefined
+    if (nativeVideoHeaderTasksPaused || !pendingNativeVideoHeaderTasks.size)
       return
-    }
 
-    initBewlyWidescreenControl()
+    const ready = !isVideoOrBangumiPage() || isNativeVideoHeaderStable()
+    try {
+      for (const [task, deadline] of pendingNativeVideoHeaderTasks) {
+        if (ready || Date.now() >= deadline) {
+          pendingNativeVideoHeaderTasks.delete(task)
+          task()
+        }
+      }
+    }
+    finally {
+      if (pendingNativeVideoHeaderTasks.size)
+        nativeVideoHeaderTaskTimer = setTimeout(flushNativeVideoHeaderTasks, playerModeReadinessRetryInterval)
+    }
   }
 
-  function applyEndPlaybackBehaviorWhenPageStable() {
-    if (isVideoOrBangumiPage() && !isNativeVideoHeaderStable()) {
-      window.setTimeout(applyEndPlaybackBehaviorWhenPageStable, playerModeReadinessRetryInterval)
-      return
-    }
-
-    applyEndPlaybackBehavior()
+  function runWhenNativeVideoHeaderStable(task: () => void) {
+    // 同一任务合并等待；导航/加载重置稳定检测不能无限延长已排队任务的寿命。
+    if (!pendingNativeVideoHeaderTasks.has(task))
+      pendingNativeVideoHeaderTasks.set(task, Date.now() + videoOwnerAvatarReadyTimeout)
+    flushNativeVideoHeaderTasks()
   }
+
+  function cancelNativeVideoHeaderTask(task: () => void) {
+    pendingNativeVideoHeaderTasks.delete(task)
+    if (!pendingNativeVideoHeaderTasks.size) {
+      clearTimeout(nativeVideoHeaderTaskTimer)
+      nativeVideoHeaderTaskTimer = undefined
+    }
+  }
+
+  window.addEventListener('pagehide', (event) => {
+    nativeVideoHeaderTasksPaused = true
+    clearTimeout(nativeVideoHeaderTaskTimer)
+    nativeVideoHeaderTaskTimer = undefined
+    nativeVideoHeaderCandidate = null
+    clearPlaybackBehaviorTimer()
+    if (!event.persisted)
+      pendingNativeVideoHeaderTasks.clear()
+  })
+  window.addEventListener('pageshow', () => {
+    nativeVideoHeaderTasksPaused = false
+    flushNativeVideoHeaderTasks()
+  })
 
   function clearPlaybackBehaviorTimer() {
+    cancelNativeVideoHeaderTask(applyEndPlaybackBehavior)
+    clearTimeout(playbackSettingsTimer)
+    playbackSettingsTimer = undefined
     if (playbackBehaviorTimer) {
       clearTimeout(playbackBehaviorTimer)
       playbackBehaviorTimer = undefined
@@ -922,6 +963,8 @@ else if (shouldInitializeContentScript) {
       applyBewlyDesignClasses()
 
       if (!isVideoOrBangumiPage()) {
+        clearPlaybackBehaviorTimer()
+        nativeVideoHeaderCandidate = null
         clearPendingWidescreenReloadNavigation()
         exitBewlyWidescreen()
         autoContinuationNavigationKey = undefined
@@ -1291,7 +1334,7 @@ else if (shouldInitializeContentScript) {
 
     initVideoAspectRatioMemory()
     initVideoScreenshotControl()
-    initBewlyWidescreenControlWhenPageStable()
+    runWhenNativeVideoHeaderStable(initBewlyWidescreenControl)
     initTouchPlayerGestures()
 
     // Initialize Favorite Dialog Enhancement (for video pages)
@@ -1409,11 +1452,6 @@ else if (shouldInitializeContentScript) {
   // 注册这一组 watcher，避免迁移回调介入 B 站的第二次页面挂载。
   void settingsReady.then(() => {
     const registerCustomPlaybackSettingsWatcher = () => {
-      if (isVideoOrBangumiPage() && !isNativeVideoHeaderStable()) {
-        window.setTimeout(registerCustomPlaybackSettingsWatcher, playerModeReadinessRetryInterval)
-        return
-      }
-
       watch(
         [
           () => settings.value.enableRandomPlay,
@@ -1449,7 +1487,7 @@ else if (shouldInitializeContentScript) {
       )
     }
 
-    registerCustomPlaybackSettingsWatcher()
+    runWhenNativeVideoHeaderStable(registerCustomPlaybackSettingsWatcher)
   })
 
   watch(
@@ -1484,8 +1522,11 @@ else if (shouldInitializeContentScript) {
       )
 
       if (autoPlaySettingsChanged) {
-        setTimeout(() => {
-          applyEndPlaybackBehaviorWhenPageStable()
+        cancelNativeVideoHeaderTask(applyEndPlaybackBehavior)
+        clearTimeout(playbackSettingsTimer)
+        playbackSettingsTimer = setTimeout(() => {
+          playbackSettingsTimer = undefined
+          runWhenNativeVideoHeaderStable(applyEndPlaybackBehavior)
         }, 1000)
       }
     }
