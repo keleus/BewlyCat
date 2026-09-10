@@ -200,45 +200,46 @@ export function clearAppAuthTokens() {
   appAuthTokens.value = { ...defaultAppAuthTokens }
 }
 
-export function pollTVLoginQRCode(authCode: string): Promise<any> {
-  const url = 'https://passport.bilibili.com/x/passport-tv-login/qrcode/poll'
+const TV_LOGIN_REQUEST_TIMEOUT = 15_000
 
-  return new Promise<void>((resolve, reject) => {
-    fetch(url, {
+async function requestTVLoginQRCode(path: string, params: Record<string, string>, signal?: AbortSignal): Promise<any> {
+  const controller = new AbortController()
+  const abort = () => controller.abort()
+  if (signal?.aborted)
+    abort()
+  else
+    signal?.addEventListener('abort', abort, { once: true })
+
+  const timeout = setTimeout(() => {
+    controller.abort(new DOMException('QR code request timed out', 'TimeoutError'))
+  }, TV_LOGIN_REQUEST_TIMEOUT)
+
+  try {
+    const response = await fetch(`https://passport.bilibili.com/x/passport-tv-login/qrcode/${path}`, {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
       },
       body: tvSignSearchParams({
         appkey: TVAppKey.appkey,
-        auth_code: authCode,
         local_id: '0',
         ts: '0',
+        ...params,
       }),
     })
-      .then(response => response.json())
-      .then(data => resolve(data))
-      .catch(error => reject(error))
-  })
+    return await response.json()
+  }
+  finally {
+    clearTimeout(timeout)
+    signal?.removeEventListener('abort', abort)
+  }
 }
 
-export function getTVLoginQRCode(): Promise<any> {
-  const url = 'https://passport.bilibili.com/x/passport-tv-login/qrcode/auth_code'
+export function pollTVLoginQRCode(authCode: string, signal?: AbortSignal): Promise<any> {
+  return requestTVLoginQRCode('poll', { auth_code: authCode }, signal)
+}
 
-  return new Promise<void>((resolve, reject) => {
-    fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-      },
-      body: tvSignSearchParams({
-        appkey: TVAppKey.appkey,
-        local_id: '0',
-        ts: '0',
-      }),
-    })
-      .then(response => response.json())
-      .then(data => resolve(data))
-      .catch(error => reject(error))
-  })
+export function getTVLoginQRCode(signal?: AbortSignal): Promise<any> {
+  return requestTVLoginQRCode('auth_code', {}, signal)
 }
