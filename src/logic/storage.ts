@@ -169,6 +169,12 @@ export interface LocalSettings {
   // 自定义CSS
   customizeCSS: boolean
   customizeCSSContent: string
+
+  // Bewly 宽屏侧栏手动宽度（px），0 表示自动布局
+  bewlyWidescreenSidebarWidth: number
+
+  // 手动开启 Bewly 宽屏后，在后续视频页自动恢复
+  bewlyWidescreenModePreferred: boolean
 }
 
 /**
@@ -489,8 +495,9 @@ export interface Settings {
   // Video Player
   defaultVideoPlayerMode: DefaultVideoPlayerMode
   bewlyWidescreenSidebarPosition: BewlyWidescreenSidebarPosition
-  bewlyWidescreenSidebarPriority: BewlyWidescreenSidebarPriority // Bewly宽屏布局优先级
-  bewlyWidescreenCenterVerticalVideo: boolean // Bewly宽屏竖屏视频画面居中
+  bewlyWidescreenSidebarPriority: BewlyWidescreenSidebarPriority // 兼容字段：video 自动收起侧栏，sidebar 完整显示侧栏
+  bewlyWidescreenCenterVerticalVideo: boolean // 视频居中基准：false 侧栏外区域，true 整个浏览器窗口
+  enableBewlyWidescreenSidebarResize: boolean // 允许手动调整 Bewly 宽屏侧栏宽度
   defaultDanmakuState: PlayerDefaultState
   defaultCaptionState: PlayerDefaultState
   lastDanmakuState: boolean
@@ -540,6 +547,8 @@ export const originalLocalSettings: LocalSettings = {
   locallyUploadedWallpaper: null,
   customizeCSS: false,
   customizeCSSContent: '',
+  bewlyWidescreenSidebarWidth: 0,
+  bewlyWidescreenModePreferred: false,
 }
 
 export const originalSettings: Settings = {
@@ -794,8 +803,9 @@ export const originalSettings: Settings = {
   // Video Player
   defaultVideoPlayerMode: 'default',
   bewlyWidescreenSidebarPosition: 'right',
-  bewlyWidescreenSidebarPriority: 'video', // 默认视频优先，侧栏收起为窄条
-  bewlyWidescreenCenterVerticalVideo: false, // 默认关闭，保持现有布局
+  bewlyWidescreenSidebarPriority: 'video', // 默认根据可用空间自动收起侧栏
+  bewlyWidescreenCenterVerticalVideo: false, // 默认在侧栏外区域居中
+  enableBewlyWidescreenSidebarResize: false, // 默认使用自动布局
   defaultDanmakuState: 'system',
   defaultCaptionState: 'system',
   lastDanmakuState: true,
@@ -1170,6 +1180,7 @@ watch(
     // 迁移旧的 locallyUploadedWallpaper/customizeCSS/customizeCSSContent 到 localSettings
     if ('locallyUploadedWallpaper' in record || 'customizeCSS' in record || 'customizeCSSContent' in record) {
       localSettings.value = {
+        ...localSettings.value,
         locallyUploadedWallpaper: record.locallyUploadedWallpaper ?? localSettings.value.locallyUploadedWallpaper,
         customizeCSS: record.customizeCSS ?? localSettings.value.customizeCSS,
         customizeCSSContent: record.customizeCSSContent ?? localSettings.value.customizeCSSContent,

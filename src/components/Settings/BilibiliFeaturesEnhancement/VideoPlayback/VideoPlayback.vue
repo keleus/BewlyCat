@@ -26,17 +26,29 @@ const bewlyWidescreenSidebarPositionOptions = computed(() => {
   ]
 })
 
-const bewlyWidescreenSidebarPriorityOptions = computed(() => {
+const bewlyWidescreenVideoAlignmentOptions = computed(() => {
   return [
     {
-      label: t('settings.video_player_mode.bewly_widescreen_sidebar_priority_video'),
-      value: 'video',
-    },
-    {
-      label: t('settings.video_player_mode.bewly_widescreen_sidebar_priority_sidebar'),
+      label: t('settings.video_player_mode.bewly_widescreen_video_alignment_sidebar'),
       value: 'sidebar',
     },
+    {
+      label: t('settings.video_player_mode.bewly_widescreen_video_alignment_viewport'),
+      value: 'viewport',
+    },
   ]
+})
+
+// 沿用原设置值以兼容已有配置：video 表示启用自动收起，sidebar 表示始终完整显示。
+const bewlyWidescreenAutoCollapseSidebar = computed({
+  get: () => settings.value.bewlyWidescreenSidebarPriority === 'video',
+  set: enabled => settings.value.bewlyWidescreenSidebarPriority = enabled ? 'video' : 'sidebar',
+})
+
+// 沿用原布尔值：false 为侧栏外区域，true 为整个浏览器窗口。
+const bewlyWidescreenVideoAlignment = computed({
+  get: () => settings.value.bewlyWidescreenCenterVerticalVideo ? 'viewport' : 'sidebar',
+  set: value => settings.value.bewlyWidescreenCenterVerticalVideo = value === 'viewport',
 })
 
 // 视频播放器模式选项
@@ -129,20 +141,29 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
 
       <SettingsItem
         v-if="usesBewlyWidescreen"
-        :title="t('settings.video_player_mode.bewly_widescreen_sidebar_priority')"
-        :desc="t('settings.video_player_mode.bewly_widescreen_sidebar_priority_desc')"
+        :title="t('settings.video_player_mode.bewly_widescreen_auto_collapse_sidebar')"
+        :desc="t('settings.video_player_mode.bewly_widescreen_auto_collapse_sidebar_desc')"
         right-width="auto"
       >
-        <Select v-model="settings.bewlyWidescreenSidebarPriority" :options="bewlyWidescreenSidebarPriorityOptions" w="160px" />
+        <Radio v-model="bewlyWidescreenAutoCollapseSidebar" />
       </SettingsItem>
 
       <SettingsItem
         v-if="usesBewlyWidescreen"
-        :title="t('settings.video_player_mode.bewly_widescreen_center_vertical_video')"
-        :desc="t('settings.video_player_mode.bewly_widescreen_center_vertical_video_desc')"
+        :title="t('settings.video_player_mode.bewly_widescreen_video_alignment')"
+        :desc="t('settings.video_player_mode.bewly_widescreen_video_alignment_desc')"
         right-width="auto"
       >
-        <Radio v-model="settings.bewlyWidescreenCenterVerticalVideo" />
+        <Select v-model="bewlyWidescreenVideoAlignment" :options="bewlyWidescreenVideoAlignmentOptions" w="200px" />
+      </SettingsItem>
+
+      <SettingsItem
+        v-if="usesBewlyWidescreen"
+        :title="t('settings.video_player_mode.enable_bewly_widescreen_sidebar_resize')"
+        :desc="t('settings.video_player_mode.enable_bewly_widescreen_sidebar_resize_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.enableBewlyWidescreenSidebarResize" />
       </SettingsItem>
 
       <SettingsItem

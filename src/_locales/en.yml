@@ -462,20 +462,21 @@ settings:
     bewly_widescreen_sidebar_position_desc: Choose the sidebar position in Bewly Widescreen mode
     bewly_widescreen_sidebar_position_left: Left
     bewly_widescreen_sidebar_position_right: Right
-    bewly_widescreen_sidebar_priority: Bewly Widescreen Layout Priority
-    bewly_widescreen_sidebar_priority_desc: >-
-      Video-first: the sidebar starts as a narrow strip, temporarily expands on
-      hover, and can be fully expanded via the button (which takes space from
-      the video). Sidebar-first: the sidebar is fully expanded by default and
-      takes space from the video.
-    bewly_widescreen_sidebar_priority_video: Video-first
-    bewly_widescreen_sidebar_priority_sidebar: Sidebar-first
-    bewly_widescreen_center_vertical_video: Center Video in Bewly Widescreen
-    bewly_widescreen_center_vertical_video_desc: >-
-      When enabled, videos are centered horizontally across the whole viewport
-      in widescreen mode whenever the letterbox bars leave enough room for the
-      sidebar, which then fully occupies one side. Otherwise the current layout
-      is kept.
+    bewly_widescreen_auto_collapse_sidebar: Auto-collapse Bewly Widescreen sidebar
+    bewly_widescreen_auto_collapse_sidebar_desc: >-
+      Keep the video at full height and adapt the sidebar to the available space.
+      The sidebar collapses when a regular window is short on space, and starts
+      as a narrow strip in ultrawide windows with temporary expansion on hover.
+      Turn this off to keep the full sidebar visible and reduce the video area.
+    bewly_widescreen_video_alignment: Video centering reference
+    bewly_widescreen_video_alignment_desc: >-
+      Center the video within the area outside the sidebar, or relative to the
+      whole browser viewport when space permits. This does not change the
+      sidebar width or expansion state.
+    bewly_widescreen_video_alignment_sidebar: Area outside sidebar (default)
+    bewly_widescreen_video_alignment_viewport: Whole browser viewport (when space permits)
+    enable_bewly_widescreen_sidebar_resize: Allow manual Bewly Widescreen sidebar resizing
+    enable_bewly_widescreen_sidebar_resize_desc: Drag the divider between the video and sidebar to resize it and remember the last width. A manual width temporarily overrides automatic sidebar layout; double-click the divider to clear it and restore automatic layout.
   enable_video_preview: Enable video preview feature (if possible)
   enable_video_ctrl_bar_on_video_card: Display the video control bar on the video card
   video_preview_swipe_seek: Swipe to seek nearby
@@ -1639,6 +1640,8 @@ user_card:
   submissions: '{count} submissions'
   followers: '{count} followers'
 widescreen:
+  resize_sidebar: Resize widescreen sidebar
+  resize_sidebar_title: Drag to resize; double-click to restore automatic layout
   show_narrow_right: Show narrow right sidebar
   show_narrow_left: Show narrow left sidebar
   collapse_right: Collapse right sidebar

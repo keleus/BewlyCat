@@ -445,12 +445,14 @@ settings:
     bewly_widescreen_sidebar_position_desc: 选择 Bewly 宽屏模式下侧边栏的显示位置
     bewly_widescreen_sidebar_position_left: 左侧
     bewly_widescreen_sidebar_position_right: 右侧
-    bewly_widescreen_sidebar_priority: Bewly宽屏布局优先级
-    bewly_widescreen_sidebar_priority_desc: 视频优先：侧栏默认收起为窄条，悬停临时展开，也可用按钮切换为完整侧栏（会压缩视频区域）；侧栏优先：侧栏默认完整显示并压缩视频区域。
-    bewly_widescreen_sidebar_priority_video: 视频优先
-    bewly_widescreen_sidebar_priority_sidebar: 侧栏优先
-    bewly_widescreen_center_vertical_video: Bewly宽屏画面居中
-    bewly_widescreen_center_vertical_video_desc: 开启后，宽屏模式下若画面两侧留有足够容纳侧栏的黑边空间，视频将在整个画面水平居中，侧栏完整占据一侧黑边；空间不足时保持现有布局。
+    bewly_widescreen_auto_collapse_sidebar: 自动收起 Bewly 宽屏侧栏
+    bewly_widescreen_auto_collapse_sidebar_desc: 开启后优先保持视频完整高度，并根据可用空间调整侧栏。普通窗口空间不足时侧栏自动收起；超宽窗口默认显示为窄条，悬停可临时展开。关闭后侧栏保持完整显示，并压缩视频区域。
+    bewly_widescreen_video_alignment: 视频居中基准
+    bewly_widescreen_video_alignment_desc: 选择视频在侧栏以外的可用区域中居中，或在空间允许时相对整个浏览器窗口居中。此设置不会改变侧栏宽度或展开状态。
+    bewly_widescreen_video_alignment_sidebar: 侧栏外区域（默认）
+    bewly_widescreen_video_alignment_viewport: 整个浏览器窗口（空间允许时）
+    enable_bewly_widescreen_sidebar_resize: 允许手动调整 Bewly 宽屏侧栏宽度
+    enable_bewly_widescreen_sidebar_resize_desc: 开启后可拖动视频与侧栏之间的分隔线调整宽度，并记住上次宽度。手动宽度会暂时覆盖侧栏自动布局；双击分隔线可清除手动宽度并恢复自动布局。
   video_player_scroll: 调整显示模式后滚动
   video_player_scroll_desc: 启用后，调整显示模式时会自动滚动到所选位置。
   video_player_scroll_mode:
@@ -1537,6 +1539,8 @@ user_card:
   submissions: '{count}个投稿'
   followers: '{count}粉丝'
 widescreen:
+  resize_sidebar: 调整宽屏侧栏宽度
+  resize_sidebar_title: 拖动调整宽度，双击恢复自动布局
   show_narrow_right: 显示窄右栏
   show_narrow_left: 显示窄左栏
   collapse_right: 收起右栏

@@ -1,5 +1,5 @@
 import { settings } from '~/logic'
-import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, rememberBewlyWidescreenMode } from '~/utils/bewlyWidescreen'
 import { isVideoOrBangumiPage } from '~/utils/main'
 // 导入需要的函数
 import {
@@ -260,6 +260,7 @@ export function registerDefaultHandlers(): void {
       return
     }
 
+    rememberBewlyWidescreenMode(true)
     applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right')
   })
 

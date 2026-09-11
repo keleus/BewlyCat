@@ -1,7 +1,7 @@
 import { watch } from 'vue'
 
 import { settings } from '~/logic'
-import { applyBewlyWidescreen, ensureNativePlayerModeGuard, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, showBewlyWidescreenSwitchHint } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, ensureNativePlayerModeGuard, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, rememberBewlyWidescreenMode, showBewlyWidescreenSwitchHint } from '~/utils/bewlyWidescreen'
 import { i18n } from '~/utils/i18n'
 import { isVideoOrBangumiPage } from '~/utils/main'
 
@@ -174,6 +174,7 @@ async function handleControlClick(button: HTMLElement) {
   }, APPLY_TIMEOUT)
 
   try {
+    rememberBewlyWidescreenMode(true)
     applyBewlyWidescreen(settings.value.bewlyWidescreenSidebarPosition || 'right', false)
   }
   catch (error) {

@@ -585,7 +585,9 @@ else if (shouldInitializeContentScript) {
       return
     }
 
-    let targetPlayerMode = resolveDefaultVideoPlayerMode()
+    let targetPlayerMode = localSettings.value.bewlyWidescreenModePreferred
+      ? 'bewlyWidescreen'
+      : resolveDefaultVideoPlayerMode()
     if (isFestivalPage() && targetPlayerMode === 'bewlyWidescreen')
       targetPlayerMode = 'widescreen'
 

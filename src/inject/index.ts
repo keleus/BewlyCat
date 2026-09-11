@@ -243,6 +243,26 @@ else if (shouldInitializePageScript) {
     like?: number
   }
 
+  const COMMENT_WIDESCREEN_COMPACT_METADATA_CSS = `
+    :host-context(#bewly-widescreen-root) #footer {
+      display: flex !important;
+      align-items: center !important;
+      flex-wrap: wrap !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      column-gap: var(--bew-space-3, 12px) !important;
+      row-gap: var(--bew-space-1, 4px) !important;
+    }
+
+    :host-context(#bewly-widescreen-root) #footer > * {
+      flex: 0 0 auto !important;
+      width: max-content !important;
+      min-width: max-content !important;
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+    }
+  `
+
   const COMMENT_SHADOW_STYLE_PATCHES: Record<string, { id: string, css: string }> = {
     'bili-comment-thread-renderer': {
       id: 'bewly-comment-thread-style',
@@ -410,6 +430,8 @@ else if (shouldInitializePageScript) {
     'bili-comment-renderer': {
       id: 'bewly-comment-renderer-style',
       css: `
+        ${COMMENT_WIDESCREEN_COMPACT_METADATA_CSS}
+
         #body.dark .tag {
           --bili-comment-tag-color: var(--bew-comment-tag-color, var(--bili-comment-tag-color-dark)) !important;
           --bili-comment-tag-bg: var(--bew-comment-tag-bg, var(--bili-comment-tag-bg-dark)) !important;
@@ -417,6 +439,27 @@ else if (shouldInitializePageScript) {
 
         #body .tag:empty {
           display: none !important;
+        }
+      `,
+    },
+    'bili-comment-reply-renderer': {
+      id: 'bewly-comment-reply-renderer-style',
+      css: COMMENT_WIDESCREEN_COMPACT_METADATA_CSS,
+    },
+    'bili-comment-action-buttons-renderer': {
+      id: 'bewly-comment-action-buttons-style',
+      css: `
+        :host-context(#bewly-widescreen-root),
+        :host-context(#bewly-widescreen-root) :is(#body, #like, #dislike, #reply, button, span) {
+          white-space: nowrap !important;
+          word-break: keep-all !important;
+        }
+
+        :host-context(#bewly-widescreen-root) {
+          display: inline-flex !important;
+          flex: 0 0 auto !important;
+          width: max-content !important;
+          min-width: max-content !important;
         }
       `,
     },
@@ -3960,6 +4003,10 @@ else if (shouldInitializePageScript) {
       if (name === 'bili-comment-action-buttons-renderer') {
         try {
           patchCommentComponentUpdate(name, classConstructor, (component) => {
+            const root = component.shadowRoot
+            const stylePatch = COMMENT_SHADOW_STYLE_PATCHES[name]
+            if (root && stylePatch)
+              ensureCommentShadowStyle(root, stylePatch.id, stylePatch.css)
             syncRenderedCommentReplyInteraction(component)
           })
         }
@@ -3997,23 +4044,14 @@ else if (shouldInitializePageScript) {
             else if (name === 'bili-comment-box') {
               updateWidescreenCommentEmojiOverflow(component, root)
             }
-          })
-        }
-        catch (error) {
-          console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
-        }
-        return
-      }
-
-      if (name === 'bili-comment-reply-renderer') {
-        try {
-          patchCommentComponentUpdate(name, classConstructor, (component) => {
-            const rootNode = component.getRootNode?.()
-            const repliesRenderer = rootNode instanceof ShadowRoot ? rootNode.host : null
-            if (repliesRenderer?.localName === 'bili-comment-replies-renderer') {
-              updateCommentReplyTree(repliesRenderer)
-              if (getCommentReplyDeepLinkId())
-                scheduleCommentReplyDeepLinkSettlement('hash')
+            else if (name === 'bili-comment-reply-renderer') {
+              const rootNode = component.getRootNode?.()
+              const repliesRenderer = rootNode instanceof ShadowRoot ? rootNode.host : null
+              if (repliesRenderer?.localName === 'bili-comment-replies-renderer') {
+                updateCommentReplyTree(repliesRenderer)
+                if (getCommentReplyDeepLinkId())
+                  scheduleCommentReplyDeepLinkSettlement('hash')
+              }
             }
           })
         }
