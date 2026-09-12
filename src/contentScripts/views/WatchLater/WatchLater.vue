@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import Icon from '~/components/Icon.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import type { Video } from '~/components/VideoCard/types'
+import { getAuthorJumpUrl } from '~/components/VideoCard/utils'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
@@ -16,6 +17,7 @@ import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getCSRF, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
+import { getWatchLaterAuthor } from '~/utils/watchLater'
 
 const { t } = useI18n()
 const { confirm: showConfirmDialog } = useConfirmDialog()
@@ -170,11 +172,7 @@ function transformWatchLaterItem(item: VideoItem): Video {
     title: item.title,
     desc: item.desc,
     cover: item.pic,
-    author: {
-      name: item.owner.name,
-      authorFace: item.owner.face,
-      mid: item.owner.mid,
-    },
+    author: getWatchLaterAuthor(item),
     publishedTimestamp: item.pubdate,
     bvid: item.bvid,
     aid: item.aid,
@@ -443,11 +441,11 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                       hover:bg="$bew-theme-color-10"
                       duration-300
                       pr-2
-                      :href="`//space.bilibili.com/${item.owner.mid}`" target="_blank"
+                      :href="getAuthorJumpUrl(getWatchLaterAuthor(item))" target="_blank"
                       @click.stop
                     >
                       <img
-                        :src="removeHttpFromUrl(`${item.owner.face}@40w_40h_1c`)"
+                        :src="removeHttpFromUrl(`${getWatchLaterAuthor(item).authorFace}@40w_40h_1c`)"
                         w-30px
                         aspect-square
                         object-cover
@@ -455,7 +453,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                         rounded="1/2"
                         mr-2
                       >
-                      {{ item.owner.name }}
+                      {{ getWatchLaterAuthor(item).name }}
                     </a>
                     <p display="block xl:none" text="$bew-text-3 sm" mt-auto mb-2>
                       {{

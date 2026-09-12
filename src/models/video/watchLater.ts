@@ -23,6 +23,15 @@ export interface List {
   desc: string
   state: number
   duration: number
+  redirect_url?: string
+  bangumi?: {
+    ep_id?: number
+    cover?: string
+    season?: {
+      season_id?: number
+      title?: string
+    }
+  }
   rights: { [key: string]: number }
   owner: Owner
   stat: { [key: string]: number }

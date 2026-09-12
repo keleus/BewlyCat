@@ -5,12 +5,14 @@ import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import Progress from '~/components/Progress.vue'
 import Tooltip from '~/components/Tooltip.vue'
+import { getAuthorJumpUrl } from '~/components/VideoCard/utils'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { isHomePage, isInIframe, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
+import { getWatchLaterAuthor } from '~/utils/watchLater'
 
 const topBarStore = useTopBarStore()
 const { watchLaterList, isLoadingWatchLater, watchLaterCount } = storeToRefs(topBarStore)
@@ -277,12 +279,12 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
               </h3>
               <div text="$bew-text-2" m="t-2" flex="~ items-center">
                 <ALink
-                  :href="`https://space.bilibili.com/${item.owner.mid}`"
+                  :href="getAuthorJumpUrl(getWatchLaterAuthor(item))"
                   type="topBar"
                   :stop-propagation="true"
                   class="bew-top-bar-media-author"
                 >
-                  {{ item.owner.name }}
+                  {{ getWatchLaterAuthor(item).name }}
                 </ALink>
               </div>
             </div>
