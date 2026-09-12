@@ -1,6 +1,6 @@
 import browser from 'webextension-polyfill'
 
-import { promptPageRefreshFromContentScript } from '~/utils/refreshPrompt'
+import { markBackgroundConnectionHealthy, promptPageRefreshFromContentScript } from '~/utils/refreshPrompt'
 
 export interface Message<T = any> {
   type: string
@@ -45,12 +45,14 @@ export async function sendMessage<T = any, R = any>(type: string, data?: T): Pro
 
   for (let attempt = 0; attempt < TRANSIENT_BACKGROUND_MESSAGE_ATTEMPTS; attempt++) {
     try {
-      return await browser.runtime.sendMessage(message)
+      const response = await browser.runtime.sendMessage(message) as R
+      markBackgroundConnectionHealthy()
+      return response
     }
     catch (error) {
       lastError = error
       if (isExtensionContextInvalidatedError(error)) {
-        promptPageRefreshFromContentScript()
+        promptPageRefreshFromContentScript('context-invalidated', attempt + 1)
         throw error
       }
       if (!isBackgroundDisconnectedError(error) || attempt === TRANSIENT_BACKGROUND_MESSAGE_ATTEMPTS - 1)
@@ -60,7 +62,7 @@ export async function sendMessage<T = any, R = any>(type: string, data?: T): Pro
   }
 
   if (isBackgroundDisconnectedError(lastError))
-    promptPageRefreshFromContentScript()
+    promptPageRefreshFromContentScript('background-unreachable', TRANSIENT_BACKGROUND_MESSAGE_ATTEMPTS)
 
   throw lastError
 }
