@@ -5,7 +5,10 @@
 import type Browser from 'webextension-polyfill'
 import browser from 'webextension-polyfill'
 
+import { createApiResponseCache } from './apiResponseCache'
 import { addWbiSign, clearWbiKeys, getWbiKeys, initWbiKeys, isBilibiliNavUrl, needsWbiSign, storeWbiKeys } from './wbiSign'
+
+const cacheApiResponse = createApiResponseCache()
 
 export class ApiRiskControlError extends Error {
   constructor(message: string = '检测到风控页面，API返回了HTML而不是JSON') {
@@ -70,6 +73,7 @@ interface _FETCH {
 interface API {
   url: string
   _fetch: _FETCH
+  cacheMaxAge?: number
   params?: {
     [key: string]: any
   }
@@ -97,7 +101,7 @@ function apiListenerFactory(API_MAP: APIMAP) {
     // eslint-disable-next-line node/prefer-global/process
     if (process.env.FIREFOX && sender && sender.tab?.id) {
       if (api._fetch.credentials === 'omit' || typedMessage.bewlyNoCookie === true)
-        return await doRequest(typedMessage, api)
+        return await doCachedRequest(typedMessage, api, sender.tab)
 
       // 获取tab信息以获取正确的cookieStoreId
       const tab = await browser.tabs.get(sender.tab.id)
@@ -105,11 +109,43 @@ function apiListenerFactory(API_MAP: APIMAP) {
       // Only copy cookies that the API target would receive naturally. Filtering
       // by store alone can mix cookies from unrelated permitted Bilibili hosts.
       const cookies = await browser.cookies.getAll({ url: api.url, storeId })
-      return await doRequest(typedMessage, api, cookies)
+      return await doCachedRequest(typedMessage, api, tab, cookies)
     }
 
-    return await doRequest(typedMessage, api)
+    return await doCachedRequest(typedMessage, api, sender?.tab)
   }
+}
+
+async function doCachedRequest(message: Message, api: API, tab?: Browser.Tabs.Tab, cookies?: Browser.Cookies.Cookie[]) {
+  const request = () => doRequest(message, api, cookies)
+  if (!api.cacheMaxAge || api._fetch.method.toLowerCase() !== 'get')
+    return request()
+
+  const noCookie = api._fetch.credentials === 'omit' || message.bewlyNoCookie === true
+  let accountId = ''
+  if (!noCookie) {
+    try {
+      // Firefox 使用实际请求的容器 Cookie；其他浏览器与后台 fetch 的默认 Cookie 保持一致。
+      const accountCookie = cookies
+        ? cookies.find(cookie => cookie.name === 'DedeUserID')
+        : await browser.cookies.get({ url: api.url, name: 'DedeUserID' })
+      accountId = accountCookie?.value ?? ''
+    }
+    catch {
+      // 无法确认账号时直接请求，避免误用其他账号的推荐。
+      return request()
+    }
+  }
+
+  const key = JSON.stringify([
+    api.url,
+    tab?.incognito ?? false,
+    tab?.cookieStoreId ?? 'default',
+    noCookie,
+    accountId,
+    Object.entries(message).sort(([a], [b]) => a.localeCompare(b)),
+  ])
+  return cacheApiResponse(key, api.cacheMaxAge, request)
 }
 
 async function doRequest(message: Message, api: API, cookies?: Browser.Cookies.Cookie[]) {

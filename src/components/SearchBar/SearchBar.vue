@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onClickOutside, onKeyStroke, useDebounceFn, useElementBounding, useMediaQuery } from '@vueuse/core'
+import { onClickOutside, onKeyStroke, useDebounceFn, useDocumentVisibility, useElementBounding, useMediaQuery } from '@vueuse/core'
 import DOMPurify from 'dompurify'
 import type { CSSProperties } from 'vue'
 import { computed, inject, reactive, ref, shallowRef, watch } from 'vue'
@@ -89,6 +89,7 @@ const isLoadingHotSearch = ref<boolean>(false)
 // 搜索推荐相关状态
 const searchRecommendation = ref<SearchRecommendationItem | null>(null)
 const isLoadingSearchRecommendation = ref<boolean>(false)
+const documentVisibility = useDocumentVisibility()
 const isNarrowLayout = useMediaQuery('(max-width: 767px)')
 
 const searchMode = computed(() => props.searchBehavior ?? 'navigate')
@@ -226,7 +227,7 @@ async function loadSearchRecommendation() {
   try {
     isLoadingSearchRecommendation.value = true
     const res: SearchRecommendationResponse = await api.search.getDefaultSearchRecommendation()
-    if (res && res.code === 0) {
+    if (res && res.code === 0 && settings.value.showSearchRecommendation) {
       searchRecommendation.value = res.data
     }
   }
@@ -243,18 +244,16 @@ let recommendationTimer: ReturnType<typeof setInterval> | null = null
 
 // 初始化搜索推荐（组件挂载时调用）
 function initSearchRecommendation() {
-  if (!settings.value.showSearchRecommendation)
+  cleanupRecommendationTimer()
+  if (!settings.value.showSearchRecommendation || documentVisibility.value !== 'visible')
     return
 
   // 立即加载一次
   loadSearchRecommendation()
 
-  // 设置10分钟定时更新
-  if (recommendationTimer)
-    clearInterval(recommendationTimer)
-
+  // 仅可见标签页定时更新；后台缓存负责多个搜索框和标签页之间的请求去重。
   recommendationTimer = setInterval(() => {
-    if (settings.value.showSearchRecommendation) {
+    if (settings.value.showSearchRecommendation && documentVisibility.value === 'visible') {
       loadSearchRecommendation()
     }
   }, 10 * 60 * 1000) // 10分钟
@@ -268,8 +267,8 @@ function cleanupRecommendationTimer() {
   }
 }
 
-// 监听设置变化，动态启用或停止推荐功能
-watch(() => settings.value.showSearchRecommendation, (enabled) => {
+// 标签页重新可见时从后台获取最新缓存，隐藏时停止刷新。
+watch([() => settings.value.showSearchRecommendation, documentVisibility], ([enabled]) => {
   if (enabled) {
     initSearchRecommendation()
   }

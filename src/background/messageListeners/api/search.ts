@@ -17,6 +17,7 @@ const API_SEARCH = {
   },
   getDefaultSearchRecommendation: {
     url: 'https://api.bilibili.com/x/web-interface/wbi/search/default',
+    cacheMaxAge: 10 * 60 * 1000,
     _fetch: {
       method: 'get',
     },
