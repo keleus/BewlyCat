@@ -1478,7 +1478,19 @@ moments:
   fit_window: 适应窗口
   rotate_clockwise: 顺时针旋转
 moment_card:
-  repost_load_failed: 转发编辑器加载失败，请在原站打开
+  repost_pending: 这条动态正在转发，请稍候
+  repost_placeholder: 说点什么吧（可选）
+  repost_login: 请先登录，或刷新页面后重试
+  repost_failed: 转发失败，请稍后重试
+  repost_success: 转发成功
+  repost_mention: "搜索要 {'@'} 的用户"
+  repost_topic: 选择话题
+  repost_commercial: 商业声明
+  repost_mentions_limit: "最多可以 {'@'} {count} 位用户"
+  repost_emoji_limit: 最多可以添加 20 个动态表情
+  repost_too_long: 已超出规定字数
+  repost_retry: 重试
+  repost_no_results: 暂无结果
   lottery_details: 抽奖详情
   repost: 转发
   comment_sex_male: 男

@@ -4,6 +4,7 @@ export interface DisplayRichTextSegment {
   imageUrl?: string
   url?: string
   size?: number
+  isLottery?: boolean
 }
 
 export interface DisplayForwardVideo {
@@ -65,6 +66,8 @@ export interface DisplayMoment {
   likeCount: number
   isLiked: boolean
   isLikeDisabled: boolean
+  forwardCount?: number
+  isForwardDisabled?: boolean
   commentCount: number
   /** 使用当前动态的 basic 字段定位评论区，转发不能继承原动态的评论区。 */
   commentTarget?: { oid: string, type: number }
@@ -118,6 +121,7 @@ export interface DisplayMoment {
     authorAction?: string
     title: string
     text: string
+    richText?: DisplayRichTextSegment[]
     fallback: string
     /** 被转发原动态 id，用于直接打开原图文 */
     id?: string

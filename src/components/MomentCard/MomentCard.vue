@@ -13,9 +13,11 @@ import type { Author, Video } from '../VideoCard/types'
 import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
 import type { CommentPreviewState } from './commentPreview'
 import { toggleCommentPreview } from './commentPreview'
+import { isMomentLotteryUrl } from './lottery'
 import MomentComments from './MomentComments.vue'
 import MomentImageGallery from './MomentImageGallery.vue'
 import MomentImageGrid from './MomentImageGrid.vue'
+import MomentRepost from './MomentRepost.vue'
 import MomentVideoPreview from './MomentVideoPreview.vue'
 import MomentVideoStrip from './MomentVideoStrip.vue'
 import MomentVote from './MomentVote.vue'
@@ -70,6 +72,7 @@ const {
 
 const emit = defineEmits<{
   cardElement: [element: HTMLElement | null]
+  openLottery: [url: string]
   openDetail: [moment: DisplayMoment, forceDialog?: boolean]
   openImagePreview: [urls: string[], index: number, trigger: HTMLElement | null]
   mediaEnter: [moment: DisplayMoment]
@@ -100,6 +103,8 @@ const descriptionExpanded = ref(false)
 const descriptionCanToggle = ref(false)
 const descriptionId = computed(() => `moment-card-desc-${moment.id.replace(/[^\w-]/g, '-')}`)
 const commentsId = computed(() => `moment-card-comments-${moment.id.replace(/[^\w-]/g, '-')}`)
+const repostExpanded = ref(false)
+const repostCount = ref(0)
 const commentsToggleRef = ref<HTMLButtonElement | null>(null)
 
 function toggleComments() {
@@ -261,14 +266,6 @@ const menuVideo = computed<Video | null>(() => {
 const menuButtonLabel = computed(() => menuVideo.value
   ? t('video_card.operation.more_options')
   : '')
-
-const cardOpenMode = computed(() => {
-  const videoCardOpenMode = settings.value.momentsVideoCardOpenMode
-  if (moment.isVideo && !moment.isPgc && videoCardOpenMode !== 'inherit')
-    return videoCardOpenMode
-
-  return settings.value.momentsCardOpenMode
-})
 
 const cardHref = computed(() => {
   if (moment.isLive && moment.roomId)
@@ -512,12 +509,18 @@ function handleForwardVideoClick(event: MouseEvent) {
 }
 
 function handleRichLinkClick(event: MouseEvent, url?: string) {
+  if (url && isMomentLotteryUrl(url) && !shouldUseNativeLinkOpen(event)) {
+    event.preventDefault()
+    event.stopPropagation()
+    emit('openLottery', url)
+    return
+  }
   handleOpenLink(event, url, url ? classifyMomentLink(url) : 'other')
 }
 
 function handleAdditionalClick(event: MouseEvent) {
   const url = moment.additional?.url
-  handleOpenLink(event, url, url ? classifyMomentLink(url) : 'other')
+  handleRichLinkClick(event, url)
 }
 </script>
 
@@ -641,7 +644,7 @@ function handleAdditionalClick(event: MouseEvent) {
                     class="moment-card__rich-link"
                     @click="handleRichLinkClick($event, segment.url)"
                   >
-                    {{ segment.text }}
+                    <span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}
                   </a>
                   <template v-else>
                     {{ segment.text }}
@@ -815,7 +818,7 @@ function handleAdditionalClick(event: MouseEvent) {
                     class="moment-card__rich-link"
                     @click="handleRichLinkClick($event, segment.url)"
                   >
-                    {{ segment.text }}
+                    <span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}
                   </a>
                   <template v-else>
                     {{ segment.text }}
@@ -925,7 +928,25 @@ function handleAdditionalClick(event: MouseEvent) {
                   @click="handleForwardAuthorClick"
                 >@{{ moment.forward.author }}</a>
                 <strong v-else>@{{ moment.forward.author }}</strong>
-                <p>{{ moment.forward.title || moment.forward.text || moment.forward.fallback }}</p>
+                <p>
+                  <template v-if="!moment.forward.title && moment.forward.richText?.length">
+                    <template v-for="(segment, index) in moment.forward.richText" :key="index">
+                      <a
+                        v-if="segment.type === 'link' && segment.url"
+                        :href="segment.url"
+                        class="moment-card__rich-link"
+                        @click="handleRichLinkClick($event, segment.url)"
+                      ><span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}</a>
+                      <img v-else-if="segment.type === 'emoji'" :src="segment.imageUrl" :alt="segment.text" class="moment-card__emoji" loading="lazy">
+                      <template v-else>
+                        {{ segment.text }}
+                      </template>
+                    </template>
+                  </template>
+                  <template v-else>
+                    {{ moment.forward.title || moment.forward.text || moment.forward.fallback }}
+                  </template>
+                </p>
               </div>
               <div
                 v-if="showForwardImageGrid"
@@ -1132,14 +1153,16 @@ function handleAdditionalClick(event: MouseEvent) {
 
       <footer class="moment-card__footer">
         <button
-          v-if="cardOpenMode !== 'dialog' && !moment.isLive"
+          v-if="!moment.isLive"
           type="button"
-          :aria-label="t('moment_card.open_dialog')"
-          @click.stop="emit('openDetail', moment, true)"
+          :disabled="moment.isForwardDisabled"
+          :aria-label="t('moment_card.repost')"
+          :aria-expanded="repostExpanded"
+          @click.stop="repostExpanded = !repostExpanded"
           @keydown.enter.stop
         >
-          <span i-tabler-layout-dashboard />
-          <span class="moment-card__open-label">{{ t('moment_card.open_dialog_short') }}</span>
+          <span i-tabler-share-3 />
+          <span>{{ moment.forwardCount || repostCount ? formatCount((moment.forwardCount || 0) + repostCount) : t('moment_card.repost') }}</span>
         </button>
         <a
           v-else
@@ -1191,6 +1214,12 @@ function handleAdditionalClick(event: MouseEvent) {
           {{ formatCount(moment.likeCount) }}
         </button>
       </footer>
+      <MomentRepost
+        v-if="repostExpanded"
+        :moment-id="moment.id"
+        @close="repostExpanded = false"
+        @sent="repostCount++; repostExpanded = false"
+      />
       <MomentComments
         v-if="commentPreview.opened"
         v-show="commentPreview.expanded"
@@ -2228,6 +2257,13 @@ function handleAdditionalClick(event: MouseEvent) {
   vertical-align: -0.4em;
 }
 
+.moment-card__lottery-icon {
+  display: inline-block;
+  vertical-align: -0.125em;
+  margin-right: var(--bew-space-1);
+  font-size: var(--bew-icon-size-sm);
+}
+
 .moment-card__rich-link {
   color: var(--bew-theme-color);
   text-decoration: none;
@@ -2326,6 +2362,11 @@ function handleAdditionalClick(event: MouseEvent) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.moment-card__footer > button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .moment-card__footer {

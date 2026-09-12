@@ -5,7 +5,9 @@ import { useToast } from 'vue-toastification'
 import Dialog from '~/components/Dialog.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { createCommentPreview } from '~/components/MomentCard/commentPreview'
+import { isMomentLotteryUrl } from '~/components/MomentCard/lottery'
 import MomentCard from '~/components/MomentCard/MomentCard.vue'
+import MomentLotteryDialog from '~/components/MomentCard/MomentLotteryDialog.vue'
 import type { DisplayForwardVideo, DisplayMoment, DisplayRichTextSegment, WatchLaterTarget } from '~/components/MomentCard/types'
 import type { MomentLinkKind } from '~/components/MomentCard/utils'
 import {
@@ -195,6 +197,7 @@ const momentColumns = ref<DisplayMoment[][]>([])
 const selectedMoment = ref<DisplayMoment | null>(null)
 const detailFrameUrl = ref('')
 const detailFrameLoaded = ref(false)
+const lotteryDialogUrl = ref('')
 const detailIframeRef = ref<HTMLIFrameElement | null>(null)
 const detailPlayerImmersive = ref(false)
 const detailImageViewerRef = ref<HTMLElement | null>(null)
@@ -580,7 +583,7 @@ function normalizeDescText(desc: any) {
   return pickText(desc.text, desc)
 }
 
-function extractRichTextSegments(...nodeLists: any[]): DisplayRichTextSegment[] {
+function extractRichTextSegments(momentId: string, ...nodeLists: any[]): DisplayRichTextSegment[] {
   const nodes = nodeLists.find(value => Array.isArray(value) && value.length)
   if (!nodes)
     return []
@@ -602,15 +605,18 @@ function extractRichTextSegments(...nodeLists: any[]): DisplayRichTextSegment[] 
       }]
     }
 
+    const isLottery = node?.type === 'RICH_TEXT_NODE_TYPE_LOTTERY'
     const isAtMention = node?.type === 'RICH_TEXT_NODE_TYPE_AT'
     const isSupportedLink = node?.type === 'RICH_TEXT_NODE_TYPE_TOPIC'
       || node?.type === 'RICH_TEXT_NODE_TYPE_WEB'
       || isAtMention
+      || isLottery
     const rawJumpUrl = node?.jump_url
+      || (isLottery && /^\d+$/.test(momentId) ? `https://www.bilibili.com/h5/lottery/result?business_id=${momentId}&business_type=1&isWeb=1` : '')
       || (isAtMention && node?.rid ? `https://space.bilibili.com/${node.rid}` : '')
-    const url = isSupportedLink ? normalizeRichTextJumpUrl(rawJumpUrl) : ''
+    const url = isSupportedLink || isMomentLotteryUrl(rawJumpUrl || '') ? normalizeRichTextJumpUrl(rawJumpUrl) : ''
     if (text && url)
-      return [{ type: 'link' as const, text, url }]
+      return [{ type: 'link' as const, text, url, isLottery: isLottery || isMomentLotteryUrl(url) }]
 
     return text ? [{ type: 'text' as const, text }] : []
   })
@@ -724,6 +730,7 @@ function getMomentContent(item: any) {
   /** 简介继承自视频/专栏元数据时标记，卡片内做弱化展示 */
   const descInherited = !selfText && Boolean(inheritedText)
   const richText = extractRichTextSegments(
+    String(item.id_str || item.id || ''),
     opus.summary?.rich_text_nodes,
     dynamic.desc?.rich_text_nodes,
   )
@@ -1727,7 +1734,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     ? (normalizeDescText(dynamic.desc) || t('moments.forwarded_post'))
     : content.text
   const richText = isForward
-    ? extractRichTextSegments(dynamic.desc?.rich_text_nodes)
+    ? extractRichTextSegments(String(id), dynamic.desc?.rich_text_nodes)
     : content.richText
   const additional = content.additional || selfContent.additional
   const isChargeExclusive = content.isChargeExclusive || selfContent.isChargeExclusive
@@ -1735,7 +1742,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     (interaction: any) => Number(interaction?.type) === 1,
   )?.desc
   const hotCommentText = normalizeDescText(commentInteraction)
-  const hotCommentRichText = extractRichTextSegments(commentInteraction?.rich_text_nodes)
+  const hotCommentRichText = extractRichTextSegments(String(id), commentInteraction?.rich_text_nodes)
 
   if (content.firstImageRatio && !coverRatios[id])
     coverRatios[id] = content.firstImageRatio
@@ -1764,6 +1771,8 @@ function mapMoment(item: DataItem): DisplayMoment {
       raw.modules?.module_stat?.like?.forbidden
       || raw.modules?.module_stat?.like?.disabled,
     ),
+    forwardCount: Number(raw.modules?.module_stat?.forward?.count || 0),
+    isForwardDisabled: Boolean(raw.modules?.module_stat?.forward?.forbidden),
     commentCount: Number(raw.modules?.module_stat?.comment?.count || 0),
     commentTarget: raw.basic?.comment_id_str && Number(raw.basic.comment_type) > 0
       ? { oid: raw.basic.comment_id_str, type: Number(raw.basic.comment_type) }
@@ -1815,6 +1824,7 @@ function mapMoment(item: DataItem): DisplayMoment {
           authorAction: forwardedAuthor.pub_action || '',
           title: content.title,
           text: content.text,
+          richText: content.richText,
           fallback: content.isChargeExclusive
             ? (content.chargeBadge || t('moments.charging_exclusive_post'))
             : content.isLive
@@ -4478,6 +4488,7 @@ watch(
                 @preview-video="bindPreviewVideo"
                 @preview-canplay="playPreview"
                 @open-link="handleOpenLink"
+                @open-lottery="lotteryDialogUrl = $event"
                 @toggle-watch-later="toggleMomentWatchLater"
                 @toggle-like="toggleMomentLike"
                 @toggle-reservation="toggleMomentReservation"
@@ -4545,6 +4556,8 @@ watch(
         </div>
       </aside>
     </div>
+
+    <MomentLotteryDialog v-if="lotteryDialogUrl" :url="lotteryDialogUrl" @close="lotteryDialogUrl = ''" />
 
     <Dialog
       v-if="selectedMoment && detailFrameUrl"

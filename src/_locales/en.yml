@@ -1580,7 +1580,19 @@ moments:
   fit_window: Fit to window
   rotate_clockwise: Rotate clockwise
 moment_card:
-  repost_load_failed: Unable to load the repost editor. Open Bilibili to continue.
+  repost_pending: This repost is still being submitted. Please wait.
+  repost_placeholder: Add a message (optional)
+  repost_login: 'Log in, or refresh the page and try again'
+  repost_failed: Repost failed. Please try again.
+  repost_success: Reposted successfully
+  repost_mention: Search users to mention
+  repost_topic: Choose a topic
+  repost_commercial: Commercial disclosure
+  repost_mentions_limit: 'You can mention up to {count} users'
+  repost_emoji_limit: You can add up to 20 animated emotes
+  repost_too_long: Message exceeds the character limit
+  repost_retry: Retry
+  repost_no_results: No results
   lottery_details: Giveaway details
   repost: Repost
   comment_sex_male: Male

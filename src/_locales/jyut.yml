@@ -1493,7 +1493,19 @@ moments:
   fit_window: 適應視窗
   rotate_clockwise: 順時針旋轉
 moment_card:
-  repost_load_failed: 轉發編輯器載入失敗，請喺原站開啟
+  repost_pending: 呢條動態轉發緊，請稍候
+  repost_placeholder: 講啲嘢啦（選填）
+  repost_login: 請先登入，或重新整理頁面再試
+  repost_failed: 轉發失敗，請稍後再試
+  repost_success: 轉發成功
+  repost_mention: "搜尋要 {'@'} 嘅用戶"
+  repost_topic: 選擇話題
+  repost_commercial: 商業聲明
+  repost_mentions_limit: "最多可以 {'@'} {count} 位用戶"
+  repost_emoji_limit: 最多可以加入 20 個動態表情
+  repost_too_long: 已超出規定字數
+  repost_retry: 再試
+  repost_no_results: 暫無結果
   lottery_details: 抽獎詳情
   repost: 轉發
   comment_sex_male: 男

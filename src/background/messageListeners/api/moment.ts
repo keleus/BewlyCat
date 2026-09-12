@@ -118,6 +118,56 @@ const API_MOMENT = {
     },
     afterHandle: AHS.J_D,
   },
+  getRepostConfig: {
+    url: 'https://api.bilibili.com/x/dynamic/feed/create/init_check',
+    _fetch: { method: 'get' },
+    params: { scene: 2 },
+    afterHandle: AHS.J_D,
+  },
+  getRepostEmotes: {
+    url: 'https://api.bilibili.com/x/emote/user/panel/web',
+    _fetch: { method: 'get' },
+    params: { business: 'reply' },
+    afterHandle: AHS.J_D,
+  },
+  searchRepostMentions: {
+    url: 'https://api.bilibili.com/x/polymer/web-dynamic/v1/mention/search',
+    _fetch: { method: 'get' },
+    params: { keyword: '' },
+    afterHandle: AHS.J_D,
+  },
+  searchRepostTopics: {
+    url: 'https://api.bilibili.com/x/topic/pub/search',
+    _fetch: { method: 'get' },
+    params: { keywords: '', page_size: 20, page_num: 1 },
+    afterHandle: AHS.J_D,
+  },
+  getRepostCommercialOrders: {
+    url: 'https://cm.bilibili.com/commercialorder/api/web_api/v1/upper/order_dynamic/list',
+    _fetch: { method: 'get' },
+    params: { cooperationType: 3 },
+    afterHandle: AHS.J_D,
+  },
+  checkRepost: {
+    url: 'https://api.bilibili.com/x/dynamic/feed/create/submit_check',
+    _fetch: {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      body: { content: {} as Record<string, unknown>, scene: 4, attach_card: undefined as Record<string, unknown> | undefined },
+    },
+    params: { csrf: '' },
+    afterHandle: AHS.J_D,
+  },
+  submitRepost: {
+    url: 'https://api.bilibili.com/x/dynamic/feed/create/dyn',
+    _fetch: {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      body: { dyn_req: {} as Record<string, unknown>, web_repost_src: { dyn_id_str: '' } },
+    },
+    params: { csrf: '', platform: 'web' },
+    afterHandle: AHS.J_D,
+  },
   getMomentVote: {
     url: 'https://api.bilibili.com/x/vote/vote_info',
     _fetch: {
