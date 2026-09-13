@@ -4,7 +4,7 @@ import 'uno.css'
 import { createApp } from 'vue'
 
 import { useDark } from '~/composables/useDark'
-import { CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG } from '~/constants/contentScript'
+import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG } from '~/constants/contentScript'
 import { BEWLY_IFRAME_DRAWER_HOST_CLASS, BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { localSettings, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
@@ -73,14 +73,16 @@ if (shouldInitializeContentScript) {
       if (typeof expected === 'object' && expected !== null
         && 'name' in expected && expected.name === contentScriptManifest.name
         && 'version' in expected && expected.version === version
+        && ('commit' in expected ? expected.commit : undefined) === CONTENT_SCRIPT_COMMIT
         && 'runtimeUrl' in expected && expected.runtimeUrl === contentScriptRuntimeUrl) {
-        markContentScriptHealthy({ name: contentScriptManifest.name, version, runtimeUrl: contentScriptRuntimeUrl })
+        markContentScriptHealthy({ name: contentScriptManifest.name, version, commit: CONTENT_SCRIPT_COMMIT, runtimeUrl: contentScriptRuntimeUrl })
       }
       return Promise.resolve({
         name: contentScriptManifest.name,
         runtimeUrl: contentScriptRuntimeUrl,
         type: CONTENT_SCRIPT_PONG,
         version,
+        commit: CONTENT_SCRIPT_COMMIT,
       })
     }
 
@@ -1379,6 +1381,8 @@ else if (shouldInitializeContentScript) {
     const container = document.createElement('div') as BewlyHostElement
     container.id = 'bewly'
     container.setAttribute('data-version', version)
+    if (CONTENT_SCRIPT_COMMIT)
+      container.dataset.commit = CONTENT_SCRIPT_COMMIT
 
     // 立即设置Shadow DOM容器的基准颜色，确保Vue组件能够访问到正确的CSS变量
     if (settings.value.darkModeBaseColor) {

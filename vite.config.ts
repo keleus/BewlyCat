@@ -7,7 +7,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import type { UserConfig } from 'vite'
 import { defineConfig } from 'vite'
 
-import { isDev, isFirefox, isSafari, port, r } from './scripts/utils'
+import { buildCommit, isDev, isFirefox, isSafari, port, r } from './scripts/utils'
 // import { MV3Hmr } from './vite-mv3-hmr'
 
 export const sharedConfig: UserConfig = {
@@ -45,6 +45,7 @@ export const sharedConfig: UserConfig = {
 
     replace({
       '__DEV__': JSON.stringify(isDev),
+      '__BUILD_COMMIT__': JSON.stringify(buildCommit),
       'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
       '__VUE_OPTIONS_API__': JSON.stringify(true),
       '__VUE_PROD_DEVTOOLS__': JSON.stringify(false),
