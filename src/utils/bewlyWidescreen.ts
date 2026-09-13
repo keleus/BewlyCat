@@ -519,6 +519,10 @@ function setSidebarMode(nextMode: BewlyWidescreenSidebarMode) {
   if (!state)
     return
 
+  // 手动调宽始终保持完整侧栏，尚未拖动或双击重置宽度时也不能恢复悬停收起。
+  if (settings.value.enableBewlyWidescreenSidebarResize)
+    nextMode = 'narrow'
+  delete state.root.dataset.sidebarExpanded
   state.sidebarMode = nextMode
   state.root.dataset.sidebarMode = nextMode
   const isFit = nextMode === 'fit'
@@ -950,19 +954,17 @@ function installSettingsWatchers() {
     updateSidebarLayoutState()
     schedulePlayerResizeSync(state)
   })
-  watch(() => settings.value.bewlyWidescreenSidebarPriority, (priority) => {
-    if (!state)
-      return
+  watch(
+    () => [settings.value.bewlyWidescreenSidebarPriority, settings.value.enableBewlyWidescreenSidebarResize] as const,
+    ([priority, enabled]) => {
+      if (!state)
+        return
 
-    setSidebarMode(priority === 'sidebar' ? 'narrow' : 'fit')
-  })
-  watch(() => settings.value.enableBewlyWidescreenSidebarResize, (enabled) => {
-    if (!state)
-      return
-
-    state.root.dataset.sidebarResizable = String(enabled)
-    applyCustomSidebarWidth(enabled ? localSettings.value.bewlyWidescreenSidebarWidth : 0)
-  })
+      state.root.dataset.sidebarResizable = String(enabled)
+      setSidebarMode(priority === 'sidebar' ? 'narrow' : 'fit')
+      applyCustomSidebarWidth(enabled ? localSettings.value.bewlyWidescreenSidebarWidth : 0)
+    },
+  )
 }
 
 export function prepareBewlyWidescreenLoading() {
@@ -2821,7 +2823,7 @@ function updateSidebarLayoutState() {
   state.root.dataset.centerLayout = String(centerLayout)
 
   // 展开入口只由自动侧栏布局决定，视频居中方式不再改变侧栏状态。
-  const showToggle = !hasCustomWidth
+  const showToggle = !settings.value.enableBewlyWidescreenSidebarResize && !hasCustomWidth
     && (state.sidebarMode === 'narrow' || wideVideoPriority || narrowWidth - fitWidth > 1)
   state.root.dataset.sidebarToggleVisible = String(showToggle)
 
@@ -3005,6 +3007,8 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   }
 
   function expandSidebar() {
+    if (settings.value.enableBewlyWidescreenSidebarResize || currentState.sidebarMode !== 'fit')
+      return
     if (currentState.root.dataset.sidebarExpanded === 'true')
       return
     currentState.root.dataset.sidebarExpanded = 'true'
@@ -3013,6 +3017,8 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   }
 
   function collapseSidebar(e: PointerEvent) {
+    if (settings.value.enableBewlyWidescreenSidebarResize || currentState.sidebarMode !== 'fit')
+      return
     if (isPointInVisibleVideoArea(e) && currentState.root.dataset.sidebarExpanded === 'true') {
       currentState.root.dataset.sidebarExpanded = 'false'
       updateSidebarLayoutState()
@@ -3091,7 +3097,6 @@ function setupSidebarResize(currentState: BewlyWidescreenState) {
     resizeStart = { clientX: event.clientX, width: sidebarEl.getBoundingClientRect().width }
     hasResized = false
     root.dataset.sidebarResizing = 'true'
-    root.dataset.sidebarExpanded = 'true'
     sidebarResizeHandle.setPointerCapture(event.pointerId)
     updateSidebarLayoutState()
     schedulePlayerResizeSync(currentState)

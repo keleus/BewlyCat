@@ -42,7 +42,24 @@ const bewlyWidescreenVideoAlignmentOptions = computed(() => {
 // 沿用原设置值以兼容已有配置：video 表示启用自动收起，sidebar 表示始终完整显示。
 const bewlyWidescreenAutoCollapseSidebar = computed({
   get: () => settings.value.bewlyWidescreenSidebarPriority === 'video',
-  set: enabled => settings.value.bewlyWidescreenSidebarPriority = enabled ? 'video' : 'sidebar',
+  set: (enabled: boolean) => {
+    settings.value = {
+      ...settings.value,
+      bewlyWidescreenSidebarPriority: enabled ? 'video' : 'sidebar',
+      enableBewlyWidescreenSidebarResize: enabled ? false : settings.value.enableBewlyWidescreenSidebarResize,
+    }
+  },
+})
+
+const bewlyWidescreenSidebarResize = computed({
+  get: () => settings.value.enableBewlyWidescreenSidebarResize,
+  set: (enabled: boolean) => {
+    settings.value = {
+      ...settings.value,
+      enableBewlyWidescreenSidebarResize: enabled,
+      bewlyWidescreenSidebarPriority: enabled ? 'sidebar' : settings.value.bewlyWidescreenSidebarPriority,
+    }
+  },
 })
 
 // 沿用原布尔值：false 为侧栏外区域，true 为整个浏览器窗口。
@@ -163,7 +180,7 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         :desc="t('settings.video_player_mode.enable_bewly_widescreen_sidebar_resize_desc')"
         right-width="auto"
       >
-        <Radio v-model="settings.enableBewlyWidescreenSidebarResize" />
+        <Radio v-model="bewlyWidescreenSidebarResize" />
       </SettingsItem>
 
       <SettingsItem

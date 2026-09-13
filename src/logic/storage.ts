@@ -1142,6 +1142,10 @@ watch(
     Reflect.deleteProperty(record, 'keepCollectionVideoDefaultMode')
     Reflect.deleteProperty(record, 'keepWatchLaterVideoDefaultMode')
 
+    // 兼容旧配置和导入设置：手动调宽时侧栏必须保持展开，避免悬停布局与拖动冲突。
+    if (record.enableBewlyWidescreenSidebarResize === true)
+      record.bewlyWidescreenSidebarPriority = 'sidebar'
+
     const modeOverrideContexts: VideoPlayerModeContext[] = ['multipart', 'collection', 'bangumi', 'watchLater', 'playlist']
     const validModeOverrides: VideoPlayerModeOverride[] = ['inherit', 'default', 'webFullscreen', 'widescreen', 'bewlyWidescreen']
     const storedModeOverrides = record.videoPlayerModeOverrides

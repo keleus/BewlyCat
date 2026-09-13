@@ -464,6 +464,7 @@ settings:
     bewly_widescreen_sidebar_position_right: Right
     bewly_widescreen_auto_collapse_sidebar: Auto-collapse Bewly Widescreen sidebar
     bewly_widescreen_auto_collapse_sidebar_desc: >-
+      Enabling this turns off manual sidebar resizing.
       Keep the video at full height and adapt the sidebar to the available space.
       The sidebar collapses when a regular window is short on space, and starts
       as a narrow strip in ultrawide windows with temporary expansion on hover.
@@ -476,7 +477,7 @@ settings:
     bewly_widescreen_video_alignment_sidebar: Area outside sidebar (default)
     bewly_widescreen_video_alignment_viewport: Whole browser viewport (when space permits)
     enable_bewly_widescreen_sidebar_resize: Allow manual Bewly Widescreen sidebar resizing
-    enable_bewly_widescreen_sidebar_resize_desc: Drag the divider between the video and sidebar to resize it and remember the last width. A manual width temporarily overrides automatic sidebar layout; double-click the divider to clear it and restore automatic layout.
+    enable_bewly_widescreen_sidebar_resize_desc: Enabling this turns off auto-collapse and keeps the sidebar fully expanded. Drag the divider between the video and sidebar to resize it and remember the last width; double-click the divider to restore the default width.
   enable_video_preview: Enable video preview feature (if possible)
   enable_video_ctrl_bar_on_video_card: Display the video control bar on the video card
   video_preview_swipe_seek: Swipe to seek nearby
@@ -1653,7 +1654,7 @@ user_card:
   followers: '{count} followers'
 widescreen:
   resize_sidebar: Resize widescreen sidebar
-  resize_sidebar_title: Drag to resize; double-click to restore automatic layout
+  resize_sidebar_title: Drag to resize; double-click to restore the default width
   show_narrow_right: Show narrow right sidebar
   show_narrow_left: Show narrow left sidebar
   collapse_right: Collapse right sidebar
