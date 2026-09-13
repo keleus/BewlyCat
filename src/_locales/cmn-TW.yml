@@ -486,12 +486,14 @@ settings:
     bewly_widescreen_sidebar_position_desc: 選擇 Bewly 寬螢幕模式下側邊欄的顯示位置
     bewly_widescreen_sidebar_position_left: 左側
     bewly_widescreen_sidebar_position_right: 右側
-    bewly_widescreen_sidebar_priority: Bewly寬螢幕版面優先級
-    bewly_widescreen_sidebar_priority_desc: 影片優先：側欄預設收合為窄條，滑鼠懸停時臨時展開，也可用按鈕切換為完整側欄（會壓縮影片區域）；側欄優先：側欄預設完整顯示並壓縮影片區域。
-    bewly_widescreen_sidebar_priority_video: 影片優先
-    bewly_widescreen_sidebar_priority_sidebar: 側欄優先
-    bewly_widescreen_center_vertical_video: Bewly寬螢幕畫面置中
-    bewly_widescreen_center_vertical_video_desc: 開啟後，寬螢幕模式下若畫面兩側留有足夠容納側欄的黑邊空間，影片將於整個畫面水平置中，側欄完整佔據一側黑邊；空間不足時保持現有版面。
+    bewly_widescreen_auto_collapse_sidebar: 自動收合 Bewly 寬螢幕側欄
+    bewly_widescreen_auto_collapse_sidebar_desc: 開啟後優先保持影片完整高度，並依可用空間調整側欄。一般視窗空間不足時側欄會自動收合；超寬視窗預設顯示為窄條，滑鼠懸停時可暫時展開。關閉後側欄保持完整顯示，並壓縮影片區域。
+    bewly_widescreen_video_alignment: 影片置中基準
+    bewly_widescreen_video_alignment_desc: 選擇影片在側欄以外的可用區域置中，或在空間允許時相對整個瀏覽器視窗置中。此設定不會改變側欄寬度或展開狀態。
+    bewly_widescreen_video_alignment_sidebar: 側欄外區域（預設）
+    bewly_widescreen_video_alignment_viewport: 整個瀏覽器視窗（空間允許時）
+    enable_bewly_widescreen_sidebar_resize: 允許手動調整 Bewly 寬螢幕側欄寬度
+    enable_bewly_widescreen_sidebar_resize_desc: 開啟後可拖曳影片與側欄之間的分隔線調整寬度，並記住上次寬度。手動寬度會暫時覆蓋側欄自動版面；按兩下分隔線可清除手動寬度並恢復自動版面。
   enable_video_preview: 啟用影片預覽功能（如果可以的話）
   enable_video_ctrl_bar_on_video_card: 在影片卡片上顯示影片控制欄
   video_preview_swipe_seek: 滑動小範圍跳轉
@@ -1564,6 +1566,8 @@ user_card:
   submissions: '{count}個投稿'
   followers: '{count}粉絲'
 widescreen:
+  resize_sidebar: 調整寬螢幕側欄寬度
+  resize_sidebar_title: 拖曳調整寬度，按兩下恢復自動版面配置
   show_narrow_right: 顯示窄右欄
   show_narrow_left: 顯示窄左欄
   collapse_right: 收合右欄

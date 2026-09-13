@@ -136,8 +136,12 @@ export function setupShortcutHandlers() {
       return
     }
 
-    // 检查是否事件来自插件容器
     const target = e.target as HTMLElement
+    // 分隔线使用方向键和 Home/End 调宽，不能被播放器快捷键提前拦截。
+    if (target?.closest?.('.bewly-widescreen-sidebar-resize-handle'))
+      return
+
+    // 检查是否事件来自插件容器
     if ((target && target.id === 'bewly') || document.getElementById('bewly')?.classList.contains('settings-open')) {
       return
     }
