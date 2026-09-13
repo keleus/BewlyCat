@@ -1056,11 +1056,13 @@ function createRoot(sidebarPosition: 'left' | 'right' = 'right') {
     panelWrap.appendChild(panel)
   }
 
-  sidebar.append(sidebarResizeHandle, sidebarTop, tablist, panelWrap)
+  sidebar.append(sidebarTop, tablist, panelWrap)
   if (sidebarPosition === 'left')
     stage.append(sidebar, playerSlot)
   else
     stage.append(playerSlot, sidebar)
+  // 分隔线独立于侧栏滚动区，避免滚动条占位和内容滚动改变交界位置。
+  stage.appendChild(sidebarResizeHandle)
   root.appendChild(stage)
   document.body.appendChild(root)
 
@@ -1175,6 +1177,7 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID} .bewly-widescreen-stage {
+      position: relative;
       display: grid;
       grid-template-columns:
         minmax(0, calc(100vw - var(--bewly-widescreen-sidebar-column-width)))
@@ -1412,9 +1415,10 @@ function injectLayoutStyle() {
       position: absolute;
       top: 0;
       bottom: 0;
-      left: 0;
+      left: calc(100% - var(--bewly-widescreen-sidebar-column-width));
       z-index: 2004;
       width: var(--bew-space-6, 24px);
+      transform: translateX(-50%);
       cursor: col-resize;
       touch-action: none;
       user-select: none;
@@ -1428,8 +1432,9 @@ function injectLayoutStyle() {
       position: absolute;
       top: 0;
       bottom: 0;
-      left: 0;
-      width: 2px;
+      left: 50%;
+      width: var(--bew-space-0-5, 2px);
+      transform: translateX(-50%);
       background: var(--bew-theme-color, #00aeec);
       content: "";
       opacity: 0;
@@ -1469,13 +1474,7 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID}[data-sidebar-position="left"] .bewly-widescreen-sidebar-resize-handle {
-      right: 0;
-      left: auto;
-    }
-
-    #${ROOT_ID}[data-sidebar-position="left"] .bewly-widescreen-sidebar-resize-handle::after {
-      right: 0;
-      left: auto;
+      left: var(--bewly-widescreen-sidebar-column-width);
     }
 
     #${ROOT_ID}[data-sidebar-position="left"][data-sidebar-mode="narrow"] .bewly-widescreen-sidebar {
