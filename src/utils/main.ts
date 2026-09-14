@@ -175,6 +175,17 @@ export function isHomePage(url: string = location.href): boolean {
 }
 
 /**
+ * 判断实际首页，排除复用首页路径的搜索、历史等 BewlyCat 内置页面。
+ */
+export function isActualHomepage(url: string = location.href): boolean {
+  if (!isHomePage(url))
+    return false
+
+  const page = new URL(url).searchParams.get('page')
+  return page === null || page === 'Home'
+}
+
+/**
  * Check if the URL points to Bilibili's watch later list page.
  * Supports both the canonical path and the legacy hash route used by the
  * user-space favorites entry. See https://github.com/keleus/BewlyCat/issues/841

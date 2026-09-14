@@ -399,12 +399,13 @@ settings:
   link_opening_behavior_opt:
     current_tab: 目前索引標籤
     current_tab_if_not_homepage: 首頁外目前分頁
+    current_tab_if_homepage: 首頁內目前分頁
     background: 背景打開
     new_tab: 新索引標籤
     drawer: 抽屜開啟
   top_bar_link_opening_behavior: 頂部列連結開啟行為
   video_card_link_opening_behavior: 影片和番劇卡片連結開啟行為
-  link_opening_behavior_desc: 控制點擊連結後的開啟位置。「首頁外目前分頁」表示：目前頁面為首頁時使用新索引標籤開啟，其他頁面使用目前索引標籤開啟；「後台打開」會在瀏覽器允許時開到背景索引標籤。
+  link_opening_behavior_desc: 控制點擊連結後的開啟位置。「首頁外目前分頁」表示：首頁使用新索引標籤開啟，其他頁面使用目前索引標籤開啟；「首頁內目前分頁」表示：Bilibili 首頁（page=Home 或未指定 page）使用目前索引標籤開啟，其他頁面使用新索引標籤開啟；「後台打開」會在瀏覽器允許時開到背景索引標籤。
   video_card_link_opening_behavior_desc: 控制點擊影片和番劇卡片後的開啟位置，可選擇目前索引標籤、抽屜、背景索引標籤或新索引標籤。
   search_bar_link_opening_behavior: 搜尋列連結開啟行為
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉

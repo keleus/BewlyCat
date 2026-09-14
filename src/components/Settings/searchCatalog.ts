@@ -148,6 +148,7 @@ const wallpaperTitleKeys = [
 const linkOpeningOptionKeys = [
   'settings.link_opening_behavior_opt.current_tab',
   'settings.link_opening_behavior_opt.current_tab_if_not_homepage',
+  'settings.link_opening_behavior_opt.current_tab_if_homepage',
   'settings.link_opening_behavior_opt.background',
   'settings.link_opening_behavior_opt.new_tab',
 ]

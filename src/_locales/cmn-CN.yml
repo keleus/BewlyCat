@@ -401,12 +401,13 @@ settings:
   link_opening_behavior_opt:
     current_tab: 当前标签页
     current_tab_if_not_homepage: 首页外当前页
+    current_tab_if_homepage: 首页内当前页
     background: 后台打开
     new_tab: 新标签页
     drawer: 抽屉打开
   top_bar_link_opening_behavior: 顶栏链接打开行为
   video_card_link_opening_behavior: 视频卡片和番剧卡片链接打开行为
-  link_opening_behavior_desc: 控制点击链接后的打开位置。“首页外当前页”表示：当前页为首页时使用新标签页打开，其他页面使用当前标签页打开；“后台打开”会在浏览器允许时打开到后台标签页。
+  link_opening_behavior_desc: 控制点击链接后的打开位置。“首页外当前页”表示：首页使用新标签页打开，其他页面使用当前标签页打开；“首页内当前页”表示：Bilibili 首页（page=Home 或未指定 page）使用当前标签页打开，其他页面使用新标签页打开；“后台打开”会在浏览器允许时打开到后台标签页。
   video_card_link_opening_behavior_desc: 控制点击视频卡片和番剧卡片后的打开位置，可选择当前标签页、抽屉、后台标签页或新标签页。
   search_bar_link_opening_behavior: 搜索栏链接打开行为
   close_drawer_without_pressing_esc_again: 关闭抽屉时不用再次按 <kbd>Esc</kbd> 关闭

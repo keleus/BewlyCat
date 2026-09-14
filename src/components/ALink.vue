@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
-import { isHomePage, isInIframe } from '~/utils/main'
+import { isActualHomepage, isHomePage, isInIframe } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 const props = defineProps<{
@@ -40,7 +40,7 @@ const openMode = computed(() => {
 
 // Since BewlyBewly sometimes uses an iframe to open the original Bilibili page in the current tab
 // please set the target to `_top` instead of `_self`
-const target = computed(() => {
+function getTarget() {
   if (openMode.value === 'newTab') {
     return '_blank'
   }
@@ -51,13 +51,20 @@ const target = computed(() => {
     }
     return isHomePage() ? '_blank' : '_top'
   }
+  if (openMode.value === 'currentTabIfHomepage') {
+    return isActualHomepage() ? '_top' : '_blank'
+  }
   if (openMode.value === 'currentTab') {
     return '_top'
   }
   return '_top'
-})
+}
 
 function handleClick(event: MouseEvent) {
+  // Dock navigation can change the URL without remounting this link.
+  const link = event.currentTarget as HTMLAnchorElement
+  link.target = getTarget()
+
   if (props.stopPropagation) {
     event.stopPropagation()
   }
@@ -109,7 +116,7 @@ function handleClick(event: MouseEvent) {
 <template>
   <a
     :href="processedHref"
-    :target="target"
+    :target="getTarget()"
     :title="title"
     :rel="rel"
     :draggable="disableDragging ? false : undefined"

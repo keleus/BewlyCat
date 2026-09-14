@@ -428,12 +428,13 @@ settings:
   link_opening_behavior_opt:
     current_tab: 目前分頁
     current_tab_if_not_homepage: 主頁外目前分頁
+    current_tab_if_homepage: 主頁內目前分頁
     new_tab: 新開分頁
     drawer: 喺櫃桶度開啓
     background: 後臺打開
   top_bar_link_opening_behavior: 頂欄連結開啓行爲
   video_card_link_opening_behavior: 影片同番劇卡片連結開啓行爲
-  link_opening_behavior_desc: 控制撳連結之後喺邊度開。「主頁外目前分頁」表示：目前頁面係主頁時用新分頁開，其他頁面用目前分頁開；「後臺打開」會喺瀏覽器容許時開到背景分頁。
+  link_opening_behavior_desc: 控制撳連結之後喺邊度開。「主頁外目前分頁」表示：主頁用新分頁開，其他頁面用目前分頁開；「主頁內目前分頁」表示：Bilibili 主頁（page=Home 或未指定 page）用目前分頁開，其他頁面用新分頁開；「後臺打開」會喺瀏覽器容許時開到背景分頁。
   video_card_link_opening_behavior_desc: 控制撳影片同番劇卡片之後喺邊度開，可以揀目前分頁、櫃桶、背景分頁或者新分頁。
   search_bar_link_opening_behavior: 搜尋欄連結開啓行爲
   close_drawer_without_pressing_esc_again: 閂櫃桶嗰陣唔使再撳多次 <kbd>Esc</kbd>

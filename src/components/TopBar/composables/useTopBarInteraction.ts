@@ -16,7 +16,7 @@ import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { experimentalTopBarStyles } from '~/logic/storage'
 import { useTopBarStore } from '~/stores/topBarStore'
-import { isHomePage } from '~/utils/main'
+import { isActualHomepage, isHomePage } from '~/utils/main'
 import { shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
 import { openLinkInBackground } from '~/utils/tabs'
 import { createTransformer } from '~/utils/transformer'
@@ -244,7 +244,11 @@ export function useTopBarInteraction() {
       return
     }
 
-    if (openMode === 'newTab' || (openMode === 'currentTabIfNotHomepage' && isHomePage())) {
+    if (
+      openMode === 'newTab'
+      || (openMode === 'currentTabIfNotHomepage' && isHomePage())
+      || (openMode === 'currentTabIfHomepage' && !isActualHomepage())
+    ) {
       window.open(pageUrl, '_blank')
       return
     }

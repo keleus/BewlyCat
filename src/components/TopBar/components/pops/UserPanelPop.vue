@@ -9,7 +9,7 @@ import api from '~/utils/api'
 import { revokeAccessKey } from '~/utils/authProvider'
 import { numFormatter } from '~/utils/dataFormatter'
 import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON, LV6_LIGHTNING_ICON } from '~/utils/lvIcons'
-import { getCSRF, getUserID, isHomePage } from '~/utils/main'
+import { getCSRF, getUserID, isActualHomepage, isHomePage } from '~/utils/main'
 
 import type { UserInfo, UserStat } from '../../types'
 
@@ -179,6 +179,9 @@ function handleClickChannel() {
       window.open(`https://space.bilibili.com/${mid.value}`, '_blank')
     else
       window.open(`https://space.bilibili.com/${mid.value}`, '_self')
+  }
+  else if (settings.value.topBarLinkOpenMode === 'currentTabIfHomepage') {
+    window.open(`https://space.bilibili.com/${mid.value}`, isActualHomepage() ? '_self' : '_blank')
   }
   else {
     window.open(`https://space.bilibili.com/${mid.value}`, '_self')

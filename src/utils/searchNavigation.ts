@@ -1,5 +1,5 @@
 import { settings } from '~/logic'
-import { isHomePage, isInIframe } from '~/utils/main'
+import { isActualHomepage, isHomePage, isInIframe } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 const NATIVE_SEARCH_CATEGORY_BY_PATH: Record<string, string> = {
@@ -46,20 +46,6 @@ export function buildKeywordSearchUrl(keyword: string): string {
     return `https://www.bilibili.com/?page=SearchResults&keyword=${encoded}`
 
   return buildNativeSearchUrl(keyword)
-}
-
-/**
- * 判断当前是否为实际首页。
- *
- * BewlyCat 的内置页面复用 B 站首页路径，并通过 `page` 查询参数区分路由，
- * 因此仅使用 isHomePage() 会把搜索、历史等内置页面也误判为首页。
- */
-function isActualHomepage(url: string = location.href): boolean {
-  if (!isHomePage(url))
-    return false
-
-  const page = new URL(url).searchParams.get('page')
-  return page === null || page === 'Home'
 }
 
 const PLUGIN_SEARCH_RESET_PARAMS = [
@@ -122,6 +108,8 @@ export function openSearchResults(keyword: string): void {
   let target = '_blank'
   if (mode === 'currentTabIfNotHomepage')
     target = isActualHomepage() ? '_blank' : '_self'
+  else if (mode === 'currentTabIfHomepage')
+    target = isActualHomepage() ? '_self' : '_blank'
   else if (mode === 'currentTab')
     target = '_self'
 
@@ -139,6 +127,7 @@ export function navigateToPluginSearchResultsInPlace(keyword: string): boolean {
     mode === 'newTab'
     || mode === 'background'
     || (mode === 'currentTabIfNotHomepage' && isActualHomepage())
+    || (mode === 'currentTabIfHomepage' && !isActualHomepage())
   ) {
     return false
   }

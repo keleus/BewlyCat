@@ -10,7 +10,7 @@ import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { calcCurrentTime } from '~/utils/dataFormatter'
-import { isHomePage, isInIframe, removeHttpFromUrl } from '~/utils/main'
+import { isActualHomepage, isHomePage, isInIframe, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 import { getWatchLaterAuthor } from '~/utils/watchLater'
 
@@ -73,7 +73,10 @@ function openVideoPage(url: string) {
     return
   }
 
-  if (settings.value.topBarLinkOpenMode === 'newTab') {
+  if (
+    settings.value.topBarLinkOpenMode === 'newTab'
+    || (settings.value.topBarLinkOpenMode === 'currentTabIfHomepage' && !isActualHomepage())
+  ) {
     window.open(url, '_blank')
     return
   }

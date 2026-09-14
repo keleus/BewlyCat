@@ -277,8 +277,8 @@ export interface Settings {
 
   // Link Opening Behavior
   videoCardLinkOpenMode: 'drawer' | 'newTab' | 'currentTab' | 'background'
-  topBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'newTab' | 'background'
-  searchBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'newTab' | 'background'
+  topBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
+  searchBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
   closeDrawerWithoutPressingEscAgain: boolean
 
   blockAds: boolean

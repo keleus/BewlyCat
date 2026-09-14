@@ -26,6 +26,10 @@ const openModeOptions = computed(() => {
       value: 'currentTabIfNotHomepage',
     },
     {
+      label: t('settings.link_opening_behavior_opt.current_tab_if_homepage'),
+      value: 'currentTabIfHomepage',
+    },
+    {
       label: t('settings.link_opening_behavior_opt.background'),
       value: 'background',
     },

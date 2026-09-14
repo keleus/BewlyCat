@@ -416,12 +416,13 @@ settings:
   link_opening_behavior_opt:
     current_tab: Current tab
     current_tab_if_not_homepage: Current outside home
+    current_tab_if_homepage: Current on home
     background: Background tab
     new_tab: New tab
     drawer: Open in drawer
   top_bar_link_opening_behavior: Top bar link opening behavior
   video_card_link_opening_behavior: Video card and bangumi card link opening behavior
-  link_opening_behavior_desc: 'Controls where links open. "Current outside home" means: use a new tab on the home page, and use the current tab on other pages; "Background tab" opens in the background when the browser allows it.'
+  link_opening_behavior_desc: 'Controls where links open. "Current outside home" uses a new tab on the home page and the current tab on other pages; "Current on home" uses the current tab on the Bilibili home page (page=Home or no page parameter) and a new tab on other pages; "Background tab" opens in the background when the browser allows it.'
   video_card_link_opening_behavior_desc: Controls where video and bangumi cards open. You can choose the current tab, drawer, background tab, or new tab.
   search_bar_link_opening_behavior: Search bar link opening behavior
   close_drawer_without_pressing_esc_again: Close the drawer without pressing <kbd>Esc</kbd> again
