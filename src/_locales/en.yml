@@ -1689,6 +1689,10 @@ favorite_dialog:
   clear_selected: Clear selected
 inject:
   page_prefix: 'Page {current}, of'
+  page_number: 'Page {current}'
+  page_separator: ', of '
+  all_pages: All pages
+  select_reply_page: Select reply page
   of: of
   loading: Loading…
   load_more: Load more
