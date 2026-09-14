@@ -1509,6 +1509,7 @@ moment_card:
   comments_load_failed: 评论加载失败
   comment_like_failed: 评论点赞失败，请稍后重试
   comment_host: 楼主
+  comment_missing_parent: 评论不在本页或已删除
   expand_comment_thread: 展开此评论及回复
   collapse_comment_thread: 收起此评论及回复
   comment_image: 查看评论图片 {index}

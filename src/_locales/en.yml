@@ -1611,6 +1611,7 @@ moment_card:
   comments_load_failed: Failed to load comments
   comment_like_failed: Failed to like comment. Please try again.
   comment_host: Thread author
+  comment_missing_parent: Comment not on this page or deleted
   expand_comment_thread: Expand this comment and replies
   collapse_comment_thread: Collapse this comment and replies
   comment_image: View comment image {index}

@@ -34,6 +34,7 @@ export interface CommentPageData {
 }
 
 export interface PreviewComment {
+  missing?: false
   id: string
   parentId: string
   mid: string
@@ -197,7 +198,7 @@ export function isCommentPageDone(data: CommentPageData, page: number) {
 }
 
 export interface CommentRow {
-  comment: PreviewComment
+  comment: CommentTreeComment
   parentId: string | null
   depth: number
   hasChildren: boolean
@@ -205,15 +206,65 @@ export interface CommentRow {
   hideBody: boolean
 }
 
+export interface MissingComment {
+  missing: true
+  id: string
+  parentId: string
+  author: string
+  message: string
+  collapsed: boolean
+}
+
+export type CommentTreeComment = PreviewComment | MissingComment
+
+// 按主评论保留占位节点，分页和重新计算树时仍可复用其折叠状态。
+const missingParentsByRoot = new WeakMap<PreviewComment, Map<string, MissingComment>>()
+
 export function getCommentRows(root: PreviewComment, tree: boolean, mode: CommentReplyTreeMode): CommentRow[] {
   const replies = root.repliesExpanded && root.replyPage > 0 ? root.replies : root.hotReplies
   const all = [root, ...replies.filter(reply => reply.id !== root.id)]
   if (!tree)
     return all.map(comment => ({ comment, parentId: null, depth: 0, hasChildren: false, collapsed: false, hideBody: false }))
 
-  const byId = new Map(all.map(comment => [comment.id, comment]))
-  const children = new Map<string, PreviewComment[]>()
-  for (const comment of replies) {
+  const byId = new Map<string, CommentTreeComment>(all.map(comment => [comment.id, comment]))
+  const orderById = new Map(all.map((comment, index) => [comment.id, index]))
+  const knownComments = new Map([...root.hotReplies, ...root.replies].map(comment => [comment.id, comment]))
+  let missingParents = missingParentsByRoot.get(root)
+  if (!missingParents) {
+    missingParents = new Map()
+    missingParentsByRoot.set(root, missingParents)
+  }
+  const retained = new Set<string>()
+  // 遍历新增占位以补齐已知父链；按 ID 去重，多个回复共享同一个父节点。
+  for (const comment of byId.values()) {
+    const parentId = comment.parentId
+    if (comment === root || !parentId || parentId === '0' || parentId === comment.id)
+      continue
+    if (byId.has(parentId) && !byId.get(parentId)!.missing)
+      continue
+    const known = knownComments.get(parentId)
+    const message = comment.missing ? '' : comment.content.map(part => part.text).join('')
+    const author = known?.author || message.match(/^(?:回复|回覆|Reply(?:\s+to)?)\s+@?([^\s:：]+)/iu)?.[1] || ''
+    let parent = missingParents.get(parentId)
+    if (!parent) {
+      parent = reactive<MissingComment>({ missing: true, id: parentId, parentId: root.id, author: '', message: '', collapsed: false })
+      missingParents.set(parentId, parent)
+    }
+    parent.parentId = known?.parentId || root.id
+    parent.author = author || parent.author
+    parent.message = known?.content.map(part => part.text).join('') || ''
+    byId.set(parentId, parent)
+    if (!orderById.has(parentId))
+      orderById.set(parentId, orderById.get(comment.id)!)
+    retained.add(parentId)
+  }
+  for (const id of missingParents.keys()) {
+    if (!retained.has(id))
+      missingParents.delete(id)
+  }
+
+  const children = new Map<string, CommentTreeComment[]>()
+  for (const comment of byId.values()) {
     if (comment.id === root.id)
       continue
     let parentId = byId.has(comment.parentId) ? comment.parentId : root.id
@@ -231,9 +282,11 @@ export function getCommentRows(root: PreviewComment, tree: boolean, mode: Commen
     siblings.push(comment)
     children.set(parentId, siblings)
   }
+  // 占位分支保留首条子回复的位置，避免统一被追加到楼层末尾。
+  children.forEach(siblings => siblings.sort((a, b) => orderById.get(a.id)! - orderById.get(b.id)!))
 
   const rows: CommentRow[] = []
-  const queue: Array<{ comment: PreviewComment, depth: number, parentId: string | null }> = [{ comment: root, depth: 0, parentId: null }]
+  const queue: Array<{ comment: CommentTreeComment, depth: number, parentId: string | null }> = [{ comment: root, depth: 0, parentId: null }]
   while (queue.length) {
     const { comment, depth, parentId } = queue.pop()!
     const descendants = children.get(comment.id) || []

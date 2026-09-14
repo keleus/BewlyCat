@@ -1524,6 +1524,7 @@ moment_card:
   comments_load_failed: 留言載入失敗
   comment_like_failed: 留言按讚失敗，請稍後重試
   comment_host: 樓主
+  comment_missing_parent: 留言不在本頁或已刪除
   expand_comment_thread: 展開此留言及回覆
   collapse_comment_thread: 收起此留言及回覆
   comment_image: 檢視留言圖片 {index}

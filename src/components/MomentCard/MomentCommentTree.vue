@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { useResizeObserver } from '@vueuse/core'
-import { onBeforeUnmount, onMounted, onUpdated, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, onUpdated, ref, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/commentReplyTree'
 import { getCommentReplyBranchExpandedToggleY, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
 
-import type { CommentRow, PreviewComment } from './commentPreview'
+import type { CommentRow, CommentTreeComment } from './commentPreview'
 
 const props = defineProps<{ rows: CommentRow[], enabled: boolean }>()
-const emit = defineEmits<{ toggle: [comment: PreviewComment] }>()
+const emit = defineEmits<{ toggle: [comment: CommentTreeComment] }>()
 const { t } = useI18n()
 const container = ref<HTMLElement>()
 const indentStep = ref(24)
@@ -85,8 +85,11 @@ function updateGuides() {
   }
   // onUpdated 同时覆盖插槽内的属地/性别、图片、换行变化；几何不变时不触发下一轮更新。
   const geometry = (items: typeof guides.value) => items.map(guide => [guide.row.comment.id, guide.row.collapsed, guide.path, guide.x, guide.y])
-  if (JSON.stringify(geometry(nextGuides)) !== JSON.stringify(geometry(guides.value)))
+  // 原评论替换同 ID 占位时，即使坐标未变，折叠按钮也必须指向新对象。
+  if (nextGuides.some((guide, index) => toRaw(guide.row.comment) !== toRaw(guides.value[index]?.row.comment))
+    || JSON.stringify(geometry(nextGuides)) !== JSON.stringify(geometry(guides.value))) {
     guides.value = nextGuides
+  }
 }
 
 function scheduleGuides() {
