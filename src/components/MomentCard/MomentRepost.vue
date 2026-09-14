@@ -10,7 +10,7 @@ import api from '~/utils/api'
 import { getCSRF, getUserID } from '~/utils/main'
 
 import type { RepostNode } from './repostEditor'
-import { createRepostRequest, findRepostCompletion, pendingReposts, readRepostEditor, repostDrafts } from './repostEditor'
+import { createRepostRequest, findRepostCompletion, isRepostCompletionBoundary, pendingReposts, readRepostEditor, repostDrafts } from './repostEditor'
 
 interface Choice { id: string, name: string, image?: string, animated?: boolean, type?: number }
 interface EmotePackage { id: string, name: string, items: Choice[] }
@@ -21,7 +21,9 @@ const toast = useToast()
 const account = useTopBarStore()
 const { mainAppRef } = useBewlyApp()
 const container = ref<HTMLElement | null>(null)
+const panelTriggers = ref<HTMLElement | null>(null)
 const popup = ref<HTMLElement | null>(null)
+const popupContent = ref<HTMLElement | null>(null)
 const popupId = useId()
 const activeChoice = ref(0)
 const popupStyle = ref<Record<string, string>>({})
@@ -102,7 +104,8 @@ function rememberSelection() {
 function sync() {
   if (editor.value)
     nodes.value = readRepostEditor(editor.value)
-  topic.value = nodes.value.find(node => node.topic)?.topic
+  // The request attaches one topic, but every inline topic keeps its link.
+  topic.value = nodes.value.findLast(node => node.topic)?.topic
   rememberSelection()
   recordHistory()
 }
@@ -309,7 +312,7 @@ async function loadPanel() {
           items: (pack.emote || []).map((item: any) => ({
             id: String(item.id),
             name: String(item.text),
-            type: Number(item.type),
+            type: Number(item.type ?? pack.type),
             image: String(item.webp_url || item.gif_url || item.url || '').replace(/^http:/, 'https:'),
             animated: Boolean(item.gif_url),
           })),
@@ -356,7 +359,17 @@ function openPanel(kind: typeof panel.value, event?: MouseEvent) {
   }
   closePanel()
   if (kind === 'mention' || kind === 'topic') {
-    insertText(kind === 'mention' ? '@' : '#')
+    const prefix = editor.value && savedRange && !isRepostCompletionBoundary(editor.value, savedRange) ? ' ' : ''
+    const suffix = editor.value && savedRange && !isRepostCompletionBoundary(editor.value, savedRange, 'after') ? ' ' : ''
+    const trigger = document.createTextNode(`${prefix}${kind === 'mention' ? '@' : '#'}${suffix}`)
+    insert(trigger)
+    if (suffix && savedRange) {
+      savedRange.setStart(trigger, trigger.length - suffix.length)
+      savedRange.collapse(true)
+      const selected = selection()
+      selected?.removeAllRanges()
+      selected?.addRange(savedRange)
+    }
     updateCompletion()
     anchorButton = event?.currentTarget as HTMLElement | null
     schedulePosition()
@@ -394,8 +407,6 @@ function choose(item: Choice) {
     if (!completionRange)
       return
     savedRange = completionRange.cloneRange()
-    // The API accepts one attached topic. Keep older topic text when replacing it.
-    editor.value?.querySelectorAll('[data-topic-id]').forEach(el => el.replaceWith(document.createTextNode(el.textContent || '')))
     const fragment = document.createDocumentFragment()
     fragment.append(token({ type: 1, raw_text: `#${item.name}#`, biz_id: '', topic: { id: Number(item.id), name: item.name } }), document.createTextNode(' '))
     insert(fragment)
@@ -478,7 +489,7 @@ function positionPopup() {
   const width = Math.min(320, window.innerWidth - margin * 2)
   const below = window.innerHeight - anchor.bottom - margin * 2
   const above = anchor.top - margin * 2
-  const openUp = below < 240 && above > below
+  const openUp = below < (panel.value === 'emoji' ? 320 : 240) && above > below
   popupStyle.value = {
     left: `${Math.max(margin, Math.min(anchor.left, window.innerWidth - width - margin))}px`,
     top: `${Math.max(margin, openUp ? anchor.top - margin : anchor.bottom + margin)}px`,
@@ -488,9 +499,17 @@ function positionPopup() {
   }
 }
 function onOutsideInteraction(event: Event) {
+  if (!panel.value)
+    return
   const path = event.composedPath()
-  if (!path.includes(container.value!) && !path.includes(popup.value!))
-    closePanel()
+  if (path.includes(popup.value!)
+    || path.some(target => target instanceof HTMLButtonElement && panelTriggers.value?.contains(target))) {
+    return
+  }
+  // Opening a picker and inserting a choice both return focus to the editor.
+  if (event.type === 'focusin' && path.includes(editor.value!))
+    return
+  closePanel()
 }
 function onEditorClick(event: MouseEvent) {
   if ((event.target as Element).closest('a'))
@@ -499,6 +518,10 @@ function onEditorClick(event: MouseEvent) {
 watch([panel, choices, loading, packageId], () => {
   void nextTick(schedulePosition)
 })
+watch(packageId, () => {
+  if (popupContent.value)
+    popupContent.value.scrollTop = 0
+}, { flush: 'post' })
 onMounted(() => {
   eventRoot = editor.value?.getRootNode() || document
   eventRoot.addEventListener('pointerdown', onOutsideInteraction, true)
@@ -569,7 +592,7 @@ onBeforeUnmount(() => {
           :aria-readonly="submitting"
           @input="input"
           @compositionend="input"
-          @mouseup="updateCompletion"
+          @mouseup="rememberSelection"
           @keyup="updateCompletion"
           @beforeinput="beforeInput"
           @paste="paste"
@@ -582,7 +605,7 @@ onBeforeUnmount(() => {
         </button>
       </div>
       <div class="moment-repost__toolbar">
-        <div class="moment-repost__tools bew-segment-control bew-segment-control--surface bew-segment-control--static">
+        <div ref="panelTriggers" class="moment-repost__tools bew-segment-control bew-segment-control--surface bew-segment-control--static">
           <button
             class="bew-segment-control__item bew-segment-control__item--icon"
             type="button" :title="t('moments.emoji')" :aria-label="t('moments.emoji')" :aria-expanded="panel === 'emoji'" :data-active="panel === 'emoji'"
@@ -631,7 +654,8 @@ onBeforeUnmount(() => {
       </div>
       <Teleport :to="mainAppRef" :disabled="!mainAppRef">
         <div
-          v-if="panel" :id="popupId" ref="popup" class="moment-repost__panel bew-popover-surface" :style="popupStyle"
+          v-if="panel" :id="popupId" ref="popup" class="moment-repost__panel bew-popover-surface"
+          :class="{ 'moment-repost__panel--emoji': panel === 'emoji' }" :style="popupStyle"
           @click.stop @keydown.stop="keyboard" @mousedown.prevent
         >
           <div v-if="panel === 'emoji' && packages.length" class="moment-repost__packages">
@@ -639,32 +663,38 @@ onBeforeUnmount(() => {
               {{ pack.name }}
             </button>
           </div>
-          <p v-if="loading" role="status">
-            {{ t('moments.loading_detail') }}
-          </p>
-          <p v-else-if="panelError" role="alert">
-            {{ panelError }} <button type="button" @click="loadPanel">
-              {{ t('moment_card.repost_retry') }}
-            </button>
-          </p>
-          <div v-else-if="panel === 'emoji'" class="moment-repost__emotes">
-            <button
-              v-for="item in emotes" :key="item.id" type="button" :title="item.name" :aria-label="item.name"
-              @click="choose(item)"
-            >
-              <img :src="item.image" :alt="item.name" loading="lazy">
-            </button>
-          </div>
-          <div v-else class="moment-repost__choices" role="listbox" :aria-label="t(panel === 'mention' ? 'moment_card.repost_mention' : 'moment_card.repost_topic')">
-            <button
-              v-for="(item, index) in choices" :id="`${popupId}-${index}`" :key="`${item.id}-${index}`" type="button" role="option"
-              :aria-selected="activeChoice === index" @mouseenter="activeChoice = index" @click="choose(item)"
-            >
-              <img v-if="item.image" :src="item.image" alt="" loading="lazy">{{ item.name }}
-            </button>
-            <p v-if="!choices.length">
-              {{ t('moment_card.repost_no_results') }}
+          <div ref="popupContent" class="moment-repost__panel-content">
+            <p v-if="loading" role="status">
+              {{ t('moments.loading_detail') }}
             </p>
+            <p v-else-if="panelError" role="alert">
+              {{ panelError }} <button type="button" @click="loadPanel">
+                {{ t('moment_card.repost_retry') }}
+              </button>
+            </p>
+            <div
+              v-else-if="panel === 'emoji'" class="moment-repost__emotes"
+              :class="{ 'moment-repost__emotes--text': emotes.some(item => item.type === 4) }"
+            >
+              <button
+                v-for="item in emotes" :key="item.id" type="button" :title="item.name" :aria-label="item.name"
+                @click="choose(item)"
+              >
+                <span v-if="item.type === 4">{{ item.name }}</span>
+                <img v-else :src="item.image" :alt="item.name" loading="lazy">
+              </button>
+            </div>
+            <div v-else class="moment-repost__choices" role="listbox" :aria-label="t(panel === 'mention' ? 'moment_card.repost_mention' : 'moment_card.repost_topic')">
+              <button
+                v-for="(item, index) in choices" :id="`${popupId}-${index}`" :key="`${item.id}-${index}`" type="button" role="option"
+                :aria-selected="activeChoice === index" @mouseenter="activeChoice = index" @click="choose(item)"
+              >
+                <img v-if="item.image" :src="item.image" alt="" loading="lazy">{{ item.name }}
+              </button>
+              <p v-if="!choices.length">
+                {{ t('moment_card.repost_no_results') }}
+              </p>
+            </div>
           </div>
         </div>
       </Teleport>
@@ -813,27 +843,47 @@ onBeforeUnmount(() => {
 .moment-repost__panel {
   position: fixed;
   z-index: 10004;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--bew-space-2);
   padding: var(--bew-space-2);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  box-sizing: border-box;
+  overflow: hidden;
   font-size: var(--bew-font-size-control);
   line-height: var(--bew-line-height-control);
 }
+.moment-repost__panel--emoji {
+  height: 320px;
+}
+.moment-repost__panel-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
 .moment-repost__packages {
   display: flex;
+  flex: none;
+  min-width: 0;
   overflow-x: auto;
+  overscroll-behavior: contain;
 }
 .moment-repost__packages button {
   flex-shrink: 0;
 }
 .moment-repost__emotes {
   display: grid;
+  align-content: start;
   grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+}
+.moment-repost__emotes--text {
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  overflow-wrap: anywhere;
 }
 .moment-repost__emotes button {
   justify-content: center;
+  min-width: 0;
 }
 .moment-repost__emotes img {
   width: 32px;

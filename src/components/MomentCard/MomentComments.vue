@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useInfiniteScroll } from '@vueuse/core'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -20,6 +21,10 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { loadComments, changeSort, loadReplies, toggleReplies, toggleLike, saveScrollPosition } = useMomentComments(moment, state)
 const scroller = ref<HTMLElement>()
+const { reset: checkScroll } = useInfiniteScroll(scroller, loadComments, {
+  distance: 80,
+  canLoadMore: () => state.expanded && !state.loading && !state.done && !state.error,
+})
 const sortOptions = [
   { value: 1, label: 'moment_card.comments_sort_hot' },
   { value: 0, label: 'moment_card.comments_sort_latest' },
@@ -52,11 +57,15 @@ function saveScroll() {
 
 async function restoreScroll() {
   await nextTick()
-  if (scroller.value && state.expanded)
+  if (scroller.value && state.expanded) {
     scroller.value.scrollTop = state.scrollTop
+    checkScroll()
+  }
 }
 
 watch(() => state.expanded, expanded => expanded && void restoreScroll())
+// 首屏、切换排序和失败重试后，继续补齐尚未填满滚动区的评论。
+watch(() => state.loading, loading => !loading && checkScroll())
 onMounted(() => {
   if (!state.page)
     void loadComments()
@@ -202,13 +211,6 @@ onMounted(() => {
           </template>
         </article>
         <div v-if="group.root.replyCount > group.root.hotReplies.length || group.root.repliesExpanded" class="moment-comments__more-replies">
-          <button
-            type="button"
-            :aria-expanded="group.root.repliesExpanded"
-            @click="toggleReplies(group.root)"
-          >
-            {{ group.root.repliesExpanded ? t('moment_card.collapse_comment_replies') : t('moment_card.expand_comment_replies', { count: group.root.replyCount }) }}
-          </button>
           <span v-if="group.root.repliesExpanded && group.root.repliesError" role="alert">{{ group.root.repliesError }}</span>
           <button
             v-if="group.root.repliesExpanded && !group.root.repliesDone"
@@ -219,6 +221,13 @@ onMounted(() => {
           >
             {{ group.root.repliesLoading ? t('common.loading') : group.root.repliesError ? t('moment_card.comments_retry') : t('moment_card.load_comment_replies') }}
           </button>
+          <button
+            type="button"
+            :aria-expanded="group.root.repliesExpanded"
+            @click="toggleReplies(group.root)"
+          >
+            {{ group.root.repliesExpanded ? t('moment_card.collapse_comment_replies') : t('moment_card.expand_comment_replies', { count: group.root.replyCount }) }}
+          </button>
         </div>
       </MomentCommentTree>
       <div class="moment-comments__status" aria-live="polite">
@@ -226,8 +235,8 @@ onMounted(() => {
         <span v-else-if="state.loading">{{ t('common.loading') }}</span>
         <span v-else-if="!state.comments.length && state.done">{{ t('moment_card.comments_empty') }}</span>
         <span v-else-if="state.done">{{ t('common.no_more_content') }}</span>
-        <button v-if="!state.loading && !state.done" type="button" @click="loadComments">
-          {{ state.error ? t('moment_card.comments_retry') : t('common.load_more') }}
+        <button v-if="state.error && !state.loading" type="button" @click="loadComments">
+          {{ t('moment_card.comments_retry') }}
         </button>
       </div>
     </div>
@@ -475,5 +484,20 @@ onMounted(() => {
   font-size: var(--bew-font-size-control);
   line-height: var(--bew-line-height-control);
   overflow-wrap: anywhere;
+}
+
+.moment-comments__more-replies {
+  justify-content: flex-start;
+  padding-inline-start: calc(var(--bew-space-6) + var(--bew-space-3));
+}
+
+.moment-comments__more-replies > [role="alert"] {
+  flex-basis: 100%;
+}
+
+.moment-comments .moment-comments__more-replies > button {
+  justify-content: flex-start;
+  padding-inline: 0;
+  text-align: start;
 }
 </style>
