@@ -50,3 +50,18 @@ export async function resolvePgcEpisodeVideoIds(epid: number): Promise<PgcEpisod
   episodeVideoIdRequests.set(epid, request)
   return request
 }
+
+/** ss 播放地址未指定单集时，选择第一集正片，不把整季加入稍后再看。 */
+export async function resolvePgcSeasonVideoIds(seasonId: number): Promise<PgcEpisodeVideoIds | undefined> {
+  const response = await api.anime.getAnimeDetail({ season_id: seasonId })
+  if (response.code !== 0)
+    return undefined
+
+  const result = response.result ?? response.data
+  const episode = result?.episodes?.find((item: any) => Number(item?.aid) > 0)
+  const aid = Number(episode?.aid)
+  if (!Number.isSafeInteger(aid) || aid <= 0)
+    return undefined
+
+  return { aid, bvid: episode.bvid || undefined }
+}

@@ -1393,6 +1393,11 @@ version_reminder:
   acknowledge: Got it, don't show this version again
   settings_hint: You can turn off “New version reminders” under Settings → About.
 watch_later:
+  add_open_tabs: Add tabs
+  add_open_tabs_hint: Add Bilibili video, anime and movie playback tabs from all windows to Watch later
+  adding_open_tabs: Adding…
+  no_open_video_tabs: No supported video, anime or movie playback tabs are open
+  add_open_tabs_result: 'Added {added}, skipped {skipped} duplicates or existing items, failed {failed}'
   title: Watch Later
   clear_all: Clear all watch later
   clear_all_confirm: >-
