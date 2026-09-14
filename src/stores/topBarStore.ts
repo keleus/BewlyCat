@@ -36,6 +36,7 @@ import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 import { i18n } from '~/utils/i18n'
 import { getCSRF, isHomePage } from '~/utils/main'
 import { isBackgroundUnavailableError, onMessage, sendMessage } from '~/utils/messaging'
+import type { AddOpenTabsResult } from '~/utils/openTabsWatchLater'
 import { addOpenTabsToWatchLater } from '~/utils/openTabsWatchLater'
 import { getOpenBilibiliTabUrls } from '~/utils/tabs'
 
@@ -122,6 +123,8 @@ export const useTopBarStore = defineStore('topBar', () => {
   const favoriteStateVersion = ref(0)
   const isLoadingWatchLater = ref<boolean>(false)
   const isAddingOpenTabsToWatchLater = ref(false)
+  const openTabsWatchLaterProgress = ref<AddOpenTabsResult>()
+  const openTabsWatchLaterError = ref('')
   // 添加 Moments 相关状态
   const moments = reactive<any[]>([])
   const addedWatchLaterList = reactive<number[]>([])
@@ -771,11 +774,13 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (isAddingOpenTabsToWatchLater.value)
       return
 
+    openTabsWatchLaterProgress.value = { total: 0, added: 0, skipped: 0, failed: 0 }
+    openTabsWatchLaterError.value = ''
     const accountId = getLocalLoginMid()
     const csrf = getCSRF()
     const t = i18n.global.t
     if (!isLogin.value || accountId === undefined || !csrf) {
-      toast.warning(t('moments.login_to_watch_later'))
+      openTabsWatchLaterError.value = t('moments.login_to_watch_later')
       return
     }
 
@@ -783,31 +788,16 @@ export const useTopBarStore = defineStore('topBar', () => {
     isAddingOpenTabsToWatchLater.value = true
     try {
       const urls = await getOpenBilibiliTabUrls()
-      const result = await addOpenTabsToWatchLater(urls, csrf, accountUnchanged)
-      if (!accountUnchanged())
-        return
-
-      if (result.total === 0) {
-        toast.info(t('watch_later.no_open_video_tabs'))
-        return
-      }
-
-      const summary = t('watch_later.add_open_tabs_result', {
-        added: result.added,
-        skipped: result.skipped,
-        failed: result.failed,
+      const result = await addOpenTabsToWatchLater(urls, csrf, accountUnchanged, (progress) => {
+        if (accountUnchanged())
+          openTabsWatchLaterProgress.value = progress
       })
-      if (result.failed > 0) {
-        const message = result.message ? `${summary} ${result.message}` : summary
-        if (result.added > 0)
-          toast.warning(message)
-        else
-          toast.error(message)
-      }
-      else {
-        toast.success(summary)
+      if (!accountUnchanged()) {
+        openTabsWatchLaterError.value = t('watch_later.add_open_tabs_account_changed')
+        return
       }
 
+      openTabsWatchLaterProgress.value = result
       if (result.added > 0) {
         const refresh = () => {
           if (!accountUnchanged())
@@ -823,8 +813,9 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
     catch (error) {
       console.error('添加打开标签页到稍后再看失败:', error)
-      if (accountUnchanged())
-        toast.error(t('moments.watch_later_operation_failed'))
+      openTabsWatchLaterError.value = t(accountUnchanged()
+        ? 'moments.watch_later_operation_failed'
+        : 'watch_later.add_open_tabs_account_changed')
     }
     finally {
       isAddingOpenTabsToWatchLater.value = false
@@ -1577,6 +1568,8 @@ export const useTopBarStore = defineStore('topBar', () => {
     favoriteStateVersion,
     isLoadingWatchLater,
     isAddingOpenTabsToWatchLater,
+    openTabsWatchLaterProgress,
+    openTabsWatchLaterError,
     drawerVisible,
     notificationsDrawerUrl,
     popupVisible,

@@ -14,6 +14,8 @@ import { isActualHomepage, isHomePage, isInIframe, removeHttpFromUrl } from '~/u
 import { openLinkInBackground } from '~/utils/tabs'
 import { getWatchLaterAuthor } from '~/utils/watchLater'
 
+const emit = defineEmits<{ addOpenTabs: [] }>()
+
 const topBarStore = useTopBarStore()
 const { watchLaterList, isLoadingWatchLater, watchLaterCount, isAddingOpenTabsToWatchLater } = storeToRefs(topBarStore)
 const viewAllUrl = computed((): string => {
@@ -129,7 +131,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
           :disabled="isAddingOpenTabsToWatchLater"
           :aria-busy="isAddingOpenTabsToWatchLater"
           :title="$t('watch_later.add_open_tabs_hint')"
-          @click.stop="topBarStore.addOpenTabVideosToWatchLater"
+          @click.stop="emit('addOpenTabs')"
         >
           {{ $t(isAddingOpenTabsToWatchLater ? 'watch_later.adding_open_tabs' : 'watch_later.add_open_tabs') }}
         </button>

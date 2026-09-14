@@ -1395,6 +1395,11 @@ version_reminder:
 watch_later:
   add_open_tabs: Add tabs
   add_open_tabs_hint: Add Bilibili video, anime and movie playback tabs from all windows to Watch later
+  add_open_tabs_confirm: This will add all open Bilibili video, anime and movie playback tabs from every window to Watch later. Duplicates and existing items will be skipped automatically.
+  confirm_add_open_tabs: Confirm addition
+  reading_open_tabs: Reading open tabs…
+  add_open_tabs_progress: 'Processed {completed} / {total} items'
+  add_open_tabs_account_changed: Your account status changed. Adding has stopped. Please confirm again to retry.
   adding_open_tabs: Adding…
   no_open_video_tabs: No supported video, anime or movie playback tabs are open
   add_open_tabs_result: 'Added {added}, skipped {skipped} duplicates or existing items, failed {failed}'

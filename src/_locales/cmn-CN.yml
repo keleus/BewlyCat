@@ -1297,6 +1297,11 @@ version_reminder:
 watch_later:
   add_open_tabs: 添加标签页
   add_open_tabs_hint: 将所有窗口中打开的 B 站视频、番剧和影视播放页添加到稍后再看
+  add_open_tabs_confirm: 将所有窗口中打开的 B 站视频、番剧和影视播放标签页全部添加到稍后再看。重复或已添加的内容会自动跳过。
+  confirm_add_open_tabs: 确认添加
+  reading_open_tabs: 正在读取标签页…
+  add_open_tabs_progress: '已处理 {completed} / {total} 项'
+  add_open_tabs_account_changed: 账号状态已变化，已停止添加，请重新确认后再试。
   adding_open_tabs: 添加中…
   no_open_video_tabs: 没有可添加的视频、番剧或影视播放标签页
   add_open_tabs_result: '已添加 {added} 项，跳过重复或已添加的 {skipped} 项，失败 {failed} 项'

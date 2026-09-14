@@ -1,6 +1,8 @@
 import api from '~/utils/api'
 import { resolvePgcEpisodeVideoIds, resolvePgcSeasonVideoIds } from '~/utils/pgcEpisode'
 
+const OPEN_TAB_ADD_INTERVAL_MS = 50
+
 type WatchLaterTabTarget
   = { type: 'bvid', id: string }
     | { type: 'aid' | 'epid' | 'seasonId', id: number }
@@ -91,6 +93,7 @@ export async function addOpenTabsToWatchLater(
   urls: string[],
   csrf: string,
   isCurrentAccount: () => boolean,
+  onProgress?: (progress: AddOpenTabsResult) => void,
 ): Promise<AddOpenTabsResult> {
   const targets = new Map<string, WatchLaterTabTarget>()
   for (const url of urls) {
@@ -100,6 +103,7 @@ export async function addOpenTabsToWatchLater(
   }
 
   const result: AddOpenTabsResult = { total: targets.size, added: 0, skipped: 0, failed: 0 }
+  onProgress?.({ ...result })
   if (!targets.size || !isCurrentAccount())
     return result
 
@@ -111,18 +115,24 @@ export async function addOpenTabsToWatchLater(
   const existingAids = new Set<number>(response.data.list.map((item: { aid: number }) => Number(item.aid)))
   const existingBvids = new Set<string>(response.data.list.map((item: { bvid: string }) => item.bvid))
 
-  // 串行写入，避免同时打开大量标签页时集中触发风控。
-  for (const target of targets.values()) {
+  // 串行处理，每项之间留出间隔，避免集中请求并让界面及时更新进度。
+  for (const [index, target] of [...targets.values()].entries()) {
     if (!isCurrentAccount())
       break
 
-    if ((target.type === 'aid' && existingAids.has(target.id))
-      || (target.type === 'bvid' && existingBvids.has(target.id))) {
-      result.skipped++
-      continue
+    if (index > 0) {
+      await new Promise<void>(resolve => setTimeout(resolve, OPEN_TAB_ADD_INTERVAL_MS))
+      if (!isCurrentAccount())
+        break
     }
 
     try {
+      if ((target.type === 'aid' && existingAids.has(target.id))
+        || (target.type === 'bvid' && existingBvids.has(target.id))) {
+        result.skipped++
+        continue
+      }
+
       const ids = await resolveTarget(target)
       if (!isCurrentAccount())
         break
@@ -153,6 +163,9 @@ export async function addOpenTabsToWatchLater(
     catch (error) {
       console.error('Failed to add an open tab to Watch later:', error)
       result.failed++
+    }
+    finally {
+      onProgress?.({ ...result })
     }
   }
 
