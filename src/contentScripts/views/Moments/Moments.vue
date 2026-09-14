@@ -247,7 +247,6 @@ const watchLaterLoadingMomentIds = reactive(new Set<string>())
 const videoCidCache = new Map<string, number>()
 const videoCidRequests = new Map<string, Promise<number | undefined>>()
 const videoAspectRatios = reactive<Record<string, number>>({})
-const videoAspectRatioRequests = new Map<string, Promise<number | undefined>>()
 const cardHeights = reactive<Record<string, number>>({})
 const visibleMomentIds = reactive(new Set<string>())
 const readyCardIds = reactive(new Set<string>())
@@ -1409,53 +1408,6 @@ function resolveLinkOpenMode(kind: MomentLinkKind): ResolvedMomentOpenMode {
   return mode === 'dialog' ? 'newTab' : mode
 }
 
-function createLinkMoment(url: string, kind: Extract<MomentLinkKind, 'video' | 'moment'>, video?: DisplayForwardVideo): DisplayMoment {
-  const bvid = video?.bvid || url.match(/\/video\/(BV\w+)/i)?.[1]
-  const aid = video?.aid || url.match(/\/video\/av(\d+)/i)?.[1]
-  return {
-    id: `link-${kind}-${bvid || aid || url}`,
-    author: { mid: '', name: '', face: '' },
-    publishedAt: 0,
-    title: video?.title || '',
-    text: '',
-    richText: [],
-    images: video?.cover ? [video.cover] : [],
-    time: '',
-    likeCount: 0,
-    isLiked: false,
-    isLikeDisabled: true,
-    commentCount: 0,
-    url,
-    isVideo: kind === 'video',
-    isRegularVideo: kind === 'video',
-    isUgcSeason: false,
-    isDraw: false,
-    isPgc: false,
-    isLive: false,
-    isChargeExclusive: false,
-    isForward: false,
-    isArticle: false,
-    isUpRecommendation: false,
-    isVideoReservation: false,
-    isLiveReservation: false,
-    mediaMeta: video?.duration || '',
-    liveArea: '',
-    livePopularity: '',
-    duration: video?.duration || '',
-    videoPlay: video?.play || '',
-    videoDanmaku: video?.danmaku || '',
-    aid,
-    bvid,
-    videoUrl: kind === 'video' ? (video?.url || url) : undefined,
-  }
-}
-
-function shouldOpenMomentExternally(moment: DisplayMoment, openMode: ResolvedMomentOpenMode) {
-  return moment.isLive
-    || openMode !== 'dialog'
-    || window.innerWidth <= DETAIL_DIALOG_MIN_WIDTH
-}
-
 function openMomentImagePreview(urls: string[], index: number, trigger: HTMLElement | null) {
   openDetailImageViewer(urls, index, null, trigger)
 }
@@ -1501,28 +1453,42 @@ function openDetailFrameInNewTab() {
   }
 }
 
-function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
+function openMomentMedia(moment: DisplayMoment) {
   if (moment.isVideo && !moment.isLive)
     recordVideoVisit(moment)
 
-  const openMode = forceDialog ? 'dialog' : resolveMomentOpenMode(moment)
+  const openMode = resolveMomentOpenMode(moment)
+  openMomentExternally(moment, openMode === 'dialog' ? 'newTab' : openMode)
+}
 
-  // 小屏、直播与外部打开设置：离开详情 Dialog，避免狭窄 Dialog 与跨域直播占用。
-  // 弹窗模式在小屏和直播动态上回退为新标签页。
-  if (!forceDialog && shouldOpenMomentExternally(moment, openMode)) {
-    openMomentExternally(moment, openMode === 'dialog' ? 'newTab' : openMode)
+function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
+  // 明确查看动态正文；视频/直播封面不能作为图文相册参与详情分栏。
+  const detailMoment: DisplayMoment = moment.isVideo || moment.isLive
+    ? {
+        ...moment,
+        isVideo: false,
+        isRegularVideo: false,
+        isUgcSeason: false,
+        isPgc: false,
+        isLive: false,
+        isDraw: false,
+        images: [],
+        imageRatios: [],
+      }
+    : moment
+
+  const openMode = forceDialog ? 'dialog' : settings.value.momentsCardOpenMode
+  if (openMode !== 'dialog' || (!forceDialog && window.innerWidth <= DETAIL_DIALOG_MIN_WIDTH)) {
+    openMomentExternally(detailMoment, openMode === 'dialog' ? 'newTab' : openMode)
     return
   }
-
-  if (moment.isVideo && !moment.isLive && moment.bvid)
-    void loadVideoAspectRatio(moment.bvid)
 
   // 若已有详情在开，先销毁旧 iframe，避免叠内存
   if (selectedMoment.value || detailFrameUrl.value)
     destroyDetailIframe()
 
-  selectedMoment.value = moment
-  detailFrameUrl.value = resolveDetailUrl(moment)
+  selectedMoment.value = detailMoment
+  detailFrameUrl.value = resolveDetailUrl(detailMoment)
   detailFrameLoaded.value = false
   setDetailPlayerImmersive(false)
   // 打开详情时释放悬停预览资源
@@ -1530,12 +1496,8 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
   cleanupLivePreviewPlayer()
   clearDetailLoadTimer()
   destroyDetailIframe()
-  // 视频/直播、转发（原页直接展示）：load 后即可；图文等待布局 ready 兜底避免遮罩卡住
-  const fallbackMs = isPlayerMoment(moment)
-    ? 1800
-    : moment.isForward
-      ? 1200
-      : 4500
+  // 转发原页直接展示；图文等待布局 ready，超时后解除加载遮罩。
+  const fallbackMs = moment.isForward ? 1200 : 4500
   detailLoadTimer = setTimeout(() => {
     detailFrameLoaded.value = true
   }, fallbackMs)
@@ -3041,29 +3003,6 @@ function cacheVideoAspectRatio(bvid: string, dimension: any) {
   return ratio
 }
 
-function loadVideoAspectRatio(bvid: string) {
-  if (videoAspectRatios[bvid])
-    return Promise.resolve(videoAspectRatios[bvid])
-
-  const pendingRequest = videoAspectRatioRequests.get(bvid)
-  if (pendingRequest)
-    return pendingRequest
-
-  const request = api.video.getVideoInfo({ bvid })
-    .then((response) => {
-      if (response.code !== 0)
-        return undefined
-      return cacheVideoAspectRatio(
-        bvid,
-        response.data?.dimension || response.data?.pages?.[0]?.dimension,
-      )
-    })
-    .catch(() => undefined)
-    .finally(() => videoAspectRatioRequests.delete(bvid))
-  videoAspectRatioRequests.set(bvid, request)
-  return request
-}
-
 async function getVideoCid(bvid: string) {
   const cachedCid = videoCidCache.get(bvid)
   if (cachedCid) {
@@ -3166,11 +3105,6 @@ function openClassifiedLink(url: string, kind: MomentLinkKind, video?: DisplayFo
     recordVideoVisit(video)
 
   const mode = resolveLinkOpenMode(kind)
-  if (mode === 'dialog' && kind !== 'other') {
-    openMomentDetail(createLinkMoment(url, kind, video))
-    return
-  }
-
   hoveredMediaId.value = ''
   cleanupLivePreviewPlayer()
   if (mode === 'background')
@@ -3902,7 +3836,6 @@ onBeforeUnmount(() => {
   videoCidCache.clear()
   videoCidRequests.clear()
   Object.keys(videoAspectRatios).forEach(key => delete videoAspectRatios[key])
-  videoAspectRatioRequests.clear()
   visibleMomentIds.clear()
   cardElements.clear()
   columnMetrics = []
@@ -4481,6 +4414,7 @@ watch(
                 :is-watch-later-loading="isWatchLaterLoading"
                 @card-element="element => bindCardEl(element, moment)"
                 @open-detail="openMomentDetail"
+                @open-media="openMomentMedia"
                 @open-image-preview="openMomentImagePreview"
                 @media-enter="handleMediaEnter"
                 @media-leave="handleMediaLeave"

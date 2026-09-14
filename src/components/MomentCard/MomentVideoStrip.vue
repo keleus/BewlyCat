@@ -134,6 +134,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
       <span i-tabler-user aria-hidden="true" />
       <a
         v-if="authorHref"
+        draggable="false"
         :href="authorHref"
         class="moment-card__forward-author"
         rel="noopener noreferrer"

@@ -1529,6 +1529,8 @@ moment_card:
   author_images: '{name} 的动态图片'
   view_author_images: 查看 {name} 的动态图片
   open_origin_moment: 查看 {name} 的原动态
+  view_details: 查看详情
+  view_original_post: 查看原动态
   additional: 附加内容
   view_hot_comment: 查看热门评论
   hot_comment: 热门评论

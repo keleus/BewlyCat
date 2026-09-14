@@ -36,7 +36,7 @@ function handleContextMenu(event: MouseEvent) {
   const path = event.composedPath()
   // Keep native text/video menus, even when a card is nested inside a configurable Pop.
   if (path.some(node => node instanceof HTMLElement
-    && (node.matches('input, textarea, select, .video-card-container')
+    && (node.matches('input, textarea, select, .video-card-container, .moment-card')
       || node.dataset.layoutSettingsPage === 'video-card'
       || node.isContentEditable))) {
     return

@@ -74,6 +74,7 @@ const emit = defineEmits<{
   cardElement: [element: HTMLElement | null]
   openLottery: [url: string]
   openDetail: [moment: DisplayMoment, forceDialog?: boolean]
+  openMedia: [moment: DisplayMoment]
   openImagePreview: [urls: string[], index: number, trigger: HTMLElement | null]
   mediaEnter: [moment: DisplayMoment]
   mediaLeave: [moment: DisplayMoment]
@@ -325,16 +326,62 @@ function closeVideoOptions() {
   showVideoOptions.value = false
 }
 
-function handleCardClick(event: MouseEvent) {
+let cardElement: HTMLElement | null = null
+let cardPointerStart: { id: number, x: number, y: number, time: number } | undefined
+let suppressPointerNavigation = false
+
+function hasSelectedCardText(target: Node | null = cardElement) {
+  const root = cardElement?.getRootNode() as ShadowRoot & { getSelection?: () => Selection | null }
+  const selection = root?.getSelection?.() || window.getSelection()
+  return Boolean(target && selection?.toString() && selection.rangeCount && selection.getRangeAt(0).intersectsNode(target))
+}
+
+function handleCardPointerDown(event: PointerEvent) {
+  if (!event.isPrimary || event.button !== 0)
+    return
+  cardPointerStart = { id: event.pointerId, x: event.clientX, y: event.clientY, time: event.timeStamp }
+  // 点击清除现有选区也不应顺带打开动态。
+  suppressPointerNavigation = hasSelectedCardText()
+}
+
+function handleCardPointerMove(event: PointerEvent) {
+  if (!cardPointerStart || cardPointerStart.id !== event.pointerId)
+    return
+  if (Math.hypot(event.clientX - cardPointerStart.x, event.clientY - cardPointerStart.y) > 6)
+    suppressPointerNavigation = true
+}
+
+function handleCardPointerUp(event: PointerEvent) {
+  if (!cardPointerStart || cardPointerStart.id !== event.pointerId)
+    return
+  handleCardPointerMove(event)
+  if (event.timeStamp - cardPointerStart.time >= 500 || event.type === 'pointercancel')
+    suppressPointerNavigation = true
+  cardPointerStart = undefined
+}
+
+function preventSelectedTextNavigation(event: MouseEvent) {
+  // 键盘激活仍然可用；拖选、长按和触屏滚动后的合成 click 不执行导航。
+  if (!event.detail || (!suppressPointerNavigation && !hasSelectedCardText()))
+    return false
+  event.preventDefault()
+  event.stopPropagation()
+  return true
+}
+
+function handleCardClick(event: MouseEvent, targetMoment = moment) {
+  if (event.defaultPrevented)
+    return
   const target = event.target
   if (target instanceof Element) {
-    const interactiveTarget = target.closest('button, a, [role="button"]')
-    // 根 article 自身就是 role="button"；只过滤卡片内部的独立交互控件。
-    if (interactiveTarget && interactiveTarget !== event.currentTarget)
+    const interactive = target.closest('button, a, input, textarea, select, [role="button"], [contenteditable="true"]')
+    if (interactive && interactive !== event.currentTarget)
       return
   }
-
-  emit('openDetail', moment)
+  if (preventSelectedTextNavigation(event))
+    return
+  event.stopPropagation()
+  emit('openDetail', targetMoment)
 }
 
 function handlePermalinkClick(event: MouseEvent) {
@@ -349,13 +396,15 @@ function handlePermalinkClick(event: MouseEvent) {
     return
   }
 
-  // 左键走卡片弹窗；a 只留给中键 / ctrl / meta 等原生打开。
+  if (preventSelectedTextNavigation(event))
+    return
+  // 媒体卡片才打开视频/直播，保留中键及修饰键的原生打开方式。
   if (shouldUseNativeLinkOpen(event))
     return
 
   event.preventDefault()
   event.stopPropagation()
-  emit('openDetail', moment)
+  emit('openMedia', moment)
 }
 
 function getForwardOriginMoment(): DisplayMoment | null {
@@ -405,35 +454,12 @@ function getForwardOriginMoment(): DisplayMoment | null {
   }
 }
 
-function handleForwardOriginClick(event: MouseEvent) {
-  if (shouldUseNativeLinkOpen(event))
-    return
-
-  event.preventDefault()
-  event.stopPropagation()
-  emit('openDetail', getForwardOriginMoment() || moment)
-}
-
-function handleForwardOriginKeydown(event: KeyboardEvent) {
-  // 仅响应容器自身焦点的按键，不拦截内部链接 / 图片按钮的键盘操作
-  if (event.target !== event.currentTarget)
-    return
-  if (event.key !== 'Enter' && event.key !== ' ')
-    return
-
-  event.preventDefault()
-  event.stopPropagation()
-  emit('openDetail', getForwardOriginMoment() || moment)
-}
-
 function handleForwardGalleryPreview(urls: string[], index: number, trigger: HTMLElement | null) {
   emit('openImagePreview', urls, index, trigger)
 }
 
 // VideoCardContextMenu uses this injection to select its common option set.
 provide('getVideoType', () => 'common')
-
-let cardElement: HTMLElement | null = null
 
 function handleCardRef(element: Element | ComponentPublicInstance | null) {
   cardElement = element instanceof HTMLElement ? element : null
@@ -485,6 +511,8 @@ function handlePreviewVideo(element: Element | ComponentPublicInstance | null) {
 }
 
 function handleOpenLink(event: MouseEvent, url?: string, kind?: MomentLinkKind, video?: DisplayForwardVideo) {
+  if (preventSelectedTextNavigation(event))
+    return
   if (!url || shouldUseNativeLinkOpen(event))
     return
 
@@ -509,6 +537,8 @@ function handleForwardVideoClick(event: MouseEvent) {
 }
 
 function handleRichLinkClick(event: MouseEvent, url?: string) {
+  if (preventSelectedTextNavigation(event))
+    return
   if (url && isMomentLotteryUrl(url) && !shouldUseNativeLinkOpen(event)) {
     event.preventDefault()
     event.stopPropagation()
@@ -546,13 +576,19 @@ function handleAdditionalClick(event: MouseEvent) {
     :style="cardLayoutStyles"
     @mouseenter="!moment.isLive && !settings.momentsOnlyCoverVideoPreview && emit('mediaEnter', moment)"
     @mouseleave="emit('mediaLeave', moment)"
-    @click="handleCardClick"
+    @pointerdown.capture="handleCardPointerDown"
+    @pointermove.capture="handleCardPointerMove"
+    @pointerup.capture="handleCardPointerUp"
+    @pointercancel.capture="handleCardPointerUp"
+    @click="handleCardClick($event)"
     @keydown.enter.self="emit('openDetail', moment)"
+    @keydown.space.self.prevent="emit('openDetail', moment)"
   >
     <div class="moment-card__surface">
       <header class="moment-card__header">
         <a
           v-if="authorSpaceUrl"
+          draggable="false"
           :href="authorSpaceUrl"
           class="moment-card__author-link"
           :aria-label="t('moment_card.open_space', { name: moment.author.name })"
@@ -572,6 +608,7 @@ function handleAdditionalClick(event: MouseEvent) {
         <span class="moment-card__identity">
           <a
             v-if="authorSpaceUrl"
+            draggable="false"
             :href="authorSpaceUrl"
             class="moment-card__author-name"
             :aria-label="t('moment_card.open_space', { name: moment.author.name })"
@@ -638,6 +675,7 @@ function handleAdditionalClick(event: MouseEvent) {
                   >
                   <a
                     v-else-if="segment.type === 'link' && segment.url"
+                    draggable="false"
                     :href="segment.url"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -671,6 +709,7 @@ function handleAdditionalClick(event: MouseEvent) {
             </button>
           </div>
           <a
+            draggable="false"
             :href="cardHref || undefined"
             class="moment-card__video-card moment-card__video-card--original"
             :aria-label="t('moment_card.open_original_video', { title: moment.title })"
@@ -716,11 +755,11 @@ function handleAdditionalClick(event: MouseEvent) {
           >
             <a
               v-if="cardHref"
+              draggable="false"
               class="moment-card__permalink"
               :href="cardHref"
               tabindex="-1"
               aria-hidden="true"
-              draggable="false"
               rel="noopener noreferrer"
               @click.capture="handlePermalinkClick"
             />
@@ -763,11 +802,11 @@ function handleAdditionalClick(event: MouseEvent) {
           <div v-else-if="(moment.isVideo || moment.isLive) && (!moment.isChargeExclusive || moment.isVideo)" class="moment-card__media moment-card__cover moment-card__text-cover moment-card__text-cover--video">
             <a
               v-if="cardHref"
+              draggable="false"
               class="moment-card__permalink"
               :href="cardHref"
               tabindex="-1"
               aria-hidden="true"
-              draggable="false"
               rel="noopener noreferrer"
               @click.capture="handlePermalinkClick"
             />
@@ -812,6 +851,7 @@ function handleAdditionalClick(event: MouseEvent) {
                   >
                   <a
                     v-else-if="segment.type === 'link' && segment.url"
+                    draggable="false"
                     :href="segment.url"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -869,6 +909,7 @@ function handleAdditionalClick(event: MouseEvent) {
                 </span>
               </div>
               <a
+                draggable="false"
                 :href="moment.forward.video.url || undefined"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -916,12 +957,14 @@ function handleAdditionalClick(event: MouseEvent) {
               role="button"
               tabindex="0"
               :aria-label="t('moment_card.open_origin_moment', { name: moment.forward.author })"
-              @click="handleForwardOriginClick"
-              @keydown="handleForwardOriginKeydown"
+              @click="handleCardClick($event, getForwardOriginMoment() || moment)"
+              @keydown.enter.self.stop="emit('openDetail', getForwardOriginMoment() || moment)"
+              @keydown.space.self.stop.prevent="emit('openDetail', getForwardOriginMoment() || moment)"
             >
               <div class="moment-card__forward-copy">
                 <a
                   v-if="forwardAuthorSpaceUrl"
+                  draggable="false"
                   :href="forwardAuthorSpaceUrl"
                   class="moment-card__forward-author"
                   rel="noopener noreferrer"
@@ -933,6 +976,7 @@ function handleAdditionalClick(event: MouseEvent) {
                     <template v-for="(segment, index) in moment.forward.richText" :key="index">
                       <a
                         v-if="segment.type === 'link' && segment.url"
+                        draggable="false"
                         :href="segment.url"
                         class="moment-card__rich-link"
                         @click="handleRichLinkClick($event, segment.url)"
@@ -947,6 +991,15 @@ function handleAdditionalClick(event: MouseEvent) {
                     {{ moment.forward.title || moment.forward.text || moment.forward.fallback }}
                   </template>
                 </p>
+                <button
+                  type="button"
+                  class="moment-card__desc-toggle"
+                  :aria-label="t('moment_card.open_origin_moment', { name: moment.forward.author })"
+                  @click="emit('openDetail', getForwardOriginMoment() || moment, true)"
+                >
+                  {{ t('moment_card.view_original_post') }}
+                  <span i-tabler-chevron-right aria-hidden="true" />
+                </button>
               </div>
               <div
                 v-if="showForwardImageGrid"
@@ -1076,6 +1129,7 @@ function handleAdditionalClick(event: MouseEvent) {
         :class="{ 'moment-card__additional--no-cover': moment.isChargeExclusive || !moment.additional.cover }"
       >
         <a
+          draggable="false"
           :href="moment.additional.url || undefined"
           class="moment-card__additional-main"
           @click="handleAdditionalClick"
@@ -1110,6 +1164,7 @@ function handleAdditionalClick(event: MouseEvent) {
         </button>
         <a
           v-else
+          draggable="false"
           :href="moment.additional.url || undefined"
           class="moment-card__additional-action"
           @click="handleAdditionalClick"
@@ -1152,6 +1207,10 @@ function handleAdditionalClick(event: MouseEvent) {
       </button>
 
       <footer class="moment-card__footer">
+        <button type="button" @click="emit('openDetail', moment, true)">
+          <span i-tabler-file-description aria-hidden="true" />
+          {{ t('moment_card.view_details') }}
+        </button>
         <button
           v-if="!moment.isLive"
           type="button"
@@ -1166,6 +1225,7 @@ function handleAdditionalClick(event: MouseEvent) {
         </button>
         <a
           v-else
+          draggable="false"
           :href="moment.url"
           target="_blank"
           rel="noopener noreferrer"
@@ -1260,6 +1320,8 @@ function handleAdditionalClick(event: MouseEvent) {
   border-radius: var(--bew-card-radius);
   background-color: transparent;
   cursor: pointer;
+  user-select: text;
+  -webkit-user-select: text;
   box-shadow: none;
 }
 
@@ -1277,7 +1339,7 @@ function handleAdditionalClick(event: MouseEvent) {
   border-radius: inherit;
   color: inherit;
   text-decoration: none;
-  cursor: inherit;
+  cursor: pointer;
 }
 
 .moment-card__media > .moment-card__permalink {
@@ -1435,7 +1497,7 @@ function handleAdditionalClick(event: MouseEvent) {
   flex-direction: column;
   margin-top: var(--bew-space-4);
   overflow: hidden;
-  /* 与横条视频卡同层级的内容块：fill 底 + 描边，点击跳原动态 */
+  /* 引用原文可拖选复制，也可点击查看原动态。 */
   border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 58%);
   border-radius: var(--bew-card-radius);
   color: var(--bew-text-2);
@@ -2371,7 +2433,7 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__footer {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   align-items: center;
   gap: 0;
   min-height: 42px;

@@ -1631,6 +1631,8 @@ moment_card:
   author_images: '{name} post images'
   view_author_images: View {name}'s post images
   open_origin_moment: View {name}'s original post
+  view_details: View details
+  view_original_post: View original post
   additional: Additional content
   view_hot_comment: View popular comment
   hot_comment: Popular comment
