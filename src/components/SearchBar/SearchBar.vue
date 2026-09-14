@@ -6,10 +6,12 @@ import { computed, inject, reactive, ref, shallowRef, watch } from 'vue'
 
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import { resolveSearchBarCharacterUrl } from '~/constants/imgs'
+import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import api from '~/utils/api'
 import { findLeafActiveElement } from '~/utils/element'
-import { buildKeywordSearchUrl, navigateToPluginSearchResultsInPlace, openSearchResults } from '~/utils/searchNavigation'
+import { isHomePage } from '~/utils/main'
+import { buildKeywordSearchUrl, navigateToPluginSearchResults, navigateToPluginSearchResultsInPlace, openSearchResults } from '~/utils/searchNavigation'
 
 import type { HistoryItem, SuggestionItem, SuggestionResponse } from './searchHistoryProvider'
 import {
@@ -455,9 +457,15 @@ async function navigateToSearchResultPage(rawKeyword: string) {
     return
   }
 
-  // 开启插件搜索结果页且为就地打开模式时，优先切到扩展内搜索结果，避免落到 B 站原站搜索页；
-  // 其余情况按「搜索栏链接打开行为」统一打开，开启插件搜索页时链接同样指向插件搜索结果页
-  if (navigateToPluginSearchResultsInPlace(normalized)) {
+  // 插件搜索结果页的顶栏始终原地更新结果；其他入口遵循「搜索栏链接打开行为」。
+  const isSearchResultsTopBar = props.topBarMode
+    && isHomePage()
+    && bewlyApp?.activatedPage.value === AppPage.SearchResults
+  const didNavigate = isSearchResultsTopBar
+    ? navigateToPluginSearchResults(normalized)
+    : navigateToPluginSearchResultsInPlace(normalized)
+
+  if (didNavigate) {
     emit('search', normalized)
     isFocus.value = false
     resetKeyboardSelection()

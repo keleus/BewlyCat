@@ -45,8 +45,7 @@ const searchBarStyles = computed(() => ({
 }))
 
 const searchBehavior = computed<'navigate' | 'stay'>(() => {
-  // 不再在这里决定搜索行为，让 SearchBar 组件自己根据情况判断
-  // SearchBar 会根据当前是否在搜索页来决定是否使用 stay 模式
+  // SearchBar 根据当前页面和「搜索栏链接打开行为」决定导航方式。
   return 'navigate'
 })
 
