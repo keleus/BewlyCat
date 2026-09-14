@@ -450,11 +450,22 @@ async function deleteFolders(ids: number[]) {
 async function unfavSeasons(ids: number[]) {
   const failedIds: number[] = []
   for (const seasonId of ids) {
+    const season = collectedFavoriteSeasons.find(item => item.id === seasonId)
+    if (!season) {
+      failedIds.push(seasonId)
+      continue
+    }
+
     try {
-      const res = await api.favorite.unfavFavoriteSeason({
-        season_id: seasonId,
-        csrf: getCSRF(),
-      })
+      const res = season.type === 11
+        ? await api.favorite.unfavFavoriteFolder({
+            media_id: seasonId,
+            csrf: getCSRF(),
+          })
+        : await api.favorite.unfavFavoriteSeason({
+            season_id: seasonId,
+            csrf: getCSRF(),
+          })
       if (res.code !== 0)
         failedIds.push(seasonId)
     }

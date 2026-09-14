@@ -166,7 +166,24 @@ const API_FAVORITE = {
     params: {},
     afterHandle: AHS.J_D,
   },
-  // 取消收藏合集（他人合集只能整体取消收藏）
+  // 取消收藏他人的公开收藏夹，media_id 使用完整 mlid
+  unfavFavoriteFolder: {
+    url: 'https://api.bilibili.com/x/v3/fav/folder/unfav',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        media_id: 0,
+        platform: 'web',
+        csrf: '',
+      },
+    },
+    params: {},
+    afterHandle: AHS.J_D,
+  },
+  // 取消收藏视频合集（type=21）
   unfavFavoriteSeason: {
     url: 'https://api.bilibili.com/x/v3/fav/season/unfav',
     _fetch: {
