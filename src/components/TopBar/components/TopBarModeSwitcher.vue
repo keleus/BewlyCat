@@ -105,10 +105,6 @@ useMutationObserver(
   <Teleport v-if="props.native && nativeTarget" :to="nativeTarget">
     <li
       class="top-bar-mode-switcher top-bar-mode-switcher--native"
-      data-native-settings-context-menu
-      data-layout-settings-menu="BewlyComponents"
-      data-layout-settings-page="topbar"
-      data-layout-settings-title-key="topbar.top_bar_switcher"
     >
       <Tooltip :content="actionLabel" placement="bottom-right">
         <button

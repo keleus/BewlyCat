@@ -5,7 +5,6 @@ import { provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '~/components/Button.vue'
-import ElementSettingsContextMenu from '~/components/ElementSettingsContextMenu.vue'
 import Icon from '~/components/Icon.vue'
 import Radio from '~/components/Radio.vue'
 import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
@@ -1862,8 +1861,6 @@ if (settings.value.cleanUrlArgument) {
     <template v-if="showBewlyPage">
       <AppBackground :activated-page="activatedPage" />
     </template>
-
-    <ElementSettingsContextMenu />
 
     <!-- Settings -->
     <KeepAlive>
