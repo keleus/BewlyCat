@@ -61,7 +61,7 @@ const rankingTypes = computed((): RankingType[] => {
   ]
 })
 
-const tabState = useHomeTabState()
+const tabState = useHomeTabState({ retainedFields: ['activatedRankingTypeId'] })
 const isLoading = ref<boolean>(false)
 const activatedRankingTypeId = tabState.ref<number>('activatedRankingTypeId', rankingTypes.value[0].id)
 const activatedRankingType = computed<RankingType>({

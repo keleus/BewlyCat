@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
+import { watch } from 'vue'
 
 import type { RecommendationMode } from '~/logic'
+import { settings } from '~/logic/storage'
 import type { Item as AppVideoItem } from '~/models/video/appForYou'
 import type { Item as VideoItem } from '~/models/video/forYou'
 
@@ -123,6 +125,12 @@ export const useForYouStore = defineStore('forYou', () => {
       recommendationMode: undefined,
     }
   }
+
+  // The store outlives Home, including while the setting is changed from the Dock.
+  watch(() => settings.value.preserveForYouState, (preserve) => {
+    if (!preserve)
+      resetState()
+  }, { flush: 'sync' })
 
   // 标记为已初始化
   const markAsInitialized = () => {

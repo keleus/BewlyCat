@@ -24,7 +24,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const tabState = useHomeTabState()
+const tabState = useHomeTabState({ retainedFields: [] })
 let visibilityTimer: ReturnType<typeof setTimeout> | undefined
 
 // https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16

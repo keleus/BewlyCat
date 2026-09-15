@@ -149,9 +149,13 @@ watch(activatedPageCacheKey, (newPage, oldPage) => {
     return
 
   // During a rapid switch the viewport may still belong to the outgoing tab.
-  if (pendingTabScrollTop === null)
+  if (pendingTabScrollTop === null && oldPage.startsWith(`${HomeSubPage.ForYou}:`))
     tabScrollPositions.set(oldPage, viewport.scrollTop)
-  pendingTabScrollTop = tabScrollPositions.get(newPage) ?? getInitialTabScrollTop()
+  // Only ForYou restores its list. Freshly fetched feeds must not inherit a
+  // scroll offset (or trigger pagination) from a different set of videos.
+  pendingTabScrollTop = newPage.startsWith(`${HomeSubPage.ForYou}:`)
+    ? tabScrollPositions.get(newPage) ?? getInitialTabScrollTop()
+    : getInitialTabScrollTop()
   isHomeTabSwitching.value = true
 }, { flush: 'sync' })
 

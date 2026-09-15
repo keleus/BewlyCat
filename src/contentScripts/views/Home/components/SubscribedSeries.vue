@@ -23,7 +23,7 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
-const tabState = useHomeTabState()
+const tabState = useHomeTabState({ retainedFields: [] })
 const isLoading = ref<boolean>(false)
 const videoList = tabState.ref<VideoElement[]>('videoList', [])
 const needToLoginFirst = tabState.ref<boolean>('needToLoginFirst', false)

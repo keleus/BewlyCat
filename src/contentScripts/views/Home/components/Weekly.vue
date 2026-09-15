@@ -24,10 +24,12 @@ const emit = defineEmits<{
 }>()
 
 const { handleBackToTop, handleReachBottom, handlePageRefresh, mainAppRef } = useBewlyApp()
-const tabState = useHomeTabState()
+const tabState = useHomeTabState({ retainedFields: ['activatedSeriesNumber', 'searchQuery'] })
 
 const seriesList = tabState.ref<PopularSeriesItem[]>('seriesList', [])
-const activatedSeries = tabState.ref<PopularSeriesItem | null>('activatedSeries', null)
+const activatedSeries = ref<PopularSeriesItem | null>(null)
+const restoredSeriesNumber = tabState.take<number | undefined>('activatedSeriesNumber', undefined)
+tabState.capture('activatedSeriesNumber', () => activatedSeries.value?.number ?? restoredSeriesNumber)
 const videoList = tabState.ref<VideoElement[]>('videoList', [])
 const noMoreContent = tabState.ref<boolean>('noMoreContent', true) // 每周必看没有分页
 const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
@@ -96,10 +98,7 @@ onMounted(() => {
   initPageAction()
   window.addEventListener('resize', calculatePosition)
 
-  if (!tabState.restored)
-    void initData()
-  else if (!hasLoaded.value)
-    void resumeData()
+  void initData(restoredSeriesNumber)
 })
 
 onUnmounted(() => {
@@ -125,7 +124,7 @@ async function refreshHandler() {
   await initData()
 }
 
-async function initData() {
+async function initData(preferredSeriesNumber?: number) {
   if (!tabState.isCurrent())
     return
 
@@ -137,10 +136,10 @@ async function initData() {
   activatedSeries.value = null
   hasLoaded.value = false
 
-  await loadInitialData(version)
+  await loadInitialData(version, preferredSeriesNumber)
 }
 
-async function loadInitialData(version: number) {
+async function loadInitialData(version: number, preferredSeriesNumber?: number) {
   try {
     const res: PopularSeriesListResult = await api.ranking.getPopularSeriesList()
     if (!isRequestCurrent(version) || res.code !== 0 || !res.data || !Array.isArray(res.data.list))
@@ -153,8 +152,9 @@ async function loadInitialData(version: number) {
       return
     }
 
-    // 默认选择第一期（通常为最新期）
-    activatedSeries.value = seriesList.value[0]
+    // Restore only the issue number against fresh metadata; fall back to latest
+    // if that issue is no longer returned by the API.
+    activatedSeries.value = seriesList.value.find(item => item.number === preferredSeriesNumber) ?? seriesList.value[0]
     if (!isRequestCurrent(version) || !activatedSeries.value)
       return
 
@@ -172,18 +172,6 @@ async function loadInitialData(version: number) {
       emit('afterLoading')
     }
   }
-}
-
-async function resumeData() {
-  if (!tabState.isCurrent())
-    return
-
-  if (seriesList.value.length && activatedSeries.value) {
-    await getSeriesOne()
-    return
-  }
-
-  await initData()
 }
 
 function isRequestCurrent(version: number, selectedNumber?: number) {

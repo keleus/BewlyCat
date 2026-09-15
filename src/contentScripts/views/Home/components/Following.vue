@@ -107,12 +107,13 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const tabState = useHomeTabState()
+const tabState = useHomeTabState({
+  retainedFields: ['expandedGroupIds', 'selectedUploader', 'searchKeyword', 'videoSearchInput', 'videoSearchKeyword'],
+})
 const hasLoaded = tabState.ref('hasLoaded', false)
 const followingPage = tabState.ref('followingPage', 1)
 const followingListLoaded = tabState.ref('followingListLoaded', false)
 const uploaderScrollRef = ref<HTMLElement | null>(null)
-tabState.capture('uploaderScrollTop', () => uploaderScrollRef.value?.scrollTop ?? 0)
 
 const { scrollViewportRef, handlePageRefresh, handleReachBottom, canRefreshHomeSubPage } = useBewlyApp()
 const videoList = tabState.ref<VideoElement[]>('videoList', [])
@@ -1416,30 +1417,14 @@ onMounted(() => {
     return
   if (settings.value.followingUploaderSort === 'group')
     void loadFollowingGroups(true)
-  if (uploaderScrollRef.value)
-    uploaderScrollRef.value.scrollTop = tabState.read('uploaderScrollTop', 0)
   isRefreshContextActive.value = true
   syncRefreshAvailability()
   initPageAction()
-  if (!tabState.restored) {
-    initData()
-    return
-  }
-  if (!followingListLoaded.value && !needToLoginFirst.value)
-    void loadFollowingList()
+  // A restored UP selection still needs a fresh sidebar. The All view loads
+  // the sidebar inside initData before requesting its feed.
   if (selectedUploader.value !== null)
-    suppressUploaderAutoLoadMore.value = true
-  if (videoSearchKeyword.value && videoList.value.length > 0)
-    void fillSearchAuthorFaces(selectionToken.value)
-  if (!hasLoaded.value && videoList.value.length === 0) {
-    if (selectedUploader.value === null) {
-      void loadAllViewVideos(3, selectionToken.value)
-    }
-    else {
-      pinFeedScrollToStart()
-      void loadSelectedUploaderVideos(selectedUploader.value, 3, selectionToken.value)
-    }
-  }
+    void loadFollowingList()
+  initData()
 })
 
 onBeforeUnmount(() => {
