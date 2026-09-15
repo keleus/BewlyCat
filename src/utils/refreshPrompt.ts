@@ -402,7 +402,7 @@ export function showRefreshPrompt(...args: unknown[]): void {
   }
 
   const promptId = 'bewlycat-refresh-required'
-  const existingPrompt = document.getElementById(promptId)
+  let existingPrompt = document.getElementById(promptId)
   if (existingPrompt && copy.diagnostic?.source === 'background')
     bindRefreshAll(existingPrompt)
 
@@ -437,7 +437,16 @@ export function showRefreshPrompt(...args: unknown[]): void {
       && existingPrompt.shadowRoot?.querySelector('[data-refresh-all]')) {
       return
     }
-    existingPrompt.remove()
+    // 兼容旧版提示；当前结构原位更新，避免在 pointerdown 和 click 之间移除按钮。
+    const existingShadow = existingPrompt.shadowRoot
+    if (!existingShadow?.querySelector('.prompt > .header')
+      || !existingShadow.querySelector('.actions > button')
+      || !existingShadow.querySelector('.actions > [data-refresh-all]')
+      || !existingShadow.querySelector('.actions > .primary')
+      || !existingShadow.querySelector('[data-refresh-status]')) {
+      existingPrompt.remove()
+      existingPrompt = null
+    }
   }
 
   const versionChanged = Boolean(runningVersion
@@ -449,8 +458,9 @@ export function showRefreshPrompt(...args: unknown[]): void {
     ? (bewlyContainer.classList.contains('dark') ? 'dark' : 'light')
     : (pageUsesDarkTheme || matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
   const edgeOffset = matchMedia('(max-width: 560px)').matches ? '16px' : '24px'
-  const host = document.createElement('div')
+  const host = existingPrompt ?? document.createElement('div')
   host.id = promptId
+  host.hidden = false
   host.dataset.theme = theme
   host.dataset.promptVersion = copy.currentVersion
   host.dataset.promptCommit = copy.currentCommit ?? ''
@@ -509,8 +519,8 @@ export function showRefreshPrompt(...args: unknown[]): void {
   if (themeStyles.fontFamily)
     host.style.setProperty('font-family', themeStyles.fontFamily, 'important')
 
-  const shadow = host.attachShadow({ mode: 'open' })
-  const style = document.createElement('style')
+  const shadow = host.shadowRoot ?? host.attachShadow({ mode: 'open' })
+  const style = shadow.querySelector('style') ?? document.createElement('style')
   style.textContent = `
     /*
      * This prompt runs in an isolated Shadow DOM after the previous content script
@@ -698,7 +708,7 @@ export function showRefreshPrompt(...args: unknown[]): void {
     }
   `
 
-  const prompt = document.createElement('aside')
+  const prompt = shadow.querySelector<HTMLElement>('.prompt') ?? document.createElement('aside')
   prompt.className = 'prompt'
   prompt.setAttribute('role', 'alert')
 
@@ -733,38 +743,44 @@ export function showRefreshPrompt(...args: unknown[]): void {
     description.textContent += ` ${copy.recurringDescription}`
   }
 
-  const actions = document.createElement('div')
+  const actions = prompt.querySelector<HTMLElement>('.actions') ?? document.createElement('div')
   actions.className = 'actions'
 
-  const laterButton = document.createElement('button')
+  const laterButton = actions.querySelector<HTMLButtonElement>('button') ?? document.createElement('button')
   laterButton.type = 'button'
   laterButton.textContent = copy.later
-  laterButton.addEventListener('click', () => {
-    host.dataset.dismissedVersion = copy.currentVersion
-    host.hidden = true
-    host.style.setProperty('display', 'none', 'important')
-  })
+  if (!existingPrompt) {
+    laterButton.addEventListener('click', () => {
+      host.dataset.dismissedVersion = host.dataset.promptVersion
+      host.hidden = true
+      host.style.setProperty('display', 'none', 'important')
+    })
+  }
 
-  const refreshButton = document.createElement('button')
+  const refreshButton = actions.querySelector<HTMLButtonElement>('.primary') ?? document.createElement('button')
   refreshButton.type = 'button'
   refreshButton.className = 'primary'
   refreshButton.textContent = copy.refresh
-  refreshButton.addEventListener('click', () => {
-    recordRefreshAttempt(host)
-    location.reload()
-  })
+  if (!existingPrompt) {
+    refreshButton.addEventListener('click', () => {
+      recordRefreshAttempt(host)
+      location.reload()
+    })
+  }
 
-  const refreshAllButton = document.createElement('button')
+  const refreshAllButton = actions.querySelector<HTMLButtonElement>('[data-refresh-all]') ?? document.createElement('button')
   refreshAllButton.type = 'button'
   refreshAllButton.dataset.refreshAll = ''
-  refreshAllButton.textContent = copy.refreshAll
+  if (!refreshAllButton.disabled)
+    refreshAllButton.textContent = copy.refreshAll
   refreshAllButton.title = copy.refreshAllHint
   refreshAllButton.setAttribute('aria-label', `${copy.refreshAll}：${copy.refreshAllHint}`)
-  const refreshStatus = document.createElement('p')
+  const refreshStatus = prompt.querySelector<HTMLElement>('[data-refresh-status]') ?? document.createElement('p')
   refreshStatus.className = 'description'
   refreshStatus.dataset.refreshStatus = ''
   refreshStatus.setAttribute('role', 'status')
-  refreshStatus.hidden = true
+  if (!existingPrompt)
+    refreshStatus.hidden = true
 
   content.append(title, description)
   if (copy.diagnostic && copy.detailLabels) {
@@ -836,11 +852,16 @@ export function showRefreshPrompt(...args: unknown[]): void {
     content.append(details)
   }
   header.append(content)
-  actions.append(laterButton, refreshAllButton, refreshButton)
-  prompt.append(header, actions, refreshStatus)
-  shadow.append(style, prompt)
+  if (existingPrompt) {
+    prompt.querySelector('.header')!.replaceWith(header)
+  }
+  else {
+    actions.append(laterButton, refreshAllButton, refreshButton)
+    prompt.append(header, actions, refreshStatus)
+    shadow.append(style, prompt)
+    document.documentElement.appendChild(host)
+  }
   bindRefreshAll(host)
-  document.documentElement.appendChild(host)
 }
 
 function canShowRefreshPrompt(): boolean {
