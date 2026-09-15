@@ -142,7 +142,7 @@ async function resolveSearchWallpaper(signal: AbortSignal) {
   }
 }
 
-// 设置同步会替换整个 settings 对象；逐项比较，避免无关设置触发大图重复加载、解码。
+// 逐项监听壁纸来源和缓存时间，避免无关设置触发大图重复加载、解码。
 watch([() => settings.value.wallpaper, () => settings.value.wallpaperCacheTime], ([, newCacheTime], oldValue, onCleanup) => {
   const controller = new AbortController()
   onCleanup(() => controller.abort())

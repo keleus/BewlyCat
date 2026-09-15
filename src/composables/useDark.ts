@@ -125,9 +125,7 @@ export function useDark() {
   })
   const isDark = computed(() => currentAppColorScheme.value === 'dark' || isVideoPageDark.value)
 
-  // Apply appearance only when an effective theme input changes. The settings
-  // adapter replaces its object on every write, so a getter returning an array
-  // would otherwise fire for unrelated settings as well.
+  // Apply appearance only when an effective theme input changes.
   watch(
     [
       isDark,

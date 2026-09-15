@@ -1,5 +1,5 @@
 import type { MaybeRef } from 'vue'
-import { getCurrentScope, isProxy, onScopeDispose, ref, toRaw, toValue, watch } from 'vue'
+import { computed, getCurrentScope, isProxy, onScopeDispose, reactive, toRaw, toValue, watch } from 'vue'
 import browser from 'webextension-polyfill'
 
 import type { StorageRef } from '~/composables/useStorageLocal'
@@ -23,6 +23,7 @@ import {
 interface UseSettingsStorageOptions<T> {
   onError?: (error: unknown) => void
   onReady?: (value: T) => void
+  normalize?: (value: T) => void
 }
 
 const MAX_MESSAGE_ATTEMPTS = 5
@@ -94,7 +95,12 @@ export function useSettingsStorage<T extends object>(
   options: UseSettingsStorageOptions<T> = {},
 ): StorageRef<T> {
   const defaults = cloneValue(toValue(initialValue))
-  const data = ref(cloneValue(defaults)) as StorageRef<T>
+  const state = reactive(cloneValue(defaults)) as T
+  // 保持根对象引用稳定；整份导入/重置也只通知实际变化的设置项。
+  const data = computed({
+    get: () => state,
+    set: (value: T | null | undefined) => writeLocalValue(value ?? defaults),
+  }) as StorageRef<T>
   const onError = options.onError ?? ((error: unknown) => console.error(error))
 
   let applyingCanonicalValue = false
@@ -113,6 +119,24 @@ export function useSettingsStorage<T extends object>(
   let storageGeneration = 0
   let readInFlightGeneration: number | null = null
 
+  function updateReactiveValue(value: T) {
+    const normalizedValue = cloneValue(value)
+    // 在普通快照上完成迁移，避免组件看到未迁移值以及迁移产生的中间状态。
+    options.normalize?.(normalizedValue)
+    const patch = createTopLevelSettingsStoragePatch(asRecord(state), asRecord(normalizedValue))
+
+    applyingCanonicalValue = true
+    try {
+      for (const key of patch.remove)
+        Reflect.deleteProperty(state, key)
+      for (const [key, next] of Object.entries(patch.set))
+        asRecord(state)[key] = next
+    }
+    finally {
+      applyingCanonicalValue = false
+    }
+  }
+
   const renderCanonicalValue = () => {
     let nextValue = canonicalValue
     if (inFlightPatch)
@@ -120,9 +144,7 @@ export function useSettingsStorage<T extends object>(
     nextValue = applySettingsStoragePatch(nextValue, queuedPatch)
     const renderedValue = asRecord(cloneValue(nextValue))
 
-    applyingCanonicalValue = true
-    data.value = cloneValue(renderedValue) as T
-    applyingCanonicalValue = false
+    updateReactiveValue(renderedValue as T)
 
     const actualValue = asRecord(cloneValue(data.value))
     const derivedPatch = createTopLevelSettingsStoragePatch(renderedValue, actualValue)
@@ -148,7 +170,7 @@ export function useSettingsStorage<T extends object>(
     renderCanonicalValue()
   }
 
-  const resetStorageGeneration = (epoch: string) => {
+  const resetStorageGeneration = (epoch: string, renderDefaults = true) => {
     storageGeneration++
     currentEpoch = epoch
     canonicalRevision = 0
@@ -157,7 +179,8 @@ export function useSettingsStorage<T extends object>(
     queuedPatch = createEmptySettingsStoragePatch()
     inFlightPatch = null
     persistenceReady = epoch.length > 0
-    renderCanonicalValue()
+    if (renderDefaults)
+      renderCanonicalValue()
   }
 
   const sendWithRetry = async <R>(type: string, payload: unknown, generation: number): Promise<R> => {
@@ -209,7 +232,7 @@ export function useSettingsStorage<T extends object>(
       if (generation !== storageGeneration)
         return
       if (!response.accepted || response.epoch !== currentEpoch) {
-        resetStorageGeneration(response.epoch)
+        resetStorageGeneration(response.epoch, false)
         persistenceReady = true
         applyCanonicalValue(response.storedValue, response.revision, true)
         void flushQueuedPatch()
@@ -232,21 +255,24 @@ export function useSettingsStorage<T extends object>(
     }
   }
 
+  function writeLocalValue(value: T) {
+    if (applyingCanonicalValue)
+      return
+
+    updateReactiveValue(value)
+    const nextValue = asRecord(cloneValue(state))
+    const patch = createTopLevelSettingsStoragePatch(observedValue, nextValue)
+    observedValue = nextValue
+    if (isSettingsStoragePatchEmpty(patch))
+      return
+
+    queuedPatch = mergeSettingsStoragePatches(queuedPatch, patch)
+    void flushQueuedPatch()
+  }
+
   watch(
     data,
-    () => {
-      if (applyingCanonicalValue)
-        return
-
-      const nextValue = asRecord(cloneValue(data.value))
-      const patch = createTopLevelSettingsStoragePatch(observedValue, nextValue)
-      observedValue = nextValue
-      if (isSettingsStoragePatchEmpty(patch))
-        return
-
-      queuedPatch = mergeSettingsStoragePatches(queuedPatch, patch)
-      void flushQueuedPatch()
-    },
+    () => writeLocalValue(state),
     { deep: true, flush: 'sync' },
   )
 
@@ -274,7 +300,7 @@ export function useSettingsStorage<T extends object>(
 
       const epochChanged = currentEpoch.length > 0 && response.epoch !== currentEpoch
       if (epochChanged)
-        resetStorageGeneration(response.epoch)
+        resetStorageGeneration(response.epoch, false)
       else
         currentEpoch = response.epoch
 
@@ -313,7 +339,7 @@ export function useSettingsStorage<T extends object>(
     const meta = metaChange ? normalizeSettingsStorageWriteMeta(metaChange.newValue) : null
     const epochChanged = Boolean(meta?.epoch && currentEpoch && meta.epoch !== currentEpoch)
     if (epochChanged)
-      resetStorageGeneration(meta!.epoch)
+      resetStorageGeneration(meta!.epoch, !settingsChange)
     else if (meta?.epoch && !currentEpoch)
       currentEpoch = meta.epoch
 

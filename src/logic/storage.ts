@@ -1,4 +1,3 @@
-import { watch } from 'vue'
 import browser from 'webextension-polyfill'
 
 import { useSettingsStorage } from '~/composables/useSettingsStorage'
@@ -897,11 +896,7 @@ export const settingsReady = new Promise<Settings>((resolve) => {
 
 export const settings = useSettingsStorage(originalSettings, {
   onReady: value => resolveSettingsReady(value),
-})
-
-watch(
-  () => settings.value,
-  (value) => {
+  normalize: (value) => {
     const record = value as Record<string, any>
 
     if (typeof record.enableFavoriteCoverBlur === 'boolean') {
@@ -1236,12 +1231,11 @@ watch(
         }
 
         // 只更新 gridColumns 字段，不覆盖整个 settings
-        settings.value = { ...settings.value, gridColumns: migratedGridColumns }
+        settings.value.gridColumns = migratedGridColumns
       })
     }
   },
-  { immediate: true },
-)
+})
 
 void browser.storage.local.remove(['gridBreakpoints']).catch(() => {})
 

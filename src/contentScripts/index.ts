@@ -1520,50 +1520,47 @@ else if (shouldInitializeContentScript) {
     () => syncRandomPlayUI(),
   )
 
-  // 监听设置变化
-  watch(settings, (newSettings, oldSettings) => {
-    sendSettingsToPage(newSettings)
+  // 只追踪网页脚本实际使用的字段，避免无关设置更新触发通信及评论重新处理。
+  watch(() => createPageSettingsPayload(settings.value), sendSettingsToPage)
 
-    // 监听自动播放设置变化
-    if (isCustomPlayPage()) {
-    // 检查自动播放相关设置是否发生变化
-      const autoPlaySettingsChanged = oldSettings && (
-        newSettings.useBilibiliDefaultAutoPlay !== oldSettings.useBilibiliDefaultAutoPlay
-        || newSettings.autoPlayMultipart !== oldSettings.autoPlayMultipart
-        || newSettings.autoPlayCollection !== oldSettings.autoPlayCollection
-        || newSettings.autoPlayRecommend !== oldSettings.autoPlayRecommend
-        || newSettings.autoPlayWatchLater !== oldSettings.autoPlayWatchLater
-        || newSettings.autoPlayPlaylist !== oldSettings.autoPlayPlaylist
-      )
+  // 深度 watch 的新旧值会共用同一对象；逐项监听才能识别原地修改。
+  watch(
+    [
+      () => settings.value.useBilibiliDefaultAutoPlay,
+      () => settings.value.autoPlayMultipart,
+      () => settings.value.autoPlayCollection,
+      () => settings.value.autoPlayRecommend,
+      () => settings.value.autoPlayWatchLater,
+      () => settings.value.autoPlayPlaylist,
+    ],
+    () => {
+      if (!isCustomPlayPage())
+        return
 
-      if (autoPlaySettingsChanged) {
-        cancelNativeVideoHeaderTask(applyEndPlaybackBehavior)
-        clearTimeout(playbackSettingsTimer)
-        playbackSettingsTimer = setTimeout(() => {
-          playbackSettingsTimer = undefined
-          runWhenNativeVideoHeaderStable(applyEndPlaybackBehavior)
-        }, 1000)
-      }
+      cancelNativeVideoHeaderTask(applyEndPlaybackBehavior)
+      clearTimeout(playbackSettingsTimer)
+      playbackSettingsTimer = setTimeout(() => {
+        playbackSettingsTimer = undefined
+        runWhenNativeVideoHeaderStable(applyEndPlaybackBehavior)
+      }, 1000)
+    },
+  )
+
+  watch(() => settings.value.externalWatchLaterButton, (enabled) => {
+    if (!isVideoPage())
+      return
+
+    watchLaterButtonAdded = false
+    if (enabled) {
+      scheduleAddWatchLaterButton()
     }
-
-    // 监听稍后再看按钮外置设置变化
-    if (isVideoPage() && oldSettings) {
-      if (newSettings.externalWatchLaterButton !== oldSettings.externalWatchLaterButton) {
-        if (newSettings.externalWatchLaterButton) {
-        // 启用稍后再看按钮
-          watchLaterButtonAdded = false // 重置标志
-          scheduleAddWatchLaterButton()
-        }
-        else {
-        // 移除稍后再看按钮，并取消尚未完成的挂载等待
-          import('~/utils/watchLaterButton')
-            .then(({ removeWatchLaterButton }) => removeWatchLaterButton())
-            .catch(err => console.error('移除稍后再看按钮失败:', err))
-          watchLaterButtonAdded = false
-        }
-      }
+    else {
+      // 移除稍后再看按钮，并取消尚未完成的挂载等待。
+      import('~/utils/watchLaterButton')
+        .then(({ removeWatchLaterButton }) => removeWatchLaterButton())
+        .catch(err => console.error('移除稍后再看按钮失败:', err))
     }
-  }, { deep: true })
+  })
 
   // 监听来自网页环境的请求
   window.addEventListener('message', (event) => {
