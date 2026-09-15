@@ -1,5 +1,6 @@
-import { ref, watch, watchEffect } from 'vue'
+import { onScopeDispose, ref, watch, watchEffect } from 'vue'
 
+import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { useUserRelationStore } from '~/stores/userRelationStore'
 
 export interface UserRelation {
@@ -14,16 +15,32 @@ export interface UserRelation {
 export function useUserRelations() {
   const userRelations = ref<Record<number, UserRelation>>({})
   const relationStore = useUserRelationStore()
+  const requestedMids = ref<number[]>([])
+  const { active } = useUserRelationScope(requestedMids, requestedMids)
 
   watch(() => relationStore.accountMid, () => {
     userRelations.value = {}
   }, { flush: 'sync' })
   watchEffect(() => {
-    for (const [mid, state] of Object.entries(userRelations.value)) {
-      const following = relationStore.getFollowing(Number(mid))
-      if (following !== undefined)
-        state.isFollowing = following
+    const next: Record<number, UserRelation> = {}
+    if (active.value && relationStore.accountMid) {
+      for (const mid of requestedMids.value) {
+        const following = relationStore.getFollowing(mid)
+        const state = userRelations.value[mid]
+          ?? (following === undefined ? undefined : { isFollowing: following, isLoading: false })
+        if (state) {
+          // 查询尚未完成时也保留当前用户操作及其 loading 状态。
+          if (following !== undefined)
+            state.isFollowing = following
+          next[mid] = state
+        }
+      }
     }
+    userRelations.value = next
+  }, { flush: 'sync' })
+  onScopeDispose(() => {
+    requestedMids.value = []
+    userRelations.value = {}
   })
 
   /**
@@ -31,20 +48,9 @@ export function useUserRelations() {
    * @param mids 用户 mid 数组
    */
   async function batchQueryUserRelations(mids: number[]) {
-    const accountMid = relationStore.accountMid
-    await relationStore.queryRelations(mids)
-    if (accountMid !== relationStore.accountMid)
-      return
-    for (const mid of mids) {
-      const isFollowing = relationStore.getFollowing(mid)
-      if (isFollowing !== undefined) {
-        const current = userRelations.value[mid]
-        if (current)
-          current.isFollowing = isFollowing
-        else
-          userRelations.value[mid] = { isFollowing, isLoading: false }
-      }
-    }
+    requestedMids.value = [...new Set(mids)]
+    if (active.value)
+      await relationStore.queryRelations(requestedMids.value)
   }
 
   /**
@@ -57,12 +63,6 @@ export function useUserRelations() {
       return
     if (userRelations.value[mid]) {
       userRelations.value[mid].isFollowing = isFollowing
-    }
-    else {
-      userRelations.value[mid] = {
-        isFollowing,
-        isLoading: false,
-      }
     }
   }
 
@@ -87,6 +87,7 @@ export function useUserRelations() {
    * 重置所有用户关系状态
    */
   function reset() {
+    requestedMids.value = []
     userRelations.value = {}
   }
 

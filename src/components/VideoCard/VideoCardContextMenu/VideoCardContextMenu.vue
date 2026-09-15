@@ -3,6 +3,7 @@ import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { settings } from '~/logic'
 import type { VideoCardContextMenuKey } from '~/logic/storage'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
@@ -127,6 +128,10 @@ const getVideoType = inject<() => string>('getVideoType')!
 
 const { t } = useI18n()
 const userRelationStore = useUserRelationStore()
+useUserRelationScope(() => {
+  const mid = getAuthorMid()
+  return mid ? [mid] : []
+})
 const videoOptions = computed(() => [
   { id: 1, key: 'notInterested' as const, name: t('video_card.operation.not_interested') },
   { id: 2, key: 'notInterestedUploader' as const, name: t('video_card.operation.not_interested_uploader') },

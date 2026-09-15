@@ -8,6 +8,7 @@ import type { CardWindowSnapshot } from '~/composables/useCardWindow'
 import { useCardWindow } from '~/composables/useCardWindow'
 import { useGridLayout } from '~/composables/useGridLayout'
 import { useHomeTabViewState } from '~/composables/useHomeTabState'
+import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { useVideoCardShadowStyle } from '~/composables/useVideoCardShadowStyle'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
@@ -1167,10 +1168,7 @@ const relationQueryMids = computed(() => {
   return [...mids]
 })
 
-watch([() => userRelationStore.accountMid, relationQueryMids], ([accountMid, mids]) => {
-  if (accountMid && mids.length)
-    void userRelationStore.queryRelations(mids)
-}, { immediate: true, flush: 'post' })
+useUserRelationScope(relationQueryMids, relationQueryMids)
 
 // 处理登录
 function handleLogin() {

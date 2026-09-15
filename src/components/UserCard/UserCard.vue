@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import ALink from '~/components/ALink.vue'
 import UserAvatarLink from '~/components/UserCard/UserAvatarLink.vue'
+import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { useUserRelationStore } from '~/stores/userRelationStore'
 import api from '~/utils/api'
 import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON } from '~/utils/lvIcons'
@@ -43,6 +44,7 @@ const emit = defineEmits<{
 }>()
 const { locale, t } = useI18n()
 const userRelationStore = useUserRelationStore()
+useUserRelationScope(() => [props.mid])
 
 interface UserSample {
   id: string

@@ -72,6 +72,7 @@ const {
   userRelations,
   batchQueryUserRelations,
   updateUserRelation,
+  reset: resetUserRelations,
 } = useUserRelations()
 
 // 搜索请求管理
@@ -397,13 +398,12 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     results.value = normalizedData
   }
 
-  if (Array.isArray(results.value?.result)) {
-    const userSection = results.value.result.find((s: any) => s?.result_type === 'bili_user')
-    if (userSection && Array.isArray(userSection.data)) {
-      const mids = userSection.data.map((u: any) => u.mid).filter(Boolean)
-      await batchQueryUserRelations(mids)
-    }
-  }
+  const userSection = Array.isArray(results.value?.result)
+    ? results.value.result.find((s: any) => s?.result_type === 'bili_user')
+    : undefined
+  await batchQueryUserRelations(Array.isArray(userSection?.data)
+    ? userSection.data.map((u: any) => u.mid).filter(Boolean)
+    : [])
 
   const fallbackLength = incomingSections.reduce((sum: number, section: any) => {
     if (Array.isArray(section?.data))
@@ -576,13 +576,12 @@ async function handlePageChange(page: number) {
 
   results.value = normalizedData
 
-  if (Array.isArray(results.value?.result)) {
-    const userSection = results.value.result.find((s: any) => s?.result_type === 'bili_user')
-    if (userSection && Array.isArray(userSection.data)) {
-      const mids = userSection.data.map((u: any) => u.mid).filter(Boolean)
-      await batchQueryUserRelations(mids)
-    }
-  }
+  const userSection = Array.isArray(results.value?.result)
+    ? results.value.result.find((s: any) => s?.result_type === 'bili_user')
+    : undefined
+  await batchQueryUserRelations(Array.isArray(userSection?.data)
+    ? userSection.data.map((u: any) => u.mid).filter(Boolean)
+    : [])
 
   const fallbackLength = incomingSections.reduce((sum: number, section: any) => {
     if (Array.isArray(section?.data))
@@ -598,6 +597,7 @@ async function handlePageChange(page: number) {
 }
 
 function resetAll() {
+  resetUserRelations()
   resetSearch()
   resetPagination()
   resetLoadMore()

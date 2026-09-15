@@ -46,6 +46,7 @@ const {
   userRelations,
   batchQueryUserRelations,
   updateUserRelation,
+  reset: resetUserRelations,
 } = useUserRelations()
 
 // 搜索请求管理
@@ -289,6 +290,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     liveUserTotalResults.value = totalResults.value
   }
   else if (props.filters.subCategory === 'live_room') {
+    resetUserRelations()
     // 直播间搜索：尝试嵌套结构和扁平结构
     const incomingList = Array.isArray(rawData?.result?.live_room)
       ? rawData.result.live_room
@@ -474,6 +476,7 @@ async function handlePageChange(page: number) {
     liveUserTotalResults.value = totalResults.value
   }
   else if (props.filters.subCategory === 'live_room') {
+    resetUserRelations()
     // 直播间搜索：尝试嵌套结构和扁平结构
     const incomingList = Array.isArray(rawData?.result?.live_room)
       ? rawData.result.live_room
@@ -588,6 +591,7 @@ async function refreshLiveRoomsOnly() {
 }
 
 function resetAll() {
+  resetUserRelations()
   resetSearch()
   resetPagination()
   resetLoadMore()

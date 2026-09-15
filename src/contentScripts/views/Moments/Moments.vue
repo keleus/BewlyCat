@@ -4,7 +4,6 @@ import { useToast } from 'vue-toastification'
 
 import Dialog from '~/components/Dialog.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
-import { createCommentPreview } from '~/components/MomentCard/commentPreview'
 import { isMomentLotteryUrl } from '~/components/MomentCard/lottery'
 import MomentCard from '~/components/MomentCard/MomentCard.vue'
 import MomentLotteryDialog from '~/components/MomentCard/MomentLotteryDialog.vue'
@@ -254,16 +253,6 @@ const enteringCardIds = reactive(new Set<string>())
 const revealedCardIds = new Set<string>()
 const cardEnterTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const cardElements = new Map<string, HTMLElement>()
-// 虚拟列表卸载卡片后，仍保留展开状态、已加载评论和内部滚动位置。
-const commentPreviews = new WeakMap<DisplayMoment, ReturnType<typeof createCommentPreview>>()
-function getCommentPreview(moment: DisplayMoment) {
-  let preview = commentPreviews.get(moment)
-  if (!preview) {
-    preview = createCommentPreview()
-    commentPreviews.set(moment, preview)
-  }
-  return preview
-}
 interface VirtualColumn {
   topPad: number
   bottomPad: number
@@ -4453,7 +4442,6 @@ watch(
               <MomentCard
                 v-for="moment in column.items" :key="moment.id"
                 :moment="moment"
-                :comment-preview="getCommentPreview(moment)"
                 :card-width="gridCardWidth"
                 :image-ratio="coverRatios[moment.id]"
                 :ready="readyCardIds.has(moment.id)"

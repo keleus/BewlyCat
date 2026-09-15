@@ -2,6 +2,7 @@
 import { computed, ref, watchEffect } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { useVideoCardSharedStyles } from '~/composables/useVideoCardSharedStyles'
 import { settings } from '~/logic'
 import type { VideoCardLayoutSetting } from '~/logic/storage'
@@ -49,6 +50,12 @@ const showMoreButton = computed(() =>
   && settings.value.showVideoCardMoreButton
   && settings.value.videoCardContextMenuConfig.some(item => item.visible),
 )
+
+// 包括接口自带关注状态的卡片，保留同屏关注操作的共享结果。
+useUserRelationScope(() => {
+  const author = Array.isArray(props.video?.author) ? props.video.author[0] : props.video?.author
+  return showMoreButton.value && author?.mid ? [author.mid] : []
+})
 
 // 数据现在在转换阶段已经完成 HTML 解码，直接使用 props
 const logic = useVideoCardLogic(props, props.persistentState)

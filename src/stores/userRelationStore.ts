@@ -30,6 +30,7 @@ export const useUserRelationStore = defineStore('userRelations', () => {
   const relations = shallowReactive(new Map<number, RelationEntry>())
   const pending = new Map<number, RelationQuery>()
   const retryAfter = new Map<number, number>()
+  const consumers = new Map<number, number>()
   let generation = 0
   let timer: ReturnType<typeof setTimeout> | undefined
   let draining = false
@@ -38,7 +39,6 @@ export const useUserRelationStore = defineStore('userRelations', () => {
     const mid = topBar.isLogin ? parseDedeUserID(document.cookie) : undefined
     if (mid !== accountMid.value) {
       generation++
-      accountMid.value = mid
       relations.clear()
       retryAfter.clear()
       clearTimeout(timer)
@@ -46,6 +46,7 @@ export const useUserRelationStore = defineStore('userRelations', () => {
       for (const query of pending.values())
         query.resolve()
       pending.clear()
+      accountMid.value = mid
     }
     return mid
   }
@@ -62,9 +63,37 @@ export const useUserRelationStore = defineStore('userRelations', () => {
     if (!syncAccount() || accountMid.value !== expectedAccount || !Number.isSafeInteger(mid) || mid <= 0 || mid === accountMid.value)
       return false
     // 替换对象，使正在进行的旧查询无法覆盖操作成功后的状态。
-    relations.set(mid, { following, updatedAt: Date.now() })
+    if (consumers.has(mid))
+      relations.set(mid, { following, updatedAt: Date.now() })
     retryAfter.delete(mid)
     return true
+  }
+
+  /** 只保留仍被加载窗口、卡片或菜单使用的关系；释放函数可以重复调用。 */
+  function retainRelations(mids: number[]) {
+    const retained = new Set(mids.filter(mid => Number.isSafeInteger(mid) && mid > 0))
+    for (const mid of retained)
+      consumers.set(mid, (consumers.get(mid) ?? 0) + 1)
+    return () => {
+      for (const mid of retained) {
+        const count = (consumers.get(mid) ?? 1) - 1
+        if (count > 0) {
+          consumers.set(mid, count)
+          continue
+        }
+        consumers.delete(mid)
+        relations.delete(mid)
+        retryAfter.delete(mid)
+        const query = pending.get(mid)
+        pending.delete(mid)
+        query?.resolve()
+      }
+      retained.clear()
+      if (!pending.size) {
+        clearTimeout(timer)
+        timer = undefined
+      }
+    }
   }
 
   function scheduleQuery() {
@@ -109,8 +138,10 @@ export const useUserRelationStore = defineStore('userRelations', () => {
           }
 
           for (const query of chunk) {
-            if (relations.get(query.mid) !== query.previous)
+            if (pending.get(query.mid) !== query || !consumers.has(query.mid)
+              || relations.get(query.mid) !== query.previous) {
               continue
+            }
             // 接口只返回已关注的用户；成功响应中缺席的 mid 表示未关注。
             const attribute = Object.prototype.hasOwnProperty.call(data, query.mid)
               ? data[query.mid]?.attribute
@@ -124,8 +155,10 @@ export const useUserRelationStore = defineStore('userRelations', () => {
         }
         catch (error) {
           if (syncAccount() === requestAccount && generation === requestGeneration) {
-            for (const query of chunk)
-              retryAfter.set(query.mid, Date.now() + RETRY_DELAY)
+            for (const query of chunk) {
+              if (pending.get(query.mid) === query && consumers.has(query.mid))
+                retryAfter.set(query.mid, Date.now() + RETRY_DELAY)
+            }
             console.error('批量查询用户关系失败:', error)
           }
         }
@@ -152,7 +185,7 @@ export const useUserRelationStore = defineStore('userRelations', () => {
     const now = Date.now()
     const promises: Promise<void>[] = []
     for (const mid of new Set(mids)) {
-      if (!Number.isSafeInteger(mid) || mid <= 0 || mid === currentAccount)
+      if (!Number.isSafeInteger(mid) || mid <= 0 || mid === currentAccount || !consumers.has(mid))
         continue
       const cached = relations.get(mid)
       if (cached && now - cached.updatedAt < CACHE_MAX_AGE)
@@ -175,5 +208,5 @@ export const useUserRelationStore = defineStore('userRelations', () => {
     await Promise.all(promises)
   }
 
-  return { accountMid, getFollowing, setFollowing, queryRelations }
+  return { accountMid, getFollowing, setFollowing, queryRelations, retainRelations }
 })

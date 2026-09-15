@@ -1,3 +1,4 @@
+import { onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
@@ -8,18 +9,31 @@ import type { CommentPageData, CommentPreviewState, CommentSort, CommentTarget, 
 import { isCommentPageDone, mergeComments, normalizeComments } from './commentPreview'
 import type { DisplayMoment } from './types'
 
-// 状态由动态页按卡片保存；请求可在虚拟列表卸载卡片后完成。
+// 评论收起或卡片卸载后清空数据，并忽略尚未完成的请求。
 export function useMomentComments(moment: DisplayMoment, state: CommentPreviewState) {
   const { t } = useI18n()
   const toast = useToast()
+  let disposed = false
+  onScopeDispose(() => {
+    disposed = true
+    state.comments = []
+    state.target = undefined
+    state.page = 0
+    state.loading = false
+    state.error = ''
+    state.done = false
+    state.scrollTop = 0
+  })
 
-  async function resolveTarget(): Promise<CommentTarget> {
+  async function resolveTarget(): Promise<CommentTarget | undefined> {
     if (state.target)
       return state.target
     if (moment.commentTarget)
       return (state.target = moment.commentTarget)
     // 缺少 basic 时向当前动态详情补取，不能用动态 id 猜相簿、视频或专栏的 oid。
     const response = await api.moment.getMomentDetail({ id: moment.id })
+    if (disposed)
+      return
     const basic = response?.data?.item?.basic
     if (response?.code !== 0 || !basic?.comment_id_str || !(Number(basic.comment_type) > 0))
       throw new Error(t('moment_card.comments_unavailable'))
@@ -28,14 +42,18 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
   }
 
   async function loadComments() {
-    if (state.loading || state.done)
+    if (disposed || !state.expanded || state.loading || state.done)
       return
     state.loading = true
     state.error = ''
     try {
       const target = await resolveTarget()
+      if (disposed || !target)
+        return
       const page = state.page + 1
       const response = await api.moment.getMomentComments({ ...target, pn: page, sort: state.sort })
+      if (disposed)
+        return
       if (response?.code !== 0 || !response.data)
         throw new Error(response?.message || t('moment_card.comments_load_failed'))
       const data = response.data as CommentPageData
@@ -44,15 +62,17 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
       state.done = isCommentPageDone(data, page)
     }
     catch (error) {
-      state.error = error instanceof Error ? error.message : t('moment_card.comments_load_failed')
+      if (!disposed)
+        state.error = error instanceof Error ? error.message : t('moment_card.comments_load_failed')
     }
     finally {
-      state.loading = false
+      if (!disposed)
+        state.loading = false
     }
   }
 
   async function changeSort(sort: CommentSort) {
-    if (state.loading || state.sort === sort)
+    if (disposed || state.loading || state.sort === sort)
       return
     state.sort = sort
     state.comments = []
@@ -64,13 +84,15 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
   }
 
   async function loadReplies(root: PreviewComment) {
-    if (root.repliesLoading || root.repliesDone || !state.target)
+    if (disposed || root.repliesLoading || root.repliesDone || !state.target)
       return
     root.repliesLoading = true
     root.repliesError = ''
     try {
       const page = root.replyPage + 1
       const response = await api.moment.getMomentCommentReplies({ ...state.target, root: root.id, pn: page })
+      if (disposed)
+        return
       if (response?.code !== 0 || !response.data)
         throw new Error(response?.message || t('moment_card.comments_load_failed'))
       const data = response.data as CommentPageData
@@ -83,14 +105,18 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
         root.replyCount = Math.max(0, Number(data.page.count) || 0)
     }
     catch (error) {
-      root.repliesError = error instanceof Error ? error.message : t('moment_card.comments_load_failed')
+      if (!disposed)
+        root.repliesError = error instanceof Error ? error.message : t('moment_card.comments_load_failed')
     }
     finally {
-      root.repliesLoading = false
+      if (!disposed)
+        root.repliesLoading = false
     }
   }
 
   function toggleReplies(root: PreviewComment) {
+    if (disposed)
+      return
     root.repliesExpanded = !root.repliesExpanded
     root.collapsed = false
     if (root.repliesExpanded) {
@@ -100,7 +126,7 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
   }
 
   async function toggleLike(comment: PreviewComment) {
-    if (comment.liking || !state.target)
+    if (disposed || comment.liking || !state.target)
       return
     const csrf = getCSRF()
     if (!csrf || !getUserID()) {
@@ -116,21 +142,25 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
         action: liked ? 1 : 0,
         csrf,
       })
+      if (disposed)
+        return
       if (response?.code !== 0)
         throw new Error(response?.message || t('moment_card.comment_like_failed'))
       comment.liked = liked
       comment.likeCount = Math.max(0, comment.likeCount + (liked ? 1 : -1))
     }
     catch (error) {
-      toast.error(error instanceof Error ? error.message : t('moment_card.comment_like_failed'))
+      if (!disposed)
+        toast.error(error instanceof Error ? error.message : t('moment_card.comment_like_failed'))
     }
     finally {
-      comment.liking = false
+      if (!disposed)
+        comment.liking = false
     }
   }
 
   function saveScrollPosition(scrollTop: number) {
-    if (state.expanded)
+    if (!disposed && state.expanded)
       state.scrollTop = scrollTop
   }
 

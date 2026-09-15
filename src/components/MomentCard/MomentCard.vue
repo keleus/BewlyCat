@@ -6,13 +6,13 @@ import { useI18n } from 'vue-i18n'
 
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { settings } from '~/logic'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 
 import type { Author, Video } from '../VideoCard/types'
 import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
-import type { CommentPreviewState } from './commentPreview'
-import { toggleCommentPreview } from './commentPreview'
+import { createCommentPreview, toggleCommentPreview } from './commentPreview'
 import { isMomentLotteryUrl } from './lottery'
 import MomentComments from './MomentComments.vue'
 import MomentImageGallery from './MomentImageGallery.vue'
@@ -42,7 +42,6 @@ import {
 
 interface Props {
   moment: DisplayMoment
-  commentPreview: CommentPreviewState
   cardWidth?: number
   imageRatio?: number
   ready?: boolean
@@ -57,7 +56,6 @@ interface Props {
 
 const {
   moment,
-  commentPreview,
   cardWidth = 520,
   imageRatio,
   ready = false,
@@ -89,6 +87,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { mainAppRef } = useBewlyApp()
+// 评论只由当前挂载的卡片持有，离开虚拟窗口后不随动态列表常驻。
+const commentPreview = createCommentPreview()
+useUserRelationScope(() => [Number(moment.author.mid)])
 
 const cardLayoutStyles = computed<CSSProperties>(() => {
   const scale = Math.max(1, cardWidth / 520)
@@ -1359,8 +1360,7 @@ function handleAdditionalClick(event: MouseEvent) {
         @sent="repostCount++; repostExpanded = false"
       />
       <MomentComments
-        v-if="commentPreview.opened"
-        v-show="commentPreview.expanded"
+        v-if="commentPreview.expanded"
         :id="commentsId"
         :moment="moment"
         :state="commentPreview"

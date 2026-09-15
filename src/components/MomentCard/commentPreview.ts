@@ -64,7 +64,6 @@ export type CommentSort = 0 | 1
 export interface CommentPreviewState {
   sort: CommentSort
   expanded: boolean
-  opened: boolean
   target?: CommentTarget
   comments: PreviewComment[]
   page: number
@@ -78,7 +77,6 @@ export function createCommentPreview(): CommentPreviewState {
   return reactive({
     sort: 0,
     expanded: false,
-    opened: false,
     comments: [],
     page: 0,
     loading: false,
@@ -90,7 +88,6 @@ export function createCommentPreview(): CommentPreviewState {
 
 export function toggleCommentPreview(state: CommentPreviewState) {
   state.expanded = !state.expanded
-  state.opened = true
 }
 
 function safeImageUrl(value?: string) {
