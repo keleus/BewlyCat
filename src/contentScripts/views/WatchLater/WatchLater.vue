@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { useDateFormat } from '@vueuse/core'
+import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Icon from '~/components/Icon.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import type { Video } from '~/components/VideoCard/types'
 import { getAuthorJumpUrl } from '~/components/VideoCard/utils'
+import VideoCardContextMenu from '~/components/VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
@@ -15,14 +17,38 @@ import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLa
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
+import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import { getCSRF, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 import { getWatchLaterAuthor } from '~/utils/watchLater'
 
 const { t } = useI18n()
 const { confirm: showConfirmDialog } = useConfirmDialog()
-const { openIframeDrawer } = useBewlyApp()
+const { openIframeDrawer, mainAppRef } = useBewlyApp()
 const topBarStore = useTopBarStore()
+
+provide('getVideoType', () => 'common')
+
+const moreMenuItem = ref<VideoItem | null>(null)
+const moreMenuTrigger = ref<HTMLButtonElement | null>(null)
+const moreMenuStyles = ref<CSSProperties>({})
+const showMoreButton = computed(() => settings.value.showVideoCardMoreButton
+  && settings.value.videoCardContextMenuConfig.some(item => item.visible))
+
+function openMoreMenu(item: VideoItem, event: MouseEvent) {
+  const trigger = event.currentTarget as HTMLButtonElement
+  const position = computeFloatingMenuPosition(trigger.getBoundingClientRect(), window.innerWidth, window.innerHeight)
+  moreMenuTrigger.value = trigger
+  moreMenuStyles.value = {
+    position: 'fixed',
+    top: position.top,
+    bottom: position.bottom,
+    left: `${position.left}px`,
+    width: `${position.width}px`,
+    maxHeight: `${position.maxHeight}px`,
+  }
+  moreMenuItem.value = item
+}
 
 const isLoading = ref<boolean>()
 const noMoreContent = ref<boolean>()
@@ -54,6 +80,7 @@ onMounted(() => {
 })
 
 async function initData() {
+  moreMenuItem.value = null
   isLoading.value = false
   noMoreContent.value = false
   currentWatchLaterList.value.length = 0
@@ -88,6 +115,7 @@ function handleListReachBottom() {
 
 // 列表模式使用全局滚动触底加载；grid 模式由 VideoCardGrid 内部哨兵触发
 watch(watchLaterLayout, (layout) => {
+  moreMenuItem.value = null
   handleReachBottom.value = layout === 'list' ? handleListReachBottom : undefined
 }, { immediate: true })
 
@@ -264,7 +292,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 
 <template>
   <div v-if="getCSRF()" flex="~ col md:row lg:row items-stretch" gap-4>
-    <main w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" mb-6>
+    <main min-w-0 w="full md:60% lg:70% xl:75%" order="2 md:1 lg:1" mb-6>
       <div flex="~ items-center justify-between gap-4" mb-6>
         <h3 class="bew-page-heading" text="$bew-text-1">
           {{ t('watch_later.title') }} ({{ watchLaterCount }})
@@ -350,7 +378,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
               :key="item.aid"
               :href="`https://www.bilibili.com/video/${item.bvid}/`"
               type="videoCard"
-              class="group"
+              class="group watch-later-list-item"
               flex cursor-pointer
             >
               <section
@@ -419,8 +447,8 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                 </div>
 
                 <!-- Description -->
-                <div flex justify-between w-full h-full>
-                  <div flex="~ col">
+                <div class="watch-later-list-description">
+                  <div class="watch-later-list-details" flex="~ col">
                     <a
                       class="keep-two-lines"
                       overflow="hidden"
@@ -463,12 +491,14 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                     </p>
                   </div>
 
-                  <div flex items-center gap-1>
+                  <div class="watch-later-list-actions">
                     <Tooltip :content="t('watch_later.play_video')" placement="top">
                       <button
+                        :aria-label="t('watch_later.play_video')"
                         text="size-$bew-icon-size-lg $bew-text-3"
                         hover:color="$bew-theme-color"
-                        opacity-0 group-hover:opacity-100
+                        class="watch-later-list-action"
+                        type="button"
                         p-2
                         duration-300
                         @click.prevent.stop="handleOpenVideoPageAndRemove(index, item.bvid, item.aid)"
@@ -478,9 +508,11 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                     </Tooltip>
                     <Tooltip :content="t('watch_later.play_in_watch_later')" placement="top">
                       <button
+                        :aria-label="t('watch_later.play_in_watch_later')"
                         text="size-$bew-icon-size-lg $bew-text-3"
                         hover:color="$bew-theme-color"
-                        opacity-0 group-hover:opacity-100
+                        class="watch-later-list-action"
+                        type="button"
                         p-2
                         duration-300
                         @click.prevent.stop="handleLinkClick(`https://www.bilibili.com/list/watchlater?bvid=${item.bvid}`)"
@@ -490,14 +522,33 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                     </Tooltip>
                     <Tooltip :content="t('watch_later.remove_from_watch_later')" placement="top">
                       <button
+                        :aria-label="t('watch_later.remove_from_watch_later')"
                         text="size-$bew-icon-size-lg $bew-text-3"
                         hover:color="$bew-theme-color"
-                        opacity-0 group-hover:opacity-100
+                        class="watch-later-list-action"
+                        type="button"
                         p-2
                         duration-300
                         @click.prevent.stop="deleteWatchLaterItem(index, item.aid)"
                       >
                         <div i-tabler:trash />
+                      </button>
+                    </Tooltip>
+                    <Tooltip v-if="showMoreButton" :content="t('video_card.operation.more_options')" placement="top">
+                      <button
+                        type="button"
+                        class="watch-later-list-action"
+                        :class="{ 'watch-later-list-action--active': moreMenuItem?.aid === item.aid }"
+                        :aria-label="t('video_card.operation.more_options')"
+                        aria-haspopup="menu"
+                        :aria-expanded="moreMenuItem?.aid === item.aid"
+                        text="size-$bew-icon-size-lg $bew-text-3"
+                        hover:color="$bew-theme-color"
+                        p-2
+                        duration-300
+                        @click.prevent.stop="openMoreMenu(item, $event)"
+                      >
+                        <div i-mingcute:more-2-line />
                       </button>
                     </Tooltip>
                   </div>
@@ -523,20 +574,14 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
           'watch-later-sidebar-panel--cover': settings.enableSidebarCoverBlur,
           'bew-popover-surface bew-popover-surface--wallpaper': !settings.enableSidebarCoverBlur,
         }"
-        pos="sticky top-120px"
-        w-full h="230px md:[calc(100vh-160px)]"
-        my-10
-        rounded="$bew-radius"
-        overflow-hidden
       >
         <!-- Frosted Glass Cover -->
         <div
           v-if="settings.enableSidebarCoverBlur"
-          pos="absolute top-0 left-0" w-full h-inherit
-          z--1
+          class="watch-later-sidebar-background"
         >
           <div
-            absolute w-full h-inherit
+            absolute inset-0
             bg="$bew-sidebar-cover-mask"
           />
           <img
@@ -550,9 +595,6 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
         <!-- Content -->
         <main
           class="watch-later-sidebar-content"
-          pos="absolute top-0 left-0"
-          w-full h-inherit
-          overflow-overlay
           flex="~ col gap-4 justify-start"
           p-6
         >
@@ -608,6 +650,19 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
         </main>
       </div>
     </aside>
+    <Teleport v-if="moreMenuItem && showMoreButton" :to="mainAppRef">
+      <VideoCardContextMenu
+        :key="moreMenuItem.aid"
+        :video="{
+          ...transformWatchLaterItem(moreMenuItem),
+          url: `https://www.bilibili.com/video/${moreMenuItem.bvid}/`,
+        }"
+        :context-menu-styles="moreMenuStyles"
+        :trigger-element="moreMenuTrigger"
+        @close="moreMenuItem = null"
+        @removed="moreMenuItem = null"
+      />
+    </Teleport>
   </div>
   <Empty v-else mt-6 :description="t('common.please_log_in_first')">
     <Button type="primary" @click="jumpToLoginPage()">
@@ -617,6 +672,67 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 </template>
 
 <style lang="scss" scoped>
+.watch-later-list-description {
+  display: flex;
+  align-self: stretch;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  justify-content: space-between;
+  gap: var(--bew-space-2);
+}
+
+.watch-later-list-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.watch-later-list-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--bew-space-1);
+}
+
+.watch-later-list-action {
+  opacity: 0;
+}
+
+.watch-later-list-action--active,
+.watch-later-list-item:hover .watch-later-list-action,
+.watch-later-list-item:focus-within .watch-later-list-action {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .watch-later-list-action {
+    opacity: 1;
+  }
+}
+
+.watch-later-sidebar-panel {
+  position: sticky;
+  top: 120px;
+  width: 100%;
+  height: 230px;
+  margin: var(--bew-space-10) 0;
+  overflow: hidden;
+  border-radius: var(--bew-panel-radius);
+}
+
+@media (min-width: 768px) {
+  .watch-later-sidebar-panel {
+    height: calc(100vh - 160px);
+    min-height: 230px;
+  }
+}
+
+.watch-later-sidebar-background {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
 .watch-later-sidebar-panel--cover {
   isolation: isolate;
 }
@@ -627,6 +743,10 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
 }
 
 .watch-later-sidebar-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
   box-sizing: border-box;
   overscroll-behavior: contain;
 }
