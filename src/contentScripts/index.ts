@@ -13,7 +13,7 @@ import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import api from '~/utils/api'
 import { applyBewlyWidescreen, BEWLY_WIDESCREEN_USER_EXIT, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, prepareBewlyWidescreenLoading } from '~/utils/bewlyWidescreen'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
-import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setupLoginButtonClickHandlers, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
+import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { findLeafActiveElement } from '~/utils/element'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
 import { i18n } from '~/utils/i18n'
@@ -1312,7 +1312,6 @@ else if (shouldInitializeContentScript) {
       // 只有「顶栏可见性 + 原版顶栏」同时开启时才 portal 原生顶栏。
       if (shouldShowOriginalBilibiliTopBar(settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)) {
         ensureOriginalBilibiliTopBarAppended(document)
-        setupLoginButtonClickHandlers(document)
       }
 
       // 如果要使用方案1（删除DOM），取消注释以下代码并注释掉上面的 CSS 方案：
@@ -1641,8 +1640,6 @@ else if (shouldInitializeContentScript) {
 
       if (showOriginal) {
         resetBilibiliTopBarInlineStyles(document)
-        // Setup login button click handlers when switching to original top bar
-        setupLoginButtonClickHandlers(document)
       }
     }
   }, { passive: true })

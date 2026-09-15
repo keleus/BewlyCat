@@ -1,3 +1,8 @@
+// portal 保留在 body 时，停用适配也不能露出原站 Banner 或其他首页内容。
+.homePage.bewly-custom-homepage > body > .bili-header > :not(.bili-header__bar):not(.bewly-bili-channel-panel) {
+  display: none !important;
+}
+
 .homePage.bewly-custom-homepage .bili-header > .bili-header__channel,
 .homePage.bewly-custom-homepage .bili-header > .bewly-bili-channel-panel {
   display: none !important;
@@ -7,17 +12,36 @@
   display: none !important;
 }
 
-.homePage .bili-header {
+.homePage.bewly-custom-homepage .bili-header {
   .bewly-bili-logo-entry,
   .bewly-home-entry-arrow {
     display: none;
   }
 }
 
+// 自定义首页的 portal 与 fixed 插件根节点显式排序，避免依赖 auto 层级。
+// Pop 的层级只在原版顶栏内部生效；外层仍低于插件设置窗口。
+.homePage.bewly-custom-homepage:not(.remove-top-bar) > body > .bili-header {
+  z-index: var(--bew-z-original-top-bar, 1002);
+
+  > .bili-header__bar {
+    z-index: var(--bew-z-original-top-bar, 1002);
+
+    .v-popover {
+      z-index: var(--bew-z-original-top-bar-popover, 1);
+    }
+
+    .search-panel {
+      position: relative;
+      z-index: var(--bew-z-original-top-bar-popover, 1);
+    }
+  }
+}
+
 // 对齐 1.6.8 / B 站原生 slide-down：浅色白底、暗色深灰，不套 elevated-solid，不强制图标纯黑。
 // 文字/图标色交给 B 站 .slide-down 默认样式；滚动后频道布局靠 .bewly-original-top-bar-scrolled。
 .homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar,
-.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
+.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
   display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
@@ -26,7 +50,9 @@
 }
 
 .dark.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar,
-.dark.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
+.dark.homePage.bewly-custom-homepage:not(.remove-top-bar)
+  .bili-header.bewly-original-top-bar-scrolled
+  > .bili-header__bar {
   background-color: rgb(36 38 40) !important;
 }
 
@@ -63,12 +89,12 @@
   }
 }
 
-.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled {
+.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
 
-  // 非自定义首页滚动态：同样显示宽 Logo
+  // 自定义首页滚动态：同样显示宽 Logo
   .bewly-bili-logo-entry {
     display: flex;
     align-items: center;
@@ -121,26 +147,26 @@
   }
 }
 
-.homePage:not(.remove-top-bar)
+.homePage.bewly-custom-homepage:not(.remove-top-bar)
   .bili-header.bewly-original-top-bar-scrolled
   .v-popover:is(.bewly-original-native-channel-open, .bewly-original-native-channel-closing) {
   display: block !important;
 }
 
-.homePage:not(.remove-top-bar)
+.homePage.bewly-custom-homepage:not(.remove-top-bar)
   .bili-header.bewly-original-top-bar-scrolled
   .v-popover.bewly-original-native-channel-open {
   animation: bewly-bili-channel-panel-enter 0.3s;
 }
 
-.homePage:not(.remove-top-bar)
+.homePage.bewly-custom-homepage:not(.remove-top-bar)
   .bili-header.bewly-original-top-bar-scrolled
   .v-popover.bewly-original-native-channel-closing {
   animation: bewly-bili-channel-panel-leave 0.3s forwards;
   pointer-events: none;
 }
 
-.homePage:not(.remove-top-bar)
+.homePage.bewly-custom-homepage:not(.remove-top-bar)
   .bili-header.bewly-original-top-bar-scrolled:is(.bewly-original-channel-open, .bewly-original-channel-closing) {
   > .bewly-bili-channel-panel {
     display: flex !important;
@@ -158,13 +184,15 @@
   }
 }
 
-.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled.bewly-original-channel-open {
+.homePage.bewly-custom-homepage:not(.remove-top-bar)
+  .bili-header.bewly-original-top-bar-scrolled.bewly-original-channel-open {
   > .bewly-bili-channel-panel {
     animation: bewly-bili-channel-panel-enter 0.3s;
   }
 }
 
-.homePage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled.bewly-original-channel-closing {
+.homePage.bewly-custom-homepage:not(.remove-top-bar)
+  .bili-header.bewly-original-top-bar-scrolled.bewly-original-channel-closing {
   > .bewly-bili-channel-panel {
     animation: bewly-bili-channel-panel-leave 0.3s forwards;
     pointer-events: none;

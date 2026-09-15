@@ -93,6 +93,9 @@
   // #region Layering
   // Keep application overlays in a predictable order. Drawers and emergency
   // prompts use separate, intentionally higher layers outside this modal stack.
+  --bew-z-original-top-bar: 1002;
+  // 保留原站头像（2）高于下拉面板（1）的内部顺序。
+  --bew-z-original-top-bar-popover: 1;
   --bew-z-settings-host: 10003;
   --bew-z-settings: 10004;
   --bew-z-settings-popover: 10005;

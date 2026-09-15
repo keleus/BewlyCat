@@ -10,24 +10,64 @@ export function shouldShowBewlyTopBar(enableTopBar: boolean, useOriginalBilibili
   return enableTopBar && !useOriginalBilibiliTopBar
 }
 
-const BILIBILI_TOP_BAR_SELECTORS = [
-  '.bili-header',
-  '.bili-header .bili-header__bar',
-  '#internationalHeader',
-  '.link-navbar',
-  '#home_nav',
-  '#biliMainHeader',
-  '#bili-header-container',
-  // Bilibili Evolved
-  '.custom-navbar',
-]
-
 let cachedOriginalTopBar: HTMLElement | null = null
 let cachedOriginalTopBarParent: HTMLElement | null = null
 const initializedHoverHeaders = new WeakSet<HTMLElement>()
 const initializedScrollStateHeaders = new WeakSet<HTMLElement>()
 const initializedTopBarDocuments = new WeakSet<Document>()
 const loginButtonSetupCleanups = new WeakMap<Document, () => void>()
+
+interface TopBarSession {
+  cleanups: (() => void)[]
+  headers: Set<HTMLElement>
+  addedNodes: Set<Element>
+  styles: Map<HTMLElement, Map<string, { value: string, priority: string }>>
+  classes: Map<Element, Map<string, boolean>>
+}
+
+const topBarSessions = new WeakMap<Document, TopBarSession>()
+
+function setManagedStyle(element: HTMLElement, property: string, value: string) {
+  const session = topBarSessions.get(element.ownerDocument)
+  if (!session)
+    return
+  let properties = session.styles.get(element)
+  if (!properties) {
+    properties = new Map()
+    session.styles.set(element, properties)
+  }
+  if (!properties.has(property)) {
+    properties.set(property, {
+      value: element.style.getPropertyValue(property),
+      priority: element.style.getPropertyPriority(property),
+    })
+  }
+  if (value)
+    element.style.setProperty(property, value)
+  else
+    element.style.removeProperty(property)
+}
+
+function setManagedClass(element: Element | null | undefined, name: string, enabled: boolean) {
+  if (!element)
+    return
+  const session = topBarSessions.get(element.ownerDocument)
+  if (!session)
+    return
+  let classes = session.classes.get(element)
+  if (!classes) {
+    classes = new Map()
+    session.classes.set(element, classes)
+  }
+  if (!classes.has(name))
+    classes.set(name, element.classList.contains(name))
+  element.classList.toggle(name, enabled)
+}
+
+function rememberAddedNode(element: Element) {
+  topBarSessions.get(element.ownerDocument)?.addedNodes.add(element)
+}
+
 const channelPanelColumns = [
   [
     ['番剧', '//www.bilibili.com/anime/', '#channel-anime'],
@@ -100,25 +140,23 @@ function rememberOriginalTopBarParent(doc: Document, header: HTMLElement) {
 }
 
 /**
- * 对齐 1.6.8：原版顶栏始终 slide-down，走 B 站「白底 + 默认图标色」实心主题。
+ * 自定义首页适配期间使用 slide-down，走 B 站「白底 + 默认图标色」实心主题。
  * 只 add、不在滚动回顶时 remove，避免透明顶栏白图标；也不在 MutationObserver 里死磕争抢。
  */
 function applyOriginalTopBarSlideDown(header: HTMLElement | null | undefined) {
-  header?.querySelector('.bili-header__bar')?.classList.add('slide-down')
+  setManagedClass(header?.querySelector('.bili-header__bar'), 'slide-down', true)
 }
 
 function prepareOriginalTopBar(header: HTMLElement) {
-  const innerUselessContents = header.querySelectorAll<HTMLElement>(
-    ':scope > *:not(.bili-header__bar):not(.bili-header__channel)',
-  )
-  innerUselessContents.forEach(item => (item.style.display = 'none'))
-  header.querySelector<HTMLElement>(':scope > .bili-header__channel')?.style.removeProperty('display')
+  topBarSessions.get(header.ownerDocument)?.headers.add(header)
   applyOriginalTopBarSlideDown(header)
   setupOriginalTopBarChannelHover(header)
   ensureOriginalTopBarScrolledLayout(header)
 }
 
 export function captureOriginalBilibiliTopBar(doc: Document) {
+  if (!doc.documentElement.classList.contains('bewly-custom-homepage'))
+    return null
   if (cachedOriginalTopBar?.isConnected && cachedOriginalTopBar.ownerDocument === doc)
     return cachedOriginalTopBar
 
@@ -128,10 +166,7 @@ export function captureOriginalBilibiliTopBar(doc: Document) {
 
   cachedOriginalTopBar = header
   rememberOriginalTopBarParent(doc, header)
-  keepOriginalTopBarAvailable(doc)
-  // 1.6.8：先进入 slide-down 实心主题，再同步滚动布局 class
-  prepareOriginalTopBar(header)
-  setOriginalBilibiliTopBarScrolled(doc, false)
+  // 这里只缓存节点；选择原版顶栏后才开始适配和监听。
   return cachedOriginalTopBar
 }
 
@@ -142,10 +177,13 @@ export function captureOriginalBilibiliTopBar(doc: Document) {
  * slide-down 始终保留（1.6.8 观感）；频道 Logo 等仅依赖 bewly-original-top-bar-scrolled。
  */
 export function setOriginalBilibiliTopBarScrolled(doc: Document, scrolled: boolean) {
-  const header = getDocumentTopBar(doc) || cachedOriginalTopBar
-  if (header && header !== cachedOriginalTopBar)
-    cachedOriginalTopBar = header
-  header?.classList.toggle('bewly-original-top-bar-scrolled', scrolled)
+  if (!topBarSessions.has(doc))
+    return
+  // 节点替换由文档观察器接管，滚动回调不能提前认领尚未适配的新顶栏。
+  const header = cachedOriginalTopBar
+  if (!header?.isConnected)
+    return
+  header.classList.toggle('bewly-original-top-bar-scrolled', scrolled)
   applyOriginalTopBarSlideDown(header)
   if (header) {
     if (scrolled)
@@ -170,24 +208,14 @@ function keepOriginalTopBarAvailable(doc: Document) {
   initializedTopBarDocuments.add(doc)
   let reparenting = false
   const observer = new MutationObserver(() => {
-    if (reparenting)
+    if (reparenting || !topBarSessions.has(doc))
       return
 
     // 已有挂在 body 上的稳定 portal：绝不要再 adopt #app 内再生的顶栏。
     // 否则会「删 body 顶栏 → portal 新节点 → Vue 再造 → 再删」无限循环，
     // 主线程卡死，页面白屏转圈且 Network 看不到后续请求。
-    if (cachedOriginalTopBar?.isConnected && cachedOriginalTopBar.parentElement === doc.body) {
-      if (cachedOriginalTopBar !== doc.body.firstElementChild) {
-        reparenting = true
-        try {
-          doc.body.prepend(cachedOriginalTopBar)
-        }
-        finally {
-          reparenting = false
-        }
-      }
+    if (cachedOriginalTopBar?.isConnected && cachedOriginalTopBar.parentElement === doc.body)
       return
-    }
 
     // 缓存已掉线时再找新顶栏；优先 body 上的，避免去抢隐藏 #app 树
     const header = doc.querySelector<HTMLElement>('body > .bili-header')
@@ -215,14 +243,19 @@ function keepOriginalTopBarAvailable(doc: Document) {
     childList: true,
     subtree: true,
   })
+  topBarSessions.get(doc)?.cleanups.push(() => {
+    observer.disconnect()
+    initializedTopBarDocuments.delete(doc)
+  })
 }
 
 function restoreOriginalTopBarVisibility(header: HTMLElement) {
   const bar = header.querySelector<HTMLElement>('.bili-header__bar')
   for (const element of [header, bar]) {
-    element?.style.removeProperty('display')
-    element?.style.removeProperty('visibility')
-    element?.style.removeProperty('opacity')
+    if (element) {
+      for (const property of ['display', 'visibility', 'opacity'])
+        setManagedStyle(element, property, '')
+    }
   }
 }
 
@@ -241,7 +274,7 @@ function keepOriginalTopBarScrolled(header: HTMLElement) {
     try {
       const bar = header.querySelector('.bili-header__bar')
       if (bar && !bar.classList.contains('slide-down'))
-        bar.classList.add('slide-down')
+        setManagedClass(bar, 'slide-down', true)
       restoreOriginalTopBarVisibility(header)
       ensureOriginalTopBarScrolledLayout(header)
     }
@@ -256,6 +289,10 @@ function keepOriginalTopBarScrolled(header: HTMLElement) {
     attributeFilter: ['class', 'style'],
     childList: true,
     subtree: true,
+  })
+  topBarSessions.get(header.ownerDocument)?.cleanups.push(() => {
+    observer.disconnect()
+    initializedScrollStateHeaders.delete(header)
   })
 }
 
@@ -311,6 +348,7 @@ function ensureOriginalTopBarLogoEntry(header: HTMLElement) {
 
   link.appendChild(image)
   item.appendChild(link)
+  rememberAddedNode(item)
   leftEntry.prepend(item)
 }
 
@@ -328,6 +366,7 @@ function ensureOriginalTopBarScrolledLayout(header: HTMLElement) {
     const arrow = doc.createElement('span')
     arrow.className = 'bewly-home-entry-arrow'
     arrow.setAttribute('aria-hidden', 'true')
+    rememberAddedNode(arrow)
     homeEntry.appendChild(arrow)
   }
 
@@ -344,6 +383,7 @@ function ensureOriginalTopBarScrolledLayout(header: HTMLElement) {
       const icons = doc.createElement('div')
       icons.dataset.bewlyChannelIcons = ''
       icons.innerHTML = SVG_ICONS
+      rememberAddedNode(icons)
       doc.body.appendChild(icons)
     }
 
@@ -378,19 +418,14 @@ function ensureOriginalTopBarScrolledLayout(header: HTMLElement) {
       panel.appendChild(column)
     })
 
+    rememberAddedNode(panel)
     header.appendChild(panel)
   }
 }
 
 function setOriginalTopBarHomeArrowExpanded(header: HTMLElement | null, expanded: boolean) {
-  header
-    ?.querySelector('.mini-header__arrow')
-    ?.classList
-    .toggle('arrow-up', expanded)
-  header
-    ?.querySelector('.bewly-home-entry-arrow')
-    ?.classList
-    .toggle('arrow-up', expanded)
+  setManagedClass(header?.querySelector('.mini-header__arrow'), 'arrow-up', expanded)
+  setManagedClass(header?.querySelector('.bewly-home-entry-arrow'), 'arrow-up', expanded)
 }
 
 function getOriginalTopBarNativeChannelPopover(header: HTMLElement | null) {
@@ -404,6 +439,7 @@ function setupOriginalTopBarChannelHover(header: HTMLElement) {
     return
 
   initializedHoverHeaders.add(header)
+  const events = new AbortController()
 
   let closeTimer: ReturnType<typeof setTimeout> | null = null
   let closeAnimationTimer: ReturnType<typeof setTimeout> | null = null
@@ -433,7 +469,7 @@ function setupOriginalTopBarChannelHover(header: HTMLElement) {
       nativePopover?.classList.add('bewly-original-native-channel-open')
       setOriginalTopBarHomeArrowExpanded(header, true)
     }
-  })
+  }, { signal: events.signal })
 
   header.addEventListener('pointerout', (event) => {
     const target = event.target as Element | null
@@ -455,39 +491,71 @@ function setupOriginalTopBarChannelHover(header: HTMLElement) {
         closeAnimationTimer = null
       }, 300)
     }, 120)
+  }, { signal: events.signal })
+  topBarSessions.get(header.ownerDocument)?.cleanups.push(() => {
+    events.abort()
+    clearCloseTimer()
+    initializedHoverHeaders.delete(header)
   })
 }
 
+/** 停止适配；自定义首页内保留 portal，退出自定义首页时归还原生父节点。 */
 export function detachOriginalBilibiliTopBar(doc: Document) {
-  const header = getDocumentTopBar(doc)
-  if (!header)
-    return
-
-  cachedOriginalTopBar = header
-  header.classList.remove(
-    'bewly-original-top-bar-scrolled',
-    'bewly-original-channel-open',
-    'bewly-original-channel-closing',
-  )
-  getOriginalTopBarNativeChannelPopover(header)?.classList.remove(
-    'bewly-original-native-channel-open',
-    'bewly-original-native-channel-closing',
-  )
-  header.querySelector('.bili-header__bar')?.classList.remove('slide-down')
+  const session = topBarSessions.get(doc)
+  if (session) {
+    topBarSessions.delete(doc)
+    session.cleanups.forEach(cleanup => cleanup())
+    session.headers.forEach((header) => {
+      header.classList.remove('bewly-original-top-bar-scrolled', 'bewly-original-channel-open', 'bewly-original-channel-closing')
+      getOriginalTopBarNativeChannelPopover(header)?.classList.remove(
+        'bewly-original-native-channel-open',
+        'bewly-original-native-channel-closing',
+      )
+    })
+    session.addedNodes.forEach(node => node.remove())
+    session.styles.forEach((properties, element) => {
+      properties.forEach(({ value, priority }, property) => {
+        if (value)
+          element.style.setProperty(property, value, priority)
+        else
+          element.style.removeProperty(property)
+      })
+    })
+    session.classes.forEach((classes, element) => {
+      classes.forEach((enabled, name) => element.classList.toggle(name, enabled))
+    })
+  }
+  if (!doc.documentElement.classList.contains('bewly-custom-homepage')
+    && cachedOriginalTopBar?.ownerDocument === doc) {
+    restoreOriginalBilibiliTopBarParent(doc)
+    cachedOriginalTopBar = null
+    cachedOriginalTopBarParent = null
+  }
 }
 
 export function ensureOriginalBilibiliTopBarAppended(doc: Document): boolean {
+  if (!doc.documentElement.classList.contains('bewly-custom-homepage'))
+    return false
+  if (!topBarSessions.has(doc)) {
+    topBarSessions.set(doc, {
+      cleanups: [],
+      headers: new Set(),
+      addedNodes: new Set(),
+      styles: new Map(),
+      classes: new Map(),
+    })
+    keepOriginalTopBarAvailable(doc)
+    topBarSessions.get(doc)!.cleanups.push(setupLoginButtonClickHandlers(doc))
+  }
   // 已有 body portal 则复用，切勿用 #app 内新生顶栏替换（会死循环）
   if (cachedOriginalTopBar?.isConnected && cachedOriginalTopBar.parentElement === doc.body) {
     prepareOriginalTopBar(cachedOriginalTopBar)
-    if (cachedOriginalTopBar !== doc.body.firstElementChild)
-      doc.body.prepend(cachedOriginalTopBar)
     return true
   }
 
   const bodyHeader = doc.querySelector<HTMLElement>('body > .bili-header')
   const nativeHeader = getNativeDocumentTopBar(doc)
-  const header = bodyHeader || cachedOriginalTopBar || nativeHeader || getDocumentTopBar(doc)
+  const header = bodyHeader || nativeHeader || getDocumentTopBar(doc) || cachedOriginalTopBar
   if (!header)
     return false
 
@@ -496,7 +564,7 @@ export function ensureOriginalBilibiliTopBarAppended(doc: Document): boolean {
   prepareOriginalTopBar(header)
 
   // 自定义首页会整树隐藏 #app，必须把顶栏 portal 到 body，不能依赖 #app 保活露出。
-  if (header.parentElement !== doc.body || header !== doc.body.firstElementChild)
+  if (header.parentElement !== doc.body)
     doc.body.prepend(header)
 
   return true
@@ -506,7 +574,7 @@ export function ensureOriginalBilibiliTopBarAppended(doc: Document): boolean {
  * 将 body 上的原版顶栏尝试放回 B 站原生父节点。
  * 自定义首页路径不再调用此函数（避免回填保活）；保留给少数需要归还所有权的场景。
  */
-export function restoreOriginalBilibiliTopBarParent(doc: Document): boolean {
+function restoreOriginalBilibiliTopBarParent(doc: Document): boolean {
   const mountedHeader = cachedOriginalTopBar?.parentElement === doc.body
     ? cachedOriginalTopBar
     : doc.querySelector<HTMLElement>('body > .bili-header')
@@ -514,6 +582,14 @@ export function restoreOriginalBilibiliTopBarParent(doc: Document): boolean {
   const header = mountedHeader || cachedOriginalTopBar
   if (!header)
     return false
+
+  // B 站若已在原位置重新渲染顶栏，保留新节点，避免归还后出现两个顶栏。
+  const nativeHeader = getNativeDocumentTopBar(doc)
+  if (nativeHeader && nativeHeader !== header) {
+    if (header.parentElement === doc.body)
+      header.remove()
+    return true
+  }
 
   const parent = cachedOriginalTopBarParent?.isConnected
     ? cachedOriginalTopBarParent
@@ -533,43 +609,48 @@ export function restoreOriginalBilibiliTopBarParent(doc: Document): boolean {
  * Clear a small set of inline properties so the original top bar can be shown immediately.
  */
 export function resetBilibiliTopBarInlineStyles(doc: Document) {
-  for (const selector of BILIBILI_TOP_BAR_SELECTORS) {
-    doc.querySelectorAll<HTMLElement>(selector).forEach((el) => {
-      el.style.removeProperty('visibility')
-      el.style.removeProperty('display')
-    })
+  // 原生页面只通过显隐 class 切换，不清理 B 站或第三方扩展的内联样式。
+  if (!topBarSessions.has(doc))
+    return
+  const header = cachedOriginalTopBar?.isConnected ? cachedOriginalTopBar : getDocumentTopBar(doc)
+  if (header) {
+    restoreOriginalTopBarVisibility(header)
+    applyOriginalTopBarSlideDown(header)
   }
-  // 切换回原版顶栏时点一次 slide-down（1.6.8），恢复默认图标色
-  applyOriginalTopBarSlideDown(getDocumentTopBar(doc) || cachedOriginalTopBar)
 }
 
 /**
  * Add click event listeners to login buttons in the original Bilibili top bar
  * to redirect users to the login page.
  */
-export function setupLoginButtonClickHandlers(doc: Document) {
+function setupLoginButtonClickHandlers(doc: Document) {
   const existingCleanup = loginButtonSetupCleanups.get(doc)
   if (existingCleanup)
     return existingCleanup
 
   const LOGIN_URL = 'https://passport.bilibili.com/login'
+  const events = new AbortController()
+  const buttons = new Map<HTMLElement, { value: string, priority: string }>()
 
   // Function to handle login button binding
   function bindLoginButton(button: HTMLElement) {
+    if (!cachedOriginalTopBar?.contains(button))
+      return
     if (button.hasAttribute('data-bewly-login-handler'))
       return
 
+    buttons.set(button, { value: button.style.getPropertyValue('cursor'), priority: button.style.getPropertyPriority('cursor') })
     button.setAttribute('data-bewly-login-handler', 'true')
     button.style.cursor = 'pointer'
     button.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
       window.location.href = LOGIN_URL
-    })
+    }, { signal: events.signal })
   }
 
-  // Bind existing login buttons
-  const existingButtons = doc.querySelectorAll<HTMLElement>('.login-btn')
+  // 只适配当前接管的顶栏，不接管原生页面其他登录入口。
+  const existingButtons = cachedOriginalTopBar?.querySelectorAll<HTMLElement>('.login-btn') ?? []
   existingButtons.forEach(bindLoginButton)
 
   // Observe the entire document for popup elements.
@@ -607,6 +688,15 @@ export function setupLoginButtonClickHandlers(doc: Document) {
 
   const cleanup = () => {
     observer?.disconnect()
+    events.abort()
+    buttons.forEach(({ value, priority }, button) => {
+      button.removeAttribute('data-bewly-login-handler')
+      if (value)
+        button.style.setProperty('cursor', value, priority)
+      else
+        button.style.removeProperty('cursor')
+    })
+    buttons.clear()
     if (loginButtonSetupCleanups.get(doc) === cleanup)
       loginButtonSetupCleanups.delete(doc)
   }

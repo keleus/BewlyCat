@@ -4,7 +4,7 @@ import { IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { setUselessFeedCardBlockerEnabled, shouldEnableUselessFeedCardBlocker } from '~/contentScripts/features/blockUselessFeedCards'
 import { LanguageType } from '~/enums/appEnums'
 import { appAuthTokens, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX, localSettings, originalSettings, settings } from '~/logic'
-import { ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
+import { detachOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, setOriginalBilibiliTopBarScrolled, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { cleanBilibiliShareText, getUserID, injectCSS, isHomePage, isInIframe, isVideoPlaybackPage } from '~/utils/main'
 
 function isFestivalPage(): boolean {
@@ -345,13 +345,7 @@ export function setupNecessarySettingsWatchers() {
       const useBewlyHomepage = !isInIframe() && isHomePage() && !useOriginalBilibiliHomepage
       document.documentElement.classList.toggle('bewly-custom-homepage', useBewlyHomepage)
 
-      if (useBewlyHomepage && shouldShowOriginalBilibiliTopBar(settings.value.enableTopBar, settings.value.useOriginalBilibiliTopBar)) {
-        const scrollTop = document.getElementById('bewly')
-          ?.shadowRoot
-          ?.querySelector<HTMLElement>('.bewly-scroll-viewport')
-          ?.scrollTop ?? 0
-        setOriginalBilibiliTopBarScrolled(document, scrollTop > 0)
-      }
+      applyOuterTopBarPolicy()
     },
     { immediate: true },
   )
@@ -428,6 +422,7 @@ export function setupNecessarySettingsWatchers() {
         applyOuterTopBarPolicy()
       })
       observer.observe(shadow, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] })
+      onScopeDispose(() => observer.disconnect())
     }
   }
 
@@ -545,6 +540,8 @@ export function setupNecessarySettingsWatchers() {
     return Boolean(shadow.querySelector('iframe[src*="bilibili.com"]'))
   }
 
+  onScopeDispose(() => detachOriginalBilibiliTopBar(document))
+
   function applyOuterTopBarPolicy() {
     if (isInIframe()) {
       applyDocumentTopBarClasses(document, !isOriginalTopBarEnabled())
@@ -554,7 +551,7 @@ export function setupNecessarySettingsWatchers() {
     }
 
     // Handle homepage-specific logic
-    if (isHomePage()) {
+    if (isHomePage() && !settings.value.useOriginalBilibiliHomepage) {
       // When the homepage is showing an original Bilibili page inside our iframe (dock item "useOriginalBiliPage"),
       // we should keep the *outer* document's Bilibili top bar hidden to avoid double headers.
       const shouldHideOuterBiliTopBar = hasBiliIframePage()
@@ -564,17 +561,11 @@ export function setupNecessarySettingsWatchers() {
       // 切回 Bewly 顶栏时用 remove-top-bar 隐藏即可，避免重新点亮原站首页 Vue 树。
       if (shouldShowOriginal && !shouldHideOuterBiliTopBar)
         ensureOriginalBilibiliTopBarAppended(document)
+      else
+        detachOriginalBilibiliTopBar(document)
 
       const shouldApplyRemoveTopBar = !shouldShowOriginal || shouldHideOuterBiliTopBar
       applyDocumentTopBarClasses(document, shouldApplyRemoveTopBar)
-
-      const outerHeader = document.querySelector<HTMLElement>('body > .bili-header, .bili-header')
-      if (outerHeader) {
-        if (shouldHideOuterBiliTopBar)
-          outerHeader.style.display = 'none'
-        else
-          outerHeader.style.removeProperty('display')
-      }
 
       if (shouldShowOriginal && !shouldHideOuterBiliTopBar)
         resetBilibiliTopBarInlineStyles(document)
@@ -588,7 +579,8 @@ export function setupNecessarySettingsWatchers() {
       }
     }
     else {
-      // Handle non-homepage pages
+      // 原版首页和其他原生页面只切换显隐，不搬移或改写顶栏。
+      detachOriginalBilibiliTopBar(document)
       applyDocumentTopBarClasses(document, !isOriginalTopBarEnabled())
       resetBilibiliTopBarInlineStyles(document)
     }
