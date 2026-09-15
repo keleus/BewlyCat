@@ -134,7 +134,8 @@ function createControlContainer(): HTMLElement {
   })
   container.addEventListener('click', (event) => {
     event.preventDefault()
-    event.stopPropagation()
+    // B 站在 window 的 click 监听器中更新播放器焦点，需让点击继续冒泡。
+    // 否则移出视频区后，上下方向键、回车等原生快捷键可能失效。
     void handleControlClick(container)
   })
   container.addEventListener('keydown', (event) => {
