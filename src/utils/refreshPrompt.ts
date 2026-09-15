@@ -40,8 +40,6 @@ export interface RefreshPromptCopy {
   refreshAll: string
   refreshAllHint: string
   refreshingAll: string
-  refreshAllFailed: string
-  refreshAllPartial: string
   currentVersion: string
   currentCommit?: string
   refresh: string
@@ -67,8 +65,6 @@ function getBaseRefreshPromptCopy(locale: string, currentVersion: string): Refre
       refreshAll: '重新整理全部頁面',
       refreshAllHint: '重新整理所有視窗中 BewlyCat 支援的 B 站頁面',
       refreshingAll: '正在重新整理…',
-      refreshAllFailed: '無法連接擴充功能，未能重新整理全部頁面。請確認 BewlyCat 已啟用後重試，或先重新整理目前頁面。',
-      refreshAllPartial: '有 {count} 個頁面未能重新整理，請重試或手動重新整理。',
       refresh: '立即重新整理',
       later: '稍後',
       missingTitle: 'BewlyCat 需要重新整理頁面',
@@ -85,8 +81,6 @@ function getBaseRefreshPromptCopy(locale: string, currentVersion: string): Refre
       refreshAll: '刷新全部页面',
       refreshAllHint: '刷新所有窗口中 BewlyCat 支持的 B 站页面',
       refreshingAll: '正在刷新…',
-      refreshAllFailed: '无法连接扩展，未能刷新全部页面。请确认 BewlyCat 已启用后重试，或先刷新当前页面。',
-      refreshAllPartial: '有 {count} 个页面未能刷新，请重试或手动刷新。',
       refresh: '立即刷新',
       later: '稍后',
       missingTitle: 'BewlyCat 需要刷新页面',
@@ -103,8 +97,6 @@ function getBaseRefreshPromptCopy(locale: string, currentVersion: string): Refre
       refreshAll: 'すべて再読み込み',
       refreshAllHint: 'すべてのウィンドウで BewlyCat が対応する Bilibili ページを再読み込み',
       refreshingAll: '再読み込み中…',
-      refreshAllFailed: '拡張機能に接続できず、すべてのページを再読み込みできませんでした。BewlyCat が有効か確認して再試行するか、このページを再読み込みしてください。',
-      refreshAllPartial: '{count} 個のページを再読み込みできませんでした。再試行するか手動で再読み込みしてください。',
       refresh: '今すぐ再読み込み',
       later: '後で',
       missingTitle: 'BewlyCat の再読み込みが必要です',
@@ -121,8 +113,6 @@ function getBaseRefreshPromptCopy(locale: string, currentVersion: string): Refre
       refreshAll: '모든 페이지 새로고침',
       refreshAllHint: '모든 창에서 BewlyCat이 지원하는 Bilibili 페이지 새로고침',
       refreshingAll: '새로고침 중…',
-      refreshAllFailed: '확장 기능에 연결할 수 없어 모든 페이지를 새로고침하지 못했습니다. BewlyCat이 활성화되어 있는지 확인한 후 다시 시도하거나 현재 페이지를 새로고침하세요.',
-      refreshAllPartial: '{count}개 페이지를 새로고침하지 못했습니다. 다시 시도하거나 직접 새로고침하세요.',
       refresh: '지금 새로고침',
       later: '나중에',
       missingTitle: 'BewlyCat 페이지 새로고침 필요',
@@ -138,8 +128,6 @@ function getBaseRefreshPromptCopy(locale: string, currentVersion: string): Refre
     refreshAll: 'Refresh all pages',
     refreshAllHint: 'Refresh Bilibili pages supported by BewlyCat in all windows',
     refreshingAll: 'Refreshing…',
-    refreshAllFailed: 'Could not connect to the extension to refresh all pages. Check that BewlyCat is enabled and try again, or refresh this page first.',
-    refreshAllPartial: '{count} pages could not be refreshed. Try again or refresh them manually.',
     refresh: 'Refresh now',
     later: 'Later',
     missingTitle: 'BewlyCat needs a page refresh',
@@ -364,8 +352,8 @@ export function showRefreshPrompt(...args: unknown[]): void {
   }
   const bindRefreshAll = (promptHost: HTMLElement) => {
     const button = promptHost.shadowRoot?.querySelector<HTMLButtonElement>('[data-refresh-all]')
-    const status = promptHost.shadowRoot?.querySelector<HTMLElement>('[data-refresh-status]')
-    if (!button || !status)
+    promptHost.shadowRoot?.querySelector('[data-refresh-status]')?.remove()
+    if (!button)
       return
     // 后台重新注入时接管旧弹窗的按钮，避免继续使用已失效的扩展连接。
     button.onclick = async (event) => {
@@ -373,7 +361,6 @@ export function showRefreshPrompt(...args: unknown[]): void {
         return
       button.disabled = true
       button.textContent = copy.refreshingAll
-      status.hidden = true
       recordRefreshAttempt(promptHost)
       try {
         // 必须使用注入上下文的原生 API，不能引用无法随函数序列化的模块变量。
@@ -384,14 +371,11 @@ export function showRefreshPrompt(...args: unknown[]): void {
         const result = await extensionApi.runtime.sendMessage({ type: copy.refreshAllMessage }) as { failed?: number } | undefined
         if (typeof result?.failed !== 'number')
           throw new Error('Invalid refresh response')
-        if (result.failed > 0) {
-          status.textContent = copy.refreshAllPartial.replace('{count}', String(result.failed))
-          status.hidden = false
-        }
+        if (result.failed > 0)
+          console.warn('[BewlyCat] Some pages could not be refreshed.', result.failed)
       }
-      catch {
-        status.textContent = copy.refreshAllFailed
-        status.hidden = false
+      catch (error) {
+        console.warn('[BewlyCat] Failed to refresh all pages.', error)
       }
       finally {
         button.disabled = false
@@ -440,8 +424,7 @@ export function showRefreshPrompt(...args: unknown[]): void {
     if (!existingShadow?.querySelector('.prompt > .header')
       || !existingShadow.querySelector('.actions > button')
       || !existingShadow.querySelector('.actions > [data-refresh-all]')
-      || !existingShadow.querySelector('.actions > .primary')
-      || !existingShadow.querySelector('[data-refresh-status]')) {
+      || !existingShadow.querySelector('.actions > .primary')) {
       existingPrompt.remove()
       existingPrompt = null
     }
@@ -772,12 +755,6 @@ export function showRefreshPrompt(...args: unknown[]): void {
     refreshAllButton.textContent = copy.refreshAll
   refreshAllButton.title = copy.refreshAllHint
   refreshAllButton.setAttribute('aria-label', `${copy.refreshAll}：${copy.refreshAllHint}`)
-  const refreshStatus = prompt.querySelector<HTMLElement>('[data-refresh-status]') ?? document.createElement('p')
-  refreshStatus.className = 'description'
-  refreshStatus.dataset.refreshStatus = ''
-  refreshStatus.setAttribute('role', 'status')
-  if (!existingPrompt)
-    refreshStatus.hidden = true
 
   content.append(title, description)
   if (copy.diagnostic && copy.detailLabels) {
@@ -854,7 +831,7 @@ export function showRefreshPrompt(...args: unknown[]): void {
   }
   else {
     actions.append(laterButton, refreshAllButton, refreshButton)
-    prompt.append(header, actions, refreshStatus)
+    prompt.append(header, actions)
     shadow.append(style, prompt)
     document.documentElement.appendChild(host)
   }
