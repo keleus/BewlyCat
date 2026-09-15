@@ -51,6 +51,11 @@ const API_USER = {
     url: 'https://api.bilibili.com/x/relation/relations',
     _fetch: {
       method: 'get',
+      // 只保留 fids 的字面逗号，其他字符和参数仍使用标准 URL 编码。
+      querySerializer: params => [...params].map(([key, value]) => {
+        const encoded = new URLSearchParams({ [key]: value }).toString()
+        return key === 'fids' ? encoded.replace(/%2C/gi, ',') : encoded
+      }).join('&'),
     },
     params: {
       fids: '', // 用户 mid 列表，用逗号分隔；分批数量由调用方控制

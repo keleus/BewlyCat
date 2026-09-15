@@ -62,6 +62,7 @@ interface Message {
 
 interface _FETCH {
   method: string
+  querySerializer?: (params: URLSearchParams) => string
   headers?: {
     [key: string]: any
   }
@@ -155,7 +156,7 @@ async function doRequest(message: Message, api: API, cookies?: Browser.Cookies.C
     rest = rest || {}
 
     const { _fetch, url, params = {}, afterHandle } = api
-    const { method, headers = {}, body, bodySerializer, credentials: configuredCredentials = 'include' } = _fetch as _FETCH
+    const { method, headers = {}, body, bodySerializer, querySerializer, credentials: configuredCredentials = 'include' } = _fetch as _FETCH
     const credentials: RequestCredentials = bewlyNoCookie ? 'omit' : configuredCredentials
     const isGET = method.toLocaleLowerCase() === 'get'
     // merge params and body
@@ -205,7 +206,7 @@ async function doRequest(message: Message, api: API, cookies?: Browser.Cookies.C
             urlParams.append(key, value)
           }
         }
-        requestUrl += `?${urlParams.toString()}`
+        requestUrl += `?${querySerializer ? querySerializer(urlParams) : urlParams.toString()}`
       }
 
       // generate body

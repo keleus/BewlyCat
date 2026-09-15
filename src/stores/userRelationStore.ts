@@ -98,15 +98,22 @@ export const useUserRelationStore = defineStore('userRelations', () => {
           const response = await api.user.getRelations({ fids: chunk.map(query => query.mid).join(',') })
           if (syncAccount() !== requestAccount || generation !== requestGeneration)
             continue
-          if (response.code !== 0 || !response.data || typeof response.data !== 'object' || Array.isArray(response.data))
-            throw new Error(response.message || 'Invalid user relations response')
+          if (response?.code !== 0) {
+            throw new Error(`查询用户关系失败（code: ${response?.code ?? 'missing'}）：${response?.message || '接口未返回成功状态'}`)
+          }
+          // 全部未关注时接口成功返回 null，等同于空关系列表。
+          const data = response.data === null ? {} : response.data
+          if (!data || typeof data !== 'object' || Array.isArray(data)) {
+            const dataType = Array.isArray(data) ? 'array' : typeof data
+            throw new Error(`用户关系响应格式异常（code: 0, data: ${dataType}）`)
+          }
 
           for (const query of chunk) {
             if (relations.get(query.mid) !== query.previous)
               continue
-            // 接口只返回有关系的用户；成功响应中缺席的 mid 表示未关注。
-            const attribute = Object.prototype.hasOwnProperty.call(response.data, query.mid)
-              ? response.data[query.mid]?.attribute
+            // 接口只返回已关注的用户；成功响应中缺席的 mid 表示未关注。
+            const attribute = Object.prototype.hasOwnProperty.call(data, query.mid)
+              ? data[query.mid]?.attribute
               : 0
             if (![0, 1, 2, 6, 128].includes(attribute)) {
               retryAfter.set(query.mid, Date.now() + RETRY_DELAY)
