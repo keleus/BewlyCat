@@ -899,6 +899,8 @@ settings:
     turn_off_light_desc: 開啟/關閉關燈模式
     caption: 字幕
     caption_desc: 開啟/關閉字幕
+    video_screenshot: 影片截圖
+    video_screenshot_desc: 將目前影片畫面儲存為 PNG 圖片，關閉播放器截圖按鈕後仍可使用。
     increase_playback_rate: 加速播放
     increase_playback_rate_desc: 提高播放速度
     decrease_playback_rate: 減速播放
@@ -981,7 +983,7 @@ settings:
   show_bewly_widescreen_button: 顯示播放器 Bewly 寬螢幕按鈕
   show_bewly_widescreen_button_desc: 啟用後，在影片播放器控制列中顯示 Bewly 寬螢幕按鈕。
   show_video_screenshot_button: 顯示播放器截圖按鈕
-  show_video_screenshot_button_desc: 啟用後，在影片播放器控制列中顯示擷取目前影片畫面的按鈕。
+  show_video_screenshot_button_desc: 啟用後，在影片播放器控制列中顯示擷取目前影片畫面的按鈕。關閉後仍可使用截圖快捷鍵，可在「快捷鍵」設定中調整。
   group_fonts: 字體
   group_visual_effects: 視覺效果
   badge_type: 角標類型

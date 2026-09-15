@@ -648,6 +648,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.shortcuts.pip',
     'settings.shortcuts.turn_off_light',
     'settings.shortcuts.caption',
+    'settings.shortcuts.video_screenshot',
     'settings.shortcuts.increase_playback_rate',
     'settings.shortcuts.decrease_playback_rate',
     'settings.shortcuts.reset_playback_rate',

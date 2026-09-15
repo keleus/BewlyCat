@@ -1,6 +1,6 @@
 import { settings } from '~/logic'
 import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged } from '~/utils/bewlyWidescreen'
-import { isVideoOrBangumiPage } from '~/utils/main'
+import { isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
 // 导入需要的函数
 import {
   adjustVideoSize,
@@ -19,6 +19,7 @@ import {
   webFullscreenClick,
   widescreenClick,
 } from '~/utils/player'
+import { captureVideoScreenshot } from '~/utils/videoScreenshot'
 
 // 定义快捷键处理器类型
 type ShortcutHandler = (e: KeyboardEvent, player?: Element) => void
@@ -189,6 +190,12 @@ export function setupShortcutHandlers() {
           // 兼容：配置为 '+' 时，允许直接按 '=' 键触发（标准键盘上 '+' 需要 Shift+=）
           if (configKey.toLowerCase() === keyCombo.toLowerCase()
             || (configKey === '+' && keyCombo === '=')) {
+            // 截图只在视频播放页响应，避免拦截其他页面或输入法的按键。
+            if (id === 'videoScreenshot'
+              && (e.isComposing || !(isVideoPlaybackPage() || isVideoOrBangumiPage()))) {
+              continue
+            }
+
             // 获取处理函数
             const handler = shortcutHandlers[id]
             if (handler) {
@@ -305,6 +312,14 @@ export function registerDefaultHandlers(): void {
   // 字幕
   registerShortcutHandler('caption', () => {
     toggleCaption()
+  })
+
+  // 视频截图独立于控制栏按钮开关，长按时只截取一次。
+  registerShortcutHandler('videoScreenshot', (event) => {
+    if (event.repeat)
+      return
+
+    void captureVideoScreenshot()
   })
 
   // 增加播放速度

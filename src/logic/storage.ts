@@ -75,6 +75,7 @@ export interface ShortcutsSettings {
   pip?: BaseShortcutSetting // P
   turnOffLight?: BaseShortcutSetting // I
   caption?: BaseShortcutSetting // C
+  videoScreenshot?: BaseShortcutSetting // Shift+S
   increasePlaybackRate?: BaseShortcutSetting // +
   decreasePlaybackRate?: BaseShortcutSetting // -
   resetPlaybackRate?: BaseShortcutSetting // 0
@@ -848,6 +849,7 @@ export const originalSettings: Settings = {
     pip: { key: 'P', enabled: true },
     turnOffLight: { key: 'I', enabled: true },
     caption: { key: 'C', enabled: true },
+    videoScreenshot: { key: 'Shift+S', enabled: true },
     increasePlaybackRate: { key: '+', enabled: true },
     decreasePlaybackRate: { key: '-', enabled: true },
     resetPlaybackRate: { key: '0', enabled: true },
@@ -1116,6 +1118,13 @@ watch(
       record.shortcuts = {
         ...record.shortcuts,
         bewlyWidescreen: { ...originalSettings.shortcuts.bewlyWidescreen },
+      }
+    }
+
+    if (!record.shortcuts?.videoScreenshot) {
+      record.shortcuts = {
+        ...record.shortcuts,
+        videoScreenshot: { ...originalSettings.shortcuts.videoScreenshot },
       }
     }
 

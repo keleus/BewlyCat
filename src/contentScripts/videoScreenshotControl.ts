@@ -3,7 +3,7 @@ import { watch } from 'vue'
 import { settings } from '~/logic'
 import { i18n } from '~/utils/i18n'
 import { isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
-import { showState } from '~/utils/player'
+import { captureVideoScreenshot } from '~/utils/videoScreenshot'
 
 const PLAYER_CONTROL_BAR_SELECTOR = '.bpx-player-control-bottom-right'
 const PLAYER_ROOT_SELECTOR = '#playerWrap, #bilibili-player, #bilibiliPlayer, .bpx-player-container, .bilibili-player'
@@ -18,7 +18,6 @@ const screenshotIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 
 
 let controlContainer: HTMLElement | null = null
 let hasInitialized = false
-let isCapturing = false
 let observedPlayerRoot: HTMLElement | null = null
 let observedControlBar: HTMLElement | null = null
 let playerStructureObserver: MutationObserver | null = null
@@ -43,111 +42,6 @@ function findPlayerRoot(controlBar?: HTMLElement | null): HTMLElement | null {
 function shouldManageControl() {
   return settings.value.showVideoScreenshotButton
     && (isVideoPlaybackPage() || isVideoOrBangumiPage())
-}
-
-function findCurrentVideo(trigger: HTMLElement): HTMLVideoElement | null {
-  const player = trigger.closest('.bpx-player-container, #bilibili-player, .bilibili-player')
-  const videos = Array.from((player || document).querySelectorAll<HTMLVideoElement>('video'))
-    .filter(video => video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0 && video.videoHeight > 0)
-
-  return videos.find(video => !video.paused && !video.ended)
-    || videos.find(video => video.getClientRects().length > 0)
-    || videos[0]
-    || null
-}
-
-function getVideoTitle(): string {
-  const titleElement = document.querySelector<HTMLElement>('h1.video-title, .video-title, #player-title, .season-info .title')
-  const title = titleElement?.getAttribute('title')
-    || titleElement?.textContent
-    || document.querySelector<HTMLMetaElement>('meta[itemprop="name"], meta[property="og:title"]')?.content
-    || document.title
-  const titleWithoutControlCharacters = Array.from(title, character => character.charCodeAt(0) < 32 ? '_' : character).join('')
-
-  return titleWithoutControlCharacters
-    .replace(/_哔哩哔哩_bilibili$/, '')
-    .replace(/[<>:"/\\|?*]/g, '_')
-    .replace(/\s+/g, ' ')
-    .replace(/[.\s]+$/g, '')
-    .slice(0, 120)
-    || 'bilibili-video'
-}
-
-function formatFrameTime(currentTime: number): string {
-  const totalMilliseconds = Number.isFinite(currentTime)
-    ? Math.max(0, Math.floor(currentTime * 1000))
-    : 0
-  const milliseconds = totalMilliseconds % 1000
-  const totalSeconds = Math.floor(totalMilliseconds / 1000)
-  const seconds = totalSeconds % 60
-  const totalMinutes = Math.floor(totalSeconds / 60)
-  const minutes = totalMinutes % 60
-  const hours = Math.floor(totalMinutes / 60)
-
-  return [hours, minutes, seconds]
-    .map(value => String(value).padStart(2, '0'))
-    .join('-')
-    .concat(`-${String(milliseconds).padStart(3, '0')}`)
-}
-
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob)
-        resolve(blob)
-      else
-        reject(new Error('Canvas conversion returned an empty image'))
-    }, 'image/png')
-  })
-}
-
-async function captureCurrentFrame(trigger: HTMLElement) {
-  if (isCapturing)
-    return
-
-  const video = findCurrentVideo(trigger)
-  if (!video) {
-    showState(translate('player_screenshot.video_unavailable'))
-    return
-  }
-
-  isCapturing = true
-  trigger.setAttribute('aria-busy', 'true')
-  trigger.style.opacity = '0.5'
-
-  try {
-    const capturedTime = video.currentTime
-    const canvas = document.createElement('canvas')
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-
-    const context = canvas.getContext('2d')
-    if (!context)
-      throw new Error('Canvas 2D context is unavailable')
-
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    const blob = await canvasToBlob(canvas)
-    const objectUrl = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = objectUrl
-    link.download = `${getVideoTitle()}_${formatFrameTime(capturedTime)}.png`
-    link.style.display = 'none'
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
-
-    showState(translate('player_screenshot.saved'))
-  }
-  catch (error) {
-    console.error('[BewlyCat] 视频帧截图失败', error)
-    showState(translate('player_screenshot.failed'))
-  }
-  finally {
-    isCapturing = false
-    trigger.removeAttribute('aria-busy')
-    trigger.style.removeProperty('opacity')
-  }
 }
 
 function createControlContainer(): HTMLElement {
@@ -177,14 +71,14 @@ function createControlContainer(): HTMLElement {
     event.preventDefault()
   })
   container.addEventListener('click', () => {
-    void captureCurrentFrame(container)
+    void captureVideoScreenshot(container)
   })
   container.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ')
       return
 
     event.preventDefault()
-    void captureCurrentFrame(container)
+    void captureVideoScreenshot(container)
   })
 
   return container

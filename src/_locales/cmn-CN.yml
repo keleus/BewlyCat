@@ -469,7 +469,7 @@ settings:
   show_bewly_widescreen_button: 显示播放器 Bewly 宽屏按钮
   show_bewly_widescreen_button_desc: 启用后，在视频播放器控制栏中显示 Bewly 宽屏按钮。
   show_video_screenshot_button: 显示播放器截图按钮
-  show_video_screenshot_button_desc: 启用后，在视频播放器控制栏中显示截取当前视频画面的按钮。
+  show_video_screenshot_button_desc: 启用后，在视频播放器控制栏中显示截取当前视频画面的按钮。关闭后仍可使用截图快捷键，可在「快捷键」设置中配置。
   keep_collection_video_default_mode: 合集视频保持默认模式
   keep_collection_video_default_mode_desc: 当启用时，合集视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   keep_watch_later_video_default_mode: 稍后再看保持默认模式
@@ -923,6 +923,8 @@ settings:
     turn_off_light_desc: 打开/关闭关灯模式
     caption: 字幕
     caption_desc: 打开/关闭字幕
+    video_screenshot: 视频截图
+    video_screenshot_desc: 将当前视频画面保存为 PNG 图片，关闭播放器截图按钮后仍可使用。
     increase_playback_rate: 加速播放
     increase_playback_rate_desc: 提高播放速度
     decrease_playback_rate: 减速播放

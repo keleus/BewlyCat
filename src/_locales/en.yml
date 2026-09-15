@@ -1001,6 +1001,8 @@ settings:
     turn_off_light_desc: Toggle theater mode
     caption: Captions
     caption_desc: Toggle captions
+    video_screenshot: Video Screenshot
+    video_screenshot_desc: Save the current video frame as a PNG image, even when the player screenshot button is hidden.
     increase_playback_rate: Increase Speed
     increase_playback_rate_desc: Increase playback speed
     decrease_playback_rate: Decrease Speed
@@ -1083,7 +1085,7 @@ settings:
   show_bewly_widescreen_button: Show player Bewly Widescreen button
   show_bewly_widescreen_button_desc: Show the Bewly Widescreen button in the video player controls.
   show_video_screenshot_button: Show player screenshot button
-  show_video_screenshot_button_desc: Show a button in the video player controls for capturing the current video frame.
+  show_video_screenshot_button_desc: Show a button in the video player controls for capturing the current video frame. The screenshot shortcut remains available when the button is hidden and can be configured in Shortcuts settings.
   group_fonts: Font
   group_visual_effects: Visual Effects
   visibility: show

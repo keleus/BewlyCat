@@ -82,6 +82,7 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
       { id: 'pip', name: t('settings.shortcuts.pip'), description: t('settings.shortcuts.pip_desc'), defaultKey: 'P' },
       { id: 'turnOffLight', name: t('settings.shortcuts.turn_off_light'), description: t('settings.shortcuts.turn_off_light_desc'), defaultKey: 'I' },
       { id: 'caption', name: t('settings.shortcuts.caption'), description: t('settings.shortcuts.caption_desc'), defaultKey: 'C' },
+      { id: 'videoScreenshot', name: t('settings.shortcuts.video_screenshot'), description: t('settings.shortcuts.video_screenshot_desc'), defaultKey: 'Shift+S' },
       { id: 'increasePlaybackRate', name: t('settings.shortcuts.increase_playback_rate'), description: t('settings.shortcuts.increase_playback_rate_desc'), defaultKey: '+' },
       { id: 'decreasePlaybackRate', name: t('settings.shortcuts.decrease_playback_rate'), description: t('settings.shortcuts.decrease_playback_rate_desc'), defaultKey: '-' },
       { id: 'resetPlaybackRate', name: t('settings.shortcuts.reset_playback_rate'), description: t('settings.shortcuts.reset_playback_rate_desc'), defaultKey: '0' },
@@ -337,7 +338,7 @@ function resetAllShortcuts() {
         <template #desc>
           <div v-html="t('settings.shortcuts.enable_all_shortcuts_toggle_desc')" />
         </template>
-        <Radio v-model="settings.keyboard" />
+        <Radio v-model="settings.keyboard" @update:model-value="setupShortcutHandlers" />
       </SettingsItem>
     </SettingsItemGroup>
 

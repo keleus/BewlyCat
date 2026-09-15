@@ -1345,6 +1345,8 @@ else if (shouldInitializeContentScript) {
 
     initVideoAspectRatioMemory()
     initVideoScreenshotControl()
+    if (isVideoPlaybackPage() || isVideoOrBangumiPage())
+      setupShortcutHandlers()
     runWhenNativeVideoHeaderStable(initBewlyWidescreenControl)
     initTouchPlayerGestures()
 
