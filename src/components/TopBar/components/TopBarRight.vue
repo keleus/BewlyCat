@@ -12,6 +12,7 @@ import { isComponentVisible, shouldShowBadge, shouldShowDotBadge, shouldShowNumb
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import { MESSAGE_URL } from '../constants/urls'
+import AddOpenTabsDialog from './AddOpenTabsDialog.vue'
 import FavoritesPop from './pops/FavoritesPop.vue'
 import HistoryPop from './pops/HistoryPop.vue'
 import MomentsPop from './pops/MomentsPop.vue'
@@ -26,6 +27,13 @@ import TopBarModeSwitcher from './TopBarModeSwitcher.vue'
 const emit = defineEmits(['notificationsClick'])
 
 const topBarStore = useTopBarStore()
+const showAddOpenTabsDialog = ref(false)
+
+function openAddOpenTabsDialog() {
+  showAddOpenTabsDialog.value = true
+  topBarStore.closeAllPopups()
+}
+
 // 使用 store 中的必要状态
 const {
   isLogin,
@@ -462,6 +470,7 @@ const shouldShowDivider = computed(() => {
                   v-if="!isLayoutEditing && popupVisible?.watchLater"
                   ref="watchLaterPopRef"
                   class="bew-popover"
+                  @add-open-tabs="openAddOpenTabsDialog"
                   @click.stop="() => {}"
                 />
               </Transition>
@@ -696,6 +705,10 @@ const shouldShowDivider = computed(() => {
         :force-white-icon="forceWhiteIcon"
       />
     </div>
+    <AddOpenTabsDialog
+      v-if="showAddOpenTabsDialog"
+      @close="showAddOpenTabsDialog = false"
+    />
   </div>
 </template>
 

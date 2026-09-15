@@ -1310,6 +1310,16 @@ version_reminder:
   acknowledge: 已知曉，此版本不再提示
   settings_hint: 可在「設定 → 關於」中關閉「新版本提醒」。
 watch_later:
+  add_open_tabs: 加入分頁
+  add_open_tabs_hint: 將所有視窗中開啟的 B 站影片、動畫和影視播放頁加入稍後觀看
+  add_open_tabs_confirm: 將所有視窗中開啟的 B 站影片、動畫和影視播放分頁全部加入稍後觀看。重複或已加入的內容會自動略過。
+  confirm_add_open_tabs: 確認加入
+  reading_open_tabs: 正在讀取分頁…
+  add_open_tabs_progress: '已處理 {completed} / {total} 項'
+  add_open_tabs_account_changed: 帳號狀態已變更，已停止加入，請重新確認後再試。
+  adding_open_tabs: 加入中…
+  no_open_video_tabs: 沒有可加入的影片、動畫或影視播放分頁
+  add_open_tabs_result: '已加入 {added} 項，略過重複或已加入的 {skipped} 項，失敗 {failed} 項'
   title: 稍後觀看
   clear_all: 清空稍後觀看
   clear_all_confirm: |-

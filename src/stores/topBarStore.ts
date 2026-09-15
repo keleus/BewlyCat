@@ -33,8 +33,12 @@ import { parseTopBarPublicationTime, recordUploaderLatestVideoTimes } from '~/lo
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
+import { i18n } from '~/utils/i18n'
 import { getCSRF, isHomePage } from '~/utils/main'
 import { isBackgroundUnavailableError, onMessage, sendMessage } from '~/utils/messaging'
+import type { AddOpenTabsResult } from '~/utils/openTabsWatchLater'
+import { addOpenTabsToWatchLater } from '~/utils/openTabsWatchLater'
+import { getOpenBilibiliTabUrls } from '~/utils/tabs'
 
 export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 已登录但 userInfo 未填充时重查的间隔
 
@@ -118,6 +122,9 @@ export const useTopBarStore = defineStore('topBar', () => {
   let watchLaterListRequested = false
   const favoriteStateVersion = ref(0)
   const isLoadingWatchLater = ref<boolean>(false)
+  const isAddingOpenTabsToWatchLater = ref(false)
+  const openTabsWatchLaterProgress = ref<AddOpenTabsResult>()
+  const openTabsWatchLaterError = ref('')
   // 添加 Moments 相关状态
   const moments = reactive<any[]>([])
   const addedWatchLaterList = reactive<number[]>([])
@@ -760,6 +767,58 @@ export const useTopBarStore = defineStore('topBar', () => {
       ) {
         isLoadingWatchLater.value = false
       }
+    }
+  }
+
+  async function addOpenTabVideosToWatchLater() {
+    if (isAddingOpenTabsToWatchLater.value)
+      return
+
+    openTabsWatchLaterProgress.value = { total: 0, added: 0, skipped: 0, failed: 0 }
+    openTabsWatchLaterError.value = ''
+    const accountId = getLocalLoginMid()
+    const csrf = getCSRF()
+    const t = i18n.global.t
+    if (!isLogin.value || accountId === undefined || !csrf) {
+      openTabsWatchLaterError.value = t('moments.login_to_watch_later')
+      return
+    }
+
+    const accountUnchanged = () => isLogin.value && getLocalLoginMid() === accountId && getCSRF() === csrf
+    isAddingOpenTabsToWatchLater.value = true
+    try {
+      const urls = await getOpenBilibiliTabUrls()
+      const result = await addOpenTabsToWatchLater(urls, csrf, accountUnchanged, (progress) => {
+        if (accountUnchanged())
+          openTabsWatchLaterProgress.value = progress
+      })
+      if (!accountUnchanged()) {
+        openTabsWatchLaterError.value = t('watch_later.add_open_tabs_account_changed')
+        return
+      }
+
+      openTabsWatchLaterProgress.value = result
+      if (result.added > 0) {
+        const refresh = () => {
+          if (!accountUnchanged())
+            return
+          void syncWatchLaterState(true).catch((error) => {
+            console.error('刷新顶栏稍后再看状态失败:', error)
+          })
+        }
+        refresh()
+        // 写入后查询偶尔短暂返回旧数据，补一次最终状态。
+        window.setTimeout(refresh, 1000)
+      }
+    }
+    catch (error) {
+      console.error('添加打开标签页到稍后再看失败:', error)
+      openTabsWatchLaterError.value = t(accountUnchanged()
+        ? 'moments.watch_later_operation_failed'
+        : 'watch_later.add_open_tabs_account_changed')
+    }
+    finally {
+      isAddingOpenTabsToWatchLater.value = false
     }
   }
 
@@ -1508,6 +1567,9 @@ export const useTopBarStore = defineStore('topBar', () => {
     watchLaterList,
     favoriteStateVersion,
     isLoadingWatchLater,
+    isAddingOpenTabsToWatchLater,
+    openTabsWatchLaterProgress,
+    openTabsWatchLaterError,
     drawerVisible,
     notificationsDrawerUrl,
     popupVisible,
@@ -1554,6 +1616,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     getAllWatchLaterList,
     loadMoreWatchLaterList,
     deleteWatchLaterItem,
+    addOpenTabVideosToWatchLater,
 
     privilegeInfo,
     hasBCoinToReceive,

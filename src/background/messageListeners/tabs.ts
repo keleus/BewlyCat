@@ -11,6 +11,7 @@ interface Message {
 
 export enum TABS_MESSAGE {
   OPEN_LINK_IN_BACKGROUND = 'openLinkInBackground',
+  GET_OPEN_BILIBILI_TAB_URLS = 'getOpenBilibiliTabUrls',
 }
 
 async function handleMessage(data: Message, sender?: browser.Runtime.MessageSender) {
@@ -45,4 +46,8 @@ async function handleMessage(data: Message, sender?: browser.Runtime.MessageSend
 
 export function setupTabMsgListeners() {
   onMessage(TABS_MESSAGE.OPEN_LINK_IN_BACKGROUND, handleMessage)
+  onMessage(TABS_MESSAGE.GET_OPEN_BILIBILI_TAB_URLS, async () => {
+    const tabs = await browser.tabs.query({ url: '*://*.bilibili.com/*' })
+    return tabs.map(tab => tab.url).filter((url): url is string => Boolean(url))
+  })
 }

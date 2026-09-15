@@ -14,8 +14,10 @@ import { isActualHomepage, isHomePage, isInIframe, removeHttpFromUrl } from '~/u
 import { openLinkInBackground } from '~/utils/tabs'
 import { getWatchLaterAuthor } from '~/utils/watchLater'
 
+const emit = defineEmits<{ addOpenTabs: [] }>()
+
 const topBarStore = useTopBarStore()
-const { watchLaterList, isLoadingWatchLater, watchLaterCount } = storeToRefs(topBarStore)
+const { watchLaterList, isLoadingWatchLater, watchLaterCount, isAddingOpenTabsToWatchLater } = storeToRefs(topBarStore)
 const viewAllUrl = computed((): string => {
   return 'https://www.bilibili.com/watchlater/list'
 })
@@ -109,11 +111,12 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
   >
     <!-- top bar -->
     <header
-      flex="~ items-center justify-between"
+      flex="~ items-center justify-between gap-3 wrap"
       p="x-6 y-5"
       pos="sticky top-0 left-0"
       w="full"
       z="2"
+      shrink-0
     >
       <div flex="~">
         <div>
@@ -121,20 +124,30 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
         </div>
       </div>
 
-      <div flex="~ gap-4">
+      <div flex="~ items-center gap-4 wrap">
+        <button
+          type="button"
+          class="watch-later-header-action"
+          :disabled="isAddingOpenTabsToWatchLater"
+          :aria-busy="isAddingOpenTabsToWatchLater"
+          :title="$t('watch_later.add_open_tabs_hint')"
+          @click.stop="emit('addOpenTabs')"
+        >
+          {{ $t(isAddingOpenTabsToWatchLater ? 'watch_later.adding_open_tabs' : 'watch_later.add_open_tabs') }}
+        </button>
         <ALink
           :href="playAllUrl"
           type="topBar"
-          flex="~" items="center"
+          class="watch-later-header-action"
         >
-          <span text="sm">{{ $t('common.play_all') }}</span>
+          {{ $t('common.play_all') }}
         </ALink>
         <ALink
           :href="viewAllUrl"
           type="topBar"
-          flex="~" items="center"
+          class="watch-later-header-action"
         >
-          <span text="sm">{{ $t('common.view_all') }}</span>
+          {{ $t('common.view_all') }}
         </ALink>
       </div>
     </header>
@@ -147,6 +160,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
       p="x-3"
       flex-1
       min-h-0
+      overscroll-contain
     >
       <!-- loading -->
       <Loading
@@ -158,8 +172,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
       <!-- empty -->
       <Empty
         v-if="!isLoadingWatchLater && watchLaterList.length === 0"
-        pos="absolute top-0 left-0"
-        z="0" w="full" h="full"
+        w="full" flex-1
         flex="~ items-center"
       />
 
@@ -311,3 +324,33 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
     </main>
   </div>
 </template>
+
+<style scoped lang="scss">
+.watch-later-header-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--bew-space-6);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--bew-text-1);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-control);
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    color: var(--bew-theme-color);
+  }
+
+  &:active:not(:disabled) {
+    opacity: 0.7;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+</style>
