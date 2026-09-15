@@ -56,6 +56,10 @@ else {
 const showSettings = ref(false)
 const pendingSettingsNavigation = ref<SettingsNavigationTarget>()
 const searchFocusOverlayActive = ref(false)
+const pageWallpaperReady = ref(false)
+const useBlendedPageControls = computed(() => settings.value.enableFrostedGlass
+  && settings.value.frostedGlassBlurIntensity > 0
+  && (pageWallpaperReady.value || (settings.value.useLinearGradientThemeColorBackground && isDark.value)))
 
 function openSettings(target?: SettingsNavigationTarget) {
   pendingSettingsNavigation.value = target
@@ -219,6 +223,14 @@ function getPageParam(): AppPage | null {
 }
 
 const activatedPage = ref<AppPage>(getPageParam() || (settings.value.dockItemsConfig.find(e => e.visible === true)?.page || AppPage.Home))
+const pageControlWallpaperMask = computed(() => {
+  if (!pageWallpaperReady.value)
+    return '0%'
+  const separateSearchWallpaper = activatedPage.value === AppPage.Search && settings.value.individuallySetSearchPageWallpaper
+  const enabled = separateSearchWallpaper ? settings.value.searchPageEnableWallpaperMasking : settings.value.enableWallpaperMasking
+  const opacity = separateSearchWallpaper ? settings.value.searchPageWallpaperMaskOpacity : settings.value.wallpaperMaskOpacity
+  return `${enabled && Number.isFinite(opacity) ? Math.min(100, Math.max(0, opacity)) : 0}%`
+})
 
 // 清理搜索相关的URL参数（仅在首页生效）
 function clearSearchParamsFromUrl() {
@@ -1859,7 +1871,7 @@ if (settings.value.cleanUrlArgument) {
   >
     <!-- Background -->
     <template v-if="showBewlyPage">
-      <AppBackground :activated-page="activatedPage" />
+      <AppBackground :activated-page="activatedPage" @wallpaper-ready="pageWallpaperReady = $event" />
     </template>
 
     <!-- Settings -->
@@ -2073,7 +2085,9 @@ if (settings.value.cleanUrlArgument) {
         <template v-if="showBewlyPage">
           <div
             ref="scrollViewportRef"
-            class="bewly-scroll-viewport"
+            class="bewly-scroll-viewport bew-page-controls"
+            :class="{ 'bew-page-controls--blend': useBlendedPageControls }"
+            :style="{ '--bew-control-wallpaper-mask': pageControlWallpaperMask }"
             h-inherit of-y-auto of-x-hidden
             tabindex="-1"
             style="overscroll-behavior: contain;"

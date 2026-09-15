@@ -23,6 +23,8 @@ export interface Video {
 
   /** `author` for individual submissions by UP; `authorList` for collaborative submissions by UP */
   author?: Author | Author[]
+  /** UP 主投稿接口的查询范围；联合投稿的主投稿人可能是其他用户。 */
+  sourceUploaderMid?: number
 
   view?: number
   viewStr?: string

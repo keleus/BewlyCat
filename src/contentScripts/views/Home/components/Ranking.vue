@@ -292,26 +292,29 @@ defineExpose({ initData })
 <template>
   <div flex="~ gap-40px">
     <aside
+      class="ranking-sidebar"
       pos="sticky top-150px" h="[calc(100vh-140px)]" w-200px shrink-0 duration-300
       ease-in-out
       :class="{ hide: shouldMoveAsideUp }"
     >
-      <div h-inherit p-20px m--20px of-y-auto of-x-hidden>
+      <div class="ranking-scroll bew-page-sidebar" of-y-auto of-x-hidden>
         <ul flex="~ col gap-2">
           <li v-for="rankingType in rankingTypes" :key="rankingType.id">
-            <a
-              :class="{ active: activatedRankingType.id === rankingType.id }"
-              px-4 lh-30px h-30px hover:bg="$bew-fill-2" w-inherit
-              block rounded="$bew-radius" cursor-pointer transition="background-color duration-200, color duration-200, box-shadow duration-200, transform duration-200"
-              un-text="$bew-text-1"
+            <button
+              type="button"
+              class="bew-page-nav-item"
+              :data-active="activatedRankingType.id === rankingType.id"
+              :aria-pressed="activatedRankingType.id === rankingType.id"
               @click="activatedRankingType = rankingType"
-            >{{ rankingType.name }}</a>
+            >
+              {{ rankingType.name }}
+            </button>
           </li>
         </ul>
       </div>
     </aside>
 
-    <div w-full>
+    <div w-full min-w-0>
       <template v-if="!('seasonType' in activatedRankingType)">
         <VideoCardGrid
           :items="videoList"
@@ -371,8 +374,14 @@ defineExpose({ initData })
 </template>
 
 <style lang="scss" scoped>
-.active {
-  --uno: "scale-105 bg-$bew-theme-color-auto text-$bew-text-auto shadow-$bew-shadow-2";
+.ranking-sidebar {
+  align-self: flex-start;
+}
+
+.ranking-scroll {
+  max-height: 100%;
+  padding: var(--bew-space-2);
+  overscroll-behavior-y: contain;
 }
 
 .hide {

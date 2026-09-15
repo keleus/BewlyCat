@@ -5,7 +5,7 @@
  * ## 功能概述
  * 显示用户关注的UP主列表及其视频动态流。支持两种视图模式：
  * 1. ALL视图：显示所有关注UP主的混合视频流
- * 2. 单UP主视图：显示特定UP主的视频动态
+ * 2. 单UP主视图：显示特定UP主的视频动态，支持通过关键词搜索其视频投稿
  *
  * UP主列表优先使用页面已加载到的历史投稿时间排序，来源包括：
  * 1. ALL视图的关注动态流中实际加载到的视频时间
@@ -56,6 +56,7 @@ import {
 import type { FollowingLiveResult, List as FollowingLiveItem } from '~/models/live/getFollowingLiveList'
 import type { DataItem as MomentItem, MomentResult } from '~/models/moment/moment'
 import { BadgeText } from '~/models/moment/moment'
+import type { UserVideo, UserVideosResult } from '~/models/video/userVideos'
 import api from '~/utils/api'
 import { calcTimeSince, parseStatNumber } from '~/utils/dataFormatter'
 import type { FollowingGroup, FollowingGroupsResult, FollowingRelationUser } from '~/utils/followingGroups'
@@ -143,6 +144,16 @@ const isRefreshContextActive = ref<boolean>(false)
 const allViewOffset = tabState.ref<string>('allViewOffset', '')
 const allViewUpdateBaseline = tabState.ref<string>('allViewUpdateBaseline', '')
 const userMomentsOffset = tabState.ref<string>('userMomentsOffset', '')
+const videoSearchInput = tabState.ref('videoSearchInput', '')
+// 输入与已提交的关键词分开，编辑期间的分页仍使用当前结果的关键词。
+const videoSearchKeyword = tabState.ref('videoSearchKeyword', '')
+const userVideosPage = tabState.ref('userVideosPage', 1)
+const USER_VIDEOS_PAGE_SIZE = 30
+// 同一主投稿人可能出现在多条联合投稿中，共用头像请求。
+const searchAuthorFaceRequests = new Map<number, Promise<string | undefined>>()
+const videoSearchPlaceholder = computed(() => t('home.following_search_videos', {
+  name: uploaderList.value.find(uploader => uploader.mid === selectedUploader.value)?.name ?? '',
+}))
 
 const currentUserMid = tabState.ref<number>('currentUserMid', 0) // 当前登录用户的mid
 
@@ -438,7 +449,7 @@ watch(() => settings.value.followingUploaderSort, (sort) => {
     void loadFollowingGroups(true)
 })
 
-const gridKey = computed(() => `following-grid-${selectedUploader.value ?? 'all'}`)
+const gridKey = computed(() => `following-grid-${selectedUploader.value ?? 'all'}-${videoSearchKeyword.value}`)
 
 // 获取当前用户信息以获取关注列表
 async function getCurrentUserInfo() {
@@ -994,6 +1005,112 @@ async function loadUserMoments(mid: number, maxPages: number = 3, token?: number
   }
 }
 
+// 搜索使用投稿接口；不能用已加载的动态做本地关键词过滤。
+async function loadUserVideoSearch(mid: number, token: number) {
+  const keyword = videoSearchKeyword.value
+  if (!tabState.isCurrent() || !keyword)
+    return
+
+  const page = userVideosPage.value
+  const pinScrollToStart = videoList.value.length === 0
+  emit('beforeLoading')
+  isLoading.value = true
+  requestFailed.value = false
+
+  try {
+    const response: UserVideosResult = await api.user.getUserVideos({
+      mid: String(mid),
+      keyword,
+      pn: page,
+      ps: USER_VIDEOS_PAGE_SIZE,
+      order: 'pubdate',
+    })
+    if (!tabState.isCurrent() || token !== selectionToken.value)
+      return
+
+    if (response.code === -101) {
+      needToLoginFirst.value = true
+      return
+    }
+
+    const data = response.data
+    // 风控可能返回 code=0，不能将校验响应显示成“没有结果”。
+    if (response.code !== 0 || data?.is_risk || data?.gaia_res_type
+      || !Array.isArray(data?.list?.vlist) || !Number.isFinite(data?.page?.count)
+      || !(data?.page?.ps > 0)) {
+      throw new Error(response.message || 'Failed to search uploader videos')
+    }
+
+    const loadedIds = new Set(videoList.value.map(video => video.uniqueId))
+    for (const item of data.list.vlist) {
+      const uniqueId = `user-video-${item.aid}`
+      if (loadedIds.has(uniqueId))
+        continue
+      if (settings.value.followingFilterChargingVideos && (item.is_charging_arc || item.elec_arc_type === 1))
+        continue
+      videoList.value.push({
+        uniqueId,
+        bvid: item.bvid,
+        displayData: mapUserVideoToVideo(item),
+      })
+      loadedIds.add(uniqueId)
+    }
+
+    // 按接口的原始数量分页，过滤充电视频或去重不应提前结束搜索。
+    userVideosPage.value = page + 1
+    noMoreContent.value = data.list.vlist.length === 0 || page * data.page.ps >= data.page.count
+    void fillSearchAuthorFaces(token)
+  }
+  catch (error) {
+    if (!tabState.isCurrent() || token !== selectionToken.value)
+      return
+    console.error('[Following] Failed to search uploader videos:', error)
+    requestFailed.value = true
+  }
+  finally {
+    if (tabState.isCurrent() && token === selectionToken.value) {
+      hasLoaded.value = true
+      isLoading.value = false
+      emit('afterLoading')
+      if (pinScrollToStart)
+        pinFeedScrollToStart()
+    }
+  }
+}
+
+function loadSelectedUploaderVideos(mid: number, maxPages: number, token: number) {
+  return videoSearchKeyword.value
+    ? loadUserVideoSearch(mid, token)
+    : loadUserMoments(mid, maxPages, token)
+}
+
+function searchUploaderVideos() {
+  if (!tabState.isCurrent() || selectedUploader.value === null)
+    return
+  const keyword = videoSearchInput.value.trim()
+  videoSearchInput.value = keyword
+  if (keyword === videoSearchKeyword.value && !requestFailed.value)
+    return
+  videoSearchKeyword.value = keyword
+  initData()
+}
+
+function clearVideoSearch() {
+  videoSearchInput.value = ''
+  searchUploaderVideos()
+}
+
+watch(videoSearchInput, (value) => {
+  if (!value.trim() && videoSearchKeyword.value)
+    clearVideoSearch()
+})
+
+function loadMoreSearchVideos() {
+  if (selectedUploader.value === null || isLoading.value || noMoreContent.value || needToLoginFirst.value)
+    return
+  void loadUserVideoSearch(selectedUploader.value, selectionToken.value)
+}
+
 // 切换UP主
 function selectUploader(mid: number | null) {
   if (!tabState.isCurrent())
@@ -1010,6 +1127,10 @@ function selectUploader(mid: number | null) {
   // 重置视频列表和分页状态
   videoList.value = []
   noMoreContent.value = false
+  needToLoginFirst.value = false
+  videoSearchInput.value = ''
+  videoSearchKeyword.value = ''
+  userVideosPage.value = 1
 
   if (mid === null) {
     // 切换到ALL视图
@@ -1050,6 +1171,83 @@ function selectUploader(mid: number | null) {
 
     // 加载UP主动态（初始加载3页，每页加载后立即显示）
     loadUserMoments(mid, 3, currentToken)
+  }
+}
+
+function getSearchAuthorFace(mid: number): Promise<string | undefined> {
+  const cached = searchAuthorFaceRequests.get(mid)
+  if (cached)
+    return cached
+
+  const request = (async () => {
+    try {
+      const response = await api.user.getUserCard({ mid: String(mid) })
+      const card = response?.data?.card
+      if (response?.code === 0 && Number(card?.mid) === mid && typeof card.face === 'string' && card.face)
+        return card.face as string
+    }
+    catch {
+      // 头像补取失败不应影响搜索结果；后续加载时可以重试。
+    }
+    return undefined
+  })()
+  searchAuthorFaceRequests.set(mid, request)
+  void request.then((face) => {
+    if (!face)
+      searchAuthorFaceRequests.delete(mid)
+    // 限制长时间浏览时的缓存体积。
+    if (searchAuthorFaceRequests.size > 100)
+      searchAuthorFaceRequests.delete(searchAuthorFaceRequests.keys().next().value!)
+  })
+  return request
+}
+
+async function fillSearchAuthorFaces(token: number) {
+  const missingAuthors = new Map<number, Author[]>()
+  for (const video of videoList.value) {
+    const author = video.displayData?.author
+    if (!author || Array.isArray(author) || author.authorFace || !author.mid)
+      continue
+    const authors = missingAuthors.get(author.mid) ?? []
+    authors.push(author)
+    missingAuthors.set(author.mid, authors)
+  }
+
+  // 逐个作者补取，避免联合投稿较多时同时发起大量请求。
+  for (const [mid, authors] of missingAuthors) {
+    if (!tabState.isCurrent() || token !== selectionToken.value)
+      return
+    const face = await getSearchAuthorFace(mid)
+    if (!tabState.isCurrent() || token !== selectionToken.value)
+      return
+    if (face) {
+      for (const author of authors)
+        author.authorFace = face
+    }
+  }
+}
+
+function mapUserVideoToVideo(item: UserVideo): Video {
+  const uploader = uploaderList.value.find(uploader => uploader.mid === item.mid)
+  return {
+    id: item.aid,
+    bvid: item.bvid,
+    sourceUploaderMid: selectedUploader.value ?? undefined,
+    title: decodeHtmlEntities(item.title.replace(/<\/?em\b[^>]*>/gi, '')),
+    desc: decodeHtmlEntities(item.description),
+    cover: item.pic,
+    durationStr: item.length,
+    author: {
+      name: decodeHtmlEntities(item.author),
+      mid: item.mid,
+      authorFace: uploader?.face ?? '',
+    },
+    view: parseStatNumber(item.play),
+    danmaku: item.video_review,
+    publishedTimestamp: item.created,
+    capsuleText: calcTimeSince(item.created * 1000),
+    tag: item.is_union_video ? t('home.collaboration') : undefined,
+    threePointV2: [],
   }
 }
 
@@ -1139,6 +1337,8 @@ async function handleLoadMore() {
     return
   if (isLoading.value || noMoreContent.value)
     return
+  if (videoSearchKeyword.value && (requestFailed.value || needToLoginFirst.value))
+    return
   if (suppressUploaderAutoLoadMore.value && selectedUploader.value !== null)
     return
 
@@ -1149,8 +1349,7 @@ async function handleLoadMore() {
     await loadAllViewVideos(1, selectionToken.value)
   }
   else {
-    // UP主视图：继续加载动态
-    await loadUserMoments(selectedUploader.value, 1, selectionToken.value)
+    await loadSelectedUploaderVideos(selectedUploader.value, 1, selectionToken.value)
   }
 }
 
@@ -1171,6 +1370,7 @@ function initData() {
   allViewOffset.value = ''
   allViewUpdateBaseline.value = ''
   userMomentsOffset.value = ''
+  userVideosPage.value = 1
   noMoreContent.value = false
   needToLoginFirst.value = false
   requestFailed.value = false
@@ -1181,7 +1381,7 @@ function initData() {
     console.log('[Following] Refreshing moments for UP', currentSelectedUploader)
     suppressUploaderAutoLoadMore.value = true
     pinFeedScrollToStart()
-    loadUserMoments(currentSelectedUploader, 3, selectionToken.value)
+    loadSelectedUploaderVideos(currentSelectedUploader, 3, selectionToken.value)
   }
   else {
     // 否则，先加载关注列表，然后加载ALL视图
@@ -1234,13 +1434,15 @@ onMounted(() => {
     void loadFollowingList()
   if (selectedUploader.value !== null)
     suppressUploaderAutoLoadMore.value = true
+  if (videoSearchKeyword.value && videoList.value.length > 0)
+    void fillSearchAuthorFaces(selectionToken.value)
   if (!hasLoaded.value && videoList.value.length === 0) {
     if (selectedUploader.value === null) {
       void loadAllViewVideos(3, selectionToken.value)
     }
     else {
       pinFeedScrollToStart()
-      void loadUserMoments(selectedUploader.value, 3, selectionToken.value)
+      void loadSelectedUploaderVideos(selectedUploader.value, 3, selectionToken.value)
     }
   }
 })
@@ -1275,27 +1477,18 @@ defineExpose({ initData })
     <!-- Left Panel: Uploader List -->
     <aside class="uploader-sidebar" w-200px shrink-0>
       <div
-        ref="uploaderScrollRef" h-inherit p="x-20px b-20px t-8px" m--20px of-y-auto
-        class="uploader-scroll"
+        ref="uploaderScrollRef" of-y-auto
+        class="uploader-scroll bew-page-sidebar"
         of-x-hidden
       >
         <!-- Search Box -->
-        <div mb-3>
-          <input
+        <div class="bew-toolbar-controls" mb-3>
+          <Input
             v-model="searchKeyword"
             type="text"
             :placeholder="$t('common.search')"
-            px-4 py-2 w-full
-            rounded="$bew-radius"
-            bg="$bew-fill-1"
-            border="1 $bew-border-color"
-            text="sm $bew-text-1"
-            outline-none
-            transition="border-color duration-300, background-color duration-300"
-            focus:border="$bew-theme-color"
-            focus:bg="$bew-fill-2"
-            placeholder:text="$bew-text-3"
-          >
+            :aria-label="$t('common.search')"
+          />
         </div>
 
         <div
@@ -1318,12 +1511,9 @@ defineExpose({ initData })
           <li key="all-uploaders">
             <button
               type="button"
-              class="uploader-button"
+              class="uploader-button bew-page-nav-item"
               :aria-pressed="selectedUploader === null"
-              :class="{ active: selectedUploader === null }"
-              px-4 py-2 hover:bg="$bew-fill-2" w-inherit
-              block rounded="$bew-radius" cursor-pointer transition="background-color duration-200, color duration-200, box-shadow duration-200"
-              un-text="$bew-text-1"
+              :data-active="selectedUploader === null"
               flex="~ items-center gap-3"
               @click="selectUploader(null)"
             >
@@ -1368,13 +1558,10 @@ defineExpose({ initData })
             <button
               v-else
               type="button"
-              class="uploader-button"
+              class="uploader-button bew-page-nav-item"
               aria-haspopup="menu"
               :aria-pressed="selectedUploader === row.uploader.mid"
-              :class="{ active: selectedUploader === row.uploader.mid }"
-              px-4 py-2 hover:bg="$bew-fill-2" w-inherit
-              block rounded="$bew-radius" cursor-pointer transition="background-color duration-200, color duration-200, box-shadow duration-200"
-              un-text="$bew-text-1"
+              :data-active="selectedUploader === row.uploader.mid"
               flex="~ items-center gap-3"
               @click="selectUploader(row.uploader.mid)"
               @contextmenu.prevent.stop="uploaderMenuRef?.open($event, row.uploader)"
@@ -1395,7 +1582,7 @@ defineExpose({ initData })
                 />
               </div>
               <div flex-1 overflow-hidden>
-                <div font-medium truncate text-sm>
+                <div font-medium truncate>
                   {{ row.uploader.name }}
                 </div>
                 <div class="secondary-text">
@@ -1423,7 +1610,41 @@ defineExpose({ initData })
     </aside>
 
     <!-- Right Panel: Video Feed -->
-    <div w-full>
+    <div w-full min-w-0>
+      <form
+        v-if="selectedUploader !== null"
+        class="video-search bew-toolbar-controls"
+        role="search"
+        :aria-label="videoSearchPlaceholder"
+        @submit.prevent="searchUploaderVideos"
+      >
+        <Input
+          v-model="videoSearchInput"
+          class="video-search-field"
+          type="text"
+          :placeholder="videoSearchPlaceholder"
+          :aria-label="videoSearchPlaceholder"
+        >
+          <template #suffix>
+            <button
+              v-if="videoSearchInput || videoSearchKeyword"
+              type="button"
+              class="video-search-clear"
+              :aria-label="$t('home.following_clear_video_search')"
+              :title="$t('home.following_clear_video_search')"
+              @click="clearVideoSearch"
+            >
+              <span i-mingcute:close-line aria-hidden="true" />
+            </button>
+          </template>
+        </Input>
+        <Button type="secondary">
+          <template #left>
+            <span i-mingcute:search-line aria-hidden="true" />
+          </template>
+          {{ $t('common.search') }}
+        </Button>
+      </form>
       <VideoCardGrid
         :key="gridKey"
         :items="videoList"
@@ -1432,6 +1653,7 @@ defineExpose({ initData })
         :no-more-content="noMoreContent"
         :need-to-login-first="needToLoginFirst"
         :request-failed="requestFailed"
+        :empty-description="videoSearchKeyword ? (requestFailed ? $t('search.search_failed') : $t('home.following_no_search_results')) : undefined"
         :show-loading-more-skeleton="selectedUploader === null"
         :transform-item="transformVideoItem"
         :get-item-key="(item: VideoElement) => item.uniqueId"
@@ -1442,6 +1664,17 @@ defineExpose({ initData })
         @login="jumpToLoginPage"
         @load-more="handleLoadMore"
       />
+      <div
+        v-if="videoSearchKeyword && !noMoreContent && !needToLoginFirst && !isLoading"
+        class="video-search-pagination"
+      >
+        <p v-if="requestFailed && videoList.length > 0" role="status">
+          {{ $t('search.search_failed') }}
+        </p>
+        <Button v-if="videoList.length > 0 || !requestFailed" type="secondary" @click="loadMoreSearchVideos">
+          {{ requestFailed ? $t('home.following_groups_retry') : $t('common.load_more') }}
+        </Button>
+      </div>
     </div>
     <FollowingUploaderMenu
       ref="uploaderMenuRef"
@@ -1459,6 +1692,51 @@ defineExpose({ initData })
 </template>
 
 <style lang="scss" scoped>
+.video-search {
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-2);
+  margin-bottom: var(--bew-space-6);
+}
+
+.video-search-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.video-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--bew-control-item-height);
+  height: var(--bew-control-item-height);
+  color: var(--bew-text-2);
+  font-size: var(--bew-icon-size-sm);
+  border-radius: var(--bew-interactive-radius);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--bew-text-1);
+    background: var(--bew-fill-2);
+  }
+
+  &:active {
+    background: var(--bew-fill-3);
+  }
+}
+
+.video-search-pagination {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--bew-space-3);
+  padding-block: var(--bew-space-4);
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+}
+
 .following-layout {
   // 切换 UP 时视频网格会短暂清空。父容器仍需容纳侧栏高度与 sticky 顶部偏移，
   // 否则 sticky 会被父容器底边推回文档流位置，造成整个侧栏先上移再下移。
@@ -1475,6 +1753,8 @@ defineExpose({ initData })
 }
 
 .uploader-scroll {
+  max-height: 100%;
+  padding: 0 var(--bew-space-2) var(--bew-space-2);
   // 点击后的状态变化不应触发浏览器滚动锚定，滚动到边缘也不穿透到右侧信息流。
   overflow-anchor: none;
   overscroll-behavior-y: contain;
@@ -1485,7 +1765,7 @@ defineExpose({ initData })
   flex-direction: column;
   align-items: flex-start;
   gap: var(--bew-space-2);
-  color: var(--bew-text-2);
+  color: var(--bew-control-surface-muted);
   font-size: var(--bew-font-size-control);
   line-height: var(--bew-line-height-control);
 
@@ -1517,7 +1797,7 @@ defineExpose({ initData })
   min-height: var(--bew-control-height);
   padding: var(--bew-space-2);
   border-radius: var(--bew-interactive-radius);
-  color: var(--bew-text-2);
+  color: var(--bew-control-surface-muted);
   font-size: var(--bew-font-size-control);
   font-weight: var(--bew-font-weight-semibold);
   line-height: var(--bew-line-height-control);
@@ -1572,14 +1852,13 @@ defineExpose({ initData })
 }
 
 .secondary-text {
-  --uno: "text-xs text-$bew-text-2";
+  color: var(--bew-control-surface-muted);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
 }
 
-.active {
-  --uno: "bg-$bew-theme-color-auto text-$bew-text-auto shadow-$bew-shadow-2";
-
-  .secondary-text {
-    --uno: "text-$bew-text-auto opacity-85";
-  }
+.uploader-button[data-active="true"] .secondary-text {
+  color: var(--bew-text-auto);
+  opacity: 0.85;
 }
 </style>

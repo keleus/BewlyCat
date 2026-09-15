@@ -210,7 +210,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
 
     // Moments feed preview control: Only load preview if video belongs to selected uploader
     // This prevents loading previews for videos from other uploaders when switching
-    if (momentsSelectedUploader.value !== null) {
+    if (momentsSelectedUploader.value !== null && props.value.video.sourceUploaderMid !== momentsSelectedUploader.value) {
       const authorMids = getAuthorMids(props.value.video)
       // If no authors found, don't load preview
       if (authorMids.length === 0)

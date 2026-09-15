@@ -1162,19 +1162,21 @@ function transformFavoriteArticle(item: FavoriteArticle) {
 
       <div
         v-if="favoriteView === 'video'"
-        class="favorites-toolbar bew-popover-surface bew-popover-surface--wallpaper"
+        class="favorites-toolbar bew-toolbar-controls"
       >
-        <div class="toolbar-search-group">
+        <div v-if="!isBatchManaging" class="toolbar-search-group">
           <Select v-model="searchScope" class="search-scope-select" :options="searchScopeOptions" @change="handleSearchScopeChange" />
           <Input
             v-model="keyword"
             class="favorites-search-input"
             :placeholder="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
+            :aria-label="searchScope === 'all' ? t('favorites.global_search_placeholder') : t('favorites.search_placeholder')"
             @enter="handleSearch"
           />
           <Button
-            type="primary"
+            type="secondary"
             :disabled="searchScope === 'all' && !keyword.trim()"
+            :aria-label="$t('common.search')"
             @click="handleSearch"
           >
             <template #left>
@@ -1207,7 +1209,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
               </template>
               {{ isAllCurrentPageSelected ? t('favorites.batch_unselect_all') : t('favorites.batch_select_all') }}
             </Button>
-            <span class="batch-selected-count">
+            <span class="batch-selected-count bew-toolbar-note">
               {{ t('favorites.batch_selected_count', { count: selectedCount }) }}
             </span>
             <Button
@@ -1370,8 +1372,7 @@ function transformFavoriteArticle(item: FavoriteArticle) {
         class="favorites-sidebar-panel"
         :class="{
           'favorites-sidebar-panel--cover': settings.enableSidebarCoverBlur,
-          'bew-popover-surface': !settings.enableSidebarCoverBlur,
-          'bew-popover-surface--wallpaper': !settings.enableSidebarCoverBlur,
+          'bew-page-sidebar': !settings.enableSidebarCoverBlur,
         }"
       >
         <div v-if="settings.enableSidebarCoverBlur" class="favorites-sidebar-background" aria-hidden="true">
@@ -1677,8 +1678,8 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   color: var(--favorites-sidebar-text);
 
   --favorites-sidebar-text: var(--bew-text-1);
-  --favorites-sidebar-text-muted: var(--bew-text-2);
-  --favorites-sidebar-text-subtle: var(--bew-text-3);
+  --favorites-sidebar-text-muted: var(--bew-control-surface-muted);
+  --favorites-sidebar-text-subtle: var(--bew-control-surface-muted);
   --favorites-sidebar-hover: var(--bew-fill-2);
   --favorites-sidebar-active: var(--bew-fill-2);
   --favorites-sidebar-active-text: var(--bew-text-1);
@@ -2139,19 +2140,6 @@ function transformFavoriteArticle(item: FavoriteArticle) {
   width: 100%;
   max-width: 100%;
   margin: var(--bew-space-3) 0;
-  padding: var(--bew-space-2);
-  isolation: isolate;
-}
-
-.favorites-toolbar :deep(.b-input),
-.favorites-toolbar :deep(.select-trigger) {
-  background: var(--bew-fill-2);
-}
-
-.favorites-toolbar :deep(.b-button--type-secondary),
-.favorites-toolbar :deep(.b-button--type-tertiary) {
-  --b-button-color: var(--bew-fill-2);
-  --b-button-color-hover: var(--bew-fill-3);
 }
 
 .toolbar-search-group,

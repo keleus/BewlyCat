@@ -6,6 +6,7 @@ interface Props {
   min?: number
   max?: number
   placeholder?: string
+  ariaLabel?: string
 }
 const props = withDefaults(defineProps<Props>(), { size: 'medium' })
 
@@ -62,6 +63,7 @@ defineExpose({ focus })
       :min="min"
       :max="max"
       :placeholder="placeholder"
+      :aria-label="ariaLabel"
       w-inherit min-w-0 h-inherit
       outline-none flex-1 bg-transparent
       @keydown.enter="$emit('enter')"

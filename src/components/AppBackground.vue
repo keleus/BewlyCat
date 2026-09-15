@@ -9,6 +9,7 @@ import { hexToHSL } from '~/utils/main'
 import { cleanupExpiredCache, getOrCacheWallpaper } from '~/utils/wallpaperCache'
 
 const props = defineProps<{ activatedPage: AppPage }>()
+const emit = defineEmits<{ wallpaperReady: [ready: boolean] }>()
 
 const { isDark } = useDark()
 
@@ -149,6 +150,10 @@ const currentWallpaperUrl = computed(() => {
   }
   return resolvedWallpaper.value
 })
+
+// 控件只在实际壁纸解码成功后使用融合底色，加载失败时仍保持普通页面的可读性。
+watch(currentWallpaperUrl, url => emit('wallpaperReady', Boolean(url)), { immediate: true })
+onBeforeUnmount(() => emit('wallpaperReady', false))
 
 const currentWallpaperBlurIntensity = computed(() => {
   if (props.activatedPage === AppPage.Search && settings.value.individuallySetSearchPageWallpaper)

@@ -185,6 +185,7 @@ const API_USER = {
       pn: 1, // 页码
       order: 'pubdate', // 排序方式：pubdate最新发布，click最多播放
       tid: 0, // 不筛选分区
+      keyword: '', // 搜索该UP主的视频投稿
     },
     afterHandle: AHS.J_D,
   },

@@ -347,6 +347,122 @@ html.dark.bewly-design {
   background: var(--bew-popover-wallpaper-background);
 }
 
+// 页面控件只在自身范围内采样背景；不再依赖工具栏背后的一整块底板。
+.bew-toolbar-controls .b-input,
+.bew-toolbar-controls .select-trigger,
+.bew-toolbar-controls .bew-toolbar-note {
+  color: var(--bew-text-1);
+  background: var(--bew-control-surface-background);
+  box-shadow: var(--bew-control-surface-edge);
+  backdrop-filter: var(--bew-control-surface-filter);
+  -webkit-backdrop-filter: var(--bew-control-surface-filter);
+}
+
+.bew-toolbar-controls .b-input:hover,
+.bew-toolbar-controls .select-trigger:hover:not(.is-disabled) {
+  background: var(--bew-control-surface-hover);
+}
+
+.bew-toolbar-controls .b-input:focus-within {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: var(--bew-space-0-5);
+}
+
+.bew-toolbar-controls .b-button.b-button--type-secondary,
+.bew-toolbar-controls .b-button.b-button--type-tertiary {
+  --b-button-color: var(--bew-control-surface-background);
+  --b-button-color-hover: var(--bew-control-surface-hover);
+  --b-button-shadow: var(--bew-control-surface-edge);
+
+  backdrop-filter: var(--bew-control-surface-filter);
+  -webkit-backdrop-filter: var(--bew-control-surface-filter);
+}
+
+// 同一行的输入框、选择器和按钮使用相同外框高度，边框和 padding 都计入其中。
+.bew-toolbar-controls .b-input.b-input--medium,
+.bew-toolbar-controls .b-button.b-button--size-medium,
+.bew-toolbar-controls .select-trigger,
+.bew-toolbar-controls .bew-toolbar-note {
+  box-sizing: border-box;
+  height: var(--bew-control-height);
+  min-height: var(--bew-control-height);
+  padding-block: 0;
+  border-radius: var(--bew-interactive-radius);
+}
+
+.bew-toolbar-controls .b-input.b-input--medium input,
+.bew-toolbar-controls .select-trigger {
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+}
+
+.bew-toolbar-controls .b-input.b-input--medium input {
+  box-sizing: border-box;
+  height: 100%;
+  padding: 0;
+  border: 0;
+}
+
+.bew-toolbar-controls .b-input input::placeholder {
+  color: var(--bew-control-surface-muted);
+  opacity: 1;
+}
+
+.bew-toolbar-controls .bew-toolbar-note {
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--bew-space-3);
+}
+
+.bew-page-sidebar {
+  box-sizing: border-box;
+  border-radius: var(--bew-panel-radius);
+}
+
+.bew-page-sidebar .bew-page-nav-item {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--bew-control-height);
+  padding: var(--bew-space-2) var(--bew-space-3);
+  border-radius: var(--bew-interactive-radius);
+  color: var(--bew-text-1);
+  background: transparent;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-control);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    background-color var(--bew-duration-fast) var(--bew-ease-standard),
+    box-shadow var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover:not(:disabled):not([data-active="true"]) {
+    background: var(--bew-fill-2);
+  }
+
+  &:active:not(:disabled):not([data-active="true"]) {
+    background: var(--bew-fill-3);
+  }
+
+  &[data-active="true"] {
+    color: var(--bew-text-auto);
+    background: var(--bew-theme-color-auto);
+    box-shadow: var(--bew-shadow-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color-auto);
+    outline-offset: var(--bew-space-0-5);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 .bew-settings-option--lift {
   cursor: pointer;
   transition:

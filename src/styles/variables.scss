@@ -489,6 +489,29 @@
   --bew-shadow-3: 0 0 0 transparent;
   --bew-shadow-4: 0 0 0 transparent;
 }
+
+// 页面独立控件共用同一底色；变量在页面容器上计算，跟随当前背景和主题。
+.bew-page-controls {
+  --bew-control-surface-opacity: 100%;
+  --bew-control-surface-tint: color-mix(in oklab, var(--bew-content-alt-solid) 94%, var(--bew-theme-color));
+  --bew-control-surface-background: color-mix(
+    in oklab,
+    var(--bew-control-surface-tint) var(--bew-control-surface-opacity),
+    transparent
+  );
+  --bew-control-surface-hover: color-mix(in oklab, var(--bew-control-surface-background) 92%, var(--bew-text-1));
+  --bew-control-surface-border: color-mix(in oklab, var(--bew-text-1) 12%, transparent);
+  --bew-control-surface-edge: inset 0 0 0 1px var(--bew-control-surface-border);
+  --bew-control-surface-filter: none;
+  --bew-control-surface-muted: color-mix(in oklab, var(--bew-text-1) 90%, var(--bew-content-solid));
+}
+
+.bew-page-controls--blend {
+  // 壁纸遮罩越强，控件需要额外叠加的底色越少，避免浅背景上出现一整块白色。
+  --bew-control-surface-opacity: calc(64% - var(--bew-control-wallpaper-mask, 0%) * 0.4);
+  --bew-control-surface-filter: var(--bew-filter-glass-1);
+}
+
 :root.bewly-design,
 :root.bewly-design * {
   --brand_pink: var(--bew-theme-color);
