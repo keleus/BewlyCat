@@ -1388,7 +1388,8 @@ function initData() {
         if (!tabState.isCurrent() || token !== selectionToken.value)
           return
         console.log('[Following] Following list loaded')
-        selectUploader(null)
+        // 初始化“全部”只加载数据；主动切换 UP 主时才滚动到信息流起点。
+        loadAllViewVideos(3, token)
       }).catch((error) => {
         if (!tabState.isCurrent() || token !== selectionToken.value)
           return

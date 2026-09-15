@@ -155,7 +155,6 @@ async function loadInitialData(version: number) {
 
     // 默认选择第一期（通常为最新期）
     activatedSeries.value = seriesList.value[0]
-    handleBackToTop(settings.value.useSearchPageModeOnHomePage ? 510 : 0)
     if (!isRequestCurrent(version) || !activatedSeries.value)
       return
 

@@ -9,6 +9,7 @@ import { provideHomeTabCache } from '~/composables/useHomeTabState'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { gridLayout, settings } from '~/logic'
+import { parseDedeUserID } from '~/logic/loginStatus'
 import type { RecommendationMode } from '~/logic/storage'
 import type { ForYouState } from '~/stores/forYouStore'
 import { useForYouStore } from '~/stores/forYouStore'
@@ -106,7 +107,11 @@ watch(() => settings.value.enableGridLayoutSwitcher, (enabled) => {
 // Cookie changes are reconciled by the top bar store. Refresh the active home
 // tab when that reconciliation changes the session so data that previously
 // failed with -101 (for example after QR-code login) is fetched immediately.
-watch(() => [topBarStore.isLogin, topBarStore.userInfo.mid], () => {
+// 首次资料返回前用 Cookie 中的账号作为基准，避免补齐 mid 被误判为换号，
+// 重建首页并将搜索区域滚出视口。真正登录、登出或换号仍会清理缓存。
+watch(() => topBarStore.isLogin
+  ? topBarStore.userInfo.mid ?? parseDedeUserID(document.cookie)
+  : undefined, () => {
   // A new account must never restore a previous account's feed or filters.
   tabCache.clear()
   forYouStore.resetState()
