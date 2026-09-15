@@ -1542,10 +1542,10 @@ defineExpose({ initData })
             </button>
           </li>
 
-          <!-- 分组标题留在外层，成员列表独立滚动。 -->
+          <!-- 分组标题和成员随搜索框下方的列表整体滚动。 -->
           <li
             v-for="row in uploaderRows" :key="row.key"
-            :class="{ 'uploader-group': row.type === 'group', 'uploader-group--expanded': row.type === 'group' && row.expanded && row.members.length > 0 }"
+            :class="{ 'uploader-group': row.type === 'group' }"
           >
             <button
               v-if="row.type === 'group'"
@@ -1759,7 +1759,8 @@ defineExpose({ initData })
 
 .uploader-sidebar {
   // sticky 顶部偏移与高度使用同一基准，避免侧栏底部越出视口后被回顶/焦点滚动纠正。
-  --following-sidebar-top: 150px;
+  // 与首页固定标签栏的 10px 顶部偏移一致，并在标签栏下保留标准区块间距。
+  --following-sidebar-top: calc(var(--bew-top-bar-height) + 10px + var(--bew-control-height) + var(--bew-space-4));
   position: sticky;
   top: var(--following-sidebar-top);
   align-self: flex-start;
@@ -1803,11 +1804,6 @@ defineExpose({ initData })
   > li {
     flex-shrink: 0;
   }
-
-  > .uploader-group--expanded {
-    flex: 0 1 auto;
-    min-height: var(--bew-control-height);
-  }
 }
 
 .uploader-group {
@@ -1823,12 +1819,6 @@ defineExpose({ initData })
   display: flex;
   flex-direction: column;
   gap: var(--bew-space-2);
-  min-height: 0;
-  max-height: 320px;
-  overflow: hidden auto;
-  scrollbar-gutter: stable;
-  overscroll-behavior-y: contain;
-  overflow-anchor: none;
 
   > li {
     flex-shrink: 0;
