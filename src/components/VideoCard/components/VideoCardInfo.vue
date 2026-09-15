@@ -335,6 +335,19 @@ const content = computed(() => {
           flex="~ items-center gap-2 wrap"
           :class="metaFontSizeClass"
         >
+          <span
+            v-if="content.showPublishTime"
+            class="video-card-meta__chip"
+            data-meta-priority="0"
+            bg="$bew-fill-1"
+            p="x-2"
+            lh-6
+            rounded="$bew-radius"
+            text="$bew-text-3"
+          >
+            {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
+          </span>
+
           <component
             :is="videoTag.searchable ? 'a' : 'span'"
             v-for="videoTag in content.visibleVideoTags"
@@ -367,19 +380,6 @@ const content = computed(() => {
             bg="$bew-theme-color-20"
           >
             {{ pluginTag }}
-          </span>
-
-          <span
-            v-if="content.showPublishTime"
-            class="video-card-meta__chip"
-            data-meta-priority="0"
-            bg="$bew-fill-1"
-            p="x-2"
-            lh-6
-            rounded="$bew-radius"
-            text="$bew-text-3"
-          >
-            {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
           </span>
 
           <span
@@ -423,6 +423,19 @@ const content = computed(() => {
               flex="~ items-center gap-2 wrap"
               :class="metaFontSizeClass"
             >
+              <span
+                v-if="content.showPublishTime"
+                class="video-card-meta__chip"
+                data-meta-priority="0"
+                bg="$bew-fill-1"
+                p="x-2"
+                lh-6
+                rounded="$bew-radius"
+                text="$bew-text-3"
+              >
+                {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
+              </span>
+
               <component
                 :is="videoTag.searchable ? 'a' : 'span'"
                 v-for="videoTag in content.visibleVideoTags"
@@ -455,19 +468,6 @@ const content = computed(() => {
                 bg="$bew-theme-color-20"
               >
                 {{ pluginTag }}
-              </span>
-
-              <span
-                v-if="content.showPublishTime"
-                class="video-card-meta__chip"
-                data-meta-priority="0"
-                bg="$bew-fill-1"
-                p="x-2"
-                lh-6
-                rounded="$bew-radius"
-                text="$bew-text-3"
-              >
-                {{ video.publishedTimestamp ? calcTimeSince(video.publishedTimestamp * 1000) : video.capsuleText?.trim() }}
               </span>
 
               <span
