@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import { nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, shallowRef, watch } from 'vue'
 
 import { CardRowMetrics } from '~/utils/cardRowMetrics'
+import { isProgrammaticScrollActive } from '~/utils/main'
 
 type CardKey = string | number
 
@@ -84,14 +85,21 @@ export function useCardWindow(options: {
   function restoreAnchor(anchor: CardWindowSnapshot['anchor']) {
     const root = options.root.value
     const element = anchor && slots.get(anchor.key)
-    if (root && anchor && element?.isConnected)
-      root.scrollTop += element.getBoundingClientRect().top - viewport().top - anchor.offset
+    if (root && !isProgrammaticScrollActive(root) && anchor && element?.isConnected) {
+      const adjustment = element.getBoundingClientRect().top - viewport().top - anchor.offset
+      // Even assigning the current scrollTop cancels native smooth scrolling.
+      // Only correct actual layout shifts, allowing back-to-top to finish.
+      if (Math.abs(adjustment) > 1)
+        root.scrollTop += adjustment
+    }
   }
 
   function keepScrollAnchor() {
     if (!active || restoring || anchorPending)
       return
     const root = options.root.value
+    if (root && isProgrammaticScrollActive(root))
+      return
     // ResizeObserver runs after CSS reflows. Use the last settled position
     // when the user has not scrolled since, rather than the already-shifted DOM.
     let anchor = root === bookmark?.root && root?.scrollTop === bookmark?.scrollTop

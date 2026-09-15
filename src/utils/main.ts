@@ -125,13 +125,41 @@ export function hexToHSL(hex: string, alpha: number | null = null): string {
   return `hsl(${h}, ${s}%, ${l}%)`
 }
 
+const pendingSmoothScrolls = new WeakMap<HTMLElement, () => void>()
+
+export function isProgrammaticScrollActive(element: HTMLElement): boolean {
+  return pendingSmoothScrolls.has(element)
+}
+
 /**
- * Smooth scroll to the top of the html element
+ * Smooth scroll to the top of the html element.
+ * Card virtualization must not restore an anchor during this navigation.
  */
 export function scrollToTop(element: HTMLElement, targetScrollTop = 0 as number) {
+  pendingSmoothScrolls.get(element)?.()
   // cancel if already on top
   if (element.scrollTop === targetScrollTop)
     return
+
+  const doc = element.ownerDocument
+  let timeout: ReturnType<typeof setTimeout>
+  const finish = () => {
+    clearTimeout(timeout)
+    element.removeEventListener('scrollend', finish)
+    element.removeEventListener('wheel', finish)
+    element.removeEventListener('touchstart', finish)
+    doc.removeEventListener('pointerdown', finish, true)
+    doc.removeEventListener('keydown', finish, true)
+    pendingSmoothScrolls.delete(element)
+  }
+  // Also release the guard when scrolling is interrupted, or scrollend is unavailable.
+  timeout = setTimeout(finish, 3000)
+  pendingSmoothScrolls.set(element, finish)
+  element.addEventListener('scrollend', finish, { passive: true })
+  element.addEventListener('wheel', finish, { passive: true })
+  element.addEventListener('touchstart', finish, { passive: true })
+  doc.addEventListener('pointerdown', finish, true)
+  doc.addEventListener('keydown', finish, true)
 
   element.scrollTo({
     top: targetScrollTop,
