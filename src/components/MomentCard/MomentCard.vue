@@ -361,6 +361,9 @@ function handleCardPointerUp(event: PointerEvent) {
 }
 
 function preventSelectedTextNavigation(event: MouseEvent) {
+  // 修饰键和非主键交给浏览器，不受上次拖选留下的状态影响。
+  if (shouldUseNativeLinkOpen(event))
+    return false
   // 键盘激活仍然可用；拖选、长按和触屏滚动后的合成 click 不执行导航。
   if (!event.detail || (!suppressPointerNavigation && !hasSelectedCardText()))
     return false
@@ -370,7 +373,7 @@ function preventSelectedTextNavigation(event: MouseEvent) {
 }
 
 function handleCardClick(event: MouseEvent, targetMoment = moment) {
-  if (event.defaultPrevented)
+  if (event.defaultPrevented || shouldUseNativeLinkOpen(event))
     return
   const target = event.target
   if (target instanceof Element) {
@@ -382,6 +385,14 @@ function handleCardClick(event: MouseEvent, targetMoment = moment) {
     return
   event.stopPropagation()
   emit('openDetail', targetMoment)
+}
+
+function handleDetailLinkClick(event: MouseEvent, targetMoment = moment, forceDialog = false) {
+  if (shouldUseNativeLinkOpen(event) || preventSelectedTextNavigation(event))
+    return
+  event.preventDefault()
+  event.stopPropagation()
+  emit('openDetail', targetMoment, forceDialog)
 }
 
 function handlePermalinkClick(event: MouseEvent) {
@@ -587,6 +598,14 @@ function handleAdditionalClick(event: MouseEvent) {
     <div class="moment-card__surface">
       <header class="moment-card__header">
         <a
+          :href="moment.url"
+          class="moment-card__permalink"
+          draggable="false"
+          tabindex="-1"
+          aria-hidden="true"
+          @click="handleDetailLinkClick($event)"
+        />
+        <a
           v-if="authorSpaceUrl"
           draggable="false"
           :href="authorSpaceUrl"
@@ -615,9 +634,13 @@ function handleAdditionalClick(event: MouseEvent) {
             rel="noopener noreferrer"
             @click="handleAuthorClick"
           >{{ moment.author.name }}</a>
-          <strong v-else>{{ moment.author.name }}</strong>
+          <strong v-else>
+            <a :href="moment.url" class="moment-card__text-link" draggable="false" tabindex="-1" @click="handleDetailLinkClick($event)">{{ moment.author.name }}</a>
+          </strong>
           <small>
-            {{ moment.time || t('moment_card.just_now') }}<template v-if="moment.isVideo && !moment.isLive"> · {{ t('moment_card.video_post') }}</template>
+            <a :href="moment.url" class="moment-card__text-link" draggable="false" tabindex="-1" @click="handleDetailLinkClick($event)">
+              {{ moment.time || t('moment_card.just_now') }}<template v-if="moment.isVideo && !moment.isLive"> · {{ t('moment_card.video_post') }}</template>
+            </a>
           </small>
         </span>
         <button
@@ -649,6 +672,14 @@ function handleAdditionalClick(event: MouseEvent) {
           'moment-card__main--live': !moment.isChargeExclusive && moment.isLive,
         }"
       >
+        <a
+          :href="moment.url"
+          class="moment-card__permalink"
+          draggable="false"
+          tabindex="-1"
+          aria-hidden="true"
+          @click="handleDetailLinkClick($event)"
+        />
         <!-- 官方式横条视频卡：左封面、右标题与简介；转发视频复用同一结构 -->
         <template v-if="moment.isVideo && !moment.isLive">
           <div
@@ -662,7 +693,17 @@ function handleAdditionalClick(event: MouseEvent) {
               :class="{ 'moment-card__desc--expanded': descriptionExpanded }"
             >
               <template v-if="moment.richText.length">
-                <template v-for="(segment, segmentIndex) in moment.richText" :key="`${moment.id}-${segmentIndex}`">
+                <a
+                  v-for="(segment, segmentIndex) in moment.richText"
+                  :key="`${moment.id}-${segmentIndex}`"
+                  draggable="false"
+                  :href="segment.type === 'link' && segment.url ? segment.url : moment.url"
+                  :target="segment.type === 'link' && segment.url ? '_blank' : undefined"
+                  :tabindex="segment.type === 'link' && segment.url ? undefined : -1"
+                  rel="noopener noreferrer"
+                  :class="segment.type === 'link' && segment.url ? 'moment-card__rich-link' : 'moment-card__text-link'"
+                  @click="segment.type === 'link' && segment.url ? handleRichLinkClick($event, segment.url) : handleDetailLinkClick($event)"
+                >
                   <img
                     v-if="segment.type === 'emoji' && segment.imageUrl"
                     :src="segment.imageUrl"
@@ -673,25 +714,21 @@ function handleAdditionalClick(event: MouseEvent) {
                     loading="lazy"
                     decoding="async"
                   >
-                  <a
-                    v-else-if="segment.type === 'link' && segment.url"
-                    draggable="false"
-                    :href="segment.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="moment-card__rich-link"
-                    @click="handleRichLinkClick($event, segment.url)"
-                  >
-                    <span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}
-                  </a>
                   <template v-else>
-                    {{ segment.text }}
+                    <span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}
                   </template>
-                </template>
+                </a>
               </template>
-              <template v-else>
+              <a
+                v-else
+                :href="moment.url"
+                class="moment-card__text-link"
+                draggable="false"
+                tabindex="-1"
+                @click="handleDetailLinkClick($event)"
+              >
                 {{ getCardPreviewText(moment) }}
-              </template>
+              </a>
             </p>
             <button
               v-if="descriptionCanToggle"
@@ -816,19 +853,23 @@ function handleAdditionalClick(event: MouseEvent) {
           </div>
           <div class="moment-card__body">
             <p v-if="moment.title && !moment.forward?.video" class="moment-card__title">
-              <VideoWatchedTag
-                v-if="moment.isVideo"
-                :aid="moment.aid"
-                :bvid="moment.bvid"
-              />
-              {{ moment.title }}
+              <a :href="moment.url" class="moment-card__text-link" draggable="false" tabindex="-1" @click="handleDetailLinkClick($event)">
+                <VideoWatchedTag
+                  v-if="moment.isVideo"
+                  :aid="moment.aid"
+                  :bvid="moment.bvid"
+                />
+                {{ moment.title }}
+              </a>
             </p>
             <p
               v-if="moment.mediaMeta && !moment.isForward && !moment.isChargeExclusive && (!moment.isVideo || moment.isLive)"
               class="moment-card__media-meta"
               :class="{ 'moment-card__media-meta--live': moment.isLive }"
             >
-              {{ moment.mediaMeta }}
+              <a :href="moment.url" class="moment-card__text-link" draggable="false" tabindex="-1" @click="handleDetailLinkClick($event)">
+                {{ moment.mediaMeta }}
+              </a>
             </p>
             <p
               v-if="!moment.isLive && (moment.richText.length || getCardPreviewText(moment))"
@@ -838,7 +879,17 @@ function handleAdditionalClick(event: MouseEvent) {
               :class="{ 'moment-card__desc--expanded': descriptionExpanded }"
             >
               <template v-if="moment.richText.length">
-                <template v-for="(segment, segmentIndex) in moment.richText" :key="`${moment.id}-${segmentIndex}`">
+                <a
+                  v-for="(segment, segmentIndex) in moment.richText"
+                  :key="`${moment.id}-${segmentIndex}`"
+                  draggable="false"
+                  :href="segment.type === 'link' && segment.url ? segment.url : moment.url"
+                  :target="segment.type === 'link' && segment.url ? '_blank' : undefined"
+                  :tabindex="segment.type === 'link' && segment.url ? undefined : -1"
+                  rel="noopener noreferrer"
+                  :class="segment.type === 'link' && segment.url ? 'moment-card__rich-link' : 'moment-card__text-link'"
+                  @click="segment.type === 'link' && segment.url ? handleRichLinkClick($event, segment.url) : handleDetailLinkClick($event)"
+                >
                   <img
                     v-if="segment.type === 'emoji' && segment.imageUrl"
                     :src="segment.imageUrl"
@@ -849,25 +900,21 @@ function handleAdditionalClick(event: MouseEvent) {
                     loading="lazy"
                     decoding="async"
                   >
-                  <a
-                    v-else-if="segment.type === 'link' && segment.url"
-                    draggable="false"
-                    :href="segment.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="moment-card__rich-link"
-                    @click="handleRichLinkClick($event, segment.url)"
-                  >
-                    <span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}
-                  </a>
                   <template v-else>
-                    {{ segment.text }}
+                    <span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}
                   </template>
-                </template>
+                </a>
               </template>
-              <template v-else>
+              <a
+                v-else
+                :href="moment.url"
+                class="moment-card__text-link"
+                draggable="false"
+                tabindex="-1"
+                @click="handleDetailLinkClick($event)"
+              >
                 {{ getCardPreviewText(moment) }}
-              </template>
+              </a>
             </p>
             <button
               v-if="descriptionCanToggle"
@@ -904,9 +951,15 @@ function handleAdditionalClick(event: MouseEvent) {
                   </span>
                   <span class="moment-card__forward-video-name">{{ moment.forward.author }}</span>
                 </component>
-                <span class="moment-card__forward-video-action">
+                <a
+                  :href="moment.url"
+                  class="moment-card__forward-video-action moment-card__text-link"
+                  draggable="false"
+                  tabindex="-1"
+                  @click="handleDetailLinkClick($event)"
+                >
                   {{ moment.forward.authorAction || t('moment_card.video_post') }}
-                </span>
+                </a>
               </div>
               <a
                 draggable="false"
@@ -961,6 +1014,14 @@ function handleAdditionalClick(event: MouseEvent) {
               @keydown.enter.self.stop="emit('openDetail', getForwardOriginMoment() || moment)"
               @keydown.space.self.stop.prevent="emit('openDetail', getForwardOriginMoment() || moment)"
             >
+              <a
+                :href="moment.forward.url || moment.url"
+                class="moment-card__permalink"
+                draggable="false"
+                tabindex="-1"
+                aria-hidden="true"
+                @click="handleDetailLinkClick($event, getForwardOriginMoment() || moment)"
+              />
               <div class="moment-card__forward-copy">
                 <a
                   v-if="forwardAuthorSpaceUrl"
@@ -970,36 +1031,53 @@ function handleAdditionalClick(event: MouseEvent) {
                   rel="noopener noreferrer"
                   @click="handleForwardAuthorClick"
                 >@{{ moment.forward.author }}</a>
-                <strong v-else>@{{ moment.forward.author }}</strong>
+                <strong v-else>
+                  <a
+                    :href="moment.forward.url || moment.url"
+                    class="moment-card__text-link"
+                    draggable="false"
+                    tabindex="-1"
+                    @click="handleDetailLinkClick($event, getForwardOriginMoment() || moment)"
+                  >@{{ moment.forward.author }}</a>
+                </strong>
                 <p>
                   <template v-if="!moment.forward.title && moment.forward.richText?.length">
-                    <template v-for="(segment, index) in moment.forward.richText" :key="index">
-                      <a
-                        v-if="segment.type === 'link' && segment.url"
-                        draggable="false"
-                        :href="segment.url"
-                        class="moment-card__rich-link"
-                        @click="handleRichLinkClick($event, segment.url)"
-                      ><span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}</a>
-                      <img v-else-if="segment.type === 'emoji'" :src="segment.imageUrl" :alt="segment.text" class="moment-card__emoji" loading="lazy">
+                    <a
+                      v-for="(segment, index) in moment.forward.richText"
+                      :key="index"
+                      draggable="false"
+                      :href="segment.type === 'link' && segment.url ? segment.url : (moment.forward.url || moment.url)"
+                      :tabindex="segment.type === 'link' && segment.url ? undefined : -1"
+                      :class="segment.type === 'link' && segment.url ? 'moment-card__rich-link' : 'moment-card__text-link'"
+                      @click="segment.type === 'link' && segment.url ? handleRichLinkClick($event, segment.url) : handleDetailLinkClick($event, getForwardOriginMoment() || moment)"
+                    >
+                      <img v-if="segment.type === 'emoji'" :src="segment.imageUrl" :alt="segment.text" class="moment-card__emoji" loading="lazy">
                       <template v-else>
-                        {{ segment.text }}
+                        <span v-if="segment.isLottery" i-tabler-gift class="moment-card__lottery-icon" aria-hidden="true" />{{ segment.text }}
                       </template>
-                    </template>
+                    </a>
                   </template>
-                  <template v-else>
+                  <a
+                    v-else
+                    :href="moment.forward.url || moment.url"
+                    class="moment-card__text-link"
+                    draggable="false"
+                    tabindex="-1"
+                    @click="handleDetailLinkClick($event, getForwardOriginMoment() || moment)"
+                  >
                     {{ moment.forward.title || moment.forward.text || moment.forward.fallback }}
-                  </template>
+                  </a>
                 </p>
-                <button
-                  type="button"
+                <a
+                  :href="moment.forward.url || moment.url"
+                  draggable="false"
                   class="moment-card__desc-toggle"
                   :aria-label="t('moment_card.open_origin_moment', { name: moment.forward.author })"
-                  @click="emit('openDetail', getForwardOriginMoment() || moment, true)"
+                  @click="handleDetailLinkClick($event, getForwardOriginMoment() || moment, true)"
                 >
                   {{ t('moment_card.view_original_post') }}
                   <span i-tabler-chevron-right aria-hidden="true" />
-                </button>
+                </a>
               </div>
               <div
                 v-if="showForwardImageGrid"
@@ -1207,10 +1285,10 @@ function handleAdditionalClick(event: MouseEvent) {
       </button>
 
       <footer class="moment-card__footer">
-        <button type="button" @click="emit('openDetail', moment, true)">
+        <a :href="moment.url" draggable="false" @click="handleDetailLinkClick($event, moment, true)">
           <span i-tabler-file-description aria-hidden="true" />
           {{ t('moment_card.view_details') }}
-        </button>
+        </a>
         <button
           v-if="!moment.isLive"
           type="button"
@@ -1355,11 +1433,26 @@ function handleAdditionalClick(event: MouseEvent) {
   cursor: inherit;
 }
 
+// 正文链接高于留白区链接，拖选仍命中文字；图集保留独立的图片交互。
+.moment-card__text-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.moment-card__header,
+.moment-card__main {
+  position: relative;
+}
+
 .moment-card__surface
   :is(a, button, [role="button"]):not(.moment-card__permalink):not(.moment-card__permalink-wrap):not(
     .moment-image-gallery__nav
   ):not(.moment-card__watch-later),
-.moment-card__media {
+.moment-card__media,
+.moment-card__gallery-host,
+.moment-card__grid-host,
+.moment-card__forward-gallery-host,
+.moment-card__forward-grid-host {
   position: relative;
   z-index: 2;
 }
