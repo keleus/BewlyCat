@@ -1,6 +1,6 @@
-import { ref } from 'vue'
+import { ref, watch, watchEffect } from 'vue'
 
-import api from '~/utils/api'
+import { useUserRelationStore } from '~/stores/userRelationStore'
 
 export interface UserRelation {
   isFollowing: boolean
@@ -13,42 +13,36 @@ export interface UserRelation {
  */
 export function useUserRelations() {
   const userRelations = ref<Record<number, UserRelation>>({})
+  const relationStore = useUserRelationStore()
+
+  watch(() => relationStore.accountMid, () => {
+    userRelations.value = {}
+  }, { flush: 'sync' })
+  watchEffect(() => {
+    for (const [mid, state] of Object.entries(userRelations.value)) {
+      const following = relationStore.getFollowing(Number(mid))
+      if (following !== undefined)
+        state.isFollowing = following
+    }
+  })
 
   /**
    * 批量查询用户关系状态
    * @param mids 用户 mid 数组
    */
   async function batchQueryUserRelations(mids: number[]) {
-    if (mids.length === 0)
+    const accountMid = relationStore.accountMid
+    await relationStore.queryRelations(mids)
+    if (accountMid !== relationStore.accountMid)
       return
-
-    // B站API限制最多40个mid
-    const chunks: number[][] = []
-    for (let i = 0; i < mids.length; i += 40) {
-      chunks.push(mids.slice(i, i + 40))
-    }
-
-    for (const chunk of chunks) {
-      try {
-        const response = await api.user.getRelations({
-          fids: chunk.join(','),
-        })
-
-        if (response.code === 0 && response.data) {
-          Object.keys(response.data).forEach((midStr) => {
-            const mid = Number(midStr)
-            const relation = response.data[midStr]
-            // attribute: 0=未关注, 1=悄悄关注, 2=关注, 6=互相关注, 128=拉黑
-            const isFollowing = relation.attribute === 2 || relation.attribute === 6
-            userRelations.value[mid] = {
-              isFollowing,
-              isLoading: false,
-            }
-          })
-        }
-      }
-      catch (error) {
-        console.error('批量查询用户关系失败:', error)
+    for (const mid of mids) {
+      const isFollowing = relationStore.getFollowing(mid)
+      if (isFollowing !== undefined) {
+        const current = userRelations.value[mid]
+        if (current)
+          current.isFollowing = isFollowing
+        else
+          userRelations.value[mid] = { isFollowing, isLoading: false }
       }
     }
   }
@@ -58,7 +52,9 @@ export function useUserRelations() {
    * @param mid 用户 mid
    * @param isFollowing 是否关注
    */
-  function updateUserRelation(mid: number, isFollowing: boolean) {
+  function updateUserRelation(mid: number, isFollowing: boolean, accountMid = relationStore.accountMid) {
+    if (!relationStore.setFollowing(mid, isFollowing, accountMid))
+      return
     if (userRelations.value[mid]) {
       userRelations.value[mid].isFollowing = isFollowing
     }

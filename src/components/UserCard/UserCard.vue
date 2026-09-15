@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ALink from '~/components/ALink.vue'
+import { useUserRelationStore } from '~/stores/userRelationStore'
 import api from '~/utils/api'
 import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON } from '~/utils/lvIcons'
 import { getCSRF } from '~/utils/main'
@@ -40,6 +41,7 @@ const emit = defineEmits<{
   followStateChanged: [mid: number, isFollowing: boolean]
 }>()
 const { locale, t } = useI18n()
+const userRelationStore = useUserRelationStore()
 
 interface UserSample {
   id: string
@@ -54,12 +56,13 @@ const sampleList = computed(() => {
   return (props.samples || []).slice(0, 7)
 })
 
-const isFollowing = ref(props.isFollowed === 1)
+const localFollowing = ref(props.isFollowed === 1)
+const isFollowing = computed(() => userRelationStore.getFollowing(props.mid) ?? localFollowing.value)
 const isFollowLoading = ref(false)
 
 // 监听 isFollowed prop 的变化
 watch(() => props.isFollowed, (newVal) => {
-  isFollowing.value = newVal === 1
+  localFollowing.value = newVal === 1
 })
 
 const followButtonText = computed(() => {
@@ -100,12 +103,14 @@ async function handleFollowClick(e: Event) {
   if (isFollowLoading.value)
     return
 
+  const nextFollowing = !isFollowing.value
+  const accountMid = userRelationStore.accountMid
   try {
     isFollowLoading.value = true
     const csrf = getCSRF()
 
     // act: 1=关注, 2=取关
-    const act = isFollowing.value ? 2 : 1
+    const act = nextFollowing ? 1 : 2
 
     const response = await api.user.relationModify({
       fid: String(props.mid),
@@ -115,9 +120,11 @@ async function handleFollowClick(e: Event) {
     })
 
     if (response.code === 0) {
-      isFollowing.value = !isFollowing.value
+      if (!userRelationStore.setFollowing(props.mid, nextFollowing, accountMid))
+        return
+      localFollowing.value = nextFollowing
       // 通知父组件关注状态已改变
-      emit('followStateChanged', props.mid, isFollowing.value)
+      emit('followStateChanged', props.mid, nextFollowing)
     }
     else {
       console.error('关注操作失败:', response.message)

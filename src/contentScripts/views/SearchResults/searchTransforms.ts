@@ -150,6 +150,10 @@ export function convertVideoData(video: any): Video {
     }
   }
 
+  // 已规范化的数据可能已经带有关注状态，保留它以避免网格重复查询。
+  if (typeof video.author?.followed === 'boolean')
+    author.followed = video.author.followed
+
   // 课堂类型需要特殊处理 URL
   const url = video.type === 'ketang' && video.arcurl
     ? video.arcurl

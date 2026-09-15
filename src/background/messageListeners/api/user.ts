@@ -53,7 +53,7 @@ const API_USER = {
       method: 'get',
     },
     params: {
-      fids: '', // 用户mid列表，用逗号分隔，最多40个
+      fids: '', // 用户 mid 列表，用逗号分隔；分批数量由调用方控制
     },
     afterHandle: AHS.J_D,
   },

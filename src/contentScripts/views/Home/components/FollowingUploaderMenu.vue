@@ -5,6 +5,7 @@ import { useToast } from 'vue-toastification'
 import type { ContextMenuOption } from '~/components/ContextMenu.vue'
 import ContextMenu from '~/components/ContextMenu.vue'
 import Dialog from '~/components/Dialog.vue'
+import { useUserRelationStore } from '~/stores/userRelationStore'
 import api from '~/utils/api'
 import type { FollowingGroup, FollowingGroupsResult } from '~/utils/followingGroups'
 import { getCSRF } from '~/utils/main'
@@ -23,6 +24,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const toast = useToast()
+const userRelationStore = useUserRelationStore()
 const target = ref<Uploader>()
 const cursorPosition = ref({ x: 0, y: 0 })
 const menuVisible = ref(false)
@@ -112,6 +114,7 @@ async function updateRelation(action: 'unfollow' | 'unspecial' | 'special' | 'mo
   if (action === 'move' && normalIds.length === 1 && normalIds[0] === groupId)
     return
   busy.value = true
+  const accountMid = userRelationStore.accountMid
   try {
     const csrf = getCSRF()
     if (!csrf)
@@ -129,6 +132,8 @@ async function updateRelation(action: 'unfollow' | 'unspecial' | 'special' | 'mo
           })
     if (response.code !== 0)
       throw new Error(response.message || String(response.code))
+    if (action === 'unfollow')
+      userRelationStore.setFollowing(uploader.mid, false, accountMid)
     if (disposed)
       return
     if (action === 'unfollow') {

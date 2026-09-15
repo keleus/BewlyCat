@@ -1,0 +1,172 @@
+import { defineStore } from 'pinia'
+import { ref, shallowReactive, watch } from 'vue'
+
+import { parseDedeUserID } from '~/logic/loginStatus'
+import { useTopBarStore } from '~/stores/topBarStore'
+import api from '~/utils/api'
+
+// 分批是客户端策略，避免过长的 URL；并非已确认的接口上限。
+const BATCH_SIZE = 40
+const CACHE_MAX_AGE = 5 * 60 * 1000
+const RETRY_DELAY = 30 * 1000
+
+interface RelationEntry {
+  following: boolean
+  updatedAt: number
+}
+
+interface RelationQuery {
+  mid: number
+  started: boolean
+  previous?: RelationEntry
+  promise: Promise<void>
+  resolve: () => void
+}
+
+/** 同一页面的网格共享关系状态，合并视窗中同时出现的 UP 主查询。 */
+export const useUserRelationStore = defineStore('userRelations', () => {
+  const topBar = useTopBarStore()
+  const accountMid = ref<number>()
+  const relations = shallowReactive(new Map<number, RelationEntry>())
+  const pending = new Map<number, RelationQuery>()
+  const retryAfter = new Map<number, number>()
+  let generation = 0
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let draining = false
+
+  function syncAccount() {
+    const mid = topBar.isLogin ? parseDedeUserID(document.cookie) : undefined
+    if (mid !== accountMid.value) {
+      generation++
+      accountMid.value = mid
+      relations.clear()
+      retryAfter.clear()
+      clearTimeout(timer)
+      timer = undefined
+      for (const query of pending.values())
+        query.resolve()
+      pending.clear()
+    }
+    return mid
+  }
+
+  watch(() => [topBar.isLogin, topBar.userInfo.mid], syncAccount, { immediate: true, flush: 'sync' })
+
+  function getFollowing(mid: number | undefined): boolean | undefined {
+    if (!accountMid.value || !mid || mid === accountMid.value)
+      return undefined
+    return relations.get(mid)?.following
+  }
+
+  function setFollowing(mid: number, following: boolean, expectedAccount = accountMid.value) {
+    if (!syncAccount() || accountMid.value !== expectedAccount || !Number.isSafeInteger(mid) || mid <= 0 || mid === accountMid.value)
+      return false
+    // 替换对象，使正在进行的旧查询无法覆盖操作成功后的状态。
+    relations.set(mid, { following, updatedAt: Date.now() })
+    retryAfter.delete(mid)
+    return true
+  }
+
+  function scheduleQuery() {
+    if (timer !== undefined || draining)
+      return
+    timer = setTimeout(() => {
+      timer = undefined
+      void flushQueries()
+    }, 50)
+  }
+
+  async function flushQueries() {
+    if (draining)
+      return
+    draining = true
+    try {
+      while (pending.size) {
+        const requestAccount = syncAccount()
+        if (!requestAccount)
+          break
+        const requestGeneration = generation
+        const chunk = [...pending.values()].filter(query => !query.started).slice(0, BATCH_SIZE)
+        if (!chunk.length)
+          break
+        for (const query of chunk) {
+          query.started = true
+          query.previous = relations.get(query.mid)
+        }
+
+        try {
+          const response = await api.user.getRelations({ fids: chunk.map(query => query.mid).join(',') })
+          if (syncAccount() !== requestAccount || generation !== requestGeneration)
+            continue
+          if (response.code !== 0 || !response.data || typeof response.data !== 'object' || Array.isArray(response.data))
+            throw new Error(response.message || 'Invalid user relations response')
+
+          for (const query of chunk) {
+            if (relations.get(query.mid) !== query.previous)
+              continue
+            // 接口只返回有关系的用户；成功响应中缺席的 mid 表示未关注。
+            const attribute = Object.prototype.hasOwnProperty.call(response.data, query.mid)
+              ? response.data[query.mid]?.attribute
+              : 0
+            if (![0, 1, 2, 6, 128].includes(attribute)) {
+              retryAfter.set(query.mid, Date.now() + RETRY_DELAY)
+              continue
+            }
+            setFollowing(query.mid, attribute === 1 || attribute === 2 || attribute === 6, requestAccount)
+          }
+        }
+        catch (error) {
+          if (syncAccount() === requestAccount && generation === requestGeneration) {
+            for (const query of chunk)
+              retryAfter.set(query.mid, Date.now() + RETRY_DELAY)
+            console.error('批量查询用户关系失败:', error)
+          }
+        }
+        finally {
+          for (const query of chunk) {
+            if (pending.get(query.mid) === query)
+              pending.delete(query.mid)
+            query.resolve()
+          }
+        }
+      }
+    }
+    finally {
+      draining = false
+      if (pending.size)
+        scheduleQuery()
+    }
+  }
+
+  async function queryRelations(mids: number[]) {
+    const currentAccount = syncAccount()
+    if (!currentAccount)
+      return
+    const now = Date.now()
+    const promises: Promise<void>[] = []
+    for (const mid of new Set(mids)) {
+      if (!Number.isSafeInteger(mid) || mid <= 0 || mid === currentAccount)
+        continue
+      const cached = relations.get(mid)
+      if (cached && now - cached.updatedAt < CACHE_MAX_AGE)
+        continue
+      if ((retryAfter.get(mid) ?? 0) > now)
+        continue
+      let query = pending.get(mid)
+      if (!query) {
+        let resolve!: () => void
+        const promise = new Promise<void>((done) => {
+          resolve = done
+        })
+        query = { mid, promise, resolve, started: false }
+        pending.set(mid, query)
+      }
+      promises.push(query.promise)
+    }
+    if (pending.size)
+      scheduleQuery()
+    await Promise.all(promises)
+  }
+
+  return { accountMid, getFollowing, setFollowing, queryRelations }
+})

@@ -13,6 +13,7 @@ import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
 import type { GridLayoutType } from '~/logic'
 import { originalSettings, settings } from '~/logic'
 import { normalizeVideoCardCoverRatio } from '~/logic/storage'
+import { useUserRelationStore } from '~/stores/userRelationStore'
 import { getAdaptiveGridColumnCount, getListGridColumnCount } from '~/utils/gridLayout'
 import emitter from '~/utils/mitt'
 
@@ -219,6 +220,7 @@ const isLoadMoreSentinelIntersecting = ref(false)
 const reachedLoadMoreDuringLoading = ref(false)
 const gridContainerWidth = ref(0)
 const bewlyApp = inject<BewlyAppProvider | undefined>('BEWLY_APP', undefined)
+const userRelationStore = useUserRelationStore()
 const tabState = useHomeTabViewState()
 const gridStateKey = `grid:${props.stateKey || 'default'}`
 interface GridSnapshot {
@@ -1133,6 +1135,42 @@ function getTransformedVideo(item: T, key: string | number): Video | undefined {
     return undefined
   }
 }
+
+const relationQueryMids = computed(() => {
+  const accountMid = userRelationStore.accountMid
+  if (!accountMid || !props.moreBtn || !settings.value.showVideoCardMoreButton
+    || props.isFollowingPage || bewlyApp?.isHomeTabSwitching.value
+    || (tabState && !tabState.isCurrent())) {
+    return []
+  }
+
+  const needsRelationships = ['followUser', 'blockUser'].some(key =>
+    settings.value.videoCardContextMenuConfig.find(item => item.key === key)?.visible ?? true,
+  )
+  if (!needsRelationships)
+    return []
+
+  const mids = new Set<number>()
+  const { start, end } = cardWindow.loadingRange.value
+  for (let index = start; index < end; index++) {
+    const card = createRenderItem(displayItems.value[index], index)
+    if (card.skeleton || card.type === 'bangumi')
+      continue
+    const author = Array.isArray(card.video?.author) ? card.video.author[0] : card.video?.author
+    const mid = author?.mid
+    if (typeof mid !== 'number' || !Number.isSafeInteger(mid) || mid <= 0
+      || mid === accountMid || typeof author?.followed === 'boolean') {
+      continue
+    }
+    mids.add(mid)
+  }
+  return [...mids]
+})
+
+watch([() => userRelationStore.accountMid, relationQueryMids], ([accountMid, mids]) => {
+  if (accountMid && mids.length)
+    void userRelationStore.queryRelations(mids)
+}, { immediate: true, flush: 'post' })
 
 // 处理登录
 function handleLogin() {

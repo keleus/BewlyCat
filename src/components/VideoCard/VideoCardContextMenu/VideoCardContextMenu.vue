@@ -6,6 +6,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import type { VideoCardContextMenuKey } from '~/logic/storage'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
+import { useUserRelationStore } from '~/stores/userRelationStore'
 import api from '~/utils/api'
 import { cleanBilibiliUrl, getCSRF, openLinkToNewTab } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -125,6 +126,7 @@ function scrollToBottom() {
 const getVideoType = inject<() => string>('getVideoType')!
 
 const { t } = useI18n()
+const userRelationStore = useUserRelationStore()
 const videoOptions = computed(() => [
   { id: 1, key: 'notInterested' as const, name: t('video_card.operation.not_interested') },
   { id: 2, key: 'notInterestedUploader' as const, name: t('video_card.operation.not_interested_uploader') },
@@ -209,16 +211,15 @@ const commonOptions = computed((): OptionItem[][] => {
     ],
   ]
 
-  // 添加关注/取消关注选项
-  // 1. 如果明确传入了 followed 状态，根据状态显示
-  // 2. 如果在 Following 页面且未传入 followed，默认显示"取消关注"（因为都是已关注的UP主）
-  // 3. 其他情况不显示
+  // 优先采用共享的查询/操作结果，未查询时沿用卡片数据与关注页语义。
   const authorMid = getAuthorMid()
-  const authorFollowed = Array.isArray(props.video.author)
+  const providedFollowed = Array.isArray(props.video.author)
     ? props.video.author[0]?.followed
     : props.video.author?.followed
+  const authorFollowed = userRelationStore.getFollowing(authorMid) ?? providedFollowed
+  const canFollowAuthor = authorMid && userRelationStore.accountMid && authorMid !== userRelationStore.accountMid
 
-  if (authorMid && (authorFollowed !== undefined || props.isFollowingPage)) {
+  if (canFollowAuthor && (authorFollowed !== undefined || props.isFollowingPage)) {
     // 判断是否已关注：明确为 true，或者在 Following 页面且未明确为 false
     const isFollowed = authorFollowed === true || (props.isFollowingPage && authorFollowed !== false)
 
@@ -235,7 +236,7 @@ const commonOptions = computed((): OptionItem[][] => {
   }
 
   // 已关注的 UP 主、正在关注页、动态及缺少作者 mid 的卡片隐藏拉黑选项。
-  if (authorMid && authorFollowed !== true && !props.isFollowingPage && !props.hideBlockUser) {
+  if (authorMid && authorMid !== userRelationStore.accountMid && authorFollowed !== true && !props.isFollowingPage && !props.hideBlockUser) {
     result.push([
       { command: VideoOption.BlockUser, key: 'blockUser', name: t('video_card.operation.block_user'), icon: 'i-solar:user-block-bold-duotone', color: 'text-red-500' },
     ])
@@ -461,6 +462,7 @@ function handleRemoved(selectedOpt?: { reasonId?: number, feedbackId?: number })
 
 async function blockUser() {
   const authorMid = getAuthorMid()
+  const accountMid = userRelationStore.accountMid
 
   if (!authorMid) {
     console.error('No author mid available')
@@ -477,6 +479,7 @@ async function blockUser() {
 
     if (response.code === 0) {
       // 拉黑成功
+      userRelationStore.setFollowing(authorMid, false, accountMid)
       handleRemoved()
     }
     else {
@@ -490,6 +493,7 @@ async function blockUser() {
 
 async function followUser() {
   const authorMid = getAuthorMid()
+  const accountMid = userRelationStore.accountMid
 
   if (!authorMid) {
     console.error('No author mid available')
@@ -506,6 +510,7 @@ async function followUser() {
 
     if (response.code === 0) {
       // 关注成功
+      userRelationStore.setFollowing(authorMid, true, accountMid)
       handleClose()
     }
     else {
@@ -519,6 +524,7 @@ async function followUser() {
 
 async function unfollowUser() {
   const authorMid = getAuthorMid()
+  const accountMid = userRelationStore.accountMid
 
   if (!authorMid) {
     console.error('No author mid available')
@@ -535,6 +541,7 @@ async function unfollowUser() {
 
     if (response.code === 0) {
       // 取消关注成功
+      userRelationStore.setFollowing(authorMid, false, accountMid)
       handleClose()
     }
     else {

@@ -13,6 +13,7 @@ import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { SEARCH_PAGE_SIZES } from '~/constants/searchApi'
 import { settings } from '~/logic'
+import { useUserRelationStore } from '~/stores/userRelationStore'
 import api from '~/utils/api'
 import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON } from '~/utils/lvIcons'
 import { getCSRF } from '~/utils/main'
@@ -57,6 +58,7 @@ function sanitizeHighlightTitle(title: string) {
 }
 
 const { t } = useI18n()
+const userRelationStore = useUserRelationStore()
 
 const { haveScrollbar, handleBackToTop } = useBewlyApp()
 
@@ -233,10 +235,12 @@ async function handleUserFollow(mid: number) {
   if (state.isLoading)
     return
 
+  const nextFollowing = !state.isFollowing
+  const accountMid = userRelationStore.accountMid
   try {
     state.isLoading = true
     const csrf = getCSRF()
-    const act = state.isFollowing ? 2 : 1
+    const act = nextFollowing ? 1 : 2
 
     const response = await api.user.relationModify({
       fid: String(mid),
@@ -246,7 +250,7 @@ async function handleUserFollow(mid: number) {
     })
 
     if (response.code === 0)
-      updateUserRelation(mid, !state.isFollowing)
+      updateUserRelation(mid, nextFollowing, accountMid)
   }
   catch (error) {
     console.error('关注操作出错:', error)
