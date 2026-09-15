@@ -243,7 +243,7 @@ const randomPlayActivationModeOptions = computed(() => {
         <Select
           v-model="settings.collectedSeasonPlayAllMode"
           :options="collectedSeasonPlayAllModeOptions"
-          w="180px"
+          w="160px"
         />
       </SettingsItem>
     </SettingsItemGroup>
