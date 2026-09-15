@@ -5,6 +5,7 @@ import { settings } from '~/logic'
 import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 
 import VideoWatchedTag from '../../VideoWatchedTag.vue'
+import { vMetaOverflow } from '../directives/metaOverflow'
 import type { Video } from '../types'
 import { getTagSearchUrl } from '../utils'
 import VideoCardAuthorAvatar from '../VideoCardAuthor/components/VideoCardAuthorAvatar.vue'
@@ -137,7 +138,10 @@ const content = computed(() => {
         shrink-0
       />
 
-      <div class="group/desc" flex="~ col" :class="content.isModernLayout ? 'gap-2' : ''" w="full" align="items-start">
+      <div
+        class="group/desc" flex="~ col" :class="content.isModernLayout ? 'gap-2' : ''" w="full" min-w-0
+        align="items-start"
+      >
         <!-- Title skeleton -->
         <div flex="~ gap-1 justify-between items-start" w="full">
           <!-- 使用与真实标题完全相同的样式和高度 -->
@@ -274,7 +278,10 @@ const content = computed(() => {
         :is-live="video.liveStatus === 1"
       />
 
-      <div class="group/desc" flex="~ col" :class="content.isModernLayout ? 'gap-2' : ''" w="full" align="items-start">
+      <div
+        class="group/desc" flex="~ col" :class="content.isModernLayout ? 'gap-2' : ''" w="full" min-w-0
+        align="items-start"
+      >
         <div flex="~ gap-1 justify-between items-start" w="full" pos="relative">
           <h3
             :class="[
@@ -323,6 +330,7 @@ const content = computed(() => {
         <!-- Modern layout with hideAuthor: Tags directly under title -->
         <div
           v-if="layout === 'modern' && !content.showAuthorAvatar && !content.showAuthorName && content.hasVisibleMeta"
+          v-meta-overflow
           class="video-card-meta-row"
           flex="~ items-center gap-2 wrap"
           :class="metaFontSizeClass"
@@ -332,6 +340,7 @@ const content = computed(() => {
             v-for="videoTag in content.visibleVideoTags"
             :key="`video-${videoTag.searchable}-${videoTag.text}`"
             class="video-card-meta__chip"
+            data-meta-priority="1"
             :class="{ 'video-card-tag--searchable': videoTag.searchable }"
             un-text="$bew-theme-color"
             p="x-2"
@@ -349,6 +358,7 @@ const content = computed(() => {
           <span
             v-for="pluginTag in content.visiblePluginComputedTags"
             :key="`plugin-${pluginTag}`"
+            data-meta-priority="2"
             class="video-card-meta__chip"
             text="$bew-theme-color"
             p="x-2"
@@ -362,6 +372,7 @@ const content = computed(() => {
           <span
             v-if="content.showPublishTime"
             class="video-card-meta__chip"
+            data-meta-priority="0"
             bg="$bew-fill-1"
             p="x-2"
             lh-6
@@ -407,6 +418,7 @@ const content = computed(() => {
 
             <div
               v-if="content.hasVisibleMeta"
+              v-meta-overflow
               class="video-card-meta-row"
               flex="~ items-center gap-2 wrap"
               :class="metaFontSizeClass"
@@ -416,6 +428,7 @@ const content = computed(() => {
                 v-for="videoTag in content.visibleVideoTags"
                 :key="`video-${videoTag.searchable}-${videoTag.text}`"
                 class="video-card-meta__chip"
+                data-meta-priority="1"
                 :class="{ 'video-card-tag--searchable': videoTag.searchable }"
                 un-text="$bew-theme-color"
                 p="x-2"
@@ -433,6 +446,7 @@ const content = computed(() => {
               <span
                 v-for="pluginTag in content.visiblePluginComputedTags"
                 :key="`plugin-${pluginTag}`"
+                data-meta-priority="2"
                 class="video-card-meta__chip"
                 text="$bew-theme-color"
                 p="x-2"
@@ -446,6 +460,7 @@ const content = computed(() => {
               <span
                 v-if="content.showPublishTime"
                 class="video-card-meta__chip"
+                data-meta-priority="0"
                 bg="$bew-fill-1"
                 p="x-2"
                 lh-6
@@ -472,6 +487,7 @@ const content = computed(() => {
           <!-- Old layout with hideAuthor: Only tags -->
           <div
             v-if="hideAuthor && content.hasVisibleMeta"
+            v-meta-overflow
             class="video-card-meta-row"
             mt-2
             flex="~ gap-1 wrap"
@@ -483,6 +499,7 @@ const content = computed(() => {
               v-for="videoTag in content.visibleVideoTags"
               :key="`legacy-video-${videoTag.searchable}-${videoTag.text}`"
               class="video-card-meta__chip"
+              data-meta-priority="1"
               :class="{ 'video-card-tag--searchable': videoTag.searchable }"
               un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
               :title="videoTag.text"
@@ -495,6 +512,7 @@ const content = computed(() => {
             <span
               v-for="pluginTag in content.visiblePluginComputedTags"
               :key="`plugin-${pluginTag}`"
+              data-meta-priority="2"
               class="video-card-meta__chip"
               text="$bew-theme-color"
               lh-6
@@ -506,6 +524,7 @@ const content = computed(() => {
             </span>
             <span
               v-if="content.showPublishTime"
+              data-meta-priority="0"
               bg="$bew-fill-1" p="x-2" rounded="$bew-radius" text="$bew-text-3" lh-6
               mr-1
             >
@@ -568,6 +587,7 @@ const content = computed(() => {
 
             <div
               v-if="content.hasVisibleMeta"
+              v-meta-overflow
               class="video-card-meta-row"
               mt-2
               flex="~ gap-1 wrap"
@@ -579,6 +599,7 @@ const content = computed(() => {
                 v-for="videoTag in content.visibleVideoTags"
                 :key="`legacy-video-${videoTag.searchable}-${videoTag.text}`"
                 class="video-card-meta__chip"
+                data-meta-priority="1"
                 :class="{ 'video-card-tag--searchable': videoTag.searchable }"
                 un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
                 :title="videoTag.text"
@@ -591,6 +612,7 @@ const content = computed(() => {
               <span
                 v-for="pluginTag in content.visiblePluginComputedTags"
                 :key="`plugin-${pluginTag}`"
+                data-meta-priority="2"
                 class="video-card-meta__chip"
                 text="$bew-theme-color"
                 lh-6
@@ -602,6 +624,7 @@ const content = computed(() => {
               </span>
               <span
                 v-if="content.showPublishTime"
+                data-meta-priority="0"
                 bg="$bew-fill-1" p="x-2" rounded="$bew-radius" text="$bew-text-3" lh-6
                 mr-1
               >
@@ -663,15 +686,15 @@ const content = computed(() => {
 }
 
 .video-card-meta > div:last-child > div:last-child {
-  flex-wrap: wrap;
   overflow: hidden;
   max-width: 100%;
 }
 
 .video-card-meta-row {
   align-content: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   overflow: hidden;
+  width: 100%;
   max-width: 100%;
   min-height: 24px;
   max-height: 24px;
@@ -683,7 +706,9 @@ const content = computed(() => {
   font-size: inherit;
   line-height: inherit;
   padding-block: calc(var(--bew-base-font-size) * 0.12);
-  /* 标签保持完整；单行放不下的标签会整体换到被裁切的下一行。 */
+}
+
+.video-card-meta-row > * {
   flex: 0 0 auto;
   white-space: nowrap;
 }
