@@ -77,7 +77,6 @@ const SIDEBAR_RESIZE_MIN_WIDTH = 320
 const SIDEBAR_RESIZE_MAX_WIDTH = 800
 const PLAYER_RESIZE_MIN_WIDTH = 480
 const SIDEBAR_RESIZE_KEYBOARD_STEP = 16
-const MOBILE_BREAKPOINT = 900
 const LOADING_FADE_DURATION = 240
 const SWITCH_HINT_FADE_DURATION = 180
 const SWITCH_HINT_TIMEOUT = 6000
@@ -1103,7 +1102,7 @@ function injectLayoutStyle() {
         26vw,
         ${SIDEBAR_NARROW_MAX_WIDTH}px
       );
-      --bewly-widescreen-sidebar-expanded-width: clamp(480px, 32vw, 600px);
+      --bewly-widescreen-sidebar-expanded-width: min(100vw, clamp(480px, 32vw, 600px));
       --bewly-widescreen-sidebar-collapsed-width: ${SIDEBAR_VIDEO_PRIORITY_COLLAPSED_WIDTH}px;
       --bewly-widescreen-sidebar-max: 40vw;
       --bewly-widescreen-layout-aspect: 1.7777778;
@@ -1154,22 +1153,20 @@ function injectLayoutStyle() {
 
     /* 当窗口本身足以容纳 16:9 全高视频和正常侧栏时，自动布局保留 96px
        入口。判定只看窗口几何，不会把普通屏幕上的窄比例视频误判为超宽屏。 */
-    @media (min-width: ${MOBILE_BREAKPOINT + 1}px) {
-      #${ROOT_ID}[data-wide-video-priority="true"] {
-        --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-collapsed-width);
-        --bewly-widescreen-sidebar-panel-width: min(
-          var(--bewly-widescreen-sidebar-expanded-width),
-          var(--bewly-widescreen-sidebar-max)
-        );
-        --bewly-widescreen-sidebar-offset: calc(
-          var(--bewly-widescreen-sidebar-panel-width) - var(--bewly-widescreen-sidebar-column-width)
-        );
-      }
+    #${ROOT_ID}[data-wide-video-priority="true"] {
+      --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-collapsed-width);
+      --bewly-widescreen-sidebar-panel-width: min(
+        var(--bewly-widescreen-sidebar-expanded-width),
+        var(--bewly-widescreen-sidebar-max)
+      );
+      --bewly-widescreen-sidebar-offset: calc(
+        var(--bewly-widescreen-sidebar-panel-width) - var(--bewly-widescreen-sidebar-column-width)
+      );
+    }
 
-      #${ROOT_ID}[data-wide-video-priority="true"][data-sidebar-expanded="true"] {
-        --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-panel-width);
-        --bewly-widescreen-sidebar-offset: 0px;
-      }
+    #${ROOT_ID}[data-wide-video-priority="true"][data-sidebar-expanded="true"] {
+      --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-panel-width);
+      --bewly-widescreen-sidebar-offset: 0px;
     }
 
     #${ROOT_ID} * {
@@ -1182,6 +1179,8 @@ function injectLayoutStyle() {
       grid-template-columns:
         minmax(0, calc(100vw - var(--bewly-widescreen-sidebar-column-width)))
         minmax(0, var(--bewly-widescreen-sidebar-column-width));
+      /* 小窗口也保持左右布局，空间不足时由侧栏收起或调宽逻辑处理。 */
+      grid-template-rows: minmax(0, 1fr);
       width: 100%;
       height: 100dvh;
       overflow: hidden;
@@ -1233,16 +1232,14 @@ function injectLayoutStyle() {
 
     /* 收起侧栏后播放器列会宽于全高视频。仅限制播放器本体的宽度，由现有
        flex 居中规则将其放在侧栏外区域正中；发送栏始终铺满当前播放器列。 */
-    @media (min-width: ${MOBILE_BREAKPOINT + 1}px) {
-      #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > *,
-      #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > #bilibili-player-wrap,
-      #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > #playerWrap,
-      #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > #bilibili-player,
-      #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > #bilibiliPlayer,
-      #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > .bpx-player-container,
-      #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > .player-wrap {
-        width: min(var(--bewly-widescreen-player-target-width), 100%) !important;
-      }
+    #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > *,
+    #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > #bilibili-player-wrap,
+    #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > #playerWrap,
+    #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > #bilibili-player,
+    #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > #bilibiliPlayer,
+    #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > .bpx-player-container,
+    #${ROOT_ID}[data-wide-video-priority="true"] .bewly-widescreen-player-frame > .player-wrap {
+      width: min(var(--bewly-widescreen-player-target-width), 100%) !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-danmaku-dock:empty {
@@ -1491,96 +1488,94 @@ function injectLayoutStyle() {
       --bewly-widescreen-sidebar-offset: 0px;
     }
 
-    @media (min-width: ${MOBILE_BREAKPOINT + 1}px) {
-      /* 选择「整个浏览器窗口」且当前可见侧栏能放入单侧空白时，播放器列占满
-         整行并将视频平移到视口中心。这里不改变侧栏宽度或展开状态。 */
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-stage {
-        grid-template-columns: minmax(0, 100vw) 0px;
-      }
+    /* 选择「整个浏览器窗口」且当前可见侧栏能放入单侧空白时，播放器列占满
+       整行并将视频平移到视口中心。这里不改变侧栏宽度或展开状态。 */
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-stage {
+      grid-template-columns: minmax(0, 100vw) 0px;
+    }
 
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-widescreen-stage {
-        grid-template-columns: 0px minmax(0, 100vw);
-      }
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-widescreen-stage {
+      grid-template-columns: 0px minmax(0, 100vw);
+    }
 
-      /* 播放器容器延伸到侧栏边缘：控件贴齐侧栏不被遮挡，同时保住整块区域给
-         进度条、点击暂停与「竖屏放大」的方形画面使用。子代 id 选择器用于压过
-         下方「width: 100%」的双 id 特异性规则（移动根节点可能没有 #playerWrap）。 */
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame {
-        justify-content: flex-start;
-      }
+    /* 播放器容器延伸到侧栏边缘：控件贴齐侧栏不被遮挡，同时保住整块区域给
+       进度条、点击暂停与「竖屏放大」的方形画面使用。子代 id 选择器用于压过
+       下方「width: 100%」的双 id 特异性规则（移动根节点可能没有 #playerWrap）。 */
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame {
+      justify-content: flex-start;
+    }
 
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-widescreen-player-frame {
-        justify-content: flex-end;
-      }
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-widescreen-player-frame {
+      justify-content: flex-end;
+    }
 
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > *,
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #bilibili-player-wrap,
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #playerWrap,
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #bilibili-player,
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #bilibiliPlayer,
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > .bpx-player-container,
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > .player-wrap {
-        width: min(calc(100vw - var(--bewly-widescreen-sidebar-column-width)), 100%) !important;
-      }
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > *,
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #bilibili-player-wrap,
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #playerWrap,
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #bilibili-player,
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > #bilibiliPlayer,
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > .bpx-player-container,
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-player-frame > .player-wrap {
+      width: min(calc(100vw - var(--bewly-widescreen-sidebar-column-width)), 100%) !important;
+    }
 
-      /* 未放大时把视频层与弹幕层平移半个侧栏宽，使画面在视口居中；
-         「竖屏放大」的方形裁切激活时改为受限位移——在不越出播放器容器
-         （不被侧栏遮挡、不额外裁切）的前提下尽量靠拢视口中心。 */
-      #${ROOT_ID}[data-center-layout="true"] .bpx-player-video-wrap,
-      #${ROOT_ID}[data-center-layout="true"] .bilibili-player-video-wrap,
-      #${ROOT_ID}[data-center-layout="true"] .bpx-player-dm-wrap {
-        transform: translateX(calc(var(--bewly-widescreen-sidebar-column-width) / 2)) !important;
-      }
+    /* 未放大时把视频层与弹幕层平移半个侧栏宽，使画面在视口居中；
+       「竖屏放大」的方形裁切激活时改为受限位移——在不越出播放器容器
+       （不被侧栏遮挡、不额外裁切）的前提下尽量靠拢视口中心。 */
+    #${ROOT_ID}[data-center-layout="true"] .bpx-player-video-wrap,
+    #${ROOT_ID}[data-center-layout="true"] .bilibili-player-video-wrap,
+    #${ROOT_ID}[data-center-layout="true"] .bpx-player-dm-wrap {
+      transform: translateX(calc(var(--bewly-widescreen-sidebar-column-width) / 2)) !important;
+    }
 
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bpx-player-video-wrap,
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bilibili-player-video-wrap,
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bpx-player-dm-wrap {
-        transform: translateX(calc(-1 * var(--bewly-widescreen-sidebar-column-width) / 2)) !important;
-      }
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bpx-player-video-wrap,
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bilibili-player-video-wrap,
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bpx-player-dm-wrap {
+      transform: translateX(calc(-1 * var(--bewly-widescreen-sidebar-column-width) / 2)) !important;
+    }
 
-      #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bpx-player-video-wrap,
-      #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bilibili-player-video-wrap,
-      #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bpx-player-dm-wrap {
-        transform: translateX(max(0px, min(
-          calc(var(--bewly-widescreen-sidebar-column-width) / 2),
-          calc((100vw - var(--bewly-widescreen-sidebar-column-width) - var(--bewly-widescreen-player-available-height)) / 2)
-        ))) !important;
-      }
+    #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bpx-player-video-wrap,
+    #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bilibili-player-video-wrap,
+    #${ROOT_ID}[data-center-layout="true"] .is-bewly-vertical-video-zoomed .bpx-player-dm-wrap {
+      transform: translateX(max(0px, min(
+        calc(var(--bewly-widescreen-sidebar-column-width) / 2),
+        calc((100vw - var(--bewly-widescreen-sidebar-column-width) - var(--bewly-widescreen-player-available-height)) / 2)
+      ))) !important;
+    }
 
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bpx-player-video-wrap,
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bilibili-player-video-wrap,
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bpx-player-dm-wrap {
-        transform: translateX(calc(-1 * max(0px, min(
-          calc(var(--bewly-widescreen-sidebar-column-width) / 2),
-          calc((100vw - var(--bewly-widescreen-sidebar-column-width) - var(--bewly-widescreen-player-available-height)) / 2)
-        )))) !important;
-      }
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bpx-player-video-wrap,
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bilibili-player-video-wrap,
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .is-bewly-vertical-video-zoomed .bpx-player-dm-wrap {
+      transform: translateX(calc(-1 * max(0px, min(
+        calc(var(--bewly-widescreen-sidebar-column-width) / 2),
+        calc((100vw - var(--bewly-widescreen-sidebar-column-width) - var(--bewly-widescreen-player-available-height)) / 2)
+      )))) !important;
+    }
 
-      /* 竖屏放大后画面可能贴近侧栏，将按钮与预览图放在另一侧的黑边。 */
-      #${ROOT_ID}[data-center-layout="true"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-button,
-      #${ROOT_ID}[data-center-layout="true"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-control {
-        --bewly-vertical-video-controls-side: left;
-        left: var(--bew-space-3, 12px) !important;
-        right: auto !important;
-      }
+    /* 竖屏放大后画面可能贴近侧栏，将按钮与预览图放在另一侧的黑边。 */
+    #${ROOT_ID}[data-center-layout="true"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-button,
+    #${ROOT_ID}[data-center-layout="true"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-control {
+      --bewly-vertical-video-controls-side: left;
+      left: var(--bew-space-3, 12px) !important;
+      right: auto !important;
+    }
 
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-button,
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-control {
-        --bewly-vertical-video-controls-side: right;
-        left: auto !important;
-        right: var(--bew-space-3, 12px) !important;
-      }
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-button,
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-vertical-video-zoom-host > .bewly-vertical-video-zoom-control {
+      --bewly-vertical-video-controls-side: right;
+      left: auto !important;
+      right: var(--bew-space-3, 12px) !important;
+    }
 
-      /* 居中布局的播放器列横跨视口，因此发送栏需显式扣除当前可见侧栏列。
-         使用 column-width 而非完整面板宽度，使收起、展开和手动宽度保持同步。 */
-      #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-danmaku-dock {
-        width: min(calc(100vw - var(--bewly-widescreen-sidebar-column-width)), 100%) !important;
-        align-self: flex-start;
-      }
+    /* 居中布局的播放器列横跨视口，因此发送栏需显式扣除当前可见侧栏列。
+       使用 column-width 而非完整面板宽度，使收起、展开和手动宽度保持同步。 */
+    #${ROOT_ID}[data-center-layout="true"] .bewly-widescreen-danmaku-dock {
+      width: min(calc(100vw - var(--bewly-widescreen-sidebar-column-width)), 100%) !important;
+      align-self: flex-start;
+    }
 
-      #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-widescreen-danmaku-dock {
-        margin-left: auto;
-      }
+    #${ROOT_ID}[data-center-layout="true"][data-sidebar-position="left"] .bewly-widescreen-danmaku-dock {
+      margin-left: auto;
     }
 
     #${ROOT_ID} .bewly-widescreen-sidebar-toggle {
@@ -2296,16 +2291,14 @@ function injectLayoutStyle() {
 
     /* 自动侧栏收起后仅部分面板留在视口内，Tab 应按可见列宽排列，
        避免稍后再看的「选集」入口被完整面板宽度挤出屏幕。 */
-    @media (min-width: ${MOBILE_BREAKPOINT + 1}px) {
-      #${ROOT_ID}[data-sidebar-mode="fit"]:not([data-sidebar-expanded="true"]) .bewly-widescreen-tabs {
-        width: min(100%, max(0px, calc(var(--bewly-widescreen-sidebar-column-width) - var(--bew-space-2, 8px))));
-        align-self: flex-start;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
+    #${ROOT_ID}[data-sidebar-mode="fit"]:not([data-sidebar-expanded="true"]) .bewly-widescreen-tabs {
+      width: min(100%, max(0px, calc(var(--bewly-widescreen-sidebar-column-width) - var(--bew-space-2, 8px))));
+      align-self: flex-start;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
 
-      #${ROOT_ID}[data-sidebar-position="left"][data-sidebar-mode="fit"]:not([data-sidebar-expanded="true"]) .bewly-widescreen-tabs {
-        align-self: flex-end;
-      }
+    #${ROOT_ID}[data-sidebar-position="left"][data-sidebar-mode="fit"]:not([data-sidebar-expanded="true"]) .bewly-widescreen-tabs {
+      align-self: flex-end;
     }
 
     #${ROOT_ID} .bewly-widescreen-tab {
@@ -2684,48 +2677,6 @@ function injectLayoutStyle() {
         row-gap: var(--bew-space-1, 4px) !important;
       }
     }
-
-    @media (max-width: ${MOBILE_BREAKPOINT}px) {
-      #${ROOT_ID} {
-        --bewly-widescreen-player-available-height: calc(56dvh - var(--bewly-widescreen-danmaku-height, 0px));
-        --bewly-widescreen-sidebar-column-width: 100vw;
-        --bewly-widescreen-sidebar-panel-width: 100vw;
-        --bewly-widescreen-sidebar-offset: 0px;
-      }
-
-      #${ROOT_ID} .bewly-widescreen-stage,
-      #${ROOT_ID}[data-sidebar-position="left"] .bewly-widescreen-stage {
-        grid-template-columns: 1fr;
-        grid-template-rows: minmax(0, 56dvh) minmax(0, 44dvh);
-      }
-
-      #${ROOT_ID} .bewly-widescreen-player-slot {
-        grid-row: 1;
-        padding: 0;
-      }
-
-      #${ROOT_ID} .bewly-widescreen-sidebar {
-        grid-row: 2;
-        width: 100%;
-        transform: none;
-        transition: none;
-        box-shadow: none;
-      }
-
-      #${ROOT_ID} .bewly-widescreen-sidebar-toggle,
-      #${ROOT_ID} .bewly-widescreen-sidebar-resize-handle {
-        display: none;
-      }
-
-      #${ROOT_ID} .bewly-widescreen-player-frame > * {
-        width: 100% !important;
-        max-height: 100% !important;
-      }
-
-      #${ROOT_ID} .bewly-widescreen-danmaku-dock {
-        width: 100% !important;
-      }
-    }
   `)
 }
 
@@ -2744,15 +2695,17 @@ function updateAspectRatio() {
 }
 
 function getSidebarResizeBounds() {
+  // 放不下播放器和常规侧栏时，将侧栏宽度下限缩至窗口的 40%。
+  const minWidth = Math.min(SIDEBAR_RESIZE_MIN_WIDTH, Math.floor(window.innerWidth * 0.4))
   const maxWidth = Math.max(
-    SIDEBAR_RESIZE_MIN_WIDTH,
+    minWidth,
     Math.min(
       SIDEBAR_RESIZE_MAX_WIDTH,
       window.innerWidth * 0.6,
       window.innerWidth - PLAYER_RESIZE_MIN_WIDTH,
     ),
   )
-  return { minWidth: SIDEBAR_RESIZE_MIN_WIDTH, maxWidth }
+  return { minWidth, maxWidth }
 }
 
 function applyCustomSidebarWidth(width: number, persist = false) {
@@ -2771,7 +2724,7 @@ function applyCustomSidebarWidth(width: number, persist = false) {
     : requestedWidth
   state.customSidebarWidth = normalizedWidth
 
-  if (!normalizedWidth || window.innerWidth <= MOBILE_BREAKPOINT) {
+  if (!normalizedWidth) {
     delete state.root.dataset.sidebarCustomWidth
     state.root.style.removeProperty('--bewly-widescreen-sidebar-custom-width')
     state.sidebarResizeHandle.removeAttribute('aria-valuenow')
@@ -2807,12 +2760,11 @@ function updateSidebarLayoutState() {
     narrowWidth,
   )
   const gapWidth = Math.max((window.innerWidth - targetWidth) / 2, 0)
-  const hasCustomWidth = state.customSidebarWidth > 0 && window.innerWidth > MOBILE_BREAKPOINT
+  const hasCustomWidth = state.customSidebarWidth > 0
   // 只根据窗口能否同时容纳 16:9 全高视频与正常侧栏判断超宽余量，避免把
   // 普通 16:9 窗口播放 4:3 或竖屏视频时产生的空白误判成超宽屏。
   const ultrawideSpareWidth = Math.max(window.innerWidth - availableHeight * (16 / 9), 0)
   const wideVideoPriority = !hasCustomWidth
-    && window.innerWidth > MOBILE_BREAKPOINT
     && state.sidebarMode === 'fit'
     && ultrawideSpareWidth >= SIDEBAR_NARROW_MIN_WIDTH
   state.root.dataset.wideVideoPriority = String(wideVideoPriority)
@@ -2831,7 +2783,6 @@ function updateSidebarLayoutState() {
   // 视频居中基准与侧栏策略相互独立：只有当前可见侧栏确实能放入单侧空白时
   // 才使用视口居中，否则安全回退到侧栏外区域居中。
   const centerLayout = !!settings.value.bewlyWidescreenCenterVerticalVideo
-    && window.innerWidth > MOBILE_BREAKPOINT
     && visibleSidebarWidth > 1
     && gapWidth >= visibleSidebarWidth
   state.root.dataset.centerLayout = String(centerLayout)
@@ -2842,20 +2793,12 @@ function updateSidebarLayoutState() {
   state.root.dataset.sidebarToggleVisible = String(showToggle)
 
   // 自动布局也要提供可访问的当前值，双击恢复后仍可继续用键盘调宽。
-  if (window.innerWidth > MOBILE_BREAKPOINT) {
-    state.sidebarResizeHandle.setAttribute('aria-valuemin', String(Math.round(minWidth)))
-    state.sidebarResizeHandle.setAttribute('aria-valuemax', String(Math.round(maxWidth)))
-    state.sidebarResizeHandle.setAttribute('aria-valuenow', String(Math.round(state.sidebarEl.getBoundingClientRect().width)))
-  }
+  state.sidebarResizeHandle.setAttribute('aria-valuemin', String(Math.round(minWidth)))
+  state.sidebarResizeHandle.setAttribute('aria-valuemax', String(Math.round(maxWidth)))
+  state.sidebarResizeHandle.setAttribute('aria-valuenow', String(Math.round(state.sidebarEl.getBoundingClientRect().width)))
 }
 
 function applyCustomSidebarWidthStyle(currentState: BewlyWidescreenState) {
-  if (window.innerWidth <= MOBILE_BREAKPOINT) {
-    delete currentState.root.dataset.sidebarCustomWidth
-    currentState.root.style.removeProperty('--bewly-widescreen-sidebar-custom-width')
-    return
-  }
-
   const { minWidth, maxWidth } = getSidebarResizeBounds()
   const clampedWidth = Math.round(Math.min(Math.max(currentState.customSidebarWidth, minWidth), maxWidth))
   currentState.root.dataset.sidebarCustomWidth = 'true'
@@ -3112,7 +3055,7 @@ function setupSidebarResize(currentState: BewlyWidescreenState) {
 
   function onPointerDown(event: PointerEvent) {
     if (!settings.value.enableBewlyWidescreenSidebarResize
-      || event.button !== 0 || !event.isPrimary || window.innerWidth <= MOBILE_BREAKPOINT) {
+      || event.button !== 0 || !event.isPrimary) {
       return
     }
 
@@ -3127,7 +3070,7 @@ function setupSidebarResize(currentState: BewlyWidescreenState) {
   }
 
   function onKeyDown(event: KeyboardEvent) {
-    if (!settings.value.enableBewlyWidescreenSidebarResize || window.innerWidth <= MOBILE_BREAKPOINT)
+    if (!settings.value.enableBewlyWidescreenSidebarResize)
       return
 
     const currentWidth = sidebarEl.getBoundingClientRect().width
