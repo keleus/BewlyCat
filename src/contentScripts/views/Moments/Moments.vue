@@ -1458,7 +1458,12 @@ function openMomentMedia(moment: DisplayMoment) {
     recordVideoVisit(moment)
 
   const openMode = resolveMomentOpenMode(moment)
-  openMomentExternally(moment, openMode === 'dialog' ? 'newTab' : openMode)
+  if (openMode !== 'dialog' || moment.isLive || window.innerWidth <= DETAIL_DIALOG_MIN_WIDTH) {
+    openMomentExternally(moment, openMode === 'dialog' ? 'newTab' : openMode)
+    return
+  }
+
+  openMomentDialog(moment)
 }
 
 function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
@@ -1483,15 +1488,21 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
     return
   }
 
+  openMomentDialog(detailMoment)
+}
+
+function openMomentDialog(moment: DisplayMoment) {
   // 若已有详情在开，先销毁旧 iframe，避免叠内存
   if (selectedMoment.value || detailFrameUrl.value)
     destroyDetailIframe()
 
-  selectedMoment.value = detailMoment
-  detailFrameUrl.value = resolveDetailUrl(detailMoment)
+  selectedMoment.value = moment
+  detailFrameUrl.value = resolveDetailUrl(moment)
   detailFrameLoaded.value = false
   setDetailPlayerImmersive(false)
   // 打开详情时释放悬停预览资源
+  if (previewUrls[hoveredMediaId.value])
+    delete previewUrls[hoveredMediaId.value]
   hoveredMediaId.value = ''
   cleanupLivePreviewPlayer()
   clearDetailLoadTimer()
@@ -3105,6 +3116,47 @@ function openClassifiedLink(url: string, kind: MomentLinkKind, video?: DisplayFo
     recordVideoVisit(video)
 
   const mode = resolveLinkOpenMode(kind)
+  if (kind === 'video' && mode === 'dialog' && window.innerWidth > DETAIL_DIALOG_MIN_WIDTH) {
+    // 转发视频和正文视频链接也使用播放器弹窗，不能回落到新标签页。
+    openMomentDialog({
+      id: url,
+      author: { mid: '', name: '', face: '' },
+      publishedAt: 0,
+      title: video?.title || t('moment_card.video_post'),
+      text: '',
+      richText: [],
+      images: video?.cover ? [video.cover] : [],
+      time: '',
+      likeCount: 0,
+      isLiked: false,
+      isLikeDisabled: true,
+      commentCount: 0,
+      url,
+      videoUrl: url,
+      aid: video?.aid,
+      bvid: video?.bvid,
+      isVideo: true,
+      isRegularVideo: true,
+      isUgcSeason: false,
+      isDraw: false,
+      isPgc: false,
+      isLive: false,
+      isChargeExclusive: false,
+      isForward: false,
+      isArticle: false,
+      isUpRecommendation: false,
+      isVideoReservation: false,
+      isLiveReservation: false,
+      mediaMeta: '',
+      liveArea: '',
+      livePopularity: '',
+      duration: video?.duration || '',
+      videoPlay: video?.play || '',
+      videoDanmaku: video?.danmaku || '',
+    })
+    return
+  }
+
   hoveredMediaId.value = ''
   cleanupLivePreviewPlayer()
   if (mode === 'background')
