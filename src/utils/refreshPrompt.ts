@@ -341,7 +341,6 @@ export function showRefreshPrompt(...args: unknown[]): void {
     && performance.timeOrigin > 0 && performance.timeOrigin < update.at) {
     const changed = (update.previousVersion && update.previousVersion !== copy.currentVersion)
       || (runningVersion && runningVersion !== copy.currentVersion)
-      || (runningCommit && runningCommit !== copy.currentCommit)
     copy = {
       ...copy,
       diagnostic: { ...copy.diagnostic, reason: changed ? 'version-mismatch' : 'extension-reloaded' },
@@ -414,8 +413,7 @@ export function showRefreshPrompt(...args: unknown[]): void {
     && (!update || health.checkedAt >= update.at)
     && health.runtimeUrl === copy.diagnostic.expected?.runtimeUrl
     && health.name === copy.diagnostic.expected?.name
-    && health.version === copy.diagnostic.expected?.version
-    && health.commit === copy.diagnostic.expected?.commit) {
+    && health.version === copy.diagnostic.expected?.version) {
     return
   }
   if (existingPrompt) {
@@ -449,8 +447,7 @@ export function showRefreshPrompt(...args: unknown[]): void {
     }
   }
 
-  const versionChanged = Boolean(runningVersion
-    && (runningVersion !== copy.currentVersion || runningCommit !== copy.currentCommit))
+  const versionChanged = Boolean(runningVersion && runningVersion !== copy.currentVersion)
   const pageUsesDarkTheme = document.documentElement.classList.contains('dark')
     || document.documentElement.classList.contains('bili_dark')
     || document.body?.classList.contains('dark') === true
@@ -890,8 +887,7 @@ export function markContentScriptHealthy(identity: ContentScriptIdentity) {
   healthGlobal.__BEWLYCAT_REFRESH_HEALTH__ = { ...identity, checkedAt: Date.now() }
   const prompt = document.getElementById('bewlycat-refresh-required')
   if (prompt?.dataset.source === 'background' && prompt.dataset.runtimeUrl === identity.runtimeUrl
-    && prompt.dataset.promptVersion === identity.version
-    && (prompt.dataset.promptCommit ?? '') === (identity.commit ?? '') && !prompt.hidden) {
+    && prompt.dataset.promptVersion === identity.version && !prompt.hidden) {
     prompt.remove()
   }
 }

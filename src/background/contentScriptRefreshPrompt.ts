@@ -169,7 +169,7 @@ async function pingContentScript(
       if (received.runtimeUrl !== currentIdentity.runtimeUrl || received.name !== currentIdentity.name) {
         return { status: 'outdated', diagnostic: { ...diagnostic, reason: 'identity-mismatch', received } }
       }
-      if (received.version !== currentIdentity.version || received.commit !== currentIdentity.commit) {
+      if (received.version !== currentIdentity.version) {
         return { status: 'outdated', diagnostic: { ...diagnostic, reason: 'version-mismatch', received } }
       }
       return { status: 'current' }

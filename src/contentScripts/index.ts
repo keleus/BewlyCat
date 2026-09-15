@@ -74,7 +74,6 @@ if (shouldInitializeContentScript) {
       if (typeof expected === 'object' && expected !== null
         && 'name' in expected && expected.name === contentScriptManifest.name
         && 'version' in expected && expected.version === version
-        && ('commit' in expected ? expected.commit : undefined) === CONTENT_SCRIPT_COMMIT
         && 'runtimeUrl' in expected && expected.runtimeUrl === contentScriptRuntimeUrl) {
         markContentScriptHealthy({ name: contentScriptManifest.name, version, commit: CONTENT_SCRIPT_COMMIT, runtimeUrl: contentScriptRuntimeUrl })
       }

@@ -28,6 +28,7 @@ export interface ContentScriptIdentity {
   name: string
   runtimeUrl: string
   version: string
+  // 开发模式的后台和页面脚本独立编译，Git 提交仅用于诊断，不代表协议或版本不兼容。
   commit?: string
 }
 
