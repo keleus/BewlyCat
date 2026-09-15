@@ -21,30 +21,47 @@ onMounted(() => {
 // 计算解析后的壁纸URL(支持本地壁纸和缓存控制)
 const resolvedWallpaper = ref('')
 const resolvedSearchPageWallpaper = ref('')
-let globalWallpaperRequestId = 0
-let searchWallpaperRequestId = 0
-
-function waitForWallpaperDecode(url: string): Promise<void> {
+function waitForWallpaperDecode(url: string, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      resolve()
+      return
+    }
+
     const image = new Image()
     let settled = false
+    let decoding = false
 
     const cleanup = () => {
       image.onload = null
       image.onerror = null
+      signal.removeEventListener('abort', handleAbort)
+      image.removeAttribute('src')
     }
-    const handleLoad = async () => {
+    function handleAbort() {
       if (settled)
         return
 
       settled = true
       cleanup()
+      resolve()
+    }
+    const handleLoad = async () => {
+      if (settled || decoding)
+        return
+
+      decoding = true
       try {
         await image.decode()
       }
       catch {
         // load 已成功时仍允许展示；部分浏览器会对已解码图片拒绝重复 decode。
       }
+      if (settled)
+        return
+
+      settled = true
+      cleanup()
       resolve()
     }
     const handleError = () => {
@@ -59,6 +76,7 @@ function waitForWallpaperDecode(url: string): Promise<void> {
     image.decoding = 'async'
     image.onload = () => void handleLoad()
     image.onerror = handleError
+    signal.addEventListener('abort', handleAbort, { once: true })
     image.src = url
 
     // data URL 或内存缓存可能在监听器注册后已经完成加载。
@@ -79,11 +97,10 @@ async function resolveWallpaperSource(originalUrl: string, cacheTime: number): P
 }
 
 // 解析全局壁纸
-async function resolveGlobalWallpaper() {
-  const requestId = ++globalWallpaperRequestId
+async function resolveGlobalWallpaper(signal: AbortSignal) {
   const originalUrl = settings.value.wallpaper
   const resolvedUrl = await resolveWallpaperSource(originalUrl, settings.value.wallpaperCacheTime)
-  if (requestId !== globalWallpaperRequestId)
+  if (signal.aborted)
     return
 
   if (!resolvedUrl) {
@@ -92,22 +109,21 @@ async function resolveGlobalWallpaper() {
   }
 
   try {
-    await waitForWallpaperDecode(resolvedUrl)
-    if (requestId === globalWallpaperRequestId)
+    await waitForWallpaperDecode(resolvedUrl, signal)
+    if (!signal.aborted)
       resolvedWallpaper.value = resolvedUrl
   }
   catch {
-    if (requestId === globalWallpaperRequestId)
+    if (!signal.aborted)
       resolvedWallpaper.value = ''
   }
 }
 
 // 解析搜索页壁纸
-async function resolveSearchWallpaper() {
-  const requestId = ++searchWallpaperRequestId
+async function resolveSearchWallpaper(signal: AbortSignal) {
   const originalUrl = settings.value.searchPageWallpaper
   const resolvedUrl = await resolveWallpaperSource(originalUrl, settings.value.searchPageWallpaperCacheTime)
-  if (requestId !== searchWallpaperRequestId)
+  if (signal.aborted)
     return
 
   if (!resolvedUrl) {
@@ -116,31 +132,35 @@ async function resolveSearchWallpaper() {
   }
 
   try {
-    await waitForWallpaperDecode(resolvedUrl)
-    if (requestId === searchWallpaperRequestId)
+    await waitForWallpaperDecode(resolvedUrl, signal)
+    if (!signal.aborted)
       resolvedSearchPageWallpaper.value = resolvedUrl
   }
   catch {
-    if (requestId === searchWallpaperRequestId)
+    if (!signal.aborted)
       resolvedSearchPageWallpaper.value = ''
   }
 }
 
-// 监听设置变化,重新解析壁纸
-watch(() => [settings.value.wallpaper, settings.value.wallpaperCacheTime], ([, newCacheTime], oldValue) => {
+// 设置同步会替换整个 settings 对象；逐项比较，避免无关设置触发大图重复加载、解码。
+watch([() => settings.value.wallpaper, () => settings.value.wallpaperCacheTime], ([, newCacheTime], oldValue, onCleanup) => {
+  const controller = new AbortController()
+  onCleanup(() => controller.abort())
   // 如果缓存时间改变,用新的缓存时间清理可能已过期的缓存
   if (oldValue && newCacheTime !== oldValue[1]) {
-    cleanupExpiredCache(newCacheTime as number)
+    cleanupExpiredCache(newCacheTime)
   }
-  void resolveGlobalWallpaper()
+  void resolveGlobalWallpaper(controller.signal)
 }, { immediate: true })
 
-watch(() => [settings.value.searchPageWallpaper, settings.value.searchPageWallpaperCacheTime], ([, newCacheTime], oldValue) => {
+watch([() => settings.value.searchPageWallpaper, () => settings.value.searchPageWallpaperCacheTime], ([, newCacheTime], oldValue, onCleanup) => {
+  const controller = new AbortController()
+  onCleanup(() => controller.abort())
   // 如果缓存时间改变,用新的缓存时间清理可能已过期的缓存
   if (oldValue && newCacheTime !== oldValue[1]) {
-    cleanupExpiredCache(newCacheTime as number)
+    cleanupExpiredCache(newCacheTime)
   }
-  void resolveSearchWallpaper()
+  void resolveSearchWallpaper(controller.signal)
 }, { immediate: true })
 
 // 计算当前页面使用的壁纸URL

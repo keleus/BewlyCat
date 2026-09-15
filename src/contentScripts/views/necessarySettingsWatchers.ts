@@ -227,6 +227,7 @@ export function setupNecessarySettingsWatchers() {
         blockAds: settings.value.blockAds,
         homePage: isHomePage(),
         inIframe: isInIframe(),
+        useOriginalBilibiliHomepage: settings.value.useOriginalBilibiliHomepage,
       }),
     )
   }
@@ -237,10 +238,14 @@ export function setupNecessarySettingsWatchers() {
       document.documentElement.classList.add('block-useless-contents')
     else
       document.documentElement.classList.remove('block-useless-contents')
-
-    // 使用 JS 标记首页信息流卡片，避免代价较高的 :has() 选择器。
-    refreshUselessFeedCardBlocker()
   }, { immediate: true })
+
+  // 只在原版首页标记卡片；切回自定义首页时释放监听器和待处理节点。
+  watch(
+    [() => settings.value.blockAds, () => settings.value.useOriginalBilibiliHomepage],
+    refreshUselessFeedCardBlocker,
+    { immediate: true },
+  )
 
   watch(
     [

@@ -14,20 +14,26 @@ const OBSERVER_OPTIONS: MutationObserverInit = {
 
 let feedCardObserver: MutationObserver | null = null
 let observeRoot: Element | null = null
-let flushScheduled = false
+let flushFrame: number | undefined
+let fullScanPending = false
+const MAX_PENDING_ROOTS = 100
 const pendingRoots = new Set<Element>()
 
 interface UselessFeedCardBlockerContext {
   blockAds: boolean
   homePage: boolean
   inIframe: boolean
+  useOriginalBilibiliHomepage: boolean
 }
 
 export function shouldEnableUselessFeedCardBlocker({
   blockAds,
   homePage,
+  inIframe,
+  useOriginalBilibiliHomepage,
 }: UselessFeedCardBlockerContext) {
-  return blockAds && homePage
+  // 自定义首页隐藏了原站信息流，无需监听；iframe 内仍使用原站页面。
+  return blockAds && homePage && (inIframe || useOriginalBilibiliHomepage)
 }
 
 function getObserveRoot(): Element {
@@ -87,10 +93,24 @@ function scanForRcmdCards(root: ParentNode) {
 }
 
 function flushPending() {
-  flushScheduled = false
+  flushFrame = undefined
+  if (!feedCardObserver)
+    return
+  if (document.visibilityState === 'hidden') {
+    deferFullScan()
+    return
+  }
 
-  for (const root of pendingRoots)
-    scanForRcmdCards(root)
+  if (fullScanPending) {
+    fullScanPending = false
+    scanForRcmdCards(document)
+  }
+  else {
+    for (const root of pendingRoots) {
+      if (root.isConnected)
+        scanForRcmdCards(root)
+    }
+  }
 
   pendingRoots.clear()
 
@@ -99,11 +119,40 @@ function flushPending() {
 }
 
 function scheduleFlushPending() {
-  if (flushScheduled)
+  if (flushFrame !== undefined)
     return
 
-  flushScheduled = true
-  requestAnimationFrame(flushPending)
+  flushFrame = requestAnimationFrame(flushPending)
+}
+
+function deferFullScan() {
+  if (flushFrame !== undefined)
+    cancelAnimationFrame(flushFrame)
+  flushFrame = undefined
+  pendingRoots.clear()
+  fullScanPending = true
+}
+
+function queueRoot(root: Element) {
+  if (fullScanPending || !root.isConnected)
+    return
+
+  // 主线程繁忙时也限制待处理引用；溢出后只保留一次重新扫描的标记。
+  if (pendingRoots.size >= MAX_PENDING_ROOTS) {
+    pendingRoots.clear()
+    fullScanPending = true
+    return
+  }
+  pendingRoots.add(root)
+}
+
+function handleVisibilityChange() {
+  // 后台标签页会暂停 RAF，但 MutationObserver 仍可能接收原站的更新。
+  // 不把期间替换、移除的 DOM 树一直保存在 Set 中，回到前台再扫描当前节点。
+  if (document.visibilityState === 'hidden')
+    deferFullScan()
+  else if (fullScanPending || pendingRoots.size > 0)
+    scheduleFlushPending()
 }
 
 function start() {
@@ -114,6 +163,11 @@ function start() {
   scanForRcmdCards(document)
 
   feedCardObserver = new MutationObserver((mutations) => {
+    if (document.visibilityState === 'hidden') {
+      deferFullScan()
+      return
+    }
+
     for (const mutation of mutations) {
       if (mutation.type === 'attributes') {
         const target = mutation.target
@@ -121,29 +175,30 @@ function start() {
 
         // Bilibili attaches recommendation classes asynchronously during hydration.
         if (target instanceof Element && (target.classList.contains(VIDEO_CARD_CLASS) || wasVideoCard))
-          pendingRoots.add(target)
+          queueRoot(target)
 
         continue
       }
 
       // If the matching child is removed, resync its existing feed-card parent.
       if (mutation.removedNodes.length > 0 && mutation.target instanceof Element)
-        pendingRoots.add(mutation.target)
+        queueRoot(mutation.target)
 
       for (let index = 0; index < mutation.addedNodes.length; index++) {
         const node = mutation.addedNodes[index]
         if (node.nodeType !== Node.ELEMENT_NODE)
           continue
-        pendingRoots.add(node as Element)
+        queueRoot(node as Element)
       }
     }
 
-    if (pendingRoots.size > 0)
+    if (fullScanPending || pendingRoots.size > 0)
       scheduleFlushPending()
   })
 
   observeRoot = getObserveRoot()
   feedCardObserver.observe(observeRoot, OBSERVER_OPTIONS)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
 }
 
 function stop() {
@@ -154,8 +209,12 @@ function stop() {
   feedCardObserver = null
   observeRoot = null
 
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
+  if (flushFrame !== undefined)
+    cancelAnimationFrame(flushFrame)
+  flushFrame = undefined
   pendingRoots.clear()
-  flushScheduled = false
+  fullScanPending = false
 }
 
 export function setUselessFeedCardBlockerEnabled(enabled: boolean) {
