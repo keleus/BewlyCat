@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ALink from '~/components/ALink.vue'
+import UserAvatarLink from '~/components/UserCard/UserAvatarLink.vue'
 import { useUserRelationStore } from '~/stores/userRelationStore'
 import api from '~/utils/api'
 import { LV0_ICON, LV1_ICON, LV2_ICON, LV3_ICON, LV4_ICON, LV5_ICON, LV6_ICON } from '~/utils/lvIcons'
@@ -142,9 +143,7 @@ async function handleFollowClick(e: Event) {
 <template>
   <!-- Compact模式布局 -->
   <template v-if="compact">
-    <ALink
-      :href="`https://space.bilibili.com/${mid}`"
-      type="videoCard"
+    <div
       class="user-card cursor-pointer compact"
       relative
       flex
@@ -155,9 +154,19 @@ async function handleFollowClick(e: Event) {
       rounded="$bew-radius"
       cursor="pointer"
     >
-      <div flex items-center gap-5 w-full>
+      <ALink
+        :href="`https://space.bilibili.com/${mid}`"
+        :title="name"
+        :aria-label="name"
+        type="videoCard"
+        absolute inset-0
+      />
+      <div
+        relative flex items-center gap-5 w-full
+        pointer-events-none
+      >
         <!-- 左侧：头像（带角标） -->
-        <div class="avatar-wrapper-compact" relative flex-shrink-0>
+        <UserAvatarLink :mid="mid" :name="name" :live-status="liveStatus" :roomid="roomid" class="avatar-wrapper-compact">
           <img
             :src="face"
             :alt="name"
@@ -175,7 +184,7 @@ async function handleFollowClick(e: Event) {
             v-else-if="isVerified && verifyInfo"
             class="bili-avatar-icon bili-avatar-right-icon bili-avatar-icon-personal bili-avatar-size-86"
           />
-        </div>
+        </UserAvatarLink>
 
         <!-- 右侧：用户信息 + 简介 + 关注按钮 -->
         <div flex="~ col gap-2" flex-1 min-w-0>
@@ -210,14 +219,10 @@ async function handleFollowClick(e: Event) {
 
           <!-- 统计信息行 -->
           <div
-            v-if="fans || videos || liveStatus === 1"
+            v-if="fans || videos"
             flex items-center gap-3
             text="xs $bew-text-3"
           >
-            <div v-if="liveStatus === 1" flex items-center gap-1 class="live-status-badge">
-              <div i-tabler:live-photo w-3.5 h-3.5 />
-              <span>{{ t('user_card.live_now') }}</span>
-            </div>
             <div v-if="videos" flex items-center gap-1>
               <div i-tabler:video w-3.5 h-3.5 />
               <span>{{ t('user_card.submissions', { count: formatNumber(videos) }) }}</span>
@@ -235,6 +240,7 @@ async function handleFollowClick(e: Event) {
           >
             <button
               class="follow-button-compact"
+              pointer-events-auto
               :class="{ followed: isFollowing }"
               :disabled="isFollowLoading"
               @click="handleFollowClick"
@@ -244,7 +250,7 @@ async function handleFollowClick(e: Event) {
           </div>
         </div>
       </div>
-    </ALink>
+    </div>
   </template>
 
   <!-- 非Compact模式布局 -->
@@ -263,7 +269,7 @@ async function handleFollowClick(e: Event) {
       @click="openUserSpace()"
     >
       <!-- 头像 -->
-      <div class="avatar-wrapper" flex-shrink-0>
+      <UserAvatarLink :mid="mid" :name="name" :live-status="liveStatus" :roomid="roomid" class="avatar-wrapper">
         <img
           :src="face"
           :alt="name"
@@ -271,7 +277,7 @@ async function handleFollowClick(e: Event) {
           :class="horizontal ? 'w-12 h-12' : 'w-16 h-16'"
           rounded-full object-cover
         >
-      </div>
+      </UserAvatarLink>
 
       <!-- 用户信息 -->
       <div class="user-info" flex-1 min-w-0>
@@ -593,11 +599,6 @@ async function handleFollowClick(e: Event) {
     background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M13 5L6 12L3 9L4 8L6 10L12 4L13 5Z'/%3E%3C/svg%3E")
       center/70% no-repeat;
   }
-}
-
-.live-status-badge {
-  color: var(--bew-theme-color);
-  font-weight: var(--bew-font-weight-medium);
 }
 
 .follow-button-compact {

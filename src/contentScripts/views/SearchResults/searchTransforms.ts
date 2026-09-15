@@ -288,7 +288,7 @@ export function convertUserCardData(user: any) {
     samples: convertUserSamples(user, 7),
     isFollowed: user.is_follow || 0,
     showFollowButton: true,
-    liveStatus: user.live_status,
+    liveStatus: Number(user.is_live ?? user.live_status ?? 0),
     roomid: user.roomid || user.room_id,
   }
 }

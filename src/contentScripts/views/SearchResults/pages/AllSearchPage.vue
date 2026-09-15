@@ -8,6 +8,7 @@ import ArticleCard from '~/components/ArticleCard/ArticleCard.vue'
 import BangumiEpisodeList from '~/components/BangumiEpisodeList/BangumiEpisodeList.vue'
 import Loading from '~/components/Loading.vue'
 import MediaEpisodeSelect from '~/components/MediaEpisodeSelect/MediaEpisodeSelect.vue'
+import UserAvatarLink from '~/components/UserCard/UserAvatarLink.vue'
 import VideoCard from '~/components/VideoCard/VideoCard.vue'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
@@ -258,12 +259,6 @@ async function handleUserFollow(mid: number) {
   finally {
     state.isLoading = false
   }
-}
-
-function openExternalLink(url?: string) {
-  if (!url)
-    return
-  window.open(url, '_blank', 'noopener')
 }
 
 // 获取当前结果长度
@@ -826,12 +821,13 @@ defineExpose({
               class="user-highlight-card"
             >
               <div class="user-highlight-header" flex items-center gap-3>
-                <img
-                  :src="user.face"
-                  :alt="user.name"
-                  class="user-highlight-avatar"
-                  @click="openExternalLink(user.url)"
-                >
+                <UserAvatarLink :mid="user.mid" :name="user.name" :live-status="user.liveStatus" :roomid="user.roomid">
+                  <img
+                    :src="user.face"
+                    :alt="user.name"
+                    class="user-highlight-avatar"
+                  >
+                </UserAvatarLink>
                 <div class="user-highlight-info" flex="~ col" gap-1 flex-1>
                   <div
                     class="user-highlight-name bew-body-text" text="$bew-text-1" font-medium flex items-center
