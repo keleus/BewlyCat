@@ -1423,23 +1423,8 @@ function openDetailFrameInNewTab() {
   if (!url)
     return
 
-  const popup = window.open('about:blank', '_blank')
-  if (!popup)
-    return
-
-  try {
-    popup.opener = null
-    popup.location.replace(url)
-    closeMomentDetail()
-  }
-  catch {
-    try {
-      popup.close()
-    }
-    catch {
-      // Ignore failures while closing a blocked or already navigated popup.
-    }
-  }
+  window.open(url, '_blank', 'noopener,noreferrer')
+  closeMomentDetail()
 }
 
 function openMomentMedia(moment: DisplayMoment) {
