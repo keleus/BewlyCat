@@ -2294,8 +2294,23 @@ function injectLayoutStyle() {
       border-bottom: 1px solid var(--bewly-widescreen-divider);
     }
 
+    /* 自动侧栏收起后仅部分面板留在视口内，Tab 应按可见列宽排列，
+       避免稍后再看的「选集」入口被完整面板宽度挤出屏幕。 */
+    @media (min-width: ${MOBILE_BREAKPOINT + 1}px) {
+      #${ROOT_ID}[data-sidebar-mode="fit"]:not([data-sidebar-expanded="true"]) .bewly-widescreen-tabs {
+        width: min(100%, max(0px, calc(var(--bewly-widescreen-sidebar-column-width) - var(--bew-space-2, 8px))));
+        align-self: flex-start;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      #${ROOT_ID}[data-sidebar-position="left"][data-sidebar-mode="fit"]:not([data-sidebar-expanded="true"]) .bewly-widescreen-tabs {
+        align-self: flex-end;
+      }
+    }
+
     #${ROOT_ID} .bewly-widescreen-tab {
       position: relative;
+      min-width: 0;
       border: 0;
       color: var(--bewly-widescreen-text-secondary);
       background: transparent;
@@ -2990,6 +3005,7 @@ function setupAspectObservers(currentState: BewlyWidescreenState) {
 function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   const sidebar = currentState.sidebarEl
   const playerFrame = currentState.playerFrame
+  const tablist = currentState.tabButtons.comment.parentElement
 
   function isPointInRect({ clientX, clientY }: PointerEvent, rect: DOMRect) {
     return clientX >= rect.left
@@ -3005,10 +3021,14 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
     return !isPointInRect(e, sidebar.getBoundingClientRect())
   }
 
-  function expandSidebar() {
+  function expandSidebar(event?: PointerEvent) {
     if (settings.value.enableBewlyWidescreenSidebarResize || currentState.sidebarMode !== 'fit')
       return
     if (currentState.root.dataset.sidebarExpanded === 'true')
+      return
+    // 点击前不搬动收起状态的 Tab，避免展开动画把指针下的目标换成相邻项。
+    // 移入内容区仍可展开；点击 Tab 则先完成选中，再展开面板。
+    if (event && tablist && isPointInRect(event, tablist.getBoundingClientRect()))
       return
     currentState.root.dataset.sidebarExpanded = 'true'
     updateSidebarLayoutState()
@@ -3025,12 +3045,17 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
     }
   }
 
+  const expandAfterTabClick = () => expandSidebar()
   sidebar.addEventListener('pointerenter', expandSidebar)
+  sidebar.addEventListener('pointermove', expandSidebar)
+  tablist?.addEventListener('click', expandAfterTabClick)
   playerFrame.addEventListener('pointerenter', collapseSidebar)
   playerFrame.addEventListener('pointermove', collapseSidebar)
 
   currentState.sidebarInteractionCleanup = () => {
     sidebar.removeEventListener('pointerenter', expandSidebar)
+    sidebar.removeEventListener('pointermove', expandSidebar)
+    tablist?.removeEventListener('click', expandAfterTabClick)
     playerFrame.removeEventListener('pointerenter', collapseSidebar)
     playerFrame.removeEventListener('pointermove', collapseSidebar)
     delete currentState.root.dataset.sidebarExpanded

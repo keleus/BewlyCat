@@ -809,6 +809,8 @@ settings:
   use_bilibili_default_auto_play: 用 Bilibili 預設自動播放行為
   use_bilibili_default_auto_play_desc: 啟用之後由 Bilibili 決定播放結束行為，唔會套用下面按影片類型設定。
   auto_play_watch_later: 稍後再睇
+  auto_remove_watch_later_on_end: 稍後再睇播完自動移除
+  auto_remove_watch_later_on_end_desc: 喺稍後再睇播放頁播完影片之後，自動將佢移出稍後再睇；多 P 影片只會喺最後一 P 播完之後移除。
   auto_play_mode_default: Bilibili 預設
   auto_play_mode_auto_play: 自動連播
   auto_play_mode_auto_play_with_recommend: 連播推薦

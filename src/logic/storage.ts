@@ -509,6 +509,7 @@ export interface Settings {
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: boolean // 使用B站默认自动播放行为（总开关）
+  autoRemoveWatchLaterOnEnd: boolean // 稍后再看播放结束自动移除
 
   // 分类型自动连播设置
   autoPlayMultipart: AutoPlayMode // 分P视频自动播放模式
@@ -822,6 +823,7 @@ export const originalSettings: Settings = {
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: true, // 使用B站默认自动播放行为（总开关），默认开启
+  autoRemoveWatchLaterOnEnd: false,
 
   // 分类型自动连播设置（总开关关闭时生效）
   autoPlayMultipart: 'autoPlay', // 分P视频自动播放模式，默认自动连播

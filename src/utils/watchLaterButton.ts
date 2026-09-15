@@ -34,6 +34,19 @@ interface MountedWatchLaterButton {
   state: WatchLaterButtonState
 }
 
+let mountedButton: MountedWatchLaterButton | undefined
+
+export async function syncRemovedWatchLaterButton(aid: number) {
+  const mounted = mountedButton
+  if (!mounted)
+    return
+  await mounted.ready
+  if (mounted.button.isConnected && mounted.state.aid === aid) {
+    mounted.state.isInWatchLater = false
+    updateButtonState(mounted.button, false)
+  }
+}
+
 /**
  * 从URL中提取视频ID
  * 支持 /video/BV...、/video/av...，以及 /list/...?bvid= / ?avid= 等合集/列表页
@@ -291,6 +304,7 @@ function mountWatchLaterButton(ids: VideoIds): MountedWatchLaterButton | undefin
 
   moreButton.parentNode.insertBefore(button, moreButton)
   mounted.ready = initializeButtonState(button, ids, state)
+  mountedButton = mounted
   return mounted
 }
 

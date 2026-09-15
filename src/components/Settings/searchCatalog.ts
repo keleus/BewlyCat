@@ -520,6 +520,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_random_play_settings',
     'settings.min_videos_for_random',
     'settings.group_playback_end_behavior',
+    'settings.auto_remove_watch_later_on_end',
     'settings.use_bilibili_default_auto_play',
     'settings.group_video_type_end_behavior',
     'settings.group_playlist_start_behavior',
