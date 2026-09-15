@@ -1162,6 +1162,8 @@ video_card:
   watched: 已觀看
   visited_recently: 近一個月內瀏覽過
 home:
+  following_display_flat: 不分組
+  following_display_grouped: 按分組
   following_search_videos: '搜尋 {name} 的影片投稿'
   following_clear_video_search: 清空投稿搜尋
   following_no_search_results: 找不到符合的影片投稿

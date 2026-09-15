@@ -83,7 +83,7 @@ interface UploaderInfo {
 }
 
 type UploaderRow
-  = | { key: string, type: 'group', id: number, name: string, count: number, expanded: boolean }
+  = | { key: string, type: 'group', id: number, name: string, count: number, expanded: boolean, members: UploaderInfo[] }
     | { key: string, type: 'uploader', uploader: UploaderInfo }
 
 interface VideoElement {
@@ -360,14 +360,8 @@ const uploaderRows = computed<UploaderRow[]>(() => {
         name: group.name,
         count: members.length,
         expanded,
+        members,
       },
-      ...(expanded
-        ? members.map(uploader => ({
-            key: `group-${group.tagid}-uploader-${uploader.mid}`,
-            type: 'uploader' as const,
-            uploader,
-          }))
-        : []),
     ]
   })
 })
@@ -1476,11 +1470,20 @@ defineExpose({ initData })
   <div class="following-layout" flex="~ gap-40px">
     <!-- Left Panel: Uploader List -->
     <aside class="uploader-sidebar" w-200px shrink-0>
-      <div
-        ref="uploaderScrollRef" of-y-auto
-        class="uploader-scroll bew-page-sidebar"
-        of-x-hidden
-      >
+      <div class="uploader-scroll bew-page-sidebar">
+        <div class="following-display-toggle bew-segment-control bew-segment-control--static" role="group" :aria-label="$t('settings.following_sort')">
+          <button
+            v-for="mode in (['updated', 'group'] as const)"
+            :key="mode"
+            type="button"
+            class="bew-segment-control__item"
+            :data-active="settings.followingUploaderSort === mode"
+            :aria-pressed="settings.followingUploaderSort === mode"
+            @click="settings.followingUploaderSort = mode"
+          >
+            {{ $t(mode === 'group' ? 'home.following_display_grouped' : 'home.following_display_flat') }}
+          </button>
+        </div>
         <!-- Search Box -->
         <div class="bew-toolbar-controls" mb-3>
           <Input
@@ -1506,7 +1509,7 @@ defineExpose({ initData })
         </div>
 
         <!-- 分组一次可能移除数百个成员，直接更新列表，避免退出动画的绝对定位行覆盖其他按钮。 -->
-        <ul flex="~ col gap-2">
+        <ul ref="uploaderScrollRef" class="uploader-list" flex="~ col gap-2">
           <!-- All Uploaders Option -->
           <li key="all-uploaders">
             <button
@@ -1538,8 +1541,11 @@ defineExpose({ initData })
             </button>
           </li>
 
-          <!-- Group headings and individual uploaders share one keyed list. -->
-          <li v-for="row in uploaderRows" :key="row.key">
+          <!-- 分组标题留在外层，成员列表独立滚动。 -->
+          <li
+            v-for="row in uploaderRows" :key="row.key"
+            :class="{ 'uploader-group': row.type === 'group', 'uploader-group--expanded': row.type === 'group' && row.expanded && row.members.length > 0 }"
+          >
             <button
               v-if="row.type === 'group'"
               type="button"
@@ -1555,41 +1561,48 @@ defineExpose({ initData })
               <span class="group-name">{{ row.name }}</span>
               <span class="group-count">{{ row.count }}</span>
             </button>
-            <button
-              v-else
-              type="button"
-              class="uploader-button bew-page-nav-item"
-              aria-haspopup="menu"
-              :aria-pressed="selectedUploader === row.uploader.mid"
-              :data-active="selectedUploader === row.uploader.mid"
-              flex="~ items-center gap-3"
-              @click="selectUploader(row.uploader.mid)"
-              @contextmenu.prevent.stop="uploaderMenuRef?.open($event, row.uploader)"
+            <ul
+              v-if="row.type === 'uploader' || row.expanded"
+              :class="{ 'group-members': row.type === 'group' }"
+              :aria-label="row.type === 'group' ? row.name : undefined"
             >
-              <div pos="relative" shrink-0>
-                <img
-                  :src="`${row.uploader.face}@50w_50h`"
-                  w-30px h-30px rounded-full object-cover
-                  loading="lazy"
-                  alt="Avatar"
+              <li v-for="uploader in row.type === 'group' ? row.members : [row.uploader]" :key="uploader.mid">
+                <button
+                  type="button"
+                  class="uploader-button bew-page-nav-item"
+                  aria-haspopup="menu"
+                  :aria-pressed="selectedUploader === uploader.mid"
+                  :data-active="selectedUploader === uploader.mid"
+                  flex="~ items-center gap-3"
+                  @click="selectUploader(uploader.mid)"
+                  @contextmenu.prevent.stop="uploaderMenuRef?.open($event, uploader)"
                 >
-                <!-- Red dot for new updates -->
-                <div
-                  v-if="row.uploader.hasUpdate"
-                  pos="absolute top-0 right-0"
-                  w-8px h-8px rounded-full
-                  bg="red-500" border="2 $bew-elevated"
-                />
-              </div>
-              <div flex-1 overflow-hidden>
-                <div font-medium truncate>
-                  {{ row.uploader.name }}
-                </div>
-                <div class="secondary-text">
-                  {{ calcTimeSince(row.uploader.lastUpdateTime) }}
-                </div>
-              </div>
-            </button>
+                  <div pos="relative" shrink-0>
+                    <img
+                      :src="`${uploader.face}@50w_50h`"
+                      w-30px h-30px rounded-full object-cover
+                      loading="lazy"
+                      alt="Avatar"
+                    >
+                    <!-- Red dot for new updates -->
+                    <div
+                      v-if="uploader.hasUpdate"
+                      pos="absolute top-0 right-0"
+                      w-8px h-8px rounded-full
+                      bg="red-500" border="2 $bew-elevated"
+                    />
+                  </div>
+                  <div flex-1 overflow-hidden>
+                    <div font-medium truncate>
+                      {{ uploader.name }}
+                    </div>
+                    <div class="secondary-text">
+                      {{ calcTimeSince(uploader.lastUpdateTime) }}
+                    </div>
+                  </div>
+                </button>
+              </li>
+            </ul>
           </li>
           <li v-if="settings.followingUploaderSort === 'group'" key="create-group">
             <button
@@ -1753,11 +1766,72 @@ defineExpose({ initData })
 }
 
 .uploader-scroll {
-  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
   padding: 0 var(--bew-space-2) var(--bew-space-2);
+
+  > :not(.uploader-list) {
+    flex-shrink: 0;
+  }
   // 点击后的状态变化不应触发浏览器滚动锚定，滚动到边缘也不穿透到右侧信息流。
   overflow-anchor: none;
   overscroll-behavior-y: contain;
+}
+
+.following-display-toggle {
+  width: 100%;
+  margin-bottom: var(--bew-space-3);
+
+  .bew-segment-control__item {
+    flex: 1;
+    min-width: 0;
+    padding-inline: var(--bew-space-1);
+  }
+}
+
+.uploader-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden auto;
+  // 始终预留空间，避免滚动条出现时改变侧栏内容宽度。
+  scrollbar-gutter: stable;
+  overscroll-behavior-y: contain;
+
+  > li {
+    flex-shrink: 0;
+  }
+
+  > .uploader-group--expanded {
+    flex: 0 1 auto;
+    min-height: var(--bew-control-height);
+  }
+}
+
+.uploader-group {
+  display: flex;
+  flex-direction: column;
+
+  > .uploader-group-heading {
+    flex-shrink: 0;
+  }
+}
+
+.group-members {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bew-space-2);
+  min-height: 0;
+  max-height: 320px;
+  overflow: hidden auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior-y: contain;
+  overflow-anchor: none;
+
+  > li {
+    flex-shrink: 0;
+  }
 }
 
 .group-status {

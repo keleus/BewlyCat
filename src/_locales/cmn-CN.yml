@@ -1147,6 +1147,8 @@ video_card:
   watched: 已观看
   visited_recently: 近一个月内浏览过
 home:
+  following_display_flat: 不分组
+  following_display_grouped: 按分组
   following_search_videos: '搜索 {name} 的视频投稿'
   following_clear_video_search: 清空投稿搜索
   following_no_search_results: 未找到匹配的视频投稿

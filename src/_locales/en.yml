@@ -1242,6 +1242,8 @@ video_card:
   watched: Watched
   visited_recently: Visited within the past month
 home:
+  following_display_flat: List
+  following_display_grouped: Groups
   following_search_videos: 'Search videos by {name}'
   following_clear_video_search: Clear video search
   following_no_search_results: No matching video submissions
