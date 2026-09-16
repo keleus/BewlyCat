@@ -17,7 +17,7 @@ const signature = (cards: Snapshot) => cards.map(card => card.querySelector<HTML
  * Reference: https://github.com/0xlau/biliplus/blob/main/scripts/feed-roll-history-btn.js
  */
 export function setupNativeHomeFeedHistory() {
-  if (isInIframe() || !isHomePage())
+  if (!isHomePage())
     return
 
   let snapshots: Snapshot[] = []
@@ -74,7 +74,19 @@ export function setupNativeHomeFeedHistory() {
     const button = document.createElement('button')
     button.type = 'button'
     button.className = 'primary-btn bewly-native-feed-history'
-    button.textContent = direction < 0 ? '↶' : '↷'
+    // Same mdi:undo-variant / mdi:redo-variant artwork used by Dock.vue.
+    // Native-page controls sit outside the Shadow DOM's UnoCSS icon styles.
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.setAttribute('viewBox', '0 0 24 24')
+    svg.setAttribute('aria-hidden', 'true')
+    svg.setAttribute('focusable', 'false')
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    path.setAttribute('fill', 'currentColor')
+    path.setAttribute('d', direction < 0
+      ? 'M13.5 7a6.5 6.5 0 0 1 6.5 6.5a6.5 6.5 0 0 1-6.5 6.5H10v-2h3.5c2.5 0 4.5-2 4.5-4.5S16 9 13.5 9H7.83l3.08 3.09L9.5 13.5L4 8l5.5-5.5l1.42 1.41L7.83 7zM6 18h2v2H6z'
+      : 'M10.5 7A6.5 6.5 0 0 0 4 13.5a6.5 6.5 0 0 0 6.5 6.5H14v-2h-3.5C8 18 6 16 6 13.5S8 9 10.5 9h5.67l-3.08 3.09l1.41 1.41L20 8l-5.5-5.5l-1.42 1.41L16.17 7zM18 18h-2v2h2z')
+    svg.append(path)
+    button.append(svg)
     button.addEventListener('click', () => navigate(direction))
     return button
   }
@@ -93,14 +105,14 @@ export function setupNativeHomeFeedHistory() {
       loading = false
     }
     container = nextContainer
-    if (!parent || !container)
+    if (!roll || !parent || !container)
       return
     if (!back?.isConnected || back.parentElement !== parent) {
       back?.remove()
       forward?.remove()
       back = createButton(-1)
       forward = createButton(1)
-      parent.append(back, forward)
+      roll.after(back, forward)
     }
     if (!loading && index < 0) {
       const initial = capture()
@@ -181,8 +193,10 @@ export function setupNativeHomeFeedHistory() {
   }
 
   function sync() {
+    // The homepage's BiliBili switch opens the native feed in an iframe while
+    // useOriginalBilibiliHomepage stays false on the outer BewlyCat page.
     const nextEnabled = settings.value.enableUndoRefreshButton
-      && settings.value.useOriginalBilibiliHomepage && isHomePage()
+      && (isInIframe() || settings.value.useOriginalBilibiliHomepage) && isHomePage()
     if (nextEnabled === enabled) {
       updateButtons()
       return
@@ -191,14 +205,23 @@ export function setupNativeHomeFeedHistory() {
     if (enabled) {
       style = document.createElement('style')
       style.textContent = `
-        .bewly-native-feed-history {
+        .primary-btn.bewly-native-feed-history {
           display: flex; align-items: center; justify-content: center; box-sizing: border-box;
-          width: var(--bew-space-40, 40px); height: var(--bew-space-40, 40px); margin-left: 0;
-          min-width: 24px; min-height: 24px; margin-top: var(--bew-space-8, 8px);
-          padding: var(--bew-space-4, 4px); font-size: var(--bew-icon-size-lg, 24px);
+          width: var(--bew-space-10, 40px); height: var(--bew-space-10, 40px);
+          margin: var(--bew-space-1, 4px) 0 0;
+          min-width: 24px; min-height: 24px;
+          padding: var(--bew-space-1, 4px);
+          font-size: var(--bew-icon-size-sm, 16px); color: rgb(24, 25, 28);
           line-height: 1; cursor: pointer;
         }
-        .bewly-native-feed-history:disabled { opacity: .4; cursor: not-allowed; }
+        .primary-btn.bewly-native-feed-history > svg {
+          display: block; flex: none; margin: 0; color: inherit;
+          width: 1em; height: 1em;
+        }
+        .primary-btn.bewly-native-feed-history > svg > path { fill: currentColor; }
+        .primary-btn.bewly-native-feed-history:disabled {
+          color: rgb(24, 25, 28); opacity: 1; cursor: not-allowed;
+        }
         .bewly-native-feed-history:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
         .bewly-native-feed-history:not(:disabled):hover { color: var(--brand_blue, #00aeec); }
         .bewly-native-feed-history:not(:disabled):active { opacity: .7; }
