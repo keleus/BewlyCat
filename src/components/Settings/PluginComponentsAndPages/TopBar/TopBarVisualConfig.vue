@@ -263,6 +263,13 @@ function toggleChannel(value: string) {
         <Radio v-model="settings.openNotificationsPageAsDrawer" />
       </SettingsItem>
       <SettingsItem
+        :title="$t('settings.show_private_message_unread_count')"
+        :desc="$t('settings.show_private_message_unread_count_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showPrivateMessageUnreadCount" />
+      </SettingsItem>
+      <SettingsItem
         :title="$t('settings.filter_articles_in_moments')"
         :desc="$t('settings.filter_articles_in_moments_desc')"
         right-width="auto"

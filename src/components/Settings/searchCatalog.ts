@@ -189,6 +189,8 @@ const topBarGlobalTitleKeys = [
   'settings.show_top_bar_theme_color_gradient',
   'settings.open_top_bar_items_in_bewly',
   'settings.open_notifications_page_as_drawer',
+  'settings.show_private_message_unread_count',
+  'settings.show_private_message_unread_count_desc',
   'settings.filter_articles_in_moments',
 ]
 

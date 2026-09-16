@@ -549,6 +549,8 @@ settings:
     icon: 圓形圖示
     brand: 品牌標誌
   open_notifications_page_as_drawer: 用櫃桶打開通知頁面
+  show_private_message_unread_count: 顯示私訊未讀數
+  show_private_message_unread_count_desc: 開咗之後，通知下拉選單會顯示私訊未讀角標，頂欄通知角標亦會計埋私訊未讀數。
   show_like_notification_reminder: 顯示點讚提醒
   show_like_notification_reminder_desc: 開咗之後，頂欄通知角標會將點讚提醒計埋入總數。
   show_layout_edit_button: 顯示版面編輯掣

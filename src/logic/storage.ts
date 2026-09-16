@@ -322,6 +322,7 @@ export interface Settings {
   topBarComponentsConfig: { key: string, visible: boolean, badgeType: 'number' | 'dot' | 'none' }[]
   topBarPinnedChannels: string[]
   openNotificationsPageAsDrawer: boolean
+  showPrivateMessageUnreadCount: boolean
   showLikeNotificationReminder: boolean
   hideTopBarUserPanelLv6LastLoginLocation: boolean
   showBCoinReceiveReminder: boolean
@@ -643,6 +644,7 @@ export const originalSettings: Settings = {
   ],
   topBarPinnedChannels: [],
   openNotificationsPageAsDrawer: true,
+  showPrivateMessageUnreadCount: false,
   showLikeNotificationReminder: false,
   hideTopBarUserPanelLv6LastLoginLocation: false,
   showBCoinReceiveReminder: true,

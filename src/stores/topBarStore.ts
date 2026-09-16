@@ -94,11 +94,13 @@ export const useTopBarStore = defineStore('topBar', () => {
     if (settings.value.showLikeNotificationReminder)
       result += getLikeUnreadCount()
 
-    // 计算 unReadDm 中的未读消息
-    if (typeof unReadDm.follow_unread === 'number')
-      result += unReadDm.follow_unread
-    if (typeof unReadDm.unfollow_unread === 'number')
-      result += unReadDm.unfollow_unread
+    // 根据设置将私信未读数计入顶栏通知角标
+    if (settings.value.showPrivateMessageUnreadCount) {
+      if (typeof unReadDm.follow_unread === 'number')
+        result += unReadDm.follow_unread
+      if (typeof unReadDm.unfollow_unread === 'number')
+        result += unReadDm.unfollow_unread
+    }
 
     return result
   })

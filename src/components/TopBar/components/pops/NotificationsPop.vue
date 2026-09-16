@@ -60,11 +60,11 @@ watch(() => props.unReadMessage, (newVal) => {
   }
 }, { immediate: true, deep: true })
 
-watch(() => props.unReadDm, (newVal) => {
-  if (newVal) {
-    // 同时处理follow_unread和unfollow_unread
-    list.value[4].unreadCount = (newVal.follow_unread || 0) + (newVal.unfollow_unread || 0)
-  }
+watch([() => props.unReadDm, () => settings.value.showPrivateMessageUnreadCount], ([newVal, showUnreadCount]) => {
+  // 同时控制已关注和未关注用户的私信角标
+  list.value[4].unreadCount = showUnreadCount && newVal
+    ? (newVal.follow_unread || 0) + (newVal.unfollow_unread || 0)
+    : 0
 }, { immediate: true, deep: true })
 
 function handleClick(event: MouseEvent, item: { name: string, url: string, unreadCount: number, icon: string }) {
