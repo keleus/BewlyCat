@@ -1223,7 +1223,7 @@ export const useTopBarStore = defineStore('topBar', () => {
       if (accountId !== userInfo.mid)
         return
 
-      syncSharedData({ force: true, refresh: getUnreadMessageCount }).catch((error) => {
+      syncSharedData({ refresh: getUnreadMessageCount }).catch((error) => {
         console.error('刷新已失效的未读消息状态失败:', error)
       })
     },
@@ -1347,10 +1347,7 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   function syncUnreadMessageState() {
-    return syncSharedData({
-      force: true,
-      refresh: getUnreadMessageCount,
-    })
+    return invalidateUnreadMessageState()
   }
 
   function syncMomentsState(selectedType: string = 'video') {
@@ -1410,7 +1407,7 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   function startUpdateTimer() {
-    if (updateTimer)
+    if (updateTimer || document.hidden)
       return
 
     const timerGeneration = updateTimerGeneration
@@ -1426,7 +1423,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     let recheckInterval = LOGIN_RECHECK_INTERVAL
     const needsRecheck = () => isLogin.value && !userInfo.mid
     const scheduleNext = (delay: number) => {
-      if (timerGeneration !== updateTimerGeneration || sharedStateMessagingUnavailable)
+      if (timerGeneration !== updateTimerGeneration || sharedStateMessagingUnavailable || document.hidden)
         return
 
       updateTimer = setTimeout(() => {
@@ -1434,7 +1431,7 @@ export const useTopBarStore = defineStore('topBar', () => {
           return
 
         // 扩展重载后旧 content script 的 runtime 已失效：停止轮询，等待刷新
-        if (sharedStateMessagingUnavailable) {
+        if (sharedStateMessagingUnavailable || document.hidden) {
           updateTimer = null
           return
         }

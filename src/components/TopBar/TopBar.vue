@@ -622,8 +622,15 @@ onMounted(() => {
 function handleVisibilityChange() {
   if (!document.hidden) {
     topBarStore.reconcileLocalLoginState()
+    topBarStore.startUpdateTimer()
+    void topBarStore.syncSharedData().catch((error) => {
+      console.error('同步顶栏共享状态失败:', error)
+    })
     scheduleUrlChangeCheck()
     scheduleConflictingHeaderVisibilityUpdate()
+  }
+  else {
+    topBarStore.stopUpdateTimer()
   }
 }
 

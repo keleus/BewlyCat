@@ -21,6 +21,7 @@ interface TopBarStateEntry {
   updatedAt: number
   refreshStartedAt: number
   refreshId: number
+  unreadInvalidated?: boolean
 }
 
 export interface TopBarStateBrokerBrowser {
@@ -269,6 +270,7 @@ export function createTopBarStateBroker(
         const shouldRefresh = force || (!snapshotFresh && !refreshInProgress)
 
         if (shouldRefresh) {
+          entry.unreadInvalidated = false
           entry.refreshStartedAt = now
           entry.refreshId += 1
           await persistState()
@@ -292,13 +294,17 @@ export function createTopBarStateBroker(
           return false
 
         entry.snapshot = snapshot
-        entry.updatedAt = Date.now()
+        entry.updatedAt = entry.unreadInvalidated ? 0 : Date.now()
         entry.refreshStartedAt = 0
         await persistState()
-        return true
+        return entry.unreadInvalidated ? 'invalidated' : 'updated'
       })
 
-      if (published)
+      // 已读操作发生在请求途中时，旧结果不能让缓存重新变为有效。
+      // 等当前请求结束后再广播一次，多个页面仍共享同一把刷新锁。
+      if (published === 'invalidated')
+        await broadcastInvalidation({ accountId }, sender)
+      else if (published === 'updated')
         await broadcastSnapshot(data, sender)
     },
 
@@ -319,8 +325,8 @@ export function createTopBarStateBroker(
         await ensureStateLoaded()
         const entry = getEntry(data.accountId, sender)
         entry.updatedAt = 0
-        entry.refreshStartedAt = 0
-        entry.refreshId += 1
+        entry.unreadInvalidated = true
+        // 保留在途请求的 lease；失效广播不能让每个标签页各发一轮请求。
         await persistState()
       })
 
