@@ -583,7 +583,6 @@ settings:
   top_bar_icon_badges: 图标角标
   top_bar_icon_badges_opt:
     number: 数字
-    number_with_likes: 数字（包含点赞）
     dot: 圆点
     none: 不显示
   show_watch_later_badge: 显示稍后再看角标
@@ -592,11 +591,11 @@ settings:
   auto_receive_bcoin_coupon_desc: 启用后，当检测到有未领取的B币券时将自动领取
   auto_receive_vip_exp: 大会员经验自动领取
   auto_receive_vip_exp_desc: 启用后，将自动领取大会员每日经验
+  notification_badge_types: 通知角标计入的消息
+  notification_badge_types_desc: 选择计入顶栏通知角标的消息类型，下拉菜单也仅显示所选类型的未读角标。
+  notification_followed_private_messages: 已关注用户的私信
+  notification_unfollowed_private_messages: 未关注用户的私信
   open_notifications_page_as_drawer: 以抽屉形式打开通知页面
-  show_private_message_unread_count: 显示私信未读数
-  show_private_message_unread_count_desc: 启用后，在通知下拉菜单中显示私信未读角标，并将私信未读数计入顶栏通知角标。
-  show_like_notification_reminder: 显示点赞提醒
-  show_like_notification_reminder_desc: 启用后，顶栏通知角标会将收到的赞计入总数。
 
   # Video Card Grid Settings
   group_video_card_grid: 视频卡片网格

@@ -540,7 +540,6 @@ settings:
   top_bar_icon_badges: 圖示標記樣式
   top_bar_icon_badges_opt:
     number: 數字
-    number_with_likes: 數字（包含按讚）
     dot: 圓點
     none: 不顯示
   show_watch_later_badge: 顯示稍後再看角標
@@ -549,11 +548,11 @@ settings:
   auto_receive_bcoin_coupon_desc: 啟用後，當檢測到有未領取的B幣券時將自動領取
   auto_receive_vip_exp: 大會員經驗自動領取
   auto_receive_vip_exp_desc: 啟用後，將自動領取大會員每日經驗
+  notification_badge_types: 通知角標計入的訊息
+  notification_badge_types_desc: 選擇計入頂欄通知角標的訊息類型，下拉選單也僅顯示所選類型的未讀角標。
+  notification_followed_private_messages: 已關注使用者的私訊
+  notification_unfollowed_private_messages: 未關注使用者的私訊
   open_notifications_page_as_drawer: 以抽屜形式打開通知頁面
-  show_private_message_unread_count: 顯示私訊未讀數
-  show_private_message_unread_count_desc: 啟用後，在通知下拉選單中顯示私訊未讀角標，並將私訊未讀數計入頂欄通知角標。
-  show_like_notification_reminder: 顯示按讚提醒
-  show_like_notification_reminder_desc: 啟用後，頂欄通知角標會將按讚提醒計入總數。
   show_layout_edit_button: 顯示版面編輯按鈕
   show_layout_edit_button_desc: 在 Dock 或側邊欄顯示版面編輯入口；關閉後可在這裡重新開啟。
   always_use_dock: 總是使用 Dock

@@ -322,8 +322,12 @@ export interface Settings {
   topBarComponentsConfig: { key: string, visible: boolean, badgeType: 'number' | 'dot' | 'none' }[]
   topBarPinnedChannels: string[]
   openNotificationsPageAsDrawer: boolean
-  showPrivateMessageUnreadCount: boolean
+  showReplyNotificationReminder: boolean
+  showAtNotificationReminder: boolean
   showLikeNotificationReminder: boolean
+  showSystemNotificationReminder: boolean
+  showFollowedPrivateMessageUnreadCount: boolean
+  showUnfollowedPrivateMessageUnreadCount: boolean
   hideTopBarUserPanelLv6LastLoginLocation: boolean
   showBCoinReceiveReminder: boolean
   autoReceiveBCoinCoupon: boolean
@@ -644,8 +648,12 @@ export const originalSettings: Settings = {
   ],
   topBarPinnedChannels: [],
   openNotificationsPageAsDrawer: true,
-  showPrivateMessageUnreadCount: false,
+  showReplyNotificationReminder: true,
+  showAtNotificationReminder: true,
   showLikeNotificationReminder: false,
+  showSystemNotificationReminder: true,
+  showFollowedPrivateMessageUnreadCount: true,
+  showUnfollowedPrivateMessageUnreadCount: false,
   hideTopBarUserPanelLv6LastLoginLocation: false,
   showBCoinReceiveReminder: true,
   autoReceiveBCoinCoupon: false,
@@ -900,6 +908,13 @@ export const settings = useSettingsStorage(originalSettings, {
   onReady: value => resolveSettingsReady(value),
   normalize: (value) => {
     const record = value as Record<string, any>
+
+    // 旧私信开关同时控制两类私信，拆分后保留原有选择。
+    if (typeof record.showPrivateMessageUnreadCount === 'boolean') {
+      record.showFollowedPrivateMessageUnreadCount = record.showPrivateMessageUnreadCount
+      record.showUnfollowedPrivateMessageUnreadCount = record.showPrivateMessageUnreadCount
+    }
+    Reflect.deleteProperty(record, 'showPrivateMessageUnreadCount')
 
     if (typeof record.enableFavoriteCoverBlur === 'boolean') {
       record.enableSidebarCoverBlur = record.enableFavoriteCoverBlur

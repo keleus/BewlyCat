@@ -524,7 +524,6 @@ settings:
   top_bar_icon_badges: Icon badges
   top_bar_icon_badges_opt:
     number: Number
-    number_with_likes: Number (including likes)
     dot: Dot
     none: Do not show
   show_watch_later_badge: Show watch later badge
@@ -533,11 +532,11 @@ settings:
   auto_receive_bcoin_coupon_desc: When enabled, B-coin coupons will be automatically received when detected
   auto_receive_vip_exp: Auto receive VIP experience
   auto_receive_vip_exp_desc: When enabled, will automatically receive daily VIP experience
+  notification_badge_types: Messages included in notification badges
+  notification_badge_types_desc: Choose which message types count toward the top bar badge. The menu also shows unread badges only for selected types.
+  notification_followed_private_messages: Private messages from followed users
+  notification_unfollowed_private_messages: Private messages from unfollowed users
   open_notifications_page_as_drawer: Open notifications page as drawer
-  show_private_message_unread_count: Show unread private message count
-  show_private_message_unread_count_desc: When enabled, show the unread private message badge in the notifications menu and include private messages in the top bar notifications badge count.
-  show_like_notification_reminder: Show like notifications
-  show_like_notification_reminder_desc: When enabled, likes are included in the top bar notifications badge count.
 
   # Video Card Grid Settings
   group_video_card_grid: Video Card Grid

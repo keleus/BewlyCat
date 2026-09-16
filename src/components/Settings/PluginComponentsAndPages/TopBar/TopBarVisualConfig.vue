@@ -8,6 +8,7 @@ import Select from '~/components/Select.vue'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import type { TopBarStyle } from '~/logic/storage'
+import type { NotificationBadgeSettings } from '~/utils/notificationBadge'
 
 import { allChannelConfigs } from '../../../TopBar/constants/channels'
 import SettingsItem from '../../components/SettingsItem.vue'
@@ -16,7 +17,16 @@ import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 const { t } = useI18n()
 
 type BadgeType = 'number' | 'dot' | 'none'
-type BadgeSelectValue = BadgeType | 'numberWithLikes'
+type NotificationBadgeType = keyof NotificationBadgeSettings
+
+const notificationTypes: { key: NotificationBadgeType, title: string }[] = [
+  { key: 'showReplyNotificationReminder', title: 'topbar.noti_dropdown.replys' },
+  { key: 'showAtNotificationReminder', title: 'topbar.noti_dropdown.mentions' },
+  { key: 'showLikeNotificationReminder', title: 'topbar.noti_dropdown.likes' },
+  { key: 'showSystemNotificationReminder', title: 'topbar.noti_dropdown.messages' },
+  { key: 'showFollowedPrivateMessageUnreadCount', title: 'settings.notification_followed_private_messages' },
+  { key: 'showUnfollowedPrivateMessageUnreadCount', title: 'settings.notification_unfollowed_private_messages' },
+]
 
 interface TopBarComponent {
   key: string
@@ -82,13 +92,6 @@ const badgeOptions = computed(() => [
   { label: t('settings.top_bar_icon_badges_opt.none'), value: 'none' },
 ])
 
-const notificationBadgeOptions = computed(() => [
-  { label: t('settings.top_bar_icon_badges_opt.number'), value: 'number' },
-  { label: t('settings.top_bar_icon_badges_opt.number_with_likes'), value: 'numberWithLikes' },
-  { label: t('settings.top_bar_icon_badges_opt.dot'), value: 'dot' },
-  { label: t('settings.top_bar_icon_badges_opt.none'), value: 'none' },
-])
-
 const videoPageTopBarConfigOptions = computed(() => [
   { label: t('settings.video_page_top_bar_config_opt.alwaysShow'), value: VideoPageTopBarConfig.AlwaysShow },
   { label: t('settings.video_page_top_bar_config_opt.alwaysHide'), value: VideoPageTopBarConfig.AlwaysHide },
@@ -124,7 +127,6 @@ function getComponentConfig(componentKey: string) {
 
 function resetTopBarComponents() {
   settings.value.topBarComponentsConfig = topBarComponents.value.map(createDefaultComponentConfig)
-  settings.value.showLikeNotificationReminder = false
 }
 
 function ensureTopBarComponentsConfig() {
@@ -148,29 +150,10 @@ function setComponentVisibility(componentKey: string, visible: boolean) {
     config.visible = visible
 }
 
-function getComponentBadgeValue(componentKey: string): BadgeSelectValue {
-  const badgeType = getComponentConfig(componentKey)?.badgeType ?? 'number'
-  if (componentKey === 'notifications' && badgeType === 'number' && settings.value.showLikeNotificationReminder)
-    return 'numberWithLikes'
-  return badgeType
-}
-
-function getBadgeOptions(componentKey: string) {
-  return componentKey === 'notifications' ? notificationBadgeOptions.value : badgeOptions.value
-}
-
-function setComponentBadgeType(componentKey: string, badgeValue: BadgeSelectValue) {
+function setComponentBadgeType(componentKey: string, badgeValue: BadgeType) {
   const config = getComponentConfig(componentKey)
-  if (!config)
-    return
-
-  if (componentKey === 'notifications') {
-    settings.value.showLikeNotificationReminder = badgeValue === 'numberWithLikes'
-    config.badgeType = badgeValue === 'numberWithLikes' ? 'number' : badgeValue
-    return
-  }
-
-  config.badgeType = badgeValue as BadgeType
+  if (config)
+    config.badgeType = badgeValue
 }
 
 ensureTopBarComponentsConfig()
@@ -261,13 +244,6 @@ function toggleChannel(value: string) {
       </SettingsItem>
       <SettingsItem :title="$t('settings.open_notifications_page_as_drawer')" right-width="auto">
         <Radio v-model="settings.openNotificationsPageAsDrawer" />
-      </SettingsItem>
-      <SettingsItem
-        :title="$t('settings.show_private_message_unread_count')"
-        :desc="$t('settings.show_private_message_unread_count_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.showPrivateMessageUnreadCount" />
       </SettingsItem>
       <SettingsItem
         :title="$t('settings.filter_articles_in_moments')"
@@ -375,6 +351,20 @@ function toggleChannel(value: string) {
     </SettingsItemGroup>
 
     <SettingsItemGroup
+      :title="$t('settings.notification_badge_types')"
+      :desc="$t('settings.notification_badge_types_desc')"
+    >
+      <SettingsItem
+        v-for="type in notificationTypes"
+        :key="type.key"
+        :title="$t(type.title)"
+        right-width="auto"
+      >
+        <Radio v-model="settings[type.key]" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup
       :title="$t('settings.topbar_actions')"
       :desc="$t('settings.topbar_actions_desc')"
     >
@@ -403,11 +393,11 @@ function toggleChannel(value: string) {
           <div v-else-if="component.supportsBadge" class="topbar-component-control topbar-component-control--badge">
             <span class="topbar-component-control__label">{{ $t('settings.badge_type') }}</span>
             <Select
-              :model-value="getComponentBadgeValue(component.key)"
-              :options="getBadgeOptions(component.key)"
+              :model-value="getComponentConfig(component.key)?.badgeType ?? 'number'"
+              :options="badgeOptions"
               :disabled="!getComponentConfig(component.key)?.visible"
               w="160px"
-              @update:model-value="setComponentBadgeType(component.key, $event as BadgeSelectValue)"
+              @update:model-value="setComponentBadgeType(component.key, $event as BadgeType)"
             />
           </div>
           <div class="topbar-component-control topbar-component-control--visibility">

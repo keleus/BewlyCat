@@ -523,7 +523,6 @@ settings:
   top_bar_icon_badges: 圖標邊位標記
   top_bar_icon_badges_opt:
     number: 數字
-    number_with_likes: 數字（包含點讚）
     dot: 圓點
     none: 唔顯示
   show_watch_later_badge: 顯示稍後再睇角標
@@ -548,11 +547,11 @@ settings:
   top_bar_logo_style_opt:
     icon: 圓形圖示
     brand: 品牌標誌
+  notification_badge_types: 通知角標計入嘅訊息
+  notification_badge_types_desc: 揀要計入頂欄通知角標嘅訊息類型，下拉選單亦只會顯示所選類型嘅未讀角標。
+  notification_followed_private_messages: 已關注用戶嘅私訊
+  notification_unfollowed_private_messages: 未關注用戶嘅私訊
   open_notifications_page_as_drawer: 用櫃桶打開通知頁面
-  show_private_message_unread_count: 顯示私訊未讀數
-  show_private_message_unread_count_desc: 開咗之後，通知下拉選單會顯示私訊未讀角標，頂欄通知角標亦會計埋私訊未讀數。
-  show_like_notification_reminder: 顯示點讚提醒
-  show_like_notification_reminder_desc: 開咗之後，頂欄通知角標會將點讚提醒計埋入總數。
   show_layout_edit_button: 顯示版面編輯掣
   show_layout_edit_button_desc: 喺 Dock 或側邊欄顯示版面編輯入口；閂咗之後可以喺呢度重新開返。
   always_use_dock: 點都要用 Dock

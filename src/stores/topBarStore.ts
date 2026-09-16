@@ -36,6 +36,7 @@ import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 import { i18n } from '~/utils/i18n'
 import { getCSRF, isHomePage } from '~/utils/main'
 import { isBackgroundUnavailableError, onMessage, sendMessage } from '~/utils/messaging'
+import { getNotificationBadgeCounts } from '~/utils/notificationBadge'
 import type { AddOpenTabsResult } from '~/utils/openTabsWatchLater'
 import { addOpenTabsToWatchLater } from '~/utils/openTabsWatchLater'
 import { getOpenBilibiliTabUrls } from '~/utils/tabs'
@@ -70,40 +71,9 @@ export const useTopBarStore = defineStore('topBar', () => {
   const unReadMessage = reactive<UnReadMessage>({} as UnReadMessage)
   const unReadDm = reactive<UnReadDm>({} as UnReadDm)
 
-  const MESSAGE_KEYS_TO_COUNT: Array<keyof UnReadMessage> = ['reply', 'at', 'chat', 'sys_msg']
-
-  function getLikeUnreadCount(): number {
-    const likeCount = typeof unReadMessage.like === 'number' ? unReadMessage.like : 0
-    const recvLike = unReadMessage.recv_like
-    const recvLikeCount = typeof recvLike === 'number' ? recvLike : 0
-
-    return Math.max(likeCount, recvLikeCount)
-  }
-
-  const unReadMessageCount = computed((): number => {
-    let result = 0
-
-    // 统计顶栏默认展示的消息类型
-    MESSAGE_KEYS_TO_COUNT.forEach((key) => {
-      const value = unReadMessage[key]
-      if (typeof value === 'number')
-        result += value
-    })
-
-    // 可选地将点赞提醒计入顶栏通知角标
-    if (settings.value.showLikeNotificationReminder)
-      result += getLikeUnreadCount()
-
-    // 根据设置将私信未读数计入顶栏通知角标
-    if (settings.value.showPrivateMessageUnreadCount) {
-      if (typeof unReadDm.follow_unread === 'number')
-        result += unReadDm.follow_unread
-      if (typeof unReadDm.unfollow_unread === 'number')
-        result += unReadDm.unfollow_unread
-    }
-
-    return result
-  })
+  const unReadMessageCount = computed((): number => Object.values(
+    getNotificationBadgeCounts(settings.value, unReadMessage, unReadDm),
+  ).reduce((total, count) => total + count, 0))
 
   // Moments State
   const newMomentsCount = ref<number>(0)
