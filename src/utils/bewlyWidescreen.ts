@@ -2829,7 +2829,7 @@ function updateAspectRatio() {
   const aspect = video?.videoWidth && video.videoHeight
     ? video.videoWidth / video.videoHeight
     : 16 / 9
-  const layoutAspect = Math.min(aspect, 16 / 9)
+  const layoutAspect = aspect
 
   state?.root.style.setProperty('--bewly-widescreen-aspect', String(aspect))
   state?.root.style.setProperty('--bewly-widescreen-layout-aspect', String(layoutAspect))
