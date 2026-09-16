@@ -860,8 +860,10 @@ settings:
   contributors_image_failed: 贡献者图片加载失败
   disable_auto_play_collection: 自动关闭合集自动播放
   disable_auto_play_collection_desc: 自动关闭视频合集的自动播放功能
-  enable_undo_refresh_button: 启用撤销刷新按钮（仅在Web推荐模式下有效）
-  enable_undo_refresh_button_desc: 刷新页面后显示撤销按钮，点击可恢复刷新前的内容
+  enable_undo_refresh_button: 启用首页前进后退按钮
+  enable_undo_refresh_button_desc: 支持插件首页推荐的撤销刷新，以及 B 站原版首页“换一换”的前进后退（最多保留 5 组推荐）。
+  native_home_feed_back: 返回上一组推荐
+  native_home_feed_forward: 前往下一组推荐
   shortcuts:
     title: 快捷键
     enable_all_shortcuts_toggle: 启用键盘快捷键

@@ -936,10 +936,10 @@ settings:
   random_play_disabled: Custom playback disabled
   random_play_not_enabled: Custom playback is not enabled
   random_play_min_videos_required: At least {count} videos required to enable random play
-  enable_undo_refresh_button: Enable Undo Refresh Button(only effective in Web recommendation mode)
-  enable_undo_refresh_button_desc: >-
-    After refreshing the page, display an undo button that restores the content
-    before the refresh when clicked.
+  enable_undo_refresh_button: Enable homepage back/forward buttons
+  enable_undo_refresh_button_desc: Undo recommendation refreshes on the extension homepage, or navigate up to 5 recommendation batches on the original Bilibili homepage.
+  native_home_feed_back: Previous recommendations
+  native_home_feed_forward: Next recommendations
   shortcuts:
     title: Keyboard Shortcuts
     enable_all_shortcuts_toggle: Enable Keyboard Shortcuts

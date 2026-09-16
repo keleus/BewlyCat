@@ -834,8 +834,10 @@ settings:
   sync_cloud_status_failed: 讀取唔到雲端同步狀態
   sync_cloud_enable_failed: 開啟雲端同步失敗
   sync_cloud_incompatible: 雲端資料係由較新版本嘅擴充功能寫入，請先升級擴充功能再開啟同步
-  enable_undo_refresh_button: 啓用復原更新掣（淨係得 Web 推介模式下有效）
-  enable_undo_refresh_button_desc: 更新頁面後顯示復原更新掣，撳低可以回復更新前內容。
+  enable_undo_refresh_button: 啟用首頁前進後退掣
+  enable_undo_refresh_button_desc: 支援插件首頁推介嘅復原更新，同埋 B 站原版首頁「換一換」嘅前進後退（最多保留 5 組推介）。
+  native_home_feed_back: 返上一組推介
+  native_home_feed_forward: 去下一組推介
   shortcuts:
     caption: 字幕
     caption_desc: 顯示/隱藏字幕。

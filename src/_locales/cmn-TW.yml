@@ -836,8 +836,10 @@ settings:
   random_play_disabled: 自訂播放已停用
   random_play_not_enabled: 自訂播放功能未啟用
   random_play_min_videos_required: 需要至少{count}個影片才能啟用隨機播放
-  enable_undo_refresh_button: 啟用撤銷重新整理按鈕（僅在Web推薦模式下有效）
-  enable_undo_refresh_button_desc: 重新整理頁面後顯示撤銷按鈕，點擊可恢復重新整理前的內容
+  enable_undo_refresh_button: 啟用首頁前進後退按鈕
+  enable_undo_refresh_button_desc: 支援擴充功能首頁推薦的撤銷重新整理，以及 B 站原版首頁「換一換」的前進後退（最多保留 5 組推薦）。
+  native_home_feed_back: 返回上一組推薦
+  native_home_feed_forward: 前往下一組推薦
   shortcuts:
     title: 快捷鍵
     enable_all_shortcuts_toggle: 啟用鍵盤快捷鍵
