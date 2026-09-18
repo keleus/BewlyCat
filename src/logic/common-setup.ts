@@ -31,6 +31,9 @@ export async function setupApp(app: App) {
       closeButtonClassName: 'bewly-toast__close',
       maxToasts: 4,
       newestOnTop: true,
+      // toast 容器运行在独立的 Vue app 中；共享主 app 上下文，
+      // 使 VNode 形式的 toast 内容可以使用全局组件与 i18n
+      shareAppContext: true,
       position: POSITION.TOP_RIGHT,
       timeout: 4000,
       hideProgressBar: false,
