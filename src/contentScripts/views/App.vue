@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { onKeyStroke, useEventListener, useIntersectionObserver, useThrottleFn } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { provide, ref, watch } from 'vue'
+import { h, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 import Button from '~/components/Button.vue'
 import Icon from '~/components/Icon.vue'
+import PerformanceWarningCard from '~/components/PerformanceWarningCard.vue'
 import Radio from '~/components/Radio.vue'
 import TopBarModeSwitcher from '~/components/TopBar/components/TopBarModeSwitcher.vue'
 import type { BewlyAppProvider, SettingsNavigationTarget } from '~/composables/useAppProvider'
@@ -25,6 +27,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
+import { dismissPerformanceWarning, notifyPerfWarningCardClosed, PERF_WATCH_SETTING_KEYS, startPerformanceWatcher } from '~/utils/performanceWatcher'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
 import { isComponentVisible } from '~/utils/topBarBadge'
 
@@ -64,6 +67,44 @@ const useBlendedPageControls = computed(() => settings.value.enableFrostedGlass
 function openSettings(target?: SettingsNavigationTarget) {
   pendingSettingsNavigation.value = target
   showSettings.value = true
+}
+
+// ---- 新装设备卡顿探测与右上角提示（可重复提示，「不再检测」后永久停止） ----
+const toast = useToast()
+let perfWarningToastId: number | string | undefined
+
+function handlePerfWarningClose() {
+  perfWarningToastId = undefined
+  // X 或倒计时自动关闭均为临时关闭：冷却期后若仍卡顿会再次弹出。
+  // 齿轮跳转设置不关闭卡片，不经过这里。
+  notifyPerfWarningCardClosed()
+}
+
+/** 点击「不再检测」：永久关闭提示并停止检测。 */
+function stopPerfDetection() {
+  if (perfWarningToastId !== undefined)
+    toast.dismiss(perfWarningToastId)
+  void dismissPerformanceWarning()
+}
+
+function openPerfSettings(target: SettingsNavigationTarget) {
+  // 不关闭卡片：倒计时继续，卡片浮在设置面板之上（z-index 高于设置层）。
+  openSettings(target)
+}
+
+function showPerfWarningToast() {
+  if (perfWarningToastId !== undefined)
+    return
+  perfWarningToastId = toast.warning(
+    h(PerformanceWarningCard, {
+      onOpenSettings: openPerfSettings,
+      onStopDetection: stopPerfDetection,
+    }),
+    {
+      timeout: 5000,
+      onClose: handlePerfWarningClose,
+    },
+  )
 }
 
 // The top-bar switcher is teleported to document.body, outside this Shadow DOM.
@@ -1422,6 +1463,14 @@ onMounted(() => {
   // 刷新后停在半页时，首帧就要有正确的滚动状态（reachTop 与遮罩强度）
   handleDocumentScroll()
   void promptSettingsMigrationIfNeeded()
+
+  startPerformanceWatcher({
+    // 设置面板打开、非 Bewly 页面或提示卡片内的高开销特效均已关闭时暂停采样，避免误报。
+    shouldPause: () => showSettings.value
+      || !showBewlyPage.value
+      || PERF_WATCH_SETTING_KEYS.every(key => !settings.value[key]),
+    onLagDetected: showPerfWarningToast,
+  })
 })
 
 function handleDockItemClick(dockItem: DockItem) {

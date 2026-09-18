@@ -29,6 +29,9 @@ common:
   remove_from_watch_later: 由陣間至睇剷走
   added: 已添加
   performance_impact_warn: 呢個功能可能會降低效能！
+  perf_warning_title: 可能偵測到窒下窒下
+  perf_warning_desc: 可以試下關閉下面嘅選項
+  perf_warning_stop: 唔好再偵測
   no_data: 暫時冇數據
   load_failed: 加載失敗
   no_more_content: 唔使睇喇，冇嘢喇
@@ -377,7 +380,7 @@ settings:
   btn:
     authorize: 授權
     revoke: 解除授權
-    open_settings: 打開設定...
+    open_settings: 打開設定
   touch_screen_optimization: 觸控螢幕體驗改進
   touch_screen_optimization_desc: |
     呢個設定開咗之後，好似頂欄噉，撳咗啲嘢先至可以睇到更多嘅資料，而唔係淨係靠游標懸停就睇到。影片頁支援雙擊播放、暫停或者快進快退，撳住左右滑動調整播放進度，同埋由播放器左右邊緣上下滑動調整音量。（舊版頂欄唔支援呢個功能）
