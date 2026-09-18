@@ -3,7 +3,7 @@ import browser from 'webextension-polyfill'
 import { useSettingsStorage } from '~/composables/useSettingsStorage'
 import { useStorageLocal } from '~/composables/useStorageLocal'
 import type { wallpaperItem } from '~/constants/imgs'
-import { DEFAULT_SEARCH_BAR_CHARACTER } from '~/constants/imgs'
+import { DEFAULT_SEARCH_BAR_CHARACTER, DEFAULT_SEARCH_PAGE_WALLPAPER } from '~/constants/imgs'
 import type { HomeSubPage } from '~/contentScripts/views/Home/types'
 import type { AppPage } from '~/enums/appEnums'
 import { VideoPageTopBarConfig } from '~/enums/appEnums'
@@ -584,9 +584,9 @@ export const originalSettings: Settings = {
   overrideDanmakuFont: true,
   removeTheIndentFromChinesePunctuation: false,
 
-  enableFrostedGlass: false,
+  enableFrostedGlass: true,
   frostedGlassBlurIntensity: 20,
-  enableLiquidSegmentIndicator: false,
+  enableLiquidSegmentIndicator: true,
   disableShadow: false,
 
   // Link Opening Behavior
@@ -714,7 +714,7 @@ export const originalSettings: Settings = {
   videoPageDarkMode: false,
   themeColor: '#00a1d6',
   darkModeBaseColor: '#2a2d32', // 默认深色模式基准颜色
-  useLinearGradientThemeColorBackground: false,
+  useLinearGradientThemeColorBackground: true,
   wallpaperMode: 'buildIn',
   wallpaper: '',
   enableWallpaperMasking: false,
@@ -723,14 +723,14 @@ export const originalSettings: Settings = {
   wallpaperCacheTime: 0, // 默认缓存24小时
 
   searchPageDarkenOnSearchFocus: true,
-  searchPageBlurredOnSearchFocus: false,
-  searchPageLogoColor: 'themeColor',
+  searchPageBlurredOnSearchFocus: true,
+  searchPageLogoColor: 'white',
   searchPageLogoGlow: true,
   searchPageShowLogo: true,
   searchPageSearchBarFocusCharacter: DEFAULT_SEARCH_BAR_CHARACTER,
-  individuallySetSearchPageWallpaper: false,
+  individuallySetSearchPageWallpaper: true,
   searchPageWallpaperMode: 'buildIn',
-  searchPageWallpaper: '',
+  searchPageWallpaper: DEFAULT_SEARCH_PAGE_WALLPAPER,
   searchPageEnableWallpaperMasking: false,
   searchPageWallpaperMaskOpacity: 80,
   searchPageWallpaperBlurIntensity: 0,
@@ -796,7 +796,7 @@ export const originalSettings: Settings = {
     { position: 100, opacity: 0 },
   ],
   videoCardShadowHeight: 1.0,
-  useSearchPageModeOnHomePage: false,
+  useSearchPageModeOnHomePage: true,
   searchPageModeWallpaperFixed: false,
   preserveForYouState: false,
   rememberNoCookieRecommendationState: true,
