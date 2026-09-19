@@ -29,6 +29,9 @@ common:
   remove_from_watch_later: Remove from Watch later
   added: Added
   performance_impact_warn: This feature may cause performance *DECREASE*!
+  perf_warning_title: Possible lag detected
+  perf_warning_desc: You can try turning off the options below
+  perf_warning_stop: Stop detecting
   no_data: No data available
   load_failed: Failed to load
   no_more_content: No more content now, owari da
@@ -352,7 +355,7 @@ settings:
   btn:
     authorize: Authorize
     revoke: Revoke
-    open_settings: Open Settings...
+    open_settings: Open Settings
   touch_screen_optimization: Touch screen optimization
   touch_screen_optimization_desc: >
     After this setting is turned on, like the top bar, you must click on items

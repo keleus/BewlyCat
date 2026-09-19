@@ -29,6 +29,9 @@ common:
   remove_from_watch_later: 从稍后再看中移除
   added: 已添加
   performance_impact_warn: 这个功能可能会影响性能！
+  perf_warning_title: 可能检测到卡顿
+  perf_warning_desc: 可以尝试关闭以下选项
+  perf_warning_stop: 不再检测
   no_data: 暂无数据
   load_failed: 加载失败
   no_more_content: 没有更多内容了
@@ -349,7 +352,7 @@ settings:
   btn:
     authorize: 授权
     revoke: 取消授权
-    open_settings: 打开设置...
+    open_settings: 打开设置
   touch_screen_optimization: 触屏体验改进
   touch_screen_optimization_desc: |
     启用后，如顶栏，你可能需要点击项目以查看更多信息，而不是鼠标直接悬停查看。视频页支持双击播放、暂停或快进快退，按住左右滑动调整播放进度，以及从播放器左右边缘上下滑动调节音量。（旧版顶栏不支持此功能）

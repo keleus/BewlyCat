@@ -32,6 +32,9 @@ export function resolveSearchBarCharacterUrl(url: string): string {
 
 export const DEFAULT_SEARCH_BAR_CHARACTER = searchBarCharacterAssetUrls['33chan-1.png']
 
+/** 新装用户的默认搜索页壁纸（使用完整图而非缩略图，保证全屏背景清晰度） */
+export const DEFAULT_SEARCH_PAGE_WALLPAPER = 'https://cdn.jsdelivr.net/gh/BewlyBewly/Imgs/wallpapers/bml2019-vr.jpg'
+
 export const SEARCH_BAR_CHARACTERS: { name: string, url: string }[] = [
   { name: '22 娘', url: searchBarCharacterAssetUrls['22chan-1.png'] },
   { name: '33 娘', url: DEFAULT_SEARCH_BAR_CHARACTER },

@@ -26,11 +26,10 @@
   gap: var(--bew-space-2);
   align-items: flex-start;
   color: var(--bew-text-1);
-  background: var(--bew-elevated-solid);
-  background: color-mix(in oklab, var(--bew-elevated-solid) 90%, transparent);
-  border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-panel-radius, 12px);
-  box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-3);
+  background: var(--bew-elevated);
+  border: 1px solid var(--bew-popover-border-color);
+  border-radius: var(--bew-popover-surface-radius);
+  box-shadow: var(--bew-shadow-2);
   backdrop-filter: var(--bew-filter-glass-1);
   font-family: inherit;
   overflow: hidden;
