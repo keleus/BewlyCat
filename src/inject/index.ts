@@ -3296,8 +3296,8 @@ else if (shouldInitializePageScript) {
       scheduleCommentReplyTreeLayoutUpdate(component)
     }
 
-    // 主评论锚点同样需要有效，否则根分支线会整体错位
-    if (threadRoot) {
+    // 主评论锚点同样需要有效，否则根分支线会整体错位；容器模式不画根分支，无需校验
+    if (threadRoot && !containerEnabled) {
       const mainRenderer = getCommentReplyTreeRootRenderer(component)
       if (mainRenderer && !getCommentReplyAvatarAnchor(mainRenderer, origin)) {
         retryLayout()
@@ -3320,24 +3320,14 @@ else if (shouldInitializePageScript) {
     const visibleRootNodes = rootNodes.filter(isCommentReplyTreeNodeVisible)
     const threadRootRenderer = getCommentReplyTreeRootRenderer(component)
     const rootBranchCollapsed = state.collapsedNodeKeys.has(COMMENT_REPLY_TREE_ROOT_KEY)
-    const rawRootAnchor = threadRootRenderer
-      ? getCommentReplyAvatarAnchor(threadRootRenderer, origin)
-      : null
     /*
-     * 容器模式下主评论位于滚动区上方，真实锚点在容器内容坐标里是负值，
-     * 会被容器裁掉。把根分支锚点收到容器内容顶部，保证「收起整层」的
-     * −/+ 仍在视野与点击范围内，主干也从容器顶端接入第一条分支。
+     * 容器模式下主评论位于滚动区上方，根分支的锚点、主干与 −/+ 都会落在
+     * 滚动内容坐标系之外，既裁切又没法稳定对齐。这里直接不画主评论那条线，
+     * 收起整层改用容器底边的原生「收起回复」。
      */
-    const threadRootAnchor = rawRootAnchor && containerEnabled
-      ? {
-          ...rawRootAnchor,
-          bottom: toggleHitRadius,
-          // 容器左边界可能落在主头像中心右侧；钳住 x 避免主干被 overflow-x 裁掉
-          centerX: Math.max(toggleHitRadius, rawRootAnchor.centerX),
-          centerY: toggleHitRadius,
-          toggleY: toggleHitRadius,
-        }
-      : rawRootAnchor
+    const threadRootAnchor = containerEnabled
+      ? null
+      : (threadRootRenderer ? getCommentReplyAvatarAnchor(threadRootRenderer, origin) : null)
     // 分支收起后即使子回复全隐藏，也保留控件以便展开
     if (threadRootAnchor && (rootNodes.length > 0 || rootBranchCollapsed)) {
       let rootTrunkExtendY: number | undefined
@@ -4260,8 +4250,15 @@ else if (shouldInitializePageScript) {
     const showGuides = treeMode === 'lineCollapseMain' || treeMode === 'lineKeepMain'
     // true：收起时折叠所有父节点本体；false：收起时父节点保持显示，仅隐藏子回复
     const collapseParentBody = treeMode === 'lineCollapseMain'
+    const containerEnabled = enabled && isCommentReplyContainerEnabled()
     component.toggleAttribute('data-bewly-comment-reply-tree', enabled)
-    applyCommentReplyContainer(component, enabled && isCommentReplyContainerEnabled())
+    applyCommentReplyContainer(component, containerEnabled)
+    /*
+     * 容器模式不再绘制主评论那条线，根分支的 −/+ 也就没有入口。
+     * 必须在应用可见性之前复位，否则此前收起过的楼层会一直隐藏且无法展开。
+     */
+    if (containerEnabled)
+      state.collapsedNodeKeys.delete(COMMENT_REPLY_TREE_ROOT_KEY)
 
     if (!enabled) {
       disconnectCommentReplyTreeResizeObserver(state)
