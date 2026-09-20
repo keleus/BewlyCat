@@ -206,6 +206,8 @@ if (isElectronEnv) {
 else if (shouldInitializeContentScript) {
   const playerModeLoadSettleDelay = 200
   const playerModeReadinessRetryInterval = 200
+  const playerModeLoadFallbackTimeout = 4000
+  const playerModeReadinessTimeout = 15_000
   const videoOwnerAvatarReadyTimeout = 4000
   const nativeVideoHeaderStableDelay = 2000
   const replacedNativeVideoHeaderStableDelay = 400
@@ -242,23 +244,22 @@ else if (shouldInitializeContentScript) {
   let lastUrl = location.href
   let lastVideoNavigationKey = getVideoNavigationKey(location.href)
   let lastAppliedPlayerModeNavigationKey: string | undefined
-  let playerModeReadyAfter = document.readyState === 'complete'
-    ? Date.now() + playerModeLoadSettleDelay
-    : Number.POSITIVE_INFINITY
+  let playerModeWaitStartedAt: number | undefined
+  let playerModeReadyAfter: number | undefined
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
+  let playerModeApplicationController: AbortController | undefined
+  let playerModeApplicationPending = false
   let playbackBehaviorTimer: ReturnType<typeof setTimeout> | undefined
   let playbackSettingsTimer: ReturnType<typeof setTimeout> | undefined
   let playbackBehaviorScheduledForKey: string | undefined
   let playerModeSettingsReady = false
-  let videoOwnerAvatarReadyDeadline = document.readyState === 'complete'
-    ? Date.now() + videoOwnerAvatarReadyTimeout
-    : Number.POSITIVE_INFINITY
+  let videoOwnerAvatarReadyDeadline: number | undefined
   let nativeVideoHeaderCandidate: HTMLElement | null = null
   let nativeVideoHeaderStableSince = 0
   let nativeVideoHeaderObserved = false
   let nativeVideoHeaderReplacementObserved = false
   let nativeVideoHeaderReadyDeadline: number | undefined
-  const pendingNativeVideoHeaderTasks = new Map<() => void, number>()
+  const pendingNativeVideoHeaderTasks = new Map<() => void, number | undefined>()
   let nativeVideoHeaderTaskTimer: ReturnType<typeof setTimeout> | undefined
   let nativeVideoHeaderTasksPaused = false
   let pendingWidescreenReloadNavigationKey: string | undefined
@@ -394,14 +395,12 @@ else if (shouldInitializeContentScript) {
     })
   }
 
-  function resetNativeVideoHeaderStability(resetObservation = true) {
-    if (resetObservation) {
-      nativeVideoHeaderCandidate = null
-      nativeVideoHeaderStableSince = 0
-      nativeVideoHeaderObserved = false
-      nativeVideoHeaderReplacementObserved = false
-    }
-    nativeVideoHeaderReadyDeadline = Date.now() + videoOwnerAvatarReadyTimeout
+  function resetNativeVideoHeaderStability() {
+    nativeVideoHeaderCandidate = null
+    nativeVideoHeaderStableSince = 0
+    nativeVideoHeaderObserved = false
+    nativeVideoHeaderReplacementObserved = false
+    nativeVideoHeaderReadyDeadline = undefined
   }
 
   // B 站视频页启动时会替换一次原生顶栏。自定义播放器若在替换期间搬动
@@ -441,13 +440,15 @@ else if (shouldInitializeContentScript) {
   function flushNativeVideoHeaderTasks() {
     clearTimeout(nativeVideoHeaderTaskTimer)
     nativeVideoHeaderTaskTimer = undefined
-    if (nativeVideoHeaderTasksPaused || !pendingNativeVideoHeaderTasks.size)
+    if (nativeVideoHeaderTasksPaused || document.hidden || !pendingNativeVideoHeaderTasks.size)
       return
 
     const ready = !isVideoOrBangumiPage() || isNativeVideoHeaderStable()
     try {
       for (const [task, deadline] of pendingNativeVideoHeaderTasks) {
-        if (ready || Date.now() >= deadline) {
+        if (deadline === undefined)
+          pendingNativeVideoHeaderTasks.set(task, Date.now() + videoOwnerAvatarReadyTimeout)
+        if (ready || (deadline !== undefined && Date.now() >= deadline)) {
           pendingNativeVideoHeaderTasks.delete(task)
           task()
         }
@@ -462,7 +463,7 @@ else if (shouldInitializeContentScript) {
   function runWhenNativeVideoHeaderStable(task: () => void) {
     // 同一任务合并等待；导航/加载重置稳定检测不能无限延长已排队任务的寿命。
     if (!pendingNativeVideoHeaderTasks.has(task))
-      pendingNativeVideoHeaderTasks.set(task, Date.now() + videoOwnerAvatarReadyTimeout)
+      pendingNativeVideoHeaderTasks.set(task, undefined)
     flushNativeVideoHeaderTasks()
   }
 
@@ -476,8 +477,7 @@ else if (shouldInitializeContentScript) {
 
   window.addEventListener('pagehide', (event) => {
     nativeVideoHeaderTasksPaused = true
-    clearTimeout(nativeVideoHeaderTaskTimer)
-    nativeVideoHeaderTaskTimer = undefined
+    pausePlayerInitialization()
     nativeVideoHeaderCandidate = null
     clearPlaybackBehaviorTimer()
     if (!event.persisted)
@@ -545,6 +545,7 @@ else if (shouldInitializeContentScript) {
     // 不能在这里准备宽屏 loading；真正的播放器模式由 iframe 自己负责。
     if (document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)) {
       clearPlayerModeRetry()
+      cancelPlayerModeApplication()
       clearPlaybackBehaviorTimer()
       exitBewlyWidescreen()
       return
@@ -552,6 +553,7 @@ else if (shouldInitializeContentScript) {
 
     if (!isVideoOrBangumiPage()) {
       clearPlayerModeRetry()
+      cancelPlayerModeApplication()
       clearPlaybackBehaviorTimer()
       exitBewlyWidescreen()
       return
@@ -560,6 +562,7 @@ else if (shouldInitializeContentScript) {
     // 后台新标签页中，load / pageshow 可能早于 B 站播放器和评论组件恢复。
     // 先等设置和可见状态，默认 Bewly 宽屏则立即显示居中的 loading。
     if (!playerModeSettingsReady
+      || nativeVideoHeaderTasksPaused
       || document.visibilityState !== 'visible') {
       clearPlayerModeRetry()
       return
@@ -571,14 +574,17 @@ else if (shouldInitializeContentScript) {
     // SPA 的新 URL 可能仍对应旧媒体的结束面板，不能在此标记新导航完成。
     if (!isBewlyWidescreenActive() && isPlayerShowingEndingRecommendation()) {
       clearPlayerModeRetry()
+      cancelPlayerModeApplication()
       exitBewlyWidescreen()
       if (lastAppliedPlayerModeNavigationKey !== currentNavigationKey)
         applyPlayerModeCompanionSettings()
       return
     }
 
-    if (lastAppliedPlayerModeNavigationKey === currentNavigationKey)
+    if (lastAppliedPlayerModeNavigationKey === currentNavigationKey) {
+      clearPlayerModeRetry()
       return
+    }
 
     // 当前视频已经进入 Bewly 宽屏时，将它视为已完成的播放器模式选择。
     // 尤其是抽屉 iframe 在标签页恢复可见后，不应再用默认模式覆盖用户当前
@@ -590,6 +596,10 @@ else if (shouldInitializeContentScript) {
       return
     }
 
+    if (playerModeApplicationPending)
+      return
+
+    playerModeWaitStartedAt ??= Date.now()
     let targetPlayerMode = resolveDefaultVideoPlayerMode()
     if (isFestivalPage() && targetPlayerMode === 'bewlyWidescreen')
       targetPlayerMode = 'widescreen'
@@ -606,11 +616,19 @@ else if (shouldInitializeContentScript) {
       exitBewlyWidescreen()
     }
 
-    if (document.readyState !== 'complete') {
+    // 保留完整加载的优先时序，但慢图片等资源不能永久挡住已经就绪的播放器。
+    if (document.readyState === 'loading') {
       clearPlayerModeRetry()
       return
     }
+    const loadWaitRemaining = playerModeWaitStartedAt + playerModeLoadFallbackTimeout - Date.now()
+    if (document.readyState !== 'complete' && loadWaitRemaining > 0) {
+      schedulePlayerModeRetry(loadWaitRemaining)
+      return
+    }
 
+    playerModeReadyAfter ??= playerModeWaitStartedAt + playerModeLoadSettleDelay
+    videoOwnerAvatarReadyDeadline ??= playerModeWaitStartedAt + videoOwnerAvatarReadyTimeout
     const settleDelay = playerModeReadyAfter - Date.now()
     if (settleDelay > 0) {
       schedulePlayerModeRetry(settleDelay)
@@ -649,14 +667,24 @@ else if (shouldInitializeContentScript) {
 
     clearPlayerModeRetry()
 
+    cancelPlayerModeApplication()
+    const controller = new AbortController()
+    playerModeApplicationController = controller
+    playerModeApplicationPending = true
     const application = {
-      shouldApply: () => getVideoNavigationKey(location.href) === currentNavigationKey
+      signal: controller.signal,
+      onSettled: () => {
+        if (playerModeApplicationController === controller)
+          playerModeApplicationPending = false
+      },
+      shouldApply: () => !controller.signal.aborted
+        && getVideoNavigationKey(location.href) === currentNavigationKey
         && lastAppliedPlayerModeNavigationKey !== currentNavigationKey
         && document.visibilityState === 'visible'
         && !document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)
         && !isPlayerShowingEndingRecommendation(),
       onApplied: () => {
-        if (getVideoNavigationKey(location.href) !== currentNavigationKey)
+        if (controller.signal.aborted || getVideoNavigationKey(location.href) !== currentNavigationKey)
           return
         applyPlayerModeCompanionSettings()
         lastAppliedPlayerModeNavigationKey = currentNavigationKey
@@ -667,8 +695,7 @@ else if (shouldInitializeContentScript) {
 
     if (!targetPlayerMode || targetPlayerMode === 'default') {
     // 默认模式也需要居中显示
-      defaultMode()
-      application.onApplied()
+      defaultMode(application)
     }
     else {
       switch (targetPlayerMode) {
@@ -698,13 +725,38 @@ else if (shouldInitializeContentScript) {
   }
 
   function schedulePlayerModeRetry(delay?: number) {
-    if (playerModeRetryTimer)
+    if (playerModeRetryTimer || nativeVideoHeaderTasksPaused || document.hidden || playerModeApplicationPending)
       return
 
+    // 同一导航只给一份等待预算，切换标签页不会重新续期。超时后由真实的
+    // load / 媒体就绪 / 可见事件再检查一次，不持续轮询缺失的播放器节点。
+    const remaining = playerModeWaitStartedAt === undefined
+      ? playerModeReadinessTimeout
+      : playerModeWaitStartedAt + playerModeReadinessTimeout - Date.now()
+    if (remaining <= 0) {
+      if (!isBewlyWidescreenActive())
+        exitBewlyWidescreen()
+      return
+    }
     playerModeRetryTimer = setTimeout(() => {
       playerModeRetryTimer = undefined
       applyDefaultPlayerMode()
-    }, delay ?? playerModeReadinessRetryInterval)
+    }, Math.min(delay ?? playerModeReadinessRetryInterval, remaining))
+  }
+
+  function cancelPlayerModeApplication() {
+    playerModeApplicationController?.abort()
+    playerModeApplicationController = undefined
+    playerModeApplicationPending = false
+  }
+
+  function pausePlayerInitialization() {
+    clearPlayerModeRetry()
+    cancelPlayerModeApplication()
+    clearTimeout(nativeVideoHeaderTaskTimer)
+    nativeVideoHeaderTaskTimer = undefined
+    if (!isBewlyWidescreenActive())
+      exitBewlyWidescreen()
   }
 
   window.addEventListener(BEWLY_WIDESCREEN_USER_EXIT, () => {
@@ -715,6 +767,7 @@ else if (shouldInitializeContentScript) {
     // 用户主动退出会终止当前视频的默认宽屏初始化。否则头部/播放器就绪
     // 检查留下的重试会再次挂载 loading，并重新进入 Bewly 宽屏。
     clearPlayerModeRetry()
+    cancelPlayerModeApplication()
     lastAppliedPlayerModeNavigationKey = currentNavigationKey
     queueMicrotask(() => {
       if (getVideoNavigationKey(location.href) === currentNavigationKey)
@@ -722,12 +775,14 @@ else if (shouldInitializeContentScript) {
     })
   })
 
-  function waitForPlayerModePageSettle(resetHeaderObservation = true) {
+  function resetPlayerModeReadinessForNavigation() {
     clearPlayerModeRetry()
+    cancelPlayerModeApplication()
     clearPlaybackBehaviorTimer()
-    playerModeReadyAfter = Date.now() + playerModeLoadSettleDelay
-    videoOwnerAvatarReadyDeadline = Date.now() + videoOwnerAvatarReadyTimeout
-    resetNativeVideoHeaderStability(resetHeaderObservation)
+    playerModeWaitStartedAt = undefined
+    playerModeReadyAfter = undefined
+    videoOwnerAvatarReadyDeadline = undefined
+    resetNativeVideoHeaderStability()
   }
 
   // 添加稍后再看按钮
@@ -958,6 +1013,7 @@ else if (shouldInitializeContentScript) {
       pendingWidescreenReloadTimer = undefined
     }, 5000)
     clearPlayerModeRetry()
+    cancelPlayerModeApplication()
     // 先退出宽屏，再让 B 站执行原本的 SPA 路由切换；真正 URL 变化后由
     // checkForUrlChanges 复用 SPA 路由并按需重载评论区。
     exitBewlyWidescreen()
@@ -976,8 +1032,7 @@ else if (shouldInitializeContentScript) {
       applyBewlyDesignClasses()
 
       if (!isVideoOrBangumiPage()) {
-        clearPlaybackBehaviorTimer()
-        nativeVideoHeaderCandidate = null
+        resetPlayerModeReadinessForNavigation()
         clearPendingWidescreenReloadNavigation()
         exitBewlyWidescreen()
         autoContinuationNavigationKey = undefined
@@ -1013,7 +1068,7 @@ else if (shouldInitializeContentScript) {
 
         exitBewlyWidescreen()
         resetVerticalVideoZoom()
-        waitForPlayerModePageSettle()
+        resetPlayerModeReadinessForNavigation()
         document.querySelector('.bewly-watch-later-btn')?.remove()
         watchLaterButtonAdded = false // URL变化时重置稍后再看按钮标志
         // 手动修改只覆盖当前视频；切集后重新应用扩展配置，避免播放器重建时开关复位。
@@ -1071,7 +1126,9 @@ else if (shouldInitializeContentScript) {
       if (event.target === getVideoElement()
         && isVideoOrBangumiPage()
         && lastAppliedPlayerModeNavigationKey !== getVideoNavigationKey(location.href)) {
-        schedulePlayerModeRetry()
+        // 已超过轮询预算的页面仍能由真正的媒体就绪事件恢复。
+        clearPlayerModeRetry()
+        applyDefaultPlayerMode()
       }
     }, true)
   }
@@ -1080,11 +1137,8 @@ else if (shouldInitializeContentScript) {
   window.addEventListener('load', () => {
     // DOMContentLoaded 后已经开始观察原生顶栏；完整加载时沿用这段观察时间，
     // 避免把安全稳定期清零后再无条件多等一轮。
-    waitForPlayerModePageSettle(false)
-    if (isVideoPage()) {
-      applyDefaultPlayerMode()
-    }
-    else if (isVideoOrBangumiPage()) {
+    clearPlayerModeRetry()
+    if (isVideoOrBangumiPage()) {
       applyDefaultPlayerMode()
     }
 
@@ -1240,15 +1294,19 @@ else if (shouldInitializeContentScript) {
         return
       }
 
-      waitForPlayerModePageSettle()
       applyDefaultPlayerMode()
     })
   }
 
   window.addEventListener('pageshow', restoreDefaultPlayerModeAfterPageResume)
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible')
+    if (document.visibilityState === 'visible') {
+      flushNativeVideoHeaderTasks()
       restoreDefaultPlayerModeAfterPageResume()
+    }
+    else {
+      pausePlayerInitialization()
+    }
   })
 
   void settingsReady.then(() => {
