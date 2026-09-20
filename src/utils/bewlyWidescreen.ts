@@ -1200,10 +1200,10 @@ function injectLayoutStyle() {
       --bewly-widescreen-sidebar-offset: 0px;
     }
 
-    /* 当窗口本身足以容纳 16:9 全高视频和正常侧栏时，自动布局保留 96px
-       入口。判定只看窗口几何，不会把普通屏幕上的窄比例视频误判为超宽屏。 */
+    /* 超宽窗口最多保留 96px 侧栏入口，但不能挤占全高视频所需的宽度。
+       视频占满窗口时入口收至零宽，通过窗口边缘触发展开。 */
     #${ROOT_ID}[data-wide-video-priority="true"] {
-      --bewly-widescreen-sidebar-column-width: var(--bewly-widescreen-sidebar-collapsed-width);
+      --bewly-widescreen-sidebar-column-width: min(var(--bewly-widescreen-sidebar-collapsed-width), var(--bewly-widescreen-sidebar-fit-width));
       --bewly-widescreen-sidebar-panel-width: min(
         var(--bewly-widescreen-sidebar-expanded-width),
         var(--bewly-widescreen-sidebar-max)
@@ -2829,7 +2829,7 @@ function updateAspectRatio() {
   const aspect = video?.videoWidth && video.videoHeight
     ? video.videoWidth / video.videoHeight
     : 16 / 9
-  const layoutAspect = Math.min(aspect, 16 / 9)
+  const layoutAspect = aspect
 
   state?.root.style.setProperty('--bewly-widescreen-aspect', String(aspect))
   state?.root.style.setProperty('--bewly-widescreen-layout-aspect', String(layoutAspect))
@@ -2912,6 +2912,12 @@ function updateSidebarLayoutState() {
     && state.sidebarMode === 'fit'
     && ultrawideSpareWidth >= SIDEBAR_NARROW_MIN_WIDTH
   state.root.dataset.wideVideoPriority = String(wideVideoPriority)
+  state.root.dataset.sidebarEdgeReveal = String(
+    !settings.value.enableBewlyWidescreenSidebarResize
+    && !hasCustomWidth
+    && state.sidebarMode === 'fit'
+    && fitWidth <= 1,
+  )
 
   const { minWidth, maxWidth } = getSidebarResizeBounds()
   const customWidth = Math.min(Math.max(state.customSidebarWidth, minWidth), maxWidth)
@@ -2921,7 +2927,7 @@ function updateSidebarLayoutState() {
     : state.sidebarMode === 'narrow'
       ? narrowWidth
       : wideVideoPriority
-        ? state.root.dataset.sidebarExpanded === 'true' ? expandedWidth : SIDEBAR_VIDEO_PRIORITY_COLLAPSED_WIDTH
+        ? state.root.dataset.sidebarExpanded === 'true' ? expandedWidth : Math.min(SIDEBAR_VIDEO_PRIORITY_COLLAPSED_WIDTH, fitWidth)
         : fitWidth
 
   // 视频居中基准与侧栏策略相互独立：只有当前可见侧栏确实能放入单侧空白时
@@ -3133,6 +3139,25 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
     return !isPointInRect(e, sidebar.getBoundingClientRect())
   }
 
+  function isAtHiddenSidebarEdge(event: PointerEvent) {
+    if (currentState.root.dataset.sidebarEdgeReveal !== 'true')
+      return false
+
+    const rect = currentState.root.getBoundingClientRect()
+    if (!isPointInRect(event, rect))
+      return false
+
+    // 给窗口边缘保留 2px 的命中容差，不额外占用视频或侧栏空间。
+    return currentState.sidebarPosition === 'left'
+      ? event.clientX <= rect.left + 2
+      : event.clientX >= rect.right - 2
+  }
+
+  function expandAtWindowEdge(event: PointerEvent) {
+    if (isAtHiddenSidebarEdge(event))
+      expandSidebar()
+  }
+
   function expandSidebar(event?: PointerEvent) {
     if (settings.value.enableBewlyWidescreenSidebarResize || currentState.sidebarMode !== 'fit')
       return
@@ -3150,6 +3175,9 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   function collapseSidebar(e: PointerEvent) {
     if (settings.value.enableBewlyWidescreenSidebarResize || currentState.sidebarMode !== 'fit')
       return
+    // 展开动画期间侧栏尚未移入视口，边缘事件仍可能落在播放器上。
+    if (isAtHiddenSidebarEdge(e))
+      return
     if (isPointInVisibleVideoArea(e) && currentState.root.dataset.sidebarExpanded === 'true') {
       currentState.root.dataset.sidebarExpanded = 'false'
       updateSidebarLayoutState()
@@ -3163,6 +3191,8 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
   tablist?.addEventListener('click', expandAfterTabClick)
   playerFrame.addEventListener('pointerenter', collapseSidebar)
   playerFrame.addEventListener('pointermove', collapseSidebar)
+  currentState.root.addEventListener('pointerenter', expandAtWindowEdge)
+  currentState.root.addEventListener('pointermove', expandAtWindowEdge)
 
   currentState.sidebarInteractionCleanup = () => {
     sidebar.removeEventListener('pointerenter', expandSidebar)
@@ -3170,6 +3200,8 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
     tablist?.removeEventListener('click', expandAfterTabClick)
     playerFrame.removeEventListener('pointerenter', collapseSidebar)
     playerFrame.removeEventListener('pointermove', collapseSidebar)
+    currentState.root.removeEventListener('pointerenter', expandAtWindowEdge)
+    currentState.root.removeEventListener('pointermove', expandAtWindowEdge)
     delete currentState.root.dataset.sidebarExpanded
   }
 }
