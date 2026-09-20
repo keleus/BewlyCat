@@ -1628,6 +1628,10 @@ favorite_dialog:
   clear_selected: 清走已揀
 inject:
   page_prefix: 第{current}頁，共
+  page_number: 第{current}頁
+  page_separator: ，共
+  all_pages: 全部
+  select_reply_page: 揀回覆頁碼
   of: 共
   loading: 載入緊…
   load_more: 載入更多

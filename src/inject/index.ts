@@ -2,6 +2,7 @@
 import { isSearchResultApiPath } from '~/constants/searchApi'
 import COMMENT_REPLY_TREE_GUIDES_CSS from '~/styles/commentReplyTree.scss?inline'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
+import { CommentReplyPageCache } from '~/utils/commentReplyPageCache'
 import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/commentReplyTree'
 import { formatCommentReplyGuideCoordinate, getCommentReplyBranchExpandedToggleY, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
 import { getCommentSexIcon, normalizeCommentLocation } from '~/utils/commentUserInfo'
@@ -136,6 +137,11 @@ else if (shouldInitializePageScript) {
   const commentReplyTreeEpochs = new WeakMap<object, number>()
   const commentReplyPaginationStates = new WeakMap<object, CommentReplyPaginationState>()
   const commentReplyPaginationModeStates = new WeakMap<object, boolean>()
+  // B 站切页时可能销毁并重建 replies renderer；按楼层身份保留已见回复的
+  // parent/root 与正文摘要，重建后仍能解析跨页父子关系。
+  const commentReplyCrossPageMetaCaches = new Map<string, Map<string, CommentReplyTreeCachedMeta>>()
+  const commentReplyPageCaches = new Map<string, CommentReplyPageCache>()
+  const MAX_COMMENT_REPLY_CROSS_PAGE_CACHE_THREADS = 64
   const MAX_COMMENT_REPLY_TREE_DEPTH = 10
   const MIN_COMMENT_REPLY_TREE_CONTENT_WIDTH = 150
   const COMPACT_COMMENT_REPLY_TREE_CONTAINER_WIDTH = 640
@@ -146,6 +152,7 @@ else if (shouldInitializePageScript) {
   const COMMENT_REPLY_TREE_INDENT_STEP = 'var(--bew-comment-reply-indent-step, var(--bew-space-8, 32px))'
   const COMMENT_REPLY_TREE_GUIDES_ID = 'bewly-comment-reply-tree-guides'
   const COMMENT_REPLY_EXPAND_ALL_ID = 'bewly-comment-expand-all-replies'
+  const COMMENT_REPLY_PAGE_SELECT_ID = 'bewly-comment-reply-page-select'
   const COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE = 'data-bewly-comment-expand-all-loading'
   // B 站分页项使用从 0 开始的 idx；-1 已被原生用于省略号，-2 留给我们的
   // 「展开全部」动作，避免把它误当成真实页码。
@@ -157,6 +164,7 @@ else if (shouldInitializePageScript) {
   /** 楼中楼已见过的回复关系（跨分页保留，用于父节点不在当前页时回溯挂载） */
   interface CommentReplyTreeCachedMeta {
     authorName: string | null
+    avatarUrl: string | null
     ctime: number | null
     /** 纯文本正文（已去掉「回复 @」前缀），用于离页父评引用 */
     messageText: string | null
@@ -228,6 +236,8 @@ else if (shouldInitializePageScript) {
     loading?: Promise<any>
     expandAllLoading?: Promise<void>
     allRepliesExpanded?: boolean
+    /** 直接选页只显示目标页；之后的「加载更多」从该页继续追加。 */
+    pageJump?: { previousPage: number, allRepliesExpanded?: boolean }
     /**
      * 从已渲染回复组件捕获的用户交互状态。楼中楼接口可能返回点赞前的
      * 缓存数据，后续分页合并时需要以本地刚完成的操作为准。
@@ -293,9 +303,72 @@ else if (shouldInitializePageScript) {
           color: var(--bew-text-3) !important;
         }
 
+        #${COMMENT_REPLY_PAGE_SELECT_ID} {
+          min-width: var(--bew-space-6, 24px);
+          min-height: var(--bew-space-6, 24px);
+          padding: 0 var(--bew-space-1, 4px);
+          border: 0;
+          border-radius: var(--bew-radius-sm, 4px);
+          background: transparent;
+          color: var(--bew-text-2, var(--text2, #61666d));
+          font: inherit;
+          cursor: pointer;
+          vertical-align: baseline;
+        }
+
+        #${COMMENT_REPLY_PAGE_SELECT_ID}:is(:hover, :active):not(:disabled) {
+          color: var(--bew-theme-color, #00aeec);
+          background: var(--bew-fill-1, var(--graph_bg_thin, #f1f2f3));
+        }
+
+        #${COMMENT_REPLY_PAGE_SELECT_ID}:focus-visible {
+          outline: var(--bew-space-0-5, 2px) solid var(--bew-theme-color, #00aeec);
+          outline-offset: var(--bew-space-0-5, 2px);
+        }
+
+        #${COMMENT_REPLY_PAGE_SELECT_ID}:disabled {
+          opacity: 0.6;
+          cursor: wait;
+        }
+
+        #${COMMENT_REPLY_PAGE_SELECT_ID} option {
+          background: var(--bew-bg, var(--bg1, #fff));
+          color: var(--bew-text-1, var(--text1, #18191c));
+        }
+
+        #view-more:has(> #${COMMENT_REPLY_EXPAND_ALL_ID}) {
+          display: flex;
+          align-items: center;
+          column-gap: var(--bew-space-2, 8px);
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        /* 展开后的按钮属于 Lit 分页列表，用 CSS 排列，不移动其 DOM 节点。 */
+        #pagination:has(#pagination-body > [data-idx="${COMMENT_REPLY_EXPAND_ALL_IDX}"]) {
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        #pagination:has(#pagination-body > [data-idx="${COMMENT_REPLY_EXPAND_ALL_IDX}"]) #pagination-body {
+          display: contents;
+        }
+
+        #pagination:has(#pagination-body > [data-idx="${COMMENT_REPLY_EXPAND_ALL_IDX}"]) #pagination-foot {
+          order: 1;
+        }
+
+        #pagination #pagination-body > [data-idx="${COMMENT_REPLY_EXPAND_ALL_IDX}"] {
+          order: 2;
+          flex-shrink: 0;
+          margin-inline-start: auto;
+          margin-inline-end: 0;
+        }
+
         #${COMMENT_REPLY_EXPAND_ALL_ID} {
-          min-height: 24px;
-          margin-inline-start: var(--bew-space-2, 8px);
+          flex-shrink: 0;
+          min-height: var(--bew-space-6, 24px);
+          margin-inline-start: auto;
           padding: 0;
           border: 0;
           background: transparent;
@@ -422,6 +495,19 @@ else if (shouldInitializePageScript) {
           height: var(--bew-space-6, 24px);
           border-radius: var(--bew-radius-full, 50%);
           background: var(--bew-fill-2, var(--bg2, #f1f2f3));
+          overflow: hidden;
+        }
+
+        .bewly-comment-missing-parent__avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .bewly-comment-missing-parent[data-cached] .bewly-comment-missing-parent__body {
+          color: var(--bew-text-1, var(--text1, #18191c));
+          font-size: var(--bew-font-size-body, 15px);
+          line-height: var(--bew-line-height-body, 24px);
         }
 
         ${COMMENT_REPLY_TREE_GUIDES_CSS}
@@ -886,24 +972,223 @@ else if (shouldInitializePageScript) {
       && currentSettings?.commentReplyPaginationMode !== 'pagination'
   }
 
-  function updateCommentReplyPaginationHead(component: any, currentPage: number) {
+  function getCommentReplyPageCache(renderer: any): CommentReplyPageCache | undefined {
+    const identity = getCommentReplyPaginationIdentity(renderer)
+    if (!identity.split('|').every(part => /^\d+$/.test(part)))
+      return undefined
+    const pageSize = Number(renderer.pageSize) || 20
+    if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100)
+      return undefined
+    const key = `${identity}|${pageSize}`
+    let cache = commentReplyPageCaches.get(key)
+    if (!cache)
+      cache = new CommentReplyPageCache(pageSize)
+    // 按最近使用淘汰；同一楼层的组件重建后仍可复用完整单页。
+    commentReplyPageCaches.delete(key)
+    commentReplyPageCaches.set(key, cache)
+    while (commentReplyPageCaches.size > MAX_COMMENT_REPLY_CROSS_PAGE_CACHE_THREADS) {
+      const oldest = commentReplyPageCaches.keys().next().value!
+      commentReplyPageCaches.get(oldest)?.stop()
+      commentReplyPageCaches.delete(oldest)
+    }
+    return cache
+  }
+
+  function rememberCommentReplyPages(renderer: any, cache: CommentReplyPageCache) {
+    const state = commentReplyPaginationStates.get(renderer)
+    state?.pages.forEach((replies, page) => cache.pages.set(page, replies))
+    const invisibleIds = getCommentReplyInvisibleIds(renderer)
+    if (invisibleIds.size) {
+      cache.pages.forEach((replies, page) => {
+        cache.pages.set(page, replies.filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? '')))
+      })
+    }
+    if (renderer.showPagination !== true || renderer.showSpinner || state?.loading)
+      return
+    const page = Number(renderer.currentPage) || 1
+    // 累计列表并非完整单页，不能当作当前页写进缓存。
+    const replies = state?.mergedList === renderer.list ? state?.pages.get(page) : renderer.list
+    if (Array.isArray(replies))
+      cache.pages.set(page, replies.filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? '')))
+  }
+
+  function prefetchOtherCommentReplyPages(renderer: any) {
+    const cache = getCommentReplyPageCache(renderer)
+    if (!cache || getCommentReplyTreeMode() === null)
+      return
+    rememberCommentReplyPages(renderer, cache)
+    const identity = getCommentReplyPaginationIdentity(renderer)
+    const [oid, type, root] = identity.split('|')
+    const isActive = () => renderer.isConnected && renderer.showPagination === true
+      && getCommentReplyTreeMode() !== null && identity === getCommentReplyPaginationIdentity(renderer)
+    const refreshParents = (replies?: any[]) => {
+      if (!isActive() || commentReplyPaginationStates.get(renderer)?.loading || renderer.showSpinner)
+        return
+      const missing = renderer.shadowRoot?.querySelectorAll('.bewly-comment-missing-parent') as NodeListOf<HTMLElement> | undefined
+      if (!missing?.length)
+        return
+      const loadedIds = replies ? new Set(replies.map(getReplyRpid)) : undefined
+      if (loadedIds && !Array.from(missing).some(node => loadedIds.has(node.dataset.parentRpid ?? '')))
+        return
+      const snapshot = captureCommentReplyScrollSnapshot(renderer)
+      updateCommentReplyTree(renderer)
+      restoreCommentReplyScrollSnapshot(snapshot)
+    }
+    void cache.prefetch({ oid, type, root, totalPage: getCommentReplyTotalPage(renderer) }, isActive, refreshParents)
+      .catch(error => console.warn('[BewlyCat] Failed to cache other reply pages.', error))
+      .finally(() => refreshParents())
+    refreshParents()
+  }
+
+  function updateCommentReplyPaginationHead(component: any) {
     const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
     if (!head)
       return
-    const prefix = pageT('inject.page_prefix', { current: currentPage })
-    const first = head.firstChild
-    if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== prefix)
-      first.textContent = prefix
+    const totalPage = getCommentReplyTotalPage(component)
+    if (component.showPagination !== true || totalPage <= 1 || typeof component.handleChangePage !== 'function') {
+      restoreCommentReplyPaginationHead(component)
+      return
+    }
+
+    let select = head.querySelector<HTMLSelectElement>(`#${COMMENT_REPLY_PAGE_SELECT_ID}`)
+    if (!select) {
+      select = document.createElement('select')
+      select.id = COMMENT_REPLY_PAGE_SELECT_ID
+      select.addEventListener('click', event => event.stopPropagation())
+      select.addEventListener('change', (event) => {
+        event.stopPropagation()
+        void jumpToCommentReplyPage(component, Number((event.currentTarget as HTMLSelectElement).value))
+      })
+      // 保留 Lit 管理的文本节点和总页数，只在它们前面插入选择器。
+      head.prepend(select)
+    }
+    const state = commentReplyPaginationStates.get(component)
+    const allExpanded = state?.allRepliesExpanded === true
+    const optionsKey = `${totalPage}|${allExpanded}|${currentSettings?.language ?? i18n.global.locale.value}`
+    if (select.dataset.optionsKey !== optionsKey) {
+      const options = document.createDocumentFragment()
+      if (allExpanded) {
+        const option = document.createElement('option')
+        option.value = ''
+        option.textContent = pageT('inject.all_pages')
+        option.disabled = true
+        option.hidden = true
+        options.appendChild(option)
+      }
+      for (let page = 1; page <= totalPage; page += 1) {
+        const option = document.createElement('option')
+        option.value = String(page)
+        option.textContent = pageT('inject.page_number', { current: page })
+        options.appendChild(option)
+      }
+      select.replaceChildren(options)
+      select.dataset.optionsKey = optionsKey
+    }
+    select.value = allExpanded ? '' : String(Number(component.currentPage) || 1)
+    select.disabled = Boolean(state?.loading || state?.expandAllLoading || component.showSpinner)
+    select.title = pageT('inject.select_reply_page')
+    select.setAttribute('aria-label', select.title)
+    const first = Array.from(head.childNodes).find(node => node.nodeType === Node.TEXT_NODE)
+    const separator = pageT('inject.page_separator')
+    if (first && first.textContent !== separator)
+      first.textContent = separator
   }
 
   function restoreCommentReplyPaginationHead(component: any) {
     const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
     if (!head)
       return
-    const first = head.firstChild
+    head.querySelector(`#${COMMENT_REPLY_PAGE_SELECT_ID}`)?.remove()
+    const first = Array.from(head.childNodes).find(node => node.nodeType === Node.TEXT_NODE)
     const ofLabel = pageT('inject.of')
     if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== ofLabel)
       first.textContent = ofLabel
+  }
+
+  async function jumpToCommentReplyPage(renderer: any, page: number) {
+    const state = isCommentReplyLoadMoreEnabled()
+      ? getCommentReplyPaginationState(renderer)
+      : commentReplyPaginationStates.get(renderer)
+    if (!Number.isInteger(page) || page < 1 || page > getCommentReplyTotalPage(renderer)
+      || renderer.showPagination !== true || renderer.showSpinner
+      || state?.loading || state?.expandAllLoading) {
+      updateCommentReplyPaginationHead(renderer)
+      return
+    }
+    const previousPage = Number(renderer.currentPage) || 1
+    const previousList = Array.isArray(renderer.list) ? renderer.list.slice() : []
+    const identity = getCommentReplyPaginationIdentity(renderer)
+    const cache = getCommentReplyPageCache(renderer)
+    if (cache) {
+      rememberCommentReplyPages(renderer, cache)
+      // 用户选页优先于后台预取；迟到的旧请求不能覆盖选中的页。
+      cache.stop()
+    }
+    if (page === previousPage && !state?.mergedList) {
+      updateCommentReplyPaginationHead(renderer)
+      prefetchOtherCommentReplyPages(renderer)
+      return
+    }
+    const scrollSnapshot = captureCommentReplyScrollSnapshot(renderer)
+    // 已访问过的页直接从缓存恢复，避免再次请求时 B 站暂时只返回当前页，
+    // 也避免切页过程中旧回复短暂消失导致树关系被判定为「不在本页」。
+    {
+      const cachedPage = cache?.pages.get(page) ?? state?.pages.get(page)
+      if (cachedPage) {
+        const invisibleIds = getCommentReplyInvisibleIds(renderer)
+        const visiblePage = cachedPage.filter(reply => !invisibleIds.has(getReplyRpid(reply) ?? ''))
+        const restoredPage = state ? restoreCommentReplyInteractionState(state, visiblePage) : visiblePage
+        if (state) {
+          state.pages.set(page, restoredPage)
+          state.currentPage = page
+          state.mergedList = restoredPage
+          state.allRepliesExpanded = false
+        }
+        renderer.currentPage = page
+        renderer.list = restoredPage
+        renderer.requestUpdate?.()
+        scheduleCommentReplyPaginationTreeUpdate(renderer)
+        restoreCommentReplyScrollSnapshot(scrollSnapshot)
+        updateCommentReplyPaginationHead(renderer)
+        prefetchOtherCommentReplyPages(renderer)
+        return
+      }
+    }
+    if (isCommentReplyLoadMoreEnabled() && state) {
+      state.pageJump = {
+        previousPage,
+        allRepliesExpanded: state?.allRepliesExpanded,
+      }
+    }
+    try {
+      const result = renderer.handleChangePage({ idx: page - 1, clickable: true })
+      updateCommentReplyPaginationHead(renderer)
+      await result
+      const currentState = commentReplyPaginationStates.get(renderer)
+      if (currentState?.loading)
+        await currentState.loading
+    }
+    catch (error) {
+      if (!isCommentReplyLoadMoreEnabled() && renderer.showPagination === true
+        && identity === getCommentReplyPaginationIdentity(renderer)) {
+        renderer.currentPage = previousPage
+        renderer.list = previousList
+        renderer.requestUpdate?.()
+      }
+      console.warn('[BewlyCat] Failed to change comment reply page.', error)
+    }
+    finally {
+      if (state)
+        state.pageJump = undefined
+      if (!renderer.isConnected || identity !== getCommentReplyPaginationIdentity(renderer))
+        scrollSnapshot.controller.abort()
+      restoreCommentReplyScrollSnapshot(scrollSnapshot)
+      updateCommentReplyPaginationHead(renderer)
+      if (identity === getCommentReplyPaginationIdentity(renderer)
+        && Number(renderer.currentPage) === page && !renderer.showSpinner) {
+        prefetchOtherCommentReplyPages(renderer)
+      }
+    }
   }
 
   function getCommentReplyInvisibleIds(renderer: any): Set<string> {
@@ -1119,6 +1404,11 @@ else if (shouldInitializePageScript) {
     if (nextList !== repliesRenderer.list)
       repliesRenderer.list = nextList
 
+    getCommentReplyPageCache(repliesRenderer)?.pages.forEach((page, pageNumber, pages) => {
+      const nextPage = applyCommentReplyInteractionToList(page, rpid, interaction)
+      if (nextPage && nextPage !== page)
+        pages.set(pageNumber, nextPage)
+    })
     const state = commentReplyPaginationStates.get(repliesRenderer)
     if (!state)
       return
@@ -1223,14 +1513,14 @@ else if (shouldInitializePageScript) {
 
   function getCommentReplyTotalPage(renderer: any): number {
     const totalPage = Number(renderer?.totalPage)
-    return Number.isFinite(totalPage) && totalPage > 0 ? totalPage : 1
+    return Number.isSafeInteger(totalPage) && totalPage > 0 ? totalPage : 1
   }
 
   function isCommentReplyPaginationComplete(renderer: any): boolean {
-    const totalPage = Number(renderer?.totalPage)
-    return Number.isFinite(totalPage)
-      && totalPage > 0
-      && (Number(renderer?.currentPage) || 1) >= totalPage
+    const totalPage = getCommentReplyTotalPage(renderer)
+    const pages = commentReplyPaginationStates.get(renderer)?.pages
+    return Boolean(pages && pages.size === totalPage
+      && [...pages.keys()].every(page => page >= 1 && page <= totalPage))
   }
 
   /** 等待一次 B 站回复请求结算；兼容旧版本组件未返回 Promise 的情况。 */
@@ -1295,25 +1585,27 @@ else if (shouldInitializePageScript) {
       while (
         isCommentReplyLoadMoreEnabled()
         && renderer.showPagination === true
-        && Number(renderer.currentPage) < getCommentReplyTotalPage(renderer)
+        && commentReplyPaginationStates.get(renderer) === state
+        && !isCommentReplyPaginationComplete(renderer)
         && loadedPages < maxPages
       ) {
-        const currentPage = Number(renderer.currentPage) || 1
         const handleChangePage = renderer.handleChangePage
         if (typeof handleChangePage !== 'function')
           break
 
-        // handleChangePage 接收 0-based idx；当前页为 1-based，因此传入
-        // currentPage 正好请求下一页。
+        // 直接跳页后前面的页可能尚未加载，从最早缺失页补齐。
+        let nextPage = 1
+        while (state.pages.has(nextPage) && nextPage <= getCommentReplyTotalPage(renderer))
+          nextPage += 1
         handleChangePage.call(renderer, {
-          idx: currentPage,
+          idx: nextPage - 1,
           clickable: true,
         })
         await waitForCommentReplyPaginationRequest(renderer, state)
         loadedPages += 1
 
         // 防止某个版本的原生组件在请求失败后不推进页码而陷入循环。
-        if ((Number(renderer.currentPage) || 1) <= currentPage && !state.loading)
+        if (!state.pages.has(nextPage) && !state.loading)
           break
       }
 
@@ -1321,6 +1613,11 @@ else if (shouldInitializePageScript) {
         renderer.showPagination === true
         && isCommentReplyPaginationComplete(renderer),
       )
+      if (state.allRepliesExpanded && commentReplyPaginationStates.get(renderer) === state) {
+        state.mergedList = restoreCommentReplyInteractionState(state, mergeCommentReplyPaginationPages(state))
+        renderer.list = state.mergedList
+        scheduleCommentReplyPaginationTreeUpdate(renderer)
+      }
     })()
 
     state.expandAllLoading = operation
@@ -1335,8 +1632,7 @@ else if (shouldInitializePageScript) {
       renderer.requestUpdate?.()
       requestAnimationFrame(() => {
         if (renderer.isConnected && getCommentReplyTreeMode() !== null) {
-          if (state.allRepliesExpanded)
-            restoreCommentReplyPaginationHead(renderer)
+          updateCommentReplyPaginationHead(renderer)
           updateCommentReplyTree(renderer)
         }
       })
@@ -1406,6 +1702,116 @@ else if (shouldInitializePageScript) {
     container: HTMLElement
     previousMinHeight: string
     previousOverflowAnchor: string
+  }
+
+  interface CommentReplyScrollSnapshot {
+    controller: AbortController
+    windowX: number
+    windowY: number
+    anchor: HTMLElement | null
+    anchorTop: number
+    elements: Array<{ element: HTMLElement, left: number, top: number }>
+  }
+
+  const activeCommentReplyScrollRestores = new WeakMap<HTMLElement, AbortController>()
+
+  /** B 站替换回复节点时可能触发 scroll anchoring，切页后恢复原视口位置。 */
+  function captureCommentReplyScrollSnapshot(renderer: any): CommentReplyScrollSnapshot {
+    const elements: CommentReplyScrollSnapshot['elements'] = []
+    const anchor = (renderer?.shadowRoot?.querySelector?.('#pagination-head') as HTMLElement | null) ?? null
+    const anchorTop = anchor?.getBoundingClientRect().top ?? 0
+    const controller = new AbortController()
+    if (anchor) {
+      activeCommentReplyScrollRestores.get(anchor)?.abort()
+      activeCommentReplyScrollRestores.set(anchor, controller)
+    }
+    // 从请求前捕获位置时就监听用户操作，等待响应期间的滚动也应取消恢复。
+    for (const name of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
+      window.addEventListener(name, () => controller.abort(), {
+        signal: controller.signal,
+        passive: true,
+        capture: true,
+      })
+    }
+    let node: Node | null = renderer ?? null
+    const visited = new Set<Node>()
+    while (node && !visited.has(node)) {
+      visited.add(node)
+      if (node instanceof HTMLElement) {
+        const style = getComputedStyle(node)
+        const canScroll = /auto|scroll|overlay/.test(`${style.overflow} ${style.overflowY} ${style.overflowX}`)
+        if (canScroll && (node.scrollHeight > node.clientHeight || node.scrollWidth > node.clientWidth)) {
+          elements.push({ element: node, left: node.scrollLeft, top: node.scrollTop })
+        }
+      }
+      if (node.parentNode) {
+        node = node.parentNode
+      }
+      else if (node instanceof ShadowRoot) {
+        node = node.host
+      }
+      else {
+        const root = node.getRootNode()
+        node = root instanceof ShadowRoot ? root.host : null
+      }
+    }
+    return { controller, anchor, anchorTop, elements, windowX: window.scrollX, windowY: window.scrollY }
+  }
+
+  function restoreCommentReplyScrollSnapshot(snapshot: CommentReplyScrollSnapshot | undefined) {
+    if (!snapshot || snapshot.controller.signal.aborted)
+      return
+    const { controller } = snapshot
+    const restore = () => {
+      if (controller.signal.aborted)
+        return
+      // B 站页面可能全局开启 smooth scrolling；切页定位必须使用即时滚动，
+      // 否则恢复动作尚未完成时下一帧又会被平滑动画推走。
+      try {
+        window.scrollTo({ left: snapshot.windowX, top: snapshot.windowY, behavior: 'instant' })
+      }
+      catch {
+        window.scrollTo(snapshot.windowX, snapshot.windowY)
+      }
+      snapshot.elements.forEach(({ element, left, top }) => {
+        if (element.isConnected) {
+          element.scrollLeft = left
+          element.scrollTop = top
+        }
+      })
+      if (snapshot.anchor?.isConnected) {
+        const offset = snapshot.anchor.getBoundingClientRect().top - snapshot.anchorTop
+        if (Math.abs(offset) > 0.5) {
+          const container = snapshot.elements[0]?.element
+          if (container?.isConnected) {
+            container.scrollTop += offset
+          }
+          else {
+            try {
+              window.scrollBy({ top: offset, left: 0, behavior: 'instant' })
+            }
+            catch {
+              window.scrollBy(0, offset)
+            }
+          }
+        }
+      }
+    }
+    restore()
+    // Lit 更新、树状布局和图片尺寸结算可能跨越多个 frame；持续约 1 秒
+    // 校正锚点，覆盖异步内容到达造成的二次位移。
+    let remainingFrames = 60
+    const settle = () => {
+      if (controller.signal.aborted)
+        return
+      restore()
+      remainingFrames -= 1
+      if (remainingFrames > 0)
+        requestAnimationFrame(settle)
+      else
+        controller.abort()
+    }
+    requestAnimationFrame(settle)
   }
 
   const activeCommentReplyLayoutReservations = new WeakMap<HTMLElement, CommentReplyLayoutReservation>()
@@ -1507,6 +1913,8 @@ else if (shouldInitializePageScript) {
           const state = getCommentReplyPaginationState(this)
           if (state.loading)
             return state.loading
+          const pageJump = state.pageJump
+          state.pageJump = undefined
           // 重新展开后进入了新的加载会话，不再受上次原生收起限制。
           state.suppressInvalidatedResultRestore = false
           state.collapsedList = undefined
@@ -1550,12 +1958,22 @@ else if (shouldInitializePageScript) {
             beforeList,
             layoutReservation: reserveCommentReplyLayoutHeight(this),
           }
+          const restoreFailedPageJump = () => {
+            if (!pageJump || state.pending !== pending)
+              return
+            this.currentPage = pageJump.previousPage
+            this.list = beforeList
+            state.mergedList = beforeList
+            state.allRepliesExpanded = pageJump.allRepliesExpanded
+            this.requestUpdate?.()
+          }
           state.pending = pending
           let result: any
           try {
             result = Reflect.apply(originalGetList, this, args)
           }
           catch (error) {
+            restoreFailedPageJump()
             if (state.pending === pending) {
               releaseCommentReplyLayoutReservation(pending.layoutReservation)
               state.pending = undefined
@@ -1571,7 +1989,7 @@ else if (shouldInitializePageScript) {
                 && state.identity === getCommentReplyPaginationIdentity(this)
                 && Array.isArray(this.list)) {
                 const latestInvisibleIds = getCommentReplyInvisibleIds(this)
-                const retainedBeforeList = pending.beforeList
+                const retainedBeforeList = (pageJump ? [] : pending.beforeList)
                   .filter((reply: any) => !latestInvisibleIds.has(getReplyRpid(reply) ?? ''))
                 const loadedList = restoreCommentReplyInteractionState(
                   state,
@@ -1593,8 +2011,9 @@ else if (shouldInitializePageScript) {
                   )
                 })
                 state.currentPage = pending.page
-                state.allRepliesExpanded = isCommentReplyPaginationComplete(this)
                 const merged = mergeCommentReplyLists(retainedBeforeList, page)
+                state.allRepliesExpanded = !pageJump && isCommentReplyPaginationComplete(this)
+                  && merged.length === mergeCommentReplyPaginationPages(state).length
                 state.mergedList = merged
                 this.list = merged
                 scheduleCommentReplyPaginationTreeUpdate(this, pending.layoutReservation)
@@ -1624,6 +2043,7 @@ else if (shouldInitializePageScript) {
             }
             return value
           }, (error) => {
+            restoreFailedPageJump()
             if (state.pending === pending) {
               releaseCommentReplyLayoutReservation(pending.layoutReservation)
               state.pending = undefined
@@ -1632,6 +2052,7 @@ else if (shouldInitializePageScript) {
             throw error
           })
           state.loading = promise
+          this.requestUpdate?.()
           return promise
         },
       })
@@ -1662,6 +2083,9 @@ else if (shouldInitializePageScript) {
             state.pages.set(currentPage, this.list.slice())
             state.currentPage = currentPage
           }
+          // 有些原生版本会忽略相同页码；累计多页后仍应允许只查看当前页。
+          if (state.pageJump && pageItem?.idx === currentPage - 1)
+            return this.getList()
           return Reflect.apply(originalChangePage, this, args)
         },
       })
@@ -1674,6 +2098,7 @@ else if (shouldInitializePageScript) {
         configurable: true,
         get(this: any) {
           const items = Reflect.apply(originalPaginationItems, this, [])
+          queueMicrotask(() => updateCommentReplyPaginationHead(this))
           if (!isCommentReplyLoadMoreEnabled() || this.showPagination !== true || !Array.isArray(items))
             return items
           const state = getCommentReplyPaginationState(this)
@@ -1682,19 +2107,12 @@ else if (shouldInitializePageScript) {
             return [{ text: pageT('inject.loading'), idx: currentPage, clickable: false }]
           }
           if (state.allRepliesExpanded) {
-            // 批量展开完成后恢复 B 站原生的「共 x 页」，不要继续显示
-            // 我们在逐页阅读模式下使用的「第 1 页，共 x 页」。
-            queueMicrotask(() => restoreCommentReplyPaginationHead(this))
             return []
           }
           const totalPage = Number(this.totalPage) || 0
           const hasNext = currentPage < totalPage
-          queueMicrotask(() => updateCommentReplyPaginationHead(this, currentPage))
-          if (!hasNext)
-            return []
-
           return [
-            { text: pageT('inject.load_more'), idx: currentPage, clickable: true },
+            ...(hasNext ? [{ text: pageT('inject.load_more'), idx: currentPage, clickable: true }] : []),
             {
               text: pageT('inject.expand_all_replies'),
               idx: COMMENT_REPLY_EXPAND_ALL_IDX,
@@ -1826,6 +2244,7 @@ else if (shouldInitializePageScript) {
     )
     const next: CommentReplyTreeCachedMeta = {
       authorName: getReplyAuthorName(replyItem) ?? previous?.authorName ?? null,
+      avatarUrl: replyItem?.member?.avatar ?? previous?.avatarUrl ?? null,
       ctime: getCommentReplyCtime(replyItem) ?? previous?.ctime ?? null,
       messageText,
       parentRpid: getReplyParentRpid(replyItem) ?? previous?.parentRpid ?? null,
@@ -1833,6 +2252,40 @@ else if (shouldInitializePageScript) {
     }
     state.replyMetaByRpid.set(rpid, next)
     return next
+  }
+
+  /** 把已访问页的回复关系同步到树缓存；切到另一页时父评仍可被解析。 */
+  function cacheCommentReplyTreeMetaList(
+    state: CommentReplyTreeState,
+    replies: any[] | undefined,
+  ) {
+    if (!Array.isArray(replies))
+      return
+    replies.forEach(reply => cacheCommentReplyTreeMeta(state, reply))
+  }
+
+  function syncCommentReplyCrossPageMeta(
+    identity: string,
+    state: CommentReplyTreeState,
+  ) {
+    if (!identity.split('|').every(Boolean))
+      return
+    let cached = commentReplyCrossPageMetaCaches.get(identity)
+    if (!cached) {
+      cached = new Map()
+      commentReplyCrossPageMetaCaches.set(identity, cached)
+      while (commentReplyCrossPageMetaCaches.size > MAX_COMMENT_REPLY_CROSS_PAGE_CACHE_THREADS) {
+        const oldest = commentReplyCrossPageMetaCaches.keys().next().value
+        if (oldest === undefined)
+          break
+        commentReplyCrossPageMetaCaches.delete(oldest)
+      }
+    }
+    cached.forEach((meta, rpid) => {
+      if (!state.replyMetaByRpid.has(rpid))
+        state.replyMetaByRpid.set(rpid, meta)
+    })
+    state.replyMetaByRpid.forEach((meta, rpid) => cached!.set(rpid, meta))
   }
 
   interface CommentReplyTreeParentResolve {
@@ -2025,6 +2478,7 @@ else if (shouldInitializePageScript) {
           // 分页状态保存在 WeakMap 中；临时折叠后若复用同一实例仍可恢复，
           // 这里只释放会形成强引用的树布局与全局可迭代集合。
           suspendCommentReplyPaginationForNativeCollapse(this, true)
+          getCommentReplyPageCache(this)?.stop()
           clearCommentReplyTreeState(this)
         }
       },
@@ -3501,9 +3955,30 @@ else if (shouldInitializePageScript) {
       }
       const label = labels[language] ?? labels['cmn-CN']
       const text = renderer.querySelector<HTMLElement>('.bewly-comment-missing-parent__text')!
-      const content = `${authorName ? `@${authorName} · ` : ''}${label}${meta?.messageText ? `：${truncateReplyMessageSnippet(meta.messageText)}` : ''}`
+      // 缓存已提供原正文时直接载入父评论，不能仍标记为「不在本页」。
+      const content = `${authorName ? `@${authorName} · ` : ''}${meta?.messageText || label}`
       if (text.textContent !== content)
         text.textContent = content
+      renderer.toggleAttribute('data-cached', Boolean(meta?.messageText))
+      const avatar = renderer.querySelector<HTMLElement>('.bewly-comment-missing-parent__avatar')!
+      const avatarUrl = typeof meta?.avatarUrl === 'string' && /^(?:https?:)?\/\//.test(meta.avatarUrl)
+        ? meta.avatarUrl
+        : null
+      if (meta?.messageText && avatarUrl) {
+        let image = avatar.querySelector('img')
+        if (!image) {
+          image = document.createElement('img')
+          image.alt = ''
+          avatar.replaceChildren(image)
+        }
+        if (image.getAttribute('src') !== avatarUrl)
+          image.setAttribute('src', avatarUrl)
+      }
+      else {
+        const avatarText = meta?.messageText ? authorName?.slice(0, 1) || '·' : '?'
+        if (avatar.textContent !== avatarText)
+          avatar.textContent = avatarText
+      }
       if (renderer.parentElement !== replyContainer)
         replyContainer.append(renderer)
       retained.add(rpid)
@@ -3598,10 +4073,13 @@ else if (shouldInitializePageScript) {
     }
     if (!paginationEnabled) {
       clearCommentReplyPaginationState(component, true)
-      restoreCommentReplyPaginationHead(component)
     }
+    updateCommentReplyPaginationHead(component)
     const existingState = commentReplyTreeStates.get(component)
     const paginationState = commentReplyPaginationStates.get(component)
+    const pageCache = getCommentReplyPageCache(component)
+    if (pageCache)
+      rememberCommentReplyPages(component, pageCache)
     if (treeMode === null && !existingState?.enabled) {
       component.removeAttribute('data-bewly-comment-reply-tree')
       return
@@ -3618,6 +4096,12 @@ else if (shouldInitializePageScript) {
     const replyRenderers = Array.from(replyContainer.children)
       .filter(isCommentReplyRenderer)
     const state = existingState ?? getCommentReplyTreeState(component)
+    syncCommentReplyCrossPageMeta(getCommentReplyPaginationIdentity(component), state)
+    // 分页缓存中的其他页不会出现在当前 DOM，但其中的 parent/root 关系
+    // 仍应参与树解析，避免切页后出现「评论不在本页或已丢失」的空占位。
+    paginationState?.pages.forEach(page => cacheCommentReplyTreeMetaList(state, page))
+    pageCache?.pages.forEach(page => cacheCommentReplyTreeMetaList(state, page))
+    getCommentReplyInvisibleIds(component).forEach(rpid => state.replyMetaByRpid.delete(rpid))
     replyRenderers.forEach(renderer => getCommentReplyOriginalOrder(state, renderer))
 
     // 批量加载时，回复节点本身会先后经历 data、用户信息、IP 标签等多次
@@ -3707,6 +4191,10 @@ else if (shouldInitializePageScript) {
       }
     })
 
+    syncCommentReplyCrossPageMeta(getCommentReplyPaginationIdentity(component), state)
+
+    // 第二次同步会合并其他 renderer 的缓存，再移除本地已删除/隐藏的回复。
+    getCommentReplyInvisibleIds(component).forEach(rpid => state.replyMetaByRpid.delete(rpid))
     addMissingCommentReplyTreeParents(nodes, state.replyMetaByRpid, replyContainer)
     const orderedNodes = buildCommentReplyTreeOrder(nodes, state.replyMetaByRpid)
     const rootNodes = orderedNodes
