@@ -7,9 +7,11 @@ export interface PageSettingsPayload {
   cleanShareLinkIncludeTitle: boolean
   cleanShareLinkRemoveTrackingParams: boolean
   commentReplyPaginationMode: PageCommentReplyPaginationMode
+  commentReplyTreeContainerHeight: number
   commentReplyTreeMode: PageCommentReplyTreeMode
   depersonalizeSearchResults: boolean
   enableCleanShareLink: boolean
+  enableCommentReplyTreeContainer: boolean
   enableCommentReplyTreeDisplay: boolean
   language: string
   preventMobileRedirect: boolean
@@ -30,15 +32,21 @@ function isCommentReplyPaginationMode(value: unknown): value is PageCommentReply
   return value === 'loadMore' || value === 'pagination'
 }
 
+function isCommentReplyTreeContainerHeight(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
 export function createPageSettingsPayload(value: unknown): PageSettingsPayload | null {
   if (!isRecord(value)
     || typeof value.adjustCommentImageHeight !== 'boolean'
     || typeof value.cleanShareLinkIncludeTitle !== 'boolean'
     || typeof value.cleanShareLinkRemoveTrackingParams !== 'boolean'
     || !isCommentReplyPaginationMode(value.commentReplyPaginationMode)
+    || !isCommentReplyTreeContainerHeight(value.commentReplyTreeContainerHeight)
     || !isCommentReplyTreeMode(value.commentReplyTreeMode)
     || typeof value.depersonalizeSearchResults !== 'boolean'
     || typeof value.enableCleanShareLink !== 'boolean'
+    || typeof value.enableCommentReplyTreeContainer !== 'boolean'
     || typeof value.enableCommentReplyTreeDisplay !== 'boolean'
     || typeof value.language !== 'string'
     || typeof value.preventMobileRedirect !== 'boolean'
@@ -53,9 +61,11 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     cleanShareLinkIncludeTitle: value.cleanShareLinkIncludeTitle,
     cleanShareLinkRemoveTrackingParams: value.cleanShareLinkRemoveTrackingParams,
     commentReplyPaginationMode: value.commentReplyPaginationMode,
+    commentReplyTreeContainerHeight: value.commentReplyTreeContainerHeight,
     commentReplyTreeMode: value.commentReplyTreeMode,
     depersonalizeSearchResults: value.depersonalizeSearchResults,
     enableCleanShareLink: value.enableCleanShareLink,
+    enableCommentReplyTreeContainer: value.enableCommentReplyTreeContainer,
     enableCommentReplyTreeDisplay: value.enableCommentReplyTreeDisplay,
     language: value.language,
     preventMobileRedirect: value.preventMobileRedirect,

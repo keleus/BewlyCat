@@ -51,6 +51,22 @@ export const momentsPinnedUsers = useStorageLocal<MomentsWantedUser[]>(
 export const FROSTED_GLASS_BLUR_MIN_PX = 1
 export const FROSTED_GLASS_BLUR_MAX_PX = 20
 
+// 展开的回复树在固定高度容器内滚动，避免整层评论把页面撑得过长
+export const COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT = 240
+export const COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT = 960
+export const COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT = 480
+
+export function normalizeCommentReplyTreeContainerHeight(value: unknown): number {
+  const height = Number(value)
+  if (!Number.isFinite(height))
+    return COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT
+
+  return Math.min(
+    COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT,
+    Math.max(COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT, Math.round(height)),
+  )
+}
+
 // 快捷键基础配置接口
 export interface BaseShortcutSetting {
   key: string
@@ -245,6 +261,8 @@ export interface Settings {
   enableCommentReplyTreeDisplay: boolean // 启用评论回复树展示
   commentReplyTreeMode: CommentReplyTreeMode // 评论回复树展示模式
   commentReplyPaginationMode: CommentReplyPaginationMode // 评论回复树分页展示模式
+  enableCommentReplyTreeContainer: boolean // 展开的回复在固定高度容器内滚动
+  commentReplyTreeContainerHeight: number // 回复容器高度（px）
   adjustCommentImageHeight: boolean // 调整评论区图片高度以匹配实际比例
   hideCommentImageScrollbar: boolean // 评论区图片预览时隐藏页面滚动条
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
@@ -565,6 +583,8 @@ export const originalSettings: Settings = {
   enableCommentReplyTreeDisplay: true, // 默认启用评论回复树展示
   commentReplyTreeMode: 'lineKeepMain', // 默认：线条树状，收起时保留父节点正文
   commentReplyPaginationMode: 'loadMore', // 默认累计加载评论回复
+  enableCommentReplyTreeContainer: true, // 默认把展开的回复放进固定高度容器
+  commentReplyTreeContainerHeight: COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT, // 默认容器高度
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   hideCommentImageScrollbar: false, // 默认不隐藏评论图片预览时的页面滚动条
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
@@ -964,6 +984,13 @@ export const settings = useSettingsStorage(originalSettings, {
     const validCommentReplyPaginationModes: CommentReplyPaginationMode[] = ['loadMore', 'pagination']
     if (!validCommentReplyPaginationModes.includes(record.commentReplyPaginationMode))
       record.commentReplyPaginationMode = originalSettings.commentReplyPaginationMode
+
+    // 分页脚本只同步合法字段，这里必须给出确定的布尔与数值，避免整份设置被判定为无效。
+    if (typeof record.enableCommentReplyTreeContainer !== 'boolean')
+      record.enableCommentReplyTreeContainer = originalSettings.enableCommentReplyTreeContainer
+    record.commentReplyTreeContainerHeight = normalizeCommentReplyTreeContainerHeight(
+      record.commentReplyTreeContainerHeight,
+    )
 
     const validTopBarLogoStyles: TopBarLogoStyle[] = ['icon', 'brand']
     if (!validTopBarLogoStyles.includes(record.topBarLogoStyle))

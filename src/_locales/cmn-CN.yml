@@ -991,6 +991,10 @@ settings:
     desc: 选择树状评论的回复展示方式。「更多」会在保持当前阅读位置的同时向下累计回复；「分页」保留 B 站原生分页，只显示当前页
     load_more: 更多
     pagination: 分页
+  enable_comment_reply_tree_container: 固定高度回复容器
+  enable_comment_reply_tree_container_desc: 展开楼中楼后在固定高度的容器内滚动查看回复，避免整层评论把页面撑得过长；仅在开启评论区树状显示时生效
+  comment_reply_tree_container_height: 回复容器高度
+  comment_reply_tree_container_height_desc: 容器的高度上限；回复不足以撑满时容器会自动收缩，不出现滚动条
   adjust_comment_image_height: 调整评论区图片高度
   adjust_comment_image_height_desc: 自动调整评论区图片高度以匹配实际长宽比，避免图片变形
   hide_comment_image_scrollbar: 评论图片预览时隐藏页面滚动条

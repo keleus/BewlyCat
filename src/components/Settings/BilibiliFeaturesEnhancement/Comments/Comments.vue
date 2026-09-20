@@ -3,8 +3,10 @@ import { useI18n } from 'vue-i18n'
 
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
+import Slider from '~/components/Slider.vue'
 import { settings } from '~/logic'
 import type { CommentReplyPaginationMode, CommentReplyTreeMode } from '~/logic/storage'
+import { COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT, COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -81,6 +83,31 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
 
     <SettingsItem
       v-if="settings.enableCommentReplyTreeDisplay"
+      :title="$t('settings.enable_comment_reply_tree_container')"
+      :desc="$t('settings.enable_comment_reply_tree_container_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.enableCommentReplyTreeContainer" />
+    </SettingsItem>
+
+    <SettingsItem
+      v-if="settings.enableCommentReplyTreeDisplay && settings.enableCommentReplyTreeContainer"
+      :title="$t('settings.comment_reply_tree_container_height')"
+      :desc="$t('settings.comment_reply_tree_container_height_desc')"
+      right-width="auto"
+    >
+      <div class="slider-control">
+        <Slider
+          v-model="settings.commentReplyTreeContainerHeight"
+          :min="COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT"
+          :max="COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT"
+          :label="`${settings.commentReplyTreeContainerHeight}px`"
+        />
+      </div>
+    </SettingsItem>
+
+    <SettingsItem
+      v-if="settings.enableCommentReplyTreeDisplay"
       :title="$t('settings.comment_reply_tree_mode.title')"
       :desc="$t('settings.comment_reply_tree_mode.desc')"
       right-width="auto"
@@ -129,5 +156,9 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
   flex-wrap: wrap;
   gap: 8px;
   padding: 1rem 0;
+}
+
+.slider-control {
+  width: 220px;
 }
 </style>

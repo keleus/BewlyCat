@@ -1067,6 +1067,10 @@ settings:
     desc: Choose how replies appear in the comment tree. “Load more” appends replies downward while keeping your current reading position; “Pagination” keeps Bilibili’s native pagination and shows only the current page
     load_more: Load more
     pagination: Pagination
+  enable_comment_reply_tree_container: Fixed-height reply container
+  enable_comment_reply_tree_container_desc: Scroll expanded replies inside a fixed-height container instead of stretching the whole thread. Requires the comment tree view
+  comment_reply_tree_container_height: Reply container height
+  comment_reply_tree_container_height_desc: Maximum height of the scrolling reply container; shorter reply lists still shrink to fit and never scroll
   adjust_comment_image_height: Adjust comment image height
   adjust_comment_image_height_desc: Automatically adjust comment image height to match actual aspect ratio and prevent distortion
   hide_comment_image_scrollbar: Hide page scrollbar in comment image preview

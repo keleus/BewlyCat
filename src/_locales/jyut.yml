@@ -988,6 +988,10 @@ settings:
     desc: 揀樹狀留言嘅回覆顯示方式。「撈多啲」會保持而家閱讀位置，同時向下累積回覆；「翻頁」保留 Bilibili 原生分頁，只顯示目前頁面
     load_more: 撈多啲
     pagination: 翻頁
+  enable_comment_reply_tree_container: 固定高度回覆容器
+  enable_comment_reply_tree_container_desc: 展開樓中樓之後喺固定高度嘅容器內滾動睇回覆，避免成層留言將版面撐到太長；只喺開啟留言區樹狀顯示時先會生效
+  comment_reply_tree_container_height: 回覆容器高度
+  comment_reply_tree_container_height_desc: 容器嘅高度上限；回覆唔夠撐滿時容器會自動收縮，唔會出現滾動條
   adjust_comment_image_height: 調整留言區圖片高度
   adjust_comment_image_height_desc: 自動調整留言區圖片高度嚟配合實際長寬比例，避免圖片變形
   hide_comment_image_scrollbar: 留言圖片預覽時隱藏頁面滾動條
