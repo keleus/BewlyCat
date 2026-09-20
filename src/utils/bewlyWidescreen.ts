@@ -126,6 +126,7 @@ let readyRetryCount = 0
 let waitingForLoad = false
 let pendingSidebarPosition: 'left' | 'right' = 'right'
 let pendingApplication: PlayerModeApplication | undefined
+let pendingApplicationAbortCleanup: (() => void) | undefined
 let nativePlayerModeGuardInstalled = false
 
 const selectors = {
@@ -3747,7 +3748,10 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
 
   const application = pendingApplication
   pendingApplication = undefined
+  pendingApplicationAbortCleanup?.()
+  pendingApplicationAbortCleanup = undefined
   application?.onApplied()
+  application?.onSettled?.()
 
   return true
 }
@@ -3804,7 +3808,7 @@ function scheduleReadyRetry(delay = READY_RETRY_INTERVAL) {
 }
 
 function canApplyPendingLayout() {
-  if (!pendingApplication || pendingApplication.shouldApply())
+  if (!pendingApplication || (!pendingApplication.signal?.aborted && pendingApplication.shouldApply()))
     return true
 
   // 自动进页任务可能跨越视频结束、后台恢复或 SPA 切集；在搬 DOM 前取消。
@@ -3857,6 +3861,13 @@ export function applyBewlyWidescreen(
   if (!canApplyPendingLayout())
     return
 
+  if (application?.signal) {
+    const signal = application.signal
+    const cancel = () => exitBewlyWidescreen()
+    signal.addEventListener('abort', cancel, { once: true })
+    pendingApplicationAbortCleanup = () => signal.removeEventListener('abort', cancel)
+  }
+
   pendingSidebarPosition = sidebarPosition
   if (showLoading) {
     const video = getVideoElement()
@@ -3891,7 +3902,11 @@ export function exitBewlyWidescreen(
   removeSwitchHint(true)
   removeWidescreenLoading(true)
   waitingForLoad = false
+  pendingApplicationAbortCleanup?.()
+  pendingApplicationAbortCleanup = undefined
+  const application = pendingApplication
   pendingApplication = undefined
+  application?.onSettled?.()
 
   if (options.userInitiated)
     window.dispatchEvent(new Event(BEWLY_WIDESCREEN_USER_EXIT))
