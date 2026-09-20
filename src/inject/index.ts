@@ -1118,7 +1118,6 @@ else if (shouldInitializePageScript) {
     const previousPage = Number(renderer.currentPage) || 1
     const previousList = Array.isArray(renderer.list) ? renderer.list.slice() : []
     const identity = getCommentReplyPaginationIdentity(renderer)
-    const scrollSnapshot = captureCommentReplyScrollSnapshot(renderer)
     const cache = getCommentReplyPageCache(renderer)
     if (cache) {
       rememberCommentReplyPages(renderer, cache)
@@ -1130,6 +1129,7 @@ else if (shouldInitializePageScript) {
       prefetchOtherCommentReplyPages(renderer)
       return
     }
+    const scrollSnapshot = captureCommentReplyScrollSnapshot(renderer)
     // 已访问过的页直接从缓存恢复，避免再次请求时 B 站暂时只返回当前页，
     // 也避免切页过程中旧回复短暂消失导致树关系被判定为「不在本页」。
     {
@@ -1180,6 +1180,8 @@ else if (shouldInitializePageScript) {
     finally {
       if (state)
         state.pageJump = undefined
+      if (!renderer.isConnected || identity !== getCommentReplyPaginationIdentity(renderer))
+        scrollSnapshot.controller.abort()
       restoreCommentReplyScrollSnapshot(scrollSnapshot)
       updateCommentReplyPaginationHead(renderer)
       if (identity === getCommentReplyPaginationIdentity(renderer)
@@ -1703,6 +1705,7 @@ else if (shouldInitializePageScript) {
   }
 
   interface CommentReplyScrollSnapshot {
+    controller: AbortController
     windowX: number
     windowY: number
     anchor: HTMLElement | null
@@ -1710,11 +1713,26 @@ else if (shouldInitializePageScript) {
     elements: Array<{ element: HTMLElement, left: number, top: number }>
   }
 
+  const activeCommentReplyScrollRestores = new WeakMap<HTMLElement, AbortController>()
+
   /** B 站替换回复节点时可能触发 scroll anchoring，切页后恢复原视口位置。 */
   function captureCommentReplyScrollSnapshot(renderer: any): CommentReplyScrollSnapshot {
     const elements: CommentReplyScrollSnapshot['elements'] = []
     const anchor = (renderer?.shadowRoot?.querySelector?.('#pagination-head') as HTMLElement | null) ?? null
     const anchorTop = anchor?.getBoundingClientRect().top ?? 0
+    const controller = new AbortController()
+    if (anchor) {
+      activeCommentReplyScrollRestores.get(anchor)?.abort()
+      activeCommentReplyScrollRestores.set(anchor, controller)
+    }
+    // 从请求前捕获位置时就监听用户操作，等待响应期间的滚动也应取消恢复。
+    for (const name of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
+      window.addEventListener(name, () => controller.abort(), {
+        signal: controller.signal,
+        passive: true,
+        capture: true,
+      })
+    }
     let node: Node | null = renderer ?? null
     const visited = new Set<Node>()
     while (node && !visited.has(node)) {
@@ -1737,23 +1755,13 @@ else if (shouldInitializePageScript) {
         node = root instanceof ShadowRoot ? root.host : null
       }
     }
-    return { anchor, anchorTop, elements, windowX: window.scrollX, windowY: window.scrollY }
+    return { controller, anchor, anchorTop, elements, windowX: window.scrollX, windowY: window.scrollY }
   }
 
-  const activeCommentReplyScrollRestores = new WeakMap<HTMLElement, AbortController>()
-
   function restoreCommentReplyScrollSnapshot(snapshot: CommentReplyScrollSnapshot | undefined) {
-    if (!snapshot)
+    if (!snapshot || snapshot.controller.signal.aborted)
       return
-    const controller = new AbortController()
-    if (snapshot.anchor) {
-      activeCommentReplyScrollRestores.get(snapshot.anchor)?.abort()
-      activeCommentReplyScrollRestores.set(snapshot.anchor, controller)
-    }
-    // 预取补全父评可能连续触发布局，新的锚点取代旧锚点；用户滚动时立即交还控制。
-    for (const name of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
-      window.addEventListener(name, () => controller.abort(), { signal: controller.signal, passive: true })
-    }
+    const { controller } = snapshot
     const restore = () => {
       if (controller.signal.aborted)
         return
@@ -3907,7 +3915,6 @@ else if (shouldInitializePageScript) {
     nodes: CommentReplyTreeNode[],
     metaByRpid: Map<string, CommentReplyTreeCachedMeta>,
     replyContainer: HTMLElement,
-    loading = false,
   ) {
     const nodeByRpid = new Map(nodes.filter(node => node.rpid).map(node => [node.rpid!, node]))
     const existing = new Map(Array.from(
@@ -3946,7 +3953,7 @@ else if (shouldInitializePageScript) {
         body.append(avatar, text)
         renderer.append(body)
       }
-      const label = loading ? pageT('inject.loading') : labels[language] ?? labels['cmn-CN']
+      const label = labels[language] ?? labels['cmn-CN']
       const text = renderer.querySelector<HTMLElement>('.bewly-comment-missing-parent__text')!
       // 缓存已提供原正文时直接载入父评论，不能仍标记为「不在本页」。
       const content = `${authorName ? `@${authorName} · ` : ''}${meta?.messageText || label}`
@@ -4188,7 +4195,7 @@ else if (shouldInitializePageScript) {
 
     // 第二次同步会合并其他 renderer 的缓存，再移除本地已删除/隐藏的回复。
     getCommentReplyInvisibleIds(component).forEach(rpid => state.replyMetaByRpid.delete(rpid))
-    addMissingCommentReplyTreeParents(nodes, state.replyMetaByRpid, replyContainer, pageCache?.loading)
+    addMissingCommentReplyTreeParents(nodes, state.replyMetaByRpid, replyContainer)
     const orderedNodes = buildCommentReplyTreeOrder(nodes, state.replyMetaByRpid)
     const rootNodes = orderedNodes
       .filter(({ depth }) => depth === 0)
