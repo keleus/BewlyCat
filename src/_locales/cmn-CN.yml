@@ -1615,9 +1615,11 @@ inject:
   page_prefix: 第{current}页，共
   page_number: 第{current}页
   page_separator: ，共
+  page_total: '，共 {total} 页'
   all_pages: 全部
   select_reply_page: 选择回复页码
   of: 共
   loading: 加载中…
   load_more: 加载更多
-  expand_all_replies: 展开全部回复
+  expand_all_replies: 加载全部
+  load_reply_pages: '加载 {count} 页'

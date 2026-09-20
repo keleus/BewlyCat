@@ -153,10 +153,12 @@ else if (shouldInitializePageScript) {
   const COMMENT_REPLY_TREE_GUIDES_ID = 'bewly-comment-reply-tree-guides'
   const COMMENT_REPLY_EXPAND_ALL_ID = 'bewly-comment-expand-all-replies'
   const COMMENT_REPLY_PAGE_SELECT_ID = 'bewly-comment-reply-page-select'
+  const COMMENT_REPLY_PAGE_HEAD_ID = 'bewly-comment-reply-page-head'
   const COMMENT_REPLY_EXPAND_ALL_LOADING_ATTRIBUTE = 'data-bewly-comment-expand-all-loading'
   // B 站分页项使用从 0 开始的 idx；-1 已被原生用于省略号，-2 留给我们的
   // 「展开全部」动作，避免把它误当成真实页码。
   const COMMENT_REPLY_EXPAND_ALL_IDX = -2
+  const COMMENT_REPLY_BATCH_PAGE_LIMIT = 5
   const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
   const WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE = 'data-bewly-comment-emoji-open'
   const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
@@ -303,6 +305,16 @@ else if (shouldInitializePageScript) {
           color: var(--bew-text-3) !important;
         }
 
+        #pagination-head:has(+ #${COMMENT_REPLY_PAGE_HEAD_ID}) {
+          display: none !important;
+        }
+
+        #${COMMENT_REPLY_PAGE_HEAD_ID} {
+          display: inline-flex;
+          align-items: center;
+          white-space: nowrap;
+        }
+
         #${COMMENT_REPLY_PAGE_SELECT_ID} {
           min-width: var(--bew-space-6, 24px);
           min-height: var(--bew-space-6, 24px);
@@ -422,7 +434,7 @@ else if (shouldInitializePageScript) {
           width: var(--bew-space-6, 24px);
           height: var(--bew-space-6, 24px);
           box-sizing: border-box;
-          border: 2px solid var(--bew-text-3, var(--text3, #9499a0));
+          border: 2px solid color-mix(in srgb, var(--bew-theme-color, #00aeec) 25%, transparent);
           border-top-color: var(--bew-theme-color, #00aeec);
           border-radius: 50%;
           animation: bewly-comment-expand-all-spin 0.8s linear infinite;
@@ -1050,7 +1062,14 @@ else if (shouldInitializePageScript) {
       return
     }
 
-    let select = head.querySelector<HTMLSelectElement>(`#${COMMENT_REPLY_PAGE_SELECT_ID}`)
+    // 单独渲染完整分页头，不改写 Lit 管理的文本（原生可能把总页数放在同一节点）。
+    let pageHead = head.parentElement?.querySelector<HTMLElement>(`#${COMMENT_REPLY_PAGE_HEAD_ID}`)
+    if (!pageHead) {
+      pageHead = document.createElement('span')
+      pageHead.id = COMMENT_REPLY_PAGE_HEAD_ID
+      head.after(pageHead)
+    }
+    let select = pageHead.querySelector<HTMLSelectElement>(`#${COMMENT_REPLY_PAGE_SELECT_ID}`)
     if (!select) {
       select = document.createElement('select')
       select.id = COMMENT_REPLY_PAGE_SELECT_ID
@@ -1059,8 +1078,7 @@ else if (shouldInitializePageScript) {
         event.stopPropagation()
         void jumpToCommentReplyPage(component, Number((event.currentTarget as HTMLSelectElement).value))
       })
-      // 保留 Lit 管理的文本节点和总页数，只在它们前面插入选择器。
-      head.prepend(select)
+      pageHead.append(select, document.createElement('span'))
     }
     const state = commentReplyPaginationStates.get(component)
     const allExpanded = state?.allRepliesExpanded === true
@@ -1088,21 +1106,17 @@ else if (shouldInitializePageScript) {
     select.disabled = Boolean(state?.loading || state?.expandAllLoading || component.showSpinner)
     select.title = pageT('inject.select_reply_page')
     select.setAttribute('aria-label', select.title)
-    const first = Array.from(head.childNodes).find(node => node.nodeType === Node.TEXT_NODE)
-    const separator = pageT('inject.page_separator')
-    if (first && first.textContent !== separator)
-      first.textContent = separator
+    const totalLabel = pageT('inject.page_total', { total: totalPage })
+    const summary = select.nextElementSibling
+    if (summary && summary.textContent !== totalLabel)
+      summary.textContent = totalLabel
   }
 
   function restoreCommentReplyPaginationHead(component: any) {
     const head = component?.shadowRoot?.querySelector('#pagination-head') as HTMLElement | null | undefined
     if (!head)
       return
-    head.querySelector(`#${COMMENT_REPLY_PAGE_SELECT_ID}`)?.remove()
-    const first = Array.from(head.childNodes).find(node => node.nodeType === Node.TEXT_NODE)
-    const ofLabel = pageT('inject.of')
-    if (first && first.nodeType === Node.TEXT_NODE && first.textContent !== ofLabel)
-      first.textContent = ofLabel
+    head.parentElement?.querySelector(`#${COMMENT_REPLY_PAGE_HEAD_ID}`)?.remove()
   }
 
   async function jumpToCommentReplyPage(renderer: any, page: number) {
@@ -1513,7 +1527,12 @@ else if (shouldInitializePageScript) {
 
   function getCommentReplyTotalPage(renderer: any): number {
     const totalPage = Number(renderer?.totalPage)
-    return Number.isSafeInteger(totalPage) && totalPage > 0 ? totalPage : 1
+    if (Number.isSafeInteger(totalPage) && totalPage > 0)
+      return totalPage
+    const count = Number(renderer?.count)
+    const pageSize = Number(renderer?.pageSize)
+    const estimatedPages = Math.ceil(count / pageSize)
+    return pageSize > 0 && Number.isSafeInteger(estimatedPages) && estimatedPages > 0 ? estimatedPages : 1
   }
 
   function isCommentReplyPaginationComplete(renderer: any): boolean {
@@ -1521,6 +1540,15 @@ else if (shouldInitializePageScript) {
     const pages = commentReplyPaginationStates.get(renderer)?.pages
     return Boolean(pages && pages.size === totalPage
       && [...pages.keys()].every(page => page >= 1 && page <= totalPage))
+  }
+
+  function getCommentReplyBatchLabel(renderer: any): string {
+    const totalPage = getCommentReplyTotalPage(renderer)
+    const pages = commentReplyPaginationStates.get(renderer)?.pages
+    const loadedPages = pages ? [...pages.keys()].filter(page => page >= 1 && page <= totalPage).length : 0
+    return totalPage - loadedPages > COMMENT_REPLY_BATCH_PAGE_LIMIT
+      ? pageT('inject.load_reply_pages', { count: COMMENT_REPLY_BATCH_PAGE_LIMIT })
+      : pageT('inject.expand_all_replies')
   }
 
   /** 等待一次 B 站回复请求结算；兼容旧版本组件未返回 Promise 的情况。 */
@@ -1550,7 +1578,7 @@ else if (shouldInitializePageScript) {
   }
 
   /**
-   * 顺序加载当前楼层的剩余回复页。
+   * 每次顺序加载最多 5 个未加载的回复页，后续点击继续补齐。
    *
    * 必须逐页等待：B 站回复接口按页返回，且组件自身只允许一个在途
    * 请求。复用已 patch 的 getList 可以继续使用去重、树关系缓存和布局
@@ -1571,6 +1599,9 @@ else if (shouldInitializePageScript) {
       if (!isCommentReplyLoadMoreEnabled() || !renderer?.user)
         return
 
+      let loadedPages = 0
+      const pagesBeforeExpand = new Set(state.pages.keys())
+      // 首次展开请求的页也计入本次额度，避免第一次实际加载 6 页。
       // 允许在原生「点击查看」尚未打开分页时直接使用本按钮。
       if (renderer.showPagination !== true) {
         const handleViewMore = renderer.handleViewMore
@@ -1578,16 +1609,15 @@ else if (shouldInitializePageScript) {
           return
         handleViewMore.call(renderer, { stopPropagation() {} })
         await waitForCommentReplyPaginationRequest(renderer, state)
+        loadedPages = [...state.pages.keys()].filter(page => !pagesBeforeExpand.has(page)).length
       }
 
-      const maxPages = getCommentReplyTotalPage(renderer) + 1
-      let loadedPages = 0
       while (
         isCommentReplyLoadMoreEnabled()
         && renderer.showPagination === true
         && commentReplyPaginationStates.get(renderer) === state
         && !isCommentReplyPaginationComplete(renderer)
-        && loadedPages < maxPages
+        && loadedPages < COMMENT_REPLY_BATCH_PAGE_LIMIT
       ) {
         const handleChangePage = renderer.handleChangePage
         if (typeof handleChangePage !== 'function')
@@ -1613,7 +1643,8 @@ else if (shouldInitializePageScript) {
         renderer.showPagination === true
         && isCommentReplyPaginationComplete(renderer),
       )
-      if (state.allRepliesExpanded && commentReplyPaginationStates.get(renderer) === state) {
+      // 每批完成后合并已加载页；跳页后也能重新显示之前加载的回复。
+      if (renderer.showPagination === true && commentReplyPaginationStates.get(renderer) === state) {
         state.mergedList = restoreCommentReplyInteractionState(state, mergeCommentReplyPaginationPages(state))
         renderer.list = state.mergedList
         scheduleCommentReplyPaginationTreeUpdate(renderer)
@@ -1681,7 +1712,7 @@ else if (shouldInitializePageScript) {
     button.className = 'bewly-comment-expand-all-replies'
     button.textContent = state?.expandAllLoading
       ? pageT('inject.loading')
-      : pageT('inject.expand_all_replies')
+      : getCommentReplyBatchLabel(renderer)
     button.disabled = Boolean(state?.expandAllLoading)
     button.setAttribute('aria-label', button.textContent)
     button.title = button.textContent
@@ -1718,7 +1749,7 @@ else if (shouldInitializePageScript) {
   /** B 站替换回复节点时可能触发 scroll anchoring，切页后恢复原视口位置。 */
   function captureCommentReplyScrollSnapshot(renderer: any): CommentReplyScrollSnapshot {
     const elements: CommentReplyScrollSnapshot['elements'] = []
-    const anchor = (renderer?.shadowRoot?.querySelector?.('#pagination-head') as HTMLElement | null) ?? null
+    const anchor = (renderer?.shadowRoot?.querySelector?.(`#${COMMENT_REPLY_PAGE_HEAD_ID}, #pagination-head:not(:has(+ #${COMMENT_REPLY_PAGE_HEAD_ID}))`) as HTMLElement | null) ?? null
     const anchorTop = anchor?.getBoundingClientRect().top ?? 0
     const controller = new AbortController()
     if (anchor) {
@@ -2114,7 +2145,7 @@ else if (shouldInitializePageScript) {
           return [
             ...(hasNext ? [{ text: pageT('inject.load_more'), idx: currentPage, clickable: true }] : []),
             {
-              text: pageT('inject.expand_all_replies'),
+              text: getCommentReplyBatchLabel(this),
               idx: COMMENT_REPLY_EXPAND_ALL_IDX,
               clickable: true,
             },

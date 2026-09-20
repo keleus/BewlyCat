@@ -1630,9 +1630,11 @@ inject:
   page_prefix: 第{current}頁，共
   page_number: 第{current}頁
   page_separator: ，共
+  page_total: '，共 {total} 頁'
   all_pages: 全部
   select_reply_page: 揀回覆頁碼
   of: 共
   loading: 載入緊…
   load_more: 載入更多
-  expand_all_replies: 展開全部回覆
+  expand_all_replies: 載入全部
+  load_reply_pages: '載入 {count} 頁'

@@ -1715,9 +1715,11 @@ inject:
   page_prefix: 'Page {current}, of'
   page_number: 'Page {current}'
   page_separator: ', of '
+  page_total: ', of {total} pages'
   all_pages: All pages
   select_reply_page: Select reply page
   of: of
   loading: Loading…
   load_more: Load more
-  expand_all_replies: Expand all replies
+  expand_all_replies: Load all
+  load_reply_pages: 'Load {count} pages'
