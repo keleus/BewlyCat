@@ -80,22 +80,50 @@ function monitorCaptionState(closeSwitch: HTMLElement, languageItem: HTMLElement
 // 重试任务类，用于处理重试逻辑
 export class RetryTask {
   private count = 0
-  private repeat: () => void
+  private timer: ReturnType<typeof setTimeout> | undefined
+  private finished = false
+  private stop = () => {
+    if (this.finished)
+      return
+    this.finished = true
+    clearTimeout(this.timer)
+    this.options.signal?.removeEventListener('abort', this.stop)
+    this.options.onFinished?.()
+  }
 
   constructor(
     private max: number,
     private timeout: number,
     private fn: () => boolean,
+    private options: { signal?: AbortSignal, onFinished?: () => void } = {},
   ) {
-    this.repeat = this.start.bind(this)
+    options.signal?.addEventListener('abort', this.stop, { once: true })
   }
 
   start() {
-    this.count++
-    if (this.count > this.max)
+    if (this.finished)
       return
-    if (!this.fn())
-      setTimeout(this.repeat, this.timeout)
+    if (this.options.signal?.aborted) {
+      this.stop()
+      return
+    }
+    this.count++
+    if (this.count > this.max) {
+      this.stop()
+      return
+    }
+    try {
+      if (this.fn() || this.count >= this.max) {
+        this.stop()
+        return
+      }
+    }
+    catch (error) {
+      this.stop()
+      throw error
+    }
+    if (!this.finished)
+      this.timer = setTimeout(() => this.start(), this.timeout)
   }
 }
 
@@ -189,6 +217,21 @@ export function fullscreen() {
 export interface PlayerModeApplication {
   shouldApply: () => boolean
   onApplied: () => void
+  signal?: AbortSignal
+  onSettled?: () => void
+}
+
+function schedulePlayerModeEffect(effect: () => void, delay: number, signal?: AbortSignal) {
+  if (signal?.aborted)
+    return
+  let timer: ReturnType<typeof setTimeout>
+  const cancel = () => clearTimeout(timer)
+  timer = setTimeout(() => {
+    signal?.removeEventListener('abort', cancel)
+    if (!signal?.aborted)
+      effect()
+  }, delay)
+  signal?.addEventListener('abort', cancel, { once: true })
 }
 
 export function webFullscreen(application?: PlayerModeApplication) {
@@ -200,9 +243,7 @@ export function webFullscreen(application?: PlayerModeApplication) {
     if (document.querySelector('[data-screen=\'web\']')) {
       application?.onApplied()
       // 即使已经是网页全屏状态，也应用倍速记忆
-      setTimeout(() => {
-        applyPlayerEnhancements()
-      }, 1000)
+      schedulePlayerModeEffect(applyPlayerEnhancements, 1000, application?.signal)
       return true
     }
 
@@ -210,16 +251,14 @@ export function webFullscreen(application?: PlayerModeApplication) {
     if (result) {
       application?.onApplied()
       // 在成功进入网页全屏后应用倍速记忆
-      setTimeout(() => {
-        applyPlayerEnhancements()
-      }, 1000)
+      schedulePlayerModeEffect(applyPlayerEnhancements, 1000, application?.signal)
     }
     return result
-  }).start()
+  }, { signal: application?.signal, onFinished: application?.onSettled }).start()
 }
 
 // 将播放器滚动到设置的位置
-function scrollPlayerToOptimalPosition(delay = 1000) {
+function scrollPlayerToOptimalPosition(delay = 1000, signal?: AbortSignal) {
   // 如果设置了不滚动，直接返回
   if (!settings.value.videoPlayerScroll)
     return
@@ -258,7 +297,7 @@ function scrollPlayerToOptimalPosition(delay = 1000) {
   }
 
   if (delay > 0) {
-    setTimeout(scroll, delay)
+    schedulePlayerModeEffect(scroll, delay, signal)
   }
   else {
     scroll()
@@ -274,24 +313,20 @@ export function widescreen(application?: PlayerModeApplication) {
     if (document.querySelector('[data-screen=\'wide\']')) {
       application?.onApplied()
       // 即使已经是宽屏状态，也执行滚动和倍速记忆
-      scrollPlayerToOptimalPosition()
-      setTimeout(() => {
-        applyPlayerEnhancements()
-      }, 1000)
+      scrollPlayerToOptimalPosition(1000, application?.signal)
+      schedulePlayerModeEffect(applyPlayerEnhancements, 1000, application?.signal)
       return true
     }
 
     const result = widescreenClick()
     if (result) {
       application?.onApplied()
-      scrollPlayerToOptimalPosition()
+      scrollPlayerToOptimalPosition(1000, application?.signal)
       // 在成功进入宽屏后应用倍速记忆
-      setTimeout(() => {
-        applyPlayerEnhancements()
-      }, 1000)
+      schedulePlayerModeEffect(applyPlayerEnhancements, 1000, application?.signal)
     }
     return result
-  }).start()
+  }, { signal: application?.signal, onFinished: application?.onSettled }).start()
 }
 
 export function widescreenClick() {
@@ -322,12 +357,16 @@ export function webFullscreenClick() {
 }
 
 // 默认模式下也执行滚动和倍速记忆
-export function defaultMode() {
-  scrollPlayerToOptimalPosition()
+export function defaultMode(application?: PlayerModeApplication) {
+  if (application && !application.shouldApply()) {
+    application.onSettled?.()
+    return false
+  }
+  scrollPlayerToOptimalPosition(1000, application?.signal)
   // 在默认模式下也应用倍速记忆
-  setTimeout(() => {
-    applyPlayerEnhancements()
-  }, 2000) // 默认模式延迟稍长一些，确保页面完全加载
+  schedulePlayerModeEffect(applyPlayerEnhancements, 2000, application?.signal)
+  application?.onApplied()
+  application?.onSettled?.()
   return true
 }
 
