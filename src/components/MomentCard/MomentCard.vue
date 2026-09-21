@@ -1286,10 +1286,6 @@ function handleAdditionalClick(event: MouseEvent) {
       </button>
 
       <footer class="moment-card__footer">
-        <a :href="moment.url" draggable="false" @click="handleDetailLinkClick($event, moment, true)">
-          <span i-tabler-file-description aria-hidden="true" />
-          {{ t('moment_card.view_details') }}
-        </a>
         <button
           v-if="!moment.isLive"
           type="button"
@@ -2526,7 +2522,7 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__footer {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   align-items: center;
   gap: 0;
   min-height: 42px;
