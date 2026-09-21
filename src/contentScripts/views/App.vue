@@ -2116,7 +2116,7 @@ if (settings.value.cleanUrlArgument) {
       </Transition>
 
       <Transition v-if="!showBewlyPage && iframePageURL && !isInIframe()" name="fade">
-        <IframePage ref="iframePageRef" :url="iframePageURL" />
+        <IframePage ref="iframePageRef" :url="iframePageURL" @scroll="topBarRef?.handleScroll($event)" />
       </Transition>
     </div>
 

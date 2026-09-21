@@ -9,6 +9,9 @@ import { releaseIframeMedia } from '~/utils/iframe'
 const props = defineProps<{
   url: string
 }>()
+const emit = defineEmits<{
+  scroll: [scrollTop: number]
+}>()
 const { reachTop, scrollTop } = useBewlyApp()
 const { isDark } = useDark()
 const headerShow = ref(false)
@@ -41,6 +44,8 @@ function updateReachTopFromIframe() {
     const iframeScrollTop = scrollElement?.scrollTop ?? iframeWindow.scrollY ?? 0
     scrollTop.value = iframeScrollTop
     reachTop.value = iframeScrollTop <= 0
+    // 原版页面的滚动发生在 iframe 内，需要交给外层顶栏处理自动隐藏。
+    emit('scroll', iframeScrollTop)
   }
   catch (error) {
     if (!iframeScrollSyncFailed.value) {

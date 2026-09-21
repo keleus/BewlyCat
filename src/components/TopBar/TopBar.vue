@@ -158,6 +158,7 @@ watch(
     () => settings.value.enableTopBar,
     () => settings.value.useOriginalBilibiliTopBar,
     () => settings.value.videoPageTopBarConfig,
+    () => settings.value.autoHideTopBar,
   ],
   () => setupScrollListeners(),
 )
@@ -317,6 +318,9 @@ function setupScrollListeners() {
 
   // 清理之前的监听器
   cleanupScrollListeners()
+  // 设置切换后从当前位置重新累计滚动距离，避免沿用上一次隐藏的锚点。
+  oldScrollTop.value = scrollTop.value
+  topBarVisibilityAnchorScrollTop.value = scrollTop.value
 
   // 在视频页面根据配置决定是否设置滚动监听
   if (isVideoOrBangumiPage()) {
