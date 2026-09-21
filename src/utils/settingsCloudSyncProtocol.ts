@@ -75,6 +75,7 @@ const LOCAL_ONLY_RUNTIME_FIELDS = new Set([
   'lastCaptionState',
   'savedPlaybackRate',
   'savedVideoAspectRatio',
+  'savedVideoQuality',
   'lastAcknowledgedVersion',
   // Removed volume-normalization field; keep it local while legacy storage is cleaned up.
   'targetVolume',

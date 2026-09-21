@@ -550,6 +550,10 @@ export interface Settings {
   rememberPlaybackRate: boolean // 启用倍速记忆功能
   savedPlaybackRate: number // 记住的倍速值 (0.25-5)
 
+  // 清晰度记忆设置
+  rememberVideoQuality: boolean
+  savedVideoQuality: number | null // 播放器清晰度 ID；首次启用时沿用当前值
+
   // 视频比例记忆设置
   rememberVideoAspectRatio: boolean // 启用视频比例记忆功能
   savedVideoAspectRatio: VideoAspectRatio | null // 记住的视频比例；首次启用时沿用播放器当前值
@@ -897,6 +901,10 @@ export const originalSettings: Settings = {
   // 倍速记忆设置
   rememberPlaybackRate: false, // 启用倍速记忆功能
   savedPlaybackRate: 1, // 记住的倍速值 (0.25-5)
+
+  // 清晰度记忆设置
+  rememberVideoQuality: false,
+  savedVideoQuality: null,
 
   // 视频比例记忆设置
   rememberVideoAspectRatio: false, // 启用视频比例记忆功能

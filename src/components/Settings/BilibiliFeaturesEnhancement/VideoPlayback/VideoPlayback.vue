@@ -118,6 +118,7 @@ const usesBewlyWidescreen = computed(() => settings.value.defaultVideoPlayerMode
 type ToggleSetting
   = | 'rememberPlaybackRate'
     | 'rememberVideoAspectRatio'
+    | 'rememberVideoQuality'
 
 interface ToggleTagOption {
   setting: ToggleSetting
@@ -127,6 +128,7 @@ interface ToggleTagOption {
 
 const playbackMemoryOptions = computed<ToggleTagOption[]>(() => [
   { setting: 'rememberPlaybackRate', label: t('settings.remember_playback_rate'), icon: 'i-tabler-gauge' },
+  { setting: 'rememberVideoQuality', label: t('settings.remember_video_quality'), icon: 'i-tabler-badge-hd' },
   { setting: 'rememberVideoAspectRatio', label: t('settings.remember_video_aspect_ratio'), icon: 'i-tabler-aspect-ratio' },
 ])
 

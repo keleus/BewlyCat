@@ -141,6 +141,11 @@ function normalizeImportedValue(current: unknown, imported: unknown, key = ''): 
     return { compatible: true, value: normalized }
   }
 
+  if (key === 'savedVideoQuality') {
+    const compatible = imported === null || (typeof imported === 'number' && Number.isSafeInteger(imported) && imported >= 0)
+    return compatible ? { compatible: true, value: imported } : { compatible: false }
+  }
+
   if (current === null) {
     if (key === 'savedVideoAspectRatio') {
       const compatible = imported === null || imported === '0:0' || imported === '4:3' || imported === '16:9'

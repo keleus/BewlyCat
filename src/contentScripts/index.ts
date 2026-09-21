@@ -44,6 +44,7 @@ import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
 import type { PageLoadingGuard } from './pageLoading'
 import { initTouchPlayerGestures } from './touchPlayerGestures'
 import { initVideoAspectRatioMemory } from './videoAspectRatioMemory'
+import { initVideoQualityMemory } from './videoQualityMemory'
 import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
 
@@ -1403,6 +1404,7 @@ else if (shouldInitializeContentScript) {
     contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.dispose()
 
     initVideoAspectRatioMemory()
+    initVideoQualityMemory()
     initVideoScreenshotControl()
     if (isVideoPlaybackPage() || isVideoOrBangumiPage())
       setupShortcutHandlers()

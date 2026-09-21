@@ -222,7 +222,7 @@ settings:
   group_player_display_mode: 播放模式
   group_player_display_mode_desc: 設定基礎顯示模式，再按需要覆寫特定播放情況。
   group_playback_memory: 播放狀態記憶
-  group_playback_memory_desc: 揀選係咪記住倍速同影片比例。
+  group_playback_memory_desc: 揀選係咪記住倍速、畫質同影片比例。
   group_video_page_actions: 影片頁功能
   group_video_page_actions_desc: 標籤只用嚟切換影片頁同播放器控制欄入面相關按鈕嘅顯示。
   group_playback_behavior: 播放行為
@@ -801,6 +801,8 @@ settings:
   keep_watch_later_video_default_mode_desc: 啟用後，稍後再睇入面嘅影片會一直用預設播放器模式，唔會套用寬螢幕或者全螢幕設定
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 開啟後，播放器會記住你上次設定嘅倍速，並喺下次開片嗰陣自動套用
+  remember_video_quality: 記住畫質
+  remember_video_quality_desc: 啟用後自動恢復上次揀嘅畫質；用唔到時沿用播放器目前畫質，唔會覆蓋記憶。
   remember_video_aspect_ratio: 記住影片比例
   remember_video_aspect_ratio_desc: 啟用後，播放器會記住你上次揀嘅影片比例，並喺下次打開影片嗰陣自動套用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播完後自動退出
