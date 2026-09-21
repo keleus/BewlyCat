@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
+import Button from '~/components/Button.vue'
 import Dialog from '~/components/Dialog.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { isMomentLotteryUrl } from '~/components/MomentCard/lottery'
@@ -280,7 +281,7 @@ const offset = ref('')
 const updateBaseline = ref('')
 /** 按 UP 主筛选时 feed/all 的 page，从 1 递增 */
 const momentsFeedPage = ref(1)
-const { handlePageRefresh, handleReachBottom, mainAppRef, scrollViewportRef } = useBewlyApp()
+const { handlePageRefresh, handleReachBottom, mainAppRef, openSettings, scrollViewportRef } = useBewlyApp()
 
 function resetMomentsScroll() {
   if (scrollViewportRef.value)
@@ -1951,6 +1952,15 @@ function handleMomentGroupChange(group: MomentGroup) {
     selectedHostMid.value = ''
   activeMomentGroup.value = group
   void loadMoments(true)
+}
+
+/** 打开设置并定位到「想看分组」，供想看列表为空时的引导按钮使用 */
+function openWantedUsersSettings() {
+  openSettings({
+    menu: 'BewlyPages',
+    secondaryPage: 'moments',
+    targetTitleKey: 'settings.group_moments_wanted_users',
+  })
 }
 
 function clearUpUpdateDot(mid: string) {
@@ -4456,13 +4466,21 @@ watch(
             </div>
           </div>
           <div v-else-if="!isInitialLoading" class="moments-page__empty">
-            <span i-tabler-windmill text="size-$bew-icon-size-xl" /><p>{{ activeMomentGroup === 'wanted' ? (momentsWantedUsers.length ? t('moments.no_recent_updates') : t('moments.add_wanted_first')) : t('moments.empty') }}</p><button
+            <span i-tabler-windmill text="size-$bew-icon-size-xl" /><p>{{ activeMomentGroup === 'wanted' ? (momentsWantedUsers.length ? t('moments.no_recent_updates') : t('moments.add_wanted_first')) : t('moments.empty') }}</p><Button
               v-if="activeMomentGroup !== 'wanted' || momentsWantedUsers.length"
+              type="secondary"
               :disabled="isLoading"
               @click="requiresManualMomentPaging() && !noMoreContent ? (activeMomentGroup === 'wanted' ? loadMoreWantedMoments() : loadMoreFilteredMoments()) : refresh()"
             >
               {{ isLoading ? t('common.loading') : requiresManualMomentPaging() ? (!noMoreContent ? t('common.load_more') : (activeMomentGroup === 'wanted' ? t('moments.recheck') : t('moments.reload'))) : t('moments.reload') }}
-            </button>
+            </Button>
+            <Button
+              v-else
+              type="primary"
+              @click="openWantedUsersSettings"
+            >
+              {{ t('settings.btn.open_settings') }}
+            </Button>
           </div>
           <button
             v-if="requiresManualMomentPaging() && moments.length && !isLoading && !noMoreContent"
@@ -5455,35 +5473,6 @@ watch(
   .moments-filter-header {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-.moments-page__empty button {
-  border: 1px solid var(--bew-border-color);
-  min-height: var(--bew-control-height);
-  border-radius: var(--bew-interactive-radius);
-  background: var(--bew-elevated);
-  color: var(--bew-text-1);
-  padding: 0 var(--bew-space-4);
-  display: flex;
-  align-items: center;
-  gap: var(--bew-space-2);
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: var(--bew-line-height-control);
-  cursor: pointer;
-  transition:
-    color var(--bew-duration-normal) var(--bew-ease-standard),
-    background-color var(--bew-duration-normal) var(--bew-ease-standard),
-    border-color var(--bew-duration-normal) var(--bew-ease-standard),
-    opacity var(--bew-duration-normal) var(--bew-ease-standard);
-}
-.moments-page__empty button:hover {
-  color: #fff;
-  background: var(--bew-theme-color);
-  border-color: var(--bew-theme-color);
-}
-.moments-page__empty button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 .moments-grid {
   display: grid;
