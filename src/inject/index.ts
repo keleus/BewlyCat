@@ -10,6 +10,7 @@ import { i18n } from '~/utils/i18n'
 import { isElectron } from '~/utils/main'
 import type { PageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
+import { installTrialQualityPageHooks } from '~/utils/trialQualityPage'
 
 // 存储当前设置状态
 let currentSettings: PageSettingsPayload | null = null
@@ -4797,6 +4798,11 @@ else if (shouldInitializePageScript) {
       patchCommentCustomElement(name, window.customElements.get(name))
   }
 
+  const trialQualityHooks = installTrialQualityPageHooks({
+    isEnabled: () => currentSettings?.trialVipQuality === true,
+    settingsReady: settingsReadyPromise,
+  })
+
   // 添加消息监听器
   window.addEventListener('message', (event) => {
   // 确保消息来源是插件环境
@@ -4874,6 +4880,8 @@ else if (shouldInitializePageScript) {
   }
 
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    if (trialQualityHooks.shouldHandleFetch(input))
+      return trialQualityHooks.handleFetch(originalFetch, this, input, init)
     if (isSearchResultFetch(input) && !settingsReady) {
       return settingsReadyPromise.then(() => {
         return fetchWithSearchSettings(this, input, init)

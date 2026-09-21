@@ -225,6 +225,17 @@ settings:
   group_playback_memory_desc: Choose whether to remember playback rate, video quality, and video aspect ratio.
   group_video_page_actions: Video Page Features
   group_video_page_actions_desc: Tags only toggle the visibility of related controls on the video page and player toolbar.
+  group_trial_vip_quality: VIP quality trial (experimental)
+  group_trial_vip_quality_desc: >-
+    Uses the Bilibili app's VIP quality trial to provide 4K, 1080P60 and other
+    qualities in the web player. Sign in and authorize an app access key for the
+    same account. Availability depends on the official API and may stop working at any time.
+  trial_vip_quality: Enable VIP quality trial
+  trial_vip_quality_desc: >-
+    Non-VIP accounts can select VIP qualities in the native player without trial
+    count or time limits. Supports regular video pages and playlists, excluding
+    bangumi, courses and HDR. Reload the video page after changing this setting or authorization.
+  trial_vip_quality_auth_required: App access key is not authorized, so this feature stays inactive. Authorize the account currently signed in on the website.
   group_playback_behavior: Playback Behavior
   group_auto_play: Auto Play
   group_custom_auto_play_behavior: End-of-playback Behavior

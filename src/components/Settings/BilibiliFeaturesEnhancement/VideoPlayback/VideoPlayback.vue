@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 
+import AppAuthorizationDialog from '~/components/AppAuthorizationDialog.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
-import { settings } from '~/logic'
+import { appAuthTokens, settings } from '~/logic'
 import type { PlayerDefaultState, VideoPlayerModeContext, VideoPlayerScrollMode } from '~/logic/storage'
+import { revokeAccessKey } from '~/utils/authProvider'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -12,6 +14,8 @@ import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 
 const { t } = useI18n()
+const showTrialQualityAuthDialog = ref(false)
+const appAccessToken = computed(() => appAuthTokens.value.accessToken)
 
 const bewlyWidescreenSidebarPositionOptions = computed(() => {
   return [
@@ -321,6 +325,31 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         </SettingsItem>
       </SettingsItemSubgroup>
     </SettingsItemGroup>
+
+    <SettingsItemGroup
+      :title="t('settings.group_trial_vip_quality')"
+      :desc="t('settings.group_trial_vip_quality_desc')"
+      warning-desc
+    >
+      <SettingsItem :title="t('settings.trial_vip_quality')" :desc="t('settings.trial_vip_quality_desc')" right-width="auto">
+        <Radio v-model="settings.trialVipQuality" />
+      </SettingsItem>
+      <SettingsItem v-if="settings.trialVipQuality" :title="t('settings.authorize_app')" right-width="auto">
+        <template #desc>
+          {{ appAccessToken ? t('settings.authorize_app_desc') : t('settings.trial_vip_quality_auth_required') }}
+        </template>
+        <Button v-if="!appAccessToken" type="primary" center @click="showTrialQualityAuthDialog = true">
+          {{ t('settings.btn.authorize') }}...
+        </Button>
+        <Button
+          v-else type="secondary" center
+          style="--b-button-text-color: var(--bew-error-color)" @click="revokeAccessKey"
+        >
+          {{ t('settings.btn.revoke') }}
+        </Button>
+      </SettingsItem>
+    </SettingsItemGroup>
+    <AppAuthorizationDialog v-if="showTrialQualityAuthDialog" @close="showTrialQualityAuthDialog = false" />
   </div>
 </template>
 

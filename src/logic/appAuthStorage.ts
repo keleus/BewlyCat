@@ -20,7 +20,16 @@ export const defaultAppAuthTokens: AppAuthTokens = {
   lastUpdatedAt: null,
 }
 
-export const appAuthTokens = useStorageLocal<AppAuthTokens>('appAuthTokens', defaultAppAuthTokens, { mergeDefaults: true, writeDefaults: false })
+let resolveAppAuthTokensReady: () => void = () => {}
+export const appAuthTokensReady = new Promise<void>((resolve) => {
+  resolveAppAuthTokensReady = resolve
+})
+
+export const appAuthTokens = useStorageLocal<AppAuthTokens>('appAuthTokens', defaultAppAuthTokens, {
+  mergeDefaults: true,
+  writeDefaults: false,
+  onReady: () => resolveAppAuthTokensReady(),
+})
 
 const legacyAccessKey = useStorageLocal('accessKey', '')
 

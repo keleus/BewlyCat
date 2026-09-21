@@ -491,6 +491,9 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_vertical_video_zoom_button',
     'settings.show_bewly_widescreen_button',
     'settings.show_video_screenshot_button',
+    'settings.group_trial_vip_quality',
+    'settings.trial_vip_quality',
+    'settings.trial_vip_quality_auth_required',
   ]),
   ...createEntries(playerRoute, [
     'settings.video_player_scroll_mode.title',

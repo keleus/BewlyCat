@@ -48,6 +48,9 @@ export async function getManifest() {
     host_permissions: [
       '*://*.bilibili.com/*',
       '*://*.hdslb.com/*',
+      '*://grpc.biliapi.net/*',
+      '*://*.bilivideo.com/*',
+      '*://*.bilivideo.cn/*',
     ],
     // IframePage and IframeDrawer embed supported Bilibili pages and rely on the
     // content scripts for styling, layout synchronization, and interactions.

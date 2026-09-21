@@ -225,6 +225,11 @@ settings:
   group_playback_memory_desc: 揀選係咪記住倍速、畫質同影片比例。
   group_video_page_actions: 影片頁功能
   group_video_page_actions_desc: 標籤只用嚟切換影片頁同播放器控制欄入面相關按鈕嘅顯示。
+  group_trial_vip_quality: 會員畫質試用（不穩定功能）
+  group_trial_vip_quality_desc: 借助 B 站 APP 端嘅會員畫質試用機制，喺網頁端提供 4K、1080P 60 幀等畫質。需要登入同授權同一個帳號嘅 APP access key；可唔可以試用取決於官方介面，隨時可能失效。
+  trial_vip_quality: 啟用會員畫質試用
+  trial_vip_quality_desc: 非會員帳號可以喺原生播放器選單揀會員畫質，唔限試用次數同時長。支援一般影片頁同播放清單，暫時唔支援番劇、課程同 HDR。更改開關或者授權之後，請重新整理影片頁。
+  trial_vip_quality_auth_required: 仲未授權 APP access key，呢個功能唔會生效。請用而家網頁登入嘅帳號授權。
   group_playback_behavior: 播放行為
   group_auto_play: 自動連播
   group_custom_auto_play_behavior: 播放結束行為

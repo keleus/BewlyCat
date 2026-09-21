@@ -18,6 +18,7 @@ export interface PageSettingsPayload {
   showCommentHostTag: boolean
   showIPLocation: boolean
   showSex: boolean
+  trialVipQuality: boolean
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -52,7 +53,8 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     || typeof value.preventMobileRedirect !== 'boolean'
     || typeof value.showCommentHostTag !== 'boolean'
     || typeof value.showIPLocation !== 'boolean'
-    || typeof value.showSex !== 'boolean') {
+    || typeof value.showSex !== 'boolean'
+    || typeof value.trialVipQuality !== 'boolean') {
     return null
   }
 
@@ -72,5 +74,6 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     showCommentHostTag: value.showCommentHostTag,
     showIPLocation: value.showIPLocation,
     showSex: value.showSex,
+    trialVipQuality: value.trialVipQuality,
   }
 }

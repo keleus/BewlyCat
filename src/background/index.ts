@@ -2,14 +2,17 @@ import browser from 'webextension-polyfill'
 
 import { isContentScriptTargetUrl } from '~/constants/contentScript'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl, isPreventMobileRedirectEnabled } from '~/utils/bilibiliDesktopNavigation'
+import { isTrialStreamUrl, TRIAL_STREAM_USER_AGENT } from '~/utils/trialQualityProtocol'
 
 import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
 import { setupLoginStateWatcher } from './loginStateWatcher'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
+import { setupTrialQualityMsgListeners } from './messageListeners/trialQuality'
 import { setupSettingsCloudSync } from './settingsCloudSync'
 import { setupSettingsStorageCoordinator } from './settingsStorageCoordinator'
 import { setupTopBarStateBroker } from './topBarStateBroker'
+import { isTrialQualityHeaderEnabled, setupTrialQualityHeaders } from './trialQualityHeaders'
 import { initWbiKeys } from './wbiSign'
 
 // Initialize extension and set up message handlers
@@ -88,11 +91,22 @@ function isExtensionUri(url: string) {
   return new URL(url).origin === new URL(browser.runtime.getURL('')).origin
 }
 
+const trialQualityHeadersReady = setupTrialQualityHeaders()
+
 // Firefox specific header handling
 if (isFirefoxBuild) {
   browser.webRequest.onBeforeSendHeaders.addListener(
     async (details: any) => {
       const requestHeaders: browser.WebRequest.HttpHeaders = []
+      await trialQualityHeadersReady
+      if (isTrialQualityHeaderEnabled() && isTrialStreamUrl(details.url)) {
+        const headers = (details.requestHeaders || []).filter((header: browser.WebRequest.HttpHeaders[number]) => !/^(?:referer|user-agent)$/i.test(header.name))
+        headers.push({ name: 'User-Agent', value: TRIAL_STREAM_USER_AGENT })
+        return { requestHeaders: headers }
+      }
+      // gRPC 保留扩展原始请求头，不套用普通 Web API 的 Referer/Origin 兼容处理。
+      if (new URL(details.url).hostname === 'grpc.biliapi.net')
+        return undefined
       await preventMobileRedirectReady
       if (preventMobileRedirectEnabled && details.type === 'main_frame' && isBilibiliWwwUrl(details.url)) {
         let hasUserAgent = false
@@ -155,6 +169,7 @@ setupSettingsStorageCoordinator()
 setupSettingsCloudSync()
 setupApiMsgListeners()
 setupTabMsgListeners()
+setupTrialQualityMsgListeners()
 setupTopBarStateBroker()
 setupContentScriptRefreshPrompt()
 setupLoginStateWatcher()
