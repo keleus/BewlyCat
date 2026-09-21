@@ -967,6 +967,10 @@ settings:
     desc: 選擇樹狀評論的回覆顯示方式。「載入更多」會在保持目前閱讀位置的同時向下累積回覆；「分頁」保留 Bilibili 原生分頁，只顯示目前頁面
     load_more: 載入更多
     pagination: 分頁
+  enable_comment_reply_tree_container: 固定高度回覆容器
+  enable_comment_reply_tree_container_desc: 展開樓中樓後在固定高度的容器內滾動查看回覆，避免整層評論把頁面撐得過長；僅在開啟評論區樹狀顯示時生效
+  comment_reply_tree_container_height: 回覆容器高度
+  comment_reply_tree_container_height_desc: 容器的高度上限；回覆不足以撐滿時容器會自動收縮，不出現滾動條
   adjust_comment_image_height: 調整評論區圖片高度
   adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
   hide_comment_image_scrollbar: 評論圖片預覽時隱藏頁面滾動條

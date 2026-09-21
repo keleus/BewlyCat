@@ -606,6 +606,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_sex',
     'settings.show_comment_host_tag',
     'settings.enable_comment_reply_tree_display',
+    'settings.enable_comment_reply_tree_container',
+    'settings.comment_reply_tree_container_height',
     'settings.comment_reply_tree_mode.title',
     'settings.comment_reply_tree_mode.line_collapse_main',
     'settings.comment_reply_tree_mode.line_keep_main',

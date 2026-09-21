@@ -160,6 +160,11 @@ else if (shouldInitializePageScript) {
   const COMMENT_REPLY_EXPAND_ALL_IDX = -2
   const COMMENT_REPLY_BATCH_PAGE_LIMIT = 5
   const COMMENT_REPLY_TREE_ROOT_KEY = 'thread-root'
+  const COMMENT_REPLY_CONTAINER_ATTRIBUTE = 'data-bewly-comment-reply-container'
+  const COMMENT_REPLY_CONTAINER_HEIGHT_VAR = '--bew-comment-reply-container-height'
+  const COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT = 240
+  const COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT = 960
+  const COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT = 480
   const WIDESCREEN_COMMENT_EMOJI_OPEN_ATTRIBUTE = 'data-bewly-comment-emoji-open'
   const SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
 
@@ -487,6 +492,27 @@ else if (shouldInitializePageScript) {
           min-height: var(--bew-space-6, 24px) !important;
           overflow: hidden !important;
           visibility: hidden !important;
+        }
+
+        /*
+         * 展开后的回复树放进固定高度容器，超出时只在容器内滚动，
+         * 避免回复很多（尤其「展开全部」）时把整层评论和页面撑得过长。
+         */
+        :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}]) #expander-contents {
+          max-height: var(${COMMENT_REPLY_CONTAINER_HEIGHT_VAR}, 480px);
+          overflow-y: auto;
+          overflow-x: hidden;
+          overscroll-behavior: contain;
+          /* 滚动条出现/消失都不改变可用宽度，避免缩进与线条被反复重算 */
+          scrollbar-gutter: stable;
+        }
+
+        /* 原生「收起回复」在回复列表末尾；滚动时钉在容器底边保持可达 */
+        :host([${COMMENT_REPLY_CONTAINER_ATTRIBUTE}]) #expander-contents > #expander-footer {
+          position: sticky;
+          bottom: 0;
+          z-index: 1;
+          background: var(--bew-bg, var(--bg1, #fff));
         }
 
         .bewly-comment-missing-parent__body {
@@ -1786,6 +1812,12 @@ else if (shouldInitializePageScript) {
         node = root instanceof ShadowRoot ? root.host : null
       }
     }
+    // 回复容器在 renderer 的 shadow root 内部，向上遍历祖先不会包含它。
+    // 必须放在最后：elements[0] 仍需是最外层滚动容器，否则恢复时的锚点校正
+    // 会不断把内层容器往下推。
+    const replyContainer = renderer?.shadowRoot?.querySelector?.('#expander-contents') as HTMLElement | null
+    if (replyContainer && replyContainer.scrollHeight > replyContainer.clientHeight)
+      elements.push({ element: replyContainer, left: replyContainer.scrollLeft, top: replyContainer.scrollTop })
     return { controller, anchor, anchorTop, elements, windowX: window.scrollX, windowY: window.scrollY }
   }
 
@@ -2476,6 +2508,7 @@ else if (shouldInitializePageScript) {
         ?.removeAttribute('data-bewly-comment-reply-collapsed')
       root?.querySelector(`#${COMMENT_REPLY_EXPAND_ALL_ID}`)?.remove()
       component.removeAttribute('data-bewly-comment-reply-tree')
+      applyCommentReplyContainer(component, false)
       component.style.removeProperty('--bew-comment-reply-indent-step')
     }
 
@@ -2755,9 +2788,48 @@ else if (shouldInitializePageScript) {
     return 'lineKeepMain'
   }
 
+  function isCommentReplyContainerEnabled(): boolean {
+    return getCommentReplyTreeMode() !== null
+      && currentSettings?.enableCommentReplyTreeContainer !== false
+  }
+
+  function getCommentReplyContainerHeight(): number {
+    const height = Number(currentSettings?.commentReplyTreeContainerHeight)
+    if (!Number.isFinite(height))
+      return COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT
+
+    return Math.min(
+      COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT,
+      Math.max(COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT, height),
+    )
+  }
+
+  /** 回复容器由 CSS 驱动：属性切换生效范围，变量承载用户配置的高度 */
+  function applyCommentReplyContainer(component: any, enabled: boolean) {
+    if (!(component instanceof HTMLElement))
+      return
+
+    component.toggleAttribute(COMMENT_REPLY_CONTAINER_ATTRIBUTE, enabled)
+    if (enabled)
+      component.style.setProperty(COMMENT_REPLY_CONTAINER_HEIGHT_VAR, `${getCommentReplyContainerHeight()}px`)
+    else
+      component.style.removeProperty(COMMENT_REPLY_CONTAINER_HEIGHT_VAR)
+  }
+
+  /**
+   * 引导线坐标原点。回复容器开启后图层挂在滚动容器内部，
+   * 原点需要从视口 rect 换算到滚动内容坐标系。
+   */
+  interface CommentReplyGuideOrigin {
+    height: number
+    left: number
+    top: number
+    width: number
+  }
+
   function getCommentReplyAvatarAnchor(
     renderer: HTMLElement,
-    containerRect: DOMRect,
+    containerRect: CommentReplyGuideOrigin,
   ): CommentReplyAvatarAnchor | null {
     const avatar = renderer.shadowRoot?.querySelector<HTMLElement>('#user-avatar')
       ?? renderer.shadowRoot?.querySelector<HTMLElement>('bili-avatar')
@@ -3172,12 +3244,28 @@ else if (shouldInitializePageScript) {
     collapseParentBody: boolean,
   ) {
     const threadRoot = getCommentReplyTreeThreadRoot(component)
-    const guideContainer: HTMLElement | ShadowRoot = threadRoot ?? replyContainer
-    const coordinateRect = threadRoot
-      ? threadRoot.host.getBoundingClientRect()
-      : replyContainer.getBoundingClientRect()
+    // 属性挂在回复渲染器 host 上（CSS 用 :host([...]) 匹配），不是 #expander-contents
+    const containerEnabled = component.hasAttribute(COMMENT_REPLY_CONTAINER_ATTRIBUTE)
+    const replyRect = replyContainer.getBoundingClientRect()
+    /*
+     * 容器模式下引导线图层改挂在滚动容器内部：线条随内容一起滚动、由容器自身裁切，
+     * 滚动时无需逐帧重算整棵树。坐标必须换算到滚动内容坐标系，否则线条会停在旧位置。
+     */
+    const origin: CommentReplyGuideOrigin = containerEnabled
+      ? {
+          height: replyContainer.scrollHeight,
+          left: replyRect.left,
+          top: replyRect.top - replyContainer.scrollTop,
+          width: replyRect.width,
+        }
+      : threadRoot
+        ? threadRoot.host.getBoundingClientRect()
+        : replyRect
+    const guideContainer: HTMLElement | ShadowRoot = containerEnabled
+      ? replyContainer
+      : (threadRoot ?? replyContainer)
     // 布局未就绪（宽度为 0 或高度异常小）时不画线，避免未展开/图片未加载时的错位
-    if (coordinateRect.width <= 0 || coordinateRect.height <= 0)
+    if (origin.width <= 0 || origin.height <= 0)
       return
 
     if (threadRoot) {
@@ -3191,7 +3279,7 @@ else if (shouldInitializePageScript) {
     nodes.forEach((node) => {
       if (!isCommentReplyTreeNodeVisible(node))
         return
-      const anchor = getCommentReplyAvatarAnchor(node.renderer, coordinateRect)
+      const anchor = getCommentReplyAvatarAnchor(node.renderer, origin)
       if (anchor) {
         avatarAnchorByNode.set(node, anchor)
         return
@@ -3208,10 +3296,10 @@ else if (shouldInitializePageScript) {
       scheduleCommentReplyTreeLayoutUpdate(component)
     }
 
-    // 主评论锚点同样需要有效，否则根分支线会整体错位
-    if (threadRoot) {
+    // 主评论锚点同样需要有效，否则根分支线会整体错位；容器模式不画根分支，无需校验
+    if (threadRoot && !containerEnabled) {
       const mainRenderer = getCommentReplyTreeRootRenderer(component)
-      if (mainRenderer && !getCommentReplyAvatarAnchor(mainRenderer, coordinateRect)) {
+      if (mainRenderer && !getCommentReplyAvatarAnchor(mainRenderer, origin)) {
         retryLayout()
         return
       }
@@ -3232,9 +3320,14 @@ else if (shouldInitializePageScript) {
     const visibleRootNodes = rootNodes.filter(isCommentReplyTreeNodeVisible)
     const threadRootRenderer = getCommentReplyTreeRootRenderer(component)
     const rootBranchCollapsed = state.collapsedNodeKeys.has(COMMENT_REPLY_TREE_ROOT_KEY)
-    const threadRootAnchor = threadRootRenderer
-      ? getCommentReplyAvatarAnchor(threadRootRenderer, coordinateRect)
-      : null
+    /*
+     * 容器模式下主评论位于滚动区上方，根分支的锚点、主干与 −/+ 都会落在
+     * 滚动内容坐标系之外，既裁切又没法稳定对齐。这里直接不画主评论那条线，
+     * 收起整层改用容器底边的原生「收起回复」。
+     */
+    const threadRootAnchor = containerEnabled
+      ? null
+      : (threadRootRenderer ? getCommentReplyAvatarAnchor(threadRootRenderer, origin) : null)
     // 分支收起后即使子回复全隐藏，也保留控件以便展开
     if (threadRootAnchor && (rootNodes.length > 0 || rootBranchCollapsed)) {
       let rootTrunkExtendY: number | undefined
@@ -3273,7 +3366,7 @@ else if (shouldInitializePageScript) {
       let parentAnchor = avatarAnchorByNode.get(node)
       if (!parentAnchor) {
         // 折叠后可能首次未写入 map，再解析一次锚点
-        const resolvedAnchor = getCommentReplyAvatarAnchor(node.renderer, coordinateRect)
+        const resolvedAnchor = getCommentReplyAvatarAnchor(node.renderer, origin)
         if (resolvedAnchor) {
           parentAnchor = resolvedAnchor
           avatarAnchorByNode.set(node, resolvedAnchor)
@@ -3375,7 +3468,7 @@ else if (shouldInitializePageScript) {
       ...tails.map(tail => tail.y - toggleHitRadius),
     )
     const maximumY = Math.max(
-      coordinateRect.height,
+      origin.height,
       ...renderedBranches.flatMap(({ branch, toggleY }) => [
         branch.parentAnchor.centerY,
         branch.parentAnchor.bottom + toggleHitRadius * 2,
@@ -3384,7 +3477,7 @@ else if (shouldInitializePageScript) {
       ]),
       ...tails.map(tail => tail.y + toggleHitRadius),
     )
-    const layerWidth = Math.max(1, coordinateRect.width - minimumX)
+    const layerWidth = Math.max(1, origin.width - minimumX)
     const layerHeight = Math.max(1, maximumY - minimumY)
     const guideLayer = document.createElementNS(SVG_NAMESPACE, 'svg')
     guideLayer.id = COMMENT_REPLY_TREE_GUIDES_ID
@@ -4113,6 +4206,7 @@ else if (shouldInitializePageScript) {
       rememberCommentReplyPages(component, pageCache)
     if (treeMode === null && !existingState?.enabled) {
       component.removeAttribute('data-bewly-comment-reply-tree')
+      applyCommentReplyContainer(component, false)
       return
     }
 
@@ -4156,7 +4250,15 @@ else if (shouldInitializePageScript) {
     const showGuides = treeMode === 'lineCollapseMain' || treeMode === 'lineKeepMain'
     // true：收起时折叠所有父节点本体；false：收起时父节点保持显示，仅隐藏子回复
     const collapseParentBody = treeMode === 'lineCollapseMain'
+    const containerEnabled = enabled && isCommentReplyContainerEnabled()
     component.toggleAttribute('data-bewly-comment-reply-tree', enabled)
+    applyCommentReplyContainer(component, containerEnabled)
+    /*
+     * 容器模式不再绘制主评论那条线，根分支的 −/+ 也就没有入口。
+     * 必须在应用可见性之前复位，否则此前收起过的楼层会一直隐藏且无法展开。
+     */
+    if (containerEnabled)
+      state.collapsedNodeKeys.delete(COMMENT_REPLY_TREE_ROOT_KEY)
 
     if (!enabled) {
       disconnectCommentReplyTreeResizeObserver(state)
