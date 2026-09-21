@@ -9,6 +9,7 @@ import { Business } from '~/models/history/history'
 import type { HistorySearchResult, List as HistorySearchItem } from '~/models/video/historySearch'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
+import { getHistoryUrl } from '~/utils/history'
 import { getCSRF, removeHttpFromUrl } from '~/utils/main'
 
 const { t } = useI18n()
@@ -133,35 +134,6 @@ function deleteHistoryItem(index: number, historyItem: HistoryItem) {
       if (res.code === 0)
         historyList.splice(index, 1)
     })
-}
-
-/**
- * Return the URL of the history item
- * @param item history item
- * @return {string} url
- */
-function getHistoryUrl(item: HistoryItem): string {
-  if (item.uri)
-    return item.uri
-
-  // Video
-  if (item.history.business === Business.ARCHIVE) {
-    if (item?.videos && item.videos > 0)
-      return `https://www.bilibili.com/video/${item.history.bvid}?p=${item.history.page}`
-    return `https://www.bilibili.com/video/${item.history.bvid}`
-  }
-  // Live
-  else if (item.history.business === Business.LIVE) {
-    return `https://live.bilibili.com/${item.history.oid}`
-  }
-  // Article
-  else if (item.history.business === Business.ARTICLE || item.history.business === Business.ARTICLE_LIST) {
-    if (item.history.cid === 0)
-      return `https://www.bilibili.com/read/cv${item.history.oid}`
-    else
-      return `https://www.bilibili.com/read/cv${item.history.cid}`
-  }
-  return ''
 }
 
 function getHistoryItemCover(item: HistoryItem) {
