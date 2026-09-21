@@ -512,7 +512,8 @@ else if (shouldInitializePageScript) {
           position: sticky;
           bottom: 0;
           z-index: 1;
-          background: var(--bew-bg, var(--bg1, #fff));
+          /* 宽屏侧栏和原生评论区可有独立底色，不能优先取全局页面背景。 */
+          background: var(--bewly-widescreen-sidebar-bg, var(--bg1, var(--bew-bg, #fff)));
         }
 
         .bewly-comment-missing-parent__body {
@@ -2790,7 +2791,7 @@ else if (shouldInitializePageScript) {
 
   function isCommentReplyContainerEnabled(): boolean {
     return getCommentReplyTreeMode() !== null
-      && currentSettings?.enableCommentReplyTreeContainer !== false
+      && currentSettings?.enableCommentReplyTreeContainer === true
   }
 
   function getCommentReplyContainerHeight(): number {

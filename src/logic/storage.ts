@@ -583,7 +583,7 @@ export const originalSettings: Settings = {
   enableCommentReplyTreeDisplay: true, // 默认启用评论回复树展示
   commentReplyTreeMode: 'lineKeepMain', // 默认：线条树状，收起时保留父节点正文
   commentReplyPaginationMode: 'loadMore', // 默认累计加载评论回复
-  enableCommentReplyTreeContainer: true, // 默认把展开的回复放进固定高度容器
+  enableCommentReplyTreeContainer: false, // 默认保留回复树与根头像的连接，容器由用户按需开启
   commentReplyTreeContainerHeight: COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT, // 默认容器高度
   adjustCommentImageHeight: true, // 默认启用评论图片高度调整
   hideCommentImageScrollbar: false, // 默认不隐藏评论图片预览时的页面滚动条
