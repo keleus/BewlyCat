@@ -3253,7 +3253,7 @@ else if (shouldInitializePageScript) {
      */
     const origin: CommentReplyGuideOrigin = containerEnabled
       ? {
-          height: replyContainer.scrollHeight,
+          height: replyRect.height,
           left: replyRect.left,
           top: replyRect.top - replyContainer.scrollTop,
           width: replyRect.width,
@@ -3468,7 +3468,9 @@ else if (shouldInitializePageScript) {
       ...tails.map(tail => tail.y - toggleHitRadius),
     )
     const maximumY = Math.max(
-      origin.height,
+      // 容器内只覆盖实际线条和控件。旧 SVG 会参与 scrollHeight 计算，
+      // 以容器高度作为下限会让折叠后的图层持续撑住旧的滚动范围。
+      containerEnabled ? 0 : origin.height,
       ...renderedBranches.flatMap(({ branch, toggleY }) => [
         branch.parentAnchor.centerY,
         branch.parentAnchor.bottom + toggleHitRadius * 2,
@@ -4257,8 +4259,17 @@ else if (shouldInitializePageScript) {
      * 容器模式不再绘制主评论那条线，根分支的 −/+ 也就没有入口。
      * 必须在应用可见性之前复位，否则此前收起过的楼层会一直隐藏且无法展开。
      */
-    if (containerEnabled)
+    if (containerEnabled) {
       state.collapsedNodeKeys.delete(COMMENT_REPLY_TREE_ROOT_KEY)
+      // 根级「收起后续」也失去了展开入口；保留分支内部仍可操作的折叠。
+      const rootTailPrefix = getCommentReplyTailCollapseKey(COMMENT_REPLY_TREE_ROOT_KEY, '')
+      for (const key of state.collapsedTailKeys) {
+        if (key.startsWith(rootTailPrefix)) {
+          state.collapsedTailKeys.delete(key)
+          state.tailToggleOffsetByKey.delete(key)
+        }
+      }
+    }
 
     if (!enabled) {
       disconnectCommentReplyTreeResizeObserver(state)
