@@ -1346,7 +1346,9 @@ else if (shouldInitializeContentScript) {
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
-        overflow-x: hidden !important;
+        /* hidden 会让纵向 visible 计算为 auto；body 仅剩顶栏高度时会裁掉所有 Pop。 */
+        overflow-x: clip !important;
+        overflow-y: visible !important;
       }
       /* Hide Bilibili's own page elements, preserving third-party extensions (e.g., Bili-Evolved) */
       html.bewly-custom-homepage > body > #app,

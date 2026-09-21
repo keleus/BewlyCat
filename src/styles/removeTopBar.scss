@@ -32,28 +32,50 @@
     }
 
     .search-panel {
-      position: relative;
+      // 原站使用 top: 100%；relative 会让面板撑高搜索栏并随居中布局移到视口上方。
+      position: absolute;
       z-index: var(--bew-z-original-top-bar-popover, 1);
     }
   }
 }
 
-// 对齐 1.6.8 / B 站原生 slide-down：浅色白底、暗色深灰，不套 elevated-solid，不强制图标纯黑。
-// 文字/图标色交给 B 站 .slide-down 默认样式；滚动后频道布局靠 .bewly-original-top-bar-scrolled。
-.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar,
-.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header.bewly-original-top-bar-scrolled > .bili-header__bar {
+// 自定义首页没有原生 Banner，首屏和滚动后的底色、入口文字必须成对设置。
+// B 站可能重新移除 slide-down，不能依赖它维持白底上的深色文字。
+.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar {
   display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
-  background-color: #fff !important;
+  background-color: var(--bew-elevated-solid) !important;
+  color: var(--bew-text-1);
   backdrop-filter: none;
-}
 
-.dark.homePage.bewly-custom-homepage:not(.remove-top-bar) .bili-header > .bili-header__bar,
-.dark.homePage.bewly-custom-homepage:not(.remove-top-bar)
-  .bili-header.bewly-original-top-bar-scrolled
-  > .bili-header__bar {
-  background-color: rgb(36 38 40) !important;
+  // 新版顶栏使用 div 包装入口，且 slide-down 不再控制入口颜色。
+  // 保留下面的旧版选择器，兼容仍使用 li / right-entry__outside 的页面。
+  :is(.left-entry__item-trigger, .right-entry__item-trigger) {
+    color: var(--bew-text-1) !important;
+
+    // 首页小电视有独立的白色声明，不能只依赖入口颜色的继承。
+    .trigger-icon {
+      color: inherit !important;
+    }
+  }
+
+  .home-page-entry > .left-entry__item-trigger > .trigger-icon {
+    color: var(--bew-theme-color) !important;
+  }
+
+  // 仅覆盖栏体入口，不把投稿按钮、会员标识及 Pop 内的强调色一起改掉。
+  > .left-entry > li > :is(a, .default-entry, .entry-title),
+  > .left-entry > li > .entry-title > .mini-header__title,
+  > .left-entry > .mini-header__logo,
+  > .left-entry > .download-entry > .download-entry__title,
+  > .right-entry > .right-entry-item > .right-entry__outside {
+    color: var(--bew-text-1) !important;
+  }
+
+  > .right-entry > .right-entry-item > .right-entry__outside > :is(.right-entry-icon, .right-entry-text) {
+    color: var(--bew-text-1) !important;
+  }
 }
 
 // 自定义首页原版顶栏：首屏与滚动后都显示 B 站自己的宽 Logo（与插件 Logo 设置无关）
