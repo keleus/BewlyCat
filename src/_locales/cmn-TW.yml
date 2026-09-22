@@ -1654,6 +1654,7 @@ vertical_video:
   adjust_area: 調整直向影片放大區域
 favorite_dialog:
   clear_selected: 清除已選
+  folder_full: 該收藏夾已滿，無法新增
 inject:
   page_prefix: 第{current}頁，共
   page_number: 第{current}頁

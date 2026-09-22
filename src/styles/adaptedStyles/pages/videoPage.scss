@@ -66,6 +66,31 @@
         no-repeat 50% / 14px;
     }
 
+    // 已满收藏夹也按普通收藏夹显示（原生 label.disable 会置灰/套浅色方块，输入框实际可交互）
+    .content .group-list li label.disable,
+    .content .group-list li label.disable:hover {
+      color: inherit;
+    }
+
+    // 覆盖原生 label.disable 的浅色方块图标（仅未勾选，特异性需高于原生 0,5,4；
+    // 已勾选项由上面的基础 :checked 规则处理）
+    .content .group-list li label.disable input[type="checkbox"]:not(:checked) + i,
+    .content .group-list li label.disable input[type="checkbox"]:not(:checked):hover + i {
+      background: unset;
+    }
+
+    // D1：已满且视频原本不在其中 → 灰色禁用外观（由 favoriteDialog.ts 添加 bewly-full-disabled）
+    .content .group-list li label.disable.bewly-full-disabled {
+      color: var(--bew-text-3);
+      cursor: not-allowed;
+    }
+
+    .content .group-list li label.disable.bewly-full-disabled input[type="checkbox"] + i,
+    .content .group-list li label.disable.bewly-full-disabled input[type="checkbox"]:hover + i {
+      background: var(--bew-fill-1);
+      border-color: var(--bew-border-color);
+    }
+
     .coin-operated-m-exp .like-checkbox input[type="checkbox"]:checked + i,
     .video-share-popover
       .video-share-dropdown
@@ -596,12 +621,6 @@
 
   // #region dark mode adaption part
   &.dark {
-    .collection-m-exp .content .group-list li label.disable input[type="checkbox"] + i,
-    .collection-m-exp .content .group-list li label.disable input[type="checkbox"]:hover + i {
-      background: var(--bew-fill-1) !important;
-      border-color: var(--bew-border-color) !important;
-    }
-
     .video-ai-assistant .video-ai-assistant-bg::before,
     .note-pc .note-container .note-header .back-note-list:hover,
     .note-pc .note-container .note-header .jump-note-package:hover,

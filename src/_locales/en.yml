@@ -1739,6 +1739,7 @@ vertical_video:
   adjust_area: Adjust vertical-video zoom area
 favorite_dialog:
   clear_selected: Clear selected
+  folder_full: This favorite folder is full and cannot be added
 inject:
   page_prefix: 'Page {current}, of'
   page_number: 'Page {current}'
