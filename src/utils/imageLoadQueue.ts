@@ -129,21 +129,24 @@ function startTask(task: QueueTask) {
 }
 
 function pumpQueue() {
-  if (isPumping)
+  if (isPumping || activeTasks.size >= IMAGE_LOAD_QUEUE_LIMIT || pendingTasks.length === 0)
     return
 
   isPumping = true
   try {
-    while (activeTasks.size < IMAGE_LOAD_QUEUE_LIMIT && pendingTasks.length > 0) {
-      pendingTasks.sort((first, second) => {
-        const priorityDifference = getTaskPriority(first) - getTaskPriority(second)
-        return priorityDifference || first.id - second.id
-      })
+    // 每轮先统一读取位置，再启动图片，避免排序比较和每个空闲槽位重复测量。
+    const prioritizedTasks = pendingTasks
+      .map(task => ({ task, priority: getTaskPriority(task) }))
+      .sort((first, second) => first.priority - second.priority || first.task.id - second.task.id)
 
-      const task = pendingTasks.shift()
-      if (!task || task.status !== 'queued' || task.cancelled)
+    for (const { task } of prioritizedTasks) {
+      if (activeTasks.size >= IMAGE_LOAD_QUEUE_LIMIT)
+        break
+
+      if (task.status !== 'queued' || task.cancelled)
         continue
 
+      removePendingTask(task)
       startTask(task)
     }
   }
