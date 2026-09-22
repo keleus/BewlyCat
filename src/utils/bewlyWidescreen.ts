@@ -1450,7 +1450,8 @@ function injectLayoutStyle() {
       overflow-x: hidden;
       overflow-y: auto;
       overscroll-behavior: contain;
-      scrollbar-gutter: stable;
+      scrollbar-gutter: auto;
+      scrollbar-width: none;
       --bewly-widescreen-back-to-top-inset: max(
         var(--bew-space-4, 16px),
         env(safe-area-inset-bottom),
@@ -1462,6 +1463,12 @@ function injectLayoutStyle() {
       will-change: transform;
       z-index: 2002;
       container: bewly-widescreen-sidebar / inline-size;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-sidebar::-webkit-scrollbar {
+      display: none;
+      width: 0;
+      height: 0;
     }
 
     #${ROOT_ID} .bewly-widescreen-sidebar-resize-handle {
@@ -2162,6 +2169,8 @@ function injectLayoutStyle() {
     /* 左侧四组内容自适应宽度，不再撑满整行，让稍后再看按钮得以紧随分享之后 */
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left {
       display: block !important;
+      width: auto !important;
+      max-width: none !important;
       min-width: 0 !important;
       flex: 0 1 auto !important;
       overflow: visible !important;
@@ -2173,6 +2182,7 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-main {
       display: flex !important;
       align-items: center !important;
+      justify-content: flex-start !important;
       width: 100% !important;
       min-width: 0 !important;
       overflow: visible !important;
@@ -2207,6 +2217,12 @@ function injectLayoutStyle() {
       min-height: 28px !important;
       white-space: nowrap !important;
       text-align: center !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-main > .video-custom-interactive-layer-entry {
+      flex: 0 0 auto !important;
+      inset: auto !important;
+      margin-left: var(--bew-space-2) !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > .video-toolbar-left-item {
@@ -2413,6 +2429,29 @@ function injectLayoutStyle() {
     #${ROOT_ID} .bewly-widescreen-up-slot .upinfo {
       padding-top: 0 !important;
       padding-bottom: 0 !important;
+    }
+
+    /* 原站 UP 主详情与关注操作有独立宽度，随侧栏可用空间一起伸缩。 */
+    #${ROOT_ID} .bewly-widescreen-up-slot .up-detail {
+      flex: 1 1 0% !important;
+      width: auto !important;
+      min-width: 0 !important;
+      max-width: none !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-up-slot .upinfo-btn-panel {
+      display: flex !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      box-sizing: border-box !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-up-slot .upinfo-btn-panel .follow-btn {
+      flex: 1 1 0% !important;
+      width: auto !important;
+      min-width: 0 !important;
+      max-width: none !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-tabs {
@@ -3378,6 +3417,9 @@ function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
     if (!state || state !== currentState)
       return
 
+    if (mutations.some(mutation => currentState.toolbarSlot.contains(mutation.target)))
+      syncCustomInteractiveEntry(currentState)
+
     if (mutations.every(mutation => currentState.root.contains(mutation.target)))
       return
 
@@ -3524,6 +3566,27 @@ function syncEpisodeSectionMarker(panel: HTMLElement, movedNodes: MovedNode[]) {
     episodeSection.classList.add(EPISODE_SECTION_CLASS)
 }
 
+function syncCustomInteractiveEntry(currentState: BewlyWidescreenState) {
+  const { toolbarSlot, movedNodes } = currentState
+  const entry = toolbarSlot.querySelector<HTMLElement>('.video-custom-interactive-layer-entry')
+  const actions = toolbarSlot.querySelector<HTMLElement>('.video-toolbar-left-main')
+  const share = actions?.querySelector<HTMLElement>('.video-share, .video-share-wrap, #share-btn-outer')
+  if (!entry || !actions || !share)
+    return
+
+  // 分享按钮可能包在原生浮层触发器内；插到整组之后，避免成为分享的点击区域。
+  let anchor = share
+  while (anchor.parentElement && anchor.parentElement !== actions)
+    anchor = anchor.parentElement
+
+  if (anchor.nextElementSibling === entry)
+    return
+
+  if (!movedNodes.some(moved => moved.node === entry))
+    moveNode(entry, actions, movedNodes, true)
+  anchor.after(entry)
+}
+
 function fillSidebar(currentState: BewlyWidescreenState) {
   syncActionAnimationTheme(currentState)
   syncSidebarTitle(currentState)
@@ -3538,6 +3601,7 @@ function fillSidebar(currentState: BewlyWidescreenState) {
     bindReactEventBridge(movedMediaInfo)
 
   moveOrReplaceNode(selectors.toolbar, currentState.toolbarSlot, currentState.movedNodes)
+  syncCustomInteractiveEntry(currentState)
   const movedToolbar = currentState.toolbarSlot.querySelector<HTMLElement>('.toolbar')
   if (movedToolbar)
     bindReactEventBridge(movedToolbar)

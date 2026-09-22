@@ -23,6 +23,33 @@
   // #region theme color adaption part
   // Increase the priority of the style inside by writing a non-existent selector in `:not()`
   :not(foobar) {
+    // UP主新玩法：入口仅在部分视频中出现。
+    .video-custom-interactive-layer-entry {
+      .video-custom-interactive-layer-card {
+        background: var(--bew-theme-color-10) !important;
+        border-color: var(--bew-theme-color) !important;
+        color: var(--bew-theme-color) !important;
+      }
+
+      .video-custom-interactive-layer-text,
+      .video-custom-interactive-layer-link-icon {
+        color: var(--bew-theme-color) !important;
+      }
+
+      .video-custom-interactive-layer-link-icon path {
+        fill: currentColor !important;
+      }
+
+      &:hover .video-custom-interactive-layer-card,
+      &:focus-visible .video-custom-interactive-layer-card {
+        background: var(--bew-theme-color-20) !important;
+      }
+
+      &:active .video-custom-interactive-layer-card {
+        background: var(--bew-theme-color-30) !important;
+      }
+    }
+
     .content .group-list li input[type="checkbox"] + i {
       border-radius: 5px;
       border: 1px solid var(--bew-border-color);
