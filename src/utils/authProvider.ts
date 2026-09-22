@@ -1,4 +1,4 @@
-// import browser from 'webextension-polyfill'
+import type { AppAuthTokens } from '~/logic/appAuthStorage'
 import { appAuthTokens, defaultAppAuthTokens, resetAppAuthTokens } from '~/logic/appAuthStorage'
 
 import { appSign } from './appSign'
@@ -47,7 +47,7 @@ const APP_TOKEN_REFRESH_ENDPOINTS = [
   'https://passport.bilibili.com/api/v2/oauth2/refresh_token',
 ]
 const APP_TOKEN_REFRESH_BUFFER = 10 * 60 * 1000
-let appTokenRefreshPromise: Promise<boolean> | null = null
+let appTokenRefresh: { tokens: AppAuthTokens, promise: Promise<AppAuthTokens | null> } | null = null
 
 export function saveAppAuthTokens(payload: PollLoginTokenPayload) {
   const tokenInfo = payload.token_info || {}
@@ -85,10 +85,10 @@ interface RefreshTokenResponse {
   }
 }
 
-export async function refreshAppAccessToken(): Promise<boolean> {
-  const { accessToken, refreshToken } = appAuthTokens.value
+async function refreshAppTokens(tokens: AppAuthTokens): Promise<AppAuthTokens | null> {
+  const { accessToken, refreshToken } = tokens
   if (!accessToken || !refreshToken)
-    return false
+    return null
 
   const ts = Math.floor(Date.now() / 1000)
   const basePayload = {
@@ -98,6 +98,9 @@ export async function refreshAppAccessToken(): Promise<boolean> {
   }
 
   for (const endpoint of APP_TOKEN_REFRESH_ENDPOINTS) {
+    if (appAuthTokens.value !== tokens)
+      return null
+
     try {
       const payload = { ...basePayload }
       const sign = appSign({ ...payload }, TVAppKey.appkey, TVAppKey.appsec)
@@ -119,14 +122,17 @@ export async function refreshAppAccessToken(): Promise<boolean> {
         continue
 
       const data = await response.json() as RefreshTokenResponse
+      // 撤销、重新授权和其他标签页的更新都会替换快照；旧请求不得恢复旧授权。
+      if (appAuthTokens.value !== tokens)
+        return null
       if (data.code !== 0 || !data.data)
         continue
 
       const tokenInfo = data.data.token_info || {}
       const refreshInfo = data.data.refresh_token_info || {}
 
-      const nextAccessToken = tokenInfo.access_token || appAuthTokens.value.accessToken
-      const nextRefreshToken = tokenInfo.refresh_token || appAuthTokens.value.refreshToken
+      const nextAccessToken = tokenInfo.access_token || tokens.accessToken
+      const nextRefreshToken = tokenInfo.refresh_token || tokens.refreshToken
       const expiresIn = tokenInfo.expires_in ?? null
       const refreshExpiresIn = refreshInfo.expires_in ?? null
 
@@ -134,18 +140,22 @@ export async function refreshAppAccessToken(): Promise<boolean> {
         accessToken: nextAccessToken,
         refreshToken: nextRefreshToken,
         accessTokenExpiresAt: expiresIn ? Date.now() + expiresIn * 1000 : null,
-        refreshTokenExpiresAt: refreshExpiresIn ? Date.now() + refreshExpiresIn * 1000 : appAuthTokens.value.refreshTokenExpiresAt,
-        mid: tokenInfo.mid ?? appAuthTokens.value.mid,
+        refreshTokenExpiresAt: refreshExpiresIn ? Date.now() + refreshExpiresIn * 1000 : tokens.refreshTokenExpiresAt,
+        mid: tokenInfo.mid ?? tokens.mid,
         lastUpdatedAt: Date.now(),
       }
-      return true
+      return appAuthTokens.value
     }
     catch (error) {
       console.error('刷新 APP access_token 失败:', error)
     }
   }
 
-  return false
+  return null
+}
+
+export async function refreshAppAccessToken(): Promise<boolean> {
+  return await refreshAppTokens(appAuthTokens.value) !== null
 }
 
 export async function ensureFreshAppAccessToken(bufferMs = APP_TOKEN_REFRESH_BUFFER): Promise<boolean> {
@@ -168,21 +178,26 @@ export async function ensureFreshAppAccessToken(bufferMs = APP_TOKEN_REFRESH_BUF
   if (!tokens.accessTokenExpiresAt || tokens.accessTokenExpiresAt > now + bufferMs)
     return true
 
-  if (!appTokenRefreshPromise) {
-    appTokenRefreshPromise = refreshAppAccessToken()
-      .finally(() => {
-        appTokenRefreshPromise = null
-      })
+  if (!appTokenRefresh || appTokenRefresh.tokens !== tokens) {
+    const refresh = {
+      tokens,
+      promise: refreshAppTokens(tokens)
+        .finally(() => {
+          if (appTokenRefresh === refresh)
+            appTokenRefresh = null
+        }),
+    }
+    appTokenRefresh = refresh
   }
 
-  const refreshed = await appTokenRefreshPromise
+  const refreshed = await appTokenRefresh.promise
   if (refreshed)
-    return true
+    return appAuthTokens.value === refreshed
 
   // A transient refresh failure should not block a token that has not actually
   // expired yet; the user request can still proceed with the remaining lifetime.
-  return appAuthTokens.value.accessTokenExpiresAt == null
-    || appAuthTokens.value.accessTokenExpiresAt > Date.now()
+  return appAuthTokens.value === tokens
+    && (tokens.accessTokenExpiresAt == null || tokens.accessTokenExpiresAt > Date.now())
 }
 
 export function hasValidAppAuthTokens(bufferMs = 5 * 60 * 1000) {
