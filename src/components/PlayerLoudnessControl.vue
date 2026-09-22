@@ -120,13 +120,15 @@ onBeforeUnmount(() => life.abort())
     @click.stop @dblclick.stop @pointerdown.stop @mousedown.stop @wheel.stop
   >
     <button
-      ref="button" type="button" class="loudness-button"
+      ref="button" type="button" class="bpx-player-ctrl-btn-icon loudness-button"
       :aria-label="t('settings.local_loudness.title')" :aria-expanded="open" aria-controls="bewly-loudness-panel"
       @click="open ? open = false : show()" @focus="onButtonFocus"
     >
-      <svg viewBox="0 0 88 88" aria-hidden="true">
-        <path d="M26 23v42M44 23v42M62 23v42M20 34h12M38 54h12M56 39h12" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" />
-      </svg>
+      <span class="bpx-common-svg-icon">
+        <svg viewBox="0 0 88 88" aria-hidden="true">
+          <path d="M26 23v42M44 23v42M62 23v42M20 34h12M38 54h12M56 39h12" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" />
+        </svg>
+      </span>
     </button>
     <div
       v-show="open" id="bewly-loudness-panel" ref="panel" class="loudness-panel" role="group"
@@ -183,7 +185,6 @@ onBeforeUnmount(() => life.abort())
 // Match Bilibili’s dark player popovers, with themed interactive controls.
 .loudness-widget {
   position: relative;
-  height: 100%;
   text-align: left;
   white-space: normal;
 }
@@ -191,10 +192,7 @@ onBeforeUnmount(() => life.abort())
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  height: 100%;
-  min-width: 28px;
-  min-height: 28px;
+  // Let the native icon wrapper size this control, like the widescreen button.
   padding: 0;
   border: 0;
   color: rgba(255, 255, 255, 0.8);

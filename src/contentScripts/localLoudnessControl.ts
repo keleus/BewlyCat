@@ -65,7 +65,9 @@ export function initLocalLoudnessControl() {
     if (host?.isConnected && host.parentElement === bar && media === video)
       return
     clearControl()
-    if (!bar || !video) {
+    const anchor = bar?.querySelector('.bpx-player-ctrl-volume')
+    // Match the widescreen control: wait for the native icon wrapper before mounting.
+    if (!bar || !video || !anchor?.querySelector('.bpx-player-ctrl-btn-icon')) {
       if (Date.now() < deadline)
         retry = setTimeout(schedule, 500)
       return
@@ -73,11 +75,7 @@ export function initLocalLoudnessControl() {
     host = document.createElement('div')
     host.className = 'bpx-player-ctrl-btn bewly-local-loudness-control'
     media = video
-    const anchor = bar.querySelector('.bpx-player-ctrl-volume')
-    if (anchor)
-      anchor.insertAdjacentElement('afterend', host)
-    else
-      bar.prepend(host)
+    anchor.insertAdjacentElement('afterend', host)
     const app = createApp(PlayerLoudnessControl, { video })
     app.use(i18n)
     app.mount(host)
