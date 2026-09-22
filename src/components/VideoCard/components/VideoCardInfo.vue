@@ -25,6 +25,7 @@ interface Props {
   metaFontSizeClass: string
   pluginComputedTags: string[]
   hideAuthor?: boolean
+  hideWatchedBadge?: boolean
 }
 
 const props = defineProps<Props>()
@@ -108,7 +109,7 @@ const content = computed(() => {
     showLegacyViewCount,
     showPublishTime,
     showVideoType,
-    showWatchedBadge: currentSettings.showVideoWatchedBadge && !video?.roomid,
+    showWatchedBadge: !props.hideWatchedBadge && currentSettings.showVideoWatchedBadge && !video?.roomid,
     statsPlaceholderEnabled,
     visiblePluginComputedTags,
     visibleVideoTags,

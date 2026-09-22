@@ -336,6 +336,7 @@ function jumpToLoginPage() {
             :show-no-more-content="false"
             :show-watch-later="false"
             :more-btn="false"
+            hide-watched-badge
             disable-content-visibility
             cover-top-left-always-visible
           >

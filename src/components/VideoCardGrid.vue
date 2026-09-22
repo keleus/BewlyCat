@@ -81,6 +81,7 @@ interface VideoCardGridProps<T = any> {
    * 是否隐藏作者信息
    */
   hideAuthor?: boolean
+  hideWatchedBadge?: boolean
 
   /**
    * 是否关闭卡片的 content-visibility 估算。
@@ -1259,6 +1260,7 @@ function getUniqueKey(item: T, index: number): string | number {
           :horizontal="isHorizontal"
           :more-btn="moreBtn"
           :hide-author="hideAuthor"
+          :hide-watched-badge="hideWatchedBadge"
           :disable-content-visibility="props.disableContentVisibility || recycleCards"
           :is-following-page="props.isFollowingPage"
           :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.card!.item, event) : undefined"

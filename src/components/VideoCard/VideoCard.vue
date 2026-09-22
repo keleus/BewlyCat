@@ -31,6 +31,7 @@ interface Props {
   showPreview?: boolean
   moreBtn?: boolean
   hideAuthor?: boolean
+  hideWatchedBadge?: boolean
   disableContentVisibility?: boolean
   isFollowingPage?: boolean
   customClickHandler?: (event: MouseEvent) => void
@@ -425,6 +426,7 @@ provide('getVideoType', () => props.type!)
           :meta-font-size-class="metaFontSizeClass"
           :plugin-computed-tags="pluginComputedTags"
           :hide-author="hideAuthor"
+          :hide-watched-badge="hideWatchedBadge"
           @more-btn-click="logic.handleMoreBtnClick"
         />
         <!-- Keep the configured cover/info ratio after horizontal cards are removed. -->
