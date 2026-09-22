@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { onScopeDispose, ref } from 'vue'
 
 import { i18n } from '~/utils/i18n'
 
@@ -35,6 +35,12 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
 
   // 请求令牌，用于取消过期的请求
   let activeRequestToken: symbol | null = null
+  let disposed = false
+
+  onScopeDispose(() => {
+    disposed = true
+    activeRequestToken = null
+  })
 
   /**
    * 执行搜索请求
@@ -48,6 +54,8 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
     searchFn: (params: any) => Promise<any>,
     options: SearchRequestOptions = {},
   ): Promise<boolean> {
+    if (disposed)
+      return false
     if (!keyword.trim()) {
       activeRequestToken = null
       isLoading.value = false

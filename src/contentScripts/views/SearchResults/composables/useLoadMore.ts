@@ -1,4 +1,4 @@
-import { nextTick, ref } from 'vue'
+import { nextTick, onScopeDispose, ref } from 'vue'
 
 export interface LoadMoreOptions {
   cooldownMs?: number
@@ -45,6 +45,14 @@ export function useLoadMore(
   })
 
   let loadMoreTimer: number | undefined
+  let generation = 0
+  let disposed = false
+
+  onScopeDispose(() => {
+    disposed = true
+    generation++
+    clearTimer()
+  })
 
   /**
    * 清除定时器
@@ -60,7 +68,7 @@ export function useLoadMore(
    * 调度加载更多尝试
    */
   function scheduleAttempt(delay: number) {
-    if (isLoading()) {
+    if (disposed || isLoading() || !hasMore.value || exhausted.value) {
       state.value.pending = false
       return
     }
@@ -68,10 +76,12 @@ export function useLoadMore(
     clearTimer()
     const effectiveDelay = Math.max(delay, 0)
     state.value.pending = true
+    const version = generation
 
     loadMoreTimer = window.setTimeout(() => {
       loadMoreTimer = undefined
-      void attemptLoadMore()
+      if (version === generation)
+        void attemptLoadMore()
     }, effectiveDelay)
   }
 
@@ -79,7 +89,7 @@ export function useLoadMore(
    * 尝试加载更多
    */
   async function attemptLoadMore() {
-    if (state.value.running)
+    if (disposed || state.value.running)
       return
 
     if (isLoading()) {
@@ -96,9 +106,12 @@ export function useLoadMore(
     state.value.pending = false
     state.value.running = true
     state.value.lastTriggered = Date.now()
+    const version = generation
 
     try {
       const result = await loadFn()
+      if (version !== generation)
+        return
 
       if (result.success) {
         page.value += 1
@@ -108,9 +121,15 @@ export function useLoadMore(
           exhausted.value = true
       }
     }
+    catch (error) {
+      if (version === generation)
+        console.error('加载更多搜索结果失败:', error)
+    }
     finally {
-      state.value.lastCompleted = Date.now()
-      state.value.running = false
+      if (version === generation) {
+        state.value.lastCompleted = Date.now()
+        state.value.running = false
+      }
     }
   }
 
@@ -118,7 +137,7 @@ export function useLoadMore(
    * 请求加载更多（带防抖）
    */
   function requestLoadMore() {
-    if (!hasMore.value || exhausted.value || isLoading() || state.value.running)
+    if (disposed || !hasMore.value || exhausted.value || isLoading() || state.value.running)
       return
 
     const now = Date.now()
@@ -142,7 +161,10 @@ export function useLoadMore(
    * @param haveScrollbar 检查是否有滚动条的函数
    */
   async function handleLoadMoreCompletion(haveScrollbar: () => Promise<boolean>) {
+    const version = generation
     await waitForRender()
+    if (disposed || version !== generation)
+      return
 
     if (isLoading()) {
       state.value.pending = false
@@ -178,6 +200,8 @@ export function useLoadMore(
     }
 
     const hasScrollBar = await haveScrollbar()
+    if (disposed || version !== generation)
+      return
     if (hasScrollBar) {
       state.value.autoFillAttempts = 0
       return
@@ -191,6 +215,7 @@ export function useLoadMore(
    * 重置状态
    */
   function reset() {
+    generation++
     page.value = 0
     hasMore.value = true
     exhausted.value = false
