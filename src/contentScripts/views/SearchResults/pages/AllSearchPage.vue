@@ -348,7 +348,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   if (useVideoFilters) {
     success = await search(
       keyword,
-      params => api.search.searchVideo(params),
+      (params, request) => api.search.searchVideo(params, request),
       {
         page: targetPage,
         page_size: SEARCH_PAGE_SIZES.video,
@@ -363,7 +363,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
   else {
     success = await search(
       keyword,
-      params => api.search.searchAll(params),
+      (params, request) => api.search.searchAll(params, request),
       {
         page: targetPage,
         page_size: SEARCH_PAGE_SIZES.all,
@@ -531,7 +531,7 @@ async function handlePageChange(page: number) {
   if (useVideoFilters) {
     success = await search(
       keyword,
-      params => api.search.searchVideo(params),
+      (params, request) => api.search.searchVideo(params, request),
       {
         page,
         page_size: SEARCH_PAGE_SIZES.video,
@@ -546,7 +546,7 @@ async function handlePageChange(page: number) {
   else {
     success = await search(
       keyword,
-      params => api.search.searchAll(params),
+      (params, request) => api.search.searchAll(params, request),
       {
         page,
         page_size: SEARCH_PAGE_SIZES.all,

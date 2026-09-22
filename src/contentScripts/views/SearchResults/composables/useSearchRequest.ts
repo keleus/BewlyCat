@@ -1,5 +1,6 @@
 import { onScopeDispose, ref } from 'vue'
 
+import type { ApiRequestOptions } from '~/utils/api'
 import { i18n } from '~/utils/i18n'
 
 import type { SearchCategory } from '../types'
@@ -35,11 +36,18 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
 
   // 请求令牌，用于取消过期的请求
   let activeRequestToken: symbol | null = null
+  let activeController: AbortController | null = null
   let disposed = false
+
+  function cancelActiveRequest() {
+    activeRequestToken = null
+    activeController?.abort()
+    activeController = null
+  }
 
   onScopeDispose(() => {
     disposed = true
-    activeRequestToken = null
+    cancelActiveRequest()
   })
 
   /**
@@ -51,13 +59,13 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
    */
   async function search(
     keyword: string,
-    searchFn: (params: any) => Promise<any>,
+    searchFn: (params: any, request: ApiRequestOptions) => Promise<any>,
     options: SearchRequestOptions = {},
   ): Promise<boolean> {
     if (disposed)
       return false
+    cancelActiveRequest()
     if (!keyword.trim()) {
-      activeRequestToken = null
       isLoading.value = false
       error.value = ''
       results.value = null
@@ -68,13 +76,15 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
     error.value = ''
 
     const requestToken = Symbol('search-request')
+    const controller = new AbortController()
     activeRequestToken = requestToken
+    activeController = controller
 
     try {
       const response = await searchFn({
         keyword,
         ...options,
-      })
+      }, { signal: controller.signal })
 
       // 检查请求是否已过期
       if (activeRequestToken !== requestToken)
@@ -98,8 +108,10 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
       return false
     }
     finally {
-      if (activeRequestToken === requestToken)
+      if (activeRequestToken === requestToken) {
         isLoading.value = false
+        activeController = null
+      }
     }
   }
 
@@ -114,7 +126,7 @@ export function useSearchRequest<T = any>(category: SearchCategory) {
     context.value = ''
     error.value = ''
     lastResponse.value = null
-    activeRequestToken = null
+    cancelActiveRequest()
   }
 
   return {

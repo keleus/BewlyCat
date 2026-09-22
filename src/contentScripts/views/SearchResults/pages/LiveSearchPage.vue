@@ -223,7 +223,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     // 仅搜索直播间
     success = await search(
       keyword,
-      params => api.search.searchLiveRoom(params),
+      (params, request) => api.search.searchLiveRoom(params, request),
       {
         page: targetPage,
         page_size: SEARCH_PAGE_SIZES.live,
@@ -235,7 +235,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     // 仅搜索主播
     success = await search(
       keyword,
-      params => api.search.searchLiveUser(params),
+      (params, request) => api.search.searchLiveUser(params, request),
       {
         page: targetPage,
         page_size: SEARCH_PAGE_SIZES.live,
@@ -247,7 +247,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
     // 全部（默认使用live类型，包含直播间和主播）
     success = await search(
       keyword,
-      params => api.search.searchLive(params),
+      (params, request) => api.search.searchLive(params, request),
       {
         page: targetPage,
         page_size: SEARCH_PAGE_SIZES.live,
@@ -412,7 +412,7 @@ async function handlePageChange(page: number) {
     // 仅搜索直播间
     success = await search(
       keyword,
-      params => api.search.searchLiveRoom(params),
+      (params, request) => api.search.searchLiveRoom(params, request),
       {
         page,
         page_size: SEARCH_PAGE_SIZES.live,
@@ -424,7 +424,7 @@ async function handlePageChange(page: number) {
     // 仅搜索主播
     success = await search(
       keyword,
-      params => api.search.searchLiveUser(params),
+      (params, request) => api.search.searchLiveUser(params, request),
       {
         page,
         page_size: SEARCH_PAGE_SIZES.live,
@@ -436,7 +436,7 @@ async function handlePageChange(page: number) {
     // 全部（默认使用live类型，包含直播间和主播）
     success = await search(
       keyword,
-      params => api.search.searchLive(params),
+      (params, request) => api.search.searchLive(params, request),
       {
         page,
         page_size: SEARCH_PAGE_SIZES.live,

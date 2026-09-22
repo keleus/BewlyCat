@@ -136,7 +136,7 @@ async function performSearch(loadMore: boolean): Promise<boolean> {
 
   const success = await search(
     keyword,
-    params => api.search.searchVideo(params),
+    (params, request) => api.search.searchVideo(params, request),
     {
       page: targetPage,
       page_size: SEARCH_PAGE_SIZES.video,
@@ -220,7 +220,7 @@ async function handlePageChange(page: number) {
 
   const success = await search(
     keyword,
-    params => api.search.searchVideo(params),
+    (params, request) => api.search.searchVideo(params, request),
     {
       page,
       page_size: SEARCH_PAGE_SIZES.video,
