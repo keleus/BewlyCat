@@ -6,6 +6,7 @@ import Hls from 'hls.js'
 import Button from '~/components/Button.vue'
 import Icon from '~/components/Icon.vue'
 import LazyPicture from '~/components/LazyPicture.vue'
+import Progress from '~/components/Progress.vue'
 import Tooltip from '~/components/Tooltip.vue'
 import { useVideoPreviewSwipeSeek } from '~/composables/useVideoPreviewSwipeSeek'
 import { settings } from '~/logic'
@@ -651,6 +652,17 @@ onBeforeUnmount(() => {
             <span class="video-card-cover-stats__value">{{ coverStatValues?.duration }}</span>
           </span>
         </div>
+
+        <div
+          v-if="video.playbackProgress !== undefined"
+          class="video-card-playback-progress"
+          aria-hidden="true"
+        >
+          <Progress
+            :percentage="video.playbackProgress"
+            height="var(--bew-space-0-5)"
+          />
+        </div>
       </template>
     </template>
   </div>
@@ -670,6 +682,16 @@ onBeforeUnmount(() => {
   transition:
     opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
     transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
+}
+
+.video-card-playback-progress {
+  position: absolute;
+  // 以圆角之间的底部直线段为完整进度范围，避免小进度被封面裁切。
+  right: var(--bew-media-radius);
+  bottom: 0;
+  left: var(--bew-media-radius);
+  z-index: 3;
+  pointer-events: none;
 }
 
 .video-card-preview--scrubbable {

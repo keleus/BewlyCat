@@ -42,6 +42,14 @@ function getHistoryItemKey(item: HistoryItem) {
 
 function transformHistoryItem(item: HistoryItem): Video {
   const isVideo = item.history.business === Business.ARCHIVE || item.history.business === Business.PGC
+  let playbackProgress: number | undefined
+  if (isVideo) {
+    const percentage = item.progress === -1
+      ? 100
+      : item.duration > 0 ? (item.progress / item.duration) * 100 : 0
+    playbackProgress = Number.isFinite(percentage) ? Math.min(100, Math.max(0, percentage)) : 0
+  }
+
   return {
     id: item.history.oid,
     title: item.show_title || item.title,
@@ -63,6 +71,7 @@ function transformHistoryItem(item: HistoryItem): Video {
     durationStr: isVideo
       ? `${calcCurrentTime(item.progress === -1 ? item.duration : Math.max(0, item.progress))} / ${calcCurrentTime(item.duration)}`
       : undefined,
+    playbackProgress,
     capsuleText: formatDate(new Date(item.view_at * 1000), 'HH:mm:ss'),
     author: {
       name: item.author_name || item.title,

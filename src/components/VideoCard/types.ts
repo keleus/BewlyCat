@@ -17,6 +17,8 @@ export interface Video {
   id: number
   duration?: number
   durationStr?: string
+  /** 播放进度百分比（0–100）；不传时隐藏封面底部进度条。 */
+  playbackProgress?: number
   title: string
   desc?: string
   cover: string
