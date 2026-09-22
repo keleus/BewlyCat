@@ -92,7 +92,7 @@ export interface FavoriteSeasonMedia {
   upper: {
     mid: number
     name: string
-    /** fav/season/list 通常不返回；由客户端按 mid 补全 */
+    /** fav/season/list 通常不返回，缺失时不额外请求头像 */
     face?: string
   }
   cnt_info: {

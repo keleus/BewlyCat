@@ -20,7 +20,6 @@ import type { CollectedFavoriteSeason, CollectedFavoriteSeasonsResult, FavoriteS
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import {
-  enrichFavoriteSeasonMediaFaces,
   FAVORITE_SEASON_PAGE_SIZE,
   fetchFavoriteSeasonPage,
   mergeFavoriteSeasonPage,
@@ -79,6 +78,12 @@ const editFolderPublic = ref<boolean>(true)
 const itemMenuTarget = ref<{ type: SidebarManageSection, id: number } | null>(null)
 const itemMenuStyles = ref<CSSProperties>({})
 let contentRequestVersion = 0
+let disposed = false
+
+onBeforeUnmount(() => {
+  disposed = true
+  contentRequestVersion++
+})
 
 function notifyTopBarFavoritesChanged() {
   void topBarStore.notifyFavoritesChanged().catch((error) => {
@@ -881,8 +886,9 @@ async function getFavoriteSeasonResources(
   pn: number,
   requestVersion = contentRequestVersion,
 ) {
+  const accountId = getUserID()
   const page = await fetchFavoriteSeasonPage(seasonId, pn, FAVORITE_SEASON_PAGE_SIZE, selectedSeason.value?.type)
-  if (requestVersion !== contentRequestVersion)
+  if (disposed || requestVersion !== contentRequestVersion || getUserID() !== accountId)
     return
 
   if (!page.ok) {
@@ -900,11 +906,8 @@ async function getFavoriteSeasonResources(
     pageSize: FAVORITE_SEASON_PAGE_SIZE,
   })
 
-  const enrichedMedias = await enrichFavoriteSeasonMediaFaces(merged.medias)
-  if (requestVersion !== contentRequestVersion)
-    return
-
-  loadedSeasonMedias.value = enrichedMedias
+  // 合集卡片隐藏作者信息，直接展示列表，不额外请求 UP 主头像。
+  loadedSeasonMedias.value = merged.medias
   loadedSeasonComplete.value = !merged.hasMore
   noMoreContent.value = !merged.hasMore
   activatedCategoryCover.value = page.cover || selectedSeason.value?.cover || ''
