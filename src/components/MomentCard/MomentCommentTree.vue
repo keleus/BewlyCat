@@ -4,7 +4,7 @@ import { onBeforeUnmount, onMounted, onUpdated, ref, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/commentReplyTree'
-import { getCommentReplyBranchExpandedToggleY, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
+import { getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
 
 import type { CommentRow, CommentTreeComment } from './commentPreview'
 
@@ -15,7 +15,6 @@ const container = ref<HTMLElement>()
 const indentStep = ref(24)
 const guides = ref<Array<{ row: CommentRow, path: string, x: number, y: number }>>([])
 const size = ref({ width: 1, height: 1 })
-const toggleOffsets = new Map<string, number>()
 let frame = 0
 
 function updateGuides() {
@@ -75,13 +74,9 @@ function updateGuides() {
       collapsed: row.collapsed,
       collapseParentBody: row.hideBody,
     }
-    if (!row.collapsed)
-      toggleOffsets.set(row.comment.id, getCommentReplyBranchExpandedToggleY(parentAnchor, childAnchors, 12) - parentAnchor.bottom)
-    const offset = toggleOffsets.get(row.comment.id)
-    const cachedY = offset === undefined ? undefined : parentAnchor.bottom + offset
-    const path = getCommentReplyBranchPath(branch, 12, 12, cachedY)
+    const path = getCommentReplyBranchPath(branch, 12, 12)
     if (path)
-      nextGuides.push({ row, path, x: parentAnchor.centerX, y: getCommentReplyBranchToggleY(branch, 12, cachedY) })
+      nextGuides.push({ row, path, x: parentAnchor.centerX, y: getCommentReplyBranchToggleY(branch, 12) })
   }
   // onUpdated 同时覆盖插槽内的属地/性别、图片、换行变化；几何不变时不触发下一轮更新。
   const geometry = (items: typeof guides.value) => items.map(guide => [guide.row.comment.id, guide.row.collapsed, guide.path, guide.x, guide.y])

@@ -47,7 +47,6 @@ export function getCommentReplyBranchPath(
   branch: CommentReplyTreeBranch,
   branchRadius: number,
   toggleHitRadius: number,
-  cachedToggleY?: number,
 ): string | null {
   const coordinate = formatCommentReplyGuideCoordinate
   const { childAnchors, collapsed, collapseParentBody, parentAnchor, trunkExtendY } = branch
@@ -57,10 +56,8 @@ export function getCommentReplyBranchPath(
     if (collapseParentBody)
       return `M ${coordinate(x)} ${coordinate(parentAnchor.centerY)}`
 
-    // 保留父节点正文：引导线与 + 留在收起前的位置，不缩短到父评论脚部
-    const toggleY = cachedToggleY !== undefined
-      ? Math.max(parentAnchor.bottom + toggleHitRadius, cachedToggleY)
-      : Math.max(parentAnchor.bottom + toggleHitRadius, parentAnchor.toggleY)
+    // 折叠会改变布局，按钮与线条都以当前父评论的位置为准。
+    const toggleY = getCommentReplyBranchToggleY(branch, toggleHitRadius)
     const startY = parentAnchor.bottom
     const endY = Math.max(toggleY + toggleHitRadius, parentAnchor.bottom + toggleHitRadius * 2)
     return [
@@ -132,23 +129,14 @@ export function getCommentReplyBranchPath(
 export function getCommentReplyBranchToggleY(
   branch: CommentReplyTreeBranch,
   toggleHitRadius: number,
-  cachedToggleY?: number,
 ): number {
-  const { childAnchors, collapsed, collapseParentBody, parentAnchor, trunkExtendY } = branch
+  const { childAnchors, collapsed, collapseParentBody, parentAnchor } = branch
   if (collapsed) {
     if (collapseParentBody)
       return parentAnchor.centerY
 
-    // 「不收起主评论」：使用展开时缓存的位置，避免 + 缩到父评论下方
-    if (cachedToggleY !== undefined)
-      return Math.max(parentAnchor.bottom + toggleHitRadius, cachedToggleY)
-
     return Math.max(parentAnchor.bottom + toggleHitRadius, parentAnchor.toggleY)
   }
-
-  // 平级收起后子锚点变少，父级 − 仍用展开时缓存，避免一起上缩
-  if (trunkExtendY !== undefined && cachedToggleY !== undefined)
-    return Math.max(parentAnchor.bottom + toggleHitRadius, cachedToggleY)
 
   return getCommentReplyBranchExpandedToggleY(parentAnchor, childAnchors, toggleHitRadius)
 }

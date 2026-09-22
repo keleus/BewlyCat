@@ -4,7 +4,7 @@ import COMMENT_REPLY_TREE_GUIDES_CSS from '~/styles/commentReplyTree.scss?inline
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { CommentReplyPageCache } from '~/utils/commentReplyPageCache'
 import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/commentReplyTree'
-import { formatCommentReplyGuideCoordinate, getCommentReplyBranchExpandedToggleY, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
+import { formatCommentReplyGuideCoordinate, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
 import { getCommentSexIcon, normalizeCommentLocation } from '~/utils/commentUserInfo'
 import { i18n } from '~/utils/i18n'
 import { isElectron } from '~/utils/main'
@@ -183,10 +183,6 @@ else if (shouldInitializePageScript) {
     collapsedNodeKeys: Set<string>
     /** 收起某条评论之后的全部同级评论（及子树） */
     collapsedTailKeys: Set<string>
-    /** 展开时缓存的分支收起按钮相对父节点偏移，避免布局移动后复用过期绝对坐标 */
-    branchToggleOffsetByKey: Map<string, number>
-    /** 展开时缓存的平级收起按钮相对父节点偏移 */
-    tailToggleOffsetByKey: Map<string, number>
     /**
      * 按 rpid 缓存回复的 parent/root 等关系。
      * 翻页后用缓存补齐缺失的父评论占位层级。
@@ -2258,8 +2254,6 @@ else if (shouldInitializePageScript) {
       state = {
         collapsedNodeKeys: new Set(),
         collapsedTailKeys: new Set(),
-        branchToggleOffsetByKey: new Map(),
-        tailToggleOffsetByKey: new Map(),
         replyMetaByRpid: new Map(),
         enabled: false,
         nextOriginalOrder: 0,
@@ -2270,10 +2264,6 @@ else if (shouldInitializePageScript) {
     else {
       if (!state.collapsedTailKeys)
         state.collapsedTailKeys = new Set()
-      if (!state.branchToggleOffsetByKey)
-        state.branchToggleOffsetByKey = new Map()
-      if (!state.tailToggleOffsetByKey)
-        state.tailToggleOffsetByKey = new Map()
       if (!state.replyMetaByRpid)
         state.replyMetaByRpid = new Map()
     }
@@ -3094,21 +3084,13 @@ else if (shouldInitializePageScript) {
 
     const tails: CommentReplyTreeTailCollapse[] = []
 
-    // 已收起后续：+ 使用展开时缓存的位置，避免随布局上缩后断线
+    // 收起后按当前可见评论定位，旧的间隔可能已随子树折叠而消失。
     if (firstHiddenIndex < siblings.length) {
       const afterSibling = siblings[firstHiddenIndex - 1]
       const afterAnchor = avatarAnchorByNode.get(afterSibling)
       if (afterAnchor) {
         const key = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(afterSibling))
-        const cachedOffset = state.tailToggleOffsetByKey.get(key)
-        const cachedY = cachedOffset === undefined
-          ? undefined
-          : parentAnchor.centerY + cachedOffset
-        const fallbackY = afterAnchor.bottom + toggleHitRadius + 4
-        // 缓存优先；至少略低于最后可见评论中心，保证仍落在主干上
-        const y = cachedY !== undefined
-          ? Math.max(afterAnchor.centerY + toggleHitRadius, cachedY)
-          : fallbackY
+        const y = Math.max(afterAnchor.bottom + toggleHitRadius, afterAnchor.toggleY)
         tails.push({
           collapsed: true,
           hiddenCount: siblings.length - firstHiddenIndex,
@@ -3120,7 +3102,7 @@ else if (shouldInitializePageScript) {
       return tails
     }
 
-    // 未收起：在相邻平级评论之间放置收起后续控件，并缓存位置
+    // 未收起：在相邻平级评论之间放置收起后续控件
     for (let index = 0; index < siblings.length - 1; index += 1) {
       const current = siblings[index]
       const next = siblings[index + 1]
@@ -3135,7 +3117,6 @@ else if (shouldInitializePageScript) {
 
       const key = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(current))
       const y = currentAnchor.centerY + gap / 2
-      state.tailToggleOffsetByKey.set(key, y - parentAnchor.centerY)
       tails.push({
         collapsed: false,
         hiddenCount: siblings.length - index - 1,
@@ -3409,34 +3390,15 @@ else if (shouldInitializePageScript) {
 
     const renderedBranches = branches
       .map((branch) => {
-        // 展开且无平级收起时刷新父分支 + 缓存；
-        // 平级收起后子节点变少，勿覆盖缓存，否则父级 − 也会上缩
-        if (!branch.collapsed && branch.trunkExtendY === undefined) {
-          const expandedToggleY = getCommentReplyBranchExpandedToggleY(
-            branch.parentAnchor,
-            branch.childAnchors,
-            toggleHitRadius,
-          )
-          state.branchToggleOffsetByKey.set(
-            branch.key,
-            expandedToggleY - branch.parentAnchor.bottom,
-          )
-        }
-
-        const cachedToggleOffset = state.branchToggleOffsetByKey.get(branch.key)
-        const cachedToggleY = cachedToggleOffset === undefined
-          ? undefined
-          : branch.parentAnchor.bottom + cachedToggleOffset
         const pathData = getCommentReplyBranchPath(
           branch,
           branchRadius,
           toggleHitRadius,
-          cachedToggleY,
         )
         if (!pathData)
           return null
 
-        const toggleY = getCommentReplyBranchToggleY(branch, toggleHitRadius, cachedToggleY)
+        const toggleY = getCommentReplyBranchToggleY(branch, toggleHitRadius)
         return { branch, pathData, toggleY }
       })
       .filter((entry): entry is {
@@ -4267,7 +4229,6 @@ else if (shouldInitializePageScript) {
       for (const key of state.collapsedTailKeys) {
         if (key.startsWith(rootTailPrefix)) {
           state.collapsedTailKeys.delete(key)
-          state.tailToggleOffsetByKey.delete(key)
         }
       }
     }
@@ -4279,8 +4240,6 @@ else if (shouldInitializePageScript) {
       replyContainer.querySelectorAll('.bewly-comment-missing-parent').forEach(node => node.remove())
       state.collapsedNodeKeys.clear()
       state.collapsedTailKeys.clear()
-      state.branchToggleOffsetByKey.clear()
-      state.tailToggleOffsetByKey.clear()
       if (state.enabled) {
         const originalOrder = [...replyRenderers].sort((a, b) => (
           getCommentReplyOriginalOrder(state, a) - getCommentReplyOriginalOrder(state, b)
@@ -4306,8 +4265,6 @@ else if (shouldInitializePageScript) {
     if (!showGuides) {
       state.collapsedNodeKeys.clear()
       state.collapsedTailKeys.clear()
-      state.branchToggleOffsetByKey.clear()
-      state.tailToggleOffsetByKey.clear()
     }
 
     observeCommentReplyTreeLayout(component, state, replyContainer)
