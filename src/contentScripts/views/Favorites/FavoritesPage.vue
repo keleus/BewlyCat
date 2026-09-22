@@ -615,25 +615,24 @@ function toggleBatchManage() {
   isBatchManaging.value = true
 }
 
-function getSelectedResourceParam() {
-  return selectedFavoriteResources.value.map(item => getFavoriteResourceKey(item)).join(',')
-}
+function removeResourcesFromList(categoryId: number, resourceKeys: string[], requestVersion: number) {
+  const category = favoriteCategories.find(item => item.id === categoryId)
+  if (category)
+    category.media_count = Math.max(0, category.media_count - resourceKeys.length)
 
-function removeSelectedResourcesFromList() {
-  const selectedKeys = new Set(selectedResourceKeys.value)
+  if (requestVersion !== contentRequestVersion || favoriteView.value !== 'video' || selectedCategory.value?.id !== categoryId)
+    return
+
+  const selectedKeys = new Set(resourceKeys)
   for (let index = favoriteResources.length - 1; index >= 0; index--) {
     if (selectedKeys.has(getFavoriteResourceKey(favoriteResources[index])))
       favoriteResources.splice(index, 1)
   }
-  if (selectedCategory.value)
-    selectedCategory.value.media_count = Math.max(0, selectedCategory.value.media_count - selectedKeys.size)
-  resetBatchSelection()
+  selectedResourceKeys.value = selectedResourceKeys.value.filter(key => !selectedKeys.has(key))
 }
 
-function increaseTargetCategoryCount(count: number) {
-  if (!targetCategory.value)
-    return
-  const category = favoriteCategories.find(item => item.id === targetCategory.value?.id)
+function increaseTargetCategoryCount(categoryId: number, count: number) {
+  const category = favoriteCategories.find(item => item.id === categoryId)
   if (category)
     category.media_count += count
 }
@@ -653,23 +652,27 @@ function selectTargetCategory(category: CategoryItem) {
 }
 
 async function handleBatchDelete() {
-  if (!selectedCategory.value || selectedCount.value === 0)
+  if (!selectedCategory.value || selectedCount.value === 0 || isBatchOperating.value)
     return
-  const result = await showConfirmDialog(t('favorites.batch_unfavorite_confirm', { count: selectedCount.value }))
-  if (!result)
-    return
-
+  const categoryId = selectedCategory.value.id
+  const resourceKeys = selectedFavoriteResources.value.map(getFavoriteResourceKey)
+  const requestVersion = contentRequestVersion
+  const accountId = getUserID()
   isBatchOperating.value = true
   try {
+    const result = await showConfirmDialog(t('favorites.batch_unfavorite_confirm', { count: resourceKeys.length }))
+    if (!result || requestVersion !== contentRequestVersion || getUserID() !== accountId)
+      return
+
     const res = await api.favorite.patchDelFavoriteResources({
-      resources: getSelectedResourceParam(),
-      media_id: selectedCategory.value.id,
+      resources: resourceKeys.join(','),
+      media_id: categoryId,
       csrf: getCSRF(),
     })
-    if (res.code === 0)
-      removeSelectedResourcesFromList()
-    if (res.code === 0)
+    if (res.code === 0 && getUserID() === accountId) {
+      removeResourcesFromList(categoryId, resourceKeys, requestVersion)
       notifyTopBarFavoritesChanged()
+    }
   }
   finally {
     isBatchOperating.value = false
@@ -677,23 +680,28 @@ async function handleBatchDelete() {
 }
 
 async function handleBatchMove() {
-  if (!selectedCategory.value || !targetCategory.value || selectedCount.value === 0)
+  if (!selectedCategory.value || !targetCategory.value || selectedCount.value === 0 || isBatchOperating.value)
     return
 
+  const categoryId = selectedCategory.value.id
+  const targetId = targetCategory.value.id
+  const resourceKeys = selectedFavoriteResources.value.map(getFavoriteResourceKey)
+  const requestVersion = contentRequestVersion
+  const accountId = getUserID()
   isBatchOperating.value = true
   try {
-    const movedCount = selectedCount.value
     const res = await api.favorite.moveFavoriteResources({
-      resources: getSelectedResourceParam(),
-      src_media_id: selectedCategory.value.id,
-      tar_media_id: targetCategory.value.id,
-      mid: getUserID(),
+      resources: resourceKeys.join(','),
+      src_media_id: categoryId,
+      tar_media_id: targetId,
+      mid: accountId,
       csrf: getCSRF(),
     })
-    if (res.code === 0) {
-      increaseTargetCategoryCount(movedCount)
-      removeSelectedResourcesFromList()
-      closeBatchManage()
+    if (res.code === 0 && getUserID() === accountId) {
+      increaseTargetCategoryCount(targetId, resourceKeys.length)
+      removeResourcesFromList(categoryId, resourceKeys, requestVersion)
+      if (requestVersion === contentRequestVersion)
+        closeBatchManage()
       notifyTopBarFavoritesChanged()
     }
   }
@@ -703,23 +711,30 @@ async function handleBatchMove() {
 }
 
 async function handleBatchCopy() {
-  if (!selectedCategory.value || !targetCategory.value || selectedCount.value === 0)
+  if (!selectedCategory.value || !targetCategory.value || selectedCount.value === 0 || isBatchOperating.value)
     return
 
+  const categoryId = selectedCategory.value.id
+  const targetId = targetCategory.value.id
+  const resourceKeys = selectedFavoriteResources.value.map(getFavoriteResourceKey)
+  const requestVersion = contentRequestVersion
+  const accountId = getUserID()
   isBatchOperating.value = true
   try {
-    const copiedCount = selectedCount.value
     const res = await api.favorite.copyFavoriteResources({
-      resources: getSelectedResourceParam(),
-      src_media_id: selectedCategory.value.id,
-      tar_media_id: targetCategory.value.id,
-      mid: getUserID(),
+      resources: resourceKeys.join(','),
+      src_media_id: categoryId,
+      tar_media_id: targetId,
+      mid: accountId,
       csrf: getCSRF(),
     })
-    if (res.code === 0) {
-      increaseTargetCategoryCount(copiedCount)
-      resetBatchSelection()
-      closeBatchTransferDialog()
+    if (res.code === 0 && getUserID() === accountId) {
+      increaseTargetCategoryCount(targetId, resourceKeys.length)
+      if (requestVersion === contentRequestVersion) {
+        const copiedKeys = new Set(resourceKeys)
+        selectedResourceKeys.value = selectedResourceKeys.value.filter(key => !copiedKeys.has(key))
+        closeBatchTransferDialog()
+      }
       notifyTopBarFavoritesChanged()
     }
   }
@@ -885,10 +900,11 @@ async function getFavoriteSeasonResources(
     pageSize: FAVORITE_SEASON_PAGE_SIZE,
   })
 
-  loadedSeasonMedias.value = await enrichFavoriteSeasonMediaFaces(merged.medias)
+  const enrichedMedias = await enrichFavoriteSeasonMediaFaces(merged.medias)
   if (requestVersion !== contentRequestVersion)
     return
 
+  loadedSeasonMedias.value = enrichedMedias
   loadedSeasonComplete.value = !merged.hasMore
   noMoreContent.value = !merged.hasMore
   activatedCategoryCover.value = page.cover || selectedSeason.value?.cover || ''
@@ -1039,24 +1055,30 @@ function jumpToLoginPage() {
 }
 
 async function handleUnfavorite(favoriteResource: FavoriteResource) {
-  const result = await showConfirmDialog(
-    t('favorites.unfavorite_confirm'),
-  )
-  if (result) {
-    api.favorite.patchDelFavoriteResources({
+  if (!selectedCategory.value || isBatchOperating.value)
+    return
+
+  const categoryId = selectedCategory.value.id
+  const requestVersion = contentRequestVersion
+  const accountId = getUserID()
+  isBatchOperating.value = true
+  try {
+    const result = await showConfirmDialog(t('favorites.unfavorite_confirm'))
+    if (!result || requestVersion !== contentRequestVersion || getUserID() !== accountId)
+      return
+
+    const res = await api.favorite.patchDelFavoriteResources({
       resources: `${favoriteResource.id}:${favoriteResource.type}`,
-      media_id: selectedCategory.value?.id,
+      media_id: categoryId,
       csrf: getCSRF(),
-    }).then((res) => {
-      if (res.code === 0) {
-        const resourceIndex = favoriteResources.indexOf(favoriteResource as FavoriteItem)
-        if (resourceIndex >= 0)
-          favoriteResources.splice(resourceIndex, 1)
-        if (selectedCategory.value)
-          selectedCategory.value.media_count = Math.max(0, selectedCategory.value.media_count - 1)
-        notifyTopBarFavoritesChanged()
-      }
     })
+    if (res.code === 0 && getUserID() === accountId) {
+      removeResourcesFromList(categoryId, [getFavoriteResourceKey(favoriteResource)], requestVersion)
+      notifyTopBarFavoritesChanged()
+    }
+  }
+  finally {
+    isBatchOperating.value = false
   }
 }
 
