@@ -1,38 +1,7 @@
 import type { Video } from '~/components/VideoCard/types'
 import { parseStatNumber } from '~/utils/dataFormatter'
+import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { i18n } from '~/utils/i18n'
-
-/**
- * 解码 HTML 实体
- * 使用轻量级正则替代 DOMParser，性能更好
- */
-function decodeHtmlEntities(text: string | undefined): string {
-  if (!text || typeof text !== 'string')
-    return text || ''
-
-  // 常用实体映射
-  const entities: Record<string, string> = {
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&quot;': '"',
-    '&#39;': '\'',
-    '&#x27;': '\'',
-    '&apos;': '\'',
-    '&nbsp;': ' ',
-  }
-
-  return text.replace(/&(?:#x?[0-9a-f]+|[a-z]+);/gi, (match) => {
-    // 数字实体 &#123; 或 &#xAB;
-    if (match.startsWith('&#')) {
-      const isHex = match[2] === 'x' || match[2] === 'X'
-      const code = Number.parseInt(match.slice(isHex ? 3 : 2, -1), isHex ? 16 : 10)
-      return Number.isNaN(code) ? match : String.fromCharCode(code)
-    }
-    // 命名实体
-    return entities[match.toLowerCase()] || match
-  })
-}
 
 export function formatNumber(num?: number): string {
   if (!num)
