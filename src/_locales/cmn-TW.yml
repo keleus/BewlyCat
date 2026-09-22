@@ -1261,6 +1261,8 @@ anime:
       sat: 週六
       sun: 週日
 history:
+  layout_list: 清單顯示
+  layout_grid: 網格顯示
   livestreaming: 直播
   pgc: 番劇影視
   live: 直播中

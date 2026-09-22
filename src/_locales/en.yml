@@ -1340,6 +1340,8 @@ anime:
       sat: SAT
       sun: SUN
 history:
+  layout_list: List view
+  layout_grid: Grid view
   livestreaming: Livestreaming
   pgc: Shows
   live: Live

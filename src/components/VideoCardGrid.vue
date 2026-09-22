@@ -48,6 +48,9 @@ interface VideoCardGridProps<T = any> {
    */
   noMoreContent?: boolean
 
+  /** Hide the end message when a parent coordinates multiple date groups. */
+  showNoMoreContent?: boolean
+
   /**
    * 是否需要先登录
    */
@@ -193,6 +196,7 @@ interface VideoCardGridProps<T = any> {
 const props = withDefaults(defineProps<VideoCardGridProps<T>>(), {
   loading: false,
   noMoreContent: false,
+  showNoMoreContent: true,
   needToLoginFirst: false,
   showPreview: false,
   showWatchLater: true,
@@ -1279,7 +1283,7 @@ function getUniqueKey(item: T, index: number): string | number {
     />
 
     <!-- 无更多内容提示（仅在有数据时显示，避免与空列表提示重复） -->
-    <Empty v-if="noMoreContent && !needToLoginFirst && items.length > 0" class="pb-4" :description="$t('common.no_more_content')">
+    <Empty v-if="showNoMoreContent && noMoreContent && !needToLoginFirst && items.length > 0" class="pb-4" :description="$t('common.no_more_content')">
       <Button type="primary" @click="handleRefresh">
         {{ refreshButtonText || $t('common.operation.refresh') }}
       </Button>

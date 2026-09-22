@@ -406,9 +406,10 @@ const content = computed(() => {
             compact
           />
 
-          <div v-if="content.showAuthorName || content.hasVisibleMeta" flex="~ col gap-1" w="full">
+          <div v-if="content.showAuthorName || content.hasVisibleMeta" flex="~ col gap-1" w="full" min-w-0>
             <div
               v-if="content.showAuthorName"
+              min-w-0
               flex="~ items-center gap-2"
               text="$bew-text-2"
               :class="authorFontSizeClass"
@@ -542,9 +543,9 @@ const content = computed(() => {
             <div
               v-if="content.showAuthorName || (horizontal && content.showAuthorAvatar)"
               text="$bew-text-2"
-              w-fit
+              w-fit min-w-0 max-w-full
               m="t-2"
-              flex="~ items-center wrap"
+              flex="~ items-center"
               :class="authorFontSizeClass"
             >
               <!-- Author Avatar (horizontal mode) -->
@@ -553,6 +554,7 @@ const content = computed(() => {
                   marginBottom: horizontal ? '0.5rem' : '0',
                 }"
                 flex="inline items-center"
+                min-w-0 max-w-full
               >
                 <VideoCardAuthorAvatar
                   v-if="horizontal && content.showAuthorAvatar && video.author"

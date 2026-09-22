@@ -1329,6 +1329,12 @@ export const watchLaterLayout = useStorageLocal<WatchLaterLayout>(
   { mergeDefaults: true, writeDefaults: false },
 )
 
+export const historyLayout = useStorageLocal<'list' | 'grid'>(
+  'historyLayout',
+  'list',
+  { writeDefaults: false },
+)
+
 export const sidePanel = useStorageLocal<{
   home: boolean
 }>('sidePanel', {
