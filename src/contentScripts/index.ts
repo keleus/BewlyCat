@@ -924,12 +924,19 @@ else if (shouldInitializeContentScript) {
   }
 
   function findVideoCommentsElement(): HTMLElement | null {
-    const commentRoot = document.querySelector<HTMLElement>(commentRootSelector)
-    if (!commentRoot)
-      return null
+    const directComments = document.querySelector<HTMLElement>('bili-comments')
+    if (directComments)
+      return directComments
 
-    return commentRoot.querySelector<HTMLElement>(':scope > bili-comments')
-      ?? commentRoot.querySelector<HTMLElement>('bili-comments')
+    const roots = document.querySelectorAll<HTMLElement>(commentRootSelector)
+    for (const root of Array.from(roots)) {
+      const comments = root.querySelector<HTMLElement>(':scope > bili-comments')
+        ?? root.querySelector<HTMLElement>('bili-comments')
+      if (comments)
+        return comments
+    }
+
+    return null
   }
 
   function replaceVideoCommentsElement(element: HTMLElement, dataParams: string) {
@@ -1053,8 +1060,13 @@ else if (shouldInitializeContentScript) {
         if (autoContinuationNavigationKey !== currentVideoNavigationKey)
           autoContinuationNavigationKey = undefined
 
+        // 抽屉父文档只同步视频 URL，实际宽屏和评论更新由 iframe 负责。
+        const willApplyBewlyWidescreen = !document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)
+          && resolveDefaultVideoPlayerMode() === 'bewlyWidescreen'
+          && !isFestivalPage()
         const shouldReloadWidescreenNavigation = pendingWidescreenReloadNavigationKey === currentVideoNavigationKey
           || isBewlyWidescreenActive()
+          || willApplyBewlyWidescreen
         const videoCommentIdentifier = shouldReloadWidescreenNavigation
           ? getVideoCommentIdentifier()
           : null
