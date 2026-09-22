@@ -137,7 +137,18 @@ export function useSettingsStorage<T extends object>(
     }
   }
 
+  function captureLocalChanges() {
+    const nextValue = asRecord(cloneValue(state))
+    const patch = createTopLevelSettingsStoragePatch(observedValue, nextValue)
+    observedValue = nextValue
+    if (!isSettingsStoragePatchEmpty(patch))
+      queuedPatch = mergeSettingsStoragePatches(queuedPatch, patch)
+  }
+
   const renderCanonicalValue = () => {
+    // 后台结果可能早于本轮 watch 执行，先保留尚未进入补丁队列的本地修改。
+    if (!disposed)
+      captureLocalChanges()
     let nextValue = canonicalValue
     if (inFlightPatch)
       nextValue = applySettingsStoragePatch(nextValue, inFlightPatch)
@@ -178,6 +189,8 @@ export function useSettingsStorage<T extends object>(
     canonicalValue = asRecord(cloneValue(defaults))
     queuedPatch = createEmptySettingsStoragePatch()
     inFlightPatch = null
+    // 存储被清空或替换时，旧 epoch 中尚未批处理的修改也必须一起丢弃。
+    observedValue = asRecord(cloneValue(state))
     persistenceReady = epoch.length > 0
     if (renderDefaults)
       renderCanonicalValue()
@@ -211,7 +224,8 @@ export function useSettingsStorage<T extends object>(
   }
 
   const flushQueuedPatch = async () => {
-    if (disposed || !ready || !persistenceReady || inFlightPatch || isSettingsStoragePatchEmpty(queuedPatch))
+    // scope 结束后仍排空此前捕获的补丁，但不再接收新的本地修改。
+    if (!ready || !persistenceReady || inFlightPatch || isSettingsStoragePatchEmpty(queuedPatch))
       return
 
     const patch = queuedPatch
@@ -256,24 +270,19 @@ export function useSettingsStorage<T extends object>(
   }
 
   function writeLocalValue(value: T) {
-    if (applyingCanonicalValue)
+    if (disposed || applyingCanonicalValue)
       return
 
     updateReactiveValue(value)
-    const nextValue = asRecord(cloneValue(state))
-    const patch = createTopLevelSettingsStoragePatch(observedValue, nextValue)
-    observedValue = nextValue
-    if (isSettingsStoragePatchEmpty(patch))
-      return
-
-    queuedPatch = mergeSettingsStoragePatches(queuedPatch, patch)
+    captureLocalChanges()
     void flushQueuedPatch()
   }
 
   watch(
     data,
     () => writeLocalValue(state),
-    { deep: true, flush: 'sync' },
+    // Vue 合并同一轮数组操作和多字段修改；界面状态仍同步更新。
+    { deep: true, flush: 'pre' },
   )
 
   const markReady = () => {
@@ -357,6 +366,7 @@ export function useSettingsStorage<T extends object>(
   browser.storage.onChanged.addListener(onStorageChanged)
   if (getCurrentScope()) {
     onScopeDispose(() => {
+      writeLocalValue(state)
       disposed = true
       browser.storage.onChanged.removeListener(onStorageChanged)
     })
