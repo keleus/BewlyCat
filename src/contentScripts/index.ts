@@ -41,6 +41,7 @@ import { setupNativeHomeFeedHistory } from './features/nativeHomeFeedHistory'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
+import { initLocalLoudnessControl } from './localLoudnessControl'
 import type { PageLoadingGuard } from './pageLoading'
 import { initTouchPlayerGestures } from './touchPlayerGestures'
 import { initVideoAspectRatioMemory } from './videoAspectRatioMemory'
@@ -1408,6 +1409,7 @@ else if (shouldInitializeContentScript) {
     initVideoAspectRatioMemory()
     initVideoQualityMemory()
     initVideoScreenshotControl()
+    initLocalLoudnessControl()
     if (isVideoPlaybackPage() || isVideoOrBangumiPage())
       setupShortcutHandlers()
     runWhenNativeVideoHeaderStable(initBewlyWidescreenControl)

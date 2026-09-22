@@ -250,6 +250,10 @@ export const defaultVideoCardContextMenuConfig: VideoCardContextMenuConfigItem[]
   = videoCardContextMenuKeys.map(key => ({ key, visible: true }))
 
 export interface Settings {
+  showLocalLoudnessButton: boolean
+  localLoudnessEnabled: boolean
+  localLoudnessTarget: number
+  localLoudnessStrength: number
   touchScreenOptimization: boolean
   showHomeButtonInTouchMode: boolean
   openTopBarItemsInBewly: boolean
@@ -576,6 +580,10 @@ export const originalLocalSettings: LocalSettings = {
 }
 
 export const originalSettings: Settings = {
+  showLocalLoudnessButton: true,
+  localLoudnessEnabled: false,
+  localLoudnessTarget: -18,
+  localLoudnessStrength: 75,
   touchScreenOptimization: false,
   showHomeButtonInTouchMode: true,
   openTopBarItemsInBewly: true,
@@ -960,7 +968,19 @@ export const settings = useSettingsStorage(originalSettings, {
     if (!validTabsPositions.includes(record.momentsTabsPosition))
       record.momentsTabsPosition = originalSettings.momentsTabsPosition
 
-    // 清理已移除的音量均衡功能设置。
+    if (typeof record.showLocalLoudnessButton !== 'boolean')
+      record.showLocalLoudnessButton = true
+    if (typeof record.localLoudnessEnabled !== 'boolean')
+      record.localLoudnessEnabled = false
+    for (const [key, min, max, fallback] of [
+      ['localLoudnessTarget', -24, -14, -18],
+      ['localLoudnessStrength', 40, 100, 75],
+    ] as const) {
+      const value = record[key]
+      record[key] = typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback
+    }
+
+    // 清理旧版音量均衡功能设置，新算法不继承旧版参数。
     for (const field of [
       'enableVolumeNormalization',
       'targetVolume',

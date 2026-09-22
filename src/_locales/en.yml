@@ -104,6 +104,26 @@ player_screenshot:
   failed: Failed to capture screenshot
   video_unavailable: The current video frame is unavailable
 settings:
+  local_loudness:
+    gain_history: Levelling gain · Last 60 seconds
+    show_button: Show player volume balance button
+    show_button_desc: Show a player control to adjust parameters and view the current video’s status on hover. Hiding the button does not disable processing.
+    summary: Balance volume across videos to reduce loudness differences when switching videos.
+    title: Volume balance
+    enable: Enable local volume balance
+    description: Balance volume across videos to reduce loudness differences when switching videos. Enabling this turns off Bilibili normalization through its player settings. Disabling this feature does not turn native normalization back on. Silence and audio below the gate are not boosted; maximum boost is 6 dB.
+    target: Target loudness
+    target_desc: Start at -18 LUFS. Lower values are quieter. The player volume remains independently adjustable.
+    strength: Levelling strength
+    strength_desc: Higher strength reduces loudness differences but also changes the dynamics of music and films more.
+    status: Status
+    states:
+      off: Off
+      waiting: Waiting for video playback. Only the video player audio is processed.
+      active: Local volume balance is active
+      error: Audio processing failed; original audio restored. Reload the page to retry.
+      native-unavailable: Native normalization could not be confirmed off. Check More playback settings in the player. Audio is unchanged.
+      unsupported: This audio source cannot be safely processed. Audio is unchanged.
   following_sort: Uploader order in the new Following layout
   following_sort_updated: By update time
   following_sort_group: By group

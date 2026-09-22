@@ -11,6 +11,8 @@ import { isElectron } from '~/utils/main'
 import type { PageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
 
+import { createLocalLoudnessController } from './audio/localLoudness'
+
 // 存储当前设置状态
 let currentSettings: PageSettingsPayload | null = null
 
@@ -38,6 +40,7 @@ if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 }
 else if (shouldInitializePageScript) {
+  const localLoudness = typeof AudioContext !== 'undefined' ? createLocalLoudnessController() : undefined
   // 根据兼容性设置动态返回桌面 UA，默认保持浏览器原始值。
   if (isBilibiliWwwUrl(location.href)) {
     const originalNavigatorValues = {
@@ -4773,6 +4776,7 @@ else if (shouldInitializePageScript) {
 
       const isFirstTime = !settingsReady
       currentSettings = pageSettings
+      localLoudness?.update({ enabled: pageSettings.localLoudnessEnabled, target: pageSettings.localLoudnessTarget, strength: pageSettings.localLoudnessStrength / 100 })
       preventMobileRedirectEnabled = pageSettings.preventMobileRedirect
       settingsReady = true
       refreshCommentReplyTrees()

@@ -9,6 +9,9 @@ const legacyPage = sessionStorage.getItem(legacyStorageKey)
 if (!sessionStorage.getItem(storageKey) && legacyPage && bilibiliPageValues.includes(legacyPage))
   sessionStorage.setItem(storageKey, legacyPage)
 
+if (sessionStorage.getItem(storageKey) === 'volume-balance')
+  sessionStorage.setItem(storageKey, 'player')
+
 const pages = [
   {
     value: 'player',

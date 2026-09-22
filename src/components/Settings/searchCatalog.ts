@@ -471,6 +471,13 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ]),
 
   ...createEntries(playerRoute, [
+    'settings.local_loudness.title',
+    'settings.local_loudness.enable',
+    'settings.local_loudness.target',
+    'settings.local_loudness.strength',
+    'settings.local_loudness.show_button',
+  ]),
+  ...createEntries(playerRoute, [
     'settings.bilibili_features.video_playback',
     'settings.group_player_display_mode',
     'settings.video_player_mode.bewly_widescreen_sidebar_position',

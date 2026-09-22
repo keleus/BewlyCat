@@ -104,6 +104,26 @@ player_screenshot:
   failed: 截圖失敗
   video_unavailable: 而家嘅影片畫面用唔到
 settings:
+  local_loudness:
+    gain_history: 均衡增益變化 · 近 60 秒
+    show_button: 顯示播放器音量均衡按鈕
+    show_button_desc: 喺影片控制列顯示按鈕，滑鼠移上去可以調整均衡參數同睇目前影片嘅運行狀態。隱藏按鈕唔會關閉均衡。
+    summary: 平衡唔同影片之間嘅音量，減少切換影片時嘅大小聲差異。
+    title: 音量均衡
+    enable: 啟用局部音量均衡
+    description: 平衡唔同影片之間嘅音量，減少切換影片時嘅大小聲差異。啟用後會透過播放器設定關閉 B 站原生均衡；關閉呢個功能唔會自動重新開啟原生均衡。靜音同低於門檻嘅聲音唔會放大，最多提升 6 dB。
+    target: 目標響度
+    target_desc: 建議由 -18 LUFS 開始。數值越低越靜；播放器音量仍然可以獨立調整。
+    strength: 均衡強度
+    strength_desc: 強度越高，大小聲差異越細，亦會更多改變音樂同電影嘅動態。
+    status: 運行狀態
+    states:
+      off: 已關閉
+      waiting: 等緊影片播放；只處理影片播放器嘅聲音。
+      active: 正進行局部音量均衡
+      error: 音訊處理失敗，已回復原聲。重新整理頁面後可以再試。
+      native-unavailable: 未能確認原生均衡已關閉，暫時唔處理。請檢查播放器嘅更多播放設定。
+      unsupported: 目前音源無法安全接入，保持原聲。
   following_sort: 新版關注列表排序
   following_sort_updated: 按更新時間
   following_sort_group: 按分組

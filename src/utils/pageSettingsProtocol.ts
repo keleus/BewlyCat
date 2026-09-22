@@ -3,6 +3,9 @@ export type PageCommentReplyPaginationMode = 'loadMore' | 'pagination'
 
 /** Minimal settings payload shared with the page's main-world script. */
 export interface PageSettingsPayload {
+  localLoudnessEnabled: boolean
+  localLoudnessTarget: number
+  localLoudnessStrength: number
   adjustCommentImageHeight: boolean
   cleanShareLinkIncludeTitle: boolean
   cleanShareLinkRemoveTrackingParams: boolean
@@ -57,6 +60,13 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
   }
 
   return {
+    localLoudnessEnabled: value.localLoudnessEnabled === true,
+    localLoudnessTarget: typeof value.localLoudnessTarget === 'number' && Number.isFinite(value.localLoudnessTarget)
+      ? Math.max(-24, Math.min(-14, value.localLoudnessTarget))
+      : -18,
+    localLoudnessStrength: typeof value.localLoudnessStrength === 'number' && Number.isFinite(value.localLoudnessStrength)
+      ? Math.max(40, Math.min(100, value.localLoudnessStrength))
+      : 75,
     adjustCommentImageHeight: value.adjustCommentImageHeight,
     cleanShareLinkIncludeTitle: value.cleanShareLinkIncludeTitle,
     cleanShareLinkRemoveTrackingParams: value.cleanShareLinkRemoveTrackingParams,

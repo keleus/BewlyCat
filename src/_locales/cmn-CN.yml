@@ -104,6 +104,26 @@ player_screenshot:
   failed: 截图失败
   video_unavailable: 当前视频画面不可用
 settings:
+  local_loudness:
+    gain_history: 均衡增益变化 · 近 60 秒
+    show_button: 显示播放器音量均衡按钮
+    show_button_desc: 在视频控制栏显示按钮，悬停可调整均衡参数并查看当前视频的运行状态。隐藏按钮不会关闭均衡。
+    summary: 平衡不同视频之间的音量，减少切换视频时的大小声差异。
+    title: 音量均衡
+    enable: 启用局部音量均衡
+    description: 平衡不同视频之间的音量，减少切换视频时的大小声差异。启用后会通过播放器设置关闭 B 站原生均衡；关闭本功能不会自动重新开启原生均衡。静音和低于门限的声音不提升，最高提升 6 dB。
+    target: 目标响度
+    target_desc: 建议从 -18 LUFS 开始。数值越低越安静；播放器音量仍可单独调整。
+    strength: 均衡强度
+    strength_desc: 强度越高，大小声差异越小，也会更多改变音乐和电影的动态。
+    status: 运行状态
+    states:
+      off: 已关闭
+      waiting: 等待视频播放；仅处理视频播放器的声音。
+      active: 正在进行局部音量均衡
+      error: 音频处理失败，已回退到原声。刷新页面后可重试。
+      native-unavailable: 未能确认原生均衡已关闭，暂不处理。请检查播放器的更多播放设置。
+      unsupported: 当前音源无法安全接入，保持原声。
   following_sort: 新版关注列表排序
   following_sort_updated: 按更新时间
   following_sort_group: 按分组
