@@ -18,7 +18,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
-import { getCSRF, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
+import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 import { getWatchLaterAuthor } from '~/utils/watchLater'
 
@@ -55,8 +55,11 @@ const noMoreContent = ref<boolean>()
 const currentWatchLaterList = ref<VideoItem[]>([])
 const watchLaterCount = ref<number>(0)
 const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
-const pageNum = ref<number>(1)
 const pageSize = ref<number>(20)
+const pendingRemovals = new Set<number>()
+let consumedCount = 0
+let requestVersion = 0
+let disposed = false
 
 const layoutIcons = computed<Array<{ icon: string, iconActivated: string, value: WatchLaterLayout }>>(() => [
   { icon: 'mingcute:list-check-3-line', iconActivated: 'mingcute:list-check-3-fill', value: 'list' },
@@ -79,12 +82,18 @@ onMounted(() => {
   initData()
 })
 
+onBeforeUnmount(() => {
+  disposed = true
+  requestVersion++
+})
+
 async function initData() {
+  requestVersion++
   moreMenuItem.value = null
   isLoading.value = false
   noMoreContent.value = false
   currentWatchLaterList.value.length = 0
-  pageNum.value = 1
+  consumedCount = 0
   await getWatchLaterListByPage()
 }
 
@@ -123,68 +132,87 @@ watch(watchLaterLayout, (layout) => {
  * Get watch later list by page
  */
 async function getWatchLaterListByPage() {
-  if (isLoading.value || noMoreContent.value) {
+  if (disposed || isLoading.value || noMoreContent.value) {
     return
   }
 
   isLoading.value = true
+  const version = requestVersion
+  const accountId = getUserID()
 
   try {
-    const res: WatchLaterResult = await api.watchlater.getWatchLaterListByPage({
-      pn: pageNum.value,
-      ps: pageSize.value,
-    })
+    while (true) {
+      if (version !== requestVersion || getUserID() !== accountId)
+        return
 
-    if (res.code === 0) {
-      // 第一页时更新总数
-      if (pageNum.value === 1) {
-        watchLaterCount.value = res.data.count
-      }
+      // 删除会让服务器页边界前移，重新请求重叠页，再按 aid 去重。
+      const page = Math.floor(consumedCount / pageSize.value) + 1
+      const res: WatchLaterResult = await api.watchlater.getWatchLaterListByPage({
+        pn: page,
+        ps: pageSize.value,
+      })
+      if (version !== requestVersion || getUserID() !== accountId || res.code !== 0)
+        return
 
-      // 如果返回的数据少于请求的数量，说明没有更多数据了
-      if (res.data.list.length < pageSize.value) {
-        noMoreContent.value = true
-      }
+      watchLaterCount.value = res.data.count
+      noMoreContent.value = res.data.list.length < pageSize.value
+      consumedCount = Math.max(consumedCount, (page - 1) * pageSize.value + res.data.list.length)
+      const existingIds = new Set(currentWatchLaterList.value.map(video => video.aid))
+      currentWatchLaterList.value.push(...res.data.list.filter(video => !existingIds.has(video.aid)))
 
-      // 添加新数据到列表
-      currentWatchLaterList.value.push(...res.data.list)
-      pageNum.value++
-
-      // 如果没有滚动条且还有更多数据，继续加载
-      if (!await haveScrollbar() && !noMoreContent.value) {
-        getWatchLaterListByPage()
-      }
+      // 保持加载锁直到填满视口，避免递归被 isLoading 拦截或重入。
+      if (noMoreContent.value || await haveScrollbar())
+        return
     }
   }
+  catch (error) {
+    if (version === requestVersion)
+      console.error('加载稍后再看失败:', error)
+  }
   finally {
-    isLoading.value = false
+    if (version === requestVersion)
+      isLoading.value = false
   }
 }
 
-function deleteWatchLaterItem(index: number, aid: number) {
-  api.watchlater.removeFromWatchLater({
-    aid,
-    csrf: getCSRF(),
-  })
-    .then((res) => {
-      if (res.code === 0) {
+async function deleteWatchLaterItem(aid: number) {
+  if (pendingRemovals.has(aid))
+    return
+
+  pendingRemovals.add(aid)
+  const accountId = getUserID()
+  try {
+    const res = await api.watchlater.removeFromWatchLater({ aid, csrf: getCSRF() })
+    if (res.code === 0 && !disposed && getUserID() === accountId) {
+      const wasLoading = isLoading.value
+      requestVersion++
+      isLoading.value = false
+      // 请求期间其他删除或刷新可能改变下标，按视频标识查找当前条目。
+      const index = currentWatchLaterList.value.findIndex(video => video.aid === aid)
+      if (index !== -1) {
         currentWatchLaterList.value.splice(index, 1)
-        watchLaterCount.value--
-        syncTopBarWatchLaterState()
+        watchLaterCount.value = Math.max(0, watchLaterCount.value - 1)
+        consumedCount = Math.max(0, consumedCount - 1)
       }
-    })
+      syncTopBarWatchLaterState()
+      if (wasLoading)
+        void getWatchLaterListByPage()
+    }
+  }
+  catch (error) {
+    console.error('移除稍后再看失败:', error)
+  }
+  finally {
+    pendingRemovals.delete(aid)
+  }
 }
 
 function handleRemoveWatchLater(item: VideoItem) {
-  const index = currentWatchLaterList.value.findIndex(video => video.aid === item.aid)
-  if (index !== -1)
-    deleteWatchLaterItem(index, item.aid)
+  void deleteWatchLaterItem(item.aid)
 }
 
 function handlePlayWatchLater(item: VideoItem) {
-  const index = currentWatchLaterList.value.findIndex(video => video.aid === item.aid)
-  if (index !== -1)
-    handleOpenVideoPageAndRemove(index, item.bvid, item.aid)
+  handleOpenVideoPageAndRemove(item.bvid, item.aid)
 }
 
 function handleWatchLaterCardClick(item: VideoItem, event: MouseEvent) {
@@ -213,17 +241,19 @@ async function handleClearAllWatchLater() {
     t('watch_later.clear_all_confirm'),
   )
   if (result) {
+    const version = requestVersion
     isLoading.value = true
-    api.watchlater.clearAllWatchLater({
-      csrf: getCSRF(),
-    }).then((res) => {
+    try {
+      const res = await api.watchlater.clearAllWatchLater({ csrf: getCSRF() })
       if (res.code === 0) {
-        initData()
+        await initData()
         syncTopBarWatchLaterState()
       }
-    }).finally(() => {
-      isLoading.value = false
-    })
+    }
+    finally {
+      if (version === requestVersion)
+        isLoading.value = false
+    }
   }
 }
 
@@ -284,9 +314,9 @@ function handleVideoLinkClick(bvid: string) {
   }
 }
 
-function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) {
+function handleOpenVideoPageAndRemove(bvid: string, aid: number) {
   handleVideoLinkClick(bvid)
-  deleteWatchLaterItem(index, aid)
+  void deleteWatchLaterItem(aid)
 }
 </script>
 
@@ -374,7 +404,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
           <!-- watcher later list -->
           <TransitionGroup name="list">
             <ALink
-              v-for="(item, index) in currentWatchLaterList"
+              v-for="item in currentWatchLaterList"
               :key="item.aid"
               :href="`https://www.bilibili.com/video/${item.bvid}/`"
               type="videoCard"
@@ -501,7 +531,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                         type="button"
                         p-2
                         duration-300
-                        @click.prevent.stop="handleOpenVideoPageAndRemove(index, item.bvid, item.aid)"
+                        @click.prevent.stop="handleOpenVideoPageAndRemove(item.bvid, item.aid)"
                       >
                         <div i-tabler:player-play />
                       </button>
@@ -529,7 +559,7 @@ function handleOpenVideoPageAndRemove(index: number, bvid: string, aid: number) 
                         type="button"
                         p-2
                         duration-300
-                        @click.prevent.stop="deleteWatchLaterItem(index, item.aid)"
+                        @click.prevent.stop="deleteWatchLaterItem(item.aid)"
                       >
                         <div i-tabler:trash />
                       </button>
