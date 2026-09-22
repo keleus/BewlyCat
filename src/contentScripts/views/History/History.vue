@@ -11,7 +11,7 @@ import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { historyLayout, settings } from '~/logic'
 import type { HistoryResult, List as HistoryItem } from '~/models/history/history'
 import { Business } from '~/models/history/history'
-import type { HistorySearchResult, List as HistorySearchItem } from '~/models/video/historySearch'
+import type { HistorySearchResult } from '~/models/video/historySearch'
 import api from '~/utils/api'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getHistoryUrl } from '~/utils/history'
@@ -25,6 +25,9 @@ const noMoreContent = ref<boolean>(false)
 const historyList = reactive<Array<HistoryItem>>([])
 const currentPageNum = ref<number>(1)
 const keyword = ref<string>()
+let activeKeyword = ''
+let requestVersion = 0
+let disposed = false
 const historyStatus = ref<boolean>()
 const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 
@@ -90,10 +93,7 @@ const historyGroups = computed(() => {
 watch(historyLayout, async () => {
   await nextTick()
   if (getCSRF() && !isLoading.value && !noMoreContent.value && historyList.length && !await haveScrollbar()) {
-    if (keyword.value)
-      searchHistoryList()
-    else
-      getHistoryList()
+    void loadHistory()
   }
 }, { flush: 'post' })
 
@@ -102,103 +102,72 @@ const HistoryBusiness = computed(() => {
 })
 
 onMounted(() => {
-  getHistoryList()
+  void loadHistory()
   getHistoryPauseStatus()
 
   initPageAction()
 })
 
+onBeforeUnmount(() => {
+  disposed = true
+  requestVersion++
+})
+
 function initPageAction() {
-  handleReachBottom.value = () => {
-    if (isLoading.value)
-      return
-    if (noMoreContent.value)
-      return
-
-    // 优化：添加延迟执行提高触发成功率
-    setTimeout(() => {
-      if (!isLoading.value && !noMoreContent.value) {
-        if (keyword.value)
-          searchHistoryList()
-        else
-          getHistoryList()
-      }
-    }, 50)
-  }
-
-  handlePageRefresh.value = () => {
-    historyList.length = 0
-    currentPageNum.value = 1
-    noMoreContent.value = false
-    getHistoryList()
-  }
+  handleReachBottom.value = () => void loadHistory()
+  handlePageRefresh.value = resetHistory
 }
 
-/**
- * Get history list
- */
-function getHistoryList(): Promise<void> {
+async function loadHistory(): Promise<void> {
+  if (disposed || isLoading.value || noMoreContent.value)
+    return
+
+  const version = requestVersion
+  const searchKeyword = activeKeyword
   isLoading.value = true
-  return api.history.getHistoryList({
-    type: 'all',
-    view_at:
-        historyList.length > 0
-          ? historyList[historyList.length - 1].view_at
-          : 0,
-  })
-    .then(async (res: HistoryResult) => {
-      if (res.code === 0) {
-        if (Array.isArray(res.data.list) && res.data.list.length > 0)
-          historyList.push(...res.data.list)
 
-        if (res.data.list.length < 20) {
-          isLoading.value = false
-          noMoreContent.value = true
-          return
-        }
+  try {
+    while (true) {
+      if (version !== requestVersion)
+        return
+      const res: HistoryResult | HistorySearchResult = searchKeyword
+        ? await api.history.searchHistoryList({ pn: currentPageNum.value, keyword: searchKeyword })
+        : await api.history.getHistoryList({ type: 'all', view_at: historyList.at(-1)?.view_at ?? 0 })
+      if (version !== requestVersion || res.code !== 0)
+        return
 
-        noMoreContent.value = false
-
-        // ✅ 修复：添加 await，因为 haveScrollbar() 是异步函数
-        if (!(await haveScrollbar()) && !noMoreContent.value) {
-          return getHistoryList()
-        }
-      }
-    })
-    .finally(() => {
+      historyList.push(...res.data.list as HistoryItem[])
+      // 成功后再推进页码，失败重试仍请求同一页。
+      if (searchKeyword)
+        currentPageNum.value++
+      noMoreContent.value = res.data.list.length < 20
+      if (noMoreContent.value || await haveScrollbar())
+        return
+    }
+  }
+  catch (error) {
+    if (version === requestVersion)
+      console.error('加载历史记录失败:', error)
+  }
+  finally {
+    if (version === requestVersion)
       isLoading.value = false
-    })
+  }
 }
 
-function searchHistoryList(): Promise<void> {
-  isLoading.value = true
-  return api.history.searchHistoryList({
-    pn: currentPageNum.value++,
-    keyword: keyword.value,
-  })
-    .then(async (res: HistorySearchResult) => {
-      if (res.code === 0) {
-        res.data.list.forEach((item: HistorySearchItem) => {
-          historyList.push(item as unknown as HistoryItem)
-        })
-
-        noMoreContent.value = res.data.list.length < 20
-        if (!noMoreContent.value && !await haveScrollbar())
-          return searchHistoryList()
-      }
-    })
-    .finally(() => {
-      isLoading.value = false
-    })
-}
-
-function handleSearch() {
+function resetHistory() {
+  requestVersion++
+  isLoading.value = false
   historyList.length = 0
   currentPageNum.value = 1
   noMoreContent.value = false
-  if (keyword.value)
-    searchHistoryList()
-  else getHistoryList()
+  void loadHistory()
+}
+
+function handleSearch() {
+  // 输入框草稿不改变正在展示的查询，直到用户提交搜索。
+  activeKeyword = keyword.value?.trim() ?? ''
+  resetHistory()
 }
 
 function deleteHistoryItem(historyItem: HistoryItem) {
@@ -248,8 +217,13 @@ function clearAllHistory() {
     csrf: getCSRF(),
   })
     .then((res) => {
-      if (res.code === 0)
+      if (res.code === 0) {
+        requestVersion++
+        isLoading.value = false
+        noMoreContent.value = true
+        currentPageNum.value = 1
         historyList.length = 0
+      }
     })
 }
 
