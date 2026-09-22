@@ -521,40 +521,36 @@ export function detectVideoType(): VideoType {
 
   // 优先根据当前稿件的分 P 数判断。合集可以包含多 P 稿件，
   // 如果先根据右侧合集列表判断，这类稿件会错用合集的播放设置。
-  const app = document.querySelector('#app') as any
-  if (app?.__vue__) {
-    const videoData = app.__vue__.videoData
-    if (videoData) {
-      const { videos: videosCount } = videoData
-      const isSection = app.__vue__.isSection
-
-      // 分P视频：videos > 1
-      if (videosCount > 1) {
-        return VideoType.MULTIPART
-      }
-      // 合集视频：isSection = true
-      if (isSection) {
-        return VideoType.COLLECTION
-      }
+  const app = document.querySelector('#app') as (Element & {
+    __vue__?: {
+      isSection?: boolean
+      videoData?: { videos?: number, pages?: unknown[] }
     }
+  }) | null
+  const videoData = app?.__vue__?.videoData
+  const videosCount = videoData?.pages?.length || videoData?.videos
+  if (videosCount && videosCount > 1)
+    return VideoType.MULTIPART
+
+  // 内容脚本未必能读取页面的 Vue 实例，仍需 DOM 兜底。
+  // video-pod__item 可以包着 simple-base-item，两者都是合集的同一条目，
+  // 不能用它们同时存在来证明当前稿件有多个分 P。
+  // 只接受分 P 专属列表或选集容器内的视图切换；已知单 P 时不再推测。
+  if (videosCount !== 1 && document.querySelector([
+    '.multi-page .cur-list li',
+    '.multi-page-v1 .cur-list li',
+    '.multi-page .multi-page__item',
+    '.multi-page .page-item',
+    '.video-pod .multip-list-item',
+    '.video-pod .view-mode',
+    '.multi-page .view-mode',
+    '.multi-page-v1 .view-mode',
+  ].join(', '))) {
+    return VideoType.MULTIPART
   }
 
-  // DOM 兜底：普通分 P 视频有 .view-mode 切换视图组件，
-  // 只有合集列表的视频没有。合集中的多 P 稿件会同时渲染
-  // 分 P 列表和新版合集列表，即使 .view-mode 被合集面板隐去也要视为分 P。
-  const hasViewMode = !!document.querySelector('.view-mode')
-  const hasMultipartItems = !!document.querySelector(
-    '.video-pod__item, .multi-page__item, .page-item',
-  )
-  const hasCollectionItems = !!document.querySelector('.video-pod__list .simple-base-item')
-  const hasVideoPod = hasMultipartItems || hasCollectionItems
-
-  if (hasVideoPod) {
-    if (hasViewMode || (hasMultipartItems && hasCollectionItems))
-      return VideoType.MULTIPART
-
+  if (app?.__vue__?.isSection)
     return VideoType.COLLECTION
-  }
 
   // 如果以上都不是，检测是否为合集视频（通过DOM）
   if (isCollectionVideo()) {
