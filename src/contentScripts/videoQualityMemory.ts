@@ -1,6 +1,8 @@
 import { settings, settingsReady } from '~/logic'
 import { getVideoElement } from '~/utils/player'
 
+import { setupPlayerSettingSync } from './playerSettingSync'
+
 const QUALITY_ITEM_SELECTOR = '.bpx-player-ctrl-quality-menu-item[data-value]'
 const ACTIVE_CLASS = 'bpx-state-active'
 let hasInitialized = false
@@ -94,6 +96,18 @@ export function initVideoQualityMemory() {
       target.click()
     }
 
+    const syncController = setupPlayerSettingSync({
+      enabled: () => settings.value.rememberVideoQuality,
+      preference: () => settings.value.savedVideoQuality,
+      target: () => document.querySelector(QUALITY_ITEM_SELECTOR)?.parentElement ?? null,
+      sync: syncQuality,
+      pending: () => pending !== null,
+      reset: () => {
+        pending = null
+        attemptedQualities.clear()
+      },
+    })
+
     document.addEventListener('click', (event) => {
       if (!event.isTrusted || !settings.value.rememberVideoQuality || !(event.target instanceof Element))
         return
@@ -108,10 +122,7 @@ export function initVideoQualityMemory() {
       contextMenu = item.parentElement
       contextUrl = location.href
       pending = { quality, expires: Date.now() + 10000 }
-    }, true)
-
-    syncQuality()
-    // 与比例记忆一致，覆盖播放器延迟初始化、菜单重建及站内切集。
-    setInterval(syncQuality, 1000)
+      syncController.schedule()
+    }, { capture: true, signal: syncController.signal })
   })
 }

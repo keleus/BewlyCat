@@ -1,6 +1,8 @@
 import { settings, settingsReady } from '~/logic'
 import type { VideoAspectRatio } from '~/logic/storage'
 
+import { setupPlayerSettingSync } from './playerSettingSync'
+
 const ASPECT_INPUT_SELECTOR = '.bpx-player-ctrl-setting-aspect input.bui-radio-input[type="radio"]'
 const SUPPORTED_ASPECT_RATIOS = new Set<VideoAspectRatio>(['0:0', '4:3', '16:9'])
 
@@ -65,10 +67,12 @@ export function initVideoAspectRatioMemory() {
   hasInitialized = true
 
   void settingsReady.then(() => {
-    document.addEventListener('change', rememberSelectedAspectRatio, true)
-    syncVideoAspectRatio()
-
-    // 播放器会在站内切集或切换番剧时复用/重建设置面板，定时同步可覆盖两种情况。
-    setInterval(syncVideoAspectRatio, 1000)
+    const syncController = setupPlayerSettingSync({
+      enabled: () => settings.value.rememberVideoAspectRatio,
+      preference: () => settings.value.savedVideoAspectRatio,
+      target: () => document.querySelector('.bpx-player-ctrl-setting-aspect'),
+      sync: syncVideoAspectRatio,
+    })
+    document.addEventListener('change', rememberSelectedAspectRatio, { capture: true, signal: syncController.signal })
   })
 }
