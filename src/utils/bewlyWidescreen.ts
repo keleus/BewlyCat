@@ -52,6 +52,7 @@ interface BewlyWidescreenState {
   lastPlayerHeight?: number
   sidebarInteractionCleanup?: () => void
   sidebarToggleAutoHideCleanup?: () => void
+  idleProgressCleanup?: () => void
   sidebarResizeCleanup?: () => void
   descriptionCleanup?: () => void
   escapeKeyCleanup?: () => void
@@ -1294,6 +1295,25 @@ function injectLayoutStyle() {
 
     #${ROOT_ID} .bewly-widescreen-danmaku-dock:empty {
       display: none;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-idle-progress {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: var(--bewly-widescreen-danmaku-height, 0px);
+      height: var(--bew-space-0-5, 2px);
+      z-index: 1;
+      pointer-events: none;
+      background: var(--bew-fill-2, rgba(255, 255, 255, 0.16));
+    }
+
+    #${ROOT_ID} .bewly-widescreen-idle-progress-value {
+      width: 100%;
+      height: 100%;
+      background: var(--bew-theme-color, #00aeec);
+      transform: scaleX(0);
+      transform-origin: left;
     }
 
     #${ROOT_ID} .bewly-widescreen-danmaku-dock .bpx-player-sending-bar,
@@ -3412,6 +3432,60 @@ function setupSidebarToggleAutoHide(currentState: BewlyWidescreenState) {
   }
 }
 
+function setupIdleProgress(currentState: BewlyWidescreenState) {
+  const { playerFrame, playerSlot } = currentState
+  const progress = document.createElement('div')
+  progress.className = 'bewly-widescreen-idle-progress'
+  progress.setAttribute('aria-hidden', 'true')
+  progress.hidden = true
+  const value = document.createElement('div')
+  value.className = 'bewly-widescreen-idle-progress-value'
+  progress.append(value)
+  playerSlot.append(progress)
+
+  function update() {
+    // 每次从当前播放器取节点，兼容换集时 video 和控制栏被替换。
+    const video = getVideoElement()
+    const controls = playerFrame.querySelector<HTMLElement>('.bpx-player-control-bottom, .bilibili-player-video-control, .squirtle-controller')
+    if (!video || !playerFrame.contains(video) || video.paused || video.ended
+      || !Number.isFinite(video.duration) || video.duration <= 0 || !controls) {
+      progress.hidden = true
+      return
+    }
+
+    // 跟随原生控制栏实际隐藏状态，不另设鼠标闲置倒计时。
+    let controlsHidden = false
+    for (let element: HTMLElement | null = controls; element && element !== playerFrame; element = element.parentElement) {
+      const style = getComputedStyle(element)
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+        controlsHidden = true
+        break
+      }
+    }
+    if (!controlsHidden) {
+      const rect = controls.getBoundingClientRect()
+      const frameRect = playerFrame.getBoundingClientRect()
+      controlsHidden = rect.width === 0 || rect.height === 0
+        || rect.top >= frameRect.bottom || rect.bottom <= frameRect.top
+    }
+
+    progress.hidden = !controlsHidden
+    if (controlsHidden)
+      value.style.transform = `scaleX(${Math.min(1, Math.max(0, video.currentTime / video.duration))})`
+  }
+
+  // 同时覆盖原生控件的 CSS 过渡和自定义 bwp-video 的播放进度。
+  const timer = window.setInterval(update, 200)
+  const mediaEvents = ['timeupdate', 'seeking', 'play', 'pause', 'ended', 'emptied', 'durationchange']
+  mediaEvents.forEach(event => playerFrame.addEventListener(event, update, true))
+  update()
+  currentState.idleProgressCleanup = () => {
+    window.clearInterval(timer)
+    mediaEvents.forEach(event => playerFrame.removeEventListener(event, update, true))
+    progress.remove()
+  }
+}
+
 function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
   currentState.mutationObserver = new MutationObserver((mutations) => {
     if (!state || state !== currentState)
@@ -3701,6 +3775,7 @@ function cleanupState(currentState: BewlyWidescreenState) {
   currentState.escapeKeyCleanup?.()
   currentState.sidebarInteractionCleanup?.()
   currentState.sidebarToggleAutoHideCleanup?.()
+  currentState.idleProgressCleanup?.()
   currentState.sidebarResizeCleanup?.()
   currentState.metadataListener?.()
   currentState.resizeObserver?.disconnect()
@@ -3807,6 +3882,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
   setupSidebarInteractionTracking(nextState)
   setupSidebarResize(nextState)
   setupSidebarToggleAutoHide(nextState)
+  setupIdleProgress(nextState)
   removeSwitchHint()
   removeWidescreenLoading()
 
