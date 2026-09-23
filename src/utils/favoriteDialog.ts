@@ -38,6 +38,94 @@ function clearAllSelections(container: Element) {
   })
 }
 
+const FAV_MARKED_ATTR = 'bewlyFavMarked'
+const FULL_GUARD_BOUND_ATTR = 'bewlyFullGuardBound'
+const FULL_DISABLED_CLASS = 'bewly-full-disabled'
+
+/**
+ * 判断收藏夹是否已满（原生会为其 label 添加 disable 类）
+ */
+function isFullFolder(label: HTMLElement): boolean {
+  return label.classList.contains('disable')
+}
+
+/**
+ * 标记「已满且视频原本不在其中」的收藏夹，用于灰色禁用外观与点击拦截
+ */
+function markFullDisabledFolders(dialog: Element) {
+  dialog.querySelectorAll<HTMLElement>('.group-list li label').forEach((label) => {
+    if (label.dataset[FAV_MARKED_ATTR])
+      return
+
+    const input = label.querySelector<HTMLInputElement>('input[type="checkbox"]')
+    if (!input)
+      return
+
+    if (!input.checked && isFullFolder(label))
+      label.classList.add(FULL_DISABLED_CLASS)
+
+    label.dataset[FAV_MARKED_ATTR] = '1'
+  })
+}
+
+/**
+ * 是否应阻止勾选：收藏夹已满、当前未勾选，且视频原本不在其中
+ */
+function shouldBlockFullFolderToggle(label: HTMLElement, target: Element): boolean {
+  if (!label.classList.contains(FULL_DISABLED_CLASS))
+    return false
+
+  const input = label.querySelector<HTMLInputElement>('input[type="checkbox"]')
+  // checkbox 的 click 捕获阶段已经执行预激活并翻转 checked；点击 label 时则尚未翻转。
+  // preventDefault 会让 checkbox 恢复预激活前的状态，同时仍允许取消已选项。
+  return !!input && (target === input ? input.checked : !input.checked)
+}
+
+/**
+ * 显示与 B 站一致的「收藏夹已满」提示
+ */
+function showFolderFullMessage(anchor: HTMLElement) {
+  document.querySelectorAll('.bili-msg').forEach(el => el.remove())
+
+  const message = document.createElement('div')
+  message.className = 'bili-msg error'
+  message.textContent = String(i18n.global.t('favorite_dialog.folder_full'))
+  document.body.appendChild(message)
+
+  const rect = anchor.getBoundingClientRect()
+  const scrollTop = (document.scrollingElement || document.documentElement).scrollTop
+  message.style.left = `${rect.left + rect.width / 2 - message.offsetWidth / 2}px`
+  message.style.top = `${rect.top + scrollTop - (message.offsetHeight + 10)}px`
+  message.classList.add('show')
+
+  window.setTimeout(() => message.remove(), 2000)
+}
+
+/**
+ * 拦截对已满收藏夹的勾选，并弹出提示
+ */
+function bindFullFolderGuard(dialog: Element) {
+  const element = dialog as HTMLElement
+  if (element.dataset[FULL_GUARD_BOUND_ATTR])
+    return
+
+  element.dataset[FULL_GUARD_BOUND_ATTR] = '1'
+
+  element.addEventListener('click', (event) => {
+    const target = event.target
+    if (!(target instanceof Element))
+      return
+
+    const label = target.closest<HTMLElement>('.group-list li label')
+    if (!label || !shouldBlockFullFolderToggle(label, target))
+      return
+
+    event.preventDefault()
+    event.stopPropagation()
+    showFolderFullMessage(label)
+  }, true)
+}
+
 /**
  * 应用放大样式到收藏弹窗
  */
@@ -89,6 +177,10 @@ function enhanceFavoriteDialog(dialog: Element) {
 
   // 注入清空按钮
   injectClearButton(dialog)
+
+  // 标记已满且原本不在其中的收藏夹，并拦截对它们的勾选
+  markFullDisabledFolders(dialog)
+  bindFullFolderGuard(dialog)
 }
 
 /**
@@ -117,6 +209,12 @@ export function initFavoriteDialogEnhancement() {
             setTimeout(() => {
               enhanceFavoriteDialog(dialog)
             }, 100)
+          }
+
+          // 收藏夹行异步渲染时补打灰色禁用标记
+          const context = node.closest('.collection-m-exp')
+          if (context) {
+            markFullDisabledFolders(context)
           }
         }
       }
