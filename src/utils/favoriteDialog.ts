@@ -58,7 +58,10 @@ function markFullDisabledFolders(dialog: Element) {
       return
 
     const input = label.querySelector<HTMLInputElement>('input[type="checkbox"]')
-    if (!input?.checked && isFullFolder(label))
+    if (!input)
+      return
+
+    if (!input.checked && isFullFolder(label))
       label.classList.add(FULL_DISABLED_CLASS)
 
     label.dataset[FAV_MARKED_ATTR] = '1'
@@ -68,12 +71,14 @@ function markFullDisabledFolders(dialog: Element) {
 /**
  * 是否应阻止勾选：收藏夹已满、当前未勾选，且视频原本不在其中
  */
-function shouldBlockFullFolderToggle(label: HTMLElement): boolean {
+function shouldBlockFullFolderToggle(label: HTMLElement, target: Element): boolean {
   if (!label.classList.contains(FULL_DISABLED_CLASS))
     return false
 
   const input = label.querySelector<HTMLInputElement>('input[type="checkbox"]')
-  return !!input && !input.checked
+  // checkbox 的 click 捕获阶段已经执行预激活并翻转 checked；点击 label 时则尚未翻转。
+  // preventDefault 会让 checkbox 恢复预激活前的状态，同时仍允许取消已选项。
+  return !!input && (target === input ? input.checked : !input.checked)
 }
 
 /**
@@ -112,7 +117,7 @@ function bindFullFolderGuard(dialog: Element) {
       return
 
     const label = target.closest<HTMLElement>('.group-list li label')
-    if (!label || !shouldBlockFullFolderToggle(label))
+    if (!label || !shouldBlockFullFolderToggle(label, target))
       return
 
     event.preventDefault()
