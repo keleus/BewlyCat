@@ -11,6 +11,7 @@ import Tooltip from '~/components/Tooltip.vue'
 import { useVideoPreviewSwipeSeek } from '~/composables/useVideoPreviewSwipeSeek'
 import { settings } from '~/logic'
 import { calcCurrentTime } from '~/utils/dataFormatter'
+import { getVideoWatchState } from '~/utils/videoVisitHistory'
 
 import type { Video } from '../types'
 
@@ -44,6 +45,8 @@ interface Props {
   }
   hasCoverStats?: boolean
   shouldHideCoverStats?: boolean
+  /** 数据未自带进度时，是否使用本地记录的观看进度。 */
+  showLocalWatchProgress?: boolean
 }
 
 const props = defineProps<Props>()
@@ -53,6 +56,19 @@ const emit = defineEmits<{
   imageLoaded: []
   previewFullscreenChange: [isFullscreen: boolean]
 }>()
+
+const playbackProgress = computed(() => {
+  const video = props.video
+  if (!video)
+    return undefined
+  if (video.playbackProgress !== undefined)
+    return video.playbackProgress
+  if (!props.showLocalWatchProgress)
+    return undefined
+
+  const watchState = getVideoWatchState({ aid: video.aid ?? video.id, bvid: video.bvid })
+  return watchState?.status === 'watched' ? watchState.percentage : undefined
+})
 
 const videoRef = ref<HTMLVideoElement | null>(null)
 const isActive = ref(true)
@@ -654,12 +670,12 @@ onBeforeUnmount(() => {
         </div>
 
         <div
-          v-if="video.playbackProgress !== undefined"
+          v-if="playbackProgress !== undefined"
           class="video-card-playback-progress"
           aria-hidden="true"
         >
           <Progress
-            :percentage="video.playbackProgress"
+            :percentage="playbackProgress"
             height="var(--bew-space-0-5)"
           />
         </div>

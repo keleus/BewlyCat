@@ -1269,6 +1269,7 @@ video_card:
   group_contribution: '{firstAuthor} and {num} others contributed'
   video_removed: Video removed
   watched: Watched
+  browsed: Opened
   visited_recently: Visited within the past month
 home:
   following_display_flat: List

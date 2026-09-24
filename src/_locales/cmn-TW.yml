@@ -1191,6 +1191,7 @@ video_card:
   group_contribution: '{firstAuthor} 等 {num} 人共同創作'
   video_removed: 影片已移除
   watched: 已觀看
+  browsed: 已瀏覽
   visited_recently: 近一個月內瀏覽過
 home:
   following_display_flat: 不分組

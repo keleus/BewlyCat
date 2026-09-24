@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { settings } from '~/logic'
 import type { VideoIdentity } from '~/utils/videoVisitHistory'
-import { wasVideoVisited } from '~/utils/videoVisitHistory'
+import { getVideoWatchState } from '~/utils/videoVisitHistory'
 
 const props = defineProps<VideoIdentity>()
 
-const visible = computed(() =>
-  settings.value.showVideoWatchedBadge && wasVideoVisited(props),
+const status = computed(() =>
+  settings.value.showVideoWatchedBadge ? getVideoWatchState(props)?.status : undefined,
 )
 </script>
 
 <template>
-  <span v-if="visible" class="video-watched-tag">
-    {{ $t('video_card.watched') }}
+  <span
+    v-if="status"
+    class="video-watched-tag"
+    :class="{ 'video-watched-tag--browsed': status === 'browsed' }"
+  >
+    {{ status === 'watched' ? $t('video_card.watched') : $t('video_card.browsed') }}
   </span>
 </template>
 
@@ -35,5 +39,13 @@ const visible = computed(() =>
 
 :global(.dark) .video-watched-tag {
   color: var(--bew-text-1);
+}
+
+/* 仅打开过、未实际播放：弱化显示，与「已观看」区分。 */
+.video-watched-tag--browsed,
+:global(.dark) .video-watched-tag--browsed {
+  border-color: var(--bew-border-color);
+  color: var(--bew-text-3);
+  background: var(--bew-fill-1);
 }
 </style>

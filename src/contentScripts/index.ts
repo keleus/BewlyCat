@@ -40,6 +40,7 @@ import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDete
 import { setupNativeHomeFeedHistory } from './features/nativeHomeFeedHistory'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
+import { setupVideoWatchProgress } from './features/videoWatchProgress'
 import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
 import { initLocalLoudnessControl } from './localLoudnessControl'
 import type { PageLoadingGuard } from './pageLoading'
@@ -232,6 +233,7 @@ else if (shouldInitializeContentScript) {
   setupNotificationStateInvalidation()
   setupNativeHomeFeedHistory()
   setupWatchLaterAutoRemove()
+  setupVideoWatchProgress()
   // Fix `OverlayScrollbars` not working in Firefox
   // https://github.com/fingerprintjs/fingerprintjs/issues/683#issuecomment-881210244
   if (isFirefox) {

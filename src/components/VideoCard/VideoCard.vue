@@ -395,6 +395,7 @@ provide('getVideoType', () => props.type!)
             :cover-stats-visibility="coverStatsVisibility"
             :has-cover-stats="Boolean(hasCoverStats)"
             :should-hide-cover-stats="Boolean(shouldHideCoverStats)"
+            :show-local-watch-progress="!hideWatchedBadge && settings.showVideoWatchedBadge && !props.video?.roomid"
             @toggle-watch-later="logic.toggleWatchLater"
             @undo="logic.handleUndo"
             @preview-fullscreen-change="logic.handlePreviewFullscreenChange"
