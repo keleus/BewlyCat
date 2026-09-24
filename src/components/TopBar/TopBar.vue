@@ -58,6 +58,17 @@ function checkUrlChange() {
 let hideTimer: number | null = null
 let urlChangeCheckQueued = false
 let topBarUnmounted = false
+// 后台恢复的标签页推迟到首次可见时再初始化，避免多个标签页同时挤占后台请求。
+let initDataDeferred = false
+
+async function initTopBarData() {
+  try {
+    await topBarStore.initData()
+  }
+  catch (error) {
+    console.error('初始化顶栏数据失败:', error)
+  }
+}
 
 function scheduleUrlChangeCheck() {
   if (urlChangeCheckQueued || topBarUnmounted)
@@ -586,12 +597,10 @@ function handleClickOutsidePopup(event: MouseEvent) {
 onMounted(() => {
   nextTick(async () => {
     // 初始化数据和更新定时器
-    try {
-      await topBarStore.initData()
-    }
-    catch (error) {
-      console.error('初始化顶栏数据失败:', error)
-    }
+    if (document.hidden)
+      initDataDeferred = true
+    else
+      await initTopBarData()
     if (topBarUnmounted)
       return
 
@@ -625,11 +634,20 @@ onMounted(() => {
 
 function handleVisibilityChange() {
   if (!document.hidden) {
-    topBarStore.reconcileLocalLoginState()
-    topBarStore.startUpdateTimer()
-    void topBarStore.syncSharedData().catch((error) => {
-      console.error('同步顶栏共享状态失败:', error)
-    })
+    if (initDataDeferred) {
+      initDataDeferred = false
+      void initTopBarData().then(() => {
+        if (!topBarUnmounted && !document.hidden)
+          topBarStore.startUpdateTimer()
+      })
+    }
+    else {
+      topBarStore.reconcileLocalLoginState()
+      topBarStore.startUpdateTimer()
+      void topBarStore.syncSharedData().catch((error) => {
+        console.error('同步顶栏共享状态失败:', error)
+      })
+    }
     scheduleUrlChangeCheck()
     scheduleConflictingHeaderVisibilityUpdate()
   }
