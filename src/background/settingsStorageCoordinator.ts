@@ -255,11 +255,36 @@ async function readSettings(): Promise<SettingsStoragePatchResponse> {
     accepted: true,
     epoch: meta.epoch,
     revision: meta.revision,
-    storedValue: typeof stored[SETTINGS_STORAGE_KEY] === 'string'
-      ? stored[SETTINGS_STORAGE_KEY]
-      : stored[SETTINGS_STORAGE_KEY] == null
-        ? undefined
-        : JSON.stringify(parseStoredSettings(stored[SETTINGS_STORAGE_KEY])),
+    storedValue: serializeStoredSettings(stored[SETTINGS_STORAGE_KEY]),
+  }
+}
+
+function serializeStoredSettings(value: unknown) {
+  if (typeof value === 'string')
+    return value
+
+  return value == null ? undefined : JSON.stringify(parseStoredSettings(value))
+}
+
+/**
+ * 单次 get 读取的设置与元数据是一致快照，不必排在云同步等较慢的写入之后；
+ * 多标签页同时启动时首屏读取因此不会被写入队列阻塞。只有需要补全元数据时
+ * 才进入队列，避免并发生成不同的 epoch。
+ */
+async function readSettingsWithoutQueue(): Promise<SettingsStoragePatchResponse> {
+  const stored = await browser.storage.local.get([
+    SETTINGS_STORAGE_KEY,
+    SETTINGS_STORAGE_META_KEY,
+  ])
+  const { changed, meta } = completeStorageMeta(stored[SETTINGS_STORAGE_META_KEY])
+  if (changed)
+    return enqueueSettingsWrite(readSettings)
+
+  return {
+    accepted: true,
+    epoch: meta.epoch,
+    revision: meta.revision,
+    storedValue: serializeStoredSettings(stored[SETTINGS_STORAGE_KEY]),
   }
 }
 
@@ -537,7 +562,7 @@ export function setupSettingsStorageCoordinator() {
 
   initialized = true
   browser.storage.onChanged.addListener(handleStorageReset)
-  onMessage(SETTINGS_STORAGE_READ_MESSAGE, () => enqueueSettingsWrite(readSettings))
+  onMessage(SETTINGS_STORAGE_READ_MESSAGE, readSettingsWithoutQueue)
   onMessage(SETTINGS_STORAGE_PATCH_MESSAGE, value => enqueueSettingsWrite(() => applyPatch(value)))
   onMessage(SETTINGS_STORAGE_IMPORT_MESSAGE, value => enqueueSettingsWrite(() => importSettings(value)))
 }
