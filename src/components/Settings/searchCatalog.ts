@@ -489,6 +489,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.video_player_scroll',
     'settings.auto_exit_fullscreen_on_end',
     'settings.group_player_components',
+    'settings.skip_concise_danmaku',
     'settings.group_playback_memory',
     'settings.remember_playback_rate',
     'settings.remember_video_aspect_ratio',

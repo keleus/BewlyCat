@@ -251,6 +251,14 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
       </SettingsItem>
 
       <SettingsItem
+        :title="t('settings.skip_concise_danmaku')"
+        :desc="t('settings.skip_concise_danmaku_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.skipConciseDanmaku" />
+      </SettingsItem>
+
+      <SettingsItem
         :title="t('settings.video_caption_default_state')"
         right-width="auto"
       >

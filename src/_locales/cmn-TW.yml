@@ -479,6 +479,8 @@ settings:
   video_default_player_mode: 影片預設顯示模式
   video_danmaku_default_state: 彈幕預設狀態
   video_danmaku_default_state_desc: 開啟影片時自動調整彈幕開關，也可以保持原樣。
+  skip_concise_danmaku: 彈幕開關略過精簡彈幕
+  skip_concise_danmaku_desc: 點擊彈幕開關或按 D 時直接在開啟和關閉之間切換，不經過 B 站新增的「精簡彈幕」檔位。重新整理頁面後生效。
   video_caption_default_state: 字幕預設狀態
   video_caption_default_state_desc: 開啟影片時自動調整字幕開關，也可以保持原樣。
   video_default_state_opt:

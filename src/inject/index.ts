@@ -92,6 +92,56 @@ else if (shouldInitializePageScript) {
     }
   }
 
+  // B 站灰度的三档弹幕开关（开 → 精简 → 关）由 dm_three_state_switch 实验控制，
+  // 页面实验值优先于 KV 配置；覆盖为 false 即恢复开/关两档。播放器按首次读到的值
+  // 创建开关组件，因此首次读取后锁定本页结果，设置变更在刷新后生效。
+  const danmakuThreeStateExpKey = 'dm_three_state_switch'
+  const patchedAbTests = new WeakSet<object>()
+  let skipConciseDanmaku: boolean | undefined
+  const patchDanmakuThreeStateExp = (abTest: unknown) => {
+    if (!abTest || typeof abTest !== 'object' || patchedAbTests.has(abTest))
+      return
+
+    const descriptor = Object.getOwnPropertyDescriptor(abTest, danmakuThreeStateExpKey)
+    let originalValue: unknown = descriptor?.value
+    try {
+      Object.defineProperty(abTest, danmakuThreeStateExpKey, {
+        configurable: true,
+        enumerable: descriptor?.enumerable ?? false,
+        get: () => {
+          // 设置未送达时按默认值（跳过）处理
+          skipConciseDanmaku ??= currentSettings?.skipConciseDanmaku ?? true
+          return skipConciseDanmaku ? 'false' : originalValue
+        },
+        set: (value: unknown) => {
+          originalValue = value
+        },
+      })
+      patchedAbTests.add(abTest)
+    }
+    catch {
+      // 实验对象不可扩展时保持 B 站原行为
+    }
+  }
+
+  try {
+    let webAbTest: unknown = (window as Window & { webAbTest?: unknown }).webAbTest
+    patchDanmakuThreeStateExp(webAbTest)
+    // 页面内联脚本会整体赋值 window.webAbTest，需要在赋值时补上覆盖
+    Object.defineProperty(window, 'webAbTest', {
+      configurable: true,
+      enumerable: true,
+      get: () => webAbTest,
+      set: (value: unknown) => {
+        webAbTest = value
+        patchDanmakuThreeStateExp(value)
+      },
+    })
+  }
+  catch {
+    // window.webAbTest 不可重定义时保持 B 站原行为
+  }
+
   // 之前inject.js的内容
   const isArray = (val: any): boolean => Array.isArray(val)
   function injectFunction(

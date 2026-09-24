@@ -21,6 +21,7 @@ export interface PageSettingsPayload {
   showCommentHostTag: boolean
   showIPLocation: boolean
   showSex: boolean
+  skipConciseDanmaku: boolean
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -82,5 +83,6 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     showCommentHostTag: value.showCommentHostTag,
     showIPLocation: value.showIPLocation,
     showSex: value.showSex,
+    skipConciseDanmaku: value.skipConciseDanmaku !== false,
   }
 }

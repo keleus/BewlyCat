@@ -524,6 +524,7 @@ export interface Settings {
   enableBewlyWidescreenSidebarResize: boolean // 允许手动调整 Bewly 宽屏侧栏宽度
   defaultDanmakuState: PlayerDefaultState
   defaultCaptionState: PlayerDefaultState
+  skipConciseDanmaku: boolean // 弹幕开关跳过 B 站灰度的“精简弹幕”档位
   lastDanmakuState: boolean
   lastCaptionState: boolean
   enableVideoPlayerModeOverrides: boolean // 启用按场景覆盖播放器显示模式
@@ -847,6 +848,7 @@ export const originalSettings: Settings = {
   enableBewlyWidescreenSidebarResize: false, // 默认使用自动布局
   defaultDanmakuState: 'system',
   defaultCaptionState: 'system',
+  skipConciseDanmaku: true,
   lastDanmakuState: true,
   lastCaptionState: false,
   enableVideoPlayerModeOverrides: false,
