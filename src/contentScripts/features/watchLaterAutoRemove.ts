@@ -1,10 +1,11 @@
 import { settings } from '~/logic'
+import { markWatchLater } from '~/logic/watchLaterState'
 import type { VideoInfo } from '~/models/video/videoInfo'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getCSRF, getUserID } from '~/utils/main'
 import { getVideoElement, isPlayerShowingAdvertisement, isWatchLaterVideo } from '~/utils/player'
-import { extractVideoIds, syncRemovedWatchLaterButton } from '~/utils/watchLaterButton'
+import { extractVideoIds } from '~/utils/watchLaterButton'
 
 export function setupWatchLaterAutoRemove() {
   const pending = new Set<string>()
@@ -87,7 +88,7 @@ export function setupWatchLaterAutoRemove() {
         if (getUserID() !== accountId)
           return
 
-        void syncRemovedWatchLaterButton(info.aid)
+        markWatchLater({ aid: info.aid, bvid: info.bvid }, false)
         // 删除接口存在短暂的最终一致性，稍后刷新顶栏列表及跨标签页计数。
         window.setTimeout(() => {
           if (getUserID() === accountId) {

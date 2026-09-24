@@ -1,5 +1,7 @@
+import { watch } from 'vue'
+
 import { settings } from '~/logic'
-import type { List as WatchLaterItem, WatchLaterResult } from '~/models/video/watchLater'
+import { ensureWatchLaterState, findWatchLaterEntry, getWatchLaterAid, markWatchLater } from '~/logic/watchLaterState'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { i18n } from '~/utils/i18n'
@@ -10,11 +12,14 @@ const WATCH_LATER_ICON_CLASS = 'i-mingcute:carplay-line'
 
 // B 站工具栏由前端水合渲染，出现时间不定；超过该时长仍未出现则放弃本次挂载
 const TOOLBAR_READY_TIMEOUT = 15000
+// 视频页按钮是查看单个视频状态的主要入口，共享缓存超过该时长时重新拉取
+const WATCH_LATER_STATE_MAX_AGE = 60_000
 
 let pendingToolbarObserver: MutationObserver | undefined
 let pendingToolbarTimer: ReturnType<typeof setTimeout> | undefined
 let pendingToolbarResolve: ((mounted: boolean) => void) | undefined
 let hoverStyleInjected = false
+let stopButtonStateWatch: (() => void) | undefined
 
 export interface VideoIds {
   bvid?: string
@@ -32,19 +37,6 @@ interface MountedWatchLaterButton {
   ids: VideoIds
   ready: Promise<void>
   state: WatchLaterButtonState
-}
-
-let mountedButton: MountedWatchLaterButton | undefined
-
-export async function syncRemovedWatchLaterButton(aid: number) {
-  const mounted = mountedButton
-  if (!mounted)
-    return
-  await mounted.ready
-  if (mounted.button.isConnected && mounted.state.aid === aid) {
-    mounted.state.isInWatchLater = false
-    updateButtonState(mounted.button, false)
-  }
 }
 
 /**
@@ -84,10 +76,6 @@ export function extractVideoIds(url: string = location.href): VideoIds {
 
 function getVideoKey({ bvid, aid }: VideoIds): string {
   return bvid || (aid ? `av${aid}` : '')
-}
-
-function findWatchLaterItem(list: WatchLaterItem[] | undefined, { bvid, aid }: VideoIds): WatchLaterItem | undefined {
-  return list?.find(item => (bvid && item.bvid === bvid) || (aid && item.aid === aid))
 }
 
 function translate(key: string): string {
@@ -153,6 +141,7 @@ function scheduleTopBarRefresh() {
 }
 
 async function resolveAid(ids: VideoIds, state: WatchLaterButtonState): Promise<number | undefined> {
+  state.aid ||= getWatchLaterAid(ids)
   if (state.aid)
     return state.aid
   if (!ids.bvid)
@@ -191,30 +180,38 @@ function waitUntilPageVisible(): Promise<void> {
   })
 }
 
-async function initializeButtonState(button: HTMLButtonElement, ids: VideoIds, state: WatchLaterButtonState) {
+async function initializeButtonState(button: HTMLButtonElement) {
   try {
     await waitUntilPageVisible()
-    if (!button.isConnected)
-      return
-
-    const result = await api.watchlater.getAllWatchLaterList() as WatchLaterResult
-    if (!button.isConnected)
-      return
-
-    if (result.code === 0) {
-      const item = findWatchLaterItem(result.data?.list, ids)
-      state.isInWatchLater = Boolean(item)
-      state.aid = item?.aid || state.aid
-      updateButtonState(button, state.isInWatchLater)
-    }
-  }
-  catch (error) {
-    console.error('获取稍后再看状态失败:', error)
+    if (button.isConnected)
+      await ensureWatchLaterState({ maxAge: WATCH_LATER_STATE_MAX_AGE })
   }
   finally {
     if (button.isConnected)
       setButtonBusy(button, false)
   }
+}
+
+function stopWatchingButtonState() {
+  stopButtonStateWatch?.()
+  stopButtonStateWatch = undefined
+}
+
+// 共享状态由本页其他入口、自动移除和其他标签页共同更新，按钮跟随变化。
+// 同一时间只保留一个 watcher；按钮被替换、移除或脱离页面时停止，避免持有旧 DOM。
+function watchButtonState({ button, ids, state }: MountedWatchLaterButton) {
+  stopWatchingButtonState()
+  const apply = (entry: ReturnType<typeof findWatchLaterEntry>) => {
+    if (!button.isConnected) {
+      stopWatchingButtonState()
+      return
+    }
+    state.isInWatchLater = Boolean(entry)
+    state.aid = entry?.aid || state.aid
+    updateButtonState(button, state.isInWatchLater)
+  }
+  stopButtonStateWatch = watch(() => findWatchLaterEntry(ids), apply)
+  apply(findWatchLaterEntry(ids))
 }
 
 async function toggleWatchLater(button: HTMLButtonElement, ids: VideoIds, state: WatchLaterButtonState) {
@@ -238,6 +235,7 @@ async function toggleWatchLater(button: HTMLButtonElement, ids: VideoIds, state:
       }
 
       state.isInWatchLater = false
+      markWatchLater({ ...ids, aid }, false)
     }
     else {
       const result = await api.watchlater.saveToWatchLater({
@@ -250,6 +248,7 @@ async function toggleWatchLater(button: HTMLButtonElement, ids: VideoIds, state:
       }
 
       state.isInWatchLater = true
+      markWatchLater({ ...ids, aid: state.aid }, true)
     }
 
     updateButtonState(button, state.isInWatchLater)
@@ -323,8 +322,8 @@ function mountWatchLaterButton(ids: VideoIds): MountedWatchLaterButton | undefin
   })
 
   moreButton.parentNode.insertBefore(button, moreButton)
-  mounted.ready = initializeButtonState(button, ids, state)
-  mountedButton = mounted
+  mounted.ready = initializeButtonState(button)
+  watchButtonState(mounted)
   return mounted
 }
 
@@ -395,6 +394,7 @@ export function addWatchLaterButton(): boolean {
   if (existingButton?.dataset.videoKey === videoKey)
     return true
   existingButton?.remove()
+  stopWatchingButtonState()
 
   return Boolean(mountWatchLaterButton(ids))
 }
@@ -453,5 +453,6 @@ export function mountWatchLaterButtonWhenToolbarReady(): Promise<boolean> {
  */
 export function removeWatchLaterButton() {
   stopWaitingForToolbar(false)
+  stopWatchingButtonState()
   document.querySelector(`.${BUTTON_CLASS}`)?.remove()
 }

@@ -13,6 +13,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import type { WatchLaterLayout } from '~/logic'
 import { settings, watchLaterLayout } from '~/logic'
+import { ensureWatchLaterState, markWatchLater, markWatchLaterCleared } from '~/logic/watchLaterState'
 import type { List as VideoItem, WatchLaterResult } from '~/models/video/watchLater'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
@@ -194,6 +195,7 @@ async function deleteWatchLaterItem(aid: number) {
         watchLaterCount.value = Math.max(0, watchLaterCount.value - 1)
         consumedCount = Math.max(0, consumedCount - 1)
       }
+      markWatchLater({ aid }, false)
       syncTopBarWatchLaterState()
       if (wasLoading)
         void getWatchLaterListByPage()
@@ -246,6 +248,7 @@ async function handleClearAllWatchLater() {
     try {
       const res = await api.watchlater.clearAllWatchLater({ csrf: getCSRF() })
       if (res.code === 0) {
+        markWatchLaterCleared()
         await initData()
         syncTopBarWatchLaterState()
       }
@@ -270,6 +273,8 @@ async function handleRemoveWatchedVideos() {
         if (res.code === 0) {
           initData()
           syncTopBarWatchLaterState()
+          // 无法得知被移除的具体条目，直接以服务器结果为准
+          void ensureWatchLaterState({ force: true })
         }
       })
   }

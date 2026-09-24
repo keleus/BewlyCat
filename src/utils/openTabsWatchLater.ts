@@ -1,3 +1,4 @@
+import { markWatchLater } from '~/logic/watchLaterState'
 import api from '~/utils/api'
 import { resolvePgcEpisodeVideoIds, resolvePgcSeasonVideoIds } from '~/utils/pgcEpisode'
 
@@ -148,6 +149,11 @@ export async function addOpenTabsToWatchLater(
       const saved = await api.watchlater.saveToWatchLater({ aid: ids.aid, csrf })
       if (saved.code === 0) {
         existingAids.add(ids.aid)
+        markWatchLater({
+          aid: ids.aid,
+          bvid: target.type === 'bvid' ? target.id : undefined,
+          epid: target.type === 'epid' ? target.id : undefined,
+        }, true)
         result.added++
       }
       else {

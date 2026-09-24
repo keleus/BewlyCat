@@ -7,6 +7,7 @@ import Loading from '~/components/Loading.vue'
 import Tooltip from '~/components/Tooltip.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
+import { ensureWatchLaterState, isInWatchLater, markWatchLater } from '~/logic/watchLaterState'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { getCSRF, scrollToTop } from '~/utils/main'
@@ -73,6 +74,7 @@ function onClickTab(tab: MomentTab) {
 
 function initData() {
   topBarStore.initMomentsData(selectedMomentTab.value.type)
+  void ensureWatchLaterState()
 }
 
 function getData() {
@@ -86,40 +88,22 @@ function isVideoMoment(moment: { itemType?: number }) {
   return moment.itemType === VIDEO_MOMENT_TYPE
 }
 
-function toggleWatchLater(aid: number) {
+function toggleWatchLater(rid: number | string | undefined) {
+  const aid = Number(rid || 0)
   const accountId = topBarStore.userInfo.mid
-  if (!topBarStore.isLogin || !accountId)
+  if (!aid || !topBarStore.isLogin || !accountId)
     return
 
-  // 修改这里，直接使用 topBarStore.addedWatchLaterList
-  const isInWatchLater = topBarStore.addedWatchLaterList.includes(aid)
-
-  if (!isInWatchLater) {
-    api.watchlater.saveToWatchLater({
-      aid,
-      csrf: getCSRF(),
-    })
-      .then((res) => {
-        if (res.code === 0 && topBarStore.isLogin && topBarStore.userInfo.mid === accountId) {
-          topBarStore.addedWatchLaterList.push(aid)
-          void topBarStore.syncWatchLaterState()
-        }
-      })
-  }
-  else {
-    api.watchlater.removeFromWatchLater({
-      aid,
-      csrf: getCSRF(),
-    })
-      .then((res) => {
-        if (res.code === 0 && topBarStore.isLogin && topBarStore.userInfo.mid === accountId) {
-          const index = topBarStore.addedWatchLaterList.indexOf(aid)
-          if (index !== -1)
-            topBarStore.addedWatchLaterList.splice(index, 1)
-          void topBarStore.syncWatchLaterState()
-        }
-      })
-  }
+  const added = isInWatchLater({ aid })
+  const request = added
+    ? api.watchlater.removeFromWatchLater({ aid, csrf: getCSRF() })
+    : api.watchlater.saveToWatchLater({ aid, csrf: getCSRF() })
+  request.then((res) => {
+    if (res.code === 0 && topBarStore.isLogin && topBarStore.userInfo.mid === accountId) {
+      markWatchLater({ aid }, !added)
+      void topBarStore.syncWatchLaterState()
+    }
+  })
 }
 
 defineExpose({
@@ -327,7 +311,7 @@ defineExpose({
                 duration-300
               >
                 <Tooltip
-                  :content="topBarStore.addedWatchLaterList.includes(moment.rid || 0)
+                  :content="isInWatchLater({ aid: moment.rid })
                     ? $t('common.added')
                     : $t('common.save_to_watch_later')"
                   placement="left"
@@ -339,10 +323,10 @@ defineExpose({
                     bg="black opacity-60"
                     rounded="$bew-radius-half"
                     color-white
-                    @click.stop.prevent="toggleWatchLater(moment.rid || 0)"
+                    @click.stop.prevent="toggleWatchLater(moment.rid)"
                   >
                     <Icon
-                      v-if="topBarStore.addedWatchLaterList.includes(moment.rid || 0)"
+                      v-if="isInWatchLater({ aid: moment.rid })"
                       icon="line-md:confirm"
                     />
                     <div v-else i-mingcute:carplay-line />

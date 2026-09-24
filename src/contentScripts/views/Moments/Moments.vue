@@ -31,6 +31,7 @@ import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, MOMENTS_VIDE
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
 import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
+import { ensureWatchLaterState, getWatchLaterAid, isInWatchLater, markWatchLater } from '~/logic/watchLaterState'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
@@ -243,7 +244,6 @@ onBeforeUnmount(cancelPendingPreview)
 const previewUrls = reactive<Record<string, string>>({})
 const likingMomentIds = reactive(new Set<string>())
 const reservationLoadingMomentIds = reactive(new Set<string>())
-const watchLaterMomentIds = reactive(new Set<string>())
 const watchLaterLoadingMomentIds = reactive(new Set<string>())
 const videoCidCache = new Map<string, number>()
 const videoCidRequests = new Map<string, Promise<number | undefined>>()
@@ -3265,14 +3265,15 @@ async function toggleMomentReservation(moment: DisplayMoment) {
   }
 }
 
-function isWatchLaterAdded(target: WatchLaterTarget) {
-  const stateKey = getWatchLaterStateKey(target)
-  return Boolean(stateKey && watchLaterMomentIds.has(stateKey))
-}
-
 function isWatchLaterLoading(target: WatchLaterTarget) {
   const stateKey = getWatchLaterStateKey(target)
   return Boolean(stateKey && watchLaterLoadingMomentIds.has(stateKey))
+}
+
+function handleDocumentVisibilityChange() {
+  // 动态接口不返回稍后再看状态；回到本页时按共享缓存的有效期重新比对
+  if (document.visibilityState === 'visible')
+    void ensureWatchLaterState()
 }
 
 async function toggleMomentWatchLater(target: WatchLaterTarget) {
@@ -3288,7 +3289,7 @@ async function toggleMomentWatchLater(target: WatchLaterTarget) {
 
   watchLaterLoadingMomentIds.add(stateKey)
   try {
-    let aid = Number(target.aid || 0)
+    let aid = Number(target.aid || 0) || getWatchLaterAid(target) || 0
     let bvid = target.bvid
     if (!aid && !bvid && target.epid) {
       const ids = await resolvePgcEpisodeVideoIds(target.epid)
@@ -3301,7 +3302,7 @@ async function toggleMomentWatchLater(target: WatchLaterTarget) {
       return
     }
 
-    const isAdded = watchLaterMomentIds.has(stateKey)
+    const isAdded = isInWatchLater(target)
     const response = isAdded
       ? await api.watchlater.removeFromWatchLater({ aid, csrf })
       : await api.watchlater.saveToWatchLater({ aid: aid || undefined, bvid, csrf })
@@ -3311,10 +3312,7 @@ async function toggleMomentWatchLater(target: WatchLaterTarget) {
       return
     }
 
-    if (isAdded)
-      watchLaterMomentIds.delete(stateKey)
-    else
-      watchLaterMomentIds.add(stateKey)
+    markWatchLater({ ...target, aid: aid || target.aid, bvid }, !isAdded)
     void topBarStore.syncWatchLaterState()
   }
   catch (error) {
@@ -3792,6 +3790,7 @@ function refresh() {
   isInitialLoading.value = moments.value.length === 0
   void loadMoments(true)
   void loadMomentsPortal()
+  void ensureWatchLaterState()
 }
 
 function handleDetailFrameMessage(event: MessageEvent) {
@@ -3853,6 +3852,7 @@ onMounted(() => {
   })
   window.addEventListener('message', handleDetailFrameMessage)
   window.addEventListener('resize', syncDetailFrameViewport)
+  document.addEventListener('visibilitychange', handleDocumentVisibilityChange)
   refresh()
   handlePageRefresh.value = refresh
   handleReachBottom.value = () => {
@@ -3895,6 +3895,7 @@ onBeforeUnmount(() => {
   }
   window.removeEventListener('message', handleDetailFrameMessage)
   window.removeEventListener('resize', syncDetailFrameViewport)
+  document.removeEventListener('visibilitychange', handleDocumentVisibilityChange)
   handlePageRefresh.value = undefined
   handleReachBottom.value = undefined
 })
@@ -4451,7 +4452,7 @@ watch(
                 :preview-url="previewUrls[moment.id]"
                 :is-like-loading="likingMomentIds.has(moment.id)"
                 :is-reservation-loading="reservationLoadingMomentIds.has(moment.id)"
-                :is-watch-later-added="isWatchLaterAdded"
+                :is-watch-later-added="isInWatchLater"
                 :is-watch-later-loading="isWatchLaterLoading"
                 @card-element="element => bindCardEl(element, moment)"
                 @open-detail="openMomentDetail"

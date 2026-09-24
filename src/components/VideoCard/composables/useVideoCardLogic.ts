@@ -3,6 +3,7 @@ import { useToast } from 'vue-toastification'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { appAuthTokens, settings } from '~/logic'
+import { ensureWatchLaterState, getWatchLaterAid, isInWatchLater as isTargetInWatchLater, markWatchLater } from '~/logic/watchLaterState'
 import type { VideoInfo } from '~/models/video/videoInfo'
 import type { VideoPreviewResult } from '~/models/video/videoPreview'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -70,8 +71,14 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const contextMenuRef = ref<HTMLDivElement | null>(null)
   const selectedDislikeOpt = toRef(interactionState, 'selectedDislikeOpt')
   const videoCurrentTime = toRef(interactionState, 'videoCurrentTime')
-  const isInWatchLater = toRef(interactionState, 'isInWatchLater')
   const resolvedWatchLaterAid = toRef(interactionState, 'resolvedWatchLaterAid')
+  const isInWatchLater = computed(() => {
+    // 不显示按钮的卡片不订阅共享状态，状态更新时无需重新计算
+    if (!props.value.showWatcherLater || !settings.value.showVideoCardWatchLater)
+      return false
+    const target = getWatchLaterTarget()
+    return target ? isTargetInWatchLater(target) : false
+  })
   const isHover = ref<boolean>(false)
   const isPreviewFullscreen = ref<boolean>(false)
   const mouseEnterTimeOut = ref<number | null>(null)
@@ -313,6 +320,18 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     window.setTimeout(refresh, 1000)
   }
 
+  function getWatchLaterTarget() {
+    const video = props.value.video
+    if (!video)
+      return undefined
+
+    const aid = video.aid || resolvedWatchLaterAid.value
+    // 仅在没有其他标识时把 id 当作 aid，避免不同 id 体系误匹配
+    if (!aid && !video.bvid && !video.epid)
+      return { aid: video.id }
+    return { aid, bvid: video.bvid, epid: video.epid }
+  }
+
   async function toggleWatchLater() {
     if (!props.value.video)
       return
@@ -327,6 +346,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       resolvedWatchLaterAid.value = ids.aid
     }
 
+    const target = getWatchLaterTarget()!
     if (!isInWatchLater.value) {
       const params: { bvid?: string, aid?: number, csrf: string } = {
         csrf: getCSRF(),
@@ -343,7 +363,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       api.watchlater.saveToWatchLater(params)
         .then((res) => {
           if (res.code === 0) {
-            isInWatchLater.value = true
+            markWatchLater(target, true)
             refreshTopBarWatchLaterAfterMutation()
           }
           else {
@@ -353,12 +373,12 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     }
     else {
       api.watchlater.removeFromWatchLater({
-        aid: video.aid || resolvedWatchLaterAid.value || video.id,
+        aid: video.aid || resolvedWatchLaterAid.value || getWatchLaterAid(target) || video.id,
         csrf: getCSRF(),
       })
         .then((res) => {
           if (res.code === 0) {
-            isInWatchLater.value = false
+            markWatchLater(target, false)
             refreshTopBarWatchLaterAfterMutation()
           }
           else {
@@ -369,6 +389,10 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   }
 
   function handleMouseEnter(event?: MouseEvent) {
+    // 稍后再看按钮在悬停时出现；共享状态已缓存时不会发请求
+    if (props.value.showWatcherLater && settings.value.showVideoCardWatchLater)
+      void ensureWatchLaterState()
+
     // Cancel any pending leave timeout
     if (mouseLeaveTimeOut.value) {
       clearTimeout(mouseLeaveTimeOut.value)

@@ -10,6 +10,7 @@ import { setupTabMsgListeners } from './messageListeners/tabs'
 import { setupSettingsCloudSync } from './settingsCloudSync'
 import { setupSettingsStorageCoordinator } from './settingsStorageCoordinator'
 import { setupTopBarStateBroker } from './topBarStateBroker'
+import { setupWatchLaterStateBroker } from './watchLaterStateBroker'
 import { initWbiKeys } from './wbiSign'
 
 // Initialize extension and set up message handlers
@@ -156,5 +157,6 @@ setupSettingsCloudSync()
 setupApiMsgListeners()
 setupTabMsgListeners()
 setupTopBarStateBroker()
+setupWatchLaterStateBroker()
 setupContentScriptRefreshPrompt()
 setupLoginStateWatcher()

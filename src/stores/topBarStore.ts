@@ -30,6 +30,7 @@ import {
 import { settings } from '~/logic'
 import { checkLoginStatus, LoginStatus, parseDedeUserID } from '~/logic/loginStatus'
 import { parseTopBarPublicationTime, recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
+import { markWatchLater, noteWatchLaterCount } from '~/logic/watchLaterState'
 import type { List as VideoItem } from '~/models/video/watchLater'
 import api from '~/utils/api'
 import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
@@ -99,7 +100,6 @@ export const useTopBarStore = defineStore('topBar', () => {
   const openTabsWatchLaterError = ref('')
   // 添加 Moments 相关状态
   const moments = reactive<any[]>([])
-  const addedWatchLaterList = reactive<number[]>([])
   const isLoadingMoments = ref<boolean>(false)
   const noMoreMomentsContent = ref<boolean>(false)
   const livePage = ref<number>(1)
@@ -201,7 +201,6 @@ export const useTopBarStore = defineStore('topBar', () => {
     watchLaterRefreshGeneration++
     watchLaterLoadingGeneration++
     watchLaterListRequested = false
-    addedWatchLaterList.splice(0)
     moments.splice(0)
     livePage.value = 1
     momentUpdateBaseline.value = ''
@@ -629,6 +628,8 @@ export const useTopBarStore = defineStore('topBar', () => {
       if (res.code === 0 && isCurrentAccount(accountId)) {
         const countChanged = watchLaterCount.value !== res.data.count
         watchLaterCount.value = res.data.count
+        if (countChanged)
+          noteWatchLaterCount(res.data.count)
 
         // 数量变化意味着服务器列表已换代，旧列表与游标不能继续混用。
         if (shouldRefreshWatchLaterList(countChanged, res.data.count)) {
@@ -806,6 +807,7 @@ export const useTopBarStore = defineStore('topBar', () => {
         csrf: getCSRF(),
       })
       if (res.code === 0 && isCurrentAccount(accountId)) {
+        markWatchLater({ aid }, false)
         const currentIndex = watchLaterList.findIndex(item => item.aid === aid)
         if (currentIndex !== -1) {
           watchLaterList.splice(currentIndex, 1)
@@ -1123,38 +1125,6 @@ export const useTopBarStore = defineStore('topBar', () => {
     return index < newMomentsCount.value
   }
 
-  function toggleWatchLater(aid: number) {
-    const accountId = userInfo.mid
-    if (!isCurrentAccount(accountId))
-      return
-
-    const isInWatchLater = addedWatchLaterList.includes(aid)
-
-    if (!isInWatchLater) {
-      api.watchlater.saveToWatchLater({
-        aid,
-        csrf: getCSRF(),
-      })
-        .then((res: any) => {
-          if (res.code === 0 && isCurrentAccount(accountId))
-            addedWatchLaterList.push(aid)
-        })
-    }
-    else {
-      api.watchlater.removeFromWatchLater({
-        aid,
-        csrf: getCSRF(),
-      })
-        .then((res: any) => {
-          if (res.code === 0 && isCurrentAccount(accountId)) {
-            const index = addedWatchLaterList.indexOf(aid)
-            if (index !== -1)
-              addedWatchLaterList.splice(index, 1)
-          }
-        })
-    }
-  }
-
   function handleNotificationsItemClick(item: { name: string, url: string, unreadCount: number, icon: string }) {
     if (settings.value.openNotificationsPageAsDrawer) {
       drawerVisible.notifications = true
@@ -1198,6 +1168,8 @@ export const useTopBarStore = defineStore('topBar', () => {
     Object.assign(unReadDm, snapshot.unReadDm)
     newMomentsCount.value = snapshot.newMomentsCount
     watchLaterCount.value = snapshot.watchLaterCount
+    if (watchLaterCountChanged)
+      noteWatchLaterCount(snapshot.watchLaterCount)
     if (shouldRefreshWatchLaterList(watchLaterCountChanged, snapshot.watchLaterCount)) {
       invalidateWatchLaterList()
       void getAllWatchLaterList()
@@ -1568,7 +1540,6 @@ export const useTopBarStore = defineStore('topBar', () => {
     stopUpdateTimer,
 
     moments,
-    addedWatchLaterList,
     isLoadingMoments,
     noMoreMomentsContent,
     livePage,
@@ -1579,7 +1550,6 @@ export const useTopBarStore = defineStore('topBar', () => {
     initMomentsData,
     getMomentsData,
     isNewMoment,
-    toggleWatchLater,
 
     getWatchLaterCount,
     getAllWatchLaterList,
