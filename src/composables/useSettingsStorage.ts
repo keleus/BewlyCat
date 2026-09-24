@@ -27,6 +27,8 @@ interface UseSettingsStorageOptions<T> {
 }
 
 const MAX_MESSAGE_ATTEMPTS = 5
+// 后台繁忙时首屏不能一直等待协调器；超时后先渲染本地存储快照。
+const INITIAL_READ_FALLBACK_DELAY = 1500
 
 class StaleStorageGenerationError extends Error {}
 
@@ -294,12 +296,45 @@ export function useSettingsStorage<T extends object>(
     void flushQueuedPatch()
   }
 
+  // 直接读取 storage.local 不经过后台 service worker，多标签页同时恢复导致
+  // 后台排队时仍能按时挂载；协调器结果稍后到达时按 revision 正常覆盖。
+  const applyLocalSnapshot = async (generation: number) => {
+    if (ready)
+      return
+
+    try {
+      const stored = await browser.storage.local.get([
+        SETTINGS_STORAGE_KEY,
+        SETTINGS_STORAGE_META_KEY,
+      ])
+      if (ready || disposed || generation !== storageGeneration)
+        return
+
+      const meta = normalizeSettingsStorageWriteMeta(stored[SETTINGS_STORAGE_META_KEY])
+      if (meta.epoch && !currentEpoch)
+        currentEpoch = meta.epoch
+      const sameEpoch = !meta.epoch || meta.epoch === currentEpoch
+      // 缺少 epoch 时只渲染，写入仍等协调器补全元数据后再提交。
+      if (meta.epoch && sameEpoch)
+        persistenceReady = true
+      if (sameEpoch && stored[SETTINGS_STORAGE_KEY] != null)
+        applyCanonicalValue(stored[SETTINGS_STORAGE_KEY], meta.revision)
+      markReady()
+    }
+    catch (error) {
+      onError(error)
+    }
+  }
+
   const refreshCanonicalValue = async (markReadyWhenFinished = false) => {
     const generation = storageGeneration
     if (readInFlightGeneration === generation)
       return
 
     readInFlightGeneration = generation
+    const fallbackTimer = markReadyWhenFinished
+      ? setTimeout(() => void applyLocalSnapshot(generation), INITIAL_READ_FALLBACK_DELAY)
+      : undefined
     try {
       const response = await sendWithRetry<SettingsStoragePatchResponse>(SETTINGS_STORAGE_READ_MESSAGE, undefined, generation)
       if (!isPatchResponse(response))
@@ -318,10 +353,15 @@ export function useSettingsStorage<T extends object>(
       void flushQueuedPatch()
     }
     catch (error) {
-      if (!(error instanceof StaleStorageGenerationError))
+      if (!(error instanceof StaleStorageGenerationError)) {
         onError(error)
+        // 后台不可达时也用本地快照挂载，避免以默认设置渲染。
+        if (markReadyWhenFinished)
+          await applyLocalSnapshot(generation)
+      }
     }
     finally {
+      clearTimeout(fallbackTimer)
       if (readInFlightGeneration === generation)
         readInFlightGeneration = null
       if (markReadyWhenFinished)
