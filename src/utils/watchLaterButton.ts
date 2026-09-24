@@ -175,8 +175,28 @@ async function resolveAid(ids: VideoIds, state: WatchLaterButtonState): Promise<
   return state.pendingAid
 }
 
+// 后台恢复的视频页在可见前用不到按钮状态；多个标签页同时拉取完整列表会挤占后台请求。
+function waitUntilPageVisible(): Promise<void> {
+  if (document.visibilityState === 'visible')
+    return Promise.resolve()
+
+  return new Promise((resolve) => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== 'visible')
+        return
+      document.removeEventListener('visibilitychange', onVisibilityChange)
+      resolve()
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+  })
+}
+
 async function initializeButtonState(button: HTMLButtonElement, ids: VideoIds, state: WatchLaterButtonState) {
   try {
+    await waitUntilPageVisible()
+    if (!button.isConnected)
+      return
+
     const result = await api.watchlater.getAllWatchLaterList() as WatchLaterResult
     if (!button.isConnected)
       return
