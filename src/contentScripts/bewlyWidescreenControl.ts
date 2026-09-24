@@ -14,9 +14,9 @@ const CONTROL_DISCOVERY_TIMEOUT = 15_000
 const CONTROL_DISCOVERY_RETRY_INTERVAL = 500
 const APPLY_TIMEOUT = 30_000
 
+// 与原生控制栏 Lottie 图标同为 88 网格面性图形；镂空侧栏以区分原生宽屏/网页全屏
 const widescreenIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" style="width: 100%; height: 100%;">
-  <rect x="15" y="20" width="58" height="48" rx="5" fill="none" stroke="currentColor" stroke-width="5"/>
-  <path d="M29 32h12M29 32v10M59 32H47M59 32v10M29 56h12M29 56V46M59 56H47M59 56V46" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+  <path d="M16 16h56a8 8 0 0 1 8 8v40a8 8 0 0 1-8 8H16a8 8 0 0 1-8-8V24a8 8 0 0 1 8-8ZM58 24h12a2 2 0 0 1 2 2v36a2 2 0 0 1-2 2H58a2 2 0 0 1-2-2V26a2 2 0 0 1 2-2ZM16 44l9-9 4.24 4.24L27.48 41h11.04l-1.76-1.76L41 35l9 9-9 9-4.24-4.24L38.52 47H27.48l1.76 1.76L25 53Z" fill="#fff" fill-rule="evenodd"/>
 </svg>`
 
 let controlContainer: HTMLElement | null = null

@@ -125,8 +125,17 @@ onBeforeUnmount(() => life.abort())
       @click="open ? open = false : show()" @focus="onButtonFocus"
     >
       <span class="bpx-common-svg-icon">
-        <svg viewBox="0 0 88 88" aria-hidden="true">
-          <path d="M26 23v42M44 23v42M62 23v42M20 34h12M38 54h12M56 39h12" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" />
+        <!-- 与原生控制栏图标同为 88 网格面性图形：轨道宽 8、推钮 20×12 -->
+        <svg viewBox="0 0 88 88" fill="#fff" aria-hidden="true">
+          <rect x="16" y="16" width="8" height="6" rx="2" />
+          <rect x="16" y="42" width="8" height="30" rx="2" />
+          <rect x="10" y="26" width="20" height="12" rx="3" />
+          <rect x="40" y="16" width="8" height="28" rx="2" />
+          <rect x="40" y="64" width="8" height="8" rx="2" />
+          <rect x="34" y="48" width="20" height="12" rx="3" />
+          <rect x="64" y="16" width="8" height="14" rx="2" />
+          <rect x="64" y="50" width="8" height="22" rx="2" />
+          <rect x="58" y="34" width="20" height="12" rx="3" />
         </svg>
       </span>
     </button>
@@ -193,14 +202,11 @@ onBeforeUnmount(() => life.abort())
   align-items: center;
   justify-content: center;
   // Let the native icon wrapper size this control, like the widescreen button.
+  // 颜色与悬停透明度沿用原生 .bpx-common-svg-icon 规则。
   padding: 0;
   border: 0;
-  color: rgba(255, 255, 255, 0.8);
   background: transparent;
   cursor: pointer;
-  &:hover {
-    color: #fff;
-  }
   svg {
     width: 100%;
     height: 100%;
