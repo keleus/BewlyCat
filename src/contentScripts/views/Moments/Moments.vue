@@ -27,7 +27,7 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import type { StorageEventFilter } from '~/composables/useStorageLocal'
 import { useStorageLocal } from '~/composables/useStorageLocal'
-import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL } from '~/constants/globalEvents'
+import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, MOMENTS_VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
 import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
@@ -1191,11 +1191,20 @@ const detailDialogHeight = computed(() => {
   return OPUS_DETAIL_MAX_HEIGHT
 })
 
+const isDetailVideoBewlyWidescreen = computed(() => {
+  if (settings.value.enableVideoPlayerModeOverrides) {
+    const dialogOverride = settings.value.videoPlayerModeOverrides?.momentsDialog
+    if (dialogOverride && dialogOverride !== 'inherit')
+      return dialogOverride === 'bewlyWidescreen'
+  }
+  return settings.value.defaultVideoPlayerMode === 'bewlyWidescreen'
+})
+
 const detailDialogWidth = computed(() => {
   if (selectedMoment.value?.isLive)
     return DETAIL_PLAYER_MAX_WIDTH
   if (selectedMoment.value?.isVideo) {
-    if (isSelectedSquareOrVerticalVideo.value && settings.value.defaultVideoPlayerMode === 'bewlyWidescreen') {
+    if (isSelectedSquareOrVerticalVideo.value && isDetailVideoBewlyWidescreen.value) {
       const ratio = Math.max(0.4, selectedVideoAspectRatio.value || 9 / 16)
       return `min(max(960px, calc(${detailDialogHeight.value} * ${ratio} + ${VIDEO_DETAIL_COMMENT_WIDTH})), ${DETAIL_PLAYER_MAX_WIDTH})`
     }
@@ -4602,6 +4611,7 @@ watch(
           ref="detailIframeRef"
           :key="detailFrameUrl"
           class="moment-detail-frame__iframe"
+          :name="selectedMoment.isVideo ? MOMENTS_VIDEO_DIALOG_IFRAME_NAME : undefined"
           :src="detailFrameUrl"
           :title="t('moments.author_detail', { name: selectedMoment.author.name })"
           referrerpolicy="no-referrer-when-downgrade"
