@@ -516,6 +516,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.video_player_mode.context_bangumi',
     'settings.video_player_mode.context_watch_later',
     'settings.video_player_mode.context_playlist',
+    'settings.video_player_mode.context_moments_dialog',
   ], { keywordKeys: [...playerModeOptionKeys, 'settings.video_player_mode.inherit'] }),
   ...createEntries(playerRoute, [
     'settings.video_danmaku_default_state',

@@ -456,12 +456,13 @@ settings:
     enable_overrides: 启用按场景覆盖
     enable_overrides_desc: 开启后，下方各播放场景的显示模式设置才会生效。
     overrides: 场景显示模式
-    overrides_desc: 选择“继承默认”时会使用上方的基础显示模式。
+    overrides_desc: 选择“继承默认”时使用基础显示模式；动态视频弹窗会优先沿用视频本身适用的场景设置。
     context_multipart: 分P视频
     context_collection: 合集视频
     context_bangumi: 番剧 / 影视
     context_watch_later: 稍后再看
     context_playlist: 收藏 / 播放列表
+    context_moments_dialog: 动态视频弹窗
     bewly_widescreen_sidebar_position: Bewly宽屏侧边栏位置
     bewly_widescreen_sidebar_position_desc: 选择 Bewly 宽屏模式下侧边栏的显示位置
     bewly_widescreen_sidebar_position_left: 左侧

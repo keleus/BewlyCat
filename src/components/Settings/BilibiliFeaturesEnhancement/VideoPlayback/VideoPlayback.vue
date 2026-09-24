@@ -105,6 +105,7 @@ const videoPlayerModeContextOptions = computed<{ label: string, value: VideoPlay
   { label: t('settings.video_player_mode.context_bangumi'), value: 'bangumi' },
   { label: t('settings.video_player_mode.context_watch_later'), value: 'watchLater' },
   { label: t('settings.video_player_mode.context_playlist'), value: 'playlist' },
+  { label: t('settings.video_player_mode.context_moments_dialog'), value: 'momentsDialog' },
 ])
 
 const videoPlayerScrollModeOptions = computed<{ label: string, value: VideoPlayerScrollMode }[]>(() => [

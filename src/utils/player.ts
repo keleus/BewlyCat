@@ -1,4 +1,5 @@
 // 更完善的播放器元素选择器
+import { MOMENTS_VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import type { AutoPlayMode, DefaultVideoPlayerMode, VideoPlayerModeContext, VideoPlayerModeOverride } from '~/logic/storage'
 import { i18n } from '~/utils/i18n'
@@ -591,6 +592,12 @@ function isVideoPlayerModeOverride(value: unknown): value is VideoPlayerModeOver
 export function resolveDefaultVideoPlayerMode(): DefaultVideoPlayerMode {
   if (!settings.value.enableVideoPlayerModeOverrides)
     return settings.value.defaultVideoPlayerMode
+
+  if (window.name === MOMENTS_VIDEO_DIALOG_IFRAME_NAME) {
+    const dialogOverride = settings.value.videoPlayerModeOverrides?.momentsDialog
+    if (isVideoPlayerModeOverride(dialogOverride) && dialogOverride !== 'inherit')
+      return dialogOverride
+  }
 
   const context = detectVideoPlayerModeContext()
   if (!context)

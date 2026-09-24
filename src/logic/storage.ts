@@ -158,7 +158,7 @@ export type BewlyWidescreenSidebarPriority = 'video' | 'sidebar'
 export type PlayerDefaultState = 'system' | 'remember' | 'on' | 'off'
 export type VideoAspectRatio = '0:0' | '4:3' | '16:9'
 export type VideoPlayerModeOverride = DefaultVideoPlayerMode | 'inherit'
-export type VideoPlayerModeContext = 'multipart' | 'collection' | 'bangumi' | 'watchLater' | 'playlist'
+export type VideoPlayerModeContext = 'multipart' | 'collection' | 'bangumi' | 'watchLater' | 'playlist' | 'momentsDialog'
 export type VideoPlayerModeOverrides = Record<VideoPlayerModeContext, VideoPlayerModeOverride>
 export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
 /**
@@ -856,6 +856,7 @@ export const originalSettings: Settings = {
     bangumi: 'inherit',
     watchLater: 'inherit',
     playlist: 'inherit',
+    momentsDialog: 'inherit',
   },
   autoExitFullscreenOnEnd: false, // 全屏播放完毕后自动退出，默认关闭
   autoExitFullscreenExcludeAutoPlay: false, // 全屏自动退出时排除自动连播，默认关闭
@@ -961,6 +962,13 @@ export const settings = useSettingsStorage(originalSettings, {
     Reflect.deleteProperty(record, 'showBewlyOrBiliTopBarSwitcher')
     Reflect.deleteProperty(record, 'enableHomeGridVirtualization')
     Reflect.deleteProperty(record, 'releaseOffscreenVideoCardImages')
+
+    if (!record.videoPlayerModeOverrides || typeof record.videoPlayerModeOverrides !== 'object' || Array.isArray(record.videoPlayerModeOverrides))
+      record.videoPlayerModeOverrides = {}
+    record.videoPlayerModeOverrides = {
+      ...originalSettings.videoPlayerModeOverrides,
+      ...record.videoPlayerModeOverrides,
+    }
 
     const validTabsPositions: TabsPosition[] = ['left', 'center']
     if (!validTabsPositions.includes(record.homeTabsPosition))
