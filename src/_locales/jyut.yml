@@ -975,13 +975,14 @@ settings:
     enable_overrides: 啟用按情況覆寫
     enable_overrides_desc: 開啟之後，下面各播放情況嘅顯示模式設定先會生效。
     overrides: 情況顯示模式
-    overrides_desc: 揀「繼承預設」嗰陣會用返基礎顯示模式；動態影片彈窗會優先沿用返影片本身適用嘅情況設定。
+    overrides_desc: 揀「繼承預設」嗰陣會用返上面嘅基礎顯示模式。
     context_multipart: 分P影片
     context_collection: 合集影片
     context_bangumi: 番劇 / 影視
     context_watch_later: 稍後再睇
     context_playlist: 收藏 / 播放列表
     context_moments_dialog: 動態影片彈窗
+    context_moments_dialog_desc: 只對動態頁彈窗入面播放嘅影片生效，並優先過其他情況；揀「繼承預設」嗰陣仍然按影片所屬情況決定。
     bewly_widescreen_sidebar_position: Bewly闊螢幕側邊欄位置
     bewly_widescreen_sidebar_position_desc: 選擇 Bewly 闊螢幕模式下側邊欄嘅顯示位置
     bewly_widescreen_sidebar_position_left: 左側

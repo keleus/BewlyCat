@@ -589,14 +589,23 @@ function isVideoPlayerModeOverride(value: unknown): value is VideoPlayerModeOver
     || value === 'bewlyWidescreen'
 }
 
+/** 动态视频弹窗的显示模式覆盖；未启用覆盖或选择继承时返回 null，交由视频所属场景决定。 */
+export function resolveMomentsDialogPlayerModeOverride(): DefaultVideoPlayerMode | null {
+  if (!settings.value.enableVideoPlayerModeOverrides)
+    return null
+
+  const override = settings.value.videoPlayerModeOverrides?.momentsDialog
+  return isVideoPlayerModeOverride(override) && override !== 'inherit' ? override : null
+}
+
 export function resolveDefaultVideoPlayerMode(): DefaultVideoPlayerMode {
   if (!settings.value.enableVideoPlayerModeOverrides)
     return settings.value.defaultVideoPlayerMode
 
   if (window.name === MOMENTS_VIDEO_DIALOG_IFRAME_NAME) {
-    const dialogOverride = settings.value.videoPlayerModeOverrides?.momentsDialog
-    if (isVideoPlayerModeOverride(dialogOverride) && dialogOverride !== 'inherit')
-      return dialogOverride
+    const dialogMode = resolveMomentsDialogPlayerModeOverride()
+    if (dialogMode)
+      return dialogMode
   }
 
   const context = detectVideoPlayerModeContext()

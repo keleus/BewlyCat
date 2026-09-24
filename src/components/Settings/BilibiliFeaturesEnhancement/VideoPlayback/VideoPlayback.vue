@@ -99,13 +99,13 @@ const videoPlayerModeOverrideOptions = computed(() => [
   ...videoPlayerModeOptions.value,
 ])
 
-const videoPlayerModeContextOptions = computed<{ label: string, value: VideoPlayerModeContext }[]>(() => [
+const videoPlayerModeContextOptions = computed<{ label: string, value: VideoPlayerModeContext, desc?: string }[]>(() => [
   { label: t('settings.video_player_mode.context_multipart'), value: 'multipart' },
   { label: t('settings.video_player_mode.context_collection'), value: 'collection' },
   { label: t('settings.video_player_mode.context_bangumi'), value: 'bangumi' },
   { label: t('settings.video_player_mode.context_watch_later'), value: 'watchLater' },
   { label: t('settings.video_player_mode.context_playlist'), value: 'playlist' },
-  { label: t('settings.video_player_mode.context_moments_dialog'), value: 'momentsDialog' },
+  { label: t('settings.video_player_mode.context_moments_dialog'), value: 'momentsDialog', desc: t('settings.video_player_mode.context_moments_dialog_desc') },
 ])
 
 const videoPlayerScrollModeOptions = computed<{ label: string, value: VideoPlayerScrollMode }[]>(() => [
@@ -228,6 +228,7 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
           v-for="context in videoPlayerModeContextOptions"
           :key="context.value"
           :title="context.label"
+          :desc="context.desc"
           right-width="auto"
         >
           <Select

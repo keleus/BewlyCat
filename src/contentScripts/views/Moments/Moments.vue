@@ -38,6 +38,7 @@ import { numFormatter } from '~/utils/dataFormatter'
 import { getCSRF } from '~/utils/main'
 import { MasonryColumnMetrics } from '~/utils/masonryColumnMetrics'
 import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
+import { resolveMomentsDialogPlayerModeOverride } from '~/utils/player'
 import { openLinkInBackground } from '~/utils/tabs'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
@@ -1191,13 +1192,9 @@ const detailDialogHeight = computed(() => {
   return OPUS_DETAIL_MAX_HEIGHT
 })
 
+// 父页面打开前无法得知视频所属场景，弹窗未单独覆盖时按基础模式估算宽度。
 const isDetailVideoBewlyWidescreen = computed(() => {
-  if (settings.value.enableVideoPlayerModeOverrides) {
-    const dialogOverride = settings.value.videoPlayerModeOverrides?.momentsDialog
-    if (dialogOverride && dialogOverride !== 'inherit')
-      return dialogOverride === 'bewlyWidescreen'
-  }
-  return settings.value.defaultVideoPlayerMode === 'bewlyWidescreen'
+  return (resolveMomentsDialogPlayerModeOverride() ?? settings.value.defaultVideoPlayerMode) === 'bewlyWidescreen'
 })
 
 const detailDialogWidth = computed(() => {

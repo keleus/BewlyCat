@@ -475,13 +475,14 @@ settings:
     enable_overrides: Enable Context Overrides
     enable_overrides_desc: Display mode settings for individual playback contexts only apply when enabled.
     overrides: Context Display Modes
-    overrides_desc: Selecting “Inherit Default” uses the base display mode above; dynamic video dialogs prioritize the context settings applicable to the video itself.
+    overrides_desc: Selecting “Inherit Default” uses the base display mode above.
     context_multipart: Multi-part Videos
     context_collection: Collections
     context_bangumi: Series / Movies
     context_watch_later: Watch Later
     context_playlist: Favorites / Playlists
-    context_moments_dialog: Dynamic Video Dialog
+    context_moments_dialog: Moments Video Dialog
+    context_moments_dialog_desc: Applies only to videos played in the Moments dialog and takes priority over other contexts; “Inherit Default” falls back to the video's own context.
     bewly_widescreen_sidebar_position: Bewly Widescreen Sidebar Position
     bewly_widescreen_sidebar_position_desc: Choose the sidebar position in Bewly Widescreen mode
     bewly_widescreen_sidebar_position_left: Left

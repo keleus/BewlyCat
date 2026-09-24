@@ -965,13 +965,6 @@ export const settings = useSettingsStorage(originalSettings, {
     Reflect.deleteProperty(record, 'enableHomeGridVirtualization')
     Reflect.deleteProperty(record, 'releaseOffscreenVideoCardImages')
 
-    if (!record.videoPlayerModeOverrides || typeof record.videoPlayerModeOverrides !== 'object' || Array.isArray(record.videoPlayerModeOverrides))
-      record.videoPlayerModeOverrides = {}
-    record.videoPlayerModeOverrides = {
-      ...originalSettings.videoPlayerModeOverrides,
-      ...record.videoPlayerModeOverrides,
-    }
-
     const validTabsPositions: TabsPosition[] = ['left', 'center']
     if (!validTabsPositions.includes(record.homeTabsPosition))
       record.homeTabsPosition = originalSettings.homeTabsPosition
@@ -1234,7 +1227,7 @@ export const settings = useSettingsStorage(originalSettings, {
     if (record.enableBewlyWidescreenSidebarResize === true)
       record.bewlyWidescreenSidebarPriority = 'sidebar'
 
-    const modeOverrideContexts: VideoPlayerModeContext[] = ['multipart', 'collection', 'bangumi', 'watchLater', 'playlist']
+    const modeOverrideContexts: VideoPlayerModeContext[] = ['multipart', 'collection', 'bangumi', 'watchLater', 'playlist', 'momentsDialog']
     const validModeOverrides: VideoPlayerModeOverride[] = ['inherit', 'default', 'webFullscreen', 'widescreen', 'bewlyWidescreen']
     const storedModeOverrides = record.videoPlayerModeOverrides
     const needsModeOverrideNormalization = !storedModeOverrides
