@@ -315,6 +315,8 @@ settings:
   original_moments_show_community_center: Show community center
   original_moments_show_hot_search: Show hot search
   original_moments_show_up_list: Show dynamic uploader banner
+  original_moments_use_bewly_filters: Filter the original dynamic feed
+  original_moments_use_bewly_filters_desc: Also apply the dynamic type and keyword filters below to Bilibili's original dynamic page.
   moments_show_user_card: Show user card
   moments_show_publish: Show publish action
   moments_show_live: Show live users

@@ -340,6 +340,8 @@ settings:
   original_moments_show_community_center: 顯示社羣中心
   original_moments_show_hot_search: 顯示熱搜
   original_moments_show_up_list: 顯示動態 UP 橫幅
+  original_moments_use_bewly_filters: 過濾原版動態流
+  original_moments_use_bewly_filters_desc: 將下面嘅動態類型同關鍵詞過濾設定一齊套用到 Bilibili 原版動態頁。
   moments_show_user_card: 顯示用戶卡片
   moments_show_publish: 顯示發布動態元件
   moments_show_live: 顯示直播中元件

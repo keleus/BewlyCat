@@ -272,6 +272,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.original_moments_show_community_center',
     'settings.original_moments_show_hot_search',
     'settings.original_moments_show_up_list',
+    'settings.original_moments_use_bewly_filters',
     'settings.group_new_moments_page',
     'settings.moments_visible_components',
     'settings.moments_filtered_types',
