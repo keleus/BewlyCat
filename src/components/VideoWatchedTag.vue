@@ -37,13 +37,14 @@ const status = computed(() =>
   white-space: nowrap;
 }
 
-:global(.dark) .video-watched-tag {
+/* :global() 会把整条选择器替换为 .dark，祖先类直接写在 scoped 选择器前即可。 */
+.dark .video-watched-tag {
   color: var(--bew-text-1);
 }
 
 /* 仅打开过、未实际播放：弱化显示，与「已观看」区分。 */
 .video-watched-tag--browsed,
-:global(.dark) .video-watched-tag--browsed {
+.dark .video-watched-tag--browsed {
   border-color: var(--bew-border-color);
   color: var(--bew-text-3);
   background: var(--bew-fill-1);
