@@ -6,6 +6,8 @@ export interface TopBarChannelConfig {
   color?: string
 }
 
+export const MAX_PINNED_CHANNELS = 6
+
 export const genreChannelConfigs: TopBarChannelConfig[] = [
   { key: 'anime', nameKey: 'topbar.logo_dropdown.anime', icon: '#channel-anime', href: 'https://www.bilibili.com/anime' },
   { key: 'movies', nameKey: 'topbar.logo_dropdown.movies', icon: '#channel-movie', href: 'https://www.bilibili.com/movie' },

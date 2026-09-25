@@ -379,6 +379,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(topBarRoute, [
     'settings.group_topbar_pinned_channels',
     'settings.topbar_pinned_channels_title',
+    'settings.topbar_pinned_channels_add',
+    'settings.topbar_pinned_channels_search',
   ]),
   ...createEntries(topBarRoute, [
     'settings.topbar_switchers',
