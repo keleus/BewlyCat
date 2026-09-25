@@ -321,6 +321,7 @@ settings:
   group_original_moments_page: Bilibili 頁面
   group_new_moments_page: Bewly動態頁
   group_new_moments_page_desc: 呢個頁面唔係最終成品，相關形態之後可能會有較大改動。
+  group_moments_filters: 動態過濾
   group_moments_sidebar: 動態頁左邊元件
   group_moments_interaction: 動態卡片互動
   group_environment_info: 環境資訊

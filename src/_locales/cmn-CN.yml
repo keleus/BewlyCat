@@ -293,6 +293,7 @@ settings:
   group_original_moments_page: Bilibili 页面
   group_new_moments_page: Bewly动态页
   group_new_moments_page_desc: 此页面并非最终成品，相关形态后续可能会有较大调整。
+  group_moments_filters: 动态过滤
   group_moments_sidebar: 动态页左侧组件
   group_moments_interaction: 动态卡片交互
   group_environment_info: 环境信息

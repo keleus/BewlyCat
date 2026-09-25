@@ -29,11 +29,7 @@ function shouldHide(card: HTMLElement) {
   if (config.momentsHideChargeExclusive && (labels.includes('充电专属') || has('.dyn-blocked-mask, .bili-dyn-upower-common')))
     return true
 
-  // 转发内的原动态也可能包含视频等卡片；类型过滤只看转发本身。
-  if (has('.bili-dyn-content__orig.reference, .bili-dyn-content__forw')) {
-    return config.momentsHideForwardDynamics
-  }
-
+  // 与 Bewly 动态页一致：预约和直播也按被转发的原动态判断。
   const reservation = card.querySelector('.bili-dyn-card-reserve')?.textContent || ''
   if (reservation && ((config.momentsHideVideoReservation && reservation.includes('视频'))
     || (config.momentsHideLiveReservation && reservation.includes('直播')))) {
@@ -41,6 +37,12 @@ function shouldHide(card: HTMLElement) {
   }
   if (config.momentsHideLiveDynamics && has('.bili-dyn-card-live'))
     return true
+
+  // 转发内的原动态也可能包含视频等卡片；其余类型过滤只看转发本身。
+  if (has('.bili-dyn-content__orig.reference, .bili-dyn-content__forw')) {
+    return config.momentsHideForwardDynamics
+  }
+
   if (config.momentsHideUgcSeasonDynamics && has('.bili-dyn-card-medialist, .dyn-ugc__wrap'))
     return true
   if (config.momentsHidePgcDynamics && has('.bili-dyn-card-pgc'))

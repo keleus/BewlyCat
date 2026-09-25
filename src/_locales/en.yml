@@ -296,6 +296,7 @@ settings:
   group_original_moments_page: Bilibili Page
   group_new_moments_page: Bewly Dynamic Feed
   group_new_moments_page_desc: This page is not final and may change significantly in future updates.
+  group_moments_filters: Dynamic Filters
   group_moments_sidebar: Dynamic Feed Sidebar
   group_moments_interaction: Dynamic Card Interaction
   group_environment_info: Environment information
