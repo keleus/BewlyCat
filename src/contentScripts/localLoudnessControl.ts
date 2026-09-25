@@ -4,6 +4,8 @@ import PlayerLoudnessControl from '~/components/PlayerLoudnessControl.vue'
 import { settings, settingsReady } from '~/logic'
 import { i18n } from '~/utils/i18n'
 
+import { schedulePlayerControlFit } from './playerControlFit'
+
 let initialized = false
 
 export function initLocalLoudnessControl() {
@@ -76,6 +78,7 @@ export function initLocalLoudnessControl() {
     host.className = 'bpx-player-ctrl-btn bewly-local-loudness-control'
     media = video
     anchor.insertAdjacentElement('afterend', host)
+    schedulePlayerControlFit(host)
     const app = createApp(PlayerLoudnessControl, { video })
     app.use(i18n)
     app.mount(host)

@@ -5,6 +5,8 @@ import { applyBewlyWidescreen, ensureNativePlayerModeGuard, exitBewlyWidescreen,
 import { i18n } from '~/utils/i18n'
 import { isVideoOrBangumiPage } from '~/utils/main'
 
+import { schedulePlayerControlFit } from './playerControlFit'
+
 const PLAYER_CONTROL_BAR_SELECTOR = '.bpx-player-control-bottom-right'
 const PLAYER_ROOT_SELECTOR = '#bilibili-player-wrap, #playerWrap, #bilibili-player, #bilibiliPlayer, .bpx-player-container, .bilibili-player'
 const PLAYER_MODE_BUTTON_SELECTOR = '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen'
@@ -318,6 +320,7 @@ function syncControl() {
   if (existingControl) {
     controlContainer = existingControl
     updateControlState()
+    schedulePlayerControlFit(existingControl)
     stopControlDiscovery()
     return
   }
@@ -335,6 +338,7 @@ function syncControl() {
   controlContainer = createControlContainer()
   anchor.insertAdjacentElement('afterend', controlContainer)
   updateControlState()
+  schedulePlayerControlFit(controlContainer)
   stopControlDiscovery()
 }
 

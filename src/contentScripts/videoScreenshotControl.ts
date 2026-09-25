@@ -5,6 +5,8 @@ import { i18n } from '~/utils/i18n'
 import { isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
 import { captureVideoScreenshot } from '~/utils/videoScreenshot'
 
+import { schedulePlayerControlFit } from './playerControlFit'
+
 const PLAYER_CONTROL_BAR_SELECTOR = '.bpx-player-control-bottom-right'
 const PLAYER_ROOT_SELECTOR = '#playerWrap, #bilibili-player, #bilibiliPlayer, .bpx-player-container, .bilibili-player'
 const TOOLTIP_CLASS = 'bewly-player-tooltip'
@@ -215,6 +217,7 @@ function syncControl() {
   const existingControl = controlBar.querySelector<HTMLElement>('.bewly-video-screenshot-control')
   if (existingControl) {
     controlContainer = existingControl
+    schedulePlayerControlFit(existingControl)
     stopControlDiscovery()
     return
   }
@@ -227,6 +230,7 @@ function syncControl() {
 
   controlContainer = createControlContainer()
   anchor.insertAdjacentElement('afterend', controlContainer)
+  schedulePlayerControlFit(controlContainer)
   stopControlDiscovery()
 }
 

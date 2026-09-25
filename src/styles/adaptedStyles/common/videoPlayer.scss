@@ -1,23 +1,6 @@
-// 只在控制栏建立尺寸容器，不给视频画面/弹幕增加布局隔离。
-.bpx-player-control-wrap {
-  container: bewly-player-controls / inline-size;
-}
-
-// 预留原生按钮和第三方控件的位置；按播放器实际宽度收起，而非浏览器宽度。
-@container bewly-player-controls (max-width: 900px) {
-  .bpx-player-control-bottom-right {
-    .bewly-widescreen-control,
-    .bewly-video-screenshot-control {
-      display: none !important;
-    }
-  }
-}
-
-// 全屏控制栏还包含弹幕输入区，原生按钮也更宽，需要更早让出截图位置。
-@container bewly-player-controls (max-width: 1200px) {
-  .bpx-player-container:is([data-screen="web"], [data-screen="full"]) .bewly-video-screenshot-control {
-    display: none !important;
-  }
+// 控制栏实测放不下时由 playerControlFit 收起，优先让出原生按钮和弹幕输入区的位置。
+.bpx-player-control-bottom-right .bewly-player-control-collapsed {
+  display: none !important;
 }
 
 .bpx-player-container:is([data-screen="web"], [data-screen="full"], [data-screen="mini"]) .bewly-widescreen-control,
