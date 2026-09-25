@@ -1027,26 +1027,12 @@ settings:
   topbar_components_adjustment: 頂部列工具角標設定
   topbar_components_adjustment_desc: 配置各個頂部列圖像的角標顯示方式
   group_topbar_pinned_channels: 頂部列常駐分區
-  topbar_pinned_channels_desc: 最多新增 6 個分區。排序決定窄螢幕時的保留優先順序，放不下的分區會收進頂部列選單。
+  topbar_pinned_channels_desc: 可將 Logo 展開內的分區固定在頂部列外側，並調整顯示順序。
   topbar_pinned_channels_title: 常駐分區
+  topbar_pinned_channels_hint: 點擊卡片即可固定或取消，點擊順序決定顯示順序。排在後面的分區會在空間不足時優先隱藏。
+  topbar_pinned_channels_all_selected: 所有可用分區都已加入。
   topbar_pinned_channels_empty: 尚未新增任何常駐分區。
-  topbar_pinned_channels_order_tip: 排序越前面，空間不足時越優先顯示；其餘分區可從頂部列選單進入。
-  topbar_pinned_channels_count: 已選 {count} / {max}
-  topbar_pinned_channels_add: 新增分區
-  topbar_pinned_channels_limit: 已達到 6 個的上限。
-  topbar_pinned_channels_legacy_limit: 舊設定超過 6 個；原選擇已保留，移除至少於 6 個後可繼續新增。
-  topbar_pinned_channels_overflow: 僅在選單中
-  topbar_pinned_channels_move_up: 上移 {name}
-  topbar_pinned_channels_move_down: 下移 {name}
-  topbar_pinned_channels_remove: 移除 {name}
-  topbar_pinned_channels_cleared: 已清空常駐分區。
-  topbar_pinned_channels_undo: 復原
-  topbar_pinned_channels_search: 搜尋分區
-  topbar_pinned_channels_close: 關閉新增面板
-  topbar_pinned_channels_genres: 分區
-  topbar_pinned_channels_others: 其他
-  topbar_pinned_channels_no_results: 找不到符合的分區。
-  topbar_pinned_channels_more: 展開另外 {count} 個常駐分區
+  topbar_pinned_channels_order_tip: 點擊順序決定顯示順序，再點一次即可取消固定。
   top_bar_logo_style: Logo 樣式
   top_bar_logo_style_desc: 選擇頂部列使用圓形圖示或橫向品牌標誌。
   top_bar_logo_style_opt:

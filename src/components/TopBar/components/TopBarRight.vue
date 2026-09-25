@@ -295,12 +295,11 @@ const shouldShowDivider = computed(() => {
         <a
           href="https://passport.bilibili.com/login"
           class="login"
-          :aria-label="$t('topbar.sign_in')"
-          :title="$t('topbar.sign_in')"
           @click="(event: MouseEvent) => handleTopBarItemClick(event, 'login')"
         >
-          <div i-solar:user-circle-bold-duotone class="text-xl mr-2" />
-          <span class="login__label">{{ $t('topbar.sign_in') }}</span>
+          <div i-solar:user-circle-bold-duotone class="text-xl mr-2" />{{
+            $t('topbar.sign_in')
+          }}
         </a>
       </div>
       <template v-if="isLogin || isLayoutEditing">
@@ -699,7 +698,6 @@ const shouldShowDivider = computed(() => {
       <TopBarModeSwitcher
         v-if="isLayoutEditing || isComponentVisible('topBarSwitcher')"
         :force-white-icon="forceWhiteIcon"
-        :collapse-on-narrow="isLogin && !isLayoutEditing"
       />
     </div>
     <AddOpenTabsDialog
@@ -714,23 +712,6 @@ const shouldShowDivider = computed(() => {
 
 .others {
   position: relative;
-}
-
-@media (max-width: 480px) {
-  .right-side-item .login {
-    width: var(--bew-control-height) !important;
-    height: var(--bew-control-height);
-    justify-content: center;
-    padding: 0 !important;
-  }
-
-  .login__label {
-    display: none;
-  }
-
-  .login > div {
-    margin-right: 0;
-  }
 }
 
 .top-bar-editing-group {
