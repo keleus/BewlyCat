@@ -66,6 +66,7 @@ const props = defineProps<{
   modelValue?: string
   searchBehavior?: 'navigate' | 'stay'
   topBarMode?: boolean
+  topBarPopupBelow?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -106,11 +107,15 @@ const narrowTopBarPopupStyle = computed<CSSProperties | undefined>(() => {
 
   return {
     position: 'absolute',
-    top: `calc(var(--bew-top-bar-height) + 4px - ${searchWrapTop.value}px)`,
+    top: props.topBarPopupBelow
+      ? 'calc(var(--bew-top-bar-primary-control-height) + 4px)'
+      : `calc(var(--bew-top-bar-height) + 4px - ${searchWrapTop.value}px)`,
     right: 'auto',
-    left: `calc(8px - ${searchWrapLeft.value}px)`,
+    left: props.topBarPopupBelow ? '0' : `calc(8px - ${searchWrapLeft.value}px)`,
     width: 'calc(100vw - 16px)',
-    maxHeight: 'calc(100dvh - var(--bew-top-bar-height) - 12px)',
+    maxHeight: props.topBarPopupBelow
+      ? 'calc(100dvh - var(--bew-top-bar-height) - var(--bew-top-bar-primary-control-height) - 20px)'
+      : 'calc(100dvh - var(--bew-top-bar-height) - 12px)',
     marginTop: '0',
   }
 })

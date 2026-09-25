@@ -3,11 +3,15 @@ import { useI18n } from 'vue-i18n'
 
 import { settings } from '~/logic'
 import { getUserID } from '~/utils/main'
+import { isComponentVisible } from '~/utils/topBarBadge'
 
 const emit = defineEmits<{
   (e: 'bewlyPageClick', event: MouseEvent, key: string): void
 }>()
 const { t } = useI18n()
+const modeSwitcherLabel = computed(() => settings.value.useOriginalBilibiliTopBar
+  ? t('topbar.switch_to_bewly_top_bar')
+  : t('topbar.switch_to_bilibili_top_bar'))
 
 const list = computed((): { name: string, url: string, icon: string, bewlyKey?: string }[] => [
   { name: t('topbar.notifications'), url: '//message.bilibili.com', icon: 'i-mingcute:notification-line' },
@@ -49,5 +53,42 @@ const list = computed((): { name: string, url: string, icon: string, bewlyKey?: 
       <i :class="item.icon" />
       <span class="flex-1">{{ item.name }}</span>
     </ALink>
+    <button
+      v-if="isComponentVisible('topBarSwitcher')"
+      type="button"
+      class="more-pop__mode-switcher"
+      @click="settings.useOriginalBilibiliTopBar = !settings.useOriginalBilibiliTopBar"
+    >
+      <i i-mingcute:refresh-2-line aria-hidden="true" />
+      {{ modeSwitcherLabel }}
+    </button>
   </div>
 </template>
+
+<style scoped lang="scss">
+.more-pop__mode-switcher {
+  display: none;
+  align-items: center;
+  gap: var(--bew-space-3);
+  min-height: var(--bew-control-height);
+  margin-bottom: var(--bew-space-1);
+  padding: var(--bew-space-2) var(--bew-space-5);
+  border: 0;
+  border-radius: var(--bew-menu-item-radius);
+  background: transparent;
+  color: var(--bew-text-1);
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--bew-fill-2);
+  }
+}
+
+@media (max-width: 480px) {
+  .more-pop__mode-switcher {
+    display: flex;
+  }
+}
+</style>

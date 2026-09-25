@@ -10,7 +10,7 @@ import { settings } from '~/logic'
 import type { TopBarStyle } from '~/logic/storage'
 import type { NotificationBadgeSettings } from '~/utils/notificationBadge'
 
-import { allChannelConfigs } from '../../../TopBar/constants/channels'
+import { genreChannelConfigs, MAX_PINNED_CHANNELS, otherChannelConfigs } from '../../../TopBar/constants/channels'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 
@@ -159,9 +159,9 @@ function setComponentBadgeType(componentKey: string, badgeValue: BadgeType) {
 ensureTopBarComponentsConfig()
 watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
 
-function resetPinnedChannels() {
-  settings.value.topBarPinnedChannels = []
-}
+const showChannelPicker = ref(false)
+const channelQuery = ref('')
+const undoPinnedKeys = ref<string[] | null>(null)
 
 interface ChannelOption {
   value: string
@@ -170,8 +170,8 @@ interface ChannelOption {
   color?: string
 }
 
-const channelOptions = computed<ChannelOption[]>(() => {
-  return allChannelConfigs.map((config) => {
+function toChannelOptions(configs: typeof genreChannelConfigs): ChannelOption[] {
+  return configs.map((config) => {
     return {
       value: config.key,
       label: t(config.nameKey),
@@ -179,23 +179,68 @@ const channelOptions = computed<ChannelOption[]>(() => {
       color: config.color,
     }
   })
-})
+}
+
+const genreOptions = computed(() => toChannelOptions(genreChannelConfigs))
+const otherOptions = computed(() => toChannelOptions(otherChannelConfigs))
+const channelOptions = computed(() => [...genreOptions.value, ...otherOptions.value])
 
 const pinnedChannelKeys = computed(() => settings.value.topBarPinnedChannels)
 
-const pinnedIndexMap = computed(() => {
-  const map = new Map<string, number>()
-  pinnedChannelKeys.value.forEach((key, index) => {
-    map.set(key, index + 1)
-  })
-  return map
-})
+function toggleChannelPicker() {
+  showChannelPicker.value = !showChannelPicker.value
+  if (showChannelPicker.value)
+    channelQuery.value = ''
+}
 
-function toggleChannel(value: string) {
-  if (pinnedChannelKeys.value.includes(value))
-    settings.value.topBarPinnedChannels = pinnedChannelKeys.value.filter(key => key !== value)
-  else
-    settings.value.topBarPinnedChannels = [...pinnedChannelKeys.value, value]
+function resetPinnedChannels() {
+  undoPinnedKeys.value = [...pinnedChannelKeys.value]
+  settings.value.topBarPinnedChannels = []
+  showChannelPicker.value = false
+}
+
+const selectedChannelOptions = computed(() => pinnedChannelKeys.value.map(key =>
+  channelOptions.value.find(option => option.value === key) ?? { value: key, label: key, icon: 'i-mingcute:question-line' },
+))
+
+function availableOptions(options: ChannelOption[]) {
+  const query = channelQuery.value.trim().toLocaleLowerCase()
+  return options.filter(option => !pinnedChannelKeys.value.includes(option.value)
+    && (!query || option.label.toLocaleLowerCase().includes(query)))
+}
+
+const availableGenreOptions = computed(() => availableOptions(genreOptions.value))
+const availableOtherOptions = computed(() => availableOptions(otherOptions.value))
+
+function addChannel(value: string) {
+  if (pinnedChannelKeys.value.length >= MAX_PINNED_CHANNELS || pinnedChannelKeys.value.includes(value))
+    return
+  undoPinnedKeys.value = null
+  settings.value.topBarPinnedChannels = [...pinnedChannelKeys.value, value]
+  if (settings.value.topBarPinnedChannels.length >= MAX_PINNED_CHANNELS)
+    showChannelPicker.value = false
+}
+
+function removeChannel(index: number) {
+  undoPinnedKeys.value = null
+  settings.value.topBarPinnedChannels = pinnedChannelKeys.value.filter((_, currentIndex) => currentIndex !== index)
+}
+
+function moveChannel(index: number, offset: -1 | 1) {
+  const target = index + offset
+  if (target < 0 || target >= pinnedChannelKeys.value.length)
+    return
+  undoPinnedKeys.value = null
+  const reordered = [...pinnedChannelKeys.value]
+  ;[reordered[index], reordered[target]] = [reordered[target], reordered[index]]
+  settings.value.topBarPinnedChannels = reordered
+}
+
+function undoResetPinnedChannels() {
+  if (!undoPinnedKeys.value)
+    return
+  settings.value.topBarPinnedChannels = undoPinnedKeys.value
+  undoPinnedKeys.value = null
 }
 </script>
 
@@ -454,31 +499,85 @@ function toggleChannel(value: string) {
         </template>
 
         <template #bottom>
-          <div class="channel-grid">
+          <div class="pinned-channel-toolbar">
+            <span>{{ $t('settings.topbar_pinned_channels_count', { count: pinnedChannelKeys.length, max: MAX_PINNED_CHANNELS }) }}</span>
             <button
-              v-for="option in channelOptions"
-              :key="option.value"
               type="button"
-              class="channel-grid__item"
-              :class="{ selected: pinnedChannelKeys.includes(option.value) }"
-              @click="toggleChannel(option.value)"
+              class="pinned-channel-action"
+              :disabled="pinnedChannelKeys.length >= MAX_PINNED_CHANNELS"
+              :aria-expanded="showChannelPicker"
+              @click="toggleChannelPicker"
             >
-              <div v-if="option.icon.startsWith('#')" class="channel-grid__icon">
-                <svg aria-hidden="true">
-                  <use :xlink:href="option.icon" />
-                </svg>
-              </div>
-              <div v-else class="channel-grid__icon">
-                <i :class="option.icon" :style="{ color: option.color ?? '' }" />
-              </div>
-              <span class="channel-grid__label">{{ option.label }}</span>
-              <span v-if="pinnedIndexMap.has(option.value)" class="channel-grid__overlay">
-                {{ pinnedIndexMap.get(option.value) }}
-              </span>
+              <i i-mingcute:add-line aria-hidden="true" />
+              {{ $t('settings.topbar_pinned_channels_add') }}
             </button>
           </div>
-          <div class="channel-grid__tip">
-            {{ pinnedChannelKeys.length ? $t('settings.topbar_pinned_channels_order_tip') : $t('settings.topbar_pinned_channels_empty') }}
+          <p v-if="pinnedChannelKeys.length > MAX_PINNED_CHANNELS" class="pinned-channel-message" role="status">
+            {{ $t('settings.topbar_pinned_channels_legacy_limit') }}
+          </p>
+          <p v-else-if="pinnedChannelKeys.length === MAX_PINNED_CHANNELS" class="pinned-channel-message" role="status">
+            {{ $t('settings.topbar_pinned_channels_limit') }}
+          </p>
+          <p v-if="!selectedChannelOptions.length" class="pinned-channel-message">
+            {{ $t('settings.topbar_pinned_channels_empty') }}
+          </p>
+          <ol v-else class="pinned-channel-list">
+            <li v-for="(option, index) in selectedChannelOptions" :key="`${option.value}-${index}`" class="pinned-channel-list__item">
+              <span class="pinned-channel-list__order">{{ index + 1 }}</span>
+              <span class="channel-grid__icon">
+                <svg v-if="option.icon.startsWith('#')" aria-hidden="true"><use :xlink:href="option.icon" /></svg>
+                <i v-else :class="option.icon" :style="{ color: option.color ?? '' }" aria-hidden="true" />
+              </span>
+              <span class="pinned-channel-list__label">{{ option.label }}</span>
+              <span v-if="index >= MAX_PINNED_CHANNELS" class="pinned-channel-list__overflow">{{ $t('settings.topbar_pinned_channels_overflow') }}</span>
+              <div class="pinned-channel-list__actions">
+                <button type="button" :disabled="index === 0" :aria-label="$t('settings.topbar_pinned_channels_move_up', { name: option.label })" @click="moveChannel(index, -1)">
+                  <i i-mingcute:up-line aria-hidden="true" />
+                </button>
+                <button type="button" :disabled="index === pinnedChannelKeys.length - 1" :aria-label="$t('settings.topbar_pinned_channels_move_down', { name: option.label })" @click="moveChannel(index, 1)">
+                  <i i-mingcute:down-line aria-hidden="true" />
+                </button>
+                <button type="button" :aria-label="$t('settings.topbar_pinned_channels_remove', { name: option.label })" @click="removeChannel(index)">
+                  <i i-mingcute:close-line aria-hidden="true" />
+                </button>
+              </div>
+            </li>
+          </ol>
+          <div v-if="undoPinnedKeys" class="pinned-channel-message" role="status">
+            {{ $t('settings.topbar_pinned_channels_cleared') }}
+            <button type="button" class="pinned-channel-action" @click="undoResetPinnedChannels">
+              {{ $t('settings.topbar_pinned_channels_undo') }}
+            </button>
+          </div>
+          <p class="channel-grid__tip">
+            {{ $t('settings.topbar_pinned_channels_order_tip') }}
+          </p>
+          <div v-if="showChannelPicker && pinnedChannelKeys.length < MAX_PINNED_CHANNELS" class="channel-picker">
+            <div class="channel-picker__header">
+              <input v-model="channelQuery" type="search" :placeholder="$t('settings.topbar_pinned_channels_search')" :aria-label="$t('settings.topbar_pinned_channels_search')">
+              <button type="button" :aria-label="$t('settings.topbar_pinned_channels_close')" @click="showChannelPicker = false">
+                <i i-mingcute:close-line aria-hidden="true" />
+              </button>
+            </div>
+            <div class="channel-picker__results">
+              <template v-for="group in [{ key: 'genre', title: $t('settings.topbar_pinned_channels_genres'), options: availableGenreOptions }, { key: 'other', title: $t('settings.topbar_pinned_channels_others'), options: availableOtherOptions }]" :key="group.key">
+                <div v-if="group.options.length" class="channel-picker__group">
+                  <h4>{{ group.title }}</h4>
+                  <div class="channel-grid">
+                    <button v-for="option in group.options" :key="option.value" type="button" class="channel-grid__item" @click="addChannel(option.value)">
+                      <span class="channel-grid__icon">
+                        <svg v-if="option.icon.startsWith('#')" aria-hidden="true"><use :xlink:href="option.icon" /></svg>
+                        <i v-else :class="option.icon" :style="{ color: option.color ?? '' }" aria-hidden="true" />
+                      </span>
+                      <span class="channel-grid__label">{{ option.label }}</span>
+                    </button>
+                  </div>
+                </div>
+              </template>
+              <p v-if="!availableGenreOptions.length && !availableOtherOptions.length" class="pinned-channel-message">
+                {{ $t('settings.topbar_pinned_channels_no_results') }}
+              </p>
+            </div>
           </div>
         </template>
       </SettingsItem>
@@ -616,17 +715,6 @@ function toggleChannel(value: string) {
     outline: 2px solid var(--bew-theme-color-60);
     outline-offset: var(--bew-space-0-5);
   }
-
-  &.selected {
-    border-color: var(--bew-theme-color-30);
-    background: color-mix(in oklab, var(--bew-theme-color-20), transparent 35%);
-    color: var(--bew-theme-color);
-    transform: none;
-
-    &:hover {
-      background: color-mix(in oklab, var(--bew-theme-color-20), transparent 20%);
-    }
-  }
 }
 
 .channel-grid__icon {
@@ -660,26 +748,143 @@ function toggleChannel(value: string) {
   white-space: nowrap;
 }
 
-.channel-grid__overlay {
-  display: grid;
-  width: var(--bew-icon-size-md);
-  height: var(--bew-icon-size-md);
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: var(--bew-badge-radius);
-  background: var(--bew-theme-color);
-  color: var(--bew-text-auto);
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: var(--bew-line-height-control);
-  pointer-events: none;
-}
-
 .channel-grid__tip {
   margin-top: var(--bew-space-3);
   color: var(--bew-text-3);
   font-size: var(--bew-font-size-control);
   line-height: var(--bew-line-height-control);
+}
+
+.pinned-channel-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bew-space-3);
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
+}
+
+.pinned-channel-action,
+.channel-picker__header button,
+.pinned-channel-list__actions button {
+  display: inline-flex;
+  min-width: var(--bew-control-height);
+  min-height: var(--bew-control-height);
+  align-items: center;
+  justify-content: center;
+  gap: var(--bew-space-1);
+  padding: var(--bew-space-1);
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  background: var(--bew-fill-1);
+  color: var(--bew-text-1);
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: var(--bew-fill-2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.pinned-channel-message {
+  margin-top: var(--bew-space-2);
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+}
+
+.pinned-channel-list {
+  display: grid;
+  gap: var(--bew-space-2);
+  margin: var(--bew-space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pinned-channel-list__item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--bew-space-2);
+  padding: var(--bew-space-2);
+  border-radius: var(--bew-interactive-radius);
+  background: var(--bew-fill-1);
+}
+
+.pinned-channel-list__order {
+  min-width: var(--bew-icon-size-md);
+  color: var(--bew-text-2);
+  text-align: center;
+}
+
+.pinned-channel-list__label {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pinned-channel-list__overflow {
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+}
+
+.pinned-channel-list__actions {
+  display: flex;
+  flex: none;
+  gap: var(--bew-space-1);
+}
+
+.channel-picker {
+  margin-top: var(--bew-space-3);
+  padding: var(--bew-space-3);
+  border: 1px solid var(--bew-border-color);
+  border-radius: var(--bew-panel-radius);
+  background: var(--bew-elevated);
+}
+
+.channel-picker__header {
+  display: flex;
+  gap: var(--bew-space-2);
+
+  input {
+    min-width: 0;
+    height: var(--bew-control-height);
+    flex: 1;
+    padding-inline: var(--bew-space-3);
+    border: 1px solid var(--bew-border-color);
+    border-radius: var(--bew-interactive-radius);
+    background: var(--bew-fill-1);
+    color: var(--bew-text-1);
+  }
+}
+
+.channel-picker__results {
+  max-height: min(50dvh, 440px);
+  margin-top: var(--bew-space-3);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.channel-picker__group + .channel-picker__group {
+  margin-top: var(--bew-space-4);
+}
+
+.channel-picker__group h4 {
+  margin: 0 0 var(--bew-space-2);
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-title);
+  font-weight: var(--bew-font-weight-semibold);
 }
 
 @media (max-width: 640px) {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useDebounceFn, useResizeObserver } from '@vueuse/core'
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { onClickOutside, onKeyStroke, useEventListener } from '@vueuse/core'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ALink from '~/components/ALink.vue'
@@ -9,20 +9,23 @@ import { settings } from '~/logic'
 import { isComponentVisible } from '~/utils/topBarBadge'
 
 import type { TopBarChannelConfig } from '../constants/channels'
-import { allChannelConfigs } from '../constants/channels'
+import { allChannelConfigs, MAX_PINNED_CHANNELS } from '../constants/channels'
 import TopBarItemEditor from './TopBarItemEditor.vue'
 
 const props = defineProps<{
   forceWhiteIcon: boolean
+  availableWidth: number
 }>()
 
 const { t, locale } = useI18n()
 const { isLayoutEditing } = useLayoutEditMode()
 
 const containerRef = ref<HTMLElement | null>(null)
-const listRef = ref<HTMLElement | null>(null)
-const displayedKeys = ref<string[]>([])
-let lastObservedWidth = 0
+const moreButtonRef = ref<HTMLButtonElement | null>(null)
+const menuRef = ref<HTMLElement | null>(null)
+const menuOpen = ref(false)
+const menuLeft = ref(0)
+const menuTop = ref(0)
 
 const channelMap = computed(() => {
   const map = new Map<string, TopBarChannelConfig & { name: string }>()
@@ -49,129 +52,71 @@ const validPinnedKeys = computed(() => {
   })
 })
 
+// 34px control: 4px padding per side, 26px items, 4px gap and 2px safety room.
+// The overflow button shares the icon item's 26px slot, including for legacy counts.
+const displayCount = computed(() => {
+  const eligible = Math.min(MAX_PINNED_CHANNELS, validPinnedKeys.value.length)
+  if (!eligible)
+    return 0
+  for (let count = eligible; count > 0; count--) {
+    const hasOverflow = validPinnedKeys.value.length > count
+    const width = 10 + count * 26 + (count - 1) * 4 + (hasOverflow ? 30 : 0)
+    if (width <= props.availableWidth)
+      return count
+  }
+  return 1
+})
+
 const displayedChannels = computed(() => {
-  return displayedKeys.value
+  return validPinnedKeys.value.slice(0, displayCount.value)
     .map(key => channelMap.value.get(key))
     .filter((channel): channel is TopBarChannelConfig & { name: string } => Boolean(channel))
 })
 
 const hiddenChannels = computed(() => {
   return validPinnedKeys.value
-    .slice(displayedKeys.value.length)
+    .slice(displayCount.value)
     .map(key => channelMap.value.get(key))
     .filter((channel): channel is TopBarChannelConfig & { name: string } => Boolean(channel))
 })
 
 const hiddenCount = computed(() => hiddenChannels.value.length)
-const hiddenTooltip = computed(() => hiddenChannels.value.map(channel => channel.name).join(', '))
-watch(validPinnedKeys, async (keys) => {
-  displayedKeys.value = [...keys]
-  await adjustVisibility(true)
-}, { immediate: true })
-
-watch(() => locale.value, async () => {
-  await adjustVisibility(true)
+watch(hiddenCount, (count) => {
+  if (!count)
+    menuOpen.value = false
 })
 
-watch(() => props.forceWhiteIcon, () => {
-  void adjustVisibility(true)
-})
+function closeMenu(restoreFocus = false) {
+  menuOpen.value = false
+  if (restoreFocus)
+    moreButtonRef.value?.focus()
+}
 
-useResizeObserver(containerRef, (entries) => {
-  const width = entries[0]?.contentRect.width ?? 0
-  const shouldReset = width > lastObservedWidth
-  lastObservedWidth = width
-  void adjustVisibility(shouldReset)
-})
-
-const handleWindowResize = useDebounceFn(() => {
-  void adjustVisibility(true)
-}, 120)
-
-onMounted(() => {
-  window.addEventListener('resize', handleWindowResize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleWindowResize)
-})
-
-async function adjustVisibility(reset = false) {
-  if (!listRef.value)
+async function toggleMenu() {
+  if (menuOpen.value) {
+    closeMenu()
     return
-
-  if (reset) {
-    const desired = validPinnedKeys.value
-    if (!arraysEqual(displayedKeys.value, desired)) {
-      displayedKeys.value = [...desired]
-      await nextTick()
-    }
   }
-
+  const rect = moreButtonRef.value?.getBoundingClientRect()
+  if (!rect)
+    return
+  const width = Math.min(280, window.innerWidth - 16)
+  menuLeft.value = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8))
+  menuTop.value = rect.bottom + 8
+  menuOpen.value = true
   await nextTick()
-
-  const listEl = listRef.value
-  if (!listEl)
-    return
-
-  // ✅ 性能优化：批量读取布局，避免read-write-read循环
-  // 使用RAF批量所有布局读取，减少15-30次强制布局到1次
-  while (displayedKeys.value.length > 0) {
-    // 批量读取所有布局属性（在RAF中）
-    const overflow = await checkOverflowBatched()
-
-    if (!overflow)
-      break
-
-    // 移除最后一个item
-    displayedKeys.value = displayedKeys.value.slice(0, -1)
-    await nextTick()
-
-    if (!listRef.value)
-      return
-  }
+  menuRef.value?.querySelector<HTMLAnchorElement>('a')?.focus()
 }
 
-/**
- * 批量检查溢出状态（性能优化版本）
- * 将所有布局读取放在单个RAF中，避免强制同步布局
- */
-function checkOverflowBatched(): Promise<boolean> {
-  return new Promise((resolve) => {
-    requestAnimationFrame(() => {
-      const listEl = listRef.value
-      const containerEl = containerRef.value
-
-      // 批量读取1: 列表自身溢出检查
-      if (listEl && listEl.scrollWidth - listEl.clientWidth > 1) {
-        resolve(true)
-        return
-      }
-
-      // 批量读取2: main元素溢出检查
-      const mainEl = containerEl?.closest('main') as HTMLElement | null
-      if (mainEl && mainEl.scrollWidth - mainEl.clientWidth > 1) {
-        resolve(true)
-        return
-      }
-
-      // 批量读取3: 搜索框溢出检查
-      const searchEl = mainEl?.querySelector('[data-top-bar-search]') as HTMLElement | null
-      if (searchEl && searchEl.scrollWidth - searchEl.clientWidth > 1) {
-        resolve(true)
-        return
-      }
-
-      resolve(false)
-    })
-  })
-}
-
-function arraysEqual<T>(a: T[], b: T[]): boolean {
-  if (a.length !== b.length)
-    return false
-  return a.every((value, index) => value === b[index])
-}
+onClickOutside(containerRef, () => closeMenu())
+useEventListener(window, 'resize', () => closeMenu())
+onKeyStroke('Escape', () => {
+  if (menuOpen.value)
+    closeMenu(true)
+})
+watch(() => locale.value, () => closeMenu())
+watch(() => props.availableWidth, () => closeMenu())
+watch(isLayoutEditing, () => closeMenu())
 
 function handleChannelClick(event: MouseEvent) {
   if (!isLayoutEditing.value)
@@ -179,6 +124,19 @@ function handleChannelClick(event: MouseEvent) {
 
   event.preventDefault()
   event.stopPropagation()
+}
+
+function handleMoreClick(event: MouseEvent) {
+  if (isLayoutEditing.value) {
+    handleChannelClick(event)
+    return
+  }
+  void toggleMenu()
+}
+
+function handleMenuClick() {
+  // Let the link's default action finish before unmounting its menu.
+  window.setTimeout(() => closeMenu(), 0)
 }
 </script>
 
@@ -202,7 +160,7 @@ function handleChannelClick(event: MouseEvent) {
           'pinned-channels--editing-empty': isLayoutEditing && !validPinnedKeys.length,
         }"
       >
-        <div v-if="validPinnedKeys.length" ref="listRef" class="pinned-channels__list">
+        <div v-if="validPinnedKeys.length" class="pinned-channels__list">
           <ALink
             v-for="channel in displayedChannels"
             :key="channel.key"
@@ -226,18 +184,48 @@ function handleChannelClick(event: MouseEvent) {
             </div>
           </ALink>
         </div>
-        <div
+        <button
           v-if="hiddenCount > 0"
+          ref="moreButtonRef"
+          type="button"
           class="pinned-channels__more"
           :class="{ 'white-icon': props.forceWhiteIcon }"
-          :title="hiddenTooltip"
+          :aria-label="$t('settings.topbar_pinned_channels_more', { count: hiddenCount })"
+          :aria-expanded="menuOpen"
+          :aria-controls="menuOpen ? 'pinned-channels-menu' : undefined"
+          @click="handleMoreClick"
         >
           +{{ hiddenCount }}
-        </div>
+        </button>
         <span v-if="isLayoutEditing && !validPinnedKeys.length" class="pinned-channels__placeholder">
           <i i-mingcute:pin-line aria-hidden="true" />
           {{ $t('settings.topbar_pinned_channels_title') }}
         </span>
+      </div>
+      <div
+        v-if="menuOpen && hiddenCount"
+        id="pinned-channels-menu"
+        ref="menuRef"
+        class="pinned-channels-menu bew-popover bew-popover-surface"
+        :style="{ left: `${menuLeft}px`, top: `${menuTop}px` }"
+        role="menu"
+        :aria-label="$t('settings.topbar_pinned_channels_title')"
+        @click="handleMenuClick"
+      >
+        <ALink
+          v-for="channel in hiddenChannels"
+          :key="channel.key"
+          :href="channel.href"
+          type="topBar"
+          role="menuitem"
+          class="pinned-channels-menu__item"
+        >
+          <span class="pinned-channels__icon">
+            <svg v-if="channel.icon.startsWith('#')" aria-hidden="true"><use :xlink:href="channel.icon" /></svg>
+            <i v-else :class="channel.icon" :style="{ color: channel.color }" aria-hidden="true" />
+          </span>
+          {{ channel.name }}
+        </ALink>
       </div>
     </div>
   </TopBarItemEditor>
@@ -249,6 +237,7 @@ function handleChannelClick(event: MouseEvent) {
 
   min-width: 0;
   flex: 0 1 auto;
+  overflow: visible;
 
   &.bew-segment-control--solid {
     --bew-segment-surface-background: var(--bew-elevated-solid);
@@ -283,14 +272,16 @@ function handleChannelClick(event: MouseEvent) {
     display: grid;
     place-items: center;
     height: var(--bew-control-item-height);
-    min-width: var(--bew-control-item-height);
-    padding: 0 8px;
+    width: var(--bew-control-item-height);
+    padding: 0;
+    border: 0;
     border-radius: var(--bew-control-item-radius);
     background: transparent;
     color: var(--bew-text-2);
     font-size: var(--bew-control-label-size);
     font-weight: var(--bew-control-brand-label-weight);
     line-height: var(--bew-control-label-line-height);
+    cursor: pointer;
     transition:
       background-color var(--bew-duration-normal, 200ms) ease,
       color var(--bew-duration-normal, 200ms) ease;
@@ -298,6 +289,11 @@ function handleChannelClick(event: MouseEvent) {
     &:hover {
       color: var(--bew-segment-item-hover-color);
       background: var(--bew-segment-item-hover-bg);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--bew-theme-color);
+      outline-offset: 2px;
     }
 
     &.white-icon {
@@ -348,17 +344,33 @@ function handleChannelClick(event: MouseEvent) {
 
 .pinned-channels-editor-anchor {
   position: relative;
-  min-width: 24px;
   min-height: var(--bew-control-height);
+  flex: none;
 }
 
-@media (max-width: 1279px) {
-  .pinned-channels {
-    display: none;
-  }
+.pinned-channels-menu {
+  position: fixed;
+  z-index: 1002;
+  width: min(280px, calc(100vw - 16px));
+  max-height: calc(100dvh - var(--bew-top-bar-height) - 16px);
+  padding: var(--bew-space-2);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
 
-  .pinned-channels--editing {
-    display: flex !important;
+.pinned-channels-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-2);
+  min-height: var(--bew-control-height);
+  padding: var(--bew-space-2);
+  border-radius: var(--bew-interactive-radius);
+  color: var(--bew-text-1);
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    background: var(--bew-fill-2);
   }
 }
 </style>

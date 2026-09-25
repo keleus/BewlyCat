@@ -252,6 +252,13 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         </div>
       </SettingsItem>
       <SettingsItem
+        :title="$t('settings.original_moments_use_bewly_filters')"
+        :desc="$t('settings.original_moments_use_bewly_filters_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.originalMomentsUseBewlyFilters" />
+      </SettingsItem>
+      <SettingsItem
         :title="$t('settings.moments_card_open_mode')"
         :desc="$t('settings.moments_card_open_mode_desc')"
         right-width="auto"

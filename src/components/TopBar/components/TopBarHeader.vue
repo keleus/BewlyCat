@@ -7,8 +7,10 @@ import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
 import { experimentalTopBarStyles, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX } from '~/logic/storage'
+import { isComponentVisible } from '~/utils/topBarBadge'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
+import { allChannelConfigs } from '../constants/channels'
 import TopBarItemEditor from './TopBarItemEditor.vue'
 import TopBarLogo from './TopBarLogo.vue'
 import TopBarRight from './TopBarRight.vue'
@@ -19,7 +21,7 @@ const props = defineProps<{
   isDark: boolean
 }>()
 
-const { forceWhiteIcon, hasPageBackdrop, handleNotificationsItemClick } = useTopBarInteraction()
+const { forceWhiteIcon, hasPageBackdrop, handleNotificationsItemClick, showSearchBar } = useTopBarInteraction()
 const { isLayoutEditing } = useLayoutEditMode()
 const { activatedPage, scrollTop } = useBewlyApp()
 const isNarrowLayout = useMediaQuery('(max-width: 767px)')
@@ -159,15 +161,55 @@ const themeGradientColor = computed(() =>
     : 'var(--bew-theme-color-10)')
 
 const leftSection = ref<HTMLElement | null>(null)
+const headerSection = ref<HTMLElement | null>(null)
 const rightSection = ref<HTMLElement | null>(null)
 const searchSection = ref<HTMLElement | null>(null)
 const searchContent = ref<HTMLElement | null>(null)
 
 const leftWidth = ref(0)
+const headerWidth = ref(0)
+const headerSpacing = ref(0)
+const logoBaseWidth = ref(0)
 const rightWidth = ref(0)
 const centerWidth = ref(0)
 const searchContentWidth = ref(0)
 const isSearchTransitionEnabled = ref(false)
+const searchIsVisible = computed(() => showTopBarSearchEditor.value && (showSearchBar.value || isLayoutEditing.value))
+const validPinnedCount = computed(() => {
+  if (!isLayoutEditing.value && !isComponentVisible('pinnedChannels'))
+    return 0
+  const valid = new Set(allChannelConfigs.map(channel => channel.key))
+  return new Set((settings.value.topBarPinnedChannels ?? []).filter(key => valid.has(key))).size
+})
+const pinnedMinimumWidth = computed(() => validPinnedCount.value > 1 ? 66 : validPinnedCount.value ? 36 : 0)
+const searchCompact = computed(() => headerWidth.value > 0 && searchIsVisible.value && validPinnedCount.value > 0
+  && headerWidth.value - headerSpacing.value - logoBaseWidth.value - rightWidth.value - 240 < pinnedMinimumWidth.value)
+const pinnedAvailableWidth = computed(() => Math.max(0, headerWidth.value - headerSpacing.value - logoBaseWidth.value - rightWidth.value
+  - (searchIsVisible.value ? searchCompact.value ? 34 : 240 : 0)))
+
+function measureRightWidth() {
+  const section = rightSection.value
+  const controls = section?.querySelector<HTMLElement>('.others')
+  if (!section || !controls)
+    return section?.clientWidth ?? 0
+
+  const style = getComputedStyle(controls)
+  const gap = Number.parseFloat(style.columnGap) || 0
+  const children = Array.from(controls.children).filter((child): child is HTMLElement => {
+    if (!(child instanceof HTMLElement))
+      return false
+    const childStyle = getComputedStyle(child)
+    return childStyle.display !== 'none' && childStyle.position !== 'absolute'
+  })
+  const contentWidth = children.reduce((width, child) => {
+    const childStyle = getComputedStyle(child)
+    return width + child.getBoundingClientRect().width
+      + (Number.parseFloat(childStyle.marginLeft) || 0)
+      + (Number.parseFloat(childStyle.marginRight) || 0)
+  }, (Number.parseFloat(style.paddingLeft) || 0) + (Number.parseFloat(style.paddingRight) || 0)
+  + gap * Math.max(0, children.length - 1))
+  return Math.max(section.clientWidth, contentWidth)
+}
 
 // 使用单个 ResizeObserver 监听多个元素，减少开销
 let resizeObserver: ResizeObserver | null = null
@@ -183,8 +225,18 @@ function setupResizeObserver() {
       if (entry.target === leftSection.value) {
         leftWidth.value = width
       }
+      else if (entry.target === headerSection.value) {
+        headerWidth.value = (entry.target as HTMLElement).clientWidth
+        const style = getComputedStyle(entry.target)
+        headerSpacing.value = Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+          + Number.parseFloat(style.columnGap) * 2 + 8
+        rightWidth.value = measureRightWidth()
+      }
+      else if (entry.target === leftSection.value?.querySelector('[data-top-bar-pin-base]')) {
+        logoBaseWidth.value = width
+      }
       else if (entry.target === rightSection.value) {
-        rightWidth.value = width
+        rightWidth.value = measureRightWidth()
       }
       else if (entry.target === searchSection.value) {
         centerWidth.value = width
@@ -198,6 +250,11 @@ function setupResizeObserver() {
 
   if (leftSection.value)
     resizeObserver.observe(leftSection.value)
+  if (headerSection.value)
+    resizeObserver.observe(headerSection.value)
+  const logoBase = leftSection.value?.querySelector('[data-top-bar-pin-base]')
+  if (logoBase)
+    resizeObserver.observe(logoBase)
   if (rightSection.value)
     resizeObserver.observe(rightSection.value)
   if (searchSection.value)
@@ -224,10 +281,20 @@ onBeforeUnmount(() => {
 useMutationObserver(searchSection, () => {
   refreshSearchContent()
 }, { childList: true, subtree: true })
+useMutationObserver(rightSection, () => {
+  rightWidth.value = measureRightWidth()
+}, { childList: true, characterData: true, subtree: true })
 
 onMounted(() => {
+  headerWidth.value = headerSection.value?.offsetWidth ?? 0
+  const headerStyle = headerSection.value ? getComputedStyle(headerSection.value) : null
+  headerSpacing.value = headerStyle
+    ? Number.parseFloat(headerStyle.paddingLeft) + Number.parseFloat(headerStyle.paddingRight)
+    + Number.parseFloat(headerStyle.columnGap) * 2 + 8
+    : 0
+  logoBaseWidth.value = leftSection.value?.querySelector<HTMLElement>('[data-top-bar-pin-base]')?.offsetWidth ?? 0
   leftWidth.value = leftSection.value?.offsetWidth ?? 0
-  rightWidth.value = rightSection.value?.offsetWidth ?? 0
+  rightWidth.value = measureRightWidth()
   centerWidth.value = searchSection.value?.offsetWidth ?? 0
   refreshSearchContent()
   setupResizeObserver()
@@ -271,8 +338,9 @@ function refreshSearchContent() {
 
 <template>
   <main
+    ref="headerSection"
     class="top-bar-header"
-    :class="{ 'top-bar-header--editing': isLayoutEditing }"
+    :class="{ 'top-bar-header--editing': isLayoutEditing, 'top-bar-header--search-visible': searchIsVisible && validPinnedCount > 0 && !searchCompact, 'top-bar-header--search-compact': searchCompact }"
     max-w="$bew-page-max-width"
     grid="~ cols-[auto_1fr_auto] items-center gap-4"
     p="x-12" m-auto
@@ -318,7 +386,7 @@ function refreshSearchContent() {
     </Transition>
 
     <div ref="leftSection" class="top-bar-header__side top-bar-header__side--left">
-      <TopBarLogo :force-white-icon="forceWhiteIcon" />
+      <TopBarLogo :force-white-icon="forceWhiteIcon" :pinned-available-width="pinnedAvailableWidth" />
     </div>
 
     <!-- search bar -->
@@ -343,6 +411,7 @@ function refreshSearchContent() {
             <TopBarSearch
               :force-visible="isLayoutEditing && activatedPage !== AppPage.Search"
               :edit-mode="isLayoutEditing"
+              :compact="searchCompact"
             />
           </TopBarItemEditor>
         </div>
@@ -364,6 +433,14 @@ function refreshSearchContent() {
   box-sizing: border-box;
   min-width: 0;
   min-height: var(--bew-top-bar-height);
+}
+
+.top-bar-header--search-visible {
+  grid-template-columns: auto minmax(240px, 1fr) auto;
+}
+
+.top-bar-header--search-compact {
+  grid-template-columns: auto minmax(34px, 1fr) auto;
 }
 
 .top-bar-header--editing {
@@ -458,6 +535,12 @@ function refreshSearchContent() {
   transition: transform 0.2s ease;
 }
 
+// A transform makes fixed descendants relative to the search cell. The compact
+// search layer must instead be positioned against the viewport.
+.top-bar-header--search-compact .top-bar-header__search {
+  transform: none !important;
+}
+
 .top-bar-header__search-content {
   display: flex;
   width: 100%;
@@ -474,7 +557,8 @@ function refreshSearchContent() {
   flex: 1 1 auto;
 }
 
-.top-bar-header--editing .top-bar-header__search-control :deep(.search-bar) {
+.top-bar-header--editing .top-bar-header__search-control :deep(.search-bar),
+.top-bar-header--editing .top-bar-header__search-control :deep(.top-bar-search__compact-button) {
   pointer-events: none;
 }
 

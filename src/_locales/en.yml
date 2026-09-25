@@ -315,6 +315,8 @@ settings:
   original_moments_show_community_center: Show community center
   original_moments_show_hot_search: Show hot search
   original_moments_show_up_list: Show dynamic uploader banner
+  original_moments_use_bewly_filters: Filter the original dynamic feed
+  original_moments_use_bewly_filters_desc: When enabled, the dynamic type and keyword filters above also apply to Bilibili's original dynamic page.
   moments_show_user_card: Show user card
   moments_show_publish: Show publish action
   moments_show_live: Show live users
@@ -608,12 +610,26 @@ settings:
   topbar_components_adjustment: Top Bar Components Badge Settings
   topbar_components_adjustment_desc: Configure the badge display mode for each top bar icon
   group_topbar_pinned_channels: Top Bar Pinned Channels
-  topbar_pinned_channels_desc: Choose items from the logo dropdown to keep directly on the top bar and arrange their priority.
+  topbar_pinned_channels_desc: Add up to six channels. Their order sets narrow-screen priority; channels that do not fit remain in the top-bar menu.
   topbar_pinned_channels_title: Pinned channels
-  topbar_pinned_channels_hint: Click a tile to pin or unpin it; the order follows the sequence of your clicks. Items toward the end hide first when space is tight.
-  topbar_pinned_channels_all_selected: All channels have already been pinned.
   topbar_pinned_channels_empty: You have not pinned any channels yet.
-  topbar_pinned_channels_order_tip: Selection order follows your clicks. Click an item again to unpin it.
+  topbar_pinned_channels_order_tip: Earlier channels stay visible first when space is tight; the rest remain available in the top-bar menu.
+  topbar_pinned_channels_count: Selected {count} / {max}
+  topbar_pinned_channels_add: Add channel
+  topbar_pinned_channels_limit: You have reached the six-channel limit.
+  topbar_pinned_channels_legacy_limit: This older configuration has more than six channels. Your choices are preserved; remove channels until fewer than six remain before adding more.
+  topbar_pinned_channels_overflow: Menu only
+  topbar_pinned_channels_move_up: Move {name} up
+  topbar_pinned_channels_move_down: Move {name} down
+  topbar_pinned_channels_remove: Remove {name}
+  topbar_pinned_channels_cleared: Pinned channels cleared.
+  topbar_pinned_channels_undo: Undo
+  topbar_pinned_channels_search: Search channels
+  topbar_pinned_channels_close: Close channel picker
+  topbar_pinned_channels_genres: Channels
+  topbar_pinned_channels_others: Other
+  topbar_pinned_channels_no_results: No matching channels.
+  topbar_pinned_channels_more: Show {count} more pinned channels
   top_bar_logo_style: Logo style
   top_bar_logo_style_desc: Choose between the circular icon and the horizontal brand mark in the top bar.
   top_bar_logo_style_opt:

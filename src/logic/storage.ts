@@ -360,6 +360,8 @@ export interface Settings {
   originalMomentsShowCommunityCenter: boolean
   originalMomentsShowHotSearch: boolean
   originalMomentsShowUpList: boolean
+  /** 将 Bewly 动态过滤设置同时应用到 Bilibili 原版动态流 */
+  originalMomentsUseBewlyFilters: boolean
   momentsSidebarShowUserCard: boolean
   momentsSidebarShowPublish: boolean
   momentsSidebarShowLive: boolean
@@ -697,6 +699,7 @@ export const originalSettings: Settings = {
   originalMomentsShowCommunityCenter: true,
   originalMomentsShowHotSearch: true,
   originalMomentsShowUpList: true,
+  originalMomentsUseBewlyFilters: false,
   momentsSidebarShowUserCard: true,
   momentsSidebarShowPublish: true,
   momentsSidebarShowLive: true,

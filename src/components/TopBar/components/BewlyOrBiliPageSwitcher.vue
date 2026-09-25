@@ -289,5 +289,9 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   .top-bar-switcher-editor-anchor--editing .bewly-bili-switcher {
     display: flex;
   }
+
+  .top-bar-switcher-editor-anchor:not(.top-bar-switcher-editor-anchor--editing) {
+    display: none;
+  }
 }
 </style>

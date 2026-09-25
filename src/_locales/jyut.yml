@@ -340,6 +340,8 @@ settings:
   original_moments_show_community_center: 顯示社羣中心
   original_moments_show_hot_search: 顯示熱搜
   original_moments_show_up_list: 顯示動態 UP 橫幅
+  original_moments_use_bewly_filters: 過濾原版動態流
+  original_moments_use_bewly_filters_desc: 開啟之後，上面嘅動態類型同關鍵詞過濾設定亦會套用到 Bilibili 原版動態頁。
   moments_show_user_card: 顯示用戶卡片
   moments_show_publish: 顯示發布動態元件
   moments_show_live: 顯示直播中元件
@@ -556,12 +558,26 @@ settings:
   topbar_components_adjustment: 頂欄組件角標設定
   topbar_components_adjustment_desc: 設定每個頂欄圖示嘅角標顯示方式
   group_topbar_pinned_channels: 頂欄固定分區
-  topbar_pinned_channels_desc: 可以將 Logo 展開嘅分區固定喺頂欄外面，並且設定顯示順序。
+  topbar_pinned_channels_desc: 最多加 6 個分區。排序決定窄畫面時邊啲優先顯示，放唔落嘅會收埋喺頂欄選單。
   topbar_pinned_channels_title: 固定分區
-  topbar_pinned_channels_hint: 撳卡片就可以固定或者取消，撳落去嘅順序會決定顯示順序。排後面嗰啲會喺空間唔夠時優先收埋。
-  topbar_pinned_channels_all_selected: 所有可用分區都已經加入。
   topbar_pinned_channels_empty: 仲未揀任何固定分區。
-  topbar_pinned_channels_order_tip: 撳嘅順序決定顯示，再撳一次就會取消固定。
+  topbar_pinned_channels_order_tip: 排得越前，空間唔夠時越會優先顯示；其餘分區可以喺頂欄選單搵返。
+  topbar_pinned_channels_count: 已揀 {count} / {max}
+  topbar_pinned_channels_add: 加入分區
+  topbar_pinned_channels_limit: 已經去到 6 個嘅上限。
+  topbar_pinned_channels_legacy_limit: 舊設定多過 6 個；原本揀嘅已保留，刪到少過 6 個先可以再加。
+  topbar_pinned_channels_overflow: 只喺選單顯示
+  topbar_pinned_channels_move_up: 上移 {name}
+  topbar_pinned_channels_move_down: 下移 {name}
+  topbar_pinned_channels_remove: 移除 {name}
+  topbar_pinned_channels_cleared: 已清空固定分區。
+  topbar_pinned_channels_undo: 還原
+  topbar_pinned_channels_search: 搜尋分區
+  topbar_pinned_channels_close: 閂咗加入面板
+  topbar_pinned_channels_genres: 分區
+  topbar_pinned_channels_others: 其他
+  topbar_pinned_channels_no_results: 搵唔到符合嘅分區。
+  topbar_pinned_channels_more: 展開另外 {count} 個固定分區
   top_bar_logo_style: Logo 樣式
   top_bar_logo_style_desc: 揀頂欄用圓形圖示或者橫向品牌標誌。
   top_bar_logo_style_opt:

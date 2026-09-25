@@ -12,9 +12,11 @@ import TopBarItemEditor from './TopBarItemEditor.vue'
 const props = withDefaults(defineProps<{
   forceWhiteIcon?: boolean
   native?: boolean
+  collapseOnNarrow?: boolean
 }>(), {
   forceWhiteIcon: false,
   native: false,
+  collapseOnNarrow: false,
 })
 
 const { t } = useI18n()
@@ -144,6 +146,7 @@ useMutationObserver(
   <div
     v-else-if="!props.native"
     class="top-bar-mode-switcher"
+    :class="{ 'top-bar-mode-switcher--collapse-on-narrow': props.collapseOnNarrow }"
   >
     <TopBarItemEditor
       component-key="topBarSwitcher"
@@ -239,6 +242,12 @@ useMutationObserver(
     position: relative;
     top: auto;
     right: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .top-bar-mode-switcher--collapse-on-narrow {
+    display: none !important;
   }
 }
 </style>

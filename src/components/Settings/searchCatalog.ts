@@ -298,6 +298,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_filter_live_reservation',
     'settings.moments_filter_live_dynamic',
     'settings.moments_keyword_filter',
+    'settings.original_moments_use_bewly_filters',
     'settings.moments_card_open_mode',
     'settings.moments_video_card_open_mode',
     'settings.group_moments_wanted_users',
@@ -378,6 +379,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(topBarRoute, [
     'settings.group_topbar_pinned_channels',
     'settings.topbar_pinned_channels_title',
+    'settings.topbar_pinned_channels_add',
+    'settings.topbar_pinned_channels_search',
   ]),
   ...createEntries(topBarRoute, [
     'settings.topbar_switchers',
