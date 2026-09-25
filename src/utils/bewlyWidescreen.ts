@@ -2467,11 +2467,12 @@ function injectLayoutStyle() {
       box-sizing: border-box !important;
     }
 
+    /* 关注按钮保持原站常规宽度，仅在侧栏不足时收缩，不随展开宽度拉伸。 */
     #${ROOT_ID} .bewly-widescreen-up-slot .upinfo-btn-panel .follow-btn {
-      flex: 1 1 0% !important;
+      flex: 0 1 200px !important;
       width: auto !important;
       min-width: 0 !important;
-      max-width: none !important;
+      max-width: 200px !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-tabs {
@@ -2484,18 +2485,6 @@ function injectLayoutStyle() {
       height: 42px;
       background: var(--bewly-widescreen-surface-bg);
       border-bottom: 1px solid var(--bewly-widescreen-divider);
-    }
-
-    /* 自动侧栏收起后仅部分面板留在视口内，Tab 应按可见列宽排列，
-       避免稍后再看的「选集」入口被完整面板宽度挤出屏幕。 */
-    #${ROOT_ID}[data-sidebar-mode="fit"]:not([data-sidebar-expanded="true"]) .bewly-widescreen-tabs {
-      width: min(100%, max(0px, calc(var(--bewly-widescreen-sidebar-column-width) - var(--bew-space-2, 8px))));
-      align-self: flex-start;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    #${ROOT_ID}[data-sidebar-position="left"][data-sidebar-mode="fit"]:not([data-sidebar-expanded="true"]) .bewly-widescreen-tabs {
-      align-self: flex-end;
     }
 
     #${ROOT_ID} .bewly-widescreen-tab {
@@ -3223,7 +3212,7 @@ function setupSidebarInteractionTracking(currentState: BewlyWidescreenState) {
       return
     if (currentState.root.dataset.sidebarExpanded === 'true')
       return
-    // 点击前不搬动收起状态的 Tab，避免展开动画把指针下的目标换成相邻项。
+    // 点击前不平移收起状态的侧栏，避免展开动画把指针下的 Tab 换成相邻项。
     // 移入内容区仍可展开；点击 Tab 则先完成选中，再展开面板。
     if (event && tablist && isPointInRect(event, tablist.getBoundingClientRect()))
       return
