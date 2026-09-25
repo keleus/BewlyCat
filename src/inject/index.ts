@@ -551,7 +551,11 @@ else if (shouldInitializePageScript) {
           max-height: var(${COMMENT_REPLY_CONTAINER_HEIGHT_VAR}, 480px);
           overflow-y: auto;
           overflow-x: hidden;
-          overscroll-behavior: contain;
+          /*
+           * 容器嵌在页面正文流中，不能使用 overscroll-behavior: contain：
+           * Chrome 会对未溢出的滚动容器同样生效，指针停在回复区时滚轮会被吞掉；
+           * 溢出时滚到边界也无法继续滚动页面。保留默认滚动链。
+           */
           /* 滚动条出现/消失都不改变可用宽度，避免缩进与线条被反复重算 */
           scrollbar-gutter: stable;
         }
