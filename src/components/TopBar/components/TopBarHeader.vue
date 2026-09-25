@@ -211,6 +211,8 @@ function measureRightWidth() {
   return Math.max(section.clientWidth, contentWidth)
 }
 
+let rightMeasureFrame: number | null = null
+
 // 使用单个 ResizeObserver 监听多个元素，减少开销
 let resizeObserver: ResizeObserver | null = null
 let searchTransitionFrame: number | null = null
@@ -276,13 +278,21 @@ onBeforeUnmount(() => {
   resizeObserver = null
   if (searchTransitionFrame !== null)
     cancelAnimationFrame(searchTransitionFrame)
+  if (rightMeasureFrame !== null)
+    cancelAnimationFrame(rightMeasureFrame)
 })
 
 useMutationObserver(searchSection, () => {
   refreshSearchContent()
 }, { childList: true, subtree: true })
+// 右侧弹窗也在该子树内，其内容加载会频繁变更 DOM；每帧只测量一次。
 useMutationObserver(rightSection, () => {
-  rightWidth.value = measureRightWidth()
+  if (rightMeasureFrame !== null)
+    return
+  rightMeasureFrame = requestAnimationFrame(() => {
+    rightMeasureFrame = null
+    rightWidth.value = measureRightWidth()
+  })
 }, { childList: true, characterData: true, subtree: true })
 
 onMounted(() => {
