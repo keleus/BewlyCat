@@ -79,6 +79,7 @@ withDefaults(defineProps<{
 }
 
 .settings-item-title {
+  color: var(--bew-text-1);
   display: inline-flex;
   gap: var(--bew-space-2);
   align-items: center;
