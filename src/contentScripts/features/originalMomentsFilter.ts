@@ -3,6 +3,7 @@ import { watch } from 'vue'
 import { settings, settingsReady } from '~/logic'
 
 const CARD_SELECTOR = '.bili-dyn-item'
+const FEED_SELECTOR = '.bili-dyn-list__items'
 const HIDDEN_CLASS = 'bewly-filtered-original-moment'
 
 function isOriginalMomentsFeed() {
@@ -55,13 +56,14 @@ export function setupOriginalMomentsFilter() {
   if (location.hostname !== 't.bilibili.com')
     return
 
-  let observer: MutationObserver | undefined
+  let pageObserver: MutationObserver | undefined
+  const feedObservers = new Map<Element, MutationObserver>()
   let style: HTMLStyleElement | undefined
   let frame: number | undefined
   const pending = new Set<HTMLElement>()
 
-  function scan() {
-    document.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(card => card.classList.toggle(HIDDEN_CLASS, shouldHide(card)))
+  function scan(root: Element) {
+    root.querySelectorAll<HTMLElement>(CARD_SELECTOR).forEach(card => card.classList.toggle(HIDDEN_CLASS, shouldHide(card)))
   }
 
   function flush() {
@@ -80,25 +82,18 @@ export function setupOriginalMomentsFilter() {
       frame = requestAnimationFrame(flush)
   }
 
-  function refresh() {
-    if (!settings.value.originalMomentsUseBewlyFilters || !isOriginalMomentsFeed()) {
-      observer?.disconnect()
-      observer = undefined
-      style?.remove()
-      style = undefined
-      if (frame !== undefined)
-        cancelAnimationFrame(frame)
-      frame = undefined
-      pending.clear()
-      document.querySelectorAll<HTMLElement>(`.${HIDDEN_CLASS}`).forEach(card => card.classList.remove(HIDDEN_CLASS))
-      return
+  function observeFeed() {
+    const roots = new Set(Array.from(document.querySelectorAll(FEED_SELECTOR)))
+    for (const [root, observer] of feedObservers) {
+      if (!roots.has(root)) {
+        observer.disconnect()
+        feedObservers.delete(root)
+      }
     }
-
-    if (!observer) {
-      style = document.createElement('style')
-      style.textContent = `.${HIDDEN_CLASS}, .bili-dyn-list__item:has(.${HIDDEN_CLASS}) { display: none !important; }`
-      document.documentElement.append(style)
-      observer = new MutationObserver((mutations) => {
+    for (const root of roots) {
+      if (feedObservers.has(root))
+        continue
+      const observer = new MutationObserver((mutations) => {
         for (const mutation of mutations) {
           if (mutation.target instanceof Element)
             queue(mutation.target)
@@ -110,9 +105,42 @@ export function setupOriginalMomentsFilter() {
           })
         }
       })
-      observer.observe(document.body || document.documentElement, { attributes: true, attributeFilter: ['class'], childList: true, characterData: true, subtree: true })
+      observer.observe(root, { attributes: true, attributeFilter: ['class'], childList: true, characterData: true, subtree: true })
+      feedObservers.set(root, observer)
+      scan(root)
     }
-    scan()
+  }
+
+  function refresh() {
+    if (!settings.value.originalMomentsUseBewlyFilters || !isOriginalMomentsFeed()) {
+      pageObserver?.disconnect()
+      pageObserver = undefined
+      feedObservers.forEach(observer => observer.disconnect())
+      feedObservers.clear()
+      style?.remove()
+      style = undefined
+      if (frame !== undefined)
+        cancelAnimationFrame(frame)
+      frame = undefined
+      pending.clear()
+      document.querySelectorAll<HTMLElement>(`.${HIDDEN_CLASS}`).forEach(card => card.classList.remove(HIDDEN_CLASS))
+      return
+    }
+
+    if (!pageObserver) {
+      style = document.createElement('style')
+      style.textContent = `.${HIDDEN_CLASS}, .bili-dyn-list__item:has(.${HIDDEN_CLASS}) { display: none !important; }`
+      document.documentElement.append(style)
+      pageObserver = new MutationObserver((mutations) => {
+        if (mutations.some(mutation => !Array.from(feedObservers.keys()).some(root => root.contains(mutation.target))))
+          observeFeed()
+      })
+      pageObserver.observe(document.body || document.documentElement, { childList: true, subtree: true })
+      observeFeed()
+    }
+    else {
+      feedObservers.forEach((_, root) => scan(root))
+    }
   }
 
   void settingsReady.then(() => {
@@ -132,7 +160,10 @@ export function setupOriginalMomentsFilter() {
       () => settings.value.momentsEnableKeywordFilter,
       () => settings.value.momentsBlockedKeywords,
     ], refresh, { immediate: true })
-    window.addEventListener('pushstate', refresh)
-    window.addEventListener('popstate', refresh)
+    // 注入层会在原生 history 方法执行前派发事件。
+    const refreshAfterNavigation = () => queueMicrotask(refresh)
+    window.addEventListener('pushstate', refreshAfterNavigation)
+    window.addEventListener('replacestate', refreshAfterNavigation)
+    window.addEventListener('popstate', refreshAfterNavigation)
   })
 }
