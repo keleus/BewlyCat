@@ -4166,7 +4166,6 @@ watch(
               >
                 <span class="moments-live-card__avatar">
                   <img :src="getSidebarAvatarUrl(liveUser.face, 64)" :alt="liveUser.uname" loading="lazy" decoding="async">
-                  <em>{{ t('moments.live_now') }}</em>
                 </span>
                 <span class="moments-live-card__info">
                   <strong>{{ liveUser.uname }}</strong>
@@ -5213,7 +5212,21 @@ watch(
   position: relative;
   flex: 0 0 auto;
   width: 48px;
-  height: 54px;
+  height: 48px;
+}
+.moments-live-card__avatar::before,
+.moments-live-card__avatar::after {
+  content: "";
+  position: absolute;
+  /* 2px 环 + 2px 外偏移：静止时与顶部 UP 切换列表头像光环位置一致 */
+  inset: -2px;
+  border: 2px solid var(--bew-theme-color);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: moments-live-ripple 2s var(--bew-ease-standard) infinite;
+}
+.moments-live-card__avatar::after {
+  animation-delay: -1s;
 }
 .moments-live-card__avatar img {
   display: block;
@@ -5223,31 +5236,15 @@ watch(
   background: var(--bew-fill-1);
   object-fit: cover;
 }
-.moments-live-card__avatar em {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  display: inline-flex;
-  align-items: center;
-  height: 16px;
-  padding: 0 var(--bew-space-2);
-  border-radius: var(--bew-radius-full);
-  color: #fff;
-  background: var(--bew-theme-color);
-  font-size: var(--bew-font-size-caption);
-  font-style: normal;
-  line-height: var(--bew-line-height-caption);
-  transform: translateX(-50%);
-  white-space: nowrap;
-}
-.moments-live-card__avatar em::after {
-  position: absolute;
-  inset: -3px;
-  border: 1px solid var(--bew-theme-color);
-  border-radius: inherit;
-  content: "";
-  pointer-events: none;
-  animation: moments-live-pulse 1.05s ease-out infinite;
+@media (prefers-reduced-motion: reduce) {
+  .moments-live-card__avatar::before {
+    animation: none;
+    opacity: 0.8;
+  }
+
+  .moments-live-card__avatar::after {
+    display: none;
+  }
 }
 .moments-live-card__info {
   display: flex;
@@ -5309,22 +5306,30 @@ watch(
 .moments-sidebar-skeleton__live {
   display: flex;
   flex-direction: column;
-  gap: var(--bew-space-2);
+  gap: var(--bew-space-1);
   margin-top: var(--bew-space-4);
 }
+/* 与 .moments-live-card__list > a 的尺寸和圆角一致，加载完成后不跳动。 */
 .moments-sidebar-skeleton__live > span {
-  height: 54px;
-  border-radius: var(--bew-radius-lg);
+  height: 72px;
+  border-radius: var(--bew-interactive-radius);
 }
-@keyframes moments-live-pulse {
+@keyframes moments-live-ripple {
+  /* 淡入出生：首尾均为 opacity 0，消除循环接缝处的闪现 */
   0% {
-    opacity: 0.75;
+    opacity: 0;
     transform: scale(0.94);
   }
+
+  15% {
+    opacity: 0.8;
+    transform: scale(1);
+  }
+
   70%,
   100% {
     opacity: 0;
-    transform: scale(1.14);
+    transform: scale(1.28);
   }
 }
 .moments-page__initial-loading {

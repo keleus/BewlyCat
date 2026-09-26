@@ -1220,7 +1220,8 @@ function injectLayoutStyle() {
       --bewly-widescreen-sidebar-offset: 0px;
     }
 
-    #${ROOT_ID} * {
+    /* 视频内引导与播放结束面板依赖原站 content-box 尺寸，否则图标、边框和推荐列表被压缩。 */
+    #${ROOT_ID} :where(*:not(.bili-danmaku-x-guide *, .bpx-player-ending-panel *)) {
       box-sizing: border-box;
     }
 
@@ -1362,9 +1363,8 @@ function injectLayoutStyle() {
       filter: none !important;
     }
 
-    #${ROOT_ID} .player-wrap *:not(.bili-danmaku-x-guide, .bili-danmaku-x-guide *),
-    #${ROOT_ID} .bpx-player-container *:not(.bili-danmaku-x-guide, .bili-danmaku-x-guide *),
-    #${ROOT_ID} #bilibili-player-wrap *:not(.bili-danmaku-x-guide, .bili-danmaku-x-guide *),
+    /* 仅处理播放器外框；不要对播放器内部元素通配，否则开关、下拉框和 border 三角会缺失上下边框。 */
+    #${ROOT_ID} #bilibili-player-placeholder,
     #${ROOT_ID} .bpx-player-primary-area,
     #${ROOT_ID} .bpx-player-video-area,
     #${ROOT_ID} .bpx-player-video-wrap,
@@ -1403,8 +1403,8 @@ function injectLayoutStyle() {
       background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 82%, white) !important;
     }
 
-    #${ROOT_ID} .bili-danmaku-x-guide-three {
-      display: none !important;
+    #${ROOT_ID} .bili-danmaku-x-guide-three > span.bili-danmaku-x-active svg {
+      fill: var(--bew-theme-color, #00aeec) !important;
     }
 
     #${ROOT_ID} .bili-danmaku-x-guide-cyc > span {
@@ -2249,8 +2249,10 @@ function injectLayoutStyle() {
       flex: 0 1 auto !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="anim"],
-    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="Anim"],
+    /* 排除图标本身：长按三连时 B 站给点赞图标加 shake-anime，若被当作特效层绝对定位，
+       按钮会塌缩导致指针移出、触发 mouseleave 取消三连 */
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="anim"]:not(.video-toolbar-item-icon),
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="Anim"]:not(.video-toolbar-item-icon),
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item > canvas,
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > [class*="anim"],
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > [class*="Anim"] {
@@ -2274,8 +2276,8 @@ function injectLayoutStyle() {
       opacity: 0.96 !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="anim"] svg,
-    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="Anim"] svg,
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="anim"]:not(.video-toolbar-item-icon) svg,
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="Anim"]:not(.video-toolbar-item-icon) svg,
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > [class*="anim"] svg,
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > [class*="Anim"] svg {
       width: 100% !important;
@@ -2283,15 +2285,15 @@ function injectLayoutStyle() {
       color: var(--bew-theme-color, #00aeec) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="anim"] [stroke],
-    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="Anim"] [stroke],
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="anim"]:not(.video-toolbar-item-icon) [stroke],
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="Anim"]:not(.video-toolbar-item-icon) [stroke],
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > [class*="anim"] [stroke],
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > [class*="Anim"] [stroke] {
       stroke: var(--bew-theme-color, #00aeec) !important;
     }
 
-    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="anim"] [fill]:not([fill="none"]),
-    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="Anim"] [fill]:not([fill="none"]),
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="anim"]:not(.video-toolbar-item-icon) [fill]:not([fill="none"]),
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item [class*="Anim"]:not(.video-toolbar-item-icon) [fill]:not([fill="none"]),
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > [class*="anim"] [fill]:not([fill="none"]),
     #${ROOT_ID} .bewly-widescreen-action-slot .toolbar-left-item-wrap > [class*="Anim"] [fill]:not([fill="none"]) {
       fill: var(--bew-theme-color, #00aeec) !important;
