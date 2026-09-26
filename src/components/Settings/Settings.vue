@@ -7,12 +7,22 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import { createTransformer } from '~/utils/transformer'
 
+import { createPinnedChannelHistory, pinnedChannelHistoryKey } from './composables/usePinnedChannelHistory'
 import type { SettingsSearchEntry } from './searchCatalog'
 import { settingsSearchEntries } from './searchCatalog'
 import type { MenuItem } from './types'
 import { MenuType } from './types'
 
 const emit = defineEmits(['close'])
+
+const pinnedChannelHistory = createPinnedChannelHistory(computed({
+  get: () => settings.value.topBarPinnedChannels,
+  set: keys => settings.value.topBarPinnedChannels = keys,
+}))
+provide(pinnedChannelHistoryKey, pinnedChannelHistory)
+// Settings is cached by KeepAlive; closing it does not dispose its scope.
+onDeactivated(pinnedChannelHistory.reset)
+onActivated(pinnedChannelHistory.reset)
 
 const { t, tm, rt } = useI18n()
 const breadcrumbDetail = ref<string>()

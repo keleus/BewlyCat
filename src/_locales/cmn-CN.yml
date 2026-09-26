@@ -672,12 +672,43 @@ settings:
   topbar_components_adjustment: 顶栏组件角标设置
   topbar_components_adjustment_desc: 配置各个顶栏图标的角标显示方式
   group_topbar_pinned_channels: 顶栏常驻分区
-  topbar_pinned_channels_desc: 可以将 Logo 展开中的分区固定在顶栏外侧，并自定义显示顺序。
+  topbar_pinned_channels_desc: 按顺序优先显示，放不下的分区会收进更多菜单。
   topbar_pinned_channels_title: 常驻分区
-  topbar_pinned_channels_hint: 点击卡片即可固定或取消，点击顺序决定展示顺序。靠后的分区会在空间不足时优先隐藏。
+  pinned_manager:
+    count: '已添加 {count} 项'
+    add: 添加分区
+    clear: 清空
+    search: 搜索分区
+    categories: 分区分类
+    screen: 影音娱乐
+    animation_games: 动漫游戏
+    knowledge_news: 知识科技
+    life_interests: 生活方式
+    services: 平台服务
+    history_reset: 分区选择已被其他操作更新，旧撤销历史已清空。
+    all: 全部
+    selected: 已选
+    no_results: 没有匹配的分区
+    move_before: '前移 {name}'
+    move_after: '后移 {name}'
+    remove: '移除 {name}'
+    undo: 撤销上一步
+    hidden: 常驻分区当前已隐藏
+    enable: 启用
+    layout: '顶栏 {visible} · 更多 {hidden}'
+    unavailable: 顶栏当前不可见
+    open: '展开分区，含 {count} 个折叠项'
+    channels: 分区
+    manage: 管理常驻分区
+    search_site: 搜索视频
+    collapse: 收起添加
+    clear_search: 清除搜索
+    view_all: 查看全部分类
+    all_visible: 全部显示
+  topbar_pinned_channels_hint: 通过添加分区选择内容，使用拖动手柄或前移、后移按钮调整顺序。
   topbar_pinned_channels_all_selected: 所有可用分区都已添加。
   topbar_pinned_channels_empty: 还没有添加任何常驻分区。
-  topbar_pinned_channels_order_tip: 点击顺序决定展示顺序，再次点击可取消固定。
+  topbar_pinned_channels_order_tip: 通过添加分区选择内容，使用拖动手柄或前移、后移按钮调整顺序。
   top_bar_logo_style: Logo 样式
   top_bar_logo_style_desc: 选择顶栏使用圆形图标或横向品牌标识。
   top_bar_logo_style_opt:

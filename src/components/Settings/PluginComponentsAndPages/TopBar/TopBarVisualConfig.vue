@@ -10,9 +10,9 @@ import { settings } from '~/logic'
 import type { TopBarStyle } from '~/logic/storage'
 import type { NotificationBadgeSettings } from '~/utils/notificationBadge'
 
-import { allChannelConfigs } from '../../../TopBar/constants/channels'
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
+import PinnedChannelsManager from './PinnedChannelsManager.vue'
 
 const { t } = useI18n()
 
@@ -158,45 +158,6 @@ function setComponentBadgeType(componentKey: string, badgeValue: BadgeType) {
 
 ensureTopBarComponentsConfig()
 watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
-
-function resetPinnedChannels() {
-  settings.value.topBarPinnedChannels = []
-}
-
-interface ChannelOption {
-  value: string
-  label: string
-  icon: string
-  color?: string
-}
-
-const channelOptions = computed<ChannelOption[]>(() => {
-  return allChannelConfigs.map((config) => {
-    return {
-      value: config.key,
-      label: t(config.nameKey),
-      icon: config.icon,
-      color: config.color,
-    }
-  })
-})
-
-const pinnedChannelKeys = computed(() => settings.value.topBarPinnedChannels)
-
-const pinnedIndexMap = computed(() => {
-  const map = new Map<string, number>()
-  pinnedChannelKeys.value.forEach((key, index) => {
-    map.set(key, index + 1)
-  })
-  return map
-})
-
-function toggleChannel(value: string) {
-  if (pinnedChannelKeys.value.includes(value))
-    settings.value.topBarPinnedChannels = pinnedChannelKeys.value.filter(key => key !== value)
-  else
-    settings.value.topBarPinnedChannels = [...pinnedChannelKeys.value, value]
-}
 </script>
 
 <template>
@@ -435,53 +396,7 @@ function toggleChannel(value: string) {
       :desc="$t('settings.topbar_pinned_channels_desc')"
       icon="i-tabler:pin-filled"
     >
-      <SettingsItem :title="$t('settings.topbar_pinned_channels_title')">
-        <template #title>
-          <div class="topbar-item-title-with-action">
-            <span>{{ $t('settings.topbar_pinned_channels_title') }}</span>
-            <Button
-              size="small"
-              type="secondary"
-              :disabled="!pinnedChannelKeys.length"
-              @click="resetPinnedChannels"
-            >
-              <template #left>
-                <div i-mingcute:back-line />
-              </template>
-              {{ $t('common.operation.reset') }}
-            </Button>
-          </div>
-        </template>
-
-        <template #bottom>
-          <div class="channel-grid">
-            <button
-              v-for="option in channelOptions"
-              :key="option.value"
-              type="button"
-              class="channel-grid__item"
-              :class="{ selected: pinnedChannelKeys.includes(option.value) }"
-              @click="toggleChannel(option.value)"
-            >
-              <div v-if="option.icon.startsWith('#')" class="channel-grid__icon">
-                <svg aria-hidden="true">
-                  <use :xlink:href="option.icon" />
-                </svg>
-              </div>
-              <div v-else class="channel-grid__icon">
-                <i :class="option.icon" :style="{ color: option.color ?? '' }" />
-              </div>
-              <span class="channel-grid__label">{{ option.label }}</span>
-              <span v-if="pinnedIndexMap.has(option.value)" class="channel-grid__overlay">
-                {{ pinnedIndexMap.get(option.value) }}
-              </span>
-            </button>
-          </div>
-          <div class="channel-grid__tip">
-            {{ pinnedChannelKeys.length ? $t('settings.topbar_pinned_channels_order_tip') : $t('settings.topbar_pinned_channels_empty') }}
-          </div>
-        </template>
-      </SettingsItem>
+      <PinnedChannelsManager />
     </SettingsItemGroup>
   </div>
 </template>
@@ -570,116 +485,6 @@ function toggleChannel(value: string) {
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-size: contain;
   }
-}
-
-.channel-grid {
-  // 32px icon + 12px gap + 24px horizontal padding + 2px border + four CJK glyphs.
-  --channel-grid-min-item-width: calc(
-    var(--bew-icon-size-xl) + var(--bew-space-3) + var(--bew-space-6) + var(--bew-space-0-5) + 4em
-  );
-
-  display: grid;
-  gap: var(--bew-space-3);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--channel-grid-min-item-width)), 1fr));
-  width: 100%;
-  grid-auto-flow: row dense;
-  font-size: var(--bew-font-size-control);
-}
-
-.channel-grid__item {
-  position: relative;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: var(--bew-space-3);
-  min-width: 0;
-  min-height: var(--bew-control-height);
-  padding: var(--bew-space-3);
-  border: 1px solid transparent;
-  border-radius: var(--bew-interactive-radius);
-  background: var(--bew-fill-1);
-  color: var(--bew-text-1);
-  cursor: pointer;
-  text-align: left;
-  transition:
-    background-color var(--bew-duration-normal) var(--bew-ease-standard),
-    border-color var(--bew-duration-normal) var(--bew-ease-standard),
-    color var(--bew-duration-normal) var(--bew-ease-standard),
-    transform var(--bew-duration-normal) var(--bew-ease-emphasized);
-
-  &:hover {
-    background: var(--bew-fill-2);
-    transform: translateY(-2px);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--bew-theme-color-60);
-    outline-offset: var(--bew-space-0-5);
-  }
-
-  &.selected {
-    border-color: var(--bew-theme-color-30);
-    background: color-mix(in oklab, var(--bew-theme-color-20), transparent 35%);
-    color: var(--bew-theme-color);
-    transform: none;
-
-    &:hover {
-      background: color-mix(in oklab, var(--bew-theme-color-20), transparent 20%);
-    }
-  }
-}
-
-.channel-grid__icon {
-  display: grid;
-  width: var(--bew-icon-size-xl);
-  height: var(--bew-icon-size-xl);
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid color-mix(in oklab, var(--bew-border-color), transparent 30%);
-  border-radius: var(--bew-interactive-radius);
-  background: color-mix(in oklab, white, transparent 20%);
-
-  svg {
-    width: var(--bew-icon-size-lg);
-    height: var(--bew-icon-size-lg);
-  }
-
-  i {
-    font-size: var(--bew-icon-size-lg);
-  }
-}
-
-.channel-grid__label {
-  min-width: 0;
-  flex: 1;
-  overflow: hidden;
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-medium);
-  line-height: var(--bew-line-height-control);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.channel-grid__overlay {
-  display: grid;
-  width: var(--bew-icon-size-md);
-  height: var(--bew-icon-size-md);
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: var(--bew-badge-radius);
-  background: var(--bew-theme-color);
-  color: var(--bew-text-auto);
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: var(--bew-line-height-control);
-  pointer-events: none;
-}
-
-.channel-grid__tip {
-  margin-top: var(--bew-space-3);
-  color: var(--bew-text-3);
-  font-size: var(--bew-font-size-control);
-  line-height: var(--bew-line-height-control);
 }
 
 @media (max-width: 640px) {
