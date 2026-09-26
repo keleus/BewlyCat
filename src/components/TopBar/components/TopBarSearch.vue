@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { onKeyStroke } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { findLeafActiveElement } from '~/utils/element'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
 import { useTopBarPanel } from '../composables/useTopBarPanel'
@@ -45,6 +47,25 @@ function toggleSearch() {
     panelOpen.value = true
   }
 }
+// The compact input is mounted lazily; its shortcut cannot open the panel.
+onKeyStroke('/', (event: KeyboardEvent) => {
+  if (!props.compact || !showSearchBar.value || props.editMode || event.isComposing
+    || event.ctrlKey || event.metaKey || event.altKey) {
+    return
+  }
+  const active = findLeafActiveElement(document) as HTMLElement | undefined
+  const target = event.target as HTMLElement | null
+  if ([active, target].some(element => element && (['INPUT', 'TEXTAREA'].includes(element.tagName) || element.isContentEditable)))
+    return
+  event.preventDefault()
+  if (!panelOpen.value) {
+    topBarStore.closeAllPopups()
+    panelOpen.value = true
+  }
+  else {
+    panel.value?.querySelector('input')?.focus({ preventScroll: true })
+  }
+})
 watch(() => props.compact, async () => {
   const root = anchor.value?.getRootNode() as ShadowRoot | undefined
   const focused = anchor.value?.contains(root?.activeElement ?? null)
@@ -101,7 +122,10 @@ function handleSearch(keyword: string) {
 </script>
 
 <template>
-  <div ref="anchor" class="top-bar-search-anchor" flex="inline 1 md:justify-center items-center" w="full" data-top-bar-search>
+  <div
+    ref="anchor" class="top-bar-search-anchor" flex="inline 1 md:justify-center items-center" w="full" data-top-bar-search
+    data-top-bar-panel-anchor
+  >
     <button
       v-if="compact && (showSearchBar || forceVisible)" ref="trigger" type="button" class="compact-search-button"
       :aria-label="$t('settings.pinned_manager.search_site')" :aria-expanded="panelOpen" aria-controls="compact-top-bar-search"

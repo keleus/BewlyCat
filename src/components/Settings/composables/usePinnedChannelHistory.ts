@@ -1,5 +1,5 @@
 import type { InjectionKey, Ref } from 'vue'
-import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, triggerRef, watch } from 'vue'
 
 /** Owned by the settings window, rather than a settings subpage or storage. */
 export function createPinnedChannelHistory(selection: Ref<string[]>) {
@@ -20,16 +20,17 @@ export function createPinnedChannelHistory(selection: Ref<string[]>) {
   function save(keys: string[]) {
     if (JSON.stringify(keys) === JSON.stringify(selection.value))
       return
-    history.value = [...history.value, [...selection.value]]
+    history.value.push([...selection.value])
+    triggerRef(history)
     externalChange.value = false
     write(keys)
   }
 
   function undo() {
-    const previous = history.value.at(-1)
+    const previous = history.value.pop()
     if (!previous)
       return
-    history.value = history.value.slice(0, -1)
+    triggerRef(history)
     externalChange.value = false
     write(previous)
   }
@@ -42,12 +43,14 @@ export function createPinnedChannelHistory(selection: Ref<string[]>) {
     externalChange.value = true
   }, { flush: 'sync' })
 
-  onScopeDispose(() => {
+  function reset() {
     history.value = []
     externalChange.value = false
-  })
+  }
 
-  return { save, undo, externalChange, canUndo: computed(() => history.value.length > 0) }
+  onScopeDispose(reset)
+
+  return { save, undo, reset, externalChange, canUndo: computed(() => history.value.length > 0) }
 }
 
 export const pinnedChannelHistoryKey: InjectionKey<ReturnType<typeof createPinnedChannelHistory>> = Symbol('pinnedChannelHistory')

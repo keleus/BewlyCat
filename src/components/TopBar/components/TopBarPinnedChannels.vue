@@ -10,7 +10,7 @@ import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { isComponentVisible } from '~/utils/topBarBadge'
 
-import { getPinnedVisibleCount, pinnedChannelLayout, validPinnedChannelKeys } from '../composables/usePinnedChannels'
+import { getPinnedVisibleCount, pinnedChannelLayout, pinnedChannelMinimumWidth, validPinnedChannelKeys } from '../composables/usePinnedChannels'
 import { useTopBarPanel } from '../composables/useTopBarPanel'
 import { allChannelConfigs } from '../constants/channels'
 import ChannelIcon from './ChannelIcon.vue'
@@ -25,9 +25,10 @@ const anchor = ref<HTMLElement | null>(null)
 const panel = ref<HTMLElement | null>(null)
 const trigger = ref<HTMLButtonElement | null>(null)
 const measurement = ref<HTMLElement | null>(null)
+const channelMap = new Map(allChannelConfigs.map(channel => [channel.key, channel]))
 const visibleCount = ref(0)
 const open = computed({ get: () => store.popupVisible.pinnedChannels, set: value => store.popupVisible.pinnedChannels = value })
-const channels = computed(() => validPinnedChannelKeys.value.map(key => allChannelConfigs.find(channel => channel.key === key)!))
+const channels = computed(() => validPinnedChannelKeys.value.map(key => channelMap.get(key)!))
 const visible = computed(() => channels.value.slice(0, visibleCount.value))
 const overflow = computed(() => channels.value.slice(visibleCount.value))
 const enabled = computed(() => isLayoutEditing.value || (isComponentVisible('pinnedChannels') && channels.value.length > 0))
@@ -57,23 +58,42 @@ function manage() {
 }
 let frame = 0
 let disposed = false
+let metrics: { itemWidths: number[], moreWidths: number[], gap: number, inset: number, collapsedWidth: number, naturalWidth: number } | undefined
+function invalidateMetrics() {
+  metrics = undefined
+  measure()
+}
 function measure() {
-  if (disposed)
+  if (disposed || frame)
     return
-  cancelAnimationFrame(frame)
   frame = requestAnimationFrame(() => {
+    frame = 0
     const el = measurement.value
     if (!el || !enabled.value) {
       pinnedChannelLayout.value = null
+      pinnedChannelMinimumWidth.value = null
       return
     }
-    const style = getComputedStyle(el)
-    const inset = Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
-      + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth)
-    const itemWidths = Array.from(el.querySelectorAll<HTMLElement>('[data-measure-item]'), item => item.getBoundingClientRect().width)
-    const moreWidths = [0, ...Array.from(el.querySelectorAll<HTMLElement>('[data-measure-more]'), item => item.getBoundingClientRect().width)]
-    let count = props.compact ? 0 : getPinnedVisibleCount(props.availableWidth, itemWidths, moreWidths, Number.parseFloat(style.columnGap) || 0, inset, visibleCount.value)
-    const collapsedWidth = Number.parseFloat(style.getPropertyValue('--bew-top-bar-pinned-collapsed-width')) || 96
+    // Resizing only reallocates cached widths. Remeasure for content/font changes.
+    if (!metrics) {
+      const style = getComputedStyle(el)
+      const inset = Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
+        + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth)
+      const itemWidths = Array.from(el.querySelectorAll<HTMLElement>('[data-measure-item]'), item => item.getBoundingClientRect().width)
+      const moreWidths = [0, ...Array.from(el.querySelectorAll<HTMLElement>('[data-measure-more]'), item => item.getBoundingClientRect().width)]
+      const gap = Number.parseFloat(style.columnGap) || 0
+      const collapsedWidth = Number.parseFloat(style.getPropertyValue('--bew-top-bar-pinned-collapsed-width')) || 96
+      const naturalWidth = itemWidths.length
+        ? inset + itemWidths.reduce((sum, width) => sum + width, 0) + (itemWidths.length - 1) * gap
+        : Number.parseFloat(style.getPropertyValue('--bew-control-height')) || 34
+      metrics = { itemWidths, moreWidths, gap, inset, collapsedWidth, naturalWidth }
+      pinnedChannelMinimumWidth.value = Math.min(naturalWidth, collapsedWidth)
+    }
+    const { itemWidths, moreWidths, gap, inset, collapsedWidth, naturalWidth } = metrics
+    // Expanding a small selection is cheaper than showing the collapsed label;
+    // do not apply expansion hysteresis when it would consume MORE space.
+    const previousCount = naturalWidth <= collapsedWidth ? channels.value.length : visibleCount.value
+    let count = props.compact ? 0 : getPinnedVisibleCount(props.availableWidth, itemWidths, moreWidths, gap, inset, previousCount)
     // Before reducing search below its preferred width, fold the whole group.
     if (count < channels.value.length && props.availableWidth < collapsedWidth)
       count = 0
@@ -98,31 +118,34 @@ function measure() {
     position()
   })
 }
-watch([() => props.availableWidth, () => props.compact, channels, locale, enabled], async () => {
+watch([() => channels.value.length, locale, enabled], async () => {
+  metrics = undefined
   await nextTick()
   measure()
 }, { immediate: true })
+watch([channels, () => props.availableWidth, () => props.compact], measure)
 watch([enabled, isLayoutEditing], () => close())
-useResizeObserver(measurement, measure)
+useResizeObserver(measurement, invalidateMetrics)
 onMounted(() => {
-  void document.fonts.ready.then(measure)
-  document.fonts.addEventListener('loadingdone', measure)
+  void document.fonts.ready.then(invalidateMetrics)
+  document.fonts.addEventListener('loadingdone', invalidateMetrics)
 })
 onBeforeUnmount(() => {
   disposed = true
-  document.fonts.removeEventListener('loadingdone', measure)
+  document.fonts.removeEventListener('loadingdone', invalidateMetrics)
   cancelAnimationFrame(frame)
   store.popupVisible.pinnedChannels = false
   pinnedChannelLayout.value = null
+  pinnedChannelMinimumWidth.value = null
 })
 </script>
 
 <template>
   <TopBarItemEditor component-key="pinnedChannels" :title="t('settings.topbar_pinned_channels_title')">
-    <div v-if="enabled" ref="anchor" class="pinned-channels-anchor" data-top-bar-editor-anchor>
+    <div v-if="enabled" ref="anchor" class="pinned-channels-anchor" data-top-bar-editor-anchor data-top-bar-panel-anchor>
       <div
         class="pinned-channels bew-segment-control bew-segment-control--surface"
-        :class="{ 'white-theme': forceWhiteIcon && settings.enableFrostedGlass, 'bew-segment-control--solid': !settings.enableFrostedGlass, 'pinned-channels--collapsed': !visible.length && !compact }"
+        :class="{ 'white-theme': forceWhiteIcon && settings.enableFrostedGlass, 'bew-segment-control--solid': !settings.enableFrostedGlass, 'pinned-channels--collapsed': channels.length > 0 && !visible.length && !compact }"
       >
         <ALink
           v-for="channel in visible" :key="channel.key" :href="channel.href" type="topBar"
@@ -149,7 +172,7 @@ onBeforeUnmount(() => {
       <div
         v-if="open" id="pinned-channels-panel" ref="panel"
         class="pinned-panel bew-popover bew-popover-surface" :style="panelStyle"
-        :aria-label="t('settings.topbar_pinned_channels_title')" @focusout="(event) => { if (event.relatedTarget && !anchor?.contains(event.relatedTarget as Node)) close() }"
+        :aria-label="t('settings.topbar_pinned_channels_title')"
       >
         <ALink v-for="channel in overflow" :key="channel.key" :href="channel.href" type="topBar" class="pinned-panel__row">
           <ChannelIcon :icon="channel.icon" :color="channel.color" />{{ t(channel.nameKey) }}

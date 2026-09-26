@@ -376,6 +376,13 @@ function refreshSearchContent() {
 
 .top-bar-header--editing {
   background: transparent;
+  grid-template-columns: auto minmax(0, 1fr);
+  height: auto;
+  padding-block: var(--bew-space-3);
+  .top-bar-header__side--right {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
 }
 
 .top-bar-header__glass-overlay {

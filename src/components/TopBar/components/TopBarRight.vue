@@ -71,6 +71,10 @@ const {
   forceWhiteIcon,
 } = useTopBarInteraction()
 const { isLayoutEditing } = useLayoutEditMode()
+const compactActions = computed(() => props.compact && !isLayoutEditing.value)
+const hasMoreBadge = computed(() => (unReadMessageCount.value > 0 && shouldShowBadge('notifications'))
+  || (newMomentsCount.value > 0 && shouldShowBadge('moments'))
+  || (watchLaterCount.value > 0 && shouldShowBadge('watchLater')))
 
 const mid = computed(() => userInfo.value.mid || getUserID())
 
@@ -154,6 +158,12 @@ function handleNotificationsLinkClick(event: MouseEvent) {
     drawerVisible.value.notifications = true
 }
 
+function handleMoreNotificationsClick(event: MouseEvent) {
+  topBarStore.notificationsDrawerUrl = 'https://message.bilibili.com/'
+  handleNotificationsLinkClick(event)
+  topBarStore.closeAllPopups()
+}
+
 watch(isLayoutEditing, (editing) => {
   if (editing)
     topBarStore.closeAllPopups()
@@ -201,8 +211,25 @@ function toggleMore() {
   }
 }
 const morePanel = computed<HTMLElement | null>(() => morePopRef.value?.$el ?? null)
-const { panelStyle: morePanelStyle } = useTopBarPanel(more, morePanel, moreOpen, closeMore)
-watch([() => props.compact, isLayoutEditing], () => topBarStore.closeAllPopups())
+const { panelStyle: morePanelStyle } = useTopBarPanel(more, morePanel, moreOpen, closeMore, { width: 'content', minWidth: 180, maxWidth: 320, align: 'end' })
+watch(compactActions, async (compact) => {
+  const active = (more.value?.getRootNode() as ShadowRoot | undefined)?.activeElement
+  const movingFocus = active?.closest('[data-top-bar-expanded], [data-top-bar-more]')
+  const key = active?.closest<HTMLElement>('[data-top-bar-action]')?.dataset.topBarAction
+  // A pending hover must not reopen a popup after its trigger is folded away.
+  for (const item of [moments, favorites, history, watchLater, upload, notifications])
+    item.reset?.()
+  topBarStore.closeAllPopups()
+  if (!movingFocus)
+    return
+  await nextTick()
+  const right = more.value?.closest('.right-side')
+  const target = compact
+    ? more.value?.querySelector('button')
+    : (key ? right?.querySelector<HTMLElement>(`[data-layout-edit-target="topbar-${key}"] a`) : null)
+      ?? right?.querySelector<HTMLElement>('[data-top-bar-expanded] a, [data-top-bar-expanded] button')
+  target?.focus({ preventScroll: true })
+})
 onBeforeUnmount(() => {
   topBarStore.popupVisible.more = false
 })
@@ -306,7 +333,7 @@ const shouldShowDivider = computed(() => {
 <template>
   <div
     class="right-side"
-    :class="{ 'right-side--compact': compact }"
+    :class="{ 'right-side--compact': compactActions, 'right-side--editing': isLayoutEditing }"
     flex="inline xl:1 justify-end items-center"
   >
     <div
@@ -336,8 +363,8 @@ const shouldShowDivider = computed(() => {
         <div
           class="top-bar-expanded-group"
           data-top-bar-expanded
-          :inert="compact || undefined"
-          :aria-hidden="compact || undefined"
+          :inert="compactActions || undefined"
+          :aria-hidden="compactActions || undefined"
           :class="{ 'top-bar-editing-group': isLayoutEditing }"
           gap-1
         >
@@ -548,16 +575,19 @@ const shouldShowDivider = computed(() => {
             :aria-expanded="popupVisible.more"
           >
             <div i-mingcute:menu-line />
+            <span v-if="hasMoreBadge" class="unread-dot" aria-hidden="true" />
           </button>
 
           <Transition name="slide-in">
             <MorePop
-              v-show="popupVisible?.more"
+              v-if="!isLayoutEditing && popupVisible.more"
               ref="morePopRef"
               class="bew-popover"
               :style="morePanelStyle"
-              @click.stop="() => {}"
+              :get-item-href="getTopBarItemHref"
+              @click.stop="closeMore()"
               @bewly-page-click="(event: MouseEvent, key: string) => handleClickTopBarItem(event, key)"
+              @notifications-click="handleMoreNotificationsClick"
             />
           </Transition>
         </div>
@@ -565,8 +595,8 @@ const shouldShowDivider = computed(() => {
         <div
           class="top-bar-expanded-group"
           data-top-bar-expanded
-          :inert="compact || undefined"
-          :aria-hidden="compact || undefined"
+          :inert="compactActions || undefined"
+          :aria-hidden="compactActions || undefined"
           :class="{ 'top-bar-editing-group': isLayoutEditing }"
           gap-1 items-center
         >
@@ -803,6 +833,27 @@ const shouldShowDivider = computed(() => {
 
 .top-bar-editing-group {
   display: flex !important;
+}
+
+.right-side--editing {
+  width: 100%;
+  min-width: 0;
+  .others {
+    width: 100%;
+    height: auto !important;
+    flex-wrap: wrap;
+    row-gap: var(--bew-space-2);
+  }
+  .top-bar-expanded-group {
+    max-width: 100%;
+    flex-wrap: wrap;
+    row-gap: var(--bew-space-2);
+  }
+  :deep(.top-bar-mode-switcher) {
+    position: relative;
+    top: auto;
+    right: auto;
+  }
 }
 
 .avatar-editing-placeholder {

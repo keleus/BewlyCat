@@ -15,10 +15,14 @@ import { MenuType } from './types'
 
 const emit = defineEmits(['close'])
 
-provide(pinnedChannelHistoryKey, createPinnedChannelHistory(computed({
+const pinnedChannelHistory = createPinnedChannelHistory(computed({
   get: () => settings.value.topBarPinnedChannels,
   set: keys => settings.value.topBarPinnedChannels = keys,
-})))
+}))
+provide(pinnedChannelHistoryKey, pinnedChannelHistory)
+// Settings is cached by KeepAlive; closing it does not dispose its scope.
+onDeactivated(pinnedChannelHistory.reset)
+onActivated(pinnedChannelHistory.reset)
 
 const { t, tm, rt } = useI18n()
 const breadcrumbDetail = ref<string>()
