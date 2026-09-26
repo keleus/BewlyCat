@@ -7,12 +7,18 @@ import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import { createTransformer } from '~/utils/transformer'
 
+import { createPinnedChannelHistory, pinnedChannelHistoryKey } from './composables/usePinnedChannelHistory'
 import type { SettingsSearchEntry } from './searchCatalog'
 import { settingsSearchEntries } from './searchCatalog'
 import type { MenuItem } from './types'
 import { MenuType } from './types'
 
 const emit = defineEmits(['close'])
+
+provide(pinnedChannelHistoryKey, createPinnedChannelHistory(computed({
+  get: () => settings.value.topBarPinnedChannels,
+  set: keys => settings.value.topBarPinnedChannels = keys,
+})))
 
 const { t, tm, rt } = useI18n()
 const breadcrumbDetail = ref<string>()

@@ -1027,12 +1027,43 @@ settings:
   topbar_components_adjustment: 頂部列工具角標設定
   topbar_components_adjustment_desc: 配置各個頂部列圖像的角標顯示方式
   group_topbar_pinned_channels: 頂部列常駐分區
-  topbar_pinned_channels_desc: 可將 Logo 展開內的分區固定在頂部列外側，並調整顯示順序。
+  topbar_pinned_channels_desc: 依順序優先顯示，放不下的分區會收進更多選單。
   topbar_pinned_channels_title: 常駐分區
-  topbar_pinned_channels_hint: 點擊卡片即可固定或取消，點擊順序決定顯示順序。排在後面的分區會在空間不足時優先隱藏。
+  pinned_manager:
+    count: '已新增 {count} 項'
+    add: 新增分區
+    clear: 清空
+    search: 搜尋分區
+    categories: 分區分類
+    screen: 影音娛樂
+    animation_games: 動漫遊戲
+    knowledge_news: 知識科技
+    life_interests: 生活方式
+    services: 平台服務
+    history_reset: 分區選擇已被其他操作更新，舊復原記錄已清空。
+    all: 全部
+    selected: 已選
+    no_results: 沒有符合的分區
+    move_before: '前移 {name}'
+    move_after: '後移 {name}'
+    remove: '移除 {name}'
+    undo: 復原上一步
+    hidden: 常駐分區目前已隱藏
+    enable: 啟用
+    layout: '頂部列 {visible} · 更多 {hidden}'
+    unavailable: 頂部列目前不可見
+    open: '展開分區，含 {count} 個收合項目'
+    channels: 分區
+    manage: 管理常駐分區
+    search_site: 搜尋影片
+    collapse: 收起新增
+    clear_search: 清除搜尋
+    view_all: 查看全部分類
+    all_visible: 全部顯示
+  topbar_pinned_channels_hint: 透過新增分區選擇內容，使用拖曳把手或前移、後移按鈕調整順序。
   topbar_pinned_channels_all_selected: 所有可用分區都已加入。
   topbar_pinned_channels_empty: 尚未新增任何常駐分區。
-  topbar_pinned_channels_order_tip: 點擊順序決定顯示順序，再點一次即可取消固定。
+  topbar_pinned_channels_order_tip: 透過新增分區選擇內容，使用拖曳把手或前移、後移按鈕調整順序。
   top_bar_logo_style: Logo 樣式
   top_bar_logo_style_desc: 選擇頂部列使用圓形圖示或橫向品牌標誌。
   top_bar_logo_style_opt:

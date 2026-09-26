@@ -611,12 +611,43 @@ settings:
   topbar_components_adjustment: Top Bar Components Badge Settings
   topbar_components_adjustment_desc: Configure the badge display mode for each top bar icon
   group_topbar_pinned_channels: Top Bar Pinned Channels
-  topbar_pinned_channels_desc: Choose items from the logo dropdown to keep directly on the top bar and arrange their priority.
+  topbar_pinned_channels_desc: Channels appear in your chosen order. Those that do not fit remain available in the overflow menu.
   topbar_pinned_channels_title: Pinned channels
-  topbar_pinned_channels_hint: Click a tile to pin or unpin it; the order follows the sequence of your clicks. Items toward the end hide first when space is tight.
+  pinned_manager:
+    count: '{count} channels added'
+    add: Add channels
+    clear: Clear
+    search: Search channels
+    categories: Channel categories
+    screen: 'Media & entertainment'
+    animation_games: 'Anime & games'
+    knowledge_news: 'Knowledge & technology'
+    life_interests: Lifestyle
+    services: Platform services
+    history_reset: Another operation changed the selection. Previous undo history has been cleared.
+    all: All
+    selected: Selected
+    no_results: No matching channels
+    move_before: 'Move {name} earlier'
+    move_after: 'Move {name} later'
+    remove: 'Remove {name}'
+    undo: Undo last change
+    hidden: Pinned channels are currently hidden
+    enable: Enable
+    layout: 'Top bar {visible} · More {hidden}'
+    unavailable: Top bar not visible
+    open: 'Open channels, including {count} collapsed items'
+    channels: Channels
+    manage: Manage pinned channels
+    search_site: Search videos
+    collapse: Hide picker
+    clear_search: Clear search
+    view_all: View all categories
+    all_visible: All visible
+  topbar_pinned_channels_hint: Add channels, then use the drag handles or move buttons to change their order.
   topbar_pinned_channels_all_selected: All channels have already been pinned.
   topbar_pinned_channels_empty: You have not pinned any channels yet.
-  topbar_pinned_channels_order_tip: Selection order follows your clicks. Click an item again to unpin it.
+  topbar_pinned_channels_order_tip: Add channels, then use the drag handles or move buttons to change their order.
   top_bar_logo_style: Logo style
   top_bar_logo_style_desc: Choose between the circular icon and the horizontal brand mark in the top bar.
   top_bar_logo_style_opt:

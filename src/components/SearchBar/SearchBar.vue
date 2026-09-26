@@ -66,6 +66,8 @@ const props = defineProps<{
   modelValue?: string
   searchBehavior?: 'navigate' | 'stay'
   topBarMode?: boolean
+  /** Search is inside an expanded compact top-bar panel. */
+  containedTopBarPanel?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -76,7 +78,7 @@ const emit = defineEmits<{
 const resolvedFocusedCharacter = computed(() => resolveSearchBarCharacterUrl(props.focusedCharacter ?? ''))
 
 const searchWrapRef = ref<HTMLElement>()
-const { left: searchWrapLeft, top: searchWrapTop } = useElementBounding(searchWrapRef)
+const { left: searchWrapLeft, top: searchWrapTop, bottom: searchWrapBottom } = useElementBounding(searchWrapRef)
 const keywordRef = ref<HTMLInputElement>()
 const isFocus = ref<boolean>(false)
 const keyword = ref<string>(props.modelValue ?? '')
@@ -101,6 +103,19 @@ const visibleHotSearchList = computed(() => {
   return hotSearchList.value.slice(0, limit)
 })
 const narrowTopBarPopupStyle = computed<CSSProperties | undefined>(() => {
+  if (props.containedTopBarPanel) {
+    return {
+      position: 'absolute',
+      top: '100%',
+      left: '0',
+      right: 'auto',
+      width: '100%',
+      marginTop: '8px',
+      maxHeight: `max(0px, calc(100dvh - ${searchWrapBottom.value + 16}px))`,
+      overscrollBehavior: 'contain',
+    }
+  }
+
   if (!props.topBarMode || !isNarrowLayout.value)
     return undefined
 

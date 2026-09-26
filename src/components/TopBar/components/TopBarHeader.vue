@@ -9,6 +9,7 @@ import { settings } from '~/logic'
 import { experimentalTopBarStyles, FROSTED_GLASS_BLUR_MAX_PX, FROSTED_GLASS_BLUR_MIN_PX } from '~/logic/storage'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
+import { useTopBarSpace } from '../composables/useTopBarSpace'
 import TopBarItemEditor from './TopBarItemEditor.vue'
 import TopBarLogo from './TopBarLogo.vue'
 import TopBarRight from './TopBarRight.vue'
@@ -19,7 +20,7 @@ const props = defineProps<{
   isDark: boolean
 }>()
 
-const { forceWhiteIcon, hasPageBackdrop, handleNotificationsItemClick } = useTopBarInteraction()
+const { forceWhiteIcon, hasPageBackdrop, handleNotificationsItemClick, showSearchBar } = useTopBarInteraction()
 const { isLayoutEditing } = useLayoutEditMode()
 const { activatedPage, scrollTop } = useBewlyApp()
 const isNarrowLayout = useMediaQuery('(max-width: 767px)')
@@ -28,6 +29,10 @@ const isNarrowLayout = useMediaQuery('(max-width: 767px)')
 // 仅布局编辑模式需要整体隐藏（搜索页本身有搜索框，不展示编辑目标）。
 const showTopBarSearchEditor = computed(() =>
   !isLayoutEditing.value || activatedPage.value !== AppPage.Search)
+
+const headerRef = ref<HTMLElement | null>(null)
+const searchActive = computed(() => showSearchBar.value || (isLayoutEditing.value && activatedPage.value !== AppPage.Search))
+const { pinnedWidth, compact, compactSearch } = useTopBarSpace(headerRef, searchActive, isLayoutEditing)
 
 const FADE_STOP_COUNT = 16
 
@@ -271,6 +276,7 @@ function refreshSearchContent() {
 
 <template>
   <main
+    ref="headerRef"
     class="top-bar-header"
     :class="{ 'top-bar-header--editing': isLayoutEditing }"
     max-w="$bew-page-max-width"
@@ -318,7 +324,7 @@ function refreshSearchContent() {
     </Transition>
 
     <div ref="leftSection" class="top-bar-header__side top-bar-header__side--left">
-      <TopBarLogo :force-white-icon="forceWhiteIcon" />
+      <TopBarLogo :force-white-icon="forceWhiteIcon" :pinned-width="pinnedWidth" :compact="compact" />
     </div>
 
     <!-- search bar -->
@@ -341,6 +347,7 @@ function refreshSearchContent() {
             :title="$t('settings.show_hot_search_in_top_bar')"
           >
             <TopBarSearch
+              :compact="compactSearch"
               :force-visible="isLayoutEditing && activatedPage !== AppPage.Search"
               :edit-mode="isLayoutEditing"
             />
@@ -352,6 +359,7 @@ function refreshSearchContent() {
     <!-- right content -->
     <div ref="rightSection" class="top-bar-header__side top-bar-header__side--right">
       <TopBarRight
+        :compact="compact"
         @notifications-click="handleNotificationsItemClick"
       />
     </div>
@@ -461,7 +469,7 @@ function refreshSearchContent() {
 .top-bar-header__search-content {
   display: flex;
   width: 100%;
-  max-width: 600px;
+  max-width: var(--bew-top-bar-search-max-width);
   min-width: 0;
   align-items: center;
   justify-content: center;

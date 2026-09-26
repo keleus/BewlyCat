@@ -3,20 +3,22 @@ import { useI18n } from 'vue-i18n'
 
 import { settings } from '~/logic'
 import { getUserID } from '~/utils/main'
+import { isComponentVisible } from '~/utils/topBarBadge'
 
 const emit = defineEmits<{
   (e: 'bewlyPageClick', event: MouseEvent, key: string): void
 }>()
 const { t } = useI18n()
 
-const list = computed((): { name: string, url: string, icon: string, bewlyKey?: string }[] => [
-  { name: t('topbar.notifications'), url: '//message.bilibili.com', icon: 'i-mingcute:notification-line' },
-  { name: t('topbar.moments'), url: '//t.bilibili.com/', icon: 'i-tabler:windmill', bewlyKey: 'moments' },
-  { name: t('topbar.favorites'), url: `//space.bilibili.com/${getUserID() ?? ''}/favlist`, icon: 'i-mingcute:star-line', bewlyKey: 'favorites' },
-  { name: t('topbar.history'), url: '//www.bilibili.com/history', icon: 'i-mingcute:time-line', bewlyKey: 'history' },
-  { name: t('topbar.watch_later'), url: '//www.bilibili.com/watchlater/#/list', icon: 'i-mingcute:carplay-line', bewlyKey: 'watchLater' },
-  { name: t('topbar.creative_center'), url: '//member.bilibili.com/platform/home', icon: 'i-mingcute:bulb-line' },
-])
+const list = computed((): { name: string, url: string, icon: string, bewlyKey?: string, key: string }[] => [
+  { key: 'notifications', name: t('topbar.notifications'), url: '//message.bilibili.com', icon: 'i-mingcute:notification-line' },
+  { key: 'moments', name: t('topbar.moments'), url: '//t.bilibili.com/', icon: 'i-tabler:windmill', bewlyKey: 'moments' },
+  { key: 'favorites', name: t('topbar.favorites'), url: `//space.bilibili.com/${getUserID() ?? ''}/favlist`, icon: 'i-mingcute:star-line', bewlyKey: 'favorites' },
+  { key: 'history', name: t('topbar.history'), url: '//www.bilibili.com/history', icon: 'i-mingcute:time-line', bewlyKey: 'history' },
+  { key: 'watchLater', name: t('topbar.watch_later'), url: '//www.bilibili.com/watchlater/#/list', icon: 'i-mingcute:carplay-line', bewlyKey: 'watchLater' },
+  { key: 'creatorCenter', name: t('topbar.creative_center'), url: '//member.bilibili.com/platform/home', icon: 'i-mingcute:bulb-line' },
+  { key: 'upload', name: t('topbar.upload'), url: 'https://member.bilibili.com/platform/upload/video/frame', icon: 'i-mingcute:upload-line' },
+].filter(item => isComponentVisible(item.key)))
 </script>
 
 <template>
