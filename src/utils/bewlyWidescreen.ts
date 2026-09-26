@@ -1220,7 +1220,8 @@ function injectLayoutStyle() {
       --bewly-widescreen-sidebar-offset: 0px;
     }
 
-    #${ROOT_ID} * {
+    /* 视频内引导与播放结束面板依赖原站 content-box 尺寸，否则图标、边框和推荐列表被压缩。 */
+    #${ROOT_ID} :where(*:not(.bili-danmaku-x-guide *, .bpx-player-ending-panel *)) {
       box-sizing: border-box;
     }
 
@@ -1362,9 +1363,8 @@ function injectLayoutStyle() {
       filter: none !important;
     }
 
-    #${ROOT_ID} .player-wrap *:not(.bili-danmaku-x-guide, .bili-danmaku-x-guide *),
-    #${ROOT_ID} .bpx-player-container *:not(.bili-danmaku-x-guide, .bili-danmaku-x-guide *),
-    #${ROOT_ID} #bilibili-player-wrap *:not(.bili-danmaku-x-guide, .bili-danmaku-x-guide *),
+    /* 仅处理播放器外框；不要对播放器内部元素通配，否则开关、下拉框和 border 三角会缺失上下边框。 */
+    #${ROOT_ID} #bilibili-player-placeholder,
     #${ROOT_ID} .bpx-player-primary-area,
     #${ROOT_ID} .bpx-player-video-area,
     #${ROOT_ID} .bpx-player-video-wrap,
@@ -1403,8 +1403,8 @@ function injectLayoutStyle() {
       background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 82%, white) !important;
     }
 
-    #${ROOT_ID} .bili-danmaku-x-guide-three {
-      display: none !important;
+    #${ROOT_ID} .bili-danmaku-x-guide-three > span.bili-danmaku-x-active svg {
+      fill: var(--bew-theme-color, #00aeec) !important;
     }
 
     #${ROOT_ID} .bili-danmaku-x-guide-cyc > span {
