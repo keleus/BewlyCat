@@ -577,16 +577,11 @@ function handleClickOutsidePopup(event: MouseEvent) {
   if (!hasActivePopup.value)
     return
 
-  const target = event.target as HTMLElement
-
-  // 检查点击是否在顶栏项目按钮上（这些按钮会自己处理切换逻辑）
-  const isTopBarItemButton = target.closest('.logo, .right-side-item, .home-button')
-  if (isTopBarItemButton)
-    return
-
-  // 检查点击是否在弹窗内
-  const isInPopup = target.closest('.bew-popover')
-  if (isInPopup)
+  // document receives the Shadow Host as event.target. Inspect the original
+  // path so opening a panel and interacting inside it never count as outside.
+  const isInside = event.composedPath().some(target => target instanceof Element
+    && target.matches('.logo, .right-side-item, .home-button, .bew-popover, [data-top-bar-panel-anchor]'))
+  if (isInside)
     return
 
   // 点击在弹窗外部，关闭所有弹窗
