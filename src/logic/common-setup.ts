@@ -26,7 +26,7 @@ export async function setupApp(app: App) {
         move: 'bewly-toast-move',
       },
       containerClassName: 'bewly-toast-container',
-      toastClassName: 'bewly-toast',
+      toastClassName: ['bewly-toast', 'bew-popover-surface'],
       bodyClassName: 'bewly-toast__body',
       closeButtonClassName: 'bewly-toast__close',
       maxToasts: 4,

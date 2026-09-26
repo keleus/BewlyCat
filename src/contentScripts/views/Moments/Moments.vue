@@ -5306,12 +5306,13 @@ watch(
 .moments-sidebar-skeleton__live {
   display: flex;
   flex-direction: column;
-  gap: var(--bew-space-2);
+  gap: var(--bew-space-1);
   margin-top: var(--bew-space-4);
 }
+/* 与 .moments-live-card__list > a 的尺寸和圆角一致，加载完成后不跳动。 */
 .moments-sidebar-skeleton__live > span {
-  height: 54px;
-  border-radius: var(--bew-radius-lg);
+  height: 72px;
+  border-radius: var(--bew-interactive-radius);
 }
 @keyframes moments-live-ripple {
   /* 淡入出生：首尾均为 opacity 0，消除循环接缝处的闪现 */
