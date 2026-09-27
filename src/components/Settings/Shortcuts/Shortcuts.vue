@@ -110,6 +110,12 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
 const editingShortcutId = ref<ConfigurableShortcutId | null>(null)
 const currentKeyCombo = ref<string[]>([])
 
+const vFocusShortcutEditor = {
+  mounted(element: HTMLElement) {
+    element.focus({ preventScroll: true })
+  },
+}
+
 // --- Helper Functions ---
 function getShortcutSetting(id: ConfigurableShortcutId): BaseShortcutSetting | undefined {
   return settings.value.shortcuts?.[id]
@@ -290,59 +296,40 @@ function handleKeyUp(event: KeyboardEvent, id: ConfigurableShortcutId) {
 
 // --- Reset and Toggle Functions ---
 function resetToDefault(shortcutDef: ConfigurableShortcutDefinition) {
+  const defaultSetting = getDefaultShortcutSetting(shortcutDef.id)
+  if (!defaultSetting)
+    return
+
+  const conflictResult = checkShortcutConflict(defaultSetting.key, shortcutDef.id)
+  if (conflictResult.hasConflict && conflictResult.conflictInfo) {
+    toast.warning(t('settings.shortcuts.conflict', { name: conflictResult.conflictInfo.name }))
+    return
+  }
+
+  cancelEdit()
   if (!settings.value.shortcuts)
     settings.value.shortcuts = {}
-
-  const defaultSetting = getDefaultShortcutSetting(shortcutDef.id)
-  if (defaultSetting) {
-    settings.value.shortcuts[shortcutDef.id] = JSON.parse(JSON.stringify(defaultSetting)) // Deep copy
-  }
-  else {
-    // Fallback if not in originalSettings (should not happen with proper setup)
-    const baseDefault: BaseShortcutSetting = { key: shortcutDef.defaultKey, enabled: true }
-    settings.value.shortcuts[shortcutDef.id] = baseDefault
-  }
-
-  // 重新注册快捷键
+  settings.value.shortcuts[shortcutDef.id] = { ...defaultSetting }
   setupShortcutHandlers()
 }
 
-interface ShortcutResetEntry {
-  id: ConfigurableShortcutId
-  previous: BaseShortcutSetting | undefined
-  reset: BaseShortcutSetting
-}
-
-const shortcutResetSnapshot = ref<ShortcutResetEntry[]>()
+// 只保存最近一次重置前的配置，撤销时整体恢复。
+const shortcutResetSnapshot = ref<ShortcutsSettings>()
 
 function resetAllShortcuts() {
-  if (shortcutResetSnapshot.value)
-    return
   cancelEdit()
-  const snapshot: ShortcutResetEntry[] = []
+  shortcutResetSnapshot.value = JSON.parse(JSON.stringify(settings.value.shortcuts ?? {}))
   if (!settings.value.shortcuts)
     settings.value.shortcuts = {}
 
   configurableShortcutsGroups.forEach((group) => {
     group.shortcuts.forEach((shortcutDef) => {
       const defaultSetting = getDefaultShortcutSetting(shortcutDef.id)
-      if (defaultSetting && settings.value.shortcuts) {
-        const previous = settings.value.shortcuts[shortcutDef.id]
-        if (JSON.stringify(previous) === JSON.stringify(defaultSetting))
-          return
-        const reset: BaseShortcutSetting = JSON.parse(JSON.stringify(defaultSetting))
-        snapshot.push({
-          id: shortcutDef.id,
-          previous: previous ? JSON.parse(JSON.stringify(previous)) : undefined,
-          reset,
-        })
-        settings.value.shortcuts[shortcutDef.id] = { ...reset }
-      }
+      if (defaultSetting)
+        settings.value.shortcuts[shortcutDef.id] = JSON.parse(JSON.stringify(defaultSetting))
     })
   })
 
-  shortcutResetSnapshot.value = snapshot.length ? snapshot : undefined
-  // 重新注册快捷键
   setupShortcutHandlers()
 }
 
@@ -350,18 +337,9 @@ function undoResetAllShortcuts() {
   if (!shortcutResetSnapshot.value)
     return
   cancelEdit()
-  for (const entry of shortcutResetSnapshot.value) {
-    // 仅撤销仍保持重置结果的条目，不覆盖重置后的编辑或同步更新。
-    if (JSON.stringify(settings.value.shortcuts[entry.id]) !== JSON.stringify(entry.reset))
-      continue
-    if (entry.previous)
-      settings.value.shortcuts[entry.id] = { ...entry.previous }
-    else
-      delete settings.value.shortcuts[entry.id]
-  }
+  settings.value.shortcuts = shortcutResetSnapshot.value
   shortcutResetSnapshot.value = undefined
   setupShortcutHandlers()
-  toast.success(t('settings.shortcuts.reset_undone'))
 }
 </script>
 
@@ -386,7 +364,7 @@ function undoResetAllShortcuts() {
           <span v-if="shortcutResetSnapshot" role="status">{{ t('settings.shortcuts.reset_undo_hint') }}</span>
         </template>
         <div class="shortcut-reset-actions">
-          <Button :disabled="!!shortcutResetSnapshot" @click="resetAllShortcuts">
+          <Button @click="resetAllShortcuts">
             {{ t('settings.shortcuts.reset_all_button') }}
           </Button>
           <Button v-if="shortcutResetSnapshot" @click="undoResetAllShortcuts">
@@ -410,6 +388,7 @@ function undoResetAllShortcuts() {
                 <!-- Shortcut Key Display/Edit -->
                 <div
                   v-if="editingShortcutId === shortcutDef.id"
+                  v-focus-shortcut-editor
                   class="shortcut-edit-box border rounded px-3 py-1 text-center text-sm"
                   tabindex="0"
                   @keydown="handleKeyDown($event, shortcutDef.id)"
