@@ -970,7 +970,9 @@ settings:
   native_home_feed_back: Previous recommendations
   native_home_feed_forward: Next recommendations
   shortcuts:
-    shortcut_count: '{count} shortcuts'
+    undo_reset: Undo reset
+    reset_undo_hint: Reset applied. Undo before leaving this page; later changes will be kept.
+    reset_undone: Reset undone; later changes kept
     title: Keyboard Shortcuts
     enable_all_shortcuts_toggle: Enable Keyboard Shortcuts
     enable_all_shortcuts_toggle_desc: Enable or disable all keyboard shortcuts functionality

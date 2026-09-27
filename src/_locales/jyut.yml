@@ -864,7 +864,9 @@ settings:
   native_home_feed_back: 返上一組推介
   native_home_feed_forward: 去下一組推介
   shortcuts:
-    shortcut_count: '{count} 個快捷鍵'
+    undo_reset: 復原重設
+    reset_undo_hint: 已重設，離開呢頁之前可以復原；之後嘅修改會保留。
+    reset_undone: 已復原重設，保留之後嘅修改
     caption: 字幕
     caption_desc: 顯示/隱藏字幕。
     video_screenshot: 影片截圖

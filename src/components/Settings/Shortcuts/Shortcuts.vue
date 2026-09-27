@@ -307,7 +307,19 @@ function resetToDefault(shortcutDef: ConfigurableShortcutDefinition) {
   setupShortcutHandlers()
 }
 
+interface ShortcutResetEntry {
+  id: ConfigurableShortcutId
+  previous: BaseShortcutSetting | undefined
+  reset: BaseShortcutSetting
+}
+
+const shortcutResetSnapshot = ref<ShortcutResetEntry[]>()
+
 function resetAllShortcuts() {
+  if (shortcutResetSnapshot.value)
+    return
+  cancelEdit()
+  const snapshot: ShortcutResetEntry[] = []
   if (!settings.value.shortcuts)
     settings.value.shortcuts = {}
 
@@ -315,13 +327,41 @@ function resetAllShortcuts() {
     group.shortcuts.forEach((shortcutDef) => {
       const defaultSetting = getDefaultShortcutSetting(shortcutDef.id)
       if (defaultSetting && settings.value.shortcuts) {
-        settings.value.shortcuts[shortcutDef.id] = JSON.parse(JSON.stringify(defaultSetting))
+        const previous = settings.value.shortcuts[shortcutDef.id]
+        if (JSON.stringify(previous) === JSON.stringify(defaultSetting))
+          return
+        const reset: BaseShortcutSetting = JSON.parse(JSON.stringify(defaultSetting))
+        snapshot.push({
+          id: shortcutDef.id,
+          previous: previous ? JSON.parse(JSON.stringify(previous)) : undefined,
+          reset,
+        })
+        settings.value.shortcuts[shortcutDef.id] = { ...reset }
       }
     })
   })
 
+  shortcutResetSnapshot.value = snapshot.length ? snapshot : undefined
   // 重新注册快捷键
   setupShortcutHandlers()
+}
+
+function undoResetAllShortcuts() {
+  if (!shortcutResetSnapshot.value)
+    return
+  cancelEdit()
+  for (const entry of shortcutResetSnapshot.value) {
+    // 仅撤销仍保持重置结果的条目，不覆盖重置后的编辑或同步更新。
+    if (JSON.stringify(settings.value.shortcuts[entry.id]) !== JSON.stringify(entry.reset))
+      continue
+    if (entry.previous)
+      settings.value.shortcuts[entry.id] = { ...entry.previous }
+    else
+      delete settings.value.shortcuts[entry.id]
+  }
+  shortcutResetSnapshot.value = undefined
+  setupShortcutHandlers()
+  toast.success(t('settings.shortcuts.reset_undone'))
 }
 </script>
 
@@ -341,13 +381,25 @@ function resetAllShortcuts() {
         </template>
         <Radio v-model="settings.keyboard" @update:model-value="setupShortcutHandlers" />
       </SettingsItem>
+      <SettingsItem :title="t('settings.shortcuts.reset_all_ext_shortcuts')" right-width="auto">
+        <template #desc>
+          <span v-if="shortcutResetSnapshot" role="status">{{ t('settings.shortcuts.reset_undo_hint') }}</span>
+        </template>
+        <div class="shortcut-reset-actions">
+          <Button :disabled="!!shortcutResetSnapshot" @click="resetAllShortcuts">
+            {{ t('settings.shortcuts.reset_all_button') }}
+          </Button>
+          <Button v-if="shortcutResetSnapshot" @click="undoResetAllShortcuts">
+            {{ t('settings.shortcuts.undo_reset') }}
+          </Button>
+        </div>
+      </SettingsItem>
     </SettingsItemGroup>
 
     <!-- Configurable Extension Shortcuts -->
     <template v-for="group in configurableShortcutsGroups" :key="group.title">
       <ShortcutSection
         :title="group.title"
-        :summary="t('settings.shortcuts.shortcut_count', { count: group.shortcuts.length })"
         default-open
       >
         <template v-for="shortcutDef in group.shortcuts" :key="shortcutDef.id">
@@ -414,15 +466,6 @@ function resetAllShortcuts() {
       </ShortcutSection>
     </template>
 
-    <!-- Global Actions -->
-    <SettingsItemGroup :title="t('settings.shortcuts.group.global_actions')">
-      <SettingsItem :title="t('settings.shortcuts.reset_all_ext_shortcuts')" right-width="auto">
-        <Button @click="resetAllShortcuts">
-          {{ t('settings.shortcuts.reset_all_button') }}
-        </Button>
-      </SettingsItem>
-    </SettingsItemGroup>
-
     <!-- Official Bilibili Shortcuts (Read-only) -->
     <ShortcutSection :title="t('settings.shortcuts.group.official_bilibili')">
       <SettingsItem
@@ -441,6 +484,13 @@ function resetAllShortcuts() {
 </template>
 
 <style lang="scss" scoped>
+.shortcut-reset-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--bew-space-2);
+}
+
 .shortcut-key-readonly,
 .shortcut-key {
   background-color: var(--bew-elevated-solid);

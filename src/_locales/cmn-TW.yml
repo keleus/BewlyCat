@@ -870,7 +870,9 @@ settings:
   native_home_feed_back: 返回上一組推薦
   native_home_feed_forward: 前往下一組推薦
   shortcuts:
-    shortcut_count: '{count} 個快捷鍵'
+    undo_reset: 復原重設
+    reset_undo_hint: 已重設，可在離開此頁前復原；後續修改會保留。
+    reset_undone: 已復原重設，保留後續修改
     title: 快捷鍵
     enable_all_shortcuts_toggle: 啟用鍵盤快捷鍵
     enable_all_shortcuts_toggle_desc: 啟用或停用所有鍵盤快捷鍵功能
