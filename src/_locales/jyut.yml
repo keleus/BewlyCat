@@ -864,6 +864,7 @@ settings:
   native_home_feed_back: 返上一組推介
   native_home_feed_forward: 去下一組推介
   shortcuts:
+    shortcut_count: '{count} 個快捷鍵'
     caption: 字幕
     caption_desc: 顯示/隱藏字幕。
     video_screenshot: 影片截圖

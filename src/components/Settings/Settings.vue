@@ -369,6 +369,11 @@ function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: n
     )
 
   if (target) {
+    // 快捷键分组收起后，搜索仍需先展开再定位，且不修改任何配置。
+    const shortcutSection = target.closest<HTMLDetailsElement>('details.shortcuts-group')
+    if (shortcutSection)
+      shortcutSection.open = true
+
     nextTick(() => {
       window.requestAnimationFrame(() => {
         target.scrollIntoView({ behavior: 'smooth', block: 'center' })

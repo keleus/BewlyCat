@@ -894,6 +894,7 @@ settings:
   native_home_feed_back: 返回上一组推荐
   native_home_feed_forward: 前往下一组推荐
   shortcuts:
+    shortcut_count: '{count} 个快捷键'
     title: 快捷键
     enable_all_shortcuts_toggle: 启用键盘快捷键
     enable_all_shortcuts_toggle_desc: 启用或禁用所有键盘快捷键功能

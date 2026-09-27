@@ -15,6 +15,7 @@ import { setupShortcutHandlers } from '~/utils/shortcuts'
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
 import SettingsSectionHeading from '../components/SettingsSectionHeading.vue'
+import ShortcutSection from './ShortcutSection.vue'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -344,7 +345,11 @@ function resetAllShortcuts() {
 
     <!-- Configurable Extension Shortcuts -->
     <template v-for="group in configurableShortcutsGroups" :key="group.title">
-      <SettingsItemGroup :title="group.title">
+      <ShortcutSection
+        :title="group.title"
+        :summary="t('settings.shortcuts.shortcut_count', { count: group.shortcuts.length })"
+        default-open
+      >
         <template v-for="shortcutDef in group.shortcuts" :key="shortcutDef.id">
           <SettingsItem :title="shortcutDef.name" :desc="shortcutDef.description" right-width="auto">
             <div class="shortcut-item-config">
@@ -406,7 +411,7 @@ function resetAllShortcuts() {
             </div>
           </SettingsItem>
         </template>
-      </SettingsItemGroup>
+      </ShortcutSection>
     </template>
 
     <!-- Global Actions -->
@@ -419,7 +424,7 @@ function resetAllShortcuts() {
     </SettingsItemGroup>
 
     <!-- Official Bilibili Shortcuts (Read-only) -->
-    <SettingsItemGroup :title="t('settings.shortcuts.group.official_bilibili')">
+    <ShortcutSection :title="t('settings.shortcuts.group.official_bilibili')">
       <SettingsItem
         v-for="shortcut in officialShortcuts"
         :key="shortcut.key"
@@ -431,7 +436,7 @@ function resetAllShortcuts() {
           {{ shortcut.key }}
         </div>
       </SettingsItem>
-    </SettingsItemGroup>
+    </ShortcutSection>
   </div>
 </template>
 
