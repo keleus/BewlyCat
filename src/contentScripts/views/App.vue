@@ -15,6 +15,7 @@ import { confirmDialogKey } from '~/composables/useConfirmDialog'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
+import { installScrollBridge } from '~/contentScripts/features/scrollBridge'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
 import { settings, settingsReady } from '~/logic'
@@ -990,6 +991,10 @@ useEventListener(window, 'resize', scheduleLayoutEditTargetsRefresh)
 useEventListener(window, 'scroll', scheduleLayoutEditTargetsRefresh, { passive: true })
 onUnmounted(stopLayoutEditTargetObserver)
 const scrollViewportRef = ref<HTMLElement | null>(null)
+watch(scrollViewportRef, (viewport, _previousViewport, onCleanup) => {
+  if (viewport && isHomePage() && !settings.value.useOriginalBilibiliHomepage)
+    onCleanup(installScrollBridge(viewport))
+}, { flush: 'post' })
 
 function handlePageBackgroundMouseDown(event: MouseEvent) {
   // Only background elements bind this with .self. Avoid starting a native
@@ -1367,6 +1372,9 @@ function handleMetaHomeKeydown(e: KeyboardEvent) {
 }
 
 function handleDocumentScroll() {
+  if (scrollViewportRef.value && isHomePage() && !settings.value.useOriginalBilibiliHomepage)
+    return
+
   scrollTop.value = window.scrollY
   reachTop.value = window.scrollY <= 0
 }
