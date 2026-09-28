@@ -894,6 +894,8 @@ settings:
   native_home_feed_back: 返回上一组推荐
   native_home_feed_forward: 前往下一组推荐
   shortcuts:
+    undo_reset: 撤销重置
+    reset_undo_hint: 已重置，可在离开此页前撤销，恢复最近一次重置前的快捷键配置。
     title: 快捷键
     enable_all_shortcuts_toggle: 启用键盘快捷键
     enable_all_shortcuts_toggle_desc: 启用或禁用所有键盘快捷键功能
@@ -927,7 +929,7 @@ settings:
       reset_default: 重置为默认值
     reset_all_button: 重置所有快捷键
     reset_all_ext_shortcuts: 重置所有扩展快捷键
-    press_keys: 点击输入框，按下快捷键
+    press_keys: 请按下快捷键
     conflict: 此快捷键已被插件快捷键“{name}”使用，不能重复设置。
     danmu_status: 显示弹幕状态
     danmu_status_desc: 显示当前弹幕开关状态

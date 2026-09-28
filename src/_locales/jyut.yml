@@ -864,6 +864,8 @@ settings:
   native_home_feed_back: 返上一組推介
   native_home_feed_forward: 去下一組推介
   shortcuts:
+    undo_reset: 復原重設
+    reset_undo_hint: 已重設，離開呢頁之前可以復原，還原最近一次重設前嘅快捷鍵設定。
     caption: 字幕
     caption_desc: 顯示/隱藏字幕。
     video_screenshot: 影片截圖
@@ -922,7 +924,7 @@ settings:
     pip_desc: 切換字母畫面模式。
     play_pause_ext: 播放/暫停
     play_pause_ext_desc: 播放或暫停影片（延伸功能）。
-    press_keys: 點擊輸入框，跟住撳低快捷鍵
+    press_keys: 請撳低快捷鍵
     conflict: 呢個快捷鍵已經俾延伸功能快捷鍵「{name}」用緊，唔可以重複設定。
     previous_frame: 上一影格
     previous_frame_desc: 去返上一影格（暫停時）。

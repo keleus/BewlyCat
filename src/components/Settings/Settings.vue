@@ -168,6 +168,7 @@ useEventListener(() => scrollViewportRef.value, 'scroll', () => {
 }, { capture: true })
 
 provide('scrollSettingsContentToTop', () => {
+  cancelSearchNavigation()
   scrollViewportRef.value?.scrollTo({ top: 0 })
 })
 
@@ -335,6 +336,19 @@ function getMenuTitle(menu: MenuType) {
 let highlightedSearchTarget: HTMLElement | undefined
 let searchTargetHighlightTimer: number | undefined
 let searchNavigationId = 0
+let searchTargetRetryTimer: number | undefined
+let searchTargetFrame: number | undefined
+
+function cancelSearchNavigation() {
+  searchNavigationId++
+  if (searchTargetRetryTimer !== undefined)
+    window.clearTimeout(searchTargetRetryTimer)
+  if (searchTargetFrame !== undefined)
+    window.cancelAnimationFrame(searchTargetFrame)
+  searchTargetRetryTimer = undefined
+  searchTargetFrame = undefined
+  clearSearchTargetHighlight()
+}
 
 function clearSearchTargetHighlight() {
   if (searchTargetHighlightTimer)
@@ -362,27 +376,67 @@ function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: n
   if (!expectedTitle || navigationId !== searchNavigationId || attempts > 30)
     return
 
-  const target = Array.from(settingsWindow.value?.querySelectorAll<HTMLElement>('[data-settings-title]') ?? [])
-    .find(element =>
-      element.dataset.settingsTitle === expectedTitle
-      && !element.closest('.page-fade-leave-active'),
-    )
-
-  if (target) {
-    nextTick(() => {
-      window.requestAnimationFrame(() => {
-        target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        highlightSearchTarget(target)
-      })
-    })
+  const retry = () => {
+    searchTargetRetryTimer = window.setTimeout(() => {
+      searchTargetRetryTimer = undefined
+      scrollToSearchTarget(expectedTitle, navigationId, attempts + 1)
+    }, 100)
+  }
+  const viewport = scrollViewportRef.value
+  // 异步页面挂载及离场节点都会影响布局，等待过渡结束后再测量。
+  if (!viewport || viewport.querySelector('.page-fade-enter-active, .page-fade-leave-active')) {
+    retry()
     return
   }
 
-  window.setTimeout(() => scrollToSearchTarget(expectedTitle, navigationId, attempts + 1), 100)
+  const target = Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]'))
+    .find(element => element.dataset.settingsTitle === expectedTitle)
+  if (!target) {
+    retry()
+    return
+  }
+
+  // 展开所有祖先分组，但不启用功能或改写配置。
+  let ancestor: HTMLElement | null = target
+  while (ancestor && ancestor !== viewport) {
+    if (ancestor instanceof HTMLDetailsElement)
+      ancestor.open = true
+    ancestor = ancestor.parentElement
+  }
+
+  nextTick(() => {
+    if (navigationId !== searchNavigationId)
+      return
+    searchTargetFrame = window.requestAnimationFrame(() => {
+      searchTargetFrame = undefined
+      if (navigationId !== searchNavigationId || !viewport.contains(target))
+        return
+      if (viewport.querySelector('.page-fade-enter-active, .page-fade-leave-active')) {
+        retry()
+        return
+      }
+      if (!target.getClientRects().length) {
+        retry()
+        return
+      }
+
+      const targetRect = target.getBoundingClientRect()
+      const viewportRect = viewport.getBoundingClientRect()
+      const headerInset = Number.parseFloat(window.getComputedStyle(viewport).paddingTop) || 0
+      const centerOffset = Math.max(0, (viewport.clientHeight - headerInset - targetRect.height) / 2)
+      // 只滚动设置容器，避免 scrollIntoView 连带滚动外层页面；避开固定顶栏。
+      viewport.scrollTo({
+        top: Math.max(0, viewport.scrollTop + targetRect.top - viewportRect.top - viewport.clientTop - headerInset - centerOffset),
+        behavior: 'smooth',
+      })
+      highlightSearchTarget(target)
+    })
+  })
 }
 
 function navigateToSearchResult(entry: SettingsSearchEntry) {
-  const navigationId = ++searchNavigationId
+  cancelSearchNavigation()
+  const navigationId = searchNavigationId
   entry.storageValues?.forEach(({ key, value }) => sessionStorage.setItem(key, value))
 
   activatedMenuItem.value = entry.menu
@@ -419,8 +473,7 @@ watch(pendingSettingsNavigation, (request) => {
 onBeforeUnmount(() => {
   if (settingsContentFrame !== undefined)
     cancelAnimationFrame(settingsContentFrame)
-  searchNavigationId++
-  clearSearchTargetHighlight()
+  cancelSearchNavigation()
 })
 
 function handleClose() {
@@ -428,6 +481,7 @@ function handleClose() {
 }
 
 function changeMenuItem(menuItem: MenuType) {
+  cancelSearchNavigation()
   activatedMenuItem.value = menuItem
 }
 </script>

@@ -970,6 +970,8 @@ settings:
   native_home_feed_back: Previous recommendations
   native_home_feed_forward: Next recommendations
   shortcuts:
+    undo_reset: Undo reset
+    reset_undo_hint: Reset applied. Undo before leaving this page to restore the shortcut configuration from before the latest reset.
     title: Keyboard Shortcuts
     enable_all_shortcuts_toggle: Enable Keyboard Shortcuts
     enable_all_shortcuts_toggle_desc: Enable or disable all keyboard shortcuts functionality
@@ -1003,7 +1005,7 @@ settings:
       reset_default: Reset to Default
     reset_all_button: Reset All Shortcuts
     reset_all_ext_shortcuts: Reset All Extension Shortcuts
-    press_keys: Click the input box, then press the shortcut keys
+    press_keys: Press the shortcut keys
     conflict: The shortcut is already used by the extension shortcut “{name}” and cannot be assigned again.
     danmu_status: Show Danmu Status
     danmu_status_desc: Show current danmu toggle status

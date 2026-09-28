@@ -910,6 +910,7 @@ export const originalSettings: Settings = {
     videoTime: { key: 'G', enabled: true },
     clockTime: { key: 'H', enabled: true },
     homeRefresh: { key: 'R', enabled: true },
+    toggleFollow: { key: 'Shift+F', enabled: false },
   },
 
   // 倍速记忆设置
