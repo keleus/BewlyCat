@@ -879,7 +879,6 @@ settings:
       official_bilibili: Bilibili 官方快捷鍵
       general: 常規快捷鍵
       fullscreen_mode: 全螢幕模式快捷鍵
-      global_actions: 全域操作
       homepage: 首頁快捷鍵
     official:
       play_pause: 播放/暫停

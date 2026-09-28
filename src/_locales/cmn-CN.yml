@@ -904,7 +904,6 @@ settings:
       homepage: 首页快捷键
       general: 常规快捷键
       fullscreen_mode: 全屏模式快捷键
-      global_actions: 全局操作
     official:
       play_pause: 播放/暂停
       forward: 快进5秒

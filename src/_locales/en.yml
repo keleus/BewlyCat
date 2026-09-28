@@ -980,7 +980,6 @@ settings:
       homepage: Homepage Shortcuts
       general: General Shortcuts
       fullscreen_mode: Fullscreen Mode Shortcuts
-      global_actions: Global Actions
     official:
       play_pause: Play/Pause
       forward: Forward 5s

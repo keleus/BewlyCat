@@ -680,7 +680,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.shortcuts.video_title',
     'settings.shortcuts.video_time',
     'settings.shortcuts.clock_time',
-    'settings.shortcuts.group.global_actions',
     'settings.shortcuts.reset_all_ext_shortcuts',
     'settings.shortcuts.group.official_bilibili',
   ]),
