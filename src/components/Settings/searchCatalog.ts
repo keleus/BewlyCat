@@ -380,7 +380,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(topBarRoute, [
     'settings.group_topbar_pinned_channels',
     'settings.topbar_pinned_channels_title',
-  ]),
+  ], { keywordKeys: ['settings.pinned_manager.add', 'settings.pinned_manager.search', 'settings.pinned_manager.undo', 'settings.pinned_manager.categories', 'settings.topbar_pinned_channels_hint'] }),
   ...createEntries(topBarRoute, [
     'settings.topbar_switchers',
     'settings.show_bewly_or_bili_page_switcher',

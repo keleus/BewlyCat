@@ -1,25 +1,89 @@
 <script setup lang="ts">
+import { onKeyStroke } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { findLeafActiveElement } from '~/utils/element'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
+import { useTopBarPanel } from '../composables/useTopBarPanel'
 
 const props = withDefaults(defineProps<{
   forceVisible?: boolean
   editMode?: boolean
+  compact?: boolean
 }>(), {
   forceVisible: false,
   editMode: false,
+  compact: false,
 })
 
 const { showSearchBar, forceWhiteIcon } = useTopBarInteraction()
 const topBarStore = useTopBarStore()
 const { searchKeyword } = storeToRefs(topBarStore)
 
-const useLightText = computed(() => forceWhiteIcon.value && settings.value.enableFrostedGlass)
+const anchor = ref<HTMLElement | null>(null)
+const panel = ref<HTMLElement | null>(null)
+const trigger = ref<HTMLButtonElement | null>(null)
+const panelOpen = computed({ get: () => topBarStore.popupVisible.compactSearch, set: value => topBarStore.popupVisible.compactSearch = value })
+function close(restoreFocus = false) {
+  if (!panelOpen.value)
+    return
+  panelOpen.value = false
+  if (restoreFocus)
+    trigger.value?.focus()
+}
+const { panelStyle } = useTopBarPanel(anchor, panel, panelOpen, close)
+function toggleSearch() {
+  if (props.editMode)
+    return
+  if (panelOpen.value) {
+    close(true)
+  }
+  else {
+    topBarStore.closeAllPopups()
+    panelOpen.value = true
+  }
+}
+// The compact input is mounted lazily; its shortcut cannot open the panel.
+onKeyStroke('/', (event: KeyboardEvent) => {
+  if (!props.compact || !showSearchBar.value || props.editMode || event.isComposing
+    || event.ctrlKey || event.metaKey || event.altKey) {
+    return
+  }
+  const active = findLeafActiveElement(document) as HTMLElement | undefined
+  const target = event.target as HTMLElement | null
+  if ([active, target].some(element => element && (['INPUT', 'TEXTAREA'].includes(element.tagName) || element.isContentEditable)))
+    return
+  event.preventDefault()
+  if (!panelOpen.value) {
+    topBarStore.closeAllPopups()
+    panelOpen.value = true
+  }
+  else {
+    panel.value?.querySelector('input')?.focus({ preventScroll: true })
+  }
+})
+watch(() => props.compact, async () => {
+  const root = anchor.value?.getRootNode() as ShadowRoot | undefined
+  const focused = anchor.value?.contains(root?.activeElement ?? null)
+  close()
+  if (focused) {
+    await nextTick()
+    if (props.compact)
+      trigger.value?.focus()
+    else
+      anchor.value?.querySelector('input')?.focus()
+  }
+})
+watch([showSearchBar, () => props.editMode], () => close())
+onBeforeUnmount(() => {
+  topBarStore.popupVisible.compactSearch = false
+})
+
+const useLightText = computed(() => !props.compact && forceWhiteIcon.value && settings.value.enableFrostedGlass)
 const normalSearchTextColor = computed(() => useLightText.value ? 'white' : 'var(--bew-text-1)')
 const normalSearchPlaceholderColor = computed(() => (
   useLightText.value
@@ -58,10 +122,26 @@ function handleSearch(keyword: string) {
 </script>
 
 <template>
-  <div flex="inline 1 md:justify-center items-center" w="full" data-top-bar-search>
-    <Transition name="slide-out">
+  <div
+    ref="anchor" class="top-bar-search-anchor" flex="inline 1 md:justify-center items-center" w="full" data-top-bar-search
+    data-top-bar-panel-anchor
+  >
+    <button
+      v-if="compact && (showSearchBar || forceVisible)" ref="trigger" type="button" class="compact-search-button"
+      :aria-label="$t('settings.pinned_manager.search_site')" :aria-expanded="panelOpen" aria-controls="compact-top-bar-search"
+      @click="toggleSearch"
+    >
+      <i i-mingcute:search-line aria-hidden="true" />
+    </button>
+    <div v-if="compact && panelOpen" id="compact-top-bar-search" ref="panel" class="compact-search-panel bew-popover-surface" :style="panelStyle">
       <SearchBar
-        v-if="showSearchBar || props.forceVisible"
+        v-model="searchKeyword" :style="searchBarStyles" :show-hot-search="settings.showHotSearchInTopBar"
+        :search-behavior="searchBehavior" :top-bar-mode="true" :contained-top-bar-panel="true" @search="handleSearch"
+      />
+    </div>
+    <Transition name="slide-out" :css="!compact">
+      <SearchBar
+        v-if="!compact && (showSearchBar || props.forceVisible)"
         v-model="searchKeyword"
         class="search-bar"
         :style="searchBarStyles"
@@ -76,4 +156,23 @@ function handleSearch(keyword: string) {
 
 <style lang="scss" scoped>
 @use "../styles/index.scss";
+.top-bar-search-anchor {
+  position: relative;
+}
+.compact-search-button {
+  display: grid;
+  place-items: center;
+  width: var(--bew-control-height);
+  flex: none;
+  height: var(--bew-control-height);
+  border-radius: var(--bew-control-radius);
+  color: var(--bew-text-1);
+  background: var(--bew-elevated);
+}
+.compact-search-panel {
+  position: absolute;
+  z-index: 999;
+  padding: var(--bew-space-2);
+  box-sizing: border-box;
+}
 </style>

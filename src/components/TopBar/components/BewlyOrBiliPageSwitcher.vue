@@ -14,6 +14,7 @@ import TopBarItemEditor from './TopBarItemEditor.vue'
 
 const props = defineProps<{
   forceWhiteIcon: boolean
+  compact?: boolean
 }>()
 
 const { activatedPage } = useBewlyApp()
@@ -172,10 +173,22 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
       :class="{ 'top-bar-switcher-editor-anchor--editing': isLayoutEditing }"
       data-top-bar-editor-anchor
     >
+      <button
+        v-if="compact" type="button" class="switcher-compact bew-segment-control bew-segment-control--surface" data-top-bar-switcher-compact
+        :aria-label="`${isOriginalBiliPageActive ? 'BiliBili' : 'BewlyCat'} → ${isOriginalBiliPageActive ? 'BewlyCat' : 'BiliBili'}`"
+        :title="`${isOriginalBiliPageActive ? 'BiliBili' : 'BewlyCat'} → ${isOriginalBiliPageActive ? 'BewlyCat' : 'BiliBili'}`"
+        @click="switchPage(!isOriginalBiliPageActive)"
+      >
+        <i i-mingcute:transfer-line aria-hidden="true" />
+      </button>
       <div
+        data-top-bar-switcher-natural
+        :inert="compact || undefined"
+        :aria-hidden="compact || undefined"
         class="bewly-bili-switcher bew-segment-control bew-segment-control--surface"
         :class="{
           'bewly-bili-switcher--white': props.forceWhiteIcon,
+          'bewly-bili-switcher--measuring': compact,
           'bew-segment-control--solid': !settings.enableFrostedGlass,
           'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
         }"
@@ -281,13 +294,15 @@ function switchPage(nextUseOriginalBiliPage: boolean) {
   }
 }
 
-@media (max-width: 640px) {
-  .bewly-bili-switcher {
-    display: none;
-  }
-
-  .top-bar-switcher-editor-anchor--editing .bewly-bili-switcher {
-    display: flex;
-  }
+.bewly-bili-switcher--measuring {
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+  width: max-content;
+}
+.switcher-compact {
+  width: var(--bew-control-height);
+  justify-content: center;
+  color: var(--bew-text-1);
 }
 </style>

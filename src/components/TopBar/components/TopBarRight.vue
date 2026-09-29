@@ -11,6 +11,7 @@ import { getUserID, isInIframe, removeHttpFromUrl } from '~/utils/main'
 import { isComponentVisible, shouldShowBadge, shouldShowDotBadge, shouldShowNumberBadge } from '~/utils/topBarBadge'
 
 import { useTopBarInteraction } from '../composables/useTopBarInteraction'
+import { useTopBarPanel } from '../composables/useTopBarPanel'
 import { MESSAGE_URL } from '../constants/urls'
 import AddOpenTabsDialog from './AddOpenTabsDialog.vue'
 import FavoritesPop from './pops/FavoritesPop.vue'
@@ -23,6 +24,8 @@ import UserPanelPop from './pops/UserPanelPop.vue'
 import WatchLaterPop from './pops/WatchLaterPop.vue'
 import TopBarItemEditor from './TopBarItemEditor.vue'
 import TopBarModeSwitcher from './TopBarModeSwitcher.vue'
+
+const props = defineProps<{ compact?: boolean }>()
 
 const emit = defineEmits(['notificationsClick'])
 
@@ -68,6 +71,10 @@ const {
   forceWhiteIcon,
 } = useTopBarInteraction()
 const { isLayoutEditing } = useLayoutEditMode()
+const compactActions = computed(() => props.compact && !isLayoutEditing.value)
+const hasMoreBadge = computed(() => (unReadMessageCount.value > 0 && shouldShowBadge('notifications'))
+  || (newMomentsCount.value > 0 && shouldShowBadge('moments'))
+  || (watchLaterCount.value > 0 && shouldShowBadge('watchLater')))
 
 const mid = computed(() => userInfo.value.mid || getUserID())
 
@@ -127,7 +134,7 @@ const history = setupTopBarItemHoverEvent('history')
 const watchLater = setupTopBarItemHoverEvent('watchLater')
 const upload = setupTopBarItemHoverEvent('upload')
 const notifications = setupTopBarItemHoverEvent('notifications')
-const more = setupTopBarItemHoverEvent('more')
+const more = ref<HTMLElement | null>(null)
 const avatar = setupTopBarItemHoverEvent('userPanel')
 
 function handleTopBarItemClick(event: MouseEvent, key: string) {
@@ -149,6 +156,12 @@ function handleNotificationsLinkClick(event: MouseEvent) {
 
   if (drawerVisible.value)
     drawerVisible.value.notifications = true
+}
+
+function handleMoreNotificationsClick(event: MouseEvent) {
+  topBarStore.notificationsDrawerUrl = 'https://message.bilibili.com/'
+  handleNotificationsLinkClick(event)
+  topBarStore.closeAllPopups()
 }
 
 watch(isLayoutEditing, (editing) => {
@@ -178,7 +191,48 @@ setupTopBarItemTransformer('favorites', favoritesPopRef)
 setupTopBarItemTransformer('history', historyPopRef)
 setupTopBarItemTransformer('watchLater', watchLaterPopRef)
 setupTopBarItemTransformer('upload', uploadPopRef)
-setupTopBarItemTransformer('more', morePopRef)
+const moreOpen = computed({ get: () => topBarStore.popupVisible.more, set: value => topBarStore.popupVisible.more = value })
+function closeMore(restoreFocus = false) {
+  if (!moreOpen.value)
+    return
+  moreOpen.value = false
+  if (restoreFocus)
+    more.value?.querySelector('button')?.focus()
+}
+function toggleMore() {
+  if (isLayoutEditing.value)
+    return
+  if (moreOpen.value) {
+    closeMore(true)
+  }
+  else {
+    topBarStore.closeAllPopups()
+    moreOpen.value = true
+  }
+}
+const morePanel = computed<HTMLElement | null>(() => morePopRef.value?.$el ?? null)
+const { panelStyle: morePanelStyle } = useTopBarPanel(more, morePanel, moreOpen, closeMore, { width: 'content', minWidth: 180, maxWidth: 320, align: 'end' })
+watch(compactActions, async (compact) => {
+  const active = (more.value?.getRootNode() as ShadowRoot | undefined)?.activeElement
+  const movingFocus = active?.closest('[data-top-bar-expanded], [data-top-bar-more]')
+  const key = active?.closest<HTMLElement>('[data-top-bar-action]')?.dataset.topBarAction
+  // A pending hover must not reopen a popup after its trigger is folded away.
+  for (const item of [moments, favorites, history, watchLater, upload, notifications])
+    item.reset?.()
+  topBarStore.closeAllPopups()
+  if (!movingFocus)
+    return
+  await nextTick()
+  const right = more.value?.closest('.right-side')
+  const target = compact
+    ? more.value?.querySelector('button')
+    : (key ? right?.querySelector<HTMLElement>(`[data-layout-edit-target="topbar-${key}"] a`) : null)
+      ?? right?.querySelector<HTMLElement>('[data-top-bar-expanded] a, [data-top-bar-expanded] button')
+  target?.focus({ preventScroll: true })
+})
+onBeforeUnmount(() => {
+  topBarStore.popupVisible.more = false
+})
 
 // Keep notification state in sync even when the item starts hidden and is
 // enabled later from the layout editor.
@@ -279,6 +333,7 @@ const shouldShowDivider = computed(() => {
 <template>
   <div
     class="right-side"
+    :class="{ 'right-side--compact': compactActions, 'right-side--editing': isLayoutEditing }"
     flex="inline xl:1 justify-end items-center"
   >
     <div
@@ -288,23 +343,28 @@ const shouldShowDivider = computed(() => {
       :style="{ height: 'var(--bew-control-height)' }"
     >
       <div
-        v-if="!isLogin"
+        v-if="!isLogin && !isLayoutEditing"
         class="right-side-item"
         important-w-auto
       >
         <a
           href="https://passport.bilibili.com/login"
           class="login"
+          :aria-label="$t('topbar.sign_in')"
           @click="(event: MouseEvent) => handleTopBarItemClick(event, 'login')"
         >
-          <div i-solar:user-circle-bold-duotone class="text-xl mr-2" />{{
-            $t('topbar.sign_in')
-          }}
+          <span data-top-bar-login-natural class="login__content">
+            <i i-solar:user-circle-bold-duotone class="text-xl mr-2" aria-hidden="true" />{{ $t('topbar.sign_in') }}
+          </span>
+          <i v-if="compact" i-solar:user-circle-bold-duotone aria-hidden="true" />
         </a>
       </div>
       <template v-if="isLogin || isLayoutEditing">
         <div
-          class="hidden lg:flex"
+          class="top-bar-expanded-group"
+          data-top-bar-expanded
+          :inert="compactActions || undefined"
+          :aria-hidden="compactActions || undefined"
           :class="{ 'top-bar-editing-group': isLayoutEditing }"
           gap-1
         >
@@ -498,34 +558,45 @@ const shouldShowDivider = computed(() => {
         <!-- More -->
         <div
           ref="more"
-          class="right-side-item lg:!hidden flex"
+          class="right-side-item top-bar-more"
+          data-top-bar-more
           :class="{ active: popupVisible?.more }"
           data-layout-edit-target="topbar-more"
           data-layout-settings-menu="BewlyComponents"
           data-layout-settings-page="topbar"
           data-layout-settings-title-key="settings.topbar_actions"
-          @click="(event: MouseEvent) => handleClickTopBarItem(event, 'more')"
+          @click="toggleMore"
         >
-          <a
+          <button
+            type="button"
+            class="top-bar-more__button"
             :class="{ 'white-icon': forceWhiteIcon }"
-            title="More"
+            :aria-label="$t('settings.topbar_actions')"
+            :aria-expanded="popupVisible.more"
           >
             <div i-mingcute:menu-line />
-          </a>
+            <span v-if="hasMoreBadge" class="unread-dot" aria-hidden="true" />
+          </button>
 
           <Transition name="slide-in">
             <MorePop
-              v-show="popupVisible?.more"
+              v-if="!isLayoutEditing && popupVisible.more"
               ref="morePopRef"
               class="bew-popover"
-              @click.stop="() => {}"
+              :style="morePanelStyle"
+              :get-item-href="getTopBarItemHref"
+              @click.stop="closeMore()"
               @bewly-page-click="(event: MouseEvent, key: string) => handleClickTopBarItem(event, key)"
+              @notifications-click="handleMoreNotificationsClick"
             />
           </Transition>
         </div>
 
         <div
-          class="hidden lg:flex"
+          class="top-bar-expanded-group"
+          data-top-bar-expanded
+          :inert="compactActions || undefined"
+          :aria-hidden="compactActions || undefined"
           :class="{ 'top-bar-editing-group': isLayoutEditing }"
           gap-1 items-center
         >
@@ -709,7 +780,53 @@ const shouldShowDivider = computed(() => {
 
 <style lang="scss" scoped>
 @use "../styles/index.scss";
+.top-bar-expanded-group {
+  display: flex;
+}
+.right-side .top-bar-more {
+  display: none;
+}
+.right-side--compact {
+  .top-bar-expanded-group {
+    position: absolute;
+    top: 0;
+    right: 0;
+    visibility: hidden;
+    pointer-events: none;
+    width: max-content;
+    display: flex !important;
+  }
+  .top-bar-more {
+    display: flex;
+  }
+}
 
+.login__content {
+  display: flex;
+  align-items: center;
+  width: max-content;
+}
+.right-side--compact .right-side-item .login {
+  width: var(--bew-control-height) !important;
+  padding-inline: 0 !important;
+  justify-content: center;
+  .login__content {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    right: 0;
+  }
+}
+.top-bar-more__button {
+  display: grid;
+  place-items: center;
+  width: var(--bew-control-height);
+  height: var(--bew-control-height);
+  border-radius: var(--bew-control-radius);
+  &:hover {
+    background: var(--bew-fill-2);
+  }
+}
 .others {
   position: relative;
 }
@@ -718,10 +835,31 @@ const shouldShowDivider = computed(() => {
   display: flex !important;
 }
 
+.right-side--editing {
+  width: 100%;
+  min-width: 0;
+  .others {
+    width: 100%;
+    height: auto !important;
+    flex-wrap: wrap;
+    row-gap: var(--bew-space-2);
+  }
+  .top-bar-expanded-group {
+    max-width: 100%;
+    flex-wrap: wrap;
+    row-gap: var(--bew-space-2);
+  }
+  :deep(.top-bar-mode-switcher) {
+    position: relative;
+    top: auto;
+    right: auto;
+  }
+}
+
 .avatar-editing-placeholder {
   display: grid;
-  width: var(--bew-top-bar-primary-control-height);
-  height: var(--bew-top-bar-primary-control-height);
+  width: var(--bew-control-height);
+  height: var(--bew-control-height);
   place-items: center;
   border: 1px dashed var(--bew-border-color);
   border-radius: 50%;
