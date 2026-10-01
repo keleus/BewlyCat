@@ -223,6 +223,12 @@ function getPageParam(): AppPage | null {
   return null
 }
 
+// 初始地址是否已经带有 BewlyCat 的页面/标签参数。
+// 干净的 B 站首页不应该被自动补上 ?page=Home&tab=ForYou，
+// 等用户真正在 BewlyCat 内导航过，或地址里本来就有导航参数时再开始同步。
+const initialUrlParams = new URLSearchParams(window.location.search)
+let isNavUrlSyncEnabled = initialUrlParams.has('page') || initialUrlParams.has('tab')
+
 const activatedPage = ref<AppPage>(getPageParam() || (settings.value.dockItemsConfig.find(e => e.visible === true)?.page || AppPage.Home))
 const pageControlWallpaperMask = computed(() => {
   if (!pageWallpaperReady.value)
@@ -1305,6 +1311,10 @@ function focusScrollViewport(options: { force?: boolean } = {}) {
 
 const isFirstTimeActivatedPageChange = ref<boolean>(true)
 function syncNavigationUrl() {
+  // 干净首页刚加载、用户还没在 BewlyCat 内导航过时，保持地址栏原样
+  if (!isNavUrlSyncEnabled)
+    return
+
   const url = new URL(window.location.href)
   url.searchParams.set('page', activatedPage.value)
   if (activatedPage.value === AppPage.Home)
@@ -1315,15 +1325,20 @@ function syncNavigationUrl() {
     window.history.replaceState(window.history.state, '', url.href)
 }
 
-watch(homeActivatedPage, () => {
-  if (isHomePage() && activatedPage.value === AppPage.Home)
+watch(homeActivatedPage, (_tab, previousTab) => {
+  if (isHomePage() && activatedPage.value === AppPage.Home) {
+    // immediate 首帧只是由默认值推导出来的状态，不代表用户导航过
+    if (previousTab !== undefined)
+      isNavUrlSyncEnabled = true
     syncNavigationUrl()
+  }
 }, { immediate: true })
 
 watch(
   () => activatedPage.value,
   () => {
     if (!isFirstTimeActivatedPageChange.value) {
+      isNavUrlSyncEnabled = true
       syncNavigationUrl()
     }
 
