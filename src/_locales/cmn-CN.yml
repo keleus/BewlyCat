@@ -1010,6 +1010,8 @@ settings:
   show_comment_host_tag_desc: 在评论回复详情页中标注楼主
   enable_comment_reply_tree_display: 评论区树状显示
   enable_comment_reply_tree_display_desc: 开启后根据回复关系整理楼中楼；关闭后不再重排、缩进或绘制评论回复树
+  collapse_comment_replies_by_default: 默认收起主评论的回复
+  collapse_comment_replies_by_default_desc: 在线条树状模式下保留主评论正文并先收起整组回复；展开后，每个父评论先显示一条子评论，点击显示更多展开其余回复。已手动展开的分支在加载更多时保持展开
   comment_reply_tree_mode:
     title: 评论回复树样式
     desc: 根据回复关系和发布时间整理楼中楼。线条模式下可折叠任意父级评论的回复；「收起主评论」会折叠父评论本体，「不收起主评论」则保留父评论正文仅隐藏子回复
@@ -1559,6 +1561,8 @@ moment_card:
   comment_sex_female: 女
   expand_comment_replies: 共 {count} 条回复，点击展开
   collapse_comment_replies: 收起回复
+  show_more_comment_replies: 显示更多 {count} 条回复
+  show_more_comment_replies_for_parent: 显示 {author} 下的其余 {count} 条回复
   collapse_comments: 收起评论
   comments_sort: 评论排序
   comments_sort_hot: 最热

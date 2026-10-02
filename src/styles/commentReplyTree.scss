@@ -1,4 +1,27 @@
 // 视频原生评论与动态预览共用树状线条和折叠控件样式。
+.bewly-comment-root-toggle,
+.bewly-comment-preview-more {
+  align-self: flex-start;
+  margin-block: var(--bew-space-2, 8px);
+  padding: var(--bew-space-2, 8px);
+  min-height: var(--bew-space-8, 32px);
+  border: 0;
+  border-radius: var(--bew-radius-md, 8px);
+  background: transparent;
+  color: var(--bew-theme-color, #00aeec);
+  font: inherit;
+  font-size: var(--bew-font-size-control, 13px);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bew-fill-1, rgba(148, 153, 160, 0.12));
+  }
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color, #00aeec);
+    outline-offset: 2px;
+  }
+}
+
 .bewly-comment-reply-tree-guides {
   position: absolute;
   inset: 0;

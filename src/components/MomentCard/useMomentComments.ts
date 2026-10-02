@@ -2,6 +2,7 @@ import { onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
+import { settings } from '~/logic'
 import api from '~/utils/api'
 import { getCSRF, getUserID } from '~/utils/main'
 
@@ -118,7 +119,11 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
     if (disposed)
       return
     root.repliesExpanded = !root.repliesExpanded
-    root.collapsed = false
+    root.replyThreadTouched = true
+    root.collapsed = !root.repliesExpanded
+      && settings.value.enableCommentReplyTreeDisplay
+      && settings.value.commentReplyTreeMode !== 'indentOnly'
+      && settings.value.collapseCommentRepliesByDefault
     if (root.repliesExpanded) {
       if (!root.replyPage)
         void loadReplies(root)

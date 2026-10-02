@@ -264,6 +264,7 @@ export interface Settings {
   showCommentHostTag: boolean // 显示评论回复详情页楼主标识
   enableCommentReplyTreeDisplay: boolean // 启用评论回复树展示
   commentReplyTreeMode: CommentReplyTreeMode // 评论回复树展示模式
+  collapseCommentRepliesByDefault: boolean // 主评论回复先收起，子分支先预览一条回复
   commentReplyPaginationMode: CommentReplyPaginationMode // 评论回复树分页展示模式
   enableCommentReplyTreeContainer: boolean // 展开的回复在固定高度容器内滚动
   commentReplyTreeContainerHeight: number // 回复容器高度（px）
@@ -597,6 +598,7 @@ export const originalSettings: Settings = {
   showCommentHostTag: true, // 默认启用楼主标识显示
   enableCommentReplyTreeDisplay: true, // 默认启用评论回复树展示
   commentReplyTreeMode: 'lineKeepMain', // 默认：线条树状，收起时保留父节点正文
+  collapseCommentRepliesByDefault: true,
   commentReplyPaginationMode: 'loadMore', // 默认累计加载评论回复
   enableCommentReplyTreeContainer: false, // 默认保留回复树与根头像的连接，容器由用户按需开启
   commentReplyTreeContainerHeight: COMMENT_REPLY_TREE_CONTAINER_DEFAULT_HEIGHT, // 默认容器高度
@@ -1015,6 +1017,8 @@ export const settings = useSettingsStorage(originalSettings, {
     }
     if (!validCommentReplyTreeModes.includes(record.commentReplyTreeMode))
       record.commentReplyTreeMode = originalSettings.commentReplyTreeMode
+    if (typeof record.collapseCommentRepliesByDefault !== 'boolean')
+      record.collapseCommentRepliesByDefault = originalSettings.collapseCommentRepliesByDefault
 
     const validCommentReplyPaginationModes: CommentReplyPaginationMode[] = ['loadMore', 'pagination']
     if (!validCommentReplyPaginationModes.includes(record.commentReplyPaginationMode))

@@ -49,6 +49,8 @@ export interface PreviewComment {
   liked: boolean
   liking: boolean
   collapsed: boolean
+  replyThreadTouched?: boolean
+  expandedReplyPreviewParents?: Set<string>
   replyCount: number
   hotReplies: PreviewComment[]
   repliesExpanded: boolean
@@ -201,6 +203,8 @@ export interface CommentRow {
   hasChildren: boolean
   collapsed: boolean
   hideBody: boolean
+  previewHiddenCount: number
+  previewMoreParents?: Array<{ comment: CommentTreeComment, count: number }>
 }
 
 export interface MissingComment {
@@ -217,11 +221,11 @@ export type CommentTreeComment = PreviewComment | MissingComment
 // 按主评论保留占位节点，分页和重新计算树时仍可复用其折叠状态。
 const missingParentsByRoot = new WeakMap<PreviewComment, Map<string, MissingComment>>()
 
-export function getCommentRows(root: PreviewComment, tree: boolean, mode: CommentReplyTreeMode): CommentRow[] {
+export function getCommentRows(root: PreviewComment, tree: boolean, mode: CommentReplyTreeMode, defaultCollapsed = false): CommentRow[] {
   const replies = root.repliesExpanded && root.replyPage > 0 ? root.replies : root.hotReplies
   const all = [root, ...replies.filter(reply => reply.id !== root.id)]
   if (!tree)
-    return all.map(comment => ({ comment, parentId: null, depth: 0, hasChildren: false, collapsed: false, hideBody: false }))
+    return all.map(comment => ({ comment, parentId: null, depth: 0, hasChildren: false, collapsed: false, hideBody: false, previewHiddenCount: 0 }))
 
   const byId = new Map<string, CommentTreeComment>(all.map(comment => [comment.id, comment]))
   const orderById = new Map(all.map((comment, index) => [comment.id, index]))
@@ -288,12 +292,25 @@ export function getCommentRows(root: PreviewComment, tree: boolean, mode: Commen
     const { comment, depth, parentId } = queue.pop()!
     const descendants = children.get(comment.id) || []
     const hasChildren = descendants.length > 0 || (comment === root && !root.repliesDone)
-    const collapsed = mode !== 'indentOnly' && hasChildren && comment.collapsed
-    rows.push({ comment, parentId, depth, hasChildren, collapsed, hideBody: collapsed && mode === 'lineCollapseMain' })
+    const initiallyCollapsed = comment === root && defaultCollapsed && !root.replyThreadTouched
+    const collapsed = mode !== 'indentOnly' && hasChildren && (initiallyCollapsed || comment.collapsed)
+    const previewChildren = defaultCollapsed && mode !== 'indentOnly' && comment !== root && !root.expandedReplyPreviewParents?.has(comment.id)
+    rows.push({ comment, parentId, depth, hasChildren, collapsed, hideBody: collapsed && mode === 'lineCollapseMain' && !(comment === root && defaultCollapsed), previewHiddenCount: !collapsed && previewChildren ? Math.max(0, descendants.length - 1) : 0 })
     if (!collapsed) {
-      for (let index = descendants.length - 1; index >= 0; index--)
-        queue.push({ comment: descendants[index], depth: depth + 1, parentId: comment.id })
+      const visibleDescendants = previewChildren ? descendants.slice(0, 1) : descendants
+      for (let index = visibleDescendants.length - 1; index >= 0; index--)
+        queue.push({ comment: visibleDescendants[index], depth: depth + 1, parentId: comment.id })
     }
+  }
+  for (let index = rows.length - 1; index >= 0; index--) {
+    const parent = rows[index]
+    if (!parent.previewHiddenCount)
+      continue
+    let lastChild = index
+    while (lastChild + 1 < rows.length && rows[lastChild + 1].depth > parent.depth)
+      lastChild++
+    const controls = rows[lastChild].previewMoreParents ??= []
+    controls.push({ comment: parent.comment, count: parent.previewHiddenCount })
   }
   return rows
 }

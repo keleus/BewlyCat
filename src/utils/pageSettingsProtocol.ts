@@ -12,6 +12,7 @@ export interface PageSettingsPayload {
   commentReplyPaginationMode: PageCommentReplyPaginationMode
   commentReplyTreeContainerHeight: number
   commentReplyTreeMode: PageCommentReplyTreeMode
+  collapseCommentRepliesByDefault: boolean
   depersonalizeSearchResults: boolean
   enableCleanShareLink: boolean
   enableCommentReplyTreeContainer: boolean
@@ -74,6 +75,7 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     commentReplyPaginationMode: value.commentReplyPaginationMode,
     commentReplyTreeContainerHeight: value.commentReplyTreeContainerHeight,
     commentReplyTreeMode: value.commentReplyTreeMode,
+    collapseCommentRepliesByDefault: value.collapseCommentRepliesByDefault !== false,
     depersonalizeSearchResults: value.depersonalizeSearchResults,
     enableCleanShareLink: value.enableCleanShareLink,
     enableCommentReplyTreeContainer: value.enableCommentReplyTreeContainer,

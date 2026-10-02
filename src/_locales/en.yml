@@ -1086,6 +1086,8 @@ settings:
   show_comment_host_tag_desc: Show an OP tag on the root comment in reply detail view
   enable_comment_reply_tree_display: Comment tree view
   enable_comment_reply_tree_display_desc: Organize nested replies by reply relationship. When off, comments are not reordered, indented, or decorated with reply-tree guides
+  collapse_comment_replies_by_default: Collapse root comment replies by default
+  collapse_comment_replies_by_default_desc: In line tree modes, collapse replies beneath the visible root comment. After expanding, show one child per parent with a Show more control for the remaining children. Loading more keeps manually expanded branches open
   comment_reply_tree_mode:
     title: Comment reply tree style
     desc: Group replies by parent and posting time. Line modes let you collapse any parent’s replies. “Collapse parent” also folds the parent body; “Keep parent” leaves the parent visible and only hides its replies
@@ -1659,6 +1661,8 @@ moment_card:
   comment_sex_female: Female
   expand_comment_replies: View all {count} replies
   collapse_comment_replies: Collapse replies
+  show_more_comment_replies: Show {count} more replies
+  show_more_comment_replies_for_parent: Show {count} remaining replies to {author}
   collapse_comments: Collapse comments
   comments_sort: Comment sort order
   comments_sort_hot: Top

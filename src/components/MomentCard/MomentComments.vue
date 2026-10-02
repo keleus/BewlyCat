@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { settings } from '~/logic'
 import { getCommentSexIcon } from '~/utils/commentUserInfo'
 
-import type { CommentPreviewState, CommentSort } from './commentPreview'
+import type { CommentPreviewState, CommentSort, CommentTreeComment, PreviewComment } from './commentPreview'
 import { getCommentRows } from './commentPreview'
 import MomentCommentTree from './MomentCommentTree.vue'
 import type { DisplayMoment } from './types'
@@ -42,8 +42,20 @@ const treeEnabled = computed(() => settings.value.enableCommentReplyTreeDisplay)
 const treeMode = computed(() => settings.value.commentReplyTreeMode)
 const groups = computed(() => state.comments.map(root => ({
   root,
-  rows: getCommentRows(root, treeEnabled.value, treeMode.value),
+  rows: getCommentRows(root, treeEnabled.value, treeMode.value, settings.value.collapseCommentRepliesByDefault),
 })))
+
+function toggleThread(comment: CommentTreeComment, root: PreviewComment) {
+  const initiallyCollapsed = comment === root && settings.value.collapseCommentRepliesByDefault && !root.replyThreadTouched
+  comment.collapsed = initiallyCollapsed ? false : !comment.collapsed
+  if (comment === root)
+    root.replyThreadTouched = true
+}
+
+function expandPreview(root: PreviewComment, comment: CommentTreeComment) {
+  root.expandedReplyPreviewParents ??= new Set()
+  root.expandedReplyPreviewParents.add(comment.id)
+}
 
 function openPicture(event: MouseEvent, pictures: string[], index: number) {
   emit('openImagePreview', pictures, index, event.currentTarget instanceof HTMLElement ? event.currentTarget : null)
@@ -106,110 +118,124 @@ onMounted(() => {
         class="moment-comments__thread"
         :rows="group.rows"
         :enabled="treeEnabled && treeMode !== 'indentOnly'"
-        @toggle="comment => comment.collapsed = !comment.collapsed"
+        @toggle="comment => toggleThread(comment, group.root)"
       >
-        <article
-          v-for="row in group.rows"
-          :key="row.comment.id"
-          class="moment-comments__comment"
-          :class="{ 'is-collapsed-body': row.hideBody }"
-          :data-comment-id="row.comment.id"
-          :style="{ '--comment-depth': Math.min(row.depth, 10) }"
-        >
-          <template v-if="row.comment.missing">
-            <header class="moment-comments__author moment-comments__missing">
-              <span class="moment-comments__avatar" data-comment-avatar><span aria-hidden="true">?</span></span>
-              <template v-if="!row.hideBody">
-                <span v-if="row.comment.author">@{{ row.comment.author }}</span>
-                <span>{{ t('moment_card.comment_missing_parent') }}</span>
-              </template>
-            </header>
-            <p v-if="!row.hideBody && row.comment.message" class="moment-comments__content" :title="row.comment.message">
-              {{ row.comment.message.length > 96 ? `${row.comment.message.slice(0, 96)}…` : row.comment.message }}
-            </p>
-          </template>
-          <template v-else>
-            <header class="moment-comments__author">
-              <a
-                v-if="row.comment.mid"
-                :href="getAuthorSpaceUrl(row.comment.mid)"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <span class="moment-comments__avatar" data-comment-avatar>
-                  <img v-if="row.comment.avatar" :src="row.comment.avatar" alt="" loading="lazy" decoding="async">
-                  <span v-else i-tabler-user aria-hidden="true" />
-                </span>
-                <span>{{ row.comment.author || t('moments.bilibili_user') }}</span>
-              </a>
-              <template v-else>
-                <span class="moment-comments__avatar" data-comment-avatar><span i-tabler-user aria-hidden="true" /></span>
-                <span>{{ row.comment.author || t('moments.bilibili_user') }}</span>
-              </template>
-              <svg
-                v-if="settings.showSex && getCommentSexIcon(row.comment.sex) && !row.hideBody"
-                class="moment-comments__sex"
-                viewBox="0 0 24 24"
-                :fill="getCommentSexIcon(row.comment.sex)?.color"
-                role="img"
-                :aria-label="t(`moment_card.comment_sex_${getCommentSexIcon(row.comment.sex)?.key}`)"
-              >
-                <path :d="getCommentSexIcon(row.comment.sex)?.path" />
-              </svg>
-              <span
-                v-if="settings.showCommentHostTag && row.comment !== group.root && row.comment.mid && row.comment.mid === group.root.mid && !row.hideBody"
-                class="moment-comments__host"
-              >{{ t('moment_card.comment_host') }}</span>
-              <span
-                v-if="settings.showIPLocation && row.comment.location && !row.hideBody"
-                class="moment-comments__location"
-              >{{ row.comment.location }}</span>
-            </header>
-            <template v-if="!row.hideBody">
-              <p class="moment-comments__content">
-                <template v-for="(part, index) in row.comment.content" :key="index">
-                  <img
-                    v-if="part.image" :src="part.image" :alt="part.text" :title="part.text" class="moment-comments__emoji"
-                    loading="lazy"
-                  >
-                  <template v-else>
-                    {{ part.text }}
-                  </template>
+        <template v-for="row in group.rows" :key="row.comment.id">
+          <article
+            class="moment-comments__comment"
+            :class="{ 'is-collapsed-body': row.hideBody }"
+            :data-comment-id="row.comment.id"
+            :style="{ '--comment-depth': Math.min(row.depth, 10) }"
+          >
+            <template v-if="row.comment.missing">
+              <header class="moment-comments__author moment-comments__missing">
+                <span class="moment-comments__avatar" data-comment-avatar><span aria-hidden="true">?</span></span>
+                <template v-if="!row.hideBody">
+                  <span v-if="row.comment.author">@{{ row.comment.author }}</span>
+                  <span>{{ t('moment_card.comment_missing_parent') }}</span>
                 </template>
+              </header>
+              <p v-if="!row.hideBody && row.comment.message" class="moment-comments__content" :title="row.comment.message">
+                {{ row.comment.message.length > 96 ? `${row.comment.message.slice(0, 96)}…` : row.comment.message }}
               </p>
-              <div v-if="row.comment.pictures.length" class="moment-comments__pictures">
-                <button
-                  v-for="(picture, index) in row.comment.pictures"
-                  :key="picture"
-                  type="button"
-                  :aria-label="t('moment_card.comment_image', { index: index + 1 })"
-                  @click="openPicture($event, row.comment.pictures, index)"
-                >
-                  <img :src="picture" alt="" loading="lazy" decoding="async">
-                </button>
-              </div>
-              <footer class="moment-comments__meta">
-                <time v-if="row.comment.time" :datetime="new Date(row.comment.time * 1000).toISOString()">
-                  {{ new Date(row.comment.time * 1000).toLocaleString() }}
-                </time>
-                <button
-                  type="button"
-                  class="moment-comments__like"
-                  :class="{ 'is-liked': row.comment.liked }"
-                  :aria-label="t(row.comment.liked ? 'moment_card.unlike' : 'moment_card.like')"
-                  :aria-pressed="row.comment.liked"
-                  :aria-busy="row.comment.liking"
-                  :aria-disabled="row.comment.liking"
-                  @click="toggleLike(row.comment)"
-                >
-                  <span v-if="row.comment.liking" i-svg-spinners:ring-resize aria-hidden="true" />
-                  <span v-else :class="row.comment.liked ? 'i-tabler-thumb-up-filled' : 'i-tabler-thumb-up'" aria-hidden="true" />
-                  {{ formatCount(row.comment.likeCount) }}
-                </button>
-              </footer>
             </template>
-          </template>
-        </article>
+            <template v-else>
+              <header class="moment-comments__author">
+                <a
+                  v-if="row.comment.mid"
+                  :href="getAuthorSpaceUrl(row.comment.mid)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span class="moment-comments__avatar" data-comment-avatar>
+                    <img v-if="row.comment.avatar" :src="row.comment.avatar" alt="" loading="lazy" decoding="async">
+                    <span v-else i-tabler-user aria-hidden="true" />
+                  </span>
+                  <span>{{ row.comment.author || t('moments.bilibili_user') }}</span>
+                </a>
+                <template v-else>
+                  <span class="moment-comments__avatar" data-comment-avatar><span i-tabler-user aria-hidden="true" /></span>
+                  <span>{{ row.comment.author || t('moments.bilibili_user') }}</span>
+                </template>
+                <svg
+                  v-if="settings.showSex && getCommentSexIcon(row.comment.sex) && !row.hideBody"
+                  class="moment-comments__sex"
+                  viewBox="0 0 24 24"
+                  :fill="getCommentSexIcon(row.comment.sex)?.color"
+                  role="img"
+                  :aria-label="t(`moment_card.comment_sex_${getCommentSexIcon(row.comment.sex)?.key}`)"
+                >
+                  <path :d="getCommentSexIcon(row.comment.sex)?.path" />
+                </svg>
+                <span
+                  v-if="settings.showCommentHostTag && row.comment !== group.root && row.comment.mid && row.comment.mid === group.root.mid && !row.hideBody"
+                  class="moment-comments__host"
+                >{{ t('moment_card.comment_host') }}</span>
+                <span
+                  v-if="settings.showIPLocation && row.comment.location && !row.hideBody"
+                  class="moment-comments__location"
+                >{{ row.comment.location }}</span>
+              </header>
+              <template v-if="!row.hideBody">
+                <p class="moment-comments__content">
+                  <template v-for="(part, index) in row.comment.content" :key="index">
+                    <img
+                      v-if="part.image" :src="part.image" :alt="part.text" :title="part.text" class="moment-comments__emoji"
+                      loading="lazy"
+                    >
+                    <template v-else>
+                      {{ part.text }}
+                    </template>
+                  </template>
+                </p>
+                <div v-if="row.comment.pictures.length" class="moment-comments__pictures">
+                  <button
+                    v-for="(picture, index) in row.comment.pictures"
+                    :key="picture"
+                    type="button"
+                    :aria-label="t('moment_card.comment_image', { index: index + 1 })"
+                    @click="openPicture($event, row.comment.pictures, index)"
+                  >
+                    <img :src="picture" alt="" loading="lazy" decoding="async">
+                  </button>
+                </div>
+                <footer class="moment-comments__meta">
+                  <time v-if="row.comment.time" :datetime="new Date(row.comment.time * 1000).toISOString()">
+                    {{ new Date(row.comment.time * 1000).toLocaleString() }}
+                  </time>
+                  <button
+                    type="button"
+                    class="moment-comments__like"
+                    :class="{ 'is-liked': row.comment.liked }"
+                    :aria-label="t(row.comment.liked ? 'moment_card.unlike' : 'moment_card.like')"
+                    :aria-pressed="row.comment.liked"
+                    :aria-busy="row.comment.liking"
+                    :aria-disabled="row.comment.liking"
+                    @click="toggleLike(row.comment)"
+                  >
+                    <span v-if="row.comment.liking" i-svg-spinners:ring-resize aria-hidden="true" />
+                    <span v-else :class="row.comment.liked ? 'i-tabler-thumb-up-filled' : 'i-tabler-thumb-up'" aria-hidden="true" />
+                    {{ formatCount(row.comment.likeCount) }}
+                  </button>
+                </footer>
+              </template>
+            </template>
+          </article>
+          <div
+            v-if="row.previewMoreParents?.length"
+            class="moment-comments__more-replies"
+          >
+            <button
+              v-for="more in row.previewMoreParents"
+              :key="more.comment.id"
+              type="button"
+              :aria-label="t('moment_card.show_more_comment_replies_for_parent', { author: more.comment.author, count: more.count })"
+              @click="expandPreview(group.root, more.comment)"
+            >
+              {{ t('moment_card.show_more_comment_replies', { count: more.count }) }}
+            </button>
+          </div>
+        </template>
         <div v-if="group.root.replyCount > group.root.hotReplies.length || group.root.repliesExpanded" class="moment-comments__more-replies">
           <span v-if="group.root.repliesExpanded && group.root.repliesError" role="alert">{{ group.root.repliesError }}</span>
           <button

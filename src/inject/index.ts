@@ -234,6 +234,9 @@ else if (shouldInitializePageScript) {
 
   interface CommentReplyTreeState {
     collapsedNodeKeys: Set<string>
+    defaultRootPolicy?: boolean
+    defaultRootRpid?: string | null
+    expandedPreviewParents: Set<string>
     /** 收起某条评论之后的全部同级评论（及子树） */
     collapsedTailKeys: Set<string>
     /**
@@ -2310,6 +2313,7 @@ else if (shouldInitializePageScript) {
     if (!state) {
       state = {
         collapsedNodeKeys: new Set(),
+        expandedPreviewParents: new Set(),
         collapsedTailKeys: new Set(),
         replyMetaByRpid: new Map(),
         enabled: false,
@@ -2687,6 +2691,7 @@ else if (shouldInitializePageScript) {
         const isTreeGuideNode = (node: Node) => (
           node instanceof Element
           && (node.id === COMMENT_REPLY_TREE_GUIDES_ID
+            || node.classList.contains('bewly-comment-preview-more')
             || Boolean(node.closest('.bewly-comment-missing-parent'))
             || Boolean(node.closest(`#${COMMENT_REPLY_TREE_GUIDES_ID}`)))
         )
@@ -2810,6 +2815,7 @@ else if (shouldInitializePageScript) {
   /** 平级评论之间的「收起后续」控件 */
   interface CommentReplyTreeTailCollapse {
     collapsed: boolean
+    previewParentKey?: string
     hiddenCount: number
     key: string
     x: number
@@ -2957,6 +2963,84 @@ else if (shouldInitializePageScript) {
     return `tail:${parentKey}:after:${afterSiblingKey}`
   }
 
+  function isDefaultCommentReplyTailCollapsed(state: CommentReplyTreeState, parentKey: string, index: number) {
+    return state.defaultRootPolicy === true
+      && parentKey !== COMMENT_REPLY_TREE_ROOT_KEY
+      && index === 0
+      && !state.expandedPreviewParents.has(parentKey)
+  }
+
+  function getCommentReplyPreviewMoreLabel(count: number) {
+    return i18n.global.t('moment_card.show_more_comment_replies', { count }, { locale: currentSettings?.language })
+  }
+
+  function updateDefaultCommentReplyRootControl(component: HTMLElement, replyContainer: HTMLElement, state: CommentReplyTreeState) {
+    let button = component.shadowRoot?.querySelector<HTMLButtonElement>('.bewly-comment-root-toggle')
+    if (!state.defaultRootPolicy) {
+      button?.remove()
+      return
+    }
+    if (!button) {
+      button = document.createElement('button')
+      button.className = 'bewly-comment-root-toggle'
+      button.type = 'button'
+      button.addEventListener('click', () => toggleCommentReplyTreeBranch(component, state, COMMENT_REPLY_TREE_ROOT_KEY))
+      replyContainer.before(button)
+    }
+    const data = getCommentReplyData(getCommentReplyTreeRootRenderer(component))
+    const count = Number(data?.rcount ?? data?.count) || replyContainer.querySelectorAll('bili-comment-reply-renderer').length
+    const collapsed = state.collapsedNodeKeys.has(COMMENT_REPLY_TREE_ROOT_KEY)
+    button.hidden = count === 0
+    button.setAttribute('aria-expanded', String(!collapsed))
+    button.textContent = i18n.global.t(collapsed ? 'moment_card.expand_comment_replies' : 'moment_card.collapse_comment_replies', { count }, { locale: currentSettings?.language })
+  }
+
+  function updateCommentReplyPreviewControls(component: HTMLElement, replyContainer: HTMLElement, state: CommentReplyTreeState, orderedNodes: Array<{ depth: number, node: CommentReplyTreeNode }>) {
+    const existing = new Map(Array.from(replyContainer.querySelectorAll<HTMLButtonElement>('.bewly-comment-preview-more')).map(button => [button.dataset.previewKey!, button]))
+    const retained = new Set<string>()
+    orderedNodes.forEach(({ depth, node }) => {
+      const parentKey = getCommentReplyTreeNodeKey(node)
+      if (!isCommentReplyTreeNodeVisible(node) || node.children.length < 2
+        || state.collapsedNodeKeys.has(parentKey) || !isDefaultCommentReplyTailCollapsed(state, parentKey, 0)) {
+        return
+      }
+      const first = node.children[0]
+      const firstIndex = orderedNodes.findIndex(item => item.node === first)
+      if (firstIndex < 0)
+        return
+      let lastIndex = firstIndex
+      for (let index = firstIndex + 1; index < orderedNodes.length && orderedNodes[index].depth > orderedNodes[firstIndex].depth; index++) {
+        if (isCommentReplyTreeNodeVisible(orderedNodes[index].node))
+          lastIndex = index
+      }
+      let button = existing.get(parentKey)
+      if (!button) {
+        button = document.createElement('button')
+        button.className = 'bewly-comment-preview-more'
+        button.type = 'button'
+        button.dataset.previewKey = parentKey
+        const control = button
+        button.addEventListener('click', () => {
+          state.expandedPreviewParents.add(parentKey)
+          if (control.dataset.firstChildKey)
+            state.collapsedTailKeys.delete(getCommentReplyTailCollapseKey(parentKey, control.dataset.firstChildKey))
+          updateCommentReplyTree(component)
+        })
+        replyContainer.appendChild(button)
+      }
+      retained.add(parentKey)
+      button.dataset.firstChildKey = getCommentReplyTreeNodeKey(first)
+      button.style.order = String(lastIndex * 2 + 1)
+      button.style.marginLeft = getCommentReplyIndent(depth + 1)
+      button.textContent = getCommentReplyPreviewMoreLabel(node.children.length - 1)
+      button.setAttribute('aria-label', i18n.global.t('moment_card.show_more_comment_replies_for_parent', { author: node.authorName || '', count: node.children.length - 1 }, { locale: currentSettings?.language }))
+    })
+    existing.forEach((button, key) => {
+      if (!retained.has(key))
+        button.remove()
+    })
+  }
+
   function removeCommentReplyTreeGuides(
     component: HTMLElement,
     replyContainer: HTMLElement,
@@ -2988,7 +3072,7 @@ else if (shouldInitializePageScript) {
         return
 
       const tailKey = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(sibling))
-      if (state.collapsedTailKeys.has(tailKey))
+      if (state.collapsedTailKeys.has(tailKey) || isDefaultCommentReplyTailCollapsed(state, parentKey, index))
         hideRemaining = true
     })
   }
@@ -3004,7 +3088,7 @@ else if (shouldInitializePageScript) {
     const rootBranchCollapsed = state.collapsedNodeKeys.has(COMMENT_REPLY_TREE_ROOT_KEY)
     // 仅「收起主评论」模式才折叠父节点本体；「不收起主评论」只隐藏子回复
     getCommentReplyTreeRootRenderer(component)
-      ?.toggleAttribute('data-bewly-comment-reply-collapsed', collapseParentBody && rootBranchCollapsed)
+      ?.toggleAttribute('data-bewly-comment-reply-collapsed', collapseParentBody && rootBranchCollapsed && !state.defaultRootPolicy)
 
     const hiddenByTail = new Set<HTMLElement>()
     collectCommentReplyTailHiddenRenderers(state, COMMENT_REPLY_TREE_ROOT_KEY, rootNodes, hiddenByTail)
@@ -3133,7 +3217,7 @@ else if (shouldInitializePageScript) {
     let firstHiddenIndex = siblings.length
     for (let index = 0; index < siblings.length - 1; index += 1) {
       const tailKey = getCommentReplyTailCollapseKey(parentKey, getCommentReplyTreeNodeKey(siblings[index]))
-      if (state.collapsedTailKeys.has(tailKey)) {
+      if (state.collapsedTailKeys.has(tailKey) || isDefaultCommentReplyTailCollapsed(state, parentKey, index)) {
         firstHiddenIndex = index + 1
         break
       }
@@ -3150,6 +3234,7 @@ else if (shouldInitializePageScript) {
         const y = Math.max(afterAnchor.bottom + toggleHitRadius, afterAnchor.toggleY)
         tails.push({
           collapsed: true,
+          previewParentKey: isDefaultCommentReplyTailCollapsed(state, parentKey, firstHiddenIndex - 1) ? parentKey : undefined,
           hiddenCount: siblings.length - firstHiddenIndex,
           key,
           x: parentAnchor.centerX,
@@ -3390,7 +3475,7 @@ else if (shouldInitializePageScript) {
           .filter((anchor): anchor is CommentReplyAvatarAnchor => Boolean(anchor))
           .filter(anchor => anchor.left > threadRootAnchor.centerX),
         collapsed: rootBranchCollapsed,
-        collapseParentBody,
+        collapseParentBody: collapseParentBody && !state.defaultRootPolicy,
         key: COMMENT_REPLY_TREE_ROOT_KEY,
         parentAnchor: threadRootAnchor,
         parentAuthorName: getCommentRendererAuthorName(threadRootRenderer),
@@ -3526,6 +3611,8 @@ else if (shouldInitializePageScript) {
       ))
     })
     tails.forEach((tail) => {
+      if (tail.previewParentKey)
+        return // Default previews use real buttons below the visible subtree.
       guideLayer.appendChild(createCommentReplyTreeTailElement(
         component,
         state,
@@ -4045,7 +4132,7 @@ else if (shouldInitializePageScript) {
       if (order === undefined)
         renderer.style.removeProperty('--bew-comment-reply-order')
       else
-        renderer.style.setProperty('--bew-comment-reply-order', String(order))
+        renderer.style.setProperty('--bew-comment-reply-order', String(order * 2))
     })
   }
 
@@ -4280,7 +4367,8 @@ else if (shouldInitializePageScript) {
      * 必须在应用可见性之前复位，否则此前收起过的楼层会一直隐藏且无法展开。
      */
     if (containerEnabled) {
-      state.collapsedNodeKeys.delete(COMMENT_REPLY_TREE_ROOT_KEY)
+      if (currentSettings?.collapseCommentRepliesByDefault === false)
+        state.collapsedNodeKeys.delete(COMMENT_REPLY_TREE_ROOT_KEY)
       // 根级「收起后续」也失去了展开入口；保留分支内部仍可操作的折叠。
       const rootTailPrefix = getCommentReplyTailCollapseKey(COMMENT_REPLY_TREE_ROOT_KEY, '')
       for (const key of state.collapsedTailKeys) {
@@ -4291,6 +4379,10 @@ else if (shouldInitializePageScript) {
     }
 
     if (!enabled) {
+      root.querySelector('.bewly-comment-root-toggle')?.remove()
+      replyContainer.querySelectorAll('.bewly-comment-preview-more').forEach(button => button.remove())
+      state.defaultRootPolicy = undefined
+      state.expandedPreviewParents.clear()
       disconnectCommentReplyTreeResizeObserver(state)
       component.style.removeProperty('--bew-comment-reply-indent-step')
       removeCommentReplyTreeGuides(component, replyContainer)
@@ -4323,6 +4415,27 @@ else if (shouldInitializePageScript) {
       state.collapsedNodeKeys.clear()
       state.collapsedTailKeys.clear()
     }
+
+    const rootRenderer = getCommentReplyTreeRootRenderer(component)
+    const rootRpid = rootRenderer ? getReplyRpid(getCommentReplyData(rootRenderer)) ?? null : null
+    const defaultCollapse = showGuides && currentSettings?.collapseCommentRepliesByDefault !== false
+    if (rootRpid !== null && state.defaultRootRpid !== rootRpid) {
+      state.collapsedNodeKeys.delete(COMMENT_REPLY_TREE_ROOT_KEY)
+      state.expandedPreviewParents.clear()
+      state.defaultRootPolicy = undefined
+      state.defaultRootRpid = rootRpid
+    }
+    if (state.defaultRootPolicy !== defaultCollapse) {
+      if (defaultCollapse)
+        state.collapsedNodeKeys.add(COMMENT_REPLY_TREE_ROOT_KEY)
+      else
+        state.collapsedNodeKeys.delete(COMMENT_REPLY_TREE_ROOT_KEY)
+      state.defaultRootPolicy = defaultCollapse
+      state.expandedPreviewParents.clear()
+    }
+    updateDefaultCommentReplyRootControl(component, replyContainer, state)
+    if (defaultCollapse && state.collapsedNodeKeys.has(COMMENT_REPLY_TREE_ROOT_KEY))
+      applyCommentReplyContainer(component, false)
 
     observeCommentReplyTreeLayout(component, state, replyContainer)
 
@@ -4381,6 +4494,7 @@ else if (shouldInitializePageScript) {
       nodes.map(node => node.renderer),
       orderedNodes.map(({ node }) => node.renderer),
     )
+    updateCommentReplyPreviewControls(component, replyContainer, state, orderedNodes)
     // 父节点展示：
     // - 直接父在本页：引导线/缩进表达层级；线条模式隐藏正文「回复 @xxx」
     // - 直接父不在本页且有正文缓存：引用卡展示原正文

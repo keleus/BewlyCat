@@ -120,6 +120,15 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
     </SettingsItem>
 
     <SettingsItem
+      v-if="settings.enableCommentReplyTreeDisplay && settings.commentReplyTreeMode !== 'indentOnly'"
+      :title="$t('settings.collapse_comment_replies_by_default')"
+      :desc="$t('settings.collapse_comment_replies_by_default_desc')"
+      right-width="auto"
+    >
+      <Radio v-model="settings.collapseCommentRepliesByDefault" />
+    </SettingsItem>
+
+    <SettingsItem
       v-if="settings.enableCommentReplyTreeDisplay"
       :title="$t('settings.comment_reply_pagination_mode.title')"
       :desc="$t('settings.comment_reply_pagination_mode.desc')"

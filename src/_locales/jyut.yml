@@ -1007,6 +1007,8 @@ settings:
   show_comment_host_tag_desc: 喺留言回覆詳情頁標示樓主。
   enable_comment_reply_tree_display: 留言區樹狀顯示
   enable_comment_reply_tree_display_desc: 開啟後會根據回覆關係整理樓中樓；關閉後唔再重排、縮入或者繪製留言回覆樹
+  collapse_comment_replies_by_default: 預設收起主留言嘅回覆
+  collapse_comment_replies_by_default_desc: 喺線條樹狀模式保留主留言正文並先收起成組回覆；展開後，每個父留言先顯示一條子留言，撳顯示更多展開其餘回覆。手動展開嘅分支載入更多時會保持展開
   comment_reply_tree_mode:
     title: 留言回覆樹樣式
     desc: 根據回覆關係同發佈時間整理樓中樓。線條模式可以收起任何父級留言嘅回覆；「收起主留言」會收埋父留言本身，「唔收起主留言」會留住父留言正文，淨係收起子回覆
@@ -1574,6 +1576,8 @@ moment_card:
   comment_sex_female: 女
   expand_comment_replies: 共 {count} 個回覆，撳嚟展開
   collapse_comment_replies: 收起回覆
+  show_more_comment_replies: 顯示多 {count} 條回覆
+  show_more_comment_replies_for_parent: 顯示 {author} 下面其餘 {count} 條回覆
   collapse_comments: 收起留言
   comments_sort: 留言排序
   comments_sort_hot: 最熱
