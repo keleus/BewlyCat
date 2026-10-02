@@ -23,11 +23,9 @@ common:
   just_now: just now
   please_log_in_first: Please log in first
   login: Login
-  save_to_watch_later: Save to Watch later
   add_to_watch_later: Add to Watch later
   added_to_watch_later: Added to Watch later
   remove_from_watch_later: Remove from Watch later
-  added: Added
   performance_impact_warn: This feature may cause performance *DECREASE*!
   no_data: No data available
   load_failed: Failed to load
@@ -1681,8 +1679,6 @@ moment_card:
   open_space: Open {name}'s profile
   just_now: Just now
   charging_exclusive: Charging exclusive
-  added_watch_later: Added to Watch later
-  add_watch_later: Add to Watch later
   live_post: Live post
   open_original_video: 'Open original video: {title}'
   author_images: '{name} post images'
