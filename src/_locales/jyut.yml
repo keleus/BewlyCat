@@ -23,11 +23,9 @@ common:
   just_now: 啱啱
   please_log_in_first: 唔該登入先
   login: 登入
-  save_to_watch_later: 陣間至睇
   add_to_watch_later: 加到陣間至睇
   added_to_watch_later: 已加到陣間至睇
   remove_from_watch_later: 由陣間至睇剷走
-  added: 已添加
   performance_impact_warn: 呢個功能可能會降低效能！
   no_data: 暫時冇數據
   load_failed: 加載失敗
@@ -1596,8 +1594,6 @@ moment_card:
   open_space: 打開 {name} 嘅空間
   just_now: 啱啱
   charging_exclusive: 充電專屬
-  added_watch_later: 已加到稍後再睇
-  add_watch_later: 加到稍後再睇
   live_post: 直播動態
   open_original_video: '打開原影片：{title}'
   author_images: '{name} 嘅動態圖片'

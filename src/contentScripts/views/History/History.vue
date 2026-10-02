@@ -335,7 +335,7 @@ function jumpToLoginPage() {
               </button>
             </template>
           </VideoCardGrid>
-          <TransitionGroup v-else name="list" tag="div">
+          <TransitionGroup v-else name="removable-list" tag="div" class="removable-list-group">
             <ALink
               v-for="historyItem in group.items"
               :key="getHistoryItemKey(historyItem)"

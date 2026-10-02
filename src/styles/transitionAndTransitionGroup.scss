@@ -44,6 +44,36 @@
   --uno: "hidden";
 }
 
+/*
+ * 单项增删型列表（TransitionGroup 预设）：
+ * 离场项向上淡出且脱离文档流，其余项经 FLIP -move 平滑补位。
+ * 用法：<TransitionGroup name="removable-list" tag="div" class="removable-list-group">
+ */
+.removable-list-move,
+.removable-list-enter-active,
+.removable-list-leave-active {
+  transition:
+    opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease),
+    transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
+}
+.removable-list-enter-from {
+  opacity: 0;
+  transform: translateY(1.5rem);
+}
+.removable-list-leave-to {
+  opacity: 0;
+  transform: translateY(-1.5rem);
+}
+.removable-list-group {
+  position: relative;
+}
+.removable-list-group > .removable-list-leave-active {
+  position: absolute;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+}
+
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);

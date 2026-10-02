@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
+import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
+import type { WatchLaterTarget } from '~/utils/watchLaterSnapshot'
 
 import MomentVideoPreview from './MomentVideoPreview.vue'
 
@@ -32,15 +33,15 @@ defineProps<{
   duration?: string
   watchedAid?: number | string
   watchedBvid?: string
+  /** 稍后再看目标（aid/bvid/epid 任一）；识别不到时按钮不渲染 */
+  watchLaterTarget?: WatchLaterTarget
+  /** 调用方附加门控（如转发视频缺少可用 ID 时关闭） */
   watchLaterEnabled?: boolean
-  watchLaterAdded?: boolean
-  watchLaterLoading?: boolean
   previewActive?: boolean
   previewUrl?: string
 }>()
 
 const emit = defineEmits<{
-  toggleWatchLater: []
   coverLoad: [event: Event]
   mediaEnter: []
   mediaLeave: []
@@ -49,8 +50,6 @@ const emit = defineEmits<{
   previewLeave: []
   authorClick: [event: MouseEvent]
 }>()
-
-const { t } = useI18n()
 
 function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
   emit('previewVideo', element instanceof Element ? element : null)
@@ -95,22 +94,10 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
       <span v-if="showDuration" class="moment-card__video-duration">{{ duration }}</span>
     </span>
     <span v-if="chargeBadge" class="moment-card__charge-badge">{{ chargeBadge }}</span>
-    <button
-      v-if="watchLaterEnabled"
-      type="button"
-      class="moment-card__watch-later"
-      :class="{ 'is-added': watchLaterAdded, 'is-loading': watchLaterLoading }"
-      :aria-busy="watchLaterLoading || undefined"
-      :aria-disabled="watchLaterLoading || undefined"
-      :aria-label="watchLaterAdded ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
-      :aria-pressed="watchLaterAdded"
-      :title="watchLaterAdded ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
-      @click.stop.prevent="emit('toggleWatchLater')"
-    >
-      <span v-if="watchLaterLoading" i-svg-spinners:ring-resize aria-hidden="true" />
-      <span v-else-if="watchLaterAdded" i-line-md:confirm aria-hidden="true" />
-      <span v-else i-mingcute:carplay-line aria-hidden="true" />
-    </button>
+    <WatchLaterCoverButton
+      :target="watchLaterTarget"
+      :enabled="watchLaterEnabled"
+    />
   </span>
   <span class="moment-card__video-card-info">
     <strong>

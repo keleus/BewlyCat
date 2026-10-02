@@ -283,7 +283,7 @@ defineExpose({
       </Empty>
 
       <!-- historys -->
-      <TransitionGroup name="list">
+      <TransitionGroup name="removable-list" tag="div" class="removable-list-group">
         <ALink
           v-for="(historyItem, index) in historys"
           :key="historyItem.kid"

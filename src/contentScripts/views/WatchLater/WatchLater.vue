@@ -407,7 +407,7 @@ function handleOpenVideoPageAndRemove(bvid: string, aid: number) {
         <!-- list layout -->
         <template v-else>
           <!-- watcher later list -->
-          <TransitionGroup name="list">
+          <TransitionGroup name="removable-list" tag="div" class="removable-list-group">
             <ALink
               v-for="item in currentWatchLaterList"
               :key="item.aid"

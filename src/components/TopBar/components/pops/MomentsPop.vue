@@ -2,15 +2,13 @@
 import { useI18n } from 'vue-i18n'
 
 import Empty from '~/components/Empty.vue'
-import Icon from '~/components/Icon.vue'
 import Loading from '~/components/Loading.vue'
-import Tooltip from '~/components/Tooltip.vue'
+import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
-import { ensureWatchLaterState, isInWatchLater, markWatchLater } from '~/logic/watchLaterState'
+import { ensureWatchLaterState } from '~/logic/watchLaterState'
 import { useTopBarStore } from '~/stores/topBarStore'
-import api from '~/utils/api'
-import { getCSRF, scrollToTop } from '~/utils/main'
+import { scrollToTop } from '~/utils/main'
 
 type MomentType = 'video' | 'live' | 'article'
 interface MomentTab { type: MomentType, name: any }
@@ -86,24 +84,6 @@ const VIDEO_MOMENT_TYPE = 8
 
 function isVideoMoment(moment: { itemType?: number }) {
   return moment.itemType === VIDEO_MOMENT_TYPE
-}
-
-function toggleWatchLater(rid: number | string | undefined) {
-  const aid = Number(rid || 0)
-  const accountId = topBarStore.userInfo.mid
-  if (!aid || !topBarStore.isLogin || !accountId)
-    return
-
-  const added = isInWatchLater({ aid })
-  const request = added
-    ? api.watchlater.removeFromWatchLater({ aid, csrf: getCSRF() })
-    : api.watchlater.saveToWatchLater({ aid, csrf: getCSRF() })
-  request.then((res) => {
-    if (res.code === 0 && topBarStore.isLogin && topBarStore.userInfo.mid === accountId) {
-      markWatchLater({ aid }, !added)
-      void topBarStore.syncWatchLaterState()
-    }
-  })
 }
 
 defineExpose({
@@ -301,38 +281,12 @@ defineExpose({
                   :alt="moment.title"
                 >
               </div>
-              <div
+              <WatchLaterCoverButton
                 v-if="isVideoMoment(moment)"
-                class="moments-pop__watch-later"
-                opacity-0 group-hover:opacity-100
-                pos="absolute top-0 right-0"
-                m="1"
-                z-2
-                duration-300
-              >
-                <Tooltip
-                  :content="isInWatchLater({ aid: moment.rid })
-                    ? $t('common.added')
-                    : $t('common.save_to_watch_later')"
-                  placement="left"
-                  type="dark"
-                >
-                  <div
-                    w="24px" h="24px"
-                    grid="~ place-items-center"
-                    bg="black opacity-60"
-                    rounded="$bew-radius-half"
-                    color-white
-                    @click.stop.prevent="toggleWatchLater(moment.rid)"
-                  >
-                    <Icon
-                      v-if="isInWatchLater({ aid: moment.rid })"
-                      icon="line-md:confirm"
-                    />
-                    <div v-else i-mingcute:carplay-line />
-                  </div>
-                </Tooltip>
-              </div>
+                :target="{ aid: moment.rid }"
+                size="sm"
+                tooltip-placement="left"
+              />
             </div>
           </section>
         </ALink>
@@ -398,10 +352,5 @@ defineExpose({
   white-space: nowrap;
   -webkit-line-clamp: unset;
   line-clamp: unset;
-}
-
-.moments-pop__watch-later :deep(.b-tooltip--placement-left) {
-  top: 50%;
-  transform: translateY(-50%);
 }
 </style>
