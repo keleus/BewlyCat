@@ -1,11 +1,9 @@
 import { watch } from 'vue'
 
 import { settings } from '~/logic'
-import { ensureWatchLaterState, findWatchLaterEntry, getWatchLaterAid, markWatchLater } from '~/logic/watchLaterState'
-import { useTopBarStore } from '~/stores/topBarStore'
-import api from '~/utils/api'
+import { ensureWatchLaterState, findWatchLaterEntry } from '~/logic/watchLaterState'
 import { i18n } from '~/utils/i18n'
-import { getCSRF } from '~/utils/main'
+import { toggleWatchLaterTarget } from '~/utils/watchLaterActions'
 
 const BUTTON_CLASS = 'bewly-watch-later-btn'
 const WATCH_LATER_ICON_CLASS = 'i-mingcute:carplay-line'
@@ -26,17 +24,10 @@ export interface VideoIds {
   aid?: number
 }
 
-interface WatchLaterButtonState {
-  aid?: number
-  isInWatchLater: boolean
-  pendingAid?: Promise<number | undefined>
-}
-
 interface MountedWatchLaterButton {
   button: HTMLButtonElement
   ids: VideoIds
   ready: Promise<void>
-  state: WatchLaterButtonState
 }
 
 /**
@@ -125,45 +116,6 @@ function animateButton(button: HTMLButtonElement) {
   }, 150)
 }
 
-function scheduleTopBarRefresh() {
-  const refresh = () => {
-    try {
-      void useTopBarStore().syncWatchLaterState(true)
-    }
-    catch (error) {
-      console.error('刷新稍后再看列表失败:', error)
-    }
-  }
-
-  // 用户操作成功后立即同步；考虑到接口偶发的最终一致性，再补一次。
-  refresh()
-  window.setTimeout(refresh, 1000)
-}
-
-async function resolveAid(ids: VideoIds, state: WatchLaterButtonState): Promise<number | undefined> {
-  state.aid ||= getWatchLaterAid(ids)
-  if (state.aid)
-    return state.aid
-  if (!ids.bvid)
-    return undefined
-  if (state.pendingAid)
-    return state.pendingAid
-
-  state.pendingAid = api.video.getVideoInfo({ bvid: ids.bvid })
-    .then((result: any) => {
-      const aid = result.code === 0 && Number.isFinite(result.data?.aid)
-        ? Number(result.data.aid)
-        : undefined
-      state.aid = aid
-      return aid
-    })
-    .finally(() => {
-      state.pendingAid = undefined
-    })
-
-  return state.pendingAid
-}
-
 // 后台恢复的视频页在可见前用不到按钮状态；多个标签页同时拉取完整列表会挤占后台请求。
 function waitUntilPageVisible(): Promise<void> {
   if (document.visibilityState === 'visible')
@@ -199,64 +151,26 @@ function stopWatchingButtonState() {
 
 // 共享状态由本页其他入口、自动移除和其他标签页共同更新，按钮跟随变化。
 // 同一时间只保留一个 watcher；按钮被替换、移除或脱离页面时停止，避免持有旧 DOM。
-function watchButtonState({ button, ids, state }: MountedWatchLaterButton) {
+function watchButtonState({ button, ids }: MountedWatchLaterButton) {
   stopWatchingButtonState()
   const apply = (entry: ReturnType<typeof findWatchLaterEntry>) => {
     if (!button.isConnected) {
       stopWatchingButtonState()
       return
     }
-    state.isInWatchLater = Boolean(entry)
-    state.aid = entry?.aid || state.aid
-    updateButtonState(button, state.isInWatchLater)
+    updateButtonState(button, Boolean(entry))
   }
   stopButtonStateWatch = watch(() => findWatchLaterEntry(ids), apply)
   apply(findWatchLaterEntry(ids))
 }
 
-async function toggleWatchLater(button: HTMLButtonElement, ids: VideoIds, state: WatchLaterButtonState) {
+async function toggleWatchLater(button: HTMLButtonElement, ids: VideoIds) {
   setButtonBusy(button, true)
-
   try {
-    if (state.isInWatchLater) {
-      const aid = await resolveAid(ids, state)
-      if (!aid) {
-        console.warn('无法获取当前视频的 aid，不能从稍后再看中移除')
-        return
-      }
-
-      const result = await api.watchlater.removeFromWatchLater({
-        aid,
-        csrf: getCSRF(),
-      })
-      if (result.code !== 0) {
-        console.warn('从稍后再看中移除失败:', result.message || result.code)
-        return
-      }
-
-      state.isInWatchLater = false
-      markWatchLater({ ...ids, aid }, false)
-    }
-    else {
-      const result = await api.watchlater.saveToWatchLater({
-        ...ids,
-        csrf: getCSRF(),
-      })
-      if (result.code !== 0) {
-        console.warn('添加到稍后再看失败:', result.message || result.code)
-        return
-      }
-
-      state.isInWatchLater = true
-      markWatchLater({ ...ids, aid: state.aid }, true)
-    }
-
-    updateButtonState(button, state.isInWatchLater)
-    animateButton(button)
-    scheduleTopBarRefresh()
-  }
-  catch (error) {
-    console.error('更新稍后再看状态失败:', error)
+    // 增删、epid/bvid 解析、状态广播与顶栏同步全部走共享动作；成功后 watcher 会刷新按钮。
+    const succeeded = await toggleWatchLaterTarget(ids, { silent: true })
+    if (succeeded && button.isConnected)
+      animateButton(button)
   }
   finally {
     if (button.isConnected)
@@ -305,16 +219,11 @@ function mountWatchLaterButton(ids: VideoIds): MountedWatchLaterButton | undefin
   if (!moreButton?.parentNode)
     return undefined
 
-  const state: WatchLaterButtonState = {
-    aid: ids.aid,
-    isInWatchLater: false,
-  }
   const button = createButton(ids)
   const mounted: MountedWatchLaterButton = {
     button,
     ids,
     ready: Promise.resolve(),
-    state,
   }
 
   button.addEventListener('click', () => {
@@ -344,7 +253,7 @@ async function handleButtonClick(mounted: MountedWatchLaterButton) {
     if (!replacement.button.isConnected || getVideoKey(extractVideoIds()) !== currentVideoKey)
       return
 
-    await toggleWatchLater(replacement.button, replacement.ids, replacement.state)
+    await toggleWatchLater(replacement.button, replacement.ids)
     return
   }
 
@@ -352,7 +261,7 @@ async function handleButtonClick(mounted: MountedWatchLaterButton) {
   if (!mounted.button.isConnected || getVideoKey(extractVideoIds()) !== currentVideoKey)
     return
 
-  await toggleWatchLater(mounted.button, currentIds, mounted.state)
+  await toggleWatchLater(mounted.button, currentIds)
 }
 
 /**
