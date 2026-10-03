@@ -554,7 +554,8 @@ onUnmounted(() => {
 <template>
   <aside
     class="dock-wrap"
-    pos="fixed top-0" z-100 flex="~ col justify-center items-center" w-full h-full
+    :class="`dock-wrap--${settings.dockPosition}`"
+    pos="fixed" z-100 flex="~ col justify-center items-center"
     z-10 pointer-events-none
   >
     <!-- Edge Div -->
@@ -838,7 +839,24 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
+// Avoid a viewport-sized click-through layer: it makes Chrome hit-test wheel
+// scrolls on the main thread, which can stall a notch on an idle page.
 .dock-wrap {
+  &--left {
+    inset: 0 auto 0 0;
+    width: 0;
+  }
+
+  &--right {
+    inset: 0 0 0 auto;
+    width: 0;
+  }
+
+  &--bottom {
+    inset: auto 0 0 0;
+    height: 0;
+  }
+
   > * {
     --uno: "pointer-events-auto";
   }
