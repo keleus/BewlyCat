@@ -13,17 +13,15 @@ import type { WatchLaterTarget } from '~/utils/watchLaterSnapshot'
 
 /**
  * 封面右上角「加入稍后再看」统一按钮。
- * 定位为绝对定位，挂在任意封面容器内即可；组件会把最近的封面父元素标记为 hover 宿主，
+ * 唯一的显隐契约是 target：传入有效目标（aid/bvid/epid 任一）且设置项开启时渲染，
+ * 不支持 / 不想显示时调用方直接传 undefined。封面容器需带 bew-cover-action-host 类，
  * 宿主 hover / 键盘 focus / 已加入状态下显示。状态与增删逻辑复用 watchLaterActions。
  */
 const props = withDefaults(defineProps<{
   target?: WatchLaterTarget
-  /** 调用方自己的显示门控（如该卡片不支持、识别不到视频 ID）；总开关仍取设置项 */
-  enabled?: boolean
   size?: 'sm' | 'md'
   tooltipPlacement?: 'left' | 'right' | 'top' | 'bottom' | 'bottom-left' | 'bottom-right'
 }>(), {
-  enabled: true,
   size: 'md',
   tooltipPlacement: 'bottom-right',
 })
@@ -31,7 +29,6 @@ const props = withDefaults(defineProps<{
 // 未渲染的按钮不会执行下方的状态计算，也就不订阅共享列表，避免长列表无效依赖。
 const visible = computed(() => Boolean(
   settings.value.showVideoCardWatchLater
-  && props.enabled
   && props.target
   && getWatchLaterTargetKey(props.target),
 ))
@@ -45,9 +42,6 @@ const label = computed(() =>
   added.value
     ? t('common.added_to_watch_later')
     : t('common.add_to_watch_later'))
-
-const coverRef = ref<HTMLDivElement | null>(null)
-let host: HTMLElement | null = null
 
 function warmState() {
   // 预热共享缓存；缓存有效期内不会发请求，多处调用共享同一次加载。
@@ -67,47 +61,33 @@ function handleClick(event: MouseEvent) {
   void toggleWatchLaterTarget(props.target)
 }
 
-// 幂等绑定：visible 可能晚于挂载变为 true（target 异步补齐），届时补绑宿主与预热。
-function attachHost() {
-  if (host || !visible.value)
+// 挂载即预热：已添加的视频刷新后无需悬停就能呈现常驻按钮；请求由状态层全局去重。
+// 后台标签页延迟到重新可见时再加载，避免挤占后台请求。
+onMounted(() => {
+  if (!visible.value)
     return
-  host = coverRef.value?.parentElement ?? null
-  if (!host)
-    return
-
-  host.classList.add('bew-watch-later-host')
-  host.addEventListener('mouseenter', warmState)
-
-  // 挂载即预热：已添加的视频刷新后无需悬停就能呈现常驻按钮；请求由状态层全局去重。
-  // 后台标签页延迟到重新可见时再加载，避免挤占后台请求。
   if (document.visibilityState === 'visible')
     warmState()
   else
     document.addEventListener('visibilitychange', handleWarmOnVisible)
-}
-
-function detachHost() {
-  host?.classList.remove('bew-watch-later-host')
-  host?.removeEventListener('mouseenter', warmState)
-  document.removeEventListener('visibilitychange', handleWarmOnVisible)
-  host = null
-}
-
-onMounted(attachHost)
-// post：等 v-if 渲染出根节点、coverRef 就绪后再绑定宿主；target 消失时同步解绑
+})
+// target 可能异步补齐（visible 晚于挂载变 true），届时补一次预热（warmState 自带去重）。
 watch(visible, (isVisible) => {
-  if (isVisible)
-    attachHost()
+  if (!isVisible)
+    return
+  if (document.visibilityState === 'visible')
+    warmState()
   else
-    detachHost()
-}, { flush: 'post' })
-onBeforeUnmount(detachHost)
+    document.addEventListener('visibilitychange', handleWarmOnVisible)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('visibilitychange', handleWarmOnVisible)
+})
 </script>
 
 <template>
   <div
     v-if="visible"
-    ref="coverRef"
     class="bew-watch-later-cover"
   >
     <Tooltip :content="label" :placement="tooltipPlacement" type="dark">
@@ -222,11 +202,12 @@ onBeforeUnmount(detachHost)
 <!--
   宿主联动规则必须放在非 scoped 块：Vue scoped 样式的 :global() 只支持包裹整条选择器，
   「:global(.host:hover) .btn」这种混合写法编译后会丢失后代关系，导致规则误挂到宿主元素。
-  类名带 bew- 前缀，不会与其他样式冲突；过渡仍由 scoped 块中的按钮规则提供。
+  封面容器静态携带 bew-cover-action-host 类（不依赖运行时探测父节点），类名带 bew- 前缀
+  不会与其他样式冲突；过渡仍由 scoped 块中的按钮规则提供。
 -->
 <style lang="scss">
-.bew-watch-later-host:hover .bew-watch-later-cover__btn,
-.bew-watch-later-host:focus-within .bew-watch-later-cover__btn {
+.bew-cover-action-host:hover .bew-watch-later-cover__btn,
+.bew-cover-action-host:focus-within .bew-watch-later-cover__btn {
   opacity: 1;
   transform: scale(1);
 }

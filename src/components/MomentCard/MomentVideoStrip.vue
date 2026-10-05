@@ -2,8 +2,6 @@
 import type { ComponentPublicInstance } from 'vue'
 
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
-import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
-import type { WatchLaterTarget } from '~/utils/watchLaterSnapshot'
 
 import MomentVideoPreview from './MomentVideoPreview.vue'
 
@@ -33,10 +31,6 @@ defineProps<{
   duration?: string
   watchedAid?: number | string
   watchedBvid?: string
-  /** 稍后再看目标（aid/bvid/epid 任一）；识别不到时按钮不渲染 */
-  watchLaterTarget?: WatchLaterTarget
-  /** 调用方附加门控（如转发视频缺少可用 ID 时关闭） */
-  watchLaterEnabled?: boolean
   previewActive?: boolean
   previewUrl?: string
 }>()
@@ -58,7 +52,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
 
 <template>
   <span
-    class="moment-card__video-card-cover"
+    class="moment-card__video-card-cover bew-cover-action-host"
     @mouseenter="emit('mediaEnter')"
     @mouseleave="emit('mediaLeave')"
   >
@@ -94,10 +88,8 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
       <span v-if="showDuration" class="moment-card__video-duration">{{ duration }}</span>
     </span>
     <span v-if="chargeBadge" class="moment-card__charge-badge">{{ chargeBadge }}</span>
-    <WatchLaterCoverButton
-      :target="watchLaterTarget"
-      :enabled="watchLaterEnabled"
-    />
+    <!-- 封面上的功能角标由功能所有者经插槽注入，布局组件不感知具体功能 -->
+    <slot name="coverAction" />
   </span>
   <span class="moment-card__video-card-info">
     <strong>

@@ -5,10 +5,12 @@ import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } f
 import { useI18n } from 'vue-i18n'
 
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
+import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { settings } from '~/logic'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
+import { normalizeWatchLaterTarget } from '~/utils/watchLaterActions'
 
 import type { Author, Video } from '../VideoCard/types'
 import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
@@ -94,6 +96,15 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
 
 const authorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.author.mid))
 const forwardAuthorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.forward?.authorMid))
+
+// 稍后再看目标在数据边界统一规整：识别不到任何视频 ID 时为 undefined，按钮自然不渲染。
+// 注意只能挑 aid/bvid/epid：moment.id 是动态 ID，normalize 会把通用 id 兜底当 aid，直接传整个 moment 会误加入。
+const watchLaterTarget = computed(() => normalizeWatchLaterTarget({
+  aid: moment.aid,
+  bvid: moment.bvid,
+  epid: moment.epid,
+}))
+const forwardWatchLaterTarget = computed(() => normalizeWatchLaterTarget(moment.forward?.video))
 const descriptionRef = ref<HTMLElement | null>(null)
 const descriptionExpanded = ref(false)
 const descriptionCanToggle = ref(false)
@@ -763,7 +774,6 @@ function handleAdditionalClick(event: MouseEvent) {
               :duration="moment.duration"
               :watched-aid="moment.aid"
               :watched-bvid="moment.bvid"
-              :watch-later-target="{ aid: moment.aid, bvid: moment.bvid, epid: moment.epid }"
               :preview-active="previewActive"
               :preview-url="previewUrl"
               @cover-load="handleCoverLoad"
@@ -772,7 +782,11 @@ function handleAdditionalClick(event: MouseEvent) {
               @preview-leave="emit('mediaLeave', moment)"
               @preview-video="handlePreviewVideo"
               @preview-canplay="(event: Event) => emit('previewCanplay', event)"
-            />
+            >
+              <template #coverAction>
+                <WatchLaterCoverButton :target="watchLaterTarget" />
+              </template>
+            </MomentVideoStrip>
           </a>
         </template>
         <template v-else>
@@ -979,8 +993,6 @@ function handleAdditionalClick(event: MouseEvent) {
                   :duration="moment.forward.video.duration"
                   :watched-aid="moment.forward.video.aid"
                   :watched-bvid="moment.forward.video.bvid"
-                  :watch-later-target="moment.forward.video"
-                  :watch-later-enabled="Boolean(moment.forward.video.aid || moment.forward.video.bvid)"
                   :preview-active="previewActive"
                   :preview-url="previewUrl"
                   @media-enter="settings.momentsOnlyCoverVideoPreview && emit('mediaEnter', moment)"
@@ -988,7 +1000,11 @@ function handleAdditionalClick(event: MouseEvent) {
                   @preview-leave="emit('mediaLeave', moment)"
                   @preview-video="handlePreviewVideo"
                   @preview-canplay="(event: Event) => emit('previewCanplay', event)"
-                />
+                >
+                  <template #coverAction>
+                    <WatchLaterCoverButton :target="forwardWatchLaterTarget" />
+                  </template>
+                </MomentVideoStrip>
               </a>
             </div>
             <div
@@ -1432,7 +1448,7 @@ function handleAdditionalClick(event: MouseEvent) {
 .moment-card__surface
   :is(a, button, [role="button"]):not(.moment-card__permalink):not(.moment-card__permalink-wrap):not(
     .moment-image-gallery__nav
-  ),
+  ):not(.bew-watch-later-cover__btn),
 .moment-card__media,
 .moment-card__gallery-host,
 .moment-card__grid-host,

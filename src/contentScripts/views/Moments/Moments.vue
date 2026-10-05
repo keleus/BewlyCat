@@ -1763,6 +1763,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     videoDanmaku: content.videoDanmaku,
     aid: content.aid,
     bvid: content.bvid,
+    epid: content.epid,
     videoUrl: content.videoUrl,
     additional,
     forward: isForward

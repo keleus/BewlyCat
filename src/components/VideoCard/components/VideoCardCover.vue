@@ -419,7 +419,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="group/cover"
+    class="group/cover bew-cover-action-host"
     :data-layout-edit-target="skeleton ? undefined : 'video-card-cover'"
     :data-layout-settings-menu="skeleton ? undefined : 'BewlyComponents'"
     :data-layout-settings-page="skeleton ? undefined : 'video-card'"
@@ -606,8 +606,7 @@ onBeforeUnmount(() => {
 
         <!-- 封面右上角稍后再看：统一样式与行为，状态和增删逻辑在共享组件内部处理 -->
         <WatchLaterCoverButton
-          :target="watchLaterTarget"
-          :enabled="showWatcherLater"
+          :target="showWatcherLater ? watchLaterTarget : undefined"
         />
 
         <!-- Modern layout: Cover stats (bottom overlay) -->
