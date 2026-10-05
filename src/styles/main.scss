@@ -234,6 +234,11 @@ html.dark.bewly-design {
 
   .bew-top-bar-media-author {
     font-weight: var(--bew-top-bar-media-author-weight);
+    transition: color var(--bew-duration-fast) var(--bew-ease-standard);
+
+    &:hover {
+      color: var(--bew-theme-color);
+    }
   }
 
   .bew-top-bar-media-author--compact {
