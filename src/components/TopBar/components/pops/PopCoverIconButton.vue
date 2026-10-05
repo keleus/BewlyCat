@@ -53,11 +53,21 @@ defineEmits<{ click: [] }>()
 <style lang="scss" scoped>
 // hover 变色写在 scoped CSS 而非动态 bg 工具类：UnoCSS watch 增量构建对
 // 三元表达式中的变体 token 提取不稳定，静态类保证两种颜色始终生成。
+.pop-cover-icon-btn {
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
 .pop-cover-icon-btn--theme:hover {
   background-color: var(--bew-theme-color);
 }
 
 .pop-cover-icon-btn--error:hover {
   background-color: var(--bew-error-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pop-cover-icon-btn {
+    transition: none;
+  }
 }
 </style>
