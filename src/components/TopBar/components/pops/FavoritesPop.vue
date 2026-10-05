@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import type { ComponentPublicInstance, Ref } from 'vue'
+import type { Ref } from 'vue'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
@@ -18,7 +18,6 @@ const favoriteResources = reactive<Array<FavoriteResource>>([])
 
 const activatedMediaId = ref<number>(0)
 const activatedFavoriteTitle = ref<string>()
-const hoveredCategoryId = ref<number>()
 const currentPageNum = ref<number>(1)
 
 const isLoading = ref<boolean>(false)
@@ -27,11 +26,8 @@ const noMoreContent = ref<boolean>(false)
 const favoriteVideosWrap = ref<HTMLElement>() as Ref<HTMLElement>
 const topBarStore = useTopBarStore()
 const { favoriteStateVersion } = storeToRefs(topBarStore)
-const categoryLabelElements = new Map<number, HTMLElement>()
-const categoryMarqueeStyles = reactive<Record<number, Record<string, string>>>({})
 let favoriteDataRequestVersion = 0
 let favoriteResourcesRequestVersion = 0
-let categoryLabelResizeObserver: ResizeObserver | undefined
 
 const viewAllUrl = computed((): string => {
   return `//space.bilibili.com/${getUserID()}/favlist?fid=${
@@ -47,65 +43,21 @@ watch(activatedMediaId, (newId, oldId) => {
   if (newId === oldId)
     return
 
-  favoriteResources.length = 0
   if (favoriteVideosWrap.value)
     scrollToTop(favoriteVideosWrap.value)
 
   currentPageNum.value = 1
   noMoreContent.value = false
-  void getFavoriteResources(true)
+  // 保留旧分类卡片直到新数据到达再原子替换（与刷新路径一致），
+  // 避免清空数组导致全屏 Loading 遮罩闪一下。
+  void getFavoriteResources(true, true)
 })
 
 watch(favoriteStateVersion, () => {
   void refreshFavoriteData()
 })
 
-onMounted(() => {
-  categoryLabelResizeObserver = new ResizeObserver((entries) => {
-    for (const entry of entries) {
-      const element = entry.target as HTMLElement
-      const categoryId = Number(element.dataset.categoryId)
-      updateCategoryMarquee(categoryId, element)
-    }
-  })
-  categoryLabelElements.forEach(element => categoryLabelResizeObserver?.observe(element))
-  initData()
-})
-
-onBeforeUnmount(() => categoryLabelResizeObserver?.disconnect())
-
-function updateCategoryMarquee(categoryId: number, element: HTMLElement) {
-  const textElement = element.querySelector<HTMLElement>('.favorite-category-label__text')
-  if (!textElement)
-    return
-
-  const overflowDistance = Math.ceil(textElement.scrollWidth - element.clientWidth)
-  if (overflowDistance <= 1) {
-    delete categoryMarqueeStyles[categoryId]
-    return
-  }
-
-  const duration = Math.min(12, Math.max(4, overflowDistance / 24 + 3))
-  categoryMarqueeStyles[categoryId] = {
-    '--favorite-category-marquee-distance': `-${overflowDistance}px`,
-    '--favorite-category-marquee-duration': `${duration}s`,
-  }
-}
-
-function setCategoryLabelRef(element: Element | ComponentPublicInstance | null, categoryId: number) {
-  const previousElement = categoryLabelElements.get(categoryId)
-  if (previousElement && previousElement !== element)
-    categoryLabelResizeObserver?.unobserve(previousElement)
-
-  if (!(element instanceof HTMLElement)) {
-    categoryLabelElements.delete(categoryId)
-    delete categoryMarqueeStyles[categoryId]
-    return
-  }
-
-  categoryLabelElements.set(categoryId, element)
-  categoryLabelResizeObserver?.observe(element)
-}
+onMounted(refreshFavoriteData)
 
 // 使用 useOptimizedScroll 处理滚动加载
 function handleReachBottom() {
@@ -123,10 +75,6 @@ useOptimizedScroll(
   { onReachBottom: handleReachBottom },
   { bottomThreshold: 400, throttleDelay: 100 },
 )
-
-async function initData() {
-  await refreshFavoriteData()
-}
 
 async function refreshFavoriteData() {
   const requestVersion = ++favoriteDataRequestVersion
@@ -307,25 +255,12 @@ defineExpose({
             hover:bg="$bew-fill-2"
             transition="colors duration-200"
             @click="changeCategory(item)"
-            @mouseenter="hoveredCategoryId = item.id"
-            @mouseleave="hoveredCategoryId = undefined"
           >
             <span
-              :ref="element => setCategoryLabelRef(element, item.id)"
               class="favorite-category-label"
-              :data-category-id="item.id"
               :title="item.title"
             >
-              <span
-                class="favorite-category-label__text"
-                :class="{
-                  'is-marquee': (activatedMediaId === item.id || hoveredCategoryId === item.id)
-                    && !!categoryMarqueeStyles[item.id],
-                }"
-                :style="categoryMarqueeStyles[item.id]"
-              >
-                {{ item.title }}
-              </span>
+              {{ item.title }}
             </span>
           </li>
         </ul>
@@ -412,46 +347,8 @@ defineExpose({
 
 .favorite-category-label {
   display: block;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.favorite-category-label__text {
-  display: block;
-  width: max-content;
-  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-
-  &.is-marquee {
-    max-width: none;
-    overflow: visible;
-    text-overflow: clip;
-    animation: favorite-category-marquee var(--favorite-category-marquee-duration) linear infinite alternate;
-    will-change: transform;
-  }
-}
-
-@keyframes favorite-category-marquee {
-  0%,
-  15% {
-    transform: translateX(0);
-  }
-
-  85%,
-  100% {
-    transform: translateX(var(--favorite-category-marquee-distance));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .favorite-category-label__text.is-marquee {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    animation: none;
-  }
 }
 </style>
