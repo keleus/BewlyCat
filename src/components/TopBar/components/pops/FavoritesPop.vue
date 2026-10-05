@@ -18,6 +18,7 @@ const favoriteResources = reactive<Array<FavoriteResource>>([])
 
 const activatedMediaId = ref<number>(0)
 const activatedFavoriteTitle = ref<string>()
+const hoveredCategoryId = ref<number>()
 const currentPageNum = ref<number>(1)
 
 const isLoading = ref<boolean>(false)
@@ -253,7 +254,7 @@ defineExpose({
   <div
     h="[calc(100vh-100px)]" max-h-500px overflow="hidden"
     bg="$bew-elevated"
-    w="450px"
+    w="480px"
     pos="relative"
     shadow="$bew-shadow-3"
     border="1 $bew-popover-border-color"
@@ -290,7 +291,7 @@ defineExpose({
 
     <main flex="~" flex-1 min-h-0>
       <aside
-        w="140px" h-full overflow="y-auto"
+        w="170px" h-full overflow="y-auto"
         flex="shrink-0"
         p="2"
       >
@@ -304,8 +305,10 @@ defineExpose({
             rounded="$bew-menu-item-radius"
             cursor="pointer"
             hover:bg="$bew-fill-2"
-            transition="background-color duration-200, color duration-200, opacity duration-200"
+            transition="colors duration-200"
             @click="changeCategory(item)"
+            @mouseenter="hoveredCategoryId = item.id"
+            @mouseleave="hoveredCategoryId = undefined"
           >
             <span
               :ref="element => setCategoryLabelRef(element, item.id)"
@@ -316,7 +319,8 @@ defineExpose({
               <span
                 class="favorite-category-label__text"
                 :class="{
-                  'is-marquee': activatedMediaId === item.id && !!categoryMarqueeStyles[item.id],
+                  'is-marquee': (activatedMediaId === item.id || hoveredCategoryId === item.id)
+                    && !!categoryMarqueeStyles[item.id],
                 }"
                 :style="categoryMarqueeStyles[item.id]"
               >
