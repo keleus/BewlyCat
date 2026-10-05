@@ -4,6 +4,7 @@ import { ref, shallowReactive, watch } from 'vue'
 import { parseDedeUserID } from '~/logic/loginStatus'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
+import { isExtensionContextInvalidatedError } from '~/utils/messaging'
 
 // 分批是客户端策略，避免过长的 URL；并非已确认的接口上限。
 const BATCH_SIZE = 40
@@ -154,6 +155,10 @@ export const useUserRelationStore = defineStore('userRelations', () => {
           }
         }
         catch (error) {
+          // 扩展热重载/更新后旧页面脚本的扩展上下文已失效，刷新页面前所有请求都注定失败：
+          // 消息层已统一弹出刷新提示，这里不再报红，也不排重试（重试只会重复同样的失败）。
+          if (isExtensionContextInvalidatedError(error))
+            continue
           if (syncAccount() === requestAccount && generation === requestGeneration) {
             for (const query of chunk) {
               if (pending.get(query.mid) === query && consumers.has(query.mid))
