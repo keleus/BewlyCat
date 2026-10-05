@@ -15,6 +15,9 @@ import PopMediaCard from './PopMediaCard.vue'
 
 const favoriteCategories = reactive<Array<FavoriteCategory>>([])
 const favoriteResources = reactive<Array<FavoriteResource>>([])
+// 整表替换（切换分类/刷新）时自增，强制重挂载列表组：
+// 旧组整体卸载不播离场动画，新组以 appear 播入场，避免同组内旧卡离场与新卡入场叠播成“向下退场”。
+const resourcesRenderKey = ref(0)
 
 const activatedMediaId = ref<number>(0)
 const activatedFavoriteTitle = ref<string>()
@@ -155,9 +158,11 @@ async function getFavoriteResources(force = false, replace = false) {
         ? data.medias.filter((m: any) => m != null)
         : []
 
-      // 刷新时保留旧卡片，等新数据到达后再原子替换，避免 Pop 闪烁。
+      // 保留旧卡片，等新数据到达后再原子替换，避免 Pop 闪烁；
+      // 同 tick 自增渲染 key，让新列表整组重挂载并播入场（追加翻页不走此分支）。
       if (replace) {
         favoriteResources.splice(0, favoriteResources.length, ...medias)
+        resourcesRenderKey.value++
       }
       else if (medias.length > 0) {
         favoriteResources.push(...medias)
@@ -294,8 +299,8 @@ defineExpose({
           w="full" h="full"
         />
 
-        <!-- favorites -->
-        <TransitionGroup name="list">
+        <!-- favorites：key 随整表替换变化，配合 appear 让切换分类时新卡整组上浮淡入 -->
+        <TransitionGroup :key="resourcesRenderKey" name="list" appear>
           <ALink
             v-for="item in favoriteResources"
             :key="item.id"
@@ -305,8 +310,7 @@ defineExpose({
             hover:bg="$bew-fill-2"
             m="last:b-4" p="2"
             class="group bew-content-card"
-            transition="colors"
-            duration-200
+            duration-300
           >
             <PopMediaCard
               :title="item.title"
