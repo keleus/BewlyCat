@@ -10,6 +10,8 @@ import { ensureWatchLaterState } from '~/logic/watchLaterState'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { scrollToTop } from '~/utils/main'
 
+import PopMediaCard from './PopMediaCard.vue'
+
 type MomentType = 'video' | 'live' | 'article'
 interface MomentTab { type: MomentType, name: any }
 
@@ -168,6 +170,7 @@ defineExpose({
           :key="moment.id_str"
           :href="moment.link"
           type="topBar"
+          block
           class="group bew-content-card"
           m="last:b-4" p="2"
           hover:bg="$bew-fill-2"
@@ -185,15 +188,17 @@ defineExpose({
             pos="absolute -top-12px -left-12px"
             style="box-shadow: 0 0 4px var(--bew-theme-color)"
           />
-          <section flex="~ row-reverse gap-4 items-stretch">
-            <div class="bew-top-bar-media-copy moments-pop__copy">
-              <h3
-                :title="moment.title"
-                class="bew-top-bar-media-title moments-pop__title"
-              >
-                {{ moment.title }}
-              </h3>
-
+          <PopMediaCard
+            :title="moment.title"
+            :cover="`${moment.cover}@240w_135h_1c`"
+            stretch
+            narrow
+            overflow-visible
+            cover-class="bew-cover-action-host"
+            copy-class="moments-pop__copy"
+            title-class="moments-pop__title"
+          >
+            <template #byline>
               <div class="moments-pop__byline" flex="~ items-center gap-1" min-w-0>
                 <ALink
                   :href="moment.authorJumpUrl"
@@ -265,30 +270,16 @@ defineExpose({
                   </span>
                 </div>
               </div>
-            </div>
+            </template>
 
-            <div
-              class="bew-top-bar-media-column bew-top-bar-media-column--narrow moments-pop__cover"
-              bg="$bew-skeleton"
-              pos="relative"
-            >
-              <div
-                class="bew-top-bar-media-frame"
-                flex="~ items-center justify-center"
-              >
-                <img
-                  :src="`${moment.cover}@240w_135h_1c`"
-                  :alt="moment.title"
-                >
-              </div>
+            <template #coverTopRight>
               <WatchLaterCoverButton
-                v-if="isVideoMoment(moment)"
-                :target="{ aid: moment.rid }"
+                :target="isVideoMoment(moment) ? { aid: moment.rid } : undefined"
                 size="sm"
                 tooltip-placement="left"
               />
-            </div>
-          </section>
+            </template>
+          </PopMediaCard>
         </ALink>
       </TransitionGroup>
 
@@ -320,28 +311,27 @@ defineExpose({
   }
 }
 
-.moments-pop__cover {
-  overflow: visible;
-}
+// copy / title 渲染在 PopMediaCard 内部，需 :deep 穿透作用域
+.moments-pop {
+  :deep(.moments-pop__copy) {
+    display: flex;
+    flex-direction: column;
+  }
 
-.moments-pop__copy {
-  display: flex;
-  flex-direction: column;
+  // 标题字号/行高沿用全局 --bew-top-bar-media-title-*（14/20，与收藏、历史、
+  // 稍后再看 Pop 共用），此处仅解除两行截断以完整展示。
+  :deep(.moments-pop__title) {
+    display: block;
+    overflow: visible;
+    text-overflow: unset;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+  }
 }
 
 .moments-pop__byline {
   margin-top: auto;
   padding-top: var(--bew-space-1);
-}
-
-// 标题字号/行高沿用全局 --bew-top-bar-media-title-*（14/20，与收藏、历史、
-// 稍后再看 Pop 共用），此处仅解除两行截断以完整展示。
-.moments-pop .moments-pop__title {
-  display: block;
-  overflow: visible;
-  text-overflow: unset;
-  -webkit-line-clamp: unset;
-  line-clamp: unset;
 }
 
 .moments-pop__author {

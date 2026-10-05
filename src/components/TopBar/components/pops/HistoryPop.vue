@@ -14,6 +14,9 @@ import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getHistoryUrl } from '~/utils/history'
 import { getCSRF, removeHttpFromUrl, scrollToTop } from '~/utils/main'
 
+import PopCoverIconButton from './PopCoverIconButton.vue'
+import PopMediaCard from './PopMediaCard.vue'
+
 const { t } = useI18n()
 const historys = reactive<Array<HistoryItem>>([])
 const historyTabs = computed(() => [
@@ -167,6 +170,14 @@ async function getHistoryList(type: Business, view_at = 0 as number) {
   }
 }
 
+/** 视频/直播用 cover，专栏用 covers 数组首图；统一补上尺寸后缀。 */
+function getHistoryCover(historyItem: HistoryItem): string {
+  if (activatedTab.value === 2) {
+    return `${Array.isArray(historyItem.covers) ? historyItem.covers[0] : ''}@320w_180h_1c`
+  }
+  return `${removeHttpFromUrl(historyItem.cover)}@320w_180h_1c`
+}
+
 function deleteHistoryItem(index: number, historyItem: HistoryItem) {
   api.history.deleteHistoryItem({
     kid: `${historyItem.history.business}_${historyItem.history.oid}`,
@@ -289,153 +300,111 @@ defineExpose({
           :key="historyItem.kid"
           :href="getHistoryUrl(historyItem)"
           type="topBar"
+          block
           class="group bew-content-card"
           m="last:b-4" p="2"
           hover:bg="$bew-fill-2"
           duration-300
         >
-          <section flex="~ gap-4 items-start">
-            <!-- Video cover, live cover, ariticle cover -->
-            <div
-              class="bew-top-bar-media-column"
-              bg="$bew-skeleton"
-              pos="relative"
-            >
-              <!-- Delete button -->
+          <PopMediaCard
+            :title="historyItem.title"
+            :cover="getHistoryCover(historyItem)"
+            :contain="activatedTab === 2"
+            :author-name="historyItem.author_name"
+            :author-href="`https://space.bilibili.com/${historyItem.author_mid}`"
+          >
+            <!-- Delete button -->
+            <template #coverTopRight>
               <div
                 class="group-hover:opacity-100 opacity-0"
-                pos="absolute top-0 right-0" z-1 w-24px h-24px
-                bg="black opacity-60 hover:$bew-error-color"
-                grid="~ place-items-center"
+                pos="absolute top-0 right-0 z-1"
                 m="1"
-                text="white xs"
                 duration-300
+              >
+                <PopCoverIconButton
+                  hover-color="error"
+                  :aria-label="$t('common.operation.delete')"
+                  @click="deleteHistoryItem(index, historyItem)"
+                >
+                  <i i-mingcute:close-line />
+                </PopCoverIconButton>
+              </div>
+            </template>
+
+            <!-- 封面框内覆盖角标：视频进度 / 直播状态 -->
+            <template #coverOverlay>
+              <!-- Video: progress badge -->
+              <div
+                v-if="activatedTab === 0"
+                pos="absolute bottom-0 right-0"
+                bg="black opacity-60"
+                m="1"
+                p="x-2 y-1"
+                text="white xs"
                 border="rounded-full"
-                @click.stop.prevent="deleteHistoryItem(index, historyItem)"
               >
-                <i i-mingcute:close-line />
+                <!--  When progress = -1 means that the user watched the full video -->
+                {{
+                  `${
+                    historyItem.progress === -1
+                      ? calcCurrentTime(historyItem.duration)
+                      : calcCurrentTime(historyItem.progress)
+                  } /
+                ${calcCurrentTime(historyItem.duration)}`
+                }}
               </div>
 
-              <!-- Video -->
-              <template v-if="activatedTab === 0">
-                <div class="bew-top-bar-media-frame">
-                  <img
-                    w-full h-full
-                    :src="`${removeHttpFromUrl(
-                      historyItem.cover,
-                    )}@320w_180h_1c`"
-                    :alt="historyItem.title"
-                    object-cover
-                  >
-                  <div
-                    pos="absolute bottom-0 right-0"
-                    bg="black opacity-60"
-                    m="1"
-                    p="x-2 y-1"
-                    text="white xs"
-                    border="rounded-full"
-                  >
-                    <!--  When progress = -1 means that the user watched the full video -->
-                    {{
-                      `${
-                        historyItem.progress === -1
-                          ? calcCurrentTime(historyItem.duration)
-                          : calcCurrentTime(historyItem.progress)
-                      } /
-                    ${calcCurrentTime(historyItem.duration)}`
-                    }}
-                  </div>
-                </div>
-                <Progress
-                  :percentage="
-                    (historyItem.progress / historyItem.duration) * 100
-                  "
-                />
-              </template>
-
-              <!-- Live -->
-              <template v-else-if="activatedTab === 1">
-                <div class="bew-top-bar-media-frame">
-                  <img
-                    w-full h-full
-                    :src="`${removeHttpFromUrl(
-                      historyItem.cover,
-                    )}@320w_180h_1c`"
-                    :alt="historyItem.title"
-                    object-cover
-                  >
-                  <div
-                    v-if="historyItem.live_status === 1"
-                    pos="absolute top-0 left-0"
-                    bg="$bew-theme-color"
-                    text="xs white"
-                    p="x-2 y-1"
-                    m="1"
-                    rounded-full
-                    font="semibold"
-                  >
-                    LIVE
-                    <i i-svg-spinners:pulse-3 align-middle mt--0.2em />
-                  </div>
-                  <div
-                    v-else
-                    pos="absolute top-0 left-0"
-                    bg="black opacity-60"
-                    text="xs white"
-                    p="x-2 y-1"
-                    m="1"
-                    rounded="full"
-                  >
-                    OFFLINE
-                  </div>
-                </div>
-              </template>
-
-              <!-- Article -->
-              <div v-else-if="activatedTab === 2" class="bew-top-bar-media-frame">
-                <img
-                  w-full h-full
-                  :src="`${
-                    Array.isArray(historyItem.covers)
-                      ? historyItem.covers[0]
-                      : ''
-                  }@320w_180h_1c`"
-                  object-cover
-                  :alt="historyItem.title"
-                  bg="contain"
-                >
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div class="bew-top-bar-media-copy">
-              <h3
-                :title="historyItem.title"
-                class="bew-top-bar-media-title"
+              <!-- Live: LIVE / OFFLINE badge -->
+              <div
+                v-else-if="activatedTab === 1 && historyItem.live_status === 1"
+                pos="absolute top-0 left-0"
+                bg="$bew-theme-color"
+                text="xs white"
+                p="x-2 y-1"
+                m="1"
+                rounded-full
+                font="semibold"
               >
-                {{ historyItem.title }}
-              </h3>
-              <div text="$bew-text-2" m="t-2" flex="~ items-center">
-                <ALink
-                  :href="`https://space.bilibili.com/${historyItem.author_mid}`"
-                  type="topBar"
-                  :stop-propagation="true"
-                  class="bew-top-bar-media-author"
-                >
-                  {{ historyItem.author_name }}
-                </ALink>
-                <span
-                  v-if="historyItem.live_status === 1"
-                  text="$bew-theme-color"
-                  flex
-                  items-center
-                  gap-1
-                  m="l-2"
-                >
-                  LIVE
-                  <i i-svg-spinners:pulse-3 align-middle mt--0.2em />
-                </span>
+                LIVE
+                <i i-svg-spinners:pulse-3 align-middle mt--0.2em />
               </div>
+              <div
+                v-else-if="activatedTab === 1"
+                pos="absolute top-0 left-0"
+                bg="black opacity-60"
+                text="xs white"
+                p="x-2 y-1"
+                m="1"
+                rounded="full"
+              >
+                OFFLINE
+              </div>
+            </template>
+
+            <!-- Video: progress bar -->
+            <template v-if="activatedTab === 0" #coverBelow>
+              <Progress
+                :percentage="(historyItem.progress / historyItem.duration) * 100"
+              />
+            </template>
+
+            <!-- Live status next to author -->
+            <template #bylineExtra>
+              <span
+                v-if="historyItem.live_status === 1"
+                text="$bew-theme-color"
+                flex
+                items-center
+                gap-1
+                m="l-2"
+              >
+                LIVE
+                <i i-svg-spinners:pulse-3 align-middle mt--0.2em />
+              </span>
+            </template>
+
+            <!-- View time -->
+            <template #meta>
               <p class="bew-top-bar-media-meta" text="$bew-text-2">
                 {{
                   useDateFormat(
@@ -444,8 +413,8 @@ defineExpose({
                   ).value
                 }}
               </p>
-            </div>
-          </section>
+            </template>
+          </PopMediaCard>
         </ALink>
       </TransitionGroup>
       <div

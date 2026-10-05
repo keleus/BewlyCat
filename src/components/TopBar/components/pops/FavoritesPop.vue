@@ -11,6 +11,7 @@ import { calcCurrentTime } from '~/utils/dataFormatter'
 import { getUserID, removeHttpFromUrl, scrollToTop } from '~/utils/main'
 
 import type { FavoriteCategory, FavoriteResource } from '../../types'
+import PopMediaCard from './PopMediaCard.vue'
 
 const favoriteCategories = reactive<Array<FavoriteCategory>>([])
 const favoriteResources = reactive<Array<FavoriteResource>>([])
@@ -361,62 +362,33 @@ defineExpose({
             :key="item.id"
             :href="isMusic(item) ? `https://www.bilibili.com/audio/au${item.id}` : `//www.bilibili.com/video/${item.bvid}`"
             type="topBar"
+            block
             hover:bg="$bew-fill-2"
             m="last:b-4" p="2"
             class="group bew-content-card"
             transition="colors"
             duration-200
           >
-            <section flex="~ gap-4" items-start>
-              <div
-                class="bew-top-bar-media-frame bew-top-bar-media-frame--narrow"
-                bg="$bew-skeleton"
-              >
-                <div pos="relative" w-full h-full>
-                  <img
-                    w-full h-full
-                    :src="`${removeHttpFromUrl(item.cover)}@256w_144h_1c`"
-                    :alt="item.title"
-                    object-cover
-                  >
-                  <div
-                    pos="absolute bottom-0 right-0"
-                    bg="black opacity-60"
-                    m="1"
-                    p="x-2 y-1"
-                    text="white xs"
-                    rounded-full
-                  >
-                    {{ calcCurrentTime(item.duration) }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Description -->
-              <div class="bew-top-bar-media-copy">
-                <h3
-                  :title="item.title"
-                  class="bew-top-bar-media-title"
-                >
-                  {{ item.title }}
-                </h3>
+            <PopMediaCard
+              :title="item.title"
+              :cover="`${removeHttpFromUrl(item.cover)}@256w_144h_1c`"
+              :author-name="item.upper.name"
+              :author-href="`https://space.bilibili.com/${item.upper.mid}`"
+              narrow
+            >
+              <template #coverOverlay>
                 <div
-                  text="$bew-text-2"
-                  m="t-2"
-                  flex="~"
-                  items-center
+                  pos="absolute bottom-0 right-0"
+                  bg="black opacity-60"
+                  m="1"
+                  p="x-2 y-1"
+                  text="white xs"
+                  rounded-full
                 >
-                  <ALink
-                    :href="`https://space.bilibili.com/${item.upper.mid}`"
-                    type="topBar"
-                    :stop-propagation="true"
-                    class="bew-top-bar-media-author"
-                  >
-                    {{ item.upper.name }}
-                  </ALink>
+                  {{ calcCurrentTime(item.duration) }}
                 </div>
-              </div>
-            </section>
+              </template>
+            </PopMediaCard>
           </ALink>
         </TransitionGroup>
 
