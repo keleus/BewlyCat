@@ -90,7 +90,8 @@ onBeforeUnmount(() => {
     v-if="visible"
     class="bew-watch-later-cover"
   >
-    <Tooltip :content="label" :placement="tooltipPlacement" type="dark">
+    <!-- floating：按钮常驻封面内（封面 overflow:hidden），提示必须传送至顶层才不会被裁切 -->
+    <Tooltip :content="label" :placement="tooltipPlacement" type="dark" floating>
       <button
         type="button"
         class="bew-watch-later-cover__btn"

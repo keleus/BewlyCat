@@ -193,7 +193,6 @@ defineExpose({
             :cover="`${moment.cover}@240w_135h_1c`"
             stretch
             narrow
-            overflow-visible
             cover-class="bew-cover-action-host"
             copy-class="moments-pop__copy"
             title-class="moments-pop__title"

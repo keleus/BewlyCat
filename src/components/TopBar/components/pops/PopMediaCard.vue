@@ -24,8 +24,6 @@ withDefaults(defineProps<{
   stretch?: boolean
   /** 封面图按 contain 展示（历史的专栏封面） */
   contain?: boolean
-  /** 封面列允许溢出（动态弹窗的稍后再看按钮 tooltip 需伸出封面） */
-  overflowVisible?: boolean
   /** 追加到封面列 / 文案区 / 标题的自定义类 */
   coverClass?: string
   copyClass?: string
@@ -35,7 +33,6 @@ withDefaults(defineProps<{
   narrow: false,
   stretch: false,
   contain: false,
-  overflowVisible: false,
 })
 </script>
 
@@ -52,10 +49,10 @@ withDefaults(defineProps<{
       }]"
       bg="$bew-skeleton"
       pos="relative"
-      :of="overflowVisible ? 'visible' : 'hidden'"
+      of="hidden"
     >
-      <!-- 左上 / 右上操作覆盖层：保持为封面列直接子级（与各弹窗原始结构一致），
-           避免 tooltip 等悬停浮层被封面框 overflow:hidden 裁切 -->
+      <!-- 左上 / 右上操作覆盖层：封面列直接子级（与各弹窗原始结构一致）；
+           操作按钮的文字提示走 Tooltip floating 模式，不受封面列 overflow:hidden 裁切 -->
       <slot name="coverTopLeft" />
       <slot name="coverTopRight" />
 
