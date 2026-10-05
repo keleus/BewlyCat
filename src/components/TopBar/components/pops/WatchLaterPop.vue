@@ -144,9 +144,11 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
       </div>
 
       <div flex="~ items-center gap-4 wrap">
+        <!-- 与收藏/历史/动态弹窗头部一致：纯文字操作，无 hover 变色 -->
         <button
           type="button"
           class="watch-later-header-action"
+          text="sm"
           :disabled="isAddingOpenTabsToWatchLater"
           :aria-busy="isAddingOpenTabsToWatchLater"
           :title="$t('watch_later.add_open_tabs_hint')"
@@ -157,16 +159,16 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
         <ALink
           :href="playAllUrl"
           type="topBar"
-          class="watch-later-header-action"
+          flex="~ items-center"
         >
-          {{ $t('common.play_all') }}
+          <span text="sm">{{ $t('common.play_all') }}</span>
         </ALink>
         <ALink
           :href="viewAllUrl"
           type="topBar"
-          class="watch-later-header-action"
+          flex="~ items-center"
         >
-          {{ $t('common.view_all') }}
+          <span text="sm">{{ $t('common.view_all') }}</span>
         </ALink>
       </div>
     </header>
@@ -301,27 +303,12 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
 </template>
 
 <style scoped lang="scss">
+// 仅做按钮归零，字号/颜色与同组 ALink 文字完全一致（text="sm" + 继承色），
+// 不提供 hover 变色；保留忙碌时的禁用态。
 .watch-later-header-action {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--bew-space-6);
   padding: 0;
   border: 0;
-  background: transparent;
-  color: var(--bew-text-1);
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-medium);
-  line-height: var(--bew-line-height-control);
-  white-space: nowrap;
-  cursor: pointer;
-
-  &:hover:not(:disabled) {
-    color: var(--bew-theme-color);
-  }
-
-  &:active:not(:disabled) {
-    opacity: 0.7;
-  }
+  color: inherit;
 
   &:disabled {
     opacity: 0.5;
