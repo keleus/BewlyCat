@@ -58,7 +58,7 @@ function handleClick(event: MouseEvent, item: { name: string, url: string, unrea
 <template>
   <div
     bg="$bew-elevated"
-    shadow="$bew-shadow-3"
+    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
     border="1 $bew-popover-border-color"
     flex="~ col"
     class="notifications-pop bew-popover bew-popover-inset"

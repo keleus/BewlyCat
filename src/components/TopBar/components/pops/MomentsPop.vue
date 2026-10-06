@@ -100,7 +100,7 @@ defineExpose({
     bg="$bew-elevated"
     w="380px"
     pos="relative"
-    shadow="$bew-shadow-3"
+    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
     border="1 $bew-popover-border-color"
     class="moments-pop bew-popover"
     data-key="moments"

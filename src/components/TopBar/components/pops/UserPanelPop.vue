@@ -195,7 +195,7 @@ function handleClickChannel() {
     w-300px max-h="[calc(100vh-120px)]" min-h-0
     z--1 bg="$bew-elevated"
     border="1 $bew-popover-border-color"
-    shadow="$bew-shadow-3"
+    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
     class="userPanel-pop bew-popover bew-popover-inset"
     data-key="userPanel"
   >

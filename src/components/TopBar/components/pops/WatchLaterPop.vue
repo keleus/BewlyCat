@@ -122,7 +122,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
     w="380px"
     pos="relative"
     of="hidden"
-    shadow="$bew-shadow-3"
+    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
     border="1 $bew-popover-border-color"
     class="watchLater-pop bew-popover"
     data-key="watchLater"

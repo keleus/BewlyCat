@@ -30,7 +30,7 @@ const otherLinks = computed(() => {
     h="fit" max-h="[calc(100vh-120px)]"
     w="fit"
     of-y-auto of-x-hidden
-    shadow="$bew-shadow-3"
+    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
     bg="$bew-elevated-alt"
     border="1 $bew-popover-border-color"
     class="channels-pop bew-popover"
