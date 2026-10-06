@@ -249,6 +249,7 @@ defineExpose({
       <ALink
         href="https://www.bilibili.com/history"
         type="topBar"
+        class="bew-top-bar-pop-action"
         flex="~ items-center"
       >
         <span text="sm">{{ $t('common.view_all') }}</span>

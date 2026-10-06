@@ -167,6 +167,17 @@ html.dark.bewly-design {
     }
   }
 
+  // 顶栏各弹窗头部右上角的文字操作（播放全部 / 查看更多 / 添加标签页等）：
+  // 默认继承文字色，hover 变主题色并平滑过渡；禁用态不变色。
+  .bew-top-bar-pop-action {
+    color: inherit;
+    transition: color var(--bew-duration-fast) var(--bew-ease-standard);
+
+    &:hover:not(:disabled) {
+      color: var(--bew-theme-color);
+    }
+  }
+
   .bew-top-bar-media-column {
     width: var(--bew-top-bar-media-width);
     flex: 0 0 auto;

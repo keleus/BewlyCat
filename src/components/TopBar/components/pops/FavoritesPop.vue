@@ -229,6 +229,7 @@ defineExpose({
         <ALink
           :href="playAllUrl"
           type="topBar"
+          class="bew-top-bar-pop-action"
           flex="~" items="center"
         >
           <span text="sm">{{ $t('common.play_all') }}</span>
@@ -236,6 +237,7 @@ defineExpose({
         <ALink
           :href="viewAllUrl"
           type="topBar"
+          class="bew-top-bar-pop-action"
           flex="~" items="center"
         >
           <span text="sm">{{ $t('common.view_all') }}</span>

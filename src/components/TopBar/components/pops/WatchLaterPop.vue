@@ -144,10 +144,9 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
       </div>
 
       <div flex="~ items-center gap-4 wrap">
-        <!-- 与收藏/历史/动态弹窗头部一致：纯文字操作，无 hover 变色 -->
         <button
           type="button"
-          class="watch-later-header-action"
+          class="watch-later-header-action bew-top-bar-pop-action"
           text="sm"
           :disabled="isAddingOpenTabsToWatchLater"
           :aria-busy="isAddingOpenTabsToWatchLater"
@@ -159,6 +158,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
         <ALink
           :href="playAllUrl"
           type="topBar"
+          class="bew-top-bar-pop-action"
           flex="~ items-center"
         >
           <span text="sm">{{ $t('common.play_all') }}</span>
@@ -166,6 +166,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
         <ALink
           :href="viewAllUrl"
           type="topBar"
+          class="bew-top-bar-pop-action"
           flex="~ items-center"
         >
           <span text="sm">{{ $t('common.view_all') }}</span>
@@ -303,12 +304,11 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
 </template>
 
 <style scoped lang="scss">
-// 仅做按钮归零，字号/颜色与同组 ALink 文字完全一致（text="sm" + 继承色），
-// 不提供 hover 变色；保留忙碌时的禁用态。
+// 仅做原生 button 归零，使其与同组 ALink 文字一致；
+// hover 变色与颜色过渡由共享类 bew-top-bar-pop-action 提供，禁用态保留。
 .watch-later-header-action {
   padding: 0;
   border: 0;
-  color: inherit;
 
   &:disabled {
     opacity: 0.5;
