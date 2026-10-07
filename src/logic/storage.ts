@@ -249,7 +249,19 @@ export interface VideoCardContextMenuConfigItem {
 export const defaultVideoCardContextMenuConfig: VideoCardContextMenuConfigItem[]
   = videoCardContextMenuKeys.map(key => ({ key, visible: true }))
 
+export type AmbilightPreset = 'soft' | 'cinema' | 'vivid'
+
 export interface Settings {
+  ambilightEnabled: boolean
+  ambilightEnableInLive: boolean
+  ambilightEnableFullscreen: boolean
+  ambilightPreset: AmbilightPreset
+  ambilightStrength: number
+  ambilightSpread: number
+  ambilightSmoothing: number
+  ambilightBlur: number
+  ambilightSaturation: number
+  ambilightFps: number
   showLocalLoudnessButton: boolean
   localLoudnessEnabled: boolean
   localLoudnessTarget: number
@@ -583,6 +595,16 @@ export const originalLocalSettings: LocalSettings = {
 }
 
 export const originalSettings: Settings = {
+  ambilightEnabled: false,
+  ambilightEnableInLive: true,
+  ambilightEnableFullscreen: true,
+  ambilightPreset: 'cinema',
+  ambilightStrength: 80,
+  ambilightSpread: 100,
+  ambilightSmoothing: 65,
+  ambilightBlur: 72,
+  ambilightSaturation: 130,
+  ambilightFps: 24,
   showLocalLoudnessButton: true,
   localLoudnessEnabled: false,
   localLoudnessTarget: -18,
@@ -974,6 +996,29 @@ export const settings = useSettingsStorage(originalSettings, {
       record.homeTabsPosition = originalSettings.homeTabsPosition
     if (!validTabsPositions.includes(record.momentsTabsPosition))
       record.momentsTabsPosition = originalSettings.momentsTabsPosition
+
+    if (typeof record.ambilightEnabled !== 'boolean')
+      record.ambilightEnabled = false
+    if (typeof record.ambilightEnableInLive !== 'boolean')
+      record.ambilightEnableInLive = true
+    if (typeof record.ambilightEnableFullscreen !== 'boolean')
+      record.ambilightEnableFullscreen = true
+
+    const validAmbilightPresets: AmbilightPreset[] = ['soft', 'cinema', 'vivid']
+    if (!validAmbilightPresets.includes(record.ambilightPreset))
+      record.ambilightPreset = 'cinema'
+
+    for (const [key, min, max, fallback] of [
+      ['ambilightStrength', 0, 150, 80],
+      ['ambilightSpread', 30, 400, 100],
+      ['ambilightSmoothing', 0, 95, 65],
+      ['ambilightBlur', 20, 140, 72],
+      ['ambilightSaturation', 50, 200, 130],
+      ['ambilightFps', 8, 30, 24],
+    ] as const) {
+      const value = record[key]
+      record[key] = typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback
+    }
 
     if (typeof record.showLocalLoudnessButton !== 'boolean')
       record.showLocalLoudnessButton = true

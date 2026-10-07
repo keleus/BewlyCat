@@ -104,6 +104,27 @@ player_screenshot:
   failed: Failed to capture screenshot
   video_unavailable: The current video frame is unavailable
 settings:
+  ambilight:
+    title: Video Ambient Light
+    enable: Enable ambient light
+    enable_desc: Cast dynamic, soft ambient light around the video player to enhance immersion.
+    enable_in_live: Enable in live rooms
+    enable_in_live_desc: Also display ambient light in live streams with semi-transparent danmaku and controls.
+    enable_fullscreen: Enable in fullscreen and web fullscreen
+    enable_fullscreen_desc: Keep ambient light active in fullscreen; when disabled, ambient light pauses in fullscreen.
+    preset: Light preset
+    preset_soft: Soft
+    preset_cinema: Cinema
+    preset_vivid: Vivid
+    strength: Light strength
+    spread: Spread range
+    smoothing: Transition smoothing
+    blur: Blur intensity
+    saturation: Saturation
+    fps: Maximum framerate
+    fps_15: 15 fps · Power saving
+    fps_24: 24 fps · Balanced
+    fps_30: 30 fps · Smooth
   local_loudness:
     gain_history: Levelling gain · Last 60 seconds
     show_button: Show player volume balance button

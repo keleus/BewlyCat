@@ -1,0 +1,192 @@
+// BewlyCat 视频环境光（Ambilight）层级与穿透样式
+
+.bewly-ambilight-host {
+  position: fixed;
+  inset: 0;
+  pointer-events: none !important;
+  z-index: -1;
+  overflow: hidden;
+  contain: strict;
+  transform: translate3d(0, 0, 0);
+
+  // 全屏或挂载在播放器容器内时的层级适配
+  .bpx-player-container &,
+  #playerWrap &,
+  #live-player & {
+    position: absolute;
+    z-index: 0;
+  }
+
+  canvas {
+    position: absolute;
+    pointer-events: none;
+    transform-origin: center;
+    will-change: left, top, width, height, filter, opacity;
+  }
+}
+
+// 仅在环境光生效激活时，开启页面隔离与包裹层透明穿透，避免未开启用户样式污染
+html[data-bewly-ambilight] {
+  body {
+    isolation: isolate;
+  }
+
+  // 暗色底衬提升环境光通透感与对比度
+  &.dark body {
+    background-color: #10141d !important;
+  }
+
+  // 点播播放页包裹层与播放器背景透明化
+  #app,
+  #video-page-app {
+    background-color: transparent !important;
+  }
+
+  .bpx-player-video-area,
+  .bpx-player-video-perch,
+  .bpx-player-video-wrap {
+    background: transparent !important;
+  }
+
+  #bilibili-player-placeholder,
+  #bilibili-player-placeholder-top,
+  #bilibili-player-placeholder-bottom,
+  #bilibili-player-placeholder-bottom-left,
+  #bilibili-player-placeholder-bottom-right {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #playerWrap,
+  #bilibili-player,
+  .bpx-docker-major,
+  .bpx-player-container,
+  .bpx-player-video-area {
+    box-shadow: none !important;
+  }
+
+  // 右侧栏、UP主信息卡、简介栏与发送弹幕区域透明穿透
+  .right-container,
+  .right-container-inner,
+  .up-info-container,
+  .video-desc-container,
+  .bpx-player-sending-area,
+  .bpx-player-sending-bar,
+  .bpx-player-sending-bar-left,
+  .bpx-player-sending-bar-right,
+  .bpx-player-video-info,
+  .bpx-player-dm-root,
+  .bpx-player-dm-input,
+  .bpx-player-dm-switch,
+  .bpx-player-dm-setting,
+  .bpx-player-video-inputbar,
+  .bpx-player-video-inputbar-wrap,
+  .bpx-player-dm-wrap,
+  .bpx-player-dm-btn-send,
+  .bpx-player-sending-area .bui-button-blue,
+  .bpx-player-sending-area::before,
+  .bpx-player-sending-area::after,
+  #danmukuBox,
+  .danmaku-wrap,
+  .bpx-docker-minor,
+  .bpx-player-auxiliary,
+  .bpx-player-collapse,
+  .bpx-player-collapse .bui-collapse-header,
+  .bpx-player-collapse .bui-collapse-body,
+  .bpx-player-dm-management,
+  .bpx-player-dm-function,
+  .bpx-player-dm-load-status,
+  .bpx-player-dm-wrap-child {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 弹幕列表底部与历史记录按钮透明化
+  .bpx-player-dm-btn-footer,
+  .bpx-player-dm-btn-history {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+  }
+
+  // 视频选集（多P、合集面板）全层级透明化，保持文字颜色与播放指示图标
+  .video-pod,
+  .video-pod__header,
+  .video-pod__body,
+  .video-pod__list,
+  .video-pod__item,
+  .video-pod .single-p,
+  .video-pod .multi-p,
+  .video-pod .page-list,
+  .video-pod .simple-base-item {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .video-pod__item.active,
+  .video-pod .simple-base-item.active {
+    color: var(--brand_blue, #00aeec) !important;
+  }
+
+  // 推荐列表与标签容器透明化
+  .recommend-list-v1 .rec-footer,
+  .video-tag-container .tag-link,
+  .video-tag-container .show-more-btn {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+  }
+
+  .bpx-player-video-inputbar,
+  .bpx-player-dm-input,
+  .bpx-player-dm-btn-send,
+  .bpx-player-sending-area .bui-button-blue {
+    border-color: transparent !important;
+  }
+
+  // 稍后再看与播放列表播放页透明穿透
+  .playlist-app
+    :is(
+      .video-info-container,
+      #playlistToolbar,
+      .playlist-container--right,
+      .up-panel-container,
+      .recommend-list-container,
+      .action-list-container,
+      .action-list-header,
+      .action-list-body,
+      .action-list-body-top,
+      .action-list-body-bottom,
+      .action-list,
+      .action-list-inner,
+      .action-list-content,
+      .action-list-item-wrap,
+      .action-list-item,
+      .singlep-list-item-inner,
+      .multip-list-item-inner,
+      .multip-list,
+      .multip-list-item
+    ) {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}
+
+// 直播间包裹层穿透
+html[data-bewly-ambilight][data-bewly-ambilight-live] {
+  .room-bg,
+  .live-room-app,
+  .app-content,
+  .app-body,
+  #fullscreen-container,
+  #live-player-ctnr,
+  #live-player,
+  .player-section {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #fullscreen-container::before {
+    background: transparent !important;
+  }
+}
