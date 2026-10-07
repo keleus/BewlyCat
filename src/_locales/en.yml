@@ -103,6 +103,10 @@ player_screenshot:
   saved: Screenshot saved
   failed: Failed to capture screenshot
   video_unavailable: The current video frame is unavailable
+player_listen:
+  enter: Listen to video
+  exit: Restore video picture
+  listening: Listening
 settings:
   local_loudness:
     gain_history: Levelling gain · Last 60 seconds
@@ -1034,6 +1038,8 @@ settings:
     caption_desc: Toggle captions
     video_screenshot: Video Screenshot
     video_screenshot_desc: Save the current video frame as a PNG image, even when the player screenshot button is hidden.
+    listen_video: Listen to video
+    listen_video_desc: Toggle listen-video mode, hiding the video picture and keeping only the audio.
     increase_playback_rate: Increase Speed
     increase_playback_rate_desc: Increase playback speed
     decrease_playback_rate: Decrease Speed
@@ -1121,6 +1127,8 @@ settings:
   show_bewly_widescreen_button_desc: Show the Bewly Widescreen button in the video player controls.
   show_video_screenshot_button: Show player screenshot button
   show_video_screenshot_button_desc: Show a button in the video player controls for capturing the current video frame. The screenshot shortcut remains available when the button is hidden and can be configured in Shortcuts settings.
+  show_listen_video_button: Show player listen-video button
+  show_listen_video_button_desc: Show a toggle in the video player controls that hides the video picture and keeps only the audio, replacing it with a cover-art listening panel. The shortcut remains available when the button is hidden and can be configured in Shortcuts settings.
   group_fonts: Font
   group_visual_effects: Visual Effects
   visibility: show

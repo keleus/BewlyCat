@@ -43,6 +43,7 @@ import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { setupOriginalMomentsFilter } from './features/originalMomentsFilter'
 import { setupVideoWatchProgress } from './features/videoWatchProgress'
 import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
+import { initListenVideoControl } from './listenVideoControl'
 import { initLocalLoudnessControl } from './localLoudnessControl'
 import type { PageLoadingGuard } from './pageLoading'
 import { initTouchPlayerGestures } from './touchPlayerGestures'
@@ -1425,6 +1426,7 @@ else if (shouldInitializeContentScript) {
     initVideoAspectRatioMemory()
     initVideoQualityMemory()
     initVideoScreenshotControl()
+    initListenVideoControl()
     initLocalLoudnessControl()
     if (isVideoPlaybackPage() || isVideoOrBangumiPage())
       setupShortcutHandlers()

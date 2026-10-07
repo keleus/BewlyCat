@@ -91,6 +91,7 @@ export interface ShortcutsSettings {
   turnOffLight?: BaseShortcutSetting // I
   caption?: BaseShortcutSetting // C
   videoScreenshot?: BaseShortcutSetting // Shift+S
+  listenVideo?: BaseShortcutSetting // Shift+M
   increasePlaybackRate?: BaseShortcutSetting // +
   decreasePlaybackRate?: BaseShortcutSetting // -
   resetPlaybackRate?: BaseShortcutSetting // 0
@@ -536,6 +537,7 @@ export interface Settings {
   showVerticalVideoZoomButton: boolean // 显示竖屏视频放大按钮
   showBewlyWidescreenButton: boolean // 显示播放器 Bewly 宽屏按钮
   showVideoScreenshotButton: boolean // 显示播放器截图按钮
+  showListenVideoButton: boolean // 显示播放器听视频按钮
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: boolean // 使用B站默认自动播放行为（总开关）
@@ -868,6 +870,7 @@ export const originalSettings: Settings = {
   showVerticalVideoZoomButton: true, // 默认显示竖屏视频放大按钮
   showBewlyWidescreenButton: true, // 默认显示播放器 Bewly 宽屏按钮
   showVideoScreenshotButton: true, // 默认显示播放器截图按钮
+  showListenVideoButton: true, // 默认显示播放器听视频按钮
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: true, // 使用B站默认自动播放行为（总开关），默认开启
@@ -897,6 +900,7 @@ export const originalSettings: Settings = {
     turnOffLight: { key: 'I', enabled: true },
     caption: { key: 'C', enabled: true },
     videoScreenshot: { key: 'Shift+S', enabled: true },
+    listenVideo: { key: 'Shift+M', enabled: true },
     increasePlaybackRate: { key: '+', enabled: true },
     decreasePlaybackRate: { key: '-', enabled: true },
     resetPlaybackRate: { key: '0', enabled: true },
@@ -1199,6 +1203,13 @@ export const settings = useSettingsStorage(originalSettings, {
       record.shortcuts = {
         ...record.shortcuts,
         videoScreenshot: { ...originalSettings.shortcuts.videoScreenshot },
+      }
+    }
+
+    if (!record.shortcuts?.listenVideo) {
+      record.shortcuts = {
+        ...record.shortcuts,
+        listenVideo: { ...originalSettings.shortcuts.listenVideo },
       }
     }
 

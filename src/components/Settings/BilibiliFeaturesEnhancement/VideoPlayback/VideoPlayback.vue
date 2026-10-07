@@ -330,6 +330,14 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         >
           <Radio v-model="settings.showVideoScreenshotButton" />
         </SettingsItem>
+
+        <SettingsItem
+          :title="t('settings.show_listen_video_button')"
+          :desc="t('settings.show_listen_video_button_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.showListenVideoButton" />
+        </SettingsItem>
       </SettingsItemSubgroup>
     </SettingsItemGroup>
     <VolumeBalance />
