@@ -2,10 +2,11 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '~/components/Button.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import Slider from '~/components/Slider.vue'
-import { settings } from '~/logic'
+import { originalSettings, settings } from '~/logic'
 import type { AmbilightPreset } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
@@ -71,6 +72,18 @@ const currentPreset = computed({
     }
   },
 })
+
+function resetAmbilightEffects() {
+  settings.value = {
+    ...settings.value,
+    ambilightPreset: originalSettings.ambilightPreset,
+    ambilightStrength: originalSettings.ambilightStrength,
+    ambilightSpread: originalSettings.ambilightSpread,
+    ambilightSmoothing: originalSettings.ambilightSmoothing,
+    ambilightBlur: originalSettings.ambilightBlur,
+    ambilightSaturation: originalSettings.ambilightSaturation,
+  }
+}
 </script>
 
 <template>
@@ -90,6 +103,15 @@ const currentPreset = computed({
         :title="t('settings.ambilight.subgroup_effects')"
         :desc="t('settings.ambilight.subgroup_effects_desc')"
       >
+        <template #action>
+          <Button size="small" type="secondary" @click="resetAmbilightEffects">
+            <template #left>
+              <div i-mingcute:back-line />
+            </template>
+            {{ t('common.operation.reset') }}
+          </Button>
+        </template>
+
         <SettingsItem :title="t('settings.ambilight.preset')" right-width="auto">
           <SettingsSegmentedControl
             v-model="currentPreset"
