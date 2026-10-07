@@ -108,8 +108,6 @@ settings:
     title: Video Ambient Light
     enable: Enable ambient light
     enable_desc: Cast dynamic, soft ambient light around the video player to enhance immersion.
-    enable_in_live: Enable in live rooms
-    enable_in_live_desc: Also display ambient light in live streams with semi-transparent danmaku and controls.
     enable_fullscreen: Enable in fullscreen and web fullscreen
     enable_fullscreen_desc: Keep ambient light active in fullscreen; when disabled, ambient light pauses in fullscreen.
     preset: Light preset
@@ -121,6 +119,11 @@ settings:
     smoothing: Transition smoothing
     blur: Blur intensity
     saturation: Saturation
+    subgroup_scenes: Applied Scenes
+    subgroup_effects: Light Effects
+    subgroup_effects_desc: Fine-tune light brightness, spread radius, and smooth transition.
+    subgroup_performance: Rendering Performance
+    subgroup_performance_desc: Cap sampling and rendering frame rate to reduce GPU load and battery usage.
     fps: Maximum framerate
     fps_15: 15 fps · Power saving
     fps_24: 24 fps · Balanced

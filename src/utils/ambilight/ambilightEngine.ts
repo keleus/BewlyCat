@@ -10,8 +10,9 @@ interface Rect {
   height: number
 }
 
+// 优化时间常数：兼顾丝滑过度与明暗剧变时的快速追随（响应速度提升约 50%）
 function blendAlpha(dt: number, smoothing: number): number {
-  return smoothing === 0 ? 1 : 1 - Math.exp(-Math.max(0, dt) / (40 + smoothing * 7))
+  return smoothing === 0 ? 1 : 1 - Math.exp(-Math.max(0, dt) / (20 + smoothing * 4.2))
 }
 
 function contentRect(rect: Rect, vw: number, vh: number, fit: string = 'contain'): Rect {
@@ -66,22 +67,75 @@ export class AmbilightEngine {
   private canvas: HTMLCanvasElement | null = null
   private ctx: CanvasRenderingContext2D | null = null
   private rafId: number | null = null
+  private layoutRafId: number | null = null
   private lastDrawTime = 0
+  private layoutDirty = true
   private options: AmbilightEngineOptions
-  private isPaused = false
   private isHidden = false
+  private isSleeping = false
   private hasPainted = false
   private currentParent: HTMLElement | null = null
   private mode: AmbilightDisplayMode = 'normal'
+  private needsForceDraw = false
 
   constructor(options: AmbilightEngineOptions) {
     this.options = { ...options }
   }
 
+  private isAllowed(): boolean {
+    return !this.isHidden
+      && !this.isSleeping
+      && this.options.enabled
+      && Boolean(this.video?.isConnected)
+      && Boolean(this.hostElem)
+  }
+
+  public markLayoutDirty() {
+    this.layoutDirty = true
+  }
+
+  public invalidate(force = false) {
+    this.layoutDirty = true
+    if (force)
+      this.needsForceDraw = true
+
+    if (this.layoutRafId !== null)
+      return
+
+    this.layoutRafId = requestAnimationFrame(() => {
+      this.layoutRafId = null
+      this.updatePosition()
+      if (this.isAllowed()) {
+        if (this.needsForceDraw || !this.hasPainted)
+          this.drawSingleFrame(true)
+        if (this.video && !this.video.paused)
+          this.startLoop()
+      }
+      this.needsForceDraw = false
+    })
+  }
+
+  public setSleeping(sleeping: boolean) {
+    if (this.isSleeping === sleeping)
+      return
+    this.isSleeping = sleeping
+
+    if (!this.hostElem)
+      return
+
+    if (sleeping) {
+      this.hostElem.classList.add('is-sleeping')
+      this.stopLoop()
+    }
+    else {
+      this.hostElem.classList.remove('is-sleeping')
+      this.invalidate(true)
+    }
+  }
+
   public updateOptions(options: Partial<AmbilightEngineOptions>) {
     this.options = { ...this.options, ...options }
-    this.applyCanvasStyles()
-    this.scheduleFrame()
+    this.invalidate(true)
   }
 
   public bindVideo(video: HTMLVideoElement) {
@@ -91,17 +145,20 @@ export class AmbilightEngine {
     this.unbindVideo()
     this.video = video
     this.hasPainted = false
+    this.layoutDirty = true
     this.ensureDom()
     this.bindVideoEvents()
-    this.updatePosition()
-    this.scheduleFrame()
+    this.invalidate(true)
   }
 
   public unbindVideo() {
     this.unbindVideoEvents()
     this.stopLoop()
+    if (this.layoutRafId !== null) {
+      cancelAnimationFrame(this.layoutRafId)
+      this.layoutRafId = null
+    }
     this.video = null
-    this.isPaused = true
     this.hasPainted = false
   }
 
@@ -114,19 +171,17 @@ export class AmbilightEngine {
       return
 
     if (mode === 'mini') {
-      this.hostElem.style.display = 'none'
-      this.stopLoop()
+      this.setSleeping(true)
       return
     }
 
     const isFullscreen = mode === 'fullscreen'
-
     if (isFullscreen) {
       if (!this.options.enableFullscreen) {
-        this.hostElem.style.display = 'none'
+        this.setSleeping(true)
         return
       }
-      this.hostElem.style.display = 'block'
+      this.setSleeping(false)
       const targetParent = playerContainer || document.body
       if (this.currentParent !== targetParent) {
         targetParent.insertBefore(this.hostElem, targetParent.firstChild)
@@ -136,7 +191,7 @@ export class AmbilightEngine {
       }
     }
     else {
-      this.hostElem.style.display = 'block'
+      this.setSleeping(false)
       if (this.currentParent !== document.body) {
         document.body.insertBefore(this.hostElem, document.body.firstChild)
         this.currentParent = document.body
@@ -145,28 +200,28 @@ export class AmbilightEngine {
       }
     }
 
-    this.updatePosition()
-    this.scheduleFrame()
+    this.invalidate()
   }
 
   public setHidden(hidden: boolean) {
     this.isHidden = hidden
     if (hidden) {
       this.stopLoop()
-      if (this.hostElem)
-        this.hostElem.style.display = 'none'
+      this.setSleeping(true)
     }
     else {
-      if (this.hostElem)
-        this.hostElem.style.display = 'block'
-      this.updatePosition()
-      this.scheduleFrame()
+      this.setSleeping(false)
+      this.invalidate(true)
     }
   }
 
   public destroy() {
     this.unbindVideo()
     this.stopLoop()
+    if (this.layoutRafId !== null) {
+      cancelAnimationFrame(this.layoutRafId)
+      this.layoutRafId = null
+    }
     if (this.hostElem) {
       this.hostElem.remove()
       this.hostElem = null
@@ -175,6 +230,7 @@ export class AmbilightEngine {
     this.ctx = null
     this.currentParent = null
     this.hasPainted = false
+    this.layoutDirty = true
   }
 
   private ensureDom() {
@@ -184,19 +240,19 @@ export class AmbilightEngine {
     const host = document.createElement('div')
     host.className = 'bewly-ambilight-host'
     host.setAttribute('aria-hidden', 'true')
-    host.style.cssText = 'position:fixed;inset:0;pointer-events:none!important;z-index:-1;overflow:hidden;contain:strict;transform:translate3d(0,0,0);'
+    host.style.cssText = 'position:fixed;inset:0;pointer-events:none!important;z-index:-1;overflow:hidden;contain:layout style;transform:translate3d(0,0,0);'
 
     const canvas = document.createElement('canvas')
     canvas.width = SAMPLE_WIDTH
     canvas.height = SAMPLE_HEIGHT
-    canvas.style.cssText = 'position:absolute;pointer-events:none;transform-origin:center;will-change:left,top,width,height,filter,opacity;'
+    canvas.style.cssText = 'position:absolute;pointer-events:none;transform-origin:center;'
 
     host.appendChild(canvas)
     document.body.insertBefore(host, document.body.firstChild)
 
     this.hostElem = host
     this.canvas = canvas
-    this.ctx = canvas.getContext('2d', { alpha: false, desynchronized: true })
+    this.ctx = canvas.getContext('2d', { alpha: false })
     this.currentParent = document.body
 
     this.applyCanvasStyles()
@@ -213,24 +269,42 @@ export class AmbilightEngine {
   }
 
   private onVideoPlay = () => {
-    this.isPaused = false
-    this.startLoop()
+    if (this.isAllowed())
+      this.startLoop()
+  }
+
+  private onVideoPlaying = () => {
+    if (this.isAllowed())
+      this.startLoop()
+  }
+
+  private onVideoLoadedData = () => {
+    this.invalidate(true)
   }
 
   private onVideoPause = () => {
-    this.isPaused = true
+    this.drawSingleFrame(true)
+    this.stopLoop()
+  }
+
+  private onVideoEnded = () => {
     this.drawSingleFrame(true)
     this.stopLoop()
   }
 
   private onVideoSeeked = () => {
-    this.updatePosition()
-    this.drawSingleFrame(true)
+    this.invalidate(true)
   }
 
   private onVideoTimeUpdate = () => {
-    if (this.isPaused)
-      this.drawSingleFrame()
+    // 自愈心跳：如果视频未暂停但帧循环断开，自动复活！
+    if (this.isAllowed() && this.video && !this.video.paused && this.rafId === null) {
+      this.startLoop()
+    }
+  }
+
+  private onVideoMetadataOrResize = () => {
+    this.invalidate(true)
   }
 
   private bindVideoEvents() {
@@ -238,10 +312,14 @@ export class AmbilightEngine {
       return
 
     this.video.addEventListener('play', this.onVideoPlay)
+    this.video.addEventListener('playing', this.onVideoPlaying)
+    this.video.addEventListener('loadeddata', this.onVideoLoadedData)
     this.video.addEventListener('pause', this.onVideoPause)
+    this.video.addEventListener('ended', this.onVideoEnded)
     this.video.addEventListener('seeked', this.onVideoSeeked)
     this.video.addEventListener('timeupdate', this.onVideoTimeUpdate)
-    this.isPaused = this.video.paused
+    this.video.addEventListener('loadedmetadata', this.onVideoMetadataOrResize)
+    this.video.addEventListener('resize', this.onVideoMetadataOrResize)
   }
 
   private unbindVideoEvents() {
@@ -249,36 +327,41 @@ export class AmbilightEngine {
       return
 
     this.video.removeEventListener('play', this.onVideoPlay)
+    this.video.removeEventListener('playing', this.onVideoPlaying)
+    this.video.removeEventListener('loadeddata', this.onVideoLoadedData)
     this.video.removeEventListener('pause', this.onVideoPause)
+    this.video.removeEventListener('ended', this.onVideoEnded)
     this.video.removeEventListener('seeked', this.onVideoSeeked)
     this.video.removeEventListener('timeupdate', this.onVideoTimeUpdate)
+    this.video.removeEventListener('loadedmetadata', this.onVideoMetadataOrResize)
+    this.video.removeEventListener('resize', this.onVideoMetadataOrResize)
   }
 
   public updatePosition() {
+    this.layoutDirty = false
+
     if (!this.video || !this.canvas || !this.hostElem)
       return
 
     if (this.mode === 'mini' || this.video.closest('.bpx-player-container[data-screen="mini"]')) {
-      this.hostElem.style.display = 'none'
-      this.stopLoop()
+      this.setSleeping(true)
       return
     }
 
     const r = this.video.getBoundingClientRect()
+    // 50px 滞后缓冲带，避免在视口边缘滚动时反复休眠与唤醒
+    const BUFFER = 50
     const isVisible = r.width >= 160
       && r.height >= 90
-      && r.bottom > 0
-      && r.top < window.innerHeight
-      && r.right > 0
-      && r.left < window.innerWidth
+      && r.bottom > -BUFFER
+      && r.top < window.innerHeight + BUFFER
+      && r.right > -BUFFER
+      && r.left < window.innerWidth + BUFFER
 
     if (!isVisible) {
-      this.hostElem.style.display = 'none'
-      this.stopLoop()
+      this.setSleeping(true)
       return
     }
-
-    this.hostElem.style.display = 'block'
 
     const computedStyle = window.getComputedStyle(this.video)
     const rect = contentRect(
@@ -288,24 +371,16 @@ export class AmbilightEngine {
       computedStyle.objectFit,
     )
 
-    const l = rect.left
-    const t = rect.top
-    const right = l + rect.width
-    const bottom = t + rect.height
-
-    // 画面完全铺满视口时（无外侧光效空间）
-    if (l <= 1 && t <= 1 && right >= window.innerWidth - 1 && bottom >= window.innerHeight - 1) {
-      this.hostElem.style.display = 'none'
-      return
-    }
-    this.hostElem.style.display = 'block'
-
-    const origin = this.hostElem.getBoundingClientRect()
+    const origin = (this.currentParent && this.currentParent !== document.body)
+      ? this.currentParent.getBoundingClientRect()
+      : { left: 0, top: 0 }
     const ox = origin.left
     const oy = origin.top
 
-    // 核心：使用奇偶反向多边形裁切，精准将视频播放区域挖空，光线纯粹只向外侧辐射
-    this.hostElem.style.clipPath = `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${l - ox}px ${t - oy}px, ${right - ox}px ${t - oy}px, ${right - ox}px ${bottom - oy}px, ${l - ox}px ${bottom - oy}px, ${l - ox}px ${t - oy}px)`
+    // 彻底清除 clipPath 挖孔：发光层位于底层 z-index: -1，由视频物理不透明画面自然覆盖，
+    // 根本消除滚动时的异步剪裁错位黑块与 GPU 频繁重绘迟滞
+    if (this.hostElem.style.clipPath)
+      this.hostElem.style.clipPath = ''
 
     // 核心几何扩散延展计算
     const glow = glowGeometry(
@@ -321,9 +396,12 @@ export class AmbilightEngine {
     this.canvas.style.width = `${glow.width}px`
     this.canvas.style.height = `${glow.height}px`
     this.applyCanvasStyles(glow.blur)
+
+    // 布局与尺寸就绪，退出休眠
+    this.setSleeping(false)
   }
 
-  private drawSingleFrame(force = false) {
+  private drawSingleFrame(force = false, frameTime?: number) {
     if (!this.video || !this.ctx || this.video.readyState < 2 || !this.video.videoWidth)
       return
 
@@ -337,7 +415,7 @@ export class AmbilightEngine {
         this.hasPainted = false
       }
 
-      const now = performance.now()
+      const now = frameTime ?? performance.now()
       const dt = this.lastDrawTime ? Math.min(500, now - this.lastDrawTime) : 1000
 
       // 核心：基于时间差与阻尼时间的指数衰减算法
@@ -354,36 +432,36 @@ export class AmbilightEngine {
     }
   }
 
-  private scheduleFrame() {
-    if (this.video && !this.video.paused && !this.isHidden)
-      this.startLoop()
-    else
-      this.drawSingleFrame()
+  public scheduleFrame() {
+    this.invalidate(true)
   }
 
-  private startLoop() {
+  public startLoop() {
     if (this.rafId !== null)
       return
 
-    const loop = (now: number) => {
-      if (this.isHidden || !this.video || this.video.paused) {
-        this.stopLoop()
+    const tick = (now: number) => {
+      this.rafId = null
+
+      if (!this.isAllowed() || !this.video || this.video.paused)
         return
-      }
+
+      if (this.layoutDirty)
+        this.updatePosition()
 
       const interval = 1000 / Math.max(8, this.options.fps)
       if (now - this.lastDrawTime >= interval) {
-        this.updatePosition()
-        this.drawSingleFrame()
+        this.drawSingleFrame(false, now)
+        this.lastDrawTime = now
       }
 
-      this.rafId = requestAnimationFrame(loop)
+      this.rafId = requestAnimationFrame(tick)
     }
 
-    this.rafId = requestAnimationFrame(loop)
+    this.rafId = requestAnimationFrame(tick)
   }
 
-  private stopLoop() {
+  public stopLoop() {
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId)
       this.rafId = null

@@ -14,36 +14,17 @@ let playerObserver: MutationObserver | null = null
 let observedPlayerContainer: HTMLElement | null = null
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 
-function isLiveRoomPage(): boolean {
-  return location.hostname === 'live.bilibili.com'
-    && /^\/(?:blanc\/)?[1-9]\d*\/?$/.test(location.pathname)
-}
-
 function isSupportedPage(): boolean {
   return isVideoPlaybackPage()
     || isVideoOrBangumiPage()
     || isWatchLaterListPage(location.href)
-    || isLiveRoomPage()
 }
 
 function isFeatureActive(): boolean {
-  if (!settings.value.ambilightEnabled || !isSupportedPage())
-    return false
-
-  if (isLiveRoomPage())
-    return settings.value.ambilightEnableInLive
-
-  return true
+  return settings.value.ambilightEnabled && isSupportedPage()
 }
 
 function findTargetVideo(): HTMLVideoElement | null {
-  if (isLiveRoomPage()) {
-    const liveVideo = document.querySelector<HTMLVideoElement>('#live-player video')
-    if (liveVideo && liveVideo.isConnected)
-      return liveVideo
-    return null
-  }
-
   const video = getVideoElement()
   if (video && video.isConnected)
     return video
@@ -59,13 +40,19 @@ function resolveDisplayMode(): {
   if (nativeFs)
     return { mode: 'fullscreen', container: nativeFs }
 
-  const playerContainer = document.querySelector<HTMLElement>('.bpx-player-container, #playerWrap, #live-player')
+  const playerContainer = document.querySelector<HTMLElement>(
+    '.bpx-player-container, #playerWrap',
+  )
   if (playerContainer) {
     const screen = playerContainer.getAttribute('data-screen')
     if (screen === 'mini')
       return { mode: 'mini', container: playerContainer }
-    if (screen === 'full' || screen === 'web')
+    if (screen === 'full' || screen === 'web'
+      || playerContainer.classList.contains('web-fullscreen')
+      || playerContainer.classList.contains('fullscreen')
+      || document.documentElement.classList.contains('fullscreen-fix')) {
       return { mode: 'fullscreen', container: playerContainer }
+    }
     if (screen === 'wide')
       return { mode: 'theater', container: playerContainer }
   }
@@ -86,27 +73,20 @@ function sync() {
       observedPlayerContainer = null
     }
     document.documentElement.removeAttribute('data-bewly-ambilight')
-    document.documentElement.removeAttribute('data-bewly-ambilight-live')
     return
   }
 
   const target = findTargetVideo()
   if (!target) {
     document.documentElement.removeAttribute('data-bewly-ambilight')
-    document.documentElement.removeAttribute('data-bewly-ambilight-live')
     return
   }
 
   document.documentElement.setAttribute('data-bewly-ambilight', '')
-  if (isLiveRoomPage())
-    document.documentElement.setAttribute('data-bewly-ambilight-live', '')
-  else
-    document.documentElement.removeAttribute('data-bewly-ambilight-live')
 
   if (!engine) {
     engine = new AmbilightEngine({
       enabled: settings.value.ambilightEnabled,
-      enableInLive: settings.value.ambilightEnableInLive,
       enableFullscreen: settings.value.ambilightEnableFullscreen,
       strength: settings.value.ambilightStrength,
       spread: settings.value.ambilightSpread,
@@ -119,7 +99,6 @@ function sync() {
   else {
     engine.updateOptions({
       enabled: settings.value.ambilightEnabled,
-      enableInLive: settings.value.ambilightEnableInLive,
       enableFullscreen: settings.value.ambilightEnableFullscreen,
       strength: settings.value.ambilightStrength,
       spread: settings.value.ambilightSpread,
@@ -137,8 +116,11 @@ function sync() {
 
   const { mode, container } = resolveDisplayMode()
   engine.setDisplayMode(mode, container)
+  engine.invalidate(true)
 
-  const playerContainer = container || document.querySelector<HTMLElement>('.bpx-player-container, #playerWrap, #live-player')
+  const playerContainer = container || document.querySelector<HTMLElement>(
+    '.bpx-player-container, #playerWrap',
+  )
   if (playerContainer && playerContainer !== observedPlayerContainer) {
     playerObserver?.disconnect()
     observedPlayerContainer = playerContainer
@@ -146,6 +128,7 @@ function sync() {
       if (engine) {
         const currentMode = resolveDisplayMode()
         engine.setDisplayMode(currentMode.mode, currentMode.container)
+        engine.invalidate()
       }
     })
     playerObserver.observe(playerContainer, {
@@ -172,7 +155,6 @@ export function initAmbilightControl() {
     watch(
       () => [
         settings.value.ambilightEnabled,
-        settings.value.ambilightEnableInLive,
         settings.value.ambilightEnableFullscreen,
         settings.value.ambilightStrength,
         settings.value.ambilightSpread,
@@ -201,26 +183,32 @@ export function initAmbilightControl() {
         engine.setHidden(document.hidden)
     })
 
-    // 节流调度，防止滚动与尺寸变动触发主线程布局抖动
-    let layoutRafId: number | null = null
     const scheduleLayoutUpdate = () => {
-      if (layoutRafId !== null)
-        return
-      layoutRafId = requestAnimationFrame(() => {
-        layoutRafId = null
-        if (engine) {
-          const { mode, container } = resolveDisplayMode()
-          engine.setDisplayMode(mode, container)
-          engine.updatePosition()
-        }
-      })
+      if (engine) {
+        const { mode, container } = resolveDisplayMode()
+        engine.setDisplayMode(mode, container)
+        engine.invalidate()
+      }
     }
 
     // 窗口尺寸变化
-    window.addEventListener('resize', scheduleLayoutUpdate)
+    window.addEventListener('resize', scheduleLayoutUpdate, { passive: true })
 
-    // 页面滚动监听（RAF 节流调度，确保中键平滑滚动和滚轮满帧无粘滞）
+    // 页面滚动监听（由 invalidate 内部 RAF 合并调度）
     window.addEventListener('scroll', scheduleLayoutUpdate, { passive: true })
+
+    // 定时心跳自愈：每秒兜底核对视频状态与激活帧循环，避免切集/缓冲后失活
+    setInterval(() => {
+      if (isFeatureActive()) {
+        const target = findTargetVideo()
+        if (target !== currentVideo) {
+          scheduleSync()
+        }
+        else if (engine && target && !target.paused) {
+          engine.startLoop()
+        }
+      }
+    }, 1000)
 
     // 观察 DOM 变化（换 P、切集、单页应用导航）
     observer = new MutationObserver(() => {

@@ -108,8 +108,6 @@ settings:
     title: 影片環境光
     enable: 啟用影片環境光
     enable_desc: 喺影片播放頁四周投射隨畫面變化嘅柔和環境光，增強觀影沉浸感。
-    enable_in_live: 喺直播間中啟用
-    enable_in_live_desc: 進入直播間時同樣顯示環境光，彈幕同控制列自動半透明融入背景。
     enable_fullscreen: 全螢幕同網頁全螢幕時啟用
     enable_fullscreen_desc: 進入全螢幕或網頁全螢幕時保持環境光透出；關閉時進入全螢幕自動休眠停繪。
     preset: 光效預設
@@ -121,6 +119,11 @@ settings:
     smoothing: 過渡平滑
     blur: 柔化程度
     saturation: 色彩飽和度
+    subgroup_scenes: 適用場景
+    subgroup_effects: 光效調節
+    subgroup_effects_desc: 調整光線發光強度、擴散範圍同色彩過渡質感。
+    subgroup_performance: 渲染性能
+    subgroup_performance_desc: 限制環境光取樣同繪製更新率，較低更新率可降低功耗同顯示卡佔用。
     fps: 渲染影格率上限
     fps_15: 15 fps · 省電
     fps_24: 24 fps · 均衡

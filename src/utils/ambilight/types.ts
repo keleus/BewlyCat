@@ -1,6 +1,5 @@
 export interface AmbilightEngineOptions {
   enabled: boolean
-  enableInLive: boolean
   enableFullscreen: boolean
   strength: number
   spread: number

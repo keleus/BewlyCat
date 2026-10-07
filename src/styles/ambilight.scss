@@ -6,13 +6,22 @@
   pointer-events: none !important;
   z-index: -1;
   overflow: hidden;
-  contain: strict;
+  contain: layout style;
   transform: translate3d(0, 0, 0);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 200ms ease-out,
+    visibility 200ms ease-out;
+
+  &.is-sleeping {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
 
   // 全屏或挂载在播放器容器内时的层级适配
   .bpx-player-container &,
-  #playerWrap &,
-  #live-player & {
+  #playerWrap & {
     position: absolute;
     z-index: 0;
   }
@@ -21,7 +30,6 @@
     position: absolute;
     pointer-events: none;
     transform-origin: center;
-    will-change: left, top, width, height, filter, opacity;
   }
 }
 
@@ -169,24 +177,5 @@ html[data-bewly-ambilight] {
     ) {
     background: transparent !important;
     box-shadow: none !important;
-  }
-}
-
-// 直播间包裹层穿透
-html[data-bewly-ambilight][data-bewly-ambilight-live] {
-  .room-bg,
-  .live-room-app,
-  .app-content,
-  .app-body,
-  #fullscreen-container,
-  #live-player-ctnr,
-  #live-player,
-  .player-section {
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  #fullscreen-container::before {
-    background: transparent !important;
   }
 }

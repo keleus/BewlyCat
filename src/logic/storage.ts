@@ -253,7 +253,6 @@ export type AmbilightPreset = 'soft' | 'cinema' | 'vivid'
 
 export interface Settings {
   ambilightEnabled: boolean
-  ambilightEnableInLive: boolean
   ambilightEnableFullscreen: boolean
   ambilightPreset: AmbilightPreset
   ambilightStrength: number
@@ -596,7 +595,6 @@ export const originalLocalSettings: LocalSettings = {
 
 export const originalSettings: Settings = {
   ambilightEnabled: false,
-  ambilightEnableInLive: true,
   ambilightEnableFullscreen: true,
   ambilightPreset: 'cinema',
   ambilightStrength: 80,
@@ -999,8 +997,6 @@ export const settings = useSettingsStorage(originalSettings, {
 
     if (typeof record.ambilightEnabled !== 'boolean')
       record.ambilightEnabled = false
-    if (typeof record.ambilightEnableInLive !== 'boolean')
-      record.ambilightEnableInLive = true
     if (typeof record.ambilightEnableFullscreen !== 'boolean')
       record.ambilightEnableFullscreen = true
 
