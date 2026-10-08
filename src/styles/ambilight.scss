@@ -117,6 +117,79 @@ html[data-bewly-ambilight] {
     border-color: transparent !important;
   }
 
+  // UP主信息区操作按钮（充电、关注）透明穿透与幽灵蓝框适配
+  :is(.up-info-container, .up-panel-container, .up-detail, #v_upinfo, .up-info, .right-container) {
+    .upinfo-btn-panel {
+      // 内部图标与内嵌容器严禁出现边框或背景
+      .charge-btn-icon,
+      .follow-btn-inner,
+      .van-icon,
+      i,
+      svg,
+      img,
+      span {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
+      }
+
+      // 1. 充电按钮本体（仅作用于外层按钮，消除内部图标正方形小框）
+      > :is(.not-follow-charge-btn, .following-charge-btn, .new-charge-btn, .charge-btn) {
+        background: transparent !important;
+        border: 1px solid var(--brand_blue, #00aeec) !important;
+        color: var(--brand_blue, #00aeec) !important;
+        box-shadow: none !important;
+
+        * {
+          color: var(--brand_blue, #00aeec) !important;
+          fill: currentColor !important;
+        }
+
+        &:hover {
+          background: rgba(0, 174, 236, 0.15) !important;
+        }
+      }
+
+      // 2. 关注按钮本体（仅作用于外层按钮）
+      > :is(.follow-btn, .btn-follow-up) {
+        box-shadow: none !important;
+
+        // 未关注（+ 关注）：幽灵蓝框风格
+        &.not-follow {
+          background: transparent !important;
+          border: 1px solid var(--brand_blue, #00aeec) !important;
+          color: var(--brand_blue, #00aeec) !important;
+
+          * {
+            color: var(--brand_blue, #00aeec) !important;
+            fill: currentColor !important;
+          }
+
+          &:hover {
+            background: rgba(0, 174, 236, 0.2) !important;
+          }
+        }
+
+        // 已关注状态
+        &:not(.not-follow) {
+          background: transparent !important;
+          border: 1px solid var(--line_regular, rgba(128, 128, 128, 0.35)) !important;
+          color: var(--text2, rgba(255, 255, 255, 0.8)) !important;
+
+          * {
+            color: var(--text2, rgba(255, 255, 255, 0.8)) !important;
+            fill: currentColor !important;
+          }
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.12) !important;
+          }
+        }
+      }
+    }
+  }
+
   // 视频选集（多P、合集面板）全层级透明化，保持文字颜色与播放指示图标
   .video-pod,
   .video-pod__header,
