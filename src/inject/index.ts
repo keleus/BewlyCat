@@ -427,14 +427,14 @@ else if (shouldInitializePageScript) {
         #pagination #pagination-body > [data-idx="${COMMENT_REPLY_EXPAND_ALL_IDX}"] {
           order: 2;
           flex-shrink: 0;
-          margin-inline-start: auto;
+          margin-inline-start: var(--bew-space-6, 24px);
           margin-inline-end: 0;
         }
 
         #${COMMENT_REPLY_EXPAND_ALL_ID} {
           flex-shrink: 0;
           min-height: var(--bew-space-6, 24px);
-          margin-inline-start: auto;
+          margin-inline-start: var(--bew-space-4, 16px);
           padding: 0;
           border: 0;
           background: transparent;
