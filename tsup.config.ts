@@ -9,6 +9,7 @@ const outDir = isFirefox ? 'extension-firefox/dist' : isSafari ? 'extension-safa
 
 export default defineConfig(() => ({
   entry: {
+    'contentScripts/listenVideoControl': './src/contentScripts/listenVideoControl.ts',
     'background/index': './src/background/index.ts',
     'contentScripts/pageLoading': './src/contentScripts/pageLoading.ts',
   },
@@ -20,6 +21,7 @@ export default defineConfig(() => ({
   target: 'esnext',
   ignoreWatch: ['**/extension/**', '**/extension-firefox/**', '**/extension-safari/**'],
   splitting: false,
+  loader: { '.css': 'text' },
   noExternal: ['md5'],
   sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
   define: {

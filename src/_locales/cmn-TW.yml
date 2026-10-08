@@ -103,6 +103,10 @@ player_screenshot:
   saved: 截圖已儲存
   failed: 截圖失敗
   video_unavailable: 目前影片畫面無法使用
+player_listen:
+  enter: 聽影片
+  exit: 恢復影片畫面
+  listening: 正在收聽
 settings:
   local_loudness:
     gain_history: 均衡增益變化 · 近 60 秒
@@ -934,6 +938,8 @@ settings:
     caption_desc: 開啟/關閉字幕
     video_screenshot: 影片截圖
     video_screenshot_desc: 將目前影片畫面儲存為 PNG 圖片，關閉播放器截圖按鈕後仍可使用。
+    listen_video: 聽影片
+    listen_video_desc: 切換聽影片模式，隱藏影片畫面、僅保留聲音播放。
     increase_playback_rate: 加速播放
     increase_playback_rate_desc: 提高播放速度
     decrease_playback_rate: 減速播放
@@ -1021,6 +1027,10 @@ settings:
   show_bewly_widescreen_button_desc: 啟用後，在影片播放器控制列中顯示 Bewly 寬螢幕按鈕。
   show_video_screenshot_button: 顯示播放器截圖按鈕
   show_video_screenshot_button_desc: 啟用後，在影片播放器控制列中顯示擷取目前影片畫面的按鈕。關閉後仍可使用截圖快捷鍵，可在「快捷鍵」設定中調整。
+  enable_listen_video: 啟用聽影片功能
+  enable_listen_video_desc: 開啟後可透過播放器按鈕或快捷鍵進入聽影片。關閉時退出聽影片、恢復彈幕並停止相關監聽；關閉後開啟頁面不載入功能模組。此功能隱藏畫面，影片串流仍會下載和解碼。
+  show_listen_video_button: 顯示播放器「聽影片」按鈕
+  show_listen_video_button_desc: 啟用後，在影片播放器控制列中顯示聽影片切換按鈕：隱藏影片畫面僅保留聲音，以封面和標題組成音訊播放介面。關閉後仍可使用快捷鍵切換，可在「快捷鍵」設定中調整。
   group_fonts: 字體
   group_visual_effects: 視覺效果
   badge_type: 角標類型

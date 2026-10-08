@@ -103,6 +103,10 @@ player_screenshot:
   saved: 截圖已儲存
   failed: 截圖失敗
   video_unavailable: 而家嘅影片畫面用唔到
+player_listen:
+  enter: 聽影片
+  exit: 還原影片畫面
+  listening: 而家聽緊
 settings:
   local_loudness:
     gain_history: 均衡增益變化 · 近 60 秒
@@ -870,6 +874,8 @@ settings:
     caption_desc: 顯示/隱藏字幕。
     video_screenshot: 影片截圖
     video_screenshot_desc: 將目前影片畫面儲存成 PNG 圖片，關咗播放器截圖按鈕之後仍然用得。
+    listen_video: 聽影片
+    listen_video_desc: 切換聽影片模式，收埋畫面淨係留低聲音。
     clock_time: 時鐘
     clock_time_desc: 顯示/隱藏系統時間。
     danmu_status: 顯示彈幕狀態
@@ -1042,6 +1048,10 @@ settings:
   show_bewly_widescreen_button_desc: 啓用後，喺影片播放器控制欄顯示 Bewly 闊螢幕按鈕。
   show_video_screenshot_button: 顯示播放器截圖按鈕
   show_video_screenshot_button_desc: 啓用後，喺影片播放器控制欄顯示擷取目前影片畫面嘅按鈕。關咗之後仍然可以用截圖快捷鍵，可以喺「快捷鍵」設定入面更改。
+  enable_listen_video: 啓用聽影片功能
+  enable_listen_video_desc: 開咗之後可以用播放器按鈕或者快捷鍵聽影片。關閉會退出聽影片、還原彈幕同停止相關監聽；關閉後開頁面唔會載入功能模組。功能會收埋畫面，但影片串流仍然會下載同解碼。
+  show_listen_video_button: 顯示播放器「聽影片」按鈕
+  show_listen_video_button_desc: 啓用後，喺影片播放器控制欄顯示聽影片切換按鈕：收埋影片畫面淨係留低聲音，用封面同標題砌返個聽歌畫面。關咗之後仍然可以用快捷鍵切換，可以喺「快捷鍵」設定入面更改。
   group_fonts: ''
   group_visual_effects: ''
   group_search_results: 搜尋結果

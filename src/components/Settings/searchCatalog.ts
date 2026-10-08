@@ -501,6 +501,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_vertical_video_zoom_button',
     'settings.show_bewly_widescreen_button',
     'settings.show_video_screenshot_button',
+    'settings.enable_listen_video',
+    'settings.show_listen_video_button',
   ]),
   ...createEntries(playerRoute, [
     'settings.video_player_scroll_mode.title',
@@ -666,6 +668,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.shortcuts.turn_off_light',
     'settings.shortcuts.caption',
     'settings.shortcuts.video_screenshot',
+    'settings.shortcuts.listen_video',
     'settings.shortcuts.increase_playback_rate',
     'settings.shortcuts.decrease_playback_rate',
     'settings.shortcuts.reset_playback_rate',

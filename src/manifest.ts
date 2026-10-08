@@ -74,6 +74,7 @@ export async function getManifest() {
       {
         resources: [
           'assets/*',
+          'dist/contentScripts/listenVideoControl.js',
         ],
         matches: [...CONTENT_SCRIPT_MATCHES],
       },

@@ -1,3 +1,4 @@
+import { toggleListenVideo } from '~/contentScripts/listenVideoFeature'
 import { settings } from '~/logic'
 import { applyBewlyWidescreen, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged } from '~/utils/bewlyWidescreen'
 import { isVideoOrBangumiPage, isVideoPlaybackPage } from '~/utils/main'
@@ -190,11 +191,14 @@ export function setupShortcutHandlers() {
           // 兼容：配置为 '+' 时，允许直接按 '=' 键触发（标准键盘上 '+' 需要 Shift+=）
           if (configKey.toLowerCase() === keyCombo.toLowerCase()
             || (configKey === '+' && keyCombo === '=')) {
-            // 截图只在视频播放页响应，避免拦截其他页面或输入法的按键。
-            if (id === 'videoScreenshot'
+            // 截图与听视频只在视频播放页响应，避免拦截其他页面或输入法的按键。
+            if ((id === 'videoScreenshot' || id === 'listenVideo')
               && (e.isComposing || !(isVideoPlaybackPage() || isVideoOrBangumiPage()))) {
               continue
             }
+
+            if (id === 'listenVideo' && !settings.value.enableListenVideo)
+              continue
 
             // 获取处理函数
             const handler = shortcutHandlers[id]
@@ -320,6 +324,14 @@ export function registerDefaultHandlers(): void {
       return
 
     void captureVideoScreenshot()
+  })
+
+  // 听视频模式独立于控制栏按钮开关，长按时不重复切换。
+  registerShortcutHandler('listenVideo', (event) => {
+    if (event.repeat)
+      return
+
+    void toggleListenVideo()
   })
 
   // 增加播放速度
