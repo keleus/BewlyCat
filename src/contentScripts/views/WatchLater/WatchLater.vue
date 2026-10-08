@@ -374,7 +374,7 @@ function handleOpenVideoPageAndRemove(bvid: string, aid: number) {
           grid-layout="adaptive"
           :loading="isLoading"
           :no-more-content="noMoreContent"
-          :show-watcher-later="false"
+          :show-watch-later="false"
           :card-click-handler="handleWatchLaterCardClick"
           @refresh="initData"
           @load-more="getWatchLaterListByPage"
