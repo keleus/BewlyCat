@@ -178,4 +178,53 @@ html[data-bewly-ambilight] {
     background: transparent !important;
     box-shadow: none !important;
   }
+
+  // =========================================================================
+  // 方案一：弹幕级 1px 紧致几何硬轮廓（无发散模糊，杜绝中空发脏）
+  // 纯字体防护，不添加任何背景卡片，保持 100% 纯净通透穿透
+  // =========================================================================
+
+  // 暗色模式（白字）：1px 紧致暗黑硬边防护，遇白底 PPT 强光不吞噬
+  &.dark,
+  &[data-dark="true"] {
+    .bili-header__bar,
+    #viewbox_report,
+    #arc_toolbar_report,
+    .right-container,
+    .video-desc-container,
+    .bpx-player-sending-area,
+    .playlist-app :is(.video-info-container, #playlistToolbar, .playlist-container--right) {
+      text-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.85),
+        0 0 1px rgba(0, 0, 0, 0.75);
+    }
+  }
+
+  // 浅色模式（黑字）：微光柔化托底（方案 A），消除生硬线框与中空感
+  &:not(.dark) {
+    .bili-header__bar,
+    #viewbox_report,
+    #arc_toolbar_report,
+    .right-container,
+    .video-desc-container,
+    .bpx-player-sending-area,
+    .playlist-app :is(.video-info-container, #playlistToolbar, .playlist-container--right) {
+      text-shadow:
+        0 1px 2px rgba(255, 255, 255, 0.55),
+        0 0 1.5px rgba(255, 255, 255, 0.45);
+    }
+
+    // 方案 B：高亮态与品牌蓝文字解绑，排除白色描边污染，保持鲜艳纯净
+    :is(
+      .active,
+      .active *,
+      .is-active,
+      .is-active *,
+      [style*="color: rgb(0, 174, 236)"],
+      [style*="color: var(--brand_blue)"],
+      [style*="color:var(--brand_blue)"]
+    ) {
+      text-shadow: none !important;
+    }
+  }
 }
