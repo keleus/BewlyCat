@@ -167,6 +167,21 @@ html.dark.bewly-design {
     }
   }
 
+  // 头部操作统一提供可点击反馈，尺寸与排版仍由各弹窗控制。
+  .bew-top-bar-pop-action {
+    transition: color var(--bew-duration-fast) var(--bew-ease-standard);
+
+    &:hover:not(:disabled) {
+      color: var(--bew-theme-color);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bew-top-bar-pop-action {
+      transition: none;
+    }
+  }
+
   .bew-top-bar-media-column {
     width: var(--bew-top-bar-media-width);
     flex: 0 0 auto;

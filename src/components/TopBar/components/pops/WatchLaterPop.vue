@@ -146,7 +146,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
       <div flex="~ items-center gap-4 wrap">
         <button
           type="button"
-          class="watch-later-header-action"
+          class="watch-later-header-action bew-top-bar-pop-action"
           :disabled="isAddingOpenTabsToWatchLater"
           :aria-busy="isAddingOpenTabsToWatchLater"
           :title="$t('watch_later.add_open_tabs_hint')"
@@ -157,14 +157,14 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
         <ALink
           :href="playAllUrl"
           type="topBar"
-          class="watch-later-header-action"
+          class="watch-later-header-action bew-top-bar-pop-action"
         >
           {{ $t('common.play_all') }}
         </ALink>
         <ALink
           :href="viewAllUrl"
           type="topBar"
-          class="watch-later-header-action"
+          class="watch-later-header-action bew-top-bar-pop-action"
         >
           {{ $t('common.view_all') }}
         </ALink>
@@ -196,7 +196,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
       />
 
       <!-- watchlater：卡片结构与收藏/动态弹窗视频卡保持一致，特有操作作为封面覆盖层 -->
-      <TransitionGroup name="list">
+      <TransitionGroup name="removable-list" tag="div" class="removable-list-group" flex="~ col gap-2">
         <ALink
           v-for="(item, index) in watchLaterList"
           :key="item.aid"
@@ -314,10 +314,6 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
   line-height: var(--bew-line-height-control);
   white-space: nowrap;
   cursor: pointer;
-
-  &:hover:not(:disabled) {
-    color: var(--bew-theme-color);
-  }
 
   &:active:not(:disabled) {
     opacity: 0.7;

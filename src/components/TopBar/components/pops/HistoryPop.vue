@@ -249,6 +249,7 @@ defineExpose({
       <ALink
         href="https://www.bilibili.com/history"
         type="topBar"
+        class="bew-top-bar-pop-action"
         flex="~ items-center"
       >
         <span text="sm">{{ $t('common.view_all') }}</span>
@@ -294,7 +295,7 @@ defineExpose({
       </Empty>
 
       <!-- historys -->
-      <TransitionGroup name="list">
+      <TransitionGroup name="removable-list" tag="div" class="removable-list-group" flex="~ col gap-2">
         <ALink
           v-for="(historyItem, index) in historys"
           :key="historyItem.kid"

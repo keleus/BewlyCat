@@ -48,6 +48,41 @@
   display: none;
 }
 
+// 删除项脱离文档流，其余项目通过 TransitionGroup 的 move 过渡补位。
+.removable-list-group {
+  position: relative;
+}
+.removable-list-group > .removable-list-move,
+.removable-list-group > .removable-list-enter-active,
+.removable-list-group > .removable-list-leave-active {
+  transition:
+    opacity var(--bew-duration-moderate) var(--bew-ease-standard),
+    transform var(--bew-duration-moderate) var(--bew-ease-standard);
+}
+.removable-list-enter-from {
+  opacity: 0;
+  transform: translateY(var(--bew-space-6));
+}
+.removable-list-leave-to {
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--bew-space-6)));
+}
+.removable-list-group > .removable-list-leave-active {
+  position: absolute;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .removable-list-group > .removable-list-move,
+  .removable-list-group > .removable-list-enter-active,
+  .removable-list-group > .removable-list-leave-active {
+    transition: none;
+    transform: none;
+  }
+}
+
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
