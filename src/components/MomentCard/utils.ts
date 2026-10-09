@@ -1,4 +1,4 @@
-import type { DisplayMoment, WatchLaterTarget } from './types'
+import type { DisplayMoment } from './types'
 
 function httpsUrl(url = '') {
   return url.replace(/^http:/, 'https:')
@@ -72,15 +72,6 @@ export function isCompactPlainTextMoment(moment: DisplayMoment) {
     && !moment.title
     && !moment.forward
     && (!moment.additional || isReservation)
-}
-
-export function getWatchLaterStateKey(target: WatchLaterTarget) {
-  const aid = Number(target.aid || 0)
-  if (aid)
-    return `aid:${aid}`
-  if (target.bvid)
-    return `bvid:${target.bvid}`
-  return target.epid ? `epid:${target.epid}` : ''
 }
 
 export type MomentLinkKind = 'video' | 'moment' | 'other'

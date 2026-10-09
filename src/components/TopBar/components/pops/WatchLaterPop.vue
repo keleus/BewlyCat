@@ -4,15 +4,18 @@ import { storeToRefs } from 'pinia'
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
 import Progress from '~/components/Progress.vue'
-import Tooltip from '~/components/Tooltip.vue'
 import { getAuthorJumpUrl } from '~/components/VideoCard/utils'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { settings } from '~/logic'
+import type { List as WatchLaterItem } from '~/models/video/watchLater'
 import { useTopBarStore } from '~/stores/topBarStore'
 import { calcCurrentTime } from '~/utils/dataFormatter'
 import { isActualHomepage, isHomePage, isInIframe, removeHttpFromUrl } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 import { getWatchLaterAuthor } from '~/utils/watchLater'
+
+import PopCoverIconButton from './PopCoverIconButton.vue'
+import PopMediaCard from './PopMediaCard.vue'
 
 const emit = defineEmits<{ addOpenTabs: [] }>()
 
@@ -88,6 +91,22 @@ function openVideoPage(url: string) {
 
 function deleteWatchLaterItem(index: number, aid: number) {
   topBarStore.deleteWatchLaterItem(index, aid)
+}
+
+/** progress = -1 表示已看完，直接展示总时长；角标文案形如「12:34 / 45:00」。 */
+function getProgressText(item: WatchLaterItem): string {
+  const played = item.progress === -1 ? item.duration : item.progress
+  return `${calcCurrentTime(played)} / ${calcCurrentTime(item.duration)}`
+}
+
+/** 封面条的宽度百分比；脏数据（缺时长）时回退为 0，避免 NaN%。 */
+function getProgressPercentage(item: WatchLaterItem): number {
+  if (!item.duration)
+    return 0
+  const percentage = (item.progress / item.duration) * 100
+  if (!Number.isFinite(percentage))
+    return 0
+  return Math.min(100, Math.max(0, percentage))
 }
 
 function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) {
@@ -176,7 +195,7 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
         flex="~ items-center"
       />
 
-      <!-- watchlater -->
+      <!-- watchlater：卡片结构与收藏/动态弹窗视频卡保持一致，特有操作作为封面覆盖层 -->
       <TransitionGroup name="list">
         <ALink
           v-for="(item, index) in watchLaterList"
@@ -184,127 +203,83 @@ function handleOpenVideoPageAndRemove(index: number, aid: number, bvid: string) 
           :href="getWatchLaterVideoUrl(item.bvid)"
           class="group bew-content-card"
           type="topBar"
-          m="last:b-4" p="2"
+          block
+          m="last:b-4"
+          p="2"
           hover:bg="$bew-fill-2"
           duration-300
         >
-          <section flex="~ gap-4 items-start">
-            <!-- Video cover, live cover, ariticle cover -->
-            <div
-              class="bew-top-bar-media-column"
-              bg="$bew-skeleton"
-              pos="relative"
-            >
+          <PopMediaCard
+            :title="item.title"
+            :cover="`${removeHttpFromUrl(item.pic)}@320w_180h_1c`"
+            :author-name="getWatchLaterAuthor(item).name"
+            :author-href="getAuthorJumpUrl(getWatchLaterAuthor(item))"
+          >
+            <!-- 左上：在普通视频页打开 / 播放并从列表移除 -->
+            <template #coverTopLeft>
               <div
                 class="group-hover:opacity-100 opacity-0"
-                pos="absolute top-0 left-0" z-1
-                flex="~ gap-1"
+                pos="absolute top-0 left-0 z-1"
+                flex="~ gap-1 items-center"
                 m="1"
                 duration-300
               >
-                <!-- Open in regular video page button -->
-                <Tooltip :content="$t('watch_later.open_video_page')" placement="top">
-                  <button
-                    type="button"
-                    w-24px h-24px
-                    bg="black opacity-60 hover:$bew-theme-color"
-                    grid="~ place-items-center"
-                    text="white xs"
-                    border="rounded-full"
-                    @click.stop.prevent="openVideoPage(getVideoPageUrl(item.bvid))"
-                  >
-                    <i i-tabler:external-link />
-                  </button>
-                </Tooltip>
+                <PopCoverIconButton
+                  :tooltip="$t('watch_later.open_video_page')"
+                  :aria-label="$t('watch_later.open_video_page')"
+                  @click="openVideoPage(getVideoPageUrl(item.bvid))"
+                >
+                  <i i-tabler:external-link aria-hidden="true" />
+                </PopCoverIconButton>
 
-                <!-- Open in video page and remove button -->
-                <Tooltip :content="$t('watch_later.play_video')" placement="top">
-                  <button
-                    type="button"
-                    w-24px h-24px
-                    bg="black opacity-60 hover:$bew-theme-color"
-                    grid="~ place-items-center"
-                    text="white xs"
-                    border="rounded-full"
-                    @click.stop.prevent="handleOpenVideoPageAndRemove(index, item.aid, item.bvid)"
-                  >
-                    <i i-tabler:player-play />
-                  </button>
-                </Tooltip>
+                <PopCoverIconButton
+                  :tooltip="$t('watch_later.play_video')"
+                  :aria-label="$t('watch_later.play_video')"
+                  @click="handleOpenVideoPageAndRemove(index, item.aid, item.bvid)"
+                >
+                  <i i-tabler:player-play aria-hidden="true" />
+                </PopCoverIconButton>
               </div>
+            </template>
 
-              <!-- Delete button -->
+            <!-- 右上：从稍后再看移除 -->
+            <template #coverTopRight>
               <div
                 class="group-hover:opacity-100 opacity-0"
-                pos="absolute top-0 right-0" z-1 w-24px h-24px
-                bg="black opacity-60 hover:$bew-error-color"
-                grid="~ place-items-center"
+                pos="absolute top-0 right-0 z-1"
                 m="1"
+                duration-300
+              >
+                <PopCoverIconButton
+                  hover-color="error"
+                  :tooltip="$t('watch_later.remove_from_watch_later')"
+                  :aria-label="$t('watch_later.remove_from_watch_later')"
+                  @click="deleteWatchLaterItem(index, item.aid)"
+                >
+                  <i i-mingcute:close-line aria-hidden="true" />
+                </PopCoverIconButton>
+              </div>
+            </template>
+
+            <!-- 右下角：观看进度 / 总时长 -->
+            <template #coverOverlay>
+              <div
+                pos="absolute bottom-0 right-0"
+                bg="black opacity-60"
+                m="1"
+                p="x-2 y-1"
                 text="white xs"
-                duration-300
                 border="rounded-full"
-                @click.stop.prevent="deleteWatchLaterItem(index, item.aid)"
+                pointer-events-none
               >
-                <i i-mingcute:close-line />
+                {{ getProgressText(item) }}
               </div>
+            </template>
 
-              <!-- Video -->
-              <div class="bew-top-bar-media-frame">
-                <img
-                  w-full h-full
-                  :src="`${removeHttpFromUrl(
-                    item.pic,
-                  )}@320w_180h_1c`"
-                  :alt="item.title"
-                  object-cover
-                  loading="lazy"
-                >
-                <div
-                  pos="absolute bottom-0 right-0"
-                  bg="black opacity-60"
-                  m="1"
-                  p="x-2 y-1"
-                  text="white xs"
-                  border="rounded-full"
-                >
-                  <!--  When progress = -1 means that the user watched the full video -->
-                  {{
-                    `${
-                      item.progress === -1
-                        ? calcCurrentTime(item.duration)
-                        : calcCurrentTime(item.progress)
-                    } /
-                    ${calcCurrentTime(item.duration)}`
-                  }}
-                </div>
-              </div>
-              <Progress
-                :percentage="
-                  (item.progress / item.duration) * 100
-                "
-              />
-            </div>
-
-            <!-- Description -->
-            <div class="bew-top-bar-media-copy">
-              <h3
-                :title="item.title"
-                class="bew-top-bar-media-title"
-              >
-                {{ item.title }}
-              </h3>
-              <div text="$bew-text-2" m="t-2" flex="~ items-center">
-                <ALink
-                  :href="getAuthorJumpUrl(getWatchLaterAuthor(item))"
-                  type="topBar"
-                  :stop-propagation="true"
-                  class="bew-top-bar-media-author"
-                >
-                  {{ getWatchLaterAuthor(item).name }}
-                </ALink>
-              </div>
-            </div>
-          </section>
+            <template #coverBelow>
+              <Progress :percentage="getProgressPercentage(item)" />
+            </template>
+          </PopMediaCard>
         </ALink>
       </TransitionGroup>
 

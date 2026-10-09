@@ -40,8 +40,12 @@
 .list-leave-to {
   --uno: "opacity-0 translate-y-6";
 }
-.list-leave-to {
-  --uno: "hidden";
+// 离场终点必须可靠地 display:none 立即脱流（list 预设不做离场位移，只保留新项入场上浮）。
+// 不能只写单类 .list-leave-to：列表项自身的 display 工具类（如卡片 [block]{display:block}）
+// 与其同为 (0,1,0)，而 UnoCSS 工具类生成顺序更靠后，会把 display:none 覆盖回 block，
+// 使透明离场项滞留文档流并与入场项层叠。叠加终点帧同时存在的 .list-leave-active 提权到 (0,2,0)。
+.list-leave-active.list-leave-to {
+  display: none;
 }
 
 .modal-enter-active,

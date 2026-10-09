@@ -19,12 +19,6 @@ export interface DisplayForwardVideo {
   bvid?: string
 }
 
-export interface WatchLaterTarget {
-  aid?: number | string
-  bvid?: string
-  epid?: number
-}
-
 export interface DisplayAdditional {
   title: string
   desc: string

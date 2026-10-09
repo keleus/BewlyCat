@@ -23,11 +23,9 @@ common:
   just_now: 剛剛
   please_log_in_first: 請先登入
   login: 登入
-  save_to_watch_later: 稍後觀看
   add_to_watch_later: 加入稍後觀看
   added_to_watch_later: 已加入稍後觀看
   remove_from_watch_later: 從稍後觀看中移除
-  added: 已新增
   performance_impact_warn: 這個功能可能會降低效能！
   no_data: 暫無資料
   load_failed: 載入失敗
@@ -1606,8 +1604,6 @@ moment_card:
   open_space: 開啟 {name} 的空間
   just_now: 剛剛
   charging_exclusive: 充電專屬
-  added_watch_later: 已加入稍後再看
-  add_watch_later: 加入稍後再看
   live_post: 直播動態
   open_original_video: '開啟原影片：{title}'
   author_images: '{name} 的動態圖片'

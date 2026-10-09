@@ -8,7 +8,7 @@ import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { isMomentLotteryUrl } from '~/components/MomentCard/lottery'
 import MomentCard from '~/components/MomentCard/MomentCard.vue'
 import MomentLotteryDialog from '~/components/MomentCard/MomentLotteryDialog.vue'
-import type { DisplayForwardVideo, DisplayMoment, DisplayRichTextSegment, WatchLaterTarget } from '~/components/MomentCard/types'
+import type { DisplayForwardVideo, DisplayMoment, DisplayRichTextSegment } from '~/components/MomentCard/types'
 import type { MomentLinkKind } from '~/components/MomentCard/utils'
 import {
   classifyMomentLink,
@@ -16,7 +16,6 @@ import {
   computeMultiImageGalleryHeight,
   formatCount,
   getCardPreviewText,
-  getWatchLaterStateKey,
   isCompactPlainTextMoment,
   isUsableImageRatio,
   LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH,
@@ -31,14 +30,12 @@ import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, MOMENTS_VIDE
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
 import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
-import { ensureWatchLaterState, getWatchLaterAid, isInWatchLater, markWatchLater } from '~/logic/watchLaterState'
+import { ensureWatchLaterState } from '~/logic/watchLaterState'
 import type { DataItem, MomentResult } from '~/models/moment/moment'
-import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
 import { numFormatter } from '~/utils/dataFormatter'
 import { getCSRF } from '~/utils/main'
 import { MasonryColumnMetrics } from '~/utils/masonryColumnMetrics'
-import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
 import { resolveMomentsDialogPlayerModeOverride } from '~/utils/player'
 import { openLinkInBackground } from '~/utils/tabs'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
@@ -114,7 +111,6 @@ interface MomentsPortalResult {
 const MOMENT_FEED_FEATURES = 'itemOpusStyle,listOnlyfans,opusBigCover,onlyfansVote,decorationCard,onlyfansAssetsV2,forwardListHidden,ugcDelete,onlyfansQaCard'
 const toast = useToast()
 const { t } = useI18n()
-const topBarStore = useTopBarStore()
 
 const moments = ref<DisplayMoment[]>([])
 type MomentFilter = 'all' | 'video' | 'pgc' | 'article'
@@ -244,7 +240,6 @@ onBeforeUnmount(cancelPendingPreview)
 const previewUrls = reactive<Record<string, string>>({})
 const likingMomentIds = reactive(new Set<string>())
 const reservationLoadingMomentIds = reactive(new Set<string>())
-const watchLaterLoadingMomentIds = reactive(new Set<string>())
 const videoCidCache = new Map<string, number>()
 const videoCidRequests = new Map<string, Promise<number | undefined>>()
 const videoAspectRatios = reactive<Record<string, number>>({})
@@ -1768,6 +1763,7 @@ function mapMoment(item: DataItem): DisplayMoment {
     videoDanmaku: content.videoDanmaku,
     aid: content.aid,
     bvid: content.bvid,
+    epid: content.epid,
     videoUrl: content.videoUrl,
     additional,
     forward: isForward
@@ -3265,63 +3261,10 @@ async function toggleMomentReservation(moment: DisplayMoment) {
   }
 }
 
-function isWatchLaterLoading(target: WatchLaterTarget) {
-  const stateKey = getWatchLaterStateKey(target)
-  return Boolean(stateKey && watchLaterLoadingMomentIds.has(stateKey))
-}
-
 function handleDocumentVisibilityChange() {
   // 动态接口不返回稍后再看状态；回到本页时按共享缓存的有效期重新比对
   if (document.visibilityState === 'visible')
     void ensureWatchLaterState()
-}
-
-async function toggleMomentWatchLater(target: WatchLaterTarget) {
-  const stateKey = getWatchLaterStateKey(target)
-  if (!stateKey || watchLaterLoadingMomentIds.has(stateKey))
-    return
-
-  const csrf = getCSRF()
-  if (!csrf) {
-    toast.warning(t('moments.login_to_watch_later'))
-    return
-  }
-
-  watchLaterLoadingMomentIds.add(stateKey)
-  try {
-    let aid = Number(target.aid || 0) || getWatchLaterAid(target) || 0
-    let bvid = target.bvid
-    if (!aid && !bvid && target.epid) {
-      const ids = await resolvePgcEpisodeVideoIds(target.epid)
-      aid = ids?.aid || 0
-      bvid = ids?.bvid
-    }
-
-    if (!aid && !bvid) {
-      toast.error(t('moments.watch_later_info_failed'))
-      return
-    }
-
-    const isAdded = isInWatchLater(target)
-    const response = isAdded
-      ? await api.watchlater.removeFromWatchLater({ aid, csrf })
-      : await api.watchlater.saveToWatchLater({ aid: aid || undefined, bvid, csrf })
-
-    if (response.code !== 0) {
-      toast.error(response.message)
-      return
-    }
-
-    markWatchLater({ ...target, aid: aid || target.aid, bvid }, !isAdded)
-    void topBarStore.syncWatchLaterState()
-  }
-  catch (error) {
-    console.error('切换稍后再看状态失败:', error)
-    toast.error(error instanceof Error ? error.message : t('moments.watch_later_operation_failed'))
-  }
-  finally {
-    watchLaterLoadingMomentIds.delete(stateKey)
-  }
 }
 
 async function loadMoments(reset = false, autoFillDepth = 0, manualPaging = false) {
@@ -4451,8 +4394,6 @@ watch(
                 :preview-url="previewUrls[moment.id]"
                 :is-like-loading="likingMomentIds.has(moment.id)"
                 :is-reservation-loading="reservationLoadingMomentIds.has(moment.id)"
-                :is-watch-later-added="isInWatchLater"
-                :is-watch-later-loading="isWatchLaterLoading"
                 @card-element="element => bindCardEl(element, moment)"
                 @open-detail="openMomentDetail"
                 @open-media="openMomentMedia"
@@ -4464,7 +4405,6 @@ watch(
                 @preview-canplay="playPreview"
                 @open-link="handleOpenLink"
                 @open-lottery="lotteryDialogUrl = $event"
-                @toggle-watch-later="toggleMomentWatchLater"
                 @toggle-like="toggleMomentLike"
                 @toggle-reservation="toggleMomentReservation"
               />

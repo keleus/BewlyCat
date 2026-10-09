@@ -5,10 +5,12 @@ import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } f
 import { useI18n } from 'vue-i18n'
 
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
+import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useUserRelationScope } from '~/composables/useUserRelationScope'
 import { settings } from '~/logic'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
+import { normalizeWatchLaterTarget } from '~/utils/watchLaterActions'
 
 import type { Author, Video } from '../VideoCard/types'
 import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
@@ -21,7 +23,7 @@ import MomentRepost from './MomentRepost.vue'
 import MomentVideoPreview from './MomentVideoPreview.vue'
 import MomentVideoStrip from './MomentVideoStrip.vue'
 import MomentVote from './MomentVote.vue'
-import type { DisplayForwardVideo, DisplayMoment, WatchLaterTarget } from './types'
+import type { DisplayForwardVideo, DisplayMoment } from './types'
 import type { MomentLinkKind } from './utils'
 import {
   classifyMomentLink,
@@ -31,7 +33,6 @@ import {
   getCardPreviewText,
   getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
-  getWatchLaterStateKey,
   isCompactPlainTextMoment,
   isPortraitImageRatio,
   LANDSCAPE_SINGLE_IMAGE_MAX_WIDTH,
@@ -50,8 +51,6 @@ interface Props {
   previewUrl?: string
   isLikeLoading?: boolean
   isReservationLoading?: boolean
-  isWatchLaterAdded: (target: WatchLaterTarget) => boolean
-  isWatchLaterLoading: (target: WatchLaterTarget) => boolean
 }
 
 const {
@@ -64,8 +63,6 @@ const {
   previewUrl = '',
   isLikeLoading = false,
   isReservationLoading = false,
-  isWatchLaterAdded,
-  isWatchLaterLoading,
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -80,7 +77,6 @@ const emit = defineEmits<{
   previewVideo: [element: Element | null, moment: DisplayMoment]
   previewCanplay: [event: Event]
   openLink: [payload: { url: string, kind: MomentLinkKind, video?: DisplayForwardVideo }]
-  toggleWatchLater: [target: WatchLaterTarget]
   toggleLike: [moment: DisplayMoment]
   toggleReservation: [moment: DisplayMoment]
 }>()
@@ -91,10 +87,6 @@ const { mainAppRef } = useBewlyApp()
 const commentPreview = createCommentPreview()
 useUserRelationScope(() => [Number(moment.author.mid)])
 
-// 包成 computed：稍后再看状态整体更新时，只有结果变化的卡片才重新渲染
-const watchLaterAdded = computed(() => isWatchLaterAdded(moment))
-const forwardWatchLaterAdded = computed(() => Boolean(moment.forward?.video && isWatchLaterAdded(moment.forward.video)))
-
 const cardLayoutStyles = computed<CSSProperties>(() => {
   const scale = Math.max(1, cardWidth / 520)
   return {
@@ -104,6 +96,15 @@ const cardLayoutStyles = computed<CSSProperties>(() => {
 
 const authorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.author.mid))
 const forwardAuthorSpaceUrl = computed(() => getAuthorSpaceUrl(moment.forward?.authorMid))
+
+// 稍后再看目标在数据边界统一规整：识别不到任何视频 ID 时为 undefined，按钮自然不渲染。
+// 注意只能挑 aid/bvid/epid：moment.id 是动态 ID，normalize 会把通用 id 兜底当 aid，直接传整个 moment 会误加入。
+const watchLaterTarget = computed(() => normalizeWatchLaterTarget({
+  aid: moment.aid,
+  bvid: moment.bvid,
+  epid: moment.epid,
+}))
+const forwardWatchLaterTarget = computed(() => normalizeWatchLaterTarget(moment.forward?.video))
 const descriptionRef = ref<HTMLElement | null>(null)
 const descriptionExpanded = ref(false)
 const descriptionCanToggle = ref(false)
@@ -773,19 +774,19 @@ function handleAdditionalClick(event: MouseEvent) {
               :duration="moment.duration"
               :watched-aid="moment.aid"
               :watched-bvid="moment.bvid"
-              :watch-later-enabled="settings.showVideoCardWatchLater"
-              :watch-later-added="watchLaterAdded"
-              :watch-later-loading="isWatchLaterLoading(moment)"
               :preview-active="previewActive"
               :preview-url="previewUrl"
-              @toggle-watch-later="emit('toggleWatchLater', moment)"
               @cover-load="handleCoverLoad"
               @media-enter="settings.momentsOnlyCoverVideoPreview && emit('mediaEnter', moment)"
               @media-leave="settings.momentsOnlyCoverVideoPreview && emit('mediaLeave', moment)"
               @preview-leave="emit('mediaLeave', moment)"
               @preview-video="handlePreviewVideo"
               @preview-canplay="(event: Event) => emit('previewCanplay', event)"
-            />
+            >
+              <template #coverAction>
+                <WatchLaterCoverButton :target="watchLaterTarget" persistent />
+              </template>
+            </MomentVideoStrip>
           </a>
         </template>
         <template v-else>
@@ -992,9 +993,6 @@ function handleAdditionalClick(event: MouseEvent) {
                   :duration="moment.forward.video.duration"
                   :watched-aid="moment.forward.video.aid"
                   :watched-bvid="moment.forward.video.bvid"
-                  :watch-later-enabled="settings.showVideoCardWatchLater && Boolean(getWatchLaterStateKey(moment.forward.video))"
-                  :watch-later-added="forwardWatchLaterAdded"
-                  :watch-later-loading="isWatchLaterLoading(moment.forward.video)"
                   :preview-active="previewActive"
                   :preview-url="previewUrl"
                   @media-enter="settings.momentsOnlyCoverVideoPreview && emit('mediaEnter', moment)"
@@ -1002,8 +1000,11 @@ function handleAdditionalClick(event: MouseEvent) {
                   @preview-leave="emit('mediaLeave', moment)"
                   @preview-video="handlePreviewVideo"
                   @preview-canplay="(event: Event) => emit('previewCanplay', event)"
-                  @toggle-watch-later="emit('toggleWatchLater', moment.forward.video)"
-                />
+                >
+                  <template #coverAction>
+                    <WatchLaterCoverButton :target="forwardWatchLaterTarget" persistent />
+                  </template>
+                </MomentVideoStrip>
               </a>
             </div>
             <div
@@ -1447,7 +1448,7 @@ function handleAdditionalClick(event: MouseEvent) {
 .moment-card__surface
   :is(a, button, [role="button"]):not(.moment-card__permalink):not(.moment-card__permalink-wrap):not(
     .moment-image-gallery__nav
-  ):not(.moment-card__watch-later),
+  ):not(.bew-watch-later-cover__btn),
 .moment-card__media,
 .moment-card__gallery-host,
 .moment-card__grid-host,
@@ -2035,60 +2036,6 @@ function handleAdditionalClick(event: MouseEvent) {
   display: inline-flex;
   align-items: center;
   gap: var(--bew-space-1);
-}
-
-/* 稍后再看：仅横条视频卡使用；未加入时显隐跟封面 hover 与键盘聚焦，已加入时常驻 */
-.moment-card__video-card :deep(.moment-card__watch-later) {
-  position: absolute;
-  top: var(--bew-space-2);
-  right: var(--bew-space-2);
-  z-index: 3;
-  display: grid;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--bew-interactive-radius);
-  place-items: center;
-  color: #fff;
-  background: rgb(0 0 0 / 62%);
-  cursor: pointer;
-  font-size: var(--bew-icon-size-md);
-  opacity: 0;
-  transform: scale(0.78);
-  transition:
-    opacity var(--bew-duration-normal) var(--bew-ease-standard),
-    transform var(--bew-duration-normal) var(--bew-ease-standard),
-    background-color var(--bew-duration-normal) var(--bew-ease-standard);
-}
-
-.moment-card__video-card :deep(.moment-card__video-card-cover:hover .moment-card__watch-later),
-.moment-card__video-card :deep(.moment-card__watch-later:focus-visible),
-.moment-card__video-card :deep(.moment-card__watch-later.is-added) {
-  opacity: 1;
-  transform: scale(1);
-}
-
-.moment-card__video-card :deep(.moment-card__watch-later:hover) {
-  background: rgb(0 0 0 / 78%);
-}
-
-.moment-card__video-card :deep(.moment-card__watch-later.is-added) {
-  background: var(--bew-theme-color);
-}
-
-.moment-card__video-card :deep(.moment-card__watch-later.is-added:hover) {
-  background: color-mix(in oklab, var(--bew-theme-color), #000 16%);
-}
-
-.moment-card__video-card :deep(.moment-card__watch-later:focus-visible) {
-  outline: 2px solid #fff;
-  outline-offset: 2px;
-}
-
-.moment-card__video-card :deep(.moment-card__watch-later.is-loading) {
-  cursor: wait;
-  opacity: 0.72;
 }
 
 /* ---- 与旧版封面共用的类：原选择器命中本组件 DOM，:deep 变体命中子组件内部 ---- */

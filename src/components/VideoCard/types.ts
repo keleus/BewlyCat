@@ -5,7 +5,6 @@ export interface VideoCardState {
   removed: boolean
   selectedDislikeOpt?: { reasonId?: number, feedbackId?: number }
   videoCurrentTime: number | null
-  resolvedWatchLaterAid?: number
 }
 
 export function createVideoCardState(): VideoCardState {

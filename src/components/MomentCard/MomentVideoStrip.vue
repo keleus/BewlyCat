@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { ComponentPublicInstance } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import VideoWatchedTag from '~/components/VideoWatchedTag.vue'
 
@@ -32,15 +31,11 @@ defineProps<{
   duration?: string
   watchedAid?: number | string
   watchedBvid?: string
-  watchLaterEnabled?: boolean
-  watchLaterAdded?: boolean
-  watchLaterLoading?: boolean
   previewActive?: boolean
   previewUrl?: string
 }>()
 
 const emit = defineEmits<{
-  toggleWatchLater: []
   coverLoad: [event: Event]
   mediaEnter: []
   mediaLeave: []
@@ -50,8 +45,6 @@ const emit = defineEmits<{
   authorClick: [event: MouseEvent]
 }>()
 
-const { t } = useI18n()
-
 function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
   emit('previewVideo', element instanceof Element ? element : null)
 }
@@ -59,7 +52,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
 
 <template>
   <span
-    class="moment-card__video-card-cover"
+    class="moment-card__video-card-cover bew-cover-action-host"
     @mouseenter="emit('mediaEnter')"
     @mouseleave="emit('mediaLeave')"
   >
@@ -95,22 +88,8 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
       <span v-if="showDuration" class="moment-card__video-duration">{{ duration }}</span>
     </span>
     <span v-if="chargeBadge" class="moment-card__charge-badge">{{ chargeBadge }}</span>
-    <button
-      v-if="watchLaterEnabled"
-      type="button"
-      class="moment-card__watch-later"
-      :class="{ 'is-added': watchLaterAdded, 'is-loading': watchLaterLoading }"
-      :aria-busy="watchLaterLoading || undefined"
-      :aria-disabled="watchLaterLoading || undefined"
-      :aria-label="watchLaterAdded ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
-      :aria-pressed="watchLaterAdded"
-      :title="watchLaterAdded ? t('moment_card.added_watch_later') : t('moment_card.add_watch_later')"
-      @click.stop.prevent="emit('toggleWatchLater')"
-    >
-      <span v-if="watchLaterLoading" i-svg-spinners:ring-resize aria-hidden="true" />
-      <span v-else-if="watchLaterAdded" i-line-md:confirm aria-hidden="true" />
-      <span v-else i-mingcute:carplay-line aria-hidden="true" />
-    </button>
+    <!-- 封面上的功能角标由功能所有者经插槽注入，布局组件不感知具体功能 -->
+    <slot name="coverAction" />
   </span>
   <span class="moment-card__video-card-info">
     <strong>

@@ -23,11 +23,9 @@ common:
   just_now: 刚刚
   please_log_in_first: 请先登录
   login: 登录
-  save_to_watch_later: 稍后再看
   add_to_watch_later: 添加到稍后再看
   added_to_watch_later: 已添加到稍后再看
   remove_from_watch_later: 从稍后再看中移除
-  added: 已添加
   performance_impact_warn: 这个功能可能会影响性能！
   no_data: 暂无数据
   load_failed: 加载失败
@@ -1591,8 +1589,6 @@ moment_card:
   open_space: 打开 {name} 的空间
   just_now: 刚刚
   charging_exclusive: 充电专属
-  added_watch_later: 已添加稍后再看
-  add_watch_later: 添加至稍后再看
   live_post: 直播动态
   open_original_video: '打开原视频：{title}'
   author_images: '{name} 的动态图片'
