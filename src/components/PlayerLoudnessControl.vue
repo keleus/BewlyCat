@@ -35,6 +35,19 @@ function updateParameter(event: Event, key: 'localLoudnessTarget' | 'localLoudne
 const statuses = new Set(['off', 'waiting', 'active', 'error', 'native-unavailable', 'unsupported'])
 const displayState = computed(() => settings.value.localLoudnessEnabled ? state.value : 'off')
 const life = new AbortController()
+const panelResizeObserver = new ResizeObserver(placePanel)
+
+watch(open, (visible) => {
+  if (visible) {
+    // The top layer escapes the player's overflow and transformed containers
+    // while keeping focus, hover and player event handling in the same DOM tree.
+    panel.value?.showPopover()
+    placePanel()
+  }
+  else {
+    panel.value?.hidePopover()
+  }
+}, { flush: 'post' })
 
 function requestStatus() {
   window.postMessage({ type: 'BEWLY_LOUDNESS_STATUS_REQUEST' }, location.origin)
@@ -42,19 +55,32 @@ function requestStatus() {
 function show() {
   open.value = true
   requestStatus()
-  void nextTick(placePanel)
 }
 function placePanel() {
-  if (!panel.value || !root.value || !open.value)
+  if (!panel.value || !button.value || !open.value)
     return
-  panel.value.style.transform = ''
-  const player = root.value.closest('.bpx-player-container')?.getBoundingClientRect()
-  const left = Math.max(8, (player?.left ?? 0) + 8)
-  const right = Math.min(innerWidth - 8, (player?.right ?? innerWidth) - 8)
-  panel.value.style.maxWidth = `${Math.max(0, right - left)}px`
+  const anchor = button.value.getBoundingClientRect()
+  const width = document.documentElement.clientWidth
+  const height = document.documentElement.clientHeight
+  if (anchor.width === 0 || anchor.height === 0 || anchor.bottom <= 0 || anchor.top >= height
+    || anchor.right <= 0 || anchor.left >= width) {
+    close()
+    return
+  }
+  const margin = 8
+  const top = Math.max(margin, Math.min(anchor.top, height - margin))
+  const bottom = Math.max(margin, Math.min(anchor.bottom, height - margin))
+  const above = Math.max(0, top - margin)
+  const below = Math.max(0, height - margin - bottom)
+  panel.value.style.maxWidth = `${Math.max(0, width - margin * 2)}px`
+  const placeAbove = above >= panel.value.scrollHeight || above >= below
+  panel.value.style.maxHeight = `${placeAbove ? above : below}px`
   const rect = panel.value.getBoundingClientRect()
-  const shift = Math.max(left - rect.left, Math.min(0, right - rect.right))
-  panel.value.style.transform = `translateX(${shift}px)`
+  panel.value.style.left = `${Math.max(margin, Math.min(anchor.right - rect.width, width - margin - rect.width))}px`
+  panel.value.style.top = `${placeAbove ? top - rect.height : bottom}px`
+}
+function close() {
+  open.value = false
 }
 function onFocusOut(event: FocusEvent) {
   if (!(event.relatedTarget instanceof Node) || !root.value?.contains(event.relatedTarget))
@@ -105,11 +131,22 @@ function onStatus(event: MessageEvent) {
 onMounted(() => {
   window.addEventListener('message', onStatus, { signal: life.signal })
   window.addEventListener('resize', placePanel, { signal: life.signal })
+  window.addEventListener('scroll', placePanel, { capture: true, signal: life.signal })
+  // Fullscreen changes the top-layer order; reopen from the button in the new mode.
+  document.addEventListener('fullscreenchange', close, { signal: life.signal })
+  for (const element of [button.value, panel.value, root.value?.closest('.bpx-player-container')]) {
+    if (element)
+      panelResizeObserver.observe(element)
+  }
   for (const name of ['emptied', 'loadedmetadata', 'seeking'])
     props.video.addEventListener(name, resetStatus, { signal: life.signal })
   requestStatus()
 })
-onBeforeUnmount(() => life.abort())
+onBeforeUnmount(() => {
+  life.abort()
+  panelResizeObserver.disconnect()
+  panel.value?.hidePopover()
+})
 </script>
 
 <template>
@@ -140,7 +177,7 @@ onBeforeUnmount(() => life.abort())
       </span>
     </button>
     <div
-      v-show="open" id="bewly-loudness-panel" ref="panel" class="loudness-panel" role="group"
+      id="bewly-loudness-panel" ref="panel" class="loudness-panel" role="group" popover="manual"
       :aria-label="t('settings.local_loudness.title')"
     >
       <div class="panel-title">
@@ -217,14 +254,13 @@ onBeforeUnmount(() => life.abort())
   outline-offset: 2px;
 }
 .loudness-panel {
-  position: absolute;
-  bottom: 100%;
-  right: 0;
-  z-index: 10;
+  position: fixed;
+  inset: auto;
+  margin: 0;
   box-sizing: border-box;
   width: 288px;
   max-width: calc(100vw - 16px);
-  max-height: 65vh;
+  max-height: calc(100vh - 16px);
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 16px 20px;
