@@ -231,6 +231,7 @@ export const videoCardContextMenuKeys = [
   'openInNewWindow',
   'openInCurrentTab',
   'openInDrawer',
+  'favorite',
   'copyVideoLink',
   'copyCleanVideoLink',
   'copyBVNumber',
@@ -957,6 +958,11 @@ export const settings = useSettingsStorage(originalSettings, {
   onReady: value => resolveSettingsReady(value),
   normalize: (value) => {
     const record = value as Record<string, any>
+
+    // 旧配置也补齐新入口，保持菜单按钮与各项的默认可见状态一致。
+    const menuConfig = record.videoCardContextMenuConfig
+    if (Array.isArray(menuConfig) && !menuConfig.some(item => item.key === 'favorite'))
+      menuConfig.push({ key: 'favorite', visible: true })
 
     // 旧私信开关同时控制两类私信，拆分后保留原有选择。
     if (typeof record.showPrivateMessageUnreadCount === 'boolean') {

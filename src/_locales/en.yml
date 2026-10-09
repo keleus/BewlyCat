@@ -1250,6 +1250,7 @@ video_card:
   episode_watch_later_info_failed: Unable to get Watch later information for this episode
   feedback_options_unavailable: Feedback options are unavailable
   operation:
+    favorite: Save to favorites
     not_interested: Not Interested
     not_interested_uploader: Don't Recommend This Uploader
     open_in_new_tab: Open in New Tab
@@ -1268,6 +1269,11 @@ video_card:
     more_options: More options
     scroll_top: Scroll to top
     scroll_bottom: Scroll to bottom
+  favorite_dialog:
+    hint: Select one or more folders. Uncheck a folder to remove this video from it.
+    empty: No folders yet. Create a folder on Bilibili, then refresh.
+    saved: Favorites updated
+    save_failed: Failed to save favorites. Please try again.
   follow_user_confirm:
     title: Confirm Follow User
     message: Are you sure you want to follow {name}?

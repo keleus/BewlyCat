@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useToast } from 'vue-toastification'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useUserRelationScope } from '~/composables/useUserRelationScope'
@@ -9,12 +10,13 @@ import type { VideoCardContextMenuKey } from '~/logic/storage'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
 import { useUserRelationStore } from '~/stores/userRelationStore'
 import api from '~/utils/api'
-import { cleanBilibiliUrl, getCSRF, openLinkToNewTab } from '~/utils/main'
+import { cleanBilibiliUrl, getCSRF, getUserID, openLinkToNewTab } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { Video } from '../types'
 import BlockUserConfirmDialog from './components/BlockUserConfirmDialog.vue'
 import DislikeDialog from './components/DislikeDialog.vue'
+import FavoriteVideoDialog from './components/FavoriteVideoDialog.vue'
 import FollowUserConfirmDialog from './components/FollowUserConfirmDialog.vue'
 import UnfollowUserConfirmDialog from './components/UnfollowUserConfirmDialog.vue'
 
@@ -127,6 +129,7 @@ function scrollToBottom() {
 const getVideoType = inject<() => string>('getVideoType')!
 
 const { t } = useI18n()
+const toast = useToast()
 const userRelationStore = useUserRelationStore()
 useUserRelationScope(() => {
   const mid = getAuthorMid()
@@ -147,6 +150,7 @@ const hasRecommendationOptions = computed(() =>
 )
 const showContextMenu = ref<boolean>(false)
 const showDislikeDialog = ref<boolean>(false)
+const showFavoriteDialog = ref(false)
 const showBlockUserDialog = ref<boolean>(false)
 const showFollowUserDialog = ref<boolean>(false)
 const showUnfollowUserDialog = ref<boolean>(false)
@@ -160,6 +164,7 @@ enum VideoOption {
   OpenInCurrentTab,
   OpenInNewWindow,
   OpenInDrawer,
+  Favorite,
 
   ViewTheOriginalCover,
   ViewThisUserChannel,
@@ -180,8 +185,21 @@ function isOptionVisible(key: VideoCardContextMenuKey) {
   return settings.value.videoCardContextMenuConfig.find(item => item.key === key)?.visible ?? true
 }
 
+const canFavorite = computed(() => {
+  const video = props.video
+  if (getVideoType() === 'bangumi' || getVideoType() === 'live'
+    || video.roomid || video.epid || video.type === 'bangumi' || video.type === 'ketang') {
+    return false
+  }
+
+  return Boolean(video.bvid || video.aid || (video.id > 0 && /\/video\/av\d+/.test(video.url || '')))
+})
+
 const commonOptions = computed((): OptionItem[][] => {
   let result: OptionItem[][] = [
+    canFavorite.value
+      ? [{ command: VideoOption.Favorite, key: 'favorite', name: t('video_card.operation.favorite'), icon: 'i-solar:star-bold-duotone' }]
+      : [],
     [
       ...(props.video.url
         ? [
@@ -301,7 +319,8 @@ onUnmounted(() => {
 // Fixed menu coordinates are calculated from the viewport at open time. Close
 // when its dimensions change so an upward menu cannot drift from its trigger.
 function handleViewportResize() {
-  emit('close')
+  if (!showFavoriteDialog.value)
+    emit('close')
 }
 
 function getAuthorMid() {
@@ -363,6 +382,15 @@ function handleAppMoreCommand(command: ThreePointV2Type) {
 
 function handleCommonCommand(command: VideoOption) {
   switch (command) {
+    case VideoOption.Favorite:
+      if (!getUserID() || !getCSRF()) {
+        toast.warning(t('common.please_log_in_first'))
+        handleClose()
+        break
+      }
+      showFavoriteDialog.value = true
+      showContextMenu.value = false
+      break
     case VideoOption.OpenInNewTab:
       openLinkToNewTab(props.video.url!)
       handleClose()
@@ -663,6 +691,12 @@ async function unfollowUser() {
         @click.right.prevent.stop="handleReopen"
       />
     </Transition>
+
+    <FavoriteVideoDialog
+      v-if="showFavoriteDialog"
+      :video="video"
+      @close="handleClose"
+    />
 
     <DislikeDialog
       v-if="showDislikeDialog"

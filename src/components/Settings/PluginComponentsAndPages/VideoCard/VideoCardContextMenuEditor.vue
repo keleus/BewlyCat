@@ -38,6 +38,7 @@ const groups = computed<MenuGroup[]>(() => [
       { key: 'openInNewWindow', label: t('video_card.operation.open_in_new_window'), icon: 'i-solar:maximize-square-3-bold-duotone' },
       { key: 'openInCurrentTab', label: t('video_card.operation.open_in_current_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
       { key: 'openInDrawer', label: t('video_card.operation.open_in_drawer'), icon: 'i-solar:archive-up-minimlistic-bold-duotone' },
+      { key: 'favorite', label: t('video_card.operation.favorite'), icon: 'i-solar:star-bold-duotone' },
     ],
   },
   {

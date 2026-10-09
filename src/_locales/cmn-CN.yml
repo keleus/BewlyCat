@@ -1157,6 +1157,7 @@ video_card:
   episode_watch_later_info_failed: 无法获取该剧集的稍后再看信息
   feedback_options_unavailable: 未能获取反馈选项
   operation:
+    favorite: 收藏到收藏夹
     not_interested: 不感兴趣
     not_interested_uploader: 不想看此 UP 主
     open_in_new_tab: 新标签页打开
@@ -1175,6 +1176,11 @@ video_card:
     more_options: 更多操作
     scroll_top: 滚动到顶部
     scroll_bottom: 滚动到底部
+  favorite_dialog:
+    hint: 选择收藏夹，可多选；取消勾选可移出收藏夹。
+    empty: 暂无收藏夹，请先在 B 站创建收藏夹后刷新。
+    saved: 收藏设置已保存
+    save_failed: 保存收藏失败，请重试
   follow_user_confirm:
     title: 确认关注用户
     message: 确定要关注 {name} 吗？

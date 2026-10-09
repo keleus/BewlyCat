@@ -1172,6 +1172,7 @@ video_card:
   episode_watch_later_info_failed: 攞唔到呢集嘅稍後再睇資料
   feedback_options_unavailable: 攞唔到回饋選項
   operation:
+    favorite: 收藏到收藏夾
     not_interested: 唔鍾意
     not_interested_uploader: 唔想睇呢個 UP 主
     open_in_new_tab: 新分頁開啓
@@ -1190,6 +1191,11 @@ video_card:
     more_options: 更多操作
     scroll_top: 捲到頂
     scroll_bottom: 捲到底
+  favorite_dialog:
+    hint: 揀收藏夾，可以揀多個；取消勾選就會移出收藏夾。
+    empty: 暫時冇收藏夾，請先喺 B 站建立收藏夾再重新整理。
+    saved: 收藏設定已儲存
+    save_failed: 儲存收藏失敗，請再試
   follow_user_confirm:
     title: 確認關注用戶
     message: 確定要關注 {name} 嗎？

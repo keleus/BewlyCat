@@ -10,7 +10,29 @@ const API_FAVORITE = {
     },
     params: {
       up_mid: '',
+      type: undefined as number | undefined,
+      rid: undefined as number | undefined,
     },
+    afterHandle: AHS.J_D,
+  },
+  // docs/video/action.md：收藏视频（Web 端），支持同时增删多个收藏夹。
+  updateVideoFavorites: {
+    url: 'https://api.bilibili.com/x/v3/fav/resource/deal',
+    _fetch: {
+      method: 'post',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: {
+        rid: 0,
+        type: 2,
+        add_media_ids: '',
+        del_media_ids: '',
+        platform: 'web',
+        csrf: '',
+      },
+    },
+    params: {},
     afterHandle: AHS.J_D,
   },
   // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/fav/list.md#%E8%8E%B7%E5%8F%96%E6%94%B6%E8%97%8F%E5%A4%B9%E5%86%85%E5%AE%B9%E6%98%8E%E7%BB%86%E5%88%97%E8%A1%A8

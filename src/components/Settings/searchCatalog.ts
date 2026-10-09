@@ -353,6 +353,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'video_card.operation.open_in_new_window',
     'video_card.operation.open_in_current_tab',
     'video_card.operation.open_in_drawer',
+    'video_card.operation.favorite',
     'video_card.operation.copy_video_link',
     'video_card.operation.copy_clean_video_link',
     'video_card.operation.copy_bv_number',
