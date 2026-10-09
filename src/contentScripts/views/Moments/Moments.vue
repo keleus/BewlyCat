@@ -5160,6 +5160,10 @@ watch(
   font-weight: var(--bew-font-weight-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: color var(--bew-duration-fast) var(--bew-ease-standard);
+}
+.moments-user-card__profile:hover .moments-user-card__identity > strong {
+  color: var(--bew-theme-color);
 }
 .moments-user-card__badges {
   display: flex;
