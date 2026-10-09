@@ -19,7 +19,12 @@ const favoriteResources = reactive<Array<FavoriteResource>>([])
 
 const activatedMediaId = ref<number>(0)
 const activatedFavoriteTitle = ref<string>()
-const currentPageNum = ref<number>(1)
+// 页码只在请求成功后推进，失败重试仍请求同一页。
+const currentPageNum = ref(0)
+const resourcesMediaId = ref<number>()
+const failedResourcesPage = ref<number>()
+const isReplacingResources = ref(false)
+const resourceListBlocked = computed(() => isReplacingResources.value || resourcesMediaId.value !== activatedMediaId.value)
 
 const isLoading = ref<boolean>(false)
 // when noMoreContent is true, the user can't scroll down to load more content
@@ -47,13 +52,14 @@ watch(activatedMediaId, (newId, oldId) => {
   if (newId === oldId)
     return
 
-  favoriteResources.length = 0
   if (favoriteVideosWrap.value)
     scrollToTop(favoriteVideosWrap.value)
 
-  currentPageNum.value = 1
+  currentPageNum.value = 0
   noMoreContent.value = false
-  void getFavoriteResources(true)
+  if (!newId)
+    return
+  void getFavoriteResources(true, true)
 })
 
 watch(favoriteStateVersion, () => {
@@ -109,12 +115,13 @@ function setCategoryLabelRef(element: Element | ComponentPublicInstance | null, 
 
 // 使用 useOptimizedScroll 处理滚动加载
 function handleReachBottom() {
-  if (isLoading.value || noMoreContent.value || favoriteResources.length === 0)
+  if (isLoading.value || failedResourcesPage.value || resourceListBlocked.value
+    || noMoreContent.value || favoriteResources.length === 0) {
     return
+  }
 
   if (activatedMediaId.value) {
-    currentPageNum.value++
-    getFavoriteResources()
+    void getFavoriteResources()
   }
 }
 
@@ -130,18 +137,22 @@ async function initData() {
 
 async function refreshFavoriteData() {
   const requestVersion = ++favoriteDataRequestVersion
-  const previousMediaId = activatedMediaId.value
   await getFavoriteCategories(requestVersion)
   if (requestVersion !== favoriteDataRequestVersion)
     return
 
-  const category = favoriteCategories.find(item => item.id === previousMediaId) || favoriteCategories[0]
+  // 等待分类请求期间用户可能切换，始终保留此刻的选择。
+  const category = favoriteCategories.find(item => item.id === activatedMediaId.value) || favoriteCategories[0]
   if (!category) {
     activatedMediaId.value = 0
     activatedFavoriteTitle.value = undefined
     favoriteResources.length = 0
+    resourcesMediaId.value = undefined
+    failedResourcesPage.value = undefined
+    currentPageNum.value = 0
     favoriteResourcesRequestVersion++
     isLoading.value = false
+    isReplacingResources.value = false
     return
   }
 
@@ -165,9 +176,7 @@ async function getFavoriteCategories(requestVersion?: number) {
       if (res.code === 0) {
         favoriteCategories.length = 0
         favoriteCategories.push(...res.data.list)
-        noMoreContent.value = false
       }
-      isLoading.value = false
     })
 }
 
@@ -175,13 +184,18 @@ async function getFavoriteCategories(requestVersion?: number) {
  * Get favorite video resources
  */
 async function getFavoriteResources(force = false, replace = false) {
-  if (isLoading.value && !force)
+  if (!activatedMediaId.value || (isLoading.value && !force))
+    return
+  // 只有当前收藏夹首屏成功后，才允许向其追加分页数据。
+  if (!replace && resourcesMediaId.value !== activatedMediaId.value)
     return
 
   const requestVersion = ++favoriteResourcesRequestVersion
   const mediaId = activatedMediaId.value
-  const pageNum = currentPageNum.value
+  const pageNum = replace ? 1 : currentPageNum.value + 1
   isLoading.value = true
+  isReplacingResources.value = replace
+  failedResourcesPage.value = undefined
 
   try {
     const res = await api.favorite.getFavoriteResources({
@@ -194,45 +208,60 @@ async function getFavoriteResources(force = false, replace = false) {
       return
 
     const { code, data } = res
-    if (code === 0) {
-      // 检查是否还有更多内容
-      if (data && 'has_more' in data && !data.has_more) {
-        noMoreContent.value = true
-      }
-      else {
-        noMoreContent.value = false
-      }
+    if (code !== 0)
+      throw new Error(`加载收藏夹失败（code: ${code}）`)
+    // 检查是否还有更多内容
+    if (data && 'has_more' in data && !data.has_more) {
+      noMoreContent.value = true
+    }
+    else {
+      noMoreContent.value = false
+    }
 
-      const medias = data && 'medias' in data && Array.isArray(data.medias)
-        ? data.medias.filter((m: any) => m != null)
-        : []
+    const medias = data && 'medias' in data && Array.isArray(data.medias)
+      ? data.medias.filter((m: any) => m != null)
+      : []
 
-      // 刷新时保留旧卡片，等新数据到达后再原子替换，避免 Pop 闪烁。
-      if (replace) {
-        favoriteResources.splice(0, favoriteResources.length, ...medias)
-      }
-      else if (medias.length > 0) {
-        favoriteResources.push(...medias)
-      }
+    // 刷新时保留旧卡片，等新数据到达后再原子替换，避免 Pop 闪烁。
+    if (replace) {
+      favoriteResources.splice(0, favoriteResources.length, ...medias)
+      resourcesMediaId.value = mediaId
+    }
+    else if (medias.length > 0) {
+      favoriteResources.push(...medias)
+    }
 
-      if (medias.length === 0) {
-        // 如果没有数据返回，也标记为没有更多内容
-        noMoreContent.value = true
-      }
+    currentPageNum.value = pageNum
+    if (medias.length === 0) {
+      // 如果没有数据返回，也标记为没有更多内容
+      noMoreContent.value = true
     }
   }
   catch (error) {
+    if (requestVersion !== favoriteResourcesRequestVersion || mediaId !== activatedMediaId.value)
+      return
+    failedResourcesPage.value = pageNum
+    // 切换失败后不再展示上一收藏夹内容；同一收藏夹翻页/刷新失败保留已加载项。
+    if (resourcesMediaId.value !== mediaId) {
+      favoriteResources.length = 0
+      resourcesMediaId.value = undefined
+    }
     console.error('Failed to load favorite resources:', error)
   }
   finally {
-    if (requestVersion === favoriteResourcesRequestVersion)
+    if (requestVersion === favoriteResourcesRequestVersion) {
       isLoading.value = false
+      isReplacingResources.value = false
+    }
   }
 }
 
 function refreshFavoriteResources() {
-  currentPageNum.value = 1
   void getFavoriteResources(true, true)
+}
+
+function retryFavoriteResources() {
+  void getFavoriteResources(false, failedResourcesPage.value === 1)
 }
 
 function changeCategory(categoryItem: FavoriteCategory) {
@@ -333,6 +362,7 @@ defineExpose({
       <!-- Favorite videos wrapper -->
       <div
         ref="favoriteVideosWrap"
+        :aria-busy="isLoading"
         flex="~ col gap-2 1"
         overflow="y-auto"
         p="r-3"
@@ -341,9 +371,9 @@ defineExpose({
       >
         <!-- loading -->
         <Loading
-          v-if="isLoading && favoriteResources.length === 0"
-          pos="absolute left-0"
-          bg="$bew-content"
+          v-if="isLoading && (favoriteResources.length === 0 || isReplacingResources)"
+          pos="absolute top-0 left-0"
+          :bg="favoriteResources.length === 0 ? '$bew-content' : undefined"
           z="1"
           w="full"
           h="full"
@@ -354,12 +384,19 @@ defineExpose({
 
         <!-- empty -->
         <Empty
-          v-if="!isLoading && favoriteResources.length === 0"
+          v-if="!isLoading && !failedResourcesPage && favoriteResources.length === 0"
           w="full" h="full"
         />
 
         <!-- favorites -->
-        <TransitionGroup name="list">
+        <TransitionGroup
+          name="list"
+          tag="div"
+          flex="~ col gap-2"
+          :inert="resourceListBlocked || undefined"
+          :aria-hidden="resourcesMediaId !== activatedMediaId || undefined"
+          :class="{ 'favorites-resources-replacing': isReplacingResources }"
+        >
           <ALink
             v-for="item in favoriteResources"
             :key="item.id"
@@ -404,9 +441,16 @@ defineExpose({
           </ALink>
         </TransitionGroup>
 
+        <div v-if="!isLoading && failedResourcesPage" role="status" flex="~ col items-center gap-2" p="y-4">
+          <span>{{ $t('common.load_failed') }}</span>
+          <Button type="secondary" size="small" @click="retryFavoriteResources">
+            {{ $t('common.operation.refresh') }}
+          </Button>
+        </div>
+
         <!-- loading -->
         <Transition name="fade">
-          <Loading v-if="isLoading && favoriteResources.length !== 0 && currentPageNum > 1" m="b-4" />
+          <Loading v-if="isLoading && favoriteResources.length !== 0 && !isReplacingResources" m="b-4" />
         </Transition>
       </div>
     </main>
@@ -414,6 +458,10 @@ defineExpose({
 </template>
 
 <style lang="scss" scoped>
+.favorites-resources-replacing {
+  opacity: 0.35;
+}
+
 .activated-category {
   --uno: "bg-$bew-theme-color text-white";
 }
