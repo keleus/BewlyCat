@@ -211,6 +211,7 @@ const detailImageViewerSource = shallowRef<Window | null>(null)
 let detailImageViewerTrigger: HTMLElement | null = null
 let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
 let detailFocusRetryTimer: ReturnType<typeof setTimeout> | null = null
+const pageRef = ref<HTMLElement | null>(null)
 const layoutRef = ref<HTMLElement | null>(null)
 const sidebarRef = ref<HTMLElement | null>(null)
 const { top: sidebarTop, update: updateSidebarBounds } = useElementBounding(sidebarRef, {
@@ -2053,6 +2054,128 @@ function setupUpListScrollerObserver() {
   updateUpListScrollState()
 }
 
+type UpNavTargetKey = 'all' | 'wanted' | `mid:${string}`
+interface UpNavTarget {
+  key: UpNavTargetKey
+  activate: () => void
+}
+
+/** 键盘左右切换时按视觉顺序遍历：全部 → 想看 → 经常访问 UP → 固定 UP */
+const upNavTargets = computed<UpNavTarget[]>(() => {
+  const targets: UpNavTarget[] = [
+    { key: 'all', activate: () => handleUpFilterChange('') },
+  ]
+  if (
+    settings.value.momentsEnableWantedFilter
+    && (activeMomentFilter.value === 'all' || activeMomentFilter.value === 'video')
+  ) {
+    targets.push({ key: 'wanted', activate: () => handleMomentGroupChange('wanted') })
+  }
+  for (const up of visiblePortalUpList.value) {
+    targets.push({ key: `mid:${up.mid}`, activate: () => handleUpFilterChange(up.mid) })
+  }
+  for (const user of momentsPinnedUsers.value) {
+    targets.push({ key: `mid:${user.mid}`, activate: () => handleUpFilterChange(user.mid) })
+  }
+  return targets
+})
+
+const activeUpNavKey = computed<UpNavTargetKey>(() => {
+  if (activeMomentGroup.value === 'wanted')
+    return 'wanted'
+  return selectedHostMid.value ? `mid:${selectedHostMid.value}` : 'all'
+})
+
+function isEditableFocusTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement))
+    return false
+  const { tagName } = target
+  return tagName === 'INPUT'
+    || tagName === 'TEXTAREA'
+    || tagName === 'SELECT'
+    || target.isContentEditable
+}
+
+function findUpNavButton(key: UpNavTargetKey) {
+  const selector = key === 'all' || key === 'wanted'
+    ? `[data-up-nav="${key}"]`
+    : `[data-up-nav-mid="${CSS.escape(key.slice(4))}"]`
+  return pageRef.value?.querySelector<HTMLElement>(selector) ?? null
+}
+
+/** 把目标按钮带入视野：固定区只触发展开，经常访问区横向滚入列表 */
+function revealUpNavTarget(key: UpNavTargetKey) {
+  nextTick(() => {
+    const button = findUpNavButton(key)
+    if (!button)
+      return
+    if (button.closest('.moments-up-list__pinned')) {
+      // 展开后宽度自适应容纳全部固定项，无需滚动；过渡中途滚动反而会写入多余 scrollLeft
+      expandPinnedList()
+      return
+    }
+    button.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  })
+}
+
+/** 判断当前键盘焦点是否已在 UP 导航栏内（用户通过 Tab 进入后再按方向键的场景） */
+function isUpNavFocused(event: KeyboardEvent): boolean {
+  const target = event.composedPath()[0]
+  return target instanceof HTMLElement
+    && Boolean(target.closest('[data-up-nav],[data-up-nav-mid]'))
+}
+
+function handleUpNavKeydown(event: KeyboardEvent) {
+  if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')
+    return
+  // 带修饰键或已被其他处理器拦截时保留默认行为
+  if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey)
+    return
+
+  // Shadow DOM 内事件目标会被重定向，composedPath 取真实焦点元素
+  if (isEditableFocusTarget(event.composedPath()[0] ?? null))
+    return
+
+  // 详情弹窗、抽奖弹窗、图片查看器、设置面板打开时不拦截
+  if (
+    detailImageViewerOpen.value
+    || selectedMoment.value
+    || lotteryDialogUrl.value
+    || document.getElementById('bewly')?.classList.contains('settings-open')
+  ) {
+    return
+  }
+
+  // 布局编辑之外，UP 导航栏被隐藏时不处理
+  if (!isLayoutEditing.value && !showMomentsUpList.value)
+    return
+
+  const targets = upNavTargets.value
+  if (!targets.length)
+    return
+
+  const currentIndex = targets.findIndex(target => target.key === activeUpNavKey.value)
+  const direction = event.key === 'ArrowRight' ? 1 : -1
+  const nextIndex = currentIndex === -1
+    ? (direction === 1 ? 0 : targets.length - 1)
+    : (currentIndex + direction + targets.length) % targets.length
+  const nextTarget = targets[nextIndex]
+  if (!nextTarget || nextTarget.key === activeUpNavKey.value)
+    return
+
+  event.preventDefault()
+  const focusWithinNav = isUpNavFocused(event)
+  nextTarget.activate()
+  // 默认仅把目标带入视野，不主动 focus，避免方向键切换后冒出 :focus-visible 焦点框；
+  // 若用户本就通过 Tab 把焦点停在导航栏内，则保持焦点跟随（框已存在，不产生新框）
+  revealUpNavTarget(nextTarget.key)
+  if (focusWithinNav) {
+    nextTick(() => {
+      findUpNavButton(nextTarget.key)?.focus({ preventScroll: true })
+    })
+  }
+}
+
 function isFeedRequestCurrent(
   requestToken: number,
   requestType: MomentFilter,
@@ -3804,6 +3927,7 @@ onMounted(() => {
   })
   window.addEventListener('message', handleDetailFrameMessage)
   window.addEventListener('resize', syncDetailFrameViewport)
+  window.addEventListener('keydown', handleUpNavKeydown)
   document.addEventListener('visibilitychange', handleDocumentVisibilityChange)
   refresh()
   handlePageRefresh.value = refresh
@@ -3847,6 +3971,7 @@ onBeforeUnmount(() => {
   }
   window.removeEventListener('message', handleDetailFrameMessage)
   window.removeEventListener('resize', syncDetailFrameViewport)
+  window.removeEventListener('keydown', handleUpNavKeydown)
   document.removeEventListener('visibilitychange', handleDocumentVisibilityChange)
   handlePageRefresh.value = undefined
   handleReachBottom.value = undefined
@@ -3992,7 +4117,7 @@ watch(
 </script>
 
 <template>
-  <section class="moments-page">
+  <section ref="pageRef" class="moments-page">
     <div
       ref="layoutRef"
       class="moments-layout"
@@ -4187,6 +4312,7 @@ watch(
               :class="{ 'moments-up-list__item--active': !selectedHostMid && activeMomentGroup === 'all' }"
               role="listitem"
               :aria-pressed="!selectedHostMid && activeMomentGroup === 'all'"
+              data-up-nav="all"
               :title="t('moments.all_posts')"
               @click="handleUpFilterChange('')"
             >
@@ -4209,6 +4335,7 @@ watch(
               :class="{ 'moments-up-list__item--active': activeMomentGroup === 'wanted' }"
               role="listitem"
               :aria-pressed="activeMomentGroup === 'wanted'"
+              data-up-nav="wanted"
               :disabled="activeMomentFilter !== 'all' && activeMomentFilter !== 'video'"
               :aria-label="activeMomentGroup === 'wanted' ? t('moments.cancel_wanted_only') : t('moments.wanted_only')"
               :title="activeMomentFilter === 'all' || activeMomentFilter === 'video'
@@ -4282,6 +4409,7 @@ watch(
                 :key="up.mid"
                 type="button"
                 class="moments-up-list__item"
+                :data-up-nav-mid="up.mid"
                 :class="{ 'moments-up-list__item--active': selectedHostMid === up.mid && activeMomentGroup === 'all' }"
                 role="listitem"
                 :aria-pressed="selectedHostMid === up.mid && activeMomentGroup === 'all'"
@@ -4335,6 +4463,7 @@ watch(
               :key="user.mid"
               type="button"
               class="moments-up-list__item"
+              :data-up-nav-mid="user.mid"
               :class="{ 'moments-up-list__item--active': selectedHostMid === user.mid && activeMomentGroup === 'all' }"
               role="listitem"
               :aria-pressed="selectedHostMid === user.mid && activeMomentGroup === 'all'"
