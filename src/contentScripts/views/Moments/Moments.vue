@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useElementBounding, useEventListener } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
@@ -211,6 +212,11 @@ let detailImageViewerTrigger: HTMLElement | null = null
 let detailLoadTimer: ReturnType<typeof setTimeout> | null = null
 let detailFocusRetryTimer: ReturnType<typeof setTimeout> | null = null
 const layoutRef = ref<HTMLElement | null>(null)
+const sidebarRef = ref<HTMLElement | null>(null)
+const { top: sidebarTop, update: updateSidebarBounds } = useElementBounding(sidebarRef, {
+  windowScroll: false,
+  updateTiming: 'next-frame',
+})
 const gridRef = ref<HTMLElement | null>(null)
 /** 与 .moments-grid__column 的 gap 及 CSS 变量联动，虚拟滚动测量按此计算。 */
 const GRID_GAP = 20
@@ -278,6 +284,8 @@ const updateBaseline = ref('')
 /** 按 UP 主筛选时 feed/all 的 page，从 1 递增 */
 const momentsFeedPage = ref(1)
 const { handlePageRefresh, handleReachBottom, mainAppRef, openSettings, scrollViewportRef } = useBewlyApp()
+// Shadow DOM 内的滚动不会传播到 window，直接监听页面实际的滚动容器。
+useEventListener(scrollViewportRef, 'scroll', updateSidebarBounds, { passive: true })
 
 function resetMomentsScroll() {
   if (scrollViewportRef.value)
@@ -3782,6 +3790,7 @@ onMounted(() => {
   gridObserver = new ResizeObserver(() => {
     updateGridColumnCount()
     updateVirtualColumns()
+    updateSidebarBounds()
   })
   nextTick(() => {
     if (layoutRef.value)
@@ -3994,7 +4003,10 @@ watch(
     >
       <aside
         v-if="showMomentsSidebar || isLayoutEditing"
+        ref="sidebarRef"
         class="moments-sidebar"
+        :class="{ 'moments-sidebar--fill': !isLayoutEditing && !isPortalLoading && settings.momentsSidebarShowLive && portalLiveUsers.length }"
+        :style="{ '--moments-sidebar-top': `${sidebarTop}px` }"
         :aria-label="t('moments.user_info')"
       >
         <div v-if="isPortalLoading && !isLayoutEditing" class="moments-sidebar-skeleton" aria-hidden="true">
@@ -4951,6 +4963,15 @@ watch(
 .moments-sidebar {
   grid-area: sidebar;
 }
+.moments-sidebar--fill {
+  // 首屏位于筛选栏下方，滚动后才吸顶；按实际顶部位置扣除视口空间。
+  height: calc(
+    100dvh - max(var(--moments-sidebar-top), var(--bew-top-bar-height, 64px) + var(--bew-space-3)) - var(--bew-space-3)
+  );
+}
+.moments-sidebar > :not(.moments-live-card) {
+  flex-shrink: 0;
+}
 .moments-rightbar {
   grid-area: rightbar;
 }
@@ -5108,6 +5129,7 @@ watch(
   padding: var(--bew-space-4) 0 var(--bew-space-3);
 }
 .moments-live-card > header {
+  flex-shrink: 0;
   padding: 0 var(--bew-space-4) var(--bew-space-2);
 }
 .moments-live-card > header strong {
@@ -5122,8 +5144,6 @@ watch(
 }
 .moments-live-card__list {
   display: flex;
-  /* 五个 72px 直播项加四个 4px 间距，超出后在卡片内滚动。 */
-  max-height: 376px;
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
