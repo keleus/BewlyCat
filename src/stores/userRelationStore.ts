@@ -4,6 +4,7 @@ import { ref, shallowReactive, watch } from 'vue'
 import { parseDedeUserID } from '~/logic/loginStatus'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
+import { isExtensionContextInvalidatedError } from '~/utils/messaging'
 
 // 分批是客户端策略，避免过长的 URL；并非已确认的接口上限。
 const BATCH_SIZE = 40
@@ -34,6 +35,8 @@ export const useUserRelationStore = defineStore('userRelations', () => {
   let generation = 0
   let timer: ReturnType<typeof setTimeout> | undefined
   let draining = false
+  // 旧页面的扩展上下文无法恢复；消息层负责提示刷新，当前 store 停止继续查询。
+  let contextInvalidated = false
 
   function syncAccount() {
     const mid = topBar.isLogin ? parseDedeUserID(document.cookie) : undefined
@@ -97,7 +100,7 @@ export const useUserRelationStore = defineStore('userRelations', () => {
   }
 
   function scheduleQuery() {
-    if (timer !== undefined || draining)
+    if (contextInvalidated || timer !== undefined || draining)
       return
     timer = setTimeout(() => {
       timer = undefined
@@ -154,6 +157,16 @@ export const useUserRelationStore = defineStore('userRelations', () => {
           }
         }
         catch (error) {
+          if (isExtensionContextInvalidatedError(error)) {
+            contextInvalidated = true
+            clearTimeout(timer)
+            timer = undefined
+            retryAfter.clear()
+            for (const query of pending.values())
+              query.resolve()
+            pending.clear()
+            break
+          }
           if (syncAccount() === requestAccount && generation === requestGeneration) {
             for (const query of chunk) {
               if (pending.get(query.mid) === query && consumers.has(query.mid))
@@ -179,6 +192,8 @@ export const useUserRelationStore = defineStore('userRelations', () => {
   }
 
   async function queryRelations(mids: number[]) {
+    if (contextInvalidated)
+      return
     const currentAccount = syncAccount()
     if (!currentAccount)
       return
