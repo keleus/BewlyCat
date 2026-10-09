@@ -4,6 +4,7 @@ import type { ComponentPublicInstance, Ref } from 'vue'
 
 import Empty from '~/components/Empty.vue'
 import Loading from '~/components/Loading.vue'
+import WatchLaterCoverButton from '~/components/WatchLaterCoverButton.vue'
 import { useOptimizedScroll } from '~/composables/useOptimizedScroll'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
@@ -375,7 +376,16 @@ defineExpose({
               :author-name="item.upper.name"
               :author-href="`https://space.bilibili.com/${item.upper.mid}`"
               narrow
+              cover-class="bew-cover-action-host"
             >
+              <!-- 仅视频稿件(type 2)显示稍后再看；音频/合集不支持 -->
+              <template #coverTopRight>
+                <WatchLaterCoverButton
+                  :target="item.type === 2 ? { aid: item.id, bvid: item.bvid } : undefined"
+                  size="sm"
+                  tooltip-placement="left"
+                />
+              </template>
               <template #coverOverlay>
                 <div
                   pos="absolute bottom-0 right-0"
