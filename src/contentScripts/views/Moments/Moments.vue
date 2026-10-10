@@ -4005,7 +4005,7 @@ watch(
         v-if="showMomentsSidebar || isLayoutEditing"
         ref="sidebarRef"
         class="moments-sidebar"
-        :class="{ 'moments-sidebar--fill': !isLayoutEditing && !isPortalLoading && settings.momentsSidebarShowLive && portalLiveUsers.length }"
+        :class="{ 'moments-sidebar--with-live': !isLayoutEditing && !isPortalLoading && settings.momentsSidebarShowLive && portalLiveUsers.length }"
         :style="{ '--moments-sidebar-top': `${sidebarTop}px` }"
         :aria-label="t('moments.user_info')"
       >
@@ -4963,9 +4963,9 @@ watch(
 .moments-sidebar {
   grid-area: sidebar;
 }
-.moments-sidebar--fill {
-  // 首屏位于筛选栏下方，滚动后才吸顶；按实际顶部位置扣除视口空间。
-  height: calc(
+.moments-sidebar--with-live {
+  // 少量直播按内容收缩，仅以实际顶部位置到视口底部的剩余空间作为高度上限。
+  max-height: calc(
     100dvh - max(var(--moments-sidebar-top), var(--bew-top-bar-height, 64px) + var(--bew-space-3)) - var(--bew-space-3)
   );
 }
