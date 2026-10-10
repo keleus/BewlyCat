@@ -16,6 +16,7 @@ import { formatCount, getAuthorSpaceUrl } from './utils'
 const { moment, state } = defineProps<{ moment: DisplayMoment, state: CommentPreviewState }>()
 const emit = defineEmits<{
   collapse: []
+  ready: []
   openImagePreview: [urls: string[], index: number, trigger: HTMLElement | null]
 }>()
 const { t } = useI18n()
@@ -66,6 +67,23 @@ async function restoreScroll() {
 watch(() => state.expanded, expanded => expanded && void restoreScroll())
 // 首屏、切换排序和失败重试后，继续补齐尚未填满滚动区的评论。
 watch(() => state.loading, loading => !loading && checkScroll())
+// 首屏加载结束（成功、空列表或失败）后再通知父组件播放展开动画，确保动画起点就是最终高度。
+let readyEmitted = false
+function notifyReady() {
+  if (readyEmitted || !state.expanded)
+    return
+  if (state.page > 0 || state.error || state.done) {
+    readyEmitted = true
+    emit('ready')
+  }
+}
+watch(
+  () => [state.loading, state.page, state.error, state.done],
+  () => {
+    if (!state.loading)
+      notifyReady()
+  },
+)
 onMounted(() => {
   if (!state.page)
     void loadComments()
