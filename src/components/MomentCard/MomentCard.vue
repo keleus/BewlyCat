@@ -1636,6 +1636,11 @@ function handleAdditionalClick(event: MouseEvent) {
   font-size: var(--bew-font-size-body);
   line-height: var(--bew-line-height-body);
   text-decoration: none;
+  transition: background-color 0.16s ease;
+}
+
+.moment-card__additional:hover {
+  background: var(--bew-fill-2);
 }
 
 .moment-card__additional-main {
@@ -1758,7 +1763,7 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__likes:hover {
   color: var(--bew-theme-color);
-  background: color-mix(in srgb, var(--bew-theme-color) 10%, transparent);
+  background: var(--bew-theme-color-10);
 }
 
 .moment-card__likes:active {
@@ -2523,7 +2528,7 @@ function handleAdditionalClick(event: MouseEvent) {
 .moment-card__footer > a:hover,
 .moment-card__footer > button:hover {
   color: var(--bew-theme-color);
-  background: color-mix(in srgb, var(--bew-theme-color) 8%, transparent);
+  background: var(--bew-theme-color-10);
 }
 
 .moment-card__footer > button.is-expanded {
