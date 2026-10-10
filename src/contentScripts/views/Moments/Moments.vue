@@ -219,8 +219,10 @@ const { top: sidebarTop, update: updateSidebarBounds } = useElementBounding(side
   updateTiming: 'next-frame',
 })
 const gridRef = ref<HTMLElement | null>(null)
-/** 与 .moments-grid__column 的 gap 及 CSS 变量联动，虚拟滚动测量按此计算。 */
+/** 多列布局的横向列距，与 .moments-grid 的 gap 及宽度预算联动。 */
 const GRID_GAP = 20
+/** 同列卡片的纵向间距(--bew-space-4)，与 .moments-grid__column 的 gap 及 CSS 联动，虚拟滚动测量按此计算。 */
+const GRID_ROW_GAP = 16
 /** 与 .moments-layout 的 column-gap(--bew-space-6) 一致。 */
 const LAYOUT_GAP = 24
 const CARD_MAX_WIDTH_BY_COLUMNS = {
@@ -2431,7 +2433,7 @@ function getColumnStackHeight(column: DisplayMoment[]) {
   if (!column.length)
     return 0
   return column.reduce((sum, moment, index) => {
-    return sum + getCardHeight(moment) + (index > 0 ? GRID_GAP : 0)
+    return sum + getCardHeight(moment) + (index > 0 ? GRID_ROW_GAP : 0)
   }, 0)
 }
 
@@ -2479,8 +2481,8 @@ function balanceColumnBottoms(columns: DisplayMoment[][]) {
             return
 
           const candidateHeights = [...heights]
-          candidateHeights[sourceIndex] -= itemHeight + GRID_GAP
-          candidateHeights[targetIndex] += itemHeight + (target.length ? GRID_GAP : 0)
+          candidateHeights[sourceIndex] -= itemHeight + GRID_ROW_GAP
+          candidateHeights[targetIndex] += itemHeight + (target.length ? GRID_ROW_GAP : 0)
           const spread = Math.max(...candidateHeights) - Math.min(...candidateHeights)
           if (spread >= currentSpread - 4 || (bestMove && spread >= bestMove.spread))
             return
@@ -2512,7 +2514,7 @@ function redistributeColumns() {
   moments.value.forEach((item) => {
     const columnIndex = findShortestColumnIndex(next, heights)
     next[columnIndex].push(item)
-    heights[columnIndex] += (heights[columnIndex] > 0 ? GRID_GAP : 0) + getCardHeight(item)
+    heights[columnIndex] += (heights[columnIndex] > 0 ? GRID_ROW_GAP : 0) + getCardHeight(item)
   })
 
   momentColumns.value = balanceColumnBottoms(next).columns
@@ -2602,7 +2604,7 @@ function appendMoments(items: DisplayMoment[]) {
     moments.value.push(item)
     appended.push(item)
     momentColumns.value[columnIndex].push(item)
-    columnHeights[columnIndex] += (columnHeights[columnIndex] > 0 ? GRID_GAP : 0) + getCardHeight(item)
+    columnHeights[columnIndex] += (columnHeights[columnIndex] > 0 ? GRID_ROW_GAP : 0) + getCardHeight(item)
     existingIds.add(item.id)
   })
   // 初始布局可整体平衡；分页只追加，不能搬动用户正在查看的旧卡片
@@ -2734,7 +2736,7 @@ function rebuildColumnMetrics() {
     metrics.reset(column.map((moment, index) => {
       cardMetricPositions.set(moment.id, { column: columnIndex, index })
       return getCardHeight(moment)
-    }), GRID_GAP)
+    }), GRID_ROW_GAP)
     return metrics
   })
 }
@@ -5438,7 +5440,7 @@ watch(
 .moments-skeleton-column {
   display: flex;
   flex-direction: column;
-  gap: var(--bew-space-5);
+  gap: var(--bew-space-4);
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -5594,8 +5596,8 @@ watch(
   max-width: 100%;
   min-width: 0;
   flex-direction: column;
-  /* 与 JS 的 GRID_GAP 一致 */
-  gap: var(--bew-space-5);
+  /* 与 JS 的 GRID_ROW_GAP 一致 */
+  gap: var(--bew-space-4);
 }
 .moments-grid :deep(.moment-card) {
   width: 100%;
