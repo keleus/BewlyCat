@@ -106,6 +106,30 @@ player_listen:
   exit: Restore video picture
   listening: Listening
 settings:
+  ambilight:
+    title: Video Ambient Light
+    enable: Enable ambient light
+    enable_desc: Cast dynamic, soft ambient light around the video player to enhance immersion.
+    enable_fullscreen: Enable in fullscreen and web fullscreen
+    enable_fullscreen_desc: Keep ambient light active in fullscreen; when disabled, ambient light pauses in fullscreen.
+    preset: Light preset
+    preset_soft: Soft
+    preset_cinema: Cinema
+    preset_vivid: Vivid
+    strength: Light strength
+    spread: Spread range
+    smoothing: Transition smoothing
+    blur: Blur intensity
+    saturation: Saturation
+    subgroup_scenes: Applied Scenes
+    subgroup_effects: Light Effects
+    subgroup_effects_desc: Fine-tune light brightness, spread radius, and smooth transition.
+    subgroup_performance: Rendering Performance
+    subgroup_performance_desc: Cap sampling and rendering frame rate to reduce GPU load and battery usage.
+    fps: Maximum framerate
+    fps_15: 15 fps · Power saving
+    fps_24: 24 fps · Balanced
+    fps_30: 30 fps · Smooth
   local_loudness:
     gain_history: Levelling gain · Last 60 seconds
     show_button: Show player volume balance button

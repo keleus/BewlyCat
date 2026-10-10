@@ -106,6 +106,30 @@ player_listen:
   exit: 恢复视频画面
   listening: 正在收听
 settings:
+  ambilight:
+    title: 视频环境光
+    enable: 启用视频环境光
+    enable_desc: 在视频播放页四周投射随画面变化的柔和环境光，增强观影沉浸感。
+    enable_fullscreen: 全屏与网页全屏时启用
+    enable_fullscreen_desc: 进入全屏或网页全屏时保持环境光透出；关闭时进入全屏自动休眠停绘。
+    preset: 光效预设
+    preset_soft: 柔和
+    preset_cinema: 影院
+    preset_vivid: 绚彩
+    strength: 光线强度
+    spread: 扩散范围
+    smoothing: 过渡平滑
+    blur: 柔化程度
+    saturation: 色彩饱和度
+    subgroup_scenes: 适用场景
+    subgroup_effects: 光效调节
+    subgroup_effects_desc: 调整光线发光强度、扩散范围与色彩过渡质感。
+    subgroup_performance: 渲染性能
+    subgroup_performance_desc: 限制环境光采样与绘制刷新率，较低帧率可降低功耗与显卡占用。
+    fps: 渲染帧率上限
+    fps_15: 15 fps · 省电
+    fps_24: 24 fps · 均衡
+    fps_30: 30 fps · 流畅
   local_loudness:
     gain_history: 均衡增益变化 · 近 60 秒
     show_button: 显示播放器音量均衡按钮

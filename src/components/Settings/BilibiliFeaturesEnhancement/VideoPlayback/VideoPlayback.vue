@@ -10,6 +10,7 @@ import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
+import Ambilight from '../Ambilight/Ambilight.vue'
 import VolumeBalance from '../VolumeBalance/VolumeBalance.vue'
 
 const { t } = useI18n()
@@ -350,6 +351,7 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
       </SettingsItemSubgroup>
     </SettingsItemGroup>
     <VolumeBalance />
+    <Ambilight />
   </div>
 </template>
 

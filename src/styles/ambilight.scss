@@ -1,0 +1,303 @@
+// BewlyCat 视频环境光（Ambilight）层级与穿透样式
+
+.bewly-ambilight-host {
+  position: fixed;
+  inset: 0;
+  pointer-events: none !important;
+  z-index: -1;
+  overflow: hidden;
+  contain: layout style;
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 200ms ease-out,
+    visibility 200ms ease-out;
+
+  &.is-sleeping {
+    opacity: 0 !important;
+    visibility: hidden !important;
+  }
+
+  // 全屏或挂载在播放器容器内时的层级适配
+  .bpx-player-container &,
+  #playerWrap & {
+    position: absolute;
+    z-index: 0;
+  }
+
+  canvas {
+    position: absolute;
+    pointer-events: none;
+    transform-origin: center;
+  }
+}
+
+// 仅在环境光生效激活时，开启页面隔离与包裹层透明穿透，避免未开启用户样式污染
+html[data-bewly-ambilight] {
+  body {
+    isolation: isolate;
+  }
+
+  // 暗色底衬提升环境光通透感与对比度
+  &.dark body {
+    background-color: #10141d !important;
+  }
+
+  // 点播播放页包裹层与播放器背景透明化
+  #app,
+  #video-page-app {
+    background-color: transparent !important;
+  }
+
+  .bpx-player-video-area,
+  .bpx-player-video-perch,
+  .bpx-player-video-wrap {
+    background: transparent !important;
+  }
+
+  #bilibili-player-placeholder,
+  #bilibili-player-placeholder-top,
+  #bilibili-player-placeholder-bottom,
+  #bilibili-player-placeholder-bottom-left,
+  #bilibili-player-placeholder-bottom-right {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #playerWrap,
+  #bilibili-player,
+  .bpx-docker-major,
+  .bpx-player-container,
+  .bpx-player-video-area {
+    box-shadow: none !important;
+  }
+
+  // 右侧栏、UP主信息卡、简介栏与发送弹幕区域透明穿透
+  .right-container,
+  .right-container-inner,
+  .up-info-container,
+  .video-desc-container,
+  .bpx-player-sending-area,
+  .bpx-player-sending-bar,
+  .bpx-player-sending-bar-left,
+  .bpx-player-sending-bar-right,
+  .bpx-player-video-info,
+  .bpx-player-dm-root,
+  .bpx-player-dm-input,
+  .bpx-player-dm-switch,
+  .bpx-player-dm-setting,
+  .bpx-player-video-inputbar,
+  .bpx-player-video-inputbar-wrap,
+  .bpx-player-dm-wrap,
+  .bpx-player-dm-btn-send,
+  .bpx-player-sending-area .bui-button-blue,
+  .bpx-player-sending-area::before,
+  .bpx-player-sending-area::after,
+  #danmukuBox,
+  .danmaku-wrap,
+  .bpx-docker-minor,
+  .bpx-player-auxiliary,
+  .bpx-player-collapse,
+  .bpx-player-collapse .bui-collapse-header,
+  .bpx-player-collapse .bui-collapse-body,
+  .bpx-player-dm-management,
+  .bpx-player-dm-function,
+  .bpx-player-dm-load-status,
+  .bpx-player-dm-wrap-child {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // 弹幕列表底部与历史记录按钮透明化
+  .bpx-player-dm-btn-footer,
+  .bpx-player-dm-btn-history {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+  }
+
+  // UP主信息区操作按钮（充电、关注）透明穿透与幽灵蓝框适配
+  :is(.up-info-container, .up-panel-container, .up-detail, #v_upinfo, .up-info, .right-container) {
+    .upinfo-btn-panel {
+      // 内部图标与内嵌容器严禁出现边框或背景
+      .charge-btn-icon,
+      .follow-btn-inner,
+      .van-icon,
+      i,
+      svg,
+      img,
+      span {
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
+      }
+
+      // 1. 充电按钮本体（仅作用于外层按钮，消除内部图标正方形小框）
+      > :is(.not-follow-charge-btn, .following-charge-btn, .new-charge-btn, .charge-btn) {
+        background: transparent !important;
+        border: 1px solid var(--brand_blue, #00aeec) !important;
+        color: var(--brand_blue, #00aeec) !important;
+        box-shadow: none !important;
+
+        * {
+          color: var(--brand_blue, #00aeec) !important;
+          fill: currentColor !important;
+        }
+
+        &:hover {
+          background: rgba(0, 174, 236, 0.15) !important;
+        }
+      }
+
+      // 2. 关注按钮本体（仅作用于外层按钮）
+      > :is(.follow-btn, .btn-follow-up) {
+        box-shadow: none !important;
+
+        // 未关注（+ 关注）：幽灵蓝框风格
+        &.not-follow {
+          background: transparent !important;
+          border: 1px solid var(--brand_blue, #00aeec) !important;
+          color: var(--brand_blue, #00aeec) !important;
+
+          * {
+            color: var(--brand_blue, #00aeec) !important;
+            fill: currentColor !important;
+          }
+
+          &:hover {
+            background: rgba(0, 174, 236, 0.2) !important;
+          }
+        }
+
+        // 已关注状态
+        &:not(.not-follow) {
+          background: transparent !important;
+          border: 1px solid var(--line_regular, rgba(128, 128, 128, 0.35)) !important;
+          color: var(--text2, rgba(255, 255, 255, 0.8)) !important;
+
+          * {
+            color: var(--text2, rgba(255, 255, 255, 0.8)) !important;
+            fill: currentColor !important;
+          }
+
+          &:hover {
+            background: rgba(255, 255, 255, 0.12) !important;
+          }
+        }
+      }
+    }
+  }
+
+  // 视频选集（多P、合集面板）全层级透明化，保持文字颜色与播放指示图标
+  .video-pod,
+  .video-pod__header,
+  .video-pod__body,
+  .video-pod__list,
+  .video-pod__item,
+  .video-pod .single-p,
+  .video-pod .multi-p,
+  .video-pod .page-list,
+  .video-pod .simple-base-item {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .video-pod__item.active,
+  .video-pod .simple-base-item.active {
+    color: var(--brand_blue, #00aeec) !important;
+  }
+
+  // 推荐列表与标签容器透明化
+  .recommend-list-v1 .rec-footer,
+  .video-tag-container .tag-link,
+  .video-tag-container .show-more-btn {
+    background: transparent !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+  }
+
+  .bpx-player-video-inputbar,
+  .bpx-player-dm-input,
+  .bpx-player-dm-btn-send,
+  .bpx-player-sending-area .bui-button-blue {
+    border-color: transparent !important;
+  }
+
+  // 稍后再看与播放列表播放页透明穿透
+  .playlist-app
+    :is(
+      .video-info-container,
+      #playlistToolbar,
+      .playlist-container--right,
+      .up-panel-container,
+      .recommend-list-container,
+      .action-list-container,
+      .action-list-header,
+      .action-list-body,
+      .action-list-body-top,
+      .action-list-body-bottom,
+      .action-list,
+      .action-list-inner,
+      .action-list-content,
+      .action-list-item-wrap,
+      .action-list-item,
+      .singlep-list-item-inner,
+      .multip-list-item-inner,
+      .multip-list,
+      .multip-list-item
+    ) {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  // =========================================================================
+  // 方案一：弹幕级 1px 紧致几何硬轮廓（无发散模糊，杜绝中空发脏）
+  // 纯字体防护，不添加任何背景卡片，保持 100% 纯净通透穿透
+  // =========================================================================
+
+  // 暗色模式（白字）：1px 紧致暗黑硬边防护，遇白底 PPT 强光不吞噬
+  &.dark,
+  &[data-dark="true"] {
+    .bili-header__bar,
+    #viewbox_report,
+    #arc_toolbar_report,
+    .right-container,
+    .video-desc-container,
+    .bpx-player-sending-area,
+    .playlist-app :is(.video-info-container, #playlistToolbar, .playlist-container--right) {
+      text-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.85),
+        0 0 1px rgba(0, 0, 0, 0.75);
+    }
+  }
+
+  // 浅色模式（黑字）：微光柔化托底（方案 A），消除生硬线框与中空感
+  &:not(.dark) {
+    .bili-header__bar,
+    #viewbox_report,
+    #arc_toolbar_report,
+    .right-container,
+    .video-desc-container,
+    .bpx-player-sending-area,
+    .playlist-app :is(.video-info-container, #playlistToolbar, .playlist-container--right) {
+      text-shadow:
+        0 1px 2px rgba(255, 255, 255, 0.55),
+        0 0 1.5px rgba(255, 255, 255, 0.45);
+    }
+
+    // 方案 B：高亮态与品牌蓝文字解绑，排除白色描边污染，保持鲜艳纯净
+    :is(
+      .active,
+      .active *,
+      .is-active,
+      .is-active *,
+      [style*="color: rgb(0, 174, 236)"],
+      [style*="color: var(--brand_blue)"],
+      [style*="color:var(--brand_blue)"]
+    ) {
+      text-shadow: none !important;
+    }
+  }
+}

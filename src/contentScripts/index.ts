@@ -35,6 +35,7 @@ import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
 import { version } from '../../package.json'
+import { initAmbilightControl } from './ambilightControl'
 import { initBewlyWidescreenControl } from './bewlyWidescreenControl'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNativeHomeFeedHistory } from './features/nativeHomeFeedHistory'
@@ -1428,6 +1429,7 @@ else if (shouldInitializeContentScript) {
     initVideoScreenshotControl()
     initListenVideoFeature()
     initLocalLoudnessControl()
+    initAmbilightControl()
     if (isVideoPlaybackPage() || isVideoOrBangumiPage())
       setupShortcutHandlers()
     runWhenNativeVideoHeaderStable(initBewlyWidescreenControl)
