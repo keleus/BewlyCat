@@ -221,20 +221,20 @@ export async function initWbiKeys(options: WbiKeyOptions = {}): Promise<boolean>
   // 开始新的获取流程
   const fetchPromise = (async () => {
     try {
-      // 获取B站cookie
-      const cookieStr = noCookie ? '' : await getBilibiliCookies()
-
-      const headers: HeadersInit = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://www.bilibili.com/',
-      }
-
-      // 如果有cookie，添加到请求头
-      if (cookieStr) {
-        headers.Cookie = cookieStr
-      }
-
+      // Cookie API 也可能在后台繁忙时挂起，必须计入整个初始化的超时预算，
+      // 否则共享 Promise 会一直占用，后续搜索永远等不到一次新的密钥请求。
       const navData = await withRequestTimeout(async (signal) => {
+        const cookieStr = noCookie ? '' : await getBilibiliCookies()
+        signal.throwIfAborted()
+
+        const headers: HeadersInit = {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Referer': 'https://www.bilibili.com/',
+        }
+
+        if (cookieStr)
+          headers.Cookie = cookieStr
+
         const navResponse = await fetch('https://api.bilibili.com/x/web-interface/nav', {
           method: 'GET',
           headers,
