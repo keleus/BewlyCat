@@ -195,6 +195,7 @@ const PINNED_DIVIDER_SPACE = 10
 const momentColumns = ref<DisplayMoment[][]>([])
 const selectedMoment = ref<DisplayMoment | null>(null)
 const detailFrameUrl = ref('')
+const detailExternalUrl = ref('')
 const detailFrameLoaded = ref(false)
 const lotteryDialogUrl = ref('')
 const detailIframeRef = ref<HTMLIFrameElement | null>(null)
@@ -1428,8 +1429,23 @@ function openMomentExternally(moment: DisplayMoment, openMode: Exclude<ResolvedM
     window.open(url, '_blank', 'noopener,noreferrer')
 }
 
+function syncDetailExternalUrl() {
+  let url = detailFrameUrl.value
+  try {
+    const currentUrl = detailIframeRef.value?.contentWindow?.location.href
+    if (currentUrl && /^https?:\/\//.test(currentUrl))
+      url = currentUrl
+  }
+  catch {
+    // 跨域图文页无法读取地址，保留原始详情链接。
+  }
+  // 与 iframe 的 src 分开，更新外链时不能重新挂载播放器。
+  detailExternalUrl.value = url
+  return url
+}
+
 function openDetailFrameInNewTab() {
-  const url = detailFrameUrl.value
+  const url = syncDetailExternalUrl()
   if (!url)
     return
 
@@ -1482,6 +1498,7 @@ function openMomentDialog(moment: DisplayMoment) {
 
   selectedMoment.value = moment
   detailFrameUrl.value = resolveDetailUrl(moment)
+  detailExternalUrl.value = detailFrameUrl.value
   detailFrameLoaded.value = false
   setDetailPlayerImmersive(false)
   // 打开详情时释放悬停预览资源
@@ -1525,6 +1542,7 @@ function handleDetailIframeLoad(event: Event) {
 
   clearDetailLoadTimer()
   syncDetailFrameViewport()
+  syncDetailExternalUrl()
 
   const win = iframe?.contentWindow
   if (win) {
@@ -4523,11 +4541,14 @@ watch(
             <a
               class="moment-detail-actions__open"
               :class="{ 'is-hidden': detailPlayerImmersive }"
-              :href="detailFrameUrl"
+              :href="detailExternalUrl"
               :aria-hidden="detailPlayerImmersive ? 'true' : undefined"
               :tabindex="detailPlayerImmersive ? -1 : 0"
               target="_blank"
               rel="noopener noreferrer"
+              @pointerdown="syncDetailExternalUrl"
+              @focus="syncDetailExternalUrl"
+              @contextmenu="syncDetailExternalUrl"
               @click.prevent.stop="openDetailFrameInNewTab"
             >
               {{ t('moments.new_tab') }}
