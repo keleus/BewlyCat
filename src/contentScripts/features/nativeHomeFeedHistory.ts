@@ -4,11 +4,16 @@ import { settings, settingsReady } from '~/logic'
 import { i18n } from '~/utils/i18n'
 import { isHomePage, isInIframe } from '~/utils/main'
 
-type Snapshot = HTMLElement[]
+type Cards = HTMLElement[]
+interface Snapshot {
+  cards: Cards
+  signature: string
+}
 
 const cardSelector = '.recommended-container_floor-aside .feed-card'
-const sameNodes = (a: Snapshot, b: Snapshot) => a.length === b.length && a.every((node, index) => node === b[index])
-const signature = (cards: Snapshot) => cards.map(card => card.querySelector<HTMLAnchorElement>('a[href]')?.href || '').join('\n')
+const sameNodes = (a: Cards, b: Cards) => a.length === b.length && a.every((node, index) => node === b[index])
+const signature = (cards: Cards) => cards.map(card => card.querySelector<HTMLAnchorElement>('a[href]')?.href || '').join('\n')
+const takeSnapshot = (cards: Cards): Snapshot => ({ cards, signature: signature(cards) })
 
 /**
  * Like BiliPlus's feed-roll-history controls, retain actual card nodes so native
@@ -22,7 +27,7 @@ export function setupNativeHomeFeedHistory() {
 
   let snapshots: Snapshot[] = []
   let index = -1
-  let nativeSnapshot: Snapshot = []
+  let nativeSnapshot: Cards = []
   let enabled = false
   let loading = false
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -33,22 +38,20 @@ export function setupNativeHomeFeedHistory() {
 
   const capture = () => Array.from(document.querySelectorAll<HTMLElement>(cardSelector))
 
-  function restore(snapshot: Snapshot) {
+  function restore(snapshot: Cards) {
     const current = capture()
     const parent = current[0]?.parentElement
     if (!parent || !snapshot.length || current.some(card => card.parentElement !== parent))
       return false
 
-    const count = Math.min(current.length, snapshot.length)
+    // 两组推荐可能复用或重排节点，逐项 replaceWith 会移走后续仍要替换的节点。
     const insertionPoint = current[current.length - 1].nextSibling
-    for (let i = 0; i < count; i++) {
-      if (current[i] !== snapshot[i])
-        current[i].replaceWith(snapshot[i])
+    for (const card of snapshot)
+      parent.insertBefore(card, insertionPoint)
+    for (const card of current) {
+      if (!snapshot.includes(card))
+        card.remove()
     }
-    for (let i = count; i < snapshot.length; i++)
-      parent.insertBefore(snapshot[i], insertionPoint)
-    for (let i = count; i < current.length; i++)
-      current[i].remove()
     return true
   }
 
@@ -65,7 +68,7 @@ export function setupNativeHomeFeedHistory() {
     if (loading)
       return
     const next = index + direction
-    if (snapshots[next] && restore(snapshots[next]))
+    if (snapshots[next] && restore(snapshots[next].cards))
       index = next
     updateButtons()
   }
@@ -118,7 +121,7 @@ export function setupNativeHomeFeedHistory() {
       const initial = capture()
       if (initial.length && initial.some(card => card.querySelector('a[href]'))) {
         nativeSnapshot = initial
-        snapshots = [initial]
+        snapshots = [takeSnapshot(initial)]
         index = 0
       }
     }
@@ -143,11 +146,11 @@ export function setupNativeHomeFeedHistory() {
     if (!visible.length)
       return
     if (index < 0) {
-      snapshots = [visible]
+      snapshots = [takeSnapshot(visible)]
       index = 0
     }
     else {
-      snapshots[index] = visible
+      snapshots[index] = takeSnapshot(visible)
     }
     if (nativeSnapshot.length && !sameNodes(visible, nativeSnapshot) && !restore(nativeSnapshot))
       return
@@ -156,18 +159,21 @@ export function setupNativeHomeFeedHistory() {
     loading = true
     updateButtons()
     let attempts = 0
-    let candidate: Snapshot = []
+    let candidate: Cards = []
     let candidateSignature = ''
     function settle() {
       const current = capture()
       const currentSignature = signature(current)
-      const changed = current.length > 0 && !sameNodes(previous, current)
-        && !!currentSignature.trim() && currentSignature !== previousSignature
+      // 原站也会原地更新卡片，链接变化即可说明换了一组，不能要求节点必须被替换。
+      const changed = current.length > 0 && !!currentSignature.trim() && currentSignature !== previousSignature
       // Wait for consecutive stable samples instead of retaining a partially
       // replaced recommendation grid.
       if (changed && sameNodes(candidate, current) && candidateSignature === currentSignature) {
         snapshots.splice(index + 1)
-        snapshots.push(current)
+        // 被原站复用并改写的节点已无法代表旧推荐，移除失效记录，保留其它可恢复组。
+        snapshots = snapshots.filter(snapshot => snapshot.signature === signature(snapshot.cards)
+          && snapshot.signature !== currentSignature)
+        snapshots.push(takeSnapshot(current))
         if (snapshots.length > 5)
           snapshots.shift()
         index = snapshots.length - 1
