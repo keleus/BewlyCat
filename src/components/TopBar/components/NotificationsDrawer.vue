@@ -34,6 +34,12 @@ const escHintTimer = ref<NodeJS.Timeout | null>(null)
 const openTimer = ref<NodeJS.Timeout | null>(null)
 const disableEscPress = ref<boolean>(false)
 const showEscHint = ref<boolean>(false)
+let darkModeSyncTimers: ReturnType<typeof setTimeout>[] = []
+
+function clearDarkModeSyncTimers() {
+  darkModeSyncTimers.forEach(clearTimeout)
+  darkModeSyncTimers = []
+}
 
 // 计算属性：只有在显示iframe时才设置src，避免隐藏时提前加载
 const src = computed(() => showIframe.value ? currentUrl.value : undefined)
@@ -79,6 +85,11 @@ function handleIframeLoad() {
     return
 
   isIframeLoaded.value = true
+  // 完整导航后 loaded 仍为 true，每次 load 都需要同步新文档的主题。
+  clearDarkModeSyncTimers()
+  syncIframeDarkModeState()
+  darkModeSyncTimers = [120, 320].map(delay => setTimeout(syncIframeDarkModeState, delay))
+  scheduleRevealIframe()
 }
 
 function handleDrawerCloseRequestMessage(event: MessageEvent) {
@@ -126,18 +137,6 @@ watch(() => isDark.value, () => {
 // 监听深色模式基准颜色变化
 watch(() => settings.value.darkModeBaseColor, () => {
   syncIframeDarkModeState()
-})
-
-// 监听iframe加载状态，加载完成后发送初始的黑暗模式状态
-watch(() => isIframeLoaded.value, (newValue) => {
-  if (!newValue)
-    return
-
-  // 发送多次深色模式同步消息，减少 iframe 页面初始亮色闪烁
-  syncIframeDarkModeState()
-  setTimeout(syncIframeDarkModeState, 120)
-  setTimeout(syncIframeDarkModeState, 320)
-  scheduleRevealIframe()
 })
 
 watch(() => showIframe.value, (newValue) => {
@@ -335,6 +334,7 @@ function removeGlobalListeners() {
 }
 
 function clearLifecycleTimers() {
+  clearDarkModeSyncTimers()
   clearRevealIframeTimer()
   if (openTimer.value) {
     clearTimeout(openTimer.value)

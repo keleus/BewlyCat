@@ -31,11 +31,6 @@ import { isComponentVisible } from '~/utils/topBarBadge'
 
 import { setupNecessarySettingsWatchers } from './necessarySettingsWatchers'
 
-// Check if current page is festival page
-function isFestivalPage(): boolean {
-  return /https?:\/\/(?:www\.)?bilibili\.com\/festival\/.*/.test(document.URL)
-}
-
 const mainStore = useMainStore()
 const settingsStore = useSettingsStore()
 const topBarStore = useTopBarStore()
@@ -1134,61 +1129,6 @@ useEventListener(window, 'message', ({ data, source }) => {
   }
 })
 
-// 监听来自父页面的黑暗模式切换消息（用于iframe跨域场景）
-useEventListener(window, 'message', ({ data, source }) => {
-  // 只处理来自父窗口的消息
-  if (source !== window.parent)
-    return
-
-  if (!data || typeof data !== 'object' || Array.isArray(data))
-    return
-
-  const { type, isDark, darkModeBaseColor } = data
-
-  if (type === 'iframeDarkModeChange') {
-    // 在iframe环境中，只更新DOM样式，不修改用户的主题设置
-    // 避免覆盖用户选择的设备或定时主题模式
-    if (isInIframe()) {
-      // Check if we should apply selective dark mode (plugin UI only) on festival pages
-      const isSelectiveDark = isFestivalPage()
-
-      // 立即更新DOM样式，不修改settings.value.theme
-      if (isDark) {
-        // Always apply to plugin container
-        document.querySelector('#bewly')?.classList.add('dark')
-
-        // Only apply global styles if not on festival pages
-        if (!isSelectiveDark) {
-          document.documentElement.classList.add('dark')
-          document.body?.classList.add('dark')
-        }
-
-        // 如果提供了深色模式基准颜色，则应用它（仅应用到DOM，不修改设置）
-        if (darkModeBaseColor) {
-          document.documentElement.style.setProperty('--bew-dark-base-color', darkModeBaseColor)
-          // 对于Shadow DOM也需要设置
-          const bewlyContainer = document.getElementById('bewly')
-          if (bewlyContainer?.shadowRoot) {
-            const shadowHost = bewlyContainer
-            shadowHost.style.setProperty('--bew-dark-base-color', darkModeBaseColor)
-          }
-        }
-      }
-      else {
-        document.querySelector('#bewly')?.classList?.remove('dark')
-
-        // Only remove global classes if not in selective mode
-        if (!isSelectiveDark) {
-          document.documentElement.classList.remove('dark')
-          document.body?.classList.remove('dark')
-        }
-      }
-
-      // 强制重新计算样式
-      void document.documentElement.offsetHeight
-    }
-  }
-}, { passive: true })
 const iframePageURL = computed((): string => {
   // If the iframe is not the BiliBili homepage or in iframe, then don't show the iframe page
   if (!isHomePage(window.self.location.href) || isInIframe())

@@ -1,15 +1,39 @@
 import { usePreferredDark } from '@vueuse/core'
 
-import { DARK_MODE_BASE_COLOR_CHANGE } from '~/constants/globalEvents'
+import { DARK_MODE_BASE_COLOR_CHANGE, IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { isVideoPlaybackPage, setCookie } from '~/utils/main'
 
 const currentUrl = ref(typeof location === 'undefined' ? '' : location.href)
 const currentMinuteOfDay = ref(getCurrentMinuteOfDay())
+const iframeTheme = ref<{ isDark: boolean, baseColor?: string }>()
+let isIframeThemeListenerStarted = false
 let isRouteWatcherStarted = false
 let isScheduleClockStarted = false
 let lastThemeChangeState: boolean | undefined
 let lastDarkModeBaseColor: string | undefined
+
+function startIframeThemeListener() {
+  if (isIframeThemeListenerStarted || typeof window === 'undefined' || window.parent === window)
+    return
+
+  isIframeThemeListenerStarted = true
+  window.addEventListener('message', ({ source, origin, data }) => {
+    if (source !== window.parent || !/^https?:\/\/(?:[\w-]+\.)?bilibili\.com$/.test(origin)
+      || data?.type !== IFRAME_DARK_MODE_CHANGE || typeof data.isDark !== 'boolean') {
+      return
+    }
+
+    // 保留父窗口的有效主题，消息页 hash 路由切换时也不能退回自身的全站主题。
+    // 仅在当前 iframe 文档内继承，不写入用户设置。
+    iframeTheme.value = {
+      isDark: data.isDark,
+      baseColor: typeof data.darkModeBaseColor === 'string' && CSS.supports('color', data.darkModeBaseColor)
+        ? data.darkModeBaseColor
+        : iframeTheme.value?.baseColor,
+    }
+  })
+}
 
 function getCurrentMinuteOfDay(): number {
   const now = new Date()
@@ -102,12 +126,15 @@ function syncBilibiliTheme(isDark: boolean) {
 }
 
 export function useDark() {
+  startIframeThemeListener()
   startRouteWatcher()
   startScheduleClock()
 
   const isPreferredDark = usePreferredDark()
   const currentSystemColorScheme = computed(() => isPreferredDark.value ? 'dark' : 'light')
   const currentAppColorScheme = computed((): 'dark' | 'light' => {
+    if (iframeTheme.value)
+      return iframeTheme.value.isDark ? 'dark' : 'light'
     if (settings.value.theme === 'light' || settings.value.theme === 'dark')
       return settings.value.theme
     if (settings.value.theme === 'scheduled') {
@@ -123,7 +150,8 @@ export function useDark() {
   const isVideoPageDark = computed(() => {
     return settings.value.videoPageDarkMode && isVideoPlaybackPage(currentUrl.value)
   })
-  const isDark = computed(() => currentAppColorScheme.value === 'dark' || isVideoPageDark.value)
+  const isDark = computed(() => iframeTheme.value?.isDark ?? (currentAppColorScheme.value === 'dark' || isVideoPageDark.value))
+  const darkModeBaseColor = computed(() => iframeTheme.value?.baseColor ?? settings.value.darkModeBaseColor)
 
   // Apply appearance only when an effective theme input changes.
   watch(
@@ -141,7 +169,7 @@ export function useDark() {
 
   // 监听深色模式基准颜色变化
   watch(
-    () => settings.value.darkModeBaseColor,
+    darkModeBaseColor,
     (newColor) => {
       setDarkModeBaseColor(newColor)
       if (lastDarkModeBaseColor === newColor)
@@ -175,7 +203,7 @@ export function useDark() {
       }
 
       // 确保深色模式基准颜色被正确应用
-      setDarkModeBaseColor(settings.value.darkModeBaseColor)
+      setDarkModeBaseColor(darkModeBaseColor.value)
     }
     else {
       document.querySelector('#bewly')?.classList?.remove('dark')
