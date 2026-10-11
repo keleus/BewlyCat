@@ -5,6 +5,7 @@ interface Props {
   type?: 'text' | 'password' | 'email' | 'number'
   min?: number
   max?: number
+  step?: number
   placeholder?: string
   ariaLabel?: string
 }
@@ -62,6 +63,7 @@ defineExpose({ focus })
       :type="type"
       :min="min"
       :max="max"
+      :step="step"
       :placeholder="placeholder"
       :aria-label="ariaLabel"
       w-inherit min-w-0 h-inherit

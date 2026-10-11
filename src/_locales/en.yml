@@ -937,6 +937,12 @@ settings:
   remember_playback_rate_desc: >
     When enabled, the player will remember your last set playback rate and
     automatically apply it when opening videos
+  custom_playback_rate: Custom playback rate
+  custom_playback_rate_desc: Enter a rate from 0.25 to 5 and apply it to the current video, including videos in drawers and dialogs. Enable Remember playback rate to save it.
+  custom_playback_rate_apply: Apply to current video
+  custom_playback_rate_no_video: No controllable video on this page. Open these settings on a video playback page.
+  playback_rate_step: Playback rate shortcut step
+  playback_rate_step_desc: Change the rate by 0.01–1 per key press; the default is 0.25. Configure the keys in Shortcuts.
   remember_video_quality: Remember video quality
   remember_video_quality_desc: Restore the last selected video quality. If unavailable, keep the current quality without overwriting the preference.
   remember_video_aspect_ratio: Remember video aspect ratio

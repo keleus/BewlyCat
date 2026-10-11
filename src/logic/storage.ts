@@ -11,6 +11,7 @@ import {
   MOBILE_LIST_LAYOUT_BREAKPOINT,
   normalizeListLayoutBreakpoint,
 } from '~/utils/gridLayout'
+import { normalizePlaybackRateStep } from '~/utils/playbackRate'
 
 export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
 
@@ -560,6 +561,7 @@ export interface Settings {
   // 倍速记忆设置
   rememberPlaybackRate: boolean // 启用倍速记忆功能
   savedPlaybackRate: number // 记住的倍速值 (0.25-5)
+  playbackRateStep: number // 倍速快捷键每次调节的幅度 (0.01-1)
 
   // 清晰度记忆设置
   rememberVideoQuality: boolean
@@ -923,6 +925,7 @@ export const originalSettings: Settings = {
   // 倍速记忆设置
   rememberPlaybackRate: false, // 启用倍速记忆功能
   savedPlaybackRate: 1, // 记住的倍速值 (0.25-5)
+  playbackRateStep: 0.25,
 
   // 清晰度记忆设置
   rememberVideoQuality: false,
@@ -958,6 +961,7 @@ export const settings = useSettingsStorage(originalSettings, {
   onReady: value => resolveSettingsReady(value),
   normalize: (value) => {
     const record = value as Record<string, any>
+    record.playbackRateStep = normalizePlaybackRateStep(record.playbackRateStep)
 
     // 旧配置也补齐新入口，保持菜单按钮与各项的默认可见状态一致。
     const menuConfig = record.videoCardContextMenuConfig

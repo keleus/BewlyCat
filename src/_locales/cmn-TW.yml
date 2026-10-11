@@ -812,6 +812,12 @@ settings:
   keep_watch_later_video_default_mode_desc: 啟用後，稍後觀看中的影片將始終使用預設播放器模式，不會套用寬螢幕或全螢幕設定
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住你上次設定的倍速，並在下次打開影片時自動套用
+  custom_playback_rate: 自訂播放倍速
+  custom_playback_rate_desc: 輸入 0.25–5 倍，套用至目前影片（支援抽屜與彈出視窗內的影片）。開啟「記住倍速」後會儲存此值。
+  custom_playback_rate_apply: 套用至目前影片
+  custom_playback_rate_no_video: 目前頁面沒有可控制的影片，請在影片播放頁開啟此設定。
+  playback_rate_step: 倍速快捷鍵調整幅度
+  playback_rate_step_desc: 每次增減 0.01–1 倍；預設 0.25。快捷鍵可在「快捷鍵」設定中修改。
   remember_video_quality: 記住畫質
   remember_video_quality_desc: 啟用後自動恢復上次選擇的畫質；無法使用時沿用播放器目前畫質，不覆蓋記憶。
   remember_video_aspect_ratio: 記住影片比例

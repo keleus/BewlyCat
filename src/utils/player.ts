@@ -3,6 +3,7 @@ import { MOMENTS_VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import type { AutoPlayMode, DefaultVideoPlayerMode, VideoPlayerModeContext, VideoPlayerModeOverride } from '~/logic/storage'
 import { i18n } from '~/utils/i18n'
+import { normalizePlaybackRate, normalizePlaybackRateStep } from '~/utils/playbackRate'
 
 function t(key: string, params: Record<string, unknown> = {}) {
   return String(i18n.global.t(key, params))
@@ -137,8 +138,8 @@ let timeInterval: number | null = null
 let clockInterval: number | null = null
 
 // 获取视频元素
-export function getVideoElement(): HTMLVideoElement | null {
-  return document.querySelector(_videoClassTag.video)
+export function getVideoElement(doc: Document = document): HTMLVideoElement | null {
+  return doc.querySelector(_videoClassTag.video)
 }
 
 export function isPlayerDisplayModeReady(mode: DefaultVideoPlayerMode): boolean {
@@ -1195,24 +1196,25 @@ export function toggleCaption() {
 }
 
 // 改变播放速度
+export function setPlaybackRate(rate: number, video = getVideoElement()): boolean {
+  if (!video || !Number.isFinite(rate))
+    return false
+  const nextRate = normalizePlaybackRate(rate)
+  video.playbackRate = nextRate
+  if (settings.value.rememberPlaybackRate) {
+    video.defaultPlaybackRate = nextRate
+    settings.value.savedPlaybackRate = nextRate
+  }
+  return true
+}
+
 export function changePlaybackRate(increase: boolean) {
   const video = getVideoElement()
   if (!video)
     return
 
-  const speedStep = 0.25
-
-  if (increase) {
-    if (video.playbackRate < 5) {
-      video.playbackRate = Number.parseFloat((video.playbackRate + speedStep).toFixed(2))
-    }
-  }
-  else {
-    const newRate = Number.parseFloat((video.playbackRate - speedStep).toFixed(2))
-    if (newRate >= 0.25) {
-      video.playbackRate = newRate
-    }
-  }
+  const speedStep = normalizePlaybackRateStep(settings.value.playbackRateStep)
+  setPlaybackRate(video.playbackRate + (increase ? speedStep : -speedStep), video)
 
   showState(t('player_state.speed', { rate: video.playbackRate }))
 }
@@ -1221,7 +1223,7 @@ export function changePlaybackRate(increase: boolean) {
 export function resetPlaybackRate() {
   const video = getVideoElement()
   if (video) {
-    video.playbackRate = 1
+    setPlaybackRate(1, video)
     showState(t('player_state.speed', { rate: 1 }))
   }
 }
