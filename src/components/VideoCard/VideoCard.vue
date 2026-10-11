@@ -377,6 +377,8 @@ provide('getVideoType', () => props.type!)
           v-on="coverSkeleton ? {} : coverEvents"
         >
           <VideoCardCover
+            v-model:video-element="logic.videoElement.value"
+            v-model:preview-time="logic.videoCurrentTime.value"
             :skeleton="coverSkeleton"
             :video="props.video"
             :layout="layout"
@@ -385,7 +387,6 @@ provide('getVideoType', () => props.type!)
             :is-hover="logic.isHover.value"
             :should-hide-overlay-elements="Boolean(logic.shouldHideOverlayElements.value)"
             :preview-video-url="logic.previewVideoUrl.value || ''"
-            :video-element="logic.videoElement.value || null"
             :show-watcher-later="showWatcherLater"
             :cover-top-left-always-visible="coverTopLeftAlwaysVisible"
             :cover-top-right-always-visible="coverTopRightAlwaysVisible"

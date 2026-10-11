@@ -119,9 +119,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       return undefined
 
     let url = ''
-    if (props.value.video.url)
-      url = props.value.video.url
-    else if (props.value.video.bvid || props.value.video.aid)
+    if (props.value.video.url || props.value.video.bvid || props.value.video.aid)
       url = getCurrentVideoUrl(props.value.video, videoCurrentTime)
     else if (props.value.video.epid)
       url = `https://www.bilibili.com/bangumi/play/ep${props.value.video.epid}/`
@@ -193,8 +191,10 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     })
     const isStale = () => cancelled || isDisposed.value || !isActive.value || !isHover.value
 
-    if (identity !== previousIdentity)
+    if (identity !== previousIdentity) {
       clearPreviewVideoUrl()
+      videoCurrentTime.value = null
+    }
 
     if (!props.value.video || !newValue)
       return
@@ -364,7 +364,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   }
 
   function handleClick(event: MouseEvent) {
-    videoCurrentTime.value = getCurrentTime(videoElement)
+    videoCurrentTime.value = getCurrentTime(videoElement) ?? videoCurrentTime.value
     if (settings.value.videoCardLinkOpenMode === 'background' && videoUrl.value && !event.ctrlKey && !event.metaKey) {
       event.preventDefault()
       openLinkInBackground(videoUrl.value)

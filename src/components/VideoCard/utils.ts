@@ -22,7 +22,18 @@ export function getCurrentTime(videoElement: Ref<HTMLVideoElement | null>) {
 }
 
 export function getCurrentVideoUrl(video: Video, videoCurrentTime: Ref<number | null>) {
-  const baseUrl = `https://www.bilibili.com/video/${video.bvid ?? `av${video.aid}`}`
+  const baseUrl = video.url || `https://www.bilibili.com/video/${video.bvid ?? `av${video.aid}`}`
   const currentTime = videoCurrentTime.value
-  return currentTime && currentTime > 5 ? `${baseUrl}/?t=${currentTime}` : `${baseUrl}`
+  if (!currentTime || !Number.isFinite(currentTime) || currentTime < 1 || video.roomid)
+    return baseUrl
+
+  try {
+    const url = new URL(baseUrl)
+    if (url.hostname === 'www.bilibili.com' && /^\/(?:video\/|bangumi\/play\/)/.test(url.pathname))
+      url.searchParams.set('t', String(Math.floor(currentTime)))
+    return url.toString()
+  }
+  catch {
+    return baseUrl
+  }
 }

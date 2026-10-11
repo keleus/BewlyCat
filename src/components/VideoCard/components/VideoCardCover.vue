@@ -25,7 +25,6 @@ interface Props {
   isHover: boolean
   shouldHideOverlayElements: boolean
   previewVideoUrl: string
-  videoElement: HTMLVideoElement | null
   showWatcherLater: boolean
   coverTopLeftAlwaysVisible?: boolean
   coverTopRightAlwaysVisible?: boolean
@@ -72,7 +71,11 @@ const playbackProgress = computed(() => {
   return watchState?.status === 'watched' ? watchState.percentage : undefined
 })
 
-const videoRef = ref<HTMLVideoElement | null>(null)
+const videoRef = defineModel<HTMLVideoElement | null>('videoElement', { default: null })
+const previewTime = defineModel<number | null>('previewTime', { default: null })
+const previewIdentity = computed(() => [props.video?.bvid, props.video?.aid, props.video?.cid, props.video?.epid].join(':'))
+let activePreviewIdentity = ''
+let canSavePreviewTime = false
 const isActive = ref(true)
 const isCoverHovered = ref(false)
 const isLoadingStream = ref<boolean>(false)
@@ -133,13 +136,22 @@ const previewInteractionEvents = computed(() => ({
 }))
 
 function resetVideoElement(videoEl: HTMLVideoElement) {
+  canSavePreviewTime = false
   videoEl.pause()
   videoEl.srcObject = null
   videoEl.removeAttribute('src')
   videoEl.load()
 }
 
+function savePreviewTime(videoEl = videoRef.value) {
+  if (!canSavePreviewTime || props.video?.roomid || activePreviewIdentity !== previewIdentity.value || !videoEl)
+    return
+  if (Number.isFinite(videoEl.currentTime))
+    previewTime.value = videoEl.ended ? 0 : videoEl.currentTime
+}
+
 function stopPreview(videoEl: HTMLVideoElement | null = videoRef.value) {
+  savePreviewTime(videoEl)
   cleanupPlayers()
   resetPreviewScrub()
   showVideoControls.value = false
@@ -339,8 +351,17 @@ async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
     }
   }
   else {
+    savePreviewTime(videoEl)
+    const resumeTime = previewTime.value
     cleanupPlayers()
     resetVideoElement(videoEl)
+    activePreviewIdentity = previewIdentity.value
+    previewEvents = new AbortController()
+    videoEl.addEventListener('loadedmetadata', () => {
+      if (resumeTime && Number.isFinite(videoEl.duration) && resumeTime < videoEl.duration)
+        videoEl.currentTime = resumeTime
+      canSavePreviewTime = true
+    }, { once: true, signal: previewEvents.signal })
     showControls()
     videoEl.src = url
     videoEl.load()
@@ -351,7 +372,10 @@ async function setupPreviewVideo(url: string, videoEl: HTMLVideoElement) {
 }
 
 // Watch for preview URL and videoRef changes
-watch([() => props.previewVideoUrl, () => props.isHover, videoRef, isActive], ([url, isHover, videoEl, active]) => {
+watch([() => props.previewVideoUrl, () => props.isHover, videoRef, isActive], ([url, isHover, videoEl, active], [, , previousVideo]) => {
+  if (previousVideo && previousVideo !== videoEl)
+    stopPreview(previousVideo)
+
   if (!active) {
     stopPreview(videoEl)
     return
@@ -484,7 +508,10 @@ onBeforeUnmount(() => {
             autoplay muted
             :draggable="false"
             :controls="showVideoControls"
-            w-full h-full
+            w-full
+            h-full
+            @timeupdate="savePreviewTime()"
+            @pause="savePreviewTime()" @ended="savePreviewTime()"
           />
 
           <div
