@@ -610,6 +610,12 @@ else if (shouldInitializePageScript) {
       css: `
         ${COMMENT_WIDESCREEN_COMPACT_METADATA_CSS}
 
+        /* 外层主题变量会跨 Shadow DOM 继承，无需等待原生 #body 同步 dark 类。 */
+        #body .tag {
+          color: var(--bew-comment-tag-color, var(--bili-comment-tag-color)) !important;
+          background-color: var(--bew-comment-tag-bg, var(--bili-comment-tag-bg)) !important;
+        }
+
         #body.dark .tag {
           --bili-comment-tag-color: var(--bew-comment-tag-color, var(--bili-comment-tag-color-dark)) !important;
           --bili-comment-tag-bg: var(--bew-comment-tag-bg, var(--bili-comment-tag-bg-dark)) !important;
