@@ -14,7 +14,7 @@ import type { ConfirmDialogOptions, ConfirmDialogToggleField } from '~/composabl
 import { confirmDialogKey } from '~/composables/useConfirmDialog'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
+import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_SEARCH_NAVIGATION, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
 import { installScrollBridge } from '~/contentScripts/features/scrollBridge'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
@@ -26,6 +26,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
+import { navigateToPluginSearchResults } from '~/utils/searchNavigation'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
 import { isComponentVisible } from '~/utils/topBarBadge'
 
@@ -1090,6 +1091,25 @@ function setActiveDrawer(drawer: DrawerType) {
 const hideUIForIframePhotoViewer = ref<boolean>(false)
 
 const iframePageRef = ref()
+// 只接受当前 Bewly 界面持有的 iframe 请求；消息仅携带关键词，不接受任意跳转 URL。
+useEventListener(window, 'message', ({ data, source, origin }) => {
+  if (data?.type !== IFRAME_SEARCH_NAVIGATION || typeof data.keyword !== 'string' || !data.keyword.trim())
+    return
+
+  const frames = document.getElementById('bewly')?.shadowRoot?.querySelectorAll<HTMLIFrameElement>('iframe')
+  const frame = Array.from(frames ?? []).find(iframe => iframe.contentWindow === source)
+  if (!frame)
+    return
+  try {
+    if (new URL(frame.src).origin !== origin || !/^https?:\/\/(?:[\w-]+\.)?bilibili\.com$/.test(origin))
+      return
+  }
+  catch {
+    return
+  }
+
+  navigateToPluginSearchResults(data.keyword)
+})
 useEventListener(window, 'message', ({ data, source }) => {
   if (typeof data !== 'string')
     return

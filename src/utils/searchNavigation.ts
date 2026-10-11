@@ -1,3 +1,4 @@
+import { IFRAME_SEARCH_NAVIGATION } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { isActualHomepage, isHomePage, isInIframe } from '~/utils/main'
 import { openLinkInBackground } from '~/utils/tabs'
@@ -72,11 +73,14 @@ export function navigateToPluginSearchResults(keyword: string): boolean {
 
   const targetUrl = `https://www.bilibili.com/?page=SearchResults&keyword=${encodeURIComponent(normalized)}`
 
+  if (isInIframe()) {
+    // 抽屉的 sandbox 禁止直接导航顶层窗口，由持有 iframe 的父页面处理。
+    window.parent.postMessage({ type: IFRAME_SEARCH_NAVIGATION, keyword: normalized }, '*')
+    return true
+  }
+
   if (!isHomePage()) {
-    if (isInIframe())
-      window.top?.location.assign(targetUrl)
-    else
-      window.location.assign(targetUrl)
+    window.location.assign(targetUrl)
     return true
   }
 
