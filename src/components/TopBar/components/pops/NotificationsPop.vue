@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { UnReadDm, UnReadMessage } from '~/components/TopBar/types'
 import { settings } from '~/logic'
-import { getNotificationBadgeCounts } from '~/utils/notificationBadge'
+import { getNotificationCounts } from '~/utils/notificationBadge'
 
 const props = defineProps<{
   // 接收外部传入的通知数据
@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const counts = computed(() => getNotificationBadgeCounts(settings.value, props.unReadMessage, props.unReadDm))
+const counts = computed(() => getNotificationCounts(props.unReadMessage, props.unReadDm))
 const list = computed((): { name: string, url: string, unreadCount: number, icon: string }[] => [
   {
     name: t('topbar.noti_dropdown.replys'),
