@@ -133,6 +133,9 @@ watch(() => commentPreview.expanded, (expanded) => {
     commentsPreparing.value = true
     commentsEntered.value = false
     commentsMounted.value = true
+    // 收起动画未结束就重新展开时子组件仍挂载、首屏已就绪，不会再发出 ready，由此直接播放展开。
+    if (!commentPreview.loading && (commentPreview.page > 0 || commentPreview.error || commentPreview.done))
+      handleCommentsReady()
   }
   else {
     commentsPreparing.value = false
@@ -153,7 +156,8 @@ function handleCommentsReady() {
   // 两帧：先让浏览器按 0fr 完成布局，再过渡到完整高度。
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      commentsEntered.value = true
+      if (commentPreview.expanded)
+        commentsEntered.value = true
     })
   })
 }
