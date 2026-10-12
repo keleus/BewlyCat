@@ -33,6 +33,8 @@ const noMoreContent = tabState.ref<boolean>('noMoreContent', false)
 const noMoreContentWarning = tabState.ref<boolean>('noMoreContentWarning', false)
 const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const { handleReachBottom, handlePageRefresh } = useBewlyApp()
+// 刷新会作废仍在进行的加载更多，避免旧页拼进新列表后重复请求同一页、产生重复卡片。
+let requestVersion = 0
 
 onMounted(() => {
   initPageAction()
@@ -46,6 +48,7 @@ async function initData() {
   if (!tabState.isCurrent())
     return
 
+  const version = ++requestVersion
   needToLoginFirst.value = false
   offset.value = ''
   updateBaseline.value = ''
@@ -54,7 +57,11 @@ async function initData() {
   noMoreContentWarning.value = false
   hasLoaded.value = false
 
-  await getData()
+  await getData(version)
+}
+
+function isRequestCurrent(version: number) {
+  return tabState.isCurrent() && version === requestVersion
 }
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
@@ -82,8 +89,8 @@ function transformSubscribedSeriesVideo(item: VideoElement): Video | undefined {
   }
 }
 
-async function getData() {
-  if (!tabState.isCurrent())
+async function getData(version = requestVersion) {
+  if (!isRequestCurrent(version))
     return
 
   emit('beforeLoading')
@@ -93,18 +100,18 @@ async function getData() {
   try {
     // 初次加载时多加载几批确保有足够内容
     for (let i = 0; i < 3 && !noMoreContent.value; i++) {
-      if (!tabState.isCurrent())
+      if (!isRequestCurrent(version))
         return
 
-      loaded = await getSubscribedSeriesVideos() || loaded
-      if (!tabState.isCurrent())
+      loaded = await getSubscribedSeriesVideos(version) || loaded
+      if (!isRequestCurrent(version))
         return
     }
-    if (tabState.isCurrent() && loaded)
+    if (isRequestCurrent(version) && loaded)
       hasLoaded.value = true
   }
   finally {
-    if (tabState.isCurrent()) {
+    if (isRequestCurrent(version)) {
       isLoading.value = false
       emit('afterLoading')
     }
@@ -134,7 +141,7 @@ async function refreshHandler() {
   await initData()
 }
 
-async function getSubscribedSeriesVideos(): Promise<boolean> {
+async function getSubscribedSeriesVideos(version: number): Promise<boolean> {
   if (noMoreContent.value)
     return true
 
@@ -150,7 +157,7 @@ async function getSubscribedSeriesVideos(): Promise<boolean> {
       update_baseline: updateBaseline.value,
     })
 
-    if (!tabState.isCurrent())
+    if (!isRequestCurrent(version))
       return false
 
     if (response.code === -101) {
@@ -185,14 +192,15 @@ async function handleLoadMore() {
   if (!tabState.isCurrent() || isLoading.value || noMoreContent.value)
     return
 
+  const version = requestVersion
   isLoading.value = true
   try {
-    const loaded = await getSubscribedSeriesVideos()
-    if (tabState.isCurrent() && loaded)
+    const loaded = await getSubscribedSeriesVideos(version)
+    if (isRequestCurrent(version) && loaded)
       hasLoaded.value = true
   }
   finally {
-    if (tabState.isCurrent())
+    if (isRequestCurrent(version))
       isLoading.value = false
   }
 }

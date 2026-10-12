@@ -31,6 +31,8 @@ const page = tabState.ref<number>('page', 1)
 const noMoreContent = tabState.ref<boolean>('noMoreContent', false)
 const hasLoaded = tabState.ref<boolean>('hasLoaded', false)
 const { handleReachBottom, handlePageRefresh } = useBewlyApp()
+// 刷新会作废仍在进行的加载更多，避免旧页拼进新列表后重复请求同一页、产生重复卡片。
+let requestVersion = 0
 
 onMounted(() => {
   initPageAction()
@@ -49,13 +51,18 @@ async function initData() {
   if (!tabState.isCurrent())
     return
 
+  const version = ++requestVersion
   needToLoginFirst.value = false
   page.value = 1
   videoList.value = []
   noMoreContent.value = false
   hasLoaded.value = false
 
-  await getData()
+  await getData(version)
+}
+
+function isRequestCurrent(version: number) {
+  return tabState.isCurrent() && version === requestVersion
 }
 
 // 数据转换函数：将原始数据转换为 VideoCard 所需的显示格式
@@ -81,8 +88,8 @@ function transformLiveVideo(item: VideoElement): Video | undefined {
   }
 }
 
-async function getData() {
-  if (!tabState.isCurrent())
+async function getData(version = requestVersion) {
+  if (!isRequestCurrent(version))
     return
 
   emit('beforeLoading')
@@ -92,18 +99,18 @@ async function getData() {
   try {
     // 初次加载时多加载几批确保有足够内容
     for (let i = 0; i < 3 && !noMoreContent.value; i++) {
-      if (!tabState.isCurrent())
+      if (!isRequestCurrent(version))
         return
 
-      loaded = await getLiveVideos() || loaded
-      if (!tabState.isCurrent())
+      loaded = await getLiveVideos(version) || loaded
+      if (!isRequestCurrent(version))
         return
     }
-    if (tabState.isCurrent() && loaded)
+    if (isRequestCurrent(version) && loaded)
       hasLoaded.value = true
   }
   finally {
-    if (tabState.isCurrent()) {
+    if (isRequestCurrent(version)) {
       isLoading.value = false
       emit('afterLoading')
     }
@@ -124,7 +131,7 @@ async function refreshHandler() {
   await initData()
 }
 
-async function getLiveVideos(): Promise<boolean> {
+async function getLiveVideos(version: number): Promise<boolean> {
   if (noMoreContent.value)
     return true
 
@@ -136,7 +143,7 @@ async function getLiveVideos(): Promise<boolean> {
       page_size: 9,
     })
 
-    if (!tabState.isCurrent())
+    if (!isRequestCurrent(version))
       return false
 
     if (response.code === -101) {
@@ -153,11 +160,19 @@ async function getLiveVideos(): Promise<boolean> {
 
     page.value = requestPage + 1
 
-    const newItems = response.data.list.map((item: FollowingLiveItem) => ({
-      uniqueId: `${item.roomid}`,
-      item,
-      displayData: transformLiveVideo({ uniqueId: `${item.roomid}`, item }),
-    }))
+    // 直播列表按页码翻页且排序随开播状态变化，同一直播间可能出现在相邻两页；卡片 key 必须唯一。
+    const seenIds = new Set(videoList.value.map(video => video.uniqueId))
+    const newItems = response.data.list.flatMap((item: FollowingLiveItem) => {
+      const uniqueId = `${item.roomid}`
+      if (seenIds.has(uniqueId))
+        return []
+      seenIds.add(uniqueId)
+      return [{
+        uniqueId,
+        item,
+        displayData: transformLiveVideo({ uniqueId, item }),
+      }]
+    })
 
     videoList.value = [...videoList.value, ...newItems]
     return true
@@ -173,14 +188,15 @@ async function handleLoadMore() {
   if (!tabState.isCurrent() || isLoading.value || noMoreContent.value)
     return
 
+  const version = requestVersion
   isLoading.value = true
   try {
-    const loaded = await getLiveVideos()
-    if (tabState.isCurrent() && loaded)
+    const loaded = await getLiveVideos(version)
+    if (isRequestCurrent(version) && loaded)
       hasLoaded.value = true
   }
   finally {
-    if (tabState.isCurrent())
+    if (isRequestCurrent(version))
       isLoading.value = false
   }
 }
