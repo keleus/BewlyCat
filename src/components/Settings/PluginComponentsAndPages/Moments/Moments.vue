@@ -125,25 +125,6 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
 
 <template>
   <div>
-    <SettingsItemGroup :title="$t('settings.group_original_moments_page')">
-      <SettingsItem
-        :title="$t('settings.moments_visible_components')"
-        :desc="$t('settings.moments_visible_components_original_desc')"
-      >
-        <template #bottom>
-          <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
-            <SettingsToggleTag
-              v-for="option in originalComponentOptions"
-              :key="option.setting"
-              v-model="settings[option.setting]"
-              :label="option.label"
-              :icon="option.icon"
-            />
-          </div>
-        </template>
-      </SettingsItem>
-    </SettingsItemGroup>
-
     <SettingsItemGroup
       :title="$t('settings.group_new_moments_page')"
       :desc="$t('settings.group_new_moments_page_desc')"
@@ -236,6 +217,25 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
           :options="videoCardOpenModeOptions"
           w="180px"
         />
+      </SettingsItem>
+    </SettingsItemGroup>
+
+    <SettingsItemGroup :title="$t('settings.group_original_moments_page')">
+      <SettingsItem
+        :title="$t('settings.moments_visible_components')"
+        :desc="$t('settings.moments_visible_components_original_desc')"
+      >
+        <template #bottom>
+          <div class="moment-setting-tags" role="group" :aria-label="$t('settings.moments_visible_components')">
+            <SettingsToggleTag
+              v-for="option in originalComponentOptions"
+              :key="option.setting"
+              v-model="settings[option.setting]"
+              :label="option.label"
+              :icon="option.icon"
+            />
+          </div>
+        </template>
       </SettingsItem>
     </SettingsItemGroup>
 

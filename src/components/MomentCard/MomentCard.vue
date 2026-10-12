@@ -118,6 +118,46 @@ function toggleComments() {
   toggleCommentPreview(commentPreview)
 }
 
+// 评论区展开分两阶段：先挂载并在 0fr 收起态加载首屏评论，数据就绪、最终高度确定后再播放展开，
+// 避免展开动画播到一半时被异步到达的评论内容突然撑开。
+const commentsMounted = ref(false)
+const commentsEntered = ref(false)
+const commentsPreparing = ref(false)
+let commentsReady = false
+let commentsLeaveTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(() => commentPreview.expanded, (expanded) => {
+  clearTimeout(commentsLeaveTimer)
+  if (expanded) {
+    commentsReady = false
+    commentsPreparing.value = true
+    commentsEntered.value = false
+    commentsMounted.value = true
+  }
+  else {
+    commentsPreparing.value = false
+    commentsEntered.value = false
+    commentsLeaveTimer = setTimeout(() => {
+      commentsMounted.value = false
+    }, 220)
+  }
+})
+
+onBeforeUnmount(() => clearTimeout(commentsLeaveTimer))
+
+function handleCommentsReady() {
+  if (commentsReady)
+    return
+  commentsReady = true
+  commentsPreparing.value = false
+  // 两帧：先让浏览器按 0fr 完成布局，再过渡到完整高度。
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      commentsEntered.value = true
+    })
+  })
+}
+
 async function collapseComments() {
   if (!commentPreview.expanded)
     return
@@ -1267,7 +1307,8 @@ function handleAdditionalClick(event: MouseEvent) {
         @click.stop="toggleComments"
       >
         <span class="moment-card__hot-comment-label">
-          <span i-tabler-message-circle-filled aria-hidden="true" />
+          <span v-if="commentsPreparing" i-svg-spinners:ring-resize aria-hidden="true" />
+          <span v-else i-tabler-message-circle-filled aria-hidden="true" />
           {{ t('moment_card.hot_comment') }}
         </span>
         <span class="moment-card__hot-comment-content">
@@ -1326,9 +1367,10 @@ function handleAdditionalClick(event: MouseEvent) {
           :title="t(commentPreview.expanded ? 'moment_card.collapse_comments' : 'moment_card.view_comments')"
           @click.stop="toggleComments"
         >
-          <span v-if="commentPreview.expanded" i-tabler-chevron-up aria-hidden="true" />
+          <span v-if="commentsPreparing" i-svg-spinners:ring-resize aria-hidden="true" />
+          <span v-else-if="commentPreview.expanded" i-tabler-chevron-up aria-hidden="true" />
           <span v-else i-tabler-message-circle aria-hidden="true" />
-          {{ commentPreview.expanded ? t('moment_card.collapse_comments') : formatCount(moment.commentCount) }}
+          {{ commentsPreparing || !commentPreview.expanded ? formatCount(moment.commentCount) : t('moment_card.collapse_comments') }}
         </button>
         <span v-else class="moment-card__footer-stat" :aria-label="t('moment_card.live_popularity', { value: moment.livePopularity || t('moment_card.no_data') })">
           <span i-tabler-users />
@@ -1360,14 +1402,20 @@ function handleAdditionalClick(event: MouseEvent) {
         @close="repostExpanded = false"
         @sent="repostCount++; repostExpanded = false"
       />
-      <MomentComments
-        v-if="commentPreview.expanded"
-        :id="commentsId"
-        :moment="moment"
-        :state="commentPreview"
-        @collapse="collapseComments"
-        @open-image-preview="(urls, index, trigger) => emit('openImagePreview', urls, index, trigger)"
-      />
+      <div
+        v-if="commentsMounted"
+        class="moment-card__comments-host"
+        :class="{ 'is-entered': commentsEntered }"
+      >
+        <MomentComments
+          :id="commentsId"
+          :moment="moment"
+          :state="commentPreview"
+          @ready="handleCommentsReady"
+          @collapse="collapseComments"
+          @open-image-preview="(urls, index, trigger) => emit('openImagePreview', urls, index, trigger)"
+        />
+      </div>
     </div>
   </article>
 </template>
@@ -1636,6 +1684,11 @@ function handleAdditionalClick(event: MouseEvent) {
   font-size: var(--bew-font-size-body);
   line-height: var(--bew-line-height-body);
   text-decoration: none;
+  transition: background-color 0.16s ease;
+}
+
+.moment-card__additional:hover {
+  background: var(--bew-fill-2);
 }
 
 .moment-card__additional-main {
@@ -1758,7 +1811,7 @@ function handleAdditionalClick(event: MouseEvent) {
 
 .moment-card__likes:hover {
   color: var(--bew-theme-color);
-  background: color-mix(in srgb, var(--bew-theme-color) 10%, transparent);
+  background: var(--bew-theme-color-10);
 }
 
 .moment-card__likes:active {
@@ -2523,7 +2576,7 @@ function handleAdditionalClick(event: MouseEvent) {
 .moment-card__footer > a:hover,
 .moment-card__footer > button:hover {
   color: var(--bew-theme-color);
-  background: color-mix(in srgb, var(--bew-theme-color) 8%, transparent);
+  background: var(--bew-theme-color-10);
 }
 
 .moment-card__footer > button.is-expanded {
@@ -2552,6 +2605,29 @@ function handleAdditionalClick(event: MouseEvent) {
 @container (max-width: 379px) {
   .moment-card__open-label {
     display: none;
+  }
+}
+
+/* 评论区展开/收起：grid 轨道 0fr→1fr 过渡实现高度自适应动画，无需 JS 测量高度。
+   挂载时先停在 0fr，首屏评论就绪后由 .is-entered 播放展开，避免内容异步到达撑断动画。 */
+.moment-card__comments-host {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--bew-duration-normal) var(--bew-ease-standard);
+}
+
+.moment-card__comments-host.is-entered {
+  grid-template-rows: 1fr;
+}
+
+.moment-card__comments-host > .moment-comments {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moment-card__comments-host {
+    transition: none;
   }
 }
 </style>
