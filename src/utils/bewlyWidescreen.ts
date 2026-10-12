@@ -60,6 +60,9 @@ interface BewlyWidescreenState {
 }
 
 const ROOT_ID = 'bewly-widescreen-root'
+const DANMAKU_DOCK_SENDING_BAR = '.bewly-widescreen-danmaku-dock .bpx-player-sending-bar'
+const REVISED_SENDING_BAR = `#${ROOT_ID}:has(.bpx-player-container:is([data-revision="1"], [data-revision="2"])) ${DANMAKU_DOCK_SENDING_BAR}`
+const REVISION_2_SENDING_BAR = `#${ROOT_ID}:has(.bpx-player-container[data-revision="2"]) ${DANMAKU_DOCK_SENDING_BAR}`
 const LOADING_ROOT_ID = 'bewly-widescreen-loading'
 const SWITCH_HINT_ID = 'bewly-widescreen-switch-hint'
 export const BEWLY_WIDESCREEN_USER_EXIT = 'bewly-widescreen-user-exit'
@@ -1331,6 +1334,129 @@ function injectLayoutStyle() {
       transform: none !important;
       box-shadow: none !important;
       z-index: auto !important;
+    }
+
+    /* 发送栏移出 .bpx-player-container 后，原站按 [data-revision] 限定的新版发送栏样式失效：
+       设置按钮撑满发送栏，弹层底边贴住输入框。以下按原站数值补回，播放器版本由 :has 读取。 */
+    ${REVISED_SENDING_BAR} {
+      font-size: 13px;
+      padding-left: 12px;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-info {
+      width: auto;
+      margin-right: 24px;
+      line-height: 18px;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-info-online {
+      margin-right: 0;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-info-online b {
+      font-weight: 400;
+      margin-right: 3px;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-dm-root .bpx-player-dm-setting,
+    ${REVISED_SENDING_BAR} .bpx-player-dm-root .bpx-player-dm-switch {
+      width: 24px;
+      height: 24px;
+      margin-right: 12px;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-dm-root .bpx-player-dm-setting {
+      padding: 0;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-inputbar {
+      width: calc(100% - 72px);
+      min-width: 300px;
+      height: 32px;
+      border-radius: 8px;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-inputbar-wrap {
+      height: 100%;
+      border: none;
+      border-radius: 8px 0 0 8px;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-inputbar .bpx-player-dm-wrap {
+      padding: 0 0 0 6px;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-inputbar .bpx-player-dm-input {
+      font-size: inherit;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-inputbar .bpx-player-dm-hint {
+      width: auto;
+      margin-right: 5px;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-inputbar .bpx-player-dm-btn-send {
+      width: 62px;
+      min-width: 62px;
+      height: 100%;
+      border-radius: 0 8px 8px 0;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-inputbar .bpx-player-dm-btn-send.bui-button .bui-area {
+      font-size: 13px;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-inputbar .bpx-player-dm-btn-send.bui-disabled {
+      filter: none;
+    }
+
+    ${REVISED_SENDING_BAR} .bpx-player-video-inputbar .bpx-player-dm-btn-send.bui-disabled .bui-button-blue {
+      color: var(--bpx-dmsend-disable-button-text, #999);
+      background-color: var(--bpx-dmsend-disable-button-bg, #e7e7e7);
+    }
+
+    @media screen and (min-width: 1681px) {
+      ${REVISED_SENDING_BAR} {
+        height: 56px;
+        font-size: 14px;
+      }
+
+      ${REVISED_SENDING_BAR} .bpx-player-video-info {
+        margin-right: 36px;
+        line-height: 20px;
+      }
+
+      ${REVISED_SENDING_BAR} .bpx-player-dm-root .bpx-player-dm-setting,
+      ${REVISED_SENDING_BAR} .bpx-player-dm-root .bpx-player-dm-switch {
+        margin-right: 18px;
+      }
+
+      ${REVISED_SENDING_BAR} .bpx-player-video-inputbar {
+        width: calc(100% - 84px);
+        height: 40px;
+      }
+
+      ${REVISED_SENDING_BAR} .bpx-player-video-inputbar .bpx-player-dm-btn-send {
+        width: 64px;
+      }
+
+      ${REVISED_SENDING_BAR} .bpx-player-video-inputbar .bpx-player-dm-btn-send.bui-button .bui-area {
+        font-size: 14px;
+      }
+    }
+
+    ${REVISION_2_SENDING_BAR} .bpx-player-video-info {
+      display: none;
+    }
+
+    /* 发送栏贴着播放器列左缘，原站向左展开 147px 的弹幕设置弹层会在人数文本较短时越界被裁切。
+       统一采用原站新版播放器向右展开的位置，并把弹层与按钮间的悬停桥移回 24px 按钮中心。 */
+    #${ROOT_ID} ${DANMAKU_DOCK_SENDING_BAR} .bpx-player-dm-setting-wrap {
+      right: -256px !important;
+    }
+
+    #${ROOT_ID} ${DANMAKU_DOCK_SENDING_BAR} .bpx-player-dm-setting-expand-interaction-area::before {
+      left: calc(100% - 256px - 12px);
     }
 
     #${ROOT_ID} #bilibili-player-wrap,
