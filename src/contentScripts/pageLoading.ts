@@ -1,4 +1,5 @@
 import { BEWLY_MOUNTED } from '../constants/globalEvents'
+import { stripBilibiliLocalePathname } from '../utils/bilibiliLocale'
 
 export interface PageLoadingGuard {
   revealHomepage: () => void
@@ -13,7 +14,7 @@ const loadingGlobal = globalThis as typeof globalThis & {
 if (!/Electron/i.test(navigator.userAgent) && !loadingGlobal.__BEWLYCAT_PAGE_LOADING__) {
   const isHomepage = window === window.top
     && /^(?:www\.)?bilibili\.com$/.test(location.hostname)
-    && (location.pathname === '/' || location.pathname === '/index.html')
+    && ['/', '/index.html'].includes(stripBilibiliLocalePathname(location.pathname))
   const homepageStyle = document.createElement('style')
   const headerStyle = document.createElement('style')
   // 保留原站布局测量；设置读取完成后，原版首页立即恢复显示。

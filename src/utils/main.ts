@@ -1,3 +1,5 @@
+import { stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
+
 /**
  * Get cookie by name
  * @param name cookie name
@@ -192,7 +194,7 @@ export function delay(ms: number) {
  */
 export function isHomePage(url: string = location.href): boolean {
   try {
-    const urlObj = new URL(url)
+    const urlObj = new URL(stripBilibiliLocaleUrl(url))
     const isHttp = urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
     const isBilibiliHomeHost = urlObj.hostname === 'www.bilibili.com' || urlObj.hostname === 'bilibili.com'
     return isHttp && isBilibiliHomeHost && (urlObj.pathname === '/' || urlObj.pathname === '/index.html')
@@ -223,7 +225,7 @@ export function isActualHomepage(url: string = location.href): boolean {
  */
 export function isWatchLaterListPage(url: string): boolean {
   try {
-    const urlObj = new URL(url)
+    const urlObj = new URL(stripBilibiliLocaleUrl(url))
     const isHttp = urlObj.protocol === 'http:' || urlObj.protocol === 'https:'
     const isBilibiliHost = urlObj.hostname === 'www.bilibili.com' || urlObj.hostname === 'bilibili.com'
     if (!isHttp || !isBilibiliHost)
@@ -246,6 +248,7 @@ export function isWatchLaterListPage(url: string): boolean {
  * @returns true if the current page is a video or bangumi page
  */
 export function isVideoOrBangumiPage(url: string = location.href): boolean {
+  url = stripBilibiliLocaleUrl(url)
   if (
     // video page
     /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(url)
@@ -270,6 +273,7 @@ export function isVideoOrBangumiPage(url: string = location.href): boolean {
  * @returns true if the current page is a video playback page
  */
 export function isVideoPlaybackPage(url: string = location.href): boolean {
+  url = stripBilibiliLocaleUrl(url)
   return (
     // normal video page and playlist video page
     /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(url)

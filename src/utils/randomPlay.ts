@@ -1,5 +1,6 @@
 import { settings } from '~/logic'
 import type { CustomPlayOrderContext, RandomPlayOrder } from '~/logic/storage'
+import { getBilibiliPathname, stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
 import { i18n } from '~/utils/i18n'
 
 import { applyAutoPlayByVideoType, detectVideoType, disableNativeEndPlaybackBehavior, doesEndBehaviorAllowCustomAdvance, getVideoElement, isPlayerEndingPanelVisible, isPlayerShowingAdvertisement, setCustomEndPlaybackHandlerActive, supportsCustomPlaybackForVideoType, VideoType } from './player'
@@ -406,7 +407,7 @@ export function getCurrentEpisodeIndex(episodes: HTMLElement[]): number {
     return activeIndex
 
   const currentUrl = new URL(location.href)
-  const currentPath = currentUrl.pathname.replace(/\/$/, '')
+  const currentPath = getBilibiliPathname(currentUrl.href).replace(/\/$/, '')
   const currentPage = currentUrl.searchParams.get('p') ?? '1'
   const urlIndex = episodes.findIndex((episode) => {
     const link = getEpisodeLink(episode)
@@ -414,7 +415,7 @@ export function getCurrentEpisodeIndex(episodes: HTMLElement[]): number {
       return false
     try {
       const episodeUrl = new URL(link.href, location.href)
-      return episodeUrl.pathname.replace(/\/$/, '') === currentPath
+      return getBilibiliPathname(episodeUrl.href).replace(/\/$/, '') === currentPath
         && (episodeUrl.searchParams.get('p') ?? '1') === currentPage
     }
     catch {
@@ -1334,5 +1335,5 @@ export function initRandomPlay(): void {
 
 // 判断是否是视频页面
 export function isCustomPlayPage(): boolean {
-  return /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(window.location.href)
+  return /https?:\/\/(?:www\.)?bilibili\.com\/(?:video|list)\/.*/.test(stripBilibiliLocaleUrl(window.location.href))
 }

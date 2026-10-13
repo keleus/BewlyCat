@@ -1,5 +1,6 @@
 import { markWatchLater } from '~/logic/watchLaterState'
 import api from '~/utils/api'
+import { stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
 import { resolvePgcEpisodeVideoIds, resolvePgcSeasonVideoIds } from '~/utils/pgcEpisode'
 
 const OPEN_TAB_ADD_INTERVAL_MS = 50
@@ -28,7 +29,7 @@ function positiveId(value: string | null): number | undefined {
 export function parseWatchLaterTabUrl(value: string): WatchLaterTabTarget | undefined {
   let url: URL
   try {
-    url = new URL(value)
+    url = new URL(stripBilibiliLocaleUrl(value))
   }
   catch {
     return undefined

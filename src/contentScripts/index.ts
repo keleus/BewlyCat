@@ -12,6 +12,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import api from '~/utils/api'
 import { applyBewlyWidescreen, BEWLY_WIDESCREEN_USER_EXIT, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, prepareBewlyWidescreenLoading } from '~/utils/bewlyWidescreen'
+import { stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { findLeafActiveElement } from '~/utils/element'
@@ -99,7 +100,8 @@ if (shouldInitializeContentScript) {
 const isFirefox: boolean = /Firefox/i.test(navigator.userAgent)
 const isElectronEnv = isElectron()
 
-const currentUrl = document.URL
+// 多语言页面（如 /ja/history）按去掉语言段后的路径匹配支持页面
+const currentUrl = stripBilibiliLocaleUrl(document.URL)
 
 if (shouldInitializeContentScript && isHomePage()) {
   console.log('[BewlyCat][首页加载] 插件开始加载', {
@@ -881,7 +883,7 @@ else if (shouldInitializeContentScript) {
 
   function getVideoCommentIdentifier(url = location.href): VideoCommentIdentifier | null {
     try {
-      const urlObj = new URL(url)
+      const urlObj = new URL(stripBilibiliLocaleUrl(url))
 
       const queryBvid = urlObj.searchParams.get('bvid')
       if (queryBvid && /^BV[0-9A-Za-z]+$/.test(queryBvid))

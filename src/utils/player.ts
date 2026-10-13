@@ -2,6 +2,7 @@
 import { MOMENTS_VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import type { AutoPlayMode, DefaultVideoPlayerMode, VideoPlayerModeContext, VideoPlayerModeOverride } from '~/logic/storage'
+import { getBilibiliPathname } from '~/utils/bilibiliLocale'
 import { i18n } from '~/utils/i18n'
 import { normalizePlaybackRate, normalizePlaybackRateStep } from '~/utils/playbackRate'
 
@@ -160,12 +161,13 @@ export function isPlayerDisplayModeReady(mode: DefaultVideoPlayerMode): boolean 
 
 // 判断是否为视频页面
 export function isVideoPage() {
-  return location.pathname.startsWith('/video/')
+  return getBilibiliPathname().startsWith('/video/')
 }
 
 // 判断是否为稍后再看播放页
 export function isWatchLaterVideo(): boolean {
-  return location.pathname === '/list/watchlater' || location.pathname === '/list/watchlater/'
+  const pathname = getBilibiliPathname()
+  return pathname === '/list/watchlater' || pathname === '/list/watchlater/'
 }
 
 // 格式化时间
@@ -513,10 +515,11 @@ export function detectVideoType(): VideoType {
     return VideoType.WATCH_LATER
 
   // 检测是否为收藏列表
+  const pathname = getBilibiliPathname()
   if (
-    location.pathname.startsWith('/list/')
-    || location.pathname === '/medialist/play'
-    || location.pathname.startsWith('/medialist/play/')
+    pathname.startsWith('/list/')
+    || pathname === '/medialist/play'
+    || pathname.startsWith('/medialist/play/')
   ) {
     return VideoType.PLAYLIST
   }
@@ -567,7 +570,7 @@ export function detectVideoPlayerModeContext(): VideoPlayerModeContext | null {
   if (isWatchLaterVideo())
     return 'watchLater'
 
-  if (location.pathname.startsWith('/bangumi/play/'))
+  if (getBilibiliPathname().startsWith('/bangumi/play/'))
     return 'bangumi'
 
   switch (detectVideoType()) {

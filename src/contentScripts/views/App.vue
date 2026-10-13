@@ -23,6 +23,7 @@ import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useSettingsStore } from '~/stores/settingsStore'
 import { useTopBarStore } from '~/stores/topBarStore'
+import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
 import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
@@ -1723,7 +1724,7 @@ if (settings.value.cleanUrlArgument) {
         }
       }
       const hostname = currentUrl.hostname
-      if ((hostname === 'bilibili.com' || hostname.endsWith('.bilibili.com')) && currentUrl.pathname.startsWith('/video/')) {
+      if ((hostname === 'bilibili.com' || hostname.endsWith('.bilibili.com')) && stripBilibiliLocalePathname(currentUrl.pathname).startsWith('/video/')) {
         for (const param of VIDEO_ONLY_PARAMS_TO_REMOVE) {
           if (currentUrl.searchParams.has(param)) {
             currentUrl.searchParams.delete(param)
