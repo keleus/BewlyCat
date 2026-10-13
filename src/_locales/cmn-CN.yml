@@ -516,7 +516,9 @@ settings:
   playback_rate_step: 倍速快捷键调节幅度
   playback_rate_step_desc: 每次增减 0.01–1 倍；默认 0.25。快捷键可在「快捷键」设置中修改。
   remember_video_quality: 记住清晰度
-  remember_video_quality_desc: 启用后自动恢复上次选择的清晰度；不可用时沿用播放器当前清晰度，不覆盖记忆。
+  remember_video_quality_desc: 启用后自动恢复上次选择的清晰度；不可用或当前账号非大会员时沿用播放器当前清晰度，不覆盖记忆。
+  remember_video_quality_confirm_title: 确认开启记住清晰度？
+  remember_video_quality_confirm_message: B 站自身就有记住清晰度能力，插件的记住清晰度功能仅用于网络不佳时避免 B 站自动试用高画质。如本身网络状况良好，无需开启此功能，使用 B 站默认的记忆逻辑即可。
   remember_video_aspect_ratio: 记住视频比例
   remember_video_aspect_ratio_desc: 启用后，播放器会记住您上次选择的视频比例，并在下次打开视频时自动应用
   auto_exit_fullscreen_on_end: 全屏/网页全屏播放完毕后自动退出

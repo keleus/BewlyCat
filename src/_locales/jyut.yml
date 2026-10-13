@@ -863,7 +863,9 @@ settings:
   playback_rate_step: 倍速快捷鍵調整幅度
   playback_rate_step_desc: 每次增減 0.01–1 倍；預設 0.25。快捷鍵可以喺「快捷鍵」設定修改。
   remember_video_quality: 記住畫質
-  remember_video_quality_desc: 啟用後自動恢復上次揀嘅畫質；用唔到時沿用播放器目前畫質，唔會覆蓋記憶。
+  remember_video_quality_desc: 啟用後自動恢復上次揀嘅畫質；用唔到或者而家個帳號唔係大會員時沿用播放器目前畫質，唔會覆蓋記憶。
+  remember_video_quality_confirm_title: 確認開啟記住畫質？
+  remember_video_quality_confirm_message: B 站本身已經識記住畫質，擴充功能嘅記住畫質淨係用嚟喺網絡唔好嘅時候，避免 B 站自動試用高畫質。如果網絡狀況本身唔錯，就唔使開呢個功能，用返 B 站預設嘅記憶邏輯就得。
   remember_video_aspect_ratio: 記住影片比例
   remember_video_aspect_ratio_desc: 啟用後，播放器會記住你上次揀嘅影片比例，並喺下次打開影片嗰陣自動套用
   auto_exit_fullscreen_on_end: 全螢幕/網頁全螢幕播完後自動退出
