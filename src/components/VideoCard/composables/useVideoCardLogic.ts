@@ -7,7 +7,8 @@ import type { VideoInfo } from '~/models/video/videoInfo'
 import type { VideoPreviewResult } from '~/models/video/videoPreview'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
-import { ensureFreshAppAccessToken, getTvSign, TVAppKey } from '~/utils/authProvider'
+import { signAppParams } from '~/utils/appSign'
+import { ensureFreshAppAccessToken } from '~/utils/authProvider'
 import { calcCurrentTime, numFormatter, parseStatNumber } from '~/utils/dataFormatter'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import { removeHttpFromUrl } from '~/utils/main'
@@ -33,7 +34,7 @@ interface AppFeedFeedbackSelection {
 }
 
 function createAppFeedFeedbackParams(video: Video, selection?: AppFeedFeedbackSelection) {
-  return {
+  return signAppParams({
     access_key: appAuthTokens.value.accessToken,
     goto: video.goto,
     id: video.param || video.id,
@@ -41,9 +42,7 @@ function createAppFeedFeedbackParams(video: Video, selection?: AppFeedFeedbackSe
     feedback_id: selection?.feedbackId,
     build: 1,
     mobi_app: 'android',
-    appkey: TVAppKey.appkey,
-    ts: Math.floor(Date.now() / 1000).toString(),
-  }
+  })
 }
 
 export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps>, savedState?: VideoCardState) {
@@ -400,12 +399,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       if (!await ensureFreshAppAccessToken())
         return
 
-      const params = createAppFeedFeedbackParams(video, selectedDislikeOpt.value)
-
-      api.video.undoDislikeVideo({
-        ...params,
-        sign: getTvSign(params),
-      }).then((res) => {
+      api.video.undoDislikeVideo(createAppFeedFeedbackParams(video, selectedDislikeOpt.value)).then((res) => {
         if (res.code === 0) {
           removed.value = false
         }

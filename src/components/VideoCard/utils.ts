@@ -9,6 +9,16 @@ export function getAuthorJumpUrl(author?: Author) {
   return author.authorUrl || (author.mid ? `//space.bilibili.com/${author.mid}` : '')
 }
 
+/** 接口未返回头像（如 APP HD 推荐）时，卡片不显示头像占位 */
+export function hasAuthorAvatar(author?: Author | Author[]) {
+  if (!author)
+    return false
+
+  return Array.isArray(author)
+    ? author.some(item => Boolean(item.authorFace))
+    : Boolean(author.authorFace)
+}
+
 /** 标签点击跳转搜索页（复用统一的搜索链接构建入口） */
 export function getTagSearchUrl(tag: string) {
   return buildKeywordSearchUrl(tag)

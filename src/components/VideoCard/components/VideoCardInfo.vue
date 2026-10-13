@@ -7,7 +7,7 @@ import { calcTimeSince, numFormatter } from '~/utils/dataFormatter'
 import VideoWatchedTag from '../../VideoWatchedTag.vue'
 import { vMetaOverflow } from '../directives/metaOverflow'
 import type { Video } from '../types'
-import { getTagSearchUrl } from '../utils'
+import { getTagSearchUrl, hasAuthorAvatar } from '../utils'
 import VideoCardAuthorAvatar from '../VideoCardAuthor/components/VideoCardAuthorAvatar.vue'
 import VideoCardAuthorName from '../VideoCardAuthor/components/VideoCardAuthorName.vue'
 
@@ -76,7 +76,7 @@ const content = computed(() => {
     : []
   const authorAvatarEnabled = !props.hideAuthor && currentSettings.showVideoCardAuthorAvatar
   const authorNameEnabled = !props.hideAuthor && currentSettings.showVideoCardAuthorName
-  const showAuthorAvatar = authorAvatarEnabled && Boolean(video?.author)
+  const showAuthorAvatar = authorAvatarEnabled && hasAuthorAvatar(video?.author)
   const showAuthorName = authorNameEnabled && Boolean(video?.author)
   const showPublishTime = currentSettings.showVideoCardPublishTime
     && (Boolean(video?.publishedTimestamp) || Boolean(video?.capsuleText))

@@ -3,6 +3,9 @@ import { isVerticalVideo } from '~/utils/uriParse'
 
 const get = (obj: any, path: string[]) => path.reduce((acc, part) => acc && acc[part], obj)
 
+// APP 推荐卡片表示已关注 UP 主的推荐理由
+const APP_FOLLOWED_REASONS = ['已关注', '已關注', '新关注', '新關注']
+
 export enum FilterType {
   filterOutVerticalVideos,
   viewCount,
@@ -266,7 +269,7 @@ export function useFilter(isFollowedKeyPath: string[], filterOpt: FilterType[], 
       return isFollowed && settings.value.disableFilterForFollowedUser
     }
     if (settings.value.recommendationMode === 'app') {
-      const isFollowed = get(item, isFollowedKeyPath) === '已关注' || get(item, isFollowedKeyPath) === '已關注'
+      const isFollowed = APP_FOLLOWED_REASONS.includes(get(item, isFollowedKeyPath))
       return isFollowed && settings.value.disableFilterForFollowedUser
     }
     return false

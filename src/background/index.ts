@@ -3,6 +3,7 @@ import browser from 'webextension-polyfill'
 import { isContentScriptTargetUrl } from '~/constants/contentScript'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl, isPreventMobileRedirectEnabled } from '~/utils/bilibiliDesktopNavigation'
 
+import { setupAppPassport } from './appPassport'
 import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
 import { setupLoginStateWatcher } from './loginStateWatcher'
 import { setupApiMsgListeners } from './messageListeners/api'
@@ -155,6 +156,7 @@ if (isFirefoxBuild) {
 setupSettingsStorageCoordinator()
 setupSettingsCloudSync()
 setupApiMsgListeners()
+setupAppPassport()
 setupTabMsgListeners()
 setupTopBarStateBroker()
 setupWatchLaterStateBroker()

@@ -17,8 +17,10 @@ import type { forYouResult, Item as VideoItem } from '~/models/video/forYou'
 import type { AppVideoElement, VideoCardDisplayData, VideoElement } from '~/stores/forYouStore'
 import { useForYouStore } from '~/stores/forYouStore'
 import api from '~/utils/api'
-import { ensureFreshAppAccessToken, TVAppKey } from '~/utils/authProvider'
+import { signAppParams } from '~/utils/appSign'
+import { ensureFreshAppAccessToken } from '~/utils/authProvider'
 import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
+import { av2bv } from '~/utils/bvid'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { getCookie } from '~/utils/main'
 import { isVerticalVideo } from '~/utils/uriParse'
@@ -74,8 +76,9 @@ const appFilterFunc = useFilter(
     ['player_args', 'duration'],
     ['cover_left_text_1'],
     ['title'],
-    ['mask', 'avatar', 'text'],
-    ['mask', 'avatar', 'up_id'],
+    // HD 接口没有 mask.avatar，UP 主信息在归一化后统一放在 args 中
+    ['args', 'up_name'],
+    ['args', 'up_id'],
   ],
 )
 
@@ -173,6 +176,13 @@ const forwardRefreshIdx = tabState.ref<number>('forwardRefreshIdx', 1)
 // APP 模式的缓存和前进状态变量
 const cachedAppVideoList = tabState.ref<AppVideoElement[]>('cachedAppVideoList', [])
 const forwardAppVideoList = tabState.ref<AppVideoElement[]>('forwardAppVideoList', [])
+// APP 推荐分页游标：与 PiliPlus 一致，刷新从 0 开始并带 pull=true，之后每次成功请求递增。
+// 不再取列表末尾卡片的 idx，避免整批被过滤或去重时反复请求同一页。
+const appFeedIdx = tabState.ref<number>('appFeedIdx', 0)
+const cachedAppFeedIdx = tabState.ref<number>('cachedAppFeedIdx', 0)
+const forwardAppFeedIdx = tabState.ref<number>('forwardAppFeedIdx', 0)
+// 之前刷新已展示过的 APP 推荐，刷新后不再重复展示
+const appRecentShownKeys = tabState.ref<string[]>('appRecentShownKeys', [])
 
 // 添加状态标记
 const hasBackState = tabState.ref<boolean>('hasBackState', false)
@@ -196,6 +206,33 @@ const WEB_RISK_COOLDOWN_STEPS_MS = [5_000, 15_000, 30_000, 60_000] as const
 const APP_REQUEST_MAX_ATTEMPTS = 3
 const APP_REQUEST_RETRY_WINDOW_MS = 5_000
 const APP_REQUEST_RETRY_BASE_DELAY_MS = 250
+const APP_RECENT_SHOWN_MAX_KEYS = 600
+// 参考 PiliPlus 的 HD 推荐请求参数
+const APP_FEED_PARAMS = {
+  build: 8430300,
+  channel: 'master',
+  column: 2,
+  device: 'phone',
+  device_name: 'android',
+  device_type: 0,
+  disable_rcmd: 0,
+  flush: 8,
+  fnval: 976,
+  fnver: 0,
+  force_host: 2,
+  fourk: 1,
+  guidance: 1,
+  https_url_req: 1,
+  mobi_app: 'android_i',
+  network: 'wifi',
+  platform: 'android',
+  player_net: 1,
+  qn: 32,
+  recsys_mode: 0,
+  statistics: JSON.stringify({ appId: 1, platform: 3, version: '8.43.0', abtest: '' }),
+  voice_balance: 0,
+} as const
+const APP_FOLLOWED_REASONS = new Set(['已关注', '已關注', '新关注', '新關注'])
 const NO_COOKIE_RECOMMEND_STATE_MAX_SHOWLIST_GROUPS = 3
 const WEB_LAST_CLICKLIST_MAX_ITEMS = 50
 const MAX_EMPTY_LOADS = 5 // 最大连续空加载次数
@@ -434,6 +471,8 @@ onMounted(() => {
     const savedState = forYouStore.getCompleteState()
     videoList.value = [...savedState.videoList]
     appVideoList.value = [...savedState.appVideoList]
+    appFeedIdx.value = savedState.appFeedIdx ?? 0
+    appRecentShownKeys.value = savedState.appRecentShownKeys?.slice(-APP_RECENT_SHOWN_MAX_KEYS) || []
     refreshIdx.value = savedState.refreshIdx
     webFreshIdx1h.value = savedState.webFreshIdx1h ?? 1
     webFreshIdx1hTimestamp = savedState.webFreshIdx1hTimestamp ?? Date.now()
@@ -517,6 +556,8 @@ onBeforeUnmount(() => {
     const currentState = {
       videoList: [...videoList.value],
       appVideoList: [...appVideoList.value],
+      appFeedIdx: appFeedIdx.value,
+      appRecentShownKeys: [...appRecentShownKeys.value],
       refreshIdx: refreshIdx.value,
       webFreshIdx1h: webFreshIdx1h.value,
       webFreshIdx1hTimestamp,
@@ -588,14 +629,61 @@ function transformWebVideo(item: VideoItem): VideoCardDisplayData {
   }
 }
 
+function getAppRcmdReasonText(item: AppVideoItem): string | undefined {
+  const reason = item.rcmd_reason
+  return (typeof reason === 'string' ? reason : reason?.content)?.trim() || undefined
+}
+
+function getAppBangumiUrl(uri?: string): string {
+  if (!uri)
+    return ''
+  if (/^https?:\/\//.test(uri))
+    return uri
+
+  // bilibili://pgc/season/ep/123456 或 bilibili://pgc/season/123456
+  const match = uri.match(/^bilibili:\/\/pgc\/season\/(ep\/)?(\d+)/)
+  if (!match)
+    return ''
+  return `https://www.bilibili.com/bangumi/play/${match[1] ? 'ep' : 'ss'}${match[2]}`
+}
+
+/**
+ * 将 HD 接口的卡片归一化为原有字段：HD 接口不返回 bvid 与 mask.avatar，
+ * UP 主信息位于 args / desc_button，关注状态位于字符串形式的 rcmd_reason。
+ */
+function normalizeAppVideoItem(item: AppVideoItem): AppVideoItem {
+  const paramAid = item.card_goto === 'av' ? Number(item.param) : 0
+  const aid = item.player_args?.aid || item.args?.aid || (Number.isSafeInteger(paramAid) && paramAid > 0 ? paramAid : undefined)
+  const rcmdReason = getAppRcmdReasonText(item)
+
+  return {
+    ...item,
+    bvid: item.bvid?.trim() || (item.card_goto === 'av' && aid ? av2bv(aid) : undefined),
+    args: {
+      ...item.args,
+      aid,
+      up_id: item.args?.up_id || item.mask?.avatar?.up_id,
+      up_name: item.args?.up_name || item.mask?.avatar?.text || item.desc_button?.text,
+    },
+    bottom_rcmd_reason: item.bottom_rcmd_reason
+      || (rcmdReason && APP_FOLLOWED_REASONS.has(rcmdReason) ? rcmdReason : undefined),
+  }
+}
+
 function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
   // 预先计算 followed 状态，避免多次 trim 和比较
   const bottomReason = item?.bottom_rcmd_reason?.trim()
-  const followed = bottomReason === '已关注' || bottomReason === '已關注'
+  const followed = !!bottomReason && APP_FOLLOWED_REASONS.has(bottomReason)
 
   // 预先计算 capsuleText，提取复杂逻辑
   const descPart = item?.desc?.split('·')?.[1]?.trim()
   const capsuleText = descPart || (followed ? bottomReason : undefined)
+
+  // HD 接口的推荐理由（如「1万点赞」）；竖屏已有类型图标，关注状态已由 followed 体现
+  const rcmdReason = getAppRcmdReasonText(item)
+  const tag = rcmdReason && rcmdReason !== '竖屏' && !APP_FOLLOWED_REASONS.has(rcmdReason)
+    ? rcmdReason
+    : undefined
 
   // 预先计算 type，避免在模板中调用函数
   let type: 'horizontal' | 'vertical' | 'bangumi' = 'horizontal'
@@ -614,11 +702,13 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     title: decodeHtmlEntities(item.title),
     cover: item.cover || '',
     author: {
-      name: decodeHtmlEntities(item?.mask?.avatar?.text || ''),
+      name: decodeHtmlEntities(item.args?.up_name || ''),
+      // HD 接口不返回头像，留空时卡片隐藏头像
       authorFace: item?.mask?.avatar?.cover || item?.avatar?.cover || '',
       followed,
-      mid: item?.mask?.avatar?.up_id || 0,
+      mid: item.args?.up_id || 0,
     },
+    tag: decodeHtmlEntities(tag),
     capsuleText: decodeHtmlEntities(capsuleText),
     bvid: item.bvid || '',
     viewStr: item.cover_left_text_1,
@@ -627,7 +717,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     goto: item?.goto,
     param: item?.param,
     trackId: item?.track_id,
-    url: item?.goto === 'bangumi' ? item.uri : '',
+    url: item?.goto === 'bangumi' ? getAppBangumiUrl(item.uri) : '',
     type,
     threePointV2: item?.three_point_v2 || [],
   }
@@ -653,12 +743,39 @@ function getAppVideoKeys(item: AppVideoItem): string[] {
   const aid = item.args?.aid
   if (aid && aid > 0)
     keys.push(`aid:${aid}`)
+
+  // 番剧等卡片可能没有 aid，用卡片类型与 param 兜底
+  const param = `${item.param ?? ''}`.trim()
+  if (param && item.card_goto !== 'av')
+    keys.push(`${item.card_goto}:${param}`)
   return keys
+}
+
+function isAppAdItem(item: AppVideoItem): boolean {
+  return item.card_type?.includes('banner')
+    || item.card_type === 'cm_v1'
+    || item.card_goto === 'ad_av'
+    || item.card_goto === 'ad_web_s'
+    || !!item.ad_info
 }
 
 function isValidAppRecommendationVideo(item: AppVideoItem): boolean {
   return (item.card_goto === 'av' || item.card_goto === 'bangumi')
+    && !isAppAdItem(item)
     && getAppVideoKeys(item).length > 0
+}
+
+function rememberAppRecentShown(list: AppVideoElement[]) {
+  const listKeys = list.flatMap(video => video.item ? getAppVideoKeys(video.item) : [])
+  if (!listKeys.length)
+    return
+
+  // 重新出现的记录移到末尾，超出上限时优先淘汰最早展示的
+  const listKeySet = new Set(listKeys)
+  appRecentShownKeys.value = [
+    ...appRecentShownKeys.value.filter(key => !listKeySet.has(key)),
+    ...listKeySet,
+  ].slice(-APP_RECENT_SHOWN_MAX_KEYS)
 }
 
 function getWebShowlistEntry(item: VideoItem, exposed = false): string | undefined {
@@ -893,6 +1010,8 @@ watch(() => settings.value.recommendationMode, () => {
   cachedVideoList.value = []
   forwardAppVideoList.value = []
   cachedAppVideoList.value = []
+  cachedAppFeedIdx.value = 0
+  forwardAppFeedIdx.value = 0
   cachedWebFetchRow.value = 1
   cachedWebFreshIdx1h.value = 1
   cachedWebRefreshBrush.value = 0
@@ -931,6 +1050,9 @@ async function initData() {
   // 用户主动刷新必须重新获得一次完整请求机会；成功后才重置递增冷却等级。
   clearActiveWebRiskCooldown()
   hasInitializedData.value = false
+  // 刷新前展示过的 APP 推荐记入最近展示，新一轮推荐中不再重复出现
+  rememberAppRecentShown(appVideoList.value)
+  appFeedIdx.value = 0
   // 直接清空列表，骨架屏由 VideoCardGrid 自动处理
   videoList.value = []
   appVideoList.value = []
@@ -1095,10 +1217,12 @@ function initPageAction() {
     else if (settings.value.recommendationMode === 'app') {
       // APP 模式下保存刷新前的当前状态到后退缓存
       cachedAppVideoList.value = [...appVideoList.value]
+      cachedAppFeedIdx.value = appFeedIdx.value
       hasBackState.value = true
 
       // 清空前进状态（因为刷新会产生新的分支）
       forwardAppVideoList.value = []
+      forwardAppFeedIdx.value = 0
       hasForwardState.value = false
 
       // 显示撤销按钮
@@ -1148,10 +1272,12 @@ function initPageAction() {
         // APP模式下的后退操作
         // 保存当前数据到前进状态
         forwardAppVideoList.value = appVideoList.value
+        forwardAppFeedIdx.value = appFeedIdx.value
         hasForwardState.value = true
 
         // 恢复缓存的数据
         appVideoList.value = cachedAppVideoList.value
+        appFeedIdx.value = cachedAppFeedIdx.value
         cachedAppVideoList.value = []
 
         hasBackState.value = false
@@ -1204,10 +1330,12 @@ function initPageAction() {
         // APP模式下的前进操作
         // 保存当前数据到后退状态
         cachedAppVideoList.value = appVideoList.value
+        cachedAppFeedIdx.value = appFeedIdx.value
         hasBackState.value = true
 
         // 恢复前进状态的数据
         appVideoList.value = forwardAppVideoList.value
+        appFeedIdx.value = forwardAppFeedIdx.value
         forwardAppVideoList.value = []
 
         // 标记为已经前进
@@ -1595,18 +1723,19 @@ async function getAppRecommendVideos(
   const beforeLoadCount = appVideoList.value.length
   let filteredBatchCandidateCount = 0
   let filteredBatchKeptCount = 0
-  const seenCandidateIds = new Set(
-    appVideoList.value
-      .flatMap(video => video.item ? getAppVideoKeys(video.item) : []),
-  )
+  // 当前列表与之前刷新展示过的推荐都视为已出现，避免同一视频重复展示
+  const seenCandidateIds = new Set([
+    ...appRecentShownKeys.value,
+    ...appVideoList.value.flatMap(video => video.item ? getAppVideoKeys(video.item) : []),
+  ])
+  const locale = settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese
+    ? 'zh-Hant_TW'
+    : 'zh-Hans_CN'
 
   // 加载多个批次
   for (let batch = 0; batch < batchesToLoad; batch++) {
     try {
-      // 获取最后一个视频的idx用于请求下一批
-      const lastIdx = appVideoList.value.length > 0 && appVideoList.value[appVideoList.value.length - 1].item
-        ? appVideoList.value[appVideoList.value.length - 1].item!.idx
-        : 1
+      const idx = appFeedIdx.value
       const retryDeadline = Date.now() + APP_REQUEST_RETRY_WINDOW_MS
       let requestLog: RecommendRequestLogContext | undefined
       let response: AppForYouResult | undefined
@@ -1614,13 +1743,15 @@ async function getAppRecommendVideos(
       for (let attempt = 1; attempt <= APP_REQUEST_MAX_ATTEMPTS; attempt++) {
         requestLog = createRecommendRequestLogContext(recommendationMode, requestType)
         try {
-          response = await api.video.getAppRecommendVideos({
+          // 每次重试重新签名，保证 ts 有效
+          response = await api.video.getAppRecommendVideos(signAppParams({
+            ...APP_FEED_PARAMS,
             access_key: appAuthTokens.value.accessToken,
-            s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-            c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-            appkey: TVAppKey.appkey,
-            idx: lastIdx,
-          })
+            c_locale: locale,
+            s_locale: locale,
+            idx,
+            pull: idx === 0,
+          }))
         }
         catch (error) {
           logRecommendRequestFailure(requestLog, { error, attempt })
@@ -1669,47 +1800,33 @@ async function getAppRecommendVideos(
         throw new Error('App 推荐接口连续返回空数据')
 
       if (response.code === 0) {
+        // 无论本批是否有可展示的卡片，都推进游标，下次请求下一页
+        appFeedIdx.value = idx + 1
         const activeAppFilter = hasActiveAppRecommendationFilter.value ? appFilterFunc.value : null
 
-        response.data.items.forEach((item: AppVideoItem) => {
-          // Remove banner & ad cards
-          if (item.card_type.includes('banner') || item.card_type === 'cm_v1')
+        response.data.items.forEach((rawItem: AppVideoItem) => {
+          const item = normalizeAppVideoItem(rawItem)
+          // 移除横幅、广告与无效卡片
+          if (!isValidAppRecommendationVideo(item))
             return
 
-          // 过滤掉没有有效 ID 的视频（既没有 aid 也没有 bvid）
-          const hasValidId = (item.args?.aid && item.args.aid > 0) || (item.bvid && item.bvid.trim() !== '')
-          if (!hasValidId)
+          const videoKeys = getAppVideoKeys(item)
+          if (videoKeys.some(key => seenCandidateIds.has(key)))
             return
+          videoKeys.forEach(key => seenCandidateIds.add(key))
 
-          const passesSettingsFilter = !activeAppFilter || activeAppFilter(item)
-          if (activeAppFilter && isValidAppRecommendationVideo(item)) {
+          if (activeAppFilter) {
+            const passesSettingsFilter = activeAppFilter(item)
             filteredBatchCandidateCount++
             if (passesSettingsFilter)
               filteredBatchKeptCount++
             recordFilteredFeedCandidate(passesSettingsFilter)
-          }
-
-          if (activeAppFilter) {
-            const videoKeys = getAppVideoKeys(item)
-            if (!videoKeys.length || videoKeys.some(key => seenCandidateIds.has(key)))
-              return
-
-            videoKeys.forEach(key => seenCandidateIds.add(key))
             if (!passesSettingsFilter)
               return
           }
-          else {
-            // Keep the unfiltered recommendation path's existing duplicate semantics.
-            const isDuplicate = appVideoList.value.some(video =>
-              video.item && (video.item.args?.aid === item.args?.aid || video.item.bvid === item.bvid),
-            )
-            if (isDuplicate)
-              return
-          }
 
-          const videoId = item.args?.aid || item.bvid
           appVideoList.value.push({
-            uniqueId: `${videoId || item.idx}`,
+            uniqueId: videoKeys[0],
             item,
             displayData: transformAppVideo(item),
           })

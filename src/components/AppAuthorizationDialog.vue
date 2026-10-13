@@ -3,7 +3,7 @@ import QRCodeVue from 'qrcode.vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
-import { getTVLoginQRCode, pollTVLoginQRCode, saveAppAuthTokens } from '~/utils/authProvider'
+import { getAppLoginQRCode, pollAppLoginQRCode, saveAppAuthTokens } from '~/utils/authProvider'
 
 const emit = defineEmits<{
   (event: 'authorized'): void
@@ -62,7 +62,7 @@ async function setLoginQRCode() {
   authCode.value = ''
   qrcodeMsg.value = ''
   try {
-    const res = await getTVLoginQRCode(controller.signal)
+    const res = await getAppLoginQRCode(controller.signal)
     if (!isCurrentAuthorization(controller))
       return
 
@@ -88,7 +88,7 @@ async function pollLoginQRCode(controller: AbortController) {
     return
 
   try {
-    const pollRes = await pollTVLoginQRCode(authCode.value, controller.signal)
+    const pollRes = await pollAppLoginQRCode(authCode.value, controller.signal)
     if (!isCurrentAuthorization(controller))
       return
 
