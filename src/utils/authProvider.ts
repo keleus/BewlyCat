@@ -1,5 +1,5 @@
-import type { AppPassportEndpoint } from '~/constants/appPassport'
-import { APP_PASSPORT_REQUEST } from '~/constants/appPassport'
+import type { AppClientEndpoint, AppClientRequest } from '~/constants/appClient'
+import { APP_CLIENT_REQUEST } from '~/constants/appClient'
 import type { AppAuthTokens } from '~/logic/appAuthStorage'
 import { appAuthTokens, defaultAppAuthTokens, resetAppAuthTokens } from '~/logic/appAuthStorage'
 
@@ -11,9 +11,10 @@ export function revokeAccessKey() {
   resetAppAuthTokens()
 }
 
-/** 授权相关请求交由后台按 PiliPlus 的登录方式签名并发出，参数无需在页面侧签名 */
-function requestAppPassport(endpoint: AppPassportEndpoint, params: Record<string, string>): Promise<any> {
-  return sendMessage(APP_PASSPORT_REQUEST, { endpoint, params })
+/** APP 接口交由后台按 PiliPlus 的请求方式签名并发出，参数无需在页面侧签名 */
+export function requestAppClient(endpoint: AppClientEndpoint, params: AppClientRequest['params']): Promise<any> {
+  const request: AppClientRequest = { endpoint, params, mid: appAuthTokens.value.mid }
+  return sendMessage(APP_CLIENT_REQUEST, request)
 }
 
 interface PollLoginTokenPayload {
@@ -32,7 +33,7 @@ interface PollLoginTokenPayload {
   }
 }
 
-const APP_TOKEN_REFRESH_ENDPOINTS: AppPassportEndpoint[] = ['refreshTokenV3', 'refreshTokenV2']
+const APP_TOKEN_REFRESH_ENDPOINTS: AppClientEndpoint[] = ['refreshTokenV3', 'refreshTokenV2']
 const APP_TOKEN_REFRESH_BUFFER = 10 * 60 * 1000
 let appTokenRefresh: { tokens: AppAuthTokens, promise: Promise<AppAuthTokens | null> } | null = null
 
@@ -90,7 +91,7 @@ async function refreshAppTokens(tokens: AppAuthTokens): Promise<AppAuthTokens | 
       return null
 
     try {
-      const data = await requestAppPassport(endpoint, basePayload) as RefreshTokenResponse
+      const data = await requestAppClient(endpoint, basePayload) as RefreshTokenResponse
       // 撤销、重新授权和其他标签页的更新都会替换快照；旧请求不得恢复旧授权。
       if (appAuthTokens.value !== tokens)
         return null
@@ -187,11 +188,11 @@ export function clearAppAuthTokens() {
 
 // HD 版沿用 TV 扫码登录接口，只是改用 HD APPKEY 签名并标明 mobi_app，参数与 PiliPlus 一致。
 export function pollAppLoginQRCode(authCode: string, signal?: AbortSignal): Promise<any> {
-  return waitWithSignal(requestAppPassport('qrcodePoll', { auth_code: authCode, local_id: '0' }), signal)
+  return waitWithSignal(requestAppClient('qrcodePoll', { auth_code: authCode, local_id: '0' }), signal)
 }
 
 export function getAppLoginQRCode(signal?: AbortSignal): Promise<any> {
-  return waitWithSignal(requestAppPassport('qrcodeAuthCode', {
+  return waitWithSignal(requestAppClient('qrcodeAuthCode', {
     local_id: '0',
     platform: 'android',
     mobi_app: HDAppKey.mobiApp,

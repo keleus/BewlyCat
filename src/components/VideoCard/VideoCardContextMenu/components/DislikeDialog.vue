@@ -8,9 +8,7 @@ import type { Video } from '~/components/VideoCard/types'
 import { appAuthTokens } from '~/logic'
 import type { DislikeReason } from '~/models/video/appForYou'
 import { Type as ThreePointV2Type } from '~/models/video/appForYou'
-import api from '~/utils/api'
-import { signAppParams } from '~/utils/appSign'
-import { ensureFreshAppAccessToken } from '~/utils/authProvider'
+import { ensureFreshAppAccessToken, requestAppClient } from '~/utils/authProvider'
 
 const props = defineProps<{
   modelValue: boolean
@@ -18,7 +16,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'removed', selectedOpt: { reasonId?: number, feedbackId?: number }): void
+  (event: 'removed'): void
   (event: 'close'): void
 }>()
 
@@ -97,7 +95,8 @@ async function handleAppDislike() {
 
     // App feed 的 reason_id / feedback_id 来自 three_point_v2，含义与 Web
     // dislike 的固定 reason_id 不一致，必须继续走 access key 签名的 App 接口。
-    const res = await api.video.dislikeVideo(signAppParams({
+    // 参数与 PiliPlus 的 feedDislike 一致
+    const res = await requestAppClient('feedDislike', {
       access_key: appAuthTokens.value.accessToken,
       goto: props.video?.goto,
       id: props.video?.param || props.video?.id,
@@ -105,9 +104,9 @@ async function handleAppDislike() {
       feedback_id: selectedPayload.feedbackId,
       build: 1,
       mobi_app: 'android',
-    }))
+    })
     if (res.code === 0)
-      emit('removed', selectedPayload)
+      emit('removed')
     else
       toast.error(res.message)
   }

@@ -17,8 +17,7 @@ import type { forYouResult, Item as VideoItem } from '~/models/video/forYou'
 import type { AppVideoElement, VideoCardDisplayData, VideoElement } from '~/stores/forYouStore'
 import { useForYouStore } from '~/stores/forYouStore'
 import api from '~/utils/api'
-import { signAppParams } from '~/utils/appSign'
-import { ensureFreshAppAccessToken } from '~/utils/authProvider'
+import { ensureFreshAppAccessToken, requestAppClient } from '~/utils/authProvider'
 import { isBilibiliRiskControl } from '~/utils/bilibiliApiError'
 import { av2bv } from '~/utils/bvid'
 import { decodeHtmlEntities } from '~/utils/htmlDecode'
@@ -714,10 +713,11 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     viewStr: item.cover_left_text_1,
     danmakuStr: item.cover_left_text_2,
     cid: item?.player_args?.cid,
-    goto: item?.goto,
+    // 与 PiliPlus 一致，不感兴趣接口的 goto 取 card_goto
+    goto: item.card_goto,
     param: item?.param,
     trackId: item?.track_id,
-    url: item?.goto === 'bangumi' ? getAppBangumiUrl(item.uri) : '',
+    url: item.card_goto === 'bangumi' ? getAppBangumiUrl(item.uri) : '',
     type,
     threePointV2: item?.three_point_v2 || [],
   }
@@ -1743,15 +1743,14 @@ async function getAppRecommendVideos(
       for (let attempt = 1; attempt <= APP_REQUEST_MAX_ATTEMPTS; attempt++) {
         requestLog = createRecommendRequestLogContext(recommendationMode, requestType)
         try {
-          // 每次重试重新签名，保证 ts 有效
-          response = await api.video.getAppRecommendVideos(signAppParams({
+          response = await requestAppClient('feedIndex', {
             ...APP_FEED_PARAMS,
             access_key: appAuthTokens.value.accessToken,
             c_locale: locale,
             s_locale: locale,
             idx,
             pull: idx === 0,
-          }))
+          })
         }
         catch (error) {
           logRecommendRequestFailure(requestLog, { error, attempt })

@@ -31,7 +31,7 @@ const props = withDefaults(defineProps<{
   hideBlockUser: false,
 })
 const emit = defineEmits<{
-  (event: 'removed', selectedOpt?: { reasonId?: number, feedbackId?: number }): void
+  (event: 'removed'): void
   (event: 'close'): void
   (event: 'reopen'): void
 }>()
@@ -488,8 +488,8 @@ function handleReopen() {
   handleClose()
 }
 
-function handleRemoved(selectedOpt?: { reasonId?: number, feedbackId?: number }) {
-  emit('removed', selectedOpt)
+function handleRemoved() {
+  emit('removed')
   handleClose()
 }
 

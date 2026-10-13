@@ -3,7 +3,6 @@ import type { ThreePointV2 } from '~/models/video/appForYou'
 /** Data-only interaction state survives offscreen card recycling. */
 export interface VideoCardState {
   removed: boolean
-  selectedDislikeOpt?: { reasonId?: number, feedbackId?: number }
   videoCurrentTime: number | null
 }
 

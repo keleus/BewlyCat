@@ -3,7 +3,7 @@ import browser from 'webextension-polyfill'
 import { isContentScriptTargetUrl } from '~/constants/contentScript'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl, isPreventMobileRedirectEnabled } from '~/utils/bilibiliDesktopNavigation'
 
-import { setupAppPassport } from './appPassport'
+import { isAppClientRequestUrl, setupAppClient } from './appClient'
 import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
 import { setupLoginStateWatcher } from './loginStateWatcher'
 import { setupApiMsgListeners } from './messageListeners/api'
@@ -121,6 +121,17 @@ if (isFirefoxBuild) {
         return { ...details, requestHeaders }
       }
 
+      // 后台发出的 APP 接口请求与 PiliPlus 一致：不带 Origin，Referer 固定为主站
+      if (details.documentUrl && isExtensionUri(details.documentUrl) && isAppClientRequestUrl(details.url)) {
+        for (const header of details.requestHeaders || []) {
+          const headerName = header.name.toLowerCase()
+          if (headerName !== 'origin' && headerName !== 'referer')
+            requestHeaders.push(header)
+        }
+        requestHeaders.push({ name: 'Referer', value: 'https://www.bilibili.com' })
+        return { ...details, requestHeaders }
+      }
+
       if (details.documentUrl && (isExtensionUri(details.documentUrl) || isContentScriptTargetUrl(details.documentUrl))) {
         const url = new URL(details.documentUrl)
         const extensionUri = isExtensionUri(details.documentUrl)
@@ -156,7 +167,7 @@ if (isFirefoxBuild) {
 setupSettingsStorageCoordinator()
 setupSettingsCloudSync()
 setupApiMsgListeners()
-setupAppPassport()
+setupAppClient()
 setupTabMsgListeners()
 setupTopBarStateBroker()
 setupWatchLaterStateBroker()

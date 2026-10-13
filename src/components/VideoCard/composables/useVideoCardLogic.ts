@@ -7,8 +7,7 @@ import type { VideoInfo } from '~/models/video/videoInfo'
 import type { VideoPreviewResult } from '~/models/video/videoPreview'
 import { useTopBarStore } from '~/stores/topBarStore'
 import api from '~/utils/api'
-import { signAppParams } from '~/utils/appSign'
-import { ensureFreshAppAccessToken } from '~/utils/authProvider'
+import { ensureFreshAppAccessToken, requestAppClient } from '~/utils/authProvider'
 import { calcCurrentTime, numFormatter, parseStatNumber } from '~/utils/dataFormatter'
 import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import { removeHttpFromUrl } from '~/utils/main'
@@ -26,23 +25,6 @@ interface VideoCardProps {
   horizontal?: boolean
   showPreview?: boolean
   moreBtn?: boolean
-}
-
-interface AppFeedFeedbackSelection {
-  reasonId?: number
-  feedbackId?: number
-}
-
-function createAppFeedFeedbackParams(video: Video, selection?: AppFeedFeedbackSelection) {
-  return signAppParams({
-    access_key: appAuthTokens.value.accessToken,
-    goto: video.goto,
-    id: video.param || video.id,
-    reason_id: selection?.reasonId,
-    feedback_id: selection?.feedbackId,
-    build: 1,
-    mobi_app: 'android',
-  })
 }
 
 export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps>, savedState?: VideoCardState) {
@@ -64,7 +46,6 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
   const removed = toRef(interactionState, 'removed')
   const moreBtnRef = ref<HTMLButtonElement | null>(null)
   const contextMenuRef = ref<HTMLDivElement | null>(null)
-  const selectedDislikeOpt = toRef(interactionState, 'selectedDislikeOpt')
   const videoCurrentTime = toRef(interactionState, 'videoCurrentTime')
   const isHover = ref<boolean>(false)
   const isPreviewFullscreen = ref<boolean>(false)
@@ -399,7 +380,14 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
       if (!await ensureFreshAppAccessToken())
         return
 
-      api.video.undoDislikeVideo(createAppFeedFeedbackParams(video, selectedDislikeOpt.value)).then((res) => {
+      // 与 PiliPlus 的 feedDislikeCancel 一致，撤销只需 goto 与 id
+      requestAppClient('feedDislikeCancel', {
+        access_key: appAuthTokens.value.accessToken,
+        goto: video.goto,
+        id: video.param || video.id,
+        build: 1,
+        mobi_app: 'android',
+      }).then((res) => {
         if (res.code === 0) {
           removed.value = false
         }
@@ -413,8 +401,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     }
   }
 
-  function handleRemoved(selectedOpt?: AppFeedFeedbackSelection) {
-    selectedDislikeOpt.value = selectedOpt
+  function handleRemoved() {
     removed.value = true
   }
 
