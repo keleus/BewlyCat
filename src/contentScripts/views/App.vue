@@ -220,7 +220,11 @@ function getPageParam(): AppPage | null {
   return null
 }
 
-const activatedPage = ref<AppPage>(getPageParam() || (settings.value.dockItemsConfig.find(e => e.visible === true)?.page || AppPage.Home))
+function getDefaultAppPage(): AppPage {
+  return settings.value.dockItemsConfig.find(e => e.visible === true)?.page || AppPage.Home
+}
+
+const activatedPage = ref<AppPage>(getPageParam() || getDefaultAppPage())
 const pageControlWallpaperMask = computed(() => {
   if (!pageWallpaperReady.value)
     return '0%'
@@ -1267,8 +1271,17 @@ function focusScrollViewport(options: { force?: boolean } = {}) {
 const isFirstTimeActivatedPageChange = ref<boolean>(true)
 function syncNavigationUrl() {
   const url = new URL(window.location.href)
-  url.searchParams.set('page', activatedPage.value)
-  if (activatedPage.value === AppPage.Home)
+  // 停留在默认首页及默认标签时不写入参数，切换后再记录 page/tab。
+  const keepTab = activatedPage.value === AppPage.Home
+    && homeActivatedPage.value !== getDefaultHomeSubPage(settings.value.homePageTabVisibilityList)
+  const keepPage = keepTab
+    || activatedPage.value !== AppPage.Home
+    || getDefaultAppPage() !== AppPage.Home
+  if (keepPage)
+    url.searchParams.set('page', activatedPage.value)
+  else
+    url.searchParams.delete('page')
+  if (keepTab)
     url.searchParams.set('tab', homeActivatedPage.value)
   else
     url.searchParams.delete('tab')
