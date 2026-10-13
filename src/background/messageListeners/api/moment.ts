@@ -10,6 +10,33 @@ function serializeMomentVoteBody(body: Record<string, any>) {
   return `${serializedRest.slice(0, -1)},"dynamic_id":${serializedDynamicId}}`
 }
 
+// 评论接口按 Web 端只提交非空字段，空 root/parent 会被视为非法楼层。
+function serializeCommentForm(body: Record<string, any>) {
+  const form = new URLSearchParams()
+  for (const [key, value] of Object.entries(body)) {
+    if (value !== undefined && value !== null && value !== '')
+      form.append(key, String(value))
+  }
+  return form
+}
+
+// 运行时消息只能传可序列化数据，图片以 data URL 进入后台后再还原为 multipart 文件。
+function serializeImageUpload(body: Record<string, any>) {
+  const match = /^data:([^;,]+);base64,([\w+/=]+)$/.exec(String(body.file_up || ''))
+  if (!match)
+    throw new Error('Invalid image data')
+  const binary = atob(match[2])
+  const bytes = new Uint8Array(binary.length)
+  for (let index = 0; index < binary.length; index++)
+    bytes[index] = binary.charCodeAt(index)
+  const form = new FormData()
+  form.append('file_up', new Blob([bytes], { type: match[1] }), String(body.file_name || 'image'))
+  form.append('category', String(body.category || 'daily'))
+  form.append('biz', String(body.biz || 'new_dyn'))
+  form.append('csrf', String(body.csrf || ''))
+  return form
+}
+
 const API_MOMENT = {
   getMomentComments: {
     url: 'https://api.bilibili.com/x/v2/reply',
@@ -29,6 +56,34 @@ const API_MOMENT = {
       method: 'post',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
       body: { type: 17, oid: '', rpid: '', action: 1, csrf: '' },
+    },
+    afterHandle: AHS.J_D,
+  },
+  addMomentComment: {
+    url: 'https://api.bilibili.com/x/v2/reply/add',
+    _fetch: {
+      method: 'post',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: { type: 17, oid: '', root: '', parent: '', message: '', plat: 1, at_name_to_mid: '', pictures: '', csrf: '' },
+      bodySerializer: serializeCommentForm,
+    },
+    afterHandle: AHS.J_D,
+  },
+  deleteMomentComment: {
+    url: 'https://api.bilibili.com/x/v2/reply/del',
+    _fetch: {
+      method: 'post',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+      body: { type: 17, oid: '', rpid: '', csrf: '' },
+    },
+    afterHandle: AHS.J_D,
+  },
+  uploadMomentCommentImage: {
+    url: 'https://api.bilibili.com/x/dynamic/feed/draw/upload_bfs',
+    _fetch: {
+      method: 'post',
+      body: { file_up: '', file_name: '', category: 'daily', biz: 'new_dyn', csrf: '' },
+      bodySerializer: serializeImageUpload,
     },
     afterHandle: AHS.J_D,
   },

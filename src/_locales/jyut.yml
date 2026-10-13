@@ -1682,6 +1682,22 @@ moment_card:
   comments_retry: 再試
   load_comment_replies: 載入更多回覆
   comments_empty: 暫時未有留言
+  comment_placeholder: 留個友善嘅留言
+  comment_login: 登入咗先可以發表留言
+  comment_send: 發佈
+  comment_send_shortcut: Ctrl / ⌘ + Enter 發送
+  comment_reply: 回覆
+  comment_reply_to: "回覆 {'@'}{name}"
+  comment_send_failed: 留言發送失敗，請稍後再試
+  comment_delete_confirm: 確認刪除
+  comment_delete_failed: 留言刪除失敗，請稍後再試
+  comment_image_add: 加圖片
+  comment_image_remove: 移除第 {index} 張圖片
+  comment_image_limit: 最多可以加 {count} 張圖片
+  comment_image_invalid: 只支援 PNG、JPG、GIF 或者 WebP 圖片
+  comment_image_too_large: 每張圖片唔可以超過 {size}MB
+  comment_image_upload_failed: 圖片上載失敗，請稍後再試
+  editor_load_failed: 載入失敗，請重試
   video_post: 投稿咗影片
   cancel_reservation: 取消預約
   reserve: 預約

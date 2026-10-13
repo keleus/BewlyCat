@@ -1667,6 +1667,22 @@ moment_card:
   comments_retry: 重试
   load_comment_replies: 加载更多回复
   comments_empty: 暂无评论
+  comment_placeholder: 发一条友善的评论
+  comment_login: 登录后才能发表评论
+  comment_send: 发布
+  comment_send_shortcut: Ctrl / ⌘ + Enter 发送
+  comment_reply: 回复
+  comment_reply_to: "回复 {'@'}{name}"
+  comment_send_failed: 评论发送失败，请稍后重试
+  comment_delete_confirm: 确认删除
+  comment_delete_failed: 评论删除失败，请稍后重试
+  comment_image_add: 添加图片
+  comment_image_remove: 移除第 {index} 张图片
+  comment_image_limit: 最多可以添加 {count} 张图片
+  comment_image_invalid: 仅支持 PNG、JPG、GIF 或 WebP 图片
+  comment_image_too_large: 单张图片不能超过 {size}MB
+  comment_image_upload_failed: 图片上传失败，请稍后重试
+  editor_load_failed: 加载失败，请重试
   video_post: 投稿了视频
   cancel_reservation: 取消预约
   reserve: 预约

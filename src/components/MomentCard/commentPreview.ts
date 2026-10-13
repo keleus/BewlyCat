@@ -24,6 +24,9 @@ interface RawComment {
     message?: string
     emote?: Record<string, { url?: string }>
     pictures?: Array<{ img_src?: string }>
+    at_name_to_mid?: Record<string, number | string>
+    members?: Array<{ mid?: string, uname?: string }>
+    jump_url?: Record<string, { title?: string, pc_url?: string, app_url_schema?: string }>
   }
   replies?: RawComment[] | null
 }
@@ -31,6 +34,17 @@ interface RawComment {
 export interface CommentPageData {
   replies?: RawComment[] | null
   page?: { count?: number, size?: number }
+  control?: { input_disable?: boolean, root_input_text?: string, child_input_text?: string }
+}
+
+export type RawCommentData = RawComment
+
+export interface CommentContentPart {
+  text: string
+  image?: string
+  url?: string
+  /** 搜索词等跳转链接显示的标题，与原文不同时作为提示 */
+  title?: string
 }
 
 export interface PreviewComment {
@@ -43,11 +57,12 @@ export interface PreviewComment {
   sex: string
   location: string
   time: number
-  content: Array<{ text: string, image?: string }>
+  content: CommentContentPart[]
   pictures: string[]
   likeCount: number
   liked: boolean
   liking: boolean
+  deleting: boolean
   collapsed: boolean
   replyCount: number
   hotReplies: PreviewComment[]
@@ -61,6 +76,11 @@ export interface PreviewComment {
 
 export type CommentSort = 0 | 1
 
+export interface CommentReplyTarget {
+  root: PreviewComment
+  comment: PreviewComment
+}
+
 export interface CommentPreviewState {
   sort: CommentSort
   expanded: boolean
@@ -71,6 +91,11 @@ export interface CommentPreviewState {
   error: string
   done: boolean
   scrollTop: number
+  /** 评论区接口返回的输入控制，仅在首屏刷新 */
+  inputDisabled: boolean
+  rootPlaceholder: string
+  childPlaceholder: string
+  replyTarget?: CommentReplyTarget
 }
 
 export function createCommentPreview(): CommentPreviewState {
@@ -83,6 +108,9 @@ export function createCommentPreview(): CommentPreviewState {
     error: '',
     done: false,
     scrollTop: 0,
+    inputDisabled: false,
+    rootPlaceholder: '',
+    childPlaceholder: '',
   })
 }
 
@@ -105,14 +133,57 @@ function safeImageUrl(value?: string) {
   }
 }
 
-function normalizeComment(raw: RawComment): PreviewComment {
-  const message = raw.content?.message || ''
-  const emotes = raw.content?.emote || {}
-  // 只替换接口明确给出的表情，不向页面插入评论 HTML。
-  const tokens = Object.keys(emotes).filter(Boolean).sort((a, b) => b.length - a.length)
-  const pattern = tokens.length
-    ? new RegExp(`(${tokens.map(token => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g')
-    : undefined
+function safeLinkUrl(value?: string) {
+  const url = safeImageUrl(value)
+  return url && /^https:\/\/(?:[\w-]+\.)*(?:bilibili\.com|b23\.tv)\//.test(url) ? url : ''
+}
+
+function getJumpUrl(keyword: string, jump: { pc_url?: string, app_url_schema?: string }) {
+  const pcUrl = safeLinkUrl(jump.pc_url)
+  if (pcUrl)
+    return pcUrl
+  if (/^(?:av\d+|BV[\dA-Z]{10})$/i.test(keyword))
+    return `https://www.bilibili.com/video/${keyword}`
+  if (jump.app_url_schema?.startsWith('bilibili://search'))
+    return `https://search.bilibili.com/all?keyword=${encodeURIComponent(keyword)}`
+  return ''
+}
+
+/** 只替换接口明确给出的表情、@ 用户和跳转词，不向页面插入评论 HTML。 */
+function normalizeContent(content: RawComment['content']): CommentContentPart[] {
+  const message = content?.message || ''
+  const emotes = content?.emote || {}
+  const mentions = new Map<string, string>()
+  for (const member of content?.members || []) {
+    if (member.uname && member.mid)
+      mentions.set(`@${member.uname}`, String(member.mid))
+  }
+  for (const [name, mid] of Object.entries(content?.at_name_to_mid || {})) {
+    if (name && mid)
+      mentions.set(`@${name}`, String(mid))
+  }
+  const jumps = new Map<string, CommentContentPart>()
+  for (const [keyword, jump] of Object.entries(content?.jump_url || {})) {
+    const url = keyword && jump ? getJumpUrl(keyword, jump) : ''
+    if (url)
+      jumps.set(keyword, { text: keyword, url, title: jump.title && jump.title !== keyword ? jump.title : undefined })
+  }
+  const tokens = [...new Set([...Object.keys(emotes), ...mentions.keys(), ...jumps.keys()])].filter(Boolean).sort((a, b) => b.length - a.length)
+  if (!tokens.length)
+    return message ? [{ text: message }] : []
+  const pattern = new RegExp(`(${tokens.map(token => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'g')
+  return message.split(pattern).filter(Boolean).map((text) => {
+    const image = safeImageUrl(emotes[text]?.url)
+    if (image)
+      return { text, image }
+    const mid = mentions.get(text)
+    if (mid && /^\d+$/.test(mid))
+      return { text, url: `https://space.bilibili.com/${mid}` }
+    return jumps.get(text) || { text }
+  })
+}
+
+export function normalizeComment(raw: RawComment): PreviewComment {
   const replies = normalizeComments(raw.replies)
   const replyCount = Math.max(Number(raw.rcount ?? raw.count) || 0, replies.length)
   const hotReplies = replies.slice(0, 3)
@@ -125,14 +196,12 @@ function normalizeComment(raw: RawComment): PreviewComment {
     sex: raw.member?.sex || '',
     location: normalizeCommentLocation(raw.reply_control?.location),
     time: Number(raw.ctime) || 0,
-    content: (pattern ? message.split(pattern) : [message]).filter(Boolean).map(text => ({
-      text,
-      image: safeImageUrl(emotes[text]?.url),
-    })),
+    content: normalizeContent(raw.content),
     pictures: (raw.content?.pictures || []).map(picture => safeImageUrl(picture.img_src)).filter(Boolean),
     likeCount: Math.max(0, Number(raw.like) || 0),
     liked: Number(raw.action) === 1,
     liking: false,
+    deleting: false,
     collapsed: false,
     replyCount,
     // 列表接口的 replies 是热门摘要；与按顺序分页的完整回复分开保存。

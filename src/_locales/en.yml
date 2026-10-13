@@ -1767,6 +1767,22 @@ moment_card:
   comments_retry: Retry
   load_comment_replies: Load more replies
   comments_empty: No comments yet
+  comment_placeholder: Leave a friendly comment
+  comment_login: Log in to post comments
+  comment_send: Post
+  comment_send_shortcut: Ctrl / ⌘ + Enter to send
+  comment_reply: Reply
+  comment_reply_to: "Reply to {'@'}{name}"
+  comment_send_failed: Failed to post the comment. Please try again later
+  comment_delete_confirm: Confirm delete
+  comment_delete_failed: Failed to delete the comment. Please try again later
+  comment_image_add: Add images
+  comment_image_remove: Remove image {index}
+  comment_image_limit: You can add up to {count} images
+  comment_image_invalid: Only PNG, JPG, GIF, or WebP images are supported
+  comment_image_too_large: Each image must be {size} MB or smaller
+  comment_image_upload_failed: Failed to upload the image. Please try again later
+  editor_load_failed: Failed to load. Please try again
   video_post: Uploaded a video
   cancel_reservation: Cancel reservation
   reserve: Reserve
