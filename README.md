@@ -118,3 +118,4 @@
 [bilibili-app-recommend](https://github.com/magicdawn/bilibili-app-recommend) - 获取访问密钥的参考来源
 - [Bilibili-Evolved](https://github.com/the1812/Bilibili-Evolved) - 部分功能实现
 - [bilibili-API-collect](https://github.com/SocialSisterYi/bilibili-API-collect)
+- [PiliPlus](https://github.com/bggRGjQaUbCoE/PiliPlus)
