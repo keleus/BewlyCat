@@ -1,0 +1,149 @@
+// 动态卡片各子组件共用的样式片段。各组件的 scoped 样式按需 include，
+// 避免同一套规则依赖父组件 :deep 穿透。
+
+// 卡片留白区由绝对定位的 permalink 覆盖层承接点击；正文链接、按钮等交互元素需高于该层。
+@mixin interactive-layer {
+  position: relative;
+  z-index: 2;
+}
+
+@mixin text-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+@mixin focus-ring($offset: 2px) {
+  outline: 2px solid var(--bew-theme-color);
+  outline-offset: $offset;
+}
+
+@mixin desc-toggle {
+  display: inline-flex;
+  min-width: 24px;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bew-space-1);
+  margin-top: var(--bew-space-1);
+  padding: 0 var(--bew-space-1);
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  color: var(--bew-theme-color);
+  background: transparent;
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: var(--bew-line-height-control);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bew-theme-color-10);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+@mixin forward-author {
+  overflow: hidden;
+  color: inherit;
+  font-weight: var(--bew-font-weight-semibold);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 0.16s ease;
+
+  &:hover {
+    color: var(--bew-theme-color);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+@mixin charge-badge {
+  position: absolute;
+  top: var(--bew-space-2);
+  left: var(--bew-space-2);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bew-space-1);
+  padding: var(--bew-space-1) var(--bew-space-2);
+  border-radius: var(--bew-radius-full);
+  color: #fff;
+  background: linear-gradient(135deg, #ff8eb4, #fb7299);
+  font-size: var(--bew-font-size-control);
+  font-weight: var(--bew-font-weight-semibold);
+  line-height: var(--bew-line-height-control);
+  box-shadow: 0 2px 8px rgb(251 114 153 / 35%);
+}
+
+// 无封面时的文字占位封面；视频变体固定 16:9 深色底。
+@mixin text-cover {
+  .moment-card__text-cover {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--bew-space-3);
+    min-height: var(--moment-card-text-cover-min-height, 176px);
+    box-sizing: border-box;
+    color: var(--bew-text-2);
+    background: linear-gradient(145deg, var(--bew-theme-color-20), var(--bew-fill-1));
+  }
+
+  .moment-card__text-cover--video {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+    color: #fff;
+    background: linear-gradient(145deg, #394e74, #141b2d);
+  }
+
+  .moment-card__text-cover-icon {
+    font-size: var(--bew-icon-size-xl);
+  }
+}
+
+// 封面底部的播放量与时长遮罩。
+@mixin video-stats {
+  .moment-card__video-stats {
+    position: absolute;
+    inset: auto 0 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--bew-space-2);
+    min-height: 28px;
+    padding: var(--bew-space-3) var(--bew-space-2) var(--bew-space-1);
+    color: #fff;
+    background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 72%));
+    box-sizing: border-box;
+    font-size: var(--bew-font-size-control);
+    line-height: var(--bew-line-height-control);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 65%);
+  }
+
+  .moment-card__video-stat-group,
+  .moment-card__video-stat-group > span {
+    display: inline-flex;
+    min-width: 0;
+    align-items: center;
+  }
+
+  .moment-card__video-stat-group {
+    gap: var(--bew-space-2);
+  }
+
+  .moment-card__video-stat-group > span {
+    gap: var(--bew-space-1);
+  }
+
+  .moment-card__video-duration {
+    flex: 0 0 auto;
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+}
