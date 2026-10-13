@@ -3,7 +3,7 @@ import SettingsCategoryLayout from '../components/SettingsCategoryLayout.vue'
 
 const storageKey = 'bewly-settings-bewly-pages-page'
 const legacyStorageKey = 'bewly-settings-navigation-page'
-const pageValues = ['home', 'moments', 'search']
+const pageValues = ['home', 'moments', 'favorites', 'search']
 const legacyPage = sessionStorage.getItem(legacyStorageKey)
 
 if (!sessionStorage.getItem(storageKey) && legacyPage && pageValues.includes(legacyPage))
@@ -27,6 +27,14 @@ const pages = [
     icon: 'i-mingcute:moment-line',
     iconActivated: 'i-mingcute:moment-fill',
     component: defineAsyncComponent(() => import('../PluginComponentsAndPages/Moments/Moments.vue')),
+  },
+  {
+    value: 'favorites',
+    titleKey: 'settings.plugin.favorites',
+    descriptionKey: 'settings.category_browsing_favorites_desc',
+    icon: 'i-mingcute:star-line',
+    iconActivated: 'i-mingcute:star-fill',
+    component: defineAsyncComponent(() => import('../PluginComponentsAndPages/Favorites/Favorites.vue')),
   },
   {
     value: 'search',

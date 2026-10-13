@@ -156,7 +156,7 @@ settings:
   group_interaction_layout: Interaction & Layout
   category_browsing_home_desc: Configure home recommendations, content filters, following, and home tabs.
   category_browsing_video_card_desc: Configure video card layout, previews, metadata, and link behavior.
-  category_browsing_favorites_desc: Configure how favorite content is displayed and opened.
+  category_browsing_favorites_desc: Organize favorite folders by rules and sync videos after a triple action.
   category_navigation_link_opening_desc: Configure where top bar, video card, and search links open, including drawer behavior.
   category_navigation_topbar_desc: Adjust top bar layout, components, channels, search, and notifications in one place.
   category_navigation_dock_desc: Configure Dock and sidebar position, visibility, and quick actions.
@@ -290,6 +290,7 @@ settings:
   group_following: Following
   group_following_desc: Configure the Following page layout, live content, and video filters.
   group_favorites: Favorites
+  group_favorite_organizer: Favorites organizer
   sidebar_cover_blur: Sidebar cover blur gradient
   sidebar_cover_blur_desc: Use blurred covers in page sidebars such as Favorites and Watch Later. Turn it off to use a Pop surface that lets the page wallpaper show through without cover tinting.
   group_search_page_mode: Search Page Mode
@@ -786,6 +787,45 @@ settings:
   filter_by_publish_time_desc: Filter out videos published more than the specified number of days ago (only works in Web recommendation mode, minimum 7 days).
   filter_by_publish_time_unit: days
   filter_item_already_exist: This filter item already exists!
+  favorite_organizer:
+    sync_after_triple: Sync after triple action
+    sync_after_triple_desc: After liking, coining and favoriting a video in one click on the video page, also add it to every folder whose rules it matches. It stays in the default folder.
+    batch_title: Organize default folder
+    batch_desc: Scan every video in the default folder and copy the ones that match a rule into the corresponding folders. Videos already in a target folder are skipped, and the default folder is left unchanged.
+    start: Start
+    stop: Stop
+    preparing: Preparing…
+    scanning: Scanning the default folder, {count} videos read
+    copying: Copying to target folders, {count} videos added
+    result_summary: Scanned {scanned} videos
+    result_folder: '{title}: {matched} matched, {copied} newly added'
+    result_folder_failed: '{title}: {matched} matched, {copied} newly added, then failed ({message})'
+    stopped: Organizing stopped
+    no_rules: No usable rules. Add conditions to a folder first.
+    no_default_folder: Default folder not found
+    account_changed: The account changed, so organizing was stopped
+    failed: 'Organizing failed: {message}'
+    rules_title: Rules
+    rules_desc: Each folder can have several rules, and a video goes into the folder when it matches any of them. All conditions in one rule must match; when a condition has several values, any one of them is enough.
+    add_folder_placeholder: Add a folder to set rules for
+    load_folders_failed: Failed to load folders. Refresh and try again later.
+    empty: No rules yet. Pick a folder above and add conditions to it.
+    folder_missing: This folder is not in the current account and will be skipped
+    remove_folder: Remove rules for this folder
+    add_rule: Add rule
+    rule_index: Rule {index}
+    remove_rule: Delete rule
+    rule_empty: No conditions, so this rule never matches
+    or: or
+    up: Uploader
+    up_placeholder: Enter a UID, space link or name, then press Enter
+    up_already_added: This uploader is already in the rule
+    zone: Zone
+    zone_placeholder: Add zone (a main zone includes all its sub-zones)
+    title_keyword: Title keyword
+    title_keyword_placeholder: Enter a keyword and press Enter (case-insensitive)
+    triple_synced: 'Synced to folders: {folders}'
+    triple_sync_failed: Failed to sync favorites after triple action
   wanted_users:
     enter_query: Enter an uploader UID or name
     no_results: No uploader found. Try another name.

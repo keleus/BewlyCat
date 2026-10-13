@@ -53,6 +53,38 @@ const API_FAVORITE = {
     },
     afterHandle: AHS.J_D,
   },
+  // https://github.com/SocialSisterYi/bilibili-API-collect/blob/master/docs/fav/list.md#%E8%8E%B7%E5%8F%96%E6%94%B6%E8%97%8F%E5%A4%B9%E5%85%A8%E9%83%A8%E5%86%85%E5%AE%B9id
+  getFavoriteResourceIds: {
+    url: 'https://api.bilibili.com/x/v3/fav/resource/ids',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      media_id: -1,
+      platform: 'web',
+    },
+    afterHandle: AHS.J_D,
+  },
+  // 播放列表接口：按收藏夹游标分页，条目带 tid 与 UP 信息，失效视频不返回。
+  getFavoriteMediaList: {
+    url: 'https://api.bilibili.com/x/v2/medialist/resource/list',
+    _fetch: {
+      method: 'get',
+    },
+    params: {
+      type: 3,
+      biz_id: -1,
+      oid: '',
+      otype: 2,
+      ps: 100,
+      direction: false,
+      desc: true,
+      sort_field: 1,
+      tid: 0,
+      with_current: false,
+    },
+    afterHandle: AHS.J_D,
+  },
   getCollectedFavoriteSeasons: {
     url: 'https://api.bilibili.com/x/v3/fav/folder/collected/list',
     _fetch: {

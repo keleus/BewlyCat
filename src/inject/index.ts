@@ -4894,7 +4894,91 @@ else if (shouldInitializePageScript) {
     return originalFetch.call(thisArg, input, newInit)
   }
 
+  // 一键三连成功后通知插件环境，由其按收藏夹整理规则同步到对应收藏夹。
+  const TRIPLE_API_PATH = '/x/web-interface/archive/like/triple'
+
+  function isTripleRequestUrl(url: string): boolean {
+    try {
+      const requestUrl = new URL(url, window.location.href)
+      return requestUrl.hostname === 'api.bilibili.com' && requestUrl.pathname === TRIPLE_API_PATH
+    }
+    catch {
+      return false
+    }
+  }
+
+  function readTripleTarget(body: unknown): { aid?: number, bvid?: string } {
+    let params: URLSearchParams | null = null
+    if (typeof body === 'string') {
+      params = new URLSearchParams(body)
+    }
+    else if (body instanceof URLSearchParams) {
+      params = body
+    }
+    else if (body instanceof FormData) {
+      const formParams = new URLSearchParams()
+      body.forEach((value, key) => {
+        if (typeof value === 'string')
+          formParams.append(key, value)
+      })
+      params = formParams
+    }
+
+    const aid = Number(params?.get('aid') || 0)
+    const bvid = params?.get('bvid') || ''
+    return {
+      aid: Number.isSafeInteger(aid) && aid > 0 ? aid : undefined,
+      bvid: bvid || undefined,
+    }
+  }
+
+  function notifyTripleResult(response: unknown, body: unknown) {
+    const result = response as { code?: number, data?: { fav?: boolean } } | null
+    if (result?.code !== 0 || !result.data?.fav)
+      return
+    window.postMessage({ type: 'BEWLY_VIDEO_TRIPLE', ...readTripleTarget(body) }, window.location.origin)
+  }
+
+  const originalXhrOpen = XMLHttpRequest.prototype.open
+  const originalXhrSend = XMLHttpRequest.prototype.send
+  const tripleXhrs = new WeakSet<XMLHttpRequest>()
+
+  XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, ...args: Parameters<XMLHttpRequest['open']>) {
+    if (isTripleRequestUrl(String(args[1])))
+      tripleXhrs.add(this)
+    else
+      tripleXhrs.delete(this)
+    return (originalXhrOpen as (...openArgs: Parameters<XMLHttpRequest['open']>) => void).apply(this, args)
+  } as XMLHttpRequest['open']
+
+  XMLHttpRequest.prototype.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
+    if (tripleXhrs.has(this)) {
+      this.addEventListener('load', () => {
+        try {
+          const response = this.responseType === 'json'
+            ? this.response
+            : this.responseType === '' || this.responseType === 'text'
+              ? JSON.parse(this.responseText)
+              : null
+          notifyTripleResult(response, body)
+        }
+        catch {}
+      }, { once: true })
+    }
+    return originalXhrSend.call(this, body)
+  }
+
+  function observeTripleFetch(response: Promise<Response>, init?: RequestInit) {
+    void response
+      .then(res => res.clone().json())
+      .then(data => notifyTripleResult(data, init?.body))
+      .catch(() => {})
+    return response
+  }
+
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    if (isTripleRequestUrl(getFetchInputUrl(input)))
+      return observeTripleFetch(originalFetch.call(this, input, init), init)
     if (isSearchResultFetch(input) && !settingsReady) {
       return settingsReadyPromise.then(() => {
         return fetchWithSearchSettings(this, input, init)

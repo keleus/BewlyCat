@@ -252,6 +252,26 @@ export interface VideoCardContextMenuConfigItem {
 export const defaultVideoCardContextMenuConfig: VideoCardContextMenuConfigItem[]
   = videoCardContextMenuKeys.map(key => ({ key, visible: true }))
 
+export interface FavoriteOrganizerUp {
+  mid: string
+  name: string
+}
+
+/** 同一条规则内各类条件需同时满足；同一类条件填多个值时满足其一即可。 */
+export interface FavoriteOrganizerRule {
+  id: string
+  ups: FavoriteOrganizerUp[]
+  zones: number[] // 旧版分区 tid，主分区包含其下全部子分区
+  titleKeywords: string[]
+}
+
+/** 收藏夹满足任一规则即归入。 */
+export interface FavoriteOrganizerFolder {
+  mediaId: number
+  title: string
+  rules: FavoriteOrganizerRule[]
+}
+
 export interface Settings {
   showLocalLoudnessButton: boolean
   localLoudnessEnabled: boolean
@@ -275,6 +295,8 @@ export interface Settings {
   enlargeFavoriteDialog: boolean // 视频页收藏夹放大样式增强
   enableSidebarCoverBlur: boolean // 页面侧栏封面高斯渐变背景
   externalWatchLaterButton: boolean // 稍后再看按钮外置
+  favoriteOrganizerFolders: FavoriteOrganizerFolder[] // 收藏夹整理：各目标收藏夹的规则组
+  favoriteOrganizerSyncAfterTriple: boolean // 一键三连后按规则把视频同步到目标收藏夹
 
   // Grid 相关设置
   gridColumns: GridColumnsConfig
@@ -611,6 +633,8 @@ export const originalSettings: Settings = {
   enlargeFavoriteDialog: false, // 默认关闭收藏夹放大样式
   enableSidebarCoverBlur: true, // 默认启用页面侧栏封面高斯渐变背景
   externalWatchLaterButton: true, // 默认开启稍后再看按钮外置
+  favoriteOrganizerFolders: [],
+  favoriteOrganizerSyncAfterTriple: false,
 
   // Grid 相关默认设置
   gridColumns: { ...defaultGridColumns },
@@ -952,6 +976,38 @@ export const originalSettings: Settings = {
 // 本地存储配置（不会同步到云端）
 export const localSettings = useStorageLocal('localSettings', originalLocalSettings, { mergeDefaults: true, writeDefaults: false })
 
+function normalizeFavoriteOrganizerFolders(value: unknown): FavoriteOrganizerFolder[] {
+  if (!Array.isArray(value))
+    return []
+
+  const strings = (items: unknown) => Array.isArray(items)
+    ? items.filter((item): item is string => typeof item === 'string' && item.trim() !== '')
+    : []
+  const folders: FavoriteOrganizerFolder[] = []
+  const seen = new Set<number>()
+  for (const folder of value) {
+    const mediaId = Number(folder?.mediaId)
+    if (!Number.isSafeInteger(mediaId) || mediaId <= 0 || seen.has(mediaId))
+      continue
+    seen.add(mediaId)
+    folders.push({
+      mediaId,
+      title: typeof folder.title === 'string' ? folder.title : '',
+      rules: (Array.isArray(folder.rules) ? folder.rules : []).map((rule: any, index: number) => ({
+        id: typeof rule?.id === 'string' && rule.id ? rule.id : `${mediaId}-${index}`,
+        ups: (Array.isArray(rule?.ups) ? rule.ups : [])
+          .filter((up: any) => /^\d+$/.test(String(up?.mid ?? '')))
+          .map((up: any) => ({ mid: String(up.mid), name: typeof up.name === 'string' ? up.name : '' })),
+        zones: (Array.isArray(rule?.zones) ? rule.zones : [])
+          .map(Number)
+          .filter((tid: number) => Number.isSafeInteger(tid) && tid > 0),
+        titleKeywords: strings(rule?.titleKeywords),
+      })),
+    })
+  }
+  return folders
+}
+
 let resolveSettingsReady: (value: Settings) => void = () => {}
 export const settingsReady = new Promise<Settings>((resolve) => {
   resolveSettingsReady = resolve
@@ -979,6 +1035,8 @@ export const settings = useSettingsStorage(originalSettings, {
       record.enableSidebarCoverBlur = record.enableFavoriteCoverBlur
       Reflect.deleteProperty(record, 'enableFavoriteCoverBlur')
     }
+
+    record.favoriteOrganizerFolders = normalizeFavoriteOrganizerFolders(record.favoriteOrganizerFolders)
 
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
     Reflect.deleteProperty(record, 'showBewlyOrBiliTopBarSwitcher')

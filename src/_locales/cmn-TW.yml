@@ -156,7 +156,7 @@ settings:
   group_interaction_layout: 互動與版面
   category_browsing_home_desc: 設定首頁推薦、內容過濾、關注頁和首頁分頁。
   category_browsing_video_card_desc: 設定影片卡片的版面、預覽、資訊顯示與開啟方式。
-  category_browsing_favorites_desc: 設定收藏內容的顯示與互動方式。
+  category_browsing_favorites_desc: 依規則整理收藏夾，並在一鍵三連後自動同步到對應收藏夾。
   category_navigation_link_opening_desc: 統一設定頂欄、影片卡片與搜尋列連結的開啟位置和抽屜行為。
   category_navigation_topbar_desc: 統一調整頂欄版面、元件、頻道、搜尋入口和通知顯示。
   category_navigation_dock_desc: 設定 Dock 列與側欄的位置、顯示和快捷操作。
@@ -286,6 +286,7 @@ settings:
   group_following: 正在跟隨
   group_following_desc: 設定「正在跟隨」頁面的版面、直播內容與影片過濾規則。
   group_favorites: 收藏
+  group_favorite_organizer: 收藏夾整理
   sidebar_cover_blur: 側邊欄封面高斯漸變
   sidebar_cover_blur_desc: 在收藏、稍後再看等頁面側邊欄使用封面模糊背景；關閉後使用透出頁面桌布的 Pop 背景，不隨封面染色。
   group_search_page_mode: 搜尋頁模式
@@ -694,6 +695,45 @@ settings:
   filter_by_publish_time_desc: 篩選掉發布時間超過設定天數的影片（僅在 Web 推薦模式下有效，最少 7 天）。
   filter_by_publish_time_unit: 天
   filter_item_already_exist: 這個篩選項目已經存在！
+  favorite_organizer:
+    sync_after_triple: 三連後自動同步
+    sync_after_triple_desc: 在影片頁一鍵三連後，依下方規則把影片同時加入符合的收藏夾，預設收藏夾中的影片保留。
+    batch_title: 批次整理預設收藏夾
+    batch_desc: 掃描預設收藏夾中的全部影片，把符合規則的影片複製到對應收藏夾；已在目標收藏夾中的影片會略過，預設收藏夾不做變更。
+    start: 開始整理
+    stop: 停止
+    preparing: 正在準備…
+    scanning: 正在掃描預設收藏夾，已讀取 {count} 部影片
+    copying: 正在複製到目標收藏夾，已加入 {count} 部影片
+    result_summary: 共掃描 {scanned} 部影片
+    result_folder: '{title}：符合 {matched} 部，新加入 {copied} 部'
+    result_folder_failed: '{title}：符合 {matched} 部，新加入 {copied} 部，後續失敗（{message}）'
+    stopped: 已停止整理
+    no_rules: 沒有可用的規則，請先為收藏夾設定條件
+    no_default_folder: 找不到預設收藏夾
+    account_changed: 帳號已切換，整理已中止
+    failed: 整理失敗：{message}
+    rules_title: 整理規則
+    rules_desc: 每個收藏夾可設定多條規則，符合任一規則即歸入；同一條規則內的各項條件需同時符合，同一項條件填多個值時符合其一即可。
+    add_folder_placeholder: 新增要設定規則的收藏夾
+    load_folders_failed: 取得收藏夾清單失敗，請稍後重新整理再試
+    empty: 尚未設定規則。從上方選擇收藏夾後為其新增條件。
+    folder_missing: 目前帳號下找不到該收藏夾，整理時會略過
+    remove_folder: 移除該收藏夾的規則
+    add_rule: 新增規則
+    rule_index: 規則 {index}
+    remove_rule: 刪除規則
+    rule_empty: 未設定條件，此規則不會生效
+    or: 或
+    up: UP 主
+    up_placeholder: 輸入 UID、空間連結或暱稱後按 Enter
+    up_already_added: 該 UP 主已在此規則中
+    zone: 分區
+    zone_placeholder: 新增分區（主分區包含其全部子分區）
+    title_keyword: 標題關鍵字
+    title_keyword_placeholder: 輸入關鍵字後按 Enter，不區分大小寫
+    triple_synced: 已同步到收藏夾：{folders}
+    triple_sync_failed: 三連後同步收藏夾失敗
   wanted_users:
     enter_query: 請輸入 UP 主 UID 或暱稱
     no_results: 找不到相關 UP 主，請嘗試其他暱稱

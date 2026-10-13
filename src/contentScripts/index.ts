@@ -37,6 +37,7 @@ import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
 import { version } from '../../package.json'
 import { initBewlyWidescreenControl } from './bewlyWidescreenControl'
+import { setupFavoriteOrganizerTripleSync } from './features/favoriteOrganizerTripleSync'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNativeHomeFeedHistory } from './features/nativeHomeFeedHistory'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
@@ -238,6 +239,7 @@ else if (shouldInitializeContentScript) {
   setupOriginalMomentsFilter()
   setupNativeHomeFeedHistory()
   setupWatchLaterAutoRemove()
+  setupFavoriteOrganizerTripleSync()
   setupVideoWatchProgress()
   // Fix `OverlayScrollbars` not working in Firefox
   // https://github.com/fingerprintjs/fingerprintjs/issues/683#issuecomment-881210244

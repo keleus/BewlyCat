@@ -94,6 +94,12 @@ const dockRoute: SearchRoute = {
   secondaryTitleKey: 'settings.plugin.dock_and_sidebar',
   storageKey: bewlyComponentsStorageKey,
 }
+const favoritesRoute: SearchRoute = {
+  menu: MenuType.BewlyPages,
+  secondaryPage: 'favorites',
+  secondaryTitleKey: 'settings.plugin.favorites',
+  storageKey: bewlyPagesStorageKey,
+}
 const searchPageRoute: SearchRoute = {
   menu: MenuType.BewlyPages,
   secondaryPage: 'search',
@@ -314,6 +320,13 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(momentsRoute, [
     'settings.moments_hide_charge_exclusive',
   ], { targetTitleKey: 'settings.moments_filter_charge_dynamic' }),
+  ...createEntries(favoritesRoute, [
+    'settings.plugin.favorites',
+    'settings.group_favorite_organizer',
+    'settings.favorite_organizer.sync_after_triple',
+    'settings.favorite_organizer.batch_title',
+    'settings.favorite_organizer.rules_title',
+  ]),
   ...createEntries(videoCardRoute, [
     'settings.plugin.video_card',
     'settings.group_video_card_grid',

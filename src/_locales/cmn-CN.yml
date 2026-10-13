@@ -156,7 +156,7 @@ settings:
   group_interaction_layout: 交互与布局
   category_browsing_home_desc: 配置首页推荐、内容过滤、关注页和首页标签。
   category_browsing_video_card_desc: 配置视频卡片的布局、预览、信息展示与打开方式。
-  category_browsing_favorites_desc: 配置收藏内容的显示与交互方式。
+  category_browsing_favorites_desc: 按规则整理收藏夹，并在一键三连后自动同步到对应收藏夹。
   category_navigation_link_opening_desc: 统一配置顶栏、视频卡片与搜索栏链接的打开位置和抽屉行为。
   category_navigation_topbar_desc: 统一调整顶栏布局、组件、频道、搜索入口和通知显示。
   category_navigation_dock_desc: 配置 Dock 栏与侧栏的位置、显隐和快捷操作。
@@ -287,6 +287,7 @@ settings:
   group_following: 正在关注
   group_following_desc: 配置“正在关注”页面的布局、直播内容与视频过滤规则。
   group_favorites: 收藏
+  group_favorite_organizer: 收藏夹整理
   sidebar_cover_blur: 侧栏封面高斯渐变
   sidebar_cover_blur_desc: 在收藏、稍后再看等页面侧栏使用封面模糊背景；关闭后使用透出页面壁纸的 Pop 背景，不随封面染色。
   group_search_page_mode: 搜索页模式
@@ -844,6 +845,45 @@ settings:
   filter_by_publish_time_desc: 筛选掉发布时间超过设定天数的视频（仅在 Web 推荐模式下有效，最少 7 天）。
   filter_by_publish_time_unit: 天
   filter_item_already_exist: 这个筛选项目已经存在！
+  favorite_organizer:
+    sync_after_triple: 三连后自动同步
+    sync_after_triple_desc: 在视频页一键三连后，按下方规则把视频同时加入匹配的收藏夹，默认收藏夹中的视频保留。
+    batch_title: 批量整理默认收藏夹
+    batch_desc: 扫描默认收藏夹中的全部视频，把命中规则的视频复制到对应收藏夹；已在目标收藏夹中的视频会跳过，默认收藏夹不做改动。
+    start: 开始整理
+    stop: 停止
+    preparing: 正在准备…
+    scanning: 正在扫描默认收藏夹，已读取 {count} 个视频
+    copying: 正在复制到目标收藏夹，已加入 {count} 个视频
+    result_summary: 共扫描 {scanned} 个视频
+    result_folder: '{title}：命中 {matched} 个，新加入 {copied} 个'
+    result_folder_failed: '{title}：命中 {matched} 个，新加入 {copied} 个，后续失败（{message}）'
+    stopped: 已停止整理
+    no_rules: 没有可用的规则，请先为收藏夹设置条件
+    no_default_folder: 找不到默认收藏夹
+    account_changed: 账号已切换，整理已中止
+    failed: 整理失败：{message}
+    rules_title: 整理规则
+    rules_desc: 每个收藏夹可设置多条规则，满足任一规则即归入；同一条规则内的各项条件需同时满足，同一项条件填多个值时满足其一即可。
+    add_folder_placeholder: 添加要设置规则的收藏夹
+    load_folders_failed: 获取收藏夹列表失败，请稍后刷新重试
+    empty: 尚未设置规则。从上方选择收藏夹后为其添加条件。
+    folder_missing: 当前账号下找不到该收藏夹，整理时会跳过
+    remove_folder: 移除该收藏夹的规则
+    add_rule: 添加规则
+    rule_index: 规则 {index}
+    remove_rule: 删除规则
+    rule_empty: 未设置条件，此规则不会生效
+    or: 或
+    up: UP 主
+    up_placeholder: 输入 UID、空间链接或昵称后按回车
+    up_already_added: 该 UP 主已在此规则中
+    zone: 分区
+    zone_placeholder: 添加分区（主分区包含其全部子分区）
+    title_keyword: 标题关键词
+    title_keyword_placeholder: 输入关键词后按回车，不区分大小写
+    triple_synced: 已同步到收藏夹：{folders}
+    triple_sync_failed: 三连后同步收藏夹失败
   wanted_users:
     enter_query: 请输入 UP 主 UID 或昵称
     no_results: 没有找到相关 UP 主，请尝试其他昵称
