@@ -4,7 +4,7 @@ import 'uno.css'
 import { createApp } from 'vue'
 
 import { startIframeThemeListener, useDark } from '~/composables/useDark'
-import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG } from '~/constants/contentScript'
+import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG, PAGE_STYLE_GATE_ATTRIBUTE } from '~/constants/contentScript'
 import { BEWLY_IFRAME_DRAWER_HOST_CLASS, BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { localSettings, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
@@ -13,6 +13,7 @@ import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import api from '~/utils/api'
 import { applyBewlyWidescreen, BEWLY_WIDESCREEN_USER_EXIT, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, prepareBewlyWidescreenLoading } from '~/utils/bewlyWidescreen'
 import { isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
+import { isInBilibiliLiveContext } from '~/utils/bilibiliLive'
 import { stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
@@ -70,13 +71,29 @@ const contentScriptGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__?: boolean
   __BEWLYCAT_PAGE_LOADING__?: PageLoadingGuard
 }
+// 直播站及其内嵌框架中不执行任何页面处理。
 const shouldInitializeContentScript = !contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__
+  && !isInBilibiliLiveContext()
 const bundledShadowStyleText = contentScriptGlobal.__BEWLYCAT_BUNDLED_STYLE_TEXT__
 const contentScriptManifest = browser.runtime.getManifest()
 const contentScriptRuntimeUrl = browser.runtime.getURL('')
 
 if (shouldInitializeContentScript) {
   contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__ = true
+  // 打开页面级样式的门槛；未运行 content script 的框架不应用任何 BewlyCat 样式。
+  // document_start 时根元素偶尔尚未创建，等它出现后再设置。
+  if (document.documentElement) {
+    document.documentElement.setAttribute(PAGE_STYLE_GATE_ATTRIBUTE, '')
+  }
+  else {
+    const rootObserver = new MutationObserver(() => {
+      if (!document.documentElement)
+        return
+      document.documentElement.setAttribute(PAGE_STYLE_GATE_ATTRIBUTE, '')
+      rootObserver.disconnect()
+    })
+    rootObserver.observe(document, { childList: true })
+  }
   browser.runtime.onMessage.addListener((message: unknown) => {
     if (typeof message === 'object' && message !== null && 'type' in message && message.type === CONTENT_SCRIPT_PING) {
       const expected = 'expectedIdentity' in message ? message.expectedIdentity : undefined

@@ -2,6 +2,7 @@
 import { isSearchResultApiPath } from '~/constants/searchApi'
 import COMMENT_REPLY_TREE_GUIDES_CSS from '~/styles/commentReplyTree.scss?inline'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
+import { isInBilibiliLiveContext } from '~/utils/bilibiliLive'
 import { CommentReplyPageCache } from '~/utils/commentReplyPageCache'
 import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/commentReplyTree'
 import { formatCommentReplyGuideCoordinate, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
@@ -30,7 +31,9 @@ const settingsReadyPromise = new Promise<void>((resolve) => {
 const pageScriptGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_PAGE_SCRIPT_INITIALIZED__?: boolean
 }
+// 直播站及其内嵌框架中不改写任何页面全局对象。
 const shouldInitializePageScript = !pageScriptGlobal.__BEWLYCAT_PAGE_SCRIPT_INITIALIZED__
+  && !isInBilibiliLiveContext()
 
 if (shouldInitializePageScript)
   pageScriptGlobal.__BEWLYCAT_PAGE_SCRIPT_INITIALIZED__ = true
@@ -41,8 +44,7 @@ if (isElectronEnv) {
 }
 else if (shouldInitializePageScript) {
   let localLoudness: ReturnType<typeof createLocalLoudnessController> | undefined
-  // 直播间不启用音量均衡，不改写其播放器的音频节点。
-  if (typeof AudioContext !== 'undefined' && location.hostname !== 'live.bilibili.com') {
+  if (typeof AudioContext !== 'undefined') {
     try {
       localLoudness = createLocalLoudnessController()
     }

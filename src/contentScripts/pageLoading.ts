@@ -1,4 +1,5 @@
 import { BEWLY_MOUNTED } from '../constants/globalEvents'
+import { isInBilibiliLiveContext } from '../utils/bilibiliLive'
 import { stripBilibiliLocalePathname } from '../utils/bilibiliLocale'
 
 export interface PageLoadingGuard {
@@ -11,7 +12,7 @@ const loadingGlobal = globalThis as typeof globalThis & {
   __BEWLYCAT_PAGE_LOADING__?: PageLoadingGuard
 }
 
-if (!/Electron/i.test(navigator.userAgent) && !loadingGlobal.__BEWLYCAT_PAGE_LOADING__) {
+if (!/Electron/i.test(navigator.userAgent) && !loadingGlobal.__BEWLYCAT_PAGE_LOADING__ && !isInBilibiliLiveContext()) {
   const isHomepage = window === window.top
     && /^(?:www\.)?bilibili\.com$/.test(location.hostname)
     && ['/', '/index.html'].includes(stripBilibiliLocalePathname(location.pathname))

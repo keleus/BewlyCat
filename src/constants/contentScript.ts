@@ -13,6 +13,9 @@ export const CONTENT_SCRIPT_HOSTS = [
 
 export const CONTENT_SCRIPT_MATCHES = CONTENT_SCRIPT_HOSTS.map(host => `*://${host}/*`)
 
+// manifest 注入的页面级样式只在 <html> 带有该属性时生效，由 content script 启动时设置。
+export const PAGE_STYLE_GATE_ATTRIBUTE = 'data-bewlycat'
+
 export const CONTENT_SCRIPT_EXCLUDE_MATCHES = [
   '*://www.bilibili.com/match/game*',
   '*://www.bilibili.com/toy*',

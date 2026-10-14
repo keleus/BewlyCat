@@ -3,6 +3,7 @@ import type { Plugin } from 'vite'
 import { defineConfig } from 'vite'
 
 import packageJson from './package.json'
+import { scopePageStyles } from './scripts/scopePageStyles'
 import { isDev, isFirefox, isSafari, r } from './scripts/utils'
 import { sharedConfig } from './vite.config'
 
@@ -34,6 +35,8 @@ function embedContentScriptStyles(): Plugin {
         ? styleAsset.source
         : new TextDecoder().decode(styleAsset.source)
       contentScriptChunk.code = `globalThis.${BUNDLED_STYLE_GLOBAL}=${JSON.stringify(css)};\n${contentScriptChunk.code}`
+      // Shadow DOM 使用上面的原样式；manifest 注入页面的副本加上运行门槛。
+      styleAsset.source = scopePageStyles(css)
     },
   }
 }
