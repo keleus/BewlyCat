@@ -14,7 +14,8 @@ const error = ref('')
 const candidates = ref<FavoriteOrganizerUp[]>([])
 
 function stripSearchHighlight(value: unknown) {
-  return String(value || '').replace(/<[^>]*>/g, '').trim()
+  // 移除高亮标签后再清掉残留尖括号，避免嵌套标签拼接出新的标签
+  return String(value || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim()
 }
 
 function parseMid(input: string): string {
