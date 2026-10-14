@@ -2775,6 +2775,27 @@ function playPreview(event: Event) {
   void video.play().catch(() => {})
 }
 
+/** 删除动态后就地移除卡片，不重新分配列，并同步清理缓存避免恢复时再次出现。 */
+function removeMoment(moment: DisplayMoment) {
+  const keep = (item: DisplayMoment) => item.id !== moment.id
+  handleMediaLeave(moment)
+  moments.value = moments.value.filter(keep)
+  momentColumns.value = momentColumns.value.map(column => column.filter(keep))
+  rebuildColumnMetrics()
+  updateVirtualColumns()
+
+  if (wantedFeedBuffer)
+    wantedFeedBuffer = { ...wantedFeedBuffer, items: wantedFeedBuffer.items.filter(keep) }
+  const cache = momentsFeedCache.value
+  if (Object.values(cache).some(entry => entry?.items.some(item => !keep(item)) || entry?.continuation?.items.some(item => !keep(item)))) {
+    momentsFeedCache.value = Object.fromEntries(Object.entries(cache).map(([filter, entry]) => [filter, entry && {
+      ...entry,
+      items: entry.items.filter(keep),
+      continuation: entry.continuation && { ...entry.continuation, items: entry.continuation.items.filter(keep) },
+    }]))
+  }
+}
+
 async function toggleMomentLike(moment: DisplayMoment) {
   if (likingMomentIds.has(moment.id) || moment.isLikeDisabled)
     return
@@ -4008,6 +4029,7 @@ watch(
                 @open-lottery="lotteryDialogUrl = $event"
                 @toggle-like="toggleMomentLike"
                 @toggle-reservation="toggleMomentReservation"
+                @removed="removeMoment"
               />
               <div v-if="column.bottomPad" class="moments-grid__spacer" :style="{ height: `${column.bottomPad}px` }" />
             </div>

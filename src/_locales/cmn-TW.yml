@@ -1727,6 +1727,30 @@ moment_card:
   like_unsupported: 此動態暫不支援按讚
   unlike: 取消按讚
   like: 按讚
+  copy_link: 複製動態連結
+  report: 檢舉
+  delete: 刪除動態
+  delete_title: 刪除動態
+  delete_confirm: 確定要刪除這則動態嗎？
+  delete_success: 刪除成功
+  delete_failed: 動態刪除失敗，請稍後再試
+  report_title: 檢舉動態
+  report_select_reason: 請選擇檢舉理由
+  report_remark_placeholder: 請補充問題類型和出現位置等詳細資訊
+  report_remark_required: 選擇「其他」時請填寫檢舉說明
+  report_success: 檢舉成功
+  report_failed: 檢舉失敗，請稍後再試
+  report_reasons:
+    spam: 垃圾廣告
+    inciting_conflict: 引戰
+    pornography: 色情
+    personal_attack: 人身攻擊
+    illegal_content: 違法資訊
+    political_rumors: 涉政謠言
+    social_event_rumor: 涉社會事件謠言
+    false_information: 虛假不實資訊
+    illegal_link: 違法資訊外連
+    other: 其他
 user_card:
   followed: 已關注
   follow: 關注

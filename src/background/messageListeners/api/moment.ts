@@ -20,6 +20,11 @@ function serializeCommentForm(body: Record<string, any>) {
   return form
 }
 
+// 与 Web 端一致：三点菜单删除项附带的 params 原样提交，再以当前动态 id 覆盖。
+function serializeMomentRemoveBody(body: Record<string, any>) {
+  return JSON.stringify({ ...body.extra, dyn_id_str: String(body.dyn_id_str || '') })
+}
+
 // 运行时消息只能传可序列化数据，图片以 data URL 进入后台后再还原为 multipart 文件。
 function serializeImageUpload(body: Record<string, any>) {
   const match = /^data:([^;,]+);base64,([\w+/=]+)$/.exec(String(body.file_up || ''))
@@ -171,6 +176,28 @@ const API_MOMENT = {
     params: {
       csrf: '',
     },
+    afterHandle: AHS.J_D,
+  },
+  removeMoment: {
+    url: 'https://api.bilibili.com/x/dynamic/feed/operate/remove',
+    _fetch: {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      body: { dyn_id_str: '', extra: {} as Record<string, unknown> },
+      bodySerializer: serializeMomentRemoveBody,
+    },
+    params: { csrf: '', platform: 'web' },
+    afterHandle: AHS.J_D,
+  },
+  reportMoment: {
+    url: 'https://api.bilibili.com/x/dynamic/feed/dynamic_report/add',
+    _fetch: {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      // reason_type 为 0（其他）时才提交说明，其余理由与 Web 端一致传 null。
+      body: { accused_uid: 0, dynamic_id: '', reason_type: 0, reason_desc: null as string | null },
+    },
+    params: { csrf: '' },
     afterHandle: AHS.J_D,
   },
   getRepostConfig: {

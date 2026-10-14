@@ -12,13 +12,13 @@ import { computeFloatingMenuPosition } from '~/utils/floatingMenu'
 import { normalizeWatchLaterTarget } from '~/utils/watchLaterActions'
 
 import type { Author, Video } from '../VideoCard/types'
-import VideoCardContextMenu from '../VideoCard/VideoCardContextMenu/VideoCardContextMenu.vue'
 import { createCommentPreview, toggleCommentPreview } from './commentPreview'
 import { isMomentLotteryUrl } from './lottery'
 import MomentAdditionalCard from './MomentAdditionalCard.vue'
 import MomentAuthorHeader from './MomentAuthorHeader.vue'
 import MomentCardFooter from './MomentCardFooter.vue'
 import MomentComments from './MomentComments.vue'
+import MomentContextMenu from './MomentContextMenu.vue'
 import MomentDescription from './MomentDescription.vue'
 import MomentForwardCard from './MomentForwardCard.vue'
 import MomentForwardVideo from './MomentForwardVideo.vue'
@@ -79,6 +79,7 @@ const emit = defineEmits<{
   openLink: [payload: { url: string, kind: MomentLinkKind, video?: DisplayForwardVideo }]
   toggleLike: [moment: DisplayMoment]
   toggleReservation: [moment: DisplayMoment]
+  removed: [moment: DisplayMoment]
 }>()
 
 const { t } = useI18n()
@@ -178,7 +179,7 @@ const showVideoCoverStats = computed(() =>
 )
 
 // The shared context menu expects the same video shape as VideoCard. A dynamic
-// video without a stable aid is intentionally left without a menu instead of
+// video without a stable aid falls back to the moment-only menu instead of
 // manufacturing an id that could make copy/dislike actions target the wrong
 // video.
 function getMenuVideo(source: {
@@ -237,10 +238,6 @@ const menuVideo = computed<Video | null>(() => {
   })
 })
 
-const menuButtonLabel = computed(() => menuVideo.value
-  ? t('video_card.operation.more_options')
-  : '')
-
 const cardHref = computed(() => {
   if (moment.isLive && moment.roomId)
     return `https://live.bilibili.com/${moment.roomId}`
@@ -256,7 +253,7 @@ function handleMoreBtnClick(event: Event) {
   event.stopPropagation()
   event.preventDefault()
 
-  if (!menuVideo.value || !moreBtnRef.value)
+  if (!moreBtnRef.value)
     return
 
   const anchor = moreBtnRef.value.getBoundingClientRect()
@@ -534,7 +531,6 @@ function handleAdditionalClick(event: MouseEvent) {
       >
         <template #actions>
           <button
-            v-if="menuVideo"
             ref="moreBtnRef"
             type="button"
             class="moment-card__more-btn"
@@ -543,10 +539,10 @@ function handleAdditionalClick(event: MouseEvent) {
             data-layout-settings-page="video-card"
             data-layout-settings-title-key="settings.group_video_card_context_menu"
             :class="{ 'is-open': showVideoOptions }"
-            :aria-label="menuButtonLabel"
+            :aria-label="t('video_card.operation.more_options')"
             aria-haspopup="menu"
             :aria-expanded="showVideoOptions"
-            :title="menuButtonLabel"
+            :title="t('video_card.operation.more_options')"
             @click.stop.prevent="handleMoreBtnClick"
             @keydown.enter.stop.prevent="handleMoreBtnClick"
             @keydown.space.stop.prevent="handleMoreBtnClick"
@@ -731,15 +727,16 @@ function handleAdditionalClick(event: MouseEvent) {
       </div>
 
       <Teleport
-        v-if="showVideoOptions && menuVideo"
+        v-if="showVideoOptions"
         :to="mainAppRef"
       >
-        <VideoCardContextMenu
+        <MomentContextMenu
+          :moment="moment"
           :video="menuVideo"
-          :context-menu-styles="videoOptionsFloatingStyles"
-          hide-block-user
+          :menu-styles="videoOptionsFloatingStyles"
+          :trigger-element="moreBtnRef"
           @close="closeVideoOptions"
-          @removed="closeVideoOptions"
+          @removed="emit('removed', moment)"
         />
       </Teleport>
 

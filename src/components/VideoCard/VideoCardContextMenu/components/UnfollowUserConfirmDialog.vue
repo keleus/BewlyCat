@@ -3,7 +3,7 @@ import type { Video } from '~/components/VideoCard/types'
 
 const props = defineProps<{
   modelValue: boolean
-  video: Video
+  video: Pick<Video, 'author'>
 }>()
 
 const emit = defineEmits<{

@@ -1812,6 +1812,30 @@ moment_card:
   like_unsupported: Likes are unavailable for this post
   unlike: Unlike
   like: Like
+  copy_link: Copy post link
+  report: Report
+  delete: Delete post
+  delete_title: Delete post
+  delete_confirm: Are you sure you want to delete this post?
+  delete_success: Post deleted
+  delete_failed: Failed to delete the post. Please try again later
+  report_title: Report post
+  report_select_reason: Select a reason for reporting
+  report_remark_placeholder: Describe the issue and where it appears
+  report_remark_required: Please describe the issue when choosing "Other"
+  report_success: Report submitted
+  report_failed: Failed to submit the report. Please try again later
+  report_reasons:
+    spam: Spam or ads
+    inciting_conflict: Inciting conflict
+    pornography: Pornography
+    personal_attack: Personal attack
+    illegal_content: Illegal content
+    political_rumors: Political rumors
+    social_event_rumor: Rumors about social events
+    false_information: False information
+    illegal_link: Links to illegal content
+    other: Other
 user_card:
   followed: Followed
   follow: Follow

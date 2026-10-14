@@ -1,4 +1,5 @@
 import type { DataItem } from '~/models/moment/moment'
+import { ThreePointItemType } from '~/models/moment/moment'
 import { i18n } from '~/utils/i18n'
 
 import { isMomentLotteryUrl } from './lottery'
@@ -433,6 +434,8 @@ export function mapMoment(item: DataItem): MappedMoment {
   )?.desc
   const hotCommentText = normalizeDescText(commentInteraction)
   const hotCommentRichText = extractRichTextSegments(String(id), commentInteraction?.rich_text_nodes)
+  const threePointItems = raw.modules?.module_more?.three_point_items || []
+  const deleteItem = threePointItems.find(item => item?.type === ThreePointItemType.ThreePointDelete)
 
   const moment: DisplayMoment = {
     id,
@@ -461,6 +464,9 @@ export function mapMoment(item: DataItem): MappedMoment {
     forwardCount: Number(raw.modules?.module_stat?.forward?.count || 0),
     isForwardDisabled: Boolean(raw.modules?.module_stat?.forward?.forbidden),
     commentCount: Number(raw.modules?.module_stat?.comment?.count || 0),
+    canDelete: Boolean(deleteItem),
+    deleteParams: deleteItem?.params,
+    canReport: threePointItems.some(item => item?.type === ThreePointItemType.ThreePointReport),
     commentTarget: raw.basic?.comment_id_str && Number(raw.basic.comment_type) > 0
       ? { oid: raw.basic.comment_id_str, type: Number(raw.basic.comment_type) }
       : undefined,

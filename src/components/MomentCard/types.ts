@@ -63,6 +63,12 @@ export interface DisplayMoment {
   forwardCount?: number
   isForwardDisabled?: boolean
   commentCount: number
+  /** 接口三点菜单是否提供删除；旧缓存缺少该字段时按作者是否为当前账号推断。 */
+  canDelete?: boolean
+  /** 三点菜单删除项附带的提交参数 */
+  deleteParams?: Record<string, unknown>
+  /** 接口三点菜单是否提供举报 */
+  canReport?: boolean
   /** 使用当前动态的 basic 字段定位评论区，转发不能继承原动态的评论区。 */
   commentTarget?: { oid: string, type: number }
   /** 动态列表接口附带的评论互动摘要（type = 1） */
