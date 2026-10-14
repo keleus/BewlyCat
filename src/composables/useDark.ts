@@ -13,7 +13,8 @@ let isScheduleClockStarted = false
 let lastThemeChangeState: boolean | undefined
 let lastDarkModeBaseColor: string | undefined
 
-function startIframeThemeListener() {
+// content script 需在 document_start 同步调用，避免等设置加载期间漏掉父窗口在 load 后发送的主题。
+export function startIframeThemeListener() {
   if (isIframeThemeListenerStarted || typeof window === 'undefined' || window.parent === window)
     return
 

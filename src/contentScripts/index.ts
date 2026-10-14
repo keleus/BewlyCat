@@ -3,7 +3,7 @@ import 'uno.css'
 
 import { createApp } from 'vue'
 
-import { useDark } from '~/composables/useDark'
+import { startIframeThemeListener, useDark } from '~/composables/useDark'
 import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG } from '~/constants/contentScript'
 import { BEWLY_IFRAME_DRAWER_HOST_CLASS, BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { localSettings, settings, settingsReady } from '~/logic'
@@ -1666,6 +1666,9 @@ else if (shouldInitializeContentScript) {
       })
     }
   })
+
+  // useDark() 要等设置加载后才执行，提前记录父页面主题，之后由它继承。
+  startIframeThemeListener()
 
   // 监听来自父页面的黑暗模式切换消息（用于iframe跨域场景）
   window.addEventListener('message', (event) => {
