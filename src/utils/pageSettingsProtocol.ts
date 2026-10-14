@@ -6,6 +6,8 @@ export interface PageSettingsPayload {
   localLoudnessEnabled: boolean
   localLoudnessTarget: number
   localLoudnessStrength: number
+  /** 收藏夹整理需要在三连后同步时，页面脚本才监听三连请求。 */
+  observeTripleRequests: boolean
   adjustCommentImageHeight: boolean
   cleanShareLinkIncludeTitle: boolean
   cleanShareLinkRemoveTrackingParams: boolean
@@ -68,6 +70,11 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     localLoudnessStrength: typeof value.localLoudnessStrength === 'number' && Number.isFinite(value.localLoudnessStrength)
       ? Math.max(40, Math.min(100, value.localLoudnessStrength))
       : 75,
+    // 页面脚本会再次校验已转换的 payload，此时直接沿用字段。
+    observeTripleRequests: value.observeTripleRequests === true
+      || (value.favoriteOrganizerSyncAfterTriple === true
+        && Array.isArray(value.favoriteOrganizerFolders)
+        && value.favoriteOrganizerFolders.length > 0),
     adjustCommentImageHeight: value.adjustCommentImageHeight,
     cleanShareLinkIncludeTitle: value.cleanShareLinkIncludeTitle,
     cleanShareLinkRemoveTrackingParams: value.cleanShareLinkRemoveTrackingParams,
@@ -84,5 +91,47 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     showIPLocation: value.showIPLocation,
     showSex: value.showSex,
     skipConciseDanmaku: value.skipConciseDanmaku !== false,
+  }
+}
+
+/**
+ * 页面启动快照：主站 localStorage 中保存决定 document_start 钩子是否安装的开关。
+ * 页面脚本启动时设置尚未送达，只能同步读取上一次加载写入的值；
+ * 快照缺失或无法读取时调用方按默认行为处理，不能据此跳过默认开启的功能。
+ */
+export interface PageBootSnapshot {
+  preventMobileRedirect: boolean
+  skipConciseDanmaku: boolean
+}
+
+const PAGE_BOOT_SNAPSHOT_KEY = 'bewlycat:page-boot'
+
+export function readPageBootSnapshot(): Partial<PageBootSnapshot> | null {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(PAGE_BOOT_SNAPSHOT_KEY) ?? 'null')
+    if (!isRecord(value))
+      return null
+    return {
+      preventMobileRedirect: typeof value.preventMobileRedirect === 'boolean' ? value.preventMobileRedirect : undefined,
+      skipConciseDanmaku: typeof value.skipConciseDanmaku === 'boolean' ? value.skipConciseDanmaku : undefined,
+    }
+  }
+  catch {
+    return null
+  }
+}
+
+export function writePageBootSnapshot(settings: PageSettingsPayload) {
+  const snapshot: PageBootSnapshot = {
+    preventMobileRedirect: settings.preventMobileRedirect,
+    skipConciseDanmaku: settings.skipConciseDanmaku,
+  }
+  try {
+    const value = JSON.stringify(snapshot)
+    if (localStorage.getItem(PAGE_BOOT_SNAPSHOT_KEY) !== value)
+      localStorage.setItem(PAGE_BOOT_SNAPSHOT_KEY, value)
+  }
+  catch {
+    // 存储不可用时下次加载按默认行为安装钩子
   }
 }

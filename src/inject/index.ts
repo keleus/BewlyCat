@@ -9,7 +9,7 @@ import { getCommentSexIcon, normalizeCommentLocation } from '~/utils/commentUser
 import { i18n } from '~/utils/i18n'
 import { isElectron } from '~/utils/main'
 import type { PageSettingsPayload } from '~/utils/pageSettingsProtocol'
-import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
+import { createPageSettingsPayload, readPageBootSnapshot } from '~/utils/pageSettingsProtocol'
 
 import { createLocalLoudnessController } from './audio/localLoudness'
 
@@ -40,9 +40,24 @@ if (isElectronEnv) {
   console.warn('[BewlyCat] Detected Electron environment, extension disabled.')
 }
 else if (shouldInitializePageScript) {
-  const localLoudness = typeof AudioContext !== 'undefined' ? createLocalLoudnessController() : undefined
+  let localLoudness: ReturnType<typeof createLocalLoudnessController> | undefined
+  // 直播间不启用音量均衡，不改写其播放器的音频节点。
+  if (typeof AudioContext !== 'undefined' && location.hostname !== 'live.bilibili.com') {
+    try {
+      localLoudness = createLocalLoudnessController()
+    }
+    catch (error) {
+      console.warn('[BewlyCat] Failed to install local loudness control.', error)
+    }
+  }
+  const isBilibiliWwwPage = isBilibiliWwwUrl(location.href)
+  // 启动快照来自主站上一次加载；跨子域或快照缺失时为 null，按默认行为处理。
+  const pageBootSnapshot = isBilibiliWwwPage ? readPageBootSnapshot() : null
+
   // 根据兼容性设置动态返回桌面 UA，默认保持浏览器原始值。
-  if (isBilibiliWwwUrl(location.href)) {
+  // 防移动端跳转默认关闭，快照确认关闭时不改写 navigator；刚开启时由网络层
+  // 规则兜底，页面内覆盖在快照更新后的下一次加载生效。
+  if (isBilibiliWwwPage && pageBootSnapshot?.preventMobileRedirect !== false) {
     const originalNavigatorValues = {
       appVersion: navigator.appVersion,
       platform: navigator.platform,
@@ -102,15 +117,18 @@ else if (shouldInitializePageScript) {
     if (!abTest || typeof abTest !== 'object' || patchedAbTests.has(abTest))
       return
 
-    const descriptor = Object.getOwnPropertyDescriptor(abTest, danmakuThreeStateExpKey)
-    let originalValue: unknown = descriptor?.value
     try {
+      const descriptor = Object.getOwnPropertyDescriptor(abTest, danmakuThreeStateExpKey)
+      // 已被其他脚本改成访问器时不再叠加覆盖
+      if (descriptor && !('value' in descriptor))
+        return
+      let originalValue: unknown = descriptor?.value
       Object.defineProperty(abTest, danmakuThreeStateExpKey, {
         configurable: true,
         enumerable: descriptor?.enumerable ?? false,
         get: () => {
           // 设置未送达时按默认值（跳过）处理
-          skipConciseDanmaku ??= currentSettings?.skipConciseDanmaku ?? true
+          skipConciseDanmaku ??= currentSettings?.skipConciseDanmaku ?? pageBootSnapshot?.skipConciseDanmaku ?? true
           return skipConciseDanmaku ? 'false' : originalValue
         },
         set: (value: unknown) => {
@@ -124,22 +142,29 @@ else if (shouldInitializePageScript) {
     }
   }
 
-  try {
-    let webAbTest: unknown = (window as Window & { webAbTest?: unknown }).webAbTest
-    patchDanmakuThreeStateExp(webAbTest)
-    // 页面内联脚本会整体赋值 window.webAbTest，需要在赋值时补上覆盖
-    Object.defineProperty(window, 'webAbTest', {
-      configurable: true,
-      enumerable: true,
-      get: () => webAbTest,
-      set: (value: unknown) => {
-        webAbTest = value
-        patchDanmakuThreeStateExp(value)
-      },
-    })
-  }
-  catch {
-    // window.webAbTest 不可重定义时保持 B 站原行为
+  // 只有主站播放页使用该实验；其他子域不改写全局实验对象，已被其他脚本接管时也不叠加。
+  // 快照确认已关闭「跳过精简弹幕」时不安装；快照缺失按默认开启处理。
+  const windowAbTestDescriptor = Object.getOwnPropertyDescriptor(window, 'webAbTest')
+  if (isBilibiliWwwPage
+    && pageBootSnapshot?.skipConciseDanmaku !== false
+    && (!windowAbTestDescriptor || 'value' in windowAbTestDescriptor)) {
+    try {
+      let webAbTest: unknown = windowAbTestDescriptor?.value
+      patchDanmakuThreeStateExp(webAbTest)
+      // 页面内联脚本会整体赋值 window.webAbTest，需要在赋值时补上覆盖
+      Object.defineProperty(window, 'webAbTest', {
+        configurable: true,
+        enumerable: true,
+        get: () => webAbTest,
+        set: (value: unknown) => {
+          webAbTest = value
+          patchDanmakuThreeStateExp(value)
+        },
+      })
+    }
+    catch {
+      // window.webAbTest 不可重定义时保持 B 站原行为
+    }
   }
 
   // 之前inject.js的内容
@@ -2224,24 +2249,31 @@ else if (shouldInitializePageScript) {
           queueMicrotask(() => updateCommentReplyPaginationHead(this))
           if (!isCommentReplyLoadMoreEnabled() || this.showPagination !== true || !Array.isArray(items))
             return items
-          const state = getCommentReplyPaginationState(this)
-          const currentPage = Number(this.currentPage) || 1
-          if (state.loading || state.expandAllLoading) {
-            return [{ text: pageT('inject.loading'), idx: currentPage, clickable: false }]
+          // 该 getter 在 Lit 渲染中调用，增强失败时退回原生分页，不能中断渲染。
+          try {
+            const state = getCommentReplyPaginationState(this)
+            const currentPage = Number(this.currentPage) || 1
+            if (state.loading || state.expandAllLoading) {
+              return [{ text: pageT('inject.loading'), idx: currentPage, clickable: false }]
+            }
+            if (state.allRepliesExpanded) {
+              return []
+            }
+            const totalPage = Number(this.totalPage) || 0
+            const hasNext = currentPage < totalPage
+            return [
+              ...(hasNext ? [{ text: pageT('inject.load_more'), idx: currentPage, clickable: true }] : []),
+              {
+                text: getCommentReplyBatchLabel(this),
+                idx: COMMENT_REPLY_EXPAND_ALL_IDX,
+                clickable: true,
+              },
+            ]
           }
-          if (state.allRepliesExpanded) {
-            return []
+          catch (error) {
+            console.warn('[BewlyCat] Failed to build reply pagination items.', error)
+            return items
           }
-          const totalPage = Number(this.totalPage) || 0
-          const hasNext = currentPage < totalPage
-          return [
-            ...(hasNext ? [{ text: pageT('inject.load_more'), idx: currentPage, clickable: true }] : []),
-            {
-              text: getCommentReplyBatchLabel(this),
-              idx: COMMENT_REPLY_EXPAND_ALL_IDX,
-              clickable: true,
-            },
-          ]
         },
       })
     }
@@ -2254,9 +2286,14 @@ else if (shouldInitializePageScript) {
         writable: true,
         value(this: any, ...args: any[]) {
           const cleanup = (captureCollapsedList: boolean) => {
-            // 原生收起只结束未完成请求；已加载页必须留给下次展开继续追加。
-            suspendCommentReplyPaginationForNativeCollapse(this, captureCollapsedList)
-            clearCommentReplyTreeState(this)
+            try {
+              // 原生收起只结束未完成请求；已加载页必须留给下次展开继续追加。
+              suspendCommentReplyPaginationForNativeCollapse(this, captureCollapsedList)
+              clearCommentReplyTreeState(this)
+            }
+            catch (error) {
+              console.warn('[BewlyCat] Failed to reset reply pagination state.', error)
+            }
           }
           cleanup(false)
           let result: any
@@ -2595,9 +2632,14 @@ else if (shouldInitializePageScript) {
         finally {
           // 分页状态保存在 WeakMap 中；临时折叠后若复用同一实例仍可恢复，
           // 这里只释放会形成强引用的树布局与全局可迭代集合。
-          suspendCommentReplyPaginationForNativeCollapse(this, true)
-          getCommentReplyPageCache(this)?.stop()
-          clearCommentReplyTreeState(this)
+          try {
+            suspendCommentReplyPaginationForNativeCollapse(this, true)
+            getCommentReplyPageCache(this)?.stop()
+            clearCommentReplyTreeState(this)
+          }
+          catch (error) {
+            console.warn('[BewlyCat] Failed to clean up reply renderer state.', error)
+          }
         }
       },
     })
@@ -4795,15 +4837,31 @@ else if (shouldInitializePageScript) {
       }
     }
 
-    const { define: originalDefine } = window.customElements
-    window.customElements.define = new Proxy(originalDefine, {
-      apply: (target, thisArg, args) => {
-        const [name, classConstructor] = args
-        if (typeof name === 'string')
-          patchCommentCustomElement(name, classConstructor)
-        return Reflect.apply(target, thisArg, args)
-      },
-    })
+    // 补丁异常只能影响 BewlyCat 自身增强，不能抛进 B 站的组件注册流程，
+    // 否则调用方脚本会在 define 处中断，评论、懒加载等后续初始化随之失效。
+    const safePatchCommentCustomElement = (name: string, classConstructor: unknown) => {
+      try {
+        patchCommentCustomElement(name, classConstructor)
+      }
+      catch (error) {
+        console.warn(`[BewlyCat] Failed to patch ${name}.`, error)
+      }
+    }
+
+    try {
+      const { define: originalDefine } = window.customElements
+      window.customElements.define = new Proxy(originalDefine, {
+        apply: (target, thisArg, args) => {
+          const [name, classConstructor] = args
+          if (typeof name === 'string')
+            safePatchCommentCustomElement(name, classConstructor)
+          return Reflect.apply(target, thisArg, args)
+        },
+      })
+    }
+    catch (error) {
+      console.warn('[BewlyCat] Failed to hook customElements.define.', error)
+    }
 
     // document_start 仍可能晚于页面内联脚本；回补已经注册的评论组件。
     const commentElementNames = new Set([
@@ -4814,7 +4872,7 @@ else if (shouldInitializePageScript) {
       'bili-comment-user-info',
     ])
     for (const name of commentElementNames)
-      patchCommentCustomElement(name, window.customElements.get(name))
+      safePatchCommentCustomElement(name, window.customElements.get(name))
   }
 
   // 添加消息监听器
@@ -4838,6 +4896,8 @@ else if (shouldInitializePageScript) {
       currentSettings = pageSettings
       localLoudness?.update({ enabled: pageSettings.localLoudnessEnabled, target: pageSettings.localLoudnessTarget, strength: pageSettings.localLoudnessStrength / 100 })
       preventMobileRedirectEnabled = pageSettings.preventMobileRedirect
+      if (pageSettings.observeTripleRequests)
+        installTripleRequestHooks()
       settingsReady = true
       refreshCommentReplyTrees()
       if (getCommentReplyTreeMode() === null)
@@ -4877,11 +4937,12 @@ else if (shouldInitializePageScript) {
     }
   }
 
-  const originalFetch = window.fetch
+  let originalFetch: typeof window.fetch | undefined
+  let tripleRequestHooksInstalled = false
 
   function fetchWithSearchSettings(thisArg: unknown, input: RequestInfo | URL, init?: RequestInit) {
     if (!currentSettings?.depersonalizeSearchResults)
-      return originalFetch.call(thisArg, input, init)
+      return originalFetch!.call(thisArg, input, init)
 
     const newInit: RequestInit = {
       ...init,
@@ -4889,9 +4950,9 @@ else if (shouldInitializePageScript) {
     }
 
     if (input instanceof Request)
-      return originalFetch.call(thisArg, new Request(input, newInit))
+      return originalFetch!.call(thisArg, new Request(input, newInit))
 
-    return originalFetch.call(thisArg, input, newInit)
+    return originalFetch!.call(thisArg, input, newInit)
   }
 
   // 一键三连成功后通知插件环境，由其按收藏夹整理规则同步到对应收藏夹。
@@ -4939,35 +5000,6 @@ else if (shouldInitializePageScript) {
     window.postMessage({ type: 'BEWLY_VIDEO_TRIPLE', ...readTripleTarget(body) }, window.location.origin)
   }
 
-  const originalXhrOpen = XMLHttpRequest.prototype.open
-  const originalXhrSend = XMLHttpRequest.prototype.send
-  const tripleXhrs = new WeakSet<XMLHttpRequest>()
-
-  XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, ...args: Parameters<XMLHttpRequest['open']>) {
-    if (isTripleRequestUrl(String(args[1])))
-      tripleXhrs.add(this)
-    else
-      tripleXhrs.delete(this)
-    return (originalXhrOpen as (...openArgs: Parameters<XMLHttpRequest['open']>) => void).apply(this, args)
-  } as XMLHttpRequest['open']
-
-  XMLHttpRequest.prototype.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
-    if (tripleXhrs.has(this)) {
-      this.addEventListener('load', () => {
-        try {
-          const response = this.responseType === 'json'
-            ? this.response
-            : this.responseType === '' || this.responseType === 'text'
-              ? JSON.parse(this.responseText)
-              : null
-          notifyTripleResult(response, body)
-        }
-        catch {}
-      }, { once: true })
-    }
-    return originalXhrSend.call(this, body)
-  }
-
   function observeTripleFetch(response: Promise<Response>, init?: RequestInit) {
     void response
       .then(res => res.clone().json())
@@ -4976,18 +5008,77 @@ else if (shouldInitializePageScript) {
     return response
   }
 
-  window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
-    if (isTripleRequestUrl(getFetchInputUrl(input)))
-      return observeTripleFetch(originalFetch.call(this, input, init), init)
-    if (isSearchResultFetch(input) && !settingsReady) {
-      return settingsReadyPromise.then(() => {
-        return fetchWithSearchSettings(this, input, init)
-      })
+  function isTripleFetch(input: RequestInfo | URL): boolean {
+    try {
+      return tripleRequestHooksInstalled && isTripleRequestUrl(getFetchInputUrl(input))
     }
-    if (isSearchResultFetch(input))
-      return fetchWithSearchSettings(this, input, init)
-    return originalFetch.call(this, input, init)
+    catch {
+      return false
+    }
   }
+
+  // 只在确有需要的页面或设置下改写 fetch/XHR，减少与 B 站及其他插件的
+  // 请求拦截叠加；包装层自身的判断失败时直接走原始请求。
+  function installFetchHook() {
+    if (originalFetch)
+      return
+    originalFetch = window.fetch
+    window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+      if (isTripleFetch(input))
+        return observeTripleFetch(originalFetch!.call(this, input, init), init)
+      if (isSearchResultFetch(input) && !settingsReady) {
+        return settingsReadyPromise.then(() => {
+          return fetchWithSearchSettings(this, input, init)
+        })
+      }
+      if (isSearchResultFetch(input))
+        return fetchWithSearchSettings(this, input, init)
+      return originalFetch!.call(this, input, init)
+    }
+  }
+
+  function installTripleRequestHooks() {
+    if (tripleRequestHooksInstalled)
+      return
+    tripleRequestHooksInstalled = true
+    installFetchHook()
+
+    const originalXhrOpen = XMLHttpRequest.prototype.open
+    const originalXhrSend = XMLHttpRequest.prototype.send
+    const tripleXhrs = new WeakSet<XMLHttpRequest>()
+
+    XMLHttpRequest.prototype.open = function (this: XMLHttpRequest, ...args: Parameters<XMLHttpRequest['open']>) {
+      try {
+        if (isTripleRequestUrl(String(args[1])))
+          tripleXhrs.add(this)
+        else
+          tripleXhrs.delete(this)
+      }
+      catch {}
+      return (originalXhrOpen as (...openArgs: Parameters<XMLHttpRequest['open']>) => void).apply(this, args)
+    } as XMLHttpRequest['open']
+
+    XMLHttpRequest.prototype.send = function (this: XMLHttpRequest, body?: Document | XMLHttpRequestBodyInit | null) {
+      if (tripleXhrs.has(this)) {
+        this.addEventListener('load', () => {
+          try {
+            const response = this.responseType === 'json'
+              ? this.response
+              : this.responseType === '' || this.responseType === 'text'
+                ? JSON.parse(this.responseText)
+                : null
+            notifyTripleResult(response, body)
+          }
+          catch {}
+        }, { once: true })
+      }
+      return originalXhrSend.call(this, body)
+    }
+  }
+
+  // 搜索请求在页面启动时发出，需在 document_start 安装；三连监听等设置送达后再按需安装。
+  if (window.location.hostname === 'search.bilibili.com')
+    installFetchHook()
 
   // 页面加载完成后初始化随机播放（功能已迁移到contentScripts）
 
@@ -5165,21 +5256,34 @@ else if (shouldInitializePageScript) {
   }
 
   // 拦截 navigator.clipboard.writeText，启用净化分享链接功能
-  const originalWriteText = navigator.clipboard.writeText.bind(navigator.clipboard)
-  navigator.clipboard.writeText = function (text: string) {
-    if (!currentSettings?.enableCleanShareLink)
-      return originalWriteText(text)
+  const clipboard = navigator.clipboard as Clipboard | undefined
+  if (clipboard?.writeText) {
+    const originalWriteText = clipboard.writeText.bind(clipboard)
+    const getCleanShareText = (text: string) => {
+      if (!currentSettings?.enableCleanShareLink || typeof text !== 'string')
+        return text
 
-    const isBilibiliShare = /【.+?】\s*https?:\/\//.test(text)
-    const hasBilibiliUrl = /https?:\/\/(?:www\.)?bilibili\.com\//.test(text) || /https?:\/\/b23\.tv\//.test(text)
+      const isBilibiliShare = /【.+?】\s*https?:\/\//.test(text)
+      const hasBilibiliUrl = /https?:\/\/(?:www\.)?bilibili\.com\//.test(text) || /https?:\/\/b23\.tv\//.test(text)
+      if (!isBilibiliShare && !hasBilibiliUrl)
+        return text
 
-    if (isBilibiliShare || hasBilibiliUrl) {
       const includeTitle = currentSettings?.cleanShareLinkIncludeTitle ?? false
       const removeTracking = currentSettings?.cleanShareLinkRemoveTrackingParams !== false
-      const cleanedText = cleanShareText(text, includeTitle, removeTracking)
-      return originalWriteText(cleanedText)
+      return cleanShareText(text, includeTitle, removeTracking)
     }
-
-    return originalWriteText(text)
+    try {
+      clipboard.writeText = function (text: string) {
+        let finalText = text
+        try {
+          finalText = getCleanShareText(text)
+        }
+        catch {}
+        return originalWriteText(finalText)
+      }
+    }
+    catch {
+      // writeText 不可改写时保留原生复制
+    }
   }
 }

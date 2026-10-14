@@ -12,6 +12,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import api from '~/utils/api'
 import { applyBewlyWidescreen, BEWLY_WIDESCREEN_USER_EXIT, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, prepareBewlyWidescreenLoading } from '~/utils/bewlyWidescreen'
+import { isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
 import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
@@ -22,7 +23,7 @@ import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl } from '~/utils/localWallpaper'
 import { getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
-import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
+import { createPageSettingsPayload, writePageBootSnapshot } from '~/utils/pageSettingsProtocol'
 import { isPhotoViewerOpen } from '~/utils/photoViewer'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, applyRememberedPlaybackRate, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isPlayerShowingEndingRecommendation, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, startPlaybackRateMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyPreservedOrDefaultCustomPlay, applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
@@ -1539,6 +1540,10 @@ else if (shouldInitializeContentScript) {
     const pageSettings = createPageSettingsPayload(value)
     if (!pageSettings)
       return
+
+    // 页面脚本下次在 document_start 据此决定是否安装 UA / 弹幕实验钩子。
+    if (isBilibiliWwwUrl(location.href))
+      writePageBootSnapshot(pageSettings)
 
     window.postMessage({
       type: 'BEWLY_SETTINGS_UPDATE',
