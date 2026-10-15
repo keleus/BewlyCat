@@ -34,6 +34,7 @@ import { setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
+import { loadCurrentVideoPageInfo } from '~/utils/videoPageInfo'
 import { recordVideoVisitFromUrl } from '~/utils/videoVisitHistory'
 import { ensureResponsiveViewport } from '~/utils/viewportMeta'
 
@@ -545,12 +546,18 @@ else if (shouldInitializeContentScript) {
       return
 
     playbackBehaviorScheduledForKey = navigationKey
+    // 结束行为按稿件分 P 数区分分 P 与合集，与等待播放器的时间并行请求。
+    const pageInfoRequest = loadCurrentVideoPageInfo()
     if (playbackBehaviorTimer)
       clearTimeout(playbackBehaviorTimer)
     playbackBehaviorTimer = setTimeout(() => {
       playbackBehaviorTimer = undefined
-      applyEndPlaybackBehavior()
-      startAutoExitFullscreenMonitoring()
+      void pageInfoRequest.then(() => {
+        if (playbackBehaviorScheduledForKey !== navigationKey)
+          return
+        applyEndPlaybackBehavior()
+        startAutoExitFullscreenMonitoring()
+      })
     }, 2000)
   }
 

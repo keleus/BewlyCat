@@ -5,6 +5,7 @@ import type { AutoPlayMode, DefaultVideoPlayerMode, VideoPlayerModeContext, Vide
 import { getBilibiliPathname } from '~/utils/bilibiliLocale'
 import { i18n } from '~/utils/i18n'
 import { normalizePlaybackRate, normalizePlaybackRateStep } from '~/utils/playbackRate'
+import { getCachedCurrentVideoPageInfo, getCurrentVideoPageNumber } from '~/utils/videoPageInfo'
 
 function t(key: string, params: Record<string, unknown> = {}) {
   return String(i18n.global.t(key, params))
@@ -509,6 +510,9 @@ export enum VideoType {
   PLAYLIST = 'playlist', // 收藏列表
 }
 
+// 新版合集中当前条目为多 P 稿件：标题行或分 P 子项带 active。
+const MULTIPART_ITEM_IN_COLLECTION_SELECTOR = '.video-pod__list.section .video-pod__item .multi-p .active'
+
 // 检测当前视频类型
 export function detectVideoType(): VideoType {
   if (isWatchLaterVideo())
@@ -524,38 +528,30 @@ export function detectVideoType(): VideoType {
     return VideoType.PLAYLIST
   }
 
-  // 优先根据当前稿件的分 P 数判断。合集可以包含多 P 稿件，
-  // 如果先根据右侧合集列表判断，这类稿件会错用合集的播放设置。
-  const app = document.querySelector('#app') as (Element & {
-    __vue__?: {
-      isSection?: boolean
-      videoData?: { videos?: number, pages?: unknown[] }
-    }
-  }) | null
-  const videoData = app?.__vue__?.videoData
-  const videosCount = videoData?.pages?.length || videoData?.videos
-  if (videosCount && videosCount > 1)
-    return VideoType.MULTIPART
+  // 优先根据当前稿件的分 P 数判断。合集可以混排单 P 与多 P 稿件，
+  // 多 P 稿件按分 P 处理，单 P 稿件才按合集处理。
+  const pageInfo = getCachedCurrentVideoPageInfo()
+  if (pageInfo) {
+    if (pageInfo.pageCount > 1)
+      return VideoType.MULTIPART
+    return pageInfo.inSeason ? VideoType.COLLECTION : VideoType.RECOMMEND
+  }
 
-  // 内容脚本未必能读取页面的 Vue 实例，仍需 DOM 兜底。
-  // video-pod__item 可以包着 simple-base-item，两者都是合集的同一条目，
-  // 不能用它们同时存在来证明当前稿件有多个分 P。
-  // 只接受分 P 专属列表或选集容器内的视图切换；已知单 P 时不再推测。
-  if (videosCount !== 1 && document.querySelector([
+  // 稿件信息未到或请求失败时按选集列表兜底。新版合集里的多 P 稿件
+  // 在当前条目下渲染 .multi-p 分 P 子列表；单 P 条目是 .single-p。
+  if (document.querySelector([
     '.multi-page .cur-list li',
     '.multi-page-v1 .cur-list li',
     '.multi-page .multi-page__item',
     '.multi-page .page-item',
-    '.video-pod .multip-list-item',
+    '.video-pod__list.multip .video-pod__item',
     '.video-pod .view-mode',
     '.multi-page .view-mode',
     '.multi-page-v1 .view-mode',
+    MULTIPART_ITEM_IN_COLLECTION_SELECTOR,
   ].join(', '))) {
     return VideoType.MULTIPART
   }
-
-  if (app?.__vue__?.isSection)
-    return VideoType.COLLECTION
 
   // 如果以上都不是，检测是否为合集视频（通过DOM）
   if (isCollectionVideo()) {
@@ -564,6 +560,40 @@ export function detectVideoType(): VideoType {
 
   // 默认为单视频推荐
   return VideoType.RECOMMEND
+}
+
+function isMultipartVideoInCollection(): boolean {
+  const pageInfo = getCachedCurrentVideoPageInfo()
+  if (pageInfo)
+    return pageInfo.inSeason && pageInfo.pageCount > 1
+  return !!document.querySelector(MULTIPART_ITEM_IN_COLLECTION_SELECTOR)
+}
+
+function isLastPageOfCurrentVideo(): boolean {
+  const pageInfo = getCachedCurrentVideoPageInfo()
+  if (pageInfo)
+    return getCurrentVideoPageNumber() >= pageInfo.pageCount
+
+  const activePage = document.querySelector<HTMLElement>('.video-pod__list.section .video-pod__item .page-item.active')
+  const pages = activePage?.parentElement?.querySelectorAll(':scope > .page-item')
+  return !!activePage && !!pages && activePage === pages[pages.length - 1]
+}
+
+/**
+ * 播完行为依据的视频类型。合集内的多 P 稿件未到最后一 P 时按分 P 设置在稿件内切 P，
+ * 最后一 P 再按合集设置决定是否进入合集下一集。
+ */
+function detectEndBehaviorVideoType(videoType = detectVideoType()): VideoType {
+  if (videoType !== VideoType.MULTIPART || !isMultipartVideoInCollection())
+    return videoType
+  return isLastPageOfCurrentVideo() ? VideoType.COLLECTION : VideoType.MULTIPART
+}
+
+/** 自定义播放操作的选集列表类型。合集内多 P 稿件的选集列表是合集条目，而不是分 P。 */
+export function detectCustomPlayListVideoType(videoType = detectVideoType()): VideoType {
+  return videoType === VideoType.MULTIPART && isMultipartVideoInCollection()
+    ? VideoType.COLLECTION
+    : videoType
 }
 
 export function detectVideoPlayerModeContext(): VideoPlayerModeContext | null {
@@ -859,12 +889,24 @@ export function getAutoPlayModeForVideoType(videoType = detectVideoType()): Auto
 }
 
 /** 当前结束行为是否允许自定义播放接管切集。播完暂停/单集循环仍走默认播放模式。 */
-export function doesEndBehaviorAllowCustomAdvance(videoType = detectVideoType()): boolean {
+function doesEndBehaviorAllowCustomAdvance(videoType: VideoType): boolean {
   if (settings.value.useBilibiliDefaultAutoPlay)
     return true
 
   const mode = getAutoPlayModeForVideoType(videoType)
   return mode === 'autoPlay' || mode === 'autoPlayWithRecommend' || mode === 'default'
+}
+
+/**
+ * 自定义播放是否接管当前视频的结束。合集内多 P 稿件未到最后一 P 时，
+ * 由分 P 设置在稿件内切 P；最后一 P 再按自定义顺序切到合集下一条目。
+ */
+export function canCustomPlayHandleCurrentEnd(): boolean {
+  const videoType = detectVideoType()
+  const endBehaviorVideoType = detectEndBehaviorVideoType(videoType)
+  if (endBehaviorVideoType !== detectCustomPlayListVideoType(videoType))
+    return false
+  return doesEndBehaviorAllowCustomAdvance(endBehaviorVideoType)
 }
 
 /** 播放器是否正在展示贴片广告。广告屏蔽插件跳过广告时不应被当成正片结束。 */
@@ -913,7 +955,7 @@ export function isPlayerShowingEndingRecommendation(): boolean {
 }
 
 /** 关闭 B 站原生的续播行为，让自定义播放独占视频结束后的切集。 */
-export function disableNativeEndPlaybackBehavior(videoType = detectVideoType()): void {
+export function disableNativeEndPlaybackBehavior(videoType = detectEndBehaviorVideoType()): void {
   captureNativeEndPlaybackBehavior(videoType)
   setLoopState(false)
   if (usesPlaylistHandoff(videoType))
@@ -923,11 +965,11 @@ export function disableNativeEndPlaybackBehavior(videoType = detectVideoType()):
 
 // 根据视频类型和设置应用自动连播状态
 export function applyAutoPlayByVideoType() {
-  const videoType = detectVideoType()
+  const videoType = detectEndBehaviorVideoType()
 
   // 自定义顺序/逆序/随机播放独占 ended 事件；播放器重建后继续关闭原生续播，
   // 避免官方逻辑与扩展同时抢着切下一集。播完暂停/单集循环仍交给默认播放模式。
-  if (customEndPlaybackHandlerActive && doesEndBehaviorAllowCustomAdvance(videoType)) {
+  if (customEndPlaybackHandlerActive && canCustomPlayHandleCurrentEnd()) {
     disableNativeEndPlaybackBehavior(videoType)
     return
   }
@@ -1714,21 +1756,13 @@ function checkAndCancelAutoPlayForRecommendation() {
   }
 
   // 检测当前视频类型,只在分P和合集视频中生效
-  const videoType = detectVideoType()
+  const videoType = detectEndBehaviorVideoType()
   if (videoType !== VideoType.MULTIPART && videoType !== VideoType.COLLECTION) {
     return
   }
 
   // 获取当前视频类型对应的自动播放模式
-  let mode: AutoPlayMode = 'default'
-  switch (videoType) {
-    case VideoType.MULTIPART:
-      mode = settings.value.autoPlayMultipart
-      break
-    case VideoType.COLLECTION:
-      mode = settings.value.autoPlayCollection
-      break
-  }
+  const mode = getAutoPlayModeForVideoType(videoType)
 
   // 如果是"自动播放(含推荐)"模式，不取消推荐视频的自动播放
   if (mode === 'autoPlayWithRecommend') {
