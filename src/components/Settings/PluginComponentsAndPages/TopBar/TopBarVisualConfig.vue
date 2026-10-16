@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 
-import bilibiliBrandLogoUrl from '~/assets/branding/bilibili-brand-logo.png'
+import bilibiliBrandLogoUrl from '~/assets/branding/bilibili-wordmark.png'
 import Button from '~/components/Button.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
