@@ -866,27 +866,39 @@ settings:
     failed: 整理失败：{message}
     rules_title: 整理规则
     rules_desc: 每个收藏夹可设置多条规则，满足任一规则即归入；同一条规则内的各项条件需同时满足，同一项条件填多个值时满足其一即可。
-    add_folder_placeholder: 添加要设置规则的收藏夹
     load_folders_failed: 获取收藏夹列表失败，请稍后刷新重试
-    empty: 尚未设置规则。从上方选择收藏夹后为其添加条件。
+    empty: 尚未设置规则。点击“新建规则”选择收藏夹并设置条件。
     folder_missing: 当前账号下找不到该收藏夹，整理时会跳过
-    remove_folder: 移除该收藏夹的规则
-    add_rule: 添加规则
-    rule_index: 规则 {index}
     remove_rule: 删除规则
+    new_rule: 新建规则
+    edit_rule: 编辑规则
+    copy_rule: 复制为新规则
+    refresh_folders: 刷新收藏夹
+    rule_editor_desc: 选择目标收藏夹并设置条件：各类条件需同时满足，同一类填多个值时满足其一即可。
+    folder: 目标收藏夹
+    folder_placeholder: 选择收藏夹
+    folder_missing_option: '{title}（已失效）'
+    folder_required: 请选择目标收藏夹
+    conditions_required: 请至少设置一个条件
+    rule_duplicate: 该收藏夹已有相同的规则：{rule}
+    rule_covered: 该收藏夹已有更宽泛的规则包含此规则：{rule}
+    rule_covers: 此规则包含该收藏夹的 {count} 条已有规则，保存后将移除它们：
+    summary_part: '{label}：{value}'
+    value_separator: 、
+    part_separator: ；
     rule_empty: 未设置条件，此规则不会生效
-    or: 或
     up: UP 主
     up_placeholder: 输入 UID、空间链接或昵称后按回车
     up_already_added: 该 UP 主已在此规则中
     zone: 分区
-    zone_placeholder: 添加分区（主分区包含其全部子分区）
+    zone_placeholder: 输入名称筛选并添加分区（主分区包含其全部子分区）
+    zone_main: 主分区
+    zone_no_match: 没有匹配的分区
     title_keyword: 标题关键词
     title_keyword_placeholder: 输入关键词后按回车，不区分大小写
     triple_synced: 已同步到收藏夹：{folders}
     triple_sync_failed: 三连后同步收藏夹失败
   wanted_users:
-    enter_query: 请输入 UP 主 UID 或昵称
     no_results: 没有找到相关 UP 主，请尝试其他昵称
     search_failed: 搜索 UP 主失败，请稍后重试
     invalid_uid: 请输入有效的 UP 主 UID

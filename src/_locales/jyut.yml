@@ -746,27 +746,39 @@ settings:
     failed: 整理失敗：{message}
     rules_title: 整理規則
     rules_desc: 每個收藏夾可以設定多條規則，符合任何一條就會歸入；同一條規則入面嘅條件要同時符合，同一項條件填咗多個值嘅話符合其中一個就得。
-    add_folder_placeholder: 加入要設定規則嘅收藏夾
     load_folders_failed: 攞收藏夾清單失敗，請遲啲重新整理再試
-    empty: 未設定規則。喺上面揀收藏夾之後幫佢加條件。
+    empty: 未設定規則。㩒「新增規則」揀收藏夾再設定條件。
     folder_missing: 而家嘅帳號搵唔到呢個收藏夾，整理時會跳過
-    remove_folder: 移除呢個收藏夾嘅規則
-    add_rule: 加入規則
-    rule_index: 規則 {index}
     remove_rule: 刪除規則
+    new_rule: 新增規則
+    edit_rule: 編輯規則
+    copy_rule: 複製做新規則
+    refresh_folders: 重新整理收藏夾
+    rule_editor_desc: 揀目標收藏夾再設定條件：每類條件要同時符合，同一類填咗多個值嘅話符合其中一個就得。
+    folder: 目標收藏夾
+    folder_placeholder: 揀收藏夾
+    folder_missing_option: '{title}（已失效）'
+    folder_required: 請揀目標收藏夾
+    conditions_required: 請至少設定一個條件
+    rule_duplicate: 呢個收藏夾已經有相同嘅規則：{rule}
+    rule_covered: 呢個收藏夾已經有更闊嘅規則包含咗呢條：{rule}
+    rule_covers: 呢條規則包含咗呢個收藏夾 {count} 條現有規則，儲存之後會移除佢哋：
+    summary_part: '{label}：{value}'
+    value_separator: 、
+    part_separator: ；
     rule_empty: 未設定條件，呢條規則唔會生效
-    or: 或者
     up: UP 主
     up_placeholder: 輸入 UID、空間連結或者暱稱之後按 Enter
     up_already_added: 呢個 UP 主已經喺呢條規則入面
     zone: 分區
-    zone_placeholder: 加入分區（主分區包括佢全部子分區）
+    zone_placeholder: 輸入名稱篩選再加入分區（主分區包括佢全部子分區）
+    zone_main: 主分區
+    zone_no_match: 冇對應嘅分區
     title_keyword: 標題關鍵字
     title_keyword_placeholder: 輸入關鍵字之後按 Enter，唔分大細階
     triple_synced: 已經同步去收藏夾：{folders}
     triple_sync_failed: 三連之後同步收藏夾失敗
   wanted_users:
-    enter_query: 請輸入 UP 主 UID 或暱稱
     no_results: 搵唔到相關 UP 主，試下其他暱稱
     search_failed: 搜尋 UP 主失敗，請遲啲再試
     invalid_uid: 請輸入有效嘅 UP 主 UID

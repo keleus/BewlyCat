@@ -5,8 +5,11 @@ const props = withDefaults(defineProps<{
   options: readonly OptionType[]
   modelValue: any
   disabled?: boolean
+  /** 在 Dialog 内使用时，下拉菜单及其滚动遮罩需高于对话框层级 */
+  inDialog?: boolean
 }>(), {
   disabled: false,
+  inDialog: false,
 })
 
 const emit = defineEmits(['update:modelValue', 'change'])
@@ -199,9 +202,10 @@ function onMouseEnter() {
             // 向上弹出时锚点移到触发器顶部，用 transform 上移自身高度，无需先测量实际高度
             transform: dropdownPosition.openUp ? `translateY(calc(-100% - ${DROPDOWN_MARGIN}px))` : undefined,
             marginTop: dropdownPosition.openUp ? undefined : `${DROPDOWN_MARGIN}px`,
+            zIndex: inDialog ? 'calc(var(--bew-z-dialog) + 2)' : 10004,
           }"
           pos="fixed" p="2"
-          z="10004" flex="~ col gap-1"
+          flex="~ col gap-1"
           w="full" overflow-y-overlay will-change-transform
         >
           <div
@@ -226,7 +230,7 @@ function onMouseEnter() {
         v-if="showOptions"
         data-layout-edit-control
         pos="fixed top-0 left-0" w-full h-full
-        z="10003"
+        :style="{ zIndex: inDialog ? 'calc(var(--bew-z-dialog) + 1)' : 10003 }"
         @wheel="closeOptions"
       />
     </Teleport>

@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { VIDEO_ZONES } from '~/constants/videoZones'
-import type { FavoriteOrganizerFolder, FavoriteOrganizerRule, FavoriteOrganizerUp } from '~/logic'
+import type { FavoriteOrganizerFolder, FavoriteOrganizerRule } from '~/logic'
 import { settings } from '~/logic'
 import type { List as FavoriteFolder } from '~/models/video/favoriteCategory'
-import { getZoneName, hasRuleConditions, isDefaultFavoriteFolder, loadOwnFavoriteFolders } from '~/utils/favoriteOrganizer'
+import { hasRuleConditions, isDefaultFavoriteFolder, loadOwnFavoriteFolders } from '~/utils/favoriteOrganizer'
 import { getUserID } from '~/utils/main'
 
-import FavoriteOrganizerUpInput from './FavoriteOrganizerUpInput.vue'
+import type { FavoriteOrganizerRuleDraft } from '../../types'
+import FavoriteOrganizerRuleDialog from './FavoriteOrganizerRuleDialog.vue'
+import { getRuleSummaryParts } from './ruleSummary'
+
+interface EditorState {
+  mode: 'create' | 'edit' | 'copy'
+  initial?: FavoriteOrganizerRuleDraft
+}
 
 const { t } = useI18n()
 const accountId = getUserID()
@@ -16,30 +22,27 @@ const ownFolders = ref<FavoriteFolder[]>([])
 const loading = ref(false)
 const loaded = ref(false)
 const loadError = ref('')
-const addFolderSelectKey = ref(0)
-const zoneSelectKeys = reactive<Record<string, number>>({})
-const keywordInputs = reactive<Record<string, string>>({})
+const editor = ref<EditorState | null>(null)
 
 const configuredFolders = computed(() => settings.value.favoriteOrganizerFolders)
 const ownFolderMap = computed(() => new Map(ownFolders.value.map(folder => [folder.id, folder])))
+const ruleRows = computed(() => configuredFolders.value.flatMap(folder => folder.rules.map(rule => ({ folder, rule }))))
 
-const addFolderOptions = computed(() => {
-  const configured = new Set(configuredFolders.value.map(folder => folder.mediaId))
-  return [
-    { value: 0, label: t('settings.favorite_organizer.add_folder_placeholder') },
+const folderOptions = computed(() => {
+  const options = [
+    { value: 0, label: t('settings.favorite_organizer.folder_placeholder') },
     ...ownFolders.value
-      .filter(folder => !isDefaultFavoriteFolder(folder) && !configured.has(folder.id))
+      .filter(folder => !isDefaultFavoriteFolder(folder))
       .map(folder => ({ value: folder.id, label: folder.title })),
   ]
+  // 编辑已失效收藏夹的规则时保留原选项，避免被静默改成其他收藏夹
+  const mediaId = editor.value?.initial?.mediaId
+  if (mediaId && !options.some(option => option.value === mediaId)) {
+    const folder = configuredFolders.value.find(item => item.mediaId === mediaId)
+    options.push({ value: mediaId, label: t('settings.favorite_organizer.folder_missing_option', { title: folder?.title || mediaId }) })
+  }
+  return options
 })
-
-const zoneOptions = computed(() => [
-  { value: 0, label: t('settings.favorite_organizer.zone_placeholder') },
-  ...VIDEO_ZONES.flatMap(zone => [
-    { value: zone.tid, label: zone.name },
-    ...zone.children.map(child => ({ value: child.tid, label: `${zone.name} · ${child.name}` })),
-  ]),
-])
 
 onMounted(loadFolders)
 
@@ -60,55 +63,47 @@ async function loadFolders() {
   }
 }
 
-function createRule(): FavoriteOrganizerRule {
-  return {
-    id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-    ups: [],
-    zones: [],
-    titleKeywords: [],
-  }
-}
-
 function folderTitle(folder: FavoriteOrganizerFolder) {
   return ownFolderMap.value.get(folder.mediaId)?.title || folder.title || String(folder.mediaId)
 }
 
-function addFolder(mediaId: number) {
-  addFolderSelectKey.value++
-  const folder = ownFolderMap.value.get(mediaId)
-  if (!folder || configuredFolders.value.some(item => item.mediaId === mediaId))
-    return
-  configuredFolders.value.push({ mediaId, title: folder.title, rules: [createRule()] })
+function openEditor(mode: EditorState['mode'], folder?: FavoriteOrganizerFolder, rule?: FavoriteOrganizerRule) {
+  editor.value = {
+    mode,
+    initial: folder && rule ? { mediaId: folder.mediaId, rule } : undefined,
+  }
 }
 
-function removeFolder(index: number) {
-  configuredFolders.value.splice(index, 1)
+function saveRule(draft: FavoriteOrganizerRuleDraft, removeRuleIds: string[]) {
+  const removed = new Set(removeRuleIds)
+  const folders = configuredFolders.value.map(folder => ({ ...folder, rules: [...folder.rules] }))
+  const previousFolder = folders.find(folder => folder.rules.some(rule => rule.id === draft.rule.id))
+  let target = folders.find(folder => folder.mediaId === draft.mediaId)
+  if (!target) {
+    target = { mediaId: draft.mediaId, title: '', rules: [] }
+    folders.push(target)
+  }
+  target.title = ownFolderMap.value.get(draft.mediaId)?.title || target.title
+
+  if (previousFolder === target) {
+    // 原收藏夹内编辑时保持位置不变
+    const index = target.rules.findIndex(rule => rule.id === draft.rule.id)
+    target.rules.splice(index, 1, draft.rule)
+  }
+  else {
+    if (previousFolder)
+      previousFolder.rules = previousFolder.rules.filter(rule => rule.id !== draft.rule.id)
+    target.rules.push(draft.rule)
+  }
+  target.rules = target.rules.filter(rule => !removed.has(rule.id))
+
+  settings.value.favoriteOrganizerFolders = folders.filter(folder => folder.rules.length)
 }
 
-function addRule(folder: FavoriteOrganizerFolder) {
-  folder.rules.push(createRule())
-}
-
-function removeRule(folder: FavoriteOrganizerFolder, index: number) {
-  folder.rules.splice(index, 1)
-}
-
-function addUp(rule: FavoriteOrganizerRule, up: FavoriteOrganizerUp) {
-  if (!rule.ups.some(item => item.mid === up.mid))
-    rule.ups.push(up)
-}
-
-function addZone(rule: FavoriteOrganizerRule, tid: number) {
-  zoneSelectKeys[rule.id] = (zoneSelectKeys[rule.id] ?? 0) + 1
-  if (tid && !rule.zones.includes(tid))
-    rule.zones.push(tid)
-}
-
-function addKeyword(rule: FavoriteOrganizerRule) {
-  const keyword = (keywordInputs[rule.id] ?? '').trim()
-  if (keyword && !rule.titleKeywords.some(item => item.toLowerCase() === keyword.toLowerCase()))
-    rule.titleKeywords.push(keyword)
-  keywordInputs[rule.id] = ''
+function removeRule(folder: FavoriteOrganizerFolder, rule: FavoriteOrganizerRule) {
+  settings.value.favoriteOrganizerFolders = configuredFolders.value
+    .map(item => item === folder ? { ...item, rules: item.rules.filter(itemRule => itemRule.id !== rule.id) } : item)
+    .filter(item => item.rules.length)
 }
 </script>
 
@@ -119,138 +114,87 @@ function addKeyword(rule: FavoriteOrganizerRule) {
     </p>
     <template v-else>
       <div class="organizer-rules__toolbar">
-        <Select
-          :key="addFolderSelectKey"
-          class="organizer-rules__folder-select"
-          :options="addFolderOptions"
-          :model-value="0"
-          :disabled="!loaded || addFolderOptions.length <= 1"
-          @change="addFolder"
-        />
+        <Button size="small" type="primary" :disabled="!loaded" @click="openEditor('create')">
+          <template #left>
+            <i i-mingcute:add-line />
+          </template>
+          {{ t('settings.favorite_organizer.new_rule') }}
+        </Button>
         <Button size="small" type="tertiary" :disabled="loading" @click="loadFolders">
           <template #left>
             <i :class="loading ? 'i-svg-spinners:ring-resize' : 'i-mingcute:refresh-2-line'" />
           </template>
-          {{ t('common.operation.refresh') }}
+          {{ t('settings.favorite_organizer.refresh_folders') }}
         </Button>
       </div>
       <p v-if="loadError" class="organizer-rules__error">
         {{ loadError }}
       </p>
 
-      <p v-if="!configuredFolders.length" class="organizer-rules__hint">
+      <p v-if="!ruleRows.length" class="organizer-rules__hint">
         {{ t('settings.favorite_organizer.empty') }}
       </p>
-
-      <section
-        v-for="(folder, folderIndex) in configuredFolders"
-        :key="folder.mediaId"
-        class="organizer-folder"
-      >
-        <header class="organizer-folder__header">
-          <i i-mingcute:star-line />
-          <strong>{{ folderTitle(folder) }}</strong>
-          <span v-if="loaded && !ownFolderMap.has(folder.mediaId)" class="organizer-folder__missing">
-            {{ t('settings.favorite_organizer.folder_missing') }}
-          </span>
-          <button
-            type="button"
-            class="organizer-icon-button"
-            :aria-label="t('settings.favorite_organizer.remove_folder')"
-            :title="t('settings.favorite_organizer.remove_folder')"
-            @click="removeFolder(folderIndex)"
-          >
-            <i i-mingcute:delete-2-line />
-          </button>
-        </header>
-
-        <template v-for="(rule, ruleIndex) in folder.rules" :key="rule.id">
-          <div v-if="ruleIndex > 0" class="organizer-folder__or">
-            {{ t('settings.favorite_organizer.or') }}
-          </div>
-          <div class="organizer-rule">
-            <div class="organizer-rule__header">
-              <span>{{ t('settings.favorite_organizer.rule_index', { index: ruleIndex + 1 }) }}</span>
-              <span v-if="!hasRuleConditions(rule)" class="organizer-rule__warning">
-                {{ t('settings.favorite_organizer.rule_empty') }}
+      <ul v-else class="organizer-rules__list">
+        <li v-for="{ folder, rule } in ruleRows" :key="rule.id" class="organizer-rule-row">
+          <div class="organizer-rule-row__main">
+            <div class="organizer-rule-row__folder">
+              <i i-mingcute:star-line />
+              <strong>{{ folderTitle(folder) }}</strong>
+              <span v-if="loaded && !ownFolderMap.has(folder.mediaId)" class="organizer-rule-row__warning">
+                {{ t('settings.favorite_organizer.folder_missing') }}
               </span>
-              <button
-                type="button"
-                class="organizer-icon-button"
-                :aria-label="t('settings.favorite_organizer.remove_rule')"
-                :title="t('settings.favorite_organizer.remove_rule')"
-                @click="removeRule(folder, ruleIndex)"
-              >
-                <i i-mingcute:close-line />
-              </button>
             </div>
-
-            <div class="organizer-rule__row">
-              <span class="organizer-rule__label">{{ t('settings.favorite_organizer.up') }}</span>
-              <div class="organizer-rule__values">
-                <div v-if="rule.ups.length" class="organizer-chips">
-                  <span v-for="(up, upIndex) in rule.ups" :key="up.mid" class="organizer-chip" :title="`UID ${up.mid}`">
-                    {{ up.name || up.mid }}
-                    <button type="button" :aria-label="t('common.operation.delete')" @click="rule.ups.splice(upIndex, 1)">
-                      <i i-mingcute:close-line />
-                    </button>
-                  </span>
-                </div>
-                <FavoriteOrganizerUpInput :exclude="rule.ups.map(up => up.mid)" @add="addUp(rule, $event)" />
-              </div>
-            </div>
-
-            <div class="organizer-rule__row">
-              <span class="organizer-rule__label">{{ t('settings.favorite_organizer.zone') }}</span>
-              <div class="organizer-rule__values">
-                <div v-if="rule.zones.length" class="organizer-chips">
-                  <span v-for="(tid, zoneIndex) in rule.zones" :key="tid" class="organizer-chip">
-                    {{ getZoneName(tid) }}
-                    <button type="button" :aria-label="t('common.operation.delete')" @click="rule.zones.splice(zoneIndex, 1)">
-                      <i i-mingcute:close-line />
-                    </button>
-                  </span>
-                </div>
-                <Select
-                  :key="zoneSelectKeys[rule.id] ?? 0"
-                  :options="zoneOptions"
-                  :model-value="0"
-                  @change="addZone(rule, $event)"
-                />
-              </div>
-            </div>
-
-            <div class="organizer-rule__row">
-              <span class="organizer-rule__label">{{ t('settings.favorite_organizer.title_keyword') }}</span>
-              <div class="organizer-rule__values">
-                <div v-if="rule.titleKeywords.length" class="organizer-chips">
-                  <span v-for="(keyword, keywordIndex) in rule.titleKeywords" :key="keyword" class="organizer-chip">
-                    {{ keyword }}
-                    <button type="button" :aria-label="t('common.operation.delete')" @click="rule.titleKeywords.splice(keywordIndex, 1)">
-                      <i i-mingcute:close-line />
-                    </button>
-                  </span>
-                </div>
-                <Input
-                  v-model="keywordInputs[rule.id]"
-                  size="small"
-                  :placeholder="t('settings.favorite_organizer.title_keyword_placeholder')"
-                  :aria-label="t('settings.favorite_organizer.title_keyword')"
-                  @enter="addKeyword(rule)"
-                />
-              </div>
-            </div>
+            <p v-if="hasRuleConditions(rule)" class="organizer-rule-row__conditions">
+              <span v-for="part in getRuleSummaryParts(rule, t)" :key="part.label">
+                <em>{{ part.label }}</em>{{ part.value }}
+              </span>
+            </p>
+            <p v-else class="organizer-rule-row__conditions organizer-rule-row__warning">
+              {{ t('settings.favorite_organizer.rule_empty') }}
+            </p>
           </div>
-        </template>
-
-        <Button size="small" type="tertiary" @click="addRule(folder)">
-          <template #left>
-            <i i-mingcute:add-line />
-          </template>
-          {{ t('settings.favorite_organizer.add_rule') }}
-        </Button>
-      </section>
+          <div class="organizer-rule-row__actions">
+            <button
+              type="button"
+              :disabled="!loaded"
+              :aria-label="t('settings.favorite_organizer.copy_rule')"
+              :title="t('settings.favorite_organizer.copy_rule')"
+              @click="openEditor('copy', folder, rule)"
+            >
+              <i i-mingcute:copy-2-line />
+            </button>
+            <button
+              type="button"
+              :disabled="!loaded"
+              :aria-label="t('settings.favorite_organizer.edit_rule')"
+              :title="t('settings.favorite_organizer.edit_rule')"
+              @click="openEditor('edit', folder, rule)"
+            >
+              <i i-mingcute:edit-2-line />
+            </button>
+            <button
+              type="button"
+              class="organizer-rule-row__delete"
+              :aria-label="t('settings.favorite_organizer.remove_rule')"
+              :title="t('settings.favorite_organizer.remove_rule')"
+              @click="removeRule(folder, rule)"
+            >
+              <i i-mingcute:delete-2-line />
+            </button>
+          </div>
+        </li>
+      </ul>
     </template>
+
+    <FavoriteOrganizerRuleDialog
+      v-if="editor"
+      :mode="editor.mode"
+      :initial="editor.initial"
+      :folder-options="folderOptions"
+      :folders="configuredFolders"
+      @save="saveRule"
+      @close="editor = null"
+    />
   </div>
 </template>
 
@@ -264,13 +208,9 @@ function addKeyword(rule: FavoriteOrganizerRule) {
 
 .organizer-rules__toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--bew-space-2);
-}
-
-.organizer-rules__folder-select {
-  min-width: 0;
-  flex: 1;
 }
 
 .organizer-rules__hint,
@@ -285,25 +225,54 @@ function addKeyword(rule: FavoriteOrganizerRule) {
   color: var(--bew-error-color);
 }
 
-.organizer-folder {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--bew-space-2);
-  padding: var(--bew-space-3);
-  border-radius: var(--bew-panel-radius);
-  background: var(--bew-fill-1);
+.organizer-rules__list {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--bew-border-color);
+  border-radius: var(--bew-interactive-radius);
+  list-style: none;
 }
 
-.organizer-folder__header {
+.organizer-rule-row {
   display: flex;
-  align-self: stretch;
   align-items: center;
-  gap: var(--bew-space-2);
+  gap: var(--bew-space-3);
+  min-height: 52px;
+  padding: var(--bew-space-2) var(--bew-space-2) var(--bew-space-2) var(--bew-space-3);
+  background: var(--bew-fill-1);
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  & + & {
+    border-top: 1px solid var(--bew-border-color);
+  }
+
+  &:hover {
+    background: var(--bew-fill-2);
+  }
+}
+
+.organizer-rule-row__main {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--bew-space-0-5);
+}
+
+.organizer-rule-row__folder {
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-1);
   min-width: 0;
   color: var(--bew-text-1);
-  font-size: var(--bew-font-size-title);
-  line-height: var(--bew-line-height-title);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+
+  i {
+    flex: 0 0 auto;
+    color: var(--bew-theme-color);
+  }
 
   strong {
     overflow: hidden;
@@ -312,135 +281,68 @@ function addKeyword(rule: FavoriteOrganizerRule) {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+}
 
-  .organizer-icon-button {
-    margin-left: auto;
+.organizer-rule-row__conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bew-space-0-5) var(--bew-space-3);
+  margin: 0;
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
+
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  em {
+    margin-right: var(--bew-space-1);
+    color: var(--bew-text-3);
+    font-style: normal;
   }
 }
 
-.organizer-folder__missing,
-.organizer-rule__warning {
+.organizer-rule-row__warning {
   color: var(--bew-warning-color);
   font-size: var(--bew-font-size-caption);
   line-height: var(--bew-line-height-caption);
 }
 
-.organizer-folder__or {
-  align-self: center;
-  color: var(--bew-text-3);
-  font-size: var(--bew-font-size-caption);
-  line-height: var(--bew-line-height-caption);
-}
-
-.organizer-rule {
+.organizer-rule-row__actions {
   display: flex;
-  align-self: stretch;
-  flex-direction: column;
-  gap: var(--bew-space-2);
-  padding: var(--bew-space-3);
-  border-radius: var(--bew-interactive-radius);
-  background: var(--bew-fill-alt);
-}
-
-.organizer-rule__header {
-  display: flex;
-  align-items: center;
-  gap: var(--bew-space-2);
-  color: var(--bew-text-2);
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-medium);
-  line-height: var(--bew-line-height-control);
-
-  .organizer-icon-button {
-    margin-left: auto;
-  }
-}
-
-.organizer-rule__row {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--bew-space-3);
-}
-
-.organizer-rule__label {
-  width: 80px;
   flex: 0 0 auto;
-  color: var(--bew-text-2);
-  font-size: var(--bew-font-size-control);
-  // 与 28px 高的小号输入框文字基线对齐
-  line-height: 28px;
-}
-
-.organizer-rule__values {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--bew-space-2);
-}
-
-.organizer-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--bew-space-1);
-}
-
-.organizer-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--bew-space-1);
-  min-height: 26px;
-  padding: 0 var(--bew-space-1) 0 var(--bew-space-2);
-  border-radius: var(--bew-badge-radius);
-  color: var(--bew-theme-color);
-  background: var(--bew-theme-color-10);
-  font-size: var(--bew-font-size-control);
-  line-height: var(--bew-line-height-control);
+  gap: var(--bew-space-0-5);
 
   button {
     display: grid;
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     border: 0;
-    border-radius: var(--bew-radius-full);
-    color: inherit;
+    border-radius: var(--bew-interactive-radius);
+    color: var(--bew-text-3);
     background: transparent;
     place-items: center;
     cursor: pointer;
+    transition:
+      color var(--bew-duration-fast) var(--bew-ease-standard),
+      background-color var(--bew-duration-fast) var(--bew-ease-standard);
 
-    &:hover {
-      background: var(--bew-theme-color-20);
+    &:hover:not(:disabled) {
+      color: var(--bew-theme-color);
+      background: var(--bew-theme-color-10);
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
     }
   }
-}
 
-.organizer-icon-button {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  border: 0;
-  border-radius: var(--bew-interactive-radius);
-  color: var(--bew-text-3);
-  background: transparent;
-  place-items: center;
-  cursor: pointer;
-
-  &:hover {
+  .organizer-rule-row__delete:hover:not(:disabled) {
     color: var(--bew-error-color);
     background: var(--bew-error-color-10);
-  }
-}
-
-@media (max-width: 560px) {
-  .organizer-rule__row {
-    flex-direction: column;
-    gap: var(--bew-space-1);
-  }
-
-  .organizer-rule__label {
-    width: auto;
-    line-height: var(--bew-line-height-control);
   }
 }
 </style>

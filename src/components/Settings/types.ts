@@ -1,3 +1,5 @@
+import type { FavoriteOrganizerRule } from '~/logic'
+
 export enum MenuType {
   General = 'General',
   BewlyPages = 'BewlyPages',
@@ -38,4 +40,18 @@ export interface MenuItem {
   titleKey: string
   badge?: string
   sectionStart?: boolean
+}
+
+/** UserSearchPicker 搜索或按 UID 查到的 UP 主 */
+export interface UserSearchCandidate {
+  mid: string
+  name: string
+  face: string
+  sign: string
+}
+
+/** 收藏夹整理规则编辑弹窗保存的内容 */
+export interface FavoriteOrganizerRuleDraft {
+  mediaId: number
+  rule: FavoriteOrganizerRule
 }

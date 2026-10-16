@@ -84,6 +84,32 @@ export function matchesRule(rule: FavoriteOrganizerRule, video: FavoriteOrganize
   return true
 }
 
+/**
+ * outer 是否包含 inner：凡命中 inner 的视频必然命中 outer。两者互相包含即为重复规则。
+ * 仅按条件判断：outer 限定的每类条件，inner 都须限定且每个取值都落在 outer 的范围内。
+ */
+export function ruleCovers(outer: FavoriteOrganizerRule, inner: FavoriteOrganizerRule): boolean {
+  if (!hasRuleConditions(outer) || !hasRuleConditions(inner))
+    return false
+  if (outer.ups.length) {
+    const outerMids = new Set(outer.ups.map(up => up.mid))
+    if (!inner.ups.length || inner.ups.some(up => !outerMids.has(up.mid)))
+      return false
+  }
+  if (outer.zones.length) {
+    // 主分区包含其子分区，反之不成立
+    if (!inner.zones.length || inner.zones.some(tid => !outer.zones.some(outerTid => outerTid === tid || outerTid === zoneParentMap.get(tid))))
+      return false
+  }
+  if (outer.titleKeywords.length) {
+    // 标题含较长关键词时必然也含其中的较短关键词
+    const outerKeywords = outer.titleKeywords.map(keyword => keyword.toLowerCase())
+    if (!inner.titleKeywords.length || inner.titleKeywords.some(keyword => !outerKeywords.some(outerKeyword => keyword.toLowerCase().includes(outerKeyword))))
+      return false
+  }
+  return true
+}
+
 export function matchesFolder(folder: FavoriteOrganizerFolder, video: FavoriteOrganizerVideo): boolean {
   return folder.rules.some(rule => matchesRule(rule, video))
 }

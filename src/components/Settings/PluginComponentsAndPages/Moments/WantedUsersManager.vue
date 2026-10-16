@@ -6,6 +6,9 @@ import type { MomentsWantedUser } from '~/logic/storage'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
 import api from '~/utils/api'
 
+import UserSearchPicker from '../../components/UserSearchPicker.vue'
+import type { UserSearchCandidate } from '../../types'
+
 const props = withDefaults(defineProps<{
   mode?: 'wanted' | 'pinned'
 }>(), {
@@ -14,16 +17,6 @@ const props = withDefaults(defineProps<{
 
 const toast = useToast()
 const { t } = useI18n()
-const query = ref('')
-const error = ref('')
-const loading = ref(false)
-interface UserSearchCandidate {
-  mid: string
-  name: string
-  face: string
-  sign: string
-}
-const searchCandidates = ref<UserSearchCandidate[]>([])
 const MAX_PINNED_USERS = 6
 
 const isPinnedMode = computed(() => props.mode === 'pinned')
@@ -38,7 +31,8 @@ const managedUsers = computed<MomentsWantedUser[]>({
   },
 })
 
-const managedUserMids = computed(() => new Set(managedUsers.value.map(user => user.mid)))
+const managedUserMids = computed(() => managedUsers.value.map(user => user.mid))
+const reachedPinnedLimit = computed(() => isPinnedMode.value && managedUsers.value.length >= MAX_PINNED_USERS)
 
 const copy = computed(() => {
   if (isPinnedMode.value) {
@@ -63,122 +57,31 @@ const copy = computed(() => {
   }
 })
 
-function httpsUrl(url = '') {
-  return url.replace(/^http:/, 'https:')
-}
-
 function avatarUrl(url = '') {
-  const normalized = httpsUrl(url).replace(/@[^/]*$/, '')
+  const normalized = url.replace(/^http:/, 'https:').replace(/@[^/]*$/, '')
   return normalized ? `${normalized}@64w_64h_1c.webp` : ''
 }
 
-function stripSearchHighlight(value: unknown) {
-  return String(value || '')
-    .replace(/<em class="keyword">|<\/em>/gi, '')
-    .replace(/[<>]/g, '')
-    .trim()
-}
+async function addUser(user: UserSearchCandidate) {
+  if (managedUserMids.value.includes(user.mid))
+    return copy.value.alreadyIn
+  if (reachedPinnedLimit.value)
+    return t('settings.wanted_users.pinned_limit', { count: MAX_PINNED_USERS })
 
-async function addUser() {
-  if (loading.value)
-    return
-
-  const input = query.value.trim()
-  error.value = ''
-  if (!input) {
-    error.value = t('settings.wanted_users.enter_query')
-    return
+  const relationResponse = await api.user.getRelations({ fids: user.mid })
+  const relation = relationResponse.code === 0 ? relationResponse.data?.[user.mid] : null
+  const isFollowing = relation?.attribute === 1 || relation?.attribute === 2 || relation?.attribute === 6
+  if (!isFollowing) {
+    const message = copy.value.needFollow(user.name)
+    toast.warning(message)
+    return message
   }
 
-  if (!/^\d+$/.test(input)) {
-    loading.value = true
-    searchCandidates.value = []
-    try {
-      const response = await api.search.searchUser({
-        keyword: input,
-        page: 1,
-        page_size: 10,
-        order: '',
-        order_sort: 0,
-        user_type: 0,
-      })
-      const results = response.code === 0 && Array.isArray(response.data?.result)
-        ? response.data.result
-        : []
-      searchCandidates.value = results.slice(0, 10).map((user: any) => ({
-        mid: String(user.mid || ''),
-        name: stripSearchHighlight(user.uname),
-        face: httpsUrl(user.upic || user.face || ''),
-        sign: stripSearchHighlight(user.usign || user.sign),
-      })).filter((user: UserSearchCandidate) => user.mid && user.name)
-      if (!searchCandidates.value.length)
-        error.value = t('settings.wanted_users.no_results')
-    }
-    catch (cause) {
-      error.value = cause instanceof Error ? cause.message : t('settings.wanted_users.search_failed')
-    }
-    finally {
-      loading.value = false
-    }
-    return
-  }
-
-  const mid = input.replace(/^0+/, '')
-  if (!mid) {
-    error.value = t('settings.wanted_users.invalid_uid')
-    return
-  }
-  await addUserByMid(mid)
-}
-
-async function addUserByMid(mid: string) {
-  if (loading.value)
-    return
-  error.value = ''
-
-  if (managedUserMids.value.has(mid)) {
-    error.value = copy.value.alreadyIn
-    return
-  }
-  if (isPinnedMode.value && managedUsers.value.length >= MAX_PINNED_USERS) {
-    error.value = t('settings.wanted_users.pinned_limit', { count: MAX_PINNED_USERS })
-    return
-  }
-
-  loading.value = true
-  try {
-    const [cardResponse, relationResponse] = await Promise.all([
-      api.user.getUserCard({ mid }),
-      api.user.getRelations({ fids: mid }),
-    ])
-    const card = cardResponse.code === 0 ? cardResponse.data?.card : null
-    if (!card?.mid || !card?.name) {
-      error.value = cardResponse.message || t('settings.wanted_users.not_found')
-      return
-    }
-
-    const relation = relationResponse.code === 0 ? relationResponse.data?.[mid] : null
-    const isFollowing = relation?.attribute === 1 || relation?.attribute === 2 || relation?.attribute === 6
-    if (!isFollowing) {
-      error.value = copy.value.needFollow(card.name)
-      toast.warning(error.value)
-      return
-    }
-
-    managedUsers.value = [
-      ...managedUsers.value,
-      { mid: String(card.mid), name: card.name, face: httpsUrl(card.face || '') },
-    ]
-    query.value = ''
-    searchCandidates.value = []
-    toast.success(copy.value.added(card.name))
-  }
-  catch (cause) {
-    error.value = cause instanceof Error ? cause.message : t('settings.wanted_users.info_failed')
-  }
-  finally {
-    loading.value = false
-  }
+  managedUsers.value = [
+    ...managedUsers.value,
+    { mid: user.mid, name: user.name, face: user.face },
+  ]
+  toast.success(copy.value.added(user.name))
 }
 
 function removeUser(mid: string) {
@@ -191,41 +94,11 @@ function removeUser(mid: string) {
 
 <template>
   <div class="wanted-users-manager">
-    <form class="wanted-users-manager__form" @submit.prevent="addUser">
-      <input
-        v-model="query"
-        type="text"
-        autocomplete="off"
-        :placeholder="t('settings.wanted_users.placeholder')"
-        :disabled="loading"
-        @input="error = ''; searchCandidates = []"
-      >
-      <button type="submit" :disabled="loading || !query.trim()">
-        <span v-if="loading" i-svg-spinners:ring-resize />
-        <span v-else-if="/^\d+$/.test(query.trim())" i-tabler-user-plus />
-        <span v-else i-tabler-search />
-        {{ /^\d+$/.test(query.trim()) ? t('common.operation.add') : t('common.search') }}
-      </button>
-    </form>
-    <p v-if="error" class="wanted-users-manager__error">
-      <span i-tabler-alert-circle />{{ error }}
-    </p>
-    <div v-if="searchCandidates.length" class="wanted-users-manager__candidates">
-      <button
-        v-for="user in searchCandidates"
-        :key="user.mid"
-        type="button"
-        :disabled="loading || managedUserMids.has(user.mid) || (isPinnedMode && managedUsers.length >= MAX_PINNED_USERS)"
-        @click="addUserByMid(user.mid)"
-      >
-        <img :src="avatarUrl(user.face)" :alt="user.name">
-        <span>
-          <strong>{{ user.name }}</strong>
-          <small>UID {{ user.mid }}</small>
-          <em v-if="user.sign">{{ user.sign }}</em>
-        </span>
-      </button>
-    </div>
+    <UserSearchPicker
+      :select="addUser"
+      :exclude="managedUserMids"
+      :disabled="reachedPinnedLimit"
+    />
     <div v-if="managedUsers.length" class="wanted-users-manager__list">
       <article v-for="user in managedUsers" :key="user.mid">
         <img :src="avatarUrl(user.face)" :alt="user.name">
@@ -252,117 +125,6 @@ function removeUser(mid: string) {
 <style scoped lang="scss">
 .wanted-users-manager {
   width: 100%;
-}
-.wanted-users-manager__form {
-  display: flex;
-  gap: 8px;
-}
-.wanted-users-manager__form input {
-  min-width: 0;
-  flex: 1;
-  height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--bew-border-color);
-  border-radius: var(--bew-interactive-radius);
-  outline: none;
-  color: var(--bew-text-1);
-  background: var(--bew-fill-1);
-  font-size: var(--bew-font-size-body);
-  line-height: var(--bew-line-height-body);
-}
-.wanted-users-manager__form input:focus {
-  border-color: var(--bew-theme-color);
-}
-.wanted-users-manager__form button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--bew-space-1);
-  min-width: 78px;
-  border: 0;
-  border-radius: var(--bew-interactive-radius);
-  color: #fff;
-  background: var(--bew-theme-color);
-  cursor: pointer;
-  font-size: var(--bew-font-size-control);
-  font-weight: var(--bew-font-weight-semibold);
-  line-height: var(--bew-line-height-control);
-  transition: filter var(--bew-duration-normal) var(--bew-ease-standard);
-}
-.wanted-users-manager__form button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.wanted-users-manager__form button:hover:not(:disabled) {
-  filter: brightness(1.08);
-}
-.wanted-users-manager__error {
-  display: flex;
-  gap: var(--bew-space-2);
-  margin: var(--bew-space-3) 0 0;
-  color: var(--bew-error-color);
-  font-size: var(--bew-font-size-control);
-}
-.wanted-users-manager__candidates {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-.wanted-users-manager__candidates > button {
-  display: flex;
-  align-items: center;
-  gap: var(--bew-space-3);
-  min-width: 0;
-  padding: 8px;
-  border: 1px solid transparent;
-  border-radius: var(--bew-interactive-radius);
-  color: inherit;
-  background: var(--bew-fill-1);
-  text-align: left;
-  cursor: pointer;
-}
-.wanted-users-manager__candidates > button:hover:not(:disabled) {
-  border-color: var(--bew-theme-color);
-  background: var(--bew-fill-2);
-}
-.wanted-users-manager__candidates > button:disabled {
-  opacity: 0.55;
-  cursor: default;
-}
-.wanted-users-manager__candidates img {
-  width: 40px;
-  height: 40px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  object-fit: cover;
-}
-.wanted-users-manager__candidates button > span {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-}
-.wanted-users-manager__candidates strong,
-.wanted-users-manager__candidates small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.wanted-users-manager__candidates strong {
-  color: var(--bew-text-1);
-  font-size: var(--bew-font-size-body);
-  line-height: var(--bew-line-height-body);
-}
-.wanted-users-manager__candidates small {
-  color: var(--bew-text-3);
-  font-size: var(--bew-font-size-caption);
-  line-height: var(--bew-line-height-caption);
-}
-.wanted-users-manager__candidates em {
-  color: var(--bew-theme-color);
-  font-size: var(--bew-font-size-control);
-  font-style: normal;
 }
 .wanted-users-manager__list {
   display: grid;

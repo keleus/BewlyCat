@@ -808,27 +808,39 @@ settings:
     failed: 'Organizing failed: {message}'
     rules_title: Rules
     rules_desc: Each folder can have several rules, and a video goes into the folder when it matches any of them. All conditions in one rule must match; when a condition has several values, any one of them is enough.
-    add_folder_placeholder: Add a folder to set rules for
     load_folders_failed: Failed to load folders. Refresh and try again later.
-    empty: No rules yet. Pick a folder above and add conditions to it.
+    empty: No rules yet. Click “New rule” to pick a folder and set conditions.
     folder_missing: This folder is not in the current account and will be skipped
-    remove_folder: Remove rules for this folder
-    add_rule: Add rule
-    rule_index: Rule {index}
     remove_rule: Delete rule
+    new_rule: New rule
+    edit_rule: Edit rule
+    copy_rule: Copy as new rule
+    refresh_folders: Refresh folders
+    rule_editor_desc: Pick a target folder and set conditions. All condition types must match; any one value within a type is enough.
+    folder: Target folder
+    folder_placeholder: Select a folder
+    folder_missing_option: '{title} (unavailable)'
+    folder_required: Select a target folder
+    conditions_required: Set at least one condition
+    rule_duplicate: 'This folder already has the same rule: {rule}'
+    rule_covered: 'A broader rule in this folder already covers this one: {rule}'
+    rule_covers: 'This rule covers {count} existing rule(s) in this folder, which will be removed when you save:'
+    summary_part: '{label}: {value}'
+    value_separator: ', '
+    part_separator: '; '
     rule_empty: No conditions, so this rule never matches
-    or: or
     up: Uploader
     up_placeholder: Enter a UID, space link or name, then press Enter
     up_already_added: This uploader is already in the rule
     zone: Zone
-    zone_placeholder: Add zone (a main zone includes all its sub-zones)
+    zone_placeholder: Type to filter and add a zone (a main zone includes all its sub-zones)
+    zone_main: Main zone
+    zone_no_match: No matching zones
     title_keyword: Title keyword
     title_keyword_placeholder: Enter a keyword and press Enter (case-insensitive)
     triple_synced: 'Synced to folders: {folders}'
     triple_sync_failed: Failed to sync favorites after triple action
   wanted_users:
-    enter_query: Enter an uploader UID or name
     no_results: No uploader found. Try another name.
     search_failed: Failed to search uploaders. Please try again later.
     invalid_uid: Enter a valid uploader UID
