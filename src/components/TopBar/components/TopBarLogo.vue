@@ -2,7 +2,7 @@
 import { storeToRefs } from 'pinia'
 import { ref, watch } from 'vue'
 
-import bilibiliBrandLogoUrl from '~/assets/branding/bilibili-brand-logo.png'
+import bilibiliBrandLogoUrl from '~/assets/branding/bilibili-wordmark.png'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
