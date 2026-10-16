@@ -527,7 +527,7 @@ function handleFocusDrawer(e?: Event) {
                 opacity: isIframeDisplayReady ? 1 : 0,
                 visibility: isIframeDisplayReady ? 'visible' : 'hidden',
                 pointerEvents: isIframeDisplayReady ? 'auto' : 'none',
-                transition: 'opacity 0.2s ease',
+                transition: 'opacity var(--bew-duration-normal, 200ms) var(--bew-ease-standard, ease)',
                 backgroundColor: 'var(--bew-bg)',
               }"
               @load="handleIframeLoad"
@@ -542,12 +542,23 @@ function handleFocusDrawer(e?: Event) {
 <style lang="scss" scoped>
 .drawer-enter-active,
 .drawer-leave-active {
-  transition: transform 0.3s;
+  transition: transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }
 
 .drawer-enter-from,
 .drawer-leave-to {
   transform: translateX(100%);
+}
+
+// 降级偏好：去掉滑入滑出位移，抽屉即时显隐（遮罩的淡入淡出仍保留）
+@media (prefers-reduced-motion: reduce) {
+  .drawer-enter-active,
+  .drawer-leave-active,
+  .drawer-enter-from,
+  .drawer-leave-to {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* 修改全局样式，避免重复设置 */
