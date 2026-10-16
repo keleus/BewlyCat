@@ -685,7 +685,8 @@ function changeMenuItem(menuItem: MenuType) {
           h-inherit of-y-auto of-x-hidden
           style="padding-top: 92px;"
         >
-          <main w-full min-h="[calc(100%-92px)]" p="x-12 b-10">
+          <!-- 底部留白高于右下角帮助按钮（16px 边距 + 32px），让末行内容可滚到按钮上方 -->
+          <main w-full min-h="[calc(100%-92px)]" p="x-12 b-20">
             <!-- <div h-80px mt--8 /> -->
 
             <Transition name="page-fade">
