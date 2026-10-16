@@ -370,15 +370,14 @@ else if (shouldInitializeContentScript) {
 
     const shouldApplyFullStyles = applyBewlyDesignClasses()
 
-    // opus 详情分栏布局不依赖“适配其他页样式”，只要在 iframe 内就尝试重排
-    if (isInIframe())
+    // opus 详情分栏布局与图片查看器检测都不依赖“适配其他页样式”，只要在 iframe 内就启用；
+    // 否则关闭该设置后，首页 iframe 内打开大图时父页面顶栏不会隐藏，遮住关闭按钮（#1298）
+    if (isInIframe()) {
       setupOpusDetailDrawerLayout()
+      setupIframePhotoViewerDetector()
+    }
 
     if (shouldApplyFullStyles) {
-      // Setup iframe photo viewer detector (only in iframe)
-      if (isInIframe())
-        setupIframePhotoViewerDetector()
-
       // Remove the Bilibili Evolved's dark mode style
       runWhenIdle(async () => {
         const darkModeStyle = document.head.querySelector('#dark-mode')
