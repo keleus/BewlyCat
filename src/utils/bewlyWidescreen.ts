@@ -2770,8 +2770,14 @@ function injectLayoutStyle() {
       max-height: min(52dvh, 560px) !important;
       overflow-x: hidden !important;
       overflow-y: auto !important;
-      overscroll-behavior: contain;
       scrollbar-gutter: stable;
+    }
+
+    /* 选集列表滚到边界后需把滚轮交给侧栏，继续滚到推荐列表；
+       B 站自带的 contain 也会截住滚轮，这里统一放开。 */
+    #${ROOT_ID} .bewly-widescreen-panel-playlist,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist * {
+      overscroll-behavior: auto !important;
     }
 
     /* New bangumi lists already scroll inside EpisodeVirtualList. Keep the
@@ -2846,7 +2852,6 @@ function injectLayoutStyle() {
       max-height: min(40dvh, 420px) !important;
       overflow-x: hidden !important;
       overflow-y: auto !important;
-      overscroll-behavior: contain;
     }
 
     #${ROOT_ID} .bewly-widescreen-panel-playlist [class*="SectionHeader_header"] h3,
