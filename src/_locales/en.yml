@@ -1781,6 +1781,7 @@ moment_card:
   comment_delete_failed: Failed to delete the comment. Please try again later
   comment_image_add: Add images
   comment_image_remove: Remove image {index}
+  comment_sync_repost: Also repost to my feed
   comment_image_limit: You can add up to {count} images
   comment_image_invalid: Only PNG, JPG, GIF, or WebP images are supported
   comment_image_too_large: Each image must be {size} MB or smaller

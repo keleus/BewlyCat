@@ -1681,6 +1681,7 @@ moment_card:
   comment_delete_failed: 评论删除失败，请稍后重试
   comment_image_add: 添加图片
   comment_image_remove: 移除第 {index} 张图片
+  comment_sync_repost: 同时转发到我的动态
   comment_image_limit: 最多可以添加 {count} 张图片
   comment_image_invalid: 仅支持 PNG、JPG、GIF 或 WebP 图片
   comment_image_too_large: 单张图片不能超过 {size}MB

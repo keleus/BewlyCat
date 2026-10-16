@@ -21,6 +21,8 @@ export interface CommentSubmission {
   /** 正文中 @ 的用户，键为不带 @ 的用户名 */
   atNameToMid: Record<string, number>
   pictures: CommentPicture[]
+  /** 同时转发到自己的动态（接口参数 sync_to_dynamic），仅一级评论使用 */
+  syncToDynamic?: boolean
 }
 
 function readFileAsDataUrl(file: File) {
@@ -33,7 +35,12 @@ function readFileAsDataUrl(file: File) {
 }
 
 // 评论收起或卡片卸载后清空数据，并忽略尚未完成的请求。
-export function useMomentComments(moment: DisplayMoment, state: CommentPreviewState, onCountChange?: (delta: number) => void) {
+export function useMomentComments(
+  moment: DisplayMoment,
+  state: CommentPreviewState,
+  onCountChange?: (delta: number) => void,
+  onReposted?: () => void,
+) {
   const { t } = useI18n()
   const toast = useToast()
   let disposed = false
@@ -230,11 +237,14 @@ export function useMomentComments(moment: DisplayMoment, state: CommentPreviewSt
       message: nested ? `回复 @${replyTo.comment.author} :${submission.message}` : submission.message,
       at_name_to_mid: Object.keys(submission.atNameToMid).length ? JSON.stringify(submission.atNameToMid) : '',
       pictures: submission.pictures.length ? JSON.stringify(submission.pictures) : '',
+      sync_to_dynamic: submission.syncToDynamic && !replyTo ? 1 : '',
       csrf,
     })
     if (response?.code !== 0)
       throw new Error(response?.message || t('moment_card.comment_send_failed'))
     onCountChange?.(1)
+    if (submission.syncToDynamic && !replyTo)
+      onReposted?.()
     const raw = response.data?.reply as RawCommentData | undefined
     if (disposed || !raw)
       return

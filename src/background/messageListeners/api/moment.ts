@@ -64,12 +64,26 @@ const API_MOMENT = {
     },
     afterHandle: AHS.J_D,
   },
+  // 与动态页 Web 评论框提交的字段保持一致；sync_to_dynamic=1 即“评论并转发”。
   addMomentComment: {
     url: 'https://api.bilibili.com/x/v2/reply/add',
     _fetch: {
       method: 'post',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-      body: { type: 17, oid: '', root: '', parent: '', message: '', plat: 1, at_name_to_mid: '', pictures: '', csrf: '' },
+      body: {
+        type: 17,
+        oid: '',
+        root: '',
+        parent: '',
+        message: '',
+        plat: 1,
+        at_name_to_mid: '',
+        pictures: '',
+        sync_to_dynamic: '' as 1 | '',
+        gaia_source: 'main_web',
+        statistics: JSON.stringify({ appId: 100, platform: 5 }),
+        csrf: '',
+      },
       bodySerializer: serializeCommentForm,
     },
     afterHandle: AHS.J_D,

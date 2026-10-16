@@ -16,6 +16,8 @@ const props = defineProps<{
   replyName?: string
   disabled?: boolean
   autofocus?: boolean
+  /** 一级评论可切换“评论并转发”，同时把评论转发到自己的动态 */
+  canSyncToDynamic?: boolean
   submit: (submission: CommentSubmission) => Promise<void>
   upload: (file: File) => Promise<CommentPicture>
 }>()
@@ -26,6 +28,7 @@ const editor = ref<InstanceType<typeof MomentRichEditor> | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const images = ref<Array<{ id: number, file: File, preview: string }>>([])
 const submitting = ref(false)
+const syncToDynamic = ref(false)
 const error = ref('')
 const MAX_LENGTH = 1000
 const MAX_IMAGES = 9
@@ -86,13 +89,19 @@ async function send() {
   submitting.value = true
   try {
     const pictures = await Promise.all(images.value.map(image => props.upload(image.file)))
-    await props.submit({ message: nodes.map(node => node.raw_text).join('').trim(), atNameToMid, pictures })
+    await props.submit({
+      message: nodes.map(node => node.raw_text).join('').trim(),
+      atNameToMid,
+      pictures,
+      syncToDynamic: !props.replyName && props.canSyncToDynamic && syncToDynamic.value,
+    })
     // 发送途中收起评论区时卸载钩子已存下草稿，成功后一并清除。
     commentDrafts.delete(props.draftKey)
     if (!alive)
       return
     images.value.forEach(image => URL.revokeObjectURL(image.preview))
     images.value = []
+    syncToDynamic.value = false
     editor.value?.setNodes([])
     if (props.replyName)
       emit('cancel')
@@ -179,6 +188,20 @@ onBeforeUnmount(() => {
             @click="fileInput?.click()"
           >
             <span i-tabler-photo />
+          </button>
+          <button
+            v-if="!replyName && canSyncToDynamic"
+            class="bew-segment-control__item bew-segment-control__item--icon"
+            type="button"
+            :title="t('moment_card.comment_sync_repost')"
+            :aria-label="t('moment_card.comment_sync_repost')"
+            :aria-pressed="syncToDynamic"
+            :data-active="syncToDynamic"
+            :disabled="submitting || disabled"
+            @mousedown.prevent
+            @click="syncToDynamic = !syncToDynamic"
+          >
+            <span i-tabler-share-3 />
           </button>
         </template>
         <template #actions>

@@ -22,6 +22,7 @@ const emit = defineEmits<{
   ready: []
   openImagePreview: [urls: string[], index: number, trigger: HTMLElement | null]
   countChange: [delta: number]
+  reposted: []
 }>()
 const { t } = useI18n()
 const account = useTopBarStore()
@@ -36,7 +37,7 @@ const {
   deleteComment,
   setReplyTarget,
   saveScrollPosition,
-} = useMomentComments(moment, state, delta => emit('countChange', delta))
+} = useMomentComments(moment, state, delta => emit('countChange', delta), () => emit('reposted'))
 const scroller = ref<HTMLElement>()
 const { reset: checkScroll } = useInfiniteScroll(scroller, loadComments, {
   distance: 80,
@@ -168,6 +169,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
         :draft-key="`${draftPrefix}:root`"
         :placeholder="state.rootPlaceholder || t('moment_card.comment_placeholder')"
         :disabled="state.inputDisabled"
+        :can-sync-to-dynamic="!moment.isForwardDisabled"
         :submit="submission => addComment(submission)"
         :upload="uploadImage"
       />

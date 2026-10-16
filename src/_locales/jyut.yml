@@ -1696,6 +1696,7 @@ moment_card:
   comment_delete_failed: 留言刪除失敗，請稍後再試
   comment_image_add: 加圖片
   comment_image_remove: 移除第 {index} 張圖片
+  comment_sync_repost: 同時轉發去我嘅動態
   comment_image_limit: 最多可以加 {count} 張圖片
   comment_image_invalid: 只支援 PNG、JPG、GIF 或者 WebP 圖片
   comment_image_too_large: 每張圖片唔可以超過 {size}MB

@@ -113,8 +113,17 @@ const repostCount = ref(0)
 const commentCountDelta = ref(0)
 const footerRef = ref<InstanceType<typeof MomentCardFooter> | null>(null)
 
+// 转发框与评论区互斥：展开其中一个时收起另一个。
 function toggleComments() {
+  if (!commentPreview.expanded)
+    repostExpanded.value = false
   toggleCommentPreview(commentPreview)
+}
+
+function toggleRepost() {
+  repostExpanded.value = !repostExpanded.value
+  if (repostExpanded.value && commentPreview.expanded)
+    toggleCommentPreview(commentPreview)
 }
 
 // 评论区展开分两阶段：先挂载并在 0fr 收起态加载首屏评论，数据就绪、最终高度确定后再播放展开，
@@ -776,7 +785,7 @@ function handleAdditionalClick(event: MouseEvent) {
         :comments-loading="commentsPreparing"
         :comments-controls="commentsId"
         :like-loading="isLikeLoading"
-        @toggle-repost="repostExpanded = !repostExpanded"
+        @toggle-repost="toggleRepost"
         @toggle-comments="toggleComments"
         @toggle-like="emit('toggleLike', moment)"
       />
@@ -798,6 +807,7 @@ function handleAdditionalClick(event: MouseEvent) {
           @ready="handleCommentsReady"
           @collapse="collapseComments"
           @count-change="delta => commentCountDelta += delta"
+          @reposted="repostCount++"
           @open-image-preview="(urls, index, trigger) => emit('openImagePreview', urls, index, trigger)"
         />
       </div>
