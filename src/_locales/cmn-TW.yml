@@ -153,6 +153,7 @@ settings:
   category_appearance_desc: 設定毛玻璃、主題顏色、桌布、字型、自訂樣式與其他頁面的適配。
   category_shortcuts_desc: 啟用、修改或還原 BewlyCat 與播放器快速鍵。
   breadcrumb: 設定位置
+  usage_guide: 使用說明：BewlyCat 功能講解影片合集
   group_interaction_layout: 互動與版面
   category_browsing_home_desc: 設定首頁推薦、內容過濾、關注頁和首頁分頁。
   category_browsing_video_card_desc: 設定影片卡片的版面、預覽、資訊顯示與開啟方式。
@@ -1444,6 +1445,8 @@ version_reminder:
   title: BewlyCat 已更新
   current_version: 目前版本 v{version}
   description: 查看此版本的更新記錄與最新動態。確認後，此版本將不再顯示提醒。
+  usage_guide: 使用說明
+  usage_guide_desc: 觀看 BewlyCat 功能講解影片合集，了解各項功能的用法
   github_releases: GitHub Releases
   github_releases_desc: 查看完整版本記錄與下載資訊
   bilibili_dynamic: Bilibili 動態

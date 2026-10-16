@@ -153,6 +153,7 @@ settings:
   category_appearance_desc: Configure frosted glass, theme colors, wallpaper, fonts, custom styles, and page style adaptation.
   category_shortcuts_desc: Enable, customize, or restore BewlyCat and player shortcuts.
   breadcrumb: Settings location
+  usage_guide: Help — BewlyCat feature guide videos
   group_interaction_layout: Interaction & Layout
   category_browsing_home_desc: Configure home recommendations, content filters, following, and home tabs.
   category_browsing_video_card_desc: Configure video card layout, previews, metadata, and link behavior.
@@ -1525,6 +1526,8 @@ version_reminder:
   title: BewlyCat has been updated
   current_version: Current version v{version}
   description: View the release notes and latest updates for this version. After confirmation, this version will not be shown again.
+  usage_guide: Help & tutorials
+  usage_guide_desc: Watch the BewlyCat feature guide video series to learn how each feature works
   github_releases: GitHub Releases
   github_releases_desc: View the full release history and downloads
   bilibili_dynamic: Bilibili posts

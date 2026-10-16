@@ -4,6 +4,7 @@ import type { CSSProperties } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { USAGE_GUIDE_URL } from '~/constants/usageGuide'
 import { settings } from '~/logic'
 import { createTransformer } from '~/utils/transformer'
 
@@ -696,6 +697,21 @@ function changeMenuItem(menuItem: MenuType) {
             </Transition>
           </main>
         </div>
+
+        <!-- 右下角落在内容区 x-12 内边距内，不遮挡设置项右侧控件 -->
+        <Tooltip class="settings-usage-guide" :content="$t('settings.usage_guide')" placement="left" floating>
+          <a
+            :href="USAGE_GUIDE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            :aria-label="$t('settings.usage_guide')"
+            :style="{
+              backdropFilter: settings.enableFrostedGlass ? 'var(--bew-filter-glass-1)' : 'none',
+            }"
+          >
+            <i i-mingcute:question-line />
+          </a>
+        </Tooltip>
       </div>
     </div>
 
@@ -850,6 +866,46 @@ function changeMenuItem(menuItem: MenuType) {
   strong:last-child {
     flex: 1 1 auto;
   }
+}
+
+/* 需高于 Tooltip 根节点自带的 relative 定位 */
+.settings-content .settings-usage-guide {
+  position: absolute;
+  right: var(--bew-space-4);
+  bottom: var(--bew-space-4);
+  z-index: 1;
+
+  a {
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    color: var(--bew-text-2);
+    font-size: 16px;
+    background: var(--bew-elevated);
+    border: 1px solid var(--bew-border-color);
+    border-radius: 50%;
+    box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
+    transition:
+      color var(--bew-duration-moderate) var(--bew-ease-standard),
+      background-color var(--bew-duration-moderate) var(--bew-ease-standard);
+  }
+
+  a:hover {
+    color: var(--bew-theme-color);
+    background: var(--bew-theme-color-30);
+  }
+
+  a:focus-visible {
+    outline: 2px solid var(--bew-theme-color-40);
+    outline-offset: 2px;
+  }
+}
+
+.dark .settings-content .settings-usage-guide a:not(:hover) {
+  background: var(--bew-fill-1);
 }
 
 .settings-search {
