@@ -30,7 +30,7 @@ import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmaku
 import { applyPreservedOrDefaultCustomPlay, applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
 import { markContentScriptHealthy } from '~/utils/refreshPrompt'
 import { getPluginSearchResultsUrl, navigateToPluginSearchResultsInPlace, openSearchResults, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
-import { setupShortcutHandlers } from '~/utils/shortcuts'
+import { installShortcutListener, setupShortcutHandlers } from '~/utils/shortcuts'
 import { SVG_ICONS } from '~/utils/svgIcons'
 import { openLinkInBackground } from '~/utils/tabs'
 import { initVerticalVideoZoom, resetVerticalVideoZoom } from '~/utils/verticalVideoZoom'
@@ -81,6 +81,8 @@ const contentScriptRuntimeUrl = browser.runtime.getURL('')
 
 if (shouldInitializeContentScript) {
   contentScriptGlobal.__BEWLYCAT_CONTENT_SCRIPT_INITIALIZED__ = true
+  // 先于 B 站脚本注册快捷键监听，覆盖其默认快捷键时才能先拦截事件。
+  installShortcutListener()
   browser.runtime.onMessage.addListener((message: unknown) => {
     if (typeof message === 'object' && message !== null && 'type' in message && message.type === CONTENT_SCRIPT_PING) {
       const expected = 'expectedIdentity' in message ? message.expectedIdentity : undefined

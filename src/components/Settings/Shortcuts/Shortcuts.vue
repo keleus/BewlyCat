@@ -10,6 +10,7 @@ import type {
   BaseShortcutSetting,
   ShortcutsSettings,
 } from '~/logic/storage'
+import { formatShortcutKey, getShortcutKeyFromEvent, isSameShortcutKey } from '~/utils/shortcutKeys'
 import { setupShortcutHandlers } from '~/utils/shortcuts'
 
 import SettingsItem from '../components/SettingsItem.vue'
@@ -97,9 +98,9 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
   {
     title: t('settings.shortcuts.group.fullscreen_mode'),
     shortcuts: [
-      { id: 'increaseVideoSize', name: t('settings.shortcuts.increase_video_size'), description: t('settings.shortcuts.increase_video_size_desc'), defaultKey: 'Shift++' },
-      { id: 'decreaseVideoSize', name: t('settings.shortcuts.decrease_video_size'), description: t('settings.shortcuts.decrease_video_size_desc'), defaultKey: 'Shift+-' },
-      { id: 'resetVideoSize', name: t('settings.shortcuts.reset_video_size'), description: t('settings.shortcuts.reset_video_size_desc'), defaultKey: 'Shift+0' },
+      { id: 'increaseVideoSize', name: t('settings.shortcuts.increase_video_size'), description: t('settings.shortcuts.increase_video_size_desc'), defaultKey: '' },
+      { id: 'decreaseVideoSize', name: t('settings.shortcuts.decrease_video_size'), description: t('settings.shortcuts.decrease_video_size_desc'), defaultKey: '' },
+      { id: 'resetVideoSize', name: t('settings.shortcuts.reset_video_size'), description: t('settings.shortcuts.reset_video_size_desc'), defaultKey: '' },
       { id: 'videoTitle', name: t('settings.shortcuts.video_title'), description: t('settings.shortcuts.video_title_desc'), defaultKey: 'B' },
       { id: 'videoTime', name: t('settings.shortcuts.video_time'), description: t('settings.shortcuts.video_time_desc'), defaultKey: 'G' },
       { id: 'clockTime', name: t('settings.shortcuts.clock_time'), description: t('settings.shortcuts.clock_time_desc'), defaultKey: 'H' },
@@ -109,7 +110,7 @@ const configurableShortcutsGroups: ShortcutGroup[] = [
 
 // --- Reactive State ---
 const editingShortcutId = ref<ConfigurableShortcutId | null>(null)
-const currentKeyCombo = ref<string[]>([])
+const currentKeyCombo = ref('')
 
 const vFocusShortcutEditor = {
   mounted(element: HTMLElement) {
@@ -140,7 +141,7 @@ function checkShortcutConflict(key: string, currentId: ConfigurableShortcutId): 
 
       const shortcutSetting = settings.value.shortcuts[shortcut.id]
       if (shortcutSetting && typeof shortcutSetting === 'object' && shortcutSetting.key) {
-        if (shortcutSetting.key.toLowerCase() === key.toLowerCase()) {
+        if (isSameShortcutKey(shortcutSetting.key, key)) {
           return {
             hasConflict: true,
             conflictInfo: {
@@ -159,7 +160,7 @@ function checkShortcutConflict(key: string, currentId: ConfigurableShortcutId): 
 // --- Edit Functions ---
 function startEditShortcut(id: ConfigurableShortcutId) {
   editingShortcutId.value = id
-  currentKeyCombo.value = [] // 重置当前按键组合
+  currentKeyCombo.value = '' // 重置当前按键组合
 }
 
 function saveShortcutKey(id: ConfigurableShortcutId, newKey: string) {
@@ -179,7 +180,7 @@ function saveShortcutKey(id: ConfigurableShortcutId, newKey: string) {
 
   // Exit editing mode
   editingShortcutId.value = null
-  currentKeyCombo.value = [] // 重置当前按键组合
+  currentKeyCombo.value = '' // 重置当前按键组合
 
   // Re-register shortcuts to ensure the new shortcut is immediately available
   try {
@@ -192,7 +193,7 @@ function saveShortcutKey(id: ConfigurableShortcutId, newKey: string) {
 
 function cancelEdit() {
   editingShortcutId.value = null
-  currentKeyCombo.value = [] // 重置当前按键组合
+  currentKeyCombo.value = '' // 重置当前按键组合
 }
 
 function handleKeyDown(event: KeyboardEvent, id: ConfigurableShortcutId) {
@@ -202,57 +203,10 @@ function handleKeyDown(event: KeyboardEvent, id: ConfigurableShortcutId) {
   event.preventDefault()
   event.stopPropagation()
 
-  // 忽略单独的修饰键
-  if (['Control', 'Alt', 'Shift', 'Meta', 'Dead'].includes(event.key))
-    return
-
-  // Update current key combo
-  const keyParts: string[] = []
-  if (event.ctrlKey)
-    keyParts.push('Ctrl')
-  if (event.altKey)
-    keyParts.push('Alt')
-  if (event.shiftKey)
-    keyParts.push('Shift')
-  if (event.metaKey)
-    keyParts.push('Meta')
-
-  // 处理主按键
-  let mainKey = event.key
-  if (mainKey === ' ') {
-    mainKey = 'Space'
-  }
-  // 对于单字符按键转为大写
-  else if (mainKey.length === 1) {
-    mainKey = mainKey.toUpperCase()
-  }
-  // 特殊按键处理
-  else if (mainKey === 'ArrowUp') {
-    mainKey = '↑'
-  }
-  else if (mainKey === 'ArrowDown') {
-    mainKey = '↓'
-  }
-  else if (mainKey === 'ArrowLeft') {
-    mainKey = '←'
-  }
-  else if (mainKey === 'ArrowRight') {
-    mainKey = '→'
-  }
-  else if (mainKey === 'Backspace') {
-    mainKey = 'Backspace'
-  }
-  else if (mainKey === 'Escape') {
-    mainKey = 'Esc'
-  }
-
-  // 只有当主按键不是修饰键时才添加
-  if (!['Control', 'Alt', 'Shift', 'Meta', 'Dead'].includes(mainKey)) {
-    keyParts.push(mainKey)
-  }
-
-  // Update the current key combo
-  currentKeyCombo.value = keyParts
+  // 单独的修饰键返回 null，保留已录到的组合
+  const keyCombo = getShortcutKeyFromEvent(event)
+  if (keyCombo)
+    currentKeyCombo.value = keyCombo
 }
 
 function handleKeyUp(event: KeyboardEvent, id: ConfigurableShortcutId) {
@@ -272,25 +226,16 @@ function handleKeyUp(event: KeyboardEvent, id: ConfigurableShortcutId) {
   }
 
   // 如果所有按键都已释放，保存快捷键
-  if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey) {
-    if (currentKeyCombo.value.length > 0) {
-      const keyCombo = currentKeyCombo.value.join('+')
+  if (!event.ctrlKey && !event.altKey && !event.shiftKey && !event.metaKey && currentKeyCombo.value) {
+    const keyCombo = currentKeyCombo.value
+    const conflictResult = checkShortcutConflict(keyCombo, id)
 
-      // 检查是否为空组合
-      if (keyCombo.trim() === '') {
-        cancelEdit()
-        return
-      }
-
-      const conflictResult = checkShortcutConflict(keyCombo, id)
-
-      if (conflictResult.hasConflict && conflictResult.conflictInfo) {
-        toast.warning(t('settings.shortcuts.conflict', { name: conflictResult.conflictInfo.name }))
-        cancelEdit()
-      }
-      else {
-        saveShortcutKey(id, keyCombo)
-      }
+    if (conflictResult.hasConflict && conflictResult.conflictInfo) {
+      toast.warning(t('settings.shortcuts.conflict', { name: conflictResult.conflictInfo.name }))
+      cancelEdit()
+    }
+    else {
+      saveShortcutKey(id, keyCombo)
     }
   }
 }
@@ -396,10 +341,10 @@ function undoResetAllShortcuts() {
                   @keyup="handleKeyUp($event, shortcutDef.id)"
                   @blur="cancelEdit"
                 >
-                  {{ currentKeyCombo.length > 0 ? currentKeyCombo.join('+') : t('settings.shortcuts.press_keys') }}
+                  {{ currentKeyCombo ? formatShortcutKey(currentKeyCombo) : t('settings.shortcuts.press_keys') }}
                 </div>
                 <div v-else class="shortcut-key border rounded px-3 py-1 text-sm">
-                  {{ getShortcutSetting(shortcutDef.id)?.key || shortcutDef.defaultKey }}
+                  {{ formatShortcutKey(getShortcutSetting(shortcutDef.id)?.key || shortcutDef.defaultKey) || t('settings.shortcuts.not_set') }}
                 </div>
 
                 <!-- Action Buttons -->

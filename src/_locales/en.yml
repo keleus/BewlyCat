@@ -1098,6 +1098,7 @@ settings:
     reset_all_button: Reset All Shortcuts
     reset_all_ext_shortcuts: Reset All Extension Shortcuts
     press_keys: Press the shortcut keys
+    not_set: Not set
     conflict: The shortcut is already used by the extension shortcut “{name}” and cannot be assigned again.
     danmu_status: Show Danmu Status
     danmu_status_desc: Show current danmu toggle status

@@ -15,6 +15,7 @@ import { settings } from '~/logic'
 import type { DockItem } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { isHomePage, openLinkToNewTab } from '~/utils/main'
+import { matchesShortcutKey } from '~/utils/shortcutKeys'
 
 import Tooltip from '../Tooltip.vue'
 import type { HoveringDockItem } from './types'
@@ -471,11 +472,8 @@ function handleHomeRefreshKeydown(event: KeyboardEvent) {
     return
   }
 
-  // 获取配置的快捷键
-  const configuredKey = shortcutConfig.key || 'R'
-
   // 检查是否按下了配置的快捷键
-  if (event.key && event.key.toUpperCase() === configuredKey.toUpperCase() && !event.ctrlKey && !event.metaKey && !event.altKey) {
+  if (matchesShortcutKey(event, shortcutConfig.key || 'R')) {
     // 检查页面中是否有任何输入框处于焦点状态
     const activeElement = document.activeElement
 

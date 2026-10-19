@@ -104,9 +104,9 @@ export interface ShortcutsSettings {
   homeRefresh?: BaseShortcutSetting // R
 
   // 全屏模式下快捷键
-  increaseVideoSize?: BaseShortcutSetting // Shift++
-  decreaseVideoSize?: BaseShortcutSetting // Shift+-
-  resetVideoSize?: BaseShortcutSetting // Shift+0
+  increaseVideoSize?: BaseShortcutSetting // 默认未绑定
+  decreaseVideoSize?: BaseShortcutSetting // 默认未绑定
+  resetVideoSize?: BaseShortcutSetting // 默认未绑定
   videoTitle?: BaseShortcutSetting // B
   videoTime?: BaseShortcutSetting // G
   clockTime?: BaseShortcutSetting // H
@@ -936,9 +936,9 @@ export const originalSettings: Settings = {
     previousFrame: { key: ',', enabled: true },
     nextFrame: { key: '.', enabled: true },
     replay: { key: 'Shift+Backspace', enabled: true },
-    increaseVideoSize: { key: 'Shift++', enabled: true },
-    decreaseVideoSize: { key: 'Shift+-', enabled: true },
-    resetVideoSize: { key: 'Shift+0', enabled: true },
+    increaseVideoSize: { key: '', enabled: false },
+    decreaseVideoSize: { key: '', enabled: false },
+    resetVideoSize: { key: '', enabled: false },
     videoTitle: { key: 'B', enabled: true },
     videoTime: { key: 'G', enabled: true },
     clockTime: { key: 'H', enabled: true },
@@ -1258,9 +1258,6 @@ export const settings = useSettingsStorage(originalSettings, {
 
     Reflect.deleteProperty(record, 'customPlayDefaultEnabled')
     Reflect.deleteProperty(record, 'randomPlayOrder')
-
-    if (record.shortcuts?.webFullscreen?.key === 'W')
-      record.shortcuts.webFullscreen.key = originalSettings.shortcuts.webFullscreen?.key
 
     if (!record.shortcuts?.bewlyWidescreen) {
       record.shortcuts = {
