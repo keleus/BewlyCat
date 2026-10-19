@@ -32,7 +32,6 @@ const isEscPressed = ref<boolean>(false)
 const escPressedTimer = ref<NodeJS.Timeout | null>(null)
 const escHintTimer = ref<NodeJS.Timeout | null>(null)
 const openTimer = ref<NodeJS.Timeout | null>(null)
-const disableEscPress = ref<boolean>(false)
 const showEscHint = ref<boolean>(false)
 let darkModeSyncTimers: ReturnType<typeof setTimeout>[] = []
 
@@ -112,21 +111,7 @@ function handleDrawerCloseRequestMessage(event: MessageEvent) {
   if (event.data?.type !== 'BEWLY_DRAWER_CLOSE_REQUEST' || event.data?.source !== 'iframe')
     return
 
-  // 根据设置决定是立即关闭还是需要二次确认
-  if (settings.value.closeDrawerWithoutPressingEscAgain) {
-    handleClose()
-  }
-  else if (isEscPressed.value) {
-    handleClose()
-  }
-  else {
-    isEscPressed.value = true
-    if (escPressedTimer.value)
-      clearTimeout(escPressedTimer.value)
-    escPressedTimer.value = setTimeout(() => {
-      isEscPressed.value = false
-    }, 1300)
-  }
+  requestClose()
 }
 
 // 监听黑暗模式变化
@@ -139,13 +124,6 @@ watch(() => settings.value.darkModeBaseColor, () => {
   syncIframeDarkModeState()
 })
 
-watch(() => showIframe.value, (newValue) => {
-  if (newValue)
-    scheduleRevealIframe()
-})
-
-const beforeUrl = ref<string>('')
-
 function handleOpen() {
   show.value = true
   isIframeLoaded.value = false // 重置加载状态
@@ -157,10 +135,8 @@ function handleOpen() {
     isPageScrollLocked.value = true
   }
 
-  if (beforeUrl.value !== props.url) {
+  if (currentUrl.value !== props.url)
     currentUrl.value = props.url
-    beforeUrl.value = props.url
-  }
   // 延迟加载iframe，确保抽屉动画完成后再开始加载内容
   if (openTimer.value)
     clearTimeout(openTimer.value)
@@ -174,7 +150,7 @@ function handleOpen() {
   }, 350) // 等待抽屉滑入动画完成(300ms)后再显示iframe，避免动画冲突
 }
 
-async function handleClose() {
+function handleClose() {
   if (delayCloseTimer.value) {
     clearTimeout(delayCloseTimer.value)
   }
@@ -193,6 +169,22 @@ async function handleClose() {
   delayCloseTimer.value = setTimeout(() => {
     emit('close')
   }, 300)
+}
+
+// 统一的关闭请求入口：ESC 与 iframe 内请求共用。
+// 未开启“直接关闭”时，首次请求只进入待确认态，1.3s 内再次请求才真正关闭。
+// handleClose 内部会清理 escPressedTimer，故进入关闭分支时无需手动清理。
+function requestClose() {
+  if (settings.value.closeDrawerWithoutPressingEscAgain || isEscPressed.value) {
+    handleClose()
+    return
+  }
+  isEscPressed.value = true
+  if (escPressedTimer.value)
+    clearTimeout(escPressedTimer.value)
+  escPressedTimer.value = setTimeout(() => {
+    isEscPressed.value = false
+  }, 1300)
 }
 
 async function releaseIframeResources() {
@@ -241,36 +233,18 @@ function handleKeydown(e: KeyboardEvent) {
   if (activeDrawer.value !== DrawerType.NotificationsDrawer)
     return
 
-  const hadEscapePriorityState = disableEscPress.value
-    || !!(document.fullscreenElement
-      || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
+  const hadEscapePriorityState = !!(document.fullscreenElement
+    || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement)
 
   window.setTimeout(() => {
     if (hadEscapePriorityState
-      || disableEscPress.value
       || e.defaultPrevented
       || e.cancelBubble
       || activeDrawer.value !== DrawerType.NotificationsDrawer) {
       return
     }
 
-    if (settings.value.closeDrawerWithoutPressingEscAgain) {
-      if (escPressedTimer.value)
-        clearTimeout(escPressedTimer.value)
-      handleClose()
-      return
-    }
-    if (isEscPressed.value) {
-      handleClose()
-    }
-    else {
-      isEscPressed.value = true
-      if (escPressedTimer.value)
-        clearTimeout(escPressedTimer.value)
-      escPressedTimer.value = setTimeout(() => {
-        isEscPressed.value = false
-      }, 1300)
-    }
+    requestClose()
   }, 0)
 }
 
@@ -368,6 +342,10 @@ onBeforeUnmount(() => {
   drawerActive = false
   removeGlobalListeners()
   clearLifecycleTimers()
+  if (delayCloseTimer.value) {
+    clearTimeout(delayCloseTimer.value)
+    delayCloseTimer.value = null
+  }
   if (isPageScrollLocked.value) {
     unlockPageScroll()
     isPageScrollLocked.value = false
@@ -510,29 +488,30 @@ function handleFocusDrawer(e?: Event) {
             </div>
           </Transition>
 
-          <Transition name="fade">
-            <!-- Iframe -->
-            <iframe
-              v-show="showIframe"
-              ref="iframeRef"
-              :src="src"
-              frameborder="0"
-              pointer-events-auto
-              pos="relative right-0"
-              sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-              w-inherit
-              max-w-inherit
-              :style="{
-                height: 'calc(100%)',
-                opacity: isIframeDisplayReady ? 1 : 0,
-                visibility: isIframeDisplayReady ? 'visible' : 'hidden',
-                pointerEvents: isIframeDisplayReady ? 'auto' : 'none',
-                transition: 'opacity 0.2s ease',
-                backgroundColor: 'var(--bew-bg)',
-              }"
-              @load="handleIframeLoad"
-            />
-          </Transition>
+          <!--
+            Iframe 的显隐只由 isIframeDisplayReady 驱动（含延迟揭幕），
+            不要再套外层 Transition：那会与内联的 opacity/transition 争夺同一属性。
+          -->
+          <iframe
+            v-show="showIframe"
+            ref="iframeRef"
+            :src="src"
+            frameborder="0"
+            pointer-events-auto
+            pos="relative right-0"
+            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+            w-inherit
+            max-w-inherit
+            :style="{
+              height: 'calc(100%)',
+              opacity: isIframeDisplayReady ? 1 : 0,
+              visibility: isIframeDisplayReady ? 'visible' : 'hidden',
+              pointerEvents: isIframeDisplayReady ? 'auto' : 'none',
+              transition: 'opacity var(--bew-duration-normal, 200ms) var(--bew-ease-standard, ease)',
+              backgroundColor: 'var(--bew-bg)',
+            }"
+            @load="handleIframeLoad"
+          />
         </div>
       </Transition>
     </div>
@@ -542,12 +521,23 @@ function handleFocusDrawer(e?: Event) {
 <style lang="scss" scoped>
 .drawer-enter-active,
 .drawer-leave-active {
-  transition: transform 0.3s;
+  transition: transform var(--bew-duration-moderate, 300ms) var(--bew-ease-standard, ease);
 }
 
 .drawer-enter-from,
 .drawer-leave-to {
   transform: translateX(100%);
+}
+
+// 降级偏好：去掉滑入滑出位移，抽屉即时显隐（遮罩的淡入淡出仍保留）
+@media (prefers-reduced-motion: reduce) {
+  .drawer-enter-active,
+  .drawer-leave-active,
+  .drawer-enter-from,
+  .drawer-leave-to {
+    transition: none;
+    transform: none;
+  }
 }
 
 /* 修改全局样式，避免重复设置 */
