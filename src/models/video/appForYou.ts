@@ -402,6 +402,10 @@ export interface ThreePoint {
 
 export interface DislikeReason {
   id: number
+  // 同类原因（如多个「频道:xxx」）共用 id，靠下列字段区分具体对象
+  mid?: number
+  rid?: number
+  tag_id?: number
   name: string
   toast: ToastEnum
 }
