@@ -98,8 +98,8 @@ watch(isLayoutEditing, (editing) => {
                 }"
                 aria-hidden="true"
               />
+              <!-- 品牌标识档在窄屏下改为显示该图标，避免文字标识被裁切 -->
               <svg
-                v-else
                 t="1720198072316"
                 class="icon"
                 viewBox="0 0 1024 1024"
@@ -201,6 +201,10 @@ watch(isLayoutEditing, (editing) => {
     display: inline-flex;
     width: auto;
     padding-inline: var(--bew-space-2);
+
+    .icon {
+      display: none;
+    }
   }
 
   &--white {
@@ -263,18 +267,16 @@ watch(isLayoutEditing, (editing) => {
 
 @media (max-width: 767px) {
   .logo--brand {
+    display: grid;
     width: var(--bew-top-bar-primary-control-height);
-    padding-inline: var(--bew-space-2);
-    overflow: hidden;
-    justify-content: flex-start;
+    padding-inline: 0;
 
     .logo__brand {
-      width: var(--bew-top-bar-brand-logo-compact-size);
-      height: var(--bew-top-bar-brand-logo-compact-size);
-      mask-position: left center;
-      mask-size: auto var(--bew-top-bar-brand-logo-compact-size);
-      -webkit-mask-position: left center;
-      -webkit-mask-size: auto var(--bew-top-bar-brand-logo-compact-size);
+      display: none;
+    }
+
+    .icon {
+      display: block;
     }
   }
 }
