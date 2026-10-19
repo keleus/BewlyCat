@@ -432,6 +432,8 @@ settings:
     By default, Bilibili will specifically handle Chinese punctuation to achieve
     left alignment. If you are using a custom font, it is recommended to remove
     the indent.
+  cjk_latin_autospace: Auto spacing between CJK and Latin
+  cjk_latin_autospace_desc: Automatically adds a small gap between CJK characters (such as Hanzi and Kana) and half-width Latin letters or digits for better mixed-script typography. Only affects rendering, not the text itself. Requires browser support for CSS text-autospace (e.g. Chrome / Edge 140+); has no effect otherwise.
   enable_frosted_glass: Enable frosted glass effect
   frosted_glass_blur_intensity: Frosted glass blur intensity
   enable_liquid_segment_indicator: Enable liquid segment indicator

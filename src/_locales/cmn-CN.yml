@@ -419,6 +419,8 @@ settings:
   remove_the_indent_from_chinese_punctuation: 移除中文标点符号的缩进
   remove_the_indent_from_chinese_punctuation_desc: |
     Bilibili 默认会专门处理中文标点符号以实现左对齐。 如果你正在使用自定义字体，建议移除缩进。
+  cjk_latin_autospace: 中英文间自动加空隙
+  cjk_latin_autospace_desc: 在汉字、假名等 CJK 字符与半角英文字母、数字之间自动加入微小间隙，提升混排观感。仅调整显示，不修改文本内容；需浏览器支持 CSS text-autospace（如 Chrome / Edge 140 及以上），不支持时无效果。
   enable_frosted_glass: 启用毛玻璃效果
   frosted_glass_blur_intensity: 毛玻璃模糊强度
   enable_liquid_segment_indicator: 启用液态分段指示器

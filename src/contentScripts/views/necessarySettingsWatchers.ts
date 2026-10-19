@@ -183,6 +183,27 @@ export function setupNecessarySettingsWatchers() {
     { immediate: true },
   )
 
+  // text-autospace 为继承属性，设在根元素即可覆盖原生页面与 Shadow DOM 内的插件 UI；
+  // 不支持该属性的浏览器会忽略此规则
+  let cjkLatinAutospaceStyleEl: HTMLStyleElement | null = null
+  watch(
+    () => settings.value.enableCjkLatinAutospace,
+    (enabled) => {
+      if (enabled) {
+        cjkLatinAutospaceStyleEl ??= injectCSS(`
+          html {
+            text-autospace: normal !important;
+          }
+        `)
+      }
+      else {
+        cjkLatinAutospaceStyleEl?.remove()
+        cjkLatinAutospaceStyleEl = null
+      }
+    },
+    { immediate: true },
+  )
+
   watch(
     () => settings.value.enableFrostedGlass,
     applyFrostedGlassState,

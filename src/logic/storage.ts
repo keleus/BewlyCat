@@ -313,6 +313,8 @@ export interface Settings {
   fontFamily: string
   overrideDanmakuFont: boolean
   removeTheIndentFromChinesePunctuation: boolean
+  /** 在 CJK 与拉丁字母、数字之间自动加入间隙（CSS text-autospace） */
+  enableCjkLatinAutospace: boolean
 
   enableFrostedGlass: boolean
   frostedGlassBlurIntensity: number
@@ -650,6 +652,7 @@ export const originalSettings: Settings = {
   fontFamily: '',
   overrideDanmakuFont: true,
   removeTheIndentFromChinesePunctuation: false,
+  enableCjkLatinAutospace: true,
 
   enableFrostedGlass: false,
   frostedGlassBlurIntensity: 20,

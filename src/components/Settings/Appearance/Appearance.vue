@@ -358,6 +358,9 @@ function changeWallpaper(url: string) {
       <SettingsItem :title="$t('settings.remove_the_indent_from_chinese_punctuation')" :desc="$t('settings.remove_the_indent_from_chinese_punctuation_desc')" right-width="auto">
         <Radio v-model="settings.removeTheIndentFromChinesePunctuation" />
       </SettingsItem>
+      <SettingsItem :title="$t('settings.cjk_latin_autospace')" :desc="$t('settings.cjk_latin_autospace_desc')" right-width="auto">
+        <Radio v-model="settings.enableCjkLatinAutospace" />
+      </SettingsItem>
       <SettingsItem :title="$t('settings.override_danmaku_font')" :desc="$t('settings.override_danmaku_font_desc')" right-width="auto">
         <Radio v-model="settings.overrideDanmakuFont" />
       </SettingsItem>

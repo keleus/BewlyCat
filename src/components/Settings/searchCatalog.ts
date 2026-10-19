@@ -622,6 +622,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_fonts',
     'settings.customize_font',
     'settings.remove_the_indent_from_chinese_punctuation',
+    'settings.cjk_latin_autospace',
     'settings.override_danmaku_font',
     'settings.customize_css',
     ...wallpaperTitleKeys,
