@@ -136,6 +136,7 @@ function transformRankingVideo(item: RankingVideoItem, rank: number): Video {
     likeStr: (item.stat as any)?.like_str ?? item.stat.like,
     publishedTimestamp: item.pubdate,
     bvid: item.bvid,
+    category: item.tname || undefined,
     rank,
     cid: item.cid,
     threePointV2: [],

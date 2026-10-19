@@ -347,6 +347,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_video_card_content',
     'settings.show_video_card_author_avatar',
     'settings.show_video_card_author_name',
+    'settings.show_video_card_category',
     'settings.show_video_card_video_tag',
     'settings.show_video_card_recommend_tag',
     'settings.show_video_card_publish_time',

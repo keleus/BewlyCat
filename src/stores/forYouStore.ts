@@ -19,6 +19,7 @@ export interface VideoCardDisplayData {
     followed: boolean
     mid: number
   }
+  category?: string
   tag?: string
   view?: number
   viewStr?: string

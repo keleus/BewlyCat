@@ -26,7 +26,8 @@ function updateVisibleMeta(row: HTMLElement) {
         + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth)
     return {
       element,
-      priority: Number(element.dataset.metaPriority ?? 3),
+      // 未标注优先级的项（如视频类型图标）排在所有标签之后。
+      priority: Number(element.dataset.metaPriority ?? 4),
       // 使用布局宽度，避免卡片的缩放动画影响可容纳标签的数量。
       width: Number.parseFloat(style.width) + paddingAndBorder + Number.parseFloat(style.marginLeft) + Number.parseFloat(style.marginRight),
     }

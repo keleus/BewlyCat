@@ -10,6 +10,7 @@ const { t } = useI18n()
 type ContentSettingKey
   = | 'showVideoCardAuthorAvatar'
     | 'showVideoCardAuthorName'
+    | 'showVideoCardCategory'
     | 'showVideoCardVideoTag'
     | 'showVideoCardRecommendTag'
     | 'showVideoCardPublishTime'
@@ -49,6 +50,7 @@ const groups = computed<ContentGroup[]>(() => [
     label: t('settings.video_card_content_region_tags'),
     elements: [
       { setting: 'showVideoCardPublishTime', label: t('settings.show_video_card_publish_time'), icon: 'i-mingcute:calendar-time-add-line' },
+      { setting: 'showVideoCardCategory', label: t('settings.show_video_card_category'), icon: 'i-mingcute:classify-2-line' },
       { setting: 'showVideoCardVideoTag', label: t('settings.show_video_card_video_tag'), icon: 'i-mingcute:tag-line' },
       { setting: 'showVideoCardRecommendTag', label: t('settings.show_video_card_recommend_tag'), icon: 'i-mingcute:sparkles-line' },
     ],

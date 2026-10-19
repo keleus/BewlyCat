@@ -46,6 +46,7 @@ import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useHomeTabState } from '~/composables/useHomeTabState'
 import { OVERLAY_SCROLL_BAR_SCROLL } from '~/constants/globalEvents'
+import { getVideoZoneName } from '~/constants/videoZones'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import {
@@ -1241,6 +1242,7 @@ function mapUserVideoToVideo(item: UserVideo): Video {
     danmaku: item.video_review,
     publishedTimestamp: item.created,
     capsuleText: calcTimeSince(item.created * 1000),
+    category: getVideoZoneName(item.typeid),
     tag: item.is_union_video ? t('home.collaboration') : undefined,
     threePointV2: [],
   }

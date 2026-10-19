@@ -24,6 +24,8 @@ export interface UserVideo {
   author: string
   mid: number
   created: number
+  /** 旧版分区 tid，接口不返回分区名 */
+  typeid?: number
   length: string
   play: number | string
   video_review: number

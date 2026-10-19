@@ -43,7 +43,9 @@ defineExpose({
 const MAX_INTERFACE_TAG_COUNT = 4
 const MIN_TAG_COUNT_BEFORE_PLUGIN = 2
 
+// 空间不足时按 data-meta-priority 从小到大保留：时间(0) > 分区(1) > 接口标签(2) > 计算标签(3)
 interface VideoCardTag {
+  priority: 1 | 2
   searchable: boolean
   text: string
 }
@@ -58,18 +60,21 @@ const content = computed(() => {
     : Array.isArray(rawTag)
       ? rawTag.filter(Boolean)
       : [rawTag]
+  // 分区与其他接口标签分开控制，分区始终排在最前
   const cardTags: VideoCardTag[] = [
-    ...(video?.category
-      ? [{ searchable: true, text: video.category }]
+    ...(currentSettings.showVideoCardCategory && video?.category
+      ? [{ priority: 1 as const, searchable: true, text: video.category }]
       : []),
-    ...displayTags.map(text => ({ searchable: false, text })),
-    ...(video?.searchableTags ?? [])
-      .filter(Boolean)
-      .map(text => ({ searchable: true, text })),
+    ...(currentSettings.showVideoCardVideoTag
+      ? [
+          ...displayTags.map(text => ({ priority: 2 as const, searchable: false, text })),
+          ...(video?.searchableTags ?? [])
+            .filter(Boolean)
+            .map(text => ({ priority: 2 as const, searchable: true, text })),
+        ]
+      : []),
   ]
-  const visibleVideoTags = currentSettings.showVideoCardVideoTag
-    ? cardTags.slice(0, MAX_INTERFACE_TAG_COUNT)
-    : []
+  const visibleVideoTags = cardTags.slice(0, MAX_INTERFACE_TAG_COUNT)
   const remainingPluginTagCount = Math.max(0, MIN_TAG_COUNT_BEFORE_PLUGIN - visibleVideoTags.length)
   const visiblePluginComputedTags = currentSettings.showVideoCardRecommendTag && remainingPluginTagCount > 0
     ? props.pluginComputedTags.slice(0, remainingPluginTagCount)
@@ -85,7 +90,8 @@ const content = computed(() => {
     && (Boolean(video?.view) || Boolean(video?.viewStr))
   const showLegacyDanmakuCount = currentSettings.showVideoCardDanmakuCount
     && (Boolean(video?.danmaku) || Boolean(video?.danmakuStr))
-  const metaPlaceholderEnabled = currentSettings.showVideoCardVideoTag
+  const metaPlaceholderEnabled = currentSettings.showVideoCardCategory
+    || currentSettings.showVideoCardVideoTag
     || currentSettings.showVideoCardRecommendTag
     || currentSettings.showVideoCardPublishTime
     || Boolean(video?.type)
@@ -354,7 +360,7 @@ const content = computed(() => {
             v-for="videoTag in content.visibleVideoTags"
             :key="`video-${videoTag.searchable}-${videoTag.text}`"
             class="video-card-meta__chip"
-            data-meta-priority="1"
+            :data-meta-priority="videoTag.priority"
             :class="{ 'video-card-tag--searchable': videoTag.searchable }"
             un-text="$bew-theme-color"
             p="x-2"
@@ -372,7 +378,7 @@ const content = computed(() => {
           <span
             v-for="pluginTag in content.visiblePluginComputedTags"
             :key="`plugin-${pluginTag}`"
-            data-meta-priority="2"
+            data-meta-priority="3"
             class="video-card-meta__chip"
             text="$bew-theme-color"
             p="x-2"
@@ -443,7 +449,7 @@ const content = computed(() => {
                 v-for="videoTag in content.visibleVideoTags"
                 :key="`video-${videoTag.searchable}-${videoTag.text}`"
                 class="video-card-meta__chip"
-                data-meta-priority="1"
+                :data-meta-priority="videoTag.priority"
                 :class="{ 'video-card-tag--searchable': videoTag.searchable }"
                 un-text="$bew-theme-color"
                 p="x-2"
@@ -461,7 +467,7 @@ const content = computed(() => {
               <span
                 v-for="pluginTag in content.visiblePluginComputedTags"
                 :key="`plugin-${pluginTag}`"
-                data-meta-priority="2"
+                data-meta-priority="3"
                 class="video-card-meta__chip"
                 text="$bew-theme-color"
                 p="x-2"
@@ -501,7 +507,7 @@ const content = computed(() => {
               v-for="videoTag in content.visibleVideoTags"
               :key="`legacy-video-${videoTag.searchable}-${videoTag.text}`"
               class="video-card-meta__chip"
-              data-meta-priority="1"
+              :data-meta-priority="videoTag.priority"
               :class="{ 'video-card-tag--searchable': videoTag.searchable }"
               un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
               :title="videoTag.text"
@@ -514,7 +520,7 @@ const content = computed(() => {
             <span
               v-for="pluginTag in content.visiblePluginComputedTags"
               :key="`plugin-${pluginTag}`"
-              data-meta-priority="2"
+              data-meta-priority="3"
               class="video-card-meta__chip"
               text="$bew-theme-color"
               lh-6
@@ -602,7 +608,7 @@ const content = computed(() => {
                 v-for="videoTag in content.visibleVideoTags"
                 :key="`legacy-video-${videoTag.searchable}-${videoTag.text}`"
                 class="video-card-meta__chip"
-                data-meta-priority="1"
+                :data-meta-priority="videoTag.priority"
                 :class="{ 'video-card-tag--searchable': videoTag.searchable }"
                 un-text="$bew-theme-color" lh-6 p="x-2" rounded="$bew-radius" bg="$bew-theme-color-20"
                 :title="videoTag.text"
@@ -615,7 +621,7 @@ const content = computed(() => {
               <span
                 v-for="pluginTag in content.visiblePluginComputedTags"
                 :key="`plugin-${pluginTag}`"
-                data-meta-priority="2"
+                data-meta-priority="3"
                 class="video-card-meta__chip"
                 text="$bew-theme-color"
                 lh-6

@@ -46,6 +46,8 @@ export interface PopularSeriesVideoItem {
   pic: string
   duration: number
   pubdate: number
+  tid?: number
+  tname?: string
   owner: {
     mid: number
     name: string

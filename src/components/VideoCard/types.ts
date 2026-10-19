@@ -55,7 +55,7 @@ export interface Video {
   tag?: string | string[]
   /** Real content tags exposed on search-result pages; clicking these starts a search. */
   searchableTags?: string[]
-  /** Searchable video partition name from APIs, such as `typename` in search results. */
+  /** Searchable video partition name from APIs, such as `tname`, `typename` or history `tag_name`. */
   category?: string
   rank?: number
   type?: 'horizontal' | 'vertical' | 'bangumi' | 'ketang'

@@ -707,6 +707,8 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
       followed,
       mid: item.args?.up_id || 0,
     },
+    // App 推荐的 rname 为分区名，tname 为话题标签
+    category: decodeHtmlEntities(item.args?.rname) || undefined,
     tag: decodeHtmlEntities(tag),
     capsuleText: decodeHtmlEntities(capsuleText),
     bvid: item.bvid || '',

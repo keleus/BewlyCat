@@ -343,6 +343,7 @@ export interface Settings {
   onlyCoverVideoPreview: boolean
   showVideoCardAuthorAvatar: boolean
   showVideoCardAuthorName: boolean
+  showVideoCardCategory: boolean
   showVideoCardVideoTag: boolean
   showVideoCardRecommendTag: boolean
   showVideoCardPublishTime: boolean
@@ -677,6 +678,7 @@ export const originalSettings: Settings = {
   onlyCoverVideoPreview: false,
   showVideoCardAuthorAvatar: true,
   showVideoCardAuthorName: true,
+  showVideoCardCategory: true,
   showVideoCardVideoTag: true,
   showVideoCardRecommendTag: true,
   showVideoCardPublishTime: true,

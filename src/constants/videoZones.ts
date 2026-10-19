@@ -29,3 +29,12 @@ export const VIDEO_ZONES: VideoZone[] = [
   { tid: 23, name: '电影', children: [{ tid: 147, name: '华语电影' }, { tid: 145, name: '欧美电影' }, { tid: 146, name: '日本电影' }, { tid: 83, name: '其他国家' }] },
   { tid: 11, name: '电视剧', children: [{ tid: 185, name: '国产剧' }, { tid: 187, name: '海外剧' }] },
 ]
+
+const VIDEO_ZONE_NAME_MAP = new Map<number, string>(
+  VIDEO_ZONES.flatMap(zone => [[zone.tid, zone.name] as const, ...zone.children.map(child => [child.tid, child.name] as const)]),
+)
+
+// 仅返回 tid 的接口（如 UP 主投稿列表）用它补出与 tname 一致的分区名，未知分区返回 undefined。
+export function getVideoZoneName(tid?: number): string | undefined {
+  return tid ? VIDEO_ZONE_NAME_MAP.get(tid) : undefined
+}

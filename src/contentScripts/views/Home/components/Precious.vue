@@ -100,6 +100,7 @@ function transformPreciousVideo(item: PreciousItem): Video {
     likeStr: item.stat?.like_str ?? item.stat?.like,
     publishedTimestamp: item.pubdate,
     bvid: item.bvid,
+    category: item.tname || undefined,
     cid: item.cid,
     threePointV2: [],
   }

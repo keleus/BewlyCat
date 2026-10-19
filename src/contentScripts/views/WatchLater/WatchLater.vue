@@ -234,6 +234,7 @@ function transformWatchLaterItem(item: VideoItem): Video {
     publishedTimestamp: item.pubdate,
     bvid: item.bvid,
     aid: item.aid,
+    category: item.tname || item.tnamev2 || undefined,
     threePointV2: [],
   }
 }

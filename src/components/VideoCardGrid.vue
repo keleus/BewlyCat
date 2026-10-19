@@ -1029,6 +1029,7 @@ const cardLayoutKey = computed(() => [
   settings.value.videoCardMetaFontSize,
   settings.value.showVideoCardAuthorAvatar,
   settings.value.showVideoCardAuthorName,
+  settings.value.showVideoCardCategory,
   settings.value.showVideoCardVideoTag,
   settings.value.showVideoCardRecommendTag,
   settings.value.showVideoCardPublishTime,

@@ -73,6 +73,8 @@ function transformHistoryItem(item: HistoryItem): Video {
       : undefined,
     playbackProgress,
     capsuleText: formatDate(new Date(item.view_at * 1000), 'HH:mm:ss'),
+    // 稿件为子分区名，直播为直播分区名
+    category: item.tag_name || undefined,
     author: {
       name: item.author_name || item.title,
       authorFace: item.author_face || item.cover,
