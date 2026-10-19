@@ -717,5 +717,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.export_settings',
     'settings.maintenance.reset_title',
     'settings.reset_settings',
+    'settings.open_source_license',
+    'settings.third_party_licenses',
   ]),
 ]

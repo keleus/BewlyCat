@@ -964,6 +964,14 @@ settings:
     settings?
   current_contributors: BewlyCat Contributors (including BewlyBewly)
   contributors_image_failed: Contributor image failed to load
+  open_source_license: Open Source License
+  open_source_license_desc: BewlyCat is a derivative of BewlyBewly, licensed under MIT with additional usage restrictions. Redistributions of this project or its derivatives must retain the copyright notices below and the full license text.
+  original_project: original project
+  view_full_license: View Full License
+  view_third_party_licenses: Third-Party Licenses
+  third_party_licenses: Third-Party Licenses
+  third_party_licenses_desc: Third-party dependencies bundled into the extension and their licenses.
+  third_party_licenses_failed: Failed to load third-party license information
   enable_settings_sync: Allow syncing settings
   enable_settings_sync_desc: >-
     Save settings locally and to browser cloud storage. Wallpaper/background

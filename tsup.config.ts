@@ -3,6 +3,7 @@
 // import fs from 'fs-extra'
 import { defineConfig } from 'tsup'
 
+import { thirdPartyLicensesEsbuildPlugin } from './scripts/thirdPartyLicenses'
 import { buildCommit, isDev, isFirefox, isSafari } from './scripts/utils'
 
 const outDir = isFirefox ? 'extension-firefox/dist' : isSafari ? 'extension-safari/dist' : 'extension/dist'
@@ -23,6 +24,7 @@ export default defineConfig(() => ({
   splitting: false,
   loader: { '.css': 'text' },
   noExternal: ['md5'],
+  esbuildPlugins: [thirdPartyLicensesEsbuildPlugin('background')],
   sourcemap: false, // https://github.com/vitejs/vite-plugin-vue/issues/35
   define: {
     '__DEV__': JSON.stringify(isDev),

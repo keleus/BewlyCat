@@ -3,6 +3,7 @@ import type { Plugin } from 'vite'
 import { defineConfig } from 'vite'
 
 import packageJson from './package.json'
+import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses'
 import { isDev, isFirefox, isSafari, r } from './scripts/utils'
 import { sharedConfig } from './vite.config'
 
@@ -45,6 +46,7 @@ export default defineConfig({
     UnoCSS(),
     ...sharedConfig.plugins!,
     embedContentScriptStyles(),
+    thirdPartyLicensesVitePlugin('content'),
   ],
   build: {
     watch: isDev

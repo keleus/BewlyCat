@@ -882,6 +882,14 @@ settings:
     噉做冇得返轉頭噃，你確定要重設你之前嘅設定？
   current_contributors: BewlyCat（含 BewlyBewly）貢獻者
   contributors_image_failed: 貢獻者圖片載入失敗
+  open_source_license: 開源授權
+  open_source_license_desc: BewlyCat 係基於 BewlyBewly 二次開發，喺 MIT 授權嘅基礎上加咗使用限制。散佈本項目或者佢嘅衍生作品時，要保留以下版權聲明同完整授權條款。
+  original_project: 原項目
+  view_full_license: 睇完整授權
+  view_third_party_licenses: 睇第三方授權
+  third_party_licenses: 第三方依賴授權
+  third_party_licenses_desc: 以下係打包咗入插件嘅第三方依賴同埋佢哋嘅授權條款。
+  third_party_licenses_failed: 第三方授權資訊載入失敗
   video_page_top_bar_config: 影片頁頂欄配置
   video_page_top_bar_config_desc: 控制影片頁頂欄嘅顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「捲動顯示」表示頁面捲動時顯示。
   video_page_top_bar_config_opt:

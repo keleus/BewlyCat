@@ -1,12 +1,17 @@
 import { defineConfig } from 'vite'
 
 import packageJson from './package.json'
+import { thirdPartyLicensesVitePlugin } from './scripts/thirdPartyLicenses'
 import { isDev, isFirefox, isSafari, r } from './scripts/utils'
 import { sharedConfig } from './vite.config'
 
 // bundling the content script using Vite
 export default defineConfig({
   ...sharedConfig,
+  plugins: [
+    ...sharedConfig.plugins!,
+    thirdPartyLicensesVitePlugin('inject'),
+  ],
   build: {
     watch: isDev
       ? { include: ['./**/*'] }

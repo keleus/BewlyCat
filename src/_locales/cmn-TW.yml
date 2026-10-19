@@ -852,6 +852,14 @@ settings:
     此操作無法撤消，你確定要重設你的設定嗎？
   current_contributors: BewlyCat（含 BewlyBewly）貢獻者
   contributors_image_failed: 貢獻者圖片載入失敗
+  open_source_license: 開源授權
+  open_source_license_desc: BewlyCat 基於 BewlyBewly 二次開發，在 MIT 授權基礎上附加了使用限制。散布本專案或其衍生作品時，須保留以下版權聲明與完整授權條款。
+  original_project: 原專案
+  view_full_license: 檢視完整授權
+  view_third_party_licenses: 檢視第三方授權
+  third_party_licenses: 第三方相依套件授權
+  third_party_licenses_desc: 以下為封裝進擴充功能的第三方相依套件及其授權條款。
+  third_party_licenses_failed: 第三方授權資訊載入失敗
   enable_settings_sync: 允許同步設定
   enable_settings_sync_desc: 開啟後同時儲存到本機與瀏覽器雲端；桌布背景與裝置播放狀態不會同步（需要登入瀏覽器帳號）
   sync_cloud_conflict_title: 偵測到雲端設定備份

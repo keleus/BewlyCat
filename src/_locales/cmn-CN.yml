@@ -988,6 +988,14 @@ settings:
     该操作无法撤销。你确定要重置你的设置吗？
   current_contributors: BewlyCat（含 BewlyBewly）贡献者
   contributors_image_failed: 贡献者图片加载失败
+  open_source_license: 开源协议
+  open_source_license_desc: BewlyCat 基于 BewlyBewly 二次开发，在 MIT 协议基础上附加了使用限制。分发本项目或其衍生作品时，须保留以下版权声明与完整协议文本。
+  original_project: 原项目
+  view_full_license: 查看完整协议
+  view_third_party_licenses: 查看第三方许可
+  third_party_licenses: 第三方依赖许可
+  third_party_licenses_desc: 以下为打包进扩展的第三方依赖及其许可证。
+  third_party_licenses_failed: 第三方许可信息加载失败
   disable_auto_play_collection: 自动关闭合集自动播放
   disable_auto_play_collection_desc: 自动关闭视频合集的自动播放功能
   enable_undo_refresh_button: 启用首页前进后退按钮
