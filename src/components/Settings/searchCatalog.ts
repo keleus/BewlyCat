@@ -609,6 +609,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.disable_shadow',
     'settings.group_page_style',
     'settings.adapt_to_other_page_styles',
+    'settings.disable_background',
     'settings.group_color',
     'settings.theme',
     'settings.theme_schedule',

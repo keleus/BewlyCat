@@ -204,6 +204,13 @@ function changeWallpaper(url: string) {
       >
         <Radio v-model="settings.adaptToOtherPageStyles" />
       </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.disable_background')"
+        :desc="$t('settings.disable_background_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.disableBackground" />
+      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_color')">
@@ -311,7 +318,7 @@ function changeWallpaper(url: string) {
         </div>
       </SettingsItem>
 
-      <SettingsItem :title="$t('settings.gradient_theme_color_background')" right-width="auto">
+      <SettingsItem v-if="!settings.disableBackground" :title="$t('settings.gradient_theme_color_background')" right-width="auto">
         <Radio v-model="settings.useLinearGradientThemeColorBackground" />
       </SettingsItem>
       <SettingsItem
@@ -334,7 +341,7 @@ function changeWallpaper(url: string) {
       </SettingsItem>
     </SettingsItemGroup>
 
-    <ChangeWallpaper type="global" />
+    <ChangeWallpaper v-if="!settings.disableBackground" type="global" />
 
     <SettingsItemGroup :title="$t('settings.group_fonts')">
       <SettingsItem :title="$t('settings.customize_font')" right-width="auto">

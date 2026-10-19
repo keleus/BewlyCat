@@ -448,6 +448,7 @@ export interface Settings {
   themeColor: string
   darkModeBaseColor: string // 深色模式基准颜色
   useLinearGradientThemeColorBackground: boolean
+  disableBackground: boolean
   wallpaperMode: 'buildIn' | 'byUrl'
   wallpaper: string
   enableWallpaperMasking: boolean
@@ -781,6 +782,7 @@ export const originalSettings: Settings = {
   themeColor: '#00a1d6',
   darkModeBaseColor: '#2a2d32', // 默认深色模式基准颜色
   useLinearGradientThemeColorBackground: false,
+  disableBackground: false,
   wallpaperMode: 'buildIn',
   wallpaper: '',
   enableWallpaperMasking: false,

@@ -57,6 +57,7 @@ const searchFocusOverlayActive = ref(false)
 const pageWallpaperReady = ref(false)
 const useBlendedPageControls = computed(() => settings.value.enableFrostedGlass
   && settings.value.frostedGlassBlurIntensity > 0
+  && !settings.value.disableBackground
   && (pageWallpaperReady.value || (settings.value.useLinearGradientThemeColorBackground && isDark.value)))
 
 function openSettings(target?: SettingsNavigationTarget) {
@@ -1852,7 +1853,7 @@ if (settings.value.cleanUrlArgument) {
     @scroll.capture.passive="scheduleLayoutEditTargetsRefresh"
   >
     <!-- Background -->
-    <template v-if="showBewlyPage">
+    <template v-if="showBewlyPage && !settings.disableBackground">
       <AppBackground :activated-page="activatedPage" @wallpaper-ready="pageWallpaperReady = $event" />
     </template>
 

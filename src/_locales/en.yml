@@ -940,6 +940,8 @@ settings:
     bewly: BewlyCat top bar
   adapt_to_other_page_styles: Adapt to other page styles
   adapt_to_other_page_styles_desc: Adapt to some common pages to match with the BewlyBewly theme.
+  disable_background: Disable background
+  disable_background_desc: Completely disable the plugin page's solid, gradient and wallpaper backgrounds (including the search page wallpaper) to show the original Bilibili page background.
   prevent_mobile_redirect: Prevent mobile redirect
   prevent_mobile_redirect_desc: When enabled, a desktop UA is used only for www.bilibili.com to prevent redirects to m.bilibili.com. Direct visits to the mobile site are unaffected.
   follow_bilibili_evolved_color: Follow the Bilibili Evolved theme color

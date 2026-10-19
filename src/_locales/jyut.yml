@@ -864,6 +864,8 @@ settings:
     bewly: BewlyCat 頂欄
   adapt_to_other_page_styles: 適應其他版面風格
   adapt_to_other_page_styles_desc: 執執啲常用嘅版面，襯返 BewlyBewly 主題風格。
+  disable_background: 閂咗背景
+  disable_background_desc: 徹底閂咗插件版面嘅純色背景、漸層背景同埋桌布（包括搜尋頁桌布），顯示返 B 站原本版面嘅背景。
   prevent_mobile_redirect: 防止跳轉去流動版
   prevent_mobile_redirect_desc: 開啟之後，只會喺進入 www.bilibili.com 時使用桌面版 UA，避免跳轉去 m.bilibili.com；直接進入流動版唔受影響。
   follow_bilibili_evolved_color: 跟返 Bilibili Evolved 主題色
