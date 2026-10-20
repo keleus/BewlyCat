@@ -48,6 +48,7 @@ import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { setupOriginalMomentsFilter } from './features/originalMomentsFilter'
 import { setupVideoWatchProgress } from './features/videoWatchProgress'
 import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
+import { initImmersiveFeedFrame } from './immersiveFeedFrame'
 import { initListenVideoFeature } from './listenVideoFeature'
 import { initLocalLoudnessControl } from './localLoudnessControl'
 import type { PageLoadingGuard } from './pageLoading'
@@ -1439,6 +1440,8 @@ else if (shouldInitializeContentScript) {
 
     contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.dispose()
 
+    // 需早于快捷键注册与宽屏布局：接管侧栏面板并优先处理沉浸式切换按键
+    initImmersiveFeedFrame()
     initVideoAspectRatioMemory()
     initVideoQualityMemory()
     initVideoScreenshotControl()

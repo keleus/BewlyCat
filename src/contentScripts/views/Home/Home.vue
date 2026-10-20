@@ -78,7 +78,11 @@ const tabPageRef = ref()
 const topBarVisibility = ref<boolean>(true)
 const shouldShowHomeTabs = computed(() => currentTabs.value.length > 1)
 const shouldShowRecommendationModeSwitcher = computed(() => settings.value.showRecommendationModeSwitcher && activatedPage.value === HomeSubPage.ForYou)
-const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value || shouldShowRecommendationModeSwitcher.value || settings.value.enableGridLayoutSwitcher)
+const shouldShowImmersiveModeEntry = computed(() => settings.value.showImmersiveModeEntry && activatedPage.value === HomeSubPage.ForYou)
+const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value
+  || shouldShowRecommendationModeSwitcher.value
+  || shouldShowImmersiveModeEntry.value
+  || settings.value.enableGridLayoutSwitcher)
 const recommendationModeOptions = computed<{ label: string, value: RecommendationMode }[]>(() => [
   { label: 'Web', value: 'web' },
   { label: t('settings.recommendation_mode_web_no_cookie'), value: 'webNoCookie' },
@@ -275,6 +279,10 @@ function handleChangeTab(tab: HomeTab) {
   homeActivatedPage.value = tab.page
 }
 
+function openImmersiveMode() {
+  tabPageRef.value?.openImmersiveMode?.()
+}
+
 function toggleTabContentLoading(loading: boolean) {
   tabContentLoading.value = loading
 }
@@ -459,6 +467,27 @@ function toggleTabContentLoading(loading: boolean) {
                 :icon="gridLayout.home === icon.value ? icon.iconActivated : icon.icon"
                 aria-hidden="true"
               />
+            </button>
+          </div>
+
+          <div
+            v-if="shouldShowImmersiveModeEntry"
+            class="glass-panel home-immersive-entry bew-segment-control bew-segment-control--surface bew-segment-control--static"
+            :class="{ 'bew-segment-control--solid': !settings.enableFrostedGlass }"
+            data-layout-settings-menu="BewlyPages"
+            data-layout-settings-page="home"
+            data-layout-settings-title-key="settings.show_immersive_mode_entry"
+            flex="~ shrink-0 items-center"
+            box-border
+          >
+            <button
+              type="button"
+              class="bew-segment-control__item bew-segment-control__item--icon"
+              :title="$t('home.immersive_mode_entry')"
+              :aria-label="$t('home.immersive_mode_entry')"
+              @click="openImmersiveMode"
+            >
+              <span class="i-mingcute-play-circle-line bew-segment-control__icon" aria-hidden="true" />
             </button>
           </div>
         </div>

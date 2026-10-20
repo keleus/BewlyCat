@@ -282,6 +282,7 @@ settings:
   group_hot_search: 热搜
   group_search_results: 搜索结果
   group_recommendation_mode: “个性推荐” 推荐模式
+  group_immersive_mode: 沉浸式模式
   group_recommendation_filters: “个性推荐” 过滤
   group_recommendation_filters_desc: |
     请勿将限制值设置得太大，不然可能会增加加载时间！频繁请求可能会导致 Bilibili 对 IP 的封禁!
@@ -821,6 +822,18 @@ settings:
     Web：普通网页端推荐模式。无 Cookie：请求首页推荐时不携带 Cookie。App：移动端推荐模式，需先授权 access key。
   show_recommendation_mode_switcher: 显示推荐模式快速切换按钮组
   show_recommendation_mode_switcher_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示胶囊按钮组，可直接选择 Web、无 Cookie 或 App 模式。
+  show_immersive_mode_entry: 启用沉浸式模式
+  show_immersive_mode_entry_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示入口：以 Bewly 宽屏打开 B 站视频页连续播放推荐视频，侧栏显示首页推荐流。关闭后不显示入口。
+  immersive_wheel_switch: 滚轮切换视频
+  immersive_wheel_switch_desc: 在播放画面上滚动滚轮切换上一条 / 下一条。
+  immersive_keyboard_switch: 快捷键切换视频
+  immersive_keyboard_switch_desc: 使用 ↑↓、W / S 或 PageUp / PageDown 切换上一条 / 下一条，输入文字时不会触发。关闭后 ↑↓ 恢复为播放器音量调节。
+  immersive_auto_play: 切换后自动开播
+  immersive_auto_play_desc: 即使关闭了 B 站播放器的“自动开播”，切换到新视频后也开始播放。
+  immersive_auto_next: 播完自动下一条
+  immersive_auto_next_desc: 当前视频播放结束后自动切到推荐流中的下一条；关闭后遵循播放器自身的播完行为。
+  immersive_preload_next: 提前加载下一条
+  immersive_preload_next_desc: 在后台提前打开下一条视频页，切换时几乎无需等待。会额外占用内存和流量，被跳过的视频也会产生一次页面访问。
   recommendation_mode_web_no_cookie: 无 Cookie
   remember_no_cookie_recommendation_state: 减少无 Cookie 推荐重复
   remember_no_cookie_recommendation_state_desc: 刷新页面后延续推荐刷新进度，并向推荐接口带上最近曝光记录，以减少重复推荐。仅无 Cookie 模式生效。
@@ -1347,6 +1360,20 @@ home:
   risk_control_paused: 请求过于频繁导致首页推荐接口风控，已暂停自动请求约 {seconds} 秒，请稍后刷新重试
   app_fallback_web: App 推荐数据加载失败，已自动切换至 Web 模式
   app_retry_web: App 推荐数据加载失败，请手动切换至 Web 模式或稍后重试
+  immersive_mode: 沉浸式模式
+  immersive_mode_entry: 进入沉浸式模式
+  immersive_exit: 退出
+  immersive_exit_title: 退出沉浸式模式
+  immersive_loading: 正在加载推荐…
+  immersive_switching: 正在切换视频…
+  immersive_empty: 暂无可播放的推荐视频
+  immersive_no_more: 没有更多推荐了
+  immersive_feed_title: 首页推荐
+  immersive_shortcut_hint: 滚轮（画面上）/ ↑↓ / W S 切换视频 · Esc 退出
+  immersive_views: 播放
+  immersive_now_playing: 正在播放
+  immersive_previous: 上一个
+  immersive_next: 下一个
   recommendations_retry: 首页推荐接口连续请求失败，请刷新后重试
   weekly_issue: 第{number}期
   select_issue: 选择期号

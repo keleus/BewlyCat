@@ -66,6 +66,8 @@ const REVISION_2_SENDING_BAR = `#${ROOT_ID}:has(.bpx-player-container[data-revis
 const LOADING_ROOT_ID = 'bewly-widescreen-loading'
 const SWITCH_HINT_ID = 'bewly-widescreen-switch-hint'
 export const BEWLY_WIDESCREEN_USER_EXIT = 'bewly-widescreen-user-exit'
+// 宽屏布局完成搬运后派发，供需要等待最终布局的模块（如首页沉浸式模式）使用
+export const BEWLY_WIDESCREEN_APPLIED = 'bewly-widescreen-applied'
 const BODY_CLASS = 'bewly-widescreen-active'
 const EMPTY_CLASS = 'bewly-widescreen-empty'
 const EPISODE_SECTION_CLASS = 'bewly-widescreen-episode-section'
@@ -495,6 +497,31 @@ function movePlaylistControls(target: HTMLElement, movedNodes: MovedNode[]) {
   // eplist layout. Move their original row so its listeners and adjacent
   // controls (such as random play) remain intact.
   return moveNode(controlRow, target, movedNodes)
+}
+
+export interface BewlyWidescreenPlaylistOverride {
+  label: string
+  element: HTMLElement
+}
+
+// 外部模块（首页沉浸式模式）可接管「选集 / 推荐」面板，并作为默认标签页
+let playlistOverride: BewlyWidescreenPlaylistOverride | null = null
+
+export function setBewlyWidescreenPlaylistOverride(override: BewlyWidescreenPlaylistOverride | null) {
+  playlistOverride = override
+  if (!state)
+    return
+  fillSidebar(state)
+  if (override)
+    setActiveTab('playlist')
+}
+
+function fillPlaylistOverride(panel: HTMLElement, tabButton: HTMLButtonElement, override: BewlyWidescreenPlaylistOverride) {
+  if (override.element.parentElement !== panel)
+    panel.appendChild(override.element)
+  clearEmptyPanel(panel)
+  if (tabButton.textContent !== override.label)
+    tabButton.textContent = override.label
 }
 
 function createPanelEmpty(label: string) {
@@ -3827,6 +3854,11 @@ function fillSidebar(currentState: BewlyWidescreenState) {
   else
     clearEmptyPanel(currentState.panels.danmaku)
 
+  if (playlistOverride) {
+    fillPlaylistOverride(currentState.panels.playlist, currentState.tabButtons.playlist, playlistOverride)
+    return
+  }
+
   movePlaylistControls(currentState.panels.playlist, currentState.movedNodes)
   moveMatchingNodes(['[class*="eplist_ep_list_wrapper"]'], currentState.panels.playlist, currentState.movedNodes)
   let existingPlaylist = currentState.panels.playlist.querySelector<HTMLElement>(selectors.playlist.join(','))
@@ -3998,7 +4030,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
 
   moveNode(player, playerFrame, movedNodes)
   fillSidebar(nextState)
-  setActiveTab('comment')
+  setActiveTab(playlistOverride ? 'playlist' : 'comment')
   setupAspectObservers(nextState)
   setupDomRefreshObserver(nextState)
   setupSidebarInteractionTracking(nextState)
@@ -4014,6 +4046,7 @@ function applyNow(sidebarPosition: 'left' | 'right' = 'right') {
   pendingApplicationAbortCleanup = undefined
   application?.onApplied()
   application?.onSettled?.()
+  window.dispatchEvent(new Event(BEWLY_WIDESCREEN_APPLIED))
 
   return true
 }
