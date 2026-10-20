@@ -68,7 +68,7 @@ const pages = computed(() => ({
 const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage.Following
   ? `${activatedPage.value}:${settings.value.useFollowingNewLayout ? 'new' : 'old'}`
   : activatedPage.value === HomeSubPage.ForYou
-    ? `${activatedPage.value}:${settings.value.recommendationMode}`
+    ? `${activatedPage.value}:${settings.value.recommendationMode}${settings.value.recommendationMode === 'app' ? `:${settings.value.appRecommendationColumn}` : ''}`
     : activatedPage.value)
 const cacheRevision = ref(0)
 const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition)

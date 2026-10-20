@@ -427,7 +427,7 @@ provide('getVideoType', () => props.type!)
           :plugin-computed-tags="pluginComputedTags"
           :hide-author="hideAuthor"
           :hide-watched-badge="hideWatchedBadge"
-          :compact-meta="props.type === 'appRcmd'"
+          :compact-meta="props.type === 'appRcmd' && settings.appRecommendationColumn === 'double'"
           @more-btn-click="logic.handleMoreBtnClick"
         />
         <!-- Keep the configured cover/info ratio after horizontal cards are removed. -->

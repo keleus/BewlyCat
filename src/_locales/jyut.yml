@@ -715,6 +715,10 @@ settings:
   immersive_preload_next_desc: 喺背景預先打開下一條片頁，切換嗰陣幾乎唔使等。會額外用多啲記憶體同流量，跳過咗嘅片都會產生一次頁面瀏覽。
   recommendation_mode_web_no_cookie: 無 Cookie
   remember_no_cookie_recommendation_state: 減少無 Cookie 推介重複
+  app_recommendation_column: App 推介樣式
+  app_recommendation_column_desc: 單列模式卡片有 UP 主頭像、發佈時間同讚好數；雙列模式有推介理由（例如讚好數、直屏）
+  app_recommendation_column_single: App 單列
+  app_recommendation_column_double: App 雙列
   remember_no_cookie_recommendation_state_desc: 重新整理頁面後，會延續推介刷新進度，並向推介接口帶上最近曝光記錄，以減少重複推介。淨係無 Cookie 模式生效。
   auto_switch_recommendation_mode: 自動切換推介模式
   auto_switch_recommendation_mode_desc: |

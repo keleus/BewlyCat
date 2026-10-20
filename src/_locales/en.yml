@@ -772,6 +772,10 @@ settings:
   immersive_preload_next_desc: Open the next video page in the background so switching is almost instant. Uses extra memory and data, and skipped videos still count as a page visit.
   recommendation_mode_web_no_cookie: No Cookie
   remember_no_cookie_recommendation_state: Reduce No Cookie recommendation repeats
+  app_recommendation_column: App recommendation style
+  app_recommendation_column_desc: Single column cards include the uploader avatar, publish time and like count; double column cards include recommendation reasons such as likes or vertical video
+  app_recommendation_column_single: App single column
+  app_recommendation_column_double: App double column
   remember_no_cookie_recommendation_state_desc: After reloading the page, continue the recommendation refresh progress and send recent exposure records with recommendation requests to reduce repeats. Only applies in No Cookie mode.
   auto_switch_recommendation_mode: Auto switch recommendation mode
   auto_switch_recommendation_mode_desc: >

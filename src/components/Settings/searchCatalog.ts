@@ -277,6 +277,11 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     keywordKeys: ['settings.recommendation_mode_web_no_cookie'],
     keywords: ['Web', 'App'],
   }),
+  ...createEntries(homeRoute, [
+    'settings.app_recommendation_column',
+  ], {
+    keywordKeys: ['settings.app_recommendation_column_single', 'settings.app_recommendation_column_double'],
+  }),
   ...createEntries(momentsRoute, [
     'settings.plugin.moments',
     'settings.group_original_moments_page',

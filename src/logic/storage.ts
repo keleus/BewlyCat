@@ -170,6 +170,8 @@ export type VideoPlayerModeOverride = DefaultVideoPlayerMode | 'inherit'
 export type VideoPlayerModeContext = 'multipart' | 'collection' | 'bangumi' | 'watchLater' | 'playlist' | 'momentsDialog'
 export type VideoPlayerModeOverrides = Record<VideoPlayerModeContext, VideoPlayerModeOverride>
 export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
+/** App 推荐的列模式，对应接口 column 参数：single 为 1（带头像与发布时间），double 为 2 */
+export type AppRecommendationColumn = 'single' | 'double'
 /**
  * 评论回复树展示模式：
  * - lineCollapseMain：线条，收起时折叠父节点本体
@@ -495,6 +497,7 @@ export interface Settings {
   searchResultsPaginationMode: 'scroll' | 'pagination' // 搜索结果分页模式：滚动加载或翻页
 
   recommendationMode: RecommendationMode
+  appRecommendationColumn: AppRecommendationColumn
   showRecommendationModeSwitcher: boolean
   showImmersiveModeEntry: boolean // 首页个性推荐标签栏右侧显示沉浸式模式入口（沉浸式模式总开关）
   immersiveWheelSwitch: boolean // 沉浸式模式中在画面上滚动滚轮切换视频
@@ -837,6 +840,7 @@ export const originalSettings: Settings = {
   searchResultsPaginationMode: 'scroll', // 默认使用滚动加载
 
   recommendationMode: 'web',
+  appRecommendationColumn: 'single',
   showRecommendationModeSwitcher: false,
   showImmersiveModeEntry: true,
   immersiveWheelSwitch: true,

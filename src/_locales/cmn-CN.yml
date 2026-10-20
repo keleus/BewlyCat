@@ -836,6 +836,10 @@ settings:
   immersive_preload_next_desc: 在后台提前打开下一条视频页，切换时几乎无需等待。会额外占用内存和流量，被跳过的视频也会产生一次页面访问。
   recommendation_mode_web_no_cookie: 无 Cookie
   remember_no_cookie_recommendation_state: 减少无 Cookie 推荐重复
+  app_recommendation_column: App 推荐样式
+  app_recommendation_column_desc: 单列模式卡片带 UP 主头像、发布时间与点赞数；双列模式带推荐理由（如点赞数、竖屏）
+  app_recommendation_column_single: App 单列
+  app_recommendation_column_double: App 双列
   remember_no_cookie_recommendation_state_desc: 刷新页面后延续推荐刷新进度，并向推荐接口带上最近曝光记录，以减少重复推荐。仅无 Cookie 模式生效。
   auto_switch_recommendation_mode: 自动切换推荐模式
   auto_switch_recommendation_mode_desc: |

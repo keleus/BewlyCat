@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { watch } from 'vue'
 
-import type { RecommendationMode } from '~/logic'
+import type { AppRecommendationColumn, RecommendationMode } from '~/logic'
 import { settings } from '~/logic/storage'
 import type { Item as AppVideoItem } from '~/models/video/appForYou'
 import type { Item as VideoItem } from '~/models/video/forYou'
@@ -79,6 +79,7 @@ export interface ForYouState {
 
   // 推荐模式，用于避免跨模式恢复旧推荐流
   recommendationMode?: RecommendationMode
+  appRecommendationColumn?: AppRecommendationColumn
 }
 
 export const useForYouStore = defineStore('forYou', () => {

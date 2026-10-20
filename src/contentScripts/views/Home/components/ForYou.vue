@@ -91,6 +91,10 @@ const videoList = tabState.ref<VideoElement[]>('videoList', [])
 const appVideoList = tabState.ref<AppVideoElement[]>('appVideoList', [])
 
 const isWebRecommendationMode = computed(() => settings.value.recommendationMode !== 'app')
+// App 推荐的单列 / 双列返回不同卡片，切换任一都需要重新加载推荐流
+const recommendationFeedKey = computed(() => settings.value.recommendationMode === 'app'
+  ? `app:${settings.value.appRecommendationColumn}`
+  : settings.value.recommendationMode)
 let requestVersion = 0
 type WebRecommendRequestType = 'refresh' | 'loadMore'
 type WebRecommendationIdentity = 'web' | 'webNoCookie'
@@ -233,7 +237,6 @@ const APP_RECENT_SHOWN_MAX_KEYS = 600
 const APP_FEED_PARAMS = {
   build: 8430300,
   channel: 'master',
-  column: 2,
   device: 'phone',
   device_name: 'android',
   device_type: 0,
@@ -487,6 +490,7 @@ onMounted(() => {
     settings.value.preserveForYouState
     && forYouStore.state.isInitialized
     && forYouStore.state.recommendationMode === settings.value.recommendationMode
+    && (settings.value.recommendationMode !== 'app' || forYouStore.state.appRecommendationColumn === settings.value.appRecommendationColumn)
     && preservedModeHasItems
   ) {
     // 恢复关键状态
@@ -592,6 +596,7 @@ onBeforeUnmount(() => {
       noMoreContent: noMoreContent.value,
       isInitialized: true,
       recommendationMode: settings.value.recommendationMode,
+      appRecommendationColumn: settings.value.appRecommendationColumn,
       scrollTop, // 保存滚动位置
     }
     forYouStore.saveCompleteState(currentState)
@@ -702,7 +707,8 @@ function normalizeAppVideoItem(item: AppVideoItem): AppVideoItem {
       up_id: item.args?.up_id || item.mask?.avatar?.up_id,
       up_name: item.args?.up_name || item.mask?.avatar?.text || item.desc_button?.text,
     },
-    bottom_rcmd_reason: item.bottom_rcmd_reason || followedReason,
+    // 单列接口没有「已关注」推荐理由，改用 is_atten 标记
+    bottom_rcmd_reason: item.bottom_rcmd_reason || followedReason || (item.is_atten ? '已关注' : undefined),
   }
 }
 
@@ -712,7 +718,8 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
   const followed = !!bottomReason && APP_FOLLOWED_REASONS.has(bottomReason)
 
   // 预先计算 capsuleText，提取复杂逻辑
-  const descPart = item?.desc?.split('·')?.[1]?.trim()
+  // 单列接口的 desc 为「UP 主 · 发布时间」，联合投稿时 multiply_desc.extra 为「等N人联合创作 · 发布时间」
+  const descPart = (item.multiply_desc?.extra || item.desc)?.split('·')?.[1]?.trim()
   const capsuleText = descPart || (followed ? bottomReason : undefined)
 
   // HD 接口的推荐理由（如「1万点赞」）；竖屏已有类型图标，关注状态已由 followed 体现
@@ -740,7 +747,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     cover: item.cover || '',
     author: {
       name: decodeHtmlEntities(item.args?.up_name || ''),
-      // HD 接口不返回头像，留空时卡片隐藏头像
+      // 单列接口在 avatar 中返回头像，双列接口不返回，留空时卡片隐藏头像
       authorFace: item?.mask?.avatar?.cover || item?.avatar?.cover || '',
       followed,
       mid: item.args?.up_id || 0,
@@ -752,6 +759,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     bvid: item.bvid || '',
     viewStr: item.cover_left_text_1,
     danmakuStr: item.cover_left_text_2,
+    like: item.like_button?.count,
     cid: item?.player_args?.cid,
     // 与 PiliPlus 一致，不感兴趣接口的 goto 取 card_goto
     goto: item.card_goto,
@@ -1032,7 +1040,7 @@ function stopWebRecommendationForRisk() {
   notifyWebRiskCooldown()
 }
 
-watch(() => settings.value.recommendationMode, () => {
+watch(recommendationFeedKey, () => {
   if (!tabState.isCurrent())
     return
   requestVersion++
@@ -1785,6 +1793,7 @@ async function getAppRecommendVideos(
         try {
           response = await requestAppClient('feedIndex', {
             ...APP_FEED_PARAMS,
+            column: settings.value.appRecommendationColumn === 'double' ? 2 : 1,
             access_key: appAuthTokens.value.accessToken,
             c_locale: locale,
             s_locale: locale,

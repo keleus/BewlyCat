@@ -8,7 +8,7 @@ import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
-import type { RecommendationMode, Settings, TabsPosition } from '~/logic/storage'
+import type { AppRecommendationColumn, RecommendationMode, Settings, TabsPosition } from '~/logic/storage'
 import { useMainStore } from '~/stores/mainStore'
 import { hasValidAppAuthTokens, revokeAccessKey } from '~/utils/authProvider'
 
@@ -27,6 +27,11 @@ const recommendationModeOptions = computed<{ label: string, value: Recommendatio
   { label: 'Web', value: 'web' },
   { label: t('settings.recommendation_mode_web_no_cookie'), value: 'webNoCookie' },
   { label: 'App', value: 'app' },
+])
+
+const appRecommendationColumnOptions = computed<{ label: string, value: AppRecommendationColumn }[]>(() => [
+  { label: t('settings.app_recommendation_column_single'), value: 'single' },
+  { label: t('settings.app_recommendation_column_double'), value: 'double' },
 ])
 
 const followingUploaderSortOptions = computed<{ label: string, value: Settings['followingUploaderSort'] }[]>(() => [
@@ -209,6 +214,19 @@ function handleToggleHomeTab(tab: any) {
             {{ $t('settings.btn.revoke') }}
           </Button>
         </div>
+      </SettingsItem>
+
+      <SettingsItem
+        v-if="settings.recommendationMode === 'app'"
+        :title="$t('settings.app_recommendation_column')"
+        :desc="$t('settings.app_recommendation_column_desc')"
+        right-width="auto"
+      >
+        <SettingsSegmentedControl
+          v-model="settings.appRecommendationColumn"
+          :label="$t('settings.app_recommendation_column')"
+          :options="appRecommendationColumnOptions"
+        />
       </SettingsItem>
 
       <SettingsItem :title="$t('settings.auto_switch_recommendation_mode')" :desc="$t('settings.auto_switch_recommendation_mode_desc')" right-width="auto">
