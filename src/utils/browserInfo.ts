@@ -1,7 +1,11 @@
+import browser from 'webextension-polyfill'
+
 export interface BrowserInfo {
   name: string | null
   version: string | null
 }
+
+export const GET_BROWSER_INFO_MESSAGE = 'getBrowserInfo'
 
 interface UserAgentBrandVersion {
   brand: string
@@ -106,4 +110,22 @@ export async function getBrowserInfo(): Promise<BrowserInfo> {
   return recognizedBrand
     ? { name: normalizeBrandName(recognizedBrand.brand), version: recognizedBrand.version }
     : fallbackInfo
+}
+
+/**
+ * 在 background 中读取浏览器信息。页面 MAIN world 的防移动端跳转会把 navigator.userAgent
+ * 改写为 Chrome 桌面 UA，Firefox 内容脚本也会读到该值，因此不能在页面上下文中判断。
+ * Firefox 优先使用专有的 runtime.getBrowserInfo()，不受任何 UA 改写影响。
+ */
+export async function getExtensionBrowserInfo(): Promise<BrowserInfo> {
+  try {
+    const runtimeInfo = await browser.runtime.getBrowserInfo?.()
+    if (runtimeInfo?.name)
+      return { name: runtimeInfo.name, version: runtimeInfo.version || null }
+  }
+  catch {
+    // Chromium 不提供该 API，回退到 UA 与 Client Hints。
+  }
+
+  return getBrowserInfo()
 }

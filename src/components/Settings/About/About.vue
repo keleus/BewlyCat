@@ -8,7 +8,8 @@ import Dialog from '~/components/Dialog.vue'
 import Radio from '~/components/Radio.vue'
 import { useSettingsCloudSyncPreference } from '~/composables/useSettingsCloudSyncPreference'
 import { settings } from '~/logic'
-import { getBrowserInfo, parseBrowserInfo } from '~/utils/browserInfo'
+import type { BrowserInfo } from '~/utils/browserInfo'
+import { GET_BROWSER_INFO_MESSAGE, getBrowserInfo } from '~/utils/browserInfo'
 import { sendMessage } from '~/utils/messaging'
 import type { SettingsCloudSyncEnableResponse, SettingsCloudSyncStatus } from '~/utils/settingsCloudSyncProtocol'
 import {
@@ -39,7 +40,7 @@ const contributorsImageFailed = ref(false)
 const contributorsImageUsingCloud = ref(false)
 const contributorsImageSrc = ref(browser.runtime.getURL('/assets/contributors.svg'))
 const settingsCloudSyncPreference = useSettingsCloudSyncPreference()
-const browserInfo = ref(parseBrowserInfo())
+const browserInfo = ref<BrowserInfo>({ name: null, version: null })
 const isCopyingEnvironmentInfo = ref(false)
 const showSyncConflictDialog = ref(false)
 const isSyncToggling = ref(false)
@@ -59,7 +60,9 @@ const isDev = computed((): boolean => import.meta.env.DEV)
 
 onMounted(async () => {
   checkGitHubRelease()
-  browserInfo.value = await getBrowserInfo()
+  // 页面上下文的 UA 可能被防移动端跳转改写，由 background 读取真实浏览器信息
+  browserInfo.value = await sendMessage<undefined, BrowserInfo>(GET_BROWSER_INFO_MESSAGE)
+    .catch(() => getBrowserInfo())
 })
 
 function revertSyncSwitch() {

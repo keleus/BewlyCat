@@ -2,6 +2,8 @@ import browser from 'webextension-polyfill'
 
 import { isContentScriptTargetUrl } from '~/constants/contentScript'
 import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl, isPreventMobileRedirectEnabled } from '~/utils/bilibiliDesktopNavigation'
+import { GET_BROWSER_INFO_MESSAGE, getExtensionBrowserInfo } from '~/utils/browserInfo'
+import { onMessage } from '~/utils/messaging'
 
 import { isAppClientRequestUrl, setupAppClient } from './appClient'
 import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
@@ -173,3 +175,4 @@ setupTopBarStateBroker()
 setupWatchLaterStateBroker()
 setupContentScriptRefreshPrompt()
 setupLoginStateWatcher()
+onMessage(GET_BROWSER_INFO_MESSAGE, getExtensionBrowserInfo)
