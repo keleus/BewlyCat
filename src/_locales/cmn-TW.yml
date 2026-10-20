@@ -671,6 +671,8 @@ settings:
   enable_search_history_desc: 啟用後，搜尋欄將記錄和顯示您的搜尋歷史記錄。關閉後將清除所有歷史記錄
   depersonalize_search_results: 去除個人化搜尋
   depersonalize_search_results_desc: 啟用後，搜尋結果請求不攜帶登入 Cookie。
+  show_search_identity_switcher: 顯示登入 / 訪客快速切換按鈕組
+  show_search_identity_switcher_desc: 在搜尋結果頁分類標籤列右側顯示膠囊按鈕組，可直接切換登入狀態或訪客狀態搜尋。訪客狀態等同於啟用「去除個人化搜尋」。
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
   recommendation_mode: 推薦模式
   recommendation_mode_desc: |
@@ -1609,6 +1611,9 @@ search:
   date: 日期
   user_type: 使用者類型
   search_failed: 搜尋失敗，請稍後再試
+  identity_switcher: 搜尋身分
+  identity_login: 登入
+  identity_guest: 訪客
   search_error: 搜尋發生錯誤，請稍後再試
   work: '稿件 {index}'
   month: '{month}月'

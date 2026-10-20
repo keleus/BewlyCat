@@ -497,6 +497,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_search_results',
     'settings.use_plugin_search_results_page',
     'settings.depersonalize_search_results',
+    'settings.show_search_identity_switcher',
     'settings.search_results_pagination_mode',
     'settings.individually_set_search_page_wallpaper',
     ...wallpaperTitleKeys,

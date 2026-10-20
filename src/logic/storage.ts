@@ -495,6 +495,7 @@ export interface Settings {
   // 搜索结果页设置
   usePluginSearchResultsPage: boolean
   depersonalizeSearchResults: boolean
+  showSearchIdentitySwitcher: boolean // 搜索结果页分类标签栏右侧显示登录 / 游客快速切换
   searchResultsPaginationMode: 'scroll' | 'pagination' // 搜索结果分页模式：滚动加载或翻页
 
   recommendationMode: RecommendationMode
@@ -838,6 +839,7 @@ export const originalSettings: Settings = {
   // 搜索结果页设置
   usePluginSearchResultsPage: true,
   depersonalizeSearchResults: false,
+  showSearchIdentitySwitcher: false,
   searchResultsPaginationMode: 'scroll', // 默认使用滚动加载
 
   recommendationMode: 'web',

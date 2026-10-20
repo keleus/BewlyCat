@@ -754,6 +754,8 @@ settings:
   use_plugin_search_results_page_disabled_by_original_homepage: Searches use bilibili's original results page while the original bilibili homepage is enabled
   depersonalize_search_results: Depersonalized search
   depersonalize_search_results_desc: When enabled, search result requests are sent without login cookies.
+  show_search_identity_switcher: Show signed-in / guest quick switcher
+  show_search_identity_switcher_desc: Show a pill button group to the right of the category tabs on the search results page to switch between signed-in and guest search. Guest is the same as enabling Depersonalized search.
   search_results_pagination_mode: Search results pagination mode
   search_results_pagination_mode_desc: 'Choose how search results are displayed: infinite scroll or page-based navigation'
   individually_set_search_page_wallpaper: Individually set search page wallpaper
@@ -1694,6 +1696,9 @@ search:
   date: Date
   user_type: User type
   search_failed: Search failed. Please try again later.
+  identity_switcher: Search identity
+  identity_login: Signed in
+  identity_guest: Guest
   search_error: An error occurred while searching. Please try again later.
   work: 'Work {index}'
   month: 'Month {month}'

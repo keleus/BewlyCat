@@ -820,6 +820,8 @@ settings:
   use_plugin_search_results_page_disabled_by_original_homepage: 使用原版 bilibili 首页时，搜索将使用 bilibili 原版结果页
   depersonalize_search_results: 去个性化搜索
   depersonalize_search_results_desc: 启用后，搜索结果请求不携带登录 Cookie。
+  show_search_identity_switcher: 显示登录 / 游客快速切换按钮组
+  show_search_identity_switcher_desc: 在搜索结果页分类标签栏右侧显示胶囊按钮组，可直接切换登录态或游客态搜索。游客态等同于开启「去个性化搜索」。
   search_results_pagination_mode: 搜索结果分页模式
   search_results_pagination_mode_desc: 选择搜索结果的展示方式：滚动自动加载或翻页
   individually_set_search_page_wallpaper: 单独设置搜索页背景
@@ -1594,6 +1596,9 @@ search:
   date: 日期
   user_type: 用户类型
   search_failed: 搜索失败，请稍后重试
+  identity_switcher: 搜索身份
+  identity_login: 登录
+  identity_guest: 游客
   search_error: 搜索出错，请稍后重试
   work: '稿件 {index}'
   month: '{month}月'

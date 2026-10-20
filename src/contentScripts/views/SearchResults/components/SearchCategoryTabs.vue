@@ -61,10 +61,28 @@ function formatCount(count: number): string {
         </span>
       </button>
     </div>
+
+    <div v-if="$slots.actions" class="search-categories__actions">
+      <slot name="actions" />
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
+.search-categories {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bew-space-4);
+}
+
+.search-categories__actions {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--bew-space-4);
+}
+
 .search-category-control {
   max-width: 100%;
   overflow-x: auto;
@@ -73,6 +91,12 @@ function formatCount(count: number): string {
 
 .search-category-control::-webkit-scrollbar {
   display: none;
+}
+
+@media (max-width: 600px) {
+  .search-categories {
+    flex-direction: column;
+  }
 }
 
 .category-tab__count {

@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
 import { useTopBarStore } from '~/stores/topBarStore'
@@ -176,6 +177,12 @@ const categories = computed<ReadonlyArray<SearchCategoryOption>>(() => [
   { value: 'user', label: t('search.users'), icon: 'i-tabler:user' },
   { value: 'live', label: t('search.live'), icon: 'i-tabler:broadcast' },
   { value: 'article', label: t('search.articles'), icon: 'i-tabler:article' },
+])
+
+// 游客态即去个性化搜索：请求仍经 WBI 签名，只省略登录 Cookie。
+const identityOptions = computed<{ label: string, value: boolean }[]>(() => [
+  { label: t('search.identity_login'), value: false },
+  { label: t('search.identity_guest'), value: true },
 ])
 
 // TODO: 需要从各个 Page 组件获取实际的 counts
@@ -381,7 +388,39 @@ onMounted(() => {
       :current-category="currentCategory"
       :category-counts="categoryCounts"
       @select="switchCategory"
-    />
+    >
+      <template v-if="settings.showSearchIdentitySwitcher" #actions>
+        <div
+          class="bew-segment-control bew-segment-control--surface"
+          :class="{
+            'bew-segment-control--static': !settings.enableLiquidSegmentIndicator,
+            'bew-segment-control--solid': !settings.enableFrostedGlass,
+          }"
+          role="group"
+          :aria-label="$t('search.identity_switcher')"
+          data-layout-settings-menu="BewlyPages"
+          data-layout-settings-page="search"
+          data-layout-settings-title-key="settings.show_search_identity_switcher"
+        >
+          <LiquidSegmentIndicator
+            v-if="settings.enableLiquidSegmentIndicator"
+            :active-key="settings.depersonalizeSearchResults"
+          />
+          <button
+            v-for="option in identityOptions"
+            :key="String(option.value)"
+            type="button"
+            class="bew-segment-control__item"
+            data-segment-item
+            :data-active="settings.depersonalizeSearchResults === option.value ? 'true' : undefined"
+            :aria-pressed="settings.depersonalizeSearchResults === option.value"
+            @click="settings.depersonalizeSearchResults = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+      </template>
+    </SearchCategoryTabs>
 
     <SearchVideoFilters
       v-if="currentCategory === 'video' || currentCategory === 'all'"
@@ -408,7 +447,9 @@ onMounted(() => {
       v-model:sub-category="currentLiveSubCategory"
     />
 
+    <!-- 切换登录 / 游客身份后重建结果页，按新身份重新请求 -->
     <SearchResultsPanel
+      :key="settings.depersonalizeSearchResults ? 'guest' : 'login'"
       ref="searchResultsPanelRef"
       :current-category="currentCategory"
       :keyword="normalizedKeyword"

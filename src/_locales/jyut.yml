@@ -699,6 +699,8 @@ settings:
   use_plugin_search_results_page_disabled_by_original_homepage: 使用原版 bilibili 首頁嗰陣，搜尋會使用 bilibili 原版結果頁
   depersonalize_search_results: 去個人化搜尋
   depersonalize_search_results_desc: 開啟後，搜尋結果請求唔會帶登入 Cookie。
+  show_search_identity_switcher: 顯示登入 / 訪客快速切換按鈕組
+  show_search_identity_switcher_desc: 喺搜尋結果頁分類標籤列右邊顯示膠囊按鈕組，可以直接切換登入狀態定訪客狀態搜尋。訪客狀態等同開啟「去個人化搜尋」。
   search_results_pagination_mode: 搜尋結果分頁模式
   search_results_pagination_mode_desc: 揀搜尋結果顯示方式：捲動自動加載或者翻頁
   individually_set_search_page_wallpaper: 單獨設定搵嘢頁背景
@@ -1609,6 +1611,9 @@ search:
   date: 日期
   user_type: 用戶類型
   search_failed: 搜尋失敗，請遲啲再試
+  identity_switcher: 搜尋身分
+  identity_login: 登入
+  identity_guest: 訪客
   search_error: 搜尋出錯，請遲啲再試
   work: '稿件 {index}'
   month: '{month}月'
