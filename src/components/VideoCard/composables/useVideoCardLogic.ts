@@ -29,7 +29,7 @@ interface VideoCardProps {
 
 export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps>, savedState?: VideoCardState) {
   const toast = useToast()
-  const { openIframeDrawer } = useBewlyApp()
+  const { openIframeDrawer, openVideoDialog } = useBewlyApp()
   const topBarStore = useTopBarStore()
 
   // 将传入的 props 转换为 computed，确保响应式
@@ -352,6 +352,10 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
     if (settings.value.videoCardLinkOpenMode === 'drawer' && videoUrl.value && !event.ctrlKey && !event.metaKey) {
       event.preventDefault()
       openIframeDrawer(videoUrl.value)
+    }
+    if (settings.value.videoCardLinkOpenMode === 'dialog' && videoUrl.value && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault()
+      openVideoDialog(videoUrl.value)
     }
   }
 

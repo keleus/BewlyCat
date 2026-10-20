@@ -241,6 +241,7 @@ export const videoCardContextMenuKeys = [
   'openInNewWindow',
   'openInCurrentTab',
   'openInDrawer',
+  'openInDialog',
   'favorite',
   'copyVideoLink',
   'copyCleanVideoLink',
@@ -334,7 +335,7 @@ export interface Settings {
   enableVideoPreview: boolean
 
   // Link Opening Behavior
-  videoCardLinkOpenMode: 'drawer' | 'newTab' | 'currentTab' | 'background'
+  videoCardLinkOpenMode: 'drawer' | 'dialog' | 'newTab' | 'currentTab' | 'background'
   topBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
   searchBarLinkOpenMode: 'currentTab' | 'currentTabIfNotHomepage' | 'currentTabIfHomepage' | 'newTab' | 'background'
   closeDrawerWithoutPressingEscAgain: boolean
@@ -1062,6 +1063,10 @@ export const settings = useSettingsStorage(originalSettings, {
     const menuConfig = record.videoCardContextMenuConfig
     if (Array.isArray(menuConfig) && !menuConfig.some(item => item.key === 'favorite'))
       menuConfig.push({ key: 'favorite', visible: true })
+    if (Array.isArray(menuConfig) && !menuConfig.some(item => item.key === 'openInDialog')) {
+      const drawerIndex = menuConfig.findIndex(item => item.key === 'openInDrawer')
+      menuConfig.splice(drawerIndex === -1 ? menuConfig.length : drawerIndex + 1, 0, { key: 'openInDialog', visible: true })
+    }
 
     // 旧私信开关同时控制两类私信，拆分后保留原有选择。
     if (typeof record.showPrivateMessageUnreadCount === 'boolean') {

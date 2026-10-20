@@ -51,6 +51,10 @@ const videoCardOpenModeOptions = computed(() => {
       value: 'drawer',
     },
     {
+      label: t('settings.link_opening_behavior_opt.dialog'),
+      value: 'dialog',
+    },
+    {
       label: t('settings.link_opening_behavior_opt.background'),
       value: 'background',
     },

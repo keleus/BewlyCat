@@ -25,7 +25,7 @@ import { getWatchLaterAuthor } from '~/utils/watchLater'
 
 const { t } = useI18n()
 const { confirm: showConfirmDialog } = useConfirmDialog()
-const { openIframeDrawer, mainAppRef } = useBewlyApp()
+const { openIframeDrawer, openVideoDialog, mainAppRef } = useBewlyApp()
 const topBarStore = useTopBarStore()
 
 provide('getVideoType', () => 'common')
@@ -289,6 +289,9 @@ function handleLinkClick(url: string) {
   if (settings.value.videoCardLinkOpenMode === 'drawer') {
     openIframeDrawer(url) // 在抽屉打开
   }
+  else if (settings.value.videoCardLinkOpenMode === 'dialog') {
+    openVideoDialog(url) // 在弹窗打开
+  }
   else if (settings.value.videoCardLinkOpenMode === 'currentTab') {
     window.open(url, '_self') // 在当前标签页打开
   }
@@ -308,6 +311,9 @@ function handleVideoLinkClick(bvid: string) {
   const videoUrl = `https://www.bilibili.com/video/${bvid}/`
   if (settings.value.videoCardLinkOpenMode === 'drawer') {
     openIframeDrawer(videoUrl) // 在抽屉打开
+  }
+  else if (settings.value.videoCardLinkOpenMode === 'dialog') {
+    openVideoDialog(videoUrl) // 在弹窗打开
   }
   else if (settings.value.videoCardLinkOpenMode === 'currentTab') {
     window.open(videoUrl, '_self') // 在当前标签页打开

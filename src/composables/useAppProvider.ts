@@ -49,6 +49,8 @@ export interface BewlyAppProvider {
   handleBackToTop: (targetScrollTop?: number) => void
   haveScrollbar: () => Promise<boolean>
   openIframeDrawer: (url: string) => void
+  /** 以居中弹窗打开视频；不支持的地址或窄视口回退为新标签页 */
+  openVideoDialog: (url: string) => void
   // 添加活跃抽屉状态
   activeDrawer: Ref<DrawerType>
   setActiveDrawer: (drawer: DrawerType) => void

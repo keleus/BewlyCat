@@ -85,7 +85,7 @@ const showFollowUserDialog = ref<boolean>(false)
 const showUnfollowUserDialog = ref<boolean>(false)
 const showPipWindow = ref<boolean>(false)
 const loadingWebDislike = ref<boolean>(false)
-const { openIframeDrawer } = useBewlyApp()
+const { openIframeDrawer, openVideoDialog } = useBewlyApp()
 
 enum VideoOption {
   OpenInNewTab,
@@ -93,6 +93,7 @@ enum VideoOption {
   OpenInCurrentTab,
   OpenInNewWindow,
   OpenInDrawer,
+  OpenInDialog,
   Favorite,
 
   ViewTheOriginalCover,
@@ -137,6 +138,7 @@ const commonOptions = computed((): OptionItem[][] => {
             { command: VideoOption.OpenInNewWindow, key: 'openInNewWindow' as const, name: t('video_card.operation.open_in_new_window'), icon: 'i-solar:maximize-square-3-bold-duotone' },
             { command: VideoOption.OpenInCurrentTab, key: 'openInCurrentTab' as const, name: t('video_card.operation.open_in_current_tab'), icon: 'i-solar:square-top-down-bold-duotone' },
             { command: VideoOption.OpenInDrawer, key: 'openInDrawer' as const, name: t('video_card.operation.open_in_drawer'), icon: 'i-solar:archive-up-minimlistic-bold-duotone' },
+            { command: VideoOption.OpenInDialog, key: 'openInDialog' as const, name: t('video_card.operation.open_in_dialog'), icon: 'i-solar:window-frame-bold-duotone' },
           ]
         : []),
     ],
@@ -301,6 +303,10 @@ function handleCommonCommand(command: VideoOption) {
       break
     case VideoOption.OpenInDrawer:
       openIframeDrawer(props.video.url || '')
+      handleClose()
+      break
+    case VideoOption.OpenInDialog:
+      openVideoDialog(props.video.url || '')
       handleClose()
       break
 

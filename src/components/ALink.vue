@@ -19,7 +19,7 @@ const emit = defineEmits<{
   (e: 'click', value: MouseEvent): void
 }>()
 
-const { openIframeDrawer } = useBewlyApp()
+const { openIframeDrawer, openVideoDialog } = useBewlyApp()
 
 const processedHref = computed(() => {
   if (!props.href)
@@ -102,6 +102,14 @@ function handleClick(event: MouseEvent) {
     event.preventDefault()
     if (props.href) {
       openIframeDrawer(processedHref.value)
+    }
+    return
+  }
+
+  if (openMode.value === 'dialog') {
+    event.preventDefault()
+    if (props.href) {
+      openVideoDialog(processedHref.value)
     }
     return
   }

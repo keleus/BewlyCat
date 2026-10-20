@@ -9,6 +9,22 @@ const DIALOG_REFERENCE_HEIGHT = 'min(88dvh, 49.5vw)'
 export const DIALOG_SAFE_HEIGHT = `min(calc(100dvh - ${DIALOG_VIEWPORT_GUTTER}px), max(280px, ${DIALOG_REFERENCE_HEIGHT}))`
 export const PLAYER_DIALOG_MAX_WIDTH = `min(92vw, calc(${PLAYER_DIALOG_WIDTH_SCALE * 100}dvh * 16 / 9), ${DIALOG_SAFE_WIDTH})`
 
+/** 弹窗可承载的视频地址：主站视频、番剧与列表播放页；直播等跨站页面回退为新标签页。 */
+export function canOpenInVideoDialog(url: string) {
+  if (window.innerWidth <= VIDEO_DIALOG_MIN_VIEWPORT_WIDTH)
+    return false
+
+  try {
+    const { protocol, hostname, pathname } = new URL(url, location.href)
+    return /^https?:$/.test(protocol)
+      && (hostname === 'www.bilibili.com' || hostname === 'bilibili.com')
+      && /^\/(?:video|bangumi\/play|cheese\/play|list|festival)\//.test(pathname)
+  }
+  catch {
+    return false
+  }
+}
+
 const WEB_FULLSCREEN_BTN_SELECTOR = '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen, .squirtle-video-pagefullscreen'
 const FULLSCREEN_BTN_SELECTOR = '.bpx-player-ctrl-full, .bilibili-player-video-btn-fullscreen, .squirtle-video-fullscreen'
 

@@ -96,6 +96,11 @@ iframe_drawer:
   open_in_new_tab: Open in new tab
   close: Close
   press_esc_again_to_close: Press Esc again to close
+video_dialog:
+  title: Video playback
+  open_in_new_tab: Open in new tab
+  close: Close
+  loading: Opening video…
 player_screenshot:
   capture: Capture current video frame
   saved: Screenshot saved
@@ -450,10 +455,11 @@ settings:
     background: Background tab
     new_tab: New tab
     drawer: Open in drawer
+    dialog: Open in dialog
   top_bar_link_opening_behavior: Top bar link opening behavior
   video_card_link_opening_behavior: Video card and bangumi card link opening behavior
   link_opening_behavior_desc: 'Controls where links open. "Current outside home" uses a new tab on the home page and the current tab on other pages; "Current on home" uses the current tab on the Bilibili home page (page=Home or no page parameter) and a new tab on other pages; "Background tab" opens in the background when the browser allows it.'
-  video_card_link_opening_behavior_desc: Controls where video and bangumi cards open. You can choose the current tab, drawer, background tab, or new tab.
+  video_card_link_opening_behavior_desc: Controls where video and bangumi cards open. You can choose the current tab, drawer, dialog, background tab, or new tab. The dialog is used only for video, bangumi, and course pages; narrow windows and other links open in a new tab instead.
   search_bar_link_opening_behavior: Search bar link opening behavior
   close_drawer_without_pressing_esc_again: Close the drawer without pressing <kbd>Esc</kbd> again
   block_ads: Block ads
@@ -491,8 +497,8 @@ settings:
     context_bangumi: Series / Movies
     context_watch_later: Watch Later
     context_playlist: Favorites / Playlists
-    context_moments_dialog: Moments Video Dialog
-    context_moments_dialog_desc: Applies only to videos played in the Moments dialog and takes priority over other contexts; “Inherit Default” falls back to the video's own context.
+    context_moments_dialog: Video Dialog
+    context_moments_dialog_desc: Applies only to videos played in the Moments and video card dialogs and takes priority over other contexts; “Inherit Default” falls back to the video's own context.
     bewly_widescreen_sidebar_position: Bewly Widescreen Sidebar Position
     bewly_widescreen_sidebar_position_desc: Choose the sidebar position in Bewly Widescreen mode
     bewly_widescreen_sidebar_position_left: Left
@@ -1382,6 +1388,7 @@ video_card:
     open_in_new_window: Open in New Window
     open_in_current_tab: Open in Current Tab
     open_in_drawer: Open in Drawer
+    open_in_dialog: Open in Dialog
     copy_video_link: Copy Video Link
     copy_clean_video_link: Copy Clean Video Link
     copy_bv_number: Copy BV Number

@@ -364,7 +364,7 @@ provide('getVideoType', () => props.type!)
         v-bind="coverSkeleton ? {} : {
           href: logic.videoUrl.value,
           type: 'videoCard',
-          customClickEvent: Boolean(props.customClickHandler) || settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'background',
+          customClickEvent: Boolean(props.customClickHandler) || settings.videoCardLinkOpenMode === 'drawer' || settings.videoCardLinkOpenMode === 'dialog' || settings.videoCardLinkOpenMode === 'background',
           customClickEventIncludesModifiers: Boolean(props.customClickHandler),
           disableDragging: shouldDisableLinkDragging,
         }"

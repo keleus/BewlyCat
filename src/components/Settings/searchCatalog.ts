@@ -161,6 +161,7 @@ const linkOpeningOptionKeys = [
 const videoCardLinkOpeningOptionKeys = [
   'settings.link_opening_behavior_opt.current_tab',
   'settings.link_opening_behavior_opt.drawer',
+  'settings.link_opening_behavior_opt.dialog',
   'settings.link_opening_behavior_opt.background',
   'settings.link_opening_behavior_opt.new_tab',
 ]
@@ -380,6 +381,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'video_card.operation.open_in_new_window',
     'video_card.operation.open_in_current_tab',
     'video_card.operation.open_in_drawer',
+    'video_card.operation.open_in_dialog',
     'video_card.operation.favorite',
     'video_card.operation.copy_video_link',
     'video_card.operation.copy_clean_video_link',
