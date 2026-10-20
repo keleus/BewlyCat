@@ -11,7 +11,7 @@ import type {
   ShortcutsSettings,
 } from '~/logic/storage'
 import { formatShortcutKey, getShortcutKeyFromEvent, isSameShortcutKey } from '~/utils/shortcutKeys'
-import { setupShortcutHandlers } from '~/utils/shortcuts'
+import { getEffectiveShortcutSetting, setupShortcutHandlers } from '~/utils/shortcuts'
 
 import SettingsItem from '../components/SettingsItem.vue'
 import SettingsItemGroup from '../components/SettingsItemGroup.vue'
@@ -120,7 +120,7 @@ const vFocusShortcutEditor = {
 
 // --- Helper Functions ---
 function getShortcutSetting(id: ConfigurableShortcutId): BaseShortcutSetting | undefined {
-  return settings.value.shortcuts?.[id]
+  return getEffectiveShortcutSetting(String(id))
 }
 
 function getDefaultShortcutSetting(id: ConfigurableShortcutId): BaseShortcutSetting | undefined {
@@ -139,7 +139,7 @@ function checkShortcutConflict(key: string, currentId: ConfigurableShortcutId): 
       if (shortcut.id === currentId)
         continue
 
-      const shortcutSetting = settings.value.shortcuts[shortcut.id]
+      const shortcutSetting = getShortcutSetting(shortcut.id)
       if (shortcutSetting && typeof shortcutSetting === 'object' && shortcutSetting.key) {
         if (isSameShortcutKey(shortcutSetting.key, key)) {
           return {
@@ -374,7 +374,7 @@ function undoResetAllShortcuts() {
                   </button>
                 </div>
                 <Radio
-                  :model-value="settings.shortcuts[shortcutDef.id]?.enabled ?? false"
+                  :model-value="getShortcutSetting(shortcutDef.id)?.enabled ?? false"
                   @update:model-value="(value) => {
                     if (!settings.shortcuts[shortcutDef.id]) {
                       settings.shortcuts[shortcutDef.id] = { key: shortcutDef.defaultKey, enabled: value }
