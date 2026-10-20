@@ -16,6 +16,9 @@ export const CONTENT_SCRIPT_MATCHES = CONTENT_SCRIPT_HOSTS.map(host => `*://${ho
 export const CONTENT_SCRIPT_EXCLUDE_MATCHES = [
   '*://www.bilibili.com/match/game*',
   '*://www.bilibili.com/toy*',
+  // B 站顶栏在每个页面隐藏加载的未读数同步框架，注入后会让每个标签页多一套存储监听与后台请求。
+  '*://message.bilibili.com/pages/nav/*',
+  '*://t.bilibili.com/pages/nav/*',
 ]
 
 export const CONTENT_SCRIPT_PING = 'bewly-cat:content-script:ping'

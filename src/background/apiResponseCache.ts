@@ -20,6 +20,7 @@ export function createApiResponseCache(
   const pendingRequests = new Map<string, Promise<any>>()
   let loadPromise: Promise<void> | undefined
   let persistQueue: Promise<void> = Promise.resolve()
+  let persistScheduled = false
 
   async function load() {
     try {
@@ -40,7 +41,13 @@ export function createApiResponseCache(
   }
 
   function persist() {
+    // 多个请求同时完成时只排一次整份写入，写入开始时会带上此前所有新结果。
+    if (persistScheduled)
+      return persistQueue
+
+    persistScheduled = true
     persistQueue = persistQueue.then(async () => {
+      persistScheduled = false
       await sessionStorage?.set({ [STORAGE_KEY]: Object.fromEntries(entries) })
     }).catch(() => {
       // 写入失败不影响请求结果，也不阻塞后续缓存写入。
@@ -66,10 +73,11 @@ export function createApiResponseCache(
       return pending
 
     // 在执行异步请求前登记 Promise，避免多个标签页同时穿透缓存。
-    const result = Promise.resolve().then(request).then(async (response) => {
+    const result = Promise.resolve().then(request).then((response) => {
       if (isSuccessfulResponse(response)) {
         entries.set(key, { response, expiresAt: Date.now() + maxAge })
-        await persist()
+        // 持久化只用于 Service Worker 休眠后恢复；浏览器繁忙时不能让响应排在整份缓存写入之后。
+        void persist()
       }
       return response
     }).finally(() => {
