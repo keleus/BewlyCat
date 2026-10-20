@@ -16,10 +16,13 @@ const props = withDefaults(defineProps<{
    * 默认关闭，保持原位纯 CSS 浮层行为不变；找不到顶层容器时也自动回退原位模式。
    */
   floating?: boolean
+  /** 浮层模式下的层级；处于设置窗口等高层容器内时可上调，避免提示被容器背景遮挡。 */
+  floatingZIndex?: CSSProperties['zIndex']
 }>(), {
   placement: 'top',
   type: 'default',
   floating: false,
+  floatingZIndex: 9999,
 })
 
 // 通用组件不能假设一定挂在 Bewly App 树内（useBewlyApp 在 dev 下无 provider 会抛错），
@@ -171,7 +174,7 @@ onBeforeUnmount(() => {
           class="b-tooltip-floating"
           :class="`b-tooltip-floating--type-${type}`"
           role="tooltip"
-          :style="tipStyles"
+          :style="[tipStyles, { zIndex: floatingZIndex }]"
         >
           {{ content }}
         </div>

@@ -700,7 +700,13 @@ function changeMenuItem(menuItem: MenuType) {
         </div>
 
         <!-- 右下角落在内容区 x-12 内边距内，不遮挡设置项右侧控件 -->
-        <Tooltip class="settings-usage-guide" :content="$t('settings.usage_guide')" placement="left" floating>
+        <Tooltip
+          class="settings-usage-guide"
+          :content="$t('settings.usage_guide')"
+          placement="left"
+          floating
+          floating-z-index="var(--bew-z-settings-tooltip)"
+        >
           <a
             :href="USAGE_GUIDE_URL"
             target="_blank"

@@ -99,6 +99,8 @@
   --bew-z-settings-host: 10003;
   --bew-z-settings: 10004;
   --bew-z-settings-popover: 10005;
+  // 设置内的浮动 Tooltip 需高于设置窗口，避免被其背景遮挡。
+  --bew-z-settings-tooltip: 10006;
   --bew-z-dialog: 10010;
   --bew-z-confirm-dialog: 10011;
   --bew-z-image-viewer: 10012;
