@@ -26,6 +26,8 @@ interface Props {
   pluginComputedTags: string[]
   hideAuthor?: boolean
   hideWatchedBadge?: boolean
+  /** 信息较少的卡片（如 App 推荐无头像、无发布时间）将 UP 主与标签合并为单行 */
+  compactMeta?: boolean
 }
 
 const props = defineProps<Props>()
@@ -43,7 +45,7 @@ defineExpose({
 const MAX_INTERFACE_TAG_COUNT = 4
 const MIN_TAG_COUNT_BEFORE_PLUGIN = 2
 
-// 空间不足时按 data-meta-priority 从小到大保留：时间(0) > 分区(1) > 接口标签(2) > 计算标签(3)
+// 空间不足时按 data-meta-priority 隐藏：时间(0) 始终保留，接口标签(2)、计算标签(3) 中先隐藏最宽的，分区(1) 最后隐藏
 interface VideoCardTag {
   priority: 1 | 2
   searchable: boolean
@@ -107,6 +109,7 @@ const content = computed(() => {
     authorNameEnabled,
     hasLegacyStats: showLegacyViewCount || showLegacyDanmakuCount,
     hasVisibleMeta,
+    isCompactMeta: props.layout === 'modern' && !!props.compactMeta && showAuthorName,
     isModernLayout: props.layout === 'modern',
     metaPlaceholderEnabled,
     showAuthorAvatar,
@@ -170,9 +173,30 @@ const content = computed(() => {
           />
         </div>
 
+        <!-- Modern compact layout: Author & tags in one row skeleton -->
+        <div
+          v-if="layout === 'modern' && compactMeta && content.authorNameEnabled"
+          class="video-card-meta video-card-meta--compact"
+          flex="~ gap-2 items-center"
+          w="full"
+        >
+          <div
+            v-if="content.authorNameEnabled"
+            w="30%" bg="$bew-skeleton" rounded="$bew-radius-sm"
+            :class="authorFontSizeClass"
+            style="height: 1em;"
+          />
+          <div
+            v-if="content.metaPlaceholderEnabled"
+            w="30%" bg="$bew-skeleton" rounded="$bew-radius-sm"
+            :class="metaFontSizeClass"
+            style="height: calc(1em + 0.24em);"
+          />
+        </div>
+
         <!-- Modern layout: Author info skeleton -->
         <div
-          v-if="layout === 'modern' && (content.authorAvatarEnabled || content.authorNameEnabled)"
+          v-else-if="layout === 'modern' && (content.authorAvatarEnabled || content.authorNameEnabled)"
           class="video-card-meta"
           flex="~ gap-2 items-center"
           w="full"
@@ -403,6 +427,7 @@ const content = computed(() => {
         <div
           v-if="layout === 'modern' && (content.showAuthorAvatar || content.showAuthorName)"
           class="video-card-meta"
+          :class="{ 'video-card-meta--compact': content.isCompactMeta }"
           flex="~ gap-2 items-center"
           w="full"
         >
@@ -413,9 +438,14 @@ const content = computed(() => {
             compact
           />
 
-          <div v-if="content.showAuthorName || content.hasVisibleMeta" flex="~ col gap-1" w="full" min-w-0>
+          <div
+            v-if="content.showAuthorName || content.hasVisibleMeta"
+            :class="content.isCompactMeta ? 'flex items-center gap-2' : 'flex flex-col gap-1'"
+            w="full" min-w-0
+          >
             <div
               v-if="content.showAuthorName"
+              class="video-card-meta__author"
               min-w-0
               flex="~ items-center gap-2"
               text="$bew-text-2"
@@ -660,6 +690,8 @@ const content = computed(() => {
 .video-card-title {
   &.keep-two-lines {
     min-height: calc(var(--bew-title-line-height, 1.35) * 2em);
+    // 字号类同时设置了行高，按实际行高保留两行，单行标题下方的信息才能与两行标题对齐
+    min-height: 2lh;
   }
   &.keep-one-line {
     min-height: auto;
@@ -691,6 +723,30 @@ const content = computed(() => {
 }
 
 .video-card-meta > div:last-child {
+  min-width: 0;
+}
+
+// 单行布局：只占一行高度并顶部对齐，UP 主名最多占一半宽度，其余留给标签
+.video-card-meta--compact {
+  min-height: 24px;
+  max-height: 24px;
+}
+
+.video-card-meta--compact .video-card-meta__author {
+  flex: 0 1 auto;
+  max-width: 50%;
+
+  &:only-child {
+    max-width: 100%;
+  }
+
+  :deep(.channel-name) {
+    margin-right: 0;
+  }
+}
+
+.video-card-meta--compact .video-card-meta-row {
+  flex: 1 1 0;
   min-width: 0;
 }
 
