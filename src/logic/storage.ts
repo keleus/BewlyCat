@@ -988,7 +988,16 @@ export const originalSettings: Settings = {
 }
 
 // 本地存储配置（不会同步到云端）
-export const localSettings = useStorageLocal('localSettings', originalLocalSettings, { mergeDefaults: true, writeDefaults: false })
+let resolveLocalSettingsReady: () => void = () => {}
+/** 本地配置首次读取结束后兑现；读取失败时值保持默认。 */
+export const localSettingsReady = new Promise<void>((resolve) => {
+  resolveLocalSettingsReady = resolve
+})
+export const localSettings = useStorageLocal('localSettings', originalLocalSettings, {
+  mergeDefaults: true,
+  writeDefaults: false,
+  onReady: () => resolveLocalSettingsReady(),
+})
 
 function normalizeFavoriteOrganizerFolders(value: unknown): FavoriteOrganizerFolder[] {
   if (!Array.isArray(value))

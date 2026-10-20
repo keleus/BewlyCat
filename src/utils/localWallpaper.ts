@@ -23,8 +23,25 @@ export interface LocalWallpaperRef {
   isLocal: true
 }
 
+let localWallpapersReadFailed = false
+let resolveLocalWallpapersLoaded: (loaded: boolean) => void = () => {}
+/**
+ * 本地壁纸首次读取结束后兑现，结果表示数据是否可信。读取完成前 getLocalWallpaper /
+ * hasLocalWallpaper 都会返回“不存在”，据此清理引用的逻辑必须先等待它。
+ */
+export const localWallpapersLoaded = new Promise<boolean>((resolve) => {
+  resolveLocalWallpapersLoaded = resolve
+})
+
 // 本地壁纸存储
-const localWallpapers = useStorageLocal<Record<string, LocalWallpaperData>>('localWallpapers', {})
+const localWallpapers = useStorageLocal<Record<string, LocalWallpaperData>>('localWallpapers', {}, {
+  onError: (error) => {
+    // 读取或补写默认值失败时数据不可信，宁可跳过清理也不误删引用。
+    localWallpapersReadFailed = true
+    console.error(error)
+  },
+  onReady: () => resolveLocalWallpapersLoaded(!localWallpapersReadFailed),
+})
 
 /**
  * 生成本地壁纸的唯一标识符
