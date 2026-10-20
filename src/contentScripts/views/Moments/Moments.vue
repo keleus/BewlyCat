@@ -26,9 +26,8 @@ import {
   shouldUseMomentImageGrid,
 } from '~/components/MomentCard/utils'
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { useExtensionCache } from '~/composables/useExtensionCache'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import type { StorageEventFilter } from '~/composables/useStorageLocal'
-import { useStorageLocal } from '~/composables/useStorageLocal'
 import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, MOMENTS_VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
@@ -138,40 +137,12 @@ interface MomentsFeedCacheEntry {
   }
 }
 type MomentsFeedCache = Partial<Record<MomentFilter, MomentsFeedCacheEntry>>
-let resolveMomentsFeedCacheReady: (() => void) | undefined
-const momentsFeedCacheReady = new Promise<void>((resolve) => {
-  resolveMomentsFeedCacheReady = resolve
-})
-let momentsCacheWriteTimer: number | undefined
-let pendingMomentsCacheWrite: (() => void | Promise<void>) | undefined
-const debounceMomentsCacheWrite: StorageEventFilter = (invoke) => {
-  pendingMomentsCacheWrite = invoke
-  if (momentsCacheWriteTimer !== undefined)
-    window.clearTimeout(momentsCacheWriteTimer)
-  momentsCacheWriteTimer = window.setTimeout(() => {
-    momentsCacheWriteTimer = undefined
-    const pendingWrite = pendingMomentsCacheWrite
-    pendingMomentsCacheWrite = undefined
-    void pendingWrite?.()
-  }, 500)
-}
-
-function flushMomentsCacheWrite() {
-  if (momentsCacheWriteTimer !== undefined)
-    window.clearTimeout(momentsCacheWriteTimer)
-  momentsCacheWriteTimer = undefined
-  const pendingWrite = pendingMomentsCacheWrite
-  pendingMomentsCacheWrite = undefined
-  void pendingWrite?.()
-}
-
-const momentsFeedCache = useStorageLocal<MomentsFeedCache>('momentsFeedCache', {}, {
-  deep: false,
-  eventFilter: debounceMomentsCacheWrite,
-  shallow: true,
-  writeDefaults: false,
-  onReady: () => resolveMomentsFeedCacheReady?.(),
-})
+// 缓存可达数 MB，存于后台 IndexedDB，避免 storage.local 把每次写入广播给所有标签页。
+const {
+  data: momentsFeedCache,
+  ready: momentsFeedCacheReady,
+  flush: flushMomentsCacheWrite,
+} = useExtensionCache<MomentsFeedCache>('momentsFeedCache', {}, { writeDelay: 500 })
 type MomentGroup = 'all' | 'wanted'
 const activeMomentGroup = ref<MomentGroup>('all')
 /** 只保留“想看”尚未扫描的缓存段；已展示数据交给虚拟列表管理。 */

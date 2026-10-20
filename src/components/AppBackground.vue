@@ -4,7 +4,7 @@ import type { CSSProperties } from 'vue'
 import { useDark } from '~/composables/useDark'
 import { AppPage } from '~/enums/appEnums'
 import { settings } from '~/logic'
-import { isLocalWallpaperUrl, resolveWallpaperUrl } from '~/utils/localWallpaper'
+import { isLocalWallpaperUrl, localWallpapersLoaded, resolveWallpaperUrl } from '~/utils/localWallpaper'
 import { hexToHSL } from '~/utils/main'
 import { cleanupExpiredCache, getOrCacheWallpaper } from '~/utils/wallpaperCache'
 
@@ -90,8 +90,11 @@ function waitForWallpaperDecode(url: string, signal: AbortSignal): Promise<void>
 }
 
 async function resolveWallpaperSource(originalUrl: string, cacheTime: number): Promise<string> {
-  if (isLocalWallpaperUrl(originalUrl))
+  if (isLocalWallpaperUrl(originalUrl)) {
+    // 读取完成前解析结果为空，且这里不会因数据到达而重新执行。
+    await localWallpapersLoaded
     return resolveWallpaperUrl(originalUrl) || ''
+  }
 
   return originalUrl ? await getOrCacheWallpaper(originalUrl, cacheTime) : ''
 }

@@ -7,6 +7,7 @@ import { onMessage } from '~/utils/messaging'
 
 import { isAppClientRequestUrl, setupAppClient } from './appClient'
 import { setupContentScriptRefreshPrompt } from './contentScriptRefreshPrompt'
+import { setupExtensionCacheStore } from './extensionCacheStore'
 import { setupLoginStateWatcher } from './loginStateWatcher'
 import { setupApiMsgListeners } from './messageListeners/api'
 import { setupTabMsgListeners } from './messageListeners/tabs'
@@ -70,17 +71,30 @@ async function syncPreventMobileRedirectRule(enabled: boolean) {
   }
 }
 
+let preventMobileRedirectApplied = false
+
+function applyPreventMobileRedirectSetting(storedSettings: unknown) {
+  const enabled = isPreventMobileRedirectEnabled(storedSettings)
+  // 任一设置项变化都会触发；规则重建在浏览器主进程执行，开关未变时跳过。
+  if (preventMobileRedirectApplied && enabled === preventMobileRedirectEnabled)
+    return Promise.resolve()
+
+  preventMobileRedirectApplied = true
+  preventMobileRedirectEnabled = enabled
+  return syncPreventMobileRedirectRule(enabled)
+}
+
 const preventMobileRedirectReady = browser.storage.local.get('settings').then((result) => {
-  preventMobileRedirectEnabled = isPreventMobileRedirectEnabled(result.settings)
-  return syncPreventMobileRedirectRule(preventMobileRedirectEnabled)
+  // 启动读取期间已收到变更时，变更值更新，不能被启动快照覆盖。
+  if (!preventMobileRedirectApplied)
+    return applyPreventMobileRedirectSetting(result.settings)
 })
 
 browser.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local' || !changes.settings)
     return
 
-  preventMobileRedirectEnabled = isPreventMobileRedirectEnabled(changes.settings.newValue)
-  void syncPreventMobileRedirectRule(preventMobileRedirectEnabled)
+  void applyPreventMobileRedirectSetting(changes.settings.newValue)
 })
 
 // 扩展启动时初始化 WBI 密钥
@@ -168,6 +182,7 @@ if (isFirefoxBuild) {
 // Setup all message listeners
 setupSettingsStorageCoordinator()
 setupSettingsCloudSync()
+setupExtensionCacheStore()
 setupApiMsgListeners()
 setupAppClient()
 setupTabMsgListeners()
