@@ -635,6 +635,15 @@ function getAppRcmdReasons(item: AppVideoItem): string[] {
   return text?.split('|').map(part => part.trim()).filter(Boolean) ?? []
 }
 
+const APP_CHANNEL_REASON_PREFIX = '频道:'
+
+function getAppChannelNames(item: AppVideoItem): string[] {
+  const reasons = item.three_point_v2?.find(option => option.type === ThreePointV2Type.Dislike)?.reasons ?? []
+  return reasons.flatMap(({ name }) =>
+    name?.startsWith(APP_CHANNEL_REASON_PREFIX) ? [name.slice(APP_CHANNEL_REASON_PREFIX.length).trim()] : [],
+  ).filter(Boolean)
+}
+
 function isAppVerticalVideo(item: AppVideoItem): boolean {
   return getAppRcmdReasons(item).includes('竖屏') || (!!item.uri && isVerticalVideo(item.uri))
 }
@@ -684,9 +693,11 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
   const capsuleText = descPart || (followed ? bottomReason : undefined)
 
   // HD 接口的推荐理由（如「1万点赞」）；竖屏已有类型图标，关注状态已由 followed 体现
-  const tags = getAppRcmdReasons(item)
-    .filter(reason => reason !== '竖屏' && !APP_FOLLOWED_REASONS.has(reason))
-    .map(reason => decodeHtmlEntities(reason))
+  // 之后追加「我不想看」中的频道名（如「频道:二次元」），作为视频所属频道标签显示
+  const tags = [...new Set([
+    ...getAppRcmdReasons(item).filter(reason => reason !== '竖屏' && !APP_FOLLOWED_REASONS.has(reason)),
+    ...getAppChannelNames(item),
+  ])].map(reason => decodeHtmlEntities(reason))
 
   // 预先计算 type，避免在模板中调用函数
   let type: 'horizontal' | 'vertical' | 'bangumi' = 'horizontal'
