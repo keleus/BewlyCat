@@ -118,14 +118,24 @@ function syncOriginalVideoTopBarVisibility(visible: boolean) {
   document.documentElement.classList.toggle(ORIGINAL_VIDEO_TOP_BAR_HIDDEN_CLASS, shouldControl && !visible)
 }
 
+// 鼠标显示只控制插件顶栏；iframe 抽屉宿主的顶栏属于原页面，沿用其他页面配置。
+const isShowOnMouseActive = computed(() => {
+  void currentUrl.value
+  if (settings.value.useOriginalBilibiliTopBar)
+    return false
+
+  const config = isVideoOrBangumiPage() && !isIframeDrawerHost()
+    ? settings.value.videoPageTopBarConfig
+    : settings.value.otherPageTopBarConfig
+  return config === VideoPageTopBarConfig.ShowOnMouse
+})
+
 // 处理顶栏显示/隐藏逻辑的函数
 function handleTopBarVisibility() {
   if (bewlyWidescreenActive.value)
     return
 
-  if (isVideoOrBangumiPage()
-    && !settings.value.useOriginalBilibiliTopBar
-    && settings.value.videoPageTopBarConfig === VideoPageTopBarConfig.ShowOnMouse) {
+  if (isShowOnMouseActive.value) {
     // 清除之前的计时器
     if (hideTimer) {
       clearTimeout(hideTimer)
@@ -169,7 +179,7 @@ watch(
     () => settings.value.enableTopBar,
     () => settings.value.useOriginalBilibiliTopBar,
     () => settings.value.videoPageTopBarConfig,
-    () => settings.value.autoHideTopBar,
+    () => settings.value.otherPageTopBarConfig,
   ],
   () => setupScrollListeners(),
 )
@@ -259,6 +269,12 @@ function handleScroll(arg?: number | Event): void {
   }
   // 处理其他页面的自动隐藏逻辑
   else {
+    // 鼠标显示：滚动监听仅用于空间页导航栏冲突检测
+    if (isShowOnMouseActive.value) {
+      finishScrollHandling()
+      return
+    }
+
     if (scrollTop.value === 0) {
       setTopBarVisibleFromScroll(true, scrollDelta)
       finishScrollHandling()
@@ -266,7 +282,7 @@ function handleScroll(arg?: number | Event): void {
     }
 
     // 在用户首页强制开启滚动隐藏，无论设置如何
-    if (isUserSpacePage() || settings.value.autoHideTopBar) {
+    if (isUserSpacePage() || settings.value.otherPageTopBarConfig === VideoPageTopBarConfig.ShowOnScroll) {
       if (!hideTopBar.value && scrollDelta < 0) {
         topBarVisibilityAnchorScrollTop.value = scrollTop.value
       }
@@ -312,20 +328,15 @@ function setupScrollListeners() {
     return
   }
 
-  // 根据视频页面配置设置初始显示状态
-  if (isVideoOrBangumiPage()) {
-    const config = settings.value.videoPageTopBarConfig
-    if (config === VideoPageTopBarConfig.AlwaysHide
-      || (config === VideoPageTopBarConfig.ShowOnMouse && !settings.value.useOriginalBilibiliTopBar)) {
-      toggleTopBarVisible(false)
-    }
-    else {
-      toggleTopBarVisible(true)
-    }
+  // 切换页面或设置后丢弃上一种模式遗留的延迟隐藏
+  if (hideTimer) {
+    clearTimeout(hideTimer)
+    hideTimer = null
   }
-  else {
-    toggleTopBarVisible(true)
-  }
+
+  // 根据页面配置设置初始显示状态
+  toggleTopBarVisible(!isShowOnMouseActive.value
+    && !(isVideoOrBangumiPage() && settings.value.videoPageTopBarConfig === VideoPageTopBarConfig.AlwaysHide))
 
   // 清理之前的监听器
   cleanupScrollListeners()
@@ -710,19 +721,13 @@ defineExpose({
   toggleTopBarVisible,
   handleScroll,
 })
-
-// 导出枚举供模板使用
-const VideoPageTopBarConfigEnum = VideoPageTopBarConfig
 </script>
 
 <template>
   <div class="top-bar-container">
     <!-- 顶部监听区域 -->
     <div
-      v-if="!bewlyWidescreenActive
-        && !settings.useOriginalBilibiliTopBar
-        && isVideoOrBangumiPage()
-        && settings.videoPageTopBarConfig === VideoPageTopBarConfigEnum.ShowOnMouse"
+      v-if="!bewlyWidescreenActive && isShowOnMouseActive"
       ref="topAreaTarget"
       class="top-area-listener"
     />

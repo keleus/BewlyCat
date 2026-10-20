@@ -182,7 +182,7 @@ const topBarGlobalTitleKeys = [
   'settings.topbar_style_settings',
   'settings.topbar_visibility',
   'settings.topbar_visibility_desc',
-  'settings.auto_hide_top_bar',
+  'settings.other_page_top_bar_config',
   'settings.video_page_top_bar_config',
   'settings.top_bar_style',
   'settings.top_bar_style_desc',

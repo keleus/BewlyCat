@@ -534,7 +534,8 @@ settings:
   show_video_card_watch_later: Show Watch Later button
   show_video_card_more_button: Show more menu button
   show_video_watched_badge: Track and show watched
-  auto_hide_top_bar: Auto-hide top bar
+  other_page_top_bar_config: Other pages top bar configuration
+  other_page_top_bar_config_desc: 'Controls when the top bar appears on pages other than video pages (such as Home and Moments). "On hover" shows it when the pointer enters the top of the page; "On scroll" hides it when scrolling down and shows it when scrolling up.'
   video_page_top_bar_config: Video page top bar configuration
   video_page_top_bar_config_desc: 'Controls when the top bar appears on video pages. "On hover" shows it when the pointer enters the top of the page; "On scroll" shows it while the page scrolls.'
   video_page_top_bar_config_opt:

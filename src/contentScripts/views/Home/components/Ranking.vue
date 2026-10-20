@@ -5,6 +5,7 @@ import type { Video } from '~/components/VideoCard/types'
 import VideoCardGrid from '~/components/VideoCardGrid.vue'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useHomeTabState } from '~/composables/useHomeTabState'
+import { VideoPageTopBarConfig } from '~/enums/appEnums'
 import type { GridLayoutType } from '~/logic'
 import { settings } from '~/logic'
 import type { List as RankingVideoItem, RankingResult } from '~/models/video/ranking'
@@ -155,10 +156,10 @@ watch(() => activatedRankingType.value.id, () => {
 watch(() => props.topBarVisibility, () => {
   shouldMoveAsideUp.value = false
 
-  // Allow moving tabs up only when the top bar is not hidden & is set to auto-hide
+  // Allow moving tabs up only when the top bar is not hidden & is set to auto-hide (on scroll or on hover)
   // This feature is primarily designed to compatible with the Bilibili Evolved's top bar
   // Even when the BewlyBewly top bar is hidden, the Bilibili Evolved top bar still exists, so not moving up
-  if (settings.value.autoHideTopBar && settings.value.enableTopBar) {
+  if (settings.value.otherPageTopBarConfig !== VideoPageTopBarConfig.AlwaysShow && settings.value.enableTopBar) {
     if (props.topBarVisibility)
       shouldMoveAsideUp.value = false
 

@@ -99,6 +99,9 @@ const videoPageTopBarConfigOptions = computed(() => [
   { label: t('settings.video_page_top_bar_config_opt.showOnScroll'), value: VideoPageTopBarConfig.ShowOnScroll },
 ])
 
+const otherPageTopBarConfigOptions = computed(() => videoPageTopBarConfigOptions.value
+  .filter(option => option.value !== VideoPageTopBarConfig.AlwaysHide))
+
 const topBarStyleOptions = computed<{ label: string, value: TopBarStyle }[]>(() => [
   { label: t('settings.top_bar_style_opt.default'), value: 'default' },
   { label: t('settings.top_bar_style_opt.frosted_glass'), value: 'frostedGlass' },
@@ -193,8 +196,12 @@ watch(topBarComponents, ensureTopBarComponentsConfig, { immediate: true })
       >
         <Radio v-model="settings.openTopBarItemsInBewly" />
       </SettingsItem>
-      <SettingsItem :title="$t('settings.auto_hide_top_bar')" right-width="auto">
-        <Radio v-model="settings.autoHideTopBar" />
+      <SettingsItem
+        :title="$t('settings.other_page_top_bar_config')"
+        :desc="$t('settings.other_page_top_bar_config_desc')"
+        right-width="auto"
+      >
+        <Select v-model="settings.otherPageTopBarConfig" :options="otherPageTopBarConfigOptions" w="160px" />
       </SettingsItem>
       <SettingsItem
         :title="$t('settings.video_page_top_bar_config')"

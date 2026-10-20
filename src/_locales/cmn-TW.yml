@@ -550,7 +550,8 @@ settings:
   show_video_card_watch_later: 顯示稍後再看按鈕
   show_video_card_more_button: 顯示更多選單按鈕
   show_video_watched_badge: 記錄並顯示已觀看
-  auto_hide_top_bar: 自動隱藏頂部列
+  other_page_top_bar_config: 其他頁面頂部列配置
+  other_page_top_bar_config_desc: 控制影片頁以外頁面（如首頁、動態）頂部列的顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「滾動顯示」表示向下滾動時隱藏、向上滾動時顯示。
   video_page_top_bar_config: 影片頁頂部列配置
   video_page_top_bar_config_desc: 控制影片頁頂部列的顯示時機。「滑鼠顯示」表示滑鼠移入頁面頂部時顯示；「滾動顯示」表示頁面滾動時顯示。
   video_page_top_bar_config_opt:

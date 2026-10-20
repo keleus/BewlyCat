@@ -705,7 +705,7 @@ const layoutEditContextActions = computed<LayoutEditQuickSettingsAction[]>(() =>
         icon: 'mingcute:settings-3-line',
         menu: 'BewlyComponents',
         secondaryPage: 'topbar',
-        targetTitleKey: 'settings.auto_hide_top_bar',
+        targetTitleKey: 'settings.video_page_top_bar_config',
       },
     ]
   }

@@ -133,6 +133,13 @@ export function normalizeVideoCardCoverRatio(value: unknown, fallback: number): 
 
 export type TabsPosition = 'left' | 'center'
 export type TopBarLogoStyle = 'icon' | 'brand'
+/** 视频页以外的顶栏显示时机；“总是隐藏”与关闭顶栏重复，不提供 */
+export type OtherPageTopBarConfig = Exclude<VideoPageTopBarConfig, VideoPageTopBarConfig.AlwaysHide>
+export const OTHER_PAGE_TOP_BAR_CONFIGS: OtherPageTopBarConfig[] = [
+  VideoPageTopBarConfig.AlwaysShow,
+  VideoPageTopBarConfig.ShowOnMouse,
+  VideoPageTopBarConfig.ShowOnScroll,
+]
 // 旧版三档（default/transparent/frostedGlass）沿用 v1.5.x 的遮罩结构与色调判定；
 // 实验三档（exp 前缀）走余弦渐变遮罩管线。
 export type TopBarStyle
@@ -359,7 +366,7 @@ export interface Settings {
   videoCardContextMenuConfig: VideoCardContextMenuConfigItem[]
 
   // Desktop & Dock
-  autoHideTopBar: boolean
+  otherPageTopBarConfig: OtherPageTopBarConfig
   showLayoutEditButton: boolean
   videoPageTopBarConfig: VideoPageTopBarConfig
   topBarStyle: TopBarStyle
@@ -695,7 +702,7 @@ export const originalSettings: Settings = {
   videoCardContextMenuConfig: defaultVideoCardContextMenuConfig.map(item => ({ ...item })),
 
   // Desktop & Dock
-  autoHideTopBar: false,
+  otherPageTopBarConfig: VideoPageTopBarConfig.AlwaysShow,
   showLayoutEditButton: true,
   videoPageTopBarConfig: VideoPageTopBarConfig.ShowOnScroll,
   topBarStyle: 'default',
@@ -1037,6 +1044,16 @@ export const settings = useSettingsStorage(originalSettings, {
       record.showUnfollowedPrivateMessageUnreadCount = record.showPrivateMessageUnreadCount
     }
     Reflect.deleteProperty(record, 'showPrivateMessageUnreadCount')
+
+    // 旧“自动隐藏顶栏”开关并入其他页面顶栏配置，开启时对应滚动显示。
+    if (typeof record.autoHideTopBar === 'boolean') {
+      record.otherPageTopBarConfig = record.autoHideTopBar
+        ? VideoPageTopBarConfig.ShowOnScroll
+        : VideoPageTopBarConfig.AlwaysShow
+    }
+    Reflect.deleteProperty(record, 'autoHideTopBar')
+    if (!OTHER_PAGE_TOP_BAR_CONFIGS.includes(record.otherPageTopBarConfig))
+      record.otherPageTopBarConfig = originalSettings.otherPageTopBarConfig
 
     if (typeof record.enableFavoriteCoverBlur === 'boolean') {
       record.enableSidebarCoverBlur = record.enableFavoriteCoverBlur
