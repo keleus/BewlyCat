@@ -496,6 +496,7 @@ export interface Settings {
 
   recommendationMode: RecommendationMode
   showRecommendationModeSwitcher: boolean
+  showImmersiveModeEntry: boolean // 首页个性推荐标签栏右侧显示沉浸式模式入口
   autoSwitchRecommendationMode: boolean
 
   // filter setting
@@ -832,6 +833,7 @@ export const originalSettings: Settings = {
 
   recommendationMode: 'web',
   showRecommendationModeSwitcher: false,
+  showImmersiveModeEntry: true,
   autoSwitchRecommendationMode: true,
 
   // filter setting

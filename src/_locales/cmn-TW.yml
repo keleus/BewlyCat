@@ -670,6 +670,8 @@ settings:
     Web：普通網頁端推薦模式。無 Cookie：請求首頁推薦時不攜帶 Cookie。App：手機端推薦模式，需先授權 access key。
   show_recommendation_mode_switcher: 顯示推薦模式快速切換按鈕組
   show_recommendation_mode_switcher_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示膠囊按鈕組，可直接選擇 Web、無 Cookie 或 App 模式。
+  show_immersive_mode_entry: 顯示沉浸式模式入口
+  show_immersive_mode_entry_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示入口：以 Bewly 寬螢幕開啟 B 站影片頁連續播放推薦影片，側欄顯示首頁推薦流，可用滾輪或方向鍵切換上一部 / 下一部。
   recommendation_mode_web_no_cookie: 無 Cookie
   remember_no_cookie_recommendation_state: 減少無 Cookie 推薦重複
   remember_no_cookie_recommendation_state_desc: 重新整理頁面後延續推薦刷新進度，並向推薦接口帶上最近曝光記錄，以減少重複推薦。僅無 Cookie 模式生效。
@@ -1362,6 +1364,19 @@ home:
   risk_control_paused: 請求過於頻繁導致首頁推薦介面風控，已暫停自動請求約 {seconds} 秒，請稍後重新整理再試
   app_fallback_web: App 推薦資料載入失敗，已自動切換至 Web 模式
   app_retry_web: App 推薦資料載入失敗，請手動切換至 Web 模式或稍後再試
+  immersive_mode: 沉浸式模式
+  immersive_mode_entry: 進入沉浸式模式
+  immersive_exit: 離開
+  immersive_loading: 正在載入推薦…
+  immersive_switching: 正在切換影片…
+  immersive_empty: 暫無可播放的推薦影片
+  immersive_no_more: 沒有更多推薦了
+  immersive_feed_title: 首頁推薦
+  immersive_shortcut_hint: 滾輪（畫面上）/ ↑↓ / W S 切換影片 · Esc 離開
+  immersive_views: 播放
+  immersive_now_playing: 正在播放
+  immersive_previous: 上一個
+  immersive_next: 下一個
   recommendations_retry: 首頁推薦介面連續請求失敗，請重新整理後再試
   weekly_issue: 第{number}期
   select_issue: 選擇期號

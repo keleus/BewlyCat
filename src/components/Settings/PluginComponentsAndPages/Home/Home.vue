@@ -181,6 +181,14 @@ function handleToggleHomeTab(tab: any) {
       </SettingsItem>
 
       <SettingsItem
+        :title="$t('settings.show_immersive_mode_entry')"
+        :desc="$t('settings.show_immersive_mode_entry_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showImmersiveModeEntry" />
+      </SettingsItem>
+
+      <SettingsItem
         v-if="settings.recommendationMode === 'webNoCookie'"
         :title="$t('settings.remember_no_cookie_recommendation_state')"
         :desc="$t('settings.remember_no_cookie_recommendation_state_desc')"

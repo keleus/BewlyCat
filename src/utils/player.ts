@@ -4,6 +4,7 @@ import { settings } from '~/logic'
 import type { AutoPlayMode, DefaultVideoPlayerMode, VideoPlayerModeContext, VideoPlayerModeOverride } from '~/logic/storage'
 import { getBilibiliPathname } from '~/utils/bilibiliLocale'
 import { i18n } from '~/utils/i18n'
+import { isImmersiveFeedFrame } from '~/utils/immersiveFeed'
 import { normalizePlaybackRate, normalizePlaybackRateStep } from '~/utils/playbackRate'
 import { getCachedCurrentVideoPageInfo, getCurrentVideoPageNumber } from '~/utils/videoPageInfo'
 
@@ -633,6 +634,10 @@ export function resolveMomentsDialogPlayerModeOverride(): DefaultVideoPlayerMode
 }
 
 export function resolveDefaultVideoPlayerMode(): DefaultVideoPlayerMode {
+  // 首页沉浸式模式的视频页固定使用 Bewly 宽屏，侧栏显示首页推荐流
+  if (isImmersiveFeedFrame())
+    return 'bewlyWidescreen'
+
   if (!settings.value.enableVideoPlayerModeOverrides)
     return settings.value.defaultVideoPlayerMode
 

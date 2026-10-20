@@ -24,6 +24,9 @@ import { decodeHtmlEntities } from '~/utils/htmlDecode'
 import { getCookie } from '~/utils/main'
 import { isVerticalVideo } from '~/utils/uriParse'
 
+import ImmersiveFeed from './ImmersiveFeed/ImmersiveFeed.vue'
+import type { ImmersiveFeedItem } from './ImmersiveFeed/types'
+
 const { gridLayout } = defineProps<{
   gridLayout: GridLayoutType
 }>()
@@ -151,6 +154,26 @@ function getRecommendErrorLogDetails(error: unknown): Record<string, unknown> {
 const currentVideoList = computed(() =>
   isWebRecommendationMode.value ? videoList.value : appVideoList.value,
 )
+
+// 沉浸式模式直接消费当前推荐流：只保留普通视频卡片，番剧等无法用 MP4 取流的卡片跳过
+const isImmersiveModeOpen = ref<boolean>(false)
+const immersiveInitialKey = ref<string>()
+const forYouRootRef = ref<HTMLElement | null>(null)
+const immersiveItems = computed<ImmersiveFeedItem[]>(() => {
+  const seen = new Set<string>()
+  const items: ImmersiveFeedItem[] = []
+  for (const element of currentVideoList.value) {
+    const video = element.displayData
+    if (!video || video.goto !== 'av' || seen.has(element.uniqueId))
+      continue
+    const bvid = video.bvid || (video.id > 0 ? av2bv(video.id) : '')
+    if (!bvid)
+      continue
+    seen.add(element.uniqueId)
+    items.push({ key: element.uniqueId, video: bvid === video.bvid ? video : { ...video, bvid } })
+  }
+  return items
+})
 
 const isLoading = ref<boolean>(true)
 const requestFailed = tabState.ref<boolean>('requestFailed', false)
@@ -1934,6 +1957,56 @@ async function getAppRecommendVideos(
   }
 }
 
+// 从视口内第一张可播放的卡片开始，避免重复播放已经滑过的推荐
+function getFirstVisibleImmersiveKey(): string | undefined {
+  const playableKeys = new Set(immersiveItems.value.map(item => item.key))
+  const viewportHeight = window.innerHeight
+  const slots = Array.from(forYouRootRef.value?.querySelectorAll<HTMLElement>('.video-card-slot[data-index]') ?? [])
+  const visibleIndexes = slots
+    .filter((slot) => {
+      const rect = slot.getBoundingClientRect()
+      return rect.bottom > 0 && rect.top < viewportHeight
+    })
+    .map(slot => Number(slot.dataset.index))
+    .filter(Number.isInteger)
+  if (!visibleIndexes.length)
+    return undefined
+
+  const list = currentVideoList.value
+  for (let index = Math.min(...visibleIndexes); index < list.length; index++) {
+    const key = list[index]?.uniqueId
+    if (key && playableKeys.has(key))
+      return key
+  }
+  return undefined
+}
+
+function openImmersiveMode() {
+  if (isImmersiveModeOpen.value)
+    return
+  immersiveInitialKey.value = getFirstVisibleImmersiveKey()
+  isImmersiveModeOpen.value = true
+  if (!hasInitializedData.value && !isLoading.value)
+    void initData()
+}
+
+function closeImmersiveMode() {
+  isImmersiveModeOpen.value = false
+}
+
+function handleImmersiveLoadMore() {
+  // 沉浸式由用户逐条切换驱动，等同手动加载，不受过滤分页与可见性限制
+  loadMore(true)
+}
+
+function handleImmersivePlay(key: string) {
+  const element = currentVideoList.value.find(item => item.uniqueId === key)
+  if (!element)
+    return
+  markWebRecommendationExposed(element)
+  recordWebRecommendationClick(element)
+}
+
 function jumpToLoginPage() {
   location.href = 'https://passport.bilibili.com/login'
 }
@@ -1941,6 +2014,7 @@ function jumpToLoginPage() {
 // 修改 defineExpose，暴露重置方法和撤销方法
 defineExpose({
   initData,
+  openImmersiveMode,
   undoRefresh: () => {
     handleUndoRefresh.value?.()
   },
@@ -1965,7 +2039,7 @@ defineExpose({
 </script>
 
 <template>
-  <div>
+  <div ref="forYouRootRef">
     <VideoCardGrid
       v-if="!needToLoginFirst"
       :items="currentVideoList"
@@ -2014,6 +2088,17 @@ defineExpose({
     <AppAuthorizationDialog
       v-if="showAppAuthorizationDialog"
       @close="showAppAuthorizationDialog = false"
+    />
+
+    <ImmersiveFeed
+      v-if="isImmersiveModeOpen"
+      :items="immersiveItems"
+      :initial-key="immersiveInitialKey"
+      :loading="isLoading"
+      :no-more-content="noMoreContent"
+      @close="closeImmersiveMode"
+      @load-more="handleImmersiveLoadMore"
+      @play="handleImmersivePlay"
     />
   </div>
 </template>

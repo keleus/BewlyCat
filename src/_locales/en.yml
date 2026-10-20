@@ -757,6 +757,8 @@ settings:
     an access key first.
   show_recommendation_mode_switcher: Show quick recommendation mode switcher
   show_recommendation_mode_switcher_desc: When "For You" is selected, show a segmented control to the right of the home tabs to choose Web, No Cookie, or App mode directly.
+  show_immersive_mode_entry: Show immersive mode entry
+  show_immersive_mode_entry_desc: When "For You" is selected, show an entry to the right of the home tabs that plays recommendations continuously on the Bilibili video page in Bewly widescreen, with the home feed in the sidebar. Switch videos with the mouse wheel or arrow keys.
   recommendation_mode_web_no_cookie: No Cookie
   remember_no_cookie_recommendation_state: Reduce No Cookie recommendation repeats
   remember_no_cookie_recommendation_state_desc: After reloading the page, continue the recommendation refresh progress and send recent exposure records with recommendation requests to reduce repeats. Only applies in No Cookie mode.
@@ -1441,6 +1443,19 @@ home:
   risk_control_paused: Requests were too frequent, so home recommendations have paused for about {seconds} seconds. Refresh and try again later.
   app_fallback_web: App recommendations failed to load. Switched to Web mode automatically.
   app_retry_web: App recommendations failed to load. Switch to Web mode manually or try again later.
+  immersive_mode: Immersive mode
+  immersive_mode_entry: Enter immersive mode
+  immersive_exit: Exit
+  immersive_loading: Loading recommendations…
+  immersive_switching: Switching video…
+  immersive_empty: No playable recommendations yet
+  immersive_no_more: No more recommendations
+  immersive_feed_title: For You
+  immersive_shortcut_hint: Wheel over video / ↑↓ / W S to switch · Esc to exit
+  immersive_views: Views
+  immersive_now_playing: Playing
+  immersive_previous: Previous
+  immersive_next: Next
   recommendations_retry: Home recommendations repeatedly failed. Refresh and try again.
   weekly_issue: 'Issue {number}'
   select_issue: Select issue

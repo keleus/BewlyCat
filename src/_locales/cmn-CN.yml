@@ -821,6 +821,8 @@ settings:
     Web：普通网页端推荐模式。无 Cookie：请求首页推荐时不携带 Cookie。App：移动端推荐模式，需先授权 access key。
   show_recommendation_mode_switcher: 显示推荐模式快速切换按钮组
   show_recommendation_mode_switcher_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示胶囊按钮组，可直接选择 Web、无 Cookie 或 App 模式。
+  show_immersive_mode_entry: 显示沉浸式模式入口
+  show_immersive_mode_entry_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示入口：以 Bewly 宽屏打开 B 站视频页连续播放推荐视频，侧栏显示首页推荐流，可用滚轮或方向键切换上一条 / 下一条。
   recommendation_mode_web_no_cookie: 无 Cookie
   remember_no_cookie_recommendation_state: 减少无 Cookie 推荐重复
   remember_no_cookie_recommendation_state_desc: 刷新页面后延续推荐刷新进度，并向推荐接口带上最近曝光记录，以减少重复推荐。仅无 Cookie 模式生效。
@@ -1347,6 +1349,19 @@ home:
   risk_control_paused: 请求过于频繁导致首页推荐接口风控，已暂停自动请求约 {seconds} 秒，请稍后刷新重试
   app_fallback_web: App 推荐数据加载失败，已自动切换至 Web 模式
   app_retry_web: App 推荐数据加载失败，请手动切换至 Web 模式或稍后重试
+  immersive_mode: 沉浸式模式
+  immersive_mode_entry: 进入沉浸式模式
+  immersive_exit: 退出
+  immersive_loading: 正在加载推荐…
+  immersive_switching: 正在切换视频…
+  immersive_empty: 暂无可播放的推荐视频
+  immersive_no_more: 没有更多推荐了
+  immersive_feed_title: 首页推荐
+  immersive_shortcut_hint: 滚轮（画面上）/ ↑↓ / W S 切换视频 · Esc 退出
+  immersive_views: 播放
+  immersive_now_playing: 正在播放
+  immersive_previous: 上一个
+  immersive_next: 下一个
   recommendations_retry: 首页推荐接口连续请求失败，请刷新后重试
   weekly_issue: 第{number}期
   select_issue: 选择期号
