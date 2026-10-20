@@ -275,7 +275,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.recommendation_mode',
   ], {
     keywordKeys: ['settings.recommendation_mode_web_no_cookie'],
-    keywords: ['Web', 'App'],
+    // 保留旧名称「无 Cookie」的检索
+    keywords: ['Web', 'App', 'Cookie'],
   }),
   ...createEntries(homeRoute, [
     'settings.app_recommendation_column',

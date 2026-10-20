@@ -753,11 +753,11 @@ settings:
   individually_set_search_page_wallpaper: Individually set search page wallpaper
   recommendation_mode: Recommendation mode
   recommendation_mode_desc: >
-    Web: normal web recommendation mode. No Cookie: request homepage
+    Web: normal web recommendation mode. Web (Guest): request homepage
     recommendations without cookies. App: mobile recommendation mode, requires
     an access key first.
   show_recommendation_mode_switcher: Show quick recommendation mode switcher
-  show_recommendation_mode_switcher_desc: When "For You" is selected, show a segmented control to the right of the home tabs to choose Web, No Cookie, or App mode directly.
+  show_recommendation_mode_switcher_desc: When "For You" is selected, show a segmented control to the right of the home tabs to choose Web, Web (Guest), or App mode directly.
   show_immersive_mode_entry: Enable immersive mode
   show_immersive_mode_entry_desc: When "For You" is selected, show an entry to the right of the home tabs that plays recommendations continuously on the Bilibili video page in Bewly widescreen, with the home feed in the sidebar. Turning this off hides the entry.
   immersive_wheel_switch: Switch videos with the mouse wheel
@@ -770,13 +770,13 @@ settings:
   immersive_auto_next_desc: Switch to the next recommendation when the current video ends. When off, the player's own end behavior applies.
   immersive_preload_next: Preload the next video
   immersive_preload_next_desc: Open the next video page in the background so switching is almost instant. Uses extra memory and data, and skipped videos still count as a page visit.
-  recommendation_mode_web_no_cookie: No Cookie
-  remember_no_cookie_recommendation_state: Reduce No Cookie recommendation repeats
+  recommendation_mode_web_no_cookie: Web (Guest)
+  remember_no_cookie_recommendation_state: Reduce Web (Guest) recommendation repeats
   app_recommendation_column: App recommendation style
   app_recommendation_column_desc: Single column cards include the uploader avatar, publish time and like count; double column cards include recommendation reasons such as likes or vertical video
   app_recommendation_column_single: App single column
   app_recommendation_column_double: App double column
-  remember_no_cookie_recommendation_state_desc: After reloading the page, continue the recommendation refresh progress and send recent exposure records with recommendation requests to reduce repeats. Only applies in No Cookie mode.
+  remember_no_cookie_recommendation_state_desc: After reloading the page, continue the recommendation refresh progress and send recent exposure records with recommendation requests to reduce repeats. Only applies in Web (Guest) mode.
   auto_switch_recommendation_mode: Auto switch recommendation mode
   auto_switch_recommendation_mode_desc: >
     Automatically switch from App mode to Web mode when App recommendation fails.

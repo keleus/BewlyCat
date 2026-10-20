@@ -668,9 +668,9 @@ settings:
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
   recommendation_mode: 推薦模式
   recommendation_mode_desc: |
-    Web：普通網頁端推薦模式。無 Cookie：請求首頁推薦時不攜帶 Cookie。App：手機端推薦模式，需先授權 access key。
+    Web：普通網頁端推薦模式。Web(訪客)：請求首頁推薦時不攜帶 Cookie。App：手機端推薦模式，需先授權 access key。
   show_recommendation_mode_switcher: 顯示推薦模式快速切換按鈕組
-  show_recommendation_mode_switcher_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示膠囊按鈕組，可直接選擇 Web、無 Cookie 或 App 模式。
+  show_recommendation_mode_switcher_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示膠囊按鈕組，可直接選擇 Web、Web(訪客) 或 App 模式。
   show_immersive_mode_entry: 啟用沉浸式模式
   show_immersive_mode_entry_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示入口：以 Bewly 寬螢幕開啟 B 站影片頁連續播放推薦影片，側欄顯示首頁推薦流。關閉後不顯示入口。
   immersive_wheel_switch: 滾輪切換影片
@@ -683,13 +683,13 @@ settings:
   immersive_auto_next_desc: 目前影片播放結束後自動切到推薦流中的下一部；關閉後遵循播放器自身的播完行為。
   immersive_preload_next: 預先載入下一部
   immersive_preload_next_desc: 在背景預先開啟下一部影片頁，切換時幾乎無需等待。會額外佔用記憶體和流量，被略過的影片也會產生一次頁面造訪。
-  recommendation_mode_web_no_cookie: 無 Cookie
-  remember_no_cookie_recommendation_state: 減少無 Cookie 推薦重複
+  recommendation_mode_web_no_cookie: Web(訪客)
+  remember_no_cookie_recommendation_state: 減少 Web(訪客) 推薦重複
   app_recommendation_column: App 推薦樣式
   app_recommendation_column_desc: 單列模式卡片帶 UP 主頭像、發佈時間與點讚數；雙列模式帶推薦理由（如點讚數、豎屏）
   app_recommendation_column_single: App 單列
   app_recommendation_column_double: App 雙列
-  remember_no_cookie_recommendation_state_desc: 重新整理頁面後延續推薦刷新進度，並向推薦接口帶上最近曝光記錄，以減少重複推薦。僅無 Cookie 模式生效。
+  remember_no_cookie_recommendation_state_desc: 重新整理頁面後延續推薦刷新進度，並向推薦接口帶上最近曝光記錄，以減少重複推薦。僅 Web(訪客) 模式生效。
   auto_switch_recommendation_mode: 自動切換推薦模式
   auto_switch_recommendation_mode_desc: |
     當手機端推薦失敗時自動切換至網頁模式。
