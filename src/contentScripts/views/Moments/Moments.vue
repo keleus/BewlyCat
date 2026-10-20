@@ -28,7 +28,7 @@ import {
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { useExtensionCache } from '~/composables/useExtensionCache'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
-import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, MOMENTS_VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
+import { DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import { momentsPinnedUsers, momentsWantedUsers } from '~/logic/storage'
 import { recordUploaderLatestVideoTimes } from '~/logic/uploaderLatestVideoTimes'
@@ -38,8 +38,19 @@ import api from '~/utils/api'
 import { numFormatter } from '~/utils/dataFormatter'
 import { getCSRF } from '~/utils/main'
 import { MasonryColumnMetrics } from '~/utils/masonryColumnMetrics'
-import { resolveMomentsDialogPlayerModeOverride } from '~/utils/player'
+import { resolveVideoDialogPlayerModeOverride } from '~/utils/player'
 import { openLinkInBackground } from '~/utils/tabs'
+import {
+  DIALOG_SAFE_HEIGHT,
+  DIALOG_SAFE_WIDTH,
+  DIALOG_VIEWPORT_GUTTER,
+  disposeDialogIframe,
+  PLAYER_DIALOG_MAX_WIDTH,
+  prepareDialogIframeDocument,
+  readIframePlayerImmersive,
+  VIDEO_DIALOG_MIN_VIEWPORT_WIDTH,
+  watchIframePlayerImmersive,
+} from '~/utils/videoDialog'
 import { recordVideoVisit } from '~/utils/videoVisitHistory'
 
 import MomentsHotSearch from './MomentsHotSearch.vue'
@@ -278,7 +289,6 @@ const MOMENTS_CACHE_MAX_ITEMS = 1000
 const MOMENTS_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000
 /** 虚拟瀑布流需要在全局哨兵进入视口前主动预取，避免高度修正后漏掉相交事件 */
 const LOAD_MORE_AHEAD_PX = 640
-const DETAIL_DIALOG_MIN_WIDTH = 860
 let attachedScrollViewport: HTMLElement | null = null
 let cardMeasureObserver: ResizeObserver | undefined
 let visibilityObserver: IntersectionObserver | undefined
@@ -532,28 +542,7 @@ function isPlayerMoment(moment: DisplayMoment | null | undefined) {
   return Boolean(moment?.isVideo || moment?.isLive)
 }
 
-const DETAIL_WEB_FULLSCREEN_BTN_SELECTOR = '.bpx-player-ctrl-web, .bilibili-player-video-web-fullscreen, .squirtle-video-pagefullscreen'
-const DETAIL_FULLSCREEN_BTN_SELECTOR = '.bpx-player-ctrl-full, .bilibili-player-video-btn-fullscreen, .squirtle-video-fullscreen'
 let stopDetailPlayerModeWatch: (() => void) | null = null
-
-function getDocumentFullscreenElement(doc: Document) {
-  return doc.fullscreenElement
-    || (doc as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
-    || null
-}
-
-function isEnteredControl(el: Element | null) {
-  return !!el?.classList.contains('bpx-state-entered')
-}
-
-function isIframePlayerImmersive(doc: Document) {
-  if (getDocumentFullscreenElement(doc))
-    return true
-  if (doc.querySelector('[data-screen="web"], [data-screen="full"]'))
-    return true
-  return isEnteredControl(doc.querySelector(DETAIL_WEB_FULLSCREEN_BTN_SELECTOR))
-    || isEnteredControl(doc.querySelector(DETAIL_FULLSCREEN_BTN_SELECTOR))
-}
 
 function setDetailPlayerImmersive(value: boolean) {
   detailPlayerImmersive.value = value
@@ -566,22 +555,10 @@ function syncDetailPlayerImmersiveFromIframe() {
     return
   }
 
-  if (getDocumentFullscreenElement(document) === iframe) {
-    setDetailPlayerImmersive(true)
-    return
-  }
-
-  try {
-    const doc = iframe.contentDocument
-    if (!doc) {
-      setDetailPlayerImmersive(false)
-      return
-    }
-    setDetailPlayerImmersive(isIframePlayerImmersive(doc))
-  }
-  catch {
-    // 跨域直播页无法读取播放器状态，保持现有按钮可见性
-  }
+  // 跨域直播页无法读取播放器状态，保持现有按钮可见性
+  const immersive = readIframePlayerImmersive(iframe)
+  if (immersive !== null)
+    setDetailPlayerImmersive(immersive)
 }
 
 function clearDetailPlayerModeWatch() {
@@ -596,95 +573,7 @@ function startDetailPlayerModeWatch(iframe: HTMLIFrameElement) {
     return
   }
 
-  let disposed = false
-  let listenersAttached = false
-  let retryTimer: ReturnType<typeof setInterval> | null = null
-  const observedTargets = new WeakSet<Element>()
-  const observer = new MutationObserver(() => {
-    if (!disposed)
-      syncDetailPlayerImmersiveFromIframe()
-  })
-
-  const onFullscreenChange = () => {
-    if (!disposed)
-      syncDetailPlayerImmersiveFromIframe()
-  }
-
-  const observeTarget = (el: Element | null) => {
-    if (!el || observedTargets.has(el))
-      return
-    observedTargets.add(el)
-    observer.observe(el, {
-      attributes: true,
-      attributeFilter: ['class', 'data-screen'],
-    })
-  }
-
-  const attach = () => {
-    if (disposed)
-      return true
-
-    try {
-      const win = iframe.contentWindow
-      const doc = iframe.contentDocument
-      if (!win || !doc)
-        return false
-
-      if (!listenersAttached) {
-        win.addEventListener('fullscreenchange', onFullscreenChange)
-        doc.addEventListener('fullscreenchange', onFullscreenChange)
-        win.addEventListener('webkitfullscreenchange', onFullscreenChange)
-        listenersAttached = true
-      }
-
-      observeTarget(doc.querySelector(DETAIL_WEB_FULLSCREEN_BTN_SELECTOR))
-      observeTarget(doc.querySelector(DETAIL_FULLSCREEN_BTN_SELECTOR))
-      observeTarget(doc.querySelector('.bpx-player-container, #bilibili-player, .bilibili-player, [data-screen]'))
-      syncDetailPlayerImmersiveFromIframe()
-      return Boolean(
-        doc.querySelector(DETAIL_WEB_FULLSCREEN_BTN_SELECTOR)
-        || doc.querySelector('.bpx-player-container, #bilibili-player, .bilibili-player'),
-      )
-    }
-    catch {
-      return true
-    }
-  }
-
-  document.addEventListener('fullscreenchange', onFullscreenChange)
-  document.addEventListener('webkitfullscreenchange', onFullscreenChange)
-
-  if (!attach()) {
-    let retries = 0
-    retryTimer = setInterval(() => {
-      retries++
-      if ((attach() || retries >= 40) && retryTimer) {
-        clearInterval(retryTimer)
-        retryTimer = null
-      }
-    }, 250)
-  }
-
-  stopDetailPlayerModeWatch = () => {
-    disposed = true
-    if (retryTimer) {
-      clearInterval(retryTimer)
-      retryTimer = null
-    }
-    observer.disconnect()
-    document.removeEventListener('fullscreenchange', onFullscreenChange)
-    document.removeEventListener('webkitfullscreenchange', onFullscreenChange)
-    try {
-      const win = iframe.contentWindow
-      const doc = iframe.contentDocument
-      win?.removeEventListener('fullscreenchange', onFullscreenChange)
-      doc?.removeEventListener('fullscreenchange', onFullscreenChange)
-      win?.removeEventListener('webkitfullscreenchange', onFullscreenChange)
-    }
-    catch {
-      // iframe 已卸载或跨域时忽略
-    }
-  }
+  stopDetailPlayerModeWatch = watchIframePlayerImmersive(iframe, syncDetailPlayerImmersiveFromIframe)
 }
 
 function getDimensionAspectRatio(dimension: any) {
@@ -699,23 +588,16 @@ function getDimensionAspectRatio(dimension: any) {
 /** 图文保留自己的布局；播放器内容可在 iframe 内滚动。弹窗尺寸只参考 16:9 视口预算，不固定 Dialog 比例。 */
 const isOpusDetailMoment = computed(() => Boolean(selectedMoment.value && !isPlayerMoment(selectedMoment.value)))
 
-/** 详情弹窗预留视口四边 32px 安全边距；极矮视口由外层 min() 保证不溢出。 */
-const PLAYER_DIALOG_WIDTH_SCALE = 0.92
-const DETAIL_VIEWPORT_GUTTER = 64
-const DETAIL_SAFE_WIDTH = `calc(100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
-const DETAIL_REFERENCE_HEIGHT = 'min(88dvh, 49.5vw)'
-const DETAIL_SAFE_HEIGHT = `min(calc(100dvh - ${DETAIL_VIEWPORT_GUTTER}px), max(280px, ${DETAIL_REFERENCE_HEIGHT}))`
-const DETAIL_PLAYER_MAX_WIDTH = `min(92vw, calc(${PLAYER_DIALOG_WIDTH_SCALE * 100}dvh * 16 / 9), ${DETAIL_SAFE_WIDTH})`
 /** 图文弹窗信息区固定占页宽（小红书 note 详情）。 */
 const OPUS_DETAIL_COMMENT_PAGE_RATIO = 0.29
 /** 长图阈值：宽/高 ≤ 1/2 时按 1:2 定弹窗，图宽占满后纵向滚动 */
 const OPUS_DETAIL_LONG_IMAGE_RATIO = 0.5
 /** 图文弹窗最大宽 90vw；与视频宽度规则分离。 */
-const OPUS_DETAIL_MAX_WIDTH = `min(90vw, 100vw - ${DETAIL_VIEWPORT_GUTTER}px)`
+const OPUS_DETAIL_MAX_WIDTH = `min(90vw, 100vw - ${DIALOG_VIEWPORT_GUTTER}px)`
 /** 分栏图文基础宽度为两个 29vw 等宽列：左侧媒体、右侧信息。 */
 const OPUS_SPLIT_DETAIL_BASE_WIDTH = `${OPUS_DETAIL_COMMENT_PAGE_RATIO * 200}vw`
 /** 图文弹窗最大高：可用视口高度内取值，且高不大于宽（宽上限同 OPUS_DETAIL_MAX_WIDTH），避免竖屏下过度拉长 */
-const OPUS_DETAIL_MAX_HEIGHT = `min(100dvh - ${DETAIL_VIEWPORT_GUTTER}px, max(280px, 88dvh), ${OPUS_DETAIL_MAX_WIDTH})`
+const OPUS_DETAIL_MAX_HEIGHT = `min(100dvh - ${DIALOG_VIEWPORT_GUTTER}px, max(280px, 88dvh), ${OPUS_DETAIL_MAX_WIDTH})`
 /** 与 Bewly 宽屏模式的完整评论面板宽度一致，避免方形/竖屏视频收窄时挤压评论区。 */
 const VIDEO_DETAIL_COMMENT_WIDTH = 'clamp(480px, 32vw, 600px)'
 const selectedVideoAspectRatio = computed(() => {
@@ -759,7 +641,7 @@ function getOpusSplitLayoutRatio(moment: DisplayMoment | null | undefined) {
 const detailDialogHeight = computed(() => {
   const moment = selectedMoment.value
   if (!isOpusSplitDetailMoment(moment))
-    return DETAIL_SAFE_HEIGHT
+    return DIALOG_SAFE_HEIGHT
   // 图文弹窗始终使用正常的视口高度预算。横图若无法同时铺满媒体区宽高，
   // 由 iframe 内的 contain 布局居中完整显示，并在上下保留媒体底色。
   return OPUS_DETAIL_MAX_HEIGHT
@@ -767,18 +649,18 @@ const detailDialogHeight = computed(() => {
 
 // 父页面打开前无法得知视频所属场景，弹窗未单独覆盖时按基础模式估算宽度。
 const isDetailVideoBewlyWidescreen = computed(() => {
-  return (resolveMomentsDialogPlayerModeOverride() ?? settings.value.defaultVideoPlayerMode) === 'bewlyWidescreen'
+  return (resolveVideoDialogPlayerModeOverride() ?? settings.value.defaultVideoPlayerMode) === 'bewlyWidescreen'
 })
 
 const detailDialogWidth = computed(() => {
   if (selectedMoment.value?.isLive)
-    return DETAIL_PLAYER_MAX_WIDTH
+    return PLAYER_DIALOG_MAX_WIDTH
   if (selectedMoment.value?.isVideo) {
     if (isSelectedSquareOrVerticalVideo.value && isDetailVideoBewlyWidescreen.value) {
       const ratio = Math.max(0.4, selectedVideoAspectRatio.value || 9 / 16)
-      return `min(max(960px, calc(${detailDialogHeight.value} * ${ratio} + ${VIDEO_DETAIL_COMMENT_WIDTH})), ${DETAIL_PLAYER_MAX_WIDTH})`
+      return `min(max(960px, calc(${detailDialogHeight.value} * ${ratio} + ${VIDEO_DETAIL_COMMENT_WIDTH})), ${PLAYER_DIALOG_MAX_WIDTH})`
     }
-    return DETAIL_PLAYER_MAX_WIDTH
+    return PLAYER_DIALOG_MAX_WIDTH
   }
   const moment = selectedMoment.value
   if (isOpusSplitDetailMoment(moment)) {
@@ -788,7 +670,7 @@ const detailDialogWidth = computed(() => {
     return `min(${OPUS_DETAIL_MAX_WIDTH}, max(${OPUS_SPLIT_DETAIL_BASE_WIDTH}, ${contentWidth}))`
   }
   // 纯文字 / 专栏 / 转发：参考小红书 note-container 1088px
-  return `min(1088px, ${DETAIL_SAFE_WIDTH})`
+  return `min(1088px, ${DIALOG_SAFE_WIDTH})`
 })
 
 const detailContentHeight = computed(() => {
@@ -1027,7 +909,7 @@ function openMomentMedia(moment: DisplayMoment) {
     recordVideoVisit(moment)
 
   const openMode = resolveMomentOpenMode(moment)
-  if (openMode !== 'dialog' || moment.isLive || window.innerWidth <= DETAIL_DIALOG_MIN_WIDTH) {
+  if (openMode !== 'dialog' || moment.isLive || window.innerWidth <= VIDEO_DIALOG_MIN_VIEWPORT_WIDTH) {
     openMomentExternally(moment, openMode === 'dialog' ? 'newTab' : openMode)
     return
   }
@@ -1052,7 +934,7 @@ function openMomentDetail(moment: DisplayMoment, forceDialog = false) {
     : moment
 
   const openMode = forceDialog ? 'dialog' : settings.value.momentsCardOpenMode
-  if (openMode !== 'dialog' || (!forceDialog && window.innerWidth <= DETAIL_DIALOG_MIN_WIDTH)) {
+  if (openMode !== 'dialog' || (!forceDialog && window.innerWidth <= VIDEO_DIALOG_MIN_VIEWPORT_WIDTH)) {
     openMomentExternally(detailMoment, openMode === 'dialog' ? 'newTab' : openMode)
     return
   }
@@ -1113,25 +995,7 @@ function handleDetailIframeLoad(event: Event) {
   syncDetailFrameViewport()
   syncDetailExternalUrl()
 
-  const win = iframe?.contentWindow
-  if (win) {
-    try {
-      const doc = win.document
-      if (doc) {
-        doc.documentElement.classList.add('remove-top-bar-without-placeholder')
-        doc.documentElement.style.setProperty('overflow-x', 'hidden', 'important')
-        doc.documentElement.style.setProperty('overflow-y', 'auto', 'important')
-        if (doc.body) {
-          doc.body.style.setProperty('overflow-x', 'hidden', 'important')
-          doc.body.style.setProperty('overflow-y', 'auto', 'important')
-          doc.body.style.setProperty('height', 'auto', 'important')
-        }
-      }
-    }
-    catch {
-      // 跨域（如 live.bilibili.com）无法注入，依赖 iframe 默认滚动
-    }
-  }
+  prepareDialogIframeDocument(iframe)
 
   // 弹窗打开后把焦点移入 iframe，确保播放器、图集与 ESC 快捷键立即生效。
   focusDetailIframe()
@@ -1162,64 +1026,7 @@ function destroyDetailIframe() {
     return
   // 先断开组件侧引用，about:blank 的迟到 load 事件不得重新注册观察器。
   detailIframeRef.value = null
-
-  // 通知同域 iframe 内部主动释放观察器/媒体
-  try {
-    iframe.contentWindow?.postMessage({ type: 'BEWLY_OPUS_DISPOSE' }, '*')
-  }
-  catch {
-    // ignore
-  }
-
-  // 同域时尽量停掉播放器并清空文档
-  try {
-    const win = iframe.contentWindow
-    const doc = win?.document
-    if (doc) {
-      doc.querySelectorAll('video, audio').forEach((el) => {
-        const media = el as HTMLMediaElement
-        try {
-          media.pause()
-          media.srcObject = null
-          media.removeAttribute('src')
-          media.querySelectorAll('source').forEach((source) => {
-            source.removeAttribute('src')
-            source.removeAttribute('srcset')
-          })
-          media.load()
-        }
-        catch {
-          // ignore
-        }
-      })
-
-      // 断开页面脚本与 DOM，促使浏览器回收
-      try {
-        doc.open()
-        doc.write('<!doctype html><title></title>')
-        doc.close()
-      }
-      catch {
-        // ignore
-      }
-    }
-  }
-  catch {
-    // 跨域（直播等）无法访问 contentDocument
-  }
-
-  try {
-    iframe.src = 'about:blank'
-  }
-  catch {
-    // ignore
-  }
-  try {
-    iframe.removeAttribute('src')
-  }
-  catch {
-    // ignore
-  }
+  disposeDialogIframe(iframe)
 }
 
 function closeMomentDetail() {
@@ -2664,7 +2471,7 @@ function openClassifiedLink(url: string, kind: MomentLinkKind, video?: DisplayFo
     recordVideoVisit(video)
 
   const mode = resolveLinkOpenMode(kind)
-  if (kind === 'video' && mode === 'dialog' && window.innerWidth > DETAIL_DIALOG_MIN_WIDTH) {
+  if (kind === 'video' && mode === 'dialog' && window.innerWidth > VIDEO_DIALOG_MIN_VIEWPORT_WIDTH) {
     // 转发视频和正文视频链接也使用播放器弹窗，不能回落到新标签页。
     openMomentDialog({
       id: url,
@@ -4145,7 +3952,7 @@ watch(
           ref="detailIframeRef"
           :key="detailFrameUrl"
           class="moment-detail-frame__iframe"
-          :name="selectedMoment.isVideo ? MOMENTS_VIDEO_DIALOG_IFRAME_NAME : undefined"
+          :name="selectedMoment.isVideo ? VIDEO_DIALOG_IFRAME_NAME : undefined"
           :src="detailFrameUrl"
           :title="t('moments.author_detail', { name: selectedMoment.author.name })"
           referrerpolicy="no-referrer-when-downgrade"

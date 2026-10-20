@@ -1,5 +1,5 @@
 // 更完善的播放器元素选择器
-import { MOMENTS_VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
+import { VIDEO_DIALOG_IFRAME_NAME } from '~/constants/globalEvents'
 import { settings } from '~/logic'
 import type { AutoPlayMode, DefaultVideoPlayerMode, VideoPlayerModeContext, VideoPlayerModeOverride } from '~/logic/storage'
 import { getBilibiliPathname } from '~/utils/bilibiliLocale'
@@ -624,8 +624,8 @@ function isVideoPlayerModeOverride(value: unknown): value is VideoPlayerModeOver
     || value === 'bewlyWidescreen'
 }
 
-/** 动态视频弹窗的显示模式覆盖；未启用覆盖或选择继承时返回 null，交由视频所属场景决定。 */
-export function resolveMomentsDialogPlayerModeOverride(): DefaultVideoPlayerMode | null {
+/** 视频弹窗（动态页、视频卡片）的显示模式覆盖；未启用覆盖或选择继承时返回 null，交由视频所属场景决定。 */
+export function resolveVideoDialogPlayerModeOverride(): DefaultVideoPlayerMode | null {
   if (!settings.value.enableVideoPlayerModeOverrides)
     return null
 
@@ -641,8 +641,8 @@ export function resolveDefaultVideoPlayerMode(): DefaultVideoPlayerMode {
   if (!settings.value.enableVideoPlayerModeOverrides)
     return settings.value.defaultVideoPlayerMode
 
-  if (window.name === MOMENTS_VIDEO_DIALOG_IFRAME_NAME) {
-    const dialogMode = resolveMomentsDialogPlayerModeOverride()
+  if (window.name === VIDEO_DIALOG_IFRAME_NAME) {
+    const dialogMode = resolveVideoDialogPlayerModeOverride()
     if (dialogMode)
       return dialogMode
   }
