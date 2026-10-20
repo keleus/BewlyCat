@@ -12,6 +12,30 @@ let isRouteWatcherStarted = false
 let isScheduleClockStarted = false
 let lastThemeChangeState: boolean | undefined
 let lastDarkModeBaseColor: string | undefined
+let isBiliDarkSuppressed = false
+let biliDarkObserver: MutationObserver | undefined
+
+function removeSuppressedBiliDark() {
+  if (isBiliDarkSuppressed && document.documentElement.classList.contains('bili_dark'))
+    document.documentElement.classList.remove('bili_dark')
+}
+
+/**
+ * 动态页等原站应用会在 created 阶段按 theme_style cookie 重新加上 bili_dark，
+ * 其 `#app::after` 纹理层会盖住整页直到插件挂载（#991），因此需持续剥离。
+ */
+function setBiliDarkSuppressed(suppressed: boolean) {
+  isBiliDarkSuppressed = suppressed
+  if (!suppressed)
+    return
+
+  removeSuppressedBiliDark()
+  if (biliDarkObserver)
+    return
+
+  biliDarkObserver = new MutationObserver(removeSuppressedBiliDark)
+  biliDarkObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+}
 
 // content script 需在 document_start 同步调用，避免等设置加载期间漏掉父窗口在 load 后发送的主题。
 export function startIframeThemeListener() {
@@ -222,16 +246,7 @@ export function useDark() {
     // Only used as a temporary solution, which will eventually be removed
     // It seems like Bilibili already supports dark mode when the `bili_dark` class is added to the `html` element
     // but it's not yet fully refined.
-    if (currentAppColorScheme.value === 'dark') {
-      if (document.documentElement.classList.contains('bili_dark')) {
-        document.documentElement.classList.remove('bili_dark')
-      }
-    }
-    // else {
-    //   if (!document.documentElement.classList.contains('bili_dark')) {
-    //     document.documentElement.classList.add('bili_dark')
-    //   }
-    // }
+    setBiliDarkSuppressed(currentAppColorScheme.value === 'dark')
   }
 
   function toggleDark(e: MouseEvent) {

@@ -53,6 +53,11 @@
     height: 100%;
   }
 
+  // 原站 bili_dark 下的纹理层会盖住整页并拦截点击（#991）
+  #app::after {
+    display: none !important;
+  }
+
   // #region new moments page
   #app .bgc {
     background-color: var(--bew-homepage-bg);
