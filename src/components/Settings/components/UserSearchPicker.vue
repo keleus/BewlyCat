@@ -77,8 +77,14 @@ function avatarUrl(url = '') {
 }
 
 function stripSearchHighlight(value: unknown) {
-  // 移除高亮标签后再清掉残留尖括号，避免嵌套标签拼接出新的标签
-  return String(value || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').trim()
+  // 反复移除高亮标签直到不再变化，再清掉残留尖括号，避免嵌套标签拼接出新的标签
+  let text = String(value || '')
+  let previous: string
+  do {
+    previous = text
+    text = text.replace(/<[^>]*>/g, '')
+  } while (text !== previous)
+  return text.replace(/[<>]/g, '').trim()
 }
 
 function parseMid(input: string): string {
