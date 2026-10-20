@@ -65,11 +65,11 @@ body:
       description: 请确认以下所有内容，尤其是第一点排除B站、浏览器以及其他插件的问题后，再提交。
       options:
         - label: 我确认在停用 BewlyCat 并强制刷新（按住 Shift 键的同时按刷新键）后，问题不再出现。
-          required: false
+          required: true
         - label: 我确认此问题未在其他 issue 中出现过。
-          required: false
+          required: true
         - label: 我确认我正在使用最新的 BewlyCat 版本。
-          required: false
+          required: true
 
   - type: checkboxes
     attributes:
