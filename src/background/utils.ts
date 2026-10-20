@@ -175,6 +175,10 @@ async function performApiRequest(message: Message, api: API, cookies?: Browser.C
     const targetParams = Object.assign({}, params)
     const targetBody = Object.assign({}, body)
     Object.keys(rest).forEach((key) => {
+      // Chrome 消息经 JSON 序列化会丢弃 undefined，Firefox 的结构化克隆会保留；
+      // 统一视为未传，避免覆盖默认值或被序列化成 "undefined"。
+      if (rest[key] === undefined)
+        return
       if (body && body[key] !== undefined)
         targetBody[key] = rest[key]
       if (params[key] !== undefined)
