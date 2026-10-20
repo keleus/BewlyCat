@@ -167,6 +167,11 @@
   animation-delay: 0.4s;
 }
 
+.bewly-listen-video-overlay.bewly-listen-video-paused .bewly-listen-video-album,
+.bewly-listen-video-overlay.bewly-listen-video-paused .bewly-listen-video-equalizer i {
+  animation-play-state: paused;
+}
+
 .bpx-player-container[data-screen="mini"] .bewly-listen-video-overlay {
   gap: var(--bew-space-2, 8px);
   padding: var(--bew-space-2, 8px);

@@ -4,6 +4,9 @@ import type { VideoInfo } from '~/models/video/videoInfo'
 export function createListenVideoMode(host: ListenVideoHost, onChange: () => void) {
   const LISTENING_CLASS = 'bewly-player-listening'
   const OVERLAY_CLASS = 'bewly-listen-video-overlay'
+  const PAUSED_CLASS = 'bewly-listen-video-paused'
+  // media 事件不冒泡，document 捕获监听可同时覆盖换集后新建的 video 元素
+  const PLAYBACK_EVENTS = ['play', 'pause', 'emptied'] as const
   const PLAYER_ROOT_SELECTOR = '.bpx-player-container, .bilibili-player, #bilibili-player, .squirtle-video-wrap'
   // 与 touchPlayerGestures 保持一致的视频区域选择器，兼容新旧播放器。
   const VIDEO_AREA_SELECTOR = '.bpx-player-video-area, .bilibili-player-video-wrap, .squirtle-video-wrap'
@@ -26,6 +29,7 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
   let danmakuWasEnabled: boolean | null = null
   let lastMetaKey = ''
   let lastMetaOverlay: HTMLElement | null = null
+  let playbackListenerAttached = false
 
   function translate(key: string): string {
     return host.translate(key)
@@ -161,6 +165,37 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
     danmakuWasEnabled = null
   }
 
+  // 暂停时冻结封面旋转与均衡器跳动；用 animation-play-state 保留动画相位，恢复播放时无缝继续
+  function syncPlaybackPausedState() {
+    const overlay = findOverlay()
+    const video = findVideoArea()?.querySelector('video')
+    if (!overlay || !video)
+      return
+
+    overlay.classList.toggle(PAUSED_CLASS, video.paused)
+  }
+
+  function onPlaybackEvent() {
+    if (listenActive)
+      syncPlaybackPausedState()
+  }
+
+  function attachPlaybackListeners() {
+    if (playbackListenerAttached)
+      return
+
+    PLAYBACK_EVENTS.forEach(event => document.addEventListener(event, onPlaybackEvent, true))
+    playbackListenerAttached = true
+  }
+
+  function detachPlaybackListeners() {
+    if (!playbackListenerAttached)
+      return
+
+    PLAYBACK_EVENTS.forEach(event => document.removeEventListener(event, onPlaybackEvent, true))
+    playbackListenerAttached = false
+  }
+
   function updateListenVideoMeta() {
     const overlay = findOverlay()
     if (!overlay)
@@ -230,10 +265,13 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
     }
 
     updateListenVideoMeta()
+    attachPlaybackListeners()
+    syncPlaybackPausedState()
     return true
   }
 
   function exitListenMode() {
+    detachPlaybackListeners()
     document.querySelectorAll(`.${LISTENING_CLASS}`).forEach(root => root.classList.remove(LISTENING_CLASS))
     document.querySelectorAll(`.${OVERLAY_CLASS}`).forEach(overlay => overlay.remove())
   }
