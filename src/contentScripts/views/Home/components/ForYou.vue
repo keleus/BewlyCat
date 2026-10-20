@@ -628,9 +628,15 @@ function transformWebVideo(item: VideoItem): VideoCardDisplayData {
   }
 }
 
-function getAppRcmdReasonText(item: AppVideoItem): string | undefined {
+// 推荐理由可能以「|」组合多项，如「1万点赞 | 竖屏」
+function getAppRcmdReasons(item: AppVideoItem): string[] {
   const reason = item.rcmd_reason
-  return (typeof reason === 'string' ? reason : reason?.content)?.trim() || undefined
+  const text = typeof reason === 'string' ? reason : reason?.content
+  return text?.split('|').map(part => part.trim()).filter(Boolean) ?? []
+}
+
+function isAppVerticalVideo(item: AppVideoItem): boolean {
+  return getAppRcmdReasons(item).includes('竖屏') || (!!item.uri && isVerticalVideo(item.uri))
 }
 
 function getAppBangumiUrl(uri?: string): string {
@@ -653,7 +659,7 @@ function getAppBangumiUrl(uri?: string): string {
 function normalizeAppVideoItem(item: AppVideoItem): AppVideoItem {
   const paramAid = item.card_goto === 'av' ? Number(item.param) : 0
   const aid = item.player_args?.aid || item.args?.aid || (Number.isSafeInteger(paramAid) && paramAid > 0 ? paramAid : undefined)
-  const rcmdReason = getAppRcmdReasonText(item)
+  const followedReason = getAppRcmdReasons(item).find(reason => APP_FOLLOWED_REASONS.has(reason))
 
   return {
     ...item,
@@ -664,8 +670,7 @@ function normalizeAppVideoItem(item: AppVideoItem): AppVideoItem {
       up_id: item.args?.up_id || item.mask?.avatar?.up_id,
       up_name: item.args?.up_name || item.mask?.avatar?.text || item.desc_button?.text,
     },
-    bottom_rcmd_reason: item.bottom_rcmd_reason
-      || (rcmdReason && APP_FOLLOWED_REASONS.has(rcmdReason) ? rcmdReason : undefined),
+    bottom_rcmd_reason: item.bottom_rcmd_reason || followedReason,
   }
 }
 
@@ -679,17 +684,16 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
   const capsuleText = descPart || (followed ? bottomReason : undefined)
 
   // HD 接口的推荐理由（如「1万点赞」）；竖屏已有类型图标，关注状态已由 followed 体现
-  const rcmdReason = getAppRcmdReasonText(item)
-  const tag = rcmdReason && rcmdReason !== '竖屏' && !APP_FOLLOWED_REASONS.has(rcmdReason)
-    ? rcmdReason
-    : undefined
+  const tags = getAppRcmdReasons(item)
+    .filter(reason => reason !== '竖屏' && !APP_FOLLOWED_REASONS.has(reason))
+    .map(reason => decodeHtmlEntities(reason))
 
   // 预先计算 type，避免在模板中调用函数
   let type: 'horizontal' | 'vertical' | 'bangumi' = 'horizontal'
   if (item.card_goto === 'bangumi') {
     type = 'bangumi'
   }
-  else if (item.uri && isVerticalVideo(item.uri)) {
+  else if (isAppVerticalVideo(item)) {
     type = 'vertical'
   }
 
@@ -709,7 +713,7 @@ function transformAppVideo(item: AppVideoItem): VideoCardDisplayData {
     },
     // App 推荐的 rname 为分区名，tname 为话题标签
     category: decodeHtmlEntities(item.args?.rname) || undefined,
-    tag: decodeHtmlEntities(tag),
+    tag: tags.length > 0 ? tags : undefined,
     capsuleText: decodeHtmlEntities(capsuleText),
     bvid: item.bvid || '',
     viewStr: item.cover_left_text_1,
@@ -1817,7 +1821,9 @@ async function getAppRecommendVideos(
           videoKeys.forEach(key => seenCandidateIds.add(key))
 
           if (activeAppFilter) {
+            // 推荐理由标为「竖屏」但 uri 尺寸未体现竖屏的视频，同样按竖屏视频过滤
             const passesSettingsFilter = activeAppFilter(item)
+              && !(settings.value.filterOutVerticalVideos && isAppVerticalVideo(item))
             filteredBatchCandidateCount++
             if (passesSettingsFilter)
               filteredBatchKeptCount++

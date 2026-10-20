@@ -20,7 +20,7 @@ export interface VideoCardDisplayData {
     mid: number
   }
   category?: string
-  tag?: string
+  tag?: string | string[]
   view?: number
   viewStr?: string
   danmaku?: number
