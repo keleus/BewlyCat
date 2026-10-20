@@ -1,7 +1,7 @@
 import browser from 'webextension-polyfill'
 
 import { isContentScriptTargetUrl } from '~/constants/contentScript'
-import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl, isPreventMobileRedirectEnabled } from '~/utils/bilibiliDesktopNavigation'
+import { BILIBILI_DESKTOP_USER_AGENT, getBilibiliDesktopNavigatorValues, isBilibiliWwwUrl, isPreventMobileRedirectEnabled } from '~/utils/bilibiliDesktopNavigation'
 import { GET_BROWSER_INFO_MESSAGE, getExtensionBrowserInfo } from '~/utils/browserInfo'
 import { onMessage } from '~/utils/messaging'
 
@@ -103,7 +103,7 @@ if (isFirefoxBuild) {
         for (const header of details.requestHeaders || []) {
           const headerName = header.name.toLowerCase()
           if (headerName === 'user-agent') {
-            requestHeaders.push({ name: header.name, value: BILIBILI_DESKTOP_USER_AGENT })
+            requestHeaders.push({ name: header.name, value: getBilibiliDesktopNavigatorValues(header.value || navigator.userAgent).userAgent })
             hasUserAgent = true
           }
           else if (headerName === 'sec-ch-ua-mobile') {
@@ -118,7 +118,7 @@ if (isFirefoxBuild) {
         }
 
         if (!hasUserAgent)
-          requestHeaders.push({ name: 'User-Agent', value: BILIBILI_DESKTOP_USER_AGENT })
+          requestHeaders.push({ name: 'User-Agent', value: getBilibiliDesktopNavigatorValues(navigator.userAgent).userAgent })
 
         return { ...details, requestHeaders }
       }

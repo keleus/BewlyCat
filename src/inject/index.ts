@@ -1,7 +1,7 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
 import { isSearchResultApiPath } from '~/constants/searchApi'
 import COMMENT_REPLY_TREE_GUIDES_CSS from '~/styles/commentReplyTree.scss?inline'
-import { BILIBILI_DESKTOP_USER_AGENT, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
+import { getBilibiliDesktopNavigatorValues, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isInBilibiliLiveContext } from '~/utils/bilibiliLive'
 import { CommentReplyPageCache } from '~/utils/commentReplyPageCache'
 import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/commentReplyTree'
@@ -64,8 +64,10 @@ else if (shouldInitializePageScript) {
       appVersion: navigator.appVersion,
       platform: navigator.platform,
       userAgent: navigator.userAgent,
+      oscpu: (navigator as Navigator & { oscpu?: string }).oscpu,
     }
-    const defineNavigatorValue = (property: 'appVersion' | 'platform' | 'userAgent', value: string) => {
+    const desktopNavigatorValues = getBilibiliDesktopNavigatorValues(originalNavigatorValues.userAgent)
+    const defineNavigatorValue = (property: keyof typeof originalNavigatorValues, value: string) => {
       try {
         Object.defineProperty(navigator, property, {
           configurable: true,
@@ -77,9 +79,11 @@ else if (shouldInitializePageScript) {
       }
     }
 
-    defineNavigatorValue('userAgent', BILIBILI_DESKTOP_USER_AGENT)
-    defineNavigatorValue('appVersion', BILIBILI_DESKTOP_USER_AGENT.replace(/^Mozilla\//, ''))
-    defineNavigatorValue('platform', 'Win32')
+    defineNavigatorValue('userAgent', desktopNavigatorValues.userAgent)
+    defineNavigatorValue('appVersion', desktopNavigatorValues.appVersion)
+    defineNavigatorValue('platform', desktopNavigatorValues.platform)
+    if (desktopNavigatorValues.oscpu && originalNavigatorValues.oscpu !== undefined)
+      defineNavigatorValue('oscpu', desktopNavigatorValues.oscpu)
 
     const userAgentData = (navigator as Navigator & {
       userAgentData?: {
