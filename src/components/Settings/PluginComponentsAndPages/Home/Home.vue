@@ -181,14 +181,6 @@ function handleToggleHomeTab(tab: any) {
       </SettingsItem>
 
       <SettingsItem
-        :title="$t('settings.show_immersive_mode_entry')"
-        :desc="$t('settings.show_immersive_mode_entry_desc')"
-        right-width="auto"
-      >
-        <Radio v-model="settings.showImmersiveModeEntry" />
-      </SettingsItem>
-
-      <SettingsItem
         v-if="settings.recommendationMode === 'webNoCookie'"
         :title="$t('settings.remember_no_cookie_recommendation_state')"
         :desc="$t('settings.remember_no_cookie_recommendation_state_desc')"
@@ -231,6 +223,58 @@ function handleToggleHomeTab(tab: any) {
         v-if="showQRCodeDialog"
         @close="handleCloseQRCodeDialog"
       />
+    </SettingsItemGroup>
+
+    <SettingsItemGroup :title="$t('settings.group_immersive_mode')">
+      <SettingsItem
+        :title="$t('settings.show_immersive_mode_entry')"
+        :desc="$t('settings.show_immersive_mode_entry_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.showImmersiveModeEntry" />
+      </SettingsItem>
+
+      <template v-if="settings.showImmersiveModeEntry">
+        <SettingsItem
+          :title="$t('settings.immersive_wheel_switch')"
+          :desc="$t('settings.immersive_wheel_switch_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.immersiveWheelSwitch" />
+        </SettingsItem>
+
+        <SettingsItem
+          :title="$t('settings.immersive_keyboard_switch')"
+          :desc="$t('settings.immersive_keyboard_switch_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.immersiveKeyboardSwitch" />
+        </SettingsItem>
+
+        <SettingsItem
+          :title="$t('settings.immersive_auto_play')"
+          :desc="$t('settings.immersive_auto_play_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.immersiveAutoPlay" />
+        </SettingsItem>
+
+        <SettingsItem
+          :title="$t('settings.immersive_auto_next')"
+          :desc="$t('settings.immersive_auto_next_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.immersiveAutoNext" />
+        </SettingsItem>
+
+        <SettingsItem
+          :title="$t('settings.immersive_preload_next')"
+          :desc="$t('settings.immersive_preload_next_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.immersivePreloadNext" />
+        </SettingsItem>
+      </template>
     </SettingsItemGroup>
 
     <SettingsItemGroup

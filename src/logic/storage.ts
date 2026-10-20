@@ -496,7 +496,12 @@ export interface Settings {
 
   recommendationMode: RecommendationMode
   showRecommendationModeSwitcher: boolean
-  showImmersiveModeEntry: boolean // 首页个性推荐标签栏右侧显示沉浸式模式入口
+  showImmersiveModeEntry: boolean // 首页个性推荐标签栏右侧显示沉浸式模式入口（沉浸式模式总开关）
+  immersiveWheelSwitch: boolean // 沉浸式模式中在画面上滚动滚轮切换视频
+  immersiveKeyboardSwitch: boolean // 沉浸式模式中 ↑↓ / W S / PageUp PageDown 切换视频（关闭后 ↑↓ 恢复播放器音量快捷键）
+  immersiveAutoPlay: boolean // 沉浸式模式切换后自动开播
+  immersiveAutoNext: boolean // 沉浸式模式播完自动切到下一条
+  immersivePreloadNext: boolean // 沉浸式模式在后台提前加载下一条视频页
   autoSwitchRecommendationMode: boolean
 
   // filter setting
@@ -834,6 +839,11 @@ export const originalSettings: Settings = {
   recommendationMode: 'web',
   showRecommendationModeSwitcher: false,
   showImmersiveModeEntry: true,
+  immersiveWheelSwitch: true,
+  immersiveKeyboardSwitch: true,
+  immersiveAutoPlay: true,
+  immersiveAutoNext: true,
+  immersivePreloadNext: false,
   autoSwitchRecommendationMode: true,
 
   // filter setting

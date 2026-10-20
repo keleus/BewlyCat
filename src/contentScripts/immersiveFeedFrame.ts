@@ -1,11 +1,14 @@
+import { settings } from '~/logic'
 import { BEWLY_WIDESCREEN_APPLIED, BEWLY_WIDESCREEN_USER_EXIT, isBewlyWidescreenActive, setBewlyWidescreenPlaylistOverride } from '~/utils/bewlyWidescreen'
 import { i18n } from '~/utils/i18n'
 import type { ImmersiveFeedFrameState } from '~/utils/immersiveFeed'
 import {
   createImmersiveFeedMessage,
+  IMMERSIVE_FEED_PRELOAD_FRAME_NAME,
   ImmersiveFeedMessageType,
   isImmersiveFeedFrame,
   isImmersiveFeedMessage,
+  isTypingContext,
 } from '~/utils/immersiveFeed'
 import { injectCSS, isVideoOrBangumiPage } from '~/utils/main'
 
@@ -13,19 +16,23 @@ import { injectCSS, isVideoOrBangumiPage } from '~/utils/main'
  * 沉浸式模式 iframe 内的视频详情页：播放完全使用 B 站原生播放器，
  * 这里只把 Bewly 宽屏的「选集 / 推荐」面板换成首页推荐流，并在原生控制栏补充上一个 / 下一个，
  * 所有切换请求交给首页处理（首页更换 iframe 地址）。
+ * 预加载的下一条视频页同样运行本模块，但在被切换为当前视频前保持暂停、不响应快捷键。
  */
 
 const PANEL_CLASS = 'bewly-immersive-feed-panel'
 const CONTROL_CLASS = 'bewly-immersive-ctrl'
 const CONTROL_BAR_SELECTOR = '.bpx-player-control-bottom-left'
 const PLAY_BUTTON_SELECTOR = '.bpx-player-ctrl-play'
+// 宽屏侧栏右上角的关闭按钮；沉浸式模式中改为退出沉浸式，而不是只退出宽屏
+const WIDESCREEN_CLOSE_SELECTOR = '.bewly-widescreen-close'
 // 滚轮只在画面区域切换视频；控制栏、音量等弹层保留原生滚轮行为
 const WHEEL_AREA_SELECTOR = '.bpx-player-video-area'
 const WHEEL_EXCLUDE_SELECTOR = '.bpx-player-control-wrap, .bpx-player-sending-area, [class*="popover"], [class*="panel"]'
 const WHEEL_SWITCH_THRESHOLD = 40
 const WHEEL_SWITCH_COOLDOWN_MS = 600
-// 等待原生自动开播生效后再检查，避免与 B 站自身的开播逻辑互相切换暂停
+// 原生「自动开播」开启时等待其生效后再检查，避免与 B 站自身的开播逻辑互相切换暂停
 const AUTO_START_DELAY_MS = 500
+const PLAYER_PROFILE_STORAGE_KEY = 'bpx_player_profile'
 
 // 与原生控制栏图标相同的 28 网格面性图形
 const previousIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28"><path d="M8 7.5a1 1 0 0 1 1 1v11a1 1 0 1 1-2 0v-11a1 1 0 0 1 1-1Zm12.4.7a1 1 0 0 1 .6.92v9.76a1 1 0 0 1-1.58.81l-7.1-4.88a1 1 0 0 1 0-1.65l7.1-4.88a1 1 0 0 1 .98-.08Z" fill="#fff"/></svg>`
@@ -37,7 +44,10 @@ let state: ImmersiveFeedFrameState = {
   noMoreContent: false,
   hasPrevious: false,
   hasNext: false,
+  active: true,
 }
+// 首页在创建时用 iframe 名称区分当前 / 预加载，之后通过状态消息切换
+let active = window.name !== IMMERSIVE_FEED_PRELOAD_FRAME_NAME
 let panel: HTMLElement | null = null
 let list: HTMLElement | null = null
 let footer: HTMLElement | null = null
@@ -48,7 +58,9 @@ let wheelDelta = 0
 let wheelLockedUntil = 0
 let autoStartChecked = false
 let hasPlayed = false
+let canPlay = false
 let shownPosted = false
+let preparedPosted = false
 
 function t(key: string) {
   return String(i18n.global.t(key))
@@ -211,8 +223,18 @@ function syncControlButtonState() {
   })
 }
 
+function syncCloseButtonLabel() {
+  const closeButton = document.querySelector<HTMLElement>(WIDESCREEN_CLOSE_SELECTOR)
+  const label = t('home.immersive_exit_title')
+  if (!closeButton || closeButton.title === label)
+    return
+  closeButton.title = label
+  closeButton.setAttribute('aria-label', label)
+}
+
 function ensureControlButtons() {
   controlSyncQueued = false
+  syncCloseButtonLabel()
   const controlBar = document.querySelector<HTMLElement>(CONTROL_BAR_SELECTOR)
   const playButton = controlBar?.querySelector<HTMLElement>(PLAY_BUTTON_SELECTOR)
   if (!controlBar || !playButton)
@@ -236,17 +258,12 @@ function queueControlSync() {
   requestAnimationFrame(ensureControlButtons)
 }
 
-function isEditableTarget(event: Event) {
-  const target = event.composedPath()[0]
-  if (!(target instanceof HTMLElement))
-    return false
-  const tagName = target.tagName.toLowerCase()
-  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select'
-}
-
-// 沉浸式模式下 ↑↓ 用于切换视频（替代原生音量快捷键），W / S 与 PageUp / PageDown 同理
+// 沉浸式模式下 ↑↓ 用于切换视频（替代原生音量快捷键），W / S 与 PageUp / PageDown 同理；
+// 在评论框、弹幕框等处输入时不处理
 function handleKeydown(event: KeyboardEvent) {
-  if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey || isEditableTarget(event))
+  if (!active || !settings.value.immersiveKeyboardSwitch)
+    return
+  if (event.ctrlKey || event.metaKey || event.altKey || isTypingContext(event))
     return
 
   let type: ImmersiveFeedMessageType | undefined
@@ -274,6 +291,8 @@ function handleKeydown(event: KeyboardEvent) {
 }
 
 function handleWheel(event: WheelEvent) {
+  if (!active || !settings.value.immersiveWheelSwitch)
+    return
   const target = event.composedPath()[0]
   if (!(target instanceof Element) || !target.closest(WHEEL_AREA_SELECTOR) || target.closest(WHEEL_EXCLUDE_SELECTOR))
     return
@@ -297,42 +316,104 @@ function handleWheel(event: WheelEvent) {
 
 function handleMediaEnded(event: Event) {
   // 原生播放器的视频元素可能被替换，捕获阶段统一监听；循环播放不会触发 ended
-  if (event.target instanceof HTMLVideoElement)
+  if (active && settings.value.immersiveAutoNext && event.target instanceof HTMLVideoElement)
     postToHost(ImmersiveFeedMessageType.Ended)
+}
+
+function isNativeAutoPlayEnabled() {
+  try {
+    const profile = JSON.parse(localStorage.getItem(PLAYER_PROFILE_STORAGE_KEY) || '{}')
+    return profile?.media?.autoplay !== false
+  }
+  catch {
+    return true
+  }
+}
+
+function startPlayback(video: HTMLVideoElement, force = false) {
+  // 原生续播会先跳到上次进度，因此以是否播放过判断，而不是 currentTime；
+  // 预加载页切换为当前视频时可能被原生自动开播短暂播放过，需强制开播
+  if (!active || !video.isConnected || !video.paused || (!force && video.played.length > 0))
+    return
+  const playButton = document.querySelector<HTMLElement>(PLAY_BUTTON_SELECTOR)
+  if (playButton)
+    playButton.click()
+  else
+    void video.play().catch(() => {})
 }
 
 // 沉浸式模式切换到视频后应直接开播；用户关闭了 B 站「自动开播」时，用原生播放按钮补一次开播
 function handleMediaCanPlay(event: Event) {
   const video = event.target
-  if (autoStartChecked || !(video instanceof HTMLVideoElement))
+  if (!(video instanceof HTMLVideoElement))
+    return
+  if (!canPlay) {
+    canPlay = true
+    notifyReady()
+  }
+  if (!active || autoStartChecked || !settings.value.immersiveAutoPlay)
     return
   autoStartChecked = true
-  window.setTimeout(() => {
-    // 原生续播会先跳到上次进度，因此以是否播放过判断，而不是 currentTime
-    if (!video.isConnected || !video.paused || video.played.length > 0)
-      return
-    const playButton = document.querySelector<HTMLElement>(PLAY_BUTTON_SELECTOR)
-    if (playButton)
-      playButton.click()
-    else
-      void video.play().catch(() => {})
-  }, AUTO_START_DELAY_MS)
+  // 原生自动开播关闭时不会有其他开播逻辑，可立即开播以缩短切换等待
+  const delay = isNativeAutoPlayEnabled() ? AUTO_START_DELAY_MS : 0
+  window.setTimeout(() => startPlayback(video), delay)
 }
 
 // 宽屏会在开播时提前撤下自身 loading，此时布局可能仍未完成；
 // 两者都就绪后再通知首页撤下遮罩，避免露出未整理的原始视频页
-function notifyShownWhenReady() {
-  if (shownPosted || !hasPlayed || !isBewlyWidescreenActive())
+function notifyReady() {
+  if (!isBewlyWidescreenActive())
+    return
+
+  if (!active) {
+    if (!preparedPosted && canPlay) {
+      preparedPosted = true
+      postToHost(ImmersiveFeedMessageType.Prepared)
+    }
+    return
+  }
+
+  // 关闭自动开播时视频停在首帧等待用户操作，可播放即可撤下遮罩
+  const mediaReady = hasPlayed || (!settings.value.immersiveAutoPlay && canPlay)
+  if (shownPosted || !mediaReady)
     return
   shownPosted = true
   postToHost(ImmersiveFeedMessageType.Shown)
 }
 
+function handleMediaPlay(event: Event) {
+  // 预加载的页面不能出声或抢先播放；原生自动开播会在切换为当前视频后重新开始
+  if (!active && event.target instanceof HTMLVideoElement)
+    event.target.pause()
+}
+
 function handleMediaPlaying(event: Event) {
-  if (!(event.target instanceof HTMLVideoElement))
+  if (!active || !(event.target instanceof HTMLVideoElement))
     return
   hasPlayed = true
-  notifyShownWhenReady()
+  notifyReady()
+}
+
+// 预加载页面被切换为当前视频：立即开播并通知首页撤下遮罩
+function activate() {
+  active = true
+  const video = document.querySelector<HTMLVideoElement>('video')
+  // 尚不可播放时交给 canplay 处理开播
+  if (video && canPlay) {
+    autoStartChecked = true
+    if (settings.value.immersiveAutoPlay)
+      startPlayback(video, true)
+  }
+  notifyReady()
+}
+
+function handleCloseClick(event: MouseEvent) {
+  const target = event.composedPath()[0]
+  if (!(target instanceof Element) || !target.closest(WIDESCREEN_CLOSE_SELECTOR))
+    return
+  event.preventDefault()
+  event.stopImmediatePropagation()
+  postToHost(ImmersiveFeedMessageType.Close)
 }
 
 function handleHostMessage(event: MessageEvent) {
@@ -344,13 +425,19 @@ function handleHostMessage(event: MessageEvent) {
   state = event.data.state
   renderPanel()
   syncControlButtonState()
+  if (state.active && !active)
+    activate()
+  else
+    active = state.active
 }
 
 function injectStyle() {
   injectCSS(`
-    /* 原生分 P / 列表的上一个、下一个与首页推荐流的切换语义冲突，沉浸式模式中隐藏 */
+    /* 原生分 P / 列表的上一个、下一个与首页推荐流的切换语义冲突；
+       控制栏的 Bewly 宽屏按钮会退出宽屏导致布局错乱，沉浸式模式中一并隐藏 */
     .bpx-player-ctrl-prev,
-    .bpx-player-ctrl-next {
+    .bpx-player-ctrl-next,
+    .bewly-widescreen-control {
       display: none !important;
     }
 
@@ -490,10 +577,15 @@ export function initImmersiveFeedFrame() {
   window.addEventListener('wheel', handleWheel, { capture: true, passive: false })
   document.addEventListener('ended', handleMediaEnded, true)
   document.addEventListener('canplay', handleMediaCanPlay, true)
+  document.addEventListener('play', handleMediaPlay, true)
   document.addEventListener('playing', handleMediaPlaying, true)
-  window.addEventListener(BEWLY_WIDESCREEN_APPLIED, notifyShownWhenReady)
+  window.addEventListener('click', handleCloseClick, { capture: true })
+  window.addEventListener(BEWLY_WIDESCREEN_APPLIED, notifyReady)
   // 宽屏的「退出」按钮与 Esc 都会派发用户退出事件，沉浸式模式中直接返回首页
-  window.addEventListener(BEWLY_WIDESCREEN_USER_EXIT, () => postToHost(ImmersiveFeedMessageType.Close))
+  window.addEventListener(BEWLY_WIDESCREEN_USER_EXIT, () => {
+    if (active)
+      postToHost(ImmersiveFeedMessageType.Close)
+  })
 
   const startControlObserver = () => {
     queueControlSync()

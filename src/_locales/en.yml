@@ -284,6 +284,7 @@ settings:
   group_hot_search: Hot Search
   group_search_results: Search Results
   group_recommendation_mode: '"For you" Recommendation Mode'
+  group_immersive_mode: Immersive mode
   group_recommendation_filters: '"For you" Recommendation Filters'
   group_recommendation_filters_desc: >
     Do not set the restricted value too large, as this may increase loading
@@ -757,8 +758,18 @@ settings:
     an access key first.
   show_recommendation_mode_switcher: Show quick recommendation mode switcher
   show_recommendation_mode_switcher_desc: When "For You" is selected, show a segmented control to the right of the home tabs to choose Web, No Cookie, or App mode directly.
-  show_immersive_mode_entry: Show immersive mode entry
-  show_immersive_mode_entry_desc: When "For You" is selected, show an entry to the right of the home tabs that plays recommendations continuously on the Bilibili video page in Bewly widescreen, with the home feed in the sidebar. Switch videos with the mouse wheel or arrow keys.
+  show_immersive_mode_entry: Enable immersive mode
+  show_immersive_mode_entry_desc: When "For You" is selected, show an entry to the right of the home tabs that plays recommendations continuously on the Bilibili video page in Bewly widescreen, with the home feed in the sidebar. Turning this off hides the entry.
+  immersive_wheel_switch: Switch videos with the mouse wheel
+  immersive_wheel_switch_desc: Scroll the wheel over the video to switch to the previous or next one.
+  immersive_keyboard_switch: Switch videos with shortcuts
+  immersive_keyboard_switch_desc: Use ↑↓, W / S or PageUp / PageDown to switch to the previous or next video. Ignored while typing. When off, ↑↓ adjust the player volume again.
+  immersive_auto_play: Autoplay after switching
+  immersive_auto_play_desc: Start playback after switching even if autoplay is turned off in the Bilibili player.
+  immersive_auto_next: Play next when finished
+  immersive_auto_next_desc: Switch to the next recommendation when the current video ends. When off, the player's own end behavior applies.
+  immersive_preload_next: Preload the next video
+  immersive_preload_next_desc: Open the next video page in the background so switching is almost instant. Uses extra memory and data, and skipped videos still count as a page visit.
   recommendation_mode_web_no_cookie: No Cookie
   remember_no_cookie_recommendation_state: Reduce No Cookie recommendation repeats
   remember_no_cookie_recommendation_state_desc: After reloading the page, continue the recommendation refresh progress and send recent exposure records with recommendation requests to reduce repeats. Only applies in No Cookie mode.
@@ -1446,6 +1457,7 @@ home:
   immersive_mode: Immersive mode
   immersive_mode_entry: Enter immersive mode
   immersive_exit: Exit
+  immersive_exit_title: Exit immersive mode
   immersive_loading: Loading recommendations…
   immersive_switching: Switching video…
   immersive_empty: No playable recommendations yet

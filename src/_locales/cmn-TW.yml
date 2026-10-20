@@ -281,6 +281,7 @@ settings:
   group_search_bar: 搜尋列
   group_hot_search: 熱門搜尋
   group_recommendation_mode: 「為你推薦」推薦模式
+  group_immersive_mode: 沉浸式模式
   group_recommendation_filters: 「為你推薦」過濾
   group_recommendation_filters_desc: |
     限制的數值不要設太大，不然載入時間可能會增加！頻繁請求可能會導致 Bilibili 對 IP 的封禁!
@@ -670,8 +671,18 @@ settings:
     Web：普通網頁端推薦模式。無 Cookie：請求首頁推薦時不攜帶 Cookie。App：手機端推薦模式，需先授權 access key。
   show_recommendation_mode_switcher: 顯示推薦模式快速切換按鈕組
   show_recommendation_mode_switcher_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示膠囊按鈕組，可直接選擇 Web、無 Cookie 或 App 模式。
-  show_immersive_mode_entry: 顯示沉浸式模式入口
-  show_immersive_mode_entry_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示入口：以 Bewly 寬螢幕開啟 B 站影片頁連續播放推薦影片，側欄顯示首頁推薦流，可用滾輪或方向鍵切換上一部 / 下一部。
+  show_immersive_mode_entry: 啟用沉浸式模式
+  show_immersive_mode_entry_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示入口：以 Bewly 寬螢幕開啟 B 站影片頁連續播放推薦影片，側欄顯示首頁推薦流。關閉後不顯示入口。
+  immersive_wheel_switch: 滾輪切換影片
+  immersive_wheel_switch_desc: 在播放畫面上捲動滾輪切換上一部 / 下一部。
+  immersive_keyboard_switch: 快捷鍵切換影片
+  immersive_keyboard_switch_desc: 使用 ↑↓、W / S 或 PageUp / PageDown 切換上一部 / 下一部，輸入文字時不會觸發。關閉後 ↑↓ 恢復為播放器音量調整。
+  immersive_auto_play: 切換後自動開播
+  immersive_auto_play_desc: 即使關閉了 B 站播放器的「自動開播」，切換到新影片後也開始播放。
+  immersive_auto_next: 播完自動下一部
+  immersive_auto_next_desc: 目前影片播放結束後自動切到推薦流中的下一部；關閉後遵循播放器自身的播完行為。
+  immersive_preload_next: 預先載入下一部
+  immersive_preload_next_desc: 在背景預先開啟下一部影片頁，切換時幾乎無需等待。會額外佔用記憶體和流量，被略過的影片也會產生一次頁面造訪。
   recommendation_mode_web_no_cookie: 無 Cookie
   remember_no_cookie_recommendation_state: 減少無 Cookie 推薦重複
   remember_no_cookie_recommendation_state_desc: 重新整理頁面後延續推薦刷新進度，並向推薦接口帶上最近曝光記錄，以減少重複推薦。僅無 Cookie 模式生效。
@@ -1367,6 +1378,7 @@ home:
   immersive_mode: 沉浸式模式
   immersive_mode_entry: 進入沉浸式模式
   immersive_exit: 離開
+  immersive_exit_title: 離開沉浸式模式
   immersive_loading: 正在載入推薦…
   immersive_switching: 正在切換影片…
   immersive_empty: 暫無可播放的推薦影片

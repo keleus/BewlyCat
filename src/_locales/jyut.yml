@@ -310,6 +310,7 @@ settings:
   group_search_bar: 搜尋欄
   group_hot_search: 熱搜
   group_recommendation_mode: 「估你心水」推介模式
+  group_immersive_mode: 沉浸式模式
   group_recommendation_filters: 「估你心水」過濾
   group_recommendation_filters_desc: |
     限制嘅數值唔好設太大，唔係嘅話會影響載入時間！頻繁請求可能會導致 Bilibili 對 IP 嘅封禁!
@@ -700,8 +701,18 @@ settings:
     Web：普通網頁版推介模式。無 Cookie：請求首頁推介時唔帶 Cookie。App：手機版推介模式，要先授權 access key。
   show_recommendation_mode_switcher: 顯示推介模式快速切換掣組
   show_recommendation_mode_switcher_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示膠囊掣組，可以直接揀 Web、無 Cookie 或 App 模式。
-  show_immersive_mode_entry: 顯示沉浸式模式入口
-  show_immersive_mode_entry_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示入口：用 Bewly 寬屏打開 B 站片頁連續播推介片，側欄顯示主頁推介流，可以用碌轆或者方向鍵切換上一條 / 下一條。
+  show_immersive_mode_entry: 啟用沉浸式模式
+  show_immersive_mode_entry_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示入口：用 Bewly 寬屏打開 B 站片頁連續播推介片，側欄顯示主頁推介流。閂咗就唔顯示入口。
+  immersive_wheel_switch: 碌轆切換條片
+  immersive_wheel_switch_desc: 喺播放畫面上碌轆切換上一條 / 下一條。
+  immersive_keyboard_switch: 快捷鍵切換條片
+  immersive_keyboard_switch_desc: 用 ↑↓、W / S 或者 PageUp / PageDown 切換上一條 / 下一條，打緊字嗰陣唔會觸發。閂咗之後 ↑↓ 變返播放器音量調節。
+  immersive_auto_play: 切換後自動開播
+  immersive_auto_play_desc: 就算閂咗 B 站播放器嘅「自動開播」，切換到新片之後都會開始播。
+  immersive_auto_next: 播完自動下一條
+  immersive_auto_next_desc: 目前條片播完之後自動轉去推介流入面嘅下一條；閂咗就跟返播放器自己嘅播完行為。
+  immersive_preload_next: 預先載入下一條
+  immersive_preload_next_desc: 喺背景預先打開下一條片頁，切換嗰陣幾乎唔使等。會額外用多啲記憶體同流量，跳過咗嘅片都會產生一次頁面瀏覽。
   recommendation_mode_web_no_cookie: 無 Cookie
   remember_no_cookie_recommendation_state: 減少無 Cookie 推介重複
   remember_no_cookie_recommendation_state_desc: 重新整理頁面後，會延續推介刷新進度，並向推介接口帶上最近曝光記錄，以減少重複推介。淨係無 Cookie 模式生效。
@@ -1367,6 +1378,7 @@ home:
   immersive_mode: 沉浸式模式
   immersive_mode_entry: 入沉浸式模式
   immersive_exit: 退出
+  immersive_exit_title: 退出沉浸式模式
   immersive_loading: 載入緊推介…
   immersive_switching: 切換緊條片…
   immersive_empty: 暫時冇可以播嘅推介片

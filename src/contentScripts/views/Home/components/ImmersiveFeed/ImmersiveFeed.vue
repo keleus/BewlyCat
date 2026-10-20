@@ -4,13 +4,16 @@ import { useI18n } from 'vue-i18n'
 import browser from 'webextension-polyfill'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { settings } from '~/logic'
 import { numFormatter } from '~/utils/dataFormatter'
 import type { ImmersiveFeedFrameState } from '~/utils/immersiveFeed'
 import {
   createImmersiveFeedMessage,
   IMMERSIVE_FEED_FRAME_NAME,
+  IMMERSIVE_FEED_PRELOAD_FRAME_NAME,
   ImmersiveFeedMessageType,
   isImmersiveFeedMessage,
+  isTypingContext,
 } from '~/utils/immersiveFeed'
 
 import type { ImmersiveFeedItem } from './types'
@@ -35,35 +38,52 @@ const PRELOAD_REMAINING_COUNT = 4
 const FRAME_CLOSE_REQUEST = 'BEWLY_DRAWER_CLOSE_REQUEST'
 // 视频无法开播（充电专享、地区限制等）时不再等待，按时撤下遮罩露出原生页面提示
 const FRAME_SHOW_TIMEOUT_MS = 12_000
+// 当前视频开播后稍等再预加载下一条，避免与当前视频争抢带宽
+const PRELOAD_START_DELAY_MS = 1500
 const loadingGifUrl = browser.runtime.getURL('/assets/loading.gif')
 
 const { t } = useI18n()
 const { mainAppRef } = useBewlyApp()
 
 const rootRef = ref<HTMLElement | null>(null)
-const frameRef = ref<HTMLIFrameElement | null>(null)
+const frameElements = new Map<string, HTMLIFrameElement>()
 const currentKey = ref<string | undefined>(props.initialKey)
 // 已到列表末尾且仍在加载时，新数据到达后自动切到下一条
 const pendingAdvance = ref(false)
 // 新 iframe 完成宽屏布局并开播前保持遮罩，避免露出未整理的原始视频页
 const isFrameShown = ref(false)
+// 仅预加载下一条：preloadKey 为正在后台加载的视频，preparedKey 表示它已可直接显示
+const preloadKey = ref<string>()
+const preparedKey = ref<string>()
 let frameShowTimer: ReturnType<typeof setTimeout> | undefined
+let preloadTimer: ReturnType<typeof setTimeout> | undefined
 let lastIndex = 0
 
 const currentIndex = computed(() => currentKey.value
   ? props.items.findIndex(item => item.key === currentKey.value)
   : -1)
 const currentItem = computed(() => currentIndex.value >= 0 ? props.items[currentIndex.value] : undefined)
+const nextItem = computed(() => currentIndex.value >= 0 ? props.items[currentIndex.value + 1] : undefined)
 const hasPrevious = computed(() => currentIndex.value > 0)
 const hasNext = computed(() => currentIndex.value >= 0
   && (currentIndex.value < props.items.length - 1 || !props.noMoreContent))
-// 每条视频使用新的 iframe（以 key 区分），不会在页面历史中留下记录
-const frameUrl = computed(() => currentItem.value
-  ? `${location.origin}/video/${currentItem.value.video.bvid}/`
-  : '')
+
+// 当前视频在前、预加载的下一条在后：切换时移除前者即可，不移动 iframe（移动会导致重新加载）
+const frameItems = computed(() => {
+  const frames: Array<{ item: ImmersiveFeedItem, active: boolean }> = []
+  if (currentItem.value)
+    frames.push({ item: currentItem.value, active: true })
+  if (preloadKey.value && nextItem.value?.key === preloadKey.value)
+    frames.push({ item: nextItem.value, active: false })
+  return frames
+})
+
+function getFrameUrl(item: ImmersiveFeedItem) {
+  return `${location.origin}/video/${item.video.bvid}/`
+}
 
 // 只传可结构化克隆的普通对象，推荐流数据本身是响应式代理
-const frameState = computed<ImmersiveFeedFrameState>(() => ({
+const feedState = computed<Omit<ImmersiveFeedFrameState, 'active'>>(() => ({
   items: props.items.map(({ key, video }) => ({
     key,
     bvid: video.bvid,
@@ -100,17 +120,59 @@ function showFrame() {
   isFrameShown.value = true
 }
 
+function clearPreload() {
+  clearTimeout(preloadTimer)
+  preloadTimer = undefined
+  preloadKey.value = undefined
+  preparedKey.value = undefined
+}
+
 watch(currentKey, (key) => {
   if (!key)
     return
   lastIndex = Math.max(0, currentIndex.value)
-  isFrameShown.value = false
   clearTimeout(frameShowTimer)
-  frameShowTimer = setTimeout(showFrame, FRAME_SHOW_TIMEOUT_MS)
+
+  // 切到已预加载完成的下一条：同一个 iframe 转为当前视频，无需再等待
+  const promoted = key === preloadKey.value && key === preparedKey.value
+  clearPreload()
+  if (promoted) {
+    isFrameShown.value = true
+  }
+  else {
+    isFrameShown.value = false
+    frameShowTimer = setTimeout(showFrame, FRAME_SHOW_TIMEOUT_MS)
+  }
+
   emit('play', key)
+  void nextTick(() => {
+    postFeedState()
+    if (promoted)
+      frameElements.get(key)?.focus()
+  })
 }, { immediate: true })
 
-onBeforeUnmount(() => clearTimeout(frameShowTimer))
+// 当前视频显示后再预加载下一条；只处理下一条，不保留或预加载上一条
+watch([isFrameShown, () => nextItem.value?.key, () => settings.value.immersivePreloadNext], ([shown, nextKey, enabled]) => {
+  if (!enabled || !nextKey) {
+    clearPreload()
+    return
+  }
+  if (!shown || preloadKey.value === nextKey || preloadTimer)
+    return
+  preloadTimer = setTimeout(() => {
+    preloadTimer = undefined
+    if (settings.value.immersivePreloadNext && nextItem.value?.key === nextKey) {
+      preparedKey.value = undefined
+      preloadKey.value = nextKey
+    }
+  }, PRELOAD_START_DELAY_MS)
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(frameShowTimer)
+  clearTimeout(preloadTimer)
+})
 
 watch([currentIndex, () => props.items.length, () => props.loading, () => props.noMoreContent], () => {
   if (props.loading || props.noMoreContent)
@@ -124,13 +186,25 @@ watch(() => props.noMoreContent, (noMore) => {
     pendingAdvance.value = false
 })
 
-watch(frameState, postFrameState)
+watch(feedState, () => postFeedState())
 
-function postFrameState() {
-  frameRef.value?.contentWindow?.postMessage(
-    createImmersiveFeedMessage(ImmersiveFeedMessageType.State, { state: frameState.value }),
-    location.origin,
-  )
+function setFrameElement(key: string, element: unknown) {
+  if (element instanceof HTMLIFrameElement)
+    frameElements.set(key, element)
+  else
+    frameElements.delete(key)
+}
+
+function postFeedState(targetKey?: string) {
+  for (const [key, frame] of frameElements) {
+    if (targetKey && key !== targetKey)
+      continue
+    const state: ImmersiveFeedFrameState = { ...feedState.value, active: key === currentKey.value }
+    frame.contentWindow?.postMessage(
+      createImmersiveFeedMessage(ImmersiveFeedMessageType.State, { state }),
+      location.origin,
+    )
+  }
 }
 
 function goTo(key: string) {
@@ -158,18 +232,31 @@ function goPrevious() {
     currentKey.value = props.items[currentIndex.value - 1].key
 }
 
-function handleFrameLoad() {
-  // 让视频页直接接收键盘操作（空格暂停、↑↓ 切换等）
-  frameRef.value?.focus()
+function handleFrameLoad(key: string) {
+  // 让当前视频页直接接收键盘操作（空格暂停、↑↓ 切换等）；预加载页不抢焦点
+  if (key === currentKey.value)
+    frameElements.get(key)?.focus()
+}
+
+function getMessageFrameKey(source: MessageEventSource | null) {
+  for (const [key, frame] of frameElements) {
+    if (frame.contentWindow && frame.contentWindow === source)
+      return key
+  }
+  return undefined
 }
 
 useEventListener(window, 'message', (event: MessageEvent) => {
-  const frameWindow = frameRef.value?.contentWindow
-  if (!frameWindow || event.source !== frameWindow || event.origin !== location.origin)
+  if (event.origin !== location.origin)
     return
+  const frameKey = getMessageFrameKey(event.source)
+  if (!frameKey)
+    return
+  const fromCurrent = frameKey === currentKey.value
 
   if (event.data?.type === FRAME_CLOSE_REQUEST) {
-    emit('close')
+    if (fromCurrent)
+      emit('close')
     return
   }
   if (!isImmersiveFeedMessage(event.data))
@@ -177,8 +264,18 @@ useEventListener(window, 'message', (event: MessageEvent) => {
 
   switch (event.data.type) {
     case ImmersiveFeedMessageType.Ready:
-      postFrameState()
-      break
+      postFeedState(frameKey)
+      return
+    case ImmersiveFeedMessageType.Prepared:
+      if (frameKey === preloadKey.value)
+        preparedKey.value = frameKey
+      return
+  }
+
+  // 其余操作只接受当前视频页发出的请求
+  if (!fromCurrent)
+    return
+  switch (event.data.type) {
     case ImmersiveFeedMessageType.Shown:
       showFrame()
       break
@@ -205,7 +302,7 @@ useEventListener(window, 'message', (event: MessageEvent) => {
 
 // 焦点仍在首页（iframe 尚未加载）时的快捷键；捕获阶段避免作用到背后的推荐流
 useEventListener(window, 'keydown', (event: KeyboardEvent) => {
-  if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey)
+  if (event.ctrlKey || event.metaKey || event.altKey || isTypingContext(event))
     return
 
   let handled = true
@@ -217,13 +314,17 @@ useEventListener(window, 'keydown', (event: KeyboardEvent) => {
     case 'PageUp':
     case 'w':
     case 'W':
-      goPrevious()
+      handled = settings.value.immersiveKeyboardSwitch
+      if (handled)
+        goPrevious()
       break
     case 'ArrowDown':
     case 'PageDown':
     case 's':
     case 'S':
-      goNext()
+      handled = settings.value.immersiveKeyboardSwitch
+      if (handled)
+        goNext()
       break
     default:
       handled = false
@@ -250,18 +351,23 @@ onMounted(() => {
       tabindex="-1"
       @wheel.prevent
     >
-      <iframe
-        v-if="currentItem"
-        :key="currentItem.key"
-        ref="frameRef"
-        class="immersive-feed__frame"
-        :name="IMMERSIVE_FEED_FRAME_NAME"
-        :src="frameUrl"
-        :title="currentItem.video.title"
-        allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
-        allowfullscreen
-        @load="handleFrameLoad"
-      />
+      <template v-if="currentItem">
+        <iframe
+          v-for="frame in frameItems"
+          :key="frame.item.key"
+          :ref="(element) => setFrameElement(frame.item.key, element)"
+          class="immersive-feed__frame"
+          :class="{ 'immersive-feed__frame--preload': !frame.active }"
+          :name="frame.active ? IMMERSIVE_FEED_FRAME_NAME : IMMERSIVE_FEED_PRELOAD_FRAME_NAME"
+          :src="getFrameUrl(frame.item)"
+          :title="frame.item.video.title"
+          :tabindex="frame.active ? undefined : -1"
+          :aria-hidden="frame.active ? undefined : 'true'"
+          allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+          allowfullscreen
+          @load="handleFrameLoad(frame.item.key)"
+        />
+      </template>
       <div v-else class="immersive-feed__placeholder">
         <span v-if="loading" class="i-mingcute-loading-3-line immersive-feed__spinner" aria-hidden="true" />
         <p>{{ loading ? t('home.immersive_loading') : t('home.immersive_empty') }}</p>
@@ -301,16 +407,27 @@ onMounted(() => {
 }
 
 .immersive-feed__frame {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
   border: none;
   background: #0f1115;
+
+  // 预加载页保持与当前页相同尺寸以便提前完成宽屏布局，只是不可见、不可交互
+  &--preload {
+    z-index: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 .immersive-feed__cover {
   position: absolute;
   inset: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
