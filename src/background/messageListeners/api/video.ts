@@ -76,17 +76,6 @@ const API_VIDEO = {
     },
     afterHandle: AHS.J_D,
   },
-  // 网页播放列表使用的批量稿件信息接口，resources 形如 `aid:2,aid:2`，返回 pubtime 等字段
-  getVideoResourceInfos: {
-    url: 'https://api.bilibili.com/medialist/gateway/base/resource/infos',
-    _fetch: {
-      method: 'get',
-    },
-    params: {
-      resources: '',
-    },
-    afterHandle: AHS.J_D,
-  },
   getVideoPageList: {
     url: 'https://api.bilibili.com/x/player/pagelist',
     _fetch: {

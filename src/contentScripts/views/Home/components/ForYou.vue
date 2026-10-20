@@ -206,7 +206,6 @@ const APP_REQUEST_MAX_ATTEMPTS = 3
 const APP_REQUEST_RETRY_WINDOW_MS = 5_000
 const APP_REQUEST_RETRY_BASE_DELAY_MS = 250
 const APP_RECENT_SHOWN_MAX_KEYS = 600
-const APP_PUBLISH_TIME_BATCH_SIZE = 20
 // 参考 PiliPlus 的 HD 推荐请求参数
 const APP_FEED_PARAMS = {
   build: 8430300,
@@ -667,47 +666,6 @@ function normalizeAppVideoItem(item: AppVideoItem): AppVideoItem {
     },
     bottom_rcmd_reason: item.bottom_rcmd_reason
       || (rcmdReason && APP_FOLLOWED_REASONS.has(rcmdReason) ? rcmdReason : undefined),
-  }
-}
-
-/**
- * HD 接口不再在 desc 中下发发布时间，按 aid 批量查询网页接口补齐卡片的发布时间。
- * 不阻塞推荐加载，查询失败时卡片保持不显示发布时间。
- */
-async function fillAppVideoPublishTimes(entries: AppVideoElement[]) {
-  const aids = [...new Set(entries.flatMap(({ item }) =>
-    item?.card_goto === 'av' && item.args?.aid ? [item.args.aid] : [],
-  ))]
-  if (aids.length === 0)
-    return
-
-  const publishTimes = new Map<number, number>()
-  for (let start = 0; start < aids.length; start += APP_PUBLISH_TIME_BATCH_SIZE) {
-    const resources = aids.slice(start, start + APP_PUBLISH_TIME_BATCH_SIZE).map(aid => `${aid}:2`).join(',')
-    try {
-      const res = await api.video.getVideoResourceInfos({ resources })
-      if (res?.code !== 0 || !Array.isArray(res.data))
-        continue
-      for (const info of res.data as Array<{ id?: number, pubtime?: number }>) {
-        if (info.id && info.pubtime)
-          publishTimes.set(info.id, info.pubtime)
-      }
-    }
-    catch (error) {
-      console.warn(`${HOME_LOAD_LOG_PREFIX} App 推荐发布时间查询失败`, error)
-    }
-  }
-  if (publishTimes.size === 0)
-    return
-
-  // 通过响应式列表写入，卡片才会更新；列表已被刷新替换时找不到对应卡片即跳过
-  const uniqueIds = new Set(entries.map(entry => entry.uniqueId))
-  for (const video of appVideoList.value) {
-    if (!uniqueIds.has(video.uniqueId) || !video.displayData || video.displayData.publishedTimestamp)
-      continue
-    const publishTime = video.item?.args?.aid ? publishTimes.get(video.item.args.aid) : undefined
-    if (publishTime)
-      video.displayData.publishedTimestamp = publishTime
   }
 }
 
@@ -1846,7 +1804,6 @@ async function getAppRecommendVideos(
         // 无论本批是否有可展示的卡片，都推进游标，下次请求下一页
         appFeedIdx.value = idx + 1
         const activeAppFilter = hasActiveAppRecommendationFilter.value ? appFilterFunc.value : null
-        const batchStartIndex = appVideoList.value.length
 
         response.data.items.forEach((rawItem: AppVideoItem) => {
           const item = normalizeAppVideoItem(rawItem)
@@ -1875,8 +1832,6 @@ async function getAppRecommendVideos(
             displayData: transformAppVideo(item),
           })
         })
-
-        void fillAppVideoPublishTimes(appVideoList.value.slice(batchStartIndex))
       }
       else if (response.code === 62011) {
         logRecommendRequestFailure(requestLog, {
