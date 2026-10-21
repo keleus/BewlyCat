@@ -10,8 +10,6 @@ import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
 import SettingsItemSubgroup from '../../components/SettingsItemSubgroup.vue'
 import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
-import Ambilight from '../Ambilight/Ambilight.vue'
-import VolumeBalance from '../VolumeBalance/VolumeBalance.vue'
 import PlaybackRate from './PlaybackRate.vue'
 
 const { t } = useI18n()
@@ -359,27 +357,8 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
         >
           <Radio v-model="settings.showVideoScreenshotButton" />
         </SettingsItem>
-
-        <SettingsItem
-          :title="t('settings.enable_listen_video')"
-          :desc="t('settings.enable_listen_video_desc')"
-          right-width="auto"
-        >
-          <Radio v-model="settings.enableListenVideo" />
-        </SettingsItem>
-
-        <SettingsItem
-          v-if="settings.enableListenVideo"
-          :title="t('settings.show_listen_video_button')"
-          :desc="t('settings.show_listen_video_button_desc')"
-          right-width="auto"
-        >
-          <Radio v-model="settings.showListenVideoButton" />
-        </SettingsItem>
       </SettingsItemSubgroup>
     </SettingsItemGroup>
-    <VolumeBalance />
-    <Ambilight />
   </div>
 </template>
 

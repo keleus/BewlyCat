@@ -196,6 +196,9 @@ settings:
   category_playback_autoplay_desc: Configure autoplay and custom playback behavior.
   category_bilibili_comments_desc: Enhance user information and content displayed in comments.
   category_bilibili_vip_desc: Configure reminders related to premium membership benefits.
+  category_bilibili_listen_video_desc: Hide the video picture and keep only the audio, shown as a cover-and-title audio player.
+  category_bilibili_volume_balance_desc: Level loudness across videos locally to reduce sudden volume changes.
+  category_bilibili_ambilight_desc: Cast soft ambient light around the player that follows the picture.
   category_advanced_compatibility_desc: Configure compatibility with original pages, third-party extensions, and other pages.
   category_advanced_maintenance_desc: Export a backup, import settings, or restore BewlyCat defaults.
   maintenance:
@@ -244,6 +247,9 @@ settings:
     auto_play: Playback Behavior
     vip_features: VIP Features
     vip_features_placeholder: VIP feature enhancements will be added here in future updates.
+    listen_video: Listen to Video
+    volume_balance: Volume Balance
+    ambilight: Video Ambient Light
 
   changelog_placeholder: Changelog content will be displayed here.
 

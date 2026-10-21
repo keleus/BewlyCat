@@ -9,9 +9,6 @@ const legacyPage = sessionStorage.getItem(legacyStorageKey)
 if (!sessionStorage.getItem(storageKey) && legacyPage && bilibiliPageValues.includes(legacyPage))
   sessionStorage.setItem(storageKey, legacyPage)
 
-if (sessionStorage.getItem(storageKey) === 'volume-balance')
-  sessionStorage.setItem(storageKey, 'player')
-
 const pages = [
   {
     value: 'player',
@@ -20,6 +17,30 @@ const pages = [
     icon: 'i-mingcute:play-circle-line',
     iconActivated: 'i-mingcute:play-circle-fill',
     component: defineAsyncComponent(() => import('./VideoPlayback/VideoPlayback.vue')),
+  },
+  {
+    value: 'listen-video',
+    titleKey: 'settings.bilibili_features.listen_video',
+    descriptionKey: 'settings.category_bilibili_listen_video_desc',
+    icon: 'i-mingcute:headphone-line',
+    iconActivated: 'i-mingcute:headphone-fill',
+    component: defineAsyncComponent(() => import('./ListenVideo/ListenVideo.vue')),
+  },
+  {
+    value: 'volume-balance',
+    titleKey: 'settings.bilibili_features.volume_balance',
+    descriptionKey: 'settings.category_bilibili_volume_balance_desc',
+    icon: 'i-mingcute:volume-line',
+    iconActivated: 'i-mingcute:volume-fill',
+    component: defineAsyncComponent(() => import('./VolumeBalance/VolumeBalance.vue')),
+  },
+  {
+    value: 'ambilight',
+    titleKey: 'settings.bilibili_features.ambilight',
+    descriptionKey: 'settings.category_bilibili_ambilight_desc',
+    icon: 'i-mingcute:light-line',
+    iconActivated: 'i-mingcute:light-fill',
+    component: defineAsyncComponent(() => import('./Ambilight/Ambilight.vue')),
   },
   {
     value: 'auto-play',

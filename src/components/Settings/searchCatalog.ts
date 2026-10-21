@@ -112,6 +112,24 @@ const playerRoute: SearchRoute = {
   secondaryTitleKey: 'settings.bilibili_features.video_playback',
   storageKey: bilibiliStorageKey,
 }
+const listenVideoRoute: SearchRoute = {
+  menu: MenuType.Bilibili,
+  secondaryPage: 'listen-video',
+  secondaryTitleKey: 'settings.bilibili_features.listen_video',
+  storageKey: bilibiliStorageKey,
+}
+const volumeBalanceRoute: SearchRoute = {
+  menu: MenuType.Bilibili,
+  secondaryPage: 'volume-balance',
+  secondaryTitleKey: 'settings.bilibili_features.volume_balance',
+  storageKey: bilibiliStorageKey,
+}
+const ambilightRoute: SearchRoute = {
+  menu: MenuType.Bilibili,
+  secondaryPage: 'ambilight',
+  secondaryTitleKey: 'settings.bilibili_features.ambilight',
+  storageKey: bilibiliStorageKey,
+}
 const autoPlayRoute: SearchRoute = {
   menu: MenuType.Bilibili,
   secondaryPage: 'auto-play',
@@ -502,14 +520,14 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     ...wallpaperTitleKeys,
   ]),
 
-  ...createEntries(playerRoute, [
+  ...createEntries(volumeBalanceRoute, [
     'settings.local_loudness.title',
     'settings.local_loudness.enable',
     'settings.local_loudness.target',
     'settings.local_loudness.strength',
     'settings.local_loudness.show_button',
   ]),
-  ...createEntries(playerRoute, [
+  ...createEntries(ambilightRoute, [
     'settings.ambilight.title',
     'settings.ambilight.enable',
     'settings.ambilight.enable_fullscreen',
@@ -545,6 +563,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.show_vertical_video_zoom_button',
     'settings.show_bewly_widescreen_button',
     'settings.show_video_screenshot_button',
+  ]),
+  ...createEntries(listenVideoRoute, [
     'settings.enable_listen_video',
     'settings.show_listen_video_button',
   ]),

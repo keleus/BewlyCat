@@ -196,6 +196,9 @@ settings:
   category_playback_autoplay_desc: 設定自動連播同自訂播放行為。
   category_bilibili_comments_desc: 加強留言區嘅用戶資料同內容顯示。
   category_bilibili_vip_desc: 設定大會員權益相關嘅提醒功能。
+  category_bilibili_listen_video_desc: 隱藏影片畫面淨係保留聲音，用封面同標題組成音訊播放介面。
+  category_bilibili_volume_balance_desc: 喺本機平衡唔同影片嘅響度，減少音量忽大忽細。
+  category_bilibili_ambilight_desc: 喺播放器四周投射跟住畫面變化嘅柔和環境光。
   category_advanced_compatibility_desc: 設定原版頁面、第三方擴充功能同其他頁面嘅相容行為。
   category_advanced_maintenance_desc: 匯出備份、匯入設定或者還原 BewlyCat 預設配置。
   maintenance:
@@ -244,6 +247,9 @@ settings:
     auto_play: 播放行為
     vip_features: 大會員
     vip_features_placeholder: 大會員功能增強將喺未來版本加入。
+    listen_video: 聽影片
+    volume_balance: 音量均衡
+    ambilight: 影片環境光
 
   changelog_placeholder: 更新日誌內容將喺呢度顯示。
 
