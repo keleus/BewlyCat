@@ -376,6 +376,8 @@ settings:
   moments_tabs_position: Dynamic tabs position
   moments_grid_columns_desc: Set the preferred column count for the Bewly dynamic feed. Card dimensions adapt to the selected layout; columns automatically reduce when space is limited, while the sidebar and feed remain centered as a group.
   moments_grid_columns_option: '{count} columns'
+  moments_grid_columns_more: More
+  moments_grid_columns_more_confirm: The extension offers more column options, but does not optimize the layout for them
   moments_filter_up_recommendation: Filter uploader recommendations
   moments_filter_up_recommendation_desc: Filter out every dynamic that contains an uploader recommendation attachment.
   moments_filter_up_recommendation_short: Uploader recommendations

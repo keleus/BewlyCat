@@ -401,6 +401,8 @@ settings:
   moments_tabs_position: 動態分頁欄位置
   moments_grid_columns_desc: 設定 Bewly 動態頁想要嘅欄數。卡片尺寸會跟住欄數自動調整；視窗空間唔夠時會自動減少欄數，左邊欄同動態流會成組保持置中。
   moments_grid_columns_option: '{count} 欄'
+  moments_grid_columns_more: 更多
+  moments_grid_columns_more_confirm: 擴充功能提供更多欄數揀，但唔會為更多欄數做相關優化
   moments_filter_up_recommendation: 過濾：UP主嘅推薦
   moments_filter_up_recommendation_desc: 過濾所有帶有「UP主嘅推薦」附加資訊嘅動態。
   moments_filter_up_recommendation_short: UP主嘅推薦

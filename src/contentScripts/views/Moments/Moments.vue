@@ -213,6 +213,8 @@ const LAYOUT_GAP = 24
 const CARD_MAX_WIDTH_BY_COLUMNS = {
   1: 720,
   2: 610,
+  3: 520,
+  4: 440,
 } as const
 const CARD_MIN_WIDTH = 360
 const CARD_COMPACT_MIN_WIDTH = 260
@@ -1082,7 +1084,7 @@ function estimateVideoCardStripHeight(contentWidth: number) {
 function estimateCardHeight(moment: DisplayMoment) {
   const columnWidth = Math.max(
     CARD_COMPACT_MIN_WIDTH,
-    gridCardWidth.value || CARD_MAX_WIDTH_BY_COLUMNS[gridColumnCount.value as 1 | 2],
+    gridCardWidth.value || CARD_MAX_WIDTH_BY_COLUMNS[gridColumnCount.value as keyof typeof CARD_MAX_WIDTH_BY_COLUMNS],
   )
   const contentScale = Math.max(1, columnWidth / CARD_MAX_WIDTH_BY_COLUMNS[2])
   const scaledTextBodyExtra = Math.round(230 * (contentScale - 1))
@@ -1761,7 +1763,7 @@ function redistributeColumns() {
 /** 列宽是上限。设置要求显示左右栏时，先给侧栏留位，再把卡片从上限往下缩。 */
 function updateGridColumnCount() {
   const layoutWidth = layoutRef.value?.clientWidth || Math.max(CARD_MAX_WIDTH_BY_COLUMNS[1], window.innerWidth - 220)
-  const preferredColumns = Math.min(2, Math.max(1, Number(settings.value.momentsGridColumns) === 1 ? 1 : 2))
+  const preferredColumns = Math.min(4, Math.max(1, Number(settings.value.momentsGridColumns) || 2))
   const wantLeft = settings.value.momentsSidebarShowUserCard
     || settings.value.momentsSidebarShowPublish
     || settings.value.momentsSidebarShowLive
@@ -1775,7 +1777,7 @@ function updateGridColumnCount() {
     const availableCardWidth = Math.floor((budget - GRID_GAP * (cols - 1)) / cols)
     if (availableCardWidth < CARD_COMPACT_MIN_WIDTH)
       return null
-    const cardMaxWidth = CARD_MAX_WIDTH_BY_COLUMNS[cols as 1 | 2]
+    const cardMaxWidth = CARD_MAX_WIDTH_BY_COLUMNS[cols as keyof typeof CARD_MAX_WIDTH_BY_COLUMNS]
     return {
       cols,
       cardWidth: Math.min(cardMaxWidth, availableCardWidth),

@@ -373,6 +373,8 @@ settings:
   moments_tabs_position: 动态标签栏位置
   moments_grid_columns_desc: 设置 Bewly 动态页的期望列数。卡片尺寸会随列数自适应；窗口空间不足时会自动减少列数，左侧栏与动态流整体保持居中。
   moments_grid_columns_option: '{count} 列'
+  moments_grid_columns_more: 更多
+  moments_grid_columns_more_confirm: 插件提供更多列的选择，但不会为更多列做相关优化
   moments_filter_up_recommendation: 过滤：UP主的推荐
   moments_filter_up_recommendation_desc: 过滤所有带有“UP主的推荐”附加信息的动态。
   moments_filter_up_recommendation_short: UP主的推荐

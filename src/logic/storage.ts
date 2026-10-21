@@ -132,6 +132,8 @@ export function normalizeVideoCardCoverRatio(value: unknown, fallback: number): 
 }
 
 export type TabsPosition = 'left' | 'center'
+/** Bewly 动态页列数；3、4 列仅提供选择，未针对窄卡片适配 */
+export type MomentsGridColumns = '1' | '2' | '3' | '4'
 export type TopBarLogoStyle = 'icon' | 'brand'
 /** 视频页以外的顶栏显示时机；“总是隐藏”与关闭顶栏重复，不提供 */
 export type OtherPageTopBarConfig = Exclude<VideoPageTopBarConfig, VideoPageTopBarConfig.AlwaysHide>
@@ -432,7 +434,7 @@ export interface Settings {
   momentsVideoPreviewDelayed: boolean
   momentsOnlyCoverVideoPreview: boolean
   /** Bewly 动态页期望列数；窄屏会自动降列 */
-  momentsGridColumns: '1' | '2'
+  momentsGridColumns: MomentsGridColumns
   momentsEnableWantedFilter: boolean
   momentsFilterUpRecommendation: boolean
   momentsHideChargeExclusive: boolean
@@ -1444,8 +1446,7 @@ export const settings = useSettingsStorage(originalSettings, {
       ) as VideoPlayerModeOverrides
     }
 
-    // 动态页不再提供 3 列
-    if (record.momentsGridColumns !== '1' && record.momentsGridColumns !== '2')
+    if (!['1', '2', '3', '4'].includes(record.momentsGridColumns))
       record.momentsGridColumns = '2'
 
     // 清理已移除的 NVIDIA RTX 视频增强兼容设置

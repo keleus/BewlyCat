@@ -4,8 +4,9 @@ import { useI18n } from 'vue-i18n'
 import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
+import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { settings } from '~/logic'
-import type { TabsPosition } from '~/logic/storage'
+import type { MomentsGridColumns, TabsPosition } from '~/logic/storage'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -14,6 +15,7 @@ import SettingsToggleTag from '../../components/SettingsToggleTag.vue'
 import WantedUsersManager from './WantedUsersManager.vue'
 
 const { t } = useI18n()
+const { confirm: showConfirmDialog } = useConfirmDialog()
 
 type MomentToggleSetting
   = | 'originalMomentsShowUserCard'
@@ -112,10 +114,28 @@ const videoCardOpenModeOptions = computed(() => [
   },
 ])
 
-const gridColumnOptions = computed(() => [
-  { label: t('settings.moments_grid_columns_option', { count: 2 }), value: '2' as const },
-  { label: t('settings.moments_grid_columns_option', { count: 1 }), value: '1' as const },
+// 3、4 列未做适配，需确认后才展开
+const moreGridColumnsUnlocked = ref(settings.value.momentsGridColumns === '3' || settings.value.momentsGridColumns === '4')
+
+const gridColumnOptions = computed<{ label: string, value: MomentsGridColumns | 'more' }[]>(() => [
+  { label: t('settings.moments_grid_columns_option', { count: 2 }), value: '2' },
+  { label: t('settings.moments_grid_columns_option', { count: 1 }), value: '1' },
+  ...moreGridColumnsUnlocked.value
+    ? [
+        { label: t('settings.moments_grid_columns_option', { count: 3 }), value: '3' as const },
+        { label: t('settings.moments_grid_columns_option', { count: 4 }), value: '4' as const },
+      ]
+    : [{ label: t('settings.moments_grid_columns_more'), value: 'more' as const }],
 ])
+
+async function selectGridColumns(value: MomentsGridColumns | 'more') {
+  if (value !== 'more') {
+    settings.value.momentsGridColumns = value
+    return
+  }
+  if (await showConfirmDialog(t('settings.moments_grid_columns_more_confirm'), { title: t('settings.moments_grid_columns') }))
+    moreGridColumnsUnlocked.value = true
+}
 
 const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition }[]>(() => [
   { label: t('common.position.left'), value: 'left' },
@@ -152,9 +172,10 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         right-width="auto"
       >
         <SettingsSegmentedControl
-          v-model="settings.momentsGridColumns"
+          :model-value="settings.momentsGridColumns"
           :label="$t('settings.moments_grid_columns')"
           :options="gridColumnOptions"
+          @update:model-value="selectGridColumns"
         />
       </SettingsItem>
       <SettingsItem :title="$t('settings.moments_tabs_position')" right-width="auto">
