@@ -10,13 +10,13 @@ import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
 import { gridLayout, settings } from '~/logic'
 import { parseDedeUserID } from '~/logic/loginStatus'
-import type { RecommendationMode } from '~/logic/storage'
 import type { ForYouState } from '~/stores/forYouStore'
 import { useForYouStore } from '~/stores/forYouStore'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useTopBarStore } from '~/stores/topBarStore'
 import emitter from '~/utils/mitt'
+import { applyRecommendationModeOption, createRecommendationModeOptions, getRecommendationModeOption } from '~/utils/recommendationMode'
 
 import VersionReminder from './components/VersionReminder.vue'
 import type { GridLayoutIcon } from './types'
@@ -65,10 +65,12 @@ const pages = computed(() => ({
   [HomeSubPage.Weekly]: weeklyPage,
   [HomeSubPage.Live]: livePage,
 }))
+// App 单列 / 双列返回不同卡片，按界面上的推荐模式选项区分个性推荐缓存
+const forYouCacheKey = computed(() => `${HomeSubPage.ForYou}:${getRecommendationModeOption()}`)
 const activatedPageCacheKey = computed(() => activatedPage.value === HomeSubPage.Following
   ? `${activatedPage.value}:${settings.value.useFollowingNewLayout ? 'new' : 'old'}`
   : activatedPage.value === HomeSubPage.ForYou
-    ? `${activatedPage.value}:${settings.value.recommendationMode}${settings.value.recommendationMode === 'app' ? `:${settings.value.appRecommendationColumn}` : ''}`
+    ? forYouCacheKey.value
     : activatedPage.value)
 const cacheRevision = ref(0)
 const tabCache = provideHomeTabCache(() => activatedPageCacheKey.value, restoreTabScrollPosition)
@@ -83,11 +85,8 @@ const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value
   || shouldShowRecommendationModeSwitcher.value
   || shouldShowImmersiveModeEntry.value
   || settings.value.enableGridLayoutSwitcher)
-const recommendationModeOptions = computed<{ label: string, value: RecommendationMode }[]>(() => [
-  { label: 'Web', value: 'web' },
-  { label: t('settings.recommendation_mode_web_no_cookie'), value: 'webNoCookie' },
-  { label: 'App', value: 'app' },
-])
+const recommendationModeOptions = computed(() => createRecommendationModeOptions(t))
+const activeRecommendationModeOption = computed(() => getRecommendationModeOption())
 const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   return [
     { icon: 'mingcute:table-3-line', iconActivated: 'mingcute:table-3-fill', value: 'adaptive' },
@@ -228,7 +227,7 @@ function preserveInactiveForYouState() {
   if (!settings.value.preserveForYouState || activatedPage.value === HomeSubPage.ForYou)
     return
   const mode = settings.value.recommendationMode
-  const key = `${HomeSubPage.ForYou}:${mode}`
+  const key = forYouCacheKey.value
   const snapshot = tabCache.take(key) as (Partial<ForYouState> & {
     hasInitializedData?: boolean
     webRecommendationUniqId?: string
@@ -250,6 +249,7 @@ function preserveInactiveForYouState() {
     noMoreContent: snapshot.noMoreContent ?? false,
     isInitialized: !!snapshot.hasInitializedData || !!snapshot.videoList?.length || !!snapshot.appVideoList?.length,
     recommendationMode: mode,
+    appRecommendationColumn: settings.value.appRecommendationColumn,
     scrollTop: tabScrollPositions.get(key) ?? getInitialTabScrollTop(),
   })
 }
@@ -418,7 +418,7 @@ function toggleTabContentLoading(loading: boolean) {
           >
             <LiquidSegmentIndicator
               v-if="settings.enableLiquidSegmentIndicator"
-              :active-key="settings.recommendationMode"
+              :active-key="activeRecommendationModeOption"
             />
             <button
               v-for="option in recommendationModeOptions"
@@ -426,9 +426,9 @@ function toggleTabContentLoading(loading: boolean) {
               type="button"
               class="bew-segment-control__item"
               data-segment-item
-              :data-active="settings.recommendationMode === option.value ? 'true' : undefined"
-              :aria-pressed="settings.recommendationMode === option.value"
-              @click="settings.recommendationMode = option.value"
+              :data-active="activeRecommendationModeOption === option.value ? 'true' : undefined"
+              :aria-pressed="activeRecommendationModeOption === option.value"
+              @click="applyRecommendationModeOption(option.value)"
             >
               {{ option.label }}
             </button>

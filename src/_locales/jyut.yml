@@ -706,9 +706,9 @@ settings:
   individually_set_search_page_wallpaper: 單獨設定搵嘢頁背景
   recommendation_mode: 推介模式
   recommendation_mode_desc: |
-    Web：普通網頁版推介模式。Web(訪客)：請求首頁推介時唔帶 Cookie。App：手機版推介模式，要先授權 access key。
+    Web：普通網頁版推介模式。Web 訪客：請求首頁推介時唔帶 Cookie。App 單列 / App 雙列：手機版推介模式，要先授權 access key；單列卡片有 UP 主頭像、發佈時間同讚好數，雙列卡片有推介理由（例如讚好數、直屏）。
   show_recommendation_mode_switcher: 顯示推介模式快速切換掣組
-  show_recommendation_mode_switcher_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示膠囊掣組，可以直接揀 Web、Web(訪客) 或 App 模式。
+  show_recommendation_mode_switcher_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示膠囊掣組，可以直接揀 Web、Web 訪客、App 單列或者 App 雙列。
   show_immersive_mode_entry: 啟用沉浸式模式
   show_immersive_mode_entry_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示入口：用 Bewly 寬屏打開 B 站片頁連續播推介片，側欄顯示主頁推介流。閂咗就唔顯示入口。
   immersive_wheel_switch: 碌轆切換條片
@@ -721,13 +721,11 @@ settings:
   immersive_auto_next_desc: 目前條片播完之後自動轉去推介流入面嘅下一條；閂咗就跟返播放器自己嘅播完行為。
   immersive_preload_next: 預先載入下一條
   immersive_preload_next_desc: 喺背景預先打開下一條片頁，切換嗰陣幾乎唔使等。會額外用多啲記憶體同流量，跳過咗嘅片都會產生一次頁面瀏覽。
-  recommendation_mode_web_no_cookie: Web(訪客)
-  remember_no_cookie_recommendation_state: 減少 Web(訪客) 推介重複
-  app_recommendation_column: App 推介樣式
-  app_recommendation_column_desc: 單列模式卡片有 UP 主頭像、發佈時間同讚好數；雙列模式有推介理由（例如讚好數、直屏）
-  app_recommendation_column_single: App 單列
-  app_recommendation_column_double: App 雙列
-  remember_no_cookie_recommendation_state_desc: 重新整理頁面後，會延續推介刷新進度，並向推介接口帶上最近曝光記錄，以減少重複推介。淨係 Web(訪客) 模式生效。
+  recommendation_mode_web_no_cookie: Web 訪客
+  recommendation_mode_app_single: App 單列
+  recommendation_mode_app_double: App 雙列
+  remember_no_cookie_recommendation_state: 減少 Web 訪客模式推介重複
+  remember_no_cookie_recommendation_state_desc: 重新整理頁面後，會延續推介刷新進度，並向推介接口帶上最近曝光記錄，以減少重複推介。淨係 Web 訪客模式生效。
   auto_switch_recommendation_mode: 自動切換推介模式
   auto_switch_recommendation_mode_desc: |
     當手機版推介壞咗嗰陣自動切換到網頁模式。

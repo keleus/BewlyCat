@@ -827,9 +827,9 @@ settings:
   individually_set_search_page_wallpaper: 单独设置搜索页背景
   recommendation_mode: 推荐模式
   recommendation_mode_desc: |
-    Web：普通网页端推荐模式。Web(游客)：请求首页推荐时不携带 Cookie。App：移动端推荐模式，需先授权 access key。
+    Web：普通网页端推荐模式。Web 游客：请求首页推荐时不携带 Cookie。App 单列 / App 双列：移动端推荐模式，需先授权 access key；单列卡片带 UP 主头像、发布时间与点赞数，双列卡片带推荐理由（如点赞数、竖屏）。
   show_recommendation_mode_switcher: 显示推荐模式快速切换按钮组
-  show_recommendation_mode_switcher_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示胶囊按钮组，可直接选择 Web、Web(游客) 或 App 模式。
+  show_recommendation_mode_switcher_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示胶囊按钮组，可直接选择 Web、Web 游客、App 单列或 App 双列。
   show_immersive_mode_entry: 启用沉浸式模式
   show_immersive_mode_entry_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示入口：以 Bewly 宽屏打开 B 站视频页连续播放推荐视频，侧栏显示首页推荐流。关闭后不显示入口。
   immersive_wheel_switch: 滚轮切换视频
@@ -842,13 +842,11 @@ settings:
   immersive_auto_next_desc: 当前视频播放结束后自动切到推荐流中的下一条；关闭后遵循播放器自身的播完行为。
   immersive_preload_next: 提前加载下一条
   immersive_preload_next_desc: 在后台提前打开下一条视频页，切换时几乎无需等待。会额外占用内存和流量，被跳过的视频也会产生一次页面访问。
-  recommendation_mode_web_no_cookie: Web(游客)
-  remember_no_cookie_recommendation_state: 减少 Web(游客) 推荐重复
-  app_recommendation_column: App 推荐样式
-  app_recommendation_column_desc: 单列模式卡片带 UP 主头像、发布时间与点赞数；双列模式带推荐理由（如点赞数、竖屏）
-  app_recommendation_column_single: App 单列
-  app_recommendation_column_double: App 双列
-  remember_no_cookie_recommendation_state_desc: 刷新页面后延续推荐刷新进度，并向推荐接口带上最近曝光记录，以减少重复推荐。仅 Web(游客) 模式生效。
+  recommendation_mode_web_no_cookie: Web 游客
+  recommendation_mode_app_single: App 单列
+  recommendation_mode_app_double: App 双列
+  remember_no_cookie_recommendation_state: 减少 Web 游客模式推荐重复
+  remember_no_cookie_recommendation_state_desc: 刷新页面后延续推荐刷新进度，并向推荐接口带上最近曝光记录，以减少重复推荐。仅 Web 游客模式生效。
   auto_switch_recommendation_mode: 自动切换推荐模式
   auto_switch_recommendation_mode_desc: |
     当 App 推荐失败时自动切换至 Web 模式。

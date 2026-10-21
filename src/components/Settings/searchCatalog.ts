@@ -275,14 +275,13 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(homeRoute, [
     'settings.recommendation_mode',
   ], {
-    keywordKeys: ['settings.recommendation_mode_web_no_cookie'],
+    keywordKeys: [
+      'settings.recommendation_mode_web_no_cookie',
+      'settings.recommendation_mode_app_single',
+      'settings.recommendation_mode_app_double',
+    ],
     // 保留旧名称「无 Cookie」的检索
     keywords: ['Web', 'App', 'Cookie'],
-  }),
-  ...createEntries(homeRoute, [
-    'settings.app_recommendation_column',
-  ], {
-    keywordKeys: ['settings.app_recommendation_column_single', 'settings.app_recommendation_column_double'],
   }),
   ...createEntries(momentsRoute, [
     'settings.plugin.moments',
