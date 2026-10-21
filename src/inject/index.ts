@@ -540,10 +540,8 @@ else if (shouldInitializePageScript) {
         :host([data-bewly-comment-reply-tree]) #expander-contents {
           position: relative;
           /*
-           * 不直接移动 Lit repeat 生成的回复节点。B 站用注释节点保存
-           * keyed repeat 的边界，移动 host 而不移动这些边界会在下一次
-           * requestUpdate 后重新插入同一条回复，表现为整条评论成对重复。
-           * 用 flex order 表达树顺序可以保留原生 DOM 锚点。
+           * 树序优先连同 repeat 边界注释整段写入 DOM（见 setCommentReplyRendererOrder）；
+           * flex order 作为兜底，在识别不到边界时仍保持正确的视觉顺序。
            */
           display: flex;
           flex-direction: column;
@@ -2589,8 +2587,18 @@ else if (shouldInitializePageScript) {
       if (replyContainer) {
         removeCommentReplyTreeGuides(component, replyContainer)
         replyContainer.querySelectorAll('.bewly-comment-missing-parent').forEach(node => node.remove())
-        Array.from(replyContainer.children)
-          .filter(isCommentReplyRenderer)
+        const replyRenderers = Array.from(replyContainer.children).filter(isCommentReplyRenderer)
+        // 树序已写入 DOM；原生收起/重新展开前按首次出现顺序还原，与列表数据一致。
+        if (state?.enabled) {
+          const getOrder = (renderer: HTMLElement) => (
+            state.originalOrderByRenderer.get(renderer) ?? Number.MAX_SAFE_INTEGER
+          )
+          moveCommentReplyRendererNodes(
+            replyContainer,
+            [...replyRenderers].sort((a, b) => getOrder(a) - getOrder(b)),
+          )
+        }
+        replyRenderers
           .forEach((renderer) => {
             delete renderer.dataset.bewlyCommentReplyDepth
             delete renderer.dataset.bewlyCommentReplyHidden
@@ -4079,18 +4087,21 @@ else if (shouldInitializePageScript) {
   }
 
   /**
-   * 给回复设置视觉顺序，但保留 B 站 Lit repeat 产生的 DOM 顺序。
+   * 给回复设置视觉顺序，并在结构可识别时同步调整 DOM 顺序。
    *
    * `bili-comment-replies-renderer` 的列表由 keyed repeat 渲染。回复 host
-   * 两侧的注释节点是 repeat 的边界；以前通过 insertBefore 移动 host 会把
-   * host 与边界拆开，下一次列表更新时 Lit 会把旧节点再插入一次。用 flex
-   * item 的 order 只改变视觉位置，不触碰这些边界，因此分页/更新都不会
-   * 生成重复评论。
+   * 两侧的注释节点是 repeat 的边界；以前通过 insertBefore 只移动 host 会把
+   * host 与边界拆开，下一次列表更新时 Lit 会把旧节点再插入一次。
+   *
+   * 只用 flex order 时视觉顺序与 DOM 顺序不一致，跨多条回复拖选/复制会按
+   * DOM 顺序跳过子回复（#1327）。因此按 repeat 自身移动 part 的方式，把
+   * 「边界注释 + host + 边界注释」整段移动；识别不到边界时只保留 flex order。
    */
   function setCommentReplyRendererOrder(
     currentRenderers: HTMLElement[],
     orderedRenderers: HTMLElement[],
-  ) {
+    replyContainer?: HTMLElement,
+  ): boolean {
     const orderByRenderer = new Map(
       orderedRenderers.map((renderer, index) => [renderer, index] as const),
     )
@@ -4101,6 +4112,70 @@ else if (shouldInitializePageScript) {
       else
         renderer.style.setProperty('--bew-comment-reply-order', String(order))
     })
+    return replyContainer
+      ? moveCommentReplyRendererNodes(replyContainer, orderedRenderers)
+      : false
+  }
+
+  function isLitRepeatItemMarker(node: Node | null): node is Comment {
+    return node?.nodeType === Node.COMMENT_NODE && (node as Comment).data === ''
+  }
+
+  /** repeat 的每一项是 `<!----> host <!---->`；缺失父评占位不属于任何 part。 */
+  function getCommentReplyRendererNodeGroup(renderer: HTMLElement): Node[] | null {
+    if (!isCommentReplyRenderer(renderer))
+      return [renderer]
+
+    const start = renderer.previousSibling
+    const end = renderer.nextSibling
+    return isLitRepeatItemMarker(start) && isLitRepeatItemMarker(end)
+      ? [start, renderer, end]
+      : null
+  }
+
+  /** 返回是否实际移动了节点，调用方据此丢弃自身引起的 childList 记录。 */
+  function moveCommentReplyRendererNodes(
+    replyContainer: HTMLElement,
+    orderedRenderers: HTMLElement[],
+  ): boolean {
+    const groups: Node[][] = []
+    for (const renderer of orderedRenderers) {
+      if (renderer.parentNode !== replyContainer)
+        return false
+      const group = getCommentReplyRendererNodeGroup(renderer)
+      if (!group)
+        return false
+      groups.push(group)
+    }
+    if (groups.length < 2)
+      return false
+
+    // 以 DOM 中最后一个 repeat 项之后的节点为插入终点，它属于 repeat 的结束
+    // 边界；占位节点可能停在其前后，跳过它们以免落到 #expander-footer 之后。
+    const groupStarts = new Set(groups.map(group => group[0]))
+    let lastLitGroupEnd: Node | null = null
+    for (const node of Array.from(replyContainer.childNodes)) {
+      if (isLitRepeatItemMarker(node) && node.nextSibling instanceof HTMLElement
+        && isCommentReplyRenderer(node.nextSibling) && groupStarts.has(node)) {
+        lastLitGroupEnd = node.nextSibling.nextSibling
+      }
+    }
+    if (!lastLitGroupEnd)
+      return false
+    let reference: Node | null = lastLitGroupEnd.nextSibling
+    while (reference && groupStarts.has(reference))
+      reference = reference.nextSibling
+
+    let moved = false
+    for (let index = groups.length - 1; index >= 0; index--) {
+      const group = groups[index]
+      if (group[group.length - 1].nextSibling !== reference) {
+        group.forEach(node => replyContainer.insertBefore(node, reference))
+        moved = true
+      }
+      reference = group[0]
+    }
+    return moved
   }
 
   function getCommentReplyTreeLayoutKey(replyRenderers: HTMLElement[]): string {
@@ -4355,7 +4430,7 @@ else if (shouldInitializePageScript) {
         const originalOrder = [...replyRenderers].sort((a, b) => (
           getCommentReplyOriginalOrder(state, a) - getCommentReplyOriginalOrder(state, b)
         ))
-        setCommentReplyRendererOrder(replyRenderers, originalOrder)
+        setCommentReplyRendererOrder(replyRenderers, originalOrder, replyContainer)
       }
 
       replyRenderers.forEach((replyRenderer) => {
@@ -4431,10 +4506,14 @@ else if (shouldInitializePageScript) {
       node.renderer.style.setProperty('--bew-comment-reply-indent', getCommentReplyIndent(depth))
     })
     updateCommentReplyTreeVisibility(component, state, orderedNodes, rootNodes, collapseParentBody)
-    setCommentReplyRendererOrder(
+    const movedReplyNodes = setCommentReplyRendererOrder(
       nodes.map(node => node.renderer),
       orderedNodes.map(({ node }) => node.renderer),
+      replyContainer,
     )
+    // 本次重排已基于当前 DOM 完成，丢弃自身移动产生的记录，避免多排一帧。
+    if (movedReplyNodes)
+      state.replyContainerMutationObserver?.takeRecords()
     // 父节点展示：
     // - 直接父在本页：引导线/缩进表达层级；线条模式隐藏正文「回复 @xxx」
     // - 直接父不在本页且有正文缓存：引用卡展示原正文
