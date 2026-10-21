@@ -116,7 +116,7 @@ settings:
     enable: 啟用影片環境光
     enable_desc: 在影片播放頁四周投射隨畫面變化的柔和環境光，增強觀影沉浸感。
     enable_fullscreen: 全螢幕與網頁全螢幕時啟用
-    enable_fullscreen_desc: 進入全螢幕或網頁全螢幕時保持環境光透出；關閉時進入全螢幕自動休眠停繪。
+    enable_fullscreen_desc: 進入全螢幕或網頁全螢幕時保持環境光；關閉後全螢幕時暫停環境光。
     preset: 光效預設
     preset_soft: 柔和
     preset_cinema: 影院
@@ -142,7 +142,7 @@ settings:
     summary: 平衡不同影片之間的音量，減少切換影片時的大小聲差異。
     title: 音量均衡
     enable: 啟用局部音量均衡
-    description: 平衡不同影片之間的音量，減少切換影片時的大小聲差異。啟用後會透過播放器設定關閉 B 站原生均衡；關閉本功能不會自動重新開啟原生均衡。靜音和低於門檻的聲音不提升，最高提升 6 dB。
+    description: 平衡不同影片之間的音量，減少切換影片時的大小聲差異。啟用後會關閉 B 站原生均衡（關閉本功能後不會自動恢復），最高提升 6 dB。
     target: 目標響度
     target_desc: 建議從 -18 LUFS 開始。數值越低越安靜；播放器音量仍可單獨調整。
     strength: 均衡強度
@@ -263,7 +263,7 @@ settings:
   group_video_card: 影片卡片
   group_video_card_display: 顯示與預覽
   group_video_card_content: 卡片內容
-  group_video_card_content_desc: 自訂影片卡片上各項資訊與操作的顯示，實際顯示元素以介面下發資料為準。
+  group_video_card_content_desc: 自訂影片卡片上顯示的資訊與操作，部分資訊僅在影片提供時顯示。
   group_video_card_context_menu: 更多選單
   group_video_card_context_menu_desc: 選擇點擊影片卡片更多按鈕後顯示的選單選項。
   video_card_context_menu_region_recommendation: 推薦
@@ -282,7 +282,7 @@ settings:
   group_playback_memory: 播放狀態記憶
   group_playback_memory_desc: 選擇是否記住倍速、畫質和影片比例。
   group_video_page_actions: 影片頁功能
-  group_video_page_actions_desc: 標籤僅用於切換影片頁和播放器控制列中相關按鈕的顯示。
+  group_video_page_actions_desc: 選擇影片頁和播放器控制列中顯示的功能按鈕。
   group_playback_behavior: 播放行為
   group_auto_play: 自動連播
   group_custom_auto_play_behavior: 播放結束行為
@@ -325,7 +325,7 @@ settings:
   group_favorites: 收藏
   group_favorite_organizer: 收藏夾整理
   sidebar_cover_blur: 側邊欄封面高斯漸變
-  sidebar_cover_blur_desc: 在收藏、稍後再看等頁面側邊欄使用封面模糊背景；關閉後使用透出頁面桌布的 Pop 背景，不隨封面染色。
+  sidebar_cover_blur_desc: 在收藏、稍後再看等頁面側邊欄使用封面模糊背景；關閉後使用頁面桌布背景。
   group_search_page_mode: 搜尋頁模式
   group_home_tabs: 首頁標籤欄
   group_home_layout: 首頁版面
@@ -363,14 +363,14 @@ settings:
   moments_visible_components_original_desc: 控制 Bilibili 原版動態頁側欄與橫幅等元件是否顯示。主題色表示顯示，灰色表示隱藏。
   moments_visible_components_plugin_desc: 控制 Bewly 動態頁側欄與頂部元件是否顯示。主題色表示顯示，灰色表示隱藏。
   moments_filtered_types: 過濾動態
-  moments_filtered_types_desc: 控制各類動態是否出現在 Bewly 動態流中。選中（主題色）表示不過濾，未選中表示過濾。開啟過濾時單次最多掃描 100 條；留存率低於 60% 時需手動載入更多，達到 60% 或以上時會自動滾動載入。
+  moments_filtered_types_desc: 控制各類動態是否出現在 Bewly 動態流中，選中表示顯示。過濾較多時可能需要手動載入更多。
   moments_enable_live_preview: 直播動態懸停預覽
   moments_enable_live_preview_desc: 滑鼠懸停直播動態封面時播放直播預覽。
   moments_enable_video_preview: 影片動態懸停預覽
   moments_enable_video_preview_desc: 滑鼠懸停影片動態或轉發影片時播放預覽，可設定觸發範圍、延遲和播放互動。
   moments_grid_columns: 動態欄數
   moments_tabs_position: 動態標籤列位置
-  moments_grid_columns_desc: 設定 Bewly 動態頁的期望欄數。卡片尺寸會隨欄數自動調整；視窗空間不足時會自動減少欄數，左側欄與動態流整體保持置中。
+  moments_grid_columns_desc: 設定 Bewly 動態頁的欄數，視窗空間不足時會自動減少。
   moments_grid_columns_option: '{count} 欄'
   moments_grid_columns_more: 更多
   moments_grid_columns_more_confirm: 擴充功能提供更多欄數的選擇，但不會針對更多欄數做相關最佳化
@@ -388,7 +388,7 @@ settings:
   moments_filter_live_reservation: 直播預約動態
   moments_filter_live_dynamic: 直播動態
   moments_keyword_filter: 按關鍵詞封鎖動態
-  moments_keyword_filter_desc: 啟用後，作者暱稱、標題、正文、附加卡片或轉發原動態中包含任一關鍵詞的動態將被過濾。多個關鍵詞請用逗號分隔，不區分大小寫。
+  moments_keyword_filter_desc: 啟用後，過濾作者、標題或內容（含轉發原動態）中包含任一關鍵詞的動態。多個關鍵詞請用逗號分隔，不區分大小寫。
   moments_keyword_filter_placeholder: 輸入關鍵詞，以逗號分隔
   moments_hide_charge_exclusive: 隱藏充電專屬動態
   moments_hide_charge_exclusive_desc: 從外掛動態流中過濾所有充電專屬動態。
@@ -405,7 +405,7 @@ settings:
   group_moments_wanted_users: 想看分組
   group_moments_wanted_users_desc: 管理想看的 UP 主；支援輸入 UID 或暱稱，名單僅儲存在本機。
   moments_enable_wanted_filter: 顯示「想看」按鈕
-  moments_enable_wanted_filter_desc: 在動態頁橫向欄顯示「想看」按鈕，用來只查看名單內 UP 主的動態；關閉後會直接移除按鈕並退出想看篩選。
+  moments_enable_wanted_filter_desc: 在動態頁橫向欄顯示「想看」按鈕，用來只查看名單內 UP 主的動態。
   moments_wanted_users: 想看的 UP 主
   group_moments_pinned_users: 固定 UP 主
   group_moments_pinned_users_desc: 管理固定在動態欄右側的 UP 主；支援輸入 UID 或暱稱，名單僅儲存在本機。
@@ -420,11 +420,11 @@ settings:
   show_home_button_in_touch_mode: 顯示 Home 按鈕
   show_home_button_in_touch_mode_desc: 在觸控螢幕優化開啟時，在頂部列 Logo 旁邊顯示一個可以直接跳轉到首頁的按鈕。
   open_top_bar_items_in_bewly: 點選頂部列圖示開啟 Bewly 頁面
-  open_top_bar_items_in_bewly_desc: 未啟用觸控螢幕優化時，點選 Logo、動態、收藏、歷史或稍後再看圖示，將依照「頂部列連結開啟行為」開啟 Dock 中對應的頁面，並沿用該頁面的 Bewly/原版 Bilibili 設定；尚未適配的圖示維持原有行為。
+  open_top_bar_items_in_bewly_desc: 未啟用觸控螢幕優化時，點選 Logo、動態、收藏、歷史或稍後再看圖示，將依照「頂部列連結開啟行為」開啟 Dock 中對應的頁面。
   show_bewly_or_bili_page_switcher_desc: 在首頁 Logo 旁顯示切換器，用於在 BewlyCat 頁面與 Bilibili 原版頁面之間切換。
   show_bewly_or_bili_page_switcher_on_more_pages_desc: 在動態、搜尋、番劇、收藏、歷史和稍後再看等 Bilibili 原版頁面顯示切換器；切換到 BewlyCat 時會開啟對應的插件頁面。
   hide_lv6_last_login_location_in_top_bar_user_pop: 隱藏 LV6 等級最後登入資訊顯示
-  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開啟後，頂部列頭像彈窗中的 LV6 等級資訊區域將不再顯示最後登入時間和地點，也不會請求登入記錄，改為顯示滿級經驗進度。
+  hide_lv6_last_login_location_in_top_bar_user_pop_desc: 開啟後，頂部列頭像彈窗中的 LV6 等級資訊不再顯示最後登入時間和地點，改為顯示滿級經驗進度。
   chk_box:
     show: 顯示
     hidden: 隱藏
@@ -456,12 +456,11 @@ settings:
   remove_the_indent_from_chinese_punctuation_desc: |
     Bilibili 預設會特別處理中文標點符號以達到左對齊。 如果你正在使用自訂字型，建議移除縮排。
   cjk_latin_autospace: 中英文間自動加入間隙
-  cjk_latin_autospace_desc: 在漢字、假名等 CJK 字元與半形英文字母、數字之間自動加入微小間隙，改善混排觀感。僅調整顯示，不修改文字內容；需瀏覽器支援 CSS text-autospace（如 Chrome / Edge 140 以上），不支援時無效果。
+  cjk_latin_autospace_desc: 在中日文字與英文、數字之間自動加入微小間隙，改善混排觀感。需 Chrome / Edge 140 以上。
   enable_frosted_glass: 啟用毛玻璃效果
   frosted_glass_blur_intensity: 毛玻璃模糊強度
   enable_liquid_segment_indicator: 啟用液態分段指示器
-  enable_liquid_segment_indicator_desc: |
-    在首頁標籤、版面切換、頂欄頁面切換器等分段控件上使用滑動液態指示器。關閉後改為靜態選中態，無滑動動畫，預設關閉以提升低效能裝置流暢度。
+  enable_liquid_segment_indicator_desc: 在首頁標籤、版面切換等分段控件上使用滑動液態指示器。低效能裝置建議保持關閉。
   disable_shadow: 停用陰影
   link_opening_behavior_opt:
     current_tab: 目前索引標籤
@@ -473,8 +472,8 @@ settings:
     dialog: 彈窗開啟
   top_bar_link_opening_behavior: 頂部列連結開啟行為
   video_card_link_opening_behavior: 影片和番劇卡片連結開啟行為
-  link_opening_behavior_desc: 控制點擊連結後的開啟位置。「首頁外目前分頁」表示：首頁使用新索引標籤開啟，其他頁面使用目前索引標籤開啟；「首頁內目前分頁」表示：Bilibili 首頁（page=Home 或未指定 page）使用目前索引標籤開啟，其他頁面使用新索引標籤開啟；「後台打開」會在瀏覽器允許時開到背景索引標籤。
-  video_card_link_opening_behavior_desc: 控制點擊影片和番劇卡片後的開啟位置，可選擇目前索引標籤、抽屜、彈窗、背景索引標籤或新索引標籤。彈窗僅用於影片、番劇與課程頁面，視窗較窄或其他連結會改用新索引標籤開啟。
+  link_opening_behavior_desc: 控制點擊連結後的開啟位置。「首頁外目前分頁」：僅在首頁用新索引標籤開啟；「首頁內目前分頁」：僅在首頁用目前索引標籤開啟。
+  video_card_link_opening_behavior_desc: 控制點擊影片和番劇卡片後的開啟位置。視窗較窄時彈窗會改用新索引標籤開啟。
   search_bar_link_opening_behavior: 搜尋列連結開啟行為
   close_drawer_without_pressing_esc_again: 關閉抽屜時不用再次按 <kbd>Esc</kbd> 關閉
   block_ads: 封鎖廣告
@@ -554,19 +553,19 @@ settings:
     context_watch_later: 稍後觀看
     context_playlist: 收藏 / 播放列表
     context_moments_dialog: 影片彈窗
-    context_moments_dialog_desc: 僅對動態頁和影片卡片彈窗內播放的影片生效，並優先於其他情境；選擇「繼承預設」時仍依影片所屬情境決定。
+    context_moments_dialog_desc: 對動態頁和影片卡片彈窗內播放的影片生效，優先於其他情境。
     bewly_widescreen_sidebar_position: Bewly寬螢幕側邊欄位置
     bewly_widescreen_sidebar_position_desc: 選擇 Bewly 寬螢幕模式下側邊欄的顯示位置
     bewly_widescreen_sidebar_position_left: 左側
     bewly_widescreen_sidebar_position_right: 右側
     bewly_widescreen_auto_collapse_sidebar: 自動收合 Bewly 寬螢幕側欄
-    bewly_widescreen_auto_collapse_sidebar_desc: 開啟後優先保持影片完整高度，並依可用空間調整側欄。一般視窗空間不足時側欄會自動收合；超寬視窗預設顯示為窄條，滑鼠懸停時可暫時展開。關閉後側欄保持完整顯示，並壓縮影片區域。開啟後會關閉手動調整側欄寬度。
+    bewly_widescreen_auto_collapse_sidebar_desc: 優先保持影片完整高度：空間不足時自動收合側欄，超寬視窗顯示為窄條，懸停展開。關閉後側欄完整顯示並壓縮影片。與手動調整側欄寬度互斥。
     bewly_widescreen_video_alignment: 影片置中基準
-    bewly_widescreen_video_alignment_desc: 選擇影片在側欄以外的可用區域置中，或在空間允許時相對整個瀏覽器視窗置中。此設定不會改變側欄寬度或展開狀態。
+    bewly_widescreen_video_alignment_desc: 選擇影片在側欄以外的區域置中，或在空間允許時相對整個視窗置中。
     bewly_widescreen_video_alignment_sidebar: 側欄外區域（預設）
     bewly_widescreen_video_alignment_viewport: 整個瀏覽器視窗（空間允許時）
     enable_bewly_widescreen_sidebar_resize: 允許手動調整 Bewly 寬螢幕側欄寬度
-    enable_bewly_widescreen_sidebar_resize_desc: 開啟後會關閉自動收合，側欄保持完整展開。可拖曳影片與側欄之間的分隔線調整寬度，並記住上次寬度；按兩下分隔線恢復預設寬度。
+    enable_bewly_widescreen_sidebar_resize_desc: 拖曳影片與側欄間的分隔線調整寬度，按兩下恢復預設。開啟後會關閉自動收合。
   enable_video_preview: 啟用影片預覽功能（如果可以的話）
   enable_video_ctrl_bar_on_video_card: 在影片卡片上顯示影片控制欄
   video_preview_swipe_seek: 滑動小範圍跳轉
@@ -578,9 +577,9 @@ settings:
   show_video_card_author_avatar: 顯示使用者頭像
   show_video_card_author_name: 顯示使用者暱稱
   show_video_card_category: 顯示影片分區
-  show_video_card_category_desc: 顯示 API 提供的影片分區，點擊可搜尋該分區。
-  show_video_card_video_tag: 顯示 API 與搜尋標籤
-  show_video_card_video_tag_desc: 顯示 API 提供的推薦理由或狀態標籤，以及搜尋頁的影片內容標籤。
+  show_video_card_category_desc: 顯示影片所屬分區，點擊可搜尋該分區。
+  show_video_card_video_tag: 顯示推薦理由與搜尋標籤
+  show_video_card_video_tag_desc: 顯示 B 站提供的推薦理由或狀態標籤，以及搜尋頁的影片內容標籤。
   show_video_card_recommend_tag: 顯示插件計算標籤
   show_video_card_recommend_tag_desc: 顯示插件計算的標籤，如「高讚」、「高互動」、「百萬播放」等
   show_video_card_publish_time: 顯示發布時間
@@ -705,19 +704,18 @@ settings:
   enable_search_history: 啟用搜尋歷史
   enable_search_history_desc: 啟用後，搜尋欄將記錄和顯示您的搜尋歷史記錄。關閉後將清除所有歷史記錄
   depersonalize_search_results: 去除個人化搜尋
-  depersonalize_search_results_desc: 啟用後，搜尋結果請求不攜帶登入 Cookie。
+  depersonalize_search_results_desc: 啟用後以未登入狀態搜尋，結果不受個人偏好影響。
   show_search_identity_switcher: 顯示登入 / 訪客快速切換按鈕組
   show_search_identity_switcher_desc: 在搜尋結果頁分類標籤列右側顯示膠囊按鈕組，可直接切換登入狀態或訪客狀態搜尋。訪客狀態等同於啟用「去除個人化搜尋」。
   individually_set_search_page_wallpaper: 單獨設定搜尋頁背景
   recommendation_mode: 推薦模式
-  recommendation_mode_desc: |
-    Web：普通網頁端推薦模式。Web 訪客：請求首頁推薦時不攜帶 Cookie。App 單列 / App 雙列：手機端推薦模式，需先授權 access key；單列卡片帶 UP 主頭像、發佈時間與點讚數，雙列卡片帶推薦理由（如點讚數、豎屏）。
+  recommendation_mode_desc: Web：網頁端推薦。Web 訪客：以未登入狀態取得推薦。App 單列 / App 雙列：手機端推薦，需先授權 access key；單列卡片帶 UP 主頭像、發佈時間與點讚數，雙列卡片帶推薦理由。
   show_recommendation_mode_switcher: 顯示推薦模式快速切換按鈕組
   show_recommendation_mode_switcher_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示膠囊按鈕組，可直接選擇 Web、Web 訪客、App 單列或 App 雙列。
   recommendation_mode_switcher_options: 顯示的推薦模式
   recommendation_mode_switcher_options_desc: 選擇快速切換按鈕組中顯示的選項，至少保留 2 個。
   show_immersive_mode_entry: 啟用沉浸式模式
-  show_immersive_mode_entry_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示入口：以 Bewly 寬螢幕開啟 B 站影片頁連續播放推薦影片，側欄顯示首頁推薦流。關閉後不顯示入口。
+  show_immersive_mode_entry_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示入口：以 Bewly 寬螢幕開啟 B 站影片頁連續播放推薦影片，側欄顯示首頁推薦流。
   immersive_wheel_switch: 滾輪切換影片
   immersive_wheel_switch_desc: 在播放畫面上捲動滾輪切換上一部 / 下一部。
   immersive_keyboard_switch: 快捷鍵切換影片
@@ -732,7 +730,7 @@ settings:
   recommendation_mode_app_single: App 單列
   recommendation_mode_app_double: App 雙列
   remember_no_cookie_recommendation_state: 減少 Web 訪客模式推薦重複
-  remember_no_cookie_recommendation_state_desc: 重新整理頁面後延續推薦刷新進度，並向推薦接口帶上最近曝光記錄，以減少重複推薦。僅 Web 訪客模式生效。
+  remember_no_cookie_recommendation_state_desc: 重新整理頁面後延續推薦進度，減少重複推薦。僅 Web 訪客模式生效。
   auto_switch_recommendation_mode: 自動切換推薦模式
   auto_switch_recommendation_mode_desc: |
     當手機端推薦失敗時自動切換至網頁模式。
@@ -743,7 +741,7 @@ settings:
   authorize_app_more_info_access_key: 關於 access key
   scan_qrcode_desc: 使用 Bilibili 手機應用程式掃描這個行動條碼，以授權取得 access key。
   show_recommendation_filter_risk_warning: 顯示過濾風控警告
-  show_recommendation_filter_risk_warning_desc: 推薦列表已有足夠有效影片填滿視口後，載入更多時連續兩批全部被過濾，或累計檢查 100 條有效推薦後保留少於 50 條時，提示頻繁請求的風控風險。
+  show_recommendation_filter_risk_warning_desc: 過濾掉的推薦過多時，提示頻繁請求可能觸發風控。
   disable_filters_for_followed_users: 正在跟隨的使用者不受過濾條件限制
   disable_filters_for_followed_users_desc: |
     如果啟用此選項，正在跟隨的使用者不受過濾條件限制。
@@ -870,7 +868,7 @@ settings:
   use_following_new_layout: 使用正在跟隨新版面
   use_following_new_layout_desc: 左側顯示關注的 UP 主列表，右側顯示影片流
   collected_season_play_all_mode: 訂閱合集「播放全部」起播位置
-  collected_season_play_all_mode_desc: 控制收藏頁、頂欄與空間頁訂閱合集「播放全部」的起播位置。預設為合集開頭；找不到上次觀看時回退到開頭。不影響列表順序與連播方向。
+  collected_season_play_all_mode_desc: 控制收藏頁、頂欄與空間頁訂閱合集「播放全部」的起播位置。找不到上次觀看記錄時從開頭播放。
   collected_season_play_all_mode_beginning: 合集開頭
   collected_season_play_all_mode_latest: 最新一期
   collected_season_play_all_mode_last_watched: 上次觀看
@@ -902,7 +900,7 @@ settings:
   disable_background: 關閉背景
   disable_background_desc: 徹底關閉擴充功能頁面的純色背景、漸層背景與桌布（含搜尋頁桌布），顯示 B 站原頁面背景。
   prevent_mobile_redirect: 防止跳轉至行動版
-  prevent_mobile_redirect_desc: 啟用後，僅在造訪 www.bilibili.com 時使用桌面版 UA，避免被跳轉至 m.bilibili.com；直接造訪行動版不受影響。
+  prevent_mobile_redirect_desc: 啟用後，避免造訪 www.bilibili.com 時被跳轉至行動版頁面。
   follow_bilibili_evolved_color: 使用 Bilibili Evolved 主題色
   follow_bilibili_evolved_color_desc: 每次變更 Bilibili Evolved 主題色後，記得重新選取此選項以更新配置。
   links: 連結
@@ -941,13 +939,13 @@ settings:
   remember_playback_rate: 記住倍速
   remember_playback_rate_desc: 啟用後，播放器會記住你上次設定的倍速，並在下次打開影片時自動套用
   custom_playback_rate: 自訂播放倍速
-  custom_playback_rate_desc: 輸入 0.25–5 倍，套用至目前影片（支援抽屜與彈出視窗內的影片）。開啟「記住倍速」後會儲存此值。
+  custom_playback_rate_desc: 輸入 0.25–5 倍，套用至目前影片。開啟「記住倍速」後會儲存此值。
   custom_playback_rate_apply: 套用至目前影片
   custom_playback_rate_no_video: 目前頁面沒有可控制的影片，請在影片播放頁開啟此設定。
   playback_rate_step: 倍速快捷鍵調整幅度
   playback_rate_step_desc: 每次增減 0.01–1 倍；預設 0.25。快捷鍵可在「快捷鍵」設定中修改。
   remember_video_quality: 記住畫質
-  remember_video_quality_desc: 啟用後自動恢復上次選擇的畫質；無法使用或目前帳號非大會員時沿用播放器目前畫質，不覆蓋記憶。
+  remember_video_quality_desc: 啟用後自動恢復上次選擇的畫質，無法使用時沿用目前畫質。
   remember_video_quality_confirm_title: 確認開啟記住畫質？
   remember_video_quality_confirm_message: B 站本身就有記住畫質的功能，外掛的記住畫質功能僅用於網路不佳時避免 B 站自動試用高畫質。若網路狀況良好，無需開啟此功能，使用 B 站預設的記憶邏輯即可。
   remember_video_aspect_ratio: 記住影片比例
@@ -967,17 +965,17 @@ settings:
   auto_play_mode_pause_at_end: 播完暫停
   auto_play_mode_loop: 單集循環
   auto_play_multipart: 分P影片
-  auto_play_multipart_desc: 選擇分P影片的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
+  auto_play_multipart_desc: 選擇分P影片的自動播放行為。
   auto_play_collection: 合集影片
-  auto_play_collection_desc: 選擇合集影片的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
+  auto_play_collection_desc: 選擇合集影片的自動播放行為。
   auto_play_recommend: 單影片推薦
-  auto_play_recommend_desc: 選擇單影片播放結束後的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
+  auto_play_recommend_desc: 選擇單影片播放結束後的自動播放行為。
   auto_play_playlist: 收藏列表
-  auto_play_playlist_desc: 選擇收藏列表的自動播放行為。「連播推薦」表示目前影片結束後繼續播放推薦影片。
+  auto_play_playlist_desc: 選擇收藏列表的自動播放行為。
   enable_random_play: 啟用影片合集自訂播放
   enable_random_play_desc: 為多P影片、合集、稍後觀看或播放列表加入順序、逆序、隨機播放與列表編輯功能。
   default_custom_play_order: 預設自訂播放選項
-  default_custom_play_order_desc: 僅控制播放器中預設選取的順序，不控制開關狀態；啟用依影片類型設定後，類型專屬預設值會覆蓋此選項。
+  default_custom_play_order_desc: 設定播放器中預設選取的播放順序；依影片類型單獨設定時以類型設定為準。
   enable_custom_play_order_overrides: 依影片類型設定自訂播放預設值
   enable_custom_play_order_overrides_desc: 啟用後，可為支援的播放情境分別選擇預設自訂播放選項。
   custom_play_order_overrides: 依影片類型設定
@@ -1126,7 +1124,7 @@ settings:
   show_comment_host_tag: 顯示樓主標示
   show_comment_host_tag_desc: 在評論回覆詳情頁標示樓主
   enable_comment_reply_tree_display: 評論區樹狀顯示
-  enable_comment_reply_tree_display_desc: 開啟後依回覆關係整理樓中樓；關閉後不再重排、縮排或繪製評論回覆樹
+  enable_comment_reply_tree_display_desc: 開啟後依回覆關係以樹狀結構整理樓中樓。
   comment_reply_tree_mode:
     title: 評論回覆樹樣式
     desc: 根據回覆關係和發佈時間整理樓中樓。線條模式下可收合任意父級評論的回覆；「收起主評論」會收合父評論本體，「不收起主評論」則保留父評論正文僅隱藏子回覆
@@ -1141,7 +1139,7 @@ settings:
   enable_comment_reply_tree_container: 固定高度回覆容器
   enable_comment_reply_tree_container_desc: 展開樓中樓後在固定高度的容器內滾動查看回覆，避免整層評論把頁面撐得過長；僅在開啟評論區樹狀顯示時生效
   comment_reply_tree_container_height: 回覆容器高度
-  comment_reply_tree_container_height_desc: 容器的高度上限；回覆不足以撐滿時容器會自動收縮，不出現滾動條
+  comment_reply_tree_container_height_desc: 容器的最大高度，回覆較少時自動收縮。
   adjust_comment_image_height: 調整評論區圖片高度
   adjust_comment_image_height_desc: 自動調整評論區圖片高度以匹配實際長寬比，避免圖片變形
   hide_comment_image_scrollbar: 評論圖片預覽時隱藏頁面滾動條
@@ -1161,13 +1159,13 @@ settings:
   show_bewly_widescreen_button: 顯示播放器 Bewly 寬螢幕按鈕
   show_bewly_widescreen_button_desc: 啟用後，在影片播放器控制列中顯示 Bewly 寬螢幕按鈕。
   show_video_screenshot_button: 顯示播放器截圖按鈕
-  show_video_screenshot_button_desc: 啟用後，在影片播放器控制列中顯示擷取目前影片畫面的按鈕。關閉後仍可使用截圖快捷鍵，可在「快捷鍵」設定中調整。
+  show_video_screenshot_button_desc: 在播放器控制列顯示截圖按鈕。關閉後仍可使用快捷鍵截圖。
   enable_listen_video: 啟用聽影片功能
-  enable_listen_video_desc: 開啟後可透過播放器按鈕或快捷鍵進入聽影片。關閉時退出聽影片、恢復彈幕並停止相關監聽；關閉後開啟頁面不載入功能模組。此功能隱藏畫面，影片串流仍會下載和解碼。
+  enable_listen_video_desc: 開啟後可透過播放器按鈕或快捷鍵進入聽影片。僅隱藏畫面，影片串流仍會正常載入。
   show_listen_video_button: 顯示播放器「聽影片」按鈕
-  show_listen_video_button_desc: 啟用後，在影片播放器控制列中顯示聽影片切換按鈕：隱藏影片畫面僅保留聲音，以封面和標題組成音訊播放介面。關閉後仍可使用快捷鍵切換，可在「快捷鍵」設定中調整。
+  show_listen_video_button_desc: 在播放器控制列顯示聽影片按鈕。關閉後仍可使用快捷鍵切換。
   listen_video_cover_shape: 聽影片封面形狀
-  listen_video_cover_shape_desc: 圓形唱片會隨播放旋轉；正方形與長方形保持靜止。封面來自影片縮圖，長方形按 16:9 原比例展示。
+  listen_video_cover_shape_desc: 圓形唱片會隨播放旋轉，正方形與長方形保持靜止。
   listen_video_cover_shape_circle: 圓形唱片
   listen_video_cover_shape_square: 正方形
   listen_video_cover_shape_rectangle: 長方形
@@ -1177,7 +1175,7 @@ settings:
   listen_video_glow_static: 常亮
   listen_video_glow_breathe: 呼吸
   listen_video_glow_color: 聽影片光暈顏色
-  listen_video_glow_color_desc: 跟隨封面時自動取封面主色作為光暈顏色，取色失敗（如圖片不可跨域讀取）時回退為主題色。
+  listen_video_glow_color_desc: 跟隨封面時取封面主色作為光暈顏色，無法取色時使用主題色。
   listen_video_glow_color_theme: 主題色
   listen_video_glow_color_cover: 跟隨封面
   listen_video_background: 聽影片背景樣式
