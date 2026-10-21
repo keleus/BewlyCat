@@ -1140,11 +1140,12 @@ export const settings = useSettingsStorage(originalSettings, {
       ['ambilightSmoothing', 0, 95, 65],
       ['ambilightBlur', 20, 140, 72],
       ['ambilightSaturation', 50, 200, 130],
-      ['ambilightFps', 8, 30, 24],
     ] as const) {
       const value = record[key]
       record[key] = typeof value === 'number' && Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback
     }
+    if (![15, 24, 30].includes(record.ambilightFps))
+      record.ambilightFps = originalSettings.ambilightFps
 
     if (typeof record.showLocalLoudnessButton !== 'boolean')
       record.showLocalLoudnessButton = true

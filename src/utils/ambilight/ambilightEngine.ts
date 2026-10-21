@@ -90,10 +90,6 @@ export class AmbilightEngine {
       && Boolean(this.hostElem)
   }
 
-  public markLayoutDirty() {
-    this.layoutDirty = true
-  }
-
   public invalidate(force = false) {
     this.layoutDirty = true
     if (force)
@@ -343,7 +339,9 @@ export class AmbilightEngine {
     if (!this.video || !this.canvas || !this.hostElem)
       return
 
-    if (this.mode === 'mini' || this.video.closest('.bpx-player-container[data-screen="mini"]')) {
+    if (this.mode === 'mini'
+      || (this.mode === 'fullscreen' && !this.options.enableFullscreen)
+      || this.video.closest('.bpx-player-container[data-screen="mini"]')) {
       this.setSleeping(true)
       return
     }
@@ -430,10 +428,6 @@ export class AmbilightEngine {
     catch {
       // 捕获跨域或未就绪异常
     }
-  }
-
-  public scheduleFrame() {
-    this.invalidate(true)
   }
 
   public startLoop() {

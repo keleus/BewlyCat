@@ -58,12 +58,19 @@ const PRESET_CONFIGS: Record<AmbilightPreset, {
   },
 }
 
-const currentPreset = computed({
-  get: () => settings.value.ambilightPreset,
-  set: (val: AmbilightPreset) => {
-    const preset = PRESET_CONFIGS[val]
-    if (!preset)
+function matchesPreset(preset: AmbilightPreset): boolean {
+  const config = PRESET_CONFIGS[preset]
+  return (Object.keys(config) as (keyof typeof config)[])
+    .every(key => settings.value[key] === config[key])
+}
+
+// 手动调整参数后不再与任何预设一致时，不高亮预设
+const currentPreset = computed<AmbilightPreset | ''>({
+  get: () => matchesPreset(settings.value.ambilightPreset) ? settings.value.ambilightPreset : '',
+  set: (val) => {
+    if (!val)
       return
+    const preset = PRESET_CONFIGS[val]
 
     settings.value = {
       ...settings.value,

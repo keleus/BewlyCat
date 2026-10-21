@@ -510,6 +510,18 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.local_loudness.show_button',
   ]),
   ...createEntries(playerRoute, [
+    'settings.ambilight.title',
+    'settings.ambilight.enable',
+    'settings.ambilight.enable_fullscreen',
+    'settings.ambilight.preset',
+    'settings.ambilight.strength',
+    'settings.ambilight.spread',
+    'settings.ambilight.smoothing',
+    'settings.ambilight.blur',
+    'settings.ambilight.saturation',
+    'settings.ambilight.fps',
+  ]),
+  ...createEntries(playerRoute, [
     'settings.bilibili_features.video_playback',
     'settings.group_player_display_mode',
     'settings.video_player_mode.bewly_widescreen_sidebar_position',

@@ -39,9 +39,9 @@ html[data-bewly-ambilight] {
     isolation: isolate;
   }
 
-  // 暗色底衬提升环境光通透感与对比度
+  // 暗色底衬沿用主题背景，跟随用户设置的深色基准色
   &.dark body {
-    background-color: #10141d !important;
+    background-color: var(--bew-bg) !important;
   }
 
   // 点播播放页包裹层与播放器背景透明化

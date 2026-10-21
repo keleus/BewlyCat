@@ -9,11 +9,4 @@ export interface AmbilightEngineOptions {
   fps: number
 }
 
-export interface VideoGeometry {
-  left: number
-  top: number
-  width: number
-  height: number
-}
-
 export type AmbilightDisplayMode = 'normal' | 'theater' | 'fullscreen' | 'mini'
