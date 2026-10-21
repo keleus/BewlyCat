@@ -962,7 +962,7 @@ export const originalSettings: Settings = {
   enableListenVideo: true, // 默认启用听视频功能，进入模式仍需手动切换
   showListenVideoButton: true, // 默认显示播放器听视频按钮
   listenVideoCoverShape: 'circle', // 默认圆形唱片并保持旋转
-  listenVideoGlow: 'static', // 默认常亮光晕
+  listenVideoGlow: 'none', // 默认关闭光晕，保持原有听视频外观
   listenVideoGlowColor: 'theme', // 默认光晕使用主题色
   listenVideoBackground: 'solid', // 默认纯色背景
 

@@ -16,6 +16,7 @@ export interface ListenVideoHost {
 export interface ListenVideoController {
   toggle: () => void
   refresh: () => void
+  refreshAppearance: () => void
   dispose: () => void
 }
 
@@ -246,6 +247,10 @@ export function initListenVideoControl(host: ListenVideoHost): ListenVideoContro
         mode.toggle()
     },
     refresh,
+    refreshAppearance: () => {
+      if (!disposed)
+        mode.refreshAppearance()
+    },
     dispose: () => {
       disposed = true
       observer.disconnect()

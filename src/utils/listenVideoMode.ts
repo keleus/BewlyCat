@@ -106,6 +106,32 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
     overlay.dataset.listenBg = appearance.listenVideoBackground
   }
 
+  // 取色要求画布可读，仅在跟随封面时发起 CORS 请求；背景图使用相同模式以共用缓存。
+  // 已有 src 的图片切换 crossorigin 会自动重新加载，并在 load 时重新取色。
+  function applyCoverCorsMode(overlay: HTMLElement) {
+    const corsEnabled = host.getSettings().listenVideoGlowColor === 'cover'
+    overlay.querySelectorAll<HTMLImageElement>('.bewly-listen-video-cover, .bewly-listen-video-backdrop img').forEach((img) => {
+      if (corsEnabled === (img.crossOrigin === 'anonymous'))
+        return
+      if (corsEnabled)
+        img.crossOrigin = 'anonymous'
+      else
+        img.removeAttribute('crossorigin')
+    })
+    if (!corsEnabled)
+      overlay.style.removeProperty('--bew-listen-glow-color')
+  }
+
+  // 外观设置变化时只更新属性与取色模式，不清空封面、不重新请求视频信息
+  function refreshAppearance() {
+    const overlay = findOverlay()
+    if (!overlay)
+      return
+
+    applyOverlayAppearance(overlay)
+    applyCoverCorsMode(overlay)
+  }
+
   function createOverlay(): HTMLElement {
     const overlay = document.createElement('div')
     overlay.className = OVERLAY_CLASS
@@ -132,8 +158,15 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
     cover.className = 'bewly-listen-video-cover'
     cover.alt = ''
     cover.decoding = 'async'
-    cover.addEventListener('error', () => album.classList.add('bewly-listen-video-cover-missing'))
-    // 取色需画布可读，仅在选择封面色时启用 CORS 请求
+    cover.addEventListener('error', () => {
+      // CORS 请求被拒时去掉跨域标记重新加载：封面照常显示，取色失败后光晕回退主题色
+      if (cover.crossOrigin && cover.getAttribute('src')) {
+        cover.removeAttribute('crossorigin')
+        backdropImg.removeAttribute('crossorigin')
+        return
+      }
+      album.classList.add('bewly-listen-video-cover-missing')
+    })
     cover.addEventListener('load', () => {
       if (host.getSettings().listenVideoGlowColor !== 'cover')
         return
@@ -250,11 +283,12 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
   // 暂停时冻结封面旋转与均衡器跳动；用 animation-play-state 保留动画相位，恢复播放时无缝继续
   function syncPlaybackPausedState() {
     const overlay = findOverlay()
-    const video = findVideoArea()?.querySelector('video')
-    if (!overlay || !video)
+    // 与 player.ts 一致兼容 bwp-video 自定义播放元素，其 paused 与媒体事件接口同原生 video
+    const media = findVideoArea()?.querySelector<HTMLElement & { paused?: boolean }>('video, bwp-video')
+    if (!overlay || typeof media?.paused !== 'boolean')
       return
 
-    overlay.classList.toggle(PAUSED_CLASS, video.paused)
+    overlay.classList.toggle(PAUSED_CLASS, media.paused)
   }
 
   function onPlaybackEvent() {
@@ -327,11 +361,8 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
       if (data.pic) {
         album.classList.remove('bewly-listen-video-cover-missing')
         const coverUrl = `${data.pic.replace(/^https?:/, '')}${COVER_SIZE_SUFFIX}`
-        // 取色要求 CORS 可读，必须在设置 src 之前生效
-        if (host.getSettings().listenVideoGlowColor === 'cover')
-          cover.crossOrigin = 'anonymous'
-        else
-          cover.removeAttribute('crossorigin')
+        // CORS 模式必须在设置 src 之前生效
+        applyCoverCorsMode(overlay)
         cover.src = coverUrl
         if (backdropCover)
           backdropCover.src = coverUrl
@@ -430,6 +461,7 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
       lastMetaKey = ''
       ensureListenVideoModeSynced()
     },
+    refreshAppearance,
     dispose,
   }
 }
