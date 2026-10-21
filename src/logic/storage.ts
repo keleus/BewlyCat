@@ -464,6 +464,7 @@ export interface Settings {
   dockItemsConfig: { page: AppPage, visible: boolean, openInNewTab: boolean, useOriginalBiliPage: boolean }[]
   disableDockGlowingEffect: boolean
   disableLightDarkModeSwitcherOnDock: boolean
+  disableBackToTopButtonOnDock: boolean
   backToTopAndRefreshButtonsAreSeparated: boolean
   alwaysShowDockActionsWhenAutoHide: boolean
   enableUndoRefreshButton: boolean // 添加撤销刷新按钮配置项
@@ -822,6 +823,7 @@ export const originalSettings: Settings = {
   dockItemsConfig: [],
   disableDockGlowingEffect: false,
   disableLightDarkModeSwitcherOnDock: false,
+  disableBackToTopButtonOnDock: false,
   backToTopAndRefreshButtonsAreSeparated: true,
   alwaysShowDockActionsWhenAutoHide: false,
   enableUndoRefreshButton: true, // 默认开启撤销刷新按钮

@@ -487,6 +487,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.dock_content_adjustment',
     'settings.disable_dock_glowing_effect',
     'settings.disable_light_dark_mode_switcher',
+    'settings.disable_back_to_top_button_on_dock',
     'settings.back_to_top_and_refresh_buttons_are_separated',
     'settings.enable_undo_refresh_button',
     'settings.group_sidebar',

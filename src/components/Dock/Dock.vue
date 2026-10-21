@@ -130,16 +130,22 @@ const hoveringDockItem = reactive<HoveringDockItem>({
 const currentDockItems = ref<DockItem[]>([])
 const activatedDockItem = ref<DockItem>()
 
+const backToTopButtonEnabled = computed((): boolean => !settings.value.disableBackToTopButtonOnDock)
+
 const dockEditActions = computed(() => [
   {
     key: 'refresh' as const,
     label: t('common.operation.refresh'),
     icon: 'line-md:rotate-270',
+    settingsTitleKey: 'settings.back_to_top_and_refresh_buttons_are_separated',
+    hidden: false,
   },
   {
     key: 'backToTop' as const,
     label: t('layout_editor.back_to_top'),
     icon: 'line-md:arrow-small-up',
+    settingsTitleKey: 'settings.disable_back_to_top_button_on_dock',
+    hidden: !backToTopButtonEnabled.value,
   },
 ])
 
@@ -174,7 +180,7 @@ const canRefreshCurrentPage = computed((): boolean => {
 })
 
 const showBackToTopOrRefreshActions = computed((): boolean => {
-  return showBackToTopOrRefreshButton.value && (canRefreshCurrentPage.value || !reachTop.value)
+  return showBackToTopOrRefreshButton.value && (canRefreshCurrentPage.value || (backToTopButtonEnabled.value && !reachTop.value))
 })
 
 /**
@@ -314,10 +320,10 @@ function handleBackToTopOrRefresh(action: 'backToTop' | 'refresh' | 'auto' = 'au
       emit('refresh')
   }
   else {
-    if (reachTop.value && canRefreshCurrentPage.value) {
+    if ((reachTop.value || !backToTopButtonEnabled.value) && canRefreshCurrentPage.value) {
       emit('refresh')
     }
-    else {
+    else if (backToTopButtonEnabled.value) {
       emit('backToTop')
     }
   }
@@ -409,14 +415,14 @@ const dockScale = computed((): number => {
   if (settings.value.dockPosition === 'bottom') {
     const maxButtonCount = isLayoutEditing.value
       ? 2
-      : (settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1)
+      : (settings.value.backToTopAndRefreshButtonsAreSeparated && backToTopButtonEnabled.value ? 2 : 1)
     const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
     additionalWidth = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
   }
   else {
     const maxButtonCount = isLayoutEditing.value
       ? 2
-      : (settings.value.backToTopAndRefreshButtonsAreSeparated ? 2 : 1)
+      : (settings.value.backToTopAndRefreshButtonsAreSeparated && backToTopButtonEnabled.value ? 2 : 1)
     const maxUndoForwardButtonCount = settings.value.enableUndoRefreshButton ? 1 : 0
     additionalHeight = (maxButtonCount + maxUndoForwardButtonCount) * buttonSize + maxButtonCount * buttonGap
   }
@@ -722,6 +728,7 @@ onUnmounted(() => {
           v-for="action in dockEditActions"
           :key="action.key"
           class="dock-edit-action-item"
+          :class="{ 'dock-edit-action-item--hidden': action.hidden }"
         >
           <button
             type="button"
@@ -729,7 +736,7 @@ onUnmounted(() => {
             :data-layout-edit-target="`dock-action-${action.key}`"
             data-layout-settings-menu="BewlyComponents"
             data-layout-settings-page="dock"
-            data-layout-settings-title-key="settings.back_to_top_and_refresh_buttons_are_separated"
+            :data-layout-settings-title-key="action.settingsTitleKey"
             :aria-label="action.label"
             :title="action.label"
           >
@@ -760,7 +767,7 @@ onUnmounted(() => {
           <template v-for="key in 2" :key="key">
             <Transition name="fade">
               <button
-                v-if="(key === 1 && canRefreshCurrentPage) || (key === 2 && !reachTop)"
+                v-if="(key === 1 && canRefreshCurrentPage) || (key === 2 && backToTopButtonEnabled && !reachTop)"
                 class="back-to-top-or-refresh-btn"
                 :class="{
                   inactive: hoveringDockItem.themeMode && isDark,
@@ -785,6 +792,7 @@ onUnmounted(() => {
         </template>
         <template v-else>
           <button
+            v-if="backToTopButtonEnabled || canRefreshCurrentPage"
             class="back-to-top-or-refresh-btn"
             :class="{
               inactive: hoveringDockItem.themeMode && isDark,
@@ -793,7 +801,7 @@ onUnmounted(() => {
           >
             <Transition name="fade">
               <Icon
-                v-if="reachTop && canRefreshCurrentPage"
+                v-if="(reachTop || !backToTopButtonEnabled) && canRefreshCurrentPage"
                 icon="line-md:rotate-270"
                 class="dock-action-icon"
                 shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
@@ -1046,6 +1054,10 @@ onUnmounted(() => {
 .dock-edit-action-item {
   position: relative;
   flex: none;
+}
+
+.dock-edit-action-item--hidden .back-to-top-or-refresh-btn {
+  opacity: 0.45;
 }
 
 .dock-edit-action-item__icon {
