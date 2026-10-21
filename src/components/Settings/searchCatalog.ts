@@ -373,6 +373,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enable_video_ctrl_bar_on_video_card',
     'settings.video_preview_swipe_seek',
     'settings.video_preview_swipe_seek_desc',
+    'settings.resume_from_video_preview',
+    'settings.resume_from_video_preview_desc',
     'settings.hover_video_card_delayed',
     'settings.only_cover_video_preview',
     'settings.group_video_card_content',

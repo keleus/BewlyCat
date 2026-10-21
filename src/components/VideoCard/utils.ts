@@ -31,9 +31,8 @@ export function getCurrentTime(videoElement: Ref<HTMLVideoElement | null>) {
   return null
 }
 
-export function getCurrentVideoUrl(video: Video, videoCurrentTime: Ref<number | null>) {
+export function getCurrentVideoUrl(video: Video, currentTime: number | null) {
   const baseUrl = video.url || `https://www.bilibili.com/video/${video.bvid ?? `av${video.aid}`}`
-  const currentTime = videoCurrentTime.value
   if (!currentTime || !Number.isFinite(currentTime) || currentTime < 1 || video.roomid)
     return baseUrl
 

@@ -635,6 +635,8 @@ settings:
   enable_video_ctrl_bar_on_video_card: 在视频卡片上显示视频控制栏
   video_preview_swipe_seek: 滑动小范围跳转
   video_preview_swipe_seek_desc: 在视频预览上按住并直接左右滑动，在当前播放位置附近快退或快进。
+  resume_from_video_preview: 从预览进度继续播放
+  resume_from_video_preview_desc: 点击正在预览的视频卡片时，在视频页从预览位置继续播放；关闭后始终从头或按历史进度播放。
   hover_video_card_delayed: 将鼠标悬停在视频卡片上时延迟视频预览
   only_cover_video_preview: 仅封面视频预览
   show_video_card_author_avatar: 显示用户头像

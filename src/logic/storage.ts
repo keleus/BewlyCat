@@ -366,6 +366,8 @@ export interface Settings {
 
   enableVideoCtrlBarOnVideoCard: boolean
   enableVideoPreviewSwipeSeek: boolean
+  /** 点击预览中的视频卡片时，从预览进度继续播放 */
+  resumeFromVideoPreview: boolean
   hoverVideoCardDelayed: boolean
   onlyCoverVideoPreview: boolean
   showVideoCardAuthorAvatar: boolean
@@ -723,6 +725,7 @@ export const originalSettings: Settings = {
   enableVideoPreview: true,
   enableVideoCtrlBarOnVideoCard: false,
   enableVideoPreviewSwipeSeek: false,
+  resumeFromVideoPreview: true,
   hoverVideoCardDelayed: false,
   onlyCoverVideoPreview: false,
   showVideoCardAuthorAvatar: true,

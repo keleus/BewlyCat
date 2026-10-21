@@ -121,6 +121,14 @@ function getCoverRatioProgress(value: number) {
           <Radio v-model="settings.enableVideoPreviewSwipeSeek" />
         </SettingsItem>
 
+        <SettingsItem
+          :title="$t('settings.resume_from_video_preview')"
+          :desc="$t('settings.resume_from_video_preview_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.resumeFromVideoPreview" />
+        </SettingsItem>
+
         <SettingsItem :title="$t('settings.hover_video_card_delayed')" right-width="auto">
           <Radio v-model="settings.hoverVideoCardDelayed" />
         </SettingsItem>

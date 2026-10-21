@@ -100,7 +100,7 @@ export function useVideoCardLogic(propsOrGetter: MaybeRefOrGetter<VideoCardProps
 
     let url = ''
     if (props.value.video.url || props.value.video.bvid || props.value.video.aid)
-      url = getCurrentVideoUrl(props.value.video, videoCurrentTime)
+      url = getCurrentVideoUrl(props.value.video, settings.value.resumeFromVideoPreview ? videoCurrentTime.value : null)
     else if (props.value.video.epid)
       url = `https://www.bilibili.com/bangumi/play/ep${props.value.video.epid}/`
     else if (props.value.video.roomid)

@@ -553,6 +553,8 @@ settings:
   enable_video_ctrl_bar_on_video_card: Display the video control bar on the video card
   video_preview_swipe_seek: Swipe to seek nearby
   video_preview_swipe_seek_desc: Press and drag horizontally on a video preview to seek backward or forward near the current position.
+  resume_from_video_preview: Resume from preview position
+  resume_from_video_preview_desc: When clicking a video card that is being previewed, continue playback on the video page from the preview position. When off, playback starts from the beginning or your watch history.
   hover_video_card_delayed: Delayed video preview on hover over the video card
   only_cover_video_preview: Preview videos only when hovering the cover
   show_video_card_author_avatar: Show uploader avatar
