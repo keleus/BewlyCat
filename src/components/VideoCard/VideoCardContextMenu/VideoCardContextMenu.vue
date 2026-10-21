@@ -14,6 +14,7 @@ import { cleanBilibiliUrl, getCSRF, getUserID, openLinkToNewTab } from '~/utils/
 import { openLinkInBackground } from '~/utils/tabs'
 
 import type { Video } from '../types'
+import { isBangumiVideo } from '../utils'
 import BlockUserConfirmDialog from './components/BlockUserConfirmDialog.vue'
 import DislikeDialog from './components/DislikeDialog.vue'
 import FavoriteVideoDialog from './components/FavoriteVideoDialog.vue'
@@ -196,7 +197,7 @@ const commonOptions = computed((): OptionItem[][] => {
     ])
   }
 
-  if (getVideoType() === 'bangumi' || getVideoType() === 'live') {
+  if (getVideoType() === 'bangumi' || getVideoType() === 'live' || isBangumiVideo(props.video)) {
     result = result.map((group) => {
       return group.filter((opt) => {
         return opt.command !== VideoOption.CopyBVNumber && opt.command !== VideoOption.CopyAVNumber && opt.command !== VideoOption.CopyCleanVideoLink && opt.command !== VideoOption.ViewThisUserChannel

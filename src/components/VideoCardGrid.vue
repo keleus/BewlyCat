@@ -3,6 +3,7 @@ import { useDebounceFn } from '@vueuse/core'
 
 import type { Video, VideoCardState } from '~/components/VideoCard/types'
 import { createVideoCardState } from '~/components/VideoCard/types'
+import { isBangumiVideo } from '~/components/VideoCard/utils'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
 import type { CardWindowSnapshot } from '~/composables/useCardWindow'
 import { useCardWindow } from '~/composables/useCardWindow'
@@ -951,10 +952,11 @@ interface VideoCardRenderItem {
 function inferVideoTypeFromVideo(video: Video | undefined): 'rcmd' | 'appRcmd' | 'bangumi' | 'common' {
   if (!video)
     return props.videoType || 'common'
-  if (video.epid || video.goto === 'bangumi' || video.type === 'bangumi')
-    return 'bangumi'
+  // 推荐流中的番剧、课程等卡片仍需保留推荐类型，才能提供不感兴趣等推荐操作
   if (props.videoType === 'rcmd' || props.videoType === 'appRcmd')
     return props.videoType
+  if (isBangumiVideo(video))
+    return 'bangumi'
   return props.videoType || 'common'
 }
 
@@ -1161,7 +1163,7 @@ const relationQueryMids = computed(() => {
   const { start, end } = cardWindow.loadingRange.value
   for (let index = start; index < end; index++) {
     const card = createRenderItem(displayItems.value[index], index)
-    if (card.skeleton || card.type === 'bangumi')
+    if (card.skeleton || card.type === 'bangumi' || (card.video && isBangumiVideo(card.video)))
       continue
     const author = Array.isArray(card.video?.author) ? card.video.author[0] : card.video?.author
     const mid = author?.mid
