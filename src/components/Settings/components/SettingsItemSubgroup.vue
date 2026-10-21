@@ -8,11 +8,16 @@ defineProps<{
 <template>
   <section class="settings-item-subgroup" :data-settings-title="title">
     <header class="subgroup-heading">
-      <div class="subgroup-title">
-        {{ title }}
+      <div class="subgroup-heading-main">
+        <div class="subgroup-title">
+          {{ title }}
+        </div>
+        <div v-if="desc" class="subgroup-desc">
+          {{ desc }}
+        </div>
       </div>
-      <div v-if="desc" class="subgroup-desc">
-        {{ desc }}
+      <div v-if="$slots.action" class="subgroup-heading-action">
+        <slot name="action" />
       </div>
     </header>
 
@@ -36,9 +41,22 @@ defineProps<{
 }
 
 .subgroup-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bew-space-4);
   width: 100%;
   min-width: 0;
   padding: var(--bew-space-0-5) 0 var(--bew-space-2);
+}
+
+.subgroup-heading-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.subgroup-heading-action {
+  flex-shrink: 0;
 }
 
 .subgroup-title {
