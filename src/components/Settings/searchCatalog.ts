@@ -255,6 +255,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.plugin.home',
     'settings.group_recommendation_mode',
     'settings.show_recommendation_mode_switcher',
+    'settings.recommendation_mode_switcher_options',
     'settings.group_immersive_mode',
     'settings.show_immersive_mode_entry',
     'settings.immersive_wheel_switch',

@@ -16,7 +16,7 @@ import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
 import { useTopBarStore } from '~/stores/topBarStore'
 import emitter from '~/utils/mitt'
-import { applyRecommendationModeOption, createRecommendationModeOptions, getRecommendationModeOption } from '~/utils/recommendationMode'
+import { applyRecommendationModeOption, createRecommendationModeOptions, filterRecommendationModeSwitcherOptions, getRecommendationModeOption } from '~/utils/recommendationMode'
 
 import VersionReminder from './components/VersionReminder.vue'
 import type { GridLayoutIcon } from './types'
@@ -85,7 +85,7 @@ const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value
   || shouldShowRecommendationModeSwitcher.value
   || shouldShowImmersiveModeEntry.value
   || settings.value.enableGridLayoutSwitcher)
-const recommendationModeOptions = computed(() => createRecommendationModeOptions(t))
+const recommendationModeOptions = computed(() => filterRecommendationModeSwitcherOptions(createRecommendationModeOptions(t)))
 const activeRecommendationModeOption = computed(() => getRecommendationModeOption())
 const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   return [

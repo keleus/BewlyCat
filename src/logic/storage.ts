@@ -176,6 +176,8 @@ export type VideoPlayerModeOverrides = Record<VideoPlayerModeContext, VideoPlaye
 export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
 /** App 推荐的列模式，对应接口 column 参数：single 为 1（带头像与发布时间），double 为 2 */
 export type AppRecommendationColumn = 'single' | 'double'
+/** 推荐模式在界面上的四个选项，App 单列 / 双列对应 recommendationMode 为 app 时的两种列模式 */
+export type RecommendationModeOption = 'web' | 'webNoCookie' | 'appSingle' | 'appDouble'
 /**
  * 评论回复树展示模式：
  * - lineCollapseMain：线条，收起时折叠父节点本体
@@ -519,6 +521,7 @@ export interface Settings {
   recommendationMode: RecommendationMode
   appRecommendationColumn: AppRecommendationColumn
   showRecommendationModeSwitcher: boolean
+  recommendationModeSwitcherOptions: RecommendationModeOption[] // 推荐模式快速切换按钮组中显示的选项，至少 2 个
   showImmersiveModeEntry: boolean // 首页个性推荐标签栏右侧显示沉浸式模式入口（沉浸式模式总开关）
   immersiveWheelSwitch: boolean // 沉浸式模式中在画面上滚动滚轮切换视频
   immersiveKeyboardSwitch: boolean // 沉浸式模式中 ↑↓ / W S / PageUp PageDown 切换视频（关闭后 ↑↓ 恢复播放器音量快捷键）
@@ -878,6 +881,7 @@ export const originalSettings: Settings = {
   recommendationMode: 'web',
   appRecommendationColumn: 'single',
   showRecommendationModeSwitcher: false,
+  recommendationModeSwitcherOptions: ['web', 'webNoCookie', 'appSingle', 'appDouble'],
   showImmersiveModeEntry: true,
   immersiveWheelSwitch: true,
   immersiveKeyboardSwitch: true,
