@@ -568,6 +568,39 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enable_listen_video',
     'settings.show_listen_video_button',
   ]),
+  ...createEntries(listenVideoRoute, [
+    'settings.listen_video_cover_shape',
+  ], {
+    keywordKeys: [
+      'settings.listen_video_cover_shape_circle',
+      'settings.listen_video_cover_shape_square',
+      'settings.listen_video_cover_shape_rectangle',
+    ],
+  }),
+  ...createEntries(listenVideoRoute, [
+    'settings.listen_video_glow',
+  ], {
+    keywordKeys: [
+      'settings.listen_video_glow_static',
+      'settings.listen_video_glow_breathe',
+    ],
+  }),
+  ...createEntries(listenVideoRoute, [
+    'settings.listen_video_glow_color',
+  ], {
+    keywordKeys: [
+      'settings.listen_video_glow_color_theme',
+      'settings.listen_video_glow_color_cover',
+    ],
+  }),
+  ...createEntries(listenVideoRoute, [
+    'settings.listen_video_background',
+  ], {
+    keywordKeys: [
+      'settings.listen_video_background_solid',
+      'settings.listen_video_background_blur',
+    ],
+  }),
   ...createEntries(playerRoute, [
     'settings.video_player_scroll_mode.title',
   ], {

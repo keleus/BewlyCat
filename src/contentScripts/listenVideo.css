@@ -55,14 +55,86 @@
   pointer-events: none;
 }
 
-.bewly-listen-video-album {
+/* 背景层：blur 模式下用封面高斯模糊铺满，替代纯色底 */
+.bewly-listen-video-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+.bewly-listen-video-backdrop img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* scale 抹去模糊边缘的透明圈 */
+  transform: scale(1.25);
+  filter: blur(48px) brightness(0.45);
+}
+.bewly-listen-video-overlay[data-listen-bg="blur"] {
+  background: rgba(0, 0, 0, 0.72);
+}
+.bewly-listen-video-overlay[data-listen-bg="blur"] .bewly-listen-video-backdrop {
+  display: block;
+}
+
+/* 舞台层持有封面几何（宽/高比/圆角）：作为 flex 子项，百分比宽度对位确定的
+   overlay 解析；album 仅填充，光晕按 inset:0 精确贴合舞台轮廓 */
+.bewly-listen-video-cover-stage {
   position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
   width: clamp(140px, 26%, 280px);
   aspect-ratio: 1/1;
-  overflow: hidden;
   border-radius: var(--bew-radius-full, 9999px);
+}
+
+/* 轮廓环绕光：与封面同形同尺寸，贴边描环并向外扩散光晕，随形状自动适配 */
+.bewly-listen-video-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 3px var(--bew-listen-glow-color, var(--bew-theme-color, #00a1d6)),
+    0 0 24px 6px var(--bew-listen-glow-color, var(--bew-theme-color, #00a1d6)),
+    0 0 64px 18px var(--bew-listen-glow-color, var(--bew-theme-color, #00a1d6));
+  opacity: 0.8;
+  animation: bewly-listen-glow-breathe 4.5s ease-in-out infinite;
+}
+.bewly-listen-video-overlay[data-listen-glow="none"] .bewly-listen-video-glow {
+  display: none;
+}
+.bewly-listen-video-overlay[data-listen-glow="static"] .bewly-listen-video-glow {
+  animation: none;
+}
+
+.bewly-listen-video-album {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: inherit;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
   animation: bewly-listen-spin 24s linear infinite;
+}
+/* 方形与矩形封面都保持静止，仅圆形唱片旋转 */
+.bewly-listen-video-overlay[data-listen-shape="square"] .bewly-listen-video-cover-stage {
+  width: clamp(160px, 30%, 300px);
+  border-radius: var(--bew-radius-2xl, 24px);
+}
+.bewly-listen-video-overlay[data-listen-shape="square"] .bewly-listen-video-album {
+  animation: none;
+}
+.bewly-listen-video-overlay[data-listen-shape="rectangle"] .bewly-listen-video-cover-stage {
+  width: clamp(260px, 52%, 620px);
+  aspect-ratio: 16/9;
+  border-radius: var(--bew-radius-2xl, 24px);
+}
+.bewly-listen-video-overlay[data-listen-shape="rectangle"] .bewly-listen-video-album {
+  animation: none;
 }
 
 .bewly-listen-video-cover {
@@ -95,6 +167,8 @@
 }
 
 .bewly-listen-video-info {
+  position: relative;
+  z-index: 1;
   display: flex;
   max-width: min(92%, 720px);
   flex-direction: column;
@@ -167,11 +241,17 @@
   animation-delay: 0.4s;
 }
 
+.bewly-listen-video-overlay.bewly-listen-video-paused .bewly-listen-video-album,
+.bewly-listen-video-overlay.bewly-listen-video-paused .bewly-listen-video-glow,
+.bewly-listen-video-overlay.bewly-listen-video-paused .bewly-listen-video-equalizer i {
+  animation-play-state: paused;
+}
+
 .bpx-player-container[data-screen="mini"] .bewly-listen-video-overlay {
   gap: var(--bew-space-2, 8px);
   padding: var(--bew-space-2, 8px);
 }
-.bpx-player-container[data-screen="mini"] .bewly-listen-video-album,
+.bpx-player-container[data-screen="mini"] .bewly-listen-video-cover-stage,
 .bpx-player-container[data-screen="mini"] .bewly-listen-video-owner {
   display: none;
 }
@@ -186,6 +266,16 @@
   }
   to {
     transform: rotate(360deg);
+  }
+}
+/* 只脉动不透明度：描环几何与封面严格重合，缩放会让内环脱离封面边缘形成黑边 */
+@keyframes bewly-listen-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
   }
 }
 @keyframes bewly-listen-eq {
@@ -203,6 +293,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bewly-listen-video-album,
+  .bewly-listen-video-glow,
   .bewly-listen-video-equalizer i {
     animation: none;
   }

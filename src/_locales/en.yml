@@ -1291,6 +1291,24 @@ settings:
   enable_listen_video_desc: Use the player button or shortcut to listen to videos. Disabling exits the mode, restores danmaku and removes its listeners. Pages opened while disabled do not load the feature module. Video streams are still downloaded and decoded.
   show_listen_video_button: Show player listen-video button
   show_listen_video_button_desc: Show a toggle in the video player controls that hides the video picture and keeps only the audio, replacing it with a cover-art listening panel. The shortcut remains available when the button is hidden and can be configured in Shortcuts settings.
+  listen_video_cover_shape: Listen-video cover shape
+  listen_video_cover_shape_desc: The vinyl circle spins while playing; square and rectangle stay still. Covers come from video thumbnails, so the rectangle keeps the 16:9 ratio.
+  listen_video_cover_shape_circle: Vinyl circle
+  listen_video_cover_shape_square: Square
+  listen_video_cover_shape_rectangle: Rectangle
+  listen_video_glow: Listen-video cover glow
+  listen_video_glow_desc: Adds a soft halo behind the cover. The breathe mode pulses gently with playback and freezes when paused.
+  listen_video_glow_none: Off
+  listen_video_glow_static: Static
+  listen_video_glow_breathe: Breathe
+  listen_video_glow_color: Listen-video glow color
+  listen_video_glow_color_desc: Cover mode samples the cover's dominant color for the glow and falls back to the theme color when sampling is unavailable.
+  listen_video_glow_color_theme: Theme color
+  listen_video_glow_color_cover: Follow cover
+  listen_video_background: Listen-video background
+  listen_video_background_desc: Blur fills the background with a blurred copy of the cover; solid keeps the plain dark backdrop.
+  listen_video_background_solid: Solid
+  listen_video_background_blur: Cover blur
   group_fonts: Font
   group_visual_effects: Visual Effects
   visibility: show

@@ -4,6 +4,9 @@ import type { VideoInfo } from '~/models/video/videoInfo'
 export function createListenVideoMode(host: ListenVideoHost, onChange: () => void) {
   const LISTENING_CLASS = 'bewly-player-listening'
   const OVERLAY_CLASS = 'bewly-listen-video-overlay'
+  const PAUSED_CLASS = 'bewly-listen-video-paused'
+  // media 事件不冒泡，document 捕获监听可同时覆盖换集后新建的 video 元素
+  const PLAYBACK_EVENTS = ['play', 'pause', 'emptied'] as const
   const PLAYER_ROOT_SELECTOR = '.bpx-player-container, .bilibili-player, #bilibili-player, .squirtle-video-wrap'
   // 与 touchPlayerGestures 保持一致的视频区域选择器，兼容新旧播放器。
   const VIDEO_AREA_SELECTOR = '.bpx-player-video-area, .bilibili-player-video-wrap, .squirtle-video-wrap'
@@ -26,6 +29,7 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
   let danmakuWasEnabled: boolean | null = null
   let lastMetaKey = ''
   let lastMetaOverlay: HTMLElement | null = null
+  let playbackListenerAttached = false
 
   function translate(key: string): string {
     return host.translate(key)
@@ -48,9 +52,77 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
     return document.querySelector<HTMLElement>(`.${OVERLAY_CLASS}`)
   }
 
+  // 取封面主色用于光晕；跨域画布受污染或取样失败时返回 null，由 CSS 回退主题色
+  function extractCoverColor(img: HTMLImageElement): string | null {
+    try {
+      const size = 16
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d', { willReadFrequently: true })
+      if (!ctx)
+        return null
+
+      ctx.drawImage(img, 0, 0, size, size)
+      const data = ctx.getImageData(0, 0, size, size).data
+      let r = 0
+      let g = 0
+      let b = 0
+      let count = 0
+      for (let i = 0; i < data.length; i += 4) {
+        const pr = data[i]
+        const pg = data[i + 1]
+        const pb = data[i + 2]
+        const max = Math.max(pr, pg, pb)
+        const min = Math.min(pr, pg, pb)
+        // 近黑与近白像素对光晕没有贡献，跳过
+        if (max < 30 || min > 235)
+          continue
+        r += pr
+        g += pg
+        b += pb
+        count++
+      }
+      if (!count)
+        return null
+
+      // 向最亮通道提升饱和度，避免取平均后发灰
+      r = Math.round(r / count)
+      g = Math.round(g / count)
+      b = Math.round(b / count)
+      const peak = Math.max(r, g, b)
+      const boost = (channel: number) => Math.round(channel + (peak - channel) * 0.35)
+      return `rgb(${boost(r)}, ${boost(g)}, ${boost(b)})`
+    }
+    catch {
+      return null
+    }
+  }
+
+  function applyOverlayAppearance(overlay: HTMLElement) {
+    const appearance = host.getSettings()
+    overlay.dataset.listenShape = appearance.listenVideoCoverShape
+    overlay.dataset.listenGlow = appearance.listenVideoGlow
+    overlay.dataset.listenBg = appearance.listenVideoBackground
+  }
+
   function createOverlay(): HTMLElement {
     const overlay = document.createElement('div')
     overlay.className = OVERLAY_CLASS
+
+    const backdrop = document.createElement('div')
+    backdrop.className = 'bewly-listen-video-backdrop'
+    const backdropImg = document.createElement('img')
+    backdropImg.alt = ''
+    backdropImg.decoding = 'async'
+    backdrop.append(backdropImg)
+
+    const stage = document.createElement('div')
+    stage.className = 'bewly-listen-video-cover-stage'
+
+    const glow = document.createElement('div')
+    glow.className = 'bewly-listen-video-glow'
+    glow.setAttribute('aria-hidden', 'true')
 
     const album = document.createElement('div')
     album.className = 'bewly-listen-video-album'
@@ -61,12 +133,26 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
     cover.alt = ''
     cover.decoding = 'async'
     cover.addEventListener('error', () => album.classList.add('bewly-listen-video-cover-missing'))
+    // 取色需画布可读，仅在选择封面色时启用 CORS 请求
+    cover.addEventListener('load', () => {
+      if (host.getSettings().listenVideoGlowColor !== 'cover')
+        return
+      const color = extractCoverColor(cover)
+      const overlayRoot = cover.closest(`.${OVERLAY_CLASS}`)
+      if (overlayRoot instanceof HTMLElement) {
+        if (color)
+          overlayRoot.style.setProperty('--bew-listen-glow-color', color)
+        else
+          overlayRoot.style.removeProperty('--bew-listen-glow-color')
+      }
+    })
 
     const fallback = document.createElement('div')
     fallback.className = 'bewly-listen-video-cover-fallback'
     fallback.innerHTML = musicNoteIcon
 
     album.append(cover, fallback)
+    stage.append(glow, album)
 
     const info = document.createElement('div')
     info.className = 'bewly-listen-video-info'
@@ -91,7 +177,7 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
 
     badge.append(equalizer, badgeText)
     info.append(title, owner, badge)
-    overlay.append(album, info)
+    overlay.append(backdrop, stage, info)
     return overlay
   }
 
@@ -161,6 +247,37 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
     danmakuWasEnabled = null
   }
 
+  // 暂停时冻结封面旋转与均衡器跳动；用 animation-play-state 保留动画相位，恢复播放时无缝继续
+  function syncPlaybackPausedState() {
+    const overlay = findOverlay()
+    const video = findVideoArea()?.querySelector('video')
+    if (!overlay || !video)
+      return
+
+    overlay.classList.toggle(PAUSED_CLASS, video.paused)
+  }
+
+  function onPlaybackEvent() {
+    if (listenActive)
+      syncPlaybackPausedState()
+  }
+
+  function attachPlaybackListeners() {
+    if (playbackListenerAttached)
+      return
+
+    PLAYBACK_EVENTS.forEach(event => document.addEventListener(event, onPlaybackEvent, true))
+    playbackListenerAttached = true
+  }
+
+  function detachPlaybackListeners() {
+    if (!playbackListenerAttached)
+      return
+
+    PLAYBACK_EVENTS.forEach(event => document.removeEventListener(event, onPlaybackEvent, true))
+    playbackListenerAttached = false
+  }
+
   function updateListenVideoMeta() {
     const overlay = findOverlay()
     if (!overlay)
@@ -171,9 +288,12 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
       return
     lastMetaKey = key
     lastMetaOverlay = overlay
+    applyOverlayAppearance(overlay)
+    overlay.style.removeProperty('--bew-listen-glow-color')
     const requestId = ++metaRequestId
     const album = overlay.querySelector<HTMLElement>('.bewly-listen-video-album')
     const cover = overlay.querySelector<HTMLImageElement>('.bewly-listen-video-cover')
+    const backdropCover = overlay.querySelector<HTMLImageElement>('.bewly-listen-video-backdrop img')
     const title = overlay.querySelector<HTMLElement>('.bewly-listen-video-title')
     const owner = overlay.querySelector<HTMLElement>('.bewly-listen-video-owner')
 
@@ -185,6 +305,7 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
       owner.textContent = ''
     album?.classList.add('bewly-listen-video-cover-missing')
     cover?.removeAttribute('src')
+    backdropCover?.removeAttribute('src')
     const badge = overlay.querySelector<HTMLElement>('.bewly-listen-video-badge-text')
     if (badge)
       badge.textContent = translate('player_listen.listening')
@@ -205,7 +326,15 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
       owner.textContent = data.owner?.name ?? ''
       if (data.pic) {
         album.classList.remove('bewly-listen-video-cover-missing')
-        cover.src = `${data.pic.replace(/^https?:/, '')}${COVER_SIZE_SUFFIX}`
+        const coverUrl = `${data.pic.replace(/^https?:/, '')}${COVER_SIZE_SUFFIX}`
+        // 取色要求 CORS 可读，必须在设置 src 之前生效
+        if (host.getSettings().listenVideoGlowColor === 'cover')
+          cover.crossOrigin = 'anonymous'
+        else
+          cover.removeAttribute('crossorigin')
+        cover.src = coverUrl
+        if (backdropCover)
+          backdropCover.src = coverUrl
       }
       else {
         album.classList.add('bewly-listen-video-cover-missing')
@@ -230,10 +359,13 @@ export function createListenVideoMode(host: ListenVideoHost, onChange: () => voi
     }
 
     updateListenVideoMeta()
+    attachPlaybackListeners()
+    syncPlaybackPausedState()
     return true
   }
 
   function exitListenMode() {
+    detachPlaybackListeners()
     document.querySelectorAll(`.${LISTENING_CLASS}`).forEach(root => root.classList.remove(LISTENING_CLASS))
     document.querySelectorAll(`.${OVERLAY_CLASS}`).forEach(overlay => overlay.remove())
   }

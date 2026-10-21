@@ -544,6 +544,24 @@ settings:
   enable_listen_video_desc: 开启后可通过播放器按钮或快捷键进入听视频。关闭时退出听视频、恢复弹幕并停止相关监听；关闭后打开页面不加载功能模块。此功能隐藏画面，视频流仍会下载和解码。
   show_listen_video_button: 显示播放器「听视频」按钮
   show_listen_video_button_desc: 启用后，在视频播放器控制栏中显示听视频切换按钮：隐藏视频画面仅保留声音，以封面和标题组成音频播放界面。关闭后仍可使用快捷键切换，可在「快捷键」设置中配置。
+  listen_video_cover_shape: 听视频封面形状
+  listen_video_cover_shape_desc: 圆形唱片会随播放旋转；正方形与长方形保持静止。封面来自视频缩略图，长方形按 16:9 原比例展示。
+  listen_video_cover_shape_circle: 圆形唱片
+  listen_video_cover_shape_square: 正方形
+  listen_video_cover_shape_rectangle: 长方形
+  listen_video_glow: 听视频封面光晕
+  listen_video_glow_desc: 在封面背后叠加一层光晕；呼吸模式会随播放轻微脉动，暂停时一同静止。
+  listen_video_glow_none: 关闭
+  listen_video_glow_static: 常亮
+  listen_video_glow_breathe: 呼吸
+  listen_video_glow_color: 听视频光晕颜色
+  listen_video_glow_color_desc: 跟随封面时自动取封面主色作为光晕颜色，取色失败（如图片不可跨域读取）时回退为主题色。
+  listen_video_glow_color_theme: 主题色
+  listen_video_glow_color_cover: 跟随封面
+  listen_video_background: 听视频背景样式
+  listen_video_background_desc: 封面模糊会将当前封面高斯模糊后铺满整个背景，纯色为深色背景。
+  listen_video_background_solid: 纯色
+  listen_video_background_blur: 封面模糊
   keep_collection_video_default_mode: 合集视频保持默认模式
   keep_collection_video_default_mode_desc: 当启用时，合集视频将始终使用默认播放器模式，不会应用宽屏或全屏设置
   keep_watch_later_video_default_mode: 稍后再看保持默认模式
