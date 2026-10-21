@@ -1,4 +1,11 @@
 .momentsPage {
+  // 原站 bili_dark 下的纹理层（#app:after）会盖住整页并拦截点击（#991, #1333）
+  #app:after,
+  #app::after {
+    display: none !important;
+    pointer-events: none !important;
+  }
+
   &.moments-hide-original-user-card {
     .bili-dyn-home--member > aside.left > section:has(.bili-dyn-my-info),
     .bili-dyn-home--member > aside.left > section:has(.bili-dyn-my-info--skeleton),
@@ -53,11 +60,6 @@
     height: 100%;
   }
 
-  // 原站 bili_dark 下的纹理层会盖住整页并拦截点击（#991）
-  #app::after {
-    display: none !important;
-  }
-
   // #region new moments page
   #app .bgc {
     background-color: var(--bew-homepage-bg);
@@ -104,8 +106,9 @@
     }
   }
 
-  .bili-dyn-home--member {
-    z-index: 1;
+  .bili-dyn-home--member,
+  .bili-dyn-home--visitor {
+    z-index: 2;
     position: relative;
   }
 
