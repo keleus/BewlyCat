@@ -959,7 +959,7 @@ export const originalSettings: Settings = {
   showVerticalVideoZoomButton: true, // 默认显示竖屏视频放大按钮
   showBewlyWidescreenButton: true, // 默认显示播放器 Bewly 宽屏按钮
   showVideoScreenshotButton: true, // 默认显示播放器截图按钮
-  enableListenVideo: true, // 默认启用听视频功能，进入模式仍需手动切换
+  enableListenVideo: false, // 默认关闭听视频功能，需在设置中手动开启
   showListenVideoButton: true, // 默认显示播放器听视频按钮
   listenVideoCoverShape: 'circle', // 默认圆形唱片并保持旋转
   listenVideoGlow: 'none', // 默认关闭光晕，保持原有听视频外观
