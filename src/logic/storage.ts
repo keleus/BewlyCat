@@ -725,7 +725,7 @@ export const originalSettings: Settings = {
   enableVideoPreview: true,
   enableVideoCtrlBarOnVideoCard: false,
   enableVideoPreviewSwipeSeek: false,
-  resumeFromVideoPreview: true,
+  resumeFromVideoPreview: false,
   hoverVideoCardDelayed: false,
   onlyCoverVideoPreview: false,
   showVideoCardAuthorAvatar: true,
