@@ -1182,6 +1182,24 @@ settings:
   enable_listen_video_desc: 開咗之後可以用播放器按鈕或者快捷鍵聽影片。關閉會退出聽影片、還原彈幕同停止相關監聽；關閉後開頁面唔會載入功能模組。功能會收埋畫面，但影片串流仍然會下載同解碼。
   show_listen_video_button: 顯示播放器「聽影片」按鈕
   show_listen_video_button_desc: 啓用後，喺影片播放器控制欄顯示聽影片切換按鈕：收埋影片畫面淨係留低聲音，用封面同標題砌返個聽歌畫面。關咗之後仍然可以用快捷鍵切換，可以喺「快捷鍵」設定入面更改。
+  listen_video_cover_shape: 聽影片封面樣式
+  listen_video_cover_shape_desc: 圓形唱片會跟住播放轉；正方形同長方形唔轉。封面係影片縮圖，長方形會 keep 住 16:9 比例。
+  listen_video_cover_shape_circle: 圓形唱片
+  listen_video_cover_shape_square: 正方形
+  listen_video_cover_shape_rectangle: 長方形
+  listen_video_glow: 聽影片封面光暈
+  listen_video_glow_desc: 封面後面加層光暈；呼吸模式會跟住播放輕輕郁，暫停就一齊停。
+  listen_video_glow_none: 唔要
+  listen_video_glow_static: 常亮
+  listen_video_glow_breathe: 呼吸
+  listen_video_glow_color: 聽影片光暈顏色
+  listen_video_glow_color_desc: 跟封面會自動攞封面主色做光暈色，攞唔到色（例如圖片唔俾跨域讀取）就用返主題色。
+  listen_video_glow_color_theme: 主題色
+  listen_video_glow_color_cover: 跟封面
+  listen_video_background: 聽影片背景樣式
+  listen_video_background_desc: 封面模糊會將而家個封面高斯模糊之後鋪滿成個背景，純色就係深色底。
+  listen_video_background_solid: 純色
+  listen_video_background_blur: 封面模糊
   group_fonts: ''
   group_visual_effects: ''
   group_search_results: 搜尋結果

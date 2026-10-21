@@ -89,7 +89,14 @@ export function initListenVideoFeature() {
       stopController()
     }
   }, { immediate: true, flush: 'sync' })
-  watch([() => settings.value.showListenVideoButton, () => settings.value.language], () => {
+  watch([
+    () => settings.value.showListenVideoButton,
+    () => settings.value.language,
+    () => settings.value.listenVideoCoverShape,
+    () => settings.value.listenVideoGlow,
+    () => settings.value.listenVideoGlowColor,
+    () => settings.value.listenVideoBackground,
+  ], () => {
     controller?.refresh()
   })
 }

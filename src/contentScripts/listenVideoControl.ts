@@ -5,7 +5,8 @@ import { createListenVideoMode } from '~/utils/listenVideoMode'
 import listenVideoStyles from './listenVideo.css?raw'
 
 export interface ListenVideoHost {
-  getSettings: () => Pick<Settings, 'enableListenVideo' | 'showListenVideoButton' | 'language'>
+  getSettings: () => Pick<Settings, 'enableListenVideo' | 'showListenVideoButton' | 'language'
+  | 'listenVideoCoverShape' | 'listenVideoGlow' | 'listenVideoGlowColor' | 'listenVideoBackground'>
   translate: (key: string) => string
   getVideoInfo: (bvid: string) => Promise<VideoInfo>
   isPlaybackPage: () => boolean

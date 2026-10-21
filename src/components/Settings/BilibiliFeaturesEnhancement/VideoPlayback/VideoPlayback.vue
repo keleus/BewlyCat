@@ -41,6 +41,36 @@ const bewlyWidescreenVideoAlignmentOptions = computed(() => {
   ]
 })
 
+const listenVideoCoverShapeOptions = computed(() => {
+  return [
+    { label: t('settings.listen_video_cover_shape_circle'), value: 'circle' },
+    { label: t('settings.listen_video_cover_shape_square'), value: 'square' },
+    { label: t('settings.listen_video_cover_shape_rectangle'), value: 'rectangle' },
+  ]
+})
+
+const listenVideoGlowOptions = computed(() => {
+  return [
+    { label: t('settings.listen_video_glow_none'), value: 'none' },
+    { label: t('settings.listen_video_glow_static'), value: 'static' },
+    { label: t('settings.listen_video_glow_breathe'), value: 'breathe' },
+  ]
+})
+
+const listenVideoGlowColorOptions = computed(() => {
+  return [
+    { label: t('settings.listen_video_glow_color_theme'), value: 'theme' },
+    { label: t('settings.listen_video_glow_color_cover'), value: 'cover' },
+  ]
+})
+
+const listenVideoBackgroundOptions = computed(() => {
+  return [
+    { label: t('settings.listen_video_background_solid'), value: 'solid' },
+    { label: t('settings.listen_video_background_blur'), value: 'blur' },
+  ]
+})
+
 // 沿用原设置值以兼容已有配置：video 表示启用自动收起，sidebar 表示始终完整显示。
 const bewlyWidescreenAutoCollapseSidebar = computed({
   get: () => settings.value.bewlyWidescreenSidebarPriority === 'video',
@@ -374,6 +404,42 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
           right-width="auto"
         >
           <Radio v-model="settings.showListenVideoButton" />
+        </SettingsItem>
+
+        <SettingsItem
+          v-if="settings.enableListenVideo"
+          :title="t('settings.listen_video_cover_shape')"
+          :desc="t('settings.listen_video_cover_shape_desc')"
+          right-width="auto"
+        >
+          <Select v-model="settings.listenVideoCoverShape" :options="listenVideoCoverShapeOptions" w="160px" />
+        </SettingsItem>
+
+        <SettingsItem
+          v-if="settings.enableListenVideo"
+          :title="t('settings.listen_video_glow')"
+          :desc="t('settings.listen_video_glow_desc')"
+          right-width="auto"
+        >
+          <Select v-model="settings.listenVideoGlow" :options="listenVideoGlowOptions" w="160px" />
+        </SettingsItem>
+
+        <SettingsItem
+          v-if="settings.enableListenVideo && settings.listenVideoGlow !== 'none'"
+          :title="t('settings.listen_video_glow_color')"
+          :desc="t('settings.listen_video_glow_color_desc')"
+          right-width="auto"
+        >
+          <Select v-model="settings.listenVideoGlowColor" :options="listenVideoGlowColorOptions" w="160px" />
+        </SettingsItem>
+
+        <SettingsItem
+          v-if="settings.enableListenVideo"
+          :title="t('settings.listen_video_background')"
+          :desc="t('settings.listen_video_background_desc')"
+          right-width="auto"
+        >
+          <Select v-model="settings.listenVideoBackground" :options="listenVideoBackgroundOptions" w="160px" />
         </SettingsItem>
       </SettingsItemSubgroup>
     </SettingsItemGroup>

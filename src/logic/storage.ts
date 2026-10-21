@@ -162,6 +162,10 @@ export type CustomPlayOrderOverrides = Record<CustomPlayOrderContext, CustomPlay
 export type CollectedSeasonPlayAllMode = 'beginning' | 'latest' | 'lastWatched'
 export type DefaultVideoPlayerMode = 'default' | 'webFullscreen' | 'widescreen' | 'bewlyWidescreen'
 export type VideoPlayerScrollMode = 'sendingBar' | 'playerCenter'
+export type ListenVideoCoverShape = 'circle' | 'square' | 'rectangle'
+export type ListenVideoGlowMode = 'none' | 'static' | 'breathe'
+export type ListenVideoGlowColor = 'theme' | 'cover'
+export type ListenVideoBackgroundMode = 'solid' | 'blur'
 export type BewlyWidescreenSidebarPosition = 'left' | 'right'
 export type BewlyWidescreenSidebarPriority = 'video' | 'sidebar'
 export type PlayerDefaultState = 'system' | 'remember' | 'on' | 'off'
@@ -585,6 +589,10 @@ export interface Settings {
   showVideoScreenshotButton: boolean // 显示播放器截图按钮
   enableListenVideo: boolean // 听视频功能总开关
   showListenVideoButton: boolean // 显示播放器听视频按钮
+  listenVideoCoverShape: ListenVideoCoverShape // 听视频封面形状（圆形唱片旋转，方/矩形静止）
+  listenVideoGlow: ListenVideoGlowMode // 听视频封面背景光晕
+  listenVideoGlowColor: ListenVideoGlowColor // 听视频光晕颜色来源
+  listenVideoBackground: ListenVideoBackgroundMode // 听视频背景样式（纯色或封面模糊）
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: boolean // 使用B站默认自动播放行为（总开关）
@@ -933,6 +941,10 @@ export const originalSettings: Settings = {
   showVideoScreenshotButton: true, // 默认显示播放器截图按钮
   enableListenVideo: true, // 默认启用听视频功能，进入模式仍需手动切换
   showListenVideoButton: true, // 默认显示播放器听视频按钮
+  listenVideoCoverShape: 'circle', // 默认圆形唱片并保持旋转
+  listenVideoGlow: 'static', // 默认常亮光晕
+  listenVideoGlowColor: 'theme', // 默认光晕使用主题色
+  listenVideoBackground: 'solid', // 默认纯色背景
 
   // 自动连播总开关
   useBilibiliDefaultAutoPlay: true, // 使用B站默认自动播放行为（总开关），默认开启
