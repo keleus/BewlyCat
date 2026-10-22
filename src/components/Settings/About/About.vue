@@ -408,18 +408,20 @@ async function handleCopyEnvironmentInfo() {
               ({{ $t('settings.original_project') }})
             </li>
           </ul>
-          <Button type="secondary" size="small" @click="showLicenseDialog = true">
-            <template #left>
-              <div i-tabler:license />
-            </template>
-            {{ $t('settings.view_full_license') }}
-          </Button>
-          <Button type="secondary" size="small" ml-2 @click="openThirdPartyLicenseDialog">
-            <template #left>
-              <div i-tabler:packages />
-            </template>
-            {{ $t('settings.view_third_party_licenses') }}
-          </Button>
+          <div flex="~ gap-2 wrap">
+            <Button type="secondary" size="small" @click="showLicenseDialog = true">
+              <template #left>
+                <div i-tabler:license />
+              </template>
+              {{ $t('settings.view_full_license') }}
+            </Button>
+            <Button type="secondary" size="small" @click="openThirdPartyLicenseDialog">
+              <template #left>
+                <div i-tabler:packages />
+              </template>
+              {{ $t('settings.view_third_party_licenses') }}
+            </Button>
+          </div>
         </section>
       </section>
     </div>
