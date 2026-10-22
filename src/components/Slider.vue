@@ -27,7 +27,7 @@ function updateBackground() {
 
   const span = props.max - props.min
   const progress = span === 0 ? 0 : ((modelValue.value - props.min) / span) * 100
-  range.style.background = `linear-gradient(to right, var(--bew-theme-color) ${progress}%, var(--bew-fill-1) ${progress}%) no-repeat`
+  range.style.setProperty('--b-slider-progress', `${progress}%`)
 }
 
 watch([modelValue, () => props.min, () => props.max], updateBackground, { flush: 'post' })
@@ -39,11 +39,10 @@ onMounted(updateBackground)
     <input
       ref="rangeRef"
       type="range" :value="modelValue" :min="min" :max="max" class="slider"
-      appearance-none outline-none bg="$bew-fill-1" rounded="$b-slider-height"
-      border="size-$b-border-width color-$bew-border-color" w="$b-slider-width" h="$b-slider-height"
+      appearance-none outline-none w="$b-slider-width" h="$b-slider-height"
       @input="handleInput"
     >
-    <span>{{ label }}</span>
+    <span class="slider-label">{{ label }}</span>
   </label>
 </template>
 
@@ -52,18 +51,61 @@ label {
   --b-border-width: 2px;
   --b-slider-height: 10px;
   --b-slider-width: 100%;
+  --b-slider-label-width: 3em;
   --b-thumb-width: calc(20px - var(--b-border-width));
   --b-thumb-height: calc(20px - var(--b-border-width));
 }
 
+.slider-label {
+  flex: none;
+  min-width: var(--b-slider-label-width);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 input[type="range"] {
+  background: transparent;
+  border: 0;
+
+  &::-webkit-slider-runnable-track {
+    height: var(--b-slider-height);
+    background: linear-gradient(
+        to right,
+        var(--bew-theme-color) var(--b-slider-progress, 0%),
+        var(--bew-fill-1) var(--b-slider-progress, 0%)
+      )
+      no-repeat;
+    border-radius: var(--b-slider-height);
+    box-shadow: inset 0 0 0 var(--b-border-width) var(--bew-border-color);
+  }
+
   &::-webkit-slider-thumb {
     --uno: "appearance-none w-$b-thumb-height h-$b-thumb-height bg-white rounded-$b-thumb-height";
     --uno: "ring-$bew-border-color ring-2 cursor-pointer duration-300";
+    margin-top: calc((var(--b-slider-height) - var(--b-thumb-height)) / 2);
   }
 
   &::-webkit-slider-thumb:hover {
     --uno: "ring-$bew-theme-color";
+  }
+
+  &::-moz-range-track {
+    height: var(--b-slider-height);
+    background: linear-gradient(
+        to right,
+        var(--bew-theme-color) var(--b-slider-progress, 0%),
+        var(--bew-fill-1) var(--b-slider-progress, 0%)
+      )
+      no-repeat;
+    border-radius: var(--b-slider-height);
+    box-shadow: inset 0 0 0 var(--b-border-width) var(--bew-border-color);
+  }
+
+  &::-moz-range-progress {
+    height: var(--b-slider-height);
+    background: var(--bew-theme-color);
+    border-radius: var(--b-slider-height);
   }
 
   &::-moz-range-thumb {
