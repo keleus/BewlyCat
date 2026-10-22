@@ -95,7 +95,16 @@ function resetAmbilightEffects() {
 
 <template>
   <SettingsItemGroup :title="t('settings.ambilight.title')">
-    <SettingsItem :title="t('settings.ambilight.enable')" :desc="t('settings.ambilight.enable_desc')" right-width="auto">
+    <SettingsItem
+      :title="t('settings.ambilight.enable')"
+      :badge="t('settings.badge_performance_impact')"
+      right-width="auto"
+    >
+      <template #desc>
+        <span>{{ t('settings.ambilight.enable_desc') }}</span>
+        <span block class="bew-warning-text">{{ t('common.performance_impact_warn') }}</span>
+      </template>
+
       <Radio v-model="settings.ambilightEnabled" />
     </SettingsItem>
 
