@@ -40,9 +40,6 @@ const GAP = 8
 const INSET = 8
 let rafId = 0
 let listenersBound = false
-let dismissListenersBound = false
-let focusShowSuppressed = false
-let suppressListenersBound = false
 let scrollRoot: ShadowRoot | undefined
 let disposed = false
 
@@ -137,69 +134,12 @@ function hideTip() {
   visible.value = false
 }
 
-// 点击入口常会打开新标签页或弹窗，此时原页面收不到 mouseleave，提示会一直停留。
-// 除模板上的点击收起外，再对切标签页/切窗口做兜底。
-function handleVisibilityChange() {
-  if (document.hidden)
-    suppressFocusShow()
+// 仅键盘聚焦时显示：鼠标点击过的触发元素（如打开新标签页的链接）在切回标签页/窗口时
+// 会被浏览器重新聚焦，此时不匹配 :focus-visible，不应重新弹出提示。
+function handleFocusIn(event: FocusEvent) {
+  if (event.target instanceof Element && event.target.matches(':focus-visible'))
+    showTip()
 }
-
-function handleWindowBlur() {
-  suppressFocusShow()
-}
-
-function handleFocusIn() {
-  // Chrome 切回标签页/窗口时会重新聚焦仍持有焦点的触发元素（如刚点击过的链接），
-  // 这类聚焦不是用户操作，不能据此重新显示提示。
-  if (focusShowSuppressed)
-    return
-  showTip()
-}
-
-/** 切走后收起提示，并在用户真正操作前忽略浏览器切回时对触发元素的重新聚焦。 */
-function suppressFocusShow() {
-  hideTip()
-  focusShowSuppressed = true
-  if (suppressListenersBound)
-    return
-  window.addEventListener('pointerdown', releaseFocusShowSuppression, true)
-  window.addEventListener('keydown', releaseFocusShowSuppression, true)
-  suppressListenersBound = true
-}
-
-function releaseFocusShowSuppression() {
-  focusShowSuppressed = false
-  if (!suppressListenersBound)
-    return
-  window.removeEventListener('pointerdown', releaseFocusShowSuppression, true)
-  window.removeEventListener('keydown', releaseFocusShowSuppression, true)
-  suppressListenersBound = false
-}
-
-// 点击后提示已隐藏，但切回标签页时仍可能收到重新聚焦，故监听需覆盖整个浮动生命周期。
-function bindDismissListeners() {
-  if (dismissListenersBound)
-    return
-  document.addEventListener('visibilitychange', handleVisibilityChange)
-  window.addEventListener('blur', handleWindowBlur)
-  dismissListenersBound = true
-}
-
-function unbindDismissListeners() {
-  if (!dismissListenersBound)
-    return
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
-  window.removeEventListener('blur', handleWindowBlur)
-  dismissListenersBound = false
-  releaseFocusShowSuppression()
-}
-
-watch(floatingEnabled, (enabled) => {
-  if (enabled)
-    bindDismissListeners()
-  else
-    unbindDismissListeners()
-}, { immediate: true })
 
 // 显隐切换（含首次定位）与文案变化（加入/移除稍后再看会改变浮层宽度）共用一次重算
 watch([visible, () => props.content, floatingEnabled], async ([isVisible, content, enabled]) => {
@@ -219,7 +159,6 @@ watch([visible, () => props.content, floatingEnabled], async ([isVisible, conten
 onBeforeUnmount(() => {
   disposed = true
   unbindRepositionListeners()
-  unbindDismissListeners()
   cancelAnimationFrame(rafId)
 })
 </script>
@@ -228,7 +167,6 @@ onBeforeUnmount(() => {
   <span
     ref="anchorRef"
     class="b-tooltip-wrapper"
-    @click.capture="hideTip"
     @mouseenter="showTip"
     @mouseleave="hideTip"
     @focusin="handleFocusIn"
