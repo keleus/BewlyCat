@@ -134,6 +134,13 @@ function hideTip() {
   visible.value = false
 }
 
+// 仅键盘聚焦时显示：鼠标点击过的触发元素（如打开新标签页的链接）在切回标签页/窗口时
+// 会被浏览器重新聚焦，此时不匹配 :focus-visible，不应重新弹出提示。
+function handleFocusIn(event: FocusEvent) {
+  if (event.target instanceof Element && event.target.matches(':focus-visible'))
+    showTip()
+}
+
 // 显隐切换（含首次定位）与文案变化（加入/移除稍后再看会改变浮层宽度）共用一次重算
 watch([visible, () => props.content, floatingEnabled], async ([isVisible, content, enabled]) => {
   if (!isVisible || !content || !enabled) {
@@ -162,7 +169,7 @@ onBeforeUnmount(() => {
     class="b-tooltip-wrapper"
     @mouseenter="showTip"
     @mouseleave="hideTip"
-    @focusin="showTip"
+    @focusin="handleFocusIn"
     @focusout="hideTip"
   >
     <!-- 浮层模式：传送至 shadow root 顶层，不受任何封面 overflow:hidden 裁切 -->
