@@ -863,7 +863,7 @@ onUnmounted(() => {
     height: 0;
   }
 
-  > * {
+  > .dock-edge {
     --uno: "pointer-events-auto";
   }
 }
@@ -912,6 +912,13 @@ onUnmounted(() => {
   --uno: "absolute flex justify-center items-center scale-$scale";
 
   transition-duration: 0ms;
+  // Only the visible pieces should hit-test; the inner margin would otherwise
+  // cover the page scrollbar next to the Dock.
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
 
   &.ready {
     transition-duration: var(--bew-duration-moderate, 300ms);
@@ -966,12 +973,8 @@ onUnmounted(() => {
     --uno: "!opacity-60 !translate-y-50%";
   }
 
-  &.hide-inner:not(.hover) {
+  &.hide-inner:not(.hover) .dock-content-inner {
     pointer-events: none;
-  }
-
-  &.hide-inner:not(.hover) .dock-action-buttons {
-    pointer-events: auto;
   }
 
   .divider {
