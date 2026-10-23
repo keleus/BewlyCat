@@ -2334,9 +2334,32 @@ function injectLayoutStyle() {
       display: none !important;
     }
 
+    /* 顶端对齐：UP 主看自己稿件时 .video-toolbar-left 内多出一行管理按钮，
+       居中会让稍后再看按钮落在两行之间 */
     #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report {
+      --bewly-widescreen-toolbar-lead-gap: 8px;
+      align-items: flex-start !important;
       flex-wrap: nowrap;
       gap: 0;
+    }
+
+    /* 稍后再看按钮（24px）+ 右间距，供 UP 主管理行向左回退到行首 */
+    #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report:has(> .video-toolbar-right .bewly-watch-later-btn) {
+      --bewly-widescreen-toolbar-lead: calc(24px + var(--bewly-widescreen-toolbar-lead-gap));
+    }
+
+    /* UP 主视角的编辑稿件 / 数据等入口单独成行，从操作栏行首开始 */
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-owner-state {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: flex-start !important;
+      gap: var(--bew-space-2, 8px) !important;
+      width: auto !important;
+      margin: var(--bew-space-2, 8px) 0 0 calc(-1 * var(--bewly-widescreen-toolbar-lead, 0px)) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-action-slot .video-owner-state-item {
+      margin: 0 !important;
     }
 
     /* 左侧四组内容自适应宽度，不再撑满整行，让稍后再看按钮得以紧随分享之后 */
@@ -2557,7 +2580,7 @@ function injectLayoutStyle() {
       align-items: center !important;
       flex: 0 0 auto !important;
       order: -1 !important;
-      margin: 0 8px 0 0 !important;
+      margin: 0 var(--bewly-widescreen-toolbar-lead-gap) 0 0 !important;
       padding: 0 !important;
       background: transparent !important;
       border: 0 !important;
@@ -2565,8 +2588,8 @@ function injectLayoutStyle() {
     }
 
     @media (min-width: 1681px) {
-      #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-right {
-        margin-right: 18px !important;
+      #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report {
+        --bewly-widescreen-toolbar-lead-gap: 18px;
       }
     }
 
