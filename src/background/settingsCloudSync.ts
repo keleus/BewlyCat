@@ -30,6 +30,15 @@ import {
 
 const CLOUD_UPLOAD_DELAY = 1_500
 const CLOUD_SYNC_ITEM_COUNT_LIMIT = 480
+// Chrome allows 120 writes per minute and 1800 per hour; every set/remove call
+// counts as one operation. Stay below both with headroom for other contexts.
+const CLOUD_WRITE_RATE_LIMITS = [
+  { duration: 60_000, limit: 100 },
+  { duration: 3_600_000, limit: 1_500 },
+]
+const CLOUD_WRITE_HISTORY_DURATION = 3_600_000
+const CLOUD_QUOTA_RETRY_DELAY_MINUTE = 60_000
+const CLOUD_QUOTA_RETRY_DELAY_HOUR = 15 * 60_000
 
 let initialized = false
 let enabled = false
@@ -40,6 +49,9 @@ let restartAfterInitialization = false
 let flushInProgress = false
 let flushTimer: ReturnType<typeof setTimeout> | undefined
 let knownCloudItems: Record<string, unknown> = {}
+/** Timestamps of sync write calls; kept across restarts of sync because the quota is per extension. */
+let cloudWriteTimestamps: number[] = []
+let cloudQuotaBlockedUntil = 0
 /**
  * Set while a message-driven enable runs its bootstrap inline; the storage
  * event for the same preference write must not start a competing start.
@@ -124,6 +136,42 @@ function clearFlushTimer() {
   flushTimer = undefined
 }
 
+function recordCloudWrite() {
+  cloudWriteTimestamps.push(Date.now())
+}
+
+/** Milliseconds until another sync write fits within the write-rate quota. */
+function getCloudWriteDelay() {
+  const now = Date.now()
+  cloudWriteTimestamps = cloudWriteTimestamps.filter(time => time > now - CLOUD_WRITE_HISTORY_DURATION)
+
+  let readyAt = Math.max(now, cloudQuotaBlockedUntil)
+  for (const { duration, limit } of CLOUD_WRITE_RATE_LIMITS) {
+    const recentWrites = cloudWriteTimestamps.filter(time => time > now - duration)
+    if (recentWrites.length >= limit)
+      readyAt = Math.max(readyAt, recentWrites[recentWrites.length - limit] + duration)
+  }
+  return readyAt - now
+}
+
+/**
+ * Backs off after the browser rejects a write for exceeding its rate quota.
+ * Local accounting cannot see writes made before the background restarted.
+ */
+function handleCloudWriteQuotaError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  let delay = 0
+  if (message.includes('MAX_WRITE_OPERATIONS_PER_HOUR'))
+    delay = CLOUD_QUOTA_RETRY_DELAY_HOUR
+  else if (message.includes('MAX_WRITE_OPERATIONS_PER_MINUTE'))
+    delay = CLOUD_QUOTA_RETRY_DELAY_MINUTE
+  if (delay === 0)
+    return false
+
+  cloudQuotaBlockedUntil = Math.max(cloudQuotaBlockedUntil, Date.now() + delay)
+  return true
+}
+
 function consumePendingUpload(field: string, entry: SettingsCloudSyncEntry) {
   const pending = pendingUploads.get(field)
   if (pending && compareSettingsCloudSyncVersions(pending.version, entry.version) <= 0)
@@ -155,7 +203,7 @@ function queueUploads(uploads: Record<string, SettingsCloudSyncEntry>) {
   flushTimer = setTimeout(() => {
     flushTimer = undefined
     void flushUploads()
-  }, CLOUD_UPLOAD_DELAY)
+  }, Math.max(CLOUD_UPLOAD_DELAY, getCloudWriteDelay()))
 }
 
 function safeEstimateItemBytes(key: string, value: unknown) {
@@ -244,6 +292,10 @@ async function flushUploads() {
     if (Object.keys(items).length === 0)
       return
 
+    if (getCloudWriteDelay() > 0)
+      return
+
+    recordCloudWrite()
     await browser.storage.sync.set(items)
     if (flushGeneration !== generation)
       return
@@ -259,8 +311,15 @@ async function flushUploads() {
     }
   }
   catch (error) {
-    shouldScheduleNextBatch = false
-    logCloudSyncError('Failed to upload settings to browser sync storage:', error)
+    // Quota rejections keep pending uploads and retry once the quota frees up;
+    // other failures wait for the next local change.
+    if (handleCloudWriteQuotaError(error)) {
+      logCloudSyncError(`Settings cloud sync write quota reached; retrying in ${Math.ceil(getCloudWriteDelay() / 60_000)} min.`)
+    }
+    else {
+      shouldScheduleNextBatch = false
+      logCloudSyncError('Failed to upload settings to browser sync storage:', error)
+    }
   }
   finally {
     flushInProgress = false
@@ -357,6 +416,7 @@ async function removeInvalidCloudItems(startGeneration: number) {
     if (invalidKeys.length === 0 || !enabled || startGeneration !== generation)
       return
 
+    recordCloudWrite()
     await browser.storage.sync.remove(invalidKeys)
     if (!enabled || startGeneration !== generation)
       return
@@ -365,6 +425,7 @@ async function removeInvalidCloudItems(startGeneration: number) {
       Reflect.deleteProperty(knownCloudItems, key)
   }
   catch (error) {
+    handleCloudWriteQuotaError(error)
     logCloudSyncError('Failed to clean up invalid cloud sync items:', error)
   }
 }
