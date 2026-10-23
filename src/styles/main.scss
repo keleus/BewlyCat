@@ -483,6 +483,29 @@ html.dark.bewly-design {
   }
 }
 
+// 高度自适应展开/收起：grid 轨道 0fr→1fr 过渡，无需 JS 测量内容高度。
+// 挂载后先停在 0fr，由调用方在内容就绪后添加 .is-entered 播放展开动画。
+.bew-expand-host {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--bew-duration-normal) var(--bew-ease-standard);
+
+  > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.bew-expand-host.is-entered {
+  grid-template-rows: 1fr;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bew-expand-host {
+    transition: none;
+  }
+}
+
 .bew-settings-option--lift {
   cursor: pointer;
   transition:
