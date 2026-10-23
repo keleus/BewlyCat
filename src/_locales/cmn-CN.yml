@@ -279,6 +279,8 @@ settings:
   group_player_components: 播放器组件
   group_player_display_mode: 播放模式
   group_player_display_mode_desc: 设置基础显示模式，并按需覆盖特定播放场景。
+  group_bewly_widescreen: Bewly 宽屏
+  group_bewly_widescreen_desc: 调整 Bewly 宽屏模式下的侧栏与视频布局，可通过播放器按钮或快捷键随时切换。
   group_playback_memory: 播放状态记忆
   group_playback_memory_desc: 选择是否记住倍速、清晰度和视频比例。
   group_video_page_actions: 视频页功能

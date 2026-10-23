@@ -279,6 +279,8 @@ settings:
   group_player_components: Player Components
   group_player_display_mode: Display Mode
   group_player_display_mode_desc: Set a base display mode and override it for specific playback contexts when needed.
+  group_bewly_widescreen: Bewly Widescreen
+  group_bewly_widescreen_desc: Adjust the sidebar and video layout in Bewly Widescreen. Toggle it anytime with the player button or shortcut.
   group_playback_memory: Playback Memory
   group_playback_memory_desc: Choose whether to remember playback rate, video quality, and video aspect ratio.
   group_video_page_actions: Video Page Features
