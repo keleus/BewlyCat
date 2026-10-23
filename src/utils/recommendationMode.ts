@@ -1,9 +1,6 @@
 import { settings } from '~/logic'
 import type { RecommendationModeOption } from '~/logic/storage'
 
-/** 快速切换按钮组至少显示的选项数 */
-export const MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS = 2
-
 /**
  * 推荐模式在界面上的四个选项。存储仍拆为 recommendationMode 与 appRecommendationColumn，
  * 选择 App 单列 / 双列时同时写入两者，旧配置无需迁移。
@@ -17,11 +14,11 @@ export function createRecommendationModeOptions(t: (key: string) => string): { l
   ]
 }
 
-/** 按设置筛出快速切换按钮组要显示的选项，保持固定顺序；存储值不足下限时显示全部 */
+/** 按设置的顺序筛出快速切换按钮组要显示的选项；顺序与可见项下限由存储层的 normalize 保证 */
 export function filterRecommendationModeSwitcherOptions<T extends { value: RecommendationModeOption }>(options: T[]): T[] {
-  const selected = settings.value.recommendationModeSwitcherOptions
-  const visible = Array.isArray(selected) ? options.filter(option => selected.includes(option.value)) : []
-  return visible.length >= MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS ? visible : options
+  return settings.value.recommendationModeSwitcherOptions
+    .filter(item => item.visible)
+    .flatMap(item => options.filter(option => option.value === item.mode))
 }
 
 export function getRecommendationModeOption(): RecommendationModeOption {

@@ -745,7 +745,7 @@ settings:
   show_recommendation_mode_switcher: 顯示推介模式快速切換掣組
   show_recommendation_mode_switcher_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示膠囊掣組，可以直接揀 Web、Web 訪客、App 單列或者 App 雙列。
   recommendation_mode_switcher_options: 顯示嘅推介模式
-  recommendation_mode_switcher_options_desc: 揀快速切換掣組入面顯示邊啲選項，最少要留 2 個。
+  recommendation_mode_switcher_options_desc: 揀快速切換掣組入面顯示邊啲選項，拖動可以改次序；最少要留 2 個。
   show_immersive_mode_entry: 啟用沉浸式模式
   show_immersive_mode_entry_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示入口：用 Bewly 寬屏打開 B 站片頁連續播推介片，側欄顯示主頁推介流。
   immersive_wheel_switch: 碌轆切換條片

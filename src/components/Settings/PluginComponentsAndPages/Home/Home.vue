@@ -9,14 +9,13 @@ import Radio from '~/components/Radio.vue'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { appAuthTokens, settings } from '~/logic'
 import type { RecommendationModeOption, Settings, TabsPosition } from '~/logic/storage'
+import { MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS } from '~/logic/storage'
 import { useMainStore } from '~/stores/mainStore'
 import { hasValidAppAuthTokens, revokeAccessKey } from '~/utils/authProvider'
 import {
   applyRecommendationModeOption,
   createRecommendationModeOptions,
-  filterRecommendationModeSwitcherOptions,
   getRecommendationModeOption,
-  MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS,
 } from '~/utils/recommendationMode'
 
 import SettingsItem from '../../components/SettingsItem.vue'
@@ -43,19 +42,15 @@ const recommendationModeOptionIcons: Record<RecommendationModeOption, string> = 
   appSingle: 'i-tabler-layout-list',
   appDouble: 'i-tabler-layout-grid',
 }
-const recommendationModeSwitcherSelection = computed(() =>
-  filterRecommendationModeSwitcherOptions(recommendationModeOptions.value).map(option => option.value),
-)
 
-function handleToggleRecommendationModeSwitcherOption(option: RecommendationModeOption, visible: boolean) {
-  const selection = recommendationModeSwitcherSelection.value
-  if (!visible && selection.length <= MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS)
+function getRecommendationModeLabel(mode: RecommendationModeOption) {
+  return recommendationModeOptions.value.find(option => option.value === mode)?.label ?? mode
+}
+
+function handleToggleRecommendationModeSwitcherOption(item: Settings['recommendationModeSwitcherOptions'][number], visible: boolean) {
+  if (!visible && settings.value.recommendationModeSwitcherOptions.filter(option => option.visible).length <= MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS)
     return
-  const next = visible ? [...selection, option] : selection.filter(value => value !== option)
-  // 按固定顺序存储，避免切换顺序影响按钮组排列
-  settings.value.recommendationModeSwitcherOptions = recommendationModeOptions.value
-    .map(item => item.value)
-    .filter(value => next.includes(value))
+  item.visible = visible
 }
 
 const followingUploaderSortOptions = computed<{ label: string, value: Settings['followingUploaderSort'] }[]>(() => [
@@ -177,12 +172,15 @@ function resetHomeTabs() {
   })
 }
 
-function handleToggleHomeTab(tab: any) {
-  // Prevent disabling all tabs if there is only one
-  if (settings.value.homePageTabVisibilityList.filter(tab => tab.visible === true).length > 1)
-    tab.visible = !tab.visible
-  else
-    tab.visible = true
+function getHomeTabLabel(page: HomeSubPage) {
+  return t(mainStore.homeTabs.find(tab => tab.page === page)?.i18nKey ?? '')
+}
+
+function handleToggleHomeTab(tab: Settings['homePageTabVisibilityList'][number], visible: boolean) {
+  // 至少保留一个可见标签
+  if (!visible && settings.value.homePageTabVisibilityList.filter(item => item.visible).length <= 1)
+    return
+  tab.visible = visible
 }
 </script>
 
@@ -215,16 +213,23 @@ function handleToggleHomeTab(tab: any) {
         :desc="$t('settings.recommendation_mode_switcher_options_desc')"
       >
         <template #bottom>
-          <div class="recommendation-mode-switcher-tags" role="group" :aria-label="$t('settings.recommendation_mode_switcher_options')">
-            <SettingsToggleTag
-              v-for="option in recommendationModeOptions"
-              :key="option.value"
-              :model-value="recommendationModeSwitcherSelection.includes(option.value)"
-              :label="option.label"
-              :icon="recommendationModeOptionIcons[option.value]"
-              @update:model-value="handleToggleRecommendationModeSwitcherOption(option.value, $event)"
-            />
-          </div>
+          <draggable
+            v-model="settings.recommendationModeSwitcherOptions"
+            item-key="mode"
+            class="settings-draggable-tags"
+            :force-fallback="true"
+            role="group"
+            :aria-label="$t('settings.recommendation_mode_switcher_options')"
+          >
+            <template #item="{ element }">
+              <SettingsToggleTag
+                :model-value="element.visible"
+                :label="getRecommendationModeLabel(element.mode)"
+                :icon="recommendationModeOptionIcons[element.mode as RecommendationModeOption]"
+                @update:model-value="handleToggleRecommendationModeSwitcherOption(element, $event)"
+              />
+            </template>
+          </draggable>
         </template>
       </SettingsItem>
 
@@ -349,21 +354,17 @@ function handleToggleHomeTab(tab: any) {
           <draggable
             v-model="settings.homePageTabVisibilityList"
             item-key="page"
-            :component-data="{ style: 'display: flex; gap: 0.5rem; flex-wrap: wrap;' }"
+            class="settings-draggable-tags"
+            :force-fallback="true"
+            role="group"
+            :aria-label="$t('settings.home_tabs_adjustment')"
           >
             <template #item="{ element }">
-              <div
-                class="bew-settings-option--lift"
-                flex="~ gap-2 items-center" p="x-4 y-2" bg="$bew-fill-1" rounded="$bew-radius" cursor-all-scroll
-                duration-300
-                :style="{
-                  background: element.visible ? 'var(--bew-theme-color-20)' : 'var(--bew-fill-1)',
-                  color: element.visible ? 'var(--bew-theme-color)' : 'var(--bew-text-1)',
-                }"
-                @click="handleToggleHomeTab(element)"
-              >
-                {{ $t(mainStore.homeTabs.find(tab => tab.page === element.page)?.i18nKey ?? '') }}
-              </div>
+              <SettingsToggleTag
+                :model-value="element.visible"
+                :label="getHomeTabLabel(element.page)"
+                @update:model-value="handleToggleHomeTab(element, $event)"
+              />
             </template>
           </draggable>
         </template>
@@ -579,10 +580,16 @@ function handleToggleHomeTab(tab: any) {
 </template>
 
 <style lang="scss" scoped>
-.recommendation-mode-switcher-tags {
+// 可拖拽排序的开关标签列表。使用 Sortable 的 fallback 拖拽：Firefox 不会在 <button> 上触发
+// 原生 dragstart，且 fallback 会在拖动结束后拦截随之而来的 click，避免误切换可见性。
+.settings-draggable-tags {
   display: flex;
   flex-wrap: wrap;
   gap: var(--bew-space-2);
+
+  :deep(.settings-toggle-tag) {
+    cursor: grab;
+  }
 }
 
 .unrestricted-width-settings-item {

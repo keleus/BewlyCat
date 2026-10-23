@@ -180,6 +180,9 @@ export type RecommendationMode = 'web' | 'app' | 'webNoCookie'
 export type AppRecommendationColumn = 'single' | 'double'
 /** 推荐模式在界面上的四个选项，App 单列 / 双列对应 recommendationMode 为 app 时的两种列模式 */
 export type RecommendationModeOption = 'web' | 'webNoCookie' | 'appSingle' | 'appDouble'
+export const RECOMMENDATION_MODE_OPTIONS: readonly RecommendationModeOption[] = ['web', 'webNoCookie', 'appSingle', 'appDouble']
+/** 快速切换按钮组至少显示的选项数 */
+export const MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS = 2
 /**
  * 评论回复树展示模式：
  * - lineCollapseMain：线条，收起时折叠父节点本体
@@ -525,7 +528,7 @@ export interface Settings {
   recommendationMode: RecommendationMode
   appRecommendationColumn: AppRecommendationColumn
   showRecommendationModeSwitcher: boolean
-  recommendationModeSwitcherOptions: RecommendationModeOption[] // 推荐模式快速切换按钮组中显示的选项，至少 2 个
+  recommendationModeSwitcherOptions: { mode: RecommendationModeOption, visible: boolean }[] // 推荐模式快速切换按钮组的选项顺序与可见性，至少 2 个可见
   showImmersiveModeEntry: boolean // 首页个性推荐标签栏右侧显示沉浸式模式入口（沉浸式模式总开关）
   immersiveWheelSwitch: boolean // 沉浸式模式中在画面上滚动滚轮切换视频
   immersiveKeyboardSwitch: boolean // 沉浸式模式中 ↑↓ / W S / PageUp PageDown 切换视频（关闭后 ↑↓ 恢复播放器音量快捷键）
@@ -886,7 +889,7 @@ export const originalSettings: Settings = {
   recommendationMode: 'web',
   appRecommendationColumn: 'single',
   showRecommendationModeSwitcher: false,
-  recommendationModeSwitcherOptions: ['web', 'webNoCookie', 'appSingle', 'appDouble'],
+  recommendationModeSwitcherOptions: RECOMMENDATION_MODE_OPTIONS.map(mode => ({ mode, visible: true })),
   showImmersiveModeEntry: true,
   immersiveWheelSwitch: true,
   immersiveKeyboardSwitch: true,
@@ -1096,6 +1099,34 @@ function normalizeFavoriteOrganizerFolders(value: unknown): FavoriteOrganizerFol
   return folders
 }
 
+/**
+ * 补齐推荐模式快速切换选项：旧版存储为可见项的字符串数组（固定顺序），转为带顺序的可见性列表；
+ * 去除重复与非法项，缺失项按可见追加，可见项不足下限时全部显示。
+ */
+export function normalizeRecommendationModeSwitcherOptions(value: unknown): Settings['recommendationModeSwitcherOptions'] {
+  const items = Array.isArray(value) ? value : []
+  const isLegacy = items.length > 0 && items.every(item => typeof item === 'string')
+  const result: Settings['recommendationModeSwitcherOptions'] = []
+  if (isLegacy) {
+    for (const mode of RECOMMENDATION_MODE_OPTIONS)
+      result.push({ mode, visible: items.includes(mode) })
+  }
+  else {
+    for (const item of items) {
+      const mode = item?.mode
+      if (RECOMMENDATION_MODE_OPTIONS.includes(mode) && !result.some(option => option.mode === mode))
+        result.push({ mode, visible: item.visible !== false })
+    }
+    for (const mode of RECOMMENDATION_MODE_OPTIONS) {
+      if (!result.some(option => option.mode === mode))
+        result.push({ mode, visible: true })
+    }
+  }
+  if (result.filter(option => option.visible).length < MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS)
+    result.forEach(option => option.visible = true)
+  return result
+}
+
 let resolveSettingsReady: (value: Settings) => void = () => {}
 export const settingsReady = new Promise<Settings>((resolve) => {
   resolveSettingsReady = resolve
@@ -1139,6 +1170,7 @@ export const settings = useSettingsStorage(originalSettings, {
     }
 
     record.favoriteOrganizerFolders = normalizeFavoriteOrganizerFolders(record.favoriteOrganizerFolders)
+    record.recommendationModeSwitcherOptions = normalizeRecommendationModeSwitcherOptions(record.recommendationModeSwitcherOptions)
 
     Reflect.deleteProperty(record, 'detectCommentShadowBan')
     Reflect.deleteProperty(record, 'showBewlyOrBiliTopBarSwitcher')

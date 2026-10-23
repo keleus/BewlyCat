@@ -884,7 +884,7 @@ settings:
   show_recommendation_mode_switcher: 显示推荐模式快速切换按钮组
   show_recommendation_mode_switcher_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示胶囊按钮组，可直接选择 Web、Web 游客、App 单列或 App 双列。
   recommendation_mode_switcher_options: 显示的推荐模式
-  recommendation_mode_switcher_options_desc: 选择快速切换按钮组中显示的选项，至少保留 2 个。
+  recommendation_mode_switcher_options_desc: 选择快速切换按钮组中显示的选项，拖动可调整顺序；至少保留 2 个。
   show_immersive_mode_entry: 启用沉浸式模式
   show_immersive_mode_entry_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示入口：以 Bewly 宽屏打开 B 站视频页连续播放推荐视频，侧栏显示首页推荐流。
   immersive_wheel_switch: 滚轮切换视频
