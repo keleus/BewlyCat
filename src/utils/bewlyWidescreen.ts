@@ -1692,8 +1692,8 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID} .bewly-widescreen-back-to-top-icon {
-      width: var(--bew-icon-size-lg, 24px);
-      height: var(--bew-icon-size-lg, 24px);
+      width: var(--bew-icon-size-lg, 25px);
+      height: var(--bew-icon-size-lg, 25px);
     }
 
     #${ROOT_ID} .bewly-widescreen-back-to-top:hover {
