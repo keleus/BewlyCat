@@ -278,7 +278,7 @@ onBeforeUnmount(() => {
 }
 
 .moment-comment-composer__error {
-  color: var(--bew-theme-color);
+  color: var(--bew-error-color);
 }
 
 .moment-comment-composer__images {
@@ -318,7 +318,7 @@ onBeforeUnmount(() => {
   border-radius: var(--bew-radius-full);
   color: #fff;
   // 与动态图片画廊的媒体浮层按钮一致，保证在任意图片上都可辨认。
-  background: rgb(15 20 25 / 72%);
+  background: var(--bew-media-button-bg);
   font-size: var(--bew-icon-size-sm);
   cursor: pointer;
 

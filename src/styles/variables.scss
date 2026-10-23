@@ -364,6 +364,10 @@
 
   // This color is used in skeleton screens
   --bew-skeleton: var(--bew-fill-2);
+
+  // 媒体浮层按钮的暗色遮罩底（图片画廊导航、评论缩略图删除等），明暗主题同值。
+  --bew-media-button-bg: rgb(15 20 25 / 72%);
+  --bew-media-button-bg-hover: rgb(15 20 25 / 88%);
   // #endregion
 
   --bew-border-color: rgb(131 131 145 / 18%);

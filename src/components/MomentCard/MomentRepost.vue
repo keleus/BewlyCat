@@ -241,7 +241,7 @@ onBeforeUnmount(() => {
 .moment-repost__error {
   display: grid;
   gap: var(--bew-space-1);
-  color: var(--bew-theme-color);
+  color: var(--bew-error-color);
 }
 @media (max-width: 480px) {
   .moment-repost__avatar {

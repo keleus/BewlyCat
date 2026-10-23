@@ -439,7 +439,7 @@ onBeforeUnmount(() => {
   border-radius: var(--bew-radius-full);
   place-items: center;
   color: #fff;
-  background: rgb(15 20 25 / 72%);
+  background: var(--bew-media-button-bg);
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 12%),
     0 4px 12px rgb(0 0 0 / 28%);
@@ -477,7 +477,7 @@ onBeforeUnmount(() => {
 }
 
 .moment-image-gallery__nav:hover {
-  background: rgb(15 20 25 / 88%);
+  background: var(--bew-media-button-bg-hover);
 }
 
 .moment-image-gallery__nav:active {

@@ -733,7 +733,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   color: var(--bew-text-3);
 }
 .moment-rich-editor__count.is-over {
-  color: var(--bew-theme-color);
+  color: var(--bew-error-color);
 }
 .moment-rich-editor__panel {
   position: fixed;
