@@ -51,6 +51,8 @@ interface Props {
   previewUrl?: string
   isLikeLoading?: boolean
   isReservationLoading?: boolean
+  /** 上次看到的位置，在卡片顶边显示分界标记 */
+  lastSeen?: boolean
 }
 
 const {
@@ -63,6 +65,7 @@ const {
   previewUrl = '',
   isLikeLoading = false,
   isReservationLoading = false,
+  lastSeen = false,
 } = defineProps<Props>()
 
 const emit = defineEmits<{
@@ -529,6 +532,7 @@ function handleAdditionalClick(event: MouseEvent) {
     @keydown.enter.self="emit('openDetail', moment)"
     @keydown.space.self.prevent="emit('openDetail', moment)"
   >
+    <span v-if="lastSeen" class="moment-card__last-seen">{{ t('moments.last_seen') }}</span>
     <div class="moment-card__surface">
       <MomentAuthorHeader
         :author="moment.author"
@@ -847,6 +851,24 @@ function handleAdditionalClick(event: MouseEvent) {
   user-select: text;
   -webkit-user-select: text;
   box-shadow: none;
+}
+
+/* 绝对定位骑在卡片顶边，不改变卡片高度，避免影响虚拟列表测量 */
+.moment-card__last-seen {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  padding: 2px var(--bew-space-2);
+  border-radius: var(--bew-badge-radius);
+  background-color: var(--bew-theme-color);
+  color: white;
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-medium);
+  line-height: 1.5;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .moment-card__surface {

@@ -374,6 +374,8 @@ settings:
   moments_enable_video_preview_desc: Preview video dynamics and forwarded videos on hover, with configurable trigger area, delay, and playback interactions.
   moments_grid_columns: Dynamic columns
   moments_tabs_position: Dynamic tabs position
+  moments_start_from_last_seen: Start from where you left off
+  moments_start_from_last_seen_desc: Open the plugin moments page and the top bar moments dropdown at the last post you saw, then scroll up to load newer posts. When off, loading starts from the latest and a button still lets you jump to where you left off.
   moments_grid_columns_desc: Set the column count for the Bewly dynamic feed. Columns reduce automatically when space is limited.
   moments_grid_columns_option: '{count} columns'
   moments_grid_columns_more: More
@@ -1400,6 +1402,8 @@ topbar:
     uploaded: 'uploaded: '
     now_streaming: 'now streaming: '
     live_status: LIVE
+    last_seen: Last seen here
+    jump_to_last_seen: Jump to where you left off
   upload_dropdown:
     article: Article
     music: Music
@@ -1755,6 +1759,10 @@ moments:
   filter_video: Videos
   filter_pgc: Anime & shows
   filter_article: Articles
+  last_seen: Last seen here
+  newer_above: Newer posts above
+  jump_to_latest: Back to latest
+  jump_to_last_seen: Jump to where you left off
   emoji: Emoji
   view: View
   charged_unlock: Unlock with charging

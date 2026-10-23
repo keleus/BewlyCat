@@ -57,10 +57,17 @@ function handleReachBottom() {
   getData()
 }
 
+function handleReachTop() {
+  if (topBarStore.isLoadingMoments || topBarStore.moments.length === 0)
+    return
+
+  void getNewerData()
+}
+
 useOptimizedScroll(
   momentsWrap,
-  { onReachBottom: handleReachBottom },
-  { bottomThreshold: 400, throttleDelay: 100 },
+  { onReachBottom: handleReachBottom, onReachTop: handleReachTop },
+  { bottomThreshold: 400, topThreshold: 200, throttleDelay: 100 },
 )
 
 function onClickTab(tab: MomentTab) {
@@ -72,13 +79,44 @@ function onClickTab(tab: MomentTab) {
   // 移除这里的 initData() 调用，因为 watch 已经会处理
 }
 
-function initData() {
-  topBarStore.initMomentsData(selectedMomentTab.value.type)
+async function initData() {
   void ensureWatchLaterState()
+  await loadFromStart(type => topBarStore.initMomentsData(type))
+}
+
+async function jumpToLastSeen() {
+  if (topBarStore.isLoadingMoments)
+    return
+  await loadFromStart(type => topBarStore.jumpToLastSeenMoment(type))
+}
+
+async function loadFromStart(load: (type: MomentType) => Promise<void>) {
+  if (momentsWrap.value)
+    momentsWrap.value.scrollTop = 0
+  const type = selectedMomentTab.value.type
+  await load(type)
+  // 从上次看到的位置开始时先向上预取一批：列表在顶部时无法再触发向上滚动
+  if (type === selectedMomentTab.value.type && topBarStore.hasNewerMoments)
+    await getNewerData()
 }
 
 function getData() {
   topBarStore.getMomentsData(selectedMomentTab.value.type)
+}
+
+/** 向上插入更新的动态，并按新增高度下移滚动位置，保持当前阅读位置不动 */
+async function getNewerData() {
+  const wrap = momentsWrap.value
+  if (!wrap || !topBarStore.hasNewerMoments || topBarStore.isLoadingNewerMoments)
+    return
+
+  const type = selectedMomentTab.value.type
+  const previousHeight = wrap.scrollHeight
+  await topBarStore.getNewerTopBarMoments(type)
+  if (type !== selectedMomentTab.value.type)
+    return
+  await nextTick()
+  wrap.scrollTop += wrap.scrollHeight - previousHeight
 }
 
 // 顶栏动态 API：8 为视频，64 为专栏
@@ -128,14 +166,26 @@ defineExpose({
           {{ tab.name }}
         </div>
       </div>
-      <ALink
-        href="https://t.bilibili.com/"
-        type="topBar"
-        class="bew-top-bar-pop-action"
-        flex="~ items-center"
-      >
-        <span text="sm">{{ $t('common.view_all') }}</span>
-      </ALink>
+      <div flex="~ items-center gap-3">
+        <button
+          v-if="selectedMomentTab.type === 'video' && topBarStore.canJumpToLastSeenMoment"
+          type="button"
+          class="bew-top-bar-pop-action"
+          flex="~ items-center gap-1"
+          @click="jumpToLastSeen"
+        >
+          <span i-tabler-arrow-down />
+          <span text="sm">{{ $t('topbar.moments_dropdown.jump_to_last_seen') }}</span>
+        </button>
+        <ALink
+          href="https://t.bilibili.com/"
+          type="topBar"
+          class="bew-top-bar-pop-action"
+          flex="~ items-center"
+        >
+          <span text="sm">{{ $t('common.view_all') }}</span>
+        </ALink>
+      </div>
     </header>
 
     <!-- moments wrapper -->
@@ -166,121 +216,128 @@ defineExpose({
 
       <!-- moments -->
       <TransitionGroup name="list">
-        <ALink
-          v-for="(moment, index) in topBarStore.moments"
-          :key="moment.id_str"
-          :href="moment.link"
-          type="topBar"
-          block
-          class="group bew-content-card"
-          m="last:b-4" p="2"
-          hover:bg="$bew-fill-2"
-          duration-300
-          pos="relative"
-        >
-          <!-- new moment dot -->
+        <!-- TransitionGroup 会以 template 的 key 加子节点序号作为子节点 key；v-if 为假时保留注释占位，序号不变 -->
+        <template v-for="(moment, index) in topBarStore.moments" :key="moment.id_str">
           <div
-            v-if="topBarStore.isNewMoment(index) && selectedMomentTab.type === 'video'"
-            rounded="full"
-            w="8px"
-            h="8px"
-            m="-2"
-            bg="$bew-theme-color"
-            pos="absolute -top-12px -left-12px"
-            style="box-shadow: 0 0 4px var(--bew-theme-color)"
-          />
-          <PopMediaCard
-            :title="moment.title"
-            :cover="`${moment.cover}@240w_135h_1c`"
-            stretch
-            narrow
-            cover-class="bew-cover-action-host"
-            copy-class="moments-pop__copy"
-            title-class="moments-pop__title"
+            v-if="selectedMomentTab.type === 'video' && topBarStore.isLastSeenMoment(index)"
+            class="moments-pop__last-seen"
           >
-            <template #byline>
-              <div class="moments-pop__byline" flex="~ items-center gap-1" min-w-0>
-                <ALink
-                  :href="moment.authorJumpUrl"
-                  type="topBar"
-                  :stop-propagation="true"
-                  rounded="1/2"
-                  w="24px" h="24px"
-                  bg="$bew-skeleton"
-                  flex="~ items-center justify-center"
-                  shrink-0
-                >
-                  <img
-                    :src="`${moment.authorFace}@48w_48h_1c`"
-                    rounded="1/2"
-                    w="20px" h="20px"
-                  >
-                </ALink>
-
-                <div
-                  class="bew-top-bar-media-author--compact moments-pop__author"
-                  min-w-0
-                  flex-1
-                >
-                  <!-- 联合投稿显示多个作者 -->
-                  <template v-if="moment.isCollaborative && moment.authors">
-                    <template v-for="(author, idx) in moment.authors" :key="author.jump_url">
-                      <ALink
-                        :href="author.jump_url"
-                        type="topBar"
-                        :stop-propagation="true"
-                        class="bew-top-bar-media-author"
-                      >
-                        {{ author.name }}
-                      </ALink>
-                      <span v-if="Number(idx) < moment.authors.length - 1" text="$bew-text-2">/</span>
-                    </template>
-                  </template>
-                  <!-- 单个作者 -->
+            {{ $t('topbar.moments_dropdown.last_seen') }}
+          </div>
+          <ALink
+            :href="moment.link"
+            type="topBar"
+            block
+            class="group bew-content-card"
+            m="last:b-4" p="2"
+            hover:bg="$bew-fill-2"
+            duration-300
+            pos="relative"
+          >
+            <!-- new moment dot -->
+            <div
+              v-if="topBarStore.isNewMoment(index) && selectedMomentTab.type === 'video'"
+              rounded="full"
+              w="8px"
+              h="8px"
+              m="-2"
+              bg="$bew-theme-color"
+              pos="absolute -top-12px -left-12px"
+              style="box-shadow: 0 0 4px var(--bew-theme-color)"
+            />
+            <PopMediaCard
+              :title="moment.title"
+              :cover="`${moment.cover}@240w_135h_1c`"
+              stretch
+              narrow
+              cover-class="bew-cover-action-host"
+              copy-class="moments-pop__copy"
+              title-class="moments-pop__title"
+            >
+              <template #byline>
+                <div class="moments-pop__byline" flex="~ items-center gap-1" min-w-0>
                   <ALink
-                    v-else
                     :href="moment.authorJumpUrl"
                     type="topBar"
                     :stop-propagation="true"
-                    class="bew-top-bar-media-author"
+                    rounded="1/2"
+                    w="24px" h="24px"
+                    bg="$bew-skeleton"
+                    flex="~ items-center justify-center"
+                    shrink-0
                   >
-                    {{ moment.author }}
+                    <img
+                      :src="`${moment.authorFace}@48w_48h_1c`"
+                      rounded="1/2"
+                      w="20px" h="20px"
+                    >
                   </ALink>
-                </div>
 
-                <div
-                  class="bew-top-bar-media-meta"
-                  shrink-0
-                  whitespace-nowrap
-                >
-                  <!-- publish time -->
-                  <span v-if="selectedMomentTab.type !== 'live'" text="$bew-text-2">
-                    {{ moment.pubTime }}
-                  </span>
-
-                  <!-- Live -->
-                  <span
-                    v-else
-                    text="$bew-theme-color"
-                    font="semibold"
-                    flex="~ items-center"
+                  <div
+                    class="bew-top-bar-media-author--compact moments-pop__author"
+                    min-w-0
+                    flex-1
                   >
-                    <span i-fluent:live-24-filled m="r-1" />
-                    {{ $t('topbar.moments_dropdown.live_status') }}
-                  </span>
-                </div>
-              </div>
-            </template>
+                    <!-- 联合投稿显示多个作者 -->
+                    <template v-if="moment.isCollaborative && moment.authors">
+                      <template v-for="(author, idx) in moment.authors" :key="author.jump_url">
+                        <ALink
+                          :href="author.jump_url"
+                          type="topBar"
+                          :stop-propagation="true"
+                          class="bew-top-bar-media-author"
+                        >
+                          {{ author.name }}
+                        </ALink>
+                        <span v-if="Number(idx) < moment.authors.length - 1" text="$bew-text-2">/</span>
+                      </template>
+                    </template>
+                    <!-- 单个作者 -->
+                    <ALink
+                      v-else
+                      :href="moment.authorJumpUrl"
+                      type="topBar"
+                      :stop-propagation="true"
+                      class="bew-top-bar-media-author"
+                    >
+                      {{ moment.author }}
+                    </ALink>
+                  </div>
 
-            <template #coverTopRight>
-              <WatchLaterCoverButton
-                :target="isVideoMoment(moment) ? { aid: moment.rid } : undefined"
-                size="sm"
-                tooltip-placement="left"
-              />
-            </template>
-          </PopMediaCard>
-        </ALink>
+                  <div
+                    class="bew-top-bar-media-meta"
+                    shrink-0
+                    whitespace-nowrap
+                  >
+                    <!-- publish time -->
+                    <span v-if="selectedMomentTab.type !== 'live'" text="$bew-text-2">
+                      {{ moment.pubTime }}
+                    </span>
+
+                    <!-- Live -->
+                    <span
+                      v-else
+                      text="$bew-theme-color"
+                      font="semibold"
+                      flex="~ items-center"
+                    >
+                      <span i-fluent:live-24-filled m="r-1" />
+                      {{ $t('topbar.moments_dropdown.live_status') }}
+                    </span>
+                  </div>
+                </div>
+              </template>
+
+              <template #coverTopRight>
+                <WatchLaterCoverButton
+                  :target="isVideoMoment(moment) ? { aid: moment.rid } : undefined"
+                  size="sm"
+                  tooltip-placement="left"
+                />
+              </template>
+            </PopMediaCard>
+          </ALink>
+        </template>
       </TransitionGroup>
 
       <!-- loading -->
@@ -326,6 +383,25 @@ defineExpose({
     text-overflow: unset;
     -webkit-line-clamp: unset;
     line-clamp: unset;
+  }
+}
+
+.moments-pop__last-seen {
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-2);
+  padding: var(--bew-space-1) var(--bew-space-2);
+  color: var(--bew-theme-color);
+  font-size: var(--bew-font-size-caption);
+  font-weight: var(--bew-font-weight-medium);
+  white-space: nowrap;
+
+  &::before,
+  &::after {
+    flex: 1;
+    height: 1px;
+    background: var(--bew-border-color);
+    content: "";
   }
 }
 

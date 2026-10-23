@@ -241,7 +241,7 @@ watch(
     // 弹窗关闭时更新
     if (isLogin.value) {
       if (!newVal) {
-        await syncMomentsState('video')
+        await syncMomentsState()
       }
       else {
         nextTick(() => {

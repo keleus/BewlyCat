@@ -427,6 +427,8 @@ export interface Settings {
   momentsSidebarShowHotSearch: boolean
   momentsShowUpList: boolean
   momentsTabsPosition: TabsPosition
+  /** 插件动态页与顶栏动态下拉从上次看到的位置开始加载 */
+  momentsStartFromLastSeen: boolean
   momentsEnableLivePreview: boolean
   momentsEnableVideoPreview: boolean
   momentsEnableVideoControls: boolean
@@ -797,6 +799,7 @@ export const originalSettings: Settings = {
   momentsSidebarShowHotSearch: true,
   momentsShowUpList: true,
   momentsTabsPosition: 'left',
+  momentsStartFromLastSeen: true,
   momentsEnableLivePreview: true,
   momentsEnableVideoPreview: true,
   momentsEnableVideoControls: false,

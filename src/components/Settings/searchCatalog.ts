@@ -319,6 +319,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_show_hot_search',
     'settings.moments_show_up_list',
     'settings.moments_tabs_position',
+    'settings.moments_start_from_last_seen',
     'settings.moments_enable_live_preview',
     'settings.moments_enable_video_preview',
     'settings.enable_video_ctrl_bar_on_video_card',

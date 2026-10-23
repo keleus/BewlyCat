@@ -370,6 +370,8 @@ settings:
   moments_enable_video_preview_desc: 滑鼠懸停影片動態或轉發影片時播放預覽，可設定觸發範圍、延遲和播放互動。
   moments_grid_columns: 動態欄數
   moments_tabs_position: 動態標籤列位置
+  moments_start_from_last_seen: 從上次看到的位置開始載入
+  moments_start_from_last_seen_desc: 開啟外掛動態頁和頂欄動態下拉時直接定位到上次看到的位置，可向上繼續載入更新的動態。關閉後從最新開始載入，仍可點擊按鈕跳轉到上次看到的位置。
   moments_grid_columns_desc: 設定 Bewly 動態頁的欄數，視窗空間不足時會自動減少。
   moments_grid_columns_option: '{count} 欄'
   moments_grid_columns_more: 更多
@@ -1334,6 +1336,8 @@ topbar:
     uploaded: 上傳了：
     now_streaming: 正在直播：
     live_status: 直播中
+    last_seen: 上次看到這裡
+    jump_to_last_seen: 跳到上次看到的位置
   upload_dropdown:
     article: 上傳文章
     music: 上傳音訊
@@ -1682,6 +1686,10 @@ moments:
   filter_video: 影片投稿
   filter_pgc: 追番追劇
   filter_article: 專欄
+  last_seen: 上次看到這裡
+  newer_above: 上方還有更新的動態
+  jump_to_latest: 回到最新
+  jump_to_last_seen: 跳到上次看到的位置
   emoji: 表情
   view: 查看
   charged_unlock: 充電解鎖

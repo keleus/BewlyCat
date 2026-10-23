@@ -371,6 +371,8 @@ settings:
   moments_enable_video_preview_desc: 鼠标悬停视频动态或转发视频时播放预览，可设置触发范围、延迟和播放交互。
   moments_grid_columns: 动态列数
   moments_tabs_position: 动态标签栏位置
+  moments_start_from_last_seen: 从上次看到的位置开始加载
+  moments_start_from_last_seen_desc: 打开插件动态页和顶栏动态下拉时直接定位到上次看到的位置，可向上继续加载更新的动态。关闭后从最新开始加载，仍可点击按钮跳转到上次看到的位置。
   moments_grid_columns_desc: 设置 Bewly 动态页的列数，窗口空间不足时会自动减少。
   moments_grid_columns_option: '{count} 列'
   moments_grid_columns_more: 更多
@@ -1319,6 +1321,8 @@ topbar:
     uploaded: 上传了：
     now_streaming: 正在直播：
     live_status: 直播中
+    last_seen: 上次看到这里
+    jump_to_last_seen: 跳到上次看到的位置
   upload_dropdown:
     article: 上传专栏
     music: 上传音频
@@ -1667,6 +1671,10 @@ moments:
   filter_video: 视频投稿
   filter_pgc: 追番追剧
   filter_article: 专栏
+  last_seen: 上次看到这里
+  newer_above: 上方还有更新的动态
+  jump_to_latest: 回到最新
+  jump_to_last_seen: 跳到上次看到的位置
   emoji: 表情
   view: 查看
   charged_unlock: 充电解锁

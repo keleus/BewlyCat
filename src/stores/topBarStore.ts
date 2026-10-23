@@ -38,6 +38,13 @@ import { shouldShowBewlyTopBar } from '~/utils/bilibiliTopBar'
 import { i18n } from '~/utils/i18n'
 import { getCSRF, isHomePage } from '~/utils/main'
 import { isBackgroundUnavailableError, onMessage, sendMessage } from '~/utils/messaging'
+import {
+  fetchNewerMoments,
+  fetchUnreadMomentIds,
+  getLastSeenStartOffset,
+  isNewerDynamicId,
+  isNotOlderDynamicId,
+} from '~/utils/momentsLastSeen'
 import { getNotificationBadgeCounts } from '~/utils/notificationBadge'
 import type { AddOpenTabsResult } from '~/utils/openTabsWatchLater'
 import { addOpenTabsToWatchLater } from '~/utils/openTabsWatchLater'
@@ -47,6 +54,12 @@ export const LOGIN_RECHECK_INTERVAL = 1000 * 60 // 已登录但 userInfo 未填�
 
 const DAY_MILLISECONDS = 24 * 60 * 60 * 1000
 const MAX_TOP_BAR_MOMENTS = 200
+// 未读超过该数量时才从上次看到的位置开始加载，否则分界线就在首页
+const TOP_BAR_LAST_SEEN_MIN_UNREAD = 8
+// 定位后分界线上方保留的未读条数
+const TOP_BAR_LAST_SEEN_CONTEXT = 3
+// 每次向上加载跨越的未读视频条数
+const TOP_BAR_LAST_SEEN_STEP = 10
 
 function getNextReceiveAt(nextReceiveDays?: number, periodEndUnix?: number): number | null {
   if (Number.isFinite(periodEndUnix) && periodEndUnix! > 0)
@@ -107,6 +120,16 @@ export const useTopBarStore = defineStore('topBar', () => {
   const momentUpdateBaseline = ref<string>('')
   const momentOffset = ref<string>('')
   const collaborativeVideoMap = new Map<string, { item: any, moment?: any }>()
+  // 上次看到定位：未读视频动态 ID（新到旧），为空表示无未读或未取到
+  const momentUnreadIds = ref<string[]>([])
+  // entrance 请求成功过；失败时新动态标记退回按 newMomentsCount 下标判断
+  const momentUnreadIdsLoaded = ref<boolean>(false)
+  // 已加载原始条目中最新的动态 ID，用作向上加载的衔接点
+  const momentNewestLoadedId = ref<string>('')
+  const hasNewerMoments = ref<boolean>(false)
+  const isLoadingNewerMoments = ref<boolean>(false)
+  // 打开下拉/切换 Tab 时递增，丢弃上一轮初始化的在途响应
+  let momentsGeneration = 0
 
   // B币领取状态
   const privilegeInfo = reactive<PrivilegeInfo>({} as PrivilegeInfo)
@@ -212,6 +235,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     isLoadingMoments.value = false
     isLoadingWatchLater.value = false
     collaborativeVideoMap.clear()
+    resetMomentsLastSeenState()
     Object.keys(privilegeInfo).forEach(key => Reflect.deleteProperty(privilegeInfo, key))
     resetReceiveStates()
   }
@@ -569,7 +593,7 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   // Moments Methods
-  async function getTopBarNewMomentsCount(selectedType: string = 'video') {
+  async function getTopBarNewMomentsCount() {
     const accountId = userInfo.mid
     if (!isCurrentAccount(accountId) || isLoadingMoments.value)
       return
@@ -577,13 +601,11 @@ export const useTopBarStore = defineStore('topBar', () => {
     try {
       isLoadingMoments.value = true
 
-      const res = await api.moment.getMomentsUpdate({
-        type: selectedType,
-        update_baseline: '0',
-      })
-
-      if (res.code === 0 && res.data && isCurrentAccount(accountId)) {
-        newMomentsCount.value = res.data.update_num
+      // 与 B 站顶栏一致取 entrance 的计数：feed/all/update 的 update_num 最多返回 99，徽标无法显示 99+
+      const res = await api.moment.getTopBarNewMomentsCount({})
+      const count = res.data?.update_info?.item?.count
+      if (res.code === 0 && typeof count === 'number' && isCurrentAccount(accountId)) {
+        newMomentsCount.value = count
       }
     }
     catch (error) {
@@ -836,154 +858,249 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
   }
 
-  function initMomentsData(selectedType: string) {
+  function resetMomentsLastSeenState() {
+    momentsGeneration++
+    momentUnreadIds.value = []
+    momentUnreadIdsLoaded.value = false
+    momentNewestLoadedId.value = ''
+    hasNewerMoments.value = false
+    isLoadingNewerMoments.value = false
+  }
+
+  // options.lastSeenIds：跳到上次看到的位置时复用已取到的未读 ID。首页请求后服务端已读位置已推进，
+  // 重新请求 entrance 只会得到空列表。
+  async function initMomentsData(selectedType: string, options: { lastSeenIds?: string[] } = {}) {
     // 重置所有相关状态
     moments.splice(0) // 使用 splice 正确清空响应式数组
     momentUpdateBaseline.value = ''
     momentOffset.value = ''
-    // newMomentsCount.value = 0
     livePage.value = 1
     noMoreMomentsContent.value = false
     isLoadingMoments.value = false // 重置加载状态,防止卡住
     collaborativeVideoMap.clear()
+    resetMomentsLastSeenState()
 
-    // 获取初始数据
-    getMomentsData(selectedType)
+    if (selectedType === 'live') {
+      getTopBarLiveMoments()
+      return
+    }
+
+    // 先取未读 ID 再请求列表：首页请求会推进服务端已读位置，之后就拿不到分界点了
+    const accountId = userInfo.mid
+    const generation = momentsGeneration
+    let unreadIds: string[] | null = options.lastSeenIds ?? null
+    if (!options.lastSeenIds) {
+      isLoadingMoments.value = true
+      unreadIds = await fetchUnreadMomentIds()
+      if (generation !== momentsGeneration || !isCurrentAccount(accountId))
+        return
+      isLoadingMoments.value = false
+    }
+
+    momentUnreadIds.value = unreadIds || []
+    momentUnreadIdsLoaded.value = unreadIds !== null
+    const startFromLastSeen = Boolean(options.lastSeenIds) || settings.value.momentsStartFromLastSeen
+    // 未读较少时分界线就在首页，按原流程从顶部加载
+    if (startFromLastSeen && momentUnreadIds.value.length > TOP_BAR_LAST_SEEN_MIN_UNREAD) {
+      momentOffset.value = getLastSeenStartOffset(momentUnreadIds.value, TOP_BAR_LAST_SEEN_CONTEXT)
+      hasNewerMoments.value = Boolean(momentOffset.value)
+    }
+
+    await getTopBarMoments(selectedType)
   }
 
   function getMomentsData(selectedType: string) {
     if (selectedType !== 'live')
-      getTopBarMoments(selectedType)
+      void getTopBarMoments(selectedType)
     else
       getTopBarLiveMoments()
   }
 
-  function getTopBarMoments(selectedType: string) {
-    const accountId = userInfo.mid
-    if (!isCurrentAccount(accountId) || isLoadingMoments.value || noMoreMomentsContent.value)
-      return
-    if (moments.length >= MAX_TOP_BAR_MOMENTS) {
-      noMoreMomentsContent.value = true
-      return
+  /** 过滤、合并联合投稿并映射为顶栏条目；返回值需由调用方插入列表后再 linkCollaborativeMoments */
+  function buildTopBarMomentItems(items: any[], selectedType: string) {
+    // 根据 selectedType 和设置过滤数据
+    // type: 8 是视频，type: 64 是专栏
+    let filteredItems = items
+
+    // 如果是视频类型，根据设置决定是否过滤专栏
+    if (selectedType === 'video') {
+      if (settings.value.filterArticlesInMoments) {
+        // 开启过滤专栏：只保留视频（type: 8）
+        filteredItems = items.filter((item: any) => item.type === 8)
+      }
+      else {
+        // 关闭过滤专栏：保留视频和专栏（type: 8 或 64）
+        filteredItems = items.filter((item: any) => item.type === 8 || item.type === 64)
+      }
     }
 
+    const latestVideoTimes = filteredItems
+      .filter((item: any) => item.type === 8)
+      .flatMap((item: any) => {
+        const time = parseTopBarPublicationTime(item.pub_time)
+        if (!time)
+          return []
+
+        const authors = Array.isArray(item.authors) && item.authors.length > 0
+          ? item.authors
+          : [item.author]
+        return authors.map((author: any) => ({
+          mid: author?.mid,
+          time,
+        }))
+      })
+    void recordUploaderLatestVideoTimes(latestVideoTimes, 'topbar-pop')
+
+    // 合并联合投稿视频：按接口返回的时间顺序遍历处理，
+    // 专栏（type 64）无 bvid 会原样保留在原位，仅对视频（type 8）
+    // 做联合投稿合并去重；不能把视频和专栏分开后再拼接，
+    // 否则专栏会被整体排到列表尾部，打乱时间序
+    let processedItems = filteredItems
+    if (selectedType === 'video')
+      processedItems = mergeCollaborativeVideos(filteredItems)
+
+    return processedItems.map((item: any) => ({
+      item,
+      moment: {
+        type: selectedType,
+        itemType: item.type,
+        title: item.title,
+        author: item.authors ? item.authors.map((a: any) => a.name).join(' / ') : item.author.name,
+        authorFace: item.author.face,
+        authorJumpUrl: item.author.jump_url,
+        pubTime: item.pub_time,
+        cover: item.cover,
+        link: item.jump_url,
+        rid: item.rid,
+        isCollaborative: !!item.authors,
+        authors: item.authors,
+        dynId: item.id_str,
+        // TransitionGroup 子元素需要唯一 key
+        id_str: item.rid != null ? `${item.type}-${item.rid}` : item.jump_url,
+      },
+    }))
+  }
+
+  function linkCollaborativeMoments(entries: Array<{ item: any, moment: any }>, selectedType: string) {
+    if (selectedType !== 'video')
+      return
+    entries.forEach(({ item, moment }) => {
+      if (item.type !== 8)
+        return
+      const bvid = extractBvid(item)
+      if (!bvid)
+        return
+      const entry = collaborativeVideoMap.get(bvid)
+      if (!entry)
+        return
+      entry.moment = moment
+      updateMomentCollaborative(moment, entry.item)
+    })
+  }
+
+  function noteNewestLoadedMoment(items: any[]) {
+    const newestId = items[0]?.id_str
+    if (newestId && (!momentNewestLoadedId.value || isNewerDynamicId(newestId, momentNewestLoadedId.value)))
+      momentNewestLoadedId.value = newestId
+  }
+
+  function getTopBarMoments(selectedType: string): Promise<void> {
+    const accountId = userInfo.mid
+    if (!isCurrentAccount(accountId) || isLoadingMoments.value || noMoreMomentsContent.value)
+      return Promise.resolve()
+    if (moments.length >= MAX_TOP_BAR_MOMENTS) {
+      noMoreMomentsContent.value = true
+      return Promise.resolve()
+    }
+
+    const generation = momentsGeneration
+    const isCurrentRequest = () => generation === momentsGeneration && isCurrentAccount(accountId)
     isLoadingMoments.value = true
-    api.moment.getTopBarMoments({
+    return api.moment.getTopBarMoments({
       type: selectedType,
       update_baseline: momentUpdateBaseline.value || undefined,
       offset: momentOffset.value || undefined,
     })
       .then((res: any) => {
-        if (res.code === 0 && isCurrentAccount(accountId)) {
-          const { has_more, items, offset, update_baseline } = res.data
+        if (res.code !== 0 || !isCurrentRequest())
+          return
 
-          if (!has_more) {
-            noMoreMomentsContent.value = true
-            return
-          }
+        const { has_more, items, offset, update_baseline } = res.data
+        momentUpdateBaseline.value = update_baseline
+        momentOffset.value = offset
+        if (!has_more)
+          noMoreMomentsContent.value = true
+        if (!items?.length)
+          return
 
-          // 更新状态
-          // newMomentsCount.value = update_num
-          momentUpdateBaseline.value = update_baseline
-          momentOffset.value = offset
-
-          // 添加新内容
-          if (items?.length) {
-            // 根据 selectedType 和设置过滤数据
-            // type: 8 是视频，type: 64 是专栏
-            let filteredItems = items
-
-            // 如果是视频类型，根据设置决定是否过滤专栏
-            if (selectedType === 'video') {
-              if (settings.value.filterArticlesInMoments) {
-                // 开启过滤专栏：只保留视频（type: 8）
-                filteredItems = items.filter((item: any) => item.type === 8)
-              }
-              else {
-                // 关闭过滤专栏：保留视频和专栏（type: 8 或 64）
-                filteredItems = items.filter((item: any) => item.type === 8 || item.type === 64)
-              }
-            }
-
-            const latestVideoTimes = filteredItems
-              .filter((item: any) => item.type === 8)
-              .flatMap((item: any) => {
-                const time = parseTopBarPublicationTime(item.pub_time)
-                if (!time)
-                  return []
-
-                const authors = Array.isArray(item.authors) && item.authors.length > 0
-                  ? item.authors
-                  : [item.author]
-                return authors.map((author: any) => ({
-                  mid: author?.mid,
-                  time,
-                }))
-              })
-            void recordUploaderLatestVideoTimes(latestVideoTimes, 'topbar-pop')
-
-            // 合并联合投稿视频：按接口返回的时间顺序遍历处理，
-            // 专栏（type 64）无 bvid 会原样保留在原位，仅对视频（type 8）
-            // 做联合投稿合并去重；不能把视频和专栏分开后再拼接，
-            // 否则专栏会被整体排到列表尾部，打乱时间序
-            let processedItems = filteredItems
-            if (selectedType === 'video')
-              processedItems = mergeCollaborativeVideos(filteredItems)
-
-            // 如果是第一次加载（offset为空），需要根据过滤和合并后的实际数量调整 newMomentsCount
-            // 因为过滤专栏和合并联合投稿会导致显示的条目数量少于原始的 update_num
-            if (!momentOffset.value && selectedType === 'video') {
-              // 计算过滤前有多少新内容
-              const originalNewCount = newMomentsCount.value
-              // 计算过滤和合并后的实际条目数
-              const actualNewCount = Math.min(originalNewCount, processedItems.length)
-              // 更新为实际的新内容数量
-              newMomentsCount.value = actualNewCount
-            }
-
-            processedItems.forEach((item: any) => {
-              if (moments.length >= MAX_TOP_BAR_MOMENTS)
-                return
-              const momentItem = {
-                type: selectedType,
-                itemType: item.type,
-                title: item.title,
-                author: item.authors ? item.authors.map((a: any) => a.name).join(' / ') : item.author.name,
-                authorFace: item.author.face,
-                authorJumpUrl: item.author.jump_url,
-                pubTime: item.pub_time,
-                cover: item.cover,
-                link: item.jump_url,
-                rid: item.rid,
-                isCollaborative: !!item.authors,
-                authors: item.authors,
-                // TransitionGroup 子元素需要唯一 key
-                id_str: item.rid != null ? `${item.type}-${item.rid}` : item.jump_url,
-              }
-
-              moments.push(momentItem)
-
-              if (selectedType === 'video' && item.type === 8) {
-                const bvid = extractBvid(item)
-                if (!bvid)
-                  return
-                const entry = collaborativeVideoMap.get(bvid)
-                if (!entry)
-                  return
-                entry.moment = momentItem
-                updateMomentCollaborative(momentItem, entry.item)
-              }
-            })
-            if (moments.length >= MAX_TOP_BAR_MOMENTS)
-              noMoreMomentsContent.value = true
-          }
-        }
+        noteNewestLoadedMoment(items)
+        const entries = buildTopBarMomentItems(items, selectedType)
+          .slice(0, Math.max(0, MAX_TOP_BAR_MOMENTS - moments.length))
+        moments.push(...entries.map(entry => entry.moment))
+        linkCollaborativeMoments(entries, selectedType)
+        if (moments.length >= MAX_TOP_BAR_MOMENTS)
+          noMoreMomentsContent.value = true
       })
       .catch(error => console.error(error))
       .finally(() => {
-        if (isCurrentAccount(accountId))
+        if (isCurrentRequest())
           isLoadingMoments.value = false
       })
+  }
+
+  /** 从上次看到的位置向上加载更新的动态；到达顶部时会请求首页，服务端随之标记为已读 */
+  async function getNewerTopBarMoments(selectedType: string) {
+    const accountId = userInfo.mid
+    if (
+      !isCurrentAccount(accountId)
+      || !hasNewerMoments.value
+      || isLoadingNewerMoments.value
+      || !momentNewestLoadedId.value
+    ) {
+      return
+    }
+
+    const generation = momentsGeneration
+    const isCurrentRequest = () => generation === momentsGeneration && isCurrentAccount(accountId)
+    isLoadingNewerMoments.value = true
+    try {
+      const result = await fetchNewerMoments(
+        async (offset) => {
+          const res: any = await api.moment.getTopBarMoments({
+            type: selectedType,
+            offset: offset || undefined,
+          })
+          if (res.code !== 0 || !isCurrentRequest())
+            return null
+          return {
+            items: res.data?.items || [],
+            offset: res.data?.offset || '',
+            hasMore: Boolean(res.data?.has_more),
+          }
+        },
+        momentUnreadIds.value,
+        momentNewestLoadedId.value,
+        TOP_BAR_LAST_SEEN_STEP,
+      )
+      if (!result || !isCurrentRequest())
+        return
+
+      if (result.items.length) {
+        noteNewestLoadedMoment(result.items)
+        const entries = buildTopBarMomentItems(result.items, selectedType)
+        moments.unshift(...entries.map(entry => entry.moment))
+        linkCollaborativeMoments(entries, selectedType)
+      }
+      if (result.reachedTop)
+        hasNewerMoments.value = false
+    }
+    catch (error) {
+      console.error(error)
+    }
+    finally {
+      if (isCurrentRequest())
+        isLoadingNewerMoments.value = false
+    }
   }
 
   function extractBvid(item: any): string | null {
@@ -1125,7 +1242,32 @@ export const useTopBarStore = defineStore('topBar', () => {
   }
 
   function isNewMoment(index: number) {
-    return index < newMomentsCount.value
+    // 取到未读 ID 时按动态 ID 判断，过滤专栏或合并联合投稿都不会让下标错位
+    if (!momentUnreadIdsLoaded.value)
+      return index < newMomentsCount.value
+    const oldestUnreadId = momentUnreadIds.value.at(-1)
+    return Boolean(oldestUnreadId) && isNotOlderDynamicId(moments[index]?.dynId, oldestUnreadId)
+  }
+
+  /** 从顶部加载且分界点尚未加载出来时，提供跳到上次看到的位置的入口 */
+  const canJumpToLastSeenMoment = computed(() => {
+    const oldestUnreadId = momentUnreadIds.value.at(-1)
+    return !hasNewerMoments.value
+      && momentUnreadIds.value.length > TOP_BAR_LAST_SEEN_MIN_UNREAD
+      && Boolean(oldestUnreadId)
+      && !moments.some(moment => isNewerDynamicId(oldestUnreadId, moment.dynId))
+  })
+
+  function jumpToLastSeenMoment(selectedType: string) {
+    return initMomentsData(selectedType, { lastSeenIds: [...momentUnreadIds.value] })
+  }
+
+  /** 该条目是上次看到的位置：前一条为未读、自身已读 */
+  function isLastSeenMoment(index: number) {
+    return momentUnreadIds.value.length > 0
+      && index > 0
+      && isNewMoment(index - 1)
+      && !isNewMoment(index)
   }
 
   function handleNotificationsItemClick(item: { name: string, url: string, unreadCount: number, icon: string }) {
@@ -1325,10 +1467,10 @@ export const useTopBarStore = defineStore('topBar', () => {
     return invalidateUnreadMessageState()
   }
 
-  function syncMomentsState(selectedType: string = 'video') {
+  function syncMomentsState() {
     return syncSharedData({
       force: true,
-      refresh: () => getTopBarNewMomentsCount(selectedType),
+      refresh: () => getTopBarNewMomentsCount(),
     })
   }
 
@@ -1548,11 +1690,17 @@ export const useTopBarStore = defineStore('topBar', () => {
     livePage,
     momentUpdateBaseline,
     momentOffset,
+    hasNewerMoments,
+    isLoadingNewerMoments,
+    canJumpToLastSeenMoment,
 
     getTopBarMoments,
     initMomentsData,
     getMomentsData,
     isNewMoment,
+    isLastSeenMoment,
+    getNewerTopBarMoments,
+    jumpToLastSeenMoment,
 
     getWatchLaterCount,
     getAllWatchLaterList,
