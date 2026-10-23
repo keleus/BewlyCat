@@ -17,6 +17,7 @@ import {
   filterRecommendationModeSwitcherOptions,
   getRecommendationModeOption,
   MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS,
+  sortRecommendationModeSwitcherOptions,
 } from '~/utils/recommendationMode'
 
 import SettingsItem from '../../components/SettingsItem.vue'
@@ -32,6 +33,12 @@ const { t } = useI18n()
 const toast = useToast()
 
 const recommendationModeOptions = computed(() => createRecommendationModeOptions(t))
+const orderedRecommendationModeOptions = computed<{ label: string, value: RecommendationModeOption }[]>({
+  get: () => sortRecommendationModeSwitcherOptions(recommendationModeOptions.value),
+  set: (options) => {
+    settings.value.recommendationModeSwitcherOrder = options.map(option => option.value)
+  },
+})
 const recommendationModeOption = computed({
   get: () => getRecommendationModeOption(),
   set: option => applyRecommendationModeOption(option),
@@ -43,6 +50,10 @@ const recommendationModeOptionIcons: Record<RecommendationModeOption, string> = 
   appSingle: 'i-tabler-layout-list',
   appDouble: 'i-tabler-layout-grid',
 }
+
+function getRecommendationModeIcon(option: RecommendationModeOption) {
+  return recommendationModeOptionIcons[option]
+}
 const recommendationModeSwitcherSelection = computed(() =>
   filterRecommendationModeSwitcherOptions(recommendationModeOptions.value).map(option => option.value),
 )
@@ -52,7 +63,7 @@ function handleToggleRecommendationModeSwitcherOption(option: RecommendationMode
   if (!visible && selection.length <= MIN_RECOMMENDATION_MODE_SWITCHER_OPTIONS)
     return
   const next = visible ? [...selection, option] : selection.filter(value => value !== option)
-  // 按固定顺序存储，避免切换顺序影响按钮组排列
+  // 可见项集合仍按固定顺序存储，按钮组的显示顺序由 recommendationModeSwitcherOrder 控制
   settings.value.recommendationModeSwitcherOptions = recommendationModeOptions.value
     .map(item => item.value)
     .filter(value => next.includes(value))
@@ -215,16 +226,22 @@ function handleToggleHomeTab(tab: any) {
         :desc="$t('settings.recommendation_mode_switcher_options_desc')"
       >
         <template #bottom>
-          <div class="recommendation-mode-switcher-tags" role="group" :aria-label="$t('settings.recommendation_mode_switcher_options')">
-            <SettingsToggleTag
-              v-for="option in recommendationModeOptions"
-              :key="option.value"
-              :model-value="recommendationModeSwitcherSelection.includes(option.value)"
-              :label="option.label"
-              :icon="recommendationModeOptionIcons[option.value]"
-              @update:model-value="handleToggleRecommendationModeSwitcherOption(option.value, $event)"
-            />
-          </div>
+          <draggable
+            v-model="orderedRecommendationModeOptions"
+            item-key="value"
+            class="recommendation-mode-switcher-tags"
+            role="group"
+            :aria-label="$t('settings.recommendation_mode_switcher_options')"
+          >
+            <template #item="{ element }">
+              <SettingsToggleTag
+                :model-value="recommendationModeSwitcherSelection.includes(element.value)"
+                :label="element.label"
+                :icon="getRecommendationModeIcon(element.value)"
+                @update:model-value="handleToggleRecommendationModeSwitcherOption(element.value, $event)"
+              />
+            </template>
+          </draggable>
         </template>
       </SettingsItem>
 
@@ -583,6 +600,10 @@ function handleToggleHomeTab(tab: any) {
   display: flex;
   flex-wrap: wrap;
   gap: var(--bew-space-2);
+}
+
+.recommendation-mode-switcher-tags :deep(.settings-toggle-tag) {
+  cursor: grab;
 }
 
 .unrestricted-width-settings-item {

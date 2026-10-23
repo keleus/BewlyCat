@@ -788,7 +788,7 @@ settings:
   show_recommendation_mode_switcher: Show quick recommendation mode switcher
   show_recommendation_mode_switcher_desc: When "For You" is selected, show a segmented control to the right of the home tabs to choose Web, Web Guest, App Single, or App Double directly.
   recommendation_mode_switcher_options: Visible recommendation modes
-  recommendation_mode_switcher_options_desc: Choose which options appear in the quick switcher. At least 2 must stay visible.
+  recommendation_mode_switcher_options_desc: Choose which options appear in the quick switcher and drag them to reorder. At least 2 must stay visible.
   show_immersive_mode_entry: Enable immersive mode
   show_immersive_mode_entry_desc: When "For You" is selected, show an entry to the right of the home tabs that plays recommendations continuously on the Bilibili video page in Bewly widescreen, with the home feed in the sidebar.
   immersive_wheel_switch: Switch videos with the mouse wheel

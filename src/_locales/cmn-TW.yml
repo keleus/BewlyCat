@@ -713,7 +713,7 @@ settings:
   show_recommendation_mode_switcher: 顯示推薦模式快速切換按鈕組
   show_recommendation_mode_switcher_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示膠囊按鈕組，可直接選擇 Web、Web 訪客、App 單列或 App 雙列。
   recommendation_mode_switcher_options: 顯示的推薦模式
-  recommendation_mode_switcher_options_desc: 選擇快速切換按鈕組中顯示的選項，至少保留 2 個。
+  recommendation_mode_switcher_options_desc: 選擇快速切換按鈕組中顯示的選項，拖動可調整順序；至少保留 2 個。
   show_immersive_mode_entry: 啟用沉浸式模式
   show_immersive_mode_entry_desc: 選取首頁「為你推薦」時，在頂部分頁列右側顯示入口：以 Bewly 寬螢幕開啟 B 站影片頁連續播放推薦影片，側欄顯示首頁推薦流。
   immersive_wheel_switch: 滾輪切換影片

@@ -524,6 +524,7 @@ export interface Settings {
   appRecommendationColumn: AppRecommendationColumn
   showRecommendationModeSwitcher: boolean
   recommendationModeSwitcherOptions: RecommendationModeOption[] // 推荐模式快速切换按钮组中显示的选项，至少 2 个
+  recommendationModeSwitcherOrder: RecommendationModeOption[] // 四个推荐模式的显示顺序（含未显示的选项）
   showImmersiveModeEntry: boolean // 首页个性推荐标签栏右侧显示沉浸式模式入口（沉浸式模式总开关）
   immersiveWheelSwitch: boolean // 沉浸式模式中在画面上滚动滚轮切换视频
   immersiveKeyboardSwitch: boolean // 沉浸式模式中 ↑↓ / W S / PageUp PageDown 切换视频（关闭后 ↑↓ 恢复播放器音量快捷键）
@@ -884,6 +885,7 @@ export const originalSettings: Settings = {
   appRecommendationColumn: 'single',
   showRecommendationModeSwitcher: false,
   recommendationModeSwitcherOptions: ['web', 'webNoCookie', 'appSingle', 'appDouble'],
+  recommendationModeSwitcherOrder: ['web', 'webNoCookie', 'appSingle', 'appDouble'],
   showImmersiveModeEntry: true,
   immersiveWheelSwitch: true,
   immersiveKeyboardSwitch: true,
