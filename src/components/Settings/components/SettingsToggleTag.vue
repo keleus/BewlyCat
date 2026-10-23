@@ -2,7 +2,7 @@
 const props = defineProps<{
   label: string
   description?: string
-  icon: string
+  icon?: string
   inverted?: boolean
   showStateIcon?: boolean
 }>()
@@ -26,7 +26,7 @@ function toggle() {
     :title="description"
     @click="toggle"
   >
-    <span :class="icon" />
+    <span v-if="icon" :class="icon" />
     <span>{{ label }}</span>
     <span
       v-if="showStateIcon !== false"
