@@ -530,49 +530,51 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
         @drop.prevent
       />
       <slot name="attachments" />
-      <!-- 工具栏放在输入框内，与正文共用同一个浅填充容器 -->
-      <div class="moment-rich-editor__toolbar">
-        <div ref="panelTriggers" class="moment-rich-editor__tools bew-segment-control bew-segment-control--static">
-          <button
-            class="bew-segment-control__item bew-segment-control__item--icon"
-            type="button" :title="t('moments.emoji')" :aria-label="t('moments.emoji')" :aria-expanded="panel === 'emoji'" :data-active="panel === 'emoji'"
-            :disabled="disabled"
-            @mousedown.prevent
-            @click="openPanel('emoji', $event)"
-          >
-            <span i-tabler-mood-smile />
-          </button>
-          <button
-            class="bew-segment-control__item bew-segment-control__item--icon"
-            type="button" :title="t('moment_card.repost_mention')" :aria-label="t('moment_card.repost_mention')" :aria-expanded="panel === 'mention'" :data-active="panel === 'mention'"
-            :disabled="disabled"
-            @mousedown.prevent
-            @click="openPanel('mention', $event)"
-          >
-            <span i-tabler-at />
-          </button>
-          <button
-            class="bew-segment-control__item bew-segment-control__item--icon"
-            type="button" :title="t('moment_card.repost_topic')" :aria-label="t('moment_card.repost_topic')" :aria-expanded="panel === 'topic'" :data-active="panel === 'topic'"
-            :disabled="disabled"
-            @mousedown.prevent
-            @click="openPanel('topic', $event)"
-          >
-            <span i-tabler-hash />
-          </button>
-          <button
-            v-if="commercialAllowed"
-            class="bew-segment-control__item bew-segment-control__item--icon" :data-active="panel === 'commercial'" type="button" :title="t('moment_card.repost_commercial')" :aria-label="t('moment_card.repost_commercial')"
-            :disabled="disabled"
-            @mousedown.prevent
-            @click="openPanel('commercial', $event)"
-          >
-            <span i-tabler-ad />
-          </button>
-          <slot name="tools" />
+      <!-- 工具栏与正文共用浅填充容器；无焦点、无内容且无面板时收起，聚焦时自动展开 -->
+      <div class="bew-expand-host moment-rich-editor__toolbar-host" :class="{ 'is-entered': panel !== '' || length > 0 }">
+        <div class="moment-rich-editor__toolbar">
+          <div ref="panelTriggers" class="moment-rich-editor__tools bew-segment-control bew-segment-control--static">
+            <button
+              class="bew-segment-control__item bew-segment-control__item--icon"
+              type="button" :title="t('moments.emoji')" :aria-label="t('moments.emoji')" :aria-expanded="panel === 'emoji'" :data-active="panel === 'emoji'"
+              :disabled="disabled"
+              @mousedown.prevent
+              @click="openPanel('emoji', $event)"
+            >
+              <span i-tabler-mood-smile />
+            </button>
+            <button
+              class="bew-segment-control__item bew-segment-control__item--icon"
+              type="button" :title="t('moment_card.repost_mention')" :aria-label="t('moment_card.repost_mention')" :aria-expanded="panel === 'mention'" :data-active="panel === 'mention'"
+              :disabled="disabled"
+              @mousedown.prevent
+              @click="openPanel('mention', $event)"
+            >
+              <span i-tabler-at />
+            </button>
+            <button
+              class="bew-segment-control__item bew-segment-control__item--icon"
+              type="button" :title="t('moment_card.repost_topic')" :aria-label="t('moment_card.repost_topic')" :aria-expanded="panel === 'topic'" :data-active="panel === 'topic'"
+              :disabled="disabled"
+              @mousedown.prevent
+              @click="openPanel('topic', $event)"
+            >
+              <span i-tabler-hash />
+            </button>
+            <button
+              v-if="commercialAllowed"
+              class="bew-segment-control__item bew-segment-control__item--icon" :data-active="panel === 'commercial'" type="button" :title="t('moment_card.repost_commercial')" :aria-label="t('moment_card.repost_commercial')"
+              :disabled="disabled"
+              @mousedown.prevent
+              @click="openPanel('commercial', $event)"
+            >
+              <span i-tabler-ad />
+            </button>
+            <slot name="tools" />
+          </div>
+          <span v-if="showCount" class="moment-rich-editor__count" :class="{ 'is-over': remaining < 0 }" aria-live="polite">{{ remaining }}</span>
+          <slot name="actions" />
         </div>
-        <span v-if="showCount" class="moment-rich-editor__count" :class="{ 'is-over': remaining < 0 }" aria-live="polite">{{ remaining }}</span>
-        <slot name="actions" />
       </div>
     </div>
     <Teleport :to="mainAppRef" :disabled="!mainAppRef">
@@ -667,12 +669,19 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   border-radius: var(--bew-interactive-radius);
   background: var(--bew-fill-1);
   cursor: text;
-  // 输入框本体不画焦点轮廓，由容器主题色环提供整框的聚焦指示。
-  transition: box-shadow var(--bew-duration-fast) var(--bew-ease-standard);
+  // 输入框本体不画焦点轮廓，由容器主题色环提供整框的聚焦指示；聚焦时底色透明，露出卡片表面。
+  transition:
+    box-shadow var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
 
   &:focus-within {
+    background: transparent;
     box-shadow: 0 0 0 2px var(--bew-theme-color-40);
   }
+}
+// 聚焦时工具栏自动展开；表情等面板打开或已有内容时由 is-entered 保持展开。
+.moment-rich-editor__wrap:focus-within .moment-rich-editor__toolbar-host {
+  grid-template-rows: 1fr;
 }
 .moment-rich-editor__input {
   min-height: var(--moment-rich-editor-min-height, 64px);
