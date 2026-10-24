@@ -137,8 +137,6 @@ settings:
     fps_30: 30 fps · 流暢
   local_loudness:
     gain_history: 均衡增益變化 · 近 60 秒
-    show_button: 顯示播放器音量均衡按鈕
-    show_button_desc: 在影片控制列顯示按鈕，懸停可調整均衡參數並查看目前影片的執行狀態。隱藏按鈕不會關閉均衡。
     summary: 平衡不同影片之間的音量，減少切換影片時的大小聲差異。
     title: 音量均衡
     enable: 啟用局部音量均衡
@@ -155,6 +153,23 @@ settings:
       error: 音訊處理失敗，已回復原聲。重新整理頁面後可重試。
       native-unavailable: 無法確認原生均衡已關閉，暫不處理。請檢查播放器的更多播放設定。
       unsupported: 目前音源無法安全接入，保持原聲。
+  player_adjustment:
+    title: 畫面與聲音調整
+    show_button: 顯示播放器畫面與聲音調整按鈕
+    show_button_desc: 在影片控制列顯示按鈕，懸停可旋轉、鏡像畫面，調整音畫同步與音量均衡。旋轉、鏡像和音畫同步只對目前影片生效；隱藏按鈕會重設這些調整，但不會關閉音量均衡。
+    picture: 畫面
+    rotate_left: 向左旋轉
+    rotate_right: 向右旋轉
+    flip_horizontal: 水平鏡像
+    flip_vertical: 垂直鏡像
+    reset: 重設
+    audio_sync: 音畫同步
+    audio_delay: 聲音延後
+    audio_delay_desc: 聲音比畫面早時使用，最多延後 1000 ms。僅對目前影片生效。
+    audio_delay_states:
+      waiting: 等待影片播放後生效。
+      unsupported: 目前音源無法安全接入，保持原聲。
+      error: 音訊處理失敗，已回退到原聲。重新整理頁面後可重試。
   following_sort: 新版關注列表排序
   following_sort_updated: 按更新時間
   following_sort_group: 按分組

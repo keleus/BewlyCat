@@ -137,8 +137,6 @@ settings:
     fps_30: 30 fps · Smooth
   local_loudness:
     gain_history: Levelling gain · Last 60 seconds
-    show_button: Show player volume balance button
-    show_button_desc: Show a player control to adjust parameters and view the current video’s status on hover. Hiding the button does not disable processing.
     summary: Balance volume across videos to reduce loudness differences when switching videos.
     title: Volume balance
     enable: Enable local volume balance
@@ -155,6 +153,23 @@ settings:
       error: Audio processing failed; original audio restored. Reload the page to retry.
       native-unavailable: Native normalization could not be confirmed off. Check More playback settings in the player. Audio is unchanged.
       unsupported: This audio source cannot be safely processed. Audio is unchanged.
+  player_adjustment:
+    title: Picture & sound adjustments
+    show_button: Show player picture & sound button
+    show_button_desc: Show a player control to rotate or mirror the picture, adjust audio sync and volume balance on hover. Rotation, mirroring and audio sync apply only to the current video; hiding the button resets them but does not disable volume balance.
+    picture: Picture
+    rotate_left: Rotate left
+    rotate_right: Rotate right
+    flip_horizontal: Mirror horizontally
+    flip_vertical: Mirror vertically
+    reset: Reset
+    audio_sync: Audio sync
+    audio_delay: Delay audio
+    audio_delay_desc: Use when the sound is ahead of the picture, up to 1000 ms. Applies only to the current video.
+    audio_delay_states:
+      waiting: Takes effect once the video plays.
+      unsupported: This audio source can’t be processed safely; original sound is kept.
+      error: Audio processing failed and fell back to the original sound. Reload the page to retry.
   following_sort: Uploader order in the new Following layout
   following_sort_updated: By update time
   following_sort_group: By group

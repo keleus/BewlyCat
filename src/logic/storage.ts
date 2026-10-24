@@ -305,7 +305,7 @@ export interface Settings {
   ambilightBlur: number
   ambilightSaturation: number
   ambilightFps: number
-  showLocalLoudnessButton: boolean
+  showPlayerAdjustmentButton: boolean
   localLoudnessEnabled: boolean
   localLoudnessTarget: number
   localLoudnessStrength: number
@@ -675,7 +675,7 @@ export const originalSettings: Settings = {
   ambilightBlur: 72,
   ambilightSaturation: 130,
   ambilightFps: 24,
-  showLocalLoudnessButton: true,
+  showPlayerAdjustmentButton: true,
   localLoudnessEnabled: false,
   localLoudnessTarget: -18,
   localLoudnessStrength: 75,
@@ -1207,8 +1207,10 @@ export const settings = useSettingsStorage(originalSettings, {
     if (![15, 24, 30].includes(record.ambilightFps))
       record.ambilightFps = originalSettings.ambilightFps
 
-    if (typeof record.showLocalLoudnessButton !== 'boolean')
-      record.showLocalLoudnessButton = true
+    // 音量均衡按钮已扩展为画面与声音调整按钮，旧显示开关不再沿用。
+    Reflect.deleteProperty(record, 'showLocalLoudnessButton')
+    if (typeof record.showPlayerAdjustmentButton !== 'boolean')
+      record.showPlayerAdjustmentButton = true
     if (typeof record.localLoudnessEnabled !== 'boolean')
       record.localLoudnessEnabled = false
     for (const [key, min, max, fallback] of [

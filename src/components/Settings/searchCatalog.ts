@@ -532,7 +532,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.local_loudness.enable',
     'settings.local_loudness.target',
     'settings.local_loudness.strength',
-    'settings.local_loudness.show_button',
+    'settings.player_adjustment.title',
+    'settings.player_adjustment.show_button',
   ]),
   ...createEntries(ambilightRoute, [
     'settings.ambilight.title',
