@@ -161,7 +161,7 @@ onBeforeUnmount(() => {
         </template>
         <template #actions>
           <Button
-            class="moment-repost__submit" type="primary" size="small" :disabled="initializing || !initialized || remaining < 0" :aria-disabled="submitting"
+            class="moment-repost__submit" type="primary" size="small" :disabled="initializing || !initialized || remaining < 0" :aria-disabled="submitting || initializing || !initialized || remaining < 0"
             :aria-busy="submitting"
             @click="submit"
           >
