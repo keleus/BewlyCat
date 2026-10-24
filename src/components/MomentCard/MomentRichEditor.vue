@@ -47,6 +47,7 @@ const loading = ref(false)
 const panelError = ref('')
 const length = computed(() => nodes.value.reduce((sum, node) => sum + node.raw_text.length, 0))
 const remaining = computed(() => props.maxLength - length.value)
+const showCount = computed(() => remaining.value <= 100)
 const emotes = computed(() => packages.value.find(item => item.id === packageId.value)?.items || [])
 let savedRange: Range | null = null
 let completionRange: Range | null = null
@@ -529,7 +530,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
         @drop.prevent
       />
       <slot name="attachments" />
-      <!-- 工具栏放在输入框内，与正文共用同一个描边容器 -->
+      <!-- 工具栏放在输入框内，与正文共用同一个浅填充容器 -->
       <div class="moment-rich-editor__toolbar">
         <div ref="panelTriggers" class="moment-rich-editor__tools bew-segment-control bew-segment-control--static">
           <button
@@ -570,7 +571,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
           </button>
           <slot name="tools" />
         </div>
-        <span class="moment-rich-editor__count" :class="{ 'is-over': remaining < 0 }" aria-live="polite">{{ remaining }}</span>
+        <span v-if="showCount" class="moment-rich-editor__count" :class="{ 'is-over': remaining < 0 }" aria-live="polite">{{ remaining }}</span>
         <slot name="actions" />
       </div>
     </div>
@@ -663,14 +664,14 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   gap: var(--bew-space-2);
   // 底部工具组自带 4px 内边距，收窄底边让图标与四周留白视觉一致。
   padding: var(--bew-space-3) var(--bew-space-3) var(--bew-space-2);
-  border: 1px solid var(--bew-border-color);
   border-radius: var(--bew-interactive-radius);
-  background: transparent;
+  background: var(--bew-fill-1);
   cursor: text;
-  transition: border-color var(--bew-duration-fast);
+  // 输入框本体不画焦点轮廓，由容器主题色环提供整框的聚焦指示。
+  transition: box-shadow var(--bew-duration-fast) var(--bew-ease-standard);
 
   &:focus-within {
-    border-color: var(--bew-theme-color);
+    box-shadow: 0 0 0 2px var(--bew-theme-color-40);
   }
 }
 .moment-rich-editor__input {
