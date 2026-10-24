@@ -19,6 +19,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   commercialAllowed?: boolean
   autofocus?: boolean
+  acceptsFiles?: boolean
 }>(), { maxMentions: 20 })
 const emit = defineEmits<{
   submit: []
@@ -222,6 +223,31 @@ function paste(event: ClipboardEvent) {
   if (text || !files.length)
     insertText(text)
   updateCompletion()
+}
+// 拖拽图片入框：与粘贴共用 pasteFiles 通道，仅在宿主声明收图时启用。
+const dragging = ref(false)
+let dragTimer: ReturnType<typeof setTimeout> | undefined
+function dragOver(event: DragEvent) {
+  if (!props.acceptsFiles || props.disabled || !event.dataTransfer?.types.includes('Files'))
+    return
+  event.preventDefault()
+  dragging.value = true
+  clearTimeout(dragTimer)
+  dragTimer = setTimeout(() => dragging.value = false, 500)
+}
+function dragLeave() {
+  // 进入子元素会先触发 leave 再触发 over，延迟收起避免高亮闪烁。
+  clearTimeout(dragTimer)
+  dragTimer = setTimeout(() => dragging.value = false, 100)
+}
+function drop(event: DragEvent) {
+  clearTimeout(dragTimer)
+  dragging.value = false
+  if (!props.acceptsFiles || props.disabled)
+    return
+  const files = Array.from(event.dataTransfer?.files || []).filter(file => file.type.startsWith('image/'))
+  if (files.length)
+    emit('pasteFiles', files)
 }
 function beforeInput(event: Event) {
   const input = event as InputEvent
@@ -506,7 +532,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 
 <template>
   <div class="moment-rich-editor" @keydown="keyboard">
-    <div class="moment-rich-editor__wrap">
+    <div class="moment-rich-editor__wrap" :class="{ 'is-dropping': dragging }" @dragover="dragOver" @dragleave="dragLeave" @drop.prevent="drop">
       <div
         ref="editor"
         class="moment-rich-editor__input"
@@ -665,6 +691,11 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 // 聚焦时工具栏自动展开；表情等面板打开或已有内容时由 is-entered 保持展开。
 .moment-rich-editor__wrap:focus-within .moment-rich-editor__toolbar-host {
   grid-template-rows: 1fr;
+}
+// 拖拽图片悬停时复用聚焦色环作为可投放反馈。
+.moment-rich-editor__wrap.is-dropping {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--bew-theme-color-40);
 }
 .moment-rich-editor__input {
   min-height: var(--moment-rich-editor-min-height, 64px);

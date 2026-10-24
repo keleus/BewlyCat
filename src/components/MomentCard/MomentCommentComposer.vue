@@ -21,7 +21,10 @@ const props = defineProps<{
   submit: (submission: CommentSubmission) => Promise<void>
   upload: (file: File) => Promise<CommentPicture>
 }>()
-const emit = defineEmits<{ cancel: [] }>()
+const emit = defineEmits<{
+  cancel: []
+  openImagePreview: [urls: string[], index: number, trigger: HTMLElement | null]
+}>()
 const { t } = useI18n()
 const account = useTopBarStore()
 const editor = ref<InstanceType<typeof MomentRichEditor> | null>(null)
@@ -67,6 +70,9 @@ function removeImage(id: number) {
   if (image)
     URL.revokeObjectURL(image.preview)
   images.value = images.value.filter(item => item.id !== id)
+}
+function previewImage(index: number, event: Event) {
+  emit('openImagePreview', images.value.map(image => image.preview), index, event.currentTarget instanceof HTMLElement ? event.currentTarget : null)
 }
 
 async function send() {
@@ -158,19 +164,32 @@ onBeforeUnmount(() => {
         :max-length="MAX_LENGTH"
         :disabled="submitting || disabled"
         :autofocus="autofocus"
+        accepts-files
         @submit="send"
         @paste-files="addImages"
       >
         <template #attachments>
           <ul v-if="images.length" class="moment-comment-composer__images">
-            <li v-for="(image, index) in images" :key="image.id">
-              <img :src="image.preview" :alt="t('moment_card.comment_image', { index: index + 1 })">
+            <li
+              v-for="(image, index) in images"
+              :key="image.id"
+              class="moment-comment-composer__item"
+              role="button"
+              tabindex="0"
+              :aria-label="t('moment_card.comment_image', { index: index + 1 })"
+              :title="t('moment_card.comment_image', { index: index + 1 })"
+              @click="previewImage(index, $event)"
+              @keydown.enter.prevent="previewImage(index, $event)"
+              @keydown.space.prevent="previewImage(index, $event)"
+            >
+              <img :src="image.preview" alt="">
               <button
                 type="button"
+                class="moment-comment-composer__remove"
                 :disabled="submitting"
                 :aria-label="t('moment_card.comment_image_remove', { index: index + 1 })"
                 :title="t('moment_card.comment_image_remove', { index: index + 1 })"
-                @click="removeImage(image.id)"
+                @click.stop="removeImage(image.id)"
               >
                 <span i-tabler-x aria-hidden="true" />
               </button>
@@ -306,8 +325,18 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
-.moment-comment-composer__images button {
+.moment-comment-composer__item {
+  cursor: zoom-in;
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color);
+    outline-offset: -2px;
+  }
+}
+
+.moment-comment-composer__remove {
   position: absolute;
+  z-index: 1;
   top: var(--bew-space-1);
   right: var(--bew-space-1);
   display: grid;

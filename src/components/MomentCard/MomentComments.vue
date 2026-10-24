@@ -172,6 +172,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
         :can-sync-to-dynamic="!moment.isForwardDisabled"
         :submit="submission => addComment(submission)"
         :upload="uploadImage"
+        @open-image-preview="(urls, index, trigger) => emit('openImagePreview', urls, index, trigger)"
       />
       <p v-else class="moment-comments__login">
         {{ t('moment_card.comment_login') }}
@@ -348,6 +349,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
           :upload="uploadImage"
           autofocus
           @cancel="setReplyTarget()"
+          @open-image-preview="(urls, index, trigger) => emit('openImagePreview', urls, index, trigger)"
         />
       </MomentCommentTree>
       <div class="moment-comments__status" aria-live="polite">
