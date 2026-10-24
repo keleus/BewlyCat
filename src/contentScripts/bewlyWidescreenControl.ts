@@ -16,9 +16,20 @@ const CONTROL_DISCOVERY_TIMEOUT = 15_000
 const CONTROL_DISCOVERY_RETRY_INTERVAL = 500
 const APPLY_TIMEOUT = 30_000
 
-// 与原生控制栏 Lottie 图标同为 88 网格面性图形；镂空侧栏以区分原生宽屏/网页全屏
+// 与原生控制栏 Lottie 图标同为 88 网格面性图形；侧栏和箭头是挖空的洞，用 mask 单独动
 const widescreenIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" style="width: 100%; height: 100%;">
-  <path d="M16 16h56a8 8 0 0 1 8 8v40a8 8 0 0 1-8 8H16a8 8 0 0 1-8-8V24a8 8 0 0 1 8-8ZM58 24h12a2 2 0 0 1 2 2v36a2 2 0 0 1-2 2H58a2 2 0 0 1-2-2V26a2 2 0 0 1 2-2ZM16 44l9-9 4.24 4.24L27.48 41h11.04l-1.76-1.76L41 35l9 9-9 9-4.24-4.24L38.52 47H27.48l1.76 1.76L25 53Z" fill="#fff" fill-rule="evenodd"/>
+  <defs>
+    <mask id="bewly-widescreen-mask">
+      <rect width="88" height="88" fill="#fff"/>
+      <path class="bewly-screen-hole bewly-screen-hole--sidebar" d="M58 24h12a2 2 0 0 1 2 2v36a2 2 0 0 1-2 2H58a2 2 0 0 1-2-2V26a2 2 0 0 1 2-2Z" fill="#000"/>
+      <g class="bewly-screen-arrow">
+        <path class="bewly-screen-arrow-left" d="M16 44L25 35L29.24 39.24L27.48 41V47L29.24 48.76L25 53Z" fill="#000"/>
+        <rect class="bewly-screen-arrow-bar" x="27.48" y="41" width="11.04" height="6" fill="#000"/>
+        <path class="bewly-screen-arrow-right" d="M41 35L50 44L41 53L36.76 48.76L38.52 47V41L36.76 39.24Z" fill="#000"/>
+      </g>
+    </mask>
+  </defs>
+  <rect x="8" y="16" width="72" height="56" rx="8" fill="#fff" mask="url(#bewly-widescreen-mask)"/>
 </svg>`
 
 let controlContainer: HTMLElement | null = null

@@ -1,0 +1,406 @@
+// 悬停时各走一段，移开就撤掉，不锁住状态。
+// 所有按钮共用一个轻微抬起，图标自己再补一点小动作。
+
+.bpx-player-control-bottom-right {
+  --bew-player-hover-response: 320ms;
+  --bew-player-hover-ease: var(--bew-ease-standard);
+  --bew-player-step-ease: cubic-bezier(0.45, 0, 0.55, 1);
+
+  :is(
+    .bewly-widescreen-control,
+    .bewly-video-screenshot-control,
+    .bewly-listen-video-control,
+    .bewly-local-loudness-control
+  ) {
+    transition: color 150ms var(--bew-ease-standard);
+
+    .bpx-player-ctrl-btn-icon {
+      transform-origin: center;
+      transition: transform var(--bew-player-hover-response) var(--bew-player-hover-ease);
+    }
+
+    .bpx-player-ctrl-btn-icon > .bpx-common-svg-icon {
+      transition: opacity 150ms var(--bew-ease-standard);
+    }
+
+    @media (hover: hover) {
+      &:hover .bpx-player-ctrl-btn-icon {
+        transform: scale(1.06);
+      }
+    }
+
+    &:focus-visible .bpx-player-ctrl-btn-icon {
+      transform: scale(1.06);
+    }
+
+    &:not(.is-disabled):active .bpx-player-ctrl-btn-icon {
+      transform: scale(0.97);
+      transition-duration: 100ms;
+    }
+  }
+}
+
+// --- 音量均衡 ---
+
+.bewly-local-loudness-control {
+  .bewly-fader-knob,
+  .bewly-fader-gap {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation-duration: 800ms;
+    // 慢—快—慢，幅度大但不甩
+    animation-timing-function: var(--bew-player-step-ease);
+    animation-fill-mode: both;
+    animation-name: none;
+  }
+
+  .bewly-fader-knob-low,
+  .bewly-fader-gap-low {
+    --bew-fader-shift: 28px;
+  }
+  .bewly-fader-knob-mid,
+  .bewly-fader-gap-mid {
+    --bew-fader-shift: -26px;
+  }
+  .bewly-fader-knob-high,
+  .bewly-fader-gap-high {
+    --bew-fader-shift: 20px;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      .bewly-fader-knob,
+      .bewly-fader-gap {
+        animation-name: bewly-fader-slide;
+      }
+    }
+  }
+
+  .loudness-button:focus-visible {
+    transform: scale(1.06);
+
+    .bewly-fader-knob,
+    .bewly-fader-gap {
+      animation-name: bewly-fader-slide;
+    }
+  }
+
+  .loudness-button:active {
+    transform: scale(0.97);
+    transition-duration: 100ms;
+  }
+}
+
+@keyframes bewly-fader-slide {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  32%,
+  52% {
+    transform: translateY(var(--bew-fader-shift));
+  }
+}
+
+// --- 截取视频帧 ---
+
+.bewly-video-screenshot-control {
+  .bewly-camera-lens {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation-duration: 650ms;
+    animation-timing-function: var(--bew-player-step-ease);
+    animation-fill-mode: both;
+    animation-name: none;
+  }
+
+  @media (hover: hover) {
+    &:hover .bewly-camera-lens {
+      animation-name: bewly-camera-focus;
+    }
+  }
+
+  &:focus-visible .bewly-camera-lens {
+    animation-name: bewly-camera-focus;
+  }
+
+  .bewly-camera-flash {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation-duration: 500ms;
+    animation-timing-function: var(--bew-player-step-ease);
+    animation-fill-mode: both;
+    animation-name: none;
+  }
+
+  @media (hover: hover) {
+    &:hover .bewly-camera-flash {
+      animation-name: bewly-camera-flash;
+    }
+  }
+
+  &:focus-visible .bewly-camera-flash {
+    animation-name: bewly-camera-flash;
+  }
+}
+
+@keyframes bewly-camera-focus {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  30%,
+  50% {
+    transform: scale(1.16);
+  }
+}
+
+@keyframes bewly-camera-flash {
+  0% {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+
+  30% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+// --- 听视频 ---
+
+.bewly-listen-video-control {
+  .bewly-sound-wave {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation-duration: 600ms;
+    animation-timing-function: var(--bew-player-step-ease);
+    animation-fill-mode: both;
+    animation-name: none;
+  }
+
+  .bewly-sound-wave-left-inner {
+    --bew-wave-x: -3px;
+  }
+
+  .bewly-sound-wave-left-outer {
+    --bew-wave-x: -6px;
+    animation-delay: 60ms;
+  }
+
+  .bewly-sound-wave-right-inner {
+    --bew-wave-x: 3px;
+  }
+
+  .bewly-sound-wave-right-outer {
+    --bew-wave-x: 6px;
+    animation-delay: 60ms;
+  }
+
+  @media (hover: hover) {
+    &:hover .bewly-sound-wave {
+      animation-name: bewly-sound-wave;
+    }
+  }
+
+  &:focus-visible .bewly-sound-wave {
+    animation-name: bewly-sound-wave;
+  }
+}
+
+@keyframes bewly-sound-wave {
+  0% {
+    transform: translateX(0) scale(0.96);
+    opacity: 0;
+  }
+
+  30% {
+    transform: translateX(calc(var(--bew-wave-x) * 0.4)) scale(1.02);
+    opacity: 0.65;
+  }
+
+  60% {
+    transform: translateX(var(--bew-wave-x)) scale(1.05);
+    opacity: 0.45;
+  }
+
+  100% {
+    transform: translateX(calc(var(--bew-wave-x) * 1.35)) scale(1.08);
+    opacity: 0;
+  }
+}
+
+@keyframes bewly-screen-bar {
+  0%,
+  100% {
+    transform: scaleX(1);
+  }
+
+  25%,
+  70% {
+    transform: scaleX(1.7);
+  }
+}
+
+@keyframes bewly-screen-arrow-right {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25%,
+  70% {
+    transform: translateX(7.7px);
+  }
+}
+
+@keyframes bewly-screen-arrow-shift {
+  0%,
+  40% {
+    transform: translateX(0);
+  }
+
+  58%,
+  70% {
+    transform: translateX(6px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@keyframes bewly-screen-sidebar-collapse {
+  0%,
+  40% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+
+  58%,
+  70% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+// --- Bewly 宽屏 ---
+
+.bewly-widescreen-control {
+  .bewly-screen-arrow-bar {
+    transform-box: fill-box;
+    transform-origin: left center;
+    animation-duration: 800ms;
+    animation-timing-function: var(--bew-player-step-ease);
+    animation-fill-mode: both;
+    animation-name: none;
+  }
+
+  .bewly-screen-arrow-right {
+    transform-box: fill-box;
+    animation-duration: 800ms;
+    animation-timing-function: var(--bew-player-step-ease);
+    animation-fill-mode: both;
+    animation-name: none;
+  }
+
+  .bewly-screen-arrow {
+    animation-duration: 800ms;
+    animation-timing-function: var(--bew-player-step-ease);
+    animation-fill-mode: both;
+    animation-name: none;
+  }
+
+  .bewly-screen-hole--sidebar {
+    transform-box: fill-box;
+    transform-origin: right center;
+    animation-duration: 800ms;
+    animation-timing-function: var(--bew-player-step-ease);
+    animation-fill-mode: both;
+    animation-name: none;
+  }
+
+  @media (hover: hover) {
+    &:hover {
+      .bewly-screen-arrow-bar {
+        animation-name: bewly-screen-bar;
+      }
+      .bewly-screen-arrow-right {
+        animation-name: bewly-screen-arrow-right;
+      }
+      .bewly-screen-arrow {
+        animation-name: bewly-screen-arrow-shift;
+      }
+      .bewly-screen-hole--sidebar {
+        animation-name: bewly-screen-sidebar-collapse;
+      }
+    }
+  }
+
+  &:focus-visible {
+    .bewly-screen-arrow-bar {
+      animation-name: bewly-screen-bar;
+    }
+    .bewly-screen-arrow-right {
+      animation-name: bewly-screen-arrow-right;
+    }
+    .bewly-screen-arrow {
+      animation-name: bewly-screen-arrow-shift;
+    }
+    .bewly-screen-hole--sidebar {
+      animation-name: bewly-screen-sidebar-collapse;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bpx-player-control-bottom-right
+    :is(
+      .bewly-widescreen-control,
+      .bewly-video-screenshot-control,
+      .bewly-listen-video-control,
+      .bewly-local-loudness-control
+    ) {
+    transition: none !important;
+
+    .bpx-player-ctrl-btn-icon,
+    .bpx-common-svg-icon {
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+
+  .bpx-player-control-bottom-right
+    :is(
+      .bewly-fader-knob,
+      .bewly-fader-gap,
+      .bewly-camera-lens,
+      .bewly-camera-flash,
+      .bewly-sound-wave,
+      .bewly-screen-hole--sidebar,
+      .bewly-screen-arrow,
+      .bewly-screen-arrow-bar,
+      .bewly-screen-arrow-right
+    ) {
+    transform: none !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

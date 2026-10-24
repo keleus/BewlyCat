@@ -164,15 +164,41 @@ onBeforeUnmount(() => {
       <span class="bpx-common-svg-icon">
         <!-- 与原生控制栏图标同为 88 网格面性图形：轨道宽 8、推钮 20×12 -->
         <svg viewBox="0 0 88 88" fill="#fff" aria-hidden="true">
-          <rect x="16" y="16" width="8" height="6" rx="2" />
-          <rect x="16" y="42" width="8" height="30" rx="2" />
-          <rect x="10" y="26" width="20" height="12" rx="3" />
-          <rect x="40" y="16" width="8" height="28" rx="2" />
-          <rect x="40" y="64" width="8" height="8" rx="2" />
-          <rect x="34" y="48" width="20" height="12" rx="3" />
-          <rect x="64" y="16" width="8" height="14" rx="2" />
-          <rect x="64" y="50" width="8" height="22" rx="2" />
-          <rect x="58" y="34" width="20" height="12" rx="3" />
+          <defs>
+            <mask id="bewly-fader-mask">
+              <rect width="88" height="88" fill="#fff" />
+              <rect
+                class="bewly-fader-gap bewly-fader-gap-low" x="14" y="22" width="12" height="20"
+                rx="2" fill="#000"
+              />
+              <rect
+                class="bewly-fader-gap bewly-fader-gap-mid" x="38" y="44" width="12" height="20"
+                rx="2" fill="#000"
+              />
+              <rect
+                class="bewly-fader-gap bewly-fader-gap-high" x="62" y="30" width="12" height="20"
+                rx="2" fill="#000"
+              />
+            </mask>
+          </defs>
+          <!-- 轨道用 mask 切出缺口，缺口跟推钮一起动 -->
+          <g mask="url(#bewly-fader-mask)">
+            <rect x="16" y="16" width="8" height="56" rx="2" />
+            <rect x="40" y="16" width="8" height="56" rx="2" />
+            <rect x="64" y="16" width="8" height="56" rx="2" />
+          </g>
+          <rect
+            class="bewly-fader-knob bewly-fader-knob-low" x="10" y="26" width="20" height="12"
+            rx="3"
+          />
+          <rect
+            class="bewly-fader-knob bewly-fader-knob-mid" x="34" y="48" width="20" height="12"
+            rx="3"
+          />
+          <rect
+            class="bewly-fader-knob bewly-fader-knob-high" x="58" y="34" width="20" height="12"
+            rx="3"
+          />
         </svg>
       </span>
     </button>
