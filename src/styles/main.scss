@@ -506,6 +506,39 @@ html.dark.bewly-design {
   }
 }
 
+// 浮层/面板内的轻量幽灵按钮：透明底，悬停浅填充并染主题色，按下加深，禁用半透明。
+// 工具图标仍用 bew-segment-control__item，主操作仍用 Button 组件，三者构成统一按钮词汇。
+.bew-ghost-button {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bew-space-1);
+  min-height: 32px;
+  min-width: 32px;
+  padding: var(--bew-space-1) var(--bew-space-2);
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover,
+  &[aria-selected="true"],
+  &[aria-pressed="true"] {
+    background: var(--bew-fill-2);
+    color: var(--bew-theme-color);
+  }
+
+  &:active {
+    background: var(--bew-fill-3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 .bew-settings-option--lift {
   cursor: pointer;
   transition:

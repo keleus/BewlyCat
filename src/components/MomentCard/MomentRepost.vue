@@ -155,7 +155,7 @@ onBeforeUnmount(() => {
         @commercial="choice => commercial = choice"
       >
         <template #attachments>
-          <button v-if="commercial" class="moment-repost__selection" type="button" :disabled="submitting" @click="commercial = undefined">
+          <button v-if="commercial" class="moment-repost__selection bew-ghost-button" type="button" :disabled="submitting" @click="commercial = undefined">
             {{ commercial.name }} <span i-tabler-x aria-hidden="true" />
           </button>
         </template>
@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
       </MomentRichEditor>
       <p v-if="error" class="moment-repost__error" role="alert">
         {{ error }}
-        <button v-if="!initialized" type="button" @click="initialize">
+        <button v-if="!initialized" class="bew-ghost-button" type="button" @click="initialize">
           {{ t('moment_card.repost_retry') }}
         </button>
         <a :href="`https://t.bilibili.com/${momentId}?tab=1`" target="_blank" rel="noopener noreferrer">{{ t('moments.new_tab') }}</a>
@@ -182,32 +182,6 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .moment-repost {
-  button:not(.bew-segment-control__item):not(.b-button) {
-    font: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--bew-space-1);
-    min-height: 32px;
-    min-width: 32px;
-    padding: var(--bew-space-1) var(--bew-space-2);
-    border: 0;
-    border-radius: var(--bew-interactive-radius);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--bew-fill-2);
-      color: var(--bew-theme-color);
-    }
-    &:active {
-      background: var(--bew-fill-3);
-    }
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
   p {
     margin: 0;
   }

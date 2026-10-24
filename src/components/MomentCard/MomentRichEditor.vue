@@ -584,7 +584,10 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
         @click.stop @keydown.stop="keyboard" @mousedown.prevent
       >
         <div v-if="panel === 'emoji' && packages.length" class="moment-rich-editor__packages">
-          <button v-for="pack in packages" :key="pack.id" type="button" :aria-pressed="pack.id === packageId" @click="packageId = pack.id">
+          <button
+            v-for="pack in packages" :key="pack.id" class="bew-ghost-button" type="button" :aria-pressed="pack.id === packageId"
+            @click="packageId = pack.id"
+          >
             {{ pack.name }}
           </button>
         </div>
@@ -593,7 +596,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
             {{ t('common.loading') }}
           </p>
           <p v-else-if="panelError" role="alert">
-            {{ panelError }} <button type="button" @click="loadPanel">
+            {{ panelError }} <button class="bew-ghost-button" type="button" @click="loadPanel">
               {{ t('moment_card.repost_retry') }}
             </button>
           </p>
@@ -602,7 +605,8 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
             :class="{ 'moment-rich-editor__emotes--text': emotes.some(item => item.type === 4) }"
           >
             <button
-              v-for="item in emotes" :key="item.id" type="button" :title="item.name" :aria-label="item.name"
+              v-for="item in emotes" :key="item.id" class="bew-ghost-button" type="button" :title="item.name"
+              :aria-label="item.name"
               @click="choose(item)"
             >
               <span v-if="item.type === 4">{{ item.name }}</span>
@@ -611,7 +615,8 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
           </div>
           <div v-else class="moment-rich-editor__choices" role="listbox" :aria-label="t(panel === 'mention' ? 'moment_card.repost_mention' : panel === 'topic' ? 'moment_card.repost_topic' : 'moment_card.repost_commercial')">
             <button
-              v-for="(item, index) in choices" :id="`${popupId}-${index}`" :key="`${item.id}-${index}`" type="button" role="option"
+              v-for="(item, index) in choices" :id="`${popupId}-${index}`" :key="`${item.id}-${index}`" class="bew-ghost-button" type="button"
+              role="option"
               :aria-selected="activeChoice === index" @mouseenter="activeChoice = index" @click="choose(item)"
             >
               <img v-if="item.image" :src="item.image" alt="" loading="lazy">{{ item.name }}
@@ -633,30 +638,6 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   min-width: 0;
 }
 .moment-rich-editor__panel {
-  button:not(.bew-segment-control__item) {
-    font: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--bew-space-1);
-    min-height: 32px;
-    min-width: 32px;
-    padding: var(--bew-space-1) var(--bew-space-2);
-    border: 0;
-    border-radius: var(--bew-interactive-radius);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-
-    &:hover,
-    &[aria-selected="true"],
-    &[aria-pressed="true"] {
-      background: var(--bew-fill-2);
-      color: var(--bew-theme-color);
-    }
-    &:active {
-      background: var(--bew-fill-3);
-    }
-  }
   p {
     margin: 0;
   }
