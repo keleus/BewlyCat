@@ -1588,11 +1588,8 @@ favorites:
   article_count: 'Articles: {count}'
   article_load_failed: Failed to load favorite articles. Please try again later.
   unfavorite: Unfavorite
-  unfavorite_confirm: >-
-    Remove selected video(s)?
-
-    This operation cannot be reversed. Are you sure you want to remove the
-    selected video(s) from your favorites?
+  unfavorited: Unfavorited
+  unfavorite_item_confirm: Unfavorite this video?
   batch_manage: Batch manage
   batch_select_all: Select page
   batch_unselect_all: Unselect all
@@ -1675,6 +1672,8 @@ watch_later:
   play_video: Remove and open video page
   play_in_watch_later: Playlist
   remove_from_watch_later: Remove
+  removed: Removed from Watch Later
+  remove_confirm: Remove from Watch Later?
   layout_list: List view
   layout_grid: Grid view
 search_bar:

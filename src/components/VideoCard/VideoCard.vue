@@ -12,7 +12,7 @@ import { recordVideoVisit } from '~/utils/videoVisitHistory'
 import VideoCardCover from './components/VideoCardCover.vue'
 import VideoCardInfo from './components/VideoCardInfo.vue'
 import { useVideoCardLogic } from './composables/useVideoCardLogic'
-import type { Video, VideoCardState } from './types'
+import type { Video, VideoCardRemovedState, VideoCardState } from './types'
 import VideoCardContextMenu from './VideoCardContextMenu/VideoCardContextMenu.vue'
 
 const props = withDefaults(defineProps<Props>(), {
@@ -39,6 +39,8 @@ interface Props {
   coverTopLeftAlwaysVisible?: boolean
   coverTopRightAlwaysVisible?: boolean
   persistentState?: VideoCardState
+  /** 页面持有的移除状态（取消稍后再看/取消收藏的确认与还原），与卡片自身的不感兴趣移除共用遮罩 */
+  removedState?: VideoCardRemovedState
 }
 
 const layout = computed((): VideoCardLayoutSetting => {
@@ -63,6 +65,14 @@ const logic = useVideoCardLogic(props, props.persistentState)
 // Keep menus, keyboard focus (handled by the grid), and fullscreen previews alive.
 defineExpose({ canRecycle: computed(() => !logic.showVideoOptions.value && !logic.isPreviewFullscreen.value && !logic.isHover.value) })
 const { mainAppRef } = useBewlyApp()
+const isRemoved = computed(() => logic.removed.value || Boolean(props.removedState))
+
+function handleUndo() {
+  if (props.removedState)
+    props.removedState.onUndo?.()
+  else
+    logic.handleUndo()
+}
 
 // 使用共享样式（避免每个卡片重复计算）
 const { titleFontSizeClass, titleStyle, authorFontSizeClass, metaFontSizeClass } = useVideoCardSharedStyles()
@@ -165,6 +175,11 @@ const hoverPreviewOnCoverOnly = computed(() =>
 )
 
 function handleLinkClick(event: MouseEvent) {
+  // 移除遮罩期间卡片不再作为链接响应
+  if (props.removedState) {
+    event.preventDefault()
+    return
+  }
   if (props.video)
     recordVideoVisit(props.video)
 
@@ -383,7 +398,10 @@ provide('getVideoType', () => props.type!)
             :video="props.video"
             :layout="layout"
             :horizontal="horizontal"
-            :removed="logic.removed.value"
+            :removed="isRemoved"
+            :removed-message="props.removedState?.message"
+            :removed-pending="props.removedState?.pending"
+            :removed-confirming="props.removedState?.confirming"
             :is-hover="logic.isHover.value"
             :should-hide-overlay-elements="Boolean(logic.shouldHideOverlayElements.value)"
             :preview-video-url="logic.previewVideoUrl.value || ''"
@@ -396,7 +414,9 @@ provide('getVideoType', () => props.type!)
             :has-cover-stats="Boolean(hasCoverStats)"
             :should-hide-cover-stats="Boolean(shouldHideCoverStats)"
             :show-local-watch-progress="!hideWatchedBadge && settings.showVideoWatchedBadge && !props.video?.roomid"
-            @undo="logic.handleUndo"
+            @undo="handleUndo"
+            @confirm-removed="props.removedState?.onConfirm?.()"
+            @cancel-removed="props.removedState?.onCancel?.()"
             @preview-fullscreen-change="logic.handlePreviewFullscreenChange"
           >
             <template #coverTopLeft>
@@ -410,7 +430,7 @@ provide('getVideoType', () => props.type!)
 
         <!-- Other Information -->
         <VideoCardInfo
-          v-if="!logic.removed.value"
+          v-if="!isRemoved"
           ref="infoComponentRef"
           :class="{ 'horizontal-card-info': horizontal }"
           :skeleton="infoSkeleton"

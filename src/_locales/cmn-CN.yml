@@ -1506,9 +1506,8 @@ favorites:
   article_count: 图文数：{count}
   article_load_failed: 图文收藏加载失败，请稍后重试
   unfavorite: 取消收藏
-  unfavorite_confirm: |-
-    要取消收藏选中的视频吗？
-    该操作无法撤销，你确定要取消收藏选中的视频吗？
+  unfavorited: 已取消收藏
+  unfavorite_item_confirm: 确定取消收藏？
   batch_manage: 批量管理
   batch_select_all: 全选本页
   batch_unselect_all: 取消全选
@@ -1587,6 +1586,8 @@ watch_later:
   play_video: 移除并进入视频页
   play_in_watch_later: 列表播放
   remove_from_watch_later: 移除
+  removed: 已移出稍后再看
+  remove_confirm: 确定移出稍后再看？
   layout_list: 列表视图
   layout_grid: 网格视图
 search_bar:

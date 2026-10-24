@@ -22,6 +22,12 @@ interface Props {
   layout: 'modern' | 'old'
   horizontal?: boolean
   removed: boolean
+  /** 覆盖默认的「视频已移除」文案 */
+  removedMessage?: string
+  /** 移除/还原请求进行中 */
+  removedPending?: boolean
+  /** 等待确认移除：显示「确定/取消」而非「还原」 */
+  removedConfirming?: boolean
   isHover: boolean
   shouldHideOverlayElements: boolean
   previewVideoUrl: string
@@ -51,6 +57,8 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{
   undo: []
+  confirmRemoved: []
+  cancelRemoved: []
   imageLoaded: []
   previewFullscreenChange: [isFullscreen: boolean]
 }>()
@@ -481,10 +489,34 @@ onBeforeUnmount(() => {
         bg="$bew-fill-4" backdrop-blur-20px mix-blend-luminosity rounded="$bew-media-radius" z-2
       >
         <p mb-2 color-white text-lg>
-          {{ $t('video_card.video_removed') }}
+          {{ removedMessage || $t('video_card.video_removed') }}
         </p>
+        <div v-if="removedConfirming" flex="~ gap-2 items-center">
+          <Button
+            color="rgba(255,255,255,.35)" text-color="white" size="small"
+            :disabled="removedPending"
+            @click.prevent.stop="emit('confirmRemoved')"
+          >
+            <template #left>
+              <div i-mingcute-check-line text-lg />
+            </template>
+            {{ $t('common.operation.confirm') }}
+          </Button>
+          <Button
+            color="rgba(255,255,255,.35)" text-color="white" size="small"
+            :disabled="removedPending"
+            @click.prevent.stop="emit('cancelRemoved')"
+          >
+            <template #left>
+              <div i-mingcute-close-line text-lg />
+            </template>
+            {{ $t('common.operation.cancel') }}
+          </Button>
+        </div>
         <Button
+          v-else
           color="rgba(255,255,255,.35)" text-color="white" size="small"
+          :disabled="removedPending"
           @click.prevent.stop="emit('undo')"
         >
           <template #left>

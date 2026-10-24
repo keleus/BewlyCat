@@ -1521,9 +1521,8 @@ favorites:
   article_count: 圖文數：{count}
   article_load_failed: 圖文收藏載入失敗，請遲啲再試
   unfavorite: 唔愛喇
-  unfavorite_confirm: |-
-    係咪要剷走你揀過啲片呀？
-    噉做冇得返轉頭噃，你確定要剷走你揀過啲片？
+  unfavorited: 唔愛咗喇
+  unfavorite_item_confirm: 真係唔愛喇？
   batch_manage: 批量管理
   batch_select_all: 揀晒本頁
   batch_unselect_all: 取消全選
@@ -1602,6 +1601,8 @@ watch_later:
   play_video: 剷走兼入去影片頁
   play_in_watch_later: 清單播
   remove_from_watch_later: 剷走
+  removed: 已經剷走咗
+  remove_confirm: 真係要剷走？
   layout_list: 清單檢視
   layout_grid: 格網檢視
 search_bar:

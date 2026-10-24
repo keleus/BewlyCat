@@ -820,11 +820,11 @@ export const useTopBarStore = defineStore('topBar', () => {
     }
   }
 
-  // 删除稍后再看项目
-  async function deleteWatchLaterItem(_index: number, aid: number) {
+  // 删除稍后再看项目，返回是否删除成功
+  async function deleteWatchLaterItem(_index: number, aid: number): Promise<boolean> {
     const accountId = userInfo.mid
     if (!isCurrentAccount(accountId))
-      return
+      return false
 
     try {
       const res = await api.watchlater.removeFromWatchLater({
@@ -851,10 +851,56 @@ export const useTopBarStore = defineStore('topBar', () => {
             console.error('刷新顶栏稍后再看状态失败:', error)
           })
         }, 800)
+        return true
       }
     }
     catch (error) {
       console.error(error)
+    }
+    return false
+  }
+
+  // 撤销删除：重新加入稍后再看，并把条目放回原位置，返回是否成功
+  async function restoreWatchLaterItem(item: VideoItem, index: number): Promise<boolean> {
+    const accountId = userInfo.mid
+    if (!isCurrentAccount(accountId))
+      return false
+
+    try {
+      const res = await api.watchlater.saveToWatchLater({
+        aid: item.aid,
+        csrf: getCSRF(),
+      })
+      if (res.code !== 0) {
+        toast.error(res.message)
+        return false
+      }
+      if (!isCurrentAccount(accountId))
+        return false
+
+      markWatchLater({ aid: item.aid, bvid: item.bvid }, true)
+      if (!watchLaterList.some(video => video.aid === item.aid)) {
+        // 重新加入的条目落在服务器已加载前缀内，计数与游标同步加一以保持翻页对齐
+        watchLaterList.splice(Math.min(index, watchLaterList.length), 0, item)
+        watchLaterCount.value++
+        watchLaterCursor.value++
+        watchLaterEpoch++
+        watchLaterRefreshGeneration++
+        watchLaterLoadingGeneration++
+        isLoadingWatchLater.value = false
+      }
+
+      // 与删除相同，延迟同步避免接口短暂返回旧数量
+      window.setTimeout(() => {
+        void syncWatchLaterState(true).catch((error) => {
+          console.error('刷新顶栏稍后再看状态失败:', error)
+        })
+      }, 800)
+      return true
+    }
+    catch (error) {
+      console.error(error)
+      return false
     }
   }
 
@@ -1706,6 +1752,7 @@ export const useTopBarStore = defineStore('topBar', () => {
     getAllWatchLaterList,
     loadMoreWatchLaterList,
     deleteWatchLaterItem,
+    restoreWatchLaterItem,
     addOpenTabVideosToWatchLater,
 
     privilegeInfo,
