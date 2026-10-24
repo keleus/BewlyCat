@@ -46,6 +46,123 @@
   }
 }
 
+// 悬停/键盘焦点时播放一次图标动效，与原生音量、设置、宽屏、全屏按钮一致
+.bewly-video-screenshot-icon-lens,
+.bewly-widescreen-icon-sidebar,
+.bewly-widescreen-icon-shaft {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.bewly-widescreen-icon-sidebar {
+  transform-origin: right center;
+}
+
+.bewly-widescreen-icon-shaft {
+  transform-origin: left center;
+}
+
+.bewly-video-screenshot-control:is(:hover, :focus-visible) {
+  .bewly-video-screenshot-icon-lens {
+    animation: bewly-screenshot-lens-focus 600ms var(--bew-ease-out, ease-out);
+  }
+
+  .bewly-video-screenshot-icon-flash {
+    animation: bewly-screenshot-flash 600ms var(--bew-ease-out, ease-out);
+  }
+}
+
+.bewly-widescreen-control:not(.is-disabled):is(:hover, :focus-visible) {
+  .bewly-widescreen-icon-sidebar {
+    animation: bewly-widescreen-sidebar 900ms ease-in-out;
+  }
+
+  .bewly-widescreen-icon-head-left {
+    animation: bewly-widescreen-head-left 900ms ease-in-out;
+  }
+
+  .bewly-widescreen-icon-shaft {
+    animation: bewly-widescreen-shaft 900ms ease-in-out;
+  }
+
+  .bewly-widescreen-icon-head-right {
+    animation: bewly-widescreen-head-right 900ms ease-in-out;
+  }
+}
+
+@keyframes bewly-screenshot-lens-focus {
+  35% {
+    transform: scale(0.7);
+  }
+  70% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes bewly-screenshot-flash {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+// 横杆先拉长，白色边界向右填掉侧栏、箭头跟着右移，再整体回退
+@keyframes bewly-widescreen-sidebar {
+  0%,
+  25% {
+    transform: scaleX(1);
+  }
+  55%,
+  70% {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes bewly-widescreen-head-left {
+  0%,
+  25% {
+    transform: translateX(0);
+  }
+  55%,
+  70% {
+    transform: translateX(10px);
+  }
+}
+
+@keyframes bewly-widescreen-shaft {
+  25% {
+    transform: scaleX(1.5);
+  }
+  55%,
+  70% {
+    transform: translateX(10px) scaleX(1.5);
+  }
+}
+
+@keyframes bewly-widescreen-head-right {
+  25% {
+    transform: translateX(9px);
+  }
+  55%,
+  70% {
+    transform: translateX(19px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bewly-video-screenshot-control,
+  .bewly-widescreen-control {
+    .bpx-common-svg-icon * {
+      animation: none !important;
+    }
+  }
+}
+
 .bewly-design {
   .bpx-player-toast-row .bpx-player-toast-item {
     --bpx-toast-fn-color: var(--bew-theme-color);

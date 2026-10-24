@@ -29,6 +29,10 @@ const listenIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" 
   <path d="M44 14C28.5 14 18 25.5 18 42v6h13v-6c0-9.5 5-15 13-15s13 5.5 13 15v6h13v-6c0-16.5-10.5-28-26-28Z" fill="currentColor"/>
   <rect x="14" y="46" width="20" height="28" rx="9" fill="currentColor"/>
   <rect x="54" y="46" width="20" height="28" rx="9" fill="currentColor"/>
+  <g class="bewly-listen-video-icon-waves" fill="none" opacity="0" stroke="currentColor" stroke-width="4" stroke-linecap="round">
+    <path class="bewly-listen-video-icon-wave-small" d="M9 52Q4 60 9 68M79 52Q84 60 79 68"/>
+    <path class="bewly-listen-video-icon-wave-large" d="M5 47Q-1 60 5 73M83 47Q89 60 83 73"/>
+  </g>
 </svg>`
 
 export function initListenVideoControl(host: ListenVideoHost): ListenVideoController {

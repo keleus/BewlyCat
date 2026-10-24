@@ -32,6 +32,39 @@
   transform: translate(-50%, 0);
 }
 
+/* 悬停/键盘焦点时耳机两侧依次泛起小、大两层水波，与原生控制栏图标动效一致 */
+.bewly-listen-video-icon-waves {
+  opacity: 1;
+}
+.bewly-listen-video-icon-wave-small,
+.bewly-listen-video-icon-wave-large {
+  opacity: 0;
+}
+.bewly-listen-video-control:hover .bewly-listen-video-icon-wave-small,
+.bewly-listen-video-control:focus-visible .bewly-listen-video-icon-wave-small {
+  animation: bewly-listen-video-wave 800ms ease-out;
+}
+.bewly-listen-video-control:hover .bewly-listen-video-icon-wave-large,
+.bewly-listen-video-control:focus-visible .bewly-listen-video-icon-wave-large {
+  animation: bewly-listen-video-wave 800ms ease-out 120ms both;
+}
+@keyframes bewly-listen-video-wave {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bewly-listen-video-control .bpx-common-svg-icon * {
+    animation: none !important;
+  }
+}
+
 .bewly-player-listening video,
 .bewly-player-listening .bpx-player-dm,
 .bewly-player-listening .bilibili-player-danmaku {

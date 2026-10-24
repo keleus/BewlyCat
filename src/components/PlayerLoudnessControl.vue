@@ -6,6 +6,7 @@ import { settings } from '~/logic'
 const props = defineProps<{ video: HTMLVideoElement }>()
 const { t } = useI18n()
 const root = ref<HTMLElement>()
+const knobMaskId = `bewly-loudness-knobs-${useId()}`
 const button = ref<HTMLButtonElement>()
 const panel = ref<HTMLElement>()
 const open = ref(false)
@@ -162,17 +163,43 @@ onBeforeUnmount(() => {
       @click="open ? open = false : show()" @focus="onButtonFocus"
     >
       <span class="bpx-common-svg-icon">
-        <!-- 与原生控制栏图标同为 88 网格面性图形：轨道宽 8、推钮 20×12 -->
+        <!-- 与原生控制栏图标同为 88 网格面性图形：轨道宽 8、推钮 20×12；轨道在推钮上下各留 4 的间隙 -->
         <svg viewBox="0 0 88 88" fill="#fff" aria-hidden="true">
-          <rect x="16" y="16" width="8" height="6" rx="2" />
-          <rect x="16" y="42" width="8" height="30" rx="2" />
-          <rect x="10" y="26" width="20" height="12" rx="3" />
-          <rect x="40" y="16" width="8" height="28" rx="2" />
-          <rect x="40" y="64" width="8" height="8" rx="2" />
-          <rect x="34" y="48" width="20" height="12" rx="3" />
-          <rect x="64" y="16" width="8" height="14" rx="2" />
-          <rect x="64" y="50" width="8" height="22" rx="2" />
-          <rect x="58" y="34" width="20" height="12" rx="3" />
+          <mask
+            :id="knobMaskId" maskUnits="userSpaceOnUse" x="0" y="0" width="88"
+            height="88"
+          >
+            <rect width="88" height="88" fill="#fff" />
+            <rect
+              class="knob knob-1" x="10" y="22" width="20" height="20"
+              fill="#000"
+            />
+            <rect
+              class="knob knob-2" x="34" y="44" width="20" height="20"
+              fill="#000"
+            />
+            <rect
+              class="knob knob-3" x="58" y="30" width="20" height="20"
+              fill="#000"
+            />
+          </mask>
+          <g :mask="`url(#${knobMaskId})`">
+            <rect x="16" y="16" width="8" height="56" rx="2" />
+            <rect x="40" y="16" width="8" height="56" rx="2" />
+            <rect x="64" y="16" width="8" height="56" rx="2" />
+          </g>
+          <rect
+            class="knob knob-1" x="10" y="26" width="20" height="12"
+            rx="3"
+          />
+          <rect
+            class="knob knob-2" x="34" y="48" width="20" height="12"
+            rx="3"
+          />
+          <rect
+            class="knob knob-3" x="58" y="34" width="20" height="12"
+            rx="3"
+          />
         </svg>
       </span>
     </button>
@@ -247,6 +274,45 @@ onBeforeUnmount(() => {
   svg {
     width: 100%;
     height: 100%;
+  }
+}
+// 悬停或键盘聚焦时三根推子错峰滑动，在端点前留出余量后回到原位
+.loudness-widget:hover .knob,
+.loudness-button:focus-visible .knob {
+  animation: 700ms ease-in-out both;
+}
+.loudness-widget:hover .knob-1,
+.loudness-button:focus-visible .knob-1 {
+  animation-name: loudness-knob-1;
+}
+.loudness-widget:hover .knob-2,
+.loudness-button:focus-visible .knob-2 {
+  animation-name: loudness-knob-2;
+  animation-delay: 70ms;
+}
+.loudness-widget:hover .knob-3,
+.loudness-button:focus-visible .knob-3 {
+  animation-name: loudness-knob-3;
+  animation-delay: 140ms;
+}
+@keyframes loudness-knob-1 {
+  45% {
+    transform: translateY(26px);
+  }
+}
+@keyframes loudness-knob-2 {
+  45% {
+    transform: translateY(-24px);
+  }
+}
+@keyframes loudness-knob-3 {
+  45% {
+    transform: translateY(18px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loudness-button .knob {
+    animation: none !important;
   }
 }
 .loudness-widget :focus-visible {
