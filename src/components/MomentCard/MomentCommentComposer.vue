@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
             :title="t('moment_card.comment_send_shortcut')"
             @click="send"
           >
-            <span v-if="submitting" i-svg-spinners:ring-resize aria-hidden="true" />{{ t(replyName ? 'moment_card.comment_reply' : 'moment_card.comment_send') }}
+            <span v-if="submitting" class="bew-submit-spinner" aria-hidden="true" /><span class="bew-submit-label" :class="{ 'is-hidden': submitting }">{{ t(replyName ? 'moment_card.comment_reply' : 'moment_card.comment_send') }}</span>
           </Button>
         </template>
       </MomentRichEditor>

@@ -539,6 +539,37 @@ html.dark.bewly-design {
   }
 }
 
+// 提交中的加载环：绝对居中盖在按钮上、文字原位隐藏（visibility 保留宽度），
+// 按钮常态无多余留白、提交时尺寸不变。宿主按钮需 position: relative。
+.bew-submit-spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: bew-submit-spin 0.7s linear infinite;
+}
+
+.bew-submit-label.is-hidden {
+  visibility: hidden;
+}
+
+@keyframes bew-submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bew-submit-spinner {
+    animation-duration: 1.4s;
+  }
+}
+
 .bew-settings-option--lift {
   cursor: pointer;
   transition:

@@ -165,7 +165,7 @@ onBeforeUnmount(() => {
             :aria-busy="submitting"
             @click="submit"
           >
-            <span v-if="submitting" i-svg-spinners:ring-resize aria-hidden="true" />{{ t('moment_card.repost') }}
+            <span v-if="submitting" class="bew-submit-spinner" aria-hidden="true" /><span class="bew-submit-label" :class="{ 'is-hidden': submitting }">{{ t('moment_card.repost') }}</span>
           </Button>
         </template>
       </MomentRichEditor>

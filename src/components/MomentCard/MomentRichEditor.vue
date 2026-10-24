@@ -739,6 +739,10 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   align-items: center;
   gap: var(--bew-space-2);
 }
+// 提交中的加载环以按钮为定位父级。
+.moment-rich-editor__actions :deep(.b-button) {
+  position: relative;
+}
 .moment-rich-editor__count.is-over {
   color: var(--bew-error-color);
 }
