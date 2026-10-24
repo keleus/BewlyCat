@@ -1884,6 +1884,7 @@ moment_card:
   comment_login: Log in to post comments
   comment_send: Post
   comment_send_shortcut: Ctrl / ⌘ + Enter to send
+  comment_send_keys: Ctrl / ⌘ + Enter
   comment_reply: Reply
   comment_reply_to: "Reply to {'@'}{name}"
   comment_send_failed: Failed to post the comment. Please try again later

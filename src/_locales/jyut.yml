@@ -1811,6 +1811,7 @@ moment_card:
   comment_login: 登入咗先可以發表留言
   comment_send: 發佈
   comment_send_shortcut: Ctrl / ⌘ + Enter 發送
+  comment_send_keys: Ctrl / ⌘ + Enter
   comment_reply: 回覆
   comment_reply_to: "回覆 {'@'}{name}"
   comment_send_failed: 留言發送失敗，請稍後再試

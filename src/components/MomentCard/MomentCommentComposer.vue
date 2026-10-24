@@ -228,6 +228,7 @@ onBeforeUnmount(() => {
           <Button v-if="replyName" size="small" :disabled="submitting" @click="emit('cancel')">
             {{ t('common.operation.cancel') }}
           </Button>
+          <span class="moment-comment-composer__shortcut">{{ t('moment_card.comment_send_keys') }}</span>
           <Button
             type="primary"
             size="small"
@@ -361,6 +362,12 @@ onBeforeUnmount(() => {
     outline: 2px solid var(--bew-theme-color);
     outline-offset: 1px;
   }
+}
+
+.moment-comment-composer__shortcut {
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  white-space: nowrap;
 }
 
 .moment-comment-composer__sync {

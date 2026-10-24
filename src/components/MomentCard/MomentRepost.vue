@@ -160,8 +160,10 @@ onBeforeUnmount(() => {
           </button>
         </template>
         <template #actions>
+          <span class="moment-repost__shortcut">{{ t('moment_card.comment_send_keys') }}</span>
           <Button
-            class="moment-repost__submit" type="primary" size="small" :disabled="initializing || !initialized || remaining < 0" :aria-disabled="submitting || initializing || !initialized || remaining < 0"
+            class="moment-repost__submit" type="primary" size="small" :title="t('moment_card.comment_send_shortcut')" :disabled="initializing || !initialized || remaining < 0"
+            :aria-disabled="submitting || initializing || !initialized || remaining < 0"
             :aria-busy="submitting"
             @click="submit"
           >
@@ -211,6 +213,11 @@ onBeforeUnmount(() => {
 }
 .moment-repost__selection {
   justify-self: start;
+}
+.moment-repost__shortcut {
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  white-space: nowrap;
 }
 .moment-repost__error {
   display: grid;
