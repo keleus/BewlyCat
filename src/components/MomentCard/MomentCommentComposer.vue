@@ -334,6 +334,10 @@ onBeforeUnmount(() => {
   }
 }
 
+.moment-comment-composer__sync {
+  font-size: var(--bew-font-size-caption);
+}
+
 .moment-comment-composer__sync-track {
   position: relative;
   display: block;

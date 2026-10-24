@@ -573,7 +573,9 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
             <slot name="tools" />
           </div>
           <span v-if="showCount" class="moment-rich-editor__count" :class="{ 'is-over': remaining < 0 }" aria-live="polite">{{ remaining }}</span>
-          <slot name="actions" />
+          <div class="moment-rich-editor__actions">
+            <slot name="actions" />
+          </div>
         </div>
       </div>
     </div>
@@ -713,15 +715,29 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   cursor: default;
 }
 .moment-rich-editor__tools {
+  // 图标按钮缩小后适当放宽间距，避免挤在一起（默认 4px）。
+  --bew-control-gap: 6px;
   // 抵消工具组内边距，让图标的悬停底色与正文左缘对齐。
   margin-inline-start: calc(-1 * var(--bew-control-padding));
 }
+// 只降图标按钮一号；开关等文字项保持原高度，避免 hover 底色被压扁。
+.moment-rich-editor__tools :deep(.bew-segment-control__item--icon) {
+  width: 20px;
+  height: 20px;
+}
 .moment-rich-editor__tools :deep(span) {
-  font-size: var(--bew-icon-size-md);
+  font-size: var(--bew-icon-size-sm);
 }
 .moment-rich-editor__count {
-  margin-left: auto;
   color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+}
+// 发送/取消等操作恒定居于工具行右下角。
+.moment-rich-editor__actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bew-space-2);
 }
 .moment-rich-editor__count.is-over {
   color: var(--bew-error-color);
