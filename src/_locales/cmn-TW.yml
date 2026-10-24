@@ -905,6 +905,8 @@ settings:
   disable_background_desc: 徹底關閉擴充功能頁面的純色背景、漸層背景與桌布（含搜尋頁桌布），顯示 B 站原頁面背景。
   prevent_mobile_redirect: 防止跳轉至行動版
   prevent_mobile_redirect_desc: 啟用後，避免造訪 www.bilibili.com 時被跳轉至行動版頁面。
+  enable_firefox_scrollbar_repaint: Firefox 捲軸重繪
+  enable_firefox_scrollbar_repaint_desc: Firefox 原生捲軸只能調整粗細與顏色。啟用後，外掛頁面改用與 Chromium 版一致的重繪捲軸。
   follow_bilibili_evolved_color: 使用 Bilibili Evolved 主題色
   follow_bilibili_evolved_color_desc: 每次變更 Bilibili Evolved 主題色後，記得重新選取此選項以更新配置。
   links: 連結

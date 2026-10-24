@@ -592,6 +592,7 @@ export interface Settings {
   useOriginalBilibiliTopBar: boolean
   useOriginalBilibiliHomepage: boolean
   preventMobileRedirect: boolean
+  enableFirefoxScrollbarRepaint: boolean // 仅 Firefox 包生效
 
   // Video Player
   defaultVideoPlayerMode: DefaultVideoPlayerMode
@@ -950,6 +951,7 @@ export const originalSettings: Settings = {
   useOriginalBilibiliTopBar: false,
   useOriginalBilibiliHomepage: false,
   preventMobileRedirect: false,
+  enableFirefoxScrollbarRepaint: false,
 
   // Video Player
   defaultVideoPlayerMode: 'default',

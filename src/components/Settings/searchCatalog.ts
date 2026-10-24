@@ -1,3 +1,5 @@
+import { isFirefoxBuild } from '~/utils/buildTarget'
+
 import { MenuType } from './types'
 
 export interface SettingsSearchStorageValue {
@@ -744,6 +746,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_common',
     'settings.use_original_bilibili_homepage',
     'settings.prevent_mobile_redirect',
+    ...(isFirefoxBuild ? ['settings.enable_firefox_scrollbar_repaint'] : []),
     'settings.group_ad_blocking',
     'settings.block_ads',
     'settings.block_top_search_page_ads',
