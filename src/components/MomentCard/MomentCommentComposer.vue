@@ -191,17 +191,18 @@ onBeforeUnmount(() => {
           </button>
           <button
             v-if="!replyName && canSyncToDynamic"
-            class="bew-segment-control__item bew-segment-control__item--icon"
+            class="bew-segment-control__item moment-comment-composer__sync"
             type="button"
-            :title="t('moment_card.comment_sync_repost')"
-            :aria-label="t('moment_card.comment_sync_repost')"
-            :aria-pressed="syncToDynamic"
-            :data-active="syncToDynamic"
+            role="switch"
+            :aria-checked="syncToDynamic"
             :disabled="submitting || disabled"
             @mousedown.prevent
             @click="syncToDynamic = !syncToDynamic"
           >
-            <span i-tabler-share-3 />
+            <span class="moment-comment-composer__sync-track" aria-hidden="true">
+              <span class="moment-comment-composer__sync-thumb" />
+            </span>
+            {{ t('moment_card.comment_sync_repost') }}
           </button>
         </template>
         <template #actions>
@@ -330,6 +331,43 @@ onBeforeUnmount(() => {
   &:focus-visible {
     outline: 2px solid var(--bew-theme-color);
     outline-offset: 1px;
+  }
+}
+
+.moment-comment-composer__sync-track {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 28px;
+  height: 16px;
+  border-radius: var(--bew-radius-full);
+  background: var(--bew-switch-bg);
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
+.moment-comment-composer__sync-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
+.moment-comment-composer__sync[aria-checked="true"] .moment-comment-composer__sync-track {
+  background: var(--bew-theme-color);
+}
+
+.moment-comment-composer__sync[aria-checked="true"] .moment-comment-composer__sync-thumb {
+  transform: translateX(12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moment-comment-composer__sync-track,
+  .moment-comment-composer__sync-thumb {
+    transition: none;
   }
 }
 
