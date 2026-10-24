@@ -52,7 +52,8 @@ export function initLocalLoudnessControl() {
   }
 
   function discover() {
-    syncPlayerAdjustmentVideo()
+    if (settings.value.showPlayerAdjustmentButton)
+      syncPlayerAdjustmentVideo()
     deadline = Date.now() + 15_000
     schedule()
   }

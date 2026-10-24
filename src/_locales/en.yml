@@ -156,7 +156,7 @@ settings:
   player_adjustment:
     title: Picture & sound adjustments
     show_button: Show player picture & sound button
-    show_button_desc: Show a player control to rotate or mirror the picture, adjust audio sync and volume balance on hover. Rotation, mirroring and audio sync apply only to the current video; hiding the button resets them but does not disable volume balance.
+    show_button_desc: Show a player control to rotate or mirror the picture, and adjust audio sync on hover; volume balance settings also appear here once it is enabled. Rotation, mirroring and audio sync apply only to the current video; hiding the button resets them but does not disable volume balance.
     picture: Picture
     rotate_left: Rotate left
     rotate_right: Rotate right

@@ -295,7 +295,8 @@ onBeforeUnmount(() => {
           {{ delayNotice }}
         </div>
       </div>
-      <div class="panel-section">
+      <!-- 音量均衡在设置页开启后才在面板中显示 -->
+      <div v-if="settings.localLoudnessEnabled" class="panel-section">
         <div class="section-heading">
           {{ t('settings.local_loudness.title') }}
         </div>

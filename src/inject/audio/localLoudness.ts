@@ -37,6 +37,8 @@ export function createLocalLoudnessController() {
   let lastStatus = 'off'
   let lastReport = 0
   const failed = new WeakSet<HTMLMediaElement>()
+  // 音画同步跟随画面与声音调整按钮，按钮关闭时不响应延迟请求，也不接管声音。
+  let delayEnabled = false
   let delayMs = 0
   let delayed: SourceRecord | undefined
   let delayAbort: AbortController | undefined
@@ -448,6 +450,16 @@ export function createLocalLoudnessController() {
     delayStatus('active')
   }
 
+  function setAudioDelayEnabled(enabled: boolean) {
+    if (disposed || delayEnabled === enabled)
+      return
+    delayEnabled = enabled
+    if (!enabled) {
+      delayMs = 0
+      applyDelay()
+    }
+  }
+
   function update(next: Config) {
     if (disposed)
       return
@@ -473,10 +485,10 @@ export function createLocalLoudnessController() {
     if (type === 'BEWLY_LOUDNESS_STATUS_REQUEST') {
       status(lastStatus)
     }
-    else if (type === 'BEWLY_AUDIO_DELAY_STATUS_REQUEST') {
+    else if (delayEnabled && type === 'BEWLY_AUDIO_DELAY_STATUS_REQUEST') {
       delayStatus(lastDelayStatus)
     }
-    else if (type === 'BEWLY_AUDIO_DELAY' && typeof event.data.delay === 'number' && Number.isFinite(event.data.delay)) {
+    else if (delayEnabled && type === 'BEWLY_AUDIO_DELAY' && typeof event.data.delay === 'number' && Number.isFinite(event.data.delay)) {
       delayMs = Math.round(Math.max(0, Math.min(MAX_AUDIO_DELAY_MS, event.data.delay)))
       applyDelay()
     }
@@ -507,8 +519,9 @@ export function createLocalLoudnessController() {
       void ownedContext?.resume().catch(() => {})
     if (!disposed) {
       update(config)
-      applyDelay()
+      if (delayEnabled)
+        applyDelay()
     }
   }, { signal: lifetime.signal })
-  return { update }
+  return { update, setAudioDelayEnabled }
 }

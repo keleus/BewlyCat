@@ -6,6 +6,8 @@ export interface PageSettingsPayload {
   localLoudnessEnabled: boolean
   localLoudnessTarget: number
   localLoudnessStrength: number
+  /** 画面与声音调整按钮关闭时，页面脚本不接管声音做音画同步。 */
+  playerAdjustmentEnabled: boolean
   /** 收藏夹整理需要在三连后同步时，页面脚本才监听三连请求。 */
   observeTripleRequests: boolean
   adjustCommentImageHeight: boolean
@@ -71,6 +73,7 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
       ? Math.max(40, Math.min(100, value.localLoudnessStrength))
       : 75,
     // 页面脚本会再次校验已转换的 payload，此时直接沿用字段。
+    playerAdjustmentEnabled: value.playerAdjustmentEnabled === true || value.showPlayerAdjustmentButton === true,
     observeTripleRequests: value.observeTripleRequests === true
       || (value.favoriteOrganizerSyncAfterTriple === true
         && Array.isArray(value.favoriteOrganizerFolders)
