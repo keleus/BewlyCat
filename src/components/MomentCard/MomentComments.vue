@@ -625,9 +625,9 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
   flex-wrap: wrap;
   gap: var(--bew-space-2);
   padding-block: var(--bew-space-2);
-  color: var(--bew-text-2);
-  font-size: var(--bew-font-size-control);
-  line-height: var(--bew-line-height-control);
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
   overflow-wrap: anywhere;
 }
 
