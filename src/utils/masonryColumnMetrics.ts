@@ -16,6 +16,16 @@ export class MasonryColumnMetrics {
     return this.metrics.set(index, height + this.gap)
   }
 
+  /** Top of the card at index, relative to the column top. */
+  offsetOf(index: number) {
+    return this.metrics.offset(index)
+  }
+
+  /** Height of the card at index, excluding the gap below it. */
+  heightOf(index: number) {
+    return this.metrics.offset(index + 1) - this.metrics.offset(index) - this.gap
+  }
+
   /** Inclusive viewport edges match the card intersection test, excluding gaps. */
   getWindow(viewStart: number, viewEnd: number) {
     let start = this.count ? this.metrics.rowAt(Math.max(0, viewStart)) : 0

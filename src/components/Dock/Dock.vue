@@ -136,7 +136,7 @@ const dockEditActions = computed(() => [
   {
     key: 'refresh' as const,
     label: t('common.operation.refresh'),
-    icon: 'line-md:rotate-270',
+    icon: 'tabler:reload',
     settingsTitleKey: 'settings.back_to_top_and_refresh_buttons_are_separated',
     hidden: false,
   },
@@ -743,7 +743,6 @@ onUnmounted(() => {
             <Icon
               :icon="action.icon"
               class="dock-edit-action-item__icon"
-              :class="{ 'dock-edit-action-item__icon--refresh': action.key === 'refresh' }"
               aria-hidden="true"
             />
           </button>
@@ -776,9 +775,9 @@ onUnmounted(() => {
               >
                 <Icon
                   v-if="key === 1"
-                  icon="line-md:rotate-270"
+                  icon="tabler:reload"
                   class="dock-action-icon"
-                  shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
+                  shrink-0 absolute text="size-$bew-icon-size-lg"
                 />
                 <Icon
                   v-else
@@ -802,9 +801,9 @@ onUnmounted(() => {
             <Transition name="fade">
               <Icon
                 v-if="(reachTop || !backToTopButtonEnabled) && canRefreshCurrentPage"
-                icon="line-md:rotate-270"
+                icon="tabler:reload"
                 class="dock-action-icon"
-                shrink-0 rotate-90 absolute text="size-$bew-icon-size-lg"
+                shrink-0 absolute text="size-$bew-icon-size-lg"
               />
               <Icon
                 v-else
@@ -863,7 +862,7 @@ onUnmounted(() => {
     height: 0;
   }
 
-  > * {
+  > .dock-edge {
     --uno: "pointer-events-auto";
   }
 }
@@ -912,6 +911,13 @@ onUnmounted(() => {
   --uno: "absolute flex justify-center items-center scale-$scale";
 
   transition-duration: 0ms;
+  // Only the visible pieces should hit-test; the inner margin would otherwise
+  // cover the page scrollbar next to the Dock.
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
 
   &.ready {
     transition-duration: var(--bew-duration-moderate, 300ms);
@@ -966,12 +972,8 @@ onUnmounted(() => {
     --uno: "!opacity-60 !translate-y-50%";
   }
 
-  &.hide-inner:not(.hover) {
+  &.hide-inner:not(.hover) .dock-content-inner {
     pointer-events: none;
-  }
-
-  &.hide-inner:not(.hover) .dock-action-buttons {
-    pointer-events: auto;
   }
 
   .divider {
@@ -1065,10 +1067,6 @@ onUnmounted(() => {
   width: var(--bew-icon-size-lg);
   height: var(--bew-icon-size-lg);
   flex: none;
-}
-
-.dock-edit-action-item__icon--refresh {
-  transform: rotate(90deg);
 }
 
 .dock-item {

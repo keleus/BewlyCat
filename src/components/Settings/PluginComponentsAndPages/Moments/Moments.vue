@@ -186,6 +186,13 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
         />
       </SettingsItem>
       <SettingsItem
+        :title="$t('settings.moments_start_from_last_seen')"
+        :desc="$t('settings.moments_start_from_last_seen_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.momentsStartFromLastSeen" />
+      </SettingsItem>
+      <SettingsItem
         :title="$t('settings.moments_enable_live_preview')"
         :desc="$t('settings.moments_enable_live_preview_desc')"
         right-width="auto"

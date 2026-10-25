@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T = any">
 import { useDebounceFn } from '@vueuse/core'
 
-import type { Video, VideoCardState } from '~/components/VideoCard/types'
+import type { Video, VideoCardRemovedState, VideoCardState } from '~/components/VideoCard/types'
 import { createVideoCardState } from '~/components/VideoCard/types'
 import { isBangumiVideo } from '~/components/VideoCard/utils'
 import type { BewlyAppProvider } from '~/composables/useAppProvider'
@@ -105,6 +105,11 @@ interface VideoCardGridProps<T = any> {
    * 观察卡片主链接点击，不接管 VideoCard 原有打开行为。
    */
   cardClickObserver?: (item: T, event: MouseEvent) => void
+
+  /**
+   * 页面持有的卡片移除状态（如取消稍后再看/取消收藏的确认与还原遮罩）
+   */
+  getRemovedState?: (item: T) => VideoCardRemovedState | undefined
 
   /**
    * 卡片首次进入滚动视口时触发。
@@ -1258,6 +1263,7 @@ function getUniqueKey(item: T, index: number): string | number {
           :type="renderItem.card.type"
           :video="renderItem.card.video"
           :persistent-state="getCardState(renderItem.card.key)"
+          :removed-state="renderItem.card.skeleton ? undefined : props.getRemovedState?.(renderItem.card.item)"
           :show-preview="showPreview"
           :show-watcher-later="showWatchLater"
           :horizontal="isHorizontal"

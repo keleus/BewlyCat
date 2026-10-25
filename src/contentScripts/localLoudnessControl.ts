@@ -3,6 +3,7 @@ import { createApp, watch } from 'vue'
 import PlayerLoudnessControl from '~/components/PlayerLoudnessControl.vue'
 import { settings, settingsReady } from '~/logic'
 import { i18n } from '~/utils/i18n'
+import { resetPlayerAdjustment, syncPlayerAdjustmentVideo } from '~/utils/playerAdjustment'
 
 import { schedulePlayerControlFit } from './playerControlFit'
 
@@ -51,14 +52,18 @@ export function initLocalLoudnessControl() {
   }
 
   function discover() {
+    if (settings.value.showPlayerAdjustmentButton)
+      syncPlayerAdjustmentVideo()
     deadline = Date.now() + 15_000
     schedule()
   }
 
   function sync() {
     cancelRetry()
-    if (!settings.value.showLocalLoudnessButton) {
+    if (!settings.value.showPlayerAdjustmentButton) {
       clearControl()
+      // 隐藏按钮后无处还原，画面与音画调整随之重置；音量均衡是全局设置，不受影响。
+      resetPlayerAdjustment()
       return
     }
     const bar = document.querySelector<HTMLElement>('.bpx-player-control-bottom-right')
@@ -112,7 +117,7 @@ export function initLocalLoudnessControl() {
   void settingsReady.then(() => {
     if (stopped)
       return
-    unwatch = watch(() => settings.value.showLocalLoudnessButton, discover, { immediate: true })
+    unwatch = watch(() => settings.value.showPlayerAdjustmentButton, discover, { immediate: true })
     for (const name of ['pushstate', 'replacestate', 'popstate', 'hashchange'])
       window.addEventListener(name, discover, { signal: lifetime.signal })
     for (const name of ['play', 'loadedmetadata'])

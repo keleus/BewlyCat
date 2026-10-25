@@ -6,7 +6,7 @@ import { useConfirmDialog } from '~/composables/useConfirmDialog'
 import { importSettingsStorage } from '~/composables/useSettingsStorage'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
-import { originalSettings, settings, videoCardContextMenuKeys } from '~/logic'
+import { normalizeRecommendationModeSwitcherOptions, originalSettings, RECOMMENDATION_MODE_OPTIONS, settings, videoCardContextMenuKeys } from '~/logic'
 import { applyPendingSettingsMigrations, formatSettingsMigrationConfirmMessage, getPendingSettingsMigrationChoices, hasPendingSettingsMigrations } from '~/utils/settingsMigration'
 
 import SettingsItem from '../components/SettingsItem.vue'
@@ -30,6 +30,7 @@ const structuredArrayKeys = new Set([
   'filterByTitle',
   'filterByUser',
   'homePageTabVisibilityList',
+  'recommendationModeSwitcherOptions',
   'topBarComponentsConfig',
   'topBarPinnedChannels',
   'videoCardContextMenuConfig',
@@ -108,6 +109,17 @@ function normalizeStructuredArray(key: string, value: unknown): NormalizedImport
       && Object.values(HomeSubPage).includes(item.page as HomeSubPage)
       && typeof item.visible === 'boolean')
     return compatible ? { compatible: true, value: structuredClone(value) } : { compatible: false }
+  }
+
+  if (key === 'recommendationModeSwitcherOptions') {
+    // 兼容旧版备份中按固定顺序保存的可见项字符串数组
+    const isMode = (mode: unknown) => (RECOMMENDATION_MODE_OPTIONS as readonly unknown[]).includes(mode)
+    const compatible = value.every(item => isMode(item)) || value.every(item => isRecord(item)
+      && isMode(item.mode)
+      && typeof item.visible === 'boolean')
+    return compatible
+      ? { compatible: true, value: normalizeRecommendationModeSwitcherOptions(value) }
+      : { compatible: false }
   }
 
   if (key === 'videoCardShadowCurve') {

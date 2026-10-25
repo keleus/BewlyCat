@@ -137,8 +137,6 @@ settings:
     fps_30: 30 fps · 流暢
   local_loudness:
     gain_history: 均衡增益變化 · 近 60 秒
-    show_button: 顯示播放器音量均衡按鈕
-    show_button_desc: 喺影片控制列顯示按鈕，滑鼠移上去可以調整均衡參數同睇目前影片嘅運行狀態。隱藏按鈕唔會關閉均衡。
     summary: 平衡唔同影片之間嘅音量，減少切換影片時嘅大小聲差異。
     title: 音量均衡
     enable: 啟用局部音量均衡
@@ -155,6 +153,23 @@ settings:
       error: 音訊處理失敗，已回復原聲。重新整理頁面後可以再試。
       native-unavailable: 未能確認原生均衡已關閉，暫時唔處理。請檢查播放器嘅更多播放設定。
       unsupported: 目前音源無法安全接入，保持原聲。
+  player_adjustment:
+    title: 畫面同聲音調整
+    show_button: 顯示播放器畫面同聲音調整按鈕
+    show_button_desc: 喺影片控制列顯示按鈕，滑鼠移上去可以旋轉、鏡像畫面，調整音畫同步；開咗音量均衡之後亦可以喺度調整均衡參數。旋轉、鏡像同音畫同步只對目前影片生效；隱藏按鈕會重設呢啲調整，但唔會關閉音量均衡。
+    picture: 畫面
+    rotate_left: 向左轉
+    rotate_right: 向右轉
+    flip_horizontal: 水平鏡像
+    flip_vertical: 垂直鏡像
+    reset: 重設
+    audio_sync: 音畫同步
+    audio_delay: 聲音延後
+    audio_delay_desc: 聲音早過畫面嗰陣用，最多延後 1000 ms。只對目前影片生效。
+    audio_delay_states:
+      waiting: 等影片播放之後先生效。
+      unsupported: 目前音源冇辦法安全接入，保持原聲。
+      error: 音訊處理失敗，已經退返原聲。重新整理頁面之後可以再試。
   following_sort: 新版關注列表排序
   following_sort_updated: 按更新時間
   following_sort_group: 按分組
@@ -279,6 +294,8 @@ settings:
   group_player_components: 播放器組件
   group_player_display_mode: 播放模式
   group_player_display_mode_desc: 設定基礎顯示模式，再按需要覆寫特定播放情況。
+  group_bewly_widescreen: Bewly 闊螢幕
+  group_bewly_widescreen_desc: 調整 Bewly 闊螢幕模式下嘅側欄同影片版面，可以用播放器按鈕或者快捷鍵隨時切換。
   group_playback_memory: 播放狀態記憶
   group_playback_memory_desc: 揀選係咪記住倍速、畫質同影片比例。
   group_video_page_actions: 影片頁功能
@@ -399,6 +416,8 @@ settings:
   moments_enable_video_preview_desc: 滑鼠懸停影片動態或轉發影片嗰陣播放預覽，可以設定觸發範圍、延遲同播放互動。
   moments_grid_columns: 動態欄數
   moments_tabs_position: 動態分頁欄位置
+  moments_start_from_last_seen: 由上次睇到嘅位置開始載入
+  moments_start_from_last_seen_desc: 打開插件動態頁同頂欄動態下拉時直接定位到上次睇到嘅位置，可以向上繼續載入更新嘅動態。閂咗之後由最新開始載入，仍然可以撳掣跳去上次睇到嘅位置。
   moments_grid_columns_desc: 設定 Bewly 動態頁嘅欄數，視窗空間唔夠時會自動減少。
   moments_grid_columns_option: '{count} 欄'
   moments_grid_columns_more: 更多
@@ -743,7 +762,7 @@ settings:
   show_recommendation_mode_switcher: 顯示推介模式快速切換掣組
   show_recommendation_mode_switcher_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示膠囊掣組，可以直接揀 Web、Web 訪客、App 單列或者 App 雙列。
   recommendation_mode_switcher_options: 顯示嘅推介模式
-  recommendation_mode_switcher_options_desc: 揀快速切換掣組入面顯示邊啲選項，最少要留 2 個。
+  recommendation_mode_switcher_options_desc: 揀快速切換掣組入面顯示邊啲選項，拖動可以改次序；最少要留 2 個。
   show_immersive_mode_entry: 啟用沉浸式模式
   show_immersive_mode_entry_desc: 揀咗主頁「估你心水」嗰陣，喺頂部分頁欄右邊顯示入口：用 Bewly 寬屏打開 B 站片頁連續播推介片，側欄顯示主頁推介流。
   immersive_wheel_switch: 碌轆切換條片
@@ -931,6 +950,8 @@ settings:
   disable_background_desc: 徹底閂咗插件版面嘅純色背景、漸層背景同埋桌布（包括搜尋頁桌布），顯示返 B 站原本版面嘅背景。
   prevent_mobile_redirect: 防止跳轉去流動版
   prevent_mobile_redirect_desc: 開啟之後，避免進入 www.bilibili.com 時跳轉去流動版頁面。
+  enable_firefox_scrollbar_repaint: Firefox 捲軸重繪
+  enable_firefox_scrollbar_repaint_desc: Firefox 原生捲軸淨係可以改粗幼同顏色。開啟之後，插件頁面會改用同 Chromium 版一樣嘅重繪捲軸。
   follow_bilibili_evolved_color: 跟返 Bilibili Evolved 主題色
   follow_bilibili_evolved_color_desc: 每次換完 Bilibili Evolved 主題色嗰陣，記得揀多一次呢個選項愛嚟更新佈置。
   links: 拎
@@ -1334,6 +1355,8 @@ topbar:
     uploaded: po 咗：
     now_streaming: 開緊 live：
     live_status: Live 緊
+    last_seen: 上次睇到呢度
+    jump_to_last_seen: 跳去上次睇到嘅位置
   upload_dropdown:
     article: 寫文
     music: 擺音樂
@@ -1515,9 +1538,8 @@ favorites:
   article_count: 圖文數：{count}
   article_load_failed: 圖文收藏載入失敗，請遲啲再試
   unfavorite: 唔愛喇
-  unfavorite_confirm: |-
-    係咪要剷走你揀過啲片呀？
-    噉做冇得返轉頭噃，你確定要剷走你揀過啲片？
+  unfavorited: 唔愛咗喇
+  unfavorite_item_confirm: 真係唔愛喇？
   batch_manage: 批量管理
   batch_select_all: 揀晒本頁
   batch_unselect_all: 取消全選
@@ -1596,6 +1618,8 @@ watch_later:
   play_video: 剷走兼入去影片頁
   play_in_watch_later: 清單播
   remove_from_watch_later: 剷走
+  removed: 已經剷走咗
+  remove_confirm: 真係要剷走？
   layout_list: 清單檢視
   layout_grid: 格網檢視
 search_bar:
@@ -1682,6 +1706,10 @@ moments:
   filter_video: 影片投稿
   filter_pgc: 追番追劇
   filter_article: 專欄
+  last_seen: 上次睇到呢度
+  newer_above: 上面仲有更新嘅動態
+  jump_to_latest: 返去最新
+  jump_to_last_seen: 跳去上次睇到嘅位置
   emoji: 表情
   view: 查看
   charged_unlock: 充電解鎖

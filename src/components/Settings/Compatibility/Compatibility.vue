@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import Radio from '~/components/Radio.vue'
 import { settings } from '~/logic'
+import { isFirefoxBuild } from '~/utils/buildTarget'
 import { isHomePage } from '~/utils/main'
 
 import SettingsItem from '../components/SettingsItem.vue'
@@ -27,6 +28,14 @@ watch(() => settings.value.useOriginalBilibiliHomepage, () => {
         right-width="auto"
       >
         <Radio v-model="settings.preventMobileRedirect" />
+      </SettingsItem>
+      <SettingsItem
+        v-if="isFirefoxBuild"
+        :title="$t('settings.enable_firefox_scrollbar_repaint')"
+        :desc="$t('settings.enable_firefox_scrollbar_repaint_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.enableFirefoxScrollbarRepaint" />
       </SettingsItem>
     </SettingsItemGroup>
 

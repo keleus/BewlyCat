@@ -58,7 +58,7 @@ export default defineConfig({
     'i-line-md:moon-alt-to-sunny-outline-loop-transition',
     'i-line-md:sunny-outline-to-moon-transition',
     'i-line-md:moon-to-sunny-outline-transition',
-    'i-line-md:rotate-270',
+    'i-tabler:reload',
     'i-line-md:arrow-small-up',
     'i-line-md:confirm',
     'i-mdi:undo-variant',

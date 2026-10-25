@@ -15,7 +15,9 @@ const CONTROL_DISCOVERY_RETRY_INTERVAL = 500
 
 // 与原生控制栏 Lottie 图标同为 88 网格面性图形：主体 72×56、圆角 8、镂空宽 8
 const screenshotIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 88 88" style="width: 100%; height: 100%;">
-  <path d="M16 24h12l4.2-6.3A4 4 0 0 1 35.5 16h17a4 4 0 0 1 3.3 1.7L60 24h12a8 8 0 0 1 8 8v32a8 8 0 0 1-8 8H16a8 8 0 0 1-8-8V32a8 8 0 0 1 8-8ZM29 48a15 15 0 1 0 30 0a15 15 0 1 0 -30 0ZM37 48a7 7 0 1 0 14 0a7 7 0 1 0 -14 0Z" fill="#fff" fill-rule="evenodd"/>
+  <path d="M16 24h12l4.2-6.3A4 4 0 0 1 35.5 16h17a4 4 0 0 1 3.3 1.7L60 24h12a8 8 0 0 1 8 8v32a8 8 0 0 1-8 8H16a8 8 0 0 1-8-8V32a8 8 0 0 1 8-8ZM29 48a15 15 0 1 0 30 0a15 15 0 1 0 -30 0Z" fill="#fff" fill-rule="evenodd"/>
+  <circle class="bewly-video-screenshot-icon-lens" cx="44" cy="48" r="7" fill="#fff"/>
+  <path class="bewly-video-screenshot-icon-flash" d="M77 3Q78 11 86 12Q78 13 77 21Q76 13 68 12Q76 11 77 3Z" fill="#fff" opacity="0"/>
 </svg>`
 
 let controlContainer: HTMLElement | null = null

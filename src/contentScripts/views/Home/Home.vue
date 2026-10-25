@@ -97,6 +97,7 @@ const gridLayoutIcons = computed((): GridLayoutIcon[] => {
 
 const tabsIndicatorRef = ref<InstanceType<typeof LiquidSegmentIndicator> | null>(null)
 const gridIndicatorRef = ref<InstanceType<typeof LiquidSegmentIndicator> | null>(null)
+const recommendationModeIndicatorRef = ref<InstanceType<typeof LiquidSegmentIndicator> | null>(null)
 
 watch(currentTabs, () => {
   void tabsIndicatorRef.value?.updateIndicator(true)
@@ -105,6 +106,10 @@ watch(currentTabs, () => {
 watch(() => settings.value.enableGridLayoutSwitcher, (enabled) => {
   if (enabled)
     void gridIndicatorRef.value?.updateIndicator(true)
+})
+
+watch(recommendationModeOptions, () => {
+  void recommendationModeIndicatorRef.value?.updateIndicator(true)
 })
 
 // Cookie changes are reconciled by the top bar store. Refresh the active home
@@ -418,6 +423,7 @@ function toggleTabContentLoading(loading: boolean) {
           >
             <LiquidSegmentIndicator
               v-if="settings.enableLiquidSegmentIndicator"
+              ref="recommendationModeIndicatorRef"
               :active-key="activeRecommendationModeOption"
             />
             <button

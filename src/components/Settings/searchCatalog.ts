@@ -1,3 +1,5 @@
+import { isFirefoxBuild } from '~/utils/buildTarget'
+
 import { MenuType } from './types'
 
 export interface SettingsSearchStorageValue {
@@ -319,6 +321,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_show_hot_search',
     'settings.moments_show_up_list',
     'settings.moments_tabs_position',
+    'settings.moments_start_from_last_seen',
     'settings.moments_enable_live_preview',
     'settings.moments_enable_video_preview',
     'settings.enable_video_ctrl_bar_on_video_card',
@@ -529,7 +532,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.local_loudness.enable',
     'settings.local_loudness.target',
     'settings.local_loudness.strength',
-    'settings.local_loudness.show_button',
+    'settings.player_adjustment.title',
+    'settings.player_adjustment.show_button',
   ]),
   ...createEntries(ambilightRoute, [
     'settings.ambilight.title',
@@ -546,14 +550,16 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(playerRoute, [
     'settings.bilibili_features.video_playback',
     'settings.group_player_display_mode',
+    'settings.video_player_scroll',
+    'settings.auto_exit_fullscreen_on_end',
+    'settings.video_player_mode.enable_overrides',
+    'settings.video_player_mode.overrides',
+    'settings.group_bewly_widescreen',
+    'settings.show_bewly_widescreen_button',
     'settings.video_player_mode.bewly_widescreen_sidebar_position',
     'settings.video_player_mode.bewly_widescreen_auto_collapse_sidebar',
     'settings.video_player_mode.bewly_widescreen_video_alignment',
     'settings.video_player_mode.enable_bewly_widescreen_sidebar_resize',
-    'settings.video_player_mode.enable_overrides',
-    'settings.video_player_mode.overrides',
-    'settings.video_player_scroll',
-    'settings.auto_exit_fullscreen_on_end',
     'settings.group_player_components',
     'settings.skip_concise_danmaku',
     'settings.group_playback_memory',
@@ -565,7 +571,6 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enlarge_favorite_dialog',
     'settings.external_watch_later_button',
     'settings.show_vertical_video_zoom_button',
-    'settings.show_bewly_widescreen_button',
     'settings.show_video_screenshot_button',
   ]),
   ...createEntries(listenVideoRoute, [
@@ -742,6 +747,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_common',
     'settings.use_original_bilibili_homepage',
     'settings.prevent_mobile_redirect',
+    ...(isFirefoxBuild ? ['settings.enable_firefox_scrollbar_repaint'] : []),
     'settings.group_ad_blocking',
     'settings.block_ads',
     'settings.block_top_search_page_ads',

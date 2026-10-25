@@ -137,8 +137,6 @@ settings:
     fps_30: 30 fps · Smooth
   local_loudness:
     gain_history: Levelling gain · Last 60 seconds
-    show_button: Show player volume balance button
-    show_button_desc: Show a player control to adjust parameters and view the current video’s status on hover. Hiding the button does not disable processing.
     summary: Balance volume across videos to reduce loudness differences when switching videos.
     title: Volume balance
     enable: Enable local volume balance
@@ -155,6 +153,23 @@ settings:
       error: Audio processing failed; original audio restored. Reload the page to retry.
       native-unavailable: Native normalization could not be confirmed off. Check More playback settings in the player. Audio is unchanged.
       unsupported: This audio source cannot be safely processed. Audio is unchanged.
+  player_adjustment:
+    title: Picture & sound adjustments
+    show_button: Show player picture & sound button
+    show_button_desc: Show a player control to rotate or mirror the picture, and adjust audio sync on hover; volume balance settings also appear here once it is enabled. Rotation, mirroring and audio sync apply only to the current video; hiding the button resets them but does not disable volume balance.
+    picture: Picture
+    rotate_left: Rotate left
+    rotate_right: Rotate right
+    flip_horizontal: Mirror horizontally
+    flip_vertical: Mirror vertically
+    reset: Reset
+    audio_sync: Audio sync
+    audio_delay: Delay audio
+    audio_delay_desc: Use when the sound is ahead of the picture, up to 1000 ms. Applies only to the current video.
+    audio_delay_states:
+      waiting: Takes effect once the video plays.
+      unsupported: This audio source can’t be processed safely; original sound is kept.
+      error: Audio processing failed and fell back to the original sound. Reload the page to retry.
   following_sort: Uploader order in the new Following layout
   following_sort_updated: By update time
   following_sort_group: By group
@@ -279,6 +294,8 @@ settings:
   group_player_components: Player Components
   group_player_display_mode: Display Mode
   group_player_display_mode_desc: Set a base display mode and override it for specific playback contexts when needed.
+  group_bewly_widescreen: Bewly Widescreen
+  group_bewly_widescreen_desc: Adjust the sidebar and video layout in Bewly Widescreen. Toggle it anytime with the player button or shortcut.
   group_playback_memory: Playback Memory
   group_playback_memory_desc: Choose whether to remember playback rate, video quality, and video aspect ratio.
   group_video_page_actions: Video Page Features
@@ -374,6 +391,8 @@ settings:
   moments_enable_video_preview_desc: Preview video dynamics and forwarded videos on hover, with configurable trigger area, delay, and playback interactions.
   moments_grid_columns: Dynamic columns
   moments_tabs_position: Dynamic tabs position
+  moments_start_from_last_seen: Start from where you left off
+  moments_start_from_last_seen_desc: Open the plugin moments page and the top bar moments dropdown at the last post you saw, then scroll up to load newer posts. When off, loading starts from the latest and a button still lets you jump to where you left off.
   moments_grid_columns_desc: Set the column count for the Bewly dynamic feed. Columns reduce automatically when space is limited.
   moments_grid_columns_option: '{count} columns'
   moments_grid_columns_more: More
@@ -788,7 +807,7 @@ settings:
   show_recommendation_mode_switcher: Show quick recommendation mode switcher
   show_recommendation_mode_switcher_desc: When "For You" is selected, show a segmented control to the right of the home tabs to choose Web, Web Guest, App Single, or App Double directly.
   recommendation_mode_switcher_options: Visible recommendation modes
-  recommendation_mode_switcher_options_desc: Choose which options appear in the quick switcher. At least 2 must stay visible.
+  recommendation_mode_switcher_options_desc: Choose which options appear in the quick switcher and drag them to reorder. At least 2 must stay visible.
   show_immersive_mode_entry: Enable immersive mode
   show_immersive_mode_entry_desc: When "For You" is selected, show an entry to the right of the home tabs that plays recommendations continuously on the Bilibili video page in Bewly widescreen, with the home feed in the sidebar.
   immersive_wheel_switch: Switch videos with the mouse wheel
@@ -995,6 +1014,8 @@ settings:
   disable_background_desc: Completely disable the plugin page's solid, gradient and wallpaper backgrounds (including the search page wallpaper) to show the original Bilibili page background.
   prevent_mobile_redirect: Prevent mobile redirect
   prevent_mobile_redirect_desc: When enabled, prevents www.bilibili.com from redirecting to the mobile site.
+  enable_firefox_scrollbar_repaint: Repaint Firefox scrollbar
+  enable_firefox_scrollbar_repaint_desc: Firefox only allows changing the native scrollbar's width and color. When enabled, plugin pages use a repainted scrollbar that matches the Chromium version.
   follow_bilibili_evolved_color: Follow the Bilibili Evolved theme color
   follow_bilibili_evolved_color_desc: >-
     After changing the theme color in Bilibili Evolved, you will need to
@@ -1400,6 +1421,8 @@ topbar:
     uploaded: 'uploaded: '
     now_streaming: 'now streaming: '
     live_status: LIVE
+    last_seen: Last seen here
+    jump_to_last_seen: Jump to where you left off
   upload_dropdown:
     article: Article
     music: Music
@@ -1582,11 +1605,8 @@ favorites:
   article_count: 'Articles: {count}'
   article_load_failed: Failed to load favorite articles. Please try again later.
   unfavorite: Unfavorite
-  unfavorite_confirm: >-
-    Remove selected video(s)?
-
-    This operation cannot be reversed. Are you sure you want to remove the
-    selected video(s) from your favorites?
+  unfavorited: Unfavorited
+  unfavorite_item_confirm: Unfavorite this video?
   batch_manage: Batch manage
   batch_select_all: Select page
   batch_unselect_all: Unselect all
@@ -1669,6 +1689,8 @@ watch_later:
   play_video: Remove and open video page
   play_in_watch_later: Playlist
   remove_from_watch_later: Remove
+  removed: Removed from Watch Later
+  remove_confirm: Remove from Watch Later?
   layout_list: List view
   layout_grid: Grid view
 search_bar:
@@ -1755,6 +1777,10 @@ moments:
   filter_video: Videos
   filter_pgc: Anime & shows
   filter_article: Articles
+  last_seen: Last seen here
+  newer_above: Newer posts above
+  jump_to_latest: Back to latest
+  jump_to_last_seen: Jump to where you left off
   emoji: Emoji
   view: View
   charged_unlock: Unlock with charging

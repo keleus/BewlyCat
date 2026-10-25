@@ -47,6 +47,7 @@ export const sharedConfig: UserConfig = {
       '__DEV__': JSON.stringify(isDev),
       '__BUILD_COMMIT__': JSON.stringify(buildCommit),
       'process.env.NODE_ENV': JSON.stringify(isDev ? 'development' : 'production'),
+      'process.env.FIREFOX': JSON.stringify(isFirefox),
       '__VUE_OPTIONS_API__': JSON.stringify(true),
       '__VUE_PROD_DEVTOOLS__': JSON.stringify(false),
       'preventAssignment': true,

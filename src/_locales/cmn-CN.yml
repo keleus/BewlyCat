@@ -137,8 +137,6 @@ settings:
     fps_30: 30 fps · 流畅
   local_loudness:
     gain_history: 均衡增益变化 · 近 60 秒
-    show_button: 显示播放器音量均衡按钮
-    show_button_desc: 在视频控制栏显示按钮，悬停可调整均衡参数并查看当前视频的运行状态。隐藏按钮不会关闭均衡。
     summary: 平衡不同视频之间的音量，减少切换视频时的大小声差异。
     title: 音量均衡
     enable: 启用局部音量均衡
@@ -155,6 +153,23 @@ settings:
       error: 音频处理失败，已回退到原声。刷新页面后可重试。
       native-unavailable: 未能确认原生均衡已关闭，暂不处理。请检查播放器的更多播放设置。
       unsupported: 当前音源无法安全接入，保持原声。
+  player_adjustment:
+    title: 画面与声音调整
+    show_button: 显示播放器画面与声音调整按钮
+    show_button_desc: 在视频控制栏显示按钮，悬停可旋转、镜像画面，调整音画同步；开启音量均衡后也可在此调整均衡参数。旋转、镜像和音画同步只对当前视频生效；隐藏按钮会重置这些调整，但不会关闭音量均衡。
+    picture: 画面
+    rotate_left: 向左旋转
+    rotate_right: 向右旋转
+    flip_horizontal: 水平镜像
+    flip_vertical: 垂直镜像
+    reset: 重置
+    audio_sync: 音画同步
+    audio_delay: 声音延后
+    audio_delay_desc: 声音比画面早时使用，最多延后 1000 ms。仅对当前视频生效。
+    audio_delay_states:
+      waiting: 等待视频播放后生效。
+      unsupported: 当前音源无法安全接入，保持原声。
+      error: 音频处理失败，已回退到原声。刷新页面后可重试。
   following_sort: 新版关注列表排序
   following_sort_updated: 按更新时间
   following_sort_group: 按分组
@@ -279,6 +294,8 @@ settings:
   group_player_components: 播放器组件
   group_player_display_mode: 播放模式
   group_player_display_mode_desc: 设置基础显示模式，并按需覆盖特定播放场景。
+  group_bewly_widescreen: Bewly 宽屏
+  group_bewly_widescreen_desc: 调整 Bewly 宽屏模式下的侧栏与视频布局，可通过播放器按钮或快捷键随时切换。
   group_playback_memory: 播放状态记忆
   group_playback_memory_desc: 选择是否记住倍速、清晰度和视频比例。
   group_video_page_actions: 视频页功能
@@ -371,6 +388,8 @@ settings:
   moments_enable_video_preview_desc: 鼠标悬停视频动态或转发视频时播放预览，可设置触发范围、延迟和播放交互。
   moments_grid_columns: 动态列数
   moments_tabs_position: 动态标签栏位置
+  moments_start_from_last_seen: 从上次看到的位置开始加载
+  moments_start_from_last_seen_desc: 打开插件动态页和顶栏动态下拉时直接定位到上次看到的位置，可向上继续加载更新的动态。关闭后从最新开始加载，仍可点击按钮跳转到上次看到的位置。
   moments_grid_columns_desc: 设置 Bewly 动态页的列数，窗口空间不足时会自动减少。
   moments_grid_columns_option: '{count} 列'
   moments_grid_columns_more: 更多
@@ -882,7 +901,7 @@ settings:
   show_recommendation_mode_switcher: 显示推荐模式快速切换按钮组
   show_recommendation_mode_switcher_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示胶囊按钮组，可直接选择 Web、Web 游客、App 单列或 App 双列。
   recommendation_mode_switcher_options: 显示的推荐模式
-  recommendation_mode_switcher_options_desc: 选择快速切换按钮组中显示的选项，至少保留 2 个。
+  recommendation_mode_switcher_options_desc: 选择快速切换按钮组中显示的选项，拖动可调整顺序；至少保留 2 个。
   show_immersive_mode_entry: 启用沉浸式模式
   show_immersive_mode_entry_desc: 选中首页“个性推荐”时，在顶部标签栏右侧显示入口：以 Bewly 宽屏打开 B 站视频页连续播放推荐视频，侧栏显示首页推荐流。
   immersive_wheel_switch: 滚轮切换视频
@@ -1055,6 +1074,8 @@ settings:
   disable_background_desc: 彻底关闭插件页面的纯色背景、渐变背景和壁纸（含搜索页壁纸），显示 B 站原页面背景。
   prevent_mobile_redirect: 防止跳转移动端
   prevent_mobile_redirect_desc: 开启后，避免访问 www.bilibili.com 时被跳转到移动版页面。
+  enable_firefox_scrollbar_repaint: Firefox 滚动条重绘
+  enable_firefox_scrollbar_repaint_desc: Firefox 原生滚动条只能调整粗细和颜色。开启后，插件页面改用与 Chromium 版一致的重绘滚动条。
   follow_bilibili_evolved_color: 使用 Bilibili Evolved 主题色
   follow_bilibili_evolved_color_desc: 每次选完 Bilibili Evolved 主题色时，记得重新选中这一选项以更新配置。
   links: 链接
@@ -1319,6 +1340,8 @@ topbar:
     uploaded: 上传了：
     now_streaming: 正在直播：
     live_status: 直播中
+    last_seen: 上次看到这里
+    jump_to_last_seen: 跳到上次看到的位置
   upload_dropdown:
     article: 上传专栏
     music: 上传音频
@@ -1500,9 +1523,8 @@ favorites:
   article_count: 图文数：{count}
   article_load_failed: 图文收藏加载失败，请稍后重试
   unfavorite: 取消收藏
-  unfavorite_confirm: |-
-    要取消收藏选中的视频吗？
-    该操作无法撤销，你确定要取消收藏选中的视频吗？
+  unfavorited: 已取消收藏
+  unfavorite_item_confirm: 确定取消收藏？
   batch_manage: 批量管理
   batch_select_all: 全选本页
   batch_unselect_all: 取消全选
@@ -1581,6 +1603,8 @@ watch_later:
   play_video: 移除并进入视频页
   play_in_watch_later: 列表播放
   remove_from_watch_later: 移除
+  removed: 已移出稍后再看
+  remove_confirm: 确定移出稍后再看？
   layout_list: 列表视图
   layout_grid: 网格视图
 search_bar:
@@ -1667,6 +1691,10 @@ moments:
   filter_video: 视频投稿
   filter_pgc: 追番追剧
   filter_article: 专栏
+  last_seen: 上次看到这里
+  newer_above: 上方还有更新的动态
+  jump_to_latest: 回到最新
+  jump_to_last_seen: 跳到上次看到的位置
   emoji: 表情
   view: 查看
   charged_unlock: 充电解锁
