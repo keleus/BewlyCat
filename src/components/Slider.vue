@@ -3,10 +3,13 @@ interface Props {
   min?: number
   max?: number
   label: string
+  /** 开启后数值部分变为可输入的数字框，label 只显示单位后缀 */
+  editable?: boolean
 }
 const props = withDefaults(defineProps<Props>(), {
   min: 0,
   max: 100,
+  editable: false,
 })
 
 const modelValue = defineModel<number>({ required: true })
@@ -18,6 +21,17 @@ function handleInput(event: Event) {
   const value = (event.target as HTMLInputElement).valueAsNumber
   if (Number.isFinite(value))
     modelValue.value = value
+}
+
+// 手动输入只在 change（回车/失焦）时提交：逐键写入会被存储层的
+// 归一化钳制打断（例如输入途中被拉回最小值），无法正常键入。
+function commitEditedValue(event: Event) {
+  const input = event.target as HTMLInputElement
+  const value = input.valueAsNumber
+  if (Number.isFinite(value))
+    modelValue.value = Math.min(props.max, Math.max(props.min, Math.round(value)))
+  else
+    input.value = String(modelValue.value)
 }
 
 function updateBackground() {
@@ -42,6 +56,15 @@ onMounted(updateBackground)
       appearance-none outline-none w="$b-slider-width" h="$b-slider-height"
       @input="handleInput"
     >
+    <input
+      v-if="editable"
+      type="number"
+      class="slider-input"
+      :value="modelValue"
+      :min="min"
+      :max="max"
+      @change="commitEditedValue"
+    >
     <span class="slider-label">{{ label }}</span>
   </label>
 </template>
@@ -62,6 +85,33 @@ label {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.slider-input {
+  flex: none;
+  width: 4em;
+  padding: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  outline: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
+  cursor: text;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &:focus {
+    border-bottom-color: var(--bew-theme-color);
+  }
 }
 
 input[type="range"] {

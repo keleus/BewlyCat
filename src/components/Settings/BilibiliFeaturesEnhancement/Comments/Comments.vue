@@ -101,7 +101,8 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
           v-model="settings.commentReplyTreeContainerHeight"
           :min="COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT"
           :max="COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT"
-          :label="`${settings.commentReplyTreeContainerHeight}px`"
+          label="px"
+          editable
         />
       </div>
     </SettingsItem>
