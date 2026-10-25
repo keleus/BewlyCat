@@ -817,6 +817,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 .moment-rich-editor__packages {
   display: flex;
   flex: none;
+  gap: var(--bew-space-1);
   min-width: 0;
   overflow-x: auto;
   overscroll-behavior: contain;
@@ -826,6 +827,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 }
 .moment-rich-editor__emotes {
   display: grid;
+  gap: var(--bew-space-1);
   align-content: start;
   grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
 }
@@ -844,6 +846,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 }
 .moment-rich-editor__choices {
   display: grid;
+  gap: var(--bew-space-1);
 }
 .moment-rich-editor__choices button {
   justify-content: flex-start;

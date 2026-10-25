@@ -548,12 +548,12 @@ html.dark.bewly-design {
   background: transparent;
   color: inherit;
   cursor: pointer;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
 
   &:hover,
   &[aria-selected="true"],
   &[aria-pressed="true"] {
     background: var(--bew-fill-2);
-    color: var(--bew-theme-color);
   }
 
   &:active {
