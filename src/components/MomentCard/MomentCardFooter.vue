@@ -106,8 +106,8 @@ defineExpose({ focusCommentsToggle })
       @keydown.enter.stop
     >
       <span v-if="likeLoading" i-svg-spinners:ring-resize aria-hidden="true" />
-      <span v-else-if="moment.isLiked" i-tabler-heart-filled aria-hidden="true" />
-      <span v-else i-tabler-heart aria-hidden="true" />
+      <span v-else-if="moment.isLiked" i-tabler-thumb-up-filled aria-hidden="true" />
+      <span v-else i-tabler-thumb-up aria-hidden="true" />
       {{ formatCount(moment.likeCount) }}
     </button>
   </footer>
