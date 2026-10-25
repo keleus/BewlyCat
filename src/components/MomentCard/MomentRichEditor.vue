@@ -108,8 +108,12 @@ function rememberSelection() {
     savedRange = selected.getRangeAt(0).cloneRange()
 }
 function sync() {
-  if (editor.value)
+  if (editor.value) {
     nodes.value = readRepostEditor(editor.value)
+    // 全选删除后 contenteditable 常残留 <br> 等空白节点，清干净让占位符的 :empty 重新成立。
+    if (!nodes.value.some(node => node.raw_text.trim()))
+      editor.value.innerHTML = ''
+  }
   rememberSelection()
   recordHistory()
 }
