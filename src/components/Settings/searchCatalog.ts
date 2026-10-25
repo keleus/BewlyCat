@@ -13,7 +13,9 @@ export interface SettingsSearchEntry {
   menu: MenuType
   targetTitleKey?: string
   targetTitle?: string
+  fallbackTargetKey?: string
   secondaryTitleKey?: string
+  contextTitleKey?: string
   storageValues?: SettingsSearchStorageValue[]
   keywordKeys?: string[]
   keywords?: string[]
@@ -50,19 +52,44 @@ function createEntries(
   titleKeys: string[],
   options: Omit<SettingsSearchEntry, 'titleKey' | 'menu' | 'secondaryTitleKey' | 'storageValues'> & {
     storageValues?: SettingsSearchStorageValue[]
+    keywordKeysByTitleKey?: Record<string, string[]>
+    contextTitleKeysByTitleKey?: Record<string, string>
   } = {},
 ): SettingsSearchEntry[] {
+  const { keywordKeysByTitleKey, contextTitleKeysByTitleKey, ...entryOptions } = options
   const routeStorageValues = route.secondaryPage
     ? [{ key: route.storageKey ?? bewlyPagesStorageKey, value: route.secondaryPage }]
     : []
+  const filteredTitleKeys = titleKeys.filter(isSettingTitleKey)
+  const filteredTitleKeySet = new Set(filteredTitleKeys)
 
-  return titleKeys.filter(isSettingTitleKey).map(titleKey => ({
-    titleKey,
-    menu: route.menu,
-    secondaryTitleKey: route.secondaryTitleKey,
-    ...options,
-    storageValues: [...routeStorageValues, ...(options.storageValues ?? [])],
-  }))
+  if (import.meta.env.DEV) {
+    for (const key of [
+      ...Object.keys(keywordKeysByTitleKey ?? {}),
+      ...Object.keys(contextTitleKeysByTitleKey ?? {}),
+    ]) {
+      if (!filteredTitleKeySet.has(key))
+        throw new Error(`Unknown search entry key: ${key}`)
+    }
+  }
+
+  return filteredTitleKeys.map((titleKey) => {
+    const keywordKeys = [
+      ...(entryOptions.keywordKeys ?? []),
+      ...(keywordKeysByTitleKey?.[titleKey] ?? []),
+    ]
+    const contextTitleKey = contextTitleKeysByTitleKey?.[titleKey]
+
+    return {
+      titleKey,
+      menu: route.menu,
+      secondaryTitleKey: route.secondaryTitleKey,
+      ...entryOptions,
+      ...(keywordKeys.length ? { keywordKeys } : {}),
+      ...(contextTitleKey ? { contextTitleKey } : {}),
+      storageValues: [...routeStorageValues, ...(entryOptions.storageValues ?? [])],
+    }
+  })
 }
 
 const generalRoute: SearchRoute = { menu: MenuType.General }
@@ -202,28 +229,19 @@ const topBarGlobalTitleKeys = [
   'settings.topbar_display_settings',
   'settings.topbar_style_settings',
   'settings.topbar_visibility',
-  'settings.topbar_visibility_desc',
   'settings.other_page_top_bar_config',
   'settings.video_page_top_bar_config',
   'settings.top_bar_style',
-  'settings.top_bar_style_desc',
-  'settings.top_bar_style_opt.default',
-  'settings.top_bar_style_opt.frosted_glass',
-  'settings.top_bar_style_opt.transparent',
-  'settings.top_bar_style_opt.exp_default',
-  'settings.top_bar_style_opt.exp_frosted_glass',
-  'settings.top_bar_style_opt.exp_transparent',
   'settings.show_top_bar_theme_color_gradient',
   'settings.open_top_bar_items_in_bewly',
   'settings.open_notifications_page_as_drawer',
   'settings.notification_badge_types',
-  'settings.notification_badge_types_desc',
   'settings.notification_followed_private_messages',
   'settings.notification_unfollowed_private_messages',
   'settings.filter_articles_in_moments',
 ]
 
-export const settingsSearchEntries: SettingsSearchEntry[] = [
+const baseSettingsSearchEntries: SettingsSearchEntry[] = [
   ...createEntries(generalRoute, [
     'settings.menu_general',
     'settings.group_language',
@@ -348,7 +366,14 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.moments_wanted_users',
     'settings.group_moments_pinned_users',
     'settings.moments_pinned_users',
-  ]),
+  ], {
+    contextTitleKeysByTitleKey: {
+      'settings.original_moments_show_user_card': 'settings.group_original_moments_page',
+      'settings.original_moments_show_hot_search': 'settings.group_original_moments_page',
+      'settings.moments_show_user_card': 'settings.group_new_moments_page',
+      'settings.moments_show_hot_search': 'settings.group_new_moments_page',
+    },
+  }),
   ...createEntries(momentsRoute, [
     'settings.moments_filter_up_recommendation',
   ], { targetTitleKey: 'settings.moments_filter_up_recommendation_short' }),
@@ -376,9 +401,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enable_video_preview',
     'settings.enable_video_ctrl_bar_on_video_card',
     'settings.video_preview_swipe_seek',
-    'settings.video_preview_swipe_seek_desc',
     'settings.resume_from_video_preview',
-    'settings.resume_from_video_preview_desc',
     'settings.hover_video_card_delayed',
     'settings.only_cover_video_preview',
     'settings.group_video_card_content',
@@ -730,12 +753,22 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.enable_comment_reply_tree_container',
     'settings.comment_reply_tree_container_height',
     'settings.comment_reply_tree_mode.title',
-    'settings.comment_reply_tree_mode.line_collapse_main',
-    'settings.comment_reply_tree_mode.line_keep_main',
-    'settings.comment_reply_tree_mode.indent_only',
+    'settings.comment_reply_pagination_mode.title',
     'settings.adjust_comment_image_height',
     'settings.hide_comment_image_scrollbar',
-  ]),
+  ], {
+    keywordKeysByTitleKey: {
+      'settings.comment_reply_tree_mode.title': [
+        'settings.comment_reply_tree_mode.line_collapse_main',
+        'settings.comment_reply_tree_mode.line_keep_main',
+        'settings.comment_reply_tree_mode.indent_only',
+      ],
+      'settings.comment_reply_pagination_mode.title': [
+        'settings.comment_reply_pagination_mode.load_more',
+        'settings.comment_reply_pagination_mode.pagination',
+      ],
+    },
+  }),
   ...createEntries(vipFeaturesRoute, [
     'settings.bilibili_features.vip_features',
     'settings.show_bcoin_receive_reminder',
@@ -812,3 +845,120 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.third_party_licenses',
   ]),
 ]
+
+// 条件渲染的设置项在关闭状态没有精确目标；落到始终可见的父项。
+const fallbackTargetKeysByTitleKey: Record<string, string> = {
+  'settings.always_show_dock_actions_when_auto_hide': 'settings.auto_hide_dock',
+  'settings.ambilight.blur': 'settings.ambilight.title',
+  'settings.ambilight.enable_fullscreen': 'settings.ambilight.title',
+  'settings.ambilight.fps': 'settings.ambilight.title',
+  'settings.ambilight.preset': 'settings.ambilight.title',
+  'settings.ambilight.saturation': 'settings.ambilight.title',
+  'settings.ambilight.smoothing': 'settings.ambilight.title',
+  'settings.ambilight.spread': 'settings.ambilight.title',
+  'settings.ambilight.strength': 'settings.ambilight.title',
+  'settings.authorize_app': 'settings.recommendation_mode',
+  'settings.auto_play_collection': 'settings.use_bilibili_default_auto_play',
+  'settings.auto_play_multipart': 'settings.use_bilibili_default_auto_play',
+  'settings.auto_play_playlist': 'settings.use_bilibili_default_auto_play',
+  'settings.auto_play_recommend': 'settings.use_bilibili_default_auto_play',
+  'settings.auto_play_watch_later': 'settings.use_bilibili_default_auto_play',
+  'settings.auto_receive_bcoin_coupon': 'settings.show_bcoin_receive_reminder',
+  'settings.clean_share_link_include_title': 'settings.enable_clean_share_link',
+  'settings.clean_share_link_remove_tracking_params': 'settings.enable_clean_share_link',
+  'settings.comment_reply_tree_container_height': 'settings.enable_comment_reply_tree_display',
+  'settings.comment_reply_tree_mode.title': 'settings.enable_comment_reply_tree_display',
+  'settings.comment_reply_pagination_mode.title': 'settings.enable_comment_reply_tree_display',
+  'settings.custom_play_order_overrides': 'settings.enable_random_play',
+  'settings.default_custom_play_order': 'settings.enable_random_play',
+  'settings.enable_comment_reply_tree_container': 'settings.enable_comment_reply_tree_display',
+  'settings.enable_custom_play_order_overrides': 'settings.enable_random_play',
+  'settings.enable_wallpaper_masking': 'settings.individually_set_search_page_wallpaper',
+  'settings.frosted_glass_blur_intensity': 'settings.enable_frosted_glass',
+  'settings.gradient_theme_color_background': 'settings.disable_background',
+  'settings.immersive_auto_next': 'settings.show_immersive_mode_entry',
+  'settings.immersive_auto_play': 'settings.show_immersive_mode_entry',
+  'settings.immersive_keyboard_switch': 'settings.show_immersive_mode_entry',
+  'settings.immersive_preload_next': 'settings.show_immersive_mode_entry',
+  'settings.immersive_wheel_switch': 'settings.show_immersive_mode_entry',
+  'settings.listen_video_background': 'settings.enable_listen_video',
+  'settings.listen_video_cover_shape': 'settings.enable_listen_video',
+  'settings.listen_video_glow': 'settings.enable_listen_video',
+  'settings.listen_video_glow_color': 'settings.enable_listen_video',
+  'settings.local_loudness.strength': 'settings.local_loudness.enable',
+  'settings.local_loudness.target': 'settings.local_loudness.enable',
+  'settings.min_videos_for_random': 'settings.enable_random_play',
+  'settings.open_top_bar_items_in_bewly': 'settings.topbar_display_settings',
+  'settings.random_play_mode': 'settings.enable_random_play',
+  'settings.recommendation_mode_switcher_options': 'settings.show_recommendation_mode_switcher',
+  'settings.remember_no_cookie_recommendation_state': 'settings.recommendation_mode',
+  'settings.resume_from_video_preview': 'settings.enable_video_preview',
+  'settings.search_page_mode_wallpaper_fixed': 'settings.use_search_page_mode',
+  'settings.settings_shared_with_the_search_page': 'settings.use_search_page_mode',
+  'settings.show_home_button_in_touch_mode': 'settings.topbar_logo_and_channels',
+  'settings.show_listen_video_button': 'settings.enable_listen_video',
+  'settings.theme_schedule': 'settings.theme',
+  'settings.third_party_licenses': 'settings.open_source_license',
+  'settings.video_card_shadow_curve': 'settings.video_card_layout',
+  'settings.video_card_shadow_height': 'settings.video_card_layout',
+  'settings.video_player_mode.context_bangumi': 'settings.video_player_mode.enable_overrides',
+  'settings.video_player_mode.context_collection': 'settings.video_player_mode.enable_overrides',
+  'settings.video_player_mode.context_moments_dialog': 'settings.video_player_mode.enable_overrides',
+  'settings.video_player_mode.context_multipart': 'settings.video_player_mode.enable_overrides',
+  'settings.video_player_mode.context_playlist': 'settings.video_player_mode.enable_overrides',
+  'settings.video_player_mode.context_watch_later': 'settings.video_player_mode.enable_overrides',
+  'settings.video_player_mode.overrides': 'settings.video_player_mode.enable_overrides',
+  'settings.video_player_scroll_mode.title': 'settings.video_player_scroll',
+  'settings.wallpaper_cache_time': 'settings.individually_set_search_page_wallpaper',
+  'settings.wallpaper_mode': 'settings.individually_set_search_page_wallpaper',
+}
+
+const fallbackTargetKeysByEntry: Record<string, string> = {
+  'BewlyPages|settings.plugin.moments|settings.enable_video_ctrl_bar_on_video_card': 'settings.moments_enable_video_preview',
+  'BewlyComponents|settings.plugin.video_card|settings.enable_video_ctrl_bar_on_video_card': 'settings.enable_video_preview',
+  'BewlyPages|settings.plugin.moments|settings.video_preview_swipe_seek': 'settings.moments_enable_video_preview',
+  'BewlyComponents|settings.plugin.video_card|settings.video_preview_swipe_seek': 'settings.enable_video_preview',
+  'BewlyPages|settings.plugin.moments|settings.hover_video_card_delayed': 'settings.moments_enable_video_preview',
+  'BewlyComponents|settings.plugin.video_card|settings.hover_video_card_delayed': 'settings.enable_video_preview',
+  'BewlyPages|settings.plugin.moments|settings.only_cover_video_preview': 'settings.moments_enable_video_preview',
+  'BewlyComponents|settings.plugin.video_card|settings.only_cover_video_preview': 'settings.enable_video_preview',
+  'BewlyPages|settings.plugin.search|settings.choose_ur_wallpaper': 'settings.individually_set_search_page_wallpaper',
+  'BewlyPages|settings.plugin.search|settings.image_url': 'settings.individually_set_search_page_wallpaper',
+  'BewlyPages|settings.plugin.search|settings.wallpaper_mask_opacity': 'settings.individually_set_search_page_wallpaper',
+  'BewlyPages|settings.plugin.search|settings.wallpaper_blur_intensity': 'settings.individually_set_search_page_wallpaper',
+  'Appearance||settings.choose_ur_wallpaper': 'settings.wallpaper_mode',
+  'Appearance||settings.enable_wallpaper_masking': 'settings.disable_background',
+  'Appearance||settings.image_url': 'settings.wallpaper_mode',
+  'Appearance||settings.wallpaper_blur_intensity': 'settings.enable_wallpaper_masking',
+  'Appearance||settings.wallpaper_cache_time': 'settings.disable_background',
+  'Appearance||settings.wallpaper_mask_opacity': 'settings.enable_wallpaper_masking',
+  'Appearance||settings.wallpaper_mode': 'settings.disable_background',
+}
+
+function getSearchEntryKey(entry: SettingsSearchEntry) {
+  return `${entry.menu}|${entry.secondaryTitleKey ?? ''}|${entry.titleKey ?? ''}`
+}
+
+if (import.meta.env.DEV) {
+  const entryTitleKeys = new Set(
+    baseSettingsSearchEntries
+      .map(entry => entry.titleKey)
+      .filter((key): key is string => Boolean(key)),
+  )
+  for (const key of Object.keys(fallbackTargetKeysByTitleKey)) {
+    if (!entryTitleKeys.has(key))
+      throw new Error(`Unknown fallback search entry key: ${key}`)
+  }
+
+  const entryKeys = new Set(baseSettingsSearchEntries.map(getSearchEntryKey))
+  for (const key of Object.keys(fallbackTargetKeysByEntry)) {
+    if (!entryKeys.has(key))
+      throw new Error(`Unknown fallback search entry: ${key}`)
+  }
+}
+
+export const settingsSearchEntries: SettingsSearchEntry[] = baseSettingsSearchEntries.map((entry) => {
+  const fallbackTargetKey = fallbackTargetKeysByEntry[getSearchEntryKey(entry)]
+    ?? (entry.titleKey ? fallbackTargetKeysByTitleKey[entry.titleKey] : undefined)
+  return fallbackTargetKey ? { ...entry, fallbackTargetKey } : entry
+})

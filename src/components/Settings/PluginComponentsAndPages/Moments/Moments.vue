@@ -43,22 +43,23 @@ type MomentToggleSetting
 interface MomentTagOption {
   setting: MomentToggleSetting
   label: string
+  labelKey?: string
   icon: string
 }
 
 const originalComponentOptions = computed<MomentTagOption[]>(() => [
-  { setting: 'originalMomentsShowUserCard', label: t('settings.original_moments_show_user_card'), icon: 'i-tabler-user-square-rounded' },
+  { setting: 'originalMomentsShowUserCard', label: t('settings.original_moments_show_user_card'), labelKey: 'settings.original_moments_show_user_card', icon: 'i-tabler-user-square-rounded' },
   { setting: 'originalMomentsShowLiveList', label: t('settings.original_moments_show_live_list'), icon: 'i-tabler-live-photo' },
   { setting: 'originalMomentsShowCommunityCenter', label: t('settings.original_moments_show_community_center'), icon: 'i-tabler-layout-dashboard' },
-  { setting: 'originalMomentsShowHotSearch', label: t('settings.original_moments_show_hot_search'), icon: 'i-tabler-flame' },
+  { setting: 'originalMomentsShowHotSearch', label: t('settings.original_moments_show_hot_search'), labelKey: 'settings.original_moments_show_hot_search', icon: 'i-tabler-flame' },
   { setting: 'originalMomentsShowUpList', label: t('settings.original_moments_show_up_list'), icon: 'i-tabler-users' },
 ])
 
 const pluginComponentOptions = computed<MomentTagOption[]>(() => [
-  { setting: 'momentsSidebarShowUserCard', label: t('settings.moments_show_user_card'), icon: 'i-tabler-user-square-rounded' },
+  { setting: 'momentsSidebarShowUserCard', label: t('settings.moments_show_user_card'), labelKey: 'settings.moments_show_user_card', icon: 'i-tabler-user-square-rounded' },
   { setting: 'momentsSidebarShowPublish', label: t('settings.moments_show_publish'), icon: 'i-tabler-edit' },
   { setting: 'momentsSidebarShowLive', label: t('settings.moments_show_live'), icon: 'i-tabler-live-photo' },
-  { setting: 'momentsSidebarShowHotSearch', label: t('settings.moments_show_hot_search'), icon: 'i-tabler-flame' },
+  { setting: 'momentsSidebarShowHotSearch', label: t('settings.moments_show_hot_search'), labelKey: 'settings.moments_show_hot_search', icon: 'i-tabler-flame' },
   { setting: 'momentsShowUpList', label: t('settings.moments_show_up_list'), icon: 'i-tabler-users' },
 ])
 
@@ -162,6 +163,7 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
               v-model="settings[option.setting]"
               :label="option.label"
               :icon="option.icon"
+              :data-settings-key="option.labelKey"
             />
           </div>
         </template>
@@ -261,6 +263,7 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
               v-model="settings[option.setting]"
               :label="option.label"
               :icon="option.icon"
+              :data-settings-key="option.labelKey"
             />
           </div>
         </template>

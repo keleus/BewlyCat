@@ -390,7 +390,7 @@ async function handleCopyEnvironmentInfo() {
             >
           </a>
         </section>
-        <section w-full>
+        <section w-full data-settings-key="settings.open_source_license" :data-settings-title="$t('settings.open_source_license')">
           <h3 class="title">
             {{ $t('settings.open_source_license') }}
           </h3>
