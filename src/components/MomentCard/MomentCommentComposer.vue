@@ -270,7 +270,7 @@ onBeforeUnmount(() => {
   --moment-rich-editor-min-height: 48px;
 
   &.is-reply {
-    --moment-rich-editor-min-height: 24px;
+    --moment-rich-editor-min-height: 32px;
   }
 }
 
