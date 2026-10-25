@@ -566,8 +566,8 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
         @drop.prevent
       />
       <slot name="attachments" />
-      <!-- 工具栏与正文共用浅填充容器；无焦点、无内容且无面板时收起，聚焦时自动展开 -->
-      <div class="bew-expand-host moment-rich-editor__toolbar-host" :class="{ 'is-entered': panel !== '' || length > 0 }">
+      <!-- 工具栏与正文共用浅填充容器；失焦且无面板时收起，聚焦或面板打开时展开 -->
+      <div class="bew-expand-host moment-rich-editor__toolbar-host" :class="{ 'is-entered': panel !== '' }">
         <div class="moment-rich-editor__toolbar">
           <div ref="panelTriggers" class="moment-rich-editor__tools bew-segment-control bew-segment-control--static">
             <button
@@ -703,7 +703,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
     box-shadow: 0 0 0 2px var(--bew-theme-color-40);
   }
 }
-// 聚焦时工具栏自动展开；表情等面板打开或已有内容时由 is-entered 保持展开。
+// 聚焦时工具栏自动展开；表情等面板打开时由 is-entered 保持展开（面板可夺走焦点但不应收起工具栏）。
 .moment-rich-editor__wrap:focus-within .moment-rich-editor__toolbar-host {
   grid-template-rows: 1fr;
 }
