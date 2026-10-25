@@ -40,6 +40,8 @@ let eventRoot: Node | null = null
 const editor = ref<HTMLElement | null>(null)
 const nodes = ref<RepostNode[]>([])
 const panel = ref<'' | 'emoji' | 'mention' | 'topic' | 'commercial'>('')
+// @/#/商单共用同一选项列表结构，键盘导航与 ARIA 关联规则一致。
+const isChoicePanel = computed(() => panel.value === 'mention' || panel.value === 'topic' || panel.value === 'commercial')
 const query = ref('')
 const choices = ref<RichEditorChoice[]>([])
 const packages = ref<EmotePackage[]>([])
@@ -272,7 +274,7 @@ function keyboard(event: KeyboardEvent) {
     restoreHistory(event.key.toLowerCase() === 'y' || event.shiftKey ? 1 : -1)
     return
   }
-  if ((panel.value === 'mention' || panel.value === 'topic') && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+  if (isChoicePanel.value && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
     if (['ArrowDown', 'ArrowUp'].includes(event.key) && choices.value.length) {
       event.preventDefault()
       activeChoice.value = (activeChoice.value + (event.key === 'ArrowDown' ? 1 : -1) + choices.value.length) % choices.value.length
@@ -549,8 +551,8 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
         role="textbox"
         aria-multiline="true"
         aria-autocomplete="list"
-        :aria-controls="panel === 'mention' || panel === 'topic' ? popupId : undefined"
-        :aria-activedescendant="(panel === 'mention' || panel === 'topic') && choices.length ? `${popupId}-${activeChoice}` : undefined"
+        :aria-controls="isChoicePanel ? popupId : undefined"
+        :aria-activedescendant="isChoicePanel && choices.length ? `${popupId}-${activeChoice}` : undefined"
         :aria-label="placeholder"
         :data-placeholder="placeholder"
         :contenteditable="!disabled"
@@ -600,6 +602,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
             <button
               v-if="commercialAllowed"
               class="bew-segment-control__item bew-segment-control__item--icon" :data-active="panel === 'commercial'" type="button" :title="t('moment_card.repost_commercial')" :aria-label="t('moment_card.repost_commercial')"
+              :aria-expanded="panel === 'commercial'"
               :disabled="disabled"
               @mousedown.prevent
               @click="openPanel('commercial', $event)"
