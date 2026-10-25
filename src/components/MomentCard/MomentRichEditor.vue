@@ -633,10 +633,12 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
           </div>
           <div ref="popupContent" class="moment-rich-editor__panel-content">
             <p v-if="loading" role="status">
+              <span i-svg-spinners:ring-resize aria-hidden="true" />
               {{ t('common.loading') }}
             </p>
             <p v-else-if="panelError" role="alert">
-              {{ panelError }} <button class="bew-ghost-button" type="button" @click="loadPanel">
+              {{ panelError }}
+              <button class="bew-ghost-button" type="button" @click="loadPanel">
                 {{ t('moment_card.repost_retry') }}
               </button>
             </p>
@@ -813,6 +815,19 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+}
+// 加载/错误/空态：居中、次要色、caption 字号；错误文案与重试按钮纵向堆叠。
+.moment-rich-editor__panel-content > p,
+.moment-rich-editor__choices p {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--bew-space-1);
+  padding: var(--bew-space-3) var(--bew-space-2);
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
+  text-align: center;
 }
 .moment-rich-editor__packages {
   display: flex;
