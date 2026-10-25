@@ -612,6 +612,7 @@ export interface Settings {
   showVerticalVideoZoomButton: boolean // 显示竖屏视频放大按钮
   showBewlyWidescreenButton: boolean // 显示播放器 Bewly 宽屏按钮
   showVideoScreenshotButton: boolean // 显示播放器截图按钮
+  showVideoPipButton: boolean // 显示播放器画中画按钮
   enableListenVideo: boolean // 听视频功能总开关
   showListenVideoButton: boolean // 显示播放器听视频按钮
   listenVideoCoverShape: ListenVideoCoverShape // 听视频封面形状（圆形唱片旋转，方/矩形静止）
@@ -978,6 +979,7 @@ export const originalSettings: Settings = {
   showVerticalVideoZoomButton: true, // 默认显示竖屏视频放大按钮
   showBewlyWidescreenButton: true, // 默认显示播放器 Bewly 宽屏按钮
   showVideoScreenshotButton: true, // 默认显示播放器截图按钮
+  showVideoPipButton: true, // 默认显示播放器画中画按钮
   enableListenVideo: false, // 默认关闭听视频功能，需在设置中手动开启
   showListenVideoButton: true, // 默认显示播放器听视频按钮
   listenVideoCoverShape: 'circle', // 默认圆形唱片并保持旋转

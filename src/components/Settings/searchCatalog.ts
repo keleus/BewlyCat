@@ -572,6 +572,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.external_watch_later_button',
     'settings.show_vertical_video_zoom_button',
     'settings.show_video_screenshot_button',
+    'settings.show_video_pip_button',
   ]),
   ...createEntries(listenVideoRoute, [
     'settings.enable_listen_video',

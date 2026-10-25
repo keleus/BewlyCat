@@ -55,6 +55,7 @@ import { initLocalLoudnessControl } from './localLoudnessControl'
 import type { PageLoadingGuard } from './pageLoading'
 import { initTouchPlayerGestures } from './touchPlayerGestures'
 import { initVideoAspectRatioMemory } from './videoAspectRatioMemory'
+import { initVideoPipButtonControl } from './videoPipButtonControl'
 import { initVideoQualityMemory } from './videoQualityMemory'
 import { initVideoScreenshotControl } from './videoScreenshotControl'
 import App from './views/App.vue'
@@ -1446,6 +1447,7 @@ else if (shouldInitializeContentScript) {
     initVideoAspectRatioMemory()
     initVideoQualityMemory()
     initVideoScreenshotControl()
+    initVideoPipButtonControl()
     initListenVideoFeature()
     initLocalLoudnessControl()
     initAmbilightControl()

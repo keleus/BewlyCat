@@ -1181,6 +1181,8 @@ settings:
   show_bewly_widescreen_button_desc: 啟用後，在影片播放器控制列中顯示 Bewly 寬螢幕按鈕。
   show_video_screenshot_button: 顯示播放器截圖按鈕
   show_video_screenshot_button_desc: 在播放器控制列顯示截圖按鈕。關閉後仍可使用快捷鍵截圖。
+  show_video_pip_button: 顯示播放器子母畫面按鈕
+  show_video_pip_button_desc: 在播放器控制列顯示子母畫面按鈕。關閉後仍可使用快捷鍵切換。
   enable_listen_video: 啟用聽影片功能
   enable_listen_video_desc: 開啟後可透過播放器按鈕或快捷鍵進入聽影片。僅隱藏畫面，影片串流仍會正常載入。
   show_listen_video_button: 顯示播放器「聽影片」按鈕

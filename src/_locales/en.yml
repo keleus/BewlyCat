@@ -1299,6 +1299,8 @@ settings:
   show_bewly_widescreen_button_desc: Show the Bewly Widescreen button in the video player controls.
   show_video_screenshot_button: Show player screenshot button
   show_video_screenshot_button_desc: Show a screenshot button in the player controls. The shortcut still works when the button is hidden.
+  show_video_pip_button: Show player picture-in-picture button
+  show_video_pip_button_desc: Show the picture-in-picture button in the player controls. The shortcut still works when the button is hidden.
   enable_listen_video: Enable listen-video mode
   enable_listen_video_desc: Use the player button or shortcut to listen to videos. Only the picture is hidden; the video stream still loads.
   show_listen_video_button: Show player listen-video button
