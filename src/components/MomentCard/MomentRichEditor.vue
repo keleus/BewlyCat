@@ -767,6 +767,8 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 .moment-rich-editor__actions {
   margin-left: auto;
   display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: var(--bew-space-2);
 }
