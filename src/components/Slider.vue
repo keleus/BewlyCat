@@ -25,8 +25,15 @@ function handleInput(event: Event) {
     modelValue.value = value
 }
 
-// 手动输入只在回车/失焦时提交：逐键写入会被存储层的归一化钳制打断
-// （例如输入途中被拉回最小值），无法正常键入。
+// 输入途中只同步范围内的整数：越界中间值若写入设置，会被存储层钳制后
+// 改写输入框，导致无法继续键入（例如从 480 输入 560 时先输入的 5）。
+function handleEditedInput(event: Event) {
+  const value = (event.target as HTMLInputElement).valueAsNumber
+  if (Number.isInteger(value) && value >= props.min && value <= props.max)
+    modelValue.value = value
+}
+
+// 手动输入在回车/失焦时最终提交：取整、钳制并修正临时输入。
 function commitEditedValue(event: Event) {
   const input = event.target as HTMLInputElement
   const value = input.valueAsNumber
@@ -76,6 +83,7 @@ onMounted(updateBackground)
         :min="min"
         :max="max"
         :aria-label="ariaLabel"
+        @input="handleEditedInput"
         @change="commitEditedValue"
         @keydown.enter.prevent="commitEditedValue"
       >
