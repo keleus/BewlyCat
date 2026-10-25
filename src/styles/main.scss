@@ -566,6 +566,25 @@ html.dark.bewly-design {
   }
 }
 
+// 主题色悬停变体：底色与文字同以主题色系共变（避免灰底配主题色文字的可读性问题），
+// 用于卡片表面的轻按钮（评论区操作等）；按下态仅保留主题色文字、不加底色。
+.bew-ghost-button--theme {
+  transition:
+    background-color var(--bew-duration-fast) var(--bew-ease-standard),
+    color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover,
+  &:active {
+    color: var(--bew-theme-color);
+    background: var(--bew-theme-color-10);
+  }
+
+  &[aria-pressed="true"] {
+    color: var(--bew-theme-color);
+    background: transparent;
+  }
+}
+
 // 提交中的加载环：绝对居中盖在按钮上、文字原位隐藏（visibility 保留宽度），
 // 按钮常态无多余留白、提交时尺寸不变。宿主按钮需 position: relative。
 .bew-submit-spinner {
