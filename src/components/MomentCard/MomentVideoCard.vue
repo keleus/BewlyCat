@@ -149,7 +149,7 @@ function handlePreviewRef(element: Element | ComponentPublicInstance | null) {
   background: var(--bew-fill-1);
   box-sizing: border-box;
   text-decoration: none;
-  transition: background-color 0.16s ease;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 
 .moment-card__video-card:hover,

@@ -156,7 +156,7 @@ const authorSpaceUrl = computed(() => getAuthorSpaceUrl(author.mid))
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color 0.16s ease;
+  transition: color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 
 .moment-card__author-name:hover {

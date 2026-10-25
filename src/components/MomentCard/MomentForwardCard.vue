@@ -144,7 +144,7 @@ const authorSpaceUrl = computed(() => getAuthorSpaceUrl(forward.authorMid))
   background: var(--bew-fill-1);
   font-size: var(--bew-font-size-control);
   line-height: var(--bew-line-height-control);
-  transition: background-color 0.16s ease;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 
 .moment-card__forward:hover,

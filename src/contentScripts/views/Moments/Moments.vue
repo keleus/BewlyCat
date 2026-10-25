@@ -4791,9 +4791,9 @@ watch(
   line-height: var(--bew-line-height-body);
   text-decoration: none;
   transition:
-    color 0.2s ease,
-    border-color 0.2s ease,
-    background-color 0.2s ease;
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    border-color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moments-publish-link > :last-child {
   margin-left: auto;
@@ -4845,7 +4845,7 @@ watch(
   border-radius: var(--bew-interactive-radius);
   color: inherit;
   text-decoration: none;
-  transition: background-color 0.18s ease;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moments-live-card__list > a:hover {
   background: var(--bew-fill-1);
@@ -5189,7 +5189,7 @@ watch(
   visibility: hidden;
   opacity: 0;
   overflow-anchor: none;
-  transition: opacity 0.16s ease;
+  transition: opacity var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moments-page__loading.is-visible {
   visibility: visible;
@@ -5271,7 +5271,7 @@ watch(
   font-size: var(--bew-font-size-control);
   pointer-events: auto;
   opacity: 1;
-  transition: opacity 0.18s ease;
+  transition: opacity var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moment-detail-frame__loading-icon {
   width: 36px;
@@ -5348,7 +5348,7 @@ watch(
   font-weight: var(--bew-font-weight-semibold);
   line-height: var(--bew-line-height-control);
   opacity: 0.92;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--bew-duration-fast) var(--bew-ease-standard);
 }
 .moment-detail-actions__open:hover {
   opacity: 1;
