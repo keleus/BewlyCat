@@ -367,6 +367,33 @@ html.dark.bewly-design {
   background: var(--bew-popover-wallpaper-background);
 }
 
+// 锚定浮层（三点菜单、编辑器面板等）共享的进出动画：淡入 + 缩放 + 毛玻璃同步插值。
+// 用独立的 scale 属性而非 transform，避免覆盖浮层自身的定位变换（如 translateY）。
+// Chromium 在 opacity/transform 动画期间会丢弃 backdrop-filter（crbug.com/40877283），
+// 故玻璃与缩放同步插值到恒等滤镜，避免动画结束才出现毛玻璃。
+.bew-pop-enter-active,
+.bew-pop-leave-active {
+  transition:
+    opacity var(--bew-duration-fast) var(--bew-ease-standard),
+    scale var(--bew-duration-fast) var(--bew-ease-standard),
+    backdrop-filter var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
+.bew-pop-enter-from,
+.bew-pop-leave-to {
+  --bew-pop-glass: blur(0px) saturate(100%);
+
+  opacity: 0;
+  scale: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bew-pop-enter-active,
+  .bew-pop-leave-active {
+    transition: none;
+  }
+}
+
 // 页面控件只在自身范围内采样背景；不再依赖工具栏背后的一整块底板。
 .bew-toolbar-controls .b-input,
 .bew-toolbar-controls .select-trigger,

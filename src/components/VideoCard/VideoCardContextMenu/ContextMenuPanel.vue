@@ -145,10 +145,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Transition name="context-menu" appear>
+  <Transition name="bew-pop" appear>
     <div
       v-if="show"
-      style="backdrop-filter: var(--b-context-menu-glass, var(--bew-filter-glass-1));"
+      style="backdrop-filter: var(--bew-pop-glass, var(--bew-filter-glass-1));"
       :style="menuStyles"
       class="context-menu-container bew-popover-surface"
       :class="opensUpward && 'context-menu-container--up'"
@@ -216,24 +216,7 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
-// Chromium 在 opacity/transform 动画期间会丢弃 backdrop-filter（crbug.com/40877283），
-// 故玻璃与缩放同步插值到恒等滤镜，避免动画结束才出现毛玻璃
-.context-menu-enter-active,
-.context-menu-leave-active {
-  transition:
-    opacity var(--bew-duration-fast) var(--bew-ease-standard),
-    transform var(--bew-duration-fast) var(--bew-ease-standard),
-    backdrop-filter var(--bew-duration-fast) var(--bew-ease-standard);
-}
-
-.context-menu-enter-from,
-.context-menu-leave-to {
-  --b-context-menu-glass: blur(0px) saturate(100%);
-
-  opacity: 0;
-  transform: scale(0.9);
-}
-
+// 进出动画由 main.scss 的 .bew-pop-* 共享过渡类提供。
 .context-menu-item {
   --uno: "hover:bg-$bew-fill-2 rounded-$bew-menu-item-radius cursor-pointer";
   --uno: "flex items-center transition-colors duration-200 ease-$bew-ease-standard";
