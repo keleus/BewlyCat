@@ -452,13 +452,23 @@ function positionPopup() {
   const below = window.innerHeight - anchor.bottom - margin * 2
   const above = anchor.top - margin * 2
   const openUp = below < (panel.value === 'emoji' ? 320 : 240) && above > below
-  popupStyle.value = {
-    left: `${Math.max(margin, Math.min(anchor.left, window.innerWidth - width - margin))}px`,
-    top: `${Math.max(margin, openUp ? anchor.top - margin : anchor.bottom + margin)}px`,
-    width: `${width}px`,
-    maxHeight: `${Math.max(0, Math.min(320, openUp ? above : below))}px`,
-    transform: openUp ? 'translateY(-100%)' : '',
-  }
+  const left = `${Math.max(margin, Math.min(anchor.left, window.innerWidth - width - margin))}px`
+  // 向上展开用 bottom 定位而非 translateY，把 transform 让位给共享的 bew-pop 缩放动画。
+  popupStyle.value = openUp
+    ? {
+        left,
+        bottom: `${window.innerHeight - anchor.top + margin}px`,
+        width: `${width}px`,
+        maxHeight: `${Math.max(0, Math.min(320, above))}px`,
+        transformOrigin: 'bottom left',
+      }
+    : {
+        left,
+        top: `${Math.max(margin, anchor.bottom + margin)}px`,
+        width: `${width}px`,
+        maxHeight: `${Math.max(0, Math.min(320, below))}px`,
+        transformOrigin: 'top left',
+      }
 }
 function onOutsideInteraction(event: Event) {
   if (!panel.value)
@@ -606,55 +616,58 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
       </div>
     </div>
     <Teleport :to="mainAppRef" :disabled="!mainAppRef">
-      <div
-        v-if="panel" :id="popupId" ref="popup" class="moment-rich-editor__panel bew-popover-surface"
-        :class="{ 'moment-rich-editor__panel--emoji': panel === 'emoji' }" :style="popupStyle"
-        @click.stop @keydown.stop="keyboard" @mousedown.prevent
-      >
-        <div v-if="panel === 'emoji' && packages.length" class="moment-rich-editor__packages">
-          <button
-            v-for="pack in packages" :key="pack.id" class="bew-ghost-button" type="button" :aria-pressed="pack.id === packageId"
-            @click="packageId = pack.id"
-          >
-            {{ pack.name }}
-          </button>
-        </div>
-        <div ref="popupContent" class="moment-rich-editor__panel-content">
-          <p v-if="loading" role="status">
-            {{ t('common.loading') }}
-          </p>
-          <p v-else-if="panelError" role="alert">
-            {{ panelError }} <button class="bew-ghost-button" type="button" @click="loadPanel">
-              {{ t('moment_card.repost_retry') }}
-            </button>
-          </p>
-          <div
-            v-else-if="panel === 'emoji'" class="moment-rich-editor__emotes"
-            :class="{ 'moment-rich-editor__emotes--text': emotes.some(item => item.type === 4) }"
-          >
+      <Transition name="bew-pop">
+        <div
+          v-if="panel" :id="popupId" ref="popup" class="moment-rich-editor__panel bew-popover-surface"
+          style="backdrop-filter: var(--bew-pop-glass, var(--bew-filter-glass-1));"
+          :class="{ 'moment-rich-editor__panel--emoji': panel === 'emoji' }" :style="popupStyle"
+          @click.stop @keydown.stop="keyboard" @mousedown.prevent
+        >
+          <div v-if="panel === 'emoji' && packages.length" class="moment-rich-editor__packages">
             <button
-              v-for="item in emotes" :key="item.id" class="bew-ghost-button" type="button" :title="item.name"
-              :aria-label="item.name"
-              @click="choose(item)"
+              v-for="pack in packages" :key="pack.id" class="bew-ghost-button" type="button" :aria-pressed="pack.id === packageId"
+              @click="packageId = pack.id"
             >
-              <span v-if="item.type === 4">{{ item.name }}</span>
-              <img v-else :src="item.image" :alt="item.name" loading="lazy">
+              {{ pack.name }}
             </button>
           </div>
-          <div v-else class="moment-rich-editor__choices" role="listbox" :aria-label="t(panel === 'mention' ? 'moment_card.repost_mention' : panel === 'topic' ? 'moment_card.repost_topic' : 'moment_card.repost_commercial')">
-            <button
-              v-for="(item, index) in choices" :id="`${popupId}-${index}`" :key="`${item.id}-${index}`" class="bew-ghost-button" type="button"
-              role="option"
-              :aria-selected="activeChoice === index" @mouseenter="activeChoice = index" @click="choose(item)"
-            >
-              <img v-if="item.image" :src="item.image" alt="" loading="lazy">{{ item.name }}
-            </button>
-            <p v-if="!choices.length">
-              {{ t('moment_card.repost_no_results') }}
+          <div ref="popupContent" class="moment-rich-editor__panel-content">
+            <p v-if="loading" role="status">
+              {{ t('common.loading') }}
             </p>
+            <p v-else-if="panelError" role="alert">
+              {{ panelError }} <button class="bew-ghost-button" type="button" @click="loadPanel">
+                {{ t('moment_card.repost_retry') }}
+              </button>
+            </p>
+            <div
+              v-else-if="panel === 'emoji'" class="moment-rich-editor__emotes"
+              :class="{ 'moment-rich-editor__emotes--text': emotes.some(item => item.type === 4) }"
+            >
+              <button
+                v-for="item in emotes" :key="item.id" class="bew-ghost-button" type="button" :title="item.name"
+                :aria-label="item.name"
+                @click="choose(item)"
+              >
+                <span v-if="item.type === 4">{{ item.name }}</span>
+                <img v-else :src="item.image" :alt="item.name" loading="lazy">
+              </button>
+            </div>
+            <div v-else class="moment-rich-editor__choices" role="listbox" :aria-label="t(panel === 'mention' ? 'moment_card.repost_mention' : panel === 'topic' ? 'moment_card.repost_topic' : 'moment_card.repost_commercial')">
+              <button
+                v-for="(item, index) in choices" :id="`${popupId}-${index}`" :key="`${item.id}-${index}`" class="bew-ghost-button" type="button"
+                role="option"
+                :aria-selected="activeChoice === index" @mouseenter="activeChoice = index" @click="choose(item)"
+              >
+                <img v-if="item.image" :src="item.image" alt="" loading="lazy">{{ item.name }}
+              </button>
+              <p v-if="!choices.length">
+                {{ t('moment_card.repost_no_results') }}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>
