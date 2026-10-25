@@ -702,10 +702,6 @@ const detailDialogWidth = computed(() => {
   return `min(1088px, ${DIALOG_SAFE_WIDTH})`
 })
 
-const detailContentHeight = computed(() => {
-  return detailDialogHeight.value
-})
-
 const detailImageViewerUrl = computed(() => detailImageViewerUrls.value[detailImageViewerIndex.value] || '')
 const detailImageViewerTransform = computed(() => {
   return `translate3d(${detailImageViewerPanX.value}px, ${detailImageViewerPanY.value}px, 0) scale(${detailImageViewerScale.value}) rotate(${detailImageViewerRotation.value}deg)`
@@ -886,10 +882,6 @@ function resolveLinkOpenMode(kind: MomentLinkKind): ResolvedMomentOpenMode {
 
   const mode = settings.value.momentsCardOpenMode
   return mode === 'dialog' ? 'newTab' : mode
-}
-
-function openMomentImagePreview(urls: string[], index: number, trigger: HTMLElement | null) {
-  openDetailImageViewer(urls, index, null, trigger)
 }
 
 function openMomentExternally(moment: DisplayMoment, openMode: Exclude<ResolvedMomentOpenMode, 'dialog'>) {
@@ -1596,11 +1588,7 @@ function cacheRegularMomentPage(
   })
 }
 
-function loadMoreWantedMoments() {
-  void loadMoments(false, 0, true)
-}
-
-function loadMoreFilteredMoments() {
+function loadMoreMoments() {
   void loadMoments(false, 0, true)
 }
 
@@ -1822,11 +1810,7 @@ function updateGridColumnCount() {
     for (let cols = preferredColumns; cols >= 1 && !result; cols--)
       result = tryLayout(cols, wantLeft, false)
   }
-  if (!result && wantLeft) {
-    for (let cols = preferredColumns; cols >= 1 && !result; cols--)
-      result = tryLayout(cols, false, false)
-  }
-  if (!result) {
+  if (!result && (wantLeft || !wantRight)) {
     for (let cols = preferredColumns; cols >= 1 && !result; cols--)
       result = tryLayout(cols, false, false)
   }
@@ -4053,7 +4037,7 @@ watch(
                 @card-element="element => bindCardEl(element, moment)"
                 @open-detail="openMomentDetail"
                 @open-media="openMomentMedia"
-                @open-image-preview="openMomentImagePreview"
+                @open-image-preview="(urls, index, trigger) => openDetailImageViewer(urls, index, null, trigger)"
                 @media-enter="handleMediaEnter"
                 @media-leave="handleMediaLeave"
                 @cover-load="(event, momentId) => handleCoverLoad(event, momentId)"
@@ -4073,7 +4057,7 @@ watch(
               v-if="activeMomentGroup !== 'wanted' || momentsWantedUsers.length"
               type="secondary"
               :disabled="isLoading"
-              @click="requiresManualMomentPaging() && !noMoreContent ? (activeMomentGroup === 'wanted' ? loadMoreWantedMoments() : loadMoreFilteredMoments()) : refresh()"
+              @click="requiresManualMomentPaging() && !noMoreContent ? loadMoreMoments() : refresh()"
             >
               {{ isLoading ? t('common.loading') : requiresManualMomentPaging() ? (!noMoreContent ? t('common.load_more') : (activeMomentGroup === 'wanted' ? t('moments.recheck') : t('moments.reload'))) : t('moments.reload') }}
             </Button>
@@ -4089,7 +4073,7 @@ watch(
             v-if="requiresManualMomentPaging() && moments.length && !isLoading && !noMoreContent"
             type="button"
             class="moments-wanted-load-more"
-            @click="activeMomentGroup === 'wanted' ? loadMoreWantedMoments() : loadMoreFilteredMoments()"
+            @click="loadMoreMoments()"
           >
             <span i-tabler-arrow-down />
             {{ t('common.load_more') }}
@@ -4152,8 +4136,8 @@ watch(
       :desc="selectedMoment.isLive || selectedMoment.isVideo ? selectedMoment.title || selectedMoment.author.name : (selectedMoment.time || t('moments.detail'))"
       :width="detailDialogWidth"
       :height="detailDialogHeight"
-      :content-height="detailContentHeight"
-      :content-max-height="detailContentHeight"
+      :content-height="detailDialogHeight"
+      :content-max-height="detailDialogHeight"
       @close="closeMomentDetail"
     >
       <template #floating-actions>
