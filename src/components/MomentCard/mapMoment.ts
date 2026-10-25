@@ -419,7 +419,7 @@ export function mapMoment(item: DataItem): MappedMoment {
   // 转发时作者侧也可能挂充电角标
   const selfContent = isForward ? getMomentContent(raw) : content
   const forwardedAuthor = contentRaw.modules?.module_author || {}
-  const id = raw.id_str || raw.id || `${author.mid}-${author.pub_ts}`
+  const id = String(raw.id_str || raw.id || `${author.mid}-${author.pub_ts}`)
   const origId = String(contentRaw.id_str || contentRaw.id || '')
   const text = isForward
     ? (normalizeDescText(dynamic.desc) || t('moments.forwarded_post'))
