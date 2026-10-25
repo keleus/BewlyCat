@@ -103,6 +103,7 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
           :max="COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT"
           label="px"
           editable
+          :aria-label="$t('settings.comment_reply_tree_container_height')"
         />
       </div>
     </SettingsItem>
@@ -160,6 +161,6 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
 }
 
 .slider-control {
-  width: 220px;
+  width: 260px;
 }
 </style>
