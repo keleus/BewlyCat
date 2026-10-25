@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import {
   getMomentOriginalImageUrl,
@@ -17,6 +18,8 @@ const emit = defineEmits<{
   coverLoad: [event: Event]
   preview: [urls: string[], index: number, trigger: HTMLElement | null]
 }>()
+
+const { t } = useI18n()
 
 const previewUrls = computed(() => images.map(url => getMomentOriginalImageUrl(url)))
 
@@ -44,7 +47,7 @@ function handleCoverLoad(event: Event, index: number) {
       :key="`${image}-${imageIndex}`"
       type="button"
       class="moment-image-grid__item"
-      :aria-label="`查看 ${altPrefix} ${imageIndex + 1}`"
+      :aria-label="t('moment_card.view_image', { images: altPrefix, index: imageIndex + 1 })"
       @click="handlePreview($event, imageIndex)"
     >
       <img

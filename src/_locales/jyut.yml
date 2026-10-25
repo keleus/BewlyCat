@@ -1863,6 +1863,8 @@ moment_card:
   open_original_video: '打開原影片：{title}'
   author_images: '{name} 嘅動態圖片'
   view_author_images: 睇 {name} 嘅動態圖片
+  gallery_region: '{images}，可以橫向滑動睇'
+  view_image: 睇 {images} 第 {index} 張
   open_origin_moment: 睇 {name} 嘅原動態
   view_details: 睇詳情
   view_original_post: 睇原動態

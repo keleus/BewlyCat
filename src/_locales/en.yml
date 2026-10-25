@@ -1934,6 +1934,8 @@ moment_card:
   open_original_video: 'Open original video: {title}'
   author_images: '{name} post images'
   view_author_images: View {name}'s post images
+  gallery_region: '{images}, scroll horizontally to view'
+  view_image: View image {index} of {images}
   open_origin_moment: View {name}'s original post
   view_details: View details
   view_original_post: View original post
