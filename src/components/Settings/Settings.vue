@@ -328,8 +328,6 @@ function getSearchMatchScore(item: SearchIndexEntry, query: string, queryParts: 
   return score
 }
 
-const SEARCH_RESULT_LIMIT = 30
-
 const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLocaleLowerCase()
   if (!query)
@@ -342,7 +340,7 @@ const searchResults = computed(() => {
 
   // 标题精确/前缀命中优先于标题包含，再到关键词命中；同分保持目录顺序。
   matches.sort((a, b) => b.score - a.score || a.item.order - b.item.order)
-  return matches.slice(0, SEARCH_RESULT_LIMIT).map(({ item }) => item.entry)
+  return matches.map(({ item }) => item.entry)
 })
 
 const activeSearchResultIndex = ref(-1)

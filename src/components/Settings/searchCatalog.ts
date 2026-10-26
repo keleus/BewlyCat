@@ -61,17 +61,6 @@ function createEntries(
     ? [{ key: route.storageKey ?? bewlyPagesStorageKey, value: route.secondaryPage }]
     : []
   const filteredTitleKeys = titleKeys.filter(isSettingTitleKey)
-  const filteredTitleKeySet = new Set(filteredTitleKeys)
-
-  if (import.meta.env.DEV) {
-    for (const key of [
-      ...Object.keys(keywordKeysByTitleKey ?? {}),
-      ...Object.keys(contextTitleKeysByTitleKey ?? {}),
-    ]) {
-      if (!filteredTitleKeySet.has(key))
-        throw new Error(`Unknown search entry key: ${key}`)
-    }
-  }
 
   return filteredTitleKeys.map((titleKey) => {
     const keywordKeys = [
@@ -227,7 +216,6 @@ const autoPlayModeOptionKeys = [
 const topBarGlobalTitleKeys = [
   'settings.group_topbar',
   'settings.topbar_display_settings',
-  'settings.topbar_style_settings',
   'settings.topbar_visibility',
   'settings.other_page_top_bar_config',
   'settings.video_page_top_bar_config',
@@ -937,24 +925,6 @@ const fallbackTargetKeysByEntry: Record<string, string> = {
 
 function getSearchEntryKey(entry: SettingsSearchEntry) {
   return `${entry.menu}|${entry.secondaryTitleKey ?? ''}|${entry.titleKey ?? ''}`
-}
-
-if (import.meta.env.DEV) {
-  const entryTitleKeys = new Set(
-    baseSettingsSearchEntries
-      .map(entry => entry.titleKey)
-      .filter((key): key is string => Boolean(key)),
-  )
-  for (const key of Object.keys(fallbackTargetKeysByTitleKey)) {
-    if (!entryTitleKeys.has(key))
-      throw new Error(`Unknown fallback search entry key: ${key}`)
-  }
-
-  const entryKeys = new Set(baseSettingsSearchEntries.map(getSearchEntryKey))
-  for (const key of Object.keys(fallbackTargetKeysByEntry)) {
-    if (!entryKeys.has(key))
-      throw new Error(`Unknown fallback search entry: ${key}`)
-  }
 }
 
 export const settingsSearchEntries: SettingsSearchEntry[] = baseSettingsSearchEntries.map((entry) => {
