@@ -308,20 +308,22 @@ onBeforeUnmount(() => {
   color: var(--bew-error-color);
 }
 
+// 删除按钮以缩略图右上角为圆心外凸半个按钮（12px）：
+// 间距与顶部留白都放到 12px，避免压到相邻缩略图和上方正文。
 .moment-comment-composer__images {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--bew-space-2);
+  gap: var(--bew-space-3);
   margin: 0;
-  padding: 0;
+  padding: var(--bew-space-1) 0 0;
   list-style: none;
 }
 
+// 圆角裁切放在预览按钮上，li 不裁切，删除按钮才能伸出图片角。
 .moment-comment-composer__images li {
   position: relative;
   width: 64px;
   height: 64px;
-  overflow: hidden;
   border-radius: var(--bew-radius-md);
   background: var(--bew-fill-1);
 
@@ -346,8 +348,10 @@ onBeforeUnmount(() => {
   display: block;
   width: 100%;
   height: 100%;
+  overflow: hidden;
   padding: 0;
   border: 0;
+  border-radius: inherit;
   background: transparent;
   cursor: zoom-in;
 
@@ -360,8 +364,9 @@ onBeforeUnmount(() => {
 .moment-comment-composer__remove {
   position: absolute;
   z-index: 1;
-  top: var(--bew-space-1);
-  right: var(--bew-space-1);
+  // 圆心落在缩略图右上角。
+  top: -12px;
+  right: -12px;
   display: grid;
   place-items: center;
   width: 24px;
