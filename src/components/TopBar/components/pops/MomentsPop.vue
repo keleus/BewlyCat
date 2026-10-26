@@ -191,6 +191,7 @@ defineExpose({
     <!-- moments wrapper -->
     <main
       ref="momentsWrap"
+      class="moments-pop__list"
       overflow-x-hidden
       overflow-y-auto
       p="x-3"
@@ -384,6 +385,11 @@ defineExpose({
     -webkit-line-clamp: unset;
     line-clamp: unset;
   }
+}
+
+// 向上插入更新的动态时由 getNewerData 手动补偿滚动位置，关闭浏览器滚动锚定避免重复补偿导致下跳
+.moments-pop__list {
+  overflow-anchor: none;
 }
 
 .moments-pop__last-seen {
