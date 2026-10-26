@@ -230,14 +230,14 @@ function paste(event: ClipboardEvent) {
   event.preventDefault()
   rememberSelection()
   const files = Array.from(event.clipboardData?.files || []).filter(file => file.type.startsWith('image/'))
-  if (files.length)
+  if (files.length && props.acceptsFiles)
     emit('pasteFiles', files)
   const text = event.clipboardData?.getData('text/plain') || ''
   if (text || !files.length)
     insertText(text)
   updateCompletion()
 }
-// 拖拽图片入框：与粘贴共用 pasteFiles 通道，仅在宿主声明收图时启用。
+// 拖拽图片入框：与粘贴共用 pasteFiles 通道，二者都仅在宿主声明收图时启用。
 const dragging = ref(false)
 let dragTimer: ReturnType<typeof setTimeout> | undefined
 function dragOver(event: DragEvent) {

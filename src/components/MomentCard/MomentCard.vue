@@ -936,8 +936,10 @@ function handleAdditionalClick(event: MouseEvent) {
   padding: 0 var(--bew-space-4) var(--bew-space-4);
 }
 
-// 子组件各自声明内部交互元素的层级，这里只覆盖本模板内的链接与按钮。
-.moment-card__surface :is(a, button, [role="button"]):not(.moment-card__permalink):not(.bew-watch-later-cover__btn) {
+// 留白区链接只铺在 main 内，只有 main 里的链接与按钮需要抬到它之上。
+// 不能放宽到整张卡片：作用域属性挂在祖先上，会连带改写评论区、转发框等子组件里
+// 自行定位的按钮（如评论缩略图的绝对定位删除按钮被改成 relative 后挤出裁切区）。
+.moment-card__main :is(a, button, [role="button"]):not(.moment-card__permalink):not(.bew-watch-later-cover__btn) {
   @include mixins.interactive-layer;
 }
 

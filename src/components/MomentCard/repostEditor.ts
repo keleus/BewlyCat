@@ -72,8 +72,8 @@ export function createRepostRequest(id: string, nodes: RepostNode[], uploadId: s
 
 export const pendingReposts = new Set<string>()
 export const repostDrafts = new Map<string, { nodes: RepostNode[], topic?: { id: number, name: string }, commercialId?: number }>()
-/** 评论草稿只保留正文；图片仍是本地文件，收起评论区后不再保留。 */
-export const commentDrafts = new Map<string, RepostNode[]>()
+/** 评论草稿保留正文与待上传图片；只存 File，预览地址在恢复时重新创建。 */
+export const commentDrafts = new Map<string, { nodes: RepostNode[], files: File[] }>()
 
 /** Check whitespace or a line edge, including across inline nodes and tokens. */
 export function isRepostCompletionBoundary(root: HTMLElement, caret: Range, side: 'before' | 'after' = 'before') {

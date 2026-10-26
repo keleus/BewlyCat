@@ -124,20 +124,25 @@ async function send() {
 
 onMounted(() => {
   const draft = commentDrafts.get(props.draftKey)
-  if (draft)
-    editor.value?.setNodes(draft)
+  if (!draft)
+    return
+  editor.value?.setNodes(draft.nodes)
+  images.value = draft.files.map(file => ({ id: ++imageId, file, preview: URL.createObjectURL(file) }))
 })
 // 父组件先于编辑器卸载，此时编辑器 DOM 仍在，可以读出最终草稿。
+// 正文与图片一起保留，与转发草稿一致：切换转发/评论或收起后再展开都能接着写。
 onBeforeUnmount(() => {
   alive = false
   images.value.forEach(image => URL.revokeObjectURL(image.preview))
   if (!editor.value)
     return
   editor.value.sync()
-  if (editor.value.nodes.some(node => node.raw_text.trim())) {
+  const nodes = editor.value.nodes
+  const files = images.value.map(image => image.file)
+  if (nodes.some(node => node.raw_text.trim()) || files.length) {
     if (commentDrafts.size >= 50 && !commentDrafts.has(props.draftKey))
       commentDrafts.delete(commentDrafts.keys().next().value!)
-    commentDrafts.set(props.draftKey, editor.value.nodes)
+    commentDrafts.set(props.draftKey, { nodes, files })
   }
   else {
     commentDrafts.delete(props.draftKey)
@@ -164,7 +169,7 @@ onBeforeUnmount(() => {
         :max-length="MAX_LENGTH"
         :disabled="submitting || disabled"
         :autofocus="autofocus"
-        accepts-files
+        :accepts-files="!replyName"
         :toolbar-pinned="submitting || images.length > 0"
         @submit="send"
         @paste-files="addImages"
@@ -196,7 +201,9 @@ onBeforeUnmount(() => {
           </ul>
         </template>
         <template #tools>
+          <!-- 与 B 站一致：只有主评论可以附图和同时转发，楼中楼回复只有表情与 @ -->
           <button
+            v-if="!replyName"
             class="bew-segment-control__item bew-segment-control__item--icon"
             type="button"
             :title="t('moment_card.comment_image_add')"
@@ -317,6 +324,16 @@ onBeforeUnmount(() => {
   overflow: hidden;
   border-radius: var(--bew-radius-md);
   background: var(--bew-fill-1);
+
+  // 细框画在图片之上，白底图片也能看清缩略图边界；不拦截点击。
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px var(--bew-border-color);
+    pointer-events: none;
+  }
 }
 
 .moment-comment-composer__images img {
@@ -357,6 +374,13 @@ onBeforeUnmount(() => {
   background: var(--bew-media-button-bg);
   font-size: var(--bew-icon-size-sm);
   cursor: pointer;
+  transition:
+    opacity var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover {
+    background: var(--bew-media-button-bg-hover);
+  }
 
   &:disabled {
     cursor: not-allowed;
@@ -366,6 +390,13 @@ onBeforeUnmount(() => {
   &:focus-visible {
     outline: 2px solid var(--bew-theme-color);
     outline-offset: 1px;
+  }
+}
+
+// 可悬停设备上删除按钮默认隐藏，悬停或键盘聚焦到该缩略图时出现；触屏设备始终显示。
+@media (hover: hover) {
+  .moment-comment-composer__images li:not(:hover, :focus-within) .moment-comment-composer__remove {
+    opacity: 0;
   }
 }
 
