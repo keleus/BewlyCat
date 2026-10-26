@@ -101,8 +101,8 @@ const commentReplyPaginationModeOptions = computed<{ label: string, value: Comme
           v-model="settings.commentReplyTreeContainerHeight"
           :min="COMMENT_REPLY_TREE_CONTAINER_MIN_HEIGHT"
           :max="COMMENT_REPLY_TREE_CONTAINER_MAX_HEIGHT"
-          label="px"
           editable
+          unit="px"
           :aria-label="$t('settings.comment_reply_tree_container_height')"
         />
       </div>
