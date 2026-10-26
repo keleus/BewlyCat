@@ -251,9 +251,12 @@ function getSearchEntryTitle(entry: SettingsSearchEntry) {
 
 function getSearchEntryLocation(entry: SettingsSearchEntry) {
   const primaryTitle = getMenuTitle(entry.menu)
-  return entry.secondaryTitleKey
+  const pageLocation = entry.secondaryTitleKey
     ? `${primaryTitle} / ${t(entry.secondaryTitleKey)}`
     : primaryTitle
+  return entry.contextTitleKey
+    ? `${t(entry.contextTitleKey)} · ${pageLocation}`
+    : pageLocation
 }
 
 function getTranslatedSearchTerms(key: string): string[] {
@@ -270,19 +273,59 @@ function getTranslatedSearchTerms(key: string): string[] {
   return collectTerms(tm(key))
 }
 
-function getSearchEntryText(entry: SettingsSearchEntry) {
+function getSearchEntryKeywordText(entry: SettingsSearchEntry) {
   const inferredKeywordKeys = entry.titleKey
-    ? [`${entry.titleKey}_desc`, `${entry.titleKey}_opt`, `${entry.titleKey}_option`]
+    ? [`${entry.titleKey}_desc`, `${entry.titleKey}_opt`, `${entry.titleKey}_option`, `${entry.titleKey}_unit`]
     : []
   const translatedKeywords = [...inferredKeywordKeys, ...(entry.keywordKeys ?? [])]
     .flatMap(getTranslatedSearchTerms)
 
   // 菜单路径只用于结果定位，避免输入分类名时命中整组设置。
-  return [
-    getSearchEntryTitle(entry),
-    ...translatedKeywords,
-    ...(entry.keywords ?? []),
-  ].join(' ').toLocaleLowerCase()
+  return [...translatedKeywords, ...(entry.keywords ?? [])].join(' ').toLocaleLowerCase()
+}
+
+interface SearchIndexEntry {
+  entry: SettingsSearchEntry
+  titleText: string
+  keywordText: string
+  text: string
+  order: number
+}
+
+// 搜索文本只随 locale/目录变化重算，输入时复用，避免每次击键重复翻译全部条目。
+const searchIndex = computed<SearchIndexEntry[]>(() => settingsSearchEntries.map((entry, order) => {
+  const titleText = getSearchEntryTitle(entry).toLocaleLowerCase()
+  const keywordText = getSearchEntryKeywordText(entry)
+  return {
+    entry,
+    titleText,
+    keywordText,
+    text: `${titleText} ${keywordText}`,
+    order,
+  }
+}))
+
+function getSearchMatchScore(item: SearchIndexEntry, query: string, queryParts: string[]) {
+  let score = 0
+  if (item.titleText === query)
+    score += 200
+  else if (item.titleText.includes(query))
+    score += 40
+
+  for (const part of queryParts) {
+    if (item.titleText === part)
+      score += 120
+    else if (item.titleText.startsWith(part))
+      score += 80
+    else if (item.titleText.includes(part))
+      score += 50
+    else if (item.keywordText.startsWith(part))
+      score += 20
+    else
+      score += 10
+  }
+
+  return score
 }
 
 const searchResults = computed(() => {
@@ -291,12 +334,13 @@ const searchResults = computed(() => {
     return []
 
   const queryParts = query.split(/\s+/).filter(Boolean)
-  return settingsSearchEntries
-    .filter((entry) => {
-      const searchableText = getSearchEntryText(entry)
-      return queryParts.every(part => searchableText.includes(part))
-    })
-    .slice(0, 12)
+  const matches = searchIndex.value
+    .filter(item => queryParts.every(part => item.text.includes(part)))
+    .map(item => ({ item, score: getSearchMatchScore(item, query, queryParts) }))
+
+  // 标题精确/前缀命中优先于标题包含，再到关键词命中；同分保持目录顺序。
+  matches.sort((a, b) => b.score - a.score || a.item.order - b.item.order)
+  return matches.map(({ item }) => item.entry)
 })
 
 const activeSearchResultIndex = ref(-1)
@@ -374,7 +418,7 @@ function clearSearchTargetHighlight() {
 function highlightSearchTarget(target: HTMLElement) {
   clearSearchTargetHighlight()
   const visualTarget = target.matches('.b-settings-item-group')
-    ? target.querySelector<HTMLElement>(':scope > .group-heading') ?? target
+    ? target.querySelector<HTMLElement>(':scope > .group-title') ?? target
     : target
 
   highlightedSearchTarget = visualTarget
@@ -383,14 +427,38 @@ function highlightSearchTarget(target: HTMLElement) {
   searchTargetHighlightTimer = window.setTimeout(clearSearchTargetHighlight, 2400)
 }
 
-function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: number, attempts = 0) {
-  if (!expectedTitle || navigationId !== searchNavigationId || attempts > 30)
+function isVisibleTarget(element: HTMLElement) {
+  return element.getClientRects().length > 0
+}
+
+function hasClosedDetailsAncestor(element: HTMLElement, viewport: HTMLElement) {
+  let ancestor = element.parentElement
+  while (ancestor && ancestor !== viewport) {
+    if (ancestor instanceof HTMLDetailsElement && !ancestor.open)
+      return true
+    ancestor = ancestor.parentElement
+  }
+  return false
+}
+
+function isUsableTarget(element: HTMLElement | null, viewport: HTMLElement): element is HTMLElement {
+  return Boolean(element && (isVisibleTarget(element) || hasClosedDetailsAncestor(element, viewport)))
+}
+
+function scrollToSearchTarget(
+  targetKey: string | undefined,
+  expectedTitle: string | undefined,
+  fallbackTargetKey: string | undefined,
+  navigationId: number,
+  attempts = 0,
+) {
+  if ((!targetKey && !expectedTitle) || navigationId !== searchNavigationId || attempts > 30)
     return
 
   const retry = () => {
     searchTargetRetryTimer = window.setTimeout(() => {
       searchTargetRetryTimer = undefined
-      scrollToSearchTarget(expectedTitle, navigationId, attempts + 1)
+      scrollToSearchTarget(targetKey, expectedTitle, fallbackTargetKey, navigationId, attempts + 1)
     }, 100)
   }
   const viewport = scrollViewportRef.value
@@ -400,8 +468,26 @@ function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: n
     return
   }
 
-  const target = Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]'))
-    .find(element => element.dataset.settingsTitle === expectedTitle)
+  const queryByKey = (key: string) => Array.from(
+    viewport.querySelectorAll<HTMLElement>(`[data-settings-key="${CSS.escape(key)}"]`),
+  ).find(element => isUsableTarget(element, viewport)) ?? null
+  const queryByTitle = (title: string | undefined) => title
+    ? Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]'))
+      .find(element => element.dataset.settingsTitle === title && isUsableTarget(element, viewport)) ?? null
+    : null
+
+  const keyedTarget = targetKey ? queryByKey(targetKey) : null
+  const titleTarget = expectedTitle ? queryByTitle(expectedTitle) : null
+  // 条件目标可能不存在；给它两轮挂载时间后落到始终可见的父项。
+  const fallbackTarget = fallbackTargetKey && attempts >= 2
+    ? queryByKey(fallbackTargetKey) ?? queryByTitle(t(fallbackTargetKey))
+    : null
+  // 未配置父项时至少把用户带到当前页面，避免点击完全无反馈。
+  const pageTarget = attempts >= 10
+    ? Array.from(viewport.querySelectorAll<HTMLElement>('[data-settings-title]')).find(isVisibleTarget) ?? null
+    : null
+  const target = keyedTarget ?? titleTarget ?? fallbackTarget ?? pageTarget
+  const usedPageFallback = !keyedTarget && !titleTarget && !fallbackTarget && Boolean(pageTarget)
   if (!target) {
     retry()
     return
@@ -440,7 +526,9 @@ function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: n
         top: Math.max(0, viewport.scrollTop + targetRect.top - viewportRect.top - viewport.clientTop - headerInset - centerOffset),
         behavior: 'smooth',
       })
-      highlightSearchTarget(target)
+      // 页面级兜底只负责把用户带到正确页面，避免把“已定位”标注到无关设置上。
+      if (!usedPageFallback)
+        highlightSearchTarget(target)
     })
   })
 }
@@ -448,16 +536,19 @@ function scrollToSearchTarget(expectedTitle: string | undefined, navigationId: n
 function navigateToSearchResult(entry: SettingsSearchEntry) {
   cancelSearchNavigation()
   const navigationId = searchNavigationId
+  // 页面存储值未变化时保持现有页面实例，避免无意义的整页重挂载。
+  const shouldReloadContent = entry.storageValues?.some(({ key, value }) => sessionStorage.getItem(key) !== value) ?? false
   entry.storageValues?.forEach(({ key, value }) => sessionStorage.setItem(key, value))
 
   activatedMenuItem.value = entry.menu
-  if (entry.storageValues?.length)
+  if (shouldReloadContent)
     settingsContentKey.value++
   searchQuery.value = ''
   const targetTitle = entry.targetTitleKey
     ? t(entry.targetTitleKey)
     : entry.targetTitle ?? getSearchEntryTitle(entry)
-  nextTick(() => scrollToSearchTarget(targetTitle, navigationId))
+  const targetKey = entry.targetTitleKey ?? entry.titleKey
+  nextTick(() => scrollToSearchTarget(targetKey, targetTitle, entry.fallbackTargetKey, navigationId))
 }
 
 const secondaryPageStorageKeys: Partial<Record<MenuType, string>> = {
