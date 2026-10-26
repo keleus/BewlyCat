@@ -47,6 +47,7 @@ import { setupNativeHomeFeedHistory } from './features/nativeHomeFeedHistory'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { setupOriginalMomentsFilter } from './features/originalMomentsFilter'
+import { setupOriginalMomentsFoldComments } from './features/originalMomentsFoldComments'
 import { setupVideoWatchProgress } from './features/videoWatchProgress'
 import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
 import { initImmersiveFeedFrame } from './immersiveFeedFrame'
@@ -246,6 +247,7 @@ else if (shouldInitializeContentScript) {
   ].join(',')
   setupNotificationStateInvalidation()
   setupOriginalMomentsFilter()
+  setupOriginalMomentsFoldComments()
   setupNativeHomeFeedHistory()
   setupWatchLaterAutoRemove()
   setupFavoriteOrganizerTripleSync()

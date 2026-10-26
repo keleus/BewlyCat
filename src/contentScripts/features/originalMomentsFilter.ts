@@ -2,13 +2,13 @@ import { watch } from 'vue'
 
 import { settings, settingsReady } from '~/logic'
 
-const CARD_SELECTOR = '.bili-dyn-item'
-const FEED_SELECTOR = '.bili-dyn-list__items'
-const HIDDEN_CLASS = 'bewly-filtered-original-moment'
+import {
+  isOriginalMomentsFeed,
+  ORIGINAL_MOMENTS_CARD_SELECTOR as CARD_SELECTOR,
+  ORIGINAL_MOMENTS_FEED_SELECTOR as FEED_SELECTOR,
+} from './originalMomentsFeed'
 
-function isOriginalMomentsFeed() {
-  return location.hostname === 't.bilibili.com' && /^\/?$/.test(location.pathname)
-}
+const HIDDEN_CLASS = 'bewly-filtered-original-moment'
 
 function shouldHide(card: HTMLElement) {
   const config = settings.value
