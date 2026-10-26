@@ -151,6 +151,7 @@ onBeforeUnmount(() => {
         :disabled="submitting"
         :commercial-allowed="commercialAllowed"
         autofocus
+        toolbar-pinned
         @submit="submit"
         @commercial="choice => commercial = choice"
       >

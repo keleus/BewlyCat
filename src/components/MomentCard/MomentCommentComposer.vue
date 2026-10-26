@@ -165,31 +165,30 @@ onBeforeUnmount(() => {
         :disabled="submitting || disabled"
         :autofocus="autofocus"
         accepts-files
+        :toolbar-pinned="submitting || images.length > 0"
         @submit="send"
         @paste-files="addImages"
       >
         <template #attachments>
           <ul v-if="images.length" class="moment-comment-composer__images">
-            <li
-              v-for="(image, index) in images"
-              :key="image.id"
-              class="moment-comment-composer__item"
-              role="button"
-              tabindex="0"
-              :aria-label="t('moment_card.comment_image', { index: index + 1 })"
-              :title="t('moment_card.comment_image', { index: index + 1 })"
-              @click="previewImage(index, $event)"
-              @keydown.enter.prevent="previewImage(index, $event)"
-              @keydown.space.prevent="previewImage(index, $event)"
-            >
-              <img :src="image.preview" alt="">
+            <li v-for="(image, index) in images" :key="image.id">
+              <!-- 预览与删除是并列的两个按钮：嵌套时删除键的回车/空格会冒泡成预览 -->
+              <button
+                type="button"
+                class="moment-comment-composer__preview"
+                :aria-label="t('moment_card.comment_image', { index: index + 1 })"
+                :title="t('moment_card.comment_image', { index: index + 1 })"
+                @click="previewImage(index, $event)"
+              >
+                <img :src="image.preview" alt="">
+              </button>
               <button
                 type="button"
                 class="moment-comment-composer__remove"
                 :disabled="submitting"
                 :aria-label="t('moment_card.comment_image_remove', { index: index + 1 })"
                 :title="t('moment_card.comment_image_remove', { index: index + 1 })"
-                @click.stop="removeImage(image.id)"
+                @click="removeImage(image.id)"
               >
                 <span i-tabler-x aria-hidden="true" />
               </button>
@@ -326,7 +325,13 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
-.moment-comment-composer__item {
+.moment-comment-composer__preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: zoom-in;
 
   &:focus-visible {

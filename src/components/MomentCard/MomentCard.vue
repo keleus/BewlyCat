@@ -129,63 +129,73 @@ function toggleRepost() {
     toggleCommentPreview(commentPreview)
 }
 
-// 转发面板复用评论区的全局展开动画（bew-expand-host）。
-// 转发内容随挂载同步渲染，无需等待数据就绪，挂载两帧后即播放展开。
-const repostMounted = ref(false)
-const repostEntered = ref(false)
-let repostLeaveTimer: ReturnType<typeof setTimeout> | undefined
+// 全局 bew-expand-host 的挂载时序：挂载时停在 0fr，enter() 后再过渡到 1fr；
+// 收起后等过渡（--bew-duration-normal）结束再卸载。转发面板与评论区共用。
+function useExpandHost(isOpen: () => boolean) {
+  const mounted = ref(false)
+  const entered = ref(false)
+  let leaveTimer: ReturnType<typeof setTimeout> | undefined
 
-watch(repostExpanded, (expanded) => {
-  clearTimeout(repostLeaveTimer)
-  if (expanded) {
-    repostEntered.value = false
-    repostMounted.value = true
+  function mount() {
+    clearTimeout(leaveTimer)
+    entered.value = false
+    mounted.value = true
+  }
+  // 两帧：先让浏览器按 0fr 完成布局，再过渡到完整高度。
+  function enter() {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (repostExpanded.value)
-          repostEntered.value = true
+        if (isOpen())
+          entered.value = true
       })
     })
   }
-  else {
-    repostEntered.value = false
-    repostLeaveTimer = setTimeout(() => {
-      repostMounted.value = false
+  function leave() {
+    clearTimeout(leaveTimer)
+    entered.value = false
+    leaveTimer = setTimeout(() => {
+      mounted.value = false
     }, 220)
+  }
+
+  onBeforeUnmount(() => clearTimeout(leaveTimer))
+  return { mounted, entered, mount, enter, leave }
+}
+
+// 转发内容随挂载同步渲染，无需等待数据就绪，挂载后即播放展开。
+const repostHost = useExpandHost(() => repostExpanded.value)
+const { mounted: repostMounted, entered: repostEntered } = repostHost
+
+watch(repostExpanded, (expanded) => {
+  if (expanded) {
+    repostHost.mount()
+    repostHost.enter()
+  }
+  else {
+    repostHost.leave()
   }
 })
 
 // 评论区展开分两阶段：先挂载并在 0fr 收起态加载首屏评论，数据就绪、最终高度确定后再播放展开，
 // 避免展开动画播到一半时被异步到达的评论内容突然撑开。
-const commentsMounted = ref(false)
-const commentsEntered = ref(false)
+const commentsHost = useExpandHost(() => commentPreview.expanded)
+const { mounted: commentsMounted, entered: commentsEntered } = commentsHost
 const commentsPreparing = ref(false)
 let commentsReady = false
-let commentsLeaveTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(() => commentPreview.expanded, (expanded) => {
-  clearTimeout(commentsLeaveTimer)
   if (expanded) {
     commentsReady = false
     commentsPreparing.value = true
-    commentsEntered.value = false
-    commentsMounted.value = true
+    commentsHost.mount()
     // 收起动画未结束就重新展开时子组件仍挂载、首屏已就绪，不会再发出 ready，由此直接播放展开。
     if (!commentPreview.loading && (commentPreview.page > 0 || commentPreview.error || commentPreview.done))
       handleCommentsReady()
   }
   else {
     commentsPreparing.value = false
-    commentsEntered.value = false
-    commentsLeaveTimer = setTimeout(() => {
-      commentsMounted.value = false
-    }, 220)
+    commentsHost.leave()
   }
-})
-
-onBeforeUnmount(() => {
-  clearTimeout(commentsLeaveTimer)
-  clearTimeout(repostLeaveTimer)
 })
 
 function handleCommentsReady() {
@@ -193,13 +203,7 @@ function handleCommentsReady() {
     return
   commentsReady = true
   commentsPreparing.value = false
-  // 两帧：先让浏览器按 0fr 完成布局，再过渡到完整高度。
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      if (commentPreview.expanded)
-        commentsEntered.value = true
-    })
-  })
+  commentsHost.enter()
 }
 
 async function collapseComments() {

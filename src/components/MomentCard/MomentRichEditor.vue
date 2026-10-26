@@ -20,6 +20,8 @@ const props = withDefaults(defineProps<{
   commercialAllowed?: boolean
   autofocus?: boolean
   acceptsFiles?: boolean
+  /** 失焦时仍保持工具栏展开（如转发面板、宿主有附件或正在提交），避免发送按钮被收起 */
+  toolbarPinned?: boolean
 }>(), { maxMentions: 20 })
 const emit = defineEmits<{
   submit: []
@@ -51,6 +53,10 @@ const panelError = ref('')
 const length = computed(() => nodes.value.reduce((sum, node) => sum + node.raw_text.length, 0))
 const remaining = computed(() => props.maxLength - length.value)
 const showCount = computed(() => remaining.value <= 100)
+const hasContent = computed(() => nodes.value.some(node => node.raw_text.trim()))
+// 空编辑器失焦才收起工具栏；有草稿、面板打开或宿主要求时保持展开。
+// 提交时编辑器变为不可编辑会丢失焦点，也靠这里保住加载态与发送按钮。
+const toolbarExpanded = computed(() => props.toolbarPinned || panel.value !== '' || hasContent.value)
 const emotes = computed(() => packages.value.find(item => item.id === packageId.value)?.items || [])
 let savedRange: Range | null = null
 let completionRange: Range | null = null
@@ -110,8 +116,9 @@ function rememberSelection() {
 function sync() {
   if (editor.value) {
     nodes.value = readRepostEditor(editor.value)
-    // 全选删除后 contenteditable 常残留 <br> 等空白节点，清干净让占位符的 :empty 重新成立。
-    if (!nodes.value.some(node => node.raw_text.trim()))
+    // 全选删除后 contenteditable 常残留 <br>，清干净让占位符的 :empty 重新成立。
+    // 只清纯换行残留，用户刚键入的空格等内容需保留。
+    if (editor.value.hasChildNodes() && nodes.value.every(node => node.type === 1 && !node.topic && /^\n*$/.test(node.raw_text)))
       editor.value.innerHTML = ''
   }
   rememberSelection()
@@ -572,8 +579,8 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
         @drop.prevent
       />
       <slot name="attachments" />
-      <!-- 工具栏与正文共用浅填充容器；失焦且无面板时收起，聚焦或面板打开时展开 -->
-      <div class="bew-expand-host moment-rich-editor__toolbar-host" :class="{ 'is-entered': panel !== '' }">
+      <!-- 工具栏与正文共用浅填充容器；聚焦时展开，失焦后按 toolbarExpanded 决定是否收起 -->
+      <div class="bew-expand-host moment-rich-editor__toolbar-host" :class="{ 'is-entered': toolbarExpanded }">
         <div class="moment-rich-editor__toolbar">
           <div ref="panelTriggers" class="moment-rich-editor__tools bew-segment-control bew-segment-control--static">
             <button
@@ -710,7 +717,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
     box-shadow: 0 0 0 2px var(--bew-theme-color-40);
   }
 }
-// 聚焦时工具栏自动展开；表情等面板打开时由 is-entered 保持展开（面板可夺走焦点但不应收起工具栏）。
+// 聚焦时工具栏自动展开；失焦后由 is-entered（面板打开、有草稿或宿主固定）保持展开。
 .moment-rich-editor__wrap:focus-within .moment-rich-editor__toolbar-host {
   grid-template-rows: 1fr;
 }
