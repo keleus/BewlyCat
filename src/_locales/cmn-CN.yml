@@ -560,6 +560,8 @@ settings:
   show_bewly_widescreen_button_desc: 启用后，在视频播放器控制栏中显示 Bewly 宽屏按钮。
   show_video_screenshot_button: 显示播放器截图按钮
   show_video_screenshot_button_desc: 在播放器控制栏显示截图按钮。关闭后仍可使用快捷键截图。
+  show_video_pip_button: 显示播放器画中画按钮
+  show_video_pip_button_desc: 在播放器控制栏显示画中画按钮。关闭后仍可使用快捷键切换。
   enable_listen_video: 启用听视频功能
   enable_listen_video_desc: 开启后可通过播放器按钮或快捷键进入听视频。仅隐藏画面，视频流仍会正常加载。
   show_listen_video_button: 显示播放器「听视频」按钮
