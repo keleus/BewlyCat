@@ -575,6 +575,8 @@ const baseSettingsSearchEntries: SettingsSearchEntry[] = [
     'settings.group_playback_memory',
     'settings.custom_playback_rate',
     'settings.playback_rate_step',
+    'settings.fullscreen_wheel_volume',
+    'settings.fullscreen_wheel_volume_step',
     'settings.remember_playback_rate',
     'settings.remember_video_aspect_ratio',
     'settings.group_video_page_actions',

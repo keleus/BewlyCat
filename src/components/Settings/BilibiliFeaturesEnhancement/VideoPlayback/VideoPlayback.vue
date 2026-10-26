@@ -1,10 +1,12 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n'
 
+import Input from '~/components/Input.vue'
 import Radio from '~/components/Radio.vue'
 import Select from '~/components/Select.vue'
 import { settings } from '~/logic'
 import type { PlayerDefaultState, VideoPlayerModeContext, VideoPlayerScrollMode } from '~/logic/storage'
+import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 
 import SettingsItem from '../../components/SettingsItem.vue'
 import SettingsItemGroup from '../../components/SettingsItemGroup.vue'
@@ -139,6 +141,15 @@ function updatePlaybackMemory(setting: ToggleSetting, enabled: boolean) {
     return
   }
   settings.value[setting] = enabled
+}
+
+const wheelVolumeStep = ref<string | number>(settings.value.fullscreenWheelVolumeStep)
+watch(() => settings.value.fullscreenWheelVolumeStep, value => wheelVolumeStep.value = value)
+
+function saveWheelVolumeStep() {
+  const value = wheelVolumeStep.value === '' ? Number.NaN : Number(wheelVolumeStep.value)
+  settings.value.fullscreenWheelVolumeStep = normalizeWheelVolumeStep(value)
+  wheelVolumeStep.value = settings.value.fullscreenWheelVolumeStep
 }
 
 const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefaultState }[]>(() => [
@@ -288,6 +299,28 @@ const playerDefaultStateOptions = computed<{ label: string, value: PlayerDefault
       </SettingsItem>
 
       <PlaybackRate />
+
+      <SettingsItemSubgroup :title="t('settings.fullscreen_wheel_volume')">
+        <SettingsItem
+          :title="t('settings.fullscreen_wheel_volume')"
+          :desc="t('settings.fullscreen_wheel_volume_desc')"
+          right-width="auto"
+        >
+          <Radio v-model="settings.customFullscreenWheelVolume" />
+        </SettingsItem>
+        <SettingsItem
+          v-if="settings.customFullscreenWheelVolume"
+          :title="t('settings.fullscreen_wheel_volume_step')"
+          :desc="t('settings.fullscreen_wheel_volume_step_desc')"
+          right-width="auto"
+        >
+          <Input
+            v-model="wheelVolumeStep" type="number" :min="1" :max="50" :step="1"
+            w="100px"
+            :aria-label="t('settings.fullscreen_wheel_volume_step')" @blur="saveWheelVolumeStep" @enter="saveWheelVolumeStep"
+          />
+        </SettingsItem>
+      </SettingsItemSubgroup>
 
       <SettingsItemSubgroup
         :title="t('settings.group_playback_memory')"

@@ -49,6 +49,7 @@ import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { setupOriginalMomentsFilter } from './features/originalMomentsFilter'
 import { setupVideoWatchProgress } from './features/videoWatchProgress'
 import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
+import { initFullscreenWheelVolume } from './fullscreenWheelVolume'
 import { initImmersiveFeedFrame } from './immersiveFeedFrame'
 import { initListenVideoFeature } from './listenVideoFeature'
 import { initLocalLoudnessControl } from './localLoudnessControl'
@@ -1455,6 +1456,7 @@ else if (shouldInitializeContentScript) {
       setupShortcutHandlers()
     runWhenNativeVideoHeaderStable(initBewlyWidescreenControl)
     initTouchPlayerGestures()
+    initFullscreenWheelVolume()
 
     // Initialize Favorite Dialog Enhancement (for video pages)
     if (isVideoOrBangumiPage()) {

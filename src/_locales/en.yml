@@ -1076,6 +1076,10 @@ settings:
   custom_playback_rate_no_video: No controllable video on this page. Open these settings on a video playback page.
   playback_rate_step: Playback rate shortcut step
   playback_rate_step_desc: Change the rate by 0.01–1 per key press; the default is 0.25. Configure the keys in Shortcuts.
+  fullscreen_wheel_volume: Mouse wheel volume in fullscreen
+  fullscreen_wheel_volume_desc: In fullscreen, BewlyCat handles the mouse wheel and changes the volume by a fixed step per notch, replacing bilibili's inconsistent native step.
+  fullscreen_wheel_volume_step: Wheel volume step
+  fullscreen_wheel_volume_step_desc: Change the volume by 1–50 per notch; the default is 5.
   remember_video_quality: Remember video quality
   remember_video_quality_desc: Restore the last selected video quality; if it is unavailable, the current quality is kept.
   remember_video_quality_confirm_title: Enable Remember video quality?

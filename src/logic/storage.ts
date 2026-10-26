@@ -12,6 +12,7 @@ import {
   normalizeListLayoutBreakpoint,
 } from '~/utils/gridLayout'
 import { normalizePlaybackRateStep } from '~/utils/playbackRate'
+import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 
 export const storageDemo = useStorageLocal('webext-demo', 'Storage Demo')
 
@@ -639,6 +640,8 @@ export interface Settings {
   rememberPlaybackRate: boolean // 启用倍速记忆功能
   savedPlaybackRate: number // 记住的倍速值 (0.25-5)
   playbackRateStep: number // 倍速快捷键每次调节的幅度 (0.01-1)
+  customFullscreenWheelVolume: boolean // 全屏时接管滚轮音量调节
+  fullscreenWheelVolumeStep: number // 全屏滚轮每格调节的音量 (1-50)
 
   // 清晰度记忆设置
   rememberVideoQuality: boolean
@@ -1034,6 +1037,8 @@ export const originalSettings: Settings = {
   rememberPlaybackRate: false, // 启用倍速记忆功能
   savedPlaybackRate: 1, // 记住的倍速值 (0.25-5)
   playbackRateStep: 0.25,
+  customFullscreenWheelVolume: false,
+  fullscreenWheelVolumeStep: 5,
 
   // 清晰度记忆设置
   rememberVideoQuality: false,
@@ -1139,6 +1144,7 @@ export const settings = useSettingsStorage(originalSettings, {
   normalize: (value) => {
     const record = value as Record<string, any>
     record.playbackRateStep = normalizePlaybackRateStep(record.playbackRateStep)
+    record.fullscreenWheelVolumeStep = normalizeWheelVolumeStep(record.fullscreenWheelVolumeStep)
 
     // 旧配置也补齐新入口，保持菜单按钮与各项的默认可见状态一致。
     const menuConfig = record.videoCardContextMenuConfig

@@ -963,6 +963,10 @@ settings:
   custom_playback_rate_no_video: 目前頁面沒有可控制的影片，請在影片播放頁開啟此設定。
   playback_rate_step: 倍速快捷鍵調整幅度
   playback_rate_step_desc: 每次增減 0.01–1 倍；預設 0.25。快捷鍵可在「快捷鍵」設定中修改。
+  fullscreen_wheel_volume: 全螢幕滾輪調整音量
+  fullscreen_wheel_volume_desc: 全螢幕播放時由擴充功能接管滾輪調整音量，每滾一格按固定幅度調整，取代 B 站原生不規律的調整幅度。
+  fullscreen_wheel_volume_step: 滾輪音量調整幅度
+  fullscreen_wheel_volume_step_desc: 每格增減 1–50；預設 5。
   remember_video_quality: 記住畫質
   remember_video_quality_desc: 啟用後自動恢復上次選擇的畫質，無法使用時沿用目前畫質。
   remember_video_quality_confirm_title: 確認開啟記住畫質？
