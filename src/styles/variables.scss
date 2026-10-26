@@ -241,6 +241,9 @@
   --bew-theme-color-80: color-mix(in oklab, var(--bew-theme-color), transparent 20%);
   --bew-theme-color-90: color-mix(in oklab, var(--bew-theme-color), transparent 10%);
 
+  // 由主题色推导的滤镜，用于让 B 站 Canvas/SVGA 动效跟随主题色（见 utils/actionAnimationTheme.ts）
+  --bew-action-animation-filter: none;
+
   --bew-info-color: hsl(198 93% 60%);
   --bew-info-color-10: color-mix(in oklab, var(--bew-info-color), transparent 90%);
   --bew-info-color-20: color-mix(in oklab, var(--bew-info-color), transparent 80%);
