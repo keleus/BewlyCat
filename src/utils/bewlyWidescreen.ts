@@ -93,7 +93,6 @@ const READY_RETRY_MAX = 50
 const PAGE_LOAD_FALLBACK_TIMEOUT = 3000
 const SIDEBAR_REFRESH_DELAY = 800
 const SIDEBAR_TOGGLE_IDLE_DELAY = 1000
-const BILIBILI_ACTION_ANIMATION_HUE = 196
 const COMMENT_ROOT_ID_SELECTOR = '#comment-module, #comment-body, #commentapp'
 const COMMENT_TIME_SELECTOR = '.reply-time, .sub-reply-time, .reply-time-location'
 const COMMENT_NESTED_UI_SELECTOR = '.reply-item, .sub-reply-item, bili-comment-renderer'
@@ -1162,6 +1161,14 @@ function injectLayoutStyle() {
       display: none !important;
     }
 
+    /* 点赞/三连动效的 SVGA 容器会被组件搬到 body 下，脱离 #ROOT_ID，
+       这里用同一个主题滤镜兜底，保证宽屏模式下进度环与三连烟花也跟随主题色 */
+    body.${BODY_CLASS} canvas.ring-progress,
+    body.${BODY_CLASS} .svga-container.svga-fireworks,
+    body.${BODY_CLASS} .svga-container.svga-center {
+      filter: var(--bew-action-animation-filter, none) !important;
+    }
+
     #${ROOT_ID} {
       position: fixed;
       inset: 0;
@@ -1546,24 +1553,8 @@ function injectLayoutStyle() {
       border: 0 !important;
     }
 
-    #${ROOT_ID} .bili-danmaku-x-guide:not(.bili-danmaku-x-guide-followed) .bili-danmaku-x-guide-follow,
-    #${ROOT_ID} .bili-danmaku-x-guide-electric {
-      background: var(--bew-theme-color, #00aeec) !important;
-    }
-
-    #${ROOT_ID} .bili-danmaku-x-guide:not(.bili-danmaku-x-guide-followed) .bili-danmaku-x-guide-follow:hover,
-    #${ROOT_ID} .bili-danmaku-x-guide-electric:hover {
-      background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 82%, white) !important;
-    }
-
-    #${ROOT_ID} .bili-danmaku-x-guide-three > span.bili-danmaku-x-active svg {
-      fill: var(--bew-theme-color, #00aeec) !important;
-    }
-
-    #${ROOT_ID} .bili-danmaku-x-guide-cyc > span {
-      filter: var(--bewly-widescreen-action-canvas-filter, none) !important;
-    }
-
+    /* 三连引导（danmaku-x guide）的按钮与动效配色统一放在 videoPage.scss 的 body 级规则里，
+       普通模式与宽屏模式共用，这里不再重复。 */
     #${ROOT_ID} #bilibili-player-wrap > *,
     #${ROOT_ID} .player-wrap > *,
     #${ROOT_ID} .bpx-player-container > * {
@@ -2448,7 +2439,7 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-left-item > canvas {
-      filter: var(--bewly-widescreen-action-canvas-filter, none) !important;
+      filter: var(--bew-action-animation-filter, none) !important;
       opacity: 0.96 !important;
     }
 
@@ -3200,82 +3191,6 @@ function updateDanmakuDockHeight() {
   schedulePlayerResizeSync(state)
 }
 
-function parseRgbColor(value: string) {
-  const match = value.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/)
-  if (!match)
-    return null
-
-  return {
-    r: Number(match[1]) / 255,
-    g: Number(match[2]) / 255,
-    b: Number(match[3]) / 255,
-  }
-}
-
-function rgbToHsl({ r, g, b }: { r: number, g: number, b: number }) {
-  const max = Math.max(r, g, b)
-  const min = Math.min(r, g, b)
-  const lightness = (max + min) / 2
-
-  if (max === min)
-    return { hue: 0, saturation: 0, lightness }
-
-  const delta = max - min
-  const saturation = lightness > 0.5
-    ? delta / (2 - max - min)
-    : delta / (max + min)
-
-  let hue = 0
-  switch (max) {
-    case r:
-      hue = (g - b) / delta + (g < b ? 6 : 0)
-      break
-    case g:
-      hue = (b - r) / delta + 2
-      break
-    default:
-      hue = (r - g) / delta + 4
-      break
-  }
-
-  return { hue: hue * 60, saturation, lightness }
-}
-
-let cssColorProbe: HTMLSpanElement | null = null
-
-function resolveCssColor(value: string) {
-  if (!value)
-    return null
-
-  if (!cssColorProbe) {
-    cssColorProbe = document.createElement('span')
-    cssColorProbe.style.position = 'fixed'
-    cssColorProbe.style.pointerEvents = 'none'
-    cssColorProbe.style.opacity = '0'
-    document.body.appendChild(cssColorProbe)
-  }
-  cssColorProbe.style.color = value
-  const resolved = getComputedStyle(cssColorProbe).color
-
-  return parseRgbColor(resolved)
-}
-
-function syncActionAnimationTheme(currentState: BewlyWidescreenState) {
-  const themeColor = getComputedStyle(document.documentElement).getPropertyValue('--bew-theme-color').trim()
-  const rgb = resolveCssColor(themeColor || '#00aeec')
-  if (!rgb)
-    return
-
-  const { hue, saturation, lightness } = rgbToHsl(rgb)
-  const hueRotate = Math.round(hue - BILIBILI_ACTION_ANIMATION_HUE)
-  const saturationRatio = Math.max(0.8, Math.min(2.4, saturation / 0.85))
-  const brightnessRatio = Math.max(0.75, Math.min(1.35, lightness / 0.46))
-  currentState.root.style.setProperty(
-    '--bewly-widescreen-action-canvas-filter',
-    `hue-rotate(${hueRotate}deg) saturate(${saturationRatio.toFixed(2)}) brightness(${brightnessRatio.toFixed(2)})`,
-  )
-}
-
 function clearPlayerResizeSync(currentState: BewlyWidescreenState) {
   if (currentState.resizeSyncFrame !== undefined)
     cancelAnimationFrame(currentState.resizeSyncFrame)
@@ -3834,7 +3749,6 @@ function syncCustomInteractiveEntry(currentState: BewlyWidescreenState) {
 }
 
 function fillSidebar(currentState: BewlyWidescreenState) {
-  syncActionAnimationTheme(currentState)
   syncSidebarTitle(currentState)
 
   moveOrReplaceNode(selectors.info, currentState.infoSlot, currentState.movedNodes)
