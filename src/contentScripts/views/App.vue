@@ -2091,7 +2091,11 @@ if (settings.value.cleanUrlArgument) {
               'bew-page-controls--blend': useBlendedPageControls,
               'bewly-scroll-viewport--repainted-scrollbar': useFirefoxScrollbar,
             }"
-            :style="{ '--bew-control-wallpaper-mask': pageControlWallpaperMask }"
+            :style="{
+              '--bew-control-wallpaper-mask': pageControlWallpaperMask,
+              // 视频弹窗打开时锁定背后列表，避免弹窗内滚轮与方向键越界滚动
+              'overflowY': videoDialog ? 'hidden' : undefined,
+            }"
             h-inherit of-y-auto of-x-hidden
             tabindex="-1"
             style="overscroll-behavior: contain;"

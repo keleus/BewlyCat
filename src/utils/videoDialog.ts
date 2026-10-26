@@ -151,7 +151,7 @@ export function watchIframePlayerImmersive(iframe: HTMLIFrameElement, onChange: 
   }
 }
 
-/** 同域 iframe 加载后去掉顶栏占位，并保证视频页可在 iframe 内滚动。 */
+/** 同域 iframe 加载后去掉顶栏占位，并保证视频页可在 iframe 内滚动且不越界带动父页面。 */
 export function prepareDialogIframeDocument(iframe: HTMLIFrameElement) {
   try {
     const doc = iframe.contentWindow?.document
@@ -160,6 +160,7 @@ export function prepareDialogIframeDocument(iframe: HTMLIFrameElement) {
     doc.documentElement.classList.add('remove-top-bar-without-placeholder')
     doc.documentElement.style.setProperty('overflow-x', 'hidden', 'important')
     doc.documentElement.style.setProperty('overflow-y', 'auto', 'important')
+    doc.documentElement.style.setProperty('overscroll-behavior', 'contain', 'important')
     if (doc.body) {
       doc.body.style.setProperty('overflow-x', 'hidden', 'important')
       doc.body.style.setProperty('overflow-y', 'auto', 'important')
