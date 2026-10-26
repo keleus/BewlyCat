@@ -106,8 +106,8 @@ defineExpose({ focusCommentsToggle })
       @keydown.enter.stop
     >
       <span v-if="likeLoading" i-svg-spinners:ring-resize aria-hidden="true" />
-      <span v-else-if="moment.isLiked" i-tabler-heart-filled aria-hidden="true" />
-      <span v-else i-tabler-heart aria-hidden="true" />
+      <span v-else-if="moment.isLiked" i-tabler-thumb-up-filled aria-hidden="true" />
+      <span v-else i-tabler-thumb-up aria-hidden="true" />
       {{ formatCount(moment.likeCount) }}
     </button>
   </footer>
@@ -147,9 +147,8 @@ defineExpose({ focusCommentsToggle })
   font: inherit;
   white-space: nowrap;
   transition:
-    color 0.16s ease,
-    background-color 0.16s ease,
-    transform 0.16s ease;
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 
 .moment-card__likes:hover {
@@ -195,8 +194,8 @@ defineExpose({ focusCommentsToggle })
   text-decoration: none;
   cursor: pointer;
   transition:
-    color 0.16s ease,
-    background-color 0.16s ease;
+    color var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 
 .moment-card__footer-stat {

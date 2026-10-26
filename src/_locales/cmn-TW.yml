@@ -1842,6 +1842,7 @@ moment_card:
   comment_login: 登入後才能發表留言
   comment_send: 發佈
   comment_send_shortcut: Ctrl / ⌘ + Enter 送出
+  comment_send_keys: Ctrl / ⌘ + Enter
   comment_reply: 回覆
   comment_reply_to: "回覆 {'@'}{name}"
   comment_send_failed: 留言送出失敗，請稍後重試
@@ -1865,6 +1866,8 @@ moment_card:
   open_original_video: '開啟原影片：{title}'
   author_images: '{name} 的動態圖片'
   view_author_images: 檢視 {name} 的動態圖片
+  gallery_region: '{images}，可橫向滑動檢視'
+  view_image: 檢視 {images} 第 {index} 張
   open_origin_moment: 查看 {name} 的原動態
   view_details: 查看詳情
   view_original_post: 查看原動態

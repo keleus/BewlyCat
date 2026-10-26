@@ -129,6 +129,32 @@ function toggleRepost() {
     toggleCommentPreview(commentPreview)
 }
 
+// 转发面板复用评论区的全局展开动画（bew-expand-host）。
+// 转发内容随挂载同步渲染，无需等待数据就绪，挂载两帧后即播放展开。
+const repostMounted = ref(false)
+const repostEntered = ref(false)
+let repostLeaveTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(repostExpanded, (expanded) => {
+  clearTimeout(repostLeaveTimer)
+  if (expanded) {
+    repostEntered.value = false
+    repostMounted.value = true
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (repostExpanded.value)
+          repostEntered.value = true
+      })
+    })
+  }
+  else {
+    repostEntered.value = false
+    repostLeaveTimer = setTimeout(() => {
+      repostMounted.value = false
+    }, 220)
+  }
+})
+
 // 评论区展开分两阶段：先挂载并在 0fr 收起态加载首屏评论，数据就绪、最终高度确定后再播放展开，
 // 避免展开动画播到一半时被异步到达的评论内容突然撑开。
 const commentsMounted = ref(false)
@@ -157,7 +183,10 @@ watch(() => commentPreview.expanded, (expanded) => {
   }
 })
 
-onBeforeUnmount(() => clearTimeout(commentsLeaveTimer))
+onBeforeUnmount(() => {
+  clearTimeout(commentsLeaveTimer)
+  clearTimeout(repostLeaveTimer)
+})
 
 function handleCommentsReady() {
   if (commentsReady)
@@ -793,15 +822,20 @@ function handleAdditionalClick(event: MouseEvent) {
         @toggle-comments="toggleComments"
         @toggle-like="emit('toggleLike', moment)"
       />
-      <MomentRepost
-        v-if="repostExpanded"
-        :moment-id="moment.id"
-        @close="repostExpanded = false"
-        @sent="repostCount++; repostExpanded = false"
-      />
+      <div
+        v-if="repostMounted"
+        class="bew-expand-host"
+        :class="{ 'is-entered': repostEntered }"
+      >
+        <MomentRepost
+          :moment-id="moment.id"
+          @close="repostExpanded = false"
+          @sent="repostCount++; repostExpanded = false"
+        />
+      </div>
       <div
         v-if="commentsMounted"
-        class="moment-card__comments-host"
+        class="bew-expand-host"
         :class="{ 'is-entered': commentsEntered }"
       >
         <MomentComments
@@ -1024,29 +1058,6 @@ function handleAdditionalClick(event: MouseEvent) {
 @container (max-width: 359px) {
   .moment-card--text .moment-card__body {
     min-height: 0;
-  }
-}
-
-/* 评论区展开/收起：grid 轨道 0fr→1fr 过渡实现高度自适应动画，无需 JS 测量高度。
-   挂载时先停在 0fr，首屏评论就绪后由 .is-entered 播放展开，避免内容异步到达撑断动画。 */
-.moment-card__comments-host {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows var(--bew-duration-normal) var(--bew-ease-standard);
-}
-
-.moment-card__comments-host.is-entered {
-  grid-template-rows: 1fr;
-}
-
-.moment-card__comments-host > .moment-comments {
-  min-height: 0;
-  overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .moment-card__comments-host {
-    transition: none;
   }
 }
 </style>

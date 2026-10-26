@@ -1827,6 +1827,7 @@ moment_card:
   comment_login: 登录后才能发表评论
   comment_send: 发布
   comment_send_shortcut: Ctrl / ⌘ + Enter 发送
+  comment_send_keys: Ctrl / ⌘ + Enter
   comment_reply: 回复
   comment_reply_to: "回复 {'@'}{name}"
   comment_send_failed: 评论发送失败，请稍后重试
@@ -1850,6 +1851,8 @@ moment_card:
   open_original_video: '打开原视频：{title}'
   author_images: '{name} 的动态图片'
   view_author_images: 查看 {name} 的动态图片
+  gallery_region: '{images}，可横向滑动查看'
+  view_image: 查看 {images} 第 {index} 张
   open_origin_moment: 查看 {name} 的原动态
   view_details: 查看详情
   view_original_post: 查看原动态

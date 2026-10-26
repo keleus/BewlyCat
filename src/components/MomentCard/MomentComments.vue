@@ -172,6 +172,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
         :can-sync-to-dynamic="!moment.isForwardDisabled"
         :submit="submission => addComment(submission)"
         :upload="uploadImage"
+        @open-image-preview="(urls, index, trigger) => emit('openImagePreview', urls, index, trigger)"
       />
       <p v-else class="moment-comments__login">
         {{ t('moment_card.comment_login') }}
@@ -266,6 +267,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
                   v-for="(picture, index) in row.comment.pictures"
                   :key="picture"
                   type="button"
+                  class="bew-ghost-button bew-ghost-button--theme"
                   :aria-label="t('moment_card.comment_image', { index: index + 1 })"
                   @click="openPicture($event, row.comment.pictures, index)"
                 >
@@ -279,8 +281,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
                 <span class="moment-comments__actions">
                   <button
                     type="button"
-                    class="moment-comments__like"
-                    :class="{ 'is-liked': row.comment.liked }"
+                    class="bew-ghost-button bew-ghost-button--theme"
                     :aria-label="t(row.comment.liked ? 'moment_card.unlike' : 'moment_card.like')"
                     :aria-pressed="row.comment.liked"
                     :aria-busy="row.comment.liking"
@@ -294,6 +295,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
                   <button
                     v-if="userId && !state.inputDisabled"
                     type="button"
+                    class="bew-ghost-button bew-ghost-button--theme"
                     :aria-expanded="state.replyTarget?.comment === row.comment"
                     @click="replyTo(group.root, row.comment)"
                   >
@@ -303,6 +305,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
                   <button
                     v-if="userId && row.comment.mid === userId"
                     type="button"
+                    class="bew-ghost-button bew-ghost-button--theme"
                     :class="{ 'is-danger': pendingDeleteId === row.comment.id }"
                     :aria-busy="row.comment.deleting"
                     :aria-disabled="row.comment.deleting"
@@ -322,6 +325,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
           <button
             v-if="group.root.repliesExpanded && !group.root.repliesDone"
             type="button"
+            class="bew-ghost-button bew-ghost-button--theme"
             :aria-disabled="group.root.repliesLoading"
             :aria-busy="group.root.repliesLoading"
             @click="loadReplies(group.root)"
@@ -330,6 +334,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
           </button>
           <button
             type="button"
+            class="bew-ghost-button bew-ghost-button--theme"
             :aria-expanded="group.root.repliesExpanded"
             @click="toggleReplies(group.root)"
           >
@@ -348,6 +353,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
           :upload="uploadImage"
           autofocus
           @cancel="setReplyTarget()"
+          @open-image-preview="(urls, index, trigger) => emit('openImagePreview', urls, index, trigger)"
         />
       </MomentCommentTree>
       <div class="moment-comments__status" aria-live="polite">
@@ -355,13 +361,13 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
         <span v-else-if="state.loading">{{ t('common.loading') }}</span>
         <span v-else-if="!state.comments.length && state.done">{{ t('moment_card.comments_empty') }}</span>
         <span v-else-if="state.done">{{ t('common.no_more_content') }}</span>
-        <button v-if="state.error && !state.loading" type="button" @click="loadComments">
+        <button v-if="state.error && !state.loading" type="button" class="bew-ghost-button bew-ghost-button--theme" @click="loadComments">
           {{ t('moment_card.comments_retry') }}
         </button>
       </div>
     </div>
     <footer class="moment-comments__footer">
-      <button type="button" @click="emit('collapse')">
+      <button type="button" class="bew-ghost-button bew-ghost-button--theme" @click="emit('collapse')">
         <span i-tabler-chevron-up text="size-$bew-icon-size-sm" aria-hidden="true" />
         {{ t('moment_card.collapse_comments') }}
       </button>
@@ -401,6 +407,7 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
   flex: none;
   padding: var(--bew-space-1) var(--bew-space-3);
   border-top: 1px solid var(--bew-border-color);
+  color: var(--bew-text-2);
 }
 
 .moment-comments .moment-comments__footer > button {
@@ -529,29 +536,15 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
   padding-block: var(--bew-space-2);
 }
 
-.moment-comments button:not(.bew-segment-control__item) {
-  display: inline-flex;
+// 评论操作按钮使用共享轻按钮词汇（bew-ghost-button--theme），此处仅补局部密度与字号。
+// 文字色由所在容器（meta/footer/status）继承 text-2，避免盖过词汇的悬停色。
+.moment-comments .bew-ghost-button {
+  justify-content: center;
   min-width: 28px;
   min-height: 28px;
-  align-items: center;
-  justify-content: center;
-  gap: var(--bew-space-1);
-  padding: var(--bew-space-1) var(--bew-space-2);
-  border: 0;
-  border-radius: var(--bew-interactive-radius);
-  color: var(--bew-text-2);
-  background: transparent;
-  cursor: pointer;
-  font: inherit;
   font-size: var(--bew-font-size-control);
   font-weight: var(--bew-font-weight-medium);
   line-height: var(--bew-line-height-control);
-}
-
-.moment-comments button:not(.bew-segment-control__item):hover,
-.moment-comments button:not(.bew-segment-control__item):active {
-  color: var(--bew-theme-color);
-  background: var(--bew-theme-color-10);
 }
 
 .moment-comments button[aria-disabled="true"] {
@@ -624,10 +617,6 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
   line-height: var(--bew-line-height-caption);
 }
 
-.moment-comments .is-liked {
-  color: var(--bew-theme-color);
-}
-
 .moment-comments__more-replies,
 .moment-comments__status {
   display: flex;
@@ -636,9 +625,9 @@ onBeforeUnmount(() => clearTimeout(pendingDeleteTimer))
   flex-wrap: wrap;
   gap: var(--bew-space-2);
   padding-block: var(--bew-space-2);
-  color: var(--bew-text-2);
-  font-size: var(--bew-font-size-control);
-  line-height: var(--bew-line-height-control);
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
   overflow-wrap: anywhere;
 }
 

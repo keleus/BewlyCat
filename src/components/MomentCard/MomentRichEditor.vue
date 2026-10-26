@@ -19,6 +19,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   commercialAllowed?: boolean
   autofocus?: boolean
+  acceptsFiles?: boolean
 }>(), { maxMentions: 20 })
 const emit = defineEmits<{
   submit: []
@@ -39,6 +40,8 @@ let eventRoot: Node | null = null
 const editor = ref<HTMLElement | null>(null)
 const nodes = ref<RepostNode[]>([])
 const panel = ref<'' | 'emoji' | 'mention' | 'topic' | 'commercial'>('')
+// @/#/商单共用同一选项列表结构，键盘导航与 ARIA 关联规则一致。
+const isChoicePanel = computed(() => panel.value === 'mention' || panel.value === 'topic' || panel.value === 'commercial')
 const query = ref('')
 const choices = ref<RichEditorChoice[]>([])
 const packages = ref<EmotePackage[]>([])
@@ -47,6 +50,7 @@ const loading = ref(false)
 const panelError = ref('')
 const length = computed(() => nodes.value.reduce((sum, node) => sum + node.raw_text.length, 0))
 const remaining = computed(() => props.maxLength - length.value)
+const showCount = computed(() => remaining.value <= 100)
 const emotes = computed(() => packages.value.find(item => item.id === packageId.value)?.items || [])
 let savedRange: Range | null = null
 let completionRange: Range | null = null
@@ -104,8 +108,12 @@ function rememberSelection() {
     savedRange = selected.getRangeAt(0).cloneRange()
 }
 function sync() {
-  if (editor.value)
+  if (editor.value) {
     nodes.value = readRepostEditor(editor.value)
+    // 全选删除后 contenteditable 常残留 <br> 等空白节点，清干净让占位符的 :empty 重新成立。
+    if (!nodes.value.some(node => node.raw_text.trim()))
+      editor.value.innerHTML = ''
+  }
   rememberSelection()
   recordHistory()
 }
@@ -222,6 +230,31 @@ function paste(event: ClipboardEvent) {
     insertText(text)
   updateCompletion()
 }
+// 拖拽图片入框：与粘贴共用 pasteFiles 通道，仅在宿主声明收图时启用。
+const dragging = ref(false)
+let dragTimer: ReturnType<typeof setTimeout> | undefined
+function dragOver(event: DragEvent) {
+  if (!props.acceptsFiles || props.disabled || !event.dataTransfer?.types.includes('Files'))
+    return
+  event.preventDefault()
+  dragging.value = true
+  clearTimeout(dragTimer)
+  dragTimer = setTimeout(() => dragging.value = false, 500)
+}
+function dragLeave() {
+  // 进入子元素会先触发 leave 再触发 over，延迟收起避免高亮闪烁。
+  clearTimeout(dragTimer)
+  dragTimer = setTimeout(() => dragging.value = false, 100)
+}
+function drop(event: DragEvent) {
+  clearTimeout(dragTimer)
+  dragging.value = false
+  if (!props.acceptsFiles || props.disabled)
+    return
+  const files = Array.from(event.dataTransfer?.files || []).filter(file => file.type.startsWith('image/'))
+  if (files.length)
+    emit('pasteFiles', files)
+}
 function beforeInput(event: Event) {
   const input = event as InputEvent
   if (input.inputType === 'historyUndo' || input.inputType === 'historyRedo') {
@@ -245,7 +278,7 @@ function keyboard(event: KeyboardEvent) {
     restoreHistory(event.key.toLowerCase() === 'y' || event.shiftKey ? 1 : -1)
     return
   }
-  if ((panel.value === 'mention' || panel.value === 'topic') && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+  if (isChoicePanel.value && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
     if (['ArrowDown', 'ArrowUp'].includes(event.key) && choices.value.length) {
       event.preventDefault()
       activeChoice.value = (activeChoice.value + (event.key === 'ArrowDown' ? 1 : -1) + choices.value.length) % choices.value.length
@@ -425,13 +458,23 @@ function positionPopup() {
   const below = window.innerHeight - anchor.bottom - margin * 2
   const above = anchor.top - margin * 2
   const openUp = below < (panel.value === 'emoji' ? 320 : 240) && above > below
-  popupStyle.value = {
-    left: `${Math.max(margin, Math.min(anchor.left, window.innerWidth - width - margin))}px`,
-    top: `${Math.max(margin, openUp ? anchor.top - margin : anchor.bottom + margin)}px`,
-    width: `${width}px`,
-    maxHeight: `${Math.max(0, Math.min(320, openUp ? above : below))}px`,
-    transform: openUp ? 'translateY(-100%)' : '',
-  }
+  const left = `${Math.max(margin, Math.min(anchor.left, window.innerWidth - width - margin))}px`
+  // 向上展开用 bottom 定位而非 translateY，把 transform 让位给共享的 bew-pop 缩放动画。
+  popupStyle.value = openUp
+    ? {
+        left,
+        bottom: `${window.innerHeight - anchor.top + margin}px`,
+        width: `${width}px`,
+        maxHeight: `${Math.max(0, Math.min(320, above))}px`,
+        transformOrigin: 'bottom left',
+      }
+    : {
+        left,
+        top: `${Math.max(margin, anchor.bottom + margin)}px`,
+        width: `${width}px`,
+        maxHeight: `${Math.max(0, Math.min(320, below))}px`,
+        transformOrigin: 'top left',
+      }
 }
 function onOutsideInteraction(event: Event) {
   if (!panel.value)
@@ -505,15 +548,15 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 
 <template>
   <div class="moment-rich-editor" @keydown="keyboard">
-    <div class="moment-rich-editor__wrap">
+    <div class="moment-rich-editor__wrap" :class="{ 'is-dropping': dragging }" @dragover="dragOver" @dragleave="dragLeave" @drop.prevent="drop">
       <div
         ref="editor"
         class="moment-rich-editor__input"
         role="textbox"
         aria-multiline="true"
         aria-autocomplete="list"
-        :aria-controls="panel === 'mention' || panel === 'topic' ? popupId : undefined"
-        :aria-activedescendant="(panel === 'mention' || panel === 'topic') && choices.length ? `${popupId}-${activeChoice}` : undefined"
+        :aria-controls="isChoicePanel ? popupId : undefined"
+        :aria-activedescendant="isChoicePanel && choices.length ? `${popupId}-${activeChoice}` : undefined"
         :aria-label="placeholder"
         :data-placeholder="placeholder"
         :contenteditable="!disabled"
@@ -529,96 +572,111 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
         @drop.prevent
       />
       <slot name="attachments" />
-      <!-- 工具栏放在输入框内，与正文共用同一个描边容器 -->
-      <div class="moment-rich-editor__toolbar">
-        <div ref="panelTriggers" class="moment-rich-editor__tools bew-segment-control bew-segment-control--static">
-          <button
-            class="bew-segment-control__item bew-segment-control__item--icon"
-            type="button" :title="t('moments.emoji')" :aria-label="t('moments.emoji')" :aria-expanded="panel === 'emoji'" :data-active="panel === 'emoji'"
-            :disabled="disabled"
-            @mousedown.prevent
-            @click="openPanel('emoji', $event)"
-          >
-            <span i-tabler-mood-smile />
-          </button>
-          <button
-            class="bew-segment-control__item bew-segment-control__item--icon"
-            type="button" :title="t('moment_card.repost_mention')" :aria-label="t('moment_card.repost_mention')" :aria-expanded="panel === 'mention'" :data-active="panel === 'mention'"
-            :disabled="disabled"
-            @mousedown.prevent
-            @click="openPanel('mention', $event)"
-          >
-            <span i-tabler-at />
-          </button>
-          <button
-            class="bew-segment-control__item bew-segment-control__item--icon"
-            type="button" :title="t('moment_card.repost_topic')" :aria-label="t('moment_card.repost_topic')" :aria-expanded="panel === 'topic'" :data-active="panel === 'topic'"
-            :disabled="disabled"
-            @mousedown.prevent
-            @click="openPanel('topic', $event)"
-          >
-            <span i-tabler-hash />
-          </button>
-          <button
-            v-if="commercialAllowed"
-            class="bew-segment-control__item bew-segment-control__item--icon" :data-active="panel === 'commercial'" type="button" :title="t('moment_card.repost_commercial')" :aria-label="t('moment_card.repost_commercial')"
-            :disabled="disabled"
-            @mousedown.prevent
-            @click="openPanel('commercial', $event)"
-          >
-            <span i-tabler-ad />
-          </button>
-          <slot name="tools" />
+      <!-- 工具栏与正文共用浅填充容器；失焦且无面板时收起，聚焦或面板打开时展开 -->
+      <div class="bew-expand-host moment-rich-editor__toolbar-host" :class="{ 'is-entered': panel !== '' }">
+        <div class="moment-rich-editor__toolbar">
+          <div ref="panelTriggers" class="moment-rich-editor__tools bew-segment-control bew-segment-control--static">
+            <button
+              class="bew-segment-control__item bew-segment-control__item--icon"
+              type="button" :title="t('moments.emoji')" :aria-label="t('moments.emoji')" :aria-expanded="panel === 'emoji'" :data-active="panel === 'emoji'"
+              :disabled="disabled"
+              @mousedown.prevent
+              @click="openPanel('emoji', $event)"
+            >
+              <span i-tabler-mood-smile />
+            </button>
+            <button
+              class="bew-segment-control__item bew-segment-control__item--icon"
+              type="button" :title="t('moment_card.repost_mention')" :aria-label="t('moment_card.repost_mention')" :aria-expanded="panel === 'mention'" :data-active="panel === 'mention'"
+              :disabled="disabled"
+              @mousedown.prevent
+              @click="openPanel('mention', $event)"
+            >
+              <span i-tabler-at />
+            </button>
+            <button
+              class="bew-segment-control__item bew-segment-control__item--icon"
+              type="button" :title="t('moment_card.repost_topic')" :aria-label="t('moment_card.repost_topic')" :aria-expanded="panel === 'topic'" :data-active="panel === 'topic'"
+              :disabled="disabled"
+              @mousedown.prevent
+              @click="openPanel('topic', $event)"
+            >
+              <span i-tabler-hash />
+            </button>
+            <button
+              v-if="commercialAllowed"
+              class="bew-segment-control__item bew-segment-control__item--icon" :data-active="panel === 'commercial'" type="button" :title="t('moment_card.repost_commercial')" :aria-label="t('moment_card.repost_commercial')"
+              :aria-expanded="panel === 'commercial'"
+              :disabled="disabled"
+              @mousedown.prevent
+              @click="openPanel('commercial', $event)"
+            >
+              <span i-tabler-ad />
+            </button>
+            <slot name="tools" />
+          </div>
+          <span v-if="showCount" class="moment-rich-editor__count" :class="{ 'is-over': remaining < 0 }" aria-live="polite">{{ remaining }}</span>
+          <div class="moment-rich-editor__actions">
+            <slot name="actions" />
+          </div>
         </div>
-        <span class="moment-rich-editor__count" :class="{ 'is-over': remaining < 0 }" aria-live="polite">{{ remaining }}</span>
-        <slot name="actions" />
       </div>
     </div>
     <Teleport :to="mainAppRef" :disabled="!mainAppRef">
-      <div
-        v-if="panel" :id="popupId" ref="popup" class="moment-rich-editor__panel bew-popover-surface"
-        :class="{ 'moment-rich-editor__panel--emoji': panel === 'emoji' }" :style="popupStyle"
-        @click.stop @keydown.stop="keyboard" @mousedown.prevent
-      >
-        <div v-if="panel === 'emoji' && packages.length" class="moment-rich-editor__packages">
-          <button v-for="pack in packages" :key="pack.id" type="button" :aria-pressed="pack.id === packageId" @click="packageId = pack.id">
-            {{ pack.name }}
-          </button>
-        </div>
-        <div ref="popupContent" class="moment-rich-editor__panel-content">
-          <p v-if="loading" role="status">
-            {{ t('common.loading') }}
-          </p>
-          <p v-else-if="panelError" role="alert">
-            {{ panelError }} <button type="button" @click="loadPanel">
-              {{ t('moment_card.repost_retry') }}
-            </button>
-          </p>
-          <div
-            v-else-if="panel === 'emoji'" class="moment-rich-editor__emotes"
-            :class="{ 'moment-rich-editor__emotes--text': emotes.some(item => item.type === 4) }"
-          >
+      <Transition name="bew-pop">
+        <div
+          v-if="panel" :id="popupId" ref="popup" class="moment-rich-editor__panel bew-popover-surface"
+          style="backdrop-filter: var(--bew-pop-glass, var(--bew-filter-glass-1));"
+          :class="{ 'moment-rich-editor__panel--emoji': panel === 'emoji' }" :style="popupStyle"
+          @click.stop @keydown.stop="keyboard" @mousedown.prevent
+        >
+          <div v-if="panel === 'emoji' && packages.length" class="moment-rich-editor__packages">
             <button
-              v-for="item in emotes" :key="item.id" type="button" :title="item.name" :aria-label="item.name"
-              @click="choose(item)"
+              v-for="pack in packages" :key="pack.id" class="bew-ghost-button" type="button" :aria-pressed="pack.id === packageId"
+              @click="packageId = pack.id"
             >
-              <span v-if="item.type === 4">{{ item.name }}</span>
-              <img v-else :src="item.image" :alt="item.name" loading="lazy">
+              {{ pack.name }}
             </button>
           </div>
-          <div v-else class="moment-rich-editor__choices" role="listbox" :aria-label="t(panel === 'mention' ? 'moment_card.repost_mention' : panel === 'topic' ? 'moment_card.repost_topic' : 'moment_card.repost_commercial')">
-            <button
-              v-for="(item, index) in choices" :id="`${popupId}-${index}`" :key="`${item.id}-${index}`" type="button" role="option"
-              :aria-selected="activeChoice === index" @mouseenter="activeChoice = index" @click="choose(item)"
-            >
-              <img v-if="item.image" :src="item.image" alt="" loading="lazy">{{ item.name }}
-            </button>
-            <p v-if="!choices.length">
-              {{ t('moment_card.repost_no_results') }}
+          <div ref="popupContent" class="moment-rich-editor__panel-content">
+            <p v-if="loading" role="status">
+              <span i-svg-spinners:ring-resize aria-hidden="true" />
+              {{ t('common.loading') }}
             </p>
+            <p v-else-if="panelError" role="alert">
+              {{ panelError }}
+              <button class="bew-ghost-button" type="button" @click="loadPanel">
+                {{ t('moment_card.repost_retry') }}
+              </button>
+            </p>
+            <div
+              v-else-if="panel === 'emoji'" class="moment-rich-editor__emotes"
+              :class="{ 'moment-rich-editor__emotes--text': emotes.some(item => item.type === 4) }"
+            >
+              <button
+                v-for="item in emotes" :key="item.id" class="bew-ghost-button" type="button" :title="item.name"
+                :aria-label="item.name"
+                @click="choose(item)"
+              >
+                <span v-if="item.type === 4">{{ item.name }}</span>
+                <img v-else :src="item.image" :alt="item.name" loading="lazy">
+              </button>
+            </div>
+            <div v-else class="moment-rich-editor__choices" role="listbox" :aria-label="t(panel === 'mention' ? 'moment_card.repost_mention' : panel === 'topic' ? 'moment_card.repost_topic' : 'moment_card.repost_commercial')">
+              <button
+                v-for="(item, index) in choices" :id="`${popupId}-${index}`" :key="`${item.id}-${index}`" class="bew-ghost-button" type="button"
+                role="option"
+                :aria-selected="activeChoice === index" @mouseenter="activeChoice = index" @click="choose(item)"
+              >
+                <img v-if="item.image" :src="item.image" alt="" loading="lazy">{{ item.name }}
+              </button>
+              <p v-if="!choices.length">
+                {{ t('moment_card.repost_no_results') }}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      </Transition>
     </Teleport>
   </div>
 </template>
@@ -630,30 +688,6 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   min-width: 0;
 }
 .moment-rich-editor__panel {
-  button:not(.bew-segment-control__item) {
-    font: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--bew-space-1);
-    min-height: 32px;
-    min-width: 32px;
-    padding: var(--bew-space-1) var(--bew-space-2);
-    border: 0;
-    border-radius: var(--bew-interactive-radius);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-
-    &:hover,
-    &[aria-selected="true"],
-    &[aria-pressed="true"] {
-      background: var(--bew-fill-2);
-      color: var(--bew-theme-color);
-    }
-    &:active {
-      background: var(--bew-fill-3);
-    }
-  }
   p {
     margin: 0;
   }
@@ -663,15 +697,27 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   gap: var(--bew-space-2);
   // 底部工具组自带 4px 内边距，收窄底边让图标与四周留白视觉一致。
   padding: var(--bew-space-3) var(--bew-space-3) var(--bew-space-2);
-  border: 1px solid var(--bew-border-color);
   border-radius: var(--bew-interactive-radius);
-  background: transparent;
+  background: var(--bew-fill-1);
   cursor: text;
-  transition: border-color var(--bew-duration-fast);
+  // 输入框本体不画焦点轮廓，由容器主题色环提供整框的聚焦指示；聚焦时底色透明，露出卡片表面。
+  transition:
+    box-shadow var(--bew-duration-fast) var(--bew-ease-standard),
+    background-color var(--bew-duration-fast) var(--bew-ease-standard);
 
   &:focus-within {
-    border-color: var(--bew-theme-color);
+    background: transparent;
+    box-shadow: 0 0 0 2px var(--bew-theme-color-40);
   }
+}
+// 聚焦时工具栏自动展开；表情等面板打开时由 is-entered 保持展开（面板可夺走焦点但不应收起工具栏）。
+.moment-rich-editor__wrap:focus-within .moment-rich-editor__toolbar-host {
+  grid-template-rows: 1fr;
+}
+// 拖拽图片悬停时复用聚焦色环作为可投放反馈。
+.moment-rich-editor__wrap.is-dropping {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--bew-theme-color-40);
 }
 .moment-rich-editor__input {
   min-height: var(--moment-rich-editor-min-height, 64px);
@@ -722,18 +768,38 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   cursor: default;
 }
 .moment-rich-editor__tools {
+  // 图标按钮缩小后适当放宽间距，避免挤在一起（默认 4px）。
+  --bew-control-gap: 6px;
   // 抵消工具组内边距，让图标的悬停底色与正文左缘对齐。
   margin-inline-start: calc(-1 * var(--bew-control-padding));
 }
+// 只降图标按钮一号；开关等文字项保持原高度，避免 hover 底色被压扁。
+.moment-rich-editor__tools :deep(.bew-segment-control__item--icon) {
+  width: 20px;
+  height: 20px;
+}
 .moment-rich-editor__tools :deep(span) {
-  font-size: var(--bew-icon-size-md);
+  font-size: var(--bew-icon-size-sm);
 }
 .moment-rich-editor__count {
-  margin-left: auto;
   color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+}
+// 发送/取消等操作恒定居于工具行右下角。
+.moment-rich-editor__actions {
+  margin-left: auto;
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--bew-space-2);
+}
+// 提交中的加载环以按钮为定位父级。
+.moment-rich-editor__actions :deep(.b-button) {
+  position: relative;
 }
 .moment-rich-editor__count.is-over {
-  color: var(--bew-theme-color);
+  color: var(--bew-error-color);
 }
 .moment-rich-editor__panel {
   position: fixed;
@@ -757,9 +823,23 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
+// 加载/错误/空态：居中、次要色、caption 字号；错误文案与重试按钮纵向堆叠。
+.moment-rich-editor__panel-content > p,
+.moment-rich-editor__choices p {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--bew-space-1);
+  padding: var(--bew-space-3) var(--bew-space-2);
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  line-height: var(--bew-line-height-caption);
+  text-align: center;
+}
 .moment-rich-editor__packages {
   display: flex;
   flex: none;
+  gap: var(--bew-space-1);
   min-width: 0;
   overflow-x: auto;
   overscroll-behavior: contain;
@@ -769,6 +849,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 }
 .moment-rich-editor__emotes {
   display: grid;
+  gap: var(--bew-space-1);
   align-content: start;
   grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
 }
@@ -787,6 +868,7 @@ defineExpose({ nodes, remaining, focus, sync, setNodes, closePanel })
 }
 .moment-rich-editor__choices {
   display: grid;
+  gap: var(--bew-space-1);
 }
 .moment-rich-editor__choices button {
   justify-content: flex-start;

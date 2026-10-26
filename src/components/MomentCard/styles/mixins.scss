@@ -51,7 +51,7 @@
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: color 0.16s ease;
+  transition: color var(--bew-duration-fast) var(--bew-ease-standard);
 
   &:hover {
     color: var(--bew-theme-color);

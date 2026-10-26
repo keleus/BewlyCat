@@ -1086,10 +1086,13 @@ function hideIframeLoading() {
 }
 
 function notifyLayoutReady() {
+  // 解除遮罩必须无条件执行：split 被原站重排拆掉后 tryApply 可能重新盖罩，
+  // 若只靠首次调用揭罩，重现的遮罩将永远无法消失（含 10s 兜底路径）。
+  // 通知父页则保持一次性。
+  hideIframeLoading()
   if (layoutReadyNotified)
     return
   layoutReadyNotified = true
-  hideIframeLoading()
   try {
     window.parent.postMessage({ type: LAYOUT_READY_MSG, source: 'bewly-opus' }, '*')
   }
@@ -2442,7 +2445,9 @@ function tryApply() {
     return
   }
 
-  showIframeLoading()
+  // 首次就绪后的拆建静默重排，不再重新盖全屏遮罩，避免"露几帧又被盖住"的闪烁
+  if (!layoutReadyNotified)
+    showIframeLoading()
   applySplitLayout(root)
 }
 

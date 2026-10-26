@@ -21,7 +21,10 @@ const props = defineProps<{
   submit: (submission: CommentSubmission) => Promise<void>
   upload: (file: File) => Promise<CommentPicture>
 }>()
-const emit = defineEmits<{ cancel: [] }>()
+const emit = defineEmits<{
+  cancel: []
+  openImagePreview: [urls: string[], index: number, trigger: HTMLElement | null]
+}>()
 const { t } = useI18n()
 const account = useTopBarStore()
 const editor = ref<InstanceType<typeof MomentRichEditor> | null>(null)
@@ -67,6 +70,9 @@ function removeImage(id: number) {
   if (image)
     URL.revokeObjectURL(image.preview)
   images.value = images.value.filter(item => item.id !== id)
+}
+function previewImage(index: number, event: Event) {
+  emit('openImagePreview', images.value.map(image => image.preview), index, event.currentTarget instanceof HTMLElement ? event.currentTarget : null)
 }
 
 async function send() {
@@ -158,19 +164,32 @@ onBeforeUnmount(() => {
         :max-length="MAX_LENGTH"
         :disabled="submitting || disabled"
         :autofocus="autofocus"
+        accepts-files
         @submit="send"
         @paste-files="addImages"
       >
         <template #attachments>
           <ul v-if="images.length" class="moment-comment-composer__images">
-            <li v-for="(image, index) in images" :key="image.id">
-              <img :src="image.preview" :alt="t('moment_card.comment_image', { index: index + 1 })">
+            <li
+              v-for="(image, index) in images"
+              :key="image.id"
+              class="moment-comment-composer__item"
+              role="button"
+              tabindex="0"
+              :aria-label="t('moment_card.comment_image', { index: index + 1 })"
+              :title="t('moment_card.comment_image', { index: index + 1 })"
+              @click="previewImage(index, $event)"
+              @keydown.enter.prevent="previewImage(index, $event)"
+              @keydown.space.prevent="previewImage(index, $event)"
+            >
+              <img :src="image.preview" alt="">
               <button
                 type="button"
+                class="moment-comment-composer__remove"
                 :disabled="submitting"
                 :aria-label="t('moment_card.comment_image_remove', { index: index + 1 })"
                 :title="t('moment_card.comment_image_remove', { index: index + 1 })"
-                @click="removeImage(image.id)"
+                @click.stop="removeImage(image.id)"
               >
                 <span i-tabler-x aria-hidden="true" />
               </button>
@@ -191,33 +210,35 @@ onBeforeUnmount(() => {
           </button>
           <button
             v-if="!replyName && canSyncToDynamic"
-            class="bew-segment-control__item bew-segment-control__item--icon"
+            class="bew-segment-control__item moment-comment-composer__sync"
             type="button"
-            :title="t('moment_card.comment_sync_repost')"
-            :aria-label="t('moment_card.comment_sync_repost')"
-            :aria-pressed="syncToDynamic"
-            :data-active="syncToDynamic"
+            role="switch"
+            :aria-checked="syncToDynamic"
             :disabled="submitting || disabled"
             @mousedown.prevent
             @click="syncToDynamic = !syncToDynamic"
           >
-            <span i-tabler-share-3 />
+            <span class="moment-comment-composer__sync-track" aria-hidden="true">
+              <span class="moment-comment-composer__sync-thumb" />
+            </span>
+            {{ t('moment_card.comment_sync_repost') }}
           </button>
         </template>
         <template #actions>
           <Button v-if="replyName" size="small" :disabled="submitting" @click="emit('cancel')">
             {{ t('common.operation.cancel') }}
           </Button>
+          <span class="moment-comment-composer__shortcut">{{ t('moment_card.comment_send_keys') }}</span>
           <Button
             type="primary"
             size="small"
             :disabled="disabled || empty || remaining < 0"
-            :aria-disabled="submitting"
+            :aria-disabled="submitting || disabled || empty || remaining < 0"
             :aria-busy="submitting"
             :title="t('moment_card.comment_send_shortcut')"
             @click="send"
           >
-            <span v-if="submitting" i-svg-spinners:ring-resize aria-hidden="true" />{{ t(replyName ? 'moment_card.comment_reply' : 'moment_card.comment_send') }}
+            <span v-if="submitting" class="bew-submit-spinner" aria-hidden="true" /><span class="bew-submit-label" :class="{ 'is-hidden': submitting }">{{ t(replyName ? 'moment_card.comment_reply' : 'moment_card.comment_send') }}</span>
           </Button>
         </template>
       </MomentRichEditor>
@@ -249,7 +270,7 @@ onBeforeUnmount(() => {
   --moment-rich-editor-min-height: 48px;
 
   &.is-reply {
-    --moment-rich-editor-min-height: 24px;
+    --moment-rich-editor-min-height: 32px;
   }
 }
 
@@ -278,7 +299,7 @@ onBeforeUnmount(() => {
 }
 
 .moment-comment-composer__error {
-  color: var(--bew-theme-color);
+  color: var(--bew-error-color);
 }
 
 .moment-comment-composer__images {
@@ -305,8 +326,18 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
-.moment-comment-composer__images button {
+.moment-comment-composer__item {
+  cursor: zoom-in;
+
+  &:focus-visible {
+    outline: 2px solid var(--bew-theme-color);
+    outline-offset: -2px;
+  }
+}
+
+.moment-comment-composer__remove {
   position: absolute;
+  z-index: 1;
   top: var(--bew-space-1);
   right: var(--bew-space-1);
   display: grid;
@@ -318,7 +349,7 @@ onBeforeUnmount(() => {
   border-radius: var(--bew-radius-full);
   color: #fff;
   // 与动态图片画廊的媒体浮层按钮一致，保证在任意图片上都可辨认。
-  background: rgb(15 20 25 / 72%);
+  background: var(--bew-media-button-bg);
   font-size: var(--bew-icon-size-sm);
   cursor: pointer;
 
@@ -330,6 +361,53 @@ onBeforeUnmount(() => {
   &:focus-visible {
     outline: 2px solid var(--bew-theme-color);
     outline-offset: 1px;
+  }
+}
+
+.moment-comment-composer__shortcut {
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  white-space: nowrap;
+}
+
+.moment-comment-composer__sync {
+  font-size: var(--bew-font-size-caption);
+}
+
+.moment-comment-composer__sync-track {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 28px;
+  height: 16px;
+  border-radius: var(--bew-radius-full);
+  background: var(--bew-switch-bg);
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
+.moment-comment-composer__sync-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
+.moment-comment-composer__sync[aria-checked="true"] .moment-comment-composer__sync-track {
+  background: var(--bew-theme-color);
+}
+
+.moment-comment-composer__sync[aria-checked="true"] .moment-comment-composer__sync-thumb {
+  transform: translateX(12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moment-comment-composer__sync-track,
+  .moment-comment-composer__sync-thumb {
+    transition: none;
   }
 }
 

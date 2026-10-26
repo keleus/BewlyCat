@@ -102,7 +102,7 @@ const reservationActionLabel = computed(() =>
   font-size: var(--bew-font-size-body);
   line-height: var(--bew-line-height-body);
   text-decoration: none;
-  transition: background-color 0.16s ease;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
 }
 
 .moment-card__additional:hover {

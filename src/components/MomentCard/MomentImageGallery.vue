@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEventListener, useResizeObserver } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import {
   computeMultiImageGalleryHeight,
@@ -31,6 +32,8 @@ const emit = defineEmits<{
   coverLoad: [event: Event]
   preview: [urls: string[], index: number, trigger: HTMLElement | null]
 }>()
+
+const { t } = useI18n()
 
 const rootRef = ref<HTMLElement | null>(null)
 const trackRef = ref<HTMLElement | null>(null)
@@ -288,7 +291,7 @@ onBeforeUnmount(() => {
       ref="trackRef"
       class="moment-image-gallery__track"
       role="region"
-      :aria-label="`${altPrefix}，可横向滑动查看`"
+      :aria-label="t('moment_card.gallery_region', { images: altPrefix })"
     >
       <button
         v-for="(image, imageIndex) in images"
@@ -299,7 +302,7 @@ onBeforeUnmount(() => {
         :class="{
           'moment-image-gallery__item--unknown-ratio': !getImageRatio(imageIndex),
         }"
-        :aria-label="`查看 ${altPrefix} ${imageIndex + 1}`"
+        :aria-label="t('moment_card.view_image', { images: altPrefix, index: imageIndex + 1 })"
         :style="getImageStyle(imageIndex)"
         draggable="false"
         @click="handleImageClick($event, imageIndex)"
@@ -324,7 +327,7 @@ onBeforeUnmount(() => {
       :class="{ 'is-enabled': canScrollLeft }"
       :tabindex="canScrollLeft ? 0 : -1"
       :aria-hidden="!canScrollLeft"
-      aria-label="上一张图片"
+      :aria-label="t('moments.previous_image')"
       @click="handleNavClick($event, -1)"
     >
       <span i-mingcute:left-line aria-hidden="true" />
@@ -335,7 +338,7 @@ onBeforeUnmount(() => {
       :class="{ 'is-enabled': canScrollRight }"
       :tabindex="canScrollRight ? 0 : -1"
       :aria-hidden="!canScrollRight"
-      aria-label="下一张图片"
+      :aria-label="t('moments.next_image')"
       @click="handleNavClick($event, 1)"
     >
       <span i-mingcute:right-line aria-hidden="true" />
@@ -439,7 +442,7 @@ onBeforeUnmount(() => {
   border-radius: var(--bew-radius-full);
   place-items: center;
   color: #fff;
-  background: rgb(15 20 25 / 72%);
+  background: var(--bew-media-button-bg);
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 12%),
     0 4px 12px rgb(0 0 0 / 28%);
@@ -477,7 +480,7 @@ onBeforeUnmount(() => {
 }
 
 .moment-image-gallery__nav:hover {
-  background: rgb(15 20 25 / 88%);
+  background: var(--bew-media-button-bg-hover);
 }
 
 .moment-image-gallery__nav:active {

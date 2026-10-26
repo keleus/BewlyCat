@@ -367,6 +367,33 @@ html.dark.bewly-design {
   background: var(--bew-popover-wallpaper-background);
 }
 
+// 锚定浮层（三点菜单、编辑器面板等）共享的进出动画：淡入 + 缩放 + 毛玻璃同步插值。
+// 用独立的 scale 属性而非 transform，避免覆盖浮层自身的定位变换（如 translateY）。
+// Chromium 在 opacity/transform 动画期间会丢弃 backdrop-filter（crbug.com/40877283），
+// 故玻璃与缩放同步插值到恒等滤镜，避免动画结束才出现毛玻璃。
+.bew-pop-enter-active,
+.bew-pop-leave-active {
+  transition:
+    opacity var(--bew-duration-fast) var(--bew-ease-standard),
+    scale var(--bew-duration-fast) var(--bew-ease-standard),
+    backdrop-filter var(--bew-duration-fast) var(--bew-ease-standard);
+}
+
+.bew-pop-enter-from,
+.bew-pop-leave-to {
+  --bew-pop-glass: blur(0px) saturate(100%);
+
+  opacity: 0;
+  scale: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bew-pop-enter-active,
+  .bew-pop-leave-active {
+    transition: none;
+  }
+}
+
 // 页面控件只在自身范围内采样背景；不再依赖工具栏背后的一整块底板。
 .bew-toolbar-controls .b-input,
 .bew-toolbar-controls .select-trigger,
@@ -480,6 +507,112 @@ html.dark.bewly-design {
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+}
+
+// 高度自适应展开/收起：grid 轨道 0fr→1fr 过渡，无需 JS 测量内容高度。
+// 挂载后先停在 0fr，由调用方在内容就绪后添加 .is-entered 播放展开动画。
+.bew-expand-host {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--bew-duration-normal) var(--bew-ease-standard);
+
+  > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.bew-expand-host.is-entered {
+  grid-template-rows: 1fr;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bew-expand-host {
+    transition: none;
+  }
+}
+
+// 浮层/面板内的轻量幽灵按钮：透明底，悬停浅填充并染主题色，按下加深，禁用半透明。
+// 工具图标仍用 bew-segment-control__item，主操作仍用 Button 组件，三者构成统一按钮词汇。
+.bew-ghost-button {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bew-space-1);
+  min-height: 32px;
+  min-width: 32px;
+  padding: var(--bew-space-1) var(--bew-space-2);
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover,
+  &[aria-selected="true"],
+  &[aria-pressed="true"] {
+    background: var(--bew-fill-2);
+  }
+
+  &:active {
+    background: var(--bew-fill-3);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// 主题色悬停变体：底色与文字同以主题色系共变（避免灰底配主题色文字的可读性问题），
+// 用于卡片表面的轻按钮（评论区操作等）；按下态仅保留主题色文字、不加底色。
+.bew-ghost-button--theme {
+  transition:
+    background-color var(--bew-duration-fast) var(--bew-ease-standard),
+    color var(--bew-duration-fast) var(--bew-ease-standard);
+
+  &:hover,
+  &:active {
+    color: var(--bew-theme-color);
+    background: var(--bew-theme-color-10);
+  }
+
+  &[aria-pressed="true"] {
+    color: var(--bew-theme-color);
+    background: transparent;
+  }
+}
+
+// 提交中的加载环：绝对居中盖在按钮上、文字原位隐藏（visibility 保留宽度），
+// 按钮常态无多余留白、提交时尺寸不变。宿主按钮需 position: relative。
+.bew-submit-spinner {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: bew-submit-spin 0.7s linear infinite;
+}
+
+.bew-submit-label.is-hidden {
+  visibility: hidden;
+}
+
+@keyframes bew-submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bew-submit-spinner {
+    animation-duration: 1.4s;
   }
 }
 

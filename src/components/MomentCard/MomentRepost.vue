@@ -155,23 +155,25 @@ onBeforeUnmount(() => {
         @commercial="choice => commercial = choice"
       >
         <template #attachments>
-          <button v-if="commercial" class="moment-repost__selection" type="button" :disabled="submitting" @click="commercial = undefined">
+          <button v-if="commercial" class="moment-repost__selection bew-ghost-button" type="button" :disabled="submitting" @click="commercial = undefined">
             {{ commercial.name }} <span i-tabler-x aria-hidden="true" />
           </button>
         </template>
         <template #actions>
+          <span class="moment-repost__shortcut">{{ t('moment_card.comment_send_keys') }}</span>
           <Button
-            class="moment-repost__submit" type="primary" size="small" :disabled="initializing || !initialized || remaining < 0" :aria-disabled="submitting"
+            class="moment-repost__submit" type="primary" size="small" :title="t('moment_card.comment_send_shortcut')" :disabled="initializing || !initialized || remaining < 0"
+            :aria-disabled="submitting || initializing || !initialized || remaining < 0"
             :aria-busy="submitting"
             @click="submit"
           >
-            <span v-if="submitting" i-svg-spinners:ring-resize aria-hidden="true" />{{ t('moment_card.repost') }}
+            <span v-if="submitting" class="bew-submit-spinner" aria-hidden="true" /><span class="bew-submit-label" :class="{ 'is-hidden': submitting }">{{ t('moment_card.repost') }}</span>
           </Button>
         </template>
       </MomentRichEditor>
       <p v-if="error" class="moment-repost__error" role="alert">
         {{ error }}
-        <button v-if="!initialized" type="button" @click="initialize">
+        <button v-if="!initialized" class="bew-ghost-button" type="button" @click="initialize">
           {{ t('moment_card.repost_retry') }}
         </button>
         <a :href="`https://t.bilibili.com/${momentId}?tab=1`" target="_blank" rel="noopener noreferrer">{{ t('moments.new_tab') }}</a>
@@ -182,32 +184,6 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 .moment-repost {
-  button:not(.bew-segment-control__item):not(.b-button) {
-    font: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--bew-space-1);
-    min-height: 32px;
-    min-width: 32px;
-    padding: var(--bew-space-1) var(--bew-space-2);
-    border: 0;
-    border-radius: var(--bew-interactive-radius);
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--bew-fill-2);
-      color: var(--bew-theme-color);
-    }
-    &:active {
-      background: var(--bew-fill-3);
-    }
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-  }
   p {
     margin: 0;
   }
@@ -238,10 +214,15 @@ onBeforeUnmount(() => {
 .moment-repost__selection {
   justify-self: start;
 }
+.moment-repost__shortcut {
+  color: var(--bew-text-3);
+  font-size: var(--bew-font-size-caption);
+  white-space: nowrap;
+}
 .moment-repost__error {
   display: grid;
   gap: var(--bew-space-1);
-  color: var(--bew-theme-color);
+  color: var(--bew-error-color);
 }
 @media (max-width: 480px) {
   .moment-repost__avatar {

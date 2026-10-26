@@ -185,8 +185,8 @@ function handleSingleKeydown(event: KeyboardEvent) {
   max-width: 560px;
 }
 
-.moment-card__gallery > img:focus-visible,
-.moment-card__forward-gallery > img:focus-visible {
+.moment-card__gallery:focus-visible,
+.moment-card__forward-gallery:focus-visible {
   @include mixins.focus-ring(-2px);
 }
 </style>
