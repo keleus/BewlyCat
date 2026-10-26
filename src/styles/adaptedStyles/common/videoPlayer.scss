@@ -269,3 +269,39 @@
   }
   // #endregion
 }
+
+// B 站点赞、长按三连的动效由 Canvas 绘制，颜色写死在 SVGA 资源里，无法直接用 CSS 变量改色。
+// 这里作用由主题色推导出的滤镜，让蓝色点赞/三连画布与插件主题色保持一致：
+// 长按三连时点赞、投币、收藏三个气泡烟花（like_base / coinBase / favBase）都用 .svga-center，
+// 三连完成后的粒子烟花用 .svga-fireworks，它们都是蓝色系，统一跟随主题色；
+// 粉色点赞心等 .svga-top 动效保持原色。普通视频、番剧、课程等播放页共用。
+.bewly-design:not(.bewly-video-dark-only) {
+  body canvas.ring-progress,
+  body .svga-container.svga-fireworks,
+  body .svga-container.svga-center {
+    filter: var(--bew-action-animation-filter, none) !important;
+  }
+
+  // UP 主在视频内配置的三连引导（danmaku-x guide）：按住时的圈动画、点击后的 Lottie 动效
+  // 也以蓝色为主，统一套用同一个主题色滤镜。
+  body .bili-danmaku-x-guide-cyc > span,
+  body .bili-danmaku-x-guide-animate > span {
+    filter: var(--bew-action-animation-filter, none) !important;
+  }
+
+  // 引导里的「关注」「充电」按钮和点亮后的三连图标使用固定品牌蓝，换成主题色；
+  // 已关注状态的灰色按钮保持原样。
+  body .bili-danmaku-x-guide:not(.bili-danmaku-x-guide-followed) .bili-danmaku-x-guide-follow,
+  body .bili-danmaku-x-guide-electric {
+    background: var(--bew-theme-color, #00aeec) !important;
+  }
+
+  body .bili-danmaku-x-guide:not(.bili-danmaku-x-guide-followed) .bili-danmaku-x-guide-follow:hover,
+  body .bili-danmaku-x-guide-electric:hover {
+    background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 82%, white) !important;
+  }
+
+  body .bili-danmaku-x-guide-three > span.bili-danmaku-x-active svg {
+    fill: var(--bew-theme-color, #00aeec) !important;
+  }
+}

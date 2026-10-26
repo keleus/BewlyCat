@@ -1553,8 +1553,26 @@ function injectLayoutStyle() {
       border: 0 !important;
     }
 
-    /* 三连引导（danmaku-x guide）的按钮与动效配色统一放在 videoPage.scss 的 body 级规则里，
-       普通模式与宽屏模式共用，这里不再重复。 */
+    /* 宽屏不依赖 bewly-design，也会在番剧/课程页启用，三连引导的主题色在这里单独兜底 */
+    body.${BODY_CLASS} .bili-danmaku-x-guide:not(.bili-danmaku-x-guide-followed) .bili-danmaku-x-guide-follow,
+    body.${BODY_CLASS} .bili-danmaku-x-guide-electric {
+      background: var(--bew-theme-color, #00aeec) !important;
+    }
+
+    body.${BODY_CLASS} .bili-danmaku-x-guide:not(.bili-danmaku-x-guide-followed) .bili-danmaku-x-guide-follow:hover,
+    body.${BODY_CLASS} .bili-danmaku-x-guide-electric:hover {
+      background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 82%, white) !important;
+    }
+
+    body.${BODY_CLASS} .bili-danmaku-x-guide-three > span.bili-danmaku-x-active svg {
+      fill: var(--bew-theme-color, #00aeec) !important;
+    }
+
+    body.${BODY_CLASS} .bili-danmaku-x-guide-cyc > span,
+    body.${BODY_CLASS} .bili-danmaku-x-guide-animate > span {
+      filter: var(--bew-action-animation-filter, none) !important;
+    }
+
     #${ROOT_ID} #bilibili-player-wrap > *,
     #${ROOT_ID} .player-wrap > *,
     #${ROOT_ID} .bpx-player-container > * {

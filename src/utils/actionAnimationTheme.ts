@@ -1,3 +1,5 @@
+import { originalSettings } from '~/logic'
+
 /**
  * B 站的点赞、长按三连等动效由 Canvas 绘制，颜色固化在 SVGA 资源里，无法通过 CSS 变量直接改色。
  * 这里按主题色与 B 站品牌蓝的色相/饱和度/明度差生成滤镜，交给样式作用到动效画布上。
@@ -82,10 +84,19 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
 
-/** 生成让 B 站动效画布跟随主题色的 CSS 滤镜；主题色为默认品牌蓝时返回 `none`。 */
+function isSameRgbColor(a: RgbColor, b: RgbColor): boolean {
+  return a.r === b.r && a.g === b.g && a.b === b.b
+}
+
+/** 生成让 B 站动效画布跟随主题色的 CSS 滤镜；主题色为插件默认主题色时返回 `none`。 */
 export function createActionAnimationFilter(themeColor: string): string {
-  const rgb = resolveCssColor(themeColor || '#00a1d6')
+  const rgb = resolveCssColor(themeColor || originalSettings.themeColor)
   if (!rgb)
+    return 'none'
+
+  // 默认主题色 #00a1d6 与 SVGA 资源的 #00aeec 色相只差约 1°，但明度更低，按差值计算会让原生动效整体变暗，这里保持原样
+  const defaultRgb = resolveCssColor(originalSettings.themeColor)
+  if (defaultRgb && isSameRgbColor(rgb, defaultRgb))
     return 'none'
 
   const { hue, saturation, lightness } = rgbToHsl(rgb)
