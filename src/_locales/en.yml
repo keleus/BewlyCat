@@ -37,6 +37,7 @@ common:
     delete: Delete
     confirm: Confirm
     cancel: Cancel
+    close: Close
     enable: Enable
     disable: Disable
     refresh: Refresh

@@ -37,6 +37,7 @@ common:
     delete: 刪除
     confirm: 確定
     cancel: 取消
+    close: 關閉
     enable: 啟用
     disable: 停用
     refresh: 重新整理

@@ -99,7 +99,7 @@ function handleConfirm() {
           </Button>
         </template>
         <Button v-else type="primary" :disabled="isAddingOpenTabsToWatchLater" @click="dialogRef?.close()">
-          {{ $t(isAddingOpenTabsToWatchLater ? 'watch_later.adding_open_tabs' : 'common.close') }}
+          {{ $t(isAddingOpenTabsToWatchLater ? 'watch_later.adding_open_tabs' : 'common.operation.close') }}
         </Button>
       </div>
     </div>
