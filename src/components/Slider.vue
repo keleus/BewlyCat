@@ -3,10 +3,15 @@ interface Props {
   min?: number
   max?: number
   label: string
+  /** 开启后数值部分变为可输入的数字框，label 作为数值单位显示 */
+  editable?: boolean
+  /** 滑块与数字框的无障碍名称 */
+  ariaLabel?: string
 }
 const props = withDefaults(defineProps<Props>(), {
   min: 0,
   max: 100,
+  editable: false,
 })
 
 const modelValue = defineModel<number>({ required: true })
@@ -18,6 +23,28 @@ function handleInput(event: Event) {
   const value = (event.target as HTMLInputElement).valueAsNumber
   if (Number.isFinite(value))
     modelValue.value = value
+}
+
+// 输入途中只同步范围内的整数：越界中间值若写入设置，会被存储层钳制后
+// 改写输入框，导致无法继续键入（例如从 480 输入 560 时先输入的 5）。
+function handleEditedInput(event: Event) {
+  const value = (event.target as HTMLInputElement).valueAsNumber
+  if (Number.isInteger(value) && value >= props.min && value <= props.max)
+    modelValue.value = value
+}
+
+// 手动输入在回车/失焦时最终提交：取整、钳制并修正临时输入。
+function commitEditedValue(event: Event) {
+  const input = event.target as HTMLInputElement
+  const value = input.valueAsNumber
+  const next = Number.isFinite(value)
+    ? Math.min(props.max, Math.max(props.min, Math.round(value)))
+    : modelValue.value
+
+  if (Number.isFinite(value))
+    modelValue.value = next
+  // 即使数值未变化也要同步显示，清掉前导零、越界值等临时输入。
+  input.value = String(next)
 }
 
 function updateBackground() {
@@ -35,19 +62,39 @@ onMounted(updateBackground)
 </script>
 
 <template>
-  <label cursor-pointer flex items-center gap-3 w="$b-slider-width">
+  <component
+    :is="editable ? 'div' : 'label'"
+    class="b-slider"
+    :class="{ 'cursor-pointer': !editable }"
+    flex items-center gap-3 w="$b-slider-width"
+  >
     <input
       ref="rangeRef"
       type="range" :value="modelValue" :min="min" :max="max" class="slider"
       appearance-none outline-none w="$b-slider-width" h="$b-slider-height"
+      :aria-label="ariaLabel"
       @input="handleInput"
     >
-    <span class="slider-label">{{ label }}</span>
-  </label>
+    <span v-if="editable" class="slider-editor">
+      <input
+        type="number"
+        class="slider-input"
+        :value="modelValue"
+        :min="min"
+        :max="max"
+        :aria-label="ariaLabel"
+        @input="handleEditedInput"
+        @change="commitEditedValue"
+        @keydown.enter.prevent="commitEditedValue"
+      >
+      <span class="slider-unit">{{ label }}</span>
+    </span>
+    <span v-else class="slider-label">{{ label }}</span>
+  </component>
 </template>
 
 <style lang="scss" scoped>
-label {
+.b-slider {
   --b-border-width: 2px;
   --b-slider-height: 10px;
   --b-slider-width: 100%;
@@ -62,6 +109,46 @@ label {
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.slider-editor {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--bew-space-1);
+}
+
+.slider-input {
+  width: 4.5em;
+  height: 28px;
+  padding: 0 var(--bew-space-2);
+  color: var(--bew-text-1);
+  font-size: var(--bew-font-size-control);
+  line-height: var(--bew-line-height-control);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  background: var(--bew-fill-1);
+  border: 0;
+  border-radius: var(--bew-interactive-radius);
+  outline: none;
+  appearance: textfield;
+  cursor: text;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+
+  &:focus {
+    outline: 2px solid var(--bew-theme-color);
+    outline-offset: var(--bew-space-0-5);
+  }
+}
+
+.slider-unit {
+  color: var(--bew-text-2);
+  font-size: var(--bew-font-size-control);
 }
 
 input[type="range"] {
