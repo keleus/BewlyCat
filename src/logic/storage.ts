@@ -297,7 +297,6 @@ export type AmbilightPreset = 'soft' | 'cinema' | 'vivid'
 
 export interface Settings {
   ambilightEnabled: boolean
-  ambilightEnableFullscreen: boolean
   ambilightPreset: AmbilightPreset
   ambilightStrength: number
   ambilightSpread: number
@@ -668,7 +667,6 @@ export const originalLocalSettings: LocalSettings = {
 
 export const originalSettings: Settings = {
   ambilightEnabled: false,
-  ambilightEnableFullscreen: true,
   ambilightPreset: 'cinema',
   ambilightStrength: 80,
   ambilightSpread: 100,
@@ -1189,8 +1187,8 @@ export const settings = useSettingsStorage(originalSettings, {
 
     if (typeof record.ambilightEnabled !== 'boolean')
       record.ambilightEnabled = false
-    if (typeof record.ambilightEnableFullscreen !== 'boolean')
-      record.ambilightEnableFullscreen = true
+    // 环境光固定不在全屏、网页全屏与 Bewly 宽屏下运行，旧的全屏开关不再沿用。
+    Reflect.deleteProperty(record, 'ambilightEnableFullscreen')
 
     const validAmbilightPresets: AmbilightPreset[] = ['soft', 'cinema', 'vivid']
     if (!validAmbilightPresets.includes(record.ambilightPreset))

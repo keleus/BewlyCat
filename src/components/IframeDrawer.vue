@@ -58,7 +58,7 @@ const iframeContainerClasses = computed(() => {
     const topPosition = headerShow.value ? 'top-$bew-top-bar-height' : 'top-0'
     // 修正高度：使用 calc(100% - top位置) 确保容器不会超出可视区域
     const height = headerShow.value ? 'h-[calc(100%-var(--bew-top-bar-height))]' : 'h-full'
-    return `pos-absolute ${topPosition} left-0 of-hidden bg-$bew-bg rounded-t-$bew-radius w-full ${height}`
+    return `iframe-drawer-panel pos-absolute ${topPosition} left-0 bg-$bew-bg w-full ${height}`
   }
 })
 
@@ -585,6 +585,12 @@ if (!isInIframe()) {
 </template>
 
 <style lang="scss" scoped>
+// 圆角用 clip-path 将底色与 iframe 一并裁剪；overflow 加圆角裁剪时，抗锯齿边缘会透出容器底色，
+// 视频环境光等让 iframe 内容与底色不同时，顶部两角会出现一圈亮边
+.iframe-drawer-panel {
+  clip-path: inset(0 round var(--bew-radius) var(--bew-radius) 0 0);
+}
+
 .drawer-enter-active,
 .drawer-leave-active {
   transition: transform 0.3s;

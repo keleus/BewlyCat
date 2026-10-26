@@ -20,13 +20,6 @@
     visibility: hidden !important;
   }
 
-  // 全屏或挂载在播放器容器内时的层级适配
-  .bpx-player-container &,
-  #playerWrap & {
-    position: absolute;
-    z-index: 0;
-  }
-
   canvas {
     position: absolute;
     pointer-events: none;

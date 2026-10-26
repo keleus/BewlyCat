@@ -115,9 +115,7 @@ settings:
   ambilight:
     title: 影片環境光
     enable: 啟用影片環境光
-    enable_desc: 喺影片播放頁四周投射隨畫面變化嘅柔和環境光，增強觀影沉浸感。
-    enable_fullscreen: 全螢幕同網頁全螢幕時啟用
-    enable_fullscreen_desc: 入全螢幕或網頁全螢幕時保持環境光；閂咗之後全螢幕時暫停環境光。
+    enable_desc: 喺影片播放頁四周投射隨畫面變化嘅柔和環境光，增強觀影沉浸感。淨係喺預設同闊螢幕播放器生效，全螢幕、網頁全螢幕同 Bewly 闊螢幕時會自動閂咗。
     preset: 光效預設
     preset_soft: 柔和
     preset_cinema: 影院
@@ -127,7 +125,6 @@ settings:
     smoothing: 過渡平滑
     blur: 柔化程度
     saturation: 色彩飽和度
-    subgroup_scenes: 適用場景
     subgroup_effects: 光效調節
     subgroup_effects_desc: 調整光線發光強度、擴散範圍同色彩過渡質感。
     subgroup_performance: 渲染性能

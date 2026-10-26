@@ -1,6 +1,5 @@
 export interface AmbilightEngineOptions {
   enabled: boolean
-  enableFullscreen: boolean
   strength: number
   spread: number
   smoothing: number
@@ -9,7 +8,8 @@ export interface AmbilightEngineOptions {
   fps: number
 }
 
-export type AmbilightDisplayMode = 'normal' | 'theater' | 'fullscreen' | 'mini'
+// 环境光只在默认与宽屏播放器下运行；全屏、网页全屏与 Bewly 宽屏由 ambilightControl 整体停用
+export type AmbilightDisplayMode = 'normal' | 'theater' | 'mini'
 
 export type AmbilightTone = 'light' | 'dark'
 

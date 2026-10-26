@@ -115,9 +115,7 @@ settings:
   ambilight:
     title: Video Ambient Light
     enable: Enable ambient light
-    enable_desc: Cast dynamic, soft ambient light around the video player to enhance immersion.
-    enable_fullscreen: Enable in fullscreen and web fullscreen
-    enable_fullscreen_desc: Keep ambient light active in fullscreen; when disabled, ambient light pauses in fullscreen.
+    enable_desc: Cast dynamic, soft ambient light around the video player to enhance immersion. Only works with the default and widescreen player; it turns off automatically in fullscreen, web fullscreen and Bewly Widescreen.
     preset: Light preset
     preset_soft: Soft
     preset_cinema: Cinema
@@ -127,7 +125,6 @@ settings:
     smoothing: Transition smoothing
     blur: Blur intensity
     saturation: Saturation
-    subgroup_scenes: Applied Scenes
     subgroup_effects: Light Effects
     subgroup_effects_desc: Fine-tune light brightness, spread radius, and smooth transition.
     subgroup_performance: Rendering Performance

@@ -1,11 +1,13 @@
 import { nextTick, watch } from 'vue'
 
 import { setAmbilightTone } from '~/composables/useDark'
+import { BEWLY_IFRAME_DRAWER_HOST_CLASS } from '~/constants/globalEvents'
 import { settings, settingsReady } from '~/logic'
 import { AmbilightEngine } from '~/utils/ambilight/ambilightEngine'
 import type { AmbilightBaseValues } from '~/utils/ambilight/textContrast'
 import { DEFAULT_BASE_VALUES, getAmbilightTextColors, getBackdropLuminance, getWorstRegionContrast, parseBaseValue } from '~/utils/ambilight/textContrast'
 import type { AmbilightBackdropAnchor, AmbilightBackdropSample, AmbilightDisplayMode, AmbilightEngineOptions, AmbilightTone } from '~/utils/ambilight/types'
+import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { getVideoElement } from '~/utils/player'
 
@@ -14,8 +16,9 @@ let engine: AmbilightEngine | null = null
 let currentVideo: HTMLVideoElement | null = null
 let playerObserver: MutationObserver | null = null
 let observedPlayerContainer: HTMLElement | null = null
+let pageStateObserver: MutationObserver | null = null
 let syncTimer: ReturnType<typeof setTimeout> | null = null
-// 功能开启期间的视频发现监听；关闭时整体撤销，不在页面上保留任何监听
+// 功能开启期间的视频发现与播放器形态监听；关闭时整体撤销，不在页面上保留任何监听
 let discoveryLifetime: AbortController | null = null
 // 引擎存在期间的布局与可见性监听
 let engineLifetime: AbortController | null = null
@@ -304,8 +307,12 @@ function isSupportedPage(): boolean {
     || isWatchLaterListPage(location.href)
 }
 
+// iframe 抽屉会把宿主页地址栏临时替换为视频 URL，宿主页本身不是播放页，
+// 也不能让宿主页的明暗经抽屉的主题同步传入 iframe
 function isFeatureActive(): boolean {
-  return settings.value.ambilightEnabled && isSupportedPage()
+  return settings.value.ambilightEnabled
+    && isSupportedPage()
+    && !document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)
 }
 
 function findTargetVideo(): HTMLVideoElement | null {
@@ -322,36 +329,36 @@ function findPlayerContainer(): HTMLElement | null {
     || document.querySelector<HTMLElement>('#playerWrap')
 }
 
-function resolveDisplayMode(): {
-  mode: AmbilightDisplayMode
-  container: HTMLElement | null
-} {
-  const nativeFs = document.fullscreenElement as HTMLElement | null
-  if (nativeFs)
-    return { mode: 'fullscreen', container: nativeFs }
+// 环境光只用于默认与宽屏播放器。全屏、网页全屏时页面其余内容不可见，Bewly 宽屏已重排整页，
+// 均返回 null 并整体停用环境光，页面的透明背景与明暗也随之恢复
+function resolveDisplayMode(): AmbilightDisplayMode | null {
+  if (document.fullscreenElement
+    || (document as Document & { webkitFullscreenElement?: Element | null }).webkitFullscreenElement
+    || document.documentElement.classList.contains('fullscreen-fix')
+    || isBewlyWidescreenActive()) {
+    return null
+  }
 
   const playerContainer = findPlayerContainer()
   if (playerContainer) {
     const screen = playerContainer.getAttribute('data-screen')
-    if (screen === 'mini')
-      return { mode: 'mini', container: playerContainer }
     if (screen === 'full' || screen === 'web'
       || playerContainer.classList.contains('web-fullscreen')
-      || playerContainer.classList.contains('fullscreen')
-      || document.documentElement.classList.contains('fullscreen-fix')) {
-      return { mode: 'fullscreen', container: playerContainer }
+      || playerContainer.classList.contains('fullscreen')) {
+      return null
     }
+    if (screen === 'mini')
+      return 'mini'
     if (screen === 'wide')
-      return { mode: 'theater', container: playerContainer }
+      return 'theater'
   }
 
-  return { mode: 'normal', container: null }
+  return 'normal'
 }
 
 function getEngineOptions(): AmbilightEngineOptions {
   return {
     enabled: settings.value.ambilightEnabled,
-    enableFullscreen: settings.value.ambilightEnableFullscreen,
     strength: settings.value.ambilightStrength,
     spread: settings.value.ambilightSpread,
     smoothing: settings.value.ambilightSmoothing,
@@ -364,9 +371,41 @@ function getEngineOptions(): AmbilightEngineOptions {
 function updateLayout() {
   if (!engine)
     return
-  const { mode, container } = resolveDisplayMode()
-  engine.setDisplayMode(mode, container)
+  const mode = resolveDisplayMode()
+  if (!mode) {
+    teardownEngine()
+    return
+  }
+  engine.setDisplayMode(mode)
   engine.invalidate()
+}
+
+// 进出全屏、网页全屏、Bewly 宽屏或抽屉时启停环境光；仅在启停状态可能变化时重新核对
+function handlePlayerModeChange() {
+  const shouldRun = isFeatureActive() && resolveDisplayMode() !== null
+  if (engine && shouldRun)
+    updateLayout()
+  else if (Boolean(engine) !== shouldRun)
+    sync()
+}
+
+function observePlayerContainer() {
+  const playerContainer = findPlayerContainer()
+  if (!playerContainer || playerContainer === observedPlayerContainer)
+    return
+  playerObserver?.disconnect()
+  observedPlayerContainer = playerContainer
+  playerObserver = new MutationObserver(handlePlayerModeChange)
+  playerObserver.observe(playerContainer, {
+    attributes: true,
+    attributeFilter: ['data-screen', 'class'],
+  })
+}
+
+function stopObservingPlayerContainer() {
+  playerObserver?.disconnect()
+  playerObserver = null
+  observedPlayerContainer = null
 }
 
 function scheduleSync() {
@@ -389,11 +428,22 @@ function attachDiscoveryListeners() {
     window.addEventListener(name, scheduleSync, { signal })
   for (const name of ['loadedmetadata', 'play'])
     document.addEventListener(name, scheduleSync, { capture: true, signal })
+
+  // 停用期间引擎不存在，播放器形态的变化需在此监听，退出全屏等形态后才能恢复
+  document.addEventListener('fullscreenchange', handlePlayerModeChange, { signal })
+  // 抽屉宿主标记在 html 上，Bewly 宽屏标记在 body 上；抽屉在内容脚本中改写地址栏，不会触发 pushstate 事件
+  pageStateObserver = new MutationObserver(handlePlayerModeChange)
+  pageStateObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+  if (document.body)
+    pageStateObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] })
 }
 
 function detachDiscoveryListeners() {
   discoveryLifetime?.abort()
   discoveryLifetime = null
+  pageStateObserver?.disconnect()
+  pageStateObserver = null
+  stopObservingPlayerContainer()
   if (syncTimer) {
     clearTimeout(syncTimer)
     syncTimer = null
@@ -406,7 +456,6 @@ function attachEngineListeners() {
   engineLifetime = new AbortController()
   const { signal } = engineLifetime
 
-  document.addEventListener('fullscreenchange', updateLayout, { signal })
   document.addEventListener('visibilitychange', () => {
     engine?.setHidden(document.hidden)
   }, { signal })
@@ -423,17 +472,20 @@ function teardownEngine() {
     engine = null
     currentVideo = null
   }
-  if (playerObserver) {
-    playerObserver.disconnect()
-    playerObserver = null
-    observedPlayerContainer = null
-  }
   document.documentElement.removeAttribute('data-bewly-ambilight')
   resetTone()
 }
 
 function sync() {
   if (!isFeatureActive()) {
+    stopObservingPlayerContainer()
+    teardownEngine()
+    return
+  }
+
+  observePlayerContainer()
+  const mode = resolveDisplayMode()
+  if (!mode) {
     teardownEngine()
     return
   }
@@ -464,20 +516,8 @@ function sync() {
     engine.bindVideo(target)
   }
 
-  const { mode, container } = resolveDisplayMode()
-  engine.setDisplayMode(mode, container)
+  engine.setDisplayMode(mode)
   engine.invalidate(true)
-
-  const playerContainer = findPlayerContainer()
-  if (playerContainer && playerContainer !== observedPlayerContainer) {
-    playerObserver?.disconnect()
-    observedPlayerContainer = playerContainer
-    playerObserver = new MutationObserver(updateLayout)
-    playerObserver.observe(playerContainer, {
-      attributes: true,
-      attributeFilter: ['data-screen', 'class'],
-    })
-  }
 }
 
 export function initAmbilightControl() {
@@ -503,7 +543,6 @@ export function initAmbilightControl() {
     watch(
       () => [
         settings.value.ambilightEnabled,
-        settings.value.ambilightEnableFullscreen,
         settings.value.ambilightStrength,
         settings.value.ambilightSpread,
         settings.value.ambilightSmoothing,

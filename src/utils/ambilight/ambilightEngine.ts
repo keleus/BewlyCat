@@ -93,7 +93,6 @@ export class AmbilightEngine {
   private isHidden = false
   private isSleeping = false
   private hasPainted = false
-  private currentParent: HTMLElement | null = null
   private mode: AmbilightDisplayMode = 'normal'
   private needsForceDraw = false
   private backdropCtx: CanvasRenderingContext2D | null = null
@@ -189,10 +188,7 @@ export class AmbilightEngine {
     this.hasPainted = false
   }
 
-  public setDisplayMode(
-    mode: AmbilightDisplayMode,
-    playerContainer?: HTMLElement | null,
-  ) {
+  public setDisplayMode(mode: AmbilightDisplayMode) {
     this.mode = mode
     if (!this.hostElem)
       return
@@ -202,31 +198,7 @@ export class AmbilightEngine {
       return
     }
 
-    const isFullscreen = mode === 'fullscreen'
-    if (isFullscreen) {
-      if (!this.options.enableFullscreen) {
-        this.setSleeping(true)
-        return
-      }
-      this.setSleeping(false)
-      const targetParent = playerContainer || document.body
-      if (this.currentParent !== targetParent) {
-        targetParent.insertBefore(this.hostElem, targetParent.firstChild)
-        this.currentParent = targetParent
-        this.hostElem.style.position = targetParent === document.body ? 'fixed' : 'absolute'
-        this.hostElem.style.zIndex = targetParent === document.body ? '-1' : '0'
-      }
-    }
-    else {
-      this.setSleeping(false)
-      if (this.currentParent !== document.body) {
-        document.body.insertBefore(this.hostElem, document.body.firstChild)
-        this.currentParent = document.body
-        this.hostElem.style.position = 'fixed'
-        this.hostElem.style.zIndex = '-1'
-      }
-    }
-
+    this.setSleeping(false)
     this.invalidate()
   }
 
@@ -257,7 +229,6 @@ export class AmbilightEngine {
     this.ctx = null
     this.backdropCtx = null
     this.backdropProbe = null
-    this.currentParent = null
     this.hasPainted = false
     this.layoutDirty = true
   }
@@ -283,7 +254,6 @@ export class AmbilightEngine {
     this.hostElem = host
     this.canvas = canvas
     this.ctx = canvas.getContext('2d', { alpha: false })
-    this.currentParent = document.body
 
     this.applyCanvasStyles()
   }
@@ -374,7 +344,6 @@ export class AmbilightEngine {
       return
 
     if (this.mode === 'mini'
-      || (this.mode === 'fullscreen' && !this.options.enableFullscreen)
       || this.video.closest('.bpx-player-container[data-screen="mini"]')) {
       this.setSleeping(true)
       return
@@ -403,12 +372,6 @@ export class AmbilightEngine {
       computedStyle.objectFit,
     )
 
-    const origin = (this.currentParent && this.currentParent !== document.body)
-      ? this.currentParent.getBoundingClientRect()
-      : { left: 0, top: 0 }
-    const ox = origin.left
-    const oy = origin.top
-
     // 彻底清除 clipPath 挖孔：发光层位于底层 z-index: -1，由视频物理不透明画面自然覆盖，
     // 根本消除滚动时的异步剪裁错位黑块与 GPU 频繁重绘迟滞
     if (this.hostElem.style.clipPath)
@@ -424,8 +387,8 @@ export class AmbilightEngine {
     )
 
     this.glowRect = glow
-    this.canvas.style.left = `${glow.left - ox}px`
-    this.canvas.style.top = `${glow.top - oy}px`
+    this.canvas.style.left = `${glow.left}px`
+    this.canvas.style.top = `${glow.top}px`
     this.canvas.style.width = `${glow.width}px`
     this.canvas.style.height = `${glow.height}px`
     this.applyCanvasStyles(glow.blur)
@@ -475,10 +438,10 @@ export class AmbilightEngine {
   }
 
   // 低频估算各文字位置下的光晕：覆盖率由画布模糊衰减求得，颜色取附近格子，
-  // 均按 CSS 合成所用的 sRGB 编码值给出；全屏与小窗时页面文字不可见，不采样
+  // 均按 CSS 合成所用的 sRGB 编码值给出；小窗时光晕已休眠，不采样
   private sampleBackdrop(now: number, force: boolean) {
     if (!this.backdropProbe || !this.canvas || !this.glowRect || !this.hasPainted || !this.isAllowed()
-      || this.mode === 'fullscreen' || this.mode === 'mini') {
+      || this.mode === 'mini') {
       return
     }
     const wait = BACKDROP_SAMPLE_INTERVAL - (now - this.lastBackdropSampleTime)

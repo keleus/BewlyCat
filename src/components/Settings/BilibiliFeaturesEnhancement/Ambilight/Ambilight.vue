@@ -109,12 +109,6 @@ function resetAmbilightEffects() {
     </SettingsItem>
 
     <template v-if="settings.ambilightEnabled">
-      <SettingsItemSubgroup :title="t('settings.ambilight.subgroup_scenes')">
-        <SettingsItem :title="t('settings.ambilight.enable_fullscreen')" :desc="t('settings.ambilight.enable_fullscreen_desc')" right-width="auto">
-          <Radio v-model="settings.ambilightEnableFullscreen" />
-        </SettingsItem>
-      </SettingsItemSubgroup>
-
       <SettingsItemSubgroup
         :title="t('settings.ambilight.subgroup_effects')"
         :desc="t('settings.ambilight.subgroup_effects_desc')"

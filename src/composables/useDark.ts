@@ -26,6 +26,10 @@ export function setAmbilightTone(tone: AmbilightToneByBase | null) {
   ambilightTone.value = tone
 }
 
+export function hasAmbilightTone(): boolean {
+  return ambilightTone.value !== null
+}
+
 function removeSuppressedBiliDark() {
   if (isBiliDarkSuppressed && document.documentElement.classList.contains('bili_dark'))
     document.documentElement.classList.remove('bili_dark')
@@ -186,10 +190,11 @@ export function useDark() {
   const isVideoPageDark = computed(() => {
     return settings.value.videoPageDarkMode && isVideoPlaybackPage(currentUrl.value)
   })
-  const isBaseDark = computed(() => currentAppColorScheme.value === 'dark' || isVideoPageDark.value)
+  // iframe 抽屉内以父窗口主题为用户主题，环境光的明暗仍在其上生效
+  const isBaseDark = computed(() => iframeTheme.value
+    ? iframeTheme.value.isDark
+    : currentAppColorScheme.value === 'dark' || isVideoPageDark.value)
   const isDark = computed(() => {
-    if (iframeTheme.value)
-      return iframeTheme.value.isDark
     if (ambilightTone.value)
       return ambilightTone.value[isBaseDark.value ? 'dark' : 'light'] === 'dark'
     return isBaseDark.value
