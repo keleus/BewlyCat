@@ -11,9 +11,10 @@
   opacity: 1;
   visibility: visible;
   transition:
-    opacity 200ms ease-out,
-    visibility 200ms ease-out;
+    opacity 480ms ease-out,
+    visibility 480ms ease-out;
 
+  &.is-pending,
   &.is-sleeping {
     opacity: 0 !important;
     visibility: hidden !important;
@@ -33,8 +34,56 @@
   }
 }
 
+// 将某个区域的四级文字色设为当前元素及后代使用的文字色
+@mixin ambilight-text-region($region) {
+  @for $level from 1 through 4 {
+    --bew-ambilight-text-#{$level}: var(--bew-ambilight-#{$region}-text-#{$level});
+  }
+}
+
 // 仅在环境光生效激活时，开启页面隔离与包裹层透明穿透，避免未开启用户样式污染
 html[data-bewly-ambilight] {
+  // 回复树节点圆点需遮住穿过的引导线；评论区 --bg1 半透明后仍保持不透明
+  --bew-comment-tree-node-bg: var(--bew-bg);
+
+  // 文字灰阶按光晕实时亮度重算（见 ambilightControl / textContrast），四级文字整体同步变化、保持原有层级。
+  // 原站与插件的文字变量在每个元素上都有声明，需同样作用到全部元素并提高优先级
+  &[data-bewly-ambilight-ink] {
+    @include ambilight-text-region(global);
+
+    &,
+    & * {
+      --text1: var(--bew-ambilight-text-1) !important;
+      --text2: var(--bew-ambilight-text-2) !important;
+      --text3: var(--bew-ambilight-text-3) !important;
+      --text4: var(--bew-ambilight-text-4) !important;
+      --bew-text-1: var(--bew-ambilight-text-1) !important;
+      --bew-text-2: var(--bew-ambilight-text-2) !important;
+      --bew-text-3: var(--bew-ambilight-text-3) !important;
+      --bew-text-4: var(--bew-ambilight-text-4) !important;
+    }
+
+    // 光晕在不同区域的覆盖与颜色差异很大，各区域按自身背景取色，子元素继承
+    :is(.video-info-container, #viewbox_report) {
+      @include ambilight-text-region(top);
+    }
+
+    :is(.right-container, .playlist-container--right) {
+      @include ambilight-text-region(side);
+    }
+
+    :is(.bpx-player-sending-area, #arc_toolbar_report, .video-toolbar-container, #playlistToolbar) {
+      @include ambilight-text-region(bottom);
+    }
+  }
+
+  // 整页明暗切换的交叉淡化时长
+  &::view-transition-old(root),
+  &::view-transition-new(root) {
+    animation-duration: 420ms;
+    animation-timing-function: ease-out;
+  }
+
   body {
     isolation: isolate;
   }
@@ -87,11 +136,8 @@ html[data-bewly-ambilight] {
   .bpx-player-dm-input,
   .bpx-player-dm-switch,
   .bpx-player-dm-setting,
-  .bpx-player-video-inputbar,
   .bpx-player-video-inputbar-wrap,
   .bpx-player-dm-wrap,
-  .bpx-player-dm-btn-send,
-  .bpx-player-sending-area .bui-button-blue,
   .bpx-player-sending-area::before,
   .bpx-player-sending-area::after,
   #danmukuBox,
@@ -147,7 +193,7 @@ html[data-bewly-ambilight] {
         }
 
         &:hover {
-          background: rgba(0, 174, 236, 0.15) !important;
+          background: color-mix(in srgb, var(--brand_blue, #00aeec) 15%, transparent) !important;
         }
       }
 
@@ -167,7 +213,7 @@ html[data-bewly-ambilight] {
           }
 
           &:hover {
-            background: rgba(0, 174, 236, 0.2) !important;
+            background: color-mix(in srgb, var(--brand_blue, #00aeec) 20%, transparent) !important;
           }
         }
 
@@ -175,15 +221,15 @@ html[data-bewly-ambilight] {
         &:not(.not-follow) {
           background: transparent !important;
           border: 1px solid var(--line_regular, rgba(128, 128, 128, 0.35)) !important;
-          color: var(--text2, rgba(255, 255, 255, 0.8)) !important;
+          color: var(--text2) !important;
 
           * {
-            color: var(--text2, rgba(255, 255, 255, 0.8)) !important;
+            color: var(--text2) !important;
             fill: currentColor !important;
           }
 
           &:hover {
-            background: rgba(255, 255, 255, 0.12) !important;
+            background: var(--bew-fill-2) !important;
           }
         }
       }
@@ -218,11 +264,18 @@ html[data-bewly-ambilight] {
     border-color: transparent !important;
   }
 
-  .bpx-player-video-inputbar,
-  .bpx-player-dm-input,
-  .bpx-player-dm-btn-send,
-  .bpx-player-sending-area .bui-button-blue {
+  // 弹幕输入框以浅填充示意可输入区域；发送按钮保留主题色底，白字不会落在光晕上
+  .bpx-player-video-inputbar {
+    background: var(--bew-fill-1) !important;
     border-color: transparent !important;
+  }
+
+  .bpx-player-dm-input {
+    border-color: transparent !important;
+
+    &::placeholder {
+      color: var(--text3) !important;
+    }
   }
 
   // 稍后再看与播放列表播放页透明穿透
@@ -252,52 +305,15 @@ html[data-bewly-ambilight] {
     box-shadow: none !important;
   }
 
-  // =========================================================================
-  // 方案一：弹幕级 1px 紧致几何硬轮廓（无发散模糊，杜绝中空发脏）
-  // 纯字体防护，不添加任何背景卡片，保持 100% 纯净通透穿透
-  // =========================================================================
-
-  // 暗色模式（白字）：1px 紧致暗黑硬边防护，遇白底 PPT 强光不吞噬
-  &.dark,
-  &[data-dark="true"] {
-    .bili-header__bar,
-    #viewbox_report,
-    #arc_toolbar_report,
-    .right-container,
-    .video-desc-container,
-    .bpx-player-sending-area,
-    .playlist-app :is(.video-info-container, #playlistToolbar, .playlist-container--right) {
-      text-shadow:
-        0 1px 1px rgba(0, 0, 0, 0.85),
-        0 0 1px rgba(0, 0, 0, 0.75);
-    }
+  // 评论区原生底色（吸底评论框、展开回复的吸底收起栏等）改为半透明，不再以实色块遮住光晕；
+  // 保留部分底色，滚动经过的评论内容不会与吸底栏文字重叠。浮层使用 --bg1_float，不受影响
+  :is(bili-comments, .bb-comment, .comment-bilibili-fold) {
+    --bg1: color-mix(in oklab, var(--bew-bg), transparent 28%) !important;
   }
 
-  // 浅色模式（黑字）：微光柔化托底（方案 A），消除生硬线框与中空感
-  &:not(.dark) {
-    .bili-header__bar,
-    #viewbox_report,
-    #arc_toolbar_report,
-    .right-container,
-    .video-desc-container,
-    .bpx-player-sending-area,
-    .playlist-app :is(.video-info-container, #playlistToolbar, .playlist-container--right) {
-      text-shadow:
-        0 1px 2px rgba(255, 255, 255, 0.55),
-        0 0 1.5px rgba(255, 255, 255, 0.45);
-    }
-
-    // 方案 B：高亮态与品牌蓝文字解绑，排除白色描边污染，保持鲜艳纯净
-    :is(
-      .active,
-      .active *,
-      .is-active,
-      .is-active *,
-      [style*="color: rgb(0, 174, 236)"],
-      [style*="color: var(--brand_blue)"],
-      [style*="color:var(--brand_blue)"]
-    ) {
-      text-shadow: none !important;
-    }
+  .bb-comment,
+  .comment-bilibili-fold,
+  .comment-wrapper .comment-m {
+    background-color: transparent !important;
   }
 }

@@ -59,7 +59,7 @@
 
 .bewly-comment-reply-tree-guides .bewly-comment-reply-branch__node,
 .bewly-comment-reply-tree-guides .bewly-comment-reply-tail__node {
-  fill: var(--bg1, var(--bew-bg, #fff));
+  fill: var(--bew-comment-tree-node-bg, var(--bg1, var(--bew-bg, #fff)));
   stroke: var(--bew-comment-tree-line-color, var(--line_regular, rgba(148, 153, 160, 0.28)));
   stroke-width: var(--bew-space-0-5, 2px);
 }

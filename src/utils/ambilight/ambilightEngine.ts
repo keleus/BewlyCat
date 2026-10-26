@@ -1,13 +1,32 @@
-import type { AmbilightDisplayMode, AmbilightEngineOptions } from './types'
+import type { AmbilightBackdropProbe, AmbilightBackdropSample, AmbilightDisplayMode, AmbilightEngineOptions } from './types'
 
 const SAMPLE_WIDTH = 256
 const SAMPLE_HEIGHT = 144
+// 亮度采样从已缩小的光晕画布再缩到 16×9 读回，读回量极小且只在 CPU 画布上进行。
+// 只在环境光已绘制的帧上顺带进行，频率不超过环境光帧率，并进一步限制为每秒 2 次
+const BACKDROP_SAMPLE_WIDTH = 16
+const BACKDROP_SAMPLE_HEIGHT = 9
+const BACKDROP_SAMPLE_INTERVAL = 500
 
 interface Rect {
   left: number
   top: number
   width: number
   height: number
+}
+
+function erf(x: number): number {
+  const sign = Math.sign(x)
+  const a = Math.abs(x)
+  const t = 1 / (1 + 0.3275911 * a)
+  const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-a * a)
+  return sign * y
+}
+
+// CSS blur() 的参数即高斯标准差；画布矩形模糊后在某点的覆盖率为两个方向 erf 之差的乘积
+function blurredCoverage(position: number, start: number, end: number, sigma: number): number {
+  const scale = sigma * Math.SQRT2
+  return 0.5 * (erf((end - position) / scale) - erf((start - position) / scale))
 }
 
 // 优化时间常数：兼顾丝滑过度与明暗剧变时的快速追随（响应速度提升约 50%）
@@ -77,9 +96,17 @@ export class AmbilightEngine {
   private currentParent: HTMLElement | null = null
   private mode: AmbilightDisplayMode = 'normal'
   private needsForceDraw = false
+  private backdropCtx: CanvasRenderingContext2D | null = null
+  private backdropLuma = new Float32Array(BACKDROP_SAMPLE_WIDTH * BACKDROP_SAMPLE_HEIGHT)
+  // 最近一次布局的光晕画布位置（视口坐标）
+  private glowRect: (Rect & { blur: number }) | null = null
+  private lastBackdropSampleTime = 0
+  private backdropSampleTimer: ReturnType<typeof setTimeout> | null = null
+  private backdropProbe: AmbilightBackdropProbe | null
 
-  constructor(options: AmbilightEngineOptions) {
+  constructor(options: AmbilightEngineOptions, backdropProbe: AmbilightBackdropProbe | null = null) {
     this.options = { ...options }
+    this.backdropProbe = backdropProbe
   }
 
   private isAllowed(): boolean {
@@ -104,6 +131,9 @@ export class AmbilightEngine {
       if (this.isAllowed()) {
         if (this.needsForceDraw || !this.hasPainted)
           this.drawSingleFrame(true)
+        // 暂停时滚动或缩放会改变光晕与文字的相对位置，画面不变也需重新估算
+        else if (this.video?.paused)
+          this.sampleBackdrop(performance.now(), false)
         if (this.video && !this.video.paused)
           this.startLoop()
       }
@@ -150,6 +180,7 @@ export class AmbilightEngine {
   public unbindVideo() {
     this.unbindVideoEvents()
     this.stopLoop()
+    this.cancelBackdropSample()
     if (this.layoutRafId !== null) {
       cancelAnimationFrame(this.layoutRafId)
       this.layoutRafId = null
@@ -224,6 +255,8 @@ export class AmbilightEngine {
     }
     this.canvas = null
     this.ctx = null
+    this.backdropCtx = null
+    this.backdropProbe = null
     this.currentParent = null
     this.hasPainted = false
     this.layoutDirty = true
@@ -234,7 +267,8 @@ export class AmbilightEngine {
       return
 
     const host = document.createElement('div')
-    host.className = 'bewly-ambilight-host'
+    // 不透明画布在首帧绘制前是黑色，首帧画好后再淡入，避免页面加载时闪出黑块
+    host.className = 'bewly-ambilight-host is-pending'
     host.setAttribute('aria-hidden', 'true')
     host.style.cssText = 'position:fixed;inset:0;pointer-events:none!important;z-index:-1;overflow:hidden;contain:layout style;transform:translate3d(0,0,0);'
 
@@ -389,6 +423,7 @@ export class AmbilightEngine {
       this.mode,
     )
 
+    this.glowRect = glow
     this.canvas.style.left = `${glow.left - ox}px`
     this.canvas.style.top = `${glow.top - oy}px`
     this.canvas.style.width = `${glow.width}px`
@@ -423,11 +458,89 @@ export class AmbilightEngine {
 
       this.ctx.drawImage(this.video, 0, 0, SAMPLE_WIDTH, targetHeight)
       this.hasPainted = true
+      this.hostElem?.classList.remove('is-pending')
       this.lastDrawTime = now
+      this.sampleBackdrop(now, force)
     }
     catch {
       // 捕获跨域或未就绪异常
     }
+  }
+
+  private cancelBackdropSample() {
+    if (this.backdropSampleTimer) {
+      clearTimeout(this.backdropSampleTimer)
+      this.backdropSampleTimer = null
+    }
+  }
+
+  // 低频估算各文字位置下的光晕：覆盖率由画布模糊衰减求得，颜色取附近格子，
+  // 均按 CSS 合成所用的 sRGB 编码值给出；全屏与小窗时页面文字不可见，不采样
+  private sampleBackdrop(now: number, force: boolean) {
+    if (!this.backdropProbe || !this.canvas || !this.glowRect || !this.hasPainted || !this.isAllowed()
+      || this.mode === 'fullscreen' || this.mode === 'mini') {
+      return
+    }
+    const wait = BACKDROP_SAMPLE_INTERVAL - (now - this.lastBackdropSampleTime)
+    if (!force && wait > 0) {
+      // 限频期间补一次尾随采样，暂停后滚动停下的位置也能被估算到
+      this.backdropSampleTimer ??= setTimeout(() => {
+        this.backdropSampleTimer = null
+        this.sampleBackdrop(performance.now(), false)
+      }, wait)
+      return
+    }
+    this.cancelBackdropSample()
+    this.lastBackdropSampleTime = now
+
+    if (!this.backdropCtx) {
+      const canvas = document.createElement('canvas')
+      canvas.width = BACKDROP_SAMPLE_WIDTH
+      canvas.height = BACKDROP_SAMPLE_HEIGHT
+      this.backdropCtx = canvas.getContext('2d', { alpha: false, willReadFrequently: true })
+      if (!this.backdropCtx)
+        return
+    }
+
+    this.backdropCtx.drawImage(this.canvas, 0, 0, BACKDROP_SAMPLE_WIDTH, BACKDROP_SAMPLE_HEIGHT)
+    const { data } = this.backdropCtx.getImageData(0, 0, BACKDROP_SAMPLE_WIDTH, BACKDROP_SAMPLE_HEIGHT)
+
+    // 与 applyCanvasStyles 一致：强度超过 100% 时以 brightness 提亮，否则以透明度减弱
+    const { strength } = this.options
+    const brightness = Math.max(1, strength / 100)
+    const opacity = Math.min(1, Math.max(0, strength / 100))
+    for (let i = 0; i < this.backdropLuma.length; i++) {
+      const p = i * 4
+      this.backdropLuma[i] = Math.min(1, brightness * (0.2126 * data[p] + 0.7152 * data[p + 1] + 0.0722 * data[p + 2]) / 255)
+    }
+
+    const glow = this.glowRect
+    const samples: AmbilightBackdropSample[] = []
+    for (const { region, x, y } of this.backdropProbe.getAnchors()) {
+      const coverage = blurredCoverage(x, glow.left, glow.left + glow.width, glow.blur)
+        * blurredCoverage(y, glow.top, glow.top + glow.height, glow.blur)
+      const cellX = Math.round(Math.min(1, Math.max(0, (x - glow.left) / glow.width)) * (BACKDROP_SAMPLE_WIDTH - 1))
+      const cellY = Math.round(Math.min(1, Math.max(0, (y - glow.top) / glow.height)) * (BACKDROP_SAMPLE_HEIGHT - 1))
+
+      // 模糊半径远大于单个格子，取 3×3 邻域均值
+      let luma = 0
+      let count = 0
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const cx = cellX + dx
+          const cy = cellY + dy
+          if (cx < 0 || cy < 0 || cx >= BACKDROP_SAMPLE_WIDTH || cy >= BACKDROP_SAMPLE_HEIGHT)
+            continue
+          luma += this.backdropLuma[cy * BACKDROP_SAMPLE_WIDTH + cx]
+          count++
+        }
+      }
+
+      samples.push({ region, glow: luma / count, alpha: opacity * coverage })
+    }
+
+    if (samples.length)
+      this.backdropProbe.onSample(samples)
   }
 
   public startLoop() {
