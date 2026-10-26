@@ -1073,7 +1073,7 @@ settings:
       fullscreen_mode: 全螢幕模式快捷鍵
       general: 一般快捷鍵
       official_bilibili: Bilibili 官方快捷鍵
-      homepage: ''
+      homepage: 主頁快捷鍵
     increase_playback_rate: 加速播放
     increase_playback_rate_desc: 校快播放速度。
     increase_video_size: 放大影片
@@ -1254,8 +1254,8 @@ settings:
   listen_video_background_desc: 封面模糊會將而家個封面高斯模糊之後鋪滿成個背景，純色就係深色底。
   listen_video_background_solid: 純色
   listen_video_background_blur: 封面模糊
-  group_fonts: ''
-  group_visual_effects: ''
+  group_fonts: 字體
+  group_visual_effects: 視覺效果
   group_search_results: 搜尋結果
   visibility: 顯示
 auth:
