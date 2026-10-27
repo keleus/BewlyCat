@@ -149,24 +149,30 @@ let dockActionPulseFrame: number | undefined
 function pulseDockAction(pulse: DockActionPulse) {
   const applyPulse = () => {
     dockActionPulse.value = pulse
-    if (dockActionPulseTimer)
-      window.clearTimeout(dockActionPulseTimer)
     dockActionPulseTimer = window.setTimeout(() => {
       dockActionPulse.value = undefined
+      dockActionPulseTimer = undefined
     }, 700)
   }
 
+  const shouldReplay = dockActionPulse.value === pulse || dockActionPulseFrame !== undefined
+  if (dockActionPulseTimer !== undefined) {
+    window.clearTimeout(dockActionPulseTimer)
+    dockActionPulseTimer = undefined
+  }
   if (dockActionPulseFrame !== undefined) {
     cancelAnimationFrame(dockActionPulseFrame)
     dockActionPulseFrame = undefined
   }
 
-  if (dockActionPulse.value === pulse) {
-    // 同一操作连续触发时先移除再下一帧加回，强制重播动画
+  if (shouldReplay) {
+    // 双 RAF 让移除动画类后的样式先完成一帧计算，再加回动画类。
     dockActionPulse.value = undefined
     dockActionPulseFrame = requestAnimationFrame(() => {
-      dockActionPulseFrame = undefined
-      applyPulse()
+      dockActionPulseFrame = requestAnimationFrame(() => {
+        dockActionPulseFrame = undefined
+        applyPulse()
+      })
     })
   }
   else {
@@ -197,32 +203,43 @@ function triggerDockIconClickFeedback(target: string, event?: MouseEvent) {
   }
 
   clickSuppressedTarget.value = target
+  const applyRebound = () => {
+    clickReboundTarget.value = target
+    // 从动画真正恢复时开始计时，避免 RAF 延后时提前结束回弹。
+    clickReboundTimer = window.setTimeout(() => {
+      clickReboundTarget.value = undefined
+      clickReboundTimer = undefined
+    }, CLICK_REBOUND_DURATION)
+  }
+
+  const shouldReplay = clickReboundTarget.value === target || clickReboundFrame !== undefined
+  if (clickReboundTimer !== undefined) {
+    window.clearTimeout(clickReboundTimer)
+    clickReboundTimer = undefined
+  }
   if (clickReboundFrame !== undefined) {
     cancelAnimationFrame(clickReboundFrame)
     clickReboundFrame = undefined
   }
-  if (clickReboundTarget.value === target) {
-    // 同一目标连续点击时先移除再下一帧加回，强制重播回弹而不是被吞掉
+  if (shouldReplay) {
+    // 等移除动画类完成一帧样式计算，再重播回弹；等待期间的点击仍走此路径。
     clickReboundTarget.value = undefined
     clickReboundFrame = requestAnimationFrame(() => {
-      clickReboundFrame = undefined
-      if (clickSuppressedTarget.value === target)
-        clickReboundTarget.value = target
+      clickReboundFrame = requestAnimationFrame(() => {
+        clickReboundFrame = undefined
+        if (clickSuppressedTarget.value === target)
+          applyRebound()
+      })
     })
   }
   else {
-    clickReboundTarget.value = target
+    applyRebound()
   }
   if (suppressionReleaseTimer) {
     window.clearTimeout(suppressionReleaseTimer)
     suppressionReleaseTimer = undefined
   }
   suppressionReleaseTarget = undefined
-  if (clickReboundTimer)
-    window.clearTimeout(clickReboundTimer)
-  clickReboundTimer = window.setTimeout(() => {
-    clickReboundTarget.value = undefined
-  }, CLICK_REBOUND_DURATION)
 }
 
 function scheduleClickSuppressionRelease(target: string) {
