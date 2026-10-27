@@ -265,6 +265,20 @@ const momentsTabsPositionOptions = computed<{ label: string, value: TabsPosition
           </div>
         </template>
       </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.original_moments_show_fold_comments_button')"
+        :desc="$t('settings.original_moments_show_fold_comments_button_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.originalMomentsShowFoldCommentsButton" />
+      </SettingsItem>
+      <SettingsItem
+        :title="$t('settings.original_moments_click_blank_to_fold_comments')"
+        :desc="$t('settings.original_moments_click_blank_to_fold_comments_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.originalMomentsClickBlankToFoldComments" />
+      </SettingsItem>
     </SettingsItemGroup>
 
     <SettingsItemGroup :title="$t('settings.group_moments_filters')">

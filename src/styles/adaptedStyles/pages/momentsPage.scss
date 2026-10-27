@@ -53,10 +53,21 @@
     flex-direction: column !important;
   }
 
+  // 表情、@ 和回复操作面板需要盖在 sticky 按钮上方（与 B-E 一致）。
+  .bili-comment-container:has(> .bewly-original-moments-fold-comment),
+  .bb-comment:has(> .bewly-original-moments-fold-comment) {
+    .at-panel,
+    .emoji-panel,
+    .reply-box .box-expand,
+    .reply-operation .operation-list {
+      z-index: 111 !important;
+    }
+  }
+
   .bewly-original-moments-fold-comment {
     position: sticky;
     bottom: 0;
-    z-index: 10;
+    z-index: 98;
     order: 1;
     display: flex;
     flex: none;
