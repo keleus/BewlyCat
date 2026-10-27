@@ -2050,8 +2050,8 @@ function getItemDisplayData(item: VideoElement | AppVideoElement) {
   return item.displayData
 }
 
-function getItemKey(item: VideoElement | AppVideoElement, index?: number) {
-  return `${item.uniqueId}-${index ?? 0}`
+function getItemKey(item: VideoElement | AppVideoElement) {
+  return item.uniqueId
 }
 </script>
 

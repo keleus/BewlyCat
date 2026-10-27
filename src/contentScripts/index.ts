@@ -1272,14 +1272,29 @@ else if (shouldInitializeContentScript) {
       scheduleNativeWatchLaterStateSync()
     })
 
-    const observeNativeWatchLaterList = () => {
-      if (document.documentElement)
+    // A document-wide subtree observer is costly on pages with constant DOM
+    // churn (danmaku), so it only runs while the native list page is open.
+    let observingNativeWatchLaterList = false
+    const syncNativeWatchLaterListObserver = () => {
+      const shouldObserve = !!document.documentElement && isWatchLaterListPage(location.href)
+      if (shouldObserve === observingNativeWatchLaterList)
+        return
+
+      observingNativeWatchLaterList = shouldObserve
+      if (shouldObserve)
         observer.observe(document.documentElement, { childList: true, subtree: true })
+      else
+        observer.disconnect()
     }
-    if (document.documentElement)
-      observeNativeWatchLaterList()
-    else
-      window.addEventListener('DOMContentLoaded', observeNativeWatchLaterList, { once: true })
+    // inject/index.ts dispatches history events before the URL changes.
+    const scheduleNativeWatchLaterListObserverSync = () => queueMicrotask(syncNativeWatchLaterListObserver)
+
+    syncNativeWatchLaterListObserver()
+    if (!document.documentElement)
+      window.addEventListener('DOMContentLoaded', syncNativeWatchLaterListObserver, { once: true })
+    window.addEventListener('pushstate', scheduleNativeWatchLaterListObserverSync, true)
+    window.addEventListener('replacestate', scheduleNativeWatchLaterListObserverSync, true)
+    window.addEventListener('popstate', scheduleNativeWatchLaterListObserverSync, true)
   }
 
   setupNativeWatchLaterStateSync()

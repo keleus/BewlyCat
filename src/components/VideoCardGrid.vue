@@ -319,6 +319,19 @@ const displayItems = computed(() => {
   return props.items
 })
 
+// Only the key index spans the feed. Scrolling never rebuilds it.
+const cardKeys = computed(() => {
+  // Repeated item keys get an occurrence suffix instead of making every key
+  // index-based, so removing an earlier item does not remount later cards.
+  const seen = new Map<string | number, number>()
+  return displayItems.value.map((item, index) => {
+    const key = getUniqueKey(item, index)
+    const count = seen.get(key) ?? 0
+    seen.set(key, count + 1)
+    return count ? `${key}#dup${count}` : key
+  })
+})
+
 function isDocumentVisible(): boolean {
   return typeof document === 'undefined' || document.visibilityState === 'visible'
 }
@@ -987,7 +1000,7 @@ function inferVideoTypeFromVideo(video: Video | undefined): 'rcmd' | 'appRcmd' |
 }
 
 function createRenderItem(item: T, index: number): VideoCardRenderItem {
-  const key = getUniqueKey(item, index)
+  const key = cardKeys.value[index] ?? getUniqueKey(item, index)
   const fallbackType = props.videoType || 'common'
 
   // 自动生成骨架屏
@@ -1038,8 +1051,6 @@ const cardWindowRoot = computed(() => {
 const recycleCards = computed(() => !!tabState?.enabled || props.items.length > 80)
 const cardColumns = computed(() => getCurrentColumnCount(props.gridLayout, gridContainerWidth.value || 1200))
 const cardGap = computed(() => isHorizontal.value ? 16 : 20)
-// Only the key index spans the feed. Scrolling never rebuilds it.
-const cardKeys = computed(() => displayItems.value.map(getUniqueKey))
 const estimatedCardHeight = computed(() => {
   const width = gridContainerWidth.value || 1200
   const columns = cardColumns.value

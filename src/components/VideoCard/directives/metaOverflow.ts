@@ -3,22 +3,53 @@ import type { ObjectDirective } from 'vue'
 interface MetaOverflowState {
   observer: ResizeObserver
   children: Set<HTMLElement>
-  frame?: number
+}
+
+interface MetaCandidate {
+  element: HTMLElement
+  priority: number
+  width: number
 }
 
 const states = new WeakMap<HTMLElement, MetaOverflowState>()
 
-function updateVisibleMeta(row: HTMLElement) {
+// Rows from every card are measured together: restore all candidates, read all
+// widths, then hide. Per-row write/read/write forced one layout per card when a
+// batch of cards mounted or updated.
+const pendingRows = new Set<HTMLElement>()
+let microtaskScheduled = false
+let frame: number | undefined
+
+function scheduleRow(row: HTMLElement, nextFrame = false) {
+  pendingRows.add(row)
+
+  // ResizeObserver callbacks run after layout; hiding items there would resize
+  // the observed children again, so that path waits for the next frame.
+  if (nextFrame) {
+    frame ??= requestAnimationFrame(() => {
+      frame = undefined
+      flushPendingRows()
+    })
+    return
+  }
+
+  // Mounted/updated hooks of one Vue flush share this microtask, which still
+  // runs before the frame is painted.
+  if (!microtaskScheduled) {
+    microtaskScheduled = true
+    queueMicrotask(() => {
+      microtaskScheduled = false
+      flushPendingRows()
+    })
+  }
+}
+
+function measureRow(row: HTMLElement) {
   const children = Array.from(row.children) as HTMLElement[]
-
-  // 先恢复候选项以测量完整宽度，最终仍按原来的 DOM 顺序显示。
-  for (const child of children)
-    child.style.removeProperty('display')
-
   const rowStyle = getComputedStyle(row)
   const availableWidth = row.clientWidth - Number.parseFloat(rowStyle.paddingLeft) - Number.parseFloat(rowStyle.paddingRight)
   const gap = Number.parseFloat(rowStyle.columnGap) || 0
-  const candidates = children.map((element) => {
+  const candidates: MetaCandidate[] = children.map((element) => {
     const style = getComputedStyle(element)
     const paddingAndBorder = style.boxSizing === 'border-box'
       ? 0
@@ -33,6 +64,10 @@ function updateVisibleMeta(row: HTMLElement) {
     }
   })
 
+  return { children, candidates, availableWidth, gap }
+}
+
+function getHiddenMeta({ children, candidates, availableWidth, gap }: ReturnType<typeof measureRow>) {
   const visibleCandidates = [...candidates]
   const getUsedWidth = () => visibleCandidates.reduce((sum, candidate) => sum + candidate.width, 0)
     + gap * Math.max(visibleCandidates.length - 1, 0)
@@ -50,8 +85,25 @@ function updateVisibleMeta(row: HTMLElement) {
   }
 
   const visible = new Set(visibleCandidates.map(candidate => candidate.element))
-  for (const child of children) {
-    if (!visible.has(child))
+  return children.filter(child => !visible.has(child))
+}
+
+function flushPendingRows() {
+  const rows = [...pendingRows].filter(row => row.isConnected && states.has(row))
+  pendingRows.clear()
+  if (!rows.length)
+    return
+
+  // 先恢复候选项以测量完整宽度，最终仍按原来的 DOM 顺序显示。
+  for (const row of rows) {
+    for (const child of Array.from(row.children) as HTMLElement[])
+      child.style.removeProperty('display')
+  }
+
+  const hidden = rows.map(row => getHiddenMeta(measureRow(row)))
+
+  for (const children of hidden) {
+    for (const child of children)
       child.style.display = 'none'
   }
 }
@@ -72,34 +124,23 @@ function observeChildren(row: HTMLElement, state: MetaOverflowState) {
 export const vMetaOverflow: ObjectDirective<HTMLElement> = {
   mounted(row) {
     const state: MetaOverflowState = {
-      observer: new ResizeObserver(() => {
-        if (state.frame !== undefined)
-          return
-
-        // 显隐会改变子项尺寸，放到下一帧更新以避免 ResizeObserver 循环。
-        state.frame = requestAnimationFrame(() => {
-          state.frame = undefined
-          updateVisibleMeta(row)
-        })
-      }),
+      observer: new ResizeObserver(() => scheduleRow(row, true)),
       children: new Set(),
     }
     states.set(row, state)
     state.observer.observe(row)
     observeChildren(row, state)
-    updateVisibleMeta(row)
+    scheduleRow(row)
   },
   updated(row) {
     const state = states.get(row)
     if (state)
       observeChildren(row, state)
-    updateVisibleMeta(row)
+    scheduleRow(row)
   },
   unmounted(row) {
-    const state = states.get(row)
-    state?.observer.disconnect()
-    if (state?.frame !== undefined)
-      cancelAnimationFrame(state.frame)
+    states.get(row)?.observer.disconnect()
     states.delete(row)
+    pendingRows.delete(row)
   },
 }

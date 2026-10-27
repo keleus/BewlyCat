@@ -418,11 +418,22 @@ watch([shouldEnableVideoControls, () => props.previewVideoUrl, () => props.isHov
   showControls()
 }, { immediate: true })
 
-// Cleanup on unmount
-onMounted(() => {
+// Only a mounted preview video can enter fullscreen, so cards without one keep
+// no document listeners.
+watch(videoRef, (videoEl, _previousVideo, onCleanup) => {
+  if (!videoEl)
+    return
+
   document.addEventListener('fullscreenchange', syncPreviewFullscreenState)
   document.addEventListener('webkitfullscreenchange', syncPreviewFullscreenState as EventListener)
-})
+  onCleanup(() => {
+    document.removeEventListener('fullscreenchange', syncPreviewFullscreenState)
+    document.removeEventListener('webkitfullscreenchange', syncPreviewFullscreenState as EventListener)
+    // Removing a fullscreen element exits fullscreen after this listener is gone.
+    if (isPreviewFullscreen.value)
+      syncPreviewFullscreenState()
+  })
+}, { immediate: true })
 
 function deactivatePreview() {
   isActive.value = false
@@ -439,11 +450,7 @@ onActivated(() => {
 })
 onDeactivated(deactivatePreview)
 
-onBeforeUnmount(() => {
-  document.removeEventListener('fullscreenchange', syncPreviewFullscreenState)
-  document.removeEventListener('webkitfullscreenchange', syncPreviewFullscreenState as EventListener)
-  deactivatePreview()
-})
+onBeforeUnmount(deactivatePreview)
 
 // Shadow styles are now injected globally via CSS variables from App.vue
 // No per-card computation needed - significant performance improvement!
