@@ -136,6 +136,18 @@ onBeforeUnmount(() => {
 })
 
 defineExpose({ initData })
+
+function getItemDisplayData(item: VideoElement) {
+  return item.displayData
+}
+
+function getItemKey(item: VideoElement) {
+  return item.uniqueId
+}
+
+function isSkeletonItem(item: VideoElement) {
+  return !item.item
+}
 </script>
 
 <template>
@@ -145,9 +157,9 @@ defineExpose({ initData })
       :grid-layout="gridLayout"
       :loading="isLoading"
       :no-more-content="noMoreContent"
-      :transform-item="(item: VideoElement) => item.displayData"
-      :get-item-key="(item: VideoElement) => item.uniqueId"
-      :is-skeleton-item="(item: VideoElement) => !item.item"
+      :transform-item="getItemDisplayData"
+      :get-item-key="getItemKey"
+      :is-skeleton-item="isSkeletonItem"
       show-preview
       @refresh="initData"
       @load-more="() => {}"

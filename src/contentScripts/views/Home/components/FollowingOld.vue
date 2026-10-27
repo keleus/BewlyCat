@@ -510,6 +510,10 @@ function transformCombinedItem(item: VideoElement | LiveVideoElement): Video | u
 }
 
 defineExpose({ initData })
+
+function getItemKey(item: VideoElement | LiveVideoElement) {
+  return item.uniqueId
+}
 </script>
 
 <template>
@@ -521,7 +525,7 @@ defineExpose({ initData })
       :no-more-content="noMoreContent"
       :need-to-login-first="needToLoginFirst"
       :transform-item="transformCombinedItem"
-      :get-item-key="(item: VideoElement | LiveVideoElement) => item.uniqueId"
+      :get-item-key="getItemKey"
       :show-watcher-later="false"
       is-following-page
       show-preview

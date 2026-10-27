@@ -625,6 +625,14 @@ defineExpose({
   currentPage,
   totalPages,
 })
+
+function transformVideoListItem(item: any) {
+  return item.type === 'live_room' ? convertLiveRoomData(item) : convertVideoData(item)
+}
+
+function getVideoListItemKey(item: any) {
+  return item.aid || item.id || item.roomid
+}
 </script>
 
 <template>
@@ -923,8 +931,8 @@ defineExpose({
         </h3>
         <VideoCardGrid
           :items="videoList"
-          :transform-item="(item: any) => item.type === 'live_room' ? convertLiveRoomData(item) : convertVideoData(item)"
-          :get-item-key="(item: any) => item.aid || item.id || item.roomid"
+          :transform-item="transformVideoListItem"
+          :get-item-key="getVideoListItemKey"
           grid-layout="adaptive"
           :loading="isLoading"
           :no-more-content="!hasMore"

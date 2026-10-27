@@ -217,6 +217,14 @@ onBeforeUnmount(() => {
 })
 
 defineExpose({ initData })
+
+function getItemDisplayData(item: VideoElement) {
+  return item.displayData
+}
+
+function getItemKey(item: VideoElement) {
+  return item.uniqueId
+}
 </script>
 
 <template>
@@ -227,8 +235,8 @@ defineExpose({ initData })
       :loading="isLoading"
       :no-more-content="noMoreContentWarning"
       :need-to-login-first="needToLoginFirst"
-      :transform-item="(item: VideoElement) => item.displayData"
-      :get-item-key="(item: VideoElement) => item.uniqueId"
+      :transform-item="getItemDisplayData"
+      :get-item-key="getItemKey"
       video-type="bangumi"
       :show-watcher-later="true"
       @refresh="initData"

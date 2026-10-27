@@ -93,6 +93,7 @@ interface VideoCardGridProps<T = any> {
 
   /**
    * 数据转换函数：将原始数据转换为 VideoCard 所需的格式
+   * 请传入稳定的函数引用；模板内联箭头函数会在父组件每次渲染时清空转换缓存。
    */
   transformItem: (item: T) => Video | undefined
 
@@ -124,6 +125,7 @@ interface VideoCardGridProps<T = any> {
 
   /**
    * 生成唯一ID的函数（可选接收 index 参数以确保唯一性）
+   * 请传入稳定的函数引用；内联箭头函数会让 key 索引和卡片行高表在父组件每次渲染时重建。
    */
   getItemKey: (item: T, index?: number) => string | number
 
@@ -379,6 +381,18 @@ const exposedCardKeys = new Set<string | number>(restoredGrid?.exposedKeys)
 const mountedCards = new Map<string | number, { canRecycle?: boolean }>()
 const cardStates = new Map<string | number, VideoCardState>(restoredGrid?.cardStates.map(([key, state]) => [key, reactive(state)]))
 
+interface CardBindings {
+  item: T
+  ref: (component: unknown) => void
+  click: (event: MouseEvent) => void
+  observe: (event: MouseEvent) => void
+}
+
+// Per-key functions keep VideoCard props identical across grid patches, so
+// scrolling the window does not re-render mounted cards. They read the
+// current item and page callbacks only when invoked.
+const cardBindings = new Map<string | number, CardBindings>()
+
 function cleanupIntersectionObserver() {
   if (intersectionObserver) {
     intersectionObserver.disconnect()
@@ -429,25 +443,31 @@ function setupCardExposureObserver() {
   })
 }
 
+// Function refs run on every grid patch, so an unchanged element is a no-op.
 function setVideoCardElement(key: string | number, item: T, component: unknown) {
   if (component)
     mountedCards.set(key, component as { canRecycle?: boolean })
   else
     mountedCards.delete(key)
 
+  const rawElement = !props.cardExposureHandler
+    ? undefined
+    : component instanceof Element
+      ? component
+      : (component as { $el?: unknown } | null)?.$el
+  const element = rawElement instanceof HTMLElement ? rawElement : undefined
   const previousElement = cardExposureElements.get(key)
+  if (element && previousElement === element) {
+    cardExposureItems.set(element, item)
+    return
+  }
+
   if (previousElement) {
     cardExposureObserver?.unobserve(previousElement)
     cardExposureElements.delete(key)
   }
 
-  if (!props.cardExposureHandler)
-    return
-
-  const element = component instanceof Element
-    ? component
-    : (component as { $el?: unknown } | null)?.$el
-  if (!(element instanceof HTMLElement))
+  if (!element)
     return
 
   cardExposureElements.set(key, element)
@@ -765,6 +785,7 @@ onUnmounted(() => {
   exposedCardKeys.clear()
   mountedCards.clear()
   cardStates.clear()
+  cardBindings.clear()
   resetTransformCaches()
 })
 
@@ -1088,11 +1109,58 @@ function getCardState(key: string | number) {
   return state
 }
 
+function getCardBindings(key: string | number, item: T) {
+  let bindings = cardBindings.get(key)
+  if (!bindings) {
+    const record = { item } as CardBindings
+    record.ref = component => setVideoCardElement(key, record.item, component)
+    record.click = event => props.cardClickHandler?.(record.item, event)
+    record.observe = event => props.cardClickObserver?.(record.item, event)
+    bindings = record
+    cardBindings.set(key, bindings)
+  }
+  bindings.item = item
+  return bindings
+}
+
+function getVideoCardProps(card: VideoCardRenderItem) {
+  const bindings = getCardBindings(card.key, card.item)
+  return {
+    'ref': bindings.ref,
+    'data-index': card.index,
+    'skeleton': card.skeleton,
+    'type': card.type,
+    'video': card.video,
+    'persistentState': getCardState(card.key),
+    'removedState': card.skeleton ? undefined : props.getRemovedState?.(card.item),
+    'showPreview': props.showPreview,
+    'showWatcherLater': props.showWatchLater,
+    'horizontal': isHorizontal.value,
+    'moreBtn': props.moreBtn,
+    'hideAuthor': props.hideAuthor,
+    'hideWatchedBadge': props.hideWatchedBadge,
+    'disableContentVisibility': props.disableContentVisibility || recycleCards.value,
+    'isFollowingPage': props.isFollowingPage,
+    'customClickHandler': props.cardClickHandler ? bindings.click : undefined,
+    'primaryClickObserver': props.cardClickObserver ? bindings.observe : undefined,
+    'coverTopLeftAlwaysVisible': props.coverTopLeftAlwaysVisible,
+  }
+}
+
+// Forwarding slots through v-for compiles to DYNAMIC_SLOTS, which forces every
+// mounted card to re-render on each grid patch. Only pages that pass slots pay that cost.
+const slots = useSlots()
+const hasCardSlots = () => Object.keys(slots).length > 0
+
 watch(cardKeys, (keys) => {
   const validKeys = new Set(keys)
   for (const key of cardStates.keys()) {
     if (!validKeys.has(key))
       cardStates.delete(key)
+  }
+  for (const key of cardBindings.keys()) {
+    if (!validKeys.has(key))
+      cardBindings.delete(key)
   }
   for (const key of exposedCardKeys) {
     if (!validKeys.has(key))
@@ -1256,25 +1324,12 @@ function getUniqueKey(item: T, index: number): string | number {
         :aria-hidden="renderItem.card ? undefined : true"
       >
         <VideoCard
-          v-if="renderItem.card"
-          :ref="(component: unknown) => setVideoCardElement(renderItem.card!.key, renderItem.card!.item, component)"
-          :data-index="renderItem.card.index"
-          :skeleton="renderItem.card.skeleton"
-          :type="renderItem.card.type"
-          :video="renderItem.card.video"
-          :persistent-state="getCardState(renderItem.card.key)"
-          :removed-state="renderItem.card.skeleton ? undefined : props.getRemovedState?.(renderItem.card.item)"
-          :show-preview="showPreview"
-          :show-watcher-later="showWatchLater"
-          :horizontal="isHorizontal"
-          :more-btn="moreBtn"
-          :hide-author="hideAuthor"
-          :hide-watched-badge="hideWatchedBadge"
-          :disable-content-visibility="props.disableContentVisibility || recycleCards"
-          :is-following-page="props.isFollowingPage"
-          :custom-click-handler="props.cardClickHandler ? (event: MouseEvent) => props.cardClickHandler?.(renderItem.card!.item, event) : undefined"
-          :primary-click-observer="props.cardClickObserver ? (event: MouseEvent) => props.cardClickObserver?.(renderItem.card!.item, event) : undefined"
-          :cover-top-left-always-visible="props.coverTopLeftAlwaysVisible"
+          v-if="renderItem.card && !hasCardSlots()"
+          v-bind="getVideoCardProps(renderItem.card)"
+        />
+        <VideoCard
+          v-else-if="renderItem.card"
+          v-bind="getVideoCardProps(renderItem.card)"
         >
           <template v-for="(_, name) in $slots" #[name]>
             <slot :name="name" :item="renderItem.card.item" />

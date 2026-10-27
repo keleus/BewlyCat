@@ -289,6 +289,14 @@ async function getRankingPgc(version: number, selectionId: number, seasonType: n
 }
 
 defineExpose({ initData })
+
+function getItemDisplayData(item: RankingVideoElement) {
+  return item.displayData
+}
+
+function getItemKey(item: RankingVideoElement) {
+  return item.aid
+}
 </script>
 
 <template>
@@ -323,8 +331,8 @@ defineExpose({ initData })
           :grid-layout="gridLayout"
           :loading="isLoading"
           :no-more-content="noMoreContent"
-          :transform-item="(item: RankingVideoElement) => item.displayData"
-          :get-item-key="(item: RankingVideoElement) => item.aid"
+          :transform-item="getItemDisplayData"
+          :get-item-key="getItemKey"
           show-preview
           @refresh="initData"
           @load-more="() => {}"

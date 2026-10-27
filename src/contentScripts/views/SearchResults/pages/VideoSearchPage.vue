@@ -300,6 +300,10 @@ defineExpose({
   currentPage,
   totalPages,
 })
+
+function getVideoKey(video: any) {
+  return video.aid || video.id
+}
 </script>
 
 <template>
@@ -316,7 +320,7 @@ defineExpose({
         :no-more-content="paginationMode === 'scroll' && !hasMore"
         :request-failed="!!error"
         :transform-item="transformVideo"
-        :get-item-key="(video: any) => video.aid || video.id"
+        :get-item-key="getVideoKey"
         :empty-description="$t('common.no_data')"
         :show-loading-more-skeleton="false"
         :show-load-more-indicator="paginationMode === 'scroll' && (results?.length || 0) > 0 && hasMore"

@@ -1452,6 +1452,10 @@ function initPageAction() {
 }
 
 defineExpose({ initData })
+
+function getItemKey(item: VideoElement) {
+  return item.uniqueId
+}
 </script>
 
 <template>
@@ -1657,7 +1661,7 @@ defineExpose({ initData })
         :empty-description="videoSearchKeyword ? (requestFailed ? $t('search.search_failed') : $t('home.following_no_search_results')) : undefined"
         :show-loading-more-skeleton="selectedUploader === null"
         :transform-item="transformVideoItem"
-        :get-item-key="(item: VideoElement) => item.uniqueId"
+        :get-item-key="getItemKey"
         :show-watcher-later="false"
         is-following-page
         show-preview

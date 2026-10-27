@@ -252,6 +252,14 @@ function onMouseEnter() {
 }
 
 defineExpose({ initData })
+
+function getItemDisplayData(item: VideoElement) {
+  return item.displayData
+}
+
+function getItemKey(item: VideoElement) {
+  return item.aid
+}
 </script>
 
 <template>
@@ -365,8 +373,8 @@ defineExpose({ initData })
         :grid-layout="gridLayout"
         :loading="isLoading"
         :no-more-content="noMoreContent"
-        :transform-item="(item: VideoElement) => item.displayData"
-        :get-item-key="(item: VideoElement) => item.aid"
+        :transform-item="getItemDisplayData"
+        :get-item-key="getItemKey"
         show-preview
         @refresh="initData"
         @load-more="() => {}"

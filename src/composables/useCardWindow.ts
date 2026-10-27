@@ -18,6 +18,13 @@ export interface CardWindowSnapshot {
   anchor?: { key: CardKey, offset: number }
 }
 
+// Offsets in viewport heights from the viewport top. Data loading looks three
+// screens ahead and behind; mounted rows cover one screen above and two below,
+// and stay mounted one extra screen in each direction before recycling.
+const LOADING_SCREENS = { before: 3, after: 4 }
+const RENDER_SCREENS = { before: 1, after: 3 }
+const RETAIN_SCREENS = { before: 2, after: 4 }
+
 interface CardRange {
   start: number
   end: number
@@ -160,20 +167,25 @@ export function useCardWindow(options: {
       : restoring || !container
         ? metrics.offset(Math.floor((anchorIndex ?? 0) / columns))
         : top - containerRect!.top
-    const loadingStart = metrics.rowAt(Math.max(0, offset - height * 3))
-    const loadingEnd = Math.min(rowCount, metrics.rowAt(offset + height * 4) + 1)
+    const loadingStart = metrics.rowAt(Math.max(0, offset - height * LOADING_SCREENS.before))
+    const loadingEnd = Math.min(rowCount, metrics.rowAt(offset + height * LOADING_SCREENS.after) + 1)
     // Data loading follows the normal overscan, independently of recycling or
     // interaction-pinned rows. Do not publish estimated pre-mount geometry.
     if (active && !restoring && document.visibilityState === 'visible'
       && container?.isConnected && containerRect && containerRect.width > 0 && containerRect.height > 0
-      && count > 0 && offset + height * 4 > 0 && offset - height * 3 < metrics.offset(rowCount)) {
+      && count > 0 && offset + height * LOADING_SCREENS.after > 0
+      && offset - height * LOADING_SCREENS.before < metrics.offset(rowCount)) {
       setLoadingRange(loadingStart * columns, Math.min(count, loadingEnd * columns))
     }
     else {
       setLoadingRange()
     }
-    const start = options.enabled.value ? loadingStart : 0
-    const end = options.enabled.value ? loadingEnd : rowCount
+    const start = options.enabled.value
+      ? metrics.rowAt(Math.max(0, offset - height * RENDER_SCREENS.before))
+      : 0
+    const end = options.enabled.value
+      ? Math.min(rowCount, metrics.rowAt(offset + height * RENDER_SCREENS.after) + 1)
+      : rowCount
     const rows = new Set<number>()
     for (let row = start; row < end; row++)
       rows.add(row)
@@ -187,7 +199,8 @@ export function useCardWindow(options: {
       if (rows.has(row))
         continue
       // Hysteresis keeps recently mounted rows around for direction changes.
-      const nearby = metrics.offset(row + 1) > offset - height * 4 && metrics.offset(row) < offset + height * 5
+      const nearby = metrics.offset(row + 1) > offset - height * RETAIN_SCREENS.before
+        && metrics.offset(row) < offset + height * RETAIN_SCREENS.after
       const focused = (element.getRootNode() as Document | ShadowRoot).activeElement
       const pinned = !options.canRelease(key) || (!!focused && element.contains(focused))
       if (nearby || pinned)
