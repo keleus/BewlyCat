@@ -3,10 +3,9 @@ import type { AmbilightBackdropProbe, AmbilightBackdropSample, AmbilightDisplayM
 const SAMPLE_WIDTH = 256
 const SAMPLE_HEIGHT = 144
 // 亮度采样从已缩小的光晕画布再缩到 16×9 读回，读回量极小且只在 CPU 画布上进行。
-// 只在环境光已绘制的帧上顺带进行，频率不超过环境光帧率，并进一步限制为每秒 2 次
+// 随环境光每一帧进行，与光晕使用同一平滑结果，文字灰阶与光晕同步渐变
 const BACKDROP_SAMPLE_WIDTH = 16
 const BACKDROP_SAMPLE_HEIGHT = 9
-const BACKDROP_SAMPLE_INTERVAL = 500
 
 interface Rect {
   left: number
@@ -99,8 +98,6 @@ export class AmbilightEngine {
   private backdropLuma = new Float32Array(BACKDROP_SAMPLE_WIDTH * BACKDROP_SAMPLE_HEIGHT)
   // 最近一次布局的光晕画布位置（视口坐标）
   private glowRect: (Rect & { blur: number }) | null = null
-  private lastBackdropSampleTime = 0
-  private backdropSampleTimer: ReturnType<typeof setTimeout> | null = null
   private backdropProbe: AmbilightBackdropProbe | null
 
   constructor(options: AmbilightEngineOptions, backdropProbe: AmbilightBackdropProbe | null = null) {
@@ -132,7 +129,7 @@ export class AmbilightEngine {
           this.drawSingleFrame(true)
         // 暂停时滚动或缩放会改变光晕与文字的相对位置，画面不变也需重新估算
         else if (this.video?.paused)
-          this.sampleBackdrop(performance.now(), false)
+          this.sampleBackdrop()
         if (this.video && !this.video.paused)
           this.startLoop()
       }
@@ -179,7 +176,6 @@ export class AmbilightEngine {
   public unbindVideo() {
     this.unbindVideoEvents()
     this.stopLoop()
-    this.cancelBackdropSample()
     if (this.layoutRafId !== null) {
       cancelAnimationFrame(this.layoutRafId)
       this.layoutRafId = null
@@ -423,38 +419,20 @@ export class AmbilightEngine {
       this.hasPainted = true
       this.hostElem?.classList.remove('is-pending')
       this.lastDrawTime = now
-      this.sampleBackdrop(now, force)
+      this.sampleBackdrop()
     }
     catch {
       // 捕获跨域或未就绪异常
     }
   }
 
-  private cancelBackdropSample() {
-    if (this.backdropSampleTimer) {
-      clearTimeout(this.backdropSampleTimer)
-      this.backdropSampleTimer = null
-    }
-  }
-
-  // 低频估算各文字位置下的光晕：覆盖率由画布模糊衰减求得，颜色取附近格子，
+  // 估算各文字位置下的光晕：覆盖率由画布模糊衰减求得，颜色取附近格子，
   // 均按 CSS 合成所用的 sRGB 编码值给出；小窗时光晕已休眠，不采样
-  private sampleBackdrop(now: number, force: boolean) {
+  private sampleBackdrop() {
     if (!this.backdropProbe || !this.canvas || !this.glowRect || !this.hasPainted || !this.isAllowed()
       || this.mode === 'mini') {
       return
     }
-    const wait = BACKDROP_SAMPLE_INTERVAL - (now - this.lastBackdropSampleTime)
-    if (!force && wait > 0) {
-      // 限频期间补一次尾随采样，暂停后滚动停下的位置也能被估算到
-      this.backdropSampleTimer ??= setTimeout(() => {
-        this.backdropSampleTimer = null
-        this.sampleBackdrop(performance.now(), false)
-      }, wait)
-      return
-    }
-    this.cancelBackdropSample()
-    this.lastBackdropSampleTime = now
 
     if (!this.backdropCtx) {
       const canvas = document.createElement('canvas')

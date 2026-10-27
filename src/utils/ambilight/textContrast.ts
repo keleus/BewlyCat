@@ -7,8 +7,16 @@ const TEXT_CONTRAST: Record<AmbilightTone, readonly number[]> = {
   dark: [13.9, 9, 5.3, 2.8],
 }
 
-// 背景无法满足一级文字的对比度时，其余各级按与一级的对比比例同步压缩，保持层级不并档
-const LEVEL_COMPRESSION = 0.35
+// 环境光下各级文字至少达到的对比度：光晕让背景不均匀，三、四级的小字按原主题的浅灰很容易看不清，
+// 整体比原主题更醒目，不严格保持原有的灰阶梯度
+const MIN_CONTRAST = [7, 7, 5.5, 4]
+
+// 背景无法满足目标对比度时，各级取所能达到的最高对比度的一定比例，只保留轻微的层级差
+const LEVEL_HEADROOM = [1, 0.92, 0.85, 0.78]
+
+// 一、二级（标题、正文）按区域背景的典型亮度取色；三、四级多为播放量、日期等小字，
+// 按区域内最不利位置取色，避免标题清楚而小字看不清
+const SMALL_TEXT_LEVEL = 2
 
 // 页面底色的 sRGB 编码亮度：实际值由 readPageBaseValue 读取，未读到前使用默认主题的近似值
 export type AmbilightBaseValues = Record<AmbilightTone, number>
@@ -40,20 +48,27 @@ function toLinear(value: number): number {
   return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
 }
 
+// 文字背后的有效相对亮度：typical 为均值与最不利位置的折中，worst 为最不利位置
+export interface AmbilightBackdrop {
+  typical: number
+  worst: number
+}
+
 /**
  * 估算页面在某明暗下，文字背后的有效相对亮度。
- * 浏览器按 sRGB 编码值做透明度合成；取均值与最不利位置的折中，兼顾整体与最难读的一处。
+ * 浏览器按 sRGB 编码值做透明度合成，结果量化到 0.01，亮度细微波动时不重复写入样式。
  */
-export function getBackdropLuminance(
+export function getBackdrop(
   samples: readonly AmbilightBackdropSample[],
   tone: AmbilightTone,
   baseValues: Readonly<AmbilightBaseValues>,
-): number {
+): AmbilightBackdrop {
   const base = baseValues[tone]
   const values = samples.map(({ glow, alpha }) => toLinear(alpha * glow + (1 - alpha) * base))
   const mean = values.reduce((sum, value) => sum + value, 0) / values.length
   const worst = tone === 'light' ? Math.min(...values) : Math.max(...values)
-  return (mean + worst) / 2
+  const quantize = (value: number) => Math.round(Math.min(1, Math.max(0, value)) * 100) / 100
+  return { typical: quantize((mean + worst) / 2), worst: quantize(worst) }
 }
 
 function maxTextContrast(tone: AmbilightTone, backdrop: number): number {
@@ -65,28 +80,25 @@ function toSrgbChannel(linear: number): number {
   return Math.round(Math.min(1, Math.max(0, v)) * 255)
 }
 
-// 与主题文字色同样略偏冷的中性灰
+// 纯中性灰，只在黑白之间变化，不带色相
 function greyWithLuminance(luminance: number): string {
   const v = toSrgbChannel(Math.min(1, Math.max(0, luminance)))
-  const clamp = (c: number) => Math.min(255, Math.max(0, c))
-  return `rgb(${clamp(v - 2)} ${clamp(v - 1)} ${clamp(v + 3)})`
+  return `rgb(${v} ${v} ${v})`
 }
 
 /**
- * 按背景相对亮度求出四级文字色：每级尽量保持原主题下的对比度，背景接近文字时整体同步压缩。
+ * 按背景相对亮度求出四级文字色：每级取原主题与环境光最低要求中更高的对比度，背景接近文字时尽量贴近可达上限。
  */
-export function getAmbilightTextColors(tone: AmbilightTone, backdropLuminance: number): string[] {
-  // 量化到 0.01，亮度细微波动时不重复写入样式
-  const backdrop = Math.round(Math.min(1, Math.max(0, backdropLuminance)) * 100) / 100
-  const maxContrast = maxTextContrast(tone, backdrop)
-  const contrasts = TEXT_CONTRAST[tone]
-  const primary = contrasts[0]
-
-  return contrasts.map((contrast) => {
-    const target = Math.min(contrast, maxContrast * (contrast / primary) ** LEVEL_COMPRESSION)
+export function getAmbilightTextColors(tone: AmbilightTone, backdrop: AmbilightBackdrop): string[] {
+  return TEXT_CONTRAST[tone].map((contrast, level) => {
+    const background = level < SMALL_TEXT_LEVEL ? backdrop.typical : backdrop.worst
+    const target = Math.min(
+      Math.max(contrast, MIN_CONTRAST[level]),
+      maxTextContrast(tone, background) * LEVEL_HEADROOM[level],
+    )
     const luminance = tone === 'light'
-      ? (backdrop + 0.05) / target - 0.05
-      : target * (backdrop + 0.05) - 0.05
+      ? (background + 0.05) / target - 0.05
+      : target * (background + 0.05) - 0.05
     return greyWithLuminance(luminance)
   })
 }

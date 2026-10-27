@@ -3,8 +3,8 @@ import { watch } from 'vue'
 import { BEWLY_IFRAME_DRAWER_HOST_CLASS } from '~/constants/globalEvents'
 import { settings, settingsReady } from '~/logic'
 import { AmbilightEngine } from '~/utils/ambilight/ambilightEngine'
-import type { AmbilightBaseValues } from '~/utils/ambilight/textContrast'
-import { DEFAULT_BASE_VALUES, getAmbilightTextColors, getBackdropLuminance, parseBaseValue } from '~/utils/ambilight/textContrast'
+import type { AmbilightBackdrop, AmbilightBaseValues } from '~/utils/ambilight/textContrast'
+import { DEFAULT_BASE_VALUES, getAmbilightTextColors, getBackdrop, parseBaseValue } from '~/utils/ambilight/textContrast'
 import type { AmbilightBackdropAnchor, AmbilightBackdropSample, AmbilightDisplayMode, AmbilightEngineOptions, AmbilightTone } from '~/utils/ambilight/types'
 import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
@@ -112,62 +112,117 @@ function getPageTone(): AmbilightTone {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 }
 
-// 改动 html 上的变量会让整页重算样式（实测 B 站播放页约 35ms），文字灰阶只在背景亮度
+// 改动 html 上的变量会让整页重算样式（实测 B 站播放页约 25ms），整页的综合灰阶只在背景亮度
 // 有可察觉变化时更新，且限制频率；用户切换明暗时立即更新
-const INK_UPDATE_DELTA = 0.04
-const INK_UPDATE_INTERVAL = 2000
+const PAGE_INK_UPDATE_DELTA = 0.04
+const PAGE_INK_UPDATE_INTERVAL = 2000
+// 各文字区域的灰阶写在区域元素自身上，只重算区域内的样式（约 10ms），随光晕逐帧采样小步更新，
+// 再由 ambilight.scss 中的变量过渡衔接相邻两次更新
+const REGION_INK_UPDATE_INTERVAL = 250
 
-let appliedInk: { tone: AmbilightTone, luminance: Map<string, number> } | null = null
-let lastInkUpdateTime = 0
-let inkUpdateTimer: ReturnType<typeof setTimeout> | null = null
+type InkBackdrops = Map<string, AmbilightBackdrop>
 
-// 文字灰阶跟随光晕实时亮度，按区域分别计算；写在 html 上，由 ambilight.scss 映射到原站与插件的文字变量
-function applyTextContrast(immediate = false) {
-  if (!lastSamples)
-    return
-  const samples = lastSamples
-  const tone = getPageTone()
-  const globalLuminance = getBackdropLuminance(samples, tone, baseValues)
-  const luminance = new Map<string, number>()
+let appliedPageInk: { tone: AmbilightTone, backdrops: InkBackdrops } | null = null
+let lastPageInkUpdateTime = 0
+let pageInkUpdateTimer: ReturnType<typeof setTimeout> | null = null
+let appliedRegionInk: { tone: AmbilightTone, backdrops: InkBackdrops } | null = null
+let lastRegionInkUpdateTime = 0
+// 已写入区域灰阶的元素，B 站重新渲染出的新元素也需补写
+const inkedRegionElements = new Set<HTMLElement>()
+
+function getInkBackdrops(samples: readonly AmbilightBackdropSample[], tone: AmbilightTone): InkBackdrops {
+  const globalBackdrop = getBackdrop(samples, tone, baseValues)
+  const backdrops: InkBackdrops = new Map()
   for (const region of BACKDROP_REGION_NAMES) {
     const regionSamples = region === 'global' ? samples : samples.filter(sample => sample.region === region)
     // 区域不在视口内时沿用综合结果，滚动回来时不会带着过期颜色
-    luminance.set(region, regionSamples.length ? getBackdropLuminance(regionSamples, tone, baseValues) : globalLuminance)
+    backdrops.set(region, regionSamples.length ? getBackdrop(regionSamples, tone, baseValues) : globalBackdrop)
   }
+  return backdrops
+}
 
-  const changed = !appliedInk || appliedInk.tone !== tone
-    || [...luminance].some(([region, value]) => Math.abs(value - (appliedInk!.luminance.get(region) ?? -1)) >= INK_UPDATE_DELTA)
-  if (!changed)
+function hasInkChanged(
+  applied: { tone: AmbilightTone, backdrops: InkBackdrops } | null,
+  tone: AmbilightTone,
+  backdrops: InkBackdrops,
+  delta: number,
+): boolean {
+  if (!applied || applied.tone !== tone)
+    return true
+  return [...backdrops].some(([region, { typical, worst }]) => {
+    const previous = applied.backdrops.get(region)
+    return !previous || Math.abs(typical - previous.typical) >= delta || Math.abs(worst - previous.worst) >= delta
+  })
+}
+
+// 整页综合灰阶与各区域的兜底值写在 html 上，由 ambilight.scss 映射到原站与插件的文字变量
+function applyPageInk(tone: AmbilightTone, backdrops: InkBackdrops, immediate: boolean) {
+  if (!hasInkChanged(appliedPageInk, tone, backdrops, PAGE_INK_UPDATE_DELTA))
     return
 
-  const wait = INK_UPDATE_INTERVAL - (performance.now() - lastInkUpdateTime)
+  const wait = PAGE_INK_UPDATE_INTERVAL - (performance.now() - lastPageInkUpdateTime)
   if (!immediate && wait > 0) {
-    inkUpdateTimer ??= setTimeout(() => {
-      inkUpdateTimer = null
+    pageInkUpdateTimer ??= setTimeout(() => {
+      pageInkUpdateTimer = null
       applyTextContrast()
     }, wait)
     return
   }
-  if (inkUpdateTimer) {
-    clearTimeout(inkUpdateTimer)
-    inkUpdateTimer = null
+  if (pageInkUpdateTimer) {
+    clearTimeout(pageInkUpdateTimer)
+    pageInkUpdateTimer = null
   }
 
-  appliedInk = { tone, luminance }
-  lastInkUpdateTime = performance.now()
+  appliedPageInk = { tone, backdrops }
+  lastPageInkUpdateTime = performance.now()
   const root = document.documentElement
-  for (const [region, value] of luminance) {
-    getAmbilightTextColors(tone, value).forEach((color, index) => {
+  for (const [region, backdrop] of backdrops) {
+    getAmbilightTextColors(tone, backdrop).forEach((color, index) => {
       root.style.setProperty(`--bew-ambilight-${region}-text-${index + 1}`, color)
     })
   }
   root.setAttribute('data-bewly-ambilight-ink', '')
 }
 
+function applyRegionInk(tone: AmbilightTone, backdrops: InkBackdrops, immediate: boolean) {
+  const changed = hasInkChanged(appliedRegionInk, tone, backdrops, 0.01)
+    && (immediate || performance.now() - lastRegionInkUpdateTime >= REGION_INK_UPDATE_INTERVAL)
+  if (changed) {
+    appliedRegionInk = { tone, backdrops }
+    lastRegionInkUpdateTime = performance.now()
+  }
+  if (!appliedRegionInk)
+    return
+
+  for (const region of BACKDROP_REGIONS) {
+    const elements = document.querySelectorAll<HTMLElement>(region.selector)
+    // 未变化时只为新出现的元素补写
+    if (!changed && Array.from(elements).every(element => inkedRegionElements.has(element)))
+      continue
+    const colors = getAmbilightTextColors(appliedRegionInk.tone, appliedRegionInk.backdrops.get(region.name)!)
+    elements.forEach((element) => {
+      colors.forEach((color, index) => element.style.setProperty(`--bew-ambilight-text-${index + 1}`, color))
+      inkedRegionElements.add(element)
+    })
+  }
+}
+
+// 文字灰阶跟随光晕实时亮度，按区域分别计算
+function applyTextContrast(immediate = false) {
+  if (!lastSamples)
+    return
+  const tone = getPageTone()
+  const backdrops = getInkBackdrops(lastSamples, tone)
+  applyPageInk(tone, backdrops, immediate)
+  // 区域灰阶依赖 html 上的标记生效，整页灰阶写入后再写
+  if (appliedPageInk)
+    applyRegionInk(tone, backdrops, immediate)
+}
+
 function clearTextContrast() {
-  if (inkUpdateTimer) {
-    clearTimeout(inkUpdateTimer)
-    inkUpdateTimer = null
+  if (pageInkUpdateTimer) {
+    clearTimeout(pageInkUpdateTimer)
+    pageInkUpdateTimer = null
   }
   const root = document.documentElement
   root.removeAttribute('data-bewly-ambilight-ink')
@@ -175,7 +230,13 @@ function clearTextContrast() {
     for (let level = 1; level <= 4; level++)
       root.style.removeProperty(`--bew-ambilight-${region}-text-${level}`)
   }
-  appliedInk = null
+  for (const element of inkedRegionElements) {
+    for (let level = 1; level <= 4; level++)
+      element.style.removeProperty(`--bew-ambilight-text-${level}`)
+  }
+  inkedRegionElements.clear()
+  appliedPageInk = null
+  appliedRegionInk = null
   lastSamples = null
 }
 
@@ -193,7 +254,7 @@ function handleBackdropSample(samples: AmbilightBackdropSample[]) {
 
 // 用户切换明暗后立即按新主题重算文字灰阶，暂停时也不必等下一次采样
 function handlePageToneChange() {
-  if (!appliedInk || appliedInk.tone === getPageTone())
+  if (!appliedPageInk || appliedPageInk.tone === getPageTone())
     return
   readPageBase()
   applyTextContrast(true)
