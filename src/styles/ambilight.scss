@@ -70,13 +70,6 @@ html[data-bewly-ambilight] {
     }
   }
 
-  // 整页明暗切换的交叉淡化时长
-  &::view-transition-old(root),
-  &::view-transition-new(root) {
-    animation-duration: 420ms;
-    animation-timing-function: ease-out;
-  }
-
   body {
     isolation: isolate;
   }

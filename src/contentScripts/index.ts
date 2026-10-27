@@ -3,7 +3,7 @@ import 'uno.css'
 
 import { createApp } from 'vue'
 
-import { hasAmbilightTone, startIframeThemeListener, useDark } from '~/composables/useDark'
+import { startIframeThemeListener, useDark } from '~/composables/useDark'
 import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG } from '~/constants/contentScript'
 import { BEWLY_IFRAME_DRAWER_HOST_CLASS, BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
 import { localSettings, localSettingsReady, settings, settingsReady } from '~/logic'
@@ -1726,10 +1726,6 @@ else if (shouldInitializeContentScript) {
     const { type, isDark, darkModeBaseColor, useOriginalBilibiliTopBar, enableTopBar } = event.data
 
     if (type === IFRAME_DARK_MODE_CHANGE) {
-      // 环境光正按光晕决定明暗时由 useDark 在父窗口主题之上统一应用，不能直接改回父窗口的明暗
-      if (hasAmbilightTone())
-        return
-
       // Check if we should apply selective dark mode (plugin UI only) on festival pages
       const isSelectiveDark = isFestivalPage()
 

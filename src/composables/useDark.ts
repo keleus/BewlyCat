@@ -2,7 +2,6 @@ import { usePreferredDark } from '@vueuse/core'
 
 import { DARK_MODE_BASE_COLOR_CHANGE, IFRAME_DARK_MODE_CHANGE } from '~/constants/globalEvents'
 import { settings } from '~/logic'
-import type { AmbilightToneByBase } from '~/utils/ambilight/types'
 import { isVideoPlaybackPage, setCookie } from '~/utils/main'
 
 const currentUrl = ref(typeof location === 'undefined' ? '' : location.href)
@@ -15,21 +14,6 @@ let lastThemeChangeState: boolean | undefined
 let lastDarkModeBaseColor: string | undefined
 let isBiliDarkSuppressed = false
 let biliDarkObserver: MutationObserver | undefined
-// 视频环境光按光晕明暗给出的页面配色，仅在环境光生效期间非空；整页随之切换主题，
-// 所有文字沿用原有的灰阶层级，不对局部元素单独改色
-const ambilightTone = shallowRef<AmbilightToneByBase | null>(null)
-
-export function setAmbilightTone(tone: AmbilightToneByBase | null) {
-  const current = ambilightTone.value
-  if (tone === current || (tone && current && tone.light === current.light && tone.dark === current.dark))
-    return
-  ambilightTone.value = tone
-}
-
-export function hasAmbilightTone(): boolean {
-  return ambilightTone.value !== null
-}
-
 function removeSuppressedBiliDark() {
   if (isBiliDarkSuppressed && document.documentElement.classList.contains('bili_dark'))
     document.documentElement.classList.remove('bili_dark')
@@ -190,15 +174,7 @@ export function useDark() {
   const isVideoPageDark = computed(() => {
     return settings.value.videoPageDarkMode && isVideoPlaybackPage(currentUrl.value)
   })
-  // iframe 抽屉内以父窗口主题为用户主题，环境光的明暗仍在其上生效
-  const isBaseDark = computed(() => iframeTheme.value
-    ? iframeTheme.value.isDark
-    : currentAppColorScheme.value === 'dark' || isVideoPageDark.value)
-  const isDark = computed(() => {
-    if (ambilightTone.value)
-      return ambilightTone.value[isBaseDark.value ? 'dark' : 'light'] === 'dark'
-    return isBaseDark.value
-  })
+  const isDark = computed(() => iframeTheme.value?.isDark ?? (currentAppColorScheme.value === 'dark' || isVideoPageDark.value))
   const darkModeBaseColor = computed(() => iframeTheme.value?.baseColor ?? settings.value.darkModeBaseColor)
 
   // Apply appearance only when an effective theme input changes.

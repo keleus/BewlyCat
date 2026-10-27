@@ -13,12 +13,6 @@ export type AmbilightDisplayMode = 'normal' | 'theater' | 'mini'
 
 export type AmbilightTone = 'light' | 'dark'
 
-// 光晕分别叠在浅色、深色主题底色上时，页面应采用的明暗
-export interface AmbilightToneByBase {
-  light: AmbilightTone
-  dark: AmbilightTone
-}
-
 // 页面上用于估算文字背景的采样点（视口坐标），region 为所属文字区域
 export interface AmbilightBackdropAnchor {
   region: string

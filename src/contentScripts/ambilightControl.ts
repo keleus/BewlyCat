@@ -1,11 +1,10 @@
-import { nextTick, watch } from 'vue'
+import { watch } from 'vue'
 
-import { setAmbilightTone } from '~/composables/useDark'
 import { BEWLY_IFRAME_DRAWER_HOST_CLASS } from '~/constants/globalEvents'
 import { settings, settingsReady } from '~/logic'
 import { AmbilightEngine } from '~/utils/ambilight/ambilightEngine'
 import type { AmbilightBaseValues } from '~/utils/ambilight/textContrast'
-import { DEFAULT_BASE_VALUES, getAmbilightTextColors, getBackdropLuminance, getWorstRegionContrast, parseBaseValue } from '~/utils/ambilight/textContrast'
+import { DEFAULT_BASE_VALUES, getAmbilightTextColors, getBackdropLuminance, parseBaseValue } from '~/utils/ambilight/textContrast'
 import type { AmbilightBackdropAnchor, AmbilightBackdropSample, AmbilightDisplayMode, AmbilightEngineOptions, AmbilightTone } from '~/utils/ambilight/types'
 import { isBewlyWidescreenActive } from '~/utils/bewlyWidescreen'
 import { isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
@@ -84,100 +83,17 @@ function getBackdropAnchors(): AmbilightBackdropAnchor[] {
   return anchors
 }
 
-// 以最难读区域的一级文字对比度比较两种明暗：用户主题下低于 LEAVE 且另一明暗明显更好才切换；
-// 切换后用户主题恢复到 RETURN 以上、或优势不再明显时切回。中间区间由文字灰阶的实时对比度补偿（见 textContrast）
-const TONE_LEAVE_CONTRAST = 6
-const TONE_RETURN_CONTRAST = 8
-const TONE_LEAVE_ADVANTAGE = 1.5
-const TONE_RETURN_ADVANTAGE = 1.2
-// 新明暗需持续一段时间才生效，过滤转场黑场、闪白与拖动进度条
-const TONE_SETTLE_MS = 1500
-// 低于此亮度视为黑场（片头、加载中），不据此做首次判断
-const BLACK_FRAME_VALUE = 0.02
-
-// 两种明暗下页面底色的实际亮度；当前明暗的底色随采样读取（跟随深色基准色设置），另一种在切换后读到
+// 页面底色的实际亮度，随采样读取（跟随深色基准色设置）。环境光只按用户当前的明暗调整文字灰阶，
+// 不随画面亮度切换整页主题
 let baseValues: AmbilightBaseValues = { ...DEFAULT_BASE_VALUES }
-
-class AmbilightToneTracker {
-  tone: AmbilightTone
-  private decided = false
-  private pending: AmbilightTone | null = null
-  private settleTimer: ReturnType<typeof setTimeout> | null = null
-
-  constructor(
-    private readonly base: AmbilightTone,
-    private readonly onChange: () => void,
-  ) {
-    this.tone = base
-  }
-
-  // 以用户主题为准：仅在用户主题下文字难以辨认、且另一明暗明显更清晰时离开
-  private resolveTarget(samples: readonly AmbilightBackdropSample[]): AmbilightTone {
-    const other: AmbilightTone = this.base === 'light' ? 'dark' : 'light'
-    const baseContrast = getWorstRegionContrast(samples, this.base, baseValues)
-    const otherContrast = getWorstRegionContrast(samples, other, baseValues)
-    if (this.tone === this.base) {
-      return baseContrast < TONE_LEAVE_CONTRAST && otherContrast > baseContrast * TONE_LEAVE_ADVANTAGE
-        ? other
-        : this.base
-    }
-    return baseContrast > TONE_RETURN_CONTRAST || otherContrast < baseContrast * TONE_RETURN_ADVANTAGE
-      ? this.base
-      : other
-  }
-
-  update(samples: readonly AmbilightBackdropSample[]) {
-    const target = this.resolveTarget(samples)
-
-    // 首个有效画面直接定调，页面与光晕同时出现，不再先亮后暗
-    if (!this.decided) {
-      if (samples.every(sample => sample.glow < BLACK_FRAME_VALUE))
-        return
-      this.decided = true
-      if (target !== this.tone) {
-        this.tone = target
-        this.onChange()
-      }
-      return
-    }
-
-    if (target === this.tone) {
-      this.cancel()
-      return
-    }
-    if (target === this.pending)
-      return
-
-    this.cancel()
-    this.pending = target
-    // 用定时器而非下一次采样确认，暂停或拖动后停在新画面时也能生效
-    this.settleTimer = setTimeout(() => {
-      this.settleTimer = null
-      this.pending = null
-      this.tone = target
-      this.onChange()
-    }, TONE_SETTLE_MS)
-  }
-
-  cancel() {
-    this.pending = null
-    if (this.settleTimer) {
-      clearTimeout(this.settleTimer)
-      this.settleTimer = null
-    }
-  }
-}
-
-let toneTrackers: Record<AmbilightTone, AmbilightToneTracker> | null = null
 let lastSamples: AmbilightBackdropSample[] | null = null
-let publishQueued = false
 
 function getPageTone(): AmbilightTone {
   return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
 }
 
 // 改动 html 上的变量会让整页重算样式（实测 B 站播放页约 35ms），文字灰阶只在背景亮度
-// 有可察觉变化时更新，且限制频率；明暗切换时随主题一并立即更新
+// 有可察觉变化时更新，且限制频率；用户切换明暗时立即更新
 const INK_UPDATE_DELTA = 0.04
 const INK_UPDATE_INTERVAL = 2000
 
@@ -243,62 +159,29 @@ function clearTextContrast() {
   lastSamples = null
 }
 
-function shouldAnimateToneChange(): boolean {
-  return typeof document.startViewTransition === 'function'
-    && !document.hidden
-    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-// 两种底色的跟踪器可能在同一次采样中同时变化，合并为一次切换
-function publishTone() {
-  if (publishQueued)
-    return
-  publishQueued = true
-  queueMicrotask(() => {
-    publishQueued = false
-    if (!toneTrackers)
-      return
-
-    const tone = { light: toneTrackers.light.tone, dark: toneTrackers.dark.tone }
-    const apply = async () => {
-      setAmbilightTone(tone)
-      // 等 useDark 的监听把主题类名写入页面后，再按新底色重算文字灰阶
-      await nextTick()
-      applyTextContrast(true)
-    }
-
-    // 整页主题切换用视图过渡交叉淡化，避免颜色瞬间突变
-    // 与其他视图过渡重叠时旧过渡会被跳过（回调仍会执行），忽略其 AbortError
-    if (shouldAnimateToneChange())
-      document.startViewTransition(apply).ready.catch(() => {})
-    else
-      void apply()
-  })
-}
-
-function handleBackdropSample(samples: AmbilightBackdropSample[]) {
-  if (!toneTrackers) {
-    toneTrackers = {
-      light: new AmbilightToneTracker('light', publishTone),
-      dark: new AmbilightToneTracker('dark', publishTone),
-    }
-  }
-  lastSamples = samples
+function readPageBase() {
   const pageBase = parseBaseValue(getComputedStyle(document.body).backgroundColor)
   if (pageBase !== null)
     baseValues[getPageTone()] = pageBase
-  toneTrackers.light.update(samples)
-  toneTrackers.dark.update(samples)
+}
+
+function handleBackdropSample(samples: AmbilightBackdropSample[]) {
+  lastSamples = samples
+  readPageBase()
   applyTextContrast()
 }
 
-function resetTone() {
-  toneTrackers?.light.cancel()
-  toneTrackers?.dark.cancel()
-  toneTrackers = null
+// 用户切换明暗后立即按新主题重算文字灰阶，暂停时也不必等下一次采样
+function handlePageToneChange() {
+  if (!appliedInk || appliedInk.tone === getPageTone())
+    return
+  readPageBase()
+  applyTextContrast(true)
+}
+
+function resetTextContrast() {
   baseValues = { ...DEFAULT_BASE_VALUES }
   clearTextContrast()
-  setAmbilightTone(null)
 }
 
 function isSupportedPage(): boolean {
@@ -432,7 +315,10 @@ function attachDiscoveryListeners() {
   // 停用期间引擎不存在，播放器形态的变化需在此监听，退出全屏等形态后才能恢复
   document.addEventListener('fullscreenchange', handlePlayerModeChange, { signal })
   // 抽屉宿主标记在 html 上，Bewly 宽屏标记在 body 上；抽屉在内容脚本中改写地址栏，不会触发 pushstate 事件
-  pageStateObserver = new MutationObserver(handlePlayerModeChange)
+  pageStateObserver = new MutationObserver(() => {
+    handlePlayerModeChange()
+    handlePageToneChange()
+  })
   pageStateObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
   if (document.body)
     pageStateObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] })
@@ -473,7 +359,7 @@ function teardownEngine() {
     currentVideo = null
   }
   document.documentElement.removeAttribute('data-bewly-ambilight')
-  resetTone()
+  resetTextContrast()
 }
 
 function sync() {

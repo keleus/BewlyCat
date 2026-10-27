@@ -60,29 +60,6 @@ function maxTextContrast(tone: AmbilightTone, backdrop: number): number {
   return tone === 'light' ? (backdrop + 0.05) / 0.05 : 1.05 / (backdrop + 0.05)
 }
 
-/**
- * 页面在某明暗下最难读的区域里，一级文字所能达到的对比度。
- */
-export function getWorstRegionContrast(
-  samples: readonly AmbilightBackdropSample[],
-  tone: AmbilightTone,
-  baseValues: Readonly<AmbilightBaseValues>,
-): number {
-  const regions = new Map<string, AmbilightBackdropSample[]>()
-  for (const sample of samples) {
-    const group = regions.get(sample.region)
-    if (group)
-      group.push(sample)
-    else
-      regions.set(sample.region, [sample])
-  }
-
-  let worst = Infinity
-  for (const group of regions.values())
-    worst = Math.min(worst, maxTextContrast(tone, getBackdropLuminance(group, tone, baseValues)))
-  return worst
-}
-
 function toSrgbChannel(linear: number): number {
   const v = linear <= 0.0031308 ? linear * 12.92 : 1.055 * linear ** (1 / 2.4) - 0.055
   return Math.round(Math.min(1, Math.max(0, v)) * 255)
