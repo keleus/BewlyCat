@@ -216,7 +216,7 @@ defineExpose({
       />
 
       <!-- moments -->
-      <TransitionGroup name="list">
+      <TransitionGroup name="list" move-class="moments-pop__item-no-move">
         <!-- TransitionGroup 会以 template 的 key 加子节点序号作为子节点 key；v-if 为假时保留注释占位，序号不变 -->
         <template v-for="(moment, index) in topBarStore.moments" :key="moment.id_str">
           <div
@@ -390,6 +390,12 @@ defineExpose({
 // 向上插入更新的动态时由 getNewerData 手动补偿滚动位置，关闭浏览器滚动锚定避免重复补偿导致下跳
 .moments-pop__list {
   overflow-anchor: none;
+}
+
+// 卡片的 duration-300 使 transition-property 为 all，TransitionGroup 会据此给已有卡片做 move 过渡：
+// 向上插入后卡片从旧位置滑向新位置，叠加滚动补偿表现为先上跳再下滑。关闭 move 过渡让卡片原地不动
+.moments-pop__item-no-move {
+  transition: none;
 }
 
 .moments-pop__last-seen {
