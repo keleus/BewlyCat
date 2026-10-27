@@ -3,6 +3,7 @@ import './shadowDom'
 import './thirdParties'
 
 import { settings, settingsReady } from '~/logic/storage'
+import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
 import { isHomePage, isInIframe, isWatchLaterListPage } from '~/utils/main'
 
 const PAGE_STYLE_CLASSES = [
@@ -72,7 +73,9 @@ async function setupStyles() {
     if (!activatePage('momentsPage'))
       return
 
-    const isOriginalMomentsFeed = /https?:\/\/t\.bilibili\.com\/?(?:[?#].*)?$/.test(currentUrl)
+    const currentUrlObj = new URL(currentUrl)
+    const isOriginalMomentsFeed = /^https?:\/\/t\.bilibili\.com$/i.test(currentUrlObj.origin)
+      && /^\/?$/.test(stripBilibiliLocalePathname(currentUrlObj.pathname))
     let initialVisibilityGuard: HTMLStyleElement | undefined
     if (isOriginalMomentsFeed) {
       root.classList.remove('moments-original-components-ready')

@@ -390,7 +390,7 @@ function isLayoutEditCandidateVisible(element: HTMLElement) {
 }
 
 function isOriginalMomentsFeedPage() {
-  return window.location.hostname === 't.bilibili.com' && /^\/?$/.test(window.location.pathname)
+  return window.location.hostname === 't.bilibili.com' && /^\/?$/.test(stripBilibiliLocalePathname(window.location.pathname))
 }
 
 function refreshLayoutEditTargets() {
