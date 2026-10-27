@@ -27,6 +27,7 @@ import { useTopBarStore } from '~/stores/topBarStore'
 import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
 import { setOriginalBilibiliTopBarScrolled } from '~/utils/bilibiliTopBar'
 import { isFirefoxBuild } from '~/utils/buildTarget'
+import { SELECTION_FALLBACK_CLASS, supportsHighlightInheritance } from '~/utils/highlightInheritance'
 import { isHomePage, isInIframe, isNotificationPage, isSearchResultsPage, isVideoOrBangumiPage, openLinkToNewTab, queryDomUntilFound, scrollToTop } from '~/utils/main'
 import emitter from '~/utils/mitt'
 import { navigateToPluginSearchResults } from '~/utils/searchNavigation'
@@ -1624,6 +1625,16 @@ function openVideoDialog(url: string) {
  */
 async function haveScrollbar() {
   await nextTick()
+  // Read after the browser has laid out the newly rendered cards; reading right
+  // after the Vue flush forced that layout synchronously after every page load.
+  // Hidden tabs do not run animation frames, so a timeout keeps loading going.
+  await new Promise<void>((resolve) => {
+    const fallback = window.setTimeout(resolve, 100)
+    requestAnimationFrame(() => setTimeout(() => {
+      window.clearTimeout(fallback)
+      resolve()
+    }, 0))
+  })
   const viewport = scrollViewportRef.value
   if (!viewport)
     return false
@@ -1861,6 +1872,7 @@ if (settings.value.cleanUrlArgument) {
     :class="{
       'dark': isDark,
       'bewly-wrapper--viewport': isHomePage() && !settings.useOriginalBilibiliHomepage,
+      [SELECTION_FALLBACK_CLASS]: !supportsHighlightInheritance(),
     }"
     text="$bew-text-1"
     @pointerdown.capture="blockOriginalLayoutInteraction"

@@ -14,34 +14,32 @@ interface MetaCandidate {
 const states = new WeakMap<HTMLElement, MetaOverflowState>()
 
 // Rows from every card are measured together: restore all candidates, read all
-// widths, then hide. Per-row write/read/write forced one layout per card when a
-// batch of cards mounted or updated.
+// widths, then hide. The pass runs after the browser has laid out the frame,
+// when those reads are free; measuring right after Vue inserted a batch of
+// cards forced a full layout of the grid. Overflowing tags stay clipped by the
+// row (fixed height, overflow hidden) until then.
 const pendingRows = new Set<HTMLElement>()
-let microtaskScheduled = false
 let frame: number | undefined
+let timer: ReturnType<typeof setTimeout> | undefined
 
-function scheduleRow(row: HTMLElement, nextFrame = false) {
+function scheduleRow(row: HTMLElement, afterLayout = false) {
   pendingRows.add(row)
+  if (timer !== undefined)
+    return
 
-  // ResizeObserver callbacks run after layout; hiding items there would resize
-  // the observed children again, so that path waits for the next frame.
-  if (nextFrame) {
-    frame ??= requestAnimationFrame(() => {
-      frame = undefined
-      flushPendingRows()
-    })
+  // ResizeObserver callbacks already run after this frame's layout.
+  if (afterLayout) {
+    if (frame !== undefined)
+      cancelAnimationFrame(frame)
+    frame = undefined
+    timer = setTimeout(flushPendingRows, 0)
     return
   }
 
-  // Mounted/updated hooks of one Vue flush share this microtask, which still
-  // runs before the frame is painted.
-  if (!microtaskScheduled) {
-    microtaskScheduled = true
-    queueMicrotask(() => {
-      microtaskScheduled = false
-      flushPendingRows()
-    })
-  }
+  frame ??= requestAnimationFrame(() => {
+    frame = undefined
+    timer ??= setTimeout(flushPendingRows, 0)
+  })
 }
 
 function measureRow(row: HTMLElement) {
@@ -89,6 +87,7 @@ function getHiddenMeta({ children, candidates, availableWidth, gap }: ReturnType
 }
 
 function flushPendingRows() {
+  timer = undefined
   const rows = [...pendingRows].filter(row => row.isConnected && states.has(row))
   pendingRows.clear()
   if (!rows.length)

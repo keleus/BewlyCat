@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onKeyStroke, useMouseInElement } from '@vueuse/core'
+import { onKeyStroke } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useBewlyApp } from '~/composables/useAppProvider'
@@ -37,10 +37,22 @@ const hideTopBar = ref<boolean>(false)
 const desiredTopBarVisible = ref(true)
 const forceHideTopBar = ref(false)
 const bewlyWidescreenActive = ref(false)
-const headerTarget = ref(null)
-const topAreaTarget = ref(null)
-const { isOutside: isOutsideTopBar } = useMouseInElement(headerTarget)
-const { isOutside: isOutsideTopArea } = useMouseInElement(topAreaTarget)
+const headerTarget = ref<HTMLElement | null>(null)
+const topAreaTarget = ref<HTMLElement | null>(null)
+// Pointer boundary events instead of useMouseInElement: that composable re-read
+// the header's rect whenever its style or class changed, which happens on every
+// scroll frame, forcing a synchronous layout each time.
+const isOutsideTopBar = ref(true)
+const isOutsideTopArea = ref(true)
+// v-if removes these elements without a pointerleave.
+watch(headerTarget, (element) => {
+  if (!element)
+    isOutsideTopBar.value = true
+})
+watch(topAreaTarget, (element) => {
+  if (!element)
+    isOutsideTopArea.value = true
+})
 
 // 当前URL
 const currentUrl = ref(window.location.href)
@@ -730,6 +742,8 @@ defineExpose({
       v-if="!bewlyWidescreenActive && isShowOnMouseActive"
       ref="topAreaTarget"
       class="top-area-listener"
+      @pointerenter="isOutsideTopArea = false"
+      @pointerleave="isOutsideTopArea = true"
     />
     <Transition name="top-bar">
       <header
@@ -746,6 +760,8 @@ defineExpose({
           'hide': hideTopBar && !isLayoutEditing,
           'force-white-icon': forceWhiteIcon,
         }"
+        @pointerenter="isOutsideTopBar = false"
+        @pointerleave="isOutsideTopBar = true"
       >
         <TopBarHeader
           v-if="!isLayoutEditing || !settings.useOriginalBilibiliTopBar"

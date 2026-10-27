@@ -159,9 +159,12 @@ const content = computed(() => {
             class="keep-two-lines" :class="[
               content.isModernLayout && moreBtn ? 'w-[calc(100%-40px)]' : 'w-full',
               content.isModernLayout ? 'video-card-title' : '',
+              // Same font size as the real title: the two-line height is in em,
+              // so a larger skeleton font made each row jump when cards arrived.
+              titleFontSizeClass,
             ]"
             :style="titleStyle"
-            text="overflow-ellipsis $bew-text-1 lg"
+            text="overflow-ellipsis $bew-text-1"
           >
             <!-- 使用与真实文本相同的行高填充，考虑 line-height -->
             <div w-full bg="$bew-skeleton" rounded="$bew-radius-sm" style="height: 1em; margin-bottom: calc((var(--bew-title-line-height, 1.35) - 1) * 0.5em);" />

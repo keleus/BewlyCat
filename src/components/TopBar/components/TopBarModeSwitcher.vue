@@ -24,7 +24,9 @@ const replacedNativeTargetStableDelay = 400
 const nativeTarget = shallowRef<Element | null>(null)
 const nativeBar = computed(() => nativeTarget.value?.closest<HTMLElement>('.bili-header__bar') ?? null)
 const nativeObserverTarget = computed(() => props.native ? document.body : null)
-const { right: nativeBarRight } = useElementBounding(nativeBar)
+// Only the bar's right edge is used, which scrolling never changes; skip the
+// default capturing scroll listener that re-read the rect on every scroll.
+const { right: nativeBarRight } = useElementBounding(nativeBar, { windowScroll: false })
 const { width: viewportWidth } = useWindowSize({ includeScrollbar: false })
 let nativeTargetCandidate: Element | null = null
 let nativeTargetCandidateSince = 0

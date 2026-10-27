@@ -76,7 +76,13 @@ const emit = defineEmits<{
 const resolvedFocusedCharacter = computed(() => resolveSearchBarCharacterUrl(props.focusedCharacter ?? ''))
 
 const searchWrapRef = ref<HTMLElement>()
-const { left: searchWrapLeft, top: searchWrapTop } = useElementBounding(searchWrapRef)
+// The search box sits in the fixed top bar, so page scrolling never moves it.
+// The default capturing scroll listener re-read its rect on every scroll event
+// of the feed, forcing a layout each time.
+const { left: searchWrapLeft, top: searchWrapTop, update: updateSearchWrapBounds } = useElementBounding(searchWrapRef, {
+  windowScroll: false,
+  updateTiming: 'next-frame',
+})
 const keywordRef = ref<HTMLInputElement>()
 const isFocus = ref<boolean>(false)
 const keyword = ref<string>(props.modelValue ?? '')
@@ -407,6 +413,7 @@ function handleCompositionEnd(event: CompositionEvent) {
 
 function handleInputFocus() {
   isFocus.value = true
+  updateSearchWrapBounds()
   queueSearchSuggestions(keyword.value)
 }
 

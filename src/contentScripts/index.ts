@@ -19,6 +19,7 @@ import { cleanupBilibiliScripts } from '~/utils/bilibiliScriptCleanup'
 import { captureOriginalBilibiliTopBar, ensureOriginalBilibiliTopBarAppended, resetBilibiliTopBarInlineStyles, shouldShowOriginalBilibiliTopBar } from '~/utils/bilibiliTopBar'
 import { findLeafActiveElement } from '~/utils/element'
 import { initFavoriteDialogEnhancement } from '~/utils/favoriteDialog'
+import { SELECTION_FALLBACK_CLASS, supportsHighlightInheritance } from '~/utils/highlightInheritance'
 import { i18n } from '~/utils/i18n'
 import { runWhenIdle } from '~/utils/lazyLoad'
 import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl, localWallpapersLoaded } from '~/utils/localWallpaper'
@@ -363,6 +364,8 @@ else if (shouldInitializeContentScript) {
     const shouldApply = shouldApplyBewlyDesign()
     document.documentElement.classList.toggle('bewly-design', shouldApply)
     document.documentElement.classList.toggle('bewly-video-dark-only', shouldApplyVideoPageDarkOnly())
+    // Only takes effect together with bewly-design, which another watcher also toggles.
+    document.documentElement.classList.toggle(SELECTION_FALLBACK_CLASS, !supportsHighlightInheritance())
     return shouldApply
   }
 
