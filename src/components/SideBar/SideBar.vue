@@ -30,7 +30,6 @@ const sideBarContentRef = useDelayedHover({
 
 const hoveringDockItem = reactive<HoveringDockItem>({
   themeMode: false,
-  settings: false,
 })
 
 watch(() => settings.value.autoHideSidebar, (newValue) => {
