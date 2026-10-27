@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useElementSize, useWindowSize } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Icon from '~/components/Icon.vue'
@@ -18,6 +18,19 @@ import { isHomePage, openLinkToNewTab } from '~/utils/main'
 import { matchesShortcutKey } from '~/utils/shortcutKeys'
 
 import Tooltip from '../Tooltip.vue'
+import {
+  ANIME_BODY_FILL_PATH,
+  ANIME_BODY_LINE_PATH,
+  ANIME_EYES_FILL_PATH,
+  ANIME_EYES_LINE_PATH,
+  CLOCK_FILL_CIRCLE_PATH,
+  CLOCK_HAND_FILL_PATH,
+  CLOCK_HAND_LINE_PATH,
+  CLOCK_RING_PATH,
+  WATCH_LATER_PLAY_FILL_PATH,
+  WATCH_LATER_PLAY_LINE_PATH,
+  WATCH_LATER_RING_PATH,
+} from './dockIconPaths'
 import type { HoveringDockItem } from './types'
 
 const props = defineProps<{
@@ -129,6 +142,20 @@ const hoveringDockItem = reactive<HoveringDockItem>({
 })
 const currentDockItems = ref<DockItem[]>([])
 const activatedDockItem = ref<DockItem>()
+
+// 每个导航图标按自身语义取一个悬停动画，未列出的页面保持静止
+const dockIconAnimationClasses: Partial<Record<AppPage, string>> = {
+  [AppPage.Home]: 'dock-icon-anim-home',
+  [AppPage.Search]: 'dock-icon-anim-search',
+  [AppPage.Anime]: 'dock-icon-anim-anime',
+  [AppPage.Favorites]: 'dock-icon-anim-favorites',
+  [AppPage.History]: 'dock-icon-anim-history',
+  [AppPage.WatchLater]: 'dock-icon-anim-watch-later',
+  [AppPage.Moments]: 'dock-icon-anim-moments',
+}
+
+const clockHandMaskId = `dock-clock-hand-mask-${useId()}`
+const animeEyeMaskId = `dock-anime-eye-mask-${useId()}`
 
 const backToTopButtonEnabled = computed((): boolean => !settings.value.disableBackToTopButtonOnDock)
 
@@ -608,24 +635,177 @@ onUnmounted(() => {
               data-layout-settings-menu="BewlyComponents"
               data-layout-settings-page="dock"
               data-layout-settings-title-key="settings.dock_content_adjustment"
-              :class="{
-                'active': isDockItemActivated(dockItem),
-                'inactive': hoveringDockItem.themeMode && isDark,
-                'disable-glowing-effect': settings.disableDockGlowingEffect,
-              }"
+              :class="[
+                dockIconAnimationClasses[dockItem.page],
+                {
+                  'active': isDockItemActivated(dockItem),
+                  'inactive': hoveringDockItem.themeMode && isDark,
+                  'disable-glowing-effect': settings.disableDockGlowingEffect,
+                },
+              ]"
               @click="handleDockItemClick($event, dockItem)"
               @click.middle="openDockItemInNewTab(dockItem)"
             >
-              <div
-                v-show="!isDockItemActivated(dockItem)"
-                :class="dockItem.icon"
-                text-xl
-              />
-              <div
-                v-show="isDockItemActivated(dockItem)"
-                :class="dockItem.iconActivated"
-                text-xl
-              />
+              <span class="dock-item-icon-wrap">
+                <!-- 路径取自 mingcute:bilibili-line/fill，拆出眼睛以支持眨眼 -->
+                <template v-if="dockItem.page === AppPage.Anime">
+                  <svg
+                    v-show="!isDockItemActivated(dockItem)"
+                    class="dock-item-icon dock-svg-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      fill-rule="evenodd"
+                      :d="ANIME_BODY_LINE_PATH"
+                    />
+                    <path
+                      class="dock-anime-eyes"
+                      fill="currentColor"
+                      fill-rule="evenodd"
+                      :d="ANIME_EYES_LINE_PATH"
+                    />
+                  </svg>
+                  <svg
+                    v-show="isDockItemActivated(dockItem)"
+                    class="dock-item-icon dock-svg-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <mask
+                      :id="animeEyeMaskId"
+                      maskUnits="userSpaceOnUse"
+                      x="0" y="0" width="24"
+                      height="24"
+                    >
+                      <rect width="24" height="24" fill="#fff" />
+                      <path
+                        class="dock-anime-eyes"
+                        fill="#000"
+                        fill-rule="evenodd"
+                        :d="ANIME_EYES_FILL_PATH"
+                      />
+                    </mask>
+                    <path
+                      fill="currentColor"
+                      fill-rule="evenodd"
+                      :d="ANIME_BODY_FILL_PATH"
+                      :mask="`url(#${animeEyeMaskId})`"
+                    />
+                  </svg>
+                </template>
+
+                <template v-else-if="dockItem.page === AppPage.History">
+                  <svg
+                    v-show="!isDockItemActivated(dockItem)"
+                    class="dock-item-icon dock-svg-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      :d="CLOCK_RING_PATH"
+                    />
+                    <path
+                      class="dock-clock-hand"
+                      fill="currentColor"
+                      :d="CLOCK_HAND_LINE_PATH"
+                    />
+                  </svg>
+                  <svg
+                    v-show="isDockItemActivated(dockItem)"
+                    class="dock-item-icon dock-svg-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <mask
+                      :id="clockHandMaskId"
+                      maskUnits="userSpaceOnUse"
+                      x="0" y="0" width="24"
+                      height="24"
+                    >
+                      <rect width="24" height="24" fill="#fff" />
+                      <path
+                        class="dock-clock-hand"
+                        fill="#000"
+                        :d="CLOCK_HAND_FILL_PATH"
+                      />
+                    </mask>
+                    <path
+                      fill="currentColor"
+                      :d="CLOCK_FILL_CIRCLE_PATH"
+                      :mask="`url(#${clockHandMaskId})`"
+                    />
+                  </svg>
+                </template>
+
+                <template v-else-if="dockItem.page === AppPage.WatchLater">
+                  <svg
+                    v-show="!isDockItemActivated(dockItem)"
+                    class="dock-item-icon dock-svg-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      :d="WATCH_LATER_RING_PATH"
+                    />
+                    <path
+                      class="dock-carplay-play"
+                      fill="currentColor"
+                      :d="WATCH_LATER_PLAY_LINE_PATH"
+                    />
+                  </svg>
+                  <svg
+                    v-show="isDockItemActivated(dockItem)"
+                    class="dock-item-icon dock-svg-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fill="currentColor"
+                      :d="WATCH_LATER_RING_PATH"
+                    />
+                    <path
+                      class="dock-carplay-play"
+                      fill="currentColor"
+                      :d="WATCH_LATER_PLAY_FILL_PATH"
+                    />
+                  </svg>
+                </template>
+
+                <template v-else>
+                  <div
+                    v-show="!isDockItemActivated(dockItem)"
+                    class="dock-item-icon"
+                    :class="dockItem.icon"
+                    text-xl
+                  />
+                  <div
+                    v-show="isDockItemActivated(dockItem)"
+                    class="dock-item-icon"
+                    :class="dockItem.iconActivated"
+                    text-xl
+                  />
+                </template>
+
+                <svg
+                  v-if="dockItem.page === AppPage.Anime"
+                  class="dock-anime-signal"
+                  viewBox="-4 -4 32 32"
+                  aria-hidden="true"
+                >
+                  <path class="dock-anime-wave dock-anime-wave-1" d="M18.2 3.4Q18.8 2 17.4 1.2" />
+                  <path class="dock-anime-wave dock-anime-wave-2" d="M21.6 4.8Q23.8 0.4 19.1 -1.2" />
+                </svg>
+
+                <span
+                  v-if="dockItem.page === AppPage.Favorites"
+                  class="dock-favorites-sparkle"
+                  aria-hidden="true"
+                />
+              </span>
             </button>
           </Tooltip>
         </template>
@@ -714,7 +894,10 @@ onUnmounted(() => {
             :aria-pressed="isLayoutEditing"
             @click="toggleLayoutEditMode('dock')"
           >
-            <Icon :icon="isLayoutEditing ? 'mingcute:check-line' : 'mingcute:edit-3-line'" />
+            <Icon
+              :icon="isLayoutEditing ? 'mingcute:check-line' : 'mingcute:edit-3-line'"
+              class="dock-edit-icon"
+            />
           </button>
         </Tooltip>
       </div>
@@ -1116,6 +1299,308 @@ onUnmounted(() => {
 
   :deep(.bew-local-icon) {
     --uno: "lg:w-22px w-18px lg:h-22px h-18px block align-middle";
+  }
+}
+
+// 导航图标的悬停动画：按各自语义播放一次
+.dock-item-icon-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.dock-item-icon {
+  position: relative;
+  z-index: 1;
+}
+
+.dock-svg-icon {
+  display: block;
+  width: 1.2em;
+  height: 1.2em;
+  font-size: calc(var(--bew-base-font-size) * 1.25);
+}
+
+.dock-item:hover .dock-item-icon,
+.dock-item:focus-visible .dock-item-icon {
+  animation-duration: 400ms;
+  animation-timing-function: var(--bew-ease-standard, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+
+.dock-icon-anim-home:hover .dock-item-icon,
+.dock-icon-anim-home:focus-visible .dock-item-icon {
+  animation-name: dock-icon-home;
+  animation-duration: 600ms;
+}
+
+.dock-icon-anim-search:hover .dock-item-icon,
+.dock-icon-anim-search:focus-visible .dock-item-icon {
+  animation-name: dock-icon-search;
+  animation-duration: 650ms;
+}
+
+.dock-icon-anim-anime:hover .dock-anime-wave,
+.dock-icon-anim-anime:focus-visible .dock-anime-wave {
+  animation: dock-anime-wave 800ms var(--bew-ease-out) both;
+}
+
+.dock-icon-anim-anime:hover .dock-anime-wave-2,
+.dock-icon-anim-anime:focus-visible .dock-anime-wave-2 {
+  animation-delay: 120ms;
+}
+
+.dock-icon-anim-anime:hover .dock-anime-eyes,
+.dock-icon-anim-anime:focus-visible .dock-anime-eyes {
+  animation: dock-anime-eyes-blink 600ms var(--bew-ease-out);
+}
+
+.dock-icon-anim-favorites:hover .dock-item-icon,
+.dock-icon-anim-favorites:focus-visible .dock-item-icon {
+  animation-name: dock-icon-favorites;
+  animation-duration: 550ms;
+}
+
+.dock-icon-anim-favorites:hover .dock-favorites-sparkle,
+.dock-icon-anim-favorites:focus-visible .dock-favorites-sparkle {
+  animation: dock-favorites-sparkle 700ms var(--bew-ease-out);
+}
+
+.dock-icon-anim-history:hover .dock-clock-hand,
+.dock-icon-anim-history:focus-visible .dock-clock-hand {
+  animation: dock-icon-history-hand 650ms var(--bew-ease-in-out);
+}
+
+.dock-icon-anim-watch-later:hover .dock-carplay-play,
+.dock-icon-anim-watch-later:focus-visible .dock-carplay-play {
+  animation: dock-icon-watch-later-play 500ms var(--bew-ease-emphasized, cubic-bezier(0.34, 1.3, 0.64, 1));
+}
+
+.dock-icon-anim-moments:hover .dock-item-icon,
+.dock-icon-anim-moments:focus-visible .dock-item-icon {
+  animation-name: dock-icon-moments;
+  animation-duration: 650ms;
+  animation-timing-function: var(--bew-ease-in-out);
+}
+
+.dock-anime-signal {
+  position: absolute;
+  inset: -4px;
+  z-index: 2;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.dock-anime-wave {
+  opacity: 0;
+  transform-box: view-box;
+  transform-origin: 67.4% 22.4%;
+}
+
+.dock-anime-eyes {
+  transform-box: view-box;
+  transform-origin: 50% 52%;
+}
+
+.dock-edit-button:hover .dock-edit-icon,
+.dock-edit-button:focus-visible .dock-edit-icon {
+  animation: dock-edit-icon-wiggle 520ms var(--bew-ease-standard, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+
+.dock-favorites-sparkle {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  z-index: 2;
+  width: 7px;
+  height: 7px;
+  background-color: currentColor;
+  clip-path: polygon(50% 0%, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0% 50%, 39% 39%);
+  opacity: 0;
+  transform: scale(0) rotate(0deg);
+  transform-origin: center;
+}
+
+.dock-clock-hand,
+.dock-carplay-play {
+  transform-box: view-box;
+}
+
+.dock-clock-hand {
+  transform-origin: 50% 50%;
+}
+
+.dock-carplay-play {
+  transform-origin: 54% 50%;
+}
+
+@keyframes dock-icon-home {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  18% {
+    transform: translateY(1.5px) scale(1.06, 0.92);
+  }
+  48% {
+    transform: translateY(-5px) scale(0.96, 1.04);
+  }
+  68% {
+    transform: translateY(1.5px) scale(1.05, 0.95);
+  }
+  84% {
+    transform: translateY(-1.5px) scale(0.99, 1.01);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+@keyframes dock-icon-search {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  20% {
+    transform: translate(-2.5px, 1.5px) rotate(-10deg);
+  }
+  45% {
+    transform: translate(2.5px, -1.5px) rotate(6deg);
+  }
+  70% {
+    transform: translate(3px, 1px) rotate(8deg);
+  }
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+@keyframes dock-icon-favorites {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  30% {
+    transform: scale(1.2) rotate(10deg);
+  }
+  62% {
+    transform: scale(0.96) rotate(-5deg);
+  }
+}
+
+@keyframes dock-favorites-sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.1) rotate(45deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1) rotate(65deg);
+  }
+  80% {
+    opacity: 0.8;
+    transform: scale(0.8) rotate(80deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(90deg);
+  }
+}
+
+@keyframes dock-anime-wave {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes dock-anime-eyes-blink {
+  0%,
+  55%,
+  70%,
+  100% {
+    transform: scaleY(1);
+  }
+  62% {
+    transform: scaleY(0.12);
+  }
+}
+
+@keyframes dock-icon-history-hand {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes dock-icon-watch-later-play {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.22);
+  }
+  70% {
+    transform: scale(0.96);
+  }
+}
+
+@keyframes dock-icon-moments {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dock-edit-icon-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  22% {
+    transform: rotate(-10deg);
+  }
+  48% {
+    transform: rotate(8deg);
+  }
+  72% {
+    transform: rotate(-4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-item:hover .dock-item-icon,
+  .dock-item:focus-visible .dock-item-icon,
+  .dock-item:hover .dock-clock-hand,
+  .dock-item:focus-visible .dock-clock-hand,
+  .dock-item:hover .dock-carplay-play,
+  .dock-item:focus-visible .dock-carplay-play,
+  .dock-item:hover .dock-anime-wave,
+  .dock-item:focus-visible .dock-anime-wave,
+  .dock-item:hover .dock-anime-eyes,
+  .dock-item:focus-visible .dock-anime-eyes,
+  .dock-item:hover .dock-favorites-sparkle,
+  .dock-item:focus-visible .dock-favorites-sparkle,
+  .dock-edit-button:hover .dock-edit-icon,
+  .dock-edit-button:focus-visible .dock-edit-icon {
+    animation: none !important;
   }
 }
 </style>

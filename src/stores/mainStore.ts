@@ -45,8 +45,8 @@ export const useMainStore = defineStore('main', () => {
       },
       {
         i18nKey: 'dock.anime',
-        icon: 'i-mingcute:tv-2-line',
-        iconActivated: 'i-mingcute:tv-2-fill',
+        icon: 'i-mingcute:bilibili-line',
+        iconActivated: 'i-mingcute:bilibili-fill',
         page: AppPage.Anime,
         openInNewTab: false,
         useOriginalBiliPage: false,
