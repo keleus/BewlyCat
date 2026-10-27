@@ -13,10 +13,14 @@ import { buildCommit, isDev, isFirefox, isSafari, port, r } from './scripts/util
 export const sharedConfig: UserConfig = {
   root: r('src'),
   resolve: {
-    alias: {
-      '~/': `${r('src')}/`,
-      '~': r('src'),
-    },
+    alias: [
+      { find: '~/', replacement: `${r('src')}/` },
+      { find: '~', replacement: r('src') },
+      // vuedraggable's UMD entry `require`s `vue`, which resolves to the CJS
+      // build and drags the template compiler into the content script.
+      // Templates are precompiled, so every consumer can share the runtime build.
+      { find: /^vue$/, replacement: 'vue/dist/vue.runtime.esm-bundler.js' },
+    ],
   },
   plugins: [
     Vue(),

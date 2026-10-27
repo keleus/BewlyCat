@@ -1,4 +1,6 @@
 // 由于是浏览器环境，所以引入的ts不能使用webextension-polyfill相关api，包含获取本地Storage，获取的是网页的localStorage
+import injectMessages from 'virtual:bewly-inject-messages'
+
 import { isSearchResultApiPath } from '~/constants/searchApi'
 import COMMENT_REPLY_TREE_GUIDES_CSS from '~/styles/commentReplyTree.scss?inline'
 import { getBilibiliDesktopNavigatorValues, isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
@@ -7,7 +9,6 @@ import { CommentReplyPageCache } from '~/utils/commentReplyPageCache'
 import type { CommentReplyAvatarAnchor, CommentReplyTreeBranch } from '~/utils/commentReplyTree'
 import { formatCommentReplyGuideCoordinate, getCommentReplyBranchPath, getCommentReplyBranchToggleY } from '~/utils/commentReplyTree'
 import { getCommentSexIcon, normalizeCommentLocation } from '~/utils/commentUserInfo'
-import { i18n } from '~/utils/i18n'
 import { isElectron } from '~/utils/main'
 import type { PageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { createPageSettingsPayload, readPageBootSnapshot } from '~/utils/pageSettingsProtocol'
@@ -17,9 +18,17 @@ import { createLocalLoudnessController } from './audio/localLoudness'
 // 存储当前设置状态
 let currentSettings: PageSettingsPayload | null = null
 
+// Matches vue-i18n's default/fallback locale; only `inject.*` messages are bundled here.
+const DEFAULT_PAGE_LOCALE = 'en'
+
 function pageT(key: string, params: Record<string, unknown> = {}) {
-  const locale = currentSettings?.language || i18n.global.locale.value
-  return String(i18n.global.t(key, params, { locale }))
+  const locale = currentSettings?.language || DEFAULT_PAGE_LOCALE
+  const messageKey = key.replace(/^inject\./, '')
+  const message = injectMessages[locale]?.[messageKey] ?? injectMessages[DEFAULT_PAGE_LOCALE]?.[messageKey]
+  if (message === undefined)
+    return key
+  return message.replace(/\{(\w+)\}/g, (placeholder, name: string) =>
+    name in params ? String(params[name]) : placeholder)
 }
 let settingsReady = false
 let preventMobileRedirectEnabled = false
@@ -1197,7 +1206,7 @@ else if (shouldInitializePageScript) {
     }
     const state = commentReplyPaginationStates.get(component)
     const allExpanded = state?.allRepliesExpanded === true
-    const optionsKey = `${totalPage}|${allExpanded}|${currentSettings?.language ?? i18n.global.locale.value}`
+    const optionsKey = `${totalPage}|${allExpanded}|${currentSettings?.language ?? DEFAULT_PAGE_LOCALE}`
     if (select.dataset.optionsKey !== optionsKey) {
       const options = document.createDocumentFragment()
       if (allExpanded) {

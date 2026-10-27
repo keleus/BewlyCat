@@ -45,6 +45,7 @@ import {
   isNewerDynamicId,
 } from '~/utils/momentsLastSeen'
 import { resolveVideoDialogPlayerModeOverride } from '~/utils/player'
+import { loadFlvjs, loadHls } from '~/utils/streamPlayers'
 import { openLinkInBackground } from '~/utils/tabs'
 import {
   DIALOG_SAFE_HEIGHT,
@@ -2466,8 +2467,7 @@ async function setupStreamPreview(url: string, videoEl: HTMLVideoElement, moment
 
   if (url.includes('.flv')) {
     try {
-      const flvjsModule = await import('flv.js')
-      const flvjs = flvjsModule.default
+      const flvjs = await loadFlvjs()
       if (!flvjs.isSupported() || !isCurrentPreview())
         return
 
@@ -2493,10 +2493,11 @@ async function setupStreamPreview(url: string, videoEl: HTMLVideoElement, moment
 
   if (url.includes('m3u8')) {
     try {
-      const Hls = (await import('hls.js')).default
+      // A player module that fails to load still leaves native HLS (Safari).
+      const Hls = await loadHls().catch(() => undefined)
       if (!isCurrentPreview())
         return
-      if (Hls.isSupported()) {
+      if (Hls?.isSupported()) {
         liveHlsPlayer = new Hls({
           enableWorker: true,
           lowLatencyMode: true,

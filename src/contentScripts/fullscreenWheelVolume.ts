@@ -1,3 +1,5 @@
+import { watch } from 'vue'
+
 import { settings } from '~/logic'
 import { adjustVolume, getVideoElement } from '~/utils/player'
 import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
@@ -6,7 +8,10 @@ import { normalizeWheelVolumeStep } from '~/utils/wheelVolume'
 const WHEEL_NOTCH_PX = 40
 const WHEEL_IDLE_RESET_MS = 200
 
+const WHEEL_LISTENER_OPTIONS = { capture: true, passive: false } as const
+
 let initialized = false
+let wheelListenerActive = false
 let accumulatedDelta = 0
 let lastWheelTime = 0
 
@@ -57,9 +62,27 @@ function handleWheel(event: WheelEvent) {
   adjustVolume(direction * normalizeWheelVolumeStep(settings.value.fullscreenWheelVolumeStep))
 }
 
+// A non-passive wheel listener makes every scroll wait for the main thread, so
+// it only exists while the feature is on and something is fullscreen.
+function syncWheelListener() {
+  const shouldListen = settings.value.customFullscreenWheelVolume && !!document.fullscreenElement
+  if (shouldListen === wheelListenerActive)
+    return
+
+  wheelListenerActive = shouldListen
+  if (shouldListen) {
+    window.addEventListener('wheel', handleWheel, WHEEL_LISTENER_OPTIONS)
+  }
+  else {
+    window.removeEventListener('wheel', handleWheel, WHEEL_LISTENER_OPTIONS)
+    accumulatedDelta = 0
+  }
+}
+
 export function initFullscreenWheelVolume() {
   if (initialized)
     return
   initialized = true
-  window.addEventListener('wheel', handleWheel, { capture: true, passive: false })
+  document.addEventListener('fullscreenchange', syncWheelListener)
+  watch(() => settings.value.customFullscreenWheelVolume, syncWheelListener, { immediate: true })
 }
