@@ -275,15 +275,21 @@ const showInitialSkeleton = computed(() => {
   return props.items.length === 0
 })
 
+// Skeletons are keyed by their absolute position in the list. When a page is
+// appended while loading is still true, real cards take over the positions
+// the skeletons held and later skeletons keep their DOM nodes in place;
+// position-independent keys made Vue move every skeleton down, which counted
+// as a large layout shift.
+function createSkeletonItem(index: number) {
+  return { _isSkeleton: true, _skeletonId: `skeleton-${index}` } as T
+}
+
 // 生成首屏骨架屏数据
 const initialSkeletonItems = computed(() => {
   if (!showInitialSkeleton.value)
     return []
 
-  return Array.from({ length: dynamicSkeletonCount.value }, (_, i) => ({
-    _isSkeleton: true,
-    _skeletonId: `skeleton-initial-${i}`,
-  })) as T[]
+  return Array.from({ length: dynamicSkeletonCount.value }, (_, i) => createSkeletonItem(i))
 })
 
 // 有真实数据时，用与视频卡片相同结构的骨架卡片表示下一批数据正在加载。
@@ -302,10 +308,8 @@ const loadingMoreSkeletonItems = computed(() => {
   const columns = getRenderedColumnCount()
   const remainder = (props.items.length + minimumSkeletonCount) % columns
   const skeletonCount = minimumSkeletonCount + (remainder === 0 ? 0 : columns - remainder)
-  return Array.from({ length: skeletonCount }, (_, i) => ({
-    _isSkeleton: true,
-    _skeletonId: `skeleton-more-${i}`,
-  })) as T[]
+  const firstIndex = props.items.length
+  return Array.from({ length: skeletonCount }, (_, i) => createSkeletonItem(firstIndex + i))
 })
 
 // 合并实际数据和骨架屏
