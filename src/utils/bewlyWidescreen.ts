@@ -2847,6 +2847,38 @@ function injectLayoutStyle() {
       overflow: visible !important;
     }
 
+    /* Watch Later / Favorites lists already scroll inside
+       #playlist-video-action-list, which also drives lazy loading. Cap the
+       outer container and let only that inner list take the remaining height. */
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .action-list-container.${EPISODE_SECTION_CLASS} {
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      scrollbar-gutter: auto;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .action-list-container > .action-list-header,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .action-list-body-top,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .action-list-body > .split-line {
+      flex: none !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .action-list-body,
+    #${ROOT_ID} .bewly-widescreen-panel-playlist .action-list-body-bottom {
+      display: flex !important;
+      flex: 1 1 auto !important;
+      flex-direction: column !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-playlist #playlist-video-action-list {
+      flex: 1 1 auto !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+    }
+
     /* New bangumi pages keep the episode list in a hidden player popover.
        Once moved into the sidebar, give the original virtualized list a
        stable flex height and let its own scroll container remain in charge. */
