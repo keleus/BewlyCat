@@ -312,6 +312,8 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
     'settings.original_moments_show_community_center',
     'settings.original_moments_show_hot_search',
     'settings.original_moments_show_up_list',
+    'settings.original_moments_show_fold_comments_button',
+    'settings.original_moments_click_blank_to_fold_comments',
     'settings.group_new_moments_page',
     'settings.moments_visible_components',
     'settings.moments_filtered_types',

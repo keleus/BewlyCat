@@ -27,10 +27,26 @@ const BLANK_LAYOUT_SELECTOR = [
   '.bili-dyn-home--member',
   '.bili-dyn-home--visitor',
   'main',
+  'aside',
   '.bili-dyn-list',
   '.bili-dyn-list__items',
 ].join(',')
-// 侧栏、页头页脚、浮层和可交互元素内的点击都不算空白。
+// 侧栏、发布区等内容卡片；点击落在卡片内或其矩形范围内都不算空白。
+const BLANK_CLICK_CONTENT_CARD_SELECTORS = [
+  '.bili-dyn-my-info',
+  '.bili-dyn-my-info--skeleton',
+  '.bili-dyn-live-users',
+  '.bili-dyn-banner',
+  '.bili-dyn-topic-box',
+  '.bili-dyn-search-trendings',
+  '.topic-panel',
+  '.bili-dyn-up-list',
+  '.bili-dyn-publishing',
+  '.bili-dyn-list-tabs',
+]
+const BLANK_CLICK_CONTENT_CARD_SELECTOR = BLANK_CLICK_CONTENT_CARD_SELECTORS.join(',')
+
+// 侧栏卡片、页头页脚、浮层和可交互元素内的点击都不算空白。
 const BLANK_CLICK_EXCLUDED_SELECTOR = [
   '#bewly',
   '#bili-header-container',
@@ -39,24 +55,27 @@ const BLANK_CLICK_EXCLUDED_SELECTOR = [
   'header',
   'footer',
   'nav',
-  'aside',
   '.bili-header',
   '.bili-footer',
   '.be-settings',
   '.side-toolbar',
-  '.bili-dyn-list-tabs',
-  '.bili-dyn-up-list',
-  '.bili-dyn-publishing',
+  ...BLANK_CLICK_CONTENT_CARD_SELECTORS,
   '.bili-album__watch',
   '.bili-dialog-bomb',
   '.modal-wrapper',
   '.pswp',
   '[aria-modal="true"]',
   '[role="button"]',
+  '[role="checkbox"]',
   '[role="dialog"]',
+  '[role="link"]',
   '[role="listbox"]',
   '[role="menu"]',
   '[role="option"]',
+  '[role="slider"]',
+  '[role="switch"]',
+  '[role="tab"]',
+  '[role="textbox"]',
   '[contenteditable="true"]',
   'a',
   'audio',
@@ -69,13 +88,27 @@ const BLANK_CLICK_EXCLUDED_SELECTOR = [
   'video',
 ].join(',')
 
+function isPointInsideContentCard(x: number, y: number) {
+  const elements = document.querySelectorAll<HTMLElement>(BLANK_CLICK_CONTENT_CARD_SELECTOR)
+  for (let i = 0; i < elements.length; i++) {
+    const rect = elements[i].getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0
+      && x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+      return true
+    }
+  }
+  return false
+}
+
 function getCollapseLabel() {
   const locale = settings.value.language || i18n.global.locale.value
   return String(i18n.global.t('moment_card.collapse_comments', {}, { locale }))
 }
 
 function updateCollapseButtonLabel(button: HTMLButtonElement) {
-  button.textContent = getCollapseLabel()
+  const label = getCollapseLabel()
+  if (button.textContent !== label)
+    button.textContent = label
 }
 
 function getCard(element: Element | null): HTMLElement | null {
@@ -96,12 +129,14 @@ function scrollCardIntoView(card: HTMLElement) {
 function getRenderedRect(element: Element) {
   if (!element.isConnected)
     return null
-  const style = getComputedStyle(element)
-  if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')
-    return null
-  if (typeof element.checkVisibility === 'function'
-    && !element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })) {
-    return null
+  if (typeof element.checkVisibility === 'function') {
+    if (!element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))
+      return null
+  }
+  else {
+    const style = getComputedStyle(element)
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0')
+      return null
   }
   const rect = element.getBoundingClientRect()
   return rect.width > 0 && rect.height > 0 ? rect : null
@@ -115,16 +150,6 @@ function isElementInViewport(element: Element) {
 function isCommentActionExpanded(action: HTMLElement) {
   // 原生 comment action 的 active class 即评论面板展开状态。
   return action.classList.contains('active')
-}
-
-function getFeedColumnRect() {
-  const cards = document.querySelectorAll<HTMLElement>(ORIGINAL_MOMENTS_CARD_SELECTOR)
-  for (let i = 0; i < cards.length; i++) {
-    const rect = cards[i].getBoundingClientRect()
-    if (rect.width > 0)
-      return rect
-  }
-  return null
 }
 
 function collapseVisibleComments(clickY: number) {
@@ -178,20 +203,8 @@ function isBlankAreaClick(event: MouseEvent) {
   if (selection && !selection.isCollapsed)
     return false
 
-  // 只认卡片横向外侧，避免点击卡片间隙或评论区域时误收起。
-  const feedRect = getFeedColumnRect()
-  return feedRect !== null && (event.clientX < feedRect.left || event.clientX > feedRect.right)
-}
-
-function isElementInsideCard(element: Element) {
-  let current: Element | null = element
-  while (current) {
-    if (current.closest(ORIGINAL_MOMENTS_CARD_SELECTOR))
-      return true
-    const root = current.getRootNode()
-    current = root instanceof ShadowRoot ? root.host : null
-  }
-  return false
+  // 目标不在卡片、评论、侧栏卡片或交互元素内，且不落在内容卡片矩形上，即视为空白区域。
+  return !isPointInsideContentCard(event.clientX, event.clientY)
 }
 
 function isEditableElement(element: Element) {
@@ -365,11 +378,11 @@ export function setupOriginalMomentsFoldComments() {
   function handleBlankAreaPointerDown(event: PointerEvent) {
     if (event.button !== 0)
       return
-    // 用空白点击清空选区或让评论输入框失焦时，不应顺手收起评论。
+    // 用空白点击清空选区或让输入框/编辑器失焦时，不应顺手收起评论。
     const selection = window.getSelection()
     const activeElement = findLeafActiveElement(document)
     suppressBlankClick = (selection !== null && !selection.isCollapsed)
-      || (activeElement !== undefined && isEditableElement(activeElement) && isElementInsideCard(activeElement))
+      || (activeElement !== undefined && isEditableElement(activeElement))
   }
 
   function handleBlankAreaClick(event: MouseEvent) {
@@ -463,7 +476,6 @@ export function setupOriginalMomentsFoldComments() {
       return
     }
     refresh()
-    feedObservers.forEach((_, root) => root.querySelectorAll<HTMLElement>(COMMENT_CONTAINER_SELECTOR).forEach(queueContainer))
   }
 
   function teardown() {

@@ -2,8 +2,8 @@ import './common'
 import './shadowDom'
 import './thirdParties'
 
+import { isOriginalMomentsFeed } from '~/contentScripts/features/originalMomentsFeed'
 import { settings, settingsReady } from '~/logic/storage'
-import { stripBilibiliLocalePathname } from '~/utils/bilibiliLocale'
 import { isHomePage, isInIframe, isWatchLaterListPage } from '~/utils/main'
 
 const PAGE_STYLE_CLASSES = [
@@ -73,11 +73,9 @@ async function setupStyles() {
     if (!activatePage('momentsPage'))
       return
 
-    const currentUrlObj = new URL(currentUrl)
-    const isOriginalMomentsFeed = /^https?:\/\/t\.bilibili\.com$/i.test(currentUrlObj.origin)
-      && /^\/?$/.test(stripBilibiliLocalePathname(currentUrlObj.pathname))
+    const isOriginalMomentsFeedPage = isOriginalMomentsFeed(currentUrl)
     let initialVisibilityGuard: HTMLStyleElement | undefined
-    if (isOriginalMomentsFeed) {
+    if (isOriginalMomentsFeedPage) {
       root.classList.remove('moments-original-components-ready')
       // storage 是异步读取的。先让可选区域不可见，等真实设置和正式样式同时就绪后再显示，
       // 避免用户已经关闭的原生组件在首屏短暂闪现。
@@ -108,7 +106,7 @@ async function setupStyles() {
 
     await Promise.all([
       import('./pages/momentsPage.scss'),
-      isOriginalMomentsFeed ? settingsReady : Promise.resolve(),
+      isOriginalMomentsFeedPage ? settingsReady : Promise.resolve(),
     ])
 
     if (!isCurrentSetup()) {
@@ -116,7 +114,7 @@ async function setupStyles() {
       return
     }
 
-    if (isOriginalMomentsFeed) {
+    if (isOriginalMomentsFeedPage) {
       root.classList.toggle('moments-hide-original-user-card', !settings.value.originalMomentsShowUserCard)
       root.classList.toggle('moments-hide-original-live-list', !settings.value.originalMomentsShowLiveList)
       root.classList.toggle('moments-hide-original-community-center', !settings.value.originalMomentsShowCommunityCenter)

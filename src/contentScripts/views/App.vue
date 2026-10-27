@@ -16,6 +16,7 @@ import { confirmDialogKey } from '~/composables/useConfirmDialog'
 import { useDark } from '~/composables/useDark'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { BEWLY_MOUNTED, DRAWER_VIDEO_ENTER_PAGE_FULL, DRAWER_VIDEO_EXIT_PAGE_FULL, IFRAME_PAGE_SWITCH_BEWLY, IFRAME_PAGE_SWITCH_BILI, IFRAME_SEARCH_NAVIGATION, OVERLAY_SCROLL_BAR_SCROLL, OVERLAY_SCROLL_STATE_CHANGE } from '~/constants/globalEvents'
+import { isOriginalMomentsFeed } from '~/contentScripts/features/originalMomentsFeed'
 import { installScrollBridge } from '~/contentScripts/features/scrollBridge'
 import { HomeSubPage } from '~/contentScripts/views/Home/types'
 import { AppPage } from '~/enums/appEnums'
@@ -390,7 +391,7 @@ function isLayoutEditCandidateVisible(element: HTMLElement) {
 }
 
 function isOriginalMomentsFeedPage() {
-  return window.location.hostname === 't.bilibili.com' && /^\/?$/.test(stripBilibiliLocalePathname(window.location.pathname))
+  return isOriginalMomentsFeed()
 }
 
 function refreshLayoutEditTargets() {
