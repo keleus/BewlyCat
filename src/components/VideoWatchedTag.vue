@@ -21,19 +21,27 @@ const status = computed(() =>
 </template>
 
 <style scoped>
+/*
+ * 标签外框（含边框）与所在标题的汉字等高，标题字号可由用户调整，故全部按 em 推算：
+ * 自身字号为标题的 --watched-tag-scale 倍，1em / scale 即标题的 1em。
+ * overflow: hidden 使 inline-block 的基线落在外框底边，再下移约 0.12 个标题字号，
+ * 让外框覆盖汉字的字面框（基线下约 0.12em 至基线上约 0.88em）。
+ */
 .video-watched-tag {
-  display: inline-flex;
-  align-items: center;
+  --watched-tag-scale: 0.75;
+
+  display: inline-block;
+  overflow: hidden;
   margin-right: var(--bew-space-1);
   padding: 0 var(--bew-space-1);
   border: 1px solid var(--bew-text-3);
   border-radius: var(--bew-radius-sm);
   color: var(--bew-text-2);
   background: var(--bew-fill-2);
-  font-size: var(--bew-font-size-caption);
+  font-size: calc(var(--watched-tag-scale) * 1em);
   font-weight: var(--bew-font-weight-medium);
-  line-height: var(--bew-line-height-caption);
-  vertical-align: 0.08em;
+  line-height: calc(1em / var(--watched-tag-scale) - 2px);
+  vertical-align: calc(-0.12em / var(--watched-tag-scale));
   white-space: nowrap;
 }
 
