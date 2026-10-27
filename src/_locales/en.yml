@@ -378,7 +378,7 @@ settings:
   original_moments_show_fold_comments_button: Show "Collapse comments" button
   original_moments_show_fold_comments_button_desc: Show a "Collapse comments" button at the bottom of the comment area on Bilibili's original moments page.
   original_moments_click_blank_to_fold_comments: Click blank areas to collapse comments
-  original_moments_click_blank_to_fold_comments_desc: When enabled, click the blank areas on either side of a moment card or elsewhere on the page to collapse expanded comments on the original moments page.
+  original_moments_click_blank_to_fold_comments_desc: When enabled, click the blank areas on either side of a moment card to collapse expanded comments on the original moments page.
   moments_show_user_card: Show user card
   moments_show_publish: Show publish action
   moments_show_live: Show live users
