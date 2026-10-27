@@ -1787,6 +1787,7 @@ moments:
   zoom_out: 缩小
   zoom_in: 放大
   fit_window: 适应窗口
+  zoom_input: 缩放比例，输入百分比后按回车或移开焦点应用
   rotate_clockwise: 顺时针旋转
 moment_card:
   repost_pending: 这条动态正在转发，请稍候

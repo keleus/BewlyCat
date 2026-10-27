@@ -716,10 +716,42 @@ function resetDetailImageViewerTransform() {
 }
 
 function setDetailImageViewerScale(scale: number) {
-  detailImageViewerScale.value = Math.min(4, Math.max(0.25, scale))
+  detailImageViewerScale.value = Math.max(0.25, scale)
   if (detailImageViewerScale.value <= 1) {
     detailImageViewerPanX.value = 0
     detailImageViewerPanY.value = 0
+  }
+}
+
+function formatDetailImageViewerZoom() {
+  return `${Math.round(detailImageViewerScale.value * 100)}%`
+}
+
+// 百分比输入在回车或失焦时应用；无效输入还原，过小的值由 setDetailImageViewerScale 收到 25%
+function applyDetailImageViewerZoomInput(event: Event) {
+  const input = event.currentTarget
+  if (!(input instanceof HTMLInputElement))
+    return
+  const percent = Number.parseFloat(input.value.replace(/[%\s]/g, ''))
+  if (Number.isFinite(percent) && percent > 0)
+    setDetailImageViewerScale(percent / 100)
+  input.value = formatDetailImageViewerZoom()
+}
+
+function handleDetailImageViewerZoomKeydown(event: KeyboardEvent) {
+  const input = event.currentTarget
+  if (!(input instanceof HTMLInputElement))
+    return
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    applyDetailImageViewerZoomInput(event)
+    input.select()
+  }
+  else if (event.key === 'Escape') {
+    event.preventDefault()
+    event.stopPropagation()
+    input.value = formatDetailImageViewerZoom()
+    detailImageViewerRef.value?.focus({ preventScroll: true })
   }
 }
 
@@ -828,7 +860,8 @@ function handleDetailImageViewerDoubleClick() {
 }
 
 function handleDetailImageViewerKeydown(event: KeyboardEvent) {
-  if (!detailImageViewerOpen.value)
+  // 输入缩放比例时不触发查看器快捷键
+  if (!detailImageViewerOpen.value || event.target instanceof HTMLInputElement)
     return
 
   if (event.key === 'Escape') {
@@ -4267,7 +4300,17 @@ watch(
           <button type="button" :aria-label="t('moments.zoom_out')" :title="t('moments.zoom_out')" @click="setDetailImageViewerScale(detailImageViewerScale - 0.25)">
             −
           </button>
-          <span class="moment-image-viewer__zoom">{{ Math.round(detailImageViewerScale * 100) }}%</span>
+          <input
+            class="moment-image-viewer__zoom"
+            type="text"
+            inputmode="decimal"
+            :value="formatDetailImageViewerZoom()"
+            :aria-label="t('moments.zoom_input')"
+            :title="t('moments.zoom_input')"
+            @focus="($event.target as HTMLInputElement).select()"
+            @keydown="handleDetailImageViewerZoomKeydown"
+            @change="applyDetailImageViewerZoomInput"
+          >
           <button type="button" :aria-label="t('moments.zoom_in')" :title="t('moments.zoom_in')" @click="setDetailImageViewerScale(detailImageViewerScale + 0.25)">
             +
           </button>
@@ -5463,6 +5506,21 @@ watch(
   text-align: center;
   font-size: var(--bew-font-size-control);
   font-variant-numeric: tabular-nums;
+}
+.moment-image-viewer__zoom {
+  width: 64px;
+  height: 30px;
+  padding: 0 var(--bew-space-1);
+  border: 0;
+  border-radius: var(--bew-radius-full);
+  outline: none;
+  color: inherit;
+  background: transparent;
+  transition: background-color var(--bew-duration-fast) var(--bew-ease-standard);
+}
+.moment-image-viewer__zoom:hover,
+.moment-image-viewer__zoom:focus {
+  background: rgb(255 255 255 / 14%);
 }
 .moment-image-viewer__divider {
   width: 1px;

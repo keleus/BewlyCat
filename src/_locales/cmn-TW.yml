@@ -1802,6 +1802,7 @@ moments:
   zoom_out: 縮小
   zoom_in: 放大
   fit_window: 適應視窗
+  zoom_input: 縮放比例，輸入百分比後按 Enter 或移開焦點套用
   rotate_clockwise: 順時針旋轉
 moment_card:
   repost_pending: 這則動態正在轉發，請稍候

@@ -836,6 +836,21 @@ html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__zoom {
   font-size: 13px !important;
   font-variant-numeric: tabular-nums !important;
 }
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__zoom {
+  width: 64px !important;
+  height: 30px !important;
+  padding: 0 4px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  outline: none !important;
+  color: inherit !important;
+  background: transparent !important;
+  transition: background-color 0.15s ease !important;
+}
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__zoom:hover,
+html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__zoom:focus {
+  background: rgba(255, 255, 255, 0.14) !important;
+}
 html.momentsPage.drawer.bewly-opus-layout .bewly-opus-viewer__divider {
   width: 1px !important;
   height: 24px !important;
@@ -1561,8 +1576,12 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   viewerToolbar.className = 'bewly-opus-viewer__toolbar'
   const viewerCounter = document.createElement('span')
   viewerCounter.className = 'bewly-opus-viewer__counter'
-  const viewerZoom = document.createElement('span')
+  const viewerZoom = document.createElement('input')
+  viewerZoom.type = 'text'
+  viewerZoom.inputMode = 'decimal'
   viewerZoom.className = 'bewly-opus-viewer__zoom'
+  viewerZoom.setAttribute('aria-label', '缩放比例，输入百分比后按回车或移开焦点应用')
+  viewerZoom.title = '缩放比例，输入百分比后按回车或移开焦点应用'
   const viewerDivider = document.createElement('span')
   viewerDivider.className = 'bewly-opus-viewer__divider'
 
@@ -1856,7 +1875,7 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   const syncViewerTransform = () => {
     viewerImage.style.transform = `translate3d(${viewerPanX}px, ${viewerPanY}px, 0) scale(${viewerScale}) rotate(${viewerRotation}deg)`
     viewerImage.classList.toggle('is-zoomed', viewerScale > 1)
-    viewerZoom.textContent = `${Math.round(viewerScale * 100)}%`
+    viewerZoom.value = `${Math.round(viewerScale * 100)}%`
   }
 
   const resetViewerTransform = () => {
@@ -1868,12 +1887,21 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   }
 
   const setViewerScale = (scale: number) => {
-    viewerScale = Math.min(4, Math.max(0.25, scale))
+    viewerScale = Math.max(0.25, scale)
     if (viewerScale <= 1) {
       viewerPanX = 0
       viewerPanY = 0
     }
     syncViewerTransform()
+  }
+
+  // 百分比输入在回车或失焦时应用；无效输入还原，过小的值由 setViewerScale 收到 25%
+  const applyViewerZoomInput = () => {
+    const percent = Number.parseFloat(viewerZoom.value.replace(/[%\s]/g, ''))
+    if (Number.isFinite(percent) && percent > 0)
+      setViewerScale(percent / 100)
+    else
+      syncViewerTransform()
   }
 
   const showViewerImage = (nextIndex: number) => {
@@ -1959,6 +1987,21 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
     e.preventDefault()
     e.stopPropagation()
     setViewerScale(viewerScale + 0.25)
+  })
+  viewerZoom.addEventListener('focus', () => viewerZoom.select())
+  viewerZoom.addEventListener('change', applyViewerZoomInput)
+  viewerZoom.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      applyViewerZoomInput()
+      viewerZoom.select()
+    }
+    else if (e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      syncViewerTransform()
+      viewer.focus({ preventScroll: true })
+    }
   })
   viewerReset.addEventListener('click', (e) => {
     e.preventDefault()
@@ -2165,7 +2208,8 @@ function createImageGallery(rawUrls: string[]): HTMLElement {
   })
 
   viewer.addEventListener('keydown', (e) => {
-    if (!viewerOpen)
+    // 输入缩放比例时不触发查看器快捷键
+    if (!viewerOpen || e.target === viewerZoom)
       return
     if (e.key === 'Escape') {
       e.preventDefault()

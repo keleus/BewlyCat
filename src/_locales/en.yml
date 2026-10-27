@@ -1873,6 +1873,7 @@ moments:
   zoom_out: Zoom out
   zoom_in: Zoom in
   fit_window: Fit to window
+  zoom_input: Zoom level. Enter a percentage, then press Enter or leave the field to apply
   rotate_clockwise: Rotate clockwise
 moment_card:
   repost_pending: This repost is still being submitted. Please wait.
