@@ -14,7 +14,7 @@ import {
   shouldUseMomentImageGrid,
 } from './utils'
 
-// 动态配图：完整行九宫格、横向画廊或单张大图三选一。默认插槽用于叠加角标（如充电专属）。
+// 动态配图：九宫格、横向画廊或单张大图三选一。默认插槽用于叠加角标（如充电专属）。
 const {
   images,
   imageRatios,

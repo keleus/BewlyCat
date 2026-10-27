@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
+  getMomentImageGridColumns,
   getMomentOriginalImageUrl,
   getMomentThumbnailUrl,
 } from './utils'
@@ -22,6 +23,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const previewUrls = computed(() => images.map(url => getMomentOriginalImageUrl(url)))
+const isTwoColumns = computed(() => getMomentImageGridColumns(images.length) === 2)
 
 function handlePreview(event: MouseEvent, index: number) {
   event.preventDefault()
@@ -39,6 +41,7 @@ function handleCoverLoad(event: Event, index: number) {
 <template>
   <div
     class="moment-image-grid"
+    :class="{ 'moment-image-grid--two-columns': isTwoColumns }"
     role="region"
     :aria-label="altPrefix"
   >
@@ -72,6 +75,12 @@ function handleCoverLoad(event: Event, index: number) {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--bew-space-2);
   min-width: 0;
+}
+
+/* 2 张、4 张（田字）：两列，单元格与三列宫格同尺寸 */
+.moment-image-grid--two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: calc((100% - var(--bew-space-2) * 2) / 3 * 2 + var(--bew-space-2));
 }
 
 .moment-image-grid__item {
