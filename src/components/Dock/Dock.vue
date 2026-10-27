@@ -144,14 +144,34 @@ const currentDockItems = ref<DockItem[]>([])
 type DockActionPulse = 'refresh' | 'back-to-top' | 'history'
 const dockActionPulse = ref<DockActionPulse>()
 let dockActionPulseTimer: number | undefined
+let dockActionPulseFrame: number | undefined
 
 function pulseDockAction(pulse: DockActionPulse) {
-  dockActionPulse.value = pulse
-  if (dockActionPulseTimer)
-    window.clearTimeout(dockActionPulseTimer)
-  dockActionPulseTimer = window.setTimeout(() => {
+  const applyPulse = () => {
+    dockActionPulse.value = pulse
+    if (dockActionPulseTimer)
+      window.clearTimeout(dockActionPulseTimer)
+    dockActionPulseTimer = window.setTimeout(() => {
+      dockActionPulse.value = undefined
+    }, 700)
+  }
+
+  if (dockActionPulseFrame !== undefined) {
+    cancelAnimationFrame(dockActionPulseFrame)
+    dockActionPulseFrame = undefined
+  }
+
+  if (dockActionPulse.value === pulse) {
+    // 同一操作连续触发时先移除再下一帧加回，强制重播动画
     dockActionPulse.value = undefined
-  }, 700)
+    dockActionPulseFrame = requestAnimationFrame(() => {
+      dockActionPulseFrame = undefined
+      applyPulse()
+    })
+  }
+  else {
+    applyPulse()
+  }
 }
 
 // 与 dock-icon-click-rebound 的 CSS 时长保持一致
@@ -730,6 +750,8 @@ onUnmounted(() => {
   if (dockActionPulseTimer) {
     window.clearTimeout(dockActionPulseTimer)
   }
+  if (dockActionPulseFrame !== undefined)
+    cancelAnimationFrame(dockActionPulseFrame)
   if (clickReboundTimer) {
     window.clearTimeout(clickReboundTimer)
   }
