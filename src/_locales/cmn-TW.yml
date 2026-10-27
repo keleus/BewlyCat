@@ -369,6 +369,10 @@ settings:
   original_moments_show_up_list: 顯示動態 UP 橫幅
   original_moments_use_bewly_filters: 過濾原版動態流
   original_moments_use_bewly_filters_desc: 啟用後，以上動態類型與關鍵詞過濾設定也會套用至 Bilibili 原版動態頁。
+  original_moments_show_fold_comments_button: 顯示收起留言按鈕
+  original_moments_show_fold_comments_button_desc: 在 Bilibili 原版動態頁的評論區底部顯示「收起留言」按鈕。
+  original_moments_click_blank_to_fold_comments: 點擊空白處收起留言
+  original_moments_click_blank_to_fold_comments_desc: 啟用後，在原版動態頁展開評論，點擊動態卡片兩側的空白區域即可收起留言。
   moments_show_user_card: 顯示使用者卡片
   moments_show_publish: 顯示發布動態元件
   moments_show_live: 顯示正在直播元件

@@ -46,6 +46,64 @@
       display: none !important;
     }
   }
+
+  // 让快速收起按钮独占评论区底部一行，并参与 sticky 定位。
+  .bili-comment-container:has(> .bewly-original-moments-fold-comment) {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  // 表情、@ 和回复操作面板需要盖在 sticky 按钮上方（与 B-E 一致）。
+  .bili-comment-container:has(> .bewly-original-moments-fold-comment),
+  .bb-comment:has(> .bewly-original-moments-fold-comment) {
+    .at-panel,
+    .emoji-panel,
+    .reply-box .box-expand,
+    .reply-operation .operation-list {
+      z-index: 111 !important;
+    }
+  }
+
+  .bewly-original-moments-fold-comment {
+    position: sticky;
+    bottom: 0;
+    z-index: 98;
+    order: 1;
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: var(--bew-control-height);
+    margin: 0;
+    padding: var(--bew-space-1) var(--bew-space-3);
+    border: 0;
+    border-top: 1px solid var(--bew-border-color);
+    border-radius: 0;
+    background: var(--bew-content-solid, var(--bg1, #fff));
+    color: var(--bew-text-2);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--bew-font-size-control);
+    font-weight: var(--bew-font-weight-medium);
+    line-height: var(--bew-line-height-control);
+    white-space: nowrap;
+    transition:
+      color 0.2s ease,
+      background-color 0.2s ease;
+
+    &:hover,
+    &:active {
+      color: var(--bew-theme-color);
+      background: var(--bew-content-solid-hover, var(--bew-fill-1));
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--bew-theme-color);
+      outline-offset: -2px;
+    }
+  }
 }
 
 .bewly-design.momentsPage {

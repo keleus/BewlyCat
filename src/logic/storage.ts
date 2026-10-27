@@ -431,6 +431,10 @@ export interface Settings {
   originalMomentsShowUpList: boolean
   /** 将 Bewly 动态过滤设置同时应用到 Bilibili 原版动态流 */
   originalMomentsUseBewlyFilters: boolean
+  /** 在原版动态评论区底部显示“收起评论”按钮 */
+  originalMomentsShowFoldCommentsButton: boolean
+  /** 原版动态页展开评论后，点击卡片两侧空白处收起评论 */
+  originalMomentsClickBlankToFoldComments: boolean
   momentsSidebarShowUserCard: boolean
   momentsSidebarShowPublish: boolean
   momentsSidebarShowLive: boolean
@@ -806,6 +810,8 @@ export const originalSettings: Settings = {
   originalMomentsShowHotSearch: true,
   originalMomentsShowUpList: true,
   originalMomentsUseBewlyFilters: false,
+  originalMomentsShowFoldCommentsButton: true,
+  originalMomentsClickBlankToFoldComments: false,
   momentsSidebarShowUserCard: true,
   momentsSidebarShowPublish: true,
   momentsSidebarShowLive: true,

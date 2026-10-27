@@ -1,4 +1,4 @@
-// B 站多语言页面在主站路径前追加语言段，例如 /ja/video/BV...、/en/。
+// B 站多语言页面会在主站及动态、空间等子站路径前追加语言段，例如 /ja/video/BV...、/zh-Hans/2/dynamic。
 // 语言列表取自 B 站页面脚本，匹配时不区分大小写。
 // 该模块会被提前执行的小入口引用，保持无依赖。
 const BILIBILI_LOCALE_PATH_SEGMENTS = new Set([
@@ -17,12 +17,12 @@ const BILIBILI_LOCALE_PATH_SEGMENTS = new Set([
   'ms',
 ])
 
-const BILIBILI_LOCALE_HOSTS = new Set(['www.bilibili.com', 'bilibili.com'])
+const BILIBILI_LOCALE_HOSTS = new Set(['www.bilibili.com', 'bilibili.com', 't.bilibili.com', 'space.bilibili.com'])
 
 const LOCALE_PATH_PREFIX_PATTERN = /^\/([^/]+)(?=\/|$)/
 
 /**
- * 去掉主站路径中的语言段，使 /ja/video/BV... 与 /video/BV... 按同一页面识别。
+ * 去掉路径中的语言段，使 /ja/video/BV... 与 /video/BV... 按同一页面识别。
  */
 export function stripBilibiliLocalePathname(pathname: string): string {
   const segment = pathname.match(LOCALE_PATH_PREFIX_PATTERN)?.[1]
@@ -33,7 +33,7 @@ export function stripBilibiliLocalePathname(pathname: string): string {
 }
 
 /**
- * 返回去掉主站语言段后的 URL；非主站或无法解析的 URL 原样返回。
+ * 返回去掉语言段后的 URL；非受支持站点或无法解析的 URL 原样返回。
  */
 export function stripBilibiliLocaleUrl(url: string): string {
   try {
