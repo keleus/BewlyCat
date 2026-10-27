@@ -361,8 +361,14 @@ function getObserverRoot(): Element | null {
 }
 
 function getViewportHeight(root = getObserverRoot()): number {
-  if (root instanceof HTMLElement && root.clientHeight > 0)
-    return root.clientHeight
+  // Cards mount while the grid inserts rows; reading clientHeight there forced
+  // a full style recalculation per batch. The shared root ResizeObserver keeps
+  // this height current, so only a root's first picture reads it.
+  const height = root instanceof HTMLElement
+    ? observedRootHeights.get(root) ?? root.clientHeight
+    : 0
+  if (height > 0)
+    return height
   return typeof window !== 'undefined' ? window.innerHeight : 0
 }
 

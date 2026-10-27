@@ -386,6 +386,7 @@ const isFirefox = typeof navigator !== 'undefined' && /\bFirefox\//.test(navigat
 let intersectionObserver: IntersectionObserver | null = null
 let cardExposureObserver: IntersectionObserver | null = null
 let isGridActive = false
+let cachedScrollElement: HTMLElement | null = null
 let scrollListenersActive = false
 const cardExposureElements = new Map<string | number, HTMLElement>()
 const cardExposureItems = new WeakMap<HTMLElement, T>()
@@ -536,6 +537,39 @@ function setupIntersectionObserver() {
 // RAF 标志，用于批量处理 DOM 读取
 let checkPreloadRAF: number | null = null
 
+interface PostFrameTask {
+  frame?: number
+  timer?: number
+}
+
+// Checks that read scroll geometry after a batch renders wait until the
+// browser has laid out that frame. Reading it inside the Vue flush forced an
+// extra full style and layout pass between card insertions.
+const postFrameTasks = new Set<PostFrameTask>()
+
+function afterNextFrame(callback: () => void) {
+  const task: PostFrameTask = {}
+  task.frame = requestAnimationFrame(() => {
+    task.frame = undefined
+    task.timer = window.setTimeout(() => {
+      postFrameTasks.delete(task)
+      if (isGridActive)
+        callback()
+    }, 0)
+  })
+  postFrameTasks.add(task)
+}
+
+function cancelPostFrameTasks() {
+  for (const task of postFrameTasks) {
+    if (task.frame !== undefined)
+      cancelAnimationFrame(task.frame)
+    if (task.timer !== undefined)
+      window.clearTimeout(task.timer)
+  }
+  postFrameTasks.clear()
+}
+
 // 检查是否需要预加载
 function checkShouldPreload() {
   if (!isGridActive || !isDocumentVisible())
@@ -661,8 +695,8 @@ watch(() => props.loading, (newLoading, oldLoading) => {
     const stayedInPreloadArea = reachedLoadMoreDuringLoading.value
     reachedLoadMoreDuringLoading.value = false
 
-    // 加载完成后，延迟检查是否需要继续加载
-    nextTick(() => {
+    // 加载完成后，等新内容完成布局再检查是否需要继续加载
+    afterNextFrame(() => {
       // 用户可能在请求结束前刚好滚到底部。此时 sentinel 没有新的相交变化，
       // 直接按滚动容器几何位置补触发，避免丢掉这次 loadMore。
       if (isScrollAtBottom() && (props.showLoadingMoreSkeleton || isListOverflowing())) {
@@ -715,9 +749,7 @@ watch(() => props.items.length, (newCount, oldCount) => {
   if (props.loading || reachedLoadMoreDuringLoading.value)
     return
 
-  nextTick(() => {
-    checkShouldPreload()
-  })
+  afterNextFrame(checkShouldPreload)
 })
 
 // 监听 noMoreContent 重置（用户切换模式或刷新时）
@@ -745,6 +777,7 @@ function activateGrid() {
     return
 
   isGridActive = true
+  cachedScrollElement = null
   setupScrollListeners()
   setupGridResizeObserver()
   document.addEventListener('visibilitychange', handleDocumentVisibilityChange)
@@ -769,6 +802,7 @@ function deactivateGrid() {
   cleanupIntersectionObserver()
   cleanupCardExposureObserver()
   cleanupGridResizeObserver()
+  cancelPostFrameTasks()
 
   if (checkPreloadRAF !== null) {
     cancelAnimationFrame(checkPreloadRAF)
@@ -879,15 +913,27 @@ function findScrollElement(): HTMLElement | null {
   if (settings.value.useOriginalBilibiliHomepage)
     return document.scrollingElement as HTMLElement | null
 
-  let element = gridContainerRef.value?.parentElement ?? null
+  const container = gridContainerRef.value
+  if (!container)
+    return null
+
+  // getComputedStyle on each ancestor forces a style recalculation when this
+  // runs right after cards are inserted. Reuse the result while the grid stays
+  // inside it, and stop at the App viewport without reading its style.
+  if (cachedScrollElement?.isConnected && cachedScrollElement.contains(container))
+    return cachedScrollElement
+
+  const viewport = bewlyApp?.scrollViewportRef.value
+  let element = container.parentElement
   while (element) {
-    const styles = window.getComputedStyle(element)
-    const canScrollY = /auto|scroll|overlay/.test(styles.overflowY)
-    if (canScrollY)
+    if (element === viewport || /auto|scroll|overlay/.test(window.getComputedStyle(element).overflowY)) {
+      cachedScrollElement = element
       return element
+    }
     element = element.parentElement
   }
 
+  cachedScrollElement = null
   return null
 }
 

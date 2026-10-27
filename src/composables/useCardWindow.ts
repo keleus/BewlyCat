@@ -32,6 +32,21 @@ interface CardRange {
   height?: number
 }
 
+/** First item index whose rendering differs between two range lists. */
+function getFirstChangedIndex(previous: CardRange[], next: CardRange[]): number | undefined {
+  for (let index = 0; index < Math.max(previous.length, next.length); index++) {
+    const before = previous[index]
+    const after = next[index]
+    if (!before || !after)
+      return (before ?? after)!.start
+    if (before.start !== after.start || before.height !== after.height)
+      return Math.min(before.start, after.start)
+    if (before.end !== after.end)
+      return Math.min(before.end, after.end)
+  }
+  return undefined
+}
+
 /** Mount only nearby rows and rows containing an interaction that cannot be recycled. */
 export function useCardWindow(options: {
   root: Ref<HTMLElement | null>
@@ -67,6 +82,9 @@ export function useCardWindow(options: {
   let pendingAnchor: CardWindowSnapshot['anchor']
   let pendingScrollTop = 0
   let bookmark: { root: HTMLElement, scrollTop: number, anchor: CardWindowSnapshot['anchor'] } | undefined
+  let bookmarkFrame: number | undefined
+  let bookmarkTimer: ReturnType<typeof setTimeout> | undefined
+  let previousLayout: { keys: CardKey[], columns: number, gap: number, estimatedHeight: number, layout: string, enabled: boolean } | undefined
 
   function setLoadingRange(start = 0, end = 0) {
     if (loadingRange.value.start !== start || loadingRange.value.end !== end)
@@ -105,6 +123,22 @@ export function useCardWindow(options: {
       if (Math.abs(adjustment) > 1)
         root.scrollTop += adjustment
     }
+  }
+
+  /** Viewport position in the container's row coordinates. */
+  function viewportOffset() {
+    const container = options.container.value
+    if (!container)
+      return undefined
+    const { top, height } = viewport()
+    return { offset: top - container.getBoundingClientRect().top, height }
+  }
+
+  // Anchoring re-reads layout right after Vue patches the grid, which forces a
+  // full style and layout pass. Rows starting below the one at the viewport's
+  // bottom edge cannot move any visible card, so changes there skip it.
+  function changesVisibleRows(firstChangedRow: number, visible = viewportOffset()) {
+    return !visible || firstChangedRow <= metrics.rowAt(Math.max(0, visible.offset + visible.height))
   }
 
   function keepScrollAnchor() {
@@ -235,20 +269,38 @@ export function useCardWindow(options: {
         height: Math.max(0, metrics.offset(rowCount) - metrics.offset(cursor) - gap),
       })
     }
-    if (next.length !== ranges.value.length || next.some((range, index) => {
-      const previous = ranges.value[index]
-      return range.start !== previous.start || range.end !== previous.end || range.height !== previous.height
-    })) {
-      keepScrollAnchor()
+    const firstChangedIndex = getFirstChangedIndex(ranges.value, next)
+    if (firstChangedIndex !== undefined) {
+      if (changesVisibleRows(Math.floor(firstChangedIndex / columns), { offset, height }))
+        keepScrollAnchor()
       ranges.value = next
       if (active && !resizeObserver)
         void nextTick(measureMounted)
     }
-    void nextTick(() => {
-      const root = options.root.value
-      if (active && !anchorPending && root)
-        bookmark = { root, scrollTop: root.scrollTop, anchor: visibleAnchor() }
+    scheduleBookmark()
+  }
+
+  // The settled position is read after the browser has laid out the patched
+  // rows; reading it in the same flush forced another synchronous layout.
+  function scheduleBookmark() {
+    if (bookmarkFrame !== undefined || bookmarkTimer !== undefined)
+      return
+    bookmarkFrame = requestAnimationFrame(() => {
+      bookmarkFrame = undefined
+      bookmarkTimer = setTimeout(() => {
+        bookmarkTimer = undefined
+        const root = options.root.value
+        if (active && !anchorPending && root)
+          bookmark = { root, scrollTop: root.scrollTop, anchor: visibleAnchor() }
+      }, 0)
     })
+  }
+
+  function cancelBookmark() {
+    if (bookmarkFrame !== undefined)
+      cancelAnimationFrame(bookmarkFrame)
+    clearTimeout(bookmarkTimer)
+    bookmarkFrame = bookmarkTimer = undefined
   }
 
   function scheduleUpdate() {
@@ -268,9 +320,33 @@ export function useCardWindow(options: {
   }
 
   function rebuildRows() {
-    keepScrollAnchor()
     const keys = options.keys.value
     const columns = options.columns.value
+    const layout = {
+      keys,
+      columns,
+      gap: options.gap.value,
+      estimatedHeight: options.estimatedHeight.value,
+      layout: options.layout.value,
+      enabled: options.enabled.value,
+    }
+    // Appending a page keeps every earlier row in place; anything else may
+    // change row heights from the top.
+    let firstChangedRow = 0
+    const previous = previousLayout
+    if (previous && previous.columns === layout.columns && previous.gap === layout.gap
+      && previous.estimatedHeight === layout.estimatedHeight && previous.layout === layout.layout
+      && previous.enabled === layout.enabled) {
+      let index = 0
+      while (index < previous.keys.length && index < keys.length && previous.keys[index] === keys[index])
+        index++
+      firstChangedRow = index === previous.keys.length && index === keys.length
+        ? Infinity
+        : Math.floor(index / columns)
+    }
+    previousLayout = layout
+    if (changesVisibleRows(firstChangedRow))
+      keepScrollAnchor()
     measuredColumns = columns
     indices.clear()
     rowCount = Math.ceil(keys.length / columns)
@@ -305,7 +381,13 @@ export function useCardWindow(options: {
       heights.set(row, Math.max(heights.get(row) ?? 0, height))
     }
     // Capture the visible position before changing spacer heights above it.
-    keepScrollAnchor()
+    let firstChangedRow = Infinity
+    for (const [row, height] of heights) {
+      if (Math.abs(metrics.offset(row + 1) - metrics.offset(row) - (height + options.gap.value)) >= 0.5)
+        firstChangedRow = Math.min(firstChangedRow, row)
+    }
+    if (changesVisibleRows(firstChangedRow))
+      keepScrollAnchor()
     for (const [key, height] of pending)
       measurements.set(key, { height, layout: options.layout.value, estimatedHeight: options.estimatedHeight.value })
     let changed = false
@@ -343,6 +425,7 @@ export function useCardWindow(options: {
     frame = undefined
     clearTimeout(sweepTimer)
     sweepTimer = undefined
+    cancelBookmark()
     resizeObserver?.disconnect()
     viewportObserver?.disconnect()
     resizeObserver = viewportObserver = undefined
