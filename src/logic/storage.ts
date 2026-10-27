@@ -50,6 +50,13 @@ export const momentsPinnedUsers = useStorageLocal<MomentsWantedUser[]>(
   { writeDefaults: false },
 )
 
+/** 动态卡片评论区上次选择的排序（0 最新，1 最热）；新展开的评论区沿用该排序。 */
+export const momentCommentSort = useStorageLocal<0 | 1>(
+  'momentCommentSort',
+  0,
+  { writeDefaults: false },
+)
+
 export const FROSTED_GLASS_BLUR_MIN_PX = 1
 export const FROSTED_GLASS_BLUR_MAX_PX = 20
 

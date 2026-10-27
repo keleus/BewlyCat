@@ -2,6 +2,7 @@ import { onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
+import { momentCommentSort } from '~/logic'
 import api from '~/utils/api'
 import { getCSRF, getUserID } from '~/utils/main'
 
@@ -44,6 +45,9 @@ export function useMomentComments(
   const { t } = useI18n()
   const toast = useToast()
   let disposed = false
+  // 评论区每次重新挂载都会清空数据，此时沿用上次选择的排序。
+  if (!state.comments.length && !state.page && (momentCommentSort.value === 0 || momentCommentSort.value === 1))
+    state.sort = momentCommentSort.value
   onScopeDispose(() => {
     disposed = true
     state.comments = []
@@ -114,6 +118,7 @@ export function useMomentComments(
     if (disposed || state.loading || state.sort === sort)
       return
     state.sort = sort
+    momentCommentSort.value = sort
     state.comments = []
     state.page = 0
     state.done = false
