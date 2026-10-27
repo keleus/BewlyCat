@@ -27,7 +27,24 @@ let engineLifetime: AbortController | null = null
 interface BackdropRegion {
   name: string
   selector: string
-  points: (rect: DOMRect) => Array<[number, number]>
+  points: (rect: DOMRect, video: DOMRect | null) => Array<[number, number]>
+}
+
+// 区域在视口内、未被视频画面遮住的纵向区段。宽屏下右侧栏从标题旁一直延伸到播放器下方，
+// 中间一段被视频覆盖，栏内文字只在视频上方与下方
+function getVisibleSpans(rect: DOMRect, video: DOMRect | null): Array<[number, number]> {
+  const top = Math.max(rect.top, 0)
+  const bottom = Math.min(rect.bottom, window.innerHeight)
+  if (bottom <= top)
+    return []
+  if (!video || video.right <= rect.left || video.left >= rect.right || video.bottom <= top || video.top >= bottom)
+    return [[top, bottom]]
+  const spans: Array<[number, number]> = []
+  if (video.top > top)
+    spans.push([top, video.top])
+  if (video.bottom < bottom)
+    spans.push([video.bottom, bottom])
+  return spans
 }
 
 const BACKDROP_REGIONS: readonly BackdropRegion[] = [
@@ -44,18 +61,15 @@ const BACKDROP_REGIONS: readonly BackdropRegion[] = [
     // UP 主信息、弹幕列表、合集与推荐列表
     name: 'side',
     selector: '.right-container, .playlist-container--right',
-    points: (rect) => {
-      const top = Math.max(rect.top, 0) + 60
-      const bottom = Math.min(rect.bottom, window.innerHeight) - 60
-      if (bottom <= top)
-        return []
+    points: (rect, video) => getVisibleSpans(rect, video).flatMap(([spanTop, spanBottom]) => {
+      // 区段足够高时避开上下边缘，否则只取中线
+      const inset = Math.min(60, (spanBottom - spanTop) / 4)
+      const top = spanTop + inset
+      const bottom = spanBottom - inset
+      const ys = bottom - top < 1 ? [top] : [top, (top + bottom) / 2, bottom]
       // 靠近视频的左缘光晕最浓，与栏内中部一起采样
-      return [rect.left + 24, rect.left + rect.width * 0.5].flatMap(x => [
-        [x, top] as [number, number],
-        [x, (top + bottom) / 2] as [number, number],
-        [x, bottom] as [number, number],
-      ])
-    },
+      return [rect.left + 24, rect.left + rect.width * 0.5].flatMap(x => ys.map(y => [x, y] as [number, number]))
+    }),
   },
   {
     // 播放器下方的弹幕发送栏与三连工具栏
@@ -67,15 +81,21 @@ const BACKDROP_REGIONS: readonly BackdropRegion[] = [
 
 const BACKDROP_REGION_NAMES = ['global', ...BACKDROP_REGIONS.map(region => region.name)]
 
+function isInside(rect: DOMRect | null, x: number, y: number): boolean {
+  return rect !== null && x > rect.left && x < rect.right && y > rect.top && y < rect.bottom
+}
+
 function getBackdropAnchors(): AmbilightBackdropAnchor[] {
   const anchors: AmbilightBackdropAnchor[] = []
+  const video = currentVideo?.getBoundingClientRect() ?? null
   for (const region of BACKDROP_REGIONS) {
     document.querySelectorAll<HTMLElement>(region.selector).forEach((element) => {
       const rect = element.getBoundingClientRect()
       if (!rect.width || !rect.height)
         return
-      for (const [x, y] of region.points(rect)) {
-        if (x >= 0 && y >= 0 && x <= window.innerWidth && y <= window.innerHeight)
+      for (const [x, y] of region.points(rect, video)) {
+        // 视频画面上没有页面文字，落在其上的点不代表文字背景
+        if (x >= 0 && y >= 0 && x <= window.innerWidth && y <= window.innerHeight && !isInside(video, x, y))
           anchors.push({ region: region.name, x, y })
       }
     })
