@@ -99,6 +99,7 @@ const COMMENT_NESTED_UI_SELECTOR = '.reply-item, .sub-reply-item, bili-comment-r
 // Light-DOM markers only. Modern bili-comments mounts most UI in shadow roots,
 // so readiness must not require these descendants to exist.
 const COMMENT_CONTENT_MARKER_SELECTOR = 'bili-comments, bili-comment-box, bili-comment-renderer, .reply-list, .comment-list, .reply-box, .comment-header'
+const NATIVE_FULLSCREEN_BUTTON_SELECTOR = '.bpx-player-ctrl-full, .bilibili-player-video-btn-fullscreen, .squirtle-video-fullscreen'
 const NATIVE_PLAYER_MODE_BUTTON_SELECTOR = [
   '.bpx-player-ctrl-wide',
   '.bilibili-player-video-btn-widescreen',
@@ -106,9 +107,7 @@ const NATIVE_PLAYER_MODE_BUTTON_SELECTOR = [
   '.bpx-player-ctrl-web',
   '.bilibili-player-video-web-fullscreen',
   '.squirtle-video-pagefullscreen',
-  '.bpx-player-ctrl-full',
-  '.bilibili-player-video-btn-fullscreen',
-  '.squirtle-video-fullscreen',
+  NATIVE_FULLSCREEN_BUTTON_SELECTOR,
 ].join(', ')
 
 let state: BewlyWidescreenState | null = null
@@ -993,7 +992,7 @@ function handleNativePlayerModeInteraction(event: Event) {
     return
 
   const alreadyEntered = isNativePlayerModeButtonEntered(button)
-  const isBrowserFullscreenButton = button.matches('.bpx-player-ctrl-full, .bilibili-player-video-btn-fullscreen, .squirtle-video-fullscreen')
+  const isBrowserFullscreenButton = button.matches(NATIVE_FULLSCREEN_BUTTON_SELECTOR)
 
   // Native web/wide/full modes cannot apply while Bewly widescreen owns the
   // player layout. Exit first so the same gesture takes effect immediately.
@@ -1007,6 +1006,15 @@ function handleNativePlayerModeInteraction(event: Event) {
       return
     button.click()
   }, 0)
+}
+
+/** 用户亲手点击原生宽屏/网页全屏按钮；浏览器全屏是临时状态，扩展的程序化点击不可信，均不计入。 */
+export function isUserNativeLayoutModeClick(event: Event) {
+  if (!event.isTrusted)
+    return false
+
+  const button = findNativePlayerModeButton(event)
+  return !!button && !button.matches(NATIVE_FULLSCREEN_BUTTON_SELECTOR)
 }
 
 export function ensureNativePlayerModeGuard() {
@@ -2358,15 +2366,16 @@ function injectLayoutStyle() {
     /* 顶端对齐：UP 主看自己稿件时 .video-toolbar-left 内多出一行管理按钮，
        居中会让稍后再看按钮落在两行之间 */
     #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report {
-      --bewly-widescreen-toolbar-lead-gap: 8px;
+      --bewly-widescreen-watch-later-size: 32px;
+      --bewly-widescreen-toolbar-lead-gap: var(--bew-space-3, 12px);
       align-items: flex-start !important;
       flex-wrap: nowrap;
       gap: 0;
     }
 
-    /* 稍后再看按钮（24px）+ 右间距，供 UP 主管理行向左回退到行首 */
+    /* 稍后再看按钮 + 右间距，供 UP 主管理行向左回退到行首 */
     #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report:has(> .video-toolbar-right .bewly-watch-later-btn) {
-      --bewly-widescreen-toolbar-lead: calc(24px + var(--bewly-widescreen-toolbar-lead-gap));
+      --bewly-widescreen-toolbar-lead: calc(var(--bewly-widescreen-watch-later-size) + var(--bewly-widescreen-toolbar-lead-gap));
     }
 
     /* UP 主视角的编辑稿件 / 数据等入口单独成行，从操作栏行首开始 */
@@ -2594,7 +2603,8 @@ function injectLayoutStyle() {
     }
 
     /* 宽屏下右侧只保留插件的稍后再看按钮（随 .video-toolbar-right 一起被搬入 slot），
-       用 order 置于四组操作之前（行首），间距镜像 B 站原生组间距（1681px 以上 18px）；
+       用 order 置于四组操作之前（行首）。侧栏宽度不随视口变化，按钮自带底色块，
+       与点赞之间用固定间距，不再跟随 B 站按视口切换的原生组间距；
        原生「更多」等其余入口维持隐藏 */
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-right {
       display: flex !important;
@@ -2608,21 +2618,25 @@ function injectLayoutStyle() {
       box-shadow: none !important;
     }
 
-    @media (min-width: 1681px) {
-      #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report {
-        --bewly-widescreen-toolbar-lead-gap: 18px;
-      }
-    }
-
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-right > :not(.bewly-watch-later-btn) {
       display: none !important;
     }
 
-    /* 稍后再看按钮与四组操作项统一：内容自适应尺寸 + 22px 图标，
-       颜色 / hover / 激活态复用上方共享项规则（含 .is-active 主题色） */
+    /* 稍后再看按钮与视频页一致：32px 圆角方块，已添加时铺主题色淡底；
+       图标沿用四组操作项的 22px。上下负外边距让方块在 28px 行高内居中，
+       不撑高操作栏；颜色 / hover 复用上方共享项规则 */
     #${ROOT_ID} .bewly-widescreen-action-slot .bewly-watch-later-btn {
       justify-content: center !important;
-      min-width: 24px !important;
+      width: var(--bewly-widescreen-watch-later-size) !important;
+      min-width: var(--bewly-widescreen-watch-later-size) !important;
+      height: var(--bewly-widescreen-watch-later-size) !important;
+      min-height: var(--bewly-widescreen-watch-later-size) !important;
+      margin: calc((28px - var(--bewly-widescreen-watch-later-size)) / 2) 0 !important;
+      border-radius: var(--bew-radius-half, 6px) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-action-slot .bewly-watch-later-btn.is-active {
+      background: color-mix(in srgb, var(--bew-theme-color, #00aeec) 12%, transparent) !important;
     }
 
     #${ROOT_ID} .bewly-widescreen-action-slot .bewly-watch-later-btn .bewly-watch-later-btn__icon {
@@ -3323,15 +3337,15 @@ function syncSidebarLayoutMetrics(currentState: BewlyWidescreenState) {
 }
 
 function setupAspectObservers(currentState: BewlyWidescreenState) {
-  const video = getVideoElement()
-  if (video) {
-    const onLoadedMetadata = () => {
-      updateAspectRatio()
-      scheduleSidebarRefresh()
-    }
-    video.addEventListener('loadedmetadata', onLoadedMetadata)
-    currentState.metadataListener = () => video.removeEventListener('loadedmetadata', onLoadedMetadata)
+  // 保留宽屏切集时 B 站可能换掉 video 元素；在 document 捕获阶段监听，始终跟随当前视频。
+  const onLoadedMetadata = (event: Event) => {
+    if (event.target !== getVideoElement())
+      return
+    updateAspectRatio()
+    scheduleSidebarRefresh()
   }
+  document.addEventListener('loadedmetadata', onLoadedMetadata, true)
+  currentState.metadataListener = () => document.removeEventListener('loadedmetadata', onLoadedMetadata, true)
 
   currentState.resizeObserver = new ResizeObserver(() => {
     updateAspectRatio()
@@ -3670,6 +3684,8 @@ function setupDomRefreshObserver(currentState: BewlyWidescreenState) {
     if (mutations.every(mutation => currentState.root.contains(mutation.target)))
       return
 
+    // 标题是复制的文本而非搬运节点，切集后立即同步，不等侧栏的延迟刷新。
+    syncSidebarTitle(currentState)
     scheduleSidebarRefresh()
   })
 
@@ -3837,7 +3853,35 @@ function syncCustomInteractiveEntry(currentState: BewlyWidescreenState) {
   anchor.after(entry)
 }
 
+function hasPlaybackElement(player: HTMLElement) {
+  return !!player.querySelector('video, bwp-video')
+}
+
+function syncPlayer(currentState: BewlyWidescreenState) {
+  const framePlayer = findFirst(selectors.player, currentState.playerFrame)
+  if (framePlayer && hasPlaybackElement(framePlayer))
+    return
+
+  // 切集时 B 站若在原位置重建播放器，接管新播放器并丢弃已脱离的旧节点，
+  // 不退出宽屏，避免露出原网页。
+  const replacement = findMovable(selectors.player)
+  if (!replacement || !hasPlaybackElement(replacement))
+    return
+
+  if (framePlayer)
+    removeMovedNode(framePlayer, currentState.movedNodes)
+  if (moveNode(replacement, currentState.playerFrame, currentState.movedNodes)) {
+    // 弹幕发送栏属于旧播放器，换成新播放器自己的发送栏。
+    const staleDanmakuInput = findFirst(selectors.danmakuInput, currentState.danmakuDock)
+    if (staleDanmakuInput)
+      removeMovedNode(staleDanmakuInput, currentState.movedNodes)
+    moveDanmakuInput(currentState)
+    updateAspectRatio()
+  }
+}
+
 function fillSidebar(currentState: BewlyWidescreenState) {
+  syncPlayer(currentState)
   syncSidebarTitle(currentState)
 
   moveOrReplaceNode(selectors.info, currentState.infoSlot, currentState.movedNodes)
@@ -4211,6 +4255,23 @@ export function applyBewlyWidescreen(
     if (waitingForLoad)
       startAfterPageLoad(pendingSidebarPosition)
   }, PAGE_LOAD_FALLBACK_TIMEOUT)
+}
+
+/**
+ * 站内切集时保留宽屏布局，按新视频原地刷新侧栏内容。
+ * 返回 false 表示当前不在宽屏中，调用方需按普通流程应用播放器模式。
+ */
+export function refreshBewlyWidescreenForNavigation() {
+  if (!state)
+    return false
+
+  const currentState = state
+  clearSidebarRefreshTimer()
+  // 简介已换成新视频，沿用上一集的展开状态会让长简介直接铺满侧栏。
+  currentState.descriptionExpanded = false
+  fillSidebar(currentState)
+  updateAspectRatio()
+  return true
 }
 
 export function exitBewlyWidescreen(

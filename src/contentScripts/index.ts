@@ -6,12 +6,13 @@ import { createApp } from 'vue'
 import { startIframeThemeListener, useDark } from '~/composables/useDark'
 import { CONTENT_SCRIPT_COMMIT, CONTENT_SCRIPT_PING, CONTENT_SCRIPT_PONG } from '~/constants/contentScript'
 import { BEWLY_IFRAME_DRAWER_HOST_CLASS, BEWLY_MOUNTED, IFRAME_DARK_MODE_CHANGE, IFRAME_TOP_BAR_CHANGE } from '~/constants/globalEvents'
+import type { DefaultVideoPlayerMode } from '~/logic'
 import { localSettings, localSettingsReady, settings, settingsReady } from '~/logic'
 import { setupApp } from '~/logic/common-setup'
 import { useTopBarStore } from '~/stores/topBarStore'
 import RESET_BEWLY_CSS from '~/styles/reset.css?raw'
 import api from '~/utils/api'
-import { applyBewlyWidescreen, BEWLY_WIDESCREEN_USER_EXIT, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, prepareBewlyWidescreenLoading } from '~/utils/bewlyWidescreen'
+import { applyBewlyWidescreen, BEWLY_WIDESCREEN_USER_EXIT, exitBewlyWidescreen, isBewlyWidescreenActive, isBewlyWidescreenEngaged, isUserNativeLayoutModeClick, prepareBewlyWidescreenLoading, refreshBewlyWidescreenForNavigation } from '~/utils/bewlyWidescreen'
 import { isBilibiliWwwUrl } from '~/utils/bilibiliDesktopNavigation'
 import { isInBilibiliLiveContext } from '~/utils/bilibiliLive'
 import { stripBilibiliLocaleUrl } from '~/utils/bilibiliLocale'
@@ -26,6 +27,7 @@ import { getLocalWallpaper, hasLocalWallpaper, isLocalWallpaperUrl, localWallpap
 import { getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificationPage, isVideoOrBangumiPage, isVideoPlaybackPage, isWatchLaterListPage } from '~/utils/main'
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { createPageSettingsPayload, writePageBootSnapshot } from '~/utils/pageSettingsProtocol'
+import { resolvePgcEpisodeVideoIds } from '~/utils/pgcEpisode'
 import { isPhotoViewerOpen } from '~/utils/photoViewer'
 import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, applyRememberedPlaybackRate, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isPlayerShowingEndingRecommendation, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, startPlaybackRateMonitoring, webFullscreen, widescreen } from '~/utils/player'
 import { applyPreservedOrDefaultCustomPlay, applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
@@ -269,6 +271,9 @@ else if (shouldInitializeContentScript) {
   let lastUrl = location.href
   let lastVideoNavigationKey = getVideoNavigationKey(location.href)
   let lastAppliedPlayerModeNavigationKey: string | undefined
+  // 同一文档内用户手动切换过播放器样式（退出 Bewly 宽屏、点原生宽屏/网页全屏）后，
+  // 站内切集沿用当前样式，不再套用默认模式；整页加载后恢复默认。
+  let playerModeChosenByUser = false
   let playerModeWaitStartedAt: number | undefined
   let playerModeReadyAfter: number | undefined
   let playerModeRetryTimer: ReturnType<typeof setTimeout> | undefined
@@ -632,7 +637,7 @@ else if (shouldInitializeContentScript) {
       return
 
     playerModeWaitStartedAt ??= Date.now()
-    let targetPlayerMode = resolveDefaultVideoPlayerMode()
+    let targetPlayerMode = resolveNavigationPlayerMode()
     if (isFestivalPage() && targetPlayerMode === 'bewlyWidescreen')
       targetPlayerMode = 'widescreen'
 
@@ -749,6 +754,15 @@ else if (shouldInitializeContentScript) {
     }
   }
 
+  function resolveNavigationPlayerMode(): DefaultVideoPlayerMode {
+    return playerModeChosenByUser ? 'default' : resolveDefaultVideoPlayerMode()
+  }
+
+  document.addEventListener('click', (event) => {
+    if (isUserNativeLayoutModeClick(event))
+      playerModeChosenByUser = true
+  }, true)
+
   function clearPlayerModeRetry() {
     if (playerModeRetryTimer) {
       clearTimeout(playerModeRetryTimer)
@@ -792,6 +806,7 @@ else if (shouldInitializeContentScript) {
   }
 
   window.addEventListener(BEWLY_WIDESCREEN_USER_EXIT, () => {
+    playerModeChosenByUser = true
     const currentNavigationKey = getVideoNavigationKey(location.href)
     if (!currentNavigationKey)
       return
@@ -902,7 +917,7 @@ else if (shouldInitializeContentScript) {
   const widescreenCommentReloadRetryTimeout = 10_000
   let widescreenCommentReloadRequestId = 0
 
-  type VideoCommentIdentifier = { bvid: string } | { aid: string }
+  type VideoCommentIdentifier = { bvid: string } | { aid: string } | { epid: string }
 
   function getVideoCommentIdentifier(url = location.href): VideoCommentIdentifier | null {
     try {
@@ -917,6 +932,15 @@ else if (shouldInitializeContentScript) {
         const aid = Number(queryAid)
         if (Number.isSafeInteger(aid) && aid > 0)
           return { aid: String(aid) }
+      }
+
+      // 番剧 SPA 切集复用同一个 bili-comments，不会更新 oid；按 ep 解析出稿件 aid 后
+      // 与普通视频一样重载。ss 地址未指定单集，仍走整页刷新兜底。
+      const epPathMatch = urlObj.pathname.match(/^\/bangumi\/play\/ep(\d+)(?:\/|$)/)
+      if (epPathMatch) {
+        const epid = Number(epPathMatch[1])
+        if (Number.isSafeInteger(epid) && epid > 0)
+          return { epid: String(epid) }
       }
 
       if (!/^\/video\//.test(urlObj.pathname))
@@ -977,23 +1001,29 @@ else if (shouldInitializeContentScript) {
     element.replaceWith(replacement)
   }
 
+  async function resolveCommentAid(identifier: VideoCommentIdentifier): Promise<number | undefined> {
+    if ('epid' in identifier)
+      return (await resolvePgcEpisodeVideoIds(Number(identifier.epid)))?.aid
+
+    const response = await api.video.getVideoInfo(identifier)
+    return response?.code === 0 ? Number(response.data?.aid) : undefined
+  }
+
   async function reloadCommentsForWidescreenNavigation(targetNavigationKey: string, requestId: number, identifier: VideoCommentIdentifier) {
-    let response: any
+    let aid: number | undefined
     try {
-      response = await api.video.getVideoInfo(identifier)
+      aid = await resolveCommentAid(identifier)
     }
     catch {
       return
     }
 
     if (requestId !== widescreenCommentReloadRequestId
-      || getVideoNavigationKey(location.href) !== targetNavigationKey
-      || response?.code !== 0) {
+      || getVideoNavigationKey(location.href) !== targetNavigationKey) {
       return
     }
 
-    const aid = Number(response.data?.aid)
-    if (!Number.isSafeInteger(aid) || aid <= 0)
+    if (!aid || !Number.isSafeInteger(aid) || aid <= 0)
       return
 
     const deadline = Date.now() + widescreenCommentReloadRetryTimeout
@@ -1053,9 +1083,11 @@ else if (shouldInitializeContentScript) {
     }, 5000)
     clearPlayerModeRetry()
     cancelPlayerModeApplication()
-    // 先退出宽屏，再让 B 站执行原本的 SPA 路由切换；真正 URL 变化后由
-    // checkForUrlChanges 复用 SPA 路由并按需重载评论区。
-    exitBewlyWidescreen()
+    // 能按视频 ID 重载评论区的切集保留宽屏，由 checkForUrlChanges 原地刷新侧栏
+    // 和评论，避免先露出原网页再重建。其余导航（如番剧 ss 地址）仍先退出宽屏，
+    // URL 变化后整页刷新。
+    if (!getVideoCommentIdentifier(targetUrl))
+      exitBewlyWidescreen()
   }
 
   function checkForUrlChanges() {
@@ -1092,7 +1124,7 @@ else if (shouldInitializeContentScript) {
 
         // 抽屉父文档只同步视频 URL，实际宽屏和评论更新由 iframe 负责。
         const willApplyBewlyWidescreen = !document.documentElement.classList.contains(BEWLY_IFRAME_DRAWER_HOST_CLASS)
-          && resolveDefaultVideoPlayerMode() === 'bewlyWidescreen'
+          && resolveNavigationPlayerMode() === 'bewlyWidescreen'
           && !isFestivalPage()
         const shouldReloadWidescreenNavigation = pendingWidescreenReloadNavigationKey === currentVideoNavigationKey
           || isBewlyWidescreenActive()
@@ -1105,12 +1137,15 @@ else if (shouldInitializeContentScript) {
         if (shouldReloadWidescreenNavigation && !videoCommentIdentifier) {
           exitBewlyWidescreen()
           // 评论区无法可靠映射到视频 ID 时保留完整刷新兜底，避免宽屏 SPA
-          // 切换后继续复用旧评论组件（例如番剧页面或异常 URL）。
+          // 切换后继续复用旧评论组件（例如番剧 ss 地址或异常 URL）。
           window.location.reload()
           return
         }
 
-        exitBewlyWidescreen()
+        // 已在宽屏中时保留布局原地刷新；随后的 applyDefaultPlayerMode 会把宽屏
+        // 视为当前导航已完成的播放器模式，只重新应用伴随设置。
+        if (!videoCommentIdentifier || !refreshBewlyWidescreenForNavigation())
+          exitBewlyWidescreen()
         resetVerticalVideoZoom()
         resetPlayerModeReadinessForNavigation()
         document.querySelector('.bewly-watch-later-btn')?.remove()
@@ -1147,8 +1182,8 @@ else if (shouldInitializeContentScript) {
     scheduleUrlChangeCheck()
   }
 
-  // inject/index.ts 在调用 history.pushState 前派发此事件，先退出宽屏；URL
-  // 真正变化后由事件队列复用 SPA 路由并按需重载评论区。
+  // inject/index.ts 在调用 history.pushState 前派发此事件，按目标决定是否先退出
+  // 宽屏；URL 真正变化后由事件队列复用 SPA 路由并按需重载评论区。
   window.addEventListener('pushstate', handlePushState, true)
   window.addEventListener('replacestate', scheduleUrlChangeCheck, true)
   window.addEventListener('popstate', scheduleUrlChangeCheck, true)
