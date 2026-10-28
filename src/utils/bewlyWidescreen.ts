@@ -535,6 +535,7 @@ function setActiveTab(nextTab: BewlyWidescreenTab) {
     return
 
   state.activeTab = nextTab
+  state.root.dataset.activeTab = nextTab
   for (const [tab, button] of Object.entries(state.tabButtons) as Array<[BewlyWidescreenTab, HTMLButtonElement]>) {
     const active = tab === nextTab
     button.classList.toggle('is-active', active)
@@ -1640,6 +1641,12 @@ function injectLayoutStyle() {
         var(--bewly-widescreen-sidebar-right-inset, 0px)
       );
       scroll-padding-top: var(--bewly-widescreen-sticky-height, 0px);
+      /* 吸顶信息栏与 Tab 以下的可视高度，扣除面板上下内边距；弹幕与选集
+         列表按此高度填满，只在原站列表内部滚动。 */
+      --bewly-widescreen-panel-fill-height: max(
+        240px,
+        calc(100dvh - var(--bewly-widescreen-sticky-height, 0px) - 24px)
+      );
       transform: translateX(var(--bewly-widescreen-sidebar-offset));
       transition: transform 180ms ease;
       will-change: transform;
@@ -1726,6 +1733,11 @@ function injectLayoutStyle() {
     }
 
     #${ROOT_ID} .bewly-widescreen-back-to-top[hidden] {
+      display: none;
+    }
+
+    /* 弹幕与选集列表已填满剩余高度并自行滚动，只有评论需要外层回到顶部。 */
+    #${ROOT_ID}[data-active-tab]:not([data-active-tab="comment"]) .bewly-widescreen-back-to-top {
       display: none;
     }
 
@@ -2718,6 +2730,11 @@ function injectLayoutStyle() {
       );
     }
 
+    /* 非评论 Tab 不显示回到顶部，也无需为它预留底部空间。 */
+    #${ROOT_ID}[data-active-tab]:not([data-active-tab="comment"]) .bewly-widescreen-panels {
+      padding-bottom: 0;
+    }
+
     #${ROOT_ID} .bewly-widescreen-panel {
       width: 100%;
       height: auto;
@@ -2820,6 +2837,22 @@ function injectLayoutStyle() {
       max-width: 100% !important;
     }
 
+    /* 弹幕列表展开时与侧栏剩余可视高度一致，避免外层再滚动。原站展开后
+       由内联高度定死 .bpx-player-wraplist 与 .bpx-player-dm-wrap，这里只改写
+       这两层：前者扣除 44px 折叠标题栏，后者再扣除原站列头、底部按钮与
+       间距共 71px；收起时（-folded）保持原站高度与动画。 */
+    #${ROOT_ID} .bewly-widescreen-panel-danmaku > :is(#danmukuBox, [class*="DanmukuBox_wrap"], .danmaku-box, .danmaku-wrap) {
+      margin-bottom: 0 !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-danmaku .bui-collapse-wrap:not(.bui-collapse-wrap-folded) .bpx-player-wraplist {
+      height: calc(var(--bewly-widescreen-panel-fill-height) - 44px) !important;
+    }
+
+    #${ROOT_ID} .bewly-widescreen-panel-danmaku .bui-collapse-wrap:not(.bui-collapse-wrap-folded) .bpx-player-dm-wrap {
+      height: calc(var(--bewly-widescreen-panel-fill-height) - 44px - 71px) !important;
+    }
+
     /* Keep only the marked episode section internally scrollable. The panel
        itself remains the outer scroll fallback for recommendations and other
        sidebar content; nested playlist containers stay overflow-visible. */
@@ -2849,8 +2882,11 @@ function injectLayoutStyle() {
 
     /* Watch Later / Favorites lists already scroll inside
        #playlist-video-action-list, which also drives lazy loading. Cap the
-       outer container and let only that inner list take the remaining height. */
+       outer container and let only that inner list take the remaining height.
+       Tab 吸顶后整个原站列表完整可见，只在内部滚动。 */
     #${ROOT_ID} .bewly-widescreen-panel-playlist .action-list-container.${EPISODE_SECTION_CLASS} {
+      height: var(--bewly-widescreen-panel-fill-height) !important;
+      max-height: var(--bewly-widescreen-panel-fill-height) !important;
       display: flex !important;
       flex-direction: column !important;
       overflow: hidden !important;
@@ -3655,6 +3691,9 @@ function moveDanmakuInput(currentState: BewlyWidescreenState) {
 function expandDanmakuTab(currentState: BewlyWidescreenState) {
   const focusable = findFirst(selectors.danmakuFocusable, currentState.panels.danmaku)
   if (!focusable)
+    return
+  // 标题栏点击是切换开关，已展开时再点会把弹幕列表收起。
+  if (focusable.matches('.bui-collapse-header') && !focusable.closest('.bui-collapse-wrap-folded'))
     return
 
   currentState.sidebarEl.scrollTo({ top: 0, behavior: 'smooth' })
