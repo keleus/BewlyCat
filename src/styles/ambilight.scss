@@ -27,32 +27,16 @@
   }
 }
 
-// 注册为颜色后，区域元素上的文字灰阶可以过渡；只在区域元素上过渡，整页不做逐帧重算
-@for $level from 1 through 4 {
-  @property --bew-ambilight-text-#{$level} {
-    syntax: "<color>";
-    inherits: true;
-    initial-value: transparent;
-  }
-}
-
-// 将某个区域的四级文字色设为当前元素及后代使用的文字色
-@mixin ambilight-text-region($region) {
-  @for $level from 1 through 4 {
-    --bew-ambilight-text-#{$level}: var(--bew-ambilight-#{$region}-text-#{$level});
-  }
-}
-
 // 仅在环境光生效激活时，开启页面隔离与包裹层透明穿透，避免未开启用户样式污染
 html[data-bewly-ambilight] {
   // 回复树节点圆点需遮住穿过的引导线；评论区 --bg1 半透明后仍保持不透明
   --bew-comment-tree-node-bg: var(--bew-bg);
 
   // 文字灰阶按光晕实时亮度重算（见 ambilightControl / textContrast），四级文字同步变化。
+  // --bew-ambilight-text-* 由 ambilightControl 写在 html（综合灰阶）与各文字区域元素（按区域背景取色）上，
+  // 子元素继承；不做过渡：文字变量为继承属性，过渡期间区域内全部后代每帧都要重算样式。
   // 原站与插件的文字变量在每个元素上都有声明，需同样作用到全部元素并提高优先级
   &[data-bewly-ambilight-ink] {
-    @include ambilight-text-region(global);
-
     &,
     & * {
       --text1: var(--bew-ambilight-text-1) !important;
@@ -63,37 +47,6 @@ html[data-bewly-ambilight] {
       --bew-text-2: var(--bew-ambilight-text-2) !important;
       --bew-text-3: var(--bew-ambilight-text-3) !important;
       --bew-text-4: var(--bew-ambilight-text-4) !important;
-    }
-
-    // 光晕在不同区域的覆盖与颜色差异很大，各区域按自身背景取色，子元素继承
-    :is(.video-info-container, #viewbox_report) {
-      @include ambilight-text-region(top);
-    }
-
-    :is(.right-container, .playlist-container--right) {
-      @include ambilight-text-region(side);
-    }
-
-    :is(.bpx-player-sending-area, #arc_toolbar_report, .video-toolbar-container, #playlistToolbar) {
-      @include ambilight-text-region(bottom);
-    }
-
-    // 区域灰阶由 ambilightControl 随光晕小步写在区域元素上，过渡衔接相邻两次更新
-    :is(
-      .video-info-container,
-      #viewbox_report,
-      .right-container,
-      .playlist-container--right,
-      .bpx-player-sending-area,
-      #arc_toolbar_report,
-      .video-toolbar-container,
-      #playlistToolbar
-    ) {
-      transition:
-        --bew-ambilight-text-1 400ms ease-out,
-        --bew-ambilight-text-2 400ms ease-out,
-        --bew-ambilight-text-3 400ms ease-out,
-        --bew-ambilight-text-4 400ms ease-out;
     }
   }
 
