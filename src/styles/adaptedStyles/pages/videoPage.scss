@@ -615,6 +615,11 @@
       #check-timestamp:checked {
       overflow: hidden;
     }
+
+    // 播放列表（稍后再看等）条目的删除按钮，B 站写死了 hover 色 #0087bd
+    :is(.singlep-list-item-inner, .multip-list-item-inner, .invalid-list-item-inner) .main .del-btn:hover {
+      color: var(--bew-theme-color);
+    }
   }
 
   // #endregion
