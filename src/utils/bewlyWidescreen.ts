@@ -1649,11 +1649,17 @@ function injectLayoutStyle() {
         var(--bewly-widescreen-sidebar-right-inset, 0px)
       );
       scroll-padding-top: var(--bewly-widescreen-sticky-height, 0px);
-      /* 吸顶信息栏与 Tab 以下的可视高度，扣除面板上下内边距；弹幕与选集
-         列表按此高度填满，只在原站列表内部滚动。 */
+      /* 未滚动时 Tab 以下的可视高度，扣除面板上下内边距；弹幕与选集列表按此
+         高度填满，只在原站列表内部滚动。简介与标签虽可滚出视野，仍按其占位
+         计算，避免列表底部超出视口、需先滚动外层才能看全。 */
       --bewly-widescreen-panel-fill-height: max(
         240px,
-        calc(100dvh - var(--bewly-widescreen-sticky-height, 0px) - 24px)
+        calc(
+          100dvh
+          - var(--bewly-widescreen-sticky-height, 0px)
+          - var(--bewly-widescreen-details-height, 0px)
+          - 24px
+        )
       );
       transform: translateX(var(--bewly-widescreen-sidebar-offset));
       transition: transform 180ms ease;
@@ -3319,8 +3325,9 @@ function schedulePlayerResizeSync(currentState: BewlyWidescreenState) {
 }
 
 function syncSidebarLayoutMetrics(currentState: BewlyWidescreenState) {
-  const { sidebarEl, sidebarTop, tabButtons } = currentState
+  const { sidebarEl, sidebarTop, sidebarDetails, tabButtons } = currentState
   const headerHeight = sidebarTop.getBoundingClientRect().height
+  const detailsHeight = sidebarDetails.getBoundingClientRect().height
   const tabsHeight = tabButtons.comment.parentElement?.getBoundingClientRect().height ?? 0
   // clientLeft 已包含左边框；侧栏位于左侧时，右边框也需纳入按钮定位。
   const rightInset = sidebarEl.offsetWidth - sidebarEl.clientWidth - sidebarEl.clientLeft
@@ -3328,6 +3335,7 @@ function syncSidebarLayoutMetrics(currentState: BewlyWidescreenState) {
   const metrics = {
     '--bewly-widescreen-header-height': `${headerHeight}px`,
     '--bewly-widescreen-sticky-height': `${headerHeight + tabsHeight}px`,
+    '--bewly-widescreen-details-height': `${detailsHeight}px`,
     '--bewly-widescreen-sidebar-right-inset': `${rightInset}px`,
   }
   for (const [property, value] of Object.entries(metrics)) {
@@ -3359,6 +3367,7 @@ function setupAspectObservers(currentState: BewlyWidescreenState) {
   currentState.resizeObserver.observe(currentState.descriptionSlot)
   currentState.resizeObserver.observe(currentState.sidebarEl)
   currentState.resizeObserver.observe(currentState.sidebarTop, { box: 'border-box' })
+  currentState.resizeObserver.observe(currentState.sidebarDetails, { box: 'border-box' })
   const tablist = currentState.tabButtons.comment.parentElement
   if (tablist)
     currentState.resizeObserver.observe(tablist, { box: 'border-box' })
