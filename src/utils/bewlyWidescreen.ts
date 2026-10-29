@@ -2370,17 +2370,28 @@ function injectLayoutStyle() {
     }
 
     /* 顶端对齐：UP 主看自己稿件时 .video-toolbar-left 内多出一行管理按钮，
-       居中会让稍后再看按钮落在两行之间 */
-    #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report {
+       居中会让稍后再看按钮落在两行之间。
+       播放列表 / 稍后再看页的容器是 #playlistToolbar，变量需一并定义 */
+    #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report,
+    #${ROOT_ID} .bewly-widescreen-action-slot #playlistToolbar {
       --bewly-widescreen-watch-later-size: 32px;
-      --bewly-widescreen-toolbar-lead-gap: var(--bew-space-3, 12px);
+      --bewly-widescreen-toolbar-lead-gap: 8px;
       align-items: flex-start !important;
       flex-wrap: nowrap;
       gap: 0;
     }
 
+    /* 稍后再看按钮与点赞的间距对齐 B 站原生 .toolbar-left-item-wrap 组间距（≥1681px 时 18px） */
+    @media (min-width: 1681px) {
+      #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report,
+      #${ROOT_ID} .bewly-widescreen-action-slot #playlistToolbar {
+        --bewly-widescreen-toolbar-lead-gap: 18px;
+      }
+    }
+
     /* 稍后再看按钮 + 右间距，供 UP 主管理行向左回退到行首 */
-    #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report:has(> .video-toolbar-right .bewly-watch-later-btn) {
+    #${ROOT_ID} .bewly-widescreen-action-slot #arc_toolbar_report:has(> .video-toolbar-right .bewly-watch-later-btn),
+    #${ROOT_ID} .bewly-widescreen-action-slot #playlistToolbar:has(> .video-toolbar-right .bewly-watch-later-btn) {
       --bewly-widescreen-toolbar-lead: calc(var(--bewly-widescreen-watch-later-size) + var(--bewly-widescreen-toolbar-lead-gap));
     }
 
@@ -2609,8 +2620,7 @@ function injectLayoutStyle() {
     }
 
     /* 宽屏下右侧只保留插件的稍后再看按钮（随 .video-toolbar-right 一起被搬入 slot），
-       用 order 置于四组操作之前（行首）。侧栏宽度不随视口变化，按钮自带底色块，
-       与点赞之间用固定间距，不再跟随 B 站按视口切换的原生组间距；
+       用 order 置于四组操作之前（行首），与点赞之间沿用 B 站原生组间距；
        原生「更多」等其余入口维持隐藏 */
     #${ROOT_ID} .bewly-widescreen-action-slot .video-toolbar-right {
       display: flex !important;
